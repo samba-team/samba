@@ -37,12 +37,12 @@ static int net_ads_gpo_refresh(struct net_context *c, int argc, const char **arg
 	struct nt_user_token *token = NULL;
 
 	if (argc < 1 || c->display_usage) {
-		d_printf("Usage:\n"
-			 "net ads gpo refresh <username|machinename>\n"
-			 "  Lists all GPOs assigned to an account and "
-			 "downloads them\n"
-			 "    username\tUser to refresh GPOs for\n"
-			 "    machinename\tMachine to refresh GPOs for\n");
+		d_printf(_("Usage:\n"
+			   "net ads gpo refresh <username|machinename>\n"
+			   "  Lists all GPOs assigned to an account and "
+			   "downloads them\n"
+			   "    username\tUser to refresh GPOs for\n"
+			   "    machinename\tMachine to refresh GPOs for\n"));
 		return -1;
 	}
 
@@ -53,13 +53,13 @@ static int net_ads_gpo_refresh(struct net_context *c, int argc, const char **arg
 
 	status = ads_startup(c, false, &ads);
 	if (!ADS_ERR_OK(status)) {
-		d_printf("failed to connect AD server: %s\n", ads_errstr(status));
+		d_printf(_("failed to connect AD server: %s\n"), ads_errstr(status));
 		goto out;
 	}
 
 	status = ads_find_samaccount(ads, mem_ctx, argv[0], &uac, &dn);
 	if (!ADS_ERR_OK(status)) {
-		d_printf("failed to find samaccount for %s\n", argv[0]);
+		d_printf(_("failed to find samaccount for %s\n"), argv[0]);
 		goto out;
 	}
 
@@ -67,11 +67,11 @@ static int net_ads_gpo_refresh(struct net_context *c, int argc, const char **arg
 		flags |= GPO_LIST_FLAG_MACHINE;
 	}
 
-	d_printf("\n%s: '%s' has dn: '%s'\n\n",
-		(uac & UF_WORKSTATION_TRUST_ACCOUNT) ? "machine" : "user",
+	d_printf(_("\n%s: '%s' has dn: '%s'\n\n"),
+		(uac & UF_WORKSTATION_TRUST_ACCOUNT) ? _("machine") : _("user"),
 		argv[0], dn);
 
-	d_printf("* fetching token ");
+	d_printf(_("* fetching token "));
 	if (uac & UF_WORKSTATION_TRUST_ACCOUNT) {
 		status = gp_get_machine_token(ads, mem_ctx, NULL, dn, &token);
 	} else {
@@ -79,46 +79,47 @@ static int net_ads_gpo_refresh(struct net_context *c, int argc, const char **arg
 	}
 
 	if (!ADS_ERR_OK(status)) {
-		d_printf("failed: %s\n", ads_errstr(status));
+		d_printf(_("failed: %s\n"), ads_errstr(status));
 		goto out;
 	}
-	d_printf("finished\n");
+	d_printf(_("finished\n"));
 
-	d_printf("* fetching GPO List ");
+	d_printf(_("* fetching GPO List "));
 	status = ads_get_gpo_list(ads, mem_ctx, dn, flags, token, &gpo_list);
 	if (!ADS_ERR_OK(status)) {
-		d_printf("failed: %s\n", ads_errstr(status));
+		d_printf(_("failed: %s\n"),
+			 ads_errstr(status));
 		goto out;
 	}
-	d_printf("finished\n");
+	d_printf(_("finished\n"));
 
-	d_printf("* refreshing Group Policy Data ");
+	d_printf(_("* Refreshing Group Policy Data "));
 	if (!NT_STATUS_IS_OK(result = check_refresh_gpo_list(ads, mem_ctx,
 	                                                     cache_path(GPO_CACHE_DIR),
 	                                                     NULL,
 							     flags,
 							     gpo_list))) {
-		d_printf("failed: %s\n", nt_errstr(result));
+		d_printf(_("failed: %s\n"), nt_errstr(result));
 		goto out;
 	}
-	d_printf("finished\n");
+	d_printf(_("finished\n"));
 
-	d_printf("* storing GPO list to registry ");
+	d_printf(_("* storing GPO list to registry "));
 
 	{
 		WERROR werr = gp_reg_state_store(mem_ctx, flags, dn,
 						 token, gpo_list);
 		if (!W_ERROR_IS_OK(werr)) {
-			d_printf("failed: %s\n", win_errstr(werr));
+			d_printf(_("failed: %s\n"), win_errstr(werr));
 			goto out;
 		}
 	}
 
-	d_printf("finished\n");
+	d_printf(_("finished\n"));
 
 	if (c->opt_verbose) {
 
-		d_printf("* dumping GPO list\n");
+		d_printf(_("* dumping GPO list\n"));
 
 		for (gpo = gpo_list; gpo; gpo = gpo->next) {
 
@@ -147,23 +148,23 @@ static int net_ads_gpo_refresh(struct net_context *c, int argc, const char **arg
 		}
 	}
 
-	d_printf("* re-reading GPO list from registry ");
+	d_printf(_("* re-reading GPO list from registry "));
 
 	{
 		WERROR werr = gp_reg_state_read(mem_ctx, flags,
 						&token->user_sids[0],
 						&read_list);
 		if (!W_ERROR_IS_OK(werr)) {
-			d_printf("failed: %s\n", win_errstr(werr));
+			d_printf(_("failed: %s\n"), win_errstr(werr));
 			goto out;
 		}
 	}
 
-	d_printf("finished\n");
+	d_printf(_("finished\n"));
 
 	if (c->opt_verbose) {
 
-		d_printf("* dumping GPO list from registry\n");
+		d_printf(_("* dumping GPO list from registry\n"));
 
 		for (gpo = read_list; gpo; gpo = gpo->next) {
 
@@ -222,9 +223,9 @@ static int net_ads_gpo_list_all(struct net_context *c, int argc, const char **ar
 	};
 
 	if (c->display_usage) {
-		d_printf("Usage:\n"
-			 "net ads gpo listall\n"
-			 "    List all GPOs on the DC\n");
+		d_printf(_("Usage:\n"
+			   "net ads gpo listall\n"
+			   "    List all GPOs on the DC\n"));
 		return 0;
 	}
 
@@ -246,13 +247,13 @@ static int net_ads_gpo_list_all(struct net_context *c, int argc, const char **ar
 					    &res);
 
 	if (!ADS_ERR_OK(status)) {
-		d_printf("search failed: %s\n", ads_errstr(status));
+		d_printf(_("search failed: %s\n"), ads_errstr(status));
 		goto out;
 	}
 
 	num_reply = ads_count_replies(ads, res);
 
-	d_printf("Got %d replies\n\n", num_reply);
+	d_printf(_("Got %d replies\n\n"), num_reply);
 
 	/* dump the results */
 	for (msg = ads_first_entry(ads, res);
@@ -266,7 +267,7 @@ static int net_ads_gpo_list_all(struct net_context *c, int argc, const char **ar
 		status = ads_parse_gpo(ads, mem_ctx, msg, dn, &gpo);
 
 		if (!ADS_ERR_OK(status)) {
-			d_printf("ads_parse_gpo failed: %s\n",
+			d_printf(_("ads_parse_gpo failed: %s\n"),
 				ads_errstr(status));
 			goto out;
 		}
@@ -296,11 +297,11 @@ static int net_ads_gpo_list(struct net_context *c, int argc, const char **argv)
 	struct nt_user_token *token = NULL;
 
 	if (argc < 1 || c->display_usage) {
-		d_printf("Usage:\n"
-			 "net ads gpo list <username|machinename>\n"
-			 "  Lists all GPOs for machine/user\n"
-			 "    username\tUser to list GPOs for\n"
-			 "    machinename\tMachine to list GPOs for\n");
+		d_printf(_("Usage:\n"
+			   "net ads gpo list <username|machinename>\n"
+			   "  Lists all GPOs for machine/user\n"
+			   "    username\tUser to list GPOs for\n"
+			   "    machinename\tMachine to list GPOs for\n"));
 		return -1;
 	}
 
@@ -323,8 +324,8 @@ static int net_ads_gpo_list(struct net_context *c, int argc, const char **argv)
 		flags |= GPO_LIST_FLAG_MACHINE;
 	}
 
-	d_printf("%s: '%s' has dn: '%s'\n",
-		(uac & UF_WORKSTATION_TRUST_ACCOUNT) ? "machine" : "user",
+	d_printf(_("%s: '%s' has dn: '%s'\n"),
+		(uac & UF_WORKSTATION_TRUST_ACCOUNT) ? _("machine") : _("user"),
 		argv[0], dn);
 
 	if (uac & UF_WORKSTATION_TRUST_ACCOUNT) {
@@ -447,10 +448,10 @@ static int net_ads_gpo_link_get(struct net_context *c, int argc, const char **ar
 	struct GP_LINK gp_link;
 
 	if (argc < 1 || c->display_usage) {
-		d_printf("Usage:\n"
-			 "net ads gpo linkget <container>\n"
-			 "  Lists gPLink of a containter\n"
-			 "    container\tContainer to get link for\n");
+		d_printf(_("Usage:\n"
+			   "net ads gpo linkget <container>\n"
+			   "  Lists gPLink of a containter\n"
+			   "    container\tContainer to get link for\n"));
 		return -1;
 	}
 
@@ -466,7 +467,7 @@ static int net_ads_gpo_link_get(struct net_context *c, int argc, const char **ar
 
 	status = ads_get_gpo_link(ads, mem_ctx, argv[0], &gp_link);
 	if (!ADS_ERR_OK(status)) {
-		d_printf("get link for %s failed: %s\n", argv[0],
+		d_printf(_("get link for %s failed: %s\n"), argv[0],
 			ads_errstr(status));
 		goto out;
 	}
@@ -488,13 +489,13 @@ static int net_ads_gpo_link_add(struct net_context *c, int argc, const char **ar
 	TALLOC_CTX *mem_ctx;
 
 	if (argc < 2 || c->display_usage) {
-		d_printf("Usage:\n"
-			 "net ads gpo linkadd <linkdn> <gpodn> [options]\n"
-			 "  Link a container to a GPO\n"
-			 "    linkdn\tContainer to link to a GPO\n"
-			 "    gpodn\tGPO to link container to\n");
-		d_printf("note: DNs must be provided properly escaped.\n");
-		d_printf("See RFC 4514 for details\n");
+		d_printf(_("Usage:\n"
+			   "net ads gpo linkadd <linkdn> <gpodn> [options]\n"
+			   "  Link a container to a GPO\n"
+			   "    linkdn\tContainer to link to a GPO\n"
+			   "    gpodn\tGPO to link container to\n"));
+		d_printf(_("note: DNs must be provided properly escaped.\n"
+			   "See RFC 4514 for details\n"));
 		return -1;
 	}
 
@@ -514,7 +515,7 @@ static int net_ads_gpo_link_add(struct net_context *c, int argc, const char **ar
 
 	status = ads_add_gpo_link(ads, mem_ctx, argv[0], argv[1], gpo_opt);
 	if (!ADS_ERR_OK(status)) {
-		d_printf("link add failed: %s\n", ads_errstr(status));
+		d_printf(_("link add failed: %s\n"), ads_errstr(status));
 		goto out;
 	}
 
@@ -575,10 +576,10 @@ static int net_ads_gpo_get_gpo(struct net_context *c, int argc, const char **arg
 	struct GROUP_POLICY_OBJECT gpo;
 
 	if (argc < 1 || c->display_usage) {
-		d_printf("Usage:\n"
-			 "net ads gpo getgpo <gpo>\n"
-			 "  List speciefied GPO\n"
-			 "    gpo\t\tGPO to list\n");
+		d_printf(_("Usage:\n"
+			   "net ads gpo getgpo <gpo>\n"
+			   "  List speciefied GPO\n"
+			   "    gpo\t\tGPO to list\n"));
 		return -1;
 	}
 
@@ -599,7 +600,7 @@ static int net_ads_gpo_get_gpo(struct net_context *c, int argc, const char **arg
 	}
 
 	if (!ADS_ERR_OK(status)) {
-		d_printf("get gpo for [%s] failed: %s\n", argv[0],
+		d_printf(_("get gpo for [%s] failed: %s\n"), argv[0],
 			ads_errstr(status));
 		goto out;
 	}
@@ -630,17 +631,17 @@ int net_ads_gpo(struct net_context *c, int argc, const char **argv)
 			"getgpo",
 			net_ads_gpo_get_gpo,
 			NET_TRANSPORT_ADS,
-			"List specified GPO",
-			"net ads gpo getgpo\n"
-			"    List specified GPO"
+			N_("List specified GPO"),
+			N_("net ads gpo getgpo\n"
+			   "    List specified GPO")
 		},
 		{
 			"linkadd",
 			net_ads_gpo_link_add,
 			NET_TRANSPORT_ADS,
-			"Link a container to a GPO",
-			"net ads gpo linkadd\n"
-			"    Link a container to a GPO"
+			N_("Link a container to a GPO"),
+			N_("net ads gpo linkadd\n"
+			   "    Link a container to a GPO")
 		},
 #if 0
 		{
@@ -656,35 +657,35 @@ int net_ads_gpo(struct net_context *c, int argc, const char **argv)
 			"linkget",
 			net_ads_gpo_link_get,
 			NET_TRANSPORT_ADS,
-			"Lists gPLink of containter",
-			"net ads gpo linkget\n"
-			"    Lists gPLink of containter"
+			N_("Lists gPLink of containter"),
+			N_("net ads gpo linkget\n"
+			   "    Lists gPLink of containter")
 		},
 		{
 			"list",
 			net_ads_gpo_list,
 			NET_TRANSPORT_ADS,
-			"Lists all GPOs for machine/user",
-			"net ads gpo list\n"
-			"    Lists all GPOs for machine/user"
+			N_("Lists all GPOs for machine/user"),
+			N_("net ads gpo list\n"
+			   "    Lists all GPOs for machine/user")
 		},
 		{
 			"listall",
 			net_ads_gpo_list_all,
 			NET_TRANSPORT_ADS,
-			"Lists all GPOs on a DC",
-			"net ads gpo listall\n"
-			"    Lists all GPOs on a DC"
+			N_("Lists all GPOs on a DC"),
+			N_("net ads gpo listall\n"
+			   "    Lists all GPOs on a DC")
 		},
 		{
 			"refresh",
 			net_ads_gpo_refresh,
 			NET_TRANSPORT_ADS,
-			"Lists all GPOs assigned to an account and downloads "
-			"them",
-			"net ads gpo refresh\n"
-			"    Lists all GPOs assigned to an account and "
-			"downloads them"
+			N_("Lists all GPOs assigned to an account and "
+			   "downloads them"),
+			N_("net ads gpo refresh\n"
+			   "    Lists all GPOs assigned to an account and "
+			   "downloads them")
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
