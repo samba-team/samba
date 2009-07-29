@@ -125,7 +125,8 @@ NTSTATUS dbwrap_change_uint32_atomic(struct db_context *db, const char *keystr,
 		val = IVAL(rec->value.dptr, 0);
 		*oldval = val;
 	} else {
-		return NT_STATUS_UNSUCCESSFUL;
+		ret = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	val += change_val;
@@ -135,8 +136,8 @@ NTSTATUS dbwrap_change_uint32_atomic(struct db_context *db, const char *keystr,
 
 	ret = rec->store(rec, data, TDB_REPLACE);
 
+done:
 	TALLOC_FREE(rec);
-
 	return ret;
 }
 
