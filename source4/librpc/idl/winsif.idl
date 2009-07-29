@@ -146,7 +146,16 @@ import "nbt.idl";
 
 	/*****************/
 	/* Function 0x02 */
-	void WinsTrigger();
+	typedef enum {
+		WINSIF_TRIGGER_PULL	= 0x0000,
+		WINSIF_TRIGGER_PUSH	= 0x0001,
+		WINSIF_TRIGGER_PUSH_PROP= 0x0002
+	} winsif_TriggerType;
+
+	WERROR winsif_WinsTrigger(
+		[in,ref] winsif_Address *owner_address,
+		[in] winsif_TriggerType trigger_type
+	);
 
 	/*****************/
 	/* Function 0x03 */
