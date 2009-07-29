@@ -401,7 +401,7 @@ static NTSTATUS idmap_tdb_alloc_init( const char *params )
 
 static NTSTATUS idmap_tdb_allocate_id(struct unixid *xid)
 {
-	bool ret;
+	NTSTATUS ret;
 	const char *hwmkey;
 	const char *hwmtype;
 	uint32_t high_hwm;
@@ -449,10 +449,11 @@ static NTSTATUS idmap_tdb_allocate_id(struct unixid *xid)
 
 	/* fetch a new id and increment it */
 	ret = dbwrap_change_uint32_atomic(idmap_alloc_db, hwmkey, &hwm, 1);
-	if (ret != 0) {
-		DEBUG(0, ("Fatal error while fetching a new %s value\n!", hwmtype));
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0, ("Fatal error while fetching a new %s value: %s\n!",
+			  hwmtype, nt_errstr(ret)));
 		idmap_alloc_db->transaction_cancel(idmap_alloc_db);
-		return NT_STATUS_UNSUCCESSFUL;
+		return ret;
 	}
 
 	/* recheck it is in the range */

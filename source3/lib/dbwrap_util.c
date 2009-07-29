@@ -106,16 +106,17 @@ int dbwrap_store_uint32(struct db_context *db, const char *keystr, uint32_t v)
  * return old value in *oldval.
  * store *oldval + change_val to db.
  */
-uint32_t dbwrap_change_uint32_atomic(struct db_context *db, const char *keystr,
+NTSTATUS dbwrap_change_uint32_atomic(struct db_context *db, const char *keystr,
 				     uint32_t *oldval, uint32_t change_val)
 {
 	struct db_record *rec;
 	uint32 val = -1;
 	TDB_DATA data;
+	NTSTATUS ret;
 
 	if (!(rec = db->fetch_locked(db, NULL,
 				     string_term_tdb_data(keystr)))) {
-		return -1;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	if (rec->value.dptr == NULL) {
@@ -124,7 +125,7 @@ uint32_t dbwrap_change_uint32_atomic(struct db_context *db, const char *keystr,
 		val = IVAL(rec->value.dptr, 0);
 		*oldval = val;
 	} else {
-		return -1;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	val += change_val;
@@ -132,11 +133,11 @@ uint32_t dbwrap_change_uint32_atomic(struct db_context *db, const char *keystr,
 	data.dsize = sizeof(val);
 	data.dptr = (uint8 *)&val;
 
-	rec->store(rec, data, TDB_REPLACE);
+	ret = rec->store(rec, data, TDB_REPLACE);
 
 	TALLOC_FREE(rec);
 
-	return 0;
+	return ret;
 }
 
 /**
