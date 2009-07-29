@@ -166,6 +166,23 @@ NTSTATUS dbwrap_change_uint32_atomic(struct db_context *db, const char *keystr,
 	return ret;
 }
 
+NTSTATUS dbwrap_trans_change_uint32_atomic(struct db_context *db,
+					   const char *keystr,
+					   uint32_t *oldval,
+					   uint32_t change_val)
+{
+	NTSTATUS ret;
+	struct dbwrap_change_uint32_atomic_context state;
+
+	state.keystr = keystr;
+	state.oldval = oldval;
+	state.change_val = change_val;
+
+	ret = dbwrap_trans_do(db, dbwrap_change_uint32_atomic_action, &state);
+
+	return ret;
+}
+
 /**
  * Atomic integer change (addition):
  *
