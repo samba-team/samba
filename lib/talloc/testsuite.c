@@ -119,6 +119,11 @@ static void test_abort_stop(void)
 	talloc_set_abort_fn(NULL);
 }
 
+static void test_log_stdout(const char *message)
+{
+	fprintf(stdout, "%s", message);
+}
+
 /*
   test references 
 */
@@ -1128,6 +1133,7 @@ static bool test_pool(void)
 
 static void test_reset(void)
 {
+	talloc_set_log_fn(test_log_stdout);
 	test_abort_stop();
 	talloc_disable_null_tracking();
 	talloc_enable_null_tracking();
