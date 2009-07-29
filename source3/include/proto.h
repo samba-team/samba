@@ -447,7 +447,7 @@ NTSTATUS dbwrap_trans_change_uint32_atomic(struct db_context *db,
 					   uint32_t *oldval,
 					   uint32_t change_val);
 NTSTATUS dbwrap_change_int32_atomic(struct db_context *db, const char *keystr,
-				    int32 *oldval, int32 change_val);
+				    int32_t *oldval, int32_t change_val);
 NTSTATUS dbwrap_trans_store(struct db_context *db, TDB_DATA key, TDB_DATA dbuf,
 			    int flag);
 NTSTATUS dbwrap_trans_delete(struct db_context *db, TDB_DATA key);

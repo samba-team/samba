@@ -191,10 +191,10 @@ NTSTATUS dbwrap_trans_change_uint32_atomic(struct db_context *db,
  * store *oldval + change_val to db.
  */
 NTSTATUS dbwrap_change_int32_atomic(struct db_context *db, const char *keystr,
-				    int32 *oldval, int32 change_val)
+				    int32_t *oldval, int32_t change_val)
 {
 	struct db_record *rec;
-	int32 val = -1;
+	int32_t val = -1;
 	TDB_DATA data;
 	NTSTATUS ret;
 
