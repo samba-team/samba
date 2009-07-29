@@ -688,14 +688,13 @@ void *_talloc_steal_loc(const void *new_ctx, const void *ptr, const char *locati
 	if (unlikely(tc->refs != NULL) && talloc_parent(ptr) != new_ctx) {
 		struct talloc_reference_handle *h;
 #if DEVELOPER
-		fprintf(stderr, "ERROR: talloc_steal with references at %s\n", location);
+		fprintf(stderr, "WARNING: talloc_steal with references at %s\n", location);
 #endif
 		for (h=tc->refs; h; h=h->next) {
 #if DEVELOPER
 			fprintf(stderr, "\treference at %s\n", h->location);
 #endif
 		}
-		return NULL;
 	}
 	
 	return _talloc_steal_internal(new_ctx, ptr);
