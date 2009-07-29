@@ -141,6 +141,41 @@ struct talloc_chunk {
 #define TC_HDR_SIZE ((sizeof(struct talloc_chunk)+15)&~15)
 #define TC_PTR_FROM_CHUNK(tc) ((void *)(TC_HDR_SIZE + (char*)tc))
 
+static void (*talloc_log_fn)(const char *message);
+
+void talloc_set_log_fn(void (*log_fn)(const char *message))
+{
+	talloc_log_fn = log_fn;
+}
+
+static void talloc_log(const char *fmt, ...) PRINTF_ATTRIBUTE(1,2);
+static void talloc_log(const char *fmt, ...)
+{
+	va_list ap;
+	char *message;
+
+	if (!talloc_log_fn) {
+		return;
+	}
+
+	va_start(ap, fmt);
+	message = talloc_vasprintf(NULL, fmt, ap);
+	va_end(ap);
+
+	talloc_log_fn(message);
+	talloc_free(message);
+}
+
+static void talloc_log_stderr(const char *message)
+{
+	fprintf(stderr, "%s", message);
+}
+
+void talloc_set_log_stderr(void)
+{
+	talloc_set_log_fn(talloc_log_stderr);
+}
+
 static void (*talloc_abort_fn)(const char *reason);
 
 void talloc_set_abort_fn(void (*abort_fn)(const char *reason))
@@ -150,6 +185,8 @@ void talloc_set_abort_fn(void (*abort_fn)(const char *reason))
 
 static void talloc_abort(const char *reason)
 {
+	talloc_log("%s\n", reason);
+
 	if (!talloc_abort_fn) {
 		TALLOC_ABORT(reason);
 	}
@@ -687,13 +724,13 @@ void *_talloc_steal_loc(const void *new_ctx, const void *ptr, const char *locati
 	
 	if (unlikely(tc->refs != NULL) && talloc_parent(ptr) != new_ctx) {
 		struct talloc_reference_handle *h;
-#if DEVELOPER
-		fprintf(stderr, "WARNING: talloc_steal with references at %s\n", location);
-#endif
+
+		talloc_log("WARNING: talloc_steal with references at %s\n",
+			   location);
+
 		for (h=tc->refs; h; h=h->next) {
-#if DEVELOPER
-			fprintf(stderr, "\treference at %s\n", h->location);
-#endif
+			talloc_log("\treference at %s\n",
+				   h->location);
 		}
 	}
 	
@@ -1061,13 +1098,13 @@ int _talloc_free(void *ptr, const char *location)
 	
 	if (unlikely(tc->refs != NULL)) {
 		struct talloc_reference_handle *h;
-#if DEVELOPER
-		fprintf(stderr, "ERROR: talloc_free with references at %s\n", location);
-#endif
+
+		talloc_log("ERROR: talloc_free with references at %s\n",
+			   location);
+
 		for (h=tc->refs; h; h=h->next) {
-#if DEVELOPER
-			fprintf(stderr, "\treference at %s\n", h->location);
-#endif
+			talloc_log("\treference at %s\n",
+				   h->location);
 		}
 		return -1;
 	}

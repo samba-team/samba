@@ -189,6 +189,8 @@ char *talloc_asprintf_append(char *s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3
 char *talloc_asprintf_append_buffer(char *s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 
 void talloc_set_abort_fn(void (*abort_fn)(const char *reason));
+void talloc_set_log_fn(void (*log_fn)(const char *message));
+void talloc_set_log_stderr(void);
 
 /* for ABI compatibility, never use in new code */
 void *_talloc_reference(const void *context, const void *ptr);
