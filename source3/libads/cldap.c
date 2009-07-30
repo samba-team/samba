@@ -151,14 +151,19 @@ static int recv_cldap_netlogon(TALLOC_CTX *mem_ctx,
 	}
 
 	if (ret == 0) {
-		DEBUG(1,("no reply received to cldap netlogon\n"));
+		DEBUG(1,("no reply received to cldap netlogon "
+			"(select timeout %u sec)\n",
+			(unsigned int)timeout.tv_sec));
 		data_blob_free(&blob);
 		return -1;
 	}
 
 	ret = read(sock, blob.data, blob.length);
 	if (ret <= 0) {
-		DEBUG(1,("no reply received to cldap netlogon\n"));
+		DEBUG(1,("no reply received to cldap netlogon "
+			"(ret = %d: Error = %s)\n",
+			ret,
+			ret == -1 ? strerror(errno) : "" ));
 		data_blob_free(&blob);
 		return -1;
 	}
@@ -251,8 +256,10 @@ bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
 
 	sock = open_udp_socket(server, LDAP_PORT );
 	if (sock == -1) {
-		DEBUG(2,("ads_cldap_netlogon: Failed to open udp socket to %s\n", 
-			 server));
+		DEBUG(2,("ads_cldap_netlogon: Failed to open udp socket to %s. "
+			"Error %s\n",
+			server,
+			strerror(errno) ));
 		return False;
 	}
 
