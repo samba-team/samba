@@ -482,15 +482,8 @@ struct socket_context *tls_init_server(struct tls_params *params,
 	}
 
 	tls->socket          = socket_ctx;
+	talloc_steal(tls, socket_ctx);
 	tls->fde             = fde;
-	if (talloc_reference(tls, fde) == NULL) {
-		talloc_free(new_sock);
-		return NULL;
-	}
-	if (talloc_reference(tls, socket_ctx) == NULL) {
-		talloc_free(new_sock);
-		return NULL;
-	}
 
 	new_sock->private_data    = tls;
 
