@@ -425,6 +425,9 @@ int tdb_reopen(struct tdb_context *tdb)
 		goto fail;
 	}
 
+/* If we have real pread & pwrite, we can skip reopen. */
+#if !defined(LIBREPLACE_PREAD_NOT_REPLACED) || \
+	!defined(LIBREPLACE_PWRITE_NOT_REPLACED)
 	if (tdb_munmap(tdb) != 0) {
 		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_reopen: munmap failed (%s)\n", strerror(errno)));
 		goto fail;
@@ -436,11 +439,6 @@ int tdb_reopen(struct tdb_context *tdb)
 		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_reopen: open failed (%s)\n", strerror(errno)));
 		goto fail;
 	}
-	if ((tdb->flags & TDB_CLEAR_IF_FIRST) && 
-	    (tdb->methods->tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0, 1) == -1)) {
-		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_reopen: failed to obtain active lock\n"));
-		goto fail;
-	}
 	if (fstat(tdb->fd, &st) != 0) {
 		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_reopen: fstat failed (%s)\n", strerror(errno)));
 		goto fail;
@@ -450,6 +448,13 @@ int tdb_reopen(struct tdb_context *tdb)
 		goto fail;
 	}
 	tdb_mmap(tdb);
+#endif /* fake pread or pwrite */
+
+	if ((tdb->flags & TDB_CLEAR_IF_FIRST) &&
+	    (tdb->methods->tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0, 1) == -1)) {
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_reopen: failed to obtain active lock\n"));
+		goto fail;
+	}
 
 	return 0;
 
