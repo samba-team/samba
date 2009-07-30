@@ -57,6 +57,8 @@ $(1): $(2) ;
 	@echo "Creating $$@"
 	@$$(PERL) $$(srcdir)/script/mkproto.pl --srcdir=$$(srcdir) --builddir=$$(builddir) --public=/dev/null --private=$$@ $$^
 
+$($(2):.c=.o): $(1) ;
+
 endef
 
 # Shared module
