@@ -405,9 +405,7 @@ void *tdb_get_logging_private(struct tdb_context *tdb)
 	return tdb->log.log_private;
 }
 
-/* reopen a tdb - this can be used after a fork to ensure that we have an independent
-   seek pointer from our parent and to re-establish locks */
-int tdb_reopen(struct tdb_context *tdb)
+static int tdb_reopen_internal(struct tdb_context *tdb, bool active_lock)
 {
 	struct stat st;
 
@@ -450,7 +448,7 @@ int tdb_reopen(struct tdb_context *tdb)
 	tdb_mmap(tdb);
 #endif /* fake pread or pwrite */
 
-	if ((tdb->flags & TDB_CLEAR_IF_FIRST) &&
+	if (active_lock &&
 	    (tdb->methods->tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0, 1) == -1)) {
 		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_reopen: failed to obtain active lock\n"));
 		goto fail;
@@ -463,12 +461,21 @@ fail:
 	return -1;
 }
 
+/* reopen a tdb - this can be used after a fork to ensure that we have an independent
+   seek pointer from our parent and to re-establish locks */
+int tdb_reopen(struct tdb_context *tdb)
+{
+	return tdb_reopen_internal(tdb, tdb->flags & TDB_CLEAR_IF_FIRST);
+}
+
 /* reopen all tdb's */
 int tdb_reopen_all(int parent_longlived)
 {
 	struct tdb_context *tdb;
 
 	for (tdb=tdbs; tdb; tdb = tdb->next) {
+		bool active_lock = (tdb->flags & TDB_CLEAR_IF_FIRST);
+
 		/*
 		 * If the parent is longlived (ie. a
 		 * parent daemon architecture), we know
@@ -482,10 +489,10 @@ int tdb_reopen_all(int parent_longlived)
 		 */
 		if (parent_longlived) {
 			/* Ensure no clear-if-first. */
-			tdb->flags &= ~TDB_CLEAR_IF_FIRST;
+			active_lock = false;
 		}
 
-		if (tdb_reopen(tdb) != 0)
+		if (tdb_reopen_internal(tdb, active_lock) != 0)
 			return -1;
 	}
 
