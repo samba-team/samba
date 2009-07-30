@@ -1895,6 +1895,7 @@ struct smb_extended_info {
 struct smb_file_time {
 	struct timespec mtime;
 	struct timespec atime;
+	struct timespec ctime;
 	struct timespec create_time;
 };
 

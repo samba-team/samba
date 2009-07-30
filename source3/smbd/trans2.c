@@ -6055,12 +6055,9 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 					const struct smb_filename *smb_fname)
 {
 	/* Patch to do this correctly from Paul Eggert <eggert@twinsun.com>. */
-	struct timespec write_time;
-	struct timespec changed_time;
 	struct smb_file_time ft;
 	uint32 dosmode = 0;
 	NTSTATUS status = NT_STATUS_OK;
-	bool setting_write_time = true;
 
 	ZERO_STRUCT(ft);
 
@@ -6075,38 +6072,23 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 		return status;
 	}
 
-	/* access time */
-	ft.atime = interpret_long_date(pdata+8);
-
-	write_time = interpret_long_date(pdata+16);
-	changed_time = interpret_long_date(pdata+24);
-
-	/* mtime */
-	ft.mtime = timespec_min(&write_time, &changed_time);
-
 	/* create time */
 	ft.create_time = interpret_long_date(pdata);
 
-	if ((timespec_compare(&write_time, &ft.mtime) == 1) &&
-	    !null_timespec(write_time)) {
-		ft.mtime = write_time;
-	}
+	/* access time */
+	ft.atime = interpret_long_date(pdata+8);
 
-	/* Prefer a defined time to an undefined one. */
-	if (null_timespec(ft.mtime)) {
-		if (null_timespec(write_time)) {
-			ft.mtime = changed_time;
-			setting_write_time = false;
-		} else {
-			ft.mtime = write_time;
-		}
-	}
+	/* write time. */
+	ft.mtime = interpret_long_date(pdata+16);
+
+	/* change time. */
+	ft.ctime = interpret_long_date(pdata+24);
 
 	DEBUG(10, ("smb_set_file_basic_info: file %s\n",
 		   smb_fname_str_dbg(smb_fname)));
 
 	return smb_set_file_time(conn, fsp, smb_fname, &ft,
-				 setting_write_time);
+				 true);
 }
 
 /****************************************************************************
