@@ -1,4 +1,109 @@
                    ==============================
+                   Release Notes for Samba 3.0.36
+                           August, 5 2009
+                   ==============================
+
+
+This is the latest bugfix release of the Samba 3.0 series.
+
+Please note, that the 3.0 series will be DISCONTINUED after this release!
+There will be neither any bugfix release nor any security release. Updating
+to the latest release series is strongly recommended. For more information
+on current Samba releases, please see
+
+http://wiki.samba.org/index.php/Samba3_Release_Planning
+
+
+Major enhancements included in Samba 3.0.36 are:
+
+   o Fix Winbind crash on 'getent group' (bug #5906).
+   o Excel save operation corrupts file ACLs (bug #4308).
+   o Prevent segmentation fault on joining a very long domain name.
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.35
+--------------------
+
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 5906: Fix Winbind crash on 'getent group'.
+    * BUG 6066: netinet/ip.h present but cannot be compiled on Solaris.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 4308: Excel save operation corrupts file ACLs.
+    * BUG 6099: In order to allow Win7 to connect to a Samba NT style
+    * BUG 6279: Fix Winbind crash.
+      PDC we set the flags before we know if it's an error or not.
+    * Fix logic error in try_chown.
+    * Correctly use chroot().
+    * Fix bug in processing of open modes in POSIX open.
+
+
+o   Günther Deschner <gd@samba.org>
+    * Don't install the cifs.upcall binary twice.
+
+
+o   Steve French <smfrench@gmail.com>
+    * BUG 4640: Fix guest mounts in mount-cifs.
+    * Fix mount.cifs handling of -V option.
+
+
+o   Bhaskar Jain (bhajain) <bhajain@cisco.com>
+    * Prevent segmentation fault on joining a very long domain name.
+
+
+o   Günter Kukkukk <linux@kukkukk.com>
+    * Don't try and delete a default ACL from a file.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Add workaround for MS KB932762.
+
+
+o   Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+    * BUG 4370: Clean-up entries in /etc/mtab after unmount.
+    * Add fakemount (-f) and nomtab (-n) flags to mount.cifs.
+
+
+o   Ted Percival <ted.percival@quest.com>
+    * Fix a crash during name resolution when log level >= 10
+      and libc segfaults if printf is passed NULL for a "%s" arg
+     (eg. Solaris).
+
+
+o   Miguel Suarez <Miguel.Suarez@stratus.com>
+    * BUG 6085: Fix build of vfs_default.
+
+
+o   Yasuma Takeda <yasuma@osstech.co.jp>
+    * BUG 6098: When the DNS server is invalid, the ads_find_dc() does not work
+      correctly.
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+As 3.0 bugs will not be fixed any longer, it does not make sense to
+create bug reports for this version. If there are any issues, please
+retry with the latest Samba version and file a bug report for that
+version if the issue still exists.
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+-------------------------------------------------
+
+                   ==============================
                    Release Notes for Samba 3.0.35
                          June, 23 2009
                    ==============================
@@ -43,9 +148,7 @@ database (https://bugzilla.samba.org/).
 == The Samba Team
 ======================================================================
 
-
-Release notes for older releases follow:
--------------------------------------------------
+----------------------------------------------------------------------
 
                    ==============================
                    Release Notes for Samba 3.0.34
