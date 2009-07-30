@@ -57,12 +57,12 @@ static int sock_userdata_connect(lua_State *L)
 	int res;
 
 	if (!lua_isstring(L, 2)) {
-		luaL_error(L, "connect: Expected IP-Address");
+		luaL_error(L, _("connect: Expected IP-Address"));
 	}
 	hostname = lua_tostring(L, 2);
 
 	if (!lua_isnumber(L, 3)) {
-		luaL_error(L, "connect: Expected port");
+		luaL_error(L, _("connect: Expected port"));
 	}
 	port = lua_tointeger(L, 3);
 
@@ -81,7 +81,7 @@ static int sock_userdata_connect(lua_State *L)
 	if (res == -1) {
 		int err = errno;
 		lua_pushnil(L);
-		lua_pushfstring(L, "connect failed: %s", strerror(err));
+		lua_pushfstring(L, _("connect failed: %s"), strerror(err));
 		return 2;
 	}
 
@@ -129,7 +129,7 @@ static int sock_userdata_new(lua_State *L)
 		i += 1;
 	}
 	if (socket_domains[i].name == NULL) {
-		return luaL_error(L, "socket domain %s unknown", domain_str);
+		return luaL_error(L, _("socket domain %s unknown"), domain_str);
 	}
 	domain = socket_domains[i].domain;
 
@@ -141,7 +141,7 @@ static int sock_userdata_new(lua_State *L)
 		i += 1;
 	}
 	if (socket_types[i].name == NULL) {
-		return luaL_error(L, "socket type %s unknown", type_str);
+		return luaL_error(L, _("socket type %s unknown"), type_str);
 	}
 	type = socket_types[i].type;
 
@@ -152,7 +152,7 @@ static int sock_userdata_new(lua_State *L)
 	if (result->fd == -1) {
 		int err = errno;
 		lua_pushnil(L);
-		lua_pushfstring(L, "socket() failed: %s", strerror(errno));
+		lua_pushfstring(L, _("socket() failed: %s"), strerror(errno));
 		lua_pushinteger(L, err);
 		return 3;
 	}
@@ -275,7 +275,7 @@ static int evt_userdata_sleep(lua_State *L)
 
 	ref = evt_reference_thread(p->ev, L);
 	if (ref == NULL) {
-		return luaL_error(L, "evt_reference_thread failed\n");
+		return luaL_error(L, _("evt_reference_thread failed\n"));
 	}
 
 	te = event_add_timed(p->ev, ref, timeval_current_ofs(0, usecs),
@@ -284,7 +284,7 @@ static int evt_userdata_sleep(lua_State *L)
 
 	if (te == NULL) {
 		TALLOC_FREE(ref);
-		return luaL_error(L, "event_add_timed failed");
+		return luaL_error(L, _("event_add_timed failed"));
 	}
 
 	return lua_yield(L, 0);
@@ -296,7 +296,8 @@ static int evt_userdata_once(lua_State *L)
 		luaL_checkudata(L, 1, EVT_METATABLE);
 
 	if (!evt_is_main_thread(L)) {
-		return luaL_error(L, "event_once called from non-base thread");
+		return luaL_error(L,
+				  _("event_once called from non-base thread"));
 	}
 
 	lua_pushinteger(L, event_loop_once(p->ev));
@@ -319,7 +320,7 @@ static int evt_userdata_new(lua_State *L) {
 
 	result->ev = event_context_init(NULL);
 	if (result->ev == NULL) {
-		return luaL_error(L, "event_context_init failed");
+		return luaL_error(L, _("event_context_init failed"));
 	}
 
 	luaL_getmetatable(L, EVT_METATABLE);
@@ -349,7 +350,7 @@ int net_lua(struct net_context *c, int argc, const char **argv)
 
 	state = lua_open();
 	if (state == NULL) {
-		d_fprintf(stderr, "lua_newstate failed\n");
+		d_fprintf(stderr, _("lua_newstate failed\n"));
 		return -1;
 	}
 
@@ -367,12 +368,13 @@ int net_lua(struct net_context *c, int argc, const char **argv)
 
 		if (line[0] == ':') {
 			if (luaL_dofile(state, &line[1])) {
-				d_printf("luaL_dofile returned an error\n");
+				d_printf(_("luaL_dofile returned an error\n"));
 				continue;
 			}
 		} else if (line[0] != '\n') {
 			if (luaL_dostring(state, line) != 0) {
-				d_printf("luaL_dostring returned an error\n");
+				d_printf(_("luaL_dostring returned an "
+					   "error\n"));
 			}
 		}
 
