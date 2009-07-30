@@ -24,23 +24,29 @@
 
 int net_group_usage(struct net_context *c, int argc, const char **argv)
 {
-	d_printf("net [<method>] group [misc. options] [targets]"\
-		 "\n\tList user groups\n\n");
-	d_printf("net rpc group LIST [global|local|builtin]* [misc. options]"\
-		 "\n\tList specific user groups\n\n");
-	d_printf("net [<method>] group DELETE <name> "\
-		 "[misc. options] [targets]"\
-		 "\n\tDelete specified group\n");
-	d_printf("\nnet [<method>] group ADD <name> [-C comment] [-c container]"\
-		 " [misc. options] [targets]\n\tCreate specified group\n");
-	d_printf("\nnet rpc group MEMBERS <name>\n\tList Group Members\n\n");
-	d_printf("\nnet rpc group ADDMEM <group> <member>\n\tAdd Group Members\n\n");
-	d_printf("\nnet rpc group DELMEM <group> <member>\n\tDelete Group Members\n\n");
+	d_printf(_("net [<method>] group [misc. options] [targets]"
+		   "\n\tList user groups\n\n"));
+	d_printf(_("net rpc group LIST [global|local|builtin]* [misc. options]"
+		   "\n\tList specific user groups\n\n"));
+	d_printf(_("net [<method>] group DELETE <name> "
+		   "[misc. options] [targets]"
+		   "\n\tDelete specified group\n"));
+	d_printf(_("\nnet [<method>] group ADD <name> [-C comment] "
+		   "[-c container] [misc. options] [targets]\n"
+		   "\tCreate specified group\n"));
+	d_printf(_("\nnet rpc group MEMBERS <name>\n\tList Group Members\n\n"));
+	d_printf(_("\nnet rpc group ADDMEM <group> <member>\n"
+		   "\tAdd Group Members\n\n"));
+	d_printf(_("\nnet rpc group DELMEM <group> <member>\n"
+		   "\tDelete Group Members\n\n"));
 	net_common_methods_usage(c, argc, argv);
 	net_common_flags_usage(c, argc, argv);
-	d_printf("\t-C or --comment=<comment>\tdescriptive comment (for add only)\n");
-	d_printf("\t-c or --container=<container>\tLDAP container, defaults to cn=Users (for add in ADS only)\n");
-	d_printf("\t-L or --localgroup\t\tWhen adding groups, create a local group (alias)\n");
+	d_printf(_("\t-C or --comment=<comment>\tdescriptive comment "
+		   "(for add only)\n"));
+	d_printf(_("\t-c or --container=<container>\tLDAP container, "
+		   "defaults to cn=Users (for add in ADS only)\n"));
+	d_printf(_("\t-L or --localgroup\t\tWhen adding groups, "
+		   "create a local group (alias)\n"));
 	return -1;
 }
 
