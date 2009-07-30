@@ -18,7 +18,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: i18n_swat \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2009-07-29 23:59+0200\n"
+"POT-Creation-Date: 2009-07-30 12:18+0200\n"
 "PO-Revision-Date: 2000-02-08 14:45+0100\n"
 "Last-Translator: François Le Lay <fanch@tuxfamily.org>\n"
 "Language-Team: (Samba Team) <samba-technical@samba.org>\n"
@@ -1558,7 +1558,7 @@ msgid "DNS update failed!\n"
 msgstr ""
 
 #. issue an overall failure message at the end.
-#: ../utils/net_ads.c:1391
+#: ../utils/net_ads.c:1391 ../utils/net_dom.c:198
 #, c-format
 msgid "Failed to join domain: %s\n"
 msgstr ""
@@ -2654,4 +2654,1385 @@ msgstr ""
 msgid ""
 "net cache stabilize\n"
 "  Move transient cache content to stable storage"
+msgstr ""
+
+#: ../utils/net_conf.c:42
+msgid "USAGE: net conf list\n"
+msgstr ""
+
+#: ../utils/net_conf.c:49
+msgid ""
+"USAGE: net conf import [--test|-T] <filename> [<servicename>]\n"
+"\t[--test|-T]    testmode - do not act, just print what would be done\n"
+"\t<servicename>  only import service <servicename>, ignore the rest\n"
+msgstr ""
+
+#: ../utils/net_conf.c:61
+msgid "USAGE: net conf listshares\n"
+msgstr ""
+
+#: ../utils/net_conf.c:68
+msgid "USAGE: net conf drop\n"
+msgstr ""
+
+#: ../utils/net_conf.c:75
+msgid "USAGE: net conf showshare <sharename>\n"
+msgstr ""
+
+#: ../utils/net_conf.c:82
+msgid ""
+"USAGE: net conf addshare <sharename> <path> [writeable={y|N} [guest_ok={y|N} [<comment>]]\n"
+"\t<sharename>      the new share name.\n"
+"\t<path>           the path on the filesystem to export.\n"
+"\twriteable={y|N}  set \"writeable to \"yes\" or \"no\" (default) on this share.\n"
+"\tguest_ok={y|N}   set \"guest ok\" to \"yes\" or \"no\" (default)   on this share.\n"
+"\t<comment>        optional comment for the new share.\n"
+msgstr ""
+
+#: ../utils/net_conf.c:97
+msgid "USAGE: net conf delshare <sharename>\n"
+msgstr ""
+
+#: ../utils/net_conf.c:104
+msgid "USAGE: net conf setparm <section> <param> <value>\n"
+msgstr ""
+
+#: ../utils/net_conf.c:111
+msgid "USAGE: net conf getparm <section> <param>\n"
+msgstr ""
+
+#: ../utils/net_conf.c:118
+msgid "USAGE: net conf delparm <section> <param>\n"
+msgstr ""
+
+#: ../utils/net_conf.c:125
+msgid "USAGE: net conf getincludes <section>\n"
+msgstr ""
+
+#: ../utils/net_conf.c:132
+msgid "USAGE: net conf setincludes <section> [<filename>]*\n"
+msgstr ""
+
+#: ../utils/net_conf.c:139
+msgid "USAGE: net conf delincludes <section>\n"
+msgstr ""
+
+#: ../utils/net_conf.c:251
+#, c-format
+msgid "Error getting config: %s\n"
+msgstr ""
+
+#: ../utils/net_conf.c:305 ../utils/net_conf.c:318 ../utils/net_conf.c:614 ../utils/net_conf.c:742 ../utils/net_conf.c:780 ../utils/net_conf.c:786 ../utils/net_conf.c:860 ../utils/net_conf.c:866 ../utils/net_conf.c:916 ../utils/net_conf.c:970
+#: ../utils/net_conf.c:1010 ../utils/net_conf.c:1050
+msgid "error: out of memory!\n"
+msgstr ""
+
+#: ../utils/net_conf.c:324
+#, c-format
+msgid "error loading file '%s': %s\n"
+msgstr ""
+
+#: ../utils/net_conf.c:330
+msgid ""
+"\n"
+"TEST MODE - would import the following configuration:\n"
+"\n"
+msgstr ""
+
+#: ../utils/net_conf.c:346 ../utils/net_conf.c:382 ../utils/net_conf.c:407 ../utils/net_conf.c:793
+#, c-format
+msgid "error starting transaction: %s\n"
+msgstr ""
+
+#: ../utils/net_conf.c:400 ../utils/net_conf.c:416 ../utils/net_conf.c:817
+#, c-format
+msgid "error committing transaction: %s\n"
+msgstr ""
+
+#: ../utils/net_conf.c:427 ../utils/net_conf.c:828
+#, c-format
+msgid "error cancelling transaction: %s\n"
+msgstr ""
+
+#: ../utils/net_conf.c:484
+#, c-format
+msgid "Error deleting configuration: %s\n"
+msgstr ""
+
+#: ../utils/net_conf.c:521
+#, c-format
+msgid "error getting share parameters: %s\n"
+msgstr ""
+
+#: ../utils/net_conf.c:630
+#, c-format
+msgid "ERROR: share name %s contains invalid characters (any of %s)\n"
+msgstr ""
+
+#: ../utils/net_conf.c:638
+msgid "ERROR: 'global' is not a valid share name.\n"
+msgstr ""
+
+#: ../utils/net_conf.c:643
+#, c-format
+msgid "ERROR: share %s already exists.\n"
+msgstr ""
+
+#: ../utils/net_conf.c:652
+#, c-format
+msgid "Error: path '%s' is not an absolute path.\n"
+msgstr ""
+
+#: ../utils/net_conf.c:659
+#, c-format
+msgid ""
+"ERROR: cannot stat path '%s' to ensure this is a directory.\n"
+"Error was '%s'.\n"
+msgstr ""
+
+#: ../utils/net_conf.c:668
+#, c-format
+msgid "ERROR: path '%s' is not a directory.\n"
+msgstr ""
+
+#: ../utils/net_conf.c:679
+#, c-format
+msgid "Error creating share %s: %s\n"
+msgstr ""
+
+#: ../utils/net_conf.c:690 ../utils/net_conf.c:699 ../utils/net_conf.c:707 ../utils/net_conf.c:715
+#, c-format
+msgid "Error setting parameter %s: %s\n"
+msgstr ""
+
+#: ../utils/net_conf.c:748
+#, c-format
+msgid "Error deleting share %s: %s\n"
+msgstr ""
+
+#: ../utils/net_conf.c:801
+#, c-format
+msgid "Error creating share '%s': %s\n"
+msgstr ""
+
+#: ../utils/net_conf.c:810
+#, c-format
+msgid "Error setting value '%s': %s\n"
+msgstr ""
+
+#: ../utils/net_conf.c:874 ../utils/net_conf.c:930
+#, c-format
+msgid "Error: given service '%s' does not exist.\n"
+msgstr ""
+
+#: ../utils/net_conf.c:879 ../utils/net_conf.c:935
+#, c-format
+msgid "Error: given parameter '%s' is not set.\n"
+msgstr ""
+
+#: ../utils/net_conf.c:883
+#, c-format
+msgid "Error getting value '%s': %s.\n"
+msgstr ""
+
+#: ../utils/net_conf.c:939
+#, c-format
+msgid "Error deleting value '%s': %s.\n"
+msgstr ""
+
+#: ../utils/net_conf.c:977
+#, c-format
+msgid "error getting includes: %s\n"
+msgstr ""
+
+#: ../utils/net_conf.c:1023
+#, c-format
+msgid "error setting includes: %s\n"
+msgstr ""
+
+#: ../utils/net_conf.c:1056
+#, c-format
+msgid "error deleting includes: %s\n"
+msgstr ""
+
+#: ../utils/net_conf.c:1136 ../utils/net_help.c:36
+msgid "Usage:\n"
+msgstr ""
+
+#: ../utils/net_conf.c:1160
+msgid "Dump the complete configuration in smb.conf like format."
+msgstr ""
+
+#: ../utils/net_conf.c:1162
+msgid ""
+"net conf list\n"
+"    Dump the complete configuration in smb.conf like format."
+msgstr ""
+
+#: ../utils/net_conf.c:1171
+msgid "Import configuration from file in smb.conf format."
+msgstr ""
+
+#: ../utils/net_conf.c:1173
+msgid ""
+"net conf import\n"
+"    Import configuration from file in smb.conf format."
+msgstr ""
+
+#: ../utils/net_conf.c:1181
+msgid "List the share names."
+msgstr ""
+
+#: ../utils/net_conf.c:1182
+msgid ""
+"net conf listshares\n"
+"    List the share names."
+msgstr ""
+
+#: ../utils/net_conf.c:1189
+msgid "Delete the complete configuration."
+msgstr ""
+
+#: ../utils/net_conf.c:1190
+msgid ""
+"net conf drop\n"
+"    Delete the complete configuration."
+msgstr ""
+
+#: ../utils/net_conf.c:1197
+msgid "Show the definition of a share."
+msgstr ""
+
+#: ../utils/net_conf.c:1198
+msgid ""
+"net conf showshare\n"
+"    Show the definition of a share."
+msgstr ""
+
+#: ../utils/net_conf.c:1205
+#, fuzzy
+msgid "Create a new share."
+msgstr "Créer un partage"
+
+#: ../utils/net_conf.c:1206
+msgid ""
+"net conf addshare\n"
+"    Create a new share."
+msgstr ""
+
+#: ../utils/net_conf.c:1213
+#, fuzzy
+msgid "Delete a share."
+msgstr "Supprimer un partage"
+
+#: ../utils/net_conf.c:1214
+msgid ""
+"net conf delshare\n"
+"    Delete a share."
+msgstr ""
+
+#: ../utils/net_conf.c:1221
+#, fuzzy
+msgid "Store a parameter."
+msgstr "Paramètres de partage"
+
+#: ../utils/net_conf.c:1222
+msgid ""
+"net conf setparm\n"
+"    Store a parameter."
+msgstr ""
+
+#: ../utils/net_conf.c:1229
+msgid "Retrieve the value of a parameter."
+msgstr ""
+
+#: ../utils/net_conf.c:1230
+msgid ""
+"net conf getparm\n"
+"    Retrieve the value of a parameter."
+msgstr ""
+
+#: ../utils/net_conf.c:1237
+#, fuzzy
+msgid "Delete a parameter."
+msgstr "Supprimer Imprimante"
+
+#: ../utils/net_conf.c:1238
+msgid ""
+"net conf delparm\n"
+"    Delete a parameter."
+msgstr ""
+
+#: ../utils/net_conf.c:1245
+msgid "Show the includes of a share definition."
+msgstr ""
+
+#: ../utils/net_conf.c:1246
+msgid ""
+"net conf getincludes\n"
+"    Show the includes of a share definition."
+msgstr ""
+
+#: ../utils/net_conf.c:1253
+msgid "Set includes for a share."
+msgstr ""
+
+#: ../utils/net_conf.c:1254
+msgid ""
+"net conf setincludes\n"
+"    Set includes for a share."
+msgstr ""
+
+#: ../utils/net_conf.c:1261
+msgid "Delete includes from a share definition."
+msgstr ""
+
+#: ../utils/net_conf.c:1262
+msgid ""
+"net conf setincludes\n"
+"    Delete includes from a share definition."
+msgstr ""
+
+#: ../utils/net_dom.c:25
+msgid ""
+"usage: net dom join <domain=DOMAIN> <ou=OU> <account=ACCOUNT> <password=PASSWORD> <reboot>\n"
+"  Join a remote machine\n"
+msgstr ""
+
+#: ../utils/net_dom.c:28
+msgid ""
+"usage: net dom unjoin <account=ACCOUNT> <password=PASSWORD> <reboot>\n"
+"  Unjoin a remote machine\n"
+msgstr ""
+
+#: ../utils/net_dom.c:31
+msgid ""
+"usage: net dom renamecomputer <newname=NEWNAME> <account=ACCOUNT> <password=PASSWORD> <reboot>\n"
+"  Rename joined computer\n"
+msgstr ""
+
+#: ../utils/net_dom.c:91
+#, c-format
+msgid "Failed to unjoin domain: %s\n"
+msgstr ""
+
+#: ../utils/net_dom.c:97 ../utils/net_dom.c:204
+msgid "Shutting down due to a domain membership change"
+msgstr ""
+
+#: ../utils/net_dom.c:290
+#, c-format
+msgid "Failed to rename machine: "
+msgstr ""
+
+#: ../utils/net_dom.c:292
+#, c-format
+msgid "Computer is not joined to a Domain\n"
+msgstr ""
+
+#: ../utils/net_dom.c:301
+msgid "Shutting down due to a computer rename"
+msgstr ""
+
+#: ../utils/net_dom.c:338
+#, fuzzy
+msgid "Join a remote machine"
+msgstr " Machine distante : "
+
+#: ../utils/net_dom.c:339
+msgid ""
+"net dom join <domain=DOMAIN> <ou=OU> <account=ACCOUNT> <password=PASSWORD> <reboot>\n"
+"  Join a remote machine"
+msgstr ""
+
+#: ../utils/net_dom.c:347
+#, fuzzy
+msgid "Unjoin a remote machine"
+msgstr " Machine distante : "
+
+#: ../utils/net_dom.c:348
+msgid ""
+"net dom unjoin <account=ACCOUNT> <password=PASSWORD> <reboot>\n"
+"  Unjoin a remote machine"
+msgstr ""
+
+#: ../utils/net_dom.c:356
+msgid "Rename a computer that is joined to a domain"
+msgstr ""
+
+#: ../utils/net_dom.c:357
+msgid ""
+"net dom renamecomputer <newname=NEWNAME> <account=ACCOUNT> <password=PASSWORD> <reboot>\n"
+"  Rename joined computer"
+msgstr ""
+
+#: ../utils/net_eventlog.c:46
+msgid "usage: net eventlog dump <file.evt>\n"
+msgstr ""
+
+#: ../utils/net_eventlog.c:52 ../utils/net_eventlog.c:108
+#, c-format
+msgid "failed to load evt file: %s\n"
+msgstr ""
+
+#: ../utils/net_eventlog.c:59 ../utils/net_eventlog.c:129
+#, fuzzy, c-format
+msgid "evt pull failed: %s\n"
+msgstr "Gestion des mots de passe"
+
+#: ../utils/net_eventlog.c:102
+msgid "usage: net eventlog import <file> <eventlog>\n"
+msgstr ""
+
+#: ../utils/net_eventlog.c:116
+#, fuzzy, c-format
+msgid "evt header pull failed: %s\n"
+msgstr "Gestion des mots de passe"
+
+#: ../utils/net_eventlog.c:122
+msgid "input file is wrapped, cannot proceed\n"
+msgstr ""
+
+#: ../utils/net_eventlog.c:138 ../utils/net_eventlog.c:203
+#, c-format
+msgid "can't open the eventlog TDB (%s)\n"
+msgstr ""
+
+#: ../utils/net_eventlog.c:158
+#, c-format
+msgid "can't write to the eventlog: %s\n"
+msgstr ""
+
+#: ../utils/net_eventlog.c:164
+#, c-format
+msgid "wrote %d entries to tdb\n"
+msgstr ""
+
+#: ../utils/net_eventlog.c:197
+msgid "usage: net eventlog export <file> <eventlog>\n"
+msgstr ""
+
+#: ../utils/net_eventlog.c:214
+#, c-format
+msgid "failed to save evt file: %s\n"
+msgstr ""
+
+#: ../utils/net_eventlog.c:243
+msgid "Dump eventlog"
+msgstr ""
+
+#: ../utils/net_eventlog.c:244
+msgid ""
+"net eventlog dump\n"
+"    Dump win32 *.evt eventlog file"
+msgstr ""
+
+#: ../utils/net_eventlog.c:251
+#, fuzzy
+msgid "Import eventlog"
+msgstr "Note Importante:"
+
+#: ../utils/net_eventlog.c:252
+msgid ""
+"net eventlog import\n"
+"    Import win32 *.evt eventlog file"
+msgstr ""
+
+#: ../utils/net_eventlog.c:259
+msgid "Export eventlog"
+msgstr ""
+
+#: ../utils/net_eventlog.c:260
+msgid ""
+"net eventlog export\n"
+"    Export win32 *.evt eventlog file"
+msgstr ""
+
+#: ../utils/net_file.c:27
+msgid ""
+"net [<method>] file [misc. options] [targets]\n"
+"\tlists all open files on file server\n"
+msgstr ""
+
+#: ../utils/net_file.c:29
+msgid ""
+"net [<method>] file USER <username> [misc. options] [targets]\n"
+"\tlists all files opened by username on file server\n"
+msgstr ""
+
+#: ../utils/net_file.c:32
+msgid ""
+"net [<method>] file CLOSE <id> [misc. options] [targets]\n"
+"\tcloses specified file on target server\n"
+msgstr ""
+
+#: ../utils/net_file.c:34
+msgid ""
+"net [rap] file INFO <id> [misc. options] [targets]\n"
+"\tdisplays information about the specified open file\n"
+msgstr ""
+
+#: ../utils/net_group.c:27
+msgid ""
+"net [<method>] group [misc. options] [targets]\n"
+"\tList user groups\n"
+"\n"
+msgstr ""
+
+#: ../utils/net_group.c:29
+msgid ""
+"net rpc group LIST [global|local|builtin]* [misc. options]\n"
+"\tList specific user groups\n"
+"\n"
+msgstr ""
+
+#: ../utils/net_group.c:31
+msgid ""
+"net [<method>] group DELETE <name> [misc. options] [targets]\n"
+"\tDelete specified group\n"
+msgstr ""
+
+#: ../utils/net_group.c:34
+msgid ""
+"\n"
+"net [<method>] group ADD <name> [-C comment] [-c container] [misc. options] [targets]\n"
+"\tCreate specified group\n"
+msgstr ""
+
+#: ../utils/net_group.c:37
+msgid ""
+"\n"
+"net rpc group MEMBERS <name>\n"
+"\tList Group Members\n"
+"\n"
+msgstr ""
+
+#: ../utils/net_group.c:38
+msgid ""
+"\n"
+"net rpc group ADDMEM <group> <member>\n"
+"\tAdd Group Members\n"
+"\n"
+msgstr ""
+
+#: ../utils/net_group.c:40
+msgid ""
+"\n"
+"net rpc group DELMEM <group> <member>\n"
+"\tDelete Group Members\n"
+"\n"
+msgstr ""
+
+#: ../utils/net_group.c:44
+msgid "\t-C or --comment=<comment>\tdescriptive comment (for add only)\n"
+msgstr ""
+
+#: ../utils/net_group.c:46
+msgid "\t-c or --container=<container>\tLDAP container, defaults to cn=Users (for add in ADS only)\n"
+msgstr ""
+
+#: ../utils/net_group.c:48
+msgid "\t-L or --localgroup\t\tWhen adding groups, create a local group (alias)\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:38
+#, c-format
+msgid "NT Group %s doesn't exist in mapping DB\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:46
+#, c-format
+msgid "converting sid %s from a string failed!\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:65
+#, c-format
+msgid "\tSID       : %s\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:66
+#, c-format
+msgid "\tUnix gid  : %u\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:67
+#, c-format
+msgid "\tUnix group: %s\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:68
+#, c-format
+msgid "\tGroup type: %s\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:70
+#, c-format
+msgid "\tComment   : %s\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:84
+msgid ""
+"net groupmap list [verbose] [ntgroup=NT group] [sid=SID]\n"
+"    verbose\tPrint verbose list\n"
+"    ntgroup\tNT group to list\n"
+"    sid\tSID of group to list"
+msgstr ""
+
+#: ../utils/net_groupmap.c:91 ../utils/net_groupmap.c:271 ../utils/net_groupmap.c:356 ../utils/net_groupmap.c:412 ../utils/net_groupmap.c:495 ../utils/net_groupmap.c:522
+#, fuzzy, c-format
+msgid ""
+"Usage:\n"
+"%s\n"
+msgstr " Nom d'utilisateur : "
+
+#: ../utils/net_groupmap.c:106 ../utils/net_groupmap.c:213 ../utils/net_groupmap.c:220 ../utils/net_groupmap.c:365 ../utils/net_groupmap.c:372 ../utils/net_groupmap.c:504
+msgid "must supply a name\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:113 ../utils/net_groupmap.c:227 ../utils/net_groupmap.c:511
+msgid "must supply a SID\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:118 ../utils/net_groupmap.c:265 ../utils/net_groupmap.c:406 ../utils/net_groupmap.c:516
+#, fuzzy, c-format
+msgid "Bad option: %s\n"
+msgstr "Options de base"
+
+#: ../utils/net_groupmap.c:139
+msgid "Failure to local group SID in the database\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:181
+msgid "net groupmap add {rid=<int>|sid=<string>} unixgroup=<string> [type=<domain|local|builtin>] [ntgroup=<string>] [comment=<string>]"
+msgstr ""
+
+#: ../utils/net_groupmap.c:195
+#, fuzzy, c-format
+msgid ""
+"Usage\n"
+"%s\n"
+msgstr " Nom d'utilisateur : "
+
+#: ../utils/net_groupmap.c:205
+#, c-format
+msgid "RID must be greater than %d\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:235 ../utils/net_groupmap.c:380
+msgid "must supply a comment string\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:259
+#, c-format
+msgid "unknown group type %s\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:276
+#, c-format
+msgid "Can't lookup UNIX group %s\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:282
+#, c-format
+msgid "Unix group %s already mapped to SID %s\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:289
+msgid "No rid or sid specified, choosing a RID\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:292
+msgid "Could not get new RID\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:297
+#, c-format
+msgid "Got RID %d\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:328
+#, c-format
+msgid "adding entry for group %s failed!\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:332
+#, c-format
+msgid "Successfully added group %s to the mapping db as a %s\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:349
+msgid "net groupmap modify {ntgroup=<string>|sid=<SID>} [comment=<string>] [unixgroup=<string>] [type=<domain|local>]"
+msgstr ""
+
+#: ../utils/net_groupmap.c:388
+msgid "must supply a group name\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:434
+msgid "Failed to find local group SID in the database\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:443
+msgid "Can't map to an unknown group type.\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:449
+msgid "You can only change between domain and local groups.\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:466
+#, c-format
+msgid "Unable to lookup UNIX group %s.  Make sure the group exists.\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:476
+msgid "Could not update group database\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:480
+#, c-format
+msgid "Updated mapping entry for %s\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:491
+msgid "net groupmap delete {ntgroup=<string>|sid=<SID>}"
+msgstr ""
+
+#: ../utils/net_groupmap.c:532
+#, c-format
+msgid "Unable to resolve group %s to a SID\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:539
+#, c-format
+msgid "Failed to remove group %s from the mapping db!\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:544
+#, c-format
+msgid "Sucessfully removed %s from the mapping db\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:557
+msgid "Usage: net groupmap set \"NT Group\" [\"unix group\"] [-C \"comment\"] [-L] [-D]\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:563
+msgid "Can only specify -L or -D, not both\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:573
+#, c-format
+msgid "Could not find unix group %s\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:594
+#, c-format
+msgid "Could not find group mapping for %s\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:605
+msgid "Could not allocate new RID\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:622
+#, c-format
+msgid "Could not add mapping entry for %s\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:633
+#, c-format
+msgid "Can't change type of the BUILTIN group %s\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:660
+#, c-format
+msgid "Could not update group mapping for %s\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:674
+msgid ""
+"Usage:\n"
+"net groupmap cleanup\n"
+"    Delete all group mappings\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:682
+msgid "Could not list group mappings\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:689
+#, c-format
+msgid "Group %s is not mapped\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:692
+#, c-format
+msgid "Deleting mapping for NT Group %s, sid %s\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:712
+msgid "Usage: net groupmap addmem alias-sid member-sid\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:717
+#, c-format
+msgid "Could not add sid %s to alias %s\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:733
+msgid "Usage: net groupmap delmem alias-sid member-sid\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:738
+#, c-format
+msgid "Could not delete sid %s from alias %s\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:755
+msgid "Usage: net groupmap listmem alias-sid\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:764
+#, c-format
+msgid "Could not list members for sid %s\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:791
+#, c-format
+msgid "Could not list memberships for sid %s\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:814
+msgid "Usage: net groupmap memberof sid\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:820 ../utils/net_idmap.c:345
+msgid "talloc_init failed\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:827
+msgid "Could not get domain sid\n"
+msgstr ""
+
+#: ../utils/net_groupmap.c:850
+msgid "Create a new group mapping"
+msgstr ""
+
+#: ../utils/net_groupmap.c:851
+msgid ""
+"net groupmap add\n"
+"    Create a new group mapping"
+msgstr ""
+
+#: ../utils/net_groupmap.c:858
+msgid "Update a group mapping"
+msgstr ""
+
+#: ../utils/net_groupmap.c:859
+msgid ""
+"net groupmap modify\n"
+"    Modify an existing group mapping"
+msgstr ""
+
+#: ../utils/net_groupmap.c:866
+msgid "Remove a group mapping"
+msgstr ""
+
+#: ../utils/net_groupmap.c:867
+msgid ""
+"net groupmap delete\n"
+"    Remove a group mapping"
+msgstr ""
+
+#: ../utils/net_groupmap.c:874
+msgid "Set group mapping"
+msgstr ""
+
+#: ../utils/net_groupmap.c:875
+msgid ""
+"net groupmap set\n"
+"    Set a group mapping"
+msgstr ""
+
+#: ../utils/net_groupmap.c:882
+msgid "Remove foreign group mapping entries"
+msgstr ""
+
+#: ../utils/net_groupmap.c:883
+msgid ""
+"net groupmap cleanup\n"
+"    Remove foreign group mapping entries"
+msgstr ""
+
+#: ../utils/net_groupmap.c:890
+msgid "Add a foreign alias member"
+msgstr ""
+
+#: ../utils/net_groupmap.c:891
+msgid ""
+"net groupmap addmem\n"
+"    Add a foreign alias member"
+msgstr ""
+
+#: ../utils/net_groupmap.c:898
+msgid "Delete foreign alias member"
+msgstr ""
+
+#: ../utils/net_groupmap.c:899
+msgid ""
+"net groupmap delmem\n"
+"    Delete foreign alias member"
+msgstr ""
+
+#: ../utils/net_groupmap.c:906
+msgid "List foreign group members"
+msgstr ""
+
+#: ../utils/net_groupmap.c:907
+msgid ""
+"net groupmap listmem\n"
+"    List foreign alias members"
+msgstr ""
+
+#: ../utils/net_groupmap.c:914
+msgid "List foreign group memberships"
+msgstr ""
+
+#: ../utils/net_groupmap.c:915
+msgid ""
+"net groupmap memberships\n"
+"    List foreign group memberships"
+msgstr ""
+
+#: ../utils/net_groupmap.c:922
+msgid "List current group map"
+msgstr ""
+
+#: ../utils/net_groupmap.c:923
+msgid ""
+"net groupmap list\n"
+"    List current group map"
+msgstr ""
+
+#: ../utils/net_help.c:39
+#, c-format
+msgid "net %s usage:\n"
+msgstr ""
+
+#: ../utils/net_help_common.c:25 ../utils/net_join.c:28
+msgid "Valid methods: (auto-detected if not specified)\n"
+msgstr ""
+
+#: ../utils/net_help_common.c:26 ../utils/net_join.c:29
+msgid "\tads\t\t\t\tActive Directory (LDAP/Kerberos)\n"
+msgstr ""
+
+#: ../utils/net_help_common.c:27 ../utils/net_join.c:30
+msgid "\trpc\t\t\t\tDCE-RPC\n"
+msgstr ""
+
+#: ../utils/net_help_common.c:28
+msgid "\trap\t\t\t\tRAP (older systems)\n"
+msgstr ""
+
+#: ../utils/net_help_common.c:35
+msgid "Valid targets: choose one (none defaults to localhost)\n"
+msgstr ""
+
+#: ../utils/net_help_common.c:36
+msgid "\t-S or --server=<server>\t\tserver name\n"
+msgstr ""
+
+#: ../utils/net_help_common.c:37
+msgid "\t-I or --ipaddress=<ipaddr>\taddress of target server\n"
+msgstr ""
+
+#: ../utils/net_help_common.c:38
+msgid "\t-w or --workgroup=<wg>\t\ttarget workgroup or domain\n"
+msgstr ""
+
+#: ../utils/net_help_common.c:41
+#, fuzzy
+msgid "Valid miscellaneous options are:\n"
+msgstr "Options Diverses"
+
+#. misc options
+#: ../utils/net_help_common.c:42
+msgid "\t-p or --port=<port>\t\tconnection port on target\n"
+msgstr ""
+
+#: ../utils/net_help_common.c:43
+msgid "\t-W or --myworkgroup=<wg>\tclient workgroup\n"
+msgstr ""
+
+#: ../utils/net_help_common.c:44
+msgid "\t-d or --debuglevel=<level>\tdebug level (0-10)\n"
+msgstr ""
+
+#: ../utils/net_help_common.c:45
+msgid "\t-n or --myname=<name>\t\tclient name\n"
+msgstr ""
+
+#: ../utils/net_help_common.c:46
+msgid "\t-U or --user=<name>\t\tuser name\n"
+msgstr ""
+
+#: ../utils/net_help_common.c:47
+msgid "\t-s or --configfile=<path>\tpathname of smb.conf file\n"
+msgstr ""
+
+#: ../utils/net_help_common.c:48
+msgid "\t-l or --long\t\t\tDisplay full information\n"
+msgstr ""
+
+#: ../utils/net_help_common.c:49
+msgid "\t-V or --version\t\t\tPrint samba version information\n"
+msgstr ""
+
+#: ../utils/net_help_common.c:50
+msgid "\t-P or --machine-pass\t\tAuthenticate as machine account\n"
+msgstr ""
+
+#: ../utils/net_help_common.c:52
+msgid "\t-e or --encrypt\t\t\tEncrypt SMB transport (UNIX extended servers only)\n"
+msgstr ""
+
+#: ../utils/net_help_common.c:54
+msgid "\t-k or --kerberos\t\tUse kerberos (active directory) authentication\n"
+msgstr ""
+
+#: ../utils/net_idmap.c:25
+msgid "Out of memory!\n"
+msgstr ""
+
+#: ../utils/net_idmap.c:39
+#, c-format
+msgid "USER HWM %d\n"
+msgstr ""
+
+#: ../utils/net_idmap.c:44
+#, c-format
+msgid "GROUP HWM %d\n"
+msgstr ""
+
+#: ../utils/net_idmap.c:63
+msgid ""
+"Usage:\n"
+"net idmap dump <inputfile>\n"
+"  Dump current ID mapping.\n"
+"    inputfile\tTDB file to read mappings from.\n"
+msgstr ""
+
+#: ../utils/net_idmap.c:73
+#, c-format
+msgid "Could not open idmap: %s\n"
+msgstr ""
+
+#: ../utils/net_idmap.c:94
+msgid ""
+"Usage:\n"
+"net idmap restore [inputfile]\n"
+"  Restore ID mappings from file\n"
+"    inputfile\tFile to load ID mappings from. If not given, load data from stdin.\n"
+msgstr ""
+
+#: ../utils/net_idmap.c:104
+msgid "To use net idmap Winbindd must be running.\n"
+msgstr ""
+
+#: ../utils/net_idmap.c:142
+#, c-format
+msgid "Could not set USER HWM: %s\n"
+msgstr ""
+
+#: ../utils/net_idmap.c:151
+#, c-format
+msgid "Could not set GROUP HWM: %s\n"
+msgstr ""
+
+#: ../utils/net_idmap.c:156
+#, c-format
+msgid "ignoring invalid line [%s]\n"
+msgstr ""
+
+#: ../utils/net_idmap.c:163
+#, c-format
+msgid "ignoring invalid sid [%s]: %s\n"
+msgstr ""
+
+#: ../utils/net_idmap.c:175
+#, c-format
+msgid "Could not set mapping of %s %lu to sid %s: %s\n"
+msgstr ""
+
+#: ../utils/net_idmap.c:196 ../utils/net_idmap.c:202
+msgid "Not Implemented yet\n"
+msgstr ""
+
+#: ../utils/net_idmap.c:240
+msgid ""
+"Usage:\n"
+"net idmap secret {<DOMAIN>|alloc} <secret>\n"
+"  Set the secret for the specified domain (or alloc module)\n"
+"    DOMAIN\tDomain to set secret for.\n"
+"    alloc\tSet secret for the alloc module\n"
+"    secret\tNew secret to set.\n"
+msgstr ""
+
+#: ../utils/net_idmap.c:271
+msgid "The only currently supported backend is LDAP\n"
+msgstr ""
+
+#: ../utils/net_idmap.c:281
+#, c-format
+msgid "Missing ldap_user_dn option for domain %s\n"
+msgstr ""
+
+#: ../utils/net_idmap.c:292
+msgid "Missing ldap_user_dn option for alloc backend\n"
+msgstr ""
+
+#: ../utils/net_idmap.c:302
+msgid "Failed to store secret\n"
+msgstr ""
+
+#: ../utils/net_idmap.c:307
+msgid "Secret stored\n"
+msgstr ""
+
+#: ../utils/net_idmap.c:313
+msgid ""
+"net idmap dump <inputfile>\n"
+"    Dump current id mapping\n"
+msgstr ""
+
+#: ../utils/net_idmap.c:316
+msgid ""
+"net idmap restore\n"
+"    Restore entries from stdin\n"
+msgstr ""
+
+#. Deliberately *not* document net idmap delete
+#: ../utils/net_idmap.c:321
+msgid ""
+"net idmap secret <DOMAIN>|alloc <secret>\n"
+"    Set the secret for the specified DOMAIN (or the alloc module)\n"
+msgstr ""
+
+#: ../utils/net_idmap.c:339
+msgid "usage: net idmap aclmapset <tdb> <src-sid> <dst-sid>\n"
+msgstr ""
+
+#: ../utils/net_idmap.c:351
+#, fuzzy, c-format
+msgid "db_open failed: %s\n"
+msgstr "Gestion des mots de passe"
+
+#: ../utils/net_idmap.c:356 ../utils/net_idmap.c:361
+#, c-format
+msgid "%s is not a valid sid\n"
+msgstr ""
+
+#: ../utils/net_idmap.c:367
+msgid "talloc_strdup failed\n"
+msgstr ""
+
+#: ../utils/net_idmap.c:373
+msgid "could not fetch db record\n"
+msgstr ""
+
+#: ../utils/net_idmap.c:381
+#, c-format
+msgid "could not store record: %s\n"
+msgstr ""
+
+#: ../utils/net_idmap.c:402
+msgid "Dump the current ID mappings"
+msgstr ""
+
+#: ../utils/net_idmap.c:403
+msgid ""
+"net idmap dump\n"
+"  Dump the current ID mappings"
+msgstr ""
+
+#: ../utils/net_idmap.c:410
+msgid "Restore entries from stdin"
+msgstr ""
+
+#: ../utils/net_idmap.c:411
+msgid ""
+"net idmap restore\n"
+"  Restore entries from stdin"
+msgstr ""
+
+#: ../utils/net_idmap.c:418 ../utils/net_idmap.c:426
+msgid "Not implemented yet"
+msgstr ""
+
+#: ../utils/net_idmap.c:419
+msgid ""
+"net idmap setmap\n"
+"  Not implemented yet"
+msgstr ""
+
+#: ../utils/net_idmap.c:427
+msgid ""
+"net idmap delete\n"
+"  Not implemented yet"
+msgstr ""
+
+#: ../utils/net_idmap.c:434
+msgid "Set secret for specified domain"
+msgstr ""
+
+#: ../utils/net_idmap.c:435
+msgid ""
+"net idmap secret {<DOMAIN>|alloc} <secret>\n"
+"  Set secret for specified domain or alloc module"
+msgstr ""
+
+#: ../utils/net_idmap.c:442
+msgid "Set acl map"
+msgstr ""
+
+#: ../utils/net_idmap.c:443
+msgid ""
+"net idmap aclmapset\n"
+"  Set acl map"
+msgstr ""
+
+#: ../utils/net_join.c:26
+msgid ""
+"\n"
+"net [<method>] join [misc. options]\n"
+"\tjoins this server to a domain\n"
+msgstr ""
+
+#: ../utils/net_join.c:47
+msgid "ADS join did not work, falling back to RPC...\n"
+msgstr ""
+
+#: ../utils/net_lookup.c:25
+msgid ""
+"  net lookup [host] HOSTNAME[#<type>]\n"
+"\tgives IP for a hostname\n"
+"\n"
+"  net lookup ldap [domain]\n"
+"\tgives IP of domain's ldap server\n"
+"\n"
+"  net lookup kdc [realm]\n"
+"\tgives IP of realm's kerberos KDC\n"
+"\n"
+"  net lookup pdc [domain|realm]\n"
+"\tgives IP of realm's kerberos KDC\n"
+"\n"
+"  net lookup dc [domain]\n"
+"\tgives IP of domains Domain Controllers\n"
+"\n"
+"  net lookup master [domain|wg]\n"
+"\tgive IP of master browser\n"
+"\n"
+"  net lookup name [name]\n"
+"\tLookup name's sid and type\n"
+"\n"
+"  net lookup sid [sid]\n"
+"\tGive sid's name and type\n"
+"\n"
+"  net lookup dsgetdcname [name] [flags] [sitename]\n"
+"\n"
+msgstr ""
+
+#: ../utils/net_lookup.c:112
+msgid "net_lookup_ldap: talloc_init() failed!\n"
+msgstr ""
+
+#: ../utils/net_lookup.c:325
+msgid "usage: net lookup name <name>\n"
+msgstr ""
+
+#: ../utils/net_lookup.c:331 ../utils/net_lookup.c:358
+#, c-format
+msgid "Could not lookup name %s\n"
+msgstr ""
+
+#: ../utils/net_lookup.c:347
+msgid "usage: net lookup sid <sid>\n"
+msgstr ""
+
+#: ../utils/net_lookup.c:352
+#, c-format
+msgid "Could not convert %s to SID\n"
+msgstr ""
+
+#: ../utils/net_lookup.c:378
+msgid "usage: net lookup dsgetdcname <name> <flags> <sitename>\n"
+msgstr ""
+
+#: ../utils/net_lookup.c:404
+#, c-format
+msgid "failed with: %s\n"
+msgstr ""
+
+#: ../utils/net_lookup.c:437
+msgid ""
+"\n"
+"Usage: \n"
+msgstr ""
+
+#: ../utils/net_lua.c:60
+msgid "connect: Expected IP-Address"
+msgstr ""
+
+#: ../utils/net_lua.c:65
+msgid "connect: Expected port"
+msgstr ""
+
+#: ../utils/net_lua.c:84
+#, fuzzy, c-format
+msgid "connect failed: %s"
+msgstr "Gestion des mots de passe"
+
+#: ../utils/net_lua.c:132
+#, c-format
+msgid "socket domain %s unknown"
+msgstr ""
+
+#: ../utils/net_lua.c:144
+#, c-format
+msgid "socket type %s unknown"
+msgstr ""
+
+#: ../utils/net_lua.c:155
+#, fuzzy, c-format
+msgid "socket() failed: %s"
+msgstr "Gestion des mots de passe"
+
+#: ../utils/net_lua.c:278
+msgid "evt_reference_thread failed\n"
+msgstr ""
+
+#: ../utils/net_lua.c:287
+msgid "event_add_timed failed"
+msgstr ""
+
+#: ../utils/net_lua.c:300
+msgid "event_once called from non-base thread"
+msgstr ""
+
+#: ../utils/net_lua.c:323
+msgid "event_context_init failed"
+msgstr ""
+
+#: ../utils/net_lua.c:353
+msgid "lua_newstate failed\n"
+msgstr ""
+
+#: ../utils/net_lua.c:371
+msgid "luaL_dofile returned an error\n"
+msgstr ""
+
+#: ../utils/net_lua.c:376
+msgid "luaL_dostring returned an error\n"
 msgstr ""
