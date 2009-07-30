@@ -760,6 +760,8 @@ int file_ntimes(connection_struct *conn, const struct smb_filename *smb_fname,
 		  time_to_asc(convert_timespec_to_time_t(ft->atime))));
 	DEBUG(6, ("file_ntime: modtime: %s",
 		  time_to_asc(convert_timespec_to_time_t(ft->mtime))));
+	DEBUG(6, ("file_ntime: ctime: %s",
+		  time_to_asc(convert_timespec_to_time_t(ft->ctime))));
 	DEBUG(6, ("file_ntime: createtime: %s",
 		  time_to_asc(convert_timespec_to_time_t(ft->create_time))));
 

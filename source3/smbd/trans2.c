@@ -5209,7 +5209,9 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 		set_createtime = true;
 	}
 
-	if (!null_timespec(ft->ctime)) {
+	if (null_timespec(ft->ctime)) {
+		ft->ctime = smb_fname->st.st_ex_ctime;
+	} else {
 		set_ctime = true;
 	}
 
@@ -5232,10 +5234,10 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 		time_to_asc(convert_timespec_to_time_t(ft->atime))));
 	DEBUG(5,("smb_set_filetime: modtime: %s\n ",
 		time_to_asc(convert_timespec_to_time_t(ft->mtime))));
-	if (!null_timespec(ft->create_time)) {
-		DEBUG(5,("smb_set_file_time: createtime: %s\n ",
-		   time_to_asc(convert_timespec_to_time_t(ft->create_time))));
-	}
+	DEBUG(5,("smb_set_filetime: ctime: %s\n ",
+		time_to_asc(convert_timespec_to_time_t(ft->ctime))));
+	DEBUG(5,("smb_set_file_time: createtime: %s\n ",
+		time_to_asc(convert_timespec_to_time_t(ft->create_time))));
 
 	/*
 	 * Try and set the times of this file if
