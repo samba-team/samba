@@ -1,6 +1,17 @@
 #include "../librpc/gen_ndr/ndr_srvsvc.h"
 #ifndef __CLI_SRVSVC__
 #define __CLI_SRVSVC__
+struct tevent_req *rpccli_srvsvc_NetCharDevEnum_send(TALLOC_CTX *mem_ctx,
+						     struct tevent_context *ev,
+						     struct rpc_pipe_client *cli,
+						     const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+						     struct srvsvc_NetCharDevInfoCtr *_info_ctr /* [in,out] [ref] */,
+						     uint32_t _max_buffer /* [in]  */,
+						     uint32_t *_totalentries /* [out] [ref] */,
+						     uint32_t *_resume_handle /* [in,out] [unique] */);
+NTSTATUS rpccli_srvsvc_NetCharDevEnum_recv(struct tevent_req *req,
+					   TALLOC_CTX *mem_ctx,
+					   WERROR *result);
 NTSTATUS rpccli_srvsvc_NetCharDevEnum(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
 				      const char *server_unc /* [in] [unique,charset(UTF16)] */,
@@ -9,6 +20,16 @@ NTSTATUS rpccli_srvsvc_NetCharDevEnum(struct rpc_pipe_client *cli,
 				      uint32_t *totalentries /* [out] [ref] */,
 				      uint32_t *resume_handle /* [in,out] [unique] */,
 				      WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetCharDevGetInfo_send(TALLOC_CTX *mem_ctx,
+							struct tevent_context *ev,
+							struct rpc_pipe_client *cli,
+							const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+							const char *_device_name /* [in] [charset(UTF16)] */,
+							uint32_t _level /* [in]  */,
+							union srvsvc_NetCharDevInfo *_info /* [out] [ref,switch_is(level)] */);
+NTSTATUS rpccli_srvsvc_NetCharDevGetInfo_recv(struct tevent_req *req,
+					      TALLOC_CTX *mem_ctx,
+					      WERROR *result);
 NTSTATUS rpccli_srvsvc_NetCharDevGetInfo(struct rpc_pipe_client *cli,
 					 TALLOC_CTX *mem_ctx,
 					 const char *server_unc /* [in] [unique,charset(UTF16)] */,
@@ -16,12 +37,33 @@ NTSTATUS rpccli_srvsvc_NetCharDevGetInfo(struct rpc_pipe_client *cli,
 					 uint32_t level /* [in]  */,
 					 union srvsvc_NetCharDevInfo *info /* [out] [ref,switch_is(level)] */,
 					 WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetCharDevControl_send(TALLOC_CTX *mem_ctx,
+							struct tevent_context *ev,
+							struct rpc_pipe_client *cli,
+							const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+							const char *_device_name /* [in] [charset(UTF16)] */,
+							uint32_t _opcode /* [in]  */);
+NTSTATUS rpccli_srvsvc_NetCharDevControl_recv(struct tevent_req *req,
+					      TALLOC_CTX *mem_ctx,
+					      WERROR *result);
 NTSTATUS rpccli_srvsvc_NetCharDevControl(struct rpc_pipe_client *cli,
 					 TALLOC_CTX *mem_ctx,
 					 const char *server_unc /* [in] [unique,charset(UTF16)] */,
 					 const char *device_name /* [in] [charset(UTF16)] */,
 					 uint32_t opcode /* [in]  */,
 					 WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetCharDevQEnum_send(TALLOC_CTX *mem_ctx,
+						      struct tevent_context *ev,
+						      struct rpc_pipe_client *cli,
+						      const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+						      const char *_user /* [in] [unique,charset(UTF16)] */,
+						      struct srvsvc_NetCharDevQInfoCtr *_info_ctr /* [in,out] [ref] */,
+						      uint32_t _max_buffer /* [in]  */,
+						      uint32_t *_totalentries /* [out] [ref] */,
+						      uint32_t *_resume_handle /* [in,out] [unique] */);
+NTSTATUS rpccli_srvsvc_NetCharDevQEnum_recv(struct tevent_req *req,
+					    TALLOC_CTX *mem_ctx,
+					    WERROR *result);
 NTSTATUS rpccli_srvsvc_NetCharDevQEnum(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
 				       const char *server_unc /* [in] [unique,charset(UTF16)] */,
@@ -31,6 +73,17 @@ NTSTATUS rpccli_srvsvc_NetCharDevQEnum(struct rpc_pipe_client *cli,
 				       uint32_t *totalentries /* [out] [ref] */,
 				       uint32_t *resume_handle /* [in,out] [unique] */,
 				       WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetCharDevQGetInfo_send(TALLOC_CTX *mem_ctx,
+							 struct tevent_context *ev,
+							 struct rpc_pipe_client *cli,
+							 const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+							 const char *_queue_name /* [in] [charset(UTF16)] */,
+							 const char *_user /* [in] [charset(UTF16)] */,
+							 uint32_t _level /* [in]  */,
+							 union srvsvc_NetCharDevQInfo *_info /* [out] [ref,switch_is(level)] */);
+NTSTATUS rpccli_srvsvc_NetCharDevQGetInfo_recv(struct tevent_req *req,
+					       TALLOC_CTX *mem_ctx,
+					       WERROR *result);
 NTSTATUS rpccli_srvsvc_NetCharDevQGetInfo(struct rpc_pipe_client *cli,
 					  TALLOC_CTX *mem_ctx,
 					  const char *server_unc /* [in] [unique,charset(UTF16)] */,
@@ -39,6 +92,17 @@ NTSTATUS rpccli_srvsvc_NetCharDevQGetInfo(struct rpc_pipe_client *cli,
 					  uint32_t level /* [in]  */,
 					  union srvsvc_NetCharDevQInfo *info /* [out] [ref,switch_is(level)] */,
 					  WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetCharDevQSetInfo_send(TALLOC_CTX *mem_ctx,
+							 struct tevent_context *ev,
+							 struct rpc_pipe_client *cli,
+							 const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+							 const char *_queue_name /* [in] [charset(UTF16)] */,
+							 uint32_t _level /* [in]  */,
+							 union srvsvc_NetCharDevQInfo _info /* [in] [switch_is(level)] */,
+							 uint32_t *_parm_error /* [in,out] [unique] */);
+NTSTATUS rpccli_srvsvc_NetCharDevQSetInfo_recv(struct tevent_req *req,
+					       TALLOC_CTX *mem_ctx,
+					       WERROR *result);
 NTSTATUS rpccli_srvsvc_NetCharDevQSetInfo(struct rpc_pipe_client *cli,
 					  TALLOC_CTX *mem_ctx,
 					  const char *server_unc /* [in] [unique,charset(UTF16)] */,
@@ -47,17 +111,46 @@ NTSTATUS rpccli_srvsvc_NetCharDevQSetInfo(struct rpc_pipe_client *cli,
 					  union srvsvc_NetCharDevQInfo info /* [in] [switch_is(level)] */,
 					  uint32_t *parm_error /* [in,out] [unique] */,
 					  WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetCharDevQPurge_send(TALLOC_CTX *mem_ctx,
+						       struct tevent_context *ev,
+						       struct rpc_pipe_client *cli,
+						       const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+						       const char *_queue_name /* [in] [charset(UTF16)] */);
+NTSTATUS rpccli_srvsvc_NetCharDevQPurge_recv(struct tevent_req *req,
+					     TALLOC_CTX *mem_ctx,
+					     WERROR *result);
 NTSTATUS rpccli_srvsvc_NetCharDevQPurge(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
 					const char *server_unc /* [in] [unique,charset(UTF16)] */,
 					const char *queue_name /* [in] [charset(UTF16)] */,
 					WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetCharDevQPurgeSelf_send(TALLOC_CTX *mem_ctx,
+							   struct tevent_context *ev,
+							   struct rpc_pipe_client *cli,
+							   const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+							   const char *_queue_name /* [in] [charset(UTF16)] */,
+							   const char *_computer_name /* [in] [charset(UTF16)] */);
+NTSTATUS rpccli_srvsvc_NetCharDevQPurgeSelf_recv(struct tevent_req *req,
+						 TALLOC_CTX *mem_ctx,
+						 WERROR *result);
 NTSTATUS rpccli_srvsvc_NetCharDevQPurgeSelf(struct rpc_pipe_client *cli,
 					    TALLOC_CTX *mem_ctx,
 					    const char *server_unc /* [in] [unique,charset(UTF16)] */,
 					    const char *queue_name /* [in] [charset(UTF16)] */,
 					    const char *computer_name /* [in] [charset(UTF16)] */,
 					    WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetConnEnum_send(TALLOC_CTX *mem_ctx,
+						  struct tevent_context *ev,
+						  struct rpc_pipe_client *cli,
+						  const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+						  const char *_path /* [in] [unique,charset(UTF16)] */,
+						  struct srvsvc_NetConnInfoCtr *_info_ctr /* [in,out] [ref] */,
+						  uint32_t _max_buffer /* [in]  */,
+						  uint32_t *_totalentries /* [out] [ref] */,
+						  uint32_t *_resume_handle /* [in,out] [unique] */);
+NTSTATUS rpccli_srvsvc_NetConnEnum_recv(struct tevent_req *req,
+					TALLOC_CTX *mem_ctx,
+					WERROR *result);
 NTSTATUS rpccli_srvsvc_NetConnEnum(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
 				   const char *server_unc /* [in] [unique,charset(UTF16)] */,
@@ -67,6 +160,19 @@ NTSTATUS rpccli_srvsvc_NetConnEnum(struct rpc_pipe_client *cli,
 				   uint32_t *totalentries /* [out] [ref] */,
 				   uint32_t *resume_handle /* [in,out] [unique] */,
 				   WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetFileEnum_send(TALLOC_CTX *mem_ctx,
+						  struct tevent_context *ev,
+						  struct rpc_pipe_client *cli,
+						  const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+						  const char *_path /* [in] [unique,charset(UTF16)] */,
+						  const char *_user /* [in] [unique,charset(UTF16)] */,
+						  struct srvsvc_NetFileInfoCtr *_info_ctr /* [in,out] [ref] */,
+						  uint32_t _max_buffer /* [in]  */,
+						  uint32_t *_totalentries /* [out] [ref] */,
+						  uint32_t *_resume_handle /* [in,out] [unique] */);
+NTSTATUS rpccli_srvsvc_NetFileEnum_recv(struct tevent_req *req,
+					TALLOC_CTX *mem_ctx,
+					WERROR *result);
 NTSTATUS rpccli_srvsvc_NetFileEnum(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
 				   const char *server_unc /* [in] [unique,charset(UTF16)] */,
@@ -77,6 +183,16 @@ NTSTATUS rpccli_srvsvc_NetFileEnum(struct rpc_pipe_client *cli,
 				   uint32_t *totalentries /* [out] [ref] */,
 				   uint32_t *resume_handle /* [in,out] [unique] */,
 				   WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetFileGetInfo_send(TALLOC_CTX *mem_ctx,
+						     struct tevent_context *ev,
+						     struct rpc_pipe_client *cli,
+						     const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+						     uint32_t _fid /* [in]  */,
+						     uint32_t _level /* [in]  */,
+						     union srvsvc_NetFileInfo *_info /* [out] [ref,switch_is(level)] */);
+NTSTATUS rpccli_srvsvc_NetFileGetInfo_recv(struct tevent_req *req,
+					   TALLOC_CTX *mem_ctx,
+					   WERROR *result);
 NTSTATUS rpccli_srvsvc_NetFileGetInfo(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
 				      const char *server_unc /* [in] [unique,charset(UTF16)] */,
@@ -84,11 +200,32 @@ NTSTATUS rpccli_srvsvc_NetFileGetInfo(struct rpc_pipe_client *cli,
 				      uint32_t level /* [in]  */,
 				      union srvsvc_NetFileInfo *info /* [out] [ref,switch_is(level)] */,
 				      WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetFileClose_send(TALLOC_CTX *mem_ctx,
+						   struct tevent_context *ev,
+						   struct rpc_pipe_client *cli,
+						   const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+						   uint32_t _fid /* [in]  */);
+NTSTATUS rpccli_srvsvc_NetFileClose_recv(struct tevent_req *req,
+					 TALLOC_CTX *mem_ctx,
+					 WERROR *result);
 NTSTATUS rpccli_srvsvc_NetFileClose(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
 				    const char *server_unc /* [in] [unique,charset(UTF16)] */,
 				    uint32_t fid /* [in]  */,
 				    WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetSessEnum_send(TALLOC_CTX *mem_ctx,
+						  struct tevent_context *ev,
+						  struct rpc_pipe_client *cli,
+						  const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+						  const char *_client /* [in] [unique,charset(UTF16)] */,
+						  const char *_user /* [in] [unique,charset(UTF16)] */,
+						  struct srvsvc_NetSessInfoCtr *_info_ctr /* [in,out] [ref] */,
+						  uint32_t _max_buffer /* [in]  */,
+						  uint32_t *_totalentries /* [out] [ref] */,
+						  uint32_t *_resume_handle /* [in,out] [unique] */);
+NTSTATUS rpccli_srvsvc_NetSessEnum_recv(struct tevent_req *req,
+					TALLOC_CTX *mem_ctx,
+					WERROR *result);
 NTSTATUS rpccli_srvsvc_NetSessEnum(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
 				   const char *server_unc /* [in] [unique,charset(UTF16)] */,
@@ -99,12 +236,31 @@ NTSTATUS rpccli_srvsvc_NetSessEnum(struct rpc_pipe_client *cli,
 				   uint32_t *totalentries /* [out] [ref] */,
 				   uint32_t *resume_handle /* [in,out] [unique] */,
 				   WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetSessDel_send(TALLOC_CTX *mem_ctx,
+						 struct tevent_context *ev,
+						 struct rpc_pipe_client *cli,
+						 const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+						 const char *_client /* [in] [unique,charset(UTF16)] */,
+						 const char *_user /* [in] [unique,charset(UTF16)] */);
+NTSTATUS rpccli_srvsvc_NetSessDel_recv(struct tevent_req *req,
+				       TALLOC_CTX *mem_ctx,
+				       WERROR *result);
 NTSTATUS rpccli_srvsvc_NetSessDel(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
 				  const char *server_unc /* [in] [unique,charset(UTF16)] */,
 				  const char *client /* [in] [unique,charset(UTF16)] */,
 				  const char *user /* [in] [unique,charset(UTF16)] */,
 				  WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetShareAdd_send(TALLOC_CTX *mem_ctx,
+						  struct tevent_context *ev,
+						  struct rpc_pipe_client *cli,
+						  const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+						  uint32_t _level /* [in]  */,
+						  union srvsvc_NetShareInfo *_info /* [in] [ref,switch_is(level)] */,
+						  uint32_t *_parm_error /* [in,out] [unique] */);
+NTSTATUS rpccli_srvsvc_NetShareAdd_recv(struct tevent_req *req,
+					TALLOC_CTX *mem_ctx,
+					WERROR *result);
 NTSTATUS rpccli_srvsvc_NetShareAdd(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
 				   const char *server_unc /* [in] [unique,charset(UTF16)] */,
@@ -112,6 +268,17 @@ NTSTATUS rpccli_srvsvc_NetShareAdd(struct rpc_pipe_client *cli,
 				   union srvsvc_NetShareInfo *info /* [in] [ref,switch_is(level)] */,
 				   uint32_t *parm_error /* [in,out] [unique] */,
 				   WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetShareEnumAll_send(TALLOC_CTX *mem_ctx,
+						      struct tevent_context *ev,
+						      struct rpc_pipe_client *cli,
+						      const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+						      struct srvsvc_NetShareInfoCtr *_info_ctr /* [in,out] [ref] */,
+						      uint32_t _max_buffer /* [in]  */,
+						      uint32_t *_totalentries /* [out] [ref] */,
+						      uint32_t *_resume_handle /* [in,out] [unique] */);
+NTSTATUS rpccli_srvsvc_NetShareEnumAll_recv(struct tevent_req *req,
+					    TALLOC_CTX *mem_ctx,
+					    WERROR *result);
 NTSTATUS rpccli_srvsvc_NetShareEnumAll(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
 				       const char *server_unc /* [in] [unique,charset(UTF16)] */,
@@ -120,6 +287,16 @@ NTSTATUS rpccli_srvsvc_NetShareEnumAll(struct rpc_pipe_client *cli,
 				       uint32_t *totalentries /* [out] [ref] */,
 				       uint32_t *resume_handle /* [in,out] [unique] */,
 				       WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetShareGetInfo_send(TALLOC_CTX *mem_ctx,
+						      struct tevent_context *ev,
+						      struct rpc_pipe_client *cli,
+						      const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+						      const char *_share_name /* [in] [charset(UTF16)] */,
+						      uint32_t _level /* [in]  */,
+						      union srvsvc_NetShareInfo *_info /* [out] [ref,switch_is(level)] */);
+NTSTATUS rpccli_srvsvc_NetShareGetInfo_recv(struct tevent_req *req,
+					    TALLOC_CTX *mem_ctx,
+					    WERROR *result);
 NTSTATUS rpccli_srvsvc_NetShareGetInfo(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
 				       const char *server_unc /* [in] [unique,charset(UTF16)] */,
@@ -127,6 +304,17 @@ NTSTATUS rpccli_srvsvc_NetShareGetInfo(struct rpc_pipe_client *cli,
 				       uint32_t level /* [in]  */,
 				       union srvsvc_NetShareInfo *info /* [out] [ref,switch_is(level)] */,
 				       WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetShareSetInfo_send(TALLOC_CTX *mem_ctx,
+						      struct tevent_context *ev,
+						      struct rpc_pipe_client *cli,
+						      const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+						      const char *_share_name /* [in] [charset(UTF16)] */,
+						      uint32_t _level /* [in]  */,
+						      union srvsvc_NetShareInfo *_info /* [in] [ref,switch_is(level)] */,
+						      uint32_t *_parm_error /* [in,out] [unique] */);
+NTSTATUS rpccli_srvsvc_NetShareSetInfo_recv(struct tevent_req *req,
+					    TALLOC_CTX *mem_ctx,
+					    WERROR *result);
 NTSTATUS rpccli_srvsvc_NetShareSetInfo(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
 				       const char *server_unc /* [in] [unique,charset(UTF16)] */,
@@ -135,30 +323,76 @@ NTSTATUS rpccli_srvsvc_NetShareSetInfo(struct rpc_pipe_client *cli,
 				       union srvsvc_NetShareInfo *info /* [in] [ref,switch_is(level)] */,
 				       uint32_t *parm_error /* [in,out] [unique] */,
 				       WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetShareDel_send(TALLOC_CTX *mem_ctx,
+						  struct tevent_context *ev,
+						  struct rpc_pipe_client *cli,
+						  const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+						  const char *_share_name /* [in] [charset(UTF16)] */,
+						  uint32_t _reserved /* [in]  */);
+NTSTATUS rpccli_srvsvc_NetShareDel_recv(struct tevent_req *req,
+					TALLOC_CTX *mem_ctx,
+					WERROR *result);
 NTSTATUS rpccli_srvsvc_NetShareDel(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
 				   const char *server_unc /* [in] [unique,charset(UTF16)] */,
 				   const char *share_name /* [in] [charset(UTF16)] */,
 				   uint32_t reserved /* [in]  */,
 				   WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetShareDelSticky_send(TALLOC_CTX *mem_ctx,
+							struct tevent_context *ev,
+							struct rpc_pipe_client *cli,
+							const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+							const char *_share_name /* [in] [charset(UTF16)] */,
+							uint32_t _reserved /* [in]  */);
+NTSTATUS rpccli_srvsvc_NetShareDelSticky_recv(struct tevent_req *req,
+					      TALLOC_CTX *mem_ctx,
+					      WERROR *result);
 NTSTATUS rpccli_srvsvc_NetShareDelSticky(struct rpc_pipe_client *cli,
 					 TALLOC_CTX *mem_ctx,
 					 const char *server_unc /* [in] [unique,charset(UTF16)] */,
 					 const char *share_name /* [in] [charset(UTF16)] */,
 					 uint32_t reserved /* [in]  */,
 					 WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetShareCheck_send(TALLOC_CTX *mem_ctx,
+						    struct tevent_context *ev,
+						    struct rpc_pipe_client *cli,
+						    const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+						    const char *_device_name /* [in] [charset(UTF16)] */,
+						    enum srvsvc_ShareType *_type /* [out] [ref] */);
+NTSTATUS rpccli_srvsvc_NetShareCheck_recv(struct tevent_req *req,
+					  TALLOC_CTX *mem_ctx,
+					  WERROR *result);
 NTSTATUS rpccli_srvsvc_NetShareCheck(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     const char *server_unc /* [in] [unique,charset(UTF16)] */,
 				     const char *device_name /* [in] [charset(UTF16)] */,
 				     enum srvsvc_ShareType *type /* [out] [ref] */,
 				     WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetSrvGetInfo_send(TALLOC_CTX *mem_ctx,
+						    struct tevent_context *ev,
+						    struct rpc_pipe_client *cli,
+						    const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+						    uint32_t _level /* [in]  */,
+						    union srvsvc_NetSrvInfo *_info /* [out] [ref,switch_is(level)] */);
+NTSTATUS rpccli_srvsvc_NetSrvGetInfo_recv(struct tevent_req *req,
+					  TALLOC_CTX *mem_ctx,
+					  WERROR *result);
 NTSTATUS rpccli_srvsvc_NetSrvGetInfo(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     const char *server_unc /* [in] [unique,charset(UTF16)] */,
 				     uint32_t level /* [in]  */,
 				     union srvsvc_NetSrvInfo *info /* [out] [ref,switch_is(level)] */,
 				     WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetSrvSetInfo_send(TALLOC_CTX *mem_ctx,
+						    struct tevent_context *ev,
+						    struct rpc_pipe_client *cli,
+						    const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+						    uint32_t _level /* [in]  */,
+						    union srvsvc_NetSrvInfo *_info /* [in] [ref,switch_is(level)] */,
+						    uint32_t *_parm_error /* [in,out] [unique] */);
+NTSTATUS rpccli_srvsvc_NetSrvSetInfo_recv(struct tevent_req *req,
+					  TALLOC_CTX *mem_ctx,
+					  WERROR *result);
 NTSTATUS rpccli_srvsvc_NetSrvSetInfo(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     const char *server_unc /* [in] [unique,charset(UTF16)] */,
@@ -166,6 +400,18 @@ NTSTATUS rpccli_srvsvc_NetSrvSetInfo(struct rpc_pipe_client *cli,
 				     union srvsvc_NetSrvInfo *info /* [in] [ref,switch_is(level)] */,
 				     uint32_t *parm_error /* [in,out] [unique] */,
 				     WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetDiskEnum_send(TALLOC_CTX *mem_ctx,
+						  struct tevent_context *ev,
+						  struct rpc_pipe_client *cli,
+						  const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+						  uint32_t _level /* [in]  */,
+						  struct srvsvc_NetDiskInfo *_info /* [in,out] [ref] */,
+						  uint32_t _maxlen /* [in]  */,
+						  uint32_t *_totalentries /* [out] [ref] */,
+						  uint32_t *_resume_handle /* [in,out] [unique] */);
+NTSTATUS rpccli_srvsvc_NetDiskEnum_recv(struct tevent_req *req,
+					TALLOC_CTX *mem_ctx,
+					WERROR *result);
 NTSTATUS rpccli_srvsvc_NetDiskEnum(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
 				   const char *server_unc /* [in] [unique,charset(UTF16)] */,
@@ -175,6 +421,17 @@ NTSTATUS rpccli_srvsvc_NetDiskEnum(struct rpc_pipe_client *cli,
 				   uint32_t *totalentries /* [out] [ref] */,
 				   uint32_t *resume_handle /* [in,out] [unique] */,
 				   WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetServerStatisticsGet_send(TALLOC_CTX *mem_ctx,
+							     struct tevent_context *ev,
+							     struct rpc_pipe_client *cli,
+							     const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+							     const char *_service /* [in] [unique,charset(UTF16)] */,
+							     uint32_t _level /* [in]  */,
+							     uint32_t _options /* [in]  */,
+							     struct srvsvc_Statistics **_stats /* [out] [ref] */);
+NTSTATUS rpccli_srvsvc_NetServerStatisticsGet_recv(struct tevent_req *req,
+						   TALLOC_CTX *mem_ctx,
+						   WERROR *result);
 NTSTATUS rpccli_srvsvc_NetServerStatisticsGet(struct rpc_pipe_client *cli,
 					      TALLOC_CTX *mem_ctx,
 					      const char *server_unc /* [in] [unique,charset(UTF16)] */,
@@ -183,12 +440,32 @@ NTSTATUS rpccli_srvsvc_NetServerStatisticsGet(struct rpc_pipe_client *cli,
 					      uint32_t options /* [in]  */,
 					      struct srvsvc_Statistics **stats /* [out] [ref] */,
 					      WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetTransportAdd_send(TALLOC_CTX *mem_ctx,
+						      struct tevent_context *ev,
+						      struct rpc_pipe_client *cli,
+						      const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+						      uint32_t _level /* [in]  */,
+						      union srvsvc_NetTransportInfo _info /* [in] [switch_is(level)] */);
+NTSTATUS rpccli_srvsvc_NetTransportAdd_recv(struct tevent_req *req,
+					    TALLOC_CTX *mem_ctx,
+					    WERROR *result);
 NTSTATUS rpccli_srvsvc_NetTransportAdd(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
 				       const char *server_unc /* [in] [unique,charset(UTF16)] */,
 				       uint32_t level /* [in]  */,
 				       union srvsvc_NetTransportInfo info /* [in] [switch_is(level)] */,
 				       WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetTransportEnum_send(TALLOC_CTX *mem_ctx,
+						       struct tevent_context *ev,
+						       struct rpc_pipe_client *cli,
+						       const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+						       struct srvsvc_NetTransportInfoCtr *_transports /* [in,out] [ref] */,
+						       uint32_t _max_buffer /* [in]  */,
+						       uint32_t *_totalentries /* [out] [ref] */,
+						       uint32_t *_resume_handle /* [in,out] [unique] */);
+NTSTATUS rpccli_srvsvc_NetTransportEnum_recv(struct tevent_req *req,
+					     TALLOC_CTX *mem_ctx,
+					     WERROR *result);
 NTSTATUS rpccli_srvsvc_NetTransportEnum(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
 					const char *server_unc /* [in] [unique,charset(UTF16)] */,
@@ -197,17 +474,44 @@ NTSTATUS rpccli_srvsvc_NetTransportEnum(struct rpc_pipe_client *cli,
 					uint32_t *totalentries /* [out] [ref] */,
 					uint32_t *resume_handle /* [in,out] [unique] */,
 					WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetTransportDel_send(TALLOC_CTX *mem_ctx,
+						      struct tevent_context *ev,
+						      struct rpc_pipe_client *cli,
+						      const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+						      uint32_t _level /* [in]  */,
+						      struct srvsvc_NetTransportInfo0 *_info0 /* [in] [ref] */);
+NTSTATUS rpccli_srvsvc_NetTransportDel_recv(struct tevent_req *req,
+					    TALLOC_CTX *mem_ctx,
+					    WERROR *result);
 NTSTATUS rpccli_srvsvc_NetTransportDel(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
 				       const char *server_unc /* [in] [unique,charset(UTF16)] */,
 				       uint32_t level /* [in]  */,
 				       struct srvsvc_NetTransportInfo0 *info0 /* [in] [ref] */,
 				       WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetRemoteTOD_send(TALLOC_CTX *mem_ctx,
+						   struct tevent_context *ev,
+						   struct rpc_pipe_client *cli,
+						   const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+						   struct srvsvc_NetRemoteTODInfo **_info /* [out] [ref] */);
+NTSTATUS rpccli_srvsvc_NetRemoteTOD_recv(struct tevent_req *req,
+					 TALLOC_CTX *mem_ctx,
+					 WERROR *result);
 NTSTATUS rpccli_srvsvc_NetRemoteTOD(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
 				    const char *server_unc /* [in] [unique,charset(UTF16)] */,
 				    struct srvsvc_NetRemoteTODInfo **info /* [out] [ref] */,
 				    WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetSetServiceBits_send(TALLOC_CTX *mem_ctx,
+							struct tevent_context *ev,
+							struct rpc_pipe_client *cli,
+							const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+							const char *_transport /* [in] [unique,charset(UTF16)] */,
+							uint32_t _servicebits /* [in]  */,
+							uint32_t _updateimmediately /* [in]  */);
+NTSTATUS rpccli_srvsvc_NetSetServiceBits_recv(struct tevent_req *req,
+					      TALLOC_CTX *mem_ctx,
+					      WERROR *result);
 NTSTATUS rpccli_srvsvc_NetSetServiceBits(struct rpc_pipe_client *cli,
 					 TALLOC_CTX *mem_ctx,
 					 const char *server_unc /* [in] [unique,charset(UTF16)] */,
@@ -215,6 +519,16 @@ NTSTATUS rpccli_srvsvc_NetSetServiceBits(struct rpc_pipe_client *cli,
 					 uint32_t servicebits /* [in]  */,
 					 uint32_t updateimmediately /* [in]  */,
 					 WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetPathType_send(TALLOC_CTX *mem_ctx,
+						  struct tevent_context *ev,
+						  struct rpc_pipe_client *cli,
+						  const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+						  const char *_path /* [in] [charset(UTF16)] */,
+						  uint32_t _pathflags /* [in]  */,
+						  uint32_t *_pathtype /* [out] [ref] */);
+NTSTATUS rpccli_srvsvc_NetPathType_recv(struct tevent_req *req,
+					TALLOC_CTX *mem_ctx,
+					WERROR *result);
 NTSTATUS rpccli_srvsvc_NetPathType(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
 				   const char *server_unc /* [in] [unique,charset(UTF16)] */,
@@ -222,6 +536,19 @@ NTSTATUS rpccli_srvsvc_NetPathType(struct rpc_pipe_client *cli,
 				   uint32_t pathflags /* [in]  */,
 				   uint32_t *pathtype /* [out] [ref] */,
 				   WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetPathCanonicalize_send(TALLOC_CTX *mem_ctx,
+							  struct tevent_context *ev,
+							  struct rpc_pipe_client *cli,
+							  const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+							  const char *_path /* [in] [charset(UTF16)] */,
+							  uint8_t *_can_path /* [out] [size_is(maxbuf)] */,
+							  uint32_t _maxbuf /* [in]  */,
+							  const char *_prefix /* [in] [charset(UTF16)] */,
+							  uint32_t *_pathtype /* [in,out] [ref] */,
+							  uint32_t _pathflags /* [in]  */);
+NTSTATUS rpccli_srvsvc_NetPathCanonicalize_recv(struct tevent_req *req,
+						TALLOC_CTX *mem_ctx,
+						WERROR *result);
 NTSTATUS rpccli_srvsvc_NetPathCanonicalize(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
 					   const char *server_unc /* [in] [unique,charset(UTF16)] */,
@@ -232,6 +559,17 @@ NTSTATUS rpccli_srvsvc_NetPathCanonicalize(struct rpc_pipe_client *cli,
 					   uint32_t *pathtype /* [in,out] [ref] */,
 					   uint32_t pathflags /* [in]  */,
 					   WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetPathCompare_send(TALLOC_CTX *mem_ctx,
+						     struct tevent_context *ev,
+						     struct rpc_pipe_client *cli,
+						     const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+						     const char *_path1 /* [in] [charset(UTF16)] */,
+						     const char *_path2 /* [in] [charset(UTF16)] */,
+						     uint32_t _pathtype /* [in]  */,
+						     uint32_t _pathflags /* [in]  */);
+NTSTATUS rpccli_srvsvc_NetPathCompare_recv(struct tevent_req *req,
+					   TALLOC_CTX *mem_ctx,
+					   WERROR *result);
 NTSTATUS rpccli_srvsvc_NetPathCompare(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
 				      const char *server_unc /* [in] [unique,charset(UTF16)] */,
@@ -240,6 +578,16 @@ NTSTATUS rpccli_srvsvc_NetPathCompare(struct rpc_pipe_client *cli,
 				      uint32_t pathtype /* [in]  */,
 				      uint32_t pathflags /* [in]  */,
 				      WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetNameValidate_send(TALLOC_CTX *mem_ctx,
+						      struct tevent_context *ev,
+						      struct rpc_pipe_client *cli,
+						      const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+						      const char *_name /* [in] [charset(UTF16)] */,
+						      uint32_t _name_type /* [in]  */,
+						      uint32_t _flags /* [in]  */);
+NTSTATUS rpccli_srvsvc_NetNameValidate_recv(struct tevent_req *req,
+					    TALLOC_CTX *mem_ctx,
+					    WERROR *result);
 NTSTATUS rpccli_srvsvc_NetNameValidate(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
 				       const char *server_unc /* [in] [unique,charset(UTF16)] */,
@@ -247,9 +595,26 @@ NTSTATUS rpccli_srvsvc_NetNameValidate(struct rpc_pipe_client *cli,
 				       uint32_t name_type /* [in]  */,
 				       uint32_t flags /* [in]  */,
 				       WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NETRPRNAMECANONICALIZE_send(TALLOC_CTX *mem_ctx,
+							     struct tevent_context *ev,
+							     struct rpc_pipe_client *cli);
+NTSTATUS rpccli_srvsvc_NETRPRNAMECANONICALIZE_recv(struct tevent_req *req,
+						   TALLOC_CTX *mem_ctx,
+						   WERROR *result);
 NTSTATUS rpccli_srvsvc_NETRPRNAMECANONICALIZE(struct rpc_pipe_client *cli,
 					      TALLOC_CTX *mem_ctx,
 					      WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetPRNameCompare_send(TALLOC_CTX *mem_ctx,
+						       struct tevent_context *ev,
+						       struct rpc_pipe_client *cli,
+						       const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+						       const char *_name1 /* [in] [charset(UTF16)] */,
+						       const char *_name2 /* [in] [charset(UTF16)] */,
+						       uint32_t _name_type /* [in]  */,
+						       uint32_t _flags /* [in]  */);
+NTSTATUS rpccli_srvsvc_NetPRNameCompare_recv(struct tevent_req *req,
+					     TALLOC_CTX *mem_ctx,
+					     WERROR *result);
 NTSTATUS rpccli_srvsvc_NetPRNameCompare(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
 					const char *server_unc /* [in] [unique,charset(UTF16)] */,
@@ -258,6 +623,17 @@ NTSTATUS rpccli_srvsvc_NetPRNameCompare(struct rpc_pipe_client *cli,
 					uint32_t name_type /* [in]  */,
 					uint32_t flags /* [in]  */,
 					WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetShareEnum_send(TALLOC_CTX *mem_ctx,
+						   struct tevent_context *ev,
+						   struct rpc_pipe_client *cli,
+						   const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+						   struct srvsvc_NetShareInfoCtr *_info_ctr /* [in,out] [ref] */,
+						   uint32_t _max_buffer /* [in]  */,
+						   uint32_t *_totalentries /* [out] [ref] */,
+						   uint32_t *_resume_handle /* [in,out] [unique] */);
+NTSTATUS rpccli_srvsvc_NetShareEnum_recv(struct tevent_req *req,
+					 TALLOC_CTX *mem_ctx,
+					 WERROR *result);
 NTSTATUS rpccli_srvsvc_NetShareEnum(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
 				    const char *server_unc /* [in] [unique,charset(UTF16)] */,
@@ -266,6 +642,16 @@ NTSTATUS rpccli_srvsvc_NetShareEnum(struct rpc_pipe_client *cli,
 				    uint32_t *totalentries /* [out] [ref] */,
 				    uint32_t *resume_handle /* [in,out] [unique] */,
 				    WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetShareDelStart_send(TALLOC_CTX *mem_ctx,
+						       struct tevent_context *ev,
+						       struct rpc_pipe_client *cli,
+						       const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+						       const char *_share /* [in] [charset(UTF16)] */,
+						       uint32_t _reserved /* [in]  */,
+						       struct policy_handle *_hnd /* [out] [unique] */);
+NTSTATUS rpccli_srvsvc_NetShareDelStart_recv(struct tevent_req *req,
+					     TALLOC_CTX *mem_ctx,
+					     WERROR *result);
 NTSTATUS rpccli_srvsvc_NetShareDelStart(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
 					const char *server_unc /* [in] [unique,charset(UTF16)] */,
@@ -273,10 +659,28 @@ NTSTATUS rpccli_srvsvc_NetShareDelStart(struct rpc_pipe_client *cli,
 					uint32_t reserved /* [in]  */,
 					struct policy_handle *hnd /* [out] [unique] */,
 					WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetShareDelCommit_send(TALLOC_CTX *mem_ctx,
+							struct tevent_context *ev,
+							struct rpc_pipe_client *cli,
+							struct policy_handle *_hnd /* [in,out] [unique] */);
+NTSTATUS rpccli_srvsvc_NetShareDelCommit_recv(struct tevent_req *req,
+					      TALLOC_CTX *mem_ctx,
+					      WERROR *result);
 NTSTATUS rpccli_srvsvc_NetShareDelCommit(struct rpc_pipe_client *cli,
 					 TALLOC_CTX *mem_ctx,
 					 struct policy_handle *hnd /* [in,out] [unique] */,
 					 WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetGetFileSecurity_send(TALLOC_CTX *mem_ctx,
+							 struct tevent_context *ev,
+							 struct rpc_pipe_client *cli,
+							 const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+							 const char *_share /* [in] [unique,charset(UTF16)] */,
+							 const char *_file /* [in] [charset(UTF16)] */,
+							 uint32_t _securityinformation /* [in]  */,
+							 struct sec_desc_buf **_sd_buf /* [out] [ref] */);
+NTSTATUS rpccli_srvsvc_NetGetFileSecurity_recv(struct tevent_req *req,
+					       TALLOC_CTX *mem_ctx,
+					       WERROR *result);
 NTSTATUS rpccli_srvsvc_NetGetFileSecurity(struct rpc_pipe_client *cli,
 					  TALLOC_CTX *mem_ctx,
 					  const char *server_unc /* [in] [unique,charset(UTF16)] */,
@@ -285,6 +689,17 @@ NTSTATUS rpccli_srvsvc_NetGetFileSecurity(struct rpc_pipe_client *cli,
 					  uint32_t securityinformation /* [in]  */,
 					  struct sec_desc_buf **sd_buf /* [out] [ref] */,
 					  WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetSetFileSecurity_send(TALLOC_CTX *mem_ctx,
+							 struct tevent_context *ev,
+							 struct rpc_pipe_client *cli,
+							 const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+							 const char *_share /* [in] [unique,charset(UTF16)] */,
+							 const char *_file /* [in] [charset(UTF16)] */,
+							 uint32_t _securityinformation /* [in]  */,
+							 struct sec_desc_buf *_sd_buf /* [in] [ref] */);
+NTSTATUS rpccli_srvsvc_NetSetFileSecurity_recv(struct tevent_req *req,
+					       TALLOC_CTX *mem_ctx,
+					       WERROR *result);
 NTSTATUS rpccli_srvsvc_NetSetFileSecurity(struct rpc_pipe_client *cli,
 					  TALLOC_CTX *mem_ctx,
 					  const char *server_unc /* [in] [unique,charset(UTF16)] */,
@@ -293,12 +708,33 @@ NTSTATUS rpccli_srvsvc_NetSetFileSecurity(struct rpc_pipe_client *cli,
 					  uint32_t securityinformation /* [in]  */,
 					  struct sec_desc_buf *sd_buf /* [in] [ref] */,
 					  WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetServerTransportAddEx_send(TALLOC_CTX *mem_ctx,
+							      struct tevent_context *ev,
+							      struct rpc_pipe_client *cli,
+							      const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+							      uint32_t _level /* [in]  */,
+							      union srvsvc_NetTransportInfo _info /* [in] [switch_is(level)] */);
+NTSTATUS rpccli_srvsvc_NetServerTransportAddEx_recv(struct tevent_req *req,
+						    TALLOC_CTX *mem_ctx,
+						    WERROR *result);
 NTSTATUS rpccli_srvsvc_NetServerTransportAddEx(struct rpc_pipe_client *cli,
 					       TALLOC_CTX *mem_ctx,
 					       const char *server_unc /* [in] [unique,charset(UTF16)] */,
 					       uint32_t level /* [in]  */,
 					       union srvsvc_NetTransportInfo info /* [in] [switch_is(level)] */,
 					       WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NetServerSetServiceBitsEx_send(TALLOC_CTX *mem_ctx,
+								struct tevent_context *ev,
+								struct rpc_pipe_client *cli,
+								const char *_server_unc /* [in] [unique,charset(UTF16)] */,
+								const char *_emulated_server_unc /* [in] [unique,charset(UTF16)] */,
+								const char *_transport /* [in] [unique,charset(UTF16)] */,
+								uint32_t _servicebitsofinterest /* [in]  */,
+								uint32_t _servicebits /* [in]  */,
+								uint32_t _updateimmediately /* [in]  */);
+NTSTATUS rpccli_srvsvc_NetServerSetServiceBitsEx_recv(struct tevent_req *req,
+						      TALLOC_CTX *mem_ctx,
+						      WERROR *result);
 NTSTATUS rpccli_srvsvc_NetServerSetServiceBitsEx(struct rpc_pipe_client *cli,
 						 TALLOC_CTX *mem_ctx,
 						 const char *server_unc /* [in] [unique,charset(UTF16)] */,
@@ -308,36 +744,102 @@ NTSTATUS rpccli_srvsvc_NetServerSetServiceBitsEx(struct rpc_pipe_client *cli,
 						 uint32_t servicebits /* [in]  */,
 						 uint32_t updateimmediately /* [in]  */,
 						 WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NETRDFSGETVERSION_send(TALLOC_CTX *mem_ctx,
+							struct tevent_context *ev,
+							struct rpc_pipe_client *cli);
+NTSTATUS rpccli_srvsvc_NETRDFSGETVERSION_recv(struct tevent_req *req,
+					      TALLOC_CTX *mem_ctx,
+					      WERROR *result);
 NTSTATUS rpccli_srvsvc_NETRDFSGETVERSION(struct rpc_pipe_client *cli,
 					 TALLOC_CTX *mem_ctx,
 					 WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NETRDFSCREATELOCALPARTITION_send(TALLOC_CTX *mem_ctx,
+								  struct tevent_context *ev,
+								  struct rpc_pipe_client *cli);
+NTSTATUS rpccli_srvsvc_NETRDFSCREATELOCALPARTITION_recv(struct tevent_req *req,
+							TALLOC_CTX *mem_ctx,
+							WERROR *result);
 NTSTATUS rpccli_srvsvc_NETRDFSCREATELOCALPARTITION(struct rpc_pipe_client *cli,
 						   TALLOC_CTX *mem_ctx,
 						   WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NETRDFSDELETELOCALPARTITION_send(TALLOC_CTX *mem_ctx,
+								  struct tevent_context *ev,
+								  struct rpc_pipe_client *cli);
+NTSTATUS rpccli_srvsvc_NETRDFSDELETELOCALPARTITION_recv(struct tevent_req *req,
+							TALLOC_CTX *mem_ctx,
+							WERROR *result);
 NTSTATUS rpccli_srvsvc_NETRDFSDELETELOCALPARTITION(struct rpc_pipe_client *cli,
 						   TALLOC_CTX *mem_ctx,
 						   WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NETRDFSSETLOCALVOLUMESTATE_send(TALLOC_CTX *mem_ctx,
+								 struct tevent_context *ev,
+								 struct rpc_pipe_client *cli);
+NTSTATUS rpccli_srvsvc_NETRDFSSETLOCALVOLUMESTATE_recv(struct tevent_req *req,
+						       TALLOC_CTX *mem_ctx,
+						       WERROR *result);
 NTSTATUS rpccli_srvsvc_NETRDFSSETLOCALVOLUMESTATE(struct rpc_pipe_client *cli,
 						  TALLOC_CTX *mem_ctx,
 						  WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NETRDFSSETSERVERINFO_send(TALLOC_CTX *mem_ctx,
+							   struct tevent_context *ev,
+							   struct rpc_pipe_client *cli);
+NTSTATUS rpccli_srvsvc_NETRDFSSETSERVERINFO_recv(struct tevent_req *req,
+						 TALLOC_CTX *mem_ctx,
+						 WERROR *result);
 NTSTATUS rpccli_srvsvc_NETRDFSSETSERVERINFO(struct rpc_pipe_client *cli,
 					    TALLOC_CTX *mem_ctx,
 					    WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NETRDFSCREATEEXITPOINT_send(TALLOC_CTX *mem_ctx,
+							     struct tevent_context *ev,
+							     struct rpc_pipe_client *cli);
+NTSTATUS rpccli_srvsvc_NETRDFSCREATEEXITPOINT_recv(struct tevent_req *req,
+						   TALLOC_CTX *mem_ctx,
+						   WERROR *result);
 NTSTATUS rpccli_srvsvc_NETRDFSCREATEEXITPOINT(struct rpc_pipe_client *cli,
 					      TALLOC_CTX *mem_ctx,
 					      WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NETRDFSDELETEEXITPOINT_send(TALLOC_CTX *mem_ctx,
+							     struct tevent_context *ev,
+							     struct rpc_pipe_client *cli);
+NTSTATUS rpccli_srvsvc_NETRDFSDELETEEXITPOINT_recv(struct tevent_req *req,
+						   TALLOC_CTX *mem_ctx,
+						   WERROR *result);
 NTSTATUS rpccli_srvsvc_NETRDFSDELETEEXITPOINT(struct rpc_pipe_client *cli,
 					      TALLOC_CTX *mem_ctx,
 					      WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NETRDFSMODIFYPREFIX_send(TALLOC_CTX *mem_ctx,
+							  struct tevent_context *ev,
+							  struct rpc_pipe_client *cli);
+NTSTATUS rpccli_srvsvc_NETRDFSMODIFYPREFIX_recv(struct tevent_req *req,
+						TALLOC_CTX *mem_ctx,
+						WERROR *result);
 NTSTATUS rpccli_srvsvc_NETRDFSMODIFYPREFIX(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
 					   WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NETRDFSFIXLOCALVOLUME_send(TALLOC_CTX *mem_ctx,
+							    struct tevent_context *ev,
+							    struct rpc_pipe_client *cli);
+NTSTATUS rpccli_srvsvc_NETRDFSFIXLOCALVOLUME_recv(struct tevent_req *req,
+						  TALLOC_CTX *mem_ctx,
+						  WERROR *result);
 NTSTATUS rpccli_srvsvc_NETRDFSFIXLOCALVOLUME(struct rpc_pipe_client *cli,
 					     TALLOC_CTX *mem_ctx,
 					     WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NETRDFSMANAGERREPORTSITEINFO_send(TALLOC_CTX *mem_ctx,
+								   struct tevent_context *ev,
+								   struct rpc_pipe_client *cli);
+NTSTATUS rpccli_srvsvc_NETRDFSMANAGERREPORTSITEINFO_recv(struct tevent_req *req,
+							 TALLOC_CTX *mem_ctx,
+							 WERROR *result);
 NTSTATUS rpccli_srvsvc_NETRDFSMANAGERREPORTSITEINFO(struct rpc_pipe_client *cli,
 						    TALLOC_CTX *mem_ctx,
 						    WERROR *werror);
+struct tevent_req *rpccli_srvsvc_NETRSERVERTRANSPORTDELEX_send(TALLOC_CTX *mem_ctx,
+							       struct tevent_context *ev,
+							       struct rpc_pipe_client *cli);
+NTSTATUS rpccli_srvsvc_NETRSERVERTRANSPORTDELEX_recv(struct tevent_req *req,
+						     TALLOC_CTX *mem_ctx,
+						     WERROR *result);
 NTSTATUS rpccli_srvsvc_NETRSERVERTRANSPORTDELEX(struct rpc_pipe_client *cli,
 						TALLOC_CTX *mem_ctx,
 						WERROR *werror);

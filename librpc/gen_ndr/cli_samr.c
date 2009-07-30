@@ -6,6 +6,129 @@
 #include "includes.h"
 #include "../librpc/gen_ndr/cli_samr.h"
 
+struct rpccli_samr_Connect_state {
+	struct samr_Connect orig;
+	struct samr_Connect tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_Connect_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_Connect_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct rpc_pipe_client *cli,
+					    uint16_t *_system_name /* [in] [unique] */,
+					    uint32_t _access_mask /* [in]  */,
+					    struct policy_handle *_connect_handle /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_Connect_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_Connect_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.system_name = _system_name;
+	state->orig.in.access_mask = _access_mask;
+
+	/* Out parameters */
+	state->orig.out.connect_handle = _connect_handle;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_Connect, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_Connect_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_CONNECT,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_Connect_done, req);
+	return req;
+}
+
+static void rpccli_samr_Connect_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_Connect_state *state = tevent_req_data(
+		req, struct rpccli_samr_Connect_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.connect_handle = *state->tmp.out.connect_handle;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_Connect, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_Connect_recv(struct tevent_req *req,
+				  TALLOC_CTX *mem_ctx,
+				  NTSTATUS *result)
+{
+	struct rpccli_samr_Connect_state *state = tevent_req_data(
+		req, struct rpccli_samr_Connect_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_Connect(struct rpc_pipe_client *cli,
 			     TALLOC_CTX *mem_ctx,
 			     uint16_t *system_name /* [in] [unique] */,
@@ -48,6 +171,126 @@ NTSTATUS rpccli_samr_Connect(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_Close_state {
+	struct samr_Close orig;
+	struct samr_Close tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_Close_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_Close_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct rpc_pipe_client *cli,
+					  struct policy_handle *_handle /* [in,out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_Close_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_Close_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.handle = _handle;
+
+	/* Out parameters */
+	state->orig.out.handle = _handle;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_Close, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_Close_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_CLOSE,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_Close_done, req);
+	return req;
+}
+
+static void rpccli_samr_Close_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_Close_state *state = tevent_req_data(
+		req, struct rpccli_samr_Close_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.handle = *state->tmp.out.handle;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_Close, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_Close_recv(struct tevent_req *req,
+				TALLOC_CTX *mem_ctx,
+				NTSTATUS *result)
+{
+	struct rpccli_samr_Close_state *state = tevent_req_data(
+		req, struct rpccli_samr_Close_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_Close(struct rpc_pipe_client *cli,
 			   TALLOC_CTX *mem_ctx,
 			   struct policy_handle *handle /* [in,out] [ref] */)
@@ -85,6 +328,122 @@ NTSTATUS rpccli_samr_Close(struct rpc_pipe_client *cli,
 
 	/* Return result */
 	return r.out.result;
+}
+
+struct rpccli_samr_SetSecurity_state {
+	struct samr_SetSecurity orig;
+	struct samr_SetSecurity tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_SetSecurity_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_SetSecurity_send(TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						struct rpc_pipe_client *cli,
+						struct policy_handle *_handle /* [in] [ref] */,
+						uint32_t _sec_info /* [in]  */,
+						struct sec_desc_buf *_sdbuf /* [in] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_SetSecurity_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_SetSecurity_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.handle = _handle;
+	state->orig.in.sec_info = _sec_info;
+	state->orig.in.sdbuf = _sdbuf;
+
+	/* Out parameters */
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_SetSecurity, &state->orig);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_SETSECURITY,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_SetSecurity_done, req);
+	return req;
+}
+
+static void rpccli_samr_SetSecurity_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_SetSecurity_state *state = tevent_req_data(
+		req, struct rpccli_samr_SetSecurity_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_SetSecurity, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_SetSecurity_recv(struct tevent_req *req,
+				      TALLOC_CTX *mem_ctx,
+				      NTSTATUS *result)
+{
+	struct rpccli_samr_SetSecurity_state *state = tevent_req_data(
+		req, struct rpccli_samr_SetSecurity_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_samr_SetSecurity(struct rpc_pipe_client *cli,
@@ -129,6 +488,129 @@ NTSTATUS rpccli_samr_SetSecurity(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_QuerySecurity_state {
+	struct samr_QuerySecurity orig;
+	struct samr_QuerySecurity tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_QuerySecurity_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_QuerySecurity_send(TALLOC_CTX *mem_ctx,
+						  struct tevent_context *ev,
+						  struct rpc_pipe_client *cli,
+						  struct policy_handle *_handle /* [in] [ref] */,
+						  uint32_t _sec_info /* [in]  */,
+						  struct sec_desc_buf **_sdbuf /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_QuerySecurity_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_QuerySecurity_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.handle = _handle;
+	state->orig.in.sec_info = _sec_info;
+
+	/* Out parameters */
+	state->orig.out.sdbuf = _sdbuf;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_QuerySecurity, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_QuerySecurity_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_QUERYSECURITY,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_QuerySecurity_done, req);
+	return req;
+}
+
+static void rpccli_samr_QuerySecurity_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_QuerySecurity_state *state = tevent_req_data(
+		req, struct rpccli_samr_QuerySecurity_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.sdbuf = *state->tmp.out.sdbuf;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_QuerySecurity, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_QuerySecurity_recv(struct tevent_req *req,
+					TALLOC_CTX *mem_ctx,
+					NTSTATUS *result)
+{
+	struct rpccli_samr_QuerySecurity_state *state = tevent_req_data(
+		req, struct rpccli_samr_QuerySecurity_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_QuerySecurity(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
 				   struct policy_handle *handle /* [in] [ref] */,
@@ -171,6 +653,118 @@ NTSTATUS rpccli_samr_QuerySecurity(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_Shutdown_state {
+	struct samr_Shutdown orig;
+	struct samr_Shutdown tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_Shutdown_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_Shutdown_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct rpc_pipe_client *cli,
+					     struct policy_handle *_connect_handle /* [in] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_Shutdown_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_Shutdown_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.connect_handle = _connect_handle;
+
+	/* Out parameters */
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_Shutdown, &state->orig);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_SHUTDOWN,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_Shutdown_done, req);
+	return req;
+}
+
+static void rpccli_samr_Shutdown_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_Shutdown_state *state = tevent_req_data(
+		req, struct rpccli_samr_Shutdown_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_Shutdown, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_Shutdown_recv(struct tevent_req *req,
+				   TALLOC_CTX *mem_ctx,
+				   NTSTATUS *result)
+{
+	struct rpccli_samr_Shutdown_state *state = tevent_req_data(
+		req, struct rpccli_samr_Shutdown_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_Shutdown(struct rpc_pipe_client *cli,
 			      TALLOC_CTX *mem_ctx,
 			      struct policy_handle *connect_handle /* [in] [ref] */)
@@ -207,6 +801,129 @@ NTSTATUS rpccli_samr_Shutdown(struct rpc_pipe_client *cli,
 
 	/* Return result */
 	return r.out.result;
+}
+
+struct rpccli_samr_LookupDomain_state {
+	struct samr_LookupDomain orig;
+	struct samr_LookupDomain tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_LookupDomain_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_LookupDomain_send(TALLOC_CTX *mem_ctx,
+						 struct tevent_context *ev,
+						 struct rpc_pipe_client *cli,
+						 struct policy_handle *_connect_handle /* [in] [ref] */,
+						 struct lsa_String *_domain_name /* [in] [ref] */,
+						 struct dom_sid2 **_sid /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_LookupDomain_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_LookupDomain_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.connect_handle = _connect_handle;
+	state->orig.in.domain_name = _domain_name;
+
+	/* Out parameters */
+	state->orig.out.sid = _sid;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_LookupDomain, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_LookupDomain_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_LOOKUPDOMAIN,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_LookupDomain_done, req);
+	return req;
+}
+
+static void rpccli_samr_LookupDomain_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_LookupDomain_state *state = tevent_req_data(
+		req, struct rpccli_samr_LookupDomain_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.sid = *state->tmp.out.sid;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_LookupDomain, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_LookupDomain_recv(struct tevent_req *req,
+				       TALLOC_CTX *mem_ctx,
+				       NTSTATUS *result)
+{
+	struct rpccli_samr_LookupDomain_state *state = tevent_req_data(
+		req, struct rpccli_samr_LookupDomain_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_samr_LookupDomain(struct rpc_pipe_client *cli,
@@ -249,6 +966,136 @@ NTSTATUS rpccli_samr_LookupDomain(struct rpc_pipe_client *cli,
 
 	/* Return result */
 	return r.out.result;
+}
+
+struct rpccli_samr_EnumDomains_state {
+	struct samr_EnumDomains orig;
+	struct samr_EnumDomains tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_EnumDomains_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_EnumDomains_send(TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						struct rpc_pipe_client *cli,
+						struct policy_handle *_connect_handle /* [in] [ref] */,
+						uint32_t *_resume_handle /* [in,out] [ref] */,
+						struct samr_SamArray **_sam /* [out] [ref] */,
+						uint32_t _buf_size /* [in]  */,
+						uint32_t *_num_entries /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_EnumDomains_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_EnumDomains_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.connect_handle = _connect_handle;
+	state->orig.in.resume_handle = _resume_handle;
+	state->orig.in.buf_size = _buf_size;
+
+	/* Out parameters */
+	state->orig.out.resume_handle = _resume_handle;
+	state->orig.out.sam = _sam;
+	state->orig.out.num_entries = _num_entries;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_EnumDomains, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_EnumDomains_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_ENUMDOMAINS,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_EnumDomains_done, req);
+	return req;
+}
+
+static void rpccli_samr_EnumDomains_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_EnumDomains_state *state = tevent_req_data(
+		req, struct rpccli_samr_EnumDomains_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.resume_handle = *state->tmp.out.resume_handle;
+	*state->orig.out.sam = *state->tmp.out.sam;
+	*state->orig.out.num_entries = *state->tmp.out.num_entries;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_EnumDomains, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_EnumDomains_recv(struct tevent_req *req,
+				      TALLOC_CTX *mem_ctx,
+				      NTSTATUS *result)
+{
+	struct rpccli_samr_EnumDomains_state *state = tevent_req_data(
+		req, struct rpccli_samr_EnumDomains_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_samr_EnumDomains(struct rpc_pipe_client *cli,
@@ -298,6 +1145,131 @@ NTSTATUS rpccli_samr_EnumDomains(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_OpenDomain_state {
+	struct samr_OpenDomain orig;
+	struct samr_OpenDomain tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_OpenDomain_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_OpenDomain_send(TALLOC_CTX *mem_ctx,
+					       struct tevent_context *ev,
+					       struct rpc_pipe_client *cli,
+					       struct policy_handle *_connect_handle /* [in] [ref] */,
+					       uint32_t _access_mask /* [in]  */,
+					       struct dom_sid2 *_sid /* [in] [ref] */,
+					       struct policy_handle *_domain_handle /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_OpenDomain_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_OpenDomain_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.connect_handle = _connect_handle;
+	state->orig.in.access_mask = _access_mask;
+	state->orig.in.sid = _sid;
+
+	/* Out parameters */
+	state->orig.out.domain_handle = _domain_handle;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_OpenDomain, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_OpenDomain_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_OPENDOMAIN,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_OpenDomain_done, req);
+	return req;
+}
+
+static void rpccli_samr_OpenDomain_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_OpenDomain_state *state = tevent_req_data(
+		req, struct rpccli_samr_OpenDomain_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.domain_handle = *state->tmp.out.domain_handle;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_OpenDomain, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_OpenDomain_recv(struct tevent_req *req,
+				     TALLOC_CTX *mem_ctx,
+				     NTSTATUS *result)
+{
+	struct rpccli_samr_OpenDomain_state *state = tevent_req_data(
+		req, struct rpccli_samr_OpenDomain_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_OpenDomain(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
 				struct policy_handle *connect_handle /* [in] [ref] */,
@@ -342,6 +1314,129 @@ NTSTATUS rpccli_samr_OpenDomain(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_QueryDomainInfo_state {
+	struct samr_QueryDomainInfo orig;
+	struct samr_QueryDomainInfo tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_QueryDomainInfo_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_QueryDomainInfo_send(TALLOC_CTX *mem_ctx,
+						    struct tevent_context *ev,
+						    struct rpc_pipe_client *cli,
+						    struct policy_handle *_domain_handle /* [in] [ref] */,
+						    enum samr_DomainInfoClass _level /* [in]  */,
+						    union samr_DomainInfo **_info /* [out] [ref,switch_is(level)] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_QueryDomainInfo_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_QueryDomainInfo_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.domain_handle = _domain_handle;
+	state->orig.in.level = _level;
+
+	/* Out parameters */
+	state->orig.out.info = _info;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_QueryDomainInfo, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_QueryDomainInfo_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_QUERYDOMAININFO,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_QueryDomainInfo_done, req);
+	return req;
+}
+
+static void rpccli_samr_QueryDomainInfo_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_QueryDomainInfo_state *state = tevent_req_data(
+		req, struct rpccli_samr_QueryDomainInfo_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.info = *state->tmp.out.info;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_QueryDomainInfo, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_QueryDomainInfo_recv(struct tevent_req *req,
+					  TALLOC_CTX *mem_ctx,
+					  NTSTATUS *result)
+{
+	struct rpccli_samr_QueryDomainInfo_state *state = tevent_req_data(
+		req, struct rpccli_samr_QueryDomainInfo_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_QueryDomainInfo(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     struct policy_handle *domain_handle /* [in] [ref] */,
@@ -384,6 +1479,122 @@ NTSTATUS rpccli_samr_QueryDomainInfo(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_SetDomainInfo_state {
+	struct samr_SetDomainInfo orig;
+	struct samr_SetDomainInfo tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_SetDomainInfo_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_SetDomainInfo_send(TALLOC_CTX *mem_ctx,
+						  struct tevent_context *ev,
+						  struct rpc_pipe_client *cli,
+						  struct policy_handle *_domain_handle /* [in] [ref] */,
+						  enum samr_DomainInfoClass _level /* [in]  */,
+						  union samr_DomainInfo *_info /* [in] [ref,switch_is(level)] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_SetDomainInfo_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_SetDomainInfo_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.domain_handle = _domain_handle;
+	state->orig.in.level = _level;
+	state->orig.in.info = _info;
+
+	/* Out parameters */
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_SetDomainInfo, &state->orig);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_SETDOMAININFO,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_SetDomainInfo_done, req);
+	return req;
+}
+
+static void rpccli_samr_SetDomainInfo_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_SetDomainInfo_state *state = tevent_req_data(
+		req, struct rpccli_samr_SetDomainInfo_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_SetDomainInfo, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_SetDomainInfo_recv(struct tevent_req *req,
+					TALLOC_CTX *mem_ctx,
+					NTSTATUS *result)
+{
+	struct rpccli_samr_SetDomainInfo_state *state = tevent_req_data(
+		req, struct rpccli_samr_SetDomainInfo_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_SetDomainInfo(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
 				   struct policy_handle *domain_handle /* [in] [ref] */,
@@ -424,6 +1635,134 @@ NTSTATUS rpccli_samr_SetDomainInfo(struct rpc_pipe_client *cli,
 
 	/* Return result */
 	return r.out.result;
+}
+
+struct rpccli_samr_CreateDomainGroup_state {
+	struct samr_CreateDomainGroup orig;
+	struct samr_CreateDomainGroup tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_CreateDomainGroup_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_CreateDomainGroup_send(TALLOC_CTX *mem_ctx,
+						      struct tevent_context *ev,
+						      struct rpc_pipe_client *cli,
+						      struct policy_handle *_domain_handle /* [in] [ref] */,
+						      struct lsa_String *_name /* [in] [ref] */,
+						      uint32_t _access_mask /* [in]  */,
+						      struct policy_handle *_group_handle /* [out] [ref] */,
+						      uint32_t *_rid /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_CreateDomainGroup_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_CreateDomainGroup_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.domain_handle = _domain_handle;
+	state->orig.in.name = _name;
+	state->orig.in.access_mask = _access_mask;
+
+	/* Out parameters */
+	state->orig.out.group_handle = _group_handle;
+	state->orig.out.rid = _rid;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_CreateDomainGroup, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_CreateDomainGroup_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_CREATEDOMAINGROUP,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_CreateDomainGroup_done, req);
+	return req;
+}
+
+static void rpccli_samr_CreateDomainGroup_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_CreateDomainGroup_state *state = tevent_req_data(
+		req, struct rpccli_samr_CreateDomainGroup_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.group_handle = *state->tmp.out.group_handle;
+	*state->orig.out.rid = *state->tmp.out.rid;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_CreateDomainGroup, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_CreateDomainGroup_recv(struct tevent_req *req,
+					    TALLOC_CTX *mem_ctx,
+					    NTSTATUS *result)
+{
+	struct rpccli_samr_CreateDomainGroup_state *state = tevent_req_data(
+		req, struct rpccli_samr_CreateDomainGroup_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_samr_CreateDomainGroup(struct rpc_pipe_client *cli,
@@ -470,6 +1809,136 @@ NTSTATUS rpccli_samr_CreateDomainGroup(struct rpc_pipe_client *cli,
 
 	/* Return result */
 	return r.out.result;
+}
+
+struct rpccli_samr_EnumDomainGroups_state {
+	struct samr_EnumDomainGroups orig;
+	struct samr_EnumDomainGroups tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_EnumDomainGroups_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_EnumDomainGroups_send(TALLOC_CTX *mem_ctx,
+						     struct tevent_context *ev,
+						     struct rpc_pipe_client *cli,
+						     struct policy_handle *_domain_handle /* [in] [ref] */,
+						     uint32_t *_resume_handle /* [in,out] [ref] */,
+						     struct samr_SamArray **_sam /* [out] [ref] */,
+						     uint32_t _max_size /* [in]  */,
+						     uint32_t *_num_entries /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_EnumDomainGroups_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_EnumDomainGroups_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.domain_handle = _domain_handle;
+	state->orig.in.resume_handle = _resume_handle;
+	state->orig.in.max_size = _max_size;
+
+	/* Out parameters */
+	state->orig.out.resume_handle = _resume_handle;
+	state->orig.out.sam = _sam;
+	state->orig.out.num_entries = _num_entries;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_EnumDomainGroups, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_EnumDomainGroups_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_ENUMDOMAINGROUPS,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_EnumDomainGroups_done, req);
+	return req;
+}
+
+static void rpccli_samr_EnumDomainGroups_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_EnumDomainGroups_state *state = tevent_req_data(
+		req, struct rpccli_samr_EnumDomainGroups_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.resume_handle = *state->tmp.out.resume_handle;
+	*state->orig.out.sam = *state->tmp.out.sam;
+	*state->orig.out.num_entries = *state->tmp.out.num_entries;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_EnumDomainGroups, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_EnumDomainGroups_recv(struct tevent_req *req,
+					   TALLOC_CTX *mem_ctx,
+					   NTSTATUS *result)
+{
+	struct rpccli_samr_EnumDomainGroups_state *state = tevent_req_data(
+		req, struct rpccli_samr_EnumDomainGroups_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_samr_EnumDomainGroups(struct rpc_pipe_client *cli,
@@ -519,6 +1988,134 @@ NTSTATUS rpccli_samr_EnumDomainGroups(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_CreateUser_state {
+	struct samr_CreateUser orig;
+	struct samr_CreateUser tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_CreateUser_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_CreateUser_send(TALLOC_CTX *mem_ctx,
+					       struct tevent_context *ev,
+					       struct rpc_pipe_client *cli,
+					       struct policy_handle *_domain_handle /* [in] [ref] */,
+					       struct lsa_String *_account_name /* [in] [ref] */,
+					       uint32_t _access_mask /* [in]  */,
+					       struct policy_handle *_user_handle /* [out] [ref] */,
+					       uint32_t *_rid /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_CreateUser_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_CreateUser_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.domain_handle = _domain_handle;
+	state->orig.in.account_name = _account_name;
+	state->orig.in.access_mask = _access_mask;
+
+	/* Out parameters */
+	state->orig.out.user_handle = _user_handle;
+	state->orig.out.rid = _rid;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_CreateUser, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_CreateUser_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_CREATEUSER,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_CreateUser_done, req);
+	return req;
+}
+
+static void rpccli_samr_CreateUser_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_CreateUser_state *state = tevent_req_data(
+		req, struct rpccli_samr_CreateUser_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.user_handle = *state->tmp.out.user_handle;
+	*state->orig.out.rid = *state->tmp.out.rid;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_CreateUser, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_CreateUser_recv(struct tevent_req *req,
+				     TALLOC_CTX *mem_ctx,
+				     NTSTATUS *result)
+{
+	struct rpccli_samr_CreateUser_state *state = tevent_req_data(
+		req, struct rpccli_samr_CreateUser_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_CreateUser(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
 				struct policy_handle *domain_handle /* [in] [ref] */,
@@ -563,6 +2160,138 @@ NTSTATUS rpccli_samr_CreateUser(struct rpc_pipe_client *cli,
 
 	/* Return result */
 	return r.out.result;
+}
+
+struct rpccli_samr_EnumDomainUsers_state {
+	struct samr_EnumDomainUsers orig;
+	struct samr_EnumDomainUsers tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_EnumDomainUsers_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_EnumDomainUsers_send(TALLOC_CTX *mem_ctx,
+						    struct tevent_context *ev,
+						    struct rpc_pipe_client *cli,
+						    struct policy_handle *_domain_handle /* [in] [ref] */,
+						    uint32_t *_resume_handle /* [in,out] [ref] */,
+						    uint32_t _acct_flags /* [in]  */,
+						    struct samr_SamArray **_sam /* [out] [ref] */,
+						    uint32_t _max_size /* [in]  */,
+						    uint32_t *_num_entries /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_EnumDomainUsers_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_EnumDomainUsers_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.domain_handle = _domain_handle;
+	state->orig.in.resume_handle = _resume_handle;
+	state->orig.in.acct_flags = _acct_flags;
+	state->orig.in.max_size = _max_size;
+
+	/* Out parameters */
+	state->orig.out.resume_handle = _resume_handle;
+	state->orig.out.sam = _sam;
+	state->orig.out.num_entries = _num_entries;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_EnumDomainUsers, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_EnumDomainUsers_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_ENUMDOMAINUSERS,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_EnumDomainUsers_done, req);
+	return req;
+}
+
+static void rpccli_samr_EnumDomainUsers_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_EnumDomainUsers_state *state = tevent_req_data(
+		req, struct rpccli_samr_EnumDomainUsers_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.resume_handle = *state->tmp.out.resume_handle;
+	*state->orig.out.sam = *state->tmp.out.sam;
+	*state->orig.out.num_entries = *state->tmp.out.num_entries;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_EnumDomainUsers, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_EnumDomainUsers_recv(struct tevent_req *req,
+					  TALLOC_CTX *mem_ctx,
+					  NTSTATUS *result)
+{
+	struct rpccli_samr_EnumDomainUsers_state *state = tevent_req_data(
+		req, struct rpccli_samr_EnumDomainUsers_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_samr_EnumDomainUsers(struct rpc_pipe_client *cli,
@@ -614,6 +2343,134 @@ NTSTATUS rpccli_samr_EnumDomainUsers(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_CreateDomAlias_state {
+	struct samr_CreateDomAlias orig;
+	struct samr_CreateDomAlias tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_CreateDomAlias_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_CreateDomAlias_send(TALLOC_CTX *mem_ctx,
+						   struct tevent_context *ev,
+						   struct rpc_pipe_client *cli,
+						   struct policy_handle *_domain_handle /* [in] [ref] */,
+						   struct lsa_String *_alias_name /* [in] [ref] */,
+						   uint32_t _access_mask /* [in]  */,
+						   struct policy_handle *_alias_handle /* [out] [ref] */,
+						   uint32_t *_rid /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_CreateDomAlias_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_CreateDomAlias_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.domain_handle = _domain_handle;
+	state->orig.in.alias_name = _alias_name;
+	state->orig.in.access_mask = _access_mask;
+
+	/* Out parameters */
+	state->orig.out.alias_handle = _alias_handle;
+	state->orig.out.rid = _rid;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_CreateDomAlias, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_CreateDomAlias_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_CREATEDOMALIAS,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_CreateDomAlias_done, req);
+	return req;
+}
+
+static void rpccli_samr_CreateDomAlias_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_CreateDomAlias_state *state = tevent_req_data(
+		req, struct rpccli_samr_CreateDomAlias_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.alias_handle = *state->tmp.out.alias_handle;
+	*state->orig.out.rid = *state->tmp.out.rid;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_CreateDomAlias, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_CreateDomAlias_recv(struct tevent_req *req,
+					 TALLOC_CTX *mem_ctx,
+					 NTSTATUS *result)
+{
+	struct rpccli_samr_CreateDomAlias_state *state = tevent_req_data(
+		req, struct rpccli_samr_CreateDomAlias_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_CreateDomAlias(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
 				    struct policy_handle *domain_handle /* [in] [ref] */,
@@ -658,6 +2515,136 @@ NTSTATUS rpccli_samr_CreateDomAlias(struct rpc_pipe_client *cli,
 
 	/* Return result */
 	return r.out.result;
+}
+
+struct rpccli_samr_EnumDomainAliases_state {
+	struct samr_EnumDomainAliases orig;
+	struct samr_EnumDomainAliases tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_EnumDomainAliases_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_EnumDomainAliases_send(TALLOC_CTX *mem_ctx,
+						      struct tevent_context *ev,
+						      struct rpc_pipe_client *cli,
+						      struct policy_handle *_domain_handle /* [in] [ref] */,
+						      uint32_t *_resume_handle /* [in,out] [ref] */,
+						      struct samr_SamArray **_sam /* [out] [ref] */,
+						      uint32_t _max_size /* [in]  */,
+						      uint32_t *_num_entries /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_EnumDomainAliases_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_EnumDomainAliases_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.domain_handle = _domain_handle;
+	state->orig.in.resume_handle = _resume_handle;
+	state->orig.in.max_size = _max_size;
+
+	/* Out parameters */
+	state->orig.out.resume_handle = _resume_handle;
+	state->orig.out.sam = _sam;
+	state->orig.out.num_entries = _num_entries;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_EnumDomainAliases, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_EnumDomainAliases_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_ENUMDOMAINALIASES,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_EnumDomainAliases_done, req);
+	return req;
+}
+
+static void rpccli_samr_EnumDomainAliases_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_EnumDomainAliases_state *state = tevent_req_data(
+		req, struct rpccli_samr_EnumDomainAliases_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.resume_handle = *state->tmp.out.resume_handle;
+	*state->orig.out.sam = *state->tmp.out.sam;
+	*state->orig.out.num_entries = *state->tmp.out.num_entries;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_EnumDomainAliases, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_EnumDomainAliases_recv(struct tevent_req *req,
+					    TALLOC_CTX *mem_ctx,
+					    NTSTATUS *result)
+{
+	struct rpccli_samr_EnumDomainAliases_state *state = tevent_req_data(
+		req, struct rpccli_samr_EnumDomainAliases_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_samr_EnumDomainAliases(struct rpc_pipe_client *cli,
@@ -707,6 +2694,129 @@ NTSTATUS rpccli_samr_EnumDomainAliases(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_GetAliasMembership_state {
+	struct samr_GetAliasMembership orig;
+	struct samr_GetAliasMembership tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_GetAliasMembership_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_GetAliasMembership_send(TALLOC_CTX *mem_ctx,
+						       struct tevent_context *ev,
+						       struct rpc_pipe_client *cli,
+						       struct policy_handle *_domain_handle /* [in] [ref] */,
+						       struct lsa_SidArray *_sids /* [in] [ref] */,
+						       struct samr_Ids *_rids /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_GetAliasMembership_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_GetAliasMembership_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.domain_handle = _domain_handle;
+	state->orig.in.sids = _sids;
+
+	/* Out parameters */
+	state->orig.out.rids = _rids;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_GetAliasMembership, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_GetAliasMembership_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_GETALIASMEMBERSHIP,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_GetAliasMembership_done, req);
+	return req;
+}
+
+static void rpccli_samr_GetAliasMembership_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_GetAliasMembership_state *state = tevent_req_data(
+		req, struct rpccli_samr_GetAliasMembership_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.rids = *state->tmp.out.rids;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_GetAliasMembership, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_GetAliasMembership_recv(struct tevent_req *req,
+					     TALLOC_CTX *mem_ctx,
+					     NTSTATUS *result)
+{
+	struct rpccli_samr_GetAliasMembership_state *state = tevent_req_data(
+		req, struct rpccli_samr_GetAliasMembership_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_GetAliasMembership(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
 					struct policy_handle *domain_handle /* [in] [ref] */,
@@ -747,6 +2857,134 @@ NTSTATUS rpccli_samr_GetAliasMembership(struct rpc_pipe_client *cli,
 
 	/* Return result */
 	return r.out.result;
+}
+
+struct rpccli_samr_LookupNames_state {
+	struct samr_LookupNames orig;
+	struct samr_LookupNames tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_LookupNames_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_LookupNames_send(TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						struct rpc_pipe_client *cli,
+						struct policy_handle *_domain_handle /* [in] [ref] */,
+						uint32_t _num_names /* [in] [range(0,1000)] */,
+						struct lsa_String *_names /* [in] [length_is(num_names),size_is(1000)] */,
+						struct samr_Ids *_rids /* [out] [ref] */,
+						struct samr_Ids *_types /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_LookupNames_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_LookupNames_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.domain_handle = _domain_handle;
+	state->orig.in.num_names = _num_names;
+	state->orig.in.names = _names;
+
+	/* Out parameters */
+	state->orig.out.rids = _rids;
+	state->orig.out.types = _types;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_LookupNames, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_LookupNames_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_LOOKUPNAMES,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_LookupNames_done, req);
+	return req;
+}
+
+static void rpccli_samr_LookupNames_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_LookupNames_state *state = tevent_req_data(
+		req, struct rpccli_samr_LookupNames_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.rids = *state->tmp.out.rids;
+	*state->orig.out.types = *state->tmp.out.types;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_LookupNames, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_LookupNames_recv(struct tevent_req *req,
+				      TALLOC_CTX *mem_ctx,
+				      NTSTATUS *result)
+{
+	struct rpccli_samr_LookupNames_state *state = tevent_req_data(
+		req, struct rpccli_samr_LookupNames_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_samr_LookupNames(struct rpc_pipe_client *cli,
@@ -795,6 +3033,134 @@ NTSTATUS rpccli_samr_LookupNames(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_LookupRids_state {
+	struct samr_LookupRids orig;
+	struct samr_LookupRids tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_LookupRids_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_LookupRids_send(TALLOC_CTX *mem_ctx,
+					       struct tevent_context *ev,
+					       struct rpc_pipe_client *cli,
+					       struct policy_handle *_domain_handle /* [in] [ref] */,
+					       uint32_t _num_rids /* [in] [range(0,1000)] */,
+					       uint32_t *_rids /* [in] [length_is(num_rids),size_is(1000)] */,
+					       struct lsa_Strings *_names /* [out] [ref] */,
+					       struct samr_Ids *_types /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_LookupRids_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_LookupRids_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.domain_handle = _domain_handle;
+	state->orig.in.num_rids = _num_rids;
+	state->orig.in.rids = _rids;
+
+	/* Out parameters */
+	state->orig.out.names = _names;
+	state->orig.out.types = _types;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_LookupRids, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_LookupRids_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_LOOKUPRIDS,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_LookupRids_done, req);
+	return req;
+}
+
+static void rpccli_samr_LookupRids_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_LookupRids_state *state = tevent_req_data(
+		req, struct rpccli_samr_LookupRids_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.names = *state->tmp.out.names;
+	*state->orig.out.types = *state->tmp.out.types;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_LookupRids, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_LookupRids_recv(struct tevent_req *req,
+				     TALLOC_CTX *mem_ctx,
+				     NTSTATUS *result)
+{
+	struct rpccli_samr_LookupRids_state *state = tevent_req_data(
+		req, struct rpccli_samr_LookupRids_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_LookupRids(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
 				struct policy_handle *domain_handle /* [in] [ref] */,
@@ -841,6 +3207,131 @@ NTSTATUS rpccli_samr_LookupRids(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_OpenGroup_state {
+	struct samr_OpenGroup orig;
+	struct samr_OpenGroup tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_OpenGroup_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_OpenGroup_send(TALLOC_CTX *mem_ctx,
+					      struct tevent_context *ev,
+					      struct rpc_pipe_client *cli,
+					      struct policy_handle *_domain_handle /* [in] [ref] */,
+					      uint32_t _access_mask /* [in]  */,
+					      uint32_t _rid /* [in]  */,
+					      struct policy_handle *_group_handle /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_OpenGroup_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_OpenGroup_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.domain_handle = _domain_handle;
+	state->orig.in.access_mask = _access_mask;
+	state->orig.in.rid = _rid;
+
+	/* Out parameters */
+	state->orig.out.group_handle = _group_handle;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_OpenGroup, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_OpenGroup_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_OPENGROUP,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_OpenGroup_done, req);
+	return req;
+}
+
+static void rpccli_samr_OpenGroup_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_OpenGroup_state *state = tevent_req_data(
+		req, struct rpccli_samr_OpenGroup_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.group_handle = *state->tmp.out.group_handle;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_OpenGroup, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_OpenGroup_recv(struct tevent_req *req,
+				    TALLOC_CTX *mem_ctx,
+				    NTSTATUS *result)
+{
+	struct rpccli_samr_OpenGroup_state *state = tevent_req_data(
+		req, struct rpccli_samr_OpenGroup_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_OpenGroup(struct rpc_pipe_client *cli,
 			       TALLOC_CTX *mem_ctx,
 			       struct policy_handle *domain_handle /* [in] [ref] */,
@@ -885,6 +3376,129 @@ NTSTATUS rpccli_samr_OpenGroup(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_QueryGroupInfo_state {
+	struct samr_QueryGroupInfo orig;
+	struct samr_QueryGroupInfo tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_QueryGroupInfo_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_QueryGroupInfo_send(TALLOC_CTX *mem_ctx,
+						   struct tevent_context *ev,
+						   struct rpc_pipe_client *cli,
+						   struct policy_handle *_group_handle /* [in] [ref] */,
+						   enum samr_GroupInfoEnum _level /* [in]  */,
+						   union samr_GroupInfo **_info /* [out] [ref,switch_is(level)] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_QueryGroupInfo_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_QueryGroupInfo_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.group_handle = _group_handle;
+	state->orig.in.level = _level;
+
+	/* Out parameters */
+	state->orig.out.info = _info;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_QueryGroupInfo, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_QueryGroupInfo_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_QUERYGROUPINFO,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_QueryGroupInfo_done, req);
+	return req;
+}
+
+static void rpccli_samr_QueryGroupInfo_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_QueryGroupInfo_state *state = tevent_req_data(
+		req, struct rpccli_samr_QueryGroupInfo_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.info = *state->tmp.out.info;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_QueryGroupInfo, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_QueryGroupInfo_recv(struct tevent_req *req,
+					 TALLOC_CTX *mem_ctx,
+					 NTSTATUS *result)
+{
+	struct rpccli_samr_QueryGroupInfo_state *state = tevent_req_data(
+		req, struct rpccli_samr_QueryGroupInfo_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_QueryGroupInfo(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
 				    struct policy_handle *group_handle /* [in] [ref] */,
@@ -925,6 +3539,122 @@ NTSTATUS rpccli_samr_QueryGroupInfo(struct rpc_pipe_client *cli,
 
 	/* Return result */
 	return r.out.result;
+}
+
+struct rpccli_samr_SetGroupInfo_state {
+	struct samr_SetGroupInfo orig;
+	struct samr_SetGroupInfo tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_SetGroupInfo_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_SetGroupInfo_send(TALLOC_CTX *mem_ctx,
+						 struct tevent_context *ev,
+						 struct rpc_pipe_client *cli,
+						 struct policy_handle *_group_handle /* [in] [ref] */,
+						 enum samr_GroupInfoEnum _level /* [in]  */,
+						 union samr_GroupInfo *_info /* [in] [ref,switch_is(level)] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_SetGroupInfo_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_SetGroupInfo_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.group_handle = _group_handle;
+	state->orig.in.level = _level;
+	state->orig.in.info = _info;
+
+	/* Out parameters */
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_SetGroupInfo, &state->orig);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_SETGROUPINFO,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_SetGroupInfo_done, req);
+	return req;
+}
+
+static void rpccli_samr_SetGroupInfo_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_SetGroupInfo_state *state = tevent_req_data(
+		req, struct rpccli_samr_SetGroupInfo_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_SetGroupInfo, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_SetGroupInfo_recv(struct tevent_req *req,
+				       TALLOC_CTX *mem_ctx,
+				       NTSTATUS *result)
+{
+	struct rpccli_samr_SetGroupInfo_state *state = tevent_req_data(
+		req, struct rpccli_samr_SetGroupInfo_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_samr_SetGroupInfo(struct rpc_pipe_client *cli,
@@ -969,6 +3699,122 @@ NTSTATUS rpccli_samr_SetGroupInfo(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_AddGroupMember_state {
+	struct samr_AddGroupMember orig;
+	struct samr_AddGroupMember tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_AddGroupMember_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_AddGroupMember_send(TALLOC_CTX *mem_ctx,
+						   struct tevent_context *ev,
+						   struct rpc_pipe_client *cli,
+						   struct policy_handle *_group_handle /* [in] [ref] */,
+						   uint32_t _rid /* [in]  */,
+						   uint32_t _flags /* [in]  */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_AddGroupMember_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_AddGroupMember_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.group_handle = _group_handle;
+	state->orig.in.rid = _rid;
+	state->orig.in.flags = _flags;
+
+	/* Out parameters */
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_AddGroupMember, &state->orig);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_ADDGROUPMEMBER,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_AddGroupMember_done, req);
+	return req;
+}
+
+static void rpccli_samr_AddGroupMember_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_AddGroupMember_state *state = tevent_req_data(
+		req, struct rpccli_samr_AddGroupMember_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_AddGroupMember, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_AddGroupMember_recv(struct tevent_req *req,
+					 TALLOC_CTX *mem_ctx,
+					 NTSTATUS *result)
+{
+	struct rpccli_samr_AddGroupMember_state *state = tevent_req_data(
+		req, struct rpccli_samr_AddGroupMember_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_AddGroupMember(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
 				    struct policy_handle *group_handle /* [in] [ref] */,
@@ -1011,6 +3857,126 @@ NTSTATUS rpccli_samr_AddGroupMember(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_DeleteDomainGroup_state {
+	struct samr_DeleteDomainGroup orig;
+	struct samr_DeleteDomainGroup tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_DeleteDomainGroup_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_DeleteDomainGroup_send(TALLOC_CTX *mem_ctx,
+						      struct tevent_context *ev,
+						      struct rpc_pipe_client *cli,
+						      struct policy_handle *_group_handle /* [in,out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_DeleteDomainGroup_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_DeleteDomainGroup_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.group_handle = _group_handle;
+
+	/* Out parameters */
+	state->orig.out.group_handle = _group_handle;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_DeleteDomainGroup, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_DeleteDomainGroup_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_DELETEDOMAINGROUP,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_DeleteDomainGroup_done, req);
+	return req;
+}
+
+static void rpccli_samr_DeleteDomainGroup_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_DeleteDomainGroup_state *state = tevent_req_data(
+		req, struct rpccli_samr_DeleteDomainGroup_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.group_handle = *state->tmp.out.group_handle;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_DeleteDomainGroup, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_DeleteDomainGroup_recv(struct tevent_req *req,
+					    TALLOC_CTX *mem_ctx,
+					    NTSTATUS *result)
+{
+	struct rpccli_samr_DeleteDomainGroup_state *state = tevent_req_data(
+		req, struct rpccli_samr_DeleteDomainGroup_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_DeleteDomainGroup(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
 				       struct policy_handle *group_handle /* [in,out] [ref] */)
@@ -1048,6 +4014,120 @@ NTSTATUS rpccli_samr_DeleteDomainGroup(struct rpc_pipe_client *cli,
 
 	/* Return result */
 	return r.out.result;
+}
+
+struct rpccli_samr_DeleteGroupMember_state {
+	struct samr_DeleteGroupMember orig;
+	struct samr_DeleteGroupMember tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_DeleteGroupMember_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_DeleteGroupMember_send(TALLOC_CTX *mem_ctx,
+						      struct tevent_context *ev,
+						      struct rpc_pipe_client *cli,
+						      struct policy_handle *_group_handle /* [in] [ref] */,
+						      uint32_t _rid /* [in]  */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_DeleteGroupMember_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_DeleteGroupMember_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.group_handle = _group_handle;
+	state->orig.in.rid = _rid;
+
+	/* Out parameters */
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_DeleteGroupMember, &state->orig);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_DELETEGROUPMEMBER,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_DeleteGroupMember_done, req);
+	return req;
+}
+
+static void rpccli_samr_DeleteGroupMember_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_DeleteGroupMember_state *state = tevent_req_data(
+		req, struct rpccli_samr_DeleteGroupMember_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_DeleteGroupMember, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_DeleteGroupMember_recv(struct tevent_req *req,
+					    TALLOC_CTX *mem_ctx,
+					    NTSTATUS *result)
+{
+	struct rpccli_samr_DeleteGroupMember_state *state = tevent_req_data(
+		req, struct rpccli_samr_DeleteGroupMember_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_samr_DeleteGroupMember(struct rpc_pipe_client *cli,
@@ -1090,6 +4170,127 @@ NTSTATUS rpccli_samr_DeleteGroupMember(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_QueryGroupMember_state {
+	struct samr_QueryGroupMember orig;
+	struct samr_QueryGroupMember tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_QueryGroupMember_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_QueryGroupMember_send(TALLOC_CTX *mem_ctx,
+						     struct tevent_context *ev,
+						     struct rpc_pipe_client *cli,
+						     struct policy_handle *_group_handle /* [in] [ref] */,
+						     struct samr_RidTypeArray **_rids /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_QueryGroupMember_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_QueryGroupMember_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.group_handle = _group_handle;
+
+	/* Out parameters */
+	state->orig.out.rids = _rids;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_QueryGroupMember, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_QueryGroupMember_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_QUERYGROUPMEMBER,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_QueryGroupMember_done, req);
+	return req;
+}
+
+static void rpccli_samr_QueryGroupMember_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_QueryGroupMember_state *state = tevent_req_data(
+		req, struct rpccli_samr_QueryGroupMember_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.rids = *state->tmp.out.rids;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_QueryGroupMember, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_QueryGroupMember_recv(struct tevent_req *req,
+					   TALLOC_CTX *mem_ctx,
+					   NTSTATUS *result)
+{
+	struct rpccli_samr_QueryGroupMember_state *state = tevent_req_data(
+		req, struct rpccli_samr_QueryGroupMember_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_QueryGroupMember(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
 				      struct policy_handle *group_handle /* [in] [ref] */,
@@ -1128,6 +4329,122 @@ NTSTATUS rpccli_samr_QueryGroupMember(struct rpc_pipe_client *cli,
 
 	/* Return result */
 	return r.out.result;
+}
+
+struct rpccli_samr_SetMemberAttributesOfGroup_state {
+	struct samr_SetMemberAttributesOfGroup orig;
+	struct samr_SetMemberAttributesOfGroup tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_SetMemberAttributesOfGroup_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_SetMemberAttributesOfGroup_send(TALLOC_CTX *mem_ctx,
+							       struct tevent_context *ev,
+							       struct rpc_pipe_client *cli,
+							       struct policy_handle *_group_handle /* [in] [ref] */,
+							       uint32_t _unknown1 /* [in]  */,
+							       uint32_t _unknown2 /* [in]  */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_SetMemberAttributesOfGroup_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_SetMemberAttributesOfGroup_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.group_handle = _group_handle;
+	state->orig.in.unknown1 = _unknown1;
+	state->orig.in.unknown2 = _unknown2;
+
+	/* Out parameters */
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_SetMemberAttributesOfGroup, &state->orig);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_SETMEMBERATTRIBUTESOFGROUP,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_SetMemberAttributesOfGroup_done, req);
+	return req;
+}
+
+static void rpccli_samr_SetMemberAttributesOfGroup_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_SetMemberAttributesOfGroup_state *state = tevent_req_data(
+		req, struct rpccli_samr_SetMemberAttributesOfGroup_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_SetMemberAttributesOfGroup, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_SetMemberAttributesOfGroup_recv(struct tevent_req *req,
+						     TALLOC_CTX *mem_ctx,
+						     NTSTATUS *result)
+{
+	struct rpccli_samr_SetMemberAttributesOfGroup_state *state = tevent_req_data(
+		req, struct rpccli_samr_SetMemberAttributesOfGroup_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_samr_SetMemberAttributesOfGroup(struct rpc_pipe_client *cli,
@@ -1170,6 +4487,131 @@ NTSTATUS rpccli_samr_SetMemberAttributesOfGroup(struct rpc_pipe_client *cli,
 
 	/* Return result */
 	return r.out.result;
+}
+
+struct rpccli_samr_OpenAlias_state {
+	struct samr_OpenAlias orig;
+	struct samr_OpenAlias tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_OpenAlias_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_OpenAlias_send(TALLOC_CTX *mem_ctx,
+					      struct tevent_context *ev,
+					      struct rpc_pipe_client *cli,
+					      struct policy_handle *_domain_handle /* [in] [ref] */,
+					      uint32_t _access_mask /* [in]  */,
+					      uint32_t _rid /* [in]  */,
+					      struct policy_handle *_alias_handle /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_OpenAlias_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_OpenAlias_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.domain_handle = _domain_handle;
+	state->orig.in.access_mask = _access_mask;
+	state->orig.in.rid = _rid;
+
+	/* Out parameters */
+	state->orig.out.alias_handle = _alias_handle;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_OpenAlias, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_OpenAlias_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_OPENALIAS,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_OpenAlias_done, req);
+	return req;
+}
+
+static void rpccli_samr_OpenAlias_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_OpenAlias_state *state = tevent_req_data(
+		req, struct rpccli_samr_OpenAlias_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.alias_handle = *state->tmp.out.alias_handle;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_OpenAlias, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_OpenAlias_recv(struct tevent_req *req,
+				    TALLOC_CTX *mem_ctx,
+				    NTSTATUS *result)
+{
+	struct rpccli_samr_OpenAlias_state *state = tevent_req_data(
+		req, struct rpccli_samr_OpenAlias_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_samr_OpenAlias(struct rpc_pipe_client *cli,
@@ -1216,6 +4658,129 @@ NTSTATUS rpccli_samr_OpenAlias(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_QueryAliasInfo_state {
+	struct samr_QueryAliasInfo orig;
+	struct samr_QueryAliasInfo tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_QueryAliasInfo_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_QueryAliasInfo_send(TALLOC_CTX *mem_ctx,
+						   struct tevent_context *ev,
+						   struct rpc_pipe_client *cli,
+						   struct policy_handle *_alias_handle /* [in] [ref] */,
+						   enum samr_AliasInfoEnum _level /* [in]  */,
+						   union samr_AliasInfo **_info /* [out] [ref,switch_is(level)] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_QueryAliasInfo_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_QueryAliasInfo_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.alias_handle = _alias_handle;
+	state->orig.in.level = _level;
+
+	/* Out parameters */
+	state->orig.out.info = _info;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_QueryAliasInfo, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_QueryAliasInfo_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_QUERYALIASINFO,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_QueryAliasInfo_done, req);
+	return req;
+}
+
+static void rpccli_samr_QueryAliasInfo_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_QueryAliasInfo_state *state = tevent_req_data(
+		req, struct rpccli_samr_QueryAliasInfo_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.info = *state->tmp.out.info;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_QueryAliasInfo, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_QueryAliasInfo_recv(struct tevent_req *req,
+					 TALLOC_CTX *mem_ctx,
+					 NTSTATUS *result)
+{
+	struct rpccli_samr_QueryAliasInfo_state *state = tevent_req_data(
+		req, struct rpccli_samr_QueryAliasInfo_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_QueryAliasInfo(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
 				    struct policy_handle *alias_handle /* [in] [ref] */,
@@ -1256,6 +4821,122 @@ NTSTATUS rpccli_samr_QueryAliasInfo(struct rpc_pipe_client *cli,
 
 	/* Return result */
 	return r.out.result;
+}
+
+struct rpccli_samr_SetAliasInfo_state {
+	struct samr_SetAliasInfo orig;
+	struct samr_SetAliasInfo tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_SetAliasInfo_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_SetAliasInfo_send(TALLOC_CTX *mem_ctx,
+						 struct tevent_context *ev,
+						 struct rpc_pipe_client *cli,
+						 struct policy_handle *_alias_handle /* [in] [ref] */,
+						 enum samr_AliasInfoEnum _level /* [in]  */,
+						 union samr_AliasInfo *_info /* [in] [ref,switch_is(level)] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_SetAliasInfo_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_SetAliasInfo_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.alias_handle = _alias_handle;
+	state->orig.in.level = _level;
+	state->orig.in.info = _info;
+
+	/* Out parameters */
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_SetAliasInfo, &state->orig);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_SETALIASINFO,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_SetAliasInfo_done, req);
+	return req;
+}
+
+static void rpccli_samr_SetAliasInfo_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_SetAliasInfo_state *state = tevent_req_data(
+		req, struct rpccli_samr_SetAliasInfo_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_SetAliasInfo, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_SetAliasInfo_recv(struct tevent_req *req,
+				       TALLOC_CTX *mem_ctx,
+				       NTSTATUS *result)
+{
+	struct rpccli_samr_SetAliasInfo_state *state = tevent_req_data(
+		req, struct rpccli_samr_SetAliasInfo_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_samr_SetAliasInfo(struct rpc_pipe_client *cli,
@@ -1300,6 +4981,126 @@ NTSTATUS rpccli_samr_SetAliasInfo(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_DeleteDomAlias_state {
+	struct samr_DeleteDomAlias orig;
+	struct samr_DeleteDomAlias tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_DeleteDomAlias_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_DeleteDomAlias_send(TALLOC_CTX *mem_ctx,
+						   struct tevent_context *ev,
+						   struct rpc_pipe_client *cli,
+						   struct policy_handle *_alias_handle /* [in,out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_DeleteDomAlias_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_DeleteDomAlias_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.alias_handle = _alias_handle;
+
+	/* Out parameters */
+	state->orig.out.alias_handle = _alias_handle;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_DeleteDomAlias, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_DeleteDomAlias_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_DELETEDOMALIAS,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_DeleteDomAlias_done, req);
+	return req;
+}
+
+static void rpccli_samr_DeleteDomAlias_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_DeleteDomAlias_state *state = tevent_req_data(
+		req, struct rpccli_samr_DeleteDomAlias_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.alias_handle = *state->tmp.out.alias_handle;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_DeleteDomAlias, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_DeleteDomAlias_recv(struct tevent_req *req,
+					 TALLOC_CTX *mem_ctx,
+					 NTSTATUS *result)
+{
+	struct rpccli_samr_DeleteDomAlias_state *state = tevent_req_data(
+		req, struct rpccli_samr_DeleteDomAlias_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_DeleteDomAlias(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
 				    struct policy_handle *alias_handle /* [in,out] [ref] */)
@@ -1337,6 +5138,120 @@ NTSTATUS rpccli_samr_DeleteDomAlias(struct rpc_pipe_client *cli,
 
 	/* Return result */
 	return r.out.result;
+}
+
+struct rpccli_samr_AddAliasMember_state {
+	struct samr_AddAliasMember orig;
+	struct samr_AddAliasMember tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_AddAliasMember_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_AddAliasMember_send(TALLOC_CTX *mem_ctx,
+						   struct tevent_context *ev,
+						   struct rpc_pipe_client *cli,
+						   struct policy_handle *_alias_handle /* [in] [ref] */,
+						   struct dom_sid2 *_sid /* [in] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_AddAliasMember_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_AddAliasMember_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.alias_handle = _alias_handle;
+	state->orig.in.sid = _sid;
+
+	/* Out parameters */
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_AddAliasMember, &state->orig);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_ADDALIASMEMBER,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_AddAliasMember_done, req);
+	return req;
+}
+
+static void rpccli_samr_AddAliasMember_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_AddAliasMember_state *state = tevent_req_data(
+		req, struct rpccli_samr_AddAliasMember_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_AddAliasMember, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_AddAliasMember_recv(struct tevent_req *req,
+					 TALLOC_CTX *mem_ctx,
+					 NTSTATUS *result)
+{
+	struct rpccli_samr_AddAliasMember_state *state = tevent_req_data(
+		req, struct rpccli_samr_AddAliasMember_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_samr_AddAliasMember(struct rpc_pipe_client *cli,
@@ -1379,6 +5294,120 @@ NTSTATUS rpccli_samr_AddAliasMember(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_DeleteAliasMember_state {
+	struct samr_DeleteAliasMember orig;
+	struct samr_DeleteAliasMember tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_DeleteAliasMember_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_DeleteAliasMember_send(TALLOC_CTX *mem_ctx,
+						      struct tevent_context *ev,
+						      struct rpc_pipe_client *cli,
+						      struct policy_handle *_alias_handle /* [in] [ref] */,
+						      struct dom_sid2 *_sid /* [in] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_DeleteAliasMember_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_DeleteAliasMember_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.alias_handle = _alias_handle;
+	state->orig.in.sid = _sid;
+
+	/* Out parameters */
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_DeleteAliasMember, &state->orig);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_DELETEALIASMEMBER,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_DeleteAliasMember_done, req);
+	return req;
+}
+
+static void rpccli_samr_DeleteAliasMember_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_DeleteAliasMember_state *state = tevent_req_data(
+		req, struct rpccli_samr_DeleteAliasMember_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_DeleteAliasMember, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_DeleteAliasMember_recv(struct tevent_req *req,
+					    TALLOC_CTX *mem_ctx,
+					    NTSTATUS *result)
+{
+	struct rpccli_samr_DeleteAliasMember_state *state = tevent_req_data(
+		req, struct rpccli_samr_DeleteAliasMember_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_DeleteAliasMember(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
 				       struct policy_handle *alias_handle /* [in] [ref] */,
@@ -1419,6 +5448,127 @@ NTSTATUS rpccli_samr_DeleteAliasMember(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_GetMembersInAlias_state {
+	struct samr_GetMembersInAlias orig;
+	struct samr_GetMembersInAlias tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_GetMembersInAlias_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_GetMembersInAlias_send(TALLOC_CTX *mem_ctx,
+						      struct tevent_context *ev,
+						      struct rpc_pipe_client *cli,
+						      struct policy_handle *_alias_handle /* [in] [ref] */,
+						      struct lsa_SidArray *_sids /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_GetMembersInAlias_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_GetMembersInAlias_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.alias_handle = _alias_handle;
+
+	/* Out parameters */
+	state->orig.out.sids = _sids;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_GetMembersInAlias, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_GetMembersInAlias_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_GETMEMBERSINALIAS,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_GetMembersInAlias_done, req);
+	return req;
+}
+
+static void rpccli_samr_GetMembersInAlias_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_GetMembersInAlias_state *state = tevent_req_data(
+		req, struct rpccli_samr_GetMembersInAlias_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.sids = *state->tmp.out.sids;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_GetMembersInAlias, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_GetMembersInAlias_recv(struct tevent_req *req,
+					    TALLOC_CTX *mem_ctx,
+					    NTSTATUS *result)
+{
+	struct rpccli_samr_GetMembersInAlias_state *state = tevent_req_data(
+		req, struct rpccli_samr_GetMembersInAlias_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_GetMembersInAlias(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
 				       struct policy_handle *alias_handle /* [in] [ref] */,
@@ -1457,6 +5607,131 @@ NTSTATUS rpccli_samr_GetMembersInAlias(struct rpc_pipe_client *cli,
 
 	/* Return result */
 	return r.out.result;
+}
+
+struct rpccli_samr_OpenUser_state {
+	struct samr_OpenUser orig;
+	struct samr_OpenUser tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_OpenUser_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_OpenUser_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct rpc_pipe_client *cli,
+					     struct policy_handle *_domain_handle /* [in] [ref] */,
+					     uint32_t _access_mask /* [in]  */,
+					     uint32_t _rid /* [in]  */,
+					     struct policy_handle *_user_handle /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_OpenUser_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_OpenUser_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.domain_handle = _domain_handle;
+	state->orig.in.access_mask = _access_mask;
+	state->orig.in.rid = _rid;
+
+	/* Out parameters */
+	state->orig.out.user_handle = _user_handle;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_OpenUser, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_OpenUser_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_OPENUSER,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_OpenUser_done, req);
+	return req;
+}
+
+static void rpccli_samr_OpenUser_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_OpenUser_state *state = tevent_req_data(
+		req, struct rpccli_samr_OpenUser_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.user_handle = *state->tmp.out.user_handle;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_OpenUser, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_OpenUser_recv(struct tevent_req *req,
+				   TALLOC_CTX *mem_ctx,
+				   NTSTATUS *result)
+{
+	struct rpccli_samr_OpenUser_state *state = tevent_req_data(
+		req, struct rpccli_samr_OpenUser_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_samr_OpenUser(struct rpc_pipe_client *cli,
@@ -1503,6 +5778,126 @@ NTSTATUS rpccli_samr_OpenUser(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_DeleteUser_state {
+	struct samr_DeleteUser orig;
+	struct samr_DeleteUser tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_DeleteUser_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_DeleteUser_send(TALLOC_CTX *mem_ctx,
+					       struct tevent_context *ev,
+					       struct rpc_pipe_client *cli,
+					       struct policy_handle *_user_handle /* [in,out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_DeleteUser_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_DeleteUser_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.user_handle = _user_handle;
+
+	/* Out parameters */
+	state->orig.out.user_handle = _user_handle;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_DeleteUser, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_DeleteUser_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_DELETEUSER,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_DeleteUser_done, req);
+	return req;
+}
+
+static void rpccli_samr_DeleteUser_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_DeleteUser_state *state = tevent_req_data(
+		req, struct rpccli_samr_DeleteUser_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.user_handle = *state->tmp.out.user_handle;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_DeleteUser, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_DeleteUser_recv(struct tevent_req *req,
+				     TALLOC_CTX *mem_ctx,
+				     NTSTATUS *result)
+{
+	struct rpccli_samr_DeleteUser_state *state = tevent_req_data(
+		req, struct rpccli_samr_DeleteUser_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_DeleteUser(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
 				struct policy_handle *user_handle /* [in,out] [ref] */)
@@ -1540,6 +5935,129 @@ NTSTATUS rpccli_samr_DeleteUser(struct rpc_pipe_client *cli,
 
 	/* Return result */
 	return r.out.result;
+}
+
+struct rpccli_samr_QueryUserInfo_state {
+	struct samr_QueryUserInfo orig;
+	struct samr_QueryUserInfo tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_QueryUserInfo_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_QueryUserInfo_send(TALLOC_CTX *mem_ctx,
+						  struct tevent_context *ev,
+						  struct rpc_pipe_client *cli,
+						  struct policy_handle *_user_handle /* [in] [ref] */,
+						  enum samr_UserInfoLevel _level /* [in]  */,
+						  union samr_UserInfo **_info /* [out] [ref,switch_is(level)] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_QueryUserInfo_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_QueryUserInfo_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.user_handle = _user_handle;
+	state->orig.in.level = _level;
+
+	/* Out parameters */
+	state->orig.out.info = _info;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_QueryUserInfo, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_QueryUserInfo_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_QUERYUSERINFO,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_QueryUserInfo_done, req);
+	return req;
+}
+
+static void rpccli_samr_QueryUserInfo_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_QueryUserInfo_state *state = tevent_req_data(
+		req, struct rpccli_samr_QueryUserInfo_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.info = *state->tmp.out.info;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_QueryUserInfo, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_QueryUserInfo_recv(struct tevent_req *req,
+					TALLOC_CTX *mem_ctx,
+					NTSTATUS *result)
+{
+	struct rpccli_samr_QueryUserInfo_state *state = tevent_req_data(
+		req, struct rpccli_samr_QueryUserInfo_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_samr_QueryUserInfo(struct rpc_pipe_client *cli,
@@ -1584,6 +6102,122 @@ NTSTATUS rpccli_samr_QueryUserInfo(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_SetUserInfo_state {
+	struct samr_SetUserInfo orig;
+	struct samr_SetUserInfo tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_SetUserInfo_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_SetUserInfo_send(TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						struct rpc_pipe_client *cli,
+						struct policy_handle *_user_handle /* [in] [ref] */,
+						enum samr_UserInfoLevel _level /* [in]  */,
+						union samr_UserInfo *_info /* [in] [ref,switch_is(level)] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_SetUserInfo_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_SetUserInfo_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.user_handle = _user_handle;
+	state->orig.in.level = _level;
+	state->orig.in.info = _info;
+
+	/* Out parameters */
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_SetUserInfo, &state->orig);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_SETUSERINFO,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_SetUserInfo_done, req);
+	return req;
+}
+
+static void rpccli_samr_SetUserInfo_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_SetUserInfo_state *state = tevent_req_data(
+		req, struct rpccli_samr_SetUserInfo_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_SetUserInfo, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_SetUserInfo_recv(struct tevent_req *req,
+				      TALLOC_CTX *mem_ctx,
+				      NTSTATUS *result)
+{
+	struct rpccli_samr_SetUserInfo_state *state = tevent_req_data(
+		req, struct rpccli_samr_SetUserInfo_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_SetUserInfo(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
 				 struct policy_handle *user_handle /* [in] [ref] */,
@@ -1624,6 +6258,138 @@ NTSTATUS rpccli_samr_SetUserInfo(struct rpc_pipe_client *cli,
 
 	/* Return result */
 	return r.out.result;
+}
+
+struct rpccli_samr_ChangePasswordUser_state {
+	struct samr_ChangePasswordUser orig;
+	struct samr_ChangePasswordUser tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_ChangePasswordUser_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_ChangePasswordUser_send(TALLOC_CTX *mem_ctx,
+						       struct tevent_context *ev,
+						       struct rpc_pipe_client *cli,
+						       struct policy_handle *_user_handle /* [in] [ref] */,
+						       uint8_t _lm_present /* [in]  */,
+						       struct samr_Password *_old_lm_crypted /* [in] [unique] */,
+						       struct samr_Password *_new_lm_crypted /* [in] [unique] */,
+						       uint8_t _nt_present /* [in]  */,
+						       struct samr_Password *_old_nt_crypted /* [in] [unique] */,
+						       struct samr_Password *_new_nt_crypted /* [in] [unique] */,
+						       uint8_t _cross1_present /* [in]  */,
+						       struct samr_Password *_nt_cross /* [in] [unique] */,
+						       uint8_t _cross2_present /* [in]  */,
+						       struct samr_Password *_lm_cross /* [in] [unique] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_ChangePasswordUser_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_ChangePasswordUser_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.user_handle = _user_handle;
+	state->orig.in.lm_present = _lm_present;
+	state->orig.in.old_lm_crypted = _old_lm_crypted;
+	state->orig.in.new_lm_crypted = _new_lm_crypted;
+	state->orig.in.nt_present = _nt_present;
+	state->orig.in.old_nt_crypted = _old_nt_crypted;
+	state->orig.in.new_nt_crypted = _new_nt_crypted;
+	state->orig.in.cross1_present = _cross1_present;
+	state->orig.in.nt_cross = _nt_cross;
+	state->orig.in.cross2_present = _cross2_present;
+	state->orig.in.lm_cross = _lm_cross;
+
+	/* Out parameters */
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_ChangePasswordUser, &state->orig);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_CHANGEPASSWORDUSER,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_ChangePasswordUser_done, req);
+	return req;
+}
+
+static void rpccli_samr_ChangePasswordUser_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_ChangePasswordUser_state *state = tevent_req_data(
+		req, struct rpccli_samr_ChangePasswordUser_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_ChangePasswordUser, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_ChangePasswordUser_recv(struct tevent_req *req,
+					     TALLOC_CTX *mem_ctx,
+					     NTSTATUS *result)
+{
+	struct rpccli_samr_ChangePasswordUser_state *state = tevent_req_data(
+		req, struct rpccli_samr_ChangePasswordUser_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_samr_ChangePasswordUser(struct rpc_pipe_client *cli,
@@ -1684,6 +6450,127 @@ NTSTATUS rpccli_samr_ChangePasswordUser(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_GetGroupsForUser_state {
+	struct samr_GetGroupsForUser orig;
+	struct samr_GetGroupsForUser tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_GetGroupsForUser_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_GetGroupsForUser_send(TALLOC_CTX *mem_ctx,
+						     struct tevent_context *ev,
+						     struct rpc_pipe_client *cli,
+						     struct policy_handle *_user_handle /* [in] [ref] */,
+						     struct samr_RidWithAttributeArray **_rids /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_GetGroupsForUser_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_GetGroupsForUser_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.user_handle = _user_handle;
+
+	/* Out parameters */
+	state->orig.out.rids = _rids;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_GetGroupsForUser, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_GetGroupsForUser_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_GETGROUPSFORUSER,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_GetGroupsForUser_done, req);
+	return req;
+}
+
+static void rpccli_samr_GetGroupsForUser_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_GetGroupsForUser_state *state = tevent_req_data(
+		req, struct rpccli_samr_GetGroupsForUser_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.rids = *state->tmp.out.rids;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_GetGroupsForUser, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_GetGroupsForUser_recv(struct tevent_req *req,
+					   TALLOC_CTX *mem_ctx,
+					   NTSTATUS *result)
+{
+	struct rpccli_samr_GetGroupsForUser_state *state = tevent_req_data(
+		req, struct rpccli_samr_GetGroupsForUser_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_GetGroupsForUser(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
 				      struct policy_handle *user_handle /* [in] [ref] */,
@@ -1722,6 +6609,141 @@ NTSTATUS rpccli_samr_GetGroupsForUser(struct rpc_pipe_client *cli,
 
 	/* Return result */
 	return r.out.result;
+}
+
+struct rpccli_samr_QueryDisplayInfo_state {
+	struct samr_QueryDisplayInfo orig;
+	struct samr_QueryDisplayInfo tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_QueryDisplayInfo_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_QueryDisplayInfo_send(TALLOC_CTX *mem_ctx,
+						     struct tevent_context *ev,
+						     struct rpc_pipe_client *cli,
+						     struct policy_handle *_domain_handle /* [in] [ref] */,
+						     uint16_t _level /* [in]  */,
+						     uint32_t _start_idx /* [in]  */,
+						     uint32_t _max_entries /* [in]  */,
+						     uint32_t _buf_size /* [in]  */,
+						     uint32_t *_total_size /* [out] [ref] */,
+						     uint32_t *_returned_size /* [out] [ref] */,
+						     union samr_DispInfo *_info /* [out] [ref,switch_is(level)] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_QueryDisplayInfo_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_QueryDisplayInfo_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.domain_handle = _domain_handle;
+	state->orig.in.level = _level;
+	state->orig.in.start_idx = _start_idx;
+	state->orig.in.max_entries = _max_entries;
+	state->orig.in.buf_size = _buf_size;
+
+	/* Out parameters */
+	state->orig.out.total_size = _total_size;
+	state->orig.out.returned_size = _returned_size;
+	state->orig.out.info = _info;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_QueryDisplayInfo, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_QueryDisplayInfo_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_QUERYDISPLAYINFO,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_QueryDisplayInfo_done, req);
+	return req;
+}
+
+static void rpccli_samr_QueryDisplayInfo_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_QueryDisplayInfo_state *state = tevent_req_data(
+		req, struct rpccli_samr_QueryDisplayInfo_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.total_size = *state->tmp.out.total_size;
+	*state->orig.out.returned_size = *state->tmp.out.returned_size;
+	*state->orig.out.info = *state->tmp.out.info;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_QueryDisplayInfo, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_QueryDisplayInfo_recv(struct tevent_req *req,
+					   TALLOC_CTX *mem_ctx,
+					   NTSTATUS *result)
+{
+	struct rpccli_samr_QueryDisplayInfo_state *state = tevent_req_data(
+		req, struct rpccli_samr_QueryDisplayInfo_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_samr_QueryDisplayInfo(struct rpc_pipe_client *cli,
@@ -1776,6 +6798,131 @@ NTSTATUS rpccli_samr_QueryDisplayInfo(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_GetDisplayEnumerationIndex_state {
+	struct samr_GetDisplayEnumerationIndex orig;
+	struct samr_GetDisplayEnumerationIndex tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_GetDisplayEnumerationIndex_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_GetDisplayEnumerationIndex_send(TALLOC_CTX *mem_ctx,
+							       struct tevent_context *ev,
+							       struct rpc_pipe_client *cli,
+							       struct policy_handle *_domain_handle /* [in] [ref] */,
+							       uint16_t _level /* [in]  */,
+							       struct lsa_String *_name /* [in] [ref] */,
+							       uint32_t *_idx /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_GetDisplayEnumerationIndex_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_GetDisplayEnumerationIndex_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.domain_handle = _domain_handle;
+	state->orig.in.level = _level;
+	state->orig.in.name = _name;
+
+	/* Out parameters */
+	state->orig.out.idx = _idx;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_GetDisplayEnumerationIndex, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_GetDisplayEnumerationIndex_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_GETDISPLAYENUMERATIONINDEX,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_GetDisplayEnumerationIndex_done, req);
+	return req;
+}
+
+static void rpccli_samr_GetDisplayEnumerationIndex_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_GetDisplayEnumerationIndex_state *state = tevent_req_data(
+		req, struct rpccli_samr_GetDisplayEnumerationIndex_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.idx = *state->tmp.out.idx;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_GetDisplayEnumerationIndex, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_GetDisplayEnumerationIndex_recv(struct tevent_req *req,
+						     TALLOC_CTX *mem_ctx,
+						     NTSTATUS *result)
+{
+	struct rpccli_samr_GetDisplayEnumerationIndex_state *state = tevent_req_data(
+		req, struct rpccli_samr_GetDisplayEnumerationIndex_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_GetDisplayEnumerationIndex(struct rpc_pipe_client *cli,
 						TALLOC_CTX *mem_ctx,
 						struct policy_handle *domain_handle /* [in] [ref] */,
@@ -1820,6 +6967,118 @@ NTSTATUS rpccli_samr_GetDisplayEnumerationIndex(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_TestPrivateFunctionsDomain_state {
+	struct samr_TestPrivateFunctionsDomain orig;
+	struct samr_TestPrivateFunctionsDomain tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_TestPrivateFunctionsDomain_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_TestPrivateFunctionsDomain_send(TALLOC_CTX *mem_ctx,
+							       struct tevent_context *ev,
+							       struct rpc_pipe_client *cli,
+							       struct policy_handle *_domain_handle /* [in] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_TestPrivateFunctionsDomain_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_TestPrivateFunctionsDomain_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.domain_handle = _domain_handle;
+
+	/* Out parameters */
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_TestPrivateFunctionsDomain, &state->orig);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_TESTPRIVATEFUNCTIONSDOMAIN,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_TestPrivateFunctionsDomain_done, req);
+	return req;
+}
+
+static void rpccli_samr_TestPrivateFunctionsDomain_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_TestPrivateFunctionsDomain_state *state = tevent_req_data(
+		req, struct rpccli_samr_TestPrivateFunctionsDomain_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_TestPrivateFunctionsDomain, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_TestPrivateFunctionsDomain_recv(struct tevent_req *req,
+						     TALLOC_CTX *mem_ctx,
+						     NTSTATUS *result)
+{
+	struct rpccli_samr_TestPrivateFunctionsDomain_state *state = tevent_req_data(
+		req, struct rpccli_samr_TestPrivateFunctionsDomain_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_TestPrivateFunctionsDomain(struct rpc_pipe_client *cli,
 						TALLOC_CTX *mem_ctx,
 						struct policy_handle *domain_handle /* [in] [ref] */)
@@ -1858,6 +7117,118 @@ NTSTATUS rpccli_samr_TestPrivateFunctionsDomain(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_TestPrivateFunctionsUser_state {
+	struct samr_TestPrivateFunctionsUser orig;
+	struct samr_TestPrivateFunctionsUser tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_TestPrivateFunctionsUser_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_TestPrivateFunctionsUser_send(TALLOC_CTX *mem_ctx,
+							     struct tevent_context *ev,
+							     struct rpc_pipe_client *cli,
+							     struct policy_handle *_user_handle /* [in] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_TestPrivateFunctionsUser_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_TestPrivateFunctionsUser_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.user_handle = _user_handle;
+
+	/* Out parameters */
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_TestPrivateFunctionsUser, &state->orig);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_TESTPRIVATEFUNCTIONSUSER,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_TestPrivateFunctionsUser_done, req);
+	return req;
+}
+
+static void rpccli_samr_TestPrivateFunctionsUser_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_TestPrivateFunctionsUser_state *state = tevent_req_data(
+		req, struct rpccli_samr_TestPrivateFunctionsUser_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_TestPrivateFunctionsUser, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_TestPrivateFunctionsUser_recv(struct tevent_req *req,
+						   TALLOC_CTX *mem_ctx,
+						   NTSTATUS *result)
+{
+	struct rpccli_samr_TestPrivateFunctionsUser_state *state = tevent_req_data(
+		req, struct rpccli_samr_TestPrivateFunctionsUser_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_TestPrivateFunctionsUser(struct rpc_pipe_client *cli,
 					      TALLOC_CTX *mem_ctx,
 					      struct policy_handle *user_handle /* [in] [ref] */)
@@ -1894,6 +7265,127 @@ NTSTATUS rpccli_samr_TestPrivateFunctionsUser(struct rpc_pipe_client *cli,
 
 	/* Return result */
 	return r.out.result;
+}
+
+struct rpccli_samr_GetUserPwInfo_state {
+	struct samr_GetUserPwInfo orig;
+	struct samr_GetUserPwInfo tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_GetUserPwInfo_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_GetUserPwInfo_send(TALLOC_CTX *mem_ctx,
+						  struct tevent_context *ev,
+						  struct rpc_pipe_client *cli,
+						  struct policy_handle *_user_handle /* [in] [ref] */,
+						  struct samr_PwInfo *_info /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_GetUserPwInfo_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_GetUserPwInfo_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.user_handle = _user_handle;
+
+	/* Out parameters */
+	state->orig.out.info = _info;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_GetUserPwInfo, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_GetUserPwInfo_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_GETUSERPWINFO,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_GetUserPwInfo_done, req);
+	return req;
+}
+
+static void rpccli_samr_GetUserPwInfo_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_GetUserPwInfo_state *state = tevent_req_data(
+		req, struct rpccli_samr_GetUserPwInfo_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.info = *state->tmp.out.info;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_GetUserPwInfo, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_GetUserPwInfo_recv(struct tevent_req *req,
+					TALLOC_CTX *mem_ctx,
+					NTSTATUS *result)
+{
+	struct rpccli_samr_GetUserPwInfo_state *state = tevent_req_data(
+		req, struct rpccli_samr_GetUserPwInfo_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_samr_GetUserPwInfo(struct rpc_pipe_client *cli,
@@ -1936,6 +7428,120 @@ NTSTATUS rpccli_samr_GetUserPwInfo(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_RemoveMemberFromForeignDomain_state {
+	struct samr_RemoveMemberFromForeignDomain orig;
+	struct samr_RemoveMemberFromForeignDomain tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_RemoveMemberFromForeignDomain_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_RemoveMemberFromForeignDomain_send(TALLOC_CTX *mem_ctx,
+								  struct tevent_context *ev,
+								  struct rpc_pipe_client *cli,
+								  struct policy_handle *_domain_handle /* [in] [ref] */,
+								  struct dom_sid2 *_sid /* [in] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_RemoveMemberFromForeignDomain_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_RemoveMemberFromForeignDomain_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.domain_handle = _domain_handle;
+	state->orig.in.sid = _sid;
+
+	/* Out parameters */
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_RemoveMemberFromForeignDomain, &state->orig);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_REMOVEMEMBERFROMFOREIGNDOMAIN,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_RemoveMemberFromForeignDomain_done, req);
+	return req;
+}
+
+static void rpccli_samr_RemoveMemberFromForeignDomain_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_RemoveMemberFromForeignDomain_state *state = tevent_req_data(
+		req, struct rpccli_samr_RemoveMemberFromForeignDomain_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_RemoveMemberFromForeignDomain, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_RemoveMemberFromForeignDomain_recv(struct tevent_req *req,
+							TALLOC_CTX *mem_ctx,
+							NTSTATUS *result)
+{
+	struct rpccli_samr_RemoveMemberFromForeignDomain_state *state = tevent_req_data(
+		req, struct rpccli_samr_RemoveMemberFromForeignDomain_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_RemoveMemberFromForeignDomain(struct rpc_pipe_client *cli,
 						   TALLOC_CTX *mem_ctx,
 						   struct policy_handle *domain_handle /* [in] [ref] */,
@@ -1974,6 +7580,129 @@ NTSTATUS rpccli_samr_RemoveMemberFromForeignDomain(struct rpc_pipe_client *cli,
 
 	/* Return result */
 	return r.out.result;
+}
+
+struct rpccli_samr_QueryDomainInfo2_state {
+	struct samr_QueryDomainInfo2 orig;
+	struct samr_QueryDomainInfo2 tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_QueryDomainInfo2_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_QueryDomainInfo2_send(TALLOC_CTX *mem_ctx,
+						     struct tevent_context *ev,
+						     struct rpc_pipe_client *cli,
+						     struct policy_handle *_domain_handle /* [in] [ref] */,
+						     enum samr_DomainInfoClass _level /* [in]  */,
+						     union samr_DomainInfo **_info /* [out] [ref,switch_is(level)] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_QueryDomainInfo2_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_QueryDomainInfo2_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.domain_handle = _domain_handle;
+	state->orig.in.level = _level;
+
+	/* Out parameters */
+	state->orig.out.info = _info;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_QueryDomainInfo2, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_QueryDomainInfo2_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_QUERYDOMAININFO2,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_QueryDomainInfo2_done, req);
+	return req;
+}
+
+static void rpccli_samr_QueryDomainInfo2_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_QueryDomainInfo2_state *state = tevent_req_data(
+		req, struct rpccli_samr_QueryDomainInfo2_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.info = *state->tmp.out.info;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_QueryDomainInfo2, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_QueryDomainInfo2_recv(struct tevent_req *req,
+					   TALLOC_CTX *mem_ctx,
+					   NTSTATUS *result)
+{
+	struct rpccli_samr_QueryDomainInfo2_state *state = tevent_req_data(
+		req, struct rpccli_samr_QueryDomainInfo2_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_samr_QueryDomainInfo2(struct rpc_pipe_client *cli,
@@ -2018,6 +7747,129 @@ NTSTATUS rpccli_samr_QueryDomainInfo2(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_QueryUserInfo2_state {
+	struct samr_QueryUserInfo2 orig;
+	struct samr_QueryUserInfo2 tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_QueryUserInfo2_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_QueryUserInfo2_send(TALLOC_CTX *mem_ctx,
+						   struct tevent_context *ev,
+						   struct rpc_pipe_client *cli,
+						   struct policy_handle *_user_handle /* [in] [ref] */,
+						   enum samr_UserInfoLevel _level /* [in]  */,
+						   union samr_UserInfo **_info /* [out] [ref,switch_is(level)] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_QueryUserInfo2_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_QueryUserInfo2_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.user_handle = _user_handle;
+	state->orig.in.level = _level;
+
+	/* Out parameters */
+	state->orig.out.info = _info;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_QueryUserInfo2, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_QueryUserInfo2_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_QUERYUSERINFO2,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_QueryUserInfo2_done, req);
+	return req;
+}
+
+static void rpccli_samr_QueryUserInfo2_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_QueryUserInfo2_state *state = tevent_req_data(
+		req, struct rpccli_samr_QueryUserInfo2_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.info = *state->tmp.out.info;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_QueryUserInfo2, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_QueryUserInfo2_recv(struct tevent_req *req,
+					 TALLOC_CTX *mem_ctx,
+					 NTSTATUS *result)
+{
+	struct rpccli_samr_QueryUserInfo2_state *state = tevent_req_data(
+		req, struct rpccli_samr_QueryUserInfo2_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_QueryUserInfo2(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
 				    struct policy_handle *user_handle /* [in] [ref] */,
@@ -2058,6 +7910,141 @@ NTSTATUS rpccli_samr_QueryUserInfo2(struct rpc_pipe_client *cli,
 
 	/* Return result */
 	return r.out.result;
+}
+
+struct rpccli_samr_QueryDisplayInfo2_state {
+	struct samr_QueryDisplayInfo2 orig;
+	struct samr_QueryDisplayInfo2 tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_QueryDisplayInfo2_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_QueryDisplayInfo2_send(TALLOC_CTX *mem_ctx,
+						      struct tevent_context *ev,
+						      struct rpc_pipe_client *cli,
+						      struct policy_handle *_domain_handle /* [in] [ref] */,
+						      uint16_t _level /* [in]  */,
+						      uint32_t _start_idx /* [in]  */,
+						      uint32_t _max_entries /* [in]  */,
+						      uint32_t _buf_size /* [in]  */,
+						      uint32_t *_total_size /* [out] [ref] */,
+						      uint32_t *_returned_size /* [out] [ref] */,
+						      union samr_DispInfo *_info /* [out] [ref,switch_is(level)] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_QueryDisplayInfo2_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_QueryDisplayInfo2_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.domain_handle = _domain_handle;
+	state->orig.in.level = _level;
+	state->orig.in.start_idx = _start_idx;
+	state->orig.in.max_entries = _max_entries;
+	state->orig.in.buf_size = _buf_size;
+
+	/* Out parameters */
+	state->orig.out.total_size = _total_size;
+	state->orig.out.returned_size = _returned_size;
+	state->orig.out.info = _info;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_QueryDisplayInfo2, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_QueryDisplayInfo2_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_QUERYDISPLAYINFO2,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_QueryDisplayInfo2_done, req);
+	return req;
+}
+
+static void rpccli_samr_QueryDisplayInfo2_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_QueryDisplayInfo2_state *state = tevent_req_data(
+		req, struct rpccli_samr_QueryDisplayInfo2_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.total_size = *state->tmp.out.total_size;
+	*state->orig.out.returned_size = *state->tmp.out.returned_size;
+	*state->orig.out.info = *state->tmp.out.info;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_QueryDisplayInfo2, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_QueryDisplayInfo2_recv(struct tevent_req *req,
+					    TALLOC_CTX *mem_ctx,
+					    NTSTATUS *result)
+{
+	struct rpccli_samr_QueryDisplayInfo2_state *state = tevent_req_data(
+		req, struct rpccli_samr_QueryDisplayInfo2_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_samr_QueryDisplayInfo2(struct rpc_pipe_client *cli,
@@ -2112,6 +8099,131 @@ NTSTATUS rpccli_samr_QueryDisplayInfo2(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_GetDisplayEnumerationIndex2_state {
+	struct samr_GetDisplayEnumerationIndex2 orig;
+	struct samr_GetDisplayEnumerationIndex2 tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_GetDisplayEnumerationIndex2_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_GetDisplayEnumerationIndex2_send(TALLOC_CTX *mem_ctx,
+								struct tevent_context *ev,
+								struct rpc_pipe_client *cli,
+								struct policy_handle *_domain_handle /* [in] [ref] */,
+								uint16_t _level /* [in]  */,
+								struct lsa_String *_name /* [in] [ref] */,
+								uint32_t *_idx /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_GetDisplayEnumerationIndex2_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_GetDisplayEnumerationIndex2_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.domain_handle = _domain_handle;
+	state->orig.in.level = _level;
+	state->orig.in.name = _name;
+
+	/* Out parameters */
+	state->orig.out.idx = _idx;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_GetDisplayEnumerationIndex2, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_GetDisplayEnumerationIndex2_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_GETDISPLAYENUMERATIONINDEX2,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_GetDisplayEnumerationIndex2_done, req);
+	return req;
+}
+
+static void rpccli_samr_GetDisplayEnumerationIndex2_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_GetDisplayEnumerationIndex2_state *state = tevent_req_data(
+		req, struct rpccli_samr_GetDisplayEnumerationIndex2_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.idx = *state->tmp.out.idx;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_GetDisplayEnumerationIndex2, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_GetDisplayEnumerationIndex2_recv(struct tevent_req *req,
+						      TALLOC_CTX *mem_ctx,
+						      NTSTATUS *result)
+{
+	struct rpccli_samr_GetDisplayEnumerationIndex2_state *state = tevent_req_data(
+		req, struct rpccli_samr_GetDisplayEnumerationIndex2_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_GetDisplayEnumerationIndex2(struct rpc_pipe_client *cli,
 						 TALLOC_CTX *mem_ctx,
 						 struct policy_handle *domain_handle /* [in] [ref] */,
@@ -2154,6 +8266,139 @@ NTSTATUS rpccli_samr_GetDisplayEnumerationIndex2(struct rpc_pipe_client *cli,
 
 	/* Return result */
 	return r.out.result;
+}
+
+struct rpccli_samr_CreateUser2_state {
+	struct samr_CreateUser2 orig;
+	struct samr_CreateUser2 tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_CreateUser2_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_CreateUser2_send(TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						struct rpc_pipe_client *cli,
+						struct policy_handle *_domain_handle /* [in] [ref] */,
+						struct lsa_String *_account_name /* [in] [ref] */,
+						uint32_t _acct_flags /* [in]  */,
+						uint32_t _access_mask /* [in]  */,
+						struct policy_handle *_user_handle /* [out] [ref] */,
+						uint32_t *_access_granted /* [out] [ref] */,
+						uint32_t *_rid /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_CreateUser2_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_CreateUser2_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.domain_handle = _domain_handle;
+	state->orig.in.account_name = _account_name;
+	state->orig.in.acct_flags = _acct_flags;
+	state->orig.in.access_mask = _access_mask;
+
+	/* Out parameters */
+	state->orig.out.user_handle = _user_handle;
+	state->orig.out.access_granted = _access_granted;
+	state->orig.out.rid = _rid;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_CreateUser2, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_CreateUser2_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_CREATEUSER2,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_CreateUser2_done, req);
+	return req;
+}
+
+static void rpccli_samr_CreateUser2_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_CreateUser2_state *state = tevent_req_data(
+		req, struct rpccli_samr_CreateUser2_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.user_handle = *state->tmp.out.user_handle;
+	*state->orig.out.access_granted = *state->tmp.out.access_granted;
+	*state->orig.out.rid = *state->tmp.out.rid;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_CreateUser2, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_CreateUser2_recv(struct tevent_req *req,
+				      TALLOC_CTX *mem_ctx,
+				      NTSTATUS *result)
+{
+	struct rpccli_samr_CreateUser2_state *state = tevent_req_data(
+		req, struct rpccli_samr_CreateUser2_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_samr_CreateUser2(struct rpc_pipe_client *cli,
@@ -2204,6 +8449,141 @@ NTSTATUS rpccli_samr_CreateUser2(struct rpc_pipe_client *cli,
 
 	/* Return result */
 	return r.out.result;
+}
+
+struct rpccli_samr_QueryDisplayInfo3_state {
+	struct samr_QueryDisplayInfo3 orig;
+	struct samr_QueryDisplayInfo3 tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_QueryDisplayInfo3_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_QueryDisplayInfo3_send(TALLOC_CTX *mem_ctx,
+						      struct tevent_context *ev,
+						      struct rpc_pipe_client *cli,
+						      struct policy_handle *_domain_handle /* [in] [ref] */,
+						      uint16_t _level /* [in]  */,
+						      uint32_t _start_idx /* [in]  */,
+						      uint32_t _max_entries /* [in]  */,
+						      uint32_t _buf_size /* [in]  */,
+						      uint32_t *_total_size /* [out] [ref] */,
+						      uint32_t *_returned_size /* [out] [ref] */,
+						      union samr_DispInfo *_info /* [out] [ref,switch_is(level)] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_QueryDisplayInfo3_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_QueryDisplayInfo3_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.domain_handle = _domain_handle;
+	state->orig.in.level = _level;
+	state->orig.in.start_idx = _start_idx;
+	state->orig.in.max_entries = _max_entries;
+	state->orig.in.buf_size = _buf_size;
+
+	/* Out parameters */
+	state->orig.out.total_size = _total_size;
+	state->orig.out.returned_size = _returned_size;
+	state->orig.out.info = _info;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_QueryDisplayInfo3, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_QueryDisplayInfo3_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_QUERYDISPLAYINFO3,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_QueryDisplayInfo3_done, req);
+	return req;
+}
+
+static void rpccli_samr_QueryDisplayInfo3_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_QueryDisplayInfo3_state *state = tevent_req_data(
+		req, struct rpccli_samr_QueryDisplayInfo3_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.total_size = *state->tmp.out.total_size;
+	*state->orig.out.returned_size = *state->tmp.out.returned_size;
+	*state->orig.out.info = *state->tmp.out.info;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_QueryDisplayInfo3, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_QueryDisplayInfo3_recv(struct tevent_req *req,
+					    TALLOC_CTX *mem_ctx,
+					    NTSTATUS *result)
+{
+	struct rpccli_samr_QueryDisplayInfo3_state *state = tevent_req_data(
+		req, struct rpccli_samr_QueryDisplayInfo3_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_samr_QueryDisplayInfo3(struct rpc_pipe_client *cli,
@@ -2258,6 +8638,120 @@ NTSTATUS rpccli_samr_QueryDisplayInfo3(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_AddMultipleMembersToAlias_state {
+	struct samr_AddMultipleMembersToAlias orig;
+	struct samr_AddMultipleMembersToAlias tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_AddMultipleMembersToAlias_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_AddMultipleMembersToAlias_send(TALLOC_CTX *mem_ctx,
+							      struct tevent_context *ev,
+							      struct rpc_pipe_client *cli,
+							      struct policy_handle *_alias_handle /* [in] [ref] */,
+							      struct lsa_SidArray *_sids /* [in] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_AddMultipleMembersToAlias_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_AddMultipleMembersToAlias_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.alias_handle = _alias_handle;
+	state->orig.in.sids = _sids;
+
+	/* Out parameters */
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_AddMultipleMembersToAlias, &state->orig);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_ADDMULTIPLEMEMBERSTOALIAS,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_AddMultipleMembersToAlias_done, req);
+	return req;
+}
+
+static void rpccli_samr_AddMultipleMembersToAlias_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_AddMultipleMembersToAlias_state *state = tevent_req_data(
+		req, struct rpccli_samr_AddMultipleMembersToAlias_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_AddMultipleMembersToAlias, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_AddMultipleMembersToAlias_recv(struct tevent_req *req,
+						    TALLOC_CTX *mem_ctx,
+						    NTSTATUS *result)
+{
+	struct rpccli_samr_AddMultipleMembersToAlias_state *state = tevent_req_data(
+		req, struct rpccli_samr_AddMultipleMembersToAlias_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_AddMultipleMembersToAlias(struct rpc_pipe_client *cli,
 					       TALLOC_CTX *mem_ctx,
 					       struct policy_handle *alias_handle /* [in] [ref] */,
@@ -2298,6 +8792,120 @@ NTSTATUS rpccli_samr_AddMultipleMembersToAlias(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_RemoveMultipleMembersFromAlias_state {
+	struct samr_RemoveMultipleMembersFromAlias orig;
+	struct samr_RemoveMultipleMembersFromAlias tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_RemoveMultipleMembersFromAlias_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_RemoveMultipleMembersFromAlias_send(TALLOC_CTX *mem_ctx,
+								   struct tevent_context *ev,
+								   struct rpc_pipe_client *cli,
+								   struct policy_handle *_alias_handle /* [in] [ref] */,
+								   struct lsa_SidArray *_sids /* [in] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_RemoveMultipleMembersFromAlias_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_RemoveMultipleMembersFromAlias_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.alias_handle = _alias_handle;
+	state->orig.in.sids = _sids;
+
+	/* Out parameters */
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_RemoveMultipleMembersFromAlias, &state->orig);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_REMOVEMULTIPLEMEMBERSFROMALIAS,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_RemoveMultipleMembersFromAlias_done, req);
+	return req;
+}
+
+static void rpccli_samr_RemoveMultipleMembersFromAlias_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_RemoveMultipleMembersFromAlias_state *state = tevent_req_data(
+		req, struct rpccli_samr_RemoveMultipleMembersFromAlias_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_RemoveMultipleMembersFromAlias, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_RemoveMultipleMembersFromAlias_recv(struct tevent_req *req,
+							 TALLOC_CTX *mem_ctx,
+							 NTSTATUS *result)
+{
+	struct rpccli_samr_RemoveMultipleMembersFromAlias_state *state = tevent_req_data(
+		req, struct rpccli_samr_RemoveMultipleMembersFromAlias_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_RemoveMultipleMembersFromAlias(struct rpc_pipe_client *cli,
 						    TALLOC_CTX *mem_ctx,
 						    struct policy_handle *alias_handle /* [in] [ref] */,
@@ -2336,6 +8944,124 @@ NTSTATUS rpccli_samr_RemoveMultipleMembersFromAlias(struct rpc_pipe_client *cli,
 
 	/* Return result */
 	return r.out.result;
+}
+
+struct rpccli_samr_OemChangePasswordUser2_state {
+	struct samr_OemChangePasswordUser2 orig;
+	struct samr_OemChangePasswordUser2 tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_OemChangePasswordUser2_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_OemChangePasswordUser2_send(TALLOC_CTX *mem_ctx,
+							   struct tevent_context *ev,
+							   struct rpc_pipe_client *cli,
+							   struct lsa_AsciiString *_server /* [in] [unique] */,
+							   struct lsa_AsciiString *_account /* [in] [ref] */,
+							   struct samr_CryptPassword *_password /* [in] [unique] */,
+							   struct samr_Password *_hash /* [in] [unique] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_OemChangePasswordUser2_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_OemChangePasswordUser2_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.server = _server;
+	state->orig.in.account = _account;
+	state->orig.in.password = _password;
+	state->orig.in.hash = _hash;
+
+	/* Out parameters */
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_OemChangePasswordUser2, &state->orig);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_OEMCHANGEPASSWORDUSER2,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_OemChangePasswordUser2_done, req);
+	return req;
+}
+
+static void rpccli_samr_OemChangePasswordUser2_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_OemChangePasswordUser2_state *state = tevent_req_data(
+		req, struct rpccli_samr_OemChangePasswordUser2_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_OemChangePasswordUser2, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_OemChangePasswordUser2_recv(struct tevent_req *req,
+						 TALLOC_CTX *mem_ctx,
+						 NTSTATUS *result)
+{
+	struct rpccli_samr_OemChangePasswordUser2_state *state = tevent_req_data(
+		req, struct rpccli_samr_OemChangePasswordUser2_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_samr_OemChangePasswordUser2(struct rpc_pipe_client *cli,
@@ -2380,6 +9106,130 @@ NTSTATUS rpccli_samr_OemChangePasswordUser2(struct rpc_pipe_client *cli,
 
 	/* Return result */
 	return r.out.result;
+}
+
+struct rpccli_samr_ChangePasswordUser2_state {
+	struct samr_ChangePasswordUser2 orig;
+	struct samr_ChangePasswordUser2 tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_ChangePasswordUser2_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_ChangePasswordUser2_send(TALLOC_CTX *mem_ctx,
+							struct tevent_context *ev,
+							struct rpc_pipe_client *cli,
+							struct lsa_String *_server /* [in] [unique] */,
+							struct lsa_String *_account /* [in] [ref] */,
+							struct samr_CryptPassword *_nt_password /* [in] [unique] */,
+							struct samr_Password *_nt_verifier /* [in] [unique] */,
+							uint8_t _lm_change /* [in]  */,
+							struct samr_CryptPassword *_lm_password /* [in] [unique] */,
+							struct samr_Password *_lm_verifier /* [in] [unique] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_ChangePasswordUser2_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_ChangePasswordUser2_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.server = _server;
+	state->orig.in.account = _account;
+	state->orig.in.nt_password = _nt_password;
+	state->orig.in.nt_verifier = _nt_verifier;
+	state->orig.in.lm_change = _lm_change;
+	state->orig.in.lm_password = _lm_password;
+	state->orig.in.lm_verifier = _lm_verifier;
+
+	/* Out parameters */
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_ChangePasswordUser2, &state->orig);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_CHANGEPASSWORDUSER2,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_ChangePasswordUser2_done, req);
+	return req;
+}
+
+static void rpccli_samr_ChangePasswordUser2_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_ChangePasswordUser2_state *state = tevent_req_data(
+		req, struct rpccli_samr_ChangePasswordUser2_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_ChangePasswordUser2, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_ChangePasswordUser2_recv(struct tevent_req *req,
+					      TALLOC_CTX *mem_ctx,
+					      NTSTATUS *result)
+{
+	struct rpccli_samr_ChangePasswordUser2_state *state = tevent_req_data(
+		req, struct rpccli_samr_ChangePasswordUser2_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_samr_ChangePasswordUser2(struct rpc_pipe_client *cli,
@@ -2432,6 +9282,127 @@ NTSTATUS rpccli_samr_ChangePasswordUser2(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_GetDomPwInfo_state {
+	struct samr_GetDomPwInfo orig;
+	struct samr_GetDomPwInfo tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_GetDomPwInfo_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_GetDomPwInfo_send(TALLOC_CTX *mem_ctx,
+						 struct tevent_context *ev,
+						 struct rpc_pipe_client *cli,
+						 struct lsa_String *_domain_name /* [in] [unique] */,
+						 struct samr_PwInfo *_info /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_GetDomPwInfo_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_GetDomPwInfo_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.domain_name = _domain_name;
+
+	/* Out parameters */
+	state->orig.out.info = _info;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_GetDomPwInfo, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_GetDomPwInfo_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_GETDOMPWINFO,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_GetDomPwInfo_done, req);
+	return req;
+}
+
+static void rpccli_samr_GetDomPwInfo_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_GetDomPwInfo_state *state = tevent_req_data(
+		req, struct rpccli_samr_GetDomPwInfo_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.info = *state->tmp.out.info;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_GetDomPwInfo, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_GetDomPwInfo_recv(struct tevent_req *req,
+				       TALLOC_CTX *mem_ctx,
+				       NTSTATUS *result)
+{
+	struct rpccli_samr_GetDomPwInfo_state *state = tevent_req_data(
+		req, struct rpccli_samr_GetDomPwInfo_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_GetDomPwInfo(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
 				  struct lsa_String *domain_name /* [in] [unique] */,
@@ -2470,6 +9441,129 @@ NTSTATUS rpccli_samr_GetDomPwInfo(struct rpc_pipe_client *cli,
 
 	/* Return result */
 	return r.out.result;
+}
+
+struct rpccli_samr_Connect2_state {
+	struct samr_Connect2 orig;
+	struct samr_Connect2 tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_Connect2_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_Connect2_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct rpc_pipe_client *cli,
+					     const char *_system_name /* [in] [unique,charset(UTF16)] */,
+					     uint32_t _access_mask /* [in]  */,
+					     struct policy_handle *_connect_handle /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_Connect2_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_Connect2_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.system_name = _system_name;
+	state->orig.in.access_mask = _access_mask;
+
+	/* Out parameters */
+	state->orig.out.connect_handle = _connect_handle;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_Connect2, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_Connect2_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_CONNECT2,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_Connect2_done, req);
+	return req;
+}
+
+static void rpccli_samr_Connect2_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_Connect2_state *state = tevent_req_data(
+		req, struct rpccli_samr_Connect2_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.connect_handle = *state->tmp.out.connect_handle;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_Connect2, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_Connect2_recv(struct tevent_req *req,
+				   TALLOC_CTX *mem_ctx,
+				   NTSTATUS *result)
+{
+	struct rpccli_samr_Connect2_state *state = tevent_req_data(
+		req, struct rpccli_samr_Connect2_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_samr_Connect2(struct rpc_pipe_client *cli,
@@ -2514,6 +9608,122 @@ NTSTATUS rpccli_samr_Connect2(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_SetUserInfo2_state {
+	struct samr_SetUserInfo2 orig;
+	struct samr_SetUserInfo2 tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_SetUserInfo2_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_SetUserInfo2_send(TALLOC_CTX *mem_ctx,
+						 struct tevent_context *ev,
+						 struct rpc_pipe_client *cli,
+						 struct policy_handle *_user_handle /* [in] [ref] */,
+						 enum samr_UserInfoLevel _level /* [in]  */,
+						 union samr_UserInfo *_info /* [in] [ref,switch_is(level)] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_SetUserInfo2_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_SetUserInfo2_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.user_handle = _user_handle;
+	state->orig.in.level = _level;
+	state->orig.in.info = _info;
+
+	/* Out parameters */
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_SetUserInfo2, &state->orig);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_SETUSERINFO2,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_SetUserInfo2_done, req);
+	return req;
+}
+
+static void rpccli_samr_SetUserInfo2_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_SetUserInfo2_state *state = tevent_req_data(
+		req, struct rpccli_samr_SetUserInfo2_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_SetUserInfo2, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_SetUserInfo2_recv(struct tevent_req *req,
+				       TALLOC_CTX *mem_ctx,
+				       NTSTATUS *result)
+{
+	struct rpccli_samr_SetUserInfo2_state *state = tevent_req_data(
+		req, struct rpccli_samr_SetUserInfo2_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_SetUserInfo2(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
 				  struct policy_handle *user_handle /* [in] [ref] */,
@@ -2554,6 +9764,124 @@ NTSTATUS rpccli_samr_SetUserInfo2(struct rpc_pipe_client *cli,
 
 	/* Return result */
 	return r.out.result;
+}
+
+struct rpccli_samr_SetBootKeyInformation_state {
+	struct samr_SetBootKeyInformation orig;
+	struct samr_SetBootKeyInformation tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_SetBootKeyInformation_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_SetBootKeyInformation_send(TALLOC_CTX *mem_ctx,
+							  struct tevent_context *ev,
+							  struct rpc_pipe_client *cli,
+							  struct policy_handle *_connect_handle /* [in] [ref] */,
+							  uint32_t _unknown1 /* [in]  */,
+							  uint32_t _unknown2 /* [in]  */,
+							  uint32_t _unknown3 /* [in]  */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_SetBootKeyInformation_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_SetBootKeyInformation_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.connect_handle = _connect_handle;
+	state->orig.in.unknown1 = _unknown1;
+	state->orig.in.unknown2 = _unknown2;
+	state->orig.in.unknown3 = _unknown3;
+
+	/* Out parameters */
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_SetBootKeyInformation, &state->orig);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_SETBOOTKEYINFORMATION,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_SetBootKeyInformation_done, req);
+	return req;
+}
+
+static void rpccli_samr_SetBootKeyInformation_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_SetBootKeyInformation_state *state = tevent_req_data(
+		req, struct rpccli_samr_SetBootKeyInformation_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_SetBootKeyInformation, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_SetBootKeyInformation_recv(struct tevent_req *req,
+						TALLOC_CTX *mem_ctx,
+						NTSTATUS *result)
+{
+	struct rpccli_samr_SetBootKeyInformation_state *state = tevent_req_data(
+		req, struct rpccli_samr_SetBootKeyInformation_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_samr_SetBootKeyInformation(struct rpc_pipe_client *cli,
@@ -2600,6 +9928,127 @@ NTSTATUS rpccli_samr_SetBootKeyInformation(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_GetBootKeyInformation_state {
+	struct samr_GetBootKeyInformation orig;
+	struct samr_GetBootKeyInformation tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_GetBootKeyInformation_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_GetBootKeyInformation_send(TALLOC_CTX *mem_ctx,
+							  struct tevent_context *ev,
+							  struct rpc_pipe_client *cli,
+							  struct policy_handle *_domain_handle /* [in] [ref] */,
+							  uint32_t *_unknown /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_GetBootKeyInformation_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_GetBootKeyInformation_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.domain_handle = _domain_handle;
+
+	/* Out parameters */
+	state->orig.out.unknown = _unknown;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_GetBootKeyInformation, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_GetBootKeyInformation_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_GETBOOTKEYINFORMATION,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_GetBootKeyInformation_done, req);
+	return req;
+}
+
+static void rpccli_samr_GetBootKeyInformation_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_GetBootKeyInformation_state *state = tevent_req_data(
+		req, struct rpccli_samr_GetBootKeyInformation_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.unknown = *state->tmp.out.unknown;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_GetBootKeyInformation, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_GetBootKeyInformation_recv(struct tevent_req *req,
+						TALLOC_CTX *mem_ctx,
+						NTSTATUS *result)
+{
+	struct rpccli_samr_GetBootKeyInformation_state *state = tevent_req_data(
+		req, struct rpccli_samr_GetBootKeyInformation_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_GetBootKeyInformation(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
 					   struct policy_handle *domain_handle /* [in] [ref] */,
@@ -2638,6 +10087,131 @@ NTSTATUS rpccli_samr_GetBootKeyInformation(struct rpc_pipe_client *cli,
 
 	/* Return result */
 	return r.out.result;
+}
+
+struct rpccli_samr_Connect3_state {
+	struct samr_Connect3 orig;
+	struct samr_Connect3 tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_Connect3_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_Connect3_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct rpc_pipe_client *cli,
+					     const char *_system_name /* [in] [unique,charset(UTF16)] */,
+					     uint32_t _unknown /* [in]  */,
+					     uint32_t _access_mask /* [in]  */,
+					     struct policy_handle *_connect_handle /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_Connect3_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_Connect3_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.system_name = _system_name;
+	state->orig.in.unknown = _unknown;
+	state->orig.in.access_mask = _access_mask;
+
+	/* Out parameters */
+	state->orig.out.connect_handle = _connect_handle;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_Connect3, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_Connect3_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_CONNECT3,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_Connect3_done, req);
+	return req;
+}
+
+static void rpccli_samr_Connect3_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_Connect3_state *state = tevent_req_data(
+		req, struct rpccli_samr_Connect3_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.connect_handle = *state->tmp.out.connect_handle;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_Connect3, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_Connect3_recv(struct tevent_req *req,
+				   TALLOC_CTX *mem_ctx,
+				   NTSTATUS *result)
+{
+	struct rpccli_samr_Connect3_state *state = tevent_req_data(
+		req, struct rpccli_samr_Connect3_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_samr_Connect3(struct rpc_pipe_client *cli,
@@ -2684,6 +10258,131 @@ NTSTATUS rpccli_samr_Connect3(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_Connect4_state {
+	struct samr_Connect4 orig;
+	struct samr_Connect4 tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_Connect4_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_Connect4_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct rpc_pipe_client *cli,
+					     const char *_system_name /* [in] [unique,charset(UTF16)] */,
+					     enum samr_ConnectVersion _client_version /* [in]  */,
+					     uint32_t _access_mask /* [in]  */,
+					     struct policy_handle *_connect_handle /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_Connect4_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_Connect4_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.system_name = _system_name;
+	state->orig.in.client_version = _client_version;
+	state->orig.in.access_mask = _access_mask;
+
+	/* Out parameters */
+	state->orig.out.connect_handle = _connect_handle;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_Connect4, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_Connect4_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_CONNECT4,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_Connect4_done, req);
+	return req;
+}
+
+static void rpccli_samr_Connect4_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_Connect4_state *state = tevent_req_data(
+		req, struct rpccli_samr_Connect4_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.connect_handle = *state->tmp.out.connect_handle;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_Connect4, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_Connect4_recv(struct tevent_req *req,
+				   TALLOC_CTX *mem_ctx,
+				   NTSTATUS *result)
+{
+	struct rpccli_samr_Connect4_state *state = tevent_req_data(
+		req, struct rpccli_samr_Connect4_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_Connect4(struct rpc_pipe_client *cli,
 			      TALLOC_CTX *mem_ctx,
 			      const char *system_name /* [in] [unique,charset(UTF16)] */,
@@ -2726,6 +10425,144 @@ NTSTATUS rpccli_samr_Connect4(struct rpc_pipe_client *cli,
 
 	/* Return result */
 	return r.out.result;
+}
+
+struct rpccli_samr_ChangePasswordUser3_state {
+	struct samr_ChangePasswordUser3 orig;
+	struct samr_ChangePasswordUser3 tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_ChangePasswordUser3_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_ChangePasswordUser3_send(TALLOC_CTX *mem_ctx,
+							struct tevent_context *ev,
+							struct rpc_pipe_client *cli,
+							struct lsa_String *_server /* [in] [unique] */,
+							struct lsa_String *_account /* [in] [ref] */,
+							struct samr_CryptPassword *_nt_password /* [in] [unique] */,
+							struct samr_Password *_nt_verifier /* [in] [unique] */,
+							uint8_t _lm_change /* [in]  */,
+							struct samr_CryptPassword *_lm_password /* [in] [unique] */,
+							struct samr_Password *_lm_verifier /* [in] [unique] */,
+							struct samr_CryptPassword *_password3 /* [in] [unique] */,
+							struct samr_DomInfo1 **_dominfo /* [out] [ref] */,
+							struct samr_ChangeReject **_reject /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_ChangePasswordUser3_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_ChangePasswordUser3_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.server = _server;
+	state->orig.in.account = _account;
+	state->orig.in.nt_password = _nt_password;
+	state->orig.in.nt_verifier = _nt_verifier;
+	state->orig.in.lm_change = _lm_change;
+	state->orig.in.lm_password = _lm_password;
+	state->orig.in.lm_verifier = _lm_verifier;
+	state->orig.in.password3 = _password3;
+
+	/* Out parameters */
+	state->orig.out.dominfo = _dominfo;
+	state->orig.out.reject = _reject;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_ChangePasswordUser3, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_ChangePasswordUser3_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_CHANGEPASSWORDUSER3,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_ChangePasswordUser3_done, req);
+	return req;
+}
+
+static void rpccli_samr_ChangePasswordUser3_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_ChangePasswordUser3_state *state = tevent_req_data(
+		req, struct rpccli_samr_ChangePasswordUser3_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.dominfo = *state->tmp.out.dominfo;
+	*state->orig.out.reject = *state->tmp.out.reject;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_ChangePasswordUser3, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_ChangePasswordUser3_recv(struct tevent_req *req,
+					      TALLOC_CTX *mem_ctx,
+					      NTSTATUS *result)
+{
+	struct rpccli_samr_ChangePasswordUser3_state *state = tevent_req_data(
+		req, struct rpccli_samr_ChangePasswordUser3_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_samr_ChangePasswordUser3(struct rpc_pipe_client *cli,
@@ -2784,6 +10621,139 @@ NTSTATUS rpccli_samr_ChangePasswordUser3(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_Connect5_state {
+	struct samr_Connect5 orig;
+	struct samr_Connect5 tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_Connect5_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_Connect5_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct rpc_pipe_client *cli,
+					     const char *_system_name /* [in] [unique,charset(UTF16)] */,
+					     uint32_t _access_mask /* [in]  */,
+					     uint32_t _level_in /* [in]  */,
+					     union samr_ConnectInfo *_info_in /* [in] [ref,switch_is(level_in)] */,
+					     uint32_t *_level_out /* [out] [ref] */,
+					     union samr_ConnectInfo *_info_out /* [out] [ref,switch_is(*level_out)] */,
+					     struct policy_handle *_connect_handle /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_Connect5_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_Connect5_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.system_name = _system_name;
+	state->orig.in.access_mask = _access_mask;
+	state->orig.in.level_in = _level_in;
+	state->orig.in.info_in = _info_in;
+
+	/* Out parameters */
+	state->orig.out.level_out = _level_out;
+	state->orig.out.info_out = _info_out;
+	state->orig.out.connect_handle = _connect_handle;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_Connect5, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_Connect5_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_CONNECT5,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_Connect5_done, req);
+	return req;
+}
+
+static void rpccli_samr_Connect5_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_Connect5_state *state = tevent_req_data(
+		req, struct rpccli_samr_Connect5_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.level_out = *state->tmp.out.level_out;
+	*state->orig.out.info_out = *state->tmp.out.info_out;
+	*state->orig.out.connect_handle = *state->tmp.out.connect_handle;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_Connect5, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_Connect5_recv(struct tevent_req *req,
+				   TALLOC_CTX *mem_ctx,
+				   NTSTATUS *result)
+{
+	struct rpccli_samr_Connect5_state *state = tevent_req_data(
+		req, struct rpccli_samr_Connect5_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_Connect5(struct rpc_pipe_client *cli,
 			      TALLOC_CTX *mem_ctx,
 			      const char *system_name /* [in] [unique,charset(UTF16)] */,
@@ -2834,6 +10804,129 @@ NTSTATUS rpccli_samr_Connect5(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_RidToSid_state {
+	struct samr_RidToSid orig;
+	struct samr_RidToSid tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_RidToSid_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_RidToSid_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct rpc_pipe_client *cli,
+					     struct policy_handle *_domain_handle /* [in] [ref] */,
+					     uint32_t _rid /* [in]  */,
+					     struct dom_sid2 **_sid /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_RidToSid_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_RidToSid_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.domain_handle = _domain_handle;
+	state->orig.in.rid = _rid;
+
+	/* Out parameters */
+	state->orig.out.sid = _sid;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_RidToSid, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_RidToSid_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_RIDTOSID,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_RidToSid_done, req);
+	return req;
+}
+
+static void rpccli_samr_RidToSid_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_RidToSid_state *state = tevent_req_data(
+		req, struct rpccli_samr_RidToSid_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.sid = *state->tmp.out.sid;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_RidToSid, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_RidToSid_recv(struct tevent_req *req,
+				   TALLOC_CTX *mem_ctx,
+				   NTSTATUS *result)
+{
+	struct rpccli_samr_RidToSid_state *state = tevent_req_data(
+		req, struct rpccli_samr_RidToSid_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_RidToSid(struct rpc_pipe_client *cli,
 			      TALLOC_CTX *mem_ctx,
 			      struct policy_handle *domain_handle /* [in] [ref] */,
@@ -2876,6 +10969,122 @@ NTSTATUS rpccli_samr_RidToSid(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_samr_SetDsrmPassword_state {
+	struct samr_SetDsrmPassword orig;
+	struct samr_SetDsrmPassword tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_SetDsrmPassword_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_SetDsrmPassword_send(TALLOC_CTX *mem_ctx,
+						    struct tevent_context *ev,
+						    struct rpc_pipe_client *cli,
+						    struct lsa_String *_name /* [in] [unique] */,
+						    uint32_t _unknown /* [in]  */,
+						    struct samr_Password *_hash /* [in] [unique] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_SetDsrmPassword_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_SetDsrmPassword_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.name = _name;
+	state->orig.in.unknown = _unknown;
+	state->orig.in.hash = _hash;
+
+	/* Out parameters */
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_SetDsrmPassword, &state->orig);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_SETDSRMPASSWORD,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_SetDsrmPassword_done, req);
+	return req;
+}
+
+static void rpccli_samr_SetDsrmPassword_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_SetDsrmPassword_state *state = tevent_req_data(
+		req, struct rpccli_samr_SetDsrmPassword_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_SetDsrmPassword, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_SetDsrmPassword_recv(struct tevent_req *req,
+					  TALLOC_CTX *mem_ctx,
+					  NTSTATUS *result)
+{
+	struct rpccli_samr_SetDsrmPassword_state *state = tevent_req_data(
+		req, struct rpccli_samr_SetDsrmPassword_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpccli_samr_SetDsrmPassword(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     struct lsa_String *name /* [in] [unique] */,
@@ -2916,6 +11125,129 @@ NTSTATUS rpccli_samr_SetDsrmPassword(struct rpc_pipe_client *cli,
 
 	/* Return result */
 	return r.out.result;
+}
+
+struct rpccli_samr_ValidatePassword_state {
+	struct samr_ValidatePassword orig;
+	struct samr_ValidatePassword tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_samr_ValidatePassword_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_samr_ValidatePassword_send(TALLOC_CTX *mem_ctx,
+						     struct tevent_context *ev,
+						     struct rpc_pipe_client *cli,
+						     enum samr_ValidatePasswordLevel _level /* [in]  */,
+						     union samr_ValidatePasswordReq *_req /* [in] [ref,switch_is(level)] */,
+						     union samr_ValidatePasswordRep **_rep /* [out] [ref,switch_is(level)] */)
+{
+	struct tevent_req *req;
+	struct rpccli_samr_ValidatePassword_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_samr_ValidatePassword_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.level = _level;
+	state->orig.in.req = _req;
+
+	/* Out parameters */
+	state->orig.out.rep = _rep;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(samr_ValidatePassword, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_samr_ValidatePassword_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_samr,
+				    NDR_SAMR_VALIDATEPASSWORD,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_samr_ValidatePassword_done, req);
+	return req;
+}
+
+static void rpccli_samr_ValidatePassword_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_samr_ValidatePassword_state *state = tevent_req_data(
+		req, struct rpccli_samr_ValidatePassword_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.rep = *state->tmp.out.rep;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(samr_ValidatePassword, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_samr_ValidatePassword_recv(struct tevent_req *req,
+					   TALLOC_CTX *mem_ctx,
+					   NTSTATUS *result)
+{
+	struct rpccli_samr_ValidatePassword_state *state = tevent_req_data(
+		req, struct rpccli_samr_ValidatePassword_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_samr_ValidatePassword(struct rpc_pipe_client *cli,
