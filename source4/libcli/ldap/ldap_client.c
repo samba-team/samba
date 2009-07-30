@@ -417,10 +417,7 @@ static void ldap_connect_got_sock(struct composite_context *ctx,
 			return;
 		}
 
-		/* the original socket, must become a child of the tls socket */
-		tmp_socket = conn->sock;
 		conn->sock = talloc_steal(conn, tls_socket);
-		talloc_steal(conn->sock, tmp_socket);
 	}
 
 	conn->packet = packet_init(conn);
