@@ -74,7 +74,7 @@ echo "Source socket is $src_socket"
 # CTDB faster than it takes us to wait for netstat to register the
 # connection and then use onnode below to ask CTDB about it.
 
-try_command_on_node -v 0 ctdb gettickles $test_ip
+try_command_on_node -v 0 ctdb gettickles $test_ip -n $test_node
 
 if [ "${out/SRC: ${src_socket} /}" != "$out" ] ; then
     echo "GOOD: CIFS connection tracked OK by CTDB."
@@ -85,7 +85,7 @@ fi
 
 tcptickle_sniff_start $src_socket "${test_ip}:${test_port}"
 
-echo "Disabling node $test_node"
+echo "Disabling node $test_node"r
 try_command_on_node 1 $CTDB disable -n $test_node
 onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node disabled
 
