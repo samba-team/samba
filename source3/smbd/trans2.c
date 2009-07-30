@@ -6045,38 +6045,6 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 }
 
 /****************************************************************************
- Deal with SMB_INFO_STANDARD.
-****************************************************************************/
-
-static NTSTATUS smb_set_info_standard(connection_struct *conn,
-					const char *pdata,
-					int total_data,
-					files_struct *fsp,
-					const struct smb_filename *smb_fname)
-{
-	struct smb_file_time ft;
-	ZERO_STRUCT(ft);
-
-	if (total_data < 12) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	/* create time */
-	ft.create_time = interpret_long_date(pdata);
-
-	/* access time */
-	ft.atime = interpret_long_date(pdata + 8);
-
-	/* write time */
-	ft.mtime = interpret_long_date(pdata + 16);
-
-	DEBUG(10,("smb_set_info_standard: file %s\n",
-		  smb_fname_str_dbg(smb_fname)));
-
-	return smb_set_file_time(conn, fsp, smb_fname, &ft, true);
-}
-
-/****************************************************************************
  Deal with SMB_SET_FILE_BASIC_INFO.
 ****************************************************************************/
 
@@ -7117,16 +7085,6 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 		 fsp ? fsp->fnum : -1, info_level, total_data));
 
 	switch (info_level) {
-
-		case SMB_INFO_STANDARD:
-		{
-			status = smb_set_info_standard(conn,
-					pdata,
-					total_data,
-					fsp,
-					smb_fname);
-			break;
-		}
 
 		case SMB_INFO_SET_EA:
 		{
