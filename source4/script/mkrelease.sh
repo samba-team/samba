@@ -11,6 +11,9 @@ OUTDIR=`mktemp -d samba-XXXXX`
 
 echo SAMBA_VERSION_IS_GIT_SNAPSHOT=no >> $OUTDIR/source4/VERSION
 
+rm -f $OUTDIR/source4/ldap_server/devdocs/rfc????.txt \
+      $OUTDIR/source4/heimdal/lib/wind/rfc????.txt
+
 #Prepare the tarball for a Samba4 release, with some generated files,
 #but without Samba3 stuff (to avoid confusion)
 ( cd $OUTDIR/ || exit 1
