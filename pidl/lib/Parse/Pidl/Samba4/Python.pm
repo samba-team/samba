@@ -766,6 +766,11 @@ sub register_module_import($$)
 sub use_type_variable($$)
 {
 	my ($self, $orig_ctype) = @_;
+	# FIXME: Have a global lookup table for types that look different on the 
+	# wire than they are named in C?
+	if ($orig_ctype->{NAME} eq "dom_sid2") {
+		$orig_ctype->{NAME} = "dom_sid";
+	}
 	my $ctype = resolveType($orig_ctype);
 	unless (defined($ctype->{BASEFILE})) {
 		return undef;
@@ -840,8 +845,7 @@ sub ConvertObjectFromPythonData($$$$$$;$)
 		my $ctype_name = $self->use_type_variable($ctype);
 		unless (defined ($ctype_name)) {
 			error($location, "Unable to determine origin of type `" . mapTypeName($ctype) . "'");
-			$self->assign($target, "NULL");
-			# FIXME:
+			$self->pidl("PyErr_SetString(PyExc_TypeError, \"Can not convert C Type " . mapType($ctype) . " to Python\");");
 			return;
 		}
 		$self->pidl("PY_CHECK_TYPE($ctype_name, $cvar, $fail);");

@@ -67,7 +67,7 @@ def test_EnumDomainUsers(samr, dom_handle):
     users = toArray(samr.EnumDomainUsers(dom_handle, 0, 0, -1))
     print "Found %d users" % len(users)
     for idx, user in users:
-        print "\t%s\t(%d)" % (user, idx)
+        print "\t%s\t(%d)" % (user.string, idx)
 
 def test_EnumDomainGroups(samr, dom_handle):
     """test the samr_EnumDomainGroups interface"""
@@ -75,7 +75,7 @@ def test_EnumDomainGroups(samr, dom_handle):
     groups = toArray(samr.EnumDomainGroups(dom_handle, 0, 0))
     print "Found %d groups" % len(groups)
     for idx, group in groups:
-        print "\t%s\t(%d)" % (group, idx)
+        print "\t%s\t(%d)" % (group.string, idx)
 
 def test_domain_ops(samr, dom_handle):
     """test domain specific ops"""
