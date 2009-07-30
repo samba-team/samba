@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    LDAP server
    Copyright (C) Stefan Metzmacher 2004
+   Copyright (C) Matthias Dieter Wallnöfer 2009
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -34,17 +35,141 @@
 		return NT_STATUS_NO_MEMORY;\
 	} else if ( ! ldb_dn_validate(dn)) {\
 		result = LDAP_INVALID_DN_SYNTAX;\
-		errstr = "Invalid DN format";\
+		map_ldb_error(local_ctx, LDB_ERR_INVALID_DN_SYNTAX, &errstr);\
 		goto reply;\
 	}\
 } while(0)
 
-static int map_ldb_error(struct ldb_context *ldb, int err, const char **errstring)
+static int map_ldb_error(TALLOC_CTX *mem_ctx, int ldb_err,
+	const char **errstring)
 {
-	*errstring = ldb_errstring(ldb);
+	WERROR err;
+
+	switch (ldb_err) {
+	case LDB_SUCCESS:
+		err = WERR_OK;
+	break;
+	case LDB_ERR_OPERATIONS_ERROR:
+		err = WERR_DS_OPERATIONS_ERROR;
+	break;
+	case LDB_ERR_PROTOCOL_ERROR:
+		err = WERR_DS_PROTOCOL_ERROR;
+	break;
+	case LDB_ERR_TIME_LIMIT_EXCEEDED:
+		err = WERR_DS_TIMELIMIT_EXCEEDED;
+	break;
+	case LDB_ERR_SIZE_LIMIT_EXCEEDED:
+		err = WERR_DS_SIZE_LIMIT_EXCEEDED;
+	break;
+	case LDB_ERR_COMPARE_FALSE:
+		err = WERR_DS_COMPARE_FALSE;
+	break;
+	case LDB_ERR_COMPARE_TRUE:
+		err = WERR_DS_COMPARE_TRUE;
+	break;
+	case LDB_ERR_AUTH_METHOD_NOT_SUPPORTED:
+		err = WERR_DS_AUTH_METHOD_NOT_SUPPORTED;
+	break;
+	case LDB_ERR_STRONG_AUTH_REQUIRED:
+		err = WERR_DS_STRONG_AUTH_REQUIRED;
+	break;
+	case LDB_ERR_REFERRAL:
+		err = WERR_DS_REFERRAL;
+	break;
+	case LDB_ERR_ADMIN_LIMIT_EXCEEDED:
+		err = WERR_DS_ADMIN_LIMIT_EXCEEDED;
+	break;
+	case LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION:
+		err = WERR_DS_UNAVAILABLE_CRIT_EXTENSION;
+	break;
+	case LDB_ERR_CONFIDENTIALITY_REQUIRED:
+		err = WERR_DS_CONFIDENTIALITY_REQUIRED;
+	break;
+	case LDB_ERR_SASL_BIND_IN_PROGRESS:
+		err = WERR_DS_BUSY;
+	break;
+	case LDB_ERR_NO_SUCH_ATTRIBUTE:
+		err = WERR_DS_NO_ATTRIBUTE_OR_VALUE;
+	break;
+	case LDB_ERR_UNDEFINED_ATTRIBUTE_TYPE:
+		err = WERR_DS_ATTRIBUTE_TYPE_UNDEFINED;
+	break;
+	case LDB_ERR_INAPPROPRIATE_MATCHING:
+		err = WERR_DS_INAPPROPRIATE_MATCHING;
+	break;
+	case LDB_ERR_CONSTRAINT_VIOLATION:
+		err = WERR_DS_CONSTRAINT_VIOLATION;
+	break;
+	case LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS:
+		err = WERR_DS_ATTRIBUTE_OR_VALUE_EXISTS;
+	break;
+	case LDB_ERR_INVALID_ATTRIBUTE_SYNTAX:
+		err = WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+	break;
+	case LDB_ERR_NO_SUCH_OBJECT:
+		err = WERR_DS_NO_SUCH_OBJECT;
+	break;
+	case LDB_ERR_ALIAS_PROBLEM:
+		err = WERR_DS_ALIAS_PROBLEM;
+	break;
+	case LDB_ERR_INVALID_DN_SYNTAX:
+		err = WERR_DS_INVALID_DN_SYNTAX;
+	break;
+	case LDB_ERR_ALIAS_DEREFERENCING_PROBLEM:
+		err = WERR_DS_ALIAS_DEREF_PROBLEM;
+	break;
+	case LDB_ERR_INAPPROPRIATE_AUTHENTICATION:
+		err = WERR_DS_INAPPROPRIATE_AUTH;
+	break;
+	case LDB_ERR_INVALID_CREDENTIALS:
+		err = WERR_ACCESS_DENIED;
+	break;
+	case LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS:
+		err = WERR_DS_INSUFF_ACCESS_RIGHTS;
+	break;
+	case LDB_ERR_BUSY:
+		err = WERR_DS_BUSY;
+	break;
+	case LDB_ERR_UNAVAILABLE:
+		err = WERR_DS_UNAVAILABLE;
+	break;
+	case LDB_ERR_UNWILLING_TO_PERFORM:
+		err = WERR_DS_UNWILLING_TO_PERFORM;
+	break;
+	case LDB_ERR_LOOP_DETECT:
+		err = WERR_DS_LOOP_DETECT;
+	break;
+	case LDB_ERR_NAMING_VIOLATION:
+		err = WERR_DS_NAMING_VIOLATION;
+	break;
+	case LDB_ERR_OBJECT_CLASS_VIOLATION:
+		err = WERR_DS_OBJ_CLASS_VIOLATION;
+	break;
+	case LDB_ERR_NOT_ALLOWED_ON_NON_LEAF:
+		err = WERR_DS_CANT_ON_NON_LEAF;
+	break;
+	case LDB_ERR_NOT_ALLOWED_ON_RDN:
+		err = WERR_DS_CANT_ON_RDN;
+	break;
+	case LDB_ERR_ENTRY_ALREADY_EXISTS:
+		err = WERR_DS_OBJ_STRING_NAME_EXISTS;
+	break;
+	case LDB_ERR_OBJECT_CLASS_MODS_PROHIBITED:
+		err = WERR_DS_CANT_MOD_OBJ_CLASS;
+	break;
+	case LDB_ERR_AFFECTS_MULTIPLE_DSAS:
+		err = WERR_DS_AFFECTS_MULTIPLE_DSAS;
+	break;
+	default:
+		err = WERR_DS_GENERIC_ERROR;
+	break;
+	}
+
+	*errstring = talloc_asprintf(mem_ctx, "%08x: %s", err,
+		ldb_strerror(ldb_err));
 	
-	/* its 1:1 for now */
-	return err;
+	/* result is 1:1 for now */
+	return ldb_err;
 }
 
 /*
@@ -152,7 +277,7 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	struct ldap_SearchResEntry *ent;
 	struct ldap_Result *done;
 	struct ldapsrv_reply *ent_r, *done_r;
-	void *local_ctx;
+	TALLOC_CTX *local_ctx;
 	struct ldb_context *samdb = talloc_get_type(call->conn->ldb, struct ldb_context);
 	struct ldb_dn *basedn;
 	struct ldb_result *res = NULL;
@@ -201,7 +326,10 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 			break;
 	        default:
 			result = LDAP_PROTOCOL_ERROR;
-			errstr = "Invalid scope";
+			map_ldb_error(local_ctx, LDB_ERR_PROTOCOL_ERROR,
+				&errstr);
+			errstr = talloc_asprintf(local_ctx,
+				"%s. Invalid scope", errstr);
 			goto reply;
 	}
 	DEBUG(10,("SearchRequest: scope: [%s]\n", scope_str));
@@ -327,7 +455,7 @@ reply:
 		}
 	} else {
 		DEBUG(10,("SearchRequest: error\n"));
-		result = map_ldb_error(samdb, ldb_ret, &errstr);
+		result = map_ldb_error(local_ctx, ldb_ret, &errstr);
 	}
 
 	done->resultcode = result;
@@ -344,7 +472,7 @@ static NTSTATUS ldapsrv_ModifyRequest(struct ldapsrv_call *call)
 	struct ldap_ModifyRequest *req = &call->request->r.ModifyRequest;
 	struct ldap_Result *modify_result;
 	struct ldapsrv_reply *modify_reply;
-	void *local_ctx;
+	TALLOC_CTX *local_ctx;
 	struct ldb_context *samdb = call->conn->ldb;
 	struct ldb_message *msg = NULL;
 	struct ldb_dn *dn;
@@ -384,7 +512,10 @@ static NTSTATUS ldapsrv_ModifyRequest(struct ldapsrv_call *call)
 			switch (req->mods[i].type) {
 			default:
 				result = LDAP_PROTOCOL_ERROR;
-				errstr = "Invalid LDAP_MODIFY_* type";
+				map_ldb_error(local_ctx,
+					LDB_ERR_PROTOCOL_ERROR, &errstr);
+				errstr = talloc_asprintf(local_ctx,
+					"%s. Invalid LDAP_MODIFY_* type", errstr);
 				goto reply;
 			case LDAP_MODIFY_ADD:
 				msg->elements[i].flags = LDB_FLAG_MOD_ADD;
@@ -406,7 +537,11 @@ static NTSTATUS ldapsrv_ModifyRequest(struct ldapsrv_call *call)
 				for (j=0; j < msg->elements[i].num_values; j++) {
 					if (!(req->mods[i].attrib.values[j].length > 0)) {
 						result = LDAP_OTHER;
-						errstr = "Empty attribute values are not allowed";
+
+						map_ldb_error(local_ctx,
+							LDB_ERR_OTHER, &errstr);
+						errstr = talloc_asprintf(local_ctx,
+							"%s. Empty attribute values not allowed", errstr);
 						goto reply;
 					}
 					msg->elements[i].values[j].length = req->mods[i].attrib.values[j].length;
@@ -416,7 +551,9 @@ static NTSTATUS ldapsrv_ModifyRequest(struct ldapsrv_call *call)
 		}
 	} else {
 		result = LDAP_OTHER;
-		errstr = "No mods are not allowed";
+		map_ldb_error(local_ctx, LDB_ERR_OTHER, &errstr);
+		errstr = talloc_asprintf(local_ctx,
+			"%s. No mods are not allowed", errstr);
 		goto reply;
 	}
 
@@ -426,7 +563,7 @@ reply:
 
 	if (result == LDAP_SUCCESS) {
 		ldb_ret = ldb_modify(samdb, msg);
-		result = map_ldb_error(samdb, ldb_ret, &errstr);
+		result = map_ldb_error(local_ctx, ldb_ret, &errstr);
 	}
 
 	modify_result = &modify_reply->msg->r.AddResponse;
@@ -447,7 +584,7 @@ static NTSTATUS ldapsrv_AddRequest(struct ldapsrv_call *call)
 	struct ldap_AddRequest *req = &call->request->r.AddRequest;
 	struct ldap_Result *add_result;
 	struct ldapsrv_reply *add_reply;
-	void *local_ctx;
+	TALLOC_CTX *local_ctx;
 	struct ldb_context *samdb = call->conn->ldb;
 	struct ldb_message *msg = NULL;
 	struct ldb_dn *dn;
@@ -494,7 +631,10 @@ static NTSTATUS ldapsrv_AddRequest(struct ldapsrv_call *call)
 				for (j=0; j < msg->elements[i].num_values; j++) {
 					if (!(req->attributes[i].values[j].length > 0)) {
 						result = LDAP_OTHER;
-						errstr = "Empty attribute values are not allowed";
+						map_ldb_error(local_ctx,
+							LDB_ERR_OTHER, &errstr);
+						errstr = talloc_asprintf(local_ctx,
+							"%s. Empty attribute values not allowed", errstr);
 						goto reply;
 					}
 					msg->elements[i].values[j].length = req->attributes[i].values[j].length;
@@ -502,13 +642,17 @@ static NTSTATUS ldapsrv_AddRequest(struct ldapsrv_call *call)
 				}
 			} else {
 				result = LDAP_OTHER;
-				errstr = "No attribute values are not allowed";
+				map_ldb_error(local_ctx, LDB_ERR_OTHER, &errstr);
+				errstr = talloc_asprintf(local_ctx,
+					"%s. No attribute values are not allowed", errstr);
 				goto reply;
 			}
 		}
 	} else {
 		result = LDAP_OTHER;
-		errstr = "No attributes are not allowed";
+		map_ldb_error(local_ctx, LDB_ERR_OTHER, &errstr);
+		errstr = talloc_asprintf(local_ctx, 
+			"%s. No attributes are not allowed", errstr);
 		goto reply;
 	}
 
@@ -518,7 +662,7 @@ reply:
 
 	if (result == LDAP_SUCCESS) {
 		ldb_ret = ldb_add(samdb, msg);
-		result = map_ldb_error(samdb, ldb_ret, &errstr);
+		result = map_ldb_error(local_ctx, ldb_ret, &errstr);
 	}
 
 	add_result = &add_reply->msg->r.AddResponse;
@@ -539,7 +683,7 @@ static NTSTATUS ldapsrv_DelRequest(struct ldapsrv_call *call)
 	struct ldap_DelRequest *req = &call->request->r.DelRequest;
 	struct ldap_Result *del_result;
 	struct ldapsrv_reply *del_reply;
-	void *local_ctx;
+	TALLOC_CTX *local_ctx;
 	struct ldb_context *samdb = call->conn->ldb;
 	struct ldb_dn *dn;
 	const char *errstr = NULL;
@@ -563,7 +707,7 @@ reply:
 
 	if (result == LDAP_SUCCESS) {
 		ldb_ret = ldb_delete(samdb, dn);
-		result = map_ldb_error(samdb, ldb_ret, &errstr);
+		result = map_ldb_error(local_ctx, ldb_ret, &errstr);
 	}
 
 	del_result = &del_reply->msg->r.DelResponse;
@@ -583,7 +727,7 @@ static NTSTATUS ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
 	struct ldap_ModifyDNRequest *req = &call->request->r.ModifyDNRequest;
 	struct ldap_Result *modifydn;
 	struct ldapsrv_reply *modifydn_r;
-	void *local_ctx;
+	TALLOC_CTX *local_ctx;
 	struct ldb_context *samdb = call->conn->ldb;
 	struct ldb_dn *olddn, *newdn=NULL, *newrdn;
 	struct ldb_dn *parentdn = NULL;
@@ -610,7 +754,9 @@ static NTSTATUS ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
 	/* we can't handle the rename if we should not remove the old dn */
 	if (!req->deleteolddn) {
 		result = LDAP_UNWILLING_TO_PERFORM;
-		errstr = "Old RDN must be deleted";
+		map_ldb_error(local_ctx, LDB_ERR_UNWILLING_TO_PERFORM, &errstr);
+		errstr = talloc_asprintf(local_ctx,
+			"%s. Old RDN must be deleted", errstr);
 		goto reply;
 	}
 
@@ -621,7 +767,10 @@ static NTSTATUS ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
 		
 		if (ldb_dn_get_comp_num(parentdn) < 1) {
 			result = LDAP_AFFECTS_MULTIPLE_DSAS;
-			errstr = "Error new Superior DN invalid";
+			map_ldb_error(local_ctx, LDB_ERR_AFFECTS_MULTIPLE_DSAS,
+				&errstr);
+			errstr = talloc_asprintf(local_ctx,
+				"%s. Error new Superior DN invalid", errstr);
 			goto reply;
 		}
 	}
@@ -646,7 +795,7 @@ reply:
 
 	if (result == LDAP_SUCCESS) {
 		ldb_ret = ldb_rename(samdb, olddn, newdn);
-		result = map_ldb_error(samdb, ldb_ret, &errstr);
+		result = map_ldb_error(local_ctx, ldb_ret, &errstr);
 	}
 
 	modifydn = &modifydn_r->msg->r.ModifyDNResponse;
@@ -666,7 +815,7 @@ static NTSTATUS ldapsrv_CompareRequest(struct ldapsrv_call *call)
 	struct ldap_CompareRequest *req = &call->request->r.CompareRequest;
 	struct ldap_Result *compare;
 	struct ldapsrv_reply *compare_r;
-	void *local_ctx;
+	TALLOC_CTX *local_ctx;
 	struct ldb_context *samdb = call->conn->ldb;
 	struct ldb_result *res = NULL;
 	struct ldb_dn *dn;
@@ -702,7 +851,7 @@ reply:
 		ldb_ret = ldb_search(samdb, local_ctx, &res,
 				     dn, LDB_SCOPE_BASE, attrs, "%s", filter);
 		if (ldb_ret != LDB_SUCCESS) {
-			result = map_ldb_error(samdb, ldb_ret, &errstr);
+			result = map_ldb_error(local_ctx, ldb_ret, &errstr);
 			DEBUG(10,("CompareRequest: error: %s\n", errstr));
 		} else if (res->count == 0) {
 			DEBUG(10,("CompareRequest: doesn't matched\n"));
@@ -714,7 +863,9 @@ reply:
 			errstr = NULL;
 		} else if (res->count > 1) {
 			result = LDAP_OTHER;
-			errstr = "too many objects match";
+			map_ldb_error(local_ctx, LDB_ERR_OTHER, &errstr);
+			errstr = talloc_asprintf(local_ctx,
+				"%s. Too many objects match!", errstr);
 			DEBUG(10,("CompareRequest: %d results: %s\n", res->count, errstr));
 		}
 	}
