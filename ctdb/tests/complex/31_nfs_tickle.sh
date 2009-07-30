@@ -75,7 +75,8 @@ echo "Sleeping for MonitorInterval..."
 sleep_for $monitor_interval
 
 echo "Trying to determine NFS_TICKLE_SHARED_DIRECTORY..."
-try_command_on_node -v 0 "sed -n -e s@^NFS_TICKLE_SHARED_DIRECTORY=@@p /etc/sysconfig/nfs" || true
+f="/etc/sysconfig/nfs"
+try_command_on_node -v 0 "[ -r $f ] &&  sed -n -e s@^NFS_TICKLE_SHARED_DIRECTORY=@@p $f" || true
 
 nfs_tickle_shared_directory="${out:-/gpfs/.ctdb/nfs-tickles}"
 
