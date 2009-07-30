@@ -22,16 +22,16 @@
 
 int net_dom_usage(struct net_context *c, int argc, const char **argv)
 {
-	d_printf("usage: net dom join "
-		 "<domain=DOMAIN> <ou=OU> <account=ACCOUNT> "
-		 "<password=PASSWORD> <reboot>\n  Join a remote machine\n");
-	d_printf("usage: net dom unjoin "
-		 "<account=ACCOUNT> <password=PASSWORD> <reboot>\n"
-		 "  Unjoin a remote machine\n");
-	d_printf("usage: net dom renamecomputer "
-		 "<newname=NEWNAME> "
-		 "<account=ACCOUNT> <password=PASSWORD> <reboot>\n"
-		 "  Rename joined computer\n");
+	d_printf(_("usage: net dom join "
+		   "<domain=DOMAIN> <ou=OU> <account=ACCOUNT> "
+		   "<password=PASSWORD> <reboot>\n  Join a remote machine\n"));
+	d_printf(_("usage: net dom unjoin "
+		   "<account=ACCOUNT> <password=PASSWORD> <reboot>\n"
+		   "  Unjoin a remote machine\n"));
+	d_printf(_("usage: net dom renamecomputer "
+		   "<newname=NEWNAME> "
+		   "<account=ACCOUNT> <password=PASSWORD> <reboot>\n"
+		   "  Rename joined computer\n"));
 
 	return -1;
 }
@@ -88,14 +88,14 @@ static int net_dom_unjoin(struct net_context *c, int argc, const char **argv)
 
 	status = NetUnjoinDomain(server_name, account, password, unjoin_flags);
 	if (status != 0) {
-		printf("Failed to unjoin domain: %s\n",
+		printf(_("Failed to unjoin domain: %s\n"),
 			libnetapi_get_error_string(c->netapi_ctx, status));
 		goto done;
 	}
 
 	if (do_reboot) {
-		c->opt_comment = "Shutting down due to a domain membership "
-				 "change";
+		c->opt_comment = _("Shutting down due to a domain membership "
+				   "change");
 		c->opt_reboot = true;
 		c->opt_timeout = 30;
 
@@ -195,14 +195,14 @@ static int net_dom_join(struct net_context *c, int argc, const char **argv)
 	status = NetJoinDomain(server_name, domain_name, account_ou,
 			       Account, password, join_flags);
 	if (status != 0) {
-		printf("Failed to join domain: %s\n",
+		printf(_("Failed to join domain: %s\n"),
 			libnetapi_get_error_string(c->netapi_ctx, status));
 		goto done;
 	}
 
 	if (do_reboot) {
-		c->opt_comment = "Shutting down due to a domain membership "
-				 "change";
+		c->opt_comment = _("Shutting down due to a domain membership "
+				   "change");
 		c->opt_reboot = true;
 		c->opt_timeout = 30;
 
@@ -287,9 +287,9 @@ static int net_dom_renamecomputer(struct net_context *c, int argc, const char **
 	status = NetRenameMachineInDomain(server_name, newname,
 					  account, password, rename_options);
 	if (status != 0) {
-		printf("Failed to rename machine: ");
+		printf(_("Failed to rename machine: "));
 		if (status == W_ERROR_V(WERR_SETUP_NOT_JOINED)) {
-			printf("Computer is not joined to a Domain\n");
+			printf(_("Computer is not joined to a Domain\n"));
 			goto done;
 		}
 		printf("%s\n",
@@ -298,7 +298,7 @@ static int net_dom_renamecomputer(struct net_context *c, int argc, const char **
 	}
 
 	if (do_reboot) {
-		c->opt_comment = "Shutting down due to a computer rename";
+		c->opt_comment = _("Shutting down due to a computer rename");
 		c->opt_reboot = true;
 		c->opt_timeout = 30;
 
@@ -335,29 +335,29 @@ int net_dom(struct net_context *c, int argc, const char **argv)
 			"join",
 			net_dom_join,
 			NET_TRANSPORT_LOCAL,
-			"Join a remote machine",
-			"net dom join <domain=DOMAIN> <ou=OU> "
-			"<account=ACCOUNT> <password=PASSWORD> <reboot>\n"
-			"  Join a remote machine"
+			N_("Join a remote machine"),
+			N_("net dom join <domain=DOMAIN> <ou=OU> "
+			   "<account=ACCOUNT> <password=PASSWORD> <reboot>\n"
+			   "  Join a remote machine")
 		},
 		{
 			"unjoin",
 			net_dom_unjoin,
 			NET_TRANSPORT_LOCAL,
-			"Unjoin a remote machine",
-			"net dom unjoin <account=ACCOUNT> <password=PASSWORD> "
-			"<reboot>\n"
-			"  Unjoin a remote machine"
+			N_("Unjoin a remote machine"),
+			N_("net dom unjoin <account=ACCOUNT> "
+			   "<password=PASSWORD> <reboot>\n"
+			   "  Unjoin a remote machine")
 		},
 		{
 			"renamecomputer",
 			net_dom_renamecomputer,
 			NET_TRANSPORT_LOCAL,
-			"Rename a computer that is joined to a domain",
-			"net dom renamecomputer <newname=NEWNAME> "
-			"<account=ACCOUNT> <password=PASSWORD> "
-			"<reboot>\n"
-			"  Rename joined computer"
+			N_("Rename a computer that is joined to a domain"),
+			N_("net dom renamecomputer <newname=NEWNAME> "
+			   "<account=ACCOUNT> <password=PASSWORD> "
+			   "<reboot>\n"
+			   "  Rename joined computer")
 		},
 
 		{NULL, NULL, 0, NULL, NULL}
