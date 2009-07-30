@@ -4,6 +4,7 @@
    
    Copyright (C) Stefan Metzmacher 2004
    Copyright (C) Simo Sorce 2004
+   Copyright (C) Matthias Dieter Wallnöfer 2009
     
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -189,6 +190,179 @@ static bool test_compare_sasl(struct ldap_connection *conn, const char *basedn)
 	return true;
 }
 
+/*
+ * This takes an AD error message and splits it into the WERROR code
+ * (WERR_DS_GENERIC if none found) and the reason (remaining string).
+ */
+static WERROR ad_error(const char *err_msg, char **reason)
+{
+	WERROR err = W_ERROR(strtol(err_msg, reason, 16));
+
+	if ((reason != NULL) && (*reason[0] != ':')) {
+		return WERR_DS_GENERIC_ERROR; /* not an AD std error message */
+	}
+		
+	if (reason != NULL) {
+		*reason += 2; /* skip ": " */
+	}
+	return err;
+}
+
+static bool test_error_codes(struct torture_context *tctx,
+	struct ldap_connection *conn, const char *basedn)
+{
+	struct ldap_message *msg, *rep;
+	struct ldap_request *req;
+	char *err_code_str, *endptr;
+	WERROR err;
+	NTSTATUS status;
+
+	printf("Testing error codes\n");
+
+	if (!basedn) {
+		return false;
+	}
+
+	msg = new_ldap_message(conn);
+	if (!msg) {
+		return false;
+	}
+
+	printf(" Try a wrong addition\n");
+
+	msg->type = LDAP_TAG_AddRequest;
+	msg->r.AddRequest.dn = basedn;
+	msg->r.AddRequest.num_attributes = 0;
+	msg->r.AddRequest.attributes = NULL;
+
+	req = ldap_request_send(conn, msg);
+	if (!req) {
+		return false;
+	}
+
+	status = ldap_result_one(req, &rep, LDAP_TAG_AddResponse);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("error in ldap addition request - %s\n", nt_errstr(status));
+		return false;
+	}
+
+	if ((rep->r.AddResponse.resultcode == 0)
+		|| (rep->r.AddResponse.errormessage == NULL)
+		|| (strtol(rep->r.AddResponse.errormessage, &endptr,16) <= 0)
+		|| (*endptr != ':')) {
+		printf("Invalid error message!\n");
+		return false;
+	}
+
+	err = ad_error(rep->r.AddResponse.errormessage, &endptr);
+	err_code_str = win_errstr(err);
+	printf(" - Errorcode: %s; Reason: %s\n", err_code_str, endptr);
+	if (torture_setting_bool(tctx, "samba4", false)) {
+		if ((!W_ERROR_EQUAL(err, WERR_DS_REFERRAL))
+			|| (rep->r.AddResponse.resultcode != 10)) {
+			return false;
+		}
+	} else {
+		if ((!W_ERROR_EQUAL(err, WERR_DS_GENERIC_ERROR))
+			|| (rep->r.AddResponse.resultcode != 80)) {
+			return false;
+		}
+	}
+
+	printf(" Try a wrong removal\n");
+
+	msg->type = LDAP_TAG_DelRequest;
+	msg->r.DelRequest.dn = "";
+
+	req = ldap_request_send(conn, msg);
+	if (!req) {
+		return false;
+	}
+
+	status = ldap_result_one(req, &rep, LDAP_TAG_DelResponse);
+
+	printf(" Try a wrong modification\n");
+
+	msg->type = LDAP_TAG_ModifyRequest;
+	msg->r.ModifyRequest.dn = "";
+	msg->r.ModifyRequest.num_mods = 0;
+	msg->r.ModifyRequest.mods = NULL;
+
+	req = ldap_request_send(conn, msg);
+	if (!req) {
+		return false;
+	}
+
+	status = ldap_result_one(req, &rep, LDAP_TAG_ModifyResponse);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("error in ldap modifification request - %s\n", nt_errstr(status));
+		return false;
+	}
+
+	if ((rep->r.ModifyResponse.resultcode == 0)
+		|| (rep->r.ModifyResponse.errormessage == NULL)
+		|| (strtol(rep->r.ModifyResponse.errormessage, &endptr,16) <= 0)
+		|| (*endptr != ':')) {
+		printf("Invalid error message!\n");
+		return false;
+	}
+
+	err = ad_error(rep->r.ModifyResponse.errormessage, &endptr);
+	err_code_str = win_errstr(err);
+	printf(" - Errorcode: %s; Reason: %s\n", err_code_str, endptr);
+	if (torture_setting_bool(tctx, "samba4", false)) {
+		if ((!W_ERROR_EQUAL(err, WERR_INVALID_PARAM))
+			|| (rep->r.ModifyResponse.resultcode != 53)) {
+			return false;
+		}
+	} else {
+		if ((!W_ERROR_EQUAL(err, WERR_DS_GENERIC_ERROR))
+			|| (rep->r.ModifyResponse.resultcode != 80)) {
+			return false;
+		}
+	}
+
+	printf(" Try a wrong removal\n");
+
+	msg->type = LDAP_TAG_DelRequest;
+	msg->r.DelRequest.dn = "";
+
+	req = ldap_request_send(conn, msg);
+	if (!req) {
+		return false;
+	}
+
+	status = ldap_result_one(req, &rep, LDAP_TAG_DelResponse);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("error in ldap removal request - %s\n", nt_errstr(status));
+		return false;
+	}
+
+	if ((rep->r.DelResponse.resultcode == 0)
+		|| (rep->r.DelResponse.errormessage == NULL)
+		|| (strtol(rep->r.DelResponse.errormessage, &endptr,16) <= 0)
+		|| (*endptr != ':')) {
+		printf("Invalid error message!\n");
+		return false;
+	}
+	
+	err = ad_error(rep->r.DelResponse.errormessage, &endptr);
+	err_code_str = win_errstr(err);
+	printf(" - Errorcode: %s; Reason: %s\n", err_code_str, endptr);
+	if (torture_setting_bool(tctx, "samba4", false)) {
+		if ((!W_ERROR_EQUAL(err, WERR_DS_OBJ_NOT_FOUND))
+			|| (rep->r.DelResponse.resultcode != 32)) {
+			return false;
+		}
+	} else {
+		if ((!W_ERROR_EQUAL(err, WERR_DS_INVALID_DN_SYNTAX))
+			|| (rep->r.DelResponse.resultcode != 34)) {
+			return false;
+		}
+	}
+
+	return true;
+}
 
 bool torture_ldap_basic(struct torture_context *torture)
 {
@@ -215,7 +389,7 @@ bool torture_ldap_basic(struct torture_context *torture)
 		ret = false;
 	}
 
-	/* other basic tests here */
+	/* other bind tests here */
 
 	if (!test_multibind(conn, userdn, secret)) {
 		ret = false;
@@ -229,10 +403,15 @@ bool torture_ldap_basic(struct torture_context *torture)
 		ret = false;
 	}
 
-	/* no more test we are closing */
-        torture_ldap_close(conn);
-	talloc_free(mem_ctx);
+	/* error codes test here */
 
+	if (!test_error_codes(torture, conn, basedn)) {
+		ret = false;
+	}
+
+	/* if there are no more tests we are closing */
+	torture_ldap_close(conn);
+	talloc_free(mem_ctx);
 
 	return ret;
 }
