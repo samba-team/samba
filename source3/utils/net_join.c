@@ -23,11 +23,11 @@
 
 int net_join_usage(struct net_context *c, int argc, const char **argv)
 {
-	d_printf("\nnet [<method>] join [misc. options]\n"
-		 "\tjoins this server to a domain\n");
-	d_printf("Valid methods: (auto-detected if not specified)\n");
-	d_printf("\tads\t\t\t\tActive Directory (LDAP/Kerberos)\n");
-	d_printf("\trpc\t\t\t\tDCE-RPC\n");
+	d_printf(_("\nnet [<method>] join [misc. options]\n"
+		   "\tjoins this server to a domain\n"));
+	d_printf(_("Valid methods: (auto-detected if not specified)\n"));
+	d_printf(_("\tads\t\t\t\tActive Directory (LDAP/Kerberos)\n"));
+	d_printf(_("\trpc\t\t\t\tDCE-RPC\n"));
 	net_common_flags_usage(c, argc, argv);
 	return -1;
 }
@@ -43,7 +43,9 @@ int net_join(struct net_context *c, int argc, const char **argv)
 		if (net_ads_join(c, argc, argv) == 0)
 			return 0;
 		else
-			d_fprintf(stderr, "ADS join did not work, falling back to RPC...\n");
+			d_fprintf(stderr,
+				  _("ADS join did not work, falling back to "
+				    "RPC...\n"));
 	}
 	return net_rpc_join(c, argc, argv);
 }
