@@ -262,6 +262,7 @@ bool asn1_write_OID(struct asn1_data *data, const char *OID)
 	}
 
 	if (!asn1_write(data, blob.data, blob.length)) {
+		data_blob_free(&blob);
 		data->has_error = true;
 		return false;
 	}
