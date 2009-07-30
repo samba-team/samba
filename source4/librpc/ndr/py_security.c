@@ -163,7 +163,7 @@ static PyObject *py_descriptor_sacl_del(PyObject *self, PyObject *args)
 
 static PyObject *py_descriptor_new(PyTypeObject *self, PyObject *args, PyObject *kwargs)
 {
-	return py_talloc_import(self, security_descriptor_initialise(NULL));
+	return py_talloc_steal(self, security_descriptor_initialise(NULL));
 }
 
 static PyObject *py_descriptor_from_sddl(PyObject *self, PyObject *args)
@@ -184,7 +184,7 @@ static PyObject *py_descriptor_from_sddl(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	return py_talloc_import((PyTypeObject *)self, secdesc);
+	return py_talloc_steal((PyTypeObject *)self, secdesc);
 }
 
 static PyObject *py_descriptor_as_sddl(PyObject *self, PyObject *args)
@@ -316,7 +316,7 @@ static PyObject *py_token_set_privilege(PyObject *self, PyObject *args)
 
 static PyObject *py_token_new(PyTypeObject *self, PyObject *args, PyObject *kwargs)
 {
-	return py_talloc_import(self, security_token_initialise(NULL));
+	return py_talloc_steal(self, security_token_initialise(NULL));
 }	
 
 static PyMethodDef py_token_extra_methods[] = {
@@ -378,7 +378,7 @@ static PyObject *py_random_sid(PyObject *self)
 
         sid = dom_sid_parse_talloc(NULL, str);
 	talloc_free(str);
-	ret = py_talloc_import(&dom_sid_Type, sid);
+	ret = py_talloc_steal(&dom_sid_Type, sid);
 	return ret;
 }
 

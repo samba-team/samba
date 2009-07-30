@@ -24,7 +24,7 @@ import sys
 
 sys.path.insert(0, "bin/python")
 
-from samba.dcerpc import samr, security, lsa
+from samba.dcerpc import samr, security
 
 def display_lsa_string(str):
     return str.string

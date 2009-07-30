@@ -53,7 +53,7 @@ static PyObject *py_get_predefined_key_by_name(PyObject *self, PyObject *args)
 	result = reg_get_predefined_key_by_name(ctx, name, &key);
 	PyErr_WERROR_IS_ERR_RAISE(result);
 
-	return py_talloc_import(&PyRegistryKey, key);
+	return py_talloc_steal(&PyRegistryKey, key);
 }
 
 static PyObject *py_key_del_abs(PyObject *self, PyObject *args)
@@ -84,7 +84,7 @@ static PyObject *py_get_predefined_key(PyObject *self, PyObject *args)
 	result = reg_get_predefined_key(ctx, hkey, &key);
 	PyErr_WERROR_IS_ERR_RAISE(result);
 
-	return py_talloc_import(&PyRegistryKey, key);
+	return py_talloc_steal(&PyRegistryKey, key);
 }
 
 static PyObject *py_diff_apply(PyObject *self, PyObject *args)
@@ -140,7 +140,7 @@ static PyObject *registry_new(PyTypeObject *type, PyObject *args, PyObject *kwar
 	struct registry_context *ctx;
 	result = reg_open_local(NULL, &ctx);
 	PyErr_WERROR_IS_ERR_RAISE(result);
-	return py_talloc_import(&PyRegistry, ctx);
+	return py_talloc_steal(&PyRegistry, ctx);
 }
 
 static PyMethodDef registry_methods[] = {
@@ -299,7 +299,7 @@ static PyObject *py_open_samba(PyObject *self, PyObject *args, PyObject *kwargs)
 		return NULL;
 	}
 	
-	return py_talloc_import(&PyRegistry, reg_ctx);
+	return py_talloc_steal(&PyRegistry, reg_ctx);
 }
 
 static PyObject *py_open_directory(PyObject *self, PyObject *args)
@@ -314,7 +314,7 @@ static PyObject *py_open_directory(PyObject *self, PyObject *args)
 	result = reg_open_directory(NULL, location, &key);
 	PyErr_WERROR_IS_ERR_RAISE(result);
 
-	return py_talloc_import(&PyHiveKey, key);
+	return py_talloc_steal(&PyHiveKey, key);
 }
 
 static PyObject *py_create_directory(PyObject *self, PyObject *args)
@@ -329,7 +329,7 @@ static PyObject *py_create_directory(PyObject *self, PyObject *args)
 	result = reg_create_directory(NULL, location, &key);
 	PyErr_WERROR_IS_ERR_RAISE(result);
 
-	return py_talloc_import(&PyHiveKey, key);
+	return py_talloc_steal(&PyHiveKey, key);
 }
 
 static PyObject *py_open_ldb_file(PyObject *self, PyObject *args, PyObject *kwargs)
@@ -368,7 +368,7 @@ static PyObject *py_open_ldb_file(PyObject *self, PyObject *args, PyObject *kwar
 							   tevent_context_init(NULL), lp_ctx, &key);
 	PyErr_WERROR_IS_ERR_RAISE(result);
 
-	return py_talloc_import(&PyHiveKey, key);
+	return py_talloc_steal(&PyHiveKey, key);
 }
 
 static PyObject *py_str_regtype(PyObject *self, PyObject *args)

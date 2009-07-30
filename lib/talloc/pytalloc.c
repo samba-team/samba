@@ -35,7 +35,7 @@ void py_talloc_dealloc(PyObject* self)
 /**
  * Import an existing talloc pointer into a Python object.
  */
-PyObject *py_talloc_import_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx, 
+PyObject *py_talloc_steal_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx, 
 						   void *ptr)
 {
 	py_talloc_Object *ret = (py_talloc_Object *)py_type->tp_alloc(py_type, 0);
@@ -56,14 +56,14 @@ PyObject *py_talloc_import_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx,
  * original parent, and creating a reference to the object in the python
  * object
  */
-PyObject *py_talloc_reference(PyTypeObject *py_type, void *ptr)
+PyObject *py_talloc_reference_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx, void *ptr)
 {
 	py_talloc_Object *ret = (py_talloc_Object *)py_type->tp_alloc(py_type, 0);
 	ret->talloc_ctx = talloc_new(NULL);
 	if (ret->talloc_ctx == NULL) {
 		return NULL;
 	}
-	if (talloc_reference(ret->talloc_ctx, ptr) == NULL) {
+	if (talloc_reference(ret->talloc_ctx, mem_ctx) == NULL) {
 		return NULL;
 	}
 	ret->ptr = ptr;

@@ -1030,7 +1030,7 @@ sub ConvertObjectToPythonData($$$$$;$)
 			error($location, "Unable to determine origin of type `" . mapTypeName($ctype) . "'");
 			return "NULL"; # FIXME!
 		}
-		return "py_talloc_import_ex($ctype_name, $mem_ctx, $cvar)";
+		return "py_talloc_reference_ex($ctype_name, $mem_ctx, $cvar)";
 	}
 
 	fatal($location, "unknown type $actual_ctype->{TYPE} for ".mapTypeName($ctype) . ": $cvar");
