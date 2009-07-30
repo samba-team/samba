@@ -71,10 +71,12 @@ sub HeaderProperties($$)
 	}
 }
 
-sub ParseOutputArgument($$$)
+sub ParseOutputArgument($$$;$$)
 {
-	my ($self, $fn, $e) = @_;
+	my ($self, $fn, $e, $r, $o) = @_;
 	my $level = 0;
+	$r = "r." unless defined($r);
+	$o = "" unless defined($o);
 
 	if ($e->{LEVELS}[0]->{TYPE} ne "POINTER" and $e->{LEVELS}[0]->{TYPE} ne "ARRAY") {
 		$self->pidl("return NT_STATUS_NOT_SUPPORTED;");
@@ -85,7 +87,7 @@ sub ParseOutputArgument($$$)
 	if ($e->{LEVELS}[0]->{TYPE} eq "POINTER") {
 		$level = 1;
 		if ($e->{LEVELS}[0]->{POINTER_TYPE} ne "ref") {
-			$self->pidl("if ($e->{NAME} && r.out.$e->{NAME}) {");
+			$self->pidl("if ($o$e->{NAME} && ${r}out.$e->{NAME}) {");
 			$self->indent;
 		}
 	}
@@ -95,7 +97,7 @@ sub ParseOutputArgument($$$)
 		# Since the data is being copied into a user-provided data 
 		# structure, the user should be able to know the size beforehand 
 		# to allocate a structure of the right size.
-		my $env = GenerateFunctionInEnv($fn, "r.");
+		my $env = GenerateFunctionInEnv($fn, $r);
 		my $l = $e->{LEVELS}[$level];
 		unless (defined($l->{SIZE_IS})) {
 			error($e->{ORIGINAL}, "no size known for [out] array `$e->{NAME}'");
@@ -103,13 +105,13 @@ sub ParseOutputArgument($$$)
 		} else {
 			my $size_is = ParseExpr($l->{SIZE_IS}, $env, $e->{ORIGINAL});
 			if (has_property($e, "charset")) {
-				$self->pidl("memcpy(CONST_DISCARD(char *, $e->{NAME}), r.out.$e->{NAME}, $size_is * sizeof(*$e->{NAME}));");
+				$self->pidl("memcpy(CONST_DISCARD(char *, $o$e->{NAME}), ${r}out.$e->{NAME}, $size_is * sizeof(*$o$e->{NAME}));");
 			} else {
-				$self->pidl("memcpy($e->{NAME}, r.out.$e->{NAME}, $size_is * sizeof(*$e->{NAME}));");
+				$self->pidl("memcpy($o$e->{NAME}, ${r}out.$e->{NAME}, $size_is * sizeof(*$o$e->{NAME}));");
 			}
 		}
 	} else {
-		$self->pidl("*$e->{NAME} = *r.out.$e->{NAME};");
+		$self->pidl("*$o$e->{NAME} = *${r}out.$e->{NAME};");
 	}
 
 	if ($e->{LEVELS}[0]->{TYPE} eq "POINTER") {
