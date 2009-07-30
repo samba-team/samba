@@ -22,34 +22,37 @@
 
 int net_common_methods_usage(struct net_context *c, int argc, const char**argv)
 {
-	d_printf("Valid methods: (auto-detected if not specified)\n");
-	d_printf("\tads\t\t\t\tActive Directory (LDAP/Kerberos)\n");
-	d_printf("\trpc\t\t\t\tDCE-RPC\n");
-	d_printf("\trap\t\t\t\tRAP (older systems)\n");
+	d_printf(_("Valid methods: (auto-detected if not specified)\n"));
+	d_printf(_("\tads\t\t\t\tActive Directory (LDAP/Kerberos)\n"));
+	d_printf(_("\trpc\t\t\t\tDCE-RPC\n"));
+	d_printf(_("\trap\t\t\t\tRAP (older systems)\n"));
 	d_printf("\n");
 	return 0;
 }
 
 int net_common_flags_usage(struct net_context *c, int argc, const char **argv)
 {
-	d_printf("Valid targets: choose one (none defaults to localhost)\n");
-	d_printf("\t-S or --server=<server>\t\tserver name\n");
-	d_printf("\t-I or --ipaddress=<ipaddr>\taddress of target server\n");
-	d_printf("\t-w or --workgroup=<wg>\t\ttarget workgroup or domain\n");
+	d_printf(_("Valid targets: choose one (none defaults to localhost)\n"));
+	d_printf(_("\t-S or --server=<server>\t\tserver name\n"));
+	d_printf(_("\t-I or --ipaddress=<ipaddr>\taddress of target server\n"));
+	d_printf(_("\t-w or --workgroup=<wg>\t\ttarget workgroup or domain\n"));
 
 	d_printf("\n");
-	d_printf("Valid miscellaneous options are:\n"); /* misc options */
-	d_printf("\t-p or --port=<port>\t\tconnection port on target\n");
-	d_printf("\t-W or --myworkgroup=<wg>\tclient workgroup\n");
-	d_printf("\t-d or --debuglevel=<level>\tdebug level (0-10)\n");
-	d_printf("\t-n or --myname=<name>\t\tclient name\n");
-	d_printf("\t-U or --user=<name>\t\tuser name\n");
-	d_printf("\t-s or --configfile=<path>\tpathname of smb.conf file\n");
-	d_printf("\t-l or --long\t\t\tDisplay full information\n");
-	d_printf("\t-V or --version\t\t\tPrint samba version information\n");
-	d_printf("\t-P or --machine-pass\t\tAuthenticate as machine account\n");
-	d_printf("\t-e or --encrypt\t\t\tEncrypt SMB transport (UNIX extended servers only)\n");
-	d_printf("\t-k or --kerberos\t\tUse kerberos (active directory) authentication\n");
+	d_printf(_("Valid miscellaneous options are:\n")); /* misc options */
+	d_printf(_("\t-p or --port=<port>\t\tconnection port on target\n"));
+	d_printf(_("\t-W or --myworkgroup=<wg>\tclient workgroup\n"));
+	d_printf(_("\t-d or --debuglevel=<level>\tdebug level (0-10)\n"));
+	d_printf(_("\t-n or --myname=<name>\t\tclient name\n"));
+	d_printf(_("\t-U or --user=<name>\t\tuser name\n"));
+	d_printf(_("\t-s or --configfile=<path>\tpathname of smb.conf file\n"));
+	d_printf(_("\t-l or --long\t\t\tDisplay full information\n"));
+	d_printf(_("\t-V or --version\t\t\tPrint samba version information\n"));
+	d_printf(_("\t-P or --machine-pass\t\tAuthenticate as machine "
+		   "account\n"));
+	d_printf(_("\t-e or --encrypt\t\t\tEncrypt SMB transport "
+		   "(UNIX extended servers only)\n"));
+	d_printf(_("\t-k or --kerberos\t\tUse kerberos (active directory) "
+		   "authentication\n"));
 	return -1;
 }
 

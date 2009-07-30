@@ -19,6 +19,7 @@ NET_FILES="${NET_FILES} ../utils/net_afs.c ../utils/net_cache.c"
 NET_FILES="${NET_FILES} ../utils/net_conf.c ../utils/net_dom.c"
 NET_FILES="${NET_FILES} ../utils/net_eventlog.c ../utils/net_file.c"
 NET_FILES="${NET_FILES} ../utils/net_group.c ../utils/net_groupmap.c"
+NET_FILES="${NET_FILES} ../utils/net_help.c ../utils/net_help_common.c"
 FILES="../web/swat.c ../web/statuspage.c ../param/loadparm.c ${NET_FILES}"
 LANGS='en ja tr pl fr de it ru'
 
