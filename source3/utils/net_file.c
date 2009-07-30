@@ -24,15 +24,15 @@
 
 int net_file_usage(struct net_context *c, int argc, const char **argv)
 {
-	d_printf("net [<method>] file [misc. options] [targets]\n"\
-		 "\tlists all open files on file server\n\n");
-	d_printf("net [<method>] file USER <username> "\
-		 "[misc. options] [targets]"\
-		 "\n\tlists all files opened by username on file server\n\n");
-	d_printf("net [<method>] file CLOSE <id> [misc. options] [targets]\n"\
-		 "\tcloses specified file on target server\n\n");
-	d_printf("net [rap] file INFO <id> [misc. options] [targets]\n"\
-		 "\tdisplays information about the specified open file\n");
+	d_printf(_("net [<method>] file [misc. options] [targets]\n"
+		   "\tlists all open files on file server\n"));
+	d_printf(_("net [<method>] file USER <username> "
+		   "[misc. options] [targets]"
+		   "\n\tlists all files opened by username on file server\n"));
+	d_printf(_("net [<method>] file CLOSE <id> [misc. options] [targets]\n"
+		   "\tcloses specified file on target server\n"));
+	d_printf(_("net [rap] file INFO <id> [misc. options] [targets]\n"
+		   "\tdisplays information about the specified open file\n"));
 
 	net_common_methods_usage(c, argc, argv);
 	net_common_flags_usage(c, argc, argv);
