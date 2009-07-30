@@ -554,13 +554,9 @@ struct socket_context *tls_init_client(struct socket_context *socket_ctx,
 	if (tls == NULL) return NULL;
 
 	tls->socket          = socket_ctx;
+	talloc_steal(tls, socket_ctx);
 	tls->fde             = fde;
-	if (talloc_reference(tls, fde) == NULL) {
-		return NULL;
-	}
-	if (talloc_reference(tls, socket_ctx) == NULL) {
-		return NULL;
-	}
+
 	new_sock->private_data    = tls;
 
 	gnutls_global_init();
