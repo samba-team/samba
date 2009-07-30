@@ -3159,6 +3159,8 @@ static NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx, const char *host,
 	result->abstract_syntax = *abstract_syntax;
 	result->transfer_syntax = ndr_transfer_syntax;
 	result->dispatch = cli_do_rpc_ndr;
+	result->dispatch_send = cli_do_rpc_ndr_send;
+	result->dispatch_recv = cli_do_rpc_ndr_recv;
 
 	result->desthost = talloc_strdup(result, host);
 	result->srv_name_slash = talloc_asprintf_strupper_m(
@@ -3371,6 +3373,8 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 	result->abstract_syntax = *abstract_syntax;
 	result->transfer_syntax = ndr_transfer_syntax;
 	result->dispatch = cli_do_rpc_ndr;
+	result->dispatch_send = cli_do_rpc_ndr_send;
+	result->dispatch_recv = cli_do_rpc_ndr_recv;
 
 	result->desthost = get_myname(result);
 	result->srv_name_slash = talloc_asprintf_strupper_m(
@@ -3459,6 +3463,8 @@ static NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
 	result->abstract_syntax = *abstract_syntax;
 	result->transfer_syntax = ndr_transfer_syntax;
 	result->dispatch = cli_do_rpc_ndr;
+	result->dispatch_send = cli_do_rpc_ndr_send;
+	result->dispatch_recv = cli_do_rpc_ndr_recv;
 	result->desthost = talloc_strdup(result, cli->desthost);
 	result->srv_name_slash = talloc_asprintf_strupper_m(
 		result, "\\\\%s", result->desthost);
@@ -3501,6 +3507,8 @@ NTSTATUS rpc_pipe_open_local(TALLOC_CTX *mem_ctx,
 	result->abstract_syntax = *syntax;
 	result->transfer_syntax = ndr_transfer_syntax;
 	result->dispatch = cli_do_rpc_ndr;
+	result->dispatch_send = cli_do_rpc_ndr_send;
+	result->dispatch_recv = cli_do_rpc_ndr_recv;
 	result->max_xmit_frag = RPC_MAX_PDU_FRAG_LEN;
 	result->max_recv_frag = RPC_MAX_PDU_FRAG_LEN;
 
