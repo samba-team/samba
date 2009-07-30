@@ -153,7 +153,7 @@ bool getgroups_unix_user(TALLOC_CTX *mem_ctx, const char *user,
 	gid_t *groups;
 	int i;
 
-	max_grp = MIN(32, groups_max());
+	max_grp = MIN(128, groups_max());
 	temp_groups = SMB_MALLOC_ARRAY(gid_t, max_grp);
 	if (! temp_groups) {
 		return False;
