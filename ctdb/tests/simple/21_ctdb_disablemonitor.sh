@@ -44,6 +44,9 @@ set -e
 
 cluster_is_healthy
 
+# Reset configuration
+ctdb_restart_when_done
+
 test_node=1
 
 # We need this for later, so we know how long to sleep.

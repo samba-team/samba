@@ -69,6 +69,11 @@ case $cmd in
 	echo "ctdb shutdown event"
 	exit 0
 	;;
+
+     stopped)
+	echo "ctdb stopped event"
+	exit 0
+	;;
 esac
 
 echo "Invalid command $cmd"

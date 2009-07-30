@@ -326,7 +326,7 @@ _cluster_is_healthy ()
 	count=0
         while read line ; do
 	    count=$(($count + 1))
-	    [ "${line#:*:*:}" != "0:0:0:0:" ] && return 1
+	    [ "${line##:*:*:*1:}" != "$line" ] && return 1
         done
 	[ $count -gt 0 ] && return $?
     } <<<"$out" # Yay bash!
@@ -368,14 +368,16 @@ node_has_status ()
 
     local bits fpat mpat
     case "$status" in
-	(unhealthy)    bits="?:?:?:1" ;;
-	(healthy)      bits="?:?:?:0" ;;
-	(disconnected) bits="1:?:?:?" ;;
-	(connected)    bits="0:?:?:?" ;;
-	(banned)       bits="?:1:?:?" ;;
-	(unbanned)     bits="?:0:?:?" ;;
-	(disabled)     bits="?:?:1:?" ;;
-	(enabled)      bits="?:?:0:?" ;;
+	(unhealthy)    bits="?:?:?:1:*" ;;
+	(healthy)      bits="?:?:?:0:*" ;;
+	(disconnected) bits="1:*" ;;
+	(connected)    bits="0:*" ;;
+	(banned)       bits="?:1:*" ;;
+	(unbanned)     bits="?:0:*" ;;
+	(disabled)     bits="?:?:1:*" ;;
+	(enabled)      bits="?:?:0:*" ;;
+	(stopped)      bits="?:?:?:?:1:*" ;;
+	(notstopped)   bits="?:?:?:?:0:*" ;;
 	(frozen)       fpat='^[[:space:]]+frozen[[:space:]]+1$' ;;
 	(unfrozen)     fpat='^[[:space:]]+frozen[[:space:]]+0$' ;;
 	(monon)        mpat='^Monitoring mode:ACTIVE \(0\)$' ;;
@@ -393,7 +395,7 @@ node_has_status ()
 	{
             read x
             while read line ; do
-		[ "${line#:${pnn}:*:${bits}:}" = "" ] && return 0
+		[ "${line#:${pnn}:*:${bits}}" != "$line" ] && return 0
             done
 	    return 1
 	} <<<"$out" # Yay bash!

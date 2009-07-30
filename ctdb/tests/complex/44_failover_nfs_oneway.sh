@@ -66,10 +66,11 @@ ctdb_test_exit_hook_add rmdir "$mnt_d"
 
 echo "Create file containing random data..."
 dd if=/dev/urandom of=$local_f bs=1k count=1
+chmod 644 "$local_f" # needed for *_squash?
 local_sum=$(sum $local_f)
 [ $? -eq 0 ]
 
-scp "$local_f" "$remote_f"
+scp -p "$local_f" "$remote_f"
 
 echo "Mounting ${test_ip}:${first_export} on ${mnt_d} ..."
 mount -o timeo=1,hard,intr,vers=3 ${test_ip}:${first_export} ${mnt_d}
