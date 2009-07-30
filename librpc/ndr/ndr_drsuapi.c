@@ -102,6 +102,7 @@ enum ndr_err_code ndr_push_drsuapi_DsReplicaOID(struct ndr_push *ndr, int ndr_fl
 				}
 			} else {
 				_OID_PUSH_CHECK(ber_write_OID_String(&blob, r->oid));
+				talloc_steal(ndr, blob.data);
 			}
 
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, blob.length));
