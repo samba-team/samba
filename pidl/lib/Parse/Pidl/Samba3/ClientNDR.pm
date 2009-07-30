@@ -122,7 +122,7 @@ sub ParseOutputArgument($$$;$$)
 	}
 }
 
-sub ParseFunction($$$)
+sub ParseFunctionSync($$$)
 {
 	my ($self, $if, $fn) = @_;
 
@@ -221,6 +221,13 @@ sub ParseFunction($$$)
 	$self->deindent;
 	$self->pidl("}");
 	$self->pidl("");
+}
+
+sub ParseFunction($$$)
+{
+	my ($self, $if, $fn) = @_;
+
+	$self->ParseFunctionSync($if, $fn);
 }
 
 sub ParseInterface($$)
