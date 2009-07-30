@@ -49,6 +49,8 @@
 void ldapsrv_terminate_connection(struct ldapsrv_connection *conn, 
 					 const char *reason)
 {
+	packet_recv_disable(conn->packet);
+	TALLOC_FREE(conn->packet);
 	stream_terminate_connection(conn->connection, reason);
 }
 
@@ -365,7 +367,6 @@ static void ldapsrv_accept(struct stream_connection *c,
 			ldapsrv_terminate_connection(conn, "ldapsrv_accept: tls_init_server() failed");
 			return;
 		}
-		talloc_unlink(c, c->socket);
 		talloc_steal(c, tls_socket);
 		c->socket = tls_socket;
 		conn->sockets.tls = tls_socket;

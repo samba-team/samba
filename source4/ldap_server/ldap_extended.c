@@ -33,7 +33,6 @@ static void ldapsrv_start_tls(void *private_data)
 {
 	struct ldapsrv_starttls_context *ctx = talloc_get_type(private_data, struct ldapsrv_starttls_context);
 	talloc_steal(ctx->conn->connection, ctx->tls_socket);
-	talloc_unlink(ctx->conn->connection, ctx->conn->connection->socket);
 
 	ctx->conn->sockets.tls = ctx->tls_socket;
 	ctx->conn->connection->socket = ctx->tls_socket;
