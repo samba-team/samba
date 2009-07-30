@@ -926,13 +926,6 @@ int net_groupmap(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	/* we shouldn't have silly checks like this */
-	if (getuid() != 0) {
-		d_fprintf(stderr,
-			  _("You must be root to edit group mappings.\n"));
-		return -1;
-	}
-
 	return net_run_function(c,argc, argv, "net groupmap", func);
 }
 
