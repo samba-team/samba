@@ -7,17 +7,17 @@
    Copyright (C) Simo Sorce 2003
    Copyright (C) Volker Lendecke 2004
    Copyright (C) Jeremy Allison 2008
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -107,7 +107,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 		DEBUG(10,("winbindd_passdb: limiting name_to_sid() to explicit mappings\n"));
 		break;
 	}
-	
+
 	if (domain_name && domain_name[0] && strchr_m(name, '\\') == NULL) {
 		fullname = talloc_asprintf(mem_ctx, "%s\\%s",
 				domain_name, name);
@@ -128,7 +128,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 		fullname,
 		sid_string_dbg(sid),
 		sid_type_lookup((uint32)*type)));
-		
+
 	return NT_STATUS_OK;
 }
 
