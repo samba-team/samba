@@ -166,6 +166,11 @@ bool lookup_cached_name(TALLOC_CTX *mem_ctx,
 void cache_name2sid(struct winbindd_domain *domain, 
 		    const char *domain_name, const char *name,
 		    enum lsa_SidType type, const DOM_SID *sid);
+NTSTATUS wcache_name_to_sid(struct winbindd_domain *domain,
+			    const char *domain_name,
+			    const char *name,
+			    struct dom_sid *sid,
+			    enum lsa_SidType *type);
 void wcache_flush_cache(void);
 NTSTATUS wcache_count_cached_creds(struct winbindd_domain *domain, int *count);
 NTSTATUS wcache_remove_oldest_cached_creds(struct winbindd_domain *domain, const DOM_SID *sid) ;
