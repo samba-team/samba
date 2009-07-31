@@ -216,7 +216,9 @@ import "nbt.idl";
 
 	/*****************/
 	/* Function 0x0A */
-	void WinsSetPriorityClass();
+	WERROR winsif_WinsSetPriorityClass(
+		[in] winsif_PriorityClass prioritiy_class
+	);
 
 	/*****************/
 	/* Function 0x0B */
