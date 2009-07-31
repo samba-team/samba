@@ -266,7 +266,9 @@ import "nbt.idl";
 
 	/*****************/
 	/* Function 0x10 */
-	void WinsSetFlags();
+	WERROR winsif_WinsSetFlags(
+		[in] uint32 flags
+	);
 
 	/*****************/
 	/* Function 0x11 */
