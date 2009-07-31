@@ -186,7 +186,9 @@ import "nbt.idl";
 
 	/*****************/
 	/* Function 0x06 */
-	void WinsTerm();
+	WERROR winsif_WinsTerm(
+		[in] uint16 abrupt_termination
+	);
 
 	/*****************/
 	/* Function 0x07 */
