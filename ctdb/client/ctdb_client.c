@@ -644,46 +644,12 @@ again:
 */
 int ctdb_record_store(struct ctdb_record_handle *h, TDB_DATA data)
 {
-	int ret;
-	int32_t status;
-	struct ctdb_rec_data *rec;
-	TDB_DATA recdata;
-
 	if (h->ctdb_db->persistent) {
-		h->header.rsn++;
-	}
-
-	ret = ctdb_ltdb_store(h->ctdb_db, h->key, &h->header, data);
-	if (ret != 0) {
-		return ret;
-	}
-
-	/* don't need the persistent_store control for non-persistent databases */
-	if (!h->ctdb_db->persistent) {
-		return 0;
-	}
-
-	rec = ctdb_marshall_record(h, h->ctdb_db->db_id, h->key, &h->header, data);
-	if (rec == NULL) {
-		DEBUG(DEBUG_ERR,("Unable to marshall record in ctdb_record_store\n"));
+		DEBUG(DEBUG_ERR, (__location__ " ctdb_record_store prohibited for persistent dbs\n"));
 		return -1;
 	}
 
-	recdata.dptr = (uint8_t *)rec;
-	recdata.dsize = rec->length;
-
-	ret = ctdb_control(h->ctdb_db->ctdb, CTDB_CURRENT_NODE, 0, 
-			   CTDB_CONTROL_PERSISTENT_STORE, 0,
-			   recdata, NULL, NULL, &status, NULL, NULL);
-
-	talloc_free(rec);
-
-	if (ret != 0 || status != 0) {
-		DEBUG(DEBUG_ERR,("Failed persistent store in ctdb_record_store\n"));
-		return -1;
-	}
-
-	return 0;
+	return ctdb_ltdb_store(h->ctdb_db, h->key, &h->header, data);
 }
 
 /*
@@ -3268,8 +3234,7 @@ int ctdb_transaction_store(struct ctdb_transaction_handle *h,
 		/* the record doesn't exist - create one with us as dmaster.
 		   This is only safe because we are in a transaction and this
 		   is a persistent database */
-		header.dmaster = h->ctdb_db->ctdb->pnn;
-		header.rsn = 0;
+		ZERO_STRUCT(header);
 	} else if (ret != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to fetch record\n"));
 		talloc_free(tmp_ctx);
@@ -3283,6 +3248,7 @@ int ctdb_transaction_store(struct ctdb_transaction_handle *h,
 		return 0;
 	}
 
+	header.dmaster = h->ctdb_db->ctdb->pnn;
 	header.rsn++;
 
 	if (!h->in_replay) {

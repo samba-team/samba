@@ -27,7 +27,7 @@ shift
 # periodic vacuum function
 periodic_vacuum() {
     # this cleans up dead records and repacks the databases
-    ( time ctdb vacuum 200000 -T 30; time ctdb repack -T 30 ) > $CTDB_BASE/state/vacuum.log 2>&1 &
+    ( time ctdb vacuum 200000 -T 30 ) > $CTDB_BASE/state/vacuum.log 2>&1 &
 }
 
 case $cmd in 

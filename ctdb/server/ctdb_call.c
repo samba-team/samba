@@ -441,12 +441,18 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	     ((header.laccessor == c->hdr.srcnode
 	       && header.lacount >= ctdb->tunable.max_lacount)
 	      || (c->flags & CTDB_IMMEDIATE_MIGRATION)) ) {
-		DEBUG(DEBUG_INFO,("pnn %u starting migration of %08x to %u\n", 
-			 ctdb->pnn, ctdb_hash(&(call->key)), c->hdr.srcnode));
-		ctdb_call_send_dmaster(ctdb_db, c, &header, &(call->key), &data);
-		talloc_free(data.dptr);
-		ctdb_ltdb_unlock(ctdb_db, call->key);
-		return;
+		if (ctdb_db->transaction_active) {
+			DEBUG(DEBUG_WARNING, (__location__ " refusing migration"
+			      " of key %s while transaction is active\n",
+			      (char *)call->key.dptr));
+		} else {
+			DEBUG(DEBUG_INFO,("pnn %u starting migration of %08x to %u\n",
+				 ctdb->pnn, ctdb_hash(&(call->key)), c->hdr.srcnode));
+			ctdb_call_send_dmaster(ctdb_db, c, &header, &(call->key), &data);
+			talloc_free(data.dptr);
+			ctdb_ltdb_unlock(ctdb_db, call->key);
+			return;
+		}
 	}
 
 	ctdb_call_local(ctdb_db, call, &header, hdr, &data, c->hdr.srcnode);

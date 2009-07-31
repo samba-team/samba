@@ -3,6 +3,7 @@
 
    Copyright (C) Andrew Tridgell  2006-2007
    Copyright (c) Ronnie sahlberg  2007
+   Copyright (C) Michael Adam     2009
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -42,6 +43,9 @@ static double end_timer(void)
 }
 
 static int timelimit = 10;
+static int delay = 0;
+static int verbose = 0;
+static int no_trans = 0;
 
 static unsigned int pnn;
 
@@ -49,20 +53,25 @@ static TDB_DATA old_data;
 
 static int success = true;
 
-static void each_second(struct event_context *ev, struct timed_event *te, 
-					 struct timeval t, void *private_data)
+static void print_counters(void)
 {
-	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
 	int i;
 	uint32_t *old_counters;
-
 
 	printf("[%4u] Counters: ", getpid());
 	old_counters = (uint32_t *)old_data.dptr;
 	for (i=0;i<old_data.dsize/sizeof(uint32_t); i++) {
 		printf("%6u ", old_counters[i]);
 	}
-	printf("\n"); 
+	printf("\n");
+}
+
+static void each_second(struct event_context *ev, struct timed_event *te,
+					 struct timeval t, void *private_data)
+{
+	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
+
+	print_counters();
 
 	event_add_timed(ev, ctdb, timeval_current_ofs(1, 0), each_second, ctdb);
 }
@@ -90,9 +99,19 @@ static void check_counters(struct ctdb_context *ctdb, TDB_DATA data)
 	}
 
 	memcpy(old_data.dptr, data.dptr, data.dsize);
+	if (verbose) print_counters();
 }
 
 
+static void do_sleep(unsigned int sec)
+{
+	unsigned int i;
+	for (i=0; i<sec; i++) {
+		if (verbose) printf(".");
+		sleep(1);
+	}
+	if (verbose) printf("\n");
+}
 
 static void test_store_records(struct ctdb_context *ctdb, struct event_context *ev)
 {
@@ -106,24 +125,42 @@ static void test_store_records(struct ctdb_context *ctdb, struct event_context *
 	key.dsize = strlen((const char *)key.dptr)+1;
 
 	start_timer();
-	while (end_timer() < timelimit) {
+	while ((timelimit == 0) || (end_timer() < timelimit)) {
 		TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 		TDB_DATA data;
-
 		struct ctdb_transaction_handle *h;
-		h = ctdb_transaction_start(ctdb_db, tmp_ctx);
-		if (h == NULL) {
-			printf("Failed to start transaction on node %d\n", 
-			       ctdb_get_pnn(ctdb));
-			talloc_free(tmp_ctx);
-			return;
-		}
+		struct ctdb_record_handle *rec;
 
-		ret = ctdb_transaction_fetch(h, tmp_ctx, key, &data);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR,("Failed to fetch record\n"));
-			exit(1);			
+
+		if (!no_trans) {
+			if (verbose) printf("starting transaction\n");
+			h = ctdb_transaction_start(ctdb_db, tmp_ctx);
+			if (h == NULL) {
+				printf("Failed to start transaction on node %d\n",
+				       ctdb_get_pnn(ctdb));
+				talloc_free(tmp_ctx);
+				return;
+			}
+			if (verbose) printf("transaction started\n");
+			do_sleep(delay);
+
+			if (verbose) printf("calling transaction_fetch\n");
+			ret = ctdb_transaction_fetch(h, tmp_ctx, key, &data);
+			if (ret != 0) {
+				DEBUG(DEBUG_ERR,("Failed to fetch record\n"));
+				exit(1);
+			}
+			if (verbose) printf("fetched data ok\n");
+		} else {
+			if (verbose) printf("calling fetch_lock\n");
+			rec = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, &data);
+			if (rec == NULL) {
+				DEBUG(DEBUG_ERR,("Failed to fetch record\n"));
+				exit(1);
+			}
+			if (verbose) printf("fetched record ok\n");
 		}
+		do_sleep(delay);
 
 		if (data.dsize < sizeof(uint32_t) * (pnn+1)) {
 			unsigned char *ptr = data.dptr;
@@ -146,22 +183,39 @@ static void test_store_records(struct ctdb_context *ctdb, struct event_context *
 		/* bump our counter */
 		counters[pnn]++;
 
-		ret = ctdb_transaction_store(h, key, data);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR,("Failed to store record\n"));
-			exit(1);
-		}
+		if (!no_trans) {
+			if (verbose) printf("calling transaction_store\n");
+			ret = ctdb_transaction_store(h, key, data);
+			if (ret != 0) {
+				DEBUG(DEBUG_ERR,("Failed to store record\n"));
+				exit(1);
+			}
+			if (verbose) printf("stored data ok\n");
+			do_sleep(delay);
 
-		ret = ctdb_transaction_commit(h);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR,("Failed to commit transaction\n"));
-			exit(1);
+			if (verbose) printf("calling transaction_commit\n");
+			ret = ctdb_transaction_commit(h);
+			if (ret != 0) {
+				DEBUG(DEBUG_ERR,("Failed to commit transaction\n"));
+				exit(1);
+			}
+			if (verbose) printf("transaction committed\n");
+		} else {
+			if (verbose) printf("calling record_store\n");
+			ret = ctdb_record_store(rec, data);
+			if (ret != 0) {
+				DEBUG(DEBUG_ERR,("Failed to store record\n"));
+				exit(1);
+			}
+			if (verbose) printf("stored record ok\n");
 		}
 
 		/* store the counters and verify that they are sane */
-		if (pnn == 0) {
+		if (verbose || (pnn == 0)) {
 			check_counters(ctdb, data);
 		}
+
+		do_sleep(delay);
 
 		talloc_free(tmp_ctx);
 	}
@@ -180,6 +234,9 @@ int main(int argc, const char *argv[])
 		POPT_AUTOHELP
 		POPT_CTDB_CMDLINE
 		{ "timelimit", 't', POPT_ARG_INT, &timelimit, 0, "timelimit", "integer" },
+		{ "delay", 'D', POPT_ARG_INT, &delay, 0, "delay (in seconds) between operations", "integer" },
+		{ "verbose", 'v', POPT_ARG_NONE,  &verbose, 0, "switch on verbose mode", NULL },
+		{ "no-trans", 'n', POPT_ARG_NONE, &no_trans, 0, "use fetch_lock/record store instead of transactions", NULL },
 		{ "unsafe-writes", 'u', POPT_ARG_NONE, &unsafe_writes, 0, "do not use tdb transactions when writing", NULL },
 		POPT_TABLEEND
 	};
@@ -189,7 +246,11 @@ int main(int argc, const char *argv[])
 	poptContext pc;
 	struct event_context *ev;
 
-	setlinebuf(stdout);
+	if (verbose) {
+		setbuf(stdout, (char *)NULL); /* don't buffer */
+	} else {
+		setlinebuf(stdout);
+	}
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
@@ -238,15 +299,15 @@ int main(int argc, const char *argv[])
 	}
 
 	pnn = ctdb_get_pnn(ctdb);
-	printf("Starting test on node %u. running for %u seconds\n", pnn, timelimit);
+	printf("Starting test on node %u. running for %u seconds. sleep delay: %u seconds.\n", pnn, timelimit, delay);
 
-	if (pnn == 0) {
+	if (!verbose && (pnn == 0)) {
 		event_add_timed(ev, ctdb, timeval_current_ofs(1, 0), each_second, ctdb);
 	}
 
 	test_store_records(ctdb, ev);
 
-	if (pnn == 0) {
+	if (verbose || (pnn == 0)) {
 		if (success != true) {
 			printf("The test FAILED\n");
 			return 1;

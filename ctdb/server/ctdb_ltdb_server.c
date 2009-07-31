@@ -291,6 +291,14 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name, boo
 		return -1;
 	}
 
+	ret = ctdb_vacuum_init(ctdb_db);
+	if (ret != 0) {
+		DEBUG(DEBUG_CRIT,("Failed to setup vacuuming for database '%s'\n", ctdb_db->db_name));
+		talloc_free(ctdb_db);
+		return -1;
+	}
+
+
 	DEBUG(DEBUG_INFO,("Attached to database '%s'\n", ctdb_db->db_path));
 	
 	/* success */
