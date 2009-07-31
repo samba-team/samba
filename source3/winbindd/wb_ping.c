@@ -39,15 +39,7 @@ struct tevent_req *wb_ping_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	return req;
 }
 
-NTSTATUS wb_ping_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-		      struct winbindd_response **presp)
+NTSTATUS wb_ping_recv(struct tevent_req *req, struct winbindd_response *presp)
 {
-	struct winbindd_response *resp;
-
-	resp = talloc_zero(mem_ctx, struct winbindd_response);
-	if (resp == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	*presp = resp;
 	return NT_STATUS_OK;
 }

@@ -519,8 +519,8 @@ struct winbindd_async_dispatch_table {
 	struct tevent_req *(*send_req)(TALLOC_CTX *mem_ctx,
 				       struct tevent_context *ev,
 				       struct winbindd_request *request);
-	NTSTATUS (*recv_req)(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-			     struct winbindd_response **presp);
+	NTSTATUS (*recv_req)(struct tevent_req *req,
+			     struct winbindd_response *presp);
 };
 
 static struct winbindd_async_dispatch_table async_nonpriv_table[] = {
@@ -602,17 +602,22 @@ static void wb_request_done(struct tevent_req *req)
 	struct winbindd_cli_state *state = tevent_req_callback_data(
 		req, struct winbindd_cli_state);
 	NTSTATUS status;
-	struct winbindd_response *response;
 
-	status = state->recv_fn(req, state->mem_ctx, &response);
+	state->response = talloc_zero(state, struct winbindd_response);
+	if (state->response == NULL) {
+		remove_client(state);
+		return;
+	}
+	state->response->result = WINBINDD_PENDING;
+	state->response->length = sizeof(struct winbindd_response);
+
+	status = state->recv_fn(req, state->response);
 	TALLOC_FREE(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("returning %s\n", nt_errstr(status)));
 		request_error(state);
+		return;
 	}
-	state->response = response;
-	state->response->result = WINBINDD_PENDING;
-	state->response->length = sizeof(struct winbindd_response);
 	request_ok(state);
 }
 
