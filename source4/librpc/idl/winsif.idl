@@ -226,7 +226,9 @@ import "nbt.idl";
 
 	/*****************/
 	/* Function 0x0C */
-	void WinsWorkerThreadUpdate();
+	WERROR winsif_WinsWorkerThreadUpdate(
+		[in] uint32 num_of_threads
+	);
 
 	/*****************/
 	/* Function 0x0D */
