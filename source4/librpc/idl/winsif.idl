@@ -317,7 +317,11 @@ import "nbt.idl";
 
 	/*****************/
 	/* Function 0x14 */
-	void WinsStatusWHdl();
+	WERROR winsif_WinsStatusWHdl(
+		[in,ref] winsif_BindData *server_handle,
+		[in] winsif_StatusCmd cmd,
+		[in,out,ref] winsif_ResultsNew *results
+	);
 
 	/*****************/
 	/* Function 0x15 */
