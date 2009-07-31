@@ -270,7 +270,7 @@ static void getpwsid_queryuser_recv(void *private_data, bool success,
 	}
 
 	if ( acct_name && *acct_name ) {
-	fstrcpy( username, acct_name );
+		fstrcpy( username, acct_name );
 	} else {
 		char *domain_name = NULL;
 		enum lsa_SidType type;
