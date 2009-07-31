@@ -170,7 +170,19 @@ import "nbt.idl";
 
 	/*****************/
 	/* Function 0x05 */
-	void WinsGetDbRecs();
+	typedef struct {
+		uint32 buffer_size;
+		[size_is(num_records)] winsif_RecordAction *row;
+		uint32 num_records;
+		uint32 total_num_records;
+	} winsif_Records;
+
+	WERROR winsif_WinsGetDbRecs(
+		[in,unique] winsif_Address *owner_address,
+		[in] hyper min_version_number,
+		[in] hyper max_version_number,
+		[out,ref] winsif_Records *records
+	);
 
 	/*****************/
 	/* Function 0x06 */
