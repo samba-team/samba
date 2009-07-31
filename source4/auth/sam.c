@@ -333,6 +333,12 @@ static NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
+	if (res[0]->num_elements == 0) {
+		talloc_free(res);
+		talloc_free(tmp_ctx);
+		return NT_STATUS_OK;
+	}
+
 	for (i = 0; i < res[0]->elements[0].num_values; i++) {
 		tmp_dn = ldb_dn_from_ldb_val(tmp_ctx, sam_ctx,
 			&res[0]->elements[0].values[i]);
