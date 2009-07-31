@@ -207,7 +207,12 @@ import "nbt.idl";
 
 	/*****************/
 	/* Function 0x09 */
-	void WinsPullRange();
+	WERROR winsif_WinsPullRange(
+		[in,ref] winsif_Address *server_address,
+		[in,ref] winsif_Address *owner_address,
+		[in] hyper min_version_number,
+		[in] hyper max_version_number
+	);
 
 	/*****************/
 	/* Function 0x0A */
