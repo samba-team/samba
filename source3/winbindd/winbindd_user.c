@@ -426,14 +426,12 @@ void winbindd_getpwnam(struct winbindd_cli_state *state)
 	fstring domname, username;
 	char *mapped_user = NULL;
 	char *domuser;
-	size_t dusize;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 
 	domuser = state->request->data.username;
-	dusize = sizeof(state->request->data.username);
 
 	/* Ensure null termination (it's an fstring) */
-	domuser[dusize-1] = '\0';
+	domuser[sizeof(state->request->data.username)-1] = '\0';
 
 	DEBUG(3, ("[%5lu]: getpwnam %s\n",
 		  (unsigned long)state->pid,
