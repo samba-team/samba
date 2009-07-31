@@ -182,9 +182,8 @@ typedef union unid_t {
 #define LOOKUP_NAME_GROUP                0x00000004  /* (unused) This is a NASTY hack for 
 							valid users = @foo where foo also
 							exists in as user. */
-#define LOOKUP_NAME_EXPLICIT             0x00000008  /* Only include
-							explicitly mapped names and not 
-							the Unix {User,Group} domain */
+#define LOOKUP_NAME_NO_NSS		 0x00000008  /* no NSS calls to avoid
+							winbind recursions */
 #define LOOKUP_NAME_BUILTIN		0x00000010 /* builtin names */
 #define LOOKUP_NAME_WKN			0x00000020 /* well known names */
 #define LOOKUP_NAME_DOMAIN		0x00000040 /* only lookup own domain */

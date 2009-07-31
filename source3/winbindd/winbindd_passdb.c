@@ -103,7 +103,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 		break;
 	default:
 		/* Avoid any NSS calls in the lookup_name by default */
-		flags |= LOOKUP_NAME_EXPLICIT;
+		flags |= LOOKUP_NAME_NO_NSS;
 		DEBUG(10,("winbindd_passdb: limiting name_to_sid() to explicit mappings\n"));
 		break;
 	}
