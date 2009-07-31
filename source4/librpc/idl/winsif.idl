@@ -272,7 +272,16 @@ import "nbt.idl";
 
 	/*****************/
 	/* Function 0x11 */
-	void WinsGetBrowserNames();
+	typedef struct {
+		boolean32 tcp_ip;
+		[string,charset(DOS)] uint8 *server_address;
+		[string,charset(DOS)] uint8 *pipe_name;
+	} winsif_BindData;
+
+	WERROR winsif_WinsGetBrowserNames(
+		[in,ref] winsif_BindData *server_handle,
+		[out,ref] winsif_BrowserNames *names
+	);
 
 
 	/*****************/
