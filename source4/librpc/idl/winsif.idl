@@ -166,7 +166,7 @@ import "nbt.idl";
 
 	/*****************/
 	/* Function 0x04 */
-	void WinsDoScavenging();
+	WERROR winsif_WinsDoScavenging();
 
 	/*****************/
 	/* Function 0x05 */
