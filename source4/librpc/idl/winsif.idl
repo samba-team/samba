@@ -244,7 +244,19 @@ import "nbt.idl";
 
 	/*****************/
 	/* Function 0x0E */
-	void WinsGetBrowserNames_Old();
+	typedef struct {
+		uint32 name_len;
+		[string,charset(DOS)] uint8 *name;
+	} winsif_BrowserInfo;
+
+	typedef struct {
+		uint32 num_entries;
+		[size_is(num_entries)] winsif_BrowserInfo *info;
+	} winsif_BrowserNames;
+
+	WERROR winsif_WinsGetBrowserNames_Old(
+		[out,ref] winsif_BrowserNames *names
+	);
 
 	/*****************/
 	/* Function 0x0F */
