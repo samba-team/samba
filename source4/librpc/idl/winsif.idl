@@ -325,5 +325,18 @@ import "nbt.idl";
 
 	/*****************/
 	/* Function 0x15 */
-	void WinsDoScanvenging2();
+	typedef enum {
+		WINSIF_SCAVENGING_GENERAL	= 0x0000,
+		WINSIF_SCAVENGING_VERIFY	= 0x0001
+	} winsif_ScavengingOpcode;
+
+	typedef struct {
+		winsif_ScavengingOpcode opcode;
+		uint32 age;
+		boolean32 force;
+	} winsif_ScavengingRequest;
+
+	WERROR winsif_WinsDoScanvengingNew(
+		[in,ref] winsif_ScavengingRequest *request
+	);
 }
