@@ -192,7 +192,10 @@ import "nbt.idl";
 
 	/*****************/
 	/* Function 0x07 */
-	void WinsBackup();
+	WERROR winsif_WinsBackup(
+		[in,ref,string,charset(DOS)] uint8 *backup_path,
+		[in] uint16 incremental
+	);
 
 	/*****************/
 	/* Function 0x08 */
