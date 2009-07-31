@@ -349,14 +349,18 @@ static char *centry_hash16(struct cache_entry *centry, TALLOC_CTX *mem_ctx)
 /* pull a sid from a cache entry, using the supplied
    talloc context 
 */
-static bool centry_sid(struct cache_entry *centry, TALLOC_CTX *mem_ctx, DOM_SID *sid)
+static bool centry_sid(struct cache_entry *centry, struct dom_sid *sid)
 {
 	char *sid_string;
-	sid_string = centry_string(centry, mem_ctx);
-	if ((sid_string == NULL) || (!string_to_sid(sid, sid_string))) {
+	bool ret;
+
+	sid_string = centry_string(centry, talloc_tos());
+	if (sid_string == NULL) {
 		return false;
 	}
-	return true;
+	ret = string_to_sid(sid, sid_string);
+	TALLOC_FREE(sid_string);
+	return ret;
 }
 
 
@@ -1358,8 +1362,8 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		(*info)[i].full_name = centry_string(centry, mem_ctx);
 		(*info)[i].homedir = centry_string(centry, mem_ctx);
 		(*info)[i].shell = centry_string(centry, mem_ctx);
-		centry_sid(centry, mem_ctx, &(*info)[i].user_sid);
-		centry_sid(centry, mem_ctx, &(*info)[i].group_sid);
+		centry_sid(centry, &(*info)[i].user_sid);
+		centry_sid(centry, &(*info)[i].group_sid);
 	}
 
 do_cached:	
@@ -1627,7 +1631,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	status = centry->status;
 	if (NT_STATUS_IS_OK(status)) {
 		*type = (enum lsa_SidType)centry_uint32(centry);
-		centry_sid(centry, mem_ctx, sid);
+		centry_sid(centry, sid);
 	}
 
 	DEBUG(10,("name_to_sid: [Cached] - cached name for domain %s status: %s\n",
@@ -1934,8 +1938,8 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		info->homedir = centry_string(centry, mem_ctx);
 		info->shell = centry_string(centry, mem_ctx);
 		info->primary_gid = centry_uint32(centry);
-		centry_sid(centry, mem_ctx, &info->user_sid);
-		centry_sid(centry, mem_ctx, &info->group_sid);
+		centry_sid(centry, &info->user_sid);
+		centry_sid(centry, &info->group_sid);
 	}
 
 	DEBUG(10,("query_user: [Cached] - cached info for domain %s status: %s\n",
@@ -2008,7 +2012,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		smb_panic_fn("lookup_usergroups out of memory");
 	}
 	for (i=0; i<(*num_groups); i++) {
-		centry_sid(centry, mem_ctx, &(*user_gids)[i]);
+		centry_sid(centry, &(*user_gids)[i]);
 	}
 
 do_cached:	
@@ -2180,7 +2184,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	}
 
 	for (i=0; i<(*num_names); i++) {
-		centry_sid(centry, mem_ctx, &(*sid_mem)[i]);
+		centry_sid(centry, &(*sid_mem)[i]);
 		(*names)[i] = centry_string(centry, mem_ctx);
 		(*name_types)[i] = centry_uint32(centry);
 	}
@@ -2282,7 +2286,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	for (i=0; i<(*num_domains); i++) {
 		(*names)[i] = centry_string(centry, mem_ctx);
 		(*alt_names)[i] = centry_string(centry, mem_ctx);
-		if (!centry_sid(centry, mem_ctx, &(*dom_sids)[i])) {
+		if (!centry_sid(centry, &(*dom_sids)[i])) {
 			sid_copy(&(*dom_sids)[i], &global_sid_NULL);
 		}
 	}
@@ -2695,7 +2699,7 @@ bool lookup_cached_name(TALLOC_CTX *mem_ctx,
 
 	if (NT_STATUS_IS_OK(centry->status)) {
 		*type = (enum lsa_SidType)centry_uint32(centry);
-		centry_sid(centry, mem_ctx, sid);
+		centry_sid(centry, sid);
 	}
 
 	status = centry->status;
@@ -3033,7 +3037,7 @@ static int validate_ns(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
 	(void)centry_uint32(centry);
 	if (NT_STATUS_IS_OK(centry->status)) {
 		DOM_SID sid;
-		(void)centry_sid(centry, mem_ctx, &sid);
+		(void)centry_sid(centry, &sid);
 	}
 
 	centry_free(centry);
@@ -3083,8 +3087,8 @@ static int validate_u(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
 	(void)centry_string(centry, mem_ctx);
 	(void)centry_string(centry, mem_ctx);
 	(void)centry_uint32(centry);
-	(void)centry_sid(centry, mem_ctx, &sid);
-	(void)centry_sid(centry, mem_ctx, &sid);
+	(void)centry_sid(centry, &sid);
+	(void)centry_sid(centry, &sid);
 
 	centry_free(centry);
 
@@ -3185,8 +3189,8 @@ static int validate_ul(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
 		(void)centry_string(centry, mem_ctx);
 		(void)centry_string(centry, mem_ctx);
 		(void)centry_string(centry, mem_ctx);
-		(void)centry_sid(centry, mem_ctx, &sid);
-		(void)centry_sid(centry, mem_ctx, &sid);
+		(void)centry_sid(centry, &sid);
+		(void)centry_sid(centry, &sid);
 	}
 
 	centry_free(centry);
@@ -3239,7 +3243,7 @@ static int validate_ug(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
 
 	for (i=0; i< num_groups; i++) {
 		DOM_SID sid;
-		centry_sid(centry, mem_ctx, &sid);
+		centry_sid(centry, &sid);
 	}
 
 	centry_free(centry);
@@ -3290,7 +3294,7 @@ static int validate_gm(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
 
 	for (i=0; i< num_names; i++) {
 		DOM_SID sid;
-		centry_sid(centry, mem_ctx, &sid);
+		centry_sid(centry, &sid);
 		(void)centry_string(centry, mem_ctx);
 		(void)centry_uint32(centry);
 	}
@@ -3417,7 +3421,7 @@ static int validate_trustdoms(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA 
 		DOM_SID sid;
 		(void)centry_string(centry, mem_ctx);
 		(void)centry_string(centry, mem_ctx);
-		(void)centry_sid(centry, mem_ctx, &sid);
+		(void)centry_sid(centry, &sid);
 	}
 
 	centry_free(centry);
