@@ -199,7 +199,11 @@ import "nbt.idl";
 
 	/*****************/
 	/* Function 0x08 */
-	void WinsDelDbRecs();
+	WERROR winsif_WinsDelDbRecs(
+		[in,ref] winsif_Address *owner_address,
+		[in] hyper min_version_number,
+		[in] hyper max_version_number
+	);
 
 	/*****************/
 	/* Function 0x09 */
