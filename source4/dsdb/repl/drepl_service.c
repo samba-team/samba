@@ -53,12 +53,12 @@ static WERROR dreplsrv_connect_samdb(struct dreplsrv_service *service, struct lo
 
 	service->samdb = samdb_connect(service, service->task->event_ctx, lp_ctx, service->system_session_info);
 	if (!service->samdb) {
-		return WERR_DS_SERVICE_UNAVAILABLE;
+		return WERR_DS_UNAVAILABLE;
 	}
 
 	ntds_guid = samdb_ntds_objectGUID(service->samdb);
 	if (!ntds_guid) {
-		return WERR_DS_SERVICE_UNAVAILABLE;
+		return WERR_DS_UNAVAILABLE;
 	}
 
 	service->ntds_guid = *ntds_guid;

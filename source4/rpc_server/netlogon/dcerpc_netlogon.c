@@ -860,13 +860,13 @@ static WERROR dcesrv_netr_GetDcName(struct dcesrv_call_state *dce_call, TALLOC_C
 				dce_call->conn->dce_ctx->lp_ctx,
 				dce_call->conn->auth_state.session_info);
 	if (sam_ctx == NULL) {
-		return WERR_DS_SERVICE_UNAVAILABLE;
+		return WERR_DS_UNAVAILABLE;
 	}
 
 	domain_dn = samdb_domain_to_dn(sam_ctx, mem_ctx,
 				       r->in.domainname);
 	if (domain_dn == NULL) {
-		return WERR_DS_SERVICE_UNAVAILABLE;
+		return WERR_DS_UNAVAILABLE;
 	}
 
 	ret = gendb_search_dn(sam_ctx, mem_ctx,
@@ -1245,7 +1245,7 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call, TA
 
 	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, dce_call->conn->auth_state.session_info);
 	if (sam_ctx == NULL) {
-		return WERR_DS_SERVICE_UNAVAILABLE;
+		return WERR_DS_UNAVAILABLE;
 	}
 
 	/* Win7-beta will send the domain name in the form the user typed, so we have to cope
@@ -1257,7 +1257,7 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call, TA
 
 	domain_dn = ldb_get_default_basedn(sam_ctx);
 	if (domain_dn == NULL) {
-		return WERR_DS_SERVICE_UNAVAILABLE;
+		return WERR_DS_UNAVAILABLE;
 	}
 
 	ret = gendb_search_dn(sam_ctx, mem_ctx,
