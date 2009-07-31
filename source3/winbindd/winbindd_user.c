@@ -462,8 +462,10 @@ void winbindd_getpwnam(struct winbindd_cli_state *state)
 	if (domain == NULL) {
 		DEBUG(7, ("could not find domain entry for domain %s.  "
 			  "Using primary domain\n", domname));
-		if ( (domain = find_our_domain()) == NULL ) {
-			DEBUG(0,("Cannot find my primary domain structure!\n"));
+		domain = find_our_domain();
+		if (domain == NULL) {
+			DEBUG(0, ("Cannot find my primary domain "
+				  "structure!\n"));
 			request_error(state);
 			return;
 		}

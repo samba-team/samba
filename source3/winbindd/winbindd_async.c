@@ -382,7 +382,8 @@ void winbindd_lookupname_async(TALLOC_CTX *mem_ctx,
 	struct winbindd_domain *domain;
 	struct lookupname_state *s;
 
-	if ( (domain = find_lookup_domain_from_name(dom_name)) == NULL ) {
+	domain = find_lookup_domain_from_name(dom_name);
+	if (domain == NULL) {
 		DEBUG(5, ("Could not find domain for name '%s'\n", dom_name));
 		cont(private_data, False, NULL, SID_NAME_UNKNOWN);
 		return;
