@@ -1525,6 +1525,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 
 		ZERO_STRUCTP(state.response);
 		state.request->null_term = '\0';
+		state.mem_ctx = frame;
 		child_process_request(child, &state);
 
 		DEBUG(4, ("Finished processing child request %d\n",
