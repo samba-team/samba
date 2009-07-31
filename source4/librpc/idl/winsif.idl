@@ -222,7 +222,7 @@ import "nbt.idl";
 
 	/*****************/
 	/* Function 0x0B */
-	void WinsResetCounters();
+	WERROR winsif_WinsResetCounters();
 
 	/*****************/
 	/* Function 0x0C */
