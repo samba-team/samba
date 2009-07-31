@@ -5250,7 +5250,7 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 		if ((timespec_compare(&ft->atime, &ats) == 0) &&
 		    (timespec_compare(&ft->mtime, &mts) == 0)) {
 			if (set_createtime || set_ctime) {
-				notify_fname(conn, NOTIFY_ACTION_MODIFIED, action,
+				notify_fname(conn, NOTIFY_ACTION_MODIFIED, FILE_NOTIFY_CHANGE_LAST_WRITE,
 						smb_fname->base_name);
 			}
 			return NT_STATUS_OK;
