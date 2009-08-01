@@ -149,6 +149,12 @@ bool wcache_invalidate_cache(void);
 bool init_wcache(void);
 bool initialize_winbindd_cache(void);
 void close_winbindd_cache(void);
+NTSTATUS wcache_sid_to_name(struct winbindd_domain *domain,
+			    const struct dom_sid *sid,
+			    TALLOC_CTX *mem_ctx,
+			    char **domain_name,
+			    char **name,
+			    enum lsa_SidType *type);
 bool lookup_cached_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 		       char **domain_name, char **name,
 		       enum lsa_SidType *type);

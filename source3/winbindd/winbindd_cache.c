@@ -1678,6 +1678,48 @@ do_query:
 	return status;
 }
 
+NTSTATUS wcache_sid_to_name(struct winbindd_domain *domain,
+			    const struct dom_sid *sid,
+			    TALLOC_CTX *mem_ctx,
+			    char **domain_name,
+			    char **name,
+			    enum lsa_SidType *type)
+{
+	struct winbind_cache *cache = get_cache(domain);
+	struct cache_entry *centry;
+	char *sid_string;
+	NTSTATUS status;
+
+	if (cache->tdb == NULL) {
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	sid_string = sid_string_tos(sid);
+	if (sid_string == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	centry = wcache_fetch(cache, domain, "SN/%s", sid_string);
+	TALLOC_FREE(sid_string);
+	if (centry == NULL) {
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	if (NT_STATUS_IS_OK(centry->status)) {
+		*type = (enum lsa_SidType)centry_uint32(centry);
+		*domain_name = centry_string(centry, mem_ctx);
+		*name = centry_string(centry, mem_ctx);
+	}
+
+	status = centry->status;
+	centry_free(centry);
+
+	DEBUG(10,("sid_to_name: [Cached] - cached name for domain %s status: "
+		  "%s\n", domain->name, nt_errstr(status) ));
+
+	return status;
+}
+
 /* convert a sid to a user or group name. The sid is guaranteed to be in the domain
    given */
 static NTSTATUS sid_to_name(struct winbindd_domain *domain,
@@ -1687,33 +1729,14 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 			    char **name,
 			    enum lsa_SidType *type)
 {
-	struct winbind_cache *cache = get_cache(domain);
-	struct cache_entry *centry = NULL;
 	NTSTATUS status;
-	fstring sid_string;
 
-	if (!cache->tdb)
-		goto do_query;
-
-	centry = wcache_fetch(cache, domain, "SN/%s",
-			      sid_to_fstring(sid_string, sid));
-	if (!centry)
-		goto do_query;
-
-	status = centry->status;
-	if (NT_STATUS_IS_OK(status)) {
-		*type = (enum lsa_SidType)centry_uint32(centry);
-		*domain_name = centry_string(centry, mem_ctx);
-		*name = centry_string(centry, mem_ctx);
+	status = wcache_sid_to_name(domain, sid, mem_ctx, domain_name, name,
+				    type);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		return status;
 	}
 
-	DEBUG(10,("sid_to_name: [Cached] - cached name for domain %s status: %s\n",
-		domain->name, nt_errstr(status) ));
-
-	centry_free(centry);
-	return status;
-
-do_query:
 	*name = NULL;
 	*domain_name = NULL;
 
@@ -2625,36 +2648,14 @@ bool lookup_cached_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 		       enum lsa_SidType *type)
 {
 	struct winbindd_domain *domain;
-	struct winbind_cache *cache;
-	struct cache_entry *centry = NULL;
 	NTSTATUS status;
-	fstring tmp;
 
 	domain = find_lookup_domain_from_sid(sid);
 	if (domain == NULL) {
 		return false;
 	}
-
-	cache = get_cache(domain);
-
-	if (cache->tdb == NULL) {
-		return false;
-	}
-
-	centry = wcache_fetch(cache, domain, "SN/%s",
-			      sid_to_fstring(tmp, sid));
-	if (centry == NULL) {
-		return false;
-	}
-
-	if (NT_STATUS_IS_OK(centry->status)) {
-		*type = (enum lsa_SidType)centry_uint32(centry);
-		*domain_name = centry_string(centry, mem_ctx);
-		*name = centry_string(centry, mem_ctx);
-	}
-
-	status = centry->status;
-	centry_free(centry);
+	status = wcache_sid_to_name(domain, sid, mem_ctx, domain_name, name,
+				    type);
 	return NT_STATUS_IS_OK(status);
 }
 
