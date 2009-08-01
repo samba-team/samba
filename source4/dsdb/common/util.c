@@ -436,6 +436,22 @@ NTTIME samdb_result_nttime(struct ldb_message *msg, const char *attr, NTTIME def
 }
 
 /*
+ * Windows stores 0 for lastLogoff.
+ * But when a MS DC return the lastLogoff (as Logoff Time)
+ * it returns 0x7FFFFFFFFFFFFFFF, not returning this value in this case
+ * cause windows 2008 and newer version to fail for SMB requests
+ */
+NTTIME samdb_result_last_logoff(struct ldb_message *msg)
+{
+	NTTIME ret = ldb_msg_find_attr_as_uint64(msg, "lastLogoff",0);
+
+	if (ret == 0)
+		ret = 0x7FFFFFFFFFFFFFFFULL;
+
+	return ret;
+}
+
+/*
  * Windows uses both 0 and 9223372036854775807 (0x7FFFFFFFFFFFFFFFULL) to
  * indicate an account doesn't expire.
  *

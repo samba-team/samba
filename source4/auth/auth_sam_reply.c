@@ -38,7 +38,7 @@ NTSTATUS auth_convert_server_info_sambaseinfo(TALLOC_CTX *mem_ctx,
 	sam->domain_sid->num_auths--;
 
 	sam->last_logon = server_info->last_logon;
-	sam->last_logoff = server_info->last_logoff;
+	sam->last_logoff =  server_info->last_logoff;
 	sam->acct_expiry = server_info->acct_expiry;
 	sam->last_password_change = server_info->last_password_change;
 	sam->allow_password_change = server_info->allow_password_change;

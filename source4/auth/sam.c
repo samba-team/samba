@@ -442,7 +442,7 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx,
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->logon_server, tmp_ctx);
 
 	server_info->last_logon = samdb_result_nttime(msg, "lastLogon", 0);
-	server_info->last_logoff = samdb_result_nttime(msg, "lastLogoff", 0);
+	server_info->last_logoff = samdb_result_last_logoff(msg);
 	server_info->acct_expiry = samdb_result_account_expires(msg);
 	server_info->last_password_change = samdb_result_nttime(msg, "pwdLastSet", 0);
 
