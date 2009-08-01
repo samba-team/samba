@@ -201,9 +201,10 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	i = 0;
 
 	for (msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
-		char *name, *gecos = NULL;
-		char *homedir = NULL;
-		char *shell = NULL;
+		const char *name;
+		const char *gecos = NULL;
+		const char *homedir = NULL;
+		const char *shell = NULL;
 		uint32 group;
 		uint32 atype;
 		DOM_SID user_sid;

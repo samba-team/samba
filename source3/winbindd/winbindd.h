@@ -91,11 +91,11 @@ struct getpwent_user {
 
 /* Server state structure */
 
-typedef struct {
-	char *acct_name;
-	char *full_name;
-	char *homedir;
-	char *shell;
+typedef struct winbind_userinfo {
+	const char *acct_name;
+	const char *full_name;
+	const char *homedir;
+	const char *shell;
 	gid_t primary_gid;                   /* allow the nss_info
 						backend to set the primary group */
 	DOM_SID user_sid;                    /* NT user and primary group SIDs */

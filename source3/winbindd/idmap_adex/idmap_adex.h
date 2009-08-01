@@ -97,8 +97,9 @@ struct cell_provider_api {
 				    enum id_type * type, const DOM_SID * sid);
 	NTSTATUS(*get_nss_info) (const DOM_SID * sid,
 				 TALLOC_CTX * ctx,
-				 char **homedir,
-				 char **shell, char **gecos, gid_t * p_gid);
+				 const char **homedir,
+				 const char **shell,
+				 const char **gecos, gid_t * p_gid);
 	NTSTATUS(*map_to_alias) (TALLOC_CTX * mem_ctx,
 				 const char *domain,
 				 const char *name, char **alias);

@@ -895,21 +895,25 @@ done:
 static NTSTATUS pull_nss_info(struct likewise_cell *c,
 			      LDAPMessage *msg,
 			      TALLOC_CTX *ctx,
-			      char **homedir,
-			      char **shell,
-			      char **gecos,
+			      const char **homedir,
+			      const char **shell,
+			      const char **gecos,
 			      gid_t *p_gid)
 {
 	NTSTATUS nt_status;
+	char *tmp;
 
-	nt_status = get_object_string(c, msg, ctx, ADEX_ATTR_HOMEDIR, homedir);
+	nt_status = get_object_string(c, msg, ctx, ADEX_ATTR_HOMEDIR, &tmp);
 	BAIL_ON_NTSTATUS_ERROR(nt_status);
+	*homedir = tmp;
 
-	nt_status = get_object_string(c, msg, ctx, ADEX_ATTR_SHELL, shell);
+	nt_status = get_object_string(c, msg, ctx, ADEX_ATTR_SHELL, &tmp);
 	BAIL_ON_NTSTATUS_ERROR(nt_status);
+	*shell = tmp;
 
-	nt_status = get_object_string(c, msg, ctx, ADEX_ATTR_GECOS, gecos);
+	nt_status = get_object_string(c, msg, ctx, ADEX_ATTR_GECOS, &tmp);
 	/* Gecos is often not set so ignore failures */
+	*gecos = tmp;
 
 	nt_status = get_object_uint32(c, msg, ADEX_ATTR_GIDNUM, p_gid);
 	BAIL_ON_NTSTATUS_ERROR(nt_status);
@@ -1021,9 +1025,9 @@ done:
 
 static NTSTATUS _ccp_nss_get_info(const DOM_SID * sid,
 				  TALLOC_CTX * ctx,
-				  char **homedir,
-				  char **shell,
-				  char **gecos, gid_t * p_gid)
+				  const char **homedir,
+				  const char **shell,
+				  const char **gecos, gid_t * p_gid)
 {
 	struct likewise_cell *cell = NULL;
 	LDAPMessage *msg = NULL;

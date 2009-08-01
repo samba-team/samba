@@ -299,11 +299,11 @@ static struct nss_domain_entry *find_nss_domain( const char *domain )
 /********************************************************************
  *******************************************************************/
 
- NTSTATUS nss_get_info( const char *domain, const DOM_SID *user_sid,
+NTSTATUS nss_get_info( const char *domain, const DOM_SID *user_sid,
 		       TALLOC_CTX *ctx,
 		       ADS_STRUCT *ads, LDAPMessage *msg,
-		       char **homedir, char **shell, char **gecos,
-		       gid_t *p_gid)
+		       const char **homedir, const char **shell,
+		       const char **gecos, gid_t *p_gid)
 {
 	struct nss_domain_entry *p;
 	struct nss_info_methods *m;

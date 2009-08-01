@@ -822,9 +822,9 @@ static NTSTATUS nss_ad_get_info( struct nss_domain_entry *e,
 				  TALLOC_CTX *mem_ctx,
 				  ADS_STRUCT *ads, 
 				  LDAPMessage *msg,
-				  char **homedir,
-				  char **shell, 
-				  char **gecos,
+				  const char **homedir,
+				  const char **shell,
+				  const char **gecos,
 				  uint32 *gid )
 {
 	const char *attrs[] = {NULL, /* attr_homedir */

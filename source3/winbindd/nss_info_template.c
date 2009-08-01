@@ -37,9 +37,9 @@ static NTSTATUS nss_template_get_info( struct nss_domain_entry *e,
 				       TALLOC_CTX *ctx,
 				       ADS_STRUCT *ads,
 				       LDAPMessage *msg,
-				       char **homedir,
-				       char **shell, 
-				       char **gecos,
+				       const char **homedir,
+				       const char **shell,
+				       const char **gecos,
 				       gid_t *gid )
 {     
 	if ( !homedir || !shell || !gecos )

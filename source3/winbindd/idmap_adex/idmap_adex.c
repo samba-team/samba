@@ -318,8 +318,9 @@ static NTSTATUS _nss_adex_get_info(struct
 				      TALLOC_CTX * ctx,
 				      ADS_STRUCT * ads,
 				      LDAPMessage * msg,
-				      char **homedir,
-				      char **shell, char **gecos, gid_t * p_gid)
+				      const char **homedir,
+				      const char **shell,
+				      const char **gecos, gid_t * p_gid)
 {
 	NTSTATUS nt_status;
         struct likewise_cell *cell;

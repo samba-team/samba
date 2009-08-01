@@ -177,8 +177,8 @@ NTSTATUS nss_get_info_cached( struct winbindd_domain *domain,
 			      const DOM_SID *user_sid,
 			      TALLOC_CTX *ctx,
 			      ADS_STRUCT *ads, LDAPMessage *msg,
-			      char **homedir, char **shell, char **gecos,
-			      gid_t *p_gid);
+			      const char **homedir, const char **shell,
+			      const char **gecos, gid_t *p_gid);
 
 /* The following definitions come from winbindd/winbindd_ccache_access.c  */
 

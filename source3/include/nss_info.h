@@ -65,7 +65,8 @@ struct nss_info_methods {
 				  const DOM_SID *sid, 
 				  TALLOC_CTX *ctx, 
 				  ADS_STRUCT *ads, LDAPMessage *msg,
-				  char **homedir, char **shell, char **gecos, gid_t *p_gid);
+				  const char **homedir, const char **shell,
+				  const char **gecos, gid_t *p_gid);
 	NTSTATUS (*map_to_alias)(TALLOC_CTX *mem_ctx,
 				 struct nss_domain_entry *e,
 				 const char *name, char **alias);
@@ -85,10 +86,10 @@ NTSTATUS smb_register_idmap_nss(int version,
 NTSTATUS nss_init( const char **nss_list );
 
 NTSTATUS nss_get_info( const char *domain, const DOM_SID *user_sid,
-                       TALLOC_CTX *ctx,
+		       TALLOC_CTX *ctx,
 		       ADS_STRUCT *ads, LDAPMessage *msg,
-                       char **homedir, char **shell, char **gecos,
-                       gid_t *p_gid);
+		       const char **homedir, const char **shell,
+		       const char **gecos, gid_t *p_gid);
 
 NTSTATUS nss_map_to_alias( TALLOC_CTX *mem_ctx, const char *domain,
 			   const char *name, char **alias );
