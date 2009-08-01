@@ -288,7 +288,7 @@ static void getpwsid_queryuser_recv(void *private_data, bool success,
 					    &s->user_sid, &domain_name,
 					    &user_name, &type );
 
-		/* If this still fails we ar4e done.  Just error out */
+		/* If this still fails we are done.  Just error out */
 		if ( !user_name ) {
 			DEBUG(5,("Could not obtain a name for SID %s\n",
 				 sid_string_dbg(&s->user_sid)));
