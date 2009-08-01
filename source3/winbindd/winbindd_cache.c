@@ -1939,37 +1939,45 @@ static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 	return result;
 }
 
-/* Lookup user information from a rid */
-static NTSTATUS query_user(struct winbindd_domain *domain, 
-			   TALLOC_CTX *mem_ctx, 
-			   const DOM_SID *user_sid, 
-			   WINBIND_USERINFO *info)
+NTSTATUS wcache_query_user(struct winbindd_domain *domain,
+			   TALLOC_CTX *mem_ctx,
+			   const struct dom_sid *user_sid,
+			   struct winbind_userinfo *info)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
-	fstring tmp;
+	char *sid_string;
 
-	if (!cache->tdb)
-		goto do_query;
-
-	centry = wcache_fetch(cache, domain, "U/%s",
-			      sid_to_fstring(tmp, user_sid));
-
-	/* If we have an access denied cache entry and a cached info3 in the
-           samlogon cache then do a query.  This will force the rpc back end
-           to return the info3 data. */
-
-	if (NT_STATUS_V(domain->last_status) == NT_STATUS_V(NT_STATUS_ACCESS_DENIED) &&
-	    netsamlogon_cache_have(user_sid)) {
-		DEBUG(10, ("query_user: cached access denied and have cached info3\n"));
-		domain->last_status = NT_STATUS_OK;
-		centry_free(centry);
-		goto do_query;
+	if (cache->tdb == NULL) {
+		return NT_STATUS_NOT_FOUND;
 	}
 
-	if (!centry)
-		goto do_query;
+	sid_string = sid_string_tos(user_sid);
+	if (sid_string == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	centry = wcache_fetch(cache, domain, "U/%s", sid_string);
+	TALLOC_FREE(sid_string);
+	if (centry == NULL) {
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	/*
+	 * If we have an access denied cache entry and a cached info3
+	 * in the samlogon cache then do a query.  This will force the
+	 * rpc back end to return the info3 data.
+	 */
+
+	if (NT_STATUS_EQUAL(domain->last_status, NT_STATUS_ACCESS_DENIED) &&
+	    netsamlogon_cache_have(user_sid)) {
+		DEBUG(10, ("query_user: cached access denied and have cached "
+			   "info3\n"));
+		domain->last_status = NT_STATUS_OK;
+		centry_free(centry);
+		return NT_STATUS_NOT_FOUND;
+	}
 
 	/* if status is not ok then this is a negative hit
 	   and the rest of the data doesn't matter */
@@ -1984,13 +1992,26 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		centry_sid(centry, &info->group_sid);
 	}
 
-	DEBUG(10,("query_user: [Cached] - cached info for domain %s status: %s\n",
-		domain->name, nt_errstr(status) ));
+	DEBUG(10,("query_user: [Cached] - cached info for domain %s status: "
+		  "%s\n", domain->name, nt_errstr(status) ));
 
 	centry_free(centry);
 	return status;
+}
 
-do_query:
+/* Lookup user information from a rid */
+static NTSTATUS query_user(struct winbindd_domain *domain,
+			   TALLOC_CTX *mem_ctx,
+			   const DOM_SID *user_sid,
+			   WINBIND_USERINFO *info)
+{
+	NTSTATUS status;
+
+	status = wcache_query_user(domain, mem_ctx, user_sid, info);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		return status;
+	}
+
 	ZERO_STRUCTP(info);
 
 	/* Return status value returned by seq number check */
