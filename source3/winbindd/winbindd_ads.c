@@ -404,14 +404,14 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 /* convert a single name to a sid in a domain - use rpc methods */
 static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 			    TALLOC_CTX *mem_ctx,
-			    enum winbindd_cmd orig_cmd,
 			    const char *domain_name,
 			    const char *name,
+			    uint32_t flags,
 			    DOM_SID *sid,
 			    enum lsa_SidType *type)
 {
-	return reconnect_methods.name_to_sid(domain, mem_ctx, orig_cmd,
-					     domain_name, name,
+	return reconnect_methods.name_to_sid(domain, mem_ctx,
+					     domain_name, name, flags,
 					     sid, type);
 }
 

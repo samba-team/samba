@@ -88,25 +88,15 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 /* convert a single name to a sid in a domain */
 static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 			    TALLOC_CTX *mem_ctx,
-			    enum winbindd_cmd original_cmd,
 			    const char *domain_name,
 			    const char *name,
+			    uint32_t flags,
 			    DOM_SID *sid,
 			    enum lsa_SidType *type)
 {
 	const char *fullname;
-	uint32 flags = LOOKUP_NAME_ALL;
 
-	switch ( original_cmd ) {
-	case WINBINDD_LOOKUPNAME:
-		/* This call is ok */
-		break;
-	default:
-		/* Avoid any NSS calls in the lookup_name by default */
-		flags |= LOOKUP_NAME_NO_NSS;
-		DEBUG(10,("winbindd_passdb: limiting name_to_sid() to explicit mappings\n"));
-		break;
-	}
+	flags |= LOOKUP_NAME_ALL;
 
 	if (domain_name && domain_name[0] && strchr_m(name, '\\') == NULL) {
 		fullname = talloc_asprintf(mem_ctx, "%s\\%s",

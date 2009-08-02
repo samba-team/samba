@@ -886,9 +886,14 @@ bool winbindd_lookup_sid_by_name(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS result;
 
-	/* Lookup name */
-	result = domain->methods->name_to_sid(domain, mem_ctx, orig_cmd,
-					      domain_name, name, sid, type);
+	/*
+	 * For all but LOOKUPNAME we have to avoid nss calls to avoid
+	 * recursion
+	 */
+	result = domain->methods->name_to_sid(
+		domain, mem_ctx, domain_name, name,
+		orig_cmd == WINBINDD_LOOKUPNAME ? 0 : LOOKUP_NAME_NO_NSS,
+		sid, type);
 
 	/* Return sid and type if lookup successful */
 	if (!NT_STATUS_IS_OK(result)) {
