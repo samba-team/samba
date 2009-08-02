@@ -91,13 +91,14 @@ static WERROR open_key(TALLOC_CTX *ctx, const char *path,
 
 	werr = open_hive(tmp_ctx, path, desired_access, &hive, &subkey_name);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "open_hive failed: %s\n", win_errstr(werr));
+		d_fprintf(stderr, _("open_hive failed: %s\n"),
+			  win_errstr(werr));
 		goto done;
 	}
 
 	werr = reg_openkey(ctx, hive, subkey_name, desired_access, key);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "reg_openkey failed: %s\n",
+		d_fprintf(stderr, _("reg_openkey failed: %s\n"),
 			  win_errstr(werr));
 		goto done;
 	}
@@ -129,15 +130,15 @@ static int net_registry_enumerate(struct net_context *c, int argc,
 	int ret = -1;
 
 	if (argc != 1 || c->display_usage) {
-		d_printf("Usage:    net registry enumerate <path>\n");
-		d_printf("Example:  net registry enumerate "
-			 "'HKLM\\Software\\Samba'\n");
+		d_printf(_("Usage:    net registry enumerate <path>\n"));
+		d_printf(_("Example:  net registry enumerate "
+			 "'HKLM\\Software\\Samba'\n"));
 		goto done;
 	}
 
 	werr = open_key(ctx, argv[0], REG_KEY_READ, &key);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "open_key failed: %s\n", win_errstr(werr));
+		d_fprintf(stderr, _("open_key failed: %s\n"), win_errstr(werr));
 		goto done;
 	}
 
@@ -181,38 +182,39 @@ static int net_registry_createkey(struct net_context *c, int argc,
 	int ret = -1;
 
 	if (argc != 1 || c->display_usage) {
-		d_printf("Usage:    net registry createkey <path>\n");
-		d_printf("Example:  net registry createkey "
-			 "'HKLM\\Software\\Samba\\smbconf.127.0.0.1'\n");
+		d_printf(_("Usage:    net registry createkey <path>\n"));
+		d_printf(_("Example:  net registry createkey "
+			 "'HKLM\\Software\\Samba\\smbconf.127.0.0.1'\n"));
 		goto done;
 	}
 	if (strlen(argv[0]) == 0) {
-		d_fprintf(stderr, "error: zero length key name given\n");
+		d_fprintf(stderr, _("error: zero length key name given\n"));
 		goto done;
 	}
 
 	werr = open_hive(ctx, argv[0], REG_KEY_WRITE, &hivekey, &subkeyname);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "open_hive failed: %s\n", win_errstr(werr));
+		d_fprintf(stderr, _("open_hive failed: %s\n"),
+			  win_errstr(werr));
 		goto done;
 	}
 
 	werr = reg_createkey(ctx, hivekey, subkeyname, REG_KEY_WRITE,
 			     &subkey, &action);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "reg_createkey failed: %s\n",
+		d_fprintf(stderr, _("reg_createkey failed: %s\n"),
 			  win_errstr(werr));
 		goto done;
 	}
 	switch (action) {
 		case REG_ACTION_NONE:
-			d_printf("createkey did nothing -- huh?\n");
+			d_printf(_("createkey did nothing -- huh?\n"));
 			break;
 		case REG_CREATED_NEW_KEY:
-			d_printf("createkey created %s\n", argv[0]);
+			d_printf(_("createkey created %s\n"), argv[0]);
 			break;
 		case REG_OPENED_EXISTING_KEY:
-			d_printf("createkey opened existing %s\n", argv[0]);
+			d_printf(_("createkey opened existing %s\n"), argv[0]);
 			break;
 	}
 
@@ -233,25 +235,26 @@ static int net_registry_deletekey(struct net_context *c, int argc,
 	int ret = -1;
 
 	if (argc != 1 || c->display_usage) {
-		d_printf("Usage:    net registry deletekey <path>\n");
-		d_printf("Example:  net registry deletekey "
-			 "'HKLM\\Software\\Samba\\smbconf.127.0.0.1'\n");
+		d_printf(_("Usage:    net registry deletekey <path>\n"));
+		d_printf(_("Example:  net registry deletekey "
+			   "'HKLM\\Software\\Samba\\smbconf.127.0.0.1'\n"));
 		goto done;
 	}
 	if (strlen(argv[0]) == 0) {
-		d_fprintf(stderr, "error: zero length key name given\n");
+		d_fprintf(stderr, _("error: zero length key name given\n"));
 		goto done;
 	}
 
 	werr = open_hive(ctx, argv[0], REG_KEY_WRITE, &hivekey, &subkeyname);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "open_hive failed: %s\n", win_errstr(werr));
+		d_fprintf(stderr, _("open_hive failed: %s\n"),
+			  win_errstr(werr));
 		goto done;
 	}
 
 	werr = reg_deletekey(hivekey, subkeyname);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "reg_deletekey failed: %s\n",
+		d_fprintf(stderr, _("reg_deletekey failed: %s\n"),
 			  win_errstr(werr));
 		goto done;
 	}
@@ -273,20 +276,20 @@ static int net_registry_getvalue_internal(struct net_context *c, int argc,
 	TALLOC_CTX *ctx = talloc_stackframe();
 
 	if (argc != 2 || c->display_usage) {
-		d_fprintf(stderr, "usage: net rpc registry getvalue <key> "
-				  "<valuename>\n");
+		d_fprintf(stderr, _("usage: net rpc registry getvalue <key> "
+				    "<valuename>\n"));
 		goto done;
 	}
 
 	werr = open_key(ctx, argv[0], REG_KEY_READ, &key);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "open_key failed: %s\n", win_errstr(werr));
+		d_fprintf(stderr, _("open_key failed: %s\n"), win_errstr(werr));
 		goto done;
 	}
 
 	werr = reg_queryvalue(ctx, key, argv[1], &value);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "reg_queryvalue failed: %s\n",
+		d_fprintf(stderr, _("reg_queryvalue failed: %s\n"),
 			  win_errstr(werr));
 		goto done;
 	}
@@ -322,13 +325,13 @@ static int net_registry_setvalue(struct net_context *c, int argc,
 	TALLOC_CTX *ctx = talloc_stackframe();
 
 	if (argc < 4 || c->display_usage) {
-		d_fprintf(stderr, "usage: net rpc registry setvalue <key> "
-			  "<valuename> <type> [<val>]+\n");
+		d_fprintf(stderr, _("usage: net rpc registry setvalue <key> "
+			  "<valuename> <type> [<val>]+\n"));
 		goto done;
 	}
 
 	if (!strequal(argv[2], "multi_sz") && (argc != 4)) {
-		d_fprintf(stderr, "Too many args for type %s\n", argv[2]);
+		d_fprintf(stderr, _("Too many args for type %s\n"), argv[2]);
 		goto done;
 	}
 
@@ -344,19 +347,19 @@ static int net_registry_setvalue(struct net_context *c, int argc,
 		value.v.multi_sz.num_strings = argc - 3;
 		value.v.multi_sz.strings = (char **)(argv + 3);
 	} else {
-		d_fprintf(stderr, "type \"%s\" not implemented\n", argv[2]);
+		d_fprintf(stderr, _("type \"%s\" not implemented\n"), argv[2]);
 		goto done;
 	}
 
 	werr = open_key(ctx, argv[0], REG_KEY_WRITE, &key);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "open_key failed: %s\n", win_errstr(werr));
+		d_fprintf(stderr, _("open_key failed: %s\n"), win_errstr(werr));
 		goto done;
 	}
 
 	werr = reg_setvalue(key, argv[1], &value);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "reg_setvalue failed: %s\n",
+		d_fprintf(stderr, _("reg_setvalue failed: %s\n"),
 			  win_errstr(werr));
 		goto done;
 	}
@@ -377,20 +380,20 @@ static int net_registry_deletevalue(struct net_context *c, int argc,
 	int ret = -1;
 
 	if (argc != 2 || c->display_usage) {
-		d_fprintf(stderr, "usage: net rpc registry deletevalue <key> "
-			  "<valuename>\n");
+		d_fprintf(stderr, _("usage: net rpc registry deletevalue <key> "
+			  "<valuename>\n"));
 		goto done;
 	}
 
 	werr = open_key(ctx, argv[0], REG_KEY_WRITE, &key);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "open_key failed: %s\n", win_errstr(werr));
+		d_fprintf(stderr, _("open_key failed: %s\n"), win_errstr(werr));
 		goto done;
 	}
 
 	werr = reg_deletevalue(key, argv[1]);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "reg_deletekey failed: %s\n",
+		d_fprintf(stderr, _("reg_deletekey failed: %s\n"),
 			  win_errstr(werr));
 		goto done;
 	}
@@ -421,9 +424,9 @@ static int net_registry_getsd(struct net_context *c, int argc,
 	access_mask = REG_KEY_READ;
 
 	if (argc != 1 || c->display_usage) {
-		d_printf("Usage:    net registry getsd <path>\n");
-		d_printf("Example:  net registry getsd "
-			 "'HKLM\\Software\\Samba'\n");
+		d_printf(_("Usage:    net registry getsd <path>\n"));
+		d_printf(_("Example:  net registry getsd "
+			   "'HKLM\\Software\\Samba'\n"));
 		goto done;
 	}
 	if (strlen(argv[0]) == 0) {
@@ -433,13 +436,13 @@ static int net_registry_getsd(struct net_context *c, int argc,
 
 	werr = open_key(ctx, argv[0], access_mask, &key);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "open_key failed: %s\n", win_errstr(werr));
+		d_fprintf(stderr, _("open_key failed: %s\n"), win_errstr(werr));
 		goto done;
 	}
 
 	werr = reg_getkeysecurity(ctx, key, &secdesc);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "reg_getkeysecurity failed: %s\n",
+		d_fprintf(stderr, _("reg_getkeysecurity failed: %s\n"),
 			  win_errstr(werr));
 		goto done;
 	}
@@ -462,65 +465,65 @@ int net_registry(struct net_context *c, int argc, const char **argv)
 			"enumerate",
 			net_registry_enumerate,
 			NET_TRANSPORT_LOCAL,
-			"Enumerate registry keys and values",
-			"net registry enumerate\n"
-			"    Enumerate registry keys and values"
+			N_("Enumerate registry keys and values"),
+			N_("net registry enumerate\n"
+			   "    Enumerate registry keys and values")
 		},
 		{
 			"createkey",
 			net_registry_createkey,
 			NET_TRANSPORT_LOCAL,
-			"Create a new registry key",
-			"net registry createkey\n"
-			"    Create a new registry key"
+			N_("Create a new registry key"),
+			N_("net registry createkey\n"
+			   "    Create a new registry key")
 		},
 		{
 			"deletekey",
 			net_registry_deletekey,
 			NET_TRANSPORT_LOCAL,
-			"Delete a registry key",
-			"net registry deletekey\n"
-			"    Delete a registry key"
+			N_("Delete a registry key"),
+			N_("net registry deletekey\n"
+			   "    Delete a registry key")
 		},
 		{
 			"getvalue",
 			net_registry_getvalue,
 			NET_TRANSPORT_LOCAL,
-			"Print a registry value",
-			"net registry getvalue\n"
-			"    Print a registry value"
+			N_("Print a registry value"),
+			N_("net registry getvalue\n"
+			   "    Print a registry value")
 		},
 		{
 			"getvalueraw",
 			net_registry_getvalueraw,
 			NET_TRANSPORT_LOCAL,
-			"Print a registry value (raw format)",
-			"net registry getvalueraw\n"
-			"    Print a registry value (raw format)"
+			N_("Print a registry value (raw format)"),
+			N_("net registry getvalueraw\n"
+			   "    Print a registry value (raw format)")
 		},
 		{
 			"setvalue",
 			net_registry_setvalue,
 			NET_TRANSPORT_LOCAL,
-			"Set a new registry value",
-			"net registry setvalue\n"
-			"    Set a new registry value"
+			N_("Set a new registry value"),
+			N_("net registry setvalue\n"
+			   "    Set a new registry value")
 		},
 		{
 			"deletevalue",
 			net_registry_deletevalue,
 			NET_TRANSPORT_LOCAL,
-			"Delete a registry value",
-			"net registry deletevalue\n"
-			"    Delete a registry value"
+			N_("Delete a registry value"),
+			N_("net registry deletevalue\n"
+			   "    Delete a registry value")
 		},
 		{
 			"getsd",
 			net_registry_getsd,
 			NET_TRANSPORT_LOCAL,
-			"Get security descriptor",
-			"net registry getsd\n"
-			"    Get security descriptor"
+			N_("Get security descriptor"),
+			N_("net registry getsd\n"
+			   "    Get security descriptor")
 		},
 	{ NULL, NULL, 0, NULL, NULL }
 	};

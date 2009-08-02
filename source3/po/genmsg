@@ -29,7 +29,8 @@ add_basedir_to_filelist() {
 NET_FILES=`add_basedir_to_filelist ../utils net.c net_ads.c net_ads_gpo.c \
 	   net_afs.c net_cache.c net_conf.c net_dom.c net_eventlog.c \
 	   net_file.c net_group.c net_groupmap.c net_help.c net_help_common.c \
-	   net_idmap.c net_join.c net_lookup.c net_lua.c net_rap.c`
+	   net_idmap.c net_join.c net_lookup.c net_lua.c net_rap.c \
+	   net_registry.c net_registry_util.c`
 
 FILES="../web/swat.c ../web/statuspage.c ../param/loadparm.c ${NET_FILES}"
 LANGS='en ja tr pl fr de it ru'
