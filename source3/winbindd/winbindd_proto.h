@@ -100,7 +100,7 @@ enum winbindd_result winbindd_dual_list_groups(struct winbindd_domain *domain,
                                                struct winbindd_cli_state *state);
 bool print_sidlist(TALLOC_CTX *mem_ctx, const DOM_SID *sids,
 		   size_t num_sids, char **result, ssize_t *len);
-bool parse_sidlist(TALLOC_CTX *mem_ctx, char *sidstr,
+bool parse_sidlist(TALLOC_CTX *mem_ctx, const char *sidstr,
 		   DOM_SID **sids, size_t *num_sids);
 enum winbindd_result winbindd_dual_lookuprids(struct winbindd_domain *domain,
 					      struct winbindd_cli_state *state);
