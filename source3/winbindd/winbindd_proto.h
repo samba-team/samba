@@ -175,6 +175,10 @@ NTSTATUS wcache_query_user(struct winbindd_domain *domain,
 			   TALLOC_CTX *mem_ctx,
 			   const struct dom_sid *user_sid,
 			   struct winbind_userinfo *info);
+NTSTATUS wcache_lookup_useraliases(struct winbindd_domain *domain,
+				   TALLOC_CTX *mem_ctx,
+				   uint32 num_sids, const DOM_SID *sids,
+				   uint32 *pnum_aliases, uint32 **paliases);
 void wcache_flush_cache(void);
 NTSTATUS wcache_count_cached_creds(struct winbindd_domain *domain, int *count);
 NTSTATUS wcache_remove_oldest_cached_creds(struct winbindd_domain *domain, const DOM_SID *sid) ;

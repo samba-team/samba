@@ -2122,58 +2122,74 @@ skip_save:
 	return status;
 }
 
-static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
-				   TALLOC_CTX *mem_ctx,
-				   uint32 num_sids, const DOM_SID *sids,
-				   uint32 *num_aliases, uint32 **alias_rids)
+static char *wcache_make_sidlist(TALLOC_CTX *mem_ctx, uint32_t num_sids,
+				 const struct dom_sid *sids)
+{
+	uint32_t i;
+	char *sidlist;
+
+	sidlist = talloc_strdup(mem_ctx, "");
+	if (sidlist == NULL) {
+		return NULL;
+	}
+	for (i=0; i<num_sids; i++) {
+		fstring tmp;
+		sidlist = talloc_asprintf_append_buffer(
+			sidlist, "/%s", sid_to_fstring(tmp, &sids[i]));
+		if (sidlist == NULL) {
+			return NULL;
+		}
+	}
+	return sidlist;
+}
+
+NTSTATUS wcache_lookup_useraliases(struct winbindd_domain *domain,
+				   TALLOC_CTX *mem_ctx, uint32_t num_sids,
+				   const struct dom_sid *sids,
+				   uint32_t *pnum_aliases, uint32_t **paliases)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
+	uint32_t num_aliases;
+	uint32_t *aliases;
 	NTSTATUS status;
-	char *sidlist = talloc_strdup(mem_ctx, "");
+	char *sidlist;
 	int i;
 
-	if (!cache->tdb)
-		goto do_query;
+	if (cache->tdb == NULL) {
+		return NT_STATUS_NOT_FOUND;
+	}
 
 	if (num_sids == 0) {
-		*num_aliases = 0;
-		*alias_rids = NULL;
+		*pnum_aliases = 0;
+		*paliases = NULL;
 		return NT_STATUS_OK;
 	}
 
 	/* We need to cache indexed by the whole list of SIDs, the aliases
 	 * resulting might come from any of the SIDs. */
 
-	for (i=0; i<num_sids; i++) {
-		fstring tmp;
-		sidlist = talloc_asprintf(mem_ctx, "%s/%s", sidlist,
-					  sid_to_fstring(tmp, &sids[i]));
-		if (sidlist == NULL)
-			return NT_STATUS_NO_MEMORY;
+	sidlist = wcache_make_sidlist(talloc_tos(), num_sids, sids);
+	if (sidlist == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	centry = wcache_fetch(cache, domain, "UA%s", sidlist);
-
-	if (!centry)
-		goto do_query;
-
-	*num_aliases = centry_uint32(centry);
-	*alias_rids = NULL;
-
-	if (*num_aliases) {
-		(*alias_rids) = TALLOC_ARRAY(mem_ctx, uint32, *num_aliases);
-
-		if ((*alias_rids) == NULL) {
-			centry_free(centry);
-			return NT_STATUS_NO_MEMORY;
-		}
-	} else {
-		(*alias_rids) = NULL;
+	TALLOC_FREE(sidlist);
+	if (centry == NULL) {
+		return NT_STATUS_NOT_FOUND;
 	}
 
-	for (i=0; i<(*num_aliases); i++)
-		(*alias_rids)[i] = centry_uint32(centry);
+	num_aliases = centry_uint32(centry);
+	aliases = talloc_array(mem_ctx, uint32_t, num_aliases);
+	if (aliases == NULL) {
+		centry_free(centry);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<num_aliases; i++) {
+		aliases[i] = centry_uint32(centry);
+	}
 
 	status = centry->status;
 
@@ -2181,9 +2197,29 @@ static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 		  "status %s\n", domain->name, nt_errstr(status)));
 
 	centry_free(centry);
-	return status;
 
- do_query:
+	*pnum_aliases = num_aliases;
+	*paliases = aliases;
+
+	return status;
+}
+
+static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
+				   TALLOC_CTX *mem_ctx,
+				   uint32 num_sids, const DOM_SID *sids,
+				   uint32 *num_aliases, uint32 **alias_rids)
+{
+	struct cache_entry *centry = NULL;
+	NTSTATUS status;
+	char *sidlist;
+	int i;
+
+	status = wcache_lookup_useraliases(domain, mem_ctx, num_sids, sids,
+					   num_aliases, alias_rids);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		return status;
+	}
+
 	(*num_aliases) = 0;
 	(*alias_rids) = NULL;
 
@@ -2192,6 +2228,11 @@ static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 
 	DEBUG(10,("lookup_usergroups: [Cached] - doing backend query for info "
 		  "for domain %s\n", domain->name ));
+
+	sidlist = wcache_make_sidlist(talloc_tos(), num_sids, sids);
+	if (sidlist == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	status = domain->backend->lookup_useraliases(domain, mem_ctx,
 						     num_sids, sids,
