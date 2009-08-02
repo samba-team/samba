@@ -6,17 +6,17 @@
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2003
    Copyright (C) Gerald (Jerry) Carter 2004
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -174,7 +174,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	}
 
 	ads = ads_cached_connection(domain);
-	
+
 	if (!ads) {
 		domain->last_status = NT_STATUS_SERVER_DISABLED;
 		goto done;
@@ -226,7 +226,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		if (gecos == NULL) {
 			gecos = ads_pull_string(ads, mem_ctx, msg, "name");
 		}
-	
+
 		if (!ads_pull_sid(ads, msg, "objectSid",
 				  &(*info)[i].user_sid)) {
 			DEBUG(1,("No sid for %s !?\n", name));
@@ -343,7 +343,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	}
 
 	i = 0;
-	
+
 	for (msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
 		char *name, *gecos;
 		DOM_SID sid;
@@ -397,7 +397,7 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 	 * to be split out
 	 */
 	*num_entries = 0;
-	
+
 	return NT_STATUS_OK;
 }
 
@@ -471,25 +471,25 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	info->primary_gid = (gid_t)-1;
 
 	/* try netsamlogon cache first */
-			
+
 	if ( (user = netsamlogon_cache_get( mem_ctx, sid )) != NULL ) 
 	{
-				
+
 		DEBUG(5,("query_user: Cache lookup succeeded for %s\n", 
 			 sid_string_dbg(sid)));
 
 		sid_compose(&info->user_sid, &domain->sid, user->base.rid);
 		sid_compose(&info->group_sid, &domain->sid, user->base.primary_gid);
-				
+
 		info->acct_name = talloc_strdup(mem_ctx, user->base.account_name.string);
 		info->full_name = talloc_strdup(mem_ctx, user->base.full_name.string);
-		
+
 		nss_get_info_cached( domain, sid, mem_ctx, NULL, NULL, 
 			      &info->homedir, &info->shell, &info->full_name, 
 			      &info->primary_gid );	
 
 		TALLOC_FREE(user);
-				
+
 		return NT_STATUS_OK;
 	}
 
@@ -628,14 +628,14 @@ static NTSTATUS lookup_usergroups_member(struct winbindd_domain *domain,
 	TALLOC_FREE(escaped_dn);
 
 	rc = ads_search_retry(ads, &res, ldap_exp, group_attrs);
-	
+
 	if (!ADS_ERR_OK(rc) || !res) {
 		DEBUG(1,("lookup_usergroups ads_search member=%s: %s\n", user_dn, ads_errstr(rc)));
 		return ads_ntstatus(rc);
 	}
-	
+
 	count = ads_count_replies(ads, res);
-	
+
 	*user_sids = NULL;
 	num_groups = 0;
 
@@ -650,12 +650,12 @@ static NTSTATUS lookup_usergroups_member(struct winbindd_domain *domain,
 		for (msg = ads_first_entry(ads, res); msg;
 		     msg = ads_next_entry(ads, msg)) {
 			DOM_SID group_sid;
-		
+
 			if (!ads_pull_sid(ads, msg, "objectSid", &group_sid)) {
 				DEBUG(1,("No sid for this group ?!?\n"));
 				continue;
 			}
-	
+
 			/* ignore Builtin groups from ADS - Guenther */
 			if (sid_check_is_in_builtin(&group_sid)) {
 				continue;
@@ -833,7 +833,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	}
 
 	ads = ads_cached_connection(domain);
-	
+
 	if (!ads) {
 		domain->last_status = NT_STATUS_SERVER_DISABLED;
 		status = NT_STATUS_SERVER_DISABLED;
@@ -848,7 +848,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 			  "%s\n", sid_string_dbg(sid), ads_errstr(rc)));
 		goto done;
 	}
-	
+
 	count = ads_count_replies(ads, msg);
 	if (count != 1) {
 		status = NT_STATUS_UNSUCCESSFUL;
@@ -891,7 +891,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	if (count == 0) {
 
 		/* no tokenGroups */
-		
+
 		/* lookup what groups this user is a member of by DN search on
 		 * "memberOf" */
 
@@ -921,7 +921,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
-	
+
 	for (i=0;i<count;i++) {
 
 		/* ignore Builtin groups from ADS - Guenther */
@@ -1225,16 +1225,16 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	*seq = DOM_SEQUENCE_NONE;
 
 	ads = ads_cached_connection(domain);
-	
+
 	if (!ads) {
 		domain->last_status = NT_STATUS_SERVER_DISABLED;
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	rc = ads_USN(ads, seq);
-	
+
 	if (!ADS_ERR_OK(rc)) {
-	
+
 		/* its a dead connection, destroy it */
 
 		if (domain->private_data) {
@@ -1279,7 +1279,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	struct rpc_pipe_client *cli;
 	uint32                 fr_flags = (NETR_TRUST_FLAG_IN_FOREST | NETR_TRUST_FLAG_TREEROOT);
 	int ret_count;
-	
+
 	DEBUG(3,("ads: trusted_domains\n"));
 
 	*num_domains = 0;
@@ -1340,7 +1340,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 		ret_count = 0;		
 		for (i = 0; i < trusts.count; i++) {
 			struct winbindd_domain d;
-			
+
 			ZERO_STRUCT(d);
 
 			/* drop external trusts if this is not our primary 
@@ -1356,7 +1356,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 					  trusts.array[i].netbios_name));
 				continue;				
 			}
-			
+
 			(*names)[ret_count] = CONST_DISCARD(char *, trusts.array[i].netbios_name);
 			(*alt_names)[ret_count] = CONST_DISCARD(char *, trusts.array[i].dns_name);
 			if (trusts.array[i].sid) {
@@ -1436,7 +1436,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 					d.domain_trust_attribs = domain->domain_trust_attribs;
 				}
 				TALLOC_FREE(parent);
-				
+
 				wcache_tdc_add_domain( &d );
 				ret_count++;
 			}

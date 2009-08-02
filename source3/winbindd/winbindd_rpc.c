@@ -7,17 +7,17 @@
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Volker Lendecke 2005
    Copyright (C) Guenther Deschner 2008 (pidl conversion)
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -106,7 +106,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			(*info)[i].homedir = NULL;
 			(*info)[i].shell = NULL;
 			sid_compose(&(*info)[i].user_sid, &domain->sid, rid);
-			
+
 			/* For the moment we set the primary group for
 			   every user to be the Domain Users group.
 			   There are serious problems with determining
@@ -114,7 +114,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			   This should really be made into a 'winbind
 			   force group' smb.conf parameter or
 			   something like that. */
-			   
+
 			sid_compose(&(*info)[i].group_sid, &domain->sid, 
 				    DOMAIN_GROUP_RID_USERS);
 		}
@@ -316,7 +316,7 @@ static NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 
 	result = rpccli_lsa_lookup_names(cli, mem_ctx, &lsa_policy, 1, 
 					 (const char**) &full_name, NULL, 1, &sids, &types);
-        
+
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
@@ -356,7 +356,7 @@ static NTSTATUS msrpc_sid_to_name(struct winbindd_domain *domain,
 			 nt_errstr(result)));		
 		return result;
 	}
-	
+
 
 	result = rpccli_lsa_lookup_sids(cli, mem_ctx, &lsa_policy,
 					1, sid, &domains, &names, &types);
@@ -471,53 +471,53 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 
 	if (!sid_peek_check_rid(&domain->sid, user_sid, &user_rid))
 		return NT_STATUS_UNSUCCESSFUL;
-	
+
 	user_info->homedir = NULL;
 	user_info->shell = NULL;
 	user_info->primary_gid = (gid_t)-1;
-						
+
 	/* try netsamlogon cache first */
-			
+
 	if ( (user = netsamlogon_cache_get( mem_ctx, user_sid )) != NULL ) 
 	{
-				
+
 		DEBUG(5,("query_user: Cache lookup succeeded for %s\n", 
 			sid_string_dbg(user_sid)));
 
 		sid_compose(&user_info->user_sid, &domain->sid, user->base.rid);
 		sid_compose(&user_info->group_sid, &domain->sid,
 			    user->base.primary_gid);
-				
+
 		user_info->acct_name = talloc_strdup(mem_ctx,
 						     user->base.account_name.string);
 		user_info->full_name = talloc_strdup(mem_ctx,
 						     user->base.full_name.string);
-		
+
 		TALLOC_FREE(user);
-						
+
 		return NT_STATUS_OK;
 	}
-				
+
 	if ( !winbindd_can_contact_domain( domain ) ) {
 		DEBUG(10,("query_user: No incoming trust for domain %s\n",
 			  domain->name));
 		return NT_STATUS_OK;
 	}
-	
+
 	if ( !winbindd_can_contact_domain( domain ) ) {
 		DEBUG(10,("query_user: No incoming trust for domain %s\n",
 			  domain->name));
 		return NT_STATUS_OK;
 	}
-	
+
 	if ( !winbindd_can_contact_domain( domain ) ) {
 		DEBUG(10,("query_user: No incoming trust for domain %s\n",
 			  domain->name));
 		return NT_STATUS_OK;
 	}
-	
+
 	/* no cache; hit the wire */
-		
+
 	result = cm_connect_sam(domain, mem_ctx, &cli, &dom_pol);
 	if (!NT_STATUS_IS_OK(result))
 		return result;
@@ -597,7 +597,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	}
 
 	/* no cache; hit the wire */
-	
+
 	result = cm_connect_sam(domain, mem_ctx, &cli, &dom_pol);
 	if (!NT_STATUS_IS_OK(result))
 		return result;
@@ -824,7 +824,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 
 	for (j=0;j<(*num_names);j++)
 		sid_compose(&(*sid_mem)[j], &domain->sid, rid_mem[j]);
-	
+
 	if (*num_names>0 && (!*names || !*name_types))
 		return NT_STATUS_NO_MEMORY;
 
