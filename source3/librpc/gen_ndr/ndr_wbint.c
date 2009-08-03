@@ -3,6 +3,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_wbint.h"
 
+#include "librpc/gen_ndr/ndr_lsa.h"
 static enum ndr_err_code ndr_push_wbint_Ping(struct ndr_push *ndr, int flags, const struct wbint_Ping *r)
 {
 	if (flags & NDR_IN) {
@@ -64,6 +65,179 @@ _PUBLIC_ void ndr_print_wbint_Ping(struct ndr_print *ndr, const char *name, int 
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_wbint_LookupSid(struct ndr_push *ndr, int flags, const struct wbint_LookupSid *r)
+{
+	if (flags & NDR_IN) {
+		if (r->in.sid == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS, r->in.sid));
+	}
+	if (flags & NDR_OUT) {
+		if (r->out.type == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_lsa_SidType(ndr, NDR_SCALARS, *r->out.type));
+		if (r->out.domain == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.domain));
+		if (*r->out.domain) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(*r->out.domain, CH_UTF8)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(*r->out.domain, CH_UTF8)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, *r->out.domain, ndr_charset_length(*r->out.domain, CH_UTF8), sizeof(uint8_t), CH_UTF8));
+		}
+		if (r->out.name == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.name));
+		if (*r->out.name) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(*r->out.name, CH_UTF8)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(*r->out.name, CH_UTF8)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, *r->out.name, ndr_charset_length(*r->out.name, CH_UTF8), sizeof(uint8_t), CH_UTF8));
+		}
+		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_wbint_LookupSid(struct ndr_pull *ndr, int flags, struct wbint_LookupSid *r)
+{
+	uint32_t _ptr_domain;
+	uint32_t _ptr_name;
+	TALLOC_CTX *_mem_save_sid_0;
+	TALLOC_CTX *_mem_save_type_0;
+	TALLOC_CTX *_mem_save_domain_0;
+	TALLOC_CTX *_mem_save_domain_1;
+	TALLOC_CTX *_mem_save_name_0;
+	TALLOC_CTX *_mem_save_name_1;
+	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.sid);
+		}
+		_mem_save_sid_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.sid, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS, r->in.sid));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sid_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_PULL_ALLOC(ndr, r->out.type);
+		ZERO_STRUCTP(r->out.type);
+		NDR_PULL_ALLOC(ndr, r->out.domain);
+		ZERO_STRUCTP(r->out.domain);
+		NDR_PULL_ALLOC(ndr, r->out.name);
+		ZERO_STRUCTP(r->out.name);
+	}
+	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.type);
+		}
+		_mem_save_type_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.type, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_lsa_SidType(ndr, NDR_SCALARS, r->out.type));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_type_0, LIBNDR_FLAG_REF_ALLOC);
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.domain);
+		}
+		_mem_save_domain_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.domain, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domain));
+		if (_ptr_domain) {
+			NDR_PULL_ALLOC(ndr, *r->out.domain);
+		} else {
+			*r->out.domain = NULL;
+		}
+		if (*r->out.domain) {
+			_mem_save_domain_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.domain, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, r->out.domain));
+			NDR_CHECK(ndr_pull_array_length(ndr, r->out.domain));
+			if (ndr_get_array_length(ndr, r->out.domain) > ndr_get_array_size(ndr, r->out.domain)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, r->out.domain), ndr_get_array_length(ndr, r->out.domain));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, r->out.domain), sizeof(uint8_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, r->out.domain, ndr_get_array_length(ndr, r->out.domain), sizeof(uint8_t), CH_UTF8));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domain_1, 0);
+		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domain_0, LIBNDR_FLAG_REF_ALLOC);
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.name);
+		}
+		_mem_save_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.name, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_name));
+		if (_ptr_name) {
+			NDR_PULL_ALLOC(ndr, *r->out.name);
+		} else {
+			*r->out.name = NULL;
+		}
+		if (*r->out.name) {
+			_mem_save_name_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.name, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, r->out.name));
+			NDR_CHECK(ndr_pull_array_length(ndr, r->out.name));
+			if (ndr_get_array_length(ndr, r->out.name) > ndr_get_array_size(ndr, r->out.name)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, r->out.name), ndr_get_array_length(ndr, r->out.name));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, r->out.name), sizeof(uint8_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, r->out.name, ndr_get_array_length(ndr, r->out.name), sizeof(uint8_t), CH_UTF8));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_name_1, 0);
+		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_name_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_wbint_LookupSid(struct ndr_print *ndr, const char *name, int flags, const struct wbint_LookupSid *r)
+{
+	ndr_print_struct(ndr, name, "wbint_LookupSid");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "wbint_LookupSid");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "sid", r->in.sid);
+		ndr->depth++;
+		ndr_print_dom_sid(ndr, "sid", r->in.sid);
+		ndr->depth--;
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "wbint_LookupSid");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "type", r->out.type);
+		ndr->depth++;
+		ndr_print_lsa_SidType(ndr, "type", *r->out.type);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "domain", r->out.domain);
+		ndr->depth++;
+		ndr_print_ptr(ndr, "domain", *r->out.domain);
+		ndr->depth++;
+		if (*r->out.domain) {
+			ndr_print_string(ndr, "domain", *r->out.domain);
+		}
+		ndr->depth--;
+		ndr->depth--;
+		ndr_print_ptr(ndr, "name", r->out.name);
+		ndr->depth++;
+		ndr_print_ptr(ndr, "name", *r->out.name);
+		ndr->depth++;
+		if (*r->out.name) {
+			ndr_print_string(ndr, "name", *r->out.name);
+		}
+		ndr->depth--;
+		ndr->depth--;
+		ndr_print_NTSTATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
 static const struct ndr_interface_call wbint_calls[] = {
 	{
 		"wbint_Ping",
@@ -71,6 +245,14 @@ static const struct ndr_interface_call wbint_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_wbint_Ping,
 		(ndr_pull_flags_fn_t) ndr_pull_wbint_Ping,
 		(ndr_print_function_t) ndr_print_wbint_Ping,
+		false,
+	},
+	{
+		"wbint_LookupSid",
+		sizeof(struct wbint_LookupSid),
+		(ndr_push_flags_fn_t) ndr_push_wbint_LookupSid,
+		(ndr_pull_flags_fn_t) ndr_pull_wbint_LookupSid,
+		(ndr_print_function_t) ndr_print_wbint_LookupSid,
 		false,
 	},
 	{ NULL, 0, NULL, NULL, NULL, false }
@@ -102,7 +284,7 @@ const struct ndr_interface_table ndr_table_wbint = {
 		NDR_WBINT_VERSION
 	},
 	.helpstring	= NDR_WBINT_HELPSTRING,
-	.num_calls	= 1,
+	.num_calls	= 2,
 	.calls		= wbint_calls,
 	.endpoints	= &wbint_endpoints,
 	.authservices	= &wbint_authservices

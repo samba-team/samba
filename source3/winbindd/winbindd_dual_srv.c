@@ -28,3 +28,27 @@ void _wbint_Ping(pipes_struct *p, struct wbint_Ping *r)
 {
 	*r->out.out_data = r->in.in_data;
 }
+
+NTSTATUS _wbint_LookupSid(pipes_struct *p, struct wbint_LookupSid *r)
+{
+	struct winbindd_domain *domain = wb_child_domain();
+	char *dom_name;
+	char *name;
+	enum lsa_SidType type;
+	NTSTATUS status;
+
+	if (domain == NULL) {
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
+
+	status = domain->methods->sid_to_name(domain, p->mem_ctx, r->in.sid,
+					      &dom_name, &name, &type);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	*r->out.domain = dom_name;
+	*r->out.name = name;
+	*r->out.type = type;
+	return NT_STATUS_OK;
+}

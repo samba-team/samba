@@ -1,3 +1,6 @@
+#include "idl_types.h"
+import "lsa.idl";
+
 [
     uuid("bf09192c-ed60-4928-9dff-d0d7bcb03ed8"),
     endpoint("ncalrpc:"),
@@ -10,5 +13,12 @@ interface wbint
     void wbint_Ping(
 	[in] uint32 in_data,
 	[out] uint32 *out_data
+	);
+
+    NTSTATUS wbint_LookupSid(
+	[in] dom_sid *sid,
+	[out] lsa_SidType *type,
+	[out,string,charset(UTF8)] char **domain,
+	[out,string,charset(UTF8)] char **name
 	);
 }

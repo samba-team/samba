@@ -4,6 +4,7 @@
 
 #include "libcli/util/ntstatus.h"
 
+#include "librpc/gen_ndr/lsa.h"
 #ifndef _HEADER_wbint
 #define _HEADER_wbint
 
@@ -15,6 +16,21 @@ struct wbint_Ping {
 
 	struct {
 		uint32_t *out_data;/* [ref] */
+	} out;
+
+};
+
+
+struct wbint_LookupSid {
+	struct {
+		struct dom_sid *sid;/* [ref] */
+	} in;
+
+	struct {
+		enum lsa_SidType *type;/* [ref] */
+		const char **domain;/* [ref,charset(UTF8)] */
+		const char **name;/* [ref,charset(UTF8)] */
+		NTSTATUS result;
 	} out;
 
 };

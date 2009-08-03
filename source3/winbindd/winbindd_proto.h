@@ -606,4 +606,11 @@ struct rpc_pipe_client *wbint_rpccli_create(TALLOC_CTX *mem_ctx,
 enum winbindd_result winbindd_dual_ndrcmd(struct winbindd_domain *domain,
 					  struct winbindd_cli_state *state);
 
+struct tevent_req *wb_lookupsid_send(TALLOC_CTX *mem_ctx,
+				     struct tevent_context *ev,
+				     const struct dom_sid *sid);
+NTSTATUS wb_lookupsid_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			   enum lsa_SidType *type, const char **domain,
+			   const char **name);
+
 #endif /*  _WINBINDD_PROTO_H_  */
