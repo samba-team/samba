@@ -54,9 +54,9 @@ static void create_wks_info_100(struct wkssvc_NetWkstaInfo100 *info100)
 WERROR _wkssvc_NetWkstaGetInfo(pipes_struct *p, struct wkssvc_NetWkstaGetInfo *r)
 {
 	struct wkssvc_NetWkstaInfo100 *wks100 = NULL;
-	
+
 	/* We only support info level 100 currently */
-	
+
 	if ( r->in.level != 100 ) {
 		return WERR_UNKNOWN_LEVEL;
 	}
@@ -66,7 +66,7 @@ WERROR _wkssvc_NetWkstaGetInfo(pipes_struct *p, struct wkssvc_NetWkstaGetInfo *r
 	}
 
 	create_wks_info_100( wks100 );
-	
+
 	r->out.info->info100 = wks100;
 
 	return WERR_OK;
