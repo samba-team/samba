@@ -1747,6 +1747,7 @@ static PyObject *py_ldb_msg_new(PyTypeObject *type, PyObject *args, PyObject *kw
 {
 	const char * const kwnames[] = { "dn", NULL };
 	struct ldb_message *ret;
+	TALLOC_CTX *mem_ctx;
 	PyObject *pydn = NULL;
 	PyLdbMessageObject *py_ret;
 
@@ -1755,8 +1756,15 @@ static PyObject *py_ldb_msg_new(PyTypeObject *type, PyObject *args, PyObject *kw
 					 &pydn))
 		return NULL;
 
-	ret = ldb_msg_new(NULL);
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	ret = ldb_msg_new(mem_ctx);
 	if (ret == NULL) {
+		talloc_free(mem_ctx);
 		PyErr_NoMemory();
 		return NULL;
 	}
@@ -1764,7 +1772,7 @@ static PyObject *py_ldb_msg_new(PyTypeObject *type, PyObject *args, PyObject *kw
 	if (pydn != NULL) {
 		struct ldb_dn *dn;
 		if (!PyObject_AsDn(NULL, pydn, NULL, &dn)) {
-			talloc_free(ret);
+			talloc_free(mem_ctx);
 			return NULL;
 		}
 		ret->dn = talloc_reference(ret, dn);
@@ -1773,12 +1781,12 @@ static PyObject *py_ldb_msg_new(PyTypeObject *type, PyObject *args, PyObject *kw
 	py_ret = (PyLdbMessageObject *)type->tp_alloc(type, 0);
 	if (py_ret == NULL) {
 		PyErr_NoMemory();
-		talloc_free(ret);
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 
-	py_ret->mem_ctx = talloc_new(NULL);
-	py_ret->msg = talloc_steal(py_ret->mem_ctx, ret);
+	py_ret->mem_ctx = mem_ctx;
+	py_ret->msg = ret;
 	return (PyObject *)py_ret;
 }
 
@@ -1805,6 +1813,11 @@ static PyObject *py_ldb_msg_get_dn(PyLdbMessageObject *self, void *closure)
 static int py_ldb_msg_set_dn(PyLdbMessageObject *self, PyObject *value, void *closure)
 {
 	struct ldb_message *msg = PyLdbMessage_AsMessage(self);
+	if (!PyLdbDn_Check(value)) {
+		PyErr_SetNone(PyExc_TypeError);
+		return -1;
+	}
+
 	msg->dn = talloc_reference(msg, PyLdbDn_AsDn(value));
 	return 0;
 }

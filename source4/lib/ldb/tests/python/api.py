@@ -279,6 +279,12 @@ class DnTests(unittest.TestCase):
     def setUp(self):
         self.ldb = ldb.Ldb(filename())
 
+    def test_set_dn_invalid(self):
+        x = ldb.Message()
+        def assign():
+            x.dn = "astring"
+        self.assertRaises(TypeError, assign)
+
     def test_eq(self):
         x = ldb.Dn(self.ldb, "dc=foo11,bar=bloe")
         y = ldb.Dn(self.ldb, "dc=foo11,bar=bloe")
