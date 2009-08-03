@@ -3710,6 +3710,9 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 	char *filter;
 	enum lsa_SidType type = SID_NAME_USE_NONE;
 
+	*pp_alias_rids = NULL;
+	*p_num_alias_rids = 0;
+
 	if (sid_check_is_builtin(domain_sid)) {
 		type = SID_NAME_ALIAS;
 	}
@@ -3722,6 +3725,10 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 		DEBUG(5, ("SID %s is neither builtin nor domain!\n",
 			  sid_string_dbg(domain_sid)));
 		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (num_members == 0) {
+		return NT_STATUS_OK;
 	}
 
 	filter = talloc_asprintf(mem_ctx,
