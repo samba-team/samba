@@ -129,7 +129,13 @@ static PyObject *py_lp_ctx_get_helper(struct loadparm_context *lp_ctx, const cha
 	{
 	    int j;
 	    const char **strlist = *(const char ***)parm_ptr;
-	    PyObject *pylist = PyList_New(str_list_length(strlist));
+	    PyObject *pylist;
+		
+		if(strlist == NULL) {
+			return PyList_New(0);
+		}
+		
+		pylist = PyList_New(str_list_length(strlist));
 	    for (j = 0; strlist[j]; j++) 
 		PyList_SetItem(pylist, j, 
 			       PyString_FromString(strlist[j]));
