@@ -456,8 +456,6 @@ exit 0
 %{_bindir}/tdbdump
 %{_bindir}/eventlogadm
 
-%{_libarchdir}/samba/idmap/*.so
-%{_libarchdir}/samba/nss_info/*.so
 %{_libarchdir}/samba/vfs/*.so
 %{_libarchdir}/samba/auth/*.so
 
@@ -474,7 +472,6 @@ exit 0
 %{_mandir}/man8/tdbtool.8*
 %{_mandir}/man8/eventlogadm.8*
 %{_mandir}/man8/vfs_*.8*
-%{_mandir}/man8/idmap_*.8*
 
 
 ##########
@@ -551,6 +548,9 @@ exit 0
 %attr(755,root,root) /%{_libarch}/security/pam_smbpass.so
 /usr/share/locale/de/LC_MESSAGES/pam_winbind.mo
 
+%{_libarchdir}/samba/idmap/*.so
+%{_libarchdir}/samba/nss_info/*.so
+
 %{_includedir}/libsmbclient.h
 %{_libarchdir}/libsmbclient.*
 #%{_includedir}/libmsrpc.h
@@ -609,6 +609,7 @@ exit 0
 %{_mandir}/man1/ldbsearch.1*
 %{_mandir}/man1/ldbrename.1*
 %{_mandir}/man7/winbind_krb5_locator.7*
+%{_mandir}/man8/idmap_*.8*
 
 %ifarch x86_64 ppc64
 %files winbind-32bit
