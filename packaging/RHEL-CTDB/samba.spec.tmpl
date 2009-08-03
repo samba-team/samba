@@ -296,6 +296,7 @@ mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/{samba,sysconfig}
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/xinetd.d
 mkdir -p $RPM_BUILD_ROOT/var/lib/samba/winbindd_privileged
 mkdir -p $RPM_BUILD_ROOT/var/{log,run/winbindd,spool}/samba
+mkdir -p $RPM_BUILD_ROOT/%{_libarchdir}/krb5/plugins/libkrb5
 
 cd source3
 make DESTDIR=$RPM_BUILD_ROOT \
@@ -313,6 +314,7 @@ install -m 755 nsswitch/libnss_winbind.so $RPM_BUILD_ROOT/%{_libarch}/libnss_win
 #install -m 755 nsswitch/libnss_wins.so $RPM_BUILD_ROOT/%{_libarch}/libnss_wins.so
 # ( cd $RPM_BUILD_ROOT/%{_libarch}; ln -sf libnss_wins.so  libnss_wins.so.2 )
 
+cp -p source3/bin/winbind_krb5_locator.so ${RPM_BUILD_ROOT}/%{_libarchdir}/krb5/plugins/libkrb5
 
 # install files for winbind-32bit package
 %ifarch x86_64 ppc64
@@ -567,6 +569,8 @@ exit 0
 %{_libarchdir}/libtalloc.so*
 %{_libarchdir}/libtdb.so*
 %{_libarchdir}/libwbclient.so*
+
+%{_libarchdir}/krb5/plugins/libkrb5/winbind_krb5_locator.so
 
 %{_sbindir}/winbind
 
