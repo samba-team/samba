@@ -42,6 +42,9 @@ static char **get_logged_on_userlist(TALLOC_CTX *mem_ctx)
 
 	while ((u = getutxent()) != NULL) {
 		char **tmp;
+		if (u->ut_type != USER_PROCESS) {
+			continue;
+		}
 		tmp = talloc_realloc(mem_ctx, users, char *, num_users+1);
 		if (tmp == NULL) {
 			return NULL;
@@ -52,6 +55,7 @@ static char **get_logged_on_userlist(TALLOC_CTX *mem_ctx)
 			TALLOC_FREE(users);
 			return NULL;
 		}
+		num_users += 1;
 	}
 	return users;
 }
@@ -181,14 +185,59 @@ WERROR _wkssvc_NetWkstaSetInfo(pipes_struct *p, struct wkssvc_NetWkstaSetInfo *r
 	return WERR_NOT_SUPPORTED;
 }
 
+static struct wkssvc_NetWkstaEnumUsersCtr0 *create_enum_users0(
+	TALLOC_CTX *mem_ctx)
+{
+	struct wkssvc_NetWkstaEnumUsersCtr0 *ctr0;
+	char **users;
+	int i, num_users;
+
+	ctr0 = talloc(mem_ctx, struct wkssvc_NetWkstaEnumUsersCtr0);
+	if (ctr0 == NULL) {
+		return NULL;
+	}
+
+	users = get_logged_on_userlist(talloc_tos());
+	if (users == NULL) {
+		TALLOC_FREE(ctr0);
+		return NULL;
+	}
+
+	num_users = talloc_array_length(users);
+	ctr0->entries_read = num_users;
+	ctr0->user0 = talloc_array(ctr0, struct wkssvc_NetrWkstaUserInfo0,
+				   num_users);
+	if (ctr0->user0 == NULL) {
+		TALLOC_FREE(ctr0);
+		TALLOC_FREE(users);
+		return NULL;
+	}
+
+	for (i=0; i<num_users; i++) {
+		ctr0->user0[i].user_name = talloc_move(ctr0->user0, &users[i]);
+	}
+	TALLOC_FREE(users);
+	return ctr0;
+}
+
 /********************************************************************
  ********************************************************************/
 
 WERROR _wkssvc_NetWkstaEnumUsers(pipes_struct *p, struct wkssvc_NetWkstaEnumUsers *r)
 {
-	/* FIXME: Add implementation code here */
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
+	if (r->in.info->level != 0) {
+		return WERR_UNKNOWN_LEVEL;
+	}
+
+	r->out.info->ctr.user0 = create_enum_users0(p->mem_ctx);
+	if (r->out.info->ctr.user0 == NULL) {
+		return WERR_NOMEM;
+	}
+	r->out.info->level = r->in.info->level;
+	*r->out.entries_read = r->out.info->ctr.user0->entries_read;
+	*r->out.resume_handle = 0;
+
+	return WERR_OK;
 }
 
 /********************************************************************
