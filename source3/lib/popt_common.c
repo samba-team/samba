@@ -59,6 +59,11 @@ static void set_logfile(poptContext con, const char * arg)
 
 static bool PrintSambaVersionString;
 
+static void popt_s3_talloc_log_fn(const char *message)
+{
+	DEBUG(0,("%s", message));
+}
+
 static void popt_common_callback(poptContext con,
 			   enum poptCallbackReason reason,
 			   const struct poptOption *opt,
@@ -67,6 +72,8 @@ static void popt_common_callback(poptContext con,
 
 	if (reason == POPT_CALLBACK_REASON_PRE) {
 		set_logfile(con, get_dyn_LOGFILEBASE());
+		talloc_set_log_fn(popt_s3_talloc_log_fn);
+		talloc_set_abort_fn(smb_panic);
 		return;
 	}
 
