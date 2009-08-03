@@ -7530,7 +7530,7 @@ static WERROR spoolss_addprinterex_level_2(pipes_struct *p,
 	}
 
 	/* you must be a printer admin to add a new printer */
-	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
+	if (!print_access_check(p->server_info, snum, PRINTER_ACCESS_ADMINISTER)) {
 		free_a_printer(&printer,2);
 		return WERR_ACCESS_DENIED;
 	}
