@@ -1,0 +1,153 @@
+# This file is distributed under the same license as the package.
+#
+# Copyright (C) 2009 Lars Mueller <lars@samba.org>
+msgid ""
+msgstr ""
+"Project-Id-Version: pam_winbind\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2008-07-16 15:30+0800\n"
+"PO-Revision-Date: 2009-02-05 08:14\n"
+"Last-Translator: Novell Language <language@novell.com>\n"
+"Language-Team: Novell Language <language@novell.com>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: pam_winbind.c:326
+msgid "Success"
+msgstr "успешно"
+
+#: pam_winbind.c:327
+msgid "No primary Domain Controler available"
+msgstr "Нет доступных основных контроллеров домена"
+
+#: pam_winbind.c:328
+msgid "No domain controllers found"
+msgstr "Контроллеры домена не найдены"
+
+#: pam_winbind.c:329
+msgid "No logon servers"
+msgstr "Нет серверов входа"
+
+#: pam_winbind.c:330
+msgid "Password too short"
+msgstr "Пароль слишком короткий"
+
+#: pam_winbind.c:331
+msgid "The password of this user is too recent to change"
+msgstr "Пароль этого пользователя слишком новый, чтобы его менять"
+
+#: pam_winbind.c:332
+msgid "Password is already in password history"
+msgstr "Пароль уже в истории паролей"
+
+#: pam_winbind.c:333
+msgid "Your password has expired"
+msgstr "Срок действия Вашего пароля истёк"
+
+#: pam_winbind.c:334
+msgid "You need to change your password now"
+msgstr "Вам необходимо изменить Ваш пароль сейчас"
+
+#: pam_winbind.c:335
+msgid "You are not allowed to logon from this workstation"
+msgstr "Вам не разрешается входить с этой рабочей станции"
+
+#: pam_winbind.c:336
+msgid "You are not allowed to logon at this time"
+msgstr "Вам не разрешается входить в это время"
+
+#: pam_winbind.c:337
+msgid "Your account has expired. Please contact your System administrator"
+msgstr "Срок действия Вашей учетной записи истёк. Пожалуйста, обратитесь к системному администратору"
+
+#: pam_winbind.c:338
+msgid "Your account is disabled. Please contact your System administrator"
+msgstr "Ваша учетная запись заблокирована. Обратитесь к системному администратору"
+
+#: pam_winbind.c:339
+msgid "Your account has been locked. Please contact your System administrator"
+msgstr "Ваша учётная запись заблокирована. Пожалуйста, обратитесь к системному администратору"
+
+#: pam_winbind.c:340 pam_winbind.c:341 pam_winbind.c:342
+msgid "Invalid Trust Account"
+msgstr "Неверная доверенная учётная запись"
+
+#: pam_winbind.c:343
+msgid "Access is denied"
+msgstr "Доступ запрещён"
+
+#: pam_winbind.c:592
+msgid "Your password expires today"
+msgstr "Срок действия Вашего пароля истекает сегодня"
+
+#: pam_winbind.c:597
+#, c-format
+msgid "Your password will expire in %d %s"
+msgstr "Срок действия Вашего пароля истечёт через %d %s"
+
+#: pam_winbind.c:598
+msgid "days"
+msgstr "Дней"
+
+#: pam_winbind.c:598
+msgid "day"
+msgstr "День"
+
+#: pam_winbind.c:917
+msgid "Grace login. Please change your password as soon you're online again"
+msgstr "Вход разрешён. Пожалуйста, измените Ваш пароль, как только Вы снова будете в сети"
+
+#: pam_winbind.c:924
+msgid "Domain Controller unreachable, using cached credentials instead. Network resources may be unavailable"
+msgstr "Контроллер домена недоступен, используются кэшированные учетные данные входа. Сетевые ресурсы могут быть недоступны"
+
+#: pam_winbind.c:950
+#, c-format
+msgid "Your password "
+msgstr "Ваш пароль "
+
+#: pam_winbind.c:957
+#, c-format
+msgid "must be at least %d characters; "
+msgstr "должен иметь хотя бы %d символов;"
+
+#: pam_winbind.c:967
+#, c-format
+msgid "cannot repeat any of your previous %d passwords; "
+msgstr "не может повторять любой из ваших предыдущих %d паролей;"
+
+#: pam_winbind.c:977
+#, c-format
+msgid "must contain capitals, numerals or punctuation; and cannot contain your account or full name; "
+msgstr "должен содержать заглавные буквы, цифры или знаки препинания; и не может содержать Вашу учётную запись или полное имя; "
+
+#: pam_winbind.c:986
+#, c-format
+msgid "Please type a different password. Type a password which meets these requirements in both text boxes."
+msgstr "Пожалуйста, введите другой пароль. Введите пароль, соответствующий этим требованиям, в оба текстовых поля."
+
+#: pam_winbind.c:1223
+msgid "Password does not meet complexity requirements"
+msgstr "Пароль не соответствует требованиям сложности"
+
+#: pam_winbind.c:1564
+msgid "Password: "
+msgstr "Пароль:"
+
+#: pam_winbind.c:2013
+msgid "Changing password for "
+msgstr "Изменение пароля для "
+
+#: pam_winbind.c:2027
+msgid "(current) NT password: "
+msgstr "(текущий) пароль NT: "
+
+#: pam_winbind.c:2089
+msgid "Enter new NT password: "
+msgstr "Введите новый пароль NT: "
+
+#: pam_winbind.c:2090
+msgid "Retype new NT password: "
+msgstr "Повторите новый пароль NT: "
+

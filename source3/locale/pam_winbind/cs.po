@@ -1,0 +1,153 @@
+# This file is distributed under the same license as the package.
+#
+# Copyright (C) 2009 Lars Mueller <lars@samba.org>
+msgid ""
+msgstr ""
+"Project-Id-Version: pam_winbind\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2008-07-16 15:30+0800\n"
+"PO-Revision-Date: 2009-02-05 14:25\n"
+"Last-Translator: Novell Language <language@novell.com>\n"
+"Language-Team: Novell Language <language@novell.com>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: pam_winbind.c:326
+msgid "Success"
+msgstr "úspěch"
+
+#: pam_winbind.c:327
+msgid "No primary Domain Controler available"
+msgstr "Žádný primární doménový kontrolér není dostupný."
+
+#: pam_winbind.c:328
+msgid "No domain controllers found"
+msgstr "Nenalezeny žádné doménové kontroléry"
+
+#: pam_winbind.c:329
+msgid "No logon servers"
+msgstr "Žádné přihlašovací servery"
+
+#: pam_winbind.c:330
+msgid "Password too short"
+msgstr "Heslo je příliš krátké"
+
+#: pam_winbind.c:331
+msgid "The password of this user is too recent to change"
+msgstr "Heslo tohoto uživatele nelze změnit, protože je příliš nové"
+
+#: pam_winbind.c:332
+msgid "Password is already in password history"
+msgstr "Heslo je již v historii hesel"
+
+#: pam_winbind.c:333
+msgid "Your password has expired"
+msgstr "Vaše heslo vypršelo"
+
+#: pam_winbind.c:334
+msgid "You need to change your password now"
+msgstr "Je potřeba změnit Vaše heslo"
+
+#: pam_winbind.c:335
+msgid "You are not allowed to logon from this workstation"
+msgstr "Nemáte práva pro přihlášení z této stanice."
+
+#: pam_winbind.c:336
+msgid "You are not allowed to logon at this time"
+msgstr "Nyní nemáte povolení k přihlášení."
+
+#: pam_winbind.c:337
+msgid "Your account has expired. Please contact your System administrator"
+msgstr "Platnost vašeho účtu vypršela. Kontaktujte svého správce systému."
+
+#: pam_winbind.c:338
+msgid "Your account is disabled. Please contact your System administrator"
+msgstr "Váš účet je zablokován. Kontaktujte svého správce systému"
+
+#: pam_winbind.c:339
+msgid "Your account has been locked. Please contact your System administrator"
+msgstr "Váš účet byl uzamčen. Prosím kontaktujte svého správce systému."
+
+#: pam_winbind.c:340 pam_winbind.c:341 pam_winbind.c:342
+msgid "Invalid Trust Account"
+msgstr "Neplatný účet vztahu důvěryhodnosti"
+
+#: pam_winbind.c:343
+msgid "Access is denied"
+msgstr "Přístup zamítnut"
+
+#: pam_winbind.c:592
+msgid "Your password expires today"
+msgstr "Vaše heslo vyprší dnes."
+
+#: pam_winbind.c:597
+#, c-format
+msgid "Your password will expire in %d %s"
+msgstr "Vaše heslo vyprší %d %s"
+
+#: pam_winbind.c:598
+msgid "days"
+msgstr "Dní"
+
+#: pam_winbind.c:598
+msgid "day"
+msgstr "Den"
+
+#: pam_winbind.c:917
+msgid "Grace login. Please change your password as soon you're online again"
+msgstr "Výjimečně přidělený login. Změňte své heslo, jakmile budete znovu online"
+
+#: pam_winbind.c:924
+msgid "Domain Controller unreachable, using cached credentials instead. Network resources may be unavailable"
+msgstr "Doménový kontrolér je nedostupný, místo toho použity přihlašovací údaje. Síťové zdroje jsou možná nedostupné"
+
+#: pam_winbind.c:950
+#, c-format
+msgid "Your password "
+msgstr "Vaše heslo:"
+
+#: pam_winbind.c:957
+#, c-format
+msgid "must be at least %d characters; "
+msgstr "musí mít nejméně %d znaků;"
+
+#: pam_winbind.c:967
+#, c-format
+msgid "cannot repeat any of your previous %d passwords; "
+msgstr "nelze zopakovat žádné z vašich %d hesel;"
+
+#: pam_winbind.c:977
+#, c-format
+msgid "must contain capitals, numerals or punctuation; and cannot contain your account or full name; "
+msgstr "musí obsahovat velká písmena, číslice nebo speciální znaky;nesmí obsahovat název vašeho účtu nebo celé jméno;"
+
+#: pam_winbind.c:986
+#, c-format
+msgid "Please type a different password. Type a password which meets these requirements in both text boxes."
+msgstr "Prosím napište jiné heslo. Napište heslo, které bude splňovat požadavky uvedené v obou textových rámečcích."
+
+#: pam_winbind.c:1223
+msgid "Password does not meet complexity requirements"
+msgstr "Heslo nesplňuje požadavky na složitost."
+
+#: pam_winbind.c:1564
+msgid "Password: "
+msgstr "Heslo:"
+
+#: pam_winbind.c:2013
+msgid "Changing password for "
+msgstr "Měním heslo pro"
+
+#: pam_winbind.c:2027
+msgid "(current) NT password: "
+msgstr "NT heslo (aktuální):"
+
+#: pam_winbind.c:2089
+msgid "Enter new NT password: "
+msgstr "Zadejte nové NT heslo:"
+
+#: pam_winbind.c:2090
+msgid "Retype new NT password: "
+msgstr "Zopakujte nové NT heslo: "
+

@@ -1,0 +1,153 @@
+# This file is distributed under the same license as the package.
+#
+# Copyright (C) 2009 Lars Mueller <lars@samba.org>
+msgid ""
+msgstr ""
+"Project-Id-Version: pam_winbind\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2008-07-16 15:30+0800\n"
+"PO-Revision-Date: 2009-02-04 15:44\n"
+"Last-Translator: Novell Language <language@novell.com>\n"
+"Language-Team: Novell Language <language@novell.com>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: pam_winbind.c:326
+msgid "Success"
+msgstr "成功"
+
+#: pam_winbind.c:327
+msgid "No primary Domain Controler available"
+msgstr "無可用的主要領域控制器"
+
+#: pam_winbind.c:328
+msgid "No domain controllers found"
+msgstr "找不到領域控制器"
+
+#: pam_winbind.c:329
+msgid "No logon servers"
+msgstr "沒有登入伺服器"
+
+#: pam_winbind.c:330
+msgid "Password too short"
+msgstr "密碼太短"
+
+#: pam_winbind.c:331
+msgid "The password of this user is too recent to change"
+msgstr "此使用者的密碼太新，無法變更"
+
+#: pam_winbind.c:332
+msgid "Password is already in password history"
+msgstr "密碼歷程記錄中已存在此密碼"
+
+#: pam_winbind.c:333
+msgid "Your password has expired"
+msgstr "您的密碼已過期"
+
+#: pam_winbind.c:334
+msgid "You need to change your password now"
+msgstr "您需要立即變更密碼"
+
+#: pam_winbind.c:335
+msgid "You are not allowed to logon from this workstation"
+msgstr "您不允許從此工作站登入"
+
+#: pam_winbind.c:336
+msgid "You are not allowed to logon at this time"
+msgstr "目前您不允許登入"
+
+#: pam_winbind.c:337
+msgid "Your account has expired. Please contact your System administrator"
+msgstr "您的帳戶已經過期，請聯絡您的系統管理員"
+
+#: pam_winbind.c:338
+msgid "Your account is disabled. Please contact your System administrator"
+msgstr "您的帳戶已經停用，請聯絡您的系統管理員"
+
+#: pam_winbind.c:339
+msgid "Your account has been locked. Please contact your System administrator"
+msgstr "您的帳戶已經鎖定，請聯絡您的系統管理員"
+
+#: pam_winbind.c:340 pam_winbind.c:341 pam_winbind.c:342
+msgid "Invalid Trust Account"
+msgstr "無效的信任帳戶"
+
+#: pam_winbind.c:343
+msgid "Access is denied"
+msgstr "存取遭拒"
+
+#: pam_winbind.c:592
+msgid "Your password expires today"
+msgstr "您的密碼今天到期"
+
+#: pam_winbind.c:597
+#, c-format
+msgid "Your password will expire in %d %s"
+msgstr "您的密碼將在  %d %s 之後過期"
+
+#: pam_winbind.c:598
+msgid "days"
+msgstr "日"
+
+#: pam_winbind.c:598
+msgid "day"
+msgstr "日"
+
+#: pam_winbind.c:917
+msgid "Grace login. Please change your password as soon you're online again"
+msgstr "寬限登入。請於您再次上線時立即變更密碼"
+
+#: pam_winbind.c:924
+msgid "Domain Controller unreachable, using cached credentials instead. Network resources may be unavailable"
+msgstr "領域控制器無法連線，改用快取的身份證明。網路資源可能不可用"
+
+#: pam_winbind.c:950
+#, c-format
+msgid "Your password "
+msgstr "您的密碼"
+
+#: pam_winbind.c:957
+#, c-format
+msgid "must be at least %d characters; "
+msgstr "必須至少包含 %d 個字元；"
+
+#: pam_winbind.c:967
+#, c-format
+msgid "cannot repeat any of your previous %d passwords; "
+msgstr "不能重複使用前 %d 個密碼；"
+
+#: pam_winbind.c:977
+#, c-format
+msgid "must contain capitals, numerals or punctuation; and cannot contain your account or full name; "
+msgstr "必須包含大寫字母、數字或標點符號；並且不能包含您的帳戶或全名；"
+
+#: pam_winbind.c:986
+#, c-format
+msgid "Please type a different password. Type a password which meets these requirements in both text boxes."
+msgstr "請輸入另一個密碼。請在兩個文字方塊中輸入符合這些要求的密碼。"
+
+#: pam_winbind.c:1223
+msgid "Password does not meet complexity requirements"
+msgstr "密碼不符合複雜性要求"
+
+#: pam_winbind.c:1564
+msgid "Password: "
+msgstr "密碼："
+
+#: pam_winbind.c:2013
+msgid "Changing password for "
+msgstr "變更密碼 -"
+
+#: pam_winbind.c:2027
+msgid "(current) NT password: "
+msgstr "(目前) NT 密碼："
+
+#: pam_winbind.c:2089
+msgid "Enter new NT password: "
+msgstr "輸入新 NT 密碼︰"
+
+#: pam_winbind.c:2090
+msgid "Retype new NT password: "
+msgstr "重新輸入新 NT 密碼："
+
