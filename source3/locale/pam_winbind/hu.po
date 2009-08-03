@@ -1,0 +1,166 @@
+# translation of pam_winbind.hu.po to
+# Kalman Kemenczy <kkemenczy@novell.com>, 2008.
+msgid ""
+msgstr ""
+"Project-Id-Version: pam_winbind.hu\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2008-07-16 15:30+0800\n"
+"PO-Revision-Date: 2008-10-26 10:27+0100\n"
+"Last-Translator: Kalman Kemenczy <kkemenczy@novell.com>\n"
+"Language-Team:  <hu@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: KBabel 1.11.4\n"
+"Plural-Forms:  nplurals=2; plural=(n != 1);\n"
+
+#: pam_winbind.c:326
+msgid "Success"
+msgstr "Sikeres"
+
+#: pam_winbind.c:327
+msgid "No primary Domain Controler available"
+msgstr "Az elsődleges tartományvezérlő nem érhető el"
+
+#: pam_winbind.c:328
+msgid "No domain controllers found"
+msgstr "Nem található tartományvezérlő"
+
+#: pam_winbind.c:329
+msgid "No logon servers"
+msgstr "Nincsenek Logon kiszolgálók"
+
+#: pam_winbind.c:330
+msgid "Password too short"
+msgstr "Túl rövid jelszó"
+
+#: pam_winbind.c:331
+msgid "The password of this user is too recent to change"
+msgstr "A felhasználó jelszava új"
+
+#: pam_winbind.c:332
+msgid "Password is already in password history"
+msgstr "A jelszó már szerepel az előzményekben"
+
+#: pam_winbind.c:333
+msgid "Your password has expired"
+msgstr "A jelszava lejárt"
+
+#: pam_winbind.c:334
+msgid "You need to change your password now"
+msgstr "Meg kell most változtatnia a jelszavát"
+
+#: pam_winbind.c:335
+msgid "You are not allowed to logon from this workstation"
+msgstr "Nem jogosult belépni erről a munkaállomásról"
+
+#: pam_winbind.c:336
+msgid "You are not allowed to logon at this time"
+msgstr "Most nem jogosult most belépni"
+
+#: pam_winbind.c:337
+msgid "Your account has expired. Please contact your System administrator"
+msgstr "A felhasználói fiókja lejárt. Lépjen kapcsolatba a rendszergazdával"
+
+#: pam_winbind.c:338
+msgid "Your account is disabled. Please contact your System administrator"
+msgstr ""
+"A felhasználói fiókja le van tiltva. Lépjen kapcsolatba a rendszergazdával"
+
+#: pam_winbind.c:339
+msgid "Your account has been locked. Please contact your System administrator"
+msgstr "A felhasználói fiókja zárolt. Lépjen kapcsolatba a rendszergazdával"
+
+#: pam_winbind.c:340 pam_winbind.c:341 pam_winbind.c:342
+msgid "Invalid Trust Account"
+msgstr "Érvénytelen Trust Account"
+
+#: pam_winbind.c:343
+msgid "Access is denied"
+msgstr "Hozzáférés megtagadva"
+
+#: pam_winbind.c:592
+msgid "Your password expires today"
+msgstr "A jelszava ma jár le"
+
+#: pam_winbind.c:597
+#, c-format
+msgid "Your password will expire in %d %s"
+msgstr "Jelszava le fog járni %d %s"
+
+#: pam_winbind.c:598
+msgid "days"
+msgstr "nap múlva"
+
+#: pam_winbind.c:598
+msgid "day"
+msgstr "nap múlva"
+
+#: pam_winbind.c:917
+msgid "Grace login. Please change your password as soon you're online again"
+msgstr "Türelmi belépés. Cserélje le a jelszavát a következő alkalommal"
+
+#: pam_winbind.c:924
+msgid ""
+"Domain Controller unreachable, using cached credentials instead. Network "
+"resources may be unavailable"
+msgstr ""
+"A tartomány nem érhető el, a gyorstározott hitelesítő adat kerül "
+"felhasználásra. A hálózati erőforrások valószínűleg nem érhatők el "
+
+#: pam_winbind.c:950
+#, c-format
+msgid "Your password "
+msgstr "A jelszavának"
+
+#: pam_winbind.c:957
+#, c-format
+msgid "must be at least %d characters; "
+msgstr "legalább %d karakterből kell állnia; "
+
+#: pam_winbind.c:967
+#, c-format
+msgid "cannot repeat any of your previous %d passwords; "
+msgstr "nem ismétlődhet az előző %d jelszó; "
+
+#: pam_winbind.c:977
+#, c-format
+msgid ""
+"must contain capitals, numerals or punctuation; and cannot contain your "
+"account or full name; "
+msgstr ""
+"tartalmaznia kell betűket, számokat vagy írásjeleket és nem tartalmazhatja a "
+"felhasználói vagy a teljes nevét; "
+
+#: pam_winbind.c:986
+#, c-format
+msgid ""
+"Please type a different password. Type a password which meets these "
+"requirements in both text boxes."
+msgstr ""
+"Adjon meg egy másik jelszót. Írjon be mindkét szövegmezőbe a feltételeknek "
+"megfelelő jelszót."
+
+#: pam_winbind.c:1223
+msgid "Password does not meet complexity requirements"
+msgstr "A jelszó nem felel meg a követelményeknek"
+
+#: pam_winbind.c:1564
+msgid "Password: "
+msgstr "Jelszó: "
+
+#: pam_winbind.c:2013
+msgid "Changing password for "
+msgstr "Jelszómódosítás"
+
+#: pam_winbind.c:2027
+msgid "(current) NT password: "
+msgstr "(jelenlegi) NT jelszó: "
+
+#: pam_winbind.c:2089
+msgid "Enter new NT password: "
+msgstr "Új NT jelszó: "
+
+#: pam_winbind.c:2090
+msgid "Retype new NT password: "
+msgstr "Új NT jelszó ismét: "
