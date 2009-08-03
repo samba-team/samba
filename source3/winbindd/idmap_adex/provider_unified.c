@@ -47,7 +47,8 @@ struct lwcell_filter
 /********************************************************************
  *******************************************************************/
 
-static char* build_id_filter(uint32_t id,
+static char* build_id_filter(TALLOC_CTX *mem_ctx,
+			     uint32_t id,
 			     enum id_type type,
 			     uint32_t search_flags)
 {
@@ -99,19 +100,19 @@ static char* build_id_filter(uint32_t id,
 	/* Use "keywords=%s" for non-schema cells */
 
 	if (use2307) {
-		filter = talloc_asprintf(frame, "(&(%s)(%s))",
-					 oc_filter, attr_filter);
+		filter = talloc_asprintf(mem_ctx,
+					 "(&(%s)(%s))",
+					 oc_filter,
+					 attr_filter);
 	} else {
-		filter = talloc_asprintf(frame, "(&(keywords=%s)(keywords=%s))",
-					 oc_filter, attr_filter);
+		filter = talloc_asprintf(mem_ctx,
+					 "(&(keywords=%s)(keywords=%s))",
+					 oc_filter,
+					 attr_filter);
 	}
 
-	talloc_destroy(oc_filter);
-	talloc_destroy(attr_filter);
-
 done:
-	/* Don't destroy the stackframe CTX since we are returning
-	   memory from it */
+	talloc_destroy(frame);
 
 	return filter;
 }
@@ -119,7 +120,9 @@ done:
 /********************************************************************
  *******************************************************************/
 
-static char* build_alias_filter(const char *alias, uint32_t search_flags)
+static char* build_alias_filter(TALLOC_CTX *mem_ctx,
+				const char *alias,
+				uint32_t search_flags)
 {
 	char *filter = NULL;
 	char *user_attr_filter, *group_attr_filter;
@@ -142,25 +145,21 @@ static char* build_alias_filter(const char *alias, uint32_t search_flags)
 	/* Use "keywords=%s" for non-schema cells */
 
 	if (use2307) {
-		filter = talloc_asprintf(frame,
+		filter = talloc_asprintf(mem_ctx,
 					 "(|(&(%s)(objectclass=%s))(&(%s)(objectclass=%s)))",
 					 user_attr_filter,
 					 search_forest ? AD_USER : ADEX_OC_POSIX_USER,
 					 group_attr_filter,
 					 search_forest ? AD_GROUP : ADEX_OC_POSIX_GROUP);
 	} else {
-		filter = talloc_asprintf(frame,
+		filter = talloc_asprintf(mem_ctx,
 					 "(|(keywords=%s)(keywords=%s))",
 					 user_attr_filter,
 					 group_attr_filter);
 	}
 
-	talloc_destroy(user_attr_filter);
-	talloc_destroy(group_attr_filter);
-
 done:
-	/* Don't destroy the stackframe CTX since we are returning
-	   memory from it */
+	talloc_destroy(frame);
 
 	return filter;
 }
@@ -193,12 +192,14 @@ static NTSTATUS search_cell(struct likewise_cell *c,
 					 sid_str);
 		break;
 	case IdFilter:
-		filter = build_id_filter(fdata->filter.id.id,
+		filter = build_id_filter(frame,
+					 fdata->filter.id.id,
 					 fdata->filter.id.type,
 					 cell_flags(c));
 		break;
 	case AliasFilter:
-		filter = build_alias_filter(fdata->filter.alias,
+		filter = build_alias_filter(frame,
+					    fdata->filter.alias,
 					    cell_flags(c));
 		break;
 	default:
@@ -490,11 +491,14 @@ static NTSTATUS search_forest(struct likewise_cell *forest_cell,
 			TALLOC_FREE(sid_binstr);
 			break;
 		case IdFilter:
-			filter = build_id_filter(fdata->filter.id.id,
+			filter = build_id_filter(frame,
+						 fdata->filter.id.id,
 						 fdata->filter.id.type, flags);
 			break;
 		case AliasFilter:
-			filter = build_alias_filter(fdata->filter.alias, flags);
+			filter = build_alias_filter(frame,
+						    fdata->filter.alias,
+						    flags);
 			break;
 		}
 
