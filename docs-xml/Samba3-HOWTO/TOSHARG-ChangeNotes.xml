@@ -107,7 +107,7 @@ An example helps to illustrate the change:
 <indexterm><primary>ACL</primary></indexterm>
 <indexterm><primary>SID</primary></indexterm>
 Assume that a group named <emphasis>developers</emphasis> exists with a UNIX GID of 782. In this
-case this user does not exist in Samba's group mapping table. It would be perfectly normal for
+case this group does not exist in Samba's group mapping table. It would be perfectly normal for
 this group to be appear in an ACL editor.  Prior to Samba-3.0.23, the group SID might appear as
 <literal>S-1-5-21-647511796-4126122067-3123570092-2565</literal>.
 </para>
@@ -188,7 +188,7 @@ and UNIX</link>.
 <indexterm><primary>GID</primary></indexterm>
 <indexterm><primary>SQL</primary></indexterm>
 <indexterm><primary>XML</primary></indexterm>
-The <smbconfoption name="passdb backend"/> parameter no long accepts multiple passdb backends in a
+The <smbconfoption name="passdb backend"/> parameter no longer accepts multiple passdb backends in a
 chained configuration.  Also be aware that the SQL and XML based passdb modules have been
 removed in the Samba-3.0.23 release.  More information regarding external support for a SQL
 passdb module can be found on the  <ulink url="http://pdbsql.sourceforge.net/">pdbsql</ulink> web site.
