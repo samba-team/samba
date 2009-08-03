@@ -235,13 +235,14 @@ static PyObject *py_lp_ctx_private_path(py_talloc_Object *self, PyObject *args)
 static PyObject *py_lp_ctx_services(py_talloc_Object *self)
 {
 	struct loadparm_context *lp_ctx = PyLoadparmContext_AsLoadparmContext(self);
-	const char **names;
 	PyObject *ret;
 	int i;
-	names = lp_server_services(lp_ctx);
-	ret = PyList_New(str_list_length(names));
-	for (i = 0; names[i]; i++) {
-		PyList_SetItem(ret, i, PyString_FromString(names[i]));
+	ret = PyList_New(lp_numservices(lp_ctx));
+	for (i = 0; i < lp_numservices(lp_ctx); i++) {
+		struct loadparm_service *service = lp_servicebynum(lp_ctx, i);
+		if (service != NULL) {
+			PyList_SetItem(ret, i, PyString_FromString(lp_servicename(service)));
+		}
 	}
 	return ret;
 }
