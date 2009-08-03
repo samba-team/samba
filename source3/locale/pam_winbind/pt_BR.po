@@ -1,0 +1,153 @@
+# This file is distributed under the same license as the package.
+#
+# Copyright (C) 2009 Lars Mueller <lars@samba.org>
+msgid ""
+msgstr ""
+"Project-Id-Version: pam_winbind\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2008-07-16 15:30+0800\n"
+"PO-Revision-Date: 2009-02-05 09:28\n"
+"Last-Translator: Novell Language <language@novell.com>\n"
+"Language-Team: Novell Language <language@novell.com>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: pam_winbind.c:326
+msgid "Success"
+msgstr "Sucesso"
+
+#: pam_winbind.c:327
+msgid "No primary Domain Controler available"
+msgstr "Nenhum Controlador de Domínio primário disponível"
+
+#: pam_winbind.c:328
+msgid "No domain controllers found"
+msgstr "Nenhum controlador de domínio encontrado"
+
+#: pam_winbind.c:329
+msgid "No logon servers"
+msgstr "Nenhum servidor de logon"
+
+#: pam_winbind.c:330
+msgid "Password too short"
+msgstr "Senha muito curta"
+
+#: pam_winbind.c:331
+msgid "The password of this user is too recent to change"
+msgstr "A senha deste usuário é muito recente para ser alterada"
+
+#: pam_winbind.c:332
+msgid "Password is already in password history"
+msgstr "A senha já está no histórico de senhas"
+
+#: pam_winbind.c:333
+msgid "Your password has expired"
+msgstr "Sua senha expirou"
+
+#: pam_winbind.c:334
+msgid "You need to change your password now"
+msgstr "Você precisa alterar sua senha agora"
+
+#: pam_winbind.c:335
+msgid "You are not allowed to logon from this workstation"
+msgstr "Você não tem autorização para efetuar login a partir desta estação de trabalho"
+
+#: pam_winbind.c:336
+msgid "You are not allowed to logon at this time"
+msgstr "Você não tem autorização para efetuar login agora"
+
+#: pam_winbind.c:337
+msgid "Your account has expired. Please contact your System administrator"
+msgstr "Sua conta expirou. Entre em contato com o administrador do sistema"
+
+#: pam_winbind.c:338
+msgid "Your account is disabled. Please contact your System administrator"
+msgstr "Sua conta está desabilitada. Entre em contato com o administrador do sistema"
+
+#: pam_winbind.c:339
+msgid "Your account has been locked. Please contact your System administrator"
+msgstr "Sua conta foi bloqueada. Entre em contato com o administrador do sistema"
+
+#: pam_winbind.c:340 pam_winbind.c:341 pam_winbind.c:342
+msgid "Invalid Trust Account"
+msgstr "Conta Confiável Inválida"
+
+#: pam_winbind.c:343
+msgid "Access is denied"
+msgstr "O acesso foi negado"
+
+#: pam_winbind.c:592
+msgid "Your password expires today"
+msgstr "Sua senha expira hoje"
+
+#: pam_winbind.c:597
+#, c-format
+msgid "Your password will expire in %d %s"
+msgstr "Sua senha expirará em %d %s."
+
+#: pam_winbind.c:598
+msgid "days"
+msgstr "dias"
+
+#: pam_winbind.c:598
+msgid "day"
+msgstr "dia"
+
+#: pam_winbind.c:917
+msgid "Grace login. Please change your password as soon you're online again"
+msgstr "Login extra. Altere sua senha assim que você ficar online novamente"
+
+#: pam_winbind.c:924
+msgid "Domain Controller unreachable, using cached credentials instead. Network resources may be unavailable"
+msgstr "Controlador de domínio inacessível, usando no lugar dele credencias em cache. Os recursos de rede podem estar indisponíveis"
+
+#: pam_winbind.c:950
+#, c-format
+msgid "Your password "
+msgstr "Sua senha"
+
+#: pam_winbind.c:957
+#, c-format
+msgid "must be at least %d characters; "
+msgstr "deve ter no mínimo %d caracteres;"
+
+#: pam_winbind.c:967
+#, c-format
+msgid "cannot repeat any of your previous %d passwords; "
+msgstr "não é permitido repetir quaisquer das suas %d senhas anteriores;"
+
+#: pam_winbind.c:977
+#, c-format
+msgid "must contain capitals, numerals or punctuation; and cannot contain your account or full name; "
+msgstr "deve conter maiúsculas, números ou pontuação e não pode conter o nome de sua conta nem seu nome completo;"
+
+#: pam_winbind.c:986
+#, c-format
+msgid "Please type a different password. Type a password which meets these requirements in both text boxes."
+msgstr "Digite uma senha diferente. Digite uma senha que atenda a estes requisitos em ambas as caixas de texto."
+
+#: pam_winbind.c:1223
+msgid "Password does not meet complexity requirements"
+msgstr "A senha não atende aos requisitos de complexidade"
+
+#: pam_winbind.c:1564
+msgid "Password: "
+msgstr "Senha:"
+
+#: pam_winbind.c:2013
+msgid "Changing password for "
+msgstr "Alterando a senha para"
+
+#: pam_winbind.c:2027
+msgid "(current) NT password: "
+msgstr "(atual) senha NT:"
+
+#: pam_winbind.c:2089
+msgid "Enter new NT password: "
+msgstr "Digite a nova senha NT:"
+
+#: pam_winbind.c:2090
+msgid "Retype new NT password: "
+msgstr "Redigite a nova senha NT:"
+

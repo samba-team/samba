@@ -1,0 +1,153 @@
+# This file is distributed under the same license as the package.
+#
+# Copyright (C) 2009 Lars Mueller <lars@samba.org>
+msgid ""
+msgstr ""
+"Project-Id-Version: pam_winbind\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2008-07-16 15:30+0800\n"
+"PO-Revision-Date: 2009-02-04 15:11\n"
+"Last-Translator: Novell Language <language@novell.com>\n"
+"Language-Team: Novell Language <language@novell.com>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: pam_winbind.c:326
+msgid "Success"
+msgstr "成功しました"
+
+#: pam_winbind.c:327
+msgid "No primary Domain Controler available"
+msgstr "プライマリドメインコントローラが利用できません"
+
+#: pam_winbind.c:328
+msgid "No domain controllers found"
+msgstr "ドメインコントローラが見つかりません"
+
+#: pam_winbind.c:329
+msgid "No logon servers"
+msgstr "ログオンサーバがありません"
+
+#: pam_winbind.c:330
+msgid "Password too short"
+msgstr "パスワードが短すぎます"
+
+#: pam_winbind.c:331
+msgid "The password of this user is too recent to change"
+msgstr "このユーザに対するパスワードは変更するには新しすぎます"
+
+#: pam_winbind.c:332
+msgid "Password is already in password history"
+msgstr "指定したパスワードはパスワード履歴内に存在しています"
+
+#: pam_winbind.c:333
+msgid "Your password has expired"
+msgstr "お使いのパスワードの期限が切れました"
+
+#: pam_winbind.c:334
+msgid "You need to change your password now"
+msgstr "パスワードを今すぐ変更する必要があります"
+
+#: pam_winbind.c:335
+msgid "You are not allowed to logon from this workstation"
+msgstr "このワークステーションからログオンすることが許可されていません"
+
+#: pam_winbind.c:336
+msgid "You are not allowed to logon at this time"
+msgstr "この時間にログオンすることが許可されていません"
+
+#: pam_winbind.c:337
+msgid "Your account has expired. Please contact your System administrator"
+msgstr "お使いのアカウントの期限が切れました。システム管理者に連絡してください"
+
+#: pam_winbind.c:338
+msgid "Your account is disabled. Please contact your System administrator"
+msgstr "アカウントは無効です。システム管理者にご連絡ください。"
+
+#: pam_winbind.c:339
+msgid "Your account has been locked. Please contact your System administrator"
+msgstr "お使いのアカウントはロック (施錠) されています。システム管理者に連絡してください"
+
+#: pam_winbind.c:340 pam_winbind.c:341 pam_winbind.c:342
+msgid "Invalid Trust Account"
+msgstr "信頼アカウントが正しくありません"
+
+#: pam_winbind.c:343
+msgid "Access is denied"
+msgstr "アクセスが拒否されました"
+
+#: pam_winbind.c:592
+msgid "Your password expires today"
+msgstr "お使いのパスワードは本日期限切れになります"
+
+#: pam_winbind.c:597
+#, c-format
+msgid "Your password will expire in %d %s"
+msgstr "お使いのパスワードは、あと %d %s で有効期限が切れます。"
+
+#: pam_winbind.c:598
+msgid "days"
+msgstr "日"
+
+#: pam_winbind.c:598
+msgid "day"
+msgstr "日"
+
+#: pam_winbind.c:917
+msgid "Grace login. Please change your password as soon you're online again"
+msgstr "猶予ログイン中です。次回ログオン時にすぐにパスワードを変更してください"
+
+#: pam_winbind.c:924
+msgid "Domain Controller unreachable, using cached credentials instead. Network resources may be unavailable"
+msgstr "ドメインコントローラにアクセスできないため、記憶済みの認証を使用しました。ネットワーク資源が利用できないかもしれません"
+
+#: pam_winbind.c:950
+#, c-format
+msgid "Your password "
+msgstr "お使いのパスワードは "
+
+#: pam_winbind.c:957
+#, c-format
+msgid "must be at least %d characters; "
+msgstr "少なくとも %d 文字以上でなければなりません; "
+
+#: pam_winbind.c:967
+#, c-format
+msgid "cannot repeat any of your previous %d passwords; "
+msgstr "過去 %d 個分のパスワードはいずれも再度利用することはできません; "
+
+#: pam_winbind.c:977
+#, c-format
+msgid "must contain capitals, numerals or punctuation; and cannot contain your account or full name; "
+msgstr "アルファベット大文字や数字、句読点 (カンマやピリオド) のいずれかを含まなければなりません; さらにアカウント名や本名 (フルネーム) を含めることはできません; "
+
+#: pam_winbind.c:986
+#, c-format
+msgid "Please type a different password. Type a password which meets these requirements in both text boxes."
+msgstr "別のパスワードを入力してください。両方のテキストボックス内にこれらの要件を満たすものを入力してください。"
+
+#: pam_winbind.c:1223
+msgid "Password does not meet complexity requirements"
+msgstr "パスワードは複雑さの要件を満たしていません"
+
+#: pam_winbind.c:1564
+msgid "Password: "
+msgstr "パスワード:"
+
+#: pam_winbind.c:2013
+msgid "Changing password for "
+msgstr "下記に対するパスワードを変更しています "
+
+#: pam_winbind.c:2027
+msgid "(current) NT password: "
+msgstr "現在の NT パスワード: "
+
+#: pam_winbind.c:2089
+msgid "Enter new NT password: "
+msgstr "新しい NT パスワード: "
+
+#: pam_winbind.c:2090
+msgid "Retype new NT password: "
+msgstr "新しい NT パスワードの再入力: "
+
