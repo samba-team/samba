@@ -2272,7 +2272,7 @@ dnl  We need to check for many of them
 dnl  But we don't need to do each and every one, because our code uses
 dnl  mostly just the utmp (not utmpx) fields.
 
-AC_CHECK_FUNCS(pututline pututxline updwtmp updwtmpx getutmpx)
+AC_CHECK_FUNCS(pututline pututxline updwtmp updwtmpx getutmpx getutxent)
 
 AC_CACHE_CHECK([for ut_name in utmp],samba_cv_HAVE_UT_UT_NAME,[
 AC_TRY_COMPILE([#include <sys/types.h>
