@@ -30,12 +30,54 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
+#ifdef HAVE_GETUTXENT
+
+#include <utmpx.h>
+
+static char **get_logged_on_userlist(TALLOC_CTX *mem_ctx)
+{
+	char **users = NULL;
+	int num_users = 0;
+	struct utmpx *u;
+
+	while ((u = getutxent()) != NULL) {
+		char **tmp;
+		tmp = talloc_realloc(mem_ctx, users, char *, num_users+1);
+		if (tmp == NULL) {
+			return NULL;
+		}
+		users = tmp;
+		users[num_users] = talloc_strdup(users, u->ut_user);
+		if (users[num_users] == NULL) {
+			TALLOC_FREE(users);
+			return NULL;
+		}
+	}
+	return users;
+}
+
+#else
+
+static char **get_logged_on_userlist(TALLOC_CTX *mem_ctx)
+{
+	return NULL;
+}
+
+#endif
+
 /*******************************************************************
  Fill in the values for the struct wkssvc_NetWkstaInfo100.
  ********************************************************************/
 
-static void create_wks_info_100(struct wkssvc_NetWkstaInfo100 *info100)
+static struct wkssvc_NetWkstaInfo100 *create_wks_info_100(TALLOC_CTX *mem_ctx)
 {
+	struct wkssvc_NetWkstaInfo100 *info100;
+
+	info100 = talloc(mem_ctx, struct wkssvc_NetWkstaInfo100);
+	if (info100 == NULL) {
+		return NULL;
+	}
+
 	info100->platform_id	 = PLATFORM_ID_NT;	/* unknown */
 	info100->version_major	 = lp_major_announce_version();
 	info100->version_minor	 = lp_minor_announce_version();
@@ -45,7 +87,56 @@ static void create_wks_info_100(struct wkssvc_NetWkstaInfo100 *info100)
 	info100->domain_name = talloc_asprintf_strupper_m(
 		info100, "%s", lp_workgroup());
 
-	return;
+	return info100;
+}
+
+static struct wkssvc_NetWkstaInfo101 *create_wks_info_101(TALLOC_CTX *mem_ctx)
+{
+	struct wkssvc_NetWkstaInfo101 *info101;
+
+	info101 = talloc(mem_ctx, struct wkssvc_NetWkstaInfo101);
+	if (info101 == NULL) {
+		return NULL;
+	}
+
+	info101->platform_id	 = PLATFORM_ID_NT;	/* unknown */
+	info101->version_major	 = lp_major_announce_version();
+	info101->version_minor	 = lp_minor_announce_version();
+
+	info101->server_name = talloc_asprintf_strupper_m(
+		info101, "%s", global_myname());
+	info101->domain_name = talloc_asprintf_strupper_m(
+		info101, "%s", lp_workgroup());
+	info101->lan_root = NULL;
+
+	return info101;
+}
+
+static struct wkssvc_NetWkstaInfo102 *create_wks_info_102(TALLOC_CTX *mem_ctx)
+{
+	struct wkssvc_NetWkstaInfo102 *info102;
+	char **users;
+
+	info102 = talloc(mem_ctx, struct wkssvc_NetWkstaInfo102);
+	if (info102 == NULL) {
+		return NULL;
+	}
+
+	info102->platform_id	 = PLATFORM_ID_NT;	/* unknown */
+	info102->version_major	 = lp_major_announce_version();
+	info102->version_minor	 = lp_minor_announce_version();
+
+	info102->server_name = talloc_asprintf_strupper_m(
+		info102, "%s", global_myname());
+	info102->domain_name = talloc_asprintf_strupper_m(
+		info102, "%s", lp_workgroup());
+	info102->lan_root = NULL;
+
+	users = get_logged_on_userlist(talloc_tos());
+	info102->logged_on_users = talloc_array_length(users);
+	TALLOC_FREE(users);
+
+	return info102;
 }
 
 /********************************************************************
@@ -54,21 +145,28 @@ static void create_wks_info_100(struct wkssvc_NetWkstaInfo100 *info100)
 
 WERROR _wkssvc_NetWkstaGetInfo(pipes_struct *p, struct wkssvc_NetWkstaGetInfo *r)
 {
-	struct wkssvc_NetWkstaInfo100 *wks100 = NULL;
-
-	/* We only support info level 100 currently */
-
-	if ( r->in.level != 100 ) {
+	switch (r->in.level) {
+	case 100:
+		r->out.info->info100 = create_wks_info_100(p->mem_ctx);
+		if (r->out.info->info100 == NULL) {
+			return WERR_NOMEM;
+		}
+		break;
+	case 101:
+		r->out.info->info101 = create_wks_info_101(p->mem_ctx);
+		if (r->out.info->info101 == NULL) {
+			return WERR_NOMEM;
+		}
+		break;
+	case 102:
+		r->out.info->info102 = create_wks_info_102(p->mem_ctx);
+		if (r->out.info->info102 == NULL) {
+			return WERR_NOMEM;
+		}
+		break;
+	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
-
-	if ( (wks100 = TALLOC_ZERO_P(p->mem_ctx, struct wkssvc_NetWkstaInfo100)) == NULL ) {
-		return WERR_NOMEM;
-	}
-
-	create_wks_info_100( wks100 );
-
-	r->out.info->info100 = wks100;
 
 	return WERR_OK;
 }
