@@ -2170,7 +2170,7 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 	ZERO_STRUCT(os);
 	os.os.MajorVersion = SAMBA_VERSION_MAJOR;
 	os.os.MinorVersion = SAMBA_VERSION_MINOR;
-	os.os.BuildNumber = SAMBA_VERSION_ALPHA_RELEASE;
+	os.os.BuildNumber = SAMBA_VERSION_RELEASE;
 	os.os.CSDVersion = "Service Pack 1";
 	os.os.ServicePackMajor = 1;
 	os.os.ServicePackMinor = 0;
