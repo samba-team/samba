@@ -30,26 +30,8 @@
   inspired by http://swapped.cc/halloc/
 */
 
-#ifdef _SAMBA_BUILD_
-#include "version.h"
-#if (SAMBA_VERSION_MAJOR<4)
-#include "includes.h"
-/* This is to circumvent SAMBA3's paranoid malloc checker. Here in this file
- * we trust ourselves... */
-#ifdef malloc
-#undef malloc
-#endif
-#ifdef realloc
-#undef realloc
-#endif
-#define _TALLOC_SAMBA3
-#endif /* (SAMBA_VERSION_MAJOR<4) */
-#endif /* _SAMBA_BUILD_ */
-
-#ifndef _TALLOC_SAMBA3
 #include "replace.h"
 #include "talloc.h"
-#endif /* not _TALLOC_SAMBA3 */
 
 /* use this to force every realloc to change the pointer, to stress test
    code that might not cope */
