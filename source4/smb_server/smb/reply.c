@@ -831,7 +831,8 @@ static void reply_read_and_X_send(struct ntvfs_request *ntvfs)
 	SMBSRV_VWV_RESERVED(4, 1);
 	SSVAL(req->out.vwv, VWV(5), io->readx.out.nread);
 	SSVAL(req->out.vwv, VWV(6), PTR_DIFF(io->readx.out.data, req->out.hdr));
-	SMBSRV_VWV_RESERVED(7, 5);
+	SSVAL(req->out.vwv, VWV(7), (io->readx.out.nread>>16));
+	SMBSRV_VWV_RESERVED(8, 4);
 
 	smbsrv_chain_reply(req);
 }
