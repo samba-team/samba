@@ -282,16 +282,21 @@ static bool sids_contains_sid(const struct dom_sid **sids, const int num_sids,
 /*
  * This function generates the transitive closure of a given SID "sid" (it
  * basically expands nested groups of a SID).
- * - If a SID is a user or a group we've always to consider the "memberOf"
- *   attribute. If the SID isn't located in the "res_sids" structure yet, we've
- *   to add it.
- * - We also add each object's SID to "red_sids"
+ * If the SID isn't located in the "res_sids" structure yet and the
+ * "only_childs" flag is negative, we add it to "res_sids".
+ * Then we've always to consider the "memberOf" attributes. We invoke the
+ * function recursively on each item of it with the "only_childs" flag set to
+ * "false".
+ * The "only_childs" flag is particularly useful if you have a user SID and
+ * want to include all his groups (referenced with "memberOf") without his SID
+ * itself.
  *
- * In the beginning "res_sids" should reference to a NULL pointer.
+ * At the beginning "res_sids" should reference to a NULL pointer.
  */
 static NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
-	const struct dom_sid *sid, TALLOC_CTX *res_sids_ctx,
-	struct dom_sid ***res_sids, int *num_res_sids)
+	const struct dom_sid *sid, const bool only_childs,
+	TALLOC_CTX *res_sids_ctx, struct dom_sid ***res_sids,
+	int *num_res_sids)
 {
 	const char * const attrs[] = { "memberOf", NULL };
 	int i, ret;
@@ -316,13 +321,15 @@ static NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
 		return NT_STATUS_OK;
 	}
 
-	tmp_sid = dom_sid_dup(res_sids_ctx, sid);
-	NT_STATUS_HAVE_NO_MEMORY(tmp_sid);
-	*res_sids = talloc_realloc(res_sids_ctx, *res_sids, struct dom_sid *,
-		*num_res_sids + 1);
-	NT_STATUS_HAVE_NO_MEMORY(*res_sids);
-	(*res_sids)[*num_res_sids] = tmp_sid;
-	++(*num_res_sids);
+	if (!only_childs) {
+		tmp_sid = dom_sid_dup(res_sids_ctx, sid);
+		NT_STATUS_HAVE_NO_MEMORY(tmp_sid);
+		*res_sids = talloc_realloc(res_sids_ctx, *res_sids,
+			struct dom_sid *, *num_res_sids + 1);
+		NT_STATUS_HAVE_NO_MEMORY(*res_sids);
+		(*res_sids)[*num_res_sids] = tmp_sid;
+		++(*num_res_sids);
+	}
 
 	tmp_ctx = talloc_new(sam_ctx);
 
@@ -346,7 +353,7 @@ static NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
 			"objectSid", NULL);
 
 		status = authsam_expand_nested_groups(sam_ctx, tmp_sid,
-			res_sids_ctx, res_sids, num_res_sids);
+			false, res_sids_ctx, res_sids, num_res_sids);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(res);
 			talloc_free(tmp_ctx);
@@ -386,8 +393,8 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx,
 	account_sid = samdb_result_dom_sid(server_info, msg, "objectSid");
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(account_sid, tmp_ctx);
 
-	status = authsam_expand_nested_groups(sam_ctx, account_sid, server_info,
-		&groupSIDs, &group_ret);
+	status = authsam_expand_nested_groups(sam_ctx, account_sid, true,
+		server_info, &groupSIDs, &group_ret);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);
 		return status;
