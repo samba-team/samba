@@ -3500,7 +3500,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[switch_is(eEventType)] spoolss_BranchOfficeJobInfo JobInfo;
 	} spoolss_BranchOfficeJobData;
 
-	typedef struct {
+	typedef [public] struct {
 		DWORD cJobDataEntries;
 		[size_is(cJobDataEntries)] spoolss_BranchOfficeJobData JobData[];
 	} spoolss_BranchOfficeJobDataContainer;
