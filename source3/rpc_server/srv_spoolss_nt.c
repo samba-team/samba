@@ -9685,8 +9685,12 @@ WERROR _spoolss_GetPrintProcessorDirectory(pipes_struct *p,
 
 	/* r->in.level is ignored */
 
+	/* We always should reply with a local print processor directory so that
+	 * users are not forced to have a [prnproc$] share on the Samba spoolss
+	 * server - Guenther */
+
 	result = getprintprocessordirectory_level_1(p->mem_ctx,
-						    r->in.server,
+						    NULL, /* r->in.server */
 						    r->in.environment,
 						    &r->out.info->info1);
 	if (!W_ERROR_IS_OK(result)) {
