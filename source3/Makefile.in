@@ -1162,6 +1162,7 @@ WINBINDD_OBJ1 = \
 		winbindd/wb_lookupuseraliases.o \
 		winbindd/wb_lookupusergroups.o \
 		winbindd/wb_getpwsid.o \
+		winbindd/wb_gettoken.o \
 		winbindd/winbindd_lookupsid.o \
 		winbindd/winbindd_lookupname.o \
 		winbindd/winbindd_sid_to_uid.o \

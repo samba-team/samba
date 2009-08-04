@@ -756,6 +756,11 @@ struct tevent_req *winbindd_getuserdomgroups_send(TALLOC_CTX *mem_ctx,
 						  struct winbindd_request *request);
 NTSTATUS winbindd_getuserdomgroups_recv(struct tevent_req *req,
 					struct winbindd_response *response);
+struct tevent_req *wb_gettoken_send(TALLOC_CTX *mem_ctx,
+				    struct tevent_context *ev,
+				    const struct dom_sid *sid);
+NTSTATUS wb_gettoken_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			  int *num_sids, struct dom_sid **sids);
 
 
 
