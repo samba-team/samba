@@ -487,7 +487,6 @@ static struct winbindd_dispatch_table {
 	/* Miscellaneous */
 
 	{ WINBINDD_CHECK_MACHACC, winbindd_check_machine_acct, "CHECK_MACHACC" },
-	{ WINBINDD_PING, winbindd_ping, "PING" },
 	{ WINBINDD_INFO, winbindd_info, "INFO" },
 	{ WINBINDD_INTERFACE_VERSION, winbindd_interface_version,
 	  "INTERFACE_VERSION" },
