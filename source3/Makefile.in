@@ -1172,6 +1172,7 @@ WINBINDD_OBJ1 = \
 		winbindd/winbindd_getpwnam.o \
 		winbindd/winbindd_getpwuid.o \
 		winbindd/winbindd_getsidaliases.o \
+		winbindd/winbindd_getuserdomgroups.o \
 		auth/token_util.o \
 		../nsswitch/libwbclient/wb_reqtrans.o \
 		smbd/connection.o
