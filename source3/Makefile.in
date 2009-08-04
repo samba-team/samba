@@ -1157,6 +1157,7 @@ WINBINDD_OBJ1 = \
 		winbindd/wb_sid2uid.o \
 		winbindd/winbindd_lookupsid.o \
 		winbindd/winbindd_lookupname.o \
+		winbindd/winbindd_sid_to_uid.o \
 		auth/token_util.o \
 		../nsswitch/libwbclient/wb_reqtrans.o \
 		smbd/connection.o
