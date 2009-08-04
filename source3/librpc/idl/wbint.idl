@@ -47,4 +47,10 @@ interface wbint
 	[in] hyper uid,
 	[out] dom_sid *sid
 	);
+
+    NTSTATUS wbint_Gid2Sid(
+	[in,unique,string,charset(UTF8)] char *dom_name,
+	[in] hyper gid,
+	[out] dom_sid *sid
+	);
 }
