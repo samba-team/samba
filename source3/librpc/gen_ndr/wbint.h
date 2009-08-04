@@ -18,6 +18,16 @@ struct wbint_userinfo {
 	struct dom_sid group_sid;
 }/* [public] */;
 
+struct wbint_SidArray {
+	uint32_t num_sids;
+	struct dom_sid *sids;/* [size_is(num_sids)] */
+}/* [public] */;
+
+struct wbint_RidArray {
+	uint32_t num_rids;
+	uint32_t *rids;/* [size_is(num_rids)] */
+}/* [public] */;
+
 
 struct wbint_Ping {
 	struct {
@@ -125,6 +135,19 @@ struct wbint_QueryUser {
 
 	struct {
 		struct wbint_userinfo *info;/* [ref] */
+		NTSTATUS result;
+	} out;
+
+};
+
+
+struct wbint_LookupUserAliases {
+	struct {
+		struct wbint_SidArray *sids;/* [ref] */
+	} in;
+
+	struct {
+		struct wbint_RidArray *rids;/* [ref] */
 		NTSTATUS result;
 	} out;
 

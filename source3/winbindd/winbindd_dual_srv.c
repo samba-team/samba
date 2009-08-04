@@ -144,3 +144,17 @@ NTSTATUS _wbint_QueryUser(pipes_struct *p, struct wbint_QueryUser *r)
 
 	return NT_STATUS_OK;
 }
+
+NTSTATUS _wbint_LookupUserAliases(pipes_struct *p,
+				  struct wbint_LookupUserAliases *r)
+{
+	struct winbindd_domain *domain = wb_child_domain();
+
+	if (domain == NULL) {
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
+
+	return domain->methods->lookup_useraliases(
+		domain, p->mem_ctx, r->in.sids->num_sids, r->in.sids->sids,
+		&r->out.rids->num_rids, &r->out.rids->rids);
+}

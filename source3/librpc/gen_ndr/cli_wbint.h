@@ -114,4 +114,16 @@ NTSTATUS rpccli_wbint_QueryUser(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
 				struct dom_sid *sid /* [in] [ref] */,
 				struct wbint_userinfo *info /* [out] [ref] */);
+struct tevent_req *rpccli_wbint_LookupUserAliases_send(TALLOC_CTX *mem_ctx,
+						       struct tevent_context *ev,
+						       struct rpc_pipe_client *cli,
+						       struct wbint_SidArray *_sids /* [in] [ref] */,
+						       struct wbint_RidArray *_rids /* [out] [ref] */);
+NTSTATUS rpccli_wbint_LookupUserAliases_recv(struct tevent_req *req,
+					     TALLOC_CTX *mem_ctx,
+					     NTSTATUS *result);
+NTSTATUS rpccli_wbint_LookupUserAliases(struct rpc_pipe_client *cli,
+					TALLOC_CTX *mem_ctx,
+					struct wbint_SidArray *sids /* [in] [ref] */,
+					struct wbint_RidArray *rids /* [out] [ref] */);
 #endif /* __CLI_WBINT__ */

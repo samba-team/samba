@@ -68,4 +68,19 @@ interface wbint
 	[in] dom_sid *sid,
 	[out] wbint_userinfo *info
 	);
+
+    typedef [public] struct {
+	uint32 num_sids;
+	[size_is(num_sids)] dom_sid sids[];
+    } wbint_SidArray;
+
+    typedef [public] struct {
+	uint32 num_rids;
+	[size_is(num_rids)] uint32 rids[];
+    } wbint_RidArray;
+
+    NTSTATUS wbint_LookupUserAliases(
+	[in] wbint_SidArray *sids,
+	[out] wbint_RidArray *rids
+	);
 }

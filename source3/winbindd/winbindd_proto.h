@@ -726,6 +726,13 @@ struct tevent_req *winbindd_getpwuid_send(TALLOC_CTX *mem_ctx,
 					  struct winbindd_request *request);
 NTSTATUS winbindd_getpwuid_recv(struct tevent_req *req,
 				struct winbindd_response *response);
+struct tevent_req *wb_lookupuseraliases_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct winbindd_domain *domain,
+					     int num_sids,
+					     const struct dom_sid *sids);
+NTSTATUS wb_lookupuseraliases_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+				   uint32_t *num_aliases, uint32_t **aliases);
 
 
 #endif /*  _WINBINDD_PROTO_H_  */

@@ -27,10 +27,18 @@ extern const struct ndr_interface_table ndr_table_wbint;
 
 #define NDR_WBINT_QUERYUSER (0x07)
 
-#define NDR_WBINT_CALL_COUNT (8)
+#define NDR_WBINT_LOOKUPUSERALIASES (0x08)
+
+#define NDR_WBINT_CALL_COUNT (9)
 enum ndr_err_code ndr_push_wbint_userinfo(struct ndr_push *ndr, int ndr_flags, const struct wbint_userinfo *r);
 enum ndr_err_code ndr_pull_wbint_userinfo(struct ndr_pull *ndr, int ndr_flags, struct wbint_userinfo *r);
 void ndr_print_wbint_userinfo(struct ndr_print *ndr, const char *name, const struct wbint_userinfo *r);
+enum ndr_err_code ndr_push_wbint_SidArray(struct ndr_push *ndr, int ndr_flags, const struct wbint_SidArray *r);
+enum ndr_err_code ndr_pull_wbint_SidArray(struct ndr_pull *ndr, int ndr_flags, struct wbint_SidArray *r);
+void ndr_print_wbint_SidArray(struct ndr_print *ndr, const char *name, const struct wbint_SidArray *r);
+enum ndr_err_code ndr_push_wbint_RidArray(struct ndr_push *ndr, int ndr_flags, const struct wbint_RidArray *r);
+enum ndr_err_code ndr_pull_wbint_RidArray(struct ndr_pull *ndr, int ndr_flags, struct wbint_RidArray *r);
+void ndr_print_wbint_RidArray(struct ndr_print *ndr, const char *name, const struct wbint_RidArray *r);
 void ndr_print_wbint_Ping(struct ndr_print *ndr, const char *name, int flags, const struct wbint_Ping *r);
 void ndr_print_wbint_LookupSid(struct ndr_print *ndr, const char *name, int flags, const struct wbint_LookupSid *r);
 void ndr_print_wbint_LookupName(struct ndr_print *ndr, const char *name, int flags, const struct wbint_LookupName *r);
@@ -39,4 +47,5 @@ void ndr_print_wbint_Sid2Gid(struct ndr_print *ndr, const char *name, int flags,
 void ndr_print_wbint_Uid2Sid(struct ndr_print *ndr, const char *name, int flags, const struct wbint_Uid2Sid *r);
 void ndr_print_wbint_Gid2Sid(struct ndr_print *ndr, const char *name, int flags, const struct wbint_Gid2Sid *r);
 void ndr_print_wbint_QueryUser(struct ndr_print *ndr, const char *name, int flags, const struct wbint_QueryUser *r);
+void ndr_print_wbint_LookupUserAliases(struct ndr_print *ndr, const char *name, int flags, const struct wbint_LookupUserAliases *r);
 #endif /* _HEADER_NDR_wbint */
