@@ -25,7 +25,12 @@ extern const struct ndr_interface_table ndr_table_wbint;
 
 #define NDR_WBINT_GID2SID (0x06)
 
-#define NDR_WBINT_CALL_COUNT (7)
+#define NDR_WBINT_QUERYUSER (0x07)
+
+#define NDR_WBINT_CALL_COUNT (8)
+enum ndr_err_code ndr_push_wbint_userinfo(struct ndr_push *ndr, int ndr_flags, const struct wbint_userinfo *r);
+enum ndr_err_code ndr_pull_wbint_userinfo(struct ndr_pull *ndr, int ndr_flags, struct wbint_userinfo *r);
+void ndr_print_wbint_userinfo(struct ndr_print *ndr, const char *name, const struct wbint_userinfo *r);
 void ndr_print_wbint_Ping(struct ndr_print *ndr, const char *name, int flags, const struct wbint_Ping *r);
 void ndr_print_wbint_LookupSid(struct ndr_print *ndr, const char *name, int flags, const struct wbint_LookupSid *r);
 void ndr_print_wbint_LookupName(struct ndr_print *ndr, const char *name, int flags, const struct wbint_LookupName *r);
@@ -33,4 +38,5 @@ void ndr_print_wbint_Sid2Uid(struct ndr_print *ndr, const char *name, int flags,
 void ndr_print_wbint_Sid2Gid(struct ndr_print *ndr, const char *name, int flags, const struct wbint_Sid2Gid *r);
 void ndr_print_wbint_Uid2Sid(struct ndr_print *ndr, const char *name, int flags, const struct wbint_Uid2Sid *r);
 void ndr_print_wbint_Gid2Sid(struct ndr_print *ndr, const char *name, int flags, const struct wbint_Gid2Sid *r);
+void ndr_print_wbint_QueryUser(struct ndr_print *ndr, const char *name, int flags, const struct wbint_QueryUser *r);
 #endif /* _HEADER_NDR_wbint */

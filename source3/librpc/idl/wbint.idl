@@ -53,4 +53,19 @@ interface wbint
 	[in] hyper gid,
 	[out] dom_sid *sid
 	);
+
+    typedef [public] struct {
+	[string,charset(UTF8)] char *acct_name;
+	[string,charset(UTF8)] char *full_name;
+	[string,charset(UTF8)] char *homedir;
+	[string,charset(UTF8)] char *shell;
+	hyper primary_gid;
+	dom_sid user_sid;
+	dom_sid group_sid;
+    } wbint_userinfo;
+
+    NTSTATUS wbint_QueryUser(
+	[in] dom_sid *sid,
+	[out] wbint_userinfo *info
+	);
 }

@@ -8,6 +8,16 @@
 #ifndef _HEADER_wbint
 #define _HEADER_wbint
 
+struct wbint_userinfo {
+	const char *acct_name;/* [unique,charset(UTF8)] */
+	const char *full_name;/* [unique,charset(UTF8)] */
+	const char *homedir;/* [unique,charset(UTF8)] */
+	const char *shell;/* [unique,charset(UTF8)] */
+	uint64_t primary_gid;
+	struct dom_sid user_sid;
+	struct dom_sid group_sid;
+}/* [public] */;
+
 
 struct wbint_Ping {
 	struct {
@@ -102,6 +112,19 @@ struct wbint_Gid2Sid {
 
 	struct {
 		struct dom_sid *sid;/* [ref] */
+		NTSTATUS result;
+	} out;
+
+};
+
+
+struct wbint_QueryUser {
+	struct {
+		struct dom_sid *sid;/* [ref] */
+	} in;
+
+	struct {
+		struct wbint_userinfo *info;/* [ref] */
 		NTSTATUS result;
 	} out;
 

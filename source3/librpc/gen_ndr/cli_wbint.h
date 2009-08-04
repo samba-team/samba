@@ -102,4 +102,16 @@ NTSTATUS rpccli_wbint_Gid2Sid(struct rpc_pipe_client *cli,
 			      const char *dom_name /* [in] [unique,charset(UTF8)] */,
 			      uint64_t gid /* [in]  */,
 			      struct dom_sid *sid /* [out] [ref] */);
+struct tevent_req *rpccli_wbint_QueryUser_send(TALLOC_CTX *mem_ctx,
+					       struct tevent_context *ev,
+					       struct rpc_pipe_client *cli,
+					       struct dom_sid *_sid /* [in] [ref] */,
+					       struct wbint_userinfo *_info /* [out] [ref] */);
+NTSTATUS rpccli_wbint_QueryUser_recv(struct tevent_req *req,
+				     TALLOC_CTX *mem_ctx,
+				     NTSTATUS *result);
+NTSTATUS rpccli_wbint_QueryUser(struct rpc_pipe_client *cli,
+				TALLOC_CTX *mem_ctx,
+				struct dom_sid *sid /* [in] [ref] */,
+				struct wbint_userinfo *info /* [out] [ref] */);
 #endif /* __CLI_WBINT__ */

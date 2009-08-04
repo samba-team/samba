@@ -685,5 +685,10 @@ struct tevent_req *winbindd_gid_to_sid_send(TALLOC_CTX *mem_ctx,
 NTSTATUS winbindd_gid_to_sid_recv(struct tevent_req *req,
 				  struct winbindd_response *response);
 
+struct tevent_req *wb_queryuser_send(TALLOC_CTX *mem_ctx,
+				     struct tevent_context *ev,
+				     const struct dom_sid *user_sid);
+NTSTATUS wb_queryuser_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			   struct winbind_userinfo **pinfo);
 
 #endif /*  _WINBINDD_PROTO_H_  */
