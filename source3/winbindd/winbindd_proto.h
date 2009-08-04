@@ -699,4 +699,10 @@ struct tevent_req *wb_queryuser_send(TALLOC_CTX *mem_ctx,
 NTSTATUS wb_queryuser_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			   struct winbind_userinfo **pinfo);
 
+struct tevent_req *wb_getpwsid_send(TALLOC_CTX *mem_ctx,
+				    struct tevent_context *ev,
+				    const struct dom_sid *user_sid,
+				    struct winbindd_pw *pw);
+NTSTATUS wb_getpwsid_recv(struct tevent_req *req);
+
 #endif /*  _WINBINDD_PROTO_H_  */
