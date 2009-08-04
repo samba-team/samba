@@ -733,6 +733,11 @@ struct tevent_req *wb_lookupuseraliases_send(TALLOC_CTX *mem_ctx,
 					     const struct dom_sid *sids);
 NTSTATUS wb_lookupuseraliases_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 				   uint32_t *num_aliases, uint32_t **aliases);
+struct tevent_req *winbindd_getsidaliases_send(TALLOC_CTX *mem_ctx,
+					       struct tevent_context *ev,
+					       struct winbindd_request *request);
+NTSTATUS winbindd_getsidaliases_recv(struct tevent_req *req,
+				     struct winbindd_response *response);
 
 
 #endif /*  _WINBINDD_PROTO_H_  */

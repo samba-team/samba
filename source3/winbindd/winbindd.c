@@ -435,8 +435,6 @@ static struct winbindd_dispatch_table {
 	{ WINBINDD_GETUSERSIDS, winbindd_getusersids, "GETUSERSIDS" },
 	{ WINBINDD_GETUSERDOMGROUPS, winbindd_getuserdomgroups,
 	  "GETUSERDOMGROUPS" },
-	{ WINBINDD_GETSIDALIASES, winbindd_getsidaliases,
-	   "LOOKUPUSERALIASES" },
 
 	/* Group functions */
 
@@ -533,6 +531,8 @@ static struct winbindd_async_dispatch_table async_nonpriv_table[] = {
 	  winbindd_getpwnam_send, winbindd_getpwnam_recv },
 	{ WINBINDD_GETPWUID, "GETPWUID",
 	  winbindd_getpwuid_send, winbindd_getpwuid_recv },
+	{ WINBINDD_GETSIDALIASES, "GETSIDALIASES",
+	  winbindd_getsidaliases_send, winbindd_getsidaliases_recv },
 
 	{ 0, NULL, NULL, NULL }
 };

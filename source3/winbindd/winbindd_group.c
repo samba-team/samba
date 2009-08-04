@@ -1887,32 +1887,6 @@ enum winbindd_result winbindd_dual_getuserdomgroups(struct winbindd_domain *doma
 	return WINBINDD_OK;
 }
 
-void winbindd_getsidaliases(struct winbindd_cli_state *state)
-{
-	DOM_SID domain_sid;
-	struct winbindd_domain *domain;
-
-	/* Ensure null termination */
-	state->request->data.sid[sizeof(state->request->data.sid)-1]='\0';
-
-	if (!string_to_sid(&domain_sid, state->request->data.sid)) {
-		DEBUG(1, ("Could not get convert sid %s from string\n",
-			  state->request->data.sid));
-		request_error(state);
-		return;
-	}
-
-	/* Get info for the domain */
-	if ((domain = find_domain_from_sid_noinit(&domain_sid)) == NULL) {
-		DEBUG(0,("could not find domain entry for sid %s\n",
-			 sid_string_dbg(&domain_sid)));
-		request_error(state);
-		return;
-	}
-
-	sendto_domain(state, domain);
-}
-
 enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
 						 struct winbindd_cli_state *state)
 {
