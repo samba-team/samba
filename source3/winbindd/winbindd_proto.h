@@ -653,4 +653,10 @@ struct tevent_req *wb_sid2gid_send(TALLOC_CTX *mem_ctx,
 				   const struct dom_sid *sid);
 NTSTATUS wb_sid2gid_recv(struct tevent_req *req, gid_t *gid);
 
+struct tevent_req *winbindd_sid_to_gid_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct winbindd_request *request);
+NTSTATUS winbindd_sid_to_gid_recv(struct tevent_req *req,
+				  struct winbindd_response *response);
+
 #endif /*  _WINBINDD_PROTO_H_  */
