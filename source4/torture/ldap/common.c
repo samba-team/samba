@@ -105,6 +105,7 @@ NTSTATUS torture_ldap_init(void)
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "LDAP");
 	torture_suite_add_simple_test(suite, "BENCH-CLDAP", torture_bench_cldap);
 	torture_suite_add_simple_test(suite, "BASIC", torture_ldap_basic);
+	torture_suite_add_simple_test(suite, "SORT", torture_ldap_sort);
 	torture_suite_add_simple_test(suite, "CLDAP", torture_cldap);
 	torture_suite_add_simple_test(suite, "SCHEMA", torture_ldap_schema);
 	torture_suite_add_simple_test(suite, "UPTODATEVECTOR", torture_ldap_uptodatevector);

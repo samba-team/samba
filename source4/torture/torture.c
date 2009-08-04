@@ -56,7 +56,6 @@ _PUBLIC_ int torture_init(void)
 {
 	extern NTSTATUS torture_base_init(void);
 	extern NTSTATUS torture_ldap_init(void);
-	extern NTSTATUS torture_ldb_module_init(void);
 	extern NTSTATUS torture_local_init(void);
 	extern NTSTATUS torture_nbt_init(void);
 	extern NTSTATUS torture_nbench_init(void);

@@ -120,7 +120,7 @@ if grep ENABLE_GNUTLS.1 include/config.h > /dev/null; then
     done
 fi
 plantest "ldb.ldapi with options $options" dc $bbdir/test_ldb.sh ldapi \$PREFIX_ABS/dc/private/ldapi $options
-for t in LDAP-CLDAP LDAP-BASIC LDAP-SCHEMA LDAP-UPTODATEVECTOR
+for t in `$smb4torture --list | grep "^LDAP-"`
 do
 	plansmbtorturetest "$t" dc "-U\$USERNAME%\$PASSWORD" //\$SERVER_IP/_none_
 done
