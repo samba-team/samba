@@ -65,3 +65,17 @@ NTSTATUS _wbint_LookupName(pipes_struct *p, struct wbint_LookupName *r)
 		domain, p->mem_ctx, r->in.domain, r->in.name, r->in.flags,
 		r->out.sid, r->out.type);
 }
+
+NTSTATUS _wbint_Sid2Uid(pipes_struct *p, struct wbint_Sid2Uid *r)
+{
+	uid_t uid;
+	NTSTATUS status;
+
+	status = idmap_sid_to_uid(r->in.dom_name ? r->in.dom_name : "",
+				  r->in.sid, &uid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	*r->out.uid = uid;
+	return NT_STATUS_OK;
+}

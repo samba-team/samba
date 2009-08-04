@@ -1154,6 +1154,7 @@ WINBINDD_OBJ1 = \
 		winbindd/wb_ping.o \
 		winbindd/wb_lookupsid.o \
 		winbindd/wb_lookupname.o \
+		winbindd/wb_sid2uid.o \
 		winbindd/winbindd_lookupsid.o \
 		winbindd/winbindd_lookupname.o \
 		auth/token_util.o \
