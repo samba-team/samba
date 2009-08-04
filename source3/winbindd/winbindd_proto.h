@@ -711,4 +711,11 @@ struct tevent_req *winbindd_getpwsid_send(TALLOC_CTX *mem_ctx,
 NTSTATUS winbindd_getpwsid_recv(struct tevent_req *req,
 				struct winbindd_response *response);
 
+struct tevent_req *winbindd_getpwnam_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct winbindd_request *request);
+NTSTATUS winbindd_getpwnam_recv(struct tevent_req *req,
+				struct winbindd_response *response);
+
+
 #endif /*  _WINBINDD_PROTO_H_  */
