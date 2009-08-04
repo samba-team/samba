@@ -327,7 +327,7 @@ static int ldif_read_ntSecurityDescriptor(struct ldb_context *ldb, void *mem_ctx
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		/* If this does not parse, then it is probably SDDL, and we should try it that way */
 		
-		struct dom_sid *sid = samdb_domain_sid(ldb);
+		const struct dom_sid *sid = samdb_domain_sid(ldb);
 		talloc_free(sd);
 		sd = sddl_decode(mem_ctx, (const char *)in->data, sid);
 		if (sd == NULL) {
