@@ -1157,8 +1157,9 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 		NT_STATUS_HAVE_NO_MEMORY(workstation_dn);
 
 		/* Gets the old DNS hostname */
-		old_dns_hostname = samdb_search_string_v(sam_ctx, mem_ctx,
-			workstation_dn,	"dNSHostName", "", NULL);
+		old_dns_hostname = samdb_search_string(sam_ctx, mem_ctx,
+						       workstation_dn,	"dNSHostName", 
+						       NULL);
 
 		/* Gets host informations and put them in our directory */
 		new_msg = ldb_msg_new(mem_ctx);
@@ -1197,8 +1198,8 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 			os_version = &r->in.query->workstation_info->os_version.os->os;
 
 			samdb_msg_set_string(sam_ctx, mem_ctx, new_msg,
-				"operatingSystemServicePack",
-				talloc_asprintf(mem_ctx, os_version->CSDVersion));
+					     "operatingSystemServicePack",
+					     os_version->CSDVersion);
 
 			samdb_msg_set_string(sam_ctx, mem_ctx, new_msg,
 				"operatingSystemVersion",
