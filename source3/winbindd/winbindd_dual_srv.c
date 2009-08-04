@@ -158,3 +158,17 @@ NTSTATUS _wbint_LookupUserAliases(pipes_struct *p,
 		domain, p->mem_ctx, r->in.sids->num_sids, r->in.sids->sids,
 		&r->out.rids->num_rids, &r->out.rids->rids);
 }
+
+NTSTATUS _wbint_LookupUserGroups(pipes_struct *p,
+				 struct wbint_LookupUserGroups *r)
+{
+	struct winbindd_domain *domain = wb_child_domain();
+
+	if (domain == NULL) {
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
+
+	return domain->methods->lookup_usergroups(
+		domain, p->mem_ctx, r->in.sid,
+		&r->out.sids->num_sids, &r->out.sids->sids);
+}

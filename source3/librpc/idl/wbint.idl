@@ -83,4 +83,9 @@ interface wbint
 	[in] wbint_SidArray *sids,
 	[out] wbint_RidArray *rids
 	);
+
+    NTSTATUS wbint_LookupUserGroups(
+	[in] dom_sid *sid,
+	[out] wbint_SidArray *sids
+	);
 }

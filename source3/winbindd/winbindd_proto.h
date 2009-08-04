@@ -184,6 +184,7 @@ NTSTATUS wcache_lookup_usergroups(struct winbindd_domain *domain,
 				  const struct dom_sid *user_sid,
 				  uint32_t *pnum_sids,
 				  struct dom_sid **psids);
+
 void wcache_flush_cache(void);
 NTSTATUS wcache_count_cached_creds(struct winbindd_domain *domain, int *count);
 NTSTATUS wcache_remove_oldest_cached_creds(struct winbindd_domain *domain, const DOM_SID *sid) ;
@@ -743,6 +744,12 @@ struct tevent_req *winbindd_getsidaliases_send(TALLOC_CTX *mem_ctx,
 					       struct winbindd_request *request);
 NTSTATUS winbindd_getsidaliases_recv(struct tevent_req *req,
 				     struct winbindd_response *response);
+struct tevent_req *wb_lookupusergroups_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct winbindd_domain *domain,
+					    const struct dom_sid *sid);
+NTSTATUS wb_lookupusergroups_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+				  int *num_sids, struct dom_sid **sids);
 
 
 #endif /*  _WINBINDD_PROTO_H_  */

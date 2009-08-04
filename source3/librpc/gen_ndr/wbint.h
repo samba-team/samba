@@ -153,4 +153,17 @@ struct wbint_LookupUserAliases {
 
 };
 
+
+struct wbint_LookupUserGroups {
+	struct {
+		struct dom_sid *sid;/* [ref] */
+	} in;
+
+	struct {
+		struct wbint_SidArray *sids;/* [ref] */
+		NTSTATUS result;
+	} out;
+
+};
+
 #endif /* _HEADER_wbint */
