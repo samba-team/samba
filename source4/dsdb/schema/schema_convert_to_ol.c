@@ -56,9 +56,11 @@ static char *print_schema_recursive(char *append_to_string, struct dsdb_schema *
 		const char **must;
 		const char **may;
 		char *schema_entry = NULL;
-		const char *objectclass_name_as_list[] = {
-			objectclass->lDAPDisplayName,
-			NULL
+		struct ldb_val objectclass_name_as_ldb_val = data_blob_string_const(objectclass->lDAPDisplayName);
+		struct ldb_message_element objectclass_name_as_el = {
+			.name = "objectClass",
+			.num_values = 1,
+			.values = &objectclass_name_as_ldb_val
 		};
 		int j;
 		int attr_idx;
@@ -89,7 +91,7 @@ static char *print_schema_recursive(char *append_to_string, struct dsdb_schema *
 			}
 		}
 		
-		may = dsdb_full_attribute_list(mem_ctx, schema, objectclass_name_as_list, DSDB_SCHEMA_ALL_MAY);
+		may = dsdb_full_attribute_list(mem_ctx, schema, &objectclass_name_as_el, DSDB_SCHEMA_ALL_MAY);
 
 		for (j=0; may && may[j]; j++) {
 			/* We might have been asked to remap this name, due to a conflict */ 
@@ -101,7 +103,7 @@ static char *print_schema_recursive(char *append_to_string, struct dsdb_schema *
 			}						
 		}
 
-		must = dsdb_full_attribute_list(mem_ctx, schema, objectclass_name_as_list, DSDB_SCHEMA_ALL_MUST);
+		must = dsdb_full_attribute_list(mem_ctx, schema, &objectclass_name_as_el, DSDB_SCHEMA_ALL_MUST);
 
 		for (j=0; must && must[j]; j++) {
 			/* We might have been asked to remap this name, due to a conflict */ 

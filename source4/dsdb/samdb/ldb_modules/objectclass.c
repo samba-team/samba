@@ -134,9 +134,10 @@ static int objectclass_sort(struct ldb_module *module,
 			ldb_oom(ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		current->objectclass = dsdb_class_by_lDAPDisplayName(schema, (const char *)objectclass_element->values[i].data);
+		current->objectclass = dsdb_class_by_lDAPDisplayName_ldb_val(schema, &objectclass_element->values[i]);
 		if (!current->objectclass) {
-			ldb_asprintf_errstring(ldb, "objectclass %s is not a valid objectClass in schema", (const char *)objectclass_element->values[i].data);
+			ldb_asprintf_errstring(ldb, "objectclass %.*s is not a valid objectClass in schema", 
+					       (int)objectclass_element->values[i].length, (const char *)objectclass_element->values[i].data);
 			return LDB_ERR_OBJECT_CLASS_VIOLATION;
 		}
 

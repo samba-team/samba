@@ -417,9 +417,8 @@ static int generate_possibleInferiors(struct ldb_context *ldb, struct ldb_messag
 	}
 
 	first_component_val = ldb_dn_get_component_val(dn, 0);
-	class_name = (const char *)first_component_val->data;
 
-	schema_class = dsdb_class_by_cn(schema, class_name);
+	schema_class = dsdb_class_by_cn_ldb_val(schema, first_component_val);
 	if (schema_class == NULL) {
 		return LDB_SUCCESS;
 	}
