@@ -508,6 +508,14 @@ enum winbindd_result winbindd_dual_allocate_gid(struct winbindd_domain *domain,
 
 /* The following definitions come from winbindd/winbindd_user.c  */
 
+bool fillup_pw_field(const char *lp_template,
+			    const char *username,
+			    const char *domname,
+			    uid_t uid,
+			    gid_t gid,
+			    const char *in,
+		     fstring out);
+
 enum winbindd_result winbindd_dual_userinfo(struct winbindd_domain *domain,
 					    struct winbindd_cli_state *state);
 void winbindd_getpwnam(struct winbindd_cli_state *state);

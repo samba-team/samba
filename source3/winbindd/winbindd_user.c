@@ -27,7 +27,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-static bool fillup_pw_field(const char *lp_template,
+bool fillup_pw_field(const char *lp_template,
 			    const char *username,
 			    const char *domname,
 			    uid_t uid,
