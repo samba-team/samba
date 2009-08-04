@@ -27,66 +27,6 @@
 
 /* Convert a string  */
 
-/**
- * Look up the SID for a qualified name.  
- **/
-
-static void lookupname_recv(void *private_data, bool success,
-			    const DOM_SID *sid, enum lsa_SidType type);
-
-void winbindd_lookupname(struct winbindd_cli_state *state)
-{
-	char *name_domain, *name_user;
-	char *p;
-
-	/* Ensure null termination */
-	state->request->data.name.dom_name[sizeof(state->request->data.name.dom_name)-1]='\0';
-
-	/* Ensure null termination */
-	state->request->data.name.name[sizeof(state->request->data.name.name)-1]='\0';
-
-	/* cope with the name being a fully qualified name */
-	p = strstr(state->request->data.name.name, lp_winbind_separator());
-	if (p) {
-		*p = 0;
-		name_domain = state->request->data.name.name;
-		name_user = p+1;
-	} else if ((p = strchr(state->request->data.name.name, '@')) != NULL) {
-		/* upn */
-		name_domain = p + 1;
-		*p = 0;
-		name_user = state->request->data.name.name;
-	} else {
-		name_domain = state->request->data.name.dom_name;
-		name_user = state->request->data.name.name;
-	}
-
-	DEBUG(3, ("[%5lu]: lookupname %s%s%s\n", (unsigned long)state->pid,
-		  name_domain, lp_winbind_separator(), name_user));
-
-	winbindd_lookupname_async(state->mem_ctx, name_domain, name_user,
-				  lookupname_recv, WINBINDD_LOOKUPNAME, 
-				  state);
-}
-
-static void lookupname_recv(void *private_data, bool success,
-			    const DOM_SID *sid, enum lsa_SidType type)
-{
-	struct winbindd_cli_state *state =
-		talloc_get_type_abort(private_data, struct winbindd_cli_state);
-
-	if (!success) {
-		DEBUG(5, ("lookupname returned an error\n"));
-		request_error(state);
-		return;
-	}
-
-	sid_to_fstring(state->response->data.sid.sid, sid);
-	state->response->data.sid.type = type;
-	request_ok(state);
-	return;
-}
-
 void winbindd_lookuprids(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;

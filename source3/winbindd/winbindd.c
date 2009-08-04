@@ -469,7 +469,6 @@ static struct winbindd_dispatch_table {
 
 	/* SID related functions */
 
-	{ WINBINDD_LOOKUPNAME, winbindd_lookupname, "LOOKUPNAME" },
 	{ WINBINDD_LOOKUPRIDS, winbindd_lookuprids, "LOOKUPRIDS" },
 
 	/* Lookup related functions */
@@ -526,6 +525,8 @@ static struct winbindd_async_dispatch_table async_nonpriv_table[] = {
 	  wb_ping_send, wb_ping_recv },
 	{ WINBINDD_LOOKUPSID, "LOOKUPSID",
 	  winbindd_lookupsid_send, winbindd_lookupsid_recv },
+	{ WINBINDD_LOOKUPNAME, "LOOKUPNAME",
+	  winbindd_lookupname_send, winbindd_lookupname_recv },
 
 	{ 0, NULL, NULL, NULL }
 };
