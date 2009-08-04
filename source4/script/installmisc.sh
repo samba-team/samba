@@ -12,7 +12,7 @@ mkdir -p $SETUPDIR/ad-schema || exit 1
 cp setup/ad-schema/*.txt $SETUPDIR/ad-schema || exit 1
 for p in enableaccount newuser provision provision-backend setexpiry setpassword
 do
-	chmod 0555 setup/$p
+	chmod a+x setup/$p
 	cp setup/$p $SETUPDIR || exit 1
 done
 cp setup/schema-map-* $SETUPDIR || exit 1
