@@ -27,48 +27,6 @@
 
 /* Convert a string  */
 
-static void lookupsid_recv(void *private_data, bool success,
-			   const char *dom_name, const char *name,
-			   enum lsa_SidType type);
-
-void winbindd_lookupsid(struct winbindd_cli_state *state)
-{
-	DOM_SID sid;
-
-	/* Ensure null termination */
-	state->request->data.sid[sizeof(state->request->data.sid)-1]='\0';
-
-	DEBUG(3, ("[%5lu]: lookupsid %s\n", (unsigned long)state->pid, 
-		  state->request->data.sid));
-
-	if (!string_to_sid(&sid, state->request->data.sid)) {
-		DEBUG(5, ("%s not a SID\n", state->request->data.sid));
-		request_error(state);
-		return;
-	}
-
-	winbindd_lookupsid_async(state->mem_ctx, &sid, lookupsid_recv, state);
-}
-
-static void lookupsid_recv(void *private_data, bool success,
-			   const char *dom_name, const char *name,
-			   enum lsa_SidType type)
-{
-	struct winbindd_cli_state *state =
-		talloc_get_type_abort(private_data, struct winbindd_cli_state);
-
-	if (!success) {
-		DEBUG(5, ("lookupsid returned an error\n"));
-		request_error(state);
-		return;
-	}
-
-	fstrcpy(state->response->data.name.dom_name, dom_name);
-	fstrcpy(state->response->data.name.name, name);
-	state->response->data.name.type = type;
-	request_ok(state);
-}
-
 /**
  * Look up the SID for a qualified name.  
  **/

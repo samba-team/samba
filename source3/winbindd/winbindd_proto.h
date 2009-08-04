@@ -613,4 +613,11 @@ NTSTATUS wb_lookupsid_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			   enum lsa_SidType *type, const char **domain,
 			   const char **name);
 
+struct tevent_req *winbindd_lookupsid_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					   struct winbindd_request *request);
+NTSTATUS winbindd_lookupsid_recv(struct tevent_req *req,
+				 struct winbindd_response *response);
+
+
 #endif /*  _WINBINDD_PROTO_H_  */
