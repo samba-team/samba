@@ -427,8 +427,6 @@ static struct winbindd_dispatch_table {
 
 	/* User functions */
 
-	{ WINBINDD_GETPWUID, winbindd_getpwuid, "GETPWUID" },
-
 	{ WINBINDD_SETPWENT, winbindd_setpwent, "SETPWENT" },
 	{ WINBINDD_ENDPWENT, winbindd_endpwent, "ENDPWENT" },
 	{ WINBINDD_GETPWENT, winbindd_getpwent, "GETPWENT" },
@@ -533,6 +531,8 @@ static struct winbindd_async_dispatch_table async_nonpriv_table[] = {
 	  winbindd_getpwsid_send, winbindd_getpwsid_recv },
 	{ WINBINDD_GETPWNAM, "GETPWNAM",
 	  winbindd_getpwnam_send, winbindd_getpwnam_recv },
+	{ WINBINDD_GETPWUID, "GETPWUID",
+	  winbindd_getpwuid_send, winbindd_getpwuid_recv },
 
 	{ 0, NULL, NULL, NULL }
 };
