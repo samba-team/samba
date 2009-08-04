@@ -21,4 +21,12 @@ interface wbint
 	[out,string,charset(UTF8)] char **domain,
 	[out,string,charset(UTF8)] char **name
 	);
+
+    NTSTATUS wbint_LookupName(
+	[in,string,charset(UTF8)] char *domain,
+	[in,string,charset(UTF8)] char *name,
+	[in] uint32 flags,
+	[out] lsa_SidType *type,
+	[out] dom_sid *sid
+	);
 }

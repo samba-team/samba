@@ -35,4 +35,20 @@ struct wbint_LookupSid {
 
 };
 
+
+struct wbint_LookupName {
+	struct {
+		const char *domain;/* [ref,charset(UTF8)] */
+		const char *name;/* [ref,charset(UTF8)] */
+		uint32_t flags;
+	} in;
+
+	struct {
+		enum lsa_SidType *type;/* [ref] */
+		struct dom_sid *sid;/* [ref] */
+		NTSTATUS result;
+	} out;
+
+};
+
 #endif /* _HEADER_wbint */

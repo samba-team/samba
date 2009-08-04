@@ -52,3 +52,16 @@ NTSTATUS _wbint_LookupSid(pipes_struct *p, struct wbint_LookupSid *r)
 	*r->out.type = type;
 	return NT_STATUS_OK;
 }
+
+NTSTATUS _wbint_LookupName(pipes_struct *p, struct wbint_LookupName *r)
+{
+	struct winbindd_domain *domain = wb_child_domain();
+
+	if (domain == NULL) {
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
+
+	return domain->methods->name_to_sid(
+		domain, p->mem_ctx, r->in.domain, r->in.name, r->in.flags,
+		r->out.sid, r->out.type);
+}

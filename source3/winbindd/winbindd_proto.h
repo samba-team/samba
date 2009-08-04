@@ -624,5 +624,12 @@ struct tevent_req *winbindd_lookupsid_send(TALLOC_CTX *mem_ctx,
 NTSTATUS winbindd_lookupsid_recv(struct tevent_req *req,
 				 struct winbindd_response *response);
 
+struct tevent_req *wb_lookupname_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      const char *dom_name, const char *name,
+				      uint32_t flags);
+NTSTATUS wb_lookupname_recv(struct tevent_req *req, struct dom_sid *sid,
+			    enum lsa_SidType *type);
+
 
 #endif /*  _WINBINDD_PROTO_H_  */

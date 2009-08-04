@@ -28,4 +28,22 @@ NTSTATUS rpccli_wbint_LookupSid(struct rpc_pipe_client *cli,
 				enum lsa_SidType *type /* [out] [ref] */,
 				const char **domain /* [out] [ref,charset(UTF8)] */,
 				const char **name /* [out] [ref,charset(UTF8)] */);
+struct tevent_req *rpccli_wbint_LookupName_send(TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						struct rpc_pipe_client *cli,
+						const char *_domain /* [in] [ref,charset(UTF8)] */,
+						const char *_name /* [in] [ref,charset(UTF8)] */,
+						uint32_t _flags /* [in]  */,
+						enum lsa_SidType *_type /* [out] [ref] */,
+						struct dom_sid *_sid /* [out] [ref] */);
+NTSTATUS rpccli_wbint_LookupName_recv(struct tevent_req *req,
+				      TALLOC_CTX *mem_ctx,
+				      NTSTATUS *result);
+NTSTATUS rpccli_wbint_LookupName(struct rpc_pipe_client *cli,
+				 TALLOC_CTX *mem_ctx,
+				 const char *domain /* [in] [ref,charset(UTF8)] */,
+				 const char *name /* [in] [ref,charset(UTF8)] */,
+				 uint32_t flags /* [in]  */,
+				 enum lsa_SidType *type /* [out] [ref] */,
+				 struct dom_sid *sid /* [out] [ref] */);
 #endif /* __CLI_WBINT__ */
