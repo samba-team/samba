@@ -314,18 +314,34 @@ static int ldif_read_ntSecurityDescriptor(struct ldb_context *ldb, void *mem_ctx
 					  const struct ldb_val *in, struct ldb_val *out)
 {
 	struct security_descriptor *sd;
+
 	enum ndr_err_code ndr_err;
 
-	sd = sddl_decode(mem_ctx, (const char *)in->data, NULL);
+	sd = talloc(mem_ctx, struct security_descriptor);
 	if (sd == NULL) {
 		return -1;
 	}
+
+	ndr_err = ndr_pull_struct_blob(in, sd, NULL, sd,
+				       (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		/* If this does not parse, then it is probably SDDL, and we should try it that way */
+		
+		struct dom_sid *sid = samdb_domain_sid(ldb);
+		talloc_free(sd);
+		sd = sddl_decode(mem_ctx, (const char *)in->data, sid);
+		if (sd == NULL) {
+			return -1;
+		}
+	}
+
 	ndr_err = ndr_push_struct_blob(out, mem_ctx, NULL, sd,
 				       (ndr_push_flags_fn_t)ndr_push_security_descriptor);
 	talloc_free(sd);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return -1;
 	}
+
 	return 0;
 }
 
