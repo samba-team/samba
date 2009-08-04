@@ -555,26 +555,6 @@ void winbindd_getpwuid(struct winbindd_cli_state *state)
 	winbindd_uid2sid_async(state->mem_ctx, uid, getpwuid_recv, state);
 }
 
-/* Return a password structure given a sid */
-void winbindd_getpwsid(struct winbindd_cli_state *state)
-{
-	DOM_SID sid;
-
-	/* Ensure null termination */
-	state->request->data.sid[sizeof(state->request->data.sid)-1]='\0';
-
-	DEBUG(3, ("[%5lu]: getpwsid %s\n", (unsigned long)state->pid,
-		  state->request->data.sid));
-
-	if (!string_to_sid(&sid, state->request->data.sid)) {
-		DEBUG(5, ("%s not a SID\n", state->request->data.sid));
-		request_error(state);
-		return;
-	}
-
-	getpwsid_queryuser(state, &sid);
-}
-
 /*
  * set/get/endpwent functions
  */
