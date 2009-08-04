@@ -1599,8 +1599,8 @@ installcifsmount: @CIFSMOUNT_PROGS@
 	@$(SHELL) script/installbin.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(ROOTSBINDIR) @CIFSMOUNT_PROGS@
 
 installcifsupcall: @CIFSUPCALL_PROGS@
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(SBINDIR)
-	@$(SHELL) script/installbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(SBINDIR) @CIFSUPCALL_PROGS@
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS) $(DESTDIR) $(SBINDIR)
+	@$(SHELL) script/installbin.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(SBINDIR) @CIFSUPCALL_PROGS@
 
 # Some symlinks are required for the 'probing' of modules.
 # This mechanism should go at some point..
@@ -1734,7 +1734,7 @@ uninstallcifsmount:
 	@$(SHELL) script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(ROOTSBINDIR) @CIFSMOUNT_PROGS@
 
 uninstallcifsupcall:
-	@$(SHELL) script/uninstallbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(ROOTSBINDIR) @CIFSUPCALL_PROGS@
+	@$(SHELL) script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(ROOTSBINDIR) @CIFSUPCALL_PROGS@
 
 uninstallmodules:
 	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(VFSLIBDIR) $(VFS_MODULES)
