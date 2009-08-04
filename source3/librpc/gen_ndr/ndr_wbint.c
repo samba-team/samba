@@ -576,6 +576,103 @@ _PUBLIC_ void ndr_print_wbint_Sid2Gid(struct ndr_print *ndr, const char *name, i
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_wbint_Uid2Sid(struct ndr_push *ndr, int flags, const struct wbint_Uid2Sid *r)
+{
+	if (flags & NDR_IN) {
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.dom_name));
+		if (r->in.dom_name) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.dom_name, CH_UTF8)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.dom_name, CH_UTF8)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.dom_name, ndr_charset_length(r->in.dom_name, CH_UTF8), sizeof(uint8_t), CH_UTF8));
+		}
+		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->in.uid));
+	}
+	if (flags & NDR_OUT) {
+		if (r->out.sid == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS, r->out.sid));
+		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_wbint_Uid2Sid(struct ndr_pull *ndr, int flags, struct wbint_Uid2Sid *r)
+{
+	uint32_t _ptr_dom_name;
+	TALLOC_CTX *_mem_save_dom_name_0;
+	TALLOC_CTX *_mem_save_sid_0;
+	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_dom_name));
+		if (_ptr_dom_name) {
+			NDR_PULL_ALLOC(ndr, r->in.dom_name);
+		} else {
+			r->in.dom_name = NULL;
+		}
+		if (r->in.dom_name) {
+			_mem_save_dom_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->in.dom_name, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.dom_name));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.dom_name));
+			if (ndr_get_array_length(ndr, &r->in.dom_name) > ndr_get_array_size(ndr, &r->in.dom_name)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.dom_name), ndr_get_array_length(ndr, &r->in.dom_name));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.dom_name), sizeof(uint8_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.dom_name, ndr_get_array_length(ndr, &r->in.dom_name), sizeof(uint8_t), CH_UTF8));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dom_name_0, 0);
+		}
+		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->in.uid));
+		NDR_PULL_ALLOC(ndr, r->out.sid);
+		ZERO_STRUCTP(r->out.sid);
+	}
+	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.sid);
+		}
+		_mem_save_sid_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.sid, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS, r->out.sid));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sid_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_wbint_Uid2Sid(struct ndr_print *ndr, const char *name, int flags, const struct wbint_Uid2Sid *r)
+{
+	ndr_print_struct(ndr, name, "wbint_Uid2Sid");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "wbint_Uid2Sid");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "dom_name", r->in.dom_name);
+		ndr->depth++;
+		if (r->in.dom_name) {
+			ndr_print_string(ndr, "dom_name", r->in.dom_name);
+		}
+		ndr->depth--;
+		ndr_print_hyper(ndr, "uid", r->in.uid);
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "wbint_Uid2Sid");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "sid", r->out.sid);
+		ndr->depth++;
+		ndr_print_dom_sid(ndr, "sid", r->out.sid);
+		ndr->depth--;
+		ndr_print_NTSTATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
 static const struct ndr_interface_call wbint_calls[] = {
 	{
 		"wbint_Ping",
@@ -617,6 +714,14 @@ static const struct ndr_interface_call wbint_calls[] = {
 		(ndr_print_function_t) ndr_print_wbint_Sid2Gid,
 		false,
 	},
+	{
+		"wbint_Uid2Sid",
+		sizeof(struct wbint_Uid2Sid),
+		(ndr_push_flags_fn_t) ndr_push_wbint_Uid2Sid,
+		(ndr_pull_flags_fn_t) ndr_pull_wbint_Uid2Sid,
+		(ndr_print_function_t) ndr_print_wbint_Uid2Sid,
+		false,
+	},
 	{ NULL, 0, NULL, NULL, NULL, false }
 };
 
@@ -646,7 +751,7 @@ const struct ndr_interface_table ndr_table_wbint = {
 		NDR_WBINT_VERSION
 	},
 	.helpstring	= NDR_WBINT_HELPSTRING,
-	.num_calls	= 5,
+	.num_calls	= 6,
 	.calls		= wbint_calls,
 	.endpoints	= &wbint_endpoints,
 	.authservices	= &wbint_authservices

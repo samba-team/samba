@@ -21,10 +21,13 @@ extern const struct ndr_interface_table ndr_table_wbint;
 
 #define NDR_WBINT_SID2GID (0x04)
 
-#define NDR_WBINT_CALL_COUNT (5)
+#define NDR_WBINT_UID2SID (0x05)
+
+#define NDR_WBINT_CALL_COUNT (6)
 void ndr_print_wbint_Ping(struct ndr_print *ndr, const char *name, int flags, const struct wbint_Ping *r);
 void ndr_print_wbint_LookupSid(struct ndr_print *ndr, const char *name, int flags, const struct wbint_LookupSid *r);
 void ndr_print_wbint_LookupName(struct ndr_print *ndr, const char *name, int flags, const struct wbint_LookupName *r);
 void ndr_print_wbint_Sid2Uid(struct ndr_print *ndr, const char *name, int flags, const struct wbint_Sid2Uid *r);
 void ndr_print_wbint_Sid2Gid(struct ndr_print *ndr, const char *name, int flags, const struct wbint_Sid2Gid *r);
+void ndr_print_wbint_Uid2Sid(struct ndr_print *ndr, const char *name, int flags, const struct wbint_Uid2Sid *r);
 #endif /* _HEADER_NDR_wbint */
