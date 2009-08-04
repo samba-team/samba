@@ -79,3 +79,17 @@ NTSTATUS _wbint_Sid2Uid(pipes_struct *p, struct wbint_Sid2Uid *r)
 	*r->out.uid = uid;
 	return NT_STATUS_OK;
 }
+
+NTSTATUS _wbint_Sid2Gid(pipes_struct *p, struct wbint_Sid2Gid *r)
+{
+	gid_t gid;
+	NTSTATUS status;
+
+	status = idmap_sid_to_gid(r->in.dom_name ? r->in.dom_name : "",
+				  r->in.sid, &gid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	*r->out.gid = gid;
+	return NT_STATUS_OK;
+}

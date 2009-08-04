@@ -65,4 +65,18 @@ struct wbint_Sid2Uid {
 
 };
 
+
+struct wbint_Sid2Gid {
+	struct {
+		const char *dom_name;/* [unique,charset(UTF8)] */
+		struct dom_sid *sid;/* [ref] */
+	} in;
+
+	struct {
+		uint64_t *gid;/* [ref] */
+		NTSTATUS result;
+	} out;
+
+};
+
 #endif /* _HEADER_wbint */

@@ -1155,6 +1155,7 @@ WINBINDD_OBJ1 = \
 		winbindd/wb_lookupsid.o \
 		winbindd/wb_lookupname.o \
 		winbindd/wb_sid2uid.o \
+		winbindd/wb_sid2gid.o \
 		winbindd/winbindd_lookupsid.o \
 		winbindd/winbindd_lookupname.o \
 		winbindd/winbindd_sid_to_uid.o \
