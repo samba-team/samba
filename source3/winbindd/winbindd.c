@@ -473,7 +473,6 @@ static struct winbindd_dispatch_table {
 
 	/* Lookup related functions */
 
-	{ WINBINDD_UID_TO_SID, winbindd_uid_to_sid, "UID_TO_SID" },
 	{ WINBINDD_GID_TO_SID, winbindd_gid_to_sid, "GID_TO_SID" },
 	{ WINBINDD_ALLOCATE_UID, winbindd_allocate_uid, "ALLOCATE_UID" },
 	{ WINBINDD_ALLOCATE_GID, winbindd_allocate_gid, "ALLOCATE_GID" },
@@ -529,6 +528,8 @@ static struct winbindd_async_dispatch_table async_nonpriv_table[] = {
 	  winbindd_sid_to_uid_send, winbindd_sid_to_uid_recv },
 	{ WINBINDD_SID_TO_GID, "SID_TO_GID",
 	  winbindd_sid_to_gid_send, winbindd_sid_to_gid_recv },
+	{ WINBINDD_UID_TO_SID, "UID_TO_SID",
+	  winbindd_uid_to_sid_send, winbindd_uid_to_sid_recv },
 
 	{ 0, NULL, NULL, NULL }
 };

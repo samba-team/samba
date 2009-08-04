@@ -171,64 +171,6 @@ void winbindd_set_hwm(struct winbindd_cli_state *state)
 	winbindd_set_hwm_async(state->mem_ctx, &xid, set_hwm_recv, state);
 }
 
-/* Convert a uid to a sid */
-
-static void uid2sid_recv(void *private_data, bool success, const char *sidstr)
-{
-	struct winbindd_cli_state *state =
-		(struct winbindd_cli_state *)private_data;
-	struct dom_sid sid;
-
-	if (!success || !string_to_sid(&sid, sidstr)) {
-		ZERO_STRUCT(sid);
-		idmap_cache_set_sid2uid(&sid, state->request->data.uid);
-		request_error(state);
-		return;
-	}
-
-	DEBUG(10,("uid2sid: uid %lu has sid %s\n",
-		  (unsigned long)(state->request->data.uid), sidstr));
-
-	idmap_cache_set_sid2uid(&sid, state->request->data.uid);
-	fstrcpy(state->response->data.sid.sid, sidstr);
-	state->response->data.sid.type = SID_NAME_USER;
-	request_ok(state);
-	return;
-}
-
-void winbindd_uid_to_sid(struct winbindd_cli_state *state)
-{
-	struct dom_sid sid;
-	bool expired;
-
-	DEBUG(3, ("[%5lu]: uid to sid %lu\n", (unsigned long)state->pid, 
-		  (unsigned long)state->request->data.uid));
-
-	if (idmap_cache_find_uid2sid(state->request->data.uid, &sid,
-				     &expired)) {
-		DEBUG(10, ("idmap_cache_find_uid2sid found %d%s\n",
-			   (int)state->request->data.uid,
-			   expired ? " (expired)": ""));
-		if (expired && IS_DOMAIN_ONLINE(find_our_domain())) {
-			DEBUG(10, ("revalidating expired entry\n"));
-			goto backend;
-		}
-		if (is_null_sid(&sid)) {
-			DEBUG(10, ("Returning negative cache entry\n"));
-			request_error(state);
-			return;
-		}
-		DEBUG(10, ("Returning positive cache entry\n"));
-		sid_to_fstring(state->response->data.sid.sid, &sid);
-		request_ok(state);
-		return;
-	}
-
-	/* always go via the async interface (may block) */
- backend:
-	winbindd_uid2sid_async(state->mem_ctx, state->request->data.uid, uid2sid_recv, state);
-}
-
 /* Convert a gid to a sid */
 
 static void gid2sid_recv(void *private_data, bool success, const char *sidstr)
