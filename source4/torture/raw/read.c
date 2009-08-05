@@ -622,6 +622,11 @@ static bool test_readbraw(struct torture_context *tctx,
 	const char *test_data = "TEST DATA";
 	uint_t seed = time(NULL);
 
+	if (!cli->transport->negotiate.readbraw_supported) {
+		printf("Server does not support readbraw - skipping\n");
+		return true;
+	}
+
 	buf = talloc_zero_array(tctx, uint8_t, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
