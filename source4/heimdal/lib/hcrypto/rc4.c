@@ -33,11 +33,7 @@
 
 /* implemented from description in draft-kaukonen-cipher-arcfour-03.txt */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-
-RCSID("$Id$");
-#endif
 
 #include <rc4.h>
 

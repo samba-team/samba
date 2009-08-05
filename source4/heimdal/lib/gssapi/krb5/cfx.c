@@ -41,10 +41,10 @@
 #define CFXAcceptorSubkey	(1 << 2)
 
 krb5_error_code
-_gsskrb5cfx_wrap_length_cfx(const gsskrb5_ctx context_handle,
-			    krb5_context context,
+_gsskrb5cfx_wrap_length_cfx(krb5_context context,
 			    krb5_crypto crypto,
 			    int conf_req_flag,
+			    int dce_style,
 			    size_t input_length,
 			    size_t *output_length,
 			    size_t *cksumsize,
@@ -71,7 +71,7 @@ _gsskrb5cfx_wrap_length_cfx(const gsskrb5_ctx context_handle,
 	/* Header is concatenated with data before encryption */
 	input_length += sizeof(gss_cfx_wrap_token_desc);
 
-	if (IS_DCE_STYLE(context_handle)) {
+	if (dce_style) {
 		ret = krb5_crypto_getblocksize(context, crypto, &padsize);
 	} else {
 		ret = krb5_crypto_getpadsize(context, crypto, &padsize);
@@ -972,8 +972,9 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
     int32_t seq_number;
     u_char *p;
 
-    ret = _gsskrb5cfx_wrap_length_cfx(ctx, context,
+    ret = _gsskrb5cfx_wrap_length_cfx(context,
 				      ctx->crypto, conf_req_flag,
+				      IS_DCE_STYLE(ctx),
 				      input_message_buffer->length,
 				      &wrapped_len, &cksumsize, &padlength);
     if (ret != 0) {

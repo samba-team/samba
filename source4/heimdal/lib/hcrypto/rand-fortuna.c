@@ -29,11 +29,7 @@
  * $PostgreSQL: pgsql/contrib/pgcrypto/fortuna.c,v 1.8 2006/10/04 00:29:46 momjian Exp $
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
-
-RCSID("$Id$");
 
 #include <stdio.h>
 #include <stdlib.h>

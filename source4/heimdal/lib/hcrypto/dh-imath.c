@@ -43,8 +43,6 @@
 
 #include "imath/imath.h"
 
-RCSID("$Id$");
-
 static void
 BN2mpz(mpz_t *s, const BIGNUM *bn)
 {
