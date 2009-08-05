@@ -1112,4 +1112,7 @@ void in6_addr_to_sockaddr_storage(struct sockaddr_storage *ss,
 				  struct in6_addr ip);
 #endif
 
+/* samba3 doesn't use uwrap yet */
+#define uwrap_enabled() 0
+
 #endif /* _INCLUDES_H */
