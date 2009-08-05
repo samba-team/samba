@@ -407,19 +407,14 @@ NTSTATUS smbsrv_recv_smb_request(void *private_data, DATA_BLOB blob)
 		req->in.data = req->in.vwv + VWV(req->in.wct) + 2;
 		req->in.data_size = SVAL(req->in.vwv, VWV(req->in.wct));
 
-		/* the bcc length is only 16 bits, but some packets
-		   (such as SMBwriteX) can be much larger than 64k. We
-		   detect this by looking for a large non-chained NBT
-		   packet (at least 64k bigger than what is
-		   specified). If it is detected then the NBT size is
-		   used instead of the bcc size */
-		if (req->in.data_size + 0x10000 <= 
-		    req->in.size - PTR_DIFF(req->in.data, req->in.buffer) &&
-			( message_flags(command) & LARGE_REQUEST) &&
-			( !(message_flags(command) & AND_X) ||
-		      (req->in.wct < 1 || SVAL(req->in.vwv, VWV(0)) == SMB_CHAIN_NONE) )
-			) {
-			/* its an oversized packet! fun for all the family */
+		/* special handling for oversize calls. Windows seems
+		   to take the maximum of the BCC value and the
+		   computed buffer size. This handles oversized writeX
+		   calls, and possibly oversized SMBtrans calls */
+		if ((message_flags(command) & LARGE_REQUEST) &&
+		    ( !(message_flags(command) & AND_X) ||
+		      (req->in.wct < 1 || SVAL(req->in.vwv, VWV(0)) == SMB_CHAIN_NONE)) &&
+		    req->in.data_size < req->in.size - PTR_DIFF(req->in.data,req->in.buffer)) {
 			req->in.data_size = req->in.size - PTR_DIFF(req->in.data,req->in.buffer);
 		}
 	}
