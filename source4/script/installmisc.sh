@@ -10,7 +10,7 @@ echo "Installing setup templates"
 mkdir -p $SETUPDIR || exit 1
 mkdir -p $SETUPDIR/ad-schema || exit 1
 cp setup/ad-schema/*.txt $SETUPDIR/ad-schema || exit 1
-for p in enableaccount newuser provision provision-backend setexpiry setpassword
+for p in enableaccount newuser provision provision-backend setexpiry setpassword pwsettings
 do
 	chmod a+x setup/$p
 	cp setup/$p $SETUPDIR || exit 1

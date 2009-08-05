@@ -1,0 +1,202 @@
+#!/usr/bin/python
+#
+#	Sets password settings (Password complexity, history length,
+#	minimum password length, the minimum and maximum password age) on a
+#	Samba4 server
+#
+#	Copyright Jelmer Vernooij 2008
+#	Copyright Matthias Dieter Wallnoefer 2009
+#	Released under the GNU GPL version 3 or later
+#
+import os, sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(sys.argv[0]), "../bin/python"))
+
+import samba.getopt as options
+import optparse
+import pwd
+import ldb
+
+from samba.auth import system_session
+from samba.samdb import SamDB
+from samba.dcerpc.samr import DOMAIN_PASSWORD_COMPLEX
+
+parser = optparse.OptionParser("pwsettings (show | set <options>)")
+sambaopts = options.SambaOptions(parser)
+parser.add_option_group(sambaopts)
+parser.add_option_group(options.VersionOptions(parser))
+credopts = options.CredentialsOptions(parser)
+parser.add_option_group(credopts)
+parser.add_option("-H", help="LDB URL for database or target server", type=str)
+parser.add_option("--complexity",
+  help="The password complexity (on | off). Default is 'on'", type=str)
+parser.add_option("--history-length",
+  help="The password history length (<integer> | default)", type=str)
+parser.add_option("--min-pwd-length",
+  help="The minimum password length (<integer> | default)", type=str)
+parser.add_option("--min-pwd-age",
+  help="The minimum password age (<integer in days> | default)", type=str)
+parser.add_option("--max-pwd-age",
+  help="The maximum password age (<integer in days> | default)", type=str)
+
+opts, args = parser.parse_args()
+
+#
+#  print a message if quiet is not set
+#
+def message(text):
+	if not opts.quiet:
+		print text
+
+if len(args) == 0:
+	parser.print_usage()
+	sys.exit(1)
+
+lp = sambaopts.get_loadparm()
+
+creds = credopts.get_credentials(lp)
+
+if opts.H is not None:
+	url = opts.H
+else:
+	url = lp.get("sam database")
+
+samdb = SamDB(url=url, session_info=system_session(),
+              credentials=creds, lp=lp)
+
+res = samdb.search("", scope=ldb.SCOPE_BASE,
+	  expression="(defaultNamingContext=*)",
+	  attrs=["defaultNamingContext"])
+assert(len(res) == 1 and res[0]["defaultNamingContext"] is not None)
+domain_dn = res[0]["defaultNamingContext"][0]
+
+res = samdb.search(domain_dn, scope=ldb.SCOPE_BASE, attrs=["pwdProperties",
+  "pwdHistoryLength", "minPwdLength", "minPwdAge", "maxPwdAge"])
+assert(len(res) == 1)
+try:
+	pwd_props = int(res[0]["pwdProperties"][0])
+	pwd_hist_len = int(res[0]["pwdHistoryLength"][0])
+	min_pwd_len = int(res[0]["minPwdLength"][0])
+	min_pwd_age = int(res[0]["minPwdAge"][0])
+	max_pwd_age = int(res[0]["maxPwdAge"][0])
+except:
+	if args[0] == "show":
+		print "ERROR: Password informations missing in your AD domain object!"
+		print "So no settings can be displayed!"
+		sys.exit(1)
+	else:
+		if pwd_props is None:
+			pwd_props = 0
+			print "WARNING: Assuming previous password properties 0 (used for password complexity setting)"
+
+if args[0] == "show":
+	print "Password informations for domain '" + domain_dn + "'"
+	print ""
+	if pwd_props & DOMAIN_PASSWORD_COMPLEX != 0:
+		print "Password complexity: on"
+	else:
+		print "Password complexity: off"
+	print "Password history length: " + str(pwd_hist_len)
+	print "Minimum password length: " + str(min_pwd_len)
+	print "Minimum password age: " + str(min_pwd_age)
+	print "Maximum password age: " + str(max_pwd_age)
+
+elif args[0] == "set":
+	if opts.complexity is not None:
+		if opts.complexity == "on":
+			pwd_props = pwd_props | DOMAIN_PASSWORD_COMPLEX
+
+			m = ldb.Message()
+			m.dn = ldb.Dn(samdb, domain_dn)
+			m["pwdProperties"] = ldb.MessageElement([],
+			  ldb.CHANGETYPE_DELETE, "pwdProperties")
+			samdb.modify(m)
+			m["pwdProperties"] = ldb.MessageElement(str(pwd_props),
+			  ldb.CHANGETYPE_ADD, "pwdProperties")
+			samdb.modify(m)
+			print "Password complexity activated!"
+		elif opts.complexity == "off":
+			pwd_props = pwd_props & (~DOMAIN_PASSWORD_COMPLEX)
+
+			m = ldb.Message()
+			m.dn = ldb.Dn(samdb, domain_dn)
+			m["pwdProperties"] = ldb.MessageElement([],
+			  ldb.CHANGETYPE_DELETE, "pwdProperties")
+			samdb.modify(m)
+			m["pwdProperties"] = ldb.MessageElement(str(pwd_props),
+			  ldb.CHANGETYPE_ADD, "pwdProperties")
+			samdb.modify(m)
+			print "Password complexity deactivated!"
+		else:
+			print "ERROR: Wrong argument '" + opts.complexity + "'!"
+			sys.exit(1)
+
+	if opts.history_length is not None:
+		if opts.history_length == "default":
+			pwd_hist_len = 24
+		else:
+			pwd_hist_len = int(opts.history_length)
+
+		m = ldb.Message()
+		m.dn = ldb.Dn(samdb, domain_dn)
+		m["pwdHistoryLength"] = ldb.MessageElement([],
+		  ldb.CHANGETYPE_DELETE, "pwdHistoryLength")
+		samdb.modify(m)
+		m["pwdHistoryLength"] = ldb.MessageElement(str(pwd_hist_len),
+		  ldb.CHANGETYPE_ADD, "pwdHistoryLength")
+		samdb.modify(m)
+		print "Password history length changed!"
+
+	if opts.min_pwd_length is not None:
+		if opts.min_pwd_length == "default":
+			min_pwd_len = 7
+		else:
+			min_pwd_len = int(opts.min_pwd_length)
+
+		m = ldb.Message()
+		m.dn = ldb.Dn(samdb, domain_dn)
+		m["minPwdLength"] = ldb.MessageElement([],
+		  ldb.CHANGETYPE_DELETE, "minPwdLength")
+		samdb.modify(m)
+		m["minPwdLength"] = ldb.MessageElement(str(min_pwd_len),
+		  ldb.CHANGETYPE_ADD, "minPwdLength")
+		samdb.modify(m)
+		print "Minimum password length changed!"
+
+	if opts.min_pwd_age is not None:
+		if opts.min_pwd_age == "default":
+			min_pwd_age = 0
+		else:
+			min_pwd_age = int(opts.min_pwd_age)
+
+		m = ldb.Message()
+		m.dn = ldb.Dn(samdb, domain_dn)
+		m["minPwdAge"] = ldb.MessageElement([],
+		  ldb.CHANGETYPE_DELETE, "minPwdAge")
+		samdb.modify(m)
+		m["minPwdAge"] = ldb.MessageElement(str(min_pwd_age),
+		  ldb.CHANGETYPE_ADD, "minPwdAge")
+		samdb.modify(m)
+		print "Minimum password age changed!"
+
+	if opts.max_pwd_age is not None:
+		if opts.max_pwd_age == "default":
+			max_pwd_age = -37108517437440
+		else:
+			max_pwd_age = int(opts.max_pwd_age)
+
+		m = ldb.Message()
+		m.dn = ldb.Dn(samdb, domain_dn)
+		m["maxPwdAge"] = ldb.MessageElement([],
+		  ldb.CHANGETYPE_DELETE, "maxPwdAge")
+		samdb.modify(m)
+		m["maxPwdAge"] = ldb.MessageElement(str(max_pwd_age),
+		  ldb.CHANGETYPE_ADD, "maxPwdAge")
+		samdb.modify(m)
+		print "Maximum password age changed!"
+
+	print "All changes applied successfully!"
+
+else:
+	print "ERROR: Wrong argument '" + args[0] + "'!"
+	sys.exit(1)
