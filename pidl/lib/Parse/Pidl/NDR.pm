@@ -610,12 +610,19 @@ sub ParseTypedef($$)
 {
 	my ($d, $pointer_default) = @_;
 
-	if (defined($d->{DATA}->{PROPERTIES}) && !defined($d->{PROPERTIES})) {
-		$d->{PROPERTIES} = $d->{DATA}->{PROPERTIES};
-	}
+	my $data;
 
-	my $data = ParseType($d->{DATA}, $pointer_default);
-	$data->{ALIGN} = align_type($d->{NAME});
+	if (ref($d->{DATA}) eq "HASH") {
+		if (defined($d->{DATA}->{PROPERTIES})
+		    and not defined($d->{PROPERTIES})) {
+			$d->{PROPERTIES} = $d->{DATA}->{PROPERTIES};
+		}
+
+		$data = ParseType($d->{DATA}, $pointer_default);
+		$data->{ALIGN} = align_type($d->{NAME});
+	} else {
+		$data = getType($d->{DATA});
+	}
 
 	return {
 		NAME => $d->{NAME},
@@ -899,13 +906,13 @@ my %property_list = (
 	"out"			=> ["ELEMENT"],
 
 	# pointer
-	"ref"			=> ["ELEMENT"],
-	"ptr"			=> ["ELEMENT"],
-	"unique"		=> ["ELEMENT"],
+	"ref"			=> ["ELEMENT", "TYPEDEF"],
+	"ptr"			=> ["ELEMENT", "TYPEDEF"],
+	"unique"		=> ["ELEMENT", "TYPEDEF"],
 	"ignore"		=> ["ELEMENT"],
-	"relative"		=> ["ELEMENT"],
-	"relative_short"	=> ["ELEMENT"],
-	"null_is_ffffffff" => ["ELEMENT"],
+	"relative"		=> ["ELEMENT", "TYPEDEF"],
+	"relative_short"	=> ["ELEMENT", "TYPEDEF"],
+	"null_is_ffffffff"	=> ["ELEMENT"],
 	"relative_base"		=> ["TYPEDEF", "STRUCT", "UNION"],
 
 	"gensize"		=> ["TYPEDEF", "STRUCT", "UNION"],
@@ -1161,12 +1168,14 @@ sub ValidTypedef($)
 
 	ValidProperties($typedef, "TYPEDEF");
 
+	return unless (ref($data) eq "HASH");
+
 	$data->{PARENT} = $typedef;
 
 	$data->{FILE} = $typedef->{FILE} unless defined($data->{FILE});
 	$data->{LINE} = $typedef->{LINE} unless defined($data->{LINE});
 
-	ValidType($data) if (ref($data) eq "HASH");
+	ValidType($data);
 }
 
 #####################################################################
