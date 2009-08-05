@@ -1394,7 +1394,8 @@ struct ldb_message_element *PyObject_AsMessageElement(TALLOC_CTX *mem_ctx,
 	struct ldb_message_element *me;
 
 	if (PyLdbMessageElement_Check(set_obj))
-		return PyLdbMessageElement_AsMessageElement(set_obj);
+		return talloc_reference(mem_ctx, 
+								PyLdbMessageElement_AsMessageElement(set_obj));
 
 	me = talloc(mem_ctx, struct ldb_message_element);
 
@@ -1544,6 +1545,13 @@ static PyObject *py_ldb_msg_element_new(PyTypeObject *type, PyObject *args, PyOb
 			el->values = talloc_array(el, struct ldb_val, el->num_values);
 			for (i = 0; i < el->num_values; i++) {
 				PyObject *item = PySequence_GetItem(py_elements, i);
+				if (!PyString_Check(item)) {
+					PyErr_Format(PyExc_TypeError, 
+							"Expected string as element %d in list", 
+							i);
+					talloc_free(mem_ctx);
+					return NULL;
+				}
 				el->values[i].length = PyString_Size(item);
 				el->values[i].data = talloc_memdup(el, 
 					(uint8_t *)PyString_AsString(item), el->values[i].length);
