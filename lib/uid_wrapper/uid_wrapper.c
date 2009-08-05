@@ -42,6 +42,10 @@ static void uwrap_init(void)
 	uwrap.initialised = true;
 	if (getenv("UID_WRAPPER")) {
 		uwrap.enabled = true;
+		/* put us in one group */
+		uwrap.ngroups = 1;
+		uwrap.groups = talloc_array(talloc_autofree_context(), gid_t, 1);
+		uwrap.groups[0] = 0;
 	}
 }
 
@@ -101,14 +105,17 @@ _PUBLIC_ int uwrap_setgroups(size_t size, const gid_t *list)
 
 	talloc_free(uwrap.groups);
 	uwrap.ngroups = 0;
+	uwrap.groups = NULL;
 
-	uwrap.groups = talloc_array(talloc_autofree_context(), gid_t, size);
-	if (uwrap.groups == NULL) {
-		errno = ENOMEM;
-		return -1;
+	if (size != 0) {
+		uwrap.groups = talloc_array(talloc_autofree_context(), gid_t, size);
+		if (uwrap.groups == NULL) {
+			errno = ENOMEM;
+			return -1;
+		}
+		memcpy(uwrap.groups, list, size*sizeof(gid_t));
+		uwrap.ngroups = size;
 	}
-	memcpy(uwrap.groups, list, size*sizeof(gid_t));
-	uwrap.ngroups = size;
 	return 0;
 }
 
@@ -130,7 +137,7 @@ _PUBLIC_ int uwrap_getgroups(int size, gid_t *list)
 		return -1;
 	}
 	memcpy(list, uwrap.groups, size*sizeof(gid_t));
-	return 0;
+	return uwrap.ngroups;
 }
 
 _PUBLIC_ uid_t uwrap_getuid(void)
