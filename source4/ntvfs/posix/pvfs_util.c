@@ -39,7 +39,10 @@ bool pvfs_has_wildcard(const char *str)
 */
 NTSTATUS pvfs_map_errno(struct pvfs_state *pvfs, int unix_errno)
 {
-	return map_nt_error_from_unix(unix_errno);
+	NTSTATUS status;
+	status = map_nt_error_from_unix(unix_errno);
+	DEBUG(10,(__location__ " mapped unix errno %d -> %s\n", unix_errno, nt_errstr(status)));
+	return status;
 }
 
 
