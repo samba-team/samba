@@ -75,6 +75,7 @@ libcmdlinesrcdir := lib/cmdline
 poptsrcdir := ../lib/popt
 socketwrappersrcdir := ../lib/socket_wrapper
 nsswrappersrcdir := ../lib/nss_wrapper
+uidwrappersrcdir := ../lib/uid_wrapper
 appwebsrcdir := lib/appweb
 libstreamsrcdir := lib/stream
 libutilsrcdir := ../lib/util

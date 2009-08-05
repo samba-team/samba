@@ -3,7 +3,7 @@
 [MODULE::ntvfs_unixuid]
 INIT_FUNCTION = ntvfs_unixuid_init
 SUBSYSTEM = ntvfs
-PRIVATE_DEPENDENCIES = SAMDB NSS_WRAPPER
+PRIVATE_DEPENDENCIES = SAMDB NSS_WRAPPER UID_WRAPPER
 # End MODULE ntvfs_unixuid
 ################################################
 

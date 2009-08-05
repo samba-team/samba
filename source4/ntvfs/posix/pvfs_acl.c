@@ -473,6 +473,14 @@ NTSTATUS pvfs_access_check_unix(struct pvfs_state *pvfs,
 		max_bits |= SEC_STD_ALL;
 	}
 
+#ifdef UID_WRAPPER_REPLACE
+	/* when running with the uid wrapper, files will be created
+	   owned by the ruid, but we may have a different simulated 
+	   euid. We need to force the permission bits as though the 
+	   files owner matches the euid */
+	max_bits |= SEC_STD_ALL;
+#endif
+
 	if (*access_mask == SEC_FLAG_MAXIMUM_ALLOWED) {
 		*access_mask = max_bits;
 		return NT_STATUS_OK;

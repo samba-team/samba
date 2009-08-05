@@ -27,4 +27,9 @@
 
 #undef HAVE_KRB5_ENCRYPT_BLOCK
 
+#if defined(UID_WRAPPER) && !defined(UID_WRAPPER_REPLACE) && !defined(UID_WRAPPER_NOT_REPLACE)
+#define UID_WRAPPER_REPLACE
+#include "../uid_wrapper/uid_wrapper.h"
+#endif
+
 #endif

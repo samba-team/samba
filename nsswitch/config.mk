@@ -30,7 +30,8 @@ PRIVATE_DEPENDENCIES = \
 		LIBWBCLIENT \
 		LIBTEVENT \
 		UTIL_TEVENT \
-		LIBASYNC_REQ
+		LIBASYNC_REQ \
+		UID_WRAPPER
 # End BINARY nsstest
 #################################
 

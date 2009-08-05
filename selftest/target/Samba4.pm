@@ -113,6 +113,8 @@ sub check_or_start($$$)
 		$ENV{NSS_WRAPPER_PASSWD} = $env_vars->{NSS_WRAPPER_PASSWD};
 		$ENV{NSS_WRAPPER_GROUP} = $env_vars->{NSS_WRAPPER_GROUP};
 
+		$ENV{UID_WRAPPER} = "1";
+
 		# Start slapd before samba, but with the fifo on stdin
 		if (defined($self->{ldap})) {
 		    $self->slapd_start($env_vars) or 
@@ -773,7 +775,6 @@ sub provision($$$$$$$)
 [tmp]
 	path = $ctx->{tmpdir}
 	read only = no
-	ntvfs handler = posix
 	posix:sharedelay = 100000
 	posix:eadb = $ctx->{lockdir}/eadb.tdb
 	posix:oplocktimeout = 3
@@ -782,7 +783,6 @@ sub provision($$$$$$$)
 [test1]
 	path = $ctx->{tmpdir}/test1
 	read only = no
-	ntvfs handler = posix
 	posix:sharedelay = 100000
 	posix:eadb = $ctx->{lockdir}/eadb.tdb
 	posix:oplocktimeout = 3
@@ -791,7 +791,6 @@ sub provision($$$$$$$)
 [test2]
 	path = $ctx->{tmpdir}/test2
 	read only = no
-	ntvfs handler = posix
 	posix:sharedelay = 100000
 	posix:eadb = $ctx->{lockdir}/eadb.tdb
 	posix:oplocktimeout = 3

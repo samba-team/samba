@@ -57,7 +57,7 @@ auth_developer_OBJ_FILES = $(addprefix $(authsrcdir)/ntlm/, auth_developer.o)
 [MODULE::auth_unix]
 INIT_FUNCTION = auth_unix_init
 SUBSYSTEM = auth
-PRIVATE_DEPENDENCIES = CRYPT PAM PAM_ERRORS NSS_WRAPPER
+PRIVATE_DEPENDENCIES = CRYPT PAM PAM_ERRORS NSS_WRAPPER UID_WRAPPER
 
 auth_unix_OBJ_FILES = $(addprefix $(authsrcdir)/ntlm/, auth_unix.o)
 

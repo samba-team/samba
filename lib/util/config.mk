@@ -54,6 +54,7 @@ PUBLIC_HEADERS += $(addprefix $(libutilsrcdir)/, util.h \
 ASN1_UTIL_OBJ_FILES = $(libutilsrcdir)/asn1.o
 
 [SUBSYSTEM::UNIX_PRIVS]
+PRIVATE_DEPENDENCIES = UID_WRAPPER
 
 UNIX_PRIVS_OBJ_FILES = $(libutilsrcdir)/unix_privs.o
 
