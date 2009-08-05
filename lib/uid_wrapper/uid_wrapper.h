@@ -58,4 +58,6 @@
 #endif
 #define getgid	uwrap_getgid
 
+int uwrap_enabled(void);
+
 #endif /* __UID_WRAPPER_H__ */

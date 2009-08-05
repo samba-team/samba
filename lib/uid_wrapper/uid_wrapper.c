@@ -45,6 +45,13 @@ static void uwrap_init(void)
 	}
 }
 
+#undef uwrap_enabled
+_PUBLIC_ int uwrap_enabled(void)
+{
+	uwrap_init();
+	return uwrap.enabled?1:0;
+}
+
 _PUBLIC_ int uwrap_seteuid(uid_t euid)
 {
 	uwrap_init();

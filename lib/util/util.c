@@ -133,14 +133,17 @@ _PUBLIC_ bool directory_create_or_exist(const char *dname, uid_t uid,
 			umask(old_umask);
 			return false;
 		}
-		if ((st.st_uid != uid) || 
-		    ((st.st_mode & 0777) != dir_perms)) {
-#ifndef UID_WRAPPER_REPLACE
+		if (st.st_uid != uid && !uwrap_enabled()) {
+			DEBUG(0, ("invalid ownership on directory "
+				  "%s\n", dname));
+			umask(old_umask);
+			return false;
+		}
+		if ((st.st_mode & 0777) != dir_perms) {
 			DEBUG(0, ("invalid permissions on directory "
 				  "%s\n", dname));
 			umask(old_umask);
 			return false;
-#endif
 		}
 	}
 	return true;
