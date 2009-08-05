@@ -473,7 +473,7 @@ NTSTATUS pvfs_access_check_unix(struct pvfs_state *pvfs,
 		max_bits |= SEC_STD_ALL;
 	}
 
-	if (!uwrap_enabled()) {
+	if (uwrap_enabled()) {
 		/* when running with the uid wrapper, files will be created
 		   owned by the ruid, but we may have a different simulated 
 		   euid. We need to force the permission bits as though the 
