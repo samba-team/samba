@@ -1063,7 +1063,7 @@ void smbsrv_reply_write_and_X(struct smbsrv_request *req)
 
 	/* make sure the data is in bounds */
 	if (req_data_oob(&req->in.bufinfo, io->writex.in.data, io->writex.in.count)) {
-		smbsrv_send_error(req, NT_STATUS_FOOBAR);
+		smbsrv_send_error(req, NT_STATUS_DOS(ERRSRV, ERRerror));
 		return;
 	}
 
