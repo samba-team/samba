@@ -928,7 +928,7 @@ my %property_list = (
 	"bitmap64bit"		=> ["BITMAP"],
 
 	# array
-	"range"			=> ["ELEMENT"],
+	"range"			=> ["ELEMENT", "PIPE"],
 	"size_is"		=> ["ELEMENT"],
 	"string"		=> ["ELEMENT"],
 	"noheader"		=> ["ELEMENT"],
@@ -1120,6 +1120,18 @@ sub ValidUnion($)
 }
 
 #####################################################################
+# validate a pipe
+sub ValidPipe($)
+{
+	my ($pipe) = @_;
+	my $data = $pipe->{DATA};
+
+	ValidProperties($pipe, "PIPE");
+
+	fatal($pipe, $pipe->{NAME} . ": 'pipe' is not yet supported by pidl");
+}
+
+#####################################################################
 # parse a typedef
 sub ValidTypedef($)
 {
@@ -1164,7 +1176,8 @@ sub ValidType($)
 		STRUCT => \&ValidStruct,
 		UNION => \&ValidUnion,
 		ENUM => \&ValidEnum,
-		BITMAP => \&ValidBitmap
+		BITMAP => \&ValidBitmap,
+		PIPE => \&ValidPipe
 	}->{$t->{TYPE}}->($t);
 }
 
@@ -1206,7 +1219,8 @@ sub ValidInterface($)
 		 $d->{TYPE} eq "STRUCT" or
 	 	 $d->{TYPE} eq "UNION" or 
 	 	 $d->{TYPE} eq "ENUM" or
-		 $d->{TYPE} eq "BITMAP") && ValidType($d);
+		 $d->{TYPE} eq "BITMAP" or
+		 $d->{TYPE} eq "PIPE") && ValidType($d);
 	}
 
 }

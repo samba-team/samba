@@ -189,6 +189,8 @@ usertype:
 	enum
 	|
 	bitmap
+	|
+	pipe
 ;
 
 typedecl:
@@ -377,6 +379,17 @@ pointers:
 	{ 0 }
 	|
 	pointers '*'  { $_[1]+1 }
+;
+
+pipe:
+	property_list 'pipe' type
+	{{
+		"TYPE" => "PIPE",
+		"PROPERTIES" => $_[1],
+		"DATA" => $_[3],
+		"FILE" => $_[0]->YYData->{FILE},
+		"LINE" => $_[0]->YYData->{LINE},
+	}}
 ;
 
 element_list1:
@@ -603,7 +616,7 @@ again:
 			if ($1 =~
 			    /^(coclass|interface|import|importlib
 			      |include|cpp_quote|typedef
-			      |union|struct|enum|bitmap
+			      |union|struct|enum|bitmap|pipe
 			      |void|const|unsigned|signed)$/x) {
 				return $1;
 			}
