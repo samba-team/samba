@@ -1,8 +1,8 @@
 /* 
    ldb database library
 
-   Copyright (C) Andrew Bartlet 2005
-   Copyright (C) Simo Sorce     2006-2008
+   Copyright (C) Andrew Bartlett 2005
+   Copyright (C) Simo Sorce 2006-2008
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -23,13 +23,13 @@
 */
 
 /*
- *  Name: rdb_name
+ *  Name: rdn_name
  *
  *  Component: ldb rdn name module
  *
  *  Description: keep a consistent name attribute on objects manpulations
  *
- *  Author: Andrew Bartlet
+ *  Author: Andrew Bartlett
  *
  *  Modifications:
  *    - made the module async
