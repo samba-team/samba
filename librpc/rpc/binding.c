@@ -45,7 +45,7 @@ static const struct {
 	{ "ncadg_ip_udp", NCACN_IP_UDP, 3, 
 		{ EPM_PROTOCOL_NCADG, EPM_PROTOCOL_UDP, EPM_PROTOCOL_IP } },
 	{ "ncalrpc", NCALRPC, 2, 
-		{ EPM_PROTOCOL_NCALRPC, EPM_PROTOCOL_PIPE } },
+		{ EPM_PROTOCOL_NCALRPC, EPM_PROTOCOL_NAMED_PIPE } },
 	{ "ncacn_unix_stream", NCACN_UNIX_STREAM, 2, 
 		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_UNIX_DS } },
 	{ "ncadg_unix_dgram", NCADG_UNIX_DGRAM, 2, 
@@ -130,8 +130,8 @@ const char *epm_floor_string(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor)
 		case EPM_PROTOCOL_IP:
 			return talloc_asprintf(mem_ctx, "IP:%s", epm_floor->rhs.ip.ipaddr);
 
-		case EPM_PROTOCOL_PIPE:
-			return talloc_asprintf(mem_ctx, "PIPE:%s", epm_floor->rhs.pipe.path);
+		case EPM_PROTOCOL_NAMED_PIPE:
+			return talloc_asprintf(mem_ctx, "NAMED-PIPE:%s", epm_floor->rhs.named_pipe.path);
 
 		case EPM_PROTOCOL_SMB:
 			return talloc_asprintf(mem_ctx, "SMB:%s", epm_floor->rhs.smb.unc);
@@ -440,9 +440,9 @@ const char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *epm
 		if (strlen(epm_floor->rhs.smb.unc) == 0) return NULL;
 		return talloc_strdup(mem_ctx, epm_floor->rhs.smb.unc);
 
-	case EPM_PROTOCOL_PIPE:
-		if (strlen(epm_floor->rhs.pipe.path) == 0) return NULL;
-		return talloc_strdup(mem_ctx, epm_floor->rhs.pipe.path);
+	case EPM_PROTOCOL_NAMED_PIPE:
+		if (strlen(epm_floor->rhs.named_pipe.path) == 0) return NULL;
+		return talloc_strdup(mem_ctx, epm_floor->rhs.named_pipe.path);
 
 	case EPM_PROTOCOL_NETBIOS:
 		if (strlen(epm_floor->rhs.netbios.name) == 0) return NULL;
@@ -510,9 +510,9 @@ static NTSTATUS dcerpc_floor_set_rhs_data(TALLOC_CTX *mem_ctx,
 		NT_STATUS_HAVE_NO_MEMORY(epm_floor->rhs.smb.unc);
 		return NT_STATUS_OK;
 
-	case EPM_PROTOCOL_PIPE:
-		epm_floor->rhs.pipe.path = talloc_strdup(mem_ctx, data);
-		NT_STATUS_HAVE_NO_MEMORY(epm_floor->rhs.pipe.path);
+	case EPM_PROTOCOL_NAMED_PIPE:
+		epm_floor->rhs.named_pipe.path = talloc_strdup(mem_ctx, data);
+		NT_STATUS_HAVE_NO_MEMORY(epm_floor->rhs.named_pipe.path);
 		return NT_STATUS_OK;
 
 	case EPM_PROTOCOL_NETBIOS:
