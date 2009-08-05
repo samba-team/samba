@@ -1544,9 +1544,9 @@ static PyObject *py_ldb_msg_element_new(PyTypeObject *type, PyObject *args, PyOb
 			el->values = talloc_array(el, struct ldb_val, el->num_values);
 			for (i = 0; i < el->num_values; i++) {
 				PyObject *item = PySequence_GetItem(py_elements, i);
+				el->values[i].length = PyString_Size(item);
 				el->values[i].data = talloc_memdup(el, 
 					(uint8_t *)PyString_AsString(item), el->values[i].length);
-				el->values[i].length = PyString_Size(item);
 			}
 		} else {
 			PyErr_SetString(PyExc_TypeError, 
