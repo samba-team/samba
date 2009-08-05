@@ -269,18 +269,6 @@ static bool test_error_codes(struct torture_context *tctx,
 		}
 	}
 
-	printf(" Try a wrong removal\n");
-
-	msg->type = LDAP_TAG_DelRequest;
-	msg->r.DelRequest.dn = "";
-
-	req = ldap_request_send(conn, msg);
-	if (!req) {
-		return false;
-	}
-
-	status = ldap_result_one(req, &rep, LDAP_TAG_DelResponse);
-
 	printf(" Try a wrong modification\n");
 
 	msg->type = LDAP_TAG_ModifyRequest;
