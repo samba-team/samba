@@ -40,7 +40,7 @@ void ndr_print_epm_rhs_ncacn(struct ndr_print *ndr, const char *name, const stru
 void ndr_print_epm_rhs_uuid(struct ndr_print *ndr, const char *name, const struct epm_rhs_uuid *r);
 void ndr_print_epm_rhs_ipx(struct ndr_print *ndr, const char *name, const struct epm_rhs_ipx *r);
 void ndr_print_epm_rhs_smb(struct ndr_print *ndr, const char *name, const struct epm_rhs_smb *r);
-void ndr_print_epm_rhs_pipe(struct ndr_print *ndr, const char *name, const struct epm_rhs_pipe *r);
+void ndr_print_epm_rhs_named_pipe(struct ndr_print *ndr, const char *name, const struct epm_rhs_named_pipe *r);
 void ndr_print_epm_rhs_netbios(struct ndr_print *ndr, const char *name, const struct epm_rhs_netbios *r);
 void ndr_print_epm_rhs_netbeui(struct ndr_print *ndr, const char *name, const struct epm_rhs_netbeui *r);
 void ndr_print_epm_rhs_spx(struct ndr_print *ndr, const char *name, const struct epm_rhs_spx *r);

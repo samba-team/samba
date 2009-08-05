@@ -35,7 +35,7 @@ _PUBLIC_ void ndr_print_epm_protocol(struct ndr_print *ndr, const char *name, en
 		case EPM_PROTOCOL_UUID: val = "EPM_PROTOCOL_UUID"; break;
 		case EPM_PROTOCOL_IPX: val = "EPM_PROTOCOL_IPX"; break;
 		case EPM_PROTOCOL_SMB: val = "EPM_PROTOCOL_SMB"; break;
-		case EPM_PROTOCOL_PIPE: val = "EPM_PROTOCOL_PIPE"; break;
+		case EPM_PROTOCOL_NAMED_PIPE: val = "EPM_PROTOCOL_NAMED_PIPE"; break;
 		case EPM_PROTOCOL_NETBIOS: val = "EPM_PROTOCOL_NETBIOS"; break;
 		case EPM_PROTOCOL_NETBEUI: val = "EPM_PROTOCOL_NETBEUI"; break;
 		case EPM_PROTOCOL_SPX: val = "EPM_PROTOCOL_SPX"; break;
@@ -391,7 +391,7 @@ _PUBLIC_ void ndr_print_epm_rhs_smb(struct ndr_print *ndr, const char *name, con
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_epm_rhs_pipe(struct ndr_push *ndr, int ndr_flags, const struct epm_rhs_pipe *r)
+static enum ndr_err_code ndr_push_epm_rhs_named_pipe(struct ndr_push *ndr, int ndr_flags, const struct epm_rhs_named_pipe *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -407,7 +407,7 @@ static enum ndr_err_code ndr_push_epm_rhs_pipe(struct ndr_push *ndr, int ndr_fla
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_epm_rhs_pipe(struct ndr_pull *ndr, int ndr_flags, struct epm_rhs_pipe *r)
+static enum ndr_err_code ndr_pull_epm_rhs_named_pipe(struct ndr_pull *ndr, int ndr_flags, struct epm_rhs_named_pipe *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -423,9 +423,9 @@ static enum ndr_err_code ndr_pull_epm_rhs_pipe(struct ndr_pull *ndr, int ndr_fla
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_epm_rhs_pipe(struct ndr_print *ndr, const char *name, const struct epm_rhs_pipe *r)
+_PUBLIC_ void ndr_print_epm_rhs_named_pipe(struct ndr_print *ndr, const char *name, const struct epm_rhs_named_pipe *r)
 {
-	ndr_print_struct(ndr, name, "epm_rhs_pipe");
+	ndr_print_struct(ndr, name, "epm_rhs_named_pipe");
 	ndr->depth++;
 	ndr_print_string(ndr, "path", r->path);
 	ndr->depth--;
@@ -916,8 +916,8 @@ static enum ndr_err_code ndr_push_epm_rhs(struct ndr_push *ndr, int ndr_flags, c
 					NDR_CHECK(ndr_push_epm_rhs_smb(ndr, NDR_SCALARS, &r->smb));
 				break; }
 
-				case EPM_PROTOCOL_PIPE: {
-					NDR_CHECK(ndr_push_epm_rhs_pipe(ndr, NDR_SCALARS, &r->pipe));
+				case EPM_PROTOCOL_NAMED_PIPE: {
+					NDR_CHECK(ndr_push_epm_rhs_named_pipe(ndr, NDR_SCALARS, &r->named_pipe));
 				break; }
 
 				case EPM_PROTOCOL_NETBIOS: {
@@ -1022,7 +1022,7 @@ static enum ndr_err_code ndr_push_epm_rhs(struct ndr_push *ndr, int ndr_flags, c
 				case EPM_PROTOCOL_SMB:
 				break;
 
-				case EPM_PROTOCOL_PIPE:
+				case EPM_PROTOCOL_NAMED_PIPE:
 				break;
 
 				case EPM_PROTOCOL_NETBIOS:
@@ -1131,8 +1131,8 @@ static enum ndr_err_code ndr_pull_epm_rhs(struct ndr_pull *ndr, int ndr_flags, u
 					NDR_CHECK(ndr_pull_epm_rhs_smb(ndr, NDR_SCALARS, &r->smb));
 				break; }
 
-				case EPM_PROTOCOL_PIPE: {
-					NDR_CHECK(ndr_pull_epm_rhs_pipe(ndr, NDR_SCALARS, &r->pipe));
+				case EPM_PROTOCOL_NAMED_PIPE: {
+					NDR_CHECK(ndr_pull_epm_rhs_named_pipe(ndr, NDR_SCALARS, &r->named_pipe));
 				break; }
 
 				case EPM_PROTOCOL_NETBIOS: {
@@ -1236,7 +1236,7 @@ static enum ndr_err_code ndr_pull_epm_rhs(struct ndr_pull *ndr, int ndr_flags, u
 				case EPM_PROTOCOL_SMB:
 				break;
 
-				case EPM_PROTOCOL_PIPE:
+				case EPM_PROTOCOL_NAMED_PIPE:
 				break;
 
 				case EPM_PROTOCOL_NETBIOS:
@@ -1345,8 +1345,8 @@ _PUBLIC_ void ndr_print_epm_rhs(struct ndr_print *ndr, const char *name, const u
 				ndr_print_epm_rhs_smb(ndr, "smb", &r->smb);
 			break;
 
-			case EPM_PROTOCOL_PIPE:
-				ndr_print_epm_rhs_pipe(ndr, "pipe", &r->pipe);
+			case EPM_PROTOCOL_NAMED_PIPE:
+				ndr_print_epm_rhs_named_pipe(ndr, "named_pipe", &r->named_pipe);
 			break;
 
 			case EPM_PROTOCOL_NETBIOS:
