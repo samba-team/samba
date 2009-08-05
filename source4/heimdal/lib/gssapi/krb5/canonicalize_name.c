@@ -48,7 +48,7 @@ OM_uint32 _gsskrb5_canonicalize_name (
 
     GSSAPI_KRB5_INIT (&context);
 
-    ret = _gsskrb5_canon_name(minor_status, context, 1, input_name, &name);
+    ret = _gsskrb5_canon_name(minor_status, context, 1, NULL, input_name, &name);
     if (ret)
 	return ret;
 

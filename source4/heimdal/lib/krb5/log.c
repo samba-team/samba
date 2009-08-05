@@ -220,17 +220,16 @@ log_file(const char *timestr,
 {
     struct file_data *f = data;
     char *msgclean;
-    size_t len = strlen(msg) + 1;
+    size_t len = strlen(msg);
     if(f->keep_open == 0)
 	f->fd = fopen(f->filename, f->mode);
     if(f->fd == NULL)
 	return;
     /* make sure the log doesn't contain special chars */
-    len *= 4;
-    msgclean = malloc(len);
+    msgclean = malloc((len + 1) * 4);
     if (msgclean == NULL)
 	goto out;
-    strvisx(rk_UNCONST(msg), msgclean, len, VIS_OCTAL);
+    strvisx(msgclean, rk_UNCONST(msg), len, VIS_OCTAL);
     fprintf(f->fd, "%s %s\n", timestr, msgclean);
     free(msgclean);
  out:

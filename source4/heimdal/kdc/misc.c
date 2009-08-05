@@ -65,12 +65,15 @@ _kdc_db_fetch(krb5_context context,
 				       "malformed request: "
 				       "enterprise name with %d name components",
 				       principal->name.name_string.len);
+		free(ent);
 		return ret;
 	    }
 	    ret = krb5_parse_name(context, principal->name.name_string.val[0],
 				  &enterprise_principal);
-	    if (ret)
+	    if (ret) {
+		free(ent);
 		return ret;
+	    }
 
 	    principal = enterprise_principal;
 	}
@@ -98,7 +101,8 @@ _kdc_db_fetch(krb5_context context,
 	}
     }
     free(ent);
-    krb5_set_error_message(context, HDB_ERR_NOENTRY, "no such entry found in hdb");
+    krb5_set_error_message(context, HDB_ERR_NOENTRY,
+			   "no such entry found in hdb");
     return HDB_ERR_NOENTRY;
 }
 

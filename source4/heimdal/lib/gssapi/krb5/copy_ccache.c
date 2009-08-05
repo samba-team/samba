@@ -63,11 +63,11 @@ gss_krb5_copy_ccache(OM_uint32 *minor_status,
 
 
 OM_uint32
-_gsskrb5_import_cred(OM_uint32 *minor_status,
-		     krb5_ccache id,
-		     krb5_principal keytab_principal,
-		     krb5_keytab keytab,
-		     gss_cred_id_t *cred)
+_gsskrb5_krb5_import_cred(OM_uint32 *minor_status,
+			  krb5_ccache id,
+			  krb5_principal keytab_principal,
+			  krb5_keytab keytab,
+			  gss_cred_id_t *cred)
 {
     krb5_context context;
     krb5_error_code kret;

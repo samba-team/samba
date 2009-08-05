@@ -198,6 +198,13 @@ der_get_bmp_string (const unsigned char *p, size_t len,
     for (i = 0; i < data->length; i++) {
 	data->data[i] = (p[0] << 8) | p[1];
 	p += 2;
+	/* check for NUL in the middle of the string */
+	if (data->data[i] == 0 && i != (data->length - 1)) {
+	    free(data->data);
+	    data->data = NULL;
+	    data->length = 0;
+	    return ASN1_BAD_CHARACTER;
+	}
     }
     if (size) *size = len;
 
@@ -222,6 +229,13 @@ der_get_universal_string (const unsigned char *p, size_t len,
     for (i = 0; i < data->length; i++) {
 	data->data[i] = (p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3];
 	p += 4;
+	/* check for NUL in the middle of the string */
+	if (data->data[i] == 0 && i != (data->length - 1)) {
+	    free(data->data);
+	    data->data = NULL;
+	    data->length = 0;
+	    return ASN1_BAD_CHARACTER;
+	}
     }
     if (size) *size = len;
     return 0;

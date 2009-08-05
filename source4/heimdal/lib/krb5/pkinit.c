@@ -1402,6 +1402,7 @@ pk_rd_pa_reply_dh(krb5_context context,
 				       kdc_dh_pubkey, ctx->u.dh);
 	if (dh_gen_keylen == -1) {
 	    ret = KRB5KRB_ERR_GENERIC;
+	    dh_gen_keylen = 0;
 	    krb5_set_error_message(context, ret,
 				   N_("PKINIT: Can't compute Diffie-Hellman key", ""));
 	    goto out;
@@ -1446,6 +1447,7 @@ pk_rd_pa_reply_dh(krb5_context context,
 	EC_KEY_free(public);
 	if (dh_gen_keylen == -1) {
 	    ret = KRB5KRB_ERR_GENERIC;
+	    dh_gen_keylen = 0;
 	    krb5_set_error_message(context, ret,
 				   N_("PKINIT: Can't compute ECDH public key", ""));
 	    goto out;
@@ -1455,6 +1457,14 @@ pk_rd_pa_reply_dh(krb5_context context,
 #endif
     }
 	
+    if (dh_gen_keylen <= 0) {
+	ret = EINVAL;
+	krb5_set_error_message(context, ret,
+			       N_("PKINIT: resulting DH key <= 0", ""));
+	dh_gen_keylen = 0;
+	goto out;
+    }
+
     *key = malloc (sizeof (**key));
     if (*key == NULL) {
 	ret = ENOMEM;

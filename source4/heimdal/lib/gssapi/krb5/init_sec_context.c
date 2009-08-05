@@ -191,7 +191,7 @@ gsskrb5_get_creds(
     }
 
     ret = _gsskrb5_canon_name(minor_status, context, use_dns,
-			      target_name, &ctx->target);
+			      ctx->source, target_name, &ctx->target);
     if (ret)
 	return ret;
 

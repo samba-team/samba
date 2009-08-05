@@ -284,7 +284,7 @@ generate_dh_keyblock(krb5_context context,
 	dh_gen_keylen = ECDH_compute_key(dh_gen_key, size, 
 					 EC_KEY_get0_public_key(client_params->u.ecdh.public_key),
 					 client_params->u.ecdh.key, NULL);
-	ret = 0;
+
 #endif /* HAVE_OPENSSL */
     } else {
 	ret = KRB5KRB_ERR_GENERIC;
@@ -1450,8 +1450,10 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 
 	ret = krb5_generate_random_keyblock(context, sessionetype, 
 					    sessionkey);
-	if (ret)
+	if (ret) {
+	    free(buf);
 	    goto out;
+	}
 
     } else
 	krb5_abortx(context, "PK-INIT internal error");
@@ -1981,12 +1983,14 @@ _kdc_pk_initialize(krb5_context context,
 		hx509_name name;
 		char *str;
 		ret = hx509_cert_get_subject(cert, &name);
-		hx509_name_to_string(name, &str);
-		krb5_warnx(context, "WARNING Found KDC certificate (%s)"
-			   "is missing the PK-INIT KDC EKU, this is bad for "
-			   "interoperability.", str);
-		hx509_name_free(&name);
-		free(str);
+		if (ret == 0) {
+		    hx509_name_to_string(name, &str);
+		    krb5_warnx(context, "WARNING Found KDC certificate (%s)"
+			       "is missing the PK-INIT KDC EKU, this is bad for "
+			       "interoperability.", str);
+		    hx509_name_free(&name);
+		    free(str);
+		}
 	    }
 	    hx509_cert_free(cert);
 	} else

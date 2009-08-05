@@ -470,7 +470,10 @@ static gssapi_mech_interface_desc krb5_mech = {
     _gsskrb5_pseudo_random,
     _gk_wrap_iov,
     _gk_unwrap_iov,
-    _gk_wrap_iov_length
+    _gk_wrap_iov_length,
+    _gsskrb5_store_cred,
+    _gsskrb5_export_cred,
+    _gsskrb5_import_cred
 };
 
 gssapi_mech_interface

@@ -63,6 +63,14 @@
 #endif
 #endif
 
+#ifdef __cplusplus
+#define GSSAPI_CPP_START	extern "C" {
+#define GSSAPI_CPP_END		}
+#else
+#define GSSAPI_CPP_START
+#define GSSAPI_CPP_END
+#endif
+
 /*
  * Now define the three implementation-dependent types.
  */
@@ -243,9 +251,7 @@ typedef OM_uint32 gss_qop_t;
 #define GSS_IOV_BUFFER_TYPE(_t) ((_t) & ~GSS_IOV_BUFFER_TYPE_FLAG_MASK)
 #define GSS_IOV_BUFFER_FLAGS(_t) ((_t) & GSS_IOV_BUFFER_TYPE_FLAG_MASK)
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+GSSAPI_CPP_START
 
 /*
  * The implementation must reserve static storage for a
@@ -894,8 +900,17 @@ OM_uint32 GSSAPI_LIB_FUNCTION
 gss_release_iov_buffer(OM_uint32 *, gss_iov_buffer_desc *, int);
 
 
-#ifdef __cplusplus
-}
-#endif
+OM_uint32 GSSAPI_LIB_FUNCTION
+gss_export_cred(OM_uint32 * /* minor_status */,
+		gss_cred_id_t /* cred_handle */,
+		gss_buffer_t /* cred_token */);
+
+OM_uint32 GSSAPI_LIB_FUNCTION
+gss_import_cred(OM_uint32 * /* minor_status */,
+		gss_buffer_t /* cred_token */,
+		gss_cred_id_t * /* cred_handle */);
+
+
+GSSAPI_CPP_END
 
 #endif /* GSSAPI_GSSAPI_H_ */

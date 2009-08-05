@@ -43,7 +43,7 @@ struct hdb_data {
 struct hdb_cursor {
     HDB *db;
     hdb_entry_ex hdb_entry;
-    bool first, next;
+    int first, next;
     int key_idx;
 };
 
@@ -272,7 +272,10 @@ hdb_start_seq_get(krb5_context context,
     HDB *db;
    
     if (dbname == NULL) {
-	/* We don't support enumerating without being told what backend to enumerate on */
+	/*
+	 * We don't support enumerating without being told what 
+	 * backend to enumerate on
+	 */
   	ret = KRB5_KT_NOTFOUND;
 	return ret;
     }
@@ -301,91 +304,111 @@ hdb_start_seq_get(krb5_context context,
     }
 
     c->db = db;
-    c->first = true;
-    c->next = true;
+    c->first = TRUE;
+    c->next = TRUE;
     c->key_idx = 0;
 
     cursor->data = c;
     return ret;
 }
 
-static int hdb_next_entry(krb5_context context,
+static int
+hdb_next_entry(krb5_context context,
 	       krb5_keytab id,
 	       krb5_keytab_entry *entry,
 	       krb5_kt_cursor *cursor) 
 {
-	struct hdb_cursor *c = cursor->data;
-	krb5_error_code ret;
+    struct hdb_cursor *c = cursor->data;
+    krb5_error_code ret;
+    
+    memset(entry, 0, sizeof(*entry));
 
-	if (c->first) {
-		c->first = false;
-		ret = (c->db->hdb_firstkey)(context, c->db, 
-					    HDB_F_DECRYPT|
-					    HDB_F_GET_CLIENT|HDB_F_GET_SERVER|HDB_F_GET_KRBTGT,
-					    &c->hdb_entry);
-		if (ret == HDB_ERR_NOENTRY) {
-			return KRB5_KT_END;
-		} else if (ret) {
-			return ret;
-		}
+    if (c->first) {
+	c->first = FALSE;
+	ret = (c->db->hdb_firstkey)(context, c->db, 
+				    HDB_F_DECRYPT|
+				    HDB_F_GET_CLIENT|HDB_F_GET_SERVER|HDB_F_GET_KRBTGT,
+				    &c->hdb_entry);
+	if (ret == HDB_ERR_NOENTRY)
+	    return KRB5_KT_END;
+	else if (ret)
+	    return ret;
+	
+	if (c->hdb_entry.entry.keys.len == 0)
+	    hdb_free_entry(context, &c->hdb_entry);
+	else
+	    c->next = FALSE;
+    } 
+    
+    while (c->next) {
+	ret = (c->db->hdb_nextkey)(context, c->db, 
+				   HDB_F_DECRYPT|
+				   HDB_F_GET_CLIENT|HDB_F_GET_SERVER|HDB_F_GET_KRBTGT,
+				   &c->hdb_entry);
+	if (ret == HDB_ERR_NOENTRY)
+	    return KRB5_KT_END;
+	else if (ret)
+	    return ret;
+	
+	/* If no keys on this entry, try again */
+	if (c->hdb_entry.entry.keys.len == 0)
+	    hdb_free_entry(context, &c->hdb_entry);
+	else
+	    c->next = FALSE;
+    }
+    
+    /*
+     * Return next enc type (keytabs are one slot per key, while
+     * hdb is one record per principal.
+     */
+    
+    ret = krb5_copy_principal(context, 
+			      c->hdb_entry.entry.principal, 
+			      &entry->principal);
+    if (ret)
+	return ret;
 
-		if (c->hdb_entry.entry.keys.len == 0) {
-			hdb_free_entry(context, &c->hdb_entry);
-		} else {
-			c->next = false;
-		}
-	} 
+    entry->vno = c->hdb_entry.entry.kvno;
+    ret = krb5_copy_keyblock_contents(context,
+				      &c->hdb_entry.entry.keys.val[c->key_idx].key,
+				      &entry->keyblock);
+    if (ret) {
+	krb5_free_principal(context, entry->principal);
+	memset(entry, 0, sizeof(*entry));
+	return ret;
+    }
+    c->key_idx++;
+    
+    /* 
+     * Once we get to the end of the list, signal that we want the
+     * next entry
+     */
+    
+    if (c->key_idx == c->hdb_entry.entry.keys.len) {
+	hdb_free_entry(context, &c->hdb_entry);
+	c->next = TRUE;
+	c->key_idx = 0;
+    }
 
-	while (c->next) {
-		ret = (c->db->hdb_nextkey)(context, c->db, 
-					   HDB_F_DECRYPT|
-					   HDB_F_GET_CLIENT|HDB_F_GET_SERVER|HDB_F_GET_KRBTGT,
-					   &c->hdb_entry);
-		if (ret == HDB_ERR_NOENTRY) {
-			return KRB5_KT_END;
-		} else if (ret) {
-			return ret;
-		}
-		if (c->hdb_entry.entry.keys.len == 0) {
-			/* If no keys on this entry, try again */
-			hdb_free_entry(context, &c->hdb_entry);
-		} else {
-			/* We have an entry, set the flag */
-			c->next = false;
-		}
-	};
-
-	/* return next enc type (keytabs are one slot per key, while hdb is one record per principal */
-	krb5_copy_principal(context, 
-			    c->hdb_entry.entry.principal, 
-			    &entry->principal);
-	entry->vno = c->hdb_entry.entry.kvno;
-	krb5_copy_keyblock_contents(context,
-				    &c->hdb_entry.entry.keys.val[c->key_idx].key,
-				    &entry->keyblock);
-	c->key_idx++;
-
-	/* Once we get to the end of the list, signal that we want the next entry */
-	if (c->key_idx == c->hdb_entry.entry.keys.len) {
-		hdb_free_entry(context, &c->hdb_entry);
-		c->next = true;
-		c->key_idx = 0;
-	}
-	return 0;
+    return 0;
 }
 
 
-static int hdb_end_seq_get(krb5_context context,
-			   krb5_keytab id,
-			   krb5_kt_cursor *cursor) {
-	struct hdb_cursor *c = cursor->data;
-	(c->db->hdb_close)(context, c->db);
-	(c->db->hdb_destroy)(context, c->db);
-	if (!c->next) {
-		hdb_free_entry(context, &c->hdb_entry);
-	}
-	free(c);
-	return 0;
+static int
+hdb_end_seq_get(krb5_context context,
+		krb5_keytab id,
+		krb5_kt_cursor *cursor)
+{
+    struct hdb_cursor *c = cursor->data;
+
+    (c->db->hdb_close)(context, c->db);
+    (c->db->hdb_destroy)(context, c->db);
+
+    if (!c->next)
+	hdb_free_entry(context, &c->hdb_entry);
+
+    free(c);
+    return 0;
 }
 
 krb5_kt_ops hdb_kt_ops = {

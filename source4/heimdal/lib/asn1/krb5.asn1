@@ -16,7 +16,8 @@ NAME-TYPE ::= INTEGER {
 	KRB5_NT_WELLKNOWN(11),	-- Wellknown
 	KRB5_NT_ENT_PRINCIPAL_AND_ID(-130), -- Windows 2000 UPN and SID
 	KRB5_NT_MS_PRINCIPAL(-128), -- NT 4 style name
-	KRB5_NT_MS_PRINCIPAL_AND_ID(-129) -- NT style name and SID
+	KRB5_NT_MS_PRINCIPAL_AND_ID(-129), -- NT style name and SID
+	KRB5_NT_NTLM(-1200) -- NTLM name, realm is domain
 }
 
 -- message types

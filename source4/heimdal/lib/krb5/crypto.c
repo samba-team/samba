@@ -3260,10 +3260,8 @@ krb5_encrypt_iov_ivec(krb5_context context,
 	memcpy(q, data[i].data.data, data[i].data.length);
 	q += data[i].data.length;
     }
-    if (piv) {
+    if (piv)
 	memset(q, 0, piv->data.length);
-	q += piv->data.length;
-    }
 
     ret = create_checksum(context,
 			  et->keyed_checksum,
@@ -3299,10 +3297,9 @@ krb5_encrypt_iov_ivec(krb5_context context,
 	memcpy(q, data[i].data.data, data[i].data.length);
 	q += data[i].data.length;
     }
-    if (piv) {
+    if (piv)
 	memset(q, 0, piv->data.length);
-	q += piv->data.length;
-    }
+
 
     ret = _get_derived_key(context, crypto, ENCRYPTION_USAGE(usage), &dkey);
     if(ret) {
@@ -3333,10 +3330,8 @@ krb5_encrypt_iov_ivec(krb5_context context,
 	memcpy(data[i].data.data, q, data[i].data.length);
 	q += data[i].data.length;
     }
-    if (piv) {
+    if (piv)
 	memcpy(piv->data.data, q, pad_sz);
-	q += pad_sz;
-    }
 
     free(p);
 

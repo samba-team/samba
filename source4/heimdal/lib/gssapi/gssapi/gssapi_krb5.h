@@ -38,9 +38,7 @@
 
 #include <gssapi.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+GSSAPI_CPP_START
 
 #if !defined(__GNUC__) && !defined(__attribute__)
 #define __attribute__(x)
@@ -246,8 +244,6 @@ gss_krb5_set_allowable_enctypes(OM_uint32 *minor_status,
 				OM_uint32 num_enctypes,
 				int32_t *enctypes);
 
-#ifdef __cplusplus
-}
-#endif
+GSSAPI_CPP_END
 
 #endif /* GSSAPI_SPNEGO_H_ */

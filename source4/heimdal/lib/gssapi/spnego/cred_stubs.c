@@ -354,3 +354,39 @@ _gss_spnego_set_cred_option (OM_uint32 *minor_status,
 			      value);
 }
 
+
+OM_uint32
+_gss_spnego_export_cred (OM_uint32 *minor_status,
+			 gss_cred_id_t cred_handle,
+			 gss_buffer_t value)
+{
+    gssspnego_cred cred = (gssspnego_cred)cred_handle;
+
+    return gss_export_cred(minor_status, cred->negotiated_cred_id, value);
+}
+
+OM_uint32
+_gss_spnego_import_cred (OM_uint32 *minor_status,
+			 gss_buffer_t value,
+			 gss_cred_id_t *cred_handle)
+{
+    gssspnego_cred cred;
+    OM_uint32 major;
+
+    *cred_handle = GSS_C_NO_CREDENTIAL;
+
+    cred = calloc(1, sizeof(*cred));
+    if (cred == NULL) {
+	*minor_status = ENOMEM;
+	return GSS_S_FAILURE;
+    }
+    
+    major = gss_import_cred(minor_status, value, &cred->negotiated_cred_id);
+    if (major == GSS_S_COMPLETE)
+	*cred_handle = (gss_cred_id_t)cred;
+    else
+	free(cred);
+
+    return major;
+}
+

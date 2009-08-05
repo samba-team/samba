@@ -1208,19 +1208,13 @@ _kdc_as_rep(krb5_context context,
 			(unsigned)abs(kdc_time - p.patimestamp),
 			context->max_skew,
 			client_name);
-#if 1
-		/* This code is from samba, needs testing */
+
 		/*
-		 * the following is needed to make windows clients
-		 * to retry using the timestamp in the error message
-		 *
-		 * this is maybe a bug in windows to not trying when e_text
-		 * is present...
+		 * The following is needed to make windows clients to
+		 * retry using the timestamp in the error message, if
+		 * there is a e_text, they become unhappy.
 		 */
 		e_text = NULL;
-#else
-		e_text = "Too large time skew";
-#endif
 		goto out;
 	    }
 	    et.flags.pre_authent = 1;

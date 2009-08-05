@@ -66,11 +66,8 @@ gss_wrap_iov(OM_uint32 * minor_status,
 
 	m = ctx->gc_mech;
 
-	if (m->gm_wrap_iov == NULL) {
-	    if (minor_status)
-		*minor_status = 0;
+	if (m->gm_wrap_iov == NULL)
 	    return GSS_S_UNAVAILABLE;
-	}
 
 	return (m->gm_wrap_iov)(minor_status, ctx->gc_ctx,
 				conf_req_flag, qop_req, conf_state,
@@ -108,10 +105,8 @@ gss_unwrap_iov(OM_uint32 *minor_status,
 
 	m = ctx->gc_mech;
 
-	if (m->gm_unwrap_iov == NULL) {
-	    *minor_status = 0;
+	if (m->gm_unwrap_iov == NULL)
 	    return GSS_S_UNAVAILABLE;
-	}
 
 	return (m->gm_unwrap_iov)(minor_status, ctx->gc_ctx,
 				  conf_state, qop_state,
@@ -152,10 +147,8 @@ gss_wrap_iov_length(OM_uint32 * minor_status,
 
 	m = ctx->gc_mech;
 
-	if (m->gm_wrap_iov_length == NULL) {
-	    *minor_status = 0;
+	if (m->gm_wrap_iov_length == NULL)
 	    return GSS_S_UNAVAILABLE;
-	}
 
 	return (m->gm_wrap_iov_length)(minor_status, ctx->gc_ctx,
 				       conf_req_flag, qop_req, conf_state,
@@ -213,7 +206,8 @@ gss_context_query_attributes(OM_uint32 *minor_status,
 			     void *data,
 			     size_t len)
 {
-    *minor_status = 0;
+    if (minor_status)
+	*minor_status = 0;
 
     if (gss_oid_equal(GSS_C_ATTR_STREAM_SIZES, attribute)) {
 	memset(data, 0, len);

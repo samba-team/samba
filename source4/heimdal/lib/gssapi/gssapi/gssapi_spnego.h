@@ -38,9 +38,7 @@
 
 #include <gssapi.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+GSSAPI_CPP_START
 
 /*
  * RFC2478, SPNEGO:
@@ -51,8 +49,6 @@ extern "C" {
 extern GSSAPI_LIB_VARIABLE gss_OID GSS_SPNEGO_MECHANISM;
 #define gss_mech_spnego GSS_SPNEGO_MECHANISM
 
-#ifdef __cplusplus
-}
-#endif
+GSSAPI_CPP_END
 
 #endif /* GSSAPI_SPNEGO_H_ */

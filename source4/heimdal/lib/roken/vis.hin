@@ -44,6 +44,8 @@
 
 #include <sys/types.h>
 
+#include <roken.h>
+
 /*
  * to select alternate encoding format
  */
@@ -80,11 +82,8 @@
  */
 #define	UNVIS_END	1	/* no more characters */
 
-#ifdef HAVE_SYS_CDEFS_H
-#include <sys/cdefs.h>
-#endif
+ROKEN_CPP_START
 
-__BEGIN_DECLS
 char * ROKEN_LIB_FUNCTION
 	rk_vis(char *, int, int, int);
 char * ROKEN_LIB_FUNCTION
@@ -103,7 +102,7 @@ int ROKEN_LIB_FUNCTION
 	rk_strunvisx(char *, const char *, int);
 int ROKEN_LIB_FUNCTION
 	rk_unvis(char *, int, int *, int);
-__END_DECLS
+ROKEN_CPP_END
 
 #undef vis
 #define vis(a,b,c,d) rk_vis(a,b,c,d)

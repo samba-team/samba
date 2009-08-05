@@ -33,23 +33,28 @@ OM_uint32 GSSAPI_LIB_FUNCTION
 gss_release_name(OM_uint32 *minor_status,
     gss_name_t *input_name)
 {
-	struct _gss_name *name = (struct _gss_name *) *input_name;
+	struct _gss_name *name;
 
 	*minor_status = 0;
-	if (name) {
-		if (name->gn_type.elements)
-			free(name->gn_type.elements);
-		while (SLIST_FIRST(&name->gn_mn)) {
-			struct _gss_mechanism_name *mn;
-			mn = SLIST_FIRST(&name->gn_mn);
-			SLIST_REMOVE_HEAD(&name->gn_mn, gmn_link);
-			mn->gmn_mech->gm_release_name(minor_status,
-			    &mn->gmn_name);
-			free(mn);
-		}
-		gss_release_buffer(minor_status, &name->gn_value);
-		free(name);
-		*input_name = GSS_C_NO_NAME;
+
+	if (input_name == NULL || *input_name == NULL)
+	    return GSS_S_COMPLETE;
+
+	name = (struct _gss_name *) *input_name;
+
+	if (name->gn_type.elements)
+		free(name->gn_type.elements);
+	while (SLIST_FIRST(&name->gn_mn)) {
+		struct _gss_mechanism_name *mn;
+		mn = SLIST_FIRST(&name->gn_mn);
+		SLIST_REMOVE_HEAD(&name->gn_mn, gmn_link);
+		mn->gmn_mech->gm_release_name(minor_status,
+					      &mn->gmn_name);
+		free(mn);
 	}
+	gss_release_buffer(minor_status, &name->gn_value);
+	free(name);
+	*input_name = GSS_C_NO_NAME;
+
 	return (GSS_S_COMPLETE);
 }

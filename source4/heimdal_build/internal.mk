@@ -93,7 +93,8 @@ HEIMDAL_HDB_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/hdb/keytab.o \
 	$(heimdalsrcdir)/lib/hdb/mkey.o \
 	$(heimdalsrcdir)/lib/hdb/ndbm.o \
-	$(heimdalsrcdir)/lib/hdb/hdb_err.o
+	$(heimdalsrcdir)/lib/hdb/hdb_err.o \
+	$(heimdalbuildsrcdir)/hdb-glue.o
 
 $(eval $(call heimdal_proto_header_template, \
   $(heimdalsrcdir)/lib/hdb/hdb-protos.h, \
@@ -169,8 +170,10 @@ HEIMDAL_GSSAPI_KRB5_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/gssapi/krb5/release_buffer.o \
 	$(heimdalsrcdir)/lib/gssapi/krb5/external.o \
 	$(heimdalsrcdir)/lib/gssapi/krb5/compat.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/creds.o \
 	$(heimdalsrcdir)/lib/gssapi/krb5/acquire_cred.o \
 	$(heimdalsrcdir)/lib/gssapi/krb5/release_cred.o \
+	$(heimdalsrcdir)/lib/gssapi/krb5/store_cred.o \
 	$(heimdalsrcdir)/lib/gssapi/krb5/set_cred_option.o \
 	$(heimdalsrcdir)/lib/gssapi/krb5/decapsulate.o \
 	$(heimdalsrcdir)/lib/gssapi/krb5/verify_mic.o \
@@ -197,6 +200,7 @@ HEIMDAL_GSSAPI_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/gssapi/mech/gss_buffer_set.o \
 	$(heimdalsrcdir)/lib/gssapi/mech/gss_aeap.o \
 	$(heimdalsrcdir)/lib/gssapi/mech/gss_add_cred.o \
+	$(heimdalsrcdir)/lib/gssapi/mech/gss_cred.o \
 	$(heimdalsrcdir)/lib/gssapi/mech/gss_add_oid_set_member.o \
 	$(heimdalsrcdir)/lib/gssapi/mech/gss_compare_name.o \
 	$(heimdalsrcdir)/lib/gssapi/mech/gss_release_oid_set.o \

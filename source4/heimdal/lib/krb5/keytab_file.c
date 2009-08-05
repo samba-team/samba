@@ -490,7 +490,7 @@ loop:
     if(len + 4 + pos - curpos >= 8) {
 	ret = krb5_ret_uint32(cursor->sp, &utmp32);
 	if (ret == 0)
-	    entry->flags = tmp32;
+	    entry->flags = utmp32;
     } else
 	entry->flags = 0;
 

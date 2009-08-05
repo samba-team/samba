@@ -165,7 +165,6 @@ der_put_general_string (unsigned char *p, size_t len,
     if (len < slen)
 	return ASN1_OVERFLOW;
     p -= slen;
-    len -= slen;
     memcpy (p+1, *str, slen);
     *size = slen;
     return 0;
@@ -200,7 +199,6 @@ der_put_bmp_string (unsigned char *p, size_t len,
     if (len / 2 < data->length)
 	return ASN1_OVERFLOW;
     p -= data->length * 2;
-    len -= data->length * 2;
     for (i = 0; i < data->length; i++) {
 	p[1] = (data->data[i] >> 8) & 0xff;
 	p[2] = data->data[i] & 0xff;
@@ -218,7 +216,6 @@ der_put_universal_string (unsigned char *p, size_t len,
     if (len / 4 < data->length)
 	return ASN1_OVERFLOW;
     p -= data->length * 4;
-    len -= data->length * 4;
     for (i = 0; i < data->length; i++) {
 	p[1] = (data->data[i] >> 24) & 0xff;
 	p[2] = (data->data[i] >> 16) & 0xff;
@@ -244,7 +241,6 @@ der_put_octet_string (unsigned char *p, size_t len,
     if (len < data->length)
 	return ASN1_OVERFLOW;
     p -= data->length;
-    len -= data->length;
     memcpy (p+1, data->data, data->length);
     *size = data->length;
     return 0;
@@ -421,8 +417,7 @@ der_put_length_and_tag (unsigned char *p, size_t len, size_t len_val,
     e = der_put_tag (p, len, class, type, tag, &l);
     if(e)
 	return e;
-    p -= l;
-    len -= l;
+
     ret += l;
     *size = ret;
     return 0;
@@ -459,7 +454,7 @@ der_put_bit_string (unsigned char *p, size_t len,
     if (len < data_size + 1)
 	return ASN1_OVERFLOW;
     p -= data_size + 1;
-    len -= data_size + 1;
+
     memcpy (p+2, data->data, data_size);
     if (data->length && (data->length % 8) != 0)
 	p[1] = 8 - (data->length % 8);

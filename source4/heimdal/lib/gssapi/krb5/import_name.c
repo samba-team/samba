@@ -83,9 +83,10 @@ import_krb5_name (OM_uint32 *minor_status,
 
 OM_uint32
 _gsskrb5_canon_name(OM_uint32 *minor_status, krb5_context context,
-		    int use_dns, gss_name_t name, krb5_principal *out)
+		    int use_dns, krb5_const_principal sourcename, gss_name_t targetname,
+		    krb5_principal *out)
 {
-    krb5_principal p = (krb5_principal)name;
+    krb5_principal p = (krb5_principal)targetname;
     krb5_error_code ret;
     char *hostname = NULL, *service;
 
@@ -96,8 +97,11 @@ _gsskrb5_canon_name(OM_uint32 *minor_status, krb5_context context,
 	ret = krb5_copy_principal(context, p, out);
     } else if (!use_dns) {
 	ret = krb5_copy_principal(context, p, out);
-	if (ret == 0)
-	    krb5_principal_set_type(context, *out, KRB5_NT_SRV_HST);
+	if (ret)
+	    goto out;
+	krb5_principal_set_type(context, *out, KRB5_NT_SRV_HST);
+	if (sourcename)
+	    ret = krb5_principal_set_realm(context, *out, sourcename->realm);
     } else {
 	if (p->name.name_string.len == 0)
 	    return GSS_S_BAD_NAME;
@@ -113,6 +117,7 @@ _gsskrb5_canon_name(OM_uint32 *minor_status, krb5_context context,
 				      out);
     }
 
+ out:
     if (ret) {
 	*minor_status = ret;
 	return GSS_S_FAILURE;

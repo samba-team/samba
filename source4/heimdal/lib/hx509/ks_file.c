@@ -340,7 +340,7 @@ pem_func(hx509_context context, const char *type,
 
 	    ret = (*formats[j].func)(context, NULL, pem_ctx->c, 
 				     header, data, len, ai);
-	    if (ret) {
+	    if (ret && (pem_ctx->flags & HX509_CERTS_UNPROTECT_ALL)) {
 		hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
 				       "Failed parseing PEM format %s", type);
 		return ret;
@@ -354,8 +354,6 @@ pem_func(hx509_context context, const char *type,
 			       "Found no matching PEM format for %s", type);
 	return ret;
     }
-    if (ret && (pem_ctx->flags & HX509_CERTS_UNPROTECT_ALL))
-	return ret;
     return 0;
 }
 

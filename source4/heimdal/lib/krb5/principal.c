@@ -496,6 +496,18 @@ unparse_name(krb5_context context,
     return ret;
 }
 
+/**
+ * Unparse the Kerberos name into a string
+ *
+ * @param context Kerberos 5 context
+ * @param principal principal to query
+ * @param name resulting string, free with krb5_xfree()
+ *
+ * @return An krb5 error code, see krb5_get_error_message().
+ *
+ * @ingroup krb5_principal
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_unparse_name(krb5_context context,
 		  krb5_const_principal principal,
@@ -503,6 +515,19 @@ krb5_unparse_name(krb5_context context,
 {
     return unparse_name(context, principal, name, 0);
 }
+
+/**
+ * Unparse the Kerberos name into a string
+ *
+ * @param context Kerberos 5 context
+ * @param principal principal to query
+ * @param flags flag to determine the behavior
+ * @param name resulting string, free with krb5_xfree()
+ *
+ * @return An krb5 error code, see krb5_get_error_message().
+ *
+ * @ingroup krb5_principal
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_unparse_name_flags(krb5_context context,
@@ -620,7 +645,6 @@ va_princ(krb5_context context, krb5_principal p, va_list ap)
     }
 }
 
-
 static krb5_error_code
 build_principal(krb5_context context,
 		krb5_principal *principal,
@@ -733,8 +757,16 @@ krb5_copy_principal(krb5_context context,
     return 0;
 }
 
-/*
- * return TRUE iff princ1 == princ2 (without considering the realm)
+/**
+ * Return TRUE iff princ1 == princ2 (without considering the realm)
+ *
+ * @param context Kerberos 5 context
+ * @param princ1 first principal to compare
+ * @param princ2 second principal to compare
+ *
+ * @return non zero if equal, 0 if not
+ *
+ * @ingroup krb5_principal
  */
 
 krb5_boolean KRB5_LIB_FUNCTION

@@ -67,6 +67,9 @@ extern const struct units _kdc_digestunits[];
 extern struct timeval _kdc_now;
 #define kdc_time (_kdc_now.tv_sec)
 
+extern char *runas_string;
+extern char *chroot_string;
+
 void
 loop(krb5_context context, krb5_kdc_configuration *config);
 

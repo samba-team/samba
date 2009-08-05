@@ -79,7 +79,7 @@ fd_free(krb5_storage * sp)
  *
  * @ingroup krb5_storage
  *
- * @sa krb5_storage_from_emem()
+ * @sa krb5_storage_emem()
  * @sa krb5_storage_from_mem()
  * @sa krb5_storage_from_readonly_mem()
  * @sa krb5_storage_from_data()

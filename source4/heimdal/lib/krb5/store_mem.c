@@ -116,7 +116,7 @@ mem_no_trunc(krb5_storage *sp, off_t offset)
  *
  * @ingroup krb5_storage
  *
- * @sa krb5_storage_from_emem()
+ * @sa krb5_storage_mem()
  * @sa krb5_storage_from_readonly_mem()
  * @sa krb5_storage_from_data()
  * @sa krb5_storage_from_fd()
@@ -155,7 +155,7 @@ krb5_storage_from_mem(void *buf, size_t len)
  *
  * @ingroup krb5_storage
  *
- * @sa krb5_storage_from_emem()
+ * @sa krb5_storage_mem()
  * @sa krb5_storage_from_mem()
  * @sa krb5_storage_from_readonly_mem()
  * @sa krb5_storage_from_fd()
@@ -174,7 +174,7 @@ krb5_storage_from_data(krb5_data *data)
  *
  * @ingroup krb5_storage
  *
- * @sa krb5_storage_from_emem()
+ * @sa krb5_storage_mem()
  * @sa krb5_storage_from_mem()
  * @sa krb5_storage_from_data()
  * @sa krb5_storage_from_fd()

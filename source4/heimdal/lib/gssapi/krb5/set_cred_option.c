@@ -119,8 +119,8 @@ import_cred(OM_uint32 *minor_status,
     free(str);
     str = NULL;
 
-    major_stat = _gsskrb5_import_cred(minor_status, id, keytab_principal,
-				      keytab, cred_handle);
+    major_stat = _gsskrb5_krb5_import_cred(minor_status, id, keytab_principal,
+					   keytab, cred_handle);
 out:
     if (id)
 	krb5_cc_close(context, id);
