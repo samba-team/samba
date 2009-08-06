@@ -875,6 +875,7 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 		if ((strcmp(mask,"*.*") == 0) ||
 		    mask_match_search(filename,mask,False) ||
 		    mangle_mask_match(conn,filename,mask)) {
+			bool isdots = (ISDOT(dname) || ISDOTDOT(dname));
 			char mname[13];
 			struct smb_filename *smb_fname = NULL;
 			NTSTATUS status;
@@ -889,6 +890,11 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 				if (!filename) {
 					return False;
 				}
+			}
+
+			if (check_descend && !isdots) {
+				TALLOC_FREE(filename);
+				continue;
 			}
 
 			if (needslash) {
