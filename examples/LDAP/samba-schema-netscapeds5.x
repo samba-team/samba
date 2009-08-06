@@ -4,9 +4,11 @@
 ## Thomas Mueller 12.04.2003, thomas.mueller@christ-wasser.de
 ## Richard Renard rrenard@idealx.com 2005-01-28
 ## - added support for MungedDial, BadPasswordCount, BadPasswordTime, PasswordHistory, LogonHours
+## TAKEDA Yasuma yasuma@osstech.co.jp 2008-11-06
+## - added sambaTrustedDomainPassword objectClasses
 ## - in Sun One 5.2 copy it as 99samba-schema-netscapeds5.ldif
 ##
-## Samba 3.0 schema file for Netscape DS 5.x
+## Samba 3.2 schema file for Netscape DS 5.x
 ##
 ## INSTALL-DIRECTORY/slapd-your_name/config/schema/samba-schema-netscapeds5.ldif
 ####################################################################
@@ -33,6 +35,7 @@ objectClasses: ( 1.3.6.1.4.1.7165.2.2.5 NAME 'sambaDomain' SUP top STRUCTURAL DE
 objectClasses: ( 1.3.6.1.4.1.7165.1.2.2.7 NAME 'sambaUnixIdPool' SUP top AUXILIARY DESC 'Pool for allocating UNIX uids/gids' MUST ( uidNumber $ gidNumber ) X-ORIGIN 'user defined' )
 objectClasses: ( 1.3.6.1.4.1.7165.1.2.2.8 NAME 'sambaIdmapEntry' SUP top AUXILIARY DESC 'Mapping from a SID to an ID' MUST ( sambaSID ) MAY ( uidNumber $ gidNumber )  X-ORIGIN 'user defined' )
 objectClasses: ( 1.3.6.1.4.1.7165.1.2.2.9 NAME 'sambaSidEntry' SUP top STRUCTURAL DESC 'Structural Class for a SID' MUST ( sambaSID )  X-ORIGIN 'user defined' )
+objectClasses: ( 1.3.6.1.4.1.7165.2.2.15 NAME 'sambaTrustedDomainPassword' SUP top STRUCTURAL DESC 'Samba Trusted Domain Password' MUST ( sambaDomainName $ sambaSID $ sambaClearTextPassword $ sambaPwdLastSet ) MAY  ( sambaPreviousClearTextPassword ) X-ORIGIN 'user defined')
 attributeTypes: ( 1.3.6.1.4.1.7165.2.1.24 NAME 'sambaLMPassword' DESC 'LanManager Password' EQUALITY caseIgnoreIA5Match SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{32} SINGLE-VALUE X-ORIGIN 'user defined' )
 attributeTypes: ( 1.3.6.1.4.1.7165.2.1.25 NAME 'sambaNTPassword' DESC 'MD4 hash of the unicode password' EQUALITY caseIgnoreIA5Match SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{32} SINGLE-VALUE X-ORIGIN 'user defined' )
 attributeTypes: ( 1.3.6.1.4.1.7165.2.1.26 NAME 'sambaAcctFlags'	DESC 'Account Flags' EQUALITY caseIgnoreIA5Match SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{16} SINGLE-VALUE X-ORIGIN 'user defined' )
@@ -60,3 +63,5 @@ attributeTypes: ( 1.3.6.1.4.1.7165.2.1.21 NAME 'sambaNextUserRid' DESC 'Next NT 
 attributeTypes: ( 1.3.6.1.4.1.7165.2.1.22 NAME 'sambaNextGroupRid' DESC 'Next NT rid to give out for groups' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-ORIGIN 'user defined' )
 attributeTypes: ( 1.3.6.1.4.1.7165.2.1.39 NAME 'sambaNextRid' DESC 'Next NT rid to give out for anything' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-ORIGIN 'user defined' )
 attributeTypes: ( 1.3.6.1.4.1.7165.2.1.40 NAME 'sambaAlgorithmicRidBase' DESC 'Base at which the samba RID generation algorithm should operate' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-ORIGIN 'user defined' )
+attributeTypes: ( 1.3.6.1.4.1.7165.2.1.68 NAME 'sambaClearTextPassword' DESC 'Clear text password (used for trusted domain passwords)' EQUALITY octetStringMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.40 X-ORIGIN 'user defined')
+attributeTypes: ( 1.3.6.1.4.1.7165.2.1.69 NAME 'sambaPreviousClearTextPassword' DESC 'Previous clear text password (used for trusted domain passwords)' EQUALITY octetStringMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.40 X-ORIGIN 'user defined')
