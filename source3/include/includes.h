@@ -207,7 +207,11 @@ typedef int ber_int_t;
 #endif
 
 #ifndef ENOATTR
+#if defined(ENODATA)
 #define ENOATTR ENODATA
+#else
+#define ENOATTR ENOENT
+#endif
 #endif
 
 /* mutually exclusive (SuSE 8.2) */
