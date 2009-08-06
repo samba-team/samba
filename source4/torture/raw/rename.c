@@ -527,6 +527,7 @@ static bool test_dir_rename(struct torture_context *tctx, struct smbcli_state *c
         const char *dname1 = BASEDIR "\\dir_for_rename";
         const char *dname2 = BASEDIR "\\renamed_dir";
         const char *fname = BASEDIR "\\dir_for_rename\\file.txt";
+	const char *sname = BASEDIR "\\dir_for_rename:a stream:$DATA";
 	bool ret = true;
 	int fnum = -1;
 
@@ -590,6 +591,55 @@ static bool test_dir_rename(struct torture_context *tctx, struct smbcli_state *c
 	
 	status = smb_raw_rename(cli->tree, &ren_io);
 	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+
+	/* Close the file and try the rename. */
+	smbcli_close(cli->tree, fnum);
+
+	status = smb_raw_rename(cli->tree, &ren_io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/*
+	 * Now try just holding a second handle on the directory and holding
+	 * it open across a rename.  This should be allowed.
+	 */
+	io.ntcreatex.in.fname = dname2;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+
+	io.ntcreatex.in.access_mask = SEC_STD_READ_CONTROL |
+	    SEC_FILE_READ_ATTRIBUTE | SEC_FILE_READ_EA | SEC_FILE_READ_DATA;
+
+	status = smb_raw_open(cli->tree, tctx, &io);
+        CHECK_STATUS(status, NT_STATUS_OK);
+        fnum = io.ntcreatex.out.file.fnum;
+
+	ren_io.generic.level = RAW_RENAME_RENAME;
+	ren_io.rename.in.pattern1 = dname2;
+	ren_io.rename.in.pattern2 = dname1;
+	ren_io.rename.in.attrib = 0;
+
+	status = smb_raw_rename(cli->tree, &ren_io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* close our handle to the directory. */
+	smbcli_close(cli->tree, fnum);
+
+	/*
+	 * Now try opening a stream on the directory and holding it open
+	 * across a rename.  This should be allowed.
+	 */
+	io.ntcreatex.in.fname = sname;
+
+	status = smb_raw_open(cli->tree, tctx, &io);
+        CHECK_STATUS(status, NT_STATUS_OK);
+        fnum = io.ntcreatex.out.file.fnum;
+
+	ren_io.generic.level = RAW_RENAME_RENAME;
+	ren_io.rename.in.pattern1 = dname1;
+	ren_io.rename.in.pattern2 = dname2;
+	ren_io.rename.in.attrib = 0;
+
+	status = smb_raw_rename(cli->tree, &ren_io);
+	CHECK_STATUS(status, NT_STATUS_OK);
 
 done:
 	
