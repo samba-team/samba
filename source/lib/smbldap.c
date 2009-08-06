@@ -1348,7 +1348,7 @@ int smbldap_search_paged(struct smbldap_state *ldap_state,
 		goto done;
 	}
 
-	DEBUG(3,("smbldap_search_paged: search was successfull\n"));
+	DEBUG(3,("smbldap_search_paged: search was successful\n"));
 
 	rc = ldap_parse_result(ldap_state->ldap_struct, *res, NULL, NULL, 
 			       NULL, NULL, &rcontrols,  0);
