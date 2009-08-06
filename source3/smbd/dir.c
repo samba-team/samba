@@ -115,15 +115,19 @@ bool make_dir_struct(TALLOC_CTX *ctx,
  Initialise the dir bitmap.
 ****************************************************************************/
 
-void init_dptrs(void)
+bool init_dptrs(struct smbd_server_connection *sconn)
 {
-	if (dptr_bmap)
-		return;
+	if (sconn->smb1.searches.dptr_bmap) {
+		return true;
+	}
 
-	dptr_bmap = bitmap_allocate(MAX_DIRECTORY_HANDLES);
+	sconn->smb1.searches.dptr_bmap = bitmap_allocate(MAX_DIRECTORY_HANDLES);
 
-	if (!dptr_bmap)
-		exit_server("out of memory in init_dptrs");
+	if (sconn->smb1.searches.dptr_bmap == NULL) {
+		return false;
+	}
+
+	return true;
 }
 
 /****************************************************************************
@@ -142,14 +146,14 @@ static void dptr_idle(struct dptr_struct *dptr)
  Idle the oldest dptr.
 ****************************************************************************/
 
-static void dptr_idleoldest(void)
+static void dptr_idleoldest(struct smbd_server_connection *sconn)
 {
 	struct dptr_struct *dptr;
 
 	/*
 	 * Go to the end of the list.
 	 */
-	for(dptr = dirptrs; dptr && dptr->next; dptr = dptr->next)
+	for(dptr = sconn->smb1.searches.dirptrs; dptr && dptr->next; dptr = dptr->next)
 		;
 
 	if(!dptr) {
@@ -173,15 +177,16 @@ static void dptr_idleoldest(void)
  Get the struct dptr_struct for a dir index.
 ****************************************************************************/
 
-static struct dptr_struct *dptr_get(int key, bool forclose)
+static struct dptr_struct *dptr_get(struct smbd_server_connection *sconn,
+				    int key, bool forclose)
 {
 	struct dptr_struct *dptr;
 
-	for(dptr = dirptrs; dptr; dptr = dptr->next) {
+	for(dptr = sconn->smb1.searches.dirptrs; dptr; dptr = dptr->next) {
 		if(dptr->dnum == key) {
 			if (!forclose && !dptr->dir_hnd) {
-				if (dirhandles_open >= MAX_OPEN_DIRECTORIES)
-					dptr_idleoldest();
+				if (sconn->smb1.searches.dirhandles_open >= MAX_OPEN_DIRECTORIES)
+					dptr_idleoldest(sconn);
 				DEBUG(4,("dptr_get: Reopening dptr key %d\n",key));
 				if (!(dptr->dir_hnd = OpenDir(
 					      NULL, dptr->conn, dptr->path,
@@ -191,7 +196,7 @@ static struct dptr_struct *dptr_get(int key, bool forclose)
 					return False;
 				}
 			}
-			DLIST_PROMOTE(dirptrs,dptr);
+			DLIST_PROMOTE(sconn->smb1.searches.dirptrs,dptr);
 			return dptr;
 		}
 	}
@@ -202,9 +207,9 @@ static struct dptr_struct *dptr_get(int key, bool forclose)
  Get the dir path for a dir index.
 ****************************************************************************/
 
-char *dptr_path(int key)
+char *dptr_path(struct smbd_server_connection *sconn, int key)
 {
-	struct dptr_struct *dptr = dptr_get(key, False);
+	struct dptr_struct *dptr = dptr_get(sconn, key, false);
 	if (dptr)
 		return(dptr->path);
 	return(NULL);
@@ -214,9 +219,9 @@ char *dptr_path(int key)
  Get the dir wcard for a dir index.
 ****************************************************************************/
 
-char *dptr_wcard(int key)
+char *dptr_wcard(struct smbd_server_connection *sconn, int key)
 {
-	struct dptr_struct *dptr = dptr_get(key, False);
+	struct dptr_struct *dptr = dptr_get(sconn, key, false);
 	if (dptr)
 		return(dptr->wcard);
 	return(NULL);
@@ -226,9 +231,9 @@ char *dptr_wcard(int key)
  Get the dir attrib for a dir index.
 ****************************************************************************/
 
-uint16 dptr_attr(int key)
+uint16 dptr_attr(struct smbd_server_connection *sconn, int key)
 {
-	struct dptr_struct *dptr = dptr_get(key, False);
+	struct dptr_struct *dptr = dptr_get(sconn, key, false);
 	if (dptr)
 		return(dptr->attr);
 	return(0);
@@ -240,22 +245,29 @@ uint16 dptr_attr(int key)
 
 static void dptr_close_internal(struct dptr_struct *dptr)
 {
+	struct smbd_server_connection *sconn = dptr->conn->sconn;
+
 	DEBUG(4,("closing dptr key %d\n",dptr->dnum));
 
-	DLIST_REMOVE(dirptrs, dptr);
+	if (sconn == NULL) {
+		goto done;
+	}
+
+	DLIST_REMOVE(sconn->smb1.searches.dirptrs, dptr);
 
 	/*
 	 * Free the dnum in the bitmap. Remember the dnum value is always 
 	 * biased by one with respect to the bitmap.
 	 */
 
-	if(bitmap_query( dptr_bmap, dptr->dnum - 1) != True) {
+	if(bitmap_query(sconn->smb1.searches.dptr_bmap, dptr->dnum - 1) != true) {
 		DEBUG(0,("dptr_close_internal : Error - closing dnum = %d and bitmap not set !\n",
 			dptr->dnum ));
 	}
 
-	bitmap_clear(dptr_bmap, dptr->dnum - 1);
+	bitmap_clear(sconn->smb1.searches.dptr_bmap, dptr->dnum - 1);
 
+done:
 	TALLOC_FREE(dptr->dir_hnd);
 
 	/* Lanman 2 specific code */
@@ -268,7 +280,7 @@ static void dptr_close_internal(struct dptr_struct *dptr)
  Close a dptr given a key.
 ****************************************************************************/
 
-void dptr_close(int *key)
+void dptr_close(struct smbd_server_connection *sconn, int *key)
 {
 	struct dptr_struct *dptr;
 
@@ -278,7 +290,7 @@ void dptr_close(int *key)
 	/* OS/2 seems to use -1 to indicate "close all directories" */
 	if (*key == -1) {
 		struct dptr_struct *next;
-		for(dptr = dirptrs; dptr; dptr = next) {
+		for(dptr = sconn->smb1.searches.dirptrs; dptr; dptr = next) {
 			next = dptr->next;
 			dptr_close_internal(dptr);
 		}
@@ -286,7 +298,7 @@ void dptr_close(int *key)
 		return;
 	}
 
-	dptr = dptr_get(*key, True);
+	dptr = dptr_get(sconn, *key, true);
 
 	if (!dptr) {
 		DEBUG(0,("Invalid key %d given to dptr_close\n", *key));
@@ -305,10 +317,17 @@ void dptr_close(int *key)
 void dptr_closecnum(connection_struct *conn)
 {
 	struct dptr_struct *dptr, *next;
-	for(dptr = dirptrs; dptr; dptr = next) {
+	struct smbd_server_connection *sconn = conn->sconn;
+
+	if (sconn == NULL) {
+		return;
+	}
+
+	for(dptr = sconn->smb1.searches.dirptrs; dptr; dptr = next) {
 		next = dptr->next;
-		if (dptr->conn == conn)
+		if (dptr->conn == conn) {
 			dptr_close_internal(dptr);
+		}
 	}
 }
 
@@ -319,9 +338,16 @@ void dptr_closecnum(connection_struct *conn)
 void dptr_idlecnum(connection_struct *conn)
 {
 	struct dptr_struct *dptr;
-	for(dptr = dirptrs; dptr; dptr = dptr->next) {
-		if (dptr->conn == conn && dptr->dir_hnd)
+	struct smbd_server_connection *sconn = conn->sconn;
+
+	if (sconn == NULL) {
+		return;
+	}
+
+	for(dptr = sconn->smb1.searches.dirptrs; dptr; dptr = dptr->next) {
+		if (dptr->conn == conn && dptr->dir_hnd) {
 			dptr_idle(dptr);
+		}
 	}
 }
 
@@ -329,10 +355,11 @@ void dptr_idlecnum(connection_struct *conn)
  Close a dptr that matches a given path, only if it matches the spid also.
 ****************************************************************************/
 
-void dptr_closepath(char *path,uint16 spid)
+void dptr_closepath(struct smbd_server_connection *sconn,
+		    char *path,uint16 spid)
 {
 	struct dptr_struct *dptr, *next;
-	for(dptr = dirptrs; dptr; dptr = next) {
+	for(dptr = sconn->smb1.searches.dirptrs; dptr; dptr = next) {
 		next = dptr->next;
 		if (spid == dptr->spid && strequal(dptr->path,path))
 			dptr_close_internal(dptr);
@@ -345,14 +372,15 @@ void dptr_closepath(char *path,uint16 spid)
  finished with that one.
 ****************************************************************************/
 
-static void dptr_close_oldest(bool old)
+static void dptr_close_oldest(struct smbd_server_connection *sconn,
+			      bool old)
 {
 	struct dptr_struct *dptr;
 
 	/*
 	 * Go to the end of the list.
 	 */
-	for(dptr = dirptrs; dptr && dptr->next; dptr = dptr->next)
+	for(dptr = sconn->smb1.searches.dirptrs; dptr && dptr->next; dptr = dptr->next)
 		;
 
 	if(!dptr) {
@@ -387,11 +415,17 @@ static void dptr_close_oldest(bool old)
 NTSTATUS dptr_create(connection_struct *conn, const char *path, bool old_handle, bool expect_close,uint16 spid,
 		const char *wcard, bool wcard_has_wild, uint32 attr, struct dptr_struct **dptr_ret)
 {
+	struct smbd_server_connection *sconn = conn->sconn;
 	struct dptr_struct *dptr = NULL;
 	struct smb_Dir *dir_hnd;
 	NTSTATUS status;
 
 	DEBUG(5,("dptr_create dir=%s\n", path));
+
+	if (sconn == NULL) {
+		DEBUG(0,("dptr_create: called with fake connection_struct\n"));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 
 	if (!wcard) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -407,8 +441,8 @@ NTSTATUS dptr_create(connection_struct *conn, const char *path, bool old_handle,
 		return map_nt_error_from_unix(errno);
 	}
 
-	if (dirhandles_open >= MAX_OPEN_DIRECTORIES) {
-		dptr_idleoldest();
+	if (sconn->smb1.searches.dirhandles_open >= MAX_OPEN_DIRECTORIES) {
+		dptr_idleoldest(sconn);
 	}
 
 	dptr = SMB_MALLOC_P(struct dptr_struct);
@@ -427,7 +461,7 @@ NTSTATUS dptr_create(connection_struct *conn, const char *path, bool old_handle,
 		 * value we return will fit in the range 1-255.
 		 */
 
-		dptr->dnum = bitmap_find(dptr_bmap, 0);
+		dptr->dnum = bitmap_find(sconn->smb1.searches.dptr_bmap, 0);
 
 		if(dptr->dnum == -1 || dptr->dnum > 254) {
 
@@ -437,10 +471,10 @@ NTSTATUS dptr_create(connection_struct *conn, const char *path, bool old_handle,
 			 * finished with that one.
 			 */
 
-			dptr_close_oldest(True);
+			dptr_close_oldest(sconn, true);
 
 			/* Now try again... */
-			dptr->dnum = bitmap_find(dptr_bmap, 0);
+			dptr->dnum = bitmap_find(sconn->smb1.searches.dptr_bmap, 0);
 			if(dptr->dnum == -1 || dptr->dnum > 254) {
 				DEBUG(0,("dptr_create: returned %d: Error - all old dirptrs in use ?\n", dptr->dnum));
 				SAFE_FREE(dptr);
@@ -455,7 +489,7 @@ NTSTATUS dptr_create(connection_struct *conn, const char *path, bool old_handle,
 		 * a range that will return 256 - MAX_DIRECTORY_HANDLES.
 		 */
 
-		dptr->dnum = bitmap_find(dptr_bmap, 255);
+		dptr->dnum = bitmap_find(sconn->smb1.searches.dptr_bmap, 255);
 
 		if(dptr->dnum == -1 || dptr->dnum < 255) {
 
@@ -466,10 +500,10 @@ NTSTATUS dptr_create(connection_struct *conn, const char *path, bool old_handle,
 			 * directory handles.
 			 */
 
-			dptr_close_oldest(False);
+			dptr_close_oldest(sconn, false);
 
 			/* Now try again... */
-			dptr->dnum = bitmap_find(dptr_bmap, 255);
+			dptr->dnum = bitmap_find(sconn->smb1.searches.dptr_bmap, 255);
 
 			if(dptr->dnum == -1 || dptr->dnum < 255) {
 				DEBUG(0,("dptr_create: returned %d: Error - all new dirptrs in use ?\n", dptr->dnum));
@@ -480,7 +514,7 @@ NTSTATUS dptr_create(connection_struct *conn, const char *path, bool old_handle,
 		}
 	}
 
-	bitmap_set(dptr_bmap, dptr->dnum);
+	bitmap_set(sconn->smb1.searches.dptr_bmap, dptr->dnum);
 
 	dptr->dnum += 1; /* Always bias the dnum by one - no zero dnums allowed. */
 
@@ -491,7 +525,7 @@ NTSTATUS dptr_create(connection_struct *conn, const char *path, bool old_handle,
 	dptr->expect_close = expect_close;
 	dptr->wcard = SMB_STRDUP(wcard);
 	if (!dptr->wcard) {
-		bitmap_clear(dptr_bmap, dptr->dnum - 1);
+		bitmap_clear(sconn->smb1.searches.dptr_bmap, dptr->dnum - 1);
 		SAFE_FREE(dptr);
 		TALLOC_FREE(dir_hnd);
 		return NT_STATUS_NO_MEMORY;
@@ -504,7 +538,7 @@ NTSTATUS dptr_create(connection_struct *conn, const char *path, bool old_handle,
 
 	dptr->attr = attr;
 
-	DLIST_ADD(dirptrs, dptr);
+	DLIST_ADD(sconn->smb1.searches.dirptrs, dptr);
 
 	DEBUG(3,("creating new dirptr %d for path %s, expect_close = %d\n",
 		dptr->dnum,path,expect_close));  
@@ -521,7 +555,8 @@ NTSTATUS dptr_create(connection_struct *conn, const char *path, bool old_handle,
 
 int dptr_CloseDir(struct dptr_struct *dptr)
 {
-	DLIST_REMOVE(dirptrs, dptr);
+	struct smbd_server_connection *sconn = dptr->conn->sconn;
+	DLIST_REMOVE(sconn->smb1.searches.dirptrs, dptr);
 	TALLOC_FREE(dptr->dir_hnd);
 	return 0;
 }
@@ -724,10 +759,11 @@ void dptr_init_search_op(struct dptr_struct *dptr)
  Fill the 5 byte server reserved dptr field.
 ****************************************************************************/
 
-bool dptr_fill(char *buf1,unsigned int key)
+bool dptr_fill(struct smbd_server_connection *sconn,
+	       char *buf1,unsigned int key)
 {
 	unsigned char *buf = (unsigned char *)buf1;
-	struct dptr_struct *dptr = dptr_get(key, False);
+	struct dptr_struct *dptr = dptr_get(sconn, key, false);
 	uint32 offset;
 	if (!dptr) {
 		DEBUG(1,("filling null dirptr %d\n",key));
@@ -745,10 +781,11 @@ bool dptr_fill(char *buf1,unsigned int key)
  Fetch the dir ptr and seek it given the 5 byte server field.
 ****************************************************************************/
 
-struct dptr_struct *dptr_fetch(char *buf,int *num)
+struct dptr_struct *dptr_fetch(struct smbd_server_connection *sconn,
+			       char *buf, int *num)
 {
 	unsigned int key = *(unsigned char *)buf;
-	struct dptr_struct *dptr = dptr_get(key, False);
+	struct dptr_struct *dptr = dptr_get(sconn, key, false);
 	uint32 offset;
 	long seekoff;
 
@@ -765,7 +802,7 @@ struct dptr_struct *dptr_fetch(char *buf,int *num)
 	}
 	SeekDir(dptr->dir_hnd,seekoff);
 	DEBUG(3,("fetching dirptr %d for path %s at offset %d\n",
-		key,dptr_path(key),(int)seekoff));
+		key, dptr->path, (int)seekoff));
 	return(dptr);
 }
 
@@ -773,15 +810,16 @@ struct dptr_struct *dptr_fetch(char *buf,int *num)
  Fetch the dir ptr.
 ****************************************************************************/
 
-struct dptr_struct *dptr_fetch_lanman2(int dptr_num)
+struct dptr_struct *dptr_fetch_lanman2(struct smbd_server_connection *sconn,
+				       int dptr_num)
 {
-	struct dptr_struct *dptr  = dptr_get(dptr_num, False);
+	struct dptr_struct *dptr  = dptr_get(sconn, dptr_num, false);
 
 	if (!dptr) {
 		DEBUG(3,("fetched null dirptr %d\n",dptr_num));
 		return(NULL);
 	}
-	DEBUG(3,("fetching dirptr %d for path %s\n",dptr_num,dptr_path(dptr_num)));
+	DEBUG(3,("fetching dirptr %d for path %s\n",dptr_num,dptr->path));
 	return(dptr);
 }
 
@@ -1245,7 +1283,9 @@ static int smb_Dir_destructor(struct smb_Dir *dirp)
 	if (dirp->dir) {
 		SMB_VFS_CLOSEDIR(dirp->conn,dirp->dir);
 	}
-	dirhandles_open--;
+	if (dirp->conn->sconn) {
+		dirp->conn->sconn->smb1.searches.dirhandles_open--;
+	}
 	return 0;
 }
 
@@ -1257,6 +1297,7 @@ struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
 			const char *name, const char *mask, uint32 attr)
 {
 	struct smb_Dir *dirp = TALLOC_ZERO_P(mem_ctx, struct smb_Dir);
+	struct smbd_server_connection *sconn = conn->sconn;
 
 	if (!dirp) {
 		return NULL;
@@ -1271,7 +1312,9 @@ struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
 		goto fail;
 	}
 
-	dirhandles_open++;
+	if (sconn) {
+		sconn->smb1.searches.dirhandles_open++;
+	}
 	talloc_set_destructor(dirp, smb_Dir_destructor);
 
 	dirp->dir = SMB_VFS_OPENDIR(conn, dirp->dir_path, mask, attr);

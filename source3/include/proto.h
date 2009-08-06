@@ -6181,14 +6181,15 @@ bool make_dir_struct(TALLOC_CTX *ctx,
 			uint32 mode,
 			time_t date,
 			bool uc);
-void init_dptrs(void);
-char *dptr_path(int key);
-char *dptr_wcard(int key);
-uint16 dptr_attr(int key);
-void dptr_close(int *key);
+bool init_dptrs(struct smbd_server_connection *sconn);
+char *dptr_path(struct smbd_server_connection *sconn, int key);
+char *dptr_wcard(struct smbd_server_connection *sconn, int key);
+uint16 dptr_attr(struct smbd_server_connection *sconn, int key);
+void dptr_close(struct smbd_server_connection *sconn, int *key);
 void dptr_closecnum(connection_struct *conn);
 void dptr_idlecnum(connection_struct *conn);
-void dptr_closepath(char *path,uint16 spid);
+void dptr_closepath(struct smbd_server_connection *sconn,
+		    char *path,uint16 spid);
 NTSTATUS dptr_create(connection_struct *conn, const char *path, bool old_handle, bool expect_close,uint16 spid,
 		const char *wcard, bool wcard_has_wild, uint32 attr, struct dptr_struct **dptr_ret);
 int dptr_CloseDir(struct dptr_struct *dptr);
@@ -6203,9 +6204,12 @@ char *dptr_ReadDirName(TALLOC_CTX *ctx,
 bool dptr_SearchDir(struct dptr_struct *dptr, const char *name, long *poffset, SMB_STRUCT_STAT *pst);
 void dptr_DirCacheAdd(struct dptr_struct *dptr, const char *name, long offset);
 void dptr_init_search_op(struct dptr_struct *dptr);
-bool dptr_fill(char *buf1,unsigned int key);
-struct dptr_struct *dptr_fetch(char *buf,int *num);
-struct dptr_struct *dptr_fetch_lanman2(int dptr_num);
+bool dptr_fill(struct smbd_server_connection *sconn,
+	       char *buf1,unsigned int key);
+struct dptr_struct *dptr_fetch(struct smbd_server_connection *sconn,
+			       char *buf,int *num);
+struct dptr_struct *dptr_fetch_lanman2(struct smbd_server_connection *sconn,
+				       int dptr_num);
 bool dir_check_ftype(connection_struct *conn, uint32 mode, uint32 dirtype);
 bool get_dir_entry(TALLOC_CTX *ctx,
 		struct dptr_struct *dirptr,

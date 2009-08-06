@@ -44,11 +44,6 @@ extern struct smbd_dmapi_context *dmapi_ctx;
 
 extern bool dfree_broken;
 
-extern struct bitmap *dptr_bmap;
-//struct dptr_struct;
-extern struct dptr_struct *dirptrs;
-extern int dirhandles_open;
-
 /* how many write cache buffers have been allocated */
 extern unsigned int allocated_write_caches;
 
@@ -453,6 +448,12 @@ struct smbd_server_connection {
 		struct pending_auth_data *pd_list;
 
 		struct notify_mid_map *notify_mid_maps;
+
+		struct {
+			struct bitmap *dptr_bmap;
+			struct dptr_struct *dirptrs;
+			int dirhandles_open;
+		} searches;
 	} smb1;
 	struct {
 		struct tevent_context *event_ctx;

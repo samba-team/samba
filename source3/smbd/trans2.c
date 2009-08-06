@@ -2018,6 +2018,7 @@ static void call_trans2findfirst(connection_struct *conn,
 	bool ask_sharemode = lp_parm_bool(SNUM(conn), "smbd", "search ask sharemode", true);
 	TALLOC_CTX *ctx = talloc_tos();
 	struct dptr_struct *dirptr = NULL;
+	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	if (total_params < 13) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -2250,7 +2251,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	/* Check if we can close the dirptr */
 	if(close_after_first || (finished && close_if_end)) {
 		DEBUG(5,("call_trans2findfirst - (2) closing dptr_num %d\n", dptr_num));
-		dptr_close(&dptr_num);
+		dptr_close(sconn, &dptr_num);
 	}
 
 	/*
@@ -2261,7 +2262,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	 */
 
 	if(numentries == 0) {
-		dptr_close(&dptr_num);
+		dptr_close(sconn, &dptr_num);
 		if (Protocol < PROTOCOL_NT1) {
 			reply_doserror(req, ERRDOS, ERRnofiles);
 			goto out;
@@ -2284,8 +2285,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	send_trans2_replies(conn, req, params, 10, pdata, PTR_DIFF(p,pdata),
 			    max_data_bytes);
 
-	if ((! *directory) && dptr_path(dptr_num)) {
-		directory = talloc_strdup(talloc_tos(),dptr_path(dptr_num));
+	if ((! *directory) && dptr_path(sconn, dptr_num)) {
+		directory = talloc_strdup(talloc_tos(),dptr_path(sconn, dptr_num));
 		if (!directory) {
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 		}
@@ -2356,6 +2357,7 @@ static void call_trans2findnext(connection_struct *conn,
 	bool ask_sharemode = lp_parm_bool(SNUM(conn), "smbd", "search ask sharemode", true);
 	TALLOC_CTX *ctx = talloc_tos();
 	struct dptr_struct *dirptr;
+	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	if (total_params < 13) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -2477,15 +2479,15 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	params = *pparams;
 
 	/* Check that the dptr is valid */
-	if(!(dirptr = dptr_fetch_lanman2(dptr_num))) {
+	if(!(dirptr = dptr_fetch_lanman2(sconn, dptr_num))) {
 		reply_doserror(req, ERRDOS, ERRnofiles);
 		return;
 	}
 
-	directory = dptr_path(dptr_num);
+	directory = dptr_path(sconn, dptr_num);
 
 	/* Get the wildcard mask from the dptr */
-	if((p = dptr_wcard(dptr_num))== NULL) {
+	if((p = dptr_wcard(sconn, dptr_num))== NULL) {
 		DEBUG(2,("dptr_num %d has no wildcard\n", dptr_num));
 		reply_doserror(req, ERRDOS, ERRnofiles);
 		return;
@@ -2494,7 +2496,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	mask = p;
 
 	/* Get the attr mask from the dptr */
-	dirtype = dptr_attr(dptr_num);
+	dirtype = dptr_attr(sconn, dptr_num);
 
 	DEBUG(3,("dptr_num is %d, mask = %s, attr = %x, dirptr=(0x%lX,%ld)\n",
 		dptr_num, mask, dirtype,
@@ -2602,7 +2604,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	/* Check if we can close the dirptr */
 	if(close_after_request || (finished && close_if_end)) {
 		DEBUG(5,("call_trans2findnext: closing dptr_num = %d\n", dptr_num));
-		dptr_close(&dptr_num); /* This frees up the saved mask */
+		dptr_close(sconn, &dptr_num); /* This frees up the saved mask */
 	}
 
 	/* Set up the return parameter block */
@@ -7851,6 +7853,7 @@ static void call_trans2ioctl(connection_struct *conn,
 void reply_findclose(struct smb_request *req)
 {
 	int dptr_num;
+	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	START_PROFILE(SMBfindclose);
 
@@ -7864,7 +7867,7 @@ void reply_findclose(struct smb_request *req)
 
 	DEBUG(3,("reply_findclose, dptr_num = %d\n", dptr_num));
 
-	dptr_close(&dptr_num);
+	dptr_close(sconn, &dptr_num);
 
 	reply_outbuf(req, 0, 0);
 
