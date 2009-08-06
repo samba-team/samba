@@ -6110,6 +6110,41 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 }
 
 /****************************************************************************
+ Deal with SMB_INFO_STANDARD.
+****************************************************************************/
+
+static NTSTATUS smb_set_info_standard(connection_struct *conn,
+					const char *pdata,
+					int total_data,
+					files_struct *fsp,
+					const struct smb_filename *smb_fname)
+{
+	struct smb_file_time ft;
+
+	ZERO_STRUCT(ft);
+
+	if (total_data < 12) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* create time */
+	ft.create_time = convert_time_t_to_timespec(srv_make_unix_date2(pdata));
+	/* access time */
+	ft.atime = convert_time_t_to_timespec(srv_make_unix_date2(pdata+4));
+	/* write time */
+	ft.mtime = convert_time_t_to_timespec(srv_make_unix_date2(pdata+8));
+
+	DEBUG(10,("smb_set_info_standard: file %s\n",
+		smb_fname_str_dbg(smb_fname)));
+
+        return smb_set_file_time(conn,
+                                fsp,
+				smb_fname,
+				&ft,
+                                true);
+}
+
+/****************************************************************************
  Deal with SMB_SET_FILE_ALLOCATION_INFO.
 ****************************************************************************/
 
@@ -7085,6 +7120,16 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 		 fsp ? fsp->fnum : -1, info_level, total_data));
 
 	switch (info_level) {
+
+		case SMB_INFO_STANDARD:
+		{
+			status = smb_set_info_standard(conn,
+					pdata,
+					total_data,
+					fsp,
+					smb_fname);
+			break;
+		}
 
 		case SMB_INFO_SET_EA:
 		{
