@@ -5702,13 +5702,13 @@ static NTSTATUS smb_set_info_standard(connection_struct *conn,
 	}
 
 	/* create time */
-	ft.create_time = interpret_long_date(pdata);
+	ft.create_time = convert_time_t_to_timespec(srv_make_unix_date2(pdata));
 
 	/* access time */
-	ft.atime = interpret_long_date(pdata + 8);
+	ft.atime = convert_time_t_to_timespec(srv_make_unix_date2(pdata+4));
 
 	/* write time */
-	ft.mtime = interpret_long_date(pdata + 16);
+	ft.mtime = convert_time_t_to_timespec(srv_make_unix_date2(pdata+8));
 
 	DEBUG(10,("smb_set_info_standard: file %s\n",
 		fname ? fname : fsp->fsp_name ));
