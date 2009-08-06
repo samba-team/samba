@@ -161,7 +161,7 @@ libraries:: $(STATIC_LIBS) $(SHARED_LIBS)
 modules:: $(PLUGINS)
 headers:: $(PUBLIC_HEADERS)
 manpages:: $(MANPAGES)
-all:: DELIBERATEBUILDBREAKAGE showflags $(ALL_PREDEP) binaries modules pythonmods libraries headers
+all:: showflags $(ALL_PREDEP) binaries modules pythonmods libraries headers
 everything:: all
 
 LD_LIBPATH_OVERRIDE = $(LIB_PATH_VAR)=$(shliboutputdir):$$$(LIB_PATH_VAR)
