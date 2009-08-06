@@ -81,8 +81,7 @@ description: %s
         """
         res = self.search(user_dn, ldb.SCOPE_BASE, None, ["userAccountControl"])
         assert len(res) == 1
-        userAccountControl = res[0]["userAccountControl"][0]
-        userAccountControl = int(userAccountControl)
+        userAccountControl = int(res[0]["userAccountControl"][0])
         if (userAccountControl & 0x2):
             userAccountControl = userAccountControl & ~0x2 # remove disabled bit
         if (userAccountControl & 0x20):
