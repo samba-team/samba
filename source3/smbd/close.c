@@ -753,6 +753,10 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 			  strerror(errno)));
 	}
 
+	if (fsp->dptr) {
+		dptr_CloseDir(fsp->dptr);
+	}
+
 	/*
 	 * Do the code common to files and directories.
 	 */

@@ -459,6 +459,8 @@ typedef struct files_struct {
 	struct notify_change_buf *notify;
 
 	struct files_struct *base_fsp; /* placeholder for delete on close */
+
+	struct dptr_struct *dptr;
 } files_struct;
 
 #include "ntquotas.h"
