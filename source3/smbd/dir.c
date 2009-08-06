@@ -825,6 +825,148 @@ static bool mangle_mask_match(connection_struct *conn,
 	return mask_match_search(mname,mask,False);
 }
 
+bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
+			   struct dptr_struct *dirptr,
+			   const char *mask,
+			   uint32_t dirtype,
+			   bool dont_descend,
+			   bool ask_sharemode,
+			   bool (*match_fn)(TALLOC_CTX *ctx,
+					    void *private_data,
+					    const char *dname,
+					    const char *mask,
+					    char **_fname),
+			   bool (*mode_fn)(TALLOC_CTX *ctx,
+					   void *private_data,
+					   struct smb_filename *smb_fname,
+					   uint32_t *_mode),
+			   void *private_data,
+			   char **_fname,
+			   struct smb_filename **_smb_fname,
+			   uint32_t *_mode,
+			   long *_prev_offset)
+{
+	connection_struct *conn = dirptr->conn;
+	bool needslash;
+
+	*_smb_fname = NULL;
+	*_mode = 0;
+
+	needslash = ( dirptr->path[strlen(dirptr->path) -1] != '/');
+
+	while (true) {
+		long cur_offset;
+		long prev_offset;
+		SMB_STRUCT_STAT sbuf;
+		char *dname = NULL;
+		bool isdots;
+		char *fname = NULL;
+		char *pathreal = NULL;
+		struct smb_filename *smb_fname = NULL;
+		uint32_t mode = 0;
+		bool ok;
+		NTSTATUS status;
+
+		cur_offset = dptr_TellDir(dirptr);
+		prev_offset = cur_offset;
+		dname = dptr_ReadDirName(ctx, dirptr, &cur_offset, &sbuf);
+
+		DEBUG(6,("smbd_dirptr_get_entry: dirptr 0x%lx now at offset %ld\n",
+			(long)dirptr, cur_offset));
+
+		if (dname == NULL) {
+			return false;
+		}
+
+		isdots = (ISDOT(dname) || ISDOTDOT(dname));
+		if (dont_descend && !isdots) {
+			TALLOC_FREE(dname);
+			continue;
+		}
+
+		/*
+		 * fname may get mangled, dname is never mangled.
+		 * Whenever we're accessing the filesystem we use
+		 * pathreal which is composed from dname.
+		 */
+
+		ok = match_fn(ctx, private_data, dname, mask, &fname);
+		if (!ok) {
+			TALLOC_FREE(dname);
+			continue;
+		}
+
+		pathreal = talloc_asprintf(ctx, "%s%s%s",
+					   dirptr->path,
+					   needslash?"/":"",
+					   dname);
+		if (!pathreal) {
+			TALLOC_FREE(dname);
+			TALLOC_FREE(fname);
+			return false;
+		}
+
+		/* Create smb_fname with NULL stream_name. */
+		status = create_synthetic_smb_fname(ctx, pathreal,
+						    NULL, &sbuf,
+						    &smb_fname);
+		TALLOC_FREE(pathreal);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(dname);
+			TALLOC_FREE(fname);
+			return false;
+		}
+
+		ok = mode_fn(ctx, private_data, smb_fname, &mode);
+		if (!ok) {
+			TALLOC_FREE(dname);
+			TALLOC_FREE(fname);
+			TALLOC_FREE(smb_fname);
+			continue;
+		}
+
+		if (!dir_check_ftype(conn, mode, dirtype)) {
+			DEBUG(5,("[%s] attribs 0x%x didn't match 0x%x\n",
+				fname, (unsigned int)mode, (unsigned int)dirtype));
+			TALLOC_FREE(dname);
+			TALLOC_FREE(fname);
+			TALLOC_FREE(smb_fname);
+			continue;
+		}
+
+		if (ask_sharemode) {
+			struct timespec write_time_ts;
+			struct file_id fileid;
+
+			fileid = vfs_file_id_from_sbuf(conn,
+						       &smb_fname->st);
+			get_file_infos(fileid, NULL, &write_time_ts);
+			if (!null_timespec(write_time_ts)) {
+				update_stat_ex_mtime(&smb_fname->st,
+						     write_time_ts);
+			}
+		}
+
+		DEBUG(3,("smbd_dirptr_get_entry mask=[%s] found %s "
+			"fname=%s (%s)\n",
+			mask, smb_fname_str_dbg(smb_fname),
+			dname, fname));
+
+		DirCacheAdd(dirptr->dir_hnd, dname, cur_offset);
+
+		TALLOC_FREE(dname);
+
+		*_fname = fname;
+		*_smb_fname = smb_fname;
+		*_mode = mode;
+		*_prev_offset = prev_offset;
+
+		return true;
+	}
+
+	return false;
+}
+
 /****************************************************************************
  Get an 8.3 directory entry.
 ****************************************************************************/
