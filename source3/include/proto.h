@@ -6145,8 +6145,7 @@ bool conn_close_all(struct smbd_server_connection *sconn);
 bool conn_idle_all(struct smbd_server_connection *sconn, time_t t);
 void conn_clear_vuid_caches(struct smbd_server_connection *sconn, uint16 vuid);
 void conn_free_internal(connection_struct *conn);
-void conn_free(struct smbd_server_connection *sconn,
-	       connection_struct *conn);
+void conn_free(connection_struct *conn);
 void msg_force_tdis(struct messaging_context *msg,
 		    void *private_data,
 		    uint32_t msg_type,
@@ -6984,8 +6983,7 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
 				   const char *service_in, DATA_BLOB password,
 				   const char *pdev, uint16 vuid,
 				   NTSTATUS *status);
-void close_cnum(struct smbd_server_connection *sconn,
-		connection_struct *conn, uint16 vuid);
+void close_cnum(connection_struct *conn, uint16 vuid);
 
 /* The following definitions come from smbd/session.c  */
 

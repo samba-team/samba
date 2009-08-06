@@ -127,7 +127,7 @@ static int smbd_smb2_tcon_destructor(struct smbd_smb2_tcon *tcon)
 	idr_remove(tcon->session->tcons.idtree, tcon->tid);
 	DLIST_REMOVE(tcon->session->tcons.list, tcon);
 
-	conn_free(tcon->session->conn, tcon->compat_conn);
+	conn_free(tcon->compat_conn);
 
 	tcon->compat_conn = NULL;
 	tcon->tid = 0;

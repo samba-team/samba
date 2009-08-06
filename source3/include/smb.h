@@ -546,6 +546,7 @@ struct share_iterator {
 
 typedef struct connection_struct {
 	struct connection_struct *next, *prev;
+	struct smbd_server_connection *sconn; /* can be NULL */
 	unsigned cnum; /* an index passed over the wire */
 	struct share_params *params;
 	bool force_user;

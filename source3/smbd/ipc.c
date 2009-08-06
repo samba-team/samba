@@ -534,7 +534,6 @@ static void named_pipe(connection_struct *conn, uint16 vuid,
 static void handle_trans(connection_struct *conn, struct smb_request *req,
 			 struct trans_state *state)
 {
-	struct smbd_server_connection *sconn = smbd_server_conn;
 	char *local_machine_name;
 	int name_offset = 0;
 
@@ -585,7 +584,7 @@ static void handle_trans(connection_struct *conn, struct smb_request *req,
 		   state->max_param_return);
 
 	if (state->close_on_completion) {
-		close_cnum(sconn, conn,state->vuid);
+		close_cnum(conn,state->vuid);
 		req->conn = NULL;
 	}
 

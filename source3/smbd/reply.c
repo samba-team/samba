@@ -703,7 +703,7 @@ void reply_tcon_and_X(struct smb_request *req)
 
 	/* we might have to close an old one */
 	if ((tcon_flags & 0x1) && conn) {
-		close_cnum(sconn, conn,req->vuid);
+		close_cnum(conn,req->vuid);
 		req->conn = NULL;
 		conn = NULL;
 	}
@@ -4868,7 +4868,6 @@ void reply_unlock(struct smb_request *req)
 
 void reply_tdis(struct smb_request *req)
 {
-	struct smbd_server_connection *sconn = smbd_server_conn;
 	connection_struct *conn = req->conn;
 	START_PROFILE(SMBtdis);
 
@@ -4881,7 +4880,7 @@ void reply_tdis(struct smb_request *req)
 
 	conn->used = False;
 
-	close_cnum(sconn, conn,req->vuid);
+	close_cnum(conn,req->vuid);
 	req->conn = NULL;
 
 	reply_outbuf(req, 0, 0);
