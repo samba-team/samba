@@ -202,6 +202,20 @@ static struct tevent_req *smbd_smb2_find_send(TALLOC_CTX *mem_ctx,
 	struct smb_request *smbreq;
 	connection_struct *conn = smb2req->tcon->compat_conn;
 	files_struct *fsp;
+	NTSTATUS status;
+	NTSTATUS empty_status;
+	uint32_t info_level;
+	uint32_t max_count;
+	char *pdata;
+	char *base_data;
+	char *end_data;
+	int last_entry_off = 0;
+	uint64_t off = 0;
+	uint32_t num = 0;
+	uint32_t dirtype = aHIDDEN | aSYSTEM | aDIR;
+	const char *directory;
+	bool dont_descend = false;
+	bool ask_sharemode = true;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbd_smb2_find_state);
@@ -233,7 +247,189 @@ static struct tevent_req *smbd_smb2_find_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	tevent_req_nterror(req, NT_STATUS_NOT_IMPLEMENTED);
+	if (!fsp->is_directory) {
+		tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);
+		return tevent_req_post(req, ev);
+	}
+
+	directory = fsp->fsp_name->base_name;
+
+	if (strcmp(in_file_name, "") == 0) {
+		tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_INVALID);
+		return tevent_req_post(req, ev);
+	}
+	if (strcmp(in_file_name, "\\") == 0) {
+		tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_INVALID);
+		return tevent_req_post(req, ev);
+	}
+	if (strcmp(in_file_name, "/") == 0) {
+		tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_INVALID);
+		return tevent_req_post(req, ev);
+	}
+
+	if (in_output_buffer_length > 0x10000) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+	}
+
+	switch (in_file_info_class) {
+	case SMB2_FIND_DIRECTORY_INFO:
+		info_level = SMB_FIND_FILE_DIRECTORY_INFO;
+		break;
+
+	case SMB2_FIND_FULL_DIRECTORY_INFO:
+		info_level = SMB_FIND_FILE_FULL_DIRECTORY_INFO;
+		break;
+
+	case SMB2_FIND_BOTH_DIRECTORY_INFO:
+		info_level = SMB_FIND_FILE_BOTH_DIRECTORY_INFO;
+		break;
+
+	case SMB2_FIND_NAME_INFO:
+		info_level = SMB_FIND_FILE_NAMES_INFO;
+		break;
+
+	case SMB2_FIND_ID_BOTH_DIRECTORY_INFO:
+		info_level = SMB_FIND_ID_BOTH_DIRECTORY_INFO;
+		break;
+
+	case SMB2_FIND_ID_FULL_DIRECTORY_INFO:
+		info_level = SMB_FIND_ID_FULL_DIRECTORY_INFO;
+		break;
+
+	default:
+		tevent_req_nterror(req, NT_STATUS_INVALID_INFO_CLASS);
+		return tevent_req_post(req, ev);
+	}
+
+	if (in_flags & SMB2_CONTINUE_FLAG_REOPEN) {
+		if (fsp->dptr) {
+			dptr_CloseDir(fsp->dptr);
+			fsp->dptr = NULL;
+		}
+	}
+
+	if (fsp->dptr == NULL) {
+		bool wcard_has_wild;
+
+		if (!(fsp->access_mask & SEC_DIR_LIST)) {
+			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return tevent_req_post(req, ev);
+		}
+
+		wcard_has_wild = ms_has_wild(in_file_name);
+
+		status = dptr_create(conn,
+				     directory,
+				     false, /* old_handle */
+				     false, /* expect_close */
+				     0, /* spid */
+				     in_file_name, /* wcard */
+				     wcard_has_wild,
+				     dirtype,
+				     &fsp->dptr);
+		if (!NT_STATUS_IS_OK(status)) {
+			tevent_req_nterror(req, status);
+			return tevent_req_post(req, ev);
+		}
+
+		empty_status = NT_STATUS_NO_SUCH_FILE;
+	} else {
+		empty_status = STATUS_NO_MORE_FILES;
+	}
+
+	if (in_flags & SMB2_CONTINUE_FLAG_RESTART) {
+		dptr_SeekDir(fsp->dptr, 0);
+	}
+
+	if (in_flags & SMB2_CONTINUE_FLAG_SINGLE) {
+		max_count = 1;
+	} else {
+		max_count = UINT16_MAX;
+	}
+
+#define DIR_ENTRY_SAFETY_MARGIN 4096
+
+	state->out_output_buffer = data_blob_talloc(state, NULL,
+			in_output_buffer_length + DIR_ENTRY_SAFETY_MARGIN);
+	if (tevent_req_nomem(state->out_output_buffer.data, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	state->out_output_buffer.length = 0;
+	pdata = (char *)state->out_output_buffer.data;
+	base_data = pdata;
+	end_data = pdata + in_output_buffer_length;
+	last_entry_off = 0;
+	off = 0;
+	num = 0;
+
+	DEBUG(8,("smbd_smb2_find_send: dirpath=<%s> dontdescend=<%s>\n",
+		directory, lp_dontdescend(SNUM(conn))));
+	if (in_list(directory,lp_dontdescend(SNUM(conn)),conn->case_sensitive)) {
+		dont_descend = true;
+	}
+
+	ask_sharemode = lp_parm_bool(SNUM(conn),
+				     "smbd", "search ask sharemode",
+				     true);
+
+	while (true) {
+		bool ok;
+		bool got_exact_match = false;
+		bool out_of_space = false;
+		int space_remaining = in_output_buffer_length - off;
+
+		ok = smbd_dirptr_lanman2_entry(state,
+					       conn,
+					       fsp->dptr,
+					       smbreq->flags2,
+					       in_file_name,
+					       dirtype,
+					       info_level,
+					       false, /* requires_resume_key */
+					       dont_descend,
+					       ask_sharemode,
+					       8, /* align to 8 bytes */
+					       false, /* no padding */
+					       &pdata,
+					       base_data,
+					       end_data,
+					       space_remaining,
+					       &out_of_space,
+					       &got_exact_match,
+					       &last_entry_off,
+					       NULL);
+
+		off = PTR_DIFF(pdata, base_data);
+
+		if (!ok) {
+			if (num > 0) {
+				SIVAL(state->out_output_buffer.data, last_entry_off, 0);
+				tevent_req_done(req);
+				return tevent_req_post(req, ev);
+			} else if (out_of_space) {
+				tevent_req_nterror(req, NT_STATUS_INFO_LENGTH_MISMATCH);
+				return tevent_req_post(req, ev);
+			} else {
+				tevent_req_nterror(req, empty_status);
+				return tevent_req_post(req, ev);
+			}
+		}
+
+		num++;
+		state->out_output_buffer.length = off;
+
+		if (num < max_count) {
+			continue;
+		}
+
+		SIVAL(state->out_output_buffer.data, last_entry_off, 0);
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 	return tevent_req_post(req, ev);
 }
 
