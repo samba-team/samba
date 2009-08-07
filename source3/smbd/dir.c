@@ -971,158 +971,108 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
  Get an 8.3 directory entry.
 ****************************************************************************/
 
+static bool smbd_dirptr_8_3_match_fn(TALLOC_CTX *ctx,
+				     void *private_data,
+				     const char *dname,
+				     const char *mask,
+				     char **_fname)
+{
+	connection_struct *conn = (connection_struct *)private_data;
+
+	if ((strcmp(mask,"*.*") == 0) ||
+	    mask_match_search(dname, mask, false) ||
+	    mangle_mask_match(conn, dname, mask)) {
+		char mname[13];
+		const char *fname;
+
+		if (!mangle_is_8_3(dname, false, conn->params)) {
+			bool ok = name_to_8_3(dname, mname, false,
+					      conn->params);
+			if (!ok) {
+				return false;
+			}
+			fname = mname;
+		} else {
+			fname = dname;
+		}
+
+		*_fname = talloc_strdup(ctx, fname);
+		if (*_fname == NULL) {
+			return false;
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
+static bool smbd_dirptr_8_3_mode_fn(TALLOC_CTX *ctx,
+				    void *private_data,
+				    struct smb_filename *smb_fname,
+				    uint32_t *_mode)
+{
+	connection_struct *conn = (connection_struct *)private_data;
+
+	if (!VALID_STAT(smb_fname->st)) {
+		if ((SMB_VFS_STAT(conn, smb_fname)) != 0) {
+			DEBUG(5,("smbd_dirptr_8_3_mode_fn: "
+				 "Couldn't stat [%s]. Error "
+			         "= %s\n",
+			         smb_fname_str_dbg(smb_fname),
+			         strerror(errno)));
+			return false;
+		}
+	}
+
+	*_mode = dos_mode(conn, smb_fname);
+	return true;
+}
+
 bool get_dir_entry(TALLOC_CTX *ctx,
 		connection_struct *conn,
 		const char *mask,
-		uint32 dirtype,
-		char **pp_fname_out,
-		SMB_OFF_T *size,
-		uint32 *mode,
-		struct timespec *date,
+		uint32_t dirtype,
+		char **_fname,
+		SMB_OFF_T *_size,
+		uint32_t *_mode,
+		struct timespec *_date,
 		bool check_descend,
 		bool ask_sharemode)
 {
-	char *dname = NULL;
-	bool found = False;
-	SMB_STRUCT_STAT sbuf;
-	char *pathreal = NULL;
-	char *filename = NULL;
-	bool needslash;
-
-	*pp_fname_out = NULL;
-
-	needslash = ( conn->dirpath[strlen(conn->dirpath) -1] != '/');
+	char *fname = NULL;
+	struct smb_filename *smb_fname = NULL;
+	uint32_t mode = 0;
+	long prev_offset;
+	bool ok;
 
 	if (!conn->dirptr) {
-		return(False);
+		return false;
 	}
 
-	while (!found) {
-		long curoff = dptr_TellDir(conn->dirptr);
-		dname = dptr_ReadDirName(ctx, conn->dirptr, &curoff, &sbuf);
-
-		DEBUG(6,("readdir on dirptr 0x%lx now at offset %ld\n",
-			(long)conn->dirptr,TellDir(conn->dirptr->dir_hnd)));
-
-		if (dname == NULL) {
-			return(False);
-		}
-
-		filename = dname;
-
-		/* notice the special *.* handling. This appears to be the only difference
-			between the wildcard handling in this routine and in the trans2 routines.
-			see masktest for a demo
-		*/
-		if ((strcmp(mask,"*.*") == 0) ||
-		    mask_match_search(filename,mask,False) ||
-		    mangle_mask_match(conn,filename,mask)) {
-			bool isdots = (ISDOT(dname) || ISDOTDOT(dname));
-			char mname[13];
-			struct smb_filename *smb_fname = NULL;
-			NTSTATUS status;
-
-			if (!mangle_is_8_3(filename, False, conn->params)) {
-				if (!name_to_8_3(filename,mname,False,
-					   conn->params)) {
-					TALLOC_FREE(filename);
-					continue;
-				}
-				filename = talloc_strdup(ctx, mname);
-				if (!filename) {
-					return False;
-				}
-			}
-
-			if (check_descend && !isdots) {
-				TALLOC_FREE(filename);
-				continue;
-			}
-
-			if (needslash) {
-				pathreal = talloc_asprintf(ctx,
-						"%s/%s",
-						conn->dirpath,
-						dname);
-			} else {
-				pathreal = talloc_asprintf(ctx,
-						"%s%s",
-						conn->dirpath,
-						dname);
-			}
-			if (!pathreal) {
-				TALLOC_FREE(filename);
-				return False;
-			}
-
-			/* Create smb_fname with NULL stream_name. */
-			status = create_synthetic_smb_fname(ctx, pathreal,
-							    NULL, &sbuf,
-							    &smb_fname);
-
-			TALLOC_FREE(pathreal);
-			if (!NT_STATUS_IS_OK(status)) {
-				TALLOC_FREE(filename);
-				return false;
-			}
-
-			if (!VALID_STAT(smb_fname->st)) {
-				if ((SMB_VFS_STAT(conn, smb_fname)) != 0) {
-					DEBUG(5,("Couldn't stat 1 [%s]. Error "
-						 "= %s\n",
-						 smb_fname_str_dbg(smb_fname),
-						 strerror(errno)));
-					TALLOC_FREE(smb_fname);
-					TALLOC_FREE(filename);
-					continue;
-				}
-			}
-
-			*mode = dos_mode(conn, smb_fname);
-
-			if (!dir_check_ftype(conn,*mode,dirtype)) {
-				DEBUG(5,("[%s] attribs 0x%x didn't match 0x%x\n",filename,(unsigned int)*mode,(unsigned int)dirtype));
-				TALLOC_FREE(smb_fname);
-				TALLOC_FREE(filename);
-				continue;
-			}
-
-			*size = smb_fname->st.st_ex_size;
-			*date = smb_fname->st.st_ex_mtime;
-
-			if (ask_sharemode) {
-				struct timespec write_time_ts;
-				struct file_id fileid;
-
-				fileid = vfs_file_id_from_sbuf(conn,
-							       &smb_fname->st);
-				get_file_infos(fileid, NULL, &write_time_ts);
-				if (!null_timespec(write_time_ts)) {
-					*date = write_time_ts;
-				}
-			}
-
-			DEBUG(3,("get_dir_entry mask=[%s] found %s "
-				"fname=%s (%s)\n",
-				mask,
-				smb_fname_str_dbg(smb_fname),
-				dname,
-				filename));
-
-			found = True;
-
-			SMB_ASSERT(filename != NULL);
-			*pp_fname_out = filename;
-
-			DirCacheAdd(conn->dirptr->dir_hnd, dname, curoff);
-			TALLOC_FREE(smb_fname);
-		}
-
-		if (!found)
-			TALLOC_FREE(filename);
+	ok = smbd_dirptr_get_entry(ctx,
+				   conn->dirptr,
+				   mask,
+				   dirtype,
+				   check_descend,
+				   ask_sharemode,
+				   smbd_dirptr_8_3_match_fn,
+				   smbd_dirptr_8_3_mode_fn,
+				   conn,
+				   &fname,
+				   &smb_fname,
+				   &mode,
+				   &prev_offset);
+	if (!ok) {
+		return false;
 	}
 
-	return(found);
+	*_fname = talloc_move(ctx, &fname);
+	*_size = smb_fname->st.st_ex_size;
+	*_mode = mode;
+	*_date = smb_fname->st.st_ex_mtime;
+	TALLOC_FREE(smb_fname);
+	return true;
 }
 
 /*******************************************************************
