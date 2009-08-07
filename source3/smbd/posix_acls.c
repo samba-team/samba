@@ -4616,7 +4616,7 @@ SEC_DESC *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname)
 
 	if (!smbd_vfs_init(conn)) {
 		DEBUG(0,("get_nt_acl_no_snum: Unable to create a fake connection struct!\n"));
-		conn_free_internal( conn );
+		conn_free(conn);
 		return NULL;
         }
 
@@ -4631,21 +4631,21 @@ SEC_DESC *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname)
 	status = create_synthetic_smb_fname(talloc_tos(), fname, NULL, NULL,
 					    &finfo.fsp_name);
 	if (!NT_STATUS_IS_OK(status)) {
-		conn_free_internal( conn );
+		conn_free(conn);
 		return NULL;
 	}
 
 	if (!NT_STATUS_IS_OK(SMB_VFS_FGET_NT_ACL( &finfo, DACL_SECURITY_INFORMATION, &psd))) {
 		DEBUG(0,("get_nt_acl_no_snum: get_nt_acl returned zero.\n"));
 		TALLOC_FREE(finfo.fsp_name);
-		conn_free_internal( conn );
+		conn_free(conn);
 		return NULL;
 	}
 
 	ret_sd = dup_sec_desc( ctx, psd );
 
 	TALLOC_FREE(finfo.fsp_name);
-	conn_free_internal( conn );
+	conn_free(conn);
 
 	return ret_sd;
 }

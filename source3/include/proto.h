@@ -6144,7 +6144,6 @@ connection_struct *conn_new(struct smbd_server_connection *sconn);
 bool conn_close_all(struct smbd_server_connection *sconn);
 bool conn_idle_all(struct smbd_server_connection *sconn, time_t t);
 void conn_clear_vuid_caches(struct smbd_server_connection *sconn, uint16 vuid);
-void conn_free_internal(connection_struct *conn);
 void conn_free(connection_struct *conn);
 void msg_force_tdis(struct messaging_context *msg,
 		    void *private_data,

@@ -257,9 +257,9 @@ void conn_clear_vuid_caches(struct smbd_server_connection *sconn,uint16_t vuid)
  Free a conn structure - internal part.
 ****************************************************************************/
 
-void conn_free_internal(connection_struct *conn)
+static void conn_free_internal(connection_struct *conn)
 {
- 	vfs_handle_struct *handle = NULL, *thandle = NULL;
+	vfs_handle_struct *handle = NULL, *thandle = NULL;
 	struct trans_state *state = NULL;
 
 	/* Free vfs_connection_struct */
