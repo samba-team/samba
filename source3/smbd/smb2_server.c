@@ -36,34 +36,34 @@ bool smbd_is_smb2_header(const uint8_t *inbuf, size_t size)
 	return true;
 }
 
-static NTSTATUS smbd_initialize_smb2(struct smbd_server_connection *conn)
+static NTSTATUS smbd_initialize_smb2(struct smbd_server_connection *sconn)
 {
 	NTSTATUS status;
 	int ret;
 
-	TALLOC_FREE(conn->smb1.fde);
+	TALLOC_FREE(sconn->smb1.fde);
 
-	conn->smb2.event_ctx = smbd_event_context();
+	sconn->smb2.event_ctx = smbd_event_context();
 
-	conn->smb2.recv_queue = tevent_queue_create(conn, "smb2 recv queue");
-	if (conn->smb2.recv_queue == NULL) {
+	sconn->smb2.recv_queue = tevent_queue_create(sconn, "smb2 recv queue");
+	if (sconn->smb2.recv_queue == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	conn->smb2.send_queue = tevent_queue_create(conn, "smb2 send queue");
-	if (conn->smb2.send_queue == NULL) {
+	sconn->smb2.send_queue = tevent_queue_create(sconn, "smb2 send queue");
+	if (sconn->smb2.send_queue == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	conn->smb2.sessions.idtree = idr_init(conn);
-	if (conn->smb2.sessions.idtree == NULL) {
+	sconn->smb2.sessions.idtree = idr_init(sconn);
+	if (sconn->smb2.sessions.idtree == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	conn->smb2.sessions.limit = 0x0000FFFE;
-	conn->smb2.sessions.list = NULL;
+	sconn->smb2.sessions.limit = 0x0000FFFE;
+	sconn->smb2.sessions.list = NULL;
 
-	ret = tstream_bsd_existing_socket(conn, smbd_server_fd(),
-					  &conn->smb2.stream);
+	ret = tstream_bsd_existing_socket(sconn, smbd_server_fd(),
+					  &sconn->smb2.stream);
 	if (ret == -1) {
 		status = map_nt_error_from_unix(errno);
 		return status;
@@ -108,7 +108,7 @@ static int smbd_smb2_request_parent_destructor(struct smbd_smb2_request **req)
 static int smbd_smb2_request_destructor(struct smbd_smb2_request *req)
 {
 	if (req->out.vector) {
-		DLIST_REMOVE(req->conn->smb2.requests, req);
+		DLIST_REMOVE(req->sconn->smb2.requests, req);
 	}
 
 	if (req->parent) {
@@ -151,7 +151,7 @@ static struct smbd_smb2_request *smbd_smb2_request_allocate(TALLOC_CTX *mem_ctx)
 	return req;
 }
 
-static NTSTATUS smbd_smb2_request_create(struct smbd_server_connection *conn,
+static NTSTATUS smbd_smb2_request_create(struct smbd_server_connection *sconn,
 					 const uint8_t *inbuf, size_t size,
 					 struct smbd_smb2_request **_req)
 {
@@ -190,11 +190,11 @@ static NTSTATUS smbd_smb2_request_create(struct smbd_server_connection *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	req = smbd_smb2_request_allocate(conn);
+	req = smbd_smb2_request_allocate(sconn);
 	if (req == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	req->conn = conn;
+	req->sconn = sconn;
 
 	talloc_steal(req, inbuf);
 
@@ -398,7 +398,7 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 	/* setup the length of the NBT packet */
 	smb2_setup_nbt_length(req->out.vector, req->out.vector_count);
 
-	DLIST_ADD_END(req->conn->smb2.requests, req, struct smbd_smb2_request *);
+	DLIST_ADD_END(req->sconn->smb2.requests, req, struct smbd_smb2_request *);
 
 	return NT_STATUS_OK;
 }
@@ -442,11 +442,11 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req)
 	SBVAL(outhdr, SMB2_HDR_PID,	async_id);
 
 	/* TODO: add a paramter to delay this */
-	state = talloc(req->conn, struct smbd_smb2_request_pending_state);
+	state = talloc(req->sconn, struct smbd_smb2_request_pending_state);
 	if (state == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	state->sconn = req->conn;
+	state->sconn = req->sconn;
 
 	state->vector.iov_base = (void *)state->buf;
 	state->vector.iov_len = sizeof(state->buf);
@@ -480,9 +480,9 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req)
 	SIVAL(body, 0x04, 0);
 
 	subreq = tstream_writev_queue_send(state,
-					   req->conn->smb2.event_ctx,
-					   req->conn->smb2.stream,
-					   req->conn->smb2.send_queue,
+					   req->sconn->smb2.event_ctx,
+					   req->sconn->smb2.stream,
+					   req->sconn->smb2.send_queue,
 					   &state->vector, 1);
 	if (subreq == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -516,7 +516,7 @@ static void smbd_smb2_request_pending_writev_done(struct tevent_req *subreq)
 
 static NTSTATUS smbd_smb2_request_process_cancel(struct smbd_smb2_request *req)
 {
-	struct smbd_server_connection *sconn = req->conn;
+	struct smbd_server_connection *sconn = req->sconn;
 	struct smbd_smb2_request *cur;
 	const uint8_t *inhdr;
 	int i = req->current_idx;
@@ -812,7 +812,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	if (req->current_idx < req->out.vector_count) {
 		struct timeval zero = timeval_zero();
 		subreq = tevent_wakeup_send(req,
-					    req->conn->smb2.event_ctx,
+					    req->sconn->smb2.event_ctx,
 					    zero);
 		if (subreq == NULL) {
 			return NT_STATUS_NO_MEMORY;
@@ -825,9 +825,9 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	}
 
 	subreq = tstream_writev_queue_send(req,
-					   req->conn->smb2.event_ctx,
-					   req->conn->smb2.stream,
-					   req->conn->smb2.send_queue,
+					   req->sconn->smb2.event_ctx,
+					   req->sconn->smb2.stream,
+					   req->sconn->smb2.send_queue,
 					   req->out.vector,
 					   req->out.vector_count);
 	if (subreq == NULL) {
@@ -842,7 +842,7 @@ static void smbd_smb2_request_dispatch_compound(struct tevent_req *subreq)
 {
 	struct smbd_smb2_request *req = tevent_req_callback_data(subreq,
 					struct smbd_smb2_request);
-	struct smbd_server_connection *conn = req->conn;
+	struct smbd_server_connection *sconn = req->sconn;
 	NTSTATUS status;
 
 	tevent_wakeup_recv(subreq);
@@ -853,7 +853,7 @@ static void smbd_smb2_request_dispatch_compound(struct tevent_req *subreq)
 
 	status = smbd_smb2_request_dispatch(req);
 	if (!NT_STATUS_IS_OK(status)) {
-		smbd_server_connection_terminate(conn, nt_errstr(status));
+		smbd_server_connection_terminate(sconn, nt_errstr(status));
 		return;
 	}
 }
@@ -862,7 +862,7 @@ static void smbd_smb2_request_writev_done(struct tevent_req *subreq)
 {
 	struct smbd_smb2_request *req = tevent_req_callback_data(subreq,
 					struct smbd_smb2_request);
-	struct smbd_server_connection *conn = req->conn;
+	struct smbd_server_connection *sconn = req->sconn;
 	int ret;
 	int sys_errno;
 
@@ -871,7 +871,7 @@ static void smbd_smb2_request_writev_done(struct tevent_req *subreq)
 	TALLOC_FREE(req);
 	if (ret == -1) {
 		NTSTATUS status = map_nt_error_from_unix(sys_errno);
-		smbd_server_connection_terminate(conn, nt_errstr(status));
+		smbd_server_connection_terminate(sconn, nt_errstr(status));
 		return;
 	}
 }
@@ -1124,7 +1124,7 @@ static void smbd_smb2_request_read_done(struct tevent_req *subreq);
 
 static struct tevent_req *smbd_smb2_request_read_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
-					struct smbd_server_connection *conn)
+					struct smbd_server_connection *sconn)
 {
 	struct tevent_req *req;
 	struct smbd_smb2_request_read_state *state;
@@ -1142,10 +1142,10 @@ static struct tevent_req *smbd_smb2_request_read_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(state->smb2_req, req)) {
 		return tevent_req_post(req, ev);
 	}
-	state->smb2_req->conn = conn;
+	state->smb2_req->sconn = sconn;
 
-	subreq = tstream_readv_pdu_queue_send(state, ev, conn->smb2.stream,
-					      conn->smb2.recv_queue,
+	subreq = tstream_readv_pdu_queue_send(state, ev, sconn->smb2.stream,
+					      sconn->smb2.recv_queue,
 					      smbd_smb2_request_next_vector,
 					      state);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1475,7 +1475,7 @@ static NTSTATUS smbd_smb2_request_read_recv(struct tevent_req *req,
 
 static void smbd_smb2_request_incoming(struct tevent_req *subreq);
 
-void smbd_smb2_first_negprot(struct smbd_server_connection *conn,
+void smbd_smb2_first_negprot(struct smbd_server_connection *sconn,
 			     const uint8_t *inbuf, size_t size)
 {
 	NTSTATUS status;
@@ -1485,50 +1485,50 @@ void smbd_smb2_first_negprot(struct smbd_server_connection *conn,
 	DEBUG(10,("smbd_smb2_first_negprot: packet length %u\n",
 		 (unsigned int)size));
 
-	status = smbd_initialize_smb2(conn);
+	status = smbd_initialize_smb2(sconn);
 	if (!NT_STATUS_IS_OK(status)) {
-		smbd_server_connection_terminate(conn, nt_errstr(status));
+		smbd_server_connection_terminate(sconn, nt_errstr(status));
 		return;
 	}
 
-	status = smbd_smb2_request_create(conn, inbuf, size, &req);
+	status = smbd_smb2_request_create(sconn, inbuf, size, &req);
 	if (!NT_STATUS_IS_OK(status)) {
-		smbd_server_connection_terminate(conn, nt_errstr(status));
+		smbd_server_connection_terminate(sconn, nt_errstr(status));
 		return;
 	}
 
 	status = smbd_smb2_request_setup_out(req);
 	if (!NT_STATUS_IS_OK(status)) {
-		smbd_server_connection_terminate(conn, nt_errstr(status));
+		smbd_server_connection_terminate(sconn, nt_errstr(status));
 		return;
 	}
 
 	status = smbd_smb2_request_dispatch(req);
 	if (!NT_STATUS_IS_OK(status)) {
-		smbd_server_connection_terminate(conn, nt_errstr(status));
+		smbd_server_connection_terminate(sconn, nt_errstr(status));
 		return;
 	}
 
 	/* ask for the next request */
-	subreq = smbd_smb2_request_read_send(conn,conn->smb2.event_ctx, conn);
+	subreq = smbd_smb2_request_read_send(sconn, sconn->smb2.event_ctx, sconn);
 	if (subreq == NULL) {
-		smbd_server_connection_terminate(conn, "no memory for reading");
+		smbd_server_connection_terminate(sconn, "no memory for reading");
 		return;
 	}
-	tevent_req_set_callback(subreq, smbd_smb2_request_incoming, conn);
+	tevent_req_set_callback(subreq, smbd_smb2_request_incoming, sconn);
 }
 
 static void smbd_smb2_request_incoming(struct tevent_req *subreq)
 {
-	struct smbd_server_connection *conn = tevent_req_callback_data(subreq,
-					      struct smbd_server_connection);
+	struct smbd_server_connection *sconn = tevent_req_callback_data(subreq,
+					       struct smbd_server_connection);
 	NTSTATUS status;
 	struct smbd_smb2_request *req = NULL;
 
-	status = smbd_smb2_request_read_recv(subreq, conn, &req);
+	status = smbd_smb2_request_read_recv(subreq, sconn, &req);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		smbd_server_connection_terminate(conn, nt_errstr(status));
+		smbd_server_connection_terminate(sconn, nt_errstr(status));
 		return;
 	}
 
@@ -1546,28 +1546,28 @@ static void smbd_smb2_request_incoming(struct tevent_req *subreq)
 
 	status = smbd_smb2_request_validate(req);
 	if (!NT_STATUS_IS_OK(status)) {
-		smbd_server_connection_terminate(conn, nt_errstr(status));
+		smbd_server_connection_terminate(sconn, nt_errstr(status));
 		return;
 	}
 
 	status = smbd_smb2_request_setup_out(req);
 	if (!NT_STATUS_IS_OK(status)) {
-		smbd_server_connection_terminate(conn, nt_errstr(status));
+		smbd_server_connection_terminate(sconn, nt_errstr(status));
 		return;
 	}
 
 	status = smbd_smb2_request_dispatch(req);
 	if (!NT_STATUS_IS_OK(status)) {
-		smbd_server_connection_terminate(conn, nt_errstr(status));
+		smbd_server_connection_terminate(sconn, nt_errstr(status));
 		return;
 	}
 
 next:
 	/* ask for the next request (this constructs the main loop) */
-	subreq = smbd_smb2_request_read_send(conn,conn->smb2.event_ctx, conn);
+	subreq = smbd_smb2_request_read_send(sconn, sconn->smb2.event_ctx, sconn);
 	if (subreq == NULL) {
-		smbd_server_connection_terminate(conn, "no memory for reading");
+		smbd_server_connection_terminate(sconn, "no memory for reading");
 		return;
 	}
-	tevent_req_set_callback(subreq, smbd_smb2_request_incoming, conn);
+	tevent_req_set_callback(subreq, smbd_smb2_request_incoming, sconn);
 }

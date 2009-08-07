@@ -243,7 +243,7 @@ void smbd_server_connection_terminate_ex(struct smbd_server_connection *sconn,
 bool smbd_is_smb2_header(const uint8_t *inbuf, size_t size);
 
 void reply_smb2002(struct smb_request *req, uint16_t choice);
-void smbd_smb2_first_negprot(struct smbd_server_connection *conn,
+void smbd_smb2_first_negprot(struct smbd_server_connection *sconn,
 			     const uint8_t *inbuf, size_t size);
 
 NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
@@ -296,7 +296,7 @@ struct smbd_smb2_request {
 	TALLOC_CTX *mem_pool;
 	struct smbd_smb2_request **parent;
 
-	struct smbd_server_connection *conn;
+	struct smbd_server_connection *sconn;
 
 	/* the session the request operates on, maybe NULL */
 	struct smbd_smb2_session *session;
@@ -361,7 +361,7 @@ struct smbd_server_connection;
 
 struct smbd_smb2_session {
 	struct smbd_smb2_session *prev, *next;
-	struct smbd_server_connection *conn;
+	struct smbd_server_connection *sconn;
 	NTSTATUS status;
 	uint64_t vuid;
 	AUTH_NTLMSSP_STATE *auth_ntlmssp_state;

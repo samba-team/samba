@@ -120,7 +120,7 @@ NTSTATUS smbd_smb2_request_process_sesssetup(struct smbd_smb2_request *req)
 
 static int smbd_smb2_session_destructor(struct smbd_smb2_session *session)
 {
-	if (session->conn == NULL) {
+	if (session->sconn == NULL) {
 		return 0;
 	}
 
@@ -129,12 +129,12 @@ static int smbd_smb2_session_destructor(struct smbd_smb2_session *session)
 		talloc_free(session->tcons.list);
 	}
 
-	idr_remove(session->conn->smb2.sessions.idtree, session->vuid);
-	DLIST_REMOVE(session->conn->smb2.sessions.list, session);
+	idr_remove(session->sconn->smb2.sessions.idtree, session->vuid);
+	DLIST_REMOVE(session->sconn->smb2.sessions.list, session);
 
 	session->vuid = 0;
 	session->status = NT_STATUS_USER_SESSION_DELETED;
-	session->conn = NULL;
+	session->sconn = NULL;
 
 	return 0;
 }
@@ -157,14 +157,14 @@ static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *req,
 		int id;
 
 		/* create a new session */
-		session = talloc_zero(req->conn, struct smbd_smb2_session);
+		session = talloc_zero(req->sconn, struct smbd_smb2_session);
 		if (session == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
 		session->status = NT_STATUS_MORE_PROCESSING_REQUIRED;
-		id = idr_get_new_random(req->conn->smb2.sessions.idtree,
+		id = idr_get_new_random(req->sconn->smb2.sessions.idtree,
 					session,
-					req->conn->smb2.sessions.limit);
+					req->sconn->smb2.sessions.limit);
 		if (id == -1) {
 			return NT_STATUS_INSUFFICIENT_RESOURCES;
 		}
@@ -177,15 +177,15 @@ static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *req,
 		session->tcons.limit = 0x0000FFFE;
 		session->tcons.list = NULL;
 
-		DLIST_ADD_END(req->conn->smb2.sessions.list, session,
+		DLIST_ADD_END(req->sconn->smb2.sessions.list, session,
 			      struct smbd_smb2_session *);
-		session->conn = req->conn;
+		session->sconn = req->sconn;
 		talloc_set_destructor(session, smbd_smb2_session_destructor);
 	} else {
 		void *p;
 
 		/* lookup an existing session */
-		p = idr_find(req->conn->smb2.sessions.idtree, in_session_id);
+		p = idr_find(req->sconn->smb2.sessions.idtree, in_session_id);
 		if (p == NULL) {
 			return NT_STATUS_USER_SESSION_DELETED;
 		}
@@ -315,7 +315,7 @@ static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *req,
 	session->compat_vuser->server_info = session->server_info;
 	session->compat_vuser->session_keystr = NULL;
 	session->compat_vuser->vuid = session->vuid;
-	DLIST_ADD(session->conn->smb1.sessions.validated_users, session->compat_vuser);
+	DLIST_ADD(session->sconn->smb1.sessions.validated_users, session->compat_vuser);
 
 	session->status = NT_STATUS_OK;
 
@@ -345,7 +345,7 @@ NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 	in_session_id = BVAL(inhdr, SMB2_HDR_SESSION_ID);
 
 	/* lookup an existing session */
-	p = idr_find(req->conn->smb2.sessions.idtree, in_session_id);
+	p = idr_find(req->sconn->smb2.sessions.idtree, in_session_id);
 	if (p == NULL) {
 		return NT_STATUS_USER_SESSION_DELETED;
 	}
