@@ -191,7 +191,7 @@ static void wb_getpwsid_sid2gid_done(struct tevent_req *subreq)
 	fstrcpy(state->pw->pw_passwd, "*");
 	fstrcpy(state->pw->pw_gecos, state->userinfo->full_name);
 
-	if (!fillup_pw_field(lp_template_homedir(), state->pw->pw_name,
+	if (!fillup_pw_field(lp_template_homedir(), username,
 			     state->user_domain->name, state->pw->pw_uid,
 			     state->pw->pw_gid, state->userinfo->homedir,
 			     state->pw->pw_dir)) {
@@ -200,9 +200,9 @@ static void wb_getpwsid_sid2gid_done(struct tevent_req *subreq)
 		return;
 	}
 
-	if (!fillup_pw_field(lp_template_homedir(), state->pw->pw_name,
+	if (!fillup_pw_field(lp_template_shell(), state->pw->pw_name,
 			     state->user_domain->name, state->pw->pw_uid,
-			     state->pw->pw_gid, state->userinfo->homedir,
+			     state->pw->pw_gid, state->userinfo->shell,
 			     state->pw->pw_shell)) {
 		DEBUG(5, ("Could not compose shell\n"));
 		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
