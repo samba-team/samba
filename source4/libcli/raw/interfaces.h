@@ -2448,22 +2448,6 @@ union smb_search_first {
 		} out;
 	} t2ffirst;
 
-/*
-  SMB2 uses different level numbers for the same old SMB trans2 search levels
-*/
-#define SMB2_FIND_DIRECTORY_INFO         0x01
-#define SMB2_FIND_FULL_DIRECTORY_INFO    0x02
-#define SMB2_FIND_BOTH_DIRECTORY_INFO    0x03
-#define SMB2_FIND_NAME_INFO              0x0C
-#define SMB2_FIND_ID_BOTH_DIRECTORY_INFO 0x25
-#define SMB2_FIND_ID_FULL_DIRECTORY_INFO 0x26
-
-/* flags for SMB2 find */
-#define SMB2_CONTINUE_FLAG_RESTART    0x01
-#define SMB2_CONTINUE_FLAG_SINGLE     0x02
-#define SMB2_CONTINUE_FLAG_INDEX      0x04
-#define SMB2_CONTINUE_FLAG_REOPEN     0x10
-
 	/* SMB2 Find */
 	struct smb2_find {
 		enum smb_search_level level;
