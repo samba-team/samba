@@ -187,13 +187,13 @@ int ldb_comparison_fold(struct ldb_context *ldb, void *mem_ctx,
 {
 	const char *s1=(const char *)v1->data, *s2=(const char *)v2->data;
 	size_t n1 = v1->length, n2 = v2->length;
-	const char *u1, *u2;
 	char *b1, *b2;
+	const char *u1, *u2;
 	int ret;
-	while (*s1 == ' ' && n1) { s1++; n1--; };
-	while (*s2 == ' ' && n2) { s2++; n2--; };
-	/* TODO: make utf8 safe, possibly with helper function from application */
-	while (*s1 && *s2 && n1 && n2) {
+	while (n1 && *s1 == ' ') { s1++; n1--; };
+	while (n2 && *s2 == ' ') { s2++; n2--; };
+
+	while (n1 && n2 && *s1 && *s2) {
 		/* the first 127 (0x7F) chars are ascii and utf8 guarantes they
 		 * never appear in multibyte sequences */
 		if (((unsigned char)s1[0]) & 0x80) goto utf8str;
@@ -201,39 +201,57 @@ int ldb_comparison_fold(struct ldb_context *ldb, void *mem_ctx,
 		if (toupper((unsigned char)*s1) != toupper((unsigned char)*s2))
 			break;
 		if (*s1 == ' ') {
-			while (s1[0] == s1[1] && n1) { s1++; n1--; }
-			while (s2[0] == s2[1] && n2) { s2++; n2--; }
+			while (n1 && s1[0] == s1[1]) { s1++; n1--; }
+			while (n2 && s2[0] == s2[1]) { s2++; n2--; }
 		}
 		s1++; s2++;
 		n1--; n2--;
 	}
-	if (! (*s1 && *s2)) {
-		/* check for trailing spaces only if one of the pointers
-		 * has reached the end of the strings otherwise we
-		 * can mistakenly match.
-		 * ex. "domain users" <-> "domainUpdates"
-		 */
-		while (*s1 == ' ') { s1++; n1--; }
-		while (*s2 == ' ') { s2++; n2--; }
+
+	/* check for trailing spaces only if the other pointers has
+	 * reached the end of the strings otherwise we can
+	 * mistakenly match.  ex. "domain users" <->
+	 * "domainUpdates"
+	 */
+	if (n1 && *s1 == ' ' && (!n2 || !*s2)) {
+		while (n1 && *s1 == ' ') { s1++; n1--; }		
 	}
-	return (int)(toupper(*s1)) - (int)(toupper(*s2));
+	if (n2 && *s2 == ' ' && (!n1 || !*s1)) {
+		while (n2 && *s2 == ' ') { s2++; n2--; }		
+	}
+	if (n1 == 0 && n2 != 0) {
+		return -(int)toupper(*s2);
+	}
+	if (n2 == 0 && n1 != 0) {
+		return (int)toupper(*s1);
+	}
+	if (n2 == 0 && n2 == 0) {
+		return 0;
+	}
+	return (int)toupper(*s1) - (int)toupper(*s2);
 
 utf8str:
 	/* no need to recheck from the start, just from the first utf8 char found */
 	b1 = ldb_casefold(ldb, mem_ctx, s1, n1);
 	b2 = ldb_casefold(ldb, mem_ctx, s2, n2);
 
-	if (b1 && b2) {
-		/* Both strings converted correctly */
-
-		u1 = b1;
-		u2 = b2;
-	} else {
-		/* One of the strings was not UTF8, so we have no options but to do a binary compare */
-
-		u1 = s1;
-		u2 = s2;
+	if (!b1 || !b2) {
+		/* One of the strings was not UTF8, so we have no
+		 * options but to do a binary compare */
+		talloc_free(b1);
+		talloc_free(b2);
+		if (memcmp(s1, s2, MIN(n1, n2)) == 0) {
+			if (n1 == n2) return 0;
+			if (n1 > n2) {
+				return (int)toupper(s1[n2]);
+			} else {
+				return -(int)toupper(s2[n1]);
+			}
+		}
 	}
+
+	u1 = b1;
+	u2 = b2;
 
 	while (*u1 & *u2) {
 		if (*u1 != *u2)
