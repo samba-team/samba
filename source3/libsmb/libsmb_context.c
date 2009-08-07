@@ -651,22 +651,28 @@ void smbc_set_credentials_with_fallback(SMBCCTX *context,
 {
 	smbc_bool use_kerberos = false;
 	const char *signing_state = "off";
-	struct user_auth_info *auth_info = user_auth_info_init(NULL);
+	struct user_auth_info *auth_info = NULL;
 
-	if (auth_info) {
-	}
-
-	if (! context ||
-	    ! workgroup || ! *workgroup ||
-	    ! user || ! *user ||
-	    ! password || ! *password) {
+	if (! context) {
 
 		return;
 	}
 
+	if (! workgroup || ! *workgroup) {
+		workgroup = smbc_getWorkgroup(context);
+	}
+
+	if (! user) {
+		user = smbc_getUser(context);
+	}
+
+	if (! password) {
+		password = "";
+	}
+
 	auth_info = user_auth_info_init(NULL);
 
-	if (auth_info) {
+	if (! auth_info) {
 		DEBUG(0, ("smbc_set_credentials_with_fallback: allocation fail\n"));
 		return;
 	}
