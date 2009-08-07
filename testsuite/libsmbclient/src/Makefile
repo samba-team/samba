@@ -2,7 +2,7 @@ CC	=	gcc
 CFLAGS	=	-Wall -W -O2 -g -I../../../source/include
 LFLAGS	=	-L../../../source/bin
 
-LIBS=	-L/usr/lib -lsmbclient
+LIBS=	-L/usr/lib -lsmbclient -ltalloc
 INCPATH= -I. -I/usr/include -I./include
 BIN_DIR=bin
 
@@ -99,7 +99,8 @@ G_STAT		= 	$(BIN_DIR)/stat_1 \
 			$(BIN_DIR)/stat_3 \
 			$(BIN_DIR)/stat_4 \
 			$(BIN_DIR)/stat_5 \
-			$(BIN_DIR)/stat_6
+			$(BIN_DIR)/stat_6 \
+			$(BIN_DIR)/stat_k
 
 G_GETDENTS	= 	$(BIN_DIR)/getdents_1 \
 			$(BIN_DIR)/getdents_2 \
@@ -520,6 +521,10 @@ $(BIN_DIR)/stat_5:	stat/stat_5.o
 $(BIN_DIR)/stat_6:	stat/stat_6.o
 	@echo Linking $@
 	@$(CC) $(LFLAGS) -o $@ stat/stat_6.o $(INCPATH) $(LIBS)
+
+$(BIN_DIR)/stat_k:	stat/stat_k.o
+	@echo Linking $@
+	@$(CC) $(LFLAGS) -o $@ stat/stat_k.o $(INCPATH) $(LIBS)
 
 $(BIN_DIR)/getdents_1:	getdents/getdents_1.o
 	@echo Linking $@
