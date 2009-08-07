@@ -5224,7 +5224,6 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 		FILE_NOTIFY_CHANGE_LAST_ACCESS
 		|FILE_NOTIFY_CHANGE_LAST_WRITE;
 	bool set_createtime = false;
-	bool set_ctime = false;
 	NTSTATUS status;
 
 	if (!VALID_STAT(smb_fname->st)) {
@@ -5240,8 +5239,6 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 
 	if (null_timespec(ft->ctime)) {
 		ft->ctime = smb_fname->st.st_ex_ctime;
-	} else {
-		set_ctime = true;
 	}
 
 	if (null_timespec(ft->atime)) {
@@ -5278,8 +5275,9 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 		struct timespec ats = smb_fname->st.st_ex_atime;
 		if ((timespec_compare(&ft->atime, &ats) == 0) &&
 		    (timespec_compare(&ft->mtime, &mts) == 0)) {
-			if (set_createtime || set_ctime) {
-				notify_fname(conn, NOTIFY_ACTION_MODIFIED, FILE_NOTIFY_CHANGE_LAST_WRITE,
+			if (set_createtime) {
+				notify_fname(conn, NOTIFY_ACTION_MODIFIED,
+						FILE_NOTIFY_CHANGE_CREATION,
 						smb_fname->base_name);
 			}
 			return NT_STATUS_OK;
