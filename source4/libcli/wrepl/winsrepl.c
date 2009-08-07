@@ -171,7 +171,7 @@ struct wrepl_socket *wrepl_socket_init(TALLOC_CTX *mem_ctx,
 	wrepl_socket = talloc_zero(mem_ctx, struct wrepl_socket);
 	if (!wrepl_socket) return NULL;
 
-	wrepl_socket->event.ctx = talloc_reference(wrepl_socket, event_ctx);
+	wrepl_socket->event.ctx = event_ctx;
 	if (!wrepl_socket->event.ctx) goto failed;
 
 	wrepl_socket->iconv_convenience = iconv_convenience;
@@ -205,7 +205,7 @@ struct wrepl_socket *wrepl_socket_merge(TALLOC_CTX *mem_ctx,
 	wrepl_socket = talloc_zero(mem_ctx, struct wrepl_socket);
 	if (wrepl_socket == NULL) goto failed;
 
-	wrepl_socket->event.ctx = talloc_reference(wrepl_socket, event_ctx);
+	wrepl_socket->event.ctx = event_ctx;
 	if (wrepl_socket->event.ctx == NULL) goto failed;
 
 	wrepl_socket->sock = sock;

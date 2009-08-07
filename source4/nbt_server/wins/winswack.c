@@ -94,7 +94,7 @@ struct composite_context *wins_challenge_send(TALLOC_CTX *mem_ctx, struct wins_c
 	result = talloc_zero(mem_ctx, struct composite_context);
 	if (result == NULL) return NULL;
 	result->state = COMPOSITE_STATE_IN_PROGRESS;
-	result->event_ctx = talloc_reference(result, io->in.event_ctx);
+	result->event_ctx = io->in.event_ctx;
 
 	state = talloc_zero(result, struct wins_challenge_state);
 	if (state == NULL) goto failed;
@@ -204,7 +204,7 @@ static struct composite_context *wins_release_demand_send(TALLOC_CTX *mem_ctx, s
 	result = talloc_zero(mem_ctx, struct composite_context);
 	if (result == NULL) return NULL;
 	result->state = COMPOSITE_STATE_IN_PROGRESS;
-	result->event_ctx = talloc_reference(result, io->in.event_ctx);
+	result->event_ctx = io->in.event_ctx;
 
 	state = talloc_zero(result, struct wins_release_demand_state);
 	if (state == NULL) goto failed;

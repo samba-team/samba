@@ -596,7 +596,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 	/* it needs to be non blocking for sends */
 	set_blocking(socket_get_fd(msg->sock), false);
 
-	msg->event.ev   = talloc_reference(msg, ev);
+	msg->event.ev   = ev;
 	msg->event.fde	= event_add_fd(ev, msg, socket_get_fd(msg->sock), 
 				       EVENT_FD_READ, messaging_handler, msg);
 

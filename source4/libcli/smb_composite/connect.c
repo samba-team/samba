@@ -466,7 +466,7 @@ struct composite_context *smb_composite_connect_send(struct smb_composite_connec
 	c = talloc_zero(mem_ctx, struct composite_context);
 	if (c == NULL) goto failed;
 
-	c->event_ctx = talloc_reference(c, event_ctx);
+	c->event_ctx = event_ctx;
 	if (c->event_ctx == NULL) goto failed;
 
 	state = talloc_zero(c, struct connect_state);
