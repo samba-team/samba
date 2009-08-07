@@ -227,7 +227,7 @@ char **wins_srv_tags(void)
 	/* yes, this is O(n^2) but n is very small */
 	for (i=0;list[i];i++) {
 		struct tagged_ip t_ip;
-		
+
 		parse_ip(&t_ip, list[i]);
 
 		/* see if we already have it */
@@ -313,7 +313,7 @@ struct in_addr wins_srv_ip_tag(const char *tag, struct in_addr src_ip)
 			return t_ip.ip;
 		}
 	}
-	
+
 	/* they're all dead - try the first one until they revive */
 	for (i=0; list[i]; i++) {
 		parse_ip(&t_ip, list[i]);
