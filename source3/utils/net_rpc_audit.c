@@ -24,13 +24,13 @@
 
 static int net_help_audit(struct net_context *c, int argc, const char **argv)
 {
-	d_printf("net rpc audit list                       View configured Auditing policies\n");
-	d_printf("net rpc audit enable                     Enable Auditing\n");
-	d_printf("net rpc audit disable                    Disable Auditing\n");
-	d_printf("net rpc audit get <category>             View configured Auditing policy setting\n");
-	d_printf("net rpc audit set <category> <policy>    Set Auditing policies\n\n");
-	d_printf("\tcategory can be one of: SYSTEM, LOGON, OBJECT, PRIVILEGE, PROCESS, POLICY, SAM, DIRECTORY or ACCOUNT\n");
-	d_printf("\tpolicy can be one of: SUCCESS, FAILURE, ALL or NONE\n\n");
+	d_printf(_("net rpc audit list                       View configured Auditing policies\n"));
+	d_printf(_("net rpc audit enable                     Enable Auditing\n"));
+	d_printf(_("net rpc audit disable                    Disable Auditing\n"));
+	d_printf(_("net rpc audit get <category>             View configured Auditing policy setting\n"));
+	d_printf(_("net rpc audit set <category> <policy>    Set Auditing policies\n\n"));
+	d_printf(_("\tcategory can be one of: SYSTEM, LOGON, OBJECT, PRIVILEGE, PROCESS, POLICY, SAM, DIRECTORY or ACCOUNT\n"));
+	d_printf(_("\tpolicy can be one of: SUCCESS, FAILURE, ALL or NONE\n\n"));
 
 	return -1;
 }
@@ -44,10 +44,10 @@ static void print_auditing_category(const char *policy, const char *value)
 	int pad_len, col_len = 30;
 
 	if (policy == NULL) {
-		policy = "Unknown";
+		policy = N_("Unknown");
 	}
 	if (value == NULL) {
-		value = "Invalid";
+		value = N_("Invalid");
 	}
 
 	/* calculate padding space for d_printf to look nicer */
@@ -55,7 +55,7 @@ static void print_auditing_category(const char *policy, const char *value)
 	padding[pad_len] = 0;
 	do padding[--pad_len] = ' '; while (pad_len > 0);
 
-	d_printf("\t%s%s%s\n", policy, padding, value);
+	d_printf(_("\t%s%s%s\n"), policy, padding, value);
 }
 
 /********************************************************************
@@ -77,13 +77,13 @@ static NTSTATUS rpc_audit_get_internal(struct net_context *c,
 	uint32_t audit_category;
 
 	if (argc < 1 || argc > 2) {
-		d_printf("insufficient arguments\n");
+		d_printf(_("insufficient arguments\n"));
 		net_help_audit(c, argc, argv);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (!get_audit_category_from_param(argv[0], &audit_category)) {
-		d_printf("invalid auditing category: %s\n", argv[0]);
+		d_printf(_("invalid auditing category: %s\n"), argv[0]);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -119,7 +119,7 @@ static NTSTATUS rpc_audit_get_internal(struct net_context *c,
 
  done:
 	if (!NT_STATUS_IS_OK(result)) {
-		d_printf("failed to get auditing policy: %s\n",
+		d_printf(_("failed to get auditing policy: %s\n"),
 			nt_errstr(result));
 	}
 
@@ -144,13 +144,13 @@ static NTSTATUS rpc_audit_set_internal(struct net_context *c,
 	uint32_t audit_policy, audit_category;
 
 	if (argc < 2 || argc > 3) {
-		d_printf("insufficient arguments\n");
+		d_printf(_("insufficient arguments\n"));
 		net_help_audit(c, argc, argv);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (!get_audit_category_from_param(argv[0], &audit_category)) {
-		d_printf("invalid auditing category: %s\n", argv[0]);
+		d_printf(_("invalid auditing category: %s\n"), argv[0]);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -165,7 +165,7 @@ static NTSTATUS rpc_audit_set_internal(struct net_context *c,
 	} else if (strequal(argv[1], "None")) {
 		audit_policy = LSA_AUDIT_POLICY_CLEAR;
 	} else {
-		d_printf("invalid auditing policy: %s\n", argv[1]);
+		d_printf(_("invalid auditing policy: %s\n"), argv[1]);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -209,7 +209,8 @@ static NTSTATUS rpc_audit_set_internal(struct net_context *c,
 
  done:
 	if (!NT_STATUS_IS_OK(result)) {
-		d_printf("failed to set audit policy: %s\n", nt_errstr(result));
+		d_printf(_("failed to set audit policy: %s\n"),
+			 nt_errstr(result));
 	}
 
 	return result;
@@ -257,8 +258,10 @@ static NTSTATUS rpc_audit_enable_internal_ext(struct rpc_pipe_client *pipe_hnd,
 
  done:
 	if (!NT_STATUS_IS_OK(result)) {
-		d_printf("failed to %s audit policy: %s\n",
-			enable ? "enable":"disable", nt_errstr(result));
+		d_printf(_("%s: %s\n"),
+			enable ? _("failed to enable audit policy"):
+				 _("failed to disable audit policy"),
+			nt_errstr(result));
 	}
 
 	return result;
@@ -329,22 +332,23 @@ static NTSTATUS rpc_audit_list_internal(struct net_context *c,
 		goto done;
 	}
 
-	printf("Auditing:\t\t");
+	printf(_("Auditing:\t\t"));
 	switch (info->audit_events.auditing_mode) {
 		case true:
-			printf("Enabled");
+			printf(_("Enabled"));
 			break;
 		case false:
-			printf("Disabled");
+			printf(_("Disabled"));
 			break;
 		default:
-			printf("unknown (%d)", info->audit_events.auditing_mode);
+			printf(_("unknown (%d)"),
+			       info->audit_events.auditing_mode);
 			break;
 	}
 	printf("\n");
 
-	printf("Auditing categories:\t%d\n", info->audit_events.count);
-	printf("Auditing settings:\n");
+	printf(_("Auditing categories:\t%d\n"), info->audit_events.count);
+	printf(_("Auditing settings:\n"));
 
 	for (i=0; i < info->audit_events.count; i++) {
 		const char *val = audit_policy_str(mem_ctx, info->audit_events.settings[i]);
@@ -354,7 +358,7 @@ static NTSTATUS rpc_audit_list_internal(struct net_context *c,
 
  done:
 	if (!NT_STATUS_IS_OK(result)) {
-		d_printf("failed to list auditing policies: %s\n",
+		d_printf(_("failed to list auditing policies: %s\n"),
 			nt_errstr(result));
 	}
 
@@ -367,9 +371,9 @@ static NTSTATUS rpc_audit_list_internal(struct net_context *c,
 static int rpc_audit_get(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf("Usage:\n"
-			 "net rpc audit get\n"
-			 "    View configured audit setting\n");
+		d_printf(_("Usage:\n"
+			   "net rpc audit get\n"
+			   "    View configured audit setting\n"));
 		return 0;
 	}
 
@@ -383,9 +387,9 @@ static int rpc_audit_get(struct net_context *c, int argc, const char **argv)
 static int rpc_audit_set(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf("Usage:\n"
-			 "net rpc audit set\n"
-			 "    Set audit policies\n");
+		d_printf(_("Usage:\n"
+			   "net rpc audit set\n"
+			   "    Set audit policies\n"));
 		return 0;
 	}
 
@@ -399,9 +403,9 @@ static int rpc_audit_set(struct net_context *c, int argc, const char **argv)
 static int rpc_audit_enable(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf("Usage:\n"
-			 "net rpc audit enable\n"
-			 "    Enable auditing\n");
+		d_printf(_("Usage:\n"
+			   "net rpc audit enable\n"
+			   "    Enable auditing\n"));
 		return 0;
 	}
 
@@ -415,9 +419,9 @@ static int rpc_audit_enable(struct net_context *c, int argc, const char **argv)
 static int rpc_audit_disable(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf("Usage:\n"
-			 "net rpc audit disable\n"
-			 "    Disable auditing\n");
+		d_printf(_("Usage:\n"
+			   "net rpc audit disable\n"
+			   "    Disable auditing\n"));
 		return 0;
 	}
 
@@ -431,9 +435,9 @@ static int rpc_audit_disable(struct net_context *c, int argc, const char **argv)
 static int rpc_audit_list(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf("Usage:\n"
-			 "net rpc audit list\n"
-			 "    List auditing settings\n");
+		d_printf(_("Usage:\n"
+			   "net rpc audit list\n"
+			   "    List auditing settings\n"));
 		return 0;
 	}
 
@@ -451,41 +455,41 @@ int net_rpc_audit(struct net_context *c, int argc, const char **argv)
 			"get",
 			rpc_audit_get,
 			NET_TRANSPORT_RPC,
-			"View configured auditing settings",
-			"net rpc audit get\n"
-			"    View configured auditing settings"
+			N_("View configured auditing settings"),
+			N_("net rpc audit get\n"
+			   "    View configured auditing settings")
 		},
 		{
 			"set",
 			rpc_audit_set,
 			NET_TRANSPORT_RPC,
-			"Set auditing policies",
-			"net rpc audit set\n"
-			"    Set auditing policies"
+			N_("Set auditing policies"),
+			N_("net rpc audit set\n"
+			   "    Set auditing policies")
 		},
 		{
 			"enable",
 			rpc_audit_enable,
 			NET_TRANSPORT_RPC,
-			"Enable auditing",
-			"net rpc audit enable\n"
-			"    Enable auditing"
+			N_("Enable auditing"),
+			N_("net rpc audit enable\n"
+			   "    Enable auditing")
 		},
 		{
 			"disable",
 			rpc_audit_disable,
 			NET_TRANSPORT_RPC,
-			"Disable auditing",
-			"net rpc audit disable\n"
-			"    Disable auditing"
+			N_("Disable auditing"),
+			N_("net rpc audit disable\n"
+			   "    Disable auditing")
 		},
 		{
 			"list",
 			rpc_audit_list,
 			NET_TRANSPORT_RPC,
-			"List configured auditing settings",
-			"net rpc audit list\n"
-			"    List configured auditing settings"
+			N_("List configured auditing settings"),
+			N_("net rpc audit list\n"
+			   "    List configured auditing settings")
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
