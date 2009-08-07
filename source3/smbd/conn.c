@@ -163,7 +163,6 @@ find_again:
 
 	sconn->smb1.tcons.num_open++;
 
-	string_set(&conn->dirpath,"");
 	string_set(&conn->connectpath,"");
 	string_set(&conn->origpath,"");
 	
@@ -284,7 +283,6 @@ static void conn_free_internal(connection_struct *conn)
 	free_namearray(conn->veto_oplock_list);
 	free_namearray(conn->aio_write_behind_list);
 	
-	string_free(&conn->dirpath);
 	string_free(&conn->connectpath);
 	string_free(&conn->origpath);
 

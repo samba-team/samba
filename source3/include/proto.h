@@ -6208,7 +6208,7 @@ struct dptr_struct *dptr_fetch(char *buf,int *num);
 struct dptr_struct *dptr_fetch_lanman2(int dptr_num);
 bool dir_check_ftype(connection_struct *conn, uint32 mode, uint32 dirtype);
 bool get_dir_entry(TALLOC_CTX *ctx,
-		connection_struct *conn,
+		struct dptr_struct *dirptr,
 		const char *mask,
 		uint32 dirtype,
 		char **pp_fname_out,

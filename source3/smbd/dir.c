@@ -407,8 +407,6 @@ NTSTATUS dptr_create(connection_struct *conn, const char *path, bool old_handle,
 		return map_nt_error_from_unix(errno);
 	}
 
-	string_set(&conn->dirpath,path);
-
 	if (dirhandles_open >= MAX_OPEN_DIRECTORIES) {
 		dptr_idleoldest();
 	}
@@ -1030,7 +1028,7 @@ static bool smbd_dirptr_8_3_mode_fn(TALLOC_CTX *ctx,
 }
 
 bool get_dir_entry(TALLOC_CTX *ctx,
-		connection_struct *conn,
+		struct dptr_struct *dirptr,
 		const char *mask,
 		uint32_t dirtype,
 		char **_fname,
@@ -1040,18 +1038,15 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 		bool check_descend,
 		bool ask_sharemode)
 {
+	connection_struct *conn = dirptr->conn;
 	char *fname = NULL;
 	struct smb_filename *smb_fname = NULL;
 	uint32_t mode = 0;
 	long prev_offset;
 	bool ok;
 
-	if (!conn->dirptr) {
-		return false;
-	}
-
 	ok = smbd_dirptr_get_entry(ctx,
-				   conn->dirptr,
+				   dirptr,
 				   mask,
 				   dirtype,
 				   check_descend,

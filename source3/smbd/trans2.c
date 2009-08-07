@@ -1448,6 +1448,7 @@ static bool smbd_dirptr_lanman2_mode_fn(TALLOC_CTX *ctx,
 
 static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 				connection_struct *conn,
+				struct dptr_struct *dirptr,
 				uint16 flags2,
 				const char *path_mask,
 				uint32 dirtype,
@@ -1487,7 +1488,7 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 	state.conn = conn;
 	state.info_level = info_level;
 	state.check_mangled_names = lp_manglednames(conn->params);
-	state.has_wild = dptr_has_wild(conn->dirptr);
+	state.has_wild = dptr_has_wild(dirptr);
 	state.got_exact_match = false;
 
 	*out_of_space = False;
@@ -1496,10 +1497,6 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 	ZERO_STRUCT(mdate_ts);
 	ZERO_STRUCT(adate_ts);
 	ZERO_STRUCT(create_date_ts);
-
-	if (!conn->dirptr) {
-		return false;
-	}
 
 	p = strrchr_m(path_mask,'/');
 	if(p != NULL) {
@@ -1513,7 +1510,7 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 	}
 
 	ok = smbd_dirptr_get_entry(ctx,
-				   conn->dirptr,
+				   dirptr,
 				   mask,
 				   dirtype,
 				   dont_descend,
@@ -1666,7 +1663,7 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 				TALLOC_FREE(fname);
 				TALLOC_FREE(smb_fname);
 				/* Move the dirptr back to prev_dirpos */
-				dptr_SeekDir(conn->dirptr, prev_dirpos);
+				dptr_SeekDir(dirptr, prev_dirpos);
 				*out_of_space = True;
 				DEBUG(9,("get_lanman2_dir_entry: out of space\n"));
 				return False; /* Not finished - just out of space */
@@ -1964,7 +1961,7 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 
 	if (PTR_DIFF(p,pdata) > space_remaining) {
 		/* Move the dirptr back to prev_dirpos */
-		dptr_SeekDir(conn->dirptr, prev_dirpos);
+		dptr_SeekDir(dirptr, prev_dirpos);
 		*out_of_space = True;
 		DEBUG(9,("get_lanman2_dir_entry: out of space\n"));
 		return False; /* Not finished - just out of space */
@@ -2020,6 +2017,7 @@ static void call_trans2findfirst(connection_struct *conn,
 	NTSTATUS ntstatus = NT_STATUS_OK;
 	bool ask_sharemode = lp_parm_bool(SNUM(conn), "smbd", "search ask sharemode", true);
 	TALLOC_CTX *ctx = talloc_tos();
+	struct dptr_struct *dirptr = NULL;
 
 	if (total_params < 13) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -2177,24 +2175,25 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				mask,
 				mask_contains_wcard,
 				dirtype,
-				&conn->dirptr);
+				&dirptr);
 
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		reply_nterror(req, ntstatus);
 		goto out;
 	}
 
-	dptr_num = dptr_dnum(conn->dirptr);
+	dptr_num = dptr_dnum(dirptr);
 	DEBUG(4,("dptr_num is %d, wcard = %s, attr = %d\n", dptr_num, mask, dirtype));
 
 	/* Initialize per TRANS2_FIND_FIRST operation data */
-	dptr_init_search_op(conn->dirptr);
+	dptr_init_search_op(dirptr);
 
 	/* We don't need to check for VOL here as this is returned by
 		a different TRANS2 call. */
 
-	DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n", conn->dirpath,lp_dontdescend(SNUM(conn))));
-	if (in_list(conn->dirpath,lp_dontdescend(SNUM(conn)),conn->case_sensitive))
+	DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n",
+		directory,lp_dontdescend(SNUM(conn))));
+	if (in_list(directory,lp_dontdescend(SNUM(conn)),conn->case_sensitive))
 		dont_descend = True;
 
 	p = pdata;
@@ -2212,6 +2211,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		} else {
 			finished = !get_lanman2_dir_entry(ctx,
 					conn,
+					dirptr,
 					req->flags2,
 					mask,dirtype,info_level,
 					requires_resume_key,dont_descend,
@@ -2355,6 +2355,7 @@ static void call_trans2findnext(connection_struct *conn,
 	NTSTATUS ntstatus = NT_STATUS_OK;
 	bool ask_sharemode = lp_parm_bool(SNUM(conn), "smbd", "search ask sharemode", true);
 	TALLOC_CTX *ctx = talloc_tos();
+	struct dptr_struct *dirptr;
 
 	if (total_params < 13) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -2476,12 +2477,12 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	params = *pparams;
 
 	/* Check that the dptr is valid */
-	if(!(conn->dirptr = dptr_fetch_lanman2(dptr_num))) {
+	if(!(dirptr = dptr_fetch_lanman2(dptr_num))) {
 		reply_doserror(req, ERRDOS, ERRnofiles);
 		return;
 	}
 
-	string_set(&conn->dirpath,dptr_path(dptr_num));
+	directory = dptr_path(dptr_num);
 
 	/* Get the wildcard mask from the dptr */
 	if((p = dptr_wcard(dptr_num))== NULL) {
@@ -2491,24 +2492,24 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	}
 
 	mask = p;
-	directory = conn->dirpath;
 
 	/* Get the attr mask from the dptr */
 	dirtype = dptr_attr(dptr_num);
 
 	DEBUG(3,("dptr_num is %d, mask = %s, attr = %x, dirptr=(0x%lX,%ld)\n",
 		dptr_num, mask, dirtype,
-		(long)conn->dirptr,
-		dptr_TellDir(conn->dirptr)));
+		(long)dirptr,
+		dptr_TellDir(dirptr)));
 
 	/* Initialize per TRANS2_FIND_NEXT operation data */
-	dptr_init_search_op(conn->dirptr);
+	dptr_init_search_op(dirptr);
 
 	/* We don't need to check for VOL here as this is returned by
 		a different TRANS2 call. */
 
-	DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n",conn->dirpath,lp_dontdescend(SNUM(conn))));
-	if (in_list(conn->dirpath,lp_dontdescend(SNUM(conn)),conn->case_sensitive))
+	DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n",
+		 directory,lp_dontdescend(SNUM(conn))));
+	if (in_list(directory,lp_dontdescend(SNUM(conn)),conn->case_sensitive))
 		dont_descend = True;
 
 	p = pdata;
@@ -2550,7 +2551,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		 * should already be at the correct place.
 		 */
 
-		finished = !dptr_SearchDir(conn->dirptr, resume_name, &current_pos, &st);
+		finished = !dptr_SearchDir(dirptr, resume_name, &current_pos, &st);
 	} /* end if resume_name && !continue_bit */
 
 	for (i=0;(i<(int)maxentries) && !finished && !out_of_space ;i++) {
@@ -2564,6 +2565,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		} else {
 			finished = !get_lanman2_dir_entry(ctx,
 						conn,
+						dirptr,
 						req->flags2,
 						mask,dirtype,info_level,
 						requires_resume_key,dont_descend,

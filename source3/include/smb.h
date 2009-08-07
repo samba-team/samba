@@ -551,12 +551,10 @@ typedef struct connection_struct {
 	struct share_params *params;
 	bool force_user;
 	struct vuid_cache vuid_cache;
-	struct dptr_struct *dirptr;
 	bool printer;
 	bool ipc;
 	bool read_only; /* Attributes for the current user of the share. */
 	bool admin_user; /* Attributes for the current user of the share. */
-	char *dirpath;
 	char *connectpath;
 	char *origpath;
 

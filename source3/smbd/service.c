@@ -692,7 +692,6 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	conn->printer = (strncmp(dev,"LPT",3) == 0);
 	conn->ipc = ( (strncmp(dev,"IPC",3) == 0) ||
 		      ( lp_enable_asu_support() && strequal(dev,"ADMIN$")) );
-	conn->dirptr = NULL;
 
 	/* Case options for the share. */
 	if (lp_casesensitive(snum) == Auto) {
@@ -712,7 +711,6 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	conn->hide_list = NULL;
 	conn->veto_oplock_list = NULL;
 	conn->aio_write_behind_list = NULL;
-	string_set(&conn->dirpath,"");
 
 	conn->read_only = lp_readonly(SNUM(conn));
 	conn->admin_user = False;
