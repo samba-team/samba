@@ -18,7 +18,6 @@
 */
 
 #include "includes.h"
-#include "smb.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/raw/raw_proto.h"
 
