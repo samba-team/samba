@@ -208,7 +208,7 @@ AC_DEFUN([AC_LD_SONAMEFLAG],
 	AC_SUBST(SONAMEFLAG)
 	SONAMEFLAG=""
 	case "$host_os" in 
-		*linux*|*gnu*)
+		*linux*|*gnu*|*qnx*)
 			SONAMEFLAG="-Wl,-soname="
 			;;
 		*solaris*)
