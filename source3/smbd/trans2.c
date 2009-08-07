@@ -1165,19 +1165,24 @@ static void call_trans2open(connection_struct *conn,
  Case can be significant or not.
 **********************************************************/
 
-static bool exact_match(connection_struct *conn,
-		const char *str,
-		const char *mask)
+static bool exact_match(bool has_wild,
+			bool case_sensitive,
+			const char *str,
+			const char *mask)
 {
-	if (mask[0] == '.' && mask[1] == 0)
-		return False;
-	if (dptr_has_wild(conn->dirptr)) {
-		return False;
+	if (mask[0] == '.' && mask[1] == 0) {
+		return false;
 	}
-	if (conn->case_sensitive)
+
+	if (has_wild) {
+		return false;
+	}
+
+	if (case_sensitive) {
 		return strcmp(str,mask)==0;
-	else
+	} else {
 		return StrCaseCmp(str,mask) == 0;
+	}
 }
 
 /****************************************************************************
@@ -1317,6 +1322,130 @@ static bool check_msdfs_link(connection_struct *conn,
  Get a level dependent lanman2 dir entry.
 ****************************************************************************/
 
+struct smbd_dirptr_lanman2_state {
+	connection_struct *conn;
+	uint32_t info_level;
+	bool check_mangled_names;
+	bool has_wild;
+	bool got_exact_match;
+};
+
+static bool smbd_dirptr_lanman2_match_fn(TALLOC_CTX *ctx,
+					 void *private_data,
+					 const char *dname,
+					 const char *mask,
+					 char **_fname)
+{
+	struct smbd_dirptr_lanman2_state *state =
+		(struct smbd_dirptr_lanman2_state *)private_data;
+	bool ok;
+	char mangled_name[13]; /* mangled 8.3 name. */
+	bool got_match;
+	const char *fname;
+
+	/* Mangle fname if it's an illegal name. */
+	if (mangle_must_mangle(dname, state->conn->params)) {
+		ok = name_to_8_3(dname, mangled_name,
+				 true, state->conn->params);
+		if (!ok) {
+			return false;
+		}
+		fname = mangled_name;
+	} else {
+		fname = dname;
+	}
+
+	got_match = exact_match(state->has_wild,
+				state->conn->case_sensitive,
+				fname, mask);
+	state->got_exact_match = got_match;
+	if (!got_match) {
+		got_match = mask_match(fname, mask,
+				       state->conn->case_sensitive);
+	}
+
+	if(!got_match && state->check_mangled_names &&
+	   !mangle_is_8_3(fname, false, state->conn->params)) {
+		/*
+		 * It turns out that NT matches wildcards against
+		 * both long *and* short names. This may explain some
+		 * of the wildcard wierdness from old DOS clients
+		 * that some people have been seeing.... JRA.
+		 */
+		/* Force the mangling into 8.3. */
+		ok = name_to_8_3(fname, mangled_name,
+				 false, state->conn->params);
+		if (!ok) {
+			return false;
+		}
+
+		got_match = exact_match(state->has_wild,
+					state->conn->case_sensitive,
+					mangled_name, mask);
+		state->got_exact_match = got_match;
+		if (!got_match) {
+			got_match = mask_match(mangled_name, mask,
+					       state->conn->case_sensitive);
+		}
+	}
+
+	if (!got_match) {
+		return false;
+	}
+
+	*_fname = talloc_strdup(ctx, fname);
+	if (*_fname == NULL) {
+		return false;
+	}
+
+	return true;
+}
+
+static bool smbd_dirptr_lanman2_mode_fn(TALLOC_CTX *ctx,
+					void *private_data,
+					struct smb_filename *smb_fname,
+					uint32_t *_mode)
+{
+	struct smbd_dirptr_lanman2_state *state =
+		(struct smbd_dirptr_lanman2_state *)private_data;
+	bool ms_dfs_link = false;
+	uint32_t mode = 0;
+
+	if (INFO_LEVEL_IS_UNIX(state->info_level)) {
+		if (SMB_VFS_LSTAT(state->conn, smb_fname) != 0) {
+			DEBUG(5,("smbd_dirptr_lanman2_mode_fn: "
+				 "Couldn't lstat [%s] (%s)\n",
+				 smb_fname_str_dbg(smb_fname),
+				 strerror(errno)));
+			return false;
+		}
+	} else if (!VALID_STAT(smb_fname->st) &&
+		   SMB_VFS_STAT(state->conn, smb_fname) != 0) {
+		/* Needed to show the msdfs symlinks as
+		 * directories */
+
+		ms_dfs_link = check_msdfs_link(state->conn,
+					       smb_fname->base_name,
+					       &smb_fname->st);
+		if (!ms_dfs_link) {
+			DEBUG(5,("smbd_dirptr_lanman2_mode_fn: "
+				 "Couldn't stat [%s] (%s)\n",
+				 smb_fname_str_dbg(smb_fname),
+				 strerror(errno)));
+			return false;
+		}
+	}
+
+	if (ms_dfs_link) {
+		mode = dos_mode_msdfs(state->conn, smb_fname);
+	} else {
+		mode = dos_mode(state->conn, smb_fname);
+	}
+
+	*_mode = mode;
+	return true;
+}
+
 static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 				connection_struct *conn,
 				uint16 flags2,
@@ -1335,12 +1464,7 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 				int *last_entry_off,
 				struct ea_list *name_list)
 {
-	char *dname;
-	bool found = False;
-	SMB_STRUCT_STAT sbuf;
 	const char *mask = NULL;
-	char *pathreal = NULL;
-	char *fname = NULL;
 	char *p, *q, *pdata = *ppdata;
 	uint32 reskey=0;
 	long prev_dirpos=0;
@@ -1354,9 +1478,17 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 	char *last_entry_ptr;
 	bool was_8_3;
 	uint32 nt_extmode; /* Used for NT connections instead of mode */
-	bool needslash = ( conn->dirpath[strlen(conn->dirpath) -1] != '/');
-	bool check_mangled_names = lp_manglednames(conn->params);
-	char mangled_name[13]; /* mangled 8.3 name. */
+	char *fname = NULL;
+	struct smb_filename *smb_fname = NULL;
+	struct smbd_dirptr_lanman2_state state;
+	bool ok;
+
+	ZERO_STRUCT(state);
+	state.conn = conn;
+	state.info_level = info_level;
+	state.check_mangled_names = lp_manglednames(conn->params);
+	state.has_wild = dptr_has_wild(conn->dirptr);
+	state.got_exact_match = false;
 
 	*out_of_space = False;
 	*got_exact_match = False;
@@ -1366,13 +1498,13 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 	ZERO_STRUCT(create_date_ts);
 
 	if (!conn->dirptr) {
-		return(False);
+		return false;
 	}
 
 	p = strrchr_m(path_mask,'/');
 	if(p != NULL) {
 		if(p[1] == '\0') {
-			mask = talloc_strdup(ctx,"*.*");
+			mask = "*.*";
 		} else {
 			mask = p+1;
 		}
@@ -1380,205 +1512,43 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 		mask = path_mask;
 	}
 
-	while (!found) {
-		bool got_match;
-		bool ms_dfs_link = False;
-
-		/* Needed if we run out of space */
-		long curr_dirpos = prev_dirpos = dptr_TellDir(conn->dirptr);
-		dname = dptr_ReadDirName(ctx,conn->dirptr,&curr_dirpos,&sbuf);
-
-		/*
-		 * Due to bugs in NT client redirectors we are not using
-		 * resume keys any more - set them to zero.
-		 * Check out the related comments in findfirst/findnext.
-		 * JRA.
-		 */
-
-		reskey = 0;
-
-		DEBUG(8,("get_lanman2_dir_entry:readdir on dirptr 0x%lx now at offset %ld\n",
-			(long)conn->dirptr,curr_dirpos));
-
-		if (!dname) {
-			return(False);
-		}
-
-		/*
-		 * fname may get mangled, dname is never mangled.
-		 * Whenever we're accessing the filesystem we use
-		 * pathreal which is composed from dname.
-		 */
-
-		pathreal = NULL;
-		fname = dname;
-
-		/* Mangle fname if it's an illegal name. */
-		if (mangle_must_mangle(dname,conn->params)) {
-			if (!name_to_8_3(dname,mangled_name,True,conn->params)) {
-				TALLOC_FREE(fname);
-				continue; /* Error - couldn't mangle. */
-			}
-			fname = talloc_strdup(ctx, mangled_name);
-			if (!fname) {
-				return False;
-			}
-		}
-
-		if(!(got_match = *got_exact_match = exact_match(conn, fname, mask))) {
-			got_match = mask_match(fname, mask, conn->case_sensitive);
-		}
-
-		if(!got_match && check_mangled_names &&
-		   !mangle_is_8_3(fname, False, conn->params)) {
-			/*
-			 * It turns out that NT matches wildcards against
-			 * both long *and* short names. This may explain some
-			 * of the wildcard wierdness from old DOS clients
-			 * that some people have been seeing.... JRA.
-			 */
-			/* Force the mangling into 8.3. */
-			if (!name_to_8_3( fname, mangled_name, False, conn->params)) {
-				TALLOC_FREE(fname);
-				continue; /* Error - couldn't mangle. */
-			}
-
-			if(!(got_match = *got_exact_match = exact_match(conn, mangled_name, mask))) {
-				got_match = mask_match(mangled_name, mask, conn->case_sensitive);
-			}
-		}
-
-		if (got_match) {
-			bool isdots = (ISDOT(dname) || ISDOTDOT(dname));
-			struct smb_filename *smb_fname = NULL;
-			NTSTATUS status;
-
-			if (dont_descend && !isdots) {
-				TALLOC_FREE(fname);
-				continue;
-			}
-
-			if (needslash) {
-				pathreal = NULL;
-				pathreal = talloc_asprintf(ctx,
-					"%s/%s",
-					conn->dirpath,
-					dname);
-			} else {
-				pathreal = talloc_asprintf(ctx,
-					"%s%s",
-					conn->dirpath,
-					dname);
-			}
-
-			if (!pathreal) {
-				TALLOC_FREE(fname);
-				return False;
-			}
-
-			/* A dirent from dptr_ReadDirName isn't a stream. */
-			status = create_synthetic_smb_fname(ctx, pathreal,
-							    NULL, &sbuf,
-							    &smb_fname);
-			if (!NT_STATUS_IS_OK(status)) {
-				TALLOC_FREE(fname);
-				return false;
-			}
-
-			if (INFO_LEVEL_IS_UNIX(info_level)) {
-				if (SMB_VFS_LSTAT(conn, smb_fname) != 0) {
-					DEBUG(5,("get_lanman2_dir_entry: "
-						 "Couldn't lstat [%s] (%s)\n",
-						 smb_fname_str_dbg(smb_fname),
-						 strerror(errno)));
-					TALLOC_FREE(smb_fname);
-					TALLOC_FREE(pathreal);
-					TALLOC_FREE(fname);
-					continue;
-				}
-			} else if (!VALID_STAT(smb_fname->st) &&
-				   SMB_VFS_STAT(conn, smb_fname) != 0) {
-				/* Needed to show the msdfs symlinks as
-				 * directories */
-
-				ms_dfs_link =
-				    check_msdfs_link(conn,
-						     smb_fname->base_name,
-						     &smb_fname->st);
-				if (!ms_dfs_link) {
-					DEBUG(5,("get_lanman2_dir_entry: "
-						 "Couldn't stat [%s] (%s)\n",
-						 smb_fname_str_dbg(smb_fname),
-						 strerror(errno)));
-					TALLOC_FREE(smb_fname);
-					TALLOC_FREE(pathreal);
-					TALLOC_FREE(fname);
-					continue;
-				}
-			}
-
-			if (ms_dfs_link) {
-				mode = dos_mode_msdfs(conn, smb_fname);
-			} else {
-				mode = dos_mode(conn, smb_fname);
-			}
-
-			if (!dir_check_ftype(conn,mode,dirtype)) {
-				DEBUG(5,("get_lanman2_dir_entry: [%s] attribs didn't match %x\n",fname,dirtype));
-				TALLOC_FREE(smb_fname);
-				TALLOC_FREE(pathreal);
-				TALLOC_FREE(fname);
-				continue;
-			}
-
-			if (!(mode & aDIR)) {
-				file_size = get_file_size_stat(&smb_fname->st);
-			}
-			allocation_size =
-			    SMB_VFS_GET_ALLOC_SIZE(conn, NULL, &smb_fname->st);
-
-			if (ask_sharemode) {
-				struct timespec write_time_ts;
-				struct file_id fileid;
-
-				ZERO_STRUCT(write_time_ts);
-				fileid = vfs_file_id_from_sbuf(conn,
-							       &smb_fname->st);
-				get_file_infos(fileid, NULL, &write_time_ts);
-				if (!null_timespec(write_time_ts)) {
-					update_stat_ex_mtime(&smb_fname->st,
-							     write_time_ts);
-				}
-			}
-
-			mdate_ts = smb_fname->st.st_ex_mtime;
-			adate_ts = smb_fname->st.st_ex_atime;
-			create_date_ts = smb_fname->st.st_ex_btime;
-
-			if (lp_dos_filetime_resolution(SNUM(conn))) {
-				dos_filetime_timespec(&create_date_ts);
-				dos_filetime_timespec(&mdate_ts);
-				dos_filetime_timespec(&adate_ts);
-			}
-
-			create_date = convert_timespec_to_time_t(create_date_ts);
-			mdate = convert_timespec_to_time_t(mdate_ts);
-			adate = convert_timespec_to_time_t(adate_ts);
-
-			DEBUG(5,("get_lanman2_dir_entry: found %s fname=%s\n",
-				 smb_fname_str_dbg(smb_fname), fname));
-
-			found = True;
-
-			dptr_DirCacheAdd(conn->dirptr, dname, curr_dirpos);
-			sbuf = smb_fname->st;
-
-			TALLOC_FREE(smb_fname);
-		}
-
-		if (!found)
-			TALLOC_FREE(fname);
+	ok = smbd_dirptr_get_entry(ctx,
+				   conn->dirptr,
+				   mask,
+				   dirtype,
+				   dont_descend,
+				   ask_sharemode,
+				   smbd_dirptr_lanman2_match_fn,
+				   smbd_dirptr_lanman2_mode_fn,
+				   &state,
+				   &fname,
+				   &smb_fname,
+				   &mode,
+				   &prev_dirpos);
+	if (!ok) {
+		return false;
 	}
+
+	*got_exact_match = state.got_exact_match;
+
+	if (!(mode & aDIR)) {
+		file_size = get_file_size_stat(&smb_fname->st);
+	}
+	allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn, NULL, &smb_fname->st);
+
+	mdate_ts = smb_fname->st.st_ex_mtime;
+	adate_ts = smb_fname->st.st_ex_atime;
+	create_date_ts = smb_fname->st.st_ex_btime;
+
+	if (lp_dos_filetime_resolution(SNUM(conn))) {
+		dos_filetime_timespec(&create_date_ts);
+		dos_filetime_timespec(&mdate_ts);
+		dos_filetime_timespec(&adate_ts);
+	}
+
+	create_date = convert_timespec_to_time_t(create_date_ts);
+	mdate = convert_timespec_to_time_t(mdate_ts);
+	adate = convert_timespec_to_time_t(adate_ts);
 
 	p = pdata;
 	last_entry_ptr = p;
@@ -1635,7 +1605,8 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			SIVAL(p,16,(uint32)allocation_size);
 			SSVAL(p,20,mode);
 			{
-				unsigned int ea_size = estimate_ea_size(conn, NULL, pathreal);
+				unsigned int ea_size = estimate_ea_size(conn, NULL,
+									smb_fname->base_name);
 				SIVAL(p,22,ea_size); /* Extended attributes */
 			}
 			p += 27;
@@ -1668,6 +1639,8 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 
 			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_EA_LIST\n"));
 			if (!name_list) {
+				TALLOC_FREE(fname);
+				TALLOC_FREE(smb_fname);
 				return False;
 			}
 			if(requires_resume_key) {
@@ -1682,12 +1655,16 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			SSVAL(p,20,mode);
 			p += 22; /* p now points to the EA area. */
 
-			file_list = get_ea_list_from_file(ctx, conn, NULL, pathreal, &ea_len);
+			file_list = get_ea_list_from_file(ctx, conn, NULL,
+							  smb_fname->base_name,
+							  &ea_len);
 			name_list = ea_list_union(name_list, file_list, &ea_len);
 
 			/* We need to determine if this entry will fit in the space available. */
 			/* Max string size is 255 bytes. */
 			if (PTR_DIFF(p + 255 + ea_len,pdata) > space_remaining) {
+				TALLOC_FREE(fname);
+				TALLOC_FREE(smb_fname);
 				/* Move the dirptr back to prev_dirpos */
 				dptr_SeekDir(conn->dirptr, prev_dirpos);
 				*out_of_space = True;
@@ -1734,7 +1711,8 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			SIVAL(p,0,nt_extmode); p += 4;
 			q = p; p += 4; /* q is placeholder for name length. */
 			{
-				unsigned int ea_size = estimate_ea_size(conn, NULL, pathreal);
+				unsigned int ea_size = estimate_ea_size(conn, NULL,
+									smb_fname->base_name);
 				SIVAL(p,0,ea_size); /* Extended attributes */
 				p += 4;
 			}
@@ -1742,7 +1720,8 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			 * IMPORTANT as not doing so will trigger
 			 * a Win2k client bug. JRA.
 			 */
-			if (!was_8_3 && check_mangled_names) {
+			if (!was_8_3 && state.check_mangled_names) {
+				char mangled_name[13]; /* mangled 8.3 name. */
 				if (!name_to_8_3(fname,mangled_name,True,
 						   conn->params)) {
 					/* Error - mangle failed ! */
@@ -1808,7 +1787,8 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			SIVAL(p,0,nt_extmode); p += 4;
 			q = p; p += 4; /* q is placeholder for name length. */
 			{
-				unsigned int ea_size = estimate_ea_size(conn, NULL, pathreal);
+				unsigned int ea_size = estimate_ea_size(conn, NULL,
+									smb_fname->base_name);
 				SIVAL(p,0,ea_size); /* Extended attributes */
 				p +=4;
 			}
@@ -1857,13 +1837,14 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			SIVAL(p,0,nt_extmode); p += 4;
 			q = p; p += 4; /* q is placeholder for name length. */
 			{
-				unsigned int ea_size = estimate_ea_size(conn, NULL, pathreal);
+				unsigned int ea_size = estimate_ea_size(conn, NULL,
+									smb_fname->base_name);
 				SIVAL(p,0,ea_size); /* Extended attributes */
 				p +=4;
 			}
 			SIVAL(p,0,0); p += 4; /* Unknown - reserved ? */
-			SIVAL(p,0,sbuf.st_ex_ino); p += 4; /* FileIndexLow */
-			SIVAL(p,0,sbuf.st_ex_dev); p += 4; /* FileIndexHigh */
+			SIVAL(p,0,smb_fname->st.st_ex_ino); p += 4; /* FileIndexLow */
+			SIVAL(p,0,smb_fname->st.st_ex_dev); p += 4; /* FileIndexHigh */
 			len = srvstr_push(base_data, flags2, p,
 					  fname, PTR_DIFF(end_data, p),
 					  STR_TERMINATE_ASCII);
@@ -1890,7 +1871,8 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			SIVAL(p,0,nt_extmode); p += 4;
 			q = p; p += 4; /* q is placeholder for name length */
 			{
-				unsigned int ea_size = estimate_ea_size(conn, NULL, pathreal);
+				unsigned int ea_size = estimate_ea_size(conn, NULL,
+									smb_fname->base_name);
 				SIVAL(p,0,ea_size); /* Extended attributes */
 				p +=4;
 			}
@@ -1898,7 +1880,8 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			 * IMPORTANT as not doing so will trigger
 			 * a Win2k client bug. JRA.
 			 */
-			if (!was_8_3 && check_mangled_names) {
+			if (!was_8_3 && state.check_mangled_names) {
+				char mangled_name[13]; /* mangled 8.3 name. */
 				if (!name_to_8_3(fname,mangled_name,True,
 						conn->params)) {
 					/* Error - mangle failed ! */
@@ -1918,8 +1901,8 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			}
 			p += 26;
 			SSVAL(p,0,0); p += 2; /* Reserved ? */
-			SIVAL(p,0,sbuf.st_ex_ino); p += 4; /* FileIndexLow */
-			SIVAL(p,0,sbuf.st_ex_dev); p += 4; /* FileIndexHigh */
+			SIVAL(p,0,smb_fname->st.st_ex_ino); p += 4; /* FileIndexLow */
+			SIVAL(p,0,smb_fname->st.st_ex_dev); p += 4; /* FileIndexHigh */
 			len = srvstr_push(base_data, flags2, p,
 					  fname, PTR_DIFF(end_data, p),
 					  STR_TERMINATE_ASCII);
@@ -1944,14 +1927,14 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			if (info_level == SMB_FIND_FILE_UNIX) {
 				DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_UNIX\n"));
 				p = store_file_unix_basic(conn, p,
-							NULL, &sbuf);
+							NULL, &smb_fname->st);
 				len = srvstr_push(base_data, flags2, p,
 						  fname, PTR_DIFF(end_data, p),
 						  STR_TERMINATE);
 			} else {
 				DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_UNIX_INFO2\n"));
 				p = store_file_unix_basic_info2(conn, p,
-							NULL, &sbuf);
+							NULL, &smb_fname->st);
 				nameptr = p;
 				p += 4;
 				len = srvstr_push(base_data, flags2, p, fname,
@@ -1972,10 +1955,13 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 
 		default:
 			TALLOC_FREE(fname);
-			return(False);
+			TALLOC_FREE(smb_fname);
+			return false;
 	}
 
 	TALLOC_FREE(fname);
+	TALLOC_FREE(smb_fname);
+
 	if (PTR_DIFF(p,pdata) > space_remaining) {
 		/* Move the dirptr back to prev_dirpos */
 		dptr_SeekDir(conn->dirptr, prev_dirpos);
@@ -1989,7 +1975,7 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 	/* Advance the data pointer to the next slot */
 	*ppdata = p;
 
-	return(found);
+	return true;
 }
 
 /****************************************************************************
