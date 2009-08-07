@@ -5222,8 +5222,8 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 	struct smb_filename *smb_fname_base = NULL;
 	uint32 action =
 		FILE_NOTIFY_CHANGE_LAST_ACCESS
-		|FILE_NOTIFY_CHANGE_LAST_WRITE;
-	bool set_createtime = false;
+		|FILE_NOTIFY_CHANGE_LAST_WRITE
+		|FILE_NOTIFY_CHANGE_CREATION;
 	NTSTATUS status;
 
 	if (!VALID_STAT(smb_fname->st)) {
@@ -5232,22 +5232,14 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 
 	/* get some defaults (no modifications) if any info is zero or -1. */
 	if (null_timespec(ft->create_time)) {
-		ft->create_time = smb_fname->st.st_ex_btime;
-	} else {
-		set_createtime = true;
-	}
-
-	if (null_timespec(ft->ctime)) {
-		ft->ctime = smb_fname->st.st_ex_ctime;
+		action &= ~FILE_NOTIFY_CHANGE_CREATION;
 	}
 
 	if (null_timespec(ft->atime)) {
-		ft->atime= smb_fname->st.st_ex_atime;
 		action &= ~FILE_NOTIFY_CHANGE_LAST_ACCESS;
 	}
 
 	if (null_timespec(ft->mtime)) {
-		ft->mtime = smb_fname->st.st_ex_mtime;
 		action &= ~FILE_NOTIFY_CHANGE_LAST_WRITE;
 	}
 
@@ -5264,25 +5256,6 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 		time_to_asc(convert_timespec_to_time_t(ft->ctime))));
 	DEBUG(5,("smb_set_file_time: createtime: %s\n ",
 		time_to_asc(convert_timespec_to_time_t(ft->create_time))));
-
-	/*
-	 * Try and set the times of this file if
-	 * they are different from the current values.
-	 */
-
-	{
-		struct timespec mts = smb_fname->st.st_ex_mtime;
-		struct timespec ats = smb_fname->st.st_ex_atime;
-		if ((timespec_compare(&ft->atime, &ats) == 0) &&
-		    (timespec_compare(&ft->mtime, &mts) == 0)) {
-			if (set_createtime) {
-				notify_fname(conn, NOTIFY_ACTION_MODIFIED,
-						FILE_NOTIFY_CHANGE_CREATION,
-						smb_fname->base_name);
-			}
-			return NT_STATUS_OK;
-		}
-	}
 
 	if (setting_write_time) {
 		/*

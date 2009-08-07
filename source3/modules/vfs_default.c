@@ -780,6 +780,21 @@ static int vfswrap_ntimes(vfs_handle_struct *handle,
 		goto out;
 	}
 
+	if (null_timespec(ft->atime)) {
+		ft->atime= smb_fname->st.st_ex_atime;
+	}
+
+	if (null_timespec(ft->mtime)) {
+		ft->mtime = smb_fname->st.st_ex_mtime;
+	}
+
+	if ((timespec_compare(&ft->atime,
+				&smb_fname->st.st_ex_atime) == 0) &&
+			(timespec_compare(&ft->mtime,
+				&smb_fname->st.st_ex_mtime) == 0)) {
+		return 0;
+	}
+
 #if defined(HAVE_UTIMES)
 	if (ft != NULL) {
 		struct timeval tv[2];
