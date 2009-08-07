@@ -44,12 +44,28 @@ static int none_setproctitle(const char *fmt, ...)
 }
 #endif
 
+/* we hold a pipe open in the parent, and the any child
+   processes wait for EOF on that pipe. This ensures that
+   children die when the parent dies */
+static int child_pipe[2];
+
 /*
   called when the process model is selected
 */
 static void standard_model_init(struct tevent_context *ev)
 {
+	pipe(child_pipe);
 	signal(SIGCHLD, SIG_IGN);
+}
+
+/*
+  handle EOF on the child pipe
+*/
+static void standard_pipe_handler(struct tevent_context *event_ctx, struct tevent_fd *fde, 
+				  uint16_t flags, void *private_data)
+{
+	DEBUG(10,("Child %d exiting\n", (int)getpid()));
+	exit(0);
 }
 
 /*
@@ -114,6 +130,10 @@ static void standard_accept_connection(struct tevent_context *ev,
 		DEBUG(0,("standard_accept_connection: tdb_reopen_all failed.\n"));
 	}
 
+	tevent_add_fd(ev2, ev2, child_pipe[0], TEVENT_FD_READ,
+		      standard_pipe_handler, NULL);
+	close(child_pipe[1]);
+
 	/* Ensure that the forked children do not expose identical random streams */
 	set_need_random_reseed();
 
@@ -176,6 +196,10 @@ static void standard_new_task(struct tevent_context *ev,
 	if (tdb_reopen_all(1) == -1) {
 		DEBUG(0,("standard_accept_connection: tdb_reopen_all failed.\n"));
 	}
+
+	tevent_add_fd(ev2, ev2, child_pipe[0], TEVENT_FD_READ,
+		      standard_pipe_handler, NULL);
+	close(child_pipe[1]);
 
 	/* Ensure that the forked children do not expose identical random streams */
 	set_need_random_reseed();
