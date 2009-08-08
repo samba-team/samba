@@ -155,6 +155,12 @@ NTSTATUS wcache_sid_to_name(struct winbindd_domain *domain,
 			    char **domain_name,
 			    char **name,
 			    enum lsa_SidType *type);
+NTSTATUS wcache_lookup_groupmem(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
+				const struct dom_sid *group_sid,
+				uint32_t *num_names,
+				struct dom_sid **sid_mem, char ***names,
+				uint32_t **name_types);
 bool lookup_cached_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 		       char **domain_name, char **name,
 		       enum lsa_SidType *type);

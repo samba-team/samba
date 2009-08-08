@@ -2272,38 +2272,52 @@ static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 	return status;
 }
 
-
-static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
+NTSTATUS wcache_lookup_groupmem(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				const DOM_SID *group_sid, uint32 *num_names, 
-				DOM_SID **sid_mem, char ***names, 
-				uint32 **name_types)
+				const struct dom_sid *group_sid,
+				uint32_t *num_names,
+				struct dom_sid **sid_mem, char ***names,
+				uint32_t **name_types)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
 	unsigned int i;
-	fstring sid_string;
+	char *sid_string;
 
-	if (!cache->tdb)
-		goto do_query;
+	if (cache->tdb == NULL) {
+		return NT_STATUS_NOT_FOUND;
+	}
 
-	centry = wcache_fetch(cache, domain, "GM/%s",
-			      sid_to_fstring(sid_string, group_sid));
-	if (!centry)
-		goto do_query;
+	sid_string = sid_string_tos(group_sid);
+	if (sid_string == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	centry = wcache_fetch(cache, domain, "GM/%s", sid_string);
+	TALLOC_FREE(sid_string);
+	if (centry == NULL) {
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	*sid_mem = NULL;
+	*names = NULL;
+	*name_types = NULL;
 
 	*num_names = centry_uint32(centry);
+	if (*num_names == 0) {
+		return NT_STATUS_OK;
+	}
 
-	if (*num_names == 0)
-		goto do_cached;
+	*sid_mem = talloc_array(mem_ctx, DOM_SID, *num_names);
+	*names = talloc_array(mem_ctx, char *, *num_names);
+	*name_types = talloc_array(mem_ctx, uint32, *num_names);
 
-	(*sid_mem) = TALLOC_ARRAY(mem_ctx, DOM_SID, *num_names);
-	(*names) = TALLOC_ARRAY(mem_ctx, char *, *num_names);
-	(*name_types) = TALLOC_ARRAY(mem_ctx, uint32, *num_names);
-
-	if (! (*sid_mem) || ! (*names) || ! (*name_types)) {
-		smb_panic_fn("lookup_groupmem out of memory");
+	if ((*sid_mem == NULL) || (*names == NULL) || (*name_types == NULL)) {
+		TALLOC_FREE(*sid_mem);
+		TALLOC_FREE(*names);
+		TALLOC_FREE(*name_types);
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	for (i=0; i<(*num_names); i++) {
@@ -2312,16 +2326,32 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 		(*name_types)[i] = centry_uint32(centry);
 	}
 
-do_cached:	
 	status = centry->status;
 
-	DEBUG(10,("lookup_groupmem: [Cached] - cached info for domain %s status: %s\n",
-		domain->name, nt_errstr(status)));
+	DEBUG(10,("lookup_groupmem: [Cached] - cached info for domain %s "
+		  "status: %s\n", domain->name, nt_errstr(status)));
 
 	centry_free(centry);
 	return status;
+}
 
-do_query:
+static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
+				const DOM_SID *group_sid, uint32 *num_names,
+				DOM_SID **sid_mem, char ***names,
+				uint32 **name_types)
+{
+	struct cache_entry *centry = NULL;
+	NTSTATUS status;
+	unsigned int i;
+	fstring sid_string;
+
+	status = wcache_lookup_groupmem(domain, mem_ctx, group_sid, num_names,
+					sid_mem, names, name_types);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		return status;
+	}
+
 	(*num_names) = 0;
 	(*sid_mem) = NULL;
 	(*names) = NULL;
