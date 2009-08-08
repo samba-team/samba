@@ -233,16 +233,24 @@ static bool wbinfo_get_groupinfo(const char *group)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	struct group *grp;
+	char **mem;
 
 	wbc_status = wbcGetgrnam(group, &grp);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		return false;
 	}
 
-	d_printf("%s:%s:%u\n",
+	d_printf("%s:%s:%u:",
 		 grp->gr_name,
 		 grp->gr_passwd,
 		 (unsigned int)grp->gr_gid);
+
+	mem = grp->gr_mem;
+	while (*mem != NULL) {
+		d_printf("%s%s", *mem, *(mem+1) != NULL ? "," : "");
+		mem += 1;
+	}
+	d_printf("\n");
 
 	wbcFreeMemory(grp);
 
@@ -254,16 +262,24 @@ static bool wbinfo_get_gidinfo(int gid)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	struct group *grp;
+	char **mem;
 
 	wbc_status = wbcGetgrgid(gid, &grp);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		return false;
 	}
 
-	d_printf("%s:%s:%u\n",
+	d_printf("%s:%s:%u:",
 		 grp->gr_name,
 		 grp->gr_passwd,
 		 (unsigned int)grp->gr_gid);
+
+	mem = grp->gr_mem;
+	while (*mem != NULL) {
+		d_printf("%s%s", *mem, *(mem+1) != NULL ? "," : "");
+		mem += 1;
+	}
+	d_printf("\n");
 
 	wbcFreeMemory(grp);
 
