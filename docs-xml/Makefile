@@ -153,10 +153,10 @@ $(PSDIR)/%.ps: %/index.xml $(PSDIR) xslt/latex.xsl %-images-eps
 	$(DBLATEX) $(DBLATEX_OPTIONS) -I $*/images -t ps -o $@ $<
 
 %.eps: %.svg
-	$(INKSCAPE) -z -f $< --export-eps=$@
+	$(INKSCAPE) -z -f $(abspath $<) --export-eps=$(abspath $@)
 
 %.png: %.svg
-	$(INKSCAPE) -z -f $< --export-png=$@
+	$(INKSCAPE) -z -f $(abspath $<) --export-png=$(abspath $@)
 
 %.eps: %.png
 	$(PNGTOPNM) $< | $(PNMTOPS) > $@
