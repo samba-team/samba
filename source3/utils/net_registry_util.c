@@ -21,34 +21,35 @@
 
 #include "includes.h"
 #include "utils/net_registry_util.h"
+#include "utils/net.h"
 
 void print_registry_key(const char *keyname, NTTIME *modtime)
 {
-	d_printf("Keyname   = %s\n", keyname);
-	d_printf("Modtime   = %s\n",
+	d_printf(_("Keyname   = %s\n"), keyname);
+	d_printf(_("Modtime   = %s\n"),
 		 modtime
 		 ? http_timestring(talloc_tos(), nt_time_to_unix(*modtime))
-		 : "None");
+		 : _("None"));
 	d_printf("\n");
 }
 
 void print_registry_value(const struct registry_value *valvalue, bool raw)
 {
 	if (!raw) {
-		d_printf("Type       = %s\n",
+		d_printf(_("Type       = %s\n"),
 			 reg_type_lookup(valvalue->type));
 	}
 	switch(valvalue->type) {
 	case REG_DWORD:
 		if (!raw) {
-			d_printf("Value      = ");
+			d_printf(_("Value      = "));
 		}
 		d_printf("%d\n", valvalue->v.dword);
 		break;
 	case REG_SZ:
 	case REG_EXPAND_SZ:
 		if (!raw) {
-			d_printf("Value      = \"");
+			d_printf(_("Value      = \""));
 		}
 		d_printf("%s", valvalue->v.sz.str);
 		if (!raw) {
@@ -60,7 +61,7 @@ void print_registry_value(const struct registry_value *valvalue, bool raw)
 		uint32 j;
 		for (j = 0; j < valvalue->v.multi_sz.num_strings; j++) {
 			if (!raw) {
-				d_printf("Value[%3.3d] = \"", j);
+				d_printf(_("Value[%3.3d] = \""), j);
 			}
 			d_printf("%s", valvalue->v.multi_sz.strings[j]);
 			if (!raw) {
@@ -72,15 +73,15 @@ void print_registry_value(const struct registry_value *valvalue, bool raw)
 	}
 	case REG_BINARY:
 		if (!raw) {
-			d_printf("Value      = ");
+			d_printf(_("Value      = "));
 		}
-		d_printf("%d bytes\n", (int)valvalue->v.binary.length);
+		d_printf(_("%d bytes\n"), (int)valvalue->v.binary.length);
 		break;
 	default:
 		if (!raw) {
-			d_printf("Value      = ");
+			d_printf(_("Value      = "));
 		}
-		d_printf("<unprintable>\n");
+		d_printf(_("<unprintable>\n"));
 		break;
 	}
 }
@@ -88,7 +89,7 @@ void print_registry_value(const struct registry_value *valvalue, bool raw)
 void print_registry_value_with_name(const char *valname,
 				    const struct registry_value *valvalue)
 {
-	d_printf("Valuename  = %s\n", valname);
+	d_printf(_("Valuename  = %s\n"), valname);
 	print_registry_value(valvalue, false);
 	d_printf("\n");
 }

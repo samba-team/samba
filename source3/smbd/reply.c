@@ -703,7 +703,7 @@ void reply_tcon_and_X(struct smb_request *req)
 
 	/* we might have to close an old one */
 	if ((tcon_flags & 0x1) && conn) {
-		close_cnum(sconn, conn,req->vuid);
+		close_cnum(conn,req->vuid);
 		req->conn = NULL;
 		conn = NULL;
 	}
@@ -1366,6 +1366,8 @@ void reply_search(struct smb_request *req)
 	bool allow_long_path_components = (req->flags2 & FLAGS2_LONG_PATH_COMPONENTS) ? True : False;
 	TALLOC_CTX *ctx = talloc_tos();
 	bool ask_sharemode = lp_parm_bool(SNUM(conn), "smbd", "search ask sharemode", true);
+	struct dptr_struct *dirptr = NULL;
+	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	START_PROFILE(SMBsearch);
 
@@ -1446,14 +1448,15 @@ void reply_search(struct smb_request *req)
 					mask,
 					mask_contains_wcard,
 					dirtype,
-					&conn->dirptr);
+					&dirptr);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			reply_nterror(req, nt_status);
 			goto out;
 		}
-		dptr_num = dptr_dnum(conn->dirptr);
+		dptr_num = dptr_dnum(dirptr);
 	} else {
 		int status_dirtype;
+		const char *dirpath;
 
 		memcpy(status,p,21);
 		status_dirtype = CVAL(status,0) & 0x1F;
@@ -1461,12 +1464,18 @@ void reply_search(struct smb_request *req)
 			dirtype = status_dirtype;
 		}
 
-		conn->dirptr = dptr_fetch(status+12,&dptr_num);
-		if (!conn->dirptr) {
+		dirptr = dptr_fetch(sconn, status+12,&dptr_num);
+		if (!dirptr) {
 			goto SearchEmpty;
 		}
-		string_set(&conn->dirpath,dptr_path(dptr_num));
-		mask = dptr_wcard(dptr_num);
+		dirpath = dptr_path(sconn, dptr_num);
+		directory = talloc_strdup(ctx, dirpath);
+		if (!directory) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			goto out;
+		}
+
+		mask = dptr_wcard(sconn, dptr_num);
 		if (!mask) {
 			goto SearchEmpty;
 		}
@@ -1475,13 +1484,13 @@ void reply_search(struct smb_request *req)
 		 * check from the initial saved string.
 		 */
 		mask_contains_wcard = ms_has_wild(mask);
-		dirtype = dptr_attr(dptr_num);
+		dirtype = dptr_attr(sconn, dptr_num);
 	}
 
 	DEBUG(4,("dptr_num is %d\n",dptr_num));
 
 	/* Initialize per SMBsearch/SMBffirst/SMBfunique operation data */
-	dptr_init_search_op(conn->dirptr);
+	dptr_init_search_op(dirptr);
 
 	if ((dirtype&0x1F) == aVOLID) {
 		char buf[DIR_STRUCT_SIZE];
@@ -1491,7 +1500,7 @@ void reply_search(struct smb_request *req)
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			goto out;
 		}
-		dptr_fill(buf+12,dptr_num);
+		dptr_fill(sconn, buf+12,dptr_num);
 		if (dptr_zero(buf+12) && (status_len==0)) {
 			numentries = 1;
 		} else {
@@ -1512,14 +1521,14 @@ void reply_search(struct smb_request *req)
 			 /DIR_STRUCT_SIZE));
 
 		DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n",
-			conn->dirpath,lp_dontdescend(SNUM(conn))));
-		if (in_list(conn->dirpath, lp_dontdescend(SNUM(conn)),True)) {
+			directory,lp_dontdescend(SNUM(conn))));
+		if (in_list(directory, lp_dontdescend(SNUM(conn)),True)) {
 			check_descend = True;
 		}
 
 		for (i=numentries;(i<maxentries) && !finished;i++) {
 			finished = !get_dir_entry(ctx,
-						  conn,
+						  dirptr,
 						  mask,
 						  dirtype,
 						  &fname,
@@ -1542,7 +1551,7 @@ void reply_search(struct smb_request *req)
 					reply_nterror(req, NT_STATUS_NO_MEMORY);
 					goto out;
 				}
-				if (!dptr_fill(buf+12,dptr_num)) {
+				if (!dptr_fill(sconn, buf+12,dptr_num)) {
 					break;
 				}
 				if (message_push_blob(&req->outbuf,
@@ -1563,15 +1572,15 @@ void reply_search(struct smb_request *req)
 		(X/Open spec) */
 
 	if (numentries == 0) {
-		dptr_close(&dptr_num);
+		dptr_close(sconn, &dptr_num);
 	} else if(expect_close && status_len == 0) {
 		/* Close the dptr - we know it's gone */
-		dptr_close(&dptr_num);
+		dptr_close(sconn, &dptr_num);
 	}
 
 	/* If we were called as SMBfunique, then we can close the dirptr now ! */
 	if(dptr_num >= 0 && req->cmd == SMBfunique) {
-		dptr_close(&dptr_num);
+		dptr_close(sconn, &dptr_num);
 	}
 
 	if ((numentries == 0) && !mask_contains_wcard) {
@@ -1597,18 +1606,15 @@ void reply_search(struct smb_request *req)
 	SSVAL(req->outbuf, smb_flg2,
 	      (SVAL(req->outbuf, smb_flg2) & (~FLAGS2_UNICODE_STRINGS)));
 
-	if (!directory) {
-		directory = dptr_path(dptr_num);
-	}
-
 	DEBUG(4,("%s mask=%s path=%s dtype=%d nument=%u of %u\n",
 		smb_fn_name(req->cmd),
 		mask,
-		directory ? directory : "./",
+		directory,
 		dirtype,
 		numentries,
 		maxentries ));
  out:
+	TALLOC_FREE(directory);
 	TALLOC_FREE(smb_fname);
 	END_PROFILE(SMBsearch);
 	return;
@@ -1628,6 +1634,7 @@ void reply_fclose(struct smb_request *req)
 	NTSTATUS err;
 	bool path_contains_wcard = False;
 	TALLOC_CTX *ctx = talloc_tos();
+	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	START_PROFILE(SMBfclose);
 
@@ -1657,9 +1664,9 @@ void reply_fclose(struct smb_request *req)
 
 	memcpy(status,p,21);
 
-	if(dptr_fetch(status+12,&dptr_num)) {
+	if(dptr_fetch(sconn, status+12,&dptr_num)) {
 		/*  Close the dptr - we know it's gone */
-		dptr_close(&dptr_num);
+		dptr_close(sconn, &dptr_num);
 	}
 
 	reply_outbuf(req, 1, 0);
@@ -4868,7 +4875,6 @@ void reply_unlock(struct smb_request *req)
 
 void reply_tdis(struct smb_request *req)
 {
-	struct smbd_server_connection *sconn = smbd_server_conn;
 	connection_struct *conn = req->conn;
 	START_PROFILE(SMBtdis);
 
@@ -4881,7 +4887,7 @@ void reply_tdis(struct smb_request *req)
 
 	conn->used = False;
 
-	close_cnum(sconn, conn,req->vuid);
+	close_cnum(conn,req->vuid);
 	req->conn = NULL;
 
 	reply_outbuf(req, 0, 0);
@@ -5528,6 +5534,7 @@ void reply_rmdir(struct smb_request *req)
 	char *directory = NULL;
 	NTSTATUS status;
 	TALLOC_CTX *ctx = talloc_tos();
+	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	START_PROFILE(SMBrmdir);
 
@@ -5559,7 +5566,7 @@ void reply_rmdir(struct smb_request *req)
 		goto out;
 	}
 
-	dptr_closepath(smb_dname->base_name, req->smbpid);
+	dptr_closepath(sconn, smb_dname->base_name, req->smbpid);
 	status = rmdir_internals(ctx, conn, smb_dname);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);

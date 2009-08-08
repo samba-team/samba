@@ -101,6 +101,7 @@ connection_struct *conn_new(struct smbd_server_connection *sconn)
 			TALLOC_FREE(conn);
 			return NULL;
 		}
+		conn->sconn = sconn;
 		return conn;
 	}
 
@@ -154,6 +155,7 @@ find_again:
 		TALLOC_FREE(conn);
 		return NULL;
 	}
+	conn->sconn = sconn;
 	conn->cnum = i;
 	conn->force_group_gid = (gid_t)-1;
 
@@ -161,7 +163,6 @@ find_again:
 
 	sconn->smb1.tcons.num_open++;
 
-	string_set(&conn->dirpath,"");
 	string_set(&conn->connectpath,"");
 	string_set(&conn->origpath,"");
 	
@@ -181,7 +182,7 @@ bool conn_close_all(struct smbd_server_connection *sconn)
 	for (conn=sconn->smb1.tcons.Connections;conn;conn=next) {
 		next=conn->next;
 		set_current_service(conn, 0, True);
-		close_cnum(sconn, conn, conn->vuid);
+		close_cnum(conn, conn->vuid);
 		ret = true;
 	}
 	return ret;
@@ -255,9 +256,9 @@ void conn_clear_vuid_caches(struct smbd_server_connection *sconn,uint16_t vuid)
  Free a conn structure - internal part.
 ****************************************************************************/
 
-void conn_free_internal(connection_struct *conn)
+static void conn_free_internal(connection_struct *conn)
 {
- 	vfs_handle_struct *handle = NULL, *thandle = NULL;
+	vfs_handle_struct *handle = NULL, *thandle = NULL;
 	struct trans_state *state = NULL;
 
 	/* Free vfs_connection_struct */
@@ -282,7 +283,6 @@ void conn_free_internal(connection_struct *conn)
 	free_namearray(conn->veto_oplock_list);
 	free_namearray(conn->aio_write_behind_list);
 	
-	string_free(&conn->dirpath);
 	string_free(&conn->connectpath);
 	string_free(&conn->origpath);
 
@@ -294,19 +294,24 @@ void conn_free_internal(connection_struct *conn)
  Free a conn structure.
 ****************************************************************************/
 
-void conn_free(struct smbd_server_connection *sconn, connection_struct *conn)
+void conn_free(connection_struct *conn)
 {
-	if (sconn->allow_smb2) {
+	if (conn->sconn == NULL) {
 		conn_free_internal(conn);
 		return;
 	}
 
-	DLIST_REMOVE(sconn->smb1.tcons.Connections, conn);
+	if (conn->sconn->allow_smb2) {
+		conn_free_internal(conn);
+		return;
+	}
 
-	bitmap_clear(sconn->smb1.tcons.bmap, conn->cnum);
+	DLIST_REMOVE(conn->sconn->smb1.tcons.Connections, conn);
 
-	SMB_ASSERT(sconn->smb1.tcons.num_open > 0);
-	sconn->smb1.tcons.num_open--;
+	bitmap_clear(conn->sconn->smb1.tcons.bmap, conn->cnum);
+
+	SMB_ASSERT(conn->sconn->smb1.tcons.num_open > 0);
+	conn->sconn->smb1.tcons.num_open--;
 
 	conn_free_internal(conn);
 }
@@ -340,7 +345,7 @@ void msg_force_tdis(struct messaging_context *msg,
 		if (strequal(lp_servicename(SNUM(conn)), sharename)) {
 			DEBUG(1,("Forcing close of share %s cnum=%d\n",
 				 sharename, conn->cnum));
-			close_cnum(sconn, conn, (uint16)-1);
+			close_cnum(conn, (uint16)-1);
 		}
 	}
 }

@@ -1590,7 +1590,7 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 	}
 	if (conn != NULL) {
 		vfs_ChDir(conn, oldcwd);
-		conn_free_internal(conn);
+		conn_free(conn);
 	}
 	if (cversion != -1) {
 		*perr = WERR_OK;
@@ -2072,7 +2072,7 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 
 	if (conn != NULL) {
 		vfs_ChDir(conn, oldcwd);
-		conn_free_internal(conn);
+		conn_free(conn);
 	}
 
 	if (W_ERROR_EQUAL(*perr, WERR_OK)) {
@@ -5267,7 +5267,7 @@ static bool delete_driver_files(struct pipes_struct *rpc_pipe,
  done:
 	if (conn != NULL) {
 		vfs_ChDir(conn, oldcwd);
-		conn_free_internal(conn);
+		conn_free(conn);
 	}
 	return ret;
 }

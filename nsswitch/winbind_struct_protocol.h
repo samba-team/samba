@@ -169,6 +169,8 @@ enum winbindd_cmd {
 	WINBINDD_DUAL_USERINFO,
 	WINBINDD_DUAL_GETSIDALIASES,
 
+	WINBINDD_DUAL_NDRCMD,
+
 	/* Complete the challenge phase of the NTLM authentication
 	   protocol using cached password. */
 	WINBINDD_CCACHE_NTLMAUTH,
@@ -247,6 +249,7 @@ struct winbindd_request {
 		fstring groupname;   /* getgrnam */
 		uid_t uid;           /* getpwuid, uid_to_sid */
 		gid_t gid;           /* getgrgid, gid_to_sid */
+		uint32_t ndrcmd;
 		struct {
 			/* We deliberatedly don't split into domain/user to
                            avoid having the client know what the separator

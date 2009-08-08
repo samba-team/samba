@@ -673,7 +673,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 		DEBUG(1, ("create_connection_server_info failed: %s\n",
 			  nt_errstr(status)));
 		*pstatus = status;
-		conn_free(sconn, conn);
+		conn_free(conn);
 		return NULL;
 	}
 
@@ -692,7 +692,6 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	conn->printer = (strncmp(dev,"LPT",3) == 0);
 	conn->ipc = ( (strncmp(dev,"IPC",3) == 0) ||
 		      ( lp_enable_asu_support() && strequal(dev,"ADMIN$")) );
-	conn->dirptr = NULL;
 
 	/* Case options for the share. */
 	if (lp_casesensitive(snum) == Auto) {
@@ -712,7 +711,6 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	conn->hide_list = NULL;
 	conn->veto_oplock_list = NULL;
 	conn->aio_write_behind_list = NULL;
-	string_set(&conn->dirpath,"");
 
 	conn->read_only = lp_readonly(SNUM(conn));
 	conn->admin_user = False;
@@ -730,7 +728,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 		fuser = talloc_string_sub(conn, lp_force_user(snum), "%S",
 					  lp_servicename(snum));
 		if (fuser == NULL) {
-			conn_free(sconn, conn);
+			conn_free(conn);
 			*pstatus = NT_STATUS_NO_MEMORY;
 			return NULL;
 		}
@@ -739,7 +737,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 			conn, fuser, conn->server_info->guest,
 			&forced_serverinfo);
 		if (!NT_STATUS_IS_OK(status)) {
-			conn_free(sconn, conn);
+			conn_free(conn);
 			*pstatus = status;
 			return NULL;
 		}
@@ -764,7 +762,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 			&conn->server_info->utok.gid);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			conn_free(sconn, conn);
+			conn_free(conn);
 			*pstatus = status;
 			return NULL;
 		}
@@ -790,14 +788,14 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 					pdb_get_domain(conn->server_info->sam_account),
 					lp_pathname(snum));
 		if (!s) {
-			conn_free(sconn, conn);
+			conn_free(conn);
 			*pstatus = NT_STATUS_NO_MEMORY;
 			return NULL;
 		}
 
 		if (!set_conn_connectpath(conn,s)) {
 			TALLOC_FREE(s);
-			conn_free(sconn, conn);
+			conn_free(conn);
 			*pstatus = NT_STATUS_NO_MEMORY;
 			return NULL;
 		}
@@ -829,7 +827,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 					 "denied due to security "
 					 "descriptor.\n",
 					  lp_servicename(snum)));
-				conn_free(sconn, conn);
+				conn_free(conn);
 				*pstatus = NT_STATUS_ACCESS_DENIED;
 				return NULL;
 			} else {
@@ -842,7 +840,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	if (!smbd_vfs_init(conn)) {
 		DEBUG(0, ("vfs_init failed for service %s\n",
 			  lp_servicename(snum)));
-		conn_free(sconn, conn);
+		conn_free(conn);
 		*pstatus = NT_STATUS_BAD_NETWORK_NAME;
 		return NULL;
 	}
@@ -860,7 +858,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 			"for service %s, path %s\n",
 				lp_servicename(snum),
 				conn->connectpath));
-			conn_free(sconn, conn);
+			conn_free(conn);
 			*pstatus = NT_STATUS_BAD_NETWORK_NAME;
 			return NULL;
 		}
@@ -884,7 +882,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 
 		DEBUG(1, ("Max connections (%d) exceeded for %s\n",
 			  lp_max_connections(snum), lp_servicename(snum)));
-		conn_free(sconn, conn);
+		conn_free(conn);
 		*pstatus = NT_STATUS_INSUFFICIENT_RESOURCES;
 		return NULL;
 	}  
@@ -894,7 +892,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	 */
 	if (!claim_connection(conn, lp_servicename(snum), 0)) {
 		DEBUG(1, ("Could not store connections entry\n"));
-		conn_free(sconn, conn);
+		conn_free(conn);
 		*pstatus = NT_STATUS_INTERNAL_DB_ERROR;
 		return NULL;
 	}  
@@ -918,7 +916,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 			DEBUG(1,("root preexec gave %d - failing "
 				 "connection\n", ret));
 			yield_connection(conn, lp_servicename(snum));
-			conn_free(sconn, conn);
+			conn_free(conn);
 			*pstatus = NT_STATUS_ACCESS_DENIED;
 			return NULL;
 		}
@@ -929,7 +927,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 		/* No point continuing if they fail the basic checks */
 		DEBUG(0,("Can't become connected user!\n"));
 		yield_connection(conn, lp_servicename(snum));
-		conn_free(sconn, conn);
+		conn_free(conn);
 		*pstatus = NT_STATUS_LOGON_FAILURE;
 		return NULL;
 	}
@@ -1072,7 +1070,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 		SMB_VFS_DISCONNECT(conn);
 	}
 	yield_connection(conn, lp_servicename(snum));
-	conn_free(sconn, conn);
+	conn_free(conn);
 	return NULL;
 }
 
@@ -1219,8 +1217,7 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
  Close a cnum.
 ****************************************************************************/
 
-void close_cnum(struct smbd_server_connection *sconn,
-		connection_struct *conn, uint16 vuid)
+void close_cnum(connection_struct *conn, uint16 vuid)
 {
 	file_close_conn(conn);
 
@@ -1274,5 +1271,5 @@ void close_cnum(struct smbd_server_connection *sconn,
 		TALLOC_FREE(cmd);
 	}
 
-	conn_free(sconn, conn);
+	conn_free(conn);
 }

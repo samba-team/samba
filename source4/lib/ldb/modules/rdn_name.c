@@ -1,8 +1,8 @@
 /* 
    ldb database library
 
-   Copyright (C) Andrew Bartlet 2005
-   Copyright (C) Simo Sorce     2006-2008
+   Copyright (C) Andrew Bartlett 2005
+   Copyright (C) Simo Sorce 2006-2008
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -23,13 +23,13 @@
 */
 
 /*
- *  Name: rdb_name
+ *  Name: rdn_name
  *
  *  Component: ldb rdn name module
  *
  *  Description: keep a consistent name attribute on objects manpulations
  *
- *  Author: Andrew Bartlet
+ *  Author: Andrew Bartlett
  *
  *  Modifications:
  *    - made the module async
@@ -156,9 +156,15 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 			}
 		}
 		if (i == attribute->num_values) {
-			ldb_debug_set(ldb, LDB_DEBUG_FATAL, 
-				      "RDN mismatch on %s: %s (%s)", 
-				      ldb_dn_get_linearized(msg->dn), rdn_name, rdn_val.data);
+			char *rdn_errstring = talloc_asprintf(ac, "RDN mismatch on %s: %s (%.*s) should match one of:", 
+							  ldb_dn_get_linearized(msg->dn), rdn_name, 
+							  (int)rdn_val.length, (const char *)rdn_val.data);
+			for (i = 0; i < attribute->num_values; i++) {
+				rdn_errstring = talloc_asprintf_append(rdn_errstring, " (%.*s)",
+								       (int)attribute->values[i].length, 
+								       (const char *)attribute->values[i].data);
+			}
+			ldb_debug_set(ldb, LDB_DEBUG_FATAL, "%s", rdn_errstring);
 			talloc_free(ac);
 			/* Match AD's error here */
 			return LDB_ERR_INVALID_DN_SYNTAX;

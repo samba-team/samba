@@ -914,8 +914,6 @@ static bool init_structs(void )
 
 	file_init();
 
-	init_dptrs();
-
 	if (!secrets_init())
 		return False;
 

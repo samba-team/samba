@@ -15,23 +15,8 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, see <http://www.gnu.org/licenses/>.
 #
-add_basedir_to_filelist() {
-	BASEDIR="$1"
-	shift;
-	FILELIST="$@"
-	FULL_LIST=""
-	for file in ${FILELIST}; do
-		FULL_LIST="${FULL_LIST} $BASEDIR/${file}"
-	done
-	echo ${FULL_LIST}
-}
 
-NET_FILES=`add_basedir_to_filelist ../utils net.c net_ads.c net_ads_gpo.c \
-	   net_afs.c net_cache.c net_conf.c net_dom.c net_eventlog.c \
-	   net_file.c net_group.c net_groupmap.c net_help.c net_help_common.c \
-	   net_idmap.c net_join.c net_lookup.c net_lua.c`
-
-FILES="../web/swat.c ../web/statuspage.c ../param/loadparm.c ${NET_FILES}"
+FILES='../web/swat.c ../web/statuspage.c ../param/loadparm.c'
 LANGS='en ja tr pl fr de it ru'
 
 XGETTEXT=xgettext

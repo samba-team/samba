@@ -67,7 +67,7 @@ static struct dcerpc_connection *dcerpc_connection_init(TALLOC_CTX *mem_ctx,
 
 	c->iconv_convenience = talloc_reference(c, ic);
 
-	c->event_ctx = talloc_reference(c, ev);
+	c->event_ctx = ev;
 
 	if (c->event_ctx == NULL) {
 		talloc_free(c);

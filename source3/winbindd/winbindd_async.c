@@ -632,25 +632,32 @@ bool print_sidlist(TALLOC_CTX *mem_ctx, const DOM_SID *sids,
 	return True;
 }
 
-bool parse_sidlist(TALLOC_CTX *mem_ctx, char *sidstr,
+bool parse_sidlist(TALLOC_CTX *mem_ctx, const char *sidstr,
 		   DOM_SID **sids, size_t *num_sids)
 {
-	char *p, *q;
+	const char *p, *q;
 
 	p = sidstr;
 	if (p == NULL)
 		return False;
 
 	while (p[0] != '\0') {
+		fstring tmp;
+		size_t sidlen;
 		DOM_SID sid;
 		q = strchr(p, '\n');
 		if (q == NULL) {
 			DEBUG(0, ("Got invalid sidstr: %s\n", p));
 			return False;
 		}
-		*q = '\0';
+		sidlen = PTR_DIFF(q, p);
+		if (sidlen >= sizeof(tmp)-1) {
+			return false;
+		}
+		memcpy(tmp, p, sidlen);
+		tmp[sidlen] = '\0';
 		q += 1;
-		if (!string_to_sid(&sid, p)) {
+		if (!string_to_sid(&sid, tmp)) {
 			DEBUG(0, ("Could not parse sid %s\n", p));
 			return False;
 		}

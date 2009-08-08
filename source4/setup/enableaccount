@@ -56,7 +56,6 @@ else:
 samdb = SamDB(url=url, session_info=system_session(), 
               credentials=creds, lp=lp)
 
-domain_dn = opts.base
 if opts.base is None:
 	res = samdb.search("", scope=ldb.SCOPE_BASE, 
 			  expression="(defaultNamingContext=*)", 

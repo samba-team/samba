@@ -427,20 +427,11 @@ static struct winbindd_dispatch_table {
 
 	/* User functions */
 
-	{ WINBINDD_GETPWNAM, winbindd_getpwnam, "GETPWNAM" },
-	{ WINBINDD_GETPWUID, winbindd_getpwuid, "GETPWUID" },
-	{ WINBINDD_GETPWSID, winbindd_getpwsid, "GETPWSID" },
-
 	{ WINBINDD_SETPWENT, winbindd_setpwent, "SETPWENT" },
 	{ WINBINDD_ENDPWENT, winbindd_endpwent, "ENDPWENT" },
 	{ WINBINDD_GETPWENT, winbindd_getpwent, "GETPWENT" },
 
-	{ WINBINDD_GETGROUPS, winbindd_getgroups, "GETGROUPS" },
 	{ WINBINDD_GETUSERSIDS, winbindd_getusersids, "GETUSERSIDS" },
-	{ WINBINDD_GETUSERDOMGROUPS, winbindd_getuserdomgroups,
-	  "GETUSERDOMGROUPS" },
-	{ WINBINDD_GETSIDALIASES, winbindd_getsidaliases,
-	   "LOOKUPUSERALIASES" },
 
 	/* Group functions */
 
@@ -469,16 +460,10 @@ static struct winbindd_dispatch_table {
 
 	/* SID related functions */
 
-	{ WINBINDD_LOOKUPSID, winbindd_lookupsid, "LOOKUPSID" },
-	{ WINBINDD_LOOKUPNAME, winbindd_lookupname, "LOOKUPNAME" },
 	{ WINBINDD_LOOKUPRIDS, winbindd_lookuprids, "LOOKUPRIDS" },
 
 	/* Lookup related functions */
 
-	{ WINBINDD_SID_TO_UID, winbindd_sid_to_uid, "SID_TO_UID" },
-	{ WINBINDD_SID_TO_GID, winbindd_sid_to_gid, "SID_TO_GID" },
-	{ WINBINDD_UID_TO_SID, winbindd_uid_to_sid, "UID_TO_SID" },
-	{ WINBINDD_GID_TO_SID, winbindd_gid_to_sid, "GID_TO_SID" },
 	{ WINBINDD_ALLOCATE_UID, winbindd_allocate_uid, "ALLOCATE_UID" },
 	{ WINBINDD_ALLOCATE_GID, winbindd_allocate_gid, "ALLOCATE_GID" },
 	{ WINBINDD_SET_MAPPING, winbindd_set_mapping, "SET_MAPPING" },
@@ -488,7 +473,6 @@ static struct winbindd_dispatch_table {
 	/* Miscellaneous */
 
 	{ WINBINDD_CHECK_MACHACC, winbindd_check_machine_acct, "CHECK_MACHACC" },
-	{ WINBINDD_PING, winbindd_ping, "PING" },
 	{ WINBINDD_INFO, winbindd_info, "INFO" },
 	{ WINBINDD_INTERFACE_VERSION, winbindd_interface_version,
 	  "INTERFACE_VERSION" },
@@ -526,6 +510,30 @@ struct winbindd_async_dispatch_table {
 static struct winbindd_async_dispatch_table async_nonpriv_table[] = {
 	{ WINBINDD_PING, "PING",
 	  wb_ping_send, wb_ping_recv },
+	{ WINBINDD_LOOKUPSID, "LOOKUPSID",
+	  winbindd_lookupsid_send, winbindd_lookupsid_recv },
+	{ WINBINDD_LOOKUPNAME, "LOOKUPNAME",
+	  winbindd_lookupname_send, winbindd_lookupname_recv },
+	{ WINBINDD_SID_TO_UID, "SID_TO_UID",
+	  winbindd_sid_to_uid_send, winbindd_sid_to_uid_recv },
+	{ WINBINDD_SID_TO_GID, "SID_TO_GID",
+	  winbindd_sid_to_gid_send, winbindd_sid_to_gid_recv },
+	{ WINBINDD_UID_TO_SID, "UID_TO_SID",
+	  winbindd_uid_to_sid_send, winbindd_uid_to_sid_recv },
+	{ WINBINDD_GID_TO_SID, "GID_TO_SID",
+	  winbindd_gid_to_sid_send, winbindd_gid_to_sid_recv },
+	{ WINBINDD_GETPWSID, "GETPWSID",
+	  winbindd_getpwsid_send, winbindd_getpwsid_recv },
+	{ WINBINDD_GETPWNAM, "GETPWNAM",
+	  winbindd_getpwnam_send, winbindd_getpwnam_recv },
+	{ WINBINDD_GETPWUID, "GETPWUID",
+	  winbindd_getpwuid_send, winbindd_getpwuid_recv },
+	{ WINBINDD_GETSIDALIASES, "GETSIDALIASES",
+	  winbindd_getsidaliases_send, winbindd_getsidaliases_recv },
+	{ WINBINDD_GETUSERDOMGROUPS, "GETUSERDOMGROUPS",
+	  winbindd_getuserdomgroups_send, winbindd_getuserdomgroups_recv },
+	{ WINBINDD_GETGROUPS, "GETGROUPS",
+	  winbindd_getgroups_send, winbindd_getgroups_recv },
 
 	{ 0, NULL, NULL, NULL }
 };

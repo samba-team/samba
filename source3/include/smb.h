@@ -546,16 +546,15 @@ struct share_iterator {
 
 typedef struct connection_struct {
 	struct connection_struct *next, *prev;
+	struct smbd_server_connection *sconn; /* can be NULL */
 	unsigned cnum; /* an index passed over the wire */
 	struct share_params *params;
 	bool force_user;
 	struct vuid_cache vuid_cache;
-	struct dptr_struct *dirptr;
 	bool printer;
 	bool ipc;
 	bool read_only; /* Attributes for the current user of the share. */
 	bool admin_user; /* Attributes for the current user of the share. */
-	char *dirpath;
 	char *connectpath;
 	char *origpath;
 

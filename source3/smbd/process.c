@@ -2206,6 +2206,9 @@ void smbd_process(void)
 #endif
 
 	conn_init(smbd_server_conn);
+	if (!init_dptrs(smbd_server_conn)) {
+		exit_server("init_dptrs() failed");
+	}
 
 	smbd_server_conn->smb1.fde = event_add_fd(smbd_event_context(),
 						  smbd_server_conn,

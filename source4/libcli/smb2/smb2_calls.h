@@ -52,18 +52,6 @@ struct smb2_negprot {
 	} out;
 };
 
-/* getinfo classes */
-#define SMB2_GETINFO_FILE               0x01
-#define SMB2_GETINFO_FS                 0x02
-#define SMB2_GETINFO_SECURITY           0x03
-#define SMB2_GETINFO_QUOTA              0x04
-
-#define SMB2_GETINFO_ADD_OWNER_SECURITY 0x01
-#define SMB2_GETINFO_ADD_GROUP_SECURITY 0x02
-#define SMB2_GETINFO_ADD_DACL_SECURITY  0x04
-#define SMB2_GETINFO_ADD_SACL_SECURITY  0x08
-#define SMB2_GETINFO_ADD_LABEL_SECURITY 0x10
-
 /* NOTE! the getinfo fs and file levels exactly match up with the
    'passthru' SMB levels, which are levels >= 1000. The SMB2 client
    lib uses the names from the libcli/raw/ library */

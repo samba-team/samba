@@ -268,7 +268,7 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 	if (!smbd_vfs_init(conn)) {
 		NTSTATUS status = map_nt_error_from_unix(errno);
 		DEBUG(0,("create_conn_struct: smbd_vfs_init failed.\n"));
-		conn_free_internal(conn);
+		conn_free(conn);
 		return status;
 	}
 
@@ -284,7 +284,7 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 	if (oldcwd == NULL) {
 		NTSTATUS status = map_nt_error_from_unix(errno);
 		DEBUG(3, ("vfs_GetWd failed: %s\n", strerror(errno)));
-		conn_free_internal(conn);
+		conn_free(conn);
 		return status;
 	}
 
@@ -293,7 +293,7 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 		DEBUG(3,("create_conn_struct: Can't ChDir to new conn path %s. "
 			"Error was %s\n",
 			conn->connectpath, strerror(errno) ));
-		conn_free_internal(conn);
+		conn_free(conn);
 		return status;
 	}
 
@@ -939,7 +939,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 		DEBUG(3,("get_referred_path: No valid referrals for path %s\n",
 			dfs_path));
 		vfs_ChDir(conn, oldpath);
-		conn_free_internal(conn);
+		conn_free(conn);
 		TALLOC_FREE(pdp);
 		return status;
 	}
@@ -951,13 +951,13 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 		DEBUG(3,("get_referred_path: failed to parse symlink "
 			"target %s\n", targetpath ));
 		vfs_ChDir(conn, oldpath);
-		conn_free_internal(conn);
+		conn_free(conn);
 		TALLOC_FREE(pdp);
 		return NT_STATUS_NOT_FOUND;
 	}
 
 	vfs_ChDir(conn, oldpath);
-	conn_free_internal(conn);
+	conn_free(conn);
 	TALLOC_FREE(pdp);
 	return NT_STATUS_OK;
 }
@@ -1374,7 +1374,7 @@ static bool junction_to_local_path(const struct junction_map *jucn,
 			jucn->volume_name);
 	if (!*pp_path_out) {
 		vfs_ChDir(*conn_out, *oldpath);
-		conn_free_internal(*conn_out);
+		conn_free(*conn_out);
 		return False;
 	}
 	return True;
@@ -1462,7 +1462,7 @@ bool create_msdfs_link(const struct junction_map *jucn)
 
 out:
 	vfs_ChDir(conn, cwd);
-	conn_free_internal(conn);
+	conn_free(conn);
 	return ret;
 }
 
@@ -1493,7 +1493,7 @@ bool remove_msdfs_link(const struct junction_map *jucn)
 
 	TALLOC_FREE(smb_fname);
 	vfs_ChDir(conn, cwd);
-	conn_free_internal(conn);
+	conn_free(conn);
 	return ret;
 }
 
@@ -1554,7 +1554,7 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 
 out:
 	vfs_ChDir(conn, cwd);
-	conn_free_internal(conn);
+	conn_free(conn);
 	return cnt;
 }
 
@@ -1680,7 +1680,7 @@ out:
 	}
 
 	vfs_ChDir(conn, cwd);
-	conn_free_internal(conn);
+	conn_free(conn);
 	return cnt;
 }
 

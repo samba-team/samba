@@ -1,0 +1,91 @@
+#include "idl_types.h"
+import "lsa.idl";
+
+[
+    uuid("bf09192c-ed60-4928-9dff-d0d7bcb03ed8"),
+    endpoint("ncalrpc:"),
+    pointer_default(unique),
+    version(1.0),
+    helpstring("winbind parent-child protocol")
+]
+interface wbint
+{
+    void wbint_Ping(
+	[in] uint32 in_data,
+	[out] uint32 *out_data
+	);
+
+    NTSTATUS wbint_LookupSid(
+	[in] dom_sid *sid,
+	[out] lsa_SidType *type,
+	[out,string,charset(UTF8)] char **domain,
+	[out,string,charset(UTF8)] char **name
+	);
+
+    NTSTATUS wbint_LookupName(
+	[in,string,charset(UTF8)] char *domain,
+	[in,string,charset(UTF8)] char *name,
+	[in] uint32 flags,
+	[out] lsa_SidType *type,
+	[out] dom_sid *sid
+	);
+
+    NTSTATUS wbint_Sid2Uid(
+	[in,unique,string,charset(UTF8)] char *dom_name,
+	[in] dom_sid *sid,
+	[out] hyper *uid
+	);
+
+    NTSTATUS wbint_Sid2Gid(
+	[in,unique,string,charset(UTF8)] char *dom_name,
+	[in] dom_sid *sid,
+	[out] hyper *gid
+	);
+
+    NTSTATUS wbint_Uid2Sid(
+	[in,unique,string,charset(UTF8)] char *dom_name,
+	[in] hyper uid,
+	[out] dom_sid *sid
+	);
+
+    NTSTATUS wbint_Gid2Sid(
+	[in,unique,string,charset(UTF8)] char *dom_name,
+	[in] hyper gid,
+	[out] dom_sid *sid
+	);
+
+    typedef [public] struct {
+	[string,charset(UTF8)] char *acct_name;
+	[string,charset(UTF8)] char *full_name;
+	[string,charset(UTF8)] char *homedir;
+	[string,charset(UTF8)] char *shell;
+	hyper primary_gid;
+	dom_sid user_sid;
+	dom_sid group_sid;
+    } wbint_userinfo;
+
+    NTSTATUS wbint_QueryUser(
+	[in] dom_sid *sid,
+	[out] wbint_userinfo *info
+	);
+
+    typedef [public] struct {
+	uint32 num_sids;
+	[size_is(num_sids)] dom_sid sids[];
+    } wbint_SidArray;
+
+    typedef [public] struct {
+	uint32 num_rids;
+	[size_is(num_rids)] uint32 rids[];
+    } wbint_RidArray;
+
+    NTSTATUS wbint_LookupUserAliases(
+	[in] wbint_SidArray *sids,
+	[out] wbint_RidArray *rids
+	);
+
+    NTSTATUS wbint_LookupUserGroups(
+	[in] dom_sid *sid,
+	[out] wbint_SidArray *sids
+	);
+}

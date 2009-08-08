@@ -3,17 +3,17 @@
    Winbind Utility functions
 
    Copyright (C) Gerald (Jerry) Carter   2007
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -113,7 +113,7 @@ bool winbind_lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 
 	wbcFreeMemory(domain_name);
 	wbcFreeMemory(account_name);
-	
+
 	if ((domain && !*domain) || (name && !*name)) {		
 		DEBUG(0,("winbind_lookup_sid: talloc() failed!\n"));
 		return false;
@@ -200,7 +200,7 @@ wbcErr wb_is_trusted_domain(const char *domain)
 {
 	wbcErr result;
 	struct wbcDomainInfo *info = NULL;
-	
+
 	result = wbcDomainInfo(domain, &info);
 
 	if (WBC_ERROR_IS_OK(result)) {
@@ -224,15 +224,15 @@ bool winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 	struct wbcDomainSid dom_sid;
 	wbcErr ret;
 	int i;	
-	
+
 	memcpy(&dom_sid, domain_sid, sizeof(struct wbcDomainSid));
-	
+
 	ret = wbcLookupRids(&dom_sid, num_rids, rids,
 			    &dom_name, &namelist, &name_types);
 	if (ret != WBC_ERR_SUCCESS) {		
 		return false;
 	}	
-	
+
 	*domain_name = talloc_strdup(mem_ctx, dom_name);
 	*names       = TALLOC_ARRAY(mem_ctx, const char*, num_rids);
 	*types       = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_rids);
@@ -245,7 +245,7 @@ bool winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 	wbcFreeMemory(CONST_DISCARD(char*, dom_name));
 	wbcFreeMemory(namelist);
 	wbcFreeMemory(name_types);
-	
+
 	return true;	
 }
 
@@ -254,9 +254,9 @@ bool winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 bool winbind_allocate_uid(uid_t *uid)
 {
 	wbcErr ret;
-	
+
 	ret = wbcAllocateUid(uid);
-	
+
 	return (ret == WBC_ERR_SUCCESS);
 }
 
@@ -265,9 +265,9 @@ bool winbind_allocate_uid(uid_t *uid)
 bool winbind_allocate_gid(gid_t *gid)
 {
 	wbcErr ret;
-	
+
 	ret = wbcAllocateGid(gid);
-	
+
 	return (ret == WBC_ERR_SUCCESS);
 }
 

@@ -207,7 +207,11 @@ typedef int ber_int_t;
 #endif
 
 #ifndef ENOATTR
+#if defined(ENODATA)
 #define ENOATTR ENODATA
+#else
+#define ENOATTR ENOENT
+#endif
 #endif
 
 /* mutually exclusive (SuSE 8.2) */
@@ -1111,5 +1115,8 @@ void exit_server_fault(void) _NORETURN_;
 void in6_addr_to_sockaddr_storage(struct sockaddr_storage *ss,
 				  struct in6_addr ip);
 #endif
+
+/* samba3 doesn't use uwrap yet */
+#define uwrap_enabled() 0
 
 #endif /* _INCLUDES_H */

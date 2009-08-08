@@ -244,10 +244,6 @@ static int samldb_search_template(struct samldb_ctx *ac)
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		if (!talloc_reference(templates_ldb, ev)) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-
 		ret = ldb_set_opaque(ldb,
 					"templates_ldb", templates_ldb);
 		if (ret != LDB_SUCCESS) {

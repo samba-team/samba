@@ -166,7 +166,7 @@ struct nbt_dgram_socket *nbt_dgram_socket_init(TALLOC_CTX *mem_ctx,
 	dgmsock = talloc(mem_ctx, struct nbt_dgram_socket);
 	if (dgmsock == NULL) goto failed;
 
-	dgmsock->event_ctx = talloc_reference(dgmsock, event_ctx);
+	dgmsock->event_ctx = event_ctx;
 	if (dgmsock->event_ctx == NULL) goto failed;
 
 	status = socket_create("ip", SOCKET_TYPE_DGRAM, &dgmsock->sock, 0);

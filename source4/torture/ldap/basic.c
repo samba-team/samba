@@ -217,7 +217,7 @@ static bool test_error_codes(struct torture_context *tctx,
 	WERROR err;
 	NTSTATUS status;
 
-	printf("Testing error codes\n");
+	printf("Testing error codes - to make this test pass against SAMBA 4 you have to specify the target!\n");
 
 	if (!basedn) {
 		return false;
@@ -257,7 +257,7 @@ static bool test_error_codes(struct torture_context *tctx,
 	err = ad_error(rep->r.AddResponse.errormessage, &endptr);
 	err_code_str = win_errstr(err);
 	printf(" - Errorcode: %s; Reason: %s\n", err_code_str, endptr);
-	if (torture_setting_bool(tctx, "samba4", false)) {
+	if (!torture_setting_bool(tctx, "samba4", false)) {
 		if ((!W_ERROR_EQUAL(err, WERR_DS_REFERRAL))
 			|| (rep->r.AddResponse.resultcode != 10)) {
 			return false;
@@ -268,18 +268,6 @@ static bool test_error_codes(struct torture_context *tctx,
 			return false;
 		}
 	}
-
-	printf(" Try a wrong removal\n");
-
-	msg->type = LDAP_TAG_DelRequest;
-	msg->r.DelRequest.dn = "";
-
-	req = ldap_request_send(conn, msg);
-	if (!req) {
-		return false;
-	}
-
-	status = ldap_result_one(req, &rep, LDAP_TAG_DelResponse);
 
 	printf(" Try a wrong modification\n");
 
@@ -310,7 +298,7 @@ static bool test_error_codes(struct torture_context *tctx,
 	err = ad_error(rep->r.ModifyResponse.errormessage, &endptr);
 	err_code_str = win_errstr(err);
 	printf(" - Errorcode: %s; Reason: %s\n", err_code_str, endptr);
-	if (torture_setting_bool(tctx, "samba4", false)) {
+	if (!torture_setting_bool(tctx, "samba4", false)) {
 		if ((!W_ERROR_EQUAL(err, WERR_INVALID_PARAM))
 			|| (rep->r.ModifyResponse.resultcode != 53)) {
 			return false;
@@ -349,7 +337,7 @@ static bool test_error_codes(struct torture_context *tctx,
 	err = ad_error(rep->r.DelResponse.errormessage, &endptr);
 	err_code_str = win_errstr(err);
 	printf(" - Errorcode: %s; Reason: %s\n", err_code_str, endptr);
-	if (torture_setting_bool(tctx, "samba4", false)) {
+	if (!torture_setting_bool(tctx, "samba4", false)) {
 		if ((!W_ERROR_EQUAL(err, WERR_DS_OBJ_NOT_FOUND))
 			|| (rep->r.DelResponse.resultcode != 32)) {
 			return false;

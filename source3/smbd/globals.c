@@ -46,10 +46,6 @@ struct smbd_dmapi_context *dmapi_ctx = NULL;
 
 bool dfree_broken = false;
 
-struct bitmap *dptr_bmap = NULL;
-struct dptr_struct *dirptrs = NULL;
-int dirhandles_open = 0;
-
 /* how many write cache buffers have been allocated */
 unsigned int allocated_write_caches = 0;
 

@@ -51,6 +51,7 @@ void ldapsrv_terminate_connection(struct ldapsrv_connection *conn,
 {
 	packet_recv_disable(conn->packet);
 	TALLOC_FREE(conn->packet);
+	TALLOC_FREE(conn->sockets.tls);
 	stream_terminate_connection(conn->connection, reason);
 }
 

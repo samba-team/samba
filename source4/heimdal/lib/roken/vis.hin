@@ -104,21 +104,45 @@ int ROKEN_LIB_FUNCTION
 	rk_unvis(char *, int, int *, int);
 ROKEN_CPP_END
 
+#ifndef HAVE_VIS
 #undef vis
 #define vis(a,b,c,d) rk_vis(a,b,c,d)
+#endif
+
+#ifndef HAVE_SVIS
 #undef svis
 #define svis(a,b,c,d,e) rk_svis(a,b,c,d,e)
+#endif
+
+#ifndef HAVE_STRVIS
 #undef strvis
 #define strvis(a,b,c) rk_strvis(a,b,c)
+#endif
+
+#ifndef HAVE_STRSVIS
 #undef strsvis
 #define strsvis(a,b,c,d) rk_strsvis(a,b,c,d)
+#endif
+
+#ifndef HAVE_STRVISX
 #undef strvisx
 #define strvisx(a,b,c,d) rk_strvisx(a,b,c,d)
+#endif
+
+#ifndef HAVE_STRSVISX
 #undef strsvisx
 #define strsvisx(a,b,c,d,e) rk_strsvisx(a,b,c,d,e)
+#endif
+
+#ifndef HAVE_STRUNVIS
 #undef strunvis
 #define strunvis(a,b) rk_strunvis(a,b)
+#endif
+
+
+#ifndef HAVE_UNVIS
 #undef unvis
 #define unvis(a,b,c,d) rk_unvis(a,b,c,d)
+#endif
 
 #endif /* !_VIS_H_ */

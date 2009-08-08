@@ -61,7 +61,7 @@ struct composite_context *smbcli_sock_connect_send(TALLOC_CTX *mem_ctx,
 	if (result == NULL) goto failed;
 	result->state = COMPOSITE_STATE_IN_PROGRESS;
 
-	result->event_ctx = talloc_reference(result, event_ctx);
+	result->event_ctx = event_ctx;
 	if (result->event_ctx == NULL) goto failed;
 
 	state = talloc(result, struct sock_connect_state);
@@ -118,8 +118,7 @@ static void smbcli_sock_connect_recv_conn(struct composite_context *ctx)
 	state->result->port = port;
 	state->result->hostname = talloc_steal(sock, state->host_name);
 
-	state->result->event.ctx =
-		talloc_reference(state->result, state->ctx->event_ctx);
+	state->result->event.ctx = state->ctx->event_ctx;
 	if (composite_nomem(state->result->event.ctx, state->ctx)) return;
 
 	composite_done(state->ctx);

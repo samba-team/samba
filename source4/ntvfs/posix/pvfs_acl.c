@@ -449,6 +449,35 @@ static bool pvfs_read_only(struct pvfs_state *pvfs, uint32_t access_mask)
 }
 
 /*
+  see if we are a member of the appropriate unix group
+ */
+static bool pvfs_group_member(struct pvfs_state *pvfs, gid_t gid)
+{
+	int i, ngroups;
+	gid_t *groups;
+	if (getegid() == gid) {
+		return true;
+	}
+	ngroups = getgroups(0, NULL);
+	if (ngroups == 0) {
+		return false;
+	}
+	groups = talloc_array(pvfs, gid_t, ngroups);
+	if (groups == NULL) {
+		return false;
+	}
+	if (getgroups(ngroups, groups) != ngroups) {
+		talloc_free(groups);
+		return false;
+	}
+	for (i=0; i<ngroups; i++) {
+		if (groups[i] == gid) break;
+	}
+	talloc_free(groups);
+	return i < ngroups;
+}
+
+/*
   default access check function based on unix permissions
   doing this saves on building a full security descriptor
   for the common case of access check on files with no 
@@ -473,6 +502,12 @@ NTSTATUS pvfs_access_check_unix(struct pvfs_state *pvfs,
 		max_bits |= SEC_STD_ALL;
 	}
 
+	if ((name->st.st_mode & S_IWOTH) ||
+	    ((name->st.st_mode & S_IWGRP) && 
+	     pvfs_group_member(pvfs, name->st.st_gid))) {
+		max_bits |= SEC_STD_ALL;
+	}
+
 	if (uwrap_enabled()) {
 		/* when running with the uid wrapper, files will be created
 		   owned by the ruid, but we may have a different simulated 
@@ -491,6 +526,8 @@ NTSTATUS pvfs_access_check_unix(struct pvfs_state *pvfs,
 	}
 
 	if (*access_mask & ~max_bits) {
+		DEBUG(0,(__location__ " denied access to '%s' - wanted 0x%08x but got 0x%08x (missing 0x%08x)\n",
+			 name->full_name, *access_mask, max_bits, *access_mask & ~max_bits));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 

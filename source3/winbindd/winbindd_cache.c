@@ -1605,6 +1605,45 @@ skip_save:
 	return status;
 }
 
+NTSTATUS wcache_name_to_sid(struct winbindd_domain *domain,
+			    const char *domain_name,
+			    const char *name,
+			    struct dom_sid *sid,
+			    enum lsa_SidType *type)
+{
+	struct winbind_cache *cache = get_cache(domain);
+	struct cache_entry *centry;
+	NTSTATUS status;
+	char *uname;
+
+	if (cache->tdb == NULL) {
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	uname = talloc_strdup_upper(talloc_tos(), name);
+	if (uname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	centry = wcache_fetch(cache, domain, "NS/%s/%s", domain_name, uname);
+	TALLOC_FREE(uname);
+	if (centry == NULL) {
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	status = centry->status;
+	if (NT_STATUS_IS_OK(status)) {
+		*type = (enum lsa_SidType)centry_uint32(centry);
+		centry_sid(centry, sid);
+	}
+
+	DEBUG(10,("name_to_sid: [Cached] - cached name for domain %s status: "
+		  "%s\n", domain->name, nt_errstr(status) ));
+
+	centry_free(centry);
+	return status;
+}
+
 /* convert a single name to a sid in a domain */
 static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 			    TALLOC_CTX *mem_ctx,
@@ -1614,33 +1653,13 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 			    DOM_SID *sid,
 			    enum lsa_SidType *type)
 {
-	struct winbind_cache *cache = get_cache(domain);
-	struct cache_entry *centry = NULL;
 	NTSTATUS status;
-	fstring uname;
 
-	if (!cache->tdb)
-		goto do_query;
-
-	fstrcpy(uname, name);
-	strupper_m(uname);
-	centry = wcache_fetch(cache, domain, "NS/%s/%s", domain_name, uname);
-	if (!centry)
-		goto do_query;
-
-	status = centry->status;
-	if (NT_STATUS_IS_OK(status)) {
-		*type = (enum lsa_SidType)centry_uint32(centry);
-		centry_sid(centry, sid);
+	status = wcache_name_to_sid(domain, domain_name, name, sid, type);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		return status;
 	}
 
-	DEBUG(10,("name_to_sid: [Cached] - cached name for domain %s status: %s\n",
-		domain->name, nt_errstr(status) ));
-
-	centry_free(centry);
-	return status;
-
-do_query:
 	ZERO_STRUCTP(sid);
 
 	/* If the seq number check indicated that there is a problem
@@ -1678,6 +1697,48 @@ do_query:
 	return status;
 }
 
+NTSTATUS wcache_sid_to_name(struct winbindd_domain *domain,
+			    const struct dom_sid *sid,
+			    TALLOC_CTX *mem_ctx,
+			    char **domain_name,
+			    char **name,
+			    enum lsa_SidType *type)
+{
+	struct winbind_cache *cache = get_cache(domain);
+	struct cache_entry *centry;
+	char *sid_string;
+	NTSTATUS status;
+
+	if (cache->tdb == NULL) {
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	sid_string = sid_string_tos(sid);
+	if (sid_string == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	centry = wcache_fetch(cache, domain, "SN/%s", sid_string);
+	TALLOC_FREE(sid_string);
+	if (centry == NULL) {
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	if (NT_STATUS_IS_OK(centry->status)) {
+		*type = (enum lsa_SidType)centry_uint32(centry);
+		*domain_name = centry_string(centry, mem_ctx);
+		*name = centry_string(centry, mem_ctx);
+	}
+
+	status = centry->status;
+	centry_free(centry);
+
+	DEBUG(10,("sid_to_name: [Cached] - cached name for domain %s status: "
+		  "%s\n", domain->name, nt_errstr(status) ));
+
+	return status;
+}
+
 /* convert a sid to a user or group name. The sid is guaranteed to be in the domain
    given */
 static NTSTATUS sid_to_name(struct winbindd_domain *domain,
@@ -1687,33 +1748,14 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 			    char **name,
 			    enum lsa_SidType *type)
 {
-	struct winbind_cache *cache = get_cache(domain);
-	struct cache_entry *centry = NULL;
 	NTSTATUS status;
-	fstring sid_string;
 
-	if (!cache->tdb)
-		goto do_query;
-
-	centry = wcache_fetch(cache, domain, "SN/%s",
-			      sid_to_fstring(sid_string, sid));
-	if (!centry)
-		goto do_query;
-
-	status = centry->status;
-	if (NT_STATUS_IS_OK(status)) {
-		*type = (enum lsa_SidType)centry_uint32(centry);
-		*domain_name = centry_string(centry, mem_ctx);
-		*name = centry_string(centry, mem_ctx);
+	status = wcache_sid_to_name(domain, sid, mem_ctx, domain_name, name,
+				    type);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		return status;
 	}
 
-	DEBUG(10,("sid_to_name: [Cached] - cached name for domain %s status: %s\n",
-		domain->name, nt_errstr(status) ));
-
-	centry_free(centry);
-	return status;
-
-do_query:
 	*name = NULL;
 	*domain_name = NULL;
 
@@ -1897,37 +1939,45 @@ static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 	return result;
 }
 
-/* Lookup user information from a rid */
-static NTSTATUS query_user(struct winbindd_domain *domain, 
-			   TALLOC_CTX *mem_ctx, 
-			   const DOM_SID *user_sid, 
-			   WINBIND_USERINFO *info)
+NTSTATUS wcache_query_user(struct winbindd_domain *domain,
+			   TALLOC_CTX *mem_ctx,
+			   const struct dom_sid *user_sid,
+			   struct winbind_userinfo *info)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
-	fstring tmp;
+	char *sid_string;
 
-	if (!cache->tdb)
-		goto do_query;
-
-	centry = wcache_fetch(cache, domain, "U/%s",
-			      sid_to_fstring(tmp, user_sid));
-
-	/* If we have an access denied cache entry and a cached info3 in the
-           samlogon cache then do a query.  This will force the rpc back end
-           to return the info3 data. */
-
-	if (NT_STATUS_V(domain->last_status) == NT_STATUS_V(NT_STATUS_ACCESS_DENIED) &&
-	    netsamlogon_cache_have(user_sid)) {
-		DEBUG(10, ("query_user: cached access denied and have cached info3\n"));
-		domain->last_status = NT_STATUS_OK;
-		centry_free(centry);
-		goto do_query;
+	if (cache->tdb == NULL) {
+		return NT_STATUS_NOT_FOUND;
 	}
 
-	if (!centry)
-		goto do_query;
+	sid_string = sid_string_tos(user_sid);
+	if (sid_string == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	centry = wcache_fetch(cache, domain, "U/%s", sid_string);
+	TALLOC_FREE(sid_string);
+	if (centry == NULL) {
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	/*
+	 * If we have an access denied cache entry and a cached info3
+	 * in the samlogon cache then do a query.  This will force the
+	 * rpc back end to return the info3 data.
+	 */
+
+	if (NT_STATUS_EQUAL(domain->last_status, NT_STATUS_ACCESS_DENIED) &&
+	    netsamlogon_cache_have(user_sid)) {
+		DEBUG(10, ("query_user: cached access denied and have cached "
+			   "info3\n"));
+		domain->last_status = NT_STATUS_OK;
+		centry_free(centry);
+		return NT_STATUS_NOT_FOUND;
+	}
 
 	/* if status is not ok then this is a negative hit
 	   and the rest of the data doesn't matter */
@@ -1942,13 +1992,26 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		centry_sid(centry, &info->group_sid);
 	}
 
-	DEBUG(10,("query_user: [Cached] - cached info for domain %s status: %s\n",
-		domain->name, nt_errstr(status) ));
+	DEBUG(10,("query_user: [Cached] - cached info for domain %s status: "
+		  "%s\n", domain->name, nt_errstr(status) ));
 
 	centry_free(centry);
 	return status;
+}
 
-do_query:
+/* Lookup user information from a rid */
+static NTSTATUS query_user(struct winbindd_domain *domain,
+			   TALLOC_CTX *mem_ctx,
+			   const DOM_SID *user_sid,
+			   WINBIND_USERINFO *info)
+{
+	NTSTATUS status;
+
+	status = wcache_query_user(domain, mem_ctx, user_sid, info);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		return status;
+	}
+
 	ZERO_STRUCTP(info);
 
 	/* Return status value returned by seq number check */
@@ -1968,63 +2031,81 @@ do_query:
 	return status;
 }
 
-
-/* Lookup groups a user is a member of. */
-static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
+NTSTATUS wcache_lookup_usergroups(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
-				  const DOM_SID *user_sid, 
-				  uint32 *num_groups, DOM_SID **user_gids)
+				  const struct dom_sid *user_sid,
+				  uint32_t *pnum_sids,
+				  struct dom_sid **psids)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
-	unsigned int i;
+	uint32_t i, num_sids;
+	struct dom_sid *sids;
 	fstring sid_string;
 
-	if (!cache->tdb)
-		goto do_query;
+	if (cache->tdb == NULL) {
+		return NT_STATUS_NOT_FOUND;
+	}
 
 	centry = wcache_fetch(cache, domain, "UG/%s",
 			      sid_to_fstring(sid_string, user_sid));
+	if (centry == NULL) {
+		return NT_STATUS_NOT_FOUND;
+	}
 
 	/* If we have an access denied cache entry and a cached info3 in the
            samlogon cache then do a query.  This will force the rpc back end
            to return the info3 data. */
 
-	if (NT_STATUS_V(domain->last_status) == NT_STATUS_V(NT_STATUS_ACCESS_DENIED) &&
-	    netsamlogon_cache_have(user_sid)) {
-		DEBUG(10, ("lookup_usergroups: cached access denied and have cached info3\n"));
+	if (NT_STATUS_EQUAL(domain->last_status, NT_STATUS_ACCESS_DENIED)
+	    && netsamlogon_cache_have(user_sid)) {
+		DEBUG(10, ("lookup_usergroups: cached access denied and have "
+			   "cached info3\n"));
 		domain->last_status = NT_STATUS_OK;
 		centry_free(centry);
-		goto do_query;
+		return NT_STATUS_NOT_FOUND;
 	}
 
-	if (!centry)
-		goto do_query;
-
-	*num_groups = centry_uint32(centry);
-
-	if (*num_groups == 0)
-		goto do_cached;
-
-	(*user_gids) = TALLOC_ARRAY(mem_ctx, DOM_SID, *num_groups);
-	if (! (*user_gids)) {
-		smb_panic_fn("lookup_usergroups out of memory");
-	}
-	for (i=0; i<(*num_groups); i++) {
-		centry_sid(centry, &(*user_gids)[i]);
+	num_sids = centry_uint32(centry);
+	sids = talloc_array(mem_ctx, struct dom_sid, num_sids);
+	if (sids == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
-do_cached:	
+	for (i=0; i<num_sids; i++) {
+		centry_sid(centry, &sids[i]);
+	}
+
 	status = centry->status;
 
-	DEBUG(10,("lookup_usergroups: [Cached] - cached info for domain %s status: %s\n",
-		domain->name, nt_errstr(status) ));
+	DEBUG(10,("lookup_usergroups: [Cached] - cached info for domain %s "
+		  "status: %s\n", domain->name, nt_errstr(status)));
 
 	centry_free(centry);
-	return status;
 
-do_query:
+	*pnum_sids = num_sids;
+	*psids = sids;
+	return status;
+}
+
+/* Lookup groups a user is a member of. */
+static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  const DOM_SID *user_sid,
+				  uint32 *num_groups, DOM_SID **user_gids)
+{
+	struct cache_entry *centry = NULL;
+	NTSTATUS status;
+	unsigned int i;
+	fstring sid_string;
+
+	status = wcache_lookup_usergroups(domain, mem_ctx, user_sid,
+					  num_groups, user_gids);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		return status;
+	}
+
 	(*num_groups) = 0;
 	(*user_gids) = NULL;
 
@@ -2059,58 +2140,74 @@ skip_save:
 	return status;
 }
 
-static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
-				   TALLOC_CTX *mem_ctx,
-				   uint32 num_sids, const DOM_SID *sids,
-				   uint32 *num_aliases, uint32 **alias_rids)
+static char *wcache_make_sidlist(TALLOC_CTX *mem_ctx, uint32_t num_sids,
+				 const struct dom_sid *sids)
+{
+	uint32_t i;
+	char *sidlist;
+
+	sidlist = talloc_strdup(mem_ctx, "");
+	if (sidlist == NULL) {
+		return NULL;
+	}
+	for (i=0; i<num_sids; i++) {
+		fstring tmp;
+		sidlist = talloc_asprintf_append_buffer(
+			sidlist, "/%s", sid_to_fstring(tmp, &sids[i]));
+		if (sidlist == NULL) {
+			return NULL;
+		}
+	}
+	return sidlist;
+}
+
+NTSTATUS wcache_lookup_useraliases(struct winbindd_domain *domain,
+				   TALLOC_CTX *mem_ctx, uint32_t num_sids,
+				   const struct dom_sid *sids,
+				   uint32_t *pnum_aliases, uint32_t **paliases)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
+	uint32_t num_aliases;
+	uint32_t *aliases;
 	NTSTATUS status;
-	char *sidlist = talloc_strdup(mem_ctx, "");
+	char *sidlist;
 	int i;
 
-	if (!cache->tdb)
-		goto do_query;
+	if (cache->tdb == NULL) {
+		return NT_STATUS_NOT_FOUND;
+	}
 
 	if (num_sids == 0) {
-		*num_aliases = 0;
-		*alias_rids = NULL;
+		*pnum_aliases = 0;
+		*paliases = NULL;
 		return NT_STATUS_OK;
 	}
 
 	/* We need to cache indexed by the whole list of SIDs, the aliases
 	 * resulting might come from any of the SIDs. */
 
-	for (i=0; i<num_sids; i++) {
-		fstring tmp;
-		sidlist = talloc_asprintf(mem_ctx, "%s/%s", sidlist,
-					  sid_to_fstring(tmp, &sids[i]));
-		if (sidlist == NULL)
-			return NT_STATUS_NO_MEMORY;
+	sidlist = wcache_make_sidlist(talloc_tos(), num_sids, sids);
+	if (sidlist == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	centry = wcache_fetch(cache, domain, "UA%s", sidlist);
-
-	if (!centry)
-		goto do_query;
-
-	*num_aliases = centry_uint32(centry);
-	*alias_rids = NULL;
-
-	if (*num_aliases) {
-		(*alias_rids) = TALLOC_ARRAY(mem_ctx, uint32, *num_aliases);
-
-		if ((*alias_rids) == NULL) {
-			centry_free(centry);
-			return NT_STATUS_NO_MEMORY;
-		}
-	} else {
-		(*alias_rids) = NULL;
+	TALLOC_FREE(sidlist);
+	if (centry == NULL) {
+		return NT_STATUS_NOT_FOUND;
 	}
 
-	for (i=0; i<(*num_aliases); i++)
-		(*alias_rids)[i] = centry_uint32(centry);
+	num_aliases = centry_uint32(centry);
+	aliases = talloc_array(mem_ctx, uint32_t, num_aliases);
+	if (aliases == NULL) {
+		centry_free(centry);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<num_aliases; i++) {
+		aliases[i] = centry_uint32(centry);
+	}
 
 	status = centry->status;
 
@@ -2118,9 +2215,29 @@ static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 		  "status %s\n", domain->name, nt_errstr(status)));
 
 	centry_free(centry);
-	return status;
 
- do_query:
+	*pnum_aliases = num_aliases;
+	*paliases = aliases;
+
+	return status;
+}
+
+static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
+				   TALLOC_CTX *mem_ctx,
+				   uint32 num_sids, const DOM_SID *sids,
+				   uint32 *num_aliases, uint32 **alias_rids)
+{
+	struct cache_entry *centry = NULL;
+	NTSTATUS status;
+	char *sidlist;
+	int i;
+
+	status = wcache_lookup_useraliases(domain, mem_ctx, num_sids, sids,
+					   num_aliases, alias_rids);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		return status;
+	}
+
 	(*num_aliases) = 0;
 	(*alias_rids) = NULL;
 
@@ -2129,6 +2246,11 @@ static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 
 	DEBUG(10,("lookup_usergroups: [Cached] - doing backend query for info "
 		  "for domain %s\n", domain->name ));
+
+	sidlist = wcache_make_sidlist(talloc_tos(), num_sids, sids);
+	if (sidlist == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	status = domain->backend->lookup_useraliases(domain, mem_ctx,
 						     num_sids, sids,
@@ -2625,36 +2747,14 @@ bool lookup_cached_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 		       enum lsa_SidType *type)
 {
 	struct winbindd_domain *domain;
-	struct winbind_cache *cache;
-	struct cache_entry *centry = NULL;
 	NTSTATUS status;
-	fstring tmp;
 
 	domain = find_lookup_domain_from_sid(sid);
 	if (domain == NULL) {
 		return false;
 	}
-
-	cache = get_cache(domain);
-
-	if (cache->tdb == NULL) {
-		return false;
-	}
-
-	centry = wcache_fetch(cache, domain, "SN/%s",
-			      sid_to_fstring(tmp, sid));
-	if (centry == NULL) {
-		return false;
-	}
-
-	if (NT_STATUS_IS_OK(centry->status)) {
-		*type = (enum lsa_SidType)centry_uint32(centry);
-		*domain_name = centry_string(centry, mem_ctx);
-		*name = centry_string(centry, mem_ctx);
-	}
-
-	status = centry->status;
-	centry_free(centry);
+	status = wcache_sid_to_name(domain, sid, mem_ctx, domain_name, name,
+				    type);
 	return NT_STATUS_IS_OK(status);
 }
 
@@ -2665,45 +2765,21 @@ bool lookup_cached_name(TALLOC_CTX *mem_ctx,
 			enum lsa_SidType *type)
 {
 	struct winbindd_domain *domain;
-	struct winbind_cache *cache;
-	struct cache_entry *centry = NULL;
 	NTSTATUS status;
-	fstring uname;
-	bool original_online_state;	
+	bool original_online_state;
 
 	domain = find_lookup_domain_from_name(domain_name);
 	if (domain == NULL) {
 		return false;
 	}
 
-	cache = get_cache(domain);
-
-	if (cache->tdb == NULL) {
-		return false;
-	}
-
-	fstrcpy(uname, name);
-	strupper_m(uname);
-
 	/* If we are doing a cached logon, temporarily set the domain
 	   offline so the cache won't expire the entry */
 
 	original_online_state = domain->online;
 	domain->online = false;
-	centry = wcache_fetch(cache, domain, "NS/%s/%s", domain_name, uname);
+	status = wcache_name_to_sid(domain, domain_name, name, sid, type);
 	domain->online = original_online_state;
-
-	if (centry == NULL) {
-		return false;
-	}
-
-	if (NT_STATUS_IS_OK(centry->status)) {
-		*type = (enum lsa_SidType)centry_uint32(centry);
-		centry_sid(centry, sid);
-	}
-
-	status = centry->status;
-	centry_free(centry);
 
 	return NT_STATUS_IS_OK(status);
 }

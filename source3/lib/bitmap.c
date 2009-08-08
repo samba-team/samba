@@ -32,7 +32,7 @@ struct bitmap *bitmap_allocate(int n)
 	bm = SMB_MALLOC_P(struct bitmap);
 
 	if (!bm) return NULL;
-	
+
 	bm->n = n;
 	bm->b = SMB_MALLOC_ARRAY(uint32, (n+31)/32);
 	if (!bm->b) {
@@ -70,7 +70,7 @@ struct bitmap *bitmap_talloc(TALLOC_CTX *mem_ctx, int n)
 	bm = TALLOC_P(mem_ctx, struct bitmap);
 
 	if (!bm) return NULL;
-	
+
 	bm->n = n;
 	bm->b = TALLOC_ARRAY(mem_ctx, uint32, (n+31)/32);
 	if (!bm->b) {

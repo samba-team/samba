@@ -1138,6 +1138,11 @@ WINBINDD_OBJ1 = \
 		winbindd/winbindd_ads.o   \
 		winbindd/winbindd_passdb.o \
 		winbindd/winbindd_dual.o  \
+		winbindd/winbindd_dual_ndr.o  \
+		winbindd/winbindd_dual_srv.o  \
+		librpc/gen_ndr/cli_wbint.o \
+		librpc/gen_ndr/srv_wbint.o \
+		librpc/gen_ndr/ndr_wbint.o \
 		winbindd/winbindd_async.o \
 		winbindd/winbindd_creds.o \
 		winbindd/winbindd_cred_cache.o \
@@ -1147,6 +1152,29 @@ WINBINDD_OBJ1 = \
 		winbindd/winbindd_locator.o \
 		winbindd/winbindd_ndr.o \
 		winbindd/wb_ping.o \
+		winbindd/wb_lookupsid.o \
+		winbindd/wb_lookupname.o \
+		winbindd/wb_sid2uid.o \
+		winbindd/wb_sid2gid.o \
+		winbindd/wb_uid2sid.o \
+		winbindd/wb_gid2sid.o \
+		winbindd/wb_queryuser.o \
+		winbindd/wb_lookupuseraliases.o \
+		winbindd/wb_lookupusergroups.o \
+		winbindd/wb_getpwsid.o \
+		winbindd/wb_gettoken.o \
+		winbindd/winbindd_lookupsid.o \
+		winbindd/winbindd_lookupname.o \
+		winbindd/winbindd_sid_to_uid.o \
+		winbindd/winbindd_sid_to_gid.o \
+		winbindd/winbindd_uid_to_sid.o \
+		winbindd/winbindd_gid_to_sid.o \
+		winbindd/winbindd_getpwsid.o \
+		winbindd/winbindd_getpwnam.o \
+		winbindd/winbindd_getpwuid.o \
+		winbindd/winbindd_getsidaliases.o \
+		winbindd/winbindd_getuserdomgroups.o \
+		winbindd/winbindd_getgroups.o \
 		auth/token_util.o \
 		../nsswitch/libwbclient/wb_reqtrans.o \
 		smbd/connection.o
@@ -1322,7 +1350,8 @@ samba3-idl::
 	 srcdir="$(srcdir)" ../librpc/build_idl.sh ../librpc/idl/*.idl
 	@PIDL_OUTPUTDIR="librpc/gen_ndr" PIDL_ARGS="$(PIDL_ARGS)" CPP="$(CPP)" PIDL="../pidl/pidl" \
 	 srcdir="$(srcdir)" $(srcdir)/script/build_idl.sh \
-	 	librpc/idl/messaging.idl librpc/idl/libnetapi.idl librpc/idl/notify.idl
+		librpc/idl/messaging.idl librpc/idl/libnetapi.idl librpc/idl/notify.idl \
+		librpc/idl/wbint.idl
 
 #####################################################################
 

@@ -2133,7 +2133,7 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p,
 
 	close_file(NULL, fsp, NORMAL_CLOSE);
 	vfs_ChDir(conn, oldcwd);
-	conn_free_internal(conn);
+	conn_free(conn);
 	werr = WERR_OK;
 	goto done;
 
@@ -2148,7 +2148,7 @@ error_exit:
 	}
 
 	if (conn) {
-		conn_free_internal(conn);
+		conn_free(conn);
 	}
 
  done:
@@ -2267,7 +2267,7 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p,
 
 	close_file(NULL, fsp, NORMAL_CLOSE);
 	vfs_ChDir(conn, oldcwd);
-	conn_free_internal(conn);
+	conn_free(conn);
 	werr = WERR_OK;
 	goto done;
 
@@ -2282,7 +2282,7 @@ error_exit:
 	}
 
 	if (conn) {
-		conn_free_internal(conn);
+		conn_free(conn);
 	}
 
  done:

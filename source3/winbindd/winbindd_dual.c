@@ -592,6 +592,8 @@ void setup_child(struct winbindd_child *child,
 	child->table = table;
 	child->queue = tevent_queue_create(NULL, "winbind_child");
 	SMB_ASSERT(child->queue != NULL);
+	child->rpccli = wbint_rpccli_create(NULL, child);
+	SMB_ASSERT(child->rpccli != NULL);
 }
 
 struct winbindd_child *children = NULL;
@@ -1307,6 +1309,16 @@ bool winbindd_reinit_after_fork(const char *logfilename)
 	return true;
 }
 
+/*
+ * In a child there will be only one domain, reference that here.
+ */
+static struct winbindd_domain *child_domain;
+
+struct winbindd_domain *wb_child_domain(void)
+{
+	return child_domain;
+}
+
 static bool fork_domain_child(struct winbindd_child *child)
 {
 	int fdpair[2];
@@ -1321,6 +1333,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 	} else {
 		DEBUG(10, ("fork_domain_child called without domain.\n"));
 	}
+	child_domain = child->domain;
 
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, fdpair) != 0) {
 		DEBUG(0, ("Could not open child pipe: %s\n",

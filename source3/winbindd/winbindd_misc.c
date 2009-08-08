@@ -741,12 +741,6 @@ static void domain_info_done(struct tevent_req *req)
 	request_ok(state->cli);
 }
 
-void winbindd_ping(struct winbindd_cli_state *state)
-{
-	DEBUG(3, ("[%5lu]: ping\n", (unsigned long)state->pid));
-	request_ok(state);
-}
-
 /* List various tidbits of information */
 
 void winbindd_info(struct winbindd_cli_state *state)

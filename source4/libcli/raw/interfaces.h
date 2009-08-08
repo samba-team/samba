@@ -22,7 +22,8 @@
 #ifndef __LIBCLI_RAW_INTERFACES_H__
 #define __LIBCLI_RAW_INTERFACES_H__
 
-#include "smb.h" 
+#include "libcli/raw/smb.h"
+#include "libcli/smb2/smb2_constants.h"
 #include "librpc/gen_ndr/misc.h" /* for struct GUID */
 
 /* this structure is just a wrapper for a string, the only reason we
@@ -2446,22 +2447,6 @@ union smb_search_first {
 			uint16_t end_of_search;
 		} out;
 	} t2ffirst;
-
-/*
-  SMB2 uses different level numbers for the same old SMB trans2 search levels
-*/
-#define SMB2_FIND_DIRECTORY_INFO         0x01
-#define SMB2_FIND_FULL_DIRECTORY_INFO    0x02
-#define SMB2_FIND_BOTH_DIRECTORY_INFO    0x03
-#define SMB2_FIND_NAME_INFO              0x0C
-#define SMB2_FIND_ID_BOTH_DIRECTORY_INFO 0x25
-#define SMB2_FIND_ID_FULL_DIRECTORY_INFO 0x26
-
-/* flags for SMB2 find */
-#define SMB2_CONTINUE_FLAG_RESTART    0x01
-#define SMB2_CONTINUE_FLAG_SINGLE     0x02
-#define SMB2_CONTINUE_FLAG_INDEX      0x04
-#define SMB2_CONTINUE_FLAG_REOPEN     0x10
 
 	/* SMB2 Find */
 	struct smb2_find {

@@ -534,7 +534,7 @@ static int pvfs_handle_destructor(struct pvfs_file_handle *h)
 
 		if (!timeval_is_zero(&tv[0]) || !timeval_is_zero(&tv[1])) {
 			if (utimes(h->name->full_name, tv) == -1) {
-				DEBUG(0,("pvfs_handle_destructor: utimes() failed '%s' - %s\n",
+				DEBUG(3,("pvfs_handle_destructor: utimes() failed '%s' - %s\n",
 					 h->name->full_name, strerror(errno)));
 			}
 		}
@@ -1516,6 +1516,8 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	if (fd == -1) {
 		status = pvfs_map_errno(f->pvfs, errno);
 
+		DEBUG(0,(__location__ " mapped errno %s for %s (was %d)\n", 
+			 nt_errstr(status), f->handle->name->full_name, errno));
 		/*
 		 * STATUS_MORE_ENTRIES is EAGAIN or EWOULDBLOCK
 		 */
@@ -1581,10 +1583,12 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	if (f->handle->name->stream_id == 0 &&
 	    (io->generic.in.open_disposition == NTCREATEX_DISP_OVERWRITE ||
 	     io->generic.in.open_disposition == NTCREATEX_DISP_OVERWRITE_IF)) {
-		/* for overwrite we need to replace file permissions */
+		/* for overwrite we may need to replace file permissions */
 		uint32_t attrib = io->ntcreatex.in.file_attr | FILE_ATTRIBUTE_ARCHIVE;
 		mode_t mode = pvfs_fileperms(pvfs, attrib);
-		if (fchmod(fd, mode) == -1) {
+		if (f->handle->name->st.st_mode != mode &&
+		    f->handle->name->dos.attrib != attrib &&
+		    fchmod(fd, mode) == -1) {
 			talloc_free(lck);
 			return pvfs_map_errno(pvfs, errno);
 		}

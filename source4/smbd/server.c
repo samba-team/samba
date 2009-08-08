@@ -38,6 +38,8 @@
 #include "param/secrets.h"
 #include "smbd/pidfile.h"
 #include "param/param.h"
+#include "dsdb/samdb/samdb.h"
+#include "auth/session.h"
 
 /*
   recursively delete a directory tree
@@ -112,6 +114,7 @@ static void sig_term(int sig)
 		kill(-getpgrp(), SIGTERM);
 	}
 #endif
+	DEBUG(0,("Exiting pid %d on SIGTERM\n", (int)getpid()));
 	exit(0);
 }
 
@@ -157,6 +160,7 @@ static void server_stdin_handler(struct tevent_context *event_ctx, struct tevent
 		DEBUG(0,("%s: EOF on stdin - terminating\n", binary_name));
 #if HAVE_GETPGRP
 		if (getpgrp() == getpid()) {
+			DEBUG(0,("Sending SIGTERM from pid %d\n", (int)getpid()));
 			kill(-getpgrp(), SIGTERM);
 		}
 #endif
@@ -174,6 +178,18 @@ _NORETURN_ static void max_runtime_handler(struct tevent_context *ev,
 	const char *binary_name = (const char *)private_data;
 	DEBUG(0,("%s: maximum runtime exceeded - terminating\n", binary_name));
 	exit(0);
+}
+
+/*
+  pre-open the sam ldb to ensure the schema has been loaded. This
+  saves a lot of time in child processes  
+ */
+static void prime_samdb_schema(struct tevent_context *event_ctx)
+{
+	TALLOC_CTX *samdb_context;
+	samdb_context = talloc_new(event_ctx);
+	samdb_connect(samdb_context, event_ctx, cmdline_lp_ctx, system_session(samdb_context, cmdline_lp_ctx));
+	talloc_free(samdb_context);
 }
 
 /*
@@ -343,6 +359,8 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 				 max_runtime_handler,
 				 discard_const(binary_name));
 	}
+
+	prime_samdb_schema(event_ctx);
 
 	DEBUG(0,("%s: using '%s' process model\n", binary_name, model));
 	status = server_service_startup(event_ctx, cmdline_lp_ctx, model, 

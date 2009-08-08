@@ -6144,9 +6144,7 @@ connection_struct *conn_new(struct smbd_server_connection *sconn);
 bool conn_close_all(struct smbd_server_connection *sconn);
 bool conn_idle_all(struct smbd_server_connection *sconn, time_t t);
 void conn_clear_vuid_caches(struct smbd_server_connection *sconn, uint16 vuid);
-void conn_free_internal(connection_struct *conn);
-void conn_free(struct smbd_server_connection *sconn,
-	       connection_struct *conn);
+void conn_free(connection_struct *conn);
 void msg_force_tdis(struct messaging_context *msg,
 		    void *private_data,
 		    uint32_t msg_type,
@@ -6183,14 +6181,15 @@ bool make_dir_struct(TALLOC_CTX *ctx,
 			uint32 mode,
 			time_t date,
 			bool uc);
-void init_dptrs(void);
-char *dptr_path(int key);
-char *dptr_wcard(int key);
-uint16 dptr_attr(int key);
-void dptr_close(int *key);
+bool init_dptrs(struct smbd_server_connection *sconn);
+char *dptr_path(struct smbd_server_connection *sconn, int key);
+char *dptr_wcard(struct smbd_server_connection *sconn, int key);
+uint16 dptr_attr(struct smbd_server_connection *sconn, int key);
+void dptr_close(struct smbd_server_connection *sconn, int *key);
 void dptr_closecnum(connection_struct *conn);
 void dptr_idlecnum(connection_struct *conn);
-void dptr_closepath(char *path,uint16 spid);
+void dptr_closepath(struct smbd_server_connection *sconn,
+		    char *path,uint16 spid);
 NTSTATUS dptr_create(connection_struct *conn, const char *path, bool old_handle, bool expect_close,uint16 spid,
 		const char *wcard, bool wcard_has_wild, uint32 attr, struct dptr_struct **dptr_ret);
 int dptr_CloseDir(struct dptr_struct *dptr);
@@ -6205,12 +6204,15 @@ char *dptr_ReadDirName(TALLOC_CTX *ctx,
 bool dptr_SearchDir(struct dptr_struct *dptr, const char *name, long *poffset, SMB_STRUCT_STAT *pst);
 void dptr_DirCacheAdd(struct dptr_struct *dptr, const char *name, long offset);
 void dptr_init_search_op(struct dptr_struct *dptr);
-bool dptr_fill(char *buf1,unsigned int key);
-struct dptr_struct *dptr_fetch(char *buf,int *num);
-struct dptr_struct *dptr_fetch_lanman2(int dptr_num);
+bool dptr_fill(struct smbd_server_connection *sconn,
+	       char *buf1,unsigned int key);
+struct dptr_struct *dptr_fetch(struct smbd_server_connection *sconn,
+			       char *buf,int *num);
+struct dptr_struct *dptr_fetch_lanman2(struct smbd_server_connection *sconn,
+				       int dptr_num);
 bool dir_check_ftype(connection_struct *conn, uint32 mode, uint32 dirtype);
 bool get_dir_entry(TALLOC_CTX *ctx,
-		connection_struct *conn,
+		struct dptr_struct *dirptr,
 		const char *mask,
 		uint32 dirtype,
 		char **pp_fname_out,
@@ -6745,7 +6747,8 @@ int chmod_acl(connection_struct *conn, const char *name, mode_t mode);
 int inherit_access_posix_acl(connection_struct *conn, const char *inherit_from_dir,
 		       const char *name, mode_t mode);
 int fchmod_acl(files_struct *fsp, mode_t mode);
-bool set_unix_posix_default_acl(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf,
+bool set_unix_posix_default_acl(connection_struct *conn, const char *fname,
+				const SMB_STRUCT_STAT *psbuf,
 				uint16 num_def_acls, const char *pdata);
 bool set_unix_posix_acl(connection_struct *conn, files_struct *fsp, const char *fname, uint16 num_acls, const char *pdata);
 SEC_DESC *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname);
@@ -6983,8 +6986,7 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
 				   const char *service_in, DATA_BLOB password,
 				   const char *pdev, uint16 vuid,
 				   NTSTATUS *status);
-void close_cnum(struct smbd_server_connection *sconn,
-		connection_struct *conn, uint16 vuid);
+void close_cnum(connection_struct *conn, uint16 vuid);
 
 /* The following definitions come from smbd/session.c  */
 

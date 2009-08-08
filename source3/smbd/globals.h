@@ -44,11 +44,6 @@ extern struct smbd_dmapi_context *dmapi_ctx;
 
 extern bool dfree_broken;
 
-extern struct bitmap *dptr_bmap;
-//struct dptr_struct;
-extern struct dptr_struct *dirptrs;
-extern int dirhandles_open;
-
 /* how many write cache buffers have been allocated */
 extern unsigned int allocated_write_caches;
 
@@ -217,6 +212,27 @@ NTSTATUS smbd_do_qfsinfo(connection_struct *conn,
 			 unsigned int max_data_bytes,
 			 char **ppdata,
 			 int *ret_data_len);
+
+bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
+			   struct dptr_struct *dirptr,
+			   const char *mask,
+			   uint32_t dirtype,
+			   bool dont_descend,
+			   bool ask_sharemode,
+			   bool (*match_fn)(TALLOC_CTX *ctx,
+					    void *private_data,
+					    const char *dname,
+					    const char *mask,
+					    char **_fname),
+			   bool (*mode_fn)(TALLOC_CTX *ctx,
+					   void *private_data,
+					   struct smb_filename *smb_fname,
+					   uint32_t *_mode),
+			   void *private_data,
+			   char **_fname,
+			   struct smb_filename **_smb_fname,
+			   uint32_t *_mode,
+			   long *_prev_offset);
 
 void smbd_server_connection_terminate_ex(struct smbd_server_connection *sconn,
 					 const char *reason,
@@ -432,6 +448,12 @@ struct smbd_server_connection {
 		struct pending_auth_data *pd_list;
 
 		struct notify_mid_map *notify_mid_maps;
+
+		struct {
+			struct bitmap *dptr_bmap;
+			struct dptr_struct *dirptrs;
+			int dirhandles_open;
+		} searches;
 	} smb1;
 	struct {
 		struct tevent_context *event_ctx;

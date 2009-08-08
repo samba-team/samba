@@ -100,7 +100,7 @@ enum winbindd_result winbindd_dual_list_groups(struct winbindd_domain *domain,
                                                struct winbindd_cli_state *state);
 bool print_sidlist(TALLOC_CTX *mem_ctx, const DOM_SID *sids,
 		   size_t num_sids, char **result, ssize_t *len);
-bool parse_sidlist(TALLOC_CTX *mem_ctx, char *sidstr,
+bool parse_sidlist(TALLOC_CTX *mem_ctx, const char *sidstr,
 		   DOM_SID **sids, size_t *num_sids);
 enum winbindd_result winbindd_dual_lookuprids(struct winbindd_domain *domain,
 					      struct winbindd_cli_state *state);
@@ -149,6 +149,12 @@ bool wcache_invalidate_cache(void);
 bool init_wcache(void);
 bool initialize_winbindd_cache(void);
 void close_winbindd_cache(void);
+NTSTATUS wcache_sid_to_name(struct winbindd_domain *domain,
+			    const struct dom_sid *sid,
+			    TALLOC_CTX *mem_ctx,
+			    char **domain_name,
+			    char **name,
+			    enum lsa_SidType *type);
 bool lookup_cached_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 		       char **domain_name, char **name,
 		       enum lsa_SidType *type);
@@ -160,6 +166,25 @@ bool lookup_cached_name(TALLOC_CTX *mem_ctx,
 void cache_name2sid(struct winbindd_domain *domain, 
 		    const char *domain_name, const char *name,
 		    enum lsa_SidType type, const DOM_SID *sid);
+NTSTATUS wcache_name_to_sid(struct winbindd_domain *domain,
+			    const char *domain_name,
+			    const char *name,
+			    struct dom_sid *sid,
+			    enum lsa_SidType *type);
+NTSTATUS wcache_query_user(struct winbindd_domain *domain,
+			   TALLOC_CTX *mem_ctx,
+			   const struct dom_sid *user_sid,
+			   struct winbind_userinfo *info);
+NTSTATUS wcache_lookup_useraliases(struct winbindd_domain *domain,
+				   TALLOC_CTX *mem_ctx,
+				   uint32 num_sids, const DOM_SID *sids,
+				   uint32 *pnum_aliases, uint32 **paliases);
+NTSTATUS wcache_lookup_usergroups(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  const struct dom_sid *user_sid,
+				  uint32_t *pnum_sids,
+				  struct dom_sid **psids);
+
 void wcache_flush_cache(void);
 NTSTATUS wcache_count_cached_creds(struct winbindd_domain *domain, int *count);
 NTSTATUS wcache_remove_oldest_cached_creds(struct winbindd_domain *domain, const DOM_SID *sid) ;
@@ -330,6 +355,7 @@ void winbind_msg_dump_domain_list(struct messaging_context *msg_ctx,
 				  struct server_id server_id,
 				  DATA_BLOB *data);
 bool winbindd_reinit_after_fork(const char *logfilename);
+struct winbindd_domain *wb_child_domain(void);
 
 /* The following definitions come from winbindd/winbindd_group.c  */
 
@@ -492,6 +518,14 @@ enum winbindd_result winbindd_dual_allocate_gid(struct winbindd_domain *domain,
 
 /* The following definitions come from winbindd/winbindd_user.c  */
 
+bool fillup_pw_field(const char *lp_template,
+			    const char *username,
+			    const char *domname,
+			    uid_t uid,
+			    gid_t gid,
+			    const char *in,
+		     fstring out);
+
 enum winbindd_result winbindd_dual_userinfo(struct winbindd_domain *domain,
 					    struct winbindd_cli_state *state);
 void winbindd_getpwnam(struct winbindd_cli_state *state);
@@ -593,5 +627,146 @@ NTSTATUS wb_ping_recv(struct tevent_req *req,
 
 enum winbindd_result winbindd_dual_ping(struct winbindd_domain *domain,
 					struct winbindd_cli_state *state);
+
+struct rpc_pipe_client *wbint_rpccli_create(TALLOC_CTX *mem_ctx,
+					    struct winbindd_child *child);
+enum winbindd_result winbindd_dual_ndrcmd(struct winbindd_domain *domain,
+					  struct winbindd_cli_state *state);
+
+struct tevent_req *wb_lookupsid_send(TALLOC_CTX *mem_ctx,
+				     struct tevent_context *ev,
+				     const struct dom_sid *sid);
+NTSTATUS wb_lookupsid_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			   enum lsa_SidType *type, const char **domain,
+			   const char **name);
+
+struct tevent_req *winbindd_lookupsid_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					   struct winbindd_request *request);
+NTSTATUS winbindd_lookupsid_recv(struct tevent_req *req,
+				 struct winbindd_response *response);
+
+struct tevent_req *wb_lookupname_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      const char *dom_name, const char *name,
+				      uint32_t flags);
+NTSTATUS wb_lookupname_recv(struct tevent_req *req, struct dom_sid *sid,
+			    enum lsa_SidType *type);
+
+struct tevent_req *winbindd_lookupname_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct winbindd_request *request);
+NTSTATUS winbindd_lookupname_recv(struct tevent_req *req,
+				  struct winbindd_response *response);
+
+struct tevent_req *wb_sid2uid_send(TALLOC_CTX *mem_ctx,
+				   struct tevent_context *ev,
+				   const struct dom_sid *sid);
+NTSTATUS wb_sid2uid_recv(struct tevent_req *req, uid_t *uid);
+
+struct tevent_req *winbindd_sid_to_uid_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct winbindd_request *request);
+NTSTATUS winbindd_sid_to_uid_recv(struct tevent_req *req,
+				  struct winbindd_response *response);
+
+struct tevent_req *wb_sid2gid_send(TALLOC_CTX *mem_ctx,
+				   struct tevent_context *ev,
+				   const struct dom_sid *sid);
+NTSTATUS wb_sid2gid_recv(struct tevent_req *req, gid_t *gid);
+
+struct tevent_req *winbindd_sid_to_gid_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct winbindd_request *request);
+NTSTATUS winbindd_sid_to_gid_recv(struct tevent_req *req,
+				  struct winbindd_response *response);
+
+struct tevent_req *wb_uid2sid_send(TALLOC_CTX *mem_ctx,
+				   struct tevent_context *ev,
+				   uid_t uid);
+NTSTATUS wb_uid2sid_recv(struct tevent_req *req, struct dom_sid *sid);
+
+struct tevent_req *winbindd_uid_to_sid_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct winbindd_request *request);
+NTSTATUS winbindd_uid_to_sid_recv(struct tevent_req *req,
+				  struct winbindd_response *response);
+
+struct tevent_req *wb_gid2sid_send(TALLOC_CTX *mem_ctx,
+				   struct tevent_context *ev,
+				   gid_t gid);
+NTSTATUS wb_gid2sid_recv(struct tevent_req *req, struct dom_sid *sid);
+
+struct tevent_req *winbindd_gid_to_sid_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct winbindd_request *request);
+NTSTATUS winbindd_gid_to_sid_recv(struct tevent_req *req,
+				  struct winbindd_response *response);
+
+struct tevent_req *wb_queryuser_send(TALLOC_CTX *mem_ctx,
+				     struct tevent_context *ev,
+				     const struct dom_sid *user_sid);
+NTSTATUS wb_queryuser_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			   struct winbind_userinfo **pinfo);
+
+struct tevent_req *wb_getpwsid_send(TALLOC_CTX *mem_ctx,
+				    struct tevent_context *ev,
+				    const struct dom_sid *user_sid,
+				    struct winbindd_pw *pw);
+NTSTATUS wb_getpwsid_recv(struct tevent_req *req);
+
+struct tevent_req *winbindd_getpwsid_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct winbindd_request *request);
+NTSTATUS winbindd_getpwsid_recv(struct tevent_req *req,
+				struct winbindd_response *response);
+
+struct tevent_req *winbindd_getpwnam_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct winbindd_request *request);
+NTSTATUS winbindd_getpwnam_recv(struct tevent_req *req,
+				struct winbindd_response *response);
+
+struct tevent_req *winbindd_getpwuid_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct winbindd_request *request);
+NTSTATUS winbindd_getpwuid_recv(struct tevent_req *req,
+				struct winbindd_response *response);
+struct tevent_req *wb_lookupuseraliases_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct winbindd_domain *domain,
+					     int num_sids,
+					     const struct dom_sid *sids);
+NTSTATUS wb_lookupuseraliases_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+				   uint32_t *num_aliases, uint32_t **aliases);
+struct tevent_req *winbindd_getsidaliases_send(TALLOC_CTX *mem_ctx,
+					       struct tevent_context *ev,
+					       struct winbindd_request *request);
+NTSTATUS winbindd_getsidaliases_recv(struct tevent_req *req,
+				     struct winbindd_response *response);
+struct tevent_req *wb_lookupusergroups_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct winbindd_domain *domain,
+					    const struct dom_sid *sid);
+NTSTATUS wb_lookupusergroups_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+				  int *num_sids, struct dom_sid **sids);
+
+struct tevent_req *winbindd_getuserdomgroups_send(TALLOC_CTX *mem_ctx,
+						  struct tevent_context *ev,
+						  struct winbindd_request *request);
+NTSTATUS winbindd_getuserdomgroups_recv(struct tevent_req *req,
+					struct winbindd_response *response);
+struct tevent_req *wb_gettoken_send(TALLOC_CTX *mem_ctx,
+				    struct tevent_context *ev,
+				    const struct dom_sid *sid);
+NTSTATUS wb_gettoken_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			  int *num_sids, struct dom_sid **sids);
+struct tevent_req *winbindd_getgroups_send(TALLOC_CTX *mem_ctx,
+					   struct tevent_context *ev,
+					   struct winbindd_request *request);
+NTSTATUS winbindd_getgroups_recv(struct tevent_req *req,
+				 struct winbindd_response *response);
+
+
 
 #endif /*  _WINBINDD_PROTO_H_  */

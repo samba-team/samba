@@ -407,7 +407,10 @@ void *tdb_get_logging_private(struct tdb_context *tdb)
 
 static int tdb_reopen_internal(struct tdb_context *tdb, bool active_lock)
 {
+#if !defined(LIBREPLACE_PREAD_NOT_REPLACED) || \
+	!defined(LIBREPLACE_PWRITE_NOT_REPLACED)
 	struct stat st;
+#endif
 
 	if (tdb->flags & TDB_INTERNAL) {
 		return 0; /* Nothing to do. */

@@ -88,7 +88,7 @@
 #include <locale.h>
 #endif
 
-#ifdef HAVE_LIBINTL_H
+#ifdef LIBINTL
 #include <libintl.h>
 #define N_(x,y) gettext(x)
 #define NP_(x,y) (x)

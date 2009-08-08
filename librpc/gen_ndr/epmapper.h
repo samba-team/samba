@@ -26,7 +26,7 @@ enum epm_protocol
 	EPM_PROTOCOL_UUID=0x0d,
 	EPM_PROTOCOL_IPX=0x0e,
 	EPM_PROTOCOL_SMB=0x0f,
-	EPM_PROTOCOL_PIPE=0x10,
+	EPM_PROTOCOL_NAMED_PIPE=0x10,
 	EPM_PROTOCOL_NETBIOS=0x11,
 	EPM_PROTOCOL_NETBEUI=0x12,
 	EPM_PROTOCOL_SPX=0x13,
@@ -55,7 +55,7 @@ enum epm_protocol
 #define EPM_PROTOCOL_UUID ( 0x0d )
 #define EPM_PROTOCOL_IPX ( 0x0e )
 #define EPM_PROTOCOL_SMB ( 0x0f )
-#define EPM_PROTOCOL_PIPE ( 0x10 )
+#define EPM_PROTOCOL_NAMED_PIPE ( 0x10 )
 #define EPM_PROTOCOL_NETBIOS ( 0x11 )
 #define EPM_PROTOCOL_NETBEUI ( 0x12 )
 #define EPM_PROTOCOL_SPX ( 0x13 )
@@ -116,7 +116,7 @@ struct epm_rhs_smb {
 	const char * unc;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
 };
 
-struct epm_rhs_pipe {
+struct epm_rhs_named_pipe {
 	const char * path;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
 };
 
@@ -189,7 +189,7 @@ union epm_rhs {
 	struct epm_rhs_uuid uuid;/* [case(EPM_PROTOCOL_UUID)] */
 	struct epm_rhs_ipx ipx;/* [case(EPM_PROTOCOL_IPX)] */
 	struct epm_rhs_smb smb;/* [case(EPM_PROTOCOL_SMB)] */
-	struct epm_rhs_pipe pipe;/* [case(EPM_PROTOCOL_PIPE)] */
+	struct epm_rhs_named_pipe named_pipe;/* [case(EPM_PROTOCOL_NAMED_PIPE)] */
 	struct epm_rhs_netbios netbios;/* [case(EPM_PROTOCOL_NETBIOS)] */
 	struct epm_rhs_netbeui netbeui;/* [case(EPM_PROTOCOL_NETBEUI)] */
 	struct epm_rhs_spx spx;/* [case(EPM_PROTOCOL_SPX)] */

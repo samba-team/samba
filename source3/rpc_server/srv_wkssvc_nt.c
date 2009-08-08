@@ -306,7 +306,7 @@ WERROR _wkssvc_NetrJoinDomain2(pipes_struct *p,
 
 	if (!user_has_privileges(token, &se_machine_account) &&
 	    !nt_token_check_domain_rid(token, DOMAIN_GROUP_RID_ADMINS) &&
-	    !nt_token_check_domain_rid(token, BUILTIN_ALIAS_RID_ADMINS)) {
+	    !nt_token_check_sid(&global_sid_Builtin_Administrators, token)) {
 		DEBUG(5,("_wkssvc_NetrJoinDomain2: account doesn't have "
 			"sufficient privileges\n"));
 		return WERR_ACCESS_DENIED;
@@ -377,7 +377,7 @@ WERROR _wkssvc_NetrUnjoinDomain2(pipes_struct *p,
 
 	if (!user_has_privileges(token, &se_machine_account) &&
 	    !nt_token_check_domain_rid(token, DOMAIN_GROUP_RID_ADMINS) &&
-	    !nt_token_check_domain_rid(token, BUILTIN_ALIAS_RID_ADMINS)) {
+	    !nt_token_check_sid(&global_sid_Builtin_Administrators, token)) {
 		DEBUG(5,("_wkssvc_NetrUnjoinDomain2: account doesn't have "
 			"sufficient privileges\n"));
 		return WERR_ACCESS_DENIED;

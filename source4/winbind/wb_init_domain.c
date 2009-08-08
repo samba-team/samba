@@ -211,7 +211,7 @@ static void init_domain_recv_netlogonpipe(struct composite_context *ctx)
 	if (!composite_is_ok(state->ctx)) {
 		return;
 	}
-	talloc_steal(state->domain->netlogon_pipe, state->domain->netlogon_binding);
+	talloc_reparent(state, state->domain->netlogon_pipe, state->domain->netlogon_binding);
 
 	state->domain->lsa_binding = init_domain_binding(state, &ndr_table_lsarpc);
 
@@ -286,7 +286,7 @@ static void init_domain_recv_lsa_pipe(struct composite_context *ctx)
 	if (!composite_is_ok(state->ctx)) return;
 
 	talloc_steal(state->domain->libnet_ctx, state->domain->libnet_ctx->lsa.pipe);
-	talloc_steal(state->domain->libnet_ctx->lsa.pipe, state->domain->lsa_binding);
+	talloc_reparent(state, state->domain->libnet_ctx->lsa.pipe, state->domain->lsa_binding);
 	state->domain->libnet_ctx->lsa.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	state->domain->libnet_ctx->lsa.name = state->domain->info->name;
 
@@ -399,7 +399,7 @@ static void init_domain_recv_samr(struct composite_context *ctx)
 		&state->domain->libnet_ctx->samr.handle);
 	if (!composite_is_ok(state->ctx)) return;
 
-	talloc_steal(state->domain->libnet_ctx->samr.pipe, state->domain->samr_binding);
+	talloc_reparent(state, state->domain->libnet_ctx->samr.pipe, state->domain->samr_binding);
 	state->domain->libnet_ctx->samr.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	state->domain->libnet_ctx->samr.name = state->domain->info->name;
 	state->domain->libnet_ctx->samr.sid = dom_sid_dup(

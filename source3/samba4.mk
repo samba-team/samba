@@ -88,6 +88,7 @@ libcmdlinesrcdir := $(samba4srcdir)/lib/cmdline
 poptsrcdir := $(samba4srcdir)/../lib/popt
 socketwrappersrcdir := $(samba4srcdir)/../lib/socket_wrapper
 nsswrappersrcdir := $(samba4srcdir)/../lib/nss_wrapper
+uidwrappersrcdir := $(samba4srcdir)/../lib/uid_wrapper
 libstreamsrcdir := $(samba4srcdir)/lib/stream
 libutilsrcdir := $(samba4srcdir)/../lib/util
 libtdrsrcdir := ../lib/tdr

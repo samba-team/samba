@@ -52,7 +52,7 @@ interface epmapper
 		EPM_PROTOCOL_UUID 			= 0x0d,
 		EPM_PROTOCOL_IPX  			= 0x0e,
 		EPM_PROTOCOL_SMB     		= 0x0f,
-		EPM_PROTOCOL_PIPE    		= 0x10,
+		EPM_PROTOCOL_NAMED_PIPE		= 0x10,
 		EPM_PROTOCOL_NETBIOS 		= 0x11,
 		EPM_PROTOCOL_NETBEUI   		= 0x12,
 		EPM_PROTOCOL_SPX     		= 0x13,
@@ -113,8 +113,8 @@ interface epmapper
 	} epm_rhs_smb;
 
 	typedef struct {
-		astring path;	
-	} epm_rhs_pipe;
+		astring path;
+	} epm_rhs_named_pipe;
 
 	typedef struct {
 		astring name;
@@ -178,7 +178,7 @@ interface epmapper
 		[case(EPM_PROTOCOL_UUID)] epm_rhs_uuid uuid;
 		[case(EPM_PROTOCOL_IPX)] epm_rhs_ipx ipx;
 		[case(EPM_PROTOCOL_SMB)] epm_rhs_smb smb;
-		[case(EPM_PROTOCOL_PIPE)] epm_rhs_pipe pipe;
+		[case(EPM_PROTOCOL_NAMED_PIPE)] epm_rhs_named_pipe named_pipe;
 		[case(EPM_PROTOCOL_NETBIOS)] epm_rhs_netbios netbios;
 		[case(EPM_PROTOCOL_NETBEUI)] epm_rhs_netbeui netbeui;
 		[case(EPM_PROTOCOL_SPX)] epm_rhs_spx spx;

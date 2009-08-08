@@ -437,7 +437,8 @@ void dsdb_make_schema_global(struct ldb_context *ldb)
 	}
 
 	/* we want the schema to be around permanently */
-	talloc_reference(talloc_autofree_context(), schema);
+	talloc_reparent(talloc_parent(schema), talloc_autofree_context(), schema);
+
 	global_schema = schema;
 
 	dsdb_set_global_schema(ldb);

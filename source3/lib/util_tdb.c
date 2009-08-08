@@ -4,17 +4,17 @@
    Copyright (C) Andrew Tridgell   1992-1998
    Copyright (C) Rafal Szczesniak  2002
    Copyright (C) Michael Adam      2007
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -91,7 +91,7 @@ int tdb_lock_bystring_with_timeout(TDB_CONTEXT *tdb, const char *keyval,
 				   int timeout)
 {
 	TDB_DATA key = string_term_tdb_data(keyval);
-	
+
 	return tdb_chainlock_with_timeout(tdb, key, timeout);
 }
 
@@ -102,7 +102,7 @@ int tdb_lock_bystring_with_timeout(TDB_CONTEXT *tdb, const char *keyval,
 int tdb_read_lock_bystring_with_timeout(TDB_CONTEXT *tdb, const char *keyval, unsigned int timeout)
 {
 	TDB_DATA key = string_term_tdb_data(keyval);
-	
+
 	return tdb_chainlock_with_timeout_internal(tdb, key, timeout, F_RDLCK);
 }
 
@@ -113,7 +113,7 @@ int tdb_trans_store_bystring(TDB_CONTEXT *tdb, const char *keystr,
 			     TDB_DATA data, int flags)
 {
 	TDB_DATA key = string_term_tdb_data(keystr);
-	
+
 	return tdb_trans_store(tdb, key, data, flags);
 }
 
@@ -202,7 +202,7 @@ static size_t tdb_pack_va(uint8 *buf, int bufsize, const char *fmt, va_list ap)
 
 	DEBUG(18,("tdb_pack_va(%s, %d) -> %d\n", 
 		 fmt0, bufsize0, (int)PTR_DIFF(buf, buf0)));
-	
+
 	return PTR_DIFF(buf, buf0);
 }
 
