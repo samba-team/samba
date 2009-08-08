@@ -335,16 +335,45 @@ static int db_rbt_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
+static int db_rbt_traverse_internal(struct rb_node *n,
+				    int (*f)(struct db_record *db,
+					     void *private_data),
+				    void *private_data)
+{
+	struct db_rbt_node *r;
+	struct db_record rec;
+	int ret;
+
+	if (n == NULL) {
+		return 0;
+	}
+
+	ret = db_rbt_traverse_internal(n->rb_left, f, private_data);
+	if (ret != 0) {
+		return ret;
+	}
+
+	r = db_rbt2node(n);
+	ZERO_STRUCT(rec);
+	db_rbt_parse_node(r, &rec.key, &rec.value);
+
+	ret = f(&rec, private_data);
+	if (ret != 0) {
+		return ret;
+	}
+
+	return db_rbt_traverse_internal(n->rb_right, f, private_data);
+}
 
 static int db_rbt_traverse(struct db_context *db,
 			   int (*f)(struct db_record *db,
 				    void *private_data),
 			   void *private_data)
 {
-	/*
-	 * Nobody uses this so far, and unused code is broken code :-)
-	 */
-	return -1;
+	struct db_rbt_ctx *ctx = talloc_get_type_abort(
+		db->private_data, struct db_rbt_ctx);
+
+	return db_rbt_traverse_internal(ctx->tree.rb_node, f, private_data);
 }
 
 static int db_rbt_get_seqnum(struct db_context *db)
