@@ -321,6 +321,14 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		in_create_options &= ~(0x10);/* NTCREATEX_OPTIONS_SYNC_ALERT */
 		in_create_options &= ~(0x20);/* NTCREATEX_OPTIONS_ASYNC_ALERT */
 
+		/* convert '\\' into '/' */
+		status = check_path_syntax(in_name);
+		if (!NT_STATUS_IS_OK(status)) {
+			tevent_req_nterror(req, status);
+			TALLOC_FREE(smb_fname);
+			goto out;
+		}
+
 		status = filename_convert(talloc_tos(),
 					smbreq->conn,
 					smbreq->flags2 & FLAGS2_DFS_PATHNAMES,
