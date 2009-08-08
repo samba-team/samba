@@ -1,6 +1,5 @@
 dn: CN=Administrator,CN=Users,${DOMAINDN}
 objectClass: user
-cn: Administrator
 description: Built-in account for administering the computer/domain
 userAccountControl: 66048
 objectSid: ${DOMAINSID}-500
@@ -12,7 +11,6 @@ isCriticalSystemObject: TRUE
 
 dn: CN=Guest,CN=Users,${DOMAINDN}
 objectClass: user
-cn: Guest
 description: Built-in account for guest access to the computer/domain
 userAccountControl: 66082
 primaryGroupID: 514
@@ -23,7 +21,6 @@ isCriticalSystemObject: TRUE
 dn: CN=Enterprise Admins,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: Enterprise Admins
 description: Designated administrators of the enterprise
 member: CN=Administrator,CN=Users,${DOMAINDN}
 objectSid: ${DOMAINSID}-519
@@ -36,7 +33,6 @@ objectClass: top
 objectClass: person
 objectClass: organizationalPerson
 objectClass: user
-cn: krbtgt
 description: Key Distribution Center Service Account
 showInAdvancedViewOnly: TRUE
 userAccountControl: 514
@@ -51,7 +47,6 @@ isCriticalSystemObject: TRUE
 dn: CN=Domain Computers,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: Domain Computers
 description: All workstations and servers joined to the domain
 objectSid: ${DOMAINSID}-515
 sAMAccountName: Domain Computers
@@ -60,7 +55,6 @@ isCriticalSystemObject: TRUE
 dn: CN=Domain Controllers,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: Domain Controllers
 description: All domain controllers in the domain
 objectSid: ${DOMAINSID}-516
 adminCount: 1
@@ -70,7 +64,6 @@ isCriticalSystemObject: TRUE
 dn: CN=Schema Admins,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: Schema Admins
 description: Designated administrators of the schema
 member: CN=Administrator,CN=Users,${DOMAINDN}
 objectSid: ${DOMAINSID}-518
@@ -81,7 +74,6 @@ isCriticalSystemObject: TRUE
 dn: CN=Cert Publishers,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: Cert Publishers
 description: Members of this group are permitted to publish certificates to the Active Directory
 groupType: -2147483644
 objectSid: ${DOMAINSID}-517
@@ -91,7 +83,6 @@ isCriticalSystemObject: TRUE
 dn: CN=Domain Admins,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: Domain Admins
 description: Designated administrators of the domain
 member: CN=Administrator,CN=Users,${DOMAINDN}
 objectSid: ${DOMAINSID}-512
@@ -102,7 +93,6 @@ isCriticalSystemObject: TRUE
 dn: CN=Domain Users,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: Domain Users
 description: All domain users
 objectSid: ${DOMAINSID}-513
 sAMAccountName: Domain Users
@@ -111,7 +101,6 @@ isCriticalSystemObject: TRUE
 dn: CN=Domain Guests,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: Domain Guests
 description: All domain guests
 objectSid: ${DOMAINSID}-514
 sAMAccountName: Domain Guests
@@ -120,7 +109,6 @@ isCriticalSystemObject: TRUE
 dn: CN=Group Policy Creator Owners,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: Group Policy Creator Owners
 description: Members in this group can modify group policy for the domain
 member: CN=Administrator,CN=Users,${DOMAINDN}
 objectSid: ${DOMAINSID}-520
@@ -130,7 +118,6 @@ isCriticalSystemObject: TRUE
 dn: CN=RAS and IAS Servers,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: RAS and IAS Servers
 description: Servers in this group can access remote access properties of users
 objectSid: ${DOMAINSID}-553
 sAMAccountName: RAS and IAS Servers
@@ -140,7 +127,6 @@ isCriticalSystemObject: TRUE
 dn: CN=Read-Only Domain Controllers,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: Read-Only Domain Controllers
 description: read-only domain controllers
 objectSid: ${DOMAINSID}-521
 sAMAccountName: Read-Only Domain Controllers
@@ -150,7 +136,6 @@ isCriticalSystemObject: TRUE
 dn: CN=Enterprise Read-Only Domain Controllers,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: Enterprise Read-Only Domain Controllers
 description: enterprise read-only domain controllers
 objectSid: ${DOMAINSID}-498
 sAMAccountName: Enterprise Read-Only Domain Controllers
@@ -160,7 +145,6 @@ isCriticalSystemObject: TRUE
 dn: CN=Certificate Service DCOM Access,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: Certificate Service DCOM Access
 description: Certificate Service DCOM Access
 objectSid: ${DOMAINSID}-574
 sAMAccountName: Certificate Service DCOM Access
@@ -170,7 +154,6 @@ isCriticalSystemObject: TRUE
 dn: CN=Cryptographic Operators,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: Cryptographic Operators
 description: Cryptographic Operators
 objectSid: ${DOMAINSID}-569
 sAMAccountName: Cryptographic Operators
@@ -180,7 +163,6 @@ isCriticalSystemObject: TRUE
 dn: CN=Event Log Readers,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: Event Log Readers
 description: Event Log Readers
 objectSid: ${DOMAINSID}-573
 sAMAccountName: Event Log Readers
@@ -190,7 +172,6 @@ isCriticalSystemObject: TRUE
 dn: CN=Administrators,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: Administrators
 description: Administrators have complete and unrestricted access to the computer/domain
 member: CN=Domain Admins,CN=Users,${DOMAINDN}
 member: CN=Enterprise Admins,CN=Users,${DOMAINDN}
@@ -229,7 +210,6 @@ isCriticalSystemObject: TRUE
 dn: CN=Users,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: Users
 description: Users are prevented from making accidental or intentional system-wide changes.  Thus, Users can run certified applications, but not most legacy applications
 member: CN=Domain Users,CN=Users,${DOMAINDN}
 objectSid: S-1-5-32-545
@@ -241,7 +221,6 @@ isCriticalSystemObject: TRUE
 dn: CN=Guests,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: Guests
 description: Guests have the same access as members of the Users group by default, except for the Guest account which is further restricted
 member: CN=Domain Guests,CN=Users,${DOMAINDN}
 member: CN=Guest,CN=Users,${DOMAINDN}
@@ -254,7 +233,6 @@ isCriticalSystemObject: TRUE
 dn: CN=Print Operators,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: Print Operators
 description: Members can administer domain printers
 objectSid: S-1-5-32-550
 adminCount: 1
@@ -269,7 +247,6 @@ isCriticalSystemObject: TRUE
 dn: CN=Backup Operators,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: Backup Operators
 description: Backup Operators can override security restrictions for the sole purpose of backing up or restoring files
 objectSid: S-1-5-32-551
 adminCount: 1
@@ -285,7 +262,6 @@ isCriticalSystemObject: TRUE
 dn: CN=Replicator,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: Replicator
 description: Supports file replication in a domain
 objectSid: S-1-5-32-552
 adminCount: 1
@@ -297,7 +273,6 @@ isCriticalSystemObject: TRUE
 dn: CN=Remote Desktop Users,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: Remote Desktop Users
 description: Members in this group are granted the right to logon remotely
 objectSid: S-1-5-32-555
 sAMAccountName: Remote Desktop Users
@@ -308,7 +283,6 @@ isCriticalSystemObject: TRUE
 dn: CN=Network Configuration Operators,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: Network Configuration Operators
 description: Members in this group can have some administrative privileges to manage configuration of networking features
 objectSid: S-1-5-32-556
 sAMAccountName: Network Configuration Operators
@@ -319,7 +293,6 @@ isCriticalSystemObject: TRUE
 dn: CN=Performance Monitor Users,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: Performance Monitor Users
 description: Members of this group have remote access to monitor this computer
 objectSid: S-1-5-32-558
 sAMAccountName: Performance Monitor Users
@@ -330,7 +303,6 @@ isCriticalSystemObject: TRUE
 dn: CN=Performance Log Users,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: Performance Log Users
 description: Members of this group have remote access to schedule logging of performance counters on this computer
 objectSid: S-1-5-32-559
 sAMAccountName: Performance Log Users
@@ -341,7 +313,6 @@ isCriticalSystemObject: TRUE
 dn: CN=Server Operators,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: Server Operators
 description: Members can administer domain servers
 objectSid: S-1-5-32-549
 adminCount: 1
@@ -359,7 +330,6 @@ isCriticalSystemObject: TRUE
 dn: CN=Account Operators,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: Account Operators
 description: Members can administer domain user and group accounts
 objectSid: S-1-5-32-548
 adminCount: 1
@@ -372,7 +342,6 @@ isCriticalSystemObject: TRUE
 dn: CN=Pre-Windows 2000 Compatible Access,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: Pre-Windows 2000 Compatible Access
 description: A backward compatibility group which allows read access on all users and groups in the domain
 objectSid: S-1-5-32-554
 sAMAccountName: Pre-Windows 2000 Compatible Access
@@ -385,7 +354,6 @@ isCriticalSystemObject: TRUE
 dn: CN=Incoming Forest Trust Builders,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: Incoming Forest Trust Builders
 description: Members of this group can create incoming, one-way trusts to this forest
 objectSid: S-1-5-32-557
 sAMAccountName: Incoming Forest Trust Builders
@@ -396,7 +364,6 @@ isCriticalSystemObject: TRUE
 dn: CN=Windows Authorization Access Group,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: Windows Authorization Access Group
 description: Members of this group have access to the computed tokenGroupsGlobalAndUniversal attribute on User objects
 objectSid: S-1-5-32-560
 sAMAccountName: Windows Authorization Access Group
@@ -407,7 +374,6 @@ isCriticalSystemObject: TRUE
 dn: CN=Terminal Server License Servers,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: Terminal Server License Servers
 description: Terminal Server License Servers
 objectSid: S-1-5-32-561
 sAMAccountName: Terminal Server License Servers
@@ -418,7 +384,6 @@ isCriticalSystemObject: TRUE
 dn: CN=Distributed COM Users,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
-cn: Distributed COM Users
 description: Members are allowed to launch, activate and use Distributed COM objects on this machine.
 objectSid: S-1-5-32-562
 sAMAccountName: Distributed COM Users
@@ -429,150 +394,124 @@ isCriticalSystemObject: TRUE
 dn: CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
 objectClass: container
-cn: WellKnown Security Principals
 systemFlags: -2147483648
 
 dn: CN=Anonymous Logon,CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
 objectClass: foreignSecurityPrincipal
-cn: Anonymous Logon
 objectSid: S-1-5-7
 
 dn: CN=Authenticated Users,CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
 objectClass: foreignSecurityPrincipal
-cn: Authenticated Users
 objectSid: S-1-5-11
 
 dn: CN=Batch,CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
 objectClass: foreignSecurityPrincipal
-cn: Batch
 objectSid: S-1-5-3
 
 dn: CN=Creator Group,CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
 objectClass: foreignSecurityPrincipal
-cn: Creator Group
 objectSid: S-1-3-1
 
 dn: CN=Creator Owner,CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
 objectClass: foreignSecurityPrincipal
-cn: Creator Owner
 objectSid: S-1-3-0
 
 dn: CN=Dialup,CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
 objectClass: foreignSecurityPrincipal
-cn: Dialup
 objectSid: S-1-5-1
 
 dn: CN=Digest Authentication,CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
 objectClass: foreignSecurityPrincipal
-cn: Digest Authentication
 objectSid: S-1-5-64-21
 
 dn: CN=Enterprise Domain Controllers,CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
 objectClass: foreignSecurityPrincipal
-cn: Enterprise Domain Controllers
 objectSid: S-1-5-9
 
 dn: CN=Everyone,CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
 objectClass: foreignSecurityPrincipal
-cn: Everyone
 objectSid: S-1-1-0
 
 dn: CN=Interactive,CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
 objectClass: foreignSecurityPrincipal
-cn: Interactive
 objectSid: S-1-5-4
 
 dn: CN=Local Service,CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
 objectClass: foreignSecurityPrincipal
-cn: Local Service
 objectSid: S-1-5-19
 
 dn: CN=Network,CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
 objectClass: foreignSecurityPrincipal
-cn: Network
 objectSid: S-1-5-2
 
 dn: CN=Network Service,CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
 objectClass: foreignSecurityPrincipal
-cn: Network Service
 objectSid: S-1-5-20
 
 dn: CN=NTLM Authentication,CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
 objectClass: foreignSecurityPrincipal
-cn: NTLM Authentication
 objectSid: S-1-5-64-10
 
 dn: CN=Other Organization,CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
 objectClass: foreignSecurityPrincipal
-cn: Other Organization
 objectSid: S-1-5-1000
 
 dn: CN=Proxy,CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
 objectClass: foreignSecurityPrincipal
-cn: Proxy
 objectSid: S-1-5-8
 
 dn: CN=Remote Interactive Logon,CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
 objectClass: foreignSecurityPrincipal
-cn: Remote Interactive Logon
 objectSid: S-1-5-14
 
 dn: CN=Restricted,CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
 objectClass: foreignSecurityPrincipal
-cn: Restricted
 objectSid: S-1-5-12
 
 dn: CN=SChannel Authentication,CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
 objectClass: foreignSecurityPrincipal
-cn: SChannel Authentication
 objectSid: S-1-5-64-14
 
 dn: CN=Self,CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
 objectClass: foreignSecurityPrincipal
-cn: Self
 objectSid: S-1-5-10
 
 dn: CN=Service,CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
 objectClass: foreignSecurityPrincipal
-cn: Service
 objectSid: S-1-5-6
 
 dn: CN=Terminal Server User,CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
 objectClass: foreignSecurityPrincipal
-cn: Terminal Server User
 objectSid: S-1-5-13
 
 dn: CN=This Organization,CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
 objectClass: foreignSecurityPrincipal
-cn: This Organization
 objectSid: S-1-5-15
 
 dn: CN=Well-Known-Security-Id-System,CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
 objectClass: foreignSecurityPrincipal
-cn: Well-Known-Security-Id-System
 objectSid: S-1-5-18
-

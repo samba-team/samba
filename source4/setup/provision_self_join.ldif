@@ -1,4 +1,4 @@
-#Join the DC to itself by default
+# Join the DC to itself
 
 dn: CN=${NETBIOSNAME},OU=Domain Controllers,${DOMAINDN}
 objectClass: top
@@ -6,7 +6,6 @@ objectClass: person
 objectClass: organizationalPerson
 objectClass: user
 objectClass: computer
-cn: ${NETBIOSNAME}
 userAccountControl: 532480
 localPolicyFlags: 0
 primaryGroupID: 516
@@ -30,7 +29,6 @@ objectClass: top
 objectClass: person
 objectClass: organizationalPerson
 objectClass: user
-cn: dns
 description: DNS Service Account
 userAccountControl: 514
 accountExpires: 9223372036854775807
@@ -42,7 +40,6 @@ isCriticalSystemObject: TRUE
 dn: ${SERVERDN}
 objectClass: top
 objectClass: server
-cn: ${NETBIOSNAME}
 systemFlags: 1375731712
 dNSHostName: ${DNSNAME}
 serverReference: CN=${NETBIOSNAME},OU=Domain Controllers,${DOMAINDN}
@@ -51,7 +48,6 @@ dn: CN=NTDS Settings,${SERVERDN}
 objectClass: top
 objectClass: applicationSettings
 objectClass: nTDSDSA
-cn: NTDS Settings
 options: 1
 systemFlags: 33554432
 dMDLocation: ${SCHEMADN}

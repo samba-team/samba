@@ -1,3 +1,7 @@
+###############################
+# Default Naming Context
+###############################
+
 dn: CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: builtinDomain
@@ -20,6 +24,9 @@ systemFlags: -1946157056
 isCriticalSystemObject: TRUE
 showInAdvancedViewOnly: FALSE
 
+# Computers located in "provision_computers*.ldif"
+# Users/Groups located in "provision_users*.ldif"
+
 dn: OU=Domain Controllers,${DOMAINDN}
 objectClass: top
 objectClass: organizationalUnit
@@ -27,6 +34,8 @@ description: Default container for domain controllers
 systemFlags: -1946157056
 isCriticalSystemObject: TRUE
 showInAdvancedViewOnly: FALSE
+
+# Joined DC located in "provision_self_join.ldif"
 
 dn: CN=ForeignSecurityPrincipals,${DOMAINDN}
 objectClass: top
@@ -160,11 +169,18 @@ objectClass: top
 objectClass: container
 isCriticalSystemObject: TRUE
 
+dn: CN=MicrosoftDNS,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+displayName: DNS Servers
+
 dn: CN=Policies,CN=System,${DOMAINDN}
 objectClass: top
 objectClass: container
 systemFlags: -1946157056
 isCriticalSystemObject: TRUE
+
+# Group policies located in "provision_group_policy.ldif"
 
 dn: CN=RAS and IAS Servers Access Check,CN=System,${DOMAINDN}
 objectClass: top
@@ -199,3 +215,23 @@ dn: CN=WinsockServices,CN=System,${DOMAINDN}
 objectClass: top
 objectClass: container
 isCriticalSystemObject: TRUE
+
+dn: CN=WMIPolicy,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=PolicyTemplate,CN=WMIPolicy,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=PolicyType,CN=WMIPolicy,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=SOM,CN=WMIPolicy,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=WMIGPO,CN=WMIPolicy,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
