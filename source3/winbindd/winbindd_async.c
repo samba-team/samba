@@ -494,7 +494,7 @@ void winbindd_listent_async(TALLOC_CTX *mem_ctx,
 enum winbindd_result winbindd_dual_list_users(struct winbindd_domain *domain,
                                               struct winbindd_cli_state *state)
 {
-	WINBIND_USERINFO *info;
+	struct wbint_userinfo *info;
 	NTSTATUS status;
 	struct winbindd_methods *methods;
 	uint32 num_entries = 0;

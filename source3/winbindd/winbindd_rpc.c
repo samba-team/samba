@@ -35,7 +35,7 @@
 static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			       TALLOC_CTX *mem_ctx,
 			       uint32 *num_entries, 
-			       WINBIND_USERINFO **info)
+			       struct wbint_userinfo **info)
 {
 	NTSTATUS result;
 	struct policy_handle dom_pol;
@@ -88,7 +88,8 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 
 		*num_entries += num_dom_users;
 
-		*info = TALLOC_REALLOC_ARRAY(mem_ctx, *info, WINBIND_USERINFO,
+		*info = TALLOC_REALLOC_ARRAY(mem_ctx, *info,
+					     struct wbint_userinfo,
 					     *num_entries);
 
 		if (!(*info)) {
@@ -493,7 +494,7 @@ static NTSTATUS msrpc_rids_to_names(struct winbindd_domain *domain,
 static NTSTATUS query_user(struct winbindd_domain *domain, 
 			   TALLOC_CTX *mem_ctx, 
 			   const DOM_SID *user_sid, 
-			   WINBIND_USERINFO *user_info)
+			   struct wbint_userinfo *user_info)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct policy_handle dom_pol, user_pol;

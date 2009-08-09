@@ -153,7 +153,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			       TALLOC_CTX *mem_ctx,
 			       uint32 *num_entries, 
-			       WINBIND_USERINFO **info)
+			       struct wbint_userinfo **info)
 {
 	ADS_STRUCT *ads = NULL;
 	const char *attrs[] = { "*", NULL };
@@ -192,7 +192,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	(*info) = TALLOC_ZERO_ARRAY(mem_ctx, WINBIND_USERINFO, count);
+	(*info) = TALLOC_ZERO_ARRAY(mem_ctx, struct wbint_userinfo, count);
 	if (!*info) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -452,7 +452,7 @@ static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 static NTSTATUS query_user(struct winbindd_domain *domain, 
 			   TALLOC_CTX *mem_ctx, 
 			   const DOM_SID *sid, 
-			   WINBIND_USERINFO *info)
+			   struct wbint_userinfo *info)
 {
 	ADS_STRUCT *ads = NULL;
 	const char *attrs[] = { "*", NULL };
@@ -464,6 +464,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	uint32 group_rid;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct netr_SamInfo3 *user = NULL;
+	gid_t gid;
 
 	DEBUG(3,("ads: query_user\n"));
 
@@ -475,7 +476,6 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 
 	if ( (user = netsamlogon_cache_get( mem_ctx, sid )) != NULL ) 
 	{
-
 		DEBUG(5,("query_user: Cache lookup succeeded for %s\n", 
 			 sid_string_dbg(sid)));
 
@@ -487,7 +487,8 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 
 		nss_get_info_cached( domain, sid, mem_ctx, NULL, NULL, 
 			      &info->homedir, &info->shell, &info->full_name, 
-			      &info->primary_gid );	
+			      &gid );
+		info->primary_gid = gid;
 
 		TALLOC_FREE(user);
 
@@ -512,7 +513,8 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 
 		nss_get_info_cached( domain, sid, mem_ctx, NULL, NULL, 
 			      &info->homedir, &info->shell, &info->full_name, 
-			      &info->primary_gid );
+			      &gid);
+		info->primary_gid = gid;
 
 		status = NT_STATUS_OK;
 		goto done;
@@ -550,7 +552,8 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 
 	nss_get_info_cached( domain, sid, mem_ctx, ads, msg, 
 		      &info->homedir, &info->shell, &info->full_name, 
-		      &info->primary_gid );	
+		      &gid);
+	info->primary_gid = gid;
 
 	if (info->full_name == NULL) {
 		info->full_name = ads_pull_string(ads, mem_ctx, msg, "name");

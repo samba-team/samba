@@ -156,7 +156,7 @@ enum winbindd_result winbindd_dual_userinfo(struct winbindd_domain *domain,
 					    struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
-	WINBIND_USERINFO user_info;
+	struct wbint_userinfo user_info;
 	NTSTATUS status;
 
 	/* Ensure null termination */
@@ -285,7 +285,7 @@ static bool get_sam_user_entries(struct getent_state *ent, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	uint32 num_entries;
-	WINBIND_USERINFO *info;
+	struct wbint_userinfo *info;
 	struct getpwent_user *name_list = NULL;
 	struct winbindd_domain *domain;
 	struct winbindd_methods *methods;

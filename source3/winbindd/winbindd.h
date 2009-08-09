@@ -25,6 +25,7 @@
 
 #include "nsswitch/winbind_struct_protocol.h"
 #include "nsswitch/libwbclient/wbclient.h"
+#include "librpc/gen_ndr/wbint.h"
 
 #ifdef HAVE_LIBNSCD
 #include <libnscd.h>
@@ -88,19 +89,6 @@ struct getpwent_user {
 	DOM_SID user_sid;                    /* NT user and primary group SIDs */
 	DOM_SID group_sid;
 };
-
-/* Server state structure */
-
-typedef struct winbind_userinfo {
-	const char *acct_name;
-	const char *full_name;
-	const char *homedir;
-	const char *shell;
-	gid_t primary_gid;                   /* allow the nss_info
-						backend to set the primary group */
-	DOM_SID user_sid;                    /* NT user and primary group SIDs */
-	DOM_SID group_sid;
-} WINBIND_USERINFO;
 
 /* Our connection to the DC */
 
@@ -227,11 +215,11 @@ struct winbindd_methods {
 	   always correct) */
 	bool consistent;
 
-	/* get a list of users, returning a WINBIND_USERINFO for each one */
+	/* get a list of users, returning a wbint_userinfo for each one */
 	NTSTATUS (*query_user_list)(struct winbindd_domain *domain,
 				   TALLOC_CTX *mem_ctx,
 				   uint32 *num_entries, 
-				   WINBIND_USERINFO **info);
+				   struct wbint_userinfo **info);
 
 	/* get a list of domain groups */
 	NTSTATUS (*enum_dom_groups)(struct winbindd_domain *domain,
@@ -275,7 +263,7 @@ struct winbindd_methods {
 	NTSTATUS (*query_user)(struct winbindd_domain *domain, 
 			       TALLOC_CTX *mem_ctx, 
 			       const DOM_SID *user_sid,
-			       WINBIND_USERINFO *user_info);
+			       struct wbint_userinfo *user_info);
 
 	/* lookup all groups that a user is a member of. The backend
 	   can also choose to lookup by username or rid for this

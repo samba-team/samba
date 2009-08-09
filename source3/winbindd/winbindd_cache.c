@@ -898,7 +898,8 @@ static void wcache_save_sid_to_name(struct winbindd_domain *domain, NTSTATUS sta
 }
 
 
-static void wcache_save_user(struct winbindd_domain *domain, NTSTATUS status, WINBIND_USERINFO *info)
+static void wcache_save_user(struct winbindd_domain *domain, NTSTATUS status,
+			     struct wbint_userinfo *info)
 {
 	struct cache_entry *centry;
 	fstring sid_string;
@@ -1334,7 +1335,7 @@ NTSTATUS wcache_save_creds(struct winbindd_domain *domain,
 static NTSTATUS query_user_list(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
 				uint32 *num_entries, 
-				WINBIND_USERINFO **info)
+				struct wbint_userinfo **info)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
@@ -1353,7 +1354,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	if (*num_entries == 0)
 		goto do_cached;
 
-	(*info) = TALLOC_ARRAY(mem_ctx, WINBIND_USERINFO, *num_entries);
+	(*info) = TALLOC_ARRAY(mem_ctx, struct wbint_userinfo, *num_entries);
 	if (! (*info)) {
 		smb_panic_fn("query_user_list out of memory");
 	}
@@ -1942,7 +1943,7 @@ static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 NTSTATUS wcache_query_user(struct winbindd_domain *domain,
 			   TALLOC_CTX *mem_ctx,
 			   const struct dom_sid *user_sid,
-			   struct winbind_userinfo *info)
+			   struct wbint_userinfo *info)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
@@ -2003,7 +2004,7 @@ NTSTATUS wcache_query_user(struct winbindd_domain *domain,
 static NTSTATUS query_user(struct winbindd_domain *domain,
 			   TALLOC_CTX *mem_ctx,
 			   const DOM_SID *user_sid,
-			   WINBIND_USERINFO *info)
+			   struct wbint_userinfo *info)
 {
 	NTSTATUS status;
 

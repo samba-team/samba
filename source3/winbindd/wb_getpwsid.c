@@ -25,7 +25,7 @@ struct wb_getpwsid_state {
 	struct winbindd_domain *user_domain;
 	struct tevent_context *ev;
 	struct dom_sid sid;
-	struct winbind_userinfo *userinfo;
+	struct wbint_userinfo *userinfo;
 	struct winbindd_pw *pw;
 };
 

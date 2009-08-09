@@ -109,28 +109,13 @@ NTSTATUS _wbint_Gid2Sid(pipes_struct *p, struct wbint_Gid2Sid *r)
 NTSTATUS _wbint_QueryUser(pipes_struct *p, struct wbint_QueryUser *r)
 {
 	struct winbindd_domain *domain = wb_child_domain();
-	WINBIND_USERINFO uinfo;
-	NTSTATUS status;
 
 	if (domain == NULL) {
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
-	status = domain->methods->query_user(domain, p->mem_ctx, r->in.sid,
-					     &uinfo);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	r->out.info->acct_name = uinfo.acct_name;
-	r->out.info->full_name = uinfo.full_name;
-	r->out.info->homedir = uinfo.homedir;
-	r->out.info->shell = uinfo.shell;
-	r->out.info->primary_gid = uinfo.primary_gid;
-	sid_copy(&r->out.info->user_sid, &uinfo.user_sid);
-	sid_copy(&r->out.info->group_sid, &uinfo.group_sid);
-
-	return NT_STATUS_OK;
+	return domain->methods->query_user(domain, p->mem_ctx, r->in.sid,
+					   r->out.info);
 }
 
 NTSTATUS _wbint_LookupUserAliases(pipes_struct *p,

@@ -379,7 +379,7 @@ static NTSTATUS builtin_enum_dom_groups(struct winbindd_domain *domain,
 static NTSTATUS builtin_query_user_list(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
 				uint32 *num_entries,
-				WINBIND_USERINFO **info)
+				struct wbint_userinfo **info)
 {
 	/* We don't have users */
 	*num_entries = 0;
@@ -391,7 +391,7 @@ static NTSTATUS builtin_query_user_list(struct winbindd_domain *domain,
 static NTSTATUS builtin_query_user(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
 				const DOM_SID *user_sid,
-				WINBIND_USERINFO *user_info)
+				struct wbint_userinfo *user_info)
 {
 	return NT_STATUS_NO_SUCH_USER;
 }
@@ -447,7 +447,7 @@ static NTSTATUS sam_enum_dom_groups(struct winbindd_domain *domain,
 static NTSTATUS sam_query_user_list(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
 				uint32 *num_entries,
-				WINBIND_USERINFO **info)
+				struct wbint_userinfo **info)
 {
 	struct pdb_search *ps = pdb_search_users(talloc_tos(), ACB_NORMAL);
 	struct samr_displayentry *entries = NULL;
@@ -464,7 +464,7 @@ static NTSTATUS sam_query_user_list(struct winbindd_domain *domain,
 					1, 0xffffffff,
 					&entries);
 
-	*info = TALLOC_ZERO_ARRAY(mem_ctx, WINBIND_USERINFO, *num_entries);
+	*info = TALLOC_ZERO_ARRAY(mem_ctx, struct wbint_userinfo, *num_entries);
 	if (!(*info)) {
 		TALLOC_FREE(ps);
 		return NT_STATUS_NO_MEMORY;
@@ -499,7 +499,7 @@ static NTSTATUS sam_query_user_list(struct winbindd_domain *domain,
 static NTSTATUS sam_query_user(struct winbindd_domain *domain,
                            TALLOC_CTX *mem_ctx,
                            const DOM_SID *user_sid,
-                           WINBIND_USERINFO *user_info)
+                           struct wbint_userinfo *user_info)
 {
 	struct samu *sampass = NULL;
 

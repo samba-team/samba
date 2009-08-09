@@ -174,7 +174,7 @@ NTSTATUS wcache_name_to_sid(struct winbindd_domain *domain,
 NTSTATUS wcache_query_user(struct winbindd_domain *domain,
 			   TALLOC_CTX *mem_ctx,
 			   const struct dom_sid *user_sid,
-			   struct winbind_userinfo *info);
+			   struct wbint_userinfo *info);
 NTSTATUS wcache_lookup_useraliases(struct winbindd_domain *domain,
 				   TALLOC_CTX *mem_ctx,
 				   uint32 num_sids, const DOM_SID *sids,
@@ -707,7 +707,7 @@ struct tevent_req *wb_queryuser_send(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev,
 				     const struct dom_sid *user_sid);
 NTSTATUS wb_queryuser_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-			   struct winbind_userinfo **pinfo);
+			   struct wbint_userinfo **pinfo);
 
 struct tevent_req *wb_getpwsid_send(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev,

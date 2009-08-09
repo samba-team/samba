@@ -23,7 +23,7 @@
 
 struct wb_queryuser_state {
 	struct dom_sid sid;
-	struct wbint_userinfo info;
+	struct wbint_userinfo *info;
 };
 
 static void wb_queryuser_done(struct tevent_req *subreq);
@@ -35,7 +35,6 @@ struct tevent_req *wb_queryuser_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct wb_queryuser_state *state;
 	struct winbindd_domain *domain;
-	struct winbind_userinfo info;
 	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state, struct wb_queryuser_state);
@@ -50,21 +49,19 @@ struct tevent_req *wb_queryuser_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	status = wcache_query_user(domain, state, &state->sid, &info);
+	state->info = talloc(state, struct wbint_userinfo);
+	if (tevent_req_nomem(state->info, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	status = wcache_query_user(domain, state, &state->sid, state->info);
 	if (NT_STATUS_IS_OK(status)) {
-		state->info.acct_name = info.acct_name;
-		state->info.full_name = info.full_name;
-		state->info.homedir = info.homedir;
-		state->info.shell = info.shell;
-		state->info.primary_gid = info.primary_gid;
-		sid_copy(&state->info.user_sid, &info.user_sid);
-		sid_copy(&state->info.group_sid, &info.group_sid);
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
 
 	subreq = rpccli_wbint_QueryUser_send(state, ev, domain->child.rpccli,
-					     &state->sid, &state->info);
+					     &state->sid, state->info);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -94,28 +91,15 @@ static void wb_queryuser_done(struct tevent_req *subreq)
 }
 
 NTSTATUS wb_queryuser_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-			   struct winbind_userinfo **pinfo)
+			   struct wbint_userinfo **pinfo)
 {
 	struct wb_queryuser_state *state = tevent_req_data(
 		req, struct wb_queryuser_state);
-	struct winbind_userinfo *info;
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
-
-	info = talloc(mem_ctx, struct winbind_userinfo);
-	if (info == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	info->acct_name = talloc_move(info, &state->info.acct_name);
-	info->full_name = talloc_move(info, &state->info.full_name);
-	info->homedir = talloc_move(info, &state->info.homedir);
-	info->shell = talloc_move(info, &state->info.shell);
-	info->primary_gid = state->info.primary_gid;
-	sid_copy(&info->user_sid, &state->info.user_sid);
-	sid_copy(&info->group_sid, &state->info.group_sid);
-	*pinfo = info;
+	*pinfo = talloc_move(mem_ctx, &state->info);
 	return NT_STATUS_OK;
 }

@@ -31,7 +31,7 @@ extern struct winbindd_methods msrpc_methods;
 static NTSTATUS query_user_list(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
 				uint32 *num_entries, 
-				WINBIND_USERINFO **info)
+				struct wbint_userinfo **info)
 {
 	NTSTATUS result;
 
@@ -152,7 +152,7 @@ static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 static NTSTATUS query_user(struct winbindd_domain *domain, 
 			   TALLOC_CTX *mem_ctx, 
 			   const DOM_SID *user_sid,
-			   WINBIND_USERINFO *user_info)
+			   struct wbint_userinfo *user_info)
 {
 	NTSTATUS result;
 
