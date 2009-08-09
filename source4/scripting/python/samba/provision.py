@@ -36,6 +36,7 @@ import socket
 import param
 import registry
 import samba
+import subprocess
 from auth import system_session
 from samba import version, Ldb, substitute_var, valid_netbios_name, check_all_substituted, \
   DS_BEHAVIOR_WIN2008
@@ -43,8 +44,9 @@ from samba.samdb import SamDB
 from samba.idmap import IDmapDB
 from samba.dcerpc import security
 import urllib
-from ldb import SCOPE_SUBTREE, LdbError, timestring
+from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError, timestring
 from ms_schema import read_ms_schema
+from signal import SIGTERM
 
 __docformat__ = "restructuredText"
 
@@ -100,7 +102,7 @@ class ProvisionPaths(object):
         self.olmmrserveridsconf = None
         self.olmmrsyncreplconf = None
         self.olcdir = None
-        self.olslaptest = None
+        self.olslapd = None
         self.olcseedldif = None
 
 
@@ -262,6 +264,8 @@ def provision_paths_from_lp(lp, dnsdomain):
                                  "ldap")
     paths.slapdconf = os.path.join(paths.ldapdir, 
                                    "slapd.conf")
+    paths.slapdpid = os.path.join(paths.ldapdir, 
+                                   "slapd.pid")
     paths.modulesconf = os.path.join(paths.ldapdir, 
                                      "modules.conf")
     paths.memberofconf = os.path.join(paths.ldapdir, 
@@ -935,6 +939,7 @@ FILL_FULL = "FULL"
 FILL_NT4SYNC = "NT4SYNC"
 FILL_DRS = "DRS"
 
+
 def provision(setup_dir, message, session_info, 
               credentials, smbconf=None, targetdir=None, samdb_fill=FILL_FULL, realm=None, 
               rootdn=None, domaindn=None, schemadn=None, configdn=None, 
@@ -1133,6 +1138,78 @@ def provision(setup_dir, message, session_info,
                              hostname=names.hostname, realm=names.realm)
             message("A Kerberos configuration suitable for Samba 4 has been generated at %s" % paths.krb5conf)
 
+
+
+            # if backend is openldap, terminate slapd after final provision and check its proper termination
+            if ldap_backend_type == "openldap":
+            
+              # We look if our "provision-slapd" is still up and running,
+              # listening with the stored PID on our ldapi_uri.
+              # first we check with ldapsearch -> rootDSE via ldapi_uri
+              # if slapd is running
+              try:
+                 # in this case we got a running slapd listening on our ldapi_uri
+                 ldapi_uri = "ldapi://" + urllib.quote(os.path.join(paths.private_dir, "ldap", "ldapi"), safe="")
+                 ldapi_db = Ldb(ldapi_uri)
+                 search_ol_rootdse = ldapi_db.search(base="", scope=SCOPE_BASE,
+                                   expression="(objectClass=OpenLDAProotDSE)");
+                 message("LDAP Debug-Output:" + str(search_ol_rootdse))
+
+                 # now we check if slapds PID file exists AND is identical to our stored  
+                 if os.path.exists(paths.slapdpid):
+                    f = open(paths.slapdpid, "r")
+                    p1 = f.read()
+                    f.close()
+                    message("slapd-PID-File found. PID is :" + str(p1))
+                    # validation against stored PID of "provision-slapd". 
+                    # is this the slapd we started from provision-backend?
+                    if os.path.exists(paths.ldapdir + "/slapd_provision_pid"):
+                       f = open(paths.ldapdir + "/slapd_provision_pid", "r")
+                       p2 = f.read()
+                       f.close()
+                       message("File from provision-backend with stored PID found. PID is :" + str(p2))
+                       if int(p1) == int(p2):
+                          message("slapd-Process used for provisioning with PID: " + str(p1) + " will now be shut down.")
+                          os.kill(int(p1),SIGTERM)
+                       else:
+                          message("Warning: PIDs are not identical! Locate the active slapd and shut it down before you continue!")
+                    else:
+                       message("Stored PID File could not be found. Sorry. You have to locate the PID and terminate slapd manually.")
+                 else:
+                    message("slapd-PID File could not be found. Sorry. You have to locate the PID and terminate slapd manually.")
+ 
+                 # Now verify proper slapd-termination...
+                 try:
+                    # in this case we got still a running slapd listening on our ldapi_uri: bad
+                    ldapi_uri = "ldapi://" + urllib.quote(os.path.join(paths.private_dir, "ldap", "ldapi"), safe="")
+                    ldapi_db = Ldb(ldapi_uri)
+                    search_ol_rootdse = ldapi_db.search(base="", scope=SCOPE_BASE,
+                                      expression="(objectClass=OpenLDAProotDSE)");
+                    message("slapd seems still to be running and listening to our "+ ldapi_uri + " -socket. Locate an terminate it manually.")
+                 except LdbError, e:
+                    message("slapd-Process used for final provision was properly shut down.") 
+                    # in this case we got no running slapd listening on our ldapi_uri: everythings good - do nothing.
+         
+              except LdbError, e:
+                  # in this case we got no running slapd
+                  message("LDAP Debug-Output:")
+                  print e
+                  message("No running slapd on: " + ldapi_uri + " detected. Maybe final provision is incomplete.")
+ 
+             # end slapd-termination check
+
+             # now display slapd_command_file.txt to show how slapd must be started next time
+              if os.path.exists(paths.ldapdir +"/slapd_command_file.txt"):
+                  message("Use later the following commandline to start slapd, then Samba:")
+                  f = open(paths.ldapdir +"/slapd_command_file.txt", "r")
+                  x = f.read()
+                  f.close()
+                  message(x)
+                  message("This slapd-Commandline is also stored under: " + str(paths.ldapdir) + "/slapd_command_file.txt")
+              else:
+                  message("Error. slapd-commandline-File could not be found.")
+
+
     create_phpldapadmin_config(paths.phpldapadminconfig, setup_path, 
                                ldapi_url)
 
@@ -1153,6 +1230,7 @@ def provision(setup_dir, message, session_info,
     result.lp = lp
     result.samdb = samdb
     return result
+
 
 
 def provision_become_dc(setup_dir=None,
@@ -1192,11 +1270,12 @@ def setup_db_config(setup_path, dbdir):
 
 
 def provision_backend(setup_dir=None, message=None,
-                      smbconf=None, targetdir=None, realm=None, 
+                      smbconf=None, targetdir=None, realm=None,
                       rootdn=None, domaindn=None, schemadn=None, configdn=None,
                       domain=None, hostname=None, adminpass=None, root=None, serverrole=None, 
                       ldap_backend_type=None, ldap_backend_port=None,
-                      ol_mmr_urls=None,ol_olc=None,ol_slaptest=None):
+                      ol_mmr_urls=None, ol_olc=None, 
+                      ol_slapd=None, nosync=False):
 
     def setup_path(file):
         return os.path.join(setup_dir, file)
@@ -1223,17 +1302,18 @@ def provision_backend(setup_dir=None, message=None,
         make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole, 
                      targetdir)
 
-    # openldap-online-configuration: validation of olc and slaptest
-    if ol_olc == "yes" and ol_slaptest is None: 
-        sys.exit("Warning: OpenLDAP-Online-Configuration cant be setup without path to slaptest-Binary!")
+    # if openldap-backend was chosen, check if path to slapd was given and exists
+    if ldap_backend_type == "openldap" and ol_slapd is None:
+        sys.exit("Warning: OpenLDAP-Backend must be setup with path to slapd (OpenLDAP-Daemon), e.g. --ol-slapd=\"/usr/local/libexec\"!")
+    if ldap_backend_type == "openldap" and ol_slapd is not None:
+       ol_slapd = ol_slapd + "/slapd"
+       if not os.path.exists(ol_slapd):
+            message (ol_slapd)
+            sys.exit("Warning: Given Path to slapd (OpenLDAP-Daemon) does not exist!")
 
-    if ol_olc == "yes" and ol_slaptest is not None:
-        ol_slaptest = ol_slaptest + "/slaptest"
-        if not os.path.exists(ol_slaptest):
-            message (ol_slaptest)
-            sys.exit("Warning: Given Path to slaptest-Binary does not exist!")
-    ###
-
+    # openldap-online-configuration: validation of olc and slapd
+    if ol_olc == "yes" and ol_slapd is None: 
+        sys.exit("Warning: OpenLDAP-Online-Configuration cant be setup without path to slapd!")
 
 
     lp = param.LoadParm()
@@ -1314,8 +1394,14 @@ def provision_backend(setup_dir=None, message=None,
         ldapuser = "--simple-bind-dn=" + names.ldapmanagerdn
 
     elif ldap_backend_type == "openldap":
+        #Allow the test scripts to turn off fsync() for OpenLDAP as for TDB and LDB
+        nosync_config = ""
+        if nosync:
+            nosync_config = "dbnosync"
+
+
         attrs = ["linkID", "lDAPDisplayName"]
-        res = schemadb.search(expression="(&(linkID=*)(!(linkID:1.2.840.113556.1.4.803:=1))(objectclass=attributeSchema)(attributeSyntax=2.5.5.1))", base=names.schemadn, scope=SCOPE_SUBTREE, attrs=attrs)
+        res = schemadb.search(expression="(&(linkID=*)(!(linkID:1.2.840.113556.1.4.803:=1))(objectclass=attributeSchema)(attributeSyntax=2.5.5.1))", base=names.schemadn, scope=SCOPE_ONELEVEL, attrs=attrs)
 
         memberof_config = "# Generated from schema in %s\n" % schemadb_path
         refint_attributes = ""
@@ -1326,7 +1412,7 @@ def provision_backend(setup_dir=None, message=None,
                                         attribute="lDAPDisplayName", 
                                         scope=SCOPE_SUBTREE)
             if target is not None:
-                refint_attributes = refint_attributes + " " + target + " " + res[i]["lDAPDisplayName"][0]
+                refint_attributes = refint_attributes + " " + res[i]["lDAPDisplayName"][0]
             
                 memberof_config += read_and_sub_file(setup_path("memberof.conf"),
                                                      { "MEMBER_ATTR" : str(res[i]["lDAPDisplayName"][0]),
@@ -1334,6 +1420,15 @@ def provision_backend(setup_dir=None, message=None,
 
         refint_config = read_and_sub_file(setup_path("refint.conf"),
                                             { "LINK_ATTRS" : refint_attributes})
+
+        res = schemadb.search(expression="(&(objectclass=attributeSchema)(searchFlags:1.2.840.113556.1.4.803:=1))", base=names.schemadn, scope=SCOPE_ONELEVEL, attrs=attrs)
+        index_config = ""
+        for i in range (0, len(res)):
+            index_attr = res[i]["lDAPDisplayName"][0]
+            if index_attr == "objectGUID":
+                index_attr = "entryUUID"
+
+            index_config += "index " + index_attr + " eq\n"
 
 # generate serverids, ldap-urls and syncrepl-blocks for mmr hosts
         mmr_on_config = ""
@@ -1443,7 +1538,9 @@ def provision_backend(setup_dir=None, message=None,
                     "OLC_SYNCREPL_CONFIG": olc_syncrepl_config,
                     "OLC_CONFIG_ACL": olc_config_acl,
                     "OLC_MMR_CONFIG": olc_mmr_config,
-                    "REFINT_CONFIG": refint_config})
+                    "REFINT_CONFIG": refint_config,
+                    "INDEX_CONFIG": index_config,
+                    "NOSYNC": nosync_config})
         setup_file(setup_path("modules.conf"), paths.modulesconf,
                    {"REALM": names.realm})
         
@@ -1475,24 +1572,36 @@ def provision_backend(setup_dir=None, message=None,
         mapping = "schema-map-openldap-2.3"
         backend_schema = "backend-schema.schema"
 
+        # now we generate the needed strings to start slapd automatically,
+        # first ldapi_uri...
         ldapi_uri = "ldapi://" + urllib.quote(os.path.join(paths.private_dir, "ldap", "ldapi"), safe="")
         if ldap_backend_port is not None:
             server_port_string = " -h ldap://0.0.0.0:%d" % ldap_backend_port
         else:
             server_port_string = ""
 
+        # ..and now the slapd-commandline with (optional) mmr and/or olc
         if ol_olc != "yes" and ol_mmr_urls is None:
-          slapdcommand="Start slapd with:    slapd -f " + paths.ldapdir + "/slapd.conf -h " + ldapi_uri + server_port_string
+           slapdcommand_prov=ol_slapd + " -f " + paths.ldapdir + "/slapd.conf -h " + ldapi_uri
+           slapdcommand=ol_slapd + " -f " + paths.ldapdir + "/slapd.conf -h " + ldapi_uri + server_port_string
 
         if ol_olc == "yes" and ol_mmr_urls is None:
-          slapdcommand="Start slapd with:    slapd -F " + paths.olcdir + " -h \"" + ldapi_uri + " ldap://<FQHN>:<PORT>\"" 
+           slapdcommand_prov=ol_slapd + " -F " + paths.olcdir + " -h " + ldapi_uri
+           slapdcommand=ol_slapd + " -F " + paths.olcdir + " -h \"" + ldapi_uri + " ldap://" + names.hostname + "." + names.dnsdomain +":<Chosen PORT (<> 389!)>\"" 
 
         if ol_olc != "yes" and ol_mmr_urls is not None:
-          slapdcommand="Start slapd with:    slapd -f " + paths.ldapdir + "/slapd.conf -h \"" + ldapi_uri + " ldap://<FQHN>:<PORT>\""
+           slapdcommand_prov=ol_slapd + " -f " + paths.ldapdir + "/slapd.conf -h " + ldapi_uri
+           slapdcommand=ol_slapd + " -f " + paths.ldapdir + "/slapd.conf -h \"" + ldapi_uri + " ldap://" + names.hostname + "." + names.dnsdomain +":<Chosen PORT (<> 389!)>\"" 
 
         if ol_olc == "yes" and ol_mmr_urls is not None:
-          slapdcommand="Start slapd with:    slapd -F " + paths.olcdir + " -h \"" + ldapi_uri + " ldap://<FQHN>:<PORT>\""
+           slapdcommand_prov=ol_slapd + " -F " + paths.olcdir + " -h " + ldapi_uri
+           slapdcommand=ol_slapd + " -F " + paths.olcdir + " -h \"" + ldapi_uri + " ldap://" + names.hostname + "." + names.dnsdomain +":<Chosen PORT (<> 389!)>\""
 
+        # now generate file with complete slapd-commandline. 
+        # it is read out later when final provision's done and ol/s4 are ready to be started manually 
+        f = open(paths.ldapdir +"/slapd_command_file.txt", "w")
+        f.write(str(slapdcommand + "\n"))
+        f.close()
 
         ldapuser = "--username=samba-admin"
 
@@ -1513,9 +1622,67 @@ def provision_backend(setup_dir=None, message=None,
         message("LDAP admin DN:       %s" % names.ldapmanagerdn)
 
     message("LDAP admin password: %s" % adminpass)
-    message(slapdcommand)
     if ol_olc == "yes" or ol_mmr_urls is not None:
-        message("Attention to slapd-Port: <PORT> must be different than 389!")
+        message("Attention! You are using olc and/or MMR: The slapd-PORT you choose later must be different than 389!")
+
+    # if --ol-olc=yes, generate online-configuration in ../private/ldap/slapd.d 
+    if ol_olc == "yes":
+          if not os.path.isdir(paths.olcdir):
+             os.makedirs(paths.olcdir, 0770)
+          paths.olslapd = str(ol_slapd)
+          olc_command = paths.olslapd + " -Ttest -f " + paths.slapdconf + " -F " +  paths.olcdir + " >/dev/null 2>&1"
+          os.system(olc_command)
+          os.remove(paths.slapdconf)        
+          # for debugging purposes, remove: ' +  ">/dev/null 2>&1" ' from the line 'olc_command =' above 
+          
+
+
+    # start slapd with ldapi for final provisioning. first check with ldapsearch -> rootDSE via ldapi_uri
+    # if another instance of slapd is already running
+    try:
+        ldapi_uri = "ldapi://" + urllib.quote(os.path.join(paths.private_dir, "ldap", "ldapi"), safe="")
+        ldapi_db = Ldb(ldapi_uri)
+        search_ol_rootdse = ldapi_db.search(base="", scope=SCOPE_BASE,
+                          expression="(objectClass=OpenLDAProotDSE)");
+        message("LDAP Debug-Output:" + str(search_ol_rootdse))
+        if os.path.exists(paths.slapdpid):
+           f = open(paths.slapdpid, "r")
+           p = f.read()
+           f.close()
+           message("Check for slapd-Process with PID: " + str(p) + " and terminate it manually.")
+        else:
+           message("slapd-PID File could not be found. Sorry. You have to locate the PID manually.")
+ 
+        sys.exit("Warning: Another slapd Instance seems already running on this host, listening to " + ldapi_uri + ". Please shut it down before you continue. Exiting now.")
+
+    except LdbError, e:
+        message("LDAP Debug-Output:")
+        print e
+        message("Ok. - No other slapd-Instance listening on: " + ldapi_uri + ". Starting slapd now for final provision.")
+
+        p = subprocess.Popen(slapdcommand_prov, shell=True)
+
+        # after startup: store slapd-provision-pid also in a separate file. 
+        # this is needed as long as provision/provision-backend are not fully merged,
+        # to compare pids before shutting down
+
+        # wait for pidfile to be created
+        time.sleep(3)
+        if os.path.exists(paths.slapdpid):
+           f = open(paths.slapdpid, "r")
+           p = f.read()
+           f.close()
+           f = open(paths.ldapdir +"/slapd_provision_pid", "w")
+           f.write(str(p) + "\n")
+           f.close()
+           message("Started slapd for final provisioning with PID: "+ str(p))
+        else:
+           message("slapd-PID File could not be found. Sorry")
+        
+        # done slapd checking + start 
+
+
+          
     assert isinstance(ldap_backend_type, str)
     assert isinstance(ldapuser, str)
     assert isinstance(adminpass, str)
@@ -1529,19 +1696,8 @@ def provision_backend(setup_dir=None, message=None,
             "--realm=" + names.dnsdomain,
             "--domain=" + names.domain,
             "--server-role='" + serverrole + "'"]
-    message("Run provision with: " + " ".join(args))
+    message("Now run final provision with: " + " ".join(args))
 
-
-    # if --ol-olc=yes, generate online-configuration in ../private/ldap/slapd.d 
-    if ol_olc == "yes":
-          if not os.path.isdir(paths.olcdir):
-             os.makedirs(paths.olcdir, 0770)
-          paths.olslaptest = str(ol_slaptest)
-          olc_command = paths.olslaptest + " -f" + paths.slapdconf + " -F" +  paths.olcdir + " >/dev/null 2>&1"
-          os.system(olc_command)
-          os.remove(paths.slapdconf)        
-          # use line below for debugging during olc-conversion with slaptest, instead of olc_command above 
-          #olc_command = paths.olslaptest + " -f" + paths.slapdconf + " -F" +  paths.olcdir"
 
 
 def create_phpldapadmin_config(path, setup_path, ldapi_uri):

@@ -55,6 +55,7 @@ parser.add_option("--ldap-admin-pass", type="string", metavar="PASSWORD",
 parser.add_option("--root", type="string", metavar="USERNAME", 
 		help="choose 'root' unix username")
 parser.add_option("--quiet", help="Be quiet", action="store_true")
+parser.add_option("--nosync", help="Configure LDAP backend not to call fsync() (for performance in test environments)", action="store_true")
 parser.add_option("--ldap-backend-type", type="choice", metavar="LDAP-BACKEND-TYPE", 
 		help="LDB mapping module to use for the LDAP backend",
 		choices=["fedora-ds", "openldap"])
@@ -66,12 +67,12 @@ parser.add_option("--server-role", type="choice", metavar="ROLE",
 parser.add_option("--targetdir", type="string", metavar="DIR", 
 		          help="Set target directory")
 parser.add_option("--ol-mmr-urls", type="string", metavar="LDAPSERVER",
-                help="List of LDAP-URLS [ ldap://<FQHN>:<PORT>/  (where <PORT> has to be different from 389!) ] separated with whitespaces for use with OpenLDAP-MMR (Multi-Master-Replication)")
+                help="List of LDAP-URLS [ ldap://<FQHN>:<PORT>/  (where <PORT> has to be different than 389!) ] separated with whitespaces for use with OpenLDAP-MMR (Multi-Master-Replication)")
 parser.add_option("--ol-olc", type="choice", metavar="OPENLDAP-OLC", 
-		help="To setup OpenLDAP-Backend with Online-Configuration [slapd.d] choose 'yes'. Note: Only OpenLDAP-Versions greater or equal 2.4.15 should be used!",
+		help="To setup OpenLDAP-Backend with Online-Configuration [slapd.d] choose 'yes'.",
 		choices=["yes", "no"])
-parser.add_option("--ol-slaptest", type="string", metavar="SLAPTEST-PATH", 
-		help="Path to slaptest-binary [e.g.:'/usr/local/sbin']. Only for use with --ol-olc='yes'")
+parser.add_option("--ol-slapd", type="string", metavar="SLAPD-PATH", 
+		help="Path to OpenLDAP-Daemon (slapd) [e.g.:'/usr/local/libexec']. Recommended for Setup with OpenLDAP-Backend. OpenLDAP Version >= 2.4.17 should be used.") 
 
 opts = parser.parse_args()[0]
 
@@ -110,5 +111,5 @@ provision_backend(setup_dir=setup_dir, message=message, smbconf=smbconf, targetd
 		  ldap_backend_port=opts.ldap_backend_port,
 		  ol_mmr_urls=opts.ol_mmr_urls,
 		  ol_olc=opts.ol_olc,
-		  ol_slaptest=opts.ol_slaptest)
-
+		  ol_slapd=opts.ol_slapd,
+		  nosync=opts.nosync)

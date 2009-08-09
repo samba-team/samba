@@ -840,7 +840,7 @@ sub provision($$$$$$$)
 		$ret->{LDAP_URI} = $ctx->{ldap_uri};
 		push (@{$ctx->{provision_options}},"--ldap-backend=$ctx->{ldap_uri}");
 
-		system("$self->{setupdir}/provision-backend $configuration --ldap-admin-pass=$ctx->{password} --root=$ctx->{unix_name} --realm=$ctx->{realm} --domain=$ctx->{domain} --host-name=$ctx->{netbiosname} --ldap-backend-type=$self->{ldap}>&2") == 0 or die("backend provision failed");
+                system("$self->{setupdir}/provision-backend $configuration --ldap-admin-pass=$ctx->{password} --root=$ctx->{unix_name} --realm=$ctx->{realm} --domain=$ctx->{domain} --host-name=$ctx->{netbiosname} --ldap-backend-type=$self->{ldap} --nosync>&2") == 0 or die("backend provision failed");
 
 		push (@{$ctx->{provision_options}}, "--password=$ctx->{password}");
 
