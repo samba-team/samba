@@ -285,16 +285,17 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 					 &access_granted,
 					 &user_rid);
 
-	if (!NT_STATUS_IS_OK(result) && 
+	if (!NT_STATUS_IS_OK(result) &&
 	    !NT_STATUS_EQUAL(result, NT_STATUS_USER_EXISTS)) {
-		d_fprintf(stderr, "Creation of workstation account failed\n");
+		d_fprintf(stderr,_("Creation of workstation account failed\n"));
 
 		/* If NT_STATUS_ACCESS_DENIED then we have a valid
 		   username/password combo but the user does not have
 		   administrator access. */
 
 		if (NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_ACCESS_DENIED))
-			d_fprintf(stderr, "User specified does not have administrator privileges\n");
+			d_fprintf(stderr, _("User specified does not have "
+					    "administrator privileges\n"));
 
 		goto done;
 	}
@@ -399,8 +400,9 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 
 		if ( NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) &&
 		     (sec_channel_type == SEC_CHAN_BDC) ) {
-			d_fprintf(stderr, "Please make sure that no computer account\n"
-				 "named like this machine (%s) exists in the domain\n",
+			d_fprintf(stderr, _("Please make sure that no computer "
+					    "account\nnamed like this machine "
+					    "(%s) exists in the domain\n"),
 				 global_myname());
 		}
 
@@ -426,8 +428,10 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 
 			if ( NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) &&
 			     (sec_channel_type == SEC_CHAN_BDC) ) {
-				d_fprintf(stderr, "Please make sure that no computer account\n"
-					 "named like this machine (%s) exists in the domain\n",
+				d_fprintf(stderr, _("Please make sure that no "
+						    "computer account\nnamed "
+						    "like this machine (%s) "
+						    "exists in the domain\n"),
 					 global_myname());
 			}
 
@@ -461,9 +465,9 @@ done:
 
 	if (domain) {
 		if (retval != 0) {
-			fprintf(stderr,"Unable to join domain %s.\n",domain);
+			fprintf(stderr,_("Unable to join domain %s.\n"),domain);
 		} else {
-			printf("Joined domain %s.\n",domain);
+			printf(_("Joined domain %s.\n"),domain);
 		}
 	}
 
@@ -485,20 +489,20 @@ int net_rpc_testjoin(struct net_context *c, int argc, const char **argv)
 	NTSTATUS nt_status;
 
 	if (c->display_usage) {
-		d_printf("Usage\n"
-			 "net rpc testjoin\n"
-			 "    Test if a join is OK\n");
+		d_printf(_("Usage\n"
+			   "net rpc testjoin\n"
+			   "    Test if a join is OK\n"));
 		return 0;
 	}
 
 	/* Display success or failure */
 	nt_status = net_rpc_join_ok(c, c->opt_target_workgroup, NULL, NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		fprintf(stderr,"Join to domain '%s' is not valid: %s\n",
+		fprintf(stderr, _("Join to domain '%s' is not valid: %s\n"),
 			c->opt_target_workgroup, nt_errstr(nt_status));
 		return -1;
 	}
 
-	printf("Join to '%s' is OK\n", c->opt_target_workgroup);
+	printf(_("Join to '%s' is OK\n"), c->opt_target_workgroup);
 	return 0;
 }
