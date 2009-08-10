@@ -2671,4 +2671,94 @@ import "misc.idl", "security.idl", "winreg.idl";
 	/* Function: 0x5f */
 	[todo] WERROR spoolss_5f(
 	);
+
+	/******************/
+	/* Function: 0x60 */
+	[todo] WERROR spoolss_60(
+	);
+
+	/******************/
+	/* Function: 0x61 */
+	[todo] WERROR spoolss_61(
+	);
+
+	/******************/
+	/* Function: 0x62 */
+	[todo] WERROR spoolss_62(
+	);
+
+	/******************/
+	/* Function: 0x63 */
+	[todo] WERROR spoolss_63(
+	);
+
+	/******************/
+	/* Function: 0x64 */
+	[todo] WERROR spoolss_64(
+	);
+
+	/******************/
+	/* Function: 0x65 */
+	[todo] WERROR spoolss_65(
+	);
+
+	/******************/
+	/* Function: 0x66 */
+	typedef struct {
+		GUID core_driver_guid;
+		NTTIME driver_date;
+		hyper driver_version;
+		[charset(UTF8)] uint8 formname[520];
+	} spoolss_CorePrinterDriver;
+
+	WERROR spoolss_GetCorePrinterDrivers(
+		[in,unique] [string,charset(UTF16)] uint16 *servername,
+		[in,ref] [string,charset(UTF16)] uint16 *architecture,
+		[in] uint32 core_driver_size,
+		[in,size_is(core_driver_size)] [charset(UTF16)] uint16 *core_driver_dependencies,
+		[in] uint32 core_printer_driver_count,
+		[out,size_is(core_printer_driver_count)] spoolss_CorePrinterDriver *core_printer_drivers
+	);
+
+	/******************/
+	/* Function: 0x67 */
+	[todo] WERROR spoolss_67(
+	);
+
+	/******************/
+	/* Function: 0x68 */
+	WERROR spoolss_GetPrinterDriverPackagePath(
+		[in,unique] [string,charset(UTF16)] uint16 *servername,
+		[in,ref] [string,charset(UTF16)] uint16 *architecture,
+		[in,unique] [string,charset(UTF16)] uint16 *language,
+		[in,ref] [string,charset(UTF16)] uint16 *package_id,
+		[in,out,unique,size_is(driver_package_cab_size)] [charset(UTF16)] uint16 *driver_package_cab,
+		[in] uint32 driver_package_cab_size,
+		[out,ref] uint32 *required
+		);
+
+	/******************/
+	/* Function: 0x69 */
+	[todo] WERROR spoolss_69(
+	);
+
+	/******************/
+	/* Function: 0x6a */
+	[todo] WERROR spoolss_6a(
+	);
+
+	/******************/
+	/* Function: 0x6b */
+	[todo] WERROR spoolss_6b(
+	);
+
+	/******************/
+	/* Function: 0x6c */
+	[todo] WERROR spoolss_6c(
+	);
+
+	/******************/
+	/* Function: 0x6d */
+	[todo] WERROR spoolss_6d(
+	);
 }
