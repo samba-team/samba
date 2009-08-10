@@ -531,6 +531,301 @@ _PUBLIC_ size_t ndr_size_spoolss_PrinterInfo0(const struct spoolss_PrinterInfo0 
 	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_PrinterInfo0, ic);
 }
 
+static enum ndr_err_code ndr_push_spoolss_DM_Signature(struct ndr_push *ndr, int ndr_flags, enum spoolss_DM_Signature r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_DM_Signature(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DM_Signature *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_DM_Signature(struct ndr_print *ndr, const char *name, enum spoolss_DM_Signature r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case SPOOLSS_DM_SIGNATURE_UNIDRVEXTRA: val = "SPOOLSS_DM_SIGNATURE_UNIDRVEXTRA"; break;
+		case SPOOLSS_DM_SIGNATURE_JTEXP: val = "SPOOLSS_DM_SIGNATURE_JTEXP"; break;
+		case SPOOLSS_DM_SIGNATURE_PSEXTRA: val = "SPOOLSS_DM_SIGNATURE_PSEXTRA"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+static enum ndr_err_code ndr_push_spoolss_DM_Layout(struct ndr_push *ndr, int ndr_flags, enum spoolss_DM_Layout r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_DM_Layout(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DM_Layout *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_DM_Layout(struct ndr_print *ndr, const char *name, enum spoolss_DM_Layout r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case SPOOLSS_DM_LAYOUT_NUP_DISABLED: val = "SPOOLSS_DM_LAYOUT_NUP_DISABLED"; break;
+		case SPOOLSS_DM_LAYOUT_NUP_2: val = "SPOOLSS_DM_LAYOUT_NUP_2"; break;
+		case SPOOLSS_DM_LAYOUT_NUP_4: val = "SPOOLSS_DM_LAYOUT_NUP_4"; break;
+		case SPOOLSS_DM_LAYOUT_NUP_6: val = "SPOOLSS_DM_LAYOUT_NUP_6"; break;
+		case SPOOLSS_DM_LAYOUT_NUP_9: val = "SPOOLSS_DM_LAYOUT_NUP_9"; break;
+		case SPOOLSS_DM_LAYOUT_NUP_16: val = "SPOOLSS_DM_LAYOUT_NUP_16"; break;
+		case SPOOLSS_DM_LAYOUT_BOOKLET: val = "SPOOLSS_DM_LAYOUT_BOOKLET"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+static enum ndr_err_code ndr_push_spoolss_DM_NupDirection(struct ndr_push *ndr, int ndr_flags, enum spoolss_DM_NupDirection r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_DM_NupDirection(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DM_NupDirection *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_DM_NupDirection(struct ndr_print *ndr, const char *name, enum spoolss_DM_NupDirection r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case SPOOLSS_DM_NUP_DIRECTION_L2R_T2B: val = "SPOOLSS_DM_NUP_DIRECTION_L2R_T2B"; break;
+		case SPOOLSS_DM_NUP_DIRECTION_T2B_L2R: val = "SPOOLSS_DM_NUP_DIRECTION_T2B_L2R"; break;
+		case SPOOLSS_DM_NUP_DIRECTION_R2L_T2B: val = "SPOOLSS_DM_NUP_DIRECTION_R2L_T2B"; break;
+		case SPOOLSS_DM_NUP_DIRECTION_T2B_R2L: val = "SPOOLSS_DM_NUP_DIRECTION_T2B_R2L"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+static enum ndr_err_code ndr_push_spoolss_DM_NupBorderFlags(struct ndr_push *ndr, int ndr_flags, enum spoolss_DM_NupBorderFlags r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_DM_NupBorderFlags(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DM_NupBorderFlags *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_DM_NupBorderFlags(struct ndr_print *ndr, const char *name, enum spoolss_DM_NupBorderFlags r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case SPOOLSS_DM_NUP_BORDER_PRINT: val = "SPOOLSS_DM_NUP_BORDER_PRINT"; break;
+		case SPOOLSS_DM_NUP_BORDER_NONE: val = "SPOOLSS_DM_NUP_BORDER_NONE"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+static enum ndr_err_code ndr_push_spoolss_DM_BookletFlags(struct ndr_push *ndr, int ndr_flags, enum spoolss_DM_BookletFlags r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_DM_BookletFlags(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DM_BookletFlags *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_DM_BookletFlags(struct ndr_print *ndr, const char *name, enum spoolss_DM_BookletFlags r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case SPOOLSS_DM_BOOKLET_LEFT_FLIP: val = "SPOOLSS_DM_BOOKLET_LEFT_FLIP"; break;
+		case SPOOLSS_DM_BOOKLET_RIGHT_FLIP: val = "SPOOLSS_DM_BOOKLET_RIGHT_FLIP"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+static enum ndr_err_code ndr_push_spoolss_DMUNI_Quality(struct ndr_push *ndr, int ndr_flags, enum spoolss_DMUNI_Quality r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_DMUNI_Quality(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DMUNI_Quality *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_DMUNI_Quality(struct ndr_print *ndr, const char *name, enum spoolss_DMUNI_Quality r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case SPOOLSS_DM_UNI_QUALITY_BEST: val = "SPOOLSS_DM_UNI_QUALITY_BEST"; break;
+		case SPOOLSS_DM_UNI_QUALITY_MEDIUM: val = "SPOOLSS_DM_UNI_QUALITY_MEDIUM"; break;
+		case SPOOLSS_DM_UNI_QUALITY_DRAFT: val = "SPOOLSS_DM_UNI_QUALITY_DRAFT"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+static enum ndr_err_code ndr_push_spoolss_DMUNI_Flags(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_DMUNI_Flags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_DMUNI_Flags(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SPOOLSS_DM_UNI_FLAGS_PRINT_TEXT_AS_GRAPHICS", SPOOLSS_DM_UNI_FLAGS_PRINT_TEXT_AS_GRAPHICS, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SPOOLSS_DM_UNI_FLAGS_AVOID_EMFSPOOL", SPOOLSS_DM_UNI_FLAGS_AVOID_EMFSPOOL, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SPOOLSS_DM_UNI_FLAGS_CUSTOM_HALFTONING", SPOOLSS_DM_UNI_FLAGS_CUSTOM_HALFTONING, r);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_UNIDRVEXTRA(struct ndr_push *ndr, int ndr_flags, const struct spoolss_UNIDRVEXTRA *r)
+{
+	uint32_t cntr_wReserved_0;
+	uint32_t cntr_aOptions_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_spoolss_DM_Signature(ndr, NDR_SCALARS, SPOOLSS_DM_SIGNATURE_UNIDRVEXTRA));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, 0x0022));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->wCoreJTExpSize));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, ndr_size_spoolss_UNIDRVEXTRA(r, NULL, 0) + r->wCoreJTExpSize));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->wOEMExtra));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->dwChecksum32));
+		NDR_CHECK(ndr_push_spoolss_DMUNI_Flags(ndr, NDR_SCALARS, r->dwFlags));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->bReversePrint));
+		NDR_CHECK(ndr_push_spoolss_DM_Layout(ndr, NDR_SCALARS, r->iLayout));
+		NDR_CHECK(ndr_push_spoolss_DMUNI_Quality(ndr, NDR_SCALARS, r->iQuality));
+		for (cntr_wReserved_0 = 0; cntr_wReserved_0 < 6; cntr_wReserved_0++) {
+			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->wReserved[cntr_wReserved_0]));
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->dwOptions));
+		for (cntr_aOptions_0 = 0; cntr_aOptions_0 < 128; cntr_aOptions_0++) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->aOptions[cntr_aOptions_0]));
+		}
+		NDR_CHECK(ndr_push_spoolss_DM_NupDirection(ndr, NDR_SCALARS, r->dwNupDirection));
+		NDR_CHECK(ndr_push_spoolss_DM_NupBorderFlags(ndr, NDR_SCALARS, r->dwNupBorderFlags));
+		NDR_CHECK(ndr_push_spoolss_DM_BookletFlags(ndr, NDR_SCALARS, r->dwBookletFlags));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_UNIDRVEXTRA(struct ndr_pull *ndr, int ndr_flags, struct spoolss_UNIDRVEXTRA *r)
+{
+	uint32_t cntr_wReserved_0;
+	uint32_t cntr_aOptions_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_spoolss_DM_Signature(ndr, NDR_SCALARS, &r->dwSignature));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->wVer));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->wCoreJTExpSize));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->wCoreFullSize));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->wOEMExtra));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->dwChecksum32));
+		NDR_CHECK(ndr_pull_spoolss_DMUNI_Flags(ndr, NDR_SCALARS, &r->dwFlags));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->bReversePrint));
+		NDR_CHECK(ndr_pull_spoolss_DM_Layout(ndr, NDR_SCALARS, &r->iLayout));
+		NDR_CHECK(ndr_pull_spoolss_DMUNI_Quality(ndr, NDR_SCALARS, &r->iQuality));
+		for (cntr_wReserved_0 = 0; cntr_wReserved_0 < 6; cntr_wReserved_0++) {
+			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->wReserved[cntr_wReserved_0]));
+		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->dwOptions));
+		for (cntr_aOptions_0 = 0; cntr_aOptions_0 < 128; cntr_aOptions_0++) {
+			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->aOptions[cntr_aOptions_0]));
+		}
+		NDR_CHECK(ndr_pull_spoolss_DM_NupDirection(ndr, NDR_SCALARS, &r->dwNupDirection));
+		NDR_CHECK(ndr_pull_spoolss_DM_NupBorderFlags(ndr, NDR_SCALARS, &r->dwNupBorderFlags));
+		NDR_CHECK(ndr_pull_spoolss_DM_BookletFlags(ndr, NDR_SCALARS, &r->dwBookletFlags));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_UNIDRVEXTRA(struct ndr_print *ndr, const char *name, const struct spoolss_UNIDRVEXTRA *r)
+{
+	uint32_t cntr_wReserved_0;
+	uint32_t cntr_aOptions_0;
+	ndr_print_struct(ndr, name, "spoolss_UNIDRVEXTRA");
+	ndr->depth++;
+	ndr_print_spoolss_DM_Signature(ndr, "dwSignature", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?SPOOLSS_DM_SIGNATURE_UNIDRVEXTRA:r->dwSignature);
+	ndr_print_uint16(ndr, "wVer", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0x0022:r->wVer);
+	ndr_print_uint16(ndr, "wCoreJTExpSize", r->wCoreJTExpSize);
+	ndr_print_uint16(ndr, "wCoreFullSize", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_spoolss_UNIDRVEXTRA(r, NULL, 0) + r->wCoreJTExpSize:r->wCoreFullSize);
+	ndr_print_uint16(ndr, "wOEMExtra", r->wOEMExtra);
+	ndr_print_uint32(ndr, "dwChecksum32", r->dwChecksum32);
+	ndr_print_spoolss_DMUNI_Flags(ndr, "dwFlags", r->dwFlags);
+	ndr_print_uint32(ndr, "bReversePrint", r->bReversePrint);
+	ndr_print_spoolss_DM_Layout(ndr, "iLayout", r->iLayout);
+	ndr_print_spoolss_DMUNI_Quality(ndr, "iQuality", r->iQuality);
+	ndr->print(ndr, "%s: ARRAY(%d)", "wReserved", (int)6);
+	ndr->depth++;
+	for (cntr_wReserved_0=0;cntr_wReserved_0<6;cntr_wReserved_0++) {
+		char *idx_0=NULL;
+		if (asprintf(&idx_0, "[%d]", cntr_wReserved_0) != -1) {
+			ndr_print_uint16(ndr, "wReserved", r->wReserved[cntr_wReserved_0]);
+			free(idx_0);
+		}
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "dwOptions", r->dwOptions);
+	ndr->print(ndr, "%s: ARRAY(%d)", "aOptions", (int)128);
+	ndr->depth++;
+	for (cntr_aOptions_0=0;cntr_aOptions_0<128;cntr_aOptions_0++) {
+		char *idx_0=NULL;
+		if (asprintf(&idx_0, "[%d]", cntr_aOptions_0) != -1) {
+			ndr_print_uint32(ndr, "aOptions", r->aOptions[cntr_aOptions_0]);
+			free(idx_0);
+		}
+	}
+	ndr->depth--;
+	ndr_print_spoolss_DM_NupDirection(ndr, "dwNupDirection", r->dwNupDirection);
+	ndr_print_spoolss_DM_NupBorderFlags(ndr, "dwNupBorderFlags", r->dwNupBorderFlags);
+	ndr_print_spoolss_DM_BookletFlags(ndr, "dwBookletFlags", r->dwBookletFlags);
+	ndr->depth--;
+}
+
+_PUBLIC_ size_t ndr_size_spoolss_UNIDRVEXTRA(const struct spoolss_UNIDRVEXTRA *r, struct smb_iconv_convenience *ic, int flags)
+{
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_UNIDRVEXTRA, ic);
+}
+
 static enum ndr_err_code ndr_push_spoolss_DeviceModeFields(struct ndr_push *ndr, int ndr_flags, uint32_t r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));

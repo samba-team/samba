@@ -275,6 +275,375 @@ struct spoolss_PrinterInfo0 {
 	uint32_t reserved3;
 }/* [gensize,public] */;
 
+enum spoolss_DM_Signature
+#ifndef USE_UINT_ENUMS
+ {
+	SPOOLSS_DM_SIGNATURE_UNIDRVEXTRA=0x554e4944,
+	SPOOLSS_DM_SIGNATURE_JTEXP=0x4a544d53,
+	SPOOLSS_DM_SIGNATURE_PSEXTRA=0x50524956
+}
+#else
+ { __donnot_use_enum_spoolss_DM_Signature=0x7FFFFFFF}
+#define SPOOLSS_DM_SIGNATURE_UNIDRVEXTRA ( 0x554e4944 )
+#define SPOOLSS_DM_SIGNATURE_JTEXP ( 0x4a544d53 )
+#define SPOOLSS_DM_SIGNATURE_PSEXTRA ( 0x50524956 )
+#endif
+;
+
+enum spoolss_DM_Layout
+#ifndef USE_UINT_ENUMS
+ {
+	SPOOLSS_DM_LAYOUT_NUP_DISABLED=0x00000000,
+	SPOOLSS_DM_LAYOUT_NUP_2=0x00000001,
+	SPOOLSS_DM_LAYOUT_NUP_4=0x00000002,
+	SPOOLSS_DM_LAYOUT_NUP_6=0x00000003,
+	SPOOLSS_DM_LAYOUT_NUP_9=0x00000004,
+	SPOOLSS_DM_LAYOUT_NUP_16=0x00000005,
+	SPOOLSS_DM_LAYOUT_BOOKLET=0x00000006
+}
+#else
+ { __donnot_use_enum_spoolss_DM_Layout=0x7FFFFFFF}
+#define SPOOLSS_DM_LAYOUT_NUP_DISABLED ( 0x00000000 )
+#define SPOOLSS_DM_LAYOUT_NUP_2 ( 0x00000001 )
+#define SPOOLSS_DM_LAYOUT_NUP_4 ( 0x00000002 )
+#define SPOOLSS_DM_LAYOUT_NUP_6 ( 0x00000003 )
+#define SPOOLSS_DM_LAYOUT_NUP_9 ( 0x00000004 )
+#define SPOOLSS_DM_LAYOUT_NUP_16 ( 0x00000005 )
+#define SPOOLSS_DM_LAYOUT_BOOKLET ( 0x00000006 )
+#endif
+;
+
+enum spoolss_DM_NupDirection
+#ifndef USE_UINT_ENUMS
+ {
+	SPOOLSS_DM_NUP_DIRECTION_L2R_T2B=0x00000001,
+	SPOOLSS_DM_NUP_DIRECTION_T2B_L2R=0x00000002,
+	SPOOLSS_DM_NUP_DIRECTION_R2L_T2B=0x00000004,
+	SPOOLSS_DM_NUP_DIRECTION_T2B_R2L=0x00000008
+}
+#else
+ { __donnot_use_enum_spoolss_DM_NupDirection=0x7FFFFFFF}
+#define SPOOLSS_DM_NUP_DIRECTION_L2R_T2B ( 0x00000001 )
+#define SPOOLSS_DM_NUP_DIRECTION_T2B_L2R ( 0x00000002 )
+#define SPOOLSS_DM_NUP_DIRECTION_R2L_T2B ( 0x00000004 )
+#define SPOOLSS_DM_NUP_DIRECTION_T2B_R2L ( 0x00000008 )
+#endif
+;
+
+enum spoolss_DM_NupBorderFlags
+#ifndef USE_UINT_ENUMS
+ {
+	SPOOLSS_DM_NUP_BORDER_PRINT=0x00000000,
+	SPOOLSS_DM_NUP_BORDER_NONE=0x00000001
+}
+#else
+ { __donnot_use_enum_spoolss_DM_NupBorderFlags=0x7FFFFFFF}
+#define SPOOLSS_DM_NUP_BORDER_PRINT ( 0x00000000 )
+#define SPOOLSS_DM_NUP_BORDER_NONE ( 0x00000001 )
+#endif
+;
+
+enum spoolss_DM_BookletFlags
+#ifndef USE_UINT_ENUMS
+ {
+	SPOOLSS_DM_BOOKLET_LEFT_FLIP=0x00000000,
+	SPOOLSS_DM_BOOKLET_RIGHT_FLIP=0x00000001
+}
+#else
+ { __donnot_use_enum_spoolss_DM_BookletFlags=0x7FFFFFFF}
+#define SPOOLSS_DM_BOOKLET_LEFT_FLIP ( 0x00000000 )
+#define SPOOLSS_DM_BOOKLET_RIGHT_FLIP ( 0x00000001 )
+#endif
+;
+
+/* bitmap spoolss_DMPS_Flags */
+#define SPOOLSS_DM_PS_FLAGS_DRV_ERROR_HANDLER ( 0x00000002 )
+#define SPOOLSS_DM_PS_FLAGS_PRINT_MIRROR ( 0x00000004 )
+#define SPOOLSS_DM_PS_FLAGS_PRINT_NEGATIVE ( 0x00000010 )
+#define SPOOLSS_DM_PS_FLAGS_COMPRESS_BITMAP ( 0x00000040 )
+#define SPOOLSS_DM_PS_FLAGS_ROTATE_180 ( 0x00000200 )
+#define SPOOLSS_DM_PS_FLAGS_GDI_METAFILE_SPOOL ( 0x00002000 )
+
+struct spoolss_PSDRVEXTRA351 {
+	enum spoolss_DM_Signature dwSignature;/* [value(SPOOLSS_DM_SIGNATURE_PSEXTRA)] */
+	uint32_t dwFlags;
+	uint32_t wchEPSFile[12];
+	uint16_t caSize;/* [value(24)] */
+	uint16_t caFlags;
+	uint16_t caIlluminantIndex;
+	uint16_t caRedGamma;
+	uint16_t caGreenGamma;
+	uint16_t caBlueGamma;
+	uint16_t caReferenceBlack;
+	uint16_t caReferenceWhite;
+	uint16_t caContrast;
+	uint16_t caBrightness;
+	uint16_t caColorfulness;
+	uint16_t caRedGreenTint;
+};
+
+struct spoolss_PSDRVEXTRA400 {
+	enum spoolss_DM_Signature dwSignature;/* [value(SPOOLSS_DM_SIGNATURE_PSEXTRA)] */
+	uint32_t dwFlags;
+	uint32_t wchEPSFile[12];
+	uint16_t caSize;/* [value(24)] */
+	uint16_t caFlags;
+	uint16_t caIlluminantIndex;
+	uint16_t caRedGamma;
+	uint16_t caGreenGamma;
+	uint16_t caBlueGamma;
+	uint16_t caReferenceBlack;
+	uint16_t caReferenceWhite;
+	uint16_t caContrast;
+	uint16_t caBrightness;
+	uint16_t caColorfulness;
+	uint16_t caRedGreenTint;
+	uint16_t wChecksum;
+	uint16_t wOptions;
+	uint32_t aubOptions[8];
+};
+
+enum spoolss_DMPS_Dialect
+#ifndef USE_UINT_ENUMS
+ {
+	SPOOLSS_DM_PS_OPTIMIZE_SPEED=0x00000000,
+	SPOOLSS_DM_PS_OPTIMIZE_PORTABILITY=0x00000001,
+	SPOOLSS_DM_PS_OPTIMIZE_EPS=0x00000002,
+	SPOOLSS_DM_PS_OPTIMIZE_ARCHIVAL=0x00000003
+}
+#else
+ { __donnot_use_enum_spoolss_DMPS_Dialect=0x7FFFFFFF}
+#define SPOOLSS_DM_PS_OPTIMIZE_SPEED ( 0x00000000 )
+#define SPOOLSS_DM_PS_OPTIMIZE_PORTABILITY ( 0x00000001 )
+#define SPOOLSS_DM_PS_OPTIMIZE_EPS ( 0x00000002 )
+#define SPOOLSS_DM_PS_OPTIMIZE_ARCHIVAL ( 0x00000003 )
+#endif
+;
+
+enum spoolss_DMPS_TTDLFmt
+#ifndef USE_UINT_ENUMS
+ {
+	SPOOLSS_DM_PS_TTDLFMT_DEFAULT=0x00000000,
+	SPOOLSS_DM_PS_TTDLFMT_TYPE_1=0x00000001,
+	SPOOLSS_DM_PS_TTDLFMT_TYPE_3=0x00000002,
+	SPOOLSS_DM_PS_TTDLFMT_TYPE_42=0x00000003
+}
+#else
+ { __donnot_use_enum_spoolss_DMPS_TTDLFmt=0x7FFFFFFF}
+#define SPOOLSS_DM_PS_TTDLFMT_DEFAULT ( 0x00000000 )
+#define SPOOLSS_DM_PS_TTDLFMT_TYPE_1 ( 0x00000001 )
+#define SPOOLSS_DM_PS_TTDLFMT_TYPE_3 ( 0x00000002 )
+#define SPOOLSS_DM_PS_TTDLFMT_TYPE_42 ( 0x00000003 )
+#endif
+;
+
+enum spoolss_DMPS_PSLevel
+#ifndef USE_UINT_ENUMS
+ {
+	SPOOLSS_DM_PS_PSLEVEL_1=0x00000001,
+	SPOOLSS_DM_PS_PSLEVEL_2=0x00000002,
+	SPOOLSS_DM_PS_PSLEVEL_3=0x00000003
+}
+#else
+ { __donnot_use_enum_spoolss_DMPS_PSLevel=0x7FFFFFFF}
+#define SPOOLSS_DM_PS_PSLEVEL_1 ( 0x00000001 )
+#define SPOOLSS_DM_PS_PSLEVEL_2 ( 0x00000002 )
+#define SPOOLSS_DM_PS_PSLEVEL_3 ( 0x00000003 )
+#endif
+;
+
+enum spoolss_DMPS_FeedDirection
+#ifndef USE_UINT_ENUMS
+ {
+	SPOOLSS_DM_PS_FEED_DIRECTION_LONG_EDGE_FIRST=0x0000,
+	SPOOLSS_DM_PS_FEED_DIRECTION_SHORT_EDGE_FIRST=0x0001,
+	SPOOLSS_DM_PS_FEED_DIRECTION_LONG_EDGE_FIRST_UPSIDEDOWN=0x0002,
+	SPOOLSS_DM_PS_FEED_DIRECTION_SHORT_EDGE_FIRST_UPSIDEDOWN=0x0003
+}
+#else
+ { __donnot_use_enum_spoolss_DMPS_FeedDirection=0x7FFFFFFF}
+#define SPOOLSS_DM_PS_FEED_DIRECTION_LONG_EDGE_FIRST ( 0x0000 )
+#define SPOOLSS_DM_PS_FEED_DIRECTION_SHORT_EDGE_FIRST ( 0x0001 )
+#define SPOOLSS_DM_PS_FEED_DIRECTION_LONG_EDGE_FIRST_UPSIDEDOWN ( 0x0002 )
+#define SPOOLSS_DM_PS_FEED_DIRECTION_SHORT_EDGE_FIRST_UPSIDEDOWN ( 0x0003 )
+#endif
+;
+
+struct spoolss_PSDRVEXTRA500 {
+	enum spoolss_DM_Signature dwSignature;/* [value(SPOOLSS_DM_SIGNATURE_PSEXTRA)] */
+	uint32_t dwFlags;
+	uint32_t wchEPSFile[12];
+	uint16_t caSize;/* [value(24)] */
+	uint16_t caFlags;
+	uint16_t caIlluminantIndex;
+	uint16_t caRedGamma;
+	uint16_t caGreenGamma;
+	uint16_t caBlueGamma;
+	uint16_t caReferenceBlack;
+	uint16_t caReferenceWhite;
+	uint16_t caContrast;
+	uint16_t caBrightness;
+	uint16_t caColorfulness;
+	uint16_t caRedGreenTint;
+	uint16_t wReserved1;
+	uint16_t wSize;
+	uint32_t fxScrFreq;
+	uint32_t fxScrAngle;
+	enum spoolss_DMPS_Dialect iDialect;
+	enum spoolss_DMPS_TTDLFmt iTTDLFmt;
+	uint32_t bReversePrint;
+	enum spoolss_DM_Layout iLayout;
+	enum spoolss_DMPS_PSLevel iPSLevel;
+	uint32_t dwReserved2;
+	uint16_t wOEMExtra;
+	uint16_t wVer;/* [value(0x0010)] */
+	uint32_t dwX;
+	uint32_t dwY;
+	uint32_t dwWidthOffset;
+	uint32_t dwHeightOffset;
+	enum spoolss_DMPS_FeedDirection wFeedDirection;
+	uint16_t wCutSheet;
+	uint32_t dwReserved3[4];
+	uint32_t dwChecksum32;
+	uint32_t dwOptions;
+	uint32_t aOptions[128];
+};
+
+struct spoolss_PSDRVEXTRA {
+	enum spoolss_DM_Signature dwSignature;/* [value(SPOOLSS_DM_SIGNATURE_PSEXTRA)] */
+	uint32_t dwFlags;
+	uint32_t wchEPSFile[12];
+	uint16_t caSize;/* [value(24)] */
+	uint16_t caFlags;
+	uint16_t caIlluminantIndex;
+	uint16_t caRedGamma;
+	uint16_t caGreenGamma;
+	uint16_t caBlueGamma;
+	uint16_t caReferenceBlack;
+	uint16_t caReferenceWhite;
+	uint16_t caContrast;
+	uint16_t caBrightness;
+	uint16_t caColorfulness;
+	uint16_t caRedGreenTint;
+	uint16_t wCoreJTExpSize;
+	uint16_t wCoreFullSize;/* [value(sizeof(spoolss_PSDRVEXTRA)+wCoreJTExpSize)] */
+	uint32_t fxScrFreq;
+	uint32_t fxScrAngle;
+	enum spoolss_DMPS_Dialect iDialect;
+	enum spoolss_DMPS_TTDLFmt iTTDLFmt;
+	uint32_t bReversePrint;
+	enum spoolss_DM_Layout iLayout;
+	enum spoolss_DMPS_PSLevel iPSLevel;
+	uint32_t dwReserved2;
+	uint16_t wOEMExtra;
+	uint16_t wVer;/* [value(0x0010)] */
+	uint32_t dwX;
+	uint32_t dwY;
+	uint32_t dwWidthOffset;
+	uint32_t dwHeightOffset;
+	enum spoolss_DMPS_FeedDirection wFeedDirection;
+	uint16_t wCutSheet;
+	uint32_t dwReserved3[4];
+	uint32_t dwChecksum32;
+	uint32_t dwOptions;
+	uint32_t aOptions[128];
+	enum spoolss_DM_NupDirection dwNupDirection;
+	enum spoolss_DM_NupBorderFlags dwNupBorderFlags;
+	enum spoolss_DM_BookletFlags dwBookletFlags;
+	uint32_t dwPadding;
+};
+
+struct spoolss_UNIDRVEXTRA3_4 {
+	uint16_t wReserved[56];
+};
+
+enum spoolss_DMUNI_Quality
+#ifndef USE_UINT_ENUMS
+ {
+	SPOOLSS_DM_UNI_QUALITY_BEST=0x00000000,
+	SPOOLSS_DM_UNI_QUALITY_MEDIUM=0x00000001,
+	SPOOLSS_DM_UNI_QUALITY_DRAFT=0x00000002
+}
+#else
+ { __donnot_use_enum_spoolss_DMUNI_Quality=0x7FFFFFFF}
+#define SPOOLSS_DM_UNI_QUALITY_BEST ( 0x00000000 )
+#define SPOOLSS_DM_UNI_QUALITY_MEDIUM ( 0x00000001 )
+#define SPOOLSS_DM_UNI_QUALITY_DRAFT ( 0x00000002 )
+#endif
+;
+
+/* bitmap spoolss_DMUNI_Flags */
+#define SPOOLSS_DM_UNI_FLAGS_PRINT_TEXT_AS_GRAPHICS ( 0x00000002 )
+#define SPOOLSS_DM_UNI_FLAGS_AVOID_EMFSPOOL ( 0x00000010 )
+#define SPOOLSS_DM_UNI_FLAGS_CUSTOM_HALFTONING ( 0x00000080 )
+
+struct spoolss_UNIDRVEXTRA500 {
+	enum spoolss_DM_Signature dwSignature;/* [value(SPOOLSS_DM_SIGNATURE_UNIDRVEXTRA)] */
+	uint16_t wVer;/* [value(0x0022)] */
+	uint16_t sPadding;
+	uint16_t wSize;
+	uint16_t wOEMExtra;
+	uint32_t dwChecksum32;
+	uint32_t dwFlags;
+	uint32_t bReversePrint;
+	enum spoolss_DM_Layout iLayout;
+	enum spoolss_DMUNI_Quality iQuality;
+	uint16_t wReserved[6];
+	uint32_t dwOptions;
+	uint32_t aOptions[128];
+};
+
+struct spoolss_UNIDRVEXTRA {
+	enum spoolss_DM_Signature dwSignature;/* [value(SPOOLSS_DM_SIGNATURE_UNIDRVEXTRA)] */
+	uint16_t wVer;/* [value(0x0022)] */
+	uint16_t wCoreJTExpSize;
+	uint16_t wCoreFullSize;/* [value(ndr_size_spoolss_UNIDRVEXTRA(r,NULL,0)+wCoreJTExpSize)] */
+	uint16_t wOEMExtra;
+	uint32_t dwChecksum32;
+	uint32_t dwFlags;
+	uint32_t bReversePrint;
+	enum spoolss_DM_Layout iLayout;
+	enum spoolss_DMUNI_Quality iQuality;
+	uint16_t wReserved[6];
+	uint32_t dwOptions;
+	uint32_t aOptions[128];
+	enum spoolss_DM_NupDirection dwNupDirection;
+	enum spoolss_DM_NupBorderFlags dwNupBorderFlags;
+	enum spoolss_DM_BookletFlags dwBookletFlags;
+}/* [gensize,public] */;
+
+struct spoolss_JTEXP {
+	uint32_t dwSize;
+	enum spoolss_DM_Signature dwSignature;/* [value(SPOOLSS_DM_SIGNATURE_JTEXP)] */
+	uint32_t dwVersion;/* [value(0)] */
+	uint32_t wJTHdrSize;/* [value(16)] */
+	uint32_t wCoreMFOSize;
+	const char *ModelName;/* [unique,charset(UTF16)] */
+	const char ** FeatureOptionPairs;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+};
+
+struct spoolss_OEM_DMEXTRA {
+	uint32_t dwSize;
+	enum spoolss_DM_Signature dwSignature;
+	uint32_t dwVersion;
+	DATA_BLOB Data;/* [flag(LIBNDR_FLAG_REMAINING)] */
+};
+
+union spoolss_DeviceModeExtraDataPostScript {
+	struct spoolss_PSDRVEXTRA351 psdrvextra351;/* [case(0x0350)] */
+	struct spoolss_PSDRVEXTRA400 psdrvextra400;/* [case(0x0400)] */
+	struct spoolss_PSDRVEXTRA500 psdrvextra500;/* [case(0x0501)] */
+	struct spoolss_PSDRVEXTRA psdrvextra;/* [case(0x0600)] */
+	DATA_BLOB blob;/* [default,flag(LIBNDR_FLAG_REMAINING)] */
+}/* [nodiscriminant] */;
+
+union spoolss_DeviceModeExtraDataUniDriver {
+	struct spoolss_UNIDRVEXTRA3_4 unidrvextra3_4;/* [case(0x0301)] */
+	struct spoolss_UNIDRVEXTRA500 unidrvextra500;/* [case(0x0500)] */
+	struct spoolss_UNIDRVEXTRA unidrvextra;/* [case(0x0600)] */
+	DATA_BLOB blob;/* [default,flag(LIBNDR_FLAG_REMAINING)] */
+}/* [nodiscriminant] */;
+
 /* bitmap spoolss_DeviceModeFields */
 #define DEVMODE_ORIENTATION ( 0x00000001 )
 #define DEVMODE_PAPERSIZE ( 0x00000002 )

@@ -247,6 +247,17 @@ enum ndr_err_code ndr_push_spoolss_PrinterInfo0(struct ndr_push *ndr, int ndr_fl
 enum ndr_err_code ndr_pull_spoolss_PrinterInfo0(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PrinterInfo0 *r);
 void ndr_print_spoolss_PrinterInfo0(struct ndr_print *ndr, const char *name, const struct spoolss_PrinterInfo0 *r);
 size_t ndr_size_spoolss_PrinterInfo0(const struct spoolss_PrinterInfo0 *r, struct smb_iconv_convenience *ic, int flags);
+void ndr_print_spoolss_DM_Signature(struct ndr_print *ndr, const char *name, enum spoolss_DM_Signature r);
+void ndr_print_spoolss_DM_Layout(struct ndr_print *ndr, const char *name, enum spoolss_DM_Layout r);
+void ndr_print_spoolss_DM_NupDirection(struct ndr_print *ndr, const char *name, enum spoolss_DM_NupDirection r);
+void ndr_print_spoolss_DM_NupBorderFlags(struct ndr_print *ndr, const char *name, enum spoolss_DM_NupBorderFlags r);
+void ndr_print_spoolss_DM_BookletFlags(struct ndr_print *ndr, const char *name, enum spoolss_DM_BookletFlags r);
+void ndr_print_spoolss_DMUNI_Quality(struct ndr_print *ndr, const char *name, enum spoolss_DMUNI_Quality r);
+void ndr_print_spoolss_DMUNI_Flags(struct ndr_print *ndr, const char *name, uint32_t r);
+enum ndr_err_code ndr_push_spoolss_UNIDRVEXTRA(struct ndr_push *ndr, int ndr_flags, const struct spoolss_UNIDRVEXTRA *r);
+enum ndr_err_code ndr_pull_spoolss_UNIDRVEXTRA(struct ndr_pull *ndr, int ndr_flags, struct spoolss_UNIDRVEXTRA *r);
+void ndr_print_spoolss_UNIDRVEXTRA(struct ndr_print *ndr, const char *name, const struct spoolss_UNIDRVEXTRA *r);
+size_t ndr_size_spoolss_UNIDRVEXTRA(const struct spoolss_UNIDRVEXTRA *r, struct smb_iconv_convenience *ic, int flags);
 void ndr_print_spoolss_DeviceModeFields(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_spoolss_DeviceModeSpecVersion(struct ndr_print *ndr, const char *name, enum spoolss_DeviceModeSpecVersion r);
 void ndr_print_spoolss_DeviceModeOrientation(struct ndr_print *ndr, const char *name, enum spoolss_DeviceModeOrientation r);
