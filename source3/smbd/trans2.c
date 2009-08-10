@@ -1468,8 +1468,9 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 	uint64_t file_size = 0;
 	uint64_t allocation_size = 0;
 	uint32_t len;
-	struct timespec mdate_ts, adate_ts, create_date_ts;
+	struct timespec mdate_ts, adate_ts, cdate_ts, create_date_ts;
 	time_t mdate = (time_t)0, adate = (time_t)0, create_date = (time_t)0;
+	time_t c_date = (time_t)0;
 	char *nameptr;
 	char *last_entry_ptr;
 	bool was_8_3;
@@ -1480,6 +1481,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 	ZERO_STRUCT(mdate_ts);
 	ZERO_STRUCT(adate_ts);
 	ZERO_STRUCT(create_date_ts);
+	ZERO_STRUCT(cdate_ts);
 
 	if (!(mode & aDIR)) {
 		file_size = get_file_size_stat(&smb_fname->st);
@@ -1488,17 +1490,20 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 
 	mdate_ts = smb_fname->st.st_ex_mtime;
 	adate_ts = smb_fname->st.st_ex_atime;
-	create_date_ts = smb_fname->st.st_ex_btime;
+	create_date_ts = get_create_timespec(NULL, smb_fname);
+	cdate_ts = get_change_timespec(NULL, smb_fname);
 
 	if (lp_dos_filetime_resolution(SNUM(conn))) {
 		dos_filetime_timespec(&create_date_ts);
 		dos_filetime_timespec(&mdate_ts);
 		dos_filetime_timespec(&adate_ts);
+		dos_filetime_timespec(&cdate_ts);
 	}
 
 	create_date = convert_timespec_to_time_t(create_date_ts);
 	mdate = convert_timespec_to_time_t(mdate_ts);
 	adate = convert_timespec_to_time_t(adate_ts);
+	c_date = convert_timespec_to_time_t(cdate_ts);
 
 	p = pdata;
 	last_entry_ptr = p;
@@ -1649,7 +1654,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		put_long_date_timespec(p,create_date_ts); p += 8;
 		put_long_date_timespec(p,adate_ts); p += 8;
 		put_long_date_timespec(p,mdate_ts); p += 8;
-		put_long_date_timespec(p,mdate_ts); p += 8;
+		put_long_date_timespec(p,cdate_ts); p += 8;
 		SOFF_T(p,0,file_size); p += 8;
 		SOFF_T(p,0,allocation_size); p += 8;
 		SIVAL(p,0,nt_extmode); p += 4;
@@ -1702,7 +1707,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		put_long_date_timespec(p,create_date_ts); p += 8;
 		put_long_date_timespec(p,adate_ts); p += 8;
 		put_long_date_timespec(p,mdate_ts); p += 8;
-		put_long_date_timespec(p,mdate_ts); p += 8;
+		put_long_date_timespec(p,cdate_ts); p += 8;
 		SOFF_T(p,0,file_size); p += 8;
 		SOFF_T(p,0,allocation_size); p += 8;
 		SIVAL(p,0,nt_extmode); p += 4;
@@ -1725,7 +1730,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		put_long_date_timespec(p,create_date_ts); p += 8;
 		put_long_date_timespec(p,adate_ts); p += 8;
 		put_long_date_timespec(p,mdate_ts); p += 8;
-		put_long_date_timespec(p,mdate_ts); p += 8;
+		put_long_date_timespec(p,cdate_ts); p += 8;
 		SOFF_T(p,0,file_size); p += 8;
 		SOFF_T(p,0,allocation_size); p += 8;
 		SIVAL(p,0,nt_extmode); p += 4;
@@ -1775,7 +1780,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		put_long_date_timespec(p,create_date_ts); p += 8;
 		put_long_date_timespec(p,adate_ts); p += 8;
 		put_long_date_timespec(p,mdate_ts); p += 8;
-		put_long_date_timespec(p,mdate_ts); p += 8;
+		put_long_date_timespec(p,cdate_ts); p += 8;
 		SOFF_T(p,0,file_size); p += 8;
 		SOFF_T(p,0,allocation_size); p += 8;
 		SIVAL(p,0,nt_extmode); p += 4;
@@ -1809,7 +1814,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		put_long_date_timespec(p,create_date_ts); p += 8;
 		put_long_date_timespec(p,adate_ts); p += 8;
 		put_long_date_timespec(p,mdate_ts); p += 8;
-		put_long_date_timespec(p,mdate_ts); p += 8;
+		put_long_date_timespec(p,cdate_ts); p += 8;
 		SOFF_T(p,0,file_size); p += 8;
 		SOFF_T(p,0,allocation_size); p += 8;
 		SIVAL(p,0,nt_extmode); p += 4;
@@ -3996,8 +4001,8 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 	char *pdata = *ppdata;
 	char *dstart, *dend;
 	unsigned int data_size;
-	struct timespec create_time_ts, mtime_ts, atime_ts;
-	time_t create_time, mtime, atime;
+	struct timespec create_time_ts, mtime_ts, atime_ts, ctime_ts;
+	time_t create_time, mtime, atime, c_time;
 	SMB_STRUCT_STAT sbuf;
 	char *p;
 	char *base_name;
@@ -4052,19 +4057,22 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		update_stat_ex_mtime(&sbuf, write_time_ts);
 	}
 
-	create_time_ts = sbuf.st_ex_btime;
+	create_time_ts = get_create_timespec(fsp, smb_fname);
 	mtime_ts = sbuf.st_ex_mtime;
 	atime_ts = sbuf.st_ex_atime;
+	ctime_ts = get_change_timespec(fsp, smb_fname);
 
 	if (lp_dos_filetime_resolution(SNUM(conn))) {
 		dos_filetime_timespec(&create_time_ts);
 		dos_filetime_timespec(&mtime_ts);
 		dos_filetime_timespec(&atime_ts);
+		dos_filetime_timespec(&ctime_ts);
 	}
 
 	create_time = convert_timespec_to_time_t(create_time_ts);
 	mtime = convert_timespec_to_time_t(mtime_ts);
 	atime = convert_timespec_to_time_t(atime_ts);
+	c_time = convert_timespec_to_time_t(ctime_ts);
 
 	p = strrchr_m(smb_fname->base_name,'/');
 	if (!p)
@@ -4257,14 +4265,14 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			put_long_date_timespec(pdata,create_time_ts);
 			put_long_date_timespec(pdata+8,atime_ts);
 			put_long_date_timespec(pdata+16,mtime_ts); /* write time */
-			put_long_date_timespec(pdata+24,mtime_ts); /* change time */
+			put_long_date_timespec(pdata+24,ctime_ts); /* change time */
 			SIVAL(pdata,32,mode);
 
 			DEBUG(5,("SMB_QFBI - "));
 			DEBUG(5,("create: %s ", ctime(&create_time)));
 			DEBUG(5,("access: %s ", ctime(&atime)));
 			DEBUG(5,("write: %s ", ctime(&mtime)));
-			DEBUG(5,("change: %s ", ctime(&mtime)));
+			DEBUG(5,("change: %s ", ctime(&c_time)));
 			DEBUG(5,("mode: %x\n", mode));
 			break;
 
@@ -4352,7 +4360,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			put_long_date_timespec(pdata,create_time_ts);
 			put_long_date_timespec(pdata+8,atime_ts);
 			put_long_date_timespec(pdata+16,mtime_ts); /* write time */
-			put_long_date_timespec(pdata+24,mtime_ts); /* change time */
+			put_long_date_timespec(pdata+24,ctime_ts); /* change time */
 			SIVAL(pdata,32,mode);
 			SIVAL(pdata,36,0); /* padding. */
 			pdata += 40;
@@ -4384,7 +4392,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			put_long_date_timespec(pdata+0x00,create_time_ts);
 			put_long_date_timespec(pdata+0x08,atime_ts);
 			put_long_date_timespec(pdata+0x10,mtime_ts); /* write time */
-			put_long_date_timespec(pdata+0x18,mtime_ts); /* change time */
+			put_long_date_timespec(pdata+0x18,ctime_ts); /* change time */
 			SIVAL(pdata,	0x20, mode);
 			SIVAL(pdata,	0x24, 0); /* padding. */
 			SBVAL(pdata,	0x28, allocation_size);
@@ -4517,7 +4525,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			put_long_date_timespec(pdata,create_time_ts);
 			put_long_date_timespec(pdata+8,atime_ts);
 			put_long_date_timespec(pdata+16,mtime_ts); /* write time */
-			put_long_date_timespec(pdata+24,mtime_ts); /* change time */
+			put_long_date_timespec(pdata+24,ctime_ts); /* change time */
 			SOFF_T(pdata,32,allocation_size);
 			SOFF_T(pdata,40,file_size);
 			SIVAL(pdata,48,mode);

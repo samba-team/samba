@@ -456,7 +456,7 @@ static struct timespec calc_create_time_stat_ex(const struct stat_ex *st)
  use the best approximation.
 ****************************************************************************/
 
-static void get_create_timespec(const struct stat *pst, struct stat_ex *dst)
+static void make_create_timespec(const struct stat *pst, struct stat_ex *dst)
 {
 	if (S_ISDIR(pst->st_mode) && lp_fake_dir_create_times()) {
 		dst->st_ex_btime.tv_sec = 315493200L;          /* 1/1/1980 */
@@ -518,7 +518,7 @@ static void init_stat_ex_from_stat (struct stat_ex *dst,
 	dst->st_ex_atime = get_atimespec(src);
 	dst->st_ex_mtime = get_mtimespec(src);
 	dst->st_ex_ctime = get_ctimespec(src);
-	get_create_timespec(src, dst);
+	make_create_timespec(src, dst);
 	dst->st_ex_blksize = src->st_blksize;
 	dst->st_ex_blocks = src->st_blocks;
 

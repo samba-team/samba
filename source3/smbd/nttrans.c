@@ -399,6 +399,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	int info = 0;
 	files_struct *fsp = NULL;
 	char *p = NULL;
+	struct timespec create_timespec;
 	struct timespec c_timespec;
 	struct timespec a_timespec;
 	struct timespec m_timespec;
@@ -524,6 +525,10 @@ void reply_ntcreate_and_X(struct smb_request *req)
 		goto out;
 	}
 
+	/* Ensure we're pointing at the correct stat struct. */
+	TALLOC_FREE(smb_fname);
+	smb_fname = fsp->fsp_name;
+
 	/*
 	 * If the caller set the extended oplock request bit
 	 * and we granted one (by whatever means) - set the
@@ -591,23 +596,25 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	}
 
 	/* Create time. */
-	c_timespec = smb_fname->st.st_ex_btime;
+	create_timespec = get_create_timespec(fsp, smb_fname);
 	a_timespec = smb_fname->st.st_ex_atime;
 	m_timespec = smb_fname->st.st_ex_mtime;
+	c_timespec = get_change_timespec(fsp, smb_fname);
 
 	if (lp_dos_filetime_resolution(SNUM(conn))) {
-		dos_filetime_timespec(&c_timespec);
+		dos_filetime_timespec(&create_timespec);
 		dos_filetime_timespec(&a_timespec);
 		dos_filetime_timespec(&m_timespec);
+		dos_filetime_timespec(&c_timespec);
 	}
 
-	put_long_date_timespec(p, c_timespec); /* create time. */
+	put_long_date_timespec(p, create_timespec); /* create time. */
 	p += 8;
 	put_long_date_timespec(p, a_timespec); /* access time */
 	p += 8;
 	put_long_date_timespec(p, m_timespec); /* write time */
 	p += 8;
-	put_long_date_timespec(p, m_timespec); /* change time */
+	put_long_date_timespec(p, c_timespec); /* change time */
 	p += 8;
 	SIVAL(p,0,fattr); /* File Attributes. */
 	p += 4;
@@ -638,7 +645,6 @@ void reply_ntcreate_and_X(struct smb_request *req)
 
 	chain_reply(req);
  out:
-	TALLOC_FREE(smb_fname);
 	END_PROFILE(SMBntcreateX);
 	return;
 }
@@ -844,6 +850,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	struct security_descriptor *sd = NULL;
 	uint32 ea_len;
 	uint16 root_dir_fid;
+	struct timespec create_timespec;
 	struct timespec c_timespec;
 	struct timespec a_timespec;
 	struct timespec m_timespec;
@@ -1016,6 +1023,10 @@ static void call_nt_transact_create(connection_struct *conn,
 		goto out;
 	}
 
+	/* Ensure we're pointing at the correct stat struct. */
+	TALLOC_FREE(smb_fname);
+	smb_fname = fsp->fsp_name;
+
 	/*
 	 * If the caller set the extended oplock request bit
 	 * and we granted one (by whatever means) - set the
@@ -1083,23 +1094,25 @@ static void call_nt_transact_create(connection_struct *conn,
 	}
 
 	/* Create time. */
-	c_timespec = smb_fname->st.st_ex_btime;
+	create_timespec = get_create_timespec(fsp, smb_fname);
 	a_timespec = smb_fname->st.st_ex_atime;
 	m_timespec = smb_fname->st.st_ex_mtime;
+	c_timespec = get_change_timespec(fsp, smb_fname);
 
 	if (lp_dos_filetime_resolution(SNUM(conn))) {
-		dos_filetime_timespec(&c_timespec);
+		dos_filetime_timespec(&create_timespec);
 		dos_filetime_timespec(&a_timespec);
 		dos_filetime_timespec(&m_timespec);
+		dos_filetime_timespec(&c_timespec);
 	}
 
-	put_long_date_timespec(p, c_timespec); /* create time. */
+	put_long_date_timespec(p, create_timespec); /* create time. */
 	p += 8;
 	put_long_date_timespec(p, a_timespec); /* access time */
 	p += 8;
 	put_long_date_timespec(p, m_timespec); /* write time */
 	p += 8;
-	put_long_date_timespec(p, m_timespec); /* change time */
+	put_long_date_timespec(p, c_timespec); /* change time */
 	p += 8;
 	SIVAL(p,0,fattr); /* File Attributes. */
 	p += 4;
@@ -1131,7 +1144,6 @@ static void call_nt_transact_create(connection_struct *conn,
 	/* Send the required number of replies */
 	send_nt_replies(conn, req, NT_STATUS_OK, params, param_len, *ppdata, 0);
  out:
-	TALLOC_FREE(smb_fname);
 	return;
 }
 

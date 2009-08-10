@@ -851,3 +851,23 @@ bool update_write_time(struct files_struct *fsp)
 
 	return true;
 }
+
+/******************************************************************
+ Return a create time (may look at EA in future).
+******************************************************************/
+
+struct timespec get_create_timespec(struct files_struct *fsp,
+				const struct smb_filename *smb_fname)
+{
+	return smb_fname->st.st_ex_btime;
+}
+
+/******************************************************************
+ Return a change time (may look at EA in future).
+******************************************************************/
+
+struct timespec get_change_timespec(struct files_struct *fsp,
+				const struct smb_filename *smb_fname)
+{
+	return smb_fname->st.st_ex_mtime;
+}

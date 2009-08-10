@@ -6266,6 +6266,12 @@ bool set_sticky_write_time_fsp(struct files_struct *fsp,
 			       struct timespec mtime);
 bool update_write_time(struct files_struct *fsp);
 
+struct timespec get_create_timespec(struct files_struct *fsp,
+				const struct smb_filename *smb_fname);
+
+struct timespec get_change_timespec(struct files_struct *fsp,
+				const struct smb_filename *smb_fname);
+
 /* The following definitions come from smbd/error.c  */
 
 bool use_nt_status(void);
