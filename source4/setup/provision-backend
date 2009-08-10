@@ -72,7 +72,7 @@ parser.add_option("--ol-olc", type="choice", metavar="OPENLDAP-OLC",
 		help="To setup OpenLDAP-Backend with Online-Configuration [slapd.d] choose 'yes'.",
 		choices=["yes", "no"])
 parser.add_option("--ol-slapd", type="string", metavar="SLAPD-PATH", 
-		help="Path to OpenLDAP-Daemon (slapd) [e.g.:'/usr/local/libexec']. Recommended for Setup with OpenLDAP-Backend. OpenLDAP Version >= 2.4.17 should be used.") 
+		help="Path to OpenLDAP-Daemon (slapd) [e.g.:'/usr/local/libexec/slapd']. Required for Setup with OpenLDAP-Backend. OpenLDAP Version >= 2.4.17 should be used.") 
 
 opts = parser.parse_args()[0]
 

@@ -1304,9 +1304,8 @@ def provision_backend(setup_dir=None, message=None,
 
     # if openldap-backend was chosen, check if path to slapd was given and exists
     if ldap_backend_type == "openldap" and ol_slapd is None:
-        sys.exit("Warning: OpenLDAP-Backend must be setup with path to slapd (OpenLDAP-Daemon), e.g. --ol-slapd=\"/usr/local/libexec\"!")
+        sys.exit("Warning: OpenLDAP-Backend must be setup with path to slapd (OpenLDAP-Daemon), e.g. --ol-slapd=\"/usr/local/libexec/slapd\"!")
     if ldap_backend_type == "openldap" and ol_slapd is not None:
-       ol_slapd = ol_slapd + "/slapd"
        if not os.path.exists(ol_slapd):
             message (ol_slapd)
             sys.exit("Warning: Given Path to slapd (OpenLDAP-Daemon) does not exist!")

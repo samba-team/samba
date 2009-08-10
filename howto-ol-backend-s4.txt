@@ -34,7 +34,7 @@ Simple provision-backend Example:
   --domain=LDAP --ldap-admin-pass="linux" \
   --ldap-backend-type=openldap \
   --server-role='domain controller' \
-  --ol-slapd="/usr/local/libexec"
+  --ol-slapd="/usr/local/libexec/slapd"
 
 After that, you should get a similar output:
 
