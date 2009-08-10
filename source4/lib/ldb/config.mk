@@ -47,18 +47,6 @@ SUBSYSTEM = LIBLDB
 ldb_paged_searches_OBJ_FILES = $(ldbsrcdir)/modules/paged_searches.o
 
 ################################################
-# Start MODULE ldb_operational
-[MODULE::ldb_operational]
-SUBSYSTEM = LIBLDB
-CFLAGS = -I$(ldbsrcdir)/include
-PRIVATE_DEPENDENCIES = LIBTALLOC LIBTEVENT
-INIT_FUNCTION = LDB_MODULE(operational)
-# End MODULE ldb_operational
-################################################
-
-ldb_operational_OBJ_FILES = $(ldbsrcdir)/modules/operational.o
-
-################################################
 # Start MODULE ldb_rdn_name
 [MODULE::ldb_rdn_name]
 SUBSYSTEM = LIBLDB

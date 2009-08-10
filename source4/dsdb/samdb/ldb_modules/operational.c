@@ -1,13 +1,14 @@
-/* 
+/*
    ldb database library
 
    Copyright (C) Andrew Tridgell 2005
    Copyright (C) Simo Sorce 2006-2008
+   Copyright (C) Matthias Dieter Wallnöfer 2009
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -21,6 +22,7 @@
    You should have received a copy of the GNU Lesser General Public
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
+
 /*
   handle operational attributes
  */
@@ -48,22 +50,26 @@
      on modify we need to change whenChanged
 
 
-  subschemaSubentry: HIDDEN, not-searchable, 
+  subschemaSubentry: HIDDEN, not-searchable,
                      points at DN CN=Aggregate,$SCHEMADN
 
      for this one we do the search as normal, then add the static
      value if requested. How do we work out the $BASEDN from inside a
      module?
-     
 
   structuralObjectClass: HIDDEN, CONSTRUCTED, not-searchable. always same as objectclass?
 
      for this one we do the search as normal, then if requested ask
      for objectclass, change the attribute name, and add it
 
-  allowedAttributesEffective: HIDDEN, CONSTRUCTED, not-searchable, 
+  allowedAttributesEffective: HIDDEN, CONSTRUCTED, not-searchable,
+
      list of attributes that can be modified - requires schema lookup
 
+  primaryGroupToken: HIDDEN, CONSTRUCTED, SEARCHABLE
+
+     contains the RID of a certain group object
+    
 
   attributeTypes: in schema only
   objectClasses: in schema only
@@ -76,6 +82,9 @@
 #include "ldb_includes.h"
 #include "ldb_module.h"
 
+#include "includes.h"
+#include "dsdb/samdb/samdb.h"
+
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
 #endif
@@ -83,7 +92,8 @@
 /*
   construct a canonical name from a message
 */
-static int construct_canonical_name(struct ldb_module *module, struct ldb_message *msg)
+static int construct_canonical_name(struct ldb_module *module,
+	struct ldb_message *msg)
 {
 	char *canonicalName;
 	canonicalName = ldb_dn_canonical_string(msg, msg->dn);
@@ -92,6 +102,28 @@ static int construct_canonical_name(struct ldb_module *module, struct ldb_messag
 	}
 	return ldb_msg_add_steal_string(msg, "canonicalName", canonicalName);
 }
+
+/*
+  construct a primary group token for groups from a message
+*/
+static int construct_primary_group_token(struct ldb_module *module,
+	struct ldb_message *msg)
+{
+	struct ldb_context *ldb;
+	uint32_t primary_group_token;
+
+	ldb = ldb_module_get_ctx(module);
+
+	if (samdb_search_count(ldb, ldb, msg->dn, "(objectclass=group)") == 1) {
+		primary_group_token
+			= samdb_result_rid_from_sid(ldb, msg, "objectSid", 0);
+		return samdb_msg_add_int(ldb, ldb, msg, "primaryGroupToken",
+			primary_group_token);
+	} else {
+		return LDB_SUCCESS;
+	}
+}
+
 
 /*
   a list of attribute names that should be substituted in the parse
@@ -118,17 +150,18 @@ static const struct {
 	{ "createTimestamp", "whenCreated", NULL },
 	{ "modifyTimestamp", "whenChanged", NULL },
 	{ "structuralObjectClass", "objectClass", NULL },
-	{ "canonicalName", "distinguishedName", construct_canonical_name }
+	{ "canonicalName", "distinguishedName", construct_canonical_name },
+	{ "primaryGroupToken", "objectSid", construct_primary_group_token }
 };
 
 /*
   post process a search result record. For any search_sub[] attributes that were
   asked for, we need to call the appropriate copy routine to copy the result
-  into the message, then remove any attributes that we added to the search but were
-  not asked for by the user
+  into the message, then remove any attributes that we added to the search but
+  were not asked for by the user
 */
 static int operational_search_post_process(struct ldb_module *module,
-					   struct ldb_message *msg, 
+					   struct ldb_message *msg,
 					   const char * const *attrs)
 {
 	struct ldb_context *ldb;
@@ -142,7 +175,7 @@ static int operational_search_post_process(struct ldb_module *module,
 				continue;
 			}
 
-			/* construct the new attribute, using either a supplied 
+			/* construct the new attribute, using either a supplied
 			   constructor or a simple copy */
 			if (search_sub[i].constructor) {
 				if (search_sub[i].constructor(module, msg) != 0) {
@@ -154,8 +187,8 @@ static int operational_search_post_process(struct ldb_module *module,
 				goto failed;
 			}
 
-			/* remove the added search attribute, unless it was asked for 
-			   by the user */
+			/* remove the added search attribute, unless it was
+ 			   asked for by the user */
 			if (search_sub[i].replace == NULL ||
 			    ldb_attr_in_list(attrs, search_sub[i].replace) ||
 			    ldb_attr_in_list(attrs, "*")) {
@@ -256,8 +289,8 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 	   searchable, but are stored using a different name in the
 	   backend */
 	for (i=0;i<ARRAY_SIZE(parse_tree_sub);i++) {
-		ldb_parse_tree_attr_replace(req->op.search.tree, 
-					    parse_tree_sub[i].attr, 
+		ldb_parse_tree_attr_replace(req->op.search.tree,
+					    parse_tree_sub[i].attr,
 					    parse_tree_sub[i].replace);
 	}
 

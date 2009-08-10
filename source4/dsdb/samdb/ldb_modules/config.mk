@@ -323,3 +323,14 @@ SUBSYSTEM = LIBLDB
 
 ldb_instancetype_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/instancetype.o
 
+################################################
+# Start MODULE ldb_operational
+[MODULE::ldb_operational]
+SUBSYSTEM = LIBLDB
+CFLAGS = -Ilib/ldb/include
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBTEVENT
+INIT_FUNCTION = LDB_MODULE(operational)
+# End MODULE ldb_operational
+################################################
+
+ldb_operational_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/operational.o
