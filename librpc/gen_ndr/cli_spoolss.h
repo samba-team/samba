@@ -1453,4 +1453,156 @@ NTSTATUS rpccli_spoolss_5f_recv(struct tevent_req *req,
 NTSTATUS rpccli_spoolss_5f(struct rpc_pipe_client *cli,
 			   TALLOC_CTX *mem_ctx,
 			   WERROR *werror);
+struct tevent_req *rpccli_spoolss_60_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct rpc_pipe_client *cli);
+NTSTATUS rpccli_spoolss_60_recv(struct tevent_req *req,
+				TALLOC_CTX *mem_ctx,
+				WERROR *result);
+NTSTATUS rpccli_spoolss_60(struct rpc_pipe_client *cli,
+			   TALLOC_CTX *mem_ctx,
+			   WERROR *werror);
+struct tevent_req *rpccli_spoolss_61_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct rpc_pipe_client *cli);
+NTSTATUS rpccli_spoolss_61_recv(struct tevent_req *req,
+				TALLOC_CTX *mem_ctx,
+				WERROR *result);
+NTSTATUS rpccli_spoolss_61(struct rpc_pipe_client *cli,
+			   TALLOC_CTX *mem_ctx,
+			   WERROR *werror);
+struct tevent_req *rpccli_spoolss_62_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct rpc_pipe_client *cli);
+NTSTATUS rpccli_spoolss_62_recv(struct tevent_req *req,
+				TALLOC_CTX *mem_ctx,
+				WERROR *result);
+NTSTATUS rpccli_spoolss_62(struct rpc_pipe_client *cli,
+			   TALLOC_CTX *mem_ctx,
+			   WERROR *werror);
+struct tevent_req *rpccli_spoolss_63_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct rpc_pipe_client *cli);
+NTSTATUS rpccli_spoolss_63_recv(struct tevent_req *req,
+				TALLOC_CTX *mem_ctx,
+				WERROR *result);
+NTSTATUS rpccli_spoolss_63(struct rpc_pipe_client *cli,
+			   TALLOC_CTX *mem_ctx,
+			   WERROR *werror);
+struct tevent_req *rpccli_spoolss_64_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct rpc_pipe_client *cli);
+NTSTATUS rpccli_spoolss_64_recv(struct tevent_req *req,
+				TALLOC_CTX *mem_ctx,
+				WERROR *result);
+NTSTATUS rpccli_spoolss_64(struct rpc_pipe_client *cli,
+			   TALLOC_CTX *mem_ctx,
+			   WERROR *werror);
+struct tevent_req *rpccli_spoolss_65_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct rpc_pipe_client *cli);
+NTSTATUS rpccli_spoolss_65_recv(struct tevent_req *req,
+				TALLOC_CTX *mem_ctx,
+				WERROR *result);
+NTSTATUS rpccli_spoolss_65(struct rpc_pipe_client *cli,
+			   TALLOC_CTX *mem_ctx,
+			   WERROR *werror);
+struct tevent_req *rpccli_spoolss_GetCorePrinterDrivers_send(TALLOC_CTX *mem_ctx,
+							     struct tevent_context *ev,
+							     struct rpc_pipe_client *cli,
+							     const char *_servername /* [in] [unique,charset(UTF16)] */,
+							     const char *_architecture /* [in] [ref,charset(UTF16)] */,
+							     uint32_t _core_driver_size /* [in]  */,
+							     const char *_core_driver_dependencies /* [in] [ref,charset(UTF16),size_is(core_driver_size)] */,
+							     uint32_t _core_printer_driver_count /* [in]  */,
+							     struct spoolss_CorePrinterDriver *_core_printer_drivers /* [out] [ref,size_is(core_printer_driver_count)] */);
+NTSTATUS rpccli_spoolss_GetCorePrinterDrivers_recv(struct tevent_req *req,
+						   TALLOC_CTX *mem_ctx,
+						   WERROR *result);
+NTSTATUS rpccli_spoolss_GetCorePrinterDrivers(struct rpc_pipe_client *cli,
+					      TALLOC_CTX *mem_ctx,
+					      const char *servername /* [in] [unique,charset(UTF16)] */,
+					      const char *architecture /* [in] [ref,charset(UTF16)] */,
+					      uint32_t core_driver_size /* [in]  */,
+					      const char *core_driver_dependencies /* [in] [ref,charset(UTF16),size_is(core_driver_size)] */,
+					      uint32_t core_printer_driver_count /* [in]  */,
+					      struct spoolss_CorePrinterDriver *core_printer_drivers /* [out] [ref,size_is(core_printer_driver_count)] */,
+					      WERROR *werror);
+struct tevent_req *rpccli_spoolss_67_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct rpc_pipe_client *cli);
+NTSTATUS rpccli_spoolss_67_recv(struct tevent_req *req,
+				TALLOC_CTX *mem_ctx,
+				WERROR *result);
+NTSTATUS rpccli_spoolss_67(struct rpc_pipe_client *cli,
+			   TALLOC_CTX *mem_ctx,
+			   WERROR *werror);
+struct tevent_req *rpccli_spoolss_GetPrinterDriverPackagePath_send(TALLOC_CTX *mem_ctx,
+								   struct tevent_context *ev,
+								   struct rpc_pipe_client *cli,
+								   const char *_servername /* [in] [unique,charset(UTF16)] */,
+								   const char *_architecture /* [in] [ref,charset(UTF16)] */,
+								   const char *_language /* [in] [unique,charset(UTF16)] */,
+								   const char *_package_id /* [in] [ref,charset(UTF16)] */,
+								   const char *_driver_package_cab /* [in,out] [unique,charset(UTF16),size_is(driver_package_cab_size)] */,
+								   uint32_t _driver_package_cab_size /* [in]  */,
+								   uint32_t *_required /* [out] [ref] */);
+NTSTATUS rpccli_spoolss_GetPrinterDriverPackagePath_recv(struct tevent_req *req,
+							 TALLOC_CTX *mem_ctx,
+							 WERROR *result);
+NTSTATUS rpccli_spoolss_GetPrinterDriverPackagePath(struct rpc_pipe_client *cli,
+						    TALLOC_CTX *mem_ctx,
+						    const char *servername /* [in] [unique,charset(UTF16)] */,
+						    const char *architecture /* [in] [ref,charset(UTF16)] */,
+						    const char *language /* [in] [unique,charset(UTF16)] */,
+						    const char *package_id /* [in] [ref,charset(UTF16)] */,
+						    const char *driver_package_cab /* [in,out] [unique,charset(UTF16),size_is(driver_package_cab_size)] */,
+						    uint32_t driver_package_cab_size /* [in]  */,
+						    uint32_t *required /* [out] [ref] */,
+						    WERROR *werror);
+struct tevent_req *rpccli_spoolss_69_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct rpc_pipe_client *cli);
+NTSTATUS rpccli_spoolss_69_recv(struct tevent_req *req,
+				TALLOC_CTX *mem_ctx,
+				WERROR *result);
+NTSTATUS rpccli_spoolss_69(struct rpc_pipe_client *cli,
+			   TALLOC_CTX *mem_ctx,
+			   WERROR *werror);
+struct tevent_req *rpccli_spoolss_6a_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct rpc_pipe_client *cli);
+NTSTATUS rpccli_spoolss_6a_recv(struct tevent_req *req,
+				TALLOC_CTX *mem_ctx,
+				WERROR *result);
+NTSTATUS rpccli_spoolss_6a(struct rpc_pipe_client *cli,
+			   TALLOC_CTX *mem_ctx,
+			   WERROR *werror);
+struct tevent_req *rpccli_spoolss_6b_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct rpc_pipe_client *cli);
+NTSTATUS rpccli_spoolss_6b_recv(struct tevent_req *req,
+				TALLOC_CTX *mem_ctx,
+				WERROR *result);
+NTSTATUS rpccli_spoolss_6b(struct rpc_pipe_client *cli,
+			   TALLOC_CTX *mem_ctx,
+			   WERROR *werror);
+struct tevent_req *rpccli_spoolss_6c_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct rpc_pipe_client *cli);
+NTSTATUS rpccli_spoolss_6c_recv(struct tevent_req *req,
+				TALLOC_CTX *mem_ctx,
+				WERROR *result);
+NTSTATUS rpccli_spoolss_6c(struct rpc_pipe_client *cli,
+			   TALLOC_CTX *mem_ctx,
+			   WERROR *werror);
+struct tevent_req *rpccli_spoolss_6d_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct rpc_pipe_client *cli);
+NTSTATUS rpccli_spoolss_6d_recv(struct tevent_req *req,
+				TALLOC_CTX *mem_ctx,
+				WERROR *result);
+NTSTATUS rpccli_spoolss_6d(struct rpc_pipe_client *cli,
+			   TALLOC_CTX *mem_ctx,
+			   WERROR *werror);
 #endif /* __CLI_SPOOLSS__ */

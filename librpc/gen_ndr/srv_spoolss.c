@@ -7481,6 +7481,1043 @@ static bool api_spoolss_5f(pipes_struct *p)
 	return true;
 }
 
+static bool api_spoolss_60(pipes_struct *p)
+{
+	const struct ndr_interface_call *call;
+	struct ndr_pull *pull;
+	struct ndr_push *push;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+	struct spoolss_60 *r;
+
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_60];
+
+	r = talloc(talloc_tos(), struct spoolss_60);
+	if (r == NULL) {
+		return false;
+	}
+
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull = ndr_pull_init_blob(&blob, r, NULL);
+	if (pull == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(spoolss_60, r);
+	}
+
+	r->out.result = _spoolss_60(p, r);
+
+	if (p->rng_fault_state) {
+		talloc_free(r);
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(spoolss_60, r);
+	}
+
+	push = ndr_push_init_ctx(r, NULL);
+	if (push == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	blob = ndr_push_blob(push);
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
+		talloc_free(r);
+		return false;
+	}
+
+	talloc_free(r);
+
+	return true;
+}
+
+static bool api_spoolss_61(pipes_struct *p)
+{
+	const struct ndr_interface_call *call;
+	struct ndr_pull *pull;
+	struct ndr_push *push;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+	struct spoolss_61 *r;
+
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_61];
+
+	r = talloc(talloc_tos(), struct spoolss_61);
+	if (r == NULL) {
+		return false;
+	}
+
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull = ndr_pull_init_blob(&blob, r, NULL);
+	if (pull == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(spoolss_61, r);
+	}
+
+	r->out.result = _spoolss_61(p, r);
+
+	if (p->rng_fault_state) {
+		talloc_free(r);
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(spoolss_61, r);
+	}
+
+	push = ndr_push_init_ctx(r, NULL);
+	if (push == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	blob = ndr_push_blob(push);
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
+		talloc_free(r);
+		return false;
+	}
+
+	talloc_free(r);
+
+	return true;
+}
+
+static bool api_spoolss_62(pipes_struct *p)
+{
+	const struct ndr_interface_call *call;
+	struct ndr_pull *pull;
+	struct ndr_push *push;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+	struct spoolss_62 *r;
+
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_62];
+
+	r = talloc(talloc_tos(), struct spoolss_62);
+	if (r == NULL) {
+		return false;
+	}
+
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull = ndr_pull_init_blob(&blob, r, NULL);
+	if (pull == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(spoolss_62, r);
+	}
+
+	r->out.result = _spoolss_62(p, r);
+
+	if (p->rng_fault_state) {
+		talloc_free(r);
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(spoolss_62, r);
+	}
+
+	push = ndr_push_init_ctx(r, NULL);
+	if (push == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	blob = ndr_push_blob(push);
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
+		talloc_free(r);
+		return false;
+	}
+
+	talloc_free(r);
+
+	return true;
+}
+
+static bool api_spoolss_63(pipes_struct *p)
+{
+	const struct ndr_interface_call *call;
+	struct ndr_pull *pull;
+	struct ndr_push *push;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+	struct spoolss_63 *r;
+
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_63];
+
+	r = talloc(talloc_tos(), struct spoolss_63);
+	if (r == NULL) {
+		return false;
+	}
+
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull = ndr_pull_init_blob(&blob, r, NULL);
+	if (pull == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(spoolss_63, r);
+	}
+
+	r->out.result = _spoolss_63(p, r);
+
+	if (p->rng_fault_state) {
+		talloc_free(r);
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(spoolss_63, r);
+	}
+
+	push = ndr_push_init_ctx(r, NULL);
+	if (push == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	blob = ndr_push_blob(push);
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
+		talloc_free(r);
+		return false;
+	}
+
+	talloc_free(r);
+
+	return true;
+}
+
+static bool api_spoolss_64(pipes_struct *p)
+{
+	const struct ndr_interface_call *call;
+	struct ndr_pull *pull;
+	struct ndr_push *push;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+	struct spoolss_64 *r;
+
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_64];
+
+	r = talloc(talloc_tos(), struct spoolss_64);
+	if (r == NULL) {
+		return false;
+	}
+
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull = ndr_pull_init_blob(&blob, r, NULL);
+	if (pull == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(spoolss_64, r);
+	}
+
+	r->out.result = _spoolss_64(p, r);
+
+	if (p->rng_fault_state) {
+		talloc_free(r);
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(spoolss_64, r);
+	}
+
+	push = ndr_push_init_ctx(r, NULL);
+	if (push == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	blob = ndr_push_blob(push);
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
+		talloc_free(r);
+		return false;
+	}
+
+	talloc_free(r);
+
+	return true;
+}
+
+static bool api_spoolss_65(pipes_struct *p)
+{
+	const struct ndr_interface_call *call;
+	struct ndr_pull *pull;
+	struct ndr_push *push;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+	struct spoolss_65 *r;
+
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_65];
+
+	r = talloc(talloc_tos(), struct spoolss_65);
+	if (r == NULL) {
+		return false;
+	}
+
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull = ndr_pull_init_blob(&blob, r, NULL);
+	if (pull == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(spoolss_65, r);
+	}
+
+	r->out.result = _spoolss_65(p, r);
+
+	if (p->rng_fault_state) {
+		talloc_free(r);
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(spoolss_65, r);
+	}
+
+	push = ndr_push_init_ctx(r, NULL);
+	if (push == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	blob = ndr_push_blob(push);
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
+		talloc_free(r);
+		return false;
+	}
+
+	talloc_free(r);
+
+	return true;
+}
+
+static bool api_spoolss_GetCorePrinterDrivers(pipes_struct *p)
+{
+	const struct ndr_interface_call *call;
+	struct ndr_pull *pull;
+	struct ndr_push *push;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+	struct spoolss_GetCorePrinterDrivers *r;
+
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_GETCOREPRINTERDRIVERS];
+
+	r = talloc(talloc_tos(), struct spoolss_GetCorePrinterDrivers);
+	if (r == NULL) {
+		return false;
+	}
+
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull = ndr_pull_init_blob(&blob, r, NULL);
+	if (pull == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(spoolss_GetCorePrinterDrivers, r);
+	}
+
+	ZERO_STRUCT(r->out);
+	r->out.core_printer_drivers = talloc_zero_array(r, struct spoolss_CorePrinterDriver, r->in.core_printer_driver_count);
+	if (r->out.core_printer_drivers == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	r->out.result = _spoolss_GetCorePrinterDrivers(p, r);
+
+	if (p->rng_fault_state) {
+		talloc_free(r);
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(spoolss_GetCorePrinterDrivers, r);
+	}
+
+	push = ndr_push_init_ctx(r, NULL);
+	if (push == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	blob = ndr_push_blob(push);
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
+		talloc_free(r);
+		return false;
+	}
+
+	talloc_free(r);
+
+	return true;
+}
+
+static bool api_spoolss_67(pipes_struct *p)
+{
+	const struct ndr_interface_call *call;
+	struct ndr_pull *pull;
+	struct ndr_push *push;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+	struct spoolss_67 *r;
+
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_67];
+
+	r = talloc(talloc_tos(), struct spoolss_67);
+	if (r == NULL) {
+		return false;
+	}
+
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull = ndr_pull_init_blob(&blob, r, NULL);
+	if (pull == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(spoolss_67, r);
+	}
+
+	r->out.result = _spoolss_67(p, r);
+
+	if (p->rng_fault_state) {
+		talloc_free(r);
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(spoolss_67, r);
+	}
+
+	push = ndr_push_init_ctx(r, NULL);
+	if (push == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	blob = ndr_push_blob(push);
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
+		talloc_free(r);
+		return false;
+	}
+
+	talloc_free(r);
+
+	return true;
+}
+
+static bool api_spoolss_GetPrinterDriverPackagePath(pipes_struct *p)
+{
+	const struct ndr_interface_call *call;
+	struct ndr_pull *pull;
+	struct ndr_push *push;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+	struct spoolss_GetPrinterDriverPackagePath *r;
+
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_GETPRINTERDRIVERPACKAGEPATH];
+
+	r = talloc(talloc_tos(), struct spoolss_GetPrinterDriverPackagePath);
+	if (r == NULL) {
+		return false;
+	}
+
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull = ndr_pull_init_blob(&blob, r, NULL);
+	if (pull == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(spoolss_GetPrinterDriverPackagePath, r);
+	}
+
+	ZERO_STRUCT(r->out);
+	r->out.driver_package_cab = r->in.driver_package_cab;
+	r->out.required = talloc_zero(r, uint32_t);
+	if (r->out.required == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	r->out.result = _spoolss_GetPrinterDriverPackagePath(p, r);
+
+	if (p->rng_fault_state) {
+		talloc_free(r);
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(spoolss_GetPrinterDriverPackagePath, r);
+	}
+
+	push = ndr_push_init_ctx(r, NULL);
+	if (push == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	blob = ndr_push_blob(push);
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
+		talloc_free(r);
+		return false;
+	}
+
+	talloc_free(r);
+
+	return true;
+}
+
+static bool api_spoolss_69(pipes_struct *p)
+{
+	const struct ndr_interface_call *call;
+	struct ndr_pull *pull;
+	struct ndr_push *push;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+	struct spoolss_69 *r;
+
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_69];
+
+	r = talloc(talloc_tos(), struct spoolss_69);
+	if (r == NULL) {
+		return false;
+	}
+
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull = ndr_pull_init_blob(&blob, r, NULL);
+	if (pull == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(spoolss_69, r);
+	}
+
+	r->out.result = _spoolss_69(p, r);
+
+	if (p->rng_fault_state) {
+		talloc_free(r);
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(spoolss_69, r);
+	}
+
+	push = ndr_push_init_ctx(r, NULL);
+	if (push == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	blob = ndr_push_blob(push);
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
+		talloc_free(r);
+		return false;
+	}
+
+	talloc_free(r);
+
+	return true;
+}
+
+static bool api_spoolss_6a(pipes_struct *p)
+{
+	const struct ndr_interface_call *call;
+	struct ndr_pull *pull;
+	struct ndr_push *push;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+	struct spoolss_6a *r;
+
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_6A];
+
+	r = talloc(talloc_tos(), struct spoolss_6a);
+	if (r == NULL) {
+		return false;
+	}
+
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull = ndr_pull_init_blob(&blob, r, NULL);
+	if (pull == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(spoolss_6a, r);
+	}
+
+	r->out.result = _spoolss_6a(p, r);
+
+	if (p->rng_fault_state) {
+		talloc_free(r);
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(spoolss_6a, r);
+	}
+
+	push = ndr_push_init_ctx(r, NULL);
+	if (push == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	blob = ndr_push_blob(push);
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
+		talloc_free(r);
+		return false;
+	}
+
+	talloc_free(r);
+
+	return true;
+}
+
+static bool api_spoolss_6b(pipes_struct *p)
+{
+	const struct ndr_interface_call *call;
+	struct ndr_pull *pull;
+	struct ndr_push *push;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+	struct spoolss_6b *r;
+
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_6B];
+
+	r = talloc(talloc_tos(), struct spoolss_6b);
+	if (r == NULL) {
+		return false;
+	}
+
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull = ndr_pull_init_blob(&blob, r, NULL);
+	if (pull == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(spoolss_6b, r);
+	}
+
+	r->out.result = _spoolss_6b(p, r);
+
+	if (p->rng_fault_state) {
+		talloc_free(r);
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(spoolss_6b, r);
+	}
+
+	push = ndr_push_init_ctx(r, NULL);
+	if (push == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	blob = ndr_push_blob(push);
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
+		talloc_free(r);
+		return false;
+	}
+
+	talloc_free(r);
+
+	return true;
+}
+
+static bool api_spoolss_6c(pipes_struct *p)
+{
+	const struct ndr_interface_call *call;
+	struct ndr_pull *pull;
+	struct ndr_push *push;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+	struct spoolss_6c *r;
+
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_6C];
+
+	r = talloc(talloc_tos(), struct spoolss_6c);
+	if (r == NULL) {
+		return false;
+	}
+
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull = ndr_pull_init_blob(&blob, r, NULL);
+	if (pull == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(spoolss_6c, r);
+	}
+
+	r->out.result = _spoolss_6c(p, r);
+
+	if (p->rng_fault_state) {
+		talloc_free(r);
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(spoolss_6c, r);
+	}
+
+	push = ndr_push_init_ctx(r, NULL);
+	if (push == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	blob = ndr_push_blob(push);
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
+		talloc_free(r);
+		return false;
+	}
+
+	talloc_free(r);
+
+	return true;
+}
+
+static bool api_spoolss_6d(pipes_struct *p)
+{
+	const struct ndr_interface_call *call;
+	struct ndr_pull *pull;
+	struct ndr_push *push;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+	struct spoolss_6d *r;
+
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_6D];
+
+	r = talloc(talloc_tos(), struct spoolss_6d);
+	if (r == NULL) {
+		return false;
+	}
+
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull = ndr_pull_init_blob(&blob, r, NULL);
+	if (pull == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(spoolss_6d, r);
+	}
+
+	r->out.result = _spoolss_6d(p, r);
+
+	if (p->rng_fault_state) {
+		talloc_free(r);
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(spoolss_6d, r);
+	}
+
+	push = ndr_push_init_ctx(r, NULL);
+	if (push == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	blob = ndr_push_blob(push);
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
+		talloc_free(r);
+		return false;
+	}
+
+	talloc_free(r);
+
+	return true;
+}
+
 
 /* Tables */
 static struct api_struct api_spoolss_cmds[] = 
@@ -7581,6 +8618,20 @@ static struct api_struct api_spoolss_cmds[] =
 	{"SPOOLSS_5D", NDR_SPOOLSS_5D, api_spoolss_5d},
 	{"SPOOLSS_5E", NDR_SPOOLSS_5E, api_spoolss_5e},
 	{"SPOOLSS_5F", NDR_SPOOLSS_5F, api_spoolss_5f},
+	{"SPOOLSS_60", NDR_SPOOLSS_60, api_spoolss_60},
+	{"SPOOLSS_61", NDR_SPOOLSS_61, api_spoolss_61},
+	{"SPOOLSS_62", NDR_SPOOLSS_62, api_spoolss_62},
+	{"SPOOLSS_63", NDR_SPOOLSS_63, api_spoolss_63},
+	{"SPOOLSS_64", NDR_SPOOLSS_64, api_spoolss_64},
+	{"SPOOLSS_65", NDR_SPOOLSS_65, api_spoolss_65},
+	{"SPOOLSS_GETCOREPRINTERDRIVERS", NDR_SPOOLSS_GETCOREPRINTERDRIVERS, api_spoolss_GetCorePrinterDrivers},
+	{"SPOOLSS_67", NDR_SPOOLSS_67, api_spoolss_67},
+	{"SPOOLSS_GETPRINTERDRIVERPACKAGEPATH", NDR_SPOOLSS_GETPRINTERDRIVERPACKAGEPATH, api_spoolss_GetPrinterDriverPackagePath},
+	{"SPOOLSS_69", NDR_SPOOLSS_69, api_spoolss_69},
+	{"SPOOLSS_6A", NDR_SPOOLSS_6A, api_spoolss_6a},
+	{"SPOOLSS_6B", NDR_SPOOLSS_6B, api_spoolss_6b},
+	{"SPOOLSS_6C", NDR_SPOOLSS_6C, api_spoolss_6c},
+	{"SPOOLSS_6D", NDR_SPOOLSS_6D, api_spoolss_6d},
 };
 
 void spoolss_get_pipe_fns(struct api_struct **fns, int *n_fns)
@@ -8566,6 +9617,103 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 		case NDR_SPOOLSS_5F: {
 			struct spoolss_5f *r = (struct spoolss_5f *)_r;
 			r->out.result = _spoolss_5f(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SPOOLSS_60: {
+			struct spoolss_60 *r = (struct spoolss_60 *)_r;
+			r->out.result = _spoolss_60(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SPOOLSS_61: {
+			struct spoolss_61 *r = (struct spoolss_61 *)_r;
+			r->out.result = _spoolss_61(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SPOOLSS_62: {
+			struct spoolss_62 *r = (struct spoolss_62 *)_r;
+			r->out.result = _spoolss_62(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SPOOLSS_63: {
+			struct spoolss_63 *r = (struct spoolss_63 *)_r;
+			r->out.result = _spoolss_63(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SPOOLSS_64: {
+			struct spoolss_64 *r = (struct spoolss_64 *)_r;
+			r->out.result = _spoolss_64(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SPOOLSS_65: {
+			struct spoolss_65 *r = (struct spoolss_65 *)_r;
+			r->out.result = _spoolss_65(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SPOOLSS_GETCOREPRINTERDRIVERS: {
+			struct spoolss_GetCorePrinterDrivers *r = (struct spoolss_GetCorePrinterDrivers *)_r;
+			ZERO_STRUCT(r->out);
+			r->out.core_printer_drivers = talloc_zero_array(mem_ctx, struct spoolss_CorePrinterDriver, r->in.core_printer_driver_count);
+			if (r->out.core_printer_drivers == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _spoolss_GetCorePrinterDrivers(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SPOOLSS_67: {
+			struct spoolss_67 *r = (struct spoolss_67 *)_r;
+			r->out.result = _spoolss_67(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SPOOLSS_GETPRINTERDRIVERPACKAGEPATH: {
+			struct spoolss_GetPrinterDriverPackagePath *r = (struct spoolss_GetPrinterDriverPackagePath *)_r;
+			ZERO_STRUCT(r->out);
+			r->out.driver_package_cab = r->in.driver_package_cab;
+			r->out.required = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.required == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _spoolss_GetPrinterDriverPackagePath(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SPOOLSS_69: {
+			struct spoolss_69 *r = (struct spoolss_69 *)_r;
+			r->out.result = _spoolss_69(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SPOOLSS_6A: {
+			struct spoolss_6a *r = (struct spoolss_6a *)_r;
+			r->out.result = _spoolss_6a(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SPOOLSS_6B: {
+			struct spoolss_6b *r = (struct spoolss_6b *)_r;
+			r->out.result = _spoolss_6b(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SPOOLSS_6C: {
+			struct spoolss_6c *r = (struct spoolss_6c *)_r;
+			r->out.result = _spoolss_6c(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SPOOLSS_6D: {
+			struct spoolss_6d *r = (struct spoolss_6d *)_r;
+			r->out.result = _spoolss_6d(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 

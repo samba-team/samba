@@ -2053,6 +2053,13 @@ struct spoolss_MonitorUi {
 #define APD_COPY_TO_ALL_SPOOLERS ( 0x00002000 )
 #define APD_RETURN_BLOCKING_STATUS_CODE ( 0x00010000 )
 
+struct spoolss_CorePrinterDriver {
+	struct GUID core_driver_guid;
+	NTTIME driver_date;
+	uint64_t driver_version;
+	const char *formname;/* [charset(UTF8)] */
+};
+
 
 struct _spoolss_EnumPrinters {
 	struct {
@@ -3640,6 +3647,138 @@ struct spoolss_5e {
 
 
 struct spoolss_5f {
+	struct {
+		WERROR result;
+	} out;
+
+};
+
+
+struct spoolss_60 {
+	struct {
+		WERROR result;
+	} out;
+
+};
+
+
+struct spoolss_61 {
+	struct {
+		WERROR result;
+	} out;
+
+};
+
+
+struct spoolss_62 {
+	struct {
+		WERROR result;
+	} out;
+
+};
+
+
+struct spoolss_63 {
+	struct {
+		WERROR result;
+	} out;
+
+};
+
+
+struct spoolss_64 {
+	struct {
+		WERROR result;
+	} out;
+
+};
+
+
+struct spoolss_65 {
+	struct {
+		WERROR result;
+	} out;
+
+};
+
+
+struct spoolss_GetCorePrinterDrivers {
+	struct {
+		const char *servername;/* [unique,charset(UTF16)] */
+		const char *architecture;/* [ref,charset(UTF16)] */
+		uint32_t core_driver_size;
+		const char *core_driver_dependencies;/* [ref,charset(UTF16),size_is(core_driver_size)] */
+		uint32_t core_printer_driver_count;
+	} in;
+
+	struct {
+		struct spoolss_CorePrinterDriver *core_printer_drivers;/* [ref,size_is(core_printer_driver_count)] */
+		WERROR result;
+	} out;
+
+};
+
+
+struct spoolss_67 {
+	struct {
+		WERROR result;
+	} out;
+
+};
+
+
+struct spoolss_GetPrinterDriverPackagePath {
+	struct {
+		const char *servername;/* [unique,charset(UTF16)] */
+		const char *architecture;/* [ref,charset(UTF16)] */
+		const char *language;/* [unique,charset(UTF16)] */
+		const char *package_id;/* [ref,charset(UTF16)] */
+		uint32_t driver_package_cab_size;
+		const char *driver_package_cab;/* [unique,charset(UTF16),size_is(driver_package_cab_size)] */
+	} in;
+
+	struct {
+		uint32_t *required;/* [ref] */
+		const char *driver_package_cab;/* [unique,charset(UTF16),size_is(driver_package_cab_size)] */
+		WERROR result;
+	} out;
+
+};
+
+
+struct spoolss_69 {
+	struct {
+		WERROR result;
+	} out;
+
+};
+
+
+struct spoolss_6a {
+	struct {
+		WERROR result;
+	} out;
+
+};
+
+
+struct spoolss_6b {
+	struct {
+		WERROR result;
+	} out;
+
+};
+
+
+struct spoolss_6c {
+	struct {
+		WERROR result;
+	} out;
+
+};
+
+
+struct spoolss_6d {
 	struct {
 		WERROR result;
 	} out;
