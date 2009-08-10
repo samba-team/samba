@@ -233,52 +233,6 @@ sub mk_openldap($$$)
 
 	my $slapd_conf = "$ldapdir/slapd.conf";
 	my $pidfile = "$ldapdir/slapd.pid";
-	my $modconf = "$ldapdir/modules.conf";
-
-	my $oldpath = $ENV{PATH};
-	my $olpath = "";
-	my $olroot = "";
-	if (defined $ENV{OPENLDAP_ROOT}) {
-               $olroot = "$ENV{OPENLDAP_ROOT}";
-	       $olpath = "$olroot/libexec:$olroot/sbin:";
-	}
-	$ENV{PATH} = "$olpath/usr/local/sbin:/usr/sbin:/sbin:$ENV{PATH}";
-
-	unlink($modconf);
-
-	#This code tries to guess what modules we need to load (if any) by trying different combinations in the modules.conf
-
-	# Try without any slapd modules
-	open(CONF, ">$modconf"); close(CONF);
-
-	if (system("slaptest -u -f $slapd_conf >&2") != 0) {
-		open(CONF, ">$modconf"); 
-		# enable slapd modules
-		print CONF "
-moduleload	syncprov
-moduleload      memberof
-moduleload      refint
-moduleload      deref
-";
-		close(CONF);
-	}
-	if (system("slaptest -u -f $slapd_conf >&2") != 0) {
-		open(CONF, ">$modconf"); 
-		# enable slapd modules, and the module for back_hdb
-		print CONF "
-moduleload	back_hdb
-moduleload	syncprov
-moduleload      memberof
-moduleload      refint
-moduleload      deref
-";
-		close(CONF);
-	}
-
-	system("slaptest -u -f $slapd_conf") == 0 or die("slaptest still fails after adding modules");
-
-    
-	$ENV{PATH} = $oldpath;
 
 	return ($slapd_conf, $pidfile);
 }
