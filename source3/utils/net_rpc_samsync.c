@@ -156,13 +156,14 @@ NTSTATUS rpc_samdump_internals(struct net_context *c,
 
 int rpc_vampire_usage(struct net_context *c, int argc, const char **argv)
 {
-	d_printf("net rpc vampire ([ldif [<ldif-filename>] | [keytab] [<keytab-filename]) [options]\n"
-		 "\t to pull accounts from a remote PDC where we are a BDC\n"
-		 "\t\t no args puts accounts in local passdb from smb.conf\n"
-		 "\t\t ldif - put accounts in ldif format (file defaults to "
-		 "/tmp/tmp.ldif)\n"
-		 "\t\t keytab - put account passwords in krb5 keytab (defaults "
-		 "to system keytab)\n");
+	d_printf(_("net rpc vampire ([ldif [<ldif-filename>] | [keytab] "
+		   "[<keytab-filename]) [options]\n"
+		   "\t to pull accounts from a remote PDC where we are a BDC\n"
+		   "\t\t no args puts accounts in local passdb from smb.conf\n"
+		   "\t\t ldif - put accounts in ldif format (file defaults to "
+		   "/tmp/tmp.ldif)\n"
+		   "\t\t keytab - put account passwords in krb5 keytab "
+		   "(defaults to system keytab)\n"));
 
 	net_common_flags_usage(c, argc, argv);
 	return -1;
@@ -183,11 +184,11 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 	struct samsync_context *ctx = NULL;
 
 	if (!sid_equal(domain_sid, get_global_sam_sid())) {
-		d_printf("Cannot import users from %s at this time, "
-			 "as the current domain:\n\t%s: %s\nconflicts "
-			 "with the remote domain\n\t%s: %s\n"
-			 "Perhaps you need to set: \n\n\tsecurity=user\n\t"
-			 "workgroup=%s\n\n in your smb.conf?\n",
+		d_printf(_("Cannot import users from %s at this time, "
+			   "as the current domain:\n\t%s: %s\nconflicts "
+			   "with the remote domain\n\t%s: %s\n"
+			   "Perhaps you need to set: \n\n\tsecurity=user\n\t"
+			   "workgroup=%s\n\n in your smb.conf?\n"),
 			 domain_name,
 			 get_global_sam_name(),
 			 sid_string_dbg(get_global_sam_sid()),
@@ -251,9 +252,9 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 int rpc_vampire_passdb(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf("Usage:\n"
-			 "net rpc vampire passdb\n"
-			 "    Dump remote SAM database to passdb\n");
+		d_printf(_("Usage:\n"
+			   "net rpc vampire passdb\n"
+			   "    Dump remote SAM database to passdb\n"));
 		return 0;
 	}
 
@@ -332,9 +333,10 @@ NTSTATUS rpc_vampire_ldif_internals(struct net_context *c,
 int rpc_vampire_ldif(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf("Usage:\n"
-			 "net rpc vampire ldif\n"
-			 "    Dump remote SAM database to LDIF file or stdout\n");
+		d_printf(_("Usage:\n"
+			   "net rpc vampire ldif\n"
+			   "    Dump remote SAM database to LDIF file or "
+			   "stdout\n"));
 		return 0;
 	}
 
@@ -475,9 +477,10 @@ int rpc_vampire_keytab(struct net_context *c, int argc, const char **argv)
 	struct net_dc_info dc_info;
 
 	if (c->display_usage || (argc < 1)) {
-		d_printf("Usage:\n"
-			 "net rpc vampire keytab <keytabfile>\n"
-			 "    Dump remote SAM database to Kerberos keytab file\n");
+		d_printf(_("Usage:\n"
+			   "net rpc vampire keytab <keytabfile>\n"
+			   "    Dump remote SAM database to Kerberos keytab "
+			   "file\n"));
 		return 0;
 	}
 
@@ -492,7 +495,7 @@ int rpc_vampire_keytab(struct net_context *c, int argc, const char **argv)
 	}
 
 	if (!dc_info.is_ad) {
-		printf("DC is not running Active Directory\n");
+		printf(_("DC is not running Active Directory\n"));
 		ret = run_rpc_command(c, cli, &ndr_table_netlogon.syntax_id,
 				      0,
 				      rpc_vampire_keytab_internals, argc, argv);
@@ -502,7 +505,8 @@ int rpc_vampire_keytab(struct net_context *c, int argc, const char **argv)
 				      NET_FLAGS_SEAL,
 				      rpc_vampire_keytab_ds_internals, argc, argv);
 		if (ret != 0 && dc_info.is_mixed_mode) {
-			printf("Fallback to NT4 vampire on Mixed-Mode AD Domain\n");
+			printf(_("Fallback to NT4 vampire on Mixed-Mode AD "
+				 "Domain\n"));
 			ret = run_rpc_command(c, cli, &ndr_table_netlogon.syntax_id,
 					      0,
 					      rpc_vampire_keytab_internals, argc, argv);
