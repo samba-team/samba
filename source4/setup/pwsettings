@@ -77,8 +77,9 @@ try:
 	pwd_props = int(res[0]["pwdProperties"][0])
 	pwd_hist_len = int(res[0]["pwdHistoryLength"][0])
 	min_pwd_len = int(res[0]["minPwdLength"][0])
-	min_pwd_age = int(res[0]["minPwdAge"][0])
-	max_pwd_age = int(res[0]["maxPwdAge"][0])
+	# ticks -> days
+	min_pwd_age = int(abs(int(res[0]["minPwdAge"][0])) / (10e7 * 60 * 60 * 24))
+	max_pwd_age = int(abs(int(res[0]["maxPwdAge"][0])) / (10e7 * 60 * 60 * 24))
 except:
 	if args[0] == "show":
 		print "ERROR: Password informations missing in your AD domain object!"
@@ -98,8 +99,8 @@ if args[0] == "show":
 		print "Password complexity: off"
 	print "Password history length: " + str(pwd_hist_len)
 	print "Minimum password length: " + str(min_pwd_len)
-	print "Minimum password age: " + str(min_pwd_age)
-	print "Maximum password age: " + str(max_pwd_age)
+	print "Minimum password age (days): " + str(min_pwd_age)
+	print "Maximum password age (days): " + str(max_pwd_age)
 
 elif args[0] == "set":
 	if opts.complexity is not None:
@@ -168,6 +169,8 @@ elif args[0] == "set":
 			min_pwd_age = 0
 		else:
 			min_pwd_age = int(opts.min_pwd_age)
+		# days -> ticks
+		min_pwd_age = -int(min_pwd_age * (24 * 60 * 60 * 10e7))
 
 		m = ldb.Message()
 		m.dn = ldb.Dn(samdb, domain_dn)
@@ -181,9 +184,11 @@ elif args[0] == "set":
 
 	if opts.max_pwd_age is not None:
 		if opts.max_pwd_age == "default":
-			max_pwd_age = -37108517437440
+			max_pwd_age = 43
 		else:
 			max_pwd_age = int(opts.max_pwd_age)
+		# days -> ticks
+		max_pwd_age = -int(max_pwd_age * (24 * 60 * 60 * 10e7))
 
 		m = ldb.Message()
 		m.dn = ldb.Dn(samdb, domain_dn)
