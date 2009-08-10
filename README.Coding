@@ -11,7 +11,7 @@ Coding style guidelines are about reducing the number of unnecessary
 reformatting patches and making things easier for developers to work together.
 You don't have to like them or even agree with them, but once put in place
 we all have to abide by them (or vote to change them).  However, coding
-style should never outweigh coding itself and so the the guidelines
+style should never outweigh coding itself and so the guidelines
 described here are hopefully easy enough to follow as they are very
 common and supported by tools and editors.
 
@@ -25,18 +25,18 @@ are the highlights.
 * Maximum Line Width is 80 Characters
   The reason is not for people with low-res screens but rather sticking
   to 80 columns prevents you from easily nesting more than one level of
-  if statements or other code blocks.  Use source/script/count_80_col.pl
+  if statements or other code blocks.  Use source3/script/count_80_col.pl
   to check your changes.
 
 * Use 8 Space Tabs to Indent
   No whitespace filler.
 
 * No Trailing Whitespace
-  Use source/script/strip_trail_ws.pl to clean you files before committing.
+  Use source3/script/strip_trail_ws.pl to clean you files before committing.
 
 * Follow the K&R guidelines.  We won't go throw them all here.  You have
   a copy of "The C Programming Language" anyways right?  You can also use
-  the format_indent.sh script found in source/script/ if all else fails.
+  the format_indent.sh script found in source3/script/ if all else fails.
 
 
 
@@ -58,7 +58,7 @@ Vi
 --
 (Thanks to SATOH Fumiyasu <fumiyas@osstech.jp> for these hints):
 
-For the basic vi editor including with all variants of \*nix, add the 
+For the basic vi editor included with all variants of \*nix, add the
 following to $HOME/.exrc:
 
   set tabstop=8
@@ -99,7 +99,7 @@ Indention & Whitespace & 80 columns
 
 To avoid confusion, indentations are to be 8 character with tab (not 
 8 ' ' characters.  When wrapping parameters for function calls, 
-alignment parameter list with the first parameter on the previous line.
+align the parameter list with the first parameter on the previous line.
 Use tabs to get as close as possible and then fill in the final 7 
 characters or less with whitespace.  For example,
 
@@ -132,7 +132,7 @@ Note that this is a rule about parentheses following keywords and not
 functions.  Don't insert a space between the name and left parentheses when 
 invoking functions.
 
-Braces for code blocks used by for, if, switch, while, do..while, etc...
+Braces for code blocks used by for, if, switch, while, do..while, etc.
 should begin on the same line as the statement keyword and end on a line 
 of their own.  NOTE: Functions are different and the beginning left brace
 should begin on a line of its own.
