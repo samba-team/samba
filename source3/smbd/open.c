@@ -3278,6 +3278,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	}
 	if ((fsp->fh != NULL) && (fsp->fh->fd != -1)) {
 		SMB_VFS_FSTAT(fsp, &smb_fname->st);
+		fsp->fsp_name->st = smb_fname->st;
 	}
 	return NT_STATUS_OK;
 
