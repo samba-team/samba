@@ -10498,3 +10498,156 @@ WERROR _spoolss_5f(pipes_struct *p,
 	return WERR_NOT_SUPPORTED;
 }
 
+/****************************************************************
+ _spoolss_60
+****************************************************************/
+
+WERROR _spoolss_60(pipes_struct *p,
+		   struct spoolss_60 *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_61
+****************************************************************/
+
+WERROR _spoolss_61(pipes_struct *p,
+		   struct spoolss_61 *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_62
+****************************************************************/
+
+WERROR _spoolss_62(pipes_struct *p,
+		   struct spoolss_62 *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_63
+****************************************************************/
+
+WERROR _spoolss_63(pipes_struct *p,
+		   struct spoolss_63 *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_64
+****************************************************************/
+
+WERROR _spoolss_64(pipes_struct *p,
+		   struct spoolss_64 *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_65
+****************************************************************/
+
+WERROR _spoolss_65(pipes_struct *p,
+		   struct spoolss_65 *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_GetCorePrinterDrivers
+****************************************************************/
+
+WERROR _spoolss_GetCorePrinterDrivers(pipes_struct *p,
+				      struct spoolss_GetCorePrinterDrivers *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_67
+****************************************************************/
+
+WERROR _spoolss_67(pipes_struct *p,
+		   struct spoolss_67 *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_GetPrinterDriverPackagePath
+****************************************************************/
+
+WERROR _spoolss_GetPrinterDriverPackagePath(pipes_struct *p,
+					    struct spoolss_GetPrinterDriverPackagePath *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_69
+****************************************************************/
+
+WERROR _spoolss_69(pipes_struct *p,
+		   struct spoolss_69 *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_6a
+****************************************************************/
+
+WERROR _spoolss_6a(pipes_struct *p,
+		   struct spoolss_6a *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_6b
+****************************************************************/
+
+WERROR _spoolss_6b(pipes_struct *p,
+		   struct spoolss_6b *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_6c
+****************************************************************/
+
+WERROR _spoolss_6c(pipes_struct *p,
+		   struct spoolss_6c *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_6d
+****************************************************************/
+
+WERROR _spoolss_6d(pipes_struct *p,
+		   struct spoolss_6d *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
