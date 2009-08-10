@@ -151,6 +151,313 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		uint32 reserved3;
 	} spoolss_PrinterInfo0;
 
+	/* Device Mode Extra Data */
+
+	typedef [v1_enum] enum {
+		SPOOLSS_DM_SIGNATURE_UNIDRVEXTRA	= 0x554e4944, /* 0x44494e55 */
+		SPOOLSS_DM_SIGNATURE_JTEXP		= 0x4a544d53, /* 0x534d544a */
+		SPOOLSS_DM_SIGNATURE_PSEXTRA		= 0x50524956 /* 0x56495250 */
+	} spoolss_DM_Signature;
+
+	typedef [v1_enum] enum {
+		SPOOLSS_DM_LAYOUT_NUP_DISABLED		= 0x00000000,
+		SPOOLSS_DM_LAYOUT_NUP_2			= 0x00000001,
+		SPOOLSS_DM_LAYOUT_NUP_4			= 0x00000002,
+		SPOOLSS_DM_LAYOUT_NUP_6			= 0x00000003,
+		SPOOLSS_DM_LAYOUT_NUP_9			= 0x00000004,
+		SPOOLSS_DM_LAYOUT_NUP_16		= 0x00000005,
+		SPOOLSS_DM_LAYOUT_BOOKLET		= 0x00000006
+	} spoolss_DM_Layout;
+
+	typedef [v1_enum] enum {
+		SPOOLSS_DM_NUP_DIRECTION_L2R_T2B	= 0x00000001,
+		SPOOLSS_DM_NUP_DIRECTION_T2B_L2R	= 0x00000002,
+		SPOOLSS_DM_NUP_DIRECTION_R2L_T2B	= 0x00000004,
+		SPOOLSS_DM_NUP_DIRECTION_T2B_R2L	= 0x00000008
+	} spoolss_DM_NupDirection;
+
+	typedef [v1_enum] enum {
+		SPOOLSS_DM_NUP_BORDER_PRINT		= 0x00000000,
+		SPOOLSS_DM_NUP_BORDER_NONE		= 0x00000001
+	} spoolss_DM_NupBorderFlags;
+
+	typedef [v1_enum] enum {
+		SPOOLSS_DM_BOOKLET_LEFT_FLIP		= 0x00000000,
+		SPOOLSS_DM_BOOKLET_RIGHT_FLIP		= 0x00000001
+	} spoolss_DM_BookletFlags;
+
+	/* Device Mode Extra Data: PostScript */
+
+	/* NT 3.51 */
+
+	typedef [bitmap32bit] bitmap {
+		SPOOLSS_DM_PS_FLAGS_DRV_ERROR_HANDLER	= 0x00000002,
+		SPOOLSS_DM_PS_FLAGS_PRINT_MIRROR	= 0x00000004,
+		SPOOLSS_DM_PS_FLAGS_PRINT_NEGATIVE	= 0x00000010,
+		SPOOLSS_DM_PS_FLAGS_COMPRESS_BITMAP	= 0x00000040,
+		SPOOLSS_DM_PS_FLAGS_ROTATE_180		= 0x00000200,
+		SPOOLSS_DM_PS_FLAGS_GDI_METAFILE_SPOOL	= 0x00002000
+	} spoolss_DMPS_Flags;
+
+	typedef struct {
+		[value(SPOOLSS_DM_SIGNATURE_PSEXTRA)] spoolss_DM_Signature dwSignature;
+		spoolss_DMPS_Flags dwFlags;
+		uint32 wchEPSFile[12];
+		[value(24)] uint16 caSize;
+		uint16 caFlags;
+		uint16 caIlluminantIndex;
+		uint16 caRedGamma;
+		uint16 caGreenGamma;
+		uint16 caBlueGamma;
+		uint16 caReferenceBlack;
+		uint16 caReferenceWhite;
+		uint16 caContrast;
+		uint16 caBrightness;
+		uint16 caColorfulness;
+		uint16 caRedGreenTint;
+	} spoolss_PSDRVEXTRA351;
+
+	/* NT 4.0 */
+
+	typedef struct {
+		[value(SPOOLSS_DM_SIGNATURE_PSEXTRA)] spoolss_DM_Signature dwSignature;
+		spoolss_DMPS_Flags dwFlags;
+		uint32 wchEPSFile[12];
+		[value(24)] uint16 caSize;
+		uint16 caFlags;
+		uint16 caIlluminantIndex;
+		uint16 caRedGamma;
+		uint16 caGreenGamma;
+		uint16 caBlueGamma;
+		uint16 caReferenceBlack;
+		uint16 caReferenceWhite;
+		uint16 caContrast;
+		uint16 caBrightness;
+		uint16 caColorfulness;
+		uint16 caRedGreenTint;
+		uint16 wChecksum;
+		uint16 wOptions;
+		uint32 aubOptions[8];
+	} spoolss_PSDRVEXTRA400;
+
+	/* 2000 & XP */
+
+	typedef [v1_enum] enum {
+		SPOOLSS_DM_PS_OPTIMIZE_SPEED		= 0x00000000,
+		SPOOLSS_DM_PS_OPTIMIZE_PORTABILITY	= 0x00000001,
+		SPOOLSS_DM_PS_OPTIMIZE_EPS		= 0x00000002,
+		SPOOLSS_DM_PS_OPTIMIZE_ARCHIVAL		= 0x00000003
+	} spoolss_DMPS_Dialect;
+
+	typedef [v1_enum] enum {
+		SPOOLSS_DM_PS_TTDLFMT_DEFAULT		= 0x00000000,
+		SPOOLSS_DM_PS_TTDLFMT_TYPE_1		= 0x00000001,
+		SPOOLSS_DM_PS_TTDLFMT_TYPE_3		= 0x00000002,
+		SPOOLSS_DM_PS_TTDLFMT_TYPE_42		= 0x00000003
+	} spoolss_DMPS_TTDLFmt;
+
+	typedef [v1_enum] enum {
+		SPOOLSS_DM_PS_PSLEVEL_1	= 0x00000001,
+		SPOOLSS_DM_PS_PSLEVEL_2	= 0x00000002,
+		SPOOLSS_DM_PS_PSLEVEL_3	= 0x00000003
+	} spoolss_DMPS_PSLevel;
+
+	typedef enum {
+		SPOOLSS_DM_PS_FEED_DIRECTION_LONG_EDGE_FIRST		= 0x0000,
+		SPOOLSS_DM_PS_FEED_DIRECTION_SHORT_EDGE_FIRST		= 0x0001,
+		SPOOLSS_DM_PS_FEED_DIRECTION_LONG_EDGE_FIRST_UPSIDEDOWN	= 0x0002,
+		SPOOLSS_DM_PS_FEED_DIRECTION_SHORT_EDGE_FIRST_UPSIDEDOWN= 0x0003
+	} spoolss_DMPS_FeedDirection;
+
+	typedef struct {
+		[value(SPOOLSS_DM_SIGNATURE_PSEXTRA)] spoolss_DM_Signature dwSignature;
+		spoolss_DMPS_Flags dwFlags;
+		uint32 wchEPSFile[12];
+		[value(24)] uint16 caSize;
+		uint16 caFlags;
+		uint16 caIlluminantIndex;
+		uint16 caRedGamma;
+		uint16 caGreenGamma;
+		uint16 caBlueGamma;
+		uint16 caReferenceBlack;
+		uint16 caReferenceWhite;
+		uint16 caContrast;
+		uint16 caBrightness;
+		uint16 caColorfulness;
+		uint16 caRedGreenTint;
+		uint16 wReserved1;
+		uint16 wSize;
+		uint32 fxScrFreq;
+		uint32 fxScrAngle;
+		spoolss_DMPS_Dialect iDialect;
+		spoolss_DMPS_TTDLFmt iTTDLFmt;
+		boolean32 bReversePrint;
+		spoolss_DM_Layout iLayout;
+		spoolss_DMPS_PSLevel iPSLevel;
+		uint32 dwReserved2;
+		uint16 wOEMExtra;
+		[value(0x0010)] uint16 wVer;
+		uint32 dwX;
+		uint32 dwY;
+		uint32 dwWidthOffset;
+		uint32 dwHeightOffset;
+		spoolss_DMPS_FeedDirection wFeedDirection;
+		uint16 wCutSheet;
+		uint32 dwReserved3[4];
+		uint32 dwChecksum32;
+		uint32 dwOptions;
+		uint32 aOptions[128];
+	} spoolss_PSDRVEXTRA500;
+
+	/* Vista, 2008, 7 */
+
+	typedef struct {
+		[value(SPOOLSS_DM_SIGNATURE_PSEXTRA)] spoolss_DM_Signature dwSignature;
+		spoolss_DMPS_Flags dwFlags;
+		uint32 wchEPSFile[12];
+		[value(24)] uint16 caSize;
+		uint16 caFlags;
+		uint16 caIlluminantIndex;
+		uint16 caRedGamma;
+		uint16 caGreenGamma;
+		uint16 caBlueGamma;
+		uint16 caReferenceBlack;
+		uint16 caReferenceWhite;
+		uint16 caContrast;
+		uint16 caBrightness;
+		uint16 caColorfulness;
+		uint16 caRedGreenTint;
+		uint16 wCoreJTExpSize;
+		[value(sizeof(spoolss_PSDRVEXTRA) + wCoreJTExpSize)] uint16 wCoreFullSize;
+		uint32 fxScrFreq;
+		uint32 fxScrAngle;
+		spoolss_DMPS_Dialect iDialect;
+		spoolss_DMPS_TTDLFmt iTTDLFmt;
+		boolean32 bReversePrint;
+		spoolss_DM_Layout iLayout;
+		spoolss_DMPS_PSLevel iPSLevel;
+		uint32 dwReserved2;
+		uint16 wOEMExtra;
+		[value(0x0010)] uint16 wVer;
+		uint32 dwX;
+		uint32 dwY;
+		uint32 dwWidthOffset;
+		uint32 dwHeightOffset;
+		spoolss_DMPS_FeedDirection wFeedDirection;
+		uint16 wCutSheet;
+		uint32 dwReserved3[4];
+		uint32 dwChecksum32;
+		uint32 dwOptions;
+		uint32 aOptions[128];
+		spoolss_DM_NupDirection dwNupDirection;
+		spoolss_DM_NupBorderFlags dwNupBorderFlags;
+		spoolss_DM_BookletFlags dwBookletFlags;
+		uint32 dwPadding;
+	} spoolss_PSDRVEXTRA;
+
+	/* Device Mode Extra Data: UniDriver */
+
+	/* NT 3.5, NT 4.0 */
+
+	typedef struct {
+		uint16 wReserved[56];
+	} spoolss_UNIDRVEXTRA3_4;
+
+	/* 2000, XP */
+
+	typedef [v1_enum] enum {
+		SPOOLSS_DM_UNI_QUALITY_BEST		= 0x00000000,
+		SPOOLSS_DM_UNI_QUALITY_MEDIUM		= 0x00000001,
+		SPOOLSS_DM_UNI_QUALITY_DRAFT		= 0x00000002
+	} spoolss_DMUNI_Quality;
+
+	typedef [bitmap32bit] bitmap {
+		SPOOLSS_DM_UNI_FLAGS_PRINT_TEXT_AS_GRAPHICS	= 0x00000002,
+		SPOOLSS_DM_UNI_FLAGS_AVOID_EMFSPOOL		= 0x00000010,
+		SPOOLSS_DM_UNI_FLAGS_CUSTOM_HALFTONING		= 0x00000080
+	} spoolss_DMUNI_Flags;
+
+	typedef struct {
+		[value(SPOOLSS_DM_SIGNATURE_UNIDRVEXTRA)] spoolss_DM_Signature dwSignature;
+		[value(0x0022)] uint16 wVer;
+		uint16 sPadding;
+		uint16 wSize;
+		uint16 wOEMExtra;
+		uint32 dwChecksum32;
+		spoolss_DMUNI_Flags dwFlags;
+		boolean32 bReversePrint;
+		spoolss_DM_Layout iLayout;
+		spoolss_DMUNI_Quality iQuality;
+		uint16 wReserved[6];
+		uint32 dwOptions;
+		uint32 aOptions[128];
+	} spoolss_UNIDRVEXTRA500;
+
+	/* Vista, 2008, 7 */
+
+	typedef [public,gensize] struct {
+		[value(SPOOLSS_DM_SIGNATURE_UNIDRVEXTRA)] spoolss_DM_Signature dwSignature;
+		[value(0x0022)] uint16 wVer;
+		uint16 wCoreJTExpSize;
+		[value(ndr_size_spoolss_UNIDRVEXTRA(r, NULL, 0) + wCoreJTExpSize)] uint16 wCoreFullSize;
+		uint16 wOEMExtra;
+		uint32 dwChecksum32;
+		spoolss_DMUNI_Flags dwFlags;
+		boolean32 bReversePrint;
+		spoolss_DM_Layout iLayout;
+		spoolss_DMUNI_Quality iQuality;
+		uint16 wReserved[6];
+		uint32 dwOptions;
+		uint32 aOptions[128];
+		spoolss_DM_NupDirection dwNupDirection;
+		spoolss_DM_NupBorderFlags dwNupBorderFlags;
+		spoolss_DM_BookletFlags dwBookletFlags;
+	} spoolss_UNIDRVEXTRA;
+
+	/* Device Mode Extra Data: JTEXP */
+
+	typedef struct {
+		uint32 dwSize;
+		[value(SPOOLSS_DM_SIGNATURE_JTEXP)] spoolss_DM_Signature dwSignature;
+		[value(0)] uint32 dwVersion;
+		[value(16)] uint32 wJTHdrSize;
+		uint32 wCoreMFOSize;
+//		[value(strlen_m(ModelName) + ndr_size_X)] uint32 wCoreMFOSize;
+		[string,charset(UTF16)] uint16 *ModelName;
+		nstring_array FeatureOptionPairs;
+		/*
+		FeatureOptionPairs (variable): Must be a concatenation of an
+		even number of zero-terminated ASCII strings, terminated by an
+		additional zero character. Each pair of two consecutive strings
+		specifies a print schema feature and the currently selected
+		option.
+		*/
+	} spoolss_JTEXP;
+
+	/* Device Mode Extra Data: OEM_DMEXTRA */
+
+	typedef struct {
+		uint32 dwSize;
+		spoolss_DM_Signature dwSignature;
+		uint32 dwVersion;
+		[flag(NDR_REMAINING)] DATA_BLOB Data;
+	} spoolss_OEM_DMEXTRA;
+
+	typedef [nodiscriminant] union {
+		[case(0x0350)] spoolss_PSDRVEXTRA351	psdrvextra351;
+		[case(0x0400)] spoolss_PSDRVEXTRA400	psdrvextra400;
+		[case(0x0501)] spoolss_PSDRVEXTRA500	psdrvextra500;
+		[case(0x0600)] spoolss_PSDRVEXTRA	psdrvextra;
+		[default] [flag(NDR_REMAINING)] DATA_BLOB psblob;
+	} spoolss_DeviceModeExtraDataPostScript;
+
+	typedef [nodiscriminant] union {
+		[case(0x0301)] spoolss_UNIDRVEXTRA3_4	unidrvextra3_4;
+		[case(0x0500)] spoolss_UNIDRVEXTRA500	unidrvextra500;
+		[case(0x0600)] spoolss_UNIDRVEXTRA	unidrvextra;
+		[default] [flag(NDR_REMAINING)] DATA_BLOB uniblob;
+	} spoolss_DeviceModeExtraDataUniDriver;
+
 	typedef [bitmap32bit] bitmap {
 		DEVMODE_ORIENTATION		= 0x00000001,
 		DEVMODE_PAPERSIZE		= 0x00000002,
