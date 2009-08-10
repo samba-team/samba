@@ -179,41 +179,230 @@ import "misc.idl", "security.idl", "winreg.idl";
 		DEVMODE_PANNINGHEIGHT		= 0x10000000
 	} spoolss_DeviceModeFields;
 
+	typedef [enum16bit] enum {
+		DMSPEC_NT3		= 0x320,
+		DMSPEC_WIN95_98_ME	= 0x400,
+		DMSPEC_NT4_AND_ABOVE	= 0x401
+	} spoolss_DeviceModeSpecVersion;
+
+	typedef [enum16bit] enum {
+		DMORIENT_PORTRAIT	= 0x0001,
+		DMORIENT_LANDSCAPE	= 0x0002
+	} spoolss_DeviceModeOrientation;
+
+	typedef [enum16bit] enum {
+		DMPAPER_LETTER			= 0x0001, /* Letter, 8 1/2 x 11 inches */
+		DMPAPER_LETTERSMALL		= 0x0002, /* Letter Small, 8 1/2 x 11 inches */
+		DMPAPER_TABLOID			= 0x0003, /* Tabloid, 11 x 17 inches */
+		DMPAPER_LEDGER			= 0x0004, /* Ledger, 17 x 11 inches */
+		DMPAPER_LEGAL			= 0x0005, /* Legal, 8 1/2 x 14 inches */
+		DMPAPER_STATEMENT		= 0x0006, /* Statement, 5 1/2 x 8 1/2 inches */
+		DMPAPER_EXECUTIVE		= 0x0007, /* Executive, 7 1/4 x 10 1/2 inches */
+		DMPAPER_A3			= 0x0008, /* A3 sheet, 297 x 420 millimeters */
+		DMPAPER_A4			= 0x0009, /* A4 sheet, 210 x 297 millimeters */
+		DMPAPER_A4SMALL			= 0x000A, /* A4 small sheet, 210 x 297 millimeters */
+		DMPAPER_A5			= 0x000B, /* A5 sheet, 148 x 210 millimeters */
+		DMPAPER_B4			= 0x000C, /* B4 sheet, 250 x 354 millimeters */
+		DMPAPER_B5			= 0x000D, /* B5 sheet, 182 x 257-millimeter paper */
+		DMPAPER_FOLIO			= 0x000E, /* Folio, 8 1/2 x 13-inch paper */
+		DMPAPER_QUARTO			= 0x000F, /* Quarto, 215 x 275 millimeter paper */
+		DMPAPER_10X14			= 0x0010, /* 10 x 14-inch sheet */
+		DMPAPER_11X17			= 0x0011, /* 11 x 17-inch sheet */
+		DMPAPER_NOTE			= 0x0012, /* Note, 8 1/2 x 11-inches */
+		DMPAPER_ENV_9			= 0x0013, /* #9 Envelope, 3 7/8 x 8 7/8 inches */
+		DMPAPER_ENV_10			= 0x0014, /* #10 Envelope, 4 1/8 x 9 1/2 inches */
+		DMPAPER_ENV_11			= 0x0015, /* #11 Envelope, 4 1/2 x 10 3/8 inches */
+		DMPAPER_ENV_12			= 0x0016, /* #12 Envelope, 4 3/4 x 11 inches */
+		DMPAPER_ENV_14			= 0x0017, /* #14 Envelope, 5 x 11 1/2 inches */
+		DMPAPER_CSHEET			= 0x0018, /* C Sheet, 17 x 22 inches */
+		DMPAPER_DSHEET			= 0x0019, /* D Sheet, 22 x 34 inches */
+		DMPAPER_ESHEET			= 0x001A, /* E Sheet, 34 x 44 inches */
+		DMPAPER_ENV_DL			= 0x001B, /* DL Envelope, 110 x 220 millimeters */
+		DMPAPER_ENV_C5			= 0x001C, /* C5 Envelope, 162 x 229 millimeters */
+		DMPAPER_ENV_C3			= 0x001D, /* C3 Envelope, 324 x 458 millimeters */
+		DMPAPER_ENV_C4			= 0x001E, /* C4 Envelope, 229 x 324 millimeters */
+		DMPAPER_ENV_C6			= 0x001F, /* C6 Envelope, 114 x 162 millimeters */
+		DMPAPER_ENV_C65			= 0x0020, /* C65 Envelope, 114 x 229 millimeters */
+		DMPAPER_ENV_B4			= 0x0021, /* B4 Envelope, 250 x 353 millimeters */
+		DMPAPER_ENV_B5			= 0x0022, /* B5 Envelope, 176 x 250 millimeters */
+		DMPAPER_ENV_B6			= 0x0023, /* B6 Envelope, 176 x 125 millimeters */
+		DMPAPER_ENV_ITALY		= 0x0024, /* Italy Envelope, 110 x 230 millimeters */
+		DMPAPER_ENV_MONARCH		= 0x0025, /* Monarch Envelope, 3 7/8 x 7 1/2 inches */
+		DMPAPER_ENV_PERSONAL		= 0x0026, /* 6 3/4 Envelope, 3 5/8 x 6 1/2 inches */
+		DMPAPER_FANFOLD_US		= 0x0027, /* US Std Fanfold, 14 7/8 x 11 inches */
+		DMPAPER_FANFOLD_STD_GERMAN	= 0x0028, /* German Std Fanfold, 8 1/2 x 12 inches */
+		DMPAPER_FANFOLD_LGL_GERMAN	= 0x0029, /* German Legal Fanfold, 8 x 13 inches */
+		DMPAPER_DBL_JAPANESE_POSTCARD	= 0x0045, /* Double Japanese Postcard, 200 x 148 millimeters */
+		DMPAPER_A6			= 0x0046, /* A6 sheet, 105 x 148 millimeters */
+		DMPAPER_JENV_KAKU2		= 0x0047, /* Japanese Envelope Kaku #2 */
+		DMPAPER_JENV_KAKU3		= 0x0048, /* Japanese Envelope Kaku #3 */
+		DMPAPER_JENV_CHOU3		= 0x0049, /* Japanese Envelope Chou #3 */
+		DMPAPER_JENV_CHOU4		= 0x004A, /* Japanese Envelope Chou #4 */
+		DMPAPER_LETTER_ROTATED		= 0x004B, /* Letter Rotated, 11 by 8 1/2 inches */
+		DMPAPER_A3_ROTATED		= 0x004C, /* A3 rotated sheet, 420 x 297 millimeters */
+		DMPAPER_A4_ROTATED		= 0x004D, /* A4 rotated sheet, 297 x 210 millimeters */
+		DMPAPER_A5_ROTATED		= 0x004E, /* A5 rotated sheet, 210 x 148 millimeters */
+		DMPAPER_B4_JIS_ROTATED		= 0x004F, /* B4 (JIS) rotated sheet, 364 x 257 millimeters */
+		DMPAPER_B5_JIS_ROTATED		= 0x0050, /* B5 (JIS) rotated sheet, 257 x 182 millimeters */
+		DMPAPER_JAPANESE_POSTCARD_ROTATED = 0x0051, /* Japanese Postcard Rotated, 148 x 100 millimeters */
+		DMPAPER_DBL_JAPANESE_POSTCARD_ROTATED = 0x0052, /* Double Japanese Postcard Rotated, 148 x 200 millimeters */
+		DMPAPER_A6_ROTATED		= 0x0053, /* A6 rotated sheet, 148 x 105 millimeters */
+		DMPAPER_JENV_KAKU2_ROTATED	= 0x0054, /* Japanese Envelope Kaku #2 Rotated */
+		DMPAPER_JENV_KAKU3_ROTATED	= 0x0055, /* Japanese Envelope Kaku #3 Rotated */
+		DMPAPER_JENV_CHOU3_ROTATED	= 0x0056, /* Japanese Envelope Chou #3 Rotated */
+		DMPAPER_JENV_CHOU4_ROTATED	= 0x0057, /* Japanese Envelope Chou #4 Rotated */
+		DMPAPER_B6_JIS			= 0x0058, /* B6 (JIS) sheet, 128 x 182 millimeters */
+		DMPAPER_B6_JIS_ROTATED		= 0x0059, /* B6 (JIS) rotated sheet, 182 x 128 millimeters */
+		DMPAPER_12X11			= 0x005A, /* 12 x 11-inch sheet */
+		DMPAPER_JENV_YOU4		= 0x005B, /* Japanese Envelope You #4 */
+		DMPAPER_JENV_YOU4_ROTATED	= 0x005C, /* Japanese Envelope You #4 */
+		DMPAPER_P16K			= 0x005D, /* PRC 16K, 146 x 215 millimeters */
+		DMPAPER_P32K			= 0x005E, /* PRC 32K, 97 x 151 millimeters */
+		DMPAPER_P32KBIG			= 0x005F, /* PRC 32K(Big) 97 x 151 millimeters */
+		DMPAPER_PENV_1			= 0x0060, /* PRC Envelope #1, 102 by 165 millimeters */
+		DMPAPER_PENV_2			= 0x0061, /* PRC Envelope #2, 102 x 176 millimeters */
+		DMPAPER_PENV_3			= 0x0062, /* PRC Envelope #3, 125 x 176 millimeters */
+		DMPAPER_PENV_4			= 0x0063, /* PRC Envelope #4, 110 x 208 millimeters */
+		DMPAPER_PENV_5			= 0x0064, /* PRC Envelope #5, 110 x 220 millimeters */
+		DMPAPER_PENV_6			= 0x0065, /* PRC Envelope #6, 120 x 230 millimeters */
+		DMPAPER_PENV_7			= 0x0066, /* PRC Envelope #7, 160 x 230 millimeters */
+		DMPAPER_PENV_8			= 0x0067, /* PRC Envelope #8, 120 x 309 millimeters */
+		DMPAPER_PENV_9			= 0x0068, /* PRC Envelope #9, 229 x 324 millimeters */
+		DMPAPER_PENV_10			= 0x0069, /* PRC Envelope #10, 324 x 458 millimeters */
+		DMPAPER_P16K_ROTATED		= 0x006A, /* PRC 16K Rotated, 215 x 146 millimeters */
+		DMPAPER_P32K_ROTATED		= 0x006B, /* PRC 32K Rotated, 151 x 97 millimeters */
+		DMPAPER_P32KBIG_ROTATED		= 0x006C, /* PRC 32K(Big) Rotated, 151 x 97 millimeters */
+		DMPAPER_PENV_1_ROTATED		= 0x006D, /* PRC Envelope #1 Rotated, 165 x 102 millimeters */
+		DMPAPER_PENV_2_ROTATED		= 0x006E, /* PRC Envelope #2 Rotated, 176 x 102 millimeters */
+		DMPAPER_PENV_3_ROTATED		= 0x006F, /* PRC Envelope #3 Rotated, 176 x 125 millimeters */
+		DMPAPER_PENV_4_ROTATED		= 0x0070, /* PRC Envelope #4 Rotated, 208 x 110 millimeters */
+		DMPAPER_PENV_5_ROTATED		= 0x0071, /* PRC Envelope #5 Rotated, 220 x 110 millimeters */
+		DMPAPER_PENV_6_ROTATED		= 0x0072, /* PRC Envelope #6 Rotated, 230 x 120 millimeters */
+		DMPAPER_PENV_7_ROTATED		= 0x0073, /* PRC Envelope #7 Rotated, 230 x 160 millimeters */
+		DMPAPER_PENV_8_ROTATED		= 0x0074, /* PRC Envelope #8 Rotated, 309 x 120 millimeters */
+		DMPAPER_PENV_9_ROTATED		= 0x0075, /* PRC Envelope #9 Rotated, 324 x 229 millimeters */
+		DMPAPER_PENV_10_ROTATED		= 0x0076 /* PRC Envelope #10 Rotated, 458 x 324 millimeters */
+	} spoolss_DeviceModePaperSize;
+
+	typedef [enum16bit] enum {
+		DMBIN_UPPER		= 0x0001,
+		DMBIN_LOWER		= 0x0002,
+		DMBIN_MIDDLE		= 0x0003,
+		DMBIN_MANUAL		= 0x0004,
+		DMBIN_ENVELOPE		= 0x0005,
+		DMBIN_ENVMANUAL		= 0x0006,
+		DMBIN_AUTO		= 0x0007,
+		DMBIN_TRACTOR		= 0x0008,
+		DMBIN_SMALLFMT		= 0x0009,
+		DMBIN_LARGEFMT		= 0x000a,
+		DMBIN_LARGECAPACITY	= 0x000b,
+		DMBIN_CASSETTE		= 0x000e,
+		DMBIN_FORMSOURCE	= 0x000f
+	} spoolss_DeviceModeDefaultSource;
+
+	typedef [enum16bit] enum {
+		DMRES_HIGH		= 0xfffc,
+		DMRES_MEDIUM		= 0xfffd,
+		DMRES_LOW		= 0xfffe,
+		DMRES_DRAFT		= 0xffff
+	} spoolss_DeviceModePrintQuality;
+
+	typedef [enum16bit] enum {
+		DMRES_MONOCHROME	 = 0x0001,
+		DMRES_COLOR		 = 0x0002
+	} spoolss_DeviceModeColor;
+
+	typedef [enum16bit] enum {
+		DMDUP_SIMPLEX		= 0x0001,
+		DMDUP_VERTICAL		= 0x0002,
+		DMDUP_HORIZONTAL	= 0x0003
+	} spoolss_DeviceModeDuplex;
+
+	typedef [enum16bit] enum {
+		DMTT_BITMAP		= 0x0001,
+		DMTT_DOWNLOAD		= 0x0002,
+		DMTT_SUBDEV		= 0x0003,
+		DMTT_DOWNLOAD_OUTLINE	= 0x0004
+	} spoolss_DeviceModeTTOption;
+
+	typedef [enum16bit] enum {
+		DMCOLLATE_FALSE		= 0x0000,
+		DMCOLLATE_TRUE		= 0x0001
+	} spoolss_DeviceModeCollate;
+
+	typedef [v1_enum] enum {
+		DMNUP_SYSTEM		= 0x00000001,
+		DMNUP_ONEUP		= 0x00000002
+	} spoolss_DeviceModeNUp;
+
+	typedef [v1_enum] enum {
+		DMICMMETHOD_NONE	= 0x00000001,
+		DMICMMETHOD_SYSTEM	= 0x00000002,
+		DMICMMETHOD_DRIVER	= 0x00000003,
+		DMICMMETHOD_DEVICE	= 0x00000004
+	} spoolss_DeviceModeICMMethod;
+
+	typedef [v1_enum] enum {
+		DMICM_SATURATE		= 0x00000001,
+		DMICM_CONTRAST		= 0x00000002,
+		DMICM_COLORIMETRIC	= 0x00000003,
+		DMICM_ABS_COLORIMETRIC	= 0x00000004
+	} spoolss_DeviceModeICMIntent;
+
+	typedef [v1_enum] enum {
+		DMMEDIA_STANDARD	= 0x00000001,
+		DMMEDIA_TRANSPARENCY	= 0x00000002,
+		DMMEDIA_GLOSSY		= 0x00000003
+	} spoolss_DeviceModeMediaType;
+
+	typedef [v1_enum] enum {
+		DMDITHER_NONE		= 0x00000001,
+		DMDITHER_COARSE		= 0x00000002,
+		DMDITHER_FINE		= 0x00000003,
+		DMDITHER_LINEART	= 0x00000004,
+		DMDITHER_ERRORDIFFUSION	= 0x00000005,
+		DMDITHER_RESERVED6	= 0x00000006,
+		DMDITHER_RESERVED7	= 0x00000007,
+		DMDITHER_RESERVED8	= 0x00000008,
+		DMDITHER_RESERVED9	= 0x00000009,
+		DMDITHER_GRAYSCALE	= 0x0000000A
+	} spoolss_DeviceModeDitherType;
+
 	typedef [public,gensize] struct {
 		[charset(UTF16)] uint16 devicename[32];
-		uint16 specversion;
+		spoolss_DeviceModeSpecVersion specversion;
 		uint16 driverversion;
 		uint16 size;
 		[value(r->driverextra_data.length)] uint16 __driverextra_length;
 		spoolss_DeviceModeFields fields;
-		uint16 orientation;
-		uint16 papersize;
+		spoolss_DeviceModeOrientation orientation;
+		spoolss_DeviceModePaperSize papersize;
 		uint16 paperlength;
 		uint16 paperwidth;
 		uint16 scale;
 		uint16 copies;
-		uint16 defaultsource;
-		uint16 printquality;
-		uint16 color;
-		uint16 duplex;
+		spoolss_DeviceModeDefaultSource defaultsource;
+		spoolss_DeviceModePrintQuality printquality;
+		spoolss_DeviceModeColor color;
+		spoolss_DeviceModeDuplex duplex;
 		uint16 yresolution;
-		uint16 ttoption;
-		uint16 collate;
+		spoolss_DeviceModeTTOption ttoption;
+		spoolss_DeviceModeCollate collate;
 		[charset(UTF16)] uint16 formname[32];
-		uint16 logpixels;
-		uint32 bitsperpel;
-		uint32 pelswidth;
-		uint32 pelsheight;
-		uint32 displayflags;
-		uint32 displayfrequency;
-		uint32 icmmethod;
-		uint32 icmintent;
-		uint32 mediatype;
-		uint32 dithertype;
+		uint16 logpixels; /* reserved */
+		uint32 bitsperpel; /* reserved */
+		uint32 pelswidth; /* reserved */
+		uint32 pelsheight; /* reserved */
+		spoolss_DeviceModeNUp displayflags;
+		uint32 displayfrequency; /* reserved */
+		spoolss_DeviceModeICMMethod icmmethod;
+		spoolss_DeviceModeICMIntent icmintent;
+		spoolss_DeviceModeMediaType mediatype;
+		spoolss_DeviceModeDitherType dithertype;
 		uint32 reserved1;
 		uint32 reserved2;
-		uint32 panningwidth;
-		uint32 panningheight;
+		uint32 panningwidth; /* reserved */
+		uint32 panningheight; /* reserved */
 		[subcontext_size(__driverextra_length),subcontext(0),flag(NDR_REMAINING)] DATA_BLOB driverextra_data;
 	} spoolss_DeviceMode;
 
