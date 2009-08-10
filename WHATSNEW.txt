@@ -1,4 +1,126 @@
                    ==============================
+                   Release Notes for Samba 3.2.14
+			  August 10, 2009
+                   ==============================
+
+
+This is a maintenance release of the Samba 3.2 series.
+
+Major enhancements in 3.2.14 include:
+
+    o Fix SAMR access checks (e.g. bugs #6089 and #6112).
+    o Fix 'force user' (bug #6291).
+    o Improve Win7 support (bug #6099).
+    o Fix posix ACLs when setting an ACL without explicit ACE for the
+      owner (bug #2346).
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.2.13
+--------------------
+
+
+o   Michael Adam <obnox@samba.org>
+    * Prevent creation of keys containing the '/' character.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 6089: Fix SAMR access checks.
+    * BUG 6112: Fix SAMR access checks.
+    * BUG 6279: Fix Winbind crash.
+    * BUG 6291: Fix 'force user'.
+    * BUG 6099: Try to fix domain join of Win7 Beta.
+    * BUG 6386: Groupdb mapping fix.
+    * BUG 6421: Fix POSIX read-only open on read-only shares.
+    * BUG 6476: Fix more smbd-zombies in memory.
+    * BUG 6488: acl_group_override() call in posix acls references an
+      uninitialized variable.
+    * BUG 6504: Fix SAMR server for Winbind access.
+    * BUG 6520: Fix time stamps.
+    * Fix join of Windows 7 RC to a Samba3 DC.
+    * Fix bug in processing of open modes in POSIX open.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 6301: Fix samr_ConnectVersion enum which is 32bit not 16bit.
+    * BUG 6340: Don't segfault when cleartext trustdom pwd could not be
+      retrieved.
+    * BUG 6372: Fix usermanager only displaying 1024 groups and aliases.
+    * BUG 6465: Fix enum_aliasmem in ldb branch.
+    * BUG 6484: Fix searching for users while adding them to groups via
+      Windows usermanager.
+    * Fix the negotiate flags.
+    * Protect netlogon_creds_server_step() against NULL creds.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * Also handle DirX return codes.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 2346: Fix posix ACLs when setting an ACL without explicit ACE for the
+      owner.
+    * BUG 6526: Let parent_dirname() correctly return toplevel filenames.
+    * Fix a crash bug if we timeout in net rpc trustdom list.
+    * Add '--request-timeout' option to 'net'.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 5798: Preserve CFLAGS info in configure.
+    * BUG 6382: Case insensitive access to DFS links broken.
+    * Fix a race condition in Winbind leading to a panic.
+    * Add workaround for MS KB932762.
+
+
+o   Jim McDonough <jmcd@samba.org>
+    * BUG 6481: Don't require "Modify property" perms to unjoin.
+
+
+o   Sébastien Prud'homme <sebastien.prudhomme@gmail.com>
+    * 5945: Fix out of memory error with Winbind idmap.
+
+
+o   Simo Sorce <ssorce@redhat.com>
+    * Avoid duplicate ACEs.
+    * Fix profile ACLs in some corner cases.
+
+
+o   Marc VanHeyningen <marc.vanheyningen@isilon.com>
+    * Zero an uninitialized array.
+
+
+o   Bo Yang <boyang@samba.org>
+    * BUG 6560: Lookupname failed, cannot find domain when attempt
+      to change password.
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 3.2 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 3.2.13
 			   June 23, 2009
                    ==============================
@@ -51,8 +173,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 3.2.12
