@@ -1589,6 +1589,146 @@ static WERROR dcesrv_spoolss_5f(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
+/*
+  spoolss_60
+*/
+static WERROR dcesrv_spoolss_60(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_60 *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/*
+  spoolss_61
+*/
+static WERROR dcesrv_spoolss_61(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_61 *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/*
+  spoolss_62
+*/
+static WERROR dcesrv_spoolss_62(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_62 *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/*
+  spoolss_63
+*/
+static WERROR dcesrv_spoolss_63(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_63 *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/*
+  spoolss_64
+*/
+static WERROR dcesrv_spoolss_64(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_64 *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/*
+  spoolss_65
+*/
+static WERROR dcesrv_spoolss_65(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_65 *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/*
+  spoolss_GetCorePrinterDrivers
+*/
+static WERROR dcesrv_spoolss_GetCorePrinterDrivers(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_GetCorePrinterDrivers *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/*
+  spoolss_67
+*/
+static WERROR dcesrv_spoolss_67(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_67 *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/*
+  spoolss_GetPrinterDriverPackagePath
+*/
+static WERROR dcesrv_spoolss_GetPrinterDriverPackagePath(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_GetPrinterDriverPackagePath *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/*
+  spoolss_69
+*/
+static WERROR dcesrv_spoolss_69(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_69 *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/*
+  spoolss_6a
+*/
+static WERROR dcesrv_spoolss_6a(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_6a *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/*
+  spoolss_6b
+*/
+static WERROR dcesrv_spoolss_6b(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_6b *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/*
+  spoolss_6c
+*/
+static WERROR dcesrv_spoolss_6c(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_6c *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/*
+  spoolss_6d
+*/
+static WERROR dcesrv_spoolss_6d(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_6d *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
 
 /* include the generated boilerplate */
 #include "librpc/gen_ndr/ndr_spoolss_s.c"
