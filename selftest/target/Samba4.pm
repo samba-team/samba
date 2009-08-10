@@ -32,16 +32,7 @@ sub bindir_path($$) {
 
 sub openldap_start($$$) {
         my ($slapd_conf, $uri, $logs) = @_;
-  	my $oldpath = $ENV{PATH};
-	my $olroot = "";
-	my $olpath = "";
-	if (defined $ENV{OPENLDAP_ROOT}) {
-	    $olroot = "$ENV{OPENLDAP_ROOT}";
-	    $olpath = "$olroot/libexec:$olroot/sbin:";
-	}
-	$ENV{PATH} = "$olpath/usr/local/sbin:/usr/sbin:/sbin:$ENV{PATH}";
-        system("slapd -d0 -f $slapd_conf -h $uri > $logs 2>&1 &");
-        $ENV{PATH} = $oldpath;
+        system("$ENV{OPENLDAP_SLAPD} -d0 -f $slapd_conf -h $uri > $logs 2>&1 &");
 }
 
 sub slapd_start($$)
@@ -118,7 +109,7 @@ sub check_or_start($$$)
 		# Start slapd before samba, but with the fifo on stdin
 		if (defined($self->{ldap})) {
 		    $self->slapd_start($env_vars) or 
-			die("couldn't start slapd (2nd time)");
+			die("couldn't start slapd (main run)");
 		}
 
 		my $optarg = "";
@@ -794,29 +785,33 @@ sub provision($$$$$$$)
 		$ret->{LDAP_URI} = $ctx->{ldap_uri};
 		push (@{$ctx->{provision_options}},"--ldap-backend=$ctx->{ldap_uri}");
 
-                system("$self->{setupdir}/provision-backend $configuration --ldap-admin-pass=$ctx->{password} --root=$ctx->{unix_name} --realm=$ctx->{realm} --domain=$ctx->{domain} --host-name=$ctx->{netbiosname} --ldap-backend-type=$self->{ldap} --nosync>&2") == 0 or die("backend provision failed");
-
 		push (@{$ctx->{provision_options}}, "--password=$ctx->{password}");
 
 		if ($self->{ldap} eq "openldap") {
 			push (@{$ctx->{provision_options}}, "--username=samba-admin");
-			push (@{$ctx->{provision_options}}, "--ldap-backend-type=openldap");
+ 			push (@{$ctx->{provision_options}}, "--ldap-backend-type=openldap");
+
+                        system("$self->{setupdir}/provision-backend $configuration --ldap-admin-pass=$ctx->{password} --root=$ctx->{unix_name} --realm=$ctx->{realm} --domain=$ctx->{domain} --host-name=$ctx->{netbiosname} --ldap-backend-type=$self->{ldap} --nosync --ol-slapd=$ENV{OPENLDAP_SLAPD}>&2") == 0 or die("backend provision failed");
 
 			($ret->{SLAPD_CONF}, $ret->{OPENLDAP_PIDFILE}) = $self->mk_openldap($ctx->{ldapdir}, $configuration) or die("Unable to create openldap directories");
 
-		} elsif ($self->{ldap} eq "fedora-ds") {
+                } elsif ($self->{ldap} eq "fedora-ds") {
 			push (@{$ctx->{provision_options}}, "--simple-bind-dn=cn=Manager,$ctx->{localbasedn}");
 			push (@{$ctx->{provision_options}}, "--ldap-backend-type=fedora-ds");
 
+                        system("$self->{setupdir}/provision-backend $configuration --ldap-admin-pass=$ctx->{password} --root=$ctx->{unix_name} --realm=$ctx->{realm} --domain=$ctx->{domain} --host-name=$ctx->{netbiosname} --ldap-backend-type=$self->{ldap}>&2") == 0 or die("backend provision failed");
+
 			($ret->{FEDORA_DS_DIR}, $ret->{FEDORA_DS_PIDFILE}) = $self->mk_fedora_ds($ctx->{ldapdir}, $configuration) or die("Unable to create fedora ds directories");
+
+		        $self->slapd_start($ret) or die("couldn't start slapd");
+
 		}
 
-		$self->slapd_start($ret) or die("couldn't start slapd");
 	}
 
 	$ret = $self->provision_raw_step2($ctx, $ret);
 
-	if (defined($self->{ldap})) {
+	if (defined($self->{ldap}) && ($self->{ldap} eq "fedora-ds")) {
 		$self->slapd_stop($ret) or die("couldn't stop slapd");
 	}
 
