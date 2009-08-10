@@ -26,13 +26,13 @@ struct svc_state_msg {
 };
 
 static struct svc_state_msg state_msg_table[] = {
-	{ SVCCTL_STOPPED,            "stopped" },
-	{ SVCCTL_START_PENDING,      "start pending" },
-	{ SVCCTL_STOP_PENDING,       "stop pending" },
-	{ SVCCTL_RUNNING,            "running" },
-	{ SVCCTL_CONTINUE_PENDING,   "resume pending" },
-	{ SVCCTL_PAUSE_PENDING,      "pause pending" },
-	{ SVCCTL_PAUSED,             "paused" },
+	{ SVCCTL_STOPPED,            N_("stopped") },
+	{ SVCCTL_START_PENDING,      N_("start pending") },
+	{ SVCCTL_STOP_PENDING,       N_("stop pending") },
+	{ SVCCTL_RUNNING,            N_("running") },
+	{ SVCCTL_CONTINUE_PENDING,   N_("resume pending") },
+	{ SVCCTL_PAUSE_PENDING,      N_("pause pending") },
+	{ SVCCTL_PAUSED,             N_("paused") },
 	{ 0,                          NULL }
 };
 
@@ -44,7 +44,7 @@ const char *svc_status_string( uint32 state )
 	fstring msg;
 	int i;
 
-	fstr_sprintf( msg, "Unknown State [%d]", state );
+	fstr_sprintf( msg, _("Unknown State [%d]"), state );
 
 	for ( i=0; state_msg_table[i].message; i++ ) {
 		if ( state_msg_table[i].flag == state ) {
@@ -79,7 +79,8 @@ static WERROR query_service_state(struct rpc_pipe_client *pipe_hnd,
 					    &hService,
 					    &result);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result) ) {
-		d_fprintf(stderr, "Failed to open service.  [%s]\n", win_errstr(result));
+		d_fprintf(stderr, _("Failed to open service.  [%s]\n"),
+			  win_errstr(result));
 		return result;
 	}
 
@@ -158,7 +159,8 @@ static WERROR control_service(struct rpc_pipe_client *pipe_hnd,
 					    &result);
 
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result) ) {
-		d_fprintf(stderr, "Failed to open service.  [%s]\n", win_errstr(result));
+		d_fprintf(stderr, _("Failed to open service.  [%s]\n"),
+			  win_errstr(result));
 		goto done;
 	}
 
@@ -171,7 +173,8 @@ static WERROR control_service(struct rpc_pipe_client *pipe_hnd,
 					      &result);
 
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result) ) {
-		d_fprintf(stderr, "Control service request failed.  [%s]\n", win_errstr(result));
+		d_fprintf(stderr, _("Control service request failed.  [%s]\n"),
+			  win_errstr(result));
 		goto done;
 	}
 
@@ -179,7 +182,7 @@ static WERROR control_service(struct rpc_pipe_client *pipe_hnd,
 
 	result = watch_service_state(pipe_hnd, mem_ctx, hSCM, service, watch_state, &state );
 
-	d_printf("%s service is %s.\n", service, svc_status_string(state));
+	d_printf(_("%s service is %s.\n"), service, svc_status_string(state));
 
 done:
 	rpccli_svcctl_CloseServiceHandle(pipe_hnd, mem_ctx, &hService, NULL);
@@ -212,7 +215,7 @@ static NTSTATUS rpc_service_list_internal(struct net_context *c,
 	uint32_t resume_handle = 0;
 
 	if (argc != 0 ) {
-		d_printf("Usage: net rpc service list\n");
+		d_printf(_("Usage: net rpc service list\n"));
 		return NT_STATUS_OK;
 	}
 
@@ -223,7 +226,9 @@ static NTSTATUS rpc_service_list_internal(struct net_context *c,
 					      &hSCM,
 					      &result);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
-		d_fprintf(stderr, "Failed to open Service Control Manager.  [%s]\n", win_errstr(result));
+		d_fprintf(stderr,
+			  _("Failed to open Service Control Manager. [%s]\n"),
+			  win_errstr(result));
 		return werror_to_ntstatus(result);
 	}
 
@@ -240,7 +245,8 @@ static NTSTATUS rpc_service_list_internal(struct net_context *c,
 							   &result);
 
 		if (NT_STATUS_IS_ERR(status)) {
-			d_fprintf(stderr, "Failed to enumerate services.  [%s]\n",
+			d_fprintf(stderr,
+				_("Failed to enumerate services.  [%s]\n"),
 				win_errstr(result));
 			break;
 		}
@@ -252,7 +258,7 @@ static NTSTATUS rpc_service_list_internal(struct net_context *c,
 		}
 
 		if ( num_services == 0 ) {
-			d_printf("No services returned\n");
+			d_printf(_("No services returned\n"));
 			break;
 		}
 
@@ -318,7 +324,7 @@ static NTSTATUS rpc_service_status_internal(struct net_context *c,
 	uint32_t ret_size = 0;
 
 	if (argc != 1 ) {
-		d_printf("Usage: net rpc service status <service>\n");
+		d_printf(_("Usage: net rpc service status <service>\n"));
 		return NT_STATUS_OK;
 	}
 
@@ -330,7 +336,9 @@ static NTSTATUS rpc_service_status_internal(struct net_context *c,
 					      &hSCM,
 					      &result);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
-		d_fprintf(stderr, "Failed to open Service Control Manager.  [%s]\n", win_errstr(result));
+		d_fprintf(stderr,
+			  _("Failed to open Service Control Manager. [%s]\n"),
+			  win_errstr(result));
 		return werror_to_ntstatus(result);
 	}
 
@@ -344,7 +352,8 @@ static NTSTATUS rpc_service_status_internal(struct net_context *c,
 					    &result);
 
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result) ) {
-		d_fprintf(stderr, "Failed to open service.  [%s]\n", win_errstr(result));
+		d_fprintf(stderr, _("Failed to open service.  [%s]\n"),
+			  win_errstr(result));
 		goto done;
 	}
 
@@ -356,11 +365,13 @@ static NTSTATUS rpc_service_status_internal(struct net_context *c,
 						  &result);
 
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result) ) {
-		d_fprintf(stderr, "Query status request failed.  [%s]\n", win_errstr(result));
+		d_fprintf(stderr, _("Query status request failed.  [%s]\n"),
+			  win_errstr(result));
 		goto done;
 	}
 
-	d_printf("%s service is %s.\n", argv[0], svc_status_string(service_status.state));
+	d_printf(_("%s service is %s.\n"), argv[0],
+		 svc_status_string(service_status.state));
 
 	/* get the config */
 
@@ -381,37 +392,43 @@ static NTSTATUS rpc_service_status_internal(struct net_context *c,
 	}
 
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result) ) {
-		d_fprintf(stderr, "Query config request failed.  [%s]\n", win_errstr(result));
+		d_fprintf(stderr, _("Query config request failed.  [%s]\n"),
+			  win_errstr(result));
 		goto done;
 	}
 
 	/* print out the configuration information for the service */
 
-	d_printf("Configuration details:\n");
-	d_printf("\tControls Accepted    = 0x%x\n", service_status.controls_accepted);
-	d_printf("\tService Type         = 0x%x\n", config.service_type);
-	d_printf("\tStart Type           = 0x%x\n", config.start_type);
-	d_printf("\tError Control        = 0x%x\n", config.error_control);
-	d_printf("\tTag ID               = 0x%x\n", config.tag_id);
+	d_printf(_("Configuration details:\n"));
+	d_printf(_("\tControls Accepted    = 0x%x\n"),
+		 service_status.controls_accepted);
+	d_printf(_("\tService Type         = 0x%x\n"), config.service_type);
+	d_printf(_("\tStart Type           = 0x%x\n"), config.start_type);
+	d_printf(_("\tError Control        = 0x%x\n"), config.error_control);
+	d_printf(_("\tTag ID               = 0x%x\n"), config.tag_id);
 
 	if (config.executablepath) {
-		d_printf("\tExecutable Path      = %s\n", config.executablepath);
+		d_printf(_("\tExecutable Path      = %s\n"),
+			 config.executablepath);
 	}
 
 	if (config.loadordergroup) {
-		d_printf("\tLoad Order Group     = %s\n", config.loadordergroup);
+		d_printf(_("\tLoad Order Group     = %s\n"),
+			 config.loadordergroup);
 	}
 
 	if (config.dependencies) {
-		d_printf("\tDependencies         = %s\n", config.dependencies);
+		d_printf(_("\tDependencies         = %s\n"),
+			 config.dependencies);
 	}
 
 	if (config.startname) {
-		d_printf("\tStart Name           = %s\n", config.startname);
+		d_printf(_("\tStart Name           = %s\n"), config.startname);
 	}
 
 	if (config.displayname) {
-		d_printf("\tDisplay Name         = %s\n", config.displayname);
+		d_printf(_("\tDisplay Name         = %s\n"),
+			 config.displayname);
 	}
 
 done:
@@ -439,7 +456,7 @@ static NTSTATUS rpc_service_stop_internal(struct net_context *c,
 	fstring servicename;
 
 	if (argc != 1 ) {
-		d_printf("Usage: net rpc service status <service>\n");
+		d_printf(_("Usage: net rpc service status <service>\n"));
 		return NT_STATUS_OK;
 	}
 
@@ -453,7 +470,9 @@ static NTSTATUS rpc_service_stop_internal(struct net_context *c,
 					      &hSCM,
 					      &result);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
-		d_fprintf(stderr, "Failed to open Service Control Manager.  [%s]\n", win_errstr(result));
+		d_fprintf(stderr,
+			  _("Failed to open Service Control Manager.  [%s]\n"),
+			  win_errstr(result));
 		return werror_to_ntstatus(result);
 	}
 
@@ -483,7 +502,7 @@ static NTSTATUS rpc_service_pause_internal(struct net_context *c,
 	fstring servicename;
 
 	if (argc != 1 ) {
-		d_printf("Usage: net rpc service status <service>\n");
+		d_printf(_("Usage: net rpc service status <service>\n"));
 		return NT_STATUS_OK;
 	}
 
@@ -497,7 +516,9 @@ static NTSTATUS rpc_service_pause_internal(struct net_context *c,
 					      &hSCM,
 					      &result);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
-		d_fprintf(stderr, "Failed to open Service Control Manager.  [%s]\n", win_errstr(result));
+		d_fprintf(stderr,
+			  _("Failed to open Service Control Manager.  [%s]\n"),
+			  win_errstr(result));
 		return werror_to_ntstatus(result);
 	}
 
@@ -527,7 +548,7 @@ static NTSTATUS rpc_service_resume_internal(struct net_context *c,
 	fstring servicename;
 
 	if (argc != 1 ) {
-		d_printf("Usage: net rpc service status <service>\n");
+		d_printf(_("Usage: net rpc service status <service>\n"));
 		return NT_STATUS_OK;
 	}
 
@@ -541,7 +562,9 @@ static NTSTATUS rpc_service_resume_internal(struct net_context *c,
 					      &hSCM,
 					      &result);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
-		d_fprintf(stderr, "Failed to open Service Control Manager.  [%s]\n", win_errstr(result));
+		d_fprintf(stderr,
+			  _("Failed to open Service Control Manager.  [%s]\n"),
+			  win_errstr(result));
 		return werror_to_ntstatus(result);
 	}
 
@@ -571,7 +594,7 @@ static NTSTATUS rpc_service_start_internal(struct net_context *c,
 	uint32 state = 0;
 
 	if (argc != 1 ) {
-		d_printf("Usage: net rpc service status <service>\n");
+		d_printf(_("Usage: net rpc service status <service>\n"));
 		return NT_STATUS_OK;
 	}
 
@@ -583,7 +606,9 @@ static NTSTATUS rpc_service_start_internal(struct net_context *c,
 					      &hSCM,
 					      &result);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
-		d_fprintf(stderr, "Failed to open Service Control Manager.  [%s]\n", win_errstr(result));
+		d_fprintf(stderr,
+			  _("Failed to open Service Control Manager.  [%s]\n"),
+			  win_errstr(result));
 		return werror_to_ntstatus(result);
 	}
 
@@ -597,7 +622,8 @@ static NTSTATUS rpc_service_start_internal(struct net_context *c,
 					    &result);
 
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result) ) {
-		d_fprintf(stderr, "Failed to open service.  [%s]\n", win_errstr(result));
+		d_fprintf(stderr, _("Failed to open service.  [%s]\n"),
+			  win_errstr(result));
 		goto done;
 	}
 
@@ -610,16 +636,19 @@ static NTSTATUS rpc_service_start_internal(struct net_context *c,
 					     &result);
 
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result) ) {
-		d_fprintf(stderr, "Query status request failed.  [%s]\n", win_errstr(result));
+		d_fprintf(stderr, _("Query status request failed.  [%s]\n"),
+			  win_errstr(result));
 		goto done;
 	}
 
 	result = watch_service_state(pipe_hnd, mem_ctx, &hSCM, argv[0], SVCCTL_RUNNING, &state  );
 
 	if ( W_ERROR_IS_OK(result) && (state == SVCCTL_RUNNING) )
-		d_printf("Successfully started service: %s\n", argv[0] );
+		d_printf(_("Successfully started service: %s\n"),
+			 argv[0] );
 	else
-		d_fprintf(stderr, "Failed to start service: %s [%s]\n", argv[0], win_errstr(result) );
+		d_fprintf(stderr,_("Failed to start service: %s [%s]\n"),
+			  argv[0], win_errstr(result) );
 
 done:
 	rpccli_svcctl_CloseServiceHandle(pipe_hnd, mem_ctx, &hService, NULL);
@@ -645,7 +674,7 @@ static NTSTATUS rpc_service_delete_internal(struct net_context *c,
 	NTSTATUS status;
 
 	if (argc != 1 ) {
-		d_printf("Usage: net rpc service delete <service>\n");
+		d_printf(_("Usage: net rpc service delete <service>\n"));
 		return NT_STATUS_OK;
 	}
 
@@ -657,7 +686,8 @@ static NTSTATUS rpc_service_delete_internal(struct net_context *c,
 					      &hSCM,
 					      &result);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
-		d_fprintf(stderr, "Failed to open Service Control Manager.  [%s]\n",
+		d_fprintf(stderr,
+			_("Failed to open Service Control Manager.  [%s]\n"),
 			win_errstr(result));
 		return werror_to_ntstatus(result);
 	}
@@ -672,7 +702,7 @@ static NTSTATUS rpc_service_delete_internal(struct net_context *c,
 					    &result);
 
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result) ) {
-		d_fprintf(stderr, "Failed to open service.  [%s]\n",
+		d_fprintf(stderr, _("Failed to open service.  [%s]\n"),
 			win_errstr(result));
 		goto done;
 	}
@@ -684,12 +714,12 @@ static NTSTATUS rpc_service_delete_internal(struct net_context *c,
 					     &result);
 
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result) ) {
-		d_fprintf(stderr, "Delete service request failed.  [%s]\n",
+		d_fprintf(stderr, _("Delete service request failed.  [%s]\n"),
 			win_errstr(result));
 		goto done;
 	}
 
-	d_printf("Successfully deleted Service: %s\n", argv[0]);
+	d_printf(_("Successfully deleted Service: %s\n"), argv[0]);
 
  done:
 	if (is_valid_policy_hnd(&hService)) {
@@ -722,7 +752,8 @@ static NTSTATUS rpc_service_create_internal(struct net_context *c,
 	const char *binary_path;
 
 	if (argc != 3) {
-		d_printf("Usage: net rpc service create <service> <displayname> <binarypath>\n");
+		d_printf(_("Usage: net rpc service create <service> "
+			   "<displayname> <binarypath>\n"));
 		return NT_STATUS_OK;
 	}
 
@@ -734,7 +765,8 @@ static NTSTATUS rpc_service_create_internal(struct net_context *c,
 					      &hSCM,
 					      &result);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
-		d_fprintf(stderr, "Failed to open Service Control Manager.  [%s]\n",
+		d_fprintf(stderr,
+			_("Failed to open Service Control Manager.  [%s]\n"),
 			win_errstr(result));
 		return werror_to_ntstatus(result);
 	}
@@ -765,12 +797,12 @@ static NTSTATUS rpc_service_create_internal(struct net_context *c,
 					      &result);
 
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result) ) {
-		d_fprintf(stderr, "Create service request failed.  [%s]\n",
+		d_fprintf(stderr, _("Create service request failed.  [%s]\n"),
 			win_errstr(result));
 		goto done;
 	}
 
-	d_printf("Successfully created Service: %s\n", argv[0]);
+	d_printf(_("Successfully created Service: %s\n"), argv[0]);
 
  done:
 	if (is_valid_policy_hnd(&hService)) {
@@ -789,9 +821,9 @@ static NTSTATUS rpc_service_create_internal(struct net_context *c,
 static int rpc_service_list(struct net_context *c, int argc, const char **argv )
 {
 	if (c->display_usage) {
-		d_printf("Usage:\n"
-			 "net rpc service list\n"
-			 "    View configured Win32 services\n");
+		d_printf(_("Usage:\n"
+			   "net rpc service list\n"
+			   "    View configured Win32 services\n"));
 		return 0;
 	}
 
@@ -805,9 +837,9 @@ static int rpc_service_list(struct net_context *c, int argc, const char **argv )
 static int rpc_service_start(struct net_context *c, int argc, const char **argv )
 {
 	if (c->display_usage) {
-		d_printf("Usage:\n"
-			 "net rpc service start <service>\n"
-			 "    Start a Win32 service\n");
+		d_printf(_("Usage:\n"
+			   "net rpc service start <service>\n"
+			   "    Start a Win32 service\n"));
 		return 0;
 	}
 
@@ -821,9 +853,9 @@ static int rpc_service_start(struct net_context *c, int argc, const char **argv 
 static int rpc_service_stop(struct net_context *c, int argc, const char **argv )
 {
 	if (c->display_usage) {
-		d_printf("Usage:\n"
-			 "net rpc service stop <service>\n"
-			 "    Stop a Win32 service\n");
+		d_printf(_("Usage:\n"
+			   "net rpc service stop <service>\n"
+			   "    Stop a Win32 service\n"));
 		return 0;
 	}
 
@@ -837,9 +869,9 @@ static int rpc_service_stop(struct net_context *c, int argc, const char **argv )
 static int rpc_service_resume(struct net_context *c, int argc, const char **argv )
 {
 	if (c->display_usage) {
-		d_printf("Usage:\n"
-			 "net rpc service resume <service>\n"
-			 "    Resume a Win32 service\n");
+		d_printf(_("Usage:\n"
+			   "net rpc service resume <service>\n"
+			   "    Resume a Win32 service\n"));
 		return 0;
 	}
 
@@ -853,9 +885,9 @@ static int rpc_service_resume(struct net_context *c, int argc, const char **argv
 static int rpc_service_pause(struct net_context *c, int argc, const char **argv )
 {
 	if (c->display_usage) {
-		d_printf("Usage:\n"
-			 "net rpc service pause <service>\n"
-			 "    Pause a Win32 service\n");
+		d_printf(_("Usage:\n"
+			   "net rpc service pause <service>\n"
+			   "    Pause a Win32 service\n"));
 		return 0;
 	}
 
@@ -869,9 +901,9 @@ static int rpc_service_pause(struct net_context *c, int argc, const char **argv 
 static int rpc_service_status(struct net_context *c, int argc, const char **argv )
 {
 	if (c->display_usage) {
-		d_printf("Usage:\n"
-			 "net rpc service status <service>\n"
-			 "     Show the current status of a service\n");
+		d_printf(_("Usage:\n"
+			   "net rpc service status <service>\n"
+			   "     Show the current status of a service\n"));
 		return 0;
 	}
 
@@ -885,9 +917,9 @@ static int rpc_service_status(struct net_context *c, int argc, const char **argv
 static int rpc_service_delete(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf("Usage:\n"
-			 "net rpc service delete <service>\n"
-			 "    Delete a Win32 service\n");
+		d_printf(_("Usage:\n"
+			   "net rpc service delete <service>\n"
+			   "    Delete a Win32 service\n"));
 		return 0;
 	}
 
@@ -901,9 +933,9 @@ static int rpc_service_delete(struct net_context *c, int argc, const char **argv
 static int rpc_service_create(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf("Usage:\n"
-			 "net rpc service create <service>\n"
-			 "    Create a Win32 service\n");
+		d_printf(_("Usage:\n"
+			   "net rpc service create <service>\n"
+			   "    Create a Win32 service\n"));
 		return 0;
 	}
 
@@ -921,65 +953,65 @@ int net_rpc_service(struct net_context *c, int argc, const char **argv)
 			"list",
 			rpc_service_list,
 			NET_TRANSPORT_RPC,
-			"View configured Win32 services",
-			"net rpc service list\n"
-			"    View configured Win32 services"
+			N_("View configured Win32 services"),
+			N_("net rpc service list\n"
+			   "    View configured Win32 services")
 		},
 		{
 			"start",
 			rpc_service_start,
 			NET_TRANSPORT_RPC,
-			"Start a service",
-			"net rpc service start\n"
-			"    Start a service"
+			N_("Start a service"),
+			N_("net rpc service start\n"
+			   "    Start a service")
 		},
 		{
 			"stop",
 			rpc_service_stop,
 			NET_TRANSPORT_RPC,
-			"Stop a service",
-			"net rpc service stop\n"
-			"    Stop a service"
+			N_("Stop a service"),
+			N_("net rpc service stop\n"
+			   "    Stop a service")
 		},
 		{
 			"pause",
 			rpc_service_pause,
 			NET_TRANSPORT_RPC,
-			"Pause a service",
-			"net rpc service pause\n"
-			"    Pause a service"
+			N_("Pause a service"),
+			N_("net rpc service pause\n"
+			   "    Pause a service")
 		},
 		{
 			"resume",
 			rpc_service_resume,
 			NET_TRANSPORT_RPC,
-			"Resume a paused service",
-			"net rpc service resume\n"
-			"    Resume a service"
+			N_("Resume a paused service"),
+			N_("net rpc service resume\n"
+			   "    Resume a service")
 		},
 		{
 			"status",
 			rpc_service_status,
 			NET_TRANSPORT_RPC,
-			"View current status of a service",
-			"net rpc service status\n"
-			"    View current status of a service"
+			N_("View current status of a service"),
+			N_("net rpc service status\n"
+			   "    View current status of a service")
 		},
 		{
 			"delete",
 			rpc_service_delete,
 			NET_TRANSPORT_RPC,
-			"Delete a service",
-			"net rpc service delete\n"
-			"    Deletes a service"
+			N_("Delete a service"),
+			N_("net rpc service delete\n"
+			   "    Deletes a service")
 		},
 		{
 			"create",
 			rpc_service_create,
 			NET_TRANSPORT_RPC,
-			"Create a service",
-			"net rpc service create\n"
-			"    Creates a service"
+			N_("Create a service"),
+			N_("net rpc service create\n"
+			   "    Creates a service")
 		},
 
 		{NULL, NULL, 0, NULL, NULL}
