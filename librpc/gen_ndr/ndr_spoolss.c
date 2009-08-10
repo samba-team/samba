@@ -566,40 +566,509 @@ _PUBLIC_ void ndr_print_spoolss_DeviceModeFields(struct ndr_print *ndr, const ch
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_spoolss_DeviceModeSpecVersion(struct ndr_push *ndr, int ndr_flags, enum spoolss_DeviceModeSpecVersion r)
+{
+	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_DeviceModeSpecVersion(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DeviceModeSpecVersion *r)
+{
+	uint16_t v;
+	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_DeviceModeSpecVersion(struct ndr_print *ndr, const char *name, enum spoolss_DeviceModeSpecVersion r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case DMSPEC_NT3: val = "DMSPEC_NT3"; break;
+		case DMSPEC_WIN95_98_ME: val = "DMSPEC_WIN95_98_ME"; break;
+		case DMSPEC_NT4_AND_ABOVE: val = "DMSPEC_NT4_AND_ABOVE"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+static enum ndr_err_code ndr_push_spoolss_DeviceModeOrientation(struct ndr_push *ndr, int ndr_flags, enum spoolss_DeviceModeOrientation r)
+{
+	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_DeviceModeOrientation(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DeviceModeOrientation *r)
+{
+	uint16_t v;
+	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_DeviceModeOrientation(struct ndr_print *ndr, const char *name, enum spoolss_DeviceModeOrientation r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case DMORIENT_PORTRAIT: val = "DMORIENT_PORTRAIT"; break;
+		case DMORIENT_LANDSCAPE: val = "DMORIENT_LANDSCAPE"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+static enum ndr_err_code ndr_push_spoolss_DeviceModePaperSize(struct ndr_push *ndr, int ndr_flags, enum spoolss_DeviceModePaperSize r)
+{
+	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_DeviceModePaperSize(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DeviceModePaperSize *r)
+{
+	uint16_t v;
+	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_DeviceModePaperSize(struct ndr_print *ndr, const char *name, enum spoolss_DeviceModePaperSize r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case DMPAPER_LETTER: val = "DMPAPER_LETTER"; break;
+		case DMPAPER_LETTERSMALL: val = "DMPAPER_LETTERSMALL"; break;
+		case DMPAPER_TABLOID: val = "DMPAPER_TABLOID"; break;
+		case DMPAPER_LEDGER: val = "DMPAPER_LEDGER"; break;
+		case DMPAPER_LEGAL: val = "DMPAPER_LEGAL"; break;
+		case DMPAPER_STATEMENT: val = "DMPAPER_STATEMENT"; break;
+		case DMPAPER_EXECUTIVE: val = "DMPAPER_EXECUTIVE"; break;
+		case DMPAPER_A3: val = "DMPAPER_A3"; break;
+		case DMPAPER_A4: val = "DMPAPER_A4"; break;
+		case DMPAPER_A4SMALL: val = "DMPAPER_A4SMALL"; break;
+		case DMPAPER_A5: val = "DMPAPER_A5"; break;
+		case DMPAPER_B4: val = "DMPAPER_B4"; break;
+		case DMPAPER_B5: val = "DMPAPER_B5"; break;
+		case DMPAPER_FOLIO: val = "DMPAPER_FOLIO"; break;
+		case DMPAPER_QUARTO: val = "DMPAPER_QUARTO"; break;
+		case DMPAPER_10X14: val = "DMPAPER_10X14"; break;
+		case DMPAPER_11X17: val = "DMPAPER_11X17"; break;
+		case DMPAPER_NOTE: val = "DMPAPER_NOTE"; break;
+		case DMPAPER_ENV_9: val = "DMPAPER_ENV_9"; break;
+		case DMPAPER_ENV_10: val = "DMPAPER_ENV_10"; break;
+		case DMPAPER_ENV_11: val = "DMPAPER_ENV_11"; break;
+		case DMPAPER_ENV_12: val = "DMPAPER_ENV_12"; break;
+		case DMPAPER_ENV_14: val = "DMPAPER_ENV_14"; break;
+		case DMPAPER_CSHEET: val = "DMPAPER_CSHEET"; break;
+		case DMPAPER_DSHEET: val = "DMPAPER_DSHEET"; break;
+		case DMPAPER_ESHEET: val = "DMPAPER_ESHEET"; break;
+		case DMPAPER_ENV_DL: val = "DMPAPER_ENV_DL"; break;
+		case DMPAPER_ENV_C5: val = "DMPAPER_ENV_C5"; break;
+		case DMPAPER_ENV_C3: val = "DMPAPER_ENV_C3"; break;
+		case DMPAPER_ENV_C4: val = "DMPAPER_ENV_C4"; break;
+		case DMPAPER_ENV_C6: val = "DMPAPER_ENV_C6"; break;
+		case DMPAPER_ENV_C65: val = "DMPAPER_ENV_C65"; break;
+		case DMPAPER_ENV_B4: val = "DMPAPER_ENV_B4"; break;
+		case DMPAPER_ENV_B5: val = "DMPAPER_ENV_B5"; break;
+		case DMPAPER_ENV_B6: val = "DMPAPER_ENV_B6"; break;
+		case DMPAPER_ENV_ITALY: val = "DMPAPER_ENV_ITALY"; break;
+		case DMPAPER_ENV_MONARCH: val = "DMPAPER_ENV_MONARCH"; break;
+		case DMPAPER_ENV_PERSONAL: val = "DMPAPER_ENV_PERSONAL"; break;
+		case DMPAPER_FANFOLD_US: val = "DMPAPER_FANFOLD_US"; break;
+		case DMPAPER_FANFOLD_STD_GERMAN: val = "DMPAPER_FANFOLD_STD_GERMAN"; break;
+		case DMPAPER_FANFOLD_LGL_GERMAN: val = "DMPAPER_FANFOLD_LGL_GERMAN"; break;
+		case DMPAPER_DBL_JAPANESE_POSTCARD: val = "DMPAPER_DBL_JAPANESE_POSTCARD"; break;
+		case DMPAPER_A6: val = "DMPAPER_A6"; break;
+		case DMPAPER_JENV_KAKU2: val = "DMPAPER_JENV_KAKU2"; break;
+		case DMPAPER_JENV_KAKU3: val = "DMPAPER_JENV_KAKU3"; break;
+		case DMPAPER_JENV_CHOU3: val = "DMPAPER_JENV_CHOU3"; break;
+		case DMPAPER_JENV_CHOU4: val = "DMPAPER_JENV_CHOU4"; break;
+		case DMPAPER_LETTER_ROTATED: val = "DMPAPER_LETTER_ROTATED"; break;
+		case DMPAPER_A3_ROTATED: val = "DMPAPER_A3_ROTATED"; break;
+		case DMPAPER_A4_ROTATED: val = "DMPAPER_A4_ROTATED"; break;
+		case DMPAPER_A5_ROTATED: val = "DMPAPER_A5_ROTATED"; break;
+		case DMPAPER_B4_JIS_ROTATED: val = "DMPAPER_B4_JIS_ROTATED"; break;
+		case DMPAPER_B5_JIS_ROTATED: val = "DMPAPER_B5_JIS_ROTATED"; break;
+		case DMPAPER_JAPANESE_POSTCARD_ROTATED: val = "DMPAPER_JAPANESE_POSTCARD_ROTATED"; break;
+		case DMPAPER_DBL_JAPANESE_POSTCARD_ROTATED: val = "DMPAPER_DBL_JAPANESE_POSTCARD_ROTATED"; break;
+		case DMPAPER_A6_ROTATED: val = "DMPAPER_A6_ROTATED"; break;
+		case DMPAPER_JENV_KAKU2_ROTATED: val = "DMPAPER_JENV_KAKU2_ROTATED"; break;
+		case DMPAPER_JENV_KAKU3_ROTATED: val = "DMPAPER_JENV_KAKU3_ROTATED"; break;
+		case DMPAPER_JENV_CHOU3_ROTATED: val = "DMPAPER_JENV_CHOU3_ROTATED"; break;
+		case DMPAPER_JENV_CHOU4_ROTATED: val = "DMPAPER_JENV_CHOU4_ROTATED"; break;
+		case DMPAPER_B6_JIS: val = "DMPAPER_B6_JIS"; break;
+		case DMPAPER_B6_JIS_ROTATED: val = "DMPAPER_B6_JIS_ROTATED"; break;
+		case DMPAPER_12X11: val = "DMPAPER_12X11"; break;
+		case DMPAPER_JENV_YOU4: val = "DMPAPER_JENV_YOU4"; break;
+		case DMPAPER_JENV_YOU4_ROTATED: val = "DMPAPER_JENV_YOU4_ROTATED"; break;
+		case DMPAPER_P16K: val = "DMPAPER_P16K"; break;
+		case DMPAPER_P32K: val = "DMPAPER_P32K"; break;
+		case DMPAPER_P32KBIG: val = "DMPAPER_P32KBIG"; break;
+		case DMPAPER_PENV_1: val = "DMPAPER_PENV_1"; break;
+		case DMPAPER_PENV_2: val = "DMPAPER_PENV_2"; break;
+		case DMPAPER_PENV_3: val = "DMPAPER_PENV_3"; break;
+		case DMPAPER_PENV_4: val = "DMPAPER_PENV_4"; break;
+		case DMPAPER_PENV_5: val = "DMPAPER_PENV_5"; break;
+		case DMPAPER_PENV_6: val = "DMPAPER_PENV_6"; break;
+		case DMPAPER_PENV_7: val = "DMPAPER_PENV_7"; break;
+		case DMPAPER_PENV_8: val = "DMPAPER_PENV_8"; break;
+		case DMPAPER_PENV_9: val = "DMPAPER_PENV_9"; break;
+		case DMPAPER_PENV_10: val = "DMPAPER_PENV_10"; break;
+		case DMPAPER_P16K_ROTATED: val = "DMPAPER_P16K_ROTATED"; break;
+		case DMPAPER_P32K_ROTATED: val = "DMPAPER_P32K_ROTATED"; break;
+		case DMPAPER_P32KBIG_ROTATED: val = "DMPAPER_P32KBIG_ROTATED"; break;
+		case DMPAPER_PENV_1_ROTATED: val = "DMPAPER_PENV_1_ROTATED"; break;
+		case DMPAPER_PENV_2_ROTATED: val = "DMPAPER_PENV_2_ROTATED"; break;
+		case DMPAPER_PENV_3_ROTATED: val = "DMPAPER_PENV_3_ROTATED"; break;
+		case DMPAPER_PENV_4_ROTATED: val = "DMPAPER_PENV_4_ROTATED"; break;
+		case DMPAPER_PENV_5_ROTATED: val = "DMPAPER_PENV_5_ROTATED"; break;
+		case DMPAPER_PENV_6_ROTATED: val = "DMPAPER_PENV_6_ROTATED"; break;
+		case DMPAPER_PENV_7_ROTATED: val = "DMPAPER_PENV_7_ROTATED"; break;
+		case DMPAPER_PENV_8_ROTATED: val = "DMPAPER_PENV_8_ROTATED"; break;
+		case DMPAPER_PENV_9_ROTATED: val = "DMPAPER_PENV_9_ROTATED"; break;
+		case DMPAPER_PENV_10_ROTATED: val = "DMPAPER_PENV_10_ROTATED"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+static enum ndr_err_code ndr_push_spoolss_DeviceModeDefaultSource(struct ndr_push *ndr, int ndr_flags, enum spoolss_DeviceModeDefaultSource r)
+{
+	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_DeviceModeDefaultSource(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DeviceModeDefaultSource *r)
+{
+	uint16_t v;
+	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_DeviceModeDefaultSource(struct ndr_print *ndr, const char *name, enum spoolss_DeviceModeDefaultSource r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case DMBIN_UPPER: val = "DMBIN_UPPER"; break;
+		case DMBIN_LOWER: val = "DMBIN_LOWER"; break;
+		case DMBIN_MIDDLE: val = "DMBIN_MIDDLE"; break;
+		case DMBIN_MANUAL: val = "DMBIN_MANUAL"; break;
+		case DMBIN_ENVELOPE: val = "DMBIN_ENVELOPE"; break;
+		case DMBIN_ENVMANUAL: val = "DMBIN_ENVMANUAL"; break;
+		case DMBIN_AUTO: val = "DMBIN_AUTO"; break;
+		case DMBIN_TRACTOR: val = "DMBIN_TRACTOR"; break;
+		case DMBIN_SMALLFMT: val = "DMBIN_SMALLFMT"; break;
+		case DMBIN_LARGEFMT: val = "DMBIN_LARGEFMT"; break;
+		case DMBIN_LARGECAPACITY: val = "DMBIN_LARGECAPACITY"; break;
+		case DMBIN_CASSETTE: val = "DMBIN_CASSETTE"; break;
+		case DMBIN_FORMSOURCE: val = "DMBIN_FORMSOURCE"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+static enum ndr_err_code ndr_push_spoolss_DeviceModePrintQuality(struct ndr_push *ndr, int ndr_flags, enum spoolss_DeviceModePrintQuality r)
+{
+	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_DeviceModePrintQuality(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DeviceModePrintQuality *r)
+{
+	uint16_t v;
+	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_DeviceModePrintQuality(struct ndr_print *ndr, const char *name, enum spoolss_DeviceModePrintQuality r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case DMRES_HIGH: val = "DMRES_HIGH"; break;
+		case DMRES_MEDIUM: val = "DMRES_MEDIUM"; break;
+		case DMRES_LOW: val = "DMRES_LOW"; break;
+		case DMRES_DRAFT: val = "DMRES_DRAFT"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+static enum ndr_err_code ndr_push_spoolss_DeviceModeColor(struct ndr_push *ndr, int ndr_flags, enum spoolss_DeviceModeColor r)
+{
+	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_DeviceModeColor(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DeviceModeColor *r)
+{
+	uint16_t v;
+	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_DeviceModeColor(struct ndr_print *ndr, const char *name, enum spoolss_DeviceModeColor r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case DMRES_MONOCHROME: val = "DMRES_MONOCHROME"; break;
+		case DMRES_COLOR: val = "DMRES_COLOR"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+static enum ndr_err_code ndr_push_spoolss_DeviceModeDuplex(struct ndr_push *ndr, int ndr_flags, enum spoolss_DeviceModeDuplex r)
+{
+	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_DeviceModeDuplex(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DeviceModeDuplex *r)
+{
+	uint16_t v;
+	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_DeviceModeDuplex(struct ndr_print *ndr, const char *name, enum spoolss_DeviceModeDuplex r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case DMDUP_SIMPLEX: val = "DMDUP_SIMPLEX"; break;
+		case DMDUP_VERTICAL: val = "DMDUP_VERTICAL"; break;
+		case DMDUP_HORIZONTAL: val = "DMDUP_HORIZONTAL"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+static enum ndr_err_code ndr_push_spoolss_DeviceModeTTOption(struct ndr_push *ndr, int ndr_flags, enum spoolss_DeviceModeTTOption r)
+{
+	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_DeviceModeTTOption(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DeviceModeTTOption *r)
+{
+	uint16_t v;
+	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_DeviceModeTTOption(struct ndr_print *ndr, const char *name, enum spoolss_DeviceModeTTOption r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case DMTT_BITMAP: val = "DMTT_BITMAP"; break;
+		case DMTT_DOWNLOAD: val = "DMTT_DOWNLOAD"; break;
+		case DMTT_SUBDEV: val = "DMTT_SUBDEV"; break;
+		case DMTT_DOWNLOAD_OUTLINE: val = "DMTT_DOWNLOAD_OUTLINE"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+static enum ndr_err_code ndr_push_spoolss_DeviceModeCollate(struct ndr_push *ndr, int ndr_flags, enum spoolss_DeviceModeCollate r)
+{
+	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_DeviceModeCollate(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DeviceModeCollate *r)
+{
+	uint16_t v;
+	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_DeviceModeCollate(struct ndr_print *ndr, const char *name, enum spoolss_DeviceModeCollate r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case DMCOLLATE_FALSE: val = "DMCOLLATE_FALSE"; break;
+		case DMCOLLATE_TRUE: val = "DMCOLLATE_TRUE"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+static enum ndr_err_code ndr_push_spoolss_DeviceModeNUp(struct ndr_push *ndr, int ndr_flags, enum spoolss_DeviceModeNUp r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_DeviceModeNUp(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DeviceModeNUp *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_DeviceModeNUp(struct ndr_print *ndr, const char *name, enum spoolss_DeviceModeNUp r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case DMNUP_SYSTEM: val = "DMNUP_SYSTEM"; break;
+		case DMNUP_ONEUP: val = "DMNUP_ONEUP"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+static enum ndr_err_code ndr_push_spoolss_DeviceModeICMMethod(struct ndr_push *ndr, int ndr_flags, enum spoolss_DeviceModeICMMethod r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_DeviceModeICMMethod(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DeviceModeICMMethod *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_DeviceModeICMMethod(struct ndr_print *ndr, const char *name, enum spoolss_DeviceModeICMMethod r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case DMICMMETHOD_NONE: val = "DMICMMETHOD_NONE"; break;
+		case DMICMMETHOD_SYSTEM: val = "DMICMMETHOD_SYSTEM"; break;
+		case DMICMMETHOD_DRIVER: val = "DMICMMETHOD_DRIVER"; break;
+		case DMICMMETHOD_DEVICE: val = "DMICMMETHOD_DEVICE"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+static enum ndr_err_code ndr_push_spoolss_DeviceModeICMIntent(struct ndr_push *ndr, int ndr_flags, enum spoolss_DeviceModeICMIntent r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_DeviceModeICMIntent(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DeviceModeICMIntent *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_DeviceModeICMIntent(struct ndr_print *ndr, const char *name, enum spoolss_DeviceModeICMIntent r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case DMICM_SATURATE: val = "DMICM_SATURATE"; break;
+		case DMICM_CONTRAST: val = "DMICM_CONTRAST"; break;
+		case DMICM_COLORIMETRIC: val = "DMICM_COLORIMETRIC"; break;
+		case DMICM_ABS_COLORIMETRIC: val = "DMICM_ABS_COLORIMETRIC"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+static enum ndr_err_code ndr_push_spoolss_DeviceModeMediaType(struct ndr_push *ndr, int ndr_flags, enum spoolss_DeviceModeMediaType r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_DeviceModeMediaType(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DeviceModeMediaType *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_DeviceModeMediaType(struct ndr_print *ndr, const char *name, enum spoolss_DeviceModeMediaType r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case DMMEDIA_STANDARD: val = "DMMEDIA_STANDARD"; break;
+		case DMMEDIA_TRANSPARENCY: val = "DMMEDIA_TRANSPARENCY"; break;
+		case DMMEDIA_GLOSSY: val = "DMMEDIA_GLOSSY"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+static enum ndr_err_code ndr_push_spoolss_DeviceModeDitherType(struct ndr_push *ndr, int ndr_flags, enum spoolss_DeviceModeDitherType r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_DeviceModeDitherType(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DeviceModeDitherType *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_DeviceModeDitherType(struct ndr_print *ndr, const char *name, enum spoolss_DeviceModeDitherType r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case DMDITHER_NONE: val = "DMDITHER_NONE"; break;
+		case DMDITHER_COARSE: val = "DMDITHER_COARSE"; break;
+		case DMDITHER_FINE: val = "DMDITHER_FINE"; break;
+		case DMDITHER_LINEART: val = "DMDITHER_LINEART"; break;
+		case DMDITHER_ERRORDIFFUSION: val = "DMDITHER_ERRORDIFFUSION"; break;
+		case DMDITHER_RESERVED6: val = "DMDITHER_RESERVED6"; break;
+		case DMDITHER_RESERVED7: val = "DMDITHER_RESERVED7"; break;
+		case DMDITHER_RESERVED8: val = "DMDITHER_RESERVED8"; break;
+		case DMDITHER_RESERVED9: val = "DMDITHER_RESERVED9"; break;
+		case DMDITHER_GRAYSCALE: val = "DMDITHER_GRAYSCALE"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_DeviceMode(struct ndr_push *ndr, int ndr_flags, const struct spoolss_DeviceMode *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->devicename, 32, sizeof(uint16_t), CH_UTF16));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->specversion));
+		NDR_CHECK(ndr_push_spoolss_DeviceModeSpecVersion(ndr, NDR_SCALARS, r->specversion));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->driverversion));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->size));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->driverextra_data.length));
 		NDR_CHECK(ndr_push_spoolss_DeviceModeFields(ndr, NDR_SCALARS, r->fields));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->orientation));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->papersize));
+		NDR_CHECK(ndr_push_spoolss_DeviceModeOrientation(ndr, NDR_SCALARS, r->orientation));
+		NDR_CHECK(ndr_push_spoolss_DeviceModePaperSize(ndr, NDR_SCALARS, r->papersize));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->paperlength));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->paperwidth));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->scale));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->copies));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->defaultsource));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->printquality));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->color));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->duplex));
+		NDR_CHECK(ndr_push_spoolss_DeviceModeDefaultSource(ndr, NDR_SCALARS, r->defaultsource));
+		NDR_CHECK(ndr_push_spoolss_DeviceModePrintQuality(ndr, NDR_SCALARS, r->printquality));
+		NDR_CHECK(ndr_push_spoolss_DeviceModeColor(ndr, NDR_SCALARS, r->color));
+		NDR_CHECK(ndr_push_spoolss_DeviceModeDuplex(ndr, NDR_SCALARS, r->duplex));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->yresolution));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->ttoption));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->collate));
+		NDR_CHECK(ndr_push_spoolss_DeviceModeTTOption(ndr, NDR_SCALARS, r->ttoption));
+		NDR_CHECK(ndr_push_spoolss_DeviceModeCollate(ndr, NDR_SCALARS, r->collate));
 		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->formname, 32, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->logpixels));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->bitsperpel));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->pelswidth));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->pelsheight));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->displayflags));
+		NDR_CHECK(ndr_push_spoolss_DeviceModeNUp(ndr, NDR_SCALARS, r->displayflags));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->displayfrequency));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->icmmethod));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->icmintent));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->mediatype));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->dithertype));
+		NDR_CHECK(ndr_push_spoolss_DeviceModeICMMethod(ndr, NDR_SCALARS, r->icmmethod));
+		NDR_CHECK(ndr_push_spoolss_DeviceModeICMIntent(ndr, NDR_SCALARS, r->icmintent));
+		NDR_CHECK(ndr_push_spoolss_DeviceModeMediaType(ndr, NDR_SCALARS, r->mediatype));
+		NDR_CHECK(ndr_push_spoolss_DeviceModeDitherType(ndr, NDR_SCALARS, r->dithertype));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->reserved1));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->reserved2));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->panningwidth));
@@ -626,35 +1095,35 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_DeviceMode(struct ndr_pull *ndr, int
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->devicename, 32, sizeof(uint16_t), CH_UTF16));
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->specversion));
+		NDR_CHECK(ndr_pull_spoolss_DeviceModeSpecVersion(ndr, NDR_SCALARS, &r->specversion));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->driverversion));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->size));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->__driverextra_length));
 		NDR_CHECK(ndr_pull_spoolss_DeviceModeFields(ndr, NDR_SCALARS, &r->fields));
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->orientation));
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->papersize));
+		NDR_CHECK(ndr_pull_spoolss_DeviceModeOrientation(ndr, NDR_SCALARS, &r->orientation));
+		NDR_CHECK(ndr_pull_spoolss_DeviceModePaperSize(ndr, NDR_SCALARS, &r->papersize));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->paperlength));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->paperwidth));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->scale));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->copies));
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->defaultsource));
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->printquality));
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->color));
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->duplex));
+		NDR_CHECK(ndr_pull_spoolss_DeviceModeDefaultSource(ndr, NDR_SCALARS, &r->defaultsource));
+		NDR_CHECK(ndr_pull_spoolss_DeviceModePrintQuality(ndr, NDR_SCALARS, &r->printquality));
+		NDR_CHECK(ndr_pull_spoolss_DeviceModeColor(ndr, NDR_SCALARS, &r->color));
+		NDR_CHECK(ndr_pull_spoolss_DeviceModeDuplex(ndr, NDR_SCALARS, &r->duplex));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->yresolution));
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->ttoption));
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->collate));
+		NDR_CHECK(ndr_pull_spoolss_DeviceModeTTOption(ndr, NDR_SCALARS, &r->ttoption));
+		NDR_CHECK(ndr_pull_spoolss_DeviceModeCollate(ndr, NDR_SCALARS, &r->collate));
 		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->formname, 32, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->logpixels));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->bitsperpel));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->pelswidth));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->pelsheight));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->displayflags));
+		NDR_CHECK(ndr_pull_spoolss_DeviceModeNUp(ndr, NDR_SCALARS, &r->displayflags));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->displayfrequency));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->icmmethod));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->icmintent));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->mediatype));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->dithertype));
+		NDR_CHECK(ndr_pull_spoolss_DeviceModeICMMethod(ndr, NDR_SCALARS, &r->icmmethod));
+		NDR_CHECK(ndr_pull_spoolss_DeviceModeICMIntent(ndr, NDR_SCALARS, &r->icmintent));
+		NDR_CHECK(ndr_pull_spoolss_DeviceModeMediaType(ndr, NDR_SCALARS, &r->mediatype));
+		NDR_CHECK(ndr_pull_spoolss_DeviceModeDitherType(ndr, NDR_SCALARS, &r->dithertype));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->reserved1));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->reserved2));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->panningwidth));
@@ -681,35 +1150,35 @@ _PUBLIC_ void ndr_print_spoolss_DeviceMode(struct ndr_print *ndr, const char *na
 	ndr_print_struct(ndr, name, "spoolss_DeviceMode");
 	ndr->depth++;
 	ndr_print_string(ndr, "devicename", r->devicename);
-	ndr_print_uint16(ndr, "specversion", r->specversion);
+	ndr_print_spoolss_DeviceModeSpecVersion(ndr, "specversion", r->specversion);
 	ndr_print_uint16(ndr, "driverversion", r->driverversion);
 	ndr_print_uint16(ndr, "size", r->size);
 	ndr_print_uint16(ndr, "__driverextra_length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?r->driverextra_data.length:r->__driverextra_length);
 	ndr_print_spoolss_DeviceModeFields(ndr, "fields", r->fields);
-	ndr_print_uint16(ndr, "orientation", r->orientation);
-	ndr_print_uint16(ndr, "papersize", r->papersize);
+	ndr_print_spoolss_DeviceModeOrientation(ndr, "orientation", r->orientation);
+	ndr_print_spoolss_DeviceModePaperSize(ndr, "papersize", r->papersize);
 	ndr_print_uint16(ndr, "paperlength", r->paperlength);
 	ndr_print_uint16(ndr, "paperwidth", r->paperwidth);
 	ndr_print_uint16(ndr, "scale", r->scale);
 	ndr_print_uint16(ndr, "copies", r->copies);
-	ndr_print_uint16(ndr, "defaultsource", r->defaultsource);
-	ndr_print_uint16(ndr, "printquality", r->printquality);
-	ndr_print_uint16(ndr, "color", r->color);
-	ndr_print_uint16(ndr, "duplex", r->duplex);
+	ndr_print_spoolss_DeviceModeDefaultSource(ndr, "defaultsource", r->defaultsource);
+	ndr_print_spoolss_DeviceModePrintQuality(ndr, "printquality", r->printquality);
+	ndr_print_spoolss_DeviceModeColor(ndr, "color", r->color);
+	ndr_print_spoolss_DeviceModeDuplex(ndr, "duplex", r->duplex);
 	ndr_print_uint16(ndr, "yresolution", r->yresolution);
-	ndr_print_uint16(ndr, "ttoption", r->ttoption);
-	ndr_print_uint16(ndr, "collate", r->collate);
+	ndr_print_spoolss_DeviceModeTTOption(ndr, "ttoption", r->ttoption);
+	ndr_print_spoolss_DeviceModeCollate(ndr, "collate", r->collate);
 	ndr_print_string(ndr, "formname", r->formname);
 	ndr_print_uint16(ndr, "logpixels", r->logpixels);
 	ndr_print_uint32(ndr, "bitsperpel", r->bitsperpel);
 	ndr_print_uint32(ndr, "pelswidth", r->pelswidth);
 	ndr_print_uint32(ndr, "pelsheight", r->pelsheight);
-	ndr_print_uint32(ndr, "displayflags", r->displayflags);
+	ndr_print_spoolss_DeviceModeNUp(ndr, "displayflags", r->displayflags);
 	ndr_print_uint32(ndr, "displayfrequency", r->displayfrequency);
-	ndr_print_uint32(ndr, "icmmethod", r->icmmethod);
-	ndr_print_uint32(ndr, "icmintent", r->icmintent);
-	ndr_print_uint32(ndr, "mediatype", r->mediatype);
-	ndr_print_uint32(ndr, "dithertype", r->dithertype);
+	ndr_print_spoolss_DeviceModeICMMethod(ndr, "icmmethod", r->icmmethod);
+	ndr_print_spoolss_DeviceModeICMIntent(ndr, "icmintent", r->icmintent);
+	ndr_print_spoolss_DeviceModeMediaType(ndr, "mediatype", r->mediatype);
+	ndr_print_spoolss_DeviceModeDitherType(ndr, "dithertype", r->dithertype);
 	ndr_print_uint32(ndr, "reserved1", r->reserved1);
 	ndr_print_uint32(ndr, "reserved2", r->reserved2);
 	ndr_print_uint32(ndr, "panningwidth", r->panningwidth);

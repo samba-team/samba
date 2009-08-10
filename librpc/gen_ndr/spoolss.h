@@ -237,37 +237,457 @@ struct spoolss_PrinterInfo0 {
 #define DEVMODE_PANNINGWIDTH ( 0x08000000 )
 #define DEVMODE_PANNINGHEIGHT ( 0x10000000 )
 
+enum spoolss_DeviceModeSpecVersion
+#ifndef USE_UINT_ENUMS
+ {
+	DMSPEC_NT3=0x320,
+	DMSPEC_WIN95_98_ME=0x400,
+	DMSPEC_NT4_AND_ABOVE=0x401
+}
+#else
+ { __donnot_use_enum_spoolss_DeviceModeSpecVersion=0x7FFFFFFF}
+#define DMSPEC_NT3 ( 0x320 )
+#define DMSPEC_WIN95_98_ME ( 0x400 )
+#define DMSPEC_NT4_AND_ABOVE ( 0x401 )
+#endif
+;
+
+enum spoolss_DeviceModeOrientation
+#ifndef USE_UINT_ENUMS
+ {
+	DMORIENT_PORTRAIT=0x0001,
+	DMORIENT_LANDSCAPE=0x0002
+}
+#else
+ { __donnot_use_enum_spoolss_DeviceModeOrientation=0x7FFFFFFF}
+#define DMORIENT_PORTRAIT ( 0x0001 )
+#define DMORIENT_LANDSCAPE ( 0x0002 )
+#endif
+;
+
+enum spoolss_DeviceModePaperSize
+#ifndef USE_UINT_ENUMS
+ {
+	DMPAPER_LETTER=0x0001,
+	DMPAPER_LETTERSMALL=0x0002,
+	DMPAPER_TABLOID=0x0003,
+	DMPAPER_LEDGER=0x0004,
+	DMPAPER_LEGAL=0x0005,
+	DMPAPER_STATEMENT=0x0006,
+	DMPAPER_EXECUTIVE=0x0007,
+	DMPAPER_A3=0x0008,
+	DMPAPER_A4=0x0009,
+	DMPAPER_A4SMALL=0x000A,
+	DMPAPER_A5=0x000B,
+	DMPAPER_B4=0x000C,
+	DMPAPER_B5=0x000D,
+	DMPAPER_FOLIO=0x000E,
+	DMPAPER_QUARTO=0x000F,
+	DMPAPER_10X14=0x0010,
+	DMPAPER_11X17=0x0011,
+	DMPAPER_NOTE=0x0012,
+	DMPAPER_ENV_9=0x0013,
+	DMPAPER_ENV_10=0x0014,
+	DMPAPER_ENV_11=0x0015,
+	DMPAPER_ENV_12=0x0016,
+	DMPAPER_ENV_14=0x0017,
+	DMPAPER_CSHEET=0x0018,
+	DMPAPER_DSHEET=0x0019,
+	DMPAPER_ESHEET=0x001A,
+	DMPAPER_ENV_DL=0x001B,
+	DMPAPER_ENV_C5=0x001C,
+	DMPAPER_ENV_C3=0x001D,
+	DMPAPER_ENV_C4=0x001E,
+	DMPAPER_ENV_C6=0x001F,
+	DMPAPER_ENV_C65=0x0020,
+	DMPAPER_ENV_B4=0x0021,
+	DMPAPER_ENV_B5=0x0022,
+	DMPAPER_ENV_B6=0x0023,
+	DMPAPER_ENV_ITALY=0x0024,
+	DMPAPER_ENV_MONARCH=0x0025,
+	DMPAPER_ENV_PERSONAL=0x0026,
+	DMPAPER_FANFOLD_US=0x0027,
+	DMPAPER_FANFOLD_STD_GERMAN=0x0028,
+	DMPAPER_FANFOLD_LGL_GERMAN=0x0029,
+	DMPAPER_DBL_JAPANESE_POSTCARD=0x0045,
+	DMPAPER_A6=0x0046,
+	DMPAPER_JENV_KAKU2=0x0047,
+	DMPAPER_JENV_KAKU3=0x0048,
+	DMPAPER_JENV_CHOU3=0x0049,
+	DMPAPER_JENV_CHOU4=0x004A,
+	DMPAPER_LETTER_ROTATED=0x004B,
+	DMPAPER_A3_ROTATED=0x004C,
+	DMPAPER_A4_ROTATED=0x004D,
+	DMPAPER_A5_ROTATED=0x004E,
+	DMPAPER_B4_JIS_ROTATED=0x004F,
+	DMPAPER_B5_JIS_ROTATED=0x0050,
+	DMPAPER_JAPANESE_POSTCARD_ROTATED=0x0051,
+	DMPAPER_DBL_JAPANESE_POSTCARD_ROTATED=0x0052,
+	DMPAPER_A6_ROTATED=0x0053,
+	DMPAPER_JENV_KAKU2_ROTATED=0x0054,
+	DMPAPER_JENV_KAKU3_ROTATED=0x0055,
+	DMPAPER_JENV_CHOU3_ROTATED=0x0056,
+	DMPAPER_JENV_CHOU4_ROTATED=0x0057,
+	DMPAPER_B6_JIS=0x0058,
+	DMPAPER_B6_JIS_ROTATED=0x0059,
+	DMPAPER_12X11=0x005A,
+	DMPAPER_JENV_YOU4=0x005B,
+	DMPAPER_JENV_YOU4_ROTATED=0x005C,
+	DMPAPER_P16K=0x005D,
+	DMPAPER_P32K=0x005E,
+	DMPAPER_P32KBIG=0x005F,
+	DMPAPER_PENV_1=0x0060,
+	DMPAPER_PENV_2=0x0061,
+	DMPAPER_PENV_3=0x0062,
+	DMPAPER_PENV_4=0x0063,
+	DMPAPER_PENV_5=0x0064,
+	DMPAPER_PENV_6=0x0065,
+	DMPAPER_PENV_7=0x0066,
+	DMPAPER_PENV_8=0x0067,
+	DMPAPER_PENV_9=0x0068,
+	DMPAPER_PENV_10=0x0069,
+	DMPAPER_P16K_ROTATED=0x006A,
+	DMPAPER_P32K_ROTATED=0x006B,
+	DMPAPER_P32KBIG_ROTATED=0x006C,
+	DMPAPER_PENV_1_ROTATED=0x006D,
+	DMPAPER_PENV_2_ROTATED=0x006E,
+	DMPAPER_PENV_3_ROTATED=0x006F,
+	DMPAPER_PENV_4_ROTATED=0x0070,
+	DMPAPER_PENV_5_ROTATED=0x0071,
+	DMPAPER_PENV_6_ROTATED=0x0072,
+	DMPAPER_PENV_7_ROTATED=0x0073,
+	DMPAPER_PENV_8_ROTATED=0x0074,
+	DMPAPER_PENV_9_ROTATED=0x0075,
+	DMPAPER_PENV_10_ROTATED=0x0076
+}
+#else
+ { __donnot_use_enum_spoolss_DeviceModePaperSize=0x7FFFFFFF}
+#define DMPAPER_LETTER ( 0x0001 )
+#define DMPAPER_LETTERSMALL ( 0x0002 )
+#define DMPAPER_TABLOID ( 0x0003 )
+#define DMPAPER_LEDGER ( 0x0004 )
+#define DMPAPER_LEGAL ( 0x0005 )
+#define DMPAPER_STATEMENT ( 0x0006 )
+#define DMPAPER_EXECUTIVE ( 0x0007 )
+#define DMPAPER_A3 ( 0x0008 )
+#define DMPAPER_A4 ( 0x0009 )
+#define DMPAPER_A4SMALL ( 0x000A )
+#define DMPAPER_A5 ( 0x000B )
+#define DMPAPER_B4 ( 0x000C )
+#define DMPAPER_B5 ( 0x000D )
+#define DMPAPER_FOLIO ( 0x000E )
+#define DMPAPER_QUARTO ( 0x000F )
+#define DMPAPER_10X14 ( 0x0010 )
+#define DMPAPER_11X17 ( 0x0011 )
+#define DMPAPER_NOTE ( 0x0012 )
+#define DMPAPER_ENV_9 ( 0x0013 )
+#define DMPAPER_ENV_10 ( 0x0014 )
+#define DMPAPER_ENV_11 ( 0x0015 )
+#define DMPAPER_ENV_12 ( 0x0016 )
+#define DMPAPER_ENV_14 ( 0x0017 )
+#define DMPAPER_CSHEET ( 0x0018 )
+#define DMPAPER_DSHEET ( 0x0019 )
+#define DMPAPER_ESHEET ( 0x001A )
+#define DMPAPER_ENV_DL ( 0x001B )
+#define DMPAPER_ENV_C5 ( 0x001C )
+#define DMPAPER_ENV_C3 ( 0x001D )
+#define DMPAPER_ENV_C4 ( 0x001E )
+#define DMPAPER_ENV_C6 ( 0x001F )
+#define DMPAPER_ENV_C65 ( 0x0020 )
+#define DMPAPER_ENV_B4 ( 0x0021 )
+#define DMPAPER_ENV_B5 ( 0x0022 )
+#define DMPAPER_ENV_B6 ( 0x0023 )
+#define DMPAPER_ENV_ITALY ( 0x0024 )
+#define DMPAPER_ENV_MONARCH ( 0x0025 )
+#define DMPAPER_ENV_PERSONAL ( 0x0026 )
+#define DMPAPER_FANFOLD_US ( 0x0027 )
+#define DMPAPER_FANFOLD_STD_GERMAN ( 0x0028 )
+#define DMPAPER_FANFOLD_LGL_GERMAN ( 0x0029 )
+#define DMPAPER_DBL_JAPANESE_POSTCARD ( 0x0045 )
+#define DMPAPER_A6 ( 0x0046 )
+#define DMPAPER_JENV_KAKU2 ( 0x0047 )
+#define DMPAPER_JENV_KAKU3 ( 0x0048 )
+#define DMPAPER_JENV_CHOU3 ( 0x0049 )
+#define DMPAPER_JENV_CHOU4 ( 0x004A )
+#define DMPAPER_LETTER_ROTATED ( 0x004B )
+#define DMPAPER_A3_ROTATED ( 0x004C )
+#define DMPAPER_A4_ROTATED ( 0x004D )
+#define DMPAPER_A5_ROTATED ( 0x004E )
+#define DMPAPER_B4_JIS_ROTATED ( 0x004F )
+#define DMPAPER_B5_JIS_ROTATED ( 0x0050 )
+#define DMPAPER_JAPANESE_POSTCARD_ROTATED ( 0x0051 )
+#define DMPAPER_DBL_JAPANESE_POSTCARD_ROTATED ( 0x0052 )
+#define DMPAPER_A6_ROTATED ( 0x0053 )
+#define DMPAPER_JENV_KAKU2_ROTATED ( 0x0054 )
+#define DMPAPER_JENV_KAKU3_ROTATED ( 0x0055 )
+#define DMPAPER_JENV_CHOU3_ROTATED ( 0x0056 )
+#define DMPAPER_JENV_CHOU4_ROTATED ( 0x0057 )
+#define DMPAPER_B6_JIS ( 0x0058 )
+#define DMPAPER_B6_JIS_ROTATED ( 0x0059 )
+#define DMPAPER_12X11 ( 0x005A )
+#define DMPAPER_JENV_YOU4 ( 0x005B )
+#define DMPAPER_JENV_YOU4_ROTATED ( 0x005C )
+#define DMPAPER_P16K ( 0x005D )
+#define DMPAPER_P32K ( 0x005E )
+#define DMPAPER_P32KBIG ( 0x005F )
+#define DMPAPER_PENV_1 ( 0x0060 )
+#define DMPAPER_PENV_2 ( 0x0061 )
+#define DMPAPER_PENV_3 ( 0x0062 )
+#define DMPAPER_PENV_4 ( 0x0063 )
+#define DMPAPER_PENV_5 ( 0x0064 )
+#define DMPAPER_PENV_6 ( 0x0065 )
+#define DMPAPER_PENV_7 ( 0x0066 )
+#define DMPAPER_PENV_8 ( 0x0067 )
+#define DMPAPER_PENV_9 ( 0x0068 )
+#define DMPAPER_PENV_10 ( 0x0069 )
+#define DMPAPER_P16K_ROTATED ( 0x006A )
+#define DMPAPER_P32K_ROTATED ( 0x006B )
+#define DMPAPER_P32KBIG_ROTATED ( 0x006C )
+#define DMPAPER_PENV_1_ROTATED ( 0x006D )
+#define DMPAPER_PENV_2_ROTATED ( 0x006E )
+#define DMPAPER_PENV_3_ROTATED ( 0x006F )
+#define DMPAPER_PENV_4_ROTATED ( 0x0070 )
+#define DMPAPER_PENV_5_ROTATED ( 0x0071 )
+#define DMPAPER_PENV_6_ROTATED ( 0x0072 )
+#define DMPAPER_PENV_7_ROTATED ( 0x0073 )
+#define DMPAPER_PENV_8_ROTATED ( 0x0074 )
+#define DMPAPER_PENV_9_ROTATED ( 0x0075 )
+#define DMPAPER_PENV_10_ROTATED ( 0x0076 )
+#endif
+;
+
+enum spoolss_DeviceModeDefaultSource
+#ifndef USE_UINT_ENUMS
+ {
+	DMBIN_UPPER=0x0001,
+	DMBIN_LOWER=0x0002,
+	DMBIN_MIDDLE=0x0003,
+	DMBIN_MANUAL=0x0004,
+	DMBIN_ENVELOPE=0x0005,
+	DMBIN_ENVMANUAL=0x0006,
+	DMBIN_AUTO=0x0007,
+	DMBIN_TRACTOR=0x0008,
+	DMBIN_SMALLFMT=0x0009,
+	DMBIN_LARGEFMT=0x000a,
+	DMBIN_LARGECAPACITY=0x000b,
+	DMBIN_CASSETTE=0x000e,
+	DMBIN_FORMSOURCE=0x000f
+}
+#else
+ { __donnot_use_enum_spoolss_DeviceModeDefaultSource=0x7FFFFFFF}
+#define DMBIN_UPPER ( 0x0001 )
+#define DMBIN_LOWER ( 0x0002 )
+#define DMBIN_MIDDLE ( 0x0003 )
+#define DMBIN_MANUAL ( 0x0004 )
+#define DMBIN_ENVELOPE ( 0x0005 )
+#define DMBIN_ENVMANUAL ( 0x0006 )
+#define DMBIN_AUTO ( 0x0007 )
+#define DMBIN_TRACTOR ( 0x0008 )
+#define DMBIN_SMALLFMT ( 0x0009 )
+#define DMBIN_LARGEFMT ( 0x000a )
+#define DMBIN_LARGECAPACITY ( 0x000b )
+#define DMBIN_CASSETTE ( 0x000e )
+#define DMBIN_FORMSOURCE ( 0x000f )
+#endif
+;
+
+enum spoolss_DeviceModePrintQuality
+#ifndef USE_UINT_ENUMS
+ {
+	DMRES_HIGH=0xfffc,
+	DMRES_MEDIUM=0xfffd,
+	DMRES_LOW=0xfffe,
+	DMRES_DRAFT=0xffff
+}
+#else
+ { __donnot_use_enum_spoolss_DeviceModePrintQuality=0x7FFFFFFF}
+#define DMRES_HIGH ( 0xfffc )
+#define DMRES_MEDIUM ( 0xfffd )
+#define DMRES_LOW ( 0xfffe )
+#define DMRES_DRAFT ( 0xffff )
+#endif
+;
+
+enum spoolss_DeviceModeColor
+#ifndef USE_UINT_ENUMS
+ {
+	DMRES_MONOCHROME=0x0001,
+	DMRES_COLOR=0x0002
+}
+#else
+ { __donnot_use_enum_spoolss_DeviceModeColor=0x7FFFFFFF}
+#define DMRES_MONOCHROME ( 0x0001 )
+#define DMRES_COLOR ( 0x0002 )
+#endif
+;
+
+enum spoolss_DeviceModeDuplex
+#ifndef USE_UINT_ENUMS
+ {
+	DMDUP_SIMPLEX=0x0001,
+	DMDUP_VERTICAL=0x0002,
+	DMDUP_HORIZONTAL=0x0003
+}
+#else
+ { __donnot_use_enum_spoolss_DeviceModeDuplex=0x7FFFFFFF}
+#define DMDUP_SIMPLEX ( 0x0001 )
+#define DMDUP_VERTICAL ( 0x0002 )
+#define DMDUP_HORIZONTAL ( 0x0003 )
+#endif
+;
+
+enum spoolss_DeviceModeTTOption
+#ifndef USE_UINT_ENUMS
+ {
+	DMTT_BITMAP=0x0001,
+	DMTT_DOWNLOAD=0x0002,
+	DMTT_SUBDEV=0x0003,
+	DMTT_DOWNLOAD_OUTLINE=0x0004
+}
+#else
+ { __donnot_use_enum_spoolss_DeviceModeTTOption=0x7FFFFFFF}
+#define DMTT_BITMAP ( 0x0001 )
+#define DMTT_DOWNLOAD ( 0x0002 )
+#define DMTT_SUBDEV ( 0x0003 )
+#define DMTT_DOWNLOAD_OUTLINE ( 0x0004 )
+#endif
+;
+
+enum spoolss_DeviceModeCollate
+#ifndef USE_UINT_ENUMS
+ {
+	DMCOLLATE_FALSE=0x0000,
+	DMCOLLATE_TRUE=0x0001
+}
+#else
+ { __donnot_use_enum_spoolss_DeviceModeCollate=0x7FFFFFFF}
+#define DMCOLLATE_FALSE ( 0x0000 )
+#define DMCOLLATE_TRUE ( 0x0001 )
+#endif
+;
+
+enum spoolss_DeviceModeNUp
+#ifndef USE_UINT_ENUMS
+ {
+	DMNUP_SYSTEM=0x00000001,
+	DMNUP_ONEUP=0x00000002
+}
+#else
+ { __donnot_use_enum_spoolss_DeviceModeNUp=0x7FFFFFFF}
+#define DMNUP_SYSTEM ( 0x00000001 )
+#define DMNUP_ONEUP ( 0x00000002 )
+#endif
+;
+
+enum spoolss_DeviceModeICMMethod
+#ifndef USE_UINT_ENUMS
+ {
+	DMICMMETHOD_NONE=0x00000001,
+	DMICMMETHOD_SYSTEM=0x00000002,
+	DMICMMETHOD_DRIVER=0x00000003,
+	DMICMMETHOD_DEVICE=0x00000004
+}
+#else
+ { __donnot_use_enum_spoolss_DeviceModeICMMethod=0x7FFFFFFF}
+#define DMICMMETHOD_NONE ( 0x00000001 )
+#define DMICMMETHOD_SYSTEM ( 0x00000002 )
+#define DMICMMETHOD_DRIVER ( 0x00000003 )
+#define DMICMMETHOD_DEVICE ( 0x00000004 )
+#endif
+;
+
+enum spoolss_DeviceModeICMIntent
+#ifndef USE_UINT_ENUMS
+ {
+	DMICM_SATURATE=0x00000001,
+	DMICM_CONTRAST=0x00000002,
+	DMICM_COLORIMETRIC=0x00000003,
+	DMICM_ABS_COLORIMETRIC=0x00000004
+}
+#else
+ { __donnot_use_enum_spoolss_DeviceModeICMIntent=0x7FFFFFFF}
+#define DMICM_SATURATE ( 0x00000001 )
+#define DMICM_CONTRAST ( 0x00000002 )
+#define DMICM_COLORIMETRIC ( 0x00000003 )
+#define DMICM_ABS_COLORIMETRIC ( 0x00000004 )
+#endif
+;
+
+enum spoolss_DeviceModeMediaType
+#ifndef USE_UINT_ENUMS
+ {
+	DMMEDIA_STANDARD=0x00000001,
+	DMMEDIA_TRANSPARENCY=0x00000002,
+	DMMEDIA_GLOSSY=0x00000003
+}
+#else
+ { __donnot_use_enum_spoolss_DeviceModeMediaType=0x7FFFFFFF}
+#define DMMEDIA_STANDARD ( 0x00000001 )
+#define DMMEDIA_TRANSPARENCY ( 0x00000002 )
+#define DMMEDIA_GLOSSY ( 0x00000003 )
+#endif
+;
+
+enum spoolss_DeviceModeDitherType
+#ifndef USE_UINT_ENUMS
+ {
+	DMDITHER_NONE=0x00000001,
+	DMDITHER_COARSE=0x00000002,
+	DMDITHER_FINE=0x00000003,
+	DMDITHER_LINEART=0x00000004,
+	DMDITHER_ERRORDIFFUSION=0x00000005,
+	DMDITHER_RESERVED6=0x00000006,
+	DMDITHER_RESERVED7=0x00000007,
+	DMDITHER_RESERVED8=0x00000008,
+	DMDITHER_RESERVED9=0x00000009,
+	DMDITHER_GRAYSCALE=0x0000000A
+}
+#else
+ { __donnot_use_enum_spoolss_DeviceModeDitherType=0x7FFFFFFF}
+#define DMDITHER_NONE ( 0x00000001 )
+#define DMDITHER_COARSE ( 0x00000002 )
+#define DMDITHER_FINE ( 0x00000003 )
+#define DMDITHER_LINEART ( 0x00000004 )
+#define DMDITHER_ERRORDIFFUSION ( 0x00000005 )
+#define DMDITHER_RESERVED6 ( 0x00000006 )
+#define DMDITHER_RESERVED7 ( 0x00000007 )
+#define DMDITHER_RESERVED8 ( 0x00000008 )
+#define DMDITHER_RESERVED9 ( 0x00000009 )
+#define DMDITHER_GRAYSCALE ( 0x0000000A )
+#endif
+;
+
 struct spoolss_DeviceMode {
 	const char *devicename;/* [charset(UTF16)] */
-	uint16_t specversion;
+	enum spoolss_DeviceModeSpecVersion specversion;
 	uint16_t driverversion;
 	uint16_t size;
 	uint16_t __driverextra_length;/* [value(r->driverextra_data.length)] */
 	uint32_t fields;
-	uint16_t orientation;
-	uint16_t papersize;
+	enum spoolss_DeviceModeOrientation orientation;
+	enum spoolss_DeviceModePaperSize papersize;
 	uint16_t paperlength;
 	uint16_t paperwidth;
 	uint16_t scale;
 	uint16_t copies;
-	uint16_t defaultsource;
-	uint16_t printquality;
-	uint16_t color;
-	uint16_t duplex;
+	enum spoolss_DeviceModeDefaultSource defaultsource;
+	enum spoolss_DeviceModePrintQuality printquality;
+	enum spoolss_DeviceModeColor color;
+	enum spoolss_DeviceModeDuplex duplex;
 	uint16_t yresolution;
-	uint16_t ttoption;
-	uint16_t collate;
+	enum spoolss_DeviceModeTTOption ttoption;
+	enum spoolss_DeviceModeCollate collate;
 	const char *formname;/* [charset(UTF16)] */
 	uint16_t logpixels;
 	uint32_t bitsperpel;
 	uint32_t pelswidth;
 	uint32_t pelsheight;
-	uint32_t displayflags;
+	enum spoolss_DeviceModeNUp displayflags;
 	uint32_t displayfrequency;
-	uint32_t icmmethod;
-	uint32_t icmintent;
-	uint32_t mediatype;
-	uint32_t dithertype;
+	enum spoolss_DeviceModeICMMethod icmmethod;
+	enum spoolss_DeviceModeICMIntent icmintent;
+	enum spoolss_DeviceModeMediaType mediatype;
+	enum spoolss_DeviceModeDitherType dithertype;
 	uint32_t reserved1;
 	uint32_t reserved2;
 	uint32_t panningwidth;
