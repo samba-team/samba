@@ -2673,26 +2673,31 @@ NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename)
 
 	fstrcpy(nt_devmode->formname, "Letter");
 
-	nt_devmode->specversion      = 0x0401;
+	nt_devmode->specversion      = DMSPEC_NT4_AND_ABOVE;
 	nt_devmode->driverversion    = 0x0400;
 	nt_devmode->size             = 0x00DC;
 	nt_devmode->driverextra      = 0x0000;
-	nt_devmode->fields           = FORMNAME | TTOPTION | PRINTQUALITY |
-				       DEFAULTSOURCE | COPIES | SCALE |
-				       PAPERSIZE | ORIENTATION;
-	nt_devmode->orientation      = 1;
-	nt_devmode->papersize        = PAPER_LETTER;
+	nt_devmode->fields           = DEVMODE_FORMNAME |
+				       DEVMODE_TTOPTION |
+				       DEVMODE_PRINTQUALITY |
+				       DEVMODE_DEFAULTSOURCE |
+				       DEVMODE_COPIES |
+				       DEVMODE_SCALE |
+				       DEVMODE_PAPERSIZE |
+				       DEVMODE_ORIENTATION;
+	nt_devmode->orientation      = DMORIENT_PORTRAIT;
+	nt_devmode->papersize        = DMPAPER_LETTER;
 	nt_devmode->paperlength      = 0;
 	nt_devmode->paperwidth       = 0;
 	nt_devmode->scale            = 0x64;
 	nt_devmode->copies           = 1;
-	nt_devmode->defaultsource    = BIN_FORMSOURCE;
-	nt_devmode->printquality     = RES_HIGH;           /* 0x0258 */
-	nt_devmode->color            = COLOR_MONOCHROME;
-	nt_devmode->duplex           = DUP_SIMPLEX;
+	nt_devmode->defaultsource    = DMBIN_FORMSOURCE;
+	nt_devmode->printquality     = DMRES_HIGH;           /* 0x0258 */
+	nt_devmode->color            = DMRES_MONOCHROME;
+	nt_devmode->duplex           = DMDUP_SIMPLEX;
 	nt_devmode->yresolution      = 0;
-	nt_devmode->ttoption         = TT_SUBDEV;
-	nt_devmode->collate          = COLLATE_FALSE;
+	nt_devmode->ttoption         = DMTT_SUBDEV;
+	nt_devmode->collate          = DMCOLLATE_FALSE;
 	nt_devmode->icmmethod        = 0;
 	nt_devmode->icmintent        = 0;
 	nt_devmode->mediatype        = 0;
