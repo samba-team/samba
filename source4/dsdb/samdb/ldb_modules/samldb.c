@@ -296,7 +296,6 @@ static int samldb_apply_template(struct samldb_ctx *ac)
 		    ldb_attr_cmp(el->name, "name") == 0 ||
 		    ldb_attr_cmp(el->name, "objectClass") == 0 ||
 		    ldb_attr_cmp(el->name, "sAMAccountName") == 0 ||
-		    ldb_attr_cmp(el->name, "sAMAccountName") == 0 ||
 		    ldb_attr_cmp(el->name, "distinguishedName") == 0 ||
 		    ldb_attr_cmp(el->name, "objectGUID") == 0) {
 			continue;
