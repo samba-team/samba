@@ -268,7 +268,7 @@ bool parse_negTokenTarg(DATA_BLOB blob, char *OIDs[ASN1_MAX_OIDS], DATA_BLOB *se
 		uint8 flags;
 
 		asn1_start_tag(data, ASN1_CONTEXT(1));
-		asn1_start_tag(data, ASN1_BITFIELD);
+		asn1_start_tag(data, ASN1_BIT_STRING);
 		while (asn1_tag_remaining(data) > 0)
 			asn1_read_uint8(data, &flags);
 		asn1_end_tag(data);
