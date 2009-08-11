@@ -279,6 +279,7 @@ static NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 	char *full_name = NULL;
 	struct rpc_pipe_client *cli;
 	POLICY_HND lsa_policy;
+	unsigned int orig_timeout;
 
 	if (name == NULL || *name=='\0') {
 		full_name = talloc_asprintf(mem_ctx, "%s", domain_name);
@@ -302,9 +303,19 @@ static NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
+	/*
+	 * This call can take a long time
+	 * allow the server to time out.
+	 * 35 seconds should do it.
+	 */
+	orig_timeout = cli_set_timeout(cli->cli, 35000);
+
 	result = rpccli_lsa_lookup_names(cli, mem_ctx, &lsa_policy, 1, 
 					 (const char**) &full_name, NULL, 1, &sids, &types);
-        
+
+	/* And restore our original timeout. */
+	cli_set_timeout(cli->cli, orig_timeout);
+
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
@@ -332,6 +343,7 @@ static NTSTATUS msrpc_sid_to_name(struct winbindd_domain *domain,
 	NTSTATUS result;
 	struct rpc_pipe_client *cli;
 	POLICY_HND lsa_policy;
+	unsigned int orig_timeout;
 
 	DEBUG(3,("sid_to_name [rpc] %s for domain %s\n", sid_string_dbg(sid),
 		 domain->name ));
@@ -344,8 +356,19 @@ static NTSTATUS msrpc_sid_to_name(struct winbindd_domain *domain,
 	}
 	
 
+	/*
+	 * This call can take a long time
+	 * allow the server to time out.
+	 * 35 seconds should do it.
+	 */
+	orig_timeout = cli_set_timeout(cli->cli, 35000);
+
 	result = rpccli_lsa_lookup_sids(cli, mem_ctx, &lsa_policy,
 					1, sid, &domains, &names, &types);
+
+	/* And restore our original timeout. */
+	cli_set_timeout(cli->cli, orig_timeout);
+
 	if (!NT_STATUS_IS_OK(result)) {		
 		DEBUG(2,("msrpc_sid_to_name: rpccli_lsa_lookup_sids()  failed (%s)\n",
 			 nt_errstr(result)));		
@@ -378,6 +401,7 @@ static NTSTATUS msrpc_rids_to_names(struct winbindd_domain *domain,
 	DOM_SID *sids;
 	size_t i;
 	char **ret_names;
+	unsigned int orig_timeout;
 
 	DEBUG(3, ("rids_to_names [rpc] for domain %s\n", domain->name ));
 
@@ -401,9 +425,20 @@ static NTSTATUS msrpc_rids_to_names(struct winbindd_domain *domain,
 		return result;
 	}
 
+	/*
+	 * This call can take a long time
+	 * allow the server to time out.
+	 * 35 seconds should do it.
+	 */
+	orig_timeout = cli_set_timeout(cli->cli, 35000);
+
 	result = rpccli_lsa_lookup_sids(cli, mem_ctx, &lsa_policy,
 					num_rids, sids, &domains,
 					names, types);
+
+	/* And restore our original timeout. */
+	cli_set_timeout(cli->cli, orig_timeout);
+
 	if (!NT_STATUS_IS_OK(result) &&
 	    !NT_STATUS_EQUAL(result, STATUS_SOME_UNMAPPED)) {
 		return result;
