@@ -71,7 +71,9 @@ ntvfs_print_OBJ_FILES = $(ntvfssrcdir)/print/vfs_print.o
 [MODULE::ntvfs_ipc]
 SUBSYSTEM = ntvfs
 INIT_FUNCTION = ntvfs_ipc_init 
-PRIVATE_DEPENDENCIES = dcerpc_server DCERPC_COMMON
+PRIVATE_DEPENDENCIES = \
+		NDR_NAMED_PIPE_AUTH NAMED_PIPE_AUTH_TSTREAM \
+		HEIMDAL_GSSAPI CREDENTIALS
 # End MODULE ntvfs_ipc
 ################################################
 
