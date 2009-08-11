@@ -49,22 +49,10 @@
 
      on modify we need to change whenChanged
 
-
-  subschemaSubentry: HIDDEN, not-searchable,
-                     points at DN CN=Aggregate,$SCHEMADN
-
-     for this one we do the search as normal, then add the static
-     value if requested. How do we work out the $BASEDN from inside a
-     module?
-
   structuralObjectClass: HIDDEN, CONSTRUCTED, not-searchable. always same as objectclass?
 
      for this one we do the search as normal, then if requested ask
      for objectclass, change the attribute name, and add it
-
-  allowedAttributesEffective: HIDDEN, CONSTRUCTED, not-searchable,
-
-     list of attributes that can be modified - requires schema lookup
 
   primaryGroupToken: HIDDEN, CONSTRUCTED, SEARCHABLE
 
