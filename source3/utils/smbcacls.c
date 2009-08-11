@@ -23,6 +23,8 @@
 
 #include "includes.h"
 
+extern bool AllowDebugChange;
+
 static int test_args;
 
 #define CREATE_ACCESS_READ READ_CONTROL_ACCESS
@@ -1043,6 +1045,7 @@ static struct cli_state *connect_one(struct user_auth_info *auth_info,
 	DEBUGLEVEL_CLASS[DBGC_ALL] = 1;
 	dbf = x_stderr;
 	x_setbuf( x_stderr, NULL );
+	AllowDebugChange = false;
 
 	setlinebuf(stdout);
 
