@@ -36,7 +36,8 @@ static time_t cli_servertime(const char *host, struct sockaddr_storage *pss, int
 
 	status = cli_connect(cli, host, pss);
 	if (!NT_STATUS_IS_OK(status)) {
-		fprintf(stderr,"Can't contact server %s. Error %s\n", host, nt_errstr(status));
+		fprintf(stderr, _("Can't contact server %s. Error %s\n"),
+			host, nt_errstr(status));
 		goto done;
 	}
 
@@ -48,12 +49,12 @@ static time_t cli_servertime(const char *host, struct sockaddr_storage *pss, int
 	}
 
 	if (!cli_session_request(cli, &calling, &called)) {
-		fprintf(stderr,"Session request failed\n");
+		fprintf(stderr, _("Session request failed\n"));
 		goto done;
 	}
 	status = cli_negprot(cli);
 	if (!NT_STATUS_IS_OK(status)) {
-		fprintf(stderr, "Protocol negotiation failed: %s\n",
+		fprintf(stderr, _("Protocol negotiation failed: %s\n"),
 			nt_errstr(status));
 		goto done;
 	}
@@ -92,12 +93,12 @@ static const char *systime(time_t t)
 
 int net_time_usage(struct net_context *c, int argc, const char **argv)
 {
-	d_printf(
+	d_printf(_(
 "net time\n\tdisplays time on a server\n\n"
 "net time system\n\tdisplays time on a server in a format ready for /bin/date\n\n"
 "net time set\n\truns /bin/date with the time from the server\n\n"
 "net time zone\n\tdisplays the timezone in hours from GMT on the remote computer\n\n"
-"\n");
+"\n"));
 	net_common_flags_usage(c, argc, argv);
 	return -1;
 }
@@ -119,7 +120,7 @@ static int net_time_set(struct net_context *c, int argc, const char **argv)
 	}
 	result = system(cmd);
 	if (result)
-		d_fprintf(stderr, "%s failed.  Error was (%s)\n",
+		d_fprintf(stderr, _("%s failed.  Error was (%s)\n"),
 			cmd, strerror(errno));
 	free(cmd);
 
@@ -132,10 +133,10 @@ static int net_time_system(struct net_context *c, int argc, const char **argv)
 	time_t t;
 
 	if (c->display_usage) {
-		d_printf("Usage:\n"
-			 "net time system\n"
-			 "    Output remote time server time in a format ready "
-			 "for /bin/date\n");
+		d_printf(_("Usage:\n"
+			   "net time system\n"
+			   "    Output remote time server time in a format "
+			   "ready for /bin/date\n"));
 		return 0;
 	}
 
@@ -156,9 +157,10 @@ static int net_time_zone(struct net_context *c, int argc, const char **argv)
 	time_t t;
 
 	if (c->display_usage) {
-		d_printf("Usage:\n"
-			 "net time zone\n"
-			 "   Display the remote time server's offset to UTC\n");
+		d_printf(_("Usage:\n"
+			   "net time zone\n"
+			   "   Display the remote time server's offset to "
+			   "UTC\n"));
 		return 0;
 	}
 
@@ -187,25 +189,25 @@ int net_time(struct net_context *c, int argc, const char **argv)
 			"system",
 			net_time_system,
 			NET_TRANSPORT_LOCAL,
-			"Display time ready for /bin/date",
-			"net time system\n"
-			"    Display time ready for /bin/date"
+			N_("Display time ready for /bin/date"),
+			N_("net time system\n"
+			   "    Display time ready for /bin/date")
 		},
 		{
 			"set",
 			net_time_set,
 			NET_TRANSPORT_LOCAL,
-			"Set the system time from time server",
-			"net time set\n"
-			"    Set the system time from time server"
+			N_("Set the system time from time server"),
+			N_("net time set\n"
+			   "    Set the system time from time server")
 		},
 		{
 			"zone",
 			net_time_zone,
 			NET_TRANSPORT_LOCAL,
-			"Display timezone offset from UTC",
-			"net time zone\n"
-			"    Display timezone offset from UTC"
+			N_("Display timezone offset from UTC"),
+			N_("net time zone\n"
+			   "    Display timezone offset from UTC")
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
@@ -215,17 +217,17 @@ int net_time(struct net_context *c, int argc, const char **argv)
 	}
 
 	if (c->display_usage) {
-		d_printf("Usage:\n");
-		d_printf("net time\n"
-			 "    Display the remote time server's time\n");
+		d_printf(_("Usage:\n"
+		           "net time\n"
+			   "    Display the remote time server's time\n"));
 		net_display_usage_from_functable(func);
 		return 0;
 	}
 
 	if (!c->opt_host && !c->opt_have_ip &&
 	    !find_master_ip(c->opt_target_workgroup, &c->opt_dest_ip)) {
-		d_fprintf(stderr, "Could not locate a time server.  Try "
-				 "specifying a target host.\n");
+		d_fprintf(stderr, _("Could not locate a time server.  Try "
+				    "specifying a target host.\n"));
 		net_time_usage(c, argc,argv);
 		return -1;
 	}
