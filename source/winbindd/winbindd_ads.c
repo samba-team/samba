@@ -1122,12 +1122,20 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 
 	/* handle sids not resolved from cache by lsa_lookup_sids */
 	if (num_nocache > 0) {
+		unsigned int orig_timeout;
 
 		status = cm_connect_lsa(domain, tmp_ctx, &cli, &lsa_policy);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
+
+		/*
+		 * This call can take a long time
+		 * allow the server to time out.
+		 * 35 seconds should do it.
+		 */
+		orig_timeout = rpccli_set_timeout(cli, 35000);
 
 		status = rpccli_lsa_lookup_sids(cli, tmp_ctx,
 						&lsa_policy,
@@ -1136,6 +1144,9 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 						&domains_nocache,
 						&names_nocache,
 						&name_types_nocache);
+
+		/* And restore our original timeout. */
+		rpccli_set_timeout(cli, orig_timeout);
 
 		if (!(NT_STATUS_IS_OK(status) ||
 		      NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED) ||
@@ -1151,6 +1162,13 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				goto done;
 			}
 
+			/*
+			 * This call can take a long time
+			 * allow the server to time out.
+			 * 35 seconds should do it.
+			 */
+			orig_timeout = rpccli_set_timeout(cli, 35000);
+
 			status = rpccli_lsa_lookup_sids(cli, tmp_ctx,
 							&lsa_policy,
 							num_nocache,
@@ -1158,6 +1176,9 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 							&domains_nocache,
 							&names_nocache,
 							&name_types_nocache);
+
+			/* And restore our original timeout. */
+			rpccli_set_timeout(cli, orig_timeout);
 		}
 
 		if (NT_STATUS_IS_OK(status) ||
