@@ -72,6 +72,7 @@ o   Stefan Metzmacher <metze@samba.org>
     * BUG 2346: Fix posix ACLs when setting an ACL without explicit ACE for the
       owner.
     * BUG 6526: Let parent_dirname() correctly return toplevel filenames.
+    * BUG 6627: Raise the timeout for lsa_Lookup*() calls from 10 to 35 seconds.
     * Fix a crash bug if we timeout in net rpc trustdom list.
     * Add '--request-timeout' option to 'net'.
 
