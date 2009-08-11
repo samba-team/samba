@@ -20,8 +20,8 @@ COMMON_OBJ=$(COMDIR)/ldb.o $(COMDIR)/ldb_ldif.o \
 	   $(COMDIR)/attrib_handlers.o $(COMDIR)/ldb_controls.o $(COMDIR)/qsort.o
 
 MODDIR=modules
-MODULES_OBJ=$(MODDIR)/operational.o $(MODDIR)/rdn_name.o \
-	   $(MODDIR)/paged_results.o $(MODDIR)/sort.o $(MODDIR)/asq.o
+MODULES_OBJ=$(MODDIR)/rdn_name.o ${MODDIR}/asq.o \
+	   $(MODDIR)/paged_results.o $(MODDIR)/sort.o
 
 NSSDIR=nssldb
 NSS_OBJ= $(NSSDIR)/ldb-nss.o $(NSSDIR)/ldb-pwd.o $(NSSDIR)/ldb-grp.o
