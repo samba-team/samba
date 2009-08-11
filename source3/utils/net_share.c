@@ -23,7 +23,7 @@
 
 int net_share_usage(struct net_context *c, int argc, const char **argv)
 {
-	d_printf(
+	d_printf(_(
 	 "\nnet [<method>] share [misc. options] [targets] \n"
 	 "\tenumerates all exported resources (network shares) "
 	 "on target server\n\n"
@@ -45,10 +45,10 @@ int net_share_usage(struct net_context *c, int argc, const char **argv)
 	 "net [<method>] share MIGRATE ALL <sharename> [misc. options] [targets]"
 	 "\n\tMigrates shares (including directories, files) from remote\n"
 	 "\tto local server\n\n"
-	);
+	 ));
 	net_common_methods_usage(c, argc, argv);
 	net_common_flags_usage(c, argc, argv);
-	d_printf(
+	d_printf(_(
 	 "\t-C or --comment=<comment>\tdescriptive comment (for add only)\n"
 	 "\t-M or --maxusers=<num>\t\tmax users allowed for share\n"
 	 "\t      --acls\t\t\tcopies ACLs as well\n"
@@ -56,7 +56,7 @@ int net_share_usage(struct net_context *c, int argc, const char **argv)
 	 "\t      --timestamps\t\tpreserve timestamps while copying files\n"
 	 "\t      --destination\t\tmigration target server (default: localhost)\n"
 	 "\t-e or --exclude\t\t\tlist of shares to be excluded from mirroring\n"
-	 "\t-v or --verbose\t\t\tgive verbose output\n");
+	 "\t-v or --verbose\t\t\tgive verbose output\n"));
 	return -1;
 }
 
