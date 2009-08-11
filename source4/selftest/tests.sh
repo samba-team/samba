@@ -272,6 +272,8 @@ done
 
 plantest "rpc.echo on ncacn_np over smb2" dc $smb4torture ncacn_np:"\$SERVER[smb2]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN RPC-ECHO "$*"
 
+plantest "ntp.signd" dc $smb4torture ncacn_np:"\$SERVER" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN NTP-SIGND "$*" --configfile=st/dc/etc/smb.conf
+
 # Tests against the NTVFS POSIX backend
 NTVFSARGS=""
 NTVFSARGS="${NTVFSARGS} --option=torture:sharedelay=100000"

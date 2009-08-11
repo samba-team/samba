@@ -153,6 +153,13 @@ static NTSTATUS ntp_signd_recv(void *private_data, DATA_BLOB wrapped_input)
 		return signing_failure(ntp_signdconn, sign_request.packet_id);
 	}
 
+	/* We need to implement 'check signature' and 'request server
+	 * to sign' operations at some point */
+	if (sign_request.version != 1) {
+		talloc_free(tmp_ctx);
+		return signing_failure(ntp_signdconn, sign_request.packet_id);
+	}
+
 	domain_sid = samdb_domain_sid(ntp_signdconn->ntp_signd->samdb);
 	if (!domain_sid) {
 		talloc_free(tmp_ctx);

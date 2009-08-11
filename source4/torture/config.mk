@@ -237,6 +237,22 @@ TORTURE_NET_OBJ_FILES = $(addprefix $(torturesrcdir)/libnet/, libnet.o \
 $(eval $(call proto_header_template,$(torturesrcdir)/libnet/proto.h,$(TORTURE_NET_OBJ_FILES:.o=.c)))
 
 #################################
+# Start SUBSYSTEM TORTURE_NTP
+[MODULE::TORTURE_NTP]
+SUBSYSTEM = smbtorture
+OUTPUT_TYPE = MERGED_OBJ
+INIT_FUNCTION = torture_ntp_init
+PRIVATE_DEPENDENCIES = \
+		POPT_CREDENTIALS \
+		torture_rpc 
+# End SUBSYSTEM TORTURE_NTP
+#################################
+
+TORTURE_NTP_OBJ_FILES = $(addprefix $(torturesrcdir)/ntp/, ntp_signd.o)
+
+$(eval $(call proto_header_template,$(torturesrcdir)/ntp/proto.h,$(TORTURE_NET_OBJ_FILES:.o=.c)))
+
+#################################
 # Start BINARY smbtorture
 [BINARY::smbtorture]
 INSTALLDIR = BINDIR

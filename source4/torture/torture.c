@@ -60,7 +60,8 @@ _PUBLIC_ int torture_init(void)
 	extern NTSTATUS torture_nbt_init(void);
 	extern NTSTATUS torture_nbench_init(void);
 	extern NTSTATUS torture_rap_init(void);
-	extern NTSTATUS torture_rpc_init(void);
+ 	extern NTSTATUS torture_rpc_init(void);
+ 	extern NTSTATUS torture_ntp_init(void);
 	extern NTSTATUS torture_smb2_init(void);
 	extern NTSTATUS torture_net_init(void);
 	extern NTSTATUS torture_libnetapi_init(void);
