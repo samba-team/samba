@@ -1,10 +1,15 @@
                    ==============================
                    Release Notes for Samba 3.2.14
-			  August 10, 2009
+			  August 12, 2009
                    ==============================
 
 
-This is a maintenance release of the Samba 3.2 series.
+This is the last maintenance release of the Samba 3.2 series.
+
+Please note that this is the last bugfix release of the Samba 3.2 series!
+There will security releases on demand only. Please see
+http://wiki.samba.org/index.php/Samba3_Release_Planning for information
+on current releases.
 
 Major enhancements in 3.2.14 include:
 
