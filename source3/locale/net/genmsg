@@ -33,7 +33,7 @@ FILES=`add_basedir_to_filelist ../../utils net.c net_ads.c net_ads_gpo.c \
        net_registry_util.c net_rpc.c net_rpc_audit.c net_rpc_join.c \
        net_rpc_printer.c net_rpc_registry.c net_rpc_rights.c net_rpc_samsync.c \
        net_rpc_service.c net_rpc_sh_acct.c net_rpc_shell.c net_sam.c \
-       net_share.c net_status.c net_time.c net_user.c net_usershare.c`
+       net_share.c net_status.c net_time.c net_user.c net_usershare.c net_util.c`
 
 LANGS="af ar bg bn bs ca cs cy da de el en_GB en_US es et fi fr gl gu he hi hr
        hu id it ja ka km ko lo lt mk mr nb nl pa pl pt_BR pt ro ru si sk sl sr

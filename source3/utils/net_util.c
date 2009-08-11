@@ -40,7 +40,7 @@ NTSTATUS net_rpc_lookup_name(struct net_context *c,
 	result = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
 					  &lsa_pipe);
 	if (!NT_STATUS_IS_OK(result)) {
-		d_fprintf(stderr, "Could not initialise lsa pipe\n");
+		d_fprintf(stderr, _("Could not initialise lsa pipe\n"));
 		return result;
 	}
 
@@ -48,7 +48,7 @@ NTSTATUS net_rpc_lookup_name(struct net_context *c,
 					SEC_FLAG_MAXIMUM_ALLOWED,
 					&pol);
 	if (!NT_STATUS_IS_OK(result)) {
-		d_fprintf(stderr, "open_policy failed: %s\n",
+		d_fprintf(stderr, _("open_policy failed: %s\n"),
 			  nt_errstr(result));
 		return result;
 	}
@@ -113,21 +113,24 @@ NTSTATUS connect_to_service(struct net_context *c,
 					c->opt_user_name, c->opt_workgroup,
 					c->opt_password, flags, Undefined, NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		d_fprintf(stderr, "Could not connect to server %s\n", server_name);
+		d_fprintf(stderr, _("Could not connect to server %s\n"),
+			  server_name);
 
 		/* Display a nicer message depending on the result */
 
 		if (NT_STATUS_V(nt_status) ==
 		    NT_STATUS_V(NT_STATUS_LOGON_FAILURE))
-			d_fprintf(stderr, "The username or password was not correct.\n");
+			d_fprintf(stderr,
+				  _("The username or password was not "
+				    "correct.\n"));
 
 		if (NT_STATUS_V(nt_status) ==
 		    NT_STATUS_V(NT_STATUS_ACCOUNT_LOCKED_OUT))
-			d_fprintf(stderr, "The account was locked out.\n");
+			d_fprintf(stderr, _("The account was locked out.\n"));
 
 		if (NT_STATUS_V(nt_status) ==
 		    NT_STATUS_V(NT_STATUS_ACCOUNT_DISABLED))
-			d_fprintf(stderr, "The account was disabled.\n");
+			d_fprintf(stderr, _("The account was disabled.\n"));
 		return nt_status;
 	}
 
@@ -138,20 +141,20 @@ NTSTATUS connect_to_service(struct net_context *c,
 					c->opt_workgroup);
 
 		if (NT_STATUS_EQUAL(nt_status,NT_STATUS_NOT_SUPPORTED)) {
-			d_printf("Encryption required and "
+			d_printf(_("Encryption required and "
 				"server that doesn't support "
-				"UNIX extensions - failing connect\n");
+				"UNIX extensions - failing connect\n"));
 		} else if (NT_STATUS_EQUAL(nt_status,NT_STATUS_UNKNOWN_REVISION)) {
-			d_printf("Encryption required and "
+			d_printf(_("Encryption required and "
 				"can't get UNIX CIFS extensions "
-				"version from server.\n");
+				"version from server.\n"));
 		} else if (NT_STATUS_EQUAL(nt_status,NT_STATUS_UNSUPPORTED_COMPRESSION)) {
-			d_printf("Encryption required and "
+			d_printf(_("Encryption required and "
 				"share %s doesn't support "
-				"encryption.\n", service_name);
+				"encryption.\n"), service_name);
 		} else if (!NT_STATUS_IS_OK(nt_status)) {
-			d_printf("Encryption required and "
-				"setup failed with error %s.\n",
+			d_printf(_("Encryption required and "
+				"setup failed with error %s.\n"),
 				nt_errstr(nt_status));
 		}
 
@@ -337,7 +340,7 @@ int net_use_krb_machine_account(struct net_context *c)
 	char *user_name = NULL;
 
 	if (!secrets_init()) {
-		d_fprintf(stderr, "ERROR: Unable to open secrets database\n");
+		d_fprintf(stderr,_("ERROR: Unable to open secrets database\n"));
 		exit(1);
 	}
 
@@ -359,7 +362,7 @@ int net_use_machine_account(struct net_context *c)
 	char *user_name = NULL;
 
 	if (!secrets_init()) {
-		d_fprintf(stderr, "ERROR: Unable to open secrets database\n");
+		d_fprintf(stderr,_("ERROR: Unable to open secrets database\n"));
 		exit(1);
 	}
 
@@ -493,8 +496,8 @@ NTSTATUS net_make_ipc_connection_ex(struct net_context *c ,const char *domain,
 	if ( !server || !pss ) {
 		if (!net_find_server(c, domain, flags, &server_ss,
 				     &server_name)) {
-			d_fprintf(stderr, "Unable to find a suitable server "
-				"for domain %s\n", domain);
+			d_fprintf(stderr, _("Unable to find a suitable server "
+				"for domain %s\n"), domain);
 			nt_status = NT_STATUS_UNSUCCESSFUL;
 			goto done;
 		}
@@ -518,7 +521,7 @@ NTSTATUS net_make_ipc_connection_ex(struct net_context *c ,const char *domain,
 
 	SAFE_FREE(server_name);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		d_fprintf(stderr, "Connection failed: %s\n",
+		d_fprintf(stderr, _("Connection failed: %s\n"),
 			  nt_errstr(nt_status));
 		cli = NULL;
 	} else if (c->opt_request_timeout) {
@@ -552,7 +555,7 @@ const char *net_prompt_pass(struct net_context *c, const char *user)
 		return NULL;
 	}
 
-	if (asprintf(&prompt, "Enter %s's password:", user) == -1) {
+	if (asprintf(&prompt, _("Enter %s's password:"), user) == -1) {
 		return NULL;
 	}
 
@@ -575,7 +578,7 @@ int net_run_function(struct net_context *c, int argc, const char **argv,
 	}
 
 	if (c->display_usage == false) {
-		d_fprintf(stderr, "Invalid command: %s %s\n", whoami,
+		d_fprintf(stderr, _("Invalid command: %s %s\n"), whoami,
 			  (argc > 0)?argv[0]:"");
 	}
 	d_printf("Usage:\n");
@@ -601,11 +604,11 @@ void net_display_usage_from_functable(struct functable *table)
 const char *net_share_type_str(int num_type)
 {
 	switch(num_type) {
-		case 0: return "Disk";
-		case 1: return "Print";
-		case 2: return "Dev";
-		case 3: return "IPC";
-		default: return "Unknown";
+		case 0: return _("Disk");
+		case 1: return _("Print");
+		case 2: return _("Dev");
+		case 3: return _("IPC");
+		default: return _("Unknown");
 	}
 }
 
