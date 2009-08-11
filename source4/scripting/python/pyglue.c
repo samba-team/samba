@@ -327,6 +327,27 @@ static PyObject *py_dsdb_convert_schema_to_openldap(PyObject *self, PyObject *ar
 	return ret;
 }
 
+static PyObject *py_dom_sid_to_rid(PyLdbObject *self, PyObject *args)
+{
+	PyObject *py_sid;
+	struct dom_sid *sid;
+	uint32_t rid;
+	NTSTATUS status;
+	
+	if(!PyArg_ParseTuple(args, "O", &py_sid))
+		return NULL;
+
+	sid = dom_sid_parse_talloc(NULL, PyString_AsString(py_sid));
+
+	status = dom_sid_split_rid(NULL, sid, NULL, &rid);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetString(PyExc_RuntimeError, "dom_sid_split_rid failed");
+		return NULL;
+	}
+
+	return PyInt_FromLong(rid);
+}
+
 static PyMethodDef py_misc_methods[] = {
 	{ "generate_random_str", (PyCFunction)py_generate_random_str, METH_VARARGS,
 		"random_password(len) -> string\n"
@@ -357,6 +378,8 @@ static PyMethodDef py_misc_methods[] = {
 	{ "dsdb_attach_schema_from_ldif", (PyCFunction)py_dsdb_attach_schema_from_ldif, METH_VARARGS,
 		NULL },
 	{ "dsdb_convert_schema_to_openldap", (PyCFunction)py_dsdb_convert_schema_to_openldap, METH_VARARGS,
+		NULL },
+	{ "dom_sid_to_rid", (PyCFunction)py_dom_sid_to_rid, METH_VARARGS,
 		NULL },
 	{ NULL }
 };

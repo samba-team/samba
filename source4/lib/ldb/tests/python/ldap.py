@@ -17,9 +17,11 @@ from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError
 from ldb import ERR_NO_SUCH_OBJECT, ERR_ATTRIBUTE_OR_VALUE_EXISTS
 from ldb import ERR_ENTRY_ALREADY_EXISTS, ERR_UNWILLING_TO_PERFORM
 from ldb import ERR_NOT_ALLOWED_ON_NON_LEAF, ERR_OTHER, ERR_INVALID_DN_SYNTAX
+from ldb import Message, Dn
 from samba import Ldb
 from subunit import SubunitTestRunner
 from samba import param
+from samba import glue
 import unittest
 
 parser = optparse.OptionParser("ldap [options] <host>")
@@ -125,21 +127,67 @@ class BasicTests(unittest.TestCase):
         ldb.delete("cn=testotherusers," + self.base_dn)
 
     def test_groupType(self):
-        """Test groupType behaviour 
-        (should appear to be casted to a 32 bit signed integer before comparsion)"""
+        """Test groupType behaviour (should appear to be casted to a 32 bit signed integer before comparsion)"""
         print "Testing groupType behaviour\n"
         
         res1 = ldb.search(base=self.base_dn, scope=SCOPE_SUBTREE,
-                          attrs=["groupType"], expression="groupType=2147483650");
+                          attrs=["groupType"], expression="groupType=2147483653");
 
         res2 = ldb.search(base=self.base_dn, scope=SCOPE_SUBTREE,
-                          attrs=["groupType"], expression="groupType=-2147483646");
+                          attrs=["groupType"], expression="groupType=-2147483643");
 
         self.assertEquals(len(res1), len(res2))
 
         self.assertTrue(res1.count > 0)
 
-        self.assertEquals(res1[0]["groupType"][0], "-2147483646")
+        self.assertEquals(res1[0]["groupType"][0], "-2147483643")
+
+    def test_primary_group_token(self):
+        """Test the primary group token behaviour (hidden-generated-readonly attribute on groups)"""
+        print "Testing primary group token behaviour\n"
+
+        ldb.add({
+            "dn": "cn=ldaptestuser,cn=uSers," + self.base_dn,
+            "objectclass": ["user", "person"],
+            "cN": "LDAPtestUSER",
+            "givenname": "ldap",
+            "sn": "testy"})
+
+        ldb.add({
+            "dn": "cn=ldaptestgroup,cn=uSers," + self.base_dn,
+            "objectclass": "group",
+            "member": "cn=ldaptestuser,cn=useRs," + self.base_dn})
+
+        res1 = ldb.search("cn=ldaptestuser, cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["primaryGroupToken"])
+        self.assertTrue(len(res1) == 1)
+        self.assertFalse("primaryGroupToken" in res1[0])
+
+	res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE)
+        self.assertTrue(len(res1) == 1)
+        self.assertFalse("primaryGroupToken" in res1[0])
+
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["primaryGroupToken", "objectSID"])
+        self.assertTrue(len(res1) == 1)
+        primary_group_token = int(res1[0]["primaryGroupToken"][0])
+
+	rid = glue.dom_sid_to_rid(ldb.schema_format_value("objectSID", res1[0]["objectSID"][0]))
+        self.assertEquals(primary_group_token, rid)
+
+# Has to wait until we support read-only generated attributes correctly
+#        m = Message()
+#        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+#        m["primaryGroupToken"] = "100"
+#        try:
+#                ldb.modify(m)
+#                self.fail()
+#        except LdbError, (num, msg):
+#                print msg
+
+        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
     def test_all(self):
         """Basic tests"""
@@ -148,11 +196,11 @@ class BasicTests(unittest.TestCase):
 
         print "Testing user add"
         ldb.add({
-        "dn": "cn=ldaptestuser,cn=uSers," + self.base_dn,
-        "objectclass": ["user", "person"],
-        "cN": "LDAPtestUSER",
-        "givenname": "ldap",
-        "sn": "testy"})
+            "dn": "cn=ldaptestuser,cn=uSers," + self.base_dn,
+            "objectclass": ["user", "person"],
+            "cN": "LDAPtestUSER",
+            "givenname": "ldap",
+            "sn": "testy"})
 
         ldb.add({
             "dn": "cn=ldaptestgroup,cn=uSers," + self.base_dn,
