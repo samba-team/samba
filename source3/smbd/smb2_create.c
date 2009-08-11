@@ -272,7 +272,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 	smbreq = smbd_smb2_fake_smb_request(smb2req);
 	if (tevent_req_nomem(smbreq, req)) {
-		goto out;
+		return tevent_req_post(req, ev);
 	}
 
 	if (IS_IPC(smbreq->conn)) {
@@ -280,7 +280,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 		if (!lp_nt_pipe_support()) {
 			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
-			goto out;
+			return tevent_req_post(req, ev);
 		}
 
 		/* Strip \\ off the name. */
@@ -291,7 +291,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		status = open_np_file(smbreq, pipe_name, &result);
 		if (!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);
-			goto out;
+			return tevent_req_post(req, ev);
 		}
 		info = FILE_WAS_OPENED;
 		ZERO_STRUCT(sbuf);
@@ -299,7 +299,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		status = file_new(smbreq, smbreq->conn, &result);
 		if(!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);
-			goto out;
+			return tevent_req_post(req, ev);
 		}
 
 		status = print_fsp_open(smbreq,
@@ -311,7 +311,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			file_free(smbreq, result);
 			tevent_req_nterror(req, status);
-			goto out;
+			return tevent_req_post(req, ev);
 		}
 		info = FILE_WAS_CREATED;
 	} else {
@@ -325,21 +325,19 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		status = check_path_syntax(in_name);
 		if (!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);
-			TALLOC_FREE(smb_fname);
-			goto out;
+			return tevent_req_post(req, ev);
 		}
 
-		status = filename_convert(talloc_tos(),
-					smbreq->conn,
-					smbreq->flags2 & FLAGS2_DFS_PATHNAMES,
-					in_name,
-					0,
-					NULL,
-					&smb_fname);
+		status = filename_convert(req,
+					  smbreq->conn,
+					  smbreq->flags2 & FLAGS2_DFS_PATHNAMES,
+					  in_name,
+					  0,
+					  NULL,
+					  &smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);
-			TALLOC_FREE(smb_fname);
-			goto out;
+			return tevent_req_post(req, ev);
 		}
 
 		status = SMB_VFS_CREATE_FILE(smbreq->conn,
@@ -359,11 +357,9 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					     &info);
 		if (!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);
-			TALLOC_FREE(smb_fname);
-			goto out;
+			return tevent_req_post(req, ev);
 		}
 		sbuf = smb_fname->st;
-		TALLOC_FREE(smb_fname);
 	}
 
 	smb2req->compat_chain_fsp = smbreq->chain_fsp;
@@ -389,7 +385,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	state->out_file_id_volatile = result->fnum;
 
 	tevent_req_done(req);
- out:
 	return tevent_req_post(req, ev);
 }
 
