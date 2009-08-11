@@ -448,7 +448,7 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 	}
 
 	if (creds2.length != sig_size) {
-		DEBUG(0,("dcesrv_auth_response: creds2.length[%u] != sig_size[%u] pad[%u] stub[%u]\n",
+		DEBUG(0,("ncacn_push_request_sign: creds2.length[%u] != sig_size[%u] pad[%u] stub[%u]\n",
 			creds2.length, (uint32_t)sig_size,
 			c->security_state.auth_info->auth_pad_length,
 			pkt->u.request.stub_and_verifier.length));
