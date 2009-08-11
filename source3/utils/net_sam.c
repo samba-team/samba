@@ -37,48 +37,48 @@ static int net_sam_userset(struct net_context *c, int argc, const char **argv,
 	NTSTATUS status;
 
 	if (argc != 2 || c->display_usage) {
-		d_fprintf(stderr, "usage: net sam set %s <user> <value>\n",
+		d_fprintf(stderr, _("usage: net sam set %s <user> <value>\n"),
 			  field);
 		return -1;
 	}
 
 	if (!lookup_name(talloc_tos(), argv[0], LOOKUP_NAME_LOCAL,
 			 &dom, &name, &sid, &type)) {
-		d_fprintf(stderr, "Could not find name %s\n", argv[0]);
+		d_fprintf(stderr, _("Could not find name %s\n"), argv[0]);
 		return -1;
 	}
 
 	if (type != SID_NAME_USER) {
-		d_fprintf(stderr, "%s is a %s, not a user\n", argv[0],
+		d_fprintf(stderr, _("%s is a %s, not a user\n"), argv[0],
 			  sid_type_lookup(type));
 		return -1;
 	}
 
 	if ( !(sam_acct = samu_new( NULL )) ) {
-		d_fprintf(stderr, "Internal error\n");
+		d_fprintf(stderr, _("Internal error\n"));
 		return -1;
 	}
 
 	if (!pdb_getsampwsid(sam_acct, &sid)) {
-		d_fprintf(stderr, "Loading user %s failed\n", argv[0]);
+		d_fprintf(stderr, _("Loading user %s failed\n"), argv[0]);
 		return -1;
 	}
 
 	if (!fn(sam_acct, argv[1], PDB_CHANGED)) {
-		d_fprintf(stderr, "Internal error\n");
+		d_fprintf(stderr, _("Internal error\n"));
 		return -1;
 	}
 
 	status = pdb_update_sam_account(sam_acct);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_fprintf(stderr, "Updating sam account %s failed with %s\n",
+		d_fprintf(stderr, _("Updating sam account %s failed with %s\n"),
 			  argv[0], nt_errstr(status));
 		return -1;
 	}
 
 	TALLOC_FREE(sam_acct);
 
-	d_printf("Updated %s for %s\\%s to %s\n", field, dom, name, argv[1]);
+	d_printf(_("Updated %s for %s\\%s to %s\n"), field, dom, name, argv[1]);
 	return 0;
 }
 
@@ -142,30 +142,30 @@ static int net_sam_set_userflag(struct net_context *c, int argc,
 	if ((argc != 2) || c->display_usage ||
 	    (!strequal(argv[1], "yes") &&
 	     !strequal(argv[1], "no"))) {
-		d_fprintf(stderr, "usage: net sam set %s <user> [yes|no]\n",
+		d_fprintf(stderr, _("usage: net sam set %s <user> [yes|no]\n"),
 			  field);
 		return -1;
 	}
 
 	if (!lookup_name(talloc_tos(), argv[0], LOOKUP_NAME_LOCAL,
 			 &dom, &name, &sid, &type)) {
-		d_fprintf(stderr, "Could not find name %s\n", argv[0]);
+		d_fprintf(stderr, _("Could not find name %s\n"), argv[0]);
 		return -1;
 	}
 
 	if (type != SID_NAME_USER) {
-		d_fprintf(stderr, "%s is a %s, not a user\n", argv[0],
+		d_fprintf(stderr, _("%s is a %s, not a user\n"), argv[0],
 			  sid_type_lookup(type));
 		return -1;
 	}
 
 	if ( !(sam_acct = samu_new( NULL )) ) {
-		d_fprintf(stderr, "Internal error\n");
+		d_fprintf(stderr, _("Internal error\n"));
 		return -1;
 	}
 
 	if (!pdb_getsampwsid(sam_acct, &sid)) {
-		d_fprintf(stderr, "Loading user %s failed\n", argv[0]);
+		d_fprintf(stderr, _("Loading user %s failed\n"), argv[0]);
 		return -1;
 	}
 
@@ -181,14 +181,14 @@ static int net_sam_set_userflag(struct net_context *c, int argc,
 
 	status = pdb_update_sam_account(sam_acct);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_fprintf(stderr, "Updating sam account %s failed with %s\n",
+		d_fprintf(stderr, _("Updating sam account %s failed with %s\n"),
 			  argv[0], nt_errstr(status));
 		return -1;
 	}
 
 	TALLOC_FREE(sam_acct);
 
-	d_fprintf(stderr, "Updated flag %s for %s\\%s to %s\n", field, dom,
+	d_fprintf(stderr, _("Updated flag %s for %s\\%s to %s\n"), field, dom,
 		  name, argv[1]);
 	return 0;
 }
@@ -233,29 +233,31 @@ static int net_sam_set_pwdmustchangenow(struct net_context *c, int argc,
 	if ((argc != 2) || c->display_usage ||
 	    (!strequal(argv[1], "yes") &&
 	     !strequal(argv[1], "no"))) {
-		d_fprintf(stderr, "usage: net sam set pwdmustchangenow <user> [yes|no]\n");
+		d_fprintf(stderr,
+			  _("usage: net sam set pwdmustchangenow <user> "
+			    "[yes|no]\n"));
 		return -1;
 	}
 
 	if (!lookup_name(talloc_tos(), argv[0], LOOKUP_NAME_LOCAL,
 			 &dom, &name, &sid, &type)) {
-		d_fprintf(stderr, "Could not find name %s\n", argv[0]);
+		d_fprintf(stderr, _("Could not find name %s\n"), argv[0]);
 		return -1;
 	}
 
 	if (type != SID_NAME_USER) {
-		d_fprintf(stderr, "%s is a %s, not a user\n", argv[0],
+		d_fprintf(stderr, _("%s is a %s, not a user\n"), argv[0],
 			  sid_type_lookup(type));
 		return -1;
 	}
 
 	if ( !(sam_acct = samu_new( NULL )) ) {
-		d_fprintf(stderr, "Internal error\n");
+		d_fprintf(stderr, _("Internal error\n"));
 		return -1;
 	}
 
 	if (!pdb_getsampwsid(sam_acct, &sid)) {
-		d_fprintf(stderr, "Loading user %s failed\n", argv[0]);
+		d_fprintf(stderr, _("Loading user %s failed\n"), argv[0]);
 		return -1;
 	}
 
@@ -267,14 +269,15 @@ static int net_sam_set_pwdmustchangenow(struct net_context *c, int argc,
 
 	status = pdb_update_sam_account(sam_acct);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_fprintf(stderr, "Updating sam account %s failed with %s\n",
+		d_fprintf(stderr, _("Updating sam account %s failed with %s\n"),
 			  argv[0], nt_errstr(status));
 		return -1;
 	}
 
 	TALLOC_FREE(sam_acct);
 
-	d_fprintf(stderr, "Updated 'user must change password at next logon' for %s\\%s to %s\n", dom,
+	d_fprintf(stderr, _("Updated 'user must change password at next logon' "
+			    "for %s\\%s to %s\n"), dom,
 		  name, argv[1]);
 	return 0;
 }
@@ -294,14 +297,14 @@ static int net_sam_set_comment(struct net_context *c, int argc,
 	NTSTATUS status;
 
 	if (argc != 2 || c->display_usage) {
-		d_fprintf(stderr, "usage: net sam set comment <name> "
-			  "<comment>\n");
+		d_fprintf(stderr, _("usage: net sam set comment <name> "
+			  "<comment>\n"));
 		return -1;
 	}
 
 	if (!lookup_name(talloc_tos(), argv[0], LOOKUP_NAME_LOCAL,
 			 &dom, &name, &sid, &type)) {
-		d_fprintf(stderr, "Could not find name %s\n", argv[0]);
+		d_fprintf(stderr, _("Could not find name %s\n"), argv[0]);
 		return -1;
 	}
 
@@ -312,13 +315,13 @@ static int net_sam_set_comment(struct net_context *c, int argc,
 
 	if ((type != SID_NAME_DOM_GRP) && (type != SID_NAME_ALIAS) &&
 	    (type != SID_NAME_WKN_GRP)) {
-		d_fprintf(stderr, "%s is a %s, not a group\n", argv[0],
+		d_fprintf(stderr, _("%s is a %s, not a group\n"), argv[0],
 			  sid_type_lookup(type));
 		return -1;
 	}
 
 	if (!pdb_getgrsid(&map, sid)) {
-		d_fprintf(stderr, "Could not load group %s\n", argv[0]);
+		d_fprintf(stderr, _("Could not load group %s\n"), argv[0]);
 		return -1;
 	}
 
@@ -327,8 +330,8 @@ static int net_sam_set_comment(struct net_context *c, int argc,
 	status = pdb_update_group_mapping_entry(&map);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		d_fprintf(stderr, "Updating group mapping entry failed with "
-			  "%s\n", nt_errstr(status));
+		d_fprintf(stderr, _("Updating group mapping entry failed with "
+			  "%s\n"), nt_errstr(status));
 		return -1;
 	}
 
@@ -345,97 +348,99 @@ static int net_sam_set(struct net_context *c, int argc, const char **argv)
 			"homedir",
 			net_sam_set_homedir,
 			NET_TRANSPORT_LOCAL,
-			"Change a user's home directory",
-			"net sam set homedir\n"
-			"    Change a user's home directory"
+			N_("Change a user's home directory"),
+			N_("net sam set homedir\n"
+			   "    Change a user's home directory")
 		},
 		{
 			"profilepath",
 			net_sam_set_profilepath,
 			NET_TRANSPORT_LOCAL,
-			"Change a user's profile path",
-			"net sam set profilepath\n"
-			"    Change a user's profile path"
+			N_("Change a user's profile path"),
+			N_("net sam set profilepath\n"
+			   "    Change a user's profile path")
 		},
 		{
 			"comment",
 			net_sam_set_comment,
 			NET_TRANSPORT_LOCAL,
-			"Change a users or groups description",
-			"net sam set comment\n"
-			"    Change a users or groups description"
+			N_("Change a users or groups description"),
+			N_("net sam set comment\n"
+			   "    Change a users or groups description")
 		},
 		{
 			"fullname",
 			net_sam_set_fullname,
 			NET_TRANSPORT_LOCAL,
-			"Change a user's full name",
-			"net sam set fullname\n"
-			"    Change a user's full name"
+			N_("Change a user's full name"),
+			N_("net sam set fullname\n"
+			   "    Change a user's full name")
 		},
 		{
 			"logonscript",
 			net_sam_set_logonscript,
 			NET_TRANSPORT_LOCAL,
-			"Change a user's logon script",
-			"net sam set logonscript\n"
-			"    Change a user's logon script"
+			N_("Change a user's logon script"),
+			N_("net sam set logonscript\n"
+			   "    Change a user's logon script")
 		},
 		{
 			"homedrive",
 			net_sam_set_homedrive,
 			NET_TRANSPORT_LOCAL,
-			"Change a user's home drive",
-			"net sam set homedrive\n"
-			"    Change a user's home drive"
+			N_("Change a user's home drive"),
+			N_("net sam set homedrive\n"
+			   "    Change a user's home drive")
 		},
 		{
 			"workstations",
 			net_sam_set_workstations,
 			NET_TRANSPORT_LOCAL,
-			"Change a user's allowed workstations",
-			"net sam set workstations\n"
-			"    Change a user's allowed workstations"
+			N_("Change a user's allowed workstations"),
+			N_("net sam set workstations\n"
+			   "    Change a user's allowed workstations")
 		},
 		{
 			"disabled",
 			net_sam_set_disabled,
 			NET_TRANSPORT_LOCAL,
-			"Disable/Enable a user",
-			"net sam set disable\n"
-			"    Disable/Enable a user"
+			N_("Disable/Enable a user"),
+			N_("net sam set disable\n"
+			   "    Disable/Enable a user")
 		},
 		{
 			"pwnotreq",
 			net_sam_set_pwnotreq,
 			NET_TRANSPORT_LOCAL,
-			"Disable/Enable the password not required flag",
-			"net sam set pwnotreq\n"
-			"    Disable/Enable the password not required flag"
+			N_("Disable/Enable the password not required flag"),
+			N_("net sam set pwnotreq\n"
+			   "    Disable/Enable the password not required flag")
 		},
 		{
 			"autolock",
 			net_sam_set_autolock,
 			NET_TRANSPORT_LOCAL,
-			"Disable/Enable a user's lockout flag",
-			"net sam set autolock\n"
-			"    Disable/Enable a user's lockout flag"
+			N_("Disable/Enable a user's lockout flag"),
+			N_("net sam set autolock\n"
+			   "    Disable/Enable a user's lockout flag")
 		},
 		{
 			"pwnoexp",
 			net_sam_set_pwnoexp,
 			NET_TRANSPORT_LOCAL,
-			"Disable/Enable whether a user's pw does not expire",
-			"net sam set pwnoexp\n"
-			"    Disable/Enable whether a user's pw does not expire"
+			N_("Disable/Enable whether a user's pw does not "
+			   "expire"),
+			N_("net sam set pwnoexp\n"
+			   "    Disable/Enable whether a user's pw does not "
+			   "expire")
 		},
 		{
 			"pwdmustchangenow",
 			net_sam_set_pwdmustchangenow,
 			NET_TRANSPORT_LOCAL,
-			"Force users password must change at next logon",
-			"net sam set pwdmustchangenow\n"
-			"    Force users password must change at next logon"
+			N_("Force users password must change at next logon"),
+			N_("net sam set pwdmustchangenow\n"
+			   "    Force users password must change at next logon")
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
@@ -456,8 +461,8 @@ static int net_sam_policy_set(struct net_context *c, int argc, const char **argv
 	char *endptr;
 
         if (argc != 2 || c->display_usage) {
-                d_fprintf(stderr, "usage: net sam policy set " 
-			  "\"<account policy>\" <value> \n");
+                d_fprintf(stderr, _("usage: net sam policy set "
+			  "\"<account policy>\" <value> \n"));
                 return -1;
         }
 
@@ -472,9 +477,9 @@ static int net_sam_policy_set(struct net_context *c, int argc, const char **argv
 		value = strtoul(argv[1], &endptr, 10);
 
 		if ((endptr == argv[1]) || (endptr[0] != '\0')) {
-			d_printf("Unable to set policy \"%s\"! Invalid value "
-				 "\"%s\".\n", 
-				 account_policy, argv[1]); 
+			d_printf(_("Unable to set policy \"%s\"! Invalid value "
+				 "\"%s\".\n"),
+				 account_policy, argv[1]);
 			return -1;
 		}
 	}
@@ -484,8 +489,8 @@ static int net_sam_policy_set(struct net_context *c, int argc, const char **argv
                 int i, count;
 
                 account_policy_names_list(&names, &count);
-		d_fprintf(stderr, "No account policy \"%s\"!\n\n", argv[0]);
-		d_fprintf(stderr, "Valid account policies are:\n");
+		d_fprintf(stderr, _("No account policy \"%s\"!\n\n"), argv[0]);
+		d_fprintf(stderr, _("Valid account policies are:\n"));
 
 		for (i=0; i<count; i++) {
 			d_fprintf(stderr, "%s\n", names[i]);
@@ -496,20 +501,20 @@ static int net_sam_policy_set(struct net_context *c, int argc, const char **argv
 	}
 
 	if (!pdb_get_account_policy(field, &old_value)) {
-		d_fprintf(stderr, "Valid account policy, but unable to fetch "
-			  "value!\n");
+		d_fprintf(stderr, _("Valid account policy, but unable to fetch "
+			  "value!\n"));
 	} else {
-		d_printf("Account policy \"%s\" value was: %d\n", account_policy,
-			old_value);
+		d_printf(_("Account policy \"%s\" value was: %d\n"),
+			account_policy, old_value);
 	}
 
 	if (!pdb_set_account_policy(field, value)) {
-		d_fprintf(stderr, "Valid account policy, but unable to "
-			  "set value!\n");
+		d_fprintf(stderr, _("Valid account policy, but unable to "
+			  "set value!\n"));
 		return -1;
 	} else {
-		d_printf("Account policy \"%s\" value is now: %d\n", account_policy,
-			value);
+		d_printf(_("Account policy \"%s\" value is now: %d\n"),
+			account_policy, value);
 	}
 
 	return 0;
@@ -522,8 +527,8 @@ static int net_sam_policy_show(struct net_context *c, int argc, const char **arg
         enum pdb_policy_type field;
 
         if (argc != 1 || c->display_usage) {
-                d_fprintf(stderr, "usage: net sam policy show"
-			  " \"<account policy>\" \n");
+                d_fprintf(stderr, _("usage: net sam policy show"
+			  " \"<account policy>\" \n"));
                 return -1;
         }
 
@@ -535,10 +540,10 @@ static int net_sam_policy_show(struct net_context *c, int argc, const char **arg
 		int count;
 		int i;
                 account_policy_names_list(&names, &count);
-                d_fprintf(stderr, "No account policy by that name!\n");
+                d_fprintf(stderr, _("No account policy by that name!\n"));
                 if (count != 0) {
-                        d_fprintf(stderr, "Valid account policies "
-                                  "are:\n");
+                        d_fprintf(stderr, _("Valid account policies "
+                                  "are:\n"));
 			for (i=0; i<count; i++) {
 				d_fprintf(stderr, "%s\n", names[i]);
 			}
@@ -548,14 +553,14 @@ static int net_sam_policy_show(struct net_context *c, int argc, const char **arg
         }
 
 	if (!pdb_get_account_policy(field, &old_value)) {
-                fprintf(stderr, "Valid account policy, but unable to "
-                        "fetch value!\n");
+                fprintf(stderr, _("Valid account policy, but unable to "
+                        "fetch value!\n"));
                 return -1;
         }
 
-	printf("Account policy \"%s\" description: %s\n",
+	printf(_("Account policy \"%s\" description: %s\n"),
 	       account_policy, account_policy_get_desc(field));
-        printf("Account policy \"%s\" value is: %d\n", account_policy,
+        printf(_("Account policy \"%s\" value is: %d\n"), account_policy,
 	       old_value);
         return 0;
 }
@@ -567,16 +572,16 @@ static int net_sam_policy_list(struct net_context *c, int argc, const char **arg
 	int i;
 
 	if (c->display_usage) {
-		d_printf("Usage:\n"
-			 "net sam policy list\n"
-			 "    List account policies\n");
+		d_printf(_("Usage:\n"
+			   "net sam policy list\n"
+			   "    List account policies\n"));
 		return 0;
 	}
 
 	account_policy_names_list(&names, &count);
         if (count != 0) {
-        	d_fprintf(stderr, "Valid account policies "
-			  "are:\n");
+		d_fprintf(stderr, _("Valid account policies "
+			  "are:\n"));
 		for (i = 0; i < count ; i++) {
 			d_fprintf(stderr, "%s\n", names[i]);
 		}
@@ -592,25 +597,25 @@ static int net_sam_policy(struct net_context *c, int argc, const char **argv)
 			"list",
 			net_sam_policy_list,
 			NET_TRANSPORT_LOCAL,
-			"List account policies",
-			"net sam policy list\n"
-			"    List account policies"
+			N_("List account policies"),
+			N_("net sam policy list\n"
+			   "    List account policies")
 		},
                 {
 			"show",
 			net_sam_policy_show,
 			NET_TRANSPORT_LOCAL,
-			"Show account policies",
-			"net sam policy show\n"
-			"    Show account policies"
+			N_("Show account policies"),
+			N_("net sam policy show\n"
+			   "    Show account policies")
 		},
 		{
 			"set",
 			net_sam_policy_set,
 			NET_TRANSPORT_LOCAL,
-			"Change account policies",
-			"net sam policy set\n"
-			"    Change account policies"
+			N_("Change account policies"),
+			N_("net sam policy set\n"
+			   "    Change account policies")
 		},
                 {NULL, NULL, 0, NULL, NULL}
         };
@@ -626,7 +631,8 @@ static int net_sam_rights_list(struct net_context *c, int argc,
 	SE_PRIV mask;
 
 	if (argc > 1 || c->display_usage) {
-		d_fprintf(stderr, "usage: net sam rights list [privilege name]\n");
+		d_fprintf(stderr,
+			  _("usage: net sam rights list [privilege name]\n"));
 		return -1;
 	}
 
@@ -648,7 +654,7 @@ static int net_sam_rights_list(struct net_context *c, int argc,
 		status = privilege_enum_sids(&mask, talloc_tos(),
 					     &sids, &num_sids);
 		if (!NT_STATUS_IS_OK(status)) {
-			d_fprintf(stderr, "Could not list rights: %s\n",
+			d_fprintf(stderr, _("Could not list rights: %s\n"),
 				  nt_errstr(status));
 			return -1;
 		}
@@ -681,29 +687,29 @@ static int net_sam_rights_grant(struct net_context *c, int argc,
 	int i;
 
 	if (argc < 2 || c->display_usage) {
-		d_fprintf(stderr, "usage: net sam rights grant <name> "
-			"<rights> ...\n");
+		d_fprintf(stderr, _("usage: net sam rights grant <name> "
+			"<rights> ...\n"));
 		return -1;
 	}
 
 	if (!lookup_name(talloc_tos(), argv[0], LOOKUP_NAME_LOCAL,
 			&dom, &name, &sid, &type)) {
-		d_fprintf(stderr, "Could not find name %s\n", argv[0]);
+		d_fprintf(stderr, _("Could not find name %s\n"), argv[0]);
 		return -1;
 	}
 
 	for (i=1; i < argc; i++) {
 		if (!se_priv_from_name(argv[i], &mask)) {
-			d_fprintf(stderr, "%s unknown\n", argv[i]);
+			d_fprintf(stderr, _("%s unknown\n"), argv[i]);
 			return -1;
 		}
 
 		if (!grant_privilege(&sid, &mask)) {
-			d_fprintf(stderr, "Could not grant privilege\n");
+			d_fprintf(stderr, _("Could not grant privilege\n"));
 			return -1;
 		}
 
-		d_printf("Granted %s to %s\\%s\n", argv[i], dom, name);
+		d_printf(_("Granted %s to %s\\%s\n"), argv[i], dom, name);
 	}
 
 	return 0;
@@ -719,30 +725,30 @@ static int net_sam_rights_revoke(struct net_context *c, int argc,
 	int i;
 
 	if (argc < 2 || c->display_usage) {
-		d_fprintf(stderr, "usage: net sam rights revoke <name> "
-			"<rights>\n");
+		d_fprintf(stderr, _("usage: net sam rights revoke <name> "
+			"<rights>\n"));
 		return -1;
 	}
 
 	if (!lookup_name(talloc_tos(), argv[0], LOOKUP_NAME_LOCAL,
 			&dom, &name, &sid, &type)) {
-		d_fprintf(stderr, "Could not find name %s\n", argv[0]);
+		d_fprintf(stderr, _("Could not find name %s\n"), argv[0]);
 		return -1;
 	}
 
 	for (i=1; i < argc; i++) {
 
 		if (!se_priv_from_name(argv[i], &mask)) {
-			d_fprintf(stderr, "%s unknown\n", argv[i]);
+			d_fprintf(stderr, _("%s unknown\n"), argv[i]);
 			return -1;
 		}
 
 		if (!revoke_privilege(&sid, &mask)) {
-			d_fprintf(stderr, "Could not revoke privilege\n");
+			d_fprintf(stderr, _("Could not revoke privilege\n"));
 			return -1;
 		}
 
-		d_printf("Revoked %s from %s\\%s\n", argv[i], dom, name);
+		d_printf(_("Revoked %s from %s\\%s\n"), argv[i], dom, name);
 	}
 
 	return 0;
@@ -755,25 +761,25 @@ static int net_sam_rights(struct net_context *c, int argc, const char **argv)
 			"list",
 			net_sam_rights_list,
 			NET_TRANSPORT_LOCAL,
-			"List possible user rights",
-			"net sam rights list\n"
-			"    List possible user rights"
+			N_("List possible user rights"),
+			N_("net sam rights list\n"
+			   "    List possible user rights")
 		},
 		{
 			"grant",
 			net_sam_rights_grant,
 			NET_TRANSPORT_LOCAL,
-			"Grant right(s)",
-			"net sam rights grant\n"
-			"    Grant right(s)"
+			N_("Grant right(s)"),
+			N_("net sam rights grant\n"
+			   "    Grant right(s)")
 		},
 		{
 			"revoke",
 			net_sam_rights_revoke,
 			NET_TRANSPORT_LOCAL,
-			"Revoke right(s)",
-			"net sam rights revoke\n"
-			"    Revoke right(s)"
+			N_("Revoke right(s)"),
+			N_("net sam rights revoke\n"
+			   "    Revoke right(s)")
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
@@ -846,25 +852,25 @@ static int net_sam_mapunixgroup(struct net_context *c, int argc, const char **ar
 	struct group *grp;
 
 	if (argc != 1 || c->display_usage) {
-		d_fprintf(stderr, "usage: net sam mapunixgroup <name>\n");
+		d_fprintf(stderr, _("usage: net sam mapunixgroup <name>\n"));
 		return -1;
 	}
 
 	grp = getgrnam(argv[0]);
 	if (grp == NULL) {
-		d_fprintf(stderr, "Could not find group %s\n", argv[0]);
+		d_fprintf(stderr, _("Could not find group %s\n"), argv[0]);
 		return -1;
 	}
 
 	status = map_unix_group(grp, &map);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		d_fprintf(stderr, "Mapping group %s failed with %s\n",
+		d_fprintf(stderr, _("Mapping group %s failed with %s\n"),
 			  argv[0], nt_errstr(status));
 		return -1;
 	}
 
-	d_printf("Mapped unix group %s to SID %s\n", argv[0],
+	d_printf(_("Mapped unix group %s to SID %s\n"), argv[0],
 		 sid_string_tos(&map.sid));
 
 	return 0;
@@ -908,25 +914,26 @@ static int net_sam_unmapunixgroup(struct net_context *c, int argc, const char **
 	struct group *grp;
 
 	if (argc != 1 || c->display_usage) {
-		d_fprintf(stderr, "usage: net sam unmapunixgroup <name>\n");
+		d_fprintf(stderr, _("usage: net sam unmapunixgroup <name>\n"));
 		return -1;
 	}
 
 	grp = getgrnam(argv[0]);
 	if (grp == NULL) {
-		d_fprintf(stderr, "Could not find mapping for group %s.\n", argv[0]);
+		d_fprintf(stderr, _("Could not find mapping for group %s.\n"),
+			  argv[0]);
 		return -1;
 	}
 
 	status = unmap_unix_group(grp, &map);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		d_fprintf(stderr, "Unmapping group %s failed with %s.\n",
+		d_fprintf(stderr, _("Unmapping group %s failed with %s.\n"),
 			  argv[0], nt_errstr(status));
 		return -1;
 	}
 
-	d_printf("Unmapped unix group %s.\n", argv[0]);
+	d_printf(_("Unmapped unix group %s.\n"), argv[0]);
 
 	return 0;
 }
@@ -942,19 +949,20 @@ static int net_sam_createdomaingroup(struct net_context *c, int argc,
 	uint32 rid;
 
 	if (argc != 1 || c->display_usage) {
-		d_fprintf(stderr, "usage: net sam createdomaingroup <name>\n");
+		d_fprintf(stderr,
+			  _("usage: net sam createdomaingroup <name>\n"));
 		return -1;
 	}
 
 	status = pdb_create_dom_group(talloc_tos(), argv[0], &rid);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		d_fprintf(stderr, "Creating %s failed with %s\n",
+		d_fprintf(stderr, _("Creating %s failed with %s\n"),
 			  argv[0], nt_errstr(status));
 		return -1;
 	}
 
-	d_printf("Created domain group %s with RID %d\n", argv[0], rid);
+	d_printf(_("Created domain group %s with RID %d\n"), argv[0], rid);
 
 	return 0;
 }
@@ -973,19 +981,19 @@ static int net_sam_deletedomaingroup(struct net_context *c, int argc,
 	NTSTATUS status;
 
 	if (argc != 1 || c->display_usage) {
-		d_fprintf(stderr, "usage: net sam deletelocalgroup <name>\n");
+		d_fprintf(stderr,_("usage: net sam deletelocalgroup <name>\n"));
 		return -1;
 	}
 
 	if (!lookup_name(talloc_tos(), argv[0], LOOKUP_NAME_LOCAL,
 			 &dom, &name, &sid, &type)) {
-		d_fprintf(stderr, "Could not find %s.\n", argv[0]);
+		d_fprintf(stderr, _("Could not find %s.\n"), argv[0]);
 		return -1;
 	}
 
 	if (type != SID_NAME_DOM_GRP) {
-		d_fprintf(stderr, "%s is a %s, not a domain group.\n", argv[0],
-			  sid_type_lookup(type));
+		d_fprintf(stderr, _("%s is a %s, not a domain group.\n"),
+			  argv[0], sid_type_lookup(type));
 		return -1;
 	}
 
@@ -994,12 +1002,12 @@ static int net_sam_deletedomaingroup(struct net_context *c, int argc,
 	status = pdb_delete_dom_group(talloc_tos(), rid);
 
 	if (!NT_STATUS_IS_OK(status)) {
-                d_fprintf(stderr, "Deleting domain group %s failed with %s\n",
+                d_fprintf(stderr,_("Deleting domain group %s failed with %s\n"),
                           argv[0], nt_errstr(status));
                 return -1;
         }
 
-	d_printf("Deleted domain group %s.\n", argv[0]);
+	d_printf(_("Deleted domain group %s.\n"), argv[0]);
 
 	return 0;
 }
@@ -1014,25 +1022,25 @@ static int net_sam_createlocalgroup(struct net_context *c, int argc, const char 
 	uint32 rid;
 
 	if (argc != 1 || c->display_usage) {
-		d_fprintf(stderr, "usage: net sam createlocalgroup <name>\n");
+		d_fprintf(stderr,_("usage: net sam createlocalgroup <name>\n"));
 		return -1;
 	}
 
 	if (!winbind_ping()) {
-		d_fprintf(stderr, "winbind seems not to run. createlocalgroup "
-			  "only works when winbind runs.\n");
+		d_fprintf(stderr, _("winbind seems not to run. "
+			  "createlocalgroup only works when winbind runs.\n"));
 		return -1;
 	}
 
 	status = pdb_create_alias(argv[0], &rid);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		d_fprintf(stderr, "Creating %s failed with %s\n",
+		d_fprintf(stderr, _("Creating %s failed with %s\n"),
 			  argv[0], nt_errstr(status));
 		return -1;
 	}
 
-	d_printf("Created local group %s with RID %d\n", argv[0], rid);
+	d_printf(_("Created local group %s with RID %d\n"), argv[0], rid);
 
 	return 0;
 }
@@ -1049,18 +1057,18 @@ static int net_sam_deletelocalgroup(struct net_context *c, int argc, const char 
 	NTSTATUS status;
 
 	if (argc != 1 || c->display_usage) {
-		d_fprintf(stderr, "usage: net sam deletelocalgroup <name>\n");
+		d_fprintf(stderr,_("usage: net sam deletelocalgroup <name>\n"));
 		return -1;
 	}
 
 	if (!lookup_name(talloc_tos(), argv[0], LOOKUP_NAME_LOCAL,
 			 &dom, &name, &sid, &type)) {
-		d_fprintf(stderr, "Could not find %s.\n", argv[0]);
+		d_fprintf(stderr,_("Could not find %s.\n"), argv[0]);
 		return -1;
 	}
 
 	if (type != SID_NAME_ALIAS) {
-		d_fprintf(stderr, "%s is a %s, not a local group.\n", argv[0],
+		d_fprintf(stderr, _("%s is a %s, not a local group.\n"),argv[0],
 			  sid_type_lookup(type));
 		return -1;
 	}
@@ -1068,12 +1076,12 @@ static int net_sam_deletelocalgroup(struct net_context *c, int argc, const char 
 	status = pdb_delete_alias(&sid);
 
 	if (!NT_STATUS_IS_OK(status)) {
-                d_fprintf(stderr, "Deleting local group %s failed with %s\n",
+                d_fprintf(stderr, _("Deleting local group %s failed with %s\n"),
                           argv[0], nt_errstr(status));
                 return -1;
         }
 
-	d_printf("Deleted local group %s.\n", argv[0]);
+	d_printf(_("Deleted local group %s.\n"), argv[0]);
 
 	return 0;
 }
@@ -1091,13 +1099,15 @@ static int net_sam_createbuiltingroup(struct net_context *c, int argc, const cha
 	DOM_SID sid;
 
 	if (argc != 1 || c->display_usage) {
-		d_fprintf(stderr, "usage: net sam createbuiltingroup <name>\n");
+		d_fprintf(stderr,
+			  _("usage: net sam createbuiltingroup <name>\n"));
 		return -1;
 	}
 
 	if (!winbind_ping()) {
-		d_fprintf(stderr, "winbind seems not to run. createbuiltingroup "
-			  "only works when winbind runs.\n");
+		d_fprintf(stderr, _("winbind seems not to run. "
+			  "createbuiltingroup only works when winbind "
+			  "runs.\n"));
 		return -1;
 	}
 
@@ -1108,24 +1118,24 @@ static int net_sam_createbuiltingroup(struct net_context *c, int argc, const cha
 
 	if ( !lookup_name(talloc_tos(), groupname, LOOKUP_NAME_ALL, NULL,
 			  NULL, &sid, &type)) {
-		d_fprintf(stderr, "%s is not a BUILTIN group\n", argv[0]);
+		d_fprintf(stderr, _("%s is not a BUILTIN group\n"), argv[0]);
 		return -1;
 	}
 
 	if ( !sid_peek_rid( &sid, &rid ) ) {
-		d_fprintf(stderr, "Failed to get RID for %s\n", argv[0]);
+		d_fprintf(stderr, _("Failed to get RID for %s\n"), argv[0]);
 		return -1;
 	}
 
 	status = pdb_create_builtin_alias( rid );
 
 	if (!NT_STATUS_IS_OK(status)) {
-		d_fprintf(stderr, "Creating %s failed with %s\n",
+		d_fprintf(stderr, _("Creating %s failed with %s\n"),
 			  argv[0], nt_errstr(status));
 		return -1;
 	}
 
-	d_printf("Created BUILTIN group %s with RID %d\n", argv[0], rid);
+	d_printf(_("Created BUILTIN group %s with RID %d\n"), argv[0], rid);
 
 	return 0;
 }
@@ -1142,13 +1152,13 @@ static int net_sam_addmem(struct net_context *c, int argc, const char **argv)
 	NTSTATUS status;
 
 	if (argc != 2 || c->display_usage) {
-		d_fprintf(stderr, "usage: net sam addmem <group> <member>\n");
+		d_fprintf(stderr,_("usage: net sam addmem <group> <member>\n"));
 		return -1;
 	}
 
 	if (!lookup_name(talloc_tos(), argv[0], LOOKUP_NAME_LOCAL,
 			 &groupdomain, &groupname, &group, &grouptype)) {
-		d_fprintf(stderr, "Could not find group %s\n", argv[0]);
+		d_fprintf(stderr, _("Could not find group %s\n"), argv[0]);
 		return -1;
 	}
 
@@ -1160,14 +1170,16 @@ static int net_sam_addmem(struct net_context *c, int argc, const char **argv)
 		/* try it as a SID */
 
 		if ( !string_to_sid( &member, argv[1] ) ) {
-			d_fprintf(stderr, "Could not find member %s\n", argv[1]);
+			d_fprintf(stderr, _("Could not find member %s\n"),
+				  argv[1]);
 			return -1;
 		}
 
 		if ( !lookup_sid(talloc_tos(), &member, &memberdomain,
 			&membername, &membertype) )
 		{
-			d_fprintf(stderr, "Could not resolve SID %s\n", argv[1]);
+			d_fprintf(stderr, _("Could not resolve SID %s\n"),
+				  argv[1]);
 			return -1;
 		}
 	}
@@ -1175,17 +1187,17 @@ static int net_sam_addmem(struct net_context *c, int argc, const char **argv)
 	if ((grouptype == SID_NAME_ALIAS) || (grouptype == SID_NAME_WKN_GRP)) {
 		if ((membertype != SID_NAME_USER) &&
 		    (membertype != SID_NAME_DOM_GRP)) {
-			d_fprintf(stderr, "%s is a local group, only users "
+			d_fprintf(stderr, _("%s is a local group, only users "
 				  "and domain groups can be added.\n"
-				  "%s is a %s\n", argv[0], argv[1],
+				  "%s is a %s\n"), argv[0], argv[1],
 				  sid_type_lookup(membertype));
 			return -1;
 		}
 		status = pdb_add_aliasmem(&group, &member);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			d_fprintf(stderr, "Adding local group member failed "
-				  "with %s\n", nt_errstr(status));
+			d_fprintf(stderr, _("Adding local group member failed "
+				  "with %s\n"), nt_errstr(status));
 			return -1;
 		}
 	} else if (grouptype == SID_NAME_DOM_GRP) {
@@ -1196,18 +1208,18 @@ static int net_sam_addmem(struct net_context *c, int argc, const char **argv)
 
 		status = pdb_add_groupmem(talloc_tos(), grouprid, memberrid);
 		if (!NT_STATUS_IS_OK(status)) {
-			d_fprintf(stderr, "Adding domain group member failed "
-				  "with %s\n", nt_errstr(status));
+			d_fprintf(stderr, _("Adding domain group member failed "
+				  "with %s\n"), nt_errstr(status));
 			return -1;
 		}
 	} else {
-		d_fprintf(stderr, "Can only add members to local groups so "
-			  "far, %s is a %s\n", argv[0],
+		d_fprintf(stderr, _("Can only add members to local groups so "
+			  "far, %s is a %s\n"), argv[0],
 			  sid_type_lookup(grouptype));
 		return -1;
 	}
 
-	d_printf("Added %s\\%s to %s\\%s\n", memberdomain, membername,
+	d_printf(_("Added %s\\%s to %s\\%s\n"), memberdomain, membername,
 		groupdomain, groupname);
 
 	return 0;
@@ -1227,20 +1239,20 @@ static int net_sam_delmem(struct net_context *c, int argc, const char **argv)
 	NTSTATUS status;
 
 	if (argc != 2 || c->display_usage) {
-		d_fprintf(stderr, "usage: net sam delmem <group> <member>\n");
+		d_fprintf(stderr,_("usage: net sam delmem <group> <member>\n"));
 		return -1;
 	}
 
 	if (!lookup_name(talloc_tos(), argv[0], LOOKUP_NAME_LOCAL,
 			 &groupdomain, &groupname, &group, &grouptype)) {
-		d_fprintf(stderr, "Could not find group %s\n", argv[0]);
+		d_fprintf(stderr, _("Could not find group %s\n"), argv[0]);
 		return -1;
 	}
 
 	if (!lookup_name(talloc_tos(), argv[1], LOOKUP_NAME_LOCAL,
 			 &memberdomain, &membername, &member, NULL)) {
 		if (!string_to_sid(&member, argv[1])) {
-			d_fprintf(stderr, "Could not find member %s\n",
+			d_fprintf(stderr, _("Could not find member %s\n"),
 				  argv[1]);
 			return -1;
 		}
@@ -1251,8 +1263,8 @@ static int net_sam_delmem(struct net_context *c, int argc, const char **argv)
 		status = pdb_del_aliasmem(&group, &member);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			d_fprintf(stderr, "Deleting local group member failed "
-				  "with %s\n", nt_errstr(status));
+			d_fprintf(stderr,_("Deleting local group member failed "
+				  "with %s\n"), nt_errstr(status));
 			return -1;
 		}
 	} else if (grouptype == SID_NAME_DOM_GRP) {
@@ -1263,22 +1275,22 @@ static int net_sam_delmem(struct net_context *c, int argc, const char **argv)
 
 		status = pdb_del_groupmem(talloc_tos(), grouprid, memberrid);
 		if (!NT_STATUS_IS_OK(status)) {
-			d_fprintf(stderr, "Deleting domain group member "
-				  "failed with %s\n", nt_errstr(status));
+			d_fprintf(stderr, _("Deleting domain group member "
+				  "failed with %s\n"), nt_errstr(status));
 			return -1;
 		}
 	} else {
-		d_fprintf(stderr, "Can only delete members from local groups "
-			  "so far, %s is a %s\n", argv[0],
+		d_fprintf(stderr, _("Can only delete members from local groups "
+			  "so far, %s is a %s\n"), argv[0],
 			  sid_type_lookup(grouptype));
 		return -1;
 	}
 
 	if (membername != NULL) {
-		d_printf("Deleted %s\\%s from %s\\%s\n",
+		d_printf(_("Deleted %s\\%s from %s\\%s\n"),
 			 memberdomain, membername, groupdomain, groupname);
 	} else {
-		d_printf("Deleted %s from %s\\%s\n",
+		d_printf(_("Deleted %s from %s\\%s\n"),
 			 sid_string_tos(&member), groupdomain, groupname);
 	}
 
@@ -1299,13 +1311,13 @@ static int net_sam_listmem(struct net_context *c, int argc, const char **argv)
 	NTSTATUS status;
 
 	if (argc != 1 || c->display_usage) {
-		d_fprintf(stderr, "usage: net sam listmem <group>\n");
+		d_fprintf(stderr, _("usage: net sam listmem <group>\n"));
 		return -1;
 	}
 
 	if (!lookup_name(talloc_tos(), argv[0], LOOKUP_NAME_LOCAL,
 			 &groupdomain, &groupname, &group, &grouptype)) {
-		d_fprintf(stderr, "Could not find group %s\n", argv[0]);
+		d_fprintf(stderr, _("Could not find group %s\n"), argv[0]);
 		return -1;
 	}
 
@@ -1314,8 +1326,8 @@ static int net_sam_listmem(struct net_context *c, int argc, const char **argv)
 		status = pdb_enum_aliasmem(&group, talloc_tos(), &members,
 					   &num_members);
 		if (!NT_STATUS_IS_OK(status)) {
-			d_fprintf(stderr, "Listing group members failed with "
-				  "%s\n", nt_errstr(status));
+			d_fprintf(stderr, _("Listing group members failed with "
+				  "%s\n"), nt_errstr(status));
 			return -1;
 		}
 	} else if (grouptype == SID_NAME_DOM_GRP) {
@@ -1324,8 +1336,8 @@ static int net_sam_listmem(struct net_context *c, int argc, const char **argv)
 		status = pdb_enum_group_members(talloc_tos(), &group,
 						&rids, &num_members);
 		if (!NT_STATUS_IS_OK(status)) {
-			d_fprintf(stderr, "Listing group members failed with "
-				  "%s\n", nt_errstr(status));
+			d_fprintf(stderr, _("Listing group members failed with "
+				  "%s\n"), nt_errstr(status));
 			return -1;
 		}
 
@@ -1342,12 +1354,12 @@ static int net_sam_listmem(struct net_context *c, int argc, const char **argv)
 		}
 		TALLOC_FREE(rids);
 	} else {
-		d_fprintf(stderr, "Can only list local group members so far.\n"
-			  "%s is a %s\n", argv[0], sid_type_lookup(grouptype));
+		d_fprintf(stderr,_("Can only list local group members so far.\n"
+			  "%s is a %s\n"), argv[0], sid_type_lookup(grouptype));
 		return -1;
 	}
 
-	d_printf("%s\\%s has %u members\n", groupdomain, groupname,
+	d_printf(_("%s\\%s has %u members\n"), groupdomain, groupname,
 		 (unsigned int)num_members);
 	for (i=0; i<num_members; i++) {
 		const char *dom, *name;
@@ -1373,12 +1385,12 @@ static int net_sam_do_list(struct net_context *c, int argc, const char **argv,
 
 	if ((argc > 1) || c->display_usage ||
 	    ((argc == 1) && !strequal(argv[0], "verbose"))) {
-		d_fprintf(stderr, "usage: net sam list %s [verbose]\n", what);
+		d_fprintf(stderr,_("usage: net sam list %s [verbose]\n"), what);
 		return -1;
 	}
 
 	if (search == NULL) {
-		d_fprintf(stderr, "Could not start search\n");
+		d_fprintf(stderr, _("Could not start search\n"));
 		return -1;
 	}
 
@@ -1453,41 +1465,41 @@ static int net_sam_list(struct net_context *c, int argc, const char **argv)
 			"users",
 			net_sam_list_users,
 			NET_TRANSPORT_LOCAL,
-			"List SAM users",
-			"net sam list users\n"
-			"    List SAM users"
+			N_("List SAM users"),
+			N_("net sam list users\n"
+			   "    List SAM users")
 		},
 		{
 			"groups",
 			net_sam_list_groups,
 			NET_TRANSPORT_LOCAL,
-			"List SAM groups",
-			"net sam list groups\n"
-			"    List SAM groups"
+			N_("List SAM groups"),
+			N_("net sam list groups\n"
+			   "    List SAM groups")
 		},
 		{
 			"localgroups",
 			net_sam_list_localgroups,
 			NET_TRANSPORT_LOCAL,
-			"List SAM local groups",
-			"net sam list localgroups\n"
-			"    List SAM local groups"
+			N_("List SAM local groups"),
+			N_("net sam list localgroups\n"
+			   "    List SAM local groups")
 		},
 		{
 			"builtin",
 			net_sam_list_builtin,
 			NET_TRANSPORT_LOCAL,
-			"List builtin groups",
-			"net sam list builtin\n"
-			"    List builtin groups"
+			N_("List builtin groups"),
+			N_("net sam list builtin\n"
+			   "    List builtin groups")
 		},
 		{
 			"workstations",
 			net_sam_list_workstations,
 			NET_TRANSPORT_LOCAL,
-			"List domain member workstations",
-			"net sam list workstations\n"
-			"    List domain member workstations"
+			N_("List domain member workstations"),
+			N_("net sam list workstations\n"
+			   "    List domain member workstations")
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
@@ -1506,17 +1518,17 @@ static int net_sam_show(struct net_context *c, int argc, const char **argv)
 	const char *dom, *name;
 
 	if (argc != 1 || c->display_usage) {
-		d_fprintf(stderr, "usage: net sam show <name>\n");
+		d_fprintf(stderr, _("usage: net sam show <name>\n"));
 		return -1;
 	}
 
 	if (!lookup_name(talloc_tos(), argv[0], LOOKUP_NAME_LOCAL,
 			 &dom, &name, &sid, &type)) {
-		d_fprintf(stderr, "Could not find name %s\n", argv[0]);
+		d_fprintf(stderr, _("Could not find name %s\n"), argv[0]);
 		return -1;
 	}
 
-	d_printf("%s\\%s is a %s with SID %s\n", dom, name,
+	d_printf(_("%s\\%s is a %s with SID %s\n"), dom, name,
 		 sid_type_lookup(type), sid_string_tos(&sid));
 
 	return 0;
@@ -1544,20 +1556,21 @@ static int net_sam_provision(struct net_context *c, int argc, const char **argv)
 	struct passwd *pwd;
 
 	if (c->display_usage) {
-		d_printf("Usage:\n"
-			 "net sam provision\n"
-			 "    Init an LDAP tree with default users/groups\n");
+		d_printf(_("Usage:\n"
+			   "net sam provision\n"
+			    "    Init an LDAP tree with default "
+			    "users/groups\n"));
 		return 0;
 	}
 
 	tc = talloc_new(NULL);
 	if (!tc) {
-		d_fprintf(stderr, "Out of Memory!\n");
+		d_fprintf(stderr, _("Out of Memory!\n"));
 		return -1;
 	}
 
 	if ((ldap_bk = talloc_strdup(tc, lp_passdb_backend())) == NULL) {
-		d_fprintf(stderr, "talloc failed\n");
+		d_fprintf(stderr, _("talloc failed\n"));
 		talloc_free(tc);
 		return -1;
 	}
@@ -1569,32 +1582,33 @@ static int net_sam_provision(struct net_context *c, int argc, const char **argv)
 	}
 
 	trim_char(ldap_bk, ' ', ' ');
-	        
+
 	if (strcmp(ldap_bk, "ldapsam") != 0) {
-		d_fprintf(stderr, "Provisioning works only with ldapsam backend\n");
+		d_fprintf(stderr,
+			  _("Provisioning works only with ldapsam backend\n"));
 		goto failed;
 	}
-	
+
 	if (!lp_parm_bool(-1, "ldapsam", "trusted", false) ||
 	    !lp_parm_bool(-1, "ldapsam", "editposix", false)) {
 
-		d_fprintf(stderr, "Provisioning works only if ldapsam:trusted"
-				  " and ldapsam:editposix are enabled.\n");
+		d_fprintf(stderr, _("Provisioning works only if ldapsam:trusted"
+				    " and ldapsam:editposix are enabled.\n"));
 		goto failed;
 	}
 
 	if (!winbind_ping()) {
-		d_fprintf(stderr, "winbind seems not to run. Provisioning "
-			  "LDAP only works when winbind runs.\n");
+		d_fprintf(stderr, _("winbind seems not to run. Provisioning "
+			    "LDAP only works when winbind runs.\n"));
 		goto failed;
 	}
 
 	if (!NT_STATUS_IS_OK(smbldap_init(tc, NULL, ldap_uri, &ls))) {
-		d_fprintf(stderr, "Unable to connect to the LDAP server.\n");
+		d_fprintf(stderr, _("Unable to connect to the LDAP server.\n"));
 		goto failed;
 	}
 
-	d_printf("Checking for Domain Users group.\n");
+	d_printf(_("Checking for Domain Users group.\n"));
 
 	sid_compose(&gsid, get_global_sam_sid(), DOMAIN_GROUP_RID_USERS);
 
@@ -1607,11 +1621,12 @@ static int net_sam_provision(struct net_context *c, int argc, const char **argv)
 		char *gtype;
 		int rc;
 
-		d_printf("Adding the Domain Users group.\n");
+		d_printf(_("Adding the Domain Users group.\n"));
 
 		/* lets allocate a new groupid for this group */
 		if (!winbind_allocate_gid(&domusers_gid)) {
-			d_fprintf(stderr, "Unable to allocate a new gid to create Domain Users group!\n");
+			d_fprintf(stderr, _("Unable to allocate a new gid to "
+					    "create Domain Users group!\n"));
 			goto domu_done;
 		}
 
@@ -1640,16 +1655,17 @@ static int net_sam_provision(struct net_context *c, int argc, const char **argv)
 		rc = smbldap_add(ls, dn, mods);
 
 		if (rc != LDAP_SUCCESS) {
-			d_fprintf(stderr, "Failed to add Domain Users group to ldap directory\n");
+			d_fprintf(stderr, _("Failed to add Domain Users group "
+					    "to ldap directory\n"));
 		}
 	} else {
 		domusers_gid = gmap.gid;
-		d_printf("found!\n");
-	}	
+		d_printf(_("found!\n"));
+	}
 
 domu_done:
 
-	d_printf("Checking for Domain Admins group.\n");
+	d_printf(_("Checking for Domain Admins group.\n"));
 
 	sid_compose(&gsid, get_global_sam_sid(), DOMAIN_GROUP_RID_ADMINS);
 
@@ -1662,11 +1678,12 @@ domu_done:
 		char *gtype;
 		int rc;
 
-		d_printf("Adding the Domain Admins group.\n");
+		d_printf(_("Adding the Domain Admins group.\n"));
 
 		/* lets allocate a new groupid for this group */
 		if (!winbind_allocate_gid(&domadmins_gid)) {
-			d_fprintf(stderr, "Unable to allocate a new gid to create Domain Admins group!\n");
+			d_fprintf(stderr, _("Unable to allocate a new gid to "
+					    "create Domain Admins group!\n"));
 			goto doma_done;
 		}
 
@@ -1677,7 +1694,7 @@ domu_done:
 		gtype = talloc_asprintf(tc, "%d", SID_NAME_DOM_GRP);
 
 		if (!uname || !wname || !dn || !gidstr || !gtype) {
-			d_fprintf(stderr, "Out of Memory!\n");
+			d_fprintf(stderr, _("Out of Memory!\n"));
 			goto failed;
 		}
 
@@ -1695,20 +1712,21 @@ domu_done:
 		rc = smbldap_add(ls, dn, mods);
 
 		if (rc != LDAP_SUCCESS) {
-			d_fprintf(stderr, "Failed to add Domain Admins group to ldap directory\n");
+			d_fprintf(stderr, _("Failed to add Domain Admins group "
+					    "to ldap directory\n"));
 		}
 	} else {
 		domadmins_gid = gmap.gid;
-		d_printf("found!\n");
+		d_printf(_("found!\n"));
 	}
 
 doma_done:
 
-	d_printf("Check for Administrator account.\n");
+	d_printf(_("Check for Administrator account.\n"));
 
 	samuser = samu_new(tc);
 	if (!samuser) {
-		d_fprintf(stderr, "Out of Memory!\n");
+		d_fprintf(stderr, _("Out of Memory!\n"));
 		goto failed;
 	}
 
@@ -1723,15 +1741,19 @@ doma_done:
 		char *dir;
 		uid_t uid;
 		int rc;
-		
-		d_printf("Adding the Administrator user.\n");
+
+		d_printf(_("Adding the Administrator user.\n"));
 
 		if (domadmins_gid == -1) {
-			d_fprintf(stderr, "Can't create Administrator user, Domain Admins group not available!\n");
+			d_fprintf(stderr,
+				  _("Can't create Administrator user, Domain "
+				    "Admins group not available!\n"));
 			goto done;
 		}
 		if (!winbind_allocate_uid(&uid)) {
-			d_fprintf(stderr, "Unable to allocate a new uid to create the Administrator user!\n");
+			d_fprintf(stderr,
+				  _("Unable to allocate a new uid to create "
+				    "the Administrator user!\n"));
 			goto done;
 		}
 		name = talloc_strdup(tc, "Administrator");
@@ -1748,7 +1770,7 @@ doma_done:
 						uid, domadmins_gid);
 
 		if (!name || !dn || !uidstr || !gidstr || !dir || !shell) {
-			d_fprintf(stderr, "Out of Memory!\n");
+			d_fprintf(stderr, _("Out of Memory!\n"));
 			goto failed;
 		}
 
@@ -1775,17 +1797,18 @@ doma_done:
 		rc = smbldap_add(ls, dn, mods);
 
 		if (rc != LDAP_SUCCESS) {
-			d_fprintf(stderr, "Failed to add Administrator user to ldap directory\n");
+			d_fprintf(stderr, _("Failed to add Administrator user "
+					    "to ldap directory\n"));
 		}
 	} else {
-		d_printf("found!\n");
+		d_printf(_("found!\n"));
 	}
 
-	d_printf("Checking for Guest user.\n");
+	d_printf(_("Checking for Guest user.\n"));
 
 	samuser = samu_new(tc);
 	if (!samuser) {
-		d_fprintf(stderr, "Out of Memory!\n");
+		d_fprintf(stderr, _("Out of Memory!\n"));
 		goto failed;
 	}
 
@@ -1796,30 +1819,34 @@ doma_done:
 		char *uidstr;
 		char *gidstr;
 		int rc;
-		
-		d_printf("Adding the Guest user.\n");
+
+		d_printf(_("Adding the Guest user.\n"));
 
 		pwd = getpwnam_alloc(tc, lp_guestaccount());
 
 		if (!pwd) {
 			if (domusers_gid == -1) {
-				d_fprintf(stderr, "Can't create Guest user, Domain Users group not available!\n");
+				d_fprintf(stderr,
+					  _("Can't create Guest user, Domain "
+					    "Users group not available!\n"));
 				goto done;
 			}
 			if ((pwd = talloc(tc, struct passwd)) == NULL) {
-				d_fprintf(stderr, "talloc failed\n");
+				d_fprintf(stderr, _("talloc failed\n"));
 				goto done;
 			}
 			pwd->pw_name = talloc_strdup(pwd, lp_guestaccount());
 			if (!winbind_allocate_uid(&(pwd->pw_uid))) {
-				d_fprintf(stderr, "Unable to allocate a new uid to create the Guest user!\n");
+				d_fprintf(stderr,
+					  _("Unable to allocate a new uid to "
+					    "create the Guest user!\n"));
 				goto done;
 			}
 			pwd->pw_gid = domusers_gid;
 			pwd->pw_dir = talloc_strdup(tc, "/");
 			pwd->pw_shell = talloc_strdup(tc, "/bin/false");
 			if (!pwd->pw_dir || !pwd->pw_shell) {
-				d_fprintf(stderr, "Out of Memory!\n");
+				d_fprintf(stderr, _("Out of Memory!\n"));
 				goto failed;
 			}
 		}
@@ -1830,7 +1857,7 @@ doma_done:
 		uidstr = talloc_asprintf(tc, "%u", (unsigned int)pwd->pw_uid);
 		gidstr = talloc_asprintf(tc, "%u", (unsigned int)pwd->pw_gid);
 		if (!dn || !uidstr || !gidstr) {
-			d_fprintf(stderr, "Out of Memory!\n");
+			d_fprintf(stderr, _("Out of Memory!\n"));
 			goto failed;
 		}
 
@@ -1859,23 +1886,25 @@ doma_done:
 		rc = smbldap_add(ls, dn, mods);
 
 		if (rc != LDAP_SUCCESS) {
-			d_fprintf(stderr, "Failed to add Guest user to ldap directory\n");
+			d_fprintf(stderr, _("Failed to add Guest user to "
+					    "ldap directory\n"));
 		}
 	} else {
-		d_printf("found!\n");
+		d_printf(_("found!\n"));
 	}
 
-	d_printf("Checking Guest's group.\n");
+	d_printf(_("Checking Guest's group.\n"));
 
 	pwd = getpwnam_alloc(talloc_autofree_context(), lp_guestaccount());
 	if (!pwd) {
-		d_fprintf(stderr, "Failed to find just created Guest account!\n"
-				  "   Is nss properly configured?!\n");
+		d_fprintf(stderr,
+			  _("Failed to find just created Guest account!\n"
+			    "   Is nss properly configured?!\n"));
 		goto failed;
 	}
 
 	if (pwd->pw_gid == domusers_gid) {
-		d_printf("found!\n");
+		d_printf(_("found!\n"));
 		goto done;
 	}
 
@@ -1888,7 +1917,7 @@ doma_done:
 		char *gtype;
 		int rc;
 
-		d_printf("Adding the Domain Guests group.\n");
+		d_printf(_("Adding the Domain Guests group.\n"));
 
 		uname = talloc_strdup(tc, "domguests");
 		wname = talloc_strdup(tc, "Domain Guests");
@@ -1897,7 +1926,7 @@ doma_done:
 		gtype = talloc_asprintf(tc, "%d", SID_NAME_DOM_GRP);
 
 		if (!uname || !wname || !dn || !gidstr || !gtype) {
-			d_fprintf(stderr, "Out of Memory!\n");
+			d_fprintf(stderr, _("Out of Memory!\n"));
 			goto failed;
 		}
 
@@ -1917,10 +1946,12 @@ doma_done:
 		rc = smbldap_add(ls, dn, mods);
 
 		if (rc != LDAP_SUCCESS) {
-			d_fprintf(stderr, "Failed to add Domain Guests group to ldap directory\n");
+			d_fprintf(stderr,
+				  _("Failed to add Domain Guests group to ldap "
+				    "directory\n"));
 		}
 	} else {
-		d_printf("found!\n");
+		d_printf(_("found!\n"));
 	}
 
 
@@ -1945,140 +1976,140 @@ int net_sam(struct net_context *c, int argc, const char **argv)
 			"createbuiltingroup",
 			net_sam_createbuiltingroup,
 			NET_TRANSPORT_LOCAL,
-			"Create a new BUILTIN group",
-			"net sam createbuiltingroup\n"
-			"    Create a new BUILTIN group"
+			N_("Create a new BUILTIN group"),
+			N_("net sam createbuiltingroup\n"
+			   "    Create a new BUILTIN group")
 		},
 		{
 			"createlocalgroup",
 			net_sam_createlocalgroup,
 			NET_TRANSPORT_LOCAL,
-			"Create a new local group",
-			"net sam createlocalgroup\n"
-			"    Create a new local group"
+			N_("Create a new local group"),
+			N_("net sam createlocalgroup\n"
+			   "    Create a new local group")
 		},
 		{
 			"createdomaingroup",
 			net_sam_createdomaingroup,
 			NET_TRANSPORT_LOCAL,
-			"Create a new group",
-			"net sam createdomaingroup\n"
-			"    Create a new group"
+			N_("Create a new group"),
+			N_("net sam createdomaingroup\n"
+			   "    Create a new group")
 		},
 		{
 			"deletelocalgroup",
 			net_sam_deletelocalgroup,
 			NET_TRANSPORT_LOCAL,
-			"Delete an existing local group",
-			"net sam deletelocalgroup\n"
-			"    Delete an existing local group"
+			N_("Delete an existing local group"),
+			N_("net sam deletelocalgroup\n"
+			   "    Delete an existing local group")
 		},
 		{
 			"deletedomaingroup",
 			net_sam_deletedomaingroup,
 			NET_TRANSPORT_LOCAL,
-			"Delete a domain group",
-			"net sam deletedomaingroup\n"
-			"    Delete a group"
+			N_("Delete a domain group"),
+			N_("net sam deletedomaingroup\n"
+			   "    Delete a group")
 		},
 		{
 			"mapunixgroup",
 			net_sam_mapunixgroup,
 			NET_TRANSPORT_LOCAL,
-			"Map a unix group to a domain group",
-			"net sam mapunixgroup\n"
-			"    Map a unix group to a domain group"
+			N_("Map a unix group to a domain group"),
+			N_("net sam mapunixgroup\n"
+			   "    Map a unix group to a domain group")
 		},
 		{
 			"unmapunixgroup",
 			net_sam_unmapunixgroup,
 			NET_TRANSPORT_LOCAL,
-			"Remove a group mapping of an unix group to a domain "
-			"group",
-			"net sam unmapunixgroup\n"
-			"    Remove a group mapping of an unix group to a "
-			"domain group"
+			N_("Remove a group mapping of an unix group to a "
+			   "domain group"),
+			N_("net sam unmapunixgroup\n"
+			   "    Remove a group mapping of an unix group to a "
+			   "domain group")
 		},
 		{
 			"addmem",
 			net_sam_addmem,
 			NET_TRANSPORT_LOCAL,
-			"Add a member to a group",
-			"net sam addmem\n"
-			"    Add a member to a group"
+			N_("Add a member to a group"),
+			N_("net sam addmem\n"
+			"    Add a member to a group")
 		},
 		{
 			"delmem",
 			net_sam_delmem,
 			NET_TRANSPORT_LOCAL,
-			"Delete a member from a group",
-			"net sam delmem\n"
-			"    Delete a member from a group"
+			N_("Delete a member from a group"),
+			N_("net sam delmem\n"
+			   "    Delete a member from a group")
 		},
 		{
 			"listmem",
 			net_sam_listmem,
 			NET_TRANSPORT_LOCAL,
-			"List group members",
-			"net sam listmem\n"
-			"    List group members"
+			N_("List group members"),
+			N_("net sam listmem\n"
+			   "    List group members")
 		},
 		{
 			"list",
 			net_sam_list,
 			NET_TRANSPORT_LOCAL,
-			"List users, groups and local groups",
-			"net sam list\n"
-			"    List users, groups and local groups"
+			N_("List users, groups and local groups"),
+			N_("net sam list\n"
+			   "    List users, groups and local groups")
 		},
 		{
 			"show",
 			net_sam_show,
 			NET_TRANSPORT_LOCAL,
-			"Show details of a SAM entry",
-			"net sam show\n"
-			"    Show details of a SAM entry"
+			N_("Show details of a SAM entry"),
+			N_("net sam show\n"
+			   "    Show details of a SAM entry")
 		},
 		{
 			"set",
 			net_sam_set,
 			NET_TRANSPORT_LOCAL,
-			"Set details of a SAM account",
-			"net sam set\n"
-			"    Set details of a SAM account"
+			N_("Set details of a SAM account"),
+			N_("net sam set\n"
+			   "    Set details of a SAM account")
 		},
 		{
 			"policy",
 			net_sam_policy,
 			NET_TRANSPORT_LOCAL,
-			"Set account policies",
-			"net sam policy\n"
-			"    Set account policies"
+			N_("Set account policies"),
+			N_("net sam policy\n"
+			   "    Set account policies")
 		},
 		{
 			"rights",
 			net_sam_rights,
 			NET_TRANSPORT_LOCAL,
-			"Manipulate user privileges",
-			"net sam rights\n"
-			"    Manipulate user privileges"
+			N_("Manipulate user privileges"),
+			N_("net sam rights\n"
+			   "    Manipulate user privileges")
 		},
 #ifdef HAVE_LDAP
 		{
 			"provision",
 			net_sam_provision,
 			NET_TRANSPORT_LOCAL,
-			"Provision a clean user database",
-			"net sam privison\n"
-			"    Provision a clear user database"
+			N_("Provision a clean user database"),
+			N_("net sam privison\n"
+			   "    Provision a clear user database")
 		},
 #endif
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
 	if (getuid() != 0) {
-		d_fprintf(stderr, "You are not root, most things won't "
-			  "work\n");
+		d_fprintf(stderr, _("You are not root, most things won't "
+			  "work\n"));
 	}
 
 	return net_run_function(c, argc, argv, "net sam", func);
