@@ -131,6 +131,7 @@ static int smbd_smb2_session_destructor(struct smbd_smb2_session *session)
 
 	idr_remove(session->sconn->smb2.sessions.idtree, session->vuid);
 	DLIST_REMOVE(session->sconn->smb2.sessions.list, session);
+	invalidate_vuid(session->sconn, session->vuid);
 
 	session->vuid = 0;
 	session->status = NT_STATUS_USER_SESSION_DELETED;
