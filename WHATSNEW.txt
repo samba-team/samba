@@ -29,6 +29,8 @@ Changes since 3.2.13
 
 
 o   Michael Adam <obnox@samba.org>
+    * BUG 6387: Fix Winbind crash when multiple IDmappings exist in the
+      LDAP directory.
     * Prevent creation of keys containing the '/' character.
 
 
