@@ -21,10 +21,10 @@
 
 int net_status_usage(struct net_context *c, int argc, const char **argv)
 {
-	d_printf("  net status sessions [parseable] "
-		 "Show list of open sessions\n");
-	d_printf("  net status shares [parseable]   "
-		 "Show list of open shares\n");
+	d_printf(_("  net status sessions [parseable] "
+		   "Show list of open sessions\n"));
+	d_printf(_("  net status shares [parseable]   "
+		   "Show list of open shares\n"));
 	return -1;
 }
 
@@ -63,11 +63,11 @@ static int net_status_sessions(struct net_context *c, int argc, const char **arg
 	bool parseable;
 
 	if (c->display_usage) {
-		d_printf("Usage:\n"
-			 "net status sessions [parseable]\n"
-			 "    Display open user sessions.\n"
-			 "    If parseable is specified, output is machine-"
-			 "readable.\n");
+		d_printf(_("Usage:\n"
+			   "net status sessions [parseable]\n"
+			   "    Display open user sessions.\n"
+			   "    If parseable is specified, output is machine-"
+			   "readable.\n"));
 		return 0;
 	}
 
@@ -80,16 +80,17 @@ static int net_status_sessions(struct net_context *c, int argc, const char **arg
 	}
 
 	if (!parseable) {
-		d_printf("PID     Username      Group         Machine"
-			 "                        \n");
-		d_printf("-------------------------------------------"
-			 "------------------------\n");
+		d_printf(_("PID     Username      Group         Machine"
+			   "                        \n"
+		           "-------------------------------------------"
+			   "------------------------\n"));
 	}
 
 	db = db_open(NULL, lock_path("sessionid.tdb"), 0,
 		     TDB_CLEAR_IF_FIRST, O_RDONLY, 0644);
 	if (db == NULL) {
-		d_fprintf(stderr, "%s not initialised\n", lock_path("sessionid.tdb"));
+		d_fprintf(stderr, _("%s not initialised\n"),
+			  lock_path("sessionid.tdb"));
 		return -1;
 	}
 
@@ -194,7 +195,8 @@ static int net_status_shares_parseable(struct net_context *c, int argc, const ch
 	db = db_open(NULL, lock_path("sessionid.tdb"), 0,
 		     TDB_CLEAR_IF_FIRST, O_RDONLY, 0644);
 	if (db == NULL) {
-		d_fprintf(stderr, "%s not initialised\n", lock_path("sessionid.tdb"));
+		d_fprintf(stderr, _("%s not initialised\n"),
+			  lock_path("sessionid.tdb"));
 		return -1;
 	}
 
@@ -211,20 +213,20 @@ static int net_status_shares_parseable(struct net_context *c, int argc, const ch
 static int net_status_shares(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf("Usage:\n"
-			 "net status shares [parseable]\n"
-			 "    Display open user shares.\n"
-			 "    If parseable is specified, output is machine-"
-			 "readable.\n");
+		d_printf(_("Usage:\n"
+			   "net status shares [parseable]\n"
+			   "    Display open user shares.\n"
+			   "    If parseable is specified, output is machine-"
+			   "readable.\n"));
 		return 0;
 	}
 
 	if (argc == 0) {
 
-		d_printf("\nService      pid     machine       "
-			 "Connected at\n");
-		d_printf("-------------------------------------"
-			 "------------------\n");
+		d_printf(_("\nService      pid     machine       "
+			   "Connected at\n"
+		           "-------------------------------------"
+			   "------------------\n"));
 
 		connections_forall(show_share, NULL);
 
@@ -245,19 +247,19 @@ int net_status(struct net_context *c, int argc, const char **argv)
 			"sessions",
 			net_status_sessions,
 			NET_TRANSPORT_LOCAL,
-			"Show list of open sessions",
-			"net status sessions [parseable]\n"
-			"    If parseable is specified, output is presented "
-			"in a machine-parseable fashion."
+			N_("Show list of open sessions"),
+			N_("net status sessions [parseable]\n"
+			   "    If parseable is specified, output is presented "
+			   "in a machine-parseable fashion.")
 		},
 		{
 			"shares",
 			net_status_shares,
 			NET_TRANSPORT_LOCAL,
-			"Show list of open shares",
-			"net status shares [parseable]\n"
-			"    If parseable is specified, output is presented "
-			"in a machine-parseable fashion."
+			N_("Show list of open shares"),
+			N_("net status shares [parseable]\n"
+			   "    If parseable is specified, output is presented "
+			   "in a machine-parseable fashion.")
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
