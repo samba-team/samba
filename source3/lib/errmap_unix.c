@@ -87,6 +87,9 @@ const struct unix_error_map unix_dos_nt_errmap[] = {
 #ifdef ECONNABORTED
 	{ ECONNABORTED, ERRHRD, ERRgeneral, NT_STATUS_CONNECTION_ABORTED},
 #endif
+#ifdef ECONNRESET
+	{ ECONNRESET, ERRHRD, ERRgeneral, NT_STATUS_CONNECTION_RESET},
+#endif
 #ifdef ENODEV
 	{ ENODEV, ERRDOS, 55, NT_STATUS_DEVICE_DOES_NOT_EXIST},
 #endif
