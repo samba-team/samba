@@ -166,7 +166,7 @@ struct tdb_context {
 	struct tdb_transaction *transaction;
 	int page_size;
 	int max_dead_records;
-	bool have_transaction_lock;
+	int transaction_lock_count;
 	volatile sig_atomic_t *interrupt_sig_ptr;
 };
 

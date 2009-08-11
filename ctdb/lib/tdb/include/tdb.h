@@ -130,6 +130,7 @@ int tdb_fd(struct tdb_context *tdb);
 tdb_log_func tdb_log_fn(struct tdb_context *tdb);
 void *tdb_get_logging_private(struct tdb_context *tdb);
 int tdb_transaction_start(struct tdb_context *tdb);
+int tdb_transaction_prepare_commit(struct tdb_context *tdb);
 int tdb_transaction_commit(struct tdb_context *tdb);
 int tdb_transaction_cancel(struct tdb_context *tdb);
 int tdb_transaction_recover(struct tdb_context *tdb);
@@ -153,11 +154,14 @@ int tdb_chainlock_unmark(struct tdb_context *tdb, TDB_DATA key);
 
 void tdb_setalarm_sigptr(struct tdb_context *tdb, volatile sig_atomic_t *sigptr);
 
+/* wipe and repack */
+int tdb_wipe_all(struct tdb_context *tdb);
+int tdb_repack(struct tdb_context *tdb);
+
 /* Debug functions. Not used in production. */
 void tdb_dump_all(struct tdb_context *tdb);
 int tdb_printfreelist(struct tdb_context *tdb);
 int tdb_validate_freelist(struct tdb_context *tdb, int *pnum_entries);
-int tdb_wipe_all(struct tdb_context *tdb);
 int tdb_freelist_size(struct tdb_context *tdb);
 
 extern TDB_DATA tdb_null;

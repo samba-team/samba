@@ -1555,15 +1555,34 @@ static void ip_reallocate_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	exit(0);
 }
 
+static void ctdb_every_second(struct event_context *ev, struct timed_event *te, struct timeval t, void *p)
+{
+	struct ctdb_context *ctdb = talloc_get_type(p, struct ctdb_context);
+
+	event_add_timed(ctdb->ev, ctdb, 
+				timeval_current_ofs(1, 0),
+				ctdb_every_second, ctdb);
+}
+
 /*
   ask the recovery daemon on the recovery master to perform a ip reallocation
  */
 static int control_ipreallocate(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int ret;
+	int i, ret;
 	TDB_DATA data;
 	struct rd_memdump_reply rd;
 	uint32_t recmaster;
+	struct ctdb_node_map *nodemap=NULL;
+	int retries=0;
+	struct timeval tv = timeval_current();
+
+	/* we need some events to trigger so we can timeout and restart
+	   the loop
+	*/
+	event_add_timed(ctdb->ev, ctdb, 
+				timeval_current_ofs(1, 0),
+				ctdb_every_second, ctdb);
 
 	rd.pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
 	if (rd.pnn == -1) {
@@ -1580,11 +1599,56 @@ static int control_ipreallocate(struct ctdb_context *ctdb, int argc, const char 
 	data.dptr = (uint8_t *)&rd;
 	data.dsize = sizeof(rd);
 
+again:
+	if (retries>5) {
+		DEBUG(DEBUG_ERR,("Failed waiting for cluster convergense\n"));
+		exit(10);
+	}
+
+	/* check that there are valid nodes available */
+	if (ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn, ctdb, &nodemap) != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
+		exit(10);
+	}
+	for (i=0; i<nodemap->num;i++) {
+		if ((nodemap->nodes[i].flags & (NODE_FLAGS_DELETED|NODE_FLAGS_BANNED|NODE_FLAGS_STOPPED)) == 0) {
+			break;
+		}
+	}
+	if (i==nodemap->num) {
+		DEBUG(DEBUG_ERR,("No recmaster available, no need to wait for cluster convergence\n"));
+		return 0;
+	}
+
+
 	ret = ctdb_ctrl_getrecmaster(ctdb, ctdb, TIMELIMIT(), options.pnn, &recmaster);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("Unable to get recmaster from node %u\n", options.pnn));
 		return ret;
 	}
+
+	/* verify the node exists */
+	if (ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), recmaster, ctdb, &nodemap) != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
+		exit(10);
+	}
+
+	/* verify the recovery master is not STOPPED, nor BANNED */
+	if (nodemap->nodes[recmaster].flags & (NODE_FLAGS_DELETED|NODE_FLAGS_BANNED|NODE_FLAGS_STOPPED)) {
+		DEBUG(DEBUG_ERR,("No suitable recmaster found. Try again\n"));
+		retries++;
+		sleep(1);
+		goto again;
+	} 
+
+	
+	/* verify the recovery master is not STOPPED, nor BANNED */
+	if (nodemap->nodes[recmaster].flags & (NODE_FLAGS_DELETED|NODE_FLAGS_BANNED|NODE_FLAGS_STOPPED)) {
+		DEBUG(DEBUG_ERR,("No suitable recmaster found. Try again\n"));
+		retries++;
+		sleep(1);
+		goto again;
+	} 
 
 	ret = ctdb_send_message(ctdb, recmaster, CTDB_SRVID_TAKEOVER_RUN, data);
 	if (ret != 0) {
@@ -1592,10 +1656,16 @@ static int control_ipreallocate(struct ctdb_context *ctdb, int argc, const char 
 		return -1;
 	}
 
+	tv = timeval_current();
 	/* this loop will terminate when we have received the reply */
-	while (1) {	
+	while (timeval_elapsed(&tv) < 3.0) {	
 		event_loop_once(ctdb->ev);
 	}
+
+	DEBUG(DEBUG_ERR,("Timed out waiting for recmaster ipreallocate. Trying again\n"));
+	retries++;
+	sleep(1);
+	goto again;
 
 	return 0;
 }

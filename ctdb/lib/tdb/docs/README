@@ -236,3 +236,11 @@ int tdb_transaction_commit(TDB_CONTEXT *tdb)
    commit a current transaction, updating the database and releasing
    the transaction locks.
 
+----------------------------------------------------------------------
+int tdb_transaction_prepare_commit(TDB_CONTEXT *tdb)
+
+   prepare to commit a current transaction, for two-phase commits.
+   Once prepared for commit, the only allowed calls are
+   tdb_transaction_commit() or tdb_transaction_cancel(). Preparing
+   allocates disk space for the pending updates, so a subsequent
+   commit should succeed (barring any hardware failures).

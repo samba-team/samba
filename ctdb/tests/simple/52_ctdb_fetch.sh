@@ -40,52 +40,25 @@ num_nodes=$(echo "$out" | wc -l)
 echo "Running ctdb_fetch on all $num_nodes nodes."
 try_command_on_node -v -pq all $CTDB_TEST_WRAPPER $VALGRIND ctdb_fetch -n $num_nodes
 
+pat='^(Fetch: [[:digit:]]+(\.[[:digit:]]+)? msgs/sec[[:space:]]?|msg_count=[[:digit:]]+ on node [[:digit:]]|Fetching final record|DATA:|Test data|Waiting for cluster[[:space:]]?|)+$'
+sanity_check_output 1 "$pat" "$out"
+
+# Filter out the performance figures:
+out_fetch=$(echo "$out" | egrep '^(Fetch: .*)+$')
+
 # Get the last line of output.
 while read line ; do
     prev=$line
-done <<<"$out"
-
-pat='^(Ring: [[:digit:]]+(\.[[:digit:]]+)? msgs/sec \(\+ve=[[:digit:]]+ -ve=[[:digit:]]+\)[[:space:]]?|Waiting for cluster[[:space:]]?)+$'
-sanity_check_output 1 "$pat" "$out"
+done <<<"$out_fetch"
 
 # $prev should look like this:
-#    Ring: 10670.93 msgs/sec (+ve=53391 -ve=53373)
-stuff="${prev##*Ring: }"
+#    Fetch: 10670.93 msgs/sec
+stuff="${prev##*Fetch: }"
 mps="${stuff% msgs/sec*}"
 
 if [ ${mps%.*} -ge 10 ] ; then
     echo "OK: $mps msgs/sec >= 10 msgs/sec"
 else
     echo "BAD: $mps msgs/sec < 10 msgs/sec"
-    exit 1
-fi
-
-stuff="${stuff#*msgs/sec (+ve=}"
-positive="${stuff%% *}"
-
-if [ $positive -gt 0 ] ; then
-    echo "OK: +ive ($positive) > 0"
-else
-    echo "BAD: +ive ($positive) = 0"
-    exit 1
-fi
-
-stuff="${stuff#*-ve=}"
-negative="${stuff%)}"
-
-if [ $negative -gt 0 ] ; then
-    echo "OK: -ive ($negative) > 0"
-else
-    echo "BAD: -ive ($negative) = 0"
-    exit 1
-fi
-
-perc_diff=$(( ($positive - $negative) * 100 / $positive ))
-perc_diff=${perc_diff#-}
-
-if [ $perc_diff -le 1 ] ; then
-    echo "OK: percentage difference between +ive and -ive ($perc_diff%) <= 1%"
-else
-    echo "BAD: percentage difference between +ive and -ive ($perc_diff%) > 1%"
     exit 1
 fi
