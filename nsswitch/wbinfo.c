@@ -1120,7 +1120,7 @@ static bool wbinfo_lookuprids(const char *domain, const char *arg)
 
 	for (i=0; i<num_rids; i++) {
 		d_printf("%8d: %s (%s)\n", rids[i], names[i],
-			 sid_type_lookup(types[i]));
+			 wbcSidTypeString(types[i]));
 	}
 
 	ret = true;
@@ -1170,7 +1170,7 @@ static bool wbinfo_lookupname(const char *full_name)
 
 	/* Display response */
 
-	d_printf("%s %s (%d)\n", sid_str, sid_type_lookup(type), type);
+	d_printf("%s %s (%d)\n", sid_str, wbcSidTypeString(type), type);
 
 	wbcFreeMemory(sid_str);
 
