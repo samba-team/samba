@@ -38,8 +38,8 @@ SMB_ACL_T aixacl_to_smbacl(struct acl *file_acl)
 
 
 	
-	DEBUG(10,("acl_entry is %d\n",acl_entry));
-	DEBUG(10,("acl_last(file_acl) id %d\n",acl_last(file_acl)));
+	DEBUG(10,("acl_entry is %p\n",(void *)acl_entry));
+	DEBUG(10,("acl_last(file_acl) id %p\n",(void *)acl_last(file_acl)));
 
 	/* Check if the extended acl bit is on.   *
 	 * If it isn't, do not show the           *
@@ -124,7 +124,7 @@ SMB_ACL_T aixacl_to_smbacl(struct acl *file_acl)
 			ace->a_perm |= (ace->a_perm & S_IXUSR) ? SMB_ACL_EXECUTE : 0;
 			DEBUG(10,("ace->a_perm is %d\n",ace->a_perm));
 			
-			DEBUG(10,("acl_entry = %d\n",acl_entry));
+			DEBUG(10,("acl_entry = %p\n",(void *)acl_entry));
 			DEBUG(10,("The ace_type is %d\n",acl_entry->ace_type));
  
 			acl_entry = acl_nxt(acl_entry);
@@ -210,7 +210,6 @@ struct acl *aixacl_smb_to_aixacl(SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
 	struct acl_entry *acl_entry = NULL;
 	struct ace_id *ace_id = NULL;
 	unsigned int id_type;
-	unsigned int user_id;
 	unsigned int acl_length;
 	int	i;
  
