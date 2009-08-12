@@ -1076,7 +1076,12 @@ static bool wbinfo_lookuprids(const char *domain, const char *arg)
 
 	while (next_token_talloc(mem_ctx, &p, &ridstr, " ,\n")) {
 		uint32_t rid = strtoul(ridstr, NULL, 10);
-		ADD_TO_ARRAY(mem_ctx, uint32_t, rid, &rids, &num_rids);
+		rids = talloc_realloc(mem_ctx, rids, uint32_t, num_rids + 1);
+		if (rids == NULL) {
+			d_printf("talloc_realloc failed\n");
+		}
+		rids[num_rids] = rid;
+		num_rids += 1;
 	}
 
 	if (rids == NULL) {
