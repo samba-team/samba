@@ -147,7 +147,7 @@ $(eval $(call proto_header_template,$(libclisrcdir)/libcli_proto.h,$(LIBCLI_SMB_
 [SUBSYSTEM::LIBCLI_RAW]
 PRIVATE_DEPENDENCIES = LIBCLI_COMPOSITE LP_RESOLVE gensec LIBCLI_RESOLVE LIBSECURITY LIBNDR
 #LDFLAGS = $(LIBCLI_SMB_COMPOSITE_OUTPUT)
-PUBLIC_DEPENDENCIES = samba_socket LIBPACKET gensec LIBCRYPTO CREDENTIALS 
+PUBLIC_DEPENDENCIES = samba_socket LIBPACKET gensec LIBCRYPTO CREDENTIALS LIBCLI_SMB_COMMON
 
 LIBCLI_RAW_OBJ_FILES = $(addprefix $(libclisrcdir)/raw/, rawfile.o smb_signing.o clisocket.o \
 					  clitransport.o clisession.o clitree.o clierror.o rawrequest.o \

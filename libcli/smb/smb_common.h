@@ -23,5 +23,6 @@
 #define __LIBCLI_SMB_SMB_COMMON_H__
 
 #include "../libcli/smb/smb2_constants.h"
+#include "../libcli/smb/smb2_create_blob.h"
 
 #endif

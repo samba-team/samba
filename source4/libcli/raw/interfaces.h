@@ -1660,13 +1660,7 @@ union smb_open {
 			struct smb2_lease *lease_request;
 			
 			/* and any additional blobs the caller wants */
-			struct smb2_create_blobs {
-				uint32_t num_blobs;
-				struct smb2_create_blob {
-					const char *tag;
-					DATA_BLOB data;
-				} *blobs;
-			} blobs;
+			struct smb2_create_blobs blobs;
 		} in;
 		struct {
 			union smb_handle file;
