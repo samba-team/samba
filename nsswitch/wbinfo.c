@@ -1472,6 +1472,7 @@ static bool wbinfo_auth_crap(char *username, bool use_ntlmv2, bool use_lanman)
 	return WBC_ERROR_IS_OK(wbc_status);
 }
 
+#ifdef WITH_FAKE_KASERVER
 /* Authenticate a user with a plaintext password and set a token */
 
 static bool wbinfo_klog(char *username)
@@ -1531,6 +1532,13 @@ static bool wbinfo_klog(char *username)
 	d_printf("Successfully created AFS token\n");
 	return true;
 }
+#else
+static bool wbinfo_klog(char *username)
+{
+	d_fprintf(stderr, "No AFS support compiled in.\n");
+	return false;
+}
+#endif
 
 /* Print domain users */
 
