@@ -1669,7 +1669,7 @@ sub ParseUnionPushPrimitives($$$$)
 	}
 	if (! $have_default) {
 		$self->pidl("default:");
-		$self->pidl("\treturn ndr_push_error($ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", level);");
+		$self->pidl("\treturn ndr_push_error($ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u at \%s\", level, __location__);");
 	}
 	$self->deindent;
 	$self->pidl("}");
@@ -1705,7 +1705,7 @@ sub ParseUnionPushDeferred($$$$)
 	}
 	if (! $have_default) {
 		$self->pidl("default:");
-		$self->pidl("\treturn ndr_push_error($ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", level);");
+		$self->pidl("\treturn ndr_push_error($ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u at \%s\", level, __location__);");
 	}
 	$self->deindent;
 	$self->pidl("}");
@@ -1784,7 +1784,7 @@ sub ParseUnionPullPrimitives($$$$$)
 	if (defined($switch_type)) {
 		$self->pidl("NDR_CHECK(ndr_pull_$switch_type($ndr, NDR_SCALARS, &_level));");
 		$self->pidl("if (_level != level) {"); 
-		$self->pidl("\treturn ndr_pull_error($ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value %u for $varname\", _level);");
+		$self->pidl("\treturn ndr_pull_error($ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value %u for $varname at \%s\", _level, __location__);");
 		$self->pidl("}");
 	}
 
@@ -1814,7 +1814,7 @@ sub ParseUnionPullPrimitives($$$$$)
 	}
 	if (! $have_default) {
 		$self->pidl("default:");
-		$self->pidl("\treturn ndr_pull_error($ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", level);");
+		$self->pidl("\treturn ndr_pull_error($ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u at \%s\", level, __location__);");
 	}
 	$self->deindent;
 	$self->pidl("}");
@@ -1848,7 +1848,7 @@ sub ParseUnionPullDeferred($$$$)
 	}
 	if (! $have_default) {
 		$self->pidl("default:");
-		$self->pidl("\treturn ndr_pull_error($ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", level);");
+		$self->pidl("\treturn ndr_pull_error($ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u at \%s\", level, __location__);");
 	}
 	$self->deindent;
 	$self->pidl("}");

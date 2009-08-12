@@ -215,7 +215,7 @@ enum ndr_compression_alg {
 
 #define NDR_PULL_NEED_BYTES(ndr, n) do { \
 	if ((n) > ndr->data_size || ndr->offset + (n) > ndr->data_size) { \
-		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE, "Pull bytes %u", (unsigned)n); \
+		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE, "Pull bytes %u (%s)", (unsigned)n, __location__); \
 	} \
 } while(0)
 
