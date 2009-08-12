@@ -95,6 +95,8 @@ o   Sébastien Prud'homme <sebastien.prudhomme@gmail.com>
 
 
 o   Simo Sorce <ssorce@redhat.com>
+    * BUG 6628: 'smbpasswd -a' uses algorithmic rid base with
+      'passdb backend = tdbsam'.
     * Avoid duplicate ACEs.
     * Fix profile ACLs in some corner cases.
 
