@@ -1045,7 +1045,7 @@ static bool wbinfo_lookuprids(const char *domain, const char *arg)
 	enum wbcSidType *types = NULL;
 	size_t i;
 	int num_rids;
-	uint32 *rids = NULL;
+	uint32_t *rids = NULL;
 	const char *p;
 	char *ridstr;
 	TALLOC_CTX *mem_ctx = NULL;
@@ -1075,8 +1075,8 @@ static bool wbinfo_lookuprids(const char *domain, const char *arg)
 	p = arg;
 
 	while (next_token_talloc(mem_ctx, &p, &ridstr, " ,\n")) {
-		uint32 rid = strtoul(ridstr, NULL, 10);
-		ADD_TO_ARRAY(mem_ctx, uint32, rid, &rids, &num_rids);
+		uint32_t rid = strtoul(ridstr, NULL, 10);
+		ADD_TO_ARRAY(mem_ctx, uint32_t, rid, &rids, &num_rids);
 	}
 
 	if (rids == NULL) {
@@ -1182,7 +1182,7 @@ static char *wbinfo_prompt_pass(const char *prefix,
 
 /* Authenticate a user with a plaintext password */
 
-static bool wbinfo_auth_krb5(char *username, const char *cctype, uint32 flags)
+static bool wbinfo_auth_krb5(char *username, const char *cctype, uint32_t flags)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	char *s = NULL;
@@ -2050,11 +2050,11 @@ int main(int argc, char **argv, char **envp)
 				break;
 			}
 		case 'K': {
-				uint32 flags =  WBFLAG_PAM_KRB5 |
-						WBFLAG_PAM_CACHED_LOGIN |
+				uint32_t flags = WBFLAG_PAM_KRB5 |
+						 WBFLAG_PAM_CACHED_LOGIN |
 						WBFLAG_PAM_FALLBACK_AFTER_KRB5 |
-						WBFLAG_PAM_INFO3_TEXT |
-						WBFLAG_PAM_CONTACT_TRUSTDOM;
+						 WBFLAG_PAM_INFO3_TEXT |
+						 WBFLAG_PAM_CONTACT_TRUSTDOM;
 
 				if (!wbinfo_auth_krb5(string_arg, "FILE",
 						      flags)) {
