@@ -23,7 +23,12 @@
 #include "includes.h"
 #include "winbind_client.h"
 #include "libwbclient/wbclient.h"
+#include "lib/popt/popt.h"
 #include "../libcli/auth/libcli_auth.h"
+#if !(_SAMBA_VERSION_) < 4
+#include "lib/cmdline/popt_common.h"
+#endif
+
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -1751,7 +1756,6 @@ int main(int argc, char **argv, char **envp)
 		{ "change-user-password", 0, POPT_ARG_STRING, &string_arg, OPT_CHANGE_USER_PASSWORD, "Change the password for a user", NULL },
 		{ "ntlmv2", 0, POPT_ARG_NONE, 0, OPT_NTLMV2, "Use NTLMv2 cryptography for user authentication", NULL},
 		{ "lanman", 0, POPT_ARG_NONE, 0, OPT_LANMAN, "Use lanman cryptography for user authentication", NULL},
-		POPT_COMMON_CONFIGFILE
 		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
