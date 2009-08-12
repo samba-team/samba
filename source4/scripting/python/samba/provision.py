@@ -1275,7 +1275,7 @@ def provision_backend(setup_dir=None, message=None,
                       domain=None, hostname=None, adminpass=None, root=None, serverrole=None, 
                       ldap_backend_type=None, ldap_backend_port=None,
                       ol_mmr_urls=None, ol_olc=None, 
-                      ol_slapd=None, nosync=False):
+                      ol_slapd=None, nosync=False, testing_mode=False):
 
     def setup_path(file):
         return os.path.join(setup_dir, file)
@@ -1303,7 +1303,7 @@ def provision_backend(setup_dir=None, message=None,
                      targetdir)
 
     # if openldap-backend was chosen, check if path to slapd was given and exists
-    if ldap_backend_type == "openldap" and ol_slapd is None:
+    if ldap_backend_type == "openldap" and ol_slapd is None and not testing_mode:
         sys.exit("Warning: OpenLDAP-Backend must be setup with path to slapd (OpenLDAP-Daemon), e.g. --ol-slapd=\"/usr/local/libexec/slapd\"!")
     if ldap_backend_type == "openldap" and ol_slapd is not None:
        if not os.path.exists(ol_slapd):
@@ -1659,26 +1659,27 @@ def provision_backend(setup_dir=None, message=None,
         print e
         message("Ok. - No other slapd-Instance listening on: " + ldapi_uri + ". Starting slapd now for final provision.")
 
-        p = subprocess.Popen(slapdcommand_prov, shell=True)
-
-        # after startup: store slapd-provision-pid also in a separate file. 
-        # this is needed as long as provision/provision-backend are not fully merged,
-        # to compare pids before shutting down
-
-        # wait for pidfile to be created
-        time.sleep(3)
-        if os.path.exists(paths.slapdpid):
-           f = open(paths.slapdpid, "r")
-           p = f.read()
-           f.close()
-           f = open(paths.ldapdir +"/slapd_provision_pid", "w")
-           f.write(str(p) + "\n")
-           f.close()
-           message("Started slapd for final provisioning with PID: "+ str(p))
-        else:
-           message("slapd-PID File could not be found. Sorry")
-        
-        # done slapd checking + start 
+        if not testing_mode:
+            p = subprocess.Popen(slapdcommand_prov, shell=True)
+            
+            # after startup: store slapd-provision-pid also in a separate file. 
+            # this is needed as long as provision/provision-backend are not fully merged,
+            # to compare pids before shutting down
+            
+            # wait for pidfile to be created
+            time.sleep(3)
+            if os.path.exists(paths.slapdpid):
+                f = open(paths.slapdpid, "r")
+                p = f.read()
+                f.close()
+                f = open(paths.ldapdir +"/slapd_provision_pid", "w")
+                f.write(str(p) + "\n")
+                f.close()
+                message("Started slapd for final provisioning with PID: "+ str(p))
+            else:
+                message("slapd-PID File could not be found. Sorry")
+                
+            # done slapd checking + start 
 
 
           

@@ -73,6 +73,9 @@ parser.add_option("--ol-olc", type="choice", metavar="OPENLDAP-OLC",
 		choices=["yes", "no"])
 parser.add_option("--ol-slapd", type="string", metavar="SLAPD-PATH", 
 		help="Path to OpenLDAP-Daemon (slapd) [e.g.:'/usr/local/libexec/slapd']. Required for Setup with OpenLDAP-Backend. OpenLDAP Version >= 2.4.17 should be used.") 
+parser.add_option("--testing-mode", type="choice", metavar="TESTING-MODE", 
+		help="Do not select this option, except as part of 'make test' to verify behaviour without a slapd on the system",
+		choices=["yes", "no"])
 
 opts = parser.parse_args()[0]
 
@@ -112,4 +115,5 @@ provision_backend(setup_dir=setup_dir, message=message, smbconf=smbconf, targetd
 		  ol_mmr_urls=opts.ol_mmr_urls,
 		  ol_olc=opts.ol_olc,
 		  ol_slapd=opts.ol_slapd,
-		  nosync=opts.nosync)
+		  nosync=opts.nosync,
+		  testing_mode=opts.testing_mode)
