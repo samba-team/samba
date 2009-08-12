@@ -21,4 +21,5 @@
 
 _PUBLIC_ size_t ndr_ntlmssp_string_length(uint32_t negotiate_flags, const char *s);
 _PUBLIC_ uint32_t ndr_ntlmssp_negotiated_string_flags(uint32_t negotiate_flags);
-
+_PUBLIC_ enum ndr_err_code ndr_push_AV_PAIR_LIST(struct ndr_push *ndr, int ndr_flags, const struct AV_PAIR_LIST *r);
+_PUBLIC_ enum ndr_err_code ndr_pull_AV_PAIR_LIST(struct ndr_pull *ndr, int ndr_flags, struct AV_PAIR_LIST *r);

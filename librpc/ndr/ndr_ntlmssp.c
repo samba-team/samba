@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "../librpc/ndr/ndr_ntlmssp.h"
+#include "../librpc/gen_ndr/ndr_ntlmssp.h"
 
 _PUBLIC_ size_t ndr_ntlmssp_string_length(uint32_t negotiate_flags, const char *s)
 {
@@ -46,4 +47,63 @@ _PUBLIC_ uint32_t ndr_ntlmssp_negotiated_string_flags(uint32_t negotiate_flags)
 	}
 
 	return flags;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_AV_PAIR_LIST(struct ndr_push *ndr, int ndr_flags, const struct AV_PAIR_LIST *r)
+{
+	uint32_t cntr_pair_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		for (cntr_pair_0 = 0; cntr_pair_0 < r->count; cntr_pair_0++) {
+			NDR_CHECK(ndr_push_AV_PAIR(ndr, NDR_SCALARS, &r->pair[cntr_pair_0]));
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		for (cntr_pair_0 = 0; cntr_pair_0 < r->count; cntr_pair_0++) {
+			NDR_CHECK(ndr_push_AV_PAIR(ndr, NDR_BUFFERS, &r->pair[cntr_pair_0]));
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_AV_PAIR_LIST(struct ndr_pull *ndr, int ndr_flags, struct AV_PAIR_LIST *r)
+{
+	uint32_t cntr_pair_0;
+	TALLOC_CTX *_mem_save_pair_0;
+	if (ndr_flags & NDR_SCALARS) {
+		uint32_t offset = 0;
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		r->count = 0;
+		if (ndr->data_size > 0) {
+			NDR_PULL_NEED_BYTES(ndr, 4);
+		}
+		while (offset + 4 <= ndr->data_size) {
+			uint16_t length;
+			uint16_t type;
+			type = SVAL(ndr->data + offset, 0);
+			if (type == MsvAvEOL) {
+				r->count++;
+				break;
+			}
+			length = SVAL(ndr->data + offset, 2);
+			offset += length + 4;
+			r->count++;
+		}
+		NDR_PULL_ALLOC_N(ndr, r->pair, r->count);
+		_mem_save_pair_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->pair, 0);
+		for (cntr_pair_0 = 0; cntr_pair_0 < r->count; cntr_pair_0++) {
+			NDR_CHECK(ndr_pull_AV_PAIR(ndr, NDR_SCALARS, &r->pair[cntr_pair_0]));
+		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_pair_0, 0);
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		_mem_save_pair_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->pair, 0);
+		for (cntr_pair_0 = 0; cntr_pair_0 < r->count; cntr_pair_0++) {
+			NDR_CHECK(ndr_pull_AV_PAIR(ndr, NDR_BUFFERS, &r->pair[cntr_pair_0]));
+		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_pair_0, 0);
+	}
+	return NDR_ERR_SUCCESS;
 }

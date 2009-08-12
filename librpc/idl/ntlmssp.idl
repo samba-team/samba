@@ -107,4 +107,74 @@ interface ntlmssp
 		[relative] [subcontext(0),subcontext_size(WorkstationLen)] [flag(ndr_ntlmssp_negotiated_string_flags(NTLMSSP_NEGOTIATE_OEM))] string *Workstation;
 		[switch_is(NegotiateFlags & NTLMSSP_NEGOTIATE_VERSION)] ntlmssp_Version Version;
 	} NEGOTIATE_MESSAGE;
+
+	typedef enum {
+		MsvAvEOL		= 0,
+		MsvAvNbComputerName	= 1,
+		MsvAvNbDomainName	= 2,
+		MsvAvDnsComputerName	= 3,
+		MsvAvDnsDomainName	= 4,
+		MsvAvDnsTreeName	= 5,
+		MsvAvFlags		= 6,
+		MsvAvTimestamp		= 7,
+		MsAvRestrictions	= 8,
+		MsvAvTargetName		= 9,
+		MsvChannelBindings	= 10
+	} ntlmssp_AvId;
+
+	typedef struct {
+		uint32 Size;
+		[value(0)] uint32 Z4;
+		boolean32 IntegrityLevel;
+		uint32 SubjectIntegrityLevel;
+		uint8 MachineId[32];
+	} Restriction_Encoding;
+
+	typedef [bitmap32bit] bitmap {
+		NTLMSSP_AVFLAG_CONSTRAINTED_ACCOUNT		= 0x00000001,
+		NTLMSSP_AVFLAG_MIC_IN_AUTHENTICATE_MESSAGE	= 0x00000002
+	} ntlmssp_AvFlags;
+
+	typedef [gensize,nodiscriminant,flag(NDR_NOALIGN)] union {
+		[case(MsvAvEOL)]		;
+		[case(MsvAvNbComputerName)]	[flag(ndr_ntlmssp_negotiated_string_flags(NTLMSSP_NEGOTIATE_UNICODE))] string AvNbComputerName;
+		[case(MsvAvNbDomainName)]	[flag(ndr_ntlmssp_negotiated_string_flags(NTLMSSP_NEGOTIATE_UNICODE))] string AvNbDomainName;
+		[case(MsvAvDnsComputerName)]	[flag(ndr_ntlmssp_negotiated_string_flags(NTLMSSP_NEGOTIATE_UNICODE))] string AvDnsComputerName;
+		[case(MsvAvDnsDomainName)]	[flag(ndr_ntlmssp_negotiated_string_flags(NTLMSSP_NEGOTIATE_UNICODE))] string AvDnsDomainName;
+		[case(MsvAvDnsTreeName)]	[flag(ndr_ntlmssp_negotiated_string_flags(NTLMSSP_NEGOTIATE_UNICODE))] string AvDnsTreeName;
+		[case(MsvAvFlags)]		ntlmssp_AvFlags AvFlags;
+		[case(MsvAvTimestamp)]		NTTIME AvTimestamp;
+		[case(MsAvRestrictions)]	Restriction_Encoding AvRestrictions;
+		[case(MsvAvTargetName)]		[flag(ndr_ntlmssp_negotiated_string_flags(NTLMSSP_NEGOTIATE_UNICODE))] string AvTargetName;
+		[case(MsvChannelBindings)]	uint8 ChannelBindings[16];
+		[default]			[flag(NDR_REMAINING)] DATA_BLOB blob;
+	} ntlmssp_AvValue;
+
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		ntlmssp_AvId AvId;
+		[value(ndr_size_ntlmssp_AvValue(&r->Value, r->AvId, ndr->iconv_convenience, 0))] uint16 AvLen;
+		[subcontext(0),subcontext_size(AvLen),switch_is(AvId)] ntlmssp_AvValue Value;
+	} AV_PAIR;
+
+	typedef [gensize,nopush,nopull,flag(NDR_NOALIGN)] struct {
+		uint32 count;
+		AV_PAIR pair[count];
+	} AV_PAIR_LIST;
+
+	/* NTLMSSP challenge message */
+
+	typedef [public,flag(NDR_PAHEX)] struct {
+		[charset(DOS),value("NTLMSSP")] uint8 Signature[8];
+		[value(NtLmChallenge)] ntlmssp_MessageType MessageType;
+		[value(ndr_ntlmssp_string_length(NegotiateFlags, TargetName))] uint16 TargetNameLen;
+		[value(TargetNameLen)] uint16 TargetNameMaxLen;
+		[relative] [subcontext(0),subcontext_size(TargetNameLen)] [flag(ndr_ntlmssp_negotiated_string_flags(r->NegotiateFlags))] string *TargetName;
+		NEGOTIATE NegotiateFlags;
+		uint8 ServerChallenge[8];
+		uint8 Reserved[8];
+		[value(ndr_size_AV_PAIR_LIST(TargetInfo, ndr->iconv_convenience, ndr->flags))] uint16 TargetInfoLen;
+		[value(TargetInfoLen)] uint16 TargetNameInfoMaxLen;
+		[relative] [subcontext(0),subcontext_size(TargetInfoLen)] AV_PAIR_LIST *TargetInfo;
+		[switch_is(NegotiateFlags & NTLMSSP_NEGOTIATE_VERSION)] ntlmssp_Version Version;
+	} CHALLENGE_MESSAGE;
 }
