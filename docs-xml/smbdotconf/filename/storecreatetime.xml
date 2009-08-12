@@ -1,0 +1,15 @@
+<samba:parameter name="store create time"
+                 context="S"
+		 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+	If this parameter is set Samba attempts to store a create timestamp on any file or directory created by Samba
+	in a filesystem extended attribute. The data is written as an 8 byte Windows timestamp in little-endian form
+	in attribute named "user.DosTimestamps". This extended attribute is explicitly hidden from smbd clients requesting an
+	EA list. On Linux the filesystem must have been mounted with the mount option user_xattr in order for
+	extended attributes to work, also extended attributes must be compiled into the Linux kernel.
+	</para>
+</description>
+<value type="default">no</value>
+</samba:parameter>
