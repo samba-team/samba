@@ -122,7 +122,7 @@ static void pvfs_oplock_break(struct pvfs_oplock *opl, uint8_t level)
 		 */
 		*last = cur;
 
-		DEBUG(0,("%s: sending oplock break level %d for '%s' %p\n",
+		DEBUG(5,("%s: sending oplock break level %d for '%s' %p\n",
 			__FUNCTION__, level, h->name->original_name, h));
 		status = ntvfs_send_oplock_break(pvfs->ntvfs, f->ntvfs, level);
 		if (!NT_STATUS_IS_OK(status)) {
