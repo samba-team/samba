@@ -4187,6 +4187,7 @@ bool lp_administrative_share(int );
 bool lp_print_ok(int );
 bool lp_map_hidden(int );
 bool lp_map_archive(int );
+bool lp_store_create_time(int );
 bool lp_store_dos_attributes(int );
 bool lp_dmapi_support(int );
 bool lp_locking(const struct share_params *p );
@@ -6266,10 +6267,17 @@ bool set_sticky_write_time_fsp(struct files_struct *fsp,
 			       struct timespec mtime);
 bool update_write_time(struct files_struct *fsp);
 
-struct timespec get_create_timespec(struct files_struct *fsp,
+NTSTATUS set_create_timespec_ea(connection_struct *conn,
+				struct files_struct *fsp,
+				const struct smb_filename *smb_fname,
+				struct timespec create_time);
+
+struct timespec get_create_timespec(connection_struct *conn,
+				struct files_struct *fsp,
 				const struct smb_filename *smb_fname);
 
-struct timespec get_change_timespec(struct files_struct *fsp,
+struct timespec get_change_timespec(connection_struct *conn,
+				struct files_struct *fsp,
 				const struct smb_filename *smb_fname);
 
 /* The following definitions come from smbd/error.c  */

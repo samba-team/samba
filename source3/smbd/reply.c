@@ -7793,7 +7793,7 @@ void reply_getattrE(struct smb_request *req)
 
 	reply_outbuf(req, 11, 0);
 
-	create_ts = get_create_timespec(fsp, fsp->fsp_name);
+	create_ts = get_create_timespec(conn, fsp, fsp->fsp_name);
 	srv_put_dos_date2((char *)req->outbuf, smb_vwv0, create_ts.tv_sec);
 	srv_put_dos_date2((char *)req->outbuf, smb_vwv2,
 			  convert_timespec_to_time_t(sbuf.st_ex_atime));

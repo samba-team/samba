@@ -817,6 +817,15 @@ static int vfswrap_ntimes(vfs_handle_struct *handle,
 	errno = ENOSYS;
 	result = -1;
 #endif
+
+	if (!null_timespec(ft->create_time) &&
+			lp_store_create_time(SNUM(handle->conn))) {
+		set_create_timespec_ea(handle->conn,
+				NULL,
+				smb_fname,
+				ft->create_time);
+	}
+
  out:
 	END_PROFILE(syscall_ntimes);
 	return result;

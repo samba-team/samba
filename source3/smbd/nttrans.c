@@ -596,10 +596,10 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	}
 
 	/* Create time. */
-	create_timespec = get_create_timespec(fsp, smb_fname);
+	create_timespec = get_create_timespec(conn, fsp, smb_fname);
 	a_timespec = smb_fname->st.st_ex_atime;
 	m_timespec = smb_fname->st.st_ex_mtime;
-	c_timespec = get_change_timespec(fsp, smb_fname);
+	c_timespec = get_change_timespec(conn, fsp, smb_fname);
 
 	if (lp_dos_filetime_resolution(SNUM(conn))) {
 		dos_filetime_timespec(&create_timespec);
@@ -1094,10 +1094,10 @@ static void call_nt_transact_create(connection_struct *conn,
 	}
 
 	/* Create time. */
-	create_timespec = get_create_timespec(fsp, smb_fname);
+	create_timespec = get_create_timespec(conn, fsp, smb_fname);
 	a_timespec = smb_fname->st.st_ex_atime;
 	m_timespec = smb_fname->st.st_ex_mtime;
-	c_timespec = get_change_timespec(fsp, smb_fname);
+	c_timespec = get_change_timespec(conn, fsp, smb_fname);
 
 	if (lp_dos_filetime_resolution(SNUM(conn))) {
 		dos_filetime_timespec(&create_timespec);

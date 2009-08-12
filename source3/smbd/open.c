@@ -3280,6 +3280,15 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		SMB_VFS_FSTAT(fsp, &smb_fname->st);
 		fsp->fsp_name->st = smb_fname->st;
 	}
+
+	/* Try and make a create timestamp, if required. */
+	if ((info == FILE_WAS_CREATED) || (info == FILE_WAS_OVERWRITTEN)) {
+		if (lp_store_create_time(SNUM(conn))) {
+			set_create_timespec_ea(conn, fsp,
+				smb_fname, smb_fname->st.st_ex_btime);
+		}
+	}
+
 	return NT_STATUS_OK;
 
  fail:

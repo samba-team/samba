@@ -72,6 +72,7 @@ static bool samba_private_attr_name(const char *unix_ea_name)
 	static const char * const prohibited_ea_names[] = {
 		SAMBA_POSIX_INHERITANCE_EA_NAME,
 		SAMBA_XATTR_DOS_ATTRIB,
+		SAMBA_XATTR_DOSTIMESTAMPS,
 		NULL
 	};
 
@@ -1490,8 +1491,8 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 
 	mdate_ts = smb_fname->st.st_ex_mtime;
 	adate_ts = smb_fname->st.st_ex_atime;
-	create_date_ts = get_create_timespec(NULL, smb_fname);
-	cdate_ts = get_change_timespec(NULL, smb_fname);
+	create_date_ts = get_create_timespec(conn, NULL, smb_fname);
+	cdate_ts = get_change_timespec(conn, NULL, smb_fname);
 
 	if (lp_dos_filetime_resolution(SNUM(conn))) {
 		dos_filetime_timespec(&create_date_ts);
@@ -4057,10 +4058,10 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		update_stat_ex_mtime(&sbuf, write_time_ts);
 	}
 
-	create_time_ts = get_create_timespec(fsp, smb_fname);
+	create_time_ts = get_create_timespec(conn, fsp, smb_fname);
 	mtime_ts = sbuf.st_ex_mtime;
 	atime_ts = sbuf.st_ex_atime;
-	ctime_ts = get_change_timespec(fsp, smb_fname);
+	ctime_ts = get_change_timespec(conn, fsp, smb_fname);
 
 	if (lp_dos_filetime_resolution(SNUM(conn))) {
 		dos_filetime_timespec(&create_time_ts);

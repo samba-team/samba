@@ -853,20 +853,103 @@ bool update_write_time(struct files_struct *fsp)
 }
 
 /******************************************************************
- Return a create time (may look at EA in future).
+ Set a create time EA.
 ******************************************************************/
 
-struct timespec get_create_timespec(struct files_struct *fsp,
+NTSTATUS set_create_timespec_ea(connection_struct *conn,
+				struct files_struct *fsp,
+                                const struct smb_filename *smb_fname,
+				struct timespec create_time)
+{
+	int ret;
+	char buf[8];
+
+	if (!lp_store_create_time(SNUM(conn))) {
+		return NT_STATUS_OK;
+	}
+
+	put_long_date_timespec(buf, create_time);
+	if (fsp && fsp->fh->fd != -1) {
+		ret = SMB_VFS_FSETXATTR(fsp,
+				SAMBA_XATTR_DOSTIMESTAMPS,
+				buf,
+				sizeof(buf),
+				0);
+	} else {
+		ret = SMB_VFS_SETXATTR(conn,
+				smb_fname->base_name,
+				SAMBA_XATTR_DOSTIMESTAMPS,
+				buf,
+				sizeof(buf),
+				0);
+	}
+
+	if (ret == -1) {
+		map_nt_error_from_unix(errno);
+	}
+	return NT_STATUS_OK;
+}
+
+/******************************************************************
+ Returns an EA create timespec, or a zero timespec if fail.
+******************************************************************/
+
+static struct timespec get_create_timespec_ea(connection_struct *conn,
+                                struct files_struct *fsp,
+                                const struct smb_filename *smb_fname)
+{
+	ssize_t ret;
+	char buf[8];
+	struct timespec ts;
+
+	ZERO_STRUCT(ts);
+
+	if (!lp_store_create_time(SNUM(conn))) {
+		return ts;
+	}
+
+	if (fsp && fsp->fh->fd != -1) {
+		ret = SMB_VFS_FGETXATTR(fsp,
+				SAMBA_XATTR_DOSTIMESTAMPS,
+				buf,
+				sizeof(buf));
+	} else {
+		ret = SMB_VFS_GETXATTR(conn,
+				smb_fname->base_name,
+				SAMBA_XATTR_DOSTIMESTAMPS,
+				buf,
+				sizeof(buf));
+	}
+	if (ret == sizeof(buf)) {
+		return interpret_long_date(buf);
+	} else {
+		return ts;
+	}
+}
+
+/******************************************************************
+ Return a create time - looks at EA.
+******************************************************************/
+
+struct timespec get_create_timespec(connection_struct *conn,
+				struct files_struct *fsp,
 				const struct smb_filename *smb_fname)
 {
-	return smb_fname->st.st_ex_btime;
+	struct timespec ts = get_create_timespec_ea(conn, fsp, smb_fname);
+
+	if (!null_timespec(ts)) {
+		return ts;
+	} else {
+		return smb_fname->st.st_ex_btime;
+	}
 }
 
 /******************************************************************
  Return a change time (may look at EA in future).
 ******************************************************************/
 
-struct timespec get_change_timespec(struct files_struct *fsp,
+struct timespec get_change_timespec(connection_struct *conn,
+				struct files_struct *fsp,
 				const struct smb_filename *smb_fname)
 {
 	return smb_fname->st.st_ex_mtime;

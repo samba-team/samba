@@ -1859,6 +1859,8 @@ struct ea_list {
 #define SAMBA_XATTR_DOS_ATTRIB "user.DOSATTRIB"
 /* Prefix for DosStreams in the vfs_streams_xattr module */
 #define SAMBA_XATTR_DOSSTREAM_PREFIX "user.DosStream."
+/* Prefix for DOS timestamps. */
+#define SAMBA_XATTR_DOSTIMESTAMPS "user.DosTimestamps"
 
 #define UUID_SIZE 16
 

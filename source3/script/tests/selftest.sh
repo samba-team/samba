@@ -243,6 +243,7 @@ cat >$SERVERCONFFILE<<EOF
 	map hidden = yes
 	map system = yes
 	create mask = 755
+	store create time = yes
 	vfs objects = $BINDIR/xattr_tdb.so $BINDIR/streams_depot.so
 
 	#Include user defined custom parameters if set
