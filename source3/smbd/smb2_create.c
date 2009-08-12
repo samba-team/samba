@@ -23,27 +23,30 @@
 #include "../libcli/smb/smb_common.h"
 
 static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
-						struct tevent_context *ev,
-						struct smbd_smb2_request *smb2req,
-						uint8_t in_oplock_level,
-						uint32_t in_impersonation_level,
-						uint32_t in_desired_access,
-						uint32_t in_file_attributes,
-						uint32_t in_share_access,
-						uint32_t in_create_disposition,
-						uint32_t in_create_options,
-						const char *in_name);
+			struct tevent_context *ev,
+			struct smbd_smb2_request *smb2req,
+			uint8_t in_oplock_level,
+			uint32_t in_impersonation_level,
+			uint32_t in_desired_access,
+			uint32_t in_file_attributes,
+			uint32_t in_share_access,
+			uint32_t in_create_disposition,
+			uint32_t in_create_options,
+			const char *in_name,
+			struct smb2_create_blobs in_context_blobs);
 static NTSTATUS smbd_smb2_create_recv(struct tevent_req *req,
-				      uint8_t *out_oplock_level,
-				      uint32_t *out_create_action,
-				      NTTIME *out_creation_time,
-				      NTTIME *out_last_access_time,
-				      NTTIME *out_last_write_time,
-				      NTTIME *out_change_time,
-				      uint64_t *out_allocation_size,
-				      uint64_t *out_end_of_file,
-				      uint32_t *out_file_attributes,
-				      uint64_t *out_file_id_volatile);
+			TALLOC_CTX *mem_ctx,
+			uint8_t *out_oplock_level,
+			uint32_t *out_create_action,
+			NTTIME *out_creation_time,
+			NTTIME *out_last_access_time,
+			NTTIME *out_last_write_time,
+			NTTIME *out_change_time,
+			uint64_t *out_allocation_size,
+			uint64_t *out_end_of_file,
+			uint32_t *out_file_attributes,
+			uint64_t *out_file_id_volatile,
+			struct smb2_create_blobs *out_context_blobs);
 
 static void smbd_smb2_request_create_done(struct tevent_req *subreq);
 NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *req)
@@ -64,6 +67,16 @@ NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *req)
 	DATA_BLOB in_name_buffer;
 	char *in_name_string;
 	size_t in_name_string_size;
+	uint32_t name_offset = 0;
+	uint32_t name_available_length = 0;
+	uint32_t in_context_offset;
+	uint32_t in_context_length;
+	DATA_BLOB in_context_buffer;
+	struct smb2_create_blobs in_context_blobs;
+	uint32_t context_offset = 0;
+	uint32_t context_available_length = 0;
+	uint32_t dyn_offset;
+	NTSTATUS status;
 	bool ok;
 	struct tevent_req *subreq;
 
@@ -87,19 +100,68 @@ NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *req)
 	in_create_options	= IVAL(inbody, 0x28);
 	in_name_offset		= SVAL(inbody, 0x2C);
 	in_name_length		= SVAL(inbody, 0x2E);
+	in_context_offset	= IVAL(inbody, 0x30);
+	in_context_length	= IVAL(inbody, 0x34);
+
+	/*
+	 * First check if the dynamic name and context buffers
+	 * are correctly specified.
+	 *
+	 * Note: That we don't check if the name and context buffers
+	 *       overlap
+	 */
+
+	dyn_offset = SMB2_HDR_BODY + (body_size & 0xFFFFFFFE);
 
 	if (in_name_offset == 0 && in_name_length == 0) {
 		/* This is ok */
-	} else if (in_name_offset != (SMB2_HDR_BODY + (body_size & 0xFFFFFFFE))) {
+		name_offset = 0;
+	} else if (in_name_offset < dyn_offset) {
+		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
+	} else {
+		name_offset = in_name_offset - dyn_offset;
+	}
+
+	if (name_offset > req->in.vector[i+2].iov_len) {
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 
-	if (in_name_length > req->in.vector[i+2].iov_len) {
+	name_available_length = req->in.vector[i+2].iov_len - name_offset;
+
+	if (in_name_length > name_available_length) {
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 
-	in_name_buffer.data = (uint8_t *)req->in.vector[i+2].iov_base;
+	in_name_buffer.data = (uint8_t *)req->in.vector[i+2].iov_base +
+			      name_offset;
 	in_name_buffer.length = in_name_length;
+
+	if (in_context_offset == 0 && in_context_length == 0) {
+		/* This is ok */
+		context_offset = 0;
+	} else if (in_context_offset < dyn_offset) {
+		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
+	} else {
+		context_offset = in_context_offset - dyn_offset;
+	}
+
+	if (context_offset > req->in.vector[i+2].iov_len) {
+		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
+	}
+
+	context_available_length = req->in.vector[i+2].iov_len - context_offset;
+
+	if (in_context_length > context_available_length) {
+		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
+	}
+
+	in_context_buffer.data = (uint8_t *)req->in.vector[i+2].iov_base +
+				  context_offset;
+	in_context_buffer.length = in_context_length;
+
+	/*
+	 * Now interpret the name and context buffers
+	 */
 
 	ok = convert_string_talloc(req, CH_UTF16, CH_UNIX,
 				   in_name_buffer.data,
@@ -108,6 +170,12 @@ NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *req)
 				   &in_name_string_size, false);
 	if (!ok) {
 		return smbd_smb2_request_error(req, NT_STATUS_ILLEGAL_CHARACTER);
+	}
+
+	ZERO_STRUCT(in_context_blobs);
+	status = smb2_create_blob_parse(req, in_context_buffer, &in_context_blobs);
+	if (!NT_STATUS_IS_OK(status)) {
+		return smbd_smb2_request_error(req, status);
 	}
 
 	subreq = smbd_smb2_create_send(req,
@@ -120,7 +188,8 @@ NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *req)
 				       in_share_access,
 				       in_create_disposition,
 				       in_create_options,
-				       in_name_string);
+				       in_name_string,
+				       in_context_blobs);
 	if (subreq == NULL) {
 		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
 	}
@@ -147,10 +216,14 @@ static void smbd_smb2_request_create_done(struct tevent_req *subreq)
 	uint64_t out_end_of_file = 0;
 	uint32_t out_file_attributes = 0;
 	uint64_t out_file_id_volatile = 0;
+	struct smb2_create_blobs out_context_blobs;
+	DATA_BLOB out_context_buffer;
+	uint16_t out_context_buffer_offset = 0;
 	NTSTATUS status;
 	NTSTATUS error; /* transport error */
 
 	status = smbd_smb2_create_recv(subreq,
+				       req,
 				       &out_oplock_level,
 				       &out_create_action,
 				       &out_creation_time,
@@ -160,7 +233,8 @@ static void smbd_smb2_request_create_done(struct tevent_req *subreq)
 				       &out_allocation_size,
 				       &out_end_of_file,
 				       &out_file_attributes,
-				       &out_file_id_volatile);
+				       &out_file_id_volatile,
+				       &out_context_blobs);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		error = smbd_smb2_request_error(req, status);
@@ -170,6 +244,21 @@ static void smbd_smb2_request_create_done(struct tevent_req *subreq)
 			return;
 		}
 		return;
+	}
+
+	status = smb2_create_blob_push(req, &out_context_buffer, out_context_blobs);
+	if (!NT_STATUS_IS_OK(status)) {
+		error = smbd_smb2_request_error(req, status);
+		if (!NT_STATUS_IS_OK(error)) {
+			smbd_server_connection_terminate(req->sconn,
+							 nt_errstr(error));
+			return;
+		}
+		return;
+	}
+
+	if (out_context_buffer.length > 0) {
+		out_context_buffer_offset = SMB2_HDR_BODY + 0x58;
 	}
 
 	outhdr = (uint8_t *)req->out.vector[i].iov_base;
@@ -209,10 +298,12 @@ static void smbd_smb2_request_create_done(struct tevent_req *subreq)
 	SBVAL(outbody.data, 0x40, 0);		/* file id (persistent) */
 	SBVAL(outbody.data, 0x48,
 	      out_file_id_volatile);		/* file id (volatile) */
-	SIVAL(outbody.data, 0x50, 0);		/* create contexts offset */
-	SIVAL(outbody.data, 0x54, 0);		/* create contexts length */
+	SIVAL(outbody.data, 0x50,
+	      out_context_buffer_offset);	/* create contexts offset */
+	SIVAL(outbody.data, 0x54,
+	      out_context_buffer.length);	/* create contexts length */
 
-	outdyn = data_blob_const(NULL, 0);
+	outdyn = out_context_buffer;
 
 	error = smbd_smb2_request_done(req, outbody, &outdyn);
 	if (!NT_STATUS_IS_OK(error)) {
@@ -234,19 +325,21 @@ struct smbd_smb2_create_state {
 	uint64_t out_end_of_file;
 	uint32_t out_file_attributes;
 	uint64_t out_file_id_volatile;
+	struct smb2_create_blobs out_context_blobs;
 };
 
 static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
-						struct tevent_context *ev,
-						struct smbd_smb2_request *smb2req,
-						uint8_t in_oplock_level,
-						uint32_t in_impersonation_level,
-						uint32_t in_desired_access,
-						uint32_t in_file_attributes,
-						uint32_t in_share_access,
-						uint32_t in_create_disposition,
-						uint32_t in_create_options,
-						const char *in_name)
+			struct tevent_context *ev,
+			struct smbd_smb2_request *smb2req,
+			uint8_t in_oplock_level,
+			uint32_t in_impersonation_level,
+			uint32_t in_desired_access,
+			uint32_t in_file_attributes,
+			uint32_t in_share_access,
+			uint32_t in_create_disposition,
+			uint32_t in_create_options,
+			const char *in_name,
+			struct smb2_create_blobs in_context_blobs)
 {
 	struct tevent_req *req;
 	struct smbd_smb2_create_state *state;
@@ -255,6 +348,9 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	files_struct *result;
 	int info;
 	SMB_STRUCT_STAT sbuf;
+	struct smb2_create_blobs out_context_blobs;
+
+	ZERO_STRUCT(out_context_blobs);
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbd_smb2_create_state);
@@ -385,22 +481,25 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		state->out_file_attributes = FILE_ATTRIBUTE_NORMAL;
 	}
 	state->out_file_id_volatile = result->fnum;
+	state->out_context_blobs = out_context_blobs;
 
 	tevent_req_done(req);
 	return tevent_req_post(req, ev);
 }
 
 static NTSTATUS smbd_smb2_create_recv(struct tevent_req *req,
-				      uint8_t *out_oplock_level,
-				      uint32_t *out_create_action,
-				      NTTIME *out_creation_time,
-				      NTTIME *out_last_access_time,
-				      NTTIME *out_last_write_time,
-				      NTTIME *out_change_time,
-				      uint64_t *out_allocation_size,
-				      uint64_t *out_end_of_file,
-				      uint32_t *out_file_attributes,
-				      uint64_t *out_file_id_volatile)
+			TALLOC_CTX *mem_ctx,
+			uint8_t *out_oplock_level,
+			uint32_t *out_create_action,
+			NTTIME *out_creation_time,
+			NTTIME *out_last_access_time,
+			NTTIME *out_last_write_time,
+			NTTIME *out_change_time,
+			uint64_t *out_allocation_size,
+			uint64_t *out_end_of_file,
+			uint32_t *out_file_attributes,
+			uint64_t *out_file_id_volatile,
+			struct smb2_create_blobs *out_context_blobs)
 {
 	NTSTATUS status;
 	struct smbd_smb2_create_state *state = tevent_req_data(req,
@@ -421,6 +520,9 @@ static NTSTATUS smbd_smb2_create_recv(struct tevent_req *req,
 	*out_end_of_file	= state->out_end_of_file;
 	*out_file_attributes	= state->out_file_attributes;
 	*out_file_id_volatile	= state->out_file_id_volatile;
+	*out_context_blobs	= state->out_context_blobs;
+
+	talloc_steal(mem_ctx, state->out_context_blobs.blobs);
 
 	tevent_req_received(req);
 	return NT_STATUS_OK;
