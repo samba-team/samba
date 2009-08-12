@@ -620,6 +620,7 @@ static int xattr_tdb_unlink(vfs_handle_struct *handle,
 	struct db_record *rec;
 	NTSTATUS status;
 	int ret = -1;
+	bool remove_record = false;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
 
@@ -632,10 +633,18 @@ static int xattr_tdb_unlink(vfs_handle_struct *handle,
 	if (SMB_VFS_STAT(handle->conn, smb_fname_tmp) == -1) {
 		goto out;
 	}
+	if (smb_fname_tmp->st.st_ex_nlink == 1) {
+		/* Only remove record on last link to file. */
+		remove_record = true;
+	}
 
 	ret = SMB_VFS_NEXT_UNLINK(handle, smb_fname_tmp);
 
 	if (ret == -1) {
+		goto out;
+	}
+
+	if (!remove_record) {
 		goto out;
 	}
 
