@@ -121,6 +121,111 @@ static int net_changesecretpw(struct net_context *c, int argc,
         return 0;
 }
 
+/**
+ * @brief Set the authorised user for winbindd access in secrets.tdb
+ */
+static int net_setauthuser(struct net_context *c, int argc, const char **argv)
+{
+	const char *password = NULL;
+
+	if (!secrets_init()) {
+		d_fprintf(stderr, _("Failed to open secrets.tdb.\n"));
+		return 1;
+	}
+
+	/* Delete the settings. */
+	if (argc >= 1) {
+		if (strncmp(argv[0], "delete", 6) != 0) {
+			d_fprintf(stderr,_("Usage:\n"));
+			d_fprintf(stderr,
+				  _("    net setauthuser -U user[%%password] \n"
+				    "        Set the auth user account to user"
+				    "password. Prompt for password if not "
+				    "specified.\n"));
+			d_fprintf(stderr,
+				  _("    net setauthuser delete\n"
+				    "        Delete the auth user setting.\n"));
+			return 1;
+		}
+		secrets_delete(SECRETS_AUTH_USER);
+		secrets_delete(SECRETS_AUTH_DOMAIN);
+		secrets_delete(SECRETS_AUTH_PASSWORD);
+		return 0;
+	}
+
+	if (!c->opt_user_specified) {
+		d_fprintf(stderr, _("Usage:\n"));
+		d_fprintf(stderr,
+			  _("    net setauthuser -U user[%%password]\n"
+			    "        Set the auth user account to user"
+			    "password. Prompt for password if not "
+			    "specified.\n"));
+		d_fprintf(stderr,
+			  _("    net setauthuser delete\n"
+			    "        Delete the auth user setting.\n"));
+		return 1;
+	}
+
+	password = net_prompt_pass(c, _("the auth user"));
+	if (password == NULL) {
+		d_fprintf(stderr,_("Failed to get the auth users password.\n"));
+		return 1;
+	}
+
+	if (!secrets_store(SECRETS_AUTH_USER, c->opt_user_name,
+			   strlen(c->opt_user_name) + 1)) {
+		d_fprintf(stderr, _("error storing auth user name\n"));
+		return 1;
+	}
+
+	if (!secrets_store(SECRETS_AUTH_DOMAIN, c->opt_workgroup,
+			   strlen(c->opt_workgroup) + 1)) {
+		d_fprintf(stderr, _("error storing auth user domain\n"));
+		return 1;
+	}
+
+	if (!secrets_store(SECRETS_AUTH_PASSWORD, password,
+			   strlen(password) + 1)) {
+		d_fprintf(stderr, _("error storing auth user password\n"));
+		return 1;
+	}
+
+	return 0;
+}
+
+/**
+ * @brief Get the auth user settings
+ */
+static int net_getauthuser(struct net_context *c, int argc, const char **argv)
+{
+	char *user, *domain, *password;
+
+	/* Lift data from secrets file */
+
+	secrets_fetch_ipc_userpass(&user, &domain, &password);
+
+	if ((!user || !*user) && (!domain || !*domain ) &&
+	    (!password || !*password)){
+
+		SAFE_FREE(user);
+		SAFE_FREE(domain);
+		SAFE_FREE(password);
+		d_printf(_("No authorised user configured\n"));
+		return 0;
+	}
+
+	/* Pretty print authorised user info */
+
+	d_printf("%s%s%s%s%s\n", domain ? domain : "",
+		 domain ? lp_winbind_separator(): "", user,
+		 password ? "%" : "", password ? password : "");
+
+	SAFE_FREE(user);
+	SAFE_FREE(domain);
+	SAFE_FREE(password);
+
+	return 0;
+}
 /*
  Retrieve our local SID or the SID for the specified name
  */
@@ -470,6 +575,25 @@ static struct functable net_func[] = {
 		   "in secrets.tdb.\n"
 		   "    Do NOT use this function unless you know what it does.\n"
 		   "    Requires the -f flag to work.")
+	},
+	{
+		"setauthuser",
+		net_setauthuser,
+		NET_TRANSPORT_LOCAL,
+		N_("Set the winbind auth user"),
+		N_("  net -U user[%%password] [-W domain] setauthuser\n"
+		   "    Set the auth user, password (and optionally domain\n"
+		   "    Will prompt for password if not given.\n"
+		   "  net setauthuser delete\n"
+		   "    Delete the existing auth user settings.")
+	},
+	{
+		"getauthuser",
+		net_getauthuser,
+		NET_TRANSPORT_LOCAL,
+		N_("Get the winbind auth user settings"),
+		N_("  net getauthuser\n"
+		   "    Get the current winbind auth user settings.")
 	},
 	{	"time",
 		net_time,
