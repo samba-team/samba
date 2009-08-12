@@ -184,3 +184,20 @@ NTSTATUS smb2_create_blob_add(TALLOC_CTX *mem_ctx, struct smb2_create_blobs *b,
 
 	return NT_STATUS_OK;
 }
+
+/*
+ * return the first blob with the given tag
+ */
+struct smb2_create_blob *smb2_create_blob_find(const struct smb2_create_blobs *b,
+					       const char *tag)
+{
+	uint32_t i;
+
+	for (i=0; i < b->num_blobs; i++) {
+		if (strcmp(b->blobs[i].tag, tag) == 0) {
+			return &b->blobs[i];
+		}
+	}
+
+	return NULL;
+}
