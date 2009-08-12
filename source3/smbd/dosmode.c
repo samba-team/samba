@@ -887,6 +887,8 @@ NTSTATUS set_create_timespec_ea(connection_struct *conn,
 	if (ret == -1) {
 		map_nt_error_from_unix(errno);
 	}
+	DEBUG(10,("set_create_timespec_ea: wrote create time EA for file %s\n",
+		smb_fname_str_dbg(smb_fname)));
 	return NT_STATUS_OK;
 }
 

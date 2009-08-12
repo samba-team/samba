@@ -3987,7 +3987,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			       TALLOC_CTX *mem_ctx,
 			       uint16_t info_level,
 			       files_struct *fsp,
-			       const struct smb_filename *smb_fname,
+			       struct smb_filename *smb_fname,
 			       bool delete_pending,
 			       struct timespec write_time_ts,
 			       bool ms_dfs_link,
@@ -4004,7 +4004,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 	unsigned int data_size;
 	struct timespec create_time_ts, mtime_ts, atime_ts, ctime_ts;
 	time_t create_time, mtime, atime, c_time;
-	SMB_STRUCT_STAT sbuf;
+	SMB_STRUCT_STAT *psbuf = &smb_fname->st;
 	char *p;
 	char *base_name;
 	char *dos_fname;
@@ -4016,8 +4016,6 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 	uint64_t allocation_size = 0;
 	uint64_t file_index = 0;
 	uint32_t access_mask = 0;
-
-	sbuf = smb_fname->st;
 
 	if (INFO_LEVEL_IS_UNIX(info_level) && !lp_unix_extensions()) {
 		return NT_STATUS_INVALID_LEVEL;
@@ -4035,7 +4033,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 	if (!mode)
 		mode = FILE_ATTRIBUTE_NORMAL;
 
-	nlink = sbuf.st_ex_nlink;
+	nlink = psbuf->st_ex_nlink;
 
 	if (nlink && (mode&aDIR)) {
 		nlink = 1;
@@ -4055,12 +4053,12 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 	dend = dstart + data_size - 1;
 
 	if (!null_timespec(write_time_ts) && !INFO_LEVEL_IS_UNIX(info_level)) {
-		update_stat_ex_mtime(&sbuf, write_time_ts);
+		update_stat_ex_mtime(psbuf, write_time_ts);
 	}
 
 	create_time_ts = get_create_timespec(conn, fsp, smb_fname);
-	mtime_ts = sbuf.st_ex_mtime;
-	atime_ts = sbuf.st_ex_atime;
+	mtime_ts = psbuf->st_ex_mtime;
+	atime_ts = psbuf->st_ex_atime;
 	ctime_ts = get_change_timespec(conn, fsp, smb_fname);
 
 	if (lp_dos_filetime_resolution(SNUM(conn))) {
@@ -4106,20 +4104,20 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		string_replace(dos_fname, '/', '\\');
 	}
 
-	allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn, fsp, &sbuf);
+	allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn, fsp, psbuf);
 
 	if (!fsp) {
 		/* Do we have this path open ? */
 		files_struct *fsp1;
-		struct file_id fileid = vfs_file_id_from_sbuf(conn, &sbuf);
+		struct file_id fileid = vfs_file_id_from_sbuf(conn, psbuf);
 		fsp1 = file_find_di_first(fileid);
 		if (fsp1 && fsp1->initial_allocation_size) {
-			allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn, fsp1, &sbuf);
+			allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn, fsp1, psbuf);
 		}
 	}
 
 	if (!(mode & aDIR)) {
-		file_size = get_file_size_stat(&sbuf);
+		file_size = get_file_size_stat(psbuf);
 	}
 
 	if (fsp) {
@@ -4138,8 +4136,8 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 	   I think this causes us to fail the IFSKIT
 	   BasicFileInformationTest. -tpot */
-	file_index =  ((sbuf.st_ex_ino) & UINT32_MAX); /* FileIndexLow */
-	file_index |= ((uint64_t)((sbuf.st_ex_dev) & UINT32_MAX)) << 32; /* FileIndexHigh */
+	file_index =  ((psbuf->st_ex_ino) & UINT32_MAX); /* FileIndexLow */
+	file_index |= ((uint64_t)((psbuf->st_ex_dev) & UINT32_MAX)) << 32; /* FileIndexHigh */
 
 	switch (info_level) {
 		case SMB_INFO_STANDARD:
@@ -4547,7 +4545,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 		case SMB_QUERY_FILE_UNIX_BASIC:
 
-			pdata = store_file_unix_basic(conn, pdata, fsp, &sbuf);
+			pdata = store_file_unix_basic(conn, pdata, fsp, psbuf);
 			data_size = PTR_DIFF(pdata,(*ppdata));
 
 			{
@@ -4563,7 +4561,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 		case SMB_QUERY_FILE_UNIX_INFO2:
 
-			pdata = store_file_unix_basic_info2(conn, pdata, fsp, &sbuf);
+			pdata = store_file_unix_basic_info2(conn, pdata, fsp, psbuf);
 			data_size = PTR_DIFF(pdata,(*ppdata));
 
 			{
@@ -4588,7 +4586,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 				DEBUG(10,("smbd_do_qfilepathinfo: SMB_QUERY_FILE_UNIX_LINK\n"));
 #ifdef S_ISLNK
-				if(!S_ISLNK(sbuf.st_ex_mode)) {
+				if(!S_ISLNK(psbuf->st_ex_mode)) {
 					return NT_STATUS_DOS(ERRSRV, ERRbadlink);
 				}
 #else
@@ -4636,7 +4634,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 					return NT_STATUS_NOT_IMPLEMENTED;
 				}
 
-				if (S_ISDIR(sbuf.st_ex_mode)) {
+				if (S_ISDIR(psbuf->st_ex_mode)) {
 					if (fsp && fsp->is_directory) {
 						def_acl =
 						    SMB_VFS_SYS_ACL_GET_FILE(
@@ -4673,7 +4671,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 				SSVAL(pdata,0,SMB_POSIX_ACL_VERSION);
 				SSVAL(pdata,2,num_file_acls);
 				SSVAL(pdata,4,num_def_acls);
-				if (!marshall_posix_acl(conn, pdata + SMB_POSIX_ACL_HEADER_SIZE, &sbuf, file_acl)) {
+				if (!marshall_posix_acl(conn, pdata + SMB_POSIX_ACL_HEADER_SIZE, psbuf, file_acl)) {
 					if (file_acl) {
 						SMB_VFS_SYS_ACL_FREE_ACL(conn, file_acl);
 					}
@@ -4682,7 +4680,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 					}
 					return NT_STATUS_INTERNAL_ERROR;
 				}
-				if (!marshall_posix_acl(conn, pdata + SMB_POSIX_ACL_HEADER_SIZE + (num_file_acls*SMB_POSIX_ACL_ENTRY_SIZE), &sbuf, def_acl)) {
+				if (!marshall_posix_acl(conn, pdata + SMB_POSIX_ACL_HEADER_SIZE + (num_file_acls*SMB_POSIX_ACL_ENTRY_SIZE), psbuf, def_acl)) {
 					if (file_acl) {
 						SMB_VFS_SYS_ACL_FREE_ACL(conn, file_acl);
 					}
