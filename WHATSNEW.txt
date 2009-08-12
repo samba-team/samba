@@ -32,6 +32,8 @@ o   Michael Adam <obnox@samba.org>
     * BUG 6387: Fix Winbind crash when multiple IDmappings exist in the
       LDAP directory.
     * BUG 6509: Use gid (not uid) cache in fetch_gid_from_cache().
+    * BUG 6628: 'smbpasswd -a' uses algorithmic rid base with
+      'passdb backend = tdbsam'.
     * Prevent creation of keys containing the '/' character.
 
 
