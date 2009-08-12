@@ -296,6 +296,9 @@ COMPRESSION_OBJ = ../lib/compression/mszip.o \
 DRSUAPI_OBJ = $(LIBNDR_DRSUAPI_OBJ) \
 	      $(COMPRESSION_OBJ)
 
+LIBNDR_NTLMSSP_OBJ = ../librpc/gen_ndr/ndr_ntlmssp.o \
+		     ../librpc/ndr/ndr_ntlmssp.o
+
 LIBNDR_OBJ = ../librpc/ndr/ndr_basic.o \
 	     ../librpc/ndr/ndr.o \
 	     ../librpc/ndr/ndr_misc.o \
@@ -470,7 +473,9 @@ LIBSMB_ERR_OBJ = $(LIBSMB_ERR_OBJ0) $(LIBSMB_ERR_OBJ1) \
 LIBSMB_OBJ0 = \
 	       ../libcli/auth/ntlm_check.o \
 	       libsmb/ntlmssp.o \
-	       libsmb/ntlmssp_sign.o
+	       libsmb/ntlmssp_sign.o \
+	       $(LIBNDR_NTLMSSP_OBJ) \
+	       libsmb/ntlmssp_ndr.o
 
 LIBSAMBA_OBJ = $(LIBSMB_OBJ0) \
 	       $(LIBSMB_ERR_OBJ)

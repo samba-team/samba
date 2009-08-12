@@ -23,6 +23,8 @@
 
 #include "includes.h"
 #include "../libcli/auth/libcli_auth.h"
+#include "../librpc/gen_ndr/ndr_ntlmssp.h"
+#include "libsmb/ntlmssp_ndr.h"
 
 static NTSTATUS ntlmssp_client_initial(struct ntlmssp_state *ntlmssp_state,
 				       DATA_BLOB reply, DATA_BLOB *next_request);
@@ -516,6 +518,8 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 	uint32 ntlmssp_command, chal_flags;
 	uint8_t cryptkey[8];
 	const char *target_name;
+	struct NEGOTIATE_MESSAGE negotiate;
+	struct CHALLENGE_MESSAGE challenge;
 
 	/* parse the NTLMSSP packet */
 #if 0
@@ -533,6 +537,16 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		debug_ntlmssp_flags(neg_flags);
+
+		if (DEBUGLEVEL >= 10) {
+			if (NT_STATUS_IS_OK(ntlmssp_pull_NEGOTIATE_MESSAGE(&request,
+						       ntlmssp_state,
+						       NULL,
+						       &negotiate)))
+			{
+				NDR_PRINT_DEBUG(NEGOTIATE_MESSAGE, &negotiate);
+			}
+		}
 	}
 
 	ntlmssp_handle_neg_flags(ntlmssp_state, neg_flags, lp_lanman_auth());
@@ -607,6 +621,16 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 			  cryptkey, 8,
 			  0, 0,
 			  struct_blob.data, struct_blob.length);
+
+		if (DEBUGLEVEL >= 10) {
+			if (NT_STATUS_IS_OK(ntlmssp_pull_CHALLENGE_MESSAGE(reply,
+						       ntlmssp_state,
+						       NULL,
+						       &challenge)))
+			{
+				NDR_PRINT_DEBUG(CHALLENGE_MESSAGE, &challenge);
+			}
+		}
 	}
 
 	data_blob_free(&struct_blob);
@@ -634,6 +658,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 	DATA_BLOB session_key = data_blob_null;
 	uint32 ntlmssp_command, auth_flags;
 	NTSTATUS nt_status = NT_STATUS_OK;
+	struct AUTHENTICATE_MESSAGE authenticate;
 
 	/* used by NTLM2 */
 	bool doing_ntlm2 = False;
@@ -701,6 +726,16 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 
 	if (auth_flags)
 		ntlmssp_handle_neg_flags(ntlmssp_state, auth_flags, lp_lanman_auth());
+
+	if (DEBUGLEVEL >= 10) {
+		if (NT_STATUS_IS_OK(ntlmssp_pull_AUTHENTICATE_MESSAGE(&request,
+						  ntlmssp_state,
+						  NULL,
+						  &authenticate)))
+		{
+			NDR_PRINT_DEBUG(AUTHENTICATE_MESSAGE, &authenticate);
+		}
+	}
 
 	DEBUG(3,("Got user=[%s] domain=[%s] workstation=[%s] len1=%lu len2=%lu\n",
 		 ntlmssp_state->user, ntlmssp_state->domain, ntlmssp_state->workstation, (unsigned long)ntlmssp_state->lm_resp.length, (unsigned long)ntlmssp_state->nt_resp.length));
@@ -920,6 +955,8 @@ NTSTATUS ntlmssp_server_start(NTLMSSP_STATE **ntlmssp_state)
 static NTSTATUS ntlmssp_client_initial(struct ntlmssp_state *ntlmssp_state,
 				  DATA_BLOB reply, DATA_BLOB *next_request)
 {
+	struct NEGOTIATE_MESSAGE negotiate;
+
 	if (ntlmssp_state->unicode) {
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_UNICODE;
 	} else {
@@ -937,6 +974,16 @@ static NTSTATUS ntlmssp_client_initial(struct ntlmssp_state *ntlmssp_state,
 		  ntlmssp_state->neg_flags,
 		  ntlmssp_state->get_domain(),
 		  ntlmssp_state->get_global_myname());
+
+	if (DEBUGLEVEL >= 10) {
+		if (NT_STATUS_IS_OK(ntlmssp_pull_NEGOTIATE_MESSAGE(next_request,
+					       ntlmssp_state,
+					       NULL,
+					       &negotiate)))
+		{
+			NDR_PRINT_DEBUG(NEGOTIATE_MESSAGE, &negotiate);
+		}
+	}
 
 	ntlmssp_state->expected_state = NTLMSSP_CHALLENGE;
 
@@ -967,6 +1014,8 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 	DATA_BLOB session_key = data_blob_null;
 	DATA_BLOB encrypted_session_key = data_blob_null;
 	NTSTATUS nt_status = NT_STATUS_OK;
+	struct CHALLENGE_MESSAGE challenge;
+	struct AUTHENTICATE_MESSAGE authenticate;
 
 	if (!msrpc_parse(ntlmssp_state, &reply, "CdBd",
 			 "NTLMSSP",
@@ -977,6 +1026,16 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 		dump_data(2, reply.data, reply.length);
 
 		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		if (NT_STATUS_IS_OK(ntlmssp_pull_CHALLENGE_MESSAGE(&reply,
+					       ntlmssp_state,
+					       NULL,
+					       &challenge)))
+		{
+			NDR_PRINT_DEBUG(CHALLENGE_MESSAGE, &challenge);
+		}
 	}
 
 	data_blob_free(&server_domain_blob);
@@ -1149,6 +1208,16 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 		       ntlmssp_state->neg_flags)) {
 
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		if (NT_STATUS_IS_OK(ntlmssp_pull_AUTHENTICATE_MESSAGE(next_request,
+						  ntlmssp_state,
+						  NULL,
+						  &authenticate)))
+		{
+			NDR_PRINT_DEBUG(AUTHENTICATE_MESSAGE, &authenticate);
+		}
 	}
 
 	data_blob_free(&encrypted_session_key);
