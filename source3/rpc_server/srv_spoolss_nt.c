@@ -2057,20 +2057,21 @@ WERROR _spoolss_DeletePrinter(pipes_struct *p,
  * long architecture string
  ******************************************************************/
 
+static const struct print_architecture_table_node archi_table[]= {
+
+	{"Windows 4.0",          SPL_ARCH_WIN40,	0 },
+	{"Windows NT x86",       SPL_ARCH_W32X86,	2 },
+	{"Windows NT R4000",     SPL_ARCH_W32MIPS,	2 },
+	{"Windows NT Alpha_AXP", SPL_ARCH_W32ALPHA,	2 },
+	{"Windows NT PowerPC",   SPL_ARCH_W32PPC,	2 },
+	{"Windows IA64",   	 SPL_ARCH_IA64,		3 },
+	{"Windows x64",   	 SPL_ARCH_X64,		3 },
+	{NULL,                   "",		-1 }
+};
+
 static int get_version_id(const char *arch)
 {
 	int i;
-	struct print_architecture_table_node archi_table[]= {
-
-	        {"Windows 4.0",          "WIN40",       0 },
-	        {"Windows NT x86",       "W32X86",      2 },
-	        {"Windows NT R4000",     "W32MIPS",     2 },
-	        {"Windows NT Alpha_AXP", "W32ALPHA",    2 },
-	        {"Windows NT PowerPC",   "W32PPC",      2 },
-		{"Windows IA64",         "IA64",        3 },
-		{"Windows x64",          "x64",         3 },
-	        {NULL,                   "",            -1 }
-	};
 
 	for (i=0; archi_table[i].long_archi != NULL; i++)
 	{
@@ -6713,18 +6714,6 @@ WERROR _spoolss_SetJob(pipes_struct *p,
 
 	return errcode;
 }
-
-static const struct print_architecture_table_node archi_table[]= {
-
-	{"Windows 4.0",          SPL_ARCH_WIN40,	0 },
-	{"Windows NT x86",       SPL_ARCH_W32X86,	2 },
-	{"Windows NT R4000",     SPL_ARCH_W32MIPS,	2 },
-	{"Windows NT Alpha_AXP", SPL_ARCH_W32ALPHA,	2 },
-	{"Windows NT PowerPC",   SPL_ARCH_W32PPC,	2 },
-	{"Windows IA64",   	 SPL_ARCH_IA64,		3 },
-	{"Windows x64",   	 SPL_ARCH_X64,		3 },
-	{NULL,                   "",		-1 }
-};
 
 /****************************************************************************
  Enumerates all printer drivers by level and architecture.
