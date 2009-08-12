@@ -782,6 +782,7 @@ SMBD_OBJ_SRV = smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	       smbd/smb2_getinfo.o \
 	       smbd/smb2_setinfo.o \
 	       smbd/smb2_break.o \
+	       ../libcli/smb/smb2_create_blob.o \
 	       $(MANGLE_OBJ) @VFS_STATIC@
 
 SMBD_OBJ_BASE = $(PARAM_WITHOUT_REG_OBJ) $(SMBD_OBJ_SRV) $(LIBSMB_OBJ) \
