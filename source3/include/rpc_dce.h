@@ -56,9 +56,6 @@ enum RPC_PKT_TYPE {
 
 #define SMBD_NTLMSSP_NEG_FLAGS 0x000082b1 /* ALWAYS_SIGN|NEG_NTLM|NEG_LM|NEG_SEAL|NEG_SIGN|NEG_UNICODE */
 
-/* NTLMSSP signature version */
-#define NTLMSSP_SIGN_VERSION 0x01
-
 /* DCE RPC auth types - extended by Microsoft. */
 #define RPC_ANONYMOUS_AUTH_TYPE    0
 #define RPC_AUTH_TYPE_KRB5_1	   1

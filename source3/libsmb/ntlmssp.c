@@ -72,30 +72,28 @@ void debug_ntlmssp_flags(uint32 neg_flags)
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_SIGN\n"));
 	if (neg_flags & NTLMSSP_NEGOTIATE_SEAL)
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_SEAL\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_DATAGRAM_STYLE)
-		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_DATAGRAM_STYLE\n"));
+	if (neg_flags & NTLMSSP_NEGOTIATE_DATAGRAM)
+		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_DATAGRAM\n"));
 	if (neg_flags & NTLMSSP_NEGOTIATE_LM_KEY)
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_LM_KEY\n"));
 	if (neg_flags & NTLMSSP_NEGOTIATE_NETWARE)
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_NETWARE\n"));
 	if (neg_flags & NTLMSSP_NEGOTIATE_NTLM)
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_NTLM\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_DOMAIN_SUPPLIED)
-		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_DOMAIN_SUPPLIED\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_WORKSTATION_SUPPLIED)
-		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_WORKSTATION_SUPPLIED\n"));
+	if (neg_flags & NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED)
+		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED\n"));
+	if (neg_flags & NTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED)
+		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED\n"));
 	if (neg_flags & NTLMSSP_NEGOTIATE_THIS_IS_LOCAL_CALL)
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_THIS_IS_LOCAL_CALL\n"));
 	if (neg_flags & NTLMSSP_NEGOTIATE_ALWAYS_SIGN)
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_ALWAYS_SIGN\n"));
-	if (neg_flags & NTLMSSP_CHAL_ACCEPT_RESPONSE)
-		DEBUGADD(4, ("  NTLMSSP_CHAL_ACCEPT_RESPONSE\n"));
-	if (neg_flags & NTLMSSP_CHAL_NON_NT_SESSION_KEY)
-		DEBUGADD(4, ("  NTLMSSP_CHAL_NON_NT_SESSION_KEY\n"));
+	if (neg_flags & NTLMSSP_REQUEST_NON_NT_SESSION_KEY)
+		DEBUGADD(4, ("  NTLMSSP_REQUEST_NON_NT_SESSION_KEY\n"));
 	if (neg_flags & NTLMSSP_NEGOTIATE_NTLM2)
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_NTLM2\n"));
-	if (neg_flags & NTLMSSP_CHAL_TARGET_INFO)
-		DEBUGADD(4, ("  NTLMSSP_CHAL_TARGET_INFO\n"));
+	if (neg_flags & NTLMSSP_NEGOTIATE_TARGET_INFO)
+		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_TARGET_INFO\n"));
 	if (neg_flags & NTLMSSP_NEGOTIATE_VERSION)
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_VERSION\n"));
 	if (neg_flags & NTLMSSP_NEGOTIATE_128)
@@ -385,7 +383,7 @@ static const char *ntlmssp_target_name(struct ntlmssp_state *ntlmssp_state,
 				       uint32 neg_flags, uint32 *chal_flags)
 {
 	if (neg_flags & NTLMSSP_REQUEST_TARGET) {
-		*chal_flags |= NTLMSSP_CHAL_TARGET_INFO;
+		*chal_flags |= NTLMSSP_NEGOTIATE_TARGET_INFO;
 		*chal_flags |= NTLMSSP_REQUEST_TARGET;
 		if (ntlmssp_state->server_role == ROLE_STANDALONE) {
 			*chal_flags |= NTLMSSP_TARGET_TYPE_SERVER;
@@ -580,7 +578,7 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 	}
 
 	/* This creates the 'blob' of names that appears at the end of the packet */
-	if (chal_flags & NTLMSSP_CHAL_TARGET_INFO)
+	if (chal_flags & NTLMSSP_NEGOTIATE_TARGET_INFO)
 	{
 		msrpc_gen(ntlmssp_state, &struct_blob, "aaaaa",
 			  NTLMSSP_NAME_TYPE_DOMAIN, target_name,
@@ -989,14 +987,14 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 	ntlmssp_handle_neg_flags(ntlmssp_state, chal_flags, lp_client_lanman_auth());
 
 	if (ntlmssp_state->unicode) {
-		if (chal_flags & NTLMSSP_CHAL_TARGET_INFO) {
+		if (chal_flags & NTLMSSP_NEGOTIATE_TARGET_INFO) {
 			chal_parse_string = "CdUdbddB";
 		} else {
 			chal_parse_string = "CdUdbdd";
 		}
 		auth_gen_string = "CdBBUUUBd";
 	} else {
-		if (chal_flags & NTLMSSP_CHAL_TARGET_INFO) {
+		if (chal_flags & NTLMSSP_NEGOTIATE_TARGET_INFO) {
 			chal_parse_string = "CdAdbddB";
 		} else {
 			chal_parse_string = "CdAdbdd";
