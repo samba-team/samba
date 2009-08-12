@@ -123,7 +123,16 @@ sub check_or_start($$$)
 			$optarg.= " $ENV{SAMBA_OPTIONS}";
 		}
 		my $samba = $self->bindir_path("samba");
-		my $ret = system("$valgrind $samba $optarg $env_vars->{CONFIGURATION} -M single -i --leak-report-full");
+
+		# allow selection of the process model using
+		# the environment varibale SAMBA_PROCESS_MODEL
+		# that allows us to change the process model for 
+		# individual machines in the build farm
+		my $model = "single";
+		if (defined($ENV{SAMBA_PROCESS_MODEL})) {
+			$model = $ENV{SAMBA_PROCESS_MODEL};
+		}
+		my $ret = system("$valgrind $samba $optarg $env_vars->{CONFIGURATION} -M $model -i");
 		if ($? == -1) {
 			print "Unable to start $samba: $ret: $!\n";
 			exit 1;
