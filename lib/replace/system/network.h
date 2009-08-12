@@ -195,6 +195,20 @@ int rep_socketpair(int d, int type, int protocol, int sv[2]);
 #endif
 #endif
 
+/*
+ * Some of the functions in source3/lib/util_sock.c use AI_ADDRCONFIG. On QNX
+ * 6.3.0, this macro is defined but, if it's used, getaddrinfo will fail. This
+ * prevents smbd from opening any sockets.
+ *
+ * If I undefine AI_ADDRCONFIG on such systems and define it to be 0,
+ * this works around the issue.
+ */
+#ifdef __QNX__
+#include <sys/neutrino.h>
+#if _NTO_VERSION == 630
+#undef AI_ADDRCONFIG
+#endif
+#endif
 #ifndef AI_ADDRCONFIG
 /*
  * logic copied from AI_NUMERICHOST
