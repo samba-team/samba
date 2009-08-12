@@ -1172,13 +1172,14 @@ static bool wbinfo_lookupname(const char *full_name)
 	return true;
 }
 
-static char *wbinfo_prompt_pass(const char *prefix,
+static char *wbinfo_prompt_pass(TALLOC_CTX *mem_ctx,
+				const char *prefix,
 				const char *username)
 {
 	char *prompt;
 	const char *ret = NULL;
 
-	prompt = talloc_asprintf(talloc_tos(), "Enter %s's ", username);
+	prompt = talloc_asprintf(mem_ctx, "Enter %s's ", username);
 	if (!prompt) {
 		return NULL;
 	}
@@ -1196,7 +1197,7 @@ static char *wbinfo_prompt_pass(const char *prefix,
 	ret = getpass(prompt);
 	TALLOC_FREE(prompt);
 
-	return SMB_STRDUP(ret);
+	return talloc_strdup(mem_ctx, ret);
 }
 
 /* Authenticate a user with a plaintext password */
@@ -1213,17 +1214,18 @@ static bool wbinfo_auth_krb5(char *username, const char *cctype, uint32_t flags)
 	struct wbcLogonUserInfo *info;
 	struct wbcAuthErrorInfo *error;
 	struct wbcUserPasswordPolicyInfo *policy;
+	TALLOC_CTX *frame = talloc_tos();
 
-	if ((s = SMB_STRDUP(username)) == NULL) {
+	if ((s = talloc_strdup(frame, username)) == NULL) {
 		return false;
 	}
 
 	if ((p = strchr(s, '%')) != NULL) {
 		*p = 0;
 		p++;
-		password = SMB_STRDUP(p);
+		password = talloc_strdup(frame, p);
 	} else {
-		password = wbinfo_prompt_pass(NULL, username);
+		password = wbinfo_prompt_pass(frame, NULL, username);
 	}
 
 	name = s;
@@ -1307,8 +1309,7 @@ static bool wbinfo_auth_krb5(char *username, const char *cctype, uint32_t flags)
 	}
  done:
 
-	SAFE_FREE(s);
-	SAFE_FREE(password);
+	TALLOC_FREE(frame);
 	wbcFreeMemory(params.blobs);
 
 	return WBC_ERROR_IS_OK(wbc_status);
@@ -1323,17 +1324,18 @@ static bool wbinfo_auth(char *username)
 	char *p = NULL;
 	char *password = NULL;
 	char *name = NULL;
+	TALLOC_CTX *frame = talloc_tos();
 
-	if ((s = SMB_STRDUP(username)) == NULL) {
+	if ((s = talloc_strdup(frame, username)) == NULL) {
 		return false;
 	}
 
 	if ((p = strchr(s, '%')) != NULL) {
 		*p = 0;
 		p++;
-		password = SMB_STRDUP(p);
+		password = talloc_strdup(frame, p);
 	} else {
-		password = wbinfo_prompt_pass(NULL, username);
+		password = wbinfo_prompt_pass(frame, NULL, username);
 	}
 
 	name = s;
@@ -1352,8 +1354,7 @@ static bool wbinfo_auth(char *username)
 			 response.data.auth.error_string);
 #endif
 
-	SAFE_FREE(s);
-	SAFE_FREE(password);
+	TALLOC_FREE(frame);
 
 	return WBC_ERROR_IS_OK(wbc_status);
 }
@@ -1372,14 +1373,15 @@ static bool wbinfo_auth_crap(char *username, bool use_ntlmv2, bool use_lanman)
 	fstring name_domain;
 	char *pass;
 	char *p;
+	TALLOC_CTX *frame = talloc_tos();
 
 	p = strchr(username, '%');
 
 	if (p) {
 		*p = 0;
-		pass = SMB_STRDUP(p + 1);
+		pass = talloc_strdup(frame, p + 1);
 	} else {
-		pass = wbinfo_prompt_pass(NULL, username);
+		pass = wbinfo_prompt_pass(frame, NULL, username);
 	}
 
 	parse_wbinfo_domain_user(username, name_domain, name_user);
@@ -1460,7 +1462,7 @@ static bool wbinfo_auth_crap(char *username, bool use_ntlmv2, bool use_lanman)
 
 	data_blob_free(&nt);
 	data_blob_free(&lm);
-	SAFE_FREE(pass);
+	TALLOC_FREE(frame);
 
 	return WBC_ERROR_IS_OK(wbc_status);
 }
@@ -1619,9 +1621,10 @@ static bool wbinfo_change_user_password(const char *username)
 	wbcErr wbc_status;
 	char *old_password = NULL;
 	char *new_password = NULL;
+	TALLOC_CTX *frame = talloc_tos();
 
-	old_password = wbinfo_prompt_pass("old", username);
-	new_password = wbinfo_prompt_pass("new", username);
+	old_password = wbinfo_prompt_pass(frame, "old", username);
+	new_password = wbinfo_prompt_pass(frame, "new", username);
 
 	wbc_status = wbcChangeUserPassword(username, old_password,new_password);
 
@@ -1630,8 +1633,7 @@ static bool wbinfo_change_user_password(const char *username)
 	d_printf("Password change for user %s %s\n", username,
 		WBC_ERROR_IS_OK(wbc_status) ? "succeeded" : "failed");
 
-	SAFE_FREE(old_password);
-	SAFE_FREE(new_password);
+	TALLOC_FREE(frame);
 
 	return WBC_ERROR_IS_OK(wbc_status);
 }
@@ -2166,7 +2168,7 @@ int main(int argc, char **argv, char **envp)
 	/* Exit code */
 
  done:
-	talloc_destroy(frame);
+	talloc_free(frame);
 
 	poptFreeContext(pc);
 	return result;
