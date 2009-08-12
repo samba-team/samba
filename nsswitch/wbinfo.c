@@ -87,6 +87,20 @@ static const char *get_winbind_domain(void)
 	return details->netbios_domain;
 }
 
+static const char *get_winbind_netbios_name(void)
+{
+	static struct wbcInterfaceDetails *details;
+
+	details = init_interface_details();
+
+	if (!details) {
+		d_fprintf(stderr, "could not obtain winbind netbios name!\n");
+		return 0;
+	}
+
+	return details->netbios_name;
+}
+
 /* Copy of parse_domain_user from winbindd_util.c.  Parse a string of the
    form DOMAIN/user into a domain and a user */
 
@@ -1389,8 +1403,9 @@ static bool wbinfo_auth_crap(char *username, bool use_ntlmv2, bool use_lanman)
 		server_chal = data_blob(params.password.response.challenge, 8);
 
 		/* Pretend this is a login to 'us', for blob purposes */
-		names_blob = NTLMv2_generate_names_blob(NULL, global_myname(),
-							get_winbind_domain());
+		names_blob = NTLMv2_generate_names_blob(NULL,
+						get_winbind_netbios_name(),
+						get_winbind_domain());
 
 		if (!SMBNTLMv2encrypt(NULL, name_user, name_domain, pass,
 				      &server_chal,
