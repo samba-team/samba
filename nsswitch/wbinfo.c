@@ -1569,99 +1569,15 @@ static bool print_domain_groups(const char *domain)
 
 static bool wbinfo_set_auth_user(char *username)
 {
-	const char *password;
-	char *p;
-	fstring user, domain;
-
-	/* Separate into user and password */
-
-	parse_wbinfo_domain_user(username, domain, user);
-
-	p = strchr(user, '%');
-
-	if (p != NULL) {
-		*p = 0;
-		password = p+1;
-	} else {
-		char *thepass = getpass("Password: ");
-		if (thepass) {
-			password = thepass;
-		} else
-			password = "";
-	}
-
-	/* Store or remove DOMAIN\username%password in secrets.tdb */
-
-	secrets_init();
-
-	if (user[0]) {
-
-		if (!secrets_store(SECRETS_AUTH_USER, user,
-				   strlen(user) + 1)) {
-			d_fprintf(stderr, "error storing username\n");
-			return false;
-		}
-
-		/* We always have a domain name added by the
-		   parse_wbinfo_domain_user() function. */
-
-		if (!secrets_store(SECRETS_AUTH_DOMAIN, domain,
-				   strlen(domain) + 1)) {
-			d_fprintf(stderr, "error storing domain name\n");
-			return false;
-		}
-
-	} else {
-		secrets_delete(SECRETS_AUTH_USER);
-		secrets_delete(SECRETS_AUTH_DOMAIN);
-	}
-
-	if (password[0]) {
-
-		if (!secrets_store(SECRETS_AUTH_PASSWORD, password,
-				   strlen(password) + 1)) {
-			d_fprintf(stderr, "error storing password\n");
-			return false;
-		}
-
-	} else
-		secrets_delete(SECRETS_AUTH_PASSWORD);
-
-	return true;
+	d_fprintf(stderr, "This functionality was moved to the 'net' utility.\n"
+			  "See 'net help setauthuser' for details.\n");
+	return false;
 }
 
 static void wbinfo_get_auth_user(void)
 {
-	char *user, *domain, *password;
-	char separator[] = {'\0', '\0'};
-
-	/* Lift data from secrets file */
-
-	secrets_fetch_ipc_userpass(&user, &domain, &password);
-
-	if ((!user || !*user) && (!domain || !*domain ) &&
-	    (!password || !*password)){
-
-		SAFE_FREE(user);
-		SAFE_FREE(domain);
-		SAFE_FREE(password);
-		d_printf("No authorised user configured\n");
-		return;
-	}
-
-	/* Pretty print authorised user info */
-
-	if (domain) {
-		separator[0] = winbind_separator();
-	}
-
-	d_printf("%s%s%s%s%s\n", domain ? domain : "",
-		 separator, user,
-		 password ? "%" : "", password ? password : "");
-
-	SAFE_FREE(user);
-	SAFE_FREE(domain);
-	SAFE_FREE(password);
+	d_fprintf(stderr, "This functionality was moved to the 'net' utility.\n"
+			  "See 'net help getauthuser' for details.\n");
 }
 
 static bool wbinfo_ping(void)
@@ -2170,6 +2086,7 @@ int main(int argc, char **argv, char **envp)
 			break;
 		case OPT_GET_AUTH_USER:
 			wbinfo_get_auth_user();
+			goto done;
 			break;
 		case OPT_GETDCNAME:
 			if (!wbinfo_getdcname(string_arg)) {
