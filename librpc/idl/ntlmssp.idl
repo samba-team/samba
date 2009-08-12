@@ -177,4 +177,79 @@ interface ntlmssp
 		[relative] [subcontext(0),subcontext_size(TargetInfoLen)] AV_PAIR_LIST *TargetInfo;
 		[switch_is(NegotiateFlags & NTLMSSP_NEGOTIATE_VERSION)] ntlmssp_Version Version;
 	} CHALLENGE_MESSAGE;
+
+	typedef [public,flag(NDR_PAHEX)] struct {
+		uint8 Response[24];
+	} LM_RESPONSE;
+
+	typedef [public,flag(NDR_PAHEX)] struct {
+		uint8 Response[16];
+		uint8 ChallengeFromClient[8];
+	} LMv2_RESPONSE;
+
+	typedef [nodiscriminant] union {
+		[case(24)] LM_RESPONSE v1;
+		[default];
+	} ntlmssp_LM_RESPONSE;
+
+	typedef [public,flag(NDR_PAHEX)] struct {
+		uint8 Response[24];
+	} NTLM_RESPONSE;
+
+	typedef [flag(NDR_PAHEX)] struct {
+		[value(1)] uint8 RespType;
+		[value(1)] uint8 HiRespType;
+		uint16 Reserved1;
+		uint32 Reserved2;
+		NTTIME TimeStamp;
+		uint8 ChallengeFromClient[8];
+		uint32 Reserved3;
+		[subcontext(0)] [flag(NDR_REMAINING)] AV_PAIR_LIST AvPairs;
+	} NTLMv2_CLIENT_CHALLENGE;
+
+	typedef [public,flag(NDR_PAHEX)] struct {
+		uint8 Response[16];
+		NTLMv2_CLIENT_CHALLENGE Challenge;
+	} NTLMv2_RESPONSE;
+
+	typedef [public,nodiscriminant] union {
+		[case(0)] ;
+		[case(0x18)] NTLM_RESPONSE v1;
+		[default] NTLMv2_RESPONSE v2;
+	} ntlmssp_NTLM_RESPONSE;
+
+	typedef [flag(NDR_PAHEX)] struct {
+		uint8 MIC[16];
+	} MIC;
+
+	/* NTLMSSP authenticate message */
+
+	typedef [public,flag(NDR_REMAINING)] struct {
+		[charset(DOS),value("NTLMSSP")] uint8 Signature[8];
+		[value(NtLmAuthenticate)] ntlmssp_MessageType MessageType;
+		uint16 LmChallengeResponseLen;
+		[value(LmChallengeResponseLen)] uint16 LmChallengeResponseMaxLen;
+		[relative] [subcontext(0),subcontext_size(LmChallengeResponseLen),switch_is(LmChallengeResponseLen)] ntlmssp_LM_RESPONSE *LmChallengeResponse;
+		uint16 NtChallengeResponseLen;
+		[value(NtChallengeResponseLen)] uint16 NtChallengeResponseMaxLen;
+		[relative] [subcontext(0),subcontext_size(NtChallengeResponseMaxLen),switch_is(NtChallengeResponseLen)] ntlmssp_NTLM_RESPONSE *NtChallengeResponse;
+		[value(ndr_ntlmssp_string_length(NegotiateFlags, DomainName))] uint16 DomainNameLen;
+		[value(DomainNameLen)] uint16 DomainNameMaxLen;
+		[relative] [subcontext(0),subcontext_size(DomainNameLen)] [flag(ndr_ntlmssp_negotiated_string_flags(r->NegotiateFlags))] string *DomainName;
+		[value(ndr_ntlmssp_string_length(NegotiateFlags, UserName))] uint16 UserNameLen;
+		[value(UserNameLen)] uint16 UserNameMaxLen;
+		[relative] [subcontext(0),subcontext_size(UserNameLen)] [flag(ndr_ntlmssp_negotiated_string_flags(r->NegotiateFlags))] string *UserName;
+		[value(ndr_ntlmssp_string_length(NegotiateFlags, Workstation))] uint16 WorkstationLen;
+		[value(WorkstationLen)] uint16 WorkstationMaxLen;
+		[relative] [subcontext(0),subcontext_size(WorkstationLen)] [flag(ndr_ntlmssp_negotiated_string_flags(r->NegotiateFlags))] string *Workstation;
+		[value(EncryptedRandomSessionKey->length)] uint16 EncryptedRandomSessionKeyLen;
+		[value(EncryptedRandomSessionKeyLen)] uint16 EncryptedRandomSessionKeyMaxLen;
+		[relative] [subcontext(0),subcontext_size(EncryptedRandomSessionKeyLen)] DATA_BLOB *EncryptedRandomSessionKey;
+		NEGOTIATE NegotiateFlags;
+		[switch_is(NegotiateFlags & NTLMSSP_NEGOTIATE_VERSION)] ntlmssp_Version Version;
+		/* MIC (Message Integrity) is only included when the client has
+		 * sent a timestap Av struct in the CHALLENGE_MESSAGE AvPair */
+		/* [flag(NDR_REMAINING)] MIC mic; */
+	} AUTHENTICATE_MESSAGE;
+
 }
