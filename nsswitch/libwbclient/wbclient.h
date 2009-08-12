@@ -62,9 +62,10 @@ const char *wbcErrorString(wbcErr error);
  *       Added wbcRemoveGidMapping()
  *  0.3: Added wbcGetpwsid()
  *	 Added wbcGetSidAliases()
+ *  0.4: Added wbcSidTypeString()
  **/
 #define WBCLIENT_MAJOR_VERSION 0
-#define WBCLIENT_MINOR_VERSION 3
+#define WBCLIENT_MINOR_VERSION 4
 #define WBCLIENT_VENDOR_VERSION "Samba libwbclient"
 struct wbcLibraryDetails {
 	uint16_t major_version;
@@ -505,6 +506,15 @@ void wbcFreeMemory(void*);
 /*
  * Utility functions for dealing with SIDs
  */
+
+/**
+ * @brief Get a string representation of the SID type
+ *
+ * @param type		type of the SID
+ *
+ * @return string representation of the SID type
+ */
+const char* wbcSidTypeString(enum wbcSidType type);
 
 /**
  * @brief Convert a binary SID to a character string

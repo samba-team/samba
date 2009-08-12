@@ -810,3 +810,20 @@ wbcErr wbcGetDisplayName(const struct wbcDomainSid *sid,
 
 	return wbc_status;
 }
+
+const char* wbcSidTypeString(enum wbcSidType type)
+{
+	switch (type) {
+	case WBC_SID_NAME_USE_NONE: return "SID_NONE";
+	case WBC_SID_NAME_USER:     return "SID_USER";
+	case WBC_SID_NAME_DOM_GRP:  return "SID_DOM_GROUP";
+	case WBC_SID_NAME_DOMAIN:   return "SID_DOMAIN";
+	case WBC_SID_NAME_ALIAS:    return "SID_ALIAS";
+	case WBC_SID_NAME_WKN_GRP:  return "SID_WKN_GROUP";
+	case WBC_SID_NAME_DELETED:  return "SID_DELETED";
+	case WBC_SID_NAME_INVALID:  return "SID_INVALID";
+	case WBC_SID_NAME_UNKNOWN:  return "SID_UNKNOWN";
+	case WBC_SID_NAME_COMPUTER: return "SID_COMPUTER";
+	default:                    return "Unknown type";
+	}
+}
