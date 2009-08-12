@@ -370,32 +370,40 @@ int dsdb_set_schema(struct ldb_context *ldb, struct dsdb_schema *schema)
 static struct dsdb_schema *global_schema;
 
 /**
- * Make this ldb use the 'global' schema, setup to avoid having multiple copies in this process
+ * Make this ldb use a specified schema, already fully calculated and belonging to another ldb
  */
-int dsdb_set_global_schema(struct ldb_context *ldb)
+int dsdb_reference_schema(struct ldb_context *ldb, struct dsdb_schema *schema)
 {
 	int ret;
-	if (!global_schema) {
-		return LDB_SUCCESS;
-	}
-
-	ret = ldb_set_opaque(ldb, "dsdb_schema", global_schema);
+	ret = ldb_set_opaque(ldb, "dsdb_schema", schema);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
 	/* Set the new attributes based on the new schema */
-	ret = dsdb_schema_set_attributes(ldb, global_schema, false);
+	ret = dsdb_schema_set_attributes(ldb, schema, false);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
-	/* Keep a reference to this schema, just incase the global copy is replaced */
-	if (talloc_reference(ldb, global_schema) == NULL) {
+	/* Keep a reference to this schema, just incase the original copy is replaced */
+	if (talloc_reference(ldb, schema) == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	return LDB_SUCCESS;
+}
+
+/**
+ * Make this ldb use the 'global' schema, setup to avoid having multiple copies in this process
+ */
+int dsdb_set_global_schema(struct ldb_context *ldb)
+{
+	if (!global_schema) {
+		return LDB_SUCCESS;
+	}
+
+	return dsdb_reference_schema(ldb, global_schema);
 }
 
 /**
@@ -451,7 +459,7 @@ void dsdb_make_schema_global(struct ldb_context *ldb)
  * schema itself to the directory.
  */
 
-WERROR dsdb_attach_schema_from_ldif(struct ldb_context *ldb, const char *pf, const char *df)
+WERROR dsdb_set_schema_from_ldif(struct ldb_context *ldb, const char *pf, const char *df)
 {
 	struct ldb_ldif *ldif;
 	struct ldb_message *msg;

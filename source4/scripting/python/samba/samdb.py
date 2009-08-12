@@ -216,8 +216,11 @@ userPassword:: %s
         """
         glue.samdb_set_domain_sid(self, sid)
 
-    def attach_schema_from_ldif(self, pf, df):
-        glue.dsdb_attach_schema_from_ldif(self, pf, df)
+    def set_schema_from_ldif(self, pf, df):
+        glue.dsdb_set_schema_from_ldif(self, pf, df)
+
+    def set_schema_from_ldb(self, ldb):
+        glue.dsdb_set_schema_from_ldb(self, ldb)
 
     def convert_schema_to_openldap(self, target, mapping):
         return glue.dsdb_convert_schema_to_openldap(self, target, mapping)
