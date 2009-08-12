@@ -167,7 +167,7 @@ modules:: $(PLUGINS)
 
 pythonmods:: $(PYTHON_PYS) $(PYTHON_SO)
 
-all:: bin/samba4 bin/regpatch4 bin/regdiff4 bin/regshell4 bin/regtree4 bin/smbclient4 bin/wbinfo4 pythonmods setup plugins
+all:: bin/samba4 bin/regpatch4 bin/regdiff4 bin/regshell4 bin/regtree4 bin/smbclient4 pythonmods setup plugins
 torture:: bin/smbtorture4
 everything:: $(patsubst %,%4,$(BINARIES))
 setup:

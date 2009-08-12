@@ -4,7 +4,7 @@
    Winbind status program.
 
    Copyright (C) Tim Potter      2000-2003
-   Copyright (C) Andrew Bartlett 2002
+   Copyright (C) Andrew Bartlett 2002-2007
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -29,9 +29,10 @@
 #include "lib/cmdline/popt_common.h"
 #endif
 
-
+#ifdef DBGC_CLASS
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
+#endif
 
 static struct wbcInterfaceDetails *init_interface_details(void)
 {
@@ -1214,6 +1215,7 @@ static bool wbinfo_auth_krb5(char *username, const char *cctype, uint32_t flags)
 	char *p = NULL;
 	char *password = NULL;
 	char *name = NULL;
+	char *local_cctype = NULL;
 	uid_t uid;
 	struct wbcLogonUserParams params;
 	struct wbcLogonUserInfo *info;
@@ -1232,6 +1234,8 @@ static bool wbinfo_auth_krb5(char *username, const char *cctype, uint32_t flags)
 	} else {
 		password = wbinfo_prompt_pass(frame, NULL, username);
 	}
+
+	local_cctype = talloc_strdup(frame, cctype);
 
 	name = s;
 
@@ -1266,7 +1270,7 @@ static bool wbinfo_auth_krb5(char *username, const char *cctype, uint32_t flags)
 				     &params.blobs,
 				     "krb5_cc_type",
 				     0,
-				     (uint8_t *)cctype,
+				     (uint8_t *)local_cctype,
 				     strlen(cctype)+1);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		goto done;
