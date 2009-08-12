@@ -185,7 +185,7 @@ static int tls_destructor(struct tls_context *tls)
 	int ret;
 	ret = gnutls_bye(tls->session, GNUTLS_SHUT_WR);
 	if (ret < 0) {
-		DEBUG(0,("TLS gnutls_bye failed - %s\n", gnutls_strerror(ret)));
+		DEBUG(4,("TLS gnutls_bye failed - %s\n", gnutls_strerror(ret)));
 	}
 	return 0;
 }
