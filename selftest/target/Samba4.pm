@@ -88,9 +88,12 @@ sub check_or_start($$$)
 	my $pid = fork();
 	if ($pid == 0) {
 		open STDIN, $env_vars->{SAMBA_TEST_FIFO};
-		open STDOUT, ">$env_vars->{SAMBA_TEST_LOG}";
+		# we want out from samba to go to the log file, but also
+		# to the users terminal when running 'make test' on the command
+		# line. This puts it on stderr on the terminal
+		open STDOUT, "| tee $env_vars->{SAMBA_TEST_LOG} 1>&2";
 		open STDERR, '>&STDOUT';
-		
+
 		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
 
 		my $valgrind = "";
