@@ -20,7 +20,7 @@
 
 #include "includes.h"
 #include "smbd/globals.h"
-#include "../source4/libcli/smb2/smb2_constants.h"
+#include "../libcli/smb/smb_common.h"
 
 static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *req,
 					uint64_t in_session_id,

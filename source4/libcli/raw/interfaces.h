@@ -23,7 +23,7 @@
 #define __LIBCLI_RAW_INTERFACES_H__
 
 #include "libcli/raw/smb.h"
-#include "libcli/smb2/smb2_constants.h"
+#include "../libcli/smb/smb_common.h"
 #include "librpc/gen_ndr/misc.h" /* for struct GUID */
 
 /* this structure is just a wrapper for a string, the only reason we

@@ -20,7 +20,7 @@
 
 #include "includes.h"
 #include "smbd/globals.h"
-#include "../source4/libcli/smb2/smb2_constants.h"
+#include "../libcli/smb/smb_common.h"
 
 struct smbd_smb2_lock_element {
 	uint64_t offset;

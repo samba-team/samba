@@ -20,7 +20,7 @@
 
 #include "includes.h"
 #include "smbd/globals.h"
-#include "../source4/libcli/smb2/smb2_constants.h"
+#include "../libcli/smb/smb_common.h"
 #include "../lib/crypto/crypto.h"
 
 NTSTATUS smb2_signing_sign_pdu(DATA_BLOB session_key,

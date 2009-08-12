@@ -20,7 +20,7 @@
 
 #include "includes.h"
 #include "smbd/globals.h"
-#include "../source4/libcli/smb2/smb2_constants.h"
+#include "../libcli/smb/smb_common.h"
 #include "../lib/tsocket/tsocket.h"
 
 bool smbd_is_smb2_header(const uint8_t *inbuf, size_t size)

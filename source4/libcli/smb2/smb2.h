@@ -24,7 +24,6 @@
 
 #include "libcli/raw/request.h"
 #include "libcli/raw/libcliraw.h"
-#include "libcli/smb2/smb2_constants.h"
 
 struct smb2_handle;
 struct smb2_lease_break;
