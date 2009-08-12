@@ -1,0 +1,89 @@
+#include "idl_types.h"
+
+/*
+  ntlmssp interface definition
+*/
+
+[
+	pointer_default(unique)
+]
+interface ntlmssp
+{
+	typedef [v1_enum] enum {
+		NtLmNegotiate		= 0x00000001,
+		NtLmChallenge		= 0x00000002,
+		NtLmAuthenticate	= 0x00000003
+	} ntlmssp_MessageType;
+
+	typedef [bitmap32bit] bitmap {
+		NTLMSSP_NEGOTIATE_UNICODE			= 0x00000001,
+		NTLMSSP_NEGOTIATE_OEM				= 0x00000002, /* NTLM_NEGOTIATE_OEM in MS-NLMP */
+		NTLMSSP_REQUEST_TARGET				= 0x00000004,
+		NTLMSSP_NEGOTIATE_SIGN				= 0x00000010, /* Message integrity */
+		NTLMSSP_NEGOTIATE_SEAL				= 0x00000020, /* Message confidentiality */
+		NTLMSSP_NEGOTIATE_DATAGRAM			= 0x00000040,
+		NTLMSSP_NEGOTIATE_LM_KEY			= 0x00000080,
+		NTLMSSP_NEGOTIATE_NETWARE			= 0x00000100, /* not mentioned in MS-NLMP */
+		NTLMSSP_NEGOTIATE_NTLM				= 0x00000200,
+		NTLMSSP_NEGOTIATE_NT_ONLY			= 0x00000400,
+		NTLMSSP_ANONYMOUS				= 0x00000800, /* no symbol name in MS-NLMP */
+		NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED		= 0x00001000,
+		NTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED	= 0x00002000,
+		NTLMSSP_NEGOTIATE_THIS_IS_LOCAL_CALL		= 0x00004000, /* not mentioned in MS-NLMP */
+		NTLMSSP_NEGOTIATE_ALWAYS_SIGN			= 0x00008000,
+		NTLMSSP_TARGET_TYPE_DOMAIN			= 0x00010000,
+		NTLMSSP_TARGET_TYPE_SERVER			= 0x00020000,
+		NTLMSSP_TARGET_TYPE_SHARE			= 0x00040000,
+		NTLMSSP_NEGOTIATE_EXTENDED_SESSIONSECURITY	= 0x00080000,
+		NTLMSSP_NEGOTIATE_IDENTIFY			= 0x00100000,
+		NTLMSSP_REQUEST_NON_NT_SESSION_KEY		= 0x00400000,
+		NTLMSSP_NEGOTIATE_TARGET_INFO			= 0x00800000,
+		NTLMSSP_NEGOTIATE_VERSION			= 0x02000000,
+		NTLMSSP_NEGOTIATE_128				= 0x20000000, /* 128-bit encryption */
+		NTLMSSP_NEGOTIATE_KEY_EXCH			= 0x40000000,
+		NTLMSSP_NEGOTIATE_56				= 0x80000000
+	} NEGOTIATE;
+
+	/* convenience mapping */
+	const int NTLMSSP_NEGOTIATE_NTLM2 = NTLMSSP_NEGOTIATE_EXTENDED_SESSIONSECURITY;
+
+	/*
+	   NTLMSSP_WINDOWS_MAJOR_VERSION_5: Windows XP SP2 and Server 2003
+	   NTLMSSP_WINDOWS_MAJOR_VERSION_6: Windows Vista, Server 2008, 7 and Server 2008 R2
+	 */
+
+	typedef [enum8bit] enum {
+		NTLMSSP_WINDOWS_MAJOR_VERSION_5	= 0x05,
+		NTLMSSP_WINDOWS_MAJOR_VERSION_6	= 0x06
+	} ntlmssp_WindowsMajorVersion;
+
+	/*
+	   NTLMSSP_WINDOWS_MINOR_VERSION_0: Windows Vista, Server 2008, 7, Server 2008 R2
+	   NTLMSSP_WINDOWS_MINOR_VERSION_1: Windows XP SP2
+	   NTLMSSP_WINDOWS_MINOR_VERSION_2: Windows Server 2003
+	 */
+
+	typedef [enum8bit] enum {
+		NTLMSSP_WINDOWS_MINOR_VERSION_0	= 0x00,
+		NTLMSSP_WINDOWS_MINOR_VERSION_1	= 0x01,
+		NTLMSSP_WINDOWS_MINOR_VERSION_2	= 0x02
+	} ntlmssp_WindowsMinorVersion;
+
+	/*
+	   NTLMSSP_REVISION_W2K3_RC1:
+	   NTLMSSP_REVISION_W2K3: Windows XP SP2, Server 2003, Vista, Server 2008, 7, Server 2008 R2
+	 */
+
+	typedef [enum8bit] enum {
+		NTLMSSP_REVISION_W2K3_RC1	= 0x0A,
+		NTLMSSP_REVISION_W2K3		= 0x0F
+	} ntlmssp_NTLMRevisionCurrent;
+
+	typedef struct {
+		ntlmssp_WindowsMajorVersion ProductMajorVersion;
+		ntlmssp_WindowsMinorVersion ProductMinorVersion;
+		uint16 ProductBuild;
+		uint8 Reserved[3];
+		ntlmssp_NTLMRevisionCurrent NTLMRevisionCurrent;
+	} VERSION;
+}
