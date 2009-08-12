@@ -119,7 +119,7 @@ static enum ndr_err_code ndr_push_replPropertyMetaDataCtr(struct ndr_push *ndr, 
 			break; }
 
 			default:
-				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -129,7 +129,7 @@ static enum ndr_err_code ndr_push_replPropertyMetaDataCtr(struct ndr_push *ndr, 
 			break;
 
 			default:
-				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -146,7 +146,7 @@ static enum ndr_err_code ndr_pull_replPropertyMetaDataCtr(struct ndr_pull *ndr, 
 			break; }
 
 			default:
-				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -155,7 +155,7 @@ static enum ndr_err_code ndr_pull_replPropertyMetaDataCtr(struct ndr_pull *ndr, 
 			break;
 
 			default:
-				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -343,7 +343,7 @@ static enum ndr_err_code ndr_push_replUpToDateVectorCtr(struct ndr_push *ndr, in
 			break; }
 
 			default:
-				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -356,7 +356,7 @@ static enum ndr_err_code ndr_push_replUpToDateVectorCtr(struct ndr_push *ndr, in
 			break;
 
 			default:
-				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -377,7 +377,7 @@ static enum ndr_err_code ndr_pull_replUpToDateVectorCtr(struct ndr_pull *ndr, in
 			break; }
 
 			default:
-				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -389,7 +389,7 @@ static enum ndr_err_code ndr_pull_replUpToDateVectorCtr(struct ndr_pull *ndr, in
 			break;
 
 			default:
-				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -618,7 +618,7 @@ static enum ndr_err_code ndr_push_repsFromTo(struct ndr_push *ndr, int ndr_flags
 			break; }
 
 			default:
-				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -629,7 +629,7 @@ static enum ndr_err_code ndr_push_repsFromTo(struct ndr_push *ndr, int ndr_flags
 			break;
 
 			default:
-				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -646,7 +646,7 @@ static enum ndr_err_code ndr_pull_repsFromTo(struct ndr_pull *ndr, int ndr_flags
 			break; }
 
 			default:
-				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -656,7 +656,7 @@ static enum ndr_err_code ndr_pull_repsFromTo(struct ndr_pull *ndr, int ndr_flags
 			break;
 
 			default:
-				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -782,7 +782,7 @@ static enum ndr_err_code ndr_push_partialAttributeSetCtr(struct ndr_push *ndr, i
 			break; }
 
 			default:
-				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -792,7 +792,7 @@ static enum ndr_err_code ndr_push_partialAttributeSetCtr(struct ndr_push *ndr, i
 			break;
 
 			default:
-				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -809,7 +809,7 @@ static enum ndr_err_code ndr_pull_partialAttributeSetCtr(struct ndr_pull *ndr, i
 			break; }
 
 			default:
-				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -818,7 +818,7 @@ static enum ndr_err_code ndr_pull_partialAttributeSetCtr(struct ndr_pull *ndr, i
 			break;
 
 			default:
-				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -912,7 +912,7 @@ static enum ndr_err_code ndr_push_prefixMapCtr(struct ndr_push *ndr, int ndr_fla
 			break; }
 
 			default:
-				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -923,7 +923,7 @@ static enum ndr_err_code ndr_push_prefixMapCtr(struct ndr_push *ndr, int ndr_fla
 			break;
 
 			default:
-				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -940,7 +940,7 @@ static enum ndr_err_code ndr_pull_prefixMapCtr(struct ndr_pull *ndr, int ndr_fla
 			break; }
 
 			default:
-				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -950,7 +950,7 @@ static enum ndr_err_code ndr_pull_prefixMapCtr(struct ndr_pull *ndr, int ndr_fla
 			break;
 
 			default:
-				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -2039,7 +2039,7 @@ static enum ndr_err_code ndr_push_package_PrimaryKerberosCtr(struct ndr_push *nd
 			break; }
 
 			default:
-				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -2054,7 +2054,7 @@ static enum ndr_err_code ndr_push_package_PrimaryKerberosCtr(struct ndr_push *nd
 			break;
 
 			default:
-				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -2075,7 +2075,7 @@ static enum ndr_err_code ndr_pull_package_PrimaryKerberosCtr(struct ndr_pull *nd
 			break; }
 
 			default:
-				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -2089,7 +2089,7 @@ static enum ndr_err_code ndr_pull_package_PrimaryKerberosCtr(struct ndr_pull *nd
 			break;
 
 			default:
-				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -2458,7 +2458,7 @@ static enum ndr_err_code ndr_push_AuthInfo(struct ndr_push *ndr, int ndr_flags, 
 			break; }
 
 			default:
-				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -2477,7 +2477,7 @@ static enum ndr_err_code ndr_push_AuthInfo(struct ndr_push *ndr, int ndr_flags, 
 			break;
 
 			default:
-				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -2506,7 +2506,7 @@ static enum ndr_err_code ndr_pull_AuthInfo(struct ndr_pull *ndr, int ndr_flags, 
 			break; }
 
 			default:
-				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -2524,7 +2524,7 @@ static enum ndr_err_code ndr_pull_AuthInfo(struct ndr_pull *ndr, int ndr_flags, 
 			break;
 
 			default:
-				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -2994,7 +2994,7 @@ static enum ndr_err_code ndr_push_ExtendedErrorComputerNameU(struct ndr_push *nd
 			break; }
 
 			default:
-				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -3008,7 +3008,7 @@ static enum ndr_err_code ndr_push_ExtendedErrorComputerNameU(struct ndr_push *nd
 			break;
 
 			default:
-				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -3022,7 +3022,7 @@ static enum ndr_err_code ndr_pull_ExtendedErrorComputerNameU(struct ndr_pull *nd
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
-			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
 		switch (level) {
 			case EXTENDED_ERROR_COMPUTER_NAME_PRESENT: {
@@ -3033,7 +3033,7 @@ static enum ndr_err_code ndr_pull_ExtendedErrorComputerNameU(struct ndr_pull *nd
 			break; }
 
 			default:
-				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -3046,7 +3046,7 @@ static enum ndr_err_code ndr_pull_ExtendedErrorComputerNameU(struct ndr_pull *nd
 			break;
 
 			default:
-				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -3172,7 +3172,7 @@ static enum ndr_err_code ndr_push_ExtendedErrorParamU(struct ndr_push *ndr, int 
 			break; }
 
 			default:
-				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -3203,7 +3203,7 @@ static enum ndr_err_code ndr_push_ExtendedErrorParamU(struct ndr_push *ndr, int 
 			break;
 
 			default:
-				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -3217,7 +3217,7 @@ static enum ndr_err_code ndr_pull_ExtendedErrorParamU(struct ndr_pull *ndr, int 
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
-			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
 		switch (level) {
 			case EXTENDED_ERROR_PARAM_TYPE_ASCII_STRING: {
@@ -3248,7 +3248,7 @@ static enum ndr_err_code ndr_pull_ExtendedErrorParamU(struct ndr_pull *ndr, int 
 			break; }
 
 			default:
-				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -3278,7 +3278,7 @@ static enum ndr_err_code ndr_pull_ExtendedErrorParamU(struct ndr_pull *ndr, int 
 			break;
 
 			default:
-				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	return NDR_ERR_SUCCESS;
