@@ -1780,7 +1780,7 @@ int main(int argc, char **argv, char **envp)
 		/* get the generic configuration parameters like --domain */
 		switch (opt) {
 		case OPT_VERBOSE:
-			verbose = True;
+			verbose = true;
 			break;
 		case OPT_NTLMV2:
 			use_ntlmv2 = true;
@@ -1792,11 +1792,6 @@ int main(int argc, char **argv, char **envp)
 	}
 
 	poptFreeContext(pc);
-
-	if (!init_names())
-		return 1;
-
-	load_interfaces();
 
 	pc = poptGetContext(NULL, argc, (const char **)argv, long_options,
 			    POPT_CONTEXT_KEEP_FIRST);
