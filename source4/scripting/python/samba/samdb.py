@@ -186,8 +186,7 @@ pwdLastSet: 0
             assert(domain_dn is not None)
 
             res = self.search(domain_dn, scope=ldb.SCOPE_SUBTREE, 
-                              expression=filter,
-                              attrs=[])
+                              expression=filter)
             assert(len(res) == 1)
             user_dn = res[0].dn
 
