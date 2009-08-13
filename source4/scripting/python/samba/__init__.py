@@ -158,7 +158,11 @@ class Ldb(ldb.Ldb):
             for msg in res:
                 erase_recursive(self, msg.dn)
 
-            self.delete(dn)
+            try:
+                self.delete(dn)
+            except ldb.LdbError, (ldb.ERR_NO_SUCH_OBJECT, _):
+                # Ignore no such object errors
+                pass
 
         res = self.search("", ldb.SCOPE_BASE, "(objectClass=*)", 
                          ["namingContexts"])
