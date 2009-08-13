@@ -1,11 +1,11 @@
 .\"     Title: ctdb
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
-.\"      Date: 07/28/2009
+.\"      Date: 08/13/2009
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "CTDB" "1" "07/28/2009" "" ""
+.TH "CTDB" "1" "08/13/2009" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -260,6 +260,7 @@ Example output:
 10\.interface         Status:OK    Duration:0\.077 Tue Mar 24 18:56:57 2009
 11\.natgw             Status:OK    Duration:0\.039 Tue Mar 24 18:56:57 2009
 20\.multipathd        Status:OK    Duration:0\.038 Tue Mar 24 18:56:57 2009
+31\.clamd             Status:DISABLED
 40\.vsftpd            Status:OK    Duration:0\.045 Tue Mar 24 18:56:57 2009
 41\.httpd             Status:OK    Duration:0\.039 Tue Mar 24 18:56:57 2009
 50\.samba             Status:ERROR    Duration:0\.082 Tue Mar 24 18:56:57 2009
@@ -267,6 +268,16 @@ Example output:
       
 .fi
 .RE
+.SS "disablescript <script>"
+.PP
+This command is used to disable an eventscript\.
+.PP
+This will take effect the next time the eventscripts are being executed so it can take a short while until this is reflected in \'scriptstatus\'\.
+.SS "enablescript <script>"
+.PP
+This command is used to enable an eventscript\.
+.PP
+This will take effect the next time the eventscripts are being executed so it can take a short while until this is reflected in \'scriptstatus\'\.
 .SS "getvar <name>"
 .PP
 Get the runtime value of a tuneable variable\.

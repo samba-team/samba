@@ -356,11 +356,30 @@ Number of addresses:4
 10.interface         Status:OK    Duration:0.077 Tue Mar 24 18:56:57 2009
 11.natgw             Status:OK    Duration:0.039 Tue Mar 24 18:56:57 2009
 20.multipathd        Status:OK    Duration:0.038 Tue Mar 24 18:56:57 2009
+31.clamd             Status:DISABLED
 40.vsftpd            Status:OK    Duration:0.045 Tue Mar 24 18:56:57 2009
 41.httpd             Status:OK    Duration:0.039 Tue Mar 24 18:56:57 2009
 50.samba             Status:ERROR    Duration:0.082 Tue Mar 24 18:56:57 2009
    OUTPUT:ERROR: Samba tcp port 445 is not responding
       </screen>
+    </refsect2>
+
+    <refsect2><title>disablescript &lt;script&gt;</title>
+      <para>
+	This command is used to disable an eventscript.
+      </para>
+      <para>
+	This will take effect the next time the eventscripts are being executed so it can take a short while until this is reflected in 'scriptstatus'.
+      </para>
+    </refsect2>
+
+    <refsect2><title>enablescript &lt;script&gt;</title>
+      <para>
+	This command is used to enable an eventscript.
+      </para>
+      <para>
+	This will take effect the next time the eventscripts are being executed so it can take a short while until this is reflected in 'scriptstatus'.
+      </para>
     </refsect2>
 
     <refsect2><title>getvar &lt;name&gt;</title>
