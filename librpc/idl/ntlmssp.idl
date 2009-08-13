@@ -87,4 +87,24 @@ interface ntlmssp
 		uint8 Reserved[3];
 		ntlmssp_NTLMRevisionCurrent NTLMRevisionCurrent;
 	} VERSION;
+
+	typedef [nodiscriminant] union {
+		[case(NTLMSSP_NEGOTIATE_VERSION)] VERSION version;
+		[default];
+	} ntlmssp_Version;
+
+	/* NTLMSSP negotiate message */
+
+	typedef [public] struct {
+		[charset(DOS),value("NTLMSSP")] uint8 Signature[8];
+		[value(NtLmNegotiate)] ntlmssp_MessageType MessageType;
+		NEGOTIATE NegotiateFlags;
+		[value(strlen(DomainName))] uint16 DomainNameLen;
+		[value(DomainNameLen)] uint16 DomainNameMaxLen;
+		[relative] [subcontext(0),subcontext_size(DomainNameLen)] [flag(ndr_ntlmssp_negotiated_string_flags(NTLMSSP_NEGOTIATE_OEM))] string *DomainName;
+		[value(strlen(Workstation))] uint16 WorkstationLen;
+		[value(WorkstationLen)] uint16 WorkstationMaxLen;
+		[relative] [subcontext(0),subcontext_size(WorkstationLen)] [flag(ndr_ntlmssp_negotiated_string_flags(NTLMSSP_NEGOTIATE_OEM))] string *Workstation;
+		[switch_is(NegotiateFlags & NTLMSSP_NEGOTIATE_VERSION)] ntlmssp_Version Version;
+	} NEGOTIATE_MESSAGE;
 }
