@@ -74,8 +74,6 @@ parser.add_option("--root", type="string", metavar="USERNAME",
 		help="choose 'root' unix username")
 parser.add_option("--nobody", type="string", metavar="USERNAME", 
 		help="choose 'nobody' user")
-parser.add_option("--nogroup", type="string", metavar="GROUPNAME", 
-		help="choose 'nogroup' group")
 parser.add_option("--wheel", type="string", metavar="GROUPNAME", 
 		help="choose 'wheel' privileged group")
 parser.add_option("--users", type="string", metavar="GROUPNAME", 
@@ -83,13 +81,12 @@ parser.add_option("--users", type="string", metavar="GROUPNAME",
 parser.add_option("--quiet", help="Be quiet", action="store_true")
 parser.add_option("--blank", action="store_true",
 		help="do not add users or groups, just the structure")
-parser.add_option("--ldap-backend", type="string", metavar="LDAPSERVER", 
-		help="LDAP server to use for this provision")
+parser.add_option("--ldap-backend-extra-port", type="int", metavar="LDAP-BACKEND-EXTRA-PORT", 
+		help="Additional TCP port for LDAP backend server (to use for replication)")
 parser.add_option("--ldap-backend-type", type="choice", metavar="LDAP-BACKEND-TYPE", 
-		help="LDB mapping module to use for the LDAP backend",
+		help="LDAP backend type (fedora-ds or openldap)",
 		choices=["fedora-ds", "openldap"])
-parser.add_option("--aci", type="string", metavar="ACI", 
-		help="An arbitary LDIF fragment, particularly useful to loading a backend ACI value into a target LDAP server. You must provide at least a realm and domain")
+parser.add_option("--ldap-backend-nosync", help="Configure LDAP backend not to call fsync() (for performance in test environments)", action="store_true")
 parser.add_option("--server-role", type="choice", metavar="ROLE",
 		  choices=["domain controller", "dc", "member server", "member", "standalone"],
 		help="Set server role to provision for (default standalone)")
@@ -97,6 +94,14 @@ parser.add_option("--partitions-only",
 		help="Configure Samba's partitions, but do not modify them (ie, join a BDC)", action="store_true")
 parser.add_option("--targetdir", type="string", metavar="DIR", 
 		          help="Set target directory")
+parser.add_option("--ol-mmr-urls", type="string", metavar="LDAPSERVER",
+                help="List of LDAP-URLS [ ldap://<FQHN>:<PORT>/  (where <PORT> has to be different than 389!) ] separated with whitespaces for use with OpenLDAP-MMR (Multi-Master-Replication)")
+parser.add_option("--slapd-path", type="string", metavar="SLAPD-PATH", 
+		help="Path to slapd for LDAP backend [e.g.:'/usr/local/libexec/slapd']. Required for Setup with LDAP-Backend. OpenLDAP Version >= 2.4.17 should be used.") 
+parser.add_option("--setup-ds-path", type="string", metavar="SETUP_DS-PATH", 
+		help="Path to setup-ds.pl script for Fedora DS LDAP backend [e.g.:'/usr/sbin/setup-ds.pl']. Required for Setup with Fedora DS backend.") 
+parser.add_option("--nosync", help="Configure LDAP backend not to call fsync() (for performance in test environments)", action="store_true")
+parser.add_option("--ldap-dryrun-mode", help="Configure LDAP backend, but do not run any binaries and exit early.  Used only for the test environment.  DO NOT USE", action="store_true")
 
 opts = parser.parse_args()[0]
 
@@ -148,9 +153,6 @@ if opts.interactive:
 lp = sambaopts.get_loadparm()
 smbconf = lp.configfile
 
-if opts.aci is not None:
-	print "set ACI: %s" % opts.aci
-
 if opts.server_role == "dc":
 	server_role = "domain controller"
 elif opts.server_role == "member":
@@ -182,7 +184,12 @@ provision(setup_dir, message,
           invocationid=opts.invocationid, adminpass=opts.adminpass,
           krbtgtpass=opts.krbtgtpass, machinepass=opts.machinepass,
           dnspass=opts.dnspass, root=opts.root, nobody=opts.nobody,
-          nogroup=opts.nogroup, wheel=opts.wheel, users=opts.users,
-          aci=opts.aci, serverrole=server_role, 
-          ldap_backend=opts.ldap_backend, 
-          ldap_backend_type=opts.ldap_backend_type)
+          wheel=opts.wheel, users=opts.users,
+          serverrole=server_role, 
+          ldap_backend_extra_port=opts.ldap_backend_extra_port, 
+          ldap_backend_type=opts.ldap_backend_type,
+	  ol_mmr_urls=opts.ol_mmr_urls,
+	  slapd_path=opts.slapd_path,
+	  setup_ds_path=opts.setup_ds_path,
+	  nosync=opts.nosync,
+	  ldap_dryrun_mode=opts.ldap_dryrun_mode)
