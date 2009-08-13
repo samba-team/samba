@@ -242,6 +242,16 @@ def valid_netbios_name(name):
             return False
     return True
 
+
+def dom_sid_to_rid(sid_str):
+    """Converts a domain SID to the relative RID.
+
+    :param sid_str: The domain SID formatted as string
+    """
+
+    return glue.dom_sid_to_rid(sid_str)
+
+
 version = glue.version
 
 DS_BEHAVIOR_WIN2000 = glue.DS_BEHAVIOR_WIN2000

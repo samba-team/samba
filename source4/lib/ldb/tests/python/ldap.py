@@ -18,10 +18,8 @@ from ldb import ERR_NO_SUCH_OBJECT, ERR_ATTRIBUTE_OR_VALUE_EXISTS
 from ldb import ERR_ENTRY_ALREADY_EXISTS, ERR_UNWILLING_TO_PERFORM
 from ldb import ERR_NOT_ALLOWED_ON_NON_LEAF, ERR_OTHER, ERR_INVALID_DN_SYNTAX
 from ldb import Message, Dn
-from samba import Ldb
+from samba import Ldb, param, dom_sid_to_rid
 from subunit import SubunitTestRunner
-from samba import param
-from samba import glue
 import unittest
 
 parser = optparse.OptionParser("ldap [options] <host>")
@@ -173,7 +171,7 @@ class BasicTests(unittest.TestCase):
         self.assertTrue(len(res1) == 1)
         primary_group_token = int(res1[0]["primaryGroupToken"][0])
 
-	rid = glue.dom_sid_to_rid(ldb.schema_format_value("objectSID", res1[0]["objectSID"][0]))
+	rid = dom_sid_to_rid(ldb.schema_format_value("objectSID", res1[0]["objectSID"][0]))
         self.assertEquals(primary_group_token, rid)
 
 # Has to wait until we support read-only generated attributes correctly
