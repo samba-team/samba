@@ -188,5 +188,5 @@ etags:
 	etags $(ETAGS_OPTIONS) `find $(base_srcdirs) -name "*.[ch]"`
 
 ctags:
-	ctags $(CTAGS_OPTIONS) `find $(base_srcdirs) -name "*.[ch]"`
+	ctags $(CTAGS_OPTIONS) `find $(base_srcdirs) -name "*.[ch]" | grep -v "_proto\.h"`
 
