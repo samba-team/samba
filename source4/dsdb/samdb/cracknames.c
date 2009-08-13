@@ -1278,6 +1278,9 @@ NTSTATUS crack_name_to_nt4_name(TALLOC_CTX *mem_ctx,
 	}
 
 	*nt4_domain = talloc_strdup(mem_ctx, info1.result_name);
+	if (*nt4_domain == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	p = strchr(*nt4_domain, '\\');
 	if (!p) {
@@ -1287,10 +1290,9 @@ NTSTATUS crack_name_to_nt4_name(TALLOC_CTX *mem_ctx,
 
 	if (p[1]) {
 		*nt4_account = talloc_strdup(mem_ctx, &p[1]);
-	}
-
-	if (!*nt4_account || !*nt4_domain) {
-		return NT_STATUS_NO_MEMORY;
+		if (*nt4_account == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	return NT_STATUS_OK;
