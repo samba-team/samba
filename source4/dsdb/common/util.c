@@ -1560,15 +1560,6 @@ int samdb_search_for_parent_domain(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-/*
-  check that a password is sufficiently complex
-*/
-static bool samdb_password_complexity_ok(const char *pass)
-{
-	return check_password_quality(pass);
-}
-
-
 
 /*
   set the user password using plaintext, obeying any user or domain
@@ -1716,7 +1707,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 
 			/* possibly check password complexity */
 			if (restrictions && (pwdProperties & DOMAIN_PASSWORD_COMPLEX) &&
-			    !samdb_password_complexity_ok(new_pass)) {
+			    !check_password_quality(new_pass)) {
 				if (reject_reason) {
 					*reject_reason = SAMR_REJECT_COMPLEXITY;
 				}
