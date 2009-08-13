@@ -838,24 +838,15 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
         # Load the schema (again).  This time it will force a reindex, to make the below computationally sane
         samdb.set_schema_from_ldb(schema.ldb)
         samdb.erase_partitions()
-
-    except:
-        samdb.transaction_cancel()
-        raise
-
-    samdb.transaction_commit()
     
-    samdb.set_opaque_integer("domainFunctionality", domainFunctionality)
-    samdb.set_opaque_integer("forestFunctionality", forestFunctionality)
-    samdb.set_opaque_integer("domainControllerFunctionality", domainControllerFunctionality)
+        samdb.set_opaque_integer("domainFunctionality", domainFunctionality)
+        samdb.set_opaque_integer("forestFunctionality", forestFunctionality)
+        samdb.set_opaque_integer("domainControllerFunctionality", domainControllerFunctionality)
 
-    samdb.set_domain_sid(str(domainsid))
-    if serverrole == "domain controller":
-        samdb.set_invocation_id(invocationid)
+        samdb.set_domain_sid(str(domainsid))
+        if serverrole == "domain controller":
+            samdb.set_invocation_id(invocationid)
 
-    samdb.transaction_start()
-        
-    try:
         message("Adding DomainDN: %s" % names.domaindn)
         if serverrole == "domain controller":
             domain_oc = "domainDNS"
