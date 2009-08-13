@@ -969,7 +969,8 @@ def provision(setup_dir, message, session_info,
               rootdn=None, domaindn=None, schemadn=None, configdn=None, 
               serverdn=None,
               domain=None, hostname=None, hostip=None, hostip6=None, 
-              domainsid=None, adminpass=None, krbtgtpass=None, domainguid=None, 
+              domainsid=None, adminpass=None, ldapadminpass=None, 
+              krbtgtpass=None, domainguid=None, 
               policyguid=None, invocationid=None, machinepass=None, 
               dnspass=None, root=None, nobody=None, users=None, 
               wheel=None, backup=None, aci=None, serverrole=None, 
@@ -998,6 +999,11 @@ def provision(setup_dir, message, session_info,
         machinepass  = glue.generate_random_str(12)
     if dnspass is None:
         dnspass = glue.generate_random_str(12)
+    if ldapadminpass is None:
+        #Make a new, random password between Samba and it's LDAP server
+        ldapadminpass=glue.generate_random_str(12)        
+
+
     root_uid = findnss_uid([root or "root"])
     nobody_uid = findnss_uid([nobody or "nobody"])
     users_gid = findnss_gid([users or "users"])
@@ -1062,6 +1068,7 @@ def provision(setup_dir, message, session_info,
                                              names=names,
                                              message=message, hostname=hostname, 
                                              root=root, schema=schema, ldap_backend_type=ldap_backend_type,
+                                             ldapadminpass=ldapadminpass,
                                              ldap_backend_extra_port=ldap_backend_extra_port,
                                              ol_mmr_urls=ol_mmr_urls, 
                                              slapd_path=slapd_path,
@@ -1258,7 +1265,7 @@ class ProvisionBackend(object):
     def __init__(self, paths=None, setup_path=None, lp=None, credentials=None, 
                  names=None, message=None, 
                  hostname=None, root=None, 
-                 schema=None,
+                 schema=None, ldapadminpass=None,
                  ldap_backend_type=None, ldap_backend_extra_port=None,
                  ol_mmr_urls=None, 
                  setup_ds_path=None, slapd_path=None, 
@@ -1334,9 +1341,6 @@ class ProvisionBackend(object):
         self.credentials = Credentials()
         self.credentials.guess(lp)
         self.ldap_backend_type = ldap_backend_type
-
-        #Make a new, random password between Samba and it's LDAP server
-        ldapadminpass=glue.generate_random_str(12)        
 
         if ldap_backend_type == "fedora-ds":
             provision_fds_backend(self, paths=paths, setup_path=setup_path, names=names, message=message, 

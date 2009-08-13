@@ -70,6 +70,8 @@ parser.add_option("--machinepass", type="string", metavar="PASSWORD",
 		help="choose machine password (otherwise random)")
 parser.add_option("--dnspass", type="string", metavar="PASSWORD", 
 		help="choose dns password (otherwise random)")
+parser.add_option("--ldapadminpass", type="string", metavar="PASSWORD", 
+		help="choose password to set between Samba and it's LDAP backend (otherwise random)")
 parser.add_option("--root", type="string", metavar="USERNAME", 
 		help="choose 'root' unix username")
 parser.add_option("--nobody", type="string", metavar="USERNAME", 
@@ -188,6 +190,7 @@ provision(setup_dir, message,
           serverrole=server_role, 
           ldap_backend_extra_port=opts.ldap_backend_extra_port, 
           ldap_backend_type=opts.ldap_backend_type,
+	  ldapadminpass=opts.ldapadminpass,
 	  ol_mmr_urls=opts.ol_mmr_urls,
 	  slapd_path=opts.slapd_path,
 	  setup_ds_path=opts.setup_ds_path,
