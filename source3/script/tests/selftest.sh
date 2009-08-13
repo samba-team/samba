@@ -240,8 +240,10 @@ cat >$SERVERCONFFILE<<EOF
 	read only = no
 	smbd:sharedelay = 100000
 	smbd:writetimeupdatedelay = 500000
-	map hidden = yes
-	map system = yes
+	map hidden = no
+	map system = no
+	map readonly = no
+	store dos attributes = yes
 	create mask = 755
 	store create time = yes
 	vfs objects = $BINDIR/xattr_tdb.so $BINDIR/streams_depot.so
