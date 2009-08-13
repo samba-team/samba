@@ -175,6 +175,9 @@ NTSTATUS wbsrv_samba3_handle_call(struct wbsrv_samba3_call *s3call)
 	case WINBINDD_DUAL_GID2SID:
 		return wbsrv_samba3_gid2sid(s3call);
 
+	case WINBINDD_DOMAIN_INFO:
+		return wbsrv_samba3_domain_info(s3call);
+
 	/* Unimplemented commands */
 
 	case WINBINDD_PAM_CHAUTHTOK:
@@ -187,7 +190,6 @@ NTSTATUS wbsrv_samba3_handle_call(struct wbsrv_samba3_call *s3call)
 	case WINBINDD_SET_MAPPING:
 	case WINBINDD_REMOVE_MAPPING:
 	case WINBINDD_SET_HWM:
-	case WINBINDD_DOMAIN_INFO:
 	case WINBINDD_SHOW_SEQUENCE:
 	case WINBINDD_WINS_BYIP:
 	case WINBINDD_WINS_BYNAME:

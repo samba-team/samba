@@ -128,6 +128,22 @@ NTSTATUS wbsrv_samba3_ping(struct wbsrv_samba3_call *s3call)
 	return NT_STATUS_OK;
 }
 
+NTSTATUS wbsrv_samba3_domain_info(struct wbsrv_samba3_call *s3call)
+{
+	DEBUG(0, ("wbsrv_samba3_domain_info called, stub\n"));
+	s3call->response.result = WINBINDD_OK;
+	fstrcpy(s3call->response.data.domain_info.name,
+		s3call->request.domain_name);
+	fstrcpy(s3call->response.data.domain_info.alt_name,
+		s3call->request.domain_name);
+	fstrcpy(s3call->response.data.domain_info.sid, "S-1-2-3-4");
+	s3call->response.data.domain_info.native_mode = false;
+	s3call->response.data.domain_info.active_directory = false;
+	s3call->response.data.domain_info.primary = false;
+
+	return NT_STATUS_OK;
+}
+
 /* Plaintext authentication 
    
    This interface is used by ntlm_auth in it's 'basic' authentication
