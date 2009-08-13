@@ -678,8 +678,12 @@ static struct functable net_func[] = {
 	load_case_tables();
 
 	setlocale(LC_ALL, "");
+#if defined(HAVE_BINDTEXTDOMAIN)
 	bindtextdomain(MODULE_NAME, dyn_LOCALEDIR);
+#endif
+#if defined(HAVE_TEXTDOMAIN)
 	textdomain(MODULE_NAME);
+#endif
 
 	/* set default debug level to 0 regardless of what smb.conf sets */
 	DEBUGLEVEL_CLASS[DBGC_ALL] = 0;
