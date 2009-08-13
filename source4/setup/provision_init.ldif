@@ -1,35 +1,3 @@
-#These attributes are only used as far as the bootstrapping of the
-# schema.  After that, the attributes from the schema are used.
-#
-# Therefore, they must strictly match the schema
-
-dn: @ATTRIBUTES
-userPrincipalName: CASE_INSENSITIVE
-servicePrincipalName: CASE_INSENSITIVE
-dnsDomain: CASE_INSENSITIVE
-dnsRoot: CASE_INSENSITIVE
-nETBIOSName: CASE_INSENSITIVE
-cn: CASE_INSENSITIVE
-dc: CASE_INSENSITIVE
-name: CASE_INSENSITIVE
-lDAPDisplayName: CASE_INSENSITIVE
-subClassOf: CASE_INSENSITIVE
-dn: CASE_INSENSITIVE
-sAMAccountName: CASE_INSENSITIVE
-objectClass: CASE_INSENSITIVE
-userPassword: HIDDEN
-krb5Key: HIDDEN
-ntPwdHash: HIDDEN
-sambaNTPwdHistory: HIDDEN
-lmPwdHash: HIDDEN
-sambaLMPwdHistory: HIDDEN
-createTimestamp: HIDDEN
-modifyTimestamp: HIDDEN
-groupType: INTEGER
-sAMAccountType: INTEGER
-systemFlags: INTEGER
-userAccountControl: INTEGER
-
 dn: @OPTIONS
 checkBaseOnSearch: TRUE
 
