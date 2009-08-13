@@ -53,27 +53,6 @@ class SamDB(samba.Ldb):
     def connect(self, url):
         super(SamDB, self).connect(self.lp.private_path(url))
 
-    def add_foreign(self, domaindn, sid, desc):
-        """Add a foreign security principle."""
-        add = """
-dn: CN=%s,CN=ForeignSecurityPrincipals,%s
-objectClass: top
-objectClass: foreignSecurityPrincipal
-description: %s
-""" % (sid, domaindn, desc)
-        # deliberately ignore errors from this, as the records may
-        # already exist
-        for msg in self.parse_ldif(add):
-            self.add(msg[1])
-
-    def add_stock_foreign_sids(self):
-        domaindn = self.domain_dn()
-        self.add_foreign(domaindn, "S-1-5-7", "Anonymous")
-        self.add_foreign(domaindn, "S-1-1-0", "World")
-        self.add_foreign(domaindn, "S-1-5-2", "Network")
-        self.add_foreign(domaindn, "S-1-5-18", "System")
-        self.add_foreign(domaindn, "S-1-5-11", "Authenticated Users")
-
     def enable_account(self, user_dn):
         """Enable an account.
         
