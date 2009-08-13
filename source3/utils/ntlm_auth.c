@@ -1454,7 +1454,8 @@ static bool manage_client_ntlmssp_init(struct spnego_data spnego)
 
 	spnego.type = SPNEGO_NEG_TOKEN_INIT;
 	spnego.negTokenInit.mechTypes = my_mechs;
-	spnego.negTokenInit.reqFlags = 0;
+	spnego.negTokenInit.reqFlags = data_blob_null;
+	spnego.negTokenInit.reqFlagsPadding = 0;
 	spnego.negTokenInit.mechListMIC = null_blob;
 
 	status = ntlmssp_update(client_ntlmssp_state, null_blob,
@@ -1609,7 +1610,8 @@ static bool manage_client_krb5_init(struct spnego_data spnego)
 
 	reply.type = SPNEGO_NEG_TOKEN_INIT;
 	reply.negTokenInit.mechTypes = my_mechs;
-	reply.negTokenInit.reqFlags = 0;
+	reply.negTokenInit.reqFlags = data_blob_null;
+	reply.negTokenInit.reqFlagsPadding = 0;
 	reply.negTokenInit.mechToken = tkt;
 	reply.negTokenInit.mechListMIC = data_blob_null;
 

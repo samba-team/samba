@@ -60,6 +60,7 @@ bool asn1_push_tag(struct asn1_data *data, uint8_t tag);
 bool asn1_pop_tag(struct asn1_data *data);
 bool asn1_write_implicit_Integer(struct asn1_data *data, int i);
 bool asn1_write_Integer(struct asn1_data *data, int i);
+bool asn1_write_BitString(struct asn1_data *data, const void *p, size_t length, uint8_t padding);
 bool ber_write_OID_String(DATA_BLOB *blob, const char *OID);
 bool asn1_write_OID(struct asn1_data *data, const char *OID);
 bool asn1_write_OctetString(struct asn1_data *data, const void *p, size_t length);
@@ -90,6 +91,7 @@ bool asn1_read_OctetString(struct asn1_data *data, TALLOC_CTX *mem_ctx, DATA_BLO
 bool asn1_read_ContextSimple(struct asn1_data *data, uint8_t num, DATA_BLOB *blob);
 bool asn1_read_implicit_Integer(struct asn1_data *data, int *i);
 bool asn1_read_Integer(struct asn1_data *data, int *i);
+bool asn1_read_BitString(struct asn1_data *data, TALLOC_CTX *mem_ctx, DATA_BLOB *blob, uint8_t *padding);
 bool asn1_read_enumerated(struct asn1_data *data, int *v);
 bool asn1_check_enumerated(struct asn1_data *data, int v);
 bool asn1_write_enumerated(struct asn1_data *data, uint8_t v);

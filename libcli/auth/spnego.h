@@ -32,7 +32,6 @@
 #define SPNEGO_ANON_FLAG     0x10
 #define SPNEGO_CONF_FLAG     0x20
 #define SPNEGO_INTEG_FLAG    0x40
-#define SPNEGO_REQ_FLAG      0x80
 
 enum spnego_negResult {
 	SPNEGO_ACCEPT_COMPLETED = 0,
@@ -43,7 +42,8 @@ enum spnego_negResult {
 
 struct spnego_negTokenInit {
 	const char **mechTypes;
-	int reqFlags;
+	DATA_BLOB reqFlags;
+	uint8_t reqFlagsPadding;
 	DATA_BLOB mechToken;
 	DATA_BLOB mechListMIC;
 	char *targetPrincipal;
