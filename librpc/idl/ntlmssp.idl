@@ -5,7 +5,8 @@
 */
 
 [
-	pointer_default(unique)
+	pointer_default(unique),
+	helper("../librpc/ndr/ndr_ntlmssp.h")
 ]
 interface ntlmssp
 {
