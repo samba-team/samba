@@ -58,6 +58,7 @@ struct ctdb_monitor_script_status {
 	const char *name;
 	struct timeval start;
 	struct timeval finished;
+	int32_t disabled;
 	int32_t status;
 	int32_t timedout;
 	char *output;
@@ -188,6 +189,36 @@ int32_t ctdb_control_event_script_stop(struct ctdb_context *ctdb, TDB_DATA indat
 	return 0;
 }
 
+/* called from the event script child process when we have a disabled script
+ */
+int32_t ctdb_control_event_script_disabled(struct ctdb_context *ctdb, TDB_DATA indata)
+{
+	int32_t res = *((int32_t *)indata.dptr);
+	struct ctdb_monitoring_status *monitoring_status =
+		talloc_get_type(ctdb->script_monitoring_ctx,
+			struct ctdb_monitoring_status);
+	struct ctdb_monitor_script_status *script;
+
+	DEBUG(DEBUG_INFO, ("event script disabed called : %d\n", (int)res));
+
+	if (monitoring_status == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " script_status is NULL when script finished.\n"));
+		return -1;
+	}
+
+	script = monitoring_status->scripts;
+	if (script == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " script is NULL when the script had finished\n"));
+		return -1;
+	}
+
+	script->finished = timeval_current();
+	script->status   = res;
+	script->disabled = 1;
+
+	return 0;
+}
+
 /* called from the event script child process when we have completed a
  * monitor event
  */
@@ -232,6 +263,7 @@ static struct ctdb_monitoring_wire *marshall_monitoring_scripts(TALLOC_CTX *mem_
 	strncpy(script_wire.name, script->name, MAX_SCRIPT_NAME);
 	script_wire.start    = script->start;
 	script_wire.finished = script->finished;
+	script_wire.disabled = script->disabled;
 	script_wire.status   = script->status;
 	script_wire.timedout = script->timedout;
 	if (script->output != NULL) {
@@ -282,6 +314,149 @@ int32_t ctdb_control_get_event_script_status(struct ctdb_context *ctdb, TDB_DATA
 	return 0;
 }
 
+struct ctdb_script_tree_item {
+	const char *name;
+	int32_t is_enabled;
+};
+
+struct ctdb_script_list {
+	struct ctdb_script_list *next;
+	const char *name;
+	int32_t is_enabled;
+};
+
+static struct ctdb_script_list *ctdb_get_script_list(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx)
+{
+	DIR *dir;
+	struct dirent *de;
+	struct stat st;
+	trbt_tree_t *tree;
+	struct ctdb_script_list *head, *tail, *new_item;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	struct ctdb_script_tree_item *tree_item;
+	int count;
+
+	/*
+	  the service specific event scripts 
+	*/
+	if (stat(ctdb->event_script_dir, &st) != 0 && 
+	    errno == ENOENT) {
+		DEBUG(DEBUG_CRIT,("No event script directory found at '%s'\n", ctdb->event_script_dir));
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+
+	/* create a tree to store all the script names in */
+	tree = trbt_create(tmp_ctx, 0);
+
+	/* scan all directory entries and insert all valid scripts into the 
+	   tree
+	*/
+	dir = opendir(ctdb->event_script_dir);
+	if (dir == NULL) {
+		DEBUG(DEBUG_CRIT,("Failed to open event script directory '%s'\n", ctdb->event_script_dir));
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+
+	count = 0;
+	while ((de=readdir(dir)) != NULL) {
+		int namlen;
+		unsigned num;
+		char *str;
+
+		namlen = strlen(de->d_name);
+
+		if (namlen < 3) {
+			continue;
+		}
+
+		if (de->d_name[namlen-1] == '~') {
+			/* skip files emacs left behind */
+			continue;
+		}
+
+		if (de->d_name[2] != '.') {
+			continue;
+		}
+
+		if (sscanf(de->d_name, "%02u.", &num) != 1) {
+			continue;
+		}
+
+		/* Make sure the event script is executable */
+		str = talloc_asprintf(tree, "%s/%s", ctdb->event_script_dir, de->d_name);
+		if (stat(str, &st) != 0) {
+			DEBUG(DEBUG_ERR,("Could not stat event script %s. Ignoring this event script\n", str));
+			continue;
+		}
+
+
+		tree_item = talloc(tree, struct ctdb_script_tree_item);
+		if (tree_item == NULL) {
+			DEBUG(DEBUG_ERR, (__location__ " Failed to allocate new tree item\n"));
+			talloc_free(tmp_ctx);
+			return NULL;
+		}
+	
+		tree_item->is_enabled = 1;
+		if (!(st.st_mode & S_IXUSR)) {
+			DEBUG(DEBUG_INFO,("Event script %s is not executable. Ignoring this event script\n", str));
+			tree_item->is_enabled = 0;
+		}
+
+		tree_item->name = talloc_strdup(tree_item, de->d_name);
+		if (tree_item->name == NULL) {
+			DEBUG(DEBUG_ERR,(__location__ " Failed to allocate script name.\n"));
+			talloc_free(tmp_ctx);
+			return NULL;
+		}
+
+		/* store the event script in the tree */
+		trbt_insert32(tree, (num<<16)|count++, tree_item);
+	}
+	closedir(dir);
+
+
+	head = NULL;
+	tail = NULL;
+
+	/* fetch the scripts from the tree one by one and add them to the linked
+	   list
+	 */
+	while ((tree_item=trbt_findfirstarray32(tree, 1)) != NULL) {
+
+		new_item = talloc(tmp_ctx, struct ctdb_script_list);
+		if (new_item == NULL) {
+			DEBUG(DEBUG_ERR, (__location__ " Failed to allocate new list item\n"));
+			talloc_free(tmp_ctx);
+			return NULL;
+		}
+
+		new_item->next = NULL;
+		new_item->name = talloc_steal(new_item, tree_item->name);
+		new_item->is_enabled = tree_item->is_enabled;
+
+		if (head == NULL) {
+			head = new_item;
+			tail = new_item;
+		} else {
+			tail->next = new_item;
+			tail = new_item;
+		}
+
+		talloc_steal(mem_ctx, new_item);
+
+		/* remove this script from the tree */
+		talloc_free(tree_item);
+	}	
+
+	talloc_free(tmp_ctx);
+	return head;
+}
+
+
+
 /*
   run the event script - varargs version
   this function is called and run in the context of a forked child
@@ -291,15 +466,9 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *options)
 {
 	char *cmdstr;
 	int ret;
-	struct stat st;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	trbt_tree_t *tree;
-	DIR *dir;
-	struct dirent *de;
-	char *script;
-	int count;
+	struct ctdb_script_list *scripts, *current;
 	int is_monitor = 0;
-	char *d_name_dup;
 
 	if (!strcmp(options, "monitor")) {
 		is_monitor = 1;
@@ -350,80 +519,16 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *options)
 	child_state.start = timeval_current();
 	child_state.script_running = "startup";
 
-	/*
-	  the service specific event scripts 
-	*/
-	if (stat(ctdb->event_script_dir, &st) != 0 && 
-	    errno == ENOENT) {
-		DEBUG(DEBUG_CRIT,("No event script directory found at '%s'\n", ctdb->event_script_dir));
-		talloc_free(tmp_ctx);
-		return -1;
-	}
-
-	/* create a tree to store all the script names in */
-	tree = trbt_create(tmp_ctx, 0);
-
-	/* scan all directory entries and insert all valid scripts into the 
-	   tree
-	*/
-	dir = opendir(ctdb->event_script_dir);
-	if (dir == NULL) {
-		DEBUG(DEBUG_CRIT,("Failed to open event script directory '%s'\n", ctdb->event_script_dir));
-		talloc_free(tmp_ctx);
-		return -1;
-	}
-
-	count = 0;
-	while ((de=readdir(dir)) != NULL) {
-		int namlen;
-		unsigned num;
-		char *str;
-
-		namlen = strlen(de->d_name);
-
-		if (namlen < 3) {
-			continue;
-		}
-
-		if (de->d_name[namlen-1] == '~') {
-			/* skip files emacs left behind */
-			continue;
-		}
-
-		if (de->d_name[2] != '.') {
-			continue;
-		}
-
-		if (sscanf(de->d_name, "%02u.", &num) != 1) {
-			continue;
-		}
-
-		/* Make sure the event script is executable */
-		str = talloc_asprintf(tree, "%s/%s", ctdb->event_script_dir, de->d_name);
-		if (stat(str, &st) != 0) {
-			DEBUG(DEBUG_ERR,("Could not stat event script %s. Ignoring this event script\n", str));
-			continue;
-		}
-		if (!(st.st_mode & S_IXUSR)) {
-			DEBUG(DEBUG_INFO,("Event script %s is not executable. Ignoring this event script\n", str));
-			continue;
-		}
-		
-		
-		/* store the event script in the tree */
-		d_name_dup = talloc_strdup(tree, de->d_name);
-		CTDB_NO_MEMORY(ctdb, d_name_dup);
-		trbt_insert32(tree, (num<<16)|count++, d_name_dup);
-	}
-	closedir(dir);
+	scripts = ctdb_get_script_list(ctdb, tmp_ctx);
 
 	/* fetch the scripts from the tree one by one and execute
 	   them
 	 */
-	while ((script=trbt_findfirstarray32(tree, 1)) != NULL) {
+	for (current=scripts; current; current=current->next) {
+		/* we dont run disabled scripts, we just report they are disabled */
 		cmdstr = talloc_asprintf(tmp_ctx, "%s/%s %s", 
 				ctdb->event_script_dir,
-				script, options);
+				current->name, options);
 		CTDB_NO_MEMORY(ctdb, cmdstr);
 
 		DEBUG(DEBUG_INFO,("Executing event script %s\n",cmdstr));
@@ -432,11 +537,24 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *options)
 		child_state.script_running = cmdstr;
 
 		if (is_monitor == 1) {
-			if (ctdb_ctrl_event_script_start(ctdb, script) != 0) {
+			if (ctdb_ctrl_event_script_start(ctdb, current->name) != 0) {
 				DEBUG(DEBUG_ERR,(__location__ " Failed to start event script monitoring\n"));
 				talloc_free(tmp_ctx);
 				return -1;
 			}
+
+			if (!current->is_enabled) {
+				if (ctdb_ctrl_event_script_disabled(ctdb, current->name) != 0) {
+					DEBUG(DEBUG_ERR,(__location__ " Failed to report disabled eventscript\n"));
+					talloc_free(tmp_ctx);
+					return -1;
+				}
+			}
+
+		}
+
+		if (!current->is_enabled) {
+			continue;
 		}
 
 		ret = system(cmdstr);
@@ -468,9 +586,6 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *options)
 			talloc_free(tmp_ctx);
 			return ret;
 		}
-
-		/* remove this script from the tree */
-		talloc_free(script);
 	}
 
 	child_state.start = timeval_current();
@@ -814,3 +929,116 @@ int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb,
 	return 0;
 }
 
+
+
+int32_t ctdb_control_enable_script(struct ctdb_context *ctdb, TDB_DATA indata)
+{
+	const char *script;
+	struct stat st;
+	char *filename;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+
+	script = (char *)indata.dptr;
+	if (indata.dsize == 0) {
+		DEBUG(DEBUG_ERR,(__location__ " No script specified.\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+	if (indata.dptr[indata.dsize - 1] != '\0') {
+		DEBUG(DEBUG_ERR,(__location__ " String is not null terminated.\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+	if (index(script,'/') != NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Script name contains '/'. Failed to enable script %s\n", script));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+
+	if (stat(ctdb->event_script_dir, &st) != 0 && 
+	    errno == ENOENT) {
+		DEBUG(DEBUG_CRIT,("No event script directory found at '%s'\n", ctdb->event_script_dir));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+
+	filename = talloc_asprintf(tmp_ctx, "%s/%s", ctdb->event_script_dir, script);
+	if (filename == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to create script path\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	if (stat(filename, &st) != 0) {
+		DEBUG(DEBUG_ERR,("Could not stat event script %s. Failed to enable script.\n", filename));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	if (chmod(filename, st.st_mode | S_IXUSR) == -1) {
+		DEBUG(DEBUG_ERR,("Could not chmod %s. Failed to enable script.\n", filename));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	talloc_free(tmp_ctx);
+	return 0;
+}
+
+int32_t ctdb_control_disable_script(struct ctdb_context *ctdb, TDB_DATA indata)
+{
+	const char *script;
+	struct stat st;
+	char *filename;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+
+	script = (char *)indata.dptr;
+	if (indata.dsize == 0) {
+		DEBUG(DEBUG_ERR,(__location__ " No script specified.\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+	if (indata.dptr[indata.dsize - 1] != '\0') {
+		DEBUG(DEBUG_ERR,(__location__ " String is not null terminated.\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+	if (index(script,'/') != NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Script name contains '/'. Failed to disable script %s\n", script));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+
+	if (stat(ctdb->event_script_dir, &st) != 0 && 
+	    errno == ENOENT) {
+		DEBUG(DEBUG_CRIT,("No event script directory found at '%s'\n", ctdb->event_script_dir));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+
+	filename = talloc_asprintf(tmp_ctx, "%s/%s", ctdb->event_script_dir, script);
+	if (filename == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to create script path\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	if (stat(filename, &st) != 0) {
+		DEBUG(DEBUG_ERR,("Could not stat event script %s. Failed to disable script.\n", filename));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	if (chmod(filename, st.st_mode & ~(S_IXUSR|S_IXGRP|S_IXOTH)) == -1) {
+		DEBUG(DEBUG_ERR,("Could not chmod %s. Failed to disable script.\n", filename));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	talloc_free(tmp_ctx);
+	return 0;
+}

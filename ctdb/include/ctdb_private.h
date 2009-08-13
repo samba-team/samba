@@ -584,6 +584,9 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_SET_NATGWSTATE          = 103,
 		    CTDB_CONTROL_SET_LMASTERROLE         = 104,
 		    CTDB_CONTROL_SET_RECMASTERROLE       = 105,
+		    CTDB_CONTROL_EVENT_SCRIPT_DISABLED   = 106,
+		    CTDB_CONTROL_ENABLE_SCRIPT           = 107,
+		    CTDB_CONTROL_DISABLE_SCRIPT          = 108,
 };	
 
 /*
@@ -1444,10 +1447,12 @@ int ctdb_ctrl_event_script_init(struct ctdb_context *ctdb);
 int ctdb_ctrl_event_script_start(struct ctdb_context *ctdb, const char *name);
 int ctdb_ctrl_event_script_stop(struct ctdb_context *ctdb, int32_t res);
 int ctdb_ctrl_event_script_finished(struct ctdb_context *ctdb);
+int ctdb_ctrl_event_script_disabled(struct ctdb_context *ctdb, const char *name);
 
 int32_t ctdb_control_event_script_init(struct ctdb_context *ctdb);
 int32_t ctdb_control_event_script_start(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_event_script_stop(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_event_script_disabled(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_event_script_finished(struct ctdb_context *ctdb);
 
 
@@ -1460,5 +1465,8 @@ int32_t ctdb_control_stop_node(struct ctdb_context *ctdb, struct ctdb_req_contro
 int32_t ctdb_control_continue_node(struct ctdb_context *ctdb);
 
 int ctdb_vacuum_init(struct ctdb_db_context *ctdb_db);
+
+int32_t ctdb_control_enable_script(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_disable_script(struct ctdb_context *ctdb, TDB_DATA indata);
 
 #endif
