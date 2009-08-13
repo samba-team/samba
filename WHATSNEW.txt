@@ -1,4 +1,94 @@
                    =============================
+                   Release Notes for Samba 3.4.1
+			  August 18, 2009
+                   =============================
+
+
+This is the latest stable release of Samba 3.4.
+
+
+Major enhancements in Samba 3.4.1 include:
+
+   o Fix connections of Win98 clients (bug #6551).
+   o SetPrinter fails (panics) as non root (bug #6564).
+   o Fix crash bug in spoolss_addprinterex_level_2 (bug #6607).
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.4.0
+-------------------
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 6437: Make open_udp_socket() IPv6 clean.
+    * BUG 6506: Smbd server doesn't set EAs when a file is overwritten in
+      NT_TRANSACT_CREATE.
+    * BUG 6551: Fix connections of Win98 clients.
+    * BUG 6564: SetPrinter fails (panics) as non root.
+    * BUG 6593: Correctly implement SMB_INFO_STANDARD setfileinfo.
+
+
+o   Yannick Bergeron <burgergold@hotmail.com>
+    * Increase the max_grp value to 128 (AIX NGROUPS_MAX value) instead of 32 to
+      allow AIX to call sys_getgrouplist only once.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 6568: Fix _spoolss_GetPrintProcessorDirectory() implementation.
+    * BUG 6607: Fix crash bug in spoolss_addprinterex_level_2.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 6611: Fix a valgrind error in chain_reply.
+    * Fix linking on Solaris.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 6222: Default to DRSUAPI replication for net rpc vampire keytab.
+    * BUG 6538: Cancel all locks that are made before the first failure.
+    * BUG 6627: Raise the timeout for lsa_Lookup*() calls from 10 to 35 seconds.
+
+
+o   Tim Prouty <tprouty@samba.org>
+    * BUG 6620: Fix a bug in renames of directories.
+
+
+o   Jelmer Vernooij <jelmer@samba.org>
+    * Fix build with external talloc.
+
+
+o   Bo Yang <boyang@samba.org>
+    * BUG 6560: Fix lookupname.
+    * BUG 6615: Fix browsing of DFS when using kerberos in libsmbclient.
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 3.4 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older versions follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 3.4.0
 			   July 3, 2009
                    =============================
