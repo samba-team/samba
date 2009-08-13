@@ -18,3 +18,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+_PUBLIC_ size_t ndr_ntlmssp_string_length(uint32_t negotiate_flags, const char *s);
+_PUBLIC_ uint32_t ndr_ntlmssp_negotiated_string_flags(uint32_t negotiate_flags);
+

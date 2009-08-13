@@ -20,4 +20,30 @@
 */
 
 #include "includes.h"
+#include "../librpc/ndr/ndr_ntlmssp.h"
 
+_PUBLIC_ size_t ndr_ntlmssp_string_length(uint32_t negotiate_flags, const char *s)
+{
+	if (!s) {
+		return 0;
+	}
+
+	if (negotiate_flags & NTLMSSP_NEGOTIATE_UNICODE) {
+		return strlen(s) * 2;
+	}
+
+	return strlen(s);
+}
+
+_PUBLIC_ uint32_t ndr_ntlmssp_negotiated_string_flags(uint32_t negotiate_flags)
+{
+	uint32_t flags = LIBNDR_FLAG_STR_NOTERM |
+			 LIBNDR_FLAG_STR_CHARLEN |
+			 LIBNDR_FLAG_REMAINING;
+
+	if (!(negotiate_flags & NTLMSSP_NEGOTIATE_UNICODE)) {
+		flags |= LIBNDR_FLAG_STR_ASCII;
+	}
+
+	return flags;
+}
