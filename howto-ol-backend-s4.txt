@@ -23,54 +23,16 @@ before compilation.
 
 
 
-2.) Prepare S4 to use OL-Backend:
 
-Run the provision-backend Python-Script first, then "final" provision
-(these 2-step process will be merged in the future)
+2.) Final provision:
 
-Simple provision-backend Example:
-
-#> setup/provision-backend --realm=ldap.local.site \
-  --domain=LDAP --ldap-admin-pass="linux" \
-  --ldap-backend-type=openldap \
-  --server-role='domain controller' \
-  --ol-slapd="/usr/local/libexec/slapd"
-
-After that, you should get a similar output:
-
---------
-Your openldap Backend for Samba4 is now configured, and is ready to be started
-Server Role:         domain controller
-Hostname:            ldapmaster
-DNS Domain:          ldap.local.site
-Base DN:             DC=ldap,DC=local,DC=site
-LDAP admin user:     samba-admin
-LDAP admin password: linux
-LDAP Debug-Output:
-(1, 'connection to remote LDAP server dropped?')
-Ok. - No other slapd-Instance listening on: ldapi://%2Fusr%2Flocal%2Fsamba%2Fprivate%2Fldap%2Fldapi. Starting al provision.
-Started slapd for final provisioning with PID: 21728
-
-Now run final provision with: --ldap-backend=ldapi --ldap-backend-type=openldap --password=linux --username=sa=ldap.local.site --domain=LDAP --server-role='domain controller'
-
---------
-
-Since this (pre)Alpha, you dont have to run slapd manually
-any more. slapd will be started automatically, when 
-provision-backend is done, listening on the
-ldapi://-Socket. System should be ready 
-for final provision now:
-
-
-3.) Final provision:
-
-Use the Parameters displayed above to run final provision.
 (you can add --adminpass=<yourpass> to the parameters,
 otherwise a random password will be generated for 
 cn=Administrator,cn=users,<Your Base-DN>):
 
-#> setup/provision --ldap-backend=ldapi \
-   --ldap-backend-type=openldap --password=linux \
+#> setup/provision \
+   --ldap-backend-type=openldap \
+   --ol-slapd="/usr/local/libexec/slapd"
    --username=samba-admin --realm=ldap.local.site \
    --domain=LDAP --server-role='domain controller'\
    --adminpass=linux
@@ -81,18 +43,11 @@ the following output (only partial here). Read it carefully:
 --------
 ...
 A Kerberos configuration suitable for Samba 4 has been generated at /usr/local/samba/private/krb5.conf
-LDAP Debug-Output:[Message({'dn': Dn(''), 'objectClass': MessageElement(['top','OpenLDAProotDSE'])})]
-slapd-PID-File found. PID is :21728
 
-File from provision-backend with stored PID found. PID is :21728
-
-slapd-Process used for provisioning with PID: 21728
- will now be shut down.
-slapd-Process used for final provision was properly shut down.
 Use later the following commandline to start slapd, then Samba:
 /usr/local/libexec/slapd -f /usr/local/samba/private/ldap/slapd.conf -h ldapi://%2Fusr%2Flocal%2Fsamba%2Fprivate%2Fldap%2Fldapi
 
-This slapd-Commandline is also stored under: /usr/local/samba/private/ldap/slapd_command_file.txt
+This slapd-Commandline is also stored under: /usr/local/samba/private/ldap/slapd_command_file.sh
 Please install the phpLDAPadmin configuration located at /usr/local/samba/private/phpldapadmin-config.php into /etc/phpldapadmin/config.php
 Once the above files are installed, your Samba4 server will be ready to use
 Server Role:    domain controller
@@ -108,23 +63,20 @@ Our slapd in "provision-mode" wiil be shut down automatically
 after final provision ends.
 
 
-4.) Run OL and S4:
+3.) Run OL and S4:
 
 After you completed the other necessary steps (krb and named-specific),
 start first OL with the commandline displayed in the output under (3),
-(remember: the slapd-Commandline is also stored in the file ../slapd_command_file.txt)
+(remember: the slapd-Commandline is also stored in the file ../slapd_command_file.sh)
 then S4.
 
 
 
-5.) Special Setup-Types:
+4.) Special Setup-Types:
 
-a) OpenLDAP-Online Configuration (olc):
-Use the provision-backend Parameter 
+OpenLDAP-Online Configuration is now in use by default (olc):
 
- --ol-olc=yes.
-
-In that case, the olc will be setup automatically
+The olc will be setup automatically
 under ../private/slapd.d/.
 olc is accessible via "cn=samba-admin,cn=samba" and Base-DN "cn=config"
 olc is intended primarily for use in conjunction with MMR
@@ -141,7 +93,7 @@ Attention: You _should_not_ edit the olc-Sections
 
 b) MultiMaster-Configuration (MMR):
 At this time (S4 (pre)Alpha9) the only possible Replication setup.
-Use the provision-backend Parameter:
+Use the provision Parameter:
 
  --ol-mmr-urls=<list of whitespace separated ldap-urls (and Ports <> 389!).
 
