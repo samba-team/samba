@@ -209,37 +209,6 @@ userPassword:: %s
             raise
         self.transaction_commit()
 
-    def set_domain_sid(self, sid):
-        """Change the domain SID used by this SamDB.
-
-        :param sid: The new domain sid to use.
-        """
-        glue.samdb_set_domain_sid(self, sid)
-
-    def set_schema_from_ldif(self, pf, df):
-        glue.dsdb_set_schema_from_ldif(self, pf, df)
-
-    def set_schema_from_ldb(self, ldb):
-        glue.dsdb_set_schema_from_ldb(self, ldb)
-
-    def convert_schema_to_openldap(self, target, mapping):
-        return glue.dsdb_convert_schema_to_openldap(self, target, mapping)
-
-    def set_invocation_id(self, invocation_id):
-        """Set the invocation id for this SamDB handle.
-        
-        :param invocation_id: GUID of the invocation id.
-        """
-        glue.dsdb_set_ntds_invocation_id(self, invocation_id)
-
-    def set_opaque_integer(self, name, value):
-        """Set an integer as an opaque (a flag or other value) value on the database
-        
-        :param name: The name for the opaque value
-        :param value: The integer value
-        """
-        glue.dsdb_set_opaque_integer(self, name, value)
-
     def setexpiry(self, user, expiry_seconds, noexpiry):
         """Set the account expiry for a user
         

@@ -121,17 +121,8 @@ class Ldb(ldb.Ldb):
 
     def erase(self):
         """Erase this ldb, removing all records."""
-        # delete the specials
-        for attr in ["@INDEXLIST", "@ATTRIBUTES", "@SUBCLASSES", "@MODULES", 
-                     "@OPTIONS", "@PARTITION", "@KLUDGEACL"]:
-            try:
-                self.delete(attr)
-            except ldb.LdbError, (ldb.ERR_NO_SUCH_OBJECT, _):
-                # Ignore missing dn errors
-                pass
-
         basedn = ""
-        # and the rest
+        # Delete the 'visible' records
         for msg in self.search(basedn, ldb.SCOPE_SUBTREE, 
                 "(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))", 
                 ["distinguishedName"]):
@@ -144,37 +135,39 @@ class Ldb(ldb.Ldb):
         res = self.search(basedn, ldb.SCOPE_SUBTREE, "(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))", ["distinguishedName"])
         assert len(res) == 0
 
+        # delete the specials
+        for attr in ["@INDEXLIST", "@ATTRIBUTES", "@SUBCLASSES", "@MODULES", 
+                     "@OPTIONS", "@PARTITION", "@KLUDGEACL"]:
+            try:
+                self.delete(attr)
+            except ldb.LdbError, (ldb.ERR_NO_SUCH_OBJECT, _):
+                # Ignore missing dn errors
+                pass
+
     def erase_partitions(self):
         """Erase an ldb, removing all records."""
+
+        def erase_recursive(self, dn):
+            try:
+                res = self.search(base=dn, scope=ldb.SCOPE_ONELEVEL, attrs=[])
+            except ldb.LdbError, (ldb.ERR_NO_SUCH_OBJECT, _):
+                # Ignore no such object errors
+                return
+                pass
+            
+            for msg in res:
+                erase_recursive(self, msg.dn)
+
+            self.delete(dn)
+
         res = self.search("", ldb.SCOPE_BASE, "(objectClass=*)", 
                          ["namingContexts"])
         assert len(res) == 1
         if not "namingContexts" in res[0]:
             return
         for basedn in res[0]["namingContexts"]:
-            previous_remaining = 1
-            current_remaining = 0
-
-            k = 0
-            while ++k < 10 and (previous_remaining != current_remaining):
-                # and the rest
-                try:
-                    res2 = self.search(basedn, ldb.SCOPE_SUBTREE, "(|(objectclass=*)(distinguishedName=*))", ["distinguishedName"])
-                except ldb.LdbError, (ldb.ERR_NO_SUCH_OBJECT, _):
-                    # Ignore missing dn errors
-                    return
-
-                previous_remaining = current_remaining
-                current_remaining = len(res2)
-                for msg in res2:
-                    try:
-                        self.delete(msg.dn)
-                    # Ignore no such object errors
-                    except ldb.LdbError, (ldb.ERR_NO_SUCH_OBJECT, _):
-                        pass
-                    # Ignore not allowed on non leaf errors
-                    except ldb.LdbError, (ldb.ERR_NOT_ALLOWED_ON_NON_LEAF, _):
-                        pass
+            # Try and erase from the bottom-up in the tree
+            erase_recursive(self, basedn)
 
     def load_ldif_file_add(self, ldif_path):
         """Load a LDIF file.
@@ -199,6 +192,37 @@ class Ldb(ldb.Ldb):
         """
         for changetype, msg in self.parse_ldif(ldif):
             self.modify(msg)
+
+    def set_domain_sid(self, sid):
+        """Change the domain SID used by this LDB.
+
+        :param sid: The new domain sid to use.
+        """
+        glue.samdb_set_domain_sid(self, sid)
+
+    def set_schema_from_ldif(self, pf, df):
+        glue.dsdb_set_schema_from_ldif(self, pf, df)
+
+    def set_schema_from_ldb(self, ldb):
+        glue.dsdb_set_schema_from_ldb(self, ldb)
+
+    def convert_schema_to_openldap(self, target, mapping):
+        return glue.dsdb_convert_schema_to_openldap(self, target, mapping)
+
+    def set_invocation_id(self, invocation_id):
+        """Set the invocation id for this SamDB handle.
+        
+        :param invocation_id: GUID of the invocation id.
+        """
+        glue.dsdb_set_ntds_invocation_id(self, invocation_id)
+
+    def set_opaque_integer(self, name, value):
+        """Set an integer as an opaque (a flag or other value) value on the database
+        
+        :param name: The name for the opaque value
+        :param value: The integer value
+        """
+        glue.dsdb_set_opaque_integer(self, name, value)
 
 
 def substitute_var(text, values):
