@@ -252,4 +252,22 @@ interface ntlmssp
 		/* [flag(NDR_REMAINING)] MIC mic; */
 	} AUTHENTICATE_MESSAGE;
 
+	/* NTLMSSP signature version */
+	const int NTLMSSP_SIGN_VERSION = 0x01;
+
+	/* NTLMSSP signature size */
+	const int NTLMSSP_SIG_SIZE = 16;
+
+	typedef [public] struct {
+		 [value(NTLMSSP_SIGN_VERSION)] uint32 Version;
+		 uint32 RandomPad;
+		 uint32 Checksum;
+		 uint32 SeqNum;
+	} NTLMSSP_MESSAGE_SIGNATURE;
+
+	typedef [public,flag(NDR_PAHEX)] struct {
+		 [value(NTLMSSP_SIGN_VERSION)] uint32 Version;
+		 uint8 Checksum[8];
+		 uint32 SeqNum;
+	} NTLMSSP_MESSAGE_SIGNATURE_NTLMv2;
 }
