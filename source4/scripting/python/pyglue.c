@@ -348,7 +348,7 @@ static PyObject *py_dsdb_set_schema_from_ldb(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	ret = dsdb_reference_schema(ldb, schema);
+	ret = dsdb_reference_schema(ldb, schema, true);
 	PyErr_LDB_ERROR_IS_ERR_RAISE(py_ldb_get_exception(), ret, ldb);
 
 	Py_RETURN_NONE;

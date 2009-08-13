@@ -139,7 +139,7 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 		}
 	}
 
-	if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
+	if (ret == LDB_ERR_OPERATIONS_ERROR || ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
 		/* We might be on a read-only DB */
 		ret = LDB_SUCCESS;
 	}
@@ -166,7 +166,7 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 			ret = samdb_replace(ldb, mem_ctx, mod_msg);
 		}
 	}
-	if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
+	if (ret == LDB_ERR_OPERATIONS_ERROR || ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
 		/* We might be on a read-only DB */
 		ret = LDB_SUCCESS;
 	}
@@ -372,7 +372,8 @@ static struct dsdb_schema *global_schema;
 /**
  * Make this ldb use a specified schema, already fully calculated and belonging to another ldb
  */
-int dsdb_reference_schema(struct ldb_context *ldb, struct dsdb_schema *schema)
+int dsdb_reference_schema(struct ldb_context *ldb, struct dsdb_schema *schema,
+			  bool write_attributes)
 {
 	int ret;
 	ret = ldb_set_opaque(ldb, "dsdb_schema", schema);
@@ -381,7 +382,7 @@ int dsdb_reference_schema(struct ldb_context *ldb, struct dsdb_schema *schema)
 	}
 
 	/* Set the new attributes based on the new schema */
-	ret = dsdb_schema_set_attributes(ldb, schema, false);
+	ret = dsdb_schema_set_attributes(ldb, schema, write_attributes);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -403,7 +404,7 @@ int dsdb_set_global_schema(struct ldb_context *ldb)
 		return LDB_SUCCESS;
 	}
 
-	return dsdb_reference_schema(ldb, global_schema);
+	return dsdb_reference_schema(ldb, global_schema, false /* Don't write attributes, it's expensive */);
 }
 
 /**
