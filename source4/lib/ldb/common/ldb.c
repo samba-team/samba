@@ -677,10 +677,12 @@ int ldb_search_default_callback(struct ldb_request *req,
 		/* this is the last message, and means the request is done */
 		/* we have to signal and eventual ldb_wait() waiting that the
 		 * async request operation was completed */
+		talloc_free(ares);
 		return ldb_request_done(req, LDB_SUCCESS);
 	}
 
 	talloc_free(ares);
+
 	return LDB_SUCCESS;
 }
 
