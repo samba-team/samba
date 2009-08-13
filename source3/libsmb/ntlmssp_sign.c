@@ -1,19 +1,19 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  Version 3.0
  *  NTLMSSP Signing routines
  *  Copyright (C) Andrew Bartlett 2003-2005
- *  
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
@@ -36,7 +36,7 @@
  *
  */
 
-static void dump_arc4_state(const char *description, 
+static void dump_arc4_state(const char *description,
 			    struct arcfour_state *state)
 {
 	dump_data_pw(description, state->sbox, sizeof(state->sbox));
@@ -59,7 +59,7 @@ enum ntlmssp_direction {
 };
 
 static NTSTATUS ntlmssp_make_packet_signature(NTLMSSP_STATE *ntlmssp_state,
-						const uchar *data, size_t length, 
+						const uchar *data, size_t length,
 						const uchar *whole_pdu, size_t pdu_length,
 						enum ntlmssp_direction direction,
 						DATA_BLOB *sig,
@@ -128,7 +128,7 @@ static NTSTATUS ntlmssp_make_packet_signature(NTLMSSP_STATE *ntlmssp_state,
 		if (!msrpc_gen(ntlmssp_state, sig, "dddd", NTLMSSP_SIGN_VERSION, 0, crc, ntlmssp_state->ntlmv1_seq_num)) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		
+
 		ntlmssp_state->ntlmv1_seq_num++;
 
 		dump_arc4_state("ntlmssp hash: \n", &ntlmssp_state->ntlmv1_arc4_state);
@@ -138,9 +138,9 @@ static NTSTATUS ntlmssp_make_packet_signature(NTLMSSP_STATE *ntlmssp_state,
 }
 
 NTSTATUS ntlmssp_sign_packet(NTLMSSP_STATE *ntlmssp_state,
-				    const uchar *data, size_t length, 
-				    const uchar *whole_pdu, size_t pdu_length, 
-				    DATA_BLOB *sig) 
+				    const uchar *data, size_t length,
+				    const uchar *whole_pdu, size_t pdu_length,
+				    DATA_BLOB *sig)
 {
 	NTSTATUS nt_status;
 
@@ -163,15 +163,15 @@ NTSTATUS ntlmssp_sign_packet(NTLMSSP_STATE *ntlmssp_state,
 }
 
 /**
- * Check the signature of an incoming packet 
- * @note caller *must* check that the signature is the size it expects 
+ * Check the signature of an incoming packet
+ * @note caller *must* check that the signature is the size it expects
  *
  */
 
 NTSTATUS ntlmssp_check_packet(NTLMSSP_STATE *ntlmssp_state,
-				const uchar *data, size_t length, 
-				const uchar *whole_pdu, size_t pdu_length, 
-				const DATA_BLOB *sig) 
+				const uchar *data, size_t length,
+				const uchar *whole_pdu, size_t pdu_length,
+				const DATA_BLOB *sig)
 {
 	DATA_BLOB local_sig;
 	NTSTATUS nt_status;
@@ -182,7 +182,7 @@ NTSTATUS ntlmssp_check_packet(NTLMSSP_STATE *ntlmssp_state,
 	}
 
 	if (sig->length < 8) {
-		DEBUG(0, ("NTLMSSP packet check failed due to short signature (%lu bytes)!\n", 
+		DEBUG(0, ("NTLMSSP packet check failed due to short signature (%lu bytes)!\n",
 			  (unsigned long)sig->length));
 	}
 
@@ -190,13 +190,13 @@ NTSTATUS ntlmssp_check_packet(NTLMSSP_STATE *ntlmssp_state,
 						data, length,
 						whole_pdu, pdu_length,
 						NTLMSSP_RECEIVE, &local_sig, True);
-	
+
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("NTLMSSP packet check failed with %s\n", nt_errstr(nt_status)));
 		data_blob_free(&local_sig);
 		return nt_status;
 	}
-	
+
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 		if (local_sig.length != sig->length ||
 				memcmp(local_sig.data, sig->data, sig->length) != 0) {
@@ -240,7 +240,7 @@ NTSTATUS ntlmssp_seal_packet(NTLMSSP_STATE *ntlmssp_state,
 			     uchar *data, size_t length,
 			     uchar *whole_pdu, size_t pdu_length,
 			     DATA_BLOB *sig)
-{	
+{
 	if (!(ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL)) {
 		DEBUG(3, ("NTLMSSP Sealing not negotiated - cannot seal packet!\n"));
 		return NT_STATUS_INVALID_PARAMETER;
@@ -279,12 +279,12 @@ NTSTATUS ntlmssp_seal_packet(NTLMSSP_STATE *ntlmssp_state,
 		/* The order of these two operations matters - we must first seal the packet,
 		   then seal the sequence number - this is becouse the ntlmv1_arc4_state is not
 		   constant, but is is rather updated with each iteration */
-		
-		dump_arc4_state("ntlmv1 arc4 state:\n", 
+
+		dump_arc4_state("ntlmv1 arc4 state:\n",
 						&ntlmssp_state->ntlmv1_arc4_state);
 		arcfour_crypt_sbox(&ntlmssp_state->ntlmv1_arc4_state, data, length);
 
-		dump_arc4_state("ntlmv1 arc4 state:\n", 
+		dump_arc4_state("ntlmv1 arc4 state:\n",
 						&ntlmssp_state->ntlmv1_arc4_state);
 
 		arcfour_crypt_sbox(&ntlmssp_state->ntlmv1_arc4_state, sig->data+4, sig->length-4);
@@ -406,10 +406,10 @@ NTSTATUS ntlmssp_sign_init(NTLMSSP_STATE *ntlmssp_state)
 
 		send_seal_key_blob.data = ntlmssp_state->send_seal_key;
 		send_seal_key_blob.length = 16;
-		arcfour_init(&ntlmssp_state->send_seal_arc4_state, 
+		arcfour_init(&ntlmssp_state->send_seal_arc4_state,
 			     &send_seal_key_blob);
 
-		dump_arc4_state("NTLMSSP send seal arc4 state:\n", 
+		dump_arc4_state("NTLMSSP send seal arc4 state:\n",
 			     &ntlmssp_state->send_seal_arc4_state);
 
 		/* RECV: sign key */
@@ -421,16 +421,16 @@ NTSTATUS ntlmssp_sign_init(NTLMSSP_STATE *ntlmssp_state)
 		/* RECV: seal ARCFOUR pad */
 		calc_ntlmv2_key(ntlmssp_state->recv_seal_key,
 				weak_session_key, recv_seal_const);
-		
+
 		dump_data_pw("NTLMSSP recv seal key:\n",
 				ntlmssp_state->recv_seal_key, 16);
-				
+
 		recv_seal_blob.data = ntlmssp_state->recv_seal_key;
 		recv_seal_blob.length = 16;
 		arcfour_init(&ntlmssp_state->recv_seal_arc4_state,
 				&recv_seal_blob);
 
-		dump_arc4_state("NTLMSSP recv seal arc4 state:\n", 
+		dump_arc4_state("NTLMSSP recv seal arc4 state:\n",
 			     &ntlmssp_state->recv_seal_arc4_state);
 
 		ntlmssp_state->ntlm2_send_seq_num = 0;
@@ -463,10 +463,10 @@ NTSTATUS ntlmssp_sign_init(NTLMSSP_STATE *ntlmssp_state)
 
 		DEBUG(5, ("NTLMSSP Sign/Seal - using NTLM1\n"));
 
-		arcfour_init(&ntlmssp_state->ntlmv1_arc4_state, 
+		arcfour_init(&ntlmssp_state->ntlmv1_arc4_state,
 			     &weak_session_key);
 
-                dump_arc4_state("NTLMv1 arc4 state:\n", 
+                dump_arc4_state("NTLMv1 arc4 state:\n",
 				&ntlmssp_state->ntlmv1_arc4_state);
 
 		ntlmssp_state->ntlmv1_seq_num = 0;

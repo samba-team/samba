@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    SMB parameters and setup
    Copyright (C) Andrew Tridgell 1992-1997
    Copyright (C) Luke Kenneth Casson Leighton 1996-1997
    Copyright (C) Paul Ashton 1997
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -70,7 +70,7 @@ enum NTLM_MESSAGE_TYPE
 
 #define NTLMSSP_SIG_SIZE 16
 
-typedef struct ntlmssp_state 
+typedef struct ntlmssp_state
 {
 	unsigned int ref_count;
 	enum NTLMSSP_ROLE role;
@@ -98,7 +98,7 @@ typedef struct ntlmssp_state
 	void *auth_context;
 
 	/**
-	 * Callback to get the 'challenge' used for NTLM authentication.  
+	 * Callback to get the 'challenge' used for NTLM authentication.
 	 *
 	 * @param ntlmssp_state This structure
 	 * @return 8 bytes of challnege data, determined by the server to be the challenge for NTLM authentication
@@ -108,10 +108,10 @@ typedef struct ntlmssp_state
 			      uint8_t challenge[8]);
 
 	/**
-	 * Callback to find if the challenge used by NTLM authentication may be modified 
+	 * Callback to find if the challenge used by NTLM authentication may be modified
 	 *
 	 * The NTLM2 authentication scheme modifies the effective challenge, but this is not compatiable with the
-	 * current 'security=server' implementation..  
+	 * current 'security=server' implementation..
 	 *
 	 * @param ntlmssp_state This structure
 	 * @return Can the challenge be set to arbitary values?
@@ -120,7 +120,7 @@ typedef struct ntlmssp_state
 	bool (*may_set_challenge)(const struct ntlmssp_state *ntlmssp_state);
 
 	/**
-	 * Callback to set the 'challenge' used for NTLM authentication.  
+	 * Callback to set the 'challenge' used for NTLM authentication.
 	 *
 	 * The callback may use the void *auth_context to store state information, but the same value is always available
 	 * from the DATA_BLOB chal on this structure.
@@ -132,9 +132,9 @@ typedef struct ntlmssp_state
 	NTSTATUS (*set_challenge)(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *challenge);
 
 	/**
-	 * Callback to check the user's password.  
+	 * Callback to check the user's password.
 	 *
-	 * The callback must reads the feilds of this structure for the information it needs on the user 
+	 * The callback must reads the feilds of this structure for the information it needs on the user
 	 * @param ntlmssp_state This structure
 	 * @param nt_session_key If an NT session key is returned by the authentication process, return it here
 	 * @param lm_session_key If an LM session key is returned by the authentication process, return it here
@@ -165,5 +165,5 @@ typedef struct ntlmssp_state
 	/* it turns out that we don't always get the
 	   response in at the time we want to process it.
 	   Store it here, until we need it */
-	DATA_BLOB stored_response; 
+	DATA_BLOB stored_response;
 } NTLMSSP_STATE;
