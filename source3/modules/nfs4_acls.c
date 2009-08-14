@@ -264,14 +264,14 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx, SMB4ACL_T *theacl, /* in */
 		}
 
 		mapped_ace_flags = ace->aceFlags & 0xf;
-		if (!is_directory && (mapped_ace_flags & 0x3)) {
+		if (!is_directory && (mapped_ace_flags & (SMB_ACE4_FILE_INHERIT_ACE|SMB_ACE4_DIRECTORY_INHERIT_ACE))) {
 			/*
 			 * GPFS sets inherits dir_inhert and file_inherit flags
 			 * to files, too, which confuses windows, and seems to
 			 * be wrong anyways. ==> Map these bits away for files.
 			 */
 			DEBUG(10, ("removing inherit flags from nfs4 ace\n"));
-			mapped_ace_flags &= ~0x3;
+			mapped_ace_flags &= ~(SMB_ACE4_FILE_INHERIT_ACE|SMB_ACE4_DIRECTORY_INHERIT_ACE);
 		}
 		DEBUG(10, ("mapped ace flags: 0x%x => 0x%x\n",
 		      ace->aceFlags, mapped_ace_flags));
