@@ -419,7 +419,7 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 			ent->attributes = talloc_array(ent_r, struct ldb_message_element, ent->num_attributes);
 			NT_STATUS_HAVE_NO_MEMORY(ent->attributes);
 			for (j=0; j < ent->num_attributes; j++) {
-				ent->attributes[j].name = talloc_steal(ent->attributes, res->msgs[i]->elements[j].name);
+				ent->attributes[j].name = res->msgs[i]->elements[j].name;
 				ent->attributes[j].num_values = 0;
 				ent->attributes[j].values = NULL;
 				if (req->attributesonly && (res->msgs[i]->elements[j].num_values == 0)) {
