@@ -60,10 +60,6 @@ o   Rusty Russell <rusty@rustcorp.com.au>
     * BUG 6601: Avoid global fd limits.
 
 
-o   Jelmer Vernooij <jelmer@samba.org>
-    * Fix build with external talloc.
-
-
 o   Bo Yang <boyang@samba.org>
     * BUG 6560: Fix lookupname.
     * BUG 6615: Fix browsing of DFS when using kerberos in libsmbclient.
