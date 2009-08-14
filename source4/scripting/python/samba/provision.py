@@ -1204,20 +1204,28 @@ def provision(setup_dir, message, session_info,
         setup_file(setup_path("ldap_backend_startup.sh"), paths.ldapdir + "/ldap_backend_startup.sh", {
                 "SLAPD_COMMAND" : slapd_command})
 
+    
     create_phpldapadmin_config(paths.phpldapadminconfig, setup_path, 
                                ldapi_url)
 
     message("Please install the phpLDAPadmin configuration located at %s into /etc/phpldapadmin/config.php" % paths.phpldapadminconfig)
 
     message("Once the above files are installed, your Samba4 server will be ready to use")
-    message("Server Role:    %s" % serverrole)
-    message("Hostname:       %s" % names.hostname)
-    message("NetBIOS Domain: %s" % names.domain)
-    message("DNS Domain:     %s" % names.dnsdomain)
-    message("DOMAIN SID:     %s" % str(domainsid))
+    message("Server Role:           %s" % serverrole)
+    message("Hostname:              %s" % names.hostname)
+    message("NetBIOS Domain:        %s" % names.domain)
+    message("DNS Domain:            %s" % names.dnsdomain)
+    message("DOMAIN SID:            %s" % str(domainsid))
     if samdb_fill == FILL_FULL:
-        message("Admin password: %s" % adminpass)
+        message("Admin password:    %s" % adminpass)
+    if provision_backend:
+        if provision_backend.credentials.get_bind_dn() is not None:
+            message("LDAP Backend Admin DN: %s" % provision_backend.credentials.get_bind_dn())
+        else:
+            message("LDAP Admin User:       %s" % provision_backend.credentials.get_username())
 
+        message("LDAP Admin Password:   %s" % provision_backend.credentials.get_password())
+  
     result = ProvisionResult()
     result.domaindn = domaindn
     result.paths = paths
