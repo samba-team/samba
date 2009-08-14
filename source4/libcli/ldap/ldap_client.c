@@ -335,7 +335,9 @@ _PUBLIC_ struct composite_context *ldap_connect_send(struct ldap_connection *con
 		SMB_ASSERT(sizeof(protocol)>10);
 		SMB_ASSERT(sizeof(path)>1024);
 	
-		/* LDAPI connections are to localhost, so give the local host name as the target for gensec */
+		/* LDAPI connections are to localhost, so give the
+		 * local host name as the target for gensec's
+		 * DIGEST-MD5 mechanism */
 		conn->host = talloc_asprintf(conn, "%s.%s", lp_netbios_name(conn->lp_ctx),  lp_realm(conn->lp_ctx));
 		if (composite_nomem(conn->host, state->ctx)) {
 			return result;
