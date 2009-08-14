@@ -39,7 +39,7 @@ import samba
 import subprocess
 
 import shutil
-from credentials import Credentials
+from credentials import Credentials, DONT_USE_KERBEROS
 from auth import system_session
 from samba import version, Ldb, substitute_var, valid_netbios_name, check_all_substituted, \
   DS_BEHAVIOR_WIN2008
@@ -1348,6 +1348,8 @@ class ProvisionBackend(object):
 
         self.credentials = Credentials()
         self.credentials.guess(lp)
+        #Kerberos to an ldapi:// backend makes no sense
+        self.credentials.set_kerberos_state(DONT_USE_KERBEROS)
         self.ldap_backend_type = ldap_backend_type
 
         if ldap_backend_type == "fedora-ds":
