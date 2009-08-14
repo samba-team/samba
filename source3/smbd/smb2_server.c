@@ -574,6 +574,7 @@ static NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 	uint32_t flags;
 	NTSTATUS status;
 	NTSTATUS session_status;
+	uint32_t allowed_flags;
 
 	inhdr = (const uint8_t *)req->in.vector[i].iov_base;
 
@@ -583,14 +584,15 @@ static NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 	opcode = IVAL(inhdr, SMB2_HDR_OPCODE);
 	DEBUG(10,("smbd_smb2_request_dispatch: opcode[%u]\n", opcode));
 
-#define TMP_SMB2_ALLOWED_FLAGS ( \
-	SMB2_HDR_FLAG_CHAINED | \
-	SMB2_HDR_FLAG_SIGNED | \
-	SMB2_HDR_FLAG_DFS)
-	if ((flags & ~TMP_SMB2_ALLOWED_FLAGS) != 0) {
+	allowed_flags = SMB2_HDR_FLAG_CHAINED |
+			SMB2_HDR_FLAG_SIGNED |
+			SMB2_HDR_FLAG_DFS;
+	if (opcode == SMB2_OP_CANCEL) {
+		allowed_flags |= SMB2_HDR_FLAG_ASYNC;
+	}
+	if ((flags & ~allowed_flags) != 0) {
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
-#undef TMP_SMB2_ALLOWED_FLAGS
 
 	session_status = smbd_smb2_request_check_session(req);
 
