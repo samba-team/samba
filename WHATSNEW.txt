@@ -56,6 +56,10 @@ o   Tim Prouty <tprouty@samba.org>
     * BUG 6620: Fix a bug in renames of directories.
 
 
+o   Rusty Russell <rusty@rustcorp.com.au>
+    * BUG 6601: Avoid global fd limits.
+
+
 o   Jelmer Vernooij <jelmer@samba.org>
     * Fix build with external talloc.
 
