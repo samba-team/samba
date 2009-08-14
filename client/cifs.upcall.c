@@ -30,7 +30,7 @@ create dns_resolver * * /usr/local/sbin/cifs.upcall %k
 
 #include "cifs_spnego.h"
 
-const char *CIFSSPNEGO_VERSION = "1.2";
+const char *CIFSSPNEGO_VERSION = "1.3";
 static const char *prog = "cifs.upcall";
 typedef enum _sectype {
 	NONE = 0,
@@ -291,8 +291,8 @@ cifs_resolver(const key_serial_t key, const char *key_descr)
 static void
 usage(void)
 {
-	syslog(LOG_INFO, "Usage: %s [-c] [-v] key_serial", prog);
-	fprintf(stderr, "Usage: %s [-c] [-v] key_serial\n", prog);
+	syslog(LOG_INFO, "Usage: %s [-v] key_serial", prog);
+	fprintf(stderr, "Usage: %s [-v] key_serial\n", prog);
 }
 
 int main(const int argc, char *const argv[])
@@ -303,7 +303,7 @@ int main(const int argc, char *const argv[])
 	key_serial_t key = 0;
 	size_t datalen;
 	long rc = 1;
-	int c, use_cifs_service_prefix = 0;
+	int c;
 	char *buf, *princ, *ccname = NULL;
 	struct decoded_args arg = { };
 	const char *oid;
@@ -313,7 +313,7 @@ int main(const int argc, char *const argv[])
 	while ((c = getopt(argc, argv, "cv")) != -1) {
 		switch (c) {
 		case 'c':
-			use_cifs_service_prefix = 1;
+			/* legacy option -- skip it */
 			break;
 		case 'v':
 			printf("version: %s\n", CIFSSPNEGO_VERSION);
@@ -395,19 +395,23 @@ int main(const int argc, char *const argv[])
 			break;
 		}
 
-		if (use_cifs_service_prefix)
-			strlcpy(princ, "cifs/", datalen);
-		else
-			strlcpy(princ, "host/", datalen);
-
-		strlcpy(princ + 5, arg.hostname, datalen - 5);
-
 		if (arg.sec == MS_KRB5)
 			oid = OID_KERBEROS5_OLD;
 		else
 			oid = OID_KERBEROS5;
 
+		/*
+		 * try getting a cifs/ principal first and then fall back to
+		 * getting a host/ principal if that doesn't work.
+		 */
+		strlcpy(princ, "cifs/", datalen);
+		strlcpy(princ + 5, arg.hostname, datalen - 5);
 		rc = handle_krb5_mech(oid, princ, &secblob, &sess_key, ccname);
+		if (rc) {
+			memcpy(princ, "host/", 5);
+			rc = handle_krb5_mech(oid, princ, &secblob, &sess_key,
+						ccname);
+		}
 		SAFE_FREE(princ);
 		break;
 	default:
