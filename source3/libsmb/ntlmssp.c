@@ -581,11 +581,11 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 	if (chal_flags & NTLMSSP_NEGOTIATE_TARGET_INFO)
 	{
 		msrpc_gen(ntlmssp_state, &struct_blob, "aaaaa",
-			  NTLMSSP_NAME_TYPE_DOMAIN, target_name,
-			  NTLMSSP_NAME_TYPE_SERVER, ntlmssp_state->get_global_myname(),
-			  NTLMSSP_NAME_TYPE_DOMAIN_DNS, dnsdomname,
-			  NTLMSSP_NAME_TYPE_SERVER_DNS, dnsname,
-			  0, "");
+			  MsvAvNbDomainName, target_name,
+			  MsvAvNbComputerName, ntlmssp_state->get_global_myname(),
+			  MsvAvDnsDomainName, dnsdomname,
+			  MsvAvDnsComputerName, dnsname,
+			  MsvAvEOL, "");
 	} else {
 		struct_blob = data_blob_null;
 	}
