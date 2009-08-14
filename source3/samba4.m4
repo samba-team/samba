@@ -75,10 +75,6 @@ SMB_EXT_LIB_FROM_PKGCONFIG(LIBTALLOC, talloc >= $TALLOC_MIN_VERSION,
 		SMB_INCLUDE_MK(../lib/talloc/config.mk)
 	]
 )
-# Tallocdir isn't always set by the Samba3 c
-tallocdir=../lib/talloc
-AC_SUBST(tallocdir)
-CFLAGS="$CFLAGS -I../lib/talloc"
 
 SMB_EXT_LIB_FROM_PKGCONFIG(LIBTDB, tdb >= $TDB_MIN_VERSION,
 	[],
