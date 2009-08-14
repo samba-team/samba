@@ -37,9 +37,14 @@ sub slapd_start($$)
 {
 	my $count = 0;
 	my ($self, $env_vars) = @_;
+	my $ldbsearch = $self->bindir_path("ldbsearch");
 
 	my $uri = $env_vars->{LDAP_URI};
 
+	if (system("$ldbsearch -H $uri -s base -b \"\" supportedLDAPVersion > /dev/null") == 0) {
+	    print "A SLAPD is still listening to $uri before we started the LDAP backend.  Aborting!";
+	    return 1;
+	}
 	# running slapd in the background means it stays in the same process group, so it can be
 	# killed by timelimit
 	if ($self->{ldap} eq "fedora-ds") {
@@ -47,7 +52,6 @@ sub slapd_start($$)
 	} elsif ($self->{ldap} eq "openldap") {
 	        system("$ENV{OPENLDAP_SLAPD} -d0 -F $env_vars->{SLAPD_CONF_D} -h $uri > $env_vars->{LDAPDIR}/logs 2>&1 &");
 	}
-	my $ldbsearch = $self->bindir_path("ldbsearch");
 	while (system("$ldbsearch -H $uri -s base -b \"\" supportedLDAPVersion > /dev/null") != 0) {
 	        $count++;
 		if ($count > 40) {
