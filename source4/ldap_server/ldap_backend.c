@@ -427,7 +427,6 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 				}
 				ent->attributes[j].num_values = res->msgs[i]->elements[j].num_values;
 				ent->attributes[j].values = res->msgs[i]->elements[j].values;
-				ent->attributes = res->msgs[i]->elements[j].values;
 			}
 queue_reply:
 			ldapsrv_queue_reply(call, ent_r);
