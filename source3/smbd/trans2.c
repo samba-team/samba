@@ -1458,6 +1458,8 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 				    const char *fname,
 				    const struct smb_filename *smb_fname,
 				    uint64_t space_remaining,
+				    uint8_t align,
+				    bool do_pad,
 				    char *base_data,
 				    char **ppdata,
 				    char *end_data,
@@ -1476,6 +1478,8 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 	char *last_entry_ptr;
 	bool was_8_3;
 	uint32_t nt_extmode; /* Used for NT connections instead of mode */
+	off_t off;
+	off_t pad = 0;
 
 	*out_of_space = false;
 
@@ -1506,8 +1510,21 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 	adate = convert_timespec_to_time_t(adate_ts);
 	c_date = convert_timespec_to_time_t(cdate_ts);
 
+	/* align the record */
+	off = PTR_DIFF(pdata, base_data);
+	pad = (off + (align-1)) & ~(align-1);
+	pad -= off;
+	off += pad;
+	/* initialize padding to 0 */
+	memset(pdata, 0, pad);
+	space_remaining -= pad;
+
+	pdata += pad;
 	p = pdata;
 	last_entry_ptr = p;
+
+	pad = 0;
+	off = 0;
 
 	nt_extmode = mode ? mode : FILE_ATTRIBUTE_NORMAL;
 
@@ -1694,11 +1711,24 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 				  STR_TERMINATE_ASCII);
 		SIVAL(q,0,len);
 		p += len;
-		SIVAL(p,0,0); /* Ensure any padding is null. */
+
 		len = PTR_DIFF(p, pdata);
-		len = (len + 3) & ~3;
-		SIVAL(pdata,0,len);
-		p = pdata + len;
+		pad = (len + (align-1)) & ~(align-1);
+		/*
+		 * offset to the next entry, the caller
+		 * will overwrite it for the last entry
+		 * that's why we always include the padding
+		 */
+		SIVAL(pdata,0,pad);
+		/*
+		 * set padding to zero
+		 */
+		if (do_pad) {
+			memset(p, 0, pad - len);
+			p = pdata + pad;
+		} else {
+			p = pdata + len;
+		}
 		break;
 
 	case SMB_FIND_FILE_DIRECTORY_INFO:
@@ -1717,11 +1747,24 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 				  STR_TERMINATE_ASCII);
 		SIVAL(p,0,len);
 		p += 4 + len;
-		SIVAL(p,0,0); /* Ensure any padding is null. */
+
 		len = PTR_DIFF(p, pdata);
-		len = (len + 3) & ~3;
-		SIVAL(pdata,0,len);
-		p = pdata + len;
+		pad = (len + (align-1)) & ~(align-1);
+		/*
+		 * offset to the next entry, the caller
+		 * will overwrite it for the last entry
+		 * that's why we always include the padding
+		 */
+		SIVAL(pdata,0,pad);
+		/*
+		 * set padding to zero
+		 */
+		if (do_pad) {
+			memset(p, 0, pad - len);
+			p = pdata + pad;
+		} else {
+			p = pdata + len;
+		}
 		break;
 
 	case SMB_FIND_FILE_FULL_DIRECTORY_INFO:
@@ -1748,11 +1791,23 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		SIVAL(q, 0, len);
 		p += len;
 
-		SIVAL(p,0,0); /* Ensure any padding is null. */
 		len = PTR_DIFF(p, pdata);
-		len = (len + 3) & ~3;
-		SIVAL(pdata,0,len);
-		p = pdata + len;
+		pad = (len + (align-1)) & ~(align-1);
+		/*
+		 * offset to the next entry, the caller
+		 * will overwrite it for the last entry
+		 * that's why we always include the padding
+		 */
+		SIVAL(pdata,0,pad);
+		/*
+		 * set padding to zero
+		 */
+		if (do_pad) {
+			memset(p, 0, pad - len);
+			p = pdata + pad;
+		} else {
+			p = pdata + len;
+		}
 		break;
 
 	case SMB_FIND_FILE_NAMES_INFO:
@@ -1767,11 +1822,24 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 				  STR_TERMINATE_ASCII);
 		SIVAL(p, -4, len);
 		p += len;
-		SIVAL(p,0,0); /* Ensure any padding is null. */
+
 		len = PTR_DIFF(p, pdata);
-		len = (len + 3) & ~3;
-		SIVAL(pdata,0,len);
-		p = pdata + len;
+		pad = (len + (align-1)) & ~(align-1);
+		/*
+		 * offset to the next entry, the caller
+		 * will overwrite it for the last entry
+		 * that's why we always include the padding
+		 */
+		SIVAL(pdata,0,pad);
+		/*
+		 * set padding to zero
+		 */
+		if (do_pad) {
+			memset(p, 0, pad - len);
+			p = pdata + pad;
+		} else {
+			p = pdata + len;
+		}
 		break;
 
 	case SMB_FIND_ID_FULL_DIRECTORY_INFO:
@@ -1800,11 +1868,24 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 				  STR_TERMINATE_ASCII);
 		SIVAL(q, 0, len);
 		p += len;
-		SIVAL(p,0,0); /* Ensure any padding is null. */
+
 		len = PTR_DIFF(p, pdata);
-		len = (len + 3) & ~3;
-		SIVAL(pdata,0,len);
-		p = pdata + len;
+		pad = (len + (align-1)) & ~(align-1);
+		/*
+		 * offset to the next entry, the caller
+		 * will overwrite it for the last entry
+		 * that's why we always include the padding
+		 */
+		SIVAL(pdata,0,pad);
+		/*
+		 * set padding to zero
+		 */
+		if (do_pad) {
+			memset(p, 0, pad - len);
+			p = pdata + pad;
+		} else {
+			p = pdata + len;
+		}
 		break;
 
 	case SMB_FIND_ID_BOTH_DIRECTORY_INFO:
@@ -1858,11 +1939,24 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 				  STR_TERMINATE_ASCII);
 		SIVAL(q,0,len);
 		p += len;
-		SIVAL(p,0,0); /* Ensure any padding is null. */
+
 		len = PTR_DIFF(p, pdata);
-		len = (len + 3) & ~3;
-		SIVAL(pdata,0,len);
-		p = pdata + len;
+		pad = (len + (align-1)) & ~(align-1);
+		/*
+		 * offset to the next entry, the caller
+		 * will overwrite it for the last entry
+		 * that's why we always include the padding
+		 */
+		SIVAL(pdata,0,pad);
+		/*
+		 * set padding to zero
+		 */
+		if (do_pad) {
+			memset(p, 0, pad - len);
+			p = pdata + pad;
+		} else {
+			p = pdata + len;
+		}
 		break;
 
 	/* CIFS UNIX Extension. */
@@ -1893,12 +1987,24 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		}
 
 		p += len;
-		SIVAL(p,0,0); /* Ensure any padding is null. */
 
 		len = PTR_DIFF(p, pdata);
-		len = (len + 3) & ~3;
-		SIVAL(pdata,0,len);	/* Offset from this structure to the beginning of the next one */
-		p = pdata + len;
+		pad = (len + (align-1)) & ~(align-1);
+		/*
+		 * offset to the next entry, the caller
+		 * will overwrite it for the last entry
+		 * that's why we always include the padding
+		 */
+		SIVAL(pdata,0,pad);
+		/*
+		 * set padding to zero
+		 */
+		if (do_pad) {
+			memset(p, 0, pad - len);
+			p = pdata + pad;
+		} else {
+			p = pdata + len;
+		}
 		/* End of SMB_QUERY_FILE_UNIX_BASIC */
 
 		break;
@@ -1921,24 +2027,26 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 	return true;
 }
 
-static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
-				connection_struct *conn,
-				struct dptr_struct *dirptr,
-				uint16 flags2,
-				const char *path_mask,
-				uint32 dirtype,
-				int info_level,
-				int requires_resume_key,
-				bool dont_descend,
-				bool ask_sharemode,
-				char **ppdata,
-				char *base_data,
-				char *end_data,
-				int space_remaining,
-				bool *out_of_space,
-				bool *got_exact_match,
-				int *_last_entry_off,
-				struct ea_list *name_list)
+bool smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
+			       connection_struct *conn,
+			       struct dptr_struct *dirptr,
+			       uint16 flags2,
+			       const char *path_mask,
+			       uint32 dirtype,
+			       int info_level,
+			       int requires_resume_key,
+			       bool dont_descend,
+			       bool ask_sharemode,
+			       uint8_t align,
+			       bool do_pad,
+			       char **ppdata,
+			       char *base_data,
+			       char *end_data,
+			       int space_remaining,
+			       bool *out_of_space,
+			       bool *got_exact_match,
+			       int *_last_entry_off,
+			       struct ea_list *name_list)
 {
 	const char *p;
 	const char *mask = NULL;
@@ -2001,6 +2109,8 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 				     fname,
 				     smb_fname,
 				     space_remaining,
+				     align,
+				     do_pad,
 				     base_data,
 				     ppdata,
 				     end_data,
@@ -2018,6 +2128,43 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 
 	*_last_entry_off = last_entry_off;
 	return true;
+}
+
+static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
+				connection_struct *conn,
+				struct dptr_struct *dirptr,
+				uint16 flags2,
+				const char *path_mask,
+				uint32 dirtype,
+				int info_level,
+				int requires_resume_key,
+				bool dont_descend,
+				bool ask_sharemode,
+				char **ppdata,
+				char *base_data,
+				char *end_data,
+				int space_remaining,
+				bool *out_of_space,
+				bool *got_exact_match,
+				int *last_entry_off,
+				struct ea_list *name_list)
+{
+	bool resume_key = false;
+	const uint8_t align = 4;
+	const bool do_pad = true;
+
+	if (requires_resume_key) {
+		resume_key = true;
+	}
+
+	return smbd_dirptr_lanman2_entry(ctx, conn, dirptr, flags2,
+					 path_mask, dirtype, info_level,
+					 resume_key, dont_descend, ask_sharemode,
+					 align, do_pad,
+					 ppdata, base_data, end_data,
+					 space_remaining,
+					 out_of_space, got_exact_match,
+					 last_entry_off, name_list);
 }
 
 /****************************************************************************
