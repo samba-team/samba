@@ -77,6 +77,7 @@ done
 AC_SUBST(LIBTDB_OBJ0)
 SAMBA_CPPFLAGS="-Iinclude -I${srcdir-.}/include  -I. -I${srcdir-.}"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/../lib/replace"
+SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} ${TALLOC_CFLAGS}"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} ${TEVENT_CFLAGS}"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} ${TDB_CFLAGS}"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/libaddns"
@@ -4747,33 +4748,7 @@ LINK_LIBSMBCLIENT=STATIC
 #  TODO: for talloc and tdb (at least), these should
 #  be extracted from their respective source directories
 #
-AC_ARG_ENABLE(external_libtalloc, [AS_HELP_STRING([--enable-external-libtalloc], [Enable external talloc [default=auto]])], 
-[ enable_external_libtalloc=$enableval ], [ enable_external_libtalloc=auto ])
-
-if test "x$enable_external_libtalloc" != xno
-then
-	PKG_CHECK_MODULES(LIBTALLOC, talloc >= 1.3.0, 
-		[ enable_external_libtalloc=yes ],
-		[ if test x$enable_external_libtalloc = xyes; then
-		 	AC_MSG_ERROR([Unable to find libtalloc])
-	      else 
-			enable_external_libtalloc=no
-		  fi
-		])
-fi
-
-if test "x$enable_external_libtalloc" = xno
-then
-	m4_include(../lib/talloc/libtalloc.m4)
-	SMB_LIBRARY(talloc, 1)
-	LIBTALLOC_OBJ0=""
-	for obj in ${TALLOC_OBJ}; do
-		LIBTALLOC_OBJ0="${LIBTALLOC_OBJ0} ${tallocdir}/${obj}"
-	done
-	SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} ${TALLOC_CFLAGS}"
-	AC_SUBST(LIBTALLOC_OBJ0)
-fi
-
+SMB_LIBRARY(talloc, 1)
 SMB_LIBRARY(tdb, 1)
 SMB_LIBRARY(netapi, 0)
 SMB_LIBRARY(smbclient, 0)
