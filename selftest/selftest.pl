@@ -348,7 +348,7 @@ exit(1) if (not $result);
 
 ShowHelp() if ($opt_help);
 
-my $tests = shift;
+my @tests = @ARGV;
 
 # quick hack to disable rpc validation when using valgrind - its way too slow
 unless (defined($ENV{VALGRIND})) {
@@ -591,6 +591,20 @@ my $testsdir = "$srcdir/selftest";
 
 my %required_envs = ();
 
+sub should_run_test($)
+{
+	my $name = shift;
+	if ($#tests == -1) {
+		return 1;
+	}
+	for (my $i=0; $i <= $#tests; $i++) {
+		if ($name =~ /$tests[$i]/i) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
 sub read_testlist($)
 {
 	my ($filename) = @_;
@@ -606,7 +620,7 @@ sub read_testlist($)
 			$env =~ s/\n//g;
 			my $cmdline = <IN>;
 			$cmdline =~ s/\n//g;
-			if (not defined($tests) or $name =~ /$tests/) {
+			if (should_run_test($name) == 1) {
 				$required_envs{$env} = 1;
 				push (@ret, [$name, $env, $cmdline]);
 			}
