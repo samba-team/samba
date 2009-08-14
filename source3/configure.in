@@ -39,16 +39,10 @@ then
 		])
 fi
 
-if test "x$enable_external_libtalloc" = xno
+if test "x$enable_external_libtalloc" != xyes
 then
 	m4_include(../lib/talloc/libtalloc.m4)
 fi
-
-LIBTALLOC_OBJ0=""
-for obj in ${TALLOC_OBJ}; do
-	LIBTALLOC_OBJ0="${LIBTALLOC_OBJ0} ${tallocdir}/${obj}"
-done
-AC_SUBST(LIBTALLOC_OBJ0)
 
 m4_include(../lib/tevent/libtevent.m4)
 
@@ -4748,7 +4742,18 @@ LINK_LIBSMBCLIENT=STATIC
 #  TODO: for talloc and tdb (at least), these should
 #  be extracted from their respective source directories
 #
-SMB_LIBRARY(talloc, 1)
+if test "x$enable_external_libtalloc" != xyes
+then
+	SMB_LIBRARY(talloc, 1)
+	LIBTALLOC_OBJ0=""
+	for obj in ${TALLOC_OBJ}; do
+		LIBTALLOC_OBJ0="${LIBTALLOC_OBJ0} ${tallocdir}/${obj}"
+	done
+	AC_SUBST(LIBTALLOC_OBJ0)
+else
+	LIBTALLOC_LIBS="${TALLOC_LIBS}"
+fi
+
 SMB_LIBRARY(tdb, 1)
 SMB_LIBRARY(netapi, 0)
 SMB_LIBRARY(smbclient, 0)
