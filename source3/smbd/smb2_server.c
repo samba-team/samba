@@ -1328,7 +1328,13 @@ static int smbd_smb2_request_next_vector(struct tstream_context *stream,
 				 * body and let the caller deal with the error
 				 */
 				invalid = true;
-			} else if (body_size > (full_size - SMB2_HDR_BODY)) {
+			}
+
+			if ((body_size % 2) != 0) {
+				body_size -= 1;
+			}
+
+			if (body_size > (full_size - SMB2_HDR_BODY)) {
 				/*
 				 * this is invalid, just return a zero
 				 * body and let the caller deal with the error
@@ -1340,10 +1346,6 @@ static int smbd_smb2_request_next_vector(struct tstream_context *stream,
 		if (invalid) {
 			/* the caller should check this */
 			body_size = 2;
-		}
-
-		if ((body_size % 2) != 0) {
-			body_size -= 1;
 		}
 
 		dyn_size = full_size - (SMB2_HDR_BODY + body_size);
