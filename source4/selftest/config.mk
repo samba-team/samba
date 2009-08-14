@@ -58,10 +58,10 @@ quicktestone:: all
 	$(SELFTEST) $(SELFTEST_QUICK_OPTS) --socket-wrapper --one $(TESTS) | $(FORMAT_TEST_OUTPUT)
 
 testenv:: everything
-	$(SELFTEST) $(SELFTEST_NOSLOW_OPTS) --socket-wrapper --testenv | $(FORMAT_TEST_OUTPUT)
+	$(SELFTEST) $(SELFTEST_NOSLOW_OPTS) --socket-wrapper --testenv
 
 testenv-%:: everything
-	SELFTEST_TESTENV=$* $(SELFTEST) $(SELFTEST_NOSLOW_OPTS) --socket-wrapper --testenv | $(FORMAT_TEST_OUTPUT)
+	SELFTEST_TESTENV=$* $(SELFTEST) $(SELFTEST_NOSLOW_OPTS) --socket-wrapper --testenv
 
 test-%:: 
 	$(MAKE) test TESTS=$*
