@@ -420,10 +420,10 @@ struct smbd_smb2_request_pending_state {
 
 static void smbd_smb2_request_pending_writev_done(struct tevent_req *subreq);
 
-NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req)
+NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
+					 struct tevent_req *subreq)
 {
 	struct smbd_smb2_request_pending_state *state;
-	struct tevent_req *subreq;
 	uint8_t *outhdr;
 	int i = req->current_idx;
 	uint32_t flags;
@@ -431,6 +431,13 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req)
 	uint64_t async_id;
 	uint8_t *hdr;
 	uint8_t *body;
+
+	if (!tevent_req_is_in_progress(subreq)) {
+		return NT_STATUS_OK;
+	}
+
+	req->subreq = subreq;
+	subreq = NULL;
 
 	outhdr = (uint8_t *)req->out.vector[i].iov_base;
 
@@ -559,8 +566,8 @@ static NTSTATUS smbd_smb2_request_process_cancel(struct smbd_smb2_request *req)
 		}
 	}
 
-	if (cur) {
-		/* TODO: try to cancel the request */
+	if (cur && cur->subreq) {
+		tevent_req_cancel(cur->subreq);
 	}
 
 	return NT_STATUS_OK;
@@ -796,6 +803,8 @@ static void smbd_smb2_request_writev_done(struct tevent_req *subreq);
 static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 {
 	struct tevent_req *subreq;
+
+	req->subreq = NULL;
 
 	smb2_setup_nbt_length(req->out.vector, req->out.vector_count);
 

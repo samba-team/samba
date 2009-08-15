@@ -264,7 +264,8 @@ NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
 				     uint64_t file_id_volatile,
 				     uint8_t oplock_level);
 
-NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req);
+NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
+					 struct tevent_req *subreq);
 
 NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_check_tcon(struct smbd_smb2_request *req);
@@ -310,6 +311,12 @@ struct smbd_smb2_request {
 	struct files_struct *compat_chain_fsp;
 
 	NTSTATUS next_status;
+
+	/*
+	 * The sub request for async backend calls.
+	 * This is used for SMB2 Cancel.
+	 */
+	struct tevent_req *subreq;
 
 	struct {
 		/* the NBT header is not allocated */

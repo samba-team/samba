@@ -124,11 +124,7 @@ NTSTATUS smbd_smb2_request_process_lock(struct smbd_smb2_request *req)
 	}
 	tevent_req_set_callback(subreq, smbd_smb2_request_lock_done, req);
 
-	if (tevent_req_is_in_progress(subreq)) {
-		return smbd_smb2_request_pending_queue(req);
-	}
-
-	return NT_STATUS_OK;
+	return smbd_smb2_request_pending_queue(req, subreq);
 }
 
 static void smbd_smb2_request_lock_done(struct tevent_req *subreq)
