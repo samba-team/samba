@@ -407,7 +407,7 @@ wbcErr wbcListTrusts(struct wbcDomainInfo **domains, size_t *num_domains)
 
 	p = (char *)response.extra_data.data;
 
-	if (strlen(p) == 0) {
+	if ((p == NULL) || (strlen(p) == 0)) {
 		/* We should always at least get back our
 		   own SAM domain */
 
