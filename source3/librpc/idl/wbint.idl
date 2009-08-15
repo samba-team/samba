@@ -88,4 +88,8 @@ interface wbint
 	[in] dom_sid *sid,
 	[out] wbint_SidArray *sids
 	);
+
+    NTSTATUS wbint_QuerySequenceNumber(
+	[out] uint32 *sequence
+	);
 }

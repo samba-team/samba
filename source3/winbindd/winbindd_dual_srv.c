@@ -145,3 +145,15 @@ NTSTATUS _wbint_LookupUserGroups(pipes_struct *p,
 		domain, p->mem_ctx, r->in.sid,
 		&r->out.sids->num_sids, &r->out.sids->sids);
 }
+
+NTSTATUS _wbint_QuerySequenceNumber(pipes_struct *p,
+				    struct wbint_QuerySequenceNumber *r)
+{
+	struct winbindd_domain *domain = wb_child_domain();
+
+	if (domain == NULL) {
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
+
+	return domain->methods->sequence_number(domain, r->out.sequence);
+}

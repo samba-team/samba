@@ -1645,3 +1645,159 @@ NTSTATUS rpccli_wbint_LookupUserGroups(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_wbint_QuerySequenceNumber_state {
+	struct wbint_QuerySequenceNumber orig;
+	struct wbint_QuerySequenceNumber tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_wbint_QuerySequenceNumber_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_wbint_QuerySequenceNumber_send(TALLOC_CTX *mem_ctx,
+							 struct tevent_context *ev,
+							 struct rpc_pipe_client *cli,
+							 uint32_t *_sequence /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_wbint_QuerySequenceNumber_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_wbint_QuerySequenceNumber_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+
+	/* Out parameters */
+	state->orig.out.sequence = _sequence;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(wbint_QuerySequenceNumber, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_wbint_QuerySequenceNumber_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_wbint,
+				    NDR_WBINT_QUERYSEQUENCENUMBER,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_wbint_QuerySequenceNumber_done, req);
+	return req;
+}
+
+static void rpccli_wbint_QuerySequenceNumber_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_wbint_QuerySequenceNumber_state *state = tevent_req_data(
+		req, struct rpccli_wbint_QuerySequenceNumber_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.sequence = *state->tmp.out.sequence;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(wbint_QuerySequenceNumber, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_wbint_QuerySequenceNumber_recv(struct tevent_req *req,
+					       TALLOC_CTX *mem_ctx,
+					       NTSTATUS *result)
+{
+	struct rpccli_wbint_QuerySequenceNumber_state *state = tevent_req_data(
+		req, struct rpccli_wbint_QuerySequenceNumber_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS rpccli_wbint_QuerySequenceNumber(struct rpc_pipe_client *cli,
+					  TALLOC_CTX *mem_ctx,
+					  uint32_t *sequence /* [out] [ref] */)
+{
+	struct wbint_QuerySequenceNumber r;
+	NTSTATUS status;
+
+	/* In parameters */
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(wbint_QuerySequenceNumber, &r);
+	}
+
+	status = cli->dispatch(cli,
+				mem_ctx,
+				&ndr_table_wbint,
+				NDR_WBINT_QUERYSEQUENCENUMBER,
+				&r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(wbint_QuerySequenceNumber, &r);
+	}
+
+	if (NT_STATUS_IS_ERR(status)) {
+		return status;
+	}
+
+	/* Return variables */
+	*sequence = *r.out.sequence;
+
+	/* Return result */
+	return r.out.result;
+}

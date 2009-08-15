@@ -1287,6 +1287,67 @@ _PUBLIC_ void ndr_print_wbint_LookupUserGroups(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_wbint_QuerySequenceNumber(struct ndr_push *ndr, int flags, const struct wbint_QuerySequenceNumber *r)
+{
+	if (flags & NDR_IN) {
+	}
+	if (flags & NDR_OUT) {
+		if (r->out.sequence == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.sequence));
+		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_wbint_QuerySequenceNumber(struct ndr_pull *ndr, int flags, struct wbint_QuerySequenceNumber *r)
+{
+	TALLOC_CTX *_mem_save_sequence_0;
+	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		NDR_PULL_ALLOC(ndr, r->out.sequence);
+		ZERO_STRUCTP(r->out.sequence);
+	}
+	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.sequence);
+		}
+		_mem_save_sequence_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.sequence, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.sequence));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sequence_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_wbint_QuerySequenceNumber(struct ndr_print *ndr, const char *name, int flags, const struct wbint_QuerySequenceNumber *r)
+{
+	ndr_print_struct(ndr, name, "wbint_QuerySequenceNumber");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "wbint_QuerySequenceNumber");
+		ndr->depth++;
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "wbint_QuerySequenceNumber");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "sequence", r->out.sequence);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "sequence", *r->out.sequence);
+		ndr->depth--;
+		ndr_print_NTSTATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
 static const struct ndr_interface_call wbint_calls[] = {
 	{
 		"wbint_Ping",
@@ -1368,6 +1429,14 @@ static const struct ndr_interface_call wbint_calls[] = {
 		(ndr_print_function_t) ndr_print_wbint_LookupUserGroups,
 		false,
 	},
+	{
+		"wbint_QuerySequenceNumber",
+		sizeof(struct wbint_QuerySequenceNumber),
+		(ndr_push_flags_fn_t) ndr_push_wbint_QuerySequenceNumber,
+		(ndr_pull_flags_fn_t) ndr_pull_wbint_QuerySequenceNumber,
+		(ndr_print_function_t) ndr_print_wbint_QuerySequenceNumber,
+		false,
+	},
 	{ NULL, 0, NULL, NULL, NULL, false }
 };
 
@@ -1397,7 +1466,7 @@ const struct ndr_interface_table ndr_table_wbint = {
 		NDR_WBINT_VERSION
 	},
 	.helpstring	= NDR_WBINT_HELPSTRING,
-	.num_calls	= 10,
+	.num_calls	= 11,
 	.calls		= wbint_calls,
 	.endpoints	= &wbint_endpoints,
 	.authservices	= &wbint_authservices

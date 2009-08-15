@@ -767,6 +767,10 @@ struct tevent_req *winbindd_getgroups_send(TALLOC_CTX *mem_ctx,
 NTSTATUS winbindd_getgroups_recv(struct tevent_req *req,
 				 struct winbindd_response *response);
 
+struct tevent_req *wb_seqnum_send(TALLOC_CTX *mem_ctx,
+				  struct tevent_context *ev,
+				  struct winbindd_domain *domain);
+NTSTATUS wb_seqnum_recv(struct tevent_req *req, uint32_t *seqnum);
 
 
 #endif /*  _WINBINDD_PROTO_H_  */

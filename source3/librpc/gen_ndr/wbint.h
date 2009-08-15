@@ -166,4 +166,13 @@ struct wbint_LookupUserGroups {
 
 };
 
+
+struct wbint_QuerySequenceNumber {
+	struct {
+		uint32_t *sequence;/* [ref] */
+		NTSTATUS result;
+	} out;
+
+};
+
 #endif /* _HEADER_wbint */
