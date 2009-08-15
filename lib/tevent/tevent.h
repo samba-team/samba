@@ -238,6 +238,14 @@ char *tevent_req_default_print(struct tevent_req *req, TALLOC_CTX *mem_ctx);
 
 char *tevent_req_print(TALLOC_CTX *mem_ctx, struct tevent_req *req);
 
+typedef bool (*tevent_req_cancel_fn)(struct tevent_req *);
+
+void tevent_req_set_cancel_fn(struct tevent_req *req, tevent_req_cancel_fn fn);
+
+bool _tevent_req_cancel(struct tevent_req *req, const char *location);
+#define tevent_req_cancel(req) \
+	_tevent_req_cancel(req, __location__)
+
 struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
 				      void *pstate,
 				      size_t state_size,
