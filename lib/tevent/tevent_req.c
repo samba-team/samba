@@ -398,3 +398,46 @@ void tevent_req_set_print_fn(struct tevent_req *req, tevent_req_print_fn fn)
 {
 	req->private_print = fn;
 }
+
+/**
+ * @brief This function sets a cancel function for the given request
+ * @param[in] req	The given request
+ * @param[in] fn	A pointer to the cancel function
+ *
+ * This function can be used to setup a cancel function for the given request.
+ * This will be triggered if the tevent_req_cancel() function was
+ * called on the given request.
+ *
+ */
+void tevent_req_set_cancel_fn(struct tevent_req *req, tevent_req_cancel_fn fn)
+{
+	req->private_cancel = fn;
+}
+
+/**
+ * @brief This function tries to cancel the given request
+ * @param[in] req	The given request
+ * @param[in] location	Automaticly filled with the __location__ macro
+ * 			via the tevent_req_cancel() macro. This is for debugging
+ * 			only!
+ * @retval		This function returns true is the request is cancelable.
+ * 			Otherwise false is returned.
+ *
+ * This function can be used to cancel the given request.
+ *
+ * It is only possible to cancel a request when the implementation
+ * has registered a cancel function via the tevent_req_set_cancel_fn().
+ *
+ * Note: Even if the function returns true, the caller need to wait
+ *       for the function to complete normally.
+ *       Only the _recv() function of the given request indicates
+ *       if the request was really canceled.
+ */
+bool _tevent_req_cancel(struct tevent_req *req, const char *location)
+{
+	if (req->private_cancel == NULL) {
+		return false;
+	}
+
+	return req->private_cancel(req);
+}
