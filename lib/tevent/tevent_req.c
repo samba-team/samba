@@ -256,6 +256,16 @@ struct tevent_req *tevent_req_post(struct tevent_req *req,
 	return req;
 }
 
+/**
+ * @brief This function destroys the attached private data
+ * @param[in] req	The request to poll
+ * @retval		The boolean form of "is in progress".
+ *
+ * This function can be used to ask if the given request
+ * is still in progress.
+ *
+ * This function is typically used by sync wrapper functions.
+ */
 bool tevent_req_is_in_progress(struct tevent_req *req)
 {
 	if (req->internal.state == TEVENT_REQ_IN_PROGRESS) {
@@ -283,6 +293,23 @@ void tevent_req_received(struct tevent_req *req)
 	req->internal.state = TEVENT_REQ_RECEIVED;
 }
 
+/**
+ * @brief This function destroys the attached private data
+ * @param[in] req	The request to poll
+ * @param[in] ev	The tevent_context to be used
+ * @retval		If a critical error has happened in the
+ * 			tevent loop layer false is returned.
+ * 			Otherwise true is returned.
+ * 			This is not the return value of the given request!
+ *
+ * This function can be used to actively poll for the
+ * given request to finish.
+ *
+ * Note: this should only be used if the given tevent context
+ *       was created by the caller, to avoid event loop nesting.
+ *
+ * This function is typically used by sync wrapper functions.
+ */
 bool tevent_req_poll(struct tevent_req *req,
 		     struct tevent_context *ev)
 {
@@ -356,6 +383,17 @@ void *_tevent_req_data(struct tevent_req *req)
 	return req->data;
 }
 
+/**
+ * @brief This function sets a print function for the given request
+ * @param[in] req	The given request
+ * @param[in] fn	A pointer to the print function
+ *
+ * This function can be used to setup a print function for the given request.
+ * This will be triggered if the tevent_req_print() function was
+ * called on the given request.
+ *
+ * Note: this function should only be used for debugging.
+ */
 void tevent_req_set_print_fn(struct tevent_req *req, tevent_req_print_fn fn)
 {
 	req->private_print = fn;
