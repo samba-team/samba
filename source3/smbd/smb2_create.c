@@ -409,15 +409,175 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	} else {
 		char *fname;
 		struct smb_filename *smb_fname = NULL;
+		struct smb2_create_blob *exta = NULL;
+		struct ea_list *ea_list = NULL;
+		struct smb2_create_blob *mxac = NULL;
+		NTTIME max_access_time = 0;
+		struct smb2_create_blob *secd = NULL;
+		struct security_descriptor *sec_desc = NULL;
+		struct smb2_create_blob *dhnq = NULL;
+		struct smb2_create_blob *dhnc = NULL;
+		struct smb2_create_blob *alsi = NULL;
+		uint64_t allocation_size = 0;
+		struct smb2_create_blob *twrp = NULL;
+		struct smb2_create_blob *qfid = NULL;
 
-		/* these are ignored for SMB2 */
-		in_create_options &= ~(0x10);/* NTCREATEX_OPTIONS_SYNC_ALERT */
-		in_create_options &= ~(0x20);/* NTCREATEX_OPTIONS_ASYNC_ALERT */
+		exta = smb2_create_blob_find(&in_context_blobs,
+					     SMB2_CREATE_TAG_EXTA);
+		mxac = smb2_create_blob_find(&in_context_blobs,
+					     SMB2_CREATE_TAG_MXAC);
+		secd = smb2_create_blob_find(&in_context_blobs,
+					     SMB2_CREATE_TAG_SECD);
+		dhnq = smb2_create_blob_find(&in_context_blobs,
+					     SMB2_CREATE_TAG_DHNQ);
+		dhnc = smb2_create_blob_find(&in_context_blobs,
+					     SMB2_CREATE_TAG_DHNC);
+		alsi = smb2_create_blob_find(&in_context_blobs,
+					     SMB2_CREATE_TAG_ALSI);
+		twrp = smb2_create_blob_find(&in_context_blobs,
+					     SMB2_CREATE_TAG_TWRP);
+		qfid = smb2_create_blob_find(&in_context_blobs,
+					     SMB2_CREATE_TAG_QFID);
 
 		fname = talloc_strdup(state, in_name);
 		if (tevent_req_nomem(fname, req)) {
 			return tevent_req_post(req, ev);
 		}
+
+		if (exta) {
+			if (dhnc) {
+				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+				return tevent_req_post(req, ev);
+			}
+
+			/* TODO */
+			tevent_req_nterror(req, NT_STATUS_EAS_NOT_SUPPORTED);
+			return tevent_req_post(req, ev);
+		}
+
+		if (mxac) {
+			if (dhnc) {
+				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+				return tevent_req_post(req, ev);
+			}
+
+			if (mxac->data.length == 0) {
+				max_access_time = 0;
+			} else if (mxac->data.length == 8) {
+				max_access_time = BVAL(mxac->data.data, 0);
+			} else {
+				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+				return tevent_req_post(req, ev);
+			}
+		}
+
+		if (secd) {
+			enum ndr_err_code ndr_err;
+
+			if (dhnc) {
+				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+				return tevent_req_post(req, ev);
+			}
+
+			sec_desc = talloc_zero(state, struct security_descriptor);
+			if (tevent_req_nomem(sec_desc, req)) {
+				return tevent_req_post(req, ev);
+			}
+
+			ndr_err = ndr_pull_struct_blob(&secd->data,
+				sec_desc, NULL, sec_desc,
+				(ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				DEBUG(2,("ndr_pull_security_descriptor failed: %s\n",
+					 ndr_errstr(ndr_err)));
+				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+				return tevent_req_post(req, ev);
+			}
+		}
+
+		if (dhnq) {
+			if (dhnc) {
+				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+				return tevent_req_post(req, ev);
+			}
+
+			if (dhnq->data.length != 16) {
+				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+				return tevent_req_post(req, ev);
+			}
+			/*
+			 * we don't support durable handles yet
+			 * and have to ignore this
+			 */
+		}
+
+		if (dhnc) {
+			if (dhnc->data.length != 16) {
+				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+				return tevent_req_post(req, ev);
+			}
+			/* we don't support durable handles yet */
+			tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+			return tevent_req_post(req, ev);
+		}
+
+		if (alsi) {
+			if (dhnc) {
+				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+				return tevent_req_post(req, ev);
+			}
+
+			if (alsi->data.length != 8) {
+				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+				return tevent_req_post(req, ev);
+			}
+			allocation_size = BVAL(alsi->data.data, 0);
+		}
+
+		if (twrp) {
+			NTTIME nttime;
+			time_t t;
+			struct tm *tm;
+
+			if (dhnc) {
+				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+				return tevent_req_post(req, ev);
+			}
+
+			if (twrp->data.length != 8) {
+				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+				return tevent_req_post(req, ev);
+			}
+
+			nttime = BVAL(twrp->data.data, 0);
+			t = nt_time_to_unix(nttime);
+			tm = gmtime(&t);
+
+			TALLOC_FREE(fname);
+			fname = talloc_asprintf(state,
+					"@GMT-%04u.%02u.%02u-%02u.%02u.%02u\\%s",
+					tm->tm_year + 1900,
+					tm->tm_mon + 1,
+					tm->tm_mday,
+					tm->tm_hour,
+					tm->tm_min,
+					tm->tm_sec,
+					in_name);
+			if (tevent_req_nomem(fname, req)) {
+				return tevent_req_post(req, ev);
+			}
+		}
+
+		if (qfid) {
+			if (qfid->data.length != 0) {
+				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+				return tevent_req_post(req, ev);
+			}
+		}
+
+		/* these are ignored for SMB2 */
+		in_create_options &= ~(0x10);/* NTCREATEX_OPTIONS_SYNC_ALERT */
+		in_create_options &= ~(0x20);/* NTCREATEX_OPTIONS_ASYNC_ALERT */
 
 		/* convert '\\' into '/' */
 		status = check_path_syntax(fname);
@@ -448,16 +608,65 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					     in_create_options,
 					     in_file_attributes,
 					     0, /* oplock_request */
-					     0, /* allocation_size */
-					     NULL, /* security_descriptor */
-					     NULL, /* ea_list */
+					     allocation_size,
+					     sec_desc,
+					     ea_list,
 					     &result,
 					     &info);
 		if (!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);
 			return tevent_req_post(req, ev);
 		}
-		sbuf = smb_fname->st;
+
+		if (mxac) {
+			NTTIME last_write_time;
+
+			unix_timespec_to_nt_time(&last_write_time,
+						 result->fsp_name->st.st_ex_mtime);
+			if (last_write_time != max_access_time) {
+				uint8_t p[8];
+				uint32_t max_access_granted;
+				DATA_BLOB blob = data_blob_const(p, sizeof(p));
+
+				status = smbd_check_open_rights(smbreq->conn,
+							result->fsp_name,
+							SEC_FLAG_MAXIMUM_ALLOWED,
+							&max_access_granted);
+
+				SIVAL(p, 0, NT_STATUS_V(status));
+				SIVAL(p, 4, max_access_granted);
+
+				status = smb2_create_blob_add(state,
+							&out_context_blobs,
+							SMB2_CREATE_TAG_MXAC,
+							blob);
+				if (!NT_STATUS_IS_OK(status)) {
+					tevent_req_nterror(req, status);
+					return tevent_req_post(req, ev);
+				}
+			}
+		}
+
+		if (qfid) {
+			uint8_t p[32];
+			DATA_BLOB blob = data_blob_const(p, sizeof(p));
+
+			ZERO_STRUCT(p);
+
+			/* TODO: maybe use result->file_id */
+			SIVAL(p, 0, result->fsp_name->st.st_ex_ino);/* FileIndexLow */
+			SIVAL(p, 4, result->fsp_name->st.st_ex_dev);/* FileIndexHigh */
+
+			status = smb2_create_blob_add(state, &out_context_blobs,
+						      SMB2_CREATE_TAG_QFID,
+						      blob);
+			if (!NT_STATUS_IS_OK(status)) {
+				tevent_req_nterror(req, status);
+				return tevent_req_post(req, ev);
+			}
+		}
+
+		sbuf = result->fsp_name->st;
 	}
 
 	smb2req->compat_chain_fsp = smbreq->chain_fsp;
