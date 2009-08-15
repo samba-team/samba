@@ -52,21 +52,22 @@ class Ldb(ldb.Ldb):
     not necessarily the Sam database. For Sam-specific helper 
     functions see samdb.py.
     """
-    def __init__(self, url=None, session_info=None, credentials=None, 
-                 modules_dir=None, lp=None, options=None):
-        """Open a Samba Ldb file. 
+    def __init__(self, url=None, lp=None, modules_dir=None, session_info=None,
+                 credentials=None, flags=0, options=None):
+        """Opens a Samba Ldb file.
 
         :param url: Optional LDB URL to open
+        :param lp: Optional loadparm object
+        :param modules_dir: Optional modules directory
         :param session_info: Optional session information
         :param credentials: Optional credentials, defaults to anonymous.
-        :param modules_dir: Modules directory, if not the default.
-        :param lp: Loadparm object, optional.
+        :param flags: Optional LDB flags
+        :param options: Additional options (optional)
 
         This is different from a regular Ldb file in that the Samba-specific
         modules-dir is used by default and that credentials and session_info 
         can be passed through (required by some modules).
         """
-        super(Ldb, self).__init__(options=options)
 
         if modules_dir is not None:
             self.set_modules_dir(modules_dir)
@@ -75,23 +76,33 @@ class Ldb(ldb.Ldb):
         elif lp is not None:
             self.set_modules_dir(os.path.join(lp.get("modules dir"), "ldb"))
 
-        if credentials is not None:
-            self.set_credentials(credentials)
-
         if session_info is not None:
             self.set_session_info(session_info)
 
-        glue.ldb_register_samba_handlers(self)
+        if credentials is not None:
+            self.set_credentials(credentials)
 
         if lp is not None:
             self.set_loadparm(lp)
 
+        # This must be done before we load the schema, as these handlers for
+        # objectSid and objectGUID etc must take precedence over the 'binary
+        # attribute' declaration in the schema
+        glue.ldb_register_samba_handlers(self)
+
+        # TODO set debug
         def msg(l,text):
             print text
         #self.set_debug(msg)
 
-        if url is not None:
-            self.connect(url, options=options)
+        glue.ldb_set_utf8_casefold(self)
+
+        # Allow admins to force non-sync ldb for all databases
+        nosync_p = lp.get("nosync", "ldb")
+        if nosync_p is not None and nosync_p == true:
+                flags |= FLG_NOSYNC
+
+        self.connect(url, flags, options)
 
     def set_credentials(self, credentials):
         glue.ldb_set_credentials(self, credentials)

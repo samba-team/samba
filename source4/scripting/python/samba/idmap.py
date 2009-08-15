@@ -32,23 +32,23 @@ class IDmapDB(samba.Ldb):
     TYPE_GID = 2
     TYPE_BOTH = 3
 
-    def __init__(self, url=None, session_info=None, credentials=None,
-                 modules_dir=None, lp=None):
-        """Open the IDmap Database.
-
-        :param url: URL of the database.
+    def __init__(self, url=None, lp=None, modules_dir=None, session_info=None,
+                 credentials=None, flags=0, options=None):
+        """Opens the IDmap Database.
+        For parameter meanings see the super class (samba.Ldb)
         """
+
         self.lp = lp
+        if url is None:
+                url = lp.get("idmap database")
 
-        super(IDmapDB, self).__init__(session_info=session_info, credentials=credentials,
-                                    modules_dir=modules_dir, lp=lp)
-        if url:
-            self.connect(url)
-        else:
-            self.connect(lp.get("idmap database"))
+        super(IDmapDB, self).__init__(url=url, lp=lp, modules_dir=modules_dir,
+                session_info=session_info, credentials=credentials, flags=flags,
+                options=options)
 
-    def connect(self, url):
-        super(IDmapDB, self).connect(self.lp.private_path(url))
+    def connect(self, url=None, flags=0, options=None):
+        super(IDmapDB, self).connect(url=self.lp.private_path(url), flags=flags,
+                options=options)
 
     def setup_name_mapping(self, sid, type, unixid):
         """Setup a mapping between a sam name and a unix name.

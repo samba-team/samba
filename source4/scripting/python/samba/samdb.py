@@ -35,23 +35,25 @@ __docformat__ = "restructuredText"
 class SamDB(samba.Ldb):
     """The SAM database."""
 
-    def __init__(self, url=None, session_info=None, credentials=None, 
-                 modules_dir=None, lp=None, options=None):
-        """Open the Sam Database.
-
-        :param url: URL of the database.
+    def __init__(self, url=None, lp=None, modules_dir=None, session_info=None,
+                 credentials=None, flags=0, options=None):
+        """Opens the Sam Database.
+        For parameter meanings see the super class (samba.Ldb)
         """
-        self.lp = lp
-        super(SamDB, self).__init__(session_info=session_info, credentials=credentials,
-                                    modules_dir=modules_dir, lp=lp, options=options)
-        glue.dsdb_set_global_schema(self)
-        if url:
-            self.connect(url)
-        else:
-            self.connect(lp.get("sam database"))
 
-    def connect(self, url):
-        super(SamDB, self).connect(self.lp.private_path(url))
+        self.lp = lp
+        if url is None:
+                url = lp.get("sam database")
+
+        super(SamDB, self).__init__(url=url, lp=lp, modules_dir=modules_dir,
+                session_info=session_info, credentials=credentials, flags=flags,
+                options=options)
+
+        glue.dsdb_set_global_schema(self)
+
+    def connect(self, url=None, flags=0, options=None):
+        super(SamDB, self).connect(url=self.lp.private_path(url), flags=flags,
+                options=options)
 
     def enable_account(self, user_dn):
         """Enable an account.
@@ -73,7 +75,6 @@ replace: userAccountControl
 userAccountControl: %u
 """ % (user_dn, userAccountControl)
         self.modify_ldif(mod)
-
         
     def force_password_change_at_next_login(self, user_dn):
         """Force a password change at next login
@@ -89,8 +90,9 @@ pwdLastSet: 0
         self.modify_ldif(mod)
 
     def domain_dn(self):
-        # find the DNs for the domain and the domain users group
-        res = self.search("", scope=ldb.SCOPE_BASE, 
+        # find the DNs for the domain
+        res = self.search(base="",
+                          scope=ldb.SCOPE_BASE,
                           expression="(defaultNamingContext=*)", 
                           attrs=["defaultNamingContext"])
         assert(len(res) == 1 and res[0]["defaultNamingContext"] is not None)
@@ -106,9 +108,7 @@ pwdLastSet: 0
         # connect to the sam 
         self.transaction_start()
         try:
-            domain_dn = self.domain_dn()
-            assert(domain_dn is not None)
-            user_dn = "CN=%s,CN=Users,%s" % (username, domain_dn)
+            user_dn = "CN=%s,CN=Users,%s" % (username, self.domain_dn())
 
             #
             #  the new user record. note the reliance on the samdb module to 
@@ -156,17 +156,8 @@ pwdLastSet: 0
         # connect to the sam 
         self.transaction_start()
         try:
-            # find the DNs for the domain
-            res = self.search("", scope=ldb.SCOPE_BASE, 
-                              expression="(defaultNamingContext=*)", 
-                              attrs=["defaultNamingContext"])
-            assert(len(res) == 1 and res[0]["defaultNamingContext"] is not None)
-            domain_dn = res[0]["defaultNamingContext"][0]
-            assert(domain_dn is not None)
-
-            res = self.search(domain_dn, scope=ldb.SCOPE_SUBTREE, 
-                              expression=filter,
-                              attrs=[])
+            res = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
+                              expression=filter, attrs=[])
             assert(len(res) == 1)
             user_dn = res[0].dn
 
