@@ -65,6 +65,15 @@ struct tevent_req {
 	tevent_req_print_fn private_print;
 
 	/**
+	 * @brief A function to cancel the request
+	 *
+	 * The implementation might want to set a function
+	 * that is called when the tevent_req_cancel() function
+	 * was called.
+	 */
+	tevent_req_cancel_fn private_cancel;
+
+	/**
 	 * @brief Internal state of the request
 	 *
 	 * Callers should only access this via functions and never directly.
@@ -98,6 +107,16 @@ struct tevent_req {
 		 * This for debugging only.
 		 */
 		const char *finish_location;
+
+		/**
+		 * @brief The location where the request was canceled
+		 *
+		 * This uses the __location__ macro via the
+		 * tevent_req_cancel() macro.
+		 *
+		 * This for debugging only.
+		 */
+		const char *cancel_location;
 
 		/**
 		 * @brief The external state - will be queried by the caller
