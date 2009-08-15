@@ -234,6 +234,9 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			   uint32_t *_mode,
 			   long *_prev_offset);
 
+void smbd_notify_cancel_by_smbreq(struct smbd_server_connection *sconn,
+				  const struct smb_request *smbreq);
+
 void smbd_server_connection_terminate_ex(struct smbd_server_connection *sconn,
 					 const char *reason,
 					 const char *location);

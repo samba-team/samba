@@ -317,6 +317,26 @@ void remove_pending_change_notify_requests_by_mid(uint16 mid)
 	change_notify_remove_request(map->req);
 }
 
+void smbd_notify_cancel_by_smbreq(struct smbd_server_connection *sconn,
+				  const struct smb_request *smbreq)
+{
+	struct notify_mid_map *map;
+
+	for (map = sconn->smb1.notify_mid_maps; map; map = map->next) {
+		if (map->req->req == smbreq) {
+			break;
+		}
+	}
+
+	if (map == NULL) {
+		return;
+	}
+
+	change_notify_reply(map->req->fsp->conn, map->req->req,
+			    NT_STATUS_CANCELLED, 0, NULL, map->req->reply_fn);
+	change_notify_remove_request(map->req);
+}
+
 /****************************************************************************
  Delete entries by fnum from the change notify pending queue.
 *****************************************************************************/
