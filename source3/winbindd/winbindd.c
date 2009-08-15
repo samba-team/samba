@@ -456,7 +456,6 @@ static struct winbindd_dispatch_table {
 	{ WINBINDD_LIST_GROUPS, winbindd_list_groups, "LIST_GROUPS" },
 	{ WINBINDD_LIST_TRUSTDOM, winbindd_list_trusted_domains,
 	  "LIST_TRUSTDOM" },
-	{ WINBINDD_SHOW_SEQUENCE, winbindd_show_sequence, "SHOW_SEQUENCE" },
 
 	/* SID related functions */
 
@@ -534,6 +533,8 @@ static struct winbindd_async_dispatch_table async_nonpriv_table[] = {
 	  winbindd_getuserdomgroups_send, winbindd_getuserdomgroups_recv },
 	{ WINBINDD_GETGROUPS, "GETGROUPS",
 	  winbindd_getgroups_send, winbindd_getgroups_recv },
+	{ WINBINDD_SHOW_SEQUENCE, "SHOW_SEQUENCE",
+	  winbindd_show_sequence_send, winbindd_show_sequence_recv },
 
 	{ 0, NULL, NULL, NULL }
 };
