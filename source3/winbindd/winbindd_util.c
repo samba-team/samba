@@ -1283,7 +1283,7 @@ NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 
 NTSTATUS normalize_name_map(TALLOC_CTX *mem_ctx,
 			     struct winbindd_domain *domain,
-			     char *name,
+			     const char *name,
 			     char **normalized)
 {
 	NTSTATUS nt_status;
