@@ -5968,6 +5968,53 @@ static bool run_local_rbtree(int dummy)
 	return ret;
 }
 
+struct talloc_dict_test {
+	int content;
+};
+
+static int talloc_dict_traverse_fn(DATA_BLOB key, void *data, void *priv)
+{
+	int *count = (int *)priv;
+	*count += 1;
+	return 0;
+}
+
+static bool run_local_talloc_dict(int dummy)
+{
+	struct talloc_dict *dict;
+	struct talloc_dict_test *t;
+	int key, count;
+
+	dict = talloc_dict_init(talloc_tos());
+	if (dict == NULL) {
+		return false;
+	}
+
+	t = talloc(talloc_tos(), struct talloc_dict_test);
+	if (t == NULL) {
+		return false;
+	}
+
+	key = 1;
+	t->content = 1;
+	if (!talloc_dict_set(dict, data_blob_const(&key, sizeof(key)), t)) {
+		return false;
+	}
+
+	count = 0;
+	if (talloc_dict_traverse(dict, talloc_dict_traverse_fn, &count) != 0) {
+		return false;
+	}
+
+	if (count != 1) {
+		return false;
+	}
+
+	TALLOC_FREE(dict);
+
+	return true;
+}
+
 /* Split a path name into filename and stream name components. Canonicalise
  * such that an implicit $DATA token is always explicit.
  *
@@ -6516,6 +6563,7 @@ static struct {
 	{ "STREAMERROR", run_streamerror },
 	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
 	{ "LOCAL-GENCACHE", run_local_gencache, 0},
+	{ "LOCAL-TALLOC-DICT", run_local_talloc_dict, 0},
 	{ "LOCAL-BASE64", run_local_base64, 0},
 	{ "LOCAL-RBTREE", run_local_rbtree, 0},
 	{ "LOCAL-MEMCACHE", run_local_memcache, 0},
