@@ -181,9 +181,8 @@ static bool fill_passdb_alias_grmem(struct winbindd_domain *domain,
 
 /* Fill a grent structure from various other information */
 
-static bool fill_grent(TALLOC_CTX *mem_ctx, struct winbindd_gr *gr,
-		       const char *dom_name,
-		       char *gr_name, gid_t unix_gid)
+bool fill_grent(TALLOC_CTX *mem_ctx, struct winbindd_gr *gr,
+		const char *dom_name, const char *gr_name, gid_t unix_gid)
 {
 	fstring full_group_name;
 	char *mapped_name = NULL;
