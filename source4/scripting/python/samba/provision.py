@@ -1314,7 +1314,7 @@ class ProvisionBackend(object):
             except:
                 pass
             
-            raise("Warning: Another slapd Instance seems already running on this host, listening to " + ldapi_uri + ". Please shut it down before you continue. ")
+            raise("Warning: Another slapd Instance seems already running on this host, listening to " + self.ldapi_uri + ". Please shut it down before you continue. ")
         
         except LdbError, e:
             pass
