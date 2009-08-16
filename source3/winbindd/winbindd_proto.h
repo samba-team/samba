@@ -811,4 +811,10 @@ NTSTATUS wb_getgrsid_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			  const char **domname, const char **name, gid_t *gid,
 			  struct talloc_dict **members);
 
+struct tevent_req *winbindd_getgrgid_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct winbindd_request *request);
+NTSTATUS winbindd_getgrgid_recv(struct tevent_req *req,
+				struct winbindd_response *response);
+
 #endif /*  _WINBINDD_PROTO_H_  */

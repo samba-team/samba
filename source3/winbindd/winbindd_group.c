@@ -1007,57 +1007,6 @@ static void winbindd_getgrsid( struct winbindd_cli_state *state, const DOM_SID g
 				  getgrsid_lookupsid_recv, s );
 }
 
-
-static void getgrgid_recv(void *private_data, bool success, const char *sid)
-{
-	struct winbindd_cli_state *state = talloc_get_type_abort(private_data, struct winbindd_cli_state);
-	enum lsa_SidType name_type;
-	DOM_SID group_sid;
-
-	if (success) {
-		DEBUG(10,("getgrgid_recv: gid %lu has sid %s\n",
-			  (unsigned long)(state->request->data.gid), sid));
-
-		if (!string_to_sid(&group_sid, sid)) {
-			DEBUG(1,("getgrgid_recv: Could not convert sid %s "
-				"from string\n", sid));
-			request_error(state);
-			return;
-		}
-
-		winbindd_getgrsid(state, group_sid);
-		return;
-	}
-
-	/* Ok, this might be "ours", i.e. an alias */
-	if (pdb_gid_to_sid(state->request->data.gid, &group_sid) &&
-	    lookup_sid(state->mem_ctx, &group_sid, NULL, NULL, &name_type) &&
-	    (name_type == SID_NAME_ALIAS)) {
-		/* Hey, got an alias */
-		DEBUG(10,("getgrgid_recv: we have an alias with gid %lu and sid %s\n",
-			  (unsigned long)(state->request->data.gid), sid));
-		winbindd_getgrsid(state, group_sid);
-		return;
-	}
-
-	DEBUG(1, ("could not convert gid %lu to sid\n",
-		  (unsigned long)state->request->data.gid));
-	request_error(state);
-}
-
-/* Return a group structure from a gid number */
-void winbindd_getgrgid(struct winbindd_cli_state *state)
-{
-	gid_t gid = state->request->data.gid;
-
-	DEBUG(3, ("[%5lu]: getgrgid %lu\n",
-		  (unsigned long)state->pid,
-		  (unsigned long)gid));
-
-	/* always use the async interface */
-	winbindd_gid2sid_async(state->mem_ctx, gid, getgrgid_recv, state);
-}
-
 /*
  * set/get/endgrent functions
  */
