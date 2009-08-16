@@ -157,3 +157,41 @@ NTSTATUS _wbint_QuerySequenceNumber(pipes_struct *p,
 
 	return domain->methods->sequence_number(domain, r->out.sequence);
 }
+
+NTSTATUS _wbint_LookupGroupMembers(pipes_struct *p,
+				   struct wbint_LookupGroupMembers *r)
+{
+	struct winbindd_domain *domain = wb_child_domain();
+	uint32_t i, num_names;
+	struct dom_sid *sid_mem;
+	char **names;
+	uint32_t *name_types;
+	NTSTATUS status;
+
+	if (domain == NULL) {
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
+
+	status = domain->methods->lookup_groupmem(
+		domain, p->mem_ctx, r->in.sid,
+		&num_names, &sid_mem, &names, &name_types);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	r->out.members->num_members = num_names;
+	r->out.members->members = talloc_array(
+		r->out.members, struct wbint_GroupMember, num_names);
+	if (r->out.members->members == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<num_names; i++) {
+		struct wbint_GroupMember *m = &r->out.members->members[i];
+		sid_copy(&m->sid, &sid_mem[i]);
+		m->name = talloc_move(r->out.members->members, &names[i]);
+		m->type = (enum lsa_SidType)name_types[i];
+	}
+
+	return NT_STATUS_OK;
+}

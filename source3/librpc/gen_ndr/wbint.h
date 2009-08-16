@@ -28,6 +28,17 @@ struct wbint_RidArray {
 	uint32_t *rids;/* [size_is(num_rids)] */
 }/* [public] */;
 
+struct wbint_GroupMember {
+	struct dom_sid sid;
+	const char *name;/* [unique,charset(UTF8)] */
+	enum lsa_SidType type;
+}/* [public] */;
+
+struct wbint_GroupMembers {
+	int32_t num_members;
+	struct wbint_GroupMember *members;/* [size_is(num_members)] */
+}/* [public] */;
+
 
 struct wbint_Ping {
 	struct {
@@ -170,6 +181,20 @@ struct wbint_LookupUserGroups {
 struct wbint_QuerySequenceNumber {
 	struct {
 		uint32_t *sequence;/* [ref] */
+		NTSTATUS result;
+	} out;
+
+};
+
+
+struct wbint_LookupGroupMembers {
+	struct {
+		struct dom_sid *sid;/* [ref] */
+		enum lsa_SidType type;
+	} in;
+
+	struct {
+		struct wbint_GroupMembers *members;/* [ref] */
 		NTSTATUS result;
 	} out;
 

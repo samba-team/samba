@@ -92,4 +92,21 @@ interface wbint
     NTSTATUS wbint_QuerySequenceNumber(
 	[out] uint32 *sequence
 	);
+
+    typedef [public] struct {
+	dom_sid sid;
+	[string,charset(UTF8)] char *name;
+	lsa_SidType type;
+    } wbint_GroupMember;
+
+    typedef [public] struct {
+	int num_members;
+	[size_is(num_members)] wbint_GroupMember members[];
+    } wbint_GroupMembers;
+
+    NTSTATUS wbint_LookupGroupMembers(
+	[in] dom_sid *sid,
+	[in] lsa_SidType type,
+	[out] wbint_GroupMembers *members
+	);
 }

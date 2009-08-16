@@ -790,5 +790,12 @@ struct tevent_req *winbindd_show_sequence_send(TALLOC_CTX *mem_ctx,
 NTSTATUS winbindd_show_sequence_recv(struct tevent_req *req,
 				     struct winbindd_response *response);
 
+struct tevent_req *wb_group_members_send(TALLOC_CTX *mem_ctx,
+					 struct tevent_context *ev,
+					 const struct dom_sid *sid,
+					 enum lsa_SidType type,
+					 int max_depth);
+NTSTATUS wb_group_members_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			       struct talloc_dict **members);
 
 #endif /*  _WINBINDD_PROTO_H_  */

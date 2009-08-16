@@ -33,7 +33,9 @@ extern const struct ndr_interface_table ndr_table_wbint;
 
 #define NDR_WBINT_QUERYSEQUENCENUMBER (0x0a)
 
-#define NDR_WBINT_CALL_COUNT (11)
+#define NDR_WBINT_LOOKUPGROUPMEMBERS (0x0b)
+
+#define NDR_WBINT_CALL_COUNT (12)
 enum ndr_err_code ndr_push_wbint_userinfo(struct ndr_push *ndr, int ndr_flags, const struct wbint_userinfo *r);
 enum ndr_err_code ndr_pull_wbint_userinfo(struct ndr_pull *ndr, int ndr_flags, struct wbint_userinfo *r);
 void ndr_print_wbint_userinfo(struct ndr_print *ndr, const char *name, const struct wbint_userinfo *r);
@@ -43,6 +45,12 @@ void ndr_print_wbint_SidArray(struct ndr_print *ndr, const char *name, const str
 enum ndr_err_code ndr_push_wbint_RidArray(struct ndr_push *ndr, int ndr_flags, const struct wbint_RidArray *r);
 enum ndr_err_code ndr_pull_wbint_RidArray(struct ndr_pull *ndr, int ndr_flags, struct wbint_RidArray *r);
 void ndr_print_wbint_RidArray(struct ndr_print *ndr, const char *name, const struct wbint_RidArray *r);
+enum ndr_err_code ndr_push_wbint_GroupMember(struct ndr_push *ndr, int ndr_flags, const struct wbint_GroupMember *r);
+enum ndr_err_code ndr_pull_wbint_GroupMember(struct ndr_pull *ndr, int ndr_flags, struct wbint_GroupMember *r);
+void ndr_print_wbint_GroupMember(struct ndr_print *ndr, const char *name, const struct wbint_GroupMember *r);
+enum ndr_err_code ndr_push_wbint_GroupMembers(struct ndr_push *ndr, int ndr_flags, const struct wbint_GroupMembers *r);
+enum ndr_err_code ndr_pull_wbint_GroupMembers(struct ndr_pull *ndr, int ndr_flags, struct wbint_GroupMembers *r);
+void ndr_print_wbint_GroupMembers(struct ndr_print *ndr, const char *name, const struct wbint_GroupMembers *r);
 void ndr_print_wbint_Ping(struct ndr_print *ndr, const char *name, int flags, const struct wbint_Ping *r);
 void ndr_print_wbint_LookupSid(struct ndr_print *ndr, const char *name, int flags, const struct wbint_LookupSid *r);
 void ndr_print_wbint_LookupName(struct ndr_print *ndr, const char *name, int flags, const struct wbint_LookupName *r);
@@ -54,4 +62,5 @@ void ndr_print_wbint_QueryUser(struct ndr_print *ndr, const char *name, int flag
 void ndr_print_wbint_LookupUserAliases(struct ndr_print *ndr, const char *name, int flags, const struct wbint_LookupUserAliases *r);
 void ndr_print_wbint_LookupUserGroups(struct ndr_print *ndr, const char *name, int flags, const struct wbint_LookupUserGroups *r);
 void ndr_print_wbint_QuerySequenceNumber(struct ndr_print *ndr, const char *name, int flags, const struct wbint_QuerySequenceNumber *r);
+void ndr_print_wbint_LookupGroupMembers(struct ndr_print *ndr, const char *name, int flags, const struct wbint_LookupGroupMembers *r);
 #endif /* _HEADER_NDR_wbint */

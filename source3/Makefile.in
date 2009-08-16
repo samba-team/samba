@@ -1167,6 +1167,7 @@ WINBINDD_OBJ1 = \
 		winbindd/wb_gettoken.o \
 		winbindd/wb_seqnum.o \
 		winbindd/wb_seqnums.o \
+		winbindd/wb_group_members.o \
 		winbindd/winbindd_lookupsid.o \
 		winbindd/winbindd_lookupname.o \
 		winbindd/winbindd_sid_to_uid.o \
