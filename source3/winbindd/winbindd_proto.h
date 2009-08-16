@@ -798,4 +798,12 @@ struct tevent_req *wb_group_members_send(TALLOC_CTX *mem_ctx,
 NTSTATUS wb_group_members_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			       struct talloc_dict **members);
 
+struct tevent_req *wb_getgrsid_send(TALLOC_CTX *mem_ctx,
+				    struct tevent_context *ev,
+				    const struct dom_sid *group_sid,
+				    int max_nesting);
+NTSTATUS wb_getgrsid_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			  const char **domname, const char **name, gid_t *gid,
+			  struct talloc_dict **members);
+
 #endif /*  _WINBINDD_PROTO_H_  */
