@@ -435,7 +435,6 @@ static struct winbindd_dispatch_table {
 
 	/* Group functions */
 
-	{ WINBINDD_GETGRNAM, winbindd_getgrnam, "GETGRNAM" },
 	{ WINBINDD_SETGRENT, winbindd_setgrent, "SETGRENT" },
 	{ WINBINDD_ENDGRENT, winbindd_endgrent, "ENDGRENT" },
 	{ WINBINDD_GETGRENT, winbindd_getgrent, "GETGRENT" },
@@ -536,6 +535,8 @@ static struct winbindd_async_dispatch_table async_nonpriv_table[] = {
 	  winbindd_show_sequence_send, winbindd_show_sequence_recv },
 	{ WINBINDD_GETGRGID, "GETGRGID",
 	  winbindd_getgrgid_send, winbindd_getgrgid_recv },
+	{ WINBINDD_GETGRNAM, "GETGRNAM",
+	  winbindd_getgrnam_send, winbindd_getgrnam_recv },
 
 	{ 0, NULL, NULL, NULL }
 };

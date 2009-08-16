@@ -817,4 +817,10 @@ struct tevent_req *winbindd_getgrgid_send(TALLOC_CTX *mem_ctx,
 NTSTATUS winbindd_getgrgid_recv(struct tevent_req *req,
 				struct winbindd_response *response);
 
+struct tevent_req *winbindd_getgrnam_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct winbindd_request *request);
+NTSTATUS winbindd_getgrnam_recv(struct tevent_req *req,
+				struct winbindd_response *response);
+
 #endif /*  _WINBINDD_PROTO_H_  */
