@@ -380,6 +380,9 @@ enum winbindd_result winbindd_dual_getuserdomgroups(struct winbindd_domain *doma
 bool get_sam_group_entries(struct getent_state *ent);
 bool fill_grent(TALLOC_CTX *mem_ctx, struct winbindd_gr *gr,
 		const char *dom_name, const char *gr_name, gid_t unix_gid);
+NTSTATUS winbindd_print_groupmembers(struct talloc_dict *members,
+				     TALLOC_CTX *mem_ctx,
+				     int *num_members, char **result);
 
 
 /* The following definitions come from winbindd/winbindd_idmap.c  */

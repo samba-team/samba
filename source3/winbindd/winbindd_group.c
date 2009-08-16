@@ -1771,4 +1771,76 @@ enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
 	return WINBINDD_OK;
 }
 
+struct getgr_countmem {
+	int num;
+	size_t len;
+};
 
+static int getgr_calc_memberlen(DATA_BLOB key, void *data, void *priv)
+{
+	struct wbint_GroupMember *m = talloc_get_type_abort(
+		data, struct wbint_GroupMember);
+	struct getgr_countmem *buf = (struct getgr_countmem *)priv;
+
+	buf->num += 1;
+	buf->len += strlen(m->name) + 1;
+	return 0;
+}
+
+struct getgr_stringmem {
+	size_t ofs;
+	char *buf;
+};
+
+static int getgr_unparse_members(DATA_BLOB key, void *data, void *priv)
+{
+	struct wbint_GroupMember *m = talloc_get_type_abort(
+		data, struct wbint_GroupMember);
+	struct getgr_stringmem *buf = (struct getgr_stringmem *)priv;
+	int len;
+
+	len = strlen(m->name);
+
+	memcpy(buf->buf + buf->ofs, m->name, len);
+	buf->ofs += len;
+	buf->buf[buf->ofs] = ',';
+	buf->ofs += 1;
+	return 0;
+}
+
+NTSTATUS winbindd_print_groupmembers(struct talloc_dict *members,
+				     TALLOC_CTX *mem_ctx,
+				     int *num_members, char **result)
+{
+	struct getgr_countmem c;
+	struct getgr_stringmem m;
+	int res;
+
+	c.num = 0;
+	c.len = 0;
+
+	res = talloc_dict_traverse(members, getgr_calc_memberlen, &c);
+	if (res != 0) {
+		DEBUG(5, ("talloc_dict_traverse failed\n"));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	m.ofs = 0;
+	m.buf = talloc_array(mem_ctx, char, c.len);
+	if (m.buf == NULL) {
+		DEBUG(5, ("talloc failed\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	res = talloc_dict_traverse(members, getgr_unparse_members, &m);
+	if (res != 0) {
+		DEBUG(5, ("talloc_dict_traverse failed\n"));
+		TALLOC_FREE(m.buf);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	m.buf[c.len-1] = '\0';
+
+	*num_members = c.num;
+	*result = m.buf;
+	return NT_STATUS_OK;
+}
