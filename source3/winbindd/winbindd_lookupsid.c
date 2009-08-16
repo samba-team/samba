@@ -32,7 +32,8 @@ static void winbindd_lookupsid_done(struct tevent_req *subreq);
 
 struct tevent_req *winbindd_lookupsid_send(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,
-					  struct winbindd_request *request)
+					   struct winbindd_cli_state *cli,
+					   struct winbindd_request *request)
 {
 	struct tevent_req *req, *subreq;
 	struct winbindd_lookupsid_state *state;

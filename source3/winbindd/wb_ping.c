@@ -25,6 +25,7 @@ struct wb_ping_state {
 };
 
 struct tevent_req *wb_ping_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+				struct winbindd_cli_state *cli,
 				struct winbindd_request *request)
 {
 	struct tevent_req *req;

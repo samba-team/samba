@@ -30,6 +30,7 @@ static void winbindd_uid_to_sid_done(struct tevent_req *subreq);
 
 struct tevent_req *winbindd_uid_to_sid_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
+					    struct winbindd_cli_state *cli,
 					    struct winbindd_request *request)
 {
 	struct tevent_req *req, *subreq;

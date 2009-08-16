@@ -30,6 +30,7 @@ static void winbindd_getsidaliases_done(struct tevent_req *subreq);
 
 struct tevent_req *winbindd_getsidaliases_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
+					       struct winbindd_cli_state *cli,
 					       struct winbindd_request *request)
 {
 	struct tevent_req *req, *subreq;

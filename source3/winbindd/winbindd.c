@@ -499,6 +499,7 @@ struct winbindd_async_dispatch_table {
 	const char *cmd_name;
 	struct tevent_req *(*send_req)(TALLOC_CTX *mem_ctx,
 				       struct tevent_context *ev,
+				       struct winbindd_cli_state *cli,
 				       struct winbindd_request *request);
 	NTSTATUS (*recv_req)(struct tevent_req *req,
 			     struct winbindd_response *presp);
@@ -570,7 +571,7 @@ static void process_request(struct winbindd_cli_state *state)
 			   atable->cmd_name));
 
 		req = atable->send_req(state->mem_ctx, winbind_event_context(),
-				       state->request);
+				       state, state->request);
 		if (req == NULL) {
 			DEBUG(0, ("process_request: atable->send failed for "
 				  "%s\n", atable->cmd_name));
