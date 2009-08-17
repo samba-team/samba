@@ -317,7 +317,6 @@ def provision_paths_from_lp(lp, dnsdomain):
     paths.samdb = os.path.join(paths.private_dir, lp.get("sam database") or "samdb.ldb")
     paths.idmapdb = os.path.join(paths.private_dir, lp.get("idmap database") or "idmap.ldb")
     paths.secrets = os.path.join(paths.private_dir, lp.get("secrets database") or "secrets.ldb")
-    paths.templates = os.path.join(paths.private_dir, "templates.ldb")
     paths.dns = os.path.join(paths.private_dir, dnsdomain + ".zone")
     paths.namedconf = os.path.join(paths.private_dir, "named.conf")
     paths.namedtxt = os.path.join(paths.private_dir, "named.txt")
@@ -711,33 +710,6 @@ def setup_secretsdb(path, setup_path, session_info, credentials, lp):
                     })
 
     return secrets_ldb
-
-
-def setup_templatesdb(path, setup_path, session_info, lp):
-    """Setup the templates database.
-
-    :param path: Path to the database.
-    :param setup_path: Function for obtaining the path to setup files.
-    :param session_info: Session info
-    :param credentials: Credentials
-    :param lp: Loadparm context
-    """
-    templates_ldb = Ldb(url=path, session_info=session_info,
-                        lp=lp)
-    # Wipes the database
-    try:
-        templates_ldb.erase()
-    # This should be 'except LdbError', but on a re-provision the assert in ldb.erase fires, and we need to catch that too
-    except:
-        os.unlink(path)
-
-    templates_ldb.load_ldif_file_add(setup_path("provision_templates_init.ldif"))
-
-    templates_ldb = Ldb(url=path, session_info=session_info,
-                        lp=lp)
-
-    templates_ldb.load_ldif_file_add(setup_path("provision_templates.ldif"))
-
 
 def setup_registry(path, setup_path, session_info, lp):
     """Setup the registry.
@@ -1151,10 +1123,6 @@ def provision(setup_dir, message, session_info,
     message("Setting up the registry")
     setup_registry(paths.hklm, setup_path, session_info, 
                    lp=lp)
-
-    message("Setting up templates db")
-    setup_templatesdb(paths.templates, setup_path, session_info=session_info, 
-                      lp=lp)
 
     message("Setting up idmap db")
     idmap = setup_idmapdb(paths.idmapdb, setup_path, session_info=session_info,
