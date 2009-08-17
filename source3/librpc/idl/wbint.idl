@@ -109,4 +109,13 @@ interface wbint
 	[in] lsa_SidType type,
 	[out] wbint_Principals *members
 	);
+
+    typedef [public] struct {
+	uint32 num_userinfos;
+	[size_is(num_userinfos)] wbint_userinfo userinfos[];
+    } wbint_userinfos;
+
+    NTSTATUS wbint_QueryUserList(
+	[out] wbint_userinfos *users
+	);
 }

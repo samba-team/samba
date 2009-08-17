@@ -424,6 +424,74 @@ _PUBLIC_ void ndr_print_wbint_Principals(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_wbint_userinfos(struct ndr_push *ndr, int ndr_flags, const struct wbint_userinfos *r)
+{
+	uint32_t cntr_userinfos_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->num_userinfos));
+		NDR_CHECK(ndr_push_align(ndr, 8));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->num_userinfos));
+		for (cntr_userinfos_0 = 0; cntr_userinfos_0 < r->num_userinfos; cntr_userinfos_0++) {
+			NDR_CHECK(ndr_push_wbint_userinfo(ndr, NDR_SCALARS, &r->userinfos[cntr_userinfos_0]));
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		for (cntr_userinfos_0 = 0; cntr_userinfos_0 < r->num_userinfos; cntr_userinfos_0++) {
+			NDR_CHECK(ndr_push_wbint_userinfo(ndr, NDR_BUFFERS, &r->userinfos[cntr_userinfos_0]));
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_wbint_userinfos(struct ndr_pull *ndr, int ndr_flags, struct wbint_userinfos *r)
+{
+	uint32_t cntr_userinfos_0;
+	TALLOC_CTX *_mem_save_userinfos_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_array_size(ndr, &r->userinfos));
+		NDR_CHECK(ndr_pull_align(ndr, 8));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->num_userinfos));
+		NDR_PULL_ALLOC_N(ndr, r->userinfos, ndr_get_array_size(ndr, &r->userinfos));
+		_mem_save_userinfos_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->userinfos, 0);
+		for (cntr_userinfos_0 = 0; cntr_userinfos_0 < r->num_userinfos; cntr_userinfos_0++) {
+			NDR_CHECK(ndr_pull_wbint_userinfo(ndr, NDR_SCALARS, &r->userinfos[cntr_userinfos_0]));
+		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_userinfos_0, 0);
+		if (r->userinfos) {
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->userinfos, r->num_userinfos));
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		_mem_save_userinfos_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->userinfos, 0);
+		for (cntr_userinfos_0 = 0; cntr_userinfos_0 < r->num_userinfos; cntr_userinfos_0++) {
+			NDR_CHECK(ndr_pull_wbint_userinfo(ndr, NDR_BUFFERS, &r->userinfos[cntr_userinfos_0]));
+		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_userinfos_0, 0);
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_wbint_userinfos(struct ndr_print *ndr, const char *name, const struct wbint_userinfos *r)
+{
+	uint32_t cntr_userinfos_0;
+	ndr_print_struct(ndr, name, "wbint_userinfos");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "num_userinfos", r->num_userinfos);
+	ndr->print(ndr, "%s: ARRAY(%d)", "userinfos", (int)r->num_userinfos);
+	ndr->depth++;
+	for (cntr_userinfos_0=0;cntr_userinfos_0<r->num_userinfos;cntr_userinfos_0++) {
+		char *idx_0=NULL;
+		if (asprintf(&idx_0, "[%d]", cntr_userinfos_0) != -1) {
+			ndr_print_wbint_userinfo(ndr, "userinfos", &r->userinfos[cntr_userinfos_0]);
+			free(idx_0);
+		}
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_wbint_Ping(struct ndr_push *ndr, int flags, const struct wbint_Ping *r)
 {
 	if (flags & NDR_IN) {
@@ -1562,6 +1630,67 @@ _PUBLIC_ void ndr_print_wbint_LookupGroupMembers(struct ndr_print *ndr, const ch
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_wbint_QueryUserList(struct ndr_push *ndr, int flags, const struct wbint_QueryUserList *r)
+{
+	if (flags & NDR_IN) {
+	}
+	if (flags & NDR_OUT) {
+		if (r->out.users == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_wbint_userinfos(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.users));
+		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_wbint_QueryUserList(struct ndr_pull *ndr, int flags, struct wbint_QueryUserList *r)
+{
+	TALLOC_CTX *_mem_save_users_0;
+	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		NDR_PULL_ALLOC(ndr, r->out.users);
+		ZERO_STRUCTP(r->out.users);
+	}
+	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.users);
+		}
+		_mem_save_users_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.users, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_wbint_userinfos(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.users));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_users_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_wbint_QueryUserList(struct ndr_print *ndr, const char *name, int flags, const struct wbint_QueryUserList *r)
+{
+	ndr_print_struct(ndr, name, "wbint_QueryUserList");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "wbint_QueryUserList");
+		ndr->depth++;
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "wbint_QueryUserList");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "users", r->out.users);
+		ndr->depth++;
+		ndr_print_wbint_userinfos(ndr, "users", r->out.users);
+		ndr->depth--;
+		ndr_print_NTSTATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
 static const struct ndr_interface_call wbint_calls[] = {
 	{
 		"wbint_Ping",
@@ -1659,11 +1788,19 @@ static const struct ndr_interface_call wbint_calls[] = {
 		(ndr_print_function_t) ndr_print_wbint_LookupGroupMembers,
 		false,
 	},
+	{
+		"wbint_QueryUserList",
+		sizeof(struct wbint_QueryUserList),
+		(ndr_push_flags_fn_t) ndr_push_wbint_QueryUserList,
+		(ndr_pull_flags_fn_t) ndr_pull_wbint_QueryUserList,
+		(ndr_print_function_t) ndr_print_wbint_QueryUserList,
+		false,
+	},
 	{ NULL, 0, NULL, NULL, NULL, false }
 };
 
 static const char * const wbint_endpoint_strings[] = {
-	"ncalrpc:",
+	"ncalrpc:", 
 };
 
 static const struct ndr_interface_string_array wbint_endpoints = {
@@ -1672,7 +1809,7 @@ static const struct ndr_interface_string_array wbint_endpoints = {
 };
 
 static const char * const wbint_authservice_strings[] = {
-	"host",
+	"host", 
 };
 
 static const struct ndr_interface_string_array wbint_authservices = {
@@ -1688,7 +1825,7 @@ const struct ndr_interface_table ndr_table_wbint = {
 		NDR_WBINT_VERSION
 	},
 	.helpstring	= NDR_WBINT_HELPSTRING,
-	.num_calls	= 12,
+	.num_calls	= 13,
 	.calls		= wbint_calls,
 	.endpoints	= &wbint_endpoints,
 	.authservices	= &wbint_authservices

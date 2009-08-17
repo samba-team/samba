@@ -162,4 +162,14 @@ NTSTATUS rpccli_wbint_LookupGroupMembers(struct rpc_pipe_client *cli,
 					 struct dom_sid *sid /* [in] [ref] */,
 					 enum lsa_SidType type /* [in]  */,
 					 struct wbint_Principals *members /* [out] [ref] */);
+struct tevent_req *rpccli_wbint_QueryUserList_send(TALLOC_CTX *mem_ctx,
+						   struct tevent_context *ev,
+						   struct rpc_pipe_client *cli,
+						   struct wbint_userinfos *_users /* [out] [ref] */);
+NTSTATUS rpccli_wbint_QueryUserList_recv(struct tevent_req *req,
+					 TALLOC_CTX *mem_ctx,
+					 NTSTATUS *result);
+NTSTATUS rpccli_wbint_QueryUserList(struct rpc_pipe_client *cli,
+				    TALLOC_CTX *mem_ctx,
+				    struct wbint_userinfos *users /* [out] [ref] */);
 #endif /* __CLI_WBINT__ */

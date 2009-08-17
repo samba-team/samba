@@ -39,6 +39,11 @@ struct wbint_Principals {
 	struct wbint_Principal *principals;/* [size_is(num_principals)] */
 }/* [public] */;
 
+struct wbint_userinfos {
+	uint32_t num_userinfos;
+	struct wbint_userinfo *userinfos;/* [size_is(num_userinfos)] */
+}/* [public] */;
+
 
 struct wbint_Ping {
 	struct {
@@ -195,6 +200,15 @@ struct wbint_LookupGroupMembers {
 
 	struct {
 		struct wbint_Principals *members;/* [ref] */
+		NTSTATUS result;
+	} out;
+
+};
+
+
+struct wbint_QueryUserList {
+	struct {
+		struct wbint_userinfos *users;/* [ref] */
 		NTSTATUS result;
 	} out;
 
