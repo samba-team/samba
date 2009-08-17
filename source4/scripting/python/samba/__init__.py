@@ -98,11 +98,13 @@ class Ldb(ldb.Ldb):
         glue.ldb_set_utf8_casefold(self)
 
         # Allow admins to force non-sync ldb for all databases
-        nosync_p = lp.get("nosync", "ldb")
-        if nosync_p is not None and nosync_p == true:
+        if lp is not None:
+            nosync_p = lp.get("nosync", "ldb")
+            if nosync_p is not None and nosync_p == true:
                 flags |= FLG_NOSYNC
 
-        self.connect(url, flags, options)
+        if url is not None:
+            self.connect(url, flags, options)
 
     def set_credentials(self, credentials):
         glue.ldb_set_credentials(self, credentials)
