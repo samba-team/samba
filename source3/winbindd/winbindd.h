@@ -65,8 +65,9 @@ struct winbindd_cli_state {
 						   * initialized? */
 	bool getgrent_initialized;                /* Has getgrent_state been
 						   * initialized? */
-	struct getent_state *getpwent_state;      /* State for getpwent() */
 	struct getent_state *getgrent_state;      /* State for getgrent() */
+
+	struct getpwent_state *pwent_state; /* State for getpwent() */
 };
 
 /* State between get{pw,gr}ent() calls */

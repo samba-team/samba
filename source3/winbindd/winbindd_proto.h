@@ -868,5 +868,25 @@ struct tevent_req *wb_next_pwent_send(TALLOC_CTX *mem_ctx,
 				      struct winbindd_pw *pw);
 NTSTATUS wb_next_pwent_recv(struct tevent_req *req);
 
+struct tevent_req *winbindd_setpwent_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct winbindd_cli_state *cli,
+					  struct winbindd_request *request);
+NTSTATUS winbindd_setpwent_recv(struct tevent_req *req,
+				struct winbindd_response *presp);
+
+struct tevent_req *winbindd_getpwent_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct winbindd_cli_state *cli,
+					  struct winbindd_request *request);
+NTSTATUS winbindd_getpwent_recv(struct tevent_req *req,
+				struct winbindd_response *response);
+
+struct tevent_req *winbindd_endpwent_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct winbindd_cli_state *cli,
+					  struct winbindd_request *request);
+NTSTATUS winbindd_endpwent_recv(struct tevent_req *req,
+				struct winbindd_response *response);
 
 #endif /*  _WINBINDD_PROTO_H_  */

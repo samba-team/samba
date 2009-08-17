@@ -425,12 +425,6 @@ static struct winbindd_dispatch_table {
 	const char *winbindd_cmd_name;
 } dispatch_table[] = {
 
-	/* User functions */
-
-	{ WINBINDD_SETPWENT, winbindd_setpwent, "SETPWENT" },
-	{ WINBINDD_ENDPWENT, winbindd_endpwent, "ENDPWENT" },
-	{ WINBINDD_GETPWENT, winbindd_getpwent, "GETPWENT" },
-
 	/* Group functions */
 
 	{ WINBINDD_SETGRENT, winbindd_setgrent, "SETGRENT" },
@@ -538,6 +532,12 @@ static struct winbindd_async_dispatch_table async_nonpriv_table[] = {
 	  winbindd_getgrnam_send, winbindd_getgrnam_recv },
 	{ WINBINDD_GETUSERSIDS, "GETUSERSIDS",
 	  winbindd_getusersids_send, winbindd_getusersids_recv },
+	{ WINBINDD_SETPWENT, "SETPWENT",
+	  winbindd_setpwent_send, winbindd_setpwent_recv },
+	{ WINBINDD_GETPWENT, "GETPWENT",
+	  winbindd_getpwent_send, winbindd_getpwent_recv },
+	{ WINBINDD_ENDPWENT, "ENDPWENT",
+	  winbindd_endpwent_send, winbindd_endpwent_recv },
 
 	{ 0, NULL, NULL, NULL }
 };
@@ -814,7 +814,6 @@ static void remove_client(struct winbindd_cli_state *state)
 
 	/* Free any getent state */
 
-	free_getent_state(state->getpwent_state);
 	free_getent_state(state->getgrent_state);
 
 	TALLOC_FREE(state->mem_ctx);
@@ -835,7 +834,7 @@ static bool remove_idle_client(void)
 
 	for (state = winbindd_client_list(); state; state = state->next) {
 		if (state->response == NULL &&
-		    !state->getpwent_state && !state->getgrent_state) {
+		    !state->pwent_state && !state->getgrent_state) {
 			nidle++;
 			if (!last_access || state->last_access < last_access) {
 				last_access = state->last_access;
