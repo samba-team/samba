@@ -147,6 +147,8 @@ static struct ldb_val objectCategory_always_dn(struct ldb_module *module, TALLOC
 static struct ldb_val normalise_to_signed32(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
 	struct ldb_val out;
+	/* We've to use "strtoll" here to have the intended overflows.
+	 * Otherwise we may get "LONG_MAX" and the conversion is wrong. */
 	int32_t i = (int32_t) strtoll((char *)val->data, NULL, 0);
 	out = data_blob_string_const(talloc_asprintf(ctx, "%d", i));
 	return out;

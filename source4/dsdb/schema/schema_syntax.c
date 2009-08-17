@@ -234,7 +234,9 @@ static WERROR dsdb_syntax_INT32_ldb_to_drsuapi(struct ldb_context *ldb,
 		blobs[i] = data_blob_talloc(blobs, NULL, 4);
 		W_ERROR_HAVE_NO_MEMORY(blobs[i].data);
 
-		v = strtol((const char *)in->values[i].data, NULL, 10);
+		/* We've to use "strtoll" here to have the intended overflows.
+		 * Otherwise we may get "LONG_MAX" and the conversion is wrong. */
+		v = strtoll((const char *)in->values[i].data, NULL, 0);
 
 		SIVALS(blobs[i].data, 0, v);
 	}

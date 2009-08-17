@@ -649,6 +649,8 @@ static int ldif_canonicalise_int32(struct ldb_context *ldb, void *mem_ctx,
 			const struct ldb_val *in, struct ldb_val *out)
 {
 	char *end;
+	/* We've to use "strtoll" here to have the intended overflows.
+	 * Otherwise we may get "LONG_MAX" and the conversion is wrong. */
 	int32_t i = (int32_t) strtoll((char *)in->data, &end, 0);
 	if (*end != 0) {
 		return -1;
@@ -665,6 +667,8 @@ static int ldif_canonicalise_int32(struct ldb_context *ldb, void *mem_ctx,
 static int ldif_comparison_int32(struct ldb_context *ldb, void *mem_ctx,
 			const struct ldb_val *v1, const struct ldb_val *v2)
 {
+	/* We've to use "strtoll" here to have the intended overflows.
+	 * Otherwise we may get "LONG_MAX" and the conversion is wrong. */
 	return (int32_t) strtoll((char *)v1->data, NULL, 0)
 	 - (int32_t) strtoll((char *)v2->data, NULL, 0);
 }
