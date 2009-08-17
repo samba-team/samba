@@ -862,5 +862,11 @@ struct tevent_req *wb_fill_pwent_send(TALLOC_CTX *mem_ctx,
 				      struct winbindd_pw *pw);
 NTSTATUS wb_fill_pwent_recv(struct tevent_req *req);
 
+struct tevent_req *wb_next_pwent_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      struct getpwent_state *gstate,
+				      struct winbindd_pw *pw);
+NTSTATUS wb_next_pwent_recv(struct tevent_req *req);
+
 
 #endif /*  _WINBINDD_PROTO_H_  */

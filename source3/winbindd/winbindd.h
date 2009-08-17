@@ -79,6 +79,13 @@ struct getent_state {
 	fstring domain_name;
 };
 
+struct getpwent_state {
+	struct winbindd_domain *domain;
+	int next_user;
+	int num_users;
+	struct wbint_userinfo *users;
+};
+
 /* Storage for cached getpwent() user entries */
 
 struct getpwent_user {
