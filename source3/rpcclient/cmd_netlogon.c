@@ -1127,11 +1127,9 @@ static NTSTATUS cmd_netlogon_capabilities(struct rpc_pipe_client *cli,
 		level = atoi(argv[1]);
 	}
 
-#if 0
+	ZERO_STRUCT(return_authenticator);
+
 	netlogon_creds_client_authenticator(cli->dc, &credential);
-#else
-	ZERO_STRUCT(credential);
-#endif
 
 	status = rpccli_netr_LogonGetCapabilities(cli, mem_ctx,
 						  cli->desthost,
@@ -1140,13 +1138,14 @@ static NTSTATUS cmd_netlogon_capabilities(struct rpc_pipe_client *cli,
 						  &return_authenticator,
 						  level,
 						  &capabilities);
-#if 0
+
 	if (!netlogon_creds_client_check(cli->dc,
 					 &return_authenticator.cred)) {
 		DEBUG(0,("credentials chain check failed\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
-#endif
+
+	printf("capabilities: 0x%08x\n", capabilities.server_capabilities);
 
 	return status;
 }
