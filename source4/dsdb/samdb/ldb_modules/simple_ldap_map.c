@@ -147,7 +147,7 @@ static struct ldb_val objectCategory_always_dn(struct ldb_module *module, TALLOC
 static struct ldb_val normalise_to_signed32(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
 	struct ldb_val out;
-	int32_t i = (int32_t) strtol((char *)val->data, NULL, 0);
+	int32_t i = (int32_t) strtoll((char *)val->data, NULL, 0);
 	out = data_blob_string_const(talloc_asprintf(ctx, "%d", i));
 	return out;
 }

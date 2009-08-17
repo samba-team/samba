@@ -649,7 +649,7 @@ static int ldif_canonicalise_int32(struct ldb_context *ldb, void *mem_ctx,
 			const struct ldb_val *in, struct ldb_val *out)
 {
 	char *end;
-	int32_t i = (int32_t) strtol((char *)in->data, &end, 0);
+	int32_t i = (int32_t) strtoll((char *)in->data, &end, 0);
 	if (*end != 0) {
 		return -1;
 	}
@@ -665,8 +665,8 @@ static int ldif_canonicalise_int32(struct ldb_context *ldb, void *mem_ctx,
 static int ldif_comparison_int32(struct ldb_context *ldb, void *mem_ctx,
 			const struct ldb_val *v1, const struct ldb_val *v2)
 {
-	return (int32_t) strtol((char *)v1->data, NULL, 0)
-	 - (int32_t) strtol((char *)v2->data, NULL, 0);
+	return (int32_t) strtoll((char *)v1->data, NULL, 0)
+	 - (int32_t) strtoll((char *)v2->data, NULL, 0);
 }
 
 static int extended_dn_write_hex(struct ldb_context *ldb, void *mem_ctx,
