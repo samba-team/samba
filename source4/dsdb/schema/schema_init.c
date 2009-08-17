@@ -349,6 +349,13 @@ WERROR dsdb_create_prefix_mapping(struct ldb_context *ldb, struct dsdb_schema *s
 		return status;
 	}
 
+	talloc_free(schema->prefixes);
+	schema->prefixes = talloc_steal(schema, prefixes);
+	schema->num_prefixes = num_prefixes;
+
+	DEBUG(2,(__location__ " Added prefixMap %s - now have %u prefixes\n",
+		 full_oid, num_prefixes));
+
 	talloc_free(mem_ctx);
 	return status;
 }
@@ -442,6 +449,8 @@ WERROR dsdb_find_prefix_for_oid(uint32_t num_prefixes, const struct dsdb_schema_
 		*out = prefixes[i].id | val;
 		return WERR_OK;
 	}
+
+	DEBUG(5,(__location__ " Failed to find oid %s - have %u prefixes\n", in, num_prefixes));
 
 	return WERR_DS_NO_MSDS_INTID;
 }
