@@ -72,12 +72,11 @@ class SamDBTestCase(TestCaseInTempDir):
                             domaindn=self.domaindn, configdn=configdn, 
                             schemadn=schemadn)
         setup_templatesdb(os.path.join(self.tempdir, "templates.ldb"), 
-                          self.setup_path, session_info=session_info, 
-                          credentials=creds, lp=self.lp)
+                          self.setup_path, session_info=session_info, lp=self.lp)
         self.samdb = setup_samdb(path, self.setup_path, session_info, creds, 
                                  self.lp, names, 
                                  lambda x: None, domainsid, 
-                                 "# no aci", domainguid, 
+                                 domainguid, 
                                  policyguid, False, "secret", 
                                  "secret", "secret", invocationid, 
                                  "secret", "domain controller")
