@@ -1180,6 +1180,7 @@ WINBINDD_OBJ1 = \
 		winbindd/wb_group_members.o \
 		winbindd/wb_getgrsid.o \
 		winbindd/wb_query_user_list.o \
+		winbindd/wb_fill_pwent.o \
 		winbindd/winbindd_lookupsid.o \
 		winbindd/winbindd_lookupname.o \
 		winbindd/winbindd_sid_to_uid.o \
