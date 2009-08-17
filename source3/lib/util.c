@@ -2743,14 +2743,15 @@ bool procid_is_me(const struct server_id *pid)
 
 struct server_id interpret_pid(const char *pid_string)
 {
-#ifdef CLUSTER_SUPPORT
-	unsigned int vnn, pid;
 	struct server_id result;
-	if (sscanf(pid_string, "%u:%u", &vnn, &pid) == 2) {
+	int pid;
+#ifdef CLUSTER_SUPPORT
+	unsigned int vnn;
+	if (sscanf(pid_string, "%u:%d", &vnn, &pid) == 2) {
 		result.vnn = vnn;
 		result.pid = pid;
 	}
-	else if (sscanf(pid_string, "%u", &pid) == 1) {
+	else if (sscanf(pid_string, "%d", &pid) == 1) {
 		result.vnn = get_my_vnn();
 		result.pid = pid;
 	}
@@ -2758,10 +2759,19 @@ struct server_id interpret_pid(const char *pid_string)
 		result.vnn = NONCLUSTER_VNN;
 		result.pid = -1;
 	}
-	return result;
 #else
-	return pid_to_procid(atoi(pid_string));
+	if (sscanf(pid_string, "%d", &pid) != 1) {
+		result.pid = -1;
+	} else {
+		result.pid = pid;
+	}
 #endif
+	/* Assigning to result.pid may have overflowed
+	   Map negative pid to -1: i.e. error */
+	if (result.pid < 0) {
+		result.pid = -1;
+	}
+	return result;
 }
 
 char *procid_str(TALLOC_CTX *mem_ctx, const struct server_id *pid)

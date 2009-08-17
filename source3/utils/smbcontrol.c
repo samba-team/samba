@@ -1247,15 +1247,12 @@ static struct server_id parse_dest(const char *dest)
 		dest = "winbindd";
 	}
 
-	if (!(strequal(dest, "winbindd") || strequal(dest, "nmbd"))) {
-		/* Check for numeric pid number */
+	/* Check for numeric pid number */
+	result = interpret_pid(dest);
 
-		result = interpret_pid(dest);
-
-		/* Zero isn't valid if not smbd. */
-		if (result.pid && procid_valid(&result)) {
-			return result;
-		}
+	/* Zero isn't valid if not "all". */
+	if (result.pid && procid_valid(&result)) {
+		return result;
 	}
 
 	/* Look up other destinations in pidfile directory */
