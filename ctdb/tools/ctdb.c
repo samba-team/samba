@@ -1707,7 +1707,7 @@ again:
 		event_loop_once(ctdb->ev);
 	}
 
-	DEBUG(DEBUG_ERR,("Timed out waiting for recmaster ipreallocate. Trying again\n"));
+	DEBUG(DEBUG_INFO,("Timed out waiting for recmaster ipreallocate. Trying again\n"));
 	retries++;
 	sleep(1);
 	goto again;
