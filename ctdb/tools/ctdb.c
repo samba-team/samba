@@ -3487,12 +3487,14 @@ int main(int argc, const char *argv[])
 		ctdb_timeout = getenv("CTDB_TIMEOUT");
 		if (ctdb_timeout != NULL) {
 			options.maxruntime = strtoul(ctdb_timeout, NULL, 0);
+		} else {
+			/* default timeout is 120 seconds */
+			options.maxruntime = 120;
 		}
 	}
-	if (options.maxruntime != 0) {
-		signal(SIGALRM, ctdb_alarm);
-		alarm(options.maxruntime);
-	}
+
+	signal(SIGALRM, ctdb_alarm);
+	alarm(options.maxruntime);
 
 	/* setup the node number to contact */
 	if (nodestring != NULL) {
