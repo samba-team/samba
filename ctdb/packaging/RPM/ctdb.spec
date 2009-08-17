@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.87
+Version: 1.0.88
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -131,6 +131,21 @@ fi
 %{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
+* Mon Aug 17 2009 : Version 1.0.88
+ - Add a new state for eventscripts : DISABLED.
+   Add two new commands "ctdb enablescript/disablescript" to enable/disable
+   eventscripts at runtime.
+ - Bugfixes for TDB from rusty.
+ - Merge/Port changes from upstream TDB library by rusty.
+ - Additional new tests from MartinS. Tests for stop/continue.
+ - Initial patch to rework vacuuming/repacking process from Wolfgang Mueller.
+ - Updates from Michael Adam for persistent writes.
+ - Updates from MartinS to handle the new STOPPED bit in the test framework.
+ - Make it possible to enable/disable the RECMASTER and LMASTER roles
+   at runtime. Add two new commands 
+   "ctdb setlmasterrole/setrecmasterrole on/off"
+ - Make it possible to enable/disable the natgw feature at runtime. Add
+   the command "ctdb setnatgwstate on/off"
 * Fri Jul 17 2009 : Version 1.0.87
  - Add a new event "stopped" that is called when a node is stopped.
  - Documentation of the STOPPED flag and the stop/continue commands
