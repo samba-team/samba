@@ -56,14 +56,9 @@ else:
 samdb = SamDB(url=url, session_info=system_session(), 
               credentials=creds, lp=lp)
 
-if opts.base is None:
-	res = samdb.search("", scope=ldb.SCOPE_BASE, 
-			  expression="(defaultNamingContext=*)", 
-			  attrs=["defaultNamingContext"])
-	assert(len(res) == 1 and res[0]["defaultNamingContext"] is not None)
-	domain_dn = res[0]["defaultNamingContext"][0]
-else:
-	domain_dn = opts.base
+domain_dn = opts.base
+if domain_dn is None:
+        domain_dn = SamDB.domain_dn(samdb)
 
 filter = "(&(objectClass=user)(samAccountName=%s))" % username
 

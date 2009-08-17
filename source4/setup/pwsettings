@@ -64,14 +64,10 @@ else:
 samdb = SamDB(url=url, session_info=system_session(),
               credentials=creds, lp=lp)
 
-res = samdb.search("", scope=ldb.SCOPE_BASE,
-	  expression="(defaultNamingContext=*)",
-	  attrs=["defaultNamingContext"])
-assert(len(res) == 1 and res[0]["defaultNamingContext"] is not None)
-domain_dn = res[0]["defaultNamingContext"][0]
-
-res = samdb.search(domain_dn, scope=ldb.SCOPE_BASE, attrs=["pwdProperties",
-  "pwdHistoryLength", "minPwdLength", "minPwdAge", "maxPwdAge"])
+domain_dn = SamDB.domain_dn(samdb)
+res = samdb.search(domain_dn, scope=ldb.SCOPE_BASE,
+  attrs=["pwdProperties", "pwdHistoryLength", "minPwdLength", "minPwdAge",
+  "maxPwdAge"])
 assert(len(res) == 1)
 try:
 	pwd_props = int(res[0]["pwdProperties"][0])
