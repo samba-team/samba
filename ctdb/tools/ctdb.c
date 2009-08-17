@@ -734,6 +734,11 @@ static int control_scriptstatus(struct ctdb_context *ctdb, int argc, const char 
 
 	printf("%d scripts were executed last monitoring cycle\n", script_status->num_scripts);
 	for (i=0; i<script_status->num_scripts; i++) {
+		if (script_status->scripts[i].disabled) {
+			printf("%-20s Status:DISABLED\n",
+				script_status->scripts[i].name);
+			continue;
+		} 
 		printf("%-20s Status:%s    ",
 			script_status->scripts[i].name,
 			script_status->scripts[i].timedout?"TIMEDOUT":script_status->scripts[i].status==0?"OK":"ERROR");
@@ -754,6 +759,46 @@ static int control_scriptstatus(struct ctdb_context *ctdb, int argc, const char 
 	return 0;
 }
 	
+
+/*
+  enable an eventscript
+ */
+static int control_enablescript(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+
+	if (argc < 1) {
+		usage();
+	}
+
+	ret = ctdb_ctrl_enablescript(ctdb, TIMELIMIT(), options.pnn, argv[0]);
+	if (ret != 0) {
+	  DEBUG(DEBUG_ERR, ("Unable to enable script %s on node %u\n", argv[0], options.pnn));
+		return ret;
+	}
+
+	return 0;
+}
+
+/*
+  disable an eventscript
+ */
+static int control_disablescript(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+
+	if (argc < 1) {
+		usage();
+	}
+
+	ret = ctdb_ctrl_disablescript(ctdb, TIMELIMIT(), options.pnn, argv[0]);
+	if (ret != 0) {
+	  DEBUG(DEBUG_ERR, ("Unable to disable script %s on node %u\n", argv[0], options.pnn));
+		return ret;
+	}
+
+	return 0;
+}
 
 /*
   display the pnn of the recovery master
@@ -1662,7 +1707,7 @@ again:
 		event_loop_once(ctdb->ev);
 	}
 
-	DEBUG(DEBUG_ERR,("Timed out waiting for recmaster ipreallocate. Trying again\n"));
+	DEBUG(DEBUG_INFO,("Timed out waiting for recmaster ipreallocate. Trying again\n"));
 	retries++;
 	sleep(1);
 	goto again;
@@ -3343,7 +3388,9 @@ static const struct {
 	{ "restoredb",        control_restoredb,        false,	false, "restore the database from a file.", "<file>"},
 	{ "recmaster",        control_recmaster,        false,	false, "show the pnn for the recovery master."},
 	{ "setflags",        control_setflags,          false,	false, "set flags for a node in the nodemap.", "<node> <flags>"},
-	{ "scriptstatus",        control_scriptstatus,  false,	false, "show the status of the monitoring scripts"},
+	{ "scriptstatus",    control_scriptstatus,  false,	false, "show the status of the monitoring scripts"},
+	{ "enablescript",     control_enablescript,  false,	false, "enable an eventscript", "<script>"},
+	{ "disablescript",    control_disablescript,  false,	false, "disable an eventscript", "<script>"},
 	{ "natgwlist",        control_natgwlist,        false,	false, "show the nodes belonging to this natgw configuration"},
 	{ "xpnn",             control_xpnn,             true,	true,  "find the pnn of the local node without talking to the daemon (unreliable)" },
 	{ "getreclock",       control_getreclock,	false,	false, "Show the reclock file of a node"},
@@ -3440,12 +3487,14 @@ int main(int argc, const char *argv[])
 		ctdb_timeout = getenv("CTDB_TIMEOUT");
 		if (ctdb_timeout != NULL) {
 			options.maxruntime = strtoul(ctdb_timeout, NULL, 0);
+		} else {
+			/* default timeout is 120 seconds */
+			options.maxruntime = 120;
 		}
 	}
-	if (options.maxruntime != 0) {
-		signal(SIGALRM, ctdb_alarm);
-		alarm(options.maxruntime);
-	}
+
+	signal(SIGALRM, ctdb_alarm);
+	alarm(options.maxruntime);
 
 	/* setup the node number to contact */
 	if (nodestring != NULL) {

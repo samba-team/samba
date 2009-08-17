@@ -437,6 +437,9 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(0);
 		return ctdb_control_event_script_finished(ctdb);
 
+	case CTDB_CONTROL_EVENT_SCRIPT_DISABLED:
+		return ctdb_control_event_script_disabled(ctdb, indata);
+	
 	case CTDB_CONTROL_GET_EVENT_SCRIPT_STATUS:
 		CHECK_CONTROL_DATA_SIZE(0);
 		return ctdb_control_get_event_script_status(ctdb, outdata);
@@ -508,6 +511,12 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		}
 		return 0;
 	}
+
+	case CTDB_CONTROL_ENABLE_SCRIPT:
+		return ctdb_control_enable_script(ctdb, indata);
+
+	case CTDB_CONTROL_DISABLE_SCRIPT:
+		return ctdb_control_disable_script(ctdb, indata);
 
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));

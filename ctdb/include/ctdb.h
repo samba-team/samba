@@ -634,6 +634,7 @@ struct ctdb_monitoring_script_wire {
 	char name[MAX_SCRIPT_NAME+1];
 	struct timeval start;
 	struct timeval finished;
+	int32_t disabled;
 	int32_t status;
 	int32_t timedout;
 	char output[MAX_SCRIPT_OUTPUT+1];
@@ -664,5 +665,8 @@ int ctdb_ctrl_continue_node(struct ctdb_context *ctdb, struct timeval timeout, u
 int ctdb_ctrl_setnatgwstate(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t natgwstate);
 int ctdb_ctrl_setlmasterrole(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t lmasterrole);
 int ctdb_ctrl_setrecmasterrole(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t recmasterrole);
+
+int ctdb_ctrl_enablescript(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, const char *script);
+int ctdb_ctrl_disablescript(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, const char *script);
 
 #endif

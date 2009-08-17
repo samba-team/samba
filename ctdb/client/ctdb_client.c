@@ -3568,6 +3568,27 @@ int ctdb_ctrl_event_script_stop(struct ctdb_context *ctdb, int32_t result)
 	return 0;
 }
 
+/*
+  tell the main daemon a script was disabled
+ */
+int ctdb_ctrl_event_script_disabled(struct ctdb_context *ctdb, const char *name)
+{
+	int ret;
+	int32_t res;
+	TDB_DATA data;
+
+	data.dptr = discard_const(name);
+	data.dsize = strlen(name)+1;
+
+	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0, CTDB_CONTROL_EVENT_SCRIPT_DISABLED, 0, data, 
+			   ctdb, NULL, &res, NULL, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,("Failed to send event_script_disabeld\n"));
+		return -1;
+	}
+
+	return 0;
+}
 
 /*
   get the status of running the monitor eventscripts
@@ -3776,3 +3797,48 @@ int ctdb_ctrl_setrecmasterrole(struct ctdb_context *ctdb, struct timeval timeout
 
 	return 0;
 }
+
+/* enable an eventscript
+ */
+int ctdb_ctrl_enablescript(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, const char *script)
+{
+	int ret;
+	TDB_DATA data;
+	int32_t res;
+
+	data.dsize = strlen(script) + 1;
+	data.dptr  = discard_const(script);
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_ENABLE_SCRIPT, 0, data, 
+			   NULL, NULL, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for enablescript failed\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+/* disable an eventscript
+ */
+int ctdb_ctrl_disablescript(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, const char *script)
+{
+	int ret;
+	TDB_DATA data;
+	int32_t res;
+
+	data.dsize = strlen(script) + 1;
+	data.dptr  = discard_const(script);
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_DISABLE_SCRIPT, 0, data, 
+			   NULL, NULL, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for disablescript failed\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
