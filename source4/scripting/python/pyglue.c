@@ -1,6 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007
+   Copyright (C) Matthias Dieter Wallnöfer          2009
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,6 +20,7 @@
 #include "includes.h"
 #include "ldb.h"
 #include "ldb_errors.h"
+#include "ldb_wrap.h"
 #include "param/param.h"
 #include "auth/credentials/credentials.h"
 #include "dsdb/samdb/samdb.h"
@@ -151,6 +153,21 @@ static PyObject *py_ldb_set_session_info(PyObject *self, PyObject *args)
 	info = PyAuthSession_AsSession(py_session_info);
 
     	ldb_set_opaque(ldb, "sessionInfo", info);
+
+	Py_RETURN_NONE;
+}
+
+static PyObject *py_ldb_set_utf8_casefold(PyObject *self, PyObject *args)
+{
+	PyObject *py_ldb;
+	struct ldb_context *ldb;
+
+	if (!PyArg_ParseTuple(args, "O", &py_ldb))
+		return NULL;
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
 
 	Py_RETURN_NONE;
 }
@@ -396,6 +413,9 @@ static PyMethodDef py_misc_methods[] = {
 	{ "ldb_register_samba_handlers", (PyCFunction)py_ldb_register_samba_handlers, METH_VARARGS,
 		"ldb_register_samba_handlers(ldb)\n"
 		"Register Samba-specific LDB modules and schemas." },
+	{ "ldb_set_utf8_casefold", (PyCFunction)py_ldb_set_utf8_casefold, METH_VARARGS,
+		"ldb_set_utf8_casefold(ldb)\n"
+		"Set the right Samba casefolding function for UTF8 charset." },
 	{ "dsdb_set_ntds_invocation_id", (PyCFunction)py_dsdb_set_ntds_invocation_id, METH_VARARGS,
 		NULL },
 	{ "dsdb_set_opaque_integer", (PyCFunction)py_dsdb_set_opaque_integer, METH_VARARGS,
