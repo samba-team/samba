@@ -41,6 +41,10 @@ o   Günther Deschner <gd@samba.org>
     * BUG 6607: Fix crash bug in spoolss_addprinterex_level_2.
 
 
+o   Matt Kraai <mkraai@beckman.com>
+    * BUG 6630: Fix opening of sockets on QNX.
+
+
 o   Volker Lendecke <vl@samba.org>
     * BUG 6611: Fix a valgrind error in chain_reply.
     * Fix linking on Solaris.
@@ -58,6 +62,10 @@ o   Tim Prouty <tprouty@samba.org>
 
 o   Rusty Russell <rusty@rustcorp.com.au>
     * BUG 6601: Avoid global fd limits.
+
+
+o   TAKEDA Yasuma <yasuma@osstech.co.jp>
+    * BUG 5879: Update LDAP schema for Netscape DS 5.
 
 
 o   Bo Yang <boyang@samba.org>
