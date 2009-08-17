@@ -19,7 +19,7 @@
 from samba.auth import system_session
 from samba.credentials import Credentials
 import os
-from samba.provision import setup_samdb, guess_names, setup_templatesdb, make_smbconf, find_setup_dir
+from samba.provision import setup_samdb, guess_names, setup_templatesdb, make_smbconf, find_setup_dir, add_foreign
 from samba.samdb import SamDB
 from samba.tests import TestCaseInTempDir
 from samba.dcerpc import security
@@ -92,5 +92,17 @@ class SamDBTests(SamDBTestCase):
     """Tests for the SamDB implementation."""
 
     def test_add_foreign(self):
-        self.samdb.add_foreign(self.domaindn, "S-1-5-7", "Somedescription")
+        add_foreign(self.samdb, self.domaindn, "S-1-5-7", "Anonymous")
+        add_foreign(self.samdb, self.domaindn, "S-1-1-0", "World")
+        add_foreign(self.samdb, self.domaindn, "S-1-5-2", "Network")
+        add_foreign(self.samdb, self.domaindn, "S-1-5-18", "System")
+        add_foreign(self.samdb, self.domaindn, "S-1-5-11", "Authenticated Users")
+
+# I don't think these should be here ...
+#        idmap.setup_name_mapping("S-1-5-7", idmap.TYPE_UID, nobody_uid)
+#        idmap.setup_name_mapping("S-1-5-32-544", idmap.TYPE_GID, wheel_gid)
+#
+#        idmap.setup_name_mapping(sid + "-500", idmap.TYPE_UID, root_uid)
+#        idmap.setup_name_mapping(sid + "-513", idmap.TYPE_GID, users_gid)
+
 

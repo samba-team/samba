@@ -474,33 +474,18 @@ def setup_name_mappings(samdb, idmap, sid, domaindn, root_uid, nobody_uid,
     :param users_gid: gid of the UNIX users group.
     :param wheel_gid: gid of the UNIX wheel group."""
 
-    def add_foreign(self, domaindn, sid, desc):
-        """Add a foreign security principle."""
-        add = """
+def add_foreign(self, domaindn, sid, desc):
+    """Add a foreign security principle."""
+    add = """
 dn: CN=%s,CN=ForeignSecurityPrincipals,%s
 objectClass: top
 objectClass: foreignSecurityPrincipal
 description: %s
 """ % (sid, domaindn, desc)
-        # deliberately ignore errors from this, as the records may
-        # already exist
-        for msg in self.parse_ldif(add):
-            self.add(msg[1])
-
-    # add some foreign sids
-    add_foreign(samdb, domaindn, "S-1-5-7", "Anonymous")
-    add_foreign(samdb, domaindn, "S-1-1-0", "World")
-    add_foreign(samdb, domaindn, "S-1-5-2", "Network")
-    add_foreign(samdb, domaindn, "S-1-5-18", "System")
-    add_foreign(samdb, domaindn, "S-1-5-11", "Authenticated Users")
-
-
-    idmap.setup_name_mapping("S-1-5-7", idmap.TYPE_UID, nobody_uid)
-    idmap.setup_name_mapping("S-1-5-32-544", idmap.TYPE_GID, wheel_gid)
-
-    idmap.setup_name_mapping(sid + "-500", idmap.TYPE_UID, root_uid)
-    idmap.setup_name_mapping(sid + "-513", idmap.TYPE_GID, users_gid)
-
+    # deliberately ignore errors from this, as the records may
+    # already exist
+    for msg in self.parse_ldif(add):
+        self.add(msg[1])
 
 def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info, 
                            credentials, names,
@@ -817,6 +802,9 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
                            credentials=credentials, session_info=session_info,
                            names=names, 
                            ldap_backend=ldap_backend, serverrole=serverrole)
+
+    if (schema == None):
+        schema = Schema(setup_path, schemadn=names.schemadn, serverdn=names.serverdn)
 
     # Load the database, but importantly, use Ldb not SamDB as we don't want to load the global schema
     samdb = Ldb(session_info=session_info, 
