@@ -6,6 +6,7 @@
    Copyright (C) Andrew Tridgell 2004
    Copyright (C) Volker Lendecke 2004
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2005
+   Copyright (C) Matthias Dieter Wallnöfer 2009
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -737,9 +738,12 @@ static NTSTATUS dcesrv_samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, 
 	switch (r->in.level) {
 	case 1: 
 	{
-		static const char * const attrs2[] = { "minPwdLength", "pwdHistoryLength",
-						       "pwdProperties", "maxPwdAge",
-						       "minPwdAge", NULL };
+		static const char * const attrs2[] = { "minPwdLength",
+						       "pwdHistoryLength",
+						       "pwdProperties",
+						       "maxPwdAge",
+						       "minPwdAge",
+						       NULL };
 		attrs = attrs2;
 		break;
 	}
@@ -797,7 +801,8 @@ static NTSTATUS dcesrv_samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, 
 		break;		
 	case 11:
 	{
-		static const char * const attrs2[] = { "oEMInformation", "forceLogoff", 
+		static const char * const attrs2[] = { "oEMInformation",
+						       "forceLogoff",
 						       "modifiedCount", 
 						       "lockoutDuration", 
 						       "lockOutObservationWindow", 
@@ -1272,7 +1277,8 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 		cn_name[cn_name_len - 1] = '\0';
 		container = "CN=Computers";
 		obj_class = "computer";
-		samdb_msg_add_int(d_state->sam_ctx, mem_ctx, msg, "primaryGroupID", DOMAIN_RID_DOMAIN_MEMBERS);
+		samdb_msg_add_int(d_state->sam_ctx, mem_ctx, msg,
+			"primaryGroupID", DOMAIN_RID_DOMAIN_MEMBERS);
 
 	} else if (r->in.acct_flags == ACB_SVRTRUST) {
 		if (cn_name[cn_name_len - 1] != '$') {
@@ -1282,7 +1288,8 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 		cn_name[cn_name_len - 1] = '\0';
 		container = "OU=Domain Controllers";
 		obj_class = "computer";
-		samdb_msg_add_int(d_state->sam_ctx, mem_ctx, msg, "primaryGroupID", DOMAIN_RID_DCS);
+		samdb_msg_add_int(d_state->sam_ctx, mem_ctx, msg,
+			"primaryGroupID", DOMAIN_RID_DCS);
 	} else {
 		ldb_transaction_cancel(d_state->sam_ctx);
 		return NT_STATUS_INVALID_PARAMETER;
@@ -1295,8 +1302,10 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 		return NT_STATUS_FOOBAR;
 	}
 
-	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "sAMAccountName", account_name);
-	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "objectClass", obj_class);
+	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "sAMAccountName",
+		account_name);
+	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "objectClass",
+		obj_class);
 
 	/* create the user */
 	ret = ldb_add(d_state->sam_ctx, msg);
@@ -1453,7 +1462,8 @@ static NTSTATUS dcesrv_samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, 
 	struct ldb_result *res;
 	int ret, num_filtered_entries, i, first;
 	struct samr_SamEntry *entries;
-	const char * const attrs[] = { "objectSid", "sAMAccountName", "userAccountControl", NULL };
+	const char * const attrs[] = { "objectSid", "sAMAccountName",
+		"userAccountControl", NULL };
 	struct samr_SamArray *sam;
 
 	*r->out.resume_handle = 0;
@@ -1769,7 +1779,8 @@ static NTSTATUS dcesrv_samr_GetAliasMembership(struct dcesrv_call_state *dce_cal
 
 			memberdn = 
 				samdb_search_string(d_state->sam_ctx,
-						    mem_ctx, NULL, "distinguishedName",
+						    mem_ctx, NULL,
+						    "distinguishedName",
 						    "(objectSid=%s)",
 						    ldap_encode_ndr_dom_sid(mem_ctx, 
 									    r->in.sids->sids[i].sid));
@@ -1936,7 +1947,8 @@ static NTSTATUS dcesrv_samr_LookupRids(struct dcesrv_call_state *dce_call, TALLO
 
 		ids[i] = SID_NAME_UNKNOWN;
 
-		sid = dom_sid_add_rid(mem_ctx, d_state->domain_sid, r->in.rids[i]);
+		sid = dom_sid_add_rid(mem_ctx, d_state->domain_sid,
+			r->in.rids[i]);
 		if (sid == NULL) {
 			names[i].string = NULL;
 			status = STATUS_SOME_UNMAPPED;
@@ -2079,7 +2091,8 @@ static NTSTATUS dcesrv_samr_QueryGroupInfo(struct dcesrv_call_state *dce_call, T
 
 	a_state = h->data;
 	
-	ret = ldb_search(a_state->sam_ctx, mem_ctx, &res, a_state->account_dn, LDB_SCOPE_SUBTREE, attrs, "objectClass=*");
+	ret = ldb_search(a_state->sam_ctx, mem_ctx, &res, a_state->account_dn,
+		LDB_SCOPE_SUBTREE, attrs, "objectClass=*");
 	
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		return NT_STATUS_NO_SUCH_GROUP;
@@ -2363,7 +2376,6 @@ static NTSTATUS dcesrv_samr_DeleteGroupMember(struct dcesrv_call_state *dce_call
 	default:
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-
 }
 
 
@@ -2699,8 +2711,8 @@ static NTSTATUS dcesrv_samr_AddAliasMember(struct dcesrv_call_state *dce_call, T
 			 ret, dom_sid_string(mem_ctx, r->in.sid)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else if (ret == 0) {
-		status = samdb_create_foreign_security_principal(d_state->sam_ctx, mem_ctx, 
-								 r->in.sid, &memberdn);
+		status = samdb_create_foreign_security_principal(
+			d_state->sam_ctx, mem_ctx, r->in.sid, &memberdn);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -2974,15 +2986,21 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 	switch (r->in.level) {
 	case 1:
 	{
-		static const char * const attrs2[] = {"sAMAccountName", "displayName",
-						      "primaryroupID", "description",
-						      "comment", NULL};
+		static const char * const attrs2[] = {"sAMAccountName",
+						      "displayName",
+						      "primaryroupID",
+						      "description",
+						      "comment",
+						      NULL};
 		attrs = attrs2;
 		break;
 	}
 	case 2:
 	{
-		static const char * const attrs2[] = {"comment", "countryCode", "codePage", NULL};
+		static const char * const attrs2[] = {"comment",
+						      "countryCode",
+						      "codePage",
+						      NULL};
 		attrs = attrs2;
 		break;
 	}
@@ -3003,13 +3021,15 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 						      "logonHours",
 						      "badPwdCount",
 						      "logonCount",
-						      "userAccountControl", NULL};
+						      "userAccountControl",
+						      NULL};
 		attrs = attrs2;
 		break;
 	}
 	case 4:
 	{
-		static const char * const attrs2[] = {"logonHours", NULL};
+		static const char * const attrs2[] = {"logonHours",
+						      NULL};
 		attrs = attrs2;
 		break;
 	}
@@ -3039,73 +3059,88 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 	}
 	case 6:
 	{
-		static const char * const attrs2[] = {"sAMAccountName", "displayName", NULL};
+		static const char * const attrs2[] = {"sAMAccountName",
+						      "displayName",
+						      NULL};
 		attrs = attrs2;
 		break;
 	}
 	case 7:
 	{
-		static const char * const attrs2[] = {"sAMAccountName", NULL};
+		static const char * const attrs2[] = {"sAMAccountName",
+						      NULL};
 		attrs = attrs2;
 		break;
 	}
 	case 8:
 	{
-		static const char * const attrs2[] = {"displayName", NULL};
+		static const char * const attrs2[] = {"displayName",
+						      NULL};
 		attrs = attrs2;
 		break;
 	}
 	case 9:
 	{
-		static const char * const attrs2[] = {"primaryGroupID", NULL};
+		static const char * const attrs2[] = {"primaryGroupID",
+						      NULL};
 		attrs = attrs2;
 		break;
 	}
 	case 10:
 	{
-		static const char * const attrs2[] = {"homeDirectory", "homeDrive", NULL};
+		static const char * const attrs2[] = {"homeDirectory",
+						      "homeDrive",
+						      NULL};
 		attrs = attrs2;
 		break;
 	}
 	case 11:
 	{
-		static const char * const attrs2[] = {"scriptPath", NULL};
+		static const char * const attrs2[] = {"scriptPath",
+						      NULL};
 		attrs = attrs2;
 		break;
 	}
 	case 12:
 	{
-		static const char * const attrs2[] = {"profilePath", NULL};
+		static const char * const attrs2[] = {"profilePath",
+						      NULL};
 		attrs = attrs2;
 		break;
 	}
 	case 13:
 	{
-		static const char * const attrs2[] = {"description", NULL};
+		static const char * const attrs2[] = {"description",
+						      NULL};
 		attrs = attrs2;
 		break;
 	}
 	case 14:
 	{
-		static const char * const attrs2[] = {"userWorkstations", NULL};
+		static const char * const attrs2[] = {"userWorkstations",
+						      NULL};
 		attrs = attrs2;
 		break;
 	}
 	case 16:
 	{
-		static const char * const attrs2[] = {"userAccountControl", "pwdLastSet", NULL};
+		static const char * const attrs2[] = {"userAccountControl",
+						      "pwdLastSet",
+						      NULL};
 		attrs = attrs2;
 		break;
 	}
 	case 17:
 	{
-		static const char * const attrs2[] = {"accountExpires", NULL};
+		static const char * const attrs2[] = {"accountExpires",
+						      NULL};
 		attrs = attrs2;
 		break;
 	}
 	case 20:
 	{
-		static const char * const attrs2[] = {"userParameters", NULL};
+		static const char * const attrs2[] = {"userParameters",
+						      NULL};
 		attrs = attrs2;
 		break;
 	}
@@ -3345,6 +3380,7 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 		break;
 
 	case 6:
+		SET_STRING(msg, info6.account_name,     "samAccountName");
 		SET_STRING(msg, info6.full_name,        "displayName");
 		break;
 
@@ -3394,68 +3430,77 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 		break;
 
 	case 21:
-#define IFSET(bit) if (bit & r->in.info->info21.fields_present)	
+#define IFSET(bit) if (bit & r->in.info->info21.fields_present)
 		IFSET(SAMR_FIELD_ACCT_EXPIRY)
-			SET_UINT64(msg, info21.acct_expiry,    "accountExpires");	
+			SET_UINT64(msg, info21.acct_expiry,    "accountExpires");
 		IFSET(SAMR_FIELD_ACCOUNT_NAME)         
 			SET_STRING(msg, info21.account_name,   "samAccountName");
 		IFSET(SAMR_FIELD_FULL_NAME) 
 			SET_STRING(msg, info21.full_name,      "displayName");
-		IFSET(SAMR_FIELD_DESCRIPTION)
-			SET_STRING(msg, info21.description,    "description");
-		IFSET(SAMR_FIELD_COMMENT)
-			SET_STRING(msg, info21.comment,        "comment");
-		IFSET(SAMR_FIELD_LOGON_SCRIPT)
-			SET_STRING(msg, info21.logon_script,   "scriptPath");
-		IFSET(SAMR_FIELD_PROFILE_PATH)
-			SET_STRING(msg, info21.profile_path,   "profilePath");
 		IFSET(SAMR_FIELD_HOME_DIRECTORY)
 			SET_STRING(msg, info21.home_directory, "homeDirectory");
 		IFSET(SAMR_FIELD_HOME_DRIVE)
 			SET_STRING(msg, info21.home_drive,     "homeDrive");
+		IFSET(SAMR_FIELD_LOGON_SCRIPT)
+			SET_STRING(msg, info21.logon_script,   "scriptPath");
+		IFSET(SAMR_FIELD_PROFILE_PATH)
+			SET_STRING(msg, info21.profile_path,   "profilePath");
+		IFSET(SAMR_FIELD_DESCRIPTION)
+			SET_STRING(msg, info21.description,    "description");
 		IFSET(SAMR_FIELD_WORKSTATIONS)
 			SET_STRING(msg, info21.workstations,   "userWorkstations");
-		IFSET(SAMR_FIELD_LOGON_HOURS)
-			SET_LHOURS(msg, info21.logon_hours,    "logonHours");
-		IFSET(SAMR_FIELD_ACCT_FLAGS)
-			SET_AFLAGS(msg, info21.acct_flags,     "userAccountControl");
+		IFSET(SAMR_FIELD_COMMENT)
+			SET_STRING(msg, info21.comment,        "comment");
 		IFSET(SAMR_FIELD_PARAMETERS)   
 			SET_PARAMETERS(msg, info21.parameters, "userParameters");
+		IFSET(SAMR_FIELD_PRIMARY_GID)
+			SET_UINT(msg, info21.primary_gid,      "primaryGroupID");
+		IFSET(SAMR_FIELD_ACCT_FLAGS)
+			SET_AFLAGS(msg, info21.acct_flags,     "userAccountControl");
+		IFSET(SAMR_FIELD_LOGON_HOURS)
+			SET_LHOURS(msg, info21.logon_hours,    "logonHours");
 		IFSET(SAMR_FIELD_COUNTRY_CODE)
 			SET_UINT  (msg, info21.country_code,   "countryCode");
 		IFSET(SAMR_FIELD_CODE_PAGE)
-			SET_UINT  (msg, info21.code_page,      "codePage");	
+			SET_UINT  (msg, info21.code_page,      "codePage");
 #undef IFSET
 		break;
 
 	case 23:
 #define IFSET(bit) if (bit & r->in.info->info23.info.fields_present)
 		IFSET(SAMR_FIELD_ACCT_EXPIRY)
-			SET_UINT64(msg, info23.info.acct_expiry,  "accountExpires");	
+			SET_UINT64(msg, info23.info.acct_expiry,    "accountExpires");
 		IFSET(SAMR_FIELD_ACCOUNT_NAME)         
-			SET_STRING(msg, info23.info.account_name, "samAccountName");
-		IFSET(SAMR_FIELD_FULL_NAME)         
-			SET_STRING(msg, info23.info.full_name,    "displayName");
-		IFSET(SAMR_FIELD_DESCRIPTION)  
-			SET_STRING(msg, info23.info.description,  "description");
-		IFSET(SAMR_FIELD_COMMENT)      
-			SET_STRING(msg, info23.info.comment,      "comment");
-		IFSET(SAMR_FIELD_LOGON_SCRIPT) 
-			SET_STRING(msg, info23.info.logon_script, "scriptPath");
-		IFSET(SAMR_FIELD_PROFILE_PATH)      
-			SET_STRING(msg, info23.info.profile_path, "profilePath");
-		IFSET(SAMR_FIELD_WORKSTATIONS)  
-			SET_STRING(msg, info23.info.workstations, "userWorkstations");
-		IFSET(SAMR_FIELD_LOGON_HOURS)  
-			SET_LHOURS(msg, info23.info.logon_hours,  "logonHours");
-		IFSET(SAMR_FIELD_ACCT_FLAGS)     
-			SET_AFLAGS(msg, info23.info.acct_flags,   "userAccountControl");
-		IFSET(SAMR_FIELD_PARAMETERS)     
+			SET_STRING(msg, info23.info.account_name,   "samAccountName");
+		IFSET(SAMR_FIELD_FULL_NAME)
+			SET_STRING(msg, info23.info.full_name,      "displayName");
+		IFSET(SAMR_FIELD_HOME_DIRECTORY)
+			SET_STRING(msg, info23.info.home_directory, "homeDirectory");
+		IFSET(SAMR_FIELD_HOME_DRIVE)
+			SET_STRING(msg, info23.info.home_drive,     "homeDrive");
+		IFSET(SAMR_FIELD_LOGON_SCRIPT)
+			SET_STRING(msg, info23.info.logon_script,   "scriptPath");
+		IFSET(SAMR_FIELD_PROFILE_PATH)
+			SET_STRING(msg, info23.info.profile_path,   "profilePath");
+		IFSET(SAMR_FIELD_DESCRIPTION)
+			SET_STRING(msg, info23.info.description,    "description");
+		IFSET(SAMR_FIELD_WORKSTATIONS)
+			SET_STRING(msg, info23.info.workstations,   "userWorkstations");
+		IFSET(SAMR_FIELD_COMMENT)
+			SET_STRING(msg, info23.info.comment,        "comment");
+		IFSET(SAMR_FIELD_PARAMETERS)
 			SET_PARAMETERS(msg, info23.info.parameters, "userParameters");
-		IFSET(SAMR_FIELD_COUNTRY_CODE) 
-			SET_UINT  (msg, info23.info.country_code, "countryCode");
-		IFSET(SAMR_FIELD_CODE_PAGE)    
-			SET_UINT  (msg, info23.info.code_page,    "codePage");
+		IFSET(SAMR_FIELD_PRIMARY_GID)
+			SET_UINT(msg, info23.info.primary_gid,      "primaryGroupID");
+		IFSET(SAMR_FIELD_ACCT_FLAGS)
+			SET_AFLAGS(msg, info23.info.acct_flags,     "userAccountControl");
+		IFSET(SAMR_FIELD_LOGON_HOURS)
+			SET_LHOURS(msg, info23.info.logon_hours,    "logonHours");
+		IFSET(SAMR_FIELD_COUNTRY_CODE)
+			SET_UINT  (msg, info23.info.country_code,   "countryCode");
+		IFSET(SAMR_FIELD_CODE_PAGE)
+			SET_UINT  (msg, info23.info.code_page,      "codePage");
+
 		IFSET(SAMR_FIELD_NT_PASSWORD_PRESENT) {
 			status = samr_set_password(dce_call,
 						   a_state->sam_ctx,
@@ -3487,31 +3532,38 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 	case 25:
 #define IFSET(bit) if (bit & r->in.info->info25.info.fields_present)
 		IFSET(SAMR_FIELD_ACCT_EXPIRY)
-			SET_UINT64(msg, info25.info.acct_expiry,  "accountExpires");	
+			SET_UINT64(msg, info25.info.acct_expiry,    "accountExpires");
 		IFSET(SAMR_FIELD_ACCOUNT_NAME)         
-			SET_STRING(msg, info25.info.account_name, "samAccountName");
-		IFSET(SAMR_FIELD_FULL_NAME)         
-			SET_STRING(msg, info25.info.full_name,    "displayName");
-		IFSET(SAMR_FIELD_DESCRIPTION)  
-			SET_STRING(msg, info25.info.description,  "description");
-		IFSET(SAMR_FIELD_COMMENT)      
-			SET_STRING(msg, info25.info.comment,      "comment");
-		IFSET(SAMR_FIELD_LOGON_SCRIPT) 
-			SET_STRING(msg, info25.info.logon_script, "scriptPath");
-		IFSET(SAMR_FIELD_PROFILE_PATH)      
-			SET_STRING(msg, info25.info.profile_path, "profilePath");
-		IFSET(SAMR_FIELD_WORKSTATIONS)  
-			SET_STRING(msg, info25.info.workstations, "userWorkstations");
-		IFSET(SAMR_FIELD_LOGON_HOURS)  
-			SET_LHOURS(msg, info25.info.logon_hours,  "logonHours");
-		IFSET(SAMR_FIELD_ACCT_FLAGS)     
-			SET_AFLAGS(msg, info25.info.acct_flags,   "userAccountControl");
-		IFSET(SAMR_FIELD_PARAMETERS)     
+			SET_STRING(msg, info25.info.account_name,   "samAccountName");
+		IFSET(SAMR_FIELD_FULL_NAME)
+			SET_STRING(msg, info25.info.full_name,      "displayName");
+		IFSET(SAMR_FIELD_HOME_DIRECTORY)
+			SET_STRING(msg, info25.info.home_directory, "homeDirectory");
+		IFSET(SAMR_FIELD_HOME_DRIVE)
+			SET_STRING(msg, info25.info.home_drive,     "homeDrive");
+		IFSET(SAMR_FIELD_LOGON_SCRIPT)
+			SET_STRING(msg, info25.info.logon_script,   "scriptPath");
+		IFSET(SAMR_FIELD_PROFILE_PATH)
+			SET_STRING(msg, info25.info.profile_path,   "profilePath");
+		IFSET(SAMR_FIELD_DESCRIPTION)
+			SET_STRING(msg, info25.info.description,    "description");
+		IFSET(SAMR_FIELD_WORKSTATIONS)
+			SET_STRING(msg, info25.info.workstations,   "userWorkstations");
+		IFSET(SAMR_FIELD_COMMENT)
+			SET_STRING(msg, info25.info.comment,        "comment");
+		IFSET(SAMR_FIELD_PARAMETERS)
 			SET_PARAMETERS(msg, info25.info.parameters, "userParameters");
-		IFSET(SAMR_FIELD_COUNTRY_CODE) 
-			SET_UINT  (msg, info25.info.country_code, "countryCode");
-		IFSET(SAMR_FIELD_CODE_PAGE)    
-			SET_UINT  (msg, info25.info.code_page,    "codePage");
+		IFSET(SAMR_FIELD_PRIMARY_GID)
+			SET_UINT(msg, info25.info.primary_gid,      "primaryGroupID");
+		IFSET(SAMR_FIELD_ACCT_FLAGS)
+			SET_AFLAGS(msg, info25.info.acct_flags,     "userAccountControl");
+		IFSET(SAMR_FIELD_LOGON_HOURS)
+			SET_LHOURS(msg, info25.info.logon_hours,    "logonHours");
+		IFSET(SAMR_FIELD_COUNTRY_CODE)
+			SET_UINT  (msg, info25.info.country_code,   "countryCode");
+		IFSET(SAMR_FIELD_CODE_PAGE)
+			SET_UINT  (msg, info25.info.code_page,      "codePage");
+
 		IFSET(SAMR_FIELD_NT_PASSWORD_PRESENT) {
 			status = samr_set_password_ex(dce_call,
 						      a_state->sam_ctx,
@@ -3577,14 +3629,15 @@ static NTSTATUS dcesrv_samr_GetGroupsForUser(struct dcesrv_call_state *dce_call,
 	struct ldb_message **res;
 	const char * const attrs[2] = { "objectSid", NULL };
 	struct samr_RidWithAttributeArray *array;
-	int count;
+	int i, count;
 
 	DCESRV_PULL_HANDLE(h, r->in.user_handle, SAMR_HANDLE_USER);
 
 	a_state = h->data;
 	d_state = a_state->domain_state;
 
-	count = samdb_search_domain(a_state->sam_ctx, mem_ctx, d_state->domain_dn, &res,
+	count = samdb_search_domain(a_state->sam_ctx, mem_ctx,
+				    d_state->domain_dn, &res,
 				    attrs, d_state->domain_sid,
 				    "(&(member=%s)(grouptype=%d)(objectclass=group))",
 				    ldb_dn_get_linearized(a_state->account_dn),
@@ -3599,29 +3652,34 @@ static NTSTATUS dcesrv_samr_GetGroupsForUser(struct dcesrv_call_state *dce_call,
 	array->count = 0;
 	array->rids = NULL;
 
-	if (count > 0) {
-		int i;
-		array->rids = talloc_array(mem_ctx, struct samr_RidWithAttribute,
-					    count);
+	array->rids = talloc_array(mem_ctx, struct samr_RidWithAttribute,
+					    count + 1);
+	if (array->rids == NULL)
+		return NT_STATUS_NO_MEMORY;
 
-		if (array->rids == NULL)
-			return NT_STATUS_NO_MEMORY;
+	/* Adds the primary group */
+	array->rids[0].rid = samdb_search_uint(a_state->sam_ctx, mem_ctx,
+					       ~0, a_state->account_dn,
+					       "primaryGroupID", NULL);
+	array->rids[0].attributes = SE_GROUP_MANDATORY
+			| SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
+	array->count += 1;
 
-		for (i=0; i<count; i++) {
-			struct dom_sid *group_sid;
+	/* Adds the additional groups */
+	for (i = 0; i < count; i++) {
+		struct dom_sid *group_sid;
 
-			group_sid = samdb_result_dom_sid(mem_ctx, res[i],
-							 "objectSid");
-			if (group_sid == NULL) {
-				DEBUG(0, ("Couldn't find objectSid attrib\n"));
-				continue;
-			}
-
-			array->rids[array->count].rid =
-				group_sid->sub_auths[group_sid->num_auths-1];
-			array->rids[array->count].attributes = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
-			array->count += 1;
+		group_sid = samdb_result_dom_sid(mem_ctx, res[i], "objectSid");
+		if (group_sid == NULL) {
+			DEBUG(0, ("Couldn't find objectSid attrib\n"));
+			continue;
 		}
+
+		array->rids[i + 1].rid =
+			group_sid->sub_auths[group_sid->num_auths-1];
+		array->rids[i + 1].attributes = SE_GROUP_MANDATORY
+			| SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
+		array->count += 1;
 	}
 
 	*r->out.rids = array;
@@ -3640,12 +3698,13 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 	struct samr_domain_state *d_state;
 	struct ldb_message **res;
 	int ldb_cnt, count, i;
-	const char * const attrs[] = { "objectSid", "sAMAccountName", "displayName",
-				       "description", "userAccountControl", "pwdLastSet", NULL };
+	const char * const attrs[] = { "objectSid", "sAMAccountName",
+		"displayName", "description", "userAccountControl",
+		"pwdLastSet", NULL };
 	struct samr_DispEntryFull *entriesFull = NULL;
 	struct samr_DispEntryFullGroup *entriesFullGroup = NULL;
 	struct samr_DispEntryAscii *entriesAscii = NULL;
-	struct samr_DispEntryGeneral * entriesGeneral = NULL;
+	struct samr_DispEntryGeneral *entriesGeneral = NULL;
 	const char *filter;
 
 	DCESRV_PULL_HANDLE(h, r->in.domain_handle, SAMR_HANDLE_DOMAIN);
@@ -3689,8 +3748,8 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 	switch (r->in.level) {
 	case 1:
 		entriesGeneral = talloc_array(mem_ctx,
-						struct samr_DispEntryGeneral,
-						ldb_cnt);
+					     struct samr_DispEntryGeneral,
+					     ldb_cnt);
 		break;
 	case 2:
 		entriesFull = talloc_array(mem_ctx,
@@ -3890,12 +3949,12 @@ static NTSTATUS dcesrv_samr_GetUserPwInfo(struct dcesrv_call_state *dce_call, TA
 
 	a_state = h->data;
 
-	r->out.info->min_password_length = samdb_search_uint(a_state->sam_ctx, mem_ctx, 0,
-							     a_state->domain_state->domain_dn, "minPwdLength",
-							     NULL);
-	r->out.info->password_properties = samdb_search_uint(a_state->sam_ctx, mem_ctx, 0,
-							     a_state->account_dn,
-							     "pwdProperties", NULL);
+	r->out.info->min_password_length = samdb_search_uint(a_state->sam_ctx,
+		mem_ctx, 0, a_state->domain_state->domain_dn, "minPwdLength",
+		NULL);
+	r->out.info->password_properties = samdb_search_uint(a_state->sam_ctx,
+		mem_ctx, 0, a_state->account_dn, "pwdProperties", NULL);
+
 	return NT_STATUS_OK;
 }
 
@@ -4123,8 +4182,10 @@ static NTSTATUS dcesrv_samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TAL
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	r->out.info->min_password_length = samdb_result_uint(msgs[0], "minPwdLength", 0);
-	r->out.info->password_properties = samdb_result_uint(msgs[0], "pwdProperties", 1);
+	r->out.info->min_password_length = samdb_result_uint(msgs[0],
+		"minPwdLength", 0);
+	r->out.info->password_properties = samdb_result_uint(msgs[0],
+		"pwdProperties", 1);
 
 	talloc_free(msgs);
 
