@@ -61,3 +61,4 @@ samba4.ntvfs.cifs.raw.
 ^samba4.net.api.become.dc.*$			# Fails
 nss.test						# Fails
 raw.offline 			# Samba 4 doesn't have much offline support yet
+rpc.autoidl  # this one just generates a lot of noise, and is no longer useful
