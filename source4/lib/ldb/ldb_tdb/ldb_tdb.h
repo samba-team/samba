@@ -8,8 +8,6 @@ struct ltdb_private {
 	TDB_CONTEXT *tdb;
 	unsigned int connect_flags;
 	
-	/* a double is used for portability and ease of string
-	   handling. It has plenty of digits of precision */
 	unsigned long long sequence_number;
 
 	/* the low level tdb seqnum - used to avoid loading BASEINFO when
