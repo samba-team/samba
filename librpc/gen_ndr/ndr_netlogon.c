@@ -296,9 +296,22 @@ _PUBLIC_ void ndr_print_netr_LogonParameterControl(struct ndr_print *ndr, const 
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "MSV1_0_CLEARTEXT_PASSWORD_ALLOWED", MSV1_0_CLEARTEXT_PASSWORD_ALLOWED, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "MSV1_0_UPDATE_LOGON_STATISTICS", MSV1_0_UPDATE_LOGON_STATISTICS, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "MSV1_0_RETURN_USER_PARAMETERS", MSV1_0_RETURN_USER_PARAMETERS, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "MSV1_0_DONT_TRY_GUEST_ACCOUNT", MSV1_0_DONT_TRY_GUEST_ACCOUNT, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT", MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "MSV1_0_RETURN_PASSWORD_EXPIRY", MSV1_0_RETURN_PASSWORD_EXPIRY, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "MSV1_0_USE_CLIENT_CHALLENGE", MSV1_0_USE_CLIENT_CHALLENGE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "MSV1_0_TRY_GUEST_ACCOUNT_ONLY", MSV1_0_TRY_GUEST_ACCOUNT_ONLY, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "MSV1_0_RETURN_PROFILE_PATH", MSV1_0_RETURN_PROFILE_PATH, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "MSV1_0_TRY_SPECIFIED_DOMAIN_ONLY", MSV1_0_TRY_SPECIFIED_DOMAIN_ONLY, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT", MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "MSV1_0_DISABLE_PERSONAL_FALLBACK", MSV1_0_DISABLE_PERSONAL_FALLBACK, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "MSV1_0_ALLOW_FORCE_GUEST", MSV1_0_ALLOW_FORCE_GUEST, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "MSV1_0_CLEARTEXT_PASSWORD_SUPPLIED", MSV1_0_CLEARTEXT_PASSWORD_SUPPLIED, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "MSV1_0_USE_DOMAIN_FOR_ROUTING_ONLY", MSV1_0_USE_DOMAIN_FOR_ROUTING_ONLY, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "MSV1_0_ALLOW_MSVCHAPV2", MSV1_0_ALLOW_MSVCHAPV2, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "MSV1_0_S4U2SELF", MSV1_0_S4U2SELF, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "MSV1_0_CHECK_LOGONHOURS_FOR_S4U", MSV1_0_CHECK_LOGONHOURS_FOR_S4U, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "MSV1_0_SUBAUTHENTICATION_DLL_EX", MSV1_0_SUBAUTHENTICATION_DLL_EX, r);
 	ndr->depth--;
 }
 
