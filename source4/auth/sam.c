@@ -373,105 +373,130 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx,
 					   const char *domain_name,
 					   struct ldb_dn *domain_dn, 
 					   struct ldb_message *msg,
-					   DATA_BLOB user_sess_key, DATA_BLOB lm_sess_key,
-					   struct auth_serversupplied_info **_server_info)
+					   DATA_BLOB user_sess_key,
+					   DATA_BLOB lm_sess_key,
+					   struct auth_serversupplied_info
+						   **_server_info)
 {
 	NTSTATUS status;
 	struct auth_serversupplied_info *server_info;
-	int group_ret = 0;
-	/* find list of sids */
-	struct dom_sid **groupSIDs = NULL;
+	const char *str;
+	struct dom_sid *tmp_sid;
+	/* SIDs for the account and his primary group */
 	struct dom_sid *account_sid;
 	struct dom_sid *primary_group_sid;
-	const char *str;
-	uint_t rid;
-	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);	
+	/* SID structures for the expanded group memberships */
+	struct dom_sid **groupSIDs = NULL, **groupSIDs_2 = NULL;
+	int num_groupSIDs = 0, num_groupSIDs_2 = 0, i;
 
-	server_info = talloc(tmp_ctx, struct auth_serversupplied_info);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info, tmp_ctx);
+	server_info = talloc(mem_ctx, struct auth_serversupplied_info);
+	NT_STATUS_HAVE_NO_MEMORY(server_info);
 
 	account_sid = samdb_result_dom_sid(server_info, msg, "objectSid");
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(account_sid, tmp_ctx);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(account_sid, server_info);
 
-	status = authsam_expand_nested_groups(sam_ctx, account_sid, true,
-		server_info, &groupSIDs, &group_ret);
+	primary_group_sid = dom_sid_add_rid(server_info,
+		samdb_domain_sid(sam_ctx),
+		samdb_result_uint(msg, "primaryGroupID", ~0));
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(primary_group_sid, server_info);
+
+	/* Expands the primary group */
+	status = authsam_expand_nested_groups(sam_ctx, primary_group_sid, false,
+		server_info, &groupSIDs, &num_groupSIDs);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(tmp_ctx);
+		talloc_free(server_info);
 		return status;
 	}
 
-	primary_group_sid = dom_sid_dup(server_info, account_sid);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(primary_group_sid, tmp_ctx);
-
-	rid = samdb_result_uint(msg, "primaryGroupID", ~0);
-	if (rid == ~0) {
-		if (group_ret > 0) {
-			primary_group_sid = groupSIDs[0];
-		} else {
-			primary_group_sid = NULL;
-		}
-	} else {
-		primary_group_sid->sub_auths[primary_group_sid->num_auths-1] = rid;
+	/* Expands the additional groups */
+	status = authsam_expand_nested_groups(sam_ctx, account_sid, true,
+		server_info, &groupSIDs_2, &num_groupSIDs_2);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(server_info);
+		return status;
 	}
+
+	/* Merge the two expanded structures (groupSIDs, groupSIDs_2) */
+	for (i = 0; i < num_groupSIDs_2; i++)
+		if (!sids_contains_sid((const struct dom_sid **) groupSIDs,
+				num_groupSIDs, groupSIDs_2[i])) {
+			tmp_sid = dom_sid_dup(server_info, groupSIDs_2[i]);
+			NT_STATUS_HAVE_NO_MEMORY_AND_FREE(tmp_sid, server_info);
+			groupSIDs = talloc_realloc(server_info, groupSIDs,
+				struct dom_sid *, num_groupSIDs + 1);
+			NT_STATUS_HAVE_NO_MEMORY_AND_FREE(groupSIDs,
+				server_info);
+			groupSIDs[num_groupSIDs] = tmp_sid;
+			++num_groupSIDs;
+		}
+	talloc_free(groupSIDs_2);
 
 	server_info->account_sid = account_sid;
 	server_info->primary_group_sid = primary_group_sid;
 	
-	server_info->n_domain_groups = group_ret;
 	server_info->domain_groups = groupSIDs;
+	server_info->n_domain_groups = num_groupSIDs;
 
-	server_info->account_name = talloc_steal(server_info, samdb_result_string(msg, "sAMAccountName", NULL));
+	server_info->account_name = talloc_steal(server_info,
+		samdb_result_string(msg, "sAMAccountName", NULL));
 
 	server_info->domain_name = talloc_strdup(server_info, domain_name);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->domain_name, tmp_ctx);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->domain_name,
+		server_info);
 
 	str = samdb_result_string(msg, "displayName", "");
 	server_info->full_name = talloc_strdup(server_info, str);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->full_name, tmp_ctx);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->full_name, server_info);
 
 	str = samdb_result_string(msg, "scriptPath", "");
 	server_info->logon_script = talloc_strdup(server_info, str);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->logon_script, tmp_ctx);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->logon_script,
+		server_info);
 
 	str = samdb_result_string(msg, "profilePath", "");
 	server_info->profile_path = talloc_strdup(server_info, str);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->profile_path, tmp_ctx);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->profile_path,
+		server_info);
 
 	str = samdb_result_string(msg, "homeDirectory", "");
 	server_info->home_directory = talloc_strdup(server_info, str);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->home_directory, tmp_ctx);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->home_directory,
+		server_info);
 
 	str = samdb_result_string(msg, "homeDrive", "");
 	server_info->home_drive = talloc_strdup(server_info, str);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->home_drive, tmp_ctx);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->home_drive, server_info);
 
 	server_info->logon_server = talloc_strdup(server_info, netbios_name);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->logon_server, tmp_ctx);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->logon_server,
+		server_info);
 
 	server_info->last_logon = samdb_result_nttime(msg, "lastLogon", 0);
 	server_info->last_logoff = samdb_result_last_logoff(msg);
 	server_info->acct_expiry = samdb_result_account_expires(msg);
-	server_info->last_password_change = samdb_result_nttime(msg, "pwdLastSet", 0);
-
+	server_info->last_password_change = samdb_result_nttime(msg,
+		"pwdLastSet", 0);
 	server_info->allow_password_change
 		= samdb_result_allow_password_change(sam_ctx, mem_ctx, 
-						     domain_dn, msg, "pwdLastSet");
+			domain_dn, msg, "pwdLastSet");
 	server_info->force_password_change
-		= samdb_result_force_password_change(sam_ctx, mem_ctx, 
-						     domain_dn, msg);
-	
+		= samdb_result_force_password_change(sam_ctx, mem_ctx,
+			domain_dn, msg);
 	server_info->logon_count = samdb_result_uint(msg, "logonCount", 0);
-	server_info->bad_password_count = samdb_result_uint(msg, "badPwdCount", 0);
+	server_info->bad_password_count = samdb_result_uint(msg, "badPwdCount",
+		0);
 
 	server_info->acct_flags = samdb_result_acct_flags(sam_ctx, mem_ctx, 
 							  msg, domain_dn);
 
-	server_info->user_session_key = user_sess_key;
-	server_info->lm_session_key = lm_sess_key;
+	server_info->user_session_key = data_blob_talloc_reference(server_info,
+		&user_sess_key);
+	server_info->lm_session_key = data_blob_talloc_reference(server_info,
+		&lm_sess_key);
 
 	server_info->authenticated = true;
 
-	*_server_info = talloc_steal(mem_ctx, server_info);
+	*_server_info = server_info;
 
 	return NT_STATUS_OK;
 }
@@ -499,8 +524,8 @@ NTSTATUS sam_get_results_principal(struct ldb_context *sam_ctx,
 	}
 	
 	/* pull the user attributes */
-	ret = gendb_search_single_extended_dn(sam_ctx, tmp_ctx, user_dn, LDB_SCOPE_BASE,
-					      msg, attrs, "(objectClass=*)");
+	ret = gendb_search_single_extended_dn(sam_ctx, tmp_ctx, user_dn,
+		LDB_SCOPE_BASE, msg, attrs, "(objectClass=*)");
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
