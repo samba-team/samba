@@ -52,6 +52,7 @@ o   Volker Lendecke <vl@samba.org>
 
 o   Stefan Metzmacher <metze@samba.org>
     * BUG 6222: Default to DRSUAPI replication for net rpc vampire keytab.
+    * BUG 6532: Fix the build with external talloc.
     * BUG 6538: Cancel all locks that are made before the first failure.
     * BUG 6627: Raise the timeout for lsa_Lookup*() calls from 10 to 35 seconds.
 
