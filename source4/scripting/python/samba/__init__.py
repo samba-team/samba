@@ -119,8 +119,8 @@ class Ldb(ldb.Ldb):
         assert len(values) == 1
         return self.schema_format_value(attribute, values.pop())
 
-    def erase(self):
-        """Erase this ldb, removing all records."""
+    def erase_except_schema_controlled(self):
+        """Erase this ldb, removing all records, except those that are controlled by Samba4's schema."""
         basedn = ""
         # Delete the 'visible' records
         for msg in self.search(basedn, ldb.SCOPE_SUBTREE, 
@@ -136,8 +136,21 @@ class Ldb(ldb.Ldb):
         assert len(res) == 0
 
         # delete the specials
-        for attr in ["@INDEXLIST", "@ATTRIBUTES", "@SUBCLASSES", "@MODULES", 
+        for attr in ["@SUBCLASSES", "@MODULES", 
                      "@OPTIONS", "@PARTITION", "@KLUDGEACL"]:
+            try:
+                self.delete(attr)
+            except ldb.LdbError, (ldb.ERR_NO_SUCH_OBJECT, _):
+                # Ignore missing dn errors
+                pass
+
+    def erase(self):
+        """Erase this ldb, removing all records."""
+        
+        self.erase_except_schema_controlled()
+
+        # delete the specials
+        for attr in ["@INDEXLIST", "@ATTRIBUTES"]:
             try:
                 self.delete(attr)
             except ldb.LdbError, (ldb.ERR_NO_SUCH_OBJECT, _):

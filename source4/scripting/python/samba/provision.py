@@ -3,7 +3,7 @@
 # backend code for provisioning a Samba4 server
 
 # Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2008
-# Copyright (C) Andrew Bartlett <abartlet@samba.org> 2008
+# Copyright (C) Andrew Bartlett <abartlet@samba.org> 2008-2009
 # Copyright (C) Oliver Liebel <oliver@itc.li> 2008-2009
 #
 # Based on the original in EJS:
@@ -525,13 +525,13 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
         samdb = Ldb(url=samdb_path, session_info=session_info, 
                       credentials=credentials, lp=lp, options=["modules:"])
         # Wipes the database
-        samdb.erase()
+        samdb.erase_except_schema_controlled()
     except LdbError:
         os.unlink(samdb_path)
         samdb = Ldb(url=samdb_path, session_info=session_info, 
                       credentials=credentials, lp=lp, options=["modules:"])
          # Wipes the database
-        samdb.erase()
+        samdb.erase_except_schema_controlled()
         
 
     #Add modules to the list to activate them by default
