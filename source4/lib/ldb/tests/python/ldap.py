@@ -6,6 +6,7 @@ import getopt
 import optparse
 import sys
 import time
+import random
 
 sys.path.append("bin/python")
 sys.path.append("../lib/subunit/python")
@@ -1167,7 +1168,7 @@ cn: """ + class_name + """
 objectCategory: CN=Class-Schema,""" + self.schema_dn + """
 defaultObjectCategory: CN=%s,%s""" % (class_name, self.schema_dn) + """
 distinguishedName: CN=%s,%s""" % (class_name, self.schema_dn) + """
-governsID: 1.2.840.""" + time.strftime("%s", time.gmtime())[3:] + """.1.5.9939
+governsID: 1.2.840.""" + str(random.randint(1,100000)) + """.1.5.9939
 instanceType: 4
 name: """ + class_name + """
 objectClassCategory: 1
