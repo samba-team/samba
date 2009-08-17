@@ -835,10 +835,18 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
     samdb.transaction_start()
     try:
         message("Erasing data from partitions")
-        # Load the schema (again).  This time it will force a reindex, to make the below computationally sane
+        # Load the schema (again).  This time it will force a reindex,
+        # and will therefore make the erase_partitions() below
+        # computationally sane
         samdb.set_schema_from_ldb(schema.ldb)
         samdb.erase_partitions()
     
+        # Set the domain functionality levels onto the database.
+        # Various module (the password_hash module in particular) need
+        # to know what level of AD we are emulating.
+
+        # These will be fixed into the database via the database
+        # modifictions below, but we need them set from the start.
         samdb.set_opaque_integer("domainFunctionality", domainFunctionality)
         samdb.set_opaque_integer("forestFunctionality", forestFunctionality)
         samdb.set_opaque_integer("domainControllerFunctionality", domainControllerFunctionality)
@@ -888,6 +896,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
             "SCHEMADN": names.schemadn,
             })
 
+        # The LDIF here was created when the Schema object was constructed
         message("Setting up sam.ldb schema")
         samdb.add_ldif(schema.schema_dn_add)
         samdb.modify_ldif(schema.schema_dn_modify)
