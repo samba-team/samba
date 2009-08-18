@@ -5,7 +5,7 @@
 
    Copyright (C) Stefan Metzmacher 2009
 
-     ** NOTE! The following LGPL license applies to the talloc
+     ** NOTE! The following LGPL license applies to the tevent
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
 
