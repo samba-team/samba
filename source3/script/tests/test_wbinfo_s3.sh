@@ -46,7 +46,7 @@ NEWIFS=$':'
 IFS=$NEWIFS
 for t in $tests; do
    IFS=$OLDIFS
-   testit "wbinfo $t" $VALGRIND $BINDIR/wbinfo $CONFIGURATION $ADDARGS $t || failed=`expr $failed + 1`
+   testit "wbinfo $t" $VALGRIND $BINDIR/wbinfo $ADDARGS $t || failed=`expr $failed + 1`
    IFS=$NEWIFS
 done
 IFS=$OLDIFS
