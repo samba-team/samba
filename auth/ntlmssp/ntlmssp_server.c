@@ -150,16 +150,39 @@ NTSTATUS gensec_ntlmssp_server_negotiate(struct gensec_security *gensec_security
 							cryptkey, 8);
 
 	/* This creates the 'blob' of names that appears at the end of the packet */
-	if (chal_flags & NTLMSSP_NEGOTIATE_TARGET_INFO)
-	{
-		status = msrpc_gen(ntlmssp_state, &struct_blob, "aaaaa",
-			  MsvAvNbDomainName, target_name,
-			  MsvAvNbComputerName, ntlmssp_state->server.netbios_name,
-			  MsvAvDnsDomainName, ntlmssp_state->server.dns_domain,
-			  MsvAvDnsComputerName, ntlmssp_state->server.dns_name,
-			  MsvAvEOL, "");
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+	if (chal_flags & NTLMSSP_NEGOTIATE_TARGET_INFO) {
+		enum ndr_err_code err;
+		struct AV_PAIR *pairs = NULL;
+		uint32_t count = 5;
+
+		pairs = talloc_zero_array(ntlmssp_state, struct AV_PAIR, count);
+		if (pairs == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		pairs[0].AvId			= MsvAvNbDomainName;
+		pairs[0].Value.AvNbDomainName	= target_name;
+
+		pairs[1].AvId			= MsvAvNbComputerName;
+		pairs[1].Value.AvNbComputerName	= ntlmssp_state->server.netbios_name;
+
+		pairs[2].AvId			= MsvAvDnsDomainName;
+		pairs[2].Value.AvDnsDomainName	= ntlmssp_state->server.dns_domain;
+
+		pairs[3].AvId			= MsvAvDnsComputerName;
+		pairs[3].Value.AvDnsComputerName= ntlmssp_state->server.dns_name;
+
+		pairs[4].AvId			= MsvAvEOL;
+
+		ntlmssp_state->server.av_pair_list.count = count;
+		ntlmssp_state->server.av_pair_list.pair = pairs;
+
+		err = ndr_push_struct_blob(&struct_blob,
+					ntlmssp_state,
+					&ntlmssp_state->server.av_pair_list,
+					(ndr_push_flags_fn_t)ndr_push_AV_PAIR_LIST);
+		if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+			return NT_STATUS_NO_MEMORY;
 		}
 	} else {
 		struct_blob = data_blob_null;
