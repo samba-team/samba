@@ -82,6 +82,7 @@ struct ntlmssp_state
 		const char *netbios_domain;
 		const char *dns_name;
 		const char *dns_domain;
+		struct AV_PAIR_LIST av_pair_list;
 	} server;
 
 	DATA_BLOB internal_chal; /* Random challenge as supplied to the client for NTLM authentication */
