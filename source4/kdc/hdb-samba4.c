@@ -333,7 +333,7 @@ static krb5_error_code hdb_samba4_message2entry_keys(krb5_context context,
 		key.salt = NULL; /* No salt for this enc type */
 
 		ret = krb5_keyblock_init(context,
-					 ENCTYPE_ARCFOUR_HMAC_MD5,
+					 ENCTYPE_ARCFOUR_HMAC,
 					 hash->hash, sizeof(hash->hash), 
 					 &key.key);
 		if (ret) {
@@ -839,7 +839,7 @@ static krb5_error_code hdb_samba4_trust_message2entry(krb5_context context, HDB 
 		}
 		
 		ret = krb5_keyblock_init(context,
-					 ENCTYPE_ARCFOUR_HMAC_MD5,
+					 ENCTYPE_ARCFOUR_HMAC,
 					 password_hash.hash, sizeof(password_hash.hash), 
 					 &key.key);
 		

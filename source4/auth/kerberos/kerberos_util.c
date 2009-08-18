@@ -184,7 +184,7 @@ static krb5_error_code salt_principal_from_credentials(TALLOC_CTX *parent_ctx,
 				return EINVAL;
 			}
 			ret = krb5_keyblock_init(smb_krb5_context->krb5_context,
-						 ETYPE_ARCFOUR_HMAC_MD5,
+						 ENCTYPE_ARCFOUR_HMAC,
 						 mach_pwd->hash, sizeof(mach_pwd->hash), 
 						 &keyblock);
 			
