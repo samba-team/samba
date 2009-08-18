@@ -130,7 +130,7 @@ NTSTATUS wbsrv_samba3_ping(struct wbsrv_samba3_call *s3call)
 
 NTSTATUS wbsrv_samba3_domain_info(struct wbsrv_samba3_call *s3call)
 {
-	DEBUG(0, ("wbsrv_samba3_domain_info called, stub\n"));
+	DEBUG(5, ("wbsrv_samba3_domain_info called, stub\n"));
 	s3call->response.result = WINBINDD_OK;
 	fstrcpy(s3call->response.data.domain_info.name,
 		s3call->request.domain_name);
