@@ -65,9 +65,6 @@ static NTSTATUS check_path_syntax_internal(char *path,
 				if (strchr_m(&s[1], ':')) {
 					return NT_STATUS_OBJECT_NAME_INVALID;
 				}
-				if (StrCaseCmp(s, ":$DATA") != 0) {
-					return NT_STATUS_INVALID_PARAMETER;
-				}
 				break;
 			}
 		}

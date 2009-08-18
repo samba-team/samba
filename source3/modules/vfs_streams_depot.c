@@ -321,14 +321,20 @@ static NTSTATUS stream_smb_fname(vfs_handle_struct *handle,
 
 	*smb_fname_out = NULL;
 
+	stype = strchr_m(smb_fname->stream_name + 1, ':');
+
+	if (stype) {
+		if (StrCaseCmp(stype, ":$DATA") != 0) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+	}
+
 	dirname = stream_dir(handle, smb_fname, NULL, create_dir);
 
 	if (dirname == NULL) {
 		status = map_nt_error_from_unix(errno);
 		goto fail;
 	}
-
-	stype = strchr_m(smb_fname->stream_name + 1, ':');
 
 	stream_fname = talloc_asprintf(talloc_tos(), "%s/%s", dirname,
 				       smb_fname->stream_name);

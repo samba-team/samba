@@ -55,6 +55,9 @@ NTSTATUS onefs_stream_prep_smb_fname(TALLOC_CTX *ctx,
 		/* Strip off the :$DATA if one exists. */
 		str_tmp = strrchr_m(stream_name, ':');
 		if (str_tmp) {
+			if (StrCaseCmp(str_tmp, ":$DATA") != 0) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
 			str_tmp[0] = '\0';
 		}
 	}
