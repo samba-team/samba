@@ -687,6 +687,12 @@ objectClass: locality
 objectClass: physicalLocation
 l: Physical Locations tree root
 
+dn: CN=Deleted Objects,${CONFIGDN}
+objectClass: top
+objectClass: container
+description: Container for deleted objects
+isDeleted: TRUE
+
 # Schema located in "ad-schema/*.txt"
 
 dn: CN=Services,${CONFIGDN}
