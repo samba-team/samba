@@ -64,7 +64,7 @@ NTSTATUS smb1_file_se_access_check(const struct security_descriptor *sd,
  Check if we have open rights.
 ****************************************************************************/
 
-static NTSTATUS check_open_rights(struct connection_struct *conn,
+NTSTATUS smbd_check_open_rights(struct connection_struct *conn,
 				const struct smb_filename *smb_fname,
 				uint32_t access_mask,
 				uint32_t *access_granted)
@@ -90,7 +90,7 @@ static NTSTATUS check_open_rights(struct connection_struct *conn,
 			DACL_SECURITY_INFORMATION),&sd);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("check_open_rights: Could not get acl "
+		DEBUG(10, ("smbd_check_open_rights: Could not get acl "
 			"on %s: %s\n",
 			smb_fname_str_dbg(smb_fname),
 			nt_errstr(status)));
@@ -105,7 +105,7 @@ static NTSTATUS check_open_rights(struct connection_struct *conn,
 
 	TALLOC_FREE(sd);
 
-	DEBUG(10,("check_open_rights: file %s requesting "
+	DEBUG(10,("smbd_check_open_rights: file %s requesting "
 		"0x%x returning 0x%x (%s)\n",
 		smb_fname_str_dbg(smb_fname),
 		(unsigned int)access_mask,
@@ -477,7 +477,7 @@ static NTSTATUS open_file(files_struct *fsp,
 		if (file_existed) {
 			uint32_t access_granted = 0;
 
-			status = check_open_rights(conn,
+			status = smbd_check_open_rights(conn,
 					smb_fname,
 					access_mask,
 					&access_granted);
@@ -547,7 +547,7 @@ static NTSTATUS open_file(files_struct *fsp,
 							  smb_fname)));
 				} else {
 					DEBUG(10,("open_file: "
-						  "check_open_rights on file "
+						  "smbd_check_open_rights on file "
 						  "%s returned %s\n",
 						  smb_fname_str_dbg(smb_fname),
 						  nt_errstr(status) ));
@@ -2545,8 +2545,8 @@ static NTSTATUS open_directory(connection_struct *conn,
 
 	if (info == FILE_WAS_OPENED) {
 		uint32_t access_granted = 0;
-		status = check_open_rights(conn, smb_dname, access_mask,
-					   &access_granted);
+		status = smbd_check_open_rights(conn, smb_dname, access_mask,
+						&access_granted);
 
 		/* Were we trying to do a directory open
 		 * for delete and didn't get DELETE
@@ -2567,7 +2567,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 		}
 
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10, ("open_directory: check_open_rights on "
+			DEBUG(10, ("open_directory: smbd_check_open_rights on "
 				"file %s failed with %s\n",
 				smb_fname_str_dbg(smb_dname),
 				nt_errstr(status)));

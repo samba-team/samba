@@ -234,6 +234,11 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			   uint32_t *_mode,
 			   long *_prev_offset);
 
+NTSTATUS smbd_check_open_rights(struct connection_struct *conn,
+				const struct smb_filename *smb_fname,
+				uint32_t access_mask,
+				uint32_t *access_granted);
+
 void smbd_notify_cancel_by_smbreq(struct smbd_server_connection *sconn,
 				  const struct smb_request *smbreq);
 
