@@ -62,7 +62,7 @@ int ldb_handler_fold(struct ldb_context *ldb, void *mem_ctx,
 
 	out->data = (uint8_t *)ldb_casefold(ldb, mem_ctx, (const char *)(in->data), in->length);
 	if (out->data == NULL) {
-		ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb_handler_fold: unable to casefold string [%s]", in->data);
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb_handler_fold: unable to casefold string [%.*s]", (int)in->length, (const char *)in->data);
 		return -1;
 	}
 
