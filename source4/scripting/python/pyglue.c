@@ -220,11 +220,67 @@ static PyObject *py_samdb_get_domain_sid(PyLdbObject *self, PyObject *args)
 	if (!sid) {
 		PyErr_SetString(PyExc_RuntimeError, "samdb_domain_sid failed");
 		return NULL;
-	} 
+	}
+
 	retstr = dom_sid_string(NULL, sid);
 	ret = PyString_FromString(retstr);
 	talloc_free(retstr);
+
 	return ret;
+}
+
+static PyObject *py_samdb_set_password(PyLdbObject *self, PyObject *args,
+	PyObject *kwargs)
+{
+	PyObject *py_sam, *py_user_dn, *py_dom_dn, *py_mod, *py_user_change;
+	char *new_password;
+	bool user_change;
+	DATA_BLOB new_pwd_blob;
+	struct ldb_context *sam_ctx;
+	struct ldb_dn *user_dn, *dom_dn;
+	struct ldb_message *mod;
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS status;
+	const char * const kwnames[] = { "samdb", "user_dn", "dom_dn", "mod",
+		"new_password", "user_change", NULL };
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OOOOsO",
+		  discard_const_p(char *, kwnames),
+		  &py_sam, &py_user_dn, &py_dom_dn, &py_mod, &new_password,
+		  &py_user_change))
+		return NULL;
+
+	sam_ctx = PyLdb_AsLdbContext(py_sam);
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+	}
+
+	if (!PyObject_AsDn(mem_ctx, py_user_dn, sam_ctx, &user_dn)) {
+		PyErr_SetString(PyExc_RuntimeError, "user_dn invalid!");
+		return NULL;
+	}
+
+	if (!PyObject_AsDn(mem_ctx, py_dom_dn, sam_ctx, &dom_dn)) {
+		PyErr_SetString(PyExc_RuntimeError, "dom_dn invalid!");
+		return NULL;
+	}
+
+	mod = PyLdbMessage_AsMessage(py_mod);
+
+	user_change = PyInt_AsLong(py_user_change);
+
+	new_pwd_blob.data = (uint8_t *) new_password;
+	new_pwd_blob.length = strlen((char *) new_pwd_blob.data);
+
+	status = samdb_set_password(sam_ctx, mem_ctx, user_dn, dom_dn, mod,
+		&new_pwd_blob, NULL, NULL, user_change, NULL, NULL);
+
+	talloc_free(mem_ctx);
+
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_ldb_register_samba_handlers(PyObject *self, PyObject *args)
@@ -440,7 +496,8 @@ static PyObject *py_dom_sid_to_rid(PyLdbObject *self, PyObject *args)
 
 	sid = dom_sid_parse_talloc(NULL, PyString_AsString(py_sid));
 
-	status = dom_sid_split_rid(NULL, sid, NULL, &rid);
+	status = dom_sid_split_rid(NULL, (const struct dom_sid *)sid, NULL,
+		&rid);
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetString(PyExc_RuntimeError, "dom_sid_split_rid failed");
 		return NULL;
@@ -470,6 +527,10 @@ static PyMethodDef py_misc_methods[] = {
 	{ "samdb_get_domain_sid", (PyCFunction)py_samdb_get_domain_sid, METH_VARARGS,
 		"samdb_get_domain_sid(samdb)\n"
 		"Get SID of domain in use." },
+	{ "samdb_set_password", (PyCFunction)py_samdb_set_password,
+		METH_VARARGS|METH_KEYWORDS,
+		"samdb_set_password(samdb, user_dn, dom_dn, mod, new_password, user_change)\n"
+		"Set the password of a user" },
 	{ "ldb_register_samba_handlers", (PyCFunction)py_ldb_register_samba_handlers, METH_VARARGS,
 		"ldb_register_samba_handlers(ldb)\n"
 		"Register Samba-specific LDB modules and schemas." },
