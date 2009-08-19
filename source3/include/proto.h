@@ -6288,6 +6288,7 @@ void reply_openerror(struct smb_request *req, NTSTATUS status);
 
 /* The following definitions come from smbd/fake_file.c  */
 
+enum FAKE_FILE_TYPE is_fake_file_path(const char *path);
 enum FAKE_FILE_TYPE is_fake_file(const struct smb_filename *smb_fname);
 NTSTATUS open_fake_file(struct smb_request *req, connection_struct *conn,
 				uint16_t current_vuid,

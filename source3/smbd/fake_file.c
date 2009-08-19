@@ -71,37 +71,45 @@ static struct fake_file_handle *init_fake_file_handle(enum FAKE_FILE_TYPE type)
  Does this name match a fake filename ?
 ****************************************************************************/
 
+enum FAKE_FILE_TYPE is_fake_file_path(const char *path)
+{
+	int i;
+
+	if (!path) {
+		return FAKE_FILE_TYPE_NONE;
+	}
+
+	for (i=0;fake_files[i].name!=NULL;i++) {
+		if (strncmp(path,fake_files[i].name,strlen(fake_files[i].name))==0) {
+			DEBUG(5,("is_fake_file: [%s] is a fake file\n",path));
+			return fake_files[i].type;
+		}
+	}
+
+	return FAKE_FILE_TYPE_NONE;
+}
+
 enum FAKE_FILE_TYPE is_fake_file(const struct smb_filename *smb_fname)
 {
-#ifdef HAVE_SYS_QUOTAS
-	int i;
 	char *fname = NULL;
 	NTSTATUS status;
-#endif
+	enum FAKE_FILE_TYPE ret;
 
 	if (!smb_fname) {
 		return FAKE_FILE_TYPE_NONE;
 	}
 
-#ifdef HAVE_SYS_QUOTAS
 	status = get_full_smb_filename(talloc_tos(), smb_fname, &fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		return FAKE_FILE_TYPE_NONE;
 	}
 
-	for (i=0;fake_files[i].name!=NULL;i++) {
-		if (strncmp(fname,fake_files[i].name,strlen(fake_files[i].name))==0) {
-			DEBUG(5,("is_fake_file: [%s] is a fake file\n",fname));
-			TALLOC_FREE(fname);
-			return fake_files[i].type;
-		}
-	}
+	ret = is_fake_file_path(fname);
+
 	TALLOC_FREE(fname);
-#endif
 
-	return FAKE_FILE_TYPE_NONE;
+	return ret;
 }
-
 
 /****************************************************************************
  Open a fake quota file with a share mode.
