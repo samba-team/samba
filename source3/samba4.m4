@@ -131,6 +131,9 @@ SMB_INCLUDE_MK(lib/ldb/python.mk)
 # Not sure why we need this..
 SMB_ENABLE(swig_ldb,YES)
 
+# Don't build wbinfo twice
+SMB_ENABLE(wbinfo, NO)
+
 m4_include(lib/tls/config.m4)
 m4_include(torture/libnetapi/config.m4)
 
