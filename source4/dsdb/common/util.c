@@ -1578,8 +1578,8 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 			    struct ldb_dn *domain_dn,
 			    struct ldb_message *mod,
 			    const DATA_BLOB *new_password,
-			    struct samr_Password *lmNewHash, 
-			    struct samr_Password *ntNewHash,
+			    struct samr_Password *param_lmNewHash,
+			    struct samr_Password *param_ntNewHash,
 			    bool user_change,
 			    enum samr_RejectReason *reject_reason,
 			    struct samr_DomInfo1 **_dominfo)
@@ -1596,7 +1596,8 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 	int64_t minPwdAge;
 	uint_t minPwdLength, pwdProperties, pwdHistoryLength;
 	uint_t userAccountControl;
-	struct samr_Password *sambaLMPwdHistory, *sambaNTPwdHistory, *lmPwdHash, *ntPwdHash;
+	struct samr_Password *sambaLMPwdHistory, *sambaNTPwdHistory,
+		*lmPwdHash, *ntPwdHash, *lmNewHash, *ntNewHash;
 	struct samr_Password local_lmNewHash, local_ntNewHash;
 	int sambaLMPwdHistory_len, sambaNTPwdHistory_len;
 	struct dom_sid *domain_sid;
@@ -1623,6 +1624,10 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 	lmPwdHash =          samdb_result_hash(mem_ctx, res[0],   "dBCSPwd");
 	ntPwdHash =          samdb_result_hash(mem_ctx, res[0],   "unicodePwd");
 	pwdLastSet =         samdb_result_uint64(res[0], "pwdLastSet", 0);
+
+	/* Copy parameters */
+	lmNewHash = param_lmNewHash;
+	ntNewHash = param_ntNewHash;
 
 	/* Only non-trust accounts have restrictions (possibly this
 	 * test is the wrong way around, but I like to be restrictive
