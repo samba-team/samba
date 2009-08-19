@@ -225,28 +225,6 @@ static NTSTATUS store_cldap_reply(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-static NTSTATUS dsgetdcname_cache_refresh(TALLOC_CTX *mem_ctx,
-					  struct messaging_context *msg_ctx,
-					  const char *domain_name,
-					  struct GUID *domain_guid,
-					  uint32_t flags,
-					  const char *site_name,
-					  struct netr_DsRGetDCNameInfo *info)
-{
-	struct netr_DsRGetDCNameInfo *dc_info;
-
-	return dsgetdcname(mem_ctx,
-			   msg_ctx,
-			   domain_name,
-			   domain_guid,
-			   site_name,
-			   flags | DS_FORCE_REDISCOVERY,
-			   &dc_info);
-}
-
-/****************************************************************
-****************************************************************/
-
 static uint32_t get_cldap_reply_server_flags(struct netlogon_samlogon_response *r,
 					     uint32_t nt_version)
 {
@@ -424,10 +402,13 @@ static NTSTATUS dsgetdcname_cached(TALLOC_CTX *mem_ctx,
 	}
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
-		status = dsgetdcname_cache_refresh(mem_ctx, msg_ctx,
-						   domain_name,
-						   domain_guid, flags,
-						   site_name, *info);
+		struct netr_DsRGetDCNameInfo *dc_info;
+
+		status = dsgetdcname(mem_ctx, msg_ctx, domain_name,
+				     domain_guid, site_name,
+				     flags | DS_FORCE_REDISCOVERY,
+				     &dc_info);
+
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
