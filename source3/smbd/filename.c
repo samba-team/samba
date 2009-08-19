@@ -1073,6 +1073,17 @@ NTSTATUS filename_convert(TALLOC_CTX *ctx,
 		return status;
 	}
 
+	if (is_fake_file_path(name_in)) {
+		SMB_STRUCT_STAT st;
+		ZERO_STRUCT(st);
+		st.st_ex_nlink = 1;
+		status = create_synthetic_smb_fname_split(ctx,
+							  name_in,
+							  &st,
+							  pp_smb_fname);
+		return status;
+	}
+
 	/*
 	 * If the caller conditionally allows wildcard lookups, only add the
 	 * always allow if the path actually does contain a wildcard.
