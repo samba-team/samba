@@ -412,6 +412,8 @@ static NTSTATUS dsgetdcname_cached(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
+
+		*info = dc_info;
 	}
 
 	return status;
