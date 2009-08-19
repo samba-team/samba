@@ -1700,10 +1700,11 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 		ntNewHash = &local_ntNewHash;
 
 		/* Only check complexity if we can convert it at all.  Assuming unconvertable passwords are 'strong' */
-		if (convert_string_talloc_convenience(mem_ctx, lp_iconv_convenience(ldb_get_opaque(ctx, "loadparm")), 
-					  CH_UTF16, CH_UNIX, 
-					  new_password->data, new_password->length, 
-					  (void **)&new_pass, NULL, false)) {
+		if (convert_string_talloc_convenience(mem_ctx,
+			  lp_iconv_convenience(ldb_get_opaque(ctx, "loadparm")),
+			  CH_UTF16, CH_UNIX,
+			  new_password->data, new_password->length,
+			  (void **)&new_pass, NULL, false)) {
 
 			/* possibly check password complexity */
 			if (restrictions && (pwdProperties & DOMAIN_PASSWORD_COMPLEX) &&
