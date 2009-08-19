@@ -751,15 +751,19 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	omd.version = 1;
 
 	/*
-	 * TODO: add rename conflict handling
+	 * TODO: check repl data is correct after a rename
 	 */
 	if (ldb_dn_compare(msg->dn, ar->search_msg->dn) != 0) {
-		ldb_debug_set(ldb, LDB_DEBUG_FATAL, "replmd_replicated_apply_merge[%u]: rename not supported",
-			      ar->index_current);
-		ldb_debug(ldb, LDB_DEBUG_FATAL, "%s => %s\n",
+		ldb_debug(ldb, LDB_DEBUG_TRACE, "replmd_replicated_request rename %s => %s\n",
 			  ldb_dn_get_linearized(ar->search_msg->dn),
 			  ldb_dn_get_linearized(msg->dn));
-		return replmd_replicated_request_werror(ar, WERR_NOT_SUPPORTED);
+		if (ldb_rename(ldb, ar->search_msg->dn, msg->dn) != LDB_SUCCESS) {
+			ldb_debug(ldb, LDB_DEBUG_FATAL, "replmd_replicated_request rename %s => %s failed - %s\n",
+				  ldb_dn_get_linearized(ar->search_msg->dn),
+				  ldb_dn_get_linearized(msg->dn),
+				  ldb_errstring(ldb));
+			return replmd_replicated_request_werror(ar, WERR_DS_DRA_DB_ERROR);
+		}
 	}
 
 	ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &seq_num);
