@@ -43,6 +43,7 @@ BuildRequires: pam-devel, readline-devel, fileutils, libacl-devel, openldap-deve
 
 %define _libarchdir /usr/%{_libarch}
 
+%define numcpu  %(grep "^processor" /proc/cpuinfo |wc -l | sed -e 's/^0$/1/')
 
 %description
 Samba is the protocol by which a lot of PC-related machines share
@@ -200,7 +201,7 @@ if [ ${CC_MAJOR} -ge 3 ]; then
         fi
 fi
 
-make %{?_smp_mflags} \
+make -j%{numcpu} %{?_smp_mflags} \
 	nss_modules pam_modules
 
 rm -rf %{_32bit_tmp_dir}
@@ -266,7 +267,7 @@ if [ ${CC_MAJOR} -ge 3 ]; then
 fi
 
 
-make %{?_smp_mflags} \
+make -j %{numcpu} %{?_smp_mflags} \
 	all modules pam_smbpass
 
 # Remove some permission bits to avoid to many dependencies
