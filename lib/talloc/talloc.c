@@ -1921,31 +1921,3 @@ int talloc_is_parent(const void *context, const void *ptr)
 	}
 	return 0;
 }
-
-
-
-
-/* ABI compat functions (do NOT append anything beyond thess functions,
- * keep them as the last ones in the file) */
-
-static const char *talloc_ABI_compat_location = "Called from compatibility function";
-
-/* ABI compat function (don't use) */
-void *_talloc_reference(const void *context, const void *ptr) {
-	return _talloc_reference_loc(context, ptr, talloc_ABI_compat_location);
-}
-
-/* ABI compat function (don't use) */
-void *_talloc_steal(const void *new_ctx, const void *ptr)
-{
-	return _talloc_steal_internal(new_ctx, ptr);
-}
-
-#undef talloc_free
-int talloc_free(void *ptr);
-int talloc_free(void *ptr)
-{
-	return _talloc_free_internal(ptr);
-}
-
-/* DO NOT APPEND ANYTHING BEYOND THIS POINT */

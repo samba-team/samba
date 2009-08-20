@@ -192,7 +192,4 @@ void talloc_set_abort_fn(void (*abort_fn)(const char *reason));
 void talloc_set_log_fn(void (*log_fn)(const char *message));
 void talloc_set_log_stderr(void);
 
-/* for ABI compatibility, never use in new code */
-void *_talloc_reference(const void *context, const void *ptr);
-void *_talloc_steal(const void *new_ctx, const void *ptr);
 #endif
