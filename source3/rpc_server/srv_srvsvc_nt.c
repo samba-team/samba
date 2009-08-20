@@ -1512,6 +1512,9 @@ WERROR _srvsvc_NetShareSetInfo(pipes_struct *p,
 		|| ( lp_enable_asu_support() && strequal(share_name,"ADMIN$") )
 		|| strequal(share_name,"global") )
 	{
+		DEBUG(5,("_srvsvc_NetShareSetInfo: share %s cannot be "
+			"modified by a remote user.\n",
+			share_name ));
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -1529,8 +1532,14 @@ WERROR _srvsvc_NetShareSetInfo(pipes_struct *p,
 
 	/* fail out now if you are not root and not a disk op */
 
-	if ( p->server_info->utok.uid != sec_initial_uid() && !is_disk_op )
+	if ( p->server_info->utok.uid != sec_initial_uid() && !is_disk_op ) {
+		DEBUG(2,("_srvsvc_NetShareSetInfo: uid %u doesn't have the "
+			"SeDiskOperatorPrivilege privilege needed to modify "
+			"share %s\n",
+			(unsigned int)p->server_info->utok.uid,
+			share_name ));
 		return WERR_ACCESS_DENIED;
+	}
 
 	switch (r->in.level) {
 	case 1:
@@ -1597,16 +1606,23 @@ WERROR _srvsvc_NetShareSetInfo(pipes_struct *p,
 	}
 
 	/* We can only modify disk shares. */
-	if (type != STYPE_DISKTREE)
+	if (type != STYPE_DISKTREE) {
+		DEBUG(5,("_srvsvc_NetShareSetInfo: share %s is not a "
+			"disk share\n",
+			share_name ));
 		return WERR_ACCESS_DENIED;
+	}
 
 	if (comment == NULL) {
 		return WERR_NOMEM;
 	}
 
 	/* Check if the pathname is valid. */
-	if (!(path = valid_share_pathname(p->mem_ctx, pathname )))
+	if (!(path = valid_share_pathname(p->mem_ctx, pathname ))) {
+		DEBUG(5,("_srvsvc_NetShareSetInfo: invalid pathname %s\n",
+			pathname ));
 		return WERR_OBJECT_PATH_INVALID;
+	}
 
 	/* Ensure share name, pathname and comment don't contain '"' characters. */
 	string_replace(share_name, '"', ' ');
