@@ -581,7 +581,6 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
                     "rdn_name",
                     "objectclass",
                     "samldb",
-                    "kludge_acl",
                     "password_hash",
                     "operational"]
     tdb_modules_list = [
@@ -590,6 +589,7 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
                     "linked_attributes",
                     "extended_dn_out_ldb"]
     modules_list2 = ["show_deleted",
+                    "kludge_acl",
                     "partition"]
  
     domaindn_ldb = "users.ldb"
