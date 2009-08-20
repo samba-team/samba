@@ -252,7 +252,7 @@ static NTSTATUS idmap_tdb2_allocate_id(struct unixid *xid)
 	const char *hwmkey;
 	const char *hwmtype;
 	uint32_t high_hwm;
-	uint32_t hwm;
+	uint32_t hwm = 0;
 	NTSTATUS status;
 	struct idmap_tdb2_allocate_id_context state;
 
@@ -469,9 +469,9 @@ static NTSTATUS idmap_tdb2_set_mapping_action(struct db_context *db,
 	struct idmap_tdb2_set_mapping_context *state;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 
-	DEBUG(10, ("Storing %s <-> %s map\n", state->ksidstr, state->kidstr));
-
 	state = (struct idmap_tdb2_set_mapping_context *)private_data;
+
+	DEBUG(10, ("Storing %s <-> %s map\n", state->ksidstr, state->kidstr));
 
 	/* check wheter sid mapping is already present in db */
 	data = dbwrap_fetch_bystring(db, tmp_ctx, state->ksidstr);
