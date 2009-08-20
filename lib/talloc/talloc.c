@@ -33,15 +33,31 @@
 #include "replace.h"
 #include "talloc.h"
 
+#ifdef TALLOC_BUILD_VERSION_MAJOR
+#if (TALLOC_VERSION_MAJOR != TALLOC_BUILD_VERSION_MAJOR)
+#error "TALLOC_VERSION_MAJOR != TALLOC_BUILD_VERSION_MAJOR"
+#endif
+#endif
+
+#ifdef TALLOC_BUILD_VERSION_MINOR
+#if (TALLOC_VERSION_MINOR != TALLOC_BUILD_VERSION_MINOR)
+#error "TALLOC_VERSION_MINOR != TALLOC_BUILD_VERSION_MINOR"
+#endif
+#endif
+
 /* use this to force every realloc to change the pointer, to stress test
    code that might not cope */
 #define ALWAYS_REALLOC 0
 
 
 #define MAX_TALLOC_SIZE 0x10000000
-#define TALLOC_MAGIC_V1 0xe814ec70
-#define TALLOC_MAGIC_V2 0xe814ec80
-#define TALLOC_MAGIC    TALLOC_MAGIC_V2
+#define TALLOC_MAGIC_BASE 0xe814ec70
+#define TALLOC_MAGIC ( \
+	TALLOC_MAGIC_BASE + \
+	(TALLOC_VERSION_MAJOR << 12) + \
+	(TALLOC_VERSION_MINOR << 4) \
+)
+
 #define TALLOC_FLAG_FREE 0x01
 #define TALLOC_FLAG_LOOP 0x02
 #define TALLOC_FLAG_POOL 0x04		/* This is a talloc pool */
@@ -123,6 +139,16 @@ struct talloc_chunk {
 #define TC_HDR_SIZE ((sizeof(struct talloc_chunk)+15)&~15)
 #define TC_PTR_FROM_CHUNK(tc) ((void *)(TC_HDR_SIZE + (char*)tc))
 
+int talloc_version_major(void)
+{
+	return TALLOC_VERSION_MAJOR;
+}
+
+int talloc_version_minor(void)
+{
+	return TALLOC_VERSION_MINOR;
+}
+
 static void (*talloc_log_fn)(const char *message);
 
 void talloc_set_log_fn(void (*log_fn)(const char *message))
@@ -176,9 +202,15 @@ static void talloc_abort(const char *reason)
 	talloc_abort_fn(reason);
 }
 
-static void talloc_abort_magic_v1(void)
+static void talloc_abort_magic(unsigned magic)
 {
-	talloc_abort("Bad talloc magic value - old magic v1 used");
+	unsigned striped = magic - TALLOC_MAGIC_BASE;
+	unsigned major = (striped & 0xFFFFF000) >> 12;
+	unsigned minor = (striped & 0x00000FF0) >> 4;
+	talloc_log("Bad talloc magic[0x%08X/%u/%u] expected[0x%08X/%u/%u]\n",
+		   magic, major, minor,
+		   TALLOC_MAGIC, TALLOC_VERSION_MAJOR, TALLOC_VERSION_MINOR);
+	talloc_abort("Bad talloc magic value - wrong talloc version used/mixed");
 }
 
 static void talloc_abort_double_free(void)
@@ -197,8 +229,8 @@ static inline struct talloc_chunk *talloc_chunk_from_ptr(const void *ptr)
 	const char *pp = (const char *)ptr;
 	struct talloc_chunk *tc = discard_const_p(struct talloc_chunk, pp - TC_HDR_SIZE);
 	if (unlikely((tc->flags & (TALLOC_FLAG_FREE | ~0xF)) != TALLOC_MAGIC)) { 
-		if ((tc->flags & (~0xF)) == TALLOC_MAGIC_V1) {
-			talloc_abort_magic_v1();
+		if ((tc->flags & (~0xFFF)) == TALLOC_MAGIC_BASE) {
+			talloc_abort_magic(tc->flags & (~0xF));
 			return NULL;
 		}
 

@@ -29,6 +29,12 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#define TALLOC_VERSION_MAJOR 2
+#define TALLOC_VERSION_MINOR 0
+
+int talloc_version_major(void);
+int talloc_version_minor(void);
+
 /* this is only needed for compatibility with the old talloc */
 typedef void TALLOC_CTX;
 

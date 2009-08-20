@@ -1,7 +1,7 @@
 TALLOC_OBJ = $(tallocdir)/talloc.o 
 
-TALLOC_SOLIB = libtalloc.$(SHLIBEXT).$(PACKAGE_VERSION)
-TALLOC_SONAME = libtalloc.$(SHLIBEXT).1
+TALLOC_SOLIB = libtalloc.$(SHLIBEXT).$(TALLOC_VERSION)
+TALLOC_SONAME = libtalloc.$(SHLIBEXT).$(TALLOC_VERSION_MAJOR)
 TALLOC_STLIB = libtalloc.a
 
 all:: $(TALLOC_STLIB) $(TALLOC_SOLIB) testsuite
