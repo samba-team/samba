@@ -189,6 +189,7 @@ source4/libcli/finddcs.h
 source4/libcli/ldap/ldap_proto.h
 source4/libcli/libcli_proto.h
 libcli/nbt/nbtname.h
+libcli/smb/smb_common_proto.h
 source4/libcli/nbt/nbt_proto.h
 source4/libcli/ndr_netlogon_proto.h
 source4/libcli/netlogon_proto.h
@@ -289,6 +290,7 @@ source4/torture/local/proto.h
 source4/torture/nbench/proto.h
 source4/torture/nbt/proto.h
 source4/torture/ndr/proto.h
+source4/torture/ntp/proto.h
 source4/torture/proto.h
 source4/torture/rap/proto.h
 source4/torture/raw/proto.h
