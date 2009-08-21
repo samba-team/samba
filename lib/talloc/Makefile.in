@@ -36,6 +36,8 @@ all:: showflags $(EXTRA_TARGETS)
 include $(tallocdir)/rules.mk
 include $(tallocdir)/talloc.mk
 
+@TALLOC_COMPAT1_MK@
+
 $(TALLOC_SOLIB): $(LIBOBJ)
 	$(SHLD) $(SHLD_FLAGS) -o $@ $(LIBOBJ) $(VERSIONSCRIPT) $(EXPORTSFILE) $(SONAMEFLAG)$(TALLOC_SONAME)
 

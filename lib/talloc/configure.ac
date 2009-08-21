@@ -34,6 +34,7 @@ AC_LIBREPLACE_SHLD
 AC_LIBREPLACE_SHLD_FLAGS
 
 m4_include(libtalloc.m4)
+m4_include(compat/talloc_compat1.m4)
 
 AC_PATH_PROG(XSLTPROC,xsltproc)
 DOC_TARGET=""
