@@ -97,7 +97,11 @@ static void tevent_common_signal_handler_info(int signum, siginfo_t *info,
 					      void *uctx)
 {
 	uint32_t count = sig_count(sig_state->signal_count[signum]);
-	sig_state->sig_info[signum][count] = *info;
+	/* sig_state->signal_count[signum].seen % SA_INFO_QUEUE_COUNT
+	 * is the base of the unprocessed signals in the ringbuffer. */
+	uint32_t ofs = (sig_state->signal_count[signum].seen + count) %
+				SA_INFO_QUEUE_COUNT;
+	sig_state->sig_info[signum][ofs] = *info;
 
 	tevent_common_signal_handler(signum);
 
@@ -229,7 +233,7 @@ struct tevent_signal *tevent_common_add_signal(struct tevent_context *ev,
 			act.sa_handler   = NULL;
 			act.sa_sigaction = tevent_common_signal_handler_info;
 			if (sig_state->sig_info[signum] == NULL) {
-				sig_state->sig_info[signum] = talloc_array(sig_state, siginfo_t, SA_INFO_QUEUE_COUNT);
+				sig_state->sig_info[signum] = talloc_zero_array(sig_state, siginfo_t, SA_INFO_QUEUE_COUNT);
 				if (sig_state->sig_info[signum] == NULL) {
 					talloc_free(se);
 					return NULL;
@@ -294,6 +298,11 @@ int tevent_common_check_signal(struct tevent_context *ev)
 		struct tevent_common_signal_list *sl, *next;
 		struct sigcounter counter = sig_state->signal_count[i];
 		uint32_t count = sig_count(counter);
+#ifdef SA_SIGINFO
+		/* Ensure we null out any stored siginfo_t entries
+		 * after processing for debugging purposes. */
+		bool clear_processed_siginfo = false;
+#endif
 
 		if (count == 0) {
 			continue;
@@ -303,24 +312,20 @@ int tevent_common_check_signal(struct tevent_context *ev)
 			next = sl->next;
 #ifdef SA_SIGINFO
 			if (se->sa_flags & SA_SIGINFO) {
-				int j;
+				uint32_t j;
+
+				clear_processed_siginfo = true;
+
 				for (j=0;j<count;j++) {
-					/* note the use of the sig_info array as a
-					   ring buffer */
-					int ofs = ((count-1) + j) % SA_INFO_QUEUE_COUNT;
-					se->handler(ev, se, i, 1, 
+					/* sig_state->signal_count[i].seen
+					 * % SA_INFO_QUEUE_COUNT is
+					 * the base position of the unprocessed
+					 * signals in the ringbuffer. */
+					uint32_t ofs = (counter.seen + j)
+						% SA_INFO_QUEUE_COUNT;
+					se->handler(ev, se, i, 1,
 						    (void*)&sig_state->sig_info[i][ofs], 
 						    se->private_data);
-				}
-				if (SIG_PENDING(sig_state->sig_blocked[i])) {
-					/* we'd filled the queue, unblock the
-					   signal now */
-					sigset_t set;
-					sigemptyset(&set);
-					sigaddset(&set, i);
-					SIG_SEEN(sig_state->sig_blocked[i], 
-						 sig_count(sig_state->sig_blocked[i]));
-					sigprocmask(SIG_UNBLOCK, &set, NULL);
 				}
 				if (se->sa_flags & SA_RESETHAND) {
 					talloc_free(se);
@@ -333,8 +338,40 @@ int tevent_common_check_signal(struct tevent_context *ev)
 				talloc_free(se);
 			}
 		}
+
+#ifdef SA_SIGINFO
+		if (clear_processed_siginfo) {
+			uint32_t j;
+			for (j=0;j<count;j++) {
+				uint32_t ofs = (counter.seen + j)
+					% SA_INFO_QUEUE_COUNT;
+				memset((void*)&sig_state->sig_info[i][ofs],
+					'\0',
+					sizeof(siginfo_t));
+			}
+		}
+#endif
+
 		SIG_SEEN(sig_state->signal_count[i], count);
 		SIG_SEEN(sig_state->got_signal, count);
+
+#ifdef SA_SIGINFO
+		if (SIG_PENDING(sig_state->sig_blocked[i])) {
+			/* We'd filled the queue, unblock the
+			   signal now the queue is empty again.
+			   Note we MUST do this after the
+			   SIG_SEEN(sig_state->signal_count[i], count)
+			   call to prevent a new signal running
+			   out of room in the sig_state->sig_info[i][]
+			   ring buffer. */
+			sigset_t set;
+			sigemptyset(&set);
+			sigaddset(&set, i);
+			SIG_SEEN(sig_state->sig_blocked[i],
+				 sig_count(sig_state->sig_blocked[i]));
+			sigprocmask(SIG_UNBLOCK, &set, NULL);
+		}
+#endif
 	}
 
 	return 1;
