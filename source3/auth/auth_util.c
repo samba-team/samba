@@ -218,7 +218,7 @@ NTSTATUS make_user_info_map(auth_usersupplied_info **user_info,
 	 * This also deals with the client passing in a "" domain */
 
 	if (!is_trusted_domain(domain) &&
-	    !strequal(domain, get_global_sam_name()) )
+	    !strequal(domain, my_sam_name()))
 	{
 		if (lp_map_untrusted_to_domain())
 			domain = my_sam_name();
