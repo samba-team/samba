@@ -1333,12 +1333,23 @@ struct bitmap {
 #define FILE_DIRECTORY_FILE       0x0001
 #define FILE_WRITE_THROUGH        0x0002
 #define FILE_SEQUENTIAL_ONLY      0x0004
+#define FILE_NO_INTERMEDIATE_BUFFERING 0x0008
+#define FILE_SYNCHRONOUS_IO_ALERT      0x0010	/* may be ignored */
+#define FILE_SYNCHRONOUS_IO_NONALERT   0x0020	/* may be ignored */
 #define FILE_NON_DIRECTORY_FILE   0x0040
+#define FILE_CREATE_TREE_CONNECTION    0x0080	/* ignore, should be zero */
+#define FILE_COMPLETE_IF_OPLOCKED      0x0100	/* ignore, should be zero */
 #define FILE_NO_EA_KNOWLEDGE      0x0200
-#define FILE_EIGHT_DOT_THREE_ONLY 0x0400
+#define FILE_EIGHT_DOT_THREE_ONLY 0x0400 /* aka OPEN_FOR_RECOVERY: ignore, should be zero */
 #define FILE_RANDOM_ACCESS        0x0800
 #define FILE_DELETE_ON_CLOSE      0x1000
 #define FILE_OPEN_BY_FILE_ID	  0x2000
+#define FILE_OPEN_FOR_BACKUP_INTENT    0x4000
+#define FILE_NO_COMPRESSION       0x8000
+#define FILE_RESERVER_OPFILTER    0x00100000	/* ignore, should be zero */
+#define FILE_OPEN_REPARSE_POINT   0x00200000
+#define FILE_OPEN_NO_RECALL       0x00400000
+#define FILE_OPEN_FOR_FREE_SPACE_QUERY 0x00800000 /* ignore should be zero */
 
 #define NTCREATEX_OPTIONS_MUST_IGNORE_MASK      (0x008F0480)
 
