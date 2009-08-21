@@ -211,7 +211,11 @@ static PyObject *py_ldb_dn_check_special(PyLdbDnObject *self, PyObject *args)
 
 static int py_ldb_dn_compare(PyLdbDnObject *dn1, PyLdbDnObject *dn2)
 {
-	return ldb_dn_compare(dn1->dn, dn2->dn);
+	int ret;
+	ret = ldb_dn_compare(dn1->dn, dn2->dn);
+	if (ret < 0) ret = -1;
+	if (ret > 0) ret = 1;
+	return ret;
 }
 
 static PyObject *py_ldb_dn_get_parent(PyLdbDnObject *self)
