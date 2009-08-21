@@ -185,7 +185,7 @@ NTSTATUS cli_read_andx_recv(struct async_req *req, ssize_t *received,
 	buf = (uint8_t *)smb_base(cli_req->inbuf) + SVAL(vwv+6, 0);
 
 	if (trans_oob(smb_len(cli_req->inbuf), SVAL(vwv+6, 0), size)
-	    || (buf < bytes)) {
+	    || (size && (buf < bytes))) {
 		DEBUG(5, ("server returned invalid read&x data offset\n"));
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
