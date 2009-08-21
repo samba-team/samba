@@ -130,8 +130,10 @@ static bool token_contains_name(TALLOC_CTX *mem_ctx,
 			continue;
 		}
 		if (*prefix == '&') {
-			if (user_in_netgroup(sconn, username, name)) {
-				return True;
+			if (username) {
+				if (user_in_netgroup(sconn, username, name)) {
+					return True;
+				}
 			}
 			continue;
 		}
