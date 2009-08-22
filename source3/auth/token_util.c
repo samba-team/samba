@@ -91,10 +91,17 @@ NT_USER_TOKEN *get_root_nt_token( void )
 			cache_data, struct nt_user_token);
 	}
 
+#if defined(DEVELOPER)
+	if ( !(pw = sys_getpwnam("root")) ) {
+		DEBUG(0,("get_root_nt_token: sys_getpwnam(\"root\") failed!\n"));
+		return NULL;
+	}
+#else
 	if ( !(pw = sys_getpwuid(0)) ) {
 		DEBUG(0,("get_root_nt_token: sys_getpwuid(0) failed!\n"));
 		return NULL;
 	}
+#endif
 
 	/* get the user and primary group SIDs; although the
 	   BUILTIN\Administrators SId is really the one that matters here */
