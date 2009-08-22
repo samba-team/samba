@@ -1025,6 +1025,10 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 		 * as on Linux ext3 doesn't have hires timestamps, but
 		 * ext4 does, so a compile time test won't work. JRA.
 		 */
+		DEBUG(10,("make_connection_snum: hires timestamps "
+			"available on share %s, directory %s\n",
+			lp_servicename(snum),
+			conn->connectpath ));
 		conn->hires_timestamps_avail = true;
 	}
 
