@@ -460,9 +460,10 @@ static NTSTATUS sam_query_user_list(struct winbindd_domain *domain,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	*num_entries = pdb_search_entries(ps,
-					1, 0xffffffff,
-					&entries);
+	*num_entries = pdb_search_entries(ps, 0, 0xffffffff, &entries);
+
+	DEBUG(10, ("sam_query_user_list: found %d users\n",
+		   (int)*num_entries));
 
 	*info = TALLOC_ZERO_ARRAY(mem_ctx, struct wbint_userinfo, *num_entries);
 	if (!(*info)) {
