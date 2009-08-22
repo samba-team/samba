@@ -557,6 +557,9 @@ typedef struct connection_struct {
 	bool ipc;
 	bool read_only; /* Attributes for the current user of the share. */
 	bool admin_user; /* Attributes for the current user of the share. */
+	bool hires_timestamps_avail; /* Does this filesystem honor
+					sub second timestamps on files
+					and directories ? */
 	char *connectpath;
 	char *origpath;
 

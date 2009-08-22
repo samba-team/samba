@@ -3284,8 +3284,12 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	/* Try and make a create timestamp, if required. */
 	if ((info == FILE_WAS_CREATED) || (info == FILE_WAS_OVERWRITTEN)) {
 		if (lp_store_create_time(SNUM(conn))) {
+			struct timespec ts = smb_fname->st.st_ex_btime;
+			if (!conn->hires_timestamps_avail) {
+				round_timespec(&ts);
+			}
 			set_create_timespec_ea(conn, fsp,
-				smb_fname, smb_fname->st.st_ex_btime);
+				smb_fname, ts);
 		}
 	}
 

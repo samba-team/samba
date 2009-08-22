@@ -1044,6 +1044,7 @@ struct timespec timespec_current(void);
 struct timespec timespec_min(const struct timespec *ts1,
 			   const struct timespec *ts2);
 int timespec_compare(const struct timespec *ts1, const struct timespec *ts2);
+void round_timespec(struct timespec *ts);
 struct timespec interpret_long_date(const char *p);
 void cli_put_dos_date(struct cli_state *cli, char *buf, int offset, time_t unixdate);
 void cli_put_dos_date2(struct cli_state *cli, char *buf, int offset, time_t unixdate);

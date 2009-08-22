@@ -5402,6 +5402,15 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 		action &= ~FILE_NOTIFY_CHANGE_LAST_WRITE;
 	}
 
+	if (!conn->hires_timestamps_avail) {
+		/* We can't store sub second timestamps
+		 * on this share. Round to seconds. */
+		round_timespec(&ft->create_time);
+		round_timespec(&ft->ctime);
+		round_timespec(&ft->atime);
+		round_timespec(&ft->mtime);
+	}
+
 	DEBUG(5,("smb_set_filetime: actime: %s\n ",
 		time_to_asc(convert_timespec_to_time_t(ft->atime))));
 	DEBUG(5,("smb_set_filetime: modtime: %s\n ",

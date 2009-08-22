@@ -1015,6 +1015,19 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 		goto err_root_exit;
 	}
 
+	if (smb_fname_cpath->st.st_ex_mtime.tv_nsec ||
+			smb_fname_cpath->st.st_ex_atime.tv_nsec ||
+			smb_fname_cpath->st.st_ex_ctime.tv_nsec) {
+		/* If any of the normal UNIX directory timestamps
+		 * have a non-zero tv_nsec component assume
+		 * we can fully store hires timestamps. We need
+		 * to make a runtime/share level distinction
+		 * as on Linux ext3 doesn't have hires timestamps, but
+		 * ext4 does, so a compile time test won't work. JRA.
+		 */
+		conn->hires_timestamps_avail = true;
+	}
+
 	string_set(&conn->origpath,conn->connectpath);
 
 #if SOFTLINK_OPTIMISATION

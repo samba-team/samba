@@ -468,6 +468,17 @@ int timespec_compare(const struct timespec *ts1, const struct timespec *ts2)
 }
 
 /****************************************************************************
+ Round up a timespec if nsec > 500000000, round down if lower,
+ then zero nsec.
+****************************************************************************/
+
+void round_timespec(struct timespec *ts)
+{
+	ts->tv_sec += ts->tv_nsec >= 500000000 ? 1 : 0;
+	ts->tv_nsec = 0;
+}
+
+/****************************************************************************
  Interprets an nt time into a unix struct timespec.
  Differs from nt_time_to_unix in that an 8 byte value of 0xffffffffffffffff
  will be returned as (time_t)-1, whereas nt_time_to_unix returns 0 in this case.
