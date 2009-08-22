@@ -569,7 +569,11 @@ enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domai
 		fstrcpy(domain->dcname, state->request->data.init_conn.dcname);
 	}
 
-	init_dc_connection(domain);
+	if (domain->internal) {
+		domain->initialized = true;
+	} else {
+		init_dc_connection(domain);
+	}
 
 	if (!domain->initialized) {
 		/* If we return error here we can't do any cached authentication,

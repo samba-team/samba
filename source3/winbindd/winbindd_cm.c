@@ -485,6 +485,12 @@ void set_domain_online_request(struct winbindd_domain *domain)
 		return;
 	}
 
+	if (domain->internal) {
+		DEBUG(10, ("set_domain_online_request: Internal domains are "
+			   "always online\n"));
+		return;
+	}
+
 	/* We've been told it's safe to go online and
 	   try and connect to a DC. But I don't believe it
 	   because network manager seems to lie.
