@@ -74,7 +74,6 @@ static NTSTATUS signing_failure(struct ntp_signd_connection *ntp_signdconn,
 
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
-	signed_reply.version = 1;
 	signed_reply.op = SIGNING_FAILURE;
 	signed_reply.packet_id = packet_id;
 	signed_reply.signed_packet = data_blob(NULL, 0);
@@ -155,7 +154,7 @@ static NTSTATUS ntp_signd_recv(void *private_data, DATA_BLOB wrapped_input)
 
 	/* We need to implement 'check signature' and 'request server
 	 * to sign' operations at some point */
-	if (sign_request.version != 1) {
+	if (sign_request.version != NTP_SIGND_PROTOCOL_VERSION_0) {
 		talloc_free(tmp_ctx);
 		return signing_failure(ntp_signdconn, sign_request.packet_id);
 	}
@@ -214,7 +213,6 @@ static NTSTATUS ntp_signd_recv(void *private_data, DATA_BLOB wrapped_input)
 	}
 
 	/* Generate the reply packet */
-	signed_reply.version = 1;
 	signed_reply.packet_id = sign_request.packet_id;
 	signed_reply.op = SIGNING_SUCCESS;
 	signed_reply.signed_packet = data_blob_talloc(tmp_ctx, 

@@ -154,7 +154,6 @@ static bool test_ntp_signd(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "ServerAuthenticate3");
 	torture_assert(tctx, netlogon_creds_client_check(creds, &credentials3), "Credential chaining failed");
 
-	sign_req.version = 1;
 	sign_req.op = SIGN_TO_CLIENT;
 	sign_req.packet_id = 1;
 	sign_req.key_id = rid;
@@ -225,7 +224,7 @@ static bool test_ntp_signd(struct torture_context *tctx,
 	torture_assert(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), ndr_map_error2string(ndr_err));
 
 	torture_assert_u64_equal(tctx, signed_reply.version, 
-				 sign_req.version, "Invalid Version");
+				 NTP_SIGND_PROTOCOL_VERSION_0, "Invalid Version");
 	torture_assert_u64_equal(tctx, signed_reply.packet_id, 
 				 sign_req.packet_id, "Invalid Packet ID");
 	torture_assert_u64_equal(tctx, signed_reply.op, 
