@@ -239,6 +239,10 @@ enum winbindd_result winbindd_dual_ndrcmd(struct winbindd_domain *domain,
 		return WINBINDD_ERROR;
 	}
 
+	DEBUG(10, ("winbindd_dual_ndrcmd: Running command %s (%s)\n",
+		   fns[state->request->data.ndrcmd].name,
+		   domain ? domain->name : "no domain"));
+
 	ZERO_STRUCT(p);
 	p.mem_ctx = talloc_stackframe();
 	p.in_data.data.buffer_size = state->request->extra_len;
