@@ -77,7 +77,7 @@ static void wb_queryuser_done(struct tevent_req *subreq)
 		req, struct wb_queryuser_state);
 	NTSTATUS status, result;
 
-	status = rpccli_wbint_QueryUser_recv(subreq, state, &result);
+	status = rpccli_wbint_QueryUser_recv(subreq, state->info, &result);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
