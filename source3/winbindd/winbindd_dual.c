@@ -573,7 +573,7 @@ static void child_process_request(struct winbindd_child *child,
 	state->response->result = WINBINDD_ERROR;
 }
 
-void setup_child(struct winbindd_child *child,
+void setup_child(struct winbindd_domain *domain, struct winbindd_child *child,
 		 const struct winbindd_child_dispatch_table *table,
 		 const char *logprefix,
 		 const char *logname)
@@ -592,7 +592,7 @@ void setup_child(struct winbindd_child *child,
 	child->table = table;
 	child->queue = tevent_queue_create(NULL, "winbind_child");
 	SMB_ASSERT(child->queue != NULL);
-	child->rpccli = wbint_rpccli_create(NULL, child);
+	child->rpccli = wbint_rpccli_create(NULL, domain, child);
 	SMB_ASSERT(child->rpccli != NULL);
 }
 

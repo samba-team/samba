@@ -32,13 +32,16 @@
 #include "librpc/gen_ndr/srv_wbint.h"
 
 struct wb_ndr_transport_priv {
+	struct winbindd_domain *domain;
 	struct winbindd_child *child;
 };
 
 struct wb_ndr_dispatch_state {
+	struct wb_ndr_transport_priv *transport;
+	uint32_t opnum;
 	const struct ndr_interface_call *call;
 	void *r;
-	struct ndr_push *push;
+	DATA_BLOB req_blob, resp_blob;
 	struct winbindd_request request;
 	struct winbindd_response *response;
 };
@@ -56,7 +59,7 @@ static struct tevent_req *wb_ndr_dispatch_send(TALLOC_CTX *mem_ctx,
 	struct wb_ndr_dispatch_state *state;
 	struct wb_ndr_transport_priv *transport = talloc_get_type_abort(
 		cli->transport->priv, struct wb_ndr_transport_priv);
-	DATA_BLOB blob;
+	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 
 	req = tevent_req_create(mem_ctx, &state,
@@ -67,25 +70,34 @@ static struct tevent_req *wb_ndr_dispatch_send(TALLOC_CTX *mem_ctx,
 
 	state->r = r;
 	state->call = &table->calls[opnum];
+	state->transport = transport;
+	state->opnum = opnum;
 
-	state->push = ndr_push_init_ctx(state, NULL);
-	if (tevent_req_nomem(state->push, req)) {
+	push = ndr_push_init_ctx(state, NULL);
+	if (tevent_req_nomem(push, req)) {
 		return tevent_req_post(req, ev);
 	}
 
-	ndr_err = state->call->ndr_push(state->push, NDR_IN, r);
+	ndr_err = state->call->ndr_push(push, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		tevent_req_nterror(req, ndr_map_error2ntstatus(ndr_err));
-		TALLOC_FREE(state->push);
+		TALLOC_FREE(push);
 		return tevent_req_post(req, ev);
 	}
 
-	blob = ndr_push_blob(state->push);
+	state->req_blob = ndr_push_blob(push);
+
+	if ((transport->domain != NULL)
+	    && wcache_fetch_ndr(state, transport->domain, opnum,
+				&state->req_blob, &state->resp_blob)) {
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
 
 	state->request.cmd = WINBINDD_DUAL_NDRCMD;
 	state->request.data.ndrcmd = opnum;
-	state->request.extra_data.data = (char *)blob.data;
-	state->request.extra_len = blob.length;
+	state->request.extra_data.data = (char *)state->req_blob.data;
+	state->request.extra_len = state->req_blob.length;
 
 	subreq = wb_child_request_send(state, ev, transport->child,
 				       &state->request);
@@ -110,6 +122,16 @@ static void wb_ndr_dispatch_done(struct tevent_req *subreq)
 		tevent_req_nterror(req, map_nt_error_from_unix(err));
 		return;
 	}
+
+	state->resp_blob = data_blob_const(
+		state->response->extra_data.data,
+		state->response->length	- sizeof(struct winbindd_response));
+
+	if (state->transport->domain != NULL) {
+		wcache_store_ndr(state->transport->domain, state->opnum,
+				 &state->req_blob, &state->resp_blob);
+	}
+
 	tevent_req_done(req);
 }
 
@@ -121,17 +143,12 @@ static NTSTATUS wb_ndr_dispatch_recv(struct tevent_req *req,
 	NTSTATUS status;
 	struct ndr_pull *pull;
 	enum ndr_err_code ndr_err;
-	DATA_BLOB blob;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
 
-	blob.data = (uint8_t *)state->response->extra_data.data;
-	blob.length = state->response->length
-		- sizeof(struct winbindd_response);
-
-	pull = ndr_pull_init_blob(&blob, mem_ctx, NULL);
+	pull = ndr_pull_init_blob(&state->resp_blob, mem_ctx, NULL);
 	if (pull == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -182,6 +199,7 @@ static NTSTATUS wb_ndr_dispatch(struct rpc_pipe_client *cli,
 }
 
 struct rpc_pipe_client *wbint_rpccli_create(TALLOC_CTX *mem_ctx,
+					    struct winbindd_domain *domain,
 					    struct winbindd_child *child)
 {
 	struct rpc_pipe_client *result;
@@ -220,6 +238,7 @@ struct rpc_pipe_client *wbint_rpccli_create(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(result);
 		return NULL;
 	}
+	transp->domain = domain;
 	transp->child = child;
 	result->transport->priv = transp;
 	return result;

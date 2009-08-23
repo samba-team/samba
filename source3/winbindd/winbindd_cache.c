@@ -4298,3 +4298,115 @@ struct winbindd_methods cache_methods = {
 	password_policy,
 	trusted_domains
 };
+
+static bool wcache_ndr_key(TALLOC_CTX *mem_ctx, char *domain_name,
+			   uint32_t opnum, const DATA_BLOB *req,
+			   TDB_DATA *pkey)
+{
+	char *key;
+	size_t keylen;
+
+	key = talloc_asprintf(mem_ctx, "NDR/%s/%d/", domain_name, (int)opnum);
+	if (key == NULL) {
+		return false;
+	}
+	keylen = talloc_get_size(key) - 1;
+
+	key = talloc_realloc(mem_ctx, key, char, keylen + req->length);
+	if (key == NULL) {
+		return false;
+	}
+	memcpy(key + keylen, req->data, req->length);
+
+	pkey->dptr = (uint8_t *)key;
+	pkey->dsize = talloc_get_size(key);
+	return true;
+}
+
+bool wcache_fetch_ndr(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
+		      uint32_t opnum, const DATA_BLOB *req, DATA_BLOB *resp)
+{
+	TDB_DATA key, data;
+	bool ret = false;
+
+	if (wcache->tdb == NULL) {
+		return false;
+	}
+
+	if (!wcache_ndr_key(talloc_tos(), domain->name, opnum, req, &key)) {
+		return false;
+	}
+	data = tdb_fetch(wcache->tdb, key);
+	TALLOC_FREE(key.dptr);
+
+	if (data.dptr == NULL) {
+		return false;
+	}
+	if (data.dsize < 4) {
+		goto fail;
+	}
+
+	if (IS_DOMAIN_ONLINE(domain)) {
+		uint32_t entry_seqnum, dom_seqnum, last_check;
+
+		if (!wcache_fetch_seqnum(domain->name, &dom_seqnum,
+					 &last_check)) {
+			goto fail;
+		}
+		entry_seqnum = IVAL(data.dptr, 0);
+		if (entry_seqnum != dom_seqnum) {
+			DEBUG(10, ("Entry has wrong sequence number: %d\n",
+				   (int)entry_seqnum));
+			goto fail;
+		}
+	}
+
+	resp->data = (uint8_t *)talloc_memdup(mem_ctx, data.dptr + 4,
+					      data.dsize - 4);
+	if (resp->data == NULL) {
+		DEBUG(10, ("talloc failed\n"));
+		goto fail;
+	}
+	resp->length = data.dsize - 4;
+
+	ret = true;
+fail:
+	SAFE_FREE(data.dptr);
+	return ret;
+}
+
+void wcache_store_ndr(struct winbindd_domain *domain, uint32_t opnum,
+		      const DATA_BLOB *req, const DATA_BLOB *resp)
+{
+	TDB_DATA key, data;
+	uint32_t dom_seqnum, last_check;
+
+	if (wcache->tdb == NULL) {
+		return;
+	}
+
+	if (!wcache_fetch_seqnum(domain->name, &dom_seqnum, &last_check)) {
+		DEBUG(10, ("could not fetch seqnum for domain %s\n",
+			   domain->name));
+		return;
+	}
+
+	if (!wcache_ndr_key(talloc_tos(), domain->name, opnum, req, &key)) {
+		return;
+	}
+
+	data.dsize = resp->length + 4;
+	data.dptr = talloc_array(key.dptr, uint8_t, data.dsize);
+	if (data.dptr == NULL) {
+		goto done;
+	}
+
+	SIVAL(data.dptr, 0, dom_seqnum);
+	memcpy(data.dptr+4, resp->data, resp->length);
+
+	tdb_store(wcache->tdb, key, data, 0);
+
+done:
+	TALLOC_FREE(key.dptr);
+	return;
+}

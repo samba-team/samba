@@ -210,6 +210,10 @@ NTSTATUS nss_get_info_cached( struct winbindd_domain *domain,
 			      ADS_STRUCT *ads, LDAPMessage *msg,
 			      const char **homedir, const char **shell,
 			      const char **gecos, gid_t *p_gid);
+bool wcache_fetch_ndr(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
+		      uint32_t opnum, const DATA_BLOB *req, DATA_BLOB *resp);
+void wcache_store_ndr(struct winbindd_domain *domain, uint32_t opnum,
+		      const DATA_BLOB *req, const DATA_BLOB *resp);
 
 /* The following definitions come from winbindd/winbindd_ccache_access.c  */
 
@@ -324,7 +328,7 @@ void sendto_child(struct winbindd_cli_state *state,
 		  struct winbindd_child *child);
 void sendto_domain(struct winbindd_cli_state *state,
 		   struct winbindd_domain *domain);
-void setup_child(struct winbindd_child *child,
+void setup_child(struct winbindd_domain *domain, struct winbindd_child *child,
 		 const struct winbindd_child_dispatch_table *table,
 		 const char *logprefix,
 		 const char *logname);
@@ -641,6 +645,7 @@ enum winbindd_result winbindd_dual_ping(struct winbindd_domain *domain,
 					struct winbindd_cli_state *state);
 
 struct rpc_pipe_client *wbint_rpccli_create(TALLOC_CTX *mem_ctx,
+					    struct winbindd_domain *domain,
 					    struct winbindd_child *child);
 enum winbindd_result winbindd_dual_ndrcmd(struct winbindd_domain *domain,
 					  struct winbindd_cli_state *state);

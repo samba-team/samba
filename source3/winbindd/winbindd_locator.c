@@ -33,7 +33,7 @@ static struct winbindd_child static_locator_child;
 
 void init_locator_child(void)
 {
-	setup_child(&static_locator_child,
+	setup_child(NULL, &static_locator_child,
 		    locator_dispatch_table,
 		    "log.winbindd", "locator");
 }
