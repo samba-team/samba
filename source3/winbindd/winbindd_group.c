@@ -1391,8 +1391,8 @@ struct getgr_countmem {
 
 static int getgr_calc_memberlen(DATA_BLOB key, void *data, void *priv)
 {
-	struct wbint_GroupMember *m = talloc_get_type_abort(
-		data, struct wbint_GroupMember);
+	struct wbint_Principal *m = talloc_get_type_abort(
+		data, struct wbint_Principal);
 	struct getgr_countmem *buf = (struct getgr_countmem *)priv;
 
 	buf->num += 1;
@@ -1407,8 +1407,8 @@ struct getgr_stringmem {
 
 static int getgr_unparse_members(DATA_BLOB key, void *data, void *priv)
 {
-	struct wbint_GroupMember *m = talloc_get_type_abort(
-		data, struct wbint_GroupMember);
+	struct wbint_Principal *m = talloc_get_type_abort(
+		data, struct wbint_Principal);
 	struct getgr_stringmem *buf = (struct getgr_stringmem *)priv;
 	int len;
 

@@ -28,15 +28,15 @@ struct wbint_RidArray {
 	uint32_t *rids;/* [size_is(num_rids)] */
 }/* [public] */;
 
-struct wbint_GroupMember {
+struct wbint_Principal {
 	struct dom_sid sid;
-	const char *name;/* [unique,charset(UTF8)] */
 	enum lsa_SidType type;
+	const char *name;/* [unique,charset(UTF8)] */
 }/* [public] */;
 
 struct wbint_GroupMembers {
 	int32_t num_members;
-	struct wbint_GroupMember *members;/* [size_is(num_members)] */
+	struct wbint_Principal *members;/* [size_is(num_members)] */
 }/* [public] */;
 
 

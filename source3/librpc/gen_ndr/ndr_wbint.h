@@ -45,9 +45,9 @@ void ndr_print_wbint_SidArray(struct ndr_print *ndr, const char *name, const str
 enum ndr_err_code ndr_push_wbint_RidArray(struct ndr_push *ndr, int ndr_flags, const struct wbint_RidArray *r);
 enum ndr_err_code ndr_pull_wbint_RidArray(struct ndr_pull *ndr, int ndr_flags, struct wbint_RidArray *r);
 void ndr_print_wbint_RidArray(struct ndr_print *ndr, const char *name, const struct wbint_RidArray *r);
-enum ndr_err_code ndr_push_wbint_GroupMember(struct ndr_push *ndr, int ndr_flags, const struct wbint_GroupMember *r);
-enum ndr_err_code ndr_pull_wbint_GroupMember(struct ndr_pull *ndr, int ndr_flags, struct wbint_GroupMember *r);
-void ndr_print_wbint_GroupMember(struct ndr_print *ndr, const char *name, const struct wbint_GroupMember *r);
+enum ndr_err_code ndr_push_wbint_Principal(struct ndr_push *ndr, int ndr_flags, const struct wbint_Principal *r);
+enum ndr_err_code ndr_pull_wbint_Principal(struct ndr_pull *ndr, int ndr_flags, struct wbint_Principal *r);
+void ndr_print_wbint_Principal(struct ndr_print *ndr, const char *name, const struct wbint_Principal *r);
 enum ndr_err_code ndr_push_wbint_GroupMembers(struct ndr_push *ndr, int ndr_flags, const struct wbint_GroupMembers *r);
 enum ndr_err_code ndr_pull_wbint_GroupMembers(struct ndr_pull *ndr, int ndr_flags, struct wbint_GroupMembers *r);
 void ndr_print_wbint_GroupMembers(struct ndr_print *ndr, const char *name, const struct wbint_GroupMembers *r);

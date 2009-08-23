@@ -95,13 +95,13 @@ interface wbint
 
     typedef [public] struct {
 	dom_sid sid;
-	[string,charset(UTF8)] char *name;
 	lsa_SidType type;
-    } wbint_GroupMember;
+	[string,charset(UTF8)] char *name;
+    } wbint_Principal;
 
     typedef [public] struct {
 	int num_members;
-	[size_is(num_members)] wbint_GroupMember members[];
+	[size_is(num_members)] wbint_Principal members[];
     } wbint_GroupMembers;
 
     NTSTATUS wbint_LookupGroupMembers(

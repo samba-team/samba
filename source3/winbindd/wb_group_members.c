@@ -100,7 +100,7 @@ static void wb_lookupgroupmem_done(struct tevent_req *subreq)
 static NTSTATUS wb_lookupgroupmem_recv(struct tevent_req *req,
 					   TALLOC_CTX *mem_ctx,
 					   int *num_members,
-					   struct wbint_GroupMember **members)
+					   struct wbint_Principal **members)
 {
 	struct wb_lookupgroupmem_state *state = tevent_req_data(
 		req, struct wb_lookupgroupmem_state);
@@ -121,10 +121,10 @@ static NTSTATUS wb_lookupgroupmem_recv(struct tevent_req *req,
 
 struct wb_groups_members_state {
 	struct tevent_context *ev;
-	struct wbint_GroupMember *groups;
+	struct wbint_Principal *groups;
 	int num_groups;
 	int next_group;
-	struct wbint_GroupMember *all_members;
+	struct wbint_Principal *all_members;
 };
 
 static NTSTATUS wb_groups_members_next_subreq(
@@ -135,7 +135,7 @@ static void wb_groups_members_done(struct tevent_req *subreq);
 static struct tevent_req *wb_groups_members_send(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
 						 int num_groups,
-						 struct wbint_GroupMember *groups)
+						 struct wbint_Principal *groups)
 {
 	struct tevent_req *req, *subreq;
 	struct wb_groups_members_state *state;
@@ -170,7 +170,7 @@ static NTSTATUS wb_groups_members_next_subreq(
 	TALLOC_CTX *mem_ctx, struct tevent_req **psubreq)
 {
 	struct tevent_req *subreq;
-	struct wbint_GroupMember *g;
+	struct wbint_Principal *g;
 
 	if (state->next_group >= state->num_groups) {
 		*psubreq = NULL;
@@ -180,8 +180,7 @@ static NTSTATUS wb_groups_members_next_subreq(
 	g = &state->groups[state->next_group];
 	state->next_group += 1;
 
-	subreq = wb_lookupgroupmem_send(mem_ctx, state->ev, &g->sid,
-					    g->type);
+	subreq = wb_lookupgroupmem_send(mem_ctx, state->ev, &g->sid, g->type);
 	if (subreq == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -197,7 +196,7 @@ static void wb_groups_members_done(struct tevent_req *subreq)
 		req, struct wb_groups_members_state);
 	int i, num_all_members;
 	int num_members = 0;
-	struct wbint_GroupMember *members = NULL;
+	struct wbint_Principal *members = NULL;
 	NTSTATUS status;
 
 	status = wb_lookupgroupmem_recv(subreq, state, &num_members,
@@ -217,14 +216,14 @@ static void wb_groups_members_done(struct tevent_req *subreq)
 	num_all_members = talloc_array_length(state->all_members);
 
 	state->all_members = talloc_realloc(
-		state, state->all_members, struct wbint_GroupMember,
+		state, state->all_members, struct wbint_Principal,
 		num_all_members + num_members);
 	if ((num_all_members + num_members != 0)
 	    && tevent_req_nomem(state->all_members, req)) {
 		return;
 	}
 	for (i=0; i<num_members; i++) {
-		struct wbint_GroupMember *src, *dst;
+		struct wbint_Principal *src, *dst;
 		src = &members[i];
 		dst = &state->all_members[num_all_members + i];
 		sid_copy(&dst->sid, &src->sid);
@@ -248,7 +247,7 @@ static void wb_groups_members_done(struct tevent_req *subreq)
 static NTSTATUS wb_groups_members_recv(struct tevent_req *req,
 				       TALLOC_CTX *mem_ctx,
 				       int *num_members,
-				       struct wbint_GroupMember **members)
+				       struct wbint_Principal **members)
 {
 	struct wb_groups_members_state *state = tevent_req_data(
 		req, struct wb_groups_members_state);
@@ -273,7 +272,7 @@ struct wb_group_members_state {
 	struct tevent_context *ev;
 	int depth;
 	struct talloc_dict *users;
-	struct wbint_GroupMember *groups;
+	struct wbint_Principal *groups;
 };
 
 static NTSTATUS wb_group_members_next_subreq(
@@ -303,7 +302,7 @@ struct tevent_req *wb_group_members_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	state->groups = talloc(state, struct wbint_GroupMember);
+	state->groups = talloc(state, struct wbint_Principal);
 	if (tevent_req_nomem(state->groups, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -355,7 +354,7 @@ static void wb_group_members_done(struct tevent_req *subreq)
 		req, struct wb_group_members_state);
 	int i, num_groups, new_users, new_groups;
 	int num_members = 0;
-	struct wbint_GroupMember *members = NULL;
+	struct wbint_Principal *members = NULL;
 	NTSTATUS status;
 
 	status = wb_groups_members_recv(subreq, state, &num_members, &members);
@@ -381,7 +380,7 @@ static void wb_group_members_done(struct tevent_req *subreq)
 
 	num_groups = 0;
 	TALLOC_FREE(state->groups);
-	state->groups = talloc_array(state, struct wbint_GroupMember,
+	state->groups = talloc_array(state, struct wbint_Principal,
 				     new_groups);
 
 	/*
@@ -396,11 +395,11 @@ static void wb_group_members_done(struct tevent_req *subreq)
 			/*
 			 * Add a copy of members[i] to state->users
 			 */
-			struct wbint_GroupMember *m;
+			struct wbint_Principal *m;
 			struct dom_sid *sid;
 			DATA_BLOB key;
 
-			m = talloc(talloc_tos(), struct wbint_GroupMember);
+			m = talloc(talloc_tos(), struct wbint_Principal);
 			if (tevent_req_nomem(m, req)) {
 				return;
 			}
@@ -421,7 +420,7 @@ static void wb_group_members_done(struct tevent_req *subreq)
 		case SID_NAME_DOM_GRP:
 		case SID_NAME_ALIAS:
 		case SID_NAME_WKN_GRP: {
-			struct wbint_GroupMember *g;
+			struct wbint_Principal *g;
 			/*
 			 * Save members[i] for the next round
 			 */
