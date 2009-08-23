@@ -48,9 +48,9 @@ void ndr_print_wbint_RidArray(struct ndr_print *ndr, const char *name, const str
 enum ndr_err_code ndr_push_wbint_Principal(struct ndr_push *ndr, int ndr_flags, const struct wbint_Principal *r);
 enum ndr_err_code ndr_pull_wbint_Principal(struct ndr_pull *ndr, int ndr_flags, struct wbint_Principal *r);
 void ndr_print_wbint_Principal(struct ndr_print *ndr, const char *name, const struct wbint_Principal *r);
-enum ndr_err_code ndr_push_wbint_GroupMembers(struct ndr_push *ndr, int ndr_flags, const struct wbint_GroupMembers *r);
-enum ndr_err_code ndr_pull_wbint_GroupMembers(struct ndr_pull *ndr, int ndr_flags, struct wbint_GroupMembers *r);
-void ndr_print_wbint_GroupMembers(struct ndr_print *ndr, const char *name, const struct wbint_GroupMembers *r);
+enum ndr_err_code ndr_push_wbint_Principals(struct ndr_push *ndr, int ndr_flags, const struct wbint_Principals *r);
+enum ndr_err_code ndr_pull_wbint_Principals(struct ndr_pull *ndr, int ndr_flags, struct wbint_Principals *r);
+void ndr_print_wbint_Principals(struct ndr_print *ndr, const char *name, const struct wbint_Principals *r);
 void ndr_print_wbint_Ping(struct ndr_print *ndr, const char *name, int flags, const struct wbint_Ping *r);
 void ndr_print_wbint_LookupSid(struct ndr_print *ndr, const char *name, int flags, const struct wbint_LookupSid *r);
 void ndr_print_wbint_LookupName(struct ndr_print *ndr, const char *name, int flags, const struct wbint_LookupName *r);

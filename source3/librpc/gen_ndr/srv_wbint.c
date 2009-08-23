@@ -943,7 +943,7 @@ static bool api_wbint_LookupGroupMembers(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.members = talloc_zero(r, struct wbint_GroupMembers);
+	r->out.members = talloc_zero(r, struct wbint_Principals);
 	if (r->out.members == NULL) {
 		talloc_free(r);
 		return false;
@@ -1166,7 +1166,7 @@ NTSTATUS rpc_wbint_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, co
 		case NDR_WBINT_LOOKUPGROUPMEMBERS: {
 			struct wbint_LookupGroupMembers *r = (struct wbint_LookupGroupMembers *)_r;
 			ZERO_STRUCT(r->out);
-			r->out.members = talloc_zero(mem_ctx, struct wbint_GroupMembers);
+			r->out.members = talloc_zero(mem_ctx, struct wbint_Principals);
 			if (r->out.members == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}

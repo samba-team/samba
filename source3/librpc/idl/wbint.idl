@@ -100,13 +100,13 @@ interface wbint
     } wbint_Principal;
 
     typedef [public] struct {
-	int num_members;
-	[size_is(num_members)] wbint_Principal members[];
-    } wbint_GroupMembers;
+	int num_principals;
+	[size_is(num_principals)] wbint_Principal principals[];
+    } wbint_Principals;
 
     NTSTATUS wbint_LookupGroupMembers(
 	[in] dom_sid *sid,
 	[in] lsa_SidType type,
-	[out] wbint_GroupMembers *members
+	[out] wbint_Principals *members
 	);
 }

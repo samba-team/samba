@@ -179,17 +179,17 @@ NTSTATUS _wbint_LookupGroupMembers(pipes_struct *p,
 		return status;
 	}
 
-	r->out.members->num_members = num_names;
-	r->out.members->members = talloc_array(
+	r->out.members->num_principals = num_names;
+	r->out.members->principals = talloc_array(
 		r->out.members, struct wbint_Principal, num_names);
-	if (r->out.members->members == NULL) {
+	if (r->out.members->principals == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	for (i=0; i<num_names; i++) {
-		struct wbint_Principal *m = &r->out.members->members[i];
+		struct wbint_Principal *m = &r->out.members->principals[i];
 		sid_copy(&m->sid, &sid_mem[i]);
-		m->name = talloc_move(r->out.members->members, &names[i]);
+		m->name = talloc_move(r->out.members->principals, &names[i]);
 		m->type = (enum lsa_SidType)name_types[i];
 	}
 

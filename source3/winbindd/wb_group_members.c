@@ -39,7 +39,7 @@
 
 struct wb_lookupgroupmem_state {
 	struct dom_sid sid;
-	struct wbint_GroupMembers members;
+	struct wbint_Principals members;
 };
 
 static void wb_lookupgroupmem_done(struct tevent_req *subreq);
@@ -110,8 +110,8 @@ static NTSTATUS wb_lookupgroupmem_recv(struct tevent_req *req,
 		return status;
 	}
 
-	*num_members = state->members.num_members;
-	*members = talloc_move(mem_ctx, &state->members.members);
+	*num_members = state->members.num_principals;
+	*members = talloc_move(mem_ctx, &state->members.principals);
 	return NT_STATUS_OK;
 }
 

@@ -34,9 +34,9 @@ struct wbint_Principal {
 	const char *name;/* [unique,charset(UTF8)] */
 }/* [public] */;
 
-struct wbint_GroupMembers {
-	int32_t num_members;
-	struct wbint_Principal *members;/* [size_is(num_members)] */
+struct wbint_Principals {
+	int32_t num_principals;
+	struct wbint_Principal *principals;/* [size_is(num_principals)] */
 }/* [public] */;
 
 
@@ -194,7 +194,7 @@ struct wbint_LookupGroupMembers {
 	} in;
 
 	struct {
-		struct wbint_GroupMembers *members;/* [ref] */
+		struct wbint_Principals *members;/* [ref] */
 		NTSTATUS result;
 	} out;
 

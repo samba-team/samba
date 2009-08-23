@@ -356,67 +356,67 @@ _PUBLIC_ void ndr_print_wbint_Principal(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_push_wbint_GroupMembers(struct ndr_push *ndr, int ndr_flags, const struct wbint_GroupMembers *r)
+_PUBLIC_ enum ndr_err_code ndr_push_wbint_Principals(struct ndr_push *ndr, int ndr_flags, const struct wbint_Principals *r)
 {
-	uint32_t cntr_members_0;
+	uint32_t cntr_principals_0;
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->num_members));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->num_principals));
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, r->num_members));
-		for (cntr_members_0 = 0; cntr_members_0 < r->num_members; cntr_members_0++) {
-			NDR_CHECK(ndr_push_wbint_Principal(ndr, NDR_SCALARS, &r->members[cntr_members_0]));
+		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, r->num_principals));
+		for (cntr_principals_0 = 0; cntr_principals_0 < r->num_principals; cntr_principals_0++) {
+			NDR_CHECK(ndr_push_wbint_Principal(ndr, NDR_SCALARS, &r->principals[cntr_principals_0]));
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		for (cntr_members_0 = 0; cntr_members_0 < r->num_members; cntr_members_0++) {
-			NDR_CHECK(ndr_push_wbint_Principal(ndr, NDR_BUFFERS, &r->members[cntr_members_0]));
+		for (cntr_principals_0 = 0; cntr_principals_0 < r->num_principals; cntr_principals_0++) {
+			NDR_CHECK(ndr_push_wbint_Principal(ndr, NDR_BUFFERS, &r->principals[cntr_principals_0]));
 		}
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_pull_wbint_GroupMembers(struct ndr_pull *ndr, int ndr_flags, struct wbint_GroupMembers *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_wbint_Principals(struct ndr_pull *ndr, int ndr_flags, struct wbint_Principals *r)
 {
-	uint32_t cntr_members_0;
-	TALLOC_CTX *_mem_save_members_0;
+	uint32_t cntr_principals_0;
+	TALLOC_CTX *_mem_save_principals_0;
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_array_size(ndr, &r->members));
+		NDR_CHECK(ndr_pull_array_size(ndr, &r->principals));
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &r->num_members));
-		NDR_PULL_ALLOC_N(ndr, r->members, ndr_get_array_size(ndr, &r->members));
-		_mem_save_members_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->members, 0);
-		for (cntr_members_0 = 0; cntr_members_0 < r->num_members; cntr_members_0++) {
-			NDR_CHECK(ndr_pull_wbint_Principal(ndr, NDR_SCALARS, &r->members[cntr_members_0]));
+		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &r->num_principals));
+		NDR_PULL_ALLOC_N(ndr, r->principals, ndr_get_array_size(ndr, &r->principals));
+		_mem_save_principals_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->principals, 0);
+		for (cntr_principals_0 = 0; cntr_principals_0 < r->num_principals; cntr_principals_0++) {
+			NDR_CHECK(ndr_pull_wbint_Principal(ndr, NDR_SCALARS, &r->principals[cntr_principals_0]));
 		}
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_members_0, 0);
-		if (r->members) {
-			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->members, r->num_members));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_principals_0, 0);
+		if (r->principals) {
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->principals, r->num_principals));
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		_mem_save_members_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->members, 0);
-		for (cntr_members_0 = 0; cntr_members_0 < r->num_members; cntr_members_0++) {
-			NDR_CHECK(ndr_pull_wbint_Principal(ndr, NDR_BUFFERS, &r->members[cntr_members_0]));
+		_mem_save_principals_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->principals, 0);
+		for (cntr_principals_0 = 0; cntr_principals_0 < r->num_principals; cntr_principals_0++) {
+			NDR_CHECK(ndr_pull_wbint_Principal(ndr, NDR_BUFFERS, &r->principals[cntr_principals_0]));
 		}
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_members_0, 0);
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_principals_0, 0);
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_wbint_GroupMembers(struct ndr_print *ndr, const char *name, const struct wbint_GroupMembers *r)
+_PUBLIC_ void ndr_print_wbint_Principals(struct ndr_print *ndr, const char *name, const struct wbint_Principals *r)
 {
-	uint32_t cntr_members_0;
-	ndr_print_struct(ndr, name, "wbint_GroupMembers");
+	uint32_t cntr_principals_0;
+	ndr_print_struct(ndr, name, "wbint_Principals");
 	ndr->depth++;
-	ndr_print_int32(ndr, "num_members", r->num_members);
-	ndr->print(ndr, "%s: ARRAY(%d)", "members", (int)r->num_members);
+	ndr_print_int32(ndr, "num_principals", r->num_principals);
+	ndr->print(ndr, "%s: ARRAY(%d)", "principals", (int)r->num_principals);
 	ndr->depth++;
-	for (cntr_members_0=0;cntr_members_0<r->num_members;cntr_members_0++) {
+	for (cntr_principals_0=0;cntr_principals_0<r->num_principals;cntr_principals_0++) {
 		char *idx_0=NULL;
-		if (asprintf(&idx_0, "[%d]", cntr_members_0) != -1) {
-			ndr_print_wbint_Principal(ndr, "members", &r->members[cntr_members_0]);
+		if (asprintf(&idx_0, "[%d]", cntr_principals_0) != -1) {
+			ndr_print_wbint_Principal(ndr, "principals", &r->principals[cntr_principals_0]);
 			free(idx_0);
 		}
 	}
@@ -1495,7 +1495,7 @@ static enum ndr_err_code ndr_push_wbint_LookupGroupMembers(struct ndr_push *ndr,
 		if (r->out.members == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_wbint_GroupMembers(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.members));
+		NDR_CHECK(ndr_push_wbint_Principals(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.members));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -1525,7 +1525,7 @@ static enum ndr_err_code ndr_pull_wbint_LookupGroupMembers(struct ndr_pull *ndr,
 		}
 		_mem_save_members_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.members, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_wbint_GroupMembers(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.members));
+		NDR_CHECK(ndr_pull_wbint_Principals(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.members));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_members_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
@@ -1554,7 +1554,7 @@ _PUBLIC_ void ndr_print_wbint_LookupGroupMembers(struct ndr_print *ndr, const ch
 		ndr->depth++;
 		ndr_print_ptr(ndr, "members", r->out.members);
 		ndr->depth++;
-		ndr_print_wbint_GroupMembers(ndr, "members", r->out.members);
+		ndr_print_wbint_Principals(ndr, "members", r->out.members);
 		ndr->depth--;
 		ndr_print_NTSTATUS(ndr, "result", r->out.result);
 		ndr->depth--;
