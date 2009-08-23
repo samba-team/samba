@@ -392,29 +392,54 @@ static bool wcache_server_down(struct winbindd_domain *domain)
 	return ret;
 }
 
+static bool wcache_fetch_seqnum(const char *domain_name, uint32_t *seqnum,
+				uint32_t *last_seq_check)
+{
+	char *key;
+	TDB_DATA data;
+
+	if (wcache->tdb == NULL) {
+		DEBUG(10,("wcache_fetch_seqnum: tdb == NULL\n"));
+		return false;
+	}
+
+	key = talloc_asprintf(talloc_tos(), "SEQNUM/%s", domain_name);
+	if (key == NULL) {
+		DEBUG(10, ("talloc failed\n"));
+		return false;
+	}
+
+	data = tdb_fetch_bystring(wcache->tdb, key);
+	TALLOC_FREE(key);
+
+	if (data.dptr == NULL) {
+		DEBUG(10, ("wcache_fetch_seqnum: %s not found\n",
+			   domain_name));
+		return false;
+	}
+	if (data.dsize != 8) {
+		DEBUG(10, ("wcache_fetch_seqnum: invalid data size %d\n",
+			   (int)data.dsize));
+		SAFE_FREE(data.dptr);
+		return false;
+	}
+
+	*seqnum = IVAL(data.dptr, 0);
+	*last_seq_check = IVAL(data.dptr, 4);
+	SAFE_FREE(data.dptr);
+
+	return true;
+}
+
 static NTSTATUS fetch_cache_seqnum( struct winbindd_domain *domain, time_t now )
 {
-	TDB_DATA data;
-	fstring key;
-	uint32 time_diff;
+	uint32 last_check, time_diff;
 
-	if (!wcache->tdb) {
-		DEBUG(10,("fetch_cache_seqnum: tdb == NULL\n"));
+	if (!wcache_fetch_seqnum(domain->name, &domain->sequence_number,
+				 &last_check)) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-
-	fstr_sprintf( key, "SEQNUM/%s", domain->name );
-
-	data = tdb_fetch_bystring( wcache->tdb, key );
-	if ( !data.dptr || data.dsize!=8 ) {
-		DEBUG(10,("fetch_cache_seqnum: invalid data size key [%s]\n", key ));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	domain->sequence_number = IVAL(data.dptr, 0);
-	domain->last_seq_check  = IVAL(data.dptr, 4);
-
-	SAFE_FREE(data.dptr);
+	domain->last_seq_check = last_check;
 
 	/* have we expired? */
 
