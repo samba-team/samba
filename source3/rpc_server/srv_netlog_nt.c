@@ -513,6 +513,7 @@ NTSTATUS _netr_ServerAuthenticate3(pipes_struct *p,
 	uint32_t in_neg_flags = *r->in.negotiate_flags;
 	struct netr_Credential srv_chal_out;
 	const char *fn;
+	uint32_t rid;
 
 	/* According to Microsoft (see bugid #6099)
 	 * Windows 7 looks at the negotiate_flags
@@ -578,7 +579,7 @@ NTSTATUS _netr_ServerAuthenticate3(pipes_struct *p,
 	status = get_md4pw((char *)p->dc->mach_pw,
 			   r->in.account_name,
 			   r->in.secure_channel_type,
-			   r->out.rid);
+			   &rid);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("%s: failed to get machine password for "
 			"account %s: %s\n",
@@ -621,6 +622,9 @@ NTSTATUS _netr_ServerAuthenticate3(pipes_struct *p,
 					    r->in.computer_name,
 					    p->dc);
 	unbecome_root();
+
+	*r->out.rid = rid;
+
 	status = NT_STATUS_OK;
 
   out:
