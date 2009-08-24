@@ -172,8 +172,8 @@ static int schema_fsmo_add(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
 	struct dsdb_schema *schema;
-	const char *attributeID = NULL;
-	const char *governsID = NULL;
+	const struct ldb_val *attributeID = NULL;
+	const struct ldb_val *governsID = NULL;
 	const char *oid_attr = NULL;
 	const char *oid = NULL;
 	uint32_t id32;
@@ -202,21 +202,24 @@ static int schema_fsmo_add(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	attributeID = samdb_result_string(req->op.add.message, "attributeID", NULL);
-	governsID = samdb_result_string(req->op.add.message, "governsID", NULL);
+	attributeID = ldb_msg_find_ldb_val(req->op.add.message, "attributeID");
+	governsID = ldb_msg_find_ldb_val(req->op.add.message, "governsID");
 
 	if (attributeID) {
 		oid_attr = "attributeID";
-		oid = attributeID;
+		oid = talloc_strndup(req, (const char *)attributeID->data, attributeID->length);
 	} else if (governsID) {
 		oid_attr = "governsID";
-		oid = governsID;
-	}
-
-	if (!oid) {
+		oid = talloc_strndup(req, (const char *)governsID->data, governsID->length);
+	} else {
 		return ldb_next_request(module, req);
 	}
 
+	if (!oid) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+		
 	status = dsdb_map_oid2int(schema, oid, &id32);
 	if (W_ERROR_IS_OK(status)) {
 		return ldb_next_request(module, req);
