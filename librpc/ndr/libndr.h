@@ -470,6 +470,7 @@ NDR_SCALAR_PROTO(NTTIME_hyper, NTTIME)
 NDR_SCALAR_PROTO(DATA_BLOB, DATA_BLOB)
 NDR_SCALAR_PROTO(ipv4address, const char *)
 NDR_SCALAR_PROTO(string, const char *)
+NDR_SCALAR_PROTO(double, double)
 
 enum ndr_err_code ndr_pull_policy_handle(struct ndr_pull *ndr, int ndr_flags, struct policy_handle *r);
 enum ndr_err_code ndr_push_policy_handle(struct ndr_push *ndr, int ndr_flags, const struct policy_handle *r);
