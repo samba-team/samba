@@ -1,6 +1,6 @@
                    =============================
                    Release Notes for Samba 3.4.1
-			  August 18, 2009
+			  August , 2009
                    =============================
 
 
@@ -9,9 +9,9 @@ This is the latest stable release of Samba 3.4.
 
 Major enhancements in Samba 3.4.1 include:
 
+   o Fix authentication on member servers without Winbind (bug #6650).
+   o Nautilus fails to copy files from an SMB share (bug #6649).
    o Fix connections of Win98 clients (bug #6551).
-   o SetPrinter fails (panics) as non root (bug #6564).
-   o Fix crash bug in spoolss_addprinterex_level_2 (bug #6607).
 
 
 ######################################################################
@@ -22,6 +22,10 @@ Changes since 3.4.0
 -------------------
 
 
+o   Michael Adam <obnox@samba.org>
+    * BUG 6650: Fix authentication on member servers without Winbind.
+
+
 o   Jeremy Allison <jra@samba.org>
     * BUG 6437: Make open_udp_socket() IPv6 clean.
     * BUG 6506: Smbd server doesn't set EAs when a file is overwritten in
@@ -29,6 +33,7 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 6551: Fix connections of Win98 clients.
     * BUG 6564: SetPrinter fails (panics) as non root.
     * BUG 6593: Correctly implement SMB_INFO_STANDARD setfileinfo.
+    * BUG 6649: Nautilus fails to copy files from an SMB share.
 
 
 o   Yannick Bergeron <burgergold@hotmail.com>
@@ -46,6 +51,7 @@ o   Matt Kraai <mkraai@beckman.com>
 
 
 o   Volker Lendecke <vl@samba.org>
+    * BUG 6585: Fix unqualified "net join".
     * BUG 6611: Fix a valgrind error in chain_reply.
     * Fix linking on Solaris.
 
