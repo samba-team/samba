@@ -157,7 +157,7 @@ const struct dsdb_class *dsdb_class_by_lDAPDisplayName(const struct dsdb_schema 
 }
 
 const struct dsdb_class *dsdb_class_by_lDAPDisplayName_ldb_val(const struct dsdb_schema *schema,
-							       struct ldb_val *name)
+							       const struct ldb_val *name)
 {
 	struct dsdb_class *c;
 	if (!name) return NULL;
@@ -177,7 +177,7 @@ const struct dsdb_class *dsdb_class_by_cn(const struct dsdb_schema *schema,
 }
 
 const struct dsdb_class *dsdb_class_by_cn_ldb_val(const struct dsdb_schema *schema,
-						  struct ldb_val *cn)
+						  const struct ldb_val *cn)
 {
 	struct dsdb_class *c;
 	if (!cn) return NULL;
