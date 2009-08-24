@@ -5409,6 +5409,17 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 		round_timespec(&ft->ctime);
 		round_timespec(&ft->atime);
 		round_timespec(&ft->mtime);
+	} else {
+		/* The highest resolution timestamp
+ 		 * setting function available in POSIX
+ 		 * is utimes(), which uses usec resolution,
+ 		 * not nsec resolution. So we must round to
+ 		 * usec, then back to nsec. JRA.
+ 		 */
+		round_timespec_to_usec(&ft->create_time);
+		round_timespec_to_usec(&ft->ctime);
+		round_timespec_to_usec(&ft->atime);
+		round_timespec_to_usec(&ft->mtime);
 	}
 
 	DEBUG(5,("smb_set_filetime: actime: %s\n ",

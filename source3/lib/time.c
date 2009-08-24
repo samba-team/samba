@@ -479,6 +479,16 @@ void round_timespec(struct timespec *ts)
 }
 
 /****************************************************************************
+ Round a timespec to usec value.
+****************************************************************************/
+
+void round_timespec_to_usec(struct timespec *ts)
+{
+	struct timeval tv = convert_timespec_to_timeval(*ts);
+	*ts = convert_timeval_to_timespec(tv);
+}
+
+/****************************************************************************
  Interprets an nt time into a unix struct timespec.
  Differs from nt_time_to_unix in that an 8 byte value of 0xffffffffffffffff
  will be returned as (time_t)-1, whereas nt_time_to_unix returns 0 in this case.
