@@ -408,7 +408,6 @@ static int generate_possibleInferiors(struct ldb_context *ldb, struct ldb_messag
 	int ret, i;
 	const char *first_component_name = ldb_dn_get_component_name(dn, 0);
 	const struct ldb_val *first_component_val;
-	const char *class_name;
 	const struct dsdb_class *schema_class;
 	const char **possibleInferiors;
 
