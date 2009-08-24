@@ -6508,6 +6508,7 @@ _PUBLIC_ void ndr_print_netr_NegotiateFlags(struct ndr_print *ndr, const char *n
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NEG_NEUTRALIZE_NT4_EMULATION", NETLOGON_NEG_NEUTRALIZE_NT4_EMULATION, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NEG_RODC_PASSTHROUGH", NETLOGON_NEG_RODC_PASSTHROUGH, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NEG_SUPPORTS_AES_SHA2", NETLOGON_NEG_SUPPORTS_AES_SHA2, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NEG_0x01000000", NETLOGON_NEG_0x01000000, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NEG_AUTHENTICATED_RPC_LSASS", NETLOGON_NEG_AUTHENTICATED_RPC_LSASS, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NEG_AUTHENTICATED_RPC", NETLOGON_NEG_AUTHENTICATED_RPC, r);
 	ndr->depth--;
