@@ -158,7 +158,7 @@ static int tevent_signal_destructor(struct tevent_signal *se)
   this is part of the pipe hack needed to avoid the signal race condition
 */
 static void signal_pipe_handler(struct tevent_context *ev, struct tevent_fd *fde, 
-				uint16_t flags, void *private)
+				uint16_t flags, void *_private)
 {
 	char c[16];
 	ssize_t res;
