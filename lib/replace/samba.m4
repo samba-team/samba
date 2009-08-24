@@ -17,10 +17,7 @@ LIBREPLACE_DIR=`echo ${libreplacedir} |sed -e 's/^\.\///g'`
 # build directory.
 LIBREPLACE_DIR=`echo ${LIBREPLACE_DIR} | sed -e "s|^$srcdir/||g"`
 
-LIBREPLACE_OBJS=""
-for obj in ${LIBREPLACEOBJ}; do
-	LIBREPLACE_OBJS="${LIBREPLACE_OBJS} ${LIBREPLACE_DIR}/${obj}"
-done
+LIBREPLACE_OBJS="${LIBREPLACEOBJ}"
 
 SMB_SUBSYSTEM(LIBREPLACE,
 	[${LIBREPLACE_OBJS}],

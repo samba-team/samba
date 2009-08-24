@@ -640,10 +640,7 @@ CPPFLAGS="${SAVE_CPPFLAGS}"
 
 LIBREPLACE_DIR=`echo ${libreplacedir} | sed -e "s;${srcdir};;" -e "s;^/;;"`
 
-LIBREPLACE_OBJS=""
-for obj in ${LIBREPLACEOBJ}; do
-	LIBREPLACE_OBJS="${LIBREPLACE_OBJS} ${LIBREPLACE_DIR}/${obj}"
-done
+LIBREPLACE_OBJS="${LIBREPLACEOBJ}"
 AC_SUBST(LIBREPLACE_OBJS)
 
 # add -ldl to the global LIBS
