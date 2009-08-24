@@ -653,14 +653,24 @@ static int dsdb_schema_setup_ldb_schema_attribute(struct ldb_context *ldb,
 }
 
 
-
 #define GET_STRING_LDB(msg, attr, mem_ctx, p, elem, strict) do { \
-	(p)->elem = samdb_result_string(msg, attr, NULL);\
-	if (strict && (p)->elem == NULL) { \
-		d_printf("%s: %s == NULL\n", __location__, attr); \
-		return WERR_INVALID_PARAM; \
-	} \
-	talloc_steal(mem_ctx, (p)->elem); \
+	struct ldb_val *get_string_val = ldb_msg_find_ldb_val(msg, attr); \
+	if (get_string_val == NULL) { \
+		if (strict) {					  \
+			d_printf("%s: %s == NULL\n", __location__, attr); \
+			return WERR_INVALID_PARAM;			\
+		} else {						\
+			(p)->elem = NULL;				\
+		}							\
+	} else {							\
+		(p)->elem = talloc_strndup(mem_ctx,			\
+					   (const char *)get_string_val->data, \
+					   get_string_val->length); \
+		if (!(p)->elem) {					\
+			d_printf("%s: talloc_strndup failed for %s\n", __location__, attr); \
+			return WERR_NOMEM;				\
+		}							\
+	}								\
 } while (0)
 
 #define GET_STRING_LIST_LDB(msg, attr, mem_ctx, p, elem, strict) do {	\
