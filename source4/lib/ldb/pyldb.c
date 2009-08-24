@@ -845,6 +845,35 @@ static PyObject *py_ldb_parse_ldif(PyLdbObject *self, PyObject *args)
 	return PyObject_GetIter(list);
 }
 
+static PyObject *py_ldb_msg_diff(PyLdbObject *self, PyObject *args)
+{
+	PyObject *py_msg_old;
+	PyObject *py_msg_new;
+	struct ldb_message *diff;
+	PyObject *py_ret;
+
+	if (!PyArg_ParseTuple(args, "OO", &py_msg_old, &py_msg_new))
+		return NULL;
+
+	if (!PyLdbMessage_Check(py_msg_old)) {
+		PyErr_SetString(PyExc_TypeError, "Expected Ldb Message for old message");
+		return NULL;
+	}
+
+	if (!PyLdbMessage_Check(py_msg_new)) {
+		PyErr_SetString(PyExc_TypeError, "Expected Ldb Message for new message");
+		return NULL;
+	}
+
+	diff = ldb_msg_diff(PyLdb_AsLdbContext(self), PyLdbMessage_AsMessage(py_msg_old), PyLdbMessage_AsMessage(py_msg_new));
+	if (diff == NULL) 
+		return NULL;
+
+	py_ret = PyLdbMessage_FromMessage(diff);
+
+	return py_ret;
+}
+
 static PyObject *py_ldb_schema_format_value(PyLdbObject *self, PyObject *args)
 {
 	const struct ldb_schema_attribute *a;
@@ -1087,6 +1116,9 @@ static PyMethodDef py_ldb_methods[] = {
 	{ "parse_ldif", (PyCFunction)py_ldb_parse_ldif, METH_VARARGS,
 		"S.parse_ldif(ldif) -> iter(messages)\n"
 		"Parse a string formatted using LDIF." },
+	{ "msg_diff", (PyCFunction)py_ldb_msg_diff, METH_VARARGS,
+		"S.msg_diff(Message) -> Message\n"
+		"Return an LDB Message of the difference between two Message objects." },
 	{ "get_opaque", (PyCFunction)py_ldb_get_opaque, METH_VARARGS,
 		"S.get_opaque(name) -> value\n"
 		"Get an opaque value set on this LDB connection. \n"

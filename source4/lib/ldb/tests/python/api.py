@@ -451,6 +451,17 @@ class LdbMsgTests(unittest.TestCase):
     def test_get_unknown(self):
         self.assertEquals(None, self.msg.get("lalalala"))
 
+    def test_msg_diff(self):
+        l = ldb.Ldb()
+        msgs = l.parse_ldif("dn: foo=bar\nfoo: bar\nbaz: do\n\ndn: foo=bar\nfoo: bar\nbaz: dont\n")
+        msg1 = msgs.next()[1]
+        msg2 = msgs.next()[1]
+        msgdiff = l.msg_diff(msg1, msg2)
+        self.assertEquals("foo=bar", msgdiff.get("dn").__str__())
+        self.assertRaises(KeyError, lambda: msgdiff["foo"])
+        self.assertEquals(1, len(msgdiff))
+
+
 
 class MessageElementTests(unittest.TestCase):
 
