@@ -131,10 +131,10 @@ For more control on which parent is removed, see talloc_unlink()
 
 talloc_free() operates recursively on its children.
 
-As a special case, talloc_free() is refused on pointers that have more
-than one parent, as talloc would have no way of knowing which parent
-should be removed. To free a pointer that has more than one parent
-please use talloc_unlink().
+From the 2.0 version of talloc, as a special case, talloc_free() is
+refused on pointers that have more than one parent, as talloc would
+have no way of knowing which parent should be removed. To free a
+pointer that has more than one parent please use talloc_unlink().
 
 To help you find problems in your code caused by this behaviour, if
 you do try and free a pointer with more than one parent then the
