@@ -744,3 +744,14 @@ know the structure you want is a parent of another context.
 
 Like talloc_find_parent_byname() but takes a type, making it typesafe.
 
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+void talloc_set_log_fn(void (*log_fn)(const char *message));
+
+This function sets a logging function that talloc will use for
+warnings and errors. By default talloc will not print any warnings or
+errors.
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+void talloc_set_log_stderr(void)
+
+This sets the talloc log function to write log messages to stderr
