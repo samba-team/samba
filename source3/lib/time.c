@@ -474,7 +474,7 @@ int timespec_compare(const struct timespec *ts1, const struct timespec *ts2)
 
 void round_timespec(struct timespec *ts)
 {
-	ts->tv_sec += ts->tv_nsec >= 500000000 ? 1 : 0;
+	ts->tv_sec = convert_timespec_to_time_t(*ts);
 	ts->tv_nsec = 0;
 }
 
