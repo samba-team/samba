@@ -368,9 +368,9 @@ DATA_BLOB NTLMv2_generate_names_blob(TALLOC_CTX *mem_ctx,
 	
 	msrpc_gen(mem_ctx, &names_blob, 
 		  "aaa", 
-		  NTLMSSP_NAME_TYPE_DOMAIN, domain,
-		  NTLMSSP_NAME_TYPE_SERVER, hostname,
-		  0, "");
+		  MsvAvNbDomainName, domain,
+		  MsvAvNbComputerName, hostname,
+		  MsvAvEOL, "");
 	return names_blob;
 }
 

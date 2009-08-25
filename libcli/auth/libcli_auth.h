@@ -25,9 +25,4 @@
 #include "libcli/auth/proto.h"
 #include "libcli/auth/msrpc_parse.h"
 
-#define NTLMSSP_NAME_TYPE_SERVER      0x01
-#define NTLMSSP_NAME_TYPE_DOMAIN      0x02
-#define NTLMSSP_NAME_TYPE_SERVER_DNS  0x03
-#define NTLMSSP_NAME_TYPE_DOMAIN_DNS  0x04
-
 #endif /* __LIBCLI_AUTH_H__ */
