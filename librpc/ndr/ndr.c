@@ -255,6 +255,7 @@ _PUBLIC_ void ndr_print_function_debug(ndr_print_function_t fn, const char *name
 	ndr->print = ndr_print_debug_helper;
 	ndr->depth = 1;
 	ndr->flags = 0;
+	ndr->iconv_convenience = smb_iconv_convenience_init(talloc_autofree_context(), "ASCII", "UTF-8", true);
 	fn(ndr, name, flags, ptr);
 	talloc_free(ndr);
 }
