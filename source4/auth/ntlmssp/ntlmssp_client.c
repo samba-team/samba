@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "auth/ntlmssp/ntlmssp.h"
+#include "../librpc/gen_ndr/ntlmssp.h"
 #include "../lib/crypto/crypto.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "auth/credentials/credentials.h"
@@ -141,14 +142,14 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	ntlmssp_handle_neg_flags(gensec_ntlmssp_state, chal_flags, gensec_ntlmssp_state->allow_lm_key);
 
 	if (gensec_ntlmssp_state->unicode) {
-		if (chal_flags & NTLMSSP_CHAL_TARGET_INFO) {
+		if (chal_flags & NTLMSSP_NEGOTIATE_TARGET_INFO) {
 			chal_parse_string = "CdUdbddB";
 		} else {
 			chal_parse_string = "CdUdbdd";
 		}
 		auth_gen_string = "CdBBUUUBd";
 	} else {
-		if (chal_flags & NTLMSSP_CHAL_TARGET_INFO) {
+		if (chal_flags & NTLMSSP_NEGOTIATE_TARGET_INFO) {
 			chal_parse_string = "CdAdbddB";
 		} else {
 			chal_parse_string = "CdAdbdd";

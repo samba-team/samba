@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "system/network.h"
 #include "auth/ntlmssp/ntlmssp.h"
+#include "../librpc/gen_ndr/ntlmssp.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../lib/crypto/crypto.h"
 #include "auth/gensec/gensec.h"
@@ -91,7 +92,7 @@ static const char *ntlmssp_target_name(struct gensec_ntlmssp_state *gensec_ntlms
 				       uint32_t neg_flags, uint32_t *chal_flags) 
 {
 	if (neg_flags & NTLMSSP_REQUEST_TARGET) {
-		*chal_flags |= NTLMSSP_CHAL_TARGET_INFO;
+		*chal_flags |= NTLMSSP_NEGOTIATE_TARGET_INFO;
 		*chal_flags |= NTLMSSP_REQUEST_TARGET;
 		if (gensec_ntlmssp_state->server_role == ROLE_STANDALONE) {
 			*chal_flags |= NTLMSSP_TARGET_TYPE_SERVER;
@@ -179,7 +180,7 @@ NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security,
 	gensec_ntlmssp_state->internal_chal = data_blob_talloc(gensec_ntlmssp_state, cryptkey, 8);
 
 	/* This creates the 'blob' of names that appears at the end of the packet */
-	if (chal_flags & NTLMSSP_CHAL_TARGET_INFO) {
+	if (chal_flags & NTLMSSP_NEGOTIATE_TARGET_INFO) {
 		char dnsdomname[MAXHOSTNAMELEN], dnsname[MAXHOSTNAMELEN];
 		const char *target_name_dns = "";
 
@@ -762,7 +763,7 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 	gensec_ntlmssp_state->server_multiple_authentications = false;
 	
 	gensec_ntlmssp_state->neg_flags = 
-		NTLMSSP_NEGOTIATE_NTLM | NTLMSSP_UNKNOWN_02000000;
+		NTLMSSP_NEGOTIATE_NTLM | NTLMSSP_NEGOTIATE_VERSION;
 
 	gensec_ntlmssp_state->lm_resp = data_blob(NULL, 0);
 	gensec_ntlmssp_state->nt_resp = data_blob(NULL, 0);

@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "auth/ntlmssp/ntlmssp.h"
+#include "../librpc/gen_ndr/ntlmssp.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "auth/credentials/credentials.h"
@@ -81,30 +82,28 @@ void debug_ntlmssp_flags(uint32_t neg_flags)
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_SIGN\n"));
 	if (neg_flags & NTLMSSP_NEGOTIATE_SEAL) 
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_SEAL\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_DATAGRAM_STYLE) 
-		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_DATAGRAM_STYLE\n"));
+	if (neg_flags & NTLMSSP_NEGOTIATE_DATAGRAM)
+		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_DATAGRAM\n"));
 	if (neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) 
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_LM_KEY\n"));
 	if (neg_flags & NTLMSSP_NEGOTIATE_NETWARE) 
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_NETWARE\n"));
 	if (neg_flags & NTLMSSP_NEGOTIATE_NTLM) 
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_NTLM\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_DOMAIN_SUPPLIED) 
-		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_DOMAIN_SUPPLIED\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_WORKSTATION_SUPPLIED) 
-		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_WORKSTATION_SUPPLIED\n"));
+	if (neg_flags & NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED)
+		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED\n"));
+	if (neg_flags & NTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED)
+		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED\n"));
 	if (neg_flags & NTLMSSP_NEGOTIATE_THIS_IS_LOCAL_CALL) 
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_THIS_IS_LOCAL_CALL\n"));
 	if (neg_flags & NTLMSSP_NEGOTIATE_ALWAYS_SIGN) 
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_ALWAYS_SIGN\n"));
-	if (neg_flags & NTLMSSP_CHAL_ACCEPT_RESPONSE) 
-		DEBUGADD(4, ("  NTLMSSP_CHAL_ACCEPT_RESPONSE\n"));
-	if (neg_flags & NTLMSSP_CHAL_NON_NT_SESSION_KEY) 
-		DEBUGADD(4, ("  NTLMSSP_CHAL_NON_NT_SESSION_KEY\n"));
+	if (neg_flags & NTLMSSP_REQUEST_NON_NT_SESSION_KEY)
+		DEBUGADD(4, ("  NTLMSSP_REQUEST_NON_NT_SESSION_KEY\n"));
 	if (neg_flags & NTLMSSP_NEGOTIATE_NTLM2) 
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_NTLM2\n"));
-	if (neg_flags & NTLMSSP_CHAL_TARGET_INFO) 
-		DEBUGADD(4, ("  NTLMSSP_CHAL_TARGET_INFO\n"));
+	if (neg_flags & NTLMSSP_NEGOTIATE_TARGET_INFO)
+		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_TARGET_INFO\n"));
 	if (neg_flags & NTLMSSP_NEGOTIATE_128) 
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_128\n"));
 	if (neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH) 
@@ -295,8 +294,8 @@ void ntlmssp_handle_neg_flags(struct gensec_ntlmssp_state *gensec_ntlmssp_state,
 
 	/* Woop Woop - unknown flag for Windows compatibility...
 	   What does this really do ? JRA. */
-	if (!(neg_flags & NTLMSSP_UNKNOWN_02000000)) {
-		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_UNKNOWN_02000000;
+	if (!(neg_flags & NTLMSSP_NEGOTIATE_VERSION)) {
+		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_VERSION;
 	}
 
 	if ((neg_flags & NTLMSSP_REQUEST_TARGET)) {
