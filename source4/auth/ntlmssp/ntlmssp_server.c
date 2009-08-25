@@ -205,11 +205,11 @@ NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security,
 
 		msrpc_gen(out_mem_ctx, 
 			  &struct_blob, "aaaaa",
-			  NTLMSSP_NAME_TYPE_DOMAIN, target_name,
-			  NTLMSSP_NAME_TYPE_SERVER, gensec_ntlmssp_state->server_name,
-			  NTLMSSP_NAME_TYPE_DOMAIN_DNS, dnsdomname,
-			  NTLMSSP_NAME_TYPE_SERVER_DNS, dnsname,
-			  0, "");
+			  MsvAvNbDomainName, target_name,
+			  MsvAvNbComputerName, gensec_ntlmssp_state->server_name,
+			  MsvAvDnsDomainName, dnsdomname,
+			  MsvAvDnsComputerName, dnsname,
+			  MsvAvEOL, "");
 	} else {
 		struct_blob = data_blob(NULL, 0);
 	}
