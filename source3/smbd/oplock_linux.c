@@ -98,6 +98,10 @@ static void linux_oplock_signal_handler(struct tevent_context *ev_ctx,
 	files_struct *fsp;
 
 	fsp = file_find_fd(fd);
+	if (fsp == NULL) {
+		DEBUG(0,("linux_oplock_signal_handler: failed to find fsp for file fd=%d\n", fd ));
+		smb_panic("linux_oplock_signal_handler\n");
+	}
 	break_kernel_oplock(smbd_messaging_context(), fsp);
 }
 
