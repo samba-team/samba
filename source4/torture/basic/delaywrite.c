@@ -240,6 +240,9 @@ static bool test_delayed_write_update1(struct torture_context *tctx, struct smbc
 		ret = false;
 	}
 
+	fflush(stdout);
+	msleep(2 * msec);
+
 	/* Do a non-zero length SMBwrite and make sure it doesn't update the write time. */
 	written = smbcli_smbwrite(cli->tree, fnum1, "x", 0, 1);
 
@@ -421,6 +424,9 @@ static bool test_delayed_write_update1a(struct torture_context *tctx, struct smb
 		ret = false;
 	}
 
+	fflush(stdout);
+	msleep(2 * msec);
+
 	/* Do a non-zero length SMBwrite and make sure it doesn't update the write time. */
 	written = smbcli_smbwrite(cli->tree, fnum1, "x", 0, 1);
 
@@ -595,6 +601,9 @@ static bool test_delayed_write_update1b(struct torture_context *tctx, struct smb
 					   "Server did not update write time (wrong!)");
 		ret = false;
 	}
+
+	fflush(stdout);
+	msleep(2 * msec);
 
 	/* Do a non-zero length SMBwrite and make sure it doesn't update the write time. */
 	written = smbcli_smbwrite(cli->tree, fnum1, "x", 0, 1);
@@ -772,6 +781,9 @@ static bool test_delayed_write_update1c(struct torture_context *tctx, struct smb
 					   "Server did not update write time (wrong!)");
 		ret = false;
 	}
+
+	fflush(stdout);
+	msleep(2 * msec);
 
 	/* Do a non-zero length SMBwrite and make sure it doesn't update the write time. */
 	written = smbcli_smbwrite(cli->tree, fnum1, "x", 0, 1);
@@ -998,6 +1010,9 @@ static bool test_delayed_write_update2(struct torture_context *tctx, struct smbc
 	if (finfo1.basic_info.out.write_time == finfo2.basic_info.out.write_time) {
 		torture_comment(tctx, "Server did not update write time (correct)\n");
 	}
+
+	fflush(stdout);
+	msleep(2 * msec);
 
 	fnum2 = smbcli_open(cli->tree, fname, O_RDWR, DENY_NONE);
 	if (fnum2 == -1) {
