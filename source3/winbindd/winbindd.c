@@ -471,7 +471,6 @@ static struct winbindd_dispatch_table {
 	{ WINBINDD_PRIV_PIPE_DIR, winbindd_priv_pipe_dir,
 	  "WINBINDD_PRIV_PIPE_DIR" },
 	{ WINBINDD_GETDCNAME, winbindd_getdcname, "GETDCNAME" },
-	{ WINBINDD_DSGETDCNAME, winbindd_dsgetdcname, "DSGETDCNAME" },
 
 	/* Credential cache access */
 	{ WINBINDD_CCACHE_NTLMAUTH, winbindd_ccache_ntlm_auth, "NTLMAUTH" },
@@ -538,6 +537,8 @@ static struct winbindd_async_dispatch_table async_nonpriv_table[] = {
 	  winbindd_getpwent_send, winbindd_getpwent_recv },
 	{ WINBINDD_ENDPWENT, "ENDPWENT",
 	  winbindd_endpwent_send, winbindd_endpwent_recv },
+	{ WINBINDD_DSGETDCNAME, "DSGETDCNAME",
+	  winbindd_dsgetdcname_send, winbindd_dsgetdcname_recv },
 
 	{ 0, NULL, NULL, NULL }
 };
