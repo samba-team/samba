@@ -120,6 +120,7 @@
    backend.
 */
 #define LDB_ERR_STRONG_AUTH_REQUIRED		8
+
 /* 9 RESERVED */
 
 /**
@@ -181,6 +182,7 @@
    already exists in the entry.
 */
 #define LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS	20
+
 /**
    The function used an invalid (incorrect syntax) attribute value.
 */
