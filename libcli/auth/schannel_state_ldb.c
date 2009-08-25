@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    module to store/fetch session keys for the schannel server
@@ -10,12 +10,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -143,12 +143,12 @@ NTSTATUS schannel_store_session_key(struct ldb_context *ldb,
 
 		ret = ldb_modify(ldb, msg);
 	}
-	
+
 	/* We don't need a transaction here, as we either add or
 	 * modify records, never delete them, so it must exist */
 
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0,("Unable to add %s to session key db - %s\n", 
+		DEBUG(0,("Unable to add %s to session key db - %s\n",
 			 ldb_dn_get_linearized(msg->dn), ldb_errstring(ldb)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -161,7 +161,7 @@ NTSTATUS schannel_store_session_key(struct ldb_context *ldb,
 */
 NTSTATUS schannel_fetch_session_key(struct ldb_context *ldb,
 				    TALLOC_CTX *mem_ctx,
-				    const char *computer_name, 
+				    const char *computer_name,
 				    struct netlogon_creds_CredentialState **creds)
 {
 	struct ldb_result *res;
@@ -262,13 +262,13 @@ NTSTATUS schannel_fetch_session_key(struct ldb_context *ldb,
 
 */
 NTSTATUS schannel_creds_server_step_check(struct ldb_context *ldb,
-					  TALLOC_CTX *mem_ctx, 
+					  TALLOC_CTX *mem_ctx,
 					  const char *computer_name,
 					  bool schannel_required_for_call,
 					  bool schannel_in_use,
 					  struct netr_Authenticator *received_authenticator,
 					  struct netr_Authenticator *return_authenticator,
-					  struct netlogon_creds_CredentialState **creds_out) 
+					  struct netlogon_creds_CredentialState **creds_out)
 {
 	struct netlogon_creds_CredentialState *creds;
 	NTSTATUS nt_status;
@@ -281,9 +281,9 @@ NTSTATUS schannel_creds_server_step_check(struct ldb_context *ldb,
 
 	/* Because this is a shared structure (even across
 	 * disconnects) we must update the database every time we
-	 * update the structure */ 
-	
-	nt_status = schannel_fetch_session_key(ldb, ldb, computer_name, 
+	 * update the structure */
+
+	nt_status = schannel_fetch_session_key(ldb, ldb, computer_name,
 					       &creds);
 
 	/* If we are flaged that schannel is required for a call, and
@@ -299,8 +299,8 @@ NTSTATUS schannel_creds_server_step_check(struct ldb_context *ldb,
 	}
 
 	if (NT_STATUS_IS_OK(nt_status)) {
-		nt_status = netlogon_creds_server_step_check(creds, 
-							     received_authenticator, 
+		nt_status = netlogon_creds_server_step_check(creds,
+							     received_authenticator,
 							     return_authenticator);
 	}
 
