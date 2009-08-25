@@ -25,6 +25,13 @@
 #include "../lib/crypto/crypto.h"
 #include "libcli/auth/libcli_auth.h"
 
+static void netlogon_creds_step_crypt(struct netlogon_creds_CredentialState *creds,
+				      const struct netr_Credential *in,
+				      struct netr_Credential *out)
+{
+	des_crypt112(out->data, in->data, creds->session_key, 1);
+}
+
 /*
   initialise the credentials state for old-style 64 bit session keys
 
@@ -47,11 +54,6 @@ static void netlogon_creds_init_64bit(struct netlogon_creds_CredentialState *cre
 	ZERO_STRUCT(creds->session_key);
 
 	des_crypt128(creds->session_key, sum2, machine_password->hash);
-
-	des_crypt112(creds->client.data, client_challenge->data, creds->session_key, 1);
-	des_crypt112(creds->server.data, server_challenge->data, creds->session_key, 1);
-
-	creds->seed = creds->client;
 }
 
 /*
@@ -80,13 +82,18 @@ static void netlogon_creds_init_128bit(struct netlogon_creds_CredentialState *cr
 	MD5Final(tmp, &md5);
 	hmac_md5_update(tmp, sizeof(tmp), &ctx);
 	hmac_md5_final(creds->session_key, &ctx);
+}
 
-	des_crypt112(creds->client.data, client_challenge->data, creds->session_key, 1);
-	des_crypt112(creds->server.data, server_challenge->data, creds->session_key, 1);
+static void netlogon_creds_first_step(struct netlogon_creds_CredentialState *creds,
+				      const struct netr_Credential *client_challenge,
+				      const struct netr_Credential *server_challenge)
+{
+	netlogon_creds_step_crypt(creds, client_challenge, &creds->client);
+
+	netlogon_creds_step_crypt(creds, server_challenge, &creds->server);
 
 	creds->seed = creds->client;
 }
-
 
 /*
   step the credentials to the next element in the chain, updating the
@@ -104,7 +111,7 @@ static void netlogon_creds_step(struct netlogon_creds_CredentialState *creds)
 
 	DEBUG(5,("\tseed+time   %08x:%08x\n", IVAL(time_cred.data, 0), IVAL(time_cred.data, 4)));
 
-	des_crypt112(creds->client.data, time_cred.data, creds->session_key, 1);
+	netlogon_creds_step_crypt(creds, &time_cred, &creds->client);
 
 	DEBUG(5,("\tCLIENT      %08x:%08x\n", 
 		 IVAL(creds->client.data, 0), IVAL(creds->client.data, 4)));
@@ -115,7 +122,7 @@ static void netlogon_creds_step(struct netlogon_creds_CredentialState *creds)
 	DEBUG(5,("\tseed+time+1 %08x:%08x\n", 
 		 IVAL(time_cred.data, 0), IVAL(time_cred.data, 4)));
 
-	des_crypt112(creds->server.data, time_cred.data, creds->session_key, 1);
+	netlogon_creds_step_crypt(creds, &time_cred, &creds->server);
 
 	DEBUG(5,("\tSERVER      %08x:%08x\n", 
 		 IVAL(creds->server.data, 0), IVAL(creds->server.data, 4)));
@@ -224,6 +231,8 @@ struct netlogon_creds_CredentialState *netlogon_creds_client_init(TALLOC_CTX *me
 	} else {
 		netlogon_creds_init_64bit(creds, client_challenge, server_challenge, machine_password);
 	}
+
+	netlogon_creds_first_step(creds, client_challenge, server_challenge);
 
 	dump_data_pw("Session key", creds->session_key, 16);
 	dump_data_pw("Credential ", creds->client.data, 8);
@@ -345,6 +354,8 @@ struct netlogon_creds_CredentialState *netlogon_creds_server_init(TALLOC_CTX *me
 		netlogon_creds_init_64bit(creds, client_challenge, server_challenge, 
 					  machine_password);
 	}
+
+	netlogon_creds_first_step(creds, client_challenge, server_challenge);
 
 	/* And before we leak information about the machine account
 	 * password, check that they got the first go right */
