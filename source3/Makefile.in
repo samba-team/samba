@@ -489,8 +489,7 @@ CLDAP_OBJ = libads/cldap.o \
 
 TLDAP_OBJ = lib/tldap.o lib/tldap_util.o lib/util_tsock.o
 
-SCHANNEL_OBJ = libsmb/credentials.o \
-	       ../libcli/auth/credentials.o \
+SCHANNEL_OBJ = ../libcli/auth/credentials.o \
 	       ../libcli/auth/schannel_state_tdb.o \
 	       ../librpc/gen_ndr/ndr_schannel.o \
 	       passdb/secrets_schannel.o

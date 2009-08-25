@@ -1806,23 +1806,6 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 						const char *sitename,
 						struct sockaddr_storage *pss);
 
-
-/* The following definitions come from libsmb/credentials.c  */
-
-char *credstr(const unsigned char *cred);
-void creds_server_init(uint32 neg_flags,
-			struct dcinfo *dc,
-			struct netr_Credential *clnt_chal,
-			struct netr_Credential *srv_chal,
-			const unsigned char mach_pw[16],
-			struct netr_Credential *init_chal_out);
-bool netlogon_creds_server_check(const struct dcinfo *dc,
-				 const struct netr_Credential *rcv_cli_chal_in);
-bool netlogon_creds_server_step(struct dcinfo *dc,
-				const struct netr_Authenticator *received_cred,
-				struct netr_Authenticator *cred_out);
-void cred_hash3(unsigned char *out, const unsigned char *in, const unsigned char *key, int forw);
-
 /* The following definitions come from libads/kerberos_keytab.c  */
 
 int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc);

@@ -207,8 +207,6 @@ typedef struct pipes_struct {
 
 	struct pipe_auth_data auth;
 
-	struct dcinfo *dc; /* Keeps the creds data from netlogon. */
-
 	/*
 	 * Set to true when an RPC bind has been done on this pipe.
 	 */
