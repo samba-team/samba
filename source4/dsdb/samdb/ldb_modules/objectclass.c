@@ -997,6 +997,7 @@ static int objectclass_rename(struct ldb_module *module, struct ldb_request *req
 	struct oc_context *ac;
 	struct ldb_dn *parent_dn;
 	int ret;
+	struct ldb_control **ctrl;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -1025,12 +1026,30 @@ static int objectclass_rename(struct ldb_module *module, struct ldb_request *req
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	/* we have to add the show deleted control, as otherwise DRS
+	   deletes will be refused as we will think the target parent
+	   does not exist */
+	ctrl = talloc_array(req, struct ldb_control, 2);
+	if (!ctrl) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ctrl[0] = talloc(ctrl, struct ldb_control);
+	if (!ctrl[0]) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ctrl[0]->oid = LDB_CONTROL_SHOW_DELETED_OID;
+	ctrl[0]->critical = 0;
+	ctrl[0]->data = NULL;
+	ctrl[1] = NULL;
+
 	/* note that the results of this search are kept and used to
 	   update the parentGUID in objectclass_rename_callback() */
 	ret = ldb_build_search_req(&search_req, ldb,
 				   ac, parent_dn, LDB_SCOPE_BASE,
 				   "(objectClass=*)",
-				   attrs, NULL, 
+				   attrs, ctrl, 
 				   ac, get_search_callback,
 				   req);
 	if (ret != LDB_SUCCESS) {
