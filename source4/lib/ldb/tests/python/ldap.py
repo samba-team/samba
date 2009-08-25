@@ -18,7 +18,7 @@ from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError
 from ldb import ERR_NO_SUCH_OBJECT, ERR_ATTRIBUTE_OR_VALUE_EXISTS
 from ldb import ERR_ENTRY_ALREADY_EXISTS, ERR_UNWILLING_TO_PERFORM
 from ldb import ERR_NOT_ALLOWED_ON_NON_LEAF, ERR_OTHER, ERR_INVALID_DN_SYNTAX
-from ldb import Message, Dn
+from ldb import Message, MessageElement, Dn, FLAG_MOD_REPLACE
 from samba import Ldb, param, dom_sid_to_rid
 from subunit import SubunitTestRunner
 import unittest
@@ -141,21 +141,139 @@ class BasicTests(unittest.TestCase):
 
         self.assertEquals(res1[0]["groupType"][0], "-2147483643")
 
+    def test_primary_group(self):
+        """This tests the primary group behaviour (setting, changing) of a user account"""
+        print "Testing primary group behaviour\n"
+
+        ldb.add({
+            "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+            "objectclass": ["user", "person"]})
+
+        ldb.add({
+            "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+            "objectclass": "group"})
+
+        ldb.add({
+            "dn": "cn=ldaptestgroup2,cn=users," + self.base_dn,
+            "objectclass": "group"})
+
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["objectSID"])
+        self.assertTrue(len(res1) == 1)
+	group_rid_1 = dom_sid_to_rid(ldb.schema_format_value("objectSID",
+          res1[0]["objectSID"][0]))
+
+        res1 = ldb.search("cn=ldaptestgroup2,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["objectSID"])
+        self.assertTrue(len(res1) == 1)
+        group_rid_2 = dom_sid_to_rid(ldb.schema_format_value("objectSID",
+          res1[0]["objectSID"][0]))
+
+        # Try to add invalid primary group
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["primaryGroupID"] = MessageElement("0", FLAG_MOD_REPLACE,
+          "primaryGroupID")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        # Try to make group 1 primary - should be denied since it is not yet
+        # secondary
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["primaryGroupID"] = MessageElement(str(group_rid_1),
+          FLAG_MOD_REPLACE, "primaryGroupID")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        # Make group 1 secondary
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["member"] = "cn=ldaptestuser,cn=users," + self.base_dn
+        ldb.modify(m)
+
+        # Make group 1 primary
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["primaryGroupID"] = MessageElement(str(group_rid_1),
+          FLAG_MOD_REPLACE, "primaryGroupID")
+        ldb.modify(m)
+
+        # Try to delete group 1 - should be denied
+        try:
+            ldb.delete("cn=ldaptestgroup,cn=users," + self.base_dn)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
+
+        # Try to add group 1 also as secondary - should be denied
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["member"] = "cn=ldaptestuser,cn=users," + self.base_dn
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
+
+        # Make group 2 secondary
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
+        m["member"] = "cn=ldaptestuser,cn=users," + self.base_dn
+        ldb.modify(m)
+
+        # Swap the groups
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["primaryGroupID"] = MessageElement(str(group_rid_2),
+          FLAG_MOD_REPLACE, "primaryGroupID")
+        ldb.modify(m)
+
+        # Old primary group should contain a "member" attribute for the user,
+        # the new shouldn't contain anymore one
+        res1 = ldb.search("cn=ldaptestgroup, cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["member"])
+        self.assertTrue(len(res1) == 1)
+        self.assertTrue(len(res1[0]["member"]) == 1)
+        self.assertEquals(res1[0]["member"][0].lower(),
+          ("cn=ldaptestuser,cn=users," + self.base_dn).lower())
+
+        res1 = ldb.search("cn=ldaptestgroup2, cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["member"])
+        self.assertTrue(len(res1) == 1)
+        self.assertFalse("member" in res1[0])
+
+        # Also this should be denied
+        try:
+            ldb.add({
+              "dn": "cn=ldaptestuser1,cn=users," + self.base_dn,
+              "objectclass": ["user", "person"],
+              "primaryGroupID": "0"})
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        self.delete_force(self.ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
+
     def test_primary_group_token(self):
         """Test the primary group token behaviour (hidden-generated-readonly attribute on groups)"""
         print "Testing primary group token behaviour\n"
 
         ldb.add({
-            "dn": "cn=ldaptestuser,cn=uSers," + self.base_dn,
-            "objectclass": ["user", "person"],
-            "cN": "LDAPtestUSER",
-            "givenname": "ldap",
-            "sn": "testy"})
+            "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+            "objectclass": ["user", "person"]})
 
         ldb.add({
-            "dn": "cn=ldaptestgroup,cn=uSers," + self.base_dn,
-            "objectclass": "group",
-            "member": "cn=ldaptestuser,cn=useRs," + self.base_dn})
+            "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+            "objectclass": "group"})
 
         res1 = ldb.search("cn=ldaptestuser, cn=users," + self.base_dn,
                           scope=SCOPE_BASE, attrs=["primaryGroupToken"])
@@ -183,23 +301,25 @@ class BasicTests(unittest.TestCase):
 #                ldb.modify(m)
 #                self.fail()
 #        except LdbError, (num, msg):
-#                print msg
 
-        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
     def test_all(self):
         """Basic tests"""
 
+        print "Testing user add"
+
         self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
-        print "Testing user add"
         ldb.add({
             "dn": "cn=ldaptestuser,cn=uSers," + self.base_dn,
             "objectclass": ["user", "person"],
             "cN": "LDAPtestUSER",
             "givenname": "ldap",
             "sn": "testy"})
+
+        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
         ldb.add({
             "dn": "cn=ldaptestgroup,cn=uSers," + self.base_dn,
