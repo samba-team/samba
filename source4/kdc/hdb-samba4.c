@@ -1348,7 +1348,6 @@ static krb5_error_code hdb_samba4_seq(krb5_context context, HDB *db, unsigned fl
 	}
 
 	if (ret != 0) {
-		talloc_free(priv);
 		db->hdb_dbc = NULL;
 	} else {
 		talloc_free(mem_ctx);
