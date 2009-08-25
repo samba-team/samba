@@ -21,4 +21,5 @@
 */
 
 struct ldb_context;
+struct tdb_context;
 #include "libcli/auth/schannel_state_proto.h"
