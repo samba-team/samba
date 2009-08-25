@@ -328,6 +328,7 @@ struct netlogon_creds_CredentialState *netlogon_creds_server_init(TALLOC_CTX *me
 	}
 	
 	creds->negotiate_flags = negotiate_flags;
+	creds->secure_channel_type = secure_channel_type;
 
 	creds->computer_name = talloc_strdup(creds, client_computer_name);
 	if (!creds->computer_name) {
