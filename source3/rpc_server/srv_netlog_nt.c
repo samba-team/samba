@@ -447,56 +447,23 @@ NTSTATUS _netr_ServerReqChallenge(pipes_struct *p,
 NTSTATUS _netr_ServerAuthenticate(pipes_struct *p,
 				  struct netr_ServerAuthenticate *r)
 {
-	NTSTATUS status;
-	struct netr_Credential srv_chal_out;
+	struct netr_ServerAuthenticate3 a;
+	uint32_t negotiate_flags = 0;
+	uint32_t rid;
 
-	if (!p->dc || !p->dc->challenge_sent) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
+	a.in.server_name		= r->in.server_name;
+	a.in.account_name		= r->in.account_name;
+	a.in.secure_channel_type	= r->in.secure_channel_type;
+	a.in.computer_name		= r->in.computer_name;
+	a.in.credentials		= r->in.credentials;
+	a.in.negotiate_flags		= &negotiate_flags;
 
-	status = get_md4pw((char *)p->dc->mach_pw,
-			   r->in.account_name,
-			   r->in.secure_channel_type,
-			   NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("_netr_ServerAuthenticate: get_md4pw failed. Failed to "
-			"get password for machine account %s "
-			"from client %s: %s\n",
-			r->in.account_name,
-			r->in.computer_name,
-			nt_errstr(status) ));
-		/* always return NT_STATUS_ACCESS_DENIED */
-		return NT_STATUS_ACCESS_DENIED;
-	}
+	a.out.return_credentials	= r->out.return_credentials;
+	a.out.rid			= &rid;
+	a.out.negotiate_flags		= &negotiate_flags;
 
-	/* From the client / server challenges and md4 password, generate sess key */
-	creds_server_init(0,			/* No neg flags. */
-			p->dc,
-			&p->dc->clnt_chal,	/* Stored client chal. */
-			&p->dc->srv_chal,	/* Stored server chal. */
-			p->dc->mach_pw,
-			&srv_chal_out);
+	return _netr_ServerAuthenticate3(p, &a);
 
-	/* Check client credentials are valid. */
-	if (!netlogon_creds_server_check(p->dc, r->in.credentials)) {
-		DEBUG(0,("_netr_ServerAuthenticate: netlogon_creds_server_check failed. Rejecting auth "
-			"request from client %s machine account %s\n",
-			r->in.computer_name,
-			r->in.account_name));
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	fstrcpy(p->dc->mach_acct, r->in.account_name);
-	fstrcpy(p->dc->remote_machine, r->in.computer_name);
-	p->dc->authenticated = True;
-
-	/* set up the LSA AUTH response */
-	/* Return the server credentials. */
-
-	memcpy(r->out.return_credentials->data, &srv_chal_out.data,
-	       sizeof(r->out.return_credentials->data));
-
-	return NT_STATUS_OK;
 }
 
 /*************************************************************************
@@ -545,6 +512,9 @@ NTSTATUS _netr_ServerAuthenticate3(pipes_struct *p,
 	}
 
 	switch (p->hdr_req.opnum) {
+		case NDR_NETR_SERVERAUTHENTICATE:
+			fn = "_netr_ServerAuthenticate";
+			break;
 		case NDR_NETR_SERVERAUTHENTICATE2:
 			fn = "_netr_ServerAuthenticate2";
 			break;
