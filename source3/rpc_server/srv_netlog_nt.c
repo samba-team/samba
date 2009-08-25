@@ -615,6 +615,40 @@ NTSTATUS _netr_ServerAuthenticate2(pipes_struct *p,
 }
 
 /*************************************************************************
+ *************************************************************************/
+
+static NTSTATUS netr_creds_server_step_check(pipes_struct *p,
+					     TALLOC_CTX *mem_ctx,
+					     const char *computer_name,
+					     struct netr_Authenticator *received_authenticator,
+					     struct netr_Authenticator *return_authenticator,
+					     struct netlogon_creds_CredentialState **creds_out)
+{
+	NTSTATUS status;
+	struct tdb_context *tdb;
+	bool schannel_global_required = (lp_server_schannel() == true) ? true:false;
+	bool schannel_in_use = (p->auth.auth_type == PIPE_AUTH_TYPE_SCHANNEL) ? true:false; /* &&
+		(p->auth.auth_level == PIPE_AUTH_LEVEL_INTEGRITY ||
+		 p->auth.auth_level == PIPE_AUTH_LEVEL_PRIVACY); */
+
+	tdb = open_schannel_session_store(mem_ctx);
+	if (!tdb) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	status = schannel_creds_server_step_check_tdb(tdb, mem_ctx,
+						      computer_name,
+						      schannel_global_required,
+						      schannel_in_use,
+						      received_authenticator,
+						      return_authenticator,
+						      creds_out);
+	tdb_close(tdb);
+
+	return status;
+}
+
+/*************************************************************************
  _netr_ServerPasswordSet
  *************************************************************************/
 
