@@ -827,7 +827,6 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 		case NDR_NETR_LOGONSAMLOGONEX:
 			fn = "_netr_LogonSamLogonEx";
 		default:
-			fn = "";
 			process_creds = false;
 	}
 
