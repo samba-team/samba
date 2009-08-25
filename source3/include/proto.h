@@ -4716,12 +4716,6 @@ bool secrets_store_afs_keyfile(const char *cell, const struct afs_keyfile *keyfi
 bool secrets_fetch_afs_key(const char *cell, struct afs_key *result);
 void secrets_fetch_ipc_userpass(char **username, char **domain, char **password);
 TDB_CONTEXT *open_schannel_session_store(TALLOC_CTX *mem_ctx);
-bool secrets_store_schannel_session_info(TALLOC_CTX *mem_ctx,
-					 const char *remote_machine,
-					 const struct dcinfo *pdc);
-bool secrets_restore_schannel_session_info(TALLOC_CTX *mem_ctx,
-					   const char *remote_machine,
-					   struct dcinfo **ppdc);
 bool secrets_store_generic(const char *owner, const char *key, const char *secret);
 char *secrets_fetch_generic(const char *owner, const char *key);
 bool secrets_store_local_schannel_key(uint8_t schannel_key[16]);

@@ -112,25 +112,6 @@ typedef struct _input_data {
 
 struct handle_list;
 
-/* Domain controller authentication protocol info */
-struct dcinfo {
-	uint32 sequence; /* "timestamp" from client. */
-	struct netr_Credential seed_chal;
-	struct netr_Credential clnt_chal; /* Client credential */
-	struct netr_Credential srv_chal;  /* Server credential */
-
-	unsigned char  sess_key[16]; /* Session key */
-	unsigned char  mach_pw[16];   /* md4(machine password) */
-
-	fstring mach_acct;  /* Machine name we've authenticated. */
-
-	fstring remote_machine;  /* Machine name we've authenticated. */
-	fstring domain;
-
-	bool challenge_sent;
-	bool authenticated;
-};
-
 typedef struct pipe_rpc_fns {
 
 	struct pipe_rpc_fns *next, *prev;
