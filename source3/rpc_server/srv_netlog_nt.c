@@ -825,9 +825,11 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 			fn = "_netr_LogonSamLogon";
 			break;
 		case NDR_NETR_LOGONSAMLOGONEX:
-			fn = "_netr_LogonSamLogonEx";
-		default:
 			process_creds = false;
+			fn = "_netr_LogonSamLogonEx";
+			break;
+		default:
+			return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	if ( (lp_server_schannel() == True) && (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) ) {
