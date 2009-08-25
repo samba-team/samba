@@ -135,17 +135,19 @@ class Ldb(ldb.Ldb):
     def erase_except_schema_controlled(self):
         """Erase this ldb, removing all records, except those that are controlled by Samba4's schema."""
         basedn = ""
-        # Delete the 'visible' records
+        # Delete the 'visible' records, and the invisble 'deleted' records (if this DB supports it)
         for msg in self.search(basedn, ldb.SCOPE_SUBTREE, 
-                "(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))", 
-                ["distinguishedName"]):
+                               "(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))",
+                               [], controls=["show_deleted:0"]):
             try:
                 self.delete(msg.dn)
             except ldb.LdbError, (ldb.ERR_NO_SUCH_OBJECT, _):
                 # Ignore no such object errors
                 pass
-
-        res = self.search(basedn, ldb.SCOPE_SUBTREE, "(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))", ["distinguishedName"])
+            
+        res = self.search(basedn, ldb.SCOPE_SUBTREE, 
+                          "(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))",
+                          [], controls=["show_deleted:0"])
         assert len(res) == 0
 
         # delete the specials
@@ -175,7 +177,8 @@ class Ldb(ldb.Ldb):
 
         def erase_recursive(self, dn):
             try:
-                res = self.search(base=dn, scope=ldb.SCOPE_ONELEVEL, attrs=[])
+                res = self.search(base=dn, scope=ldb.SCOPE_ONELEVEL, attrs=[], 
+                                  controls=["show_deleted:0"])
             except ldb.LdbError, (ldb.ERR_NO_SUCH_OBJECT, _):
                 # Ignore no such object errors
                 return
