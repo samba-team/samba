@@ -28,6 +28,7 @@
  */
 
 #include "includes.h"
+#include "../libcli/auth/libcli_auth.h"
 
 extern struct current_user current_user;
 
@@ -1328,7 +1329,8 @@ static bool pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 	RPC_AUTH_SCHANNEL_NEG neg;
 	RPC_AUTH_VERIFIER auth_verifier;
 	bool ret;
-	struct dcinfo *pdcinfo;
+	NTSTATUS status;
+	struct netlogon_creds_CredentialState *creds;
 	uint32 flags;
 	DATA_BLOB session_key;
 
@@ -1344,25 +1346,27 @@ static bool pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 	 */
 
 	become_root();
-	ret = secrets_restore_schannel_session_info(p->mem_ctx, neg.myname, &pdcinfo);
+	status = schannel_fetch_session_key(p->mem_ctx,
+					    neg.myname,
+					    &creds);
 	unbecome_root();
 
-	if (!ret) {
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("pipe_schannel_auth_bind: Attempt to bind using schannel without successful serverauth2\n"));
 		return False;
 	}
 
 	p->auth.a_u.schannel_auth = talloc(p, struct schannel_auth_struct);
 	if (!p->auth.a_u.schannel_auth) {
-		TALLOC_FREE(pdcinfo);
+		TALLOC_FREE(creds);
 		return False;
 	}
 
 	memset(p->auth.a_u.schannel_auth->sess_key, 0, sizeof(p->auth.a_u.schannel_auth->sess_key));
-	memcpy(p->auth.a_u.schannel_auth->sess_key, pdcinfo->sess_key,
-			sizeof(pdcinfo->sess_key));
+	memcpy(p->auth.a_u.schannel_auth->sess_key, creds->session_key,
+			sizeof(creds->session_key));
 
-	TALLOC_FREE(pdcinfo);
+	TALLOC_FREE(creds);
 
 	p->auth.a_u.schannel_auth->seq_num = 0;
 

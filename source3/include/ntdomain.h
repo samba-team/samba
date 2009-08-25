@@ -258,6 +258,9 @@ typedef struct pipes_struct {
 	/* handle database to use on this pipe. */
 	struct handle_list *pipe_handles;
 
+	/* private data for the interface implementation */
+	void *private_data;
+
 } pipes_struct;
 
 struct api_struct {  
