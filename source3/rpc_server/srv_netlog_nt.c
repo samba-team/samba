@@ -296,7 +296,7 @@ WERROR _netr_NetrEnumerateTrustedDomains(pipes_struct *p,
  gets a machine password entry.  checks access rights of the host.
  ******************************************************************/
 
-static NTSTATUS get_md4pw(char *md4pw, const char *mach_acct,
+static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
 			  uint16_t sec_chan_type, uint32_t *rid)
 {
 	struct samu *sampass = NULL;
@@ -390,8 +390,8 @@ static NTSTATUS get_md4pw(char *md4pw, const char *mach_acct,
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
-	memcpy(md4pw, pass, 16);
-	dump_data(5, (uint8 *)md4pw, 16);
+	memcpy(md4pw->hash, pass, 16);
+	dump_data(5, md4pw->hash, 16);
 
 	if (rid) {
 		*rid = pdb_get_user_rid(sampass);
@@ -481,6 +481,7 @@ NTSTATUS _netr_ServerAuthenticate3(pipes_struct *p,
 	struct netr_Credential srv_chal_out;
 	const char *fn;
 	uint32_t rid;
+	struct samr_Password mach_pwd;
 
 	/* According to Microsoft (see bugid #6099)
 	 * Windows 7 looks at the negotiate_flags
@@ -546,7 +547,7 @@ NTSTATUS _netr_ServerAuthenticate3(pipes_struct *p,
 		goto out;
 	}
 
-	status = get_md4pw((char *)p->dc->mach_pw,
+	status = get_md4pw(&mach_pwd,
 			   r->in.account_name,
 			   r->in.secure_channel_type,
 			   &rid);
@@ -564,7 +565,7 @@ NTSTATUS _netr_ServerAuthenticate3(pipes_struct *p,
 			p->dc,
 			&p->dc->clnt_chal,	/* Stored client chal. */
 			&p->dc->srv_chal,	/* Stored server chal. */
-			p->dc->mach_pw,
+			mach_pwd.hash,
 			&srv_chal_out);
 
 	/* Check client credentials are valid. */
