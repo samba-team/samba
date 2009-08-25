@@ -458,34 +458,47 @@ static NTSTATUS fetch_cache_seqnum( struct winbindd_domain *domain, time_t now )
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS store_cache_seqnum( struct winbindd_domain *domain )
+bool wcache_store_seqnum(const char *domain_name, uint32_t seqnum,
+			 time_t last_seq_check)
 {
-	TDB_DATA data;
-	fstring key_str;
-	uint8 buf[8];
+	char *key_str;
+	uint8_t buf[8];
+	int ret;
 
-	if (!wcache->tdb) {
-		DEBUG(10,("store_cache_seqnum: tdb == NULL\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+	if (wcache->tdb == NULL) {
+		DEBUG(10, ("wcache_store_seqnum: wcache->tdb == NULL\n"));
+		return false;
 	}
 
-	fstr_sprintf( key_str, "SEQNUM/%s", domain->name );
-
-	SIVAL(buf, 0, domain->sequence_number);
-	SIVAL(buf, 4, domain->last_seq_check);
-	data.dptr = buf;
-	data.dsize = 8;
-
-	if ( tdb_store_bystring( wcache->tdb, key_str, data, TDB_REPLACE) == -1 ) {
-		DEBUG(10,("store_cache_seqnum: tdb_store fail key [%s]\n", key_str ));
-		return NT_STATUS_UNSUCCESSFUL;
+	key_str = talloc_asprintf(talloc_tos(), "SEQNUM/%s", domain_name);
+	if (key_str == NULL) {
+		DEBUG(10, ("talloc_asprintf failed\n"));
+		return false;
 	}
 
-	DEBUG(10,("store_cache_seqnum: success [%s][%u @ %u]\n", 
-		domain->name, domain->sequence_number, 
-		(uint32)domain->last_seq_check));
+	SIVAL(buf, 0, seqnum);
+	SIVAL(buf, 4, last_seq_check);
 
-	return NT_STATUS_OK;
+	ret = tdb_store_bystring(wcache->tdb, key_str,
+				 make_tdb_data(buf, sizeof(buf)), TDB_REPLACE);
+	TALLOC_FREE(key_str);
+	if (ret == -1) {
+		DEBUG(10, ("tdb_store_bystring failed: %s\n",
+			   tdb_errorstr(wcache->tdb)));
+		TALLOC_FREE(key_str);
+		return false;
+	}
+
+	DEBUG(10, ("wcache_store_seqnum: success [%s][%u @ %u]\n",
+		   domain_name, seqnum, (unsigned)last_seq_check));
+
+	return true;
+}
+
+static bool store_cache_seqnum( struct winbindd_domain *domain )
+{
+	return wcache_store_seqnum(domain->name, domain->sequence_number,
+				   domain->last_seq_check);
 }
 
 /*

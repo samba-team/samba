@@ -210,6 +210,8 @@ NTSTATUS nss_get_info_cached( struct winbindd_domain *domain,
 			      ADS_STRUCT *ads, LDAPMessage *msg,
 			      const char **homedir, const char **shell,
 			      const char **gecos, gid_t *p_gid);
+bool wcache_store_seqnum(const char *domain_name, uint32_t seqnum,
+			 time_t last_seq_check);
 bool wcache_fetch_ndr(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 		      uint32_t opnum, const DATA_BLOB *req, DATA_BLOB *resp);
 void wcache_store_ndr(struct winbindd_domain *domain, uint32_t opnum,
