@@ -98,24 +98,33 @@ static void wb_seqnums_done(struct tevent_req *subreq)
 
 	for (i=0; i<state->num_domains; i++) {
 		if (subreq == state->subreqs[i]) {
-			state->subreqs[i] = NULL;
-			state->stati[i] = status;
-			if (NT_STATUS_IS_OK(status)) {
-				state->seqnums[i] = seqnum;
-
-				/*
-				 * This first assignment might be removed
-				 * later
-				 */
-				state->domains[i]->sequence_number = seqnum;
-
-				wcache_store_seqnum(state->domains[i]->name,
-						    state->seqnums[i],
-						    time(NULL));
-			}
 			break;
 		}
 	}
+	if (i < state->num_domains) {
+		/* found one */
+
+		state->subreqs[i] = NULL;
+		state->stati[i] = status;
+		if (NT_STATUS_IS_OK(status)) {
+			state->seqnums[i] = seqnum;
+
+			/*
+			 * This first assignment might be removed
+			 * later
+			 */
+			state->domains[i]->sequence_number = seqnum;
+
+			if (!wcache_store_seqnum(state->domains[i]->name,
+						 state->seqnums[i],
+						 time(NULL))) {
+				DEBUG(1, ("wcache_store_seqnum failed for "
+					  "domain %s\n",
+					  state->domains[i]->name));
+			}
+		}
+	}
+
 	TALLOC_FREE(subreq);
 
 	state->num_received += 1;
