@@ -27,6 +27,7 @@
 #include "winbindd.h"
 #include "tdb_validate.h"
 #include "../libcli/auth/libcli_auth.h"
+#include "../librpc/gen_ndr/ndr_wbint.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -4336,11 +4337,25 @@ static bool wcache_ndr_key(TALLOC_CTX *mem_ctx, char *domain_name,
 	return true;
 }
 
+static bool wcache_opnum_cacheable(uint32_t opnum)
+{
+	switch (opnum) {
+	case NDR_WBINT_PING:
+	case NDR_WBINT_QUERYSEQUENCENUMBER:
+		return false;
+	}
+	return true;
+}
+
 bool wcache_fetch_ndr(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 		      uint32_t opnum, const DATA_BLOB *req, DATA_BLOB *resp)
 {
 	TDB_DATA key, data;
 	bool ret = false;
+
+	if (!wcache_opnum_cacheable(opnum)) {
+		return false;
+	}
 
 	if (wcache->tdb == NULL) {
 		return false;
@@ -4393,6 +4408,10 @@ void wcache_store_ndr(struct winbindd_domain *domain, uint32_t opnum,
 {
 	TDB_DATA key, data;
 	uint32_t dom_seqnum, last_check;
+
+	if (!wcache_opnum_cacheable(opnum)) {
+		return;
+	}
 
 	if (wcache->tdb == NULL) {
 		return;
