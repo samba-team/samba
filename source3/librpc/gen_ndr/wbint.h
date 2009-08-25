@@ -214,4 +214,20 @@ struct wbint_QueryUserList {
 
 };
 
+
+struct wbint_DsGetDcName {
+	struct {
+		const char *domain_name;/* [ref,charset(UTF8)] */
+		struct GUID *domain_guid;/* [unique] */
+		const char *site_name;/* [unique,charset(UTF8)] */
+		uint32_t flags;
+	} in;
+
+	struct {
+		struct netr_DsRGetDCNameInfo **dc_info;/* [ref] */
+		NTSTATUS result;
+	} out;
+
+};
+
 #endif /* _HEADER_wbint */

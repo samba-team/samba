@@ -172,4 +172,22 @@ NTSTATUS rpccli_wbint_QueryUserList_recv(struct tevent_req *req,
 NTSTATUS rpccli_wbint_QueryUserList(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
 				    struct wbint_userinfos *users /* [out] [ref] */);
+struct tevent_req *rpccli_wbint_DsGetDcName_send(TALLOC_CTX *mem_ctx,
+						 struct tevent_context *ev,
+						 struct rpc_pipe_client *cli,
+						 const char *_domain_name /* [in] [ref,charset(UTF8)] */,
+						 struct GUID *_domain_guid /* [in] [unique] */,
+						 const char *_site_name /* [in] [unique,charset(UTF8)] */,
+						 uint32_t _flags /* [in]  */,
+						 struct netr_DsRGetDCNameInfo **_dc_info /* [out] [ref] */);
+NTSTATUS rpccli_wbint_DsGetDcName_recv(struct tevent_req *req,
+				       TALLOC_CTX *mem_ctx,
+				       NTSTATUS *result);
+NTSTATUS rpccli_wbint_DsGetDcName(struct rpc_pipe_client *cli,
+				  TALLOC_CTX *mem_ctx,
+				  const char *domain_name /* [in] [ref,charset(UTF8)] */,
+				  struct GUID *domain_guid /* [in] [unique] */,
+				  const char *site_name /* [in] [unique,charset(UTF8)] */,
+				  uint32_t flags /* [in]  */,
+				  struct netr_DsRGetDCNameInfo **dc_info /* [out] [ref] */);
 #endif /* __CLI_WBINT__ */

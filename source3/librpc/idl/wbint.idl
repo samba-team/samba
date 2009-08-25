@@ -118,4 +118,12 @@ interface wbint
     NTSTATUS wbint_QueryUserList(
 	[out] wbint_userinfos *users
 	);
+
+    NTSTATUS wbint_DsGetDcName(
+	[in,string,charset(UTF8)]		char *domain_name,
+	[in,unique]				GUID *domain_guid,
+	[in,string,unique,charset(UTF8)]	char *site_name,
+	[in]					uint32 flags,
+	[out] 					netr_DsRGetDCNameInfo **dc_info
+	);
 }

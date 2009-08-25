@@ -1691,6 +1691,166 @@ _PUBLIC_ void ndr_print_wbint_QueryUserList(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_wbint_DsGetDcName(struct ndr_push *ndr, int flags, const struct wbint_DsGetDcName *r)
+{
+	if (flags & NDR_IN) {
+		if (r->in.domain_name == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.domain_name, CH_UTF8)));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.domain_name, CH_UTF8)));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.domain_name, ndr_charset_length(r->in.domain_name, CH_UTF8), sizeof(uint8_t), CH_UTF8));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.domain_guid));
+		if (r->in.domain_guid) {
+			NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, r->in.domain_guid));
+		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.site_name));
+		if (r->in.site_name) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.site_name, CH_UTF8)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.site_name, CH_UTF8)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.site_name, ndr_charset_length(r->in.site_name, CH_UTF8), sizeof(uint8_t), CH_UTF8));
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.flags));
+	}
+	if (flags & NDR_OUT) {
+		if (r->out.dc_info == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.dc_info));
+		if (*r->out.dc_info) {
+			NDR_CHECK(ndr_push_netr_DsRGetDCNameInfo(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.dc_info));
+		}
+		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_wbint_DsGetDcName(struct ndr_pull *ndr, int flags, struct wbint_DsGetDcName *r)
+{
+	uint32_t _ptr_domain_guid;
+	uint32_t _ptr_site_name;
+	uint32_t _ptr_dc_info;
+	TALLOC_CTX *_mem_save_domain_guid_0;
+	TALLOC_CTX *_mem_save_site_name_0;
+	TALLOC_CTX *_mem_save_dc_info_0;
+	TALLOC_CTX *_mem_save_dc_info_1;
+	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.domain_name));
+		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.domain_name));
+		if (ndr_get_array_length(ndr, &r->in.domain_name) > ndr_get_array_size(ndr, &r->in.domain_name)) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.domain_name), ndr_get_array_length(ndr, &r->in.domain_name));
+		}
+		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.domain_name), sizeof(uint8_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.domain_name, ndr_get_array_length(ndr, &r->in.domain_name), sizeof(uint8_t), CH_UTF8));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domain_guid));
+		if (_ptr_domain_guid) {
+			NDR_PULL_ALLOC(ndr, r->in.domain_guid);
+		} else {
+			r->in.domain_guid = NULL;
+		}
+		if (r->in.domain_guid) {
+			_mem_save_domain_guid_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->in.domain_guid, 0);
+			NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, r->in.domain_guid));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domain_guid_0, 0);
+		}
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_site_name));
+		if (_ptr_site_name) {
+			NDR_PULL_ALLOC(ndr, r->in.site_name);
+		} else {
+			r->in.site_name = NULL;
+		}
+		if (r->in.site_name) {
+			_mem_save_site_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->in.site_name, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.site_name));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.site_name));
+			if (ndr_get_array_length(ndr, &r->in.site_name) > ndr_get_array_size(ndr, &r->in.site_name)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.site_name), ndr_get_array_length(ndr, &r->in.site_name));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.site_name), sizeof(uint8_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.site_name, ndr_get_array_length(ndr, &r->in.site_name), sizeof(uint8_t), CH_UTF8));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_site_name_0, 0);
+		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.flags));
+		NDR_PULL_ALLOC(ndr, r->out.dc_info);
+		ZERO_STRUCTP(r->out.dc_info);
+	}
+	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.dc_info);
+		}
+		_mem_save_dc_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.dc_info, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_dc_info));
+		if (_ptr_dc_info) {
+			NDR_PULL_ALLOC(ndr, *r->out.dc_info);
+		} else {
+			*r->out.dc_info = NULL;
+		}
+		if (*r->out.dc_info) {
+			_mem_save_dc_info_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.dc_info, 0);
+			NDR_CHECK(ndr_pull_netr_DsRGetDCNameInfo(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.dc_info));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dc_info_1, 0);
+		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dc_info_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_wbint_DsGetDcName(struct ndr_print *ndr, const char *name, int flags, const struct wbint_DsGetDcName *r)
+{
+	ndr_print_struct(ndr, name, "wbint_DsGetDcName");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "wbint_DsGetDcName");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "domain_name", r->in.domain_name);
+		ndr->depth++;
+		ndr_print_string(ndr, "domain_name", r->in.domain_name);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "domain_guid", r->in.domain_guid);
+		ndr->depth++;
+		if (r->in.domain_guid) {
+			ndr_print_GUID(ndr, "domain_guid", r->in.domain_guid);
+		}
+		ndr->depth--;
+		ndr_print_ptr(ndr, "site_name", r->in.site_name);
+		ndr->depth++;
+		if (r->in.site_name) {
+			ndr_print_string(ndr, "site_name", r->in.site_name);
+		}
+		ndr->depth--;
+		ndr_print_uint32(ndr, "flags", r->in.flags);
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "wbint_DsGetDcName");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "dc_info", r->out.dc_info);
+		ndr->depth++;
+		ndr_print_ptr(ndr, "dc_info", *r->out.dc_info);
+		ndr->depth++;
+		if (*r->out.dc_info) {
+			ndr_print_netr_DsRGetDCNameInfo(ndr, "dc_info", *r->out.dc_info);
+		}
+		ndr->depth--;
+		ndr->depth--;
+		ndr_print_NTSTATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
 static const struct ndr_interface_call wbint_calls[] = {
 	{
 		"wbint_Ping",
@@ -1796,6 +1956,14 @@ static const struct ndr_interface_call wbint_calls[] = {
 		(ndr_print_function_t) ndr_print_wbint_QueryUserList,
 		false,
 	},
+	{
+		"wbint_DsGetDcName",
+		sizeof(struct wbint_DsGetDcName),
+		(ndr_push_flags_fn_t) ndr_push_wbint_DsGetDcName,
+		(ndr_pull_flags_fn_t) ndr_pull_wbint_DsGetDcName,
+		(ndr_print_function_t) ndr_print_wbint_DsGetDcName,
+		false,
+	},
 	{ NULL, 0, NULL, NULL, NULL, false }
 };
 
@@ -1825,7 +1993,7 @@ const struct ndr_interface_table ndr_table_wbint = {
 		NDR_WBINT_VERSION
 	},
 	.helpstring	= NDR_WBINT_HELPSTRING,
-	.num_calls	= 13,
+	.num_calls	= 14,
 	.calls		= wbint_calls,
 	.endpoints	= &wbint_endpoints,
 	.authservices	= &wbint_authservices

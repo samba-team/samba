@@ -2124,3 +2124,176 @@ NTSTATUS rpccli_wbint_QueryUserList(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_wbint_DsGetDcName_state {
+	struct wbint_DsGetDcName orig;
+	struct wbint_DsGetDcName tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_wbint_DsGetDcName_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_wbint_DsGetDcName_send(TALLOC_CTX *mem_ctx,
+						 struct tevent_context *ev,
+						 struct rpc_pipe_client *cli,
+						 const char *_domain_name /* [in] [ref,charset(UTF8)] */,
+						 struct GUID *_domain_guid /* [in] [unique] */,
+						 const char *_site_name /* [in] [unique,charset(UTF8)] */,
+						 uint32_t _flags /* [in]  */,
+						 struct netr_DsRGetDCNameInfo **_dc_info /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_wbint_DsGetDcName_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_wbint_DsGetDcName_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.domain_name = _domain_name;
+	state->orig.in.domain_guid = _domain_guid;
+	state->orig.in.site_name = _site_name;
+	state->orig.in.flags = _flags;
+
+	/* Out parameters */
+	state->orig.out.dc_info = _dc_info;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(wbint_DsGetDcName, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_wbint_DsGetDcName_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_wbint,
+				    NDR_WBINT_DSGETDCNAME,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_wbint_DsGetDcName_done, req);
+	return req;
+}
+
+static void rpccli_wbint_DsGetDcName_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_wbint_DsGetDcName_state *state = tevent_req_data(
+		req, struct rpccli_wbint_DsGetDcName_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.dc_info = *state->tmp.out.dc_info;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(wbint_DsGetDcName, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_wbint_DsGetDcName_recv(struct tevent_req *req,
+				       TALLOC_CTX *mem_ctx,
+				       NTSTATUS *result)
+{
+	struct rpccli_wbint_DsGetDcName_state *state = tevent_req_data(
+		req, struct rpccli_wbint_DsGetDcName_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS rpccli_wbint_DsGetDcName(struct rpc_pipe_client *cli,
+				  TALLOC_CTX *mem_ctx,
+				  const char *domain_name /* [in] [ref,charset(UTF8)] */,
+				  struct GUID *domain_guid /* [in] [unique] */,
+				  const char *site_name /* [in] [unique,charset(UTF8)] */,
+				  uint32_t flags /* [in]  */,
+				  struct netr_DsRGetDCNameInfo **dc_info /* [out] [ref] */)
+{
+	struct wbint_DsGetDcName r;
+	NTSTATUS status;
+
+	/* In parameters */
+	r.in.domain_name = domain_name;
+	r.in.domain_guid = domain_guid;
+	r.in.site_name = site_name;
+	r.in.flags = flags;
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(wbint_DsGetDcName, &r);
+	}
+
+	status = cli->dispatch(cli,
+				mem_ctx,
+				&ndr_table_wbint,
+				NDR_WBINT_DSGETDCNAME,
+				&r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(wbint_DsGetDcName, &r);
+	}
+
+	if (NT_STATUS_IS_ERR(status)) {
+		return status;
+	}
+
+	/* Return variables */
+	*dc_info = *r.out.dc_info;
+
+	/* Return result */
+	return r.out.result;
+}
+

@@ -208,3 +208,84 @@ NTSTATUS _wbint_QueryUserList(pipes_struct *p, struct wbint_QueryUserList *r)
 		domain, p->mem_ctx, &r->out.users->num_userinfos,
 		&r->out.users->userinfos);
 }
+
+NTSTATUS _wbint_DsGetDcName(pipes_struct *p, struct wbint_DsGetDcName *r)
+{
+	struct winbindd_domain *domain = wb_child_domain();
+	struct rpc_pipe_client *netlogon_pipe;
+	struct netr_DsRGetDCNameInfo *dc_info;
+	NTSTATUS status;
+	WERROR werr;
+	unsigned int orig_timeout;
+
+	if (domain == NULL) {
+		return dsgetdcname(p->mem_ctx, winbind_messaging_context(),
+				   r->in.domain_name, r->in.domain_guid,
+				   r->in.site_name ? r->in.site_name : "",
+				   r->in.flags,
+				   r->out.dc_info);
+	}
+
+	status = cm_connect_netlogon(domain, &netlogon_pipe);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("Can't contact the NETLOGON pipe\n"));
+		return status;
+	}
+
+	/* This call can take a long time - allow the server to time out.
+	   35 seconds should do it. */
+
+	orig_timeout = rpccli_set_timeout(netlogon_pipe, 35000);
+
+	if (domain->active_directory) {
+		status = rpccli_netr_DsRGetDCName(
+			netlogon_pipe, p->mem_ctx, domain->dcname,
+			r->in.domain_name, NULL, r->in.domain_guid,
+			r->in.flags, r->out.dc_info, &werr);
+		if (NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(werr)) {
+			goto done;
+		}
+	}
+
+	/*
+	 * Fallback to less capable methods
+	 */
+
+	dc_info = talloc_zero(r->out.dc_info, struct netr_DsRGetDCNameInfo);
+	if (dc_info == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	if (r->in.flags & DS_PDC_REQUIRED) {
+		status = rpccli_netr_GetDcName(
+			netlogon_pipe, p->mem_ctx, domain->dcname,
+			r->in.domain_name, &dc_info->dc_unc, &werr);
+	} else {
+		status = rpccli_netr_GetAnyDCName(
+			netlogon_pipe, p->mem_ctx, domain->dcname,
+			r->in.domain_name, &dc_info->dc_unc, &werr);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("rpccli_netr_Get[Any]DCName failed: %s\n",
+			   nt_errstr(status)));
+		goto done;
+	}
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(10, ("rpccli_netr_Get[Any]DCName failed: %s\n",
+			   win_errstr(werr)));
+		status = werror_to_ntstatus(werr);
+		goto done;
+	}
+
+	*r->out.dc_info = dc_info;
+	status = NT_STATUS_OK;
+
+done:
+	/* And restore our original timeout. */
+	rpccli_set_timeout(netlogon_pipe, orig_timeout);
+
+	return status;
+}
