@@ -1133,7 +1133,7 @@ void secrets_fetch_ipc_userpass(char **username, char **domain, char **password)
  Open or create the schannel session store tdb.
 *******************************************************************************/
 
-static TDB_CONTEXT *open_schannel_session_store(TALLOC_CTX *mem_ctx)
+TDB_CONTEXT *open_schannel_session_store(TALLOC_CTX *mem_ctx)
 {
 	TDB_DATA vers;
 	uint32 ver;

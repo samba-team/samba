@@ -4732,6 +4732,7 @@ NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
 bool secrets_store_afs_keyfile(const char *cell, const struct afs_keyfile *keyfile);
 bool secrets_fetch_afs_key(const char *cell, struct afs_key *result);
 void secrets_fetch_ipc_userpass(char **username, char **domain, char **password);
+TDB_CONTEXT *open_schannel_session_store(TALLOC_CTX *mem_ctx);
 bool secrets_store_schannel_session_info(TALLOC_CTX *mem_ctx,
 					 const char *remote_machine,
 					 const struct dcinfo *pdc);
