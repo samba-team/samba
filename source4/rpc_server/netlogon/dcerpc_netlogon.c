@@ -260,7 +260,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	nt_status = schannel_store_session_key(schannel_ldb, mem_ctx, creds);
+	nt_status = schannel_store_session_key_ldb(schannel_ldb, mem_ctx, creds);
 	talloc_free(schannel_ldb);
 
 	return nt_status;
@@ -342,12 +342,12 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 	if (!ldb) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
-	nt_status = schannel_creds_server_step_check(ldb, mem_ctx,
-						     computer_name,
-						     schannel_global_required,
-						     schannel_in_use,
-						     received_authenticator, 
-						     return_authenticator, creds_out); 
+	nt_status = schannel_creds_server_step_check_ldb(ldb, mem_ctx,
+							 computer_name,
+							 schannel_global_required,
+							 schannel_in_use,
+							 received_authenticator,
+							 return_authenticator, creds_out);
 	talloc_free(ldb);
 	return nt_status;
 }
@@ -677,7 +677,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, 
 		return NT_STATUS_ACCESS_DENIED;
 	}
 	
-	nt_status = schannel_fetch_session_key(ldb, mem_ctx, r->in.computer_name, &creds);
+	nt_status = schannel_fetch_session_key_ldb(ldb, mem_ctx, r->in.computer_name, &creds);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}

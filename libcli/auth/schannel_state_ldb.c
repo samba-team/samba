@@ -72,9 +72,9 @@ static struct dom_sid *schannel_ldb_val_dom_sid(TALLOC_CTX *mem_ctx,
   remember an established session key for a netr server authentication
   use a simple ldb structure
 */
-NTSTATUS schannel_store_session_key(struct ldb_context *ldb,
-				    TALLOC_CTX *mem_ctx,
-				    struct netlogon_creds_CredentialState *creds)
+NTSTATUS schannel_store_session_key_ldb(struct ldb_context *ldb,
+					TALLOC_CTX *mem_ctx,
+					struct netlogon_creds_CredentialState *creds)
 {
 	struct ldb_message *msg;
 	struct ldb_val val, seed, client_state, server_state;
@@ -159,10 +159,10 @@ NTSTATUS schannel_store_session_key(struct ldb_context *ldb,
 /*
   read back a credentials back for a computer
 */
-NTSTATUS schannel_fetch_session_key(struct ldb_context *ldb,
-				    TALLOC_CTX *mem_ctx,
-				    const char *computer_name,
-				    struct netlogon_creds_CredentialState **creds)
+NTSTATUS schannel_fetch_session_key_ldb(struct ldb_context *ldb,
+					TALLOC_CTX *mem_ctx,
+					const char *computer_name,
+					struct netlogon_creds_CredentialState **creds)
 {
 	struct ldb_result *res;
 	int ret;
@@ -261,14 +261,14 @@ NTSTATUS schannel_fetch_session_key(struct ldb_context *ldb,
   the caller needs some of that information.
 
 */
-NTSTATUS schannel_creds_server_step_check(struct ldb_context *ldb,
-					  TALLOC_CTX *mem_ctx,
-					  const char *computer_name,
-					  bool schannel_required_for_call,
-					  bool schannel_in_use,
-					  struct netr_Authenticator *received_authenticator,
-					  struct netr_Authenticator *return_authenticator,
-					  struct netlogon_creds_CredentialState **creds_out)
+NTSTATUS schannel_creds_server_step_check_ldb(struct ldb_context *ldb,
+					      TALLOC_CTX *mem_ctx,
+					      const char *computer_name,
+					      bool schannel_required_for_call,
+					      bool schannel_in_use,
+					      struct netr_Authenticator *received_authenticator,
+					      struct netr_Authenticator *return_authenticator,
+					      struct netlogon_creds_CredentialState **creds_out)
 {
 	struct netlogon_creds_CredentialState *creds;
 	NTSTATUS nt_status;
@@ -283,8 +283,8 @@ NTSTATUS schannel_creds_server_step_check(struct ldb_context *ldb,
 	 * disconnects) we must update the database every time we
 	 * update the structure */
 
-	nt_status = schannel_fetch_session_key(ldb, ldb, computer_name,
-					       &creds);
+	nt_status = schannel_fetch_session_key_ldb(ldb, ldb, computer_name,
+						   &creds);
 
 	/* If we are flaged that schannel is required for a call, and
 	 * it is not in use, then make this an error */
@@ -305,7 +305,7 @@ NTSTATUS schannel_creds_server_step_check(struct ldb_context *ldb,
 	}
 
 	if (NT_STATUS_IS_OK(nt_status)) {
-		nt_status = schannel_store_session_key(ldb, mem_ctx, creds);
+		nt_status = schannel_store_session_key_ldb(ldb, mem_ctx, creds);
 	}
 
 	if (NT_STATUS_IS_OK(nt_status)) {
