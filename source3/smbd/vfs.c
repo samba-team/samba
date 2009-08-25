@@ -1096,10 +1096,11 @@ int smb_vfs_call_statvfs(struct vfs_handle_struct *handle, const char *path,
 	return handle->fns->statvfs(handle, path, statbuf);
 }
 
-uint32_t smb_vfs_call_fs_capabilities(struct vfs_handle_struct *handle)
+uint32_t smb_vfs_call_fs_capabilities(struct vfs_handle_struct *handle,
+			enum timestamp_set_resolution *p_ts_res)
 {
 	VFS_FIND(fs_capabilities);
-	return handle->fns->fs_capabilities(handle);
+	return handle->fns->fs_capabilities(handle, p_ts_res);
 }
 
 SMB_STRUCT_DIR *smb_vfs_call_opendir(struct vfs_handle_struct *handle,

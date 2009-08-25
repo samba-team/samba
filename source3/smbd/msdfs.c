@@ -272,7 +272,7 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 		return status;
 	}
 
-	conn->fs_capabilities = SMB_VFS_FS_CAPABILITIES(conn);
+	conn->fs_capabilities = SMB_VFS_FS_CAPABILITIES(conn, &conn->ts_res);
 
 	/*
 	 * Windows seems to insist on doing trans2getdfsreferral() calls on

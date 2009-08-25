@@ -301,14 +301,30 @@ void srv_put_dos_date3(char *buf,int offset,time_t unixdate)
 	put_dos_date3(buf, offset, unixdate, server_zone_offset);
 }
 
+void round_timespec(enum timestamp_set_resolution res, struct timespec *ts)
+{
+	switch (res) {
+		case TIMESTAMP_SET_SECONDS:
+			round_timespec_to_sec(ts);
+			break;
+		case TIMESTAMP_SET_MSEC:
+			round_timespec_to_usec(ts);
+			break;
+		case TIMESTAMP_SET_NT_OR_BETTER:
+			/* No rounding needed. */
+			break;
+        }
+}
+
 /****************************************************************************
  Take a Unix time and convert to an NTTIME structure and place in buffer 
- pointed to by p.
+ pointed to by p, rounded to the correct resolution.
 ****************************************************************************/
 
-void put_long_date_timespec(char *p, struct timespec ts)
+void put_long_date_timespec(enum timestamp_set_resolution res, char *p, struct timespec ts)
 {
 	NTTIME nt;
+	round_timespec(res, &ts);
 	unix_timespec_to_nt_time(&nt, ts);
 	SIVAL(p, 0, nt & 0xFFFFFFFF);
 	SIVAL(p, 4, nt >> 32);
@@ -319,7 +335,7 @@ void put_long_date(char *p, time_t t)
 	struct timespec ts;
 	ts.tv_sec = t;
 	ts.tv_nsec = 0;
-	put_long_date_timespec(p, ts);
+	put_long_date_timespec(TIMESTAMP_SET_SECONDS, p, ts);
 }
 
 void dos_filetime_timespec(struct timespec *tsp)
@@ -472,7 +488,7 @@ int timespec_compare(const struct timespec *ts1, const struct timespec *ts2)
  then zero nsec.
 ****************************************************************************/
 
-void round_timespec(struct timespec *ts)
+void round_timespec_to_sec(struct timespec *ts)
 {
 	ts->tv_sec = convert_timespec_to_time_t(*ts);
 	ts->tv_nsec = 0;

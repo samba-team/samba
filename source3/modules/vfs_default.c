@@ -90,15 +90,71 @@ static int vfswrap_statvfs(struct vfs_handle_struct *handle,  const char *path, 
 	return sys_statvfs(path, statbuf);
 }
 
-static uint32_t vfswrap_fs_capabilities(struct vfs_handle_struct *handle)
+static uint32_t vfswrap_fs_capabilities(struct vfs_handle_struct *handle,
+		enum timestamp_set_resolution *p_ts_res)
 {
+	connection_struct *conn = handle->conn;
+	uint32_t caps = FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES;
+	struct smb_filename *smb_fname_cpath = NULL;
+	NTSTATUS status;
+	int ret = -1;
+
 #if defined(DARWINOS)
 	struct vfs_statvfs_struct statbuf;
 	ZERO_STRUCT(statbuf);
-	sys_statvfs(handle->conn->connectpath, &statbuf);
-	return statbuf.FsCapabilities;
+	sys_statvfs(conn->connectpath, &statbuf);
+	caps = statbuf.FsCapabilities;
 #endif
-	return FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES;
+
+	*p_ts_res = TIMESTAMP_SET_SECONDS;
+
+	/* Work out what timestamp resolution we can
+	 * use when setting a timestamp. */
+
+	status = create_synthetic_smb_fname(talloc_tos(),
+				conn->connectpath,
+				NULL,
+				NULL,
+				&smb_fname_cpath);
+	if (!NT_STATUS_IS_OK(status)) {
+		return caps;
+	}
+
+	ret = SMB_VFS_STAT(conn, smb_fname_cpath);
+	if (ret == -1) {
+		TALLOC_FREE(smb_fname_cpath);
+		return caps;
+	}
+
+	if (smb_fname_cpath->st.st_ex_mtime.tv_nsec ||
+			smb_fname_cpath->st.st_ex_atime.tv_nsec ||
+			smb_fname_cpath->st.st_ex_ctime.tv_nsec) {
+		/* If any of the normal UNIX directory timestamps
+		 * have a non-zero tv_nsec component assume
+		 * we might be able to set sub-second timestamps.
+		 * See what filetime set primitives we have.
+		 */
+#if defined(HAVE_UTIMES)
+		/* utimes allows msec timestamps to be set. */
+		*p_ts_res = TIMESTAMP_SET_MSEC;
+#elif defined(HAVE_UTIME)
+		/* utime only allows sec timestamps to be set. */
+		*p_ts_res = TIMESTAMP_SET_SEC;
+#endif
+
+		/* TODO. Add a configure test for the Linux
+		 * nsec timestamp set system call, and use it
+		 * if available....
+		 */
+		DEBUG(10,("vfswrap_fs_capabilities: timestamp "
+			"resolution of %s "
+			"available on share %s, directory %s\n",
+			*p_ts_res == TIMESTAMP_SET_MSEC ? "msec" : "sec",
+			lp_servicename(conn->cnum),
+			conn->connectpath ));
+	}
+	TALLOC_FREE(smb_fname_cpath);
+	return caps;
 }
 
 /* Directory operations */
@@ -788,6 +844,14 @@ static int vfswrap_ntimes(vfs_handle_struct *handle,
 		ft->mtime = smb_fname->st.st_ex_mtime;
 	}
 
+	if (!null_timespec(ft->create_time) &&
+			lp_store_create_time(SNUM(handle->conn))) {
+		set_create_timespec_ea(handle->conn,
+				NULL,
+				smb_fname,
+				ft->create_time);
+	}
+
 	if ((timespec_compare(&ft->atime,
 				&smb_fname->st.st_ex_atime) == 0) &&
 			(timespec_compare(&ft->mtime,
@@ -817,14 +881,6 @@ static int vfswrap_ntimes(vfs_handle_struct *handle,
 	errno = ENOSYS;
 	result = -1;
 #endif
-
-	if (!null_timespec(ft->create_time) &&
-			lp_store_create_time(SNUM(handle->conn))) {
-		set_create_timespec_ea(handle->conn,
-				NULL,
-				smb_fname,
-				ft->create_time);
-	}
 
  out:
 	END_PROFILE(syscall_ntimes);

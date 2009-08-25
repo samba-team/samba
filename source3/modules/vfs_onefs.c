@@ -234,7 +234,7 @@ static int onefs_ntimes(vfs_handle_struct *handle,
 	return onefs_vtimes_streams(handle, smb_fname, flags, times);
 }
 
-static uint32_t onefs_fs_capabilities(struct vfs_handle_struct *handle)
+static uint32_t onefs_fs_capabilities(struct vfs_handle_struct *handle, enum timestamp_set_resolution *p_ts_res)
 {
 	uint32_t result = 0;
 
@@ -243,7 +243,9 @@ static uint32_t onefs_fs_capabilities(struct vfs_handle_struct *handle)
 		result |= FILE_NAMED_STREAMS;
 	}
 
-	return result | SMB_VFS_NEXT_FS_CAPABILITIES(handle);
+	result |= SMB_VFS_NEXT_FS_CAPABILITIES(handle, p_ts_res);
+	*p_ts_res = TIMESTAMP_SET_MSEC;
+	return result;
 }
 
 static struct vfs_fn_pointers onefs_fns = {

@@ -63,10 +63,10 @@
 #define SMB_VFS_NEXT_STATVFS(handle, path, statbuf) \
 	smb_vfs_call_statvfs((handle)->next, (path), (statbuf))
 
-#define SMB_VFS_FS_CAPABILITIES(conn) \
-	smb_vfs_call_fs_capabilities((conn)->vfs_handles)
-#define SMB_VFS_NEXT_FS_CAPABILITIES(handle) \
-	smb_vfs_call_fs_capabilities((handle)->next)
+#define SMB_VFS_FS_CAPABILITIES(conn, p_ts_res) \
+	smb_vfs_call_fs_capabilities((conn)->vfs_handles, (p_ts_res))
+#define SMB_VFS_NEXT_FS_CAPABILITIES(handle, p_ts_res) \
+	smb_vfs_call_fs_capabilities((handle)->next, (p_ts_res))
 
 /* Directory operations */
 #define SMB_VFS_OPENDIR(conn, fname, mask, attr) \

@@ -837,9 +837,10 @@ static NTSTATUS streams_xattr_streaminfo(vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
-static uint32_t streams_xattr_fs_capabilities(struct vfs_handle_struct *handle)
+static uint32_t streams_xattr_fs_capabilities(struct vfs_handle_struct *handle,
+			enum timestamp_set_resolution *p_ts_res)
 {
-	return SMB_VFS_NEXT_FS_CAPABILITIES(handle) | FILE_NAMED_STREAMS;
+	return SMB_VFS_NEXT_FS_CAPABILITIES(handle, p_ts_res) | FILE_NAMED_STREAMS;
 }
 
 static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,

@@ -710,11 +710,11 @@ static int smb_full_audit_statvfs(struct vfs_handle_struct *handle,
 	return result;
 }
 
-static uint32_t smb_full_audit_fs_capabilities(struct vfs_handle_struct *handle)
+static uint32_t smb_full_audit_fs_capabilities(struct vfs_handle_struct *handle, enum timestamp_set_resolution *p_ts_res)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_FS_CAPABILITIES(handle);
+	result = SMB_VFS_NEXT_FS_CAPABILITIES(handle, p_ts_res);
 
 	do_log(SMB_VFS_OP_FS_CAPABILITIES, true, handle, "");
 

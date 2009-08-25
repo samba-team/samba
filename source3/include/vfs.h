@@ -121,8 +121,9 @@
 /* Changed to version 26 - Plumb struct smb_filename to SMB_VFS_CREATE_FILE,
 			   SMB_VFS_OPEN, SMB_VFS_STAT, SMB_VFS_LSTAT,
 			   SMB_VFS_RENAME, SMB_VFS_UNLINK, SMB_VFS_NTIMES.  */
-
-#define SMB_VFS_INTERFACE_VERSION 26
+/* Changed to version 27 - not yet released. Added enum timestamp_set_resolution
+ * 			   return to fs_capabilities call. JRA. */
+#define SMB_VFS_INTERFACE_VERSION 27
 
 
 /* to bug old modules which are trying to compile with the old functions */
@@ -173,7 +174,7 @@ struct vfs_fn_pointers {
 	int (*set_quota)(struct vfs_handle_struct *handle, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt);
 	int (*get_shadow_copy_data)(struct vfs_handle_struct *handle, struct files_struct *fsp, SHADOW_COPY_DATA *shadow_copy_data, bool labels);
 	int (*statvfs)(struct vfs_handle_struct *handle, const char *path, struct vfs_statvfs_struct *statbuf);
-	uint32_t (*fs_capabilities)(struct vfs_handle_struct *handle);
+	uint32_t (*fs_capabilities)(struct vfs_handle_struct *handle, enum timestamp_set_resolution *p_ts_res);
 
 	/* Directory operations */
 
@@ -488,7 +489,8 @@ int smb_vfs_call_get_shadow_copy_data(struct vfs_handle_struct *handle,
 				      bool labels);
 int smb_vfs_call_statvfs(struct vfs_handle_struct *handle, const char *path,
 			 struct vfs_statvfs_struct *statbuf);
-uint32_t smb_vfs_call_fs_capabilities(struct vfs_handle_struct *handle);
+uint32_t smb_vfs_call_fs_capabilities(struct vfs_handle_struct *handle,
+			enum timestamp_set_resolution *p_ts_res);
 SMB_STRUCT_DIR *smb_vfs_call_opendir(struct vfs_handle_struct *handle,
 				     const char *fname, const char *mask,
 				     uint32 attributes);

@@ -868,7 +868,7 @@ NTSTATUS set_create_timespec_ea(connection_struct *conn,
 		return NT_STATUS_OK;
 	}
 
-	put_long_date_timespec(buf, create_time);
+	put_long_date_timespec(conn->ts_res, buf, create_time);
 	if (fsp && fsp->fh->fd != -1) {
 		ret = SMB_VFS_FSETXATTR(fsp,
 				SAMBA_XATTR_DOSTIMESTAMPS,

@@ -357,9 +357,10 @@ static int tsmsm_set_offline(struct vfs_handle_struct *handle,
 	return result;
 }
 
-static uint32_t tsmsm_fs_capabilities(struct vfs_handle_struct *handle)
+static uint32_t tsmsm_fs_capabilities(struct vfs_handle_struct *handle,
+			enum timestamp_set_resolution *p_ts_res)
 {
-	return SMB_VFS_NEXT_FS_CAPABILITIES(handle) | FILE_SUPPORTS_REMOTE_STORAGE | FILE_SUPPORTS_REPARSE_POINTS;
+	return SMB_VFS_NEXT_FS_CAPABILITIES(handle, p_ts_res) | FILE_SUPPORTS_REMOTE_STORAGE | FILE_SUPPORTS_REPARSE_POINTS;
 }
 
 static struct vfs_fn_pointers tsmsm_fns = {

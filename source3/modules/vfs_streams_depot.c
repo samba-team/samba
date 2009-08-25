@@ -875,9 +875,10 @@ static NTSTATUS streams_depot_streaminfo(vfs_handle_struct *handle,
 	return status;
 }
 
-static uint32_t streams_depot_fs_capabilities(struct vfs_handle_struct *handle)
+static uint32_t streams_depot_fs_capabilities(struct vfs_handle_struct *handle,
+			enum timestamp_set_resolution *p_ts_res)
 {
-	return SMB_VFS_NEXT_FS_CAPABILITIES(handle) | FILE_NAMED_STREAMS;
+	return SMB_VFS_NEXT_FS_CAPABILITIES(handle, p_ts_res) | FILE_NAMED_STREAMS;
 }
 
 static struct vfs_fn_pointers vfs_streams_depot_fns = {
