@@ -985,7 +985,7 @@ NTSTATUS ads_dns_query_dcs_guid(TALLOC_CTX *ctx,
 	/*_ldap._tcp.DomainGuid.domains._msdcs.DnsForestName */
 
 	const char *domains;
-	const char *guid_string;
+	char *guid_string;
 
 	guid_string = GUID_string(ctx, domain_guid);
 	if (!guid_string) {
@@ -997,6 +997,7 @@ NTSTATUS ads_dns_query_dcs_guid(TALLOC_CTX *ctx,
 	if (!domains) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	TALLOC_FREE(guid_string);
 
 	return ads_dns_query_internal(ctx, "_ldap", domains, dns_forest_name,
 				      NULL, dclist, numdcs);
