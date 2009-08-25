@@ -32,18 +32,6 @@ extern userdom_struct current_user_info;
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-/*************************************************************************
- init_net_r_req_chal:
- *************************************************************************/
-
-static void init_net_r_req_chal(struct netr_Credential *r,
-				struct netr_Credential *srv_chal)
-{
-	DEBUG(6,("init_net_r_req_chal: %d\n", __LINE__));
-
-	memcpy(r->data, srv_chal->data, sizeof(r->data));
-}
-
 /*******************************************************************
  Inits a netr_NETLOGON_INFO_1 structure.
 ********************************************************************/
@@ -432,7 +420,7 @@ NTSTATUS _netr_ServerReqChallenge(pipes_struct *p,
 	generate_random_buffer(p->dc->srv_chal.data, 8);
 
 	/* set up the LSA REQUEST CHALLENGE response */
-	init_net_r_req_chal(r->out.return_credentials, &p->dc->srv_chal);
+	*r->out.return_credentials = p->dc->srv_chal;
 
 	p->dc->challenge_sent = True;
 
