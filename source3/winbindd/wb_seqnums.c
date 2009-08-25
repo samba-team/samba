@@ -1,6 +1,8 @@
 /*
    Unix SMB/CIFS implementation.
-   async seqnums
+
+   async seqnums, update the seqnums in winbindd_cache.c
+
    Copyright (C) Volker Lendecke 2009
 
    This program is free software; you can redistribute it and/or modify
@@ -100,7 +102,16 @@ static void wb_seqnums_done(struct tevent_req *subreq)
 			state->stati[i] = status;
 			if (NT_STATUS_IS_OK(status)) {
 				state->seqnums[i] = seqnum;
+
+				/*
+				 * This first assignment might be removed
+				 * later
+				 */
 				state->domains[i]->sequence_number = seqnum;
+
+				wcache_store_seqnum(state->domains[i]->name,
+						    state->seqnums[i],
+						    time(NULL));
 			}
 			break;
 		}
