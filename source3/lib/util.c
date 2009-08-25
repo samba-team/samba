@@ -1691,7 +1691,7 @@ bool is_in_path(const char *name, name_compare_entry *namelist, bool case_sensit
 void set_namearray(name_compare_entry **ppname_array, const char *namelist)
 {
 	char *name_end;
-	const char *nameptr = namelist;
+	char *nameptr = (char *)namelist;
 	int num_entries = 0;
 	int i;
 
@@ -1711,12 +1711,14 @@ void set_namearray(name_compare_entry **ppname_array, const char *namelist)
 			nameptr++;
 			continue;
 		}
-		/* find the next / */
-		name_end = strchr_m(nameptr, '/');
-
-		/* oops - the last check for a / didn't find one. */
-		if (name_end == NULL)
+		/* anything left? */
+		if ( *nameptr == '\0' )
 			break;
+
+		/* find the next '/' or consume remaining */
+		name_end = strchr_m(nameptr, '/');
+		if (name_end == NULL)
+			name_end = (char *)nameptr + strlen(nameptr);
 
 		/* next segment please */
 		nameptr = name_end + 1;
@@ -1732,7 +1734,7 @@ void set_namearray(name_compare_entry **ppname_array, const char *namelist)
 	}
 
 	/* Now copy out the names */
-	nameptr = namelist;
+	nameptr = (char *)namelist;
 	i = 0;
 	while(*nameptr) {
 		if ( *nameptr == '/' ) {
@@ -1740,13 +1742,16 @@ void set_namearray(name_compare_entry **ppname_array, const char *namelist)
 			nameptr++;
 			continue;
 		}
-		/* find the next / */
-		if ((name_end = strchr_m(nameptr, '/')) != NULL)
-			*name_end = 0;
-
-		/* oops - the last check for a / didn't find one. */
-		if(name_end == NULL) 
+		/* anything left? */
+		if ( *nameptr == '\0' )
 			break;
+
+		/* find the next '/' or consume remaining */
+		name_end = strchr_m(nameptr, '/');
+		if (name_end)
+			*name_end = '\0';
+		else
+			name_end = nameptr + strlen(nameptr);
 
 		(*ppname_array)[i].is_wild = ms_has_wild(nameptr);
 		if(((*ppname_array)[i].name = SMB_STRDUP(nameptr)) == NULL) {
