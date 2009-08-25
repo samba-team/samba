@@ -81,9 +81,6 @@ static void netlogon_creds_init_128bit(struct netlogon_creds_CredentialState *cr
 	hmac_md5_update(tmp, sizeof(tmp), &ctx);
 	hmac_md5_final(creds->session_key, &ctx);
 
-	creds->client = *client_challenge;
-	creds->server = *server_challenge;
-
 	des_crypt112(creds->client.data, client_challenge->data, creds->session_key, 1);
 	des_crypt112(creds->server.data, server_challenge->data, creds->session_key, 1);
 
