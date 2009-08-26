@@ -345,6 +345,14 @@
 #define SMB_VFS_NEXT_STRICT_UNLOCK(handle, fsp, plock) \
 	smb_vfs_call_strict_unlock((handle)->next, (fsp), (plock))
 
+#define SMB_VFS_TRANSLATE_NAME(conn, mapped_name) \
+	smb_vfs_call_translate_name((conn)->vfs_handles, (mapped_name))
+#define SMB_VFS_NEXT_TRANSLATE_NAME(handle, mapped_name) \
+	smb_vfs_call_translate_name((handle)->next, (mapped_name))
+
+#define SMB_VFS_NEXT_STRICT_UNLOCK(handle, fsp, plock) \
+	smb_vfs_call_strict_unlock((handle)->next, (fsp), (plock))
+
 #define SMB_VFS_FGET_NT_ACL(fsp, security_info, ppdesc) \
 	smb_vfs_call_fget_nt_acl((fsp)->conn->vfs_handles, (fsp), (security_info), (ppdesc))
 #define SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info, ppdesc) \

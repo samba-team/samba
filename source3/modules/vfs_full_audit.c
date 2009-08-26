@@ -143,6 +143,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_BRL_CANCEL_WINDOWS,
 	SMB_VFS_OP_STRICT_LOCK,
 	SMB_VFS_OP_STRICT_UNLOCK,
+	SMB_VFS_OP_TRANSLATE_NAME,
 
 	/* NT ACL operations. */
 
@@ -280,6 +281,7 @@ static struct {
 	{ SMB_VFS_OP_BRL_CANCEL_WINDOWS, "brl_cancel_windows" },
 	{ SMB_VFS_OP_STRICT_LOCK, "strict_lock" },
 	{ SMB_VFS_OP_STRICT_UNLOCK, "strict_unlock" },
+	{ SMB_VFS_OP_TRANSLATE_NAME,	"translate_name" },
 	{ SMB_VFS_OP_FGET_NT_ACL,	"fget_nt_acl" },
 	{ SMB_VFS_OP_GET_NT_ACL,	"get_nt_acl" },
 	{ SMB_VFS_OP_FSET_NT_ACL,	"fset_nt_acl" },
@@ -1515,6 +1517,18 @@ static void smb_full_audit_strict_unlock(struct vfs_handle_struct *handle,
 	return;
 }
 
+static NTSTATUS smb_full_audit_translate_name(vfs_handle_struct *handle,
+					      char **mapped_name)
+{
+	NTSTATUS result;
+
+	result = SMB_VFS_NEXT_TRANSLATE_NAME(handle, mapped_name);
+
+	do_log(SMB_VFS_OP_TRANSLATE_NAME, NT_STATUS_IS_OK(result), handle, "");
+
+	return result;
+}
+
 static NTSTATUS smb_full_audit_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 				uint32 security_info,
 				SEC_DESC **ppdesc)
@@ -2229,6 +2243,7 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.brl_cancel_windows = smb_full_audit_brl_cancel_windows,
 	.strict_lock = smb_full_audit_strict_lock,
 	.strict_unlock = smb_full_audit_strict_unlock,
+	.translate_name = smb_full_audit_translate_name,
 	.fget_nt_acl = smb_full_audit_fget_nt_acl,
 	.get_nt_acl = smb_full_audit_get_nt_acl,
 	.fset_nt_acl = smb_full_audit_fset_nt_acl,

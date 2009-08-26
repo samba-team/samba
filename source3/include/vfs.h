@@ -123,6 +123,8 @@
 			   SMB_VFS_RENAME, SMB_VFS_UNLINK, SMB_VFS_NTIMES.  */
 /* Changed to version 27 - not yet released. Added enum timestamp_set_resolution
  * 			   return to fs_capabilities call. JRA. */
+/* Leave at 27 - not yet released. Add translate_name VFS call to convert
+		 UNIX names to Windows supported names -- asrinivasan. */
 #define SMB_VFS_INTERFACE_VERSION 27
 
 
@@ -298,6 +300,9 @@ struct vfs_fn_pointers {
 	void (*strict_unlock)(struct vfs_handle_struct *handle,
 			      struct files_struct *fsp,
 			      struct lock_struct *plock);
+
+	NTSTATUS (*translate_name)(struct vfs_handle_struct *handle,
+				   char **mapped_name);
 
 	/* NT ACL operations. */
 
@@ -644,6 +649,8 @@ bool smb_vfs_call_strict_lock(struct vfs_handle_struct *handle,
 void smb_vfs_call_strict_unlock(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
 				struct lock_struct *plock);
+NTSTATUS smb_vfs_call_translate_name(struct vfs_handle_struct *handle,
+				     char **mapped_name);
 NTSTATUS smb_vfs_call_fget_nt_acl(struct vfs_handle_struct *handle,
 				  struct files_struct *fsp,
 				  uint32 security_info,

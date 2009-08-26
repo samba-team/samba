@@ -585,15 +585,16 @@ int dptr_dnum(struct dptr_struct *dptr)
  Return the next visible file name, skipping veto'd and invisible files.
 ****************************************************************************/
 
-static const char *dptr_normal_ReadDirName(struct dptr_struct *dptr,
+static char *dptr_normal_ReadDirName(struct dptr_struct *dptr,
 					   long *poffset, SMB_STRUCT_STAT *pst)
 {
 	/* Normal search for the next file. */
-	const char *name;
+	char *name;
 	while ((name = ReadDirName(dptr->dir_hnd, poffset, pst)) != NULL) {
 		if (is_visible_file(dptr->conn, dptr->path, name, pst, True)) {
 			return name;
 		}
+		TALLOC_FREE(name);
 	}
 	return NULL;
 }
@@ -612,14 +613,12 @@ char *dptr_ReadDirName(TALLOC_CTX *ctx,
 	char *pathreal = NULL;
 	char *found_name = NULL;
 	int ret;
-	const char *name_temp = NULL;
 	NTSTATUS status;
 
 	SET_STAT_INVALID(*pst);
 
 	if (dptr->has_wild || dptr->did_stat) {
-		name_temp = dptr_normal_ReadDirName(dptr, poffset, pst);
-		name = talloc_strdup(ctx, name_temp);
+		name = dptr_normal_ReadDirName(dptr, poffset, pst);
 		return name;
 	}
 
@@ -707,8 +706,8 @@ char *dptr_ReadDirName(TALLOC_CTX *ctx,
 
 	TALLOC_FREE(pathreal);
 
-	name_temp = dptr_normal_ReadDirName(dptr, poffset, pst);
-	name = talloc_strdup(ctx, name_temp);
+	name = dptr_normal_ReadDirName(dptr, poffset, pst);
+
 	return name;
 
 clean:
@@ -1337,10 +1336,10 @@ struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
  Don't check for veto or invisible files.
 ********************************************************************/
 
-const char *ReadDirName(struct smb_Dir *dirp, long *poffset,
+char *ReadDirName(struct smb_Dir *dirp, long *poffset,
 			SMB_STRUCT_STAT *sbuf)
 {
-	const char *n;
+	char *n;
 	connection_struct *conn = dirp->conn;
 
 	/* Cheat to allow . and .. to be the first entries returned. */
@@ -1348,11 +1347,15 @@ const char *ReadDirName(struct smb_Dir *dirp, long *poffset,
 	     (*poffset == DOT_DOT_DIRECTORY_OFFSET)) && (dirp->file_number < 2))
 	{
 		if (dirp->file_number == 0) {
-			n = ".";
+			n = talloc_strdup(talloc_tos(), ".");
+			if (n == NULL)
+				return NULL;
 			*poffset = dirp->offset = START_OF_DIRECTORY_OFFSET;
 		} else {
 			*poffset = dirp->offset = DOT_DOT_DIRECTORY_OFFSET;
-			n = "..";
+			n = talloc_strdup(talloc_tos(), "..");
+			if (n == NULL)
+				return NULL;
 		}
 		dirp->file_number++;
 		return n;
@@ -1368,6 +1371,7 @@ const char *ReadDirName(struct smb_Dir *dirp, long *poffset,
 		/* Ignore . and .. - we've already returned them. */
 		if (*n == '.') {
 			if ((n[1] == '\0') || (n[1] == '.' && n[2] == '\0')) {
+				TALLOC_FREE(n);
 				continue;
 			}
 		}
@@ -1470,7 +1474,7 @@ void DirCacheAdd(struct smb_Dir *dirp, const char *name, long offset)
 bool SearchDir(struct smb_Dir *dirp, const char *name, long *poffset)
 {
 	int i;
-	const char *entry;
+	char *entry = NULL;
 	connection_struct *conn = dirp->conn;
 
 	/* Search back in the name cache. */
@@ -1499,8 +1503,10 @@ bool SearchDir(struct smb_Dir *dirp, const char *name, long *poffset)
 	*poffset = START_OF_DIRECTORY_OFFSET;
 	while ((entry = ReadDirName(dirp, poffset, NULL))) {
 		if (conn->case_sensitive ? (strcmp(entry, name) == 0) : strequal(entry, name)) {
+			TALLOC_FREE(entry);
 			return True;
 		}
+		TALLOC_FREE(entry);
 	}
 	return False;
 }
@@ -1514,7 +1520,7 @@ NTSTATUS can_delete_directory(struct connection_struct *conn,
 {
 	NTSTATUS status = NT_STATUS_OK;
 	long dirpos = 0;
-	const char *dname;
+	char *dname = NULL;
 	SMB_STRUCT_STAT st;
 	struct smb_Dir *dir_hnd = OpenDir(talloc_tos(), conn, dirname,
 					  NULL, 0);
@@ -1527,11 +1533,13 @@ NTSTATUS can_delete_directory(struct connection_struct *conn,
 		/* Quick check for "." and ".." */
 		if (dname[0] == '.') {
 			if (!dname[1] || (dname[1] == '.' && !dname[2])) {
+				TALLOC_FREE(dname);
 				continue;
 			}
 		}
 
 		if (!is_visible_file(conn, dirname, dname, &st, True)) {
+			TALLOC_FREE(dname);
 			continue;
 		}
 
@@ -1540,6 +1548,7 @@ NTSTATUS can_delete_directory(struct connection_struct *conn,
 		status = NT_STATUS_DIRECTORY_NOT_EMPTY;
 		break;
 	}
+	TALLOC_FREE(dname);
 	TALLOC_FREE(dir_hnd);
 
 	return status;

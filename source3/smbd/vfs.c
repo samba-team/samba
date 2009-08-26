@@ -662,7 +662,8 @@ SMB_OFF_T vfs_transfer_file(files_struct *in, files_struct *out, SMB_OFF_T n)
 char *vfs_readdirname(connection_struct *conn, void *p, SMB_STRUCT_STAT *sbuf)
 {
 	SMB_STRUCT_DIRENT *ptr= NULL;
-	char *dname;
+	char *dname = NULL;
+	NTSTATUS result;
 
 	if (!p)
 		return(NULL);
@@ -671,7 +672,16 @@ char *vfs_readdirname(connection_struct *conn, void *p, SMB_STRUCT_STAT *sbuf)
 	if (!ptr)
 		return(NULL);
 
-	dname = ptr->d_name;
+	dname = talloc_strdup(talloc_tos(), ptr->d_name);
+	if (dname == NULL) {
+		errno = ENOMEM;
+		return NULL;
+	}
+	result = SMB_VFS_TRANSLATE_NAME(conn, &dname);
+	if (!NT_STATUS_IS_OK(result)) {
+		TALLOC_FREE(dname);
+		return NULL;
+	}
 
 #ifdef NEXT2
 	if (telldir(p) < 0)
@@ -1493,6 +1503,13 @@ void smb_vfs_call_strict_unlock(struct vfs_handle_struct *handle,
 {
 	VFS_FIND(strict_unlock);
 	handle->fns->strict_unlock(handle, fsp, plock);
+}
+
+NTSTATUS smb_vfs_call_translate_name(struct vfs_handle_struct *handle,
+				     char **mapped_name)
+{
+	VFS_FIND(translate_name);
+	return handle->fns->translate_name(handle, mapped_name);
 }
 
 NTSTATUS smb_vfs_call_fget_nt_acl(struct vfs_handle_struct *handle,

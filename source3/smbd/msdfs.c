@@ -1548,6 +1548,7 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 				NULL)) {
 			cnt++;
 		}
+		TALLOC_FREE(dname);
 	}
 
 	SMB_VFS_CLOSEDIR(conn,dirp);
@@ -1647,6 +1648,7 @@ static int form_junctions(TALLOC_CTX *ctx,
 		if (cnt >= jn_remain) {
 			DEBUG(2, ("form_junctions: ran out of MSDFS "
 				"junction slots"));
+			TALLOC_FREE(dname);
 			goto out;
 		}
 		if (is_msdfs_link_internal(ctx,
@@ -1664,6 +1666,7 @@ static int form_junctions(TALLOC_CTX *ctx,
 								dname);
 				if (!jucn[cnt].service_name ||
 						!jucn[cnt].volume_name) {
+					TALLOC_FREE(dname);
 					goto out;
 				}
 				jucn[cnt].comment = "";
@@ -1671,6 +1674,7 @@ static int form_junctions(TALLOC_CTX *ctx,
 			}
 			TALLOC_FREE(link_target);
 		}
+		TALLOC_FREE(dname);
 	}
 
 out:

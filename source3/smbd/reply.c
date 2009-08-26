@@ -2577,7 +2577,7 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 	} else {
 		struct smb_Dir *dir_hnd = NULL;
 		long offset = 0;
-		const char *dname;
+		char *dname = NULL;
 
 		if ((dirtype & SAMBA_ATTRIBUTES_MASK) == aDIR) {
 			status = NT_STATUS_OBJECT_NAME_INVALID;
@@ -2619,18 +2619,21 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 			if (!is_visible_file(conn, fname_dir, dname,
 					     &smb_fname->st, true)) {
 				TALLOC_FREE(frame);
+				TALLOC_FREE(dname);
 				continue;
 			}
 
 			/* Quick check for "." and ".." */
 			if (ISDOT(dname) || ISDOTDOT(dname)) {
 				TALLOC_FREE(frame);
+				TALLOC_FREE(dname);
 				continue;
 			}
 
 			if(!mask_match(dname, fname_mask,
 				       conn->case_sensitive)) {
 				TALLOC_FREE(frame);
+				TALLOC_FREE(dname);
 				continue;
 			}
 
@@ -2643,6 +2646,7 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 				TALLOC_FREE(dir_hnd);
 				status = NT_STATUS_NO_MEMORY;
 				TALLOC_FREE(frame);
+				TALLOC_FREE(dname);
 				goto out;
 			}
 
@@ -2650,12 +2654,14 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 			if (!NT_STATUS_IS_OK(status)) {
 				TALLOC_FREE(dir_hnd);
 				TALLOC_FREE(frame);
+				TALLOC_FREE(dname);
 				goto out;
 			}
 
 			status = do_unlink(conn, req, smb_fname, dirtype);
 			if (!NT_STATUS_IS_OK(status)) {
 				TALLOC_FREE(frame);
+				TALLOC_FREE(dname);
 				continue;
 			}
 
@@ -2664,6 +2670,7 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 				 smb_fname->base_name));
 
 			TALLOC_FREE(frame);
+			TALLOC_FREE(dname);
 		}
 		TALLOC_FREE(dir_hnd);
 	}
@@ -5287,7 +5294,7 @@ static bool recursive_rmdir(TALLOC_CTX *ctx,
 			connection_struct *conn,
 			struct smb_filename *smb_dname)
 {
-	const char *dname = NULL;
+	char *dname = NULL;
 	bool ret = True;
 	long offset = 0;
 	SMB_STRUCT_STAT st;
@@ -5306,11 +5313,13 @@ static bool recursive_rmdir(TALLOC_CTX *ctx,
 		NTSTATUS status;
 
 		if (ISDOT(dname) || ISDOTDOT(dname)) {
+			TALLOC_FREE(dname);
 			continue;
 		}
 
 		if (!is_visible_file(conn, smb_dname->base_name, dname, &st,
 				     false)) {
+			TALLOC_FREE(dname);
 			continue;
 		}
 
@@ -5353,6 +5362,7 @@ static bool recursive_rmdir(TALLOC_CTX *ctx,
 	 err_break:
 		TALLOC_FREE(smb_dname_full);
 		TALLOC_FREE(fullname);
+		TALLOC_FREE(dname);
 		if (do_break) {
 			ret = false;
 			break;
@@ -5406,7 +5416,7 @@ NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
 		 * retry. If we fail to delete any of them (and we *don't*
 		 * do a recursive delete) then fail the rmdir.
 		 */
-		const char *dname;
+		char *dname = NULL;
 		long dirpos = 0;
 		struct smb_Dir *dir_hnd = OpenDir(talloc_tos(), conn,
 						  smb_dname->base_name, NULL,
@@ -5418,16 +5428,22 @@ NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
 		}
 
 		while ((dname = ReadDirName(dir_hnd, &dirpos, &st))) {
-			if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
+			if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0)) {
+				TALLOC_FREE(dname);
 				continue;
+			}
 			if (!is_visible_file(conn, smb_dname->base_name, dname,
-					     &st, false))
+					     &st, false)) {
+				TALLOC_FREE(dname);
 				continue;
+			}
 			if(!IS_VETO_PATH(conn, dname)) {
 				TALLOC_FREE(dir_hnd);
+				TALLOC_FREE(dname);
 				errno = ENOTEMPTY;
 				goto err;
 			}
+			TALLOC_FREE(dname);
 		}
 
 		/* We only have veto files/directories.
@@ -5448,10 +5464,12 @@ NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
 			NTSTATUS status;
 
 			if (ISDOT(dname) || ISDOTDOT(dname)) {
+				TALLOC_FREE(dname);
 				continue;
 			}
 			if (!is_visible_file(conn, smb_dname->base_name, dname,
 					     &st, false)) {
+				TALLOC_FREE(dname);
 				continue;
 			}
 
@@ -5496,6 +5514,7 @@ NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
 		 err_break:
 			TALLOC_FREE(fullname);
 			TALLOC_FREE(smb_dname_full);
+			TALLOC_FREE(dname);
 			if (do_break)
 				break;
 		}
@@ -6132,7 +6151,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	int count=0;
 	NTSTATUS status = NT_STATUS_OK;
 	struct smb_Dir *dir_hnd = NULL;
-	const char *dname;
+	char *dname = NULL;
 	long offset = 0;
 	int create_options = 0;
 	bool posix_pathnames = lp_posix_pathnames();
@@ -6320,16 +6339,19 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			if (attrs & aDIR) {
 				sysdir_entry = True;
 			} else {
+				TALLOC_FREE(dname);
 				continue;
 			}
 		}
 
 		if (!is_visible_file(conn, fname_src_dir, dname,
 				     &smb_fname_src->st, false)) {
+			TALLOC_FREE(dname);
 			continue;
 		}
 
 		if(!mask_match(dname, fname_src_mask, conn->case_sensitive)) {
+			TALLOC_FREE(dname);
 			continue;
 		}
 
@@ -6353,6 +6375,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 				       &destname)) {
 			DEBUG(6, ("resolve_wildcards %s %s failed\n",
 				  smb_fname_src->base_name, destname));
+			TALLOC_FREE(dname);
 			continue;
 		}
 		if (!destname) {
@@ -6428,7 +6451,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		DEBUG(3,("rename_internals: doing rename on %s -> "
 			 "%s\n", smb_fname_str_dbg(smb_fname_src),
 			 smb_fname_str_dbg(smb_fname_src)));
-
+		TALLOC_FREE(dname);
 	}
 	TALLOC_FREE(dir_hnd);
 
@@ -6437,6 +6460,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	}
 
  out:
+	TALLOC_FREE(dname);
 	TALLOC_FREE(fname_src_dir);
 	TALLOC_FREE(fname_src_mask);
 	return status;
@@ -6901,7 +6925,7 @@ void reply_copy(struct smb_request *req)
 		}
 	} else {
 		struct smb_Dir *dir_hnd = NULL;
-		const char *dname = NULL;
+		char *dname = NULL;
 		long offset = 0;
 
 		/*
@@ -6946,16 +6970,19 @@ void reply_copy(struct smb_request *req)
 			char *destname = NULL;
 
 			if (ISDOT(dname) || ISDOTDOT(dname)) {
+				TALLOC_FREE(dname);
 				continue;
 			}
 
 			if (!is_visible_file(conn, fname_src_dir, dname,
 					     &smb_fname_src->st, false)) {
+				TALLOC_FREE(dname);
 				continue;
 			}
 
 			if(!mask_match(dname, fname_src_mask,
 				       conn->case_sensitive)) {
+				TALLOC_FREE(dname);
 				continue;
 			}
 
@@ -6969,6 +6996,7 @@ void reply_copy(struct smb_request *req)
 
 			if (!smb_fname_src->base_name) {
 				TALLOC_FREE(dir_hnd);
+				TALLOC_FREE(dname);
 				reply_nterror(req, NT_STATUS_NO_MEMORY);
 				goto out;
 			}
@@ -6976,10 +7004,12 @@ void reply_copy(struct smb_request *req)
 			if (!resolve_wildcards(ctx, smb_fname_src->base_name,
 					       smb_fname_dst->base_name,
 					       &destname)) {
+				TALLOC_FREE(dname);
 				continue;
 			}
 			if (!destname) {
 				TALLOC_FREE(dir_hnd);
+				TALLOC_FREE(dname);
 				reply_nterror(req, NT_STATUS_NO_MEMORY);
 				goto out;
 			}
@@ -6990,6 +7020,7 @@ void reply_copy(struct smb_request *req)
 			status = check_name(conn, smb_fname_src->base_name);
 			if (!NT_STATUS_IS_OK(status)) {
 				TALLOC_FREE(dir_hnd);
+				TALLOC_FREE(dname);
 				reply_nterror(req, status);
 				goto out;
 			}
@@ -6997,6 +7028,7 @@ void reply_copy(struct smb_request *req)
 			status = check_name(conn, smb_fname_dst->base_name);
 			if (!NT_STATUS_IS_OK(status)) {
 				TALLOC_FREE(dir_hnd);
+				TALLOC_FREE(dname);
 				reply_nterror(req, status);
 				goto out;
 			}
@@ -7011,6 +7043,8 @@ void reply_copy(struct smb_request *req)
 			if (NT_STATUS_IS_OK(status)) {
 				count++;
 			}
+
+			TALLOC_FREE(dname);
 		}
 		TALLOC_FREE(dir_hnd);
 	}

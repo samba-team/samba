@@ -651,6 +651,16 @@ static int vfswrap_lstat(vfs_handle_struct *handle,
 	return result;
 }
 
+static NTSTATUS vfswrap_translate_name(vfs_handle_struct *handle,
+				       char **mapped_name)
+{
+	/* Default behavior is a NOOP */
+
+	if (*mapped_name != NULL)
+		return NT_STATUS_OK;
+
+	return NT_STATUS_INVALID_PARAMETER;
+}
 /********************************************************************
  Given a stat buffer return the allocated size on disk, taking into
  account sparse files.
@@ -1725,6 +1735,7 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.brl_cancel_windows = vfswrap_brl_cancel_windows,
 	.strict_lock = vfswrap_strict_lock,
 	.strict_unlock = vfswrap_strict_unlock,
+	.translate_name = vfswrap_translate_name,
 
 	/* NT ACL operations. */
 
