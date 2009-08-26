@@ -855,6 +855,30 @@ static NTSTATUS smb_full_audit_create_file(vfs_handle_struct *handle,
 				      int *pinfo)
 {
 	NTSTATUS result;
+	const char* str_create_disposition;
+
+	switch (create_disposition) {
+	case FILE_SUPERSEDE:
+		str_create_disposition = "supersede";
+		break;
+	case FILE_OVERWRITE_IF:
+		str_create_disposition = "overwrite_if";
+		break;
+	case FILE_OPEN:
+		str_create_disposition = "open";
+		break;
+	case FILE_OVERWRITE:
+		str_create_disposition = "overwrite";
+		break;
+	case FILE_CREATE:
+		str_create_disposition = "create";
+		break;
+	case FILE_OPEN_IF:
+		str_create_disposition = "open_if";
+		break;
+	default:
+		str_create_disposition = "unknown";
+	}
 
 	result = SMB_VFS_NEXT_CREATE_FILE(
 		handle,					/* handle */
@@ -873,8 +897,10 @@ static NTSTATUS smb_full_audit_create_file(vfs_handle_struct *handle,
 		result_fsp,				/* result */
 		pinfo);					/* pinfo */
 
-	do_log(SMB_VFS_OP_CREATE_FILE, (NT_STATUS_IS_OK(result)), handle, "0x%x|%s",
-	       access_mask, smb_fname_str_do_log(smb_fname));
+	do_log(SMB_VFS_OP_CREATE_FILE, (NT_STATUS_IS_OK(result)), handle,
+	       "0x%x|%s|%s|%s", access_mask,
+	       create_options & FILE_DIRECTORY_FILE ? "dir" : "file",
+	       str_create_disposition, smb_fname_str_do_log(smb_fname));
 
 	return result;
 }
