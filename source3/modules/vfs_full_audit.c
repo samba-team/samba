@@ -510,6 +510,7 @@ static void do_log(vfs_op_type op, bool success, vfs_handle_struct *handle,
 	char *audit_pre = NULL;
 	va_list ap;
 	char *op_msg = NULL;
+	int priority;
 
 	if (success && (!log_success(handle, op)))
 		goto out;
@@ -530,8 +531,15 @@ static void do_log(vfs_op_type op, bool success, vfs_handle_struct *handle,
 		goto out;
 	}
 
+	/*
+	 * Specify the facility to interoperate with other syslog callers
+	 * (smbd for example).
+	 */
+	priority = audit_syslog_priority(handle) |
+	    audit_syslog_facility(handle);
+
 	audit_pre = audit_prefix(talloc_tos(), handle->conn);
-	syslog(audit_syslog_priority(handle), "%s|%s|%s|%s\n",
+	syslog(priority, "%s|%s|%s|%s\n",
 		audit_pre ? audit_pre : "",
 		audit_opname(op), err_msg, op_msg);
 
@@ -606,7 +614,9 @@ static int smb_full_audit_connect(vfs_handle_struct *handle,
 	}
 	ZERO_STRUCTP(pd);
 
+#ifndef WITH_SYSLOG
 	openlog("smbd_audit", 0, audit_syslog_facility(handle));
+#endif
 
 	init_bitmap(&pd->success_ops,
 		    lp_parm_string_list(SNUM(handle->conn), "full_audit", "success",

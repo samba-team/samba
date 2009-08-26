@@ -856,6 +856,12 @@ void check_log_size( void )
 		else
 			priority = priority_map[syslog_level];
 
+		/*
+		 * Specify the facility to interoperate with other syslog
+		 * callers (vfs_full_audit for example).
+		 */
+		priority |= SYSLOG_FACILITY;
+
 		va_start(ap, format_str);
 		ret = vasprintf(&msgbuf, format_str, ap);
 		va_end(ap);
