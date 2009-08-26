@@ -87,11 +87,11 @@ do { \
 	}\
 } while (0)
 
-/* demote an element to the end of the list, needs a tmp pointer */
-#define DLIST_DEMOTE(list, p, tmp) \
+/* demote an element to the end of the list, needs the entry type */
+#define DLIST_DEMOTE(list, p, type) \
 do { \
 		DLIST_REMOVE(list, p); \
-		DLIST_ADD_END(list, p, tmp); \
+		DLIST_ADD_END(list, p, type); \
 } while (0)
 
 /* concatenate two lists - putting all elements of the 2nd list at the
