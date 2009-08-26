@@ -167,6 +167,32 @@ class Schema(object):
         prefixmap_ldif = "dn: cn=schema\nprefixMap:: %s\n\n" % prefixmap
         self.ldb.set_schema_from_ldif(prefixmap_ldif, self.schema_data)
 
+
+# Return a hash with the forward attribute as a key and the back as the value 
+def get_linked_attributes(schemadn,schemaldb):
+    attrs = ["linkID", "lDAPDisplayName"]
+    res = schemaldb.search(expression="(&(linkID=*)(!(linkID:1.2.840.113556.1.4.803:=1))(objectclass=attributeSchema)(attributeSyntax=2.5.5.1))", base=schemadn, scope=SCOPE_ONELEVEL, attrs=attrs)
+    attributes = {}
+    for i in range (0, len(res)):
+        expression = "(&(objectclass=attributeSchema)(linkID=%d)(attributeSyntax=2.5.5.1))" % (int(res[i]["linkID"][0])+1)
+        target = schemaldb.searchone(basedn=schemadn, 
+                                     expression=expression, 
+                                     attribute="lDAPDisplayName", 
+                                     scope=SCOPE_SUBTREE)
+        if target is not None:
+            attributes[str(res[i]["lDAPDisplayName"])]=str(target)
+            
+    return attributes
+
+def get_dnsyntax_attributes(schemadn,schemaldb):
+    attrs = ["linkID", "lDAPDisplayName"]
+    res = schemaldb.search(expression="(&(!(linkID=*))(objectclass=attributeSchema)(attributeSyntax=2.5.5.1))", base=schemadn, scope=SCOPE_ONELEVEL, attrs=attrs)
+    attributes = []
+    for i in range (0, len(res)):
+        attributes.append(str(res[i]["lDAPDisplayName"]))
+        
+    return attributes
+    
     
 def check_install(lp, session_info, credentials):
     """Check whether the current install seems ok.
@@ -1431,28 +1457,21 @@ def provision_openldap_backend(result, paths=None, setup_path=None, names=None, 
     if nosync:
         nosync_config = "dbnosync"
         
-        
-    attrs = ["linkID", "lDAPDisplayName"]
-    res = schema.ldb.search(expression="(&(linkID=*)(!(linkID:1.2.840.113556.1.4.803:=1))(objectclass=attributeSchema)(attributeSyntax=2.5.5.1))", base=names.schemadn, scope=SCOPE_ONELEVEL, attrs=attrs)
-
-    memberof_config = "# Generated from Samba4 schema\n"
+    lnkattr = get_linked_attributes(names.schemadn,schema.ldb)
     refint_attributes = ""
-    for i in range (0, len(res)):
-        expression = "(&(objectclass=attributeSchema)(linkID=%d)(attributeSyntax=2.5.5.1))" % (int(res[i]["linkID"][0])+1)
-        target = schema.ldb.searchone(basedn=names.schemadn, 
-                                      expression=expression, 
-                                      attribute="lDAPDisplayName", 
-                                      scope=SCOPE_SUBTREE)
-        if target is not None:
-            refint_attributes = refint_attributes + " " + res[i]["lDAPDisplayName"][0]
+    memberof_config = "# Generated from Samba4 schema\n"
+    for att in  lnkattr.keys():
+        if lnkattr[att] is not None:
+            refint_attributes = refint_attributes + " " + att 
             
             memberof_config += read_and_sub_file(setup_path("memberof.conf"),
-                                                 { "MEMBER_ATTR" : str(res[i]["lDAPDisplayName"][0]),
-                                                   "MEMBEROF_ATTR" : str(target) })
+                                                 { "MEMBER_ATTR" : att ,
+                                                   "MEMBEROF_ATTR" : lnkattr[att] })
             
     refint_config = read_and_sub_file(setup_path("refint.conf"),
                                       { "LINK_ATTRS" : refint_attributes})
     
+    attrs = ["linkID", "lDAPDisplayName"]
     res = schema.ldb.search(expression="(&(objectclass=attributeSchema)(searchFlags:1.2.840.113556.1.4.803:=1))", base=names.schemadn, scope=SCOPE_ONELEVEL, attrs=attrs)
     index_config = ""
     for i in range (0, len(res)):
@@ -1837,6 +1856,4 @@ def create_krb5_conf(path, setup_path, dnsdomain, hostname, realm):
         })
 
 
-
- 
 
