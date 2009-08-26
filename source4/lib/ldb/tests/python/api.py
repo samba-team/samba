@@ -195,10 +195,13 @@ class SimpleLdb(unittest.TestCase):
         try:
             m = ldb.Message()
             m.dn = ldb.Dn(l, "dc=modifydelete")
-            m["bla"] = ldb.MessageElement([], ldb.CHANGETYPE_DELETE, "bla")
+            m["bla"] = ldb.MessageElement([], ldb.FLAG_MOD_DELETE, "bla")
+            self.assertEquals(ldb.FLAG_MOD_DELETE, m["bla"].flags())
             l.modify(m)
             rm = l.search(m.dn)[0]
             self.assertEquals(1, len(rm))
+            rm = l.search(m.dn, attrs=["bla"])[0]
+            self.assertEquals(0, len(rm))
         finally:
             l.delete(ldb.Dn(l, "dc=modifydelete"))
 
@@ -211,7 +214,8 @@ class SimpleLdb(unittest.TestCase):
         try:
             m = ldb.Message()
             m.dn = ldb.Dn(l, "dc=add")
-            m["bla"] = ldb.MessageElement(["456"], ldb.CHANGETYPE_ADD, "bla")
+            m["bla"] = ldb.MessageElement(["456"], ldb.FLAG_MOD_ADD, "bla")
+            self.assertEquals(ldb.FLAG_MOD_ADD, m["bla"].flags())
             l.modify(m)
             rm = l.search(m.dn)[0]
             self.assertEquals(2, len(rm))
@@ -219,7 +223,7 @@ class SimpleLdb(unittest.TestCase):
         finally:
             l.delete(ldb.Dn(l, "dc=add"))
 
-    def test_modify_modify(self):
+    def test_modify_replace(self):
         l = ldb.Ldb(filename())
         m = ldb.Message()
         m.dn = ldb.Dn(l, "dc=modify2")
@@ -228,13 +232,43 @@ class SimpleLdb(unittest.TestCase):
         try:
             m = ldb.Message()
             m.dn = ldb.Dn(l, "dc=modify2")
-            m["bla"] = ldb.MessageElement(["456"], ldb.CHANGETYPE_MODIFY, "bla")
+            m["bla"] = ldb.MessageElement(["789"], ldb.FLAG_MOD_REPLACE, "bla")
+            self.assertEquals(ldb.FLAG_MOD_REPLACE, m["bla"].flags())
             l.modify(m)
             rm = l.search(m.dn)[0]
             self.assertEquals(2, len(rm))
-            self.assertEquals(["1234"], list(rm["bla"]))
+            self.assertEquals(["789"], list(rm["bla"]))
+            rm = l.search(m.dn, attrs=["bla"])[0]
+            self.assertEquals(1, len(rm))
         finally:
             l.delete(ldb.Dn(l, "dc=modify2"))
+
+    def test_modify_flags_change(self):
+        l = ldb.Ldb(filename())
+        m = ldb.Message()
+        m.dn = ldb.Dn(l, "dc=add")
+        m["bla"] = ["1234"]
+        l.add(m)
+        try:
+            m = ldb.Message()
+            m.dn = ldb.Dn(l, "dc=add")
+            m["bla"] = ldb.MessageElement(["456"], ldb.FLAG_MOD_ADD, "bla")
+            self.assertEquals(ldb.FLAG_MOD_ADD, m["bla"].flags())
+            l.modify(m)
+            rm = l.search(m.dn)[0]
+            self.assertEquals(2, len(rm))
+            self.assertEquals(["1234", "456"], list(rm["bla"]))
+            
+            #Now create another modify, but switch the flags before we do it
+            m["bla"] = ldb.MessageElement(["456"], ldb.FLAG_MOD_ADD, "bla")
+            m["bla"].set_flags(ldb.FLAG_MOD_DELETE)
+            l.modify(m)
+            rm = l.search(m.dn, attrs=["bla"])[0]
+            self.assertEquals(1, len(rm))
+            self.assertEquals(["1234"], list(rm["bla"]))
+            
+        finally:
+            l.delete(ldb.Dn(l, "dc=add"))
 
     def test_transaction_commit(self):
         l = ldb.Ldb(filename())

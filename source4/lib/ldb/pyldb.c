@@ -1493,8 +1493,30 @@ static PyObject *py_ldb_msg_element_get(PyLdbMessageElementObject *self, PyObjec
 								 &(PyLdbMessageElement_AsMessageElement(self)->values[i]));
 }
 
+static PyObject *py_ldb_msg_element_flags(PyLdbMessageElementObject *self, PyObject *args)
+{
+	struct ldb_message_element *el;
+
+	el = PyLdbMessageElement_AsMessageElement(self);
+	return PyInt_FromLong(el->flags);
+}
+
+static PyObject *py_ldb_msg_element_set_flags(PyLdbMessageElementObject *self, PyObject *args)
+{
+	int flags;
+	struct ldb_message_element *el;
+	if (!PyArg_ParseTuple(args, "i", &flags))
+		return NULL;
+
+	el = PyLdbMessageElement_AsMessageElement(self);
+	el->flags = flags;
+	Py_RETURN_NONE;
+}
+
 static PyMethodDef py_ldb_msg_element_methods[] = {
 	{ "get", (PyCFunction)py_ldb_msg_element_get, METH_VARARGS, NULL },
+	{ "set_flags", (PyCFunction)py_ldb_msg_element_set_flags, METH_VARARGS, NULL },
+	{ "flags", (PyCFunction)py_ldb_msg_element_flags, METH_NOARGS, NULL },
 	{ NULL },
 };
 
@@ -2325,6 +2347,10 @@ void initldb(void)
 	PyModule_AddObject(m, "CHANGETYPE_ADD", PyInt_FromLong(LDB_CHANGETYPE_ADD));
 	PyModule_AddObject(m, "CHANGETYPE_DELETE", PyInt_FromLong(LDB_CHANGETYPE_DELETE));
 	PyModule_AddObject(m, "CHANGETYPE_MODIFY", PyInt_FromLong(LDB_CHANGETYPE_MODIFY));
+
+	PyModule_AddObject(m, "FLAG_MOD_ADD", PyInt_FromLong(LDB_FLAG_MOD_ADD));
+	PyModule_AddObject(m, "FLAG_MOD_REPLACE", PyInt_FromLong(LDB_FLAG_MOD_REPLACE));
+	PyModule_AddObject(m, "FLAG_MOD_DELETE", PyInt_FromLong(LDB_FLAG_MOD_DELETE));
 
 	PyModule_AddObject(m, "SUCCESS", PyInt_FromLong(LDB_SUCCESS));
 	PyModule_AddObject(m, "ERR_OPERATIONS_ERROR", PyInt_FromLong(LDB_ERR_OPERATIONS_ERROR));
