@@ -2634,3 +2634,21 @@ struct torture_suite *torture_rpc_netlogon(TALLOC_CTX *mem_ctx)
 
 	return suite;
 }
+
+struct torture_suite *torture_rpc_netlogon_s3(TALLOC_CTX *mem_ctx)
+{
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "NETLOGON-S3");
+	struct torture_rpc_tcase *tcase;
+
+	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "netlogon",
+						  &ndr_table_netlogon, TEST_MACHINE_NAME);
+
+	torture_rpc_tcase_add_test_creds(tcase, "SamLogon", test_SamLogon);
+	torture_rpc_tcase_add_test_creds(tcase, "SetPassword", test_SetPassword);
+	torture_rpc_tcase_add_test(tcase, "LogonControl", test_LogonControl);
+	torture_rpc_tcase_add_test(tcase, "LogonControl2", test_LogonControl2);
+	torture_rpc_tcase_add_test(tcase, "LogonControl2Ex", test_LogonControl2Ex);
+	torture_rpc_tcase_add_test(tcase, "NetrEnumerateTrustedDomains", test_netr_NetrEnumerateTrustedDomains);
+
+	return suite;
+}
