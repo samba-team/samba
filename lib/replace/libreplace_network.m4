@@ -173,7 +173,7 @@ LIBS="${LIBREPLACE_NETWORK_LIBS}"
 libreplace_SAVE_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS -I$libreplacedir"
 
-AC_CHECK_FUNCS(socketpair,[],[LIBREPLACE_NETWORK_OBJS="${LIBREPLACE_NETWORK_OBJS} socketpair.o"])
+AC_CHECK_FUNCS(socketpair,[],[LIBREPLACE_NETWORK_OBJS="${LIBREPLACE_NETWORK_OBJS} $libreplacedir/socketpair.o"])
 
 AC_CACHE_CHECK([for broken inet_ntoa],libreplace_cv_REPLACE_INET_NTOA,[
 AC_TRY_RUN([
@@ -193,14 +193,14 @@ exit(1);}],
 AC_CHECK_FUNCS(inet_ntoa,[],[libreplace_cv_REPLACE_INET_NTOA=yes])
 if test x"$libreplace_cv_REPLACE_INET_NTOA" = x"yes"; then
     AC_DEFINE(REPLACE_INET_NTOA,1,[Whether inet_ntoa should be replaced])
-    LIBREPLACE_NETWORK_OBJS="${LIBREPLACE_NETWORK_OBJS} inet_ntoa.o"
+    LIBREPLACE_NETWORK_OBJS="${LIBREPLACE_NETWORK_OBJS} $libreplacedir/inet_ntoa.o"
 fi
 
-AC_CHECK_FUNCS(inet_aton,[],[LIBREPLACE_NETWORK_OBJS="${LIBREPLACE_NETWORK_OBJS} inet_aton.o"])
+AC_CHECK_FUNCS(inet_aton,[],[LIBREPLACE_NETWORK_OBJS="${LIBREPLACE_NETWORK_OBJS} $libreplacedir/inet_aton.o"])
 
-AC_CHECK_FUNCS(inet_ntop,[],[LIBREPLACE_NETWORK_OBJS="${LIBREPLACE_NETWORK_OBJS} inet_ntop.o"])
+AC_CHECK_FUNCS(inet_ntop,[],[LIBREPLACE_NETWORK_OBJS="${LIBREPLACE_NETWORK_OBJS} $libreplacedir/inet_ntop.o"])
 
-AC_CHECK_FUNCS(inet_pton,[],[LIBREPLACE_NETWORK_OBJS="${LIBREPLACE_NETWORK_OBJS} inet_pton.o"])
+AC_CHECK_FUNCS(inet_pton,[],[LIBREPLACE_NETWORK_OBJS="${LIBREPLACE_NETWORK_OBJS} $libreplacedir/inet_pton.o"])
 
 dnl test for getaddrinfo/getnameinfo
 AC_CACHE_CHECK([for getaddrinfo],libreplace_cv_HAVE_GETADDRINFO,[
@@ -232,7 +232,7 @@ if test x"$libreplace_cv_HAVE_GETADDRINFO" = x"yes"; then
 	AC_DEFINE(HAVE_FREEADDRINFO,1,[Whether the system has freeaddrinfo])
 	AC_DEFINE(HAVE_GAI_STRERROR,1,[Whether the system has gai_strerror])
 else
-	LIBREPLACE_NETWORK_OBJS="${LIBREPLACE_NETWORK_OBJS} getaddrinfo.o"
+	LIBREPLACE_NETWORK_OBJS="${LIBREPLACE_NETWORK_OBJS} $libreplacedir/getaddrinfo.o"
 fi
 
 AC_CHECK_HEADERS([ifaddrs.h])
@@ -287,7 +287,7 @@ AC_TRY_RUN([
 if test x"$libreplace_cv_HAVE_IFACE_GETIFADDRS" = x"yes"; then
     iface=yes;AC_DEFINE(HAVE_IFACE_GETIFADDRS,1,[Whether iface getifaddrs is available])
 else
-	LIBREPLACE_NETWORK_OBJS="${LIBREPLACE_NETWORK_OBJS} getifaddrs.o"
+	LIBREPLACE_NETWORK_OBJS="${LIBREPLACE_NETWORK_OBJS} $libreplacedir/getifaddrs.o"
 fi
 
 

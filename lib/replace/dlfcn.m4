@@ -23,7 +23,7 @@ AC_VERIFY_C_PROTOTYPE([void *dlopen(const char* filename, unsigned int flags)],
 	])
 
 if test x"${libreplace_cv_dlfcn}" = x"yes";then
-	LIBREPLACEOBJ="${LIBREPLACEOBJ} dlfcn.o"
+	LIBREPLACEOBJ="${LIBREPLACEOBJ} $libreplacedir/dlfcn.o"
 fi
 
 LIBDL="$LIBS"
