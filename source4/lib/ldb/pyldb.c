@@ -813,6 +813,41 @@ static PyObject *ldb_ldif_to_pyobject(struct ldb_ldif *ldif)
 }
 
 
+static PyObject *py_ldb_write_ldif(PyLdbMessageObject *self, PyObject *args)
+{
+	int changetype;
+	PyObject *py_msg;
+	struct ldb_ldif ldif;
+	PyObject *ret;
+	char *string;
+	TALLOC_CTX *mem_ctx;
+
+	if (!PyArg_ParseTuple(args, "Oi", &py_msg, &changetype))
+		return NULL;
+
+	if (!PyLdbMessage_Check(py_msg)) {
+		PyErr_SetString(PyExc_TypeError, "Expected Ldb Message for msg");
+		return NULL;
+	}
+
+	ldif.msg = PyLdbMessage_AsMessage(py_msg);
+	ldif.changetype = changetype;
+
+	mem_ctx = talloc_new(NULL);
+
+	string = ldb_ldif_write_string(PyLdb_AsLdbContext(self), mem_ctx, &ldif);
+	if (!string) {
+		PyErr_SetString(PyExc_KeyError, "Failed to generate LDIF");
+		return NULL;
+	}
+
+	ret = PyString_FromString(string);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
 static PyObject *py_ldb_parse_ldif(PyLdbObject *self, PyObject *args)
 {
 	PyObject *list;
@@ -1116,6 +1151,9 @@ static PyMethodDef py_ldb_methods[] = {
 	{ "parse_ldif", (PyCFunction)py_ldb_parse_ldif, METH_VARARGS,
 		"S.parse_ldif(ldif) -> iter(messages)\n"
 		"Parse a string formatted using LDIF." },
+	{ "write_ldif", (PyCFunction)py_ldb_write_ldif, METH_VARARGS,
+		"S.write_ldif(message, changetype) -> ldif\n"
+		"Print the message as a string formatted using LDIF." },
 	{ "msg_diff", (PyCFunction)py_ldb_msg_diff, METH_VARARGS,
 		"S.msg_diff(Message) -> Message\n"
 		"Return an LDB Message of the difference between two Message objects." },

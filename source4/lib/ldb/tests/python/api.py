@@ -402,7 +402,9 @@ class DnTests(unittest.TestCase):
         msg = msgs.next()
         self.assertEquals("foo=bar", str(msg[1].dn))
         self.assertTrue(isinstance(msg[1], ldb.Message))
-
+        ldif = self.ldb.write_ldif(msg[1], ldb.CHANGETYPE_NONE)
+        self.assertEquals("dn: foo=bar\n\n", ldif)
+        
     def test_parse_ldif_more(self):
         msgs = self.ldb.parse_ldif("dn: foo=bar\n\n\ndn: bar=bar")
         msg = msgs.next()

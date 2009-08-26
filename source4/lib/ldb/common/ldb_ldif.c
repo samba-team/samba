@@ -759,3 +759,43 @@ int ldb_ldif_write_file(struct ldb_context *ldb, FILE *f, const struct ldb_ldif 
 	state.f = f;
 	return ldb_ldif_write(ldb, fprintf_file, &state, ldif);
 }
+
+/*
+  wrapper around ldif_write() for a string
+*/
+struct ldif_write_string_state {
+	char *string;
+};
+
+static int ldif_printf_string(void *private_data, const char *fmt, ...) PRINTF_ATTRIBUTE(2, 3);
+
+static int ldif_printf_string(void *private_data, const char *fmt, ...)
+{
+	struct ldif_write_string_state *state =
+		(struct ldif_write_string_state *)private_data;
+	va_list ap;
+	size_t oldlen = strlen(state->string);
+	va_start(ap, fmt);
+	
+	state->string = talloc_vasprintf_append(state->string, fmt, ap);
+	va_end(ap);
+	if (!state->string) {
+		return -1;
+	}
+		
+	return strlen(state->string) - oldlen;
+}
+
+char *ldb_ldif_write_string(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, 
+			    const struct ldb_ldif *ldif)
+{
+	struct ldif_write_string_state state;
+	state.string = talloc_strdup(mem_ctx, "");
+	if (!state.string) {
+		return NULL;
+	}
+	if (ldb_ldif_write(ldb, ldif_printf_string, &state, ldif) == -1) {
+		return NULL;
+	}
+	return state.string;
+}

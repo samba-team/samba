@@ -1450,6 +1450,20 @@ struct ldb_ldif *ldb_ldif_read_string(struct ldb_context *ldb, const char **s);
 int ldb_ldif_write_file(struct ldb_context *ldb, FILE *f, const struct ldb_ldif *msg);
 
 /**
+   Write an LDIF message to a string
+
+   \param ldb the ldb context (from ldb_init())
+   \param mem_ctx the talloc context on which to attach the string)
+   \param msg the message to write out
+
+   \return the string containing the LDIF, or NULL on error
+
+   \sa ldb_ldif_read_string for the reader equivalent to this function.
+*/
+char * ldb_ldif_write_string(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, 
+			  const struct ldb_ldif *msg);
+
+/**
    Base64 encode a buffer
 
    \param mem_ctx the memory context that the result is allocated
