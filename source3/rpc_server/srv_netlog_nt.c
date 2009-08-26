@@ -285,7 +285,7 @@ WERROR _netr_NetrEnumerateTrustedDomains(pipes_struct *p,
  ******************************************************************/
 
 static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
-			  uint16_t sec_chan_type, uint32_t *rid)
+			  uint16_t sec_chan_type, struct dom_sid *sid)
 {
 	struct samu *sampass = NULL;
 	const uint8 *pass;
@@ -381,9 +381,7 @@ static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
 	memcpy(md4pw->hash, pass, 16);
 	dump_data(5, md4pw->hash, 16);
 
-	if (rid) {
-		*rid = pdb_get_user_rid(sampass);
-	}
+	sid_copy(sid, pdb_get_user_sid(sampass));
 
 	TALLOC_FREE(sampass);
 
@@ -468,7 +466,7 @@ NTSTATUS _netr_ServerAuthenticate3(pipes_struct *p,
 	uint32_t in_neg_flags = *r->in.negotiate_flags;
 	struct netr_Credential srv_chal_out;
 	const char *fn;
-	uint32_t rid;
+	struct dom_sid sid;
 	struct samr_Password mach_pwd;
 
 	/* According to Microsoft (see bugid #6099)
@@ -538,7 +536,7 @@ NTSTATUS _netr_ServerAuthenticate3(pipes_struct *p,
 	status = get_md4pw(&mach_pwd,
 			   r->in.account_name,
 			   r->in.secure_channel_type,
-			   &rid);
+			   &sid);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("%s: failed to get machine password for "
 			"account %s: %s\n",
@@ -582,7 +580,7 @@ NTSTATUS _netr_ServerAuthenticate3(pipes_struct *p,
 					    p->dc);
 	unbecome_root();
 
-	*r->out.rid = rid;
+	sid_peek_rid(&sid, r->out.rid);
 
 	status = NT_STATUS_OK;
 
