@@ -842,6 +842,10 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
 
     # And now we can connect to the DB - the schema won't be loaded from the DB
     samdb.connect(path)
+
+    # Load @OPTIONS
+    samdb.load_ldif_file_add(setup_path("provision_options.ldif"))
+
     if fill == FILL_DRS:
         return samdb
 
