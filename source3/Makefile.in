@@ -489,13 +489,15 @@ CLDAP_OBJ = libads/cldap.o \
 
 TLDAP_OBJ = lib/tldap.o lib/tldap_util.o lib/util_tsock.o
 
+SCHANNEL_OBJ = libsmb/credentials.o \
+	       ../libcli/auth/credentials.o
+
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clikrb5.o libsmb/clispnego.o ../lib/util/asn1.o \
 	     libsmb/clirap.o libsmb/clierror.o libsmb/climessage.o \
 	     libsmb/clireadwrite.o libsmb/clilist.o libsmb/cliprint.o \
 	     libsmb/clitrans.o libsmb/clisecdesc.o libsmb/clidgram.o \
 	     libsmb/clistr.o libsmb/cliquota.o libsmb/clifsinfo.o libsmb/clidfs.o \
-             libsmb/credentials.o ../libcli/auth/credentials.o \
 	     libsmb/clioplock.o libsmb/clirap2.o \
 	     libsmb/smb_seal.o libsmb/async_smb.o \
 	     $(LIBSAMBA_OBJ) \
@@ -504,7 +506,8 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     $(CLDAP_OBJ) \
 	     $(DRSUAPI_OBJ)
 
-RPC_CLIENT_OBJ1 = rpc_client/cli_netlogon.o
+RPC_CLIENT_OBJ1 = rpc_client/cli_netlogon.o \
+		  $(SCHANNEL_OBJ)
 
 LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 	       $(RPC_CLIENT_OBJ1) rpc_client/cli_reg.o $(RPC_CLIENT_OBJ) \
