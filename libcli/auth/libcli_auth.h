@@ -19,6 +19,7 @@
 
 #include "librpc/gen_ndr/netlogon.h"
 #include "librpc/gen_ndr/wkssvc.h"
+#include "librpc/gen_ndr/schannel.h"
 #include "libcli/auth/credentials.h"
 #include "libcli/auth/ntlm_check.h"
 #include "libcli/auth/proto.h"

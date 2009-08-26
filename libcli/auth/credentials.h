@@ -21,19 +21,6 @@
 
 #include "librpc/gen_ndr/netlogon.h"
 
-struct netlogon_creds_CredentialState {
-	uint32_t negotiate_flags;
-	uint8_t session_key[16];
-	uint32_t sequence;
-	struct netr_Credential seed;
-	struct netr_Credential client;
-	struct netr_Credential server;
-	uint16_t secure_channel_type;
-	const char *computer_name;
-	const char *account_name;
-	struct dom_sid *sid;
-};
-
 /* The 7 here seems to be required to get Win2k not to downgrade us
    to NT4.  Actually, anything other than 1ff would seem to do... */
 #define NETLOGON_NEG_AUTH2_FLAGS 0x000701ff
