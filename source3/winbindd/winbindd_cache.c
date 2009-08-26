@@ -2306,6 +2306,7 @@ NTSTATUS wcache_lookup_groupmem(struct winbindd_domain *domain,
 
 	*num_names = centry_uint32(centry);
 	if (*num_names == 0) {
+		centry_free(centry);
 		return NT_STATUS_OK;
 	}
 
@@ -2317,6 +2318,7 @@ NTSTATUS wcache_lookup_groupmem(struct winbindd_domain *domain,
 		TALLOC_FREE(*sid_mem);
 		TALLOC_FREE(*names);
 		TALLOC_FREE(*name_types);
+		centry_free(centry);
 		return NT_STATUS_NO_MEMORY;
 	}
 
