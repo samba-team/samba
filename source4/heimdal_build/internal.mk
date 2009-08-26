@@ -350,7 +350,6 @@ HEIMDAL_KRB5_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/krb5/heim_err.o \
 	$(heimdalsrcdir)/lib/krb5/k524_err.o \
 	$(heimdalsrcdir)/lib/krb5/krb_err.o \
-	$(heimdalsrcdir)/lib/hcrypto/evp-aes-cts.o \
 	$(heimdalbuildsrcdir)/krb5-glue.o
 
 $(eval $(call heimdal_proto_header_template, \
@@ -430,6 +429,7 @@ HEIMDAL_HCRYPTO_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/hcrypto/ui.o \
 	$(heimdalsrcdir)/lib/hcrypto/evp.o \
 	$(heimdalsrcdir)/lib/hcrypto/evp-hcrypto.o \
+	$(heimdalsrcdir)/lib/hcrypto/evp-aes-cts.o \
 	$(heimdalsrcdir)/lib/hcrypto/pkcs5.o \
 	$(heimdalsrcdir)/lib/hcrypto/pkcs12.o \
 	$(heimdalsrcdir)/lib/hcrypto/rand.o \
