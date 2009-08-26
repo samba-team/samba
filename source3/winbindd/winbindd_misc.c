@@ -414,26 +414,6 @@ enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *
 	return WINBINDD_OK;
 }
 
-void winbindd_getdcname(struct winbindd_cli_state *state)
-{
-	struct winbindd_domain *domain;
-
-	state->request->domain_name
-		[sizeof(state->request->domain_name)-1] = '\0';
-
-	DEBUG(3, ("[%5lu]: Get DC name for %s\n", (unsigned long)state->pid,
-		  state->request->domain_name));
-
-	domain = find_domain_from_name_noinit(state->request->domain_name);
-	if (domain && domain->internal) {
-		fstrcpy(state->response->data.dc_name, global_myname());
-		request_ok(state);	
-		return;
-	}
-
-	sendto_domain(state, find_our_domain());
-}
-
 enum winbindd_result winbindd_dual_getdcname(struct winbindd_domain *domain,
 					     struct winbindd_cli_state *state)
 {

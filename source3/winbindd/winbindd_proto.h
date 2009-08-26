@@ -447,7 +447,6 @@ void winbindd_list_ent(struct winbindd_cli_state *state, enum ent_type type);
 void winbindd_list_trusted_domains(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *domain,
 							struct winbindd_cli_state *state);
-void winbindd_getdcname(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_dual_getdcname(struct winbindd_domain *domain,
 					     struct winbindd_cli_state *state);
 void winbindd_show_sequence(struct winbindd_cli_state *state);
@@ -904,5 +903,12 @@ struct tevent_req *wb_dsgetdcname_send(TALLOC_CTX *mem_ctx,
 				       uint32_t flags);
 NTSTATUS wb_dsgetdcname_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			     struct netr_DsRGetDCNameInfo **pdcinfo);
+
+struct tevent_req *winbindd_getdcname_send(TALLOC_CTX *mem_ctx,
+					   struct tevent_context *ev,
+					   struct winbindd_cli_state *cli,
+					   struct winbindd_request *request);
+NTSTATUS winbindd_getdcname_recv(struct tevent_req *req,
+				 struct winbindd_response *response);
 
 #endif /*  _WINBINDD_PROTO_H_  */
