@@ -6,7 +6,4 @@ changetype: modify
 -
 replace: objectVersion
 objectVersion: 30
--
-replace: prefixMap
-prefixMap:: ${PREFIXMAP_B64}
 

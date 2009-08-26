@@ -151,18 +151,21 @@ class Schema(object):
         self.schema_data += open(setup_path("schema_samba4.ldif"), 'r').read()
         self.schema_data = substitute_var(self.schema_data, {"SCHEMADN": schemadn})
         check_all_substituted(self.schema_data)
-        prefixmap = open(setup_path("prefixMap.txt"), 'r').read()
-        prefixmap = b64encode(prefixmap)
-        
+
         self.schema_dn_modify = read_and_sub_file(setup_path("provision_schema_basedn_modify.ldif"),
                                                   {"SCHEMADN": schemadn,
-                                                   "PREFIXMAP_B64": prefixmap,
                                                    "SERVERDN": serverdn,
                                                    })
         self.schema_dn_add = read_and_sub_file(setup_path("provision_schema_basedn.ldif"),
                                                {"SCHEMADN": schemadn
                                                 })
-        self.ldb.set_schema_from_ldif(self.schema_dn_modify, self.schema_data)
+
+        prefixmap = open(setup_path("prefixMap.txt"), 'r').read()
+        prefixmap = b64encode(prefixmap)
+
+        # We don't actually add this ldif, just parse it
+        prefixmap_ldif = "dn: cn=schema\nprefixMap:: %s\n\n" % prefixmap
+        self.ldb.set_schema_from_ldif(prefixmap_ldif, self.schema_data)
 
     
 def check_install(lp, session_info, credentials):
@@ -910,6 +913,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
         message("Setting up sam.ldb schema")
         samdb.add_ldif(schema.schema_dn_add)
         samdb.modify_ldif(schema.schema_dn_modify)
+        samdb.write_prefixes_from_schema()
         samdb.add_ldif(schema.schema_data)
         setup_add_ldif(samdb, setup_path("aggregate_schema.ldif"), 
                        {"SCHEMADN": names.schemadn})
