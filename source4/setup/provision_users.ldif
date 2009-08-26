@@ -1,3 +1,24 @@
+# Add default primary groups (domain users, domain guests) - needed for
+# the users to find valid primary groups (samldb module)
+
+dn: CN=Domain Users,CN=Users,${DOMAINDN}
+objectClass: top
+objectClass: group
+description: All domain users
+objectSid: ${DOMAINSID}-513
+sAMAccountName: Domain Users
+isCriticalSystemObject: TRUE
+
+dn: CN=Domain Guests,CN=Users,${DOMAINDN}
+objectClass: top
+objectClass: group
+description: All domain guests
+objectSid: ${DOMAINSID}-514
+sAMAccountName: Domain Guests
+isCriticalSystemObject: TRUE
+
+# Add users
+
 dn: CN=Administrator,CN=Users,${DOMAINDN}
 objectClass: user
 description: Built-in account for administering the computer/domain
@@ -18,16 +39,6 @@ objectSid: ${DOMAINSID}-501
 sAMAccountName: Guest
 isCriticalSystemObject: TRUE
 
-dn: CN=Enterprise Admins,CN=Users,${DOMAINDN}
-objectClass: top
-objectClass: group
-description: Designated administrators of the enterprise
-member: CN=Administrator,CN=Users,${DOMAINDN}
-objectSid: ${DOMAINSID}-519
-adminCount: 1
-sAMAccountName: Enterprise Admins
-isCriticalSystemObject: TRUE
-
 dn: CN=krbtgt,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: person
@@ -42,6 +53,18 @@ accountExpires: 9223372036854775807
 sAMAccountName: krbtgt
 servicePrincipalName: kadmin/changepw
 userPassword:: ${KRBTGTPASS_B64}
+isCriticalSystemObject: TRUE
+
+# Add other groups
+
+dn: CN=Enterprise Admins,CN=Users,${DOMAINDN}
+objectClass: top
+objectClass: group
+description: Designated administrators of the enterprise
+member: CN=Administrator,CN=Users,${DOMAINDN}
+objectSid: ${DOMAINSID}-519
+adminCount: 1
+sAMAccountName: Enterprise Admins
 isCriticalSystemObject: TRUE
 
 dn: CN=Domain Computers,CN=Users,${DOMAINDN}
@@ -88,22 +111,6 @@ member: CN=Administrator,CN=Users,${DOMAINDN}
 objectSid: ${DOMAINSID}-512
 adminCount: 1
 sAMAccountName: Domain Admins
-isCriticalSystemObject: TRUE
-
-dn: CN=Domain Users,CN=Users,${DOMAINDN}
-objectClass: top
-objectClass: group
-description: All domain users
-objectSid: ${DOMAINSID}-513
-sAMAccountName: Domain Users
-isCriticalSystemObject: TRUE
-
-dn: CN=Domain Guests,CN=Users,${DOMAINDN}
-objectClass: top
-objectClass: group
-description: All domain guests
-objectSid: ${DOMAINSID}-514
-sAMAccountName: Domain Guests
 isCriticalSystemObject: TRUE
 
 dn: CN=Group Policy Creator Owners,CN=Users,${DOMAINDN}
@@ -390,6 +397,8 @@ sAMAccountName: Distributed COM Users
 systemFlags: -1946157056
 groupType: -2147483643
 isCriticalSystemObject: TRUE
+
+# Add well known security principals
 
 dn: CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
