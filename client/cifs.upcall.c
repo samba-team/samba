@@ -27,6 +27,7 @@ create dns_resolver * * /usr/local/sbin/cifs.upcall %k
 
 #include "includes.h"
 #include <keyutils.h>
+#include <getopt.h>
 
 #include "cifs_spnego.h"
 
@@ -357,6 +358,11 @@ usage(void)
 	fprintf(stderr, "Usage: %s [-v] key_serial\n", prog);
 }
 
+const struct option long_options[] = {
+	{ "version",	0, NULL, 'v' },
+	{ NULL,		0, NULL, 0 }
+};
+
 int main(const int argc, char *const argv[])
 {
 	struct cifs_spnego_msg *keydata = NULL;
@@ -374,7 +380,7 @@ int main(const int argc, char *const argv[])
 
 	openlog(prog, 0, LOG_DAEMON);
 
-	while ((c = getopt(argc, argv, "cv")) != -1) {
+	while ((c = getopt_long(argc, argv, "cv", long_options, NULL)) != -1) {
 		switch (c) {
 		case 'c':
 			/* legacy option -- skip it */
