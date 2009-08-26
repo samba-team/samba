@@ -817,7 +817,7 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 						const char *sitename,
 						struct sockaddr_storage *pss)
 {
-	char *dname = lock_path("smb_krb5");
+	char *dname;
 	char *tmpname = NULL;
 	char *fname = NULL;
 	char *file_contents = NULL;
@@ -828,6 +828,11 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 	char *realm_upper = NULL;
 	bool result = false;
 
+	if (!lp_create_krb5_conf()) {
+		return false;
+	}
+
+	dname = lock_path("smb_krb5");
 	if (!dname) {
 		return false;
 	}

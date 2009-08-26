@@ -199,6 +199,7 @@ struct global {
 	bool bWinbindOfflineLogon;
 	bool bWinbindNormalizeNames;
 	bool bWinbindRpcOnly;
+	bool bCreateKrb5Conf;
 	char *szIdmapBackend;
 	char *szIdmapAllocBackend;
 	char *szAddShareCommand;
@@ -4588,6 +4589,15 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
+	{
+		.label		= "create krb5 conf",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.ptr		= &Globals.bCreateKrb5Conf,
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
 
 	{NULL,  P_BOOL,  P_NONE,  NULL,  NULL,  NULL,  0}
 };
@@ -5005,6 +5015,7 @@ static void init_globals(bool first_time_only)
 #endif
 	Globals.bUnixExtensions = True;
 	Globals.bResetOnZeroVC = False;
+	Globals.bCreateKrb5Conf = true;
 
 	/* hostname lookups can be very expensive and are broken on
 	   a large number of sites (tridge) */
@@ -5359,6 +5370,7 @@ FN_GLOBAL_BOOL(lp_winbind_refresh_tickets, &Globals.bWinbindRefreshTickets)
 FN_GLOBAL_BOOL(lp_winbind_offline_logon, &Globals.bWinbindOfflineLogon)
 FN_GLOBAL_BOOL(lp_winbind_normalize_names, &Globals.bWinbindNormalizeNames)
 FN_GLOBAL_BOOL(lp_winbind_rpc_only, &Globals.bWinbindRpcOnly)
+FN_GLOBAL_BOOL(lp_create_krb5_conf, &Globals.bCreateKrb5Conf)
 
 FN_GLOBAL_CONST_STRING(lp_idmap_backend, &Globals.szIdmapBackend)
 FN_GLOBAL_STRING(lp_idmap_alloc_backend, &Globals.szIdmapAllocBackend)

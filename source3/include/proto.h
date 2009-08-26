@@ -3998,6 +3998,7 @@ bool lp_winbind_refresh_tickets(void);
 bool lp_winbind_offline_logon(void);
 bool lp_winbind_normalize_names(void);
 bool lp_winbind_rpc_only(void);
+bool lp_create_krb5_conf(void);
 const char **lp_idmap_domains(void);
 const char *lp_idmap_backend(void);
 char *lp_idmap_alloc_backend(void);
