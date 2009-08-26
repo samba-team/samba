@@ -653,7 +653,7 @@ static int dsdb_schema_setup_ldb_schema_attribute(struct ldb_context *ldb,
 
 
 #define GET_STRING_LDB(msg, attr, mem_ctx, p, elem, strict) do { \
-	struct ldb_val *get_string_val = ldb_msg_find_ldb_val(msg, attr); \
+	const struct ldb_val *get_string_val = ldb_msg_find_ldb_val(msg, attr); \
 	if (get_string_val == NULL) { \
 		if (strict) {					  \
 			d_printf("%s: %s == NULL\n", __location__, attr); \
