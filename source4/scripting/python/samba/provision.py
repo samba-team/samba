@@ -787,11 +787,21 @@ def setup_self_join(samdb, names,
               "DNSDOMAIN": names.dnsdomain,
               "SAMBA_VERSION_STRING": version,
               "DOMAIN_CONTROLLER_FUNCTIONALITY": str(domainControllerFunctionality)})
+
     setup_add_ldif(samdb, setup_path("provision_group_policy.ldif"), { 
               "POLICYGUID": policyguid,
               "DNSDOMAIN": names.dnsdomain,
               "DOMAINSID": str(domainsid),
               "DOMAINDN": names.domaindn})
+
+    # Setup fSMORoleOwner entries to point at the newly created DC entry
+    setup_modify_ldif(samdb, setup_path("provision_self_join_modify.ldif"), {
+              "DOMAINDN": names.domaindn,
+              "CONFIGDN": names.configdn,
+              "SCHEMADN": names.schemadn, 
+              "DEFAULTSITE": names.sitename,
+              "SERVERDN": names.serverdn
+              })
 
 
 def setup_samdb(path, setup_path, session_info, credentials, lp, 

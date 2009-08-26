@@ -61,9 +61,6 @@ uASCompat: 1
 replace: modifiedCount
 modifiedCount: 1
 -
-replace: fSMORoleOwner
-fSMORoleOwner: CN=NTDS Settings,${SERVERDN}
--
 replace: systemFlags
 systemFlags: -1946157056
 -

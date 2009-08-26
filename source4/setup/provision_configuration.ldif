@@ -656,7 +656,6 @@ objectClass: top
 objectClass: crossRefContainer
 systemFlags: -2147483648
 msDS-Behavior-Version: ${FOREST_FUNCTIONALALITY}
-fSMORoleOwner: CN=NTDS Settings,${SERVERDN}
 showInAdvancedViewOnly: TRUE
 
 dn: CN=Enterprise Configuration,CN=Partitions,${CONFIGDN}
@@ -749,7 +748,6 @@ dn: CN=NTDS Site Settings,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
 objectClass: top
 objectClass: applicationSiteSettings
 objectClass: nTDSSiteSettings
-interSiteTopologyGenerator: CN=NTDS Settings,${SERVERDN}
 
 dn: CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
 objectClass: top
