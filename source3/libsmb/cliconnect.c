@@ -1010,7 +1010,10 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 
 	/* make sure the server understands kerberos */
 	for (i=0;OIDs[i];i++) {
-		DEBUG(3,("got OID=%s\n", OIDs[i]));
+		if (i == 0)
+			DEBUG(3,("got OID=%s\n", OIDs[i]));
+		else
+			DEBUGADD(3,("got OID=%s\n", OIDs[i]));
 		if (strcmp(OIDs[i], OID_KERBEROS5_OLD) == 0 ||
 		    strcmp(OIDs[i], OID_KERBEROS5) == 0) {
 			cli->got_kerberos_mechanism = True;
