@@ -26,8 +26,8 @@
  *
  *  Component: ldb attribute scoped query control module
  *
- *  Description: this module searches all the the objects pointed
- *  		 by the DNs contained in the references attribute
+ *  Description: this module searches all the objects pointed by
+ *  		 the DNs contained in the references attribute
  *
  *  Author: Simo Sorce
  */
