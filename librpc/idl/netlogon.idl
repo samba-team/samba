@@ -937,7 +937,7 @@ interface netlogon
 	/*****************/
 	/* Function 0x0F */
 
-	typedef [bitmap32bit] bitmap {
+	typedef [public,bitmap32bit] bitmap {
 		NETLOGON_NEG_ACCOUNT_LOCKOUT		= 0x00000001,
 		NETLOGON_NEG_PERSISTENT_SAMREPL		= 0x00000002,
 		NETLOGON_NEG_ARCFOUR			= 0x00000004,
