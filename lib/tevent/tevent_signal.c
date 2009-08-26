@@ -70,10 +70,7 @@ static struct sig_state {
 */
 static uint32_t sig_count(struct sigcounter s)
 {
-	if (s.count >= s.seen) {
-		return s.count - s.seen;
-	}
-	return 1 + (0xFFFFFFFF & ~(s.seen - s.count));
+	return s.count - s.seen;
 }
 
 /*
