@@ -417,20 +417,24 @@ onefs_canon_acl(files_struct *fsp, struct ifs_security_descriptor *sd)
 	 * By walking down the list 3 separate times, we can avoid the need
 	 * to create multiple temp buffers and extra copies.
 	 */
-	for (cur = 0; cur < sd->dacl->num_aces; cur++)  {
-		if (sd->dacl->aces[cur].flags & IFS_ACE_FLAG_INHERITED_ACE)
-			new_aces[new_aces_count++] = sd->dacl->aces[cur];
-	}
 
+	/* Explict deny aces first */
 	for (cur = 0; cur < sd->dacl->num_aces; cur++)  {
 		if (!(sd->dacl->aces[cur].flags & IFS_ACE_FLAG_INHERITED_ACE) &&
 		    (sd->dacl->aces[cur].type == IFS_ACE_TYPE_ACCESS_DENIED))
 			new_aces[new_aces_count++] = sd->dacl->aces[cur];
 	}
 
+	/* Explict allow aces second */
 	for (cur = 0; cur < sd->dacl->num_aces; cur++)  {
 		if (!(sd->dacl->aces[cur].flags & IFS_ACE_FLAG_INHERITED_ACE) &&
 		    !(sd->dacl->aces[cur].type == IFS_ACE_TYPE_ACCESS_DENIED))
+			new_aces[new_aces_count++] = sd->dacl->aces[cur];
+	}
+
+	/* Inherited deny/allow aces third */
+	for (cur = 0; cur < sd->dacl->num_aces; cur++)  {
+		if ((sd->dacl->aces[cur].flags & IFS_ACE_FLAG_INHERITED_ACE))
 			new_aces[new_aces_count++] = sd->dacl->aces[cur];
 	}
 
