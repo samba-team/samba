@@ -896,4 +896,13 @@ struct tevent_req *winbindd_dsgetdcname_send(TALLOC_CTX *mem_ctx,
 NTSTATUS winbindd_dsgetdcname_recv(struct tevent_req *req,
 				   struct winbindd_response *response);
 
+struct tevent_req *wb_dsgetdcname_send(TALLOC_CTX *mem_ctx,
+				       struct tevent_context *ev,
+				       const char *domain_name,
+				       const struct GUID *domain_guid,
+				       const char *site_name,
+				       uint32_t flags);
+NTSTATUS wb_dsgetdcname_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			     struct netr_DsRGetDCNameInfo **pdcinfo);
+
 #endif /*  _WINBINDD_PROTO_H_  */
