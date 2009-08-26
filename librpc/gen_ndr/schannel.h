@@ -38,4 +38,17 @@ struct schannel_bind_ack {
 	uint32_t unknown3;
 }/* [public] */;
 
+struct netlogon_creds_CredentialState {
+	uint32_t negotiate_flags;
+	uint8_t session_key[16];
+	uint32_t sequence;
+	struct netr_Credential seed;
+	struct netr_Credential client;
+	struct netr_Credential server;
+	enum netr_SchannelType secure_channel_type;
+	const char *computer_name;/* [charset(UTF8)] */
+	const char *account_name;/* [charset(UTF8)] */
+	struct dom_sid *sid;/* [unique] */
+}/* [public,flag(LIBNDR_PRINT_ARRAY_HEX)] */;
+
 #endif /* _HEADER_schannel */

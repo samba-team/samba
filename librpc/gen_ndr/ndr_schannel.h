@@ -16,4 +16,7 @@ void ndr_print_schannel_bind(struct ndr_print *ndr, const char *name, const stru
 enum ndr_err_code ndr_push_schannel_bind_ack(struct ndr_push *ndr, int ndr_flags, const struct schannel_bind_ack *r);
 enum ndr_err_code ndr_pull_schannel_bind_ack(struct ndr_pull *ndr, int ndr_flags, struct schannel_bind_ack *r);
 void ndr_print_schannel_bind_ack(struct ndr_print *ndr, const char *name, const struct schannel_bind_ack *r);
+enum ndr_err_code ndr_push_netlogon_creds_CredentialState(struct ndr_push *ndr, int ndr_flags, const struct netlogon_creds_CredentialState *r);
+enum ndr_err_code ndr_pull_netlogon_creds_CredentialState(struct ndr_pull *ndr, int ndr_flags, struct netlogon_creds_CredentialState *r);
+void ndr_print_netlogon_creds_CredentialState(struct ndr_print *ndr, const char *name, const struct netlogon_creds_CredentialState *r);
 #endif /* _HEADER_NDR_schannel */

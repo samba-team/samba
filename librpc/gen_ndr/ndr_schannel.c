@@ -277,3 +277,114 @@ _PUBLIC_ void ndr_print_schannel_bind_ack(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_netlogon_creds_CredentialState(struct ndr_push *ndr, int ndr_flags, const struct netlogon_creds_CredentialState *r)
+{
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_push_align(ndr, 4));
+			NDR_CHECK(ndr_push_netr_NegotiateFlags(ndr, NDR_SCALARS, r->negotiate_flags));
+			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->session_key, 16));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sequence));
+			NDR_CHECK(ndr_push_netr_Credential(ndr, NDR_SCALARS, &r->seed));
+			NDR_CHECK(ndr_push_netr_Credential(ndr, NDR_SCALARS, &r->client));
+			NDR_CHECK(ndr_push_netr_Credential(ndr, NDR_SCALARS, &r->server));
+			NDR_CHECK(ndr_push_netr_SchannelType(ndr, NDR_SCALARS, r->secure_channel_type));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->computer_name, CH_UTF8)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->computer_name, CH_UTF8)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->computer_name, ndr_charset_length(r->computer_name, CH_UTF8), sizeof(uint8_t), CH_UTF8));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->account_name, CH_UTF8)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->account_name, CH_UTF8)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->account_name, ndr_charset_length(r->account_name, CH_UTF8), sizeof(uint8_t), CH_UTF8));
+			NDR_CHECK(ndr_push_unique_ptr(ndr, r->sid));
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+			if (r->sid) {
+				NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS, r->sid));
+			}
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_netlogon_creds_CredentialState(struct ndr_pull *ndr, int ndr_flags, struct netlogon_creds_CredentialState *r)
+{
+	uint32_t _ptr_sid;
+	TALLOC_CTX *_mem_save_sid_0;
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_pull_align(ndr, 4));
+			NDR_CHECK(ndr_pull_netr_NegotiateFlags(ndr, NDR_SCALARS, &r->negotiate_flags));
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->session_key, 16));
+			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sequence));
+			NDR_CHECK(ndr_pull_netr_Credential(ndr, NDR_SCALARS, &r->seed));
+			NDR_CHECK(ndr_pull_netr_Credential(ndr, NDR_SCALARS, &r->client));
+			NDR_CHECK(ndr_pull_netr_Credential(ndr, NDR_SCALARS, &r->server));
+			NDR_CHECK(ndr_pull_netr_SchannelType(ndr, NDR_SCALARS, &r->secure_channel_type));
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->computer_name));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->computer_name));
+			if (ndr_get_array_length(ndr, &r->computer_name) > ndr_get_array_size(ndr, &r->computer_name)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->computer_name), ndr_get_array_length(ndr, &r->computer_name));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->computer_name), sizeof(uint8_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->computer_name, ndr_get_array_length(ndr, &r->computer_name), sizeof(uint8_t), CH_UTF8));
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->account_name));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->account_name));
+			if (ndr_get_array_length(ndr, &r->account_name) > ndr_get_array_size(ndr, &r->account_name)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->account_name), ndr_get_array_length(ndr, &r->account_name));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->account_name), sizeof(uint8_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->account_name, ndr_get_array_length(ndr, &r->account_name), sizeof(uint8_t), CH_UTF8));
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sid));
+			if (_ptr_sid) {
+				NDR_PULL_ALLOC(ndr, r->sid);
+			} else {
+				r->sid = NULL;
+			}
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+			if (r->sid) {
+				_mem_save_sid_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->sid, 0);
+				NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS, r->sid));
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sid_0, 0);
+			}
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_netlogon_creds_CredentialState(struct ndr_print *ndr, const char *name, const struct netlogon_creds_CredentialState *r)
+{
+	ndr_print_struct(ndr, name, "netlogon_creds_CredentialState");
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
+		ndr->depth++;
+		ndr_print_netr_NegotiateFlags(ndr, "negotiate_flags", r->negotiate_flags);
+		ndr_print_array_uint8(ndr, "session_key", r->session_key, 16);
+		ndr_print_uint32(ndr, "sequence", r->sequence);
+		ndr_print_netr_Credential(ndr, "seed", &r->seed);
+		ndr_print_netr_Credential(ndr, "client", &r->client);
+		ndr_print_netr_Credential(ndr, "server", &r->server);
+		ndr_print_netr_SchannelType(ndr, "secure_channel_type", r->secure_channel_type);
+		ndr_print_string(ndr, "computer_name", r->computer_name);
+		ndr_print_string(ndr, "account_name", r->account_name);
+		ndr_print_ptr(ndr, "sid", r->sid);
+		ndr->depth++;
+		if (r->sid) {
+			ndr_print_dom_sid(ndr, "sid", r->sid);
+		}
+		ndr->depth--;
+		ndr->depth--;
+		ndr->flags = _flags_save_STRUCT;
+	}
+}
+
