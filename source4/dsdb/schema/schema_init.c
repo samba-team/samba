@@ -458,14 +458,17 @@ WERROR dsdb_find_prefix_for_oid(uint32_t num_prefixes, const struct dsdb_schema_
 WERROR dsdb_write_prefixes_from_schema_to_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 						     const struct dsdb_schema *schema)
 {
-	struct ldb_message msg;
+	struct ldb_message *msg = ldb_msg_new(mem_ctx);
 	struct ldb_dn *schema_dn;
-	struct ldb_message_element el;
 	struct prefixMapBlob pm;
 	struct ldb_val ndr_blob;
 	enum ndr_err_code ndr_err;
 	uint32_t i;
 	int ret;
+
+	if (!msg) {
+		return WERR_NOMEM;
+	}
 	
 	schema_dn = samdb_schema_dn(ldb);
 	if (!schema_dn) {
@@ -475,10 +478,11 @@ WERROR dsdb_write_prefixes_from_schema_to_ldb(TALLOC_CTX *mem_ctx, struct ldb_co
 
 	pm.version			= PREFIX_MAP_VERSION_DSDB;
 	pm.ctr.dsdb.num_mappings	= schema->num_prefixes;
-	pm.ctr.dsdb.mappings		= talloc_array(mem_ctx,
+	pm.ctr.dsdb.mappings		= talloc_array(msg,
 						struct drsuapi_DsReplicaOIDMapping,
 						pm.ctr.dsdb.num_mappings);
 	if (!pm.ctr.dsdb.mappings) {
+		talloc_free(msg);
 		return WERR_NOMEM;
 	}
 
@@ -487,26 +491,28 @@ WERROR dsdb_write_prefixes_from_schema_to_ldb(TALLOC_CTX *mem_ctx, struct ldb_co
 		pm.ctr.dsdb.mappings[i].oid.oid = talloc_strdup(pm.ctr.dsdb.mappings, schema->prefixes[i].oid);
 	}
 
-	ndr_err = ndr_push_struct_blob(&ndr_blob, ldb,
+	ndr_err = ndr_push_struct_blob(&ndr_blob, msg,
 				       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
 				       &pm,
 				       (ndr_push_flags_fn_t)ndr_push_prefixMapBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(msg);
 		return WERR_FOOBAR;
 	}
  
-	el.num_values = 1;
-	el.values = &ndr_blob;
-	el.flags = LDB_FLAG_MOD_REPLACE;
-	el.name = talloc_strdup(mem_ctx, "prefixMap");
- 
-	msg.dn = ldb_dn_copy(mem_ctx, schema_dn);
-	msg.num_elements = 1;
-	msg.elements = &el;
- 
-	ret = ldb_modify( ldb, &msg );
+	msg->dn = schema_dn;
+	ret = ldb_msg_add_value(msg, "prefixMap", &ndr_blob, NULL);
 	if (ret != 0) {
-		DEBUG(0,("dsdb_write_prefixes_from_schema_to_ldb: ldb_modify failed\n"));	
+		talloc_free(msg);
+		DEBUG(0,("dsdb_write_prefixes_from_schema_to_ldb: ldb_msg_add_value failed\n"));	
+		return WERR_NOMEM;
+ 	}
+ 
+	ret = samdb_replace( ldb, msg, msg );
+	talloc_free(msg);
+
+	if (ret != 0) {
+		DEBUG(0,("dsdb_write_prefixes_from_schema_to_ldb: samdb_replace failed\n"));	
 		return WERR_FOOBAR;
  	}
  
