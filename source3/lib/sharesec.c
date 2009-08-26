@@ -37,7 +37,7 @@ static int delete_fn(struct db_record *rec, void *priv)
 	return 0;
 }
 
-static bool share_info_db_init(void)
+bool share_info_db_init(void)
 {
 	const char *vstring = "INFO/version";
 	int32 vers_id;

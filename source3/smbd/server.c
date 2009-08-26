@@ -1218,6 +1218,15 @@ extern void build_options(bool screen);
 		return -1;
 	}
 
+	/* Open the share_info.tdb here, so we don't have to open
+	   after the fork on every single connection.  This is a small
+	   performance improvment and reduces the total number of system
+	   fds used. */
+	if (!share_info_db_init()) {
+		DEBUG(0,("ERROR: failed to load share info db.\n"));
+		exit(1);
+	}
+
 	/* only start the background queue daemon if we are 
 	   running as a daemon -- bad things will happen if
 	   smbd is launched via inetd and we fork a copy of 
