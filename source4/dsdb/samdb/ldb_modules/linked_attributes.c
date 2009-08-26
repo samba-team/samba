@@ -593,7 +593,7 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 	return ret;
 }
 
-/* delete, rename */
+/* delete */
 static int linked_attributes_del(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
@@ -645,7 +645,7 @@ static int linked_attributes_del(struct ldb_module *module, struct ldb_request *
 	return ldb_next_request(module, search_req);
 }
 
-/* delete, rename */
+/* rename */
 static int linked_attributes_rename(struct ldb_module *module, struct ldb_request *req)
 {
 	struct la_context *ac;
