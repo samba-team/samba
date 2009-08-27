@@ -491,7 +491,8 @@ NTSTATUS _netr_ServerAuthenticate3(pipes_struct *p,
 		   NETLOGON_NEG_FULL_SYNC_REPL |
 		   NETLOGON_NEG_MULTIPLE_SIDS |
 		   NETLOGON_NEG_REDO |
-		   NETLOGON_NEG_PASSWORD_CHANGE_REFUSAL;
+		   NETLOGON_NEG_PASSWORD_CHANGE_REFUSAL |
+		   NETLOGON_NEG_PASSWORD_SET2;
 
 	/* Ensure we support strong (128-bit) keys. */
 	if (in_neg_flags & NETLOGON_NEG_STRONG_KEYS) {
@@ -819,6 +820,59 @@ NTSTATUS _netr_ServerPasswordSet(pipes_struct *p,
 						   sampass,
 						   NULL,
 						   r->in.new_password,
+						   NULL);
+	TALLOC_FREE(sampass);
+	return status;
+}
+
+/****************************************************************
+ _netr_ServerPasswordSet2
+****************************************************************/
+
+NTSTATUS _netr_ServerPasswordSet2(pipes_struct *p,
+				  struct netr_ServerPasswordSet2 *r)
+{
+	NTSTATUS status;
+	struct netlogon_creds_CredentialState *creds;
+	struct samu *sampass;
+	DATA_BLOB plaintext;
+	struct samr_CryptPassword password_buf;
+
+	become_root();
+	status = netr_creds_server_step_check(p, p->mem_ctx,
+					      r->in.computer_name,
+					      r->in.credential,
+					      r->out.return_authenticator,
+					      &creds);
+	unbecome_root();
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(2,("_netr_ServerPasswordSet2: netlogon_creds_server_step "
+			"failed. Rejecting auth request from client %s machine account %s\n",
+			r->in.computer_name, creds->computer_name));
+		TALLOC_FREE(creds);
+		return status;
+	}
+
+	memcpy(password_buf.data, r->in.new_password->data, 512);
+	SIVAL(password_buf.data, 512, r->in.new_password->length);
+	netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
+
+	if (!extract_pw_from_buffer(p->mem_ctx, password_buf.data, &plaintext)) {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	status = netr_find_machine_account(p->mem_ctx,
+					   creds->account_name,
+					   &sampass);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = netr_set_machine_account_password(sampass,
+						   sampass,
+						   &plaintext,
+						   NULL,
 						   NULL);
 	TALLOC_FREE(sampass);
 	return status;
@@ -1362,16 +1416,6 @@ WERROR _netr_DsRGetSiteName(pipes_struct *p,
 
 NTSTATUS _netr_LogonGetDomainInfo(pipes_struct *p,
 				  struct netr_LogonGetDomainInfo *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _netr_ServerPasswordSet2(pipes_struct *p,
-				  struct netr_ServerPasswordSet2 *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
