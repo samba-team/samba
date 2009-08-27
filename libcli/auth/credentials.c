@@ -30,7 +30,17 @@ static void netlogon_creds_step_crypt(struct netlogon_creds_CredentialState *cre
 				      const struct netr_Credential *in,
 				      struct netr_Credential *out)
 {
-	des_crypt112(out->data, in->data, creds->session_key, 1);
+	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		AES_KEY key;
+		uint8_t iv[AES_BLOCK_SIZE];
+
+		AES_set_encrypt_key(creds->session_key, 128, &key);
+		ZERO_STRUCT(iv);
+
+		aes_cfb8_encrypt(in->data, out->data, 8, &key, iv, AES_ENCRYPT);
+	} else {
+		des_crypt112(out->data, in->data, creds->session_key, 1);
+	}
 }
 
 /*
@@ -83,6 +93,34 @@ static void netlogon_creds_init_128bit(struct netlogon_creds_CredentialState *cr
 	MD5Final(tmp, &md5);
 	hmac_md5_update(tmp, sizeof(tmp), &ctx);
 	hmac_md5_final(creds->session_key, &ctx);
+}
+
+/*
+  initialise the credentials state for AES/HMAC-SHA256-style 128 bit session keys
+
+  this call is made after the netr_ServerReqChallenge call
+*/
+static void netlogon_creds_init_hmac_sha256(struct netlogon_creds_CredentialState *creds,
+					    const struct netr_Credential *client_challenge,
+					    const struct netr_Credential *server_challenge,
+					    const struct samr_Password *machine_password)
+{
+	struct HMACSHA256Context ctx;
+	uint8_t digest[SHA256_DIGEST_LENGTH];
+
+	ZERO_STRUCT(creds->session_key);
+
+	hmac_sha256_init(machine_password->hash,
+			 sizeof(machine_password->hash),
+			 &ctx);
+	hmac_sha256_update(client_challenge->data, 8, &ctx);
+	hmac_sha256_update(server_challenge->data, 8, &ctx);
+	hmac_sha256_final(digest, &ctx);
+
+	memcpy(creds->session_key, digest, sizeof(creds->session_key));
+
+	ZERO_STRUCT(digest);
+	ZERO_STRUCT(ctx);
 }
 
 static void netlogon_creds_first_step(struct netlogon_creds_CredentialState *creds,
@@ -227,7 +265,12 @@ struct netlogon_creds_CredentialState *netlogon_creds_client_init(TALLOC_CTX *me
 	dump_data_pw("Server chall", server_challenge->data, sizeof(server_challenge->data));
 	dump_data_pw("Machine Pass", machine_password->hash, sizeof(machine_password->hash));
 
-	if (negotiate_flags & NETLOGON_NEG_128BIT) {
+	if (negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		netlogon_creds_init_hmac_sha256(creds,
+						client_challenge,
+						server_challenge,
+						machine_password);
+	} else if (negotiate_flags & NETLOGON_NEG_STRONG_KEYS) {
 		netlogon_creds_init_128bit(creds, client_challenge, server_challenge, machine_password);
 	} else {
 		netlogon_creds_init_64bit(creds, client_challenge, server_challenge, machine_password);
@@ -338,6 +381,10 @@ struct netlogon_creds_CredentialState *netlogon_creds_server_init(TALLOC_CTX *me
 	creds->negotiate_flags = negotiate_flags;
 	creds->secure_channel_type = secure_channel_type;
 
+	dump_data_pw("Client chall", client_challenge->data, sizeof(client_challenge->data));
+	dump_data_pw("Server chall", server_challenge->data, sizeof(server_challenge->data));
+	dump_data_pw("Machine Pass", machine_password->hash, sizeof(machine_password->hash));
+
 	creds->computer_name = talloc_strdup(creds, client_computer_name);
 	if (!creds->computer_name) {
 		talloc_free(creds);
@@ -349,7 +396,12 @@ struct netlogon_creds_CredentialState *netlogon_creds_server_init(TALLOC_CTX *me
 		return NULL;
 	}
 
-	if (negotiate_flags & NETLOGON_NEG_128BIT) {
+	if (negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		netlogon_creds_init_hmac_sha256(creds,
+						client_challenge,
+						server_challenge,
+						machine_password);
+	} else if (negotiate_flags & NETLOGON_NEG_STRONG_KEYS) {
 		netlogon_creds_init_128bit(creds, client_challenge, server_challenge, 
 					   machine_password);
 	} else {
@@ -359,6 +411,12 @@ struct netlogon_creds_CredentialState *netlogon_creds_server_init(TALLOC_CTX *me
 
 	netlogon_creds_first_step(creds, client_challenge, server_challenge);
 
+	dump_data_pw("Session key", creds->session_key, 16);
+	dump_data_pw("Client Credential ", creds->client.data, 8);
+	dump_data_pw("Server Credential ", creds->server.data, 8);
+
+	dump_data_pw("Credentials in", credentials_in->data, sizeof(credentials_in->data));
+
 	/* And before we leak information about the machine account
 	 * password, check that they got the first go right */
 	if (!netlogon_creds_server_check_internal(creds, credentials_in)) {
@@ -367,6 +425,8 @@ struct netlogon_creds_CredentialState *netlogon_creds_server_init(TALLOC_CTX *me
 	}
 
 	*credentials_out = creds->server;
+
+	dump_data_pw("Credentials out", credentials_out->data, sizeof(credentials_out->data));
 
 	return creds;
 }
