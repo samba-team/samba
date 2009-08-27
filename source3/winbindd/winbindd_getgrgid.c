@@ -122,6 +122,9 @@ NTSTATUS winbindd_getgrgid_recv(struct tevent_req *req,
 
 	status = winbindd_print_groupmembers(state->members, response,
 					     &num_members, &buf);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	response->data.gr.num_gr_mem = (uint32)num_members;
 
