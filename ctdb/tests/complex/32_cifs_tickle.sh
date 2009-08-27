@@ -85,7 +85,7 @@ fi
 
 tcptickle_sniff_start $src_socket "${test_ip}:${test_port}"
 
-echo "Disabling node $test_node"r
+echo "Disabling node $test_node"
 try_command_on_node 1 $CTDB disable -n $test_node
 onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node disabled
 
