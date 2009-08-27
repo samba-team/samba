@@ -655,6 +655,120 @@ static NTSTATUS netr_creds_server_step_check(pipes_struct *p,
 }
 
 /*************************************************************************
+ *************************************************************************/
+
+static NTSTATUS netr_find_machine_account(TALLOC_CTX *mem_ctx,
+					  const char *account_name,
+					  struct samu **sampassp)
+{
+	struct samu *sampass;
+	bool ret = false;
+	uint32_t acct_ctrl;
+
+	sampass = samu_new(mem_ctx);
+	if (!sampass) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	become_root();
+	ret = pdb_getsampwnam(sampass, account_name);
+	unbecome_root();
+
+	if (!ret) {
+		TALLOC_FREE(sampass);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/* Ensure the account exists and is a machine account. */
+
+	acct_ctrl = pdb_get_acct_ctrl(sampass);
+
+	if (!(acct_ctrl & ACB_WSTRUST ||
+	      acct_ctrl & ACB_SVRTRUST ||
+	      acct_ctrl & ACB_DOMTRUST)) {
+		TALLOC_FREE(sampass);
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	if (acct_ctrl & ACB_DISABLED) {
+		TALLOC_FREE(sampass);
+		return NT_STATUS_ACCOUNT_DISABLED;
+	}
+
+	*sampassp = sampass;
+
+	return NT_STATUS_OK;
+}
+
+/*************************************************************************
+ *************************************************************************/
+
+static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
+						  struct samu *sampass,
+						  DATA_BLOB *plaintext_blob,
+						  struct samr_Password *nt_hash,
+						  struct samr_Password *lm_hash)
+{
+	NTSTATUS status;
+	const uchar *old_pw;
+	const char *plaintext = NULL;
+	size_t plaintext_len;
+	struct samr_Password nt_hash_local;
+
+	if (!sampass) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (plaintext_blob) {
+		if (!convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX,
+					   plaintext_blob->data, plaintext_blob->length,
+					   &plaintext, &plaintext_len, false))
+		{
+			plaintext = NULL;
+			mdfour(nt_hash_local.hash, plaintext_blob->data, plaintext_blob->length);
+			nt_hash = &nt_hash_local;
+		}
+	}
+
+	if (plaintext) {
+		if (!pdb_set_plaintext_passwd(sampass, plaintext)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+
+		goto done;
+	}
+
+	if (nt_hash) {
+		old_pw = pdb_get_nt_passwd(sampass);
+
+		if (old_pw && memcmp(nt_hash->hash, old_pw, 16) == 0) {
+			/* Avoid backend modificiations and other fun if the
+			   client changed the password to the *same thing* */
+		} else {
+			/* LM password should be NULL for machines */
+			if (!pdb_set_lanman_passwd(sampass, NULL, PDB_CHANGED)) {
+				return NT_STATUS_NO_MEMORY;
+			}
+			if (!pdb_set_nt_passwd(sampass, nt_hash->hash, PDB_CHANGED)) {
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			if (!pdb_set_pass_last_set_time(sampass, time(NULL), PDB_CHANGED)) {
+				/* Not quite sure what this one qualifies as, but this will do */
+				return NT_STATUS_UNSUCCESSFUL;
+			}
+		}
+	}
+
+ done:
+	become_root();
+	status = pdb_update_sam_account(sampass);
+	unbecome_root();
+
+	return status;
+}
+
+/*************************************************************************
  _netr_ServerPasswordSet
  *************************************************************************/
 
@@ -663,10 +777,7 @@ NTSTATUS _netr_ServerPasswordSet(pipes_struct *p,
 {
 	NTSTATUS status = NT_STATUS_OK;
 	struct samu *sampass=NULL;
-	bool ret = False;
 	int i;
-	uint32 acct_ctrl;
-	const uchar *old_pw;
 	struct netlogon_creds_CredentialState *creds;
 
 	DEBUG(5,("_netr_ServerPasswordSet: %d\n", __LINE__));
@@ -690,37 +801,6 @@ NTSTATUS _netr_ServerPasswordSet(pipes_struct *p,
 	DEBUG(3,("_netr_ServerPasswordSet: Server Password Set by remote machine:[%s] on account [%s]\n",
 			r->in.computer_name, creds->computer_name));
 
-	sampass = samu_new( NULL );
-	if (!sampass) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	become_root();
-	ret = pdb_getsampwnam(sampass, creds->account_name);
-	unbecome_root();
-
-	if (!ret) {
-		TALLOC_FREE(sampass);
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	/* Ensure the account exists and is a machine account. */
-
-	acct_ctrl = pdb_get_acct_ctrl(sampass);
-
-	if (!(acct_ctrl & ACB_WSTRUST ||
-		      acct_ctrl & ACB_SVRTRUST ||
-		      acct_ctrl & ACB_DOMTRUST)) {
-		TALLOC_FREE(sampass);
-		return NT_STATUS_NO_SUCH_USER;
-	}
-
-	if (pdb_get_acct_ctrl(sampass) & ACB_DISABLED) {
-		TALLOC_FREE(sampass);
-		return NT_STATUS_ACCOUNT_DISABLED;
-	}
-
-	/* Woah - what does this to to the credential chain ? JRA */
 	netlogon_creds_des_decrypt(creds, r->in.new_password);
 
 	DEBUG(100,("_netr_ServerPasswordSet: new given value was :\n"));
@@ -728,37 +808,18 @@ NTSTATUS _netr_ServerPasswordSet(pipes_struct *p,
 		DEBUG(100,("%02X ", r->in.new_password->hash[i]));
 	DEBUG(100,("\n"));
 
-	old_pw = pdb_get_nt_passwd(sampass);
-
-	if (old_pw && memcmp(r->in.new_password->hash, old_pw, 16) == 0) {
-		/* Avoid backend modificiations and other fun if the
-		   client changed the password to the *same thing* */
-
-		ret = True;
-	} else {
-
-		/* LM password should be NULL for machines */
-		if (!pdb_set_lanman_passwd(sampass, NULL, PDB_CHANGED)) {
-			TALLOC_FREE(sampass);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		if (!pdb_set_nt_passwd(sampass, r->in.new_password->hash, PDB_CHANGED)) {
-			TALLOC_FREE(sampass);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		if (!pdb_set_pass_last_set_time(sampass, time(NULL), PDB_CHANGED)) {
-			TALLOC_FREE(sampass);
-			/* Not quite sure what this one qualifies as, but this will do */
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-
-		become_root();
-		status = pdb_update_sam_account(sampass);
-		unbecome_root();
+	status = netr_find_machine_account(p->mem_ctx,
+					   creds->account_name,
+					   &sampass);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
+	status = netr_set_machine_account_password(sampass,
+						   sampass,
+						   NULL,
+						   r->in.new_password,
+						   NULL);
 	TALLOC_FREE(sampass);
 	return status;
 }
