@@ -194,6 +194,30 @@ static PyObject *py_samdb_set_domain_sid(PyLdbObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_samdb_get_domain_sid(PyLdbObject *self, PyObject *args)
+{ 
+	PyObject *py_ldb;
+	struct ldb_context *ldb;
+	const struct dom_sid *sid;
+	PyObject *ret;
+	char *retstr;
+
+	if (!PyArg_ParseTuple(args, "O", &py_ldb))
+		return NULL;
+	
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	sid = samdb_domain_sid(ldb);
+	if (!sid) {
+		PyErr_SetString(PyExc_RuntimeError, "samdb_domain_sid failed");
+		return NULL;
+	} 
+	retstr = dom_sid_string(NULL, sid);
+	ret = PyString_FromString(retstr);
+	talloc_free(retstr);
+	return ret;
+}
+
 static PyObject *py_ldb_register_samba_handlers(PyObject *self, PyObject *args)
 {
 	PyObject *py_ldb;
@@ -434,6 +458,9 @@ static PyMethodDef py_misc_methods[] = {
 	{ "samdb_set_domain_sid", (PyCFunction)py_samdb_set_domain_sid, METH_VARARGS,
 		"samdb_set_domain_sid(samdb, sid)\n"
 		"Set SID of domain to use." },
+	{ "samdb_get_domain_sid", (PyCFunction)py_samdb_get_domain_sid, METH_VARARGS,
+		"samdb_get_domain_sid(samdb)\n"
+		"Get SID of domain in use." },
 	{ "ldb_register_samba_handlers", (PyCFunction)py_ldb_register_samba_handlers, METH_VARARGS,
 		"ldb_register_samba_handlers(ldb)\n"
 		"Register Samba-specific LDB modules and schemas." },

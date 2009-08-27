@@ -233,6 +233,12 @@ class Ldb(ldb.Ldb):
         """
         glue.samdb_set_domain_sid(self, sid)
 
+    def domain_sid(self):
+        """Read the domain SID used by this LDB.
+
+        """
+        glue.samdb_get_domain_sid(self)
+
     def set_schema_from_ldif(self, pf, df):
         glue.dsdb_set_schema_from_ldif(self, pf, df)
 
