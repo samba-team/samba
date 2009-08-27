@@ -110,7 +110,7 @@ bool test_SetupCredentials(struct dcerpc_pipe *p, struct torture_context *tctx,
 
 	a.in.server_name = NULL;
 	a.in.account_name = talloc_asprintf(tctx, "%s$", machine_name);
-	a.in.secure_channel_type = SEC_CHAN_BDC;
+	a.in.secure_channel_type = cli_credentials_get_secure_channel_type(credentials);
 	a.in.computer_name = machine_name;
 	a.in.credentials = &credentials3;
 	a.out.return_credentials = &credentials3;
@@ -130,7 +130,9 @@ bool test_SetupCredentials(struct dcerpc_pipe *p, struct torture_context *tctx,
 	/* This allows the tests to continue against the more fussy windows 2008 */
 	if (NT_STATUS_EQUAL(status, NT_STATUS_DOWNGRADE_DETECTED)) {
 		return test_SetupCredentials2(p, tctx, NETLOGON_NEG_AUTH2_ADS_FLAGS, 
-					      credentials, SEC_CHAN_BDC, creds_out);
+					      credentials,
+					      cli_credentials_get_secure_channel_type(credentials),
+					      creds_out);
 	}
 
 	torture_assert_ntstatus_ok(tctx, status, "ServerAuthenticate");
@@ -238,7 +240,7 @@ static bool test_SetupCredentials3(struct dcerpc_pipe *p, struct torture_context
 
 	a.in.server_name = NULL;
 	a.in.account_name = talloc_asprintf(tctx, "%s$", machine_name);
-	a.in.secure_channel_type = SEC_CHAN_BDC;
+	a.in.secure_channel_type = cli_credentials_get_secure_channel_type(machine_credentials);
 	a.in.computer_name = machine_name;
 	a.in.negotiate_flags = &negotiate_flags;
 	a.in.credentials = &credentials3;
@@ -290,7 +292,7 @@ static bool test_SetPassword(struct torture_context *tctx,
 
 	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.account_name = talloc_asprintf(tctx, "%s$", TEST_MACHINE_NAME);
-	r.in.secure_channel_type = SEC_CHAN_BDC;
+	r.in.secure_channel_type = cli_credentials_get_secure_channel_type(machine_credentials);
 	r.in.computer_name = TEST_MACHINE_NAME;
 	r.in.credential = &credential;
 	r.in.new_password = &new_password;
@@ -458,7 +460,7 @@ static bool test_SetPassword2(struct torture_context *tctx,
 
 	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.account_name = talloc_asprintf(tctx, "%s$", TEST_MACHINE_NAME);
-	r.in.secure_channel_type = SEC_CHAN_BDC;
+	r.in.secure_channel_type = cli_credentials_get_secure_channel_type(machine_credentials);
 	r.in.computer_name = TEST_MACHINE_NAME;
 	r.in.credential = &credential;
 	r.in.new_password = &new_password;
@@ -618,7 +620,7 @@ static bool test_GetPassword(struct torture_context *tctx,
 
 	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.account_name = talloc_asprintf(tctx, "%s$", TEST_MACHINE_NAME);
-	r.in.secure_channel_type = SEC_CHAN_BDC;
+	r.in.secure_channel_type = cli_credentials_get_secure_channel_type(machine_credentials);
 	r.in.computer_name = TEST_MACHINE_NAME;
 	r.in.credential = &credential;
 	r.out.return_authenticator = &return_authenticator;
@@ -649,7 +651,7 @@ static bool test_GetTrustPasswords(struct torture_context *tctx,
 
 	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.account_name = talloc_asprintf(tctx, "%s$", TEST_MACHINE_NAME);
-	r.in.secure_channel_type = SEC_CHAN_BDC;
+	r.in.secure_channel_type = cli_credentials_get_secure_channel_type(machine_credentials);
 	r.in.computer_name = TEST_MACHINE_NAME;
 	r.in.credential = &credential;
 	r.out.return_authenticator = &return_authenticator;
@@ -1715,7 +1717,8 @@ static bool test_DatabaseSync2(struct torture_context *tctx,
 
 	if (!test_SetupCredentials2(p, tctx, NETLOGON_NEG_AUTH2_FLAGS, 
 				    machine_credentials,
-				    SEC_CHAN_BDC, &creds)) {
+				    cli_credentials_get_secure_channel_type(machine_credentials),
+				    &creds)) {
 		return false;
 	}
 
@@ -2170,7 +2173,7 @@ static bool test_netr_ServerGetTrustInfo(struct torture_context *tctx,
 
 	r.in.server_name		= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.account_name		= talloc_asprintf(tctx, "%s$", TEST_MACHINE_NAME);
-	r.in.secure_channel_type	= SEC_CHAN_BDC;
+	r.in.secure_channel_type	= cli_credentials_get_secure_channel_type(machine_credentials);
 	r.in.computer_name		= TEST_MACHINE_NAME;
 	r.in.credential			= &a;
 
