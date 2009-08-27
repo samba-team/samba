@@ -447,10 +447,6 @@ static struct winbindd_dispatch_table {
 	{ WINBINDD_LIST_TRUSTDOM, winbindd_list_trusted_domains,
 	  "LIST_TRUSTDOM" },
 
-	/* SID related functions */
-
-	{ WINBINDD_LOOKUPRIDS, winbindd_lookuprids, "LOOKUPRIDS" },
-
 	/* Lookup related functions */
 
 	{ WINBINDD_ALLOCATE_UID, winbindd_allocate_uid, "ALLOCATE_UID" },
@@ -530,6 +526,8 @@ static struct winbindd_async_dispatch_table async_nonpriv_table[] = {
 	  winbindd_getgrnam_send, winbindd_getgrnam_recv },
 	{ WINBINDD_GETUSERSIDS, "GETUSERSIDS",
 	  winbindd_getusersids_send, winbindd_getusersids_recv },
+	{ WINBINDD_LOOKUPRIDS, "LOOKUPRIDS",
+	  winbindd_lookuprids_send, winbindd_lookuprids_recv },
 	{ WINBINDD_SETPWENT, "SETPWENT",
 	  winbindd_setpwent_send, winbindd_setpwent_recv },
 	{ WINBINDD_GETPWENT, "GETPWENT",

@@ -190,4 +190,16 @@ NTSTATUS rpccli_wbint_DsGetDcName(struct rpc_pipe_client *cli,
 				  const char *site_name /* [in] [unique,charset(UTF8)] */,
 				  uint32_t flags /* [in]  */,
 				  struct netr_DsRGetDCNameInfo **dc_info /* [out] [ref] */);
+struct tevent_req *rpccli_wbint_LookupRids_send(TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						struct rpc_pipe_client *cli,
+						struct wbint_RidArray *_rids /* [in] [ref] */,
+						struct wbint_Principals *_names /* [out] [ref] */);
+NTSTATUS rpccli_wbint_LookupRids_recv(struct tevent_req *req,
+				      TALLOC_CTX *mem_ctx,
+				      NTSTATUS *result);
+NTSTATUS rpccli_wbint_LookupRids(struct rpc_pipe_client *cli,
+				 TALLOC_CTX *mem_ctx,
+				 struct wbint_RidArray *rids /* [in] [ref] */,
+				 struct wbint_Principals *names /* [out] [ref] */);
 #endif /* __CLI_WBINT__ */

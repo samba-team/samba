@@ -694,64 +694,6 @@ static bool parse_ridlist(TALLOC_CTX *mem_ctx, char *ridstr,
 	return True;
 }
 
-enum winbindd_result winbindd_dual_lookuprids(struct winbindd_domain *domain,
-					      struct winbindd_cli_state *state)
-{
-	uint32 *rids = NULL;
-	size_t i, buflen, num_rids = 0;
-	ssize_t len;
-	DOM_SID domain_sid;
-	char *domain_name;
-	char **names;
-	enum lsa_SidType *types;
-	NTSTATUS status;
-	char *result;
-
-	DEBUG(10, ("Looking up RIDs for domain %s (%s)\n",
-		   state->request->domain_name,
-		   state->request->data.sid));
-
-	if (!parse_ridlist(state->mem_ctx, state->request->extra_data.data,
-			   &rids, &num_rids)) {
-		DEBUG(5, ("Could not parse ridlist\n"));
-		return WINBINDD_ERROR;
-	}
-
-	if (!string_to_sid(&domain_sid, state->request->data.sid)) {
-		DEBUG(5, ("Could not parse domain sid %s\n",
-			  state->request->data.sid));
-		return WINBINDD_ERROR;
-	}
-
-	status = domain->methods->rids_to_names(domain, state->mem_ctx,
-						&domain_sid, rids, num_rids,
-						&domain_name,
-						&names, &types);
-
-	if (!NT_STATUS_IS_OK(status) &&
-	    !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
-		return WINBINDD_ERROR;
-	}
-
-	len = 0;
-	buflen = 0;
-	result = NULL;
-
-	for (i=0; i<num_rids; i++) {
-		sprintf_append(state->mem_ctx, &result, &len, &buflen,
-			       "%d %s\n", types[i], names[i]);
-	}
-
-	fstrcpy(state->response->data.domain_name, domain_name);
-
-	if (result != NULL) {
-		state->response->extra_data.data = result;
-		state->response->length += len+1;
-	}
-
-	return WINBINDD_OK;
-}
-
 static void getsidaliases_recv(TALLOC_CTX *mem_ctx, bool success,
 			       struct winbindd_response *response,
 			       void *c, void *private_data)

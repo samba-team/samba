@@ -102,8 +102,6 @@ bool print_sidlist(TALLOC_CTX *mem_ctx, const DOM_SID *sids,
 		   size_t num_sids, char **result, ssize_t *len);
 bool parse_sidlist(TALLOC_CTX *mem_ctx, const char *sidstr,
 		   DOM_SID **sids, size_t *num_sids);
-enum winbindd_result winbindd_dual_lookuprids(struct winbindd_domain *domain,
-					      struct winbindd_cli_state *state);
 void winbindd_getsidaliases_async(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
 				  const DOM_SID *sids, size_t num_sids,
@@ -847,6 +845,13 @@ struct tevent_req *winbindd_getusersids_send(TALLOC_CTX *mem_ctx,
 					     struct winbindd_request *request);
 NTSTATUS winbindd_getusersids_recv(struct tevent_req *req,
 				   struct winbindd_response *response);
+
+struct tevent_req *winbindd_lookuprids_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct winbindd_cli_state *cli,
+					    struct winbindd_request *request);
+NTSTATUS winbindd_lookuprids_recv(struct tevent_req *req,
+				  struct winbindd_response *response);
 
 struct tevent_req *wb_query_user_list_send(TALLOC_CTX *mem_ctx,
 					   struct tevent_context *ev,

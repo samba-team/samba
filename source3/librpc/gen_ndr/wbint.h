@@ -230,4 +230,17 @@ struct wbint_DsGetDcName {
 
 };
 
+
+struct wbint_LookupRids {
+	struct {
+		struct wbint_RidArray *rids;/* [ref] */
+	} in;
+
+	struct {
+		struct wbint_Principals *names;/* [ref] */
+		NTSTATUS result;
+	} out;
+
+};
+
 #endif /* _HEADER_wbint */

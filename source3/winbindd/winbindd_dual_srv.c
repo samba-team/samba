@@ -289,3 +289,43 @@ done:
 
 	return status;
 }
+
+NTSTATUS _wbint_LookupRids(pipes_struct *p, struct wbint_LookupRids *r)
+{
+	struct winbindd_domain *domain = wb_child_domain();
+	char *domain_name;
+	char **names;
+	enum lsa_SidType *types;
+	struct wbint_Principal *result;
+	NTSTATUS status;
+	int i;
+
+	if (domain == NULL) {
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
+
+	status = domain->methods->rids_to_names(
+		domain, talloc_tos(), &domain->sid, r->in.rids->rids,
+		r->in.rids->num_rids, &domain_name, &names, &types);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	result = talloc_array(p->mem_ctx, struct wbint_Principal,
+			      r->in.rids->num_rids);
+	if (result == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<r->in.rids->num_rids; i++) {
+		sid_compose(&result[i].sid, &domain->sid, r->in.rids->rids[i]);
+		result[i].type = types[i];
+		result[i].name = talloc_move(result, &names[i]);
+	}
+	TALLOC_FREE(types);
+	TALLOC_FREE(names);
+
+	r->out.names->num_principals = r->in.rids->num_rids;
+	r->out.names->principals = result;
+	return NT_STATUS_OK;
+}

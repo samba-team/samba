@@ -126,4 +126,9 @@ interface wbint
 	[in]					uint32 flags,
 	[out] 					netr_DsRGetDCNameInfo **dc_info
 	);
+
+    NTSTATUS wbint_LookupRids(
+	[in] wbint_RidArray *rids,
+	[out] wbint_Principals *names
+	);
 }

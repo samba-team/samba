@@ -1199,6 +1199,7 @@ WINBINDD_OBJ1 = \
 		winbindd/winbindd_getgrgid.o \
 		winbindd/winbindd_getgrnam.o \
 		winbindd/winbindd_getusersids.o \
+		winbindd/winbindd_lookuprids.o \
 		winbindd/winbindd_setpwent.o \
 		winbindd/winbindd_getpwent.o \
 		winbindd/winbindd_endpwent.o \

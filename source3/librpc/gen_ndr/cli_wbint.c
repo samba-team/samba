@@ -2297,3 +2297,164 @@ NTSTATUS rpccli_wbint_DsGetDcName(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_wbint_LookupRids_state {
+	struct wbint_LookupRids orig;
+	struct wbint_LookupRids tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_wbint_LookupRids_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_wbint_LookupRids_send(TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						struct rpc_pipe_client *cli,
+						struct wbint_RidArray *_rids /* [in] [ref] */,
+						struct wbint_Principals *_names /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_wbint_LookupRids_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_wbint_LookupRids_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.rids = _rids;
+
+	/* Out parameters */
+	state->orig.out.names = _names;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(wbint_LookupRids, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_wbint_LookupRids_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_wbint,
+				    NDR_WBINT_LOOKUPRIDS,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_wbint_LookupRids_done, req);
+	return req;
+}
+
+static void rpccli_wbint_LookupRids_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_wbint_LookupRids_state *state = tevent_req_data(
+		req, struct rpccli_wbint_LookupRids_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.names = *state->tmp.out.names;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(wbint_LookupRids, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_wbint_LookupRids_recv(struct tevent_req *req,
+				      TALLOC_CTX *mem_ctx,
+				      NTSTATUS *result)
+{
+	struct rpccli_wbint_LookupRids_state *state = tevent_req_data(
+		req, struct rpccli_wbint_LookupRids_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS rpccli_wbint_LookupRids(struct rpc_pipe_client *cli,
+				 TALLOC_CTX *mem_ctx,
+				 struct wbint_RidArray *rids /* [in] [ref] */,
+				 struct wbint_Principals *names /* [out] [ref] */)
+{
+	struct wbint_LookupRids r;
+	NTSTATUS status;
+
+	/* In parameters */
+	r.in.rids = rids;
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(wbint_LookupRids, &r);
+	}
+
+	status = cli->dispatch(cli,
+				mem_ctx,
+				&ndr_table_wbint,
+				NDR_WBINT_LOOKUPRIDS,
+				&r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(wbint_LookupRids, &r);
+	}
+
+	if (NT_STATUS_IS_ERR(status)) {
+		return status;
+	}
+
+	/* Return variables */
+	*names = *r.out.names;
+
+	/* Return result */
+	return r.out.result;
+}
+
