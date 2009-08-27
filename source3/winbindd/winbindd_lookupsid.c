@@ -1,6 +1,6 @@
 /*
    Unix SMB/CIFS implementation.
-   async implementation of WINBINDD_GETPWNAM
+   async implementation of WINBINDD_LOOKUPSID
    Copyright (C) Volker Lendecke 2009
 
    This program is free software; you can redistribute it and/or modify
