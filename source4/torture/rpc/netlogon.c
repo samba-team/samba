@@ -342,6 +342,82 @@ static bool test_SetPassword(struct torture_context *tctx,
 }
 
 /*
+  try a change password for our machine account
+*/
+static bool test_SetPassword_flags(struct torture_context *tctx,
+				   struct dcerpc_pipe *p,
+				   struct cli_credentials *machine_credentials,
+				   uint32_t negotiate_flags)
+{
+	NTSTATUS status;
+	struct netr_ServerPasswordSet r;
+	const char *password;
+	struct netlogon_creds_CredentialState *creds;
+	struct netr_Authenticator credential, return_authenticator;
+	struct samr_Password new_password;
+
+	if (!test_SetupCredentials2(p, tctx, negotiate_flags,
+				    machine_credentials,
+				    cli_credentials_get_secure_channel_type(machine_credentials),
+				    &creds)) {
+		return false;
+	}
+
+	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.account_name = talloc_asprintf(tctx, "%s$", TEST_MACHINE_NAME);
+	r.in.secure_channel_type = cli_credentials_get_secure_channel_type(machine_credentials);
+	r.in.computer_name = TEST_MACHINE_NAME;
+	r.in.credential = &credential;
+	r.in.new_password = &new_password;
+	r.out.return_authenticator = &return_authenticator;
+
+	password = generate_random_str(tctx, 8);
+	E_md4hash(password, new_password.hash);
+
+	netlogon_creds_des_encrypt(creds, &new_password);
+
+	torture_comment(tctx, "Testing ServerPasswordSet on machine account\n");
+	torture_comment(tctx, "Changing machine account password to '%s'\n",
+			password);
+
+	netlogon_creds_client_authenticator(creds, &credential);
+
+	status = dcerpc_netr_ServerPasswordSet(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "ServerPasswordSet");
+
+	if (!netlogon_creds_client_check(creds, &r.out.return_authenticator->cred)) {
+		torture_comment(tctx, "Credential chaining failed\n");
+	}
+
+	/* by changing the machine password twice we test the
+	   credentials chaining fully, and we verify that the server
+	   allows the password to be set to the same value twice in a
+	   row (match win2k3) */
+	torture_comment(tctx,
+		"Testing a second ServerPasswordSet on machine account\n");
+	torture_comment(tctx,
+		"Changing machine account password to '%s' (same as previous run)\n", password);
+
+	netlogon_creds_client_authenticator(creds, &credential);
+
+	status = dcerpc_netr_ServerPasswordSet(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "ServerPasswordSet (2)");
+
+	if (!netlogon_creds_client_check(creds, &r.out.return_authenticator->cred)) {
+		torture_comment(tctx, "Credential chaining failed\n");
+	}
+
+	cli_credentials_set_password(machine_credentials, password, CRED_SPECIFIED);
+
+	torture_assert(tctx,
+		test_SetupCredentials(p, tctx, machine_credentials, &creds),
+		"ServerPasswordSet failed to actually change the password");
+
+	return true;
+}
+
+
+/*
   generate a random password for password change tests
 */
 static DATA_BLOB netlogon_very_rand_pass(TALLOC_CTX *mem_ctx, int len)
@@ -2590,6 +2666,30 @@ static bool test_ManyGetDCName(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_SetPassword_with_flags(struct torture_context *tctx,
+					struct dcerpc_pipe *p,
+					struct cli_credentials *machine_credentials)
+{
+	uint32_t flags[] = { 0, NETLOGON_NEG_STRONG_KEYS };
+	struct netlogon_creds_CredentialState *creds;
+	int i;
+
+	if (!test_SetupCredentials2(p, tctx, 0,
+				    machine_credentials,
+				    cli_credentials_get_secure_channel_type(machine_credentials),
+				    &creds)) {
+		torture_skip(tctx, "DC does not support negotiation of 64bit session keys");
+	}
+
+	for (i=0; i < ARRAY_SIZE(flags); i++) {
+		torture_assert(tctx,
+			test_SetPassword_flags(tctx, p, machine_credentials, flags[i]),
+			talloc_asprintf(tctx, "failed to test SetPassword negotiating with 0x%08x flags", flags[i]));
+	}
+
+	return true;
+}
+
 struct torture_suite *torture_rpc_netlogon(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "NETLOGON");
@@ -2645,6 +2745,7 @@ struct torture_suite *torture_rpc_netlogon_s3(TALLOC_CTX *mem_ctx)
 
 	torture_rpc_tcase_add_test_creds(tcase, "SamLogon", test_SamLogon);
 	torture_rpc_tcase_add_test_creds(tcase, "SetPassword", test_SetPassword);
+	torture_rpc_tcase_add_test_creds(tcase, "SetPassword_with_flags", test_SetPassword_with_flags);
 	torture_rpc_tcase_add_test(tcase, "LogonControl", test_LogonControl);
 	torture_rpc_tcase_add_test(tcase, "LogonControl2", test_LogonControl2);
 	torture_rpc_tcase_add_test(tcase, "LogonControl2Ex", test_LogonControl2Ex);
