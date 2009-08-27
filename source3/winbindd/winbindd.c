@@ -431,8 +431,6 @@ static struct winbindd_dispatch_table {
 	{ WINBINDD_ENDPWENT, winbindd_endpwent, "ENDPWENT" },
 	{ WINBINDD_GETPWENT, winbindd_getpwent, "GETPWENT" },
 
-	{ WINBINDD_GETUSERSIDS, winbindd_getusersids, "GETUSERSIDS" },
-
 	/* Group functions */
 
 	{ WINBINDD_SETGRENT, winbindd_setgrent, "SETGRENT" },
@@ -538,6 +536,8 @@ static struct winbindd_async_dispatch_table async_nonpriv_table[] = {
 	  winbindd_getgrgid_send, winbindd_getgrgid_recv },
 	{ WINBINDD_GETGRNAM, "GETGRNAM",
 	  winbindd_getgrnam_send, winbindd_getgrnam_recv },
+	{ WINBINDD_GETUSERSIDS, "GETUSERSIDS",
+	  winbindd_getusersids_send, winbindd_getusersids_recv },
 
 	{ 0, NULL, NULL, NULL }
 };

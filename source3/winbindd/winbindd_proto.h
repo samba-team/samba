@@ -114,10 +114,6 @@ void winbindd_getsidaliases_async(struct winbindd_domain *domain,
 				  void *private_data);
 enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
 						 struct winbindd_cli_state *state);
-void winbindd_gettoken_async(TALLOC_CTX *mem_ctx, const DOM_SID *user_sid,
-			     void (*cont)(void *private_data, bool success,
-					  DOM_SID *sids, size_t num_sids),
-			     void *private_data);
 void query_user_async(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 		      const DOM_SID *sid,
 		      void (*cont)(void *private_data, bool success,
@@ -845,5 +841,12 @@ struct tevent_req *winbindd_getgrnam_send(TALLOC_CTX *mem_ctx,
 					  struct winbindd_request *request);
 NTSTATUS winbindd_getgrnam_recv(struct tevent_req *req,
 				struct winbindd_response *response);
+
+struct tevent_req *winbindd_getusersids_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct winbindd_cli_state *cli,
+					     struct winbindd_request *request);
+NTSTATUS winbindd_getusersids_recv(struct tevent_req *req,
+				   struct winbindd_response *response);
 
 #endif /*  _WINBINDD_PROTO_H_  */
