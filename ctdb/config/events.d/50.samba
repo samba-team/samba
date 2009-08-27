@@ -73,7 +73,7 @@ testparm_background_update() {
 	while [ $timeleft -gt 0 ]; do
 	    timeleft=$(($timeleft - 1))
 	    # see if the process still exists
-	    kill -0 $pid > /dev/null 2>&1 || {
+	    /bin/kill -0 $pid > /dev/null 2>&1 || {
 		# it doesn't exist, grab its exit status
 		wait $pid
 		[ $? = 0 ] || {
@@ -99,7 +99,7 @@ testparm_background_update() {
 	done
 	# it took more than 10 seconds - kill it off
 	rm -f "${tmpfile}"
-	kill -9 "$pid" > /dev/null 2>&1
+	/bin/kill -9 "$pid" > /dev/null 2>&1
 	echo "50.samba: timed out updating smbconf cache in background"
 	exit 1
     ) &
