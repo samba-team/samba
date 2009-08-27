@@ -119,6 +119,10 @@ interface wbint
 	[out] wbint_userinfos *users
 	);
 
+    NTSTATUS wbint_QueryGroupList(
+	[out] wbint_Principals *groups
+	);
+
     NTSTATUS wbint_DsGetDcName(
 	[in,string,charset(UTF8)]		char *domain_name,
 	[in,unique]				GUID *domain_guid,

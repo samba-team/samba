@@ -1064,6 +1064,86 @@ static bool api_wbint_QueryUserList(pipes_struct *p)
 	return true;
 }
 
+static bool api_wbint_QueryGroupList(pipes_struct *p)
+{
+	const struct ndr_interface_call *call;
+	struct ndr_pull *pull;
+	struct ndr_push *push;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+	struct wbint_QueryGroupList *r;
+
+	call = &ndr_table_wbint.calls[NDR_WBINT_QUERYGROUPLIST];
+
+	r = talloc(talloc_tos(), struct wbint_QueryGroupList);
+	if (r == NULL) {
+		return false;
+	}
+
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull = ndr_pull_init_blob(&blob, r, NULL);
+	if (pull == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(wbint_QueryGroupList, r);
+	}
+
+	ZERO_STRUCT(r->out);
+	r->out.groups = talloc_zero(r, struct wbint_Principals);
+	if (r->out.groups == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	r->out.result = _wbint_QueryGroupList(p, r);
+
+	if (p->rng_fault_state) {
+		talloc_free(r);
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(wbint_QueryGroupList, r);
+	}
+
+	push = ndr_push_init_ctx(r, NULL);
+	if (push == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	blob = ndr_push_blob(push);
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
+		talloc_free(r);
+		return false;
+	}
+
+	talloc_free(r);
+
+	return true;
+}
+
 static bool api_wbint_DsGetDcName(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
@@ -1241,6 +1321,7 @@ static struct api_struct api_wbint_cmds[] =
 	{"WBINT_QUERYSEQUENCENUMBER", NDR_WBINT_QUERYSEQUENCENUMBER, api_wbint_QuerySequenceNumber},
 	{"WBINT_LOOKUPGROUPMEMBERS", NDR_WBINT_LOOKUPGROUPMEMBERS, api_wbint_LookupGroupMembers},
 	{"WBINT_QUERYUSERLIST", NDR_WBINT_QUERYUSERLIST, api_wbint_QueryUserList},
+	{"WBINT_QUERYGROUPLIST", NDR_WBINT_QUERYGROUPLIST, api_wbint_QueryGroupList},
 	{"WBINT_DSGETDCNAME", NDR_WBINT_DSGETDCNAME, api_wbint_DsGetDcName},
 	{"WBINT_LOOKUPRIDS", NDR_WBINT_LOOKUPRIDS, api_wbint_LookupRids},
 };
@@ -1427,6 +1508,18 @@ NTSTATUS rpc_wbint_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, co
 			}
 
 			r->out.result = _wbint_QueryUserList(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WBINT_QUERYGROUPLIST: {
+			struct wbint_QueryGroupList *r = (struct wbint_QueryGroupList *)_r;
+			ZERO_STRUCT(r->out);
+			r->out.groups = talloc_zero(mem_ctx, struct wbint_Principals);
+			if (r->out.groups == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _wbint_QueryGroupList(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 

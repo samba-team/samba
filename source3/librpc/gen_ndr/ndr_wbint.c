@@ -1691,6 +1691,67 @@ _PUBLIC_ void ndr_print_wbint_QueryUserList(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_wbint_QueryGroupList(struct ndr_push *ndr, int flags, const struct wbint_QueryGroupList *r)
+{
+	if (flags & NDR_IN) {
+	}
+	if (flags & NDR_OUT) {
+		if (r->out.groups == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_wbint_Principals(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.groups));
+		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_wbint_QueryGroupList(struct ndr_pull *ndr, int flags, struct wbint_QueryGroupList *r)
+{
+	TALLOC_CTX *_mem_save_groups_0;
+	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		NDR_PULL_ALLOC(ndr, r->out.groups);
+		ZERO_STRUCTP(r->out.groups);
+	}
+	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.groups);
+		}
+		_mem_save_groups_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.groups, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_wbint_Principals(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.groups));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_groups_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_wbint_QueryGroupList(struct ndr_print *ndr, const char *name, int flags, const struct wbint_QueryGroupList *r)
+{
+	ndr_print_struct(ndr, name, "wbint_QueryGroupList");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "wbint_QueryGroupList");
+		ndr->depth++;
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "wbint_QueryGroupList");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "groups", r->out.groups);
+		ndr->depth++;
+		ndr_print_wbint_Principals(ndr, "groups", r->out.groups);
+		ndr->depth--;
+		ndr_print_NTSTATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_wbint_DsGetDcName(struct ndr_push *ndr, int flags, const struct wbint_DsGetDcName *r)
 {
 	if (flags & NDR_IN) {
@@ -2034,6 +2095,14 @@ static const struct ndr_interface_call wbint_calls[] = {
 		false,
 	},
 	{
+		"wbint_QueryGroupList",
+		sizeof(struct wbint_QueryGroupList),
+		(ndr_push_flags_fn_t) ndr_push_wbint_QueryGroupList,
+		(ndr_pull_flags_fn_t) ndr_pull_wbint_QueryGroupList,
+		(ndr_print_function_t) ndr_print_wbint_QueryGroupList,
+		false,
+	},
+	{
 		"wbint_DsGetDcName",
 		sizeof(struct wbint_DsGetDcName),
 		(ndr_push_flags_fn_t) ndr_push_wbint_DsGetDcName,
@@ -2078,7 +2147,7 @@ const struct ndr_interface_table ndr_table_wbint = {
 		NDR_WBINT_VERSION
 	},
 	.helpstring	= NDR_WBINT_HELPSTRING,
-	.num_calls	= 15,
+	.num_calls	= 16,
 	.calls		= wbint_calls,
 	.endpoints	= &wbint_endpoints,
 	.authservices	= &wbint_authservices

@@ -209,6 +209,46 @@ NTSTATUS _wbint_QueryUserList(pipes_struct *p, struct wbint_QueryUserList *r)
 		&r->out.users->userinfos);
 }
 
+NTSTATUS _wbint_QueryGroupList(pipes_struct *p, struct wbint_QueryGroupList *r)
+{
+	struct winbindd_domain *domain = wb_child_domain();
+	uint32_t i, num_groups;
+	struct acct_info *groups;
+	struct wbint_Principal *result;
+	NTSTATUS status;
+
+	if (domain == NULL) {
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
+
+	status = domain->methods->enum_dom_groups(domain, talloc_tos(),
+						  &num_groups, &groups);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	result = talloc_array(r->out.groups, struct wbint_Principal,
+			      num_groups);
+	if (result == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<num_groups; i++) {
+		sid_compose(&result[i].sid, &domain->sid, groups[i].rid);
+		result[i].type = SID_NAME_DOM_GRP;
+		result[i].name = talloc_strdup(result, groups[i].acct_name);
+		if (result[i].name == NULL) {
+			TALLOC_FREE(result);
+			TALLOC_FREE(groups);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	r->out.groups->num_principals = num_groups;
+	r->out.groups->principals = result;
+	return NT_STATUS_OK;
+}
+
 NTSTATUS _wbint_DsGetDcName(pipes_struct *p, struct wbint_DsGetDcName *r)
 {
 	struct winbindd_domain *domain = wb_child_domain();

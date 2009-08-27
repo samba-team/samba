@@ -14,6 +14,7 @@ NTSTATUS _wbint_LookupUserGroups(pipes_struct *p, struct wbint_LookupUserGroups 
 NTSTATUS _wbint_QuerySequenceNumber(pipes_struct *p, struct wbint_QuerySequenceNumber *r);
 NTSTATUS _wbint_LookupGroupMembers(pipes_struct *p, struct wbint_LookupGroupMembers *r);
 NTSTATUS _wbint_QueryUserList(pipes_struct *p, struct wbint_QueryUserList *r);
+NTSTATUS _wbint_QueryGroupList(pipes_struct *p, struct wbint_QueryGroupList *r);
 NTSTATUS _wbint_DsGetDcName(pipes_struct *p, struct wbint_DsGetDcName *r);
 NTSTATUS _wbint_LookupRids(pipes_struct *p, struct wbint_LookupRids *r);
 void wbint_get_pipe_fns(struct api_struct **fns, int *n_fns);
@@ -31,6 +32,7 @@ NTSTATUS _wbint_LookupUserGroups(pipes_struct *p, struct wbint_LookupUserGroups 
 NTSTATUS _wbint_QuerySequenceNumber(pipes_struct *p, struct wbint_QuerySequenceNumber *r);
 NTSTATUS _wbint_LookupGroupMembers(pipes_struct *p, struct wbint_LookupGroupMembers *r);
 NTSTATUS _wbint_QueryUserList(pipes_struct *p, struct wbint_QueryUserList *r);
+NTSTATUS _wbint_QueryGroupList(pipes_struct *p, struct wbint_QueryGroupList *r);
 NTSTATUS _wbint_DsGetDcName(pipes_struct *p, struct wbint_DsGetDcName *r);
 NTSTATUS _wbint_LookupRids(pipes_struct *p, struct wbint_LookupRids *r);
 NTSTATUS rpc_wbint_init(void);

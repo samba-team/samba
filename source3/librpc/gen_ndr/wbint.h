@@ -215,6 +215,15 @@ struct wbint_QueryUserList {
 };
 
 
+struct wbint_QueryGroupList {
+	struct {
+		struct wbint_Principals *groups;/* [ref] */
+		NTSTATUS result;
+	} out;
+
+};
+
+
 struct wbint_DsGetDcName {
 	struct {
 		const char *domain_name;/* [ref,charset(UTF8)] */

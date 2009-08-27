@@ -172,6 +172,16 @@ NTSTATUS rpccli_wbint_QueryUserList_recv(struct tevent_req *req,
 NTSTATUS rpccli_wbint_QueryUserList(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
 				    struct wbint_userinfos *users /* [out] [ref] */);
+struct tevent_req *rpccli_wbint_QueryGroupList_send(TALLOC_CTX *mem_ctx,
+						    struct tevent_context *ev,
+						    struct rpc_pipe_client *cli,
+						    struct wbint_Principals *_groups /* [out] [ref] */);
+NTSTATUS rpccli_wbint_QueryGroupList_recv(struct tevent_req *req,
+					  TALLOC_CTX *mem_ctx,
+					  NTSTATUS *result);
+NTSTATUS rpccli_wbint_QueryGroupList(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx,
+				     struct wbint_Principals *groups /* [out] [ref] */);
 struct tevent_req *rpccli_wbint_DsGetDcName_send(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
 						 struct rpc_pipe_client *cli,
