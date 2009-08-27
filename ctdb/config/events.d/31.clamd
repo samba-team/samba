@@ -15,7 +15,7 @@ case $CTDB_INIT_STYLE in
 		CTDB_SERVICE_CLAMD="clamav"
 		CTDB_CONFIG_CLAMD="clamav"
 		;;
-	ubuntu)
+	debian)
 		CTDB_SERVICE_CLAMD="clamav"
 		CTDB_CONFIG_CLAMD="clamav"
 		;;

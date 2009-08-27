@@ -62,7 +62,7 @@ CTDB_RECOVERY_LOCK="/some/place/on/shared/storage"
 # should ctdb manage starting/stopping the Apache web server httpd?
 # CTDB_MANAGES_HTTPD
 
-# The init style (redhat/suse/ubuntu...) is usually auto-detected.
+# The init style (redhat/suse/debian...) is usually auto-detected.
 # The names of init scripts of services managed by CTDB are set
 # based on the detected init style. You can override the init style
 # auto-detection here to explicitly use a scheme. This might be

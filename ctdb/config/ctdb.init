@@ -162,7 +162,7 @@ start() {
 	    echo
 	    [ $RETVAL -eq 0 ] && touch /var/lock/subsys/ctdb || RETVAL=1
 	    ;;
-	ubuntu)
+	debian)
 	    start-stop-daemon --start --quiet --background \
 		--exec $ctdbd -- $CTDB_OPTIONS
 	    RETVAL=$?
