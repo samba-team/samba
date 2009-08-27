@@ -68,6 +68,7 @@ struct winbindd_cli_state {
 	struct getent_state *getgrent_state;      /* State for getgrent() */
 
 	struct getpwent_state *pwent_state; /* State for getpwent() */
+	struct getgrent_state *grent_state; /* State for getgrent() */
 };
 
 /* State between get{pw,gr}ent() calls */
@@ -85,6 +86,13 @@ struct getpwent_state {
 	int next_user;
 	int num_users;
 	struct wbint_userinfo *users;
+};
+
+struct getgrent_state {
+	struct winbindd_domain *domain;
+	int next_group;
+	int num_groups;
+	struct wbint_Principal *groups;
 };
 
 /* Storage for cached getpwent() user entries */

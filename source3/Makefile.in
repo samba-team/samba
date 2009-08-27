@@ -1182,6 +1182,7 @@ WINBINDD_OBJ1 = \
 		winbindd/wb_query_user_list.o \
 		winbindd/wb_fill_pwent.o \
 		winbindd/wb_next_pwent.o \
+		winbindd/wb_next_grent.o \
 		winbindd/wb_dsgetdcname.o \
 		winbindd/winbindd_lookupsid.o \
 		winbindd/winbindd_lookupname.o \

@@ -916,4 +916,12 @@ struct tevent_req *winbindd_getdcname_send(TALLOC_CTX *mem_ctx,
 NTSTATUS winbindd_getdcname_recv(struct tevent_req *req,
 				 struct winbindd_response *response);
 
+struct tevent_req *wb_next_grent_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      int max_nesting,
+				      struct getgrent_state *gstate,
+				      struct winbindd_gr *gr);
+NTSTATUS wb_next_grent_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			    struct talloc_dict **members);
+
 #endif /*  _WINBINDD_PROTO_H_  */
