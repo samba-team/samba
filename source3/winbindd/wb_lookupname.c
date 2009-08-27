@@ -41,34 +41,36 @@ struct tevent_req *wb_lookupname_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct wb_lookupname_state *state;
 	struct winbindd_domain *domain;
-	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state, struct wb_lookupname_state);
 	if (req == NULL) {
 		return NULL;
 	}
 	state->ev = ev;
-	state->dom_name = dom_name;
-	state->name = name;
 	state->flags = flags;
 
-	domain = find_lookup_domain_from_name(dom_name);
+	/*
+	 * Uppercase domain and name so that we become cache-friendly
+	 */
+	state->dom_name = talloc_strdup_upper(state, dom_name);
+	if (tevent_req_nomem(state->dom_name, req)) {
+		return tevent_req_post(req, ev);
+	}
+	state->name = talloc_strdup_upper(state, name);
+	if (tevent_req_nomem(state->name, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	domain = find_lookup_domain_from_name(state->dom_name);
 	if (domain == NULL) {
-		DEBUG(5, ("Could not find domain for %s\n", dom_name));
+		DEBUG(5, ("Could not find domain for %s\n", state->dom_name));
 		tevent_req_nterror(req, NT_STATUS_NONE_MAPPED);
 		return tevent_req_post(req, ev);
 	}
 
-	status = wcache_name_to_sid(domain, dom_name, name,
-				    &state->sid, &state->type);
-	if (NT_STATUS_IS_OK(status)) {
-		tevent_req_done(req);
-		return tevent_req_post(req, ev);
-	}
-
 	subreq = rpccli_wbint_LookupName_send(
-		state, ev, domain->child.rpccli, dom_name, name, flags,
-		&state->type, &state->sid);
+		state, ev, domain->child.rpccli, state->dom_name, state->name,
+		flags, &state->type, &state->sid);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}

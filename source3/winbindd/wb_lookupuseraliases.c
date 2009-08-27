@@ -37,7 +37,6 @@ struct tevent_req *wb_lookupuseraliases_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct wb_lookupuseraliases_state *state;
-	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct wb_lookupuseraliases_state);
@@ -46,14 +45,6 @@ struct tevent_req *wb_lookupuseraliases_send(TALLOC_CTX *mem_ctx,
 	}
 	state->sids.num_sids = num_sids;
 	state->sids.sids = CONST_DISCARD(struct dom_sid *, sids);
-
-	status = wcache_lookup_useraliases(domain, state, num_sids, sids,
-					   &state->rids.num_rids,
-					   &state->rids.rids);
-	if (NT_STATUS_IS_OK(status)) {
-		tevent_req_done(req);
-		return tevent_req_post(req, ev);
-	}
 
 	subreq = rpccli_wbint_LookupUserAliases_send(
 		state, ev, domain->child.rpccli, &state->sids, &state->rids);

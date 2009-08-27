@@ -38,8 +38,6 @@ struct tevent_req *wb_lookupsid_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct wb_lookupsid_state *state;
-	char *dom_name, *name;
-	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state, struct wb_lookupsid_state);
 	if (req == NULL) {
@@ -53,15 +51,6 @@ struct tevent_req *wb_lookupsid_send(TALLOC_CTX *mem_ctx,
 		DEBUG(5, ("Could not find domain for sid %s\n",
 			  sid_string_dbg(sid)));
 		tevent_req_nterror(req, NT_STATUS_NONE_MAPPED);
-		return tevent_req_post(req, ev);
-	}
-
-	status = wcache_sid_to_name(state->lookup_domain, sid, state,
-				    &dom_name, &name, &state->type);
-	if (NT_STATUS_IS_OK(status)) {
-		state->domname = dom_name;
-		state->name = name;
-		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
 

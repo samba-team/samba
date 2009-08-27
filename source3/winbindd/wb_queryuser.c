@@ -35,7 +35,6 @@ struct tevent_req *wb_queryuser_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct wb_queryuser_state *state;
 	struct winbindd_domain *domain;
-	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state, struct wb_queryuser_state);
 	if (req == NULL) {
@@ -51,12 +50,6 @@ struct tevent_req *wb_queryuser_send(TALLOC_CTX *mem_ctx,
 
 	state->info = talloc(state, struct wbint_userinfo);
 	if (tevent_req_nomem(state->info, req)) {
-		return tevent_req_post(req, ev);
-	}
-
-	status = wcache_query_user(domain, state, &state->sid, state->info);
-	if (NT_STATUS_IS_OK(status)) {
-		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
 

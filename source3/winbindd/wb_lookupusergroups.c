@@ -36,7 +36,6 @@ struct tevent_req *wb_lookupusergroups_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct wb_lookupusergroups_state *state;
-	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct wb_lookupusergroups_state);
@@ -44,14 +43,6 @@ struct tevent_req *wb_lookupusergroups_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	sid_copy(&state->sid, sid);
-
-	status = wcache_lookup_usergroups(domain, state, sid,
-					  &state->sids.num_sids,
-					  &state->sids.sids);
-	if (NT_STATUS_IS_OK(status)) {
-		tevent_req_done(req);
-		return tevent_req_post(req, ev);
-	}
 
 	subreq = rpccli_wbint_LookupUserGroups_send(
 		state, ev, domain->child.rpccli, &state->sid, &state->sids);

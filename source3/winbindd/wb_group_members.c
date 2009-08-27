@@ -52,11 +52,6 @@ static struct tevent_req *wb_lookupgroupmem_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct wb_lookupgroupmem_state *state;
 	struct winbindd_domain *domain;
-	uint32_t num_names;
-	struct dom_sid *sid_mem;
-	char **names;
-	uint32_t *name_types;
-	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct wb_lookupgroupmem_state);
@@ -68,32 +63,6 @@ static struct tevent_req *wb_lookupgroupmem_send(TALLOC_CTX *mem_ctx,
 	domain = find_domain_from_sid_noinit(group_sid);
 	if (domain == NULL) {
 		tevent_req_nterror(req, NT_STATUS_NO_SUCH_GROUP);
-		return tevent_req_post(req, ev);
-	}
-
-	status = wcache_lookup_groupmem(domain, state, &state->sid, &num_names,
-					&sid_mem, &names, &name_types);
-	if (NT_STATUS_IS_OK(status)) {
-		int i;
-		state->members.members = talloc_array(
-			state, struct wbint_GroupMember, num_names);
-		if (tevent_req_nomem(state->members.members, req)) {
-			return tevent_req_post(req, ev);
-		}
-		state->members.num_members = num_names;
-		for (i=0; i<num_names; i++) {
-			struct wbint_GroupMember *m;
-			const char *name;
-			m = &state->members.members[i];
-			sid_copy(&m->sid, &sid_mem[i]);
-			name = names[i];
-			m->name = talloc_move(state->members.members, &name);
-			m->type = (enum lsa_SidType)name_types[i];
-		}
-		TALLOC_FREE(sid_mem);
-		TALLOC_FREE(names);
-		TALLOC_FREE(name_types);
-		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
 
