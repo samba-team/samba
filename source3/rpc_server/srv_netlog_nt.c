@@ -741,8 +741,7 @@ NTSTATUS _netr_ServerPasswordSet(pipes_struct *p,
 		return NT_STATUS_ACCOUNT_DISABLED;
 	}
 
-	/* Woah - what does this to to the credential chain ? JRA */
-	cred_hash3(pwd, r->in.new_password->hash, p->dc->sess_key, 0);
+	des_crypt112_16(pwd, r->in.new_password->hash, p->dc->sess_key, 0);
 
 	DEBUG(100,("_netr_ServerPasswordSet: new given value was :\n"));
 	for(i = 0; i < sizeof(pwd); i++)
