@@ -924,4 +924,23 @@ struct tevent_req *wb_next_grent_send(TALLOC_CTX *mem_ctx,
 NTSTATUS wb_next_grent_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			    struct talloc_dict **members);
 
+struct tevent_req *winbindd_setgrent_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct winbindd_cli_state *cli,
+					  struct winbindd_request *request);
+NTSTATUS winbindd_setgrent_recv(struct tevent_req *req,
+				struct winbindd_response *response);
+struct tevent_req *winbindd_getgrent_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct winbindd_cli_state *cli,
+					  struct winbindd_request *request);
+NTSTATUS winbindd_getgrent_recv(struct tevent_req *req,
+				struct winbindd_response *response);
+struct tevent_req *winbindd_endgrent_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct winbindd_cli_state *cli,
+					  struct winbindd_request *request);
+NTSTATUS winbindd_endgrent_recv(struct tevent_req *req,
+				struct winbindd_response *response);
+
 #endif /*  _WINBINDD_PROTO_H_  */

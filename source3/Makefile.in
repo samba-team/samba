@@ -1204,6 +1204,9 @@ WINBINDD_OBJ1 = \
 		winbindd/winbindd_setpwent.o \
 		winbindd/winbindd_getpwent.o \
 		winbindd/winbindd_endpwent.o \
+		winbindd/winbindd_setgrent.o \
+		winbindd/winbindd_getgrent.o \
+		winbindd/winbindd_endgrent.o \
 		winbindd/winbindd_dsgetdcname.o \
 		winbindd/winbindd_getdcname.o \
 		auth/token_util.o \

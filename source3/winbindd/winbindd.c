@@ -425,13 +425,6 @@ static struct winbindd_dispatch_table {
 	const char *winbindd_cmd_name;
 } dispatch_table[] = {
 
-	/* Group functions */
-
-	{ WINBINDD_SETGRENT, winbindd_setgrent, "SETGRENT" },
-	{ WINBINDD_ENDGRENT, winbindd_endgrent, "ENDGRENT" },
-	{ WINBINDD_GETGRENT, winbindd_getgrent, "GETGRENT" },
-	{ WINBINDD_GETGRLST, winbindd_getgrent, "GETGRLST" },
-
 	/* PAM auth functions */
 
 	{ WINBINDD_PAM_AUTH, winbindd_pam_auth, "PAM_AUTH" },
@@ -538,6 +531,12 @@ static struct winbindd_async_dispatch_table async_nonpriv_table[] = {
 	  winbindd_dsgetdcname_send, winbindd_dsgetdcname_recv },
 	{ WINBINDD_GETDCNAME, "GETDCNAME",
 	  winbindd_getdcname_send, winbindd_getdcname_recv },
+	{ WINBINDD_SETGRENT, "SETGRENT",
+	  winbindd_setgrent_send, winbindd_setgrent_recv },
+	{ WINBINDD_GETGRENT, "GETGRENT",
+	  winbindd_getgrent_send, winbindd_getgrent_recv },
+	{ WINBINDD_ENDGRENT, "ENDGRENT",
+	  winbindd_endgrent_send, winbindd_endgrent_recv },
 
 	{ 0, NULL, NULL, NULL }
 };
