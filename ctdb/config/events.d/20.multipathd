@@ -52,7 +52,7 @@ multipathd_check()
 		timeleft=$(($timeleft - 1))
 
 		# see if the process still exists
-		kill -0 $pid > /dev/null 2>&1 || {
+		/bin/kill -0 $pid > /dev/null 2>&1 || {
 			# it doesn't exist, grab its exit status
 			wait $pid
 			[ $? = 0 ] || {
@@ -87,7 +87,7 @@ case $cmd in
 
      monitor)
 	multipathd_check
-	[ "$?" == "0" ] || {
+	[ "$?" = "0" ] || {
 		echo 20.multipathd: monitoring of multipathing failed
 		exit 1
 	}
