@@ -392,6 +392,12 @@ int ctdb_attach_persistent(struct ctdb_context *ctdb)
 		s = talloc_strdup(ctdb, de->d_name);
 		CTDB_NO_MEMORY(ctdb, s);
 
+		/* ignore names ending in .bak */
+		p = strstr(s, ".bak");
+		if (p != NULL) {
+			continue;
+		}
+
 		/* only accept names ending in .tdb */
 		p = strstr(s, ".tdb.");
 		if (len < 7 || p == NULL) {
