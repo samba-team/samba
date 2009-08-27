@@ -62,10 +62,6 @@ else
 fi
 
 build_ctdb_options () {
-    [ -z "$CTDB_RECOVERY_LOCK" ] && {
-	echo "You must configure the location of the CTDB_RECOVERY_LOCK"
-	exit 1
-    }
 
     maybe_set () {
 	# If the 2nd arg is null then return - don't set anything.
