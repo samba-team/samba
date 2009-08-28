@@ -1407,14 +1407,14 @@ int ltdb_index_del_value(struct ldb_module *module, const char *dn,
 	i = ldb_msg_find_idx(msg, dn, &j, LTDB_IDX);
 	if (i == -1) {
 		struct ldb_ldif ldif;
-
-		ldb_debug(ldb, LDB_DEBUG_ERROR,
-				"ERROR: dn %s not found in %s", dn,
-				ldb_dn_get_linearized(dn_key));
+		char *ldif_string;
 		ldif.changetype = LDB_CHANGETYPE_NONE;
 		ldif.msg = msg;
-		ldb_ldif_write_file(ldb, stdout, &ldif);
-		sleep(100);
+		ldif_string = ldb_ldif_write_string(ldb, NULL, &ldif);
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			  "ERROR: dn %s not found in %s", dn,
+			  ldif_string);
+		talloc_free(ldif_string);
 		/* it ain't there. hmmm */
 		talloc_free(dn_key);
 		return LDB_SUCCESS;
