@@ -24,6 +24,7 @@
 #include "librpc/gen_ndr/drsuapi.h"
 
 struct DsPrivate {
+	struct dcerpc_pipe *pipe;
 	struct policy_handle bind_handle;
 	struct GUID bind_guid;
 	const char *domain_obj_dn;

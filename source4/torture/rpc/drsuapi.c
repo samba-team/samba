@@ -772,7 +772,50 @@ bool torture_rpc_drsuapi(struct torture_context *torture)
 	return ret;
 }
 
+bool torture_rpc_drsuapi_tcase_setup(struct torture_context *tctx, void **data)
+{
+        NTSTATUS status;
+	struct DsPrivate *priv;
+	struct cli_credentials *machine_credentials;
 
+	*data = priv = talloc_zero(tctx, struct DsPrivate);
+	torture_assert(tctx, priv, "Not enough memory");
+
+	torture_comment(tctx, "Create DRSUAPI pipe");
+	status = torture_rpc_connection(tctx,
+					&priv->pipe,
+					&ndr_table_drsuapi);
+	torture_assert(tctx, NT_STATUS_IS_OK(status), "Unable to connect to DRSUAPI pipe");
+
+	torture_comment(tctx, "Connected to DRSUAPI pipe\n");
+	priv->join = torture_join_domain(tctx, TEST_MACHINE_NAME, ACB_SVRTRUST,
+					 &machine_credentials);
+	torture_assert(tctx, priv->join, "Failed to join as BDC");
+
+	if (!test_DsBind(priv->pipe, tctx, priv)) {
+		/* clean up */
+		torture_rpc_drsuapi_tcase_teardown(tctx, priv);
+		torture_fail(tctx, "Failed execute test_DsBind()");
+	}
+
+	return true;
+}
+
+bool torture_rpc_drsuapi_tcase_teardown(struct torture_context *tctx, void *data)
+{
+	struct DsPrivate *priv = (struct DsPrivate *)data;
+
+	if (priv->join) {
+		torture_leave_domain(tctx, priv->join);
+	}
+
+	talloc_free(priv);
+
+	return true;
+}
+
+
+/*
 bool torture_rpc_drsuapi_cracknames(struct torture_context *torture)
 {
         NTSTATUS status;
