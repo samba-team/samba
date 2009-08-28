@@ -148,6 +148,8 @@ int tevent_common_context_destructor(struct tevent_context *ev)
 
 	if (ev->pipe_fde) {
 		talloc_free(ev->pipe_fde);
+		close(ev->pipe_fds[0]);
+		close(ev->pipe_fds[1]);
 		ev->pipe_fde = NULL;
 	}
 
