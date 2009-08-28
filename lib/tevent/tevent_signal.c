@@ -57,7 +57,6 @@ static struct sig_state {
 	struct sigaction *oldact[NUM_SIGNALS+1];
 	struct sigcounter signal_count[NUM_SIGNALS+1];
 	struct sigcounter got_signal;
-	int pipe_hack[2];
 #ifdef SA_SIGINFO
 	/* with SA_SIGINFO we get quite a lot of info per signal */
 	siginfo_t *sig_info[NUM_SIGNALS+1];
@@ -80,10 +79,20 @@ static void tevent_common_signal_handler(int signum)
 {
 	char c = 0;
 	ssize_t res;
+	struct tevent_common_signal_list *sl;
+	struct tevent_context *ev = NULL;
+
 	SIG_INCREMENT(sig_state->signal_count[signum]);
 	SIG_INCREMENT(sig_state->got_signal);
-	/* doesn't matter if this pipe overflows */
-	res = write(sig_state->pipe_hack[1], &c, 1);
+
+	/* Write to each unique event context. */
+	for (sl = sig_state->sig_handlers[signum]; sl; sl = sl->next) {
+		if (sl->se->event_ctx != ev) {
+			/* doesn't matter if this pipe overflows */
+			res = write(ev->pipe_fds[1], &c, 1);
+			ev = sl->se->event_ctx;
+		}
+	}
 }
 
 #ifdef SA_SIGINFO
@@ -160,7 +169,7 @@ static void signal_pipe_handler(struct tevent_context *ev, struct tevent_fd *fde
 	char c[16];
 	ssize_t res;
 	/* its non-blocking, doesn't matter if we read too much */
-	res = read(sig_state->pipe_hack[0], c, sizeof(c));
+	res = read(fde->fd, c, sizeof(c));
 }
 
 /*
@@ -178,6 +187,7 @@ struct tevent_signal *tevent_common_add_signal(struct tevent_context *ev,
 {
 	struct tevent_signal *se;
 	struct tevent_common_signal_list *sl;
+	sigset_t set, oldset;
 
 	if (signum >= NUM_SIGNALS) {
 		errno = EINVAL;
@@ -222,18 +232,18 @@ struct tevent_signal *tevent_common_add_signal(struct tevent_context *ev,
 	/* we need to setup the pipe hack handler if not already
 	   setup */
 	if (ev->pipe_fde == NULL) {
-		if (sig_state->pipe_hack[0] == 0 &&
-		    sig_state->pipe_hack[1] == 0) {
-			if (pipe(sig_state->pipe_hack) == -1) {
-				talloc_free(se);
-				return NULL;
-			}
-			ev_set_blocking(sig_state->pipe_hack[0], false);
-			ev_set_blocking(sig_state->pipe_hack[1], false);
+		if (pipe(ev->pipe_fds) == -1) {
+			talloc_free(se);
+			return NULL;
 		}
-		ev->pipe_fde = tevent_add_fd(ev, ev, sig_state->pipe_hack[0],
-					     TEVENT_FD_READ, signal_pipe_handler, NULL);
+		ev_set_blocking(ev->pipe_fds[0], false);
+		ev_set_blocking(ev->pipe_fds[1], false);
+		ev->pipe_fde = tevent_add_fd(ev, ev, ev->pipe_fds[0],
+					     TEVENT_FD_READ,
+					     signal_pipe_handler, NULL);
 		if (!ev->pipe_fde) {
+			close(ev->pipe_fds[0]);
+			close(ev->pipe_fds[1]);
 			talloc_free(se);
 			return NULL;
 		}
@@ -270,7 +280,13 @@ struct tevent_signal *tevent_common_add_signal(struct tevent_context *ev,
 	}
 
 	DLIST_ADD(se->event_ctx->signal_events, se);
+
+	/* Make sure the signal doesn't come in while we're mangling list. */
+	sigemptyset(&set);
+	sigaddset(&set, signum);
+	sigprocmask(SIG_BLOCK, &set, &oldset);
 	DLIST_ADD(sig_state->sig_handlers[signum], sl);
+	sigprocmask(SIG_SETMASK, &oldset, NULL);
 
 	talloc_set_destructor(se, tevent_signal_destructor);
 	talloc_set_destructor(sl, tevent_common_signal_list_destructor);
