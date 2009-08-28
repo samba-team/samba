@@ -71,6 +71,13 @@ NTSTATUS onefs_stream_prep_smb_fname(TALLOC_CTX *ctx,
 					    stream_name, &smb_fname_in->st,
 					    smb_fname_out);
 	TALLOC_FREE(stream_name);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(5, ("Failed to prep stream name for %s: %s\n",
+			  *smb_fname_out ?
+			  smb_fname_str_dbg(*smb_fname_out) : "NULL",
+			  nt_errstr(status)));
+	}
 	return status;
 }
 
@@ -96,6 +103,9 @@ static int get_stream_dir_fd(connection_struct *conn, const char *base,
 	int dir_fd;
 	int saved_errno;
 
+	DEBUG(10, ("Getting stream directory fd: %s (%d)\n", base,
+		   base_fdp ? *base_fdp : -1));
+
 	/* If a valid base_fdp was given, use it. */
 	if (base_fdp && *base_fdp >= 0) {
 		base_fd = *base_fdp;
@@ -115,6 +125,8 @@ static int get_stream_dir_fd(connection_struct *conn, const char *base,
 						0,
 						NULL);
 		if (base_fd < 0) {
+			DEBUG(5, ("Failed getting base fd: %s\n",
+				  strerror(errno)));
 			return -1;
 		}
 	}
@@ -147,6 +159,11 @@ static int get_stream_dir_fd(connection_struct *conn, const char *base,
 		*base_fdp = base_fd;
 	}
 
+	if (dir_fd < 0) {
+		DEBUG(5, ("Failed getting stream directory fd: %s\n",
+			  strerror(errno)));
+	}
+
 	return dir_fd;
 }
 
@@ -173,6 +190,9 @@ int onefs_rename(vfs_handle_struct *handle,
 	/* For now don't allow renames from or to the default stream. */
 	if (is_ntfs_default_stream_smb_fname(smb_fname_src) ||
 	    is_ntfs_default_stream_smb_fname(smb_fname_dst)) {
+		DEBUG(3, ("Unable to rename to/from a default stream: %s -> "
+			  "%s\n", smb_fname_str_dbg(smb_fname_src),
+			  smb_fname_str_dbg(smb_fname_dst)));
 		errno = ENOSYS;
 		goto done;
 	}
@@ -311,6 +331,9 @@ static int stat_stream(struct connection_struct *conn, const char *base,
 	/* Stat the stream. */
 	ret = onefs_sys_fstat_at(dir_fd, stream, sbuf, flags);
 	if (ret != -1) {
+		DEBUG(10, ("stat of stream '%s' failed: %s\n", stream,
+			   strerror(errno)));
+	} else {
 		/* Now stat the base file and merge the results. */
 		ret = onefs_sys_fstat(base_fd, &base_sbuf);
 		if (ret != -1) {

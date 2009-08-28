@@ -178,7 +178,7 @@ int onefs_sys_create_file(connection_struct *conn,
 			     open_access_mask));
 	}
 
-	DEBUG(10,("onefs_sys_create_file: base_fd = %d, fname = %s"
+	DEBUG(10,("onefs_sys_create_file: base_fd = %d, fname = %s "
 		  "open_access_mask = 0x%x, flags = 0x%x, mode = 0%o, "
 		  "desired_oplock = %s, id = 0x%x, secinfo = 0x%x, sd = %p, "
 		  "dos_attributes = 0x%x, path = %s, "

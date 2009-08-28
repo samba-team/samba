@@ -973,8 +973,8 @@ static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 	}
 
 	if (errno != ENOENT) {
+		DEBUG(10, ("vfs_stat failed: %s\n", strerror(errno)));
 		status = map_nt_error_from_unix(errno);
-		DEBUG(10, ("vfs_stat failed: %s\n", nt_errstr(status)));
 		goto fail;
 	}
 
