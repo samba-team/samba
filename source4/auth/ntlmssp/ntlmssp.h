@@ -20,6 +20,7 @@
 */
 
 #include "librpc/gen_ndr/samr.h"
+#include "../librpc/gen_ndr/ntlmssp.h"
 
 /* NTLMSSP mode */
 enum ntlmssp_role
