@@ -1002,3 +1002,20 @@ bool test_DsCrackNames(struct torture_context *tctx,
 	return test_DsCrackNamesMatrix(tctx, priv, FQDN_1779_name,
 					user_principal_name, service_principal_name);
 }
+
+/**
+ * CRACKNAMES test suite implementation
+ */
+void torture_rpc_drsuapi_cracknames_tcase(struct torture_suite *suite)
+{
+	typedef bool (*run_func) (struct torture_context *test, void *tcase_data);
+
+	struct torture_test *test;
+	struct torture_tcase *tcase = torture_suite_add_tcase(suite, "CRACKNAMES");
+
+	torture_tcase_set_fixture(tcase,
+				  torture_rpc_drsuapi_tcase_setup,
+				  torture_rpc_drsuapi_tcase_teardown);
+
+	test = torture_tcase_add_simple_test(tcase, "CRACKNAMES-TEST", (run_func)test_DsCrackNames);
+}
