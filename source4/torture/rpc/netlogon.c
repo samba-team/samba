@@ -2749,6 +2749,7 @@ struct torture_suite *torture_rpc_netlogon_s3(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test_creds(tcase, "SamLogon", test_SamLogon);
 	torture_rpc_tcase_add_test_creds(tcase, "SetPassword", test_SetPassword);
 	torture_rpc_tcase_add_test_creds(tcase, "SetPassword_with_flags", test_SetPassword_with_flags);
+	torture_rpc_tcase_add_test_creds(tcase, "SetPassword2", test_SetPassword2);
 	torture_rpc_tcase_add_test(tcase, "LogonControl", test_LogonControl);
 	torture_rpc_tcase_add_test(tcase, "LogonControl2", test_LogonControl2);
 	torture_rpc_tcase_add_test(tcase, "LogonControl2Ex", test_LogonControl2Ex);
