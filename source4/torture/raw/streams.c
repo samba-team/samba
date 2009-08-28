@@ -380,7 +380,7 @@ static bool test_stream_io(struct torture_context *tctx,
 	io.ntcreatex.in.fname = sname2;
 	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
 	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_DELETE;
-	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.ntcreatex.in.access_mask = SEC_STD_DELETE;
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
 
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
@@ -1091,6 +1091,7 @@ static bool test_stream_rename(struct torture_context *tctx,
 	 * Open the second stream.
 	 */
 
+	io.ntcreatex.in.access_mask = SEC_STD_DELETE;
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
