@@ -20,6 +20,9 @@
 /* To use these macros you must have a structure containing a next and
    prev pointer */
 
+#ifndef _DLINKLIST_H
+#define _DLINKLIST_H
+
 
 /* hook into the front of the list */
 #define DLIST_ADD(list, p) \
@@ -36,7 +39,6 @@ do { \
 } while (0)
 
 /* remove an element from a list - element doesn't have to be in list. */
-#ifndef DLIST_REMOVE
 #define DLIST_REMOVE(list, p) \
 do { \
 	if ((p) == (list)) { \
@@ -48,7 +50,6 @@ do { \
 	} \
 	if ((p) && ((p) != (list))) (p)->next = (p)->prev = NULL; \
 } while (0)
-#endif
 
 /* promote an element to the top of the list */
 #define DLIST_PROMOTE(list, p) \
@@ -57,7 +58,7 @@ do { \
           DLIST_ADD(list, p); \
 } while (0)
 
-/* hook into the end of the list - needs a tmp pointer */
+/* hook into the end of the list - needs the entry type */
 #define DLIST_ADD_END(list, p, type) \
 do { \
 		if (!(list)) { \
@@ -86,11 +87,11 @@ do { \
 	}\
 } while (0)
 
-/* demote an element to the end of the list, needs a tmp pointer */
-#define DLIST_DEMOTE(list, p, tmp) \
+/* demote an element to the end of the list, needs the entry type */
+#define DLIST_DEMOTE(list, p, type) \
 do { \
 		DLIST_REMOVE(list, p); \
-		DLIST_ADD_END(list, p, tmp); \
+		DLIST_ADD_END(list, p, type); \
 } while (0)
 
 /* concatenate two lists - putting all elements of the 2nd list at the
@@ -108,3 +109,5 @@ do { \
 			} \
 		} \
 } while (0)
+
+#endif /* _DLINKLIST_H */
