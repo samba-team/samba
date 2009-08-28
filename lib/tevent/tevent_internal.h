@@ -240,6 +240,7 @@ struct tevent_context {
 
 	/* pipe hack used with signal handlers */
 	struct tevent_fd *pipe_fde;
+	int pipe_fds[2];
 
 	/* debugging operations */
 	struct tevent_debug_ops debug_ops;
