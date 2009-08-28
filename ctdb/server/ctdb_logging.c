@@ -31,7 +31,7 @@ struct ctdb_log_state {
 	bool use_syslog;
 };
 
-/* we need this global to eep the DEBUG() syntax */
+/* we need this global to keep the DEBUG() syntax */
 static struct ctdb_log_state *log_state;
 
 /*
