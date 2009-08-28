@@ -35,5 +35,9 @@ clean::
 test:: testsuite
 	./testsuite
 
+abi_checks::
+	@echo ABI checks:
+	@./script/abi_checks.sh talloc talloc.h
+
 gcov::
 	gcov talloc.c
