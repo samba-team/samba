@@ -219,6 +219,26 @@ struct tevent_signal *tevent_common_add_signal(struct tevent_context *ev,
 		return NULL;
 	}
 
+	/* we need to setup the pipe hack handler if not already
+	   setup */
+	if (ev->pipe_fde == NULL) {
+		if (sig_state->pipe_hack[0] == 0 && 
+		    sig_state->pipe_hack[1] == 0) {
+			if (pipe(sig_state->pipe_hack) == -1) {
+				talloc_free(se);
+				return NULL;
+			}
+			ev_set_blocking(sig_state->pipe_hack[0], false);
+			ev_set_blocking(sig_state->pipe_hack[1], false);
+		}
+		ev->pipe_fde = tevent_add_fd(ev, ev, sig_state->pipe_hack[0],
+					     TEVENT_FD_READ, signal_pipe_handler, NULL);
+		if (!ev->pipe_fde) {
+			talloc_free(se);
+			return NULL;
+		}
+	}
+
 	/* only install a signal handler if not already installed */
 	if (sig_state->sig_handlers[signum] == NULL) {
 		struct sigaction act;
@@ -254,26 +274,6 @@ struct tevent_signal *tevent_common_add_signal(struct tevent_context *ev,
 
 	talloc_set_destructor(se, tevent_signal_destructor);
 	talloc_set_destructor(sl, tevent_common_signal_list_destructor);
-
-	/* we need to setup the pipe hack handler if not already
-	   setup */
-	if (ev->pipe_fde == NULL) {
-		if (sig_state->pipe_hack[0] == 0 && 
-		    sig_state->pipe_hack[1] == 0) {
-			if (pipe(sig_state->pipe_hack) == -1) {
-				talloc_free(se);
-				return NULL;
-			}
-			ev_set_blocking(sig_state->pipe_hack[0], false);
-			ev_set_blocking(sig_state->pipe_hack[1], false);
-		}
-		ev->pipe_fde = tevent_add_fd(ev, ev, sig_state->pipe_hack[0],
-					     TEVENT_FD_READ, signal_pipe_handler, NULL);
-		if (!ev->pipe_fde) {
-			talloc_free(se);
-			return NULL;
-		}
-	}
 
 	return se;
 }
