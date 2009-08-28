@@ -57,7 +57,7 @@ bool test_DsBind(struct dcerpc_pipe *p, struct torture_context *tctx,
 	return true;
 }
 
-static bool test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, struct torture_context *torture, 
+static bool test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, struct torture_context *torture,
 		      struct DsPrivate *priv)
 {
 	NTSTATUS status;
@@ -747,13 +747,16 @@ bool torture_rpc_drsuapi(struct torture_context *torture)
 		torture_fail(torture, "Unable to connect to DRSUAPI pipe");
 	}
 
+	/* cache pipe handle */
+	priv.pipe = p;
+
 	ret &= test_DsBind(p, torture, &priv);
 #if 0
 	ret &= test_QuerySitesByCost(p, torture, &priv);
 #endif
 	ret &= test_DsGetDomainControllerInfo(p, torture, &priv);
 
-	ret &= test_DsCrackNames(torture, p, torture, &priv);
+	ret &= test_DsCrackNames(torture, &priv);
 
 	ret &= test_DsWriteAccountSpn(p, torture, &priv);
 
@@ -851,9 +854,16 @@ bool torture_rpc_drsuapi_tcase_setup(struct torture_context *tctx, void **data)
 		torture_fail(tctx, "Failed execute test_DsBind()");
 	}
 
+	/* try collect some information for testing */
+	torture_rpc_drsuapi_get_dcinfo(tctx, priv);
+
 	return true;
 }
 
+/**
+ * Common test case teardown function to be used
+ * in DRS suit of test when appropriate
+ */
 bool torture_rpc_drsuapi_tcase_teardown(struct torture_context *tctx, void *data)
 {
 	struct DsPrivate *priv = (struct DsPrivate *)data;
@@ -865,49 +875,5 @@ bool torture_rpc_drsuapi_tcase_teardown(struct torture_context *tctx, void *data
 	talloc_free(priv);
 
 	return true;
-}
-
-
-/*
-bool torture_rpc_drsuapi_cracknames(struct torture_context *torture)
-{
-        NTSTATUS status;
-        struct dcerpc_pipe *p;
-	bool ret = true;
-	struct DsPrivate priv;
-	struct cli_credentials *machine_credentials;
-
-	torture_comment(torture, "Connected to DRSUAPI pipe\n");
-
-	ZERO_STRUCT(priv);
-
-	priv.join = torture_join_domain(torture, TEST_MACHINE_NAME, ACB_SVRTRUST, 
-				       &machine_credentials);
-	if (!priv.join) {
-		torture_fail(torture, "Failed to join as BDC\n");
-	}
-
-	status = torture_rpc_connection(torture, 
-					&p, 
-					&ndr_table_drsuapi);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_leave_domain(torture, priv.join);
-		torture_fail(torture, "Unable to connect to DRSUAPI pipe");
-	}
-
-	ret &= test_DsBind(p, torture, &priv);
-
-	if (ret) {
-		/* We don't care if this fails, we just need some info from it */
-		test_DsGetDomainControllerInfo(p, torture, &priv);
-		
-		ret &= test_DsCrackNames(torture, p, torture, &priv);
-		
-		ret &= test_DsUnbind(p, torture, &priv);
-	}
-
-	torture_leave_domain(torture, priv.join);
-
-	return ret;
 }
 
