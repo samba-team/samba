@@ -396,22 +396,6 @@ static NTSTATUS builtin_query_user(struct winbindd_domain *domain,
 	return NT_STATUS_NO_SUCH_USER;
 }
 
-static NTSTATUS builtin_lookup_groupmem(struct winbindd_domain *domain,
-				TALLOC_CTX *mem_ctx,
-				const DOM_SID *group_sid, uint32 *num_names,
-				DOM_SID **sid_mem, char ***names,
-				uint32 **name_types)
-{
-	DEBUG(10,("passdb: lookup_groupmem (builtin) %s sid=%s\n", domain->name,
-		  sid_string_dbg(group_sid)));
-
-	*num_names = 0;
-	*sid_mem = NULL;
-	*names = NULL;
-	*name_types = 0;
-	return NT_STATUS_NO_SUCH_GROUP;
-}
-
 /* get a list of trusted domains - builtin domain */
 static NTSTATUS builtin_trusted_domains(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
@@ -552,13 +536,14 @@ static NTSTATUS sam_query_user(struct winbindd_domain *domain,
 
 /* Lookup group membership given a rid.   */
 static NTSTATUS sam_lookup_groupmem(struct winbindd_domain *domain,
-				TALLOC_CTX *mem_ctx,
-				const DOM_SID *group_sid, uint32 *num_names, 
-				DOM_SID **sid_mem, char ***names, 
-				uint32 **name_types)
+				    TALLOC_CTX *mem_ctx,
+				    const DOM_SID *group_sid,
+				    enum lsa_SidType type,
+				    uint32 *num_names,
+				    DOM_SID **sid_mem, char ***names,
+				    uint32 **name_types)
 {
 	size_t i, num_members, num_mapped;
-	uint32 *rids;
 	NTSTATUS result;
 	const DOM_SID **sids;
 	struct lsa_dom_info *lsa_domains;
@@ -568,7 +553,7 @@ static NTSTATUS sam_lookup_groupmem(struct winbindd_domain *domain,
 	DEBUG(10,("passdb: lookup_groupmem (sam) %s sid=%s\n", domain->name,
 		  sid_string_dbg(group_sid)));
 
-	if (!sid_check_is_in_our_domain(group_sid)) {
+	if (sid_check_is_in_builtin(group_sid) && (type != SID_NAME_ALIAS)) {
 		/* There's no groups, only aliases in BUILTIN */
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
@@ -577,11 +562,31 @@ static NTSTATUS sam_lookup_groupmem(struct winbindd_domain *domain,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	result = pdb_enum_group_members(tmp_ctx, group_sid, &rids,
-					&num_members);
-	if (!NT_STATUS_IS_OK(result)) {
-		TALLOC_FREE(tmp_ctx);
-		return result;
+	if (type == SID_NAME_DOM_GRP) {
+		uint32 *rids;
+
+		result = pdb_enum_group_members(tmp_ctx, group_sid, &rids,
+						&num_members);
+		if (!NT_STATUS_IS_OK(result)) {
+			TALLOC_FREE(tmp_ctx);
+			return result;
+		}
+		*sid_mem = talloc_array(mem_ctx, struct dom_sid, num_members);
+		if (*sid_mem == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+		for (i=0; i<num_members; i++) {
+			sid_compose(&((*sid_mem)[i]), &domain->sid, rids[i]);
+		}
+		TALLOC_FREE(rids);
+	} else {
+		result = pdb_enum_aliasmem(group_sid, mem_ctx, sid_mem,
+					   &num_members);
+		if (!NT_STATUS_IS_OK(result)) {
+			TALLOC_FREE(tmp_ctx);
+			return result;
+		}
 	}
 
 	if (num_members == 0) {
@@ -593,13 +598,11 @@ static NTSTATUS sam_lookup_groupmem(struct winbindd_domain *domain,
 		return NT_STATUS_OK;
 	}
 
-	*sid_mem = TALLOC_ARRAY(mem_ctx, DOM_SID, num_members);
 	*names = TALLOC_ARRAY(mem_ctx, char *, num_members);
 	*name_types = TALLOC_ARRAY(mem_ctx, uint32, num_members);
 	sids = TALLOC_ARRAY(tmp_ctx, const DOM_SID *, num_members);
 
-	if (((*sid_mem) == NULL) || ((*names) == NULL) ||
-	    ((*name_types) == NULL) || (sids == NULL)) {
+	if (((*names) == NULL) || ((*name_types) == NULL) || (sids == NULL)) {
 		TALLOC_FREE(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -610,12 +613,7 @@ static NTSTATUS sam_lookup_groupmem(struct winbindd_domain *domain,
 	 */
 
 	for (i=0; i<num_members; i++) {
-		DOM_SID *sid = &((*sid_mem)[i]);
-		if (!sid_compose(sid, &domain->sid, rids[i])) {
-			TALLOC_FREE(tmp_ctx);
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-		sids[i] = sid;
+		sids[i] = &((*sid_mem)[i]);
 	}
 
 	result = lookup_sids(tmp_ctx, num_members, sids, 1,
@@ -718,7 +716,7 @@ struct winbindd_methods builtin_passdb_methods = {
 	builtin_query_user,
 	lookup_usergroups,
 	lookup_useraliases,
-	builtin_lookup_groupmem,
+	sam_lookup_groupmem,
 	sequence_number,
 	lockout_policy,
 	password_policy,

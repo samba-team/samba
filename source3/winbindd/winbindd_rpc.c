@@ -775,7 +775,9 @@ static NTSTATUS msrpc_lookup_useraliases(struct winbindd_domain *domain,
 /* Lookup group membership given a rid.   */
 static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				const DOM_SID *group_sid, uint32 *num_names, 
+				const DOM_SID *group_sid,
+				enum lsa_SidType type,
+				uint32 *num_names,
 				DOM_SID **sid_mem, char ***names, 
 				uint32 **name_types)
 {

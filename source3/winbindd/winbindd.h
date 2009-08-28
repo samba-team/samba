@@ -286,6 +286,7 @@ struct winbindd_methods {
 	NTSTATUS (*lookup_groupmem)(struct winbindd_domain *domain,
 				    TALLOC_CTX *mem_ctx,
 				    const DOM_SID *group_sid,
+				    enum lsa_SidType type,
 				    uint32 *num_names, 
 				    DOM_SID **sid_mem, char ***names, 
 				    uint32 **name_types);

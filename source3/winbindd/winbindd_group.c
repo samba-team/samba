@@ -118,7 +118,8 @@ static void add_expanded_sid(const DOM_SID *sid,
 	}
 
 	result = domain->methods->lookup_groupmem(domain, mem_ctx,
-						  sid, &num_names,
+						  sid, SID_NAME_DOM_GRP,
+						  &num_names,
 						  &sid_mem, &names,
 						  &types);
 
@@ -470,7 +471,9 @@ static NTSTATUS expand_groups( TALLOC_CTX *ctx,
 		/* Lookup the group membership */
 
 		lookup_status = d->methods->lookup_groupmem(d, tmp_ctx,
-						     &glist[i], &num_names,
+						     &glist[i],
+						     SID_NAME_DOM_GRP,
+						     &num_names,
 						     &sid_mem, &names,
 						     &name_types);
 		if (!NT_STATUS_IS_OK(lookup_status)) {

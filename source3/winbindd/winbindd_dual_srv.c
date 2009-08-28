@@ -173,7 +173,7 @@ NTSTATUS _wbint_LookupGroupMembers(pipes_struct *p,
 	}
 
 	status = domain->methods->lookup_groupmem(
-		domain, p->mem_ctx, r->in.sid,
+		domain, p->mem_ctx, r->in.sid, r->in.type,
 		&num_names, &sid_mem, &names, &name_types);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

@@ -2378,7 +2378,9 @@ NTSTATUS wcache_lookup_groupmem(struct winbindd_domain *domain,
 
 static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				const DOM_SID *group_sid, uint32 *num_names,
+				const DOM_SID *group_sid,
+				enum lsa_SidType type,
+				uint32 *num_names,
 				DOM_SID **sid_mem, char ***names,
 				uint32 **name_types)
 {
@@ -2406,7 +2408,8 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	DEBUG(10,("lookup_groupmem: [Cached] - doing backend query for info for domain %s\n",
 		domain->name ));
 
-	status = domain->backend->lookup_groupmem(domain, mem_ctx, group_sid, num_names, 
+	status = domain->backend->lookup_groupmem(domain, mem_ctx, group_sid,
+						  type, num_names,
 						  sid_mem, names, name_types);
 
 	/* and save it */
