@@ -772,6 +772,59 @@ bool torture_rpc_drsuapi(struct torture_context *torture)
 	return ret;
 }
 
+/**
+ * Helper func to collect DC information for testing purposes.
+ * This function is almost identical to test_DsGetDomainControllerInfo
+ */
+bool torture_rpc_drsuapi_get_dcinfo(struct torture_context *torture,
+				    struct DsPrivate *priv)
+{
+	NTSTATUS status;
+	int32_t level_out = 0;
+	struct drsuapi_DsGetDomainControllerInfo r;
+	union drsuapi_DsGetDCInfoCtr ctr;
+	int j, k;
+	const char *names[] = {
+				torture_join_dom_netbios_name(priv->join),
+				torture_join_dom_dns_name(priv->join)};
+
+	for (j=0; j < ARRAY_SIZE(names); j++) {
+		union drsuapi_DsGetDCInfoRequest req;
+		r.in.bind_handle = &priv->bind_handle;
+		r.in.level = 1;
+		r.in.req = &req;
+
+		r.in.req->req1.domain_name = names[j];
+		r.in.req->req1.level = 2;
+
+		r.out.ctr = &ctr;
+		r.out.level_out = &level_out;
+
+		status = dcerpc_drsuapi_DsGetDomainControllerInfo(priv->pipe, torture, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			continue;
+		}
+		if (!W_ERROR_IS_OK(r.out.result)) {
+			/* If this was an error, we can't read the result structure */
+			continue;
+		}
+
+		for (k=0; k < r.out.ctr->ctr2.count; k++) {
+			if (strcasecmp_m(r.out.ctr->ctr2.array[k].netbios_name,
+					 torture_join_netbios_name(priv->join)) == 0) {
+				priv->dcinfo	= r.out.ctr->ctr2.array[k];
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+/**
+ * Common test case setup function to be used
+ * in DRS suit of test when appropriate
+ */
 bool torture_rpc_drsuapi_tcase_setup(struct torture_context *tctx, void **data)
 {
         NTSTATUS status;
