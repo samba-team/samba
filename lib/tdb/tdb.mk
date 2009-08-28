@@ -29,6 +29,10 @@ bin/tdbbackup$(EXEEXT): tools/tdbbackup.o $(TDB_LIB)
 test:: bin/tdbtorture$(EXEEXT) $(TDB_SONAME)
 	$(LIB_PATH_VAR)=. bin/tdbtorture$(EXEEXT)
 
+abi_checks::
+	@echo ABI checks:
+	@./script/abi_checks.sh tdb include/tdb.h
+
 clean:: 
 	rm -f test.db test.tdb torture.tdb test.gdbm
 	rm -f $(TDB_SONAME) $(TDB_SOLIB) $(TDB_STLIB) libtdb.$(SHLIBEXT)
