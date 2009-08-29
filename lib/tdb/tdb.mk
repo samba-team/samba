@@ -26,6 +26,8 @@ bin/tdbdump$(EXEEXT): tools/tdbdump.o $(TDB_LIB)
 bin/tdbbackup$(EXEEXT): tools/tdbbackup.o $(TDB_LIB)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbbackup tools/tdbbackup.o -L. -ltdb
 
+test:: abi_checks
+
 test:: bin/tdbtorture$(EXEEXT) $(TDB_SONAME)
 	$(LIB_PATH_VAR)=. bin/tdbtorture$(EXEEXT)
 
