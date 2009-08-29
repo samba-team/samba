@@ -61,7 +61,6 @@
            talloc_version_minor;
            _talloc_zero;
            _talloc_zero_array;
-           talloc_free;
 
     local: *;
 };
