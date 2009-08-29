@@ -41,5 +41,7 @@ abi_checks::
 	@echo ABI checks:
 	@./script/abi_checks.sh talloc talloc.h
 
+test:: abi_checks
+
 gcov::
 	gcov talloc.c
