@@ -37,6 +37,8 @@ clean::
 	rm -f test.db test.tdb torture.tdb test.gdbm
 	rm -f $(TDB_SONAME) $(TDB_SOLIB) $(TDB_STLIB) libtdb.$(SHLIBEXT)
 	rm -f $(ALL_PROGS) tdb.pc
+	rm -f tdb.exports.sort tdb.exports.check tdb.exports.check.sort
+	rm -f tdb.signatures.sort tdb.signatures.check tdb.signatures.check.sort
 
 build-python:: tdb.$(SHLIBEXT) 
 
