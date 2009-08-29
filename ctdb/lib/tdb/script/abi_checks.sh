@@ -3,7 +3,7 @@
 #
 # abi_checks.sh - check for possible abi changes
 #
-# Copyright (C) 2009 Micheal Adam <obnox@samba.org>
+# Copyright (C) 2009 Michael Adam <obnox@samba.org>
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the Free
