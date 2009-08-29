@@ -345,7 +345,7 @@ static void print_passwd(struct passwd *pwd)
 static void print_group(struct group *grp)
 {
 	int i;
-	printf("%s:%s:%lu: ", 
+	printf("%s:%s:%lu:",
 	       grp->gr_name,
 	       grp->gr_passwd,
 	       (unsigned long)grp->gr_gid);
@@ -356,7 +356,7 @@ static void print_group(struct group *grp)
 	}
 	
 	for (i=0; grp->gr_mem[i+1]; i++) {
-		printf("%s, ", grp->gr_mem[i]);
+		printf("%s,", grp->gr_mem[i]);
 	}
 	printf("%s\n", grp->gr_mem[i]);
 }
