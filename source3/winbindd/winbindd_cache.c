@@ -3615,6 +3615,16 @@ static int validate_offline(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA db
 	return 0;
 }
 
+static int validate_ndr(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
+			struct tdb_validation_status *state)
+{
+	/*
+	 * Ignore validation for now. The proper way to do this is with a
+	 * checksum. Just pure parsing does not really catch much.
+	 */
+	return 0;
+}
+
 static int validate_cache_version(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
 				  struct tdb_validation_status *state)
 {
@@ -3660,6 +3670,7 @@ struct key_val_struct {
 	{"NSS/NA/", validate_nss_na},
 	{"NSS/AN/", validate_nss_an},
 	{"WINBINDD_OFFLINE", validate_offline},
+	{"NDR/", validate_ndr},
 	{WINBINDD_CACHE_VERSION_KEYSTR, validate_cache_version},
 	{NULL, NULL}
 };
