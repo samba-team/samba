@@ -110,9 +110,3 @@ enum winbindd_result winbindd_dual_userinfo(struct winbindd_domain *domain,
 
 	return WINBINDD_OK;
 }
-
-/* List domain users without mapping to unix ids */
-void winbindd_list_users(struct winbindd_cli_state *state)
-{
-	winbindd_list_ent(state, LIST_USERS);
-}
