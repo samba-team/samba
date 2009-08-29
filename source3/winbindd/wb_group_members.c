@@ -33,6 +33,10 @@
  */
 
 /*
+ * TODO: fill_grent_mem_domusers must be re-added
+ */
+
+/*
  * Look up members of a single group. Essentially a wrapper around the
  * lookup_groupmem winbindd_methods routine.
  */
