@@ -201,12 +201,6 @@ bool get_sam_group_entries(struct getent_state *ent)
 	return result;
 }
 
-/* List domain groups without mapping to unix ids */
-void winbindd_list_groups(struct winbindd_cli_state *state)
-{
-	winbindd_list_ent(state, LIST_GROUPS);
-}
-
 /* Get user supplementary groups.  This is much quicker than trying to
    invert the groups database.  We merge the groups from the gids and
    other_sids info3 fields as trusted domain, universal group

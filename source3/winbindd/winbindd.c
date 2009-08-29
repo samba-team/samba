@@ -435,7 +435,6 @@ static struct winbindd_dispatch_table {
 
 	/* Enumeration functions */
 
-	{ WINBINDD_LIST_GROUPS, winbindd_list_groups, "LIST_GROUPS" },
 	{ WINBINDD_LIST_TRUSTDOM, winbindd_list_trusted_domains,
 	  "LIST_TRUSTDOM" },
 
@@ -538,6 +537,8 @@ static struct winbindd_async_dispatch_table async_nonpriv_table[] = {
 	  winbindd_endgrent_send, winbindd_endgrent_recv },
 	{ WINBINDD_LIST_USERS, "LIST_USERS",
 	  winbindd_list_users_send, winbindd_list_users_recv },
+	{ WINBINDD_LIST_GROUPS, "LIST_GROUPS",
+	  winbindd_list_groups_send, winbindd_list_groups_recv },
 
 	{ 0, NULL, NULL, NULL }
 };

@@ -1210,6 +1210,7 @@ WINBINDD_OBJ1 = \
 		winbindd/winbindd_dsgetdcname.o \
 		winbindd/winbindd_getdcname.o \
 		winbindd/winbindd_list_users.o \
+		winbindd/winbindd_list_groups.o \
 		auth/token_util.o \
 		../nsswitch/libwbclient/wb_reqtrans.o \
 		smbd/connection.o
