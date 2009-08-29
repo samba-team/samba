@@ -31,9 +31,23 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 	struct cli_state *cli;
 	struct rpc_pipe_client *pipe_hnd;
 	struct sockaddr_storage ss;
+	char *user, *domain, *p;
 
 	NTSTATUS result;
 	bool pass_must_change = False;
+
+	user = talloc_strdup(talloc_tos(), user_name);
+	SMB_ASSERT(user != NULL);
+	domain = talloc_strdup(talloc_tos(), "");
+	SMB_ASSERT(domain != NULL);
+
+	/* allow usernames of the form domain\\user or domain/user */
+	if ((p = strchr_m(user,'\\')) || (p = strchr_m(user,'/')) ||
+	    (p = strchr_m(user,*lp_winbind_separator()))) {
+		*p = 0;
+		domain = user;
+		user = p+1;
+	}
 
 	*err_str = NULL;
 
@@ -139,7 +153,7 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 			return result;
 		}
 	} else {
-		result = cli_init_creds(cli, user_name, "", old_passwd);
+		result = cli_init_creds(cli, user, domain, old_passwd);
 		if (!NT_STATUS_IS_OK(result)) {
 			cli_shutdown(cli);
 			return result;
@@ -163,8 +177,7 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 		result = cli_rpc_pipe_open_ntlmssp(cli,
 						   &ndr_table_samr.syntax_id,
 						   PIPE_AUTH_LEVEL_PRIVACY,
-						   "", /* what domain... ? */
-						   user_name,
+						   domain, user,
 						   old_passwd,
 						   &pipe_hnd);
 	} else {
