@@ -557,10 +557,6 @@ static const struct winbindd_child_dispatch_table idmap_dispatch_table[] = {
 		.struct_cmd	= WINBINDD_DUAL_SET_HWM,
 		.struct_fn	= winbindd_dual_set_hwm,
 	},{
-		.name		= "ALLOCATE_GID",
-		.struct_cmd	= WINBINDD_ALLOCATE_GID,
-		.struct_fn	= winbindd_dual_allocate_gid,
-	},{
 		.name		= "NDRCMD",
 		.struct_cmd	= WINBINDD_DUAL_NDRCMD,
 		.struct_fn	= winbindd_dual_ndrcmd,

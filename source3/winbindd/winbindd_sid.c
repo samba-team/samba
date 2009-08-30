@@ -140,27 +140,3 @@ void winbindd_set_hwm(struct winbindd_cli_state *state)
 
 	winbindd_set_hwm_async(state->mem_ctx, &xid, set_hwm_recv, state);
 }
-
-void winbindd_allocate_gid(struct winbindd_cli_state *state)
-{
-	if ( !state->privileged ) {
-		DEBUG(2, ("winbindd_allocate_gid: non-privileged access "
-			  "denied!\n"));
-		request_error(state);
-		return;
-	}
-
-	sendto_child(state, idmap_child());
-}
-
-enum winbindd_result winbindd_dual_allocate_gid(struct winbindd_domain *domain,
-						struct winbindd_cli_state *state)
-{
-	struct unixid xid;
-
-	if (!NT_STATUS_IS_OK(idmap_allocate_gid(&xid))) {
-		return WINBINDD_ERROR;
-	}
-	state->response->data.gid = xid.id;
-	return WINBINDD_OK;
-}

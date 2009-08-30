@@ -1319,6 +1319,163 @@ NTSTATUS rpccli_wbint_AllocateUid(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_wbint_AllocateGid_state {
+	struct wbint_AllocateGid orig;
+	struct wbint_AllocateGid tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_wbint_AllocateGid_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_wbint_AllocateGid_send(TALLOC_CTX *mem_ctx,
+						 struct tevent_context *ev,
+						 struct rpc_pipe_client *cli,
+						 uint64_t *_gid /* [out] [ref] */)
+{
+	struct tevent_req *req;
+	struct rpccli_wbint_AllocateGid_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_wbint_AllocateGid_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+
+	/* Out parameters */
+	state->orig.out.gid = _gid;
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(wbint_AllocateGid, &state->orig);
+	}
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_wbint_AllocateGid_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_wbint,
+				    NDR_WBINT_ALLOCATEGID,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_wbint_AllocateGid_done, req);
+	return req;
+}
+
+static void rpccli_wbint_AllocateGid_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_wbint_AllocateGid_state *state = tevent_req_data(
+		req, struct rpccli_wbint_AllocateGid_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+	*state->orig.out.gid = *state->tmp.out.gid;
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(wbint_AllocateGid, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_wbint_AllocateGid_recv(struct tevent_req *req,
+				       TALLOC_CTX *mem_ctx,
+				       NTSTATUS *result)
+{
+	struct rpccli_wbint_AllocateGid_state *state = tevent_req_data(
+		req, struct rpccli_wbint_AllocateGid_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS rpccli_wbint_AllocateGid(struct rpc_pipe_client *cli,
+				  TALLOC_CTX *mem_ctx,
+				  uint64_t *gid /* [out] [ref] */)
+{
+	struct wbint_AllocateGid r;
+	NTSTATUS status;
+
+	/* In parameters */
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(wbint_AllocateGid, &r);
+	}
+
+	status = cli->dispatch(cli,
+				mem_ctx,
+				&ndr_table_wbint,
+				NDR_WBINT_ALLOCATEGID,
+				&r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(wbint_AllocateGid, &r);
+	}
+
+	if (NT_STATUS_IS_ERR(status)) {
+		return status;
+	}
+
+	/* Return variables */
+	*gid = *r.out.gid;
+
+	/* Return result */
+	return r.out.result;
+}
+
 struct rpccli_wbint_QueryUser_state {
 	struct wbint_QueryUser orig;
 	struct wbint_QueryUser tmp;

@@ -1319,6 +1319,67 @@ _PUBLIC_ void ndr_print_wbint_AllocateUid(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_wbint_AllocateGid(struct ndr_push *ndr, int flags, const struct wbint_AllocateGid *r)
+{
+	if (flags & NDR_IN) {
+	}
+	if (flags & NDR_OUT) {
+		if (r->out.gid == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, *r->out.gid));
+		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_wbint_AllocateGid(struct ndr_pull *ndr, int flags, struct wbint_AllocateGid *r)
+{
+	TALLOC_CTX *_mem_save_gid_0;
+	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		NDR_PULL_ALLOC(ndr, r->out.gid);
+		ZERO_STRUCTP(r->out.gid);
+	}
+	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.gid);
+		}
+		_mem_save_gid_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.gid, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, r->out.gid));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_gid_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_wbint_AllocateGid(struct ndr_print *ndr, const char *name, int flags, const struct wbint_AllocateGid *r)
+{
+	ndr_print_struct(ndr, name, "wbint_AllocateGid");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "wbint_AllocateGid");
+		ndr->depth++;
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "wbint_AllocateGid");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "gid", r->out.gid);
+		ndr->depth++;
+		ndr_print_hyper(ndr, "gid", *r->out.gid);
+		ndr->depth--;
+		ndr_print_NTSTATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_wbint_QueryUser(struct ndr_push *ndr, int flags, const struct wbint_QueryUser *r)
 {
 	if (flags & NDR_IN) {
@@ -2116,6 +2177,14 @@ static const struct ndr_interface_call wbint_calls[] = {
 		false,
 	},
 	{
+		"wbint_AllocateGid",
+		sizeof(struct wbint_AllocateGid),
+		(ndr_push_flags_fn_t) ndr_push_wbint_AllocateGid,
+		(ndr_pull_flags_fn_t) ndr_pull_wbint_AllocateGid,
+		(ndr_print_function_t) ndr_print_wbint_AllocateGid,
+		false,
+	},
+	{
 		"wbint_QueryUser",
 		sizeof(struct wbint_QueryUser),
 		(ndr_push_flags_fn_t) ndr_push_wbint_QueryUser,
@@ -2216,7 +2285,7 @@ const struct ndr_interface_table ndr_table_wbint = {
 		NDR_WBINT_VERSION
 	},
 	.helpstring	= NDR_WBINT_HELPSTRING,
-	.num_calls	= 17,
+	.num_calls	= 18,
 	.calls		= wbint_calls,
 	.endpoints	= &wbint_endpoints,
 	.authservices	= &wbint_authservices

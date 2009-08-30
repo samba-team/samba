@@ -153,6 +153,15 @@ struct wbint_AllocateUid {
 };
 
 
+struct wbint_AllocateGid {
+	struct {
+		uint64_t *gid;/* [ref] */
+		NTSTATUS result;
+	} out;
+
+};
+
+
 struct wbint_QueryUser {
 	struct {
 		struct dom_sid *sid;/* [ref] */

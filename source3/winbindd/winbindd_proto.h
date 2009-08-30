@@ -728,6 +728,13 @@ struct tevent_req *winbindd_allocate_uid_send(TALLOC_CTX *mem_ctx,
 NTSTATUS winbindd_allocate_uid_recv(struct tevent_req *req,
 				    struct winbindd_response *response);
 
+struct tevent_req *winbindd_allocate_gid_send(TALLOC_CTX *mem_ctx,
+					      struct tevent_context *ev,
+					      struct winbindd_cli_state *cli,
+					      struct winbindd_request *request);
+NTSTATUS winbindd_allocate_gid_recv(struct tevent_req *req,
+				    struct winbindd_response *response);
+
 struct tevent_req *wb_queryuser_send(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev,
 				     const struct dom_sid *user_sid);

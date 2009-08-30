@@ -112,6 +112,16 @@ NTSTATUS rpccli_wbint_AllocateUid_recv(struct tevent_req *req,
 NTSTATUS rpccli_wbint_AllocateUid(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
 				  uint64_t *uid /* [out] [ref] */);
+struct tevent_req *rpccli_wbint_AllocateGid_send(TALLOC_CTX *mem_ctx,
+						 struct tevent_context *ev,
+						 struct rpc_pipe_client *cli,
+						 uint64_t *_gid /* [out] [ref] */);
+NTSTATUS rpccli_wbint_AllocateGid_recv(struct tevent_req *req,
+				       TALLOC_CTX *mem_ctx,
+				       NTSTATUS *result);
+NTSTATUS rpccli_wbint_AllocateGid(struct rpc_pipe_client *cli,
+				  TALLOC_CTX *mem_ctx,
+				  uint64_t *gid /* [out] [ref] */);
 struct tevent_req *rpccli_wbint_QueryUser_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
 					       struct rpc_pipe_client *cli,

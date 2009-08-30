@@ -58,6 +58,10 @@ interface wbint
 	[out] hyper *uid
 	);
 
+    NTSTATUS wbint_AllocateGid(
+	[out] hyper *gid
+	);
+
     typedef [public] struct {
 	[string,charset(UTF8)] char *acct_name;
 	[string,charset(UTF8)] char *full_name;

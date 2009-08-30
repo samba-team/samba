@@ -119,6 +119,19 @@ NTSTATUS _wbint_AllocateUid(pipes_struct *p, struct wbint_AllocateUid *r)
 	return NT_STATUS_OK;
 }
 
+NTSTATUS _wbint_AllocateGid(pipes_struct *p, struct wbint_AllocateGid *r)
+{
+	struct unixid xid;
+	NTSTATUS status;
+
+	status = idmap_allocate_gid(&xid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	*r->out.gid = xid.id;
+	return NT_STATUS_OK;
+}
+
 NTSTATUS _wbint_QueryUser(pipes_struct *p, struct wbint_QueryUser *r)
 {
 	struct winbindd_domain *domain = wb_child_domain();
