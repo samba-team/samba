@@ -584,6 +584,86 @@ static bool api_wbint_Gid2Sid(pipes_struct *p)
 	return true;
 }
 
+static bool api_wbint_AllocateUid(pipes_struct *p)
+{
+	const struct ndr_interface_call *call;
+	struct ndr_pull *pull;
+	struct ndr_push *push;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+	struct wbint_AllocateUid *r;
+
+	call = &ndr_table_wbint.calls[NDR_WBINT_ALLOCATEUID];
+
+	r = talloc(talloc_tos(), struct wbint_AllocateUid);
+	if (r == NULL) {
+		return false;
+	}
+
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull = ndr_pull_init_blob(&blob, r, NULL);
+	if (pull == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(wbint_AllocateUid, r);
+	}
+
+	ZERO_STRUCT(r->out);
+	r->out.uid = talloc_zero(r, uint64_t);
+	if (r->out.uid == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	r->out.result = _wbint_AllocateUid(p, r);
+
+	if (p->rng_fault_state) {
+		talloc_free(r);
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(wbint_AllocateUid, r);
+	}
+
+	push = ndr_push_init_ctx(r, NULL);
+	if (push == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	blob = ndr_push_blob(push);
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
+		talloc_free(r);
+		return false;
+	}
+
+	talloc_free(r);
+
+	return true;
+}
+
 static bool api_wbint_QueryUser(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
@@ -1315,6 +1395,7 @@ static struct api_struct api_wbint_cmds[] =
 	{"WBINT_SID2GID", NDR_WBINT_SID2GID, api_wbint_Sid2Gid},
 	{"WBINT_UID2SID", NDR_WBINT_UID2SID, api_wbint_Uid2Sid},
 	{"WBINT_GID2SID", NDR_WBINT_GID2SID, api_wbint_Gid2Sid},
+	{"WBINT_ALLOCATEUID", NDR_WBINT_ALLOCATEUID, api_wbint_AllocateUid},
 	{"WBINT_QUERYUSER", NDR_WBINT_QUERYUSER, api_wbint_QueryUser},
 	{"WBINT_LOOKUPUSERALIASES", NDR_WBINT_LOOKUPUSERALIASES, api_wbint_LookupUserAliases},
 	{"WBINT_LOOKUPUSERGROUPS", NDR_WBINT_LOOKUPUSERGROUPS, api_wbint_LookupUserGroups},
@@ -1436,6 +1517,18 @@ NTSTATUS rpc_wbint_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, co
 			}
 
 			r->out.result = _wbint_Gid2Sid(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WBINT_ALLOCATEUID: {
+			struct wbint_AllocateUid *r = (struct wbint_AllocateUid *)_r;
+			ZERO_STRUCT(r->out);
+			r->out.uid = talloc_zero(mem_ctx, uint64_t);
+			if (r->out.uid == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _wbint_AllocateUid(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 

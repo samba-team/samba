@@ -4356,6 +4356,7 @@ static bool wcache_opnum_cacheable(uint32_t opnum)
 	switch (opnum) {
 	case NDR_WBINT_PING:
 	case NDR_WBINT_QUERYSEQUENCENUMBER:
+	case NDR_WBINT_ALLOCATEUID:
 		return false;
 	}
 	return true;

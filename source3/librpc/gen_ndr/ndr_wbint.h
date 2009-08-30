@@ -25,25 +25,27 @@ extern const struct ndr_interface_table ndr_table_wbint;
 
 #define NDR_WBINT_GID2SID (0x06)
 
-#define NDR_WBINT_QUERYUSER (0x07)
+#define NDR_WBINT_ALLOCATEUID (0x07)
 
-#define NDR_WBINT_LOOKUPUSERALIASES (0x08)
+#define NDR_WBINT_QUERYUSER (0x08)
 
-#define NDR_WBINT_LOOKUPUSERGROUPS (0x09)
+#define NDR_WBINT_LOOKUPUSERALIASES (0x09)
 
-#define NDR_WBINT_QUERYSEQUENCENUMBER (0x0a)
+#define NDR_WBINT_LOOKUPUSERGROUPS (0x0a)
 
-#define NDR_WBINT_LOOKUPGROUPMEMBERS (0x0b)
+#define NDR_WBINT_QUERYSEQUENCENUMBER (0x0b)
 
-#define NDR_WBINT_QUERYUSERLIST (0x0c)
+#define NDR_WBINT_LOOKUPGROUPMEMBERS (0x0c)
 
-#define NDR_WBINT_QUERYGROUPLIST (0x0d)
+#define NDR_WBINT_QUERYUSERLIST (0x0d)
 
-#define NDR_WBINT_DSGETDCNAME (0x0e)
+#define NDR_WBINT_QUERYGROUPLIST (0x0e)
 
-#define NDR_WBINT_LOOKUPRIDS (0x0f)
+#define NDR_WBINT_DSGETDCNAME (0x0f)
 
-#define NDR_WBINT_CALL_COUNT (16)
+#define NDR_WBINT_LOOKUPRIDS (0x10)
+
+#define NDR_WBINT_CALL_COUNT (17)
 enum ndr_err_code ndr_push_wbint_userinfo(struct ndr_push *ndr, int ndr_flags, const struct wbint_userinfo *r);
 enum ndr_err_code ndr_pull_wbint_userinfo(struct ndr_pull *ndr, int ndr_flags, struct wbint_userinfo *r);
 void ndr_print_wbint_userinfo(struct ndr_print *ndr, const char *name, const struct wbint_userinfo *r);
@@ -69,6 +71,7 @@ void ndr_print_wbint_Sid2Uid(struct ndr_print *ndr, const char *name, int flags,
 void ndr_print_wbint_Sid2Gid(struct ndr_print *ndr, const char *name, int flags, const struct wbint_Sid2Gid *r);
 void ndr_print_wbint_Uid2Sid(struct ndr_print *ndr, const char *name, int flags, const struct wbint_Uid2Sid *r);
 void ndr_print_wbint_Gid2Sid(struct ndr_print *ndr, const char *name, int flags, const struct wbint_Gid2Sid *r);
+void ndr_print_wbint_AllocateUid(struct ndr_print *ndr, const char *name, int flags, const struct wbint_AllocateUid *r);
 void ndr_print_wbint_QueryUser(struct ndr_print *ndr, const char *name, int flags, const struct wbint_QueryUser *r);
 void ndr_print_wbint_LookupUserAliases(struct ndr_print *ndr, const char *name, int flags, const struct wbint_LookupUserAliases *r);
 void ndr_print_wbint_LookupUserGroups(struct ndr_print *ndr, const char *name, int flags, const struct wbint_LookupUserGroups *r);

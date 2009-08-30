@@ -440,7 +440,6 @@ static struct winbindd_dispatch_table {
 
 	/* Lookup related functions */
 
-	{ WINBINDD_ALLOCATE_UID, winbindd_allocate_uid, "ALLOCATE_UID" },
 	{ WINBINDD_ALLOCATE_GID, winbindd_allocate_gid, "ALLOCATE_GID" },
 	{ WINBINDD_SET_MAPPING, winbindd_set_mapping, "SET_MAPPING" },
 	{ WINBINDD_REMOVE_MAPPING, winbindd_remove_mapping, "REMOVE_MAPPING" },
@@ -543,6 +542,13 @@ static struct winbindd_async_dispatch_table async_nonpriv_table[] = {
 	{ 0, NULL, NULL, NULL }
 };
 
+static struct winbindd_async_dispatch_table async_priv_table[] = {
+	{ WINBINDD_ALLOCATE_UID, "ALLOCATE_UID",
+	  winbindd_allocate_uid_send, winbindd_allocate_uid_recv },
+
+	{ 0, NULL, NULL, NULL }
+};
+
 static void wb_request_done(struct tevent_req *req);
 
 static void process_request(struct winbindd_cli_state *state)
@@ -562,6 +568,15 @@ static void process_request(struct winbindd_cli_state *state)
 	for (atable = async_nonpriv_table; atable->send_req; atable += 1) {
 		if (state->request->cmd == atable->cmd) {
 			break;
+		}
+	}
+
+	if ((atable->send_req == NULL) && state->privileged) {
+		for (atable = async_priv_table; atable->send_req;
+		     atable += 1) {
+			if (state->request->cmd == atable->cmd) {
+				break;
+			}
 		}
 	}
 
