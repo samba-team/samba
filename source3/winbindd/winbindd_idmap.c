@@ -38,16 +38,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-static const struct winbindd_child_dispatch_table idmap_dispatch_table[];
-
 static struct winbindd_child static_idmap_child;
-
-void init_idmap_child(void)
-{
-	setup_child(&static_idmap_child,
-		    idmap_dispatch_table,
-		    "log.winbindd", "idmap");
-}
 
 struct winbindd_child *idmap_child(void)
 {
@@ -564,3 +555,10 @@ static const struct winbindd_child_dispatch_table idmap_dispatch_table[] = {
 		.name		= NULL,
 	}
 };
+
+void init_idmap_child(void)
+{
+	setup_child(&static_idmap_child,
+		    idmap_dispatch_table,
+		    "log.winbindd", "idmap");
+}
