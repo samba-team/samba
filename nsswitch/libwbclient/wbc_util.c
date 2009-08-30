@@ -262,6 +262,8 @@ static wbcErr process_domain_info_string(TALLOC_CTX *ctx,
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
 
+	ZERO_STRUCTP(info);
+
 	r = info_string;
 
 	/* Short Name */
