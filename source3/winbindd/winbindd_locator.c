@@ -27,16 +27,7 @@
 #define DBGC_CLASS DBGC_WINBIND
 
 
-static const struct winbindd_child_dispatch_table locator_dispatch_table[];
-
 static struct winbindd_child static_locator_child;
-
-void init_locator_child(void)
-{
-	setup_child(&static_locator_child,
-		    locator_dispatch_table,
-		    "log.winbindd", "locator");
-}
 
 struct winbindd_child *locator_child(void)
 {
@@ -164,3 +155,10 @@ static const struct winbindd_child_dispatch_table locator_dispatch_table[] = {
 		.name		= NULL,
 	}
 };
+
+void init_locator_child(void)
+{
+	setup_child(&static_locator_child,
+		    locator_dispatch_table,
+		    "log.winbindd", "locator");
+}
