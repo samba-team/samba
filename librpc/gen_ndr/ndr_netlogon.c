@@ -6825,6 +6825,7 @@ _PUBLIC_ void ndr_print_netr_DsRGetDCName_flags(struct ndr_print *ndr, const cha
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DS_IS_DNS_NAME", DS_IS_DNS_NAME, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DS_TRY_NEXTCLOSEST_SITE", DS_TRY_NEXTCLOSEST_SITE, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DS_DIRECTORY_SERVICE_6_REQUIRED", DS_DIRECTORY_SERVICE_6_REQUIRED, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DS_WEB_SERVICE_REQUIRED", DS_WEB_SERVICE_REQUIRED, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DS_RETURN_DNS_NAME", DS_RETURN_DNS_NAME, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DS_RETURN_FLAT_NAME", DS_RETURN_FLAT_NAME, r);
 	ndr->depth--;
