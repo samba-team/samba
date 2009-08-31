@@ -807,6 +807,10 @@ static NTSTATUS _netr_LogonSamLogon_base(pipes_struct *p,
 			process_creds = true;
 			fn = "_netr_LogonSamLogon";
 			break;
+		case NDR_NETR_LOGONSAMLOGONWITHFLAGS:
+			process_creds = true;
+			fn = "_netr_LogonSamLogonWithFlags";
+			break;
 		case NDR_NETR_LOGONSAMLOGONEX:
 			process_creds = false;
 			fn = "_netr_LogonSamLogonEx";
@@ -993,18 +997,17 @@ static NTSTATUS _netr_LogonSamLogon_base(pipes_struct *p,
 	return status;
 }
 
-/*************************************************************************
- _netr_LogonSamLogon
- *************************************************************************/
+/****************************************************************
+ _netr_LogonSamLogonWithFlags
+****************************************************************/
 
-NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
-			     struct netr_LogonSamLogon *r)
+NTSTATUS _netr_LogonSamLogonWithFlags(pipes_struct *p,
+				      struct netr_LogonSamLogonWithFlags *r)
 {
 	NTSTATUS status;
 	struct netlogon_creds_CredentialState *creds;
 	struct netr_LogonSamLogonEx r2;
 	struct netr_Authenticator return_authenticator;
-	uint32_t flags = 0;
 
 	become_root();
 	status = netr_creds_server_step_check(p, p->mem_ctx,
@@ -1022,14 +1025,43 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 	r2.in.logon_level	= r->in.logon_level;
 	r2.in.logon		= r->in.logon;
 	r2.in.validation_level	= r->in.validation_level;
-	r2.in.flags		= &flags;
+	r2.in.flags		= r->in.flags;
 	r2.out.validation	= r->out.validation;
 	r2.out.authoritative	= r->out.authoritative;
-	r2.out.flags		= &flags;
+	r2.out.flags		= r->out.flags;
 
 	status = _netr_LogonSamLogon_base(p, &r2, creds);
 
 	*r->out.return_authenticator = return_authenticator;
+
+	return status;
+}
+
+/*************************************************************************
+ _netr_LogonSamLogon
+ *************************************************************************/
+
+NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
+			     struct netr_LogonSamLogon *r)
+{
+	NTSTATUS status;
+	struct netr_LogonSamLogonWithFlags r2;
+	uint32_t flags = 0;
+
+	r2.in.server_name		= r->in.server_name;
+	r2.in.computer_name		= r->in.computer_name;
+	r2.in.credential		= r->in.credential;
+	r2.in.logon_level		= r->in.logon_level;
+	r2.in.logon			= r->in.logon;
+	r2.in.validation_level		= r->in.validation_level;
+	r2.in.return_authenticator	= r->in.return_authenticator;
+	r2.in.flags			= &flags;
+	r2.out.validation		= r->out.validation;
+	r2.out.authoritative		= r->out.authoritative;
+	r2.out.flags			= &flags;
+	r2.out.return_authenticator	= r->out.return_authenticator;
+
+	status = _netr_LogonSamLogonWithFlags(p, &r2);
 
 	return status;
 }
@@ -1412,16 +1444,6 @@ WERROR _netr_GetForestTrustInformation(pipes_struct *p,
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _netr_LogonSamLogonWithFlags(pipes_struct *p,
-				      struct netr_LogonSamLogonWithFlags *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /****************************************************************
