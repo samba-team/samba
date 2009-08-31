@@ -5611,9 +5611,14 @@ _PUBLIC_ void ndr_print_netr_InfoFlags(struct ndr_print *ndr, const char *name, 
 {
 	ndr_print_uint32(ndr, name, r);
 	ndr->depth++;
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_CTRL_REPL_NEEDED", NETLOGON_CTRL_REPL_NEEDED, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_CTRL_REPL_IN_PROGRESS", NETLOGON_CTRL_REPL_IN_PROGRESS, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_CTRL_REPL_FULL_SYNC", NETLOGON_CTRL_REPL_FULL_SYNC, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_REPLICATION_NEEDED", NETLOGON_REPLICATION_NEEDED, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_REPLICATION_IN_PROGRESS", NETLOGON_REPLICATION_IN_PROGRESS, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_FULL_SYNC_REPLICATION", NETLOGON_FULL_SYNC_REPLICATION, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_REDO_NEEDED", NETLOGON_REDO_NEEDED, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_HAS_IP", NETLOGON_HAS_IP, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_HAS_TIMESERV", NETLOGON_HAS_TIMESERV, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_DNS_UPDATE_FAILURE", NETLOGON_DNS_UPDATE_FAILURE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_VERIFY_STATUS_RETURNED", NETLOGON_VERIFY_STATUS_RETURNED, r);
 	ndr->depth--;
 }
 
@@ -5882,8 +5887,9 @@ static enum ndr_err_code ndr_push_netr_CONTROL_QUERY_INFORMATION(struct ndr_push
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info4));
 			break; }
 
-			default:
-				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
+			default: {
+			break; }
+
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -5914,7 +5920,8 @@ static enum ndr_err_code ndr_push_netr_CONTROL_QUERY_INFORMATION(struct ndr_push
 			break;
 
 			default:
-				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
+			break;
+
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -5975,8 +5982,9 @@ static enum ndr_err_code ndr_pull_netr_CONTROL_QUERY_INFORMATION(struct ndr_pull
 				}
 			break; }
 
-			default:
-				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
+			default: {
+			break; }
+
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -6018,7 +6026,8 @@ static enum ndr_err_code ndr_pull_netr_CONTROL_QUERY_INFORMATION(struct ndr_pull
 			break;
 
 			default:
-				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
+			break;
+
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -6067,7 +6076,8 @@ _PUBLIC_ void ndr_print_netr_CONTROL_QUERY_INFORMATION(struct ndr_print *ndr, co
 		break;
 
 		default:
-			ndr_print_bad_level(ndr, name, level);
+		break;
+
 	}
 }
 
@@ -6144,8 +6154,9 @@ static enum ndr_err_code ndr_push_netr_CONTROL_DATA_INFORMATION(struct ndr_push 
 				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->debug_level));
 			break; }
 
-			default:
-				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
+			default: {
+			break; }
+
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -6209,7 +6220,8 @@ static enum ndr_err_code ndr_push_netr_CONTROL_DATA_INFORMATION(struct ndr_push 
 			break;
 
 			default:
-				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
+			break;
+
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -6292,8 +6304,9 @@ static enum ndr_err_code ndr_pull_netr_CONTROL_DATA_INFORMATION(struct ndr_pull 
 				NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->debug_level));
 			break; }
 
-			default:
-				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
+			default: {
+			break; }
+
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -6392,7 +6405,8 @@ static enum ndr_err_code ndr_pull_netr_CONTROL_DATA_INFORMATION(struct ndr_pull 
 			break;
 
 			default:
-				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
+			break;
+
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -6463,7 +6477,8 @@ _PUBLIC_ void ndr_print_netr_CONTROL_DATA_INFORMATION(struct ndr_print *ndr, con
 		break;
 
 		default:
-			ndr_print_bad_level(ndr, name, level);
+		break;
+
 	}
 }
 

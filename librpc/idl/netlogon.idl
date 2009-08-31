@@ -831,9 +831,14 @@ interface netlogon
 	/* Function 0x0C */
 
 	typedef [bitmap32bit] bitmap {
-		NETLOGON_CTRL_REPL_NEEDED	= 0x0001,
-		NETLOGON_CTRL_REPL_IN_PROGRESS	= 0x0002,
-		NETLOGON_CTRL_REPL_FULL_SYNC	= 0x0004
+		NETLOGON_REPLICATION_NEEDED		= 0x00000001,
+		NETLOGON_REPLICATION_IN_PROGRESS	= 0x00000002,
+		NETLOGON_FULL_SYNC_REPLICATION		= 0x00000004,
+		NETLOGON_REDO_NEEDED			= 0x00000008,
+		NETLOGON_HAS_IP				= 0x00000010,
+		NETLOGON_HAS_TIMESERV			= 0x00000020,
+		NETLOGON_DNS_UPDATE_FAILURE		= 0x00000040,
+		NETLOGON_VERIFY_STATUS_RETURNED		= 0x00000080
 	} netr_InfoFlags;
 
 	typedef struct {
@@ -868,6 +873,7 @@ interface netlogon
 		[case(2)]  netr_NETLOGON_INFO_2 *info2;
 		[case(3)]  netr_NETLOGON_INFO_3 *info3;
 		[case(4)]  netr_NETLOGON_INFO_4 *info4;
+		[default] ;
 	} netr_CONTROL_QUERY_INFORMATION;
 
 	/* function_code values */
@@ -919,6 +925,7 @@ interface netlogon
 		[case(NETLOGON_CONTROL_TC_VERIFY)]         [string,charset(UTF16)] uint16 *domain;
 		[case(NETLOGON_CONTROL_FIND_USER)]         [string,charset(UTF16)] uint16 *user;
 		[case(NETLOGON_CONTROL_SET_DBFLAG)]        uint32 debug_level;
+		[default] ;
 	} netr_CONTROL_DATA_INFORMATION;
 
 	WERROR netr_LogonControl2(
