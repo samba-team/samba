@@ -918,6 +918,9 @@ static NTSTATUS _netr_LogonSamLogon_base(pipes_struct *p,
 
 	switch (r->in.logon_level) {
 	case NetlogonInteractiveInformation:
+	case NetlogonServiceInformation:
+	case NetlogonInteractiveTransitiveInformation:
+	case NetlogonServiceTransitiveInformation:
 		nt_username	= logon->password->identity_info.account_name.string;
 		nt_domain	= logon->password->identity_info.domain_name.string;
 		nt_workstation	= logon->password->identity_info.workstation.string;
@@ -925,6 +928,7 @@ static NTSTATUS _netr_LogonSamLogon_base(pipes_struct *p,
 		DEBUG(3,("SAM Logon (Interactive). Domain:[%s].  ", lp_workgroup()));
 		break;
 	case NetlogonNetworkInformation:
+	case NetlogonNetworkTransitiveInformation:
 		nt_username	= logon->network->identity_info.account_name.string;
 		nt_domain	= logon->network->identity_info.domain_name.string;
 		nt_workstation	= logon->network->identity_info.workstation.string;
@@ -947,6 +951,7 @@ static NTSTATUS _netr_LogonSamLogon_base(pipes_struct *p,
 
 	switch (r->in.logon_level) {
 	case NetlogonNetworkInformation:
+	case NetlogonNetworkTransitiveInformation:
 	{
 		const char *wksname = nt_workstation;
 
@@ -976,6 +981,10 @@ static NTSTATUS _netr_LogonSamLogon_base(pipes_struct *p,
 		break;
 	}
 	case NetlogonInteractiveInformation:
+	case NetlogonServiceInformation:
+	case NetlogonInteractiveTransitiveInformation:
+	case NetlogonServiceTransitiveInformation:
+
 		/* 'Interactive' authentication, supplies the password in its
 		   MD4 form, encrypted with the session key.  We will convert
 		   this to challenge/response for the auth subsystem to chew
