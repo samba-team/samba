@@ -910,6 +910,12 @@ static NTSTATUS _netr_LogonSamLogon_base(pipes_struct *p,
 			return NT_STATUS_NO_MEMORY;
 		}
 		break;
+	case 6:
+		r->out.validation->sam6 = TALLOC_ZERO_P(p->mem_ctx, struct netr_SamInfo6);
+		if (!r->out.validation->sam6) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		break;
 	default:
 		DEBUG(0,("%s: bad validation_level value %d.\n",
 			fn, (int)r->in.validation_level));
@@ -1074,6 +1080,10 @@ static NTSTATUS _netr_LogonSamLogon_base(pipes_struct *p,
 	case 3:
 		status = serverinfo_to_SamInfo3(server_info, pipe_session_key, 16,
 						r->out.validation->sam3);
+		break;
+	case 6:
+		status = serverinfo_to_SamInfo6(server_info, pipe_session_key, 16,
+						r->out.validation->sam6);
 		break;
 	}
 

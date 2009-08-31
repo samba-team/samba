@@ -5620,6 +5620,10 @@ NTSTATUS serverinfo_to_SamInfo3(struct auth_serversupplied_info *server_info,
 				uint8_t *pipe_session_key,
 				size_t pipe_session_key_len,
 				struct netr_SamInfo3 *sam3);
+NTSTATUS serverinfo_to_SamInfo6(struct auth_serversupplied_info *server_info,
+				uint8_t *pipe_session_key,
+				size_t pipe_session_key_len,
+				struct netr_SamInfo6 *sam6);
 void init_netr_CryptPassword(const char *pwd,
 			     unsigned char session_key[16],
 			     struct netr_CryptPassword *pwd_buf);

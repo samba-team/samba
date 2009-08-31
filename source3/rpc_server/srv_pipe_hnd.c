@@ -1716,3 +1716,54 @@ NTSTATUS serverinfo_to_SamInfo3(struct auth_serversupplied_info *server_info,
 
 	return NT_STATUS_OK;
 }
+
+/****************************************************************************
+ inits a netr_SamInfo6 structure from an auth_serversupplied_info. sam6 must
+ already be initialized and is used as the talloc parent for its members.
+*****************************************************************************/
+
+NTSTATUS serverinfo_to_SamInfo6(struct auth_serversupplied_info *server_info,
+				uint8_t *pipe_session_key,
+				size_t pipe_session_key_len,
+				struct netr_SamInfo6 *sam6)
+{
+	NTSTATUS status;
+	struct pdb_domain_info *dominfo;
+
+	if ((pdb_capabilities() & PDB_CAP_ADS) == 0) {
+		DEBUG(10,("Not adding validation info level 6 "
+			   "without ADS passdb backend\n"));
+		return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	dominfo = pdb_get_domain_info(sam6);
+	if (dominfo == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = serverinfo_to_SamInfo_base(sam6,
+					    server_info,
+					    pipe_session_key,
+					    pipe_session_key_len,
+					    &sam6->base);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	sam6->sidcount		= 0;
+	sam6->sids		= NULL;
+
+	sam6->forest.string	= talloc_strdup(sam6, dominfo->dns_forest);
+	if (sam6->forest.string == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	sam6->principle.string	= talloc_asprintf(sam6, "%s@%s",
+						  pdb_get_username(server_info->sam_account),
+						  dominfo->dns_domain);
+	if (sam6->principle.string == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
+}
