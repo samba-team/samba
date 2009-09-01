@@ -1,6 +1,6 @@
                    =============================
                    Release Notes for Samba 3.4.1
-			  August , 2009
+			 September 3, 2009
                    =============================
 
 
@@ -46,11 +46,16 @@ o   Günther Deschner <gd@samba.org>
     * BUG 6607: Fix crash bug in spoolss_addprinterex_level_2.
 
 
+o   Olaf Flebbe <flebbe@nix.science-computing.de>
+    * BUG 6655: Fix 'smbcontrol smbd ping'.
+
+
 o   Matt Kraai <mkraai@beckman.com>
     * BUG 6630: Fix opening of sockets on QNX.
 
 
 o   Volker Lendecke <vl@samba.org>
+    * BUG 5886: Fix password change propagation with ldapsam.
     * BUG 6585: Fix unqualified "net join".
     * BUG 6611: Fix a valgrind error in chain_reply.
     * Fix linking on Solaris.
@@ -61,6 +66,7 @@ o   Stefan Metzmacher <metze@samba.org>
     * BUG 6532: Fix the build with external talloc.
     * BUG 6538: Cancel all locks that are made before the first failure.
     * BUG 6627: Raise the timeout for lsa_Lookup*() calls from 10 to 35 seconds.
+    * BUG 6664: Fix truncation of the session key.
 
 
 o   Tim Prouty <tprouty@samba.org>
