@@ -36,9 +36,6 @@
 /* change this if the data format ever changes */
 #define LTDB_PACKING_FORMAT 0x26011967
 
-/* old packing formats */
-#define LTDB_PACKING_FORMAT_NODN 0x26011966
-
 /* use a portable integer format */
 static void put_uint32(uint8_t *p, int ofs, unsigned int val)
 {
@@ -183,10 +180,6 @@ int ltdb_unpack_data(struct ldb_module *module,
 	remaining = data->dsize - 8;
 
 	switch (format) {
-	case LTDB_PACKING_FORMAT_NODN:
-		message->dn = NULL;
-		break;
-
 	case LTDB_PACKING_FORMAT:
 		len = strnlen((char *)p, remaining);
 		if (len == remaining) {
