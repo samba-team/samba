@@ -373,6 +373,7 @@ int ldb_ldif_write(struct ldb_context *ldb,
 	ret = fprintf_fn(private_data,"\n");
 	CHECK_RET;
 
+	talloc_free(mem_ctx);
 	return total;
 }
 
