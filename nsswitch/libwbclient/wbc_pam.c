@@ -423,15 +423,24 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 		request.data.auth_crap.lm_resp_len =
 				MIN(params->password.response.lm_length,
 				    sizeof(request.data.auth_crap.lm_resp));
-		request.data.auth_crap.nt_resp_len =
-				MIN(params->password.response.nt_length,
-				    sizeof(request.data.auth_crap.nt_resp));
 		if (params->password.response.lm_data) {
 			memcpy(request.data.auth_crap.lm_resp,
 			       params->password.response.lm_data,
 			       request.data.auth_crap.lm_resp_len);
 		}
-		if (params->password.response.nt_data) {
+		request.data.auth_crap.nt_resp_len = params->password.response.nt_length;
+		if (params->password.response.nt_length > sizeof(request.data.auth_crap.nt_resp)) {
+			request.flags |= WBFLAG_BIG_NTLMV2_BLOB;
+			request.extra_len = params->password.response.nt_length;
+			request.extra_data.data = talloc_zero_array(NULL, char, request.extra_len);
+			if (request.extra_data.data == NULL) {
+				wbc_status = WBC_ERR_NO_MEMORY;
+				BAIL_ON_WBC_ERROR(wbc_status);
+			}
+			memcpy(request.extra_data.data,
+			       params->password.response.nt_data,
+			       request.data.auth_crap.nt_resp_len);
+		} else if (params->password.response.nt_data) {
 			memcpy(request.data.auth_crap.nt_resp,
 			       params->password.response.nt_data,
 			       request.data.auth_crap.nt_resp_len);
@@ -476,6 +485,8 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 done:
 	if (response.extra_data.data)
 		free(response.extra_data.data);
+
+	talloc_free(request.extra_data.data);
 
 	return wbc_status;
 }
