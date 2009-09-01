@@ -432,6 +432,7 @@ static int ldif_canonicalise_objectCategory(struct ldb_context *ldb, void *mem_c
 	}
 
 	if (!schema) {
+		talloc_free(tmp_ctx);
 		*out = data_blob_talloc(mem_ctx, in->data, in->length);
 		if (in->data && !out->data) {
 			return LDB_ERR_OPERATIONS_ERROR;
