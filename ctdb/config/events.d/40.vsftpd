@@ -24,11 +24,11 @@ case $cmd in
 	;;
 
      takeip)
-	echo "restart" >> $CTDB_BASE/state/vsftpd/restart
+	echo "restart" > $CTDB_BASE/state/vsftpd/restart
 	;;
 
      releaseip)
-	echo "restart" >> $CTDB_BASE/state/vsftpd/restart
+	echo "restart" > $CTDB_BASE/state/vsftpd/restart
 	;;
 
      recovered)
@@ -39,7 +39,7 @@ case $cmd in
 		service vsftpd start
 	} >/dev/null 2>&1
 
-	/bin/rm -f $CTDB_BASE/state/vsftpd/restart
+	/bin/rm -f $CTDB_BASE/state/vsftpd/restart 2>/dev/null
 	;;
 
      monitor)
