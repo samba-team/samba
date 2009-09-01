@@ -369,7 +369,7 @@ static int ldb_list_find(const void *needle,
 			 const void *base, size_t nmemb, size_t size,
 			 comparison_fn_t comp_fn)
 {
-	const char *base_p = (const char *)base;
+	const uint8_t *base_p = (const uint8_t *)base;
 	size_t min_i, max_i, test_i;
 
 	if (nmemb == 0) {
@@ -383,17 +383,11 @@ static int ldb_list_find(const void *needle,
 		int r;
 
 		test_i = (min_i + max_i) / 2;
-		/* the following cast looks strange, but is
-		 correct. The key to understanding it is that base_p
-		 is a pointer to an array of pointers, so we have to
-		 dereference it after casting to void **. The strange
-		 const in the middle gives us the right type of pointer
-		 after the dereference  (tridge) */
-		r = comp_fn(needle, *(void * const *)(base_p + (size * test_i)));
+		r = comp_fn(needle, (void const *)(base_p + (size * test_i)));
 		if (r == 0) {
 			/* scan back for first element */
 			while (test_i > 0 &&
-			       comp_fn(needle, *(void * const *)(base_p + (size * (test_i-1)))) == 0) {
+			       comp_fn(needle, (void const *)(base_p + (size * (test_i-1)))) == 0) {
 				test_i--;
 			}
 			return test_i;
@@ -409,7 +403,7 @@ static int ldb_list_find(const void *needle,
 		}
 	}
 
-	if (comp_fn(needle, *(void * const *)(base_p + (size * min_i))) == 0) {
+	if (comp_fn(needle, (void const *)(base_p + (size * min_i))) == 0) {
 		return min_i;
 	}
 
