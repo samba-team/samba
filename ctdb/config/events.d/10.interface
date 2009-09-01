@@ -114,7 +114,7 @@ case $cmd in
 		fi
 	    done
 	}
-	iptables -D INPUT -i $iface -d $ip -j DROP
+	iptables -D INPUT -i $iface -d $ip -j DROP 2> /dev/null
 	[ $failed = 0 ] || {
 		 echo "Failed to del $ip on dev $iface"
 		 exit 1
