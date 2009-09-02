@@ -45,6 +45,13 @@ WERROR registry_pull_value(TALLOC_CTX *mem_ctx,
 		}
 		value->v.dword = IVAL(data, 0);
 		break;
+	case REG_QWORD:
+		if ((size != 8) || (length != 8)) {
+			err = WERR_INVALID_PARAM;
+			goto error;
+		}
+		value->v.qword = BVAL(data, 0);
+		break;
 	case REG_SZ:
 	case REG_EXPAND_SZ:
 	{
@@ -84,7 +91,6 @@ WERROR registry_pull_value(TALLOC_CTX *mem_ctx,
 			memcpy((void *)tmp, (const void *)data, length);
 			tmp[num_ucs2] = 0;
 		}
-
 		if (length + 2 < length) {
 			/* Integer wrap. */
 			SAFE_FREE(tmp);
@@ -149,6 +155,15 @@ WERROR registry_push_value(TALLOC_CTX *mem_ctx,
 		char buf[4];
 		SIVAL(buf, 0, value->v.dword);
 		*presult = data_blob_talloc(mem_ctx, (void *)buf, 4);
+		if (presult->data == NULL) {
+			return WERR_NOMEM;
+		}
+		break;
+	}
+	case REG_QWORD: {
+		char buf[8];
+		SBVAL(buf, 0, value->v.qword);
+		*presult = data_blob_talloc(mem_ctx, (void *)buf, 8);
 		if (presult->data == NULL) {
 			return WERR_NOMEM;
 		}
