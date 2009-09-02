@@ -49,6 +49,7 @@ from samba.dcerpc import security
 import urllib
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError, timestring
 from ms_schema import read_ms_schema
+from ms_display_specifiers import read_ms_ldif
 from signal import SIGTERM
 
 __docformat__ = "restructuredText"
@@ -963,8 +964,10 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
             })
 
         message("Setting up display specifiers")
-        setup_add_ldif(samdb, setup_path("display_specifiers.ldif"), 
-                       {"CONFIGDN": names.configdn})
+        display_specifiers_ldif = read_ms_ldif(setup_path('display-specifiers/DisplaySpecifiers-Win2k8R2.txt'))
+        display_specifiers_ldif = substitute_var(display_specifiers_ldif, {"CONFIGDN": names.configdn})
+        check_all_substituted(display_specifiers_ldif)
+        samdb.add_ldif(display_specifiers_ldif)
 
         message("Adding users container")
         setup_add_ldif(samdb, setup_path("provision_users_add.ldif"), {
