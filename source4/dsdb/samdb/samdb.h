@@ -45,15 +45,11 @@ struct dsdb_control_current_partition {
 	/* 
 	 * this is the version of the dsdb_control_current_partition
 	 * version 0: initial implementation
+	 * version 1: got rid of backend and module fields
 	 */
-#define DSDB_CONTROL_CURRENT_PARTITION_VERSION 0
+#define DSDB_CONTROL_CURRENT_PARTITION_VERSION 1
 	uint32_t version;
-
 	struct ldb_dn *dn;
-
-	const char *backend;
-
-	struct ldb_module *module;
 };
 
 #define DSDB_CONTROL_REPLICATED_UPDATE_OID "1.3.6.1.4.1.7165.4.3.3"

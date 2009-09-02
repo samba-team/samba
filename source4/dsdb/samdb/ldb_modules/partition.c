@@ -40,8 +40,13 @@
 #include "lib/ldb/include/ldb_private.h"
 #include "dsdb/samdb/samdb.h"
 
+struct dsdb_partition {
+	struct ldb_module *module;
+	struct dsdb_control_current_partition *ctrl;
+};
+
 struct partition_private_data {
-	struct dsdb_control_current_partition **partitions;
+	struct dsdb_partition **partitions;
 	struct ldb_dn **replicate;
 };
 
@@ -139,16 +144,32 @@ static int partition_request(struct ldb_module *module, struct ldb_request *requ
 	return ret;
 }
 
-static struct dsdb_control_current_partition *find_partition(struct partition_private_data *data,
-							     struct ldb_dn *dn)
+static struct dsdb_partition *find_partition(struct partition_private_data *data,
+					     struct ldb_dn *dn,
+					     struct ldb_request *req)
 {
 	int i;
+	struct ldb_control *partition_ctrl;
+
+	/* see if the request has the partition DN specified in a
+	 * control. The repl_meta_data module can specify this to
+	 * ensure that replication happens to the right partition
+	 */
+	partition_ctrl = ldb_request_get_control(req, DSDB_CONTROL_CURRENT_PARTITION_OID);
+	if (partition_ctrl) {
+		const struct dsdb_control_current_partition *partition;
+		partition = talloc_get_type(partition_ctrl->data,
+					    struct dsdb_control_current_partition);
+		if (partition != NULL) {
+			dn = partition->dn;
+		}
+	}
 
 	/* Look at base DN */
 	/* Figure out which partition it is under */
 	/* Skip the lot if 'data' isn't here yet (initialisation) */
 	for (i=0; data && data->partitions && data->partitions[i]; i++) {
-		if (ldb_dn_compare_base(data->partitions[i]->dn, dn) == 0) {
+		if (ldb_dn_compare_base(data->partitions[i]->ctrl->dn, dn) == 0) {
 			return data->partitions[i];
 		}
 	}
@@ -239,7 +260,7 @@ static int partition_req_callback(struct ldb_request *req,
 }
 
 static int partition_prep_request(struct partition_context *ac,
-				  struct dsdb_control_current_partition *partition)
+				  struct dsdb_partition *partition)
 {
 	int ret;
 	struct ldb_request *req;
@@ -326,20 +347,22 @@ static int partition_prep_request(struct partition_context *ac,
 	if (partition) {
 		ac->part_req[ac->num_requests].module = partition->module;
 
-		ret = ldb_request_add_control(req,
-					DSDB_CONTROL_CURRENT_PARTITION_OID,
-					false, partition);
-		if (ret != LDB_SUCCESS) {
-			return ret;
+		if (!ldb_request_get_control(req, DSDB_CONTROL_CURRENT_PARTITION_OID)) {
+			ret = ldb_request_add_control(req,
+						      DSDB_CONTROL_CURRENT_PARTITION_OID,
+						      false, partition->ctrl);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
 		}
 
 		if (req->operation == LDB_SEARCH) {
 			/* If the search is for 'more' than this partition,
 			 * then change the basedn, so a remote LDAP server
 			 * doesn't object */
-			if (ldb_dn_compare_base(partition->dn,
+			if (ldb_dn_compare_base(partition->ctrl->dn,
 						req->op.search.base) != 0) {
-				req->op.search.base = partition->dn;
+				req->op.search.base = partition->ctrl->dn;
 			}
 		}
 
@@ -393,7 +416,7 @@ static int partition_replicate(struct ldb_module *module, struct ldb_request *re
 	struct partition_context *ac;
 	unsigned i;
 	int ret;
-	struct dsdb_control_current_partition *partition;
+	struct dsdb_partition *partition;
 	struct partition_private_data *data = talloc_get_type(module->private_data, 
 							      struct partition_private_data);
 	if (!data || !data->partitions) {
@@ -419,7 +442,7 @@ static int partition_replicate(struct ldb_module *module, struct ldb_request *re
 	/* Otherwise, we need to find the partition to fire it to */
 
 	/* Find partition */
-	partition = find_partition(data, dn);
+	partition = find_partition(data, dn, req);
 	if (!partition) {
 		/*
 		 * if we haven't found a matching partition
@@ -520,19 +543,19 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
                              or
 			      3) the DN we are looking for is a child of the partition
 			 */
-			if (ldb_dn_compare(data->partitions[i]->dn, req->op.search.base) == 0) {
+			if (ldb_dn_compare(data->partitions[i]->ctrl->dn, req->op.search.base) == 0) {
 				match = true;
 				if (req->op.search.scope == LDB_SCOPE_BASE) {
 					stop = true;
 				}
 			}
 			if (!match && 
-			    (ldb_dn_compare_base(req->op.search.base, data->partitions[i]->dn) == 0 &&
+			    (ldb_dn_compare_base(req->op.search.base, data->partitions[i]->ctrl->dn) == 0 &&
 			     req->op.search.scope != LDB_SCOPE_BASE)) {
 				match = true;
 			}
 			if (!match &&
-			    ldb_dn_compare_base(data->partitions[i]->dn, req->op.search.base) == 0) {
+			    ldb_dn_compare_base(data->partitions[i]->ctrl->dn, req->op.search.base) == 0) {
 				match = true;
 				stop = true; /* note that this relies on partition ordering */
 			}
@@ -592,7 +615,7 @@ static int partition_delete(struct ldb_module *module, struct ldb_request *req)
 static int partition_rename(struct ldb_module *module, struct ldb_request *req)
 {
 	/* Find backend */
-	struct dsdb_control_current_partition *backend, *backend2;
+	struct dsdb_partition *backend, *backend2;
 	
 	struct partition_private_data *data = talloc_get_type(module->private_data, 
 							      struct partition_private_data);
@@ -602,8 +625,8 @@ static int partition_rename(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	backend = find_partition(data, req->op.rename.olddn);
-	backend2 = find_partition(data, req->op.rename.newdn);
+	backend = find_partition(data, req->op.rename.olddn, req);
+	backend2 = find_partition(data, req->op.rename.newdn, req);
 
 	if ((backend && !backend2) || (!backend && backend2)) {
 		return LDB_ERR_AFFECTS_MULTIPLE_DSAS;
@@ -613,9 +636,9 @@ static int partition_rename(struct ldb_module *module, struct ldb_request *req)
 		ldb_asprintf_errstring(ldb_module_get_ctx(module), 
 				       "Cannot rename from %s in %s to %s in %s: %s",
 				       ldb_dn_get_linearized(req->op.rename.olddn),
-				       ldb_dn_get_linearized(backend->dn),
+				       ldb_dn_get_linearized(backend->ctrl->dn),
 				       ldb_dn_get_linearized(req->op.rename.newdn),
-				       ldb_dn_get_linearized(backend2->dn),
+				       ldb_dn_get_linearized(backend2->ctrl->dn),
 				       ldb_strerror(LDB_ERR_AFFECTS_MULTIPLE_DSAS));
 		return LDB_ERR_AFFECTS_MULTIPLE_DSAS;
 	}
@@ -834,12 +857,14 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 				return ret;
 			}
 
-			ret = ldb_request_add_control(treq,
-						      DSDB_CONTROL_CURRENT_PARTITION_OID,
-						      false, data->partitions[i]);
-			if (ret != LDB_SUCCESS) {
-				talloc_free(res);
-				return ret;
+			if (!ldb_request_get_control(treq, DSDB_CONTROL_CURRENT_PARTITION_OID)) {
+				ret = ldb_request_add_control(treq,
+							      DSDB_CONTROL_CURRENT_PARTITION_OID,
+							      false, data->partitions[i]->ctrl);
+				if (ret != LDB_SUCCESS) {
+					talloc_free(res);
+					return ret;
+				}
 			}
 
 			ret = partition_request(data->partitions[i]->module, treq);
@@ -933,12 +958,14 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 				return ret;
 			}
 
-			ret = ldb_request_add_control(treq,
-						      DSDB_CONTROL_CURRENT_PARTITION_OID,
-						      false, data->partitions[i]);
-			if (ret != LDB_SUCCESS) {
-				talloc_free(res);
-				return ret;
+			if (!ldb_request_get_control(treq, DSDB_CONTROL_CURRENT_PARTITION_OID)) {
+				ret = ldb_request_add_control(treq,
+							      DSDB_CONTROL_CURRENT_PARTITION_OID,
+							      false, data->partitions[i]->ctrl);
+				if (ret != LDB_SUCCESS) {
+					talloc_free(res);
+					return ret;
+				}
 			}
 
 			ret = partition_request(data->partitions[i]->module, treq);
@@ -1005,28 +1032,9 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 	return ldb_module_done(req, NULL, ext, LDB_SUCCESS);
 }
 
-static int partition_extended_replicated_objects(struct ldb_module *module, struct ldb_request *req)
-{
-	struct dsdb_extended_replicated_objects *ext;
-
-	ext = talloc_get_type(req->op.extended.data, struct dsdb_extended_replicated_objects);
-	if (!ext) {
-		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_FATAL, "partition_extended_replicated_objects: invalid extended data\n");
-		return LDB_ERR_PROTOCOL_ERROR;
-	}
-
-	if (ext->version != DSDB_EXTENDED_REPLICATED_OBJECTS_VERSION) {
-		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_FATAL, "partition_extended_replicated_objects: extended data invalid version [%u != %u]\n",
-			  ext->version, DSDB_EXTENDED_REPLICATED_OBJECTS_VERSION);
-		return LDB_ERR_PROTOCOL_ERROR;
-	}
-
-	return partition_replicate(module, req, ext->partition_dn);
-}
-
 static int partition_extended_schema_update_now(struct ldb_module *module, struct ldb_request *req)
 {
-	struct dsdb_control_current_partition *partition;
+	struct dsdb_partition *partition;
 	struct partition_private_data *data;
 	struct ldb_dn *schema_dn;
 	struct partition_context *ac;
@@ -1043,7 +1051,7 @@ static int partition_extended_schema_update_now(struct ldb_module *module, struc
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	
-	partition = find_partition( data, schema_dn );
+	partition = find_partition( data, schema_dn, req);
 	if (!partition) {
 		return ldb_next_request(module, req);
 	}
@@ -1085,10 +1093,6 @@ static int partition_extended(struct ldb_module *module, struct ldb_request *req
 		return partition_sequence_number(module, req);
 	}
 
-	if (strcmp(req->op.extended.oid, DSDB_EXTENDED_REPLICATED_OBJECTS_OID) == 0) {
-		return partition_extended_replicated_objects(module, req);
-	}
-
 	/* forward schemaUpdateNow operation to schema_fsmo module*/
 	if (strcmp(req->op.extended.oid, DSDB_EXTENDED_SCHEMA_UPDATE_NOW_OID) == 0) {
 		return partition_extended_schema_update_now( module, req );
@@ -1109,13 +1113,13 @@ static int partition_extended(struct ldb_module *module, struct ldb_request *req
 
 static int partition_sort_compare(const void *v1, const void *v2)
 {
-	const struct dsdb_control_current_partition *p1;
-	const struct dsdb_control_current_partition *p2;
+	const struct dsdb_partition *p1;
+	const struct dsdb_partition *p2;
 
-	p1 = *((struct dsdb_control_current_partition * const*)v1);
-	p2 = *((struct dsdb_control_current_partition * const*)v2);
+	p1 = *((struct dsdb_partition * const*)v1);
+	p2 = *((struct dsdb_partition * const*)v2);
 
-	return ldb_dn_compare(p1->dn, p2->dn);
+	return ldb_dn_compare(p1->ctrl->dn, p2->ctrl->dn);
 }
 
 static int partition_init(struct ldb_module *module)
@@ -1165,7 +1169,7 @@ static int partition_init(struct ldb_module *module)
 		talloc_free(mem_ctx);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
-	data->partitions = talloc_array(data, struct dsdb_control_current_partition *, partition_attributes->num_values + 1);
+	data->partitions = talloc_array(data, struct dsdb_partition *, partition_attributes->num_values + 1);
 	if (!data->partitions) {
 		talloc_free(mem_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -1173,6 +1177,8 @@ static int partition_init(struct ldb_module *module)
 	for (i=0; i < partition_attributes->num_values; i++) {
 		char *base = talloc_strdup(data->partitions, (char *)partition_attributes->values[i].data);
 		char *p = strchr(base, ':');
+		const char *backend;
+
 		if (!p) {
 			ldb_asprintf_errstring(ldb_module_get_ctx(module), 
 						"partition_init: "
@@ -1189,30 +1195,34 @@ static int partition_init(struct ldb_module *module)
 			talloc_free(mem_ctx);
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
-		data->partitions[i] = talloc(data->partitions, struct dsdb_control_current_partition);
+		data->partitions[i] = talloc(data->partitions, struct dsdb_partition);
 		if (!data->partitions[i]) {
 			talloc_free(mem_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		data->partitions[i]->version = DSDB_CONTROL_CURRENT_PARTITION_VERSION;
-
-		data->partitions[i]->dn = ldb_dn_new(data->partitions[i], ldb_module_get_ctx(module), base);
-		if (!data->partitions[i]->dn) {
+		data->partitions[i]->ctrl = talloc(data->partitions[i], struct dsdb_control_current_partition);
+		if (!data->partitions[i]->ctrl) {
+			talloc_free(mem_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		data->partitions[i]->ctrl->version = DSDB_CONTROL_CURRENT_PARTITION_VERSION;
+		data->partitions[i]->ctrl->dn = ldb_dn_new(data->partitions[i], ldb_module_get_ctx(module), base);
+		if (!data->partitions[i]->ctrl->dn) {
 			ldb_asprintf_errstring(ldb_module_get_ctx(module), 
 						"partition_init: invalid DN in partition record: %s", base);
 			talloc_free(mem_ctx);
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 
-		data->partitions[i]->backend = samdb_relative_path(ldb_module_get_ctx(module), 
+		backend = samdb_relative_path(ldb_module_get_ctx(module), 
 								   data->partitions[i], 
 								   p);
-		if (!data->partitions[i]->backend) {
+		if (!backend) {
 			ldb_asprintf_errstring(ldb_module_get_ctx(module), 
 						"partition_init: unable to determine an relative path for partition: %s", base);
 			talloc_free(mem_ctx);			
 		}
-		ret = ldb_connect_backend(ldb_module_get_ctx(module), data->partitions[i]->backend, NULL, &data->partitions[i]->module);
+		ret = ldb_connect_backend(ldb_module_get_ctx(module), backend, NULL, &data->partitions[i]->module);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(mem_ctx);
 			return ret;
@@ -1234,7 +1244,7 @@ static int partition_init(struct ldb_module *module)
 		}
 		
 		req->operation = LDB_REQ_REGISTER_PARTITION;
-		req->op.reg_partition.dn = data->partitions[i]->dn;
+		req->op.reg_partition.dn = data->partitions[i]->ctrl->dn;
 		req->callback = ldb_op_default_callback;
 
 		ldb_set_timeout(ldb_module_get_ctx(module), req, 0);
@@ -1289,7 +1299,7 @@ static int partition_init(struct ldb_module *module)
 		for (i=0; i < modules_attributes->num_values; i++) {
 			struct ldb_dn *base_dn;
 			int partition_idx;
-			struct dsdb_control_current_partition *partition = NULL;
+			struct dsdb_partition *partition = NULL;
 			const char **modules = NULL;
 
 			char *base = talloc_strdup(data->partitions, (char *)modules_attributes->values[i].data);
@@ -1321,7 +1331,7 @@ static int partition_init(struct ldb_module *module)
 			}
 			
 			for (partition_idx = 0; data->partitions[partition_idx]; partition_idx++) {
-				if (ldb_dn_compare(data->partitions[partition_idx]->dn, base_dn) == 0) {
+				if (ldb_dn_compare(data->partitions[partition_idx]->ctrl->dn, base_dn) == 0) {
 					partition = data->partitions[partition_idx];
 					break;
 				}
