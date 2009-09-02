@@ -245,14 +245,32 @@ WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
 
 	/* TODO: handle linked attributes */
 
+	/* wrap the extended operation in a transaction 
+	   See [MS-DRSR] 3.3.2 Transactions
+	 */
+	ret = ldb_transaction_start(ldb);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,(__location__ " Failed to start transaction\n"));
+		talloc_free(out);
+		return WERR_FOOBAR;
+	}
+
 	ret = ldb_extended(ldb, DSDB_EXTENDED_REPLICATED_OBJECTS_OID, out, &ext_res);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,("Failed to apply records: %s: %s\n",
 			 ldb_errstring(ldb), ldb_strerror(ret)));
 		talloc_free(out);
+		ldb_transaction_cancel(ldb);
 		return WERR_FOOBAR;
 	}
 	talloc_free(ext_res);
+
+	ret = ldb_transaction_commit(ldb);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,(__location__ " Failed to commit transaction\n"));
+		talloc_free(out);
+		return WERR_FOOBAR;
+	}
 
 	if (_out) {
 		*_out = out;
