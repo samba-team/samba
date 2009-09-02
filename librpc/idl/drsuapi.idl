@@ -608,6 +608,7 @@ interface drsuapi
 		drsuapi_DsReplicaMetaData meta_data;
 	} drsuapi_DsReplicaLinkedAttribute;
 
+	/* [MS-DRSR] section 4.1.10.2.11 DRS_MSG_GETCHGREPLY_V6 */
 	typedef [public,gensize] struct {
 		GUID source_dsa_guid; /* the 'objectGUID' field of the CN=NTDS Settings object */
 		GUID source_dsa_invocation_id; /* the 'invocationId' field of the CN=NTDS Settings object */
