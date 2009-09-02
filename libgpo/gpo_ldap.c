@@ -726,6 +726,10 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 		return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
+	if (!ads_set_sasl_wrap_flags(ads, ADS_AUTH_SASL_SIGN)) {
+		return ADS_ERROR(LDAP_INVALID_CREDENTIALS);
+	}
+
 	DEBUG(10,("ads_get_gpo_list: getting GPO list for [%s]\n", dn));
 
 	/* (L)ocal */
