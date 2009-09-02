@@ -1713,6 +1713,7 @@ char *ads_build_domain(const char *dn);
 ADS_STRUCT *ads_init(const char *realm, 
 		     const char *workgroup,
 		     const char *ldap_server);
+bool ads_set_sasl_wrap_flags(ADS_STRUCT *ads, int flags);
 void ads_destroy(ADS_STRUCT **ads);
 
 const char *ads_get_ldap_server_name(ADS_STRUCT *ads);

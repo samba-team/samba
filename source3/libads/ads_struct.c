@@ -151,6 +151,20 @@ ADS_STRUCT *ads_init(const char *realm,
 	return ads;
 }
 
+/****************************************************************
+****************************************************************/
+
+bool ads_set_sasl_wrap_flags(ADS_STRUCT *ads, int flags)
+{
+	if (!ads) {
+		return false;
+	}
+
+	ads->auth.flags = flags;
+
+	return true;
+}
+
 /*
   free the memory used by the ADS structure initialized with 'ads_init(...)'
 */
