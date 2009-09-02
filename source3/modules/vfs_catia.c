@@ -393,12 +393,14 @@ static int catia_rename(vfs_handle_struct *handle,
 	TALLOC_CTX *ctx = talloc_tos();
 	struct smb_filename *smb_fname_src_tmp = NULL;
 	struct smb_filename *smb_fname_dst_tmp = NULL;
+	char *src_name_mapped = NULL;
+	char *dst_name_mapped = NULL;
 	NTSTATUS status;
 	int ret = -1;
 
 	status = catia_string_replace_allocate(handle->conn,
 				smb_fname_src->base_name,
-				&(smb_fname_src_tmp->base_name), TO_UNIX);
+				&src_name_mapped, TO_UNIX);
 	if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
 		return -1;
@@ -406,7 +408,7 @@ static int catia_rename(vfs_handle_struct *handle,
 
 	status = catia_string_replace_allocate(handle->conn,
 				smb_fname_dst->base_name,
-				&(smb_fname_dst_tmp->base_name), TO_UNIX);
+				&dst_name_mapped, TO_UNIX);
 	if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
 		return -1;
@@ -426,6 +428,8 @@ static int catia_rename(vfs_handle_struct *handle,
 		goto out;
 	}
 
+	smb_fname_src_tmp->base_name = src_name_mapped;
+	smb_fname_dst_tmp->base_name = dst_name_mapped;	
 	DEBUG(10, ("converted old name: %s\n",
 				smb_fname_str_dbg(smb_fname_src_tmp)));
 	DEBUG(10, ("converted new name: %s\n",
@@ -434,6 +438,8 @@ static int catia_rename(vfs_handle_struct *handle,
 	ret = SMB_VFS_NEXT_RENAME(handle, smb_fname_src_tmp,
 			smb_fname_dst_tmp);
 out:
+	TALLOC_FREE(src_name_mapped);
+	TALLOC_FREE(dst_name_mapped);
 	TALLOC_FREE(smb_fname_src_tmp);
 	TALLOC_FREE(smb_fname_dst_tmp);
 	return ret;
@@ -652,6 +658,7 @@ static int catia_ntimes(vfs_handle_struct *handle,
 
 	smb_fname_tmp->base_name = name;
 	ret = SMB_VFS_NEXT_NTIMES(handle, smb_fname_tmp, ft);
+	TALLOC_FREE(name);
 	TALLOC_FREE(smb_fname_tmp);
 
 	return ret;
