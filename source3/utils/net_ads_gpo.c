@@ -360,7 +360,6 @@ out:
 	return 0;
 }
 
-#if 0
 static int net_ads_gpo_apply(struct net_context *c, int argc, const char **argv)
 {
 	TALLOC_CTX *mem_ctx;
@@ -444,7 +443,6 @@ out:
 	talloc_destroy(mem_ctx);
 	return 0;
 }
-#endif
 
 static int net_ads_gpo_link_get(struct net_context *c, int argc, const char **argv)
 {
@@ -626,7 +624,6 @@ out:
 int net_ads_gpo(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
-#if 0
 		{
 			"apply",
 			net_ads_gpo_apply,
@@ -635,7 +632,6 @@ int net_ads_gpo(struct net_context *c, int argc, const char **argv)
 			"net ads gpo apply\n"
 			"    Apply GPO to container"
 		},
-#endif
 		{
 			"getgpo",
 			net_ads_gpo_get_gpo,
