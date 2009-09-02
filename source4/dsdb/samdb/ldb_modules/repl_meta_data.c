@@ -658,6 +658,12 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 
 	replmd_ldb_message_sort(msg, ar->schema);
 
+	if (DEBUGLVL(4)) {
+		char *s = ldb_ldif_message_string(ldb, ar, LDB_CHANGETYPE_ADD, msg);
+		DEBUG(4, ("DRS replication add message:\n%s\n", s));
+		talloc_free(s);
+	}
+
 	ret = ldb_build_add_req(&change_req,
 				ldb,
 				ar,
@@ -903,6 +909,12 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	/* we want to replace the old values */
 	for (i=0; i < msg->num_elements; i++) {
 		msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
+	}
+
+	if (DEBUGLVL(4)) {
+		char *s = ldb_ldif_message_string(ldb, ar, LDB_CHANGETYPE_MODIFY, msg);
+		DEBUG(4, ("DRS replication modify message:\n%s\n", s));
+		talloc_free(s);
 	}
 
 	ret = ldb_build_mod_req(&change_req,
@@ -1311,6 +1323,12 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 	 * so we'll replace the whole attribute with all values
 	 */
 	nrf_el->flags = LDB_FLAG_MOD_REPLACE;
+
+	if (DEBUGLVL(4)) {
+		char *s = ldb_ldif_message_string(ldb, ar, LDB_CHANGETYPE_MODIFY, msg);
+		DEBUG(4, ("DRS replication uptodate modify message:\n%s\n", s));
+		talloc_free(s);
+	}
 
 	/* prepare the ldb_modify() request */
 	ret = ldb_build_mod_req(&change_req,
