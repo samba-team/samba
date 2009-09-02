@@ -236,6 +236,66 @@ static WERROR dcesrv_drsuapi_DsReplicaSync(struct dcesrv_call_state *dce_call, T
 	return WERR_OK;
 }
 
+int drsuapi_search_with_extended_dn(struct ldb_context *ldb,
+				TALLOC_CTX *mem_ctx,
+				struct ldb_result **_res,
+				struct ldb_dn *basedn,
+				enum ldb_scope scope,
+				const char * const *attrs,
+				const char *format, ...)
+{
+	va_list ap;
+	int ret;
+	struct ldb_request *req;
+	char *filter;
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_result *res;
+
+	tmp_ctx = talloc_new(mem_ctx);
+
+	res = talloc_zero(tmp_ctx, struct ldb_result);
+	if (!res) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	va_start(ap, format);
+	filter = talloc_vasprintf(tmp_ctx, format, ap);
+	va_end(ap);
+
+	if (filter == NULL) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ldb_build_search_req(&req, ldb, tmp_ctx,
+				   basedn,
+				   scope,
+				   filter,
+				   attrs,
+				   NULL,
+				   res,
+				   ldb_search_default_callback,
+				   NULL);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	ret = ldb_request_add_control(req, LDB_CONTROL_EXTENDED_DN_OID, true, NULL);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = ldb_request(ldb, req);
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+
+	talloc_free(req);
+	*_res = res;
+	return ret;
+}
+
 
 /* 
   drsuapi_DsGetNCChanges
@@ -243,7 +303,150 @@ static WERROR dcesrv_drsuapi_DsReplicaSync(struct dcesrv_call_state *dce_call, T
 static WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct drsuapi_DsGetNCChanges *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct ldb_result *site_res;
+	struct drsuapi_DsReplicaObjectIdentifier *ncRoot;
+	struct drsuapi_bind_state *b_state;
+	struct ldb_dn *ncRoot_dn;
+	int ret;
+	int i;
+	int j;
+	int uSN;
+	struct dsdb_schema *schema;
+	struct drsuapi_DsReplicaOIDMapping_Ctr *ctr;
+	time_t t = time(NULL);
+	NTTIME now;
+	struct drsuapi_DsReplicaObjectListItemEx *currentObject;
+	struct dom_sid *zero_sid;
+	struct ldb_dn *obj_dn;
+
+	b_state = talloc_zero(mem_ctx, struct drsuapi_bind_state);
+	W_ERROR_HAVE_NO_MEMORY(b_state);
+	zero_sid = talloc_zero(mem_ctx, struct dom_sid);
+	/*
+	 * connect to the samdb
+	 */
+	b_state->sam_ctx = samdb_connect(b_state, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, dce_call->conn->auth_state.session_info);
+	if (!b_state->sam_ctx) {
+		return WERR_FOOBAR;
+	}
+
+	/* Check request revision. */
+	if (r->in.level != 8) {
+		return WERR_REVISION_MISMATCH;
+	}
+
+        /* Perform access checks. */
+	if (r->in.req->req8.naming_context == NULL) {
+		return WERR_DS_DRA_INVALID_PARAMETER;
+	}
+
+	ncRoot = r->in.req->req8.naming_context;
+	if (ncRoot == NULL) {
+		return WERR_DS_DRA_BAD_NC;
+	}
+
+	/* Construct response. */
+	ncRoot_dn = ldb_dn_new(mem_ctx, b_state->sam_ctx, ncRoot->dn);
+	ret = drsuapi_search_with_extended_dn(b_state->sam_ctx, mem_ctx, &site_res,
+			 ncRoot_dn, LDB_SCOPE_SUBTREE, NULL,
+			 "(&(uSNChanged>=%lld)(objectClass=*))", r->in.req->req8.highwatermark.highest_usn);
+	if (ret != LDB_SUCCESS) {
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+
+	*r->out.level_out = 6;
+	r->out.ctr->ctr6.naming_context = talloc(mem_ctx, struct drsuapi_DsReplicaObjectIdentifier);
+	*r->out.ctr->ctr6.naming_context = *ncRoot;
+	/* TODO: linked attributes*/
+	r->out.ctr->ctr6.linked_attributes_count = 0;
+	r->out.ctr->ctr6.linked_attributes = NULL;
+
+	r->out.ctr->ctr6.object_count = 0;
+	r->out.ctr->ctr6.more_data = false;
+	r->out.ctr->ctr6.uptodateness_vector = NULL;
+
+	/* Prefix mapping */
+	schema = dsdb_get_schema(b_state->sam_ctx);
+	if (!schema) {
+		DEBUG(0,("No schema in b_state->sam_ctx"));
+	}
+
+	dsdb_get_oid_mappings_drsuapi(schema, true, mem_ctx, &ctr);
+	r->out.ctr->ctr6.mapping_ctr = *ctr;
+
+	r->out.ctr->ctr6.source_dsa_guid = *(samdb_ntds_objectGUID(b_state->sam_ctx));
+	r->out.ctr->ctr6.source_dsa_invocation_id = *(samdb_ntds_invocation_id(b_state->sam_ctx));
+
+	r->out.ctr->ctr6.old_highwatermark = r->in.req->req8.highwatermark;
+	r->out.ctr->ctr6.new_highwatermark = r->in.req->req8.highwatermark;
+
+	r->out.ctr->ctr6.first_object = talloc(mem_ctx, struct drsuapi_DsReplicaObjectListItemEx);
+	currentObject = r->out.ctr->ctr6.first_object;
+
+	for(i=0; i<site_res->count; i++) {
+		uSN = ldb_msg_find_attr_as_int(site_res->msgs[i],"uSNChanged", -1);
+		r->out.ctr->ctr6.object_count++;
+		if (uSN > r->out.ctr->ctr6.new_highwatermark.highest_usn) {
+			r->out.ctr->ctr6.new_highwatermark.highest_usn = uSN;
+		}
+
+		if (ldb_dn_compare(ncRoot_dn, site_res->msgs[i]->dn) == 0) {
+			currentObject->is_nc_prefix = true;
+			currentObject->parent_object_guid = NULL;
+		} else {
+			currentObject->is_nc_prefix = false;
+			currentObject->parent_object_guid = talloc(mem_ctx, struct GUID);
+			*currentObject->parent_object_guid = samdb_result_guid(site_res->msgs[i], "parentGUID");
+		}
+		currentObject->next_object = NULL;
+		/* TODO: MetaData vector*/
+		currentObject->meta_data_ctr = talloc(mem_ctx, struct drsuapi_DsReplicaMetaDataCtr);
+		currentObject->meta_data_ctr->meta_data = talloc(mem_ctx, struct drsuapi_DsReplicaMetaData);
+		currentObject->meta_data_ctr->count = 0;
+		currentObject->object.identifier = talloc(mem_ctx, struct drsuapi_DsReplicaObjectIdentifier);
+		obj_dn = ldb_msg_find_attr_as_dn(b_state->sam_ctx, mem_ctx, site_res->msgs[i], "distinguishedName");
+		currentObject->object.identifier->dn = ldb_dn_get_linearized(obj_dn);
+		currentObject->object.identifier->guid = GUID_zero();
+		currentObject->object.identifier->sid = *zero_sid;
+
+		currentObject->object.attribute_ctr.num_attributes = site_res->msgs[i]->num_elements;
+		/* Exclude non-replicate attributes from the responce.*/
+		for (j=0; j<site_res->msgs[i]->num_elements; j++) {
+			const struct dsdb_attribute *sa;
+			sa = dsdb_attribute_by_lDAPDisplayName(schema, site_res->msgs[i]->elements[j].name);
+			if (sa && sa->systemFlags & 0x00000001) {
+				ldb_msg_remove_attr(site_res->msgs[i], site_res->msgs[i]->elements[j].name);
+				currentObject->object.attribute_ctr.num_attributes--;
+			}
+		}
+		currentObject->object.attribute_ctr.attributes = talloc_array(mem_ctx, struct drsuapi_DsReplicaAttribute,
+									      currentObject->object.attribute_ctr.num_attributes);
+		for (j=0; j<currentObject->object.attribute_ctr.num_attributes; j++) {
+			dsdb_attribute_ldb_to_drsuapi(b_state->sam_ctx, schema,&site_res->msgs[i]->elements[j], mem_ctx,
+						      &currentObject->object.attribute_ctr.attributes[j]);
+		}
+
+		if (i == (site_res->count-1)) {
+			break;
+		}
+		currentObject->next_object = talloc(mem_ctx, struct drsuapi_DsReplicaObjectListItemEx);
+		currentObject = currentObject->next_object;
+	}
+
+	r->out.ctr->ctr6.uptodateness_vector = talloc(mem_ctx, struct drsuapi_DsReplicaCursor2CtrEx);
+
+	r->out.ctr->ctr6.uptodateness_vector->version = 2;
+	r->out.ctr->ctr6.uptodateness_vector->count = 1;
+	r->out.ctr->ctr6.uptodateness_vector->reserved1 = 0;
+	r->out.ctr->ctr6.uptodateness_vector->reserved2 = 0;
+	r->out.ctr->ctr6.uptodateness_vector->cursors = talloc(mem_ctx, struct drsuapi_DsReplicaCursor2);
+
+	r->out.ctr->ctr6.uptodateness_vector->cursors[0].source_dsa_invocation_id = *(samdb_ntds_invocation_id(b_state->sam_ctx));
+	r->out.ctr->ctr6.uptodateness_vector->cursors[0].highest_usn = r->out.ctr->ctr6.new_highwatermark.highest_usn;
+	unix_to_nt_time(&now, t);
+	r->out.ctr->ctr6.uptodateness_vector->cursors[0].last_sync_success = now;
+
+	return WERR_OK;
 }
 
 
