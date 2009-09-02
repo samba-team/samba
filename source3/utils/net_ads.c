@@ -2708,6 +2708,11 @@ int net_ads_group(struct net_context *c, int argc, const char **argv)
 	return net_ads_noads();
 }
 
+int net_ads_gpo(int argc, const char **argv)
+{
+	return net_ads_noads();
+}
+
 /* this one shouldn't display a message */
 int net_ads_check(struct net_context *c)
 {
