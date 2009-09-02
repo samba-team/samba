@@ -119,7 +119,9 @@ static bool net_sh_process(struct net_context *c,
 		}
 	}
 
-	if (strequal(argv[0], "exit") || strequal(argv[0], "quit")) {
+	if (strequal(argv[0], "exit") ||
+	    strequal(argv[0], "quit") ||
+	    strequal(argv[0], "q")) {
 		return false;
 	}
 
