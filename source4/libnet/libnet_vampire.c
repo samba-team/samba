@@ -103,6 +103,19 @@ static NTSTATUS vampire_prepare_db(void *private_data,
 	s->ldb = result.samdb;
 	s->lp_ctx = result.lp_ctx;
 
+	/* wrap the entire vapire operation in a transaction.  This
+	   isn't just cosmetic - we use this to ensure that linked
+	   attribute back links are added at the end by relying on a
+	   transaction commit hook in the linked attributes module. We
+	   need to do this as the order of objects coming from the
+	   server is not sufficiently deterministic to know that the
+	   record that a backlink needs to be created in has itself
+	   been created before the object containing the forward link
+	   has come over the wire */
+	if (ldb_transaction_start(s->ldb) != LDB_SUCCESS) {
+		return NT_STATUS_FOOBAR;
+	}
+
         return NT_STATUS_OK;
 
 
@@ -329,19 +342,8 @@ static NTSTATUS vampire_apply_schema(struct vampire_state *s,
 	talloc_free(s_dsa);
 	talloc_free(objs);
 
-	/* reopen the ldb */
-	talloc_free(s->ldb); /* this also free's the s->schema, because dsdb_set_schema() steals it */
-	s->schema = NULL;
-
-	DEBUG(0,("Reopen the SAM LDB with system credentials and a already stored schema\n"));
-	s->ldb = samdb_connect(s, s->event_ctx, s->lp_ctx, 
-			       system_session(s, s->lp_ctx));
-	if (!s->ldb) {
-		DEBUG(0,("Failed to reopen sam.ldb\n"));
-		return NT_STATUS_INTERNAL_DB_ERROR;
-	}
-
-	/* We must set these up to ensure the replMetaData is written correctly, before our NTDS Settings entry is replicated */
+	/* We must set these up to ensure the replMetaData is written
+	 * correctly, before our NTDS Settings entry is replicated */
 	ok = samdb_set_ntds_invocation_id(s->ldb, &c->dest_dsa->invocation_id);
 	if (!ok) {
 		DEBUG(0,("Failed to set cached ntds invocationId\n"));
@@ -688,6 +690,15 @@ NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 	if (ldb_ret != LDB_SUCCESS) {
 		printf("ldb_modify() failed: %d\n", ldb_ret);
 		talloc_free(s);
+		return NT_STATUS_INTERNAL_DB_ERROR;
+	}
+
+	/* commit the transaction - this commits all the changes in
+	   the ldb from the whole vampire.  Note that this commit
+	   triggers the writing of the linked attribute backlinks.
+	*/
+	if (ldb_transaction_commit(s->ldb) != LDB_SUCCESS) {
+		printf("Failed to commit vampire transaction\n");
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
