@@ -118,9 +118,14 @@ char *config_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
 	}
 	p = strrchr(config_dir, '/');
 	if (p == NULL) {
-		return NULL;
+		talloc_free(config_dir);
+		config_dir = talloc_strdup(mem_ctx, ".");
+		if (config_dir == NULL) {
+			return NULL;
+		}
+	} else {
+		p[0] = '\0';
 	}
-	p[0] = '\0';
 	fname = talloc_asprintf(mem_ctx, "%s/%s", config_dir, name);
 	talloc_free(config_dir);
 	return fname;
