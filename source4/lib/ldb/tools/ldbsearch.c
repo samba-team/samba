@@ -38,14 +38,7 @@
 static void usage(void)
 {
 	printf("Usage: ldbsearch <options> <expression> <attrs...>\n");
-	printf("Options:\n");
-	printf("  -H ldb_url       choose the database (or $LDB_URL)\n");
-	printf("  -s base|sub|one  choose search scope\n");
-	printf("  -b basedn        choose baseDN\n");
-	printf("  -i               read search expressions from stdin\n");
-        printf("  -S               sort returned attributes\n");
-	printf("  -o options       pass options like modules to activate\n");
-	printf("              e.g: -o modules:timestamps\n");
+	ldb_cmdline_help("ldbsearch", stdout);
 	exit(1);
 }
 
