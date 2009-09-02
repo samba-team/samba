@@ -181,7 +181,7 @@ static int linked_attributes_add(struct ldb_module *module, struct ldb_request *
 		}
 		
 		if ((schema_attr->linkID & 1) == 1) {
-			/* Odd is for the target.  Illigal to modify */
+			/* Odd is for the target.  Illegal to modify */
 			ldb_asprintf_errstring(ldb, 
 					       "attribute %s must not be modified directly, it is a linked attribute", el->name);
 			return LDB_ERR_UNWILLING_TO_PERFORM;
