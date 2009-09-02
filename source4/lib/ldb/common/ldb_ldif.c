@@ -799,3 +799,19 @@ char *ldb_ldif_write_string(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	}
 	return state.string;
 }
+
+/*
+  convenient function to turn a ldb_message into a string. Useful for
+  debugging
+ */
+char *ldb_ldif_message_string(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, 
+			      enum ldb_changetype changetype,
+			      const struct ldb_message *msg)
+{
+	struct ldb_ldif ldif;
+
+	ldif.changetype = changetype;
+	ldif.msg = msg;
+
+	return ldb_ldif_write_string(ldb, mem_ctx, &ldif);
+}

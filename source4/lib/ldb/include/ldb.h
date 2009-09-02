@@ -1463,6 +1463,18 @@ int ldb_ldif_write_file(struct ldb_context *ldb, FILE *f, const struct ldb_ldif 
 char * ldb_ldif_write_string(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, 
 			  const struct ldb_ldif *msg);
 
+
+/*
+   Produce a string form of an ldb message
+
+   convenient function to turn a ldb_message into a string. Useful for
+   debugging
+ */
+char *ldb_ldif_message_string(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, 
+			      enum ldb_changetype changetype,
+			      const struct ldb_message *msg);
+
+
 /**
    Base64 encode a buffer
 
