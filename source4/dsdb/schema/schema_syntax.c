@@ -660,6 +660,55 @@ static WERROR _dsdb_syntax_OID_oid_drsuapi_to_ldb(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
+static WERROR _dsdb_syntax_OID_obj_ldb_to_drsuapi(struct ldb_context *ldb,
+						  const struct dsdb_schema *schema,
+						  const struct dsdb_attribute *attr,
+						  const struct ldb_message_element *in,
+						  TALLOC_CTX *mem_ctx,
+						  struct drsuapi_DsReplicaAttribute *out)
+{
+        uint32_t i;
+        DATA_BLOB *blobs;
+
+        out->attid= attr->attributeID_id;
+        out->value_ctr.num_values= in->num_values;
+        out->value_ctr.values= talloc_array(mem_ctx,
+                                            struct drsuapi_DsAttributeValue,
+                                            in->num_values);
+        W_ERROR_HAVE_NO_MEMORY(out->value_ctr.values);
+
+        blobs = talloc_array(mem_ctx, DATA_BLOB, in->num_values);
+        W_ERROR_HAVE_NO_MEMORY(blobs);
+
+        for (i=0; i < in->num_values; i++) {
+		const struct dsdb_class *obj_class;
+
+		out->value_ctr.values[i].blob= &blobs[i];
+
+		blobs[i] = data_blob_talloc(blobs, NULL, 4);
+		W_ERROR_HAVE_NO_MEMORY(blobs[i].data);
+
+		obj_class = dsdb_class_by_lDAPDisplayName(schema, (const char *)in->values[i].data);
+		if (!obj_class) {
+			return WERR_FOOBAR;
+		}
+		SIVAL(blobs[i].data, 0, obj_class->governsID_id);
+        }
+
+
+        return WERR_OK;
+}
+
+static WERROR _dsdb_syntax_OID_oid_ldb_to_drsuapi(struct ldb_context *ldb,
+						  const struct dsdb_schema *schema,
+						  const struct dsdb_attribute *attr,
+						  const struct ldb_message_element *in,
+						  TALLOC_CTX *mem_ctx,
+						  struct drsuapi_DsReplicaAttribute *out)
+{
+	return _dsdb_syntax_OID_obj_ldb_to_drsuapi(ldb, schema, attr, in, mem_ctx, out);
+}
+
 static WERROR dsdb_syntax_OID_drsuapi_to_ldb(struct ldb_context *ldb, 
 					     const struct dsdb_schema *schema,
 					     const struct dsdb_attribute *attr,
@@ -731,10 +780,11 @@ static WERROR dsdb_syntax_OID_ldb_to_drsuapi(struct ldb_context *ldb,
 
 	switch (attr->attributeID_id) {
 	case DRSUAPI_ATTRIBUTE_objectClass:
+		return _dsdb_syntax_OID_obj_ldb_to_drsuapi(ldb, schema, attr, in, mem_ctx, out);
 	case DRSUAPI_ATTRIBUTE_governsID:
 	case DRSUAPI_ATTRIBUTE_attributeID:
 	case DRSUAPI_ATTRIBUTE_attributeSyntax:
-		return dsdb_syntax_FOOBAR_ldb_to_drsuapi(ldb, schema, attr, in, mem_ctx, out);
+		return _dsdb_syntax_OID_oid_ldb_to_drsuapi(ldb, schema, attr, in, mem_ctx, out);
 	}
 
 	out->attid			= attr->attributeID_id;
