@@ -35,7 +35,43 @@
 #include "param/param.h"
 #endif
 
+static struct ldb_cmdline options; /* needs to be static for older compilers */
 
+static struct poptOption popt_options[] = {
+	POPT_AUTOHELP
+	{ "url",       'H', POPT_ARG_STRING, &options.url, 0, "database URL", "URL" },
+	{ "basedn",    'b', POPT_ARG_STRING, &options.basedn, 0, "base DN", "DN" },
+	{ "editor",    'e', POPT_ARG_STRING, &options.editor, 0, "external editor", "PROGRAM" },
+	{ "scope",     's', POPT_ARG_STRING, NULL, 's', "search scope", "SCOPE" },
+	{ "verbose",   'v', POPT_ARG_NONE, NULL, 'v', "increase verbosity", NULL },
+	{ "interactive", 'i', POPT_ARG_NONE, &options.interactive, 0, "input from stdin", NULL },
+	{ "recursive", 'r', POPT_ARG_NONE, &options.recursive, 0, "recursive delete", NULL },
+	{ "modules-path", 0, POPT_ARG_STRING, &options.modules_path, 0, "modules path", "PATH" },
+	{ "num-searches", 0, POPT_ARG_INT, &options.num_searches, 0, "number of test searches", NULL },
+	{ "num-records", 0, POPT_ARG_INT, &options.num_records, 0, "number of test records", NULL },
+	{ "all", 'a',    POPT_ARG_NONE, &options.all_records, 0, "(|(objectClass=*)(distinguishedName=*))", NULL },
+	{ "nosync", 0,   POPT_ARG_NONE, &options.nosync, 0, "non-synchronous transactions", NULL },
+	{ "sorted", 'S', POPT_ARG_NONE, &options.sorted, 0, "sort attributes", NULL },
+	{ "input", 'I', POPT_ARG_STRING, &options.input, 0, "Input File", "Input" },
+	{ "output", 'O', POPT_ARG_STRING, &options.output, 0, "Output File", "Output" },
+	{ NULL,    'o', POPT_ARG_STRING, NULL, 'o', "ldb_connect option", "OPTION" },
+	{ "controls", 0, POPT_ARG_STRING, NULL, 'c', "controls", NULL },
+#if (_SAMBA_BUILD_ >= 4)
+	POPT_COMMON_SAMBA
+	POPT_COMMON_CREDENTIALS
+	POPT_COMMON_CONNECTION
+	POPT_COMMON_VERSION
+#endif
+	{ NULL }
+};
+
+void ldb_cmdline_help(const char *cmdname, FILE *f)
+{
+	poptContext pc;
+	pc = poptGetContext(cmdname, 0, NULL, popt_options, 
+			    POPT_CONTEXT_KEEP_FIRST);
+	poptPrintHelp(pc, f, 0);
+}
 
 /**
   process command line options
@@ -44,7 +80,6 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb,
 					int argc, const char **argv,
 					void (*usage)(void))
 {
-	static struct ldb_cmdline options; /* needs to be static for older compilers */
 	struct ldb_cmdline *ret=NULL;
 	poptContext pc;
 #if (_SAMBA_BUILD_ >= 4)
@@ -53,34 +88,6 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb,
 	int num_options = 0;
 	int opt;
 	int flags = 0;
-
-	struct poptOption popt_options[] = {
-		POPT_AUTOHELP
-		{ "url",       'H', POPT_ARG_STRING, &options.url, 0, "database URL", "URL" },
-		{ "basedn",    'b', POPT_ARG_STRING, &options.basedn, 0, "base DN", "DN" },
-		{ "editor",    'e', POPT_ARG_STRING, &options.editor, 0, "external editor", "PROGRAM" },
-		{ "scope",     's', POPT_ARG_STRING, NULL, 's', "search scope", "SCOPE" },
-		{ "verbose",   'v', POPT_ARG_NONE, NULL, 'v', "increase verbosity", NULL },
-		{ "interactive", 'i', POPT_ARG_NONE, &options.interactive, 0, "input from stdin", NULL },
-		{ "recursive", 'r', POPT_ARG_NONE, &options.recursive, 0, "recursive delete", NULL },
-		{ "modules-path", 0, POPT_ARG_STRING, &options.modules_path, 0, "modules path", "PATH" },
-		{ "num-searches", 0, POPT_ARG_INT, &options.num_searches, 0, "number of test searches", NULL },
-		{ "num-records", 0, POPT_ARG_INT, &options.num_records, 0, "number of test records", NULL },
-		{ "all", 'a',    POPT_ARG_NONE, &options.all_records, 0, "(|(objectClass=*)(distinguishedName=*))", NULL },
-		{ "nosync", 0,   POPT_ARG_NONE, &options.nosync, 0, "non-synchronous transactions", NULL },
-		{ "sorted", 'S', POPT_ARG_NONE, &options.sorted, 0, "sort attributes", NULL },
-		{ "input", 'I', POPT_ARG_STRING, &options.input, 0, "Input File", "Input" },
-		{ "output", 'O', POPT_ARG_STRING, &options.output, 0, "Output File", "Output" },
-		{ NULL,    'o', POPT_ARG_STRING, NULL, 'o', "ldb_connect option", "OPTION" },
-		{ "controls", 0, POPT_ARG_STRING, NULL, 'c', "controls", NULL },
-#if (_SAMBA_BUILD_ >= 4)
-		POPT_COMMON_SAMBA
-		POPT_COMMON_CREDENTIALS
-		POPT_COMMON_CONNECTION
-		POPT_COMMON_VERSION
-#endif
-		{ NULL }
-	};
 
 #if (_SAMBA_BUILD_ >= 4)
 	r = ldb_register_samba_handlers(ldb);
