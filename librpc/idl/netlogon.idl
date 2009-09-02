@@ -843,14 +843,14 @@ interface netlogon
 
 	typedef struct {
 		netr_InfoFlags flags;
-		uint32 pdc_connection_status;
+		WERROR pdc_connection_status;
 	} netr_NETLOGON_INFO_1;
 
 	typedef struct {
 		netr_InfoFlags flags;
-		uint32 pdc_connection_status;
+		WERROR pdc_connection_status;
 		[string,charset(UTF16)] uint16 *trusted_dc_name;
-		uint32 tc_connection_status;
+		WERROR tc_connection_status;
 	} netr_NETLOGON_INFO_2;
 
 	typedef struct {

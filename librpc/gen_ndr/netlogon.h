@@ -656,14 +656,14 @@ struct netr_AccountBuffer {
 
 struct netr_NETLOGON_INFO_1 {
 	uint32_t flags;
-	uint32_t pdc_connection_status;
+	WERROR pdc_connection_status;
 };
 
 struct netr_NETLOGON_INFO_2 {
 	uint32_t flags;
-	uint32_t pdc_connection_status;
+	WERROR pdc_connection_status;
 	const char *trusted_dc_name;/* [unique,charset(UTF16)] */
-	uint32_t tc_connection_status;
+	WERROR tc_connection_status;
 };
 
 struct netr_NETLOGON_INFO_3 {

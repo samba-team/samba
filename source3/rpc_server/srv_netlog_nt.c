@@ -38,46 +38,6 @@ struct netlogon_server_pipe_state {
 	struct netr_Credential server_challenge;
 };
 
-/*******************************************************************
- Inits a netr_NETLOGON_INFO_1 structure.
-********************************************************************/
-
-static void init_netlogon_info1(struct netr_NETLOGON_INFO_1 *r,
-				uint32_t flags,
-				uint32_t pdc_connection_status)
-{
-	r->flags = flags;
-	r->pdc_connection_status = pdc_connection_status;
-}
-
-/*******************************************************************
- Inits a netr_NETLOGON_INFO_2 structure.
-********************************************************************/
-
-static void init_netlogon_info2(struct netr_NETLOGON_INFO_2 *r,
-				uint32_t flags,
-				uint32_t pdc_connection_status,
-				const char *trusted_dc_name,
-				uint32_t tc_connection_status)
-{
-	r->flags = flags;
-	r->pdc_connection_status = pdc_connection_status;
-	r->trusted_dc_name = trusted_dc_name;
-	r->tc_connection_status = tc_connection_status;
-}
-
-/*******************************************************************
- Inits a netr_NETLOGON_INFO_3 structure.
-********************************************************************/
-
-static void init_netlogon_info3(struct netr_NETLOGON_INFO_3 *r,
-				uint32_t flags,
-				uint32_t logon_attempts)
-{
-	r->flags = flags;
-	r->logon_attempts = logon_attempts;
-}
-
 /*************************************************************************
  _netr_LogonControl
  *************************************************************************/
@@ -141,10 +101,10 @@ WERROR _netr_LogonControl2(pipes_struct *p,
 WERROR _netr_LogonControl2Ex(pipes_struct *p,
 			     struct netr_LogonControl2Ex *r)
 {
-        uint32 flags = 0x0;
-        uint32 pdc_connection_status = 0x0;
-        uint32 logon_attempts = 0x0;
-        uint32 tc_status;
+	uint32_t flags = 0x0;
+	WERROR pdc_connection_status = WERR_OK;
+	uint32_t logon_attempts = 0x0;
+	WERROR tc_status;
 	fstring dc_name2;
 	const char *dc_name = NULL;
 	struct sockaddr_storage dc_ss;
@@ -168,7 +128,7 @@ WERROR _netr_LogonControl2Ex(pipes_struct *p,
 			return WERR_INVALID_PARAM;
 	}
 
-	tc_status = W_ERROR_V(WERR_NO_SUCH_DOMAIN);
+	tc_status = WERR_NO_SUCH_DOMAIN;
 
 	switch (r->in.function_code) {
 		case NETLOGON_CONTROL_TC_QUERY:
@@ -178,7 +138,7 @@ WERROR _netr_LogonControl2Ex(pipes_struct *p,
 				break;
 
 			if ( !get_dc_name( domain, NULL, dc_name2, &dc_ss ) ) {
-				tc_status = W_ERROR_V(WERR_NO_LOGON_SERVERS);
+				tc_status = WERR_NO_LOGON_SERVERS;
 				break;
 			}
 
@@ -187,7 +147,7 @@ WERROR _netr_LogonControl2Ex(pipes_struct *p,
 				return WERR_NOMEM;
 			}
 
-			tc_status = W_ERROR_V(WERR_OK);
+			tc_status = WERR_OK;
 
 			break;
 
@@ -198,7 +158,7 @@ WERROR _netr_LogonControl2Ex(pipes_struct *p,
 				break;
 
 			if ( !get_dc_name( domain, NULL, dc_name2, &dc_ss ) ) {
-				tc_status = W_ERROR_V(WERR_NO_LOGON_SERVERS);
+				tc_status = WERR_NO_LOGON_SERVERS;
 				break;
 			}
 
@@ -207,7 +167,7 @@ WERROR _netr_LogonControl2Ex(pipes_struct *p,
 				return WERR_NOMEM;
 			}
 
-			tc_status = W_ERROR_V(WERR_OK);
+			tc_status = WERR_OK;
 
 			break;
 
@@ -225,29 +185,29 @@ WERROR _netr_LogonControl2Ex(pipes_struct *p,
 			info1 = TALLOC_ZERO_P(p->mem_ctx, struct netr_NETLOGON_INFO_1);
 			W_ERROR_HAVE_NO_MEMORY(info1);
 
-			init_netlogon_info1(info1,
-					    flags,
-					    pdc_connection_status);
+			info1->flags			= flags;
+			info1->pdc_connection_status	= pdc_connection_status;
+
 			r->out.query->info1 = info1;
 			break;
 		case 2:
 			info2 = TALLOC_ZERO_P(p->mem_ctx, struct netr_NETLOGON_INFO_2);
 			W_ERROR_HAVE_NO_MEMORY(info2);
 
-			init_netlogon_info2(info2,
-					    flags,
-					    pdc_connection_status,
-					    dc_name,
-					    tc_status);
+			info2->flags			= flags;
+			info2->pdc_connection_status	= pdc_connection_status;
+			info2->trusted_dc_name		= dc_name;
+			info2->tc_connection_status	= tc_status;
+
 			r->out.query->info2 = info2;
 			break;
 		case 3:
 			info3 = TALLOC_ZERO_P(p->mem_ctx, struct netr_NETLOGON_INFO_3);
 			W_ERROR_HAVE_NO_MEMORY(info3);
 
-			init_netlogon_info3(info3,
-					    flags,
-					    logon_attempts);
+			info3->flags			= flags;
+			info3->logon_attempts		= logon_attempts;
+
 			r->out.query->info3 = info3;
 			break;
 		default:

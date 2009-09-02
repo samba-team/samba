@@ -5627,7 +5627,7 @@ static enum ndr_err_code ndr_push_netr_NETLOGON_INFO_1(struct ndr_push *ndr, int
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_netr_InfoFlags(ndr, NDR_SCALARS, r->flags));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->pdc_connection_status));
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->pdc_connection_status));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -5639,7 +5639,7 @@ static enum ndr_err_code ndr_pull_netr_NETLOGON_INFO_1(struct ndr_pull *ndr, int
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_netr_InfoFlags(ndr, NDR_SCALARS, &r->flags));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->pdc_connection_status));
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->pdc_connection_status));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -5651,7 +5651,7 @@ _PUBLIC_ void ndr_print_netr_NETLOGON_INFO_1(struct ndr_print *ndr, const char *
 	ndr_print_struct(ndr, name, "netr_NETLOGON_INFO_1");
 	ndr->depth++;
 	ndr_print_netr_InfoFlags(ndr, "flags", r->flags);
-	ndr_print_uint32(ndr, "pdc_connection_status", r->pdc_connection_status);
+	ndr_print_WERROR(ndr, "pdc_connection_status", r->pdc_connection_status);
 	ndr->depth--;
 }
 
@@ -5660,9 +5660,9 @@ static enum ndr_err_code ndr_push_netr_NETLOGON_INFO_2(struct ndr_push *ndr, int
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_netr_InfoFlags(ndr, NDR_SCALARS, r->flags));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->pdc_connection_status));
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->pdc_connection_status));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->trusted_dc_name));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->tc_connection_status));
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->tc_connection_status));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->trusted_dc_name) {
@@ -5682,14 +5682,14 @@ static enum ndr_err_code ndr_pull_netr_NETLOGON_INFO_2(struct ndr_pull *ndr, int
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_netr_InfoFlags(ndr, NDR_SCALARS, &r->flags));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->pdc_connection_status));
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->pdc_connection_status));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_trusted_dc_name));
 		if (_ptr_trusted_dc_name) {
 			NDR_PULL_ALLOC(ndr, r->trusted_dc_name);
 		} else {
 			r->trusted_dc_name = NULL;
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->tc_connection_status));
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->tc_connection_status));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->trusted_dc_name) {
@@ -5713,14 +5713,14 @@ _PUBLIC_ void ndr_print_netr_NETLOGON_INFO_2(struct ndr_print *ndr, const char *
 	ndr_print_struct(ndr, name, "netr_NETLOGON_INFO_2");
 	ndr->depth++;
 	ndr_print_netr_InfoFlags(ndr, "flags", r->flags);
-	ndr_print_uint32(ndr, "pdc_connection_status", r->pdc_connection_status);
+	ndr_print_WERROR(ndr, "pdc_connection_status", r->pdc_connection_status);
 	ndr_print_ptr(ndr, "trusted_dc_name", r->trusted_dc_name);
 	ndr->depth++;
 	if (r->trusted_dc_name) {
 		ndr_print_string(ndr, "trusted_dc_name", r->trusted_dc_name);
 	}
 	ndr->depth--;
-	ndr_print_uint32(ndr, "tc_connection_status", r->tc_connection_status);
+	ndr_print_WERROR(ndr, "tc_connection_status", r->tc_connection_status);
 	ndr->depth--;
 }
 
