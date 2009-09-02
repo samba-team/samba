@@ -391,6 +391,8 @@ static int net_ads_gpo_apply(struct net_context *c, int argc, const char **argv)
 	}
 
 	status = ads_startup(c, false, &ads);
+	/* filter = cse_gpo_name_to_guid_string("Security"); */
+
 	if (!ADS_ERR_OK(status)) {
 		d_printf("got: %s\n", ads_errstr(status));
 		goto out;
