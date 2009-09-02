@@ -270,13 +270,7 @@ static int do_edit(struct ldb_context *ldb, struct ldb_message **msgs1, int coun
 static void usage(void)
 {
 	printf("Usage: ldbedit <options> <expression> <attributes ...>\n");
-	printf("Options:\n");
-	printf("  -H ldb_url       choose the database (or $LDB_URL)\n");
-	printf("  -s base|sub|one  choose search scope\n");
-	printf("  -b basedn        choose baseDN\n");
-	printf("  -a               edit all records (expression 'objectclass=*')\n");
-	printf("  -e editor        choose editor (or $VISUAL or $EDITOR)\n");
-	printf("  -v               verbose mode\n");
+	ldb_cmdline_help("ldbedit", stdout);
 	exit(1);
 }
 

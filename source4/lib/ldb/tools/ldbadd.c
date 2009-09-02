@@ -38,13 +38,9 @@ static int failures;
 
 static void usage(void)
 {
-	printf("Usage: ldbadd <options> <ldif...>\n");
-	printf("Options:\n");
-	printf("  -H ldb_url       choose the database (or $LDB_URL)\n");
-	printf("  -o options       pass options like modules to activate\n");
-	printf("              e.g: -o modules:timestamps\n");
-	printf("\n");
+	printf("Usage: ldbadd <options> <ldif...>\n");	
 	printf("Adds records to a ldb, reading ldif the specified list of files\n\n");
+	ldb_cmdline_help("ldbadd", stdout);
 	exit(1);
 }
 

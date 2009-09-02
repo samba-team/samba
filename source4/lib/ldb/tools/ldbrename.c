@@ -39,12 +39,8 @@
 static void usage(void)
 {
 	printf("Usage: ldbrename [<options>] <olddn> <newdn>\n");
-	printf("Options:\n");
-	printf("  -H ldb_url       choose the database (or $LDB_URL)\n");
-	printf("  -o options       pass options like modules to activate\n");
-	printf("              e.g: -o modules:timestamps\n");
-	printf("\n");
 	printf("Renames records in a ldb\n\n");
+	ldb_cmdline_help("ldbmodify", stdout);
 	exit(1);
 }
 
