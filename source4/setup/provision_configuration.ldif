@@ -2,7 +2,9 @@
 # Configuration Naming Context
 ###############################
 
-# Display specifiers located in "display_specifiers.ldif"
+# Display specifiers are in "display-specifiers/DisplaySpecifiers-Win2k8R2.txt"
+# This file is parsed during provision using the ms_display_specifiers.py
+# script.
 
 dn: CN=Extended-Rights,${CONFIGDN}
 objectClass: top
