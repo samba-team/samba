@@ -585,6 +585,7 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
                     "password_hash",
                     "operational"]
     tdb_modules_list = [
+                    "repl_meta_data",
                     "subtree_rename",
                     "subtree_delete",
                     "linked_attributes",
@@ -610,7 +611,7 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
             tdb_modules_list = ["extended_dn_out_dereference"]
 
     elif serverrole == "domain controller":
-        backend_modules = ["repl_meta_data"]
+        backend_modules = []
     else:
         backend_modules = ["objectguid"]
 
