@@ -1243,7 +1243,12 @@ static int linked_attributes_end_transaction(struct ldb_module *module)
 		talloc_get_type(ldb_module_get_private(module), struct la_private);
 	struct la_context *ac;
 
-	for (ac=la_private->la_list; ac; ac=ac->next) {
+	/* walk the list backwards, to do the first entry first, as we
+	 * added the entries with DLIST_ADD() which puts them at the
+	 * start of the list */
+	for (ac = la_private->la_list; ac && ac->next; ac=ac->next) ;
+
+	for (; ac; ac=ac->prev) {
 		int ret;
 		ac->req = NULL;
 		ret = la_do_mod_request(module, ac);
