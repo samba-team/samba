@@ -1423,6 +1423,7 @@ static int replmd_extended_replicated_objects(struct ldb_module *module, struct 
 	struct replmd_replicated_request *ar;
 	struct ldb_control **ctrls;
 	int ret;
+	struct dsdb_control_current_partition *partition_ctrl;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -1461,6 +1462,27 @@ static int replmd_extended_replicated_objects(struct ldb_module *module, struct 
 	}
 
 	ret = ldb_request_add_control(req, DSDB_CONTROL_REPLICATED_UPDATE_OID, false, NULL);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	/*
+	  add the DSDB_CONTROL_CURRENT_PARTITION_OID control. This
+	  tells the partition module which partition this request is
+	  directed at. That is important as the partition roots appear
+	  twice in the directory, once as mount points in the top
+	  level store, and once as the roots of each partition. The
+	  replication code wants to operate on the root of the
+	  partitions, not the top level mount points
+	 */
+	partition_ctrl = talloc(req, struct dsdb_control_current_partition);
+	if (partition_ctrl == NULL) {
+		if (!partition_ctrl) return replmd_replicated_request_werror(ar, WERR_NOMEM);
+	}
+	partition_ctrl->version = DSDB_CONTROL_CURRENT_PARTITION_VERSION;
+	partition_ctrl->dn = objs->partition_dn;
+
+	ret = ldb_request_add_control(req, DSDB_CONTROL_CURRENT_PARTITION_OID, false, partition_ctrl);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
