@@ -208,7 +208,7 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 	/* update out vnn list */
 	vnn = find_public_ip_vnn(ctdb, &pip->addr);
 	if (vnn == NULL) {
-		DEBUG(DEBUG_ERR,("takeoverip called for an ip '%s' that is not a public address\n", 
+		DEBUG(DEBUG_INFO,("takeoverip called for an ip '%s' that is not a public address\n", 
 			ctdb_addr_to_str(&pip->addr)));
 		return 0;
 	}
@@ -357,7 +357,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 	/* update our vnn list */
 	vnn = find_public_ip_vnn(ctdb, &pip->addr);
 	if (vnn == NULL) {
-		DEBUG(DEBUG_ERR,("takeoverip called for an ip '%s' that is not a public address\n",
+		DEBUG(DEBUG_INFO,("releaseip called for an ip '%s' that is not a public address\n",
 			ctdb_addr_to_str(&pip->addr)));
 		return 0;
 	}
