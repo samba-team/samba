@@ -40,7 +40,7 @@ import subprocess
 
 import shutil
 from credentials import Credentials, DONT_USE_KERBEROS
-from auth import system_session
+from auth import system_session, admin_session
 from samba import version, Ldb, substitute_var, valid_netbios_name, check_all_substituted, \
   DS_BEHAVIOR_WIN2008
 from samba.samdb import SamDB
@@ -862,6 +862,10 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
             domain_oc = "domainDNS"
         else:
             domain_oc = "samba4LocalDomain"
+
+#impersonate domain admin
+        admin_session_info = admin_session(lp, str(domainsid))
+        samdb.set_session_info(admin_session_info)
 
         setup_add_ldif(samdb, setup_path("provision_basedn.ldif"), {
                 "DOMAINDN": names.domaindn,

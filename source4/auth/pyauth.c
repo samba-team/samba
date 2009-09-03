@@ -21,6 +21,8 @@
 #include "pyauth.h"
 #include "auth/system_session_proto.h"
 #include "param/pyparam.h"
+#include "libcli/security/security.h"
+
 
 PyTypeObject PyAuthSession = {
 	.tp_name = "AuthSession",
@@ -70,9 +72,30 @@ static PyObject *py_system_session_anon(PyObject *module, PyObject *args)
 	return PyAuthSession_FromSession(session);
 }
 
+static PyObject *py_admin_session(PyObject *module, PyObject *args)
+{
+	PyObject *py_lp_ctx;
+	PyObject *py_sid;
+	struct loadparm_context *lp_ctx = NULL;
+	struct auth_session_info *session;
+	struct dom_sid *domain_sid = NULL;
+	if (!PyArg_ParseTuple(args, "OO", &py_lp_ctx, &py_sid))
+		return NULL;
+
+	lp_ctx = lp_from_py_object(py_lp_ctx);
+	if (lp_ctx == NULL)
+		return NULL;
+
+	domain_sid = dom_sid_parse_talloc(NULL, PyString_AsString(py_sid));
+	session = admin_session(NULL, lp_ctx, domain_sid);
+
+	return PyAuthSession_FromSession(session);
+}
+
 static PyMethodDef py_auth_methods[] = {
 	{ "system_session", (PyCFunction)py_system_session, METH_VARARGS, NULL },
 	{ "system_session_anonymous", (PyCFunction)py_system_session_anon, METH_VARARGS, NULL },
+	{ "admin_session", (PyCFunction)py_admin_session, METH_VARARGS, NULL },
 	{ NULL },
 };
 
