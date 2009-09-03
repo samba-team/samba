@@ -1518,11 +1518,12 @@ static void smb_full_audit_strict_unlock(struct vfs_handle_struct *handle,
 }
 
 static NTSTATUS smb_full_audit_translate_name(vfs_handle_struct *handle,
-					      char **mapped_name)
+					      char **mapped_name,
+					      enum vfs_translate_direction direction)
 {
 	NTSTATUS result;
 
-	result = SMB_VFS_NEXT_TRANSLATE_NAME(handle, mapped_name);
+	result = SMB_VFS_NEXT_TRANSLATE_NAME(handle, mapped_name, direction);
 
 	do_log(SMB_VFS_OP_TRANSLATE_NAME, NT_STATUS_IS_OK(result), handle, "");
 

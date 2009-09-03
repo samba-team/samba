@@ -98,8 +98,22 @@ int onefs_sys_create_file(connection_struct *conn,
 	int ret_fd = -1;
 	uint32_t onefs_dos_attributes;
 	struct ifs_createfile_flags cf_flags = CF_FLAGS_NONE;
+	char *mapped_name = NULL;
+	NTSTATUS result;
 
 	START_PROFILE(syscall_createfile);
+
+	/* Translate the name to UNIX before calling ifs_createfile */
+	mapped_name = talloc_strdup(talloc_tos(), path);
+	if (mapped_name == NULL) {
+		errno = ENOMEM;
+		goto out;
+	}
+	result = SMB_VFS_TRANSLATE_NAME(conn, &mapped_name,
+					vfs_translate_to_unix);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto out;
+	}
 
 	/* Setup security descriptor and get secinfo. */
 	if (sd != NULL) {
@@ -148,7 +162,7 @@ int onefs_sys_create_file(connection_struct *conn,
 			 PARM_ALLOW_EXECUTE_ALWAYS_DEFAULT) &&
 	    (open_access_mask & FILE_EXECUTE)) {
 
-		DEBUG(3, ("Stripping execute bit from %s: (0x%x)\n", path,
+		DEBUG(3, ("Stripping execute bit from %s: (0x%x)\n", mapped_name,
 			  open_access_mask));
 
 		/* Strip execute. */
@@ -168,27 +182,27 @@ int onefs_sys_create_file(connection_struct *conn,
 		  "open_access_mask = 0x%x, flags = 0x%x, mode = 0%o, "
 		  "desired_oplock = %s, id = 0x%x, secinfo = 0x%x, sd = %p, "
 		  "dos_attributes = 0x%x, path = %s, "
-		  "default_acl=%s\n", base_fd, path,
+		  "default_acl=%s\n", base_fd, mapped_name,
 		  (unsigned int)open_access_mask,
 		  (unsigned int)flags,
 		  (unsigned int)mode,
 		  onefs_oplock_str(onefs_oplock),
 		  (unsigned int)id,
 		  sec_info_effective, sd,
-		  (unsigned int)onefs_dos_attributes, path,
+		  (unsigned int)onefs_dos_attributes, mapped_name,
 		  cf_flags_and_bool(cf_flags, CF_FLAGS_DEFAULT_ACL) ?
 		      "true" : "false"));
 
 	/* Initialize smlock struct for files/dirs but not internal opens */
 	if (!(oplock_request & INTERNAL_OPEN_ONLY)) {
-		smlock_init(conn, &sml, is_executable(path), access_mask,
+		smlock_init(conn, &sml, is_executable(mapped_name), access_mask,
 		    share_access, create_options);
 		psml = &sml;
 	}
 
 	smlock_dump(10, psml);
 
-	ret_fd = ifs_createfile(base_fd, path,
+	ret_fd = ifs_createfile(base_fd, mapped_name,
 	    (enum ifs_ace_rights)open_access_mask, flags & ~O_ACCMODE, mode,
 	    onefs_oplock, id, psml, sec_info_effective, pifs_sd,
 	    onefs_dos_attributes, cf_flags, &onefs_granted_oplock);
@@ -206,6 +220,7 @@ int onefs_sys_create_file(connection_struct *conn,
  out:
 	END_PROFILE(syscall_createfile);
 	aclu_free_sd(pifs_sd, false);
+	TALLOC_FREE(mapped_name);
 
 	return ret_fd;
 }

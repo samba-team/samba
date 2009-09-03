@@ -677,7 +677,8 @@ char *vfs_readdirname(connection_struct *conn, void *p, SMB_STRUCT_STAT *sbuf)
 		errno = ENOMEM;
 		return NULL;
 	}
-	result = SMB_VFS_TRANSLATE_NAME(conn, &dname);
+	result = SMB_VFS_TRANSLATE_NAME(conn, &dname,
+					vfs_translate_to_windows);
 	if (!NT_STATUS_IS_OK(result)) {
 		TALLOC_FREE(dname);
 		return NULL;
@@ -1506,10 +1507,11 @@ void smb_vfs_call_strict_unlock(struct vfs_handle_struct *handle,
 }
 
 NTSTATUS smb_vfs_call_translate_name(struct vfs_handle_struct *handle,
-				     char **mapped_name)
+				     char **mapped_name,
+				     enum vfs_translate_direction direction)
 {
 	VFS_FIND(translate_name);
-	return handle->fns->translate_name(handle, mapped_name);
+	return handle->fns->translate_name(handle, mapped_name, direction);
 }
 
 NTSTATUS smb_vfs_call_fget_nt_acl(struct vfs_handle_struct *handle,

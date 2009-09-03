@@ -158,6 +158,11 @@ struct smb_filename;
 				handle = handle->next; \
 			 }
 
+enum vfs_translate_direction {
+	vfs_translate_to_unix = 0,
+	vfs_translate_to_windows
+};
+
 /*
     Available VFS operations. These values must be in sync with vfs_ops struct
     (struct vfs_fn_pointers and struct vfs_handle_pointers inside of struct vfs_ops).
@@ -302,7 +307,8 @@ struct vfs_fn_pointers {
 			      struct lock_struct *plock);
 
 	NTSTATUS (*translate_name)(struct vfs_handle_struct *handle,
-				   char **mapped_name);
+				   char **mapped_name,
+				   enum vfs_translate_direction direction);
 
 	/* NT ACL operations. */
 
@@ -650,7 +656,8 @@ void smb_vfs_call_strict_unlock(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
 				struct lock_struct *plock);
 NTSTATUS smb_vfs_call_translate_name(struct vfs_handle_struct *handle,
-				     char **mapped_name);
+				     char **mapped_name,
+				     enum vfs_translate_direction direction);
 NTSTATUS smb_vfs_call_fget_nt_acl(struct vfs_handle_struct *handle,
 				  struct files_struct *fsp,
 				  uint32 security_info,
