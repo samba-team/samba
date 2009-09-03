@@ -1678,6 +1678,17 @@ again:
 		exit(10);
 	}
 
+
+	/* check tha there are nodes available that can act as a recmaster */
+	for (i=0; i<nodemap->num; i++) {
+		if (nodemap->nodes[i].flags & (NODE_FLAGS_DELETED|NODE_FLAGS_BANNED|NODE_FLAGS_STOPPED)) {
+			continue;
+		}
+	}
+	if (i == nodemap->num) {
+		return 0;
+	}
+
 	/* verify the recovery master is not STOPPED, nor BANNED */
 	if (nodemap->nodes[recmaster].flags & (NODE_FLAGS_DELETED|NODE_FLAGS_BANNED|NODE_FLAGS_STOPPED)) {
 		DEBUG(DEBUG_ERR,("No suitable recmaster found. Try again\n"));
@@ -1898,20 +1909,13 @@ static uint32_t get_generation(struct ctdb_context *ctdb)
 static int control_ban(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
-	struct ctdb_ban_info b;
-	TDB_DATA data;
-	uint32_t ban_time;
 	struct ctdb_node_map *nodemap=NULL;
-	uint32_t generation, next_generation;
+	struct ctdb_ban_time bantime;
 
 	if (argc < 1) {
 		usage();
 	}
 	
-	/* record the current generation number */
-	generation = get_generation(ctdb);
-
-
 	/* verify the node exists */
 	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap);
 	if (ret != 0) {
@@ -1924,27 +1928,19 @@ static int control_ban(struct ctdb_context *ctdb, int argc, const char **argv)
 		return -1;
 	}
 
-	ban_time = strtoul(argv[0], NULL, 0);
+	bantime.pnn  = options.pnn;
+	bantime.time = strtoul(argv[0], NULL, 0);
 
-	b.pnn = options.pnn;
-	b.ban_time = ban_time;
-
-	data.dptr = (uint8_t *)&b;
-	data.dsize = sizeof(b);
-
-	ret = ctdb_send_message(ctdb, options.pnn, CTDB_SRVID_BAN_NODE, data);
+	ret = ctdb_ctrl_set_ban(ctdb, TIMELIMIT(), options.pnn, &bantime);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR,("Failed to ban node %u\n", options.pnn));
+		DEBUG(DEBUG_ERR,("Banning node %d for %d seconds failed.\n", bantime.pnn, bantime.time));
 		return -1;
-	}
+	}	
 
-	/* wait until we are in a new generation */
-	while (1) {
-		next_generation = get_generation(ctdb);
-		if (next_generation != generation) {
-			return 0;
-		}
-		sleep(1);
+	ret = control_ipreallocate(ctdb, argc, argv);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("IP Reallocate failed on node %u\n", options.pnn));
+		return ret;
 	}
 
 	return 0;
@@ -1957,16 +1953,10 @@ static int control_ban(struct ctdb_context *ctdb, int argc, const char **argv)
 static int control_unban(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
-	TDB_DATA data;
-	uint32_t generation, next_generation;
 	struct ctdb_node_map *nodemap=NULL;
+	struct ctdb_ban_time bantime;
 
-	/* record the current generation number */
-	generation = get_generation(ctdb);
-
-	data.dptr = (uint8_t *)&options.pnn;
-	data.dsize = sizeof(uint32_t);
-
+	/* verify the node exists */
 	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
@@ -1974,28 +1964,59 @@ static int control_unban(struct ctdb_context *ctdb, int argc, const char **argv)
 	}
 
 	if (!(nodemap->nodes[options.pnn].flags & NODE_FLAGS_BANNED)) {
-		DEBUG(DEBUG_ERR, ("Node %d is not banned. Can not unban\n", options.pnn));
+		DEBUG(DEBUG_ERR,("Node %u is not banned.\n", options.pnn));
 		return -1;
 	}
 
-	ret = ctdb_send_message(ctdb, options.pnn, CTDB_SRVID_UNBAN_NODE, data);
+	bantime.pnn  = options.pnn;
+	bantime.time = 0;
+
+	ret = ctdb_ctrl_set_ban(ctdb, TIMELIMIT(), options.pnn, &bantime);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR,("Failed to to unban node %u\n", options.pnn));
+		DEBUG(DEBUG_ERR,("Unbanning node %d failed.\n", bantime.pnn));
 		return -1;
-	}
-	
-	/* wait until we are in a new generation */
-	while (1) {
-		next_generation = get_generation(ctdb);
-		if (next_generation != generation) {
-			return 0;
-		}
-		sleep(1);
+	}	
+
+	ret = control_ipreallocate(ctdb, argc, argv);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("IP Reallocate failed on node %u\n", options.pnn));
+		return ret;
 	}
 
 	return 0;
 }
 
+
+/*
+  show ban information for a node
+ */
+static int control_showban(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	struct ctdb_node_map *nodemap=NULL;
+	struct ctdb_ban_time *bantime;
+
+	/* verify the node exists */
+	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
+		return ret;
+	}
+
+	ret = ctdb_ctrl_get_ban(ctdb, TIMELIMIT(), options.pnn, ctdb, &bantime);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Showing ban info for node %d failed.\n", options.pnn));
+		return -1;
+	}	
+
+	if (bantime->time == 0) {
+		printf("Node %u is not banned\n", bantime->pnn);
+	} else {
+		printf("Node %u is banned banned for %d seconds\n", bantime->pnn, bantime->time);
+	}
+
+	return 0;
+}
 
 /*
   shutdown a daemon
@@ -3360,7 +3381,8 @@ static const struct {
 	{ "stop",            control_stop,              true,	false,  "stop a node" },
 	{ "continue",        control_continue,          true,	false,  "re-start a stopped node" },
 	{ "ban",             control_ban,               true,	false,  "ban a node from the cluster",          "<bantime|0>"},
-	{ "unban",           control_unban,             true,	false,  "unban a node from the cluster" },
+	{ "unban",           control_unban,             true,	false,  "unban a node" },
+	{ "showban",         control_showban,           true,	false,  "show ban information"},
 	{ "shutdown",        control_shutdown,          true,	false,  "shutdown ctdbd" },
 	{ "recover",         control_recover,           true,	false,  "force recovery" },
 	{ "ipreallocate",    control_ipreallocate,      true,	false,  "force the recovery daemon to perform a ip reallocation procedure" },

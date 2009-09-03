@@ -75,16 +75,6 @@ struct ctdb_call_info {
  */
 #define CTDB_SRVID_SET_NODE_FLAGS 0xF400000000000000LL
 
-/* 
-   a message ID meaning that a node should be banned
- */
-#define CTDB_SRVID_BAN_NODE 0xF500000000000000LL
-
-/* 
-   a message ID meaning that a node should be unbanned
- */
-#define CTDB_SRVID_UNBAN_NODE 0xF600000000000000LL
-
 /*
   a message to tell the recovery daemon to fetch a set of records
  */
@@ -668,5 +658,14 @@ int ctdb_ctrl_setrecmasterrole(struct ctdb_context *ctdb, struct timeval timeout
 
 int ctdb_ctrl_enablescript(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, const char *script);
 int ctdb_ctrl_disablescript(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, const char *script);
+
+struct ctdb_ban_time {
+	uint32_t pnn;
+	uint32_t time;
+};
+
+int ctdb_ctrl_set_ban(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, struct ctdb_ban_time *bantime);
+int ctdb_ctrl_get_ban(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, TALLOC_CTX *mem_ctx, struct ctdb_ban_time **bantime);
+
 
 #endif

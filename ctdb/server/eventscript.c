@@ -625,21 +625,16 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 
 static void ctdb_ban_self(struct ctdb_context *ctdb, uint32_t ban_period)
 {
-	int ret;
-	struct ctdb_ban_info b;
 	TDB_DATA data;
+	struct ctdb_ban_time bantime;
 
-	b.pnn      = ctdb->pnn;
-	b.ban_time = ban_period;
+	bantime.pnn  = ctdb->pnn;
+	bantime.time = ban_period;
 
-	data.dptr = (uint8_t *)&b;
-	data.dsize = sizeof(b);
+	data.dsize = sizeof(bantime);
+	data.dptr  = (uint8_t *)&bantime;
 
-	ret = ctdb_daemon_send_message(ctdb, CTDB_BROADCAST_CONNECTED,
-		CTDB_SRVID_BAN_NODE, data);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to send ban message\n"));
-	}
+	ctdb_control_set_ban_state(ctdb, data);
 }
 
 

@@ -518,6 +518,14 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_DISABLE_SCRIPT:
 		return ctdb_control_disable_script(ctdb, indata);
 
+	case CTDB_CONTROL_SET_BAN_STATE:
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_ban_time));
+		return ctdb_control_set_ban_state(ctdb, indata);
+
+	case CTDB_CONTROL_GET_BAN_STATE:
+		CHECK_CONTROL_DATA_SIZE(0);
+		return ctdb_control_get_ban_state(ctdb, outdata);
+
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;
