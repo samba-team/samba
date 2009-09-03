@@ -7,7 +7,20 @@
 #define _HEADER_NDR_ntlmssp
 
 #include "../librpc/ndr/ndr_ntlmssp.h"
-#define NDR_NTLMSSP_CALL_COUNT (0)
+#define NDR_NTLMSSP_UUID "6e746c6d-7373-700a-0000-00000000"
+#define NDR_NTLMSSP_VERSION 0.0
+#define NDR_NTLMSSP_NAME "ntlmssp"
+#define NDR_NTLMSSP_HELPSTRING "NTLM messages"
+extern const struct ndr_interface_table ndr_table_ntlmssp;
+#define NDR_DECODE_NEGOTIATE_MESSAGE (0x00)
+
+#define NDR_DECODE_CHALLENGE_MESSAGE (0x01)
+
+#define NDR_DECODE_AUTHENTICATE_MESSAGE (0x02)
+
+#define NDR_DECODE_NTLMV2_CLIENT_CHALLENGE (0x03)
+
+#define NDR_NTLMSSP_CALL_COUNT (4)
 void ndr_print_ntlmssp_MessageType(struct ndr_print *ndr, const char *name, enum ntlmssp_MessageType r);
 void ndr_print_NEGOTIATE(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_ntlmssp_WindowsMajorVersion(struct ndr_print *ndr, const char *name, enum ntlmssp_WindowsMajorVersion r);
@@ -57,4 +70,8 @@ void ndr_print_NTLMSSP_MESSAGE_SIGNATURE(struct ndr_print *ndr, const char *name
 enum ndr_err_code ndr_push_NTLMSSP_MESSAGE_SIGNATURE_NTLMv2(struct ndr_push *ndr, int ndr_flags, const struct NTLMSSP_MESSAGE_SIGNATURE_NTLMv2 *r);
 enum ndr_err_code ndr_pull_NTLMSSP_MESSAGE_SIGNATURE_NTLMv2(struct ndr_pull *ndr, int ndr_flags, struct NTLMSSP_MESSAGE_SIGNATURE_NTLMv2 *r);
 void ndr_print_NTLMSSP_MESSAGE_SIGNATURE_NTLMv2(struct ndr_print *ndr, const char *name, const struct NTLMSSP_MESSAGE_SIGNATURE_NTLMv2 *r);
+void ndr_print_decode_NEGOTIATE_MESSAGE(struct ndr_print *ndr, const char *name, int flags, const struct decode_NEGOTIATE_MESSAGE *r);
+void ndr_print_decode_CHALLENGE_MESSAGE(struct ndr_print *ndr, const char *name, int flags, const struct decode_CHALLENGE_MESSAGE *r);
+void ndr_print_decode_AUTHENTICATE_MESSAGE(struct ndr_print *ndr, const char *name, int flags, const struct decode_AUTHENTICATE_MESSAGE *r);
+void ndr_print_decode_NTLMv2_CLIENT_CHALLENGE(struct ndr_print *ndr, const char *name, int flags, const struct decode_NTLMv2_CLIENT_CHALLENGE *r);
 #endif /* _HEADER_NDR_ntlmssp */
