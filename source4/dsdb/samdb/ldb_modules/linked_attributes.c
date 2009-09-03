@@ -1028,84 +1028,13 @@ static int la_down_req(struct la_context *ac)
 static int la_find_dn_target(struct ldb_module *module, struct la_context *ac, struct ldb_dn **dn)
 {
 	const struct ldb_val *guid;
-	struct ldb_context *ldb;
-	int ret;
-	struct ldb_result *res;
-	const char *attrs[] = { NULL };
-	struct ldb_request *search_req;
-	char *expression;
-	struct ldb_search_options_control *options;
-
-	ldb = ldb_module_get_ctx(ac->module);
 
 	guid = ldb_dn_get_extended_component(*dn, "GUID");
 	if (guid == NULL) {
 		return LDB_SUCCESS;
 	}
 
-	expression = talloc_asprintf(ac, "objectGUID=%s", ldb_binary_encode(ac, *guid));
-	if (!expression) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	res = talloc_zero(ac, struct ldb_result);
-	if (!res) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ret = ldb_build_search_req(&search_req, ldb, ac,
-				   ldb_get_default_basedn(ldb),
-				   LDB_SCOPE_SUBTREE,
-				   expression, attrs,
-				   NULL,
-				   res, ldb_search_default_callback,
-				   NULL);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	/* we need to cope with cross-partition links, so search for
-	   the GUID over all partitions */
-	options = talloc(search_req, struct ldb_search_options_control);
-	if (options == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	options->search_options = LDB_SEARCH_OPTION_PHANTOM_ROOT;
-
-	ret = ldb_request_add_control(search_req,
-				      LDB_CONTROL_SEARCH_OPTIONS_OID,
-				      true, options);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	ret = ldb_next_request(module, search_req);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	ret = ldb_wait(search_req->handle, LDB_WAIT_ALL);
-	if (ret != LDB_SUCCESS) {
-		ldb_debug(ldb, LDB_DEBUG_ERROR, "GUID search failed (%s) for %s\n", 
-			  ldb_errstring(ldb), ldb_dn_get_extended_linearized(ac, *dn, 1));
-		return ret;
-	}
-
-	/* this really should be exactly 1, but there is a bug in the
-	   partitions module that can return two here with the
-	   search_options control set */
-	if (res->count < 1) {
-		ldb_debug(ldb, LDB_DEBUG_ERROR, "GUID search gave count=%d for %s\n", 
-			  res->count, ldb_dn_get_extended_linearized(ac, *dn, 1));
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	*dn = res->msgs[0]->dn;
-
-	return LDB_SUCCESS;
+	return dsdb_find_dn_by_guid(ldb_module_get_ctx(ac->module), ac, ldb_binary_encode(ac, *guid), dn);
 }
 
 /* apply one la_context op change */
@@ -1230,7 +1159,7 @@ static int linked_attributes_start_transaction(struct ldb_module *module)
 	}
 	la_private->la_list = NULL;
 	ldb_module_set_private(module, la_private);
-	return LDB_SUCCESS;
+	return ldb_next_start_trans(module);
 }
 
 /*
@@ -1253,12 +1182,11 @@ static int linked_attributes_end_transaction(struct ldb_module *module)
 		ac->req = NULL;
 		ret = la_do_mod_request(module, ac);
 		if (ret != LDB_SUCCESS) {
-			ret = la_do_mod_request(module, ac);
 			return ret;
 		}
 	}
 	
-	return LDB_SUCCESS;
+	return ldb_next_end_trans(module);
 }
 
 static int linked_attributes_del_transaction(struct ldb_module *module)
@@ -1267,7 +1195,7 @@ static int linked_attributes_del_transaction(struct ldb_module *module)
 		talloc_get_type(ldb_module_get_private(module), struct la_private);
 	talloc_free(la_private);
 	ldb_module_set_private(module, NULL);
-	return LDB_SUCCESS;
+	return ldb_next_del_trans(module);
 }
 
 
