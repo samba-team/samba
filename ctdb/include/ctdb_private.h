@@ -226,6 +226,8 @@ struct ctdb_node {
 	   by each node.
 	*/
 	struct ctdb_all_public_ips *public_ips;
+	/* used by the recovery dameon to track when a node should be banned */
+	struct ctdb_banning_state *ban_state; 
 };
 
 /*
@@ -429,6 +431,7 @@ struct ctdb_context {
 	TALLOC_CTX *release_ips_ctx; /* a context used to automatically drop all IPs if we fail to recover the node */
 	TALLOC_CTX *script_monitoring_ctx; /* a context where we store results while running the monitor event */
 	TALLOC_CTX *last_monitoring_ctx; 
+	TALLOC_CTX *banning_ctx;
 };
 
 struct ctdb_db_context {
@@ -587,6 +590,8 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_EVENT_SCRIPT_DISABLED   = 106,
 		    CTDB_CONTROL_ENABLE_SCRIPT           = 107,
 		    CTDB_CONTROL_DISABLE_SCRIPT          = 108,
+		    CTDB_CONTROL_SET_BAN_STATE           = 109,
+		    CTDB_CONTROL_GET_BAN_STATE           = 110,
 };	
 
 /*
@@ -1468,5 +1473,8 @@ int ctdb_vacuum_init(struct ctdb_db_context *ctdb_db);
 
 int32_t ctdb_control_enable_script(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_disable_script(struct ctdb_context *ctdb, TDB_DATA indata);
+
+int32_t ctdb_control_set_ban_state(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_get_ban_state(struct ctdb_context *ctdb, TDB_DATA *outdata);
 
 #endif
