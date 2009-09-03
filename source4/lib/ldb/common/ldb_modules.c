@@ -472,10 +472,14 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
   which makes writing a module simpler, and makes it more likely to keep working
   when ldb is extended
 */
-#define FIND_OP(module, op) do { \
-	struct ldb_context *ldb = module->ldb; \
+#define FIND_OP_NOERR(module, op) do { \
 	module = module->next; \
 	while (module && module->ops->op == NULL) module = module->next; \
+} while (0)
+
+#define FIND_OP(module, op) do { \
+	struct ldb_context *ldb = module->ldb; \
+	FIND_OP_NOERR(module, op); \
 	if (module == NULL) { \
 		ldb_asprintf_errstring(ldb, "Unable to find backend operation for " #op ); \
 		return LDB_ERR_OPERATIONS_ERROR;	\
@@ -593,6 +597,17 @@ int ldb_next_end_trans(struct ldb_module *module)
 {
 	FIND_OP(module, end_transaction);
 	return module->ops->end_transaction(module);
+}
+
+int ldb_next_prepare_commit(struct ldb_module *module)
+{
+	FIND_OP_NOERR(module, prepare_commit);
+	if (module == NULL) {
+		/* we are allowed to have no prepare commit in
+		   backends */
+		return LDB_SUCCESS;
+	}
+	return module->ops->prepare_commit(module);
 }
 
 int ldb_next_del_trans(struct ldb_module *module)

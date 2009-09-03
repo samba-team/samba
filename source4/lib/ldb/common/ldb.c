@@ -282,14 +282,19 @@ void ldb_reset_err_string(struct ldb_context *ldb)
 	}
 }
 
-#define FIRST_OP(ldb, op) do { \
+#define FIRST_OP_NOERR(ldb, op) do { \
 	module = ldb->modules;					\
 	while (module && module->ops->op == NULL) module = module->next; \
-	if (module == NULL) {						\
+} while (0)
+
+#define FIRST_OP(ldb, op) do { \
+	FIRST_OP_NOERR(ldb, op); \
+	if (module == NULL) {	       				\
 		ldb_asprintf_errstring(ldb, "unable to find module or backend to handle operation: " #op); \
 		return LDB_ERR_OPERATIONS_ERROR;			\
 	} \
 } while (0)
+
 
 /*
   start a transaction
@@ -337,6 +342,7 @@ int ldb_transaction_commit(struct ldb_context *ldb)
 	struct ldb_module *module;
 	int status;
 
+
 	ldb->transaction_active--;
 
 	ldb_debug(ldb, LDB_DEBUG_TRACE,
@@ -355,10 +361,30 @@ int ldb_transaction_commit(struct ldb_context *ldb)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	FIRST_OP(ldb, end_transaction);
+	/* call prepare transaction if available */
+	FIRST_OP_NOERR(ldb, prepare_commit);
+	if (module != NULL) {
+		status = module->ops->prepare_commit(module);
+		if (status != LDB_SUCCESS) {
+			/* if a module fails the prepare then we need
+			   to call the end transaction for everyone */
+			/* preserve err string */
+			FIRST_OP(ldb, end_transaction);
+			module->ops->end_transaction(module);
+			if (ldb->err_string == NULL) {
+				/* no error string was setup by the backend */
+				ldb_asprintf_errstring(ldb,
+						       "ldb transaction prepare commit: %s (%d)",
+						       ldb_strerror(status),
+						       status);
+			}
+			return status;
+		}
+	}
 
 	ldb_reset_err_string(ldb);
 
+	FIRST_OP(ldb, end_transaction);
 	status = module->ops->end_transaction(module);
 	if (status != LDB_SUCCESS) {
 		if (ldb->err_string == NULL) {
@@ -368,6 +394,9 @@ int ldb_transaction_commit(struct ldb_context *ldb)
 				ldb_strerror(status),
 				status);
 		}
+		/* cancel the transaction */
+		FIRST_OP(ldb, del_transaction);
+		module->ops->del_transaction(module);
 	}
 	return status;
 }
@@ -393,7 +422,7 @@ int ldb_transaction_cancel(struct ldb_context *ldb)
 
 	if (ldb->transaction_active < 0) {
 		ldb_debug(ldb, LDB_DEBUG_FATAL,
-			  "commit called but no ldb transactions are active!");
+			  "cancel called but no ldb transactions are active!");
 		ldb->transaction_active = 0;
 		return LDB_ERR_OPERATIONS_ERROR;
 	}

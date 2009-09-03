@@ -127,6 +127,7 @@ int ldb_next_request(struct ldb_module *module, struct ldb_request *request);
 int ldb_next_start_trans(struct ldb_module *module);
 int ldb_next_end_trans(struct ldb_module *module);
 int ldb_next_del_trans(struct ldb_module *module);
+int ldb_next_prepare_commit(struct ldb_module *module);
 int ldb_next_init(struct ldb_module *module);
 
 void ldb_set_errstring(struct ldb_context *ldb, const char *err_string);
