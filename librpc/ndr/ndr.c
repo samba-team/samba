@@ -255,7 +255,14 @@ _PUBLIC_ void ndr_print_function_debug(ndr_print_function_t fn, const char *name
 	ndr->print = ndr_print_debug_helper;
 	ndr->depth = 1;
 	ndr->flags = 0;
+
+	/* this is a s4 hack until we build up the courage to pass
+	 * this all the way down 
+	 */
+#if _SAMBA_BUILD_ == 4
 	ndr->iconv_convenience = smb_iconv_convenience_init(talloc_autofree_context(), "ASCII", "UTF-8", true);
+#endif
+
 	fn(ndr, name, flags, ptr);
 	talloc_free(ndr);
 }
@@ -277,6 +284,14 @@ _PUBLIC_ char *ndr_print_struct_string(TALLOC_CTX *mem_ctx, ndr_print_fn_t fn, c
 	ndr->print = ndr_print_string_helper;
 	ndr->depth = 1;
 	ndr->flags = 0;
+
+	/* this is a s4 hack until we build up the courage to pass
+	 * this all the way down 
+	 */
+#if _SAMBA_BUILD_ == 4
+	ndr->iconv_convenience = smb_iconv_convenience_init(talloc_autofree_context(), "ASCII", "UTF-8", true);
+#endif
+
 	fn(ndr, name, ptr);
 	ret = talloc_steal(mem_ctx, (char *)ndr->private_data);
 failed:
