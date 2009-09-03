@@ -93,6 +93,15 @@ static PyObject *py_unix2nttime(PyObject *self, PyObject *args)
 	return PyInt_FromLong((uint64_t)nt);
 }
 
+static PyObject *py_set_debug_level(PyObject *self, PyObject *args)
+{
+	unsigned level;
+	if (!PyArg_ParseTuple(args, "I", &level))
+		return NULL;
+	(DEBUGLEVEL) = level;
+	Py_RETURN_NONE;
+}
+
 static PyObject *py_ldb_set_credentials(PyObject *self, PyObject *args)
 {
 	PyObject *py_creds, *py_ldb;
@@ -483,6 +492,8 @@ static PyMethodDef py_misc_methods[] = {
 		NULL },
 	{ "dom_sid_to_rid", (PyCFunction)py_dom_sid_to_rid, METH_VARARGS,
 		NULL },
+	{ "set_debug_level", (PyCFunction)py_set_debug_level, METH_VARARGS,
+		"set debug level" },
 	{ NULL }
 };
 

@@ -1298,11 +1298,13 @@ def provision_become_dc(setup_dir=None,
                         policyguid=None, invocationid=None, machinepass=None, 
                         dnspass=None, root=None, nobody=None, users=None, 
                         wheel=None, backup=None, serverrole=None, 
-                        ldap_backend=None, ldap_backend_type=None, sitename=None):
+                        ldap_backend=None, ldap_backend_type=None, sitename=None, debuglevel=1):
 
     def message(text):
         """print a message if quiet is not set."""
         print text
+
+    glue.set_debug_level(debuglevel)
 
     return provision(setup_dir, message, system_session(), None,
               smbconf=smbconf, targetdir=targetdir, samdb_fill=FILL_DRS, realm=realm, 

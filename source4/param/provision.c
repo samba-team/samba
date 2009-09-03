@@ -34,7 +34,7 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 			struct provision_settings *settings, 
 			struct provision_result *result)
 {
-	char *configfile;
+	const char *configfile;
 	PyObject *provision_mod, *provision_dict, *provision_fn, *py_result, *parameters;
 	
 	DEBUG(0,("Provision for Become-DC test using python\n"));
@@ -122,6 +122,9 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 
 	PyDict_SetItemString(parameters, "machinepass", 
 			     PyString_FromString(settings->machine_password));
+
+	
+	PyDict_SetItemString(parameters, "debuglevel", PyInt_FromLong(DEBUGLEVEL));
 
 	py_result = PyEval_CallObjectWithKeywords(provision_fn, NULL, parameters);
 
