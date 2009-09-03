@@ -495,11 +495,11 @@ static bool test_plaintext(enum ntlm_break break_which)
 		nt_response.data[0]++;
 		break;
 	case NO_LM:
-		SAFE_FREE(lm_response.data);
+		TALLOC_FREE(lm_response.data);
 		lm_response.length = 0;
 		break;
 	case NO_NT:
-		SAFE_FREE(nt_response.data);
+		TALLOC_FREE(nt_response.data);
 		nt_response.length = 0;
 		break;
 	}
