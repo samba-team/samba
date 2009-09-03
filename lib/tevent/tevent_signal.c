@@ -32,8 +32,12 @@
 
 #define NUM_SIGNALS 64
 
-/* maximum number of SA_SIGINFO signals to hold in the queue */
-#define SA_INFO_QUEUE_COUNT 100
+/* maximum number of SA_SIGINFO signals to hold in the queue.
+  NB. This *MUST* be a power of 2, in order for the ring buffer
+  wrap to work correctly. Thanks to Petr Vandrovec <petr@vandrovec.name>
+  for this. */
+
+#define SA_INFO_QUEUE_COUNT 64
 
 struct sigcounter {
 	uint32_t count;
