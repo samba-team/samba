@@ -41,11 +41,23 @@
 #include "includes.h"
 #include "ldb_module.h"
 #include "dsdb/samdb/samdb.h"
+#include "dsdb/common/proto.h"
 #include "../libds/common/flags.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "param/param.h"
+#include "libcli/security/dom_sid.h"
+#include "dlinklist.h"
+
+struct replmd_private {
+	struct la_entry *la_list;
+};
+
+struct la_entry {
+	struct la_entry *next, *prev;
+	struct drsuapi_DsReplicaLinkedAttribute *la;
+};
 
 struct replmd_replicated_request {
 	struct ldb_module *module;
@@ -63,8 +75,11 @@ struct replmd_replicated_request {
 	struct ldb_message *search_msg;
 };
 
+/*
+  created a replmd_replicated_request context
+ */
 static struct replmd_replicated_request *replmd_ctx_init(struct ldb_module *module,
-					  struct ldb_request *req)
+							 struct ldb_request *req)
 {
 	struct ldb_context *ldb;
 	struct replmd_replicated_request *ac;
@@ -291,7 +306,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	/* a new GUID */
 	guid = GUID_random();
 
-	/* get our invicationId */
+	/* get our invocationId */
 	our_invocation_id = samdb_ntds_invocation_id(ldb);
 	if (!our_invocation_id) {
 		ldb_debug_set(ldb, LDB_DEBUG_ERROR,
@@ -982,7 +997,7 @@ static int replmd_replicated_apply_next(struct replmd_replicated_request *ar)
 	struct ldb_request *search_req;
 
 	if (ar->index_current >= ar->objs->num_objects) {
-		/* done with it, go to the last op */
+		/* done with it, go to next stage */
 		return replmd_replicated_uptodate_vector(ar);
 	}
 
@@ -1416,14 +1431,18 @@ static int replmd_replicated_uptodate_vector(struct replmd_replicated_request *a
 	return ldb_next_request(ar->module, search_req);
 }
 
+
+
 static int replmd_extended_replicated_objects(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
 	struct dsdb_extended_replicated_objects *objs;
 	struct replmd_replicated_request *ar;
 	struct ldb_control **ctrls;
-	int ret;
+	int ret, i;
 	struct dsdb_control_current_partition *partition_ctrl;
+	struct replmd_private *replmd_private = 
+		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -1490,7 +1509,198 @@ static int replmd_extended_replicated_objects(struct ldb_module *module, struct 
 	ar->controls = req->controls;
 	req->controls = ctrls;
 
+	DEBUG(4,("linked_attributes_count=%u\n", objs->linked_attributes_count));
+
+	/* save away the linked attributes for the end of the
+	   transaction */
+	for (i=0; i<ar->objs->linked_attributes_count; i++) {
+		struct la_entry *la_entry;
+
+		if (replmd_private == NULL) {
+			DEBUG(0,(__location__ ": repl_meta_data not called from within a transaction\n"));
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		la_entry = talloc(replmd_private, struct la_entry);
+		if (la_entry == NULL) {
+			ldb_oom(ldb);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		la_entry->la = talloc(la_entry, struct drsuapi_DsReplicaLinkedAttribute);
+		if (la_entry->la == NULL) {
+			ldb_oom(ldb);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		*la_entry->la = ar->objs->linked_attributes[i];
+
+		/* we need to steal the non-scalars so they stay
+		   around until the end of the transaction */
+		talloc_steal(la_entry->la, la_entry->la->identifier);
+		talloc_steal(la_entry->la, la_entry->la->value.blob);
+
+		DLIST_ADD(replmd_private->la_list, la_entry);
+	}
+
 	return replmd_replicated_apply_next(ar);
+}
+
+/*
+  process one linked attribute structure
+ */
+static int replmd_process_linked_attribute(struct ldb_module *module,
+					   struct la_entry *la_entry)
+{					   
+	struct drsuapi_DsReplicaLinkedAttribute *la = la_entry->la;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct drsuapi_DsReplicaObjectIdentifier3 target;
+	struct ldb_message *msg;
+	struct ldb_message_element *ret_el;
+	TALLOC_CTX *tmp_ctx = talloc_new(la_entry);
+	enum ndr_err_code ndr_err;
+	char *target_dn;
+	struct ldb_request *mod_req;
+	int ret;
+	const struct dsdb_attribute *attr;
+
+/*
+linked_attributes[0]:                                                     
+     &objs->linked_attributes[i]: struct drsuapi_DsReplicaLinkedAttribute 
+        identifier               : *                                      
+            identifier: struct drsuapi_DsReplicaObjectIdentifier          
+                __ndr_size               : 0x0000003a (58)                
+                __ndr_size_sid           : 0x00000000 (0)                 
+                guid                     : 8e95b6a9-13dd-4158-89db-3220a5be5cc7
+                sid                      : S-0-0                               
+                __ndr_size_dn            : 0x00000000 (0)                      
+                dn                       : ''                                  
+        attid                    : DRSUAPI_ATTRIBUTE_member (0x1F)             
+        value: struct drsuapi_DsAttributeValue                                 
+            __ndr_size               : 0x0000007e (126)                        
+            blob                     : *                                       
+                blob                     : DATA_BLOB length=126                
+        flags                    : 0x00000001 (1)                              
+               1: DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE                      
+        originating_add_time     : Wed Sep  2 22:20:01 2009 EST                
+        meta_data: struct drsuapi_DsReplicaMetaData                            
+            version                  : 0x00000015 (21)                         
+            originating_change_time  : Wed Sep  2 23:39:07 2009 EST            
+            originating_invocation_id: 794640f3-18cf-40ee-a211-a93992b67a64    
+            originating_usn          : 0x000000000001e19c (123292)             
+     &target: struct drsuapi_DsReplicaObjectIdentifier3                        
+        __ndr_size               : 0x0000007e (126)                            
+        __ndr_size_sid           : 0x0000001c (28)                             
+        guid                     : 7639e594-db75-4086-b0d4-67890ae46031        
+        sid                      : S-1-5-21-2848215498-2472035911-1947525656-19924
+        __ndr_size_dn            : 0x00000022 (34)                                
+        dn                       : 'CN=UOne,OU=TestOU,DC=vsofs8,DC=com'           
+ */
+	if (DEBUGLVL(4)) {
+		NDR_PRINT_DEBUG(drsuapi_DsReplicaLinkedAttribute, la); 
+	}
+	
+	/* decode the target of the link */
+	ndr_err = ndr_pull_struct_blob(la->value.blob, 
+				       tmp_ctx, lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")), 
+				       &target,
+				       (ndr_pull_flags_fn_t)ndr_pull_drsuapi_DsReplicaObjectIdentifier3);
+	if (ndr_err != NDR_ERR_SUCCESS) {
+		DEBUG(0,("Unable to decode linked_attribute target\n"));
+		dump_data(4, la->value.blob->data, la->value.blob->length);			
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	if (DEBUGLVL(4)) {
+		NDR_PRINT_DEBUG(drsuapi_DsReplicaObjectIdentifier3, &target);
+	}
+
+	/* construct a modify request for this attribute change */
+	msg = ldb_msg_new(tmp_ctx);
+	if (!msg) {
+		ldb_oom(ldb);
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = dsdb_find_dn_by_guid(ldb, tmp_ctx, 
+				   GUID_string(tmp_ctx, &la->identifier->guid), &msg->dn);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	/* find the attribute being modified */
+	attr = dsdb_attribute_by_attributeID_id(dsdb_get_schema(ldb), la->attid);
+	if (attr == NULL) {
+		DEBUG(0, (__location__ ": Unable to find attributeID 0x%x\n", la->attid));
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (la->flags & DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE) {
+		ret = ldb_msg_add_empty(msg, attr->lDAPDisplayName,
+					LDB_FLAG_MOD_ADD, &ret_el);
+	} else {
+		ret = ldb_msg_add_empty(msg, attr->lDAPDisplayName,
+					LDB_FLAG_MOD_DELETE, &ret_el);
+	}
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+	ret_el->values = talloc_array(msg, struct ldb_val, 1);
+	if (!ret_el->values) {
+		ldb_oom(ldb);
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ret_el->num_values = 1;
+
+	target_dn = talloc_asprintf(tmp_ctx, "<GUID=%s>;<SID=%s>;%s",
+				    GUID_string(tmp_ctx, &target.guid),
+				    dom_sid_string(tmp_ctx, &target.sid),
+				    target.dn);
+	if (target_dn == NULL) {
+		ldb_oom(ldb);
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ret_el->values[0] = data_blob_string_const(target_dn);
+
+	ret = ldb_build_mod_req(&mod_req, ldb, tmp_ctx,
+				msg,
+				NULL,
+				NULL, 
+				ldb_op_default_callback,
+				NULL);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+	talloc_steal(mod_req, msg);
+
+	if (DEBUGLVL(4)) {
+		DEBUG(4,("Applying DRS linked attribute change:\n%s\n",
+			 ldb_ldif_message_string(ldb, tmp_ctx, LDB_CHANGETYPE_MODIFY, msg)));
+	}
+
+	/* Run the new request */
+	ret = ldb_next_request(module, mod_req);
+
+	/* we need to wait for this to finish, as we are being called
+	   from the synchronous end_transaction hook of this module */
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(mod_req->handle, LDB_WAIT_ALL);
+	}
+
+	if (ret != LDB_SUCCESS) {
+		ldb_debug(ldb, LDB_DEBUG_WARNING, "Failed to apply linked attribute change '%s' %s\n",
+			  ldb_errstring(ldb),
+			  ldb_ldif_message_string(ldb, tmp_ctx, LDB_CHANGETYPE_MODIFY, msg));
+	}
+	
+	talloc_free(tmp_ctx);
+
+	return ret;	
 }
 
 static int replmd_extended(struct ldb_module *module, struct ldb_request *req)
@@ -1502,9 +1712,71 @@ static int replmd_extended(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, req);
 }
 
+
+/*
+  we hook into the transaction operations to allow us to 
+  perform the linked attribute updates at the end of the whole
+  transaction. This allows a forward linked attribute to be created
+  before the object is created. During a vampire, w2k8 sends us linked
+  attributes before the objects they are part of.
+ */
+static int replmd_start_transaction(struct ldb_module *module)
+{
+	/* create our private structure for this transaction */
+	struct replmd_private *replmd_private = talloc_get_type(ldb_module_get_private(module),
+								struct replmd_private);
+	talloc_free(replmd_private);
+	replmd_private = talloc(module, struct replmd_private);
+	if (replmd_private == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	replmd_private->la_list = NULL;
+	ldb_module_set_private(module, replmd_private);
+	return ldb_next_start_trans(module);
+}
+
+/*
+  on end transaction we loop over our queued la_context structures and
+  apply each of them  
+ */
+static int replmd_end_transaction(struct ldb_module *module)
+{
+	struct replmd_private *replmd_private = 
+		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
+	struct la_entry *la;
+
+	/* walk the list backwards, to do the first entry first, as we
+	 * added the entries with DLIST_ADD() which puts them at the
+	 * start of the list */
+	for (la = replmd_private->la_list; la && la->next; la=la->next) ;
+
+	for (; la; la=la->prev) {
+		int ret;
+		ret = replmd_process_linked_attribute(module, la);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+	
+	return ldb_next_end_trans(module);
+}
+
+static int replmd_del_transaction(struct ldb_module *module)
+{
+	struct replmd_private *replmd_private = 
+		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
+	talloc_free(replmd_private);
+	ldb_module_set_private(module, NULL);
+	return ldb_next_del_trans(module);
+}
+
+
 _PUBLIC_ const struct ldb_module_ops ldb_repl_meta_data_module_ops = {
 	.name          = "repl_meta_data",
 	.add           = replmd_add,
 	.modify        = replmd_modify,
 	.extended      = replmd_extended,
+	.start_transaction = replmd_start_transaction,
+	.end_transaction   = replmd_end_transaction,
+	.del_transaction   = replmd_del_transaction,
 };
