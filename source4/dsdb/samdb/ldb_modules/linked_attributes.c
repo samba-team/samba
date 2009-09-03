@@ -32,6 +32,7 @@
 #include "ldb_module.h"
 #include "dlinklist.h"
 #include "dsdb/samdb/samdb.h"
+#include "librpc/gen_ndr/ndr_misc.h"
 
 struct la_private {
 	struct la_context *la_list;
@@ -41,7 +42,7 @@ struct la_op_store {
 	struct la_op_store *next;
 	struct la_op_store *prev;
 	enum la_op {LA_OP_ADD, LA_OP_DEL} op;
-	struct ldb_dn *dn;
+	struct GUID guid;
 	char *name;
 	char *value;
 };
@@ -99,15 +100,46 @@ static struct la_context *linked_attributes_init(struct ldb_module *module,
 	return ac;
 }
 
+/*
+  turn a DN into a GUID
+ */
+static int la_guid_from_dn(struct la_context *ac, struct ldb_dn *dn, struct GUID *guid)
+{
+	const struct ldb_val *guid_val;
+	int ret;
+
+	guid_val = ldb_dn_get_extended_component(dn, "GUID");
+	if (guid_val) {
+		/* there is a GUID embedded in the DN */
+		enum ndr_err_code ndr_err;
+		ndr_err = ndr_pull_struct_blob(guid_val, ac, NULL, guid,
+					       (ndr_pull_flags_fn_t)ndr_pull_GUID);
+		if (ndr_err != NDR_ERR_SUCCESS) {
+			DEBUG(0,(__location__ ": Failed to parse GUID\n"));
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+	} else {
+		ret = dsdb_find_guid_by_dn(ldb_module_get_ctx(ac->module), dn, guid);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(4,(__location__ ": Failed to find GUID for dn %s\n",
+				 ldb_dn_get_linearized(dn)));
+			return ret;
+		}
+	}
+	return LDB_SUCCESS;
+}
+
+
 /* Common routine to handle reading the attributes and creating a
  * series of modify requests */
 static int la_store_op(struct la_context *ac,
 		       enum la_op op, struct ldb_val *dn,
-			const char *name)
+		       const char *name)
 {
 	struct ldb_context *ldb;
 	struct la_op_store *os;
 	struct ldb_dn *op_dn;
+	int ret;
 
 	ldb = ldb_module_get_ctx(ac->module);
 
@@ -126,7 +158,20 @@ static int la_store_op(struct la_context *ac,
 
 	os->op = op;
 
-	os->dn = talloc_steal(os, op_dn);
+	ret = la_guid_from_dn(ac, op_dn, &os->guid);
+	if (ret == LDB_ERR_NO_SUCH_OBJECT && ac->req->operation == LDB_DELETE) {
+		/* we are deleting an object, and we've found it has a
+		 * forward link to a target that no longer
+		 * exists. This is not an error in the delete, and we
+		 * should just not do the deferred delete of the
+		 * target attribute
+		 */
+		talloc_free(os);
+		return LDB_SUCCESS;
+	}
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 
 	os->name = talloc_strdup(os, name);
 	if (!os->name) {
@@ -1025,16 +1070,10 @@ static int la_down_req(struct la_context *ac)
   use the GUID part of an extended DN to find the target DN, in case
   it has moved
  */
-static int la_find_dn_target(struct ldb_module *module, struct la_context *ac, struct ldb_dn **dn)
+static int la_find_dn_target(struct ldb_module *module, struct la_context *ac, 
+			     struct GUID *guid, struct ldb_dn **dn)
 {
-	const struct ldb_val *guid;
-
-	guid = ldb_dn_get_extended_component(*dn, "GUID");
-	if (guid == NULL) {
-		return LDB_SUCCESS;
-	}
-
-	return dsdb_find_dn_by_guid(ldb_module_get_ctx(ac->module), ac, ldb_binary_encode(ac, *guid), dn);
+	return dsdb_find_dn_by_guid(ldb_module_get_ctx(ac->module), ac, GUID_string(ac, guid), dn);
 }
 
 /* apply one la_context op change */
@@ -1055,8 +1094,7 @@ static int la_do_op_request(struct ldb_module *module, struct la_context *ac, st
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	new_msg->dn = op->dn;
-	ret = la_find_dn_target(module, ac, &new_msg->dn);
+	ret = la_find_dn_target(module, ac, &op->guid, &new_msg->dn);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -1132,7 +1170,9 @@ static int la_do_mod_request(struct ldb_module *module, struct la_context *ac)
 	for (op = ac->ops; op; op=op->next) {
 		int ret = la_do_op_request(module, ac, op);
 		if (ret != LDB_SUCCESS) {
-			return ret;
+			if (ret != LDB_ERR_NO_SUCH_OBJECT) {
+				return ret;
+			}
 		}
 	}
 
@@ -1163,10 +1203,10 @@ static int linked_attributes_start_transaction(struct ldb_module *module)
 }
 
 /*
-  on end transaction we loop over our queued la_context structures and
-  apply each of them  
+  on prepare commit we loop over our queued la_context structures
+  and apply each of them
  */
-static int linked_attributes_end_transaction(struct ldb_module *module)
+static int linked_attributes_prepare_commit(struct ldb_module *module)
 {
 	struct la_private *la_private = 
 		talloc_get_type(ldb_module_get_private(module), struct la_private);
@@ -1182,11 +1222,15 @@ static int linked_attributes_end_transaction(struct ldb_module *module)
 		ac->req = NULL;
 		ret = la_do_mod_request(module, ac);
 		if (ret != LDB_SUCCESS) {
+			DEBUG(0,(__location__ ": Failed mod request ret=%d\n", ret));
 			return ret;
 		}
 	}
+
+	talloc_free(la_private);
+	ldb_module_set_private(module, NULL);	
 	
-	return ldb_next_end_trans(module);
+	return ldb_next_prepare_commit(module);
 }
 
 static int linked_attributes_del_transaction(struct ldb_module *module)
@@ -1206,6 +1250,6 @@ _PUBLIC_ const struct ldb_module_ops ldb_linked_attributes_module_ops = {
 	.del               = linked_attributes_del,
 	.rename            = linked_attributes_rename,
 	.start_transaction = linked_attributes_start_transaction,
-	.end_transaction   = linked_attributes_end_transaction,
+	.prepare_commit    = linked_attributes_prepare_commit,
 	.del_transaction   = linked_attributes_del_transaction,
 };
