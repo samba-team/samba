@@ -71,6 +71,8 @@ struct vampire_state {
 
 	struct loadparm_context *lp_ctx;
 	struct tevent_context *event_ctx;
+	unsigned total_objects;
+	char *last_partition;
 };
 
 static NTSTATUS vampire_prepare_db(void *private_data,
@@ -190,8 +192,8 @@ static NTSTATUS vampire_apply_schema(struct vampire_state *s,
 		mapping_ctr			= &c->ctr6->mapping_ctr;
 		object_count			= s->schema_part.object_count;
 		first_object			= s->schema_part.first_object;
-		linked_attributes_count		= 0; /* TODO: ! */
-		linked_attributes		= NULL; /* TODO: ! */;
+		linked_attributes_count		= c->ctr6->linked_attributes_count;
+		linked_attributes		= c->ctr6->linked_attributes;
 		s_dsa->highwatermark		= c->ctr6->new_highwatermark;
 		s_dsa->source_dsa_obj_guid	= c->ctr6->source_dsa_guid;
 		s_dsa->source_dsa_invocation_id = c->ctr6->source_dsa_invocation_id;
@@ -376,6 +378,7 @@ static NTSTATUS vampire_schema_chunk(void *private_data,
 	struct drsuapi_DsReplicaObjectListItemEx *cur;
 	uint32_t nc_linked_attributes_count;
 	uint32_t linked_attributes_count;
+	struct drsuapi_DsReplicaLinkedAttribute *linked_attributes;
 
 	switch (c->ctr_level) {
 	case 1:
@@ -385,6 +388,7 @@ static NTSTATUS vampire_schema_chunk(void *private_data,
 		first_object			= c->ctr1->first_object;
 		nc_linked_attributes_count	= 0;
 		linked_attributes_count		= 0;
+		linked_attributes		= NULL;
 		break;
 	case 6:
 		mapping_ctr			= &c->ctr6->mapping_ctr;
@@ -393,6 +397,7 @@ static NTSTATUS vampire_schema_chunk(void *private_data,
 		first_object			= c->ctr6->first_object;
 		nc_linked_attributes_count	= c->ctr6->nc_linked_attributes_count;
 		linked_attributes_count		= c->ctr6->linked_attributes_count;
+		linked_attributes		= c->ctr6->linked_attributes;
 		break;
 	default:
 		return NT_STATUS_INVALID_PARAMETER;
@@ -508,14 +513,23 @@ static NTSTATUS vampire_store_chunk(void *private_data,
 	NT_STATUS_HAVE_NO_MEMORY(tmp_dns_name);
 	s_dsa->other_info->dns_name = tmp_dns_name;
 
+	/* we want to show a count per partition */
+	if (!s->last_partition || strcmp(s->last_partition, c->partition->nc.dn) != 0) {
+		s->total_objects = 0;
+		talloc_free(s->last_partition);
+		s->last_partition = talloc_strdup(s, c->partition->nc.dn);
+	}
+	s->total_objects += object_count;
+
 	if (nc_object_count) {
 		DEBUG(0,("Partition[%s] objects[%u/%u] linked_values[%u/%u]\n",
-			c->partition->nc.dn, object_count, nc_object_count,
+			c->partition->nc.dn, s->total_objects, nc_object_count,
 			linked_attributes_count, nc_linked_attributes_count));
 	} else {
 		DEBUG(0,("Partition[%s] objects[%u] linked_values[%u\n",
-		c->partition->nc.dn, object_count, linked_attributes_count));
+		c->partition->nc.dn, s->total_objects, linked_attributes_count));
 	}
+
 
 	status = dsdb_extended_replicated_objects_commit(s->ldb,
 							 c->partition->nc.dn,
