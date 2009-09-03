@@ -6,7 +6,9 @@
 
 [
 	pointer_default(unique),
-	helper("../librpc/ndr/ndr_ntlmssp.h")
+	helper("../librpc/ndr/ndr_ntlmssp.h"),
+	helpstring("NTLM messages"),
+	uuid("6e746c6d-7373-700a-0000-00000000")
 ]
 interface ntlmssp
 {
@@ -270,4 +272,23 @@ interface ntlmssp
 		 uint8 Checksum[8];
 		 uint32 SeqNum;
 	} NTLMSSP_MESSAGE_SIGNATURE_NTLMv2;
+
+	/* some ndrdump helpers */
+
+	void decode_NEGOTIATE_MESSAGE(
+		[in] NEGOTIATE_MESSAGE negotiate
+		);
+
+	void decode_CHALLENGE_MESSAGE(
+		[in] CHALLENGE_MESSAGE challenge
+		);
+
+	void decode_AUTHENTICATE_MESSAGE(
+		[in] AUTHENTICATE_MESSAGE authenticate
+		);
+
+	void decode_NTLMv2_CLIENT_CHALLENGE(
+		[in] NTLMv2_CLIENT_CHALLENGE challenge
+		);
+
 }

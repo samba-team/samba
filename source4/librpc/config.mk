@@ -291,6 +291,11 @@ PUBLIC_DEPENDENCIES = LIBNDR NDR_STANDARD
 NDR_WINBIND_OBJ_FILES = $(gen_ndrsrcdir)/ndr_winbind.o
 #PUBLIC_HEADERS += $(gen_ndrsrcdir)/winbind.h
 
+[SUBSYSTEM::NDR_NTLMSSP]
+PUBLIC_DEPENDENCIES = LIBNDR NDR_STANDARD
+
+NDR_NTLMSSP_OBJ_FILES = ../librpc/gen_ndr/ndr_ntlmssp.o ../librpc/ndr/ndr_ntlmssp.o
+
 $(librpcsrcdir)/idl-deps:
 	$(PERL) $(librpcsrcdir)/idl-deps.pl $(wildcard $(librpcsrcdir)/idl/*.idl ../librpc/idl/*.idl) >$@
 
@@ -346,7 +351,8 @@ PUBLIC_DEPENDENCIES = \
 	NDR_SASL_HELPERS NDR_NOTIFY NDR_WINBIND \
 	NDR_FRSRPC NDR_FRSAPI NDR_FRSTRANS \
 	NDR_NFS4ACL NDR_NTP_SIGND \
-	NDR_DCOM NDR_WMI NDR_NAMED_PIPE_AUTH
+	NDR_DCOM NDR_WMI NDR_NAMED_PIPE_AUTH \
+	NDR_NTLMSSP
 
 NDR_TABLE_OBJ_FILES = ../librpc/ndr/ndr_table.o $(gen_ndrsrcdir)/tables.o
 
