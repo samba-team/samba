@@ -73,7 +73,7 @@ struct dsdb_extended_replicated_objects {
 	 * this is the version of the dsdb_extended_replicated_objects
 	 * version 0: initial implementation
 	 */
-#define DSDB_EXTENDED_REPLICATED_OBJECTS_VERSION 0
+#define DSDB_EXTENDED_REPLICATED_OBJECTS_VERSION 1
 	uint32_t version;
 
 	struct ldb_dn *partition_dn;
@@ -83,6 +83,9 @@ struct dsdb_extended_replicated_objects {
 
 	uint32_t num_objects;
 	struct dsdb_extended_replicated_object *objects;
+
+	uint32_t linked_attributes_count;
+	const struct drsuapi_DsReplicaLinkedAttribute *linked_attributes;
 };
 
 struct dsdb_naming_fsmo {

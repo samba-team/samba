@@ -231,6 +231,11 @@ WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
 					       out->num_objects);
 	W_ERROR_HAVE_NO_MEMORY(out->objects);
 
+	/* pass the linked attributes down to the repl_meta_data
+	   module */
+	out->linked_attributes_count = linked_attributes_count;
+	out->linked_attributes       = linked_attributes;
+
 	for (i=0, cur = first_object; cur; cur = cur->next_object, i++) {
 		if (i == out->num_objects) {
 			return WERR_FOOBAR;
