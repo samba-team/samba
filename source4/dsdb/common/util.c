@@ -2111,7 +2111,7 @@ int dsdb_find_dn_by_guid(struct ldb_context *ldb,
 	   partitions module that can return two here with the
 	   search_options control set */
 	if (res->count < 1) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return LDB_ERR_NO_SUCH_OBJECT;
 	}
 
 	*dn = res->msgs[0]->dn;
@@ -2120,3 +2120,23 @@ int dsdb_find_dn_by_guid(struct ldb_context *ldb,
 }
 
 
+/*
+  use a DN to find a GUID
+ */
+int dsdb_find_guid_by_dn(struct ldb_context *ldb, 
+			 struct ldb_dn *dn, struct GUID *guid)
+{
+	int ret;
+	struct ldb_result *res;
+	const char *attrs[] = { "objectGUID" };
+	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+
+	ret = ldb_search(ldb, tmp_ctx, &res, dn, LDB_SCOPE_BASE, attrs, NULL);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+	*guid = samdb_result_guid(res->msgs[0], "objectGUID");
+	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
+}
