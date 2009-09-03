@@ -28,6 +28,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "param/param.h"
+#include "librpc/gen_ndr/ndr_drsblobs.h"
 
 /* 
   drsuapi_DsBind 
@@ -318,7 +319,11 @@ static WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, 
 	struct drsuapi_DsReplicaObjectListItemEx *currentObject;
 	struct dom_sid *zero_sid;
 	struct ldb_dn *obj_dn;
-
+	enum ndr_err_code ndr_err;
+	const struct ldb_val *md_value;
+	struct replPropertyMetaDataBlob md;
+	ZERO_STRUCT(md);
+	md.version = 1;
 	b_state = talloc_zero(mem_ctx, struct drsuapi_bind_state);
 	W_ERROR_HAVE_NO_MEMORY(b_state);
 	zero_sid = talloc_zero(mem_ctx, struct dom_sid);
@@ -399,10 +404,33 @@ static WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, 
 			*currentObject->parent_object_guid = samdb_result_guid(site_res->msgs[i], "parentGUID");
 		}
 		currentObject->next_object = NULL;
-		/* TODO: MetaData vector*/
+
 		currentObject->meta_data_ctr = talloc(mem_ctx, struct drsuapi_DsReplicaMetaDataCtr);
-		currentObject->meta_data_ctr->meta_data = talloc(mem_ctx, struct drsuapi_DsReplicaMetaData);
-		currentObject->meta_data_ctr->count = 0;
+		md_value = ldb_msg_find_ldb_val(site_res->msgs[i], "replPropertyMetaData");
+		if (md_value) {
+			ndr_err = ndr_pull_struct_blob(md_value, mem_ctx,
+						       lp_iconv_convenience(ldb_get_opaque(b_state->sam_ctx, "loadparm")), &md,
+						       (ndr_pull_flags_fn_t)ndr_pull_replPropertyMetaDataBlob);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				return WERR_DS_DRA_INTERNAL_ERROR;
+			}
+
+			if (md.version != 1) {
+				return WERR_DS_DRA_INTERNAL_ERROR;
+			}
+
+			currentObject->meta_data_ctr->count = md.ctr.ctr1.count;
+			currentObject->meta_data_ctr->meta_data = talloc_array(mem_ctx, struct drsuapi_DsReplicaMetaData, md.ctr.ctr1.count);
+			for (j=0; j<md.ctr.ctr1.count; j++) {
+				currentObject->meta_data_ctr->meta_data[j].originating_change_time = md.ctr.ctr1.array[j].originating_change_time;
+				currentObject->meta_data_ctr->meta_data[j].version = md.ctr.ctr1.array[j].version;
+				currentObject->meta_data_ctr->meta_data[j].originating_invocation_id = md.ctr.ctr1.array[j].originating_invocation_id;
+				currentObject->meta_data_ctr->meta_data[j].originating_usn = md.ctr.ctr1.array[j].originating_usn;
+			}
+		} else {
+			currentObject->meta_data_ctr->meta_data = talloc(mem_ctx, struct drsuapi_DsReplicaMetaData);
+			currentObject->meta_data_ctr->count = 0;
+		}
 		currentObject->object.identifier = talloc(mem_ctx, struct drsuapi_DsReplicaObjectIdentifier);
 		obj_dn = ldb_msg_find_attr_as_dn(b_state->sam_ctx, mem_ctx, site_res->msgs[i], "distinguishedName");
 		currentObject->object.identifier->dn = ldb_dn_get_linearized(obj_dn);
