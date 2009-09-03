@@ -680,97 +680,74 @@ static int partition_start_trans(struct ldb_module *module)
 	return LDB_SUCCESS;
 }
 
-/* end a transaction */
-static int partition_end_trans(struct ldb_module *module)
+/* prepare for a commit */
+static int partition_prepare_commit(struct ldb_module *module)
 {
-	int i, ret, final_ret;
+	int i;
 	struct partition_private_data *data = talloc_get_type(module->private_data, 
 							      struct partition_private_data);
-	ret = ldb_next_end_trans(module);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
 
-	/* if the backend has a prepare_commit op then use that, to ensure
-	   that all partitions are committed safely together */
 	for (i=0; data && data->partitions && data->partitions[i]; i++) {
-		struct ldb_module *next_end = data->partitions[i]->module;
 		struct ldb_module *next_prepare = data->partitions[i]->module;
-		struct ldb_module *next_del = data->partitions[i]->module;
+		int ret;
 
 		PARTITION_FIND_OP_NOERROR(next_prepare, prepare_commit);
 		if (next_prepare == NULL) {
 			continue;
 		}
 
-		PARTITION_FIND_OP(next_end, end_transaction);
-		PARTITION_FIND_OP(next_del, del_transaction);
-
-		if (next_end != next_prepare || next_del != next_end) {
-			ldb_asprintf_errstring(ldb_module_get_ctx(module), "ERROR: Mismatch between prepare and commit ops in ldb module");
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		
 		ret = next_prepare->ops->prepare_commit(next_prepare);
 		if (ret != LDB_SUCCESS) {
-			/* if one fails, cancel all but this one */
-			int j;
-			for (j=0; data->partitions[j]; j++) {
-				if (j == i) continue;
-				next_del = data->partitions[j]->module;
-				PARTITION_FIND_OP(next_del, del_transaction);
-				next_del->ops->del_transaction(next_del);
-			}
-			ldb_next_del_trans(module);
 			return ret;
 		}
 	}
 
-	/* Look at base DN */
-	/* Figure out which partition it is under */
-	/* Skip the lot if 'data' isn't here yet (initialisation) */
-	final_ret = LDB_SUCCESS;
+	return ldb_next_prepare_commit(module);
+}
 
+
+/* end a transaction */
+static int partition_end_trans(struct ldb_module *module)
+{
+	int i;
+	struct partition_private_data *data = talloc_get_type(module->private_data, 
+							      struct partition_private_data);
 	for (i=0; data && data->partitions && data->partitions[i]; i++) {
-		struct ldb_module *next = data->partitions[i]->module;
-		PARTITION_FIND_OP(next, end_transaction);
+		struct ldb_module *next_end = data->partitions[i]->module;
+		int ret;
 
-		ret = next->ops->end_transaction(next);
+		PARTITION_FIND_OP(next_end, end_transaction);
+
+		ret = next_end->ops->end_transaction(next_end);
 		if (ret != LDB_SUCCESS) {
-			/* this should only be happening if we had a serious 
-			   OS or hardware error */
-			ldb_asprintf_errstring(ldb_module_get_ctx(module), "ERROR: partition commit error");
-			final_ret = ret;
+			return ret;
 		}
 	}
 
-	return final_ret;
+	return ldb_next_end_trans(module);
 }
 
 /* delete a transaction */
 static int partition_del_trans(struct ldb_module *module)
 {
-	int i, ret, ret2 = LDB_SUCCESS;
+	int i, ret, final_ret = LDB_SUCCESS;
 	struct partition_private_data *data = talloc_get_type(module->private_data, 
 							      struct partition_private_data);
-	ret = ldb_next_del_trans(module);
-	if (ret != LDB_SUCCESS) {
-		ret2 = ret;
-	}
-
-	/* Look at base DN */
-	/* Figure out which partition it is under */
-	/* Skip the lot if 'data' isn't here yet (initialistion) */
 	for (i=0; data && data->partitions && data->partitions[i]; i++) {
 		struct ldb_module *next = data->partitions[i]->module;
 		PARTITION_FIND_OP(next, del_transaction);
 
 		ret = next->ops->del_transaction(next);
 		if (ret != LDB_SUCCESS) {
-			ret2 = ret;
+			final_ret = ret;
 		}
+	}	
+
+	ret = ldb_next_del_trans(module);
+	if (ret != LDB_SUCCESS) {
+		final_ret = ret;
 	}
-	return ret2;
+	return final_ret;
 }
 
 
@@ -1394,6 +1371,7 @@ _PUBLIC_ const struct ldb_module_ops ldb_partition_module_ops = {
 	.rename            = partition_rename,
 	.extended          = partition_extended,
 	.start_transaction = partition_start_trans,
+	.prepare_commit    = partition_prepare_commit,
 	.end_transaction   = partition_end_trans,
 	.del_transaction   = partition_del_trans,
 };
