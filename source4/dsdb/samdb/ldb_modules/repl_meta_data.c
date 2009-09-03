@@ -1736,10 +1736,10 @@ static int replmd_start_transaction(struct ldb_module *module)
 }
 
 /*
-  on end transaction we loop over our queued la_context structures and
+  on prepare commit we loop over our queued la_context structures and
   apply each of them  
  */
-static int replmd_end_transaction(struct ldb_module *module)
+static int replmd_prepare_commit(struct ldb_module *module)
 {
 	struct replmd_private *replmd_private = 
 		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
@@ -1757,8 +1757,11 @@ static int replmd_end_transaction(struct ldb_module *module)
 			return ret;
 		}
 	}
+
+	talloc_free(replmd_private);
+	ldb_module_set_private(module, NULL);
 	
-	return ldb_next_end_trans(module);
+	return ldb_next_prepare_commit(module);
 }
 
 static int replmd_del_transaction(struct ldb_module *module)
@@ -1777,6 +1780,6 @@ _PUBLIC_ const struct ldb_module_ops ldb_repl_meta_data_module_ops = {
 	.modify        = replmd_modify,
 	.extended      = replmd_extended,
 	.start_transaction = replmd_start_transaction,
-	.end_transaction   = replmd_end_transaction,
+	.prepare_commit    = replmd_prepare_commit,
 	.del_transaction   = replmd_del_transaction,
 };
