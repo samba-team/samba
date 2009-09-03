@@ -1318,7 +1318,6 @@ static bool wbinfo_auth_krb5(char *username, const char *cctype, uint32_t flags)
 	}
  done:
 
-	TALLOC_FREE(frame);
 	wbcFreeMemory(params.blobs);
 
 	return WBC_ERROR_IS_OK(wbc_status);
@@ -1362,8 +1361,6 @@ static bool wbinfo_auth(char *username)
 			 response.data.auth.nt_status,
 			 response.data.auth.error_string);
 #endif
-
-	TALLOC_FREE(frame);
 
 	return WBC_ERROR_IS_OK(wbc_status);
 }
@@ -1424,7 +1421,7 @@ static bool wbinfo_auth_crap(char *username, bool use_ntlmv2, bool use_lanman)
 				      &lm, &nt, NULL, NULL)) {
 			data_blob_free(&names_blob);
 			data_blob_free(&server_chal);
-			SAFE_FREE(pass);
+			TALLOC_FREE(pass);
 			return false;
 		}
 		data_blob_free(&names_blob);
@@ -1471,7 +1468,6 @@ static bool wbinfo_auth_crap(char *username, bool use_ntlmv2, bool use_lanman)
 
 	data_blob_free(&nt);
 	data_blob_free(&lm);
-	TALLOC_FREE(frame);
 
 	return WBC_ERROR_IS_OK(wbc_status);
 }
@@ -1649,8 +1645,6 @@ static bool wbinfo_change_user_password(const char *username)
 
 	d_printf("Password change for user %s %s\n", username,
 		WBC_ERROR_IS_OK(wbc_status) ? "succeeded" : "failed");
-
-	TALLOC_FREE(frame);
 
 	return WBC_ERROR_IS_OK(wbc_status);
 }
