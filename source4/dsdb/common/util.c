@@ -2042,3 +2042,81 @@ struct ldb_dn *samdb_domain_to_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	return samdb_result_dn(ldb, mem_ctx, res_domain_ref->msgs[0], "nCName", NULL);
 
 }
+
+
+/*
+  use a GUID to find a DN
+ */
+int dsdb_find_dn_by_guid(struct ldb_context *ldb, 
+			 TALLOC_CTX *mem_ctx,
+			 const char *guid_str, struct ldb_dn **dn)
+{
+	int ret;
+	struct ldb_result *res;
+	const char *attrs[] = { NULL };
+	struct ldb_request *search_req;
+	char *expression;
+	struct ldb_search_options_control *options;
+
+	expression = talloc_asprintf(mem_ctx, "objectGUID=%s", guid_str);
+	if (!expression) {
+		DEBUG(0, (__location__ ": out of memory\n"));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	res = talloc_zero(mem_ctx, struct ldb_result);
+	if (!res) {
+		DEBUG(0, (__location__ ": out of memory\n"));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ldb_build_search_req(&search_req, ldb, mem_ctx,
+				   ldb_get_default_basedn(ldb),
+				   LDB_SCOPE_SUBTREE,
+				   expression, attrs,
+				   NULL,
+				   res, ldb_search_default_callback,
+				   NULL);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	/* we need to cope with cross-partition links, so search for
+	   the GUID over all partitions */
+	options = talloc(search_req, struct ldb_search_options_control);
+	if (options == NULL) {
+		DEBUG(0, (__location__ ": out of memory\n"));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	options->search_options = LDB_SEARCH_OPTION_PHANTOM_ROOT;
+
+	ret = ldb_request_add_control(search_req,
+				      LDB_CONTROL_SEARCH_OPTIONS_OID,
+				      true, options);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = ldb_request(ldb, search_req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = ldb_wait(search_req->handle, LDB_WAIT_ALL);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	/* this really should be exactly 1, but there is a bug in the
+	   partitions module that can return two here with the
+	   search_options control set */
+	if (res->count < 1) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	*dn = res->msgs[0]->dn;
+
+	return LDB_SUCCESS;
+}
+
+
