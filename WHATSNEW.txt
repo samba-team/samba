@@ -44,6 +44,7 @@ o   Yannick Bergeron <burgergold@hotmail.com>
 o   Günther Deschner <gd@samba.org>
     * BUG 6568: Fix _spoolss_GetPrintProcessorDirectory() implementation.
     * BUG 6607: Fix crash bug in spoolss_addprinterex_level_2.
+    * BUG 6680: Fix authentication failure from Windows 7 when domain joined.
 
 
 o   Olaf Flebbe <flebbe@nix.science-computing.de>
@@ -372,6 +373,7 @@ o   Jeremy Allison <jra@samba.org>
 
 
 o   Günther Deschner <gd@samba.org>
+    * BUG 4296: Clean up group membership while deleting a user.
     * BUG 5456: Fix "net ads testjoin".
     * BUG 6253: Use correct value for password expiry calculation in
       pam_winbind.
@@ -383,6 +385,7 @@ o   Günther Deschner <gd@samba.org>
 
 o   Volker Lendecke <vl@samba.org>
     * BUG 4699: Remove pidfile on clean shutdown.
+    * BUG 6349: Initialize domain info struct.
     * BUG 6449: 'net rap user add' crashes without -C option.
 
 
@@ -398,6 +401,7 @@ o   Andreas Schneider <mail@cynapses.org>
 o   Simo Sorce <idra@samba.org>
     * BUG 6081: Make it possible to change machine account sids.
     * BUG 6333: Consolidate create/delete account paths in pdbedit.
+    * BUG 6584: Allow DOM\user when changing passwords remotely.
 
 
 o   Jelmer Vernooij <jelmer@samba.org>
