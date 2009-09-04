@@ -378,6 +378,7 @@ void winbindd_domain_info(struct winbindd_cli_state *cli)
 	if (req == NULL) {
 		DEBUG(3, ("wb_domain_request_send failed\n"));
 		request_error(cli);
+		return;
 	}
 	tevent_req_set_callback(req, domain_info_done, state);
 }
