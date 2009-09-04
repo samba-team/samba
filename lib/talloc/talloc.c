@@ -235,6 +235,7 @@ static inline struct talloc_chunk *talloc_chunk_from_ptr(const void *ptr)
 		}
 
 		if (tc->flags & TALLOC_FLAG_FREE) {
+			talloc_log("talloc: double free error - first free may be at %s\n", tc->name);
 			talloc_abort_double_free();
 			return NULL;
 		} else {
@@ -558,7 +559,7 @@ static void *_talloc_steal_internal(const void *new_ctx, const void *ptr);
 /* 
    internal talloc_free call
 */
-static inline int _talloc_free_internal(void *ptr)
+static inline int _talloc_free_internal(void *ptr, const char *location)
 {
 	struct talloc_chunk *tc;
 
@@ -578,9 +579,9 @@ static inline int _talloc_free_internal(void *ptr)
 		 * pointer.
 		 */
 		is_child = talloc_is_parent(tc->refs, ptr);
-		_talloc_free_internal(tc->refs);
+		_talloc_free_internal(tc->refs, location);
 		if (is_child) {
-			return _talloc_free_internal(ptr);
+			return _talloc_free_internal(ptr, location);
 		}
 		return -1;
 	}
@@ -627,7 +628,7 @@ static inline int _talloc_free_internal(void *ptr)
 			struct talloc_chunk *p = talloc_parent_chunk(tc->child->refs);
 			if (p) new_parent = TC_PTR_FROM_CHUNK(p);
 		}
-		if (unlikely(_talloc_free_internal(child) == -1)) {
+		if (unlikely(_talloc_free_internal(child, location) == -1)) {
 			if (new_parent == null_context) {
 				struct talloc_chunk *p = talloc_parent_chunk(ptr);
 				if (p) new_parent = TC_PTR_FROM_CHUNK(p);
@@ -637,6 +638,12 @@ static inline int _talloc_free_internal(void *ptr)
 	}
 
 	tc->flags |= TALLOC_FLAG_FREE;
+
+	/* we mark the freed memory with where we called the free
+	 * from. This means on a double free error we can report where
+	 * the first free came from 
+	 */	 
+	tc->name = location;
 
 	if (tc->flags & (TALLOC_FLAG_POOL|TALLOC_FLAG_POOLMEM)) {
 		struct talloc_chunk *pool;
@@ -777,7 +784,7 @@ void *talloc_reparent(const void *old_parent, const void *new_parent, const void
 			if (_talloc_steal_internal(new_parent, h) != h) {
 				return NULL;
 			}
-			return (void *)ptr;
+			return discard_const_p(void, ptr);
 		}
 	}	
 
@@ -811,7 +818,7 @@ static inline int talloc_unreference(const void *context, const void *ptr)
 		return -1;
 	}
 
-	return _talloc_free_internal(h);
+	return _talloc_free_internal(h, __location__);
 }
 
 /*
@@ -848,7 +855,7 @@ int talloc_unlink(const void *context, void *ptr)
 	tc_p = talloc_chunk_from_ptr(ptr);
 
 	if (tc_p->refs == NULL) {
-		return _talloc_free_internal(ptr);
+		return _talloc_free_internal(ptr, __location__);
 	}
 
 	new_p = talloc_parent_chunk(tc_p->refs);
@@ -915,7 +922,7 @@ void *talloc_named(const void *context, size_t size, const char *fmt, ...)
 	va_end(ap);
 
 	if (unlikely(name == NULL)) {
-		_talloc_free_internal(ptr);
+		_talloc_free_internal(ptr, __location__);
 		return NULL;
 	}
 
@@ -1013,7 +1020,7 @@ void *talloc_init(const char *fmt, ...)
 	va_end(ap);
 
 	if (unlikely(name == NULL)) {
-		_talloc_free_internal(ptr);
+		_talloc_free_internal(ptr, __location__);
 		return NULL;
 	}
 
@@ -1123,7 +1130,7 @@ int _talloc_free(void *ptr, const char *location)
 		return -1;
 	}
 	
-	return _talloc_free_internal(ptr);
+	return _talloc_free_internal(ptr, location);
 }
 
 
@@ -1237,7 +1244,7 @@ void *_talloc_realloc(const void *context, void *ptr, size_t size, const char *n
 void *_talloc_move(const void *new_ctx, const void *_pptr)
 {
 	const void **pptr = discard_const_p(const void *,_pptr);
-	void *ret = talloc_steal(new_ctx, (void *)*pptr);
+	void *ret = talloc_steal(new_ctx, discard_const_p(void, *pptr));
 	(*pptr) = NULL;
 	return ret;
 }
