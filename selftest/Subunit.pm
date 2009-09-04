@@ -36,8 +36,8 @@ sub parse_results($$$)
 			$msg_ops->control_msg($_);
 			$msg_ops->start_test($1);
 			push (@$open_tests, $1);
-		} elsif (/^time: (\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)Z\n/) {
-			$msg_ops->report_time(mktime($6, $5, $4, $3, $2, $1-1900));
+		} elsif (/^time: (\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)\n/) {
+			$msg_ops->report_time(mktime($6, $5, $4, $3, $2-1, $1-1900));
 		} elsif (/^(success|successful|failure|fail|skip|knownfail|error|xfail|skip-testsuite|testsuite-failure|testsuite-xfail|testsuite-success|testsuite-error): (.*?)( \[)?([ \t]*)\n/) {
 			$msg_ops->control_msg($_);
 			my $result = $1;
@@ -170,7 +170,7 @@ sub report_time($)
 {
 	my ($time) = @_;
 	my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime($time);
-	printf "time: %04d-%02d-%02d %02d:%02d:%02dZ\n", $year+1900, $mon, $mday, $hour, $min, $sec;
+	printf "time: %04d-%02d-%02d %02d:%02d:%02d\n", $year+1900, $mon+1, $mday, $hour, $min, $sec;
 }
 
 # The following are Samba extensions:
