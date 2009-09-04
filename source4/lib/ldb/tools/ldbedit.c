@@ -128,6 +128,7 @@ static int merge_edits(struct ldb_context *ldb,
 				fprintf(stderr, "failed to add %s - %s\n",
 					ldb_dn_get_linearized(msgs2[i]->dn),
 					ldb_errstring(ldb));
+				ldb_transaction_cancel(ldb);
 				return -1;
 			}
 			adds++;
@@ -149,6 +150,7 @@ static int merge_edits(struct ldb_context *ldb,
 				fprintf(stderr, "failed to delete %s - %s\n",
 					ldb_dn_get_linearized(msgs1[i]->dn),
 					ldb_errstring(ldb));
+				ldb_transaction_cancel(ldb);
 				return -1;
 			}
 			deletes++;

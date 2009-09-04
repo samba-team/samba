@@ -109,9 +109,13 @@ int main(int argc, const char **argv)
 		}
 	}
 
-	if (count != 0 && ldb_transaction_commit(ldb) != 0) {
-		printf("Failed to commit transaction: %s\n", ldb_errstring(ldb));
-		exit(1);
+	if (count != 0) {
+		if (ldb_transaction_commit(ldb) != 0) {
+			printf("Failed to commit transaction: %s\n", ldb_errstring(ldb));
+			exit(1);
+		}
+	} else {
+		ldb_transaction_cancel(ldb);
 	}
 
 	talloc_free(ldb);
