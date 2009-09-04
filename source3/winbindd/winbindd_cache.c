@@ -2110,6 +2110,7 @@ NTSTATUS wcache_lookup_usergroups(struct winbindd_domain *domain,
 	num_sids = centry_uint32(centry);
 	sids = talloc_array(mem_ctx, struct dom_sid, num_sids);
 	if (sids == NULL) {
+		centry_free(centry);
 		return NT_STATUS_NO_MEMORY;
 	}
 
