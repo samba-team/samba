@@ -577,6 +577,17 @@ int ldb_next_request(struct ldb_module *module, struct ldb_request *request)
 		/* Set a default error string, to place the blame somewhere */
 		ldb_asprintf_errstring(module->ldb, "error in module %s: %s (%d)", module->ops->name, ldb_strerror(ret), ret);
 	}
+
+	if (!(request->handle->flags & LDB_HANDLE_FLAG_DONE_CALLED)) {
+		/* It is _extremely_ common that a module returns a
+		 * failure without calling ldb_module_done(), but that
+		 * guarantees we will end up hanging in
+		 * ldb_wait(). This fixes it without having to rewrite
+		 * all our modules, and leaves us one less sharp
+		 * corner for module developers to cut themselves on 
+		 */
+		ldb_module_done(request, NULL, NULL, ret);
+	}
 	return ret;
 }
 
@@ -629,6 +640,7 @@ struct ldb_handle *ldb_handle_new(TALLOC_CTX *mem_ctx, struct ldb_context *ldb)
 	h->status = LDB_SUCCESS;
 	h->state = LDB_ASYNC_INIT;
 	h->ldb = ldb;
+	h->flags = 0;
 
 	return h;
 }
@@ -714,6 +726,8 @@ int ldb_module_done(struct ldb_request *req,
 	ares->controls = talloc_steal(ares, ctrls);
 	ares->response = talloc_steal(ares, response);
 	ares->error = error;
+
+	req->handle->flags |= LDB_HANDLE_FLAG_DONE_CALLED;
 
 	req->callback(req, ares);
 	return error;

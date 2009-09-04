@@ -47,10 +47,13 @@ struct ldb_module_ops;
 
 struct ldb_backend_ops;
 
+#define LDB_HANDLE_FLAG_DONE_CALLED 1
+
 struct ldb_handle {
 	int status;
 	enum ldb_state state;
 	struct ldb_context *ldb;
+	unsigned flags;
 };
 
 /* basic module structure */
