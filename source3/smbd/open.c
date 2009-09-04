@@ -3332,12 +3332,12 @@ NTSTATUS get_relative_fid_filename(connection_struct *conn,
 
 	dir_fsp = file_fsp(req, root_dir_fid);
 
-	if (is_ntfs_stream_smb_fname(dir_fsp->fsp_name)) {
+	if (dir_fsp == NULL) {
 		status = NT_STATUS_INVALID_HANDLE;
 		goto out;
 	}
 
-	if (dir_fsp == NULL) {
+	if (is_ntfs_stream_smb_fname(dir_fsp->fsp_name)) {
 		status = NT_STATUS_INVALID_HANDLE;
 		goto out;
 	}
