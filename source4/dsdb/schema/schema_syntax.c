@@ -706,7 +706,37 @@ static WERROR _dsdb_syntax_OID_oid_ldb_to_drsuapi(struct ldb_context *ldb,
 						  TALLOC_CTX *mem_ctx,
 						  struct drsuapi_DsReplicaAttribute *out)
 {
-	return _dsdb_syntax_OID_obj_ldb_to_drsuapi(ldb, schema, attr, in, mem_ctx, out);
+	uint32_t i;
+	DATA_BLOB *blobs;
+
+	out->attid= attr->attributeID_id;
+	out->value_ctr.num_values= in->num_values;
+	out->value_ctr.values= talloc_array(mem_ctx,
+					    struct drsuapi_DsAttributeValue,
+					    in->num_values);
+	W_ERROR_HAVE_NO_MEMORY(out->value_ctr.values);
+
+	blobs = talloc_array(mem_ctx, DATA_BLOB, in->num_values);
+	W_ERROR_HAVE_NO_MEMORY(blobs);
+
+	for (i=0; i < in->num_values; i++) {
+		uint32_t v;
+		WERROR status;
+
+		out->value_ctr.values[i].blob= &blobs[i];
+
+		blobs[i] = data_blob_talloc(blobs, NULL, 4);
+		W_ERROR_HAVE_NO_MEMORY(blobs[i].data);
+
+		status = dsdb_map_oid2int(schema,
+					  (const char *)in->values[i].data,
+					  &v);
+		W_ERROR_NOT_OK_RETURN(status);
+
+		SIVAL(blobs[i].data, 0, v);
+	}
+
+	return WERR_OK;
 }
 
 static WERROR dsdb_syntax_OID_drsuapi_to_ldb(struct ldb_context *ldb, 
