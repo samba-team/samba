@@ -2128,7 +2128,7 @@ int dsdb_find_guid_by_dn(struct ldb_context *ldb,
 {
 	int ret;
 	struct ldb_result *res;
-	const char *attrs[] = { "objectGUID" };
+	const char *attrs[] = { "objectGUID", NULL };
 	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
 
 	ret = ldb_search(ldb, tmp_ctx, &res, dn, LDB_SCOPE_BASE, attrs, NULL);
