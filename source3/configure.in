@@ -6530,9 +6530,10 @@ if test x$enable_merged_build = xauto; then
 	AC_MSG_RESULT([$merged_build_possible])
 
 	# Enable merged build automatically if possible, when in developer mode
-	if test "x$developer" = xyes; then
-		enable_merged_build=$merged_build_possible
-	fi
+	# Don't enable  merged build automatically in 3.5.0.
+	#if test "x$developer" = xyes; then
+	#	enable_merged_build=$merged_build_possible
+	#fi
 fi
 
 if test x$enable_merged_build = xyes; then
