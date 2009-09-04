@@ -433,22 +433,22 @@ plantest "registry.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/lib/regist
 plantest "tdb.python" none PYTHONPATH="$PYTHONPATH:../lib/tdb/python/tests" $SUBUNITRUN simple
 plantest "auth.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/auth/tests/" $SUBUNITRUN bindings
 plantest "security.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/libcli/security/tests" $SUBUNITRUN bindings
-plantest "misc.python" none $SUBUNITRUN samba.tests.dcerpc.misc
+plantest "misc.python" none $SUBUNITRUN samba.tests.misc
 plantest "param.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/param/tests" $SUBUNITRUN bindings
 plantest "upgrade.python" none $SUBUNITRUN samba.tests.upgrade
 plantest "samba.python" none $SUBUNITRUN samba.tests
 plantest "provision.python" none $SUBUNITRUN samba.tests.provision
 plantest "samba3.python" none $SUBUNITRUN samba.tests.samba3
-plantest "samr.python" dc:local $SUBUNITRUN samba.tests.dcerpc.sam
-plantest "dcerpc.bare.python" dc:local $SUBUNITRUN samba.tests.dcerpc.bare
-plantest "unixinfo.python" dc:local $SUBUNITRUN samba.tests.dcerpc.unix
+plantest "samr.python" dc:local $SUBUNITRUN samba.tests.sam
+plantest "dcerpc.bare.python" dc:local $SUBUNITRUN samba.tests.bare
+plantest "unixinfo.python" dc:local $SUBUNITRUN samba.tests.unix
 plantest "samdb.python" none $SUBUNITRUN samba.tests.samdb
 plantest "shares.python" none $SUBUNITRUN samba.tests.shares
 plantest "messaging.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/lib/messaging/tests" $SUBUNITRUN bindings
 plantest "samba3sam.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/dsdb/samdb/ldb_modules/tests" $SUBUNITRUN samba3sam
 plantest "subunit.python" none $SUBUNITRUN subunit
-plantest "rpcecho.python" dc:local $SUBUNITRUN samba.tests.dcerpc.rpcecho
-plantest "winreg.python" dc:local $SUBUNITRUN -U\$USERNAME%\$PASSWORD samba.tests.dcerpc.registry
+plantest "rpcecho.python" dc:local $SUBUNITRUN samba.tests.rpcecho
+plantest "winreg.python" dc:local $SUBUNITRUN -U\$USERNAME%\$PASSWORD samba.tests.registry
 plantest "ldap.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python" $PYTHON $samba4srcdir/lib/ldb/tests/python/ldap.py $CONFIGURATION \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
 plantest "possibleInferiors.python" dc $PYTHON $samba4srcdir/dsdb/samdb/ldb_modules/tests/possibleinferiors.py $CONFIGURATION ldap://\$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
 plantest "blackbox.samba3dump" none $PYTHON $samba4srcdir/scripting/bin/samba3dump $samba4srcdir/../testdata/samba3
