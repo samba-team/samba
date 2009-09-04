@@ -44,7 +44,17 @@ static bool test_http_timestring(struct torture_context *tctx)
 {
 	const char *start = "Thu, 01 Jan 1970";
 	char *result;
-	result = http_timestring(tctx, 42);
+	/*
+	 * Correct test for negative UTC offset.  Without the correction, the
+	 * test fails when run on hosts with negative UTC offsets, as the date
+	 * returned is back in 1969 (pre-epoch).
+	 */
+	time_t now = time(NULL);
+	struct tm local = *localtime(&now);
+	struct tm gmt = *gmtime(&now);
+	time_t utc_offset = mktime(&local) - mktime(&gmt);
+
+	result = http_timestring(tctx, 42 - (utc_offset < 0 ? utc_offset : 0));
 	torture_assert(tctx, !strncmp(start, result, 
 				      strlen(start)), result);
 	torture_assert_str_equal(tctx, "never", 
@@ -55,7 +65,18 @@ static bool test_http_timestring(struct torture_context *tctx)
 static bool test_timestring(struct torture_context *tctx)
 {
 	const char *start = "Thu Jan  1";
-	char *result = timestring(tctx, 42);
+	char *result;
+	/*
+	 * Correct test for negative UTC offset.  Without the correction, the
+	 * test fails when run on hosts with negative UTC offsets, as the date
+	 * returned is back in 1969 (pre-epoch).
+	 */
+	time_t now = time(NULL);
+	struct tm local = *localtime(&now);
+	struct tm gmt = *gmtime(&now);
+	time_t utc_offset = mktime(&local) - mktime(&gmt);
+
+	result = timestring(tctx, 42 - (utc_offset < 0 ? utc_offset : 0));
 	torture_assert(tctx, !strncmp(start, result, strlen(start)),
 				   result);
 	return true;
