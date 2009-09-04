@@ -415,7 +415,6 @@ plantest "samr.python" dc:local $SUBUNITRUN samba.tests.dcerpc.sam
 plantest "dcerpc.bare.python" dc:local $SUBUNITRUN samba.tests.dcerpc.bare
 plantest "unixinfo.python" dc:local $SUBUNITRUN samba.tests.dcerpc.unix
 plantest "samdb.python" none $SUBUNITRUN samba.tests.samdb
-plantest "tevent.python" none PYTHONPATH="$PYTHONPATH:../lib/tevent" $SUBUNITRUN tests
 plantest "messaging.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/lib/messaging/tests" $SUBUNITRUN bindings
 plantest "samba3sam.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/dsdb/samdb/ldb_modules/tests" $SUBUNITRUN samba3sam
 plantest "subunit.python" none $SUBUNITRUN subunit
