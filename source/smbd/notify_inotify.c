@@ -232,6 +232,7 @@ static void inotify_handler(struct event_context *ev, struct fd_event *fde,
 	int bufsize = 0;
 	struct inotify_event *e0, *e;
 	uint32_t prev_cookie=0;
+	NTSTATUS status;
 
 	/*
 	  we must use FIONREAD as we cannot predict the length of the
@@ -247,9 +248,14 @@ static void inotify_handler(struct event_context *ev, struct fd_event *fde,
 	e0 = e = (struct inotify_event *)TALLOC_SIZE(in, bufsize);
 	if (e == NULL) return;
 
-	if (sys_read(in->fd, e0, bufsize) != bufsize) {
-		DEBUG(0,("Failed to read all inotify data\n"));
+	status = read_data(in->fd, (char *)e0, bufsize);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Failed to read all inotify data - %s\n",
+			nt_errstr(status)));
 		talloc_free(e0);
+		/* the inotify fd will now be out of sync,
+		 * can't keep reading data off it */
+		TALLOC_FREE(fde);
 		return;
 	}
 
