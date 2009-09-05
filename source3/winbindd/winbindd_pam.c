@@ -1730,20 +1730,17 @@ void winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	}
 
 	if (!state->privileged) {
-		char *error_string = NULL;
 		DEBUG(2, ("winbindd_pam_auth_crap: non-privileged access "
 			  "denied.  !\n"));
 		DEBUGADD(2, ("winbindd_pam_auth_crap: Ensure permissions "
 			     "on %s are set correctly.\n",
 			     get_winbind_priv_pipe_dir()));
 		/* send a better message than ACCESS_DENIED */
-		error_string = talloc_asprintf(state->mem_ctx,
-					       "winbind client not authorized "
-					       "to use winbindd_pam_auth_crap."
-					       " Ensure permissions on %s "
-					       "are set correctly.",
-					       get_winbind_priv_pipe_dir());
-		fstrcpy(state->response->data.auth.error_string, error_string);
+		fstr_sprintf(state->response->data.auth.error_string,
+			     "winbind client not authorized to use "
+			     "winbindd_pam_auth_crap. Ensure permissions on "
+			     "%s are set correctly.",
+			     get_winbind_priv_pipe_dir());
 		result = NT_STATUS_ACCESS_DENIED;
 		goto done;
 	}
