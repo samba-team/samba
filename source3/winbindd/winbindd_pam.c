@@ -854,9 +854,9 @@ void winbindd_pam_auth(struct winbindd_cli_state *state)
 	request_error(state);
 }
 
-NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
-				       struct winbindd_cli_state *state,
-				       struct netr_SamInfo3 **info3)
+static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
+					      struct winbindd_cli_state *state,
+					      struct netr_SamInfo3 **info3)
 {
 	NTSTATUS result = NT_STATUS_LOGON_FAILURE;
 	uint16 max_allowed_bad_attempts;
@@ -1110,9 +1110,9 @@ failed:
 	return NT_STATUS_LOGON_FAILURE;
 }
 
-NTSTATUS winbindd_dual_pam_auth_kerberos(struct winbindd_domain *domain,
-					 struct winbindd_cli_state *state,
-					 struct netr_SamInfo3 **info3)
+static NTSTATUS winbindd_dual_pam_auth_kerberos(struct winbindd_domain *domain,
+						struct winbindd_cli_state *state,
+						struct netr_SamInfo3 **info3)
 {
 	struct winbindd_domain *contact_domain;
 	fstring name_domain, name_user;
@@ -1181,9 +1181,9 @@ typedef	NTSTATUS (*netlogon_fn_t)(struct rpc_pipe_client *cli,
 				  DATA_BLOB nt_response,
 				  struct netr_SamInfo3 **info3);
 
-NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
-					 struct winbindd_cli_state *state,
-					 struct netr_SamInfo3 **info3)
+static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
+						struct winbindd_cli_state *state,
+						struct netr_SamInfo3 **info3)
 {
 
 	struct rpc_pipe_client *netlogon_pipe;

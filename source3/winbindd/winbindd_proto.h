@@ -478,15 +478,6 @@ void ndr_print_winbindd_domain(struct ndr_print *ndr,
 struct winbindd_domain *find_auth_domain(struct winbindd_cli_state *state, 
 					const char *domain_name);
 void winbindd_pam_auth(struct winbindd_cli_state *state);
-NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
-				       struct winbindd_cli_state *state,
-				       struct netr_SamInfo3 **info3);
-NTSTATUS winbindd_dual_pam_auth_kerberos(struct winbindd_domain *domain,
-					 struct winbindd_cli_state *state, 
-					 struct netr_SamInfo3 **info3);
-NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
-					 struct winbindd_cli_state *state,
-					 struct netr_SamInfo3 **info3);
 enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 					    struct winbindd_cli_state *state) ;
 void winbindd_pam_auth_crap(struct winbindd_cli_state *state);
