@@ -555,6 +555,7 @@ NTSTATUS read_socket_with_timeout(int fd, char *buf,
 	size_t nread = 0;
 	struct timeval timeout;
 	char addr[INET6_ADDRSTRLEN];
+	int save_errno;
 
 	/* just checking .... */
 	if (maxcnt <= 0)
@@ -576,19 +577,20 @@ NTSTATUS read_socket_with_timeout(int fd, char *buf,
 			}
 
 			if (readret == -1) {
+				save_errno = errno;
 				if (fd == get_client_fd()) {
 					/* Try and give an error message
 					 * saying what client failed. */
 					DEBUG(0,("read_socket_with_timeout: "
 						"client %s read error = %s.\n",
 						get_peer_addr(fd,addr,sizeof(addr)),
-						strerror(errno) ));
+						strerror(save_errno) ));
 				} else {
 					DEBUG(0,("read_socket_with_timeout: "
 						"read error = %s.\n",
-						strerror(errno) ));
+						strerror(save_errno) ));
 				}
-				return map_nt_error_from_unix(errno);
+				return map_nt_error_from_unix(save_errno);
 			}
 			nread += readret;
 		}
@@ -613,6 +615,7 @@ NTSTATUS read_socket_with_timeout(int fd, char *buf,
 
 		/* Check if error */
 		if (selrtn == -1) {
+			save_errno = errno;
 			/* something is wrong. Maybe the socket is dead? */
 			if (fd == get_client_fd()) {
 				/* Try and give an error message saying
@@ -620,13 +623,13 @@ NTSTATUS read_socket_with_timeout(int fd, char *buf,
 				DEBUG(0,("read_socket_with_timeout: timeout "
 				"read for client %s. select error = %s.\n",
 				get_peer_addr(fd,addr,sizeof(addr)),
-				strerror(errno) ));
+				strerror(save_errno) ));
 			} else {
 				DEBUG(0,("read_socket_with_timeout: timeout "
 				"read. select error = %s.\n",
-				strerror(errno) ));
+				strerror(save_errno) ));
 			}
-			return map_nt_error_from_unix(errno);
+			return map_nt_error_from_unix(save_errno);
 		}
 
 		/* Did we timeout ? */
@@ -646,6 +649,7 @@ NTSTATUS read_socket_with_timeout(int fd, char *buf,
 		}
 
 		if (readret == -1) {
+			save_errno = errno;
 			/* the descriptor is probably dead */
 			if (fd == get_client_fd()) {
 				/* Try and give an error message
@@ -653,11 +657,11 @@ NTSTATUS read_socket_with_timeout(int fd, char *buf,
 				DEBUG(0,("read_socket_with_timeout: timeout "
 					"read to client %s. read error = %s.\n",
 					get_peer_addr(fd,addr,sizeof(addr)),
-					strerror(errno) ));
+					strerror(save_errno) ));
 			} else {
 				DEBUG(0,("read_socket_with_timeout: timeout "
 					"read. read error = %s.\n",
-					strerror(errno) ));
+					strerror(save_errno) ));
 			}
 			return map_nt_error_from_unix(errno);
 		}
