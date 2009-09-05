@@ -782,9 +782,18 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 
 			status = lck->record->delete_rec(lck->record);
 			if (!NT_STATUS_IS_OK(status)) {
+				char *errmsg;
+
 				DEBUG(0, ("delete_rec returned %s\n",
 					  nt_errstr(status)));
-				smb_panic("could not delete share entry");
+
+				if (asprintf(&errmsg, "could not delete share "
+					     "entry: %s\n",
+					     nt_errstr(status)) == -1) {
+					smb_panic("could not delete share"
+						  "entry");
+				}
+				smb_panic(errmsg);
 			}
 		}
 		goto done;
@@ -792,8 +801,15 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 
 	status = lck->record->store(lck->record, data, TDB_REPLACE);
 	if (!NT_STATUS_IS_OK(status)) {
+		char *errmsg;
+
 		DEBUG(0, ("store returned %s\n", nt_errstr(status)));
-		smb_panic("could not store share mode entry");
+
+		if (asprintf(&errmsg, "could not store share mode entry: %s",
+			     nt_errstr(status)) == -1) {
+			smb_panic("could not store share mode entry");
+		}
+		smb_panic(errmsg);
 	}
 
  done:
