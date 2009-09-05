@@ -925,12 +925,12 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 		uchar salted_hash[NT_HASH_LEN];
 		E_md5hash(cached_salt, new_nt_pass, salted_hash);
 
-		password_good = (memcmp(cached_nt_pass, salted_hash, NT_HASH_LEN) == 0) ?
-			true : false;
+		password_good = (memcmp(cached_nt_pass, salted_hash,
+					NT_HASH_LEN) == 0);
 	} else {
 		/* Old cached cred - direct store of nt_hash (bad bad bad !). */
-		password_good = (memcmp(cached_nt_pass, new_nt_pass, NT_HASH_LEN) == 0) ?
-			true : false;
+		password_good = (memcmp(cached_nt_pass, new_nt_pass,
+					NT_HASH_LEN) == 0);
 	}
 
 	if (password_good) {
