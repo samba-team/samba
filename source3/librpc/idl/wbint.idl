@@ -158,4 +158,10 @@ interface wbint
 	[in] wbint_IdType type,
 	[in] hyper id
 	);
+
+    NTSTATUS wbint_RemoveMapping(
+	[in] dom_sid *sid,
+	[in] wbint_IdType type,
+	[in] hyper id
+	);
 }

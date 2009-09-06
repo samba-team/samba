@@ -307,4 +307,18 @@ struct wbint_SetMapping {
 
 };
 
+
+struct wbint_RemoveMapping {
+	struct {
+		struct dom_sid *sid;/* [ref] */
+		enum wbint_IdType type;
+		uint64_t id;
+	} in;
+
+	struct {
+		NTSTATUS result;
+	} out;
+
+};
+
 #endif /* _HEADER_wbint */

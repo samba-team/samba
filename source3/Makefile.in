@@ -1215,6 +1215,7 @@ WINBINDD_OBJ1 = \
 		winbindd/winbindd_list_groups.o \
 		winbindd/winbindd_check_machine_acct.o \
 		winbindd/winbindd_set_mapping.o \
+		winbindd/winbindd_remove_mapping.o \
 		auth/token_util.o \
 		../nsswitch/libwbclient/wb_reqtrans.o \
 		smbd/connection.o

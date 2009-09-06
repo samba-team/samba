@@ -2241,6 +2241,69 @@ _PUBLIC_ void ndr_print_wbint_SetMapping(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_wbint_RemoveMapping(struct ndr_push *ndr, int flags, const struct wbint_RemoveMapping *r)
+{
+	if (flags & NDR_IN) {
+		if (r->in.sid == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS, r->in.sid));
+		NDR_CHECK(ndr_push_wbint_IdType(ndr, NDR_SCALARS, r->in.type));
+		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->in.id));
+	}
+	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_wbint_RemoveMapping(struct ndr_pull *ndr, int flags, struct wbint_RemoveMapping *r)
+{
+	TALLOC_CTX *_mem_save_sid_0;
+	if (flags & NDR_IN) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.sid);
+		}
+		_mem_save_sid_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.sid, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS, r->in.sid));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sid_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_wbint_IdType(ndr, NDR_SCALARS, &r->in.type));
+		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->in.id));
+	}
+	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_wbint_RemoveMapping(struct ndr_print *ndr, const char *name, int flags, const struct wbint_RemoveMapping *r)
+{
+	ndr_print_struct(ndr, name, "wbint_RemoveMapping");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "wbint_RemoveMapping");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "sid", r->in.sid);
+		ndr->depth++;
+		ndr_print_dom_sid(ndr, "sid", r->in.sid);
+		ndr->depth--;
+		ndr_print_wbint_IdType(ndr, "type", r->in.type);
+		ndr_print_hyper(ndr, "id", r->in.id);
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "wbint_RemoveMapping");
+		ndr->depth++;
+		ndr_print_NTSTATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
 static const struct ndr_interface_call wbint_calls[] = {
 	{
 		"wbint_Ping",
@@ -2402,6 +2465,14 @@ static const struct ndr_interface_call wbint_calls[] = {
 		(ndr_print_function_t) ndr_print_wbint_SetMapping,
 		false,
 	},
+	{
+		"wbint_RemoveMapping",
+		sizeof(struct wbint_RemoveMapping),
+		(ndr_push_flags_fn_t) ndr_push_wbint_RemoveMapping,
+		(ndr_pull_flags_fn_t) ndr_pull_wbint_RemoveMapping,
+		(ndr_print_function_t) ndr_print_wbint_RemoveMapping,
+		false,
+	},
 	{ NULL, 0, NULL, NULL, NULL, false }
 };
 
@@ -2431,7 +2502,7 @@ const struct ndr_interface_table ndr_table_wbint = {
 		NDR_WBINT_VERSION
 	},
 	.helpstring	= NDR_WBINT_HELPSTRING,
-	.num_calls	= 20,
+	.num_calls	= 21,
 	.calls		= wbint_calls,
 	.endpoints	= &wbint_endpoints,
 	.authservices	= &wbint_authservices

@@ -469,3 +469,25 @@ NTSTATUS _wbint_SetMapping(pipes_struct *p, struct wbint_SetMapping *r)
 
 	return idmap_set_mapping(&map);
 }
+
+NTSTATUS _wbint_RemoveMapping(pipes_struct *p, struct wbint_RemoveMapping *r)
+{
+	struct id_map map;
+
+	map.sid = r->in.sid;
+	map.xid.id = r->in.id;
+	map.status = ID_MAPPED;
+
+	switch (r->in.type) {
+	case WBINT_ID_TYPE_UID:
+		map.xid.type = ID_TYPE_UID;
+		break;
+	case WBINT_ID_TYPE_GID:
+		map.xid.type = ID_TYPE_GID;
+		break;
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	return idmap_remove_mapping(&map);
+}
