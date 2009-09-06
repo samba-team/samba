@@ -2211,7 +2211,7 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 	struct ldb_message_element *spn_el;
 	int ret, i;
 	char *version_str;
-	const char *old_dnsname;
+	const char *old_dnsname = NULL;
 	char **spns = NULL;
 	int num_spns = 0;
 	char *temp_str;
