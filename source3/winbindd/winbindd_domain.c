@@ -75,10 +75,6 @@ static const struct winbindd_child_dispatch_table domain_dispatch_table[] = {
 		.struct_cmd	= WINBINDD_PAM_CHAUTHTOK,
 		.struct_fn	= winbindd_dual_pam_chauthtok,
 	},{
-		.name		= "CHECK_MACHACC",
-		.struct_cmd	= WINBINDD_CHECK_MACHACC,
-		.struct_fn	= winbindd_dual_check_machine_acct,
-	},{
 		.name		= "DUAL_USERINFO",
 		.struct_cmd	= WINBINDD_DUAL_USERINFO,
 		.struct_fn	= winbindd_dual_userinfo,

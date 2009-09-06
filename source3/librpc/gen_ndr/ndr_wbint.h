@@ -47,7 +47,9 @@ extern const struct ndr_interface_table ndr_table_wbint;
 
 #define NDR_WBINT_LOOKUPRIDS (0x11)
 
-#define NDR_WBINT_CALL_COUNT (18)
+#define NDR_WBINT_CHECKMACHINEACCOUNT (0x12)
+
+#define NDR_WBINT_CALL_COUNT (19)
 enum ndr_err_code ndr_push_wbint_userinfo(struct ndr_push *ndr, int ndr_flags, const struct wbint_userinfo *r);
 enum ndr_err_code ndr_pull_wbint_userinfo(struct ndr_pull *ndr, int ndr_flags, struct wbint_userinfo *r);
 void ndr_print_wbint_userinfo(struct ndr_print *ndr, const char *name, const struct wbint_userinfo *r);
@@ -84,4 +86,5 @@ void ndr_print_wbint_QueryUserList(struct ndr_print *ndr, const char *name, int 
 void ndr_print_wbint_QueryGroupList(struct ndr_print *ndr, const char *name, int flags, const struct wbint_QueryGroupList *r);
 void ndr_print_wbint_DsGetDcName(struct ndr_print *ndr, const char *name, int flags, const struct wbint_DsGetDcName *r);
 void ndr_print_wbint_LookupRids(struct ndr_print *ndr, const char *name, int flags, const struct wbint_LookupRids *r);
+void ndr_print_wbint_CheckMachineAccount(struct ndr_print *ndr, const char *name, int flags, const struct wbint_CheckMachineAccount *r);
 #endif /* _HEADER_NDR_wbint */

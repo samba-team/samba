@@ -270,4 +270,12 @@ struct wbint_LookupRids {
 
 };
 
+
+struct wbint_CheckMachineAccount {
+	struct {
+		NTSTATUS result;
+	} out;
+
+};
+
 #endif /* _HEADER_wbint */
