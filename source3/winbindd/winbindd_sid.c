@@ -25,48 +25,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-static void set_mapping_recv(void *private_data, bool success)
-{
-	struct winbindd_cli_state *state =
-		talloc_get_type_abort(private_data, struct winbindd_cli_state);
-
-	if (!success) {
-		DEBUG(5, ("Could not set sid mapping\n"));
-		request_error(state);
-		return;
-	}
-
-	request_ok(state);
-}
-
-void winbindd_set_mapping(struct winbindd_cli_state *state)
-{
-	struct id_map map;
-	DOM_SID sid;
-
-	DEBUG(3, ("[%5lu]: set id map\n", (unsigned long)state->pid));
-
-	if ( ! state->privileged) {
-		DEBUG(0, ("Only root is allowed to set mappings!\n"));
-		request_error(state);
-		return;
-	}
-
-	if (!string_to_sid(&sid, state->request->data.dual_idmapset.sid)) {
-		DEBUG(1, ("Could not get convert sid %s from string\n",
-			  state->request->data.sid));
-		request_error(state);
-		return;
-	}
-
-	map.sid = &sid;
-	map.xid.id = state->request->data.dual_idmapset.id;
-	map.xid.type = state->request->data.dual_idmapset.type;
-
-	winbindd_set_mapping_async(state->mem_ctx, &map,
-			set_mapping_recv, state);
-}
-
 static void remove_mapping_recv(void *private_data, bool success)
 {
 	struct winbindd_cli_state *state =
