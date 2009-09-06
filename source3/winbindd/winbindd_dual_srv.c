@@ -395,3 +395,55 @@ NTSTATUS _wbint_LookupRids(pipes_struct *p, struct wbint_LookupRids *r)
 	r->out.names->principals = result;
 	return NT_STATUS_OK;
 }
+
+NTSTATUS _wbint_CheckMachineAccount(pipes_struct *p,
+				    struct wbint_CheckMachineAccount *r)
+{
+	struct winbindd_domain *domain;
+	int num_retries = 0;
+	NTSTATUS status;
+
+again:
+	domain = wb_child_domain();
+	if (domain == NULL) {
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
+
+	invalidate_cm_connection(&domain->conn);
+
+	{
+		struct rpc_pipe_client *netlogon_pipe;
+		status = cm_connect_netlogon(domain, &netlogon_pipe);
+	}
+
+        /* There is a race condition between fetching the trust account
+           password and the periodic machine password change.  So it's
+	   possible that the trust account password has been changed on us.
+	   We are returned NT_STATUS_ACCESS_DENIED if this happens. */
+
+#define MAX_RETRIES 3
+
+        if ((num_retries < MAX_RETRIES)
+	    && NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+                num_retries++;
+                goto again;
+        }
+
+        if (!NT_STATUS_IS_OK(status)) {
+                DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
+                goto done;
+        }
+
+	/* Pass back result code - zero for success, other values for
+	   specific failures. */
+
+	DEBUG(3, ("secret is %s\n", NT_STATUS_IS_OK(status) ?
+                  "good" : "bad"));
+
+ done:
+	DEBUG(NT_STATUS_IS_OK(status) ? 5 : 2,
+	      ("Checking the trust account password returned %s\n",
+	       nt_errstr(status)));
+
+	return status;
+}

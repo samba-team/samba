@@ -232,4 +232,12 @@ NTSTATUS rpccli_wbint_LookupRids(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
 				 struct wbint_RidArray *rids /* [in] [ref] */,
 				 struct wbint_Principals *names /* [out] [ref] */);
+struct tevent_req *rpccli_wbint_CheckMachineAccount_send(TALLOC_CTX *mem_ctx,
+							 struct tevent_context *ev,
+							 struct rpc_pipe_client *cli);
+NTSTATUS rpccli_wbint_CheckMachineAccount_recv(struct tevent_req *req,
+					       TALLOC_CTX *mem_ctx,
+					       NTSTATUS *result);
+NTSTATUS rpccli_wbint_CheckMachineAccount(struct rpc_pipe_client *cli,
+					  TALLOC_CTX *mem_ctx);
 #endif /* __CLI_WBINT__ */

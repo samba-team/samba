@@ -143,4 +143,7 @@ interface wbint
 	[in] wbint_RidArray *rids,
 	[out] wbint_Principals *names
 	);
+
+    NTSTATUS wbint_CheckMachineAccount(
+	);
 }

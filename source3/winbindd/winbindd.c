@@ -446,7 +446,6 @@ static struct winbindd_dispatch_table {
 
 	/* Miscellaneous */
 
-	{ WINBINDD_CHECK_MACHACC, winbindd_check_machine_acct, "CHECK_MACHACC" },
 	{ WINBINDD_INFO, winbindd_info, "INFO" },
 	{ WINBINDD_INTERFACE_VERSION, winbindd_interface_version,
 	  "INTERFACE_VERSION" },
@@ -537,6 +536,8 @@ static struct winbindd_async_dispatch_table async_nonpriv_table[] = {
 	  winbindd_list_users_send, winbindd_list_users_recv },
 	{ WINBINDD_LIST_GROUPS, "LIST_GROUPS",
 	  winbindd_list_groups_send, winbindd_list_groups_recv },
+	{ WINBINDD_CHECK_MACHACC, "CHECK_MACHACC",
+	  winbindd_check_machine_acct_send, winbindd_check_machine_acct_recv },
 
 	{ 0, NULL, NULL, NULL }
 };
