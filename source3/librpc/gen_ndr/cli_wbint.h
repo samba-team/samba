@@ -240,4 +240,18 @@ NTSTATUS rpccli_wbint_CheckMachineAccount_recv(struct tevent_req *req,
 					       NTSTATUS *result);
 NTSTATUS rpccli_wbint_CheckMachineAccount(struct rpc_pipe_client *cli,
 					  TALLOC_CTX *mem_ctx);
+struct tevent_req *rpccli_wbint_SetMapping_send(TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						struct rpc_pipe_client *cli,
+						struct dom_sid *_sid /* [in] [ref] */,
+						enum wbint_IdType _type /* [in]  */,
+						uint64_t _id /* [in]  */);
+NTSTATUS rpccli_wbint_SetMapping_recv(struct tevent_req *req,
+				      TALLOC_CTX *mem_ctx,
+				      NTSTATUS *result);
+NTSTATUS rpccli_wbint_SetMapping(struct rpc_pipe_client *cli,
+				 TALLOC_CTX *mem_ctx,
+				 struct dom_sid *sid /* [in] [ref] */,
+				 enum wbint_IdType type /* [in]  */,
+				 uint64_t id /* [in]  */);
 #endif /* __CLI_WBINT__ */

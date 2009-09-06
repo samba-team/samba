@@ -44,6 +44,21 @@ struct wbint_userinfos {
 	struct wbint_userinfo *userinfos;/* [size_is(num_userinfos)] */
 }/* [public] */;
 
+enum wbint_IdType
+#ifndef USE_UINT_ENUMS
+ {
+	WBINT_ID_TYPE_NOT_SPECIFIED,
+	WBINT_ID_TYPE_UID,
+	WBINT_ID_TYPE_GID
+}
+#else
+ { __donnot_use_enum_wbint_IdType=0x7FFFFFFF}
+#define WBINT_ID_TYPE_NOT_SPECIFIED ( 0 )
+#define WBINT_ID_TYPE_UID ( 1 )
+#define WBINT_ID_TYPE_GID ( 2 )
+#endif
+;
+
 
 struct wbint_Ping {
 	struct {
@@ -272,6 +287,20 @@ struct wbint_LookupRids {
 
 
 struct wbint_CheckMachineAccount {
+	struct {
+		NTSTATUS result;
+	} out;
+
+};
+
+
+struct wbint_SetMapping {
+	struct {
+		struct dom_sid *sid;/* [ref] */
+		enum wbint_IdType type;
+		uint64_t id;
+	} in;
+
 	struct {
 		NTSTATUS result;
 	} out;

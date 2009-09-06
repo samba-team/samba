@@ -492,6 +492,32 @@ _PUBLIC_ void ndr_print_wbint_userinfos(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_wbint_IdType(struct ndr_push *ndr, int ndr_flags, enum wbint_IdType r)
+{
+	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_wbint_IdType(struct ndr_pull *ndr, int ndr_flags, enum wbint_IdType *r)
+{
+	uint16_t v;
+	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_wbint_IdType(struct ndr_print *ndr, const char *name, enum wbint_IdType r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case WBINT_ID_TYPE_NOT_SPECIFIED: val = "WBINT_ID_TYPE_NOT_SPECIFIED"; break;
+		case WBINT_ID_TYPE_UID: val = "WBINT_ID_TYPE_UID"; break;
+		case WBINT_ID_TYPE_GID: val = "WBINT_ID_TYPE_GID"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
 static enum ndr_err_code ndr_push_wbint_Ping(struct ndr_push *ndr, int flags, const struct wbint_Ping *r)
 {
 	if (flags & NDR_IN) {
@@ -2152,6 +2178,69 @@ _PUBLIC_ void ndr_print_wbint_CheckMachineAccount(struct ndr_print *ndr, const c
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_wbint_SetMapping(struct ndr_push *ndr, int flags, const struct wbint_SetMapping *r)
+{
+	if (flags & NDR_IN) {
+		if (r->in.sid == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS, r->in.sid));
+		NDR_CHECK(ndr_push_wbint_IdType(ndr, NDR_SCALARS, r->in.type));
+		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->in.id));
+	}
+	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_wbint_SetMapping(struct ndr_pull *ndr, int flags, struct wbint_SetMapping *r)
+{
+	TALLOC_CTX *_mem_save_sid_0;
+	if (flags & NDR_IN) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.sid);
+		}
+		_mem_save_sid_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.sid, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS, r->in.sid));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sid_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_wbint_IdType(ndr, NDR_SCALARS, &r->in.type));
+		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->in.id));
+	}
+	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_wbint_SetMapping(struct ndr_print *ndr, const char *name, int flags, const struct wbint_SetMapping *r)
+{
+	ndr_print_struct(ndr, name, "wbint_SetMapping");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "wbint_SetMapping");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "sid", r->in.sid);
+		ndr->depth++;
+		ndr_print_dom_sid(ndr, "sid", r->in.sid);
+		ndr->depth--;
+		ndr_print_wbint_IdType(ndr, "type", r->in.type);
+		ndr_print_hyper(ndr, "id", r->in.id);
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "wbint_SetMapping");
+		ndr->depth++;
+		ndr_print_NTSTATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
 static const struct ndr_interface_call wbint_calls[] = {
 	{
 		"wbint_Ping",
@@ -2305,6 +2394,14 @@ static const struct ndr_interface_call wbint_calls[] = {
 		(ndr_print_function_t) ndr_print_wbint_CheckMachineAccount,
 		false,
 	},
+	{
+		"wbint_SetMapping",
+		sizeof(struct wbint_SetMapping),
+		(ndr_push_flags_fn_t) ndr_push_wbint_SetMapping,
+		(ndr_pull_flags_fn_t) ndr_pull_wbint_SetMapping,
+		(ndr_print_function_t) ndr_print_wbint_SetMapping,
+		false,
+	},
 	{ NULL, 0, NULL, NULL, NULL, false }
 };
 
@@ -2334,7 +2431,7 @@ const struct ndr_interface_table ndr_table_wbint = {
 		NDR_WBINT_VERSION
 	},
 	.helpstring	= NDR_WBINT_HELPSTRING,
-	.num_calls	= 19,
+	.num_calls	= 20,
 	.calls		= wbint_calls,
 	.endpoints	= &wbint_endpoints,
 	.authservices	= &wbint_authservices

@@ -969,4 +969,11 @@ struct tevent_req *winbindd_check_machine_acct_send(TALLOC_CTX *mem_ctx,
 NTSTATUS winbindd_check_machine_acct_recv(struct tevent_req *req,
 					  struct winbindd_response *presp);
 
+struct tevent_req *winbindd_set_mapping_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct winbindd_cli_state *cli,
+					     struct winbindd_request *request);
+NTSTATUS winbindd_set_mapping_recv(struct tevent_req *req,
+				   struct winbindd_response *response);
+
 #endif /*  _WINBINDD_PROTO_H_  */
