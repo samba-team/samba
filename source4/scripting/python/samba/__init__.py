@@ -132,9 +132,32 @@ class Ldb(ldb.Ldb):
         assert len(values) == 1
         return self.schema_format_value(attribute, values.pop())
 
+    def erase_users_computers(self, dn):
+        """Erases user and computer objects from our AD. This is needed since the 'samldb' module denies the deletion of primary groups. Therefore all groups shouldn't be primary somewhere anymore."""
+
+        try:
+            res = self.search(base=dn, scope=ldb.SCOPE_SUBTREE, attrs=[],
+                      expression="(|(objectclass=user)(objectclass=computer))")
+        except ldb.LdbError, (ldb.ERR_NO_SUCH_OBJECT, _):
+            # Ignore no such object errors
+            return
+            pass
+
+        try:
+            for msg in res:
+                self.delete(msg.dn)
+        except ldb.LdbError, (ldb.ERR_NO_SUCH_OBJECT, _):
+            # Ignore no such object errors
+            return
+
     def erase_except_schema_controlled(self):
         """Erase this ldb, removing all records, except those that are controlled by Samba4's schema."""
+
         basedn = ""
+
+        # Try to delete user/computer accounts to allow deletion of groups
+        self.erase_users_computers(basedn)
+
         # Delete the 'visible' records, and the invisble 'deleted' records (if this DB supports it)
         for msg in self.search(basedn, ldb.SCOPE_SUBTREE, 
                                "(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))",
@@ -199,6 +222,8 @@ class Ldb(ldb.Ldb):
         if not "namingContexts" in res[0]:
             return
         for basedn in res[0]["namingContexts"]:
+            # Try to delete user/computer accounts to allow deletion of groups
+            self.erase_users_computers(basedn)
             # Try and erase from the bottom-up in the tree
             erase_recursive(self, basedn)
 
