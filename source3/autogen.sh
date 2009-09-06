@@ -75,6 +75,6 @@ $AUTOCONF $IPATHS || exit 1
 
 rm -rf autom4te*.cache
 
-echo "Now run ./configure and then make."
+echo "Now run ./configure (or ./configure.developer) and then make."
 exit 0
 
