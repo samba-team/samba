@@ -1165,7 +1165,7 @@ static int samldb_fill_foreignSecurityPrincipal_object(struct samldb_ctx *ac)
 			   (const char *)ldb_dn_get_rdn_val(ac->msg->dn)->data);
 		if (!ac->sid) {
 			ldb_set_errstring(ldb,
-					"No valid found SID in "
+					"No valid SID found in "
 					"ForeignSecurityPrincipal CN!");
 			talloc_free(ac);
 			return LDB_ERR_CONSTRAINT_VIOLATION;
