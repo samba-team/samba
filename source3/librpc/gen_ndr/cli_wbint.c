@@ -3391,3 +3391,157 @@ NTSTATUS rpccli_wbint_RemoveMapping(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
+struct rpccli_wbint_SetHWM_state {
+	struct wbint_SetHWM orig;
+	struct wbint_SetHWM tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_wbint_SetHWM_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_wbint_SetHWM_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct rpc_pipe_client *cli,
+					    enum wbint_IdType _type /* [in]  */,
+					    uint64_t _id /* [in]  */)
+{
+	struct tevent_req *req;
+	struct rpccli_wbint_SetHWM_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_wbint_SetHWM_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.type = _type;
+	state->orig.in.id = _id;
+
+	/* Out parameters */
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(wbint_SetHWM, &state->orig);
+	}
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_wbint,
+				    NDR_WBINT_SETHWM,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_wbint_SetHWM_done, req);
+	return req;
+}
+
+static void rpccli_wbint_SetHWM_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_wbint_SetHWM_state *state = tevent_req_data(
+		req, struct rpccli_wbint_SetHWM_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(wbint_SetHWM, &state->orig);
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_wbint_SetHWM_recv(struct tevent_req *req,
+				  TALLOC_CTX *mem_ctx,
+				  NTSTATUS *result)
+{
+	struct rpccli_wbint_SetHWM_state *state = tevent_req_data(
+		req, struct rpccli_wbint_SetHWM_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS rpccli_wbint_SetHWM(struct rpc_pipe_client *cli,
+			     TALLOC_CTX *mem_ctx,
+			     enum wbint_IdType type /* [in]  */,
+			     uint64_t id /* [in]  */)
+{
+	struct wbint_SetHWM r;
+	NTSTATUS status;
+
+	/* In parameters */
+	r.in.type = type;
+	r.in.id = id;
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(wbint_SetHWM, &r);
+	}
+
+	status = cli->dispatch(cli,
+				mem_ctx,
+				&ndr_table_wbint,
+				NDR_WBINT_SETHWM,
+				&r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(wbint_SetHWM, &r);
+	}
+
+	if (NT_STATUS_IS_ERR(status)) {
+		return status;
+	}
+
+	/* Return variables */
+
+	/* Return result */
+	return r.out.result;
+}
+

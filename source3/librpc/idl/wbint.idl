@@ -164,4 +164,9 @@ interface wbint
 	[in] wbint_IdType type,
 	[in] hyper id
 	);
+
+    NTSTATUS wbint_SetHWM(
+	[in] wbint_IdType type,
+	[in] hyper id
+	);
 }

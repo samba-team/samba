@@ -438,10 +438,6 @@ static struct winbindd_dispatch_table {
 	{ WINBINDD_LIST_TRUSTDOM, winbindd_list_trusted_domains,
 	  "LIST_TRUSTDOM" },
 
-	/* Lookup related functions */
-
-	{ WINBINDD_SET_HWM, winbindd_set_hwm, "SET_HWMS" },
-
 	/* Miscellaneous */
 
 	{ WINBINDD_INFO, winbindd_info, "INFO" },
@@ -549,6 +545,8 @@ static struct winbindd_async_dispatch_table async_priv_table[] = {
 	  winbindd_set_mapping_send, winbindd_set_mapping_recv },
 	{ WINBINDD_REMOVE_MAPPING, "SET_MAPPING",
 	  winbindd_remove_mapping_send, winbindd_remove_mapping_recv },
+	{ WINBINDD_SET_HWM, "SET_HWM",
+	  winbindd_set_hwm_send, winbindd_set_hwm_recv },
 
 	{ 0, NULL, NULL, NULL }
 };

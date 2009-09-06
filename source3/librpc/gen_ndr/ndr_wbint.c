@@ -2304,6 +2304,53 @@ _PUBLIC_ void ndr_print_wbint_RemoveMapping(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_wbint_SetHWM(struct ndr_push *ndr, int flags, const struct wbint_SetHWM *r)
+{
+	if (flags & NDR_IN) {
+		NDR_CHECK(ndr_push_wbint_IdType(ndr, NDR_SCALARS, r->in.type));
+		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->in.id));
+	}
+	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_wbint_SetHWM(struct ndr_pull *ndr, int flags, struct wbint_SetHWM *r)
+{
+	if (flags & NDR_IN) {
+		NDR_CHECK(ndr_pull_wbint_IdType(ndr, NDR_SCALARS, &r->in.type));
+		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->in.id));
+	}
+	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_wbint_SetHWM(struct ndr_print *ndr, const char *name, int flags, const struct wbint_SetHWM *r)
+{
+	ndr_print_struct(ndr, name, "wbint_SetHWM");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "wbint_SetHWM");
+		ndr->depth++;
+		ndr_print_wbint_IdType(ndr, "type", r->in.type);
+		ndr_print_hyper(ndr, "id", r->in.id);
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "wbint_SetHWM");
+		ndr->depth++;
+		ndr_print_NTSTATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
 static const struct ndr_interface_call wbint_calls[] = {
 	{
 		"wbint_Ping",
@@ -2473,6 +2520,14 @@ static const struct ndr_interface_call wbint_calls[] = {
 		(ndr_print_function_t) ndr_print_wbint_RemoveMapping,
 		false,
 	},
+	{
+		"wbint_SetHWM",
+		sizeof(struct wbint_SetHWM),
+		(ndr_push_flags_fn_t) ndr_push_wbint_SetHWM,
+		(ndr_pull_flags_fn_t) ndr_pull_wbint_SetHWM,
+		(ndr_print_function_t) ndr_print_wbint_SetHWM,
+		false,
+	},
 	{ NULL, 0, NULL, NULL, NULL, false }
 };
 
@@ -2502,7 +2557,7 @@ const struct ndr_interface_table ndr_table_wbint = {
 		NDR_WBINT_VERSION
 	},
 	.helpstring	= NDR_WBINT_HELPSTRING,
-	.num_calls	= 21,
+	.num_calls	= 22,
 	.calls		= wbint_calls,
 	.endpoints	= &wbint_endpoints,
 	.authservices	= &wbint_authservices
