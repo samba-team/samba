@@ -440,7 +440,6 @@ static struct winbindd_dispatch_table {
 
 	/* Lookup related functions */
 
-	{ WINBINDD_REMOVE_MAPPING, winbindd_remove_mapping, "REMOVE_MAPPING" },
 	{ WINBINDD_SET_HWM, winbindd_set_hwm, "SET_HWMS" },
 
 	/* Miscellaneous */
@@ -548,6 +547,8 @@ static struct winbindd_async_dispatch_table async_priv_table[] = {
 	  winbindd_allocate_gid_send, winbindd_allocate_gid_recv },
 	{ WINBINDD_SET_MAPPING, "SET_MAPPING",
 	  winbindd_set_mapping_send, winbindd_set_mapping_recv },
+	{ WINBINDD_REMOVE_MAPPING, "SET_MAPPING",
+	  winbindd_remove_mapping_send, winbindd_remove_mapping_recv },
 
 	{ 0, NULL, NULL, NULL }
 };
