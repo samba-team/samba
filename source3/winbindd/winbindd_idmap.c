@@ -45,65 +45,6 @@ struct winbindd_child *idmap_child(void)
 	return &static_idmap_child;
 }
 
-static void winbindd_set_hwm_recv(TALLOC_CTX *mem_ctx, bool success,
-				   struct winbindd_response *response,
-				   void *c, void *private_data)
-{
-	void (*cont)(void *priv, bool succ) = (void (*)(void *, bool))c;
-
-	if (!success) {
-		DEBUG(5, ("Could not trigger idmap_set_hwm\n"));
-		cont(private_data, False);
-		return;
-	}
-
-	if (response->result != WINBINDD_OK) {
-		DEBUG(5, ("idmap_set_hwm returned an error\n"));
-		cont(private_data, False);
-		return;
-	}
-
-	cont(private_data, True);
-}
-
-void winbindd_set_hwm_async(TALLOC_CTX *mem_ctx, const struct unixid *xid,
-			     void (*cont)(void *private_data, bool success),
-			     void *private_data)
-{
-	struct winbindd_request request;
-	ZERO_STRUCT(request);
-	request.cmd = WINBINDD_DUAL_SET_HWM;
-	request.data.dual_idmapset.id = xid->id;
-	request.data.dual_idmapset.type = xid->type;
-
-	do_async(mem_ctx, idmap_child(), &request, winbindd_set_hwm_recv,
-		 (void *)cont, private_data);
-}
-
-enum winbindd_result winbindd_dual_set_hwm(struct winbindd_domain *domain,
-					    struct winbindd_cli_state *state)
-{
-	struct unixid xid;
-	NTSTATUS result;
-
-	DEBUG(3, ("[%5lu]: dual_set_hwm\n", (unsigned long)state->pid));
-
-	xid.id = state->request->data.dual_idmapset.id;
-	xid.type = state->request->data.dual_idmapset.type;
-
-	switch (xid.type) {
-	case ID_TYPE_UID:
-		result = idmap_set_uid_hwm(&xid);
-		break;
-	case ID_TYPE_GID:
-		result = idmap_set_gid_hwm(&xid);
-		break;
-	default:
-		return WINBINDD_ERROR;
-	}
-	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
-}
-
 static void winbindd_sid2uid_recv(TALLOC_CTX *mem_ctx, bool success,
 			       struct winbindd_response *response,
 			       void *c, void *private_data)
@@ -419,10 +360,6 @@ static const struct winbindd_child_dispatch_table idmap_dispatch_table[] = {
 		.name		= "DUAL_GID2SID",
 		.struct_cmd	= WINBINDD_DUAL_GID2SID,
 		.struct_fn	= winbindd_dual_gid2sid,
-	},{
-		.name		= "DUAL_SET_HWMS",
-		.struct_cmd	= WINBINDD_DUAL_SET_HWM,
-		.struct_fn	= winbindd_dual_set_hwm,
 	},{
 		.name		= "NDRCMD",
 		.struct_cmd	= WINBINDD_DUAL_NDRCMD,

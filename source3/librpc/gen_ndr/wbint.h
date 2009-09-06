@@ -321,4 +321,17 @@ struct wbint_RemoveMapping {
 
 };
 
+
+struct wbint_SetHWM {
+	struct {
+		enum wbint_IdType type;
+		uint64_t id;
+	} in;
+
+	struct {
+		NTSTATUS result;
+	} out;
+
+};
+
 #endif /* _HEADER_wbint */

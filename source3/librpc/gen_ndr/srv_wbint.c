@@ -1683,6 +1683,79 @@ static bool api_wbint_RemoveMapping(pipes_struct *p)
 	return true;
 }
 
+static bool api_wbint_SetHWM(pipes_struct *p)
+{
+	const struct ndr_interface_call *call;
+	struct ndr_pull *pull;
+	struct ndr_push *push;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+	struct wbint_SetHWM *r;
+
+	call = &ndr_table_wbint.calls[NDR_WBINT_SETHWM];
+
+	r = talloc(talloc_tos(), struct wbint_SetHWM);
+	if (r == NULL) {
+		return false;
+	}
+
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull = ndr_pull_init_blob(&blob, r, NULL);
+	if (pull == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(wbint_SetHWM, r);
+	}
+
+	r->out.result = _wbint_SetHWM(p, r);
+
+	if (p->rng_fault_state) {
+		talloc_free(r);
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(wbint_SetHWM, r);
+	}
+
+	push = ndr_push_init_ctx(r, NULL);
+	if (push == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	blob = ndr_push_blob(push);
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
+		talloc_free(r);
+		return false;
+	}
+
+	talloc_free(r);
+
+	return true;
+}
+
 
 /* Tables */
 static struct api_struct api_wbint_cmds[] = 
@@ -1708,6 +1781,7 @@ static struct api_struct api_wbint_cmds[] =
 	{"WBINT_CHECKMACHINEACCOUNT", NDR_WBINT_CHECKMACHINEACCOUNT, api_wbint_CheckMachineAccount},
 	{"WBINT_SETMAPPING", NDR_WBINT_SETMAPPING, api_wbint_SetMapping},
 	{"WBINT_REMOVEMAPPING", NDR_WBINT_REMOVEMAPPING, api_wbint_RemoveMapping},
+	{"WBINT_SETHWM", NDR_WBINT_SETHWM, api_wbint_SetHWM},
 };
 
 void wbint_get_pipe_fns(struct api_struct **fns, int *n_fns)
@@ -1970,6 +2044,12 @@ NTSTATUS rpc_wbint_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, co
 		case NDR_WBINT_REMOVEMAPPING: {
 			struct wbint_RemoveMapping *r = (struct wbint_RemoveMapping *)_r;
 			r->out.result = _wbint_RemoveMapping(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WBINT_SETHWM: {
+			struct wbint_SetHWM *r = (struct wbint_SetHWM *)_r;
+			r->out.result = _wbint_SetHWM(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
