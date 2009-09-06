@@ -176,6 +176,30 @@ sAMAccountName: Event Log Readers
 groupType: -2147483644
 isCriticalSystemObject: TRUE
 
+# Add foreign security principals
+
+dn: CN=S-1-5-4,CN=ForeignSecurityPrincipals,${DOMAINDN}
+objectClass: top
+objectClass: foreignSecurityPrincipal
+objectSid: S-1-5-4
+
+dn: CN=S-1-5-9,CN=ForeignSecurityPrincipals,${DOMAINDN}
+objectClass: top
+objectClass: foreignSecurityPrincipal
+objectSid: S-1-5-9
+
+dn: CN=S-1-5-11,CN=ForeignSecurityPrincipals,${DOMAINDN}
+objectClass: top
+objectClass: foreignSecurityPrincipal
+objectSid: S-1-5-11
+
+dn: CN=S-1-5-20,CN=ForeignSecurityPrincipals,${DOMAINDN}
+objectClass: top
+objectClass: foreignSecurityPrincipal
+objectSid: S-1-5-20
+
+# Add builtin objects
+
 dn: CN=Administrators,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
@@ -219,6 +243,8 @@ objectClass: top
 objectClass: group
 description: Users are prevented from making accidental or intentional system-wide changes.  Thus, Users can run certified applications, but not most legacy applications
 member: CN=Domain Users,CN=Users,${DOMAINDN}
+member: CN=S-1-5-4,CN=ForeignSecurityPrincipals,${DOMAINDN}
+member: CN=S-1-5-11,CN=ForeignSecurityPrincipals,${DOMAINDN}
 objectSid: S-1-5-32-545
 sAMAccountName: Users
 systemFlags: -1946157056
@@ -311,6 +337,7 @@ dn: CN=Performance Log Users,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
 description: Members of this group have remote access to schedule logging of performance counters on this computer
+member: CN=S-1-5-20,CN=ForeignSecurityPrincipals,${DOMAINDN}
 objectSid: S-1-5-32-559
 sAMAccountName: Performance Log Users
 systemFlags: -1946157056
@@ -350,6 +377,7 @@ dn: CN=Pre-Windows 2000 Compatible Access,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
 description: A backward compatibility group which allows read access on all users and groups in the domain
+member: CN=S-1-5-11,CN=ForeignSecurityPrincipals,${DOMAINDN}
 objectSid: S-1-5-32-554
 sAMAccountName: Pre-Windows 2000 Compatible Access
 systemFlags: -1946157056
@@ -372,6 +400,7 @@ dn: CN=Windows Authorization Access Group,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
 description: Members of this group have access to the computed tokenGroupsGlobalAndUniversal attribute on User objects
+member: CN=S-1-5-9,CN=ForeignSecurityPrincipals,${DOMAINDN}
 objectSid: S-1-5-32-560
 sAMAccountName: Windows Authorization Access Group
 systemFlags: -1946157056

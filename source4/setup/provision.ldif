@@ -45,6 +45,8 @@ systemFlags: -1946157056
 isCriticalSystemObject: TRUE
 showInAdvancedViewOnly: FALSE
 
+# Foreign security principals located in "provision_users.ldif"
+
 dn: CN=Infrastructure,${DOMAINDN}
 objectClass: top
 objectClass: infrastructureUpdate
