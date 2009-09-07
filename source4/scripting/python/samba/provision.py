@@ -55,6 +55,10 @@ from signal import SIGTERM
 __docformat__ = "restructuredText"
 
 
+class ProvisioningError(ValueError):
+  pass
+
+
 def find_setup_dir():
     """Find the setup directory used by provision."""
     dirname = os.path.dirname(__file__)
@@ -207,7 +211,7 @@ def check_install(lp, session_info, credentials):
     ldb = Ldb(lp.get("sam database"), session_info=session_info, 
             credentials=credentials, lp=lp)
     if len(ldb.search("(cn=Administrator)")) != 1:
-        raise "No administrator account found"
+        raise ProvisioningError("No administrator account found")
 
 
 def findnss(nssfn, names):
@@ -1322,17 +1326,17 @@ class ProvisionBackend(object):
             except:
                 pass
             
-            raise("Warning: Another slapd Instance seems already running on this host, listening to " + self.ldapi_uri + ". Please shut it down before you continue. ")
+            raise ProvisioningError("Warning: Another slapd Instance seems already running on this host, listening to " + self.ldapi_uri + ". Please shut it down before you continue. ")
         
         except LdbError, e:
             pass
 
         # Try to print helpful messages when the user has not specified the path to slapd
         if slapd_path is None:
-            raise("Warning: LDAP-Backend must be setup with path to slapd, e.g. --slapd-path=\"/usr/local/libexec/slapd\"!")
+            raise ProvisioningError("Warning: LDAP-Backend must be setup with path to slapd, e.g. --slapd-path=\"/usr/local/libexec/slapd\"!")
         if not os.path.exists(slapd_path):
             message (slapd_path)
-            raise("Warning: Given Path to slapd does not exist!")
+            raise ProvisioningError("Warning: Given Path to slapd does not exist!")
 
         schemadb_path = os.path.join(paths.ldapdir, "schema-tmp.ldb")
         try:
@@ -1375,7 +1379,7 @@ class ProvisionBackend(object):
                                        slapd_path=slapd_path,
                                        nosync=nosync, ldap_dryrun_mode=ldap_dryrun_mode)
         else:
-            raise("Unknown LDAP backend type selected")
+            raise ProvisioningError("Unknown LDAP backend type selected")
 
         self.credentials.set_password(ldapadminpass)
 
@@ -1396,7 +1400,7 @@ class ProvisionBackend(object):
                 time.sleep(1)
                 pass
         
-        raise "slapd died before we could make a connection to it"
+        raise ProvisioningError("slapd died before we could make a connection to it")
 
 
 def provision_openldap_backend(result, paths=None, setup_path=None, names=None, message=None, 
@@ -1618,10 +1622,10 @@ def provision_openldap_backend(result, paths=None, setup_path=None, names=None, 
 #        output to the above, but does the conversion sucessfully...
 #
 #        if retcode != 0:
-#            raise("conversion from slapd.conf to cn=config failed")
+#            raise ProvisioningError("conversion from slapd.conf to cn=config failed")
 
         if not os.path.exists(os.path.join(paths.olcdir, "cn=config.ldif")):
-            raise("conversion from slapd.conf to cn=config failed")
+            raise ProvisioningError("conversion from slapd.conf to cn=config failed")
 
         # Don't confuse the admin by leaving the slapd.conf around
         os.remove(paths.slapdconf)        
@@ -1684,15 +1688,15 @@ def provision_fds_backend(result, paths=None, setup_path=None, names=None, messa
 
     # Try to print helpful messages when the user has not specified the path to the setup-ds tool
     if setup_ds_path is None:
-        raise("Warning: Fedora DS LDAP-Backend must be setup with path to setup-ds, e.g. --setup-ds-path=\"/usr/sbin/setup-ds.pl\"!")
+        raise ProvisioningError("Warning: Fedora DS LDAP-Backend must be setup with path to setup-ds, e.g. --setup-ds-path=\"/usr/sbin/setup-ds.pl\"!")
     if not os.path.exists(setup_ds_path):
         message (setup_ds_path)
-        raise("Warning: Given Path to slapd does not exist!")
+        raise ProvisioningError("Warning: Given Path to slapd does not exist!")
 
     # Run the Fedora DS setup utility
     retcode = subprocess.call([setup_ds_path, "--silent", "--file", paths.fedoradsinf], close_fds=True, shell=False)
     if retcode != 0:
-        raise("setup-ds failed")
+        raise ProvisioningError("setup-ds failed")
 
 def create_phpldapadmin_config(path, setup_path, ldapi_uri):
     """Create a PHP LDAP admin configuration file.
