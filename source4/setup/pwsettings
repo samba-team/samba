@@ -125,6 +125,10 @@ elif args[0] == "set":
 		else:
 			pwd_hist_len = int(opts.history_length)
 
+		if pwd_hist_len < 0 or pwd_hist_len > 24:
+			print "ERROR: Password history length must be in the range of 0 to 24!"
+			sys.exit(1)
+
 		m["pwdHistoryLength"] = ldb.MessageElement(str(pwd_hist_len),
 		  ldb.FLAG_MOD_REPLACE, "pwdHistoryLength")
 		msgs.append("Password history length changed!")
@@ -135,6 +139,10 @@ elif args[0] == "set":
 		else:
 			min_pwd_len = int(opts.min_pwd_length)
 
+		if min_pwd_len < 0 or min_pwd_len > 14:
+			print "ERROR: Minimum password length must be in the range of 0 to 14!"
+			sys.exit(1)
+
 		m["minPwdLength"] = ldb.MessageElement(str(min_pwd_len),
 		  ldb.FLAG_MOD_REPLACE, "minPwdLength")
 		msgs.append("Minimum password length changed!")
@@ -144,10 +152,15 @@ elif args[0] == "set":
 			min_pwd_age = 0
 		else:
 			min_pwd_age = int(opts.min_pwd_age)
-		# days -> ticks
-		min_pwd_age = -int(min_pwd_age * (24 * 60 * 60 * 1e7))
 
-		m["minPwdAge"] = ldb.MessageElement(str(min_pwd_age),
+		if min_pwd_age < 0 or min_pwd_age > 998:
+			print "ERROR: Minimum password age must be in the range of 0 to 998!"
+			sys.exit(1)
+
+		# days -> ticks
+		min_pwd_age_ticks = -int(min_pwd_age * (24 * 60 * 60 * 1e7))
+
+		m["minPwdAge"] = ldb.MessageElement(str(min_pwd_age_ticks),
 		  ldb.FLAG_MOD_REPLACE, "minPwdAge")
 		msgs.append("Minimum password age changed!")
 
@@ -156,12 +169,21 @@ elif args[0] == "set":
 			max_pwd_age = 43
 		else:
 			max_pwd_age = int(opts.max_pwd_age)
-		# days -> ticks
-		max_pwd_age = -int(max_pwd_age * (24 * 60 * 60 * 1e7))
 
-		m["maxPwdAge"] = ldb.MessageElement(str(max_pwd_age),
+		if max_pwd_age < 0 or max_pwd_age > 999:
+			print "ERROR: Maximum password age must be in the range of 0 to 999!"
+			sys.exit(1)
+
+		# days -> ticks
+		max_pwd_age_ticks = -int(max_pwd_age * (24 * 60 * 60 * 1e7))
+
+		m["maxPwdAge"] = ldb.MessageElement(str(max_pwd_age_ticks),
 		  ldb.FLAG_MOD_REPLACE, "maxPwdAge")
 		msgs.append("Maximum password age changed!")
+
+	if max_pwd_age > 0 and min_pwd_age >= max_pwd_age:
+		print "ERROR: Maximum password age (%d) must be greater than minimum password age (%d)!" % (max_pwd_age, min_pwd_age)
+		sys.exit(1)
 
 	samdb.modify(m)
 
