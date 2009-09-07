@@ -168,7 +168,7 @@ bool dns_register_smbd_reply(struct dns_reg_state *dns_state,
 {
 	int mdnsd_conn_fd = -1;
 
-	if (dns_state->srv_ref == NULL) {
+	if ((dns_state == NULL) || (dns_state->srv_ref == NULL)) {
 		return false;
 	}
 
