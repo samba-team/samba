@@ -940,16 +940,16 @@ NTSTATUS libnet_set_join_secrets(struct libnet_context *ctx,
 			talloc_free(tmp_mem);
 			return NT_STATUS_NO_MEMORY;
 		}
-
-		rtn = samdb_msg_add_string(ldb, tmp_mem, msg, "objectClass", "primaryDomain");
-		if (rtn == -1) {
-			r->out.error_string = NULL;
-			talloc_free(tmp_mem);
-			return NT_STATUS_NO_MEMORY;
-		}
 	}
 
 	rtn = samdb_msg_add_string(ldb, tmp_mem, msg, "objectClass", "primaryDomain");
+	if (rtn == -1) {
+		r->out.error_string = NULL;
+		talloc_free(tmp_mem);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	rtn = samdb_msg_add_string(ldb, tmp_mem, msg, "objectClass", "kerberosSecret");
 	if (rtn == -1) {
 		r->out.error_string = NULL;
 		talloc_free(tmp_mem);
@@ -1008,7 +1008,7 @@ NTSTATUS libnet_set_join_secrets(struct libnet_context *ctx,
 			   "(|" SECRETS_PRIMARY_DOMAIN_FILTER "(realm=%s))",
 			   r->in.domain_name, r->in.realm);
 	if (ret == 0) {
-		rtn = samdb_msg_set_string(ldb, tmp_mem, msg, "secretsKeytab", "secrets.keytab");
+		rtn = samdb_msg_set_string(ldb, tmp_mem, msg, "privateKeytab", "secrets.keytab");
 		if (rtn == -1) {
 			r->out.error_string = NULL;
 			talloc_free(tmp_mem);
