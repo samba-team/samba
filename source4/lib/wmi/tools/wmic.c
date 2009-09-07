@@ -35,61 +35,91 @@
 #include "lib/wmi/wmi.h"
 
 struct program_args {
-    char *hostname;
-    char *query;
-    char *ns;
+	char *hostname;
+	char *query;
+	char *ns;
 };
 
 static void parse_args(int argc, char *argv[], struct program_args *pmyargs)
 {
-    poptContext pc;
-    int opt, i;
+	poptContext pc;
+	int opt, i;
 
-    int argc_new;
-    char **argv_new;
+	int argc_new;
+	char **argv_new;
 
-    struct poptOption long_options[] = {
-	POPT_AUTOHELP
-	POPT_COMMON_SAMBA
-	POPT_COMMON_CONNECTION
-	POPT_COMMON_CREDENTIALS
-	POPT_COMMON_VERSION
-	{"namespace", 0, POPT_ARG_STRING, &pmyargs->ns, 0,
-	 "WMI namespace, default to root\\cimv2", 0},
-	POPT_TABLEEND
-    };
+	struct poptOption long_options[] = {
+		POPT_AUTOHELP
+		POPT_COMMON_SAMBA
+		POPT_COMMON_CONNECTION
+		POPT_COMMON_CREDENTIALS
+		POPT_COMMON_VERSION
+		{"namespace", 0, POPT_ARG_STRING, &pmyargs->ns, 0,
+		 "WMI namespace, default to root\\cimv2", 0},
+		POPT_TABLEEND
+	};
 
-    pc = poptGetContext("wmi", argc, (const char **) argv,
-	        long_options, POPT_CONTEXT_KEEP_FIRST);
+	pc = poptGetContext("wmi", argc, (const char **) argv,
+		long_options, POPT_CONTEXT_KEEP_FIRST);
 
-    poptSetOtherOptionHelp(pc, "//host query\n\nExample: wmic -U [domain/]adminuser%password //host \"select * from Win32_ComputerSystem\"");
+	poptSetOtherOptionHelp(pc, "//host query\n\nExample: wmic -U [domain/]adminuser%password //host \"select * from Win32_ComputerSystem\"");
 
-    while ((opt = poptGetNextOpt(pc)) != -1) {
-	poptPrintUsage(pc, stdout, 0);
-	poptFreeContext(pc);
-	exit(1);
-    }
-
-    argv_new = discard_const_p(char *, poptGetArgs(pc));
-
-    argc_new = argc;
-    for (i = 0; i < argc; i++) {
-	if (argv_new[i] == NULL) {
-	    argc_new = i;
-	    break;
+	while ((opt = poptGetNextOpt(pc)) != -1) {
+		poptPrintUsage(pc, stdout, 0);
+		poptFreeContext(pc);
+		exit(1);
 	}
-    }
 
-    if (argc_new != 3 || argv_new[1][0] != '/'
-	|| argv_new[1][1] != '/') {
-	poptPrintUsage(pc, stdout, 0);
+	argv_new = discard_const_p(char *, poptGetArgs(pc));
+
+	argc_new = argc;
+	for (i = 0; i < argc; i++) {
+		if (argv_new[i] == NULL) {
+			argc_new = i;
+			break;
+		}
+	}
+
+	if (argc_new != 3 || argv_new[1][0] != '/'
+			|| argv_new[1][1] != '/') {
+		poptPrintUsage(pc, stdout, 0);
+		poptFreeContext(pc);
+		exit(1);
+	}
+
+	pmyargs->hostname = argv_new[1] + 2;
+	pmyargs->query = argv_new[2];
 	poptFreeContext(pc);
-	exit(1);
-    }
+}
 
-    pmyargs->hostname = argv_new[1] + 2;
-    pmyargs->query = argv_new[2];
-    poptFreeContext(pc);
+static void escape_string(const char *src, char *dst, int len)
+{
+	char *p = dst, *end = dst + len - 1;
+	const char *q = src;
+
+	if ( q == NULL) {
+		strncpy( dst, "(null)", len);
+		return;
+	}
+
+	while ( *q && p <= end ) {
+		if ( strchr( "|\\(),", *q)) {
+			*p++ = '\\';
+			*p++ = *q++;
+		} else if ( *q == '\n' ) {
+			*p++ = '\\';
+			*p++ = 'n';
+			q++;
+		} else if ( *q == '\r' ) {
+			*p++ = '\\';
+			*p++ = 'r';
+			q++;
+		} else {
+			*p++ = *q++;
+		}
+	}
+
+	*p++ = 0;
 }
 
 #define WERR_CHECK(msg) if (!W_ERROR_IS_OK(result)) { \
@@ -99,19 +129,32 @@ static void parse_args(int argc, char *argv[], struct program_args *pmyargs)
 			    DEBUG(1, ("OK   : %s\n", msg)); \
 			}
 
-#define RETURN_CVAR_ARRAY_STR(fmt, arr) {\
-	uint32_t i;\
+#define RETURN_CVAR_ARRAY_STR_START(arr) {\
+        uint32_t i;\
 	char *r;\
 \
-	if (!arr) {\
-	        return talloc_strdup(mem_ctx, "NULL");\
-	}\
+        if (!arr) {\
+                return talloc_strdup(mem_ctx, "(null)");\
+        }\
 	r = talloc_strdup(mem_ctx, "(");\
-	for (i = 0; i < arr->count; ++i) {\
-		r = talloc_asprintf_append(r, fmt "%s", arr->item[i], (i+1 == arr->count)?"":",");\
-	}\
-	return talloc_asprintf_append(r, ")");\
+        for (i = 0; i < arr->count; ++i) {
+
+
+#define RETURN_CVAR_ARRAY_STR_END(fmt, arr, item) \
+		r = talloc_asprintf_append(r, fmt "%s", item, (i+1 == arr->count)?"":",");\
+        }\
+        return talloc_asprintf_append(r, ")");\
 }
+
+#define RETURN_CVAR_ARRAY_STR(fmt, arr) \
+	RETURN_CVAR_ARRAY_STR_START(arr) \
+	RETURN_CVAR_ARRAY_STR_END(fmt, arr, arr->item[i])
+
+#define RETURN_CVAR_ARRAY_ESCAPED(fmt, arr) \
+	RETURN_CVAR_ARRAY_STR_START(arr) \
+	char buf[2048]; \
+	escape_string( arr->item[i], buf, 2048); \
+	RETURN_CVAR_ARRAY_STR_END(fmt, arr, buf)
 
 char *string_CIMVAR(TALLOC_CTX *mem_ctx, union CIMVAR *v, enum CIMTYPE_ENUMERATION cimtype)
 {
@@ -129,7 +172,11 @@ char *string_CIMVAR(TALLOC_CTX *mem_ctx, union CIMVAR *v, enum CIMTYPE_ENUMERATI
 	case CIM_BOOLEAN: return talloc_asprintf(mem_ctx, "%s", v->v_boolean?"True":"False");
 	case CIM_STRING:
 	case CIM_DATETIME:
-	case CIM_REFERENCE: return talloc_asprintf(mem_ctx, "%s", v->v_string);
+	case CIM_REFERENCE: {
+		char buf[2048];
+		escape_string((char*) v-> v_string, buf, 2048);
+		return talloc_asprintf(mem_ctx, "%s", buf);
+	}
 	case CIM_CHAR16: return talloc_asprintf(mem_ctx, "Unsupported");
 	case CIM_OBJECT: return talloc_asprintf(mem_ctx, "Unsupported");
 	case CIM_ARR_SINT8: RETURN_CVAR_ARRAY_STR("%d", v->a_sint8);
@@ -143,9 +190,9 @@ char *string_CIMVAR(TALLOC_CTX *mem_ctx, union CIMVAR *v, enum CIMTYPE_ENUMERATI
 	case CIM_ARR_REAL32: RETURN_CVAR_ARRAY_STR("%f", v->a_real32);
 	case CIM_ARR_REAL64: RETURN_CVAR_ARRAY_STR("%f", v->a_real64);
 	case CIM_ARR_BOOLEAN: RETURN_CVAR_ARRAY_STR("%d", v->a_boolean);
-	case CIM_ARR_STRING: RETURN_CVAR_ARRAY_STR("%s", v->a_string);
-	case CIM_ARR_DATETIME: RETURN_CVAR_ARRAY_STR("%s", v->a_datetime);
-	case CIM_ARR_REFERENCE: RETURN_CVAR_ARRAY_STR("%s", v->a_reference);
+	case CIM_ARR_STRING: RETURN_CVAR_ARRAY_ESCAPED("%s", v->a_string);
+	case CIM_ARR_DATETIME: RETURN_CVAR_ARRAY_ESCAPED("%s", v->a_datetime);
+	case CIM_ARR_REFERENCE: RETURN_CVAR_ARRAY_ESCAPED("%s", v->a_reference);
 	default: return talloc_asprintf(mem_ctx, "Unsupported");
 	}
 }
