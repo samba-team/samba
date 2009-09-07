@@ -27,6 +27,7 @@ parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))
 credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
+parser.add_option("--quiet", help="Be quiet", action="store_true")
 parser.add_option("-H", help="LDB URL for database or target server", type=str)
 parser.add_option("--complexity",
   help="The password complexity (on | off). Default is 'on'", type=str)
@@ -83,19 +84,19 @@ except:
 		sys.exit(1)
 	else:
 		pwd_props = 0
-		print "WARNING: Assuming previous password properties 0 (used for password complexity setting)"
+		message("WARNING: Assuming previous password properties 0 (used for password complexity setting)")
 
 if args[0] == "show":
-	print "Password informations for domain '" + domain_dn + "'"
-	print ""
+	message("Password informations for domain '" + domain_dn + "'")
+	message("")
 	if pwd_props & DOMAIN_PASSWORD_COMPLEX != 0:
-		print "Password complexity: on"
+		message("Password complexity: on")
 	else:
-		print "Password complexity: off"
-	print "Password history length: " + str(pwd_hist_len)
-	print "Minimum password length: " + str(min_pwd_len)
-	print "Minimum password age (days): " + str(min_pwd_age)
-	print "Maximum password age (days): " + str(max_pwd_age)
+		message("Password complexity: off")
+	message("Password history length: " + str(pwd_hist_len))
+	message("Minimum password length: " + str(min_pwd_len))
+	message("Minimum password age (days): " + str(min_pwd_age))
+	message("Maximum password age (days): " + str(max_pwd_age))
 
 elif args[0] == "set":
 	if opts.complexity is not None:
@@ -107,7 +108,7 @@ elif args[0] == "set":
 			m["pwdProperties"] = ldb.MessageElement(str(pwd_props),
 			  ldb.FLAG_MOD_REPLACE, "pwdProperties")
 			samdb.modify(m)
-			print "Password complexity activated!"
+			message("Password complexity activated!")
 		elif opts.complexity == "off":
 			pwd_props = pwd_props & (~DOMAIN_PASSWORD_COMPLEX)
 
@@ -116,7 +117,7 @@ elif args[0] == "set":
 			m["pwdProperties"] = ldb.MessageElement(str(pwd_props),
 			  ldb.FLAG_MOD_REPLACE, "pwdProperties")
 			samdb.modify(m)
-			print "Password complexity deactivated!"
+			message("Password complexity deactivated!")
 		else:
 			print "ERROR: Wrong argument '" + opts.complexity + "'!"
 			sys.exit(1)
@@ -132,7 +133,7 @@ elif args[0] == "set":
 		m["pwdHistoryLength"] = ldb.MessageElement(str(pwd_hist_len),
 		  ldb.FLAG_MOD_REPLACE, "pwdHistoryLength")
 		samdb.modify(m)
-		print "Password history length changed!"
+		message("Password history length changed!")
 
 	if opts.min_pwd_length is not None:
 		if opts.min_pwd_length == "default":
@@ -145,7 +146,7 @@ elif args[0] == "set":
 		m["minPwdLength"] = ldb.MessageElement(str(min_pwd_len),
 		  ldb.FLAG_MOD_REPLACE, "minPwdLength")
 		samdb.modify(m)
-		print "Minimum password length changed!"
+		message("Minimum password length changed!")
 
 	if opts.min_pwd_age is not None:
 		if opts.min_pwd_age == "default":
@@ -160,7 +161,7 @@ elif args[0] == "set":
 		m["minPwdAge"] = ldb.MessageElement(str(min_pwd_age),
 		  ldb.FLAG_MOD_REPLACE, "minPwdAge")
 		samdb.modify(m)
-		print "Minimum password age changed!"
+		message("Minimum password age changed!")
 
 	if opts.max_pwd_age is not None:
 		if opts.max_pwd_age == "default":
@@ -175,9 +176,9 @@ elif args[0] == "set":
 		m["maxPwdAge"] = ldb.MessageElement(str(max_pwd_age),
 		  ldb.FLAG_MOD_REPLACE, "maxPwdAge")
 		samdb.modify(m)
-		print "Maximum password age changed!"
+		message("Maximum password age changed!")
 
-	print "All changes applied successfully!"
+	message("All changes applied successfully!")
 
 else:
 	print "ERROR: Wrong argument '" + args[0] + "'!"
