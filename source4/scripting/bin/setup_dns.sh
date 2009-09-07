@@ -6,8 +6,8 @@
     exit 1
 }
 
-HOSTNAME="$1"
-DOMAIN="$2"
+HOSTNAME="$(echo $1 | tr '[a-z]' '[A-Z]')"
+DOMAIN="$(echo $2 | tr '[a-z]' '[A-Z]')"
 IP="$3"
 
 RSUFFIX=$(echo $DOMAIN | sed s/[\.]/,DC=/g)
@@ -18,12 +18,18 @@ OBJECTGUID=$(bin/ldbsearch -H "$PRIVATEDIR/sam.ldb" -b "CN=NTDS Settings,CN=$HOS
 
 echo "Found objectGUID $OBJECTGUID"
 
-echo "Running kinit for BLU\$@VSOFS8.COM"
-bin/samba4kinit -e arcfour-hmac-md5 -k -t "$PRIVATEDIR/secrets.keytab" BLU\$@VSOFS8.COM || exit 1
+echo "Running kinit for $HOSTNAME\$@$DOMAIN"
+bin/samba4kinit -e arcfour-hmac-md5 -k -t "$PRIVATEDIR/secrets.keytab" $HOSTNAME\$@$DOMAIN || exit 1
 echo "Adding $HOSTNAME.$DOMAIN"
-scripting/bin/nsupdate-gss --noverify $HOSTNAME $DOMAIN $IP 300 || exit 1
-echo "Adding $OBJECTGUID.$DOMAIN => $HOSTNAME.$DOMAIN"
-scripting/bin/nsupdate-gss --noverify --ntype="CNAME" $OBJECTGUID $DOMAIN $HOSTNAME.$DOMAIN 300 || exit 1
+scripting/bin/nsupdate-gss --noverify $HOSTNAME $DOMAIN $IP 300 || {
+    echo "Failed to add A record"
+    exit 1
+}
+echo "Adding $OBJECTGUID._msdcs.$DOMAIN => $HOSTNAME.$DOMAIN"
+scripting/bin/nsupdate-gss --realm=$DOMAIN --noverify --ntype="CNAME" $OBJECTGUID _msdcs.$DOMAIN $HOSTNAME.$DOMAIN 300 || {
+    echo "Failed to add CNAME"
+    exit 1
+}
 echo "Checking"
 host $HOSTNAME.$DOMAIN
-host $OBJECTGUID.$DOMAIN
+host $OBJECTGUID._msdcs.$DOMAIN
