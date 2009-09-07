@@ -538,13 +538,15 @@ ssize_t read_udp_v4_socket(int fd,
 }
 
 /****************************************************************************
- Read data from a socket with a timout in msec.
+ Read data from a file descriptor with a timout in msec.
  mincount = if timeout, minimum to read before returning
  maxcount = number to be read.
  time_out = timeout in milliseconds
+ NB. This can be called with a non-socket fd, don't change
+ sys_read() to sys_recv() or other socket call.
 ****************************************************************************/
 
-NTSTATUS read_socket_with_timeout(int fd, char *buf,
+NTSTATUS read_fd_with_timeout(int fd, char *buf,
 				  size_t mincnt, size_t maxcnt,
 				  unsigned int time_out,
 				  size_t *size_ret)
@@ -568,10 +570,10 @@ NTSTATUS read_socket_with_timeout(int fd, char *buf,
 		}
 
 		while (nread < mincnt) {
-			readret = sys_recv(fd, buf + nread, maxcnt - nread, 0);
+			readret = sys_read(fd, buf + nread, maxcnt - nread);
 
 			if (readret == 0) {
-				DEBUG(5,("read_socket_with_timeout: "
+				DEBUG(5,("read_fd_with_timeout: "
 					"blocking read. EOF from client.\n"));
 				return NT_STATUS_END_OF_FILE;
 			}
@@ -581,12 +583,12 @@ NTSTATUS read_socket_with_timeout(int fd, char *buf,
 				if (fd == get_client_fd()) {
 					/* Try and give an error message
 					 * saying what client failed. */
-					DEBUG(0,("read_socket_with_timeout: "
+					DEBUG(0,("read_fd_with_timeout: "
 						"client %s read error = %s.\n",
 						get_peer_addr(fd,addr,sizeof(addr)),
 						strerror(save_errno) ));
 				} else {
-					DEBUG(0,("read_socket_with_timeout: "
+					DEBUG(0,("read_fd_with_timeout: "
 						"read error = %s.\n",
 						strerror(save_errno) ));
 				}
@@ -620,12 +622,12 @@ NTSTATUS read_socket_with_timeout(int fd, char *buf,
 			if (fd == get_client_fd()) {
 				/* Try and give an error message saying
 				 * what client failed. */
-				DEBUG(0,("read_socket_with_timeout: timeout "
+				DEBUG(0,("read_fd_with_timeout: timeout "
 				"read for client %s. select error = %s.\n",
 				get_peer_addr(fd,addr,sizeof(addr)),
 				strerror(save_errno) ));
 			} else {
-				DEBUG(0,("read_socket_with_timeout: timeout "
+				DEBUG(0,("read_fd_with_timeout: timeout "
 				"read. select error = %s.\n",
 				strerror(save_errno) ));
 			}
@@ -634,16 +636,16 @@ NTSTATUS read_socket_with_timeout(int fd, char *buf,
 
 		/* Did we timeout ? */
 		if (selrtn == 0) {
-			DEBUG(10,("read_socket_with_timeout: timeout read. "
+			DEBUG(10,("read_fd_with_timeout: timeout read. "
 				"select timed out.\n"));
 			return NT_STATUS_IO_TIMEOUT;
 		}
 
-		readret = sys_recv(fd, buf+nread, maxcnt-nread, 0);
+		readret = sys_read(fd, buf+nread, maxcnt-nread);
 
 		if (readret == 0) {
 			/* we got EOF on the file descriptor */
-			DEBUG(5,("read_socket_with_timeout: timeout read. "
+			DEBUG(5,("read_fd_with_timeout: timeout read. "
 				"EOF from client.\n"));
 			return NT_STATUS_END_OF_FILE;
 		}
@@ -654,12 +656,12 @@ NTSTATUS read_socket_with_timeout(int fd, char *buf,
 			if (fd == get_client_fd()) {
 				/* Try and give an error message
 				 * saying what client failed. */
-				DEBUG(0,("read_socket_with_timeout: timeout "
+				DEBUG(0,("read_fd_with_timeout: timeout "
 					"read to client %s. read error = %s.\n",
 					get_peer_addr(fd,addr,sizeof(addr)),
 					strerror(save_errno) ));
 			} else {
-				DEBUG(0,("read_socket_with_timeout: timeout "
+				DEBUG(0,("read_fd_with_timeout: timeout "
 					"read. read error = %s.\n",
 					strerror(save_errno) ));
 			}
@@ -678,16 +680,20 @@ NTSTATUS read_socket_with_timeout(int fd, char *buf,
 }
 
 /****************************************************************************
- Read data from the client, reading exactly N bytes.
+ Read data from an fd, reading exactly N bytes.
+ NB. This can be called with a non-socket fd, don't add dependencies
+ on socket calls.
 ****************************************************************************/
 
 NTSTATUS read_data(int fd, char *buffer, size_t N)
 {
-	return read_socket_with_timeout(fd, buffer, N, N, 0, NULL);
+	return read_fd_with_timeout(fd, buffer, N, N, 0, NULL);
 }
 
 /****************************************************************************
  Write all data from an iov array
+ NB. This can be called with a non-socket fd, don't add dependencies
+ on socket calls.
 ****************************************************************************/
 
 ssize_t write_data_iov(int fd, const struct iovec *orig_iov, int iovcnt)
@@ -757,6 +763,8 @@ ssize_t write_data_iov(int fd, const struct iovec *orig_iov, int iovcnt)
 
 /****************************************************************************
  Write data to a fd.
+ NB. This can be called with a non-socket fd, don't add dependencies
+ on socket calls.
 ****************************************************************************/
 
 ssize_t write_data(int fd, const char *buffer, size_t N)
@@ -817,7 +825,7 @@ NTSTATUS read_smb_length_return_keepalive(int fd, char *inbuf,
 	int msg_type;
 	NTSTATUS status;
 
-	status = read_socket_with_timeout(fd, inbuf, 4, 4, timeout, NULL);
+	status = read_fd_with_timeout(fd, inbuf, 4, 4, timeout, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -898,7 +906,7 @@ NTSTATUS receive_smb_raw(int fd, char *buffer, size_t buflen, unsigned int timeo
 			len = MIN(len,maxlen);
 		}
 
-		status = read_socket_with_timeout(
+		status = read_fd_with_timeout(
 			fd, buffer+4, len, len, timeout, &len);
 
 		if (!NT_STATUS_IS_OK(status)) {
