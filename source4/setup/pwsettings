@@ -6,6 +6,7 @@
 #
 #	Copyright Jelmer Vernooij 2008
 #	Copyright Matthias Dieter Wallnoefer 2009
+#	Copyright Andrew Kroeger 2009
 #	Released under the GNU GPL version 3 or later
 #
 import os, sys
@@ -99,28 +100,24 @@ if args[0] == "show":
 	message("Maximum password age (days): " + str(max_pwd_age))
 
 elif args[0] == "set":
+
+	msgs = []
+	m = ldb.Message()
+	m.dn = ldb.Dn(samdb, domain_dn)
+
 	if opts.complexity is not None:
 		if opts.complexity == "on":
 			pwd_props = pwd_props | DOMAIN_PASSWORD_COMPLEX
-
-			m = ldb.Message()
-			m.dn = ldb.Dn(samdb, domain_dn)
-			m["pwdProperties"] = ldb.MessageElement(str(pwd_props),
-			  ldb.FLAG_MOD_REPLACE, "pwdProperties")
-			samdb.modify(m)
-			message("Password complexity activated!")
+			msgs.append("Password complexity activated!")
 		elif opts.complexity == "off":
 			pwd_props = pwd_props & (~DOMAIN_PASSWORD_COMPLEX)
-
-			m = ldb.Message()
-			m.dn = ldb.Dn(samdb, domain_dn)
-			m["pwdProperties"] = ldb.MessageElement(str(pwd_props),
-			  ldb.FLAG_MOD_REPLACE, "pwdProperties")
-			samdb.modify(m)
-			message("Password complexity deactivated!")
+			msgs.append("Password complexity deactivated!")
 		else:
 			print "ERROR: Wrong argument '" + opts.complexity + "'!"
 			sys.exit(1)
+
+		m["pwdProperties"] = ldb.MessageElement(str(pwd_props),
+		  ldb.FLAG_MOD_REPLACE, "pwdProperties")
 
 	if opts.history_length is not None:
 		if opts.history_length == "default":
@@ -128,12 +125,9 @@ elif args[0] == "set":
 		else:
 			pwd_hist_len = int(opts.history_length)
 
-		m = ldb.Message()
-		m.dn = ldb.Dn(samdb, domain_dn)
 		m["pwdHistoryLength"] = ldb.MessageElement(str(pwd_hist_len),
 		  ldb.FLAG_MOD_REPLACE, "pwdHistoryLength")
-		samdb.modify(m)
-		message("Password history length changed!")
+		msgs.append("Password history length changed!")
 
 	if opts.min_pwd_length is not None:
 		if opts.min_pwd_length == "default":
@@ -141,12 +135,9 @@ elif args[0] == "set":
 		else:
 			min_pwd_len = int(opts.min_pwd_length)
 
-		m = ldb.Message()
-		m.dn = ldb.Dn(samdb, domain_dn)
 		m["minPwdLength"] = ldb.MessageElement(str(min_pwd_len),
 		  ldb.FLAG_MOD_REPLACE, "minPwdLength")
-		samdb.modify(m)
-		message("Minimum password length changed!")
+		msgs.append("Minimum password length changed!")
 
 	if opts.min_pwd_age is not None:
 		if opts.min_pwd_age == "default":
@@ -156,12 +147,9 @@ elif args[0] == "set":
 		# days -> ticks
 		min_pwd_age = -int(min_pwd_age * (24 * 60 * 60 * 1e7))
 
-		m = ldb.Message()
-		m.dn = ldb.Dn(samdb, domain_dn)
 		m["minPwdAge"] = ldb.MessageElement(str(min_pwd_age),
 		  ldb.FLAG_MOD_REPLACE, "minPwdAge")
-		samdb.modify(m)
-		message("Minimum password age changed!")
+		msgs.append("Minimum password age changed!")
 
 	if opts.max_pwd_age is not None:
 		if opts.max_pwd_age == "default":
@@ -171,15 +159,15 @@ elif args[0] == "set":
 		# days -> ticks
 		max_pwd_age = -int(max_pwd_age * (24 * 60 * 60 * 1e7))
 
-		m = ldb.Message()
-		m.dn = ldb.Dn(samdb, domain_dn)
 		m["maxPwdAge"] = ldb.MessageElement(str(max_pwd_age),
 		  ldb.FLAG_MOD_REPLACE, "maxPwdAge")
-		samdb.modify(m)
-		message("Maximum password age changed!")
+		msgs.append("Maximum password age changed!")
 
-	message("All changes applied successfully!")
+	samdb.modify(m)
 
+	msgs.append("All changes applied successfully!")
+
+	message("\n".join(msgs))
 else:
 	print "ERROR: Wrong argument '" + args[0] + "'!"
 	sys.exit(1)
