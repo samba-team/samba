@@ -441,7 +441,8 @@ static bool test_string2key(struct torture_context *tctx)
 		torture_fail(tctx, "Failed to convert fixed buffer to UTF8\n");
 	}
 
-	torture_assert(tctx, strcmp(correct, out1) == 0, "conversion gave incorrect result\n");
+	torture_assert(tctx, strcmp(correct, (const char *) out1) == 0,
+		"conversion gave incorrect result\n");
 
 	talloc_free(mem_ctx);
 
