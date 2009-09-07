@@ -3842,3 +3842,48 @@ int ctdb_ctrl_disablescript(struct ctdb_context *ctdb, struct timeval timeout, u
 	return 0;
 }
 
+
+int ctdb_ctrl_set_ban(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, struct ctdb_ban_time *bantime)
+{
+	int ret;
+	TDB_DATA data;
+	int32_t res;
+
+	data.dsize = sizeof(*bantime);
+	data.dptr  = (uint8_t *)bantime;
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_SET_BAN_STATE, 0, data, 
+			   NULL, NULL, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for set ban state failed\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+
+int ctdb_ctrl_get_ban(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, TALLOC_CTX *mem_ctx, struct ctdb_ban_time **bantime)
+{
+	int ret;
+	TDB_DATA outdata;
+	int32_t res;
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_GET_BAN_STATE, 0, tdb_null,
+			   tmp_ctx, &outdata, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for set ban state failed\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	*bantime = (struct ctdb_ban_time *)talloc_steal(mem_ctx, outdata.dptr);
+	talloc_free(tmp_ctx);
+
+	return 0;
+}
+
+

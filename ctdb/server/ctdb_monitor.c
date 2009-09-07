@@ -306,6 +306,14 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 		}
 	}
 
+	/* we dont let other nodes modify our BANNED status */
+	if (c->pnn == ctdb->pnn) {
+		node->flags &= ~NODE_FLAGS_BANNED;
+		if (old_flags & NODE_FLAGS_BANNED) {
+			node->flags |= NODE_FLAGS_BANNED;
+		}
+	}
+
 	if (node->flags == c->old_flags) {
 		DEBUG(DEBUG_INFO, ("Control modflags on node %u - Unchanged - flags 0x%x\n", c->pnn, node->flags));
 		return 0;

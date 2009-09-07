@@ -36,7 +36,8 @@ esac
 cmd="$1"
 shift
 
-[ "$CTDB_MANAGES_SAMBA" = "yes" ] || exit 0
+[ "$CTDB_MANAGES_SAMBA" = "yes" ] || [ "$CTDB_MANAGES_WINBIND" = "yes" ] || exit 0
+
 
 # set default samba cleanup period - in minutes
 [ -z "$SAMBA_CLEANUP_PERIOD" ] && {
@@ -144,18 +145,20 @@ case $cmd in
 	/bin/mkdir -p $CTDB_BASE/state/samba
 
 	# make sure samba is not already started
-	service "$CTDB_SERVICE_SMB" stop > /dev/null 2>&1
-	service "$CTDB_SERVICE_NMB" stop > /dev/null 2>&1
-	killall -0 -q smbd && {
-	    sleep 1
-	    # make absolutely sure samba is dead
-	    killall -q -9 smbd
-	}
+	[ "$CTDB_MANAGES_SAMBA" = "yes" ] && {
+		service "$CTDB_SERVICE_SMB" stop > /dev/null 2>&1
+		service "$CTDB_SERVICE_NMB" stop > /dev/null 2>&1
+		killall -0 -q smbd && {
+		    sleep 1
+		    # make absolutely sure samba is dead
+		    killall -q -9 smbd
+		}
 
-	killall -0 -q nmbd && {
-	    sleep 1
-	    # make absolutely sure samba is dead
-	    killall -q -9 nmbd
+		killall -0 -q nmbd && {
+		    sleep 1
+		    # make absolutely sure samba is dead
+		    killall -q -9 nmbd
+		}
 	}
 
 	# restart the winbind service
@@ -173,8 +176,10 @@ case $cmd in
 	# start Samba service. Start it reniced, as under very heavy load 
 	# the number of smbd processes will mean that it leaves few cycles for
 	# anything else
-	nice_service "$CTDB_SERVICE_NMB" start
-	nice_service "$CTDB_SERVICE_SMB" start
+	[ "$CTDB_MANAGES_SAMBA" = "yes" ] && {
+		nice_service "$CTDB_SERVICE_NMB" start
+		nice_service "$CTDB_SERVICE_SMB" start
+	}
 	;;
 	
      takeip)
@@ -192,8 +197,10 @@ case $cmd in
 
      shutdown)
 	# shutdown Samba when ctdb goes down
-	service "$CTDB_SERVICE_SMB" stop
-	service "$CTDB_SERVICE_NMB" stop
+	[ "$CTDB_MANAGES_SAMBA" = "yes" ] && {
+		service "$CTDB_SERVICE_SMB" stop
+		service "$CTDB_SERVICE_NMB" stop
+	}
 
 	# stop the winbind service
 	check_ctdb_manages_winbind
@@ -214,30 +221,32 @@ case $cmd in
 		touch $CTDB_BASE/state/samba/periodic_cleanup
 	}
 
-	[ "$CTDB_SAMBA_SKIP_SHARE_CHECK" = "yes" ] || {
-		testparm_background_update
+	[ "$CTDB_MANAGES_SAMBA" = "yes" ] && {
+		[ "$CTDB_SAMBA_SKIP_SHARE_CHECK" = "yes" ] || {
+			testparm_background_update
 
-		testparm_cat | egrep '^WARNING|^ERROR|^Unknown' && {
-		    testparm_foreground_update
-		    testparm_cat | egrep '^WARNING|^ERROR|^Unknown' && {
-			echo "ERROR: testparm shows smb.conf is not clean"
-			exit 1
-		    }
+			testparm_cat | egrep '^WARNING|^ERROR|^Unknown' && {
+			    testparm_foreground_update
+			    testparm_cat | egrep '^WARNING|^ERROR|^Unknown' && {
+				echo "ERROR: testparm shows smb.conf is not clean"
+				exit 1
+			    }
+			}
+
+			smb_dirs=`testparm_cat | egrep '^[[:space:]]*path = ' | cut -d= -f2`
+			ctdb_check_directories_probe "Samba" $smb_dirs || {
+			    testparm_foreground_update
+			    smb_dirs=`testparm_cat | egrep '^[[:space:]]*path = ' | cut -d= -f2`
+			    ctdb_check_directories "Samba" $smb_dirs
+			}
 		}
 
-		smb_dirs=`testparm_cat | egrep '^[[:space:]]*path = ' | cut -d= -f2`
-		ctdb_check_directories_probe "Samba" $smb_dirs || {
-		    testparm_foreground_update
-		    smb_dirs=`testparm_cat | egrep '^[[:space:]]*path = ' | cut -d= -f2`
-		    ctdb_check_directories "Samba" $smb_dirs
+		smb_ports="$CTDB_SAMBA_CHECK_PORTS"
+		[ -z "$smb_ports" ] && {
+			smb_ports=`testparm_cat --parameter-name="smb ports"`
 		}
+		ctdb_check_tcp_ports "Samba" $smb_ports
 	}
-
-	smb_ports="$CTDB_SAMBA_CHECK_PORTS"
-	[ -z "$smb_ports" ] && {
-		smb_ports=`testparm_cat --parameter-name="smb ports"`
-	}
-	ctdb_check_tcp_ports "Samba" $smb_ports
 
 	# check winbind is OK
 	check_ctdb_manages_winbind

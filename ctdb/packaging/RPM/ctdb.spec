@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.88
+Version: 1.0.89
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -131,6 +131,15 @@ fi
 %{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
+* Thu Sep 3 2009 : Version 1.0.89
+ - Make it possible to manage winbind independently of samba.
+ - Add new prototype banning code
+ - Overwrite the vsftpd state file instead of appending. This eliminates
+   annoying errors in the log.
+ - Redirect some iptables commands to dev null
+ - From Michael A, explicitely set the broadcast when we takeover a public ip
+ - Remove a reclock file check we no longer need
+ - Skip any persistent database files ending in .bak
 * Mon Aug 17 2009 : Version 1.0.88
  - Add a new state for eventscripts : DISABLED.
    Add two new commands "ctdb enablescript/disablescript" to enable/disable

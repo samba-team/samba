@@ -57,7 +57,7 @@ case $cmd in
 		 echo "Failed to bringup interface $iface"
 		 exit 1
 	}
-	/sbin/ip addr add $ip/$maskbits dev $iface || {
+	/sbin/ip addr add $ip/$maskbits brd + dev $iface || {
 		 echo "Failed to add $ip/$maskbits on dev $iface"
 	}
 	# cope with the script being killed while we have the interface blocked
@@ -114,7 +114,7 @@ case $cmd in
 		fi
 	    done
 	}
-	iptables -D INPUT -i $iface -d $ip -j DROP
+	iptables -D INPUT -i $iface -d $ip -j DROP 2> /dev/null
 	[ $failed = 0 ] || {
 		 echo "Failed to del $ip on dev $iface"
 		 exit 1
