@@ -22,19 +22,20 @@ my $opt_noverify = 0;
 my $opt_verbose = 0;
 my $opt_help = 0;
 my $opt_nameserver;
+my $opt_realm;
 my $opt_ntype = "A";
 
 # main program
 GetOptions (
 	    'h|help|?' => \$opt_help,
 	    'wipe' => \$opt_wipe,
+	    'realm=s' => \$opt_realm,
 	    'nameserver=s' => \$opt_nameserver,
 	    'ntype=s' => \$opt_ntype,
 	    'add' => \$opt_add,
 	    'noverify' => \$opt_noverify,
 	    'verbose' => \$opt_verbose
 	    );
-
 
 #########################################
 # display help text
@@ -122,35 +123,30 @@ sub sig_verify($$)
 #######################################################################
 # find the nameserver for the domain
 #
-sub find_nameservers($)
+sub find_nameserver($)
 {
-    my $domain = shift;
-    my $res;
-    if ($opt_nameserver) {
-	    $res = Net::DNS::Resolver->new(
-		    nameservers => [qw($opt_nameserver)],
-		    recurse     => 0,
-		    debug       => 1);
-    } else {
-	    $res = Net::DNS::Resolver->new;
-    }
-    $res->nameservers($domain);
-    return $res;
+    my $server_name = shift;
+    return Net::DNS::Resolver->new(
+	    nameservers => [$server_name],
+	    recurse     => 0,
+	    debug       => 0);
 }
 
 
 #######################################################################
-# find a server name for a domain - currently uses the LDAP SRV record.
-# I wonder if there is a _dns record type?
+# find a server name for a domain - currently uses the NS record
 sub find_server_name($)
 {
     my $domain = shift;
     my $res = Net::DNS::Resolver->new;
-    my $srv_query = $res->query("_ldap._tcp.$domain.", "SRV");
+    my $srv_query = $res->query("$domain.", "NS");
     if (!defined($srv_query)) {
 	return undef;
     }
-    my $server_name = ($srv_query->answer)[0]->{"target"};
+    my $server_name;
+    foreach my $rr (grep { $_->type eq 'NS' } $srv_query->answer) {
+	    $server_name = $rr->nsdname;
+    }
     return $server_name;
 }
 
@@ -170,8 +166,10 @@ sub negotiate_tkey($$$$)
     my $context = GSSAPI::Context->new;
     my $name = GSSAPI::Name->new;
 
-    # use a principal name of dns/server@DOMAIN
-    $status = $name->import($name, "dns/" . $server_name . "@" . uc($domain));
+    # use a principal name of dns/server@REALM
+    $opt_verbose &&
+	print "Using principal dns/" . $server_name . "@" . uc($opt_realm) . "\n";
+    $status = $name->import($name, "dns/" . $server_name . "@" . uc($opt_realm));
     if (! $status) {
 	    print "import name: $status\n";
 	    return undef;
@@ -270,30 +268,33 @@ sub negotiate_tkey($$$$)
 # MAIN
 #######################################################################
 
-
-# find the nameservers
-my $nameserver = find_nameservers("$domain.");
-
-$opt_verbose && print "Found nameserver $nameserver\n";
-
-if (!defined($nameserver) || $nameserver->{'errorstring'} ne 'NOERROR') {
-    print "Failed to find a nameserver for domain $domain\n";
-    exit 1;
+if (!$opt_realm) {
+	$opt_realm = $domain;
 }
 
 # find the name of the DNS server
-my $server_name = find_server_name($domain);
-if (!defined($server_name)) {
-    print "Failed to find a DNS server name for $domain\n";
-    exit 1;
+if (!$opt_nameserver) {
+	$opt_nameserver = find_server_name($domain);
+	if (!defined($opt_nameserver)) {
+		print "Failed to find a DNS server name for $domain\n";
+		exit 1;
+	}
 }
-$opt_verbose && print "Using DNS server name $server_name\n";
+$opt_verbose && print "Using DNS server name $opt_nameserver\n";
+
+# connect to the nameserver
+my $nameserver = find_nameserver($opt_nameserver);
+if (!defined($nameserver) || $nameserver->{'errorstring'} ne 'NOERROR') {
+	print "Failed to connect to nameserver for domain $domain\n";
+	exit 1;
+}
+
 
 # use a long random key name
 my $key_name = int(rand 10000000000000);
 
 # negotiate a TKEY key
-my $gss_context = negotiate_tkey($nameserver, $domain, $server_name, $key_name);
+my $gss_context = negotiate_tkey($nameserver, $domain, $opt_nameserver, $key_name);
 if (!defined($gss_context)) {
     print "Failed to negotiate a TKEY\n";
     exit 1;
@@ -341,7 +342,8 @@ if (! defined($update_reply)) {
 
 # make sure it worked
 my $result = $update_reply->header->{"rcode"};
-$opt_verbose && print "Update gave rcode $result\n";
+
+($opt_verbose || $result ne 'NOERROR') && print "Update gave rcode $result\n";
 
 if ($result ne 'NOERROR') {
     exit 1;
