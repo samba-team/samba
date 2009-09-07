@@ -1121,6 +1121,7 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 	struct netlogon_creds_CredentialState *creds;
 	const char * const attrs[] = { "objectSid", "objectGUID", "flatName",
 		"securityIdentifier", "trustPartner", NULL };
+	const char *temp_str;
 	const char *old_dns_hostname;
 	struct ldb_context *sam_ctx;
 	struct ldb_message **res1, **res2, *new_msg;
@@ -1152,14 +1153,28 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 	switch (r->in.level) {
 	case 1: /* Domain information */
 
+		/* TODO: check NTSTATUS results - and fail also on SAMDB
+		 * errors (needs some testing against Windows Server 2008) */
+
+		/*
+		 * Check that the computer name parameter matches as prefix with
+		 * the DNS hostname in the workstation info structure.
+		 */
+		temp_str = strndup(r->in.query->workstation_info->dns_hostname,
+			strcspn(r->in.query->workstation_info->dns_hostname,
+			"."));
+		if (strcasecmp(r->in.computer_name, temp_str) != 0)
+			return NT_STATUS_INVALID_PARAMETER;
+
 		workstation_dn = ldb_dn_new_fmt(mem_ctx, sam_ctx, "<SID=%s>",
 			dom_sid_string(mem_ctx, creds->sid));
 		NT_STATUS_HAVE_NO_MEMORY(workstation_dn);
 
 		/* Gets the old DNS hostname */
 		old_dns_hostname = samdb_search_string(sam_ctx, mem_ctx,
-						       workstation_dn,	"dNSHostName", 
-						       NULL);
+							workstation_dn,
+							"dNSHostName",
+							NULL);
 
 		/* Gets host informations and put them in our directory */
 		new_msg = ldb_msg_new(mem_ctx);
