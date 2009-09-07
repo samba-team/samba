@@ -341,6 +341,17 @@ static const struct ldb_map_attribute entryuuid_attributes[] =
 		}
 	},
 	{
+		.local_name = "primaryGroupID",
+		.type = MAP_CONVERT,
+		.u = {
+			.convert = {
+				 .remote_name = "primaryGroupID",
+				 .convert_local = normalise_to_signed32,
+				 .convert_remote = val_copy,
+			}
+		}
+	},
+	{
 		.local_name = "groupType",
 		.type = MAP_CONVERT,
 		.u = {
@@ -348,7 +359,7 @@ static const struct ldb_map_attribute entryuuid_attributes[] =
 				 .remote_name = "groupType",
 				 .convert_local = normalise_to_signed32,
 				 .convert_remote = val_copy,
-			 },
+			 }
 		}
 	},
 	{
@@ -359,7 +370,7 @@ static const struct ldb_map_attribute entryuuid_attributes[] =
 				 .remote_name = "userAccountControl",
 				 .convert_local = normalise_to_signed32,
 				 .convert_remote = val_copy,
-			 },
+			 }
 		}
 	},
 	{
@@ -370,7 +381,7 @@ static const struct ldb_map_attribute entryuuid_attributes[] =
 				 .remote_name = "sAMAccountType",
 				 .convert_local = normalise_to_signed32,
 				 .convert_remote = val_copy,
-			 },
+			 }
 		}
 	},
 	{
@@ -381,7 +392,7 @@ static const struct ldb_map_attribute entryuuid_attributes[] =
 				 .remote_name = "systemFlags",
 				 .convert_local = normalise_to_signed32,
 				 .convert_remote = val_copy,
-			 },
+			 }
 		}
 	},
 	{
