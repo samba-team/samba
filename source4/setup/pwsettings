@@ -84,8 +84,8 @@ except:
 		print "So no settings can be displayed!"
 		sys.exit(1)
 	else:
-		pwd_props = 0
-		message("WARNING: Assuming previous password properties 0 (used for password complexity setting)")
+		print "ERROR: Could not retrieve password properties (used for password complexity setting)"
+		sys.exit(1)
 
 if args[0] == "show":
 	message("Password informations for domain '" + domain_dn + "'")
