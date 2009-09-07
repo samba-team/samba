@@ -22,7 +22,6 @@
 #include "../lib/util/dlinklist.h"
 #include "system/iconv.h"
 #include "system/filesys.h"
-#undef strcasecmp
 
 
 /**
@@ -50,7 +49,6 @@
 
 static size_t ascii_pull  (void *,const char **, size_t *, char **, size_t *);
 static size_t ascii_push  (void *,const char **, size_t *, char **, size_t *);
-static size_t latin1_push (void *,const char **, size_t *, char **, size_t *);
 static size_t utf8_pull   (void *,const char **, size_t *, char **, size_t *);
 static size_t utf8_push   (void *,const char **, size_t *, char **, size_t *);
 static size_t utf16_munged_pull(void *,const char **, size_t *, char **, size_t *);
@@ -74,8 +72,6 @@ static const struct charset_functions builtin_functions[] = {
 	{"UTF16_MUNGED",   utf16_munged_pull,  iconv_copy},
 
 	{"ASCII", ascii_pull, ascii_push},
-	{"646", ascii_pull, ascii_push},
-	{"ISO-8859-1", ascii_pull, latin1_push},
 	{"UCS2-HEX", ucs2hex_pull, ucs2hex_push}
 };
 
@@ -162,7 +158,19 @@ static bool is_utf16(const char *name)
 		strcasecmp(name, "UTF-16LE") == 0;
 }
 
+int smb_iconv_t_destructor(smb_iconv_t hwd)
+{ 
+#ifdef HAVE_NATIVE_ICONV
+	if (hwd->cd_pull != NULL && hwd->cd_pull != (iconv_t)-1)
+		iconv_close(hwd->cd_pull);
+	if (hwd->cd_push != NULL && hwd->cd_push != (iconv_t)-1)
+		iconv_close(hwd->cd_push);
+	if (hwd->cd_direct != NULL && hwd->cd_direct != (iconv_t)-1)
+		iconv_close(hwd->cd_direct);
+#endif
 
+	return 0;
+}
 
 _PUBLIC_ smb_iconv_t smb_iconv_open_ex(TALLOC_CTX *mem_ctx, const char *tocode, 
 			      const char *fromcode, bool native_iconv)
@@ -179,6 +187,7 @@ _PUBLIC_ smb_iconv_t smb_iconv_open_ex(TALLOC_CTX *mem_ctx, const char *tocode,
 		return (smb_iconv_t)-1;
 	}
 	memset(ret, 0, sizeof(*ret));
+	talloc_set_destructor(ret, smb_iconv_t_destructor);
 
 	/* check for the simplest null conversion */
 	if (strcmp(fromcode, tocode) == 0) {
@@ -251,6 +260,9 @@ _PUBLIC_ smb_iconv_t smb_iconv_open_ex(TALLOC_CTX *mem_ctx, const char *tocode,
 	}
 	if (is_utf16(tocode)) {
 		ret->direct = sys_iconv;
+		/* could be set just above - so we need to close iconv */
+		if (ret->cd_direct != NULL && ret->cd_direct != (iconv_t)-1)
+			iconv_close(ret->cd_direct);
 		ret->cd_direct = ret->cd_pull;
 		ret->cd_pull = NULL;
 		return ret;
@@ -273,7 +285,7 @@ failed:
  */
 _PUBLIC_ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 {
-	return smb_iconv_open_ex(NULL, tocode, fromcode, true);
+	return smb_iconv_open_ex(talloc_autofree_context(), tocode, fromcode, true);
 }
 
 /*
@@ -281,12 +293,6 @@ _PUBLIC_ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 */
 _PUBLIC_ int smb_iconv_close(smb_iconv_t cd)
 {
-#ifdef HAVE_NATIVE_ICONV
-	if (cd->cd_direct) iconv_close((iconv_t)cd->cd_direct);
-	if (cd->cd_pull) iconv_close((iconv_t)cd->cd_pull);
-	if (cd->cd_push) iconv_close((iconv_t)cd->cd_push);
-#endif
-
 	talloc_free(cd);
 	return 0;
 }
@@ -344,32 +350,6 @@ static size_t ascii_push(void *cd, const char **inbuf, size_t *inbytesleft,
 	return ir_count;
 }
 
-static size_t latin1_push(void *cd, const char **inbuf, size_t *inbytesleft,
-			 char **outbuf, size_t *outbytesleft)
-{
-	int ir_count=0;
-
-	while (*inbytesleft >= 2 && *outbytesleft >= 1) {
-		(*outbuf)[0] = (*inbuf)[0];
-		if ((*inbuf)[1]) ir_count++;
-		(*inbytesleft)  -= 2;
-		(*outbytesleft) -= 1;
-		(*inbuf)  += 2;
-		(*outbuf) += 1;
-	}
-
-	if (*inbytesleft == 1) {
-		errno = EINVAL;
-		return -1;
-	}
-
-	if (*inbytesleft > 1) {
-		errno = E2BIG;
-		return -1;
-	}
-	
-	return ir_count;
-}
 
 static size_t ucs2hex_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)

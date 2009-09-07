@@ -39,6 +39,9 @@ static smb_iconv_t display_cd = (smb_iconv_t)-1;
 
 void d_set_iconv(smb_iconv_t cd)
 {
+	if (display_cd != (smb_iconv_t)-1)
+		talloc_free(display_cd);
+
 	display_cd = cd;
 }
 
