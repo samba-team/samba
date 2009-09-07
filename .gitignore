@@ -356,6 +356,10 @@ librpc/gen_ndr/*_c.h
 librpc/gen_ndr/*_s.c
 librpc/gen_ndr/cli_named_pipe_auth.[ch]
 librpc/gen_ndr/srv_named_pipe_auth.[ch]
+librpc/gen_ndr/cli_ntlmssp.[ch]
+librpc/gen_ndr/cli_schannel.[ch]
+librpc/gen_ndr/srv_ntlmssp.[ch]
+librpc/gen_ndr/srv_schannel.[ch]
 lib/tevent/Makefile
 lib/tevent/tevent.so
 lib/tevent/libtevent.so*
