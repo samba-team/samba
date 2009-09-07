@@ -819,9 +819,9 @@ struct traverse_state {
 /*
   traverse function for repacking
  */
-static int repack_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *private)
+static int repack_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *private_data)
 {
-	struct traverse_state *state = (struct traverse_state *)private;
+	struct traverse_state *state = (struct traverse_state *)private_data;
 	if (tdb_store(state->dest_db, key, data, TDB_INSERT) != 0) {
 		state->error = true;
 		return -1;
