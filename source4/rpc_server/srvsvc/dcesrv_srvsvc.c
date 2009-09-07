@@ -1246,7 +1246,7 @@ static WERROR dcesrv_srvsvc_NetShareSetInfo(struct dcesrv_call_state *dce_call, 
 					0,
 					0,
 					NULL);
-		if (W_ERROR_EQUAL(status, WERR_OK)) {
+		if (!W_ERROR_EQUAL(status, WERR_OK)) {
 			return status;
 		}
 		break;
@@ -1263,7 +1263,7 @@ static WERROR dcesrv_srvsvc_NetShareSetInfo(struct dcesrv_call_state *dce_call, 
 					0,
 					0,
 					NULL);
-		if (W_ERROR_EQUAL(status, WERR_OK)) {
+		if (!W_ERROR_EQUAL(status, WERR_OK)) {
 			return status;
 		}
 		break;
@@ -1280,7 +1280,7 @@ static WERROR dcesrv_srvsvc_NetShareSetInfo(struct dcesrv_call_state *dce_call, 
 					r->in.info->info2->max_users,
 					0,
 					NULL);
-		if (W_ERROR_EQUAL(status, WERR_OK)) {
+		if (!W_ERROR_EQUAL(status, WERR_OK)) {
 			return status;
 		}
 		break;
@@ -1297,7 +1297,7 @@ static WERROR dcesrv_srvsvc_NetShareSetInfo(struct dcesrv_call_state *dce_call, 
 					0,
 					r->in.info->info501->csc_policy,
 					NULL);
-		if (W_ERROR_EQUAL(status, WERR_OK)) {
+		if (!W_ERROR_EQUAL(status, WERR_OK)) {
 			return status;
 		}
 		break;
@@ -1314,7 +1314,7 @@ static WERROR dcesrv_srvsvc_NetShareSetInfo(struct dcesrv_call_state *dce_call, 
 					r->in.info->info502->max_users,
 					0,
 					r->in.info->info502->sd_buf.sd);
-		if (W_ERROR_EQUAL(status, WERR_OK)) {
+		if (!W_ERROR_EQUAL(status, WERR_OK)) {
 			return status;
 		}
 		break;
@@ -1331,7 +1331,7 @@ static WERROR dcesrv_srvsvc_NetShareSetInfo(struct dcesrv_call_state *dce_call, 
 					0,
 					0,
 					NULL);
-		if (W_ERROR_EQUAL(status, WERR_OK)) {
+		if (!W_ERROR_EQUAL(status, WERR_OK)) {
 			return status;
 		}
 		break;
