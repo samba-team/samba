@@ -1383,7 +1383,7 @@ ssize_t read_udp_v4_socket(int fd,
 			char *buf,
 			size_t len,
 			struct sockaddr_storage *psa);
-NTSTATUS read_socket_with_timeout(int fd, char *buf,
+NTSTATUS read_fd_with_timeout(int fd, char *buf,
 				  size_t mincnt, size_t maxcnt,
 				  unsigned int time_out,
 				  size_t *size_ret);
