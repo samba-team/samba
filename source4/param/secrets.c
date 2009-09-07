@@ -119,6 +119,13 @@ struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	/* the update_keytab module relies on this being setup */
+	if (ldb_set_opaque(ldb, "loadparm", lp_ctx) != LDB_SUCCESS) {
+		talloc_free(path);
+		talloc_free(ldb);
+		return NULL;
+	}
+
 	talloc_free(path);
 	
 	return ldb;
