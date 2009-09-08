@@ -166,7 +166,7 @@ pwdLastSet: 0
 
             glue.samdb_set_password(samdb=self, user_dn=str(user_dn),
                         dom_dn=self.domain_dn(), mod=mod, new_password=password,
-                        user_change=True)
+                        user_change=False)
 
             self.modify(mod)
 
