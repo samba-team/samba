@@ -671,8 +671,6 @@ enum swrap_packet_type {
 	SWRAP_CLOSE_SEND,
 	SWRAP_CLOSE_RECV,
 	SWRAP_CLOSE_ACK,
-	SWRAP_READ,
-	SWRAP_READ_RST
 };
 
 struct swrap_file_hdr {
@@ -2060,11 +2058,11 @@ _PUBLIC_ ssize_t swrap_read(int s, void *buf, size_t len)
 
 	ret = real_read(s, buf, len);
 	if (ret == -1 && errno != EAGAIN && errno != ENOBUFS) {
-		swrap_dump_packet(si, NULL, SWRAP_READ_RST, NULL, 0);
+		swrap_dump_packet(si, NULL, SWRAP_RECV_RST, NULL, 0);
 	} else if (ret == 0) { /* END OF FILE */
-		swrap_dump_packet(si, NULL, SWRAP_READ_RST, NULL, 0);
+		swrap_dump_packet(si, NULL, SWRAP_RECV_RST, NULL, 0);
 	} else if (ret > 0) {
-		swrap_dump_packet(si, NULL, SWRAP_READ, buf, ret);
+		swrap_dump_packet(si, NULL, SWRAP_RECV, buf, ret);
 	}
 
 	return ret;
