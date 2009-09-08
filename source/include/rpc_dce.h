@@ -150,7 +150,7 @@ enum schannel_direction {
 };
 
 /* Maximum size of the signing data in a fragment. */
-#define RPC_MAX_SIGN_SIZE 0x20 /* 32 */
+#define RPC_MAX_SIGN_SIZE 0x38 /* 56 */
 
 /* Maximum PDU fragment size. */
 /* #define MAX_PDU_FRAG_LEN 0x1630		this is what wnt sets */
