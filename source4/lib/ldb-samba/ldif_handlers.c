@@ -35,6 +35,37 @@
 #include "param/param.h"
 
 /*
+  use ndr_print_* to convert a NDR formatted blob to a ldif formatted blob
+*/
+static int ldif_write_NDR(struct ldb_context *ldb, void *mem_ctx,
+			  const struct ldb_val *in, struct ldb_val *out,
+			  size_t struct_size,
+			  ndr_pull_flags_fn_t pull_fn,
+			  ndr_print_fn_t print_fn)
+{
+	uint8_t *p;
+	enum ndr_err_code err;
+	if (!(ldb_get_flags(ldb) & LDB_FLG_SHOW_BINARY)) {
+		return ldb_handler_copy(ldb, mem_ctx, in, out);
+	}
+	p = talloc_size(mem_ctx, struct_size);
+	err = ndr_pull_struct_blob(in, mem_ctx, 
+				   lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")), 
+				   p, pull_fn);
+	if (err != NDR_ERR_SUCCESS) {
+		talloc_free(p);
+		return ldb_handler_copy(ldb, mem_ctx, in, out);
+	}
+	out->data = (uint8_t *)ndr_print_struct_string(mem_ctx, print_fn, "NDR", p);
+	talloc_free(p);
+	if (out->data == NULL) {
+		return ldb_handler_copy(ldb, mem_ctx, in, out);		
+	}
+	out->length = strlen((char *)out->data);
+	return 0;
+}
+
+/*
   convert a ldif formatted objectSid to a NDR formatted blob
 */
 static int ldif_read_objectSid(struct ldb_context *ldb, void *mem_ctx,
@@ -315,7 +346,6 @@ static int ldif_read_ntSecurityDescriptor(struct ldb_context *ldb, void *mem_ctx
 					  const struct ldb_val *in, struct ldb_val *out)
 {
 	struct security_descriptor *sd;
-
 	enum ndr_err_code ndr_err;
 
 	sd = talloc(mem_ctx, struct security_descriptor);
@@ -354,6 +384,14 @@ static int ldif_write_ntSecurityDescriptor(struct ldb_context *ldb, void *mem_ct
 {
 	struct security_descriptor *sd;
 	enum ndr_err_code ndr_err;
+
+	if (ldb_get_flags(ldb) & LDB_FLG_SHOW_BINARY) {
+		return ldif_write_NDR(ldb, mem_ctx, in, out, 
+				      sizeof(struct security_descriptor),
+				      (ndr_pull_flags_fn_t)ndr_pull_security_descriptor,
+				      (ndr_print_fn_t)ndr_print_security_descriptor);
+				      
+	}
 
 	sd = talloc(mem_ctx, struct security_descriptor);
 	if (sd == NULL) {
@@ -673,38 +711,6 @@ static int ldif_comparison_int32(struct ldb_context *ldb, void *mem_ctx,
 	return (int32_t) strtoll((char *)v1->data, NULL, 0)
 	 - (int32_t) strtoll((char *)v2->data, NULL, 0);
 }
-
-/*
-  use ndr_print_* to convert a NDR formatted blob to a ldif formatted blob
-*/
-static int ldif_write_NDR(struct ldb_context *ldb, void *mem_ctx,
-			  const struct ldb_val *in, struct ldb_val *out,
-			  size_t struct_size,
-			  ndr_pull_flags_fn_t pull_fn,
-			  ndr_print_fn_t print_fn)
-{
-	uint8_t *p;
-	enum ndr_err_code err;
-	if (!(ldb_get_flags(ldb) & LDB_FLG_SHOW_BINARY)) {
-		return ldb_handler_copy(ldb, mem_ctx, in, out);
-	}
-	p = talloc_size(mem_ctx, struct_size);
-	err = ndr_pull_struct_blob(in, mem_ctx, 
-				   lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")), 
-				   p, pull_fn);
-	if (err != NDR_ERR_SUCCESS) {
-		talloc_free(p);
-		return ldb_handler_copy(ldb, mem_ctx, in, out);
-	}
-	out->data = (uint8_t *)ndr_print_struct_string(mem_ctx, print_fn, "NDR", p);
-	talloc_free(p);
-	if (out->data == NULL) {
-		return ldb_handler_copy(ldb, mem_ctx, in, out);		
-	}
-	out->length = strlen((char *)out->data);
-	return 0;
-}
-
 
 /*
   convert a NDR formatted blob to a ldif formatted repsFromTo
