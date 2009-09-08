@@ -1467,3 +1467,9 @@ int ldb_global_init(void)
 	/* Provided for compatibility with some older versions of ldb */
 	return 0;
 }
+
+/* return the ldb flags */
+unsigned int ldb_get_flags(struct ldb_context *ldb)
+{
+	return ldb->flags;
+}

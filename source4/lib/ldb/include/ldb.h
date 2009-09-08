@@ -1898,4 +1898,9 @@ void ldb_qsort (void *const pbase, size_t total_elems, size_t size, void *opaque
 */
 struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, const char **control_strings);
 
+/**
+   return the ldb flags 
+*/
+unsigned int ldb_get_flags(struct ldb_context *ldb);
+
 #endif
