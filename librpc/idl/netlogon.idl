@@ -1372,6 +1372,14 @@ interface netlogon
 		uint32 dummy_long4;
 	} netr_OneDomainInfo;
 
+ typedef [public,bitmap32bit] bitmap {
+		ENC_CRC32 = 0x00000001,
+		ENC_RSA_MD5 = 0x00000002,
+		ENC_RC4_HMAC_MD5 = 0x00000004,
+		ENC_HMAC_SHA1_96_AES128  = 0x00000008,
+		ENC_HMAC_SHA1_96_AES256  = 0x00000010
+	} netr_SupportedEncTypes;
+
 	typedef struct {
 		netr_OneDomainInfo primary_domain;
 		uint32 trusted_domain_count;
@@ -1382,7 +1390,7 @@ interface netlogon
 		lsa_String dummy_string3;
 		lsa_String dummy_string4;
 		netr_WorkstationFlags workstation_flags;
-		uint32 supported_enc_types;
+		netr_SupportedEncTypes supported_enc_types;
 		uint32 dummy_long3;
 		uint32 dummy_long4;
 	} netr_DomainInformation;
