@@ -5731,10 +5731,6 @@ void init_rpc_auth_verifier(RPC_AUTH_VERIFIER *rav,
 				const char *signature, uint32 msg_type);
 bool smb_io_rpc_auth_verifier(const char *desc, RPC_AUTH_VERIFIER *rav, prs_struct *ps, int depth);
 bool smb_io_rpc_schannel_verifier(const char *desc, RPC_AUTH_VERIFIER *rav, prs_struct *ps, int depth);
-void init_rpc_auth_schannel_neg(RPC_AUTH_SCHANNEL_NEG *neg,
-			      const char *domain, const char *myname);
-bool smb_io_rpc_auth_schannel_neg(const char *desc, RPC_AUTH_SCHANNEL_NEG *neg,
-				prs_struct *ps, int depth);
 bool smb_io_rpc_auth_schannel_chk(const char *desc, int auth_len, 
                                 RPC_AUTH_SCHANNEL_CHK * chk,
 				prs_struct *ps, int depth);

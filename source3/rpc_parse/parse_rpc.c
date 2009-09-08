@@ -571,47 +571,6 @@ bool smb_io_rpc_schannel_verifier(const char *desc, RPC_AUTH_VERIFIER *rav, prs_
 }
 
 /*******************************************************************
-creates an RPC_AUTH_SCHANNEL_NEG structure.
-********************************************************************/
-
-void init_rpc_auth_schannel_neg(RPC_AUTH_SCHANNEL_NEG *neg,
-			      const char *domain, const char *myname)
-{
-	neg->type1 = 0;
-	neg->type2 = 0x3;
-	fstrcpy(neg->domain, domain);
-	fstrcpy(neg->myname, myname);
-}
-
-/*******************************************************************
- Reads or writes an RPC_AUTH_SCHANNEL_NEG structure.
-********************************************************************/
-
-bool smb_io_rpc_auth_schannel_neg(const char *desc, RPC_AUTH_SCHANNEL_NEG *neg,
-				prs_struct *ps, int depth)
-{
-	if (neg == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "smb_io_rpc_auth_schannel_neg");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_uint32("type1", ps, depth, &neg->type1))
-		return False;
-	if(!prs_uint32("type2", ps, depth, &neg->type2))
-		return False;
-	if(!prs_string("domain  ", ps, depth, neg->domain, sizeof(neg->domain)))
-		return False;
-	if(!prs_string("myname  ", ps, depth, neg->myname, sizeof(neg->myname)))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
 reads or writes an RPC_AUTH_SCHANNEL_CHK structure.
 ********************************************************************/
 

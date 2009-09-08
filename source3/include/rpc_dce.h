@@ -174,16 +174,6 @@ typedef struct rpc_hdr_auth_info {
 
 #define RPC_HDR_AUTH_LEN 8
 
-/* this is TEMPORARILY coded up as a specific structure */
-/* this structure comes after the bind request */
-/* RPC_AUTH_SCHANNEL_NEG */
-typedef struct rpc_auth_schannel_neg_info {
-	uint32 type1; 	/* Always zero ? */
-	uint32 type2;	/* Types 0x3 and 0x13 seen. Check AcquireSecurityContext() docs.... */
-	fstring domain; /* calling workstations's domain */
-	fstring myname; /* calling workstation's name */
-} RPC_AUTH_SCHANNEL_NEG;
-
 /* attached to the end of encrypted rpc requests and responses */
 /* RPC_AUTH_SCHANNEL_CHK */
 typedef struct rpc_auth_schannel_chk_info {
