@@ -1100,7 +1100,7 @@ REPLACETORT_OBJ = @libreplacedir@/test/testsuite.o \
 		@libreplacedir@/test/os2_delete.o \
 		@libreplacedir@/test/strptime.o \
 		@libreplacedir@/test/main.o \
-		$(LIBREPLACE_OBJ)
+		$(LIBREPLACE_OBJ) $(SOCKET_WRAPPER_OBJ)
 
 DEBUG2HTML_OBJ = utils/debug2html.o utils/debugparse.o
 
