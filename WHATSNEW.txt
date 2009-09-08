@@ -12,6 +12,8 @@ Major enhancements in Samba 3.4.1 include:
    o Fix authentication on member servers without Winbind (bug #6650).
    o Nautilus fails to copy files from an SMB share (bug #6649).
    o Fix connections of Win98 clients (bug #6551).
+   o Fix interdomain trusts with Windows 2008 R2 DCs (bug #6697).
+
 
 
 ######################################################################
@@ -45,10 +47,15 @@ o   Günther Deschner <gd@samba.org>
     * BUG 6568: Fix _spoolss_GetPrintProcessorDirectory() implementation.
     * BUG 6607: Fix crash bug in spoolss_addprinterex_level_2.
     * BUG 6680: Fix authentication failure from Windows 7 when domain joined.
+    * BUG 6697: Fix interdomain trusts with Windows 2008 R2 DCs.
 
 
 o   Olaf Flebbe <flebbe@nix.science-computing.de>
     * BUG 6655: Fix 'smbcontrol smbd ping'.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 6105: Make linking of rpcclient --as-needed safe.
 
 
 o   Matt Kraai <mkraai@beckman.com>
@@ -78,6 +85,14 @@ o   Rusty Russell <rusty@rustcorp.com.au>
     * BUG 6601: Avoid global fd limits.
 
 
+o   Simo Sorce <idra@samba.org>
+    * BUG 6693: Check we read off the complete event from inotify.
+
+
+o   Peter Volkov <pva@gentoo.org>
+    * BUG 6105: Make linking of cifs.upcall --as-needed safe.
+
+
 o   TAKEDA Yasuma <yasuma@osstech.co.jp>
     * BUG 5879: Update LDAP schema for Netscape DS 5.
 
@@ -85,6 +100,7 @@ o   TAKEDA Yasuma <yasuma@osstech.co.jp>
 o   Bo Yang <boyang@samba.org>
     * BUG 6560: Fix lookupname.
     * BUG 6615: Fix browsing of DFS when using kerberos in libsmbclient.
+    * BUG 6688: Fix crash in 'net usershare list'.
 
 
 ######################################################################
