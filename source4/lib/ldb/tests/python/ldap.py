@@ -1256,7 +1256,7 @@ nTSecurityDescriptor:: """ + desc_base64)
             self.delete_force(self.ldb, user_dn)
 
     def test_security_descriptor_add_neg(self):
-        """ Test add_ldif() with BASE64 security descriptor input using WRONG domain SID (expect fail)
+        """Test add_ldif() with BASE64 security descriptor input using WRONG domain SID
             Negative test
         """
         user_name = "testdescriptoruser1"

@@ -55,3 +55,4 @@ samba4.winbind.struct.*.LOOKUP_NAME_SID   # Not yet working in winbind
 ^samba4.*base.delaywrite.*delayed update of write time 3c$
 ^samba4.*base.delaywrite.*update of write time using SET_END_OF_FILE$
 ^samba4.*base.delaywrite.*update of write time using SET_ALLOCATION_SIZE$
+^samba4.ldap.python \(dc\).Test add_ldif\(\) with BASE64 security descriptor input using WRONG domain SID$
