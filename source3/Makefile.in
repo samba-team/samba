@@ -497,6 +497,7 @@ TLDAP_OBJ = lib/tldap.o lib/tldap_util.o lib/util_tsock.o
 SCHANNEL_OBJ = ../libcli/auth/credentials.o \
 	       ../libcli/auth/schannel_state_tdb.o \
 	       ../librpc/gen_ndr/ndr_schannel.o \
+	       ../librpc/ndr/ndr_schannel.o \
 	       passdb/secrets_schannel.o
 
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
