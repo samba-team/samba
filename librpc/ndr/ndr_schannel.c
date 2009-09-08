@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "../librpc/gen_ndr/ndr_schannel.h"
 #include "../librpc/ndr/ndr_schannel.h"
+#include "../libcli/nbt/libnbt.h"
 
 _PUBLIC_ void ndr_print_NL_AUTH_MESSAGE_BUFFER(struct ndr_print *ndr, const char *name, const union NL_AUTH_MESSAGE_BUFFER *r)
 {
