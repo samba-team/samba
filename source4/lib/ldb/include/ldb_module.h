@@ -102,7 +102,7 @@ int save_controls(struct ldb_control *exclude, struct ldb_request *req, struct l
 int check_critical_controls(struct ldb_control **controls);
 
 /* The following definitions come from lib/ldb/common/ldb_ldif.c  */
-int ldb_should_b64_encode(const struct ldb_val *val);
+int ldb_should_b64_encode(struct ldb_context *ldb, const struct ldb_val *val);
 
 /* The following definitions come from lib/ldb/common/ldb_match.c  */
 int ldb_match_msg(struct ldb_context *ldb,

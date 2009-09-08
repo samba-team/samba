@@ -240,6 +240,12 @@ struct ldb_utf8_fns {
 */
 #define LDB_FLG_NOMMAP 8
 
+/**
+   Flag to tell ldif handlers not to force encoding of binary
+   structures in base64   
+*/
+#define LDB_FLG_SHOW_BINARY 16
+
 /*
    structures for ldb_parse_tree handling code
 */

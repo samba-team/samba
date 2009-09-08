@@ -56,6 +56,7 @@ static struct poptOption popt_options[] = {
 	{ "output", 'O', POPT_ARG_STRING, &options.output, 0, "Output File", "Output" },
 	{ NULL,    'o', POPT_ARG_STRING, NULL, 'o', "ldb_connect option", "OPTION" },
 	{ "controls", 0, POPT_ARG_STRING, NULL, 'c', "controls", NULL },
+	{ "show-binary", 0, POPT_ARG_NONE, &options.show_binary, 0, "display binary LDIF", NULL },
 #if (_SAMBA_BUILD_ >= 4)
 	POPT_COMMON_SAMBA
 	POPT_COMMON_CREDENTIALS
@@ -213,6 +214,10 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb,
 
 	if (options.nosync) {
 		flags |= LDB_FLG_NOSYNC;
+	}
+
+	if (options.show_binary) {
+		flags |= LDB_FLG_SHOW_BINARY;
 	}
 
 #if (_SAMBA_BUILD_ >= 4)

@@ -455,7 +455,7 @@ static struct ldb_dn *ltdb_index_key(struct ldb_context *ldb,
 		talloc_free(attr_folded);
 		return NULL;
 	}
-	if (ldb_should_b64_encode(&v)) {
+	if (ldb_should_b64_encode(ldb, &v)) {
 		char *vstr = ldb_base64_encode(ldb, (char *)v.data, v.length);
 		if (!vstr) return NULL;
 		ret = ldb_dn_new_fmt(ldb, ldb, "%s:%s::%s", LTDB_INDEX, attr_folded, vstr);

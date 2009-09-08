@@ -185,10 +185,14 @@ char *ldb_base64_encode(void *mem_ctx, const char *buf, int len)
 /*
   see if a buffer should be base64 encoded
 */
-int ldb_should_b64_encode(const struct ldb_val *val)
+int ldb_should_b64_encode(struct ldb_context *ldb, const struct ldb_val *val)
 {
 	unsigned int i;
 	uint8_t *p = val->data;
+
+	if (ldb->flags & LDB_FLG_SHOW_BINARY) {
+		return 0;
+	}
 
 	if (val->length == 0) {
 		return 0;
@@ -333,7 +337,7 @@ int ldb_ldif_write(struct ldb_context *ldb,
 			if (ret != LDB_SUCCESS) {
 				v = msg->elements[i].values[j];
 			}
-			if (ret != LDB_SUCCESS || ldb_should_b64_encode(&v)) {
+			if (ret != LDB_SUCCESS || ldb_should_b64_encode(ldb, &v)) {
 				ret = fprintf_fn(private_data, "%s:: ", 
 						 msg->elements[i].name);
 				CHECK_RET;
