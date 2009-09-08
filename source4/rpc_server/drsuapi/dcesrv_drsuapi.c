@@ -350,6 +350,9 @@ static WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, 
 		return WERR_DS_DRA_BAD_NC;
 	}
 
+	DEBUG(4,("DsGetNSChanges with uSHChanged >= %llu\n", 
+		 (unsigned long long)r->in.req->req8.highwatermark.highest_usn));
+
 	/* Construct response. */
 	ncRoot_dn = ldb_dn_new(mem_ctx, b_state->sam_ctx, ncRoot->dn);
 	ret = drsuapi_search_with_extended_dn(b_state->sam_ctx, mem_ctx, &site_res,
@@ -475,16 +478,6 @@ static WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, 
 	r->out.ctr->ctr6.uptodateness_vector->cursors[0].last_sync_success = now;
 
 	return WERR_OK;
-}
-
-
-/* 
-  drsuapi_DsReplicaUpdateRefs
-*/
-static WERROR dcesrv_drsuapi_DsReplicaUpdateRefs(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct drsuapi_DsReplicaUpdateRefs *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 

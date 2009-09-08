@@ -183,7 +183,9 @@ PRIVATE_DEPENDENCIES = \
 # End MODULE dcerpc_drsuapi
 ################################################
 
-dcerpc_drsuapi_OBJ_FILES = $(rpc_serversrcdir)/drsuapi/dcesrv_drsuapi.o
+dcerpc_drsuapi_OBJ_FILES = $(rpc_serversrcdir)/drsuapi/dcesrv_drsuapi.o \
+	$(rpc_serversrcdir)/drsuapi/updaterefs.o \
+	$(rpc_serversrcdir)/drsuapi/drsutil.o
 
 ################################################
 # Start MODULE dcerpc_browser

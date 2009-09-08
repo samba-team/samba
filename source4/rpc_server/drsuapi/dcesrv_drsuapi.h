@@ -35,3 +35,12 @@ struct drsuapi_bind_state {
 	struct drsuapi_DsBindInfo28 remote_info28;
 	struct drsuapi_DsBindInfo28 local_info28;
 };
+
+
+/* prototypes of internal functions */
+WERROR dcesrv_drsuapi_DsReplicaUpdateRefs(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					  struct drsuapi_DsReplicaUpdateRefs *r);
+
+char *drs_ObjectIdentifier_to_string(TALLOC_CTX *mem_ctx,
+				     struct drsuapi_DsReplicaObjectIdentifier *nc);
+
