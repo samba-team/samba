@@ -55,6 +55,14 @@
 	  </para>
         </listitem>
       </varlistentry>
+      <varlistentry><term>any</term>
+        <listitem>
+          <para>
+             A node where ctdbd is running.  This semi-random but
+             there is a bias towards choosing a low numbered node.
+	  </para>
+        </listitem>
+      </varlistentry>
       <varlistentry><term>ok | healthy</term>
         <listitem>
           <para>
