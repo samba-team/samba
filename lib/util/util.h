@@ -192,6 +192,16 @@ _PUBLIC_ char *generate_random_str_list(TALLOC_CTX *mem_ctx, size_t len, const c
  */
 _PUBLIC_ char *generate_random_str(TALLOC_CTX *mem_ctx, size_t len);
 
+/**
+ * Generate an array of unique text strings all of the same length.
+ * The returned strings will be allocated.
+ * Returns NULL if the number of unique combinations cannot be created.
+ *
+ * Characters used are: ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+_-#.,
+ */
+_PUBLIC_ char** generate_unique_strs(TALLOC_CTX *mem_ctx, size_t len,
+                                         uint32_t num);
+
 /* The following definitions come from lib/util/dprintf.c  */
 #if _SAMBA_BUILD_ == 4
 
