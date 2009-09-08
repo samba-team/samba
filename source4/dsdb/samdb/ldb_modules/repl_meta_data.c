@@ -1079,7 +1079,6 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 	struct ldb_val *nrf_value = NULL;
 	struct ldb_message_element *nrf_el = NULL;
 	uint32_t i,j,ni=0;
-	uint64_t seq_num;
 	bool found = false;
 	time_t t = time(NULL);
 	NTTIME now;
@@ -1093,16 +1092,6 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 	nuv.version = 2;
 
 	unix_to_nt_time(&now, t);
-
-	/* 
-	 * we use the next sequence number for our own highest_usn
-	 * because we will do a modify request and this will increment
-	 * our highest_usn
-	 */
-	ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &seq_num);
-	if (ret != LDB_SUCCESS) {
-		return replmd_replicated_request_error(ar, ret);
-	}
 
 	/*
 	 * first create the new replUpToDateVector
