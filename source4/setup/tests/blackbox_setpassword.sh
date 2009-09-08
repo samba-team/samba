@@ -20,4 +20,6 @@ testit "setpassword" $PYTHON ./setup/setpassword --configfile=$PREFIX/simple-dc/
 
 testit "setpassword" $PYTHON ./setup/setpassword --configfile=$PREFIX/simple-dc/etc/smb.conf testuser --newpassword=testpass --must-change-at-next-login
 
+testit "pwsettings" $PYTHON ./setup/pwsettings --quiet set --configfile=$PREFIX/simple-dc/etc/smb.conf --complexity=default --history-length=default --min-pwd-length=default --min-pwd-age=default --max-pwd-age=default
+
 exit $failed
