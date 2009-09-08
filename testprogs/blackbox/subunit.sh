@@ -65,3 +65,18 @@ testit () {
 	fi
 	return $status
 }
+
+testit_expect_failure () {
+	name="$1"
+	shift
+	cmdline="$*"
+	subunit_start_test "$name"
+	output=`$cmdline 2>&1`
+	status=$?
+	if [ x$status = x0 ]; then
+		echo "$output" | subunit_fail_test "$name"
+	else
+		subunit_pass_test "$name"
+	fi
+	return $status
+}
