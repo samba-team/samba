@@ -683,7 +683,7 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli, RPC_HDR *p
 		return NT_STATUS_OK;
 	}
 
-	if (auth_len != RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN) {
+	if (auth_len < RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN) {
 		DEBUG(0,("cli_pipe_verify_schannel: auth_len %u.\n", (unsigned int)auth_len ));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
