@@ -30,6 +30,7 @@
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
+#include "librpc/ndr/libndr.h"
 #include "libcli/security/security.h"
 #include "param/param.h"
 
@@ -673,6 +674,51 @@ static int ldif_comparison_int32(struct ldb_context *ldb, void *mem_ctx,
 	 - (int32_t) strtoll((char *)v2->data, NULL, 0);
 }
 
+/*
+  use ndr_print_* to convert a NDR formatted blob to a ldif formatted blob
+*/
+static int ldif_write_NDR(struct ldb_context *ldb, void *mem_ctx,
+			  const struct ldb_val *in, struct ldb_val *out,
+			  size_t struct_size,
+			  ndr_pull_flags_fn_t pull_fn,
+			  ndr_print_fn_t print_fn)
+{
+	uint8_t *p;
+	enum ndr_err_code err;
+	if (!(ldb_get_flags(ldb) & LDB_FLG_SHOW_BINARY)) {
+		return ldb_handler_copy(ldb, mem_ctx, in, out);
+	}
+	p = talloc_size(mem_ctx, struct_size);
+	err = ndr_pull_struct_blob(in, mem_ctx, 
+				   lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")), 
+				   p, pull_fn);
+	if (err != NDR_ERR_SUCCESS) {
+		talloc_free(p);
+		return ldb_handler_copy(ldb, mem_ctx, in, out);
+	}
+	out->data = (uint8_t *)ndr_print_struct_string(mem_ctx, print_fn, "NDR", p);
+	talloc_free(p);
+	if (out->data == NULL) {
+		return ldb_handler_copy(ldb, mem_ctx, in, out);		
+	}
+	out->length = strlen((char *)out->data);
+	return 0;
+}
+
+
+/*
+  convert a NDR formatted blob to a ldif formatted repsFromTo
+*/
+static int ldif_write_repsFromTo(struct ldb_context *ldb, void *mem_ctx,
+				 const struct ldb_val *in, struct ldb_val *out)
+{
+	return ldif_write_NDR(ldb, mem_ctx, in, out, 
+			      sizeof(struct repsFromToBlob),
+			      (ndr_pull_flags_fn_t)ndr_pull_repsFromToBlob,
+			      (ndr_print_fn_t)ndr_print_repsFromToBlob);
+}
+
+
 static int extended_dn_write_hex(struct ldb_context *ldb, void *mem_ctx,
 				 const struct ldb_val *in, struct ldb_val *out)
 {
@@ -720,7 +766,13 @@ static const struct ldb_schema_syntax samba_syntaxes[] = {
 		.ldif_write_fn	  = ldb_handler_copy,
 		.canonicalise_fn  = ldif_canonicalise_int32,
 		.comparison_fn	  = ldif_comparison_int32
-	}
+	},{
+		.name		  = LDB_SYNTAX_SAMBA_REPSFROMTO,
+		.ldif_read_fn	  = ldb_handler_copy,
+		.ldif_write_fn	  = ldif_write_repsFromTo,
+		.canonicalise_fn  = ldb_handler_copy,
+		.comparison_fn	  = ldb_comparison_binary
+	},
 };
 
 static const struct ldb_dn_extended_syntax samba_dn_syntax[] = {
@@ -761,7 +813,9 @@ static const struct {
 	{ "fRSReplicaSetGUID",		LDB_SYNTAX_SAMBA_GUID },
 	{ "netbootGUID",		LDB_SYNTAX_SAMBA_GUID },
 	{ "objectCategory",		LDB_SYNTAX_SAMBA_OBJECT_CATEGORY },
-	{ "prefixMap",                  LDB_SYNTAX_SAMBA_PREFIX_MAP }
+	{ "prefixMap",                  LDB_SYNTAX_SAMBA_PREFIX_MAP },
+	{ "repsFrom",                   LDB_SYNTAX_SAMBA_REPSFROMTO },
+	{ "repsTo",                     LDB_SYNTAX_SAMBA_REPSFROMTO },
 };
 
 const struct ldb_schema_syntax *ldb_samba_syntax_by_name(struct ldb_context *ldb, const char *name)
