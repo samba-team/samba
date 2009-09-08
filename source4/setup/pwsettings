@@ -31,7 +31,7 @@ parser.add_option_group(credopts)
 parser.add_option("--quiet", help="Be quiet", action="store_true")
 parser.add_option("-H", help="LDB URL for database or target server", type=str)
 parser.add_option("--complexity",
-  help="The password complexity (on | off). Default is 'on'", type=str)
+  help="The password complexity (on | off | default). Default is 'on'", type=str)
 parser.add_option("--history-length",
   help="The password history length (<integer> | default)", type=str)
 parser.add_option("--min-pwd-length",
@@ -106,7 +106,7 @@ elif args[0] == "set":
 	m.dn = ldb.Dn(samdb, domain_dn)
 
 	if opts.complexity is not None:
-		if opts.complexity == "on":
+		if opts.complexity == "on" or opts.complexity == "default":
 			pwd_props = pwd_props | DOMAIN_PASSWORD_COMPLEX
 			msgs.append("Password complexity activated!")
 		elif opts.complexity == "off":
