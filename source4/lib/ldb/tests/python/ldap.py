@@ -7,6 +7,7 @@ import optparse
 import sys
 import time
 import random
+import base64
 
 sys.path.append("bin/python")
 sys.path.append("../lib/subunit/python")
@@ -22,6 +23,9 @@ from ldb import Message, MessageElement, Dn, FLAG_MOD_REPLACE
 from samba import Ldb, param, dom_sid_to_rid
 from subunit import SubunitTestRunner
 import unittest
+
+from samba.ndr import ndr_pack, ndr_unpack
+from samba.dcerpc import security
 
 parser = optparse.OptionParser("ldap [options] <host>")
 sambaopts = options.SambaOptions(parser)
@@ -64,12 +68,17 @@ class BasicTests(unittest.TestCase):
         self.assertEquals(len(res), 1)
         return res[0]["schemaNamingContext"][0]
 
+    def find_domain_sid(self):
+        res = self.ldb.search(base=self.base_dn, expression="(objectClass=*)", scope=SCOPE_BASE)
+        return ndr_unpack( security.dom_sid,res[0]["objectSid"][0])
+
     def setUp(self):
         self.ldb = ldb
         self.gc_ldb = gc_ldb
         self.base_dn = self.find_basedn(ldb)
         self.configuration_dn = self.find_configurationdn(ldb)
         self.schema_dn = self.find_schemadn(ldb)
+        self.domain_sid = self.find_domain_sid()
 
         print "baseDN: %s\n" % self.base_dn
 
@@ -97,7 +106,7 @@ class BasicTests(unittest.TestCase):
     def test_parentGUID(self):
         """Test parentGUID behaviour"""
         print "Testing parentGUID behaviour\n"
-        
+
         self.ldb.add({
             "dn": "cn=parentguidtest,cn=users," + self.base_dn,
             "objectclass":"user",
@@ -128,7 +137,7 @@ class BasicTests(unittest.TestCase):
     def test_groupType(self):
         """Test groupType behaviour (should appear to be casted to a 32 bit signed integer before comparsion)"""
         print "Testing groupType behaviour\n"
-        
+
         res1 = ldb.search(base=self.base_dn, scope=SCOPE_SUBTREE,
                           attrs=["groupType"], expression="groupType=2147483653");
 
@@ -1203,6 +1212,189 @@ member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + self.base_dn + """
         res = ldb.search(self.base_dn, expression="objectCategory=group", scope=SCOPE_SUBTREE, attrs=["cn"], controls=["domain_scope:1"])
         self.assertTrue(len(res) > 0)
 
+    def test_security_descriptor_add(self):
+        """ Testing ldb.add_ldif() for nTSecurityDescriptor """
+        user_name = "testdescriptoruser1"
+        user_dn = "CN=%s,CN=Users,%s" % (user_name, self.base_dn)
+        #
+        # Test add_ldif() with SDDL security descriptor input
+        #
+        self.delete_force(self.ldb, user_dn)
+        try:
+            sddl = "O:DUG:DUD:PAI(A;;RPWP;;;AU)S:PAI"
+            self.ldb.add_ldif("""
+dn: """ + user_dn + """
+objectclass: user
+sAMAccountName: """ + user_name + """
+nTSecurityDescriptor: """ + sddl)
+            res = self.ldb.search(base=user_dn, attrs=["nTSecurityDescriptor"])
+            desc = res[0]["nTSecurityDescriptor"][0]
+            desc = ndr_unpack( security.descriptor, desc )
+            desc_sddl = desc.as_sddl( self.domain_sid )
+            self.assertEqual(desc_sddl, sddl)
+        finally:
+            self.delete_force(self.ldb, user_dn)
+        #
+        # Test add_ldif() with BASE64 security descriptor
+        #
+        try:
+            sddl = "O:DUG:DUD:PAI(A;;RPWP;;;AU)S:PAI"
+            desc = security.descriptor.from_sddl(sddl, self.domain_sid)
+            desc_binary = ndr_pack(desc)
+            desc_base64 = base64.b64encode(desc_binary)
+            self.ldb.add_ldif("""
+dn: """ + user_dn + """
+objectclass: user
+sAMAccountName: """ + user_name + """
+nTSecurityDescriptor:: """ + desc_base64)
+            res = self.ldb.search(base=user_dn, attrs=["nTSecurityDescriptor"])
+            desc = res[0]["nTSecurityDescriptor"][0]
+            desc = ndr_unpack(security.descriptor, desc)
+            desc_sddl = desc.as_sddl(self.domain_sid)
+            self.assertEqual(desc_sddl, sddl)
+        finally:
+            self.delete_force(self.ldb, user_dn)
+
+    def test_security_descriptor_add_neg(self):
+        """ Test add_ldif() with BASE64 security descriptor input using WRONG domain SID (expect fail)
+            Negative test
+        """
+        user_name = "testdescriptoruser1"
+        user_dn = "CN=%s,CN=Users,%s" % (user_name, self.base_dn)
+        self.delete_force(self.ldb, user_dn)
+        try:
+            sddl = "O:DUG:DUD:PAI(A;;RPWP;;;AU)S:PAI"
+            desc = security.descriptor.from_sddl(sddl, security.dom_sid('S-1-5-21'))
+            desc_base64 = base64.b64encode( ndr_pack(desc) )
+            self.ldb.add_ldif("""
+dn: """ + user_dn + """
+objectclass: user
+sAMAccountName: """ + user_name + """
+nTSecurityDescriptor:: """ + desc_base64)
+            res = self.ldb.search(base=user_dn, attrs=["nTSecurityDescriptor"])
+            print res
+            self.assertRaises(KeyError, lambda: res[0]["nTSecurityDescriptor"])
+        finally:
+            self.delete_force(self.ldb, user_dn)
+
+    def test_security_descriptor_modify(self):
+        """ Testing ldb.modify_ldif() for nTSecurityDescriptor """
+        user_name = "testdescriptoruser2"
+        user_dn = "CN=%s,CN=Users,%s" % (user_name, self.base_dn)
+        #
+        # Delete user object and test modify_ldif() with SDDL security descriptor input
+        # Add ACE to the original descriptor test
+        #
+        try:
+            self.delete_force(self.ldb, user_dn)
+            self.ldb.add_ldif("""
+dn: """ + user_dn + """
+objectclass: user
+sAMAccountName: """ + user_name)
+            # Modify descriptor
+            res = self.ldb.search(base=user_dn, attrs=["nTSecurityDescriptor"])
+            desc = res[0]["nTSecurityDescriptor"][0]
+            desc = ndr_unpack(security.descriptor, desc)
+            desc_sddl = desc.as_sddl(self.domain_sid)
+            sddl = desc_sddl[:desc_sddl.find("(")] + "(A;;RPWP;;;AU)" + desc_sddl[desc_sddl.find("("):]
+            mod = """
+dn: """ + user_dn + """
+changetype: modify
+replace: nTSecurityDescriptor
+nTSecurityDescriptor: """ + sddl
+            self.ldb.modify_ldif(mod)
+            # Read modified descriptor
+            res = self.ldb.search(base=user_dn, attrs=["nTSecurityDescriptor"])
+            desc = res[0]["nTSecurityDescriptor"][0]
+            desc = ndr_unpack(security.descriptor, desc)
+            desc_sddl = desc.as_sddl(self.domain_sid)
+            self.assertEqual(desc_sddl, sddl)
+        finally:
+            self.delete_force(self.ldb, user_dn)
+        #
+        # Test modify_ldif() with SDDL security descriptor input
+        # New desctiptor test
+        #
+        try:
+            self.ldb.add_ldif("""
+dn: """ + user_dn + """
+objectclass: user
+sAMAccountName: """ + user_name)
+            # Modify descriptor
+            sddl = "O:DUG:DUD:PAI(A;;RPWP;;;AU)S:PAI"
+            mod = """
+dn: """ + user_dn + """
+changetype: modify
+replace: nTSecurityDescriptor
+nTSecurityDescriptor: """ + sddl
+            self.ldb.modify_ldif(mod)
+            # Read modified descriptor
+            res = self.ldb.search(base=user_dn, attrs=["nTSecurityDescriptor"])
+            desc = res[0]["nTSecurityDescriptor"][0]
+            desc = ndr_unpack(security.descriptor, desc)
+            desc_sddl = desc.as_sddl(self.domain_sid)
+            self.assertEqual(desc_sddl, sddl)
+        finally:
+            self.delete_force(self.ldb, user_dn)
+        #
+        # Test modify_ldif() with BASE64 security descriptor input
+        # Add ACE to the original descriptor test
+        #
+        try:
+            self.ldb.add_ldif("""
+dn: """ + user_dn + """
+objectclass: user
+sAMAccountName: """ + user_name)
+            # Modify descriptor
+            res = self.ldb.search(base=user_dn, attrs=["nTSecurityDescriptor"])
+            desc = res[0]["nTSecurityDescriptor"][0]
+            desc = ndr_unpack(security.descriptor, desc)
+            desc_sddl = desc.as_sddl(self.domain_sid)
+            sddl = desc_sddl[:desc_sddl.find("(")] + "(A;;RPWP;;;AU)" + desc_sddl[desc_sddl.find("("):]
+            desc = security.descriptor.from_sddl(sddl, self.domain_sid)
+            desc_base64 = base64.b64encode(ndr_pack(desc))
+            mod = """
+dn: """ + user_dn + """
+changetype: modify
+replace: nTSecurityDescriptor
+nTSecurityDescriptor:: """ + desc_base64
+            self.ldb.modify_ldif(mod)
+            # Read modified descriptor
+            res = self.ldb.search(base=user_dn, attrs=["nTSecurityDescriptor"])
+            desc = res[0]["nTSecurityDescriptor"][0]
+            desc = ndr_unpack(security.descriptor, desc)
+            desc_sddl = desc.as_sddl(self.domain_sid)
+            self.assertEqual(desc_sddl, sddl)
+        finally:
+            self.delete_force(self.ldb, user_dn)
+        #
+        # Test modify_ldif() with BASE64 security descriptor input
+        # New descriptor test
+        #
+        try:
+            self.delete_force(self.ldb, user_dn)
+            self.ldb.add_ldif("""
+dn: """ + user_dn + """
+objectclass: user
+sAMAccountName: """ + user_name)
+            # Modify descriptor
+            sddl = "O:DUG:DUD:PAI(A;;RPWP;;;AU)S:PAI"
+            desc = security.descriptor.from_sddl(sddl, self.domain_sid)
+            desc_base64 = base64.b64encode(ndr_pack(desc))
+            mod = """
+dn: """ + user_dn + """
+changetype: modify
+replace: nTSecurityDescriptor
+nTSecurityDescriptor:: """ + desc_base64
+            self.ldb.modify_ldif(mod)
+            # Read modified descriptor
+            res = self.ldb.search(base=user_dn, attrs=["nTSecurityDescriptor"])
+            desc = res[0]["nTSecurityDescriptor"][0]
+            desc = ndr_unpack(security.descriptor, desc)
+            desc_sddl = desc.as_sddl(self.domain_sid)
+            self.assertEqual(desc_sddl, sddl)
+        finally:
+            self.delete_force(self.ldb, user_dn)
 
 class BaseDnTests(unittest.TestCase):
     def setUp(self):
