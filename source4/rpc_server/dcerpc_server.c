@@ -1262,8 +1262,6 @@ NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 */
 _PUBLIC_ NTSTATUS dcesrv_input(struct dcesrv_connection *dce_conn, const DATA_BLOB *data)
 {
-	NTSTATUS status;
-
 	dce_conn->partial_input.data = talloc_realloc(dce_conn,
 						      dce_conn->partial_input.data,
 						      uint8_t,
