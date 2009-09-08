@@ -121,6 +121,7 @@
 #define real_sendmsg sendmsg
 #define real_ioctl ioctl
 #define real_recv recv
+#define real_read read
 #define real_send send
 #define real_readv readv
 #define real_writev writev
@@ -669,7 +670,9 @@ enum swrap_packet_type {
 	SWRAP_SEND_RST,
 	SWRAP_CLOSE_SEND,
 	SWRAP_CLOSE_RECV,
-	SWRAP_CLOSE_ACK
+	SWRAP_CLOSE_ACK,
+	SWRAP_READ,
+	SWRAP_READ_RST
 };
 
 struct swrap_file_hdr {
@@ -2034,6 +2037,34 @@ _PUBLIC_ ssize_t swrap_recv(int s, void *buf, size_t len, int flags)
 		swrap_dump_packet(si, NULL, SWRAP_RECV_RST, NULL, 0);
 	} else if (ret > 0) {
 		swrap_dump_packet(si, NULL, SWRAP_RECV, buf, ret);
+	}
+
+	return ret;
+}
+
+_PUBLIC_ ssize_t swrap_read(int s, void *buf, size_t len)
+{
+	int ret;
+	struct socket_info *si = find_socket_info(s);
+
+	if (!si) {
+		return real_read(s, buf, len);
+	}
+
+	if (si->type == SOCK_STREAM) {
+		/* cut down to 1500 byte packets for stream sockets,
+		 * which makes it easier to format PCAP capture files
+		 * (as the caller will simply continue from here) */
+		len = MIN(len, 1500);
+	}
+
+	ret = real_read(s, buf, len);
+	if (ret == -1 && errno != EAGAIN && errno != ENOBUFS) {
+		swrap_dump_packet(si, NULL, SWRAP_READ_RST, NULL, 0);
+	} else if (ret == 0) { /* END OF FILE */
+		swrap_dump_packet(si, NULL, SWRAP_READ_RST, NULL, 0);
+	} else if (ret > 0) {
+		swrap_dump_packet(si, NULL, SWRAP_READ, buf, ret);
 	}
 
 	return ret;
