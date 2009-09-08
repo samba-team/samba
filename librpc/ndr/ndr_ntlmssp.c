@@ -20,7 +20,6 @@
 */
 
 #include "includes.h"
-#include "../librpc/ndr/ndr_ntlmssp.h"
 #include "../librpc/gen_ndr/ndr_ntlmssp.h"
 
 _PUBLIC_ size_t ndr_ntlmssp_string_length(uint32_t negotiate_flags, const char *s)
