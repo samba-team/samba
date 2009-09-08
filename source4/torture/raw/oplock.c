@@ -193,7 +193,8 @@ static bool open_connection_no_level2_oplocks(struct torture_context *tctx,
 					lp_iconv_convenience(tctx->lp_ctx),
 					lp_gensec_settings(tctx, tctx->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to open connection - %s\n", nt_errstr(status));
+		torture_comment(tctx, "Failed to open connection - %s\n",
+				nt_errstr(status));
 		return false;
 	}
 
@@ -594,7 +595,8 @@ static bool test_raw_oplock_exclusive6(struct torture_context *tctx, struct smbc
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname1;
 
-	torture_comment(tctx, "EXCLUSIVE6: open a file with an exclusive oplock (share mode: none)\n");
+	torture_comment(tctx, "EXCLUSIVE6: open a file with an exclusive "
+			"oplock (share mode: none)\n");
 	ZERO_STRUCT(break_info);
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | NTCREATEX_FLAGS_REQUEST_OPLOCK;
 
@@ -603,14 +605,15 @@ static bool test_raw_oplock_exclusive6(struct torture_context *tctx, struct smbc
 	fnum = io.ntcreatex.out.file.fnum;
 	CHECK_VAL(io.ntcreatex.out.oplock_level, EXCLUSIVE_OPLOCK_RETURN);
 
-	torture_comment(tctx, "rename should not generate a break but get a sharing violation\n");
+	torture_comment(tctx, "rename should not generate a break but get a "
+			"sharing violation\n");
 	ZERO_STRUCT(rn);
 	rn.generic.level = RAW_RENAME_RENAME;
 	rn.rename.in.pattern1 = fname1;
 	rn.rename.in.pattern2 = fname2;
 	rn.rename.in.attrib = 0;
 
-	printf("trying rename while first file open\n");
+	torture_comment(tctx, "trying rename while first file open\n");
 	status = smb_raw_rename(cli2->tree, &rn);
 
 	CHECK_STATUS(tctx, status, NT_STATUS_SHARING_VIOLATION);
@@ -1922,7 +1925,7 @@ static bool test_raw_oplock_batch17(struct torture_context *tctx, struct smbcli_
 	rn.rename.in.pattern2 = fname2;
 	rn.rename.in.attrib = 0;
 
-	printf("trying rename while first file open\n");
+	torture_comment(tctx, "trying rename while first file open\n");
 	status = smb_raw_rename(cli2->tree, &rn);
 
 	CHECK_STATUS(tctx, status, NT_STATUS_SHARING_VIOLATION);
@@ -1993,7 +1996,7 @@ static bool test_raw_oplock_batch18(struct torture_context *tctx, struct smbcli_
 	rn.ntrename.in.flags	= RENAME_FLAG_RENAME;
 	rn.ntrename.in.old_name = fname1;
 	rn.ntrename.in.new_name = fname2;
-	printf("trying rename while first file open\n");
+	torture_comment(tctx, "trying rename while first file open\n");
 	status = smb_raw_rename(cli2->tree, &rn);
 
 	CHECK_STATUS(tctx, status, NT_STATUS_SHARING_VIOLATION);
