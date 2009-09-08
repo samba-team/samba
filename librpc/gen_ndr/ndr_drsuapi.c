@@ -3509,10 +3509,10 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaUpdateRefsOptions(struct ndr_print *ndr
 	ndr_print_uint32(ndr, name, r);
 	ndr->depth++;
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_UPDATE_ASYNCHRONOUS_OPERATION", DRSUAPI_DS_REPLICA_UPDATE_ASYNCHRONOUS_OPERATION, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_UPDATE_WRITEABLE", DRSUAPI_DS_REPLICA_UPDATE_WRITEABLE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_UPDATE_GETCHG_CHECK", DRSUAPI_DS_REPLICA_UPDATE_GETCHG_CHECK, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_UPDATE_ADD_REFERENCE", DRSUAPI_DS_REPLICA_UPDATE_ADD_REFERENCE, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_UPDATE_DELETE_REFERENCE", DRSUAPI_DS_REPLICA_UPDATE_DELETE_REFERENCE, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_UPDATE_0x00000010", DRSUAPI_DS_REPLICA_UPDATE_0x00000010, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_UPDATE_WRITEABLE", DRSUAPI_DS_REPLICA_UPDATE_WRITEABLE, r);
 	ndr->depth--;
 }
 

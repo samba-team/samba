@@ -648,10 +648,10 @@ union drsuapi_DsGetNCChangesCtr {
 
 /* bitmap drsuapi_DsReplicaUpdateRefsOptions */
 #define DRSUAPI_DS_REPLICA_UPDATE_ASYNCHRONOUS_OPERATION ( 0x00000001 )
-#define DRSUAPI_DS_REPLICA_UPDATE_WRITEABLE ( 0x00000002 )
+#define DRSUAPI_DS_REPLICA_UPDATE_GETCHG_CHECK ( 0x00000002 )
 #define DRSUAPI_DS_REPLICA_UPDATE_ADD_REFERENCE ( 0x00000004 )
 #define DRSUAPI_DS_REPLICA_UPDATE_DELETE_REFERENCE ( 0x00000008 )
-#define DRSUAPI_DS_REPLICA_UPDATE_0x00000010 ( 0x00000010 )
+#define DRSUAPI_DS_REPLICA_UPDATE_WRITEABLE ( 0x00000010 )
 
 struct drsuapi_DsReplicaUpdateRefsRequest1 {
 	struct drsuapi_DsReplicaObjectIdentifier *naming_context;/* [ref] */

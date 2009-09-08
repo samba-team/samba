@@ -75,6 +75,13 @@ void ndr_print_prefixMapCtr(struct ndr_print *ndr, const char *name, const union
 enum ndr_err_code ndr_push_prefixMapBlob(struct ndr_push *ndr, int ndr_flags, const struct prefixMapBlob *r);
 enum ndr_err_code ndr_pull_prefixMapBlob(struct ndr_pull *ndr, int ndr_flags, struct prefixMapBlob *r);
 void ndr_print_prefixMapBlob(struct ndr_print *ndr, const char *name, const struct prefixMapBlob *r);
+void ndr_print_repsToVersion(struct ndr_print *ndr, const char *name, enum repsToVersion r);
+void ndr_print_repsToDest(struct ndr_print *ndr, const char *name, const struct repsToDest *r);
+void ndr_print_repsTov1(struct ndr_print *ndr, const char *name, const struct repsTov1 *r);
+void ndr_print_repsToCtr(struct ndr_print *ndr, const char *name, const union repsToCtr *r);
+enum ndr_err_code ndr_push_repsTo(struct ndr_push *ndr, int ndr_flags, const struct repsTo *r);
+enum ndr_err_code ndr_pull_repsTo(struct ndr_pull *ndr, int ndr_flags, struct repsTo *r);
+void ndr_print_repsTo(struct ndr_print *ndr, const char *name, const struct repsTo *r);
 void ndr_print_ldapControlDirSyncExtra(struct ndr_print *ndr, const char *name, const union ldapControlDirSyncExtra *r);
 void ndr_print_ldapControlDirSyncBlob(struct ndr_print *ndr, const char *name, const struct ldapControlDirSyncBlob *r);
 enum ndr_err_code ndr_push_ldapControlDirSyncCookie(struct ndr_push *ndr, int ndr_flags, const struct ldapControlDirSyncCookie *r);

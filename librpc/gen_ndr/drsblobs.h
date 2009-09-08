@@ -128,6 +128,37 @@ struct prefixMapBlob {
 	union prefixMapCtr ctr;/* [switch_is(version)] */
 }/* [public] */;
 
+enum repsToVersion
+#ifndef USE_UINT_ENUMS
+ {
+	REPSTO_VERSION1=1
+}
+#else
+ { __donnot_use_enum_repsToVersion=0x7FFFFFFF}
+#define REPSTO_VERSION1 ( 1 )
+#endif
+;
+
+struct repsToDest {
+	const char * dest_dsa_dns_name;/* [flag(LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NULLTERM)] */
+	struct GUID dest_guid;
+	uint32_t options;
+};
+
+struct repsTov1 {
+	uint32_t count;
+	struct repsToDest *reps;/* [size_is(count)] */
+};
+
+union repsToCtr {
+	struct repsTov1 r;/* [case(REPSTO_VERSION1)] */
+}/* [nodiscriminant] */;
+
+struct repsTo {
+	enum repsToVersion version;
+	union repsToCtr ctr;/* [switch_is(version)] */
+}/* [public] */;
+
 union ldapControlDirSyncExtra {
 	struct replUpToDateVectorBlob uptodateness_vector;/* [default] */
 }/* [gensize,nodiscriminant] */;
