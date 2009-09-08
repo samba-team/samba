@@ -732,6 +732,30 @@ static int ldif_write_repsFromTo(struct ldb_context *ldb, void *mem_ctx,
 			      (ndr_print_fn_t)ndr_print_repsFromToBlob);
 }
 
+/*
+  convert a NDR formatted blob to a ldif formatted replPropertyMetaData
+*/
+static int ldif_write_replPropertyMetaData(struct ldb_context *ldb, void *mem_ctx,
+					   const struct ldb_val *in, struct ldb_val *out)
+{
+	return ldif_write_NDR(ldb, mem_ctx, in, out, 
+			      sizeof(struct replPropertyMetaDataBlob),
+			      (ndr_pull_flags_fn_t)ndr_pull_replPropertyMetaDataBlob,
+			      (ndr_print_fn_t)ndr_print_replPropertyMetaDataBlob);
+}
+
+/*
+  convert a NDR formatted blob to a ldif formatted replUpToDateVector
+*/
+static int ldif_write_replUpToDateVector(struct ldb_context *ldb, void *mem_ctx,
+					 const struct ldb_val *in, struct ldb_val *out)
+{
+	return ldif_write_NDR(ldb, mem_ctx, in, out, 
+			      sizeof(struct replUpToDateVectorBlob),
+			      (ndr_pull_flags_fn_t)ndr_pull_replUpToDateVectorBlob,
+			      (ndr_print_fn_t)ndr_print_replPropertyMetaDataBlob);
+}
+
 
 static int extended_dn_write_hex(struct ldb_context *ldb, void *mem_ctx,
 				 const struct ldb_val *in, struct ldb_val *out)
@@ -786,6 +810,18 @@ static const struct ldb_schema_syntax samba_syntaxes[] = {
 		.ldif_write_fn	  = ldif_write_repsFromTo,
 		.canonicalise_fn  = ldb_handler_copy,
 		.comparison_fn	  = ldb_comparison_binary
+	},{
+		.name		  = LDB_SYNTAX_SAMBA_REPLPROPERTYMETADATA,
+		.ldif_read_fn	  = ldb_handler_copy,
+		.ldif_write_fn	  = ldif_write_replPropertyMetaData,
+		.canonicalise_fn  = ldb_handler_copy,
+		.comparison_fn	  = ldb_comparison_binary
+	},{
+		.name		  = LDB_SYNTAX_SAMBA_REPLUPTODATEVECTOR,
+		.ldif_read_fn	  = ldb_handler_copy,
+		.ldif_write_fn	  = ldif_write_replUpToDateVector,
+		.canonicalise_fn  = ldb_handler_copy,
+		.comparison_fn	  = ldb_comparison_binary
 	},
 };
 
@@ -830,6 +866,8 @@ static const struct {
 	{ "prefixMap",                  LDB_SYNTAX_SAMBA_PREFIX_MAP },
 	{ "repsFrom",                   LDB_SYNTAX_SAMBA_REPSFROMTO },
 	{ "repsTo",                     LDB_SYNTAX_SAMBA_REPSFROMTO },
+	{ "replPropertyMetaData",       LDB_SYNTAX_SAMBA_REPLPROPERTYMETADATA },
+	{ "replUpToDateVector",         LDB_SYNTAX_SAMBA_REPLUPTODATEVECTOR },
 };
 
 const struct ldb_schema_syntax *ldb_samba_syntax_by_name(struct ldb_context *ldb, const char *name)
