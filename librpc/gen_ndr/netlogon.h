@@ -1006,6 +1006,13 @@ struct netr_OneDomainInfo {
 	uint32_t dummy_long4;
 };
 
+/* bitmap netr_SupportedEncTypes */
+#define ENC_CRC32 ( 0x00000001 )
+#define ENC_RSA_MD5 ( 0x00000002 )
+#define ENC_RC4_HMAC_MD5 ( 0x00000004 )
+#define ENC_HMAC_SHA1_96_AES128 ( 0x00000008 )
+#define ENC_HMAC_SHA1_96_AES256 ( 0x00000010 )
+
 struct netr_DomainInformation {
 	struct netr_OneDomainInfo primary_domain;
 	uint32_t trusted_domain_count;

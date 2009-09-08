@@ -222,6 +222,9 @@ void ndr_print_netr_WorkstationInfo(struct ndr_print *ndr, const char *name, con
 void ndr_print_netr_trust_extension(struct ndr_print *ndr, const char *name, const struct netr_trust_extension *r);
 void ndr_print_netr_trust_extension_container(struct ndr_print *ndr, const char *name, const struct netr_trust_extension_container *r);
 void ndr_print_netr_OneDomainInfo(struct ndr_print *ndr, const char *name, const struct netr_OneDomainInfo *r);
+enum ndr_err_code ndr_push_netr_SupportedEncTypes(struct ndr_push *ndr, int ndr_flags, uint32_t r);
+enum ndr_err_code ndr_pull_netr_SupportedEncTypes(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
+void ndr_print_netr_SupportedEncTypes(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_netr_DomainInformation(struct ndr_print *ndr, const char *name, const struct netr_DomainInformation *r);
 void ndr_print_netr_DomainInfo(struct ndr_print *ndr, const char *name, const union netr_DomainInfo *r);
 void ndr_print_netr_CryptPassword(struct ndr_print *ndr, const char *name, const struct netr_CryptPassword *r);

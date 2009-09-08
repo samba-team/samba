@@ -8141,6 +8141,32 @@ _PUBLIC_ void ndr_print_netr_OneDomainInfo(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_netr_SupportedEncTypes(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_netr_SupportedEncTypes(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_netr_SupportedEncTypes(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "ENC_CRC32", ENC_CRC32, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "ENC_RSA_MD5", ENC_RSA_MD5, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "ENC_RC4_HMAC_MD5", ENC_RC4_HMAC_MD5, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "ENC_HMAC_SHA1_96_AES128", ENC_HMAC_SHA1_96_AES128, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "ENC_HMAC_SHA1_96_AES256", ENC_HMAC_SHA1_96_AES256, r);
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_netr_DomainInformation(struct ndr_push *ndr, int ndr_flags, const struct netr_DomainInformation *r)
 {
 	uint32_t cntr_trusted_domains_1;
@@ -8155,7 +8181,7 @@ static enum ndr_err_code ndr_push_netr_DomainInformation(struct ndr_push *ndr, i
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->dummy_string3));
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->dummy_string4));
 		NDR_CHECK(ndr_push_netr_WorkstationFlags(ndr, NDR_SCALARS, r->workstation_flags));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->supported_enc_types));
+		NDR_CHECK(ndr_push_netr_SupportedEncTypes(ndr, NDR_SCALARS, r->supported_enc_types));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->dummy_long3));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->dummy_long4));
 	}
@@ -8201,7 +8227,7 @@ static enum ndr_err_code ndr_pull_netr_DomainInformation(struct ndr_pull *ndr, i
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->dummy_string3));
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->dummy_string4));
 		NDR_CHECK(ndr_pull_netr_WorkstationFlags(ndr, NDR_SCALARS, &r->workstation_flags));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->supported_enc_types));
+		NDR_CHECK(ndr_pull_netr_SupportedEncTypes(ndr, NDR_SCALARS, &r->supported_enc_types));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->dummy_long3));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->dummy_long4));
 	}
@@ -8263,7 +8289,7 @@ _PUBLIC_ void ndr_print_netr_DomainInformation(struct ndr_print *ndr, const char
 	ndr_print_lsa_String(ndr, "dummy_string3", &r->dummy_string3);
 	ndr_print_lsa_String(ndr, "dummy_string4", &r->dummy_string4);
 	ndr_print_netr_WorkstationFlags(ndr, "workstation_flags", r->workstation_flags);
-	ndr_print_uint32(ndr, "supported_enc_types", r->supported_enc_types);
+	ndr_print_netr_SupportedEncTypes(ndr, "supported_enc_types", r->supported_enc_types);
 	ndr_print_uint32(ndr, "dummy_long3", r->dummy_long3);
 	ndr_print_uint32(ndr, "dummy_long4", r->dummy_long4);
 	ndr->depth--;
