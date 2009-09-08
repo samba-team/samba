@@ -16,7 +16,6 @@ TORTURE_SMB2_OBJ_FILES = $(addprefix $(torturesrcdir)/smb2/, \
 		util.o \
 		getinfo.o \
 		setinfo.o \
-		find.o \
 		lock.o \
 		notify.o \
 		smb2.o \

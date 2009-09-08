@@ -134,7 +134,6 @@ NTSTATUS torture_smb2_init(void)
 	torture_suite_add_simple_test(suite, "SCANFIND", torture_smb2_find_scan);
 	torture_suite_add_simple_test(suite, "GETINFO", torture_smb2_getinfo);
 	torture_suite_add_simple_test(suite, "SETINFO", torture_smb2_setinfo);
-	torture_suite_add_simple_test(suite, "FIND", torture_smb2_find);
 	torture_suite_add_suite(suite, torture_smb2_lock_init());
 	torture_suite_add_suite(suite, torture_smb2_read_init());
 	torture_suite_add_suite(suite, torture_smb2_create_init());
