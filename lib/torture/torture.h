@@ -246,6 +246,15 @@ void torture_result(struct torture_context *test,
 	}\
 	} while(0)
 
+#define torture_assert_ntstatus_equal_goto(torture_ctx,got,expected,ret,label,cmt) \
+	do { NTSTATUS __got = got, __expected = expected; \
+	if (!NT_STATUS_EQUAL(__got, __expected)) { \
+		torture_result(torture_ctx, TORTURE_FAIL, __location__": "#got" was %s, expected %s: %s", nt_errstr(__got), nt_errstr(__expected), cmt); \
+		ret = false; \
+		goto label; \
+	}\
+	} while(0)
+
 #define torture_assert_ndr_err_equal(torture_ctx,got,expected,cmt) \
 	do { enum ndr_err_code __got = got, __expected = expected; \
 	if (__got != __expected) { \
@@ -269,6 +278,17 @@ void torture_result(struct torture_context *test,
 					   __location__": "#got" was %s, expected %s: %s", \
 					   __got, __expected, cmt); \
 		return false; \
+	} \
+	} while(0)
+
+#define torture_assert_str_equal_goto(torture_ctx,got,expected,ret,label,cmt)\
+	do { const char *__got = (got), *__expected = (expected); \
+	if (strcmp_safe(__got, __expected) != 0) { \
+		torture_result(torture_ctx, TORTURE_FAIL, \
+					   __location__": "#got" was %s, expected %s: %s", \
+					   __got, __expected, cmt); \
+		ret = false; \
+		goto label; \
 	} \
 	} while(0)
 
@@ -343,6 +363,17 @@ void torture_result(struct torture_context *test,
 	} \
 	} while(0)
 
+#define torture_assert_int_equal_goto(torture_ctx,got,expected,ret,label,cmt)\
+	do { int __got = (got), __expected = (expected); \
+	if (__got != __expected) { \
+		torture_result(torture_ctx, TORTURE_FAIL, \
+			__location__": "#got" was %d, expected %d: %s", \
+			__got, __expected, cmt); \
+		ret = false; \
+		goto label; \
+	} \
+	} while(0)
+
 #define torture_assert_u64_equal(torture_ctx,got,expected,cmt)\
 	do { uint64_t __got = (got), __expected = (expected); \
 	if (__got != __expected) { \
@@ -370,6 +401,10 @@ void torture_result(struct torture_context *test,
 		torture_result(torture_ctx, TORTURE_SKIP, __location__": %s", cmt);\
 		return true; \
 	} while(0)
+#define torture_skip_goto(torture_ctx,label,cmt) do {\
+		torture_result(torture_ctx, TORTURE_SKIP, __location__": %s", cmt);\
+		goto label; \
+	} while(0)
 #define torture_fail(torture_ctx,cmt) do {\
 		torture_result(torture_ctx, TORTURE_FAIL, __location__": %s", cmt);\
 		return false; \
@@ -384,6 +419,9 @@ void torture_result(struct torture_context *test,
 /* Convenience macros */
 #define torture_assert_ntstatus_ok(torture_ctx,expr,cmt) \
 		torture_assert_ntstatus_equal(torture_ctx,expr,NT_STATUS_OK,cmt)
+
+#define torture_assert_ntstatus_ok_goto(torture_ctx,expr,ret,label,cmt) \
+		torture_assert_ntstatus_equal_goto(torture_ctx,expr,NT_STATUS_OK,ret,label,cmt)
 
 #define torture_assert_werr_ok(torture_ctx,expr,cmt) \
 		torture_assert_werr_equal(torture_ctx,expr,WERR_OK,cmt)
