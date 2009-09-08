@@ -218,7 +218,7 @@ ssize_t cli_receive_smb_data(struct cli_state *cli, char *buffer, size_t len)
 
 	set_smb_read_error(&cli->smb_rw_error, SMB_READ_OK);
 
-	status = read_socket_with_timeout(
+	status = read_fd_with_timeout(
 		cli->fd, buffer, len, len, cli->timeout, NULL);
 	if (NT_STATUS_IS_OK(status)) {
 		return len;
