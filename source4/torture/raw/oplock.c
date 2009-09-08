@@ -2592,7 +2592,8 @@ static bool test_raw_oplock_batch22(struct torture_context *tctx, struct smbcli_
 	fnum = io.ntcreatex.out.file.fnum;
 	CHECK_VAL(io.ntcreatex.out.oplock_level, BATCH_OPLOCK_RETURN);
 
-	torture_comment(tctx, "a 2nd open shoud not succeed after the oplock break timeout\n");
+	torture_comment(tctx, "a 2nd open should not succeed after the oplock "
+			"break timeout\n");
 	tv = timeval_current();
 	smbcli_oplock_handler(cli1->transport, oplock_handler_timeout, cli1->tree);
 	status = smb_raw_open(cli1->tree, tctx, &io);
@@ -2606,7 +2607,8 @@ static bool test_raw_oplock_batch22(struct torture_context *tctx, struct smbcli_
 	CHECK_VAL(break_info.failures, 0);
 	ZERO_STRUCT(break_info);
 
-	torture_comment(tctx, "a 2nd open shoud succeed after the oplock release without break\n");
+	torture_comment(tctx, "a 2nd open should succeed after the oplock "
+			"release without break\n");
 	tv = timeval_current();
 	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 	status = smb_raw_open(cli1->tree, tctx, &io);
