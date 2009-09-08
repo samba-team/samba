@@ -516,9 +516,9 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 	if (NT_STATUS_IS_OK(status)) {
 		if (creds2.length != sig_size) {
 			DEBUG(0,("dcesrv_auth_response: creds2.length[%u] != sig_size[%u] pad[%u] stub[%u]\n",
-				creds2.length, (uint32_t)sig_size,
-				dce_conn->auth_state.auth_info->auth_pad_length,
-				pkt->u.response.stub_and_verifier.length));
+				 (unsigned)creds2.length, (uint32_t)sig_size,
+				 (unsigned)dce_conn->auth_state.auth_info->auth_pad_length,
+				 (unsigned)pkt->u.response.stub_and_verifier.length));
 			data_blob_free(&creds2);
 			status = NT_STATUS_INTERNAL_ERROR;
 		}
