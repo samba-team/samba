@@ -367,9 +367,9 @@ def provision_paths_from_lp(lp, dnsdomain):
     return paths
 
 
-def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None, serverrole=None,
-                rootdn=None, domaindn=None, configdn=None, schemadn=None, serverdn=None, 
-                sitename=None):
+def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
+                serverrole=None, rootdn=None, domaindn=None, configdn=None,
+                schemadn=None, serverdn=None, sitename=None):
     """Guess configuration settings to use."""
 
     if hostname is None:
@@ -963,7 +963,8 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
                                 dnspass=dnspass,  
                                 machinepass=machinepass, 
                                 domainsid=domainsid, policyguid=policyguid,
-                                setup_path=setup_path, domainControllerFunctionality=domainControllerFunctionality)
+                                setup_path=setup_path,
+                                domainControllerFunctionality=domainControllerFunctionality)
 
     except:
         samdb.transaction_cancel()
@@ -979,7 +980,8 @@ FILL_DRS = "DRS"
 
 
 def provision(setup_dir, message, session_info, 
-              credentials, smbconf=None, targetdir=None, samdb_fill=FILL_FULL, realm=None, 
+              credentials, smbconf=None, targetdir=None, samdb_fill=FILL_FULL,
+              realm=None, 
               rootdn=None, domaindn=None, schemadn=None, configdn=None, 
               serverdn=None,
               domain=None, hostname=None, hostip=None, hostip6=None, 
@@ -988,7 +990,8 @@ def provision(setup_dir, message, session_info,
               policyguid=None, invocationid=None, machinepass=None, 
               dnspass=None, root=None, nobody=None, users=None, 
               wheel=None, backup=None, aci=None, serverrole=None, 
-              ldap_backend_extra_port=None, ldap_backend_type=None, sitename=None,
+              ldap_backend_extra_port=None, ldap_backend_type=None,
+              sitename=None,
               ol_mmr_urls=None, ol_olc=None, 
               setup_ds_path=None, slapd_path=None, nosync=False,
               ldap_dryrun_mode=False):
@@ -1078,10 +1081,12 @@ def provision(setup_dir, message, session_info,
     if ldap_backend_type:
         # We only support an LDAP backend over ldapi://
 
-        provision_backend = ProvisionBackend(paths=paths, setup_path=setup_path, lp=lp, credentials=credentials, 
+        provision_backend = ProvisionBackend(paths=paths, setup_path=setup_path,
+                                             lp=lp, credentials=credentials, 
                                              names=names,
-                                             message=message, hostname=hostname, 
-                                             root=root, schema=schema, ldap_backend_type=ldap_backend_type,
+                                             message=message, hostname=hostname,
+                                             root=root, schema=schema,
+                                             ldap_backend_type=ldap_backend_type,
                                              ldapadminpass=ldapadminpass,
                                              ldap_backend_extra_port=ldap_backend_extra_port,
                                              ol_mmr_urls=ol_mmr_urls, 
@@ -1159,11 +1164,14 @@ def provision(setup_dir, message, session_info,
         if serverrole == "domain controller":
             secrets_ldb = Ldb(paths.secrets, session_info=session_info, 
                               credentials=credentials, lp=lp)
-            secretsdb_become_dc(secrets_ldb, setup_path, domain=domain, realm=names.realm,
-                                netbiosname=names.netbiosname, domainsid=domainsid, 
-                                keytab_path=paths.keytab, samdb_url=paths.samdb, 
-                                dns_keytab_path=paths.dns_keytab, dnspass=dnspass, 
-                                machinepass=machinepass, dnsdomain=names.dnsdomain)
+            secretsdb_become_dc(secrets_ldb, setup_path, domain=domain,
+                                realm=names.realm,
+                                netbiosname=names.netbiosname,
+                                domainsid=domainsid, 
+                                keytab_path=paths.keytab, samdb_url=paths.samdb,
+                                dns_keytab_path=paths.dns_keytab,
+                                dnspass=dnspass, machinepass=machinepass,
+                                dnsdomain=names.dnsdomain)
 
             domainguid = samdb.searchone(basedn=domaindn, attribute="objectGUID")
             assert isinstance(domainguid, str)
@@ -1187,8 +1195,9 @@ def provision(setup_dir, message, session_info,
             message("See %s for an example configuration include file for BIND" % paths.namedconf)
             message("and %s for further documentation required for secure DNS updates" % paths.namedtxt)
 
-            create_krb5_conf(paths.krb5conf, setup_path, dnsdomain=names.dnsdomain,
-                             hostname=names.hostname, realm=names.realm)
+            create_krb5_conf(paths.krb5conf, setup_path,
+                             dnsdomain=names.dnsdomain, hostname=names.hostname,
+                             realm=names.realm)
             message("A Kerberos configuration suitable for Samba 4 has been generated at %s" % paths.krb5conf)
 
 
@@ -1247,14 +1256,15 @@ def provision(setup_dir, message, session_info,
 
 def provision_become_dc(setup_dir=None,
                         smbconf=None, targetdir=None, realm=None, 
-                        rootdn=None, domaindn=None, schemadn=None, configdn=None,
-                        serverdn=None,
+                        rootdn=None, domaindn=None, schemadn=None,
+                        configdn=None, serverdn=None,
                         domain=None, hostname=None, domainsid=None, 
                         adminpass=None, krbtgtpass=None, domainguid=None, 
                         policyguid=None, invocationid=None, machinepass=None, 
                         dnspass=None, root=None, nobody=None, users=None, 
                         wheel=None, backup=None, serverrole=None, 
-                        ldap_backend=None, ldap_backend_type=None, sitename=None, debuglevel=1):
+                        ldap_backend=None, ldap_backend_type=None,
+                        sitename=None, debuglevel=1):
 
     def message(text):
         """print a message if quiet is not set."""
@@ -1263,10 +1273,13 @@ def provision_become_dc(setup_dir=None,
     glue.set_debug_level(debuglevel)
 
     return provision(setup_dir, message, system_session(), None,
-              smbconf=smbconf, targetdir=targetdir, samdb_fill=FILL_DRS, realm=realm, 
-              rootdn=rootdn, domaindn=domaindn, schemadn=schemadn, configdn=configdn, serverdn=serverdn,
-              domain=domain, hostname=hostname, hostip="127.0.0.1", domainsid=domainsid, machinepass=machinepass, serverrole="domain controller", sitename=sitename)
-    
+              smbconf=smbconf, targetdir=targetdir, samdb_fill=FILL_DRS,
+              realm=realm, rootdn=rootdn, domaindn=domaindn, schemadn=schemadn,
+              configdn=configdn, serverdn=serverdn, domain=domain,
+              hostname=hostname, hostip="127.0.0.1", domainsid=domainsid,
+              machinepass=machinepass, serverrole="domain controller",
+              sitename=sitename)
+
 
 def setup_db_config(setup_path, dbdir):
     """Setup a Berkeley database.
@@ -1365,19 +1378,28 @@ class ProvisionBackend(object):
         self.ldap_backend_type = ldap_backend_type
 
         if ldap_backend_type == "fedora-ds":
-            provision_fds_backend(self, paths=paths, setup_path=setup_path, names=names, message=message, 
-                                  hostname=hostname, ldapadminpass=ldapadminpass, root=root, 
-                                  schema=schema, ldap_backend_extra_port=ldap_backend_extra_port, 
-                                  setup_ds_path=setup_ds_path, slapd_path=slapd_path,
-                                  nosync=nosync, ldap_dryrun_mode=ldap_dryrun_mode)
+            provision_fds_backend(self, paths=paths, setup_path=setup_path,
+                                  names=names, message=message, 
+                                  hostname=hostname,
+                                  ldapadminpass=ldapadminpass, root=root, 
+                                  schema=schema,
+                                  ldap_backend_extra_port=ldap_backend_extra_port, 
+                                  setup_ds_path=setup_ds_path,
+                                  slapd_path=slapd_path,
+                                  nosync=nosync,
+                                  ldap_dryrun_mode=ldap_dryrun_mode)
             
         elif ldap_backend_type == "openldap":
-            provision_openldap_backend(self, paths=paths, setup_path=setup_path, names=names, message=message, 
-                                       hostname=hostname, ldapadminpass=ldapadminpass, root=root, 
-                                       schema=schema, ldap_backend_extra_port=ldap_backend_extra_port, 
+            provision_openldap_backend(self, paths=paths, setup_path=setup_path,
+                                       names=names, message=message, 
+                                       hostname=hostname,
+                                       ldapadminpass=ldapadminpass, root=root, 
+                                       schema=schema,
+                                       ldap_backend_extra_port=ldap_backend_extra_port, 
                                        ol_mmr_urls=ol_mmr_urls, 
                                        slapd_path=slapd_path,
-                                       nosync=nosync, ldap_dryrun_mode=ldap_dryrun_mode)
+                                       nosync=nosync,
+                                       ldap_dryrun_mode=ldap_dryrun_mode)
         else:
             raise ProvisioningError("Unknown LDAP backend type selected")
 
@@ -1403,7 +1425,8 @@ class ProvisionBackend(object):
         raise ProvisioningError("slapd died before we could make a connection to it")
 
 
-def provision_openldap_backend(result, paths=None, setup_path=None, names=None, message=None, 
+def provision_openldap_backend(result, paths=None, setup_path=None, names=None,
+                               message=None, 
                                hostname=None, ldapadminpass=None, root=None, 
                                schema=None, 
                                ldap_backend_extra_port=None,
@@ -1631,7 +1654,8 @@ def provision_openldap_backend(result, paths=None, setup_path=None, names=None, 
         os.remove(paths.slapdconf)        
           
 
-def provision_fds_backend(result, paths=None, setup_path=None, names=None, message=None, 
+def provision_fds_backend(result, paths=None, setup_path=None, names=None,
+                          message=None, 
                           hostname=None, ldapadminpass=None, root=None, 
                           schema=None,
                           ldap_backend_extra_port=None,
@@ -1709,7 +1733,8 @@ def create_phpldapadmin_config(path, setup_path, ldapi_uri):
 
 
 def create_zone_file(path, setup_path, dnsdomain, domaindn, 
-                     hostip, hostip6, hostname, dnspass, realm, domainguid, hostguid):
+                     hostip, hostip6, hostname, dnspass, realm, domainguid,
+                     hostguid):
     """Write out a DNS zone file, from the info in the current database.
 
     :param path: Path of the new zone file.
@@ -1813,6 +1838,5 @@ def create_krb5_conf(path, setup_path, dnsdomain, hostname, realm):
             "HOSTNAME": hostname,
             "REALM": realm,
         })
-
 
 
