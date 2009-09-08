@@ -387,7 +387,7 @@ NTSTATUS torture_single_file_search(struct smb2_tree *tree,
 				    const char *pattern,
 				    uint8_t level,
 				    enum smb_search_data_level data_level,
-				    int index,
+				    int idx,
 				    union smb_search_data *d,
 				    uint_t *count,
 				    struct smb2_handle *h)
@@ -404,7 +404,7 @@ NTSTATUS torture_single_file_search(struct smb2_tree *tree,
 
 	status = smb2_find_level(tree, tree, &f, count, &d);
 	if (NT_STATUS_IS_OK(status))
-		fill_level_data(mem_ctx, &levels[index].data, d, *count, level,
+		fill_level_data(mem_ctx, &levels[idx].data, d, *count, level,
 				data_level);
 	return status;
 }
