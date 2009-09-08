@@ -227,7 +227,7 @@ bool profile_setup(struct messaging_context *msg_ctx, bool rdonly)
 	
 	profile_h = (struct profile_header *)shmat(shm_id, 0, 
 						   read_only?SHM_RDONLY:0);
-	if ((long)profile_p == -1) {
+	if ((long)profile_h == -1) {
 		DEBUG(0,("Can't attach to IPC area. Error was %s\n", 
 			 strerror(errno)));
 		return False;
