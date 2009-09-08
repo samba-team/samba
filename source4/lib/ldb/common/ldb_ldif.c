@@ -350,9 +350,14 @@ int ldb_ldif_write(struct ldb_context *ldb,
 			} else {
 				ret = fprintf_fn(private_data, "%s: ", msg->elements[i].name);
 				CHECK_RET;
-				ret = fold_string(fprintf_fn, private_data,
-						  (char *)v.data, v.length,
-						  strlen(msg->elements[i].name)+2);
+				if (ldb->flags & LDB_FLG_SHOW_BINARY) {
+					ret = fprintf_fn(private_data, "%*.*s", 
+							 v.length, v.length, (char *)v.data);
+				} else {
+					ret = fold_string(fprintf_fn, private_data,
+							  (char *)v.data, v.length,
+							  strlen(msg->elements[i].name)+2);
+				}
 				CHECK_RET;
 				ret = fprintf_fn(private_data, "\n");
 				CHECK_RET;
@@ -815,7 +820,7 @@ char *ldb_ldif_message_string(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	struct ldb_ldif ldif;
 
 	ldif.changetype = changetype;
-	ldif.msg = msg;
+	ldif.msg = discard_const_p(struct ldb_message, msg);
 
 	return ldb_ldif_write_string(ldb, mem_ctx, &ldif);
 }
