@@ -29,6 +29,7 @@
 
 #include "includes.h"
 #include "../libcli/auth/libcli_auth.h"
+#include "../librpc/gen_ndr/ndr_schannel.h"
 
 extern struct current_user current_user;
 
@@ -1326,28 +1327,44 @@ static bool pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 					RPC_HDR_AUTH *pauth_info, prs_struct *pout_auth)
 {
 	RPC_HDR_AUTH auth_info;
-	RPC_AUTH_SCHANNEL_NEG neg;
+	struct NL_AUTH_MESSAGE neg;
 	RPC_AUTH_VERIFIER auth_verifier;
 	bool ret;
 	NTSTATUS status;
 	struct netlogon_creds_CredentialState *creds;
 	uint32 flags;
 	DATA_BLOB session_key;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
 
-	if (!smb_io_rpc_auth_schannel_neg("", &neg, rpc_in_p, 0)) {
+	blob = data_blob_const(prs_data_p(rpc_in_p) + prs_offset(rpc_in_p),
+			       prs_data_size(rpc_in_p));
+
+	ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), NULL, &neg,
+			       (ndr_pull_flags_fn_t)ndr_pull_NL_AUTH_MESSAGE);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0,("pipe_schannel_auth_bind: Could not unmarshal SCHANNEL auth neg\n"));
-		return False;
+		return false;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(NL_AUTH_MESSAGE, &neg);
+	}
+
+	if (!(neg.Flags & NL_FLAG_OEM_NETBIOS_COMPUTER_NAME)) {
+		DEBUG(0,("pipe_schannel_auth_bind: Did not receive netbios computer name\n"));
+		return false;
 	}
 
 	/*
-	 * The neg.myname key here must match the remote computer name
+	 * The neg.oem_netbios_computer.a key here must match the remote computer name
 	 * given in the DOM_CLNT_SRV.uni_comp_name used on all netlogon pipe
 	 * operations that use credentials.
 	 */
 
 	become_root();
 	status = schannel_fetch_session_key(p->mem_ctx,
-					    neg.myname,
+					    neg.oem_netbios_computer.a,
 					    &creds);
 	unbecome_root();
 
@@ -1419,7 +1436,7 @@ static bool pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 	}
 
 	DEBUG(10,("pipe_schannel_auth_bind: schannel auth: domain [%s] myname [%s]\n",
-		neg.domain, neg.myname));
+		neg.oem_netbios_domain.a, neg.oem_netbios_computer.a));
 
 	/* We're finished with this bind - no more packets. */
 	p->auth.auth_data_free_func = NULL;
