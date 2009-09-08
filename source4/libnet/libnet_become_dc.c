@@ -2768,7 +2768,7 @@ static void becomeDC_drsuapi_update_refs_send(struct libnet_BecomeDC_state *s,
 	r->in.req.req1.dest_dsa_guid	= s->dest_dsa.ntds_guid;
 	r->in.req.req1.options		= DRSUAPI_DS_REPLICA_UPDATE_ADD_REFERENCE
 					| DRSUAPI_DS_REPLICA_UPDATE_DELETE_REFERENCE
-					| DRSUAPI_DS_REPLICA_UPDATE_0x00000010;
+					| DRSUAPI_DS_REPLICA_UPDATE_WRITEABLE;
 
 	req = dcerpc_drsuapi_DsReplicaUpdateRefs_send(drsuapi->pipe, r, r);
 	composite_continue_rpc(c, req, recv_fn, s);
