@@ -388,3 +388,451 @@ _PUBLIC_ void ndr_print_netlogon_creds_CredentialState(struct ndr_print *ndr, co
 	}
 }
 
+static enum ndr_err_code ndr_push_NL_AUTH_MESSAGE_TYPE(struct ndr_push *ndr, int ndr_flags, enum NL_AUTH_MESSAGE_TYPE r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_NL_AUTH_MESSAGE_TYPE(struct ndr_pull *ndr, int ndr_flags, enum NL_AUTH_MESSAGE_TYPE *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_NL_AUTH_MESSAGE_TYPE(struct ndr_print *ndr, const char *name, enum NL_AUTH_MESSAGE_TYPE r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case NL_NEGOTIATE_REQUEST: val = "NL_NEGOTIATE_REQUEST"; break;
+		case NL_NEGOTIATE_RESPONSE: val = "NL_NEGOTIATE_RESPONSE"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+static enum ndr_err_code ndr_push_NL_AUTH_MESSAGE_FLAGS(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_NL_AUTH_MESSAGE_FLAGS(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_NL_AUTH_MESSAGE_FLAGS(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NL_FLAG_OEM_NETBIOS_DOMAIN_NAME", NL_FLAG_OEM_NETBIOS_DOMAIN_NAME, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NL_FLAG_OEM_NETBIOS_COMPUTER_NAME", NL_FLAG_OEM_NETBIOS_COMPUTER_NAME, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NL_FLAG_UTF8_DNS_DOMAIN_NAME", NL_FLAG_UTF8_DNS_DOMAIN_NAME, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NL_FLAG_UTF8_DNS_HOST_NAME", NL_FLAG_UTF8_DNS_HOST_NAME, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NL_FLAG_UTF8_NETBIOS_COMPUTER_NAME", NL_FLAG_UTF8_NETBIOS_COMPUTER_NAME, r);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_NL_AUTH_MESSAGE_BUFFER(struct ndr_push *ndr, int ndr_flags, const union NL_AUTH_MESSAGE_BUFFER *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
+		switch (level) {
+			case NL_FLAG_OEM_NETBIOS_DOMAIN_NAME: {
+				{
+					uint32_t _flags_save_string = ndr->flags;
+					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
+					NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->a));
+					ndr->flags = _flags_save_string;
+				}
+			break; }
+
+			case NL_FLAG_OEM_NETBIOS_COMPUTER_NAME: {
+				{
+					uint32_t _flags_save_string = ndr->flags;
+					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
+					NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->a));
+					ndr->flags = _flags_save_string;
+				}
+			break; }
+
+			case NL_FLAG_UTF8_DNS_DOMAIN_NAME: {
+				NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->u));
+			break; }
+
+			case NL_FLAG_UTF8_DNS_HOST_NAME: {
+				NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->u));
+			break; }
+
+			case NL_FLAG_UTF8_NETBIOS_COMPUTER_NAME: {
+				NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->u));
+			break; }
+
+			default: {
+			break; }
+
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
+		switch (level) {
+			case NL_FLAG_OEM_NETBIOS_DOMAIN_NAME:
+			break;
+
+			case NL_FLAG_OEM_NETBIOS_COMPUTER_NAME:
+			break;
+
+			case NL_FLAG_UTF8_DNS_DOMAIN_NAME:
+			break;
+
+			case NL_FLAG_UTF8_DNS_HOST_NAME:
+			break;
+
+			case NL_FLAG_UTF8_NETBIOS_COMPUTER_NAME:
+			break;
+
+			default:
+			break;
+
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_NL_AUTH_MESSAGE_BUFFER(struct ndr_pull *ndr, int ndr_flags, union NL_AUTH_MESSAGE_BUFFER *r)
+{
+	int level;
+	level = ndr_pull_get_switch_value(ndr, r);
+	if (ndr_flags & NDR_SCALARS) {
+		switch (level) {
+			case NL_FLAG_OEM_NETBIOS_DOMAIN_NAME: {
+				{
+					uint32_t _flags_save_string = ndr->flags;
+					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
+					NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->a));
+					ndr->flags = _flags_save_string;
+				}
+			break; }
+
+			case NL_FLAG_OEM_NETBIOS_COMPUTER_NAME: {
+				{
+					uint32_t _flags_save_string = ndr->flags;
+					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
+					NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->a));
+					ndr->flags = _flags_save_string;
+				}
+			break; }
+
+			case NL_FLAG_UTF8_DNS_DOMAIN_NAME: {
+				NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->u));
+			break; }
+
+			case NL_FLAG_UTF8_DNS_HOST_NAME: {
+				NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->u));
+			break; }
+
+			case NL_FLAG_UTF8_NETBIOS_COMPUTER_NAME: {
+				NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->u));
+			break; }
+
+			default: {
+			break; }
+
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		switch (level) {
+			case NL_FLAG_OEM_NETBIOS_DOMAIN_NAME:
+			break;
+
+			case NL_FLAG_OEM_NETBIOS_COMPUTER_NAME:
+			break;
+
+			case NL_FLAG_UTF8_DNS_DOMAIN_NAME:
+			break;
+
+			case NL_FLAG_UTF8_DNS_HOST_NAME:
+			break;
+
+			case NL_FLAG_UTF8_NETBIOS_COMPUTER_NAME:
+			break;
+
+			default:
+			break;
+
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_NL_AUTH_MESSAGE(struct ndr_push *ndr, int ndr_flags, const struct NL_AUTH_MESSAGE *r)
+{
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_push_align(ndr, 4));
+			NDR_CHECK(ndr_push_NL_AUTH_MESSAGE_TYPE(ndr, NDR_SCALARS, r->MessageType));
+			NDR_CHECK(ndr_push_NL_AUTH_MESSAGE_FLAGS(ndr, NDR_SCALARS, r->Flags));
+			NDR_CHECK(ndr_push_set_switch_value(ndr, &r->oem_netbios_domain, r->Flags & NL_FLAG_OEM_NETBIOS_DOMAIN_NAME));
+			NDR_CHECK(ndr_push_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_SCALARS, &r->oem_netbios_domain));
+			NDR_CHECK(ndr_push_set_switch_value(ndr, &r->oem_netbios_computer, r->Flags & NL_FLAG_OEM_NETBIOS_COMPUTER_NAME));
+			NDR_CHECK(ndr_push_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_SCALARS, &r->oem_netbios_computer));
+			NDR_CHECK(ndr_push_set_switch_value(ndr, &r->utf8_dns_domain, r->Flags & NL_FLAG_UTF8_DNS_DOMAIN_NAME));
+			NDR_CHECK(ndr_push_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_SCALARS, &r->utf8_dns_domain));
+			NDR_CHECK(ndr_push_set_switch_value(ndr, &r->utf8_dns_host, r->Flags & NL_FLAG_UTF8_DNS_HOST_NAME));
+			NDR_CHECK(ndr_push_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_SCALARS, &r->utf8_dns_host));
+			NDR_CHECK(ndr_push_set_switch_value(ndr, &r->utf8_netbios_computer, r->Flags & NL_FLAG_UTF8_NETBIOS_COMPUTER_NAME));
+			NDR_CHECK(ndr_push_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_SCALARS, &r->utf8_netbios_computer));
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+			NDR_CHECK(ndr_push_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_BUFFERS, &r->oem_netbios_domain));
+			NDR_CHECK(ndr_push_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_BUFFERS, &r->oem_netbios_computer));
+			NDR_CHECK(ndr_push_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_BUFFERS, &r->utf8_dns_domain));
+			NDR_CHECK(ndr_push_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_BUFFERS, &r->utf8_dns_host));
+			NDR_CHECK(ndr_push_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_BUFFERS, &r->utf8_netbios_computer));
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_NL_AUTH_MESSAGE(struct ndr_pull *ndr, int ndr_flags, struct NL_AUTH_MESSAGE *r)
+{
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_pull_align(ndr, 4));
+			NDR_CHECK(ndr_pull_NL_AUTH_MESSAGE_TYPE(ndr, NDR_SCALARS, &r->MessageType));
+			NDR_CHECK(ndr_pull_NL_AUTH_MESSAGE_FLAGS(ndr, NDR_SCALARS, &r->Flags));
+			NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->oem_netbios_domain, r->Flags & NL_FLAG_OEM_NETBIOS_DOMAIN_NAME));
+			NDR_CHECK(ndr_pull_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_SCALARS, &r->oem_netbios_domain));
+			NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->oem_netbios_computer, r->Flags & NL_FLAG_OEM_NETBIOS_COMPUTER_NAME));
+			NDR_CHECK(ndr_pull_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_SCALARS, &r->oem_netbios_computer));
+			NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->utf8_dns_domain, r->Flags & NL_FLAG_UTF8_DNS_DOMAIN_NAME));
+			NDR_CHECK(ndr_pull_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_SCALARS, &r->utf8_dns_domain));
+			NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->utf8_dns_host, r->Flags & NL_FLAG_UTF8_DNS_HOST_NAME));
+			NDR_CHECK(ndr_pull_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_SCALARS, &r->utf8_dns_host));
+			NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->utf8_netbios_computer, r->Flags & NL_FLAG_UTF8_NETBIOS_COMPUTER_NAME));
+			NDR_CHECK(ndr_pull_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_SCALARS, &r->utf8_netbios_computer));
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+			NDR_CHECK(ndr_pull_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_BUFFERS, &r->oem_netbios_domain));
+			NDR_CHECK(ndr_pull_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_BUFFERS, &r->oem_netbios_computer));
+			NDR_CHECK(ndr_pull_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_BUFFERS, &r->utf8_dns_domain));
+			NDR_CHECK(ndr_pull_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_BUFFERS, &r->utf8_dns_host));
+			NDR_CHECK(ndr_pull_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_BUFFERS, &r->utf8_netbios_computer));
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_NL_AUTH_MESSAGE(struct ndr_print *ndr, const char *name, const struct NL_AUTH_MESSAGE *r)
+{
+	ndr_print_struct(ndr, name, "NL_AUTH_MESSAGE");
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
+		ndr->depth++;
+		ndr_print_NL_AUTH_MESSAGE_TYPE(ndr, "MessageType", r->MessageType);
+		ndr_print_NL_AUTH_MESSAGE_FLAGS(ndr, "Flags", r->Flags);
+		ndr_print_set_switch_value(ndr, &r->oem_netbios_domain, r->Flags & NL_FLAG_OEM_NETBIOS_DOMAIN_NAME);
+		ndr_print_NL_AUTH_MESSAGE_BUFFER(ndr, "oem_netbios_domain", &r->oem_netbios_domain);
+		ndr_print_set_switch_value(ndr, &r->oem_netbios_computer, r->Flags & NL_FLAG_OEM_NETBIOS_COMPUTER_NAME);
+		ndr_print_NL_AUTH_MESSAGE_BUFFER(ndr, "oem_netbios_computer", &r->oem_netbios_computer);
+		ndr_print_set_switch_value(ndr, &r->utf8_dns_domain, r->Flags & NL_FLAG_UTF8_DNS_DOMAIN_NAME);
+		ndr_print_NL_AUTH_MESSAGE_BUFFER(ndr, "utf8_dns_domain", &r->utf8_dns_domain);
+		ndr_print_set_switch_value(ndr, &r->utf8_dns_host, r->Flags & NL_FLAG_UTF8_DNS_HOST_NAME);
+		ndr_print_NL_AUTH_MESSAGE_BUFFER(ndr, "utf8_dns_host", &r->utf8_dns_host);
+		ndr_print_set_switch_value(ndr, &r->utf8_netbios_computer, r->Flags & NL_FLAG_UTF8_NETBIOS_COMPUTER_NAME);
+		ndr_print_NL_AUTH_MESSAGE_BUFFER(ndr, "utf8_netbios_computer", &r->utf8_netbios_computer);
+		ndr->depth--;
+		ndr->flags = _flags_save_STRUCT;
+	}
+}
+
+static enum ndr_err_code ndr_push_NL_SIGNATURE_ALGORITHM(struct ndr_push *ndr, int ndr_flags, enum NL_SIGNATURE_ALGORITHM r)
+{
+	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_NL_SIGNATURE_ALGORITHM(struct ndr_pull *ndr, int ndr_flags, enum NL_SIGNATURE_ALGORITHM *r)
+{
+	uint16_t v;
+	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_NL_SIGNATURE_ALGORITHM(struct ndr_print *ndr, const char *name, enum NL_SIGNATURE_ALGORITHM r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case NL_SIGN_HMAC_SHA256: val = "NL_SIGN_HMAC_SHA256"; break;
+		case NL_SIGN_HMAC_MD5: val = "NL_SIGN_HMAC_MD5"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+static enum ndr_err_code ndr_push_NL_SEAL_ALGORITHM(struct ndr_push *ndr, int ndr_flags, enum NL_SEAL_ALGORITHM r)
+{
+	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_NL_SEAL_ALGORITHM(struct ndr_pull *ndr, int ndr_flags, enum NL_SEAL_ALGORITHM *r)
+{
+	uint16_t v;
+	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_NL_SEAL_ALGORITHM(struct ndr_print *ndr, const char *name, enum NL_SEAL_ALGORITHM r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case NL_SEAL_AES128: val = "NL_SEAL_AES128"; break;
+		case NL_SEAL_RC4: val = "NL_SEAL_RC4"; break;
+		case NL_SEAL_NONE: val = "NL_SEAL_NONE"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_NL_AUTH_SIGNATURE(struct ndr_push *ndr, int ndr_flags, const struct NL_AUTH_SIGNATURE *r)
+{
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_push_align(ndr, 2));
+			NDR_CHECK(ndr_push_NL_SIGNATURE_ALGORITHM(ndr, NDR_SCALARS, NL_SIGN_HMAC_MD5));
+			NDR_CHECK(ndr_push_NL_SEAL_ALGORITHM(ndr, NDR_SCALARS, r->SealAlgorithm));
+			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->Pad));
+			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->Flags));
+			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->SequenceNumber, 8));
+			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->Checksum, 8));
+			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->Confounder, 8));
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_NL_AUTH_SIGNATURE(struct ndr_pull *ndr, int ndr_flags, struct NL_AUTH_SIGNATURE *r)
+{
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_pull_align(ndr, 2));
+			NDR_CHECK(ndr_pull_NL_SIGNATURE_ALGORITHM(ndr, NDR_SCALARS, &r->SignatureAlgorithm));
+			NDR_CHECK(ndr_pull_NL_SEAL_ALGORITHM(ndr, NDR_SCALARS, &r->SealAlgorithm));
+			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->Pad));
+			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->Flags));
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->SequenceNumber, 8));
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->Checksum, 8));
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->Confounder, 8));
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_NL_AUTH_SIGNATURE(struct ndr_print *ndr, const char *name, const struct NL_AUTH_SIGNATURE *r)
+{
+	ndr_print_struct(ndr, name, "NL_AUTH_SIGNATURE");
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
+		ndr->depth++;
+		ndr_print_NL_SIGNATURE_ALGORITHM(ndr, "SignatureAlgorithm", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?NL_SIGN_HMAC_MD5:r->SignatureAlgorithm);
+		ndr_print_NL_SEAL_ALGORITHM(ndr, "SealAlgorithm", r->SealAlgorithm);
+		ndr_print_uint16(ndr, "Pad", r->Pad);
+		ndr_print_uint16(ndr, "Flags", r->Flags);
+		ndr_print_array_uint8(ndr, "SequenceNumber", r->SequenceNumber, 8);
+		ndr_print_array_uint8(ndr, "Checksum", r->Checksum, 8);
+		ndr_print_array_uint8(ndr, "Confounder", r->Confounder, 8);
+		ndr->depth--;
+		ndr->flags = _flags_save_STRUCT;
+	}
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_NL_AUTH_SHA2_SIGNATURE(struct ndr_push *ndr, int ndr_flags, const struct NL_AUTH_SHA2_SIGNATURE *r)
+{
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_push_align(ndr, 2));
+			NDR_CHECK(ndr_push_NL_SIGNATURE_ALGORITHM(ndr, NDR_SCALARS, NL_SIGN_HMAC_SHA256));
+			NDR_CHECK(ndr_push_NL_SEAL_ALGORITHM(ndr, NDR_SCALARS, r->SealAlgorithm));
+			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->Pad));
+			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->Flags));
+			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->SequenceNumber, 8));
+			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->Checksum, 32));
+			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->Confounder, 8));
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_NL_AUTH_SHA2_SIGNATURE(struct ndr_pull *ndr, int ndr_flags, struct NL_AUTH_SHA2_SIGNATURE *r)
+{
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_pull_align(ndr, 2));
+			NDR_CHECK(ndr_pull_NL_SIGNATURE_ALGORITHM(ndr, NDR_SCALARS, &r->SignatureAlgorithm));
+			NDR_CHECK(ndr_pull_NL_SEAL_ALGORITHM(ndr, NDR_SCALARS, &r->SealAlgorithm));
+			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->Pad));
+			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->Flags));
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->SequenceNumber, 8));
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->Checksum, 32));
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->Confounder, 8));
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_NL_AUTH_SHA2_SIGNATURE(struct ndr_print *ndr, const char *name, const struct NL_AUTH_SHA2_SIGNATURE *r)
+{
+	ndr_print_struct(ndr, name, "NL_AUTH_SHA2_SIGNATURE");
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
+		ndr->depth++;
+		ndr_print_NL_SIGNATURE_ALGORITHM(ndr, "SignatureAlgorithm", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?NL_SIGN_HMAC_SHA256:r->SignatureAlgorithm);
+		ndr_print_NL_SEAL_ALGORITHM(ndr, "SealAlgorithm", r->SealAlgorithm);
+		ndr_print_uint16(ndr, "Pad", r->Pad);
+		ndr_print_uint16(ndr, "Flags", r->Flags);
+		ndr_print_array_uint8(ndr, "SequenceNumber", r->SequenceNumber, 8);
+		ndr_print_array_uint8(ndr, "Checksum", r->Checksum, 32);
+		ndr_print_array_uint8(ndr, "Confounder", r->Confounder, 8);
+		ndr->depth--;
+		ndr->flags = _flags_save_STRUCT;
+	}
+}
+
