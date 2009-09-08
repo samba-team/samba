@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/cli_epmapper.h"
+#include "../librpc/gen_ndr/ndr_schannel.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_CLI
@@ -1611,7 +1612,9 @@ static NTSTATUS create_schannel_auth_rpc_bind_req( struct rpc_pipe_client *cli,
 						RPC_HDR_AUTH *pauth_out,
 						prs_struct *auth_data)
 {
-	RPC_AUTH_SCHANNEL_NEG schannel_neg;
+	struct NL_AUTH_MESSAGE r;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
 
 	/* We may change the pad length before marshalling. */
 	init_rpc_hdr_auth(pauth_out, RPC_SCHANNEL_AUTH_TYPE, (int)auth_level, 0, 1);
@@ -1625,16 +1628,30 @@ static NTSTATUS create_schannel_auth_rpc_bind_req( struct rpc_pipe_client *cli,
 		}
 	}
 
-	init_rpc_auth_schannel_neg(&schannel_neg, cli->auth->domain,
-				   global_myname());
-
 	/*
 	 * Now marshall the data into the auth parse_struct.
 	 */
 
-	if(!smb_io_rpc_auth_schannel_neg("schannel_neg",
-				       &schannel_neg, auth_data, 0)) {
-		DEBUG(0,("Failed to marshall RPC_AUTH_SCHANNEL_NEG.\n"));
+	r.MessageType			= NL_NEGOTIATE_REQUEST;
+	r.Flags				= NL_FLAG_OEM_NETBIOS_DOMAIN_NAME |
+					  NL_FLAG_OEM_NETBIOS_COMPUTER_NAME;
+	r.oem_netbios_domain.a		= cli->auth->domain;
+	r.oem_netbios_computer.a	= global_myname();
+
+	ndr_err = ndr_push_struct_blob(&blob, talloc_tos(), NULL, &r,
+		       (ndr_push_flags_fn_t)ndr_push_NL_AUTH_MESSAGE);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0,("Failed to marshall NL_AUTH_MESSAGE.\n"));
+		prs_mem_free(auth_data);
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(NL_AUTH_MESSAGE, &r);
+	}
+
+	if (!prs_copy_data_in(auth_data, (const char *)blob.data, blob.length))
+	{
 		prs_mem_free(auth_data);
 		return NT_STATUS_NO_MEMORY;
 	}
