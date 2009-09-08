@@ -33,13 +33,13 @@ parser.add_option("-H", help="LDB URL for database or target server", type=str)
 parser.add_option("--complexity",
   help="The password complexity (on | off | default). Default is 'on'", type=str)
 parser.add_option("--history-length",
-  help="The password history length (<integer> | default)", type=str)
+  help="The password history length (<integer> | default).  Default is 24.", type=str)
 parser.add_option("--min-pwd-length",
-  help="The minimum password length (<integer> | default)", type=str)
+  help="The minimum password length (<integer> | default).  Default is 7.", type=str)
 parser.add_option("--min-pwd-age",
-  help="The minimum password age (<integer in days> | default)", type=str)
+  help="The minimum password age (<integer in days> | default).  Default is 0.", type=str)
 parser.add_option("--max-pwd-age",
-  help="The maximum password age (<integer in days> | default)", type=str)
+  help="The maximum password age (<integer in days> | default).  Default is 43.", type=str)
 
 opts, args = parser.parse_args()
 
