@@ -268,7 +268,7 @@ static int expect(int master, char *issue, char *expected)
 		buffer[nread] = 0;
 
 		while (True) {
-			status = read_socket_with_timeout(
+			status = read_fd_with_timeout(
 				master, buffer + nread, 1,
 				sizeof(buffer) - nread - 1,
 				timeout, &len);
