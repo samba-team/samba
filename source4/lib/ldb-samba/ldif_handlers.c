@@ -595,6 +595,14 @@ static int ldif_write_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 	char *string;
 	uint32_t i;
 
+	if (ldb_get_flags(ldb) & LDB_FLG_SHOW_BINARY) {
+		return ldif_write_NDR(ldb, mem_ctx, in, out, 
+				      sizeof(struct prefixMapBlob),
+				      (ndr_pull_flags_fn_t)ndr_pull_prefixMapBlob,
+				      (ndr_print_fn_t)ndr_print_prefixMapBlob);
+				      
+	}
+
 	blob = talloc(mem_ctx, struct prefixMapBlob);
 	if (blob == NULL) {
 		return -1;
