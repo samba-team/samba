@@ -35,18 +35,6 @@
 
 #include "system/filesys.h"
 
-#define CHECK_STATUS(status, correct) do { \
-	if (!NT_STATUS_EQUAL(status, correct)) { \
-		torture_result(tctx, TORTURE_FAIL, __location__": \
-		       Incorrect status %s - should be %s", \
-		       nt_errstr(status), nt_errstr(correct)); \
-		ret = false; \
-		goto done; \
-	}} while (0)
-
-#define CHECK_VALUE(v, correct) torture_assert_int_equal(tctx, (v), \
-				(correct), "incorrect value");
-
 #define DNAME	"smb2_dir"
 #define NFILES	100
 
@@ -63,6 +51,7 @@ static NTSTATUS populate_tree(struct torture_context *tctx,
 			      struct smb2_handle *h_out)
 {
 	struct smb2_create create;
+	char **strs = NULL;
 	NTSTATUS status;
 	bool ret;
 	int i;
@@ -80,7 +69,7 @@ static NTSTATUS populate_tree(struct torture_context *tctx,
 	create.in.fname = DNAME;
 
 	status = smb2_create(tree, mem_ctx, &create);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 	*h_out = create.out.file.handle;
 
 	ZERO_STRUCT(create);
@@ -88,12 +77,17 @@ static NTSTATUS populate_tree(struct torture_context *tctx,
 	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
 	create.in.create_disposition = NTCREATEX_DISP_CREATE;
 
+	strs = generate_unique_strs(mem_ctx, 8, nfiles);
+	if (strs == NULL) {
+		status = NT_STATUS_OBJECT_NAME_COLLISION;
+		goto done;
+	}
 	for (i = 0; i < nfiles; i++) {
-		files[i].name = generate_random_str(tctx, 8);
+		files[i].name = strs[i];
 		create.in.fname = talloc_asprintf(mem_ctx, "%s\\%s",
 		    DNAME, files[i].name);
 		status = smb2_create(tree, mem_ctx, &create);
-		CHECK_STATUS(status, NT_STATUS_OK);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 		smb2_util_close(tree, create.out.file.handle);
 	}
  done:
@@ -130,7 +124,7 @@ static bool test_find(struct torture_context *tctx,
 		status = smb2_find_level(tree, tree, &f, &count, &d);
 		if (NT_STATUS_EQUAL(status, STATUS_NO_MORE_FILES))
 			break;
-		CHECK_STATUS(status, NT_STATUS_OK);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 
 		for (i = 0; i < count; i++) {
 			bool expected;
@@ -163,7 +157,8 @@ static bool test_find(struct torture_context *tctx,
 		f.in.max_response_size	= 4096;
 	} while (count != 0);
 
-	CHECK_VALUE(file_count, NFILES + 2);
+	torture_assert_int_equal_goto(tctx, file_count, NFILES + 2, ret, done,
+				      "");
 
 	for (i = 0; i < NFILES; i++) {
 		if (files[j].found)
@@ -214,7 +209,7 @@ static bool test_fixed(struct torture_context *tctx,
 	create.in.fname = DNAME;
 
 	status = smb2_create(tree, mem_ctx, &create);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 	h2 = create.out.file.handle;
 
 	ZERO_STRUCT(f);
@@ -226,7 +221,7 @@ static bool test_fixed(struct torture_context *tctx,
 
 	/* Start enumeration on h, then delete all from h2 */
 	status = smb2_find_level(tree, tree, &f, &count, &d);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 
 	f.in.file.handle	= h2;
 
@@ -234,7 +229,7 @@ static bool test_fixed(struct torture_context *tctx,
 		status = smb2_find_level(tree, tree, &f, &count, &d);
 		if (NT_STATUS_EQUAL(status, STATUS_NO_MORE_FILES))
 			break;
-		CHECK_STATUS(status, NT_STATUS_OK);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 
 		for (i = 0; i < count; i++) {
 			const char *found = d[i].both_directory_info.name.s;
@@ -245,7 +240,8 @@ static bool test_fixed(struct torture_context *tctx,
 				continue;
 
 			status = smb2_util_unlink(tree, path);
-			CHECK_STATUS(status, NT_STATUS_OK);
+			torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+							"");
 
 			talloc_free(path);
 		}
@@ -261,7 +257,7 @@ static bool test_fixed(struct torture_context *tctx,
 		status = smb2_find_level(tree, tree, &f, &count, &d);
 		if (NT_STATUS_EQUAL(status, STATUS_NO_MORE_FILES))
 			break;
-		CHECK_STATUS(status, NT_STATUS_OK);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 
 		for (i = 0; i < count; i++) {
 			const char *found = d[i].both_directory_info.name.s;
@@ -427,11 +423,11 @@ static bool test_one_file(struct torture_context *tctx,
 	struct smb2_handle h, h2;
 
 	status = torture_smb2_testdir(tree, DNAME, &h);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 
 	status = smb2_create_complex_file(tree, DNAME "\\torture_search.txt",
 					  &h2);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 
 	/* call all the File Information Classes */
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
@@ -441,36 +437,39 @@ static bool test_one_file(struct torture_context *tctx,
 		levels[i].status = torture_single_file_search(tree, mem_ctx,
 				   fname, levels[i].level, levels[i].data_level,
 				   i, &d, &count, &h);
-		CHECK_STATUS(levels[i].status, NT_STATUS_OK);
+		torture_assert_ntstatus_ok_goto(tctx, levels[i].status, ret,
+						done, "");
 	}
 
 	/* get the all_info file into to check against */
 	all_info2.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION;
 	all_info2.generic.in.file.handle = h2;
 	status = smb2_getinfo_file(tree, tctx, &all_info2);
-	torture_assert_ntstatus_ok(tctx, status,
-				   "RAW_FILEINFO_ALL_INFO failed");
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"RAW_FILEINFO_ALL_INFO failed");
 
 	alt_info.generic.level = RAW_FILEINFO_ALT_NAME_INFORMATION;
 	alt_info.generic.in.file.handle = h2;
 	status = smb2_getinfo_file(tree, tctx, &alt_info);
-	torture_assert_ntstatus_ok(tctx, status,
-				   "RAW_FILEINFO_ALT_NAME_INFO failed");
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"RAW_FILEINFO_ALT_NAME_INFO failed");
 
 	internal_info.generic.level = RAW_FILEINFO_INTERNAL_INFORMATION;
 	internal_info.generic.in.file.handle = h2;
 	status = smb2_getinfo_file(tree, tctx, &internal_info);
-	torture_assert_ntstatus_ok(tctx, status,
-				   "RAW_FILEINFO_INTERNAL_INFORMATION failed");
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"RAW_FILEINFO_INTERNAL_INFORMATION "
+				        "failed");
 
 #define CHECK_VAL(name, sname1, field1, v, sname2, field2) do { \
 	s = find(name); \
 	if (s) { \
 		if ((s->sname1.field1) != (v.sname2.out.field2)) { \
-			printf("(%s) %s/%s [0x%x] != %s/%s [0x%x]\n", \
-				__location__, \
-				#sname1, #field1, (int)s->sname1.field1, \
-				#sname2, #field2, (int)v.sname2.out.field2); \
+			torture_result(tctx, TORTURE_FAIL, \
+			    "(%s) %s/%s [0x%x] != %s/%s [0x%x]\n", \
+			    __location__, \
+			    #sname1, #field1, (int)s->sname1.field1, \
+			    #sname2, #field2, (int)v.sname2.out.field2); \
 			ret = false; \
 		} \
 	}} while (0)
@@ -480,12 +479,13 @@ static bool test_one_file(struct torture_context *tctx,
 	if (s) { \
 		if (s->sname1.field1 != \
 		    (~1 & nt_time_to_unix(v.sname2.out.field2))) { \
-			printf("(%s) %s/%s [%s] != %s/%s [%s]\n", \
-				__location__, \
-				#sname1, #field1, \
-				timestring(tctx, s->sname1.field1), \
-				#sname2, #field2, \
-				nt_time_string(tctx, v.sname2.out.field2)); \
+			torture_result(tctx, TORTURE_FAIL, \
+			    "(%s) %s/%s [%s] != %s/%s [%s]\n", \
+			    __location__, \
+			    #sname1, #field1, \
+			    timestring(tctx, s->sname1.field1), \
+			    #sname2, #field2, \
+			    nt_time_string(tctx, v.sname2.out.field2)); \
 			ret = false; \
 		} \
 	}} while (0)
@@ -494,12 +494,13 @@ static bool test_one_file(struct torture_context *tctx,
 	s = find(name); \
 	if (s) { \
 		if (s->sname1.field1 != v.sname2.out.field2) { \
-			printf("(%s) %s/%s [%s] != %s/%s [%s]\n", \
-				__location__, \
-				#sname1, #field1, \
-				nt_time_string(tctx, s->sname1.field1), \
-				#sname2, #field2, \
-				nt_time_string(tctx, v.sname2.out.field2)); \
+			torture_result(tctx, TORTURE_FAIL, \
+			    "(%s) %s/%s [%s] != %s/%s [%s]\n", \
+			    __location__, \
+			    #sname1, #field1, \
+			    nt_time_string(tctx, s->sname1.field1), \
+			    #sname2, #field2, \
+			    nt_time_string(tctx, v.sname2.out.field2)); \
 			ret = false; \
 		} \
 	}} while (0)
@@ -509,10 +510,11 @@ static bool test_one_file(struct torture_context *tctx,
 	if (s) { \
 		if (!s->sname1.field1 || \
 		    strcmp(s->sname1.field1, v.sname2.out.field2.s)) { \
-			printf("(%s) %s/%s [%s] != %s/%s [%s]\n", \
-				__location__, \
-				#sname1, #field1, s->sname1.field1, \
-				#sname2, #field2, v.sname2.out.field2.s); \
+			torture_result(tctx, TORTURE_FAIL, \
+			    "(%s) %s/%s [%s] != %s/%s [%s]\n", \
+			    __location__, \
+			    #sname1, #field1, s->sname1.field1, \
+			    #sname2, #field2, v.sname2.out.field2.s); \
 			ret = false; \
 		} \
 	}} while (0)
@@ -522,10 +524,11 @@ static bool test_one_file(struct torture_context *tctx,
 	if (s) { \
 		if (!s->sname1.field1.s || \
 		    strcmp(s->sname1.field1.s, v.sname2.out.field2.s)) { \
-			printf("(%s) %s/%s [%s] != %s/%s [%s]\n", \
-				__location__, \
-				#sname1, #field1, s->sname1.field1.s, \
-				#sname2, #field2, v.sname2.out.field2.s); \
+			torture_result(tctx, TORTURE_FAIL, \
+			    "(%s) %s/%s [%s] != %s/%s [%s]\n", \
+			    __location__, \
+			    #sname1, #field1, s->sname1.field1.s, \
+			    #sname2, #field2, v.sname2.out.field2.s); \
 			ret = false; \
 		} \
 	}} while (0)
@@ -535,10 +538,10 @@ static bool test_one_file(struct torture_context *tctx,
 	if (s) { \
 		if (!s->sname1.field1.s || \
 		    strcmp(s->sname1.field1.s, fname)) { \
-			printf("(%s) %s/%s [%s] != %s\n", \
-				__location__, \
-				#sname1, #field1, s->sname1.field1.s, \
-				fname); \
+			torture_result(tctx, TORTURE_FAIL, \
+			    "(%s) %s/%s [%s] != %s\n", \
+			    __location__, \
+			    #sname1, #field1, s->sname1.field1.s, fname); \
 			ret = false; \
 		} \
 	}} while (0)
@@ -548,10 +551,10 @@ static bool test_one_file(struct torture_context *tctx,
 	if (s) { \
 		if (!s->sname1.field1 || \
 		    strcmp(s->sname1.field1, fname)) { \
-			printf("(%s) %s/%s [%s] != %s\n", \
-				__location__, \
-				#sname1, #field1, s->sname1.field1, \
-				fname); \
+			torture_result(tctx, TORTURE_FAIL, \
+			   "(%s) %s/%s [%s] != %s\n", \
+			    __location__, \
+			    #sname1, #field1, s->sname1.field1, fname); \
 			ret = false; \
 		} \
 	}} while (0)
@@ -574,6 +577,7 @@ static bool test_one_file(struct torture_context *tctx,
 	CHECK_NTTIME("SMB2_FIND_BOTH_DIRECTORY_INFO",    both_directory_info,    create_time, all_info2, all_info2, create_time);
 	CHECK_NTTIME("SMB2_FIND_ID_FULL_DIRECTORY_INFO", id_full_directory_info, create_time, all_info2, all_info2, create_time);
 	CHECK_NTTIME("SMB2_FIND_ID_BOTH_DIRECTORY_INFO", id_both_directory_info, create_time, all_info2, all_info2, create_time);
+
 	CHECK_NTTIME("SMB2_FIND_DIRECTORY_INFO",         directory_info,         access_time, all_info2, all_info2, access_time);
 	CHECK_NTTIME("SMB2_FIND_FULL_DIRECTORY_INFO",    full_directory_info,    access_time, all_info2, all_info2, access_time);
 	CHECK_NTTIME("SMB2_FIND_BOTH_DIRECTORY_INFO",    both_directory_info,    access_time, all_info2, all_info2, access_time);
@@ -603,16 +607,16 @@ static bool test_one_file(struct torture_context *tctx,
 	CHECK_VAL("SMB2_FIND_ID_FULL_DIRECTORY_INFO",    id_full_directory_info, ea_size, all_info2, all_info2, ea_size);
 	CHECK_VAL("SMB2_FIND_ID_BOTH_DIRECTORY_INFO",    id_both_directory_info, ea_size, all_info2, all_info2, ea_size);
 
-	CHECK_WSTR("SMB2_FIND_BOTH_DIRECTORY_INFO",      both_directory_info,    short_name, alt_info, alt_name_info, fname, STR_UNICODE);
-
 	CHECK_NAME("SMB2_FIND_DIRECTORY_INFO",           directory_info,         name, fname, STR_TERMINATE_ASCII);
 	CHECK_NAME("SMB2_FIND_FULL_DIRECTORY_INFO",      full_directory_info,    name, fname, STR_TERMINATE_ASCII);
 	CHECK_NAME("SMB2_FIND_NAME_INFO",                name_info,              name, fname, STR_TERMINATE_ASCII);
 	CHECK_NAME("SMB2_FIND_BOTH_DIRECTORY_INFO",      both_directory_info,    name, fname, STR_TERMINATE_ASCII);
 	CHECK_NAME("SMB2_FIND_ID_FULL_DIRECTORY_INFO",   id_full_directory_info, name, fname, STR_TERMINATE_ASCII);
 	CHECK_NAME("SMB2_FIND_ID_BOTH_DIRECTORY_INFO",   id_both_directory_info, name, fname, STR_TERMINATE_ASCII);
-	CHECK_VAL("SMB2_FIND_ID_FULL_DIRECTORY_INFO",    id_full_directory_info, file_id, internal_info, internal_information, file_id);
 
+	CHECK_WSTR("SMB2_FIND_BOTH_DIRECTORY_INFO",      both_directory_info,    short_name, alt_info, alt_name_info, fname, STR_UNICODE);
+
+	CHECK_VAL("SMB2_FIND_ID_FULL_DIRECTORY_INFO",    id_full_directory_info, file_id, internal_info, internal_information, file_id);
 	CHECK_VAL("SMB2_FIND_ID_BOTH_DIRECTORY_INFO",    id_both_directory_info, file_id, internal_info, internal_information, file_id);
 
 done:
@@ -685,7 +689,7 @@ static NTSTATUS multiple_smb2_search(struct smb2_tree *tree,
 		status = smb2_find_level(tree, tree, &f, &count, &d);
 		if (NT_STATUS_EQUAL(status, STATUS_NO_MORE_FILES))
 			break;
-		CHECK_STATUS(status, NT_STATUS_OK);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 		if (!fill_result(result, d, count, level, data_level)) {
 			return NT_STATUS_UNSUCCESSFUL;
 		}
@@ -703,7 +707,8 @@ static NTSTATUS multiple_smb2_search(struct smb2_tree *tree,
 				break;
 			case CONT_RESTART:
 			default:
-				/* we should prevent staying in the loop forever */
+				/* we should prevent staying in the loop
+				 * forever */
 				f.in.continue_flags = 0;
 				break;
 		}
@@ -767,7 +772,7 @@ static bool test_many_files(struct torture_context *tctx,
 
 	smb2_deltree(tree, DNAME);
 	status = torture_smb2_testdir(tree, DNAME, &h);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 
 	torture_comment(tctx, "Testing with %d files\n", num_files);
 	ZERO_STRUCT(create);
@@ -779,7 +784,7 @@ static bool test_many_files(struct torture_context *tctx,
 		fname = talloc_asprintf(mem_ctx, DNAME "\\t%03d-%d.txt", i, i);
 		create.in.fname = talloc_asprintf(mem_ctx, "%s", fname);
 		status = smb2_create(tree, mem_ctx, &create);
-		CHECK_STATUS(status, NT_STATUS_OK);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 		smb2_util_close(tree, create.out.file.handle);
 		talloc_free(fname);
 	}
@@ -797,7 +802,8 @@ static bool test_many_files(struct torture_context *tctx,
 					      search_types[t].cont_type,
 					      &result, &h);
 
-		CHECK_VALUE(result.count, num_files);
+		torture_assert_int_equal_goto(tctx, result.count, num_files,
+					      ret, done, "");
 
 		compare_data_level = search_types[t].data_level;
 		level_sort = search_types[t].level;
@@ -813,8 +819,8 @@ static bool test_many_files(struct torture_context *tctx,
 					 search_types[t].level,
 					 compare_data_level);
 			fname = talloc_asprintf(mem_ctx, "t%03d-%d.txt", i, i);
-			torture_assert_str_equal(tctx, fname, s,
-						 "Incorrect name");
+			torture_assert_str_equal_goto(tctx, s, fname, ret,
+						      done, "Incorrect name");
 			talloc_free(fname);
 		}
 		talloc_free(result.tctx);
@@ -829,9 +835,10 @@ done:
 }
 
 /*
-  check a individual file result
+  check an individual file result
 */
-static bool check_result(struct multiple_result *result,
+static bool check_result(struct torture_context *tctx,
+			 struct multiple_result *result,
 			 const char *name,
 			 bool exist,
 			 uint32_t attrib)
@@ -845,24 +852,26 @@ static bool check_result(struct multiple_result *result,
 	}
 	if (i == result->count) {
 		if (exist) {
-			printf("failed: '%s' should exist with attribute %s\n",
-			       name, attrib_string(result->list, attrib));
+			torture_result(tctx, TORTURE_FAIL,
+			    "failed: '%s' should exist with attribute %s\n",
+			    name, attrib_string(result->list, attrib));
 			return false;
 		}
 		return true;
 	}
 
 	if (!exist) {
-		printf("failed: '%s' should NOT exist (has attribute %s)\n",
-		       name, attrib_string(result->list,
-		       result->list[i].both_directory_info.attrib));
+		torture_result(tctx, TORTURE_FAIL,
+		    "failed: '%s' should NOT exist (has attribute %s)\n",
+		    name, attrib_string(result->list,
+		    result->list[i].both_directory_info.attrib));
 		return false;
 	}
 
 	if ((result->list[i].both_directory_info.attrib&0xFFF) != attrib) {
-		printf("failed: '%s' should have attribute 0x%x (has 0x%x)\n",
-		       name,
-		       attrib, result->list[i].both_directory_info.attrib);
+		torture_result(tctx, TORTURE_FAIL,
+		    "failed: '%s' should have attribute 0x%x (has 0x%x)\n",
+		    name, attrib, result->list[i].both_directory_info.attrib);
 		return false;
 	}
 	return true;
@@ -891,9 +900,9 @@ static bool test_modify_search(struct torture_context *tctx,
 	smb2_deltree(tree, DNAME);
 
 	status = torture_smb2_testdir(tree, DNAME, &h);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 
-	printf("Creating %d files\n", num_files);
+	torture_comment(tctx, "Creating %d files\n", num_files);
 
 	ZERO_STRUCT(create);
 	create.in.desired_access = SEC_RIGHTS_FILE_ALL;
@@ -905,11 +914,11 @@ static bool test_modify_search(struct torture_context *tctx,
 		create.in.fname = talloc_asprintf(mem_ctx, "%s\\%s",
 						  DNAME, files[i].name);
 		status = smb2_create(tree, mem_ctx, &create);
-		CHECK_STATUS(status, NT_STATUS_OK);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 		smb2_util_close(tree, create.out.file.handle);
 	}
 
-	printf("pulling the first two files\n");
+	torture_comment(tctx, "pulling the first two files\n");
 	ZERO_STRUCT(result);
 	result.tctx = talloc_new(tctx);
 
@@ -924,15 +933,15 @@ static bool test_modify_search(struct torture_context *tctx,
 		status = smb2_find_level(tree, tree, &f, &count, &d);
 		if (NT_STATUS_EQUAL(status, STATUS_NO_MORE_FILES))
 			break;
-		CHECK_STATUS(status, NT_STATUS_OK);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 		if (!fill_result(&result, d, count, f.in.level,
 				 RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO)) {
 			ret = false;
 			goto done;
 		}
-	}while(result.count < 2);
+	} while (result.count < 2);
 
-	printf("Changing attributes and deleting\n");
+	torture_comment(tctx, "Changing attributes and deleting\n");
 
 	ZERO_STRUCT(create);
 	create.in.desired_access = SEC_RIGHTS_FILE_ALL;
@@ -943,7 +952,7 @@ static bool test_modify_search(struct torture_context *tctx,
 	create.in.fname = talloc_asprintf(mem_ctx, "%s\\%s", DNAME,
 					  files[num_files].name);
 	status = smb2_create(tree, mem_ctx, &create);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 	smb2_util_close(tree, create.out.file.handle);
 
 	ZERO_STRUCT(create);
@@ -955,12 +964,12 @@ static bool test_modify_search(struct torture_context *tctx,
 	create.in.fname = talloc_asprintf(mem_ctx, "%s\\%s", DNAME,
 					  files[num_files + 1].name);
 	status = smb2_create(tree, mem_ctx, &create);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 	smb2_util_close(tree, create.out.file.handle);
 
 	files[num_files + 2].name = talloc_asprintf(mem_ctx, "T013-13.txt.3");
 	status = smb2_create_complex_file(tree, DNAME "\\T013-13.txt.3", &h);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 
 	smb2_util_unlink(tree, DNAME "\\T014-14.txt");
 	smb2_util_setatr(tree, DNAME "\\T015-15.txt", FILE_ATTRIBUTE_HIDDEN);
@@ -973,7 +982,7 @@ static bool test_modify_search(struct torture_context *tctx,
 	sfinfo.generic.in.file.path = DNAME "\\T013-13.txt.3";
 	sfinfo.disposition_info.in.delete_on_close = 1;
 	status = smb2_composite_setpathinfo(tree, &sfinfo);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 
 	/* Reset the numfiles to include the new files and start the
 	 * search from the beginning */
@@ -986,7 +995,7 @@ static bool test_modify_search(struct torture_context *tctx,
 		status = smb2_find_level(tree, tree, &f, &count, &d);
 		if (NT_STATUS_EQUAL(status, STATUS_NO_MORE_FILES))
 			break;
-		CHECK_STATUS(status, NT_STATUS_OK);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 		if (!fill_result(&result, d, count, f.in.level,
 				 RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO)) {
 			ret = false;
@@ -997,21 +1006,21 @@ static bool test_modify_search(struct torture_context *tctx,
 	} while (count != 0);
 
 
-	ret &= check_result(&result, "t039-39.txt", true, FILE_ATTRIBUTE_HIDDEN);
-	ret &= check_result(&result, "t000-0.txt", true, FILE_ATTRIBUTE_HIDDEN);
-	ret &= check_result(&result, "t014-14.txt", false, 0);
-	ret &= check_result(&result, "t015-15.txt", true, FILE_ATTRIBUTE_HIDDEN);
-	ret &= check_result(&result, "t016-16.txt", true, FILE_ATTRIBUTE_NORMAL);
-	ret &= check_result(&result, "t017-17.txt", true, FILE_ATTRIBUTE_SYSTEM);
-	ret &= check_result(&result, "t018-18.txt", true, FILE_ATTRIBUTE_ARCHIVE);
-	ret &= check_result(&result, "t019-19.txt", true, FILE_ATTRIBUTE_ARCHIVE);
-	ret &= check_result(&result, "T013-13.txt.2", true, FILE_ATTRIBUTE_ARCHIVE);
-	ret &= check_result(&result, "T003-3.txt.2", false, 0);
-	ret &= check_result(&result, "T013-13.txt.3", true, FILE_ATTRIBUTE_NORMAL);
+	ret &= check_result(tctx, &result, "t039-39.txt", true, FILE_ATTRIBUTE_HIDDEN);
+	ret &= check_result(tctx, &result, "t000-0.txt", true, FILE_ATTRIBUTE_HIDDEN);
+	ret &= check_result(tctx, &result, "t014-14.txt", false, 0);
+	ret &= check_result(tctx, &result, "t015-15.txt", true, FILE_ATTRIBUTE_HIDDEN);
+	ret &= check_result(tctx, &result, "t016-16.txt", true, FILE_ATTRIBUTE_NORMAL);
+	ret &= check_result(tctx, &result, "t017-17.txt", true, FILE_ATTRIBUTE_SYSTEM);
+	ret &= check_result(tctx, &result, "t018-18.txt", true, FILE_ATTRIBUTE_ARCHIVE);
+	ret &= check_result(tctx, &result, "t019-19.txt", true, FILE_ATTRIBUTE_ARCHIVE);
+	ret &= check_result(tctx, &result, "T013-13.txt.2", true, FILE_ATTRIBUTE_ARCHIVE);
+	ret &= check_result(tctx, &result, "T003-3.txt.2", false, 0);
+	ret &= check_result(tctx, &result, "T013-13.txt.3", true, FILE_ATTRIBUTE_NORMAL);
 
 	if (!ret) {
 		for (i=0;i<result.count;i++) {
-			printf("%s %s (0x%x)\n",
+			torture_warning(tctx, "%s %s (0x%x)\n",
 			       result.list[i].both_directory_info.name.s,
 			       attrib_string(tctx,
 			       result.list[i].both_directory_info.attrib),
@@ -1041,9 +1050,10 @@ static bool test_sorted(struct torture_context *tctx,
 	struct multiple_result result;
 	struct smb2_handle h;
 
-	printf("Testing if directories always come back sorted\n");
+	torture_comment(tctx, "Testing if directories always come back "
+	   "sorted\n");
 	status = populate_tree(tctx, mem_ctx, tree, files, num_files, &h);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 
 	ZERO_STRUCT(result);
 	result.tctx = tctx;
@@ -1054,18 +1064,19 @@ static bool test_sorted(struct torture_context *tctx,
 				      SMB2_CONTINUE_FLAG_SINGLE,
 				      &result, &h);
 
-	CHECK_VALUE(result.count, num_files);
+	torture_assert_int_equal_goto(tctx, result.count, num_files, ret, done,
+				      "");
 
 	for (i=0;i<num_files-1;i++) {
 		const char *name1, *name2;
 		name1 = result.list[i].both_directory_info.name.s;
 		name2 = result.list[i+1].both_directory_info.name.s;
 		if (strcasecmp_m(name1, name2) > 0) {
-			printf("non-alphabetical order at entry %d  '%s' '%s'"
-			       "\n", i, name1, name2);
+			torture_comment(tctx, "non-alphabetical order at entry "
+			    "%d '%s' '%s'\n", i, name1, name2);
 			torture_comment(tctx,
-			"Server does not produce sorted directory listings"
-			"(not an error)\n");
+			    "Server does not produce sorted directory listings"
+			    "(not an error)\n");
 			goto done;
 		}
 	}
@@ -1079,7 +1090,6 @@ done:
 }
 
 /* test the behavior of file_index field in the SMB2_FIND struct */
-
 static bool test_file_index(struct torture_context *tctx,
 			    struct smb2_tree *tree)
 {
@@ -1100,9 +1110,9 @@ static bool test_file_index(struct torture_context *tctx,
 	smb2_deltree(tree, DNAME);
 
 	status = torture_smb2_testdir(tree, DNAME, &h);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 
-	printf("Testing the behavior of file_index flag\n");
+	torture_comment(tctx, "Testing the behavior of file_index flag\n");
 
 	ZERO_STRUCT(create);
 	create.in.desired_access = SEC_RIGHTS_FILE_ALL;
@@ -1112,7 +1122,7 @@ static bool test_file_index(struct torture_context *tctx,
 		fname = talloc_asprintf(mem_ctx, DNAME "\\file%u.txt", i);
 		create.in.fname = fname;
 		status = smb2_create(tree, mem_ctx, &create);
-		CHECK_STATUS(status, NT_STATUS_OK);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 		talloc_free(fname);
 		smb2_util_close(tree, create.out.file.handle);
 	}
@@ -1131,7 +1141,7 @@ static bool test_file_index(struct torture_context *tctx,
 		status = smb2_find_level(tree, tree, &f, &count, &d);
 		if (NT_STATUS_EQUAL(status, STATUS_NO_MORE_FILES))
 			break;
-		CHECK_STATUS(status, NT_STATUS_OK);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 		if (!fill_result(&result, d, count, f.in.level,
 				 RAW_SEARCH_DATA_FULL_DIRECTORY_INFO)) {
 			ret = false;
@@ -1140,15 +1150,14 @@ static bool test_file_index(struct torture_context *tctx,
 	} while(result.count < 10);
 
 	if (result.list[0].full_directory_info.file_index == 0) {
-		torture_comment(tctx,
+		torture_skip_goto(tctx, done,
 				"Talking to a server that doesn't provide a "
 				"file index.\nWindows servers using NTFS do "
 				"not provide a file_index. Skipping test\n");
-		goto done;
 	} else {
 		/* We are not talking to a Windows based server.  Windows
 		 * servers using NTFS do not provide a file_index.  Windows
-		 * server using FAT do provide a file index, however in both
+		 * servers using FAT do provide a file index, however in both
 		 * cases they do not honor a file index on a resume request.
 		 * See MS-FSCC <62> and MS-SMB2 <54> for more information. */
 
@@ -1168,7 +1177,7 @@ static bool test_file_index(struct torture_context *tctx,
 		status = smb2_find_level(tree, tree, &f, &count, &d);
 		if (NT_STATUS_EQUAL(status, STATUS_NO_MORE_FILES))
 			goto done;
-		CHECK_STATUS(status, NT_STATUS_OK);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 		if (!fill_result(&result, d, count, f.in.level,
 				 RAW_SEARCH_DATA_FULL_DIRECTORY_INFO)) {
 			ret = false;
@@ -1176,9 +1185,9 @@ static bool test_file_index(struct torture_context *tctx,
 		}
 		if (strcmp(fname,
 			result.list[0].full_directory_info.name.s)) {
-			printf("next expected file: %s but the server "
-			       "returned %s\n", fname,
-			       result.list[0].full_directory_info.name.s);
+			torture_comment(tctx, "Next expected file: %s but the "
+			    "server returned %s\n", fname,
+			    result.list[0].full_directory_info.name.s);
 			torture_comment(tctx,
 					"Not an error. Resuming using a file "
 					"index is an optional feature of the "
@@ -1203,8 +1212,11 @@ static bool test_large_files(struct torture_context *tctx,
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	const int num_files = 2000;
-	int i, j = 1, retry_count = 0;
+	int max_len = 200;
+	/* These should be evenly divisible */
+	int num_at_len = num_files / max_len;
 	struct file_elem files[2000] = {};
+	size_t len = 1;
 	bool ret = true;
 	NTSTATUS status;
 	struct smb2_create create;
@@ -1212,9 +1224,11 @@ static bool test_large_files(struct torture_context *tctx,
 	struct smb2_handle h;
 	union smb_search_data *d;
 	int count, file_count = 0;
+	char **strs = NULL;
+	int i, j;
 
 	torture_comment(tctx,
-	"Testing directory enumeration in a directory with >1000 files\n");
+	    "Testing directory enumeration in a directory with >1000 files\n");
 
 	smb2_deltree(tree, DNAME);
 
@@ -1229,7 +1243,7 @@ static bool test_large_files(struct torture_context *tctx,
 	create.in.fname = DNAME;
 
 	status = smb2_create(tree, mem_ctx, &create);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 	h = create.out.file.handle;
 
 	ZERO_STRUCT(create);
@@ -1238,15 +1252,16 @@ static bool test_large_files(struct torture_context *tctx,
 	create.in.create_disposition = NTCREATEX_DISP_CREATE;
 
 	for (i = 0; i < num_files; i++) {
-		files[i].name = generate_random_str(tctx, j);
+		if (i % num_at_len == 0) {
+		    strs = generate_unique_strs(mem_ctx, len, num_at_len);
+		    len++;
+		}
+		files[i].name = strs[i % num_at_len];
 		create.in.fname = talloc_asprintf(mem_ctx, "%s\\%s",
 		    DNAME, files[i].name);
 		status = smb2_create(tree, mem_ctx, &create);
-		CHECK_STATUS(status, NT_STATUS_OK);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 		smb2_util_close(tree, create.out.file.handle);
-		retry_count = 0;
-		if (i%9 == 0)
-			j = j + 1;
 	}
 
 	ZERO_STRUCT(f);
@@ -1259,7 +1274,7 @@ static bool test_large_files(struct torture_context *tctx,
 		status = smb2_find_level(tree, tree, &f, &count, &d);
 		if (NT_STATUS_EQUAL(status, STATUS_NO_MORE_FILES))
 			break;
-		CHECK_STATUS(status, NT_STATUS_OK);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 
 		for (i = 0; i < count; i++) {
 			bool expected;
@@ -1291,7 +1306,8 @@ static bool test_large_files(struct torture_context *tctx,
 		f.in.max_response_size  = 4096;
 	} while (count != 0);
 
-	CHECK_VALUE(file_count, num_files + 2);
+	torture_assert_int_equal_goto(tctx, file_count, num_files + 2, ret,
+				      done, "");
 
 	for (i = 0; i < num_files; i++) {
 		if (files[j].found)
