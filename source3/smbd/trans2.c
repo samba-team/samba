@@ -2691,6 +2691,9 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_dev, (unsi
 
 			/* Capabilities are filled in at connection time through STATVFS call */
 			additional_flags |= conn->fs_capabilities;
+			additional_flags |= lp_parm_int(conn->params->service,
+							"share", "fake_fscaps",
+							0);
 
 			SIVAL(pdata,0,FILE_CASE_PRESERVED_NAMES|FILE_CASE_SENSITIVE_SEARCH|
 				FILE_SUPPORTS_OBJECT_IDS|FILE_UNICODE_ON_DISK|
