@@ -234,9 +234,9 @@ static NTSTATUS vampire_apply_schema(struct vampire_state *s,
 				for (j=0; j < a->value_ctr.num_values; j++) {
 					uint32_t val = 0xFFFFFFFF;
 
-					if (a->value_ctr.values[i].blob
-					    && a->value_ctr.values[i].blob->length == 4) {
-						val = IVAL(a->value_ctr.values[i].blob->data,0);
+					if (a->value_ctr.values[j].blob
+					    && a->value_ctr.values[j].blob->length == 4) {
+						val = IVAL(a->value_ctr.values[j].blob->data,0);
 					}
 
 					if (val == DRSUAPI_OBJECTCLASS_attributeSchema) {
