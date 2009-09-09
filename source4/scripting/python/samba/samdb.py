@@ -161,14 +161,14 @@ pwdLastSet: 0
             assert(len(res) == 1)
             user_dn = res[0].dn
 
-            mod = ldb.Message()
-            mod.dn = user_dn
+            setpw = """
+dn: %s
+changetype: modify
+replace: userPassword
+userPassword:: %s
+""" % (user_dn, base64.b64encode(password))
 
-            glue.samdb_set_password(samdb=self, user_dn=str(user_dn),
-                        dom_dn=self.domain_dn(), mod=mod, new_password=password,
-                        user_change=False)
-
-            self.modify(mod)
+            self.modify_ldif(setpw)
 
             if force_password_change_at_next_login:
                 self.force_password_change_at_next_login(user_dn)
