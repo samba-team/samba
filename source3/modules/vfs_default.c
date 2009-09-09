@@ -139,7 +139,7 @@ static uint32_t vfswrap_fs_capabilities(struct vfs_handle_struct *handle,
 		*p_ts_res = TIMESTAMP_SET_MSEC;
 #elif defined(HAVE_UTIME)
 		/* utime only allows sec timestamps to be set. */
-		*p_ts_res = TIMESTAMP_SET_SEC;
+		*p_ts_res = TIMESTAMP_SET_SECONDS;
 #endif
 
 		/* TODO. Add a configure test for the Linux
