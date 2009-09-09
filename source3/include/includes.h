@@ -526,6 +526,12 @@ struct timespec {
 };
 #endif
 
+enum timestamp_set_resolution {
+	TIMESTAMP_SET_SECONDS = 0,
+	TIMESTAMP_SET_MSEC,
+	TIMESTAMP_SET_NT_OR_BETTER
+};
+
 #ifdef HAVE_BROKEN_GETGROUPS
 #define GID_T int
 #else

@@ -241,7 +241,9 @@ static uint32_t onefs_fs_capabilities(struct vfs_handle_struct *handle)
 		result |= FILE_NAMED_STREAMS;
 	}
 
-	return result | SMB_VFS_NEXT_FS_CAPABILITIES(handle);
+	result |= SMB_VFS_NEXT_FS_CAPABILITIES(handle);
+	conn->ts_res = TIMESTAMP_SET_MSEC;
+	return result;
 }
 
 static vfs_op_tuple onefs_ops[] = {

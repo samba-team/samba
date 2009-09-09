@@ -614,13 +614,13 @@ void reply_ntcreate_and_X(struct smb_request *req)
 		dos_filetime_timespec(&m_timespec);
 	}
 
-	put_long_date_timespec(p, c_timespec); /* create time. */
+	put_long_date_timespec(conn->ts_res, p, c_timespec); /* create time. */
 	p += 8;
-	put_long_date_timespec(p, a_timespec); /* access time */
+	put_long_date_timespec(conn->ts_res, p, a_timespec); /* access time */
 	p += 8;
-	put_long_date_timespec(p, m_timespec); /* write time */
+	put_long_date_timespec(conn->ts_res, p, m_timespec); /* write time */
 	p += 8;
-	put_long_date_timespec(p, m_timespec); /* change time */
+	put_long_date_timespec(conn->ts_res, p, m_timespec); /* change time */
 	p += 8;
 	SIVAL(p,0,fattr); /* File Attributes. */
 	p += 4;
@@ -1081,13 +1081,13 @@ static void call_nt_transact_create(connection_struct *conn,
 		dos_filetime_timespec(&m_timespec);
 	}
 
-	put_long_date_timespec(p, c_timespec); /* create time. */
+	put_long_date_timespec(conn->ts_res, p, c_timespec); /* create time. */
 	p += 8;
-	put_long_date_timespec(p, a_timespec); /* access time */
+	put_long_date_timespec(conn->ts_res, p, a_timespec); /* access time */
 	p += 8;
-	put_long_date_timespec(p, m_timespec); /* write time */
+	put_long_date_timespec(conn->ts_res, p, m_timespec); /* write time */
 	p += 8;
-	put_long_date_timespec(p, m_timespec); /* change time */
+	put_long_date_timespec(conn->ts_res, p, m_timespec); /* change time */
 	p += 8;
 	SIVAL(p,0,fattr); /* File Attributes. */
 	p += 4;

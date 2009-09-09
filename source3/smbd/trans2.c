@@ -1598,10 +1598,10 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			was_8_3 = mangle_is_8_3(fname, True, conn->params);
 			p += 4;
 			SIVAL(p,0,reskey); p += 4;
-			put_long_date_timespec(p,create_date_ts); p += 8;
-			put_long_date_timespec(p,adate_ts); p += 8;
-			put_long_date_timespec(p,mdate_ts); p += 8;
-			put_long_date_timespec(p,mdate_ts); p += 8;
+			put_long_date_timespec(conn->ts_res, p,create_date_ts); p += 8;
+			put_long_date_timespec(conn->ts_res, p,adate_ts); p += 8;
+			put_long_date_timespec(conn->ts_res, p,mdate_ts); p += 8;
+			put_long_date_timespec(conn->ts_res, p,mdate_ts); p += 8;
 			SOFF_T(p,0,file_size); p += 8;
 			SOFF_T(p,0,allocation_size); p += 8;
 			SIVAL(p,0,nt_extmode); p += 4;
@@ -1649,10 +1649,10 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_DIRECTORY_INFO\n"));
 			p += 4;
 			SIVAL(p,0,reskey); p += 4;
-			put_long_date_timespec(p,create_date_ts); p += 8;
-			put_long_date_timespec(p,adate_ts); p += 8;
-			put_long_date_timespec(p,mdate_ts); p += 8;
-			put_long_date_timespec(p,mdate_ts); p += 8;
+			put_long_date_timespec(conn->ts_res, p,create_date_ts); p += 8;
+			put_long_date_timespec(conn->ts_res, p,adate_ts); p += 8;
+			put_long_date_timespec(conn->ts_res, p,mdate_ts); p += 8;
+			put_long_date_timespec(conn->ts_res, p,mdate_ts); p += 8;
 			SOFF_T(p,0,file_size); p += 8;
 			SOFF_T(p,0,allocation_size); p += 8;
 			SIVAL(p,0,nt_extmode); p += 4;
@@ -1672,10 +1672,10 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_FULL_DIRECTORY_INFO\n"));
 			p += 4;
 			SIVAL(p,0,reskey); p += 4;
-			put_long_date_timespec(p,create_date_ts); p += 8;
-			put_long_date_timespec(p,adate_ts); p += 8;
-			put_long_date_timespec(p,mdate_ts); p += 8;
-			put_long_date_timespec(p,mdate_ts); p += 8;
+			put_long_date_timespec(conn->ts_res, p,create_date_ts); p += 8;
+			put_long_date_timespec(conn->ts_res, p,adate_ts); p += 8;
+			put_long_date_timespec(conn->ts_res, p,mdate_ts); p += 8;
+			put_long_date_timespec(conn->ts_res, p,mdate_ts); p += 8;
 			SOFF_T(p,0,file_size); p += 8;
 			SOFF_T(p,0,allocation_size); p += 8;
 			SIVAL(p,0,nt_extmode); p += 4;
@@ -1721,10 +1721,10 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_ID_FULL_DIRECTORY_INFO\n"));
 			p += 4;
 			SIVAL(p,0,reskey); p += 4;
-			put_long_date_timespec(p,create_date_ts); p += 8;
-			put_long_date_timespec(p,adate_ts); p += 8;
-			put_long_date_timespec(p,mdate_ts); p += 8;
-			put_long_date_timespec(p,mdate_ts); p += 8;
+			put_long_date_timespec(conn->ts_res, p,create_date_ts); p += 8;
+			put_long_date_timespec(conn->ts_res, p,adate_ts); p += 8;
+			put_long_date_timespec(conn->ts_res, p,mdate_ts); p += 8;
+			put_long_date_timespec(conn->ts_res, p,mdate_ts); p += 8;
 			SOFF_T(p,0,file_size); p += 8;
 			SOFF_T(p,0,allocation_size); p += 8;
 			SIVAL(p,0,nt_extmode); p += 4;
@@ -1754,10 +1754,10 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			was_8_3 = mangle_is_8_3(fname, True, conn->params);
 			p += 4;
 			SIVAL(p,0,reskey); p += 4;
-			put_long_date_timespec(p,create_date_ts); p += 8;
-			put_long_date_timespec(p,adate_ts); p += 8;
-			put_long_date_timespec(p,mdate_ts); p += 8;
-			put_long_date_timespec(p,mdate_ts); p += 8;
+			put_long_date_timespec(conn->ts_res, p,create_date_ts); p += 8;
+			put_long_date_timespec(conn->ts_res, p,adate_ts); p += 8;
+			put_long_date_timespec(conn->ts_res, p,mdate_ts); p += 8;
+			put_long_date_timespec(conn->ts_res, p,mdate_ts); p += 8;
 			SOFF_T(p,0,file_size); p += 8;
 			SOFF_T(p,0,allocation_size); p += 8;
 			SIVAL(p,0,nt_extmode); p += 4;
@@ -3526,9 +3526,9 @@ static char *store_file_unix_basic(connection_struct *conn,
 	SOFF_T(pdata,0,SMB_VFS_GET_ALLOC_SIZE(conn,fsp,psbuf)); /* Number of bytes used on disk - 64 Bit */
 	pdata += 8;
 
-	put_long_date_timespec(pdata,get_ctimespec(psbuf));       /* Change Time 64 Bit */
-	put_long_date_timespec(pdata+8,get_atimespec(psbuf));     /* Last access time 64 Bit */
-	put_long_date_timespec(pdata+16,get_mtimespec(psbuf));    /* Last modification time 64 Bit */
+	put_long_date_timespec(TIMESTAMP_SET_NT_OR_BETTER, pdata,get_ctimespec(psbuf));       /* Change Time 64 Bit */
+	put_long_date_timespec(TIMESTAMP_SET_NT_OR_BETTER, pdata+8,get_atimespec(psbuf));     /* Last access time 64 Bit */
+	put_long_date_timespec(TIMESTAMP_SET_NT_OR_BETTER, pdata+16,get_mtimespec(psbuf));    /* Last modification time 64 Bit */
 	pdata += 24;
 
 	SIVAL(pdata,0,psbuf->st_uid);               /* user id for the owner */
@@ -3668,7 +3668,7 @@ static char *store_file_unix_basic_info2(connection_struct *conn,
 	pdata = store_file_unix_basic(conn, pdata, fsp, psbuf);
 
 	/* Create (birth) time 64 bit */
-	put_long_date_timespec(pdata, get_create_timespec(psbuf, False));
+	put_long_date_timespec(TIMESTAMP_SET_NT_OR_BETTER, pdata, get_create_timespec(psbuf, False));
 	pdata += 8;
 
 	map_info2_flags_from_sbuf(psbuf, &file_flags, &flags_mask);
@@ -4309,10 +4309,10 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				data_size = 40;
 				SIVAL(pdata,36,0);
 			}
-			put_long_date_timespec(pdata,create_time_ts);
-			put_long_date_timespec(pdata+8,atime_ts);
-			put_long_date_timespec(pdata+16,mtime_ts); /* write time */
-			put_long_date_timespec(pdata+24,mtime_ts); /* change time */
+			put_long_date_timespec(conn->ts_res, pdata,create_time_ts);
+			put_long_date_timespec(conn->ts_res, pdata+8,atime_ts);
+			put_long_date_timespec(conn->ts_res, pdata+16,mtime_ts); /* write time */
+			put_long_date_timespec(conn->ts_res, pdata+24,mtime_ts); /* change time */
 			SIVAL(pdata,32,mode);
 
 			DEBUG(5,("SMB_QFBI - "));
@@ -4399,10 +4399,10 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		{
 			unsigned int ea_size = estimate_ea_size(conn, fsp, fname);
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_FILE_ALL_INFORMATION\n"));
-			put_long_date_timespec(pdata,create_time_ts);
-			put_long_date_timespec(pdata+8,atime_ts);
-			put_long_date_timespec(pdata+16,mtime_ts); /* write time */
-			put_long_date_timespec(pdata+24,mtime_ts); /* change time */
+			put_long_date_timespec(conn->ts_res, pdata,create_time_ts);
+			put_long_date_timespec(conn->ts_res, pdata+8,atime_ts);
+			put_long_date_timespec(conn->ts_res, pdata+16,mtime_ts); /* write time */
+			put_long_date_timespec(conn->ts_res, pdata+24,mtime_ts); /* change time */
 			SIVAL(pdata,32,mode);
 			SIVAL(pdata,36,0); /* padding. */
 			pdata += 40;
@@ -4537,10 +4537,10 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 		case SMB_FILE_NETWORK_OPEN_INFORMATION:
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_FILE_NETWORK_OPEN_INFORMATION\n"));
-			put_long_date_timespec(pdata,create_time_ts);
-			put_long_date_timespec(pdata+8,atime_ts);
-			put_long_date_timespec(pdata+16,mtime_ts); /* write time */
-			put_long_date_timespec(pdata+24,mtime_ts); /* change time */
+			put_long_date_timespec(conn->ts_res, pdata,create_time_ts);
+			put_long_date_timespec(conn->ts_res, pdata+8,atime_ts);
+			put_long_date_timespec(conn->ts_res, pdata+16,mtime_ts); /* write time */
+			put_long_date_timespec(conn->ts_res, pdata+24,mtime_ts); /* change time */
 			SOFF_T(pdata,32,allocation_size);
 			SOFF_T(pdata,40,file_size);
 			SIVAL(pdata,48,mode);
@@ -4894,15 +4894,22 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 			   struct smb_file_time *ft,
 			   bool setting_write_time)
 {
+	struct smb_file_time ft_stat;
 	uint32 action =
 		FILE_NOTIFY_CHANGE_LAST_ACCESS
-		|FILE_NOTIFY_CHANGE_LAST_WRITE;
+		|FILE_NOTIFY_CHANGE_LAST_WRITE
+		|FILE_NOTIFY_CHANGE_CREATION;
 
 	if (!VALID_STAT(*psbuf)) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
 	/* get some defaults (no modifications) if any info is zero or -1. */
+	if (null_timespec(ft->create_time)) {
+		ft->create_time = get_create_timespec(psbuf, lp_fake_dir_create_times(SNUM(conn)));
+		action &= ~FILE_NOTIFY_CHANGE_CREATION;
+	}
+
 	if (null_timespec(ft->atime)) {
 		ft->atime= get_atimespec(psbuf);
 		action &= ~FILE_NOTIFY_CHANGE_LAST_ACCESS;
@@ -4918,28 +4925,19 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 		action &= ~FILE_NOTIFY_CHANGE_LAST_WRITE;
 	}
 
+	/* Ensure the resolution is the correct for
+	 * what we can store on this filesystem. */
+
+	round_timespec(conn->ts_res, &ft->create_time);
+	round_timespec(conn->ts_res, &ft->atime);
+	round_timespec(conn->ts_res, &ft->mtime);
+
 	DEBUG(5,("smb_set_filetime: actime: %s\n ",
 		time_to_asc(convert_timespec_to_time_t(ft->atime))));
 	DEBUG(5,("smb_set_filetime: modtime: %s\n ",
 		time_to_asc(convert_timespec_to_time_t(ft->mtime))));
-	if (!null_timespec(ft->create_time)) {
-		DEBUG(5,("smb_set_file_time: createtime: %s\n ",
-		   time_to_asc(convert_timespec_to_time_t(ft->create_time))));
-	}
-
-	/*
-	 * Try and set the times of this file if
-	 * they are different from the current values.
-	 */
-
-	{
-		struct timespec mts = get_mtimespec(psbuf);
-		struct timespec ats = get_atimespec(psbuf);
-		if ((timespec_compare(&ft->atime, &ats) == 0) &&
-		    (timespec_compare(&ft->mtime, &mts) == 0)) {
-			return NT_STATUS_OK;
-		}
-	}
+	DEBUG(5,("smb_set_file_time: createtime: %s\n ",
+		time_to_asc(convert_timespec_to_time_t(ft->create_time))));
 
 	if (setting_write_time) {
 		/*
@@ -4969,14 +4967,26 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 		}
 	}
 
-	DEBUG(10,("smb_set_file_time: setting utimes to modified values.\n"));
+	ft_stat.create_time = get_create_timespec(psbuf,
+				lp_fake_dir_create_times(SNUM(conn)));
+	ft_stat.atime= get_atimespec(psbuf);
+	ft_stat.mtime = get_mtimespec(psbuf);
+
+	round_timespec(conn->ts_res, &ft_stat.create_time);
+	round_timespec(conn->ts_res, &ft_stat.atime);
+	round_timespec(conn->ts_res, &ft_stat.mtime);
 
 	if (fsp && fsp->base_fsp) {
 		fname = fsp->base_fsp->fsp_name;
 	}
 
-	if(file_ntimes(conn, fname, ft)!=0) {
-		return map_nt_error_from_unix(errno);
+	if (timespec_compare(&ft_stat.create_time, &ft->create_time) ||
+			timespec_compare(&ft_stat.atime, &ft->atime) ||
+			timespec_compare(&ft_stat.mtime, &ft->mtime)) {
+		DEBUG(10,("smb_set_file_time: setting utimes to modified values.\n"));
+		if(file_ntimes(conn, fname, ft)!=0) {
+			return map_nt_error_from_unix(errno);
+		}
 	}
 	notify_fname(conn, NOTIFY_ACTION_MODIFIED, action, fname);
 

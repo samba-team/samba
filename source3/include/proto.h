@@ -1017,7 +1017,8 @@ char *current_timestring(TALLOC_CTX *ctx, bool hires);
 void srv_put_dos_date(char *buf,int offset,time_t unixdate);
 void srv_put_dos_date2(char *buf,int offset, time_t unixdate);
 void srv_put_dos_date3(char *buf,int offset,time_t unixdate);
-void put_long_date_timespec(char *p, struct timespec ts);
+void round_timespec(enum timestamp_set_resolution res, struct timespec *ts);
+void put_long_date_timespec(enum timestamp_set_resolution res, char *p, struct timespec ts);
 void put_long_date(char *p, time_t t);
 struct timespec get_create_timespec(const SMB_STRUCT_STAT *st,bool fake_dirs);
 struct timespec get_atimespec(const SMB_STRUCT_STAT *pst);
@@ -1038,6 +1039,8 @@ struct timespec timespec_current(void);
 struct timespec timespec_min(const struct timespec *ts1,
 			   const struct timespec *ts2);
 int timespec_compare(const struct timespec *ts1, const struct timespec *ts2);
+void round_timespec_to_sec(struct timespec *ts);
+void round_timespec_to_usec(struct timespec *ts);
 struct timespec interpret_long_date(const char *p);
 void cli_put_dos_date(struct cli_state *cli, char *buf, int offset, time_t unixdate);
 void cli_put_dos_date2(struct cli_state *cli, char *buf, int offset, time_t unixdate);
