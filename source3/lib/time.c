@@ -301,14 +301,30 @@ void srv_put_dos_date3(char *buf,int offset,time_t unixdate)
 	put_dos_date3(buf, offset, unixdate, server_zone_offset);
 }
 
+void round_timespec(enum timestamp_set_resolution res, struct timespec *ts)
+{
+	switch (res) {
+		case TIMESTAMP_SET_SECONDS:
+			round_timespec_to_sec(ts);
+			break;
+		case TIMESTAMP_SET_MSEC:
+			round_timespec_to_usec(ts);
+			break;
+		case TIMESTAMP_SET_NT_OR_BETTER:
+			/* No rounding needed. */
+			break;
+	}
+}
+
 /****************************************************************************
  Take a Unix time and convert to an NTTIME structure and place in buffer 
  pointed to by p.
 ****************************************************************************/
 
-void put_long_date_timespec(char *p, struct timespec ts)
+void put_long_date_timespec(enum timestamp_set_resolution res, char *p, struct timespec ts)
 {
 	NTTIME nt;
+	round_timespec(res, &ts);
 	unix_timespec_to_nt_time(&nt, ts);
 	SIVAL(p, 0, nt & 0xFFFFFFFF);
 	SIVAL(p, 4, nt >> 32);
@@ -319,7 +335,7 @@ void put_long_date(char *p, time_t t)
 	struct timespec ts;
 	ts.tv_sec = t;
 	ts.tv_nsec = 0;
-	put_long_date_timespec(p, ts);
+	put_long_date_timespec(TIMESTAMP_SET_SECONDS, p, ts);
 }
 
 /****************************************************************************
@@ -710,6 +726,27 @@ int timespec_compare(const struct timespec *ts1, const struct timespec *ts2)
 	if (ts1->tv_nsec > ts2->tv_nsec) return 1;
 	if (ts1->tv_nsec < ts2->tv_nsec) return -1;
 	return 0;
+}
+
+/****************************************************************************
+ Round up a timespec if nsec > 500000000, round down if lower,
+ then zero nsec.
+****************************************************************************/
+
+void round_timespec_to_sec(struct timespec *ts)
+{
+	ts->tv_sec = convert_timespec_to_time_t(*ts);
+	ts->tv_nsec = 0;
+}
+
+/****************************************************************************
+ Round a timespec to usec value.
+****************************************************************************/
+
+void round_timespec_to_usec(struct timespec *ts)
+{
+	struct timeval tv = convert_timespec_to_timeval(*ts);
+	*ts = convert_timeval_to_timespec(tv);
 }
 
 /****************************************************************************

@@ -92,13 +92,62 @@ static int vfswrap_statvfs(struct vfs_handle_struct *handle,  const char *path, 
 
 static uint32_t vfswrap_fs_capabilities(struct vfs_handle_struct *handle)
 {
+	connection_struct *conn = handle->conn;
+	uint32_t caps = FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES;
+	SMB_STRUCT_STAT st;
+	NTSTATUS status;
+	struct timespec mtime_ts, ctime_ts, atime_ts;
+	int ret = -1;
+
 #if defined(DARWINOS)
 	struct vfs_statvfs_struct statbuf;
 	ZERO_STRUCT(statbuf);
 	sys_statvfs(handle->conn->connectpath, &statbuf);
 	return statbuf.FsCapabilities;
 #endif
-	return FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES;
+
+	conn->ts_res = TIMESTAMP_SET_SECONDS;
+
+	/* Work out what timestamp resolution we can
+	 * use when setting a timestamp. */
+
+	ret = SMB_VFS_STAT(conn, conn->connectpath, &st);
+	if (ret == -1) {
+		return caps;
+	}
+
+	mtime_ts = get_mtimespec(&st);
+	ctime_ts = get_ctimespec(&st);
+	atime_ts = get_atimespec(&st);
+
+	if (mtime_ts.tv_nsec ||
+			atime_ts.tv_nsec ||
+			ctime_ts.tv_nsec) {
+		/* If any of the normal UNIX directory timestamps
+		 * have a non-zero tv_nsec component assume
+		 * we might be able to set sub-second timestamps.
+		 * See what filetime set primitives we have.
+		 */
+#if defined(HAVE_UTIMES)
+		/* utimes allows msec timestamps to be set. */
+		conn->ts_res = TIMESTAMP_SET_MSEC;
+#elif defined(HAVE_UTIME)
+		/* utime only allows sec timestamps to be set. */
+		conn->ts_res = TIMESTAMP_SET_SECONDS;
+#endif
+
+		/* TODO. Add a configure test for the Linux
+		 * nsec timestamp set system call, and use it
+		 * if available....
+		 */
+		DEBUG(10,("vfswrap_fs_capabilities: timestamp "
+			"resolution of %s "
+			"available on share %s, directory %s\n",
+			conn->ts_res == TIMESTAMP_SET_MSEC ? "msec" : "sec",
+			lp_servicename(conn->cnum),
+			conn->connectpath ));
+	}
+	return caps;
 }
 
 /* Directory operations */
