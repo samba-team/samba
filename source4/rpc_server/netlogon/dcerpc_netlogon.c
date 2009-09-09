@@ -1129,9 +1129,9 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 	struct netr_DomainInformation *domain_info;
 	struct netr_LsaPolicyInformation *lsa_policy_info;
 	struct netr_OsVersionInfoEx *os_version;
+	uint32_t default_supported_enc_types =
+		ENC_CRC32|ENC_RSA_MD5|ENC_RC4_HMAC_MD5;
 	int ret1, ret2, i;
-	uint32_t client_supported_enc;
-	uint32_t default_supported_enc = ENC_CRC32|ENC_RSA_MD5|ENC_RC4_HMAC_MD5;
 	NTSTATUS status;
 
 	status = dcesrv_netr_creds_server_step_check(dce_call,
@@ -1178,9 +1178,6 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 							"dNSHostName",
 							NULL);
 
-		client_supported_enc = samdb_search_int64(sam_ctx, mem_ctx, default_supported_enc,
-						       workstation_dn,	"msDS-SupportedEncryptionTypes", 
-						       NULL);
 		/* Gets host informations and put them in our directory */
 		new_msg = ldb_msg_new(mem_ctx);
 		NT_STATUS_HAVE_NO_MEMORY(new_msg);
@@ -1314,6 +1311,12 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 			&domain_info->trusted_domains[i], true, true);
 		NT_STATUS_NOT_OK_RETURN(status);
 
+		/* Sets the supported encryption types */
+		domain_info->supported_enc_types = samdb_search_uint(
+			sam_ctx, mem_ctx,
+			default_supported_enc_types, workstation_dn,
+			"msDS-SupportedEncryptionTypes", NULL);
+
 		/* Other host domain informations */
 
 		lsa_policy_info = talloc(mem_ctx,
@@ -1326,7 +1329,6 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 		domain_info->dns_hostname.string = old_dns_hostname;
 		domain_info->workstation_flags =
 			r->in.query->workstation_info->workstation_flags;
-		domain_info->supported_enc_types = client_supported_enc;
 
 		r->out.info->domain_info = domain_info;
 	break;
