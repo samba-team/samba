@@ -43,6 +43,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	const struct ldb_val *md_value;
 	int i;
 	struct ldb_dn *obj_dn;
+	struct replPropertyMetaDataBlob md;
 
 	if (ldb_dn_compare(ncRoot_dn, msg->dn) == 0) {
 		obj->is_nc_prefix = true;
@@ -57,7 +58,6 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	obj->meta_data_ctr = talloc(obj, struct drsuapi_DsReplicaMetaDataCtr);
 	md_value = ldb_msg_find_ldb_val(msg, "replPropertyMetaData");
 	if (md_value) {
-		struct replPropertyMetaDataBlob md;
 		enum ndr_err_code ndr_err;
 		ndr_err = ndr_pull_struct_blob(md_value, obj,
 					       lp_iconv_convenience(ldb_get_opaque(sam_ctx, "loadparm")), &md,
@@ -81,28 +81,57 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	} else {
 		obj->meta_data_ctr->meta_data = talloc(obj, struct drsuapi_DsReplicaMetaData);
 		obj->meta_data_ctr->count = 0;
+		ZERO_STRUCT(md);
 	}
 	obj->object.identifier = talloc(obj, struct drsuapi_DsReplicaObjectIdentifier);
 	obj_dn = ldb_msg_find_attr_as_dn(sam_ctx, obj, msg, "distinguishedName");
 	obj->object.identifier->dn = ldb_dn_get_linearized(obj_dn);
 	obj->object.identifier->guid = GUID_zero();
 	ZERO_STRUCT(obj->object.identifier->sid);
-	
-	obj->object.attribute_ctr.num_attributes = msg->num_elements;
-	/* Exclude non-replicate attributes from the responce.*/
-	for (i=0; i<msg->num_elements; i++) {
-		const struct dsdb_attribute *sa;
-		sa = dsdb_attribute_by_lDAPDisplayName(schema, msg->elements[i].name);
-		if (sa && sa->systemFlags & SYSTEM_FLAG_CR_NTDS_NC) {
-			ldb_msg_remove_attr(msg, msg->elements[i].name);
-			obj->object.attribute_ctr.num_attributes--;
-		}
-	}
+
+	obj->object.attribute_ctr.num_attributes = obj->meta_data_ctr->count;
 	obj->object.attribute_ctr.attributes = talloc_array(obj, struct drsuapi_DsReplicaAttribute,
-								      obj->object.attribute_ctr.num_attributes);
+							    obj->object.attribute_ctr.num_attributes);
+
+	/*
+	 * Note that the meta_data array and the attributes array must
+	 * be the same size and in the same order
+	 */
 	for (i=0; i<obj->object.attribute_ctr.num_attributes; i++) {
-		dsdb_attribute_ldb_to_drsuapi(sam_ctx, schema,&msg->elements[i], obj,
-					      &obj->object.attribute_ctr.attributes[i]);
+		const struct dsdb_attribute *sa;
+		struct ldb_message_element *el;
+		WERROR werr;
+
+		sa = dsdb_attribute_by_attributeID_id(schema, md.ctr.ctr1.array[i].attid);
+		if (!sa) {
+			DEBUG(0,("Unable to find attributeID %u in schema\n", md.ctr.ctr1.array[i].attid));
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+
+		el = ldb_msg_find_element(msg, sa->lDAPDisplayName);
+		if (el == NULL) {
+			DEBUG(0,("No element '%s' for attributeID %u in message\n", 
+				 sa->lDAPDisplayName, md.ctr.ctr1.array[i].attid));
+			/* we really should find it, but let's try to
+			 * cope for now by going to the next one
+			 */
+			memmove(&obj->meta_data_ctr->meta_data[i], &obj->meta_data_ctr->meta_data[i+1],
+				sizeof(obj->meta_data_ctr->meta_data[i])*(obj->object.attribute_ctr.num_attributes-(i+1)));
+			memmove(&md.ctr.ctr1.array[i], &md.ctr.ctr1.array[i+1],
+				sizeof(md.ctr.ctr1.array[i])*(obj->object.attribute_ctr.num_attributes-(i+1)));
+			obj->object.attribute_ctr.num_attributes--;
+			i--;
+			obj->meta_data_ctr->count--;
+			continue;
+		}
+
+		werr = dsdb_attribute_ldb_to_drsuapi(sam_ctx, schema, el, obj,
+						     &obj->object.attribute_ctr.attributes[i]);
+		if (!W_ERROR_IS_OK(werr)) {
+			DEBUG(0,("Unable to convert %s to DRS object - %s\n", 
+				 sa->lDAPDisplayName, win_errstr(werr)));
+			return werr;
+		}
 	}
 
 	return WERR_OK;
@@ -149,7 +178,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		return WERR_DS_DRA_BAD_NC;
 	}
 
-	DEBUG(4,("DsGetNSChanges with uSHChanged >= %llu\n", 
+	DEBUG(4,("DsGetNSChanges with uSNChanged >= %llu\n", 
 		 (unsigned long long)r->in.req->req8.highwatermark.highest_usn));
 
 	/* Construct response. */
@@ -204,12 +233,13 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 
 		werr = get_nc_changes_build_object(currentObject, site_res->msgs[i], sam_ctx, ncRoot_dn, schema);
 		if (!W_ERROR_IS_OK(werr)) {
+			r->out.ctr->ctr6.first_object = NULL;
 			return werr;
 		}
 		if (i == (site_res->count-1)) {
 			break;
 		}
-		currentObject->next_object = talloc(mem_ctx, struct drsuapi_DsReplicaObjectListItemEx);
+		currentObject->next_object = talloc_zero(mem_ctx, struct drsuapi_DsReplicaObjectListItemEx);
 		currentObject = currentObject->next_object;
 	}
 
