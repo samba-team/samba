@@ -36,6 +36,8 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 6564: SetPrinter fails (panics) as non root.
     * BUG 6593: Correctly implement SMB_INFO_STANDARD setfileinfo.
     * BUG 6649: Nautilus fails to copy files from an SMB share.
+    * BUG 6651: Fix smbd SIGSEGV when breaking oplocks.
+    * BUG 6673: Fix 'smbpasswd' with "unix password sync = yes".
 
 
 o   Yannick Bergeron <burgergold@hotmail.com>
@@ -62,6 +64,10 @@ o   Matt Kraai <mkraai@beckman.com>
     * BUG 6630: Fix opening of sockets on QNX.
 
 
+o   Robert LeBlanc <robert@leblancnet.us>
+    * BUG 6700: Use dns domain name when needing to guess server principal.
+
+
 o   Volker Lendecke <vl@samba.org>
     * BUG 5886: Fix password change propagation with ldapsam.
     * BUG 6585: Fix unqualified "net join".
@@ -74,6 +80,7 @@ o   Stefan Metzmacher <metze@samba.org>
     * BUG 6532: Fix the build with external talloc.
     * BUG 6538: Cancel all locks that are made before the first failure.
     * BUG 6627: Raise the timeout for lsa_Lookup*() calls from 10 to 35 seconds.
+    * BUG 6651: Fix smbd SIGSEGV when breaking oplocks.
     * BUG 6664: Fix truncation of the session key.
 
 
@@ -83,6 +90,10 @@ o   Tim Prouty <tprouty@samba.org>
 
 o   Rusty Russell <rusty@rustcorp.com.au>
     * BUG 6601: Avoid global fd limits.
+
+
+o   SATOH Fumiyasu <fumiyas@osstech.co.jp>
+    * BUG 6496: MS-DFS cannot follow multibyte char link name in libsmbclient.
 
 
 o   Simo Sorce <idra@samba.org>
