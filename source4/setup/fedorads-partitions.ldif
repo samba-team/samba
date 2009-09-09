@@ -28,3 +28,18 @@ objectclass: nsBackendInstance
 nsslapd-suffix: ${SCHEMADN}
 cn: schemaData
 
+dn: cn="${SAMBADN}",cn=mapping tree,cn=config
+objectclass: top
+objectclass: extensibleObject
+objectclass: nsMappingTree
+nsslapd-state: backend
+nsslapd-backend: sambaData
+cn: ${SAMBADN}
+
+dn: cn=sambaData,cn=ldbm database,cn=plugins,cn=config
+objectclass: top
+objectclass: extensibleObject
+objectclass: nsBackendInstance
+nsslapd-suffix: ${SAMBADN}
+cn: sambaData
+

@@ -37,6 +37,7 @@ import param
 import registry
 import samba
 import subprocess
+import ldb
 
 import shutil
 from credentials import Credentials, DONT_USE_KERBEROS
@@ -106,6 +107,7 @@ class ProvisionPaths(object):
         self.memberofconf = None
         self.fedoradsinf = None
         self.fedoradspartitions = None
+        self.fedoradssasl = None
         self.olmmron = None
         self.olmmrserveridsconf = None
         self.olmmrsyncreplconf = None
@@ -120,6 +122,7 @@ class ProvisionNames(object):
         self.domaindn = None
         self.configdn = None
         self.schemadn = None
+        self.sambadn = None
         self.ldapmanagerdn = None
         self.dnsdomain = None
         self.realm = None
@@ -139,7 +142,7 @@ class ProvisionResult(object):
         
 class Schema(object):
     def __init__(self, setup_path, schemadn=None, 
-                 serverdn=None):
+                 serverdn=None, sambadn=None, ldap_backend_type=None):
         """Load schema for the SamDB from the AD schema files and samba4_schema.ldif
         
         :param samdb: Load a schema into a SamDB.
@@ -343,6 +346,10 @@ def provision_paths_from_lp(lp, dnsdomain):
                                      "fedorads.inf")
     paths.fedoradspartitions = os.path.join(paths.ldapdir, 
                                             "fedorads-partitions.ldif")
+    paths.fedoradssasl = os.path.join(paths.ldapdir, 
+                                      "fedorads-sasl.ldif")
+    paths.fedoradssamba = os.path.join(paths.ldapdir, 
+                                        "fedorads-samba.ldif")
     paths.olmmrserveridsconf = os.path.join(paths.ldapdir, 
                                             "mmr_serverids.conf")
     paths.olmmrsyncreplconf = os.path.join(paths.ldapdir, 
@@ -369,7 +376,7 @@ def provision_paths_from_lp(lp, dnsdomain):
 
 def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
                 serverrole=None, rootdn=None, domaindn=None, configdn=None,
-                schemadn=None, serverdn=None, sitename=None):
+                schemadn=None, serverdn=None, sitename=None, sambadn=None):
     """Guess configuration settings to use."""
 
     if hostname is None:
@@ -421,6 +428,8 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
         configdn = "CN=Configuration," + rootdn
     if schemadn is None:
         schemadn = "CN=Schema," + configdn
+    if sambadn is None:
+        sambadn = "CN=Samba"
 
     if sitename is None:
         sitename=DEFAULTSITE
@@ -430,6 +439,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
     names.domaindn = domaindn
     names.configdn = configdn
     names.schemadn = schemadn
+    names.sambadn = sambadn
     names.ldapmanagerdn = "CN=Manager," + rootdn
     names.dnsdomain = dnsdomain
     names.domain = domain
@@ -814,7 +824,8 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
                            ldap_backend=ldap_backend, serverrole=serverrole)
 
     if (schema == None):
-        schema = Schema(setup_path, schemadn=names.schemadn, serverdn=names.serverdn)
+        schema = Schema(setup_path, schemadn=names.schemadn, serverdn=names.serverdn,
+            sambadn=names.sambadn, ldap_backend_type=ldap_backend.ldap_backend_type)
 
     # Load the database, but importantly, use Ldb not SamDB as we don't want to load the global schema
     samdb = Ldb(session_info=session_info, 
@@ -1079,7 +1090,8 @@ def provision(setup_dir, message, session_info,
 
     ldapi_url = "ldapi://%s" % urllib.quote(paths.s4_ldapi_path, safe="")
     
-    schema = Schema(setup_path, schemadn=names.schemadn, serverdn=names.serverdn)
+    schema = Schema(setup_path, schemadn=names.schemadn, serverdn=names.serverdn,
+        sambadn=names.sambadn, ldap_backend_type=ldap_backend_type)
     
     provision_backend = None
     if ldap_backend_type:
@@ -1112,7 +1124,7 @@ def provision(setup_dir, message, session_info,
     message("Setting up secrets.ldb")
     secrets_ldb = setup_secretsdb(paths.secrets, setup_path, 
                                   session_info=session_info, 
-                                  credentials=credentials, lp=lp)
+                                  credentials=provision_backend.adminCredentials, lp=lp)
 
     message("Setting up the registry")
     setup_registry(paths.hklm, setup_path, session_info, 
@@ -1204,6 +1216,32 @@ def provision(setup_dir, message, session_info,
                              realm=names.realm)
             message("A Kerberos configuration suitable for Samba 4 has been generated at %s" % paths.krb5conf)
 
+
+    ldapi_db = Ldb(provision_backend.ldapi_uri, lp=lp, credentials=credentials)
+
+    # delete default SASL mappings
+    res = ldapi_db.search(expression="(!(cn=samba-admin mapping))", base="cn=mapping,cn=sasl,cn=config", scope=SCOPE_ONELEVEL, attrs=["dn"])
+
+    for i in range (0, len(res)):
+        dn = str(res[i]["dn"])
+        ldapi_db.delete(dn)
+
+    # configure aci
+    if ldap_backend_type == "fedora-ds":
+
+        aci = """(targetattr = "*") (version 3.0;acl "full access to all by samba-admin";allow (all)(userdn = "ldap:///CN=samba-admin,%s");)""" % names.sambadn
+
+        m = ldb.Message()
+        m["aci"] = ldb.MessageElement([aci], ldb.FLAG_MOD_REPLACE, "aci")
+
+        m.dn = ldb.Dn(1, names.domaindn)
+        ldapi_db.modify(m)
+
+        m.dn = ldb.Dn(1, names.configdn)
+        ldapi_db.modify(m)
+
+        m.dn = ldb.Dn(1, names.schemadn)
+        ldapi_db.modify(m)
 
     # if backend is openldap, terminate slapd after final provision and check its proper termination
     if provision_backend is not None and provision_backend.slapd is not None:
@@ -1379,6 +1417,12 @@ class ProvisionBackend(object):
         self.credentials.guess(lp)
         #Kerberos to an ldapi:// backend makes no sense
         self.credentials.set_kerberos_state(DONT_USE_KERBEROS)
+
+        self.adminCredentials = Credentials()
+        self.adminCredentials.guess(lp)
+        #Kerberos to an ldapi:// backend makes no sense
+        self.adminCredentials.set_kerberos_state(DONT_USE_KERBEROS)
+
         self.ldap_backend_type = ldap_backend_type
 
         if ldap_backend_type == "fedora-ds":
@@ -1408,6 +1452,8 @@ class ProvisionBackend(object):
             raise ProvisioningError("Unknown LDAP backend type selected")
 
         self.credentials.set_password(ldapadminpass)
+        self.adminCredentials.set_username("samba-admin")
+        self.adminCredentials.set_password(ldapadminpass)
 
         # Now start the slapd, so we can provision onto it.  We keep the
         # subprocess context around, to kill this off at the successful
@@ -1686,6 +1732,16 @@ def provision_fds_backend(result, paths=None, setup_path=None, names=None,
     setup_file(setup_path("fedorads-partitions.ldif"), paths.fedoradspartitions, 
                {"CONFIGDN": names.configdn,
                 "SCHEMADN": names.schemadn,
+                "SAMBADN": names.sambadn,
+                })
+
+    setup_file(setup_path("fedorads-sasl.ldif"), paths.fedoradssasl, 
+               {"SAMBADN": names.sambadn,
+                })
+
+    setup_file(setup_path("fedorads-samba.ldif"), paths.fedoradssamba,
+                {"SAMBADN": names.sambadn, 
+                 "LDAPADMINPASS": ldapadminpass
                 })
 
     mapping = "schema-map-fedora-ds-1.0"
@@ -1725,6 +1781,13 @@ def provision_fds_backend(result, paths=None, setup_path=None, names=None,
     retcode = subprocess.call([setup_ds_path, "--silent", "--file", paths.fedoradsinf], close_fds=True, shell=False)
     if retcode != 0:
         raise ProvisioningError("setup-ds failed")
+
+    # Load samba-admin
+    retcode = subprocess.call([
+        os.path.join(paths.ldapdir, "slapd-samba4", "ldif2db"), "-s", names.sambadn, "-i", paths.fedoradssamba],
+        close_fds=True, shell=False)
+    if retcode != 0:
+        raise("ldib2db failed")
 
 def create_phpldapadmin_config(path, setup_path, ldapi_uri):
     """Create a PHP LDAP admin configuration file.

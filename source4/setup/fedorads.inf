@@ -27,3 +27,4 @@ start_server= 0
 install_full_schema= 0
 SchemaFile=${LDAPDIR}/99_ad.ldif
 ConfigFile = ${LDAPDIR}/fedorads-partitions.ldif
+ConfigFile = ${LDAPDIR}/fedorads-sasl.ldif
