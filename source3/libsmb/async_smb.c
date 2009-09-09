@@ -923,6 +923,12 @@ static void handle_incoming_pdu(struct cli_state *cli)
 		}
 	}
 
+	if ((raw_pdu_len == 4) && (CVAL(pdu, 0) == SMBkeepalive)) {
+		DEBUG(10, ("Got keepalive\n"));
+		TALLOC_FREE(pdu);
+		return;
+	}
+
 	status = validate_smb_crypto(cli, pdu);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto invalidate_requests;
