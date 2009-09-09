@@ -50,7 +50,7 @@ WERROR dcesrv_drsuapi_DsAddEntry(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	/* TODO: check which out level the client supports */
 
 	ZERO_STRUCTP(r->out.ctr);
-	r->out.level_out = 3;
+	*r->out.level_out = 3;
 	r->out.ctr->ctr3.level = 1;
 	r->out.ctr->ctr3.error = talloc_zero(mem_ctx, union drsuapi_DsAddEntryError);
 
