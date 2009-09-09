@@ -29,6 +29,7 @@
 #include "lib/ldb/include/ldb_errors.h"
 #include "param/param.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
+#include "messaging/irpc.h"
 
 /* 
   drsuapi_DsBind 
@@ -228,12 +229,32 @@ static WERROR dcesrv_drsuapi_DsUnbind(struct dcesrv_call_state *dce_call, TALLOC
   drsuapi_DsReplicaSync 
 */
 static WERROR dcesrv_drsuapi_DsReplicaSync(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct drsuapi_DsReplicaSync *r)
+					   struct drsuapi_DsReplicaSync *r)
 {
-	/* TODO: implement this call correct!
-	 *       for now we just say yes,
-	 *       because we have no output parameter
-	 */
+	struct server_id *repld;
+	struct irpc_request *ireq;
+
+	if (DEBUGLVL(4)) {
+		NDR_PRINT_IN_DEBUG(drsuapi_DsReplicaSync, r);
+	}
+
+	repld = irpc_servers_byname(dce_call->msg_ctx, mem_ctx, "dreplsrv");
+	if (repld == NULL || repld[0].id == 0) {
+		DEBUG(0,("DsReplicaSync: Unable to find dreplsrv task\n"));
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+
+	ireq = IRPC_CALL_SEND(dce_call->msg_ctx, repld[0],
+			      drsuapi, DRSUAPI_DSREPLICASYNC,
+			      r, mem_ctx);
+	if (ireq == NULL) {
+		DEBUG(0,("DsReplicaSync: Failed to forward request to dreplsrv task\n"));
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+
+	/* we are not interested in a reply */
+	talloc_free(ireq);
+
 	return WERR_OK;
 }
 

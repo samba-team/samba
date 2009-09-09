@@ -79,6 +79,22 @@ WERROR dreplsrv_schedule_pull_replication(struct dreplsrv_service *s, TALLOC_CTX
 	return WERR_OK;
 }
 
+
+/* force an immediate of the specified partition by GUID  */
+WERROR dreplsrv_schedule_partition_pull_by_guid(struct dreplsrv_service *s, TALLOC_CTX *mem_ctx,
+						struct GUID *guid)
+{
+	struct dreplsrv_partition *p;
+	
+	for (p = s->partitions; p; p = p->next) {
+		if (GUID_compare(&p->nc.guid, guid) == 0) {
+			return dreplsrv_schedule_partition_pull(s, p, mem_ctx);
+		}
+	}
+
+	return WERR_NOT_FOUND;
+}
+
 static void dreplsrv_pending_op_callback(struct dreplsrv_out_operation *op)
 {
 	struct repsFromTo1 *rf = op->source_dsa->repsFrom1;

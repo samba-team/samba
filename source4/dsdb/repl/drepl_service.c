@@ -106,6 +106,30 @@ static WERROR dreplsrv_connect_samdb(struct dreplsrv_service *service, struct lo
 }
 
 /*
+  DsReplicaSync messages from the DRSUAPI server are forwarded here
+ */
+static NTSTATUS drepl_replica_sync(struct irpc_message *msg, 
+				   struct drsuapi_DsReplicaSync *r)
+{
+	struct dreplsrv_service *service = talloc_get_type(msg->private_data,
+							   struct dreplsrv_service);
+	WERROR werr;
+	struct GUID *guid = &r->in.req.req1.naming_context->guid;
+
+	werr = dreplsrv_schedule_partition_pull_by_guid(service, msg, guid);
+	if (W_ERROR_IS_OK(werr)) {
+		DEBUG(3,("drepl_replica_sync: forcing sync of partition %s\n",
+			 GUID_string(msg, guid)));
+		dreplsrv_run_pending_ops(service);
+	} else {
+		DEBUG(3,("drepl_replica_sync: failed setup of sync of partition %s - %s\n",
+			 GUID_string(msg, guid), win_errstr(werr)));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	return NT_STATUS_OK;
+}
+
+/*
   startup the dsdb replicator service task
 */
 static void dreplsrv_task_init(struct task_server *task)
@@ -173,6 +197,8 @@ static void dreplsrv_task_init(struct task_server *task)
 	}
 
 	irpc_add_name(task->msg_ctx, "dreplsrv");
+
+	IRPC_REGISTER(task->msg_ctx, drsuapi, DRSUAPI_DSREPLICASYNC, drepl_replica_sync, service);
 }
 
 /*
