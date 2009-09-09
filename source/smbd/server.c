@@ -652,6 +652,12 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 		FD_ZERO(&w_fds);
 		GetTimeOfDay(&now);
 
+                /* Kick off our mDNS registration. */
+                if (dns_port != 0) {
+                        dns_register_smbd(&dns_reg, dns_port, &maxfd,
+                                        &r_fds, &idle_timeout);
+                }
+
 		event_add_to_select_args(smbd_event_context(), &now,
 					 &r_fds, &w_fds, &idle_timeout,
 					 &maxfd);
