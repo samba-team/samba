@@ -30,6 +30,11 @@
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "auth/auth.h"
 
+struct repsTo {
+	uint32_t count;
+	struct repsFromToBlob *r;
+};
+
 /*
   load the repsTo structure for a given partition GUID
  */
@@ -39,8 +44,9 @@ static WERROR uref_loadreps(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx, st
 	struct ldb_dn *dn;
 	const char *attrs[] = { "repsTo", NULL };
 	struct ldb_result *res;
-	const struct ldb_val *v;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	int i;
+	struct ldb_message_element *el;
 
 	if (dsdb_find_dn_by_guid(sam_ctx, tmp_ctx, GUID_string(tmp_ctx, guid), &dn) != LDB_SUCCESS) {
 		DEBUG(0,("drsuapi_addref: failed to find partition with GUID %s\n",
@@ -58,16 +64,27 @@ static WERROR uref_loadreps(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx, st
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
-	v = ldb_msg_find_ldb_val(res->msgs[0], "repsTo");
-	if (v == NULL) {
-		/* treat as empty empty */
-		ZERO_STRUCTP(reps);
-		reps->version = REPSTO_VERSION1;
-	} else {
+	ZERO_STRUCTP(reps);
+
+	el = ldb_msg_find_element(res->msgs[0], "repsTo");
+	if (el == NULL) {
+		talloc_free(tmp_ctx);
+		return WERR_OK;
+	}
+
+	reps->count = el->num_values;
+	reps->r = talloc_array(mem_ctx, struct repsFromToBlob, reps->count);
+	if (reps->r == NULL) {
+		talloc_free(tmp_ctx);
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+
+	for (i=0; i<reps->count; i++) {
 		enum ndr_err_code ndr_err;
-		ndr_err = ndr_pull_struct_blob(v, mem_ctx, lp_iconv_convenience(ldb_get_opaque(sam_ctx, "loadparm")),
-					       reps, 
-					       (ndr_pull_flags_fn_t)ndr_pull_repsTo);
+		ndr_err = ndr_pull_struct_blob(&el->values[i], 
+					       mem_ctx, lp_iconv_convenience(ldb_get_opaque(sam_ctx, "loadparm")),
+					       &reps->r[i], 
+					       (ndr_pull_flags_fn_t)ndr_pull_repsFromToBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			talloc_free(tmp_ctx);
 			return WERR_DS_DRA_INTERNAL_ERROR;
@@ -86,11 +103,10 @@ static WERROR uref_savereps(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx, st
 			    struct repsTo *reps)
 {
 	struct ldb_dn *dn;
-	struct ldb_val v;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
-	enum ndr_err_code ndr_err;
 	struct ldb_message *msg;
 	struct ldb_message_element *el;
+	int i;
 
 	if (dsdb_find_dn_by_guid(sam_ctx, tmp_ctx, GUID_string(tmp_ctx, guid), &dn) != LDB_SUCCESS) {
 		DEBUG(0,("drsuapi_addref: failed to find partition with GUID %s\n",
@@ -99,20 +115,31 @@ static WERROR uref_savereps(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx, st
 		return WERR_DS_DRA_BAD_NC;
 	}
 
-	ndr_err = ndr_push_struct_blob(&v, tmp_ctx, lp_iconv_convenience(ldb_get_opaque(sam_ctx, "loadparm")),
-				       reps, 
-				       (ndr_push_flags_fn_t)ndr_push_repsTo);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		goto failed;
-	}
-
 	msg = ldb_msg_new(tmp_ctx);
 	msg->dn = dn;
 	if (ldb_msg_add_empty(msg, "repsTo", LDB_FLAG_MOD_REPLACE, &el) != LDB_SUCCESS) {
 		goto failed;
 	}
-	el->num_values = 1;
-	el->values = &v;
+
+	el->values = talloc_array(msg, struct ldb_val, reps->count);
+	if (!el->values) {
+		goto failed;
+	}
+
+	for (i=0; i<reps->count; i++) {
+		struct ldb_val v;
+		enum ndr_err_code ndr_err;
+
+		ndr_err = ndr_push_struct_blob(&v, tmp_ctx, lp_iconv_convenience(ldb_get_opaque(sam_ctx, "loadparm")),
+					       &reps->r[i], 
+					       (ndr_push_flags_fn_t)ndr_push_repsFromToBlob);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			goto failed;
+		}
+
+		el->num_values++;
+		el->values[i] = v;
+	}
 
 	if (ldb_modify(sam_ctx, msg) != LDB_SUCCESS) {
 		DEBUG(0,("Failed to store repsTo - %s\n", ldb_errstring(sam_ctx)));
@@ -132,30 +159,24 @@ failed:
   add a replication destination for a given partition GUID
  */
 static WERROR uref_add_dest(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx, 
-			    struct GUID *guid, struct repsToDest *dest)
+			    struct GUID *guid, struct repsFromTo1 *dest)
 {
 	struct repsTo reps;
 	WERROR werr;
-	struct repsTov1 *rv1;
 
 	werr = uref_loadreps(sam_ctx, mem_ctx, guid, &reps);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
 
-	if (reps.version != REPSTO_VERSION1) {
-		DEBUG(0,("Wrong version number %u on disk\n",
-			 reps.version));
+	reps.r = talloc_realloc(mem_ctx, reps.r, struct repsFromToBlob, reps.count+1);
+	if (reps.r == NULL) {
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
-
-	rv1 = &reps.ctr.r;
-	rv1->reps = talloc_realloc(mem_ctx, rv1->reps, struct repsToDest, rv1->count+1);
-	if (rv1->reps == NULL) {
-		return WERR_DS_DRA_INTERNAL_ERROR;
-	}
-	rv1->reps[rv1->count] = *dest;
-	rv1->count++;
+	ZERO_STRUCT(reps.r[reps.count]);
+	reps.r[reps.count].version = 1;
+	reps.r[reps.count].ctr.ctr1 = *dest;
+	reps.count++;
 
 	werr = uref_savereps(sam_ctx, mem_ctx, guid, &reps);
 	if (!W_ERROR_IS_OK(werr)) {
@@ -173,7 +194,6 @@ static WERROR uref_del_dest(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 {
 	struct repsTo reps;
 	WERROR werr;
-	struct repsTov1 *rv1;
 	int i;
 
 	werr = uref_loadreps(sam_ctx, mem_ctx, guid, &reps);
@@ -181,19 +201,12 @@ static WERROR uref_del_dest(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		return werr;
 	}
 
-	if (reps.version != REPSTO_VERSION1) {
-		DEBUG(0,("Wrong version number %u on disk\n", reps.version));
-		return WERR_DS_DRA_INTERNAL_ERROR;
-	}
-
-	rv1 = &reps.ctr.r;
-
-	for (i=0; i<rv1->count; i++) {
-		if (GUID_compare(dest_guid, &rv1->reps[i].dest_guid) == 0) {
-			if (i+1 < rv1->count) {
-				memmove(&rv1->reps[i], &rv1->reps[i+1], sizeof(rv1->reps[i])*(rv1->count-(i+1)));
+	for (i=0; i<reps.count; i++) {
+		if (GUID_compare(dest_guid, &reps.r[i].ctr.ctr1.source_dsa_obj_guid) == 0) {
+			if (i+1 < reps.count) {
+				memmove(&reps.r[i], &reps.r[i+1], sizeof(reps.r[i])*(reps.count-(i+1)));
 			}
-			rv1->count--;
+			reps.count--;
 		}
 	}
 
@@ -248,16 +261,21 @@ WERROR dcesrv_drsuapi_DsReplicaUpdateRefs(struct dcesrv_call_state *dce_call, TA
 	}
 
 	if (req->options & DRSUAPI_DS_REPLICA_UPDATE_ADD_REFERENCE) {
-		struct repsToDest dest;
+		struct repsFromTo1 dest;
+		struct repsFromTo1OtherInfo oi;
+		
+		ZERO_STRUCT(dest);
+		ZERO_STRUCT(oi);
 
-		dest.dest_dsa_dns_name = req->dest_dsa_dns_name;
-		dest.dest_guid         = req->dest_dsa_guid;
-		dest.options           = req->options;
+		oi.dns_name = req->dest_dsa_dns_name;
+		dest.other_info          = &oi;
+		dest.source_dsa_obj_guid = req->dest_dsa_guid;
+		dest.replica_flags       = req->options;
 
 		werr = uref_add_dest(sam_ctx, mem_ctx, &req->naming_context->guid, &dest);
 		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(0,("Failed to delete repsTo for %s\n",
-				 GUID_string(dce_call, &dest.dest_guid)));
+				 GUID_string(dce_call, &dest.source_dsa_obj_guid)));
 			goto failed;
 		}
 	}
