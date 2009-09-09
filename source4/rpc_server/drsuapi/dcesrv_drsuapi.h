@@ -40,7 +40,19 @@ struct drsuapi_bind_state {
 /* prototypes of internal functions */
 WERROR dcesrv_drsuapi_DsReplicaUpdateRefs(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					  struct drsuapi_DsReplicaUpdateRefs *r);
+WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				     struct drsuapi_DsGetNCChanges *r);
+WERROR dcesrv_drsuapi_DsAddEntry(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				 struct drsuapi_DsAddEntry *r);
 
 char *drs_ObjectIdentifier_to_string(TALLOC_CTX *mem_ctx,
 				     struct drsuapi_DsReplicaObjectIdentifier *nc);
+
+int drsuapi_search_with_extended_dn(struct ldb_context *ldb,
+				    TALLOC_CTX *mem_ctx,
+				    struct ldb_result **_res,
+				    struct ldb_dn *basedn,
+				    enum ldb_scope scope,
+				    const char * const *attrs,
+				    const char *format, ...) PRINTF_ATTRIBUTE(7,8);
 

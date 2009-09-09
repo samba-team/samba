@@ -23,12 +23,12 @@
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/common/common.h"
-#include "rpc_server/drsuapi/dcesrv_drsuapi.h"
 #include "dsdb/samdb/samdb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "param/param.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "libcli/security/dom_sid.h"
+#include "rpc_server/drsuapi/dcesrv_drsuapi.h"
 
 /*
   format a drsuapi_DsReplicaObjectIdentifier naming context as a string
@@ -45,3 +45,64 @@ char *drs_ObjectIdentifier_to_string(TALLOC_CTX *mem_ctx,
 	talloc_free(sid);
 	return ret;
 }
+
+int drsuapi_search_with_extended_dn(struct ldb_context *ldb,
+				TALLOC_CTX *mem_ctx,
+				struct ldb_result **_res,
+				struct ldb_dn *basedn,
+				enum ldb_scope scope,
+				const char * const *attrs,
+				const char *format, ...)
+{
+	va_list ap;
+	int ret;
+	struct ldb_request *req;
+	char *filter;
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_result *res;
+
+	tmp_ctx = talloc_new(mem_ctx);
+
+	res = talloc_zero(tmp_ctx, struct ldb_result);
+	if (!res) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	va_start(ap, format);
+	filter = talloc_vasprintf(tmp_ctx, format, ap);
+	va_end(ap);
+
+	if (filter == NULL) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ldb_build_search_req(&req, ldb, tmp_ctx,
+				   basedn,
+				   scope,
+				   filter,
+				   attrs,
+				   NULL,
+				   res,
+				   ldb_search_default_callback,
+				   NULL);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	ret = ldb_request_add_control(req, LDB_CONTROL_EXTENDED_DN_OID, true, NULL);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = ldb_request(ldb, req);
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+
+	talloc_free(req);
+	*_res = res;
+	return ret;
+}
+

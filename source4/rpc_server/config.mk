@@ -185,6 +185,8 @@ PRIVATE_DEPENDENCIES = \
 
 dcerpc_drsuapi_OBJ_FILES = $(rpc_serversrcdir)/drsuapi/dcesrv_drsuapi.o \
 	$(rpc_serversrcdir)/drsuapi/updaterefs.o \
+	$(rpc_serversrcdir)/drsuapi/getncchanges.o \
+	$(rpc_serversrcdir)/drsuapi/addentry.o \
 	$(rpc_serversrcdir)/drsuapi/drsutil.o
 
 ################################################
