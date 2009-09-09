@@ -65,6 +65,14 @@ kernel log.
 		the mounted resource is unmounted (usually via the umount utility).
 	</para>
 
+	<para>
+		<emphasis>mount.cifs -V</emphasis> command displays the version of cifs mount helper.
+	</para>
+	<para>
+
+		<emphasis>modinfo cifs</emphasis> command displays the version of cifs module.
+	</para>
+
 </refsect1>
 
 <refsect1>
