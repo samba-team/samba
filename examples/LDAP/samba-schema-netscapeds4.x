@@ -85,7 +85,7 @@ objectclass sambaDomain
 
 objectclass sambaUnixIdPool
 		oid
-				1.3.6.1.4.1.7165.1.2.2.7
+				1.3.6.1.4.1.7165.2.2.7
 		superior
 				top
 		requires
@@ -94,7 +94,7 @@ objectclass sambaUnixIdPool
 
 objectclass sambaIdmapEntry
 		oid
-				1.3.6.1.4.1.7165.1.2.2.8
+				1.3.6.1.4.1.7165.2.2.8
 		superior
 				top
 		requires
@@ -105,7 +105,7 @@ objectclass sambaIdmapEntry
 
 objectclass sambaSidEntry
 		oid
-				1.3.6.1.4.1.7165.1.2.2.9
+				1.3.6.1.4.1.7165.2.2.9
 		superior
 				top
 		requires

@@ -328,22 +328,22 @@ objectClasses: ( 1.3.6.1.4.1.7165.2.2.5 NAME 'sambaDomain' DESC 'Samba Domain In
 dn: cn=schema
 changetype: modify
 add: objectClasses
-objectClasses: ( 1.3.6.1.4.1.7165.1.2.2.7 NAME 'sambaUnixIdPool' DESC 'Pool for allocating UNIX uids/gids' SUP top AUXILIARY MUST ( uidNumber $ gidNumber ))
+objectClasses: ( 1.3.6.1.4.1.7165.2.2.7 NAME 'sambaUnixIdPool' DESC 'Pool for allocating UNIX uids/gids' SUP top AUXILIARY MUST ( uidNumber $ gidNumber ))
 
 dn: cn=schema
 changetype: modify
 add: objectClasses
-objectClasses: ( 1.3.6.1.4.1.7165.1.2.2.8 NAME 'sambaIdmapEntry' DESC 'Mapping from a SID to an ID' SUP top AUXILIARY MUST ( sambaSID ) MAY ( uidNumber $ gidNumber ))
+objectClasses: ( 1.3.6.1.4.1.7165.2.2.8 NAME 'sambaIdmapEntry' DESC 'Mapping from a SID to an ID' SUP top AUXILIARY MUST ( sambaSID ) MAY ( uidNumber $ gidNumber ))
 
 dn: cn=schema
 changetype: modify
 add: objectClasses
-objectClasses: ( 1.3.6.1.4.1.7165.1.2.2.9 NAME 'sambaSidEntry' DESC 'Structural Class for a SID' SUP top STRUCTURAL MUST ( sambaSID ))
+objectClasses: ( 1.3.6.1.4.1.7165.2.2.9 NAME 'sambaSidEntry' DESC 'Structural Class for a SID' SUP top STRUCTURAL MUST ( sambaSID ))
 
 dn: cn=schema
 changetype: modify
 add: objectClasses
-objectClasses: ( 1.3.6.1.4.1.7165.1.2.2.10 NAME 'sambaConfig' DESC 'Samba Configuration Section' SUP top AUXILIARY MAY ( description ))
+objectClasses: ( 1.3.6.1.4.1.7165.2.2.10 NAME 'sambaConfig' DESC 'Samba Configuration Section' SUP top AUXILIARY MAY ( description ))
 
 dn: cn=schema
 changetype: modify
