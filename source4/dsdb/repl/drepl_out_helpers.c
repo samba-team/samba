@@ -33,6 +33,7 @@
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "libcli/composite/composite.h"
 #include "auth/gensec/gensec.h"
+#include "param/param.h"
 
 struct dreplsrv_out_drsuapi_state {
 	struct composite_context *creq;
@@ -355,6 +356,8 @@ static void dreplsrv_op_pull_source_get_changes_recv(struct rpc_request *req)
 	dreplsrv_op_pull_source_apply_changes_send(st, r, ctr_level, ctr1, ctr6);
 }
 
+static void dreplsrv_update_refs_send(struct dreplsrv_op_pull_source_state *st);
+
 static void dreplsrv_op_pull_source_apply_changes_send(struct dreplsrv_op_pull_source_state *st,
 						       struct drsuapi_DsGetNCChanges *r,
 						       uint32_t ctr_level,
@@ -430,7 +433,12 @@ static void dreplsrv_op_pull_source_apply_changes_send(struct dreplsrv_op_pull_s
 		return;
 	}
 
-	composite_done(c);
+	/* now we need to update the repsTo record for this partition
+	   on the server. These records are initially established when
+	   we join the domain, but they quickly expire.  We do it here
+	   so we can use the already established DRSUAPI pipe
+	*/
+	dreplsrv_update_refs_send(st);
 }
 
 WERROR dreplsrv_op_pull_source_recv(struct composite_context *c)
@@ -441,4 +449,82 @@ WERROR dreplsrv_op_pull_source_recv(struct composite_context *c)
 
 	talloc_free(c);
 	return ntstatus_to_werror(status);
+}
+
+/*
+  receive a UpdateRefs reply
+ */
+static void dreplsrv_update_refs_recv(struct rpc_request *req)
+{
+	struct dreplsrv_op_pull_source_state *st = talloc_get_type(req->async.private_data,
+						   struct dreplsrv_op_pull_source_state);
+	struct composite_context *c = st->creq;
+	struct drsuapi_DsReplicaUpdateRefs *r = talloc_get_type(req->ndr.struct_ptr,
+								struct drsuapi_DsReplicaUpdateRefs);
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) {
+		DEBUG(0,("UpdateRefs failed with %s for %s %s\n", 
+			 nt_errstr(c->status),
+			 r->in.req.req1.dest_dsa_dns_name,
+			 r->in.req.req1.naming_context->dn));
+		return;
+	}
+
+	if (!W_ERROR_IS_OK(r->out.result)) {
+		DEBUG(0,("UpdateRefs failed with %s for %s %s\n", 
+			 win_errstr(r->out.result),
+			 r->in.req.req1.dest_dsa_dns_name,
+			 r->in.req.req1.naming_context->dn));
+		composite_error(c, werror_to_ntstatus(r->out.result));
+		return;
+	}
+
+	DEBUG(4,("UpdateRefs OK for %s %s\n", 
+		 r->in.req.req1.dest_dsa_dns_name,
+		 r->in.req.req1.naming_context->dn));
+
+	composite_done(c);
+}
+
+/*
+  send a UpdateRefs request to refresh our repsTo record on the server
+ */
+static void dreplsrv_update_refs_send(struct dreplsrv_op_pull_source_state *st)
+{
+	struct composite_context *c = st->creq;
+	struct dreplsrv_service *service = st->op->service;
+	struct dreplsrv_partition *partition = st->op->source_dsa->partition;
+	struct dreplsrv_drsuapi_connection *drsuapi = st->op->source_dsa->conn->drsuapi;
+	struct rpc_request *req;
+	struct drsuapi_DsReplicaUpdateRefs *r;
+	char *ntds_guid_str;
+	char *ntds_dns_name;
+
+	r = talloc(st, struct drsuapi_DsReplicaUpdateRefs);
+	if (composite_nomem(r, c)) return;
+
+	ntds_guid_str = GUID_string(r, &service->ntds_guid);
+	if (composite_nomem(ntds_guid_str, c)) return;
+
+	/* lp_realm() is not really right here */
+	ntds_dns_name = talloc_asprintf(r, "%s._msdcs.%s",
+					ntds_guid_str,
+					lp_realm(service->task->lp_ctx));
+	if (composite_nomem(ntds_dns_name, c)) return;
+
+	r->in.bind_handle	= &drsuapi->bind_handle;
+	r->in.level             = 1;
+	r->in.req.req1.naming_context	  = &partition->nc;
+	r->in.req.req1.dest_dsa_dns_name  = ntds_dns_name;
+	r->in.req.req1.dest_dsa_guid	  = service->ntds_guid;
+	r->in.req.req1.options	          = 
+		DRSUAPI_DS_REPLICA_UPDATE_ADD_REFERENCE |
+		DRSUAPI_DS_REPLICA_UPDATE_DELETE_REFERENCE;
+	if (!lp_parm_bool(service->task->lp_ctx, NULL, "repl", "RODC", false)) {
+		r->in.req.req1.options |= DRSUAPI_DS_REPLICA_UPDATE_WRITEABLE;
+	}
+
+	req = dcerpc_drsuapi_DsReplicaUpdateRefs_send(drsuapi->pipe, r, r);
+	composite_continue_rpc(c, req, dreplsrv_update_refs_recv, st);
 }
