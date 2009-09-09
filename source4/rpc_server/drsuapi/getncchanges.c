@@ -112,25 +112,16 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 		if (el == NULL) {
 			DEBUG(0,("No element '%s' for attributeID %u in message\n", 
 				 sa->lDAPDisplayName, md.ctr.ctr1.array[i].attid));
-			/* we really should find it, but let's try to
-			 * cope for now by going to the next one
-			 */
-			memmove(&obj->meta_data_ctr->meta_data[i], &obj->meta_data_ctr->meta_data[i+1],
-				sizeof(obj->meta_data_ctr->meta_data[i])*(obj->object.attribute_ctr.num_attributes-(i+1)));
-			memmove(&md.ctr.ctr1.array[i], &md.ctr.ctr1.array[i+1],
-				sizeof(md.ctr.ctr1.array[i])*(obj->object.attribute_ctr.num_attributes-(i+1)));
-			obj->object.attribute_ctr.num_attributes--;
-			i--;
-			obj->meta_data_ctr->count--;
-			continue;
-		}
-
-		werr = dsdb_attribute_ldb_to_drsuapi(sam_ctx, schema, el, obj,
-						     &obj->object.attribute_ctr.attributes[i]);
-		if (!W_ERROR_IS_OK(werr)) {
-			DEBUG(0,("Unable to convert %s to DRS object - %s\n", 
-				 sa->lDAPDisplayName, win_errstr(werr)));
-			return werr;
+			ZERO_STRUCT(obj->object.attribute_ctr.attributes[i]);
+			obj->object.attribute_ctr.attributes[i].attid = md.ctr.ctr1.array[i].attid;
+		} else {
+			werr = dsdb_attribute_ldb_to_drsuapi(sam_ctx, schema, el, obj,
+							     &obj->object.attribute_ctr.attributes[i]);
+			if (!W_ERROR_IS_OK(werr)) {
+				DEBUG(0,("Unable to convert %s to DRS object - %s\n", 
+					 sa->lDAPDisplayName, win_errstr(werr)));
+				return werr;
+			}
 		}
 	}
 
