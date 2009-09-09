@@ -856,7 +856,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 							      machine_krb5_principal, 
 							      machine_password,
 							      lp_workgroup(),
-							      domain->name);
+							      domain->alt_name);
 
 			if (!ADS_ERR_OK(ads_status)) {
 				DEBUG(4,("failed kerberos session setup with %s\n",
