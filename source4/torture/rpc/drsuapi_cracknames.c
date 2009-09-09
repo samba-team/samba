@@ -115,6 +115,7 @@ static bool test_DsCrackNamesMatrix(struct torture_context *tctx,
 			}
 			torture_comment(tctx, __location__ ": (expected) error\n");
 			break;
+		case DRSUAPI_DS_NAME_FORMAT_UNKNOWN:	/* should fail as we ask server to convert to Unknown format */
 		case DRSUAPI_DS_NAME_FORMAT_DNS_DOMAIN:	
 		case DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY:	
 			if (r.out.ctr->ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR) {
@@ -132,6 +133,7 @@ static bool test_DsCrackNamesMatrix(struct torture_context *tctx,
 						r.out.ctr->ctr1->array[0].status);
 				torture_fail(tctx, err_msg);
 			}
+			break;
 		}
 
 		switch (formats[i]) {
@@ -141,6 +143,7 @@ static bool test_DsCrackNamesMatrix(struct torture_context *tctx,
 		case DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL:	
 			n_from[i] = service_principal_name;
 			break;
+		case DRSUAPI_DS_NAME_FORMAT_UNKNOWN:
 		case DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY:	
 		case DRSUAPI_DS_NAME_FORMAT_DNS_DOMAIN:	
 			n_from[i] = NULL;
@@ -148,6 +151,7 @@ static bool test_DsCrackNamesMatrix(struct torture_context *tctx,
 		default:
 			n_from[i] = r.out.ctr->ctr1->array[0].result_name;
 			printf("%s\n", n_from[i]);
+			break;
 		}
 	}
 
