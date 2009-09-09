@@ -13,7 +13,7 @@ Major enhancements in Samba 3.4.1 include:
    o Nautilus fails to copy files from an SMB share (bug #6649).
    o Fix connections of Win98 clients (bug #6551).
    o Fix interdomain trusts with Windows 2008 R2 DCs (bug #6697).
-
+   o Fix Winbind authentication issue (bug #6646).
 
 
 ######################################################################
@@ -72,6 +72,7 @@ o   Volker Lendecke <vl@samba.org>
     * BUG 5886: Fix password change propagation with ldapsam.
     * BUG 6585: Fix unqualified "net join".
     * BUG 6611: Fix a valgrind error in chain_reply.
+    * BUG 6646: Fix Winbind authentication issue.
     * Fix linking on Solaris.
 
 
