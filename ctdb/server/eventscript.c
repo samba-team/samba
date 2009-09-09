@@ -616,6 +616,8 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 
 	read(state->fd[0], &rt, sizeof(rt));
 
+	DEBUG(DEBUG_INFO,(__location__ " Eventscript %s finished with state %d\n", state->options, rt));
+
 	talloc_set_destructor(state, NULL);
 	talloc_free(state);
 	callback(ctdb, rt, private_data);
@@ -733,6 +735,8 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	state->private_data = private_data;
 	state->options = talloc_vasprintf(state, fmt, ap);
 	CTDB_NO_MEMORY(ctdb, state->options);
+
+	DEBUG(DEBUG_INFO,(__location__ " Starting eventscript %s\n", state->options));
 	
 	ret = pipe(state->fd);
 	if (ret != 0) {
@@ -828,7 +832,9 @@ int ctdb_event_script(struct ctdb_context *ctdb, const char *fmt, ...)
 	struct callback_status status;
 
 	va_start(ap, fmt);
-	ret = ctdb_event_script_callback_v(ctdb, timeval_zero(), tmp_ctx, event_script_callback, &status, fmt, ap);
+	ret = ctdb_event_script_callback_v(ctdb, 
+			timeval_current_ofs(ctdb->tunable.script_timeout, 0),
+			tmp_ctx, event_script_callback, &status, fmt, ap);
 	va_end(ap);
 
 	if (ret != 0) {

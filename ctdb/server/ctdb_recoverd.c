@@ -883,15 +883,6 @@ static int update_local_flags(struct ctdb_recoverd *rec, struct ctdb_node_map *n
 			return MONITOR_FAILED;
 		}
 		if (nodemap->nodes[j].flags != remote_nodemap->nodes[j].flags) {
-			int ban_changed = (nodemap->nodes[j].flags ^ remote_nodemap->nodes[j].flags) & NODE_FLAGS_BANNED;
-
-			if (ban_changed) {
-				DEBUG(DEBUG_NOTICE,("Remote node %u had different BANNED flags 0x%x, local had 0x%x - trigger a re-election\n",
-				nodemap->nodes[j].pnn,
-				remote_nodemap->nodes[j].flags,
-				nodemap->nodes[j].flags));
-			}
-
 			/* We should tell our daemon about this so it
 			   updates its flags or else we will log the same 
 			   message again in the next iteration of recovery.
@@ -911,15 +902,6 @@ static int update_local_flags(struct ctdb_recoverd *rec, struct ctdb_node_map *n
 				 nodemap->nodes[j].pnn, remote_nodemap->nodes[j].flags,
 				 nodemap->nodes[j].flags));
 			nodemap->nodes[j].flags = remote_nodemap->nodes[j].flags;
-
-			/* If the BANNED flag has changed for the node
-			   this is a good reason to do a new election.
-			 */
-			if (ban_changed) {
-				talloc_free(mem_ctx);
-				return MONITOR_ELECTION_NEEDED;
-			}
-
 		}
 		talloc_free(remote_nodemap);
 	}
