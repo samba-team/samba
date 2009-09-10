@@ -150,6 +150,71 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	return WERR_OK;
 }
 
+static int replmd_drsuapi_DsReplicaCursor2_compare(const struct drsuapi_DsReplicaCursor2 *c1,
+						   const struct drsuapi_DsReplicaCursor2 *c2)
+{
+	return GUID_compare(&c1->source_dsa_invocation_id, &c2->source_dsa_invocation_id);
+}
+
+static WERROR get_nc_changes_udv(struct drsuapi_DsReplicaCursor2CtrEx *udv,
+				 struct ldb_message *msg,
+				 struct ldb_context *sam_ctx)
+{
+	uint32_t it_value;
+
+	it_value = ldb_msg_find_attr_as_uint(msg, "instanceType", 0);
+	if ((it_value & INSTANCE_TYPE_IS_NC_HEAD) == INSTANCE_TYPE_IS_NC_HEAD) {
+		const struct ldb_val *ouv_value;
+		struct drsuapi_DsReplicaCursor2 *tmp_cursor;
+		uint64_t highest_commited_usn;
+		NTTIME now;
+		time_t t = time(NULL);
+
+		int ret = ldb_sequence_number(sam_ctx, LDB_SEQ_HIGHEST_SEQ, &highest_commited_usn);
+		if (ret != LDB_SUCCESS) {
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+		tmp_cursor = talloc(udv, struct drsuapi_DsReplicaCursor2);
+		tmp_cursor->source_dsa_invocation_id = *(samdb_ntds_invocation_id(sam_ctx));
+		tmp_cursor->highest_usn = highest_commited_usn;
+		unix_to_nt_time(&now, t);
+		tmp_cursor->last_sync_success = now;
+
+		ouv_value = ldb_msg_find_ldb_val(msg, "replUpToDateVector");
+		if (ouv_value) {
+			struct replUpToDateVectorBlob ouv;
+			enum ndr_err_code ndr_err;
+
+			ndr_err = ndr_pull_struct_blob(ouv_value, udv,
+						       lp_iconv_convenience(ldb_get_opaque(sam_ctx, "loadparm")), &ouv,
+						       (ndr_pull_flags_fn_t)ndr_pull_replUpToDateVectorBlob);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				return WERR_DS_DRA_INTERNAL_ERROR;
+			}
+			if (ouv.version != 2) {
+				return WERR_DS_DRA_INTERNAL_ERROR;
+			}
+
+			udv->count = ouv.ctr.ctr2.count + 1;
+			udv->cursors = talloc_steal(udv, ouv.ctr.ctr2.cursors);
+			udv->cursors = talloc_realloc(udv, udv->cursors, struct drsuapi_DsReplicaCursor2, udv->count);
+			if (!udv->cursors) {
+				return WERR_DS_DRA_INTERNAL_ERROR;
+			}
+			udv->cursors[udv->count - 1] = *tmp_cursor;
+
+			qsort(udv->cursors, udv->count,
+			      sizeof(struct drsuapi_DsReplicaCursor2),
+			      (comparison_fn_t)replmd_drsuapi_DsReplicaCursor2_compare);
+		} else {
+			udv->count = 1;
+			udv->cursors = talloc_steal(udv, tmp_cursor);
+		}
+	}
+
+	return WERR_OK;
+}
+
 /* 
   drsuapi_DsGetNCChanges
 */
@@ -164,8 +229,6 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	int i;
 	struct dsdb_schema *schema;
 	struct drsuapi_DsReplicaOIDMapping_Ctr *ctr;
-	time_t t = time(NULL);
-	NTTIME now;
 	struct drsuapi_DsReplicaObjectListItemEx *currentObject;
 	NTSTATUS status;
 	DATA_BLOB session_key;
@@ -244,6 +307,11 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	r->out.ctr->ctr6.old_highwatermark = r->in.req->req8.highwatermark;
 	r->out.ctr->ctr6.new_highwatermark = r->in.req->req8.highwatermark;
 
+	r->out.ctr->ctr6.uptodateness_vector = talloc(mem_ctx, struct drsuapi_DsReplicaCursor2CtrEx);
+	r->out.ctr->ctr6.uptodateness_vector->version = 2;
+	r->out.ctr->ctr6.uptodateness_vector->reserved1 = 0;
+	r->out.ctr->ctr6.uptodateness_vector->reserved2 = 0;
+
 	r->out.ctr->ctr6.first_object = talloc(mem_ctx, struct drsuapi_DsReplicaObjectListItemEx);
 	currentObject = r->out.ctr->ctr6.first_object;
 
@@ -263,25 +331,18 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 			r->out.ctr->ctr6.first_object = NULL;
 			return werr;
 		}
+
+		werr = get_nc_changes_udv(r->out.ctr->ctr6.uptodateness_vector, site_res->msgs[i], sam_ctx);
+		if (!W_ERROR_IS_OK(werr)) {
+                        return werr;
+		}
+
 		if (i == (site_res->count-1)) {
 			break;
 		}
 		currentObject->next_object = talloc_zero(mem_ctx, struct drsuapi_DsReplicaObjectListItemEx);
 		currentObject = currentObject->next_object;
 	}
-
-	r->out.ctr->ctr6.uptodateness_vector = talloc(mem_ctx, struct drsuapi_DsReplicaCursor2CtrEx);
-
-	r->out.ctr->ctr6.uptodateness_vector->version = 2;
-	r->out.ctr->ctr6.uptodateness_vector->count = 1;
-	r->out.ctr->ctr6.uptodateness_vector->reserved1 = 0;
-	r->out.ctr->ctr6.uptodateness_vector->reserved2 = 0;
-	r->out.ctr->ctr6.uptodateness_vector->cursors = talloc(mem_ctx, struct drsuapi_DsReplicaCursor2);
-
-	r->out.ctr->ctr6.uptodateness_vector->cursors[0].source_dsa_invocation_id = *(samdb_ntds_invocation_id(sam_ctx));
-	r->out.ctr->ctr6.uptodateness_vector->cursors[0].highest_usn = r->out.ctr->ctr6.new_highwatermark.highest_usn;
-	unix_to_nt_time(&now, t);
-	r->out.ctr->ctr6.uptodateness_vector->cursors[0].last_sync_success = now;
 
 	return WERR_OK;
 }
