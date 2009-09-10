@@ -243,7 +243,10 @@ WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
 		status = dsdb_convert_object_ex(ldb, schema,
 						cur, gensec_skey,
 						out->objects, &out->objects[i]);
-		W_ERROR_NOT_OK_RETURN(status);
+		if (!W_ERROR_IS_OK(status)) {
+			DEBUG(0,("Failed to convert object %s\n", cur->object.identifier->dn));
+			return status;
+		}
 	}
 	if (i != out->num_objects) {
 		return WERR_FOOBAR;
