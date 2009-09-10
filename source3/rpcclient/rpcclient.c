@@ -642,8 +642,9 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 	if ((cmd_entry->interface != NULL) && (cmd_entry->rpc_pipe == NULL)) {
 		switch (pipe_default_auth_type) {
 			case PIPE_AUTH_TYPE_NONE:
-				ntresult = cli_rpc_pipe_open_noauth(
-					cli, cmd_entry->interface,
+				ntresult = cli_rpc_pipe_open_noauth_transport(
+					cli, default_transport,
+					cmd_entry->interface,
 					&cmd_entry->rpc_pipe);
 				break;
 			case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
