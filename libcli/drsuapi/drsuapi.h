@@ -31,3 +31,8 @@ WERROR drsuapi_decrypt_attribute(TALLOC_CTX *mem_ctx,
 				 uint32_t rid,
 				 struct drsuapi_DsReplicaAttribute *attr);
 
+
+WERROR drsuapi_encrypt_attribute(TALLOC_CTX *mem_ctx, 
+				 const DATA_BLOB *gensec_skey,
+				 uint32_t rid,
+				 struct drsuapi_DsReplicaAttribute *attr);

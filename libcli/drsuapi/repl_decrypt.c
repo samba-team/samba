@@ -94,14 +94,14 @@ WERROR drsuapi_decrypt_attribute_value(TALLOC_CTX *mem_ctx,
 	 */
 	crc32_given = IVAL(dec_buffer.data, 0);
 	crc32_calc = crc32_calc_buffer(dec_buffer.data + 4 , dec_buffer.length - 4);
-	if (crc32_given != crc32_calc) {
-		return WERR_SEC_E_DECRYPT_FAILURE;
-	}
 	checked_buffer = data_blob_const(dec_buffer.data + 4, dec_buffer.length - 4);
 
 	plain_buffer = data_blob_talloc(mem_ctx, checked_buffer.data, checked_buffer.length);
 	W_ERROR_HAVE_NO_MEMORY(plain_buffer.data);
 
+	if (crc32_given != crc32_calc) {
+		return WERR_SEC_E_DECRYPT_FAILURE;
+	}
 	/*
 	 * The following rid_crypt obfuscation isn't session specific
 	 * and not really needed here, because we allways know the rid of the
@@ -188,12 +188,12 @@ WERROR drsuapi_decrypt_attribute(TALLOC_CTX *mem_ctx,
 	return WERR_OK;
 }
 
-WERROR drsuapi_encrypt_attribute_value(TALLOC_CTX *mem_ctx,
-				       const DATA_BLOB *gensec_skey,
-				       bool rid_crypt,
-				       uint32_t rid,
-				       DATA_BLOB *in,
-				       DATA_BLOB *out)
+static WERROR drsuapi_encrypt_attribute_value(TALLOC_CTX *mem_ctx,
+					      const DATA_BLOB *gensec_skey,
+					      bool rid_crypt,
+					      uint32_t rid,
+					      DATA_BLOB *in,
+					      DATA_BLOB *out)
 {
 	DATA_BLOB rid_crypt_out = data_blob(NULL, 0);
 	DATA_BLOB confounder;
@@ -273,7 +273,7 @@ WERROR drsuapi_encrypt_attribute_value(TALLOC_CTX *mem_ctx,
 	 * of the remaining bytes
 	 */
 	crc32_calc = crc32_calc_buffer(in->data, in->length);
-	SIVAL(enc_buffer.data, 4, crc32_calc);
+	SIVAL(enc_buffer.data, 16, crc32_calc);
 
 	/*
 	 * copy the plain buffer part and 
@@ -282,9 +282,71 @@ WERROR drsuapi_encrypt_attribute_value(TALLOC_CTX *mem_ctx,
 	memcpy(enc_buffer.data+20, in->data, in->length); 
 	talloc_free(rid_crypt_out.data);
 
-	arcfour_crypt_blob(enc_buffer.data+20, enc_buffer.length-20, &enc_key);
+	arcfour_crypt_blob(enc_buffer.data+16, enc_buffer.length-16, &enc_key);
 
 	*out = enc_buffer;
+
+	return WERR_OK;
+}
+
+/*
+  encrypt a DRSUAPI attribute ready for sending over the wire
+  Only some attribute types are encrypted
+ */
+WERROR drsuapi_encrypt_attribute(TALLOC_CTX *mem_ctx, 
+				 const DATA_BLOB *gensec_skey,
+				 uint32_t rid,
+				 struct drsuapi_DsReplicaAttribute *attr)
+{
+	WERROR status;
+	DATA_BLOB *plain_data;
+	DATA_BLOB enc_data;
+	bool rid_crypt = false;
+
+	if (attr->value_ctr.num_values == 0) {
+		return WERR_OK;
+	}
+
+	switch (attr->attid) {
+	case DRSUAPI_ATTRIBUTE_dBCSPwd:
+	case DRSUAPI_ATTRIBUTE_unicodePwd:
+	case DRSUAPI_ATTRIBUTE_ntPwdHistory:
+	case DRSUAPI_ATTRIBUTE_lmPwdHistory:
+		rid_crypt = true;
+		break;
+	case DRSUAPI_ATTRIBUTE_supplementalCredentials:
+	case DRSUAPI_ATTRIBUTE_priorValue:
+	case DRSUAPI_ATTRIBUTE_currentValue:
+	case DRSUAPI_ATTRIBUTE_trustAuthOutgoing:
+	case DRSUAPI_ATTRIBUTE_trustAuthIncoming:
+	case DRSUAPI_ATTRIBUTE_initialAuthOutgoing:
+	case DRSUAPI_ATTRIBUTE_initialAuthIncoming:
+		break;
+	default:
+		return WERR_OK;
+	}
+
+	if (attr->value_ctr.num_values > 1) {
+		return WERR_DS_DRA_INVALID_PARAMETER;
+	}
+
+	if (!attr->value_ctr.values[0].blob) {
+		return WERR_DS_DRA_INVALID_PARAMETER;
+	}
+
+	plain_data	= attr->value_ctr.values[0].blob;
+
+	status = drsuapi_encrypt_attribute_value(mem_ctx,
+						 gensec_skey,
+						 rid_crypt,
+						 rid,
+						 plain_data,
+						 &enc_data);
+	W_ERROR_NOT_OK_RETURN(status);
+
+	talloc_free(attr->value_ctr.values[0].blob->data);
+	*attr->value_ctr.values[0].blob = enc_data;
+
 	return WERR_OK;
 }
 
