@@ -156,10 +156,6 @@ static int _get_interfaces(TALLOC_CTX *mem_ctx, struct iface_struct **pifaces)
 	/* Loop through interfaces, looking for given IP address */
 	for (ifptr = iflist; ifptr != NULL; ifptr = ifptr->ifa_next) {
 
-		memset(&ifaces[total], '\0', sizeof(ifaces[total]));
-
-		copy_size = sizeof(struct sockaddr_in);
-
 		if (!ifptr->ifa_addr || !ifptr->ifa_netmask) {
 			continue;
 		}
@@ -168,6 +164,10 @@ static int _get_interfaces(TALLOC_CTX *mem_ctx, struct iface_struct **pifaces)
 		if (!(ifptr->ifa_flags & IFF_UP)) {
 			continue;
 		}
+
+		memset(&ifaces[total], '\0', sizeof(ifaces[total]));
+
+		copy_size = sizeof(struct sockaddr_in);
 
 		ifaces[total].flags = ifptr->ifa_flags;
 
