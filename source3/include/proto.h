@@ -1090,6 +1090,9 @@ struct user_auth_info *user_auth_info_init(TALLOC_CTX *mem_ctx);
 const char *get_cmdline_auth_info_username(const struct user_auth_info *auth_info);
 void set_cmdline_auth_info_username(struct user_auth_info *auth_info,
 				    const char *username);
+const char *get_cmdline_auth_info_domain(const struct user_auth_info *auth_info);
+void set_cmdline_auth_info_domain(struct user_auth_info *auth_info,
+				  const char *domain);
 void set_cmdline_auth_info_password(struct user_auth_info *auth_info,
 				    const char *password);
 const char *get_cmdline_auth_info_password(const struct user_auth_info *auth_info);
