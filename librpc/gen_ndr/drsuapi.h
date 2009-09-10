@@ -294,8 +294,12 @@ enum drsuapi_DsAttributeId
 	DRSUAPI_ATTRIBUTE_member=0x0000001f,
 	DRSUAPI_ATTRIBUTE_instanceType=0x00020001,
 	DRSUAPI_ATTRIBUTE_whenCreated=0x00020002,
+	DRSUAPI_ATTRIBUTE_possSuperiors=0x00020008,
 	DRSUAPI_ATTRIBUTE_hasMasterNCs=0x0002000e,
+	DRSUAPI_ATTRIBUTE_subClassOf=0x00020015,
 	DRSUAPI_ATTRIBUTE_governsID=0x00020016,
+	DRSUAPI_ATTRIBUTE_mustContain=0x00020018,
+	DRSUAPI_ATTRIBUTE_mayContain=0x00020019,
 	DRSUAPI_ATTRIBUTE_attributeID=0x0002001e,
 	DRSUAPI_ATTRIBUTE_attributeSyntax=0x00020020,
 	DRSUAPI_ATTRIBUTE_isSingleValued=0x00020021,
@@ -310,6 +314,7 @@ enum drsuapi_DsAttributeId
 	DRSUAPI_ATTRIBUTE_oMSyntax=0x000200e7,
 	DRSUAPI_ATTRIBUTE_ntSecurityDescriptor=0x00020119,
 	DRSUAPI_ATTRIBUTE_searchFlags=0x0002014e,
+	DRSUAPI_ATTRIBUTE_auxiliaryClass=0x0002015f,
 	DRSUAPI_ATTRIBUTE_lDAPDisplayName=0x000201cc,
 	DRSUAPI_ATTRIBUTE_name=0x00090001,
 	DRSUAPI_ATTRIBUTE_userAccountControl=0x00090008,
@@ -330,6 +335,9 @@ enum drsuapi_DsAttributeId
 	DRSUAPI_ATTRIBUTE_trustAuthIncoming=0x00090081,
 	DRSUAPI_ATTRIBUTE_trustAuthOutgoing=0x00090087,
 	DRSUAPI_ATTRIBUTE_lmPwdHistory=0x000900a0,
+	DRSUAPI_ATTRIBUTE_systemPossSuperiors=0x000900c3,
+	DRSUAPI_ATTRIBUTE_systemMayContain=0x000900c4,
+	DRSUAPI_ATTRIBUTE_systemMustContain=0x000900c5,
 	DRSUAPI_ATTRIBUTE_sAMAccountName=0x000900dd,
 	DRSUAPI_ATTRIBUTE_sAMAccountType=0x0009012e,
 	DRSUAPI_ATTRIBUTE_fSMORoleOwner=0x00090171,
@@ -358,8 +366,12 @@ enum drsuapi_DsAttributeId
 #define DRSUAPI_ATTRIBUTE_member ( 0x0000001f )
 #define DRSUAPI_ATTRIBUTE_instanceType ( 0x00020001 )
 #define DRSUAPI_ATTRIBUTE_whenCreated ( 0x00020002 )
+#define DRSUAPI_ATTRIBUTE_possSuperiors ( 0x00020008 )
 #define DRSUAPI_ATTRIBUTE_hasMasterNCs ( 0x0002000e )
+#define DRSUAPI_ATTRIBUTE_subClassOf ( 0x00020015 )
 #define DRSUAPI_ATTRIBUTE_governsID ( 0x00020016 )
+#define DRSUAPI_ATTRIBUTE_mustContain ( 0x00020018 )
+#define DRSUAPI_ATTRIBUTE_mayContain ( 0x00020019 )
 #define DRSUAPI_ATTRIBUTE_attributeID ( 0x0002001e )
 #define DRSUAPI_ATTRIBUTE_attributeSyntax ( 0x00020020 )
 #define DRSUAPI_ATTRIBUTE_isSingleValued ( 0x00020021 )
@@ -374,6 +386,7 @@ enum drsuapi_DsAttributeId
 #define DRSUAPI_ATTRIBUTE_oMSyntax ( 0x000200e7 )
 #define DRSUAPI_ATTRIBUTE_ntSecurityDescriptor ( 0x00020119 )
 #define DRSUAPI_ATTRIBUTE_searchFlags ( 0x0002014e )
+#define DRSUAPI_ATTRIBUTE_auxiliaryClass ( 0x0002015f )
 #define DRSUAPI_ATTRIBUTE_lDAPDisplayName ( 0x000201cc )
 #define DRSUAPI_ATTRIBUTE_name ( 0x00090001 )
 #define DRSUAPI_ATTRIBUTE_userAccountControl ( 0x00090008 )
@@ -394,6 +407,9 @@ enum drsuapi_DsAttributeId
 #define DRSUAPI_ATTRIBUTE_trustAuthIncoming ( 0x00090081 )
 #define DRSUAPI_ATTRIBUTE_trustAuthOutgoing ( 0x00090087 )
 #define DRSUAPI_ATTRIBUTE_lmPwdHistory ( 0x000900a0 )
+#define DRSUAPI_ATTRIBUTE_systemPossSuperiors ( 0x000900c3 )
+#define DRSUAPI_ATTRIBUTE_systemMayContain ( 0x000900c4 )
+#define DRSUAPI_ATTRIBUTE_systemMustContain ( 0x000900c5 )
 #define DRSUAPI_ATTRIBUTE_sAMAccountName ( 0x000900dd )
 #define DRSUAPI_ATTRIBUTE_sAMAccountType ( 0x0009012e )
 #define DRSUAPI_ATTRIBUTE_fSMORoleOwner ( 0x00090171 )

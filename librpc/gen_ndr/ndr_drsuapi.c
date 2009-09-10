@@ -1261,8 +1261,12 @@ _PUBLIC_ void ndr_print_drsuapi_DsAttributeId(struct ndr_print *ndr, const char 
 			case DRSUAPI_ATTRIBUTE_member: val = "DRSUAPI_ATTRIBUTE_member"; break;
 			case DRSUAPI_ATTRIBUTE_instanceType: val = "DRSUAPI_ATTRIBUTE_instanceType"; break;
 			case DRSUAPI_ATTRIBUTE_whenCreated: val = "DRSUAPI_ATTRIBUTE_whenCreated"; break;
+			case DRSUAPI_ATTRIBUTE_possSuperiors: val = "DRSUAPI_ATTRIBUTE_possSuperiors"; break;
 			case DRSUAPI_ATTRIBUTE_hasMasterNCs: val = "DRSUAPI_ATTRIBUTE_hasMasterNCs"; break;
+			case DRSUAPI_ATTRIBUTE_subClassOf: val = "DRSUAPI_ATTRIBUTE_subClassOf"; break;
 			case DRSUAPI_ATTRIBUTE_governsID: val = "DRSUAPI_ATTRIBUTE_governsID"; break;
+			case DRSUAPI_ATTRIBUTE_mustContain: val = "DRSUAPI_ATTRIBUTE_mustContain"; break;
+			case DRSUAPI_ATTRIBUTE_mayContain: val = "DRSUAPI_ATTRIBUTE_mayContain"; break;
 			case DRSUAPI_ATTRIBUTE_attributeID: val = "DRSUAPI_ATTRIBUTE_attributeID"; break;
 			case DRSUAPI_ATTRIBUTE_attributeSyntax: val = "DRSUAPI_ATTRIBUTE_attributeSyntax"; break;
 			case DRSUAPI_ATTRIBUTE_isSingleValued: val = "DRSUAPI_ATTRIBUTE_isSingleValued"; break;
@@ -1277,6 +1281,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsAttributeId(struct ndr_print *ndr, const char 
 			case DRSUAPI_ATTRIBUTE_oMSyntax: val = "DRSUAPI_ATTRIBUTE_oMSyntax"; break;
 			case DRSUAPI_ATTRIBUTE_ntSecurityDescriptor: val = "DRSUAPI_ATTRIBUTE_ntSecurityDescriptor"; break;
 			case DRSUAPI_ATTRIBUTE_searchFlags: val = "DRSUAPI_ATTRIBUTE_searchFlags"; break;
+			case DRSUAPI_ATTRIBUTE_auxiliaryClass: val = "DRSUAPI_ATTRIBUTE_auxiliaryClass"; break;
 			case DRSUAPI_ATTRIBUTE_lDAPDisplayName: val = "DRSUAPI_ATTRIBUTE_lDAPDisplayName"; break;
 			case DRSUAPI_ATTRIBUTE_name: val = "DRSUAPI_ATTRIBUTE_name"; break;
 			case DRSUAPI_ATTRIBUTE_userAccountControl: val = "DRSUAPI_ATTRIBUTE_userAccountControl"; break;
@@ -1297,6 +1302,9 @@ _PUBLIC_ void ndr_print_drsuapi_DsAttributeId(struct ndr_print *ndr, const char 
 			case DRSUAPI_ATTRIBUTE_trustAuthIncoming: val = "DRSUAPI_ATTRIBUTE_trustAuthIncoming"; break;
 			case DRSUAPI_ATTRIBUTE_trustAuthOutgoing: val = "DRSUAPI_ATTRIBUTE_trustAuthOutgoing"; break;
 			case DRSUAPI_ATTRIBUTE_lmPwdHistory: val = "DRSUAPI_ATTRIBUTE_lmPwdHistory"; break;
+			case DRSUAPI_ATTRIBUTE_systemPossSuperiors: val = "DRSUAPI_ATTRIBUTE_systemPossSuperiors"; break;
+			case DRSUAPI_ATTRIBUTE_systemMayContain: val = "DRSUAPI_ATTRIBUTE_systemMayContain"; break;
+			case DRSUAPI_ATTRIBUTE_systemMustContain: val = "DRSUAPI_ATTRIBUTE_systemMustContain"; break;
 			case DRSUAPI_ATTRIBUTE_sAMAccountName: val = "DRSUAPI_ATTRIBUTE_sAMAccountName"; break;
 			case DRSUAPI_ATTRIBUTE_sAMAccountType: val = "DRSUAPI_ATTRIBUTE_sAMAccountType"; break;
 			case DRSUAPI_ATTRIBUTE_fSMORoleOwner: val = "DRSUAPI_ATTRIBUTE_fSMORoleOwner"; break;
