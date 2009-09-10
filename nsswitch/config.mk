@@ -2,6 +2,7 @@
 PRIVATE_DEPENDENCIES = SOCKET_WRAPPER
 
 LIBWINBIND-CLIENT_OBJ_FILES = $(nsswitchsrcdir)/wb_common.o
+$(LIBWINBIND-CLIENT_OBJ_FILES): CFLAGS+=-DWINBINDD_SOCKET_DIR=\"$(winbindd_socket_dir)\"
 
 #################################
 # Start BINARY nsstest
@@ -37,3 +38,4 @@ PRIVATE_DEPENDENCIES = \
 
 wbinfo_OBJ_FILES = \
 		$(nsswitchsrcdir)/wbinfo.o
+$(wbinfo_OBJ_FILES): CFLAGS+=-DWINBINDD_SOCKET_DIR=\"$(winbindd_socket_dir)\"
