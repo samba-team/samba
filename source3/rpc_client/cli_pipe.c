@@ -3207,6 +3207,8 @@ static NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx, const char *host,
 		goto fail;
 	}
 
+	result->transport->transport = NCACN_IP_TCP;
+
 	*presult = result;
 	return NT_STATUS_OK;
 
@@ -3427,6 +3429,8 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 		goto fail;
 	}
 
+	result->transport->transport = NCALRPC;
+
 	*presult = result;
 	return NT_STATUS_OK;
 
@@ -3501,6 +3505,8 @@ static NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
 		return status;
 	}
 
+	result->transport->transport = NCACN_NP;
+
 	DLIST_ADD(cli->pipe_list, result);
 	talloc_set_destructor(result, rpc_pipe_client_np_destructor);
 
@@ -3560,6 +3566,8 @@ NTSTATUS rpc_pipe_open_local(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(result);
 		return status;
 	}
+
+	result->transport->transport = NCACN_INTERNAL;
 
 	*presult = result;
 	return NT_STATUS_OK;
