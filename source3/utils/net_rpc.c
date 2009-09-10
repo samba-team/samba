@@ -170,6 +170,8 @@ int run_rpc_command(struct net_context *c,
 			if (conn_flags & NET_FLAGS_SEAL) {
 				nt_status = cli_rpc_pipe_open_ntlmssp(
 					cli, interface,
+					(conn_flags & NET_FLAGS_TCP) ?
+					NCACN_IP_TCP : NCACN_NP,
 					PIPE_AUTH_LEVEL_PRIVACY,
 					lp_workgroup(), c->opt_user_name,
 					c->opt_password, &pipe_hnd);

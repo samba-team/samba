@@ -176,6 +176,7 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 	if (!pass_must_change) {
 		result = cli_rpc_pipe_open_ntlmssp(cli,
 						   &ndr_table_samr.syntax_id,
+						   NCACN_NP,
 						   PIPE_AUTH_LEVEL_PRIVACY,
 						   domain, user,
 						   old_passwd,
