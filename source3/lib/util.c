@@ -308,6 +308,24 @@ void set_cmdline_auth_info_username(struct user_auth_info *auth_info,
 	}
 }
 
+const char *get_cmdline_auth_info_domain(const struct user_auth_info *auth_info)
+{
+	if (!auth_info->domain) {
+		return "";
+	}
+	return auth_info->domain;
+}
+
+void set_cmdline_auth_info_domain(struct user_auth_info *auth_info,
+				  const char *domain)
+{
+	TALLOC_FREE(auth_info->domain);
+	auth_info->domain = talloc_strdup(auth_info, domain);
+	if (!auth_info->domain) {
+		exit(ENOMEM);
+	}
+}
+
 const char *get_cmdline_auth_info_password(const struct user_auth_info *auth_info)
 {
 	if (!auth_info->password) {
