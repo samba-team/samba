@@ -672,7 +672,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 					cli, cmd_entry->interface,
 					default_transport,
 					pipe_default_auth_level,
-					lp_workgroup(),
+					get_cmdline_auth_info_domain(auth_info),
 					&cmd_entry->rpc_pipe);
 				break;
 			default:
@@ -696,18 +696,20 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 			uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
 			uint32 sec_channel_type;
 			uchar trust_password[16];
-	
-			if (!secrets_fetch_trust_account_password(lp_workgroup(),
-							trust_password,
-							NULL, &sec_channel_type)) {
-				return NT_STATUS_UNSUCCESSFUL;
+			const char *machine_account;
+
+			if (!get_trust_pw_hash(get_cmdline_auth_info_domain(auth_info),
+					       trust_password, &machine_account,
+					       &sec_channel_type))
+			{
+				return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 			}
-		
+
 			ntresult = rpccli_netlogon_setup_creds(cmd_entry->rpc_pipe,
 						cli->desthost,   /* server name */
-						lp_workgroup(),  /* domain */
+						get_cmdline_auth_info_domain(auth_info),  /* domain */
 						global_myname(), /* client name */
-						global_myname(), /* machine account name */
+						machine_account, /* machine account name */
 						trust_password,
 						sec_channel_type,
 						&neg_flags);
