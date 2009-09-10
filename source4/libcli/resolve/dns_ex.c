@@ -371,6 +371,8 @@ static void pipe_handler(struct tevent_context *ev, struct tevent_fd *fde,
 	}
 
 	if (ret <= 0) {
+		DEBUG(3,("dns child failed to find name '%s' of type %s\n",
+			 state->name.name, (state->flags & RESOLVE_NAME_FLAG_DNS_SRV)?"SRV":"A"));
 		composite_error(c, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 		return;
 	}
