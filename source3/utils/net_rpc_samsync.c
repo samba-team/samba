@@ -499,7 +499,7 @@ int rpc_vampire_keytab(struct net_context *c, int argc, const char **argv)
 		return -1;
 	} else {
 		ret = run_rpc_command(c, cli, &ndr_table_drsuapi.syntax_id,
-				      NET_FLAGS_SEAL,
+				      NET_FLAGS_SEAL | NET_FLAGS_TCP,
 				      rpc_vampire_keytab_ds_internals, argc, argv);
 		if (ret != 0 && dc_info.is_mixed_mode) {
 			printf("Fallback to NT4 vampire on Mixed-Mode AD Domain\n");
