@@ -830,29 +830,27 @@ bool torture_rpc_drsuapi_get_dcinfo(struct torture_context *torture,
  * Common test case setup function to be used
  * in DRS suit of test when appropriate
  */
-bool torture_rpc_drsuapi_tcase_setup(struct torture_context *tctx, void **data)
+bool torture_drsuapi_tcase_setup_common(struct torture_context *tctx, struct DsPrivate *priv)
 {
         NTSTATUS status;
-	struct DsPrivate *priv;
 	struct cli_credentials *machine_credentials;
 
-	*data = priv = talloc_zero(tctx, struct DsPrivate);
-	torture_assert(tctx, priv, "Not enough memory");
+	torture_assert(tctx, priv, "Invalid argument");
 
-	torture_comment(tctx, "Create DRSUAPI pipe");
+	torture_comment(tctx, "Create DRSUAPI pipe\n");
 	status = torture_rpc_connection(tctx,
 					&priv->pipe,
 					&ndr_table_drsuapi);
 	torture_assert(tctx, NT_STATUS_IS_OK(status), "Unable to connect to DRSUAPI pipe");
 
-	torture_comment(tctx, "Connected to DRSUAPI pipe\n");
+	torture_comment(tctx, "About to join domain\n");
 	priv->join = torture_join_domain(tctx, TEST_MACHINE_NAME, ACB_SVRTRUST,
 					 &machine_credentials);
 	torture_assert(tctx, priv->join, "Failed to join as BDC");
 
 	if (!test_DsBind(priv->pipe, tctx, priv)) {
 		/* clean up */
-		torture_rpc_drsuapi_tcase_teardown(tctx, priv);
+		torture_drsuapi_tcase_teardown_common(tctx, priv);
 		torture_fail(tctx, "Failed execute test_DsBind()");
 	}
 
@@ -866,16 +864,11 @@ bool torture_rpc_drsuapi_tcase_setup(struct torture_context *tctx, void **data)
  * Common test case teardown function to be used
  * in DRS suit of test when appropriate
  */
-bool torture_rpc_drsuapi_tcase_teardown(struct torture_context *tctx, void *data)
+bool torture_drsuapi_tcase_teardown_common(struct torture_context *tctx, struct DsPrivate *priv)
 {
-	struct DsPrivate *priv = (struct DsPrivate *)data;
-
 	if (priv->join) {
 		torture_leave_domain(tctx, priv->join);
 	}
 
-	talloc_free(priv);
-
 	return true;
 }
-
