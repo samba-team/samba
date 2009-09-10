@@ -5315,12 +5315,14 @@ NTSTATUS get_schannel_session_key(struct cli_state *cli,
 				  struct rpc_pipe_client **presult);
 NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 					     const struct ndr_syntax_id *interface,
+					     enum dcerpc_transport_t transport,
 					     enum pipe_auth_level auth_level,
 					     const char *domain,
 					     const struct dcinfo *pdc,
 					     struct rpc_pipe_client **presult);
 NTSTATUS cli_rpc_pipe_open_ntlmssp_auth_schannel(struct cli_state *cli,
 						 const struct ndr_syntax_id *interface,
+						 enum dcerpc_transport_t transport,
 						 enum pipe_auth_level auth_level,
 						 const char *domain,
 						 const char *username,
@@ -5328,6 +5330,7 @@ NTSTATUS cli_rpc_pipe_open_ntlmssp_auth_schannel(struct cli_state *cli,
 						 struct rpc_pipe_client **presult);
 NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
 				    const struct ndr_syntax_id *interface,
+				    enum dcerpc_transport_t transport,
 				    enum pipe_auth_level auth_level,
 				    const char *domain,
 				    struct rpc_pipe_client **presult);

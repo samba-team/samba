@@ -2089,7 +2089,8 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 		goto anonymous;
 	}
 	result = cli_rpc_pipe_open_schannel_with_key
-		(conn->cli, &ndr_table_samr.syntax_id, PIPE_AUTH_LEVEL_PRIVACY,
+		(conn->cli, &ndr_table_samr.syntax_id, NCACN_NP,
+		PIPE_AUTH_LEVEL_PRIVACY,
 		 domain->name, p_dcinfo, &conn->samr_pipe);
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -2225,7 +2226,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 		goto anonymous;
 	}
 	result = cli_rpc_pipe_open_schannel_with_key
-		(conn->cli, &ndr_table_lsarpc.syntax_id,
+		(conn->cli, &ndr_table_lsarpc.syntax_id, NCACN_NP,
 		 PIPE_AUTH_LEVEL_PRIVACY,
 		 domain->name, p_dcinfo, &conn->lsa_pipe);
 
@@ -2372,7 +2373,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 	*/
 
 	result = cli_rpc_pipe_open_schannel_with_key(
-		conn->cli, &ndr_table_netlogon.syntax_id,
+		conn->cli, &ndr_table_netlogon.syntax_id, NCACN_NP,
 		PIPE_AUTH_LEVEL_PRIVACY, domain->name, netlogon_pipe->dc,
 		&conn->netlogon_pipe);
 
