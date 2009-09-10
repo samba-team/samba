@@ -38,22 +38,14 @@ struct repsTo {
 /*
   load the repsTo structure for a given partition GUID
  */
-static WERROR uref_loadreps(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx, struct GUID *guid,
+static WERROR uref_loadreps(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx, struct ldb_dn *dn,
 			    struct repsTo *reps)
 {
-	struct ldb_dn *dn;
 	const char *attrs[] = { "repsTo", NULL };
 	struct ldb_result *res;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	int i;
 	struct ldb_message_element *el;
-
-	if (dsdb_find_dn_by_guid(sam_ctx, tmp_ctx, GUID_string(tmp_ctx, guid), &dn) != LDB_SUCCESS) {
-		DEBUG(0,("drsuapi_addref: failed to find partition with GUID %s\n",
-			 GUID_string(tmp_ctx, guid)));
-		talloc_free(tmp_ctx);
-		return WERR_DS_DRA_BAD_NC;
-	}
 
 	/* TODO: possibly check in the rootDSE to see that this DN is
 	 * one of our partition roots */	 
@@ -99,21 +91,13 @@ static WERROR uref_loadreps(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx, st
 /*
   save the repsTo structure for a given partition GUID
  */
-static WERROR uref_savereps(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx, struct GUID *guid,
+static WERROR uref_savereps(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx, struct ldb_dn *dn,
 			    struct repsTo *reps)
 {
-	struct ldb_dn *dn;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	struct ldb_message *msg;
 	struct ldb_message_element *el;
 	int i;
-
-	if (dsdb_find_dn_by_guid(sam_ctx, tmp_ctx, GUID_string(tmp_ctx, guid), &dn) != LDB_SUCCESS) {
-		DEBUG(0,("drsuapi_addref: failed to find partition with GUID %s\n",
-			 GUID_string(tmp_ctx, guid)));
-		talloc_free(tmp_ctx);
-		return WERR_DS_DRA_BAD_NC;
-	}
 
 	msg = ldb_msg_new(tmp_ctx);
 	msg->dn = dn;
@@ -159,12 +143,12 @@ failed:
   add a replication destination for a given partition GUID
  */
 static WERROR uref_add_dest(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx, 
-			    struct GUID *guid, struct repsFromTo1 *dest)
+			    struct ldb_dn *dn, struct repsFromTo1 *dest)
 {
 	struct repsTo reps;
 	WERROR werr;
 
-	werr = uref_loadreps(sam_ctx, mem_ctx, guid, &reps);
+	werr = uref_loadreps(sam_ctx, mem_ctx, dn, &reps);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
@@ -178,7 +162,7 @@ static WERROR uref_add_dest(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	reps.r[reps.count].ctr.ctr1 = *dest;
 	reps.count++;
 
-	werr = uref_savereps(sam_ctx, mem_ctx, guid, &reps);
+	werr = uref_savereps(sam_ctx, mem_ctx, dn, &reps);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
@@ -190,13 +174,13 @@ static WERROR uref_add_dest(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
   delete a replication destination for a given partition GUID
  */
 static WERROR uref_del_dest(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx, 
-			    struct GUID *guid, struct GUID *dest_guid)
+			    struct ldb_dn *dn, struct GUID *dest_guid)
 {
 	struct repsTo reps;
 	WERROR werr;
 	int i;
 
-	werr = uref_loadreps(sam_ctx, mem_ctx, guid, &reps);
+	werr = uref_loadreps(sam_ctx, mem_ctx, dn, &reps);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
@@ -210,7 +194,7 @@ static WERROR uref_del_dest(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	werr = uref_savereps(sam_ctx, mem_ctx, guid, &reps);
+	werr = uref_savereps(sam_ctx, mem_ctx, dn, &reps);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
@@ -227,6 +211,7 @@ WERROR dcesrv_drsuapi_DsReplicaUpdateRefs(struct dcesrv_call_state *dce_call, TA
 	struct drsuapi_DsReplicaUpdateRefsRequest1 *req;
 	struct ldb_context *sam_ctx;
 	WERROR werr;
+	struct ldb_dn *dn;
 
 	if (r->in.level != 1) {
 		DEBUG(0,("DrReplicUpdateRefs - unsupported level %u\n", r->in.level));
@@ -246,13 +231,20 @@ WERROR dcesrv_drsuapi_DsReplicaUpdateRefs(struct dcesrv_call_state *dce_call, TA
 		return WERR_DS_DRA_INTERNAL_ERROR;		
 	}
 
+	dn = ldb_dn_new(mem_ctx, sam_ctx, req->naming_context->dn);
+	if (dn == NULL) {
+		talloc_free(sam_ctx);		
+		return WERR_DS_INVALID_DN_SYNTAX;
+	}
+
 	if (ldb_transaction_start(sam_ctx) != LDB_SUCCESS) {
 		DEBUG(0,(__location__ ": Failed to start transaction on samdb\n"));
+		talloc_free(sam_ctx);
 		return WERR_DS_DRA_INTERNAL_ERROR;		
 	}
 
 	if (req->options & DRSUAPI_DS_REPLICA_UPDATE_DELETE_REFERENCE) {
-		werr = uref_del_dest(sam_ctx, mem_ctx, &req->naming_context->guid, &req->dest_dsa_guid);
+		werr = uref_del_dest(sam_ctx, mem_ctx, dn, &req->dest_dsa_guid);
 		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(0,("Failed to delete repsTo for %s\n",
 				 GUID_string(dce_call, &req->dest_dsa_guid)));
@@ -272,7 +264,7 @@ WERROR dcesrv_drsuapi_DsReplicaUpdateRefs(struct dcesrv_call_state *dce_call, TA
 		dest.source_dsa_obj_guid = req->dest_dsa_guid;
 		dest.replica_flags       = req->options;
 
-		werr = uref_add_dest(sam_ctx, mem_ctx, &req->naming_context->guid, &dest);
+		werr = uref_add_dest(sam_ctx, mem_ctx, dn, &dest);
 		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(0,("Failed to delete repsTo for %s\n",
 				 GUID_string(dce_call, &dest.source_dsa_obj_guid)));
@@ -293,4 +285,3 @@ failed:
 	talloc_free(sam_ctx);
 	return werr;
 }
-
