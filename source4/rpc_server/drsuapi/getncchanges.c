@@ -169,6 +169,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	struct drsuapi_DsReplicaObjectListItemEx *currentObject;
 	NTSTATUS status;
 	DATA_BLOB session_key;
+	const char *attrs[] = { "*", "parentGUID", NULL };
 
 	/*
 	 * connect to the samdb. TODO: We need to check that the caller
@@ -209,7 +210,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	/* Construct response. */
 	ncRoot_dn = ldb_dn_new(mem_ctx, sam_ctx, ncRoot->dn);
 	ret = drsuapi_search_with_extended_dn(sam_ctx, mem_ctx, &site_res,
-			 ncRoot_dn, LDB_SCOPE_SUBTREE, NULL,
+					      ncRoot_dn, LDB_SCOPE_SUBTREE, attrs,
 					      "(&(uSNChanged>=%llu)(objectClass=*))", 
 					      (unsigned long long)r->in.req->req8.highwatermark.highest_usn);
 	if (ret != LDB_SUCCESS) {
