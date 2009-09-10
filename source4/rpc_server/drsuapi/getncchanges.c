@@ -86,7 +86,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	obj->object.identifier = talloc(obj, struct drsuapi_DsReplicaObjectIdentifier);
 	obj_dn = ldb_msg_find_attr_as_dn(sam_ctx, obj, msg, "distinguishedName");
 	obj->object.identifier->dn = ldb_dn_get_linearized(obj_dn);
-	obj->object.identifier->guid = GUID_zero();
+	obj->object.identifier->guid = samdb_result_guid(msg, "objectGUID");
 	ZERO_STRUCT(obj->object.identifier->sid);
 
 	obj->object.attribute_ctr.num_attributes = obj->meta_data_ctr->count;
