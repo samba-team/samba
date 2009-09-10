@@ -652,7 +652,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 					cli, cmd_entry->interface,
 					default_transport,
 					pipe_default_auth_level,
-					lp_workgroup(),
+					get_cmdline_auth_info_domain(auth_info),
 					get_cmdline_auth_info_username(auth_info),
 					get_cmdline_auth_info_password(auth_info),
 					&cmd_entry->rpc_pipe);
@@ -662,7 +662,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 					cli, cmd_entry->interface,
 					default_transport,
 					pipe_default_auth_level,
-					lp_workgroup(),
+					get_cmdline_auth_info_domain(auth_info),
 					get_cmdline_auth_info_username(auth_info),
 					get_cmdline_auth_info_password(auth_info),
 					&cmd_entry->rpc_pipe);
@@ -828,6 +828,7 @@ out_free:
 	uint32_t flags = 0;
 	struct dcerpc_binding *binding = NULL;
 	const char *binding_string = NULL;
+	char *user, *domain, *q;
 
 	/* make sure the vars that get altered (4th field) are in
 	   a fixed location or certain compilers complain */
@@ -965,12 +966,24 @@ out_free:
 			 CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
 	}
 
+	user = talloc_strdup(frame, get_cmdline_auth_info_username(rpcclient_auth_info));
+	SMB_ASSERT(user != NULL);
+	domain = talloc_strdup(frame, lp_workgroup());
+	SMB_ASSERT(domain != NULL);
+	set_cmdline_auth_info_domain(rpcclient_auth_info, domain);
+
+	if ((q = strchr_m(user,'\\'))) {
+		*q = 0;
+		set_cmdline_auth_info_domain(rpcclient_auth_info, user);
+		set_cmdline_auth_info_username(rpcclient_auth_info, q+1);
+	}
+
 
 	nt_status = cli_full_connection(&cli, global_myname(), binding->host,
 					opt_ipaddr ? &server_ss : NULL, opt_port,
 					"IPC$", "IPC",
 					get_cmdline_auth_info_username(rpcclient_auth_info),
-					lp_workgroup(),
+					get_cmdline_auth_info_domain(rpcclient_auth_info),
 					get_cmdline_auth_info_password(rpcclient_auth_info),
 					flags,
 					get_cmdline_auth_info_signing_state(rpcclient_auth_info),
@@ -986,7 +999,7 @@ out_free:
 		nt_status = cli_cm_force_encryption(cli,
 					get_cmdline_auth_info_username(rpcclient_auth_info),
 					get_cmdline_auth_info_password(rpcclient_auth_info),
-					lp_workgroup(),
+					get_cmdline_auth_info_domain(rpcclient_auth_info),
 					"IPC$");
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			result = 1;
