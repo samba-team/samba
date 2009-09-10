@@ -68,6 +68,8 @@ struct cli_pipe_auth_data {
 
 struct rpc_cli_transport {
 
+	enum dcerpc_transport_t transport;
+
 	/**
 	 * Trigger an async read from the server. May return a short read.
 	 */
