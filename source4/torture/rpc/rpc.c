@@ -489,7 +489,7 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_simple_test(suite, "SAMBA3-SPOOLSS", torture_samba3_rpc_spoolss);
 	torture_suite_add_simple_test(suite, "SAMBA3-WKSSVC", torture_samba3_rpc_wkssvc);
 	torture_suite_add_simple_test(suite, "SAMBA3-WINREG", torture_samba3_rpc_winreg);
-	torture_suite_add_simple_test(suite, "DRSUAPI", torture_rpc_drsuapi);
+	torture_rpc_drsuapi_tcase(suite);
 	torture_rpc_drsuapi_cracknames_tcase(suite);
 	torture_suite_add_suite(suite, torture_rpc_dssetup(suite));
 	torture_suite_add_suite(suite, torture_rpc_browser(suite));

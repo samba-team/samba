@@ -50,11 +50,11 @@ bool test_DsBind(struct dcerpc_pipe *p,
 	return true;
 }
 
-static bool test_DsGetDomainControllerInfo(struct dcerpc_pipe *p,
-					   struct torture_context *tctx,
+static bool test_DsGetDomainControllerInfo(struct torture_context *tctx,
 					   struct DsPrivate *priv)
 {
 	NTSTATUS status;
+	struct dcerpc_pipe *p = priv->pipe;
 	struct drsuapi_DsGetDomainControllerInfo r;
 	union drsuapi_DsGetDCInfoCtr ctr;
 	int32_t level_out = 0;
@@ -184,11 +184,11 @@ static bool test_DsGetDomainControllerInfo(struct dcerpc_pipe *p,
 	return true;
 }
 
-static bool test_DsWriteAccountSpn(struct dcerpc_pipe *p,
-				   struct torture_context *tctx,
+static bool test_DsWriteAccountSpn(struct torture_context *tctx,
 				   struct DsPrivate *priv)
 {
 	NTSTATUS status;
+	struct dcerpc_pipe *p = priv->pipe;
 	struct drsuapi_DsWriteAccountSpn r;
 	union drsuapi_DsWriteAccountSpnRequest req;
 	struct drsuapi_DsNameString names[2];
@@ -224,11 +224,11 @@ static bool test_DsWriteAccountSpn(struct dcerpc_pipe *p,
 	return true;
 }
 
-static bool test_DsReplicaGetInfo(struct dcerpc_pipe *p,
-				  struct torture_context *tctx,
+static bool test_DsReplicaGetInfo(struct torture_context *tctx,
 				  struct DsPrivate *priv)
 {
 	NTSTATUS status;
+	struct dcerpc_pipe *p = priv->pipe;
 	struct drsuapi_DsReplicaGetInfo r;
 	union drsuapi_DsReplicaGetInfoRequest req;
 	union drsuapi_DsReplicaInfo info;
@@ -353,11 +353,11 @@ static bool test_DsReplicaGetInfo(struct dcerpc_pipe *p,
 	return true;
 }
 
-static bool test_DsReplicaSync(struct dcerpc_pipe *p,
-				struct torture_context *tctx,
+static bool test_DsReplicaSync(struct torture_context *tctx,
 				struct DsPrivate *priv)
 {
 	NTSTATUS status;
+	struct dcerpc_pipe *p = priv->pipe;
 	int i;
 	struct drsuapi_DsReplicaSync r;
 	struct drsuapi_DsReplicaObjectIdentifier nc;
@@ -411,11 +411,11 @@ static bool test_DsReplicaSync(struct dcerpc_pipe *p,
 	return true;
 }
 
-static bool test_DsReplicaUpdateRefs(struct dcerpc_pipe *p,
-				     struct torture_context *tctx,
+static bool test_DsReplicaUpdateRefs(struct torture_context *tctx,
 				     struct DsPrivate *priv)
 {
 	NTSTATUS status;
+	struct dcerpc_pipe *p = priv->pipe;
 	int i;
 	struct drsuapi_DsReplicaUpdateRefs r;
 	struct drsuapi_DsReplicaObjectIdentifier nc;
@@ -465,11 +465,11 @@ static bool test_DsReplicaUpdateRefs(struct dcerpc_pipe *p,
 	return true;
 }
 
-static bool test_DsGetNCChanges(struct dcerpc_pipe *p,
-				struct torture_context *tctx,
+static bool test_DsGetNCChanges(struct torture_context *tctx,
 				struct DsPrivate *priv)
 {
 	NTSTATUS status;
+	struct dcerpc_pipe *p = priv->pipe;
 	int i;
 	struct drsuapi_DsGetNCChanges r;
 	union drsuapi_DsGetNCChangesRequest req;
@@ -575,11 +575,11 @@ static bool test_DsGetNCChanges(struct dcerpc_pipe *p,
 	return true;
 }
 
-bool test_QuerySitesByCost(struct dcerpc_pipe *p,
-			   struct torture_context *tctx,
+bool test_QuerySitesByCost(struct torture_context *tctx,
 			   struct DsPrivate *priv)
 {
 	NTSTATUS status;
+	struct dcerpc_pipe *p = priv->pipe;
 	struct drsuapi_QuerySitesByCost r;
 	union drsuapi_QuerySitesByCostRequest req;
 
@@ -640,59 +640,6 @@ bool test_DsUnbind(struct dcerpc_pipe *p,
 	return true;
 }
 
-bool torture_rpc_drsuapi(struct torture_context *torture)
-{
-        NTSTATUS status;
-        struct dcerpc_pipe *p;
-	bool ret = true;
-	struct DsPrivate *priv;
-	struct cli_credentials *machine_credentials;
-
-	priv = talloc_zero(torture, struct DsPrivate);
-
-	priv->join = torture_join_domain(torture, TEST_MACHINE_NAME, ACB_SVRTRUST, 
-				       &machine_credentials);
-	if (!priv->join) {
-		torture_fail(torture, "Failed to join as BDC");
-	}
-
-	status = torture_rpc_connection(torture, 
-					&p, 
-					&ndr_table_drsuapi);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_leave_domain(torture, priv->join);
-		torture_fail(torture, "Unable to connect to DRSUAPI pipe");
-	}
-
-	/* cache pipe handle */
-	priv->pipe = p;
-
-	ret &= test_DsBind(p, torture, priv);
-#if 0
-	ret &= test_QuerySitesByCost(p, torture, priv);
-#endif
-	ret &= test_DsGetDomainControllerInfo(p, torture, priv);
-
-	ret &= test_DsCrackNames(torture, priv);
-
-	ret &= test_DsWriteAccountSpn(p, torture, priv);
-
-	ret &= test_DsReplicaGetInfo(p, torture, priv);
-
-	ret &= test_DsReplicaSync(p, torture, priv);
-
-	ret &= test_DsReplicaUpdateRefs(p, torture, priv);
-
-	ret &= test_DsGetNCChanges(p, torture, priv);
-
-	ret &= test_DsUnbind(p, torture, priv);
-
-	torture_leave_domain(torture, priv->join);
-
-	talloc_free(priv);
-
-	return ret;
-}
 
 /**
  * Helper func to collect DC information for testing purposes.
@@ -788,4 +735,63 @@ bool torture_drsuapi_tcase_teardown_common(struct torture_context *tctx, struct 
 	}
 
 	return true;
+}
+
+/**
+ * Test case setup for DRSUAPI test case
+ */
+static bool torture_drsuapi_tcase_setup(struct torture_context *tctx, void **data)
+{
+	struct DsPrivate *priv;
+
+	*data = priv = talloc_zero(tctx, struct DsPrivate);
+
+	return torture_drsuapi_tcase_setup_common(tctx, priv);
+}
+
+/**
+ * Test case tear-down for DRSUAPI test case
+ */
+static bool torture_drsuapi_tcase_teardown(struct torture_context *tctx, void *data)
+{
+	bool ret;
+	struct DsPrivate *priv = talloc_get_type(data, struct DsPrivate);
+
+	ret = torture_drsuapi_tcase_teardown_common(tctx, priv);
+
+	talloc_free(priv);
+	return ret;
+}
+
+/**
+ * DRSUAPI test case implementation
+ */
+void torture_rpc_drsuapi_tcase(struct torture_suite *suite)
+{
+	typedef bool (*run_func) (struct torture_context *test, void *tcase_data);
+
+	struct torture_test *test;
+	struct torture_tcase *tcase = torture_suite_add_tcase(suite, "DRSUAPI");
+
+	torture_tcase_set_fixture(tcase,
+				  torture_drsuapi_tcase_setup,
+				  torture_drsuapi_tcase_teardown);
+
+#if 0
+	test = torture_tcase_add_simple_test(tcase, "QuerySitesByCost", (run_func)test_QuerySitesByCost);
+#endif
+
+	test = torture_tcase_add_simple_test(tcase, "DsGetDomainControllerInfo", (run_func)test_DsGetDomainControllerInfo);
+
+	test = torture_tcase_add_simple_test(tcase, "DsCrackNames", (run_func)test_DsCrackNames);
+
+	test = torture_tcase_add_simple_test(tcase, "DsWriteAccountSpn", (run_func)test_DsWriteAccountSpn);
+
+	test = torture_tcase_add_simple_test(tcase, "DsReplicaGetInfo", (run_func)test_DsReplicaGetInfo);
+
+	test = torture_tcase_add_simple_test(tcase, "DsReplicaSync", (run_func)test_DsReplicaSync);
+
+	test = torture_tcase_add_simple_test(tcase, "DsReplicaUpdateRefs", (run_func)test_DsReplicaUpdateRefs);
+
+	test = torture_tcase_add_simple_test(tcase, "DsGetNCChanges", (run_func)test_DsGetNCChanges);
 }
