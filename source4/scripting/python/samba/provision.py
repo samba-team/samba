@@ -1220,45 +1220,44 @@ def provision(setup_dir, message, session_info,
             message("A Kerberos configuration suitable for Samba 4 has been generated at %s" % paths.krb5conf)
 
 
-    if provision_backend is not None:
-      ldapi_db = Ldb(provision_backend.ldapi_uri, lp=lp, credentials=credentials)
-
-      # delete default SASL mappings
-      res = ldapi_db.search(expression="(!(cn=samba-admin mapping))", base="cn=mapping,cn=sasl,cn=config", scope=SCOPE_ONELEVEL, attrs=["dn"])
-
-      for i in range (0, len(res)):
-        dn = str(res[i]["dn"])
-        ldapi_db.delete(dn)
-
-        # configure aci
+    if provision_backend is not None: 
       if ldap_backend_type == "fedora-ds":
+        ldapi_db = Ldb(provision_backend.ldapi_uri, lp=lp, credentials=credentials)
 
-        aci = """(targetattr = "*") (version 3.0;acl "full access to all by samba-admin";allow (all)(userdn = "ldap:///CN=samba-admin,%s");)""" % names.sambadn
+        # delete default SASL mappings
+        res = ldapi_db.search(expression="(!(cn=samba-admin mapping))", base="cn=mapping,cn=sasl,cn=config", scope=SCOPE_ONELEVEL, attrs=["dn"])
 
-        m = ldb.Message()
-        m["aci"] = ldb.MessageElement([aci], ldb.FLAG_MOD_REPLACE, "aci")
+        # configure in-directory access control on Fedora DS via the aci attribute (over a direct ldapi:// socket)
+        for i in range (0, len(res)):
+          dn = str(res[i]["dn"])
+          ldapi_db.delete(dn)
 
-        m.dn = ldb.Dn(1, names.domaindn)
-        ldapi_db.modify(m)
+          aci = """(targetattr = "*") (version 3.0;acl "full access to all by samba-admin";allow (all)(userdn = "ldap:///CN=samba-admin,%s");)""" % names.sambadn
 
-        m.dn = ldb.Dn(1, names.configdn)
-        ldapi_db.modify(m)
+          m = ldb.Message()
+          m["aci"] = ldb.MessageElement([aci], ldb.FLAG_MOD_REPLACE, "aci")
+        
+          m.dn = ldb.Dn(1, names.domaindn)
+          ldapi_db.modify(m)
 
-        m.dn = ldb.Dn(1, names.schemadn)
-        ldapi_db.modify(m)
+          m.dn = ldb.Dn(1, names.configdn)
+          ldapi_db.modify(m)
 
-    # if backend is openldap, terminate slapd after final provision and check its proper termination
-    if provision_backend is not None and provision_backend.slapd is not None:
-        if provision_backend.slapd.poll() is None:
-            #Kill the slapd
-            if hasattr(provision_backend.slapd, "terminate"):
-                provision_backend.slapd.terminate()
-            else:
-                import signal
-                os.kill(provision_backend.slapd.pid, signal.SIGTERM)
+          m.dn = ldb.Dn(1, names.schemadn)
+          ldapi_db.modify(m)
+
+      # if an LDAP backend is in use, terminate slapd after final provision and check its proper termination
+      if provision_backend.slapd.poll() is None:
+        #Kill the slapd
+        if hasattr(provision_backend.slapd, "terminate"):
+          provision_backend.slapd.terminate()
+        else:
+          # Older python versions don't have .terminate()
+          import signal
+          os.kill(provision_backend.slapd.pid, signal.SIGTERM)
             
-            #and now wait for it to die
-            provision_backend.slapd.communicate()
+        #and now wait for it to die
+        provision_backend.slapd.communicate()
             
     # now display slapd_command_file.txt to show how slapd must be started next time
         message("Use later the following commandline to start slapd, then Samba:")
