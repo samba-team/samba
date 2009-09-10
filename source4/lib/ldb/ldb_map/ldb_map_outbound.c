@@ -1250,15 +1250,15 @@ static int map_remote_search_callback(struct ldb_request *req,
 						ares->response, LDB_SUCCESS);
 		}
 
-		talloc_free(ares);
-
 		/* reset the pointer to the start of the list */
 		ac->r_current = ac->r_list;
 
 		/* no entry just return */
 		if (ac->r_current == NULL) {
-			return ldb_module_done(ac->req, ares->controls,
+			ret = ldb_module_done(ac->req, ares->controls,
 						ares->response, LDB_SUCCESS);
+			talloc_free(ares);
+			return ret;
 		}
 
 		ret = map_search_local(ac);
