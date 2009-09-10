@@ -31,11 +31,11 @@
 /**
   build an empty (only NULL terminated) list of strings (for expansion with str_list_add() etc)
 */
-_PUBLIC_ char **str_list_make_empty(TALLOC_CTX *mem_ctx)
+_PUBLIC_ const char **str_list_make_empty(TALLOC_CTX *mem_ctx)
 {
-	char **ret = NULL;
+	const char **ret = NULL;
 
-	ret = talloc_array(mem_ctx, char *, 1);
+	ret = (const char **) talloc_array(mem_ctx, char *, 1);
 	if (ret == NULL) {
 		return NULL;
 	}
@@ -48,11 +48,11 @@ _PUBLIC_ char **str_list_make_empty(TALLOC_CTX *mem_ctx)
 /**
   place the only element 'entry' into a new, NULL terminated string list
 */
-_PUBLIC_ char **str_list_make_single(TALLOC_CTX *mem_ctx, const char *entry)
+_PUBLIC_ const char **str_list_make_single(TALLOC_CTX *mem_ctx, const char *entry)
 {
-	char **ret = NULL;
+	const char **ret = NULL;
 
-	ret = talloc_array(mem_ctx, char *, 2);
+	ret = talloc_array(mem_ctx, const char *, 2);
 	if (ret == NULL) {
 		return NULL;
 	}
@@ -72,30 +72,31 @@ _PUBLIC_ char **str_list_make_single(TALLOC_CTX *mem_ctx, const char *entry)
   separator list. The separator list must contain characters less than
   or equal to 0x2f for this to work correctly on multi-byte strings
 */
-_PUBLIC_ char **str_list_make(TALLOC_CTX *mem_ctx, const char *string, const char *sep)
+_PUBLIC_ const char **str_list_make(TALLOC_CTX *mem_ctx, const char *string, const char *sep)
 {
 	int num_elements = 0;
-	char **ret = NULL;
+	const char **ret = NULL;
 
 	if (sep == NULL) {
 		sep = LIST_SEP;
 	}
 
-	ret = talloc_array(mem_ctx, char *, 1);
+	ret = talloc_array(mem_ctx, const char *, 1);
 	if (ret == NULL) {
 		return NULL;
 	}
 
 	while (string && *string) {
 		size_t len = strcspn(string, sep);
-		char **ret2;
+		const char **ret2;
 		
 		if (len == 0) {
 			string += strspn(string, sep);
 			continue;
 		}
 
-		ret2 = talloc_realloc(mem_ctx, ret, char *, num_elements+2);
+		ret2 = talloc_realloc(mem_ctx, ret, const char *,
+			num_elements+2);
 		if (ret2 == NULL) {
 			talloc_free(ret);
 			return NULL;
@@ -237,15 +238,15 @@ _PUBLIC_ size_t str_list_length(const char * const *list)
 /**
   copy a string list
 */
-_PUBLIC_ char **str_list_copy(TALLOC_CTX *mem_ctx, const char **list)
+_PUBLIC_ const char **str_list_copy(TALLOC_CTX *mem_ctx, const char **list)
 {
 	int i;
-	char **ret;
+	const char **ret;
 
 	if (list == NULL)
 		return NULL;
 	
-	ret = talloc_array(mem_ctx, char *, str_list_length(list)+1);
+	ret = talloc_array(mem_ctx, const char *, str_list_length(list)+1);
 	if (ret == NULL) 
 		return NULL;
 
@@ -350,14 +351,15 @@ _PUBLIC_ bool str_list_check_ci(const char **list, const char *s)
 /**
   append one list to another - expanding list1
 */
-_PUBLIC_ char **str_list_append(const char **list1, const char * const *list2)
+_PUBLIC_ const char **str_list_append(const char **list1,
+	const char * const *list2)
 {
 	size_t len1 = str_list_length(list1);
 	size_t len2 = str_list_length(list2);
-	char **ret;
+	const char **ret;
 	int i;
 
-	ret = talloc_realloc(NULL, list1, char *, len1+len2+1);
+	ret = talloc_realloc(NULL, list1, const char *, len1+len2+1);
 	if (ret == NULL) return NULL;
 
 	for (i=len1;i<len1+len2;i++) {
