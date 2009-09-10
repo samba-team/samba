@@ -28,6 +28,15 @@
 #include "ldb/include/ldb.h"
 #include "libcli/security/security.h"
 
+struct DsCrackNamesPrivate {
+	struct DsPrivate base;
+
+	/* following names are used in Crack Names Matrix test */
+	const char *fqdn_name;
+	const char *user_principal_name;
+	const char *service_principal_name;
+};
+
 static bool test_DsCrackNamesMatrix(struct torture_context *tctx,
 				    struct DsPrivate *priv, const char *dn,
 				    const char *user_principal_name, const char *service_principal_name)
@@ -1008,6 +1017,28 @@ bool test_DsCrackNames(struct torture_context *tctx,
 }
 
 /**
+ * Test case setup for CrackNames
+ */
+static bool torture_drsuapi_cracknames_setup(struct torture_context *tctx, void **data)
+{
+	struct DsCrackNamesPrivate *priv;
+
+	*data = priv = talloc_zero(tctx, struct DsCrackNamesPrivate);
+
+	return torture_drsuapi_tcase_setup_common(tctx, &priv->base);
+}
+
+/**
+ * Test case tear-down for CrackNames
+ */
+static bool torture_drsuapi_cracknames_teardown(struct torture_context *tctx, void *data)
+{
+	struct DsCrackNamesPrivate *priv = talloc_get_type(data, struct DsCrackNamesPrivate);
+
+	return torture_drsuapi_tcase_teardown_common(tctx, &priv->base);
+}
+
+/**
  * CRACKNAMES test suite implementation
  */
 void torture_rpc_drsuapi_cracknames_tcase(struct torture_suite *suite)
@@ -1018,8 +1049,8 @@ void torture_rpc_drsuapi_cracknames_tcase(struct torture_suite *suite)
 	struct torture_tcase *tcase = torture_suite_add_tcase(suite, "CRACKNAMES");
 
 	torture_tcase_set_fixture(tcase,
-				  torture_rpc_drsuapi_tcase_setup,
-				  torture_rpc_drsuapi_tcase_teardown);
+				  torture_drsuapi_cracknames_setup,
+				  torture_drsuapi_cracknames_teardown);
 
 	test = torture_tcase_add_simple_test(tcase, "CRACKNAMES-TEST", (run_func)test_DsCrackNames);
 }
