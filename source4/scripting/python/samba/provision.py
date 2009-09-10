@@ -1093,6 +1093,7 @@ def provision(setup_dir, message, session_info,
     schema = Schema(setup_path, schemadn=names.schemadn, serverdn=names.serverdn,
         sambadn=names.sambadn, ldap_backend_type=ldap_backend_type)
     
+    secrets_credentials = credentials
     provision_backend = None
     if ldap_backend_type:
         # We only support an LDAP backend over ldapi://
@@ -1112,6 +1113,7 @@ def provision(setup_dir, message, session_info,
 
         # Now use the backend credentials to access the databases
         credentials = provision_backend.credentials
+        secrets_credentials = provision_backend.adminCredentials
 
     # only install a new shares config db if there is none
     if not os.path.exists(paths.shareconf):
@@ -1124,7 +1126,7 @@ def provision(setup_dir, message, session_info,
     message("Setting up secrets.ldb")
     secrets_ldb = setup_secretsdb(paths.secrets, setup_path, 
                                   session_info=session_info, 
-                                  credentials=provision_backend.adminCredentials, lp=lp)
+                                  credentials=secrets_credentials, lp=lp)
 
     message("Setting up the registry")
     setup_registry(paths.hklm, setup_path, session_info, 
