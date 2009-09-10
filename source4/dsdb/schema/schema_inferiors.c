@@ -49,7 +49,8 @@ static char **schema_supclasses(struct dsdb_schema *schema, struct dsdb_class *s
 	}
 
 	/* Cope with 'top SUP top', ie top is subClassOf top */ 
-	if (strcmp(schema_class->lDAPDisplayName, schema_class->subClassOf) == 0) {
+	if (schema_class->subClassOf &&
+	    strcmp(schema_class->lDAPDisplayName, schema_class->subClassOf) == 0) {
 		schema_class->supclasses = list;
 		return list;
 	}
@@ -132,7 +133,11 @@ static void schema_create_subclasses(struct dsdb_schema *schema)
 
 	for (schema_class=schema->classes; schema_class; schema_class=schema_class->next) {
 		struct dsdb_class *schema_class2 = dsdb_class_by_lDAPDisplayName(schema, schema_class->subClassOf);
-		if (schema_class != schema_class2) {
+		if (schema_class2 == NULL) {
+			DEBUG(0,("ERROR: no subClassOf for '%s'\n", schema_class->lDAPDisplayName));
+			continue;
+		}
+		if (schema_class2 && schema_class != schema_class2) {
 			if (schema_class2->subclasses_direct == NULL) {
 				schema_class2->subclasses_direct = str_list_make_empty(schema_class2);
 			}
