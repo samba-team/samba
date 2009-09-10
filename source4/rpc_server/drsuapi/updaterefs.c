@@ -234,7 +234,7 @@ WERROR dcesrv_drsuapi_DsReplicaUpdateRefs(struct dcesrv_call_state *dce_call, TA
 	}
 
 	req = &r->in.req.req1;
-	DEBUG(4,("DrReplicUpdateRefs for host '%s' with GUID %s options 0x%08x nc=%s\n",
+	DEBUG(4,("DsReplicaUpdateRefs for host '%s' with GUID %s options 0x%08x nc=%s\n",
 		 req->dest_dsa_dns_name, GUID_string(mem_ctx, &req->dest_dsa_guid),
 		 req->options,
 		 drs_ObjectIdentifier_to_string(mem_ctx, req->naming_context)));
