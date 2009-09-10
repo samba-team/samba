@@ -3218,6 +3218,7 @@ NTSTATUS get_schannel_session_key(struct cli_state *cli,
 
 NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 					     const struct ndr_syntax_id *interface,
+					     enum dcerpc_transport_t transport,
 					     enum pipe_auth_level auth_level,
 					     const char *domain,
 					     const struct dcinfo *pdc,
@@ -3227,7 +3228,7 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 	struct cli_pipe_auth_data *auth;
 	NTSTATUS status;
 
-	status = cli_rpc_pipe_open(cli, NCACN_NP, interface, &result);
+	status = cli_rpc_pipe_open(cli, transport, interface, &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -3313,6 +3314,7 @@ static NTSTATUS get_schannel_session_key_auth_ntlmssp(struct cli_state *cli,
 
 NTSTATUS cli_rpc_pipe_open_ntlmssp_auth_schannel(struct cli_state *cli,
 						 const struct ndr_syntax_id *interface,
+						 enum dcerpc_transport_t transport,
 						 enum pipe_auth_level auth_level,
 						 const char *domain,
 						 const char *username,
@@ -3334,7 +3336,7 @@ NTSTATUS cli_rpc_pipe_open_ntlmssp_auth_schannel(struct cli_state *cli,
 	}
 
 	status = cli_rpc_pipe_open_schannel_with_key(
-		cli, interface, auth_level, domain, netlogon_pipe->dc,
+		cli, interface, transport, auth_level, domain, netlogon_pipe->dc,
 		&result);
 
 	/* Now we've bound using the session key we can close the netlog pipe. */
@@ -3353,6 +3355,7 @@ NTSTATUS cli_rpc_pipe_open_ntlmssp_auth_schannel(struct cli_state *cli,
 
 NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
 				    const struct ndr_syntax_id *interface,
+				    enum dcerpc_transport_t transport,
 				    enum pipe_auth_level auth_level,
 				    const char *domain,
 				    struct rpc_pipe_client **presult)
@@ -3372,7 +3375,7 @@ NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
 	}
 
 	status = cli_rpc_pipe_open_schannel_with_key(
-		cli, interface, auth_level, domain, netlogon_pipe->dc,
+		cli, interface, transport, auth_level, domain, netlogon_pipe->dc,
 		&result);
 
 	/* Now we've bound using the session key we can close the netlog pipe. */
