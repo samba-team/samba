@@ -607,6 +607,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 			case PIPE_AUTH_TYPE_SCHANNEL:
 				ntresult = cli_rpc_pipe_open_schannel(
 					cli, cmd_entry->interface,
+					NCACN_NP,
 					pipe_default_auth_level,
 					lp_workgroup(),
 					&cmd_entry->rpc_pipe);
