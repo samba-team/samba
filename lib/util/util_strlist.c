@@ -35,7 +35,7 @@ _PUBLIC_ const char **str_list_make_empty(TALLOC_CTX *mem_ctx)
 {
 	const char **ret = NULL;
 
-	ret = (const char **) talloc_array(mem_ctx, char *, 1);
+	ret = talloc_array(mem_ctx, const char *, 1);
 	if (ret == NULL) {
 		return NULL;
 	}
