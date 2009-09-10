@@ -28,6 +28,7 @@ DOM_SID domain_sid;
 static enum pipe_auth_type pipe_default_auth_type = PIPE_AUTH_TYPE_NONE;
 static enum pipe_auth_level pipe_default_auth_level = PIPE_AUTH_LEVEL_NONE;
 static unsigned int timeout = 0;
+static enum dcerpc_transport_t default_transport = NCACN_NP;
 
 struct user_auth_info *rpcclient_auth_info;
 
@@ -351,6 +352,29 @@ static NTSTATUS cmd_set_ss_level(void)
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS cmd_set_transport(void)
+{
+	struct cmd_list *tmp;
+
+	/* Close any existing connections not at this level. */
+
+	for (tmp = cmd_list; tmp; tmp = tmp->next) {
+		struct cmd_set *tmp_set;
+
+		for (tmp_set = tmp->cmd_set; tmp_set->name; tmp_set++) {
+			if (tmp_set->rpc_pipe == NULL) {
+				continue;
+			}
+
+			if (tmp_set->rpc_pipe->transport->transport != default_transport) {
+				TALLOC_FREE(tmp_set->rpc_pipe);
+				tmp_set->rpc_pipe = NULL;
+			}
+		}
+	}
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS cmd_sign(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                          int argc, const char **argv)
 {
@@ -477,6 +501,34 @@ static NTSTATUS cmd_schannel_sign(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	return cmd_set_ss_level();
 }
 
+static NTSTATUS cmd_choose_transport(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
+				     int argc, const char **argv)
+{
+	NTSTATUS status;
+
+	if (argc != 2) {
+		printf("Usage: %s [NCACN_NP|NCACN_IP_TCP]\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	if (strequal(argv[1], "NCACN_NP")) {
+		default_transport = NCACN_NP;
+	} else if (strequal(argv[1], "NCACN_IP_TCP")) {
+		default_transport = NCACN_IP_TCP;
+	} else {
+		printf("transport type: %s unknown or not supported\n",	argv[1]);
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	status = cmd_set_transport();
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	printf("default transport is now: %s\n", argv[1]);
+
+	return NT_STATUS_OK;
+}
 
 /* Built in rpcclient commands */
 
@@ -496,6 +548,7 @@ static struct cmd_set rpcclient_commands[] = {
 	{ "schannel", RPC_RTYPE_NTSTATUS, cmd_schannel, NULL,	  NULL, NULL,	"Force RPC pipe connections to be sealed with 'schannel'.  Assumes valid machine account to this domain controller.", "" },
 	{ "schannelsign", RPC_RTYPE_NTSTATUS, cmd_schannel_sign, NULL,	  NULL, NULL, "Force RPC pipe connections to be signed (not sealed) with 'schannel'.  Assumes valid machine account to this domain controller.", "" },
 	{ "timeout", RPC_RTYPE_NTSTATUS, cmd_timeout, NULL,	  NULL, NULL, "Set timeout (in milliseonds) for RPC operations", "" },
+	{ "transport", RPC_RTYPE_NTSTATUS, cmd_choose_transport, NULL,	  NULL, NULL, "Choose ncacn transport for RPC operations", "" },
 	{ "none", RPC_RTYPE_NTSTATUS, cmd_none, NULL,	  NULL, NULL, "Force RPC pipe connections to have no special properties", "" },
 
 	{ NULL }
@@ -569,6 +622,7 @@ static void add_command_set(struct cmd_set *cmd_set)
 static NTSTATUS do_cmd(struct cli_state *cli,
 		       struct user_auth_info *auth_info,
 		       struct cmd_set *cmd_entry,
+		       struct dcerpc_binding *binding,
 		       int argc, char **argv)
 {
 	NTSTATUS ntresult;
@@ -693,7 +747,9 @@ static NTSTATUS do_cmd(struct cli_state *cli,
  * @returns The NTSTATUS from running the command.
  **/
 static NTSTATUS process_cmd(struct user_auth_info *auth_info,
-			    struct cli_state *cli, char *cmd)
+			    struct cli_state *cli,
+			    struct dcerpc_binding *binding,
+			    char *cmd)
 {
 	struct cmd_list *temp_list;
 	NTSTATUS result = NT_STATUS_OK;
@@ -720,7 +776,7 @@ static NTSTATUS process_cmd(struct user_auth_info *auth_info,
 				}
 
 				result = do_cmd(cli, auth_info, temp_set,
-						argc, argv);
+						binding, argc, argv);
 
 				goto out_free;
 			}
@@ -766,6 +822,8 @@ out_free:
 	int result = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
 	uint32_t flags = 0;
+	struct dcerpc_binding *binding = NULL;
+	const char *binding_string = NULL;
 
 	/* make sure the vars that get altered (4th field) are in
 	   a fixed location or certain compilers complain */
@@ -876,13 +934,35 @@ out_free:
 		server += 2;
 	}
 
+	nt_status = dcerpc_parse_binding(frame, server, &binding);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+
+		binding_string = talloc_asprintf(frame, "ncacn_np:%s",
+						 strip_hostname(server));
+		if (!binding_string) {
+			result = 1;
+			goto done;
+		}
+
+		nt_status = dcerpc_parse_binding(frame, binding_string, &binding);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			result = -1;
+			goto done;
+		}
+	}
+
+	if (binding->transport == NCA_UNKNOWN) {
+		binding->transport = NCACN_NP;
+	}
+
 	if (get_cmdline_auth_info_use_kerberos(rpcclient_auth_info)) {
 		flags |= CLI_FULL_CONNECTION_USE_KERBEROS |
 			 CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
 	}
 
 
-	nt_status = cli_full_connection(&cli, global_myname(), server,
+	nt_status = cli_full_connection(&cli, global_myname(), binding->host,
 					opt_ipaddr ? &server_ss : NULL, opt_port,
 					"IPC$", "IPC",
 					get_cmdline_auth_info_username(rpcclient_auth_info),
@@ -926,6 +1006,8 @@ out_free:
 		cmd_set++;
 	}
 
+	default_transport = binding->transport;
+
 	fetch_machine_sid(cli);
 
        /* Do anything specified with -c */
@@ -936,7 +1018,8 @@ out_free:
 		result = 0;
 
                 while((cmd=next_command(&p)) != NULL) {
-                        NTSTATUS cmd_result = process_cmd(rpcclient_auth_info, cli, cmd);
+                        NTSTATUS cmd_result = process_cmd(rpcclient_auth_info, cli,
+							  binding, cmd);
 			SAFE_FREE(cmd);
 			result = NT_STATUS_IS_ERR(cmd_result);
                 }
@@ -955,7 +1038,7 @@ out_free:
 			break;
 
 		if (line[0] != '\n')
-			process_cmd(rpcclient_auth_info, cli, line);
+			process_cmd(rpcclient_auth_info, cli, binding, line);
 		SAFE_FREE(line);
 	}
 
