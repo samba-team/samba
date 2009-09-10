@@ -253,7 +253,7 @@ Samba-3 introduces a number of new password backend capabilities.
 <indexterm><primary>converted</primary></indexterm>
 	Many people ask why Samba cannot simply use the UNIX password database. Windows requires
 	passwords that are encrypted in its own format.  The UNIX passwords can't be converted to
-	UNIX-style encrypted passwords. Because of that, you can't use the standard UNIX user
+	Windows-style encrypted passwords. Because of that, you can't use the standard UNIX user
 	database, and you have to store the LanMan and NT hashes somewhere else.
 	</para>
 
@@ -369,7 +369,7 @@ Samba-3 introduces a number of new password backend capabilities.
 		<para>
 <indexterm><primary>SMB/CIFS</primary></indexterm>
 <indexterm><primary>authentication</primary></indexterm>
-<indexterm><primary>challenge/response mechanis</primary></indexterm>
+<indexterm><primary>challenge/response mechanism</primary></indexterm>
 <indexterm><primary>clear-text</primary></indexterm>
 <indexterm><primary>encrypted</primary></indexterm>
 <indexterm><primary>negotiate</primary></indexterm>
@@ -845,7 +845,7 @@ attempts.
 Some people are confused when reference is made to <literal>smbpasswd</literal> because the
 name refers to a storage mechanism for SambaSAMAccount information, but it is also the name
 of a utility tool. That tool is destined to eventually be replaced by new functionality that
-is being added to the <command>net</command> toolset (see <link linkend="NetCommand">the Net Command</link>.
+is being added to the <command>net</command> toolset (see <link linkend="NetCommand">the Net Command</link>).
 </para>
 
 	<sect2>
@@ -861,7 +861,7 @@ is being added to the <command>net</command> toolset (see <link linkend="NetComm
 		and <command>yppasswd</command> programs. It maintains the two 32 byte password
 		fields in the passdb backend. This utility operates independently of the actual
 		account and password storage methods used (as specified by the <parameter>passdb
-		backend</parameter> in the &smb.conf; file.
+		backend</parameter> in the &smb.conf; file).
 		</para>
 
 		<para>
@@ -1228,7 +1228,7 @@ marvel$:1011:BF709959C3C94E0B3958B7B84A3BB6F3:
 			<listitem><para>Login ID.</para></listitem>
 			<listitem><para>UNIX UID.</para></listitem>
 			<listitem>
-				<para>Microsoft LanManager password hash (password converted to upper-case then hashed.</para>
+				<para>Microsoft LanManager password hash (password converted to upper-case then hashed).</para>
 			</listitem>
 			<listitem><para>Microsoft NT password hash (hash of the case-preserved password).</para></listitem>
 			<listitem><para>Samba SAM Account Flags.</para></listitem>
@@ -2655,7 +2655,7 @@ sambaNTPassword: 878D8014606CDA29677A44EFA1353FC7
 		<para><quote>I've installed Samba, but now I can't log on with my UNIX account! </quote></para>
 
 		<para>Make sure your user has been added to the current Samba <smbconfoption name="passdb backend"/>.
-		Read the <link linkend="acctmgmttools">Account Management Tools,</link> for details.</para>
+		Read the <link linkend="acctmgmttools">Account Management Tools</link> for details.</para>
 
 	</sect2>
 
