@@ -29,7 +29,8 @@
 
 #define TEST_MACHINE_NAME "torturetest"
 
-bool test_DsBind(struct dcerpc_pipe *p, struct torture_context *tctx,
+bool test_DsBind(struct dcerpc_pipe *p,
+		 struct torture_context *tctx,
 		 struct DsPrivate *priv)
 {
 	NTSTATUS status;
@@ -57,8 +58,9 @@ bool test_DsBind(struct dcerpc_pipe *p, struct torture_context *tctx,
 	return true;
 }
 
-static bool test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, struct torture_context *torture,
-		      struct DsPrivate *priv)
+static bool test_DsGetDomainControllerInfo(struct dcerpc_pipe *p,
+					   struct torture_context *tctx,
+					   struct DsPrivate *priv)
 {
 	NTSTATUS status;
 	struct drsuapi_DsGetDomainControllerInfo r;
@@ -105,14 +107,14 @@ static bool test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, struct torture
 			r.out.ctr = &ctr;
 			r.out.level_out = &level_out;
 			
-			torture_comment(torture,
+			torture_comment(tctx,
 				   "testing DsGetDomainControllerInfo level %d on domainname '%s'\n",
 			       r.in.req->req1.level, r.in.req->req1.domain_name);
 		
-			status = dcerpc_drsuapi_DsGetDomainControllerInfo(p, torture, &r);
-			torture_assert_ntstatus_ok(torture, status,
+			status = dcerpc_drsuapi_DsGetDomainControllerInfo(p, tctx, &r);
+			torture_assert_ntstatus_ok(tctx, status,
 				   "dcerpc_drsuapi_DsGetDomainControllerInfo with dns domain failed");
-			torture_assert_werr_equal(torture, 
+			torture_assert_werr_equal(tctx,
 									  r.out.result, names[j].expected, 
 					   "DsGetDomainControllerInfo level with dns domain failed");
 		
@@ -121,9 +123,9 @@ static bool test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, struct torture
 				continue;
 			}
 
-			torture_assert_int_equal(torture, 
-									 r.in.req->req1.level, *r.out.level_out,
-									 "dcerpc_drsuapi_DsGetDomainControllerInfo level"); 
+			torture_assert_int_equal(tctx,
+						 r.in.req->req1.level, *r.out.level_out,
+						 "dcerpc_drsuapi_DsGetDomainControllerInfo in/out level differs");
 
 			switch (level) {
 			case 1:
@@ -146,7 +148,7 @@ static bool test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, struct torture
 				}
 				break;
 			}
-			torture_assert(torture, found,
+			torture_assert(tctx, found,
 				 "dcerpc_drsuapi_DsGetDomainControllerInfo: Failed to find the domain controller we just created during the join");
 		}
 	}
@@ -160,20 +162,21 @@ static bool test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, struct torture
 	r.in.req->req1.domain_name = "__UNKNOWN_DOMAIN__"; /* This is clearly ignored for this level */
 	r.in.req->req1.level = -1;
 	
-	printf("testing DsGetDomainControllerInfo level %d on domainname '%s'\n",
-	       r.in.req->req1.level, r.in.req->req1.domain_name);
+	torture_comment(tctx, "testing DsGetDomainControllerInfo level %d on domainname '%s'\n",
+			r.in.req->req1.level, r.in.req->req1.domain_name);
 	
-	status = dcerpc_drsuapi_DsGetDomainControllerInfo(p, torture, &r);
+	status = dcerpc_drsuapi_DsGetDomainControllerInfo(p, tctx, &r);
 
-	torture_assert_ntstatus_ok(torture, status, 
-			"dcerpc_drsuapi_DsGetDomainControllerInfo with dns domain failed");
-	torture_assert_werr_ok(torture, r.out.result, 
-			   "DsGetDomainControllerInfo with dns domain failed");
+	torture_assert_ntstatus_ok(tctx, status,
+				   "dcerpc_drsuapi_DsGetDomainControllerInfo with dns domain failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+				"DsGetDomainControllerInfo with dns domain failed");
 	
 	{
-		const char *dc_account = talloc_asprintf(torture, "%s\\%s$",
+		const char *dc_account = talloc_asprintf(tctx, "%s\\%s$",
 							 torture_join_dom_netbios_name(priv->join), 
 							 priv->dcinfo.netbios_name);
+		torture_comment(tctx, "%s: Enum active LDAP sessions searching for %s\n", __func__, dc_account);
 		for (k=0; k < r.out.ctr->ctr01.count; k++) {
 			if (strcasecmp_m(r.out.ctr->ctr01.array[k].client_account,
 					 dc_account)) {
@@ -181,7 +184,7 @@ static bool test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, struct torture
 				break;
 			}
 		}
-		torture_assert(torture, found,
+		torture_assert(tctx, found,
 			"dcerpc_drsuapi_DsGetDomainControllerInfo level: Failed to find the domain controller in last logon records");
 	}
 
@@ -189,7 +192,8 @@ static bool test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, struct torture
 	return true;
 }
 
-static bool test_DsWriteAccountSpn(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+static bool test_DsWriteAccountSpn(struct dcerpc_pipe *p,
+				   struct torture_context *tctx,
 				   struct DsPrivate *priv)
 {
 	NTSTATUS status;
@@ -204,24 +208,24 @@ static bool test_DsWriteAccountSpn(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.level			= 1;
 	r.in.req			= &req;
 
-	printf("testing DsWriteAccountSpn\n");
+	torture_comment(tctx, "testing DsWriteAccountSpn\n");
 
 	r.in.req->req1.operation	= DRSUAPI_DS_SPN_OPERATION_ADD;
 	r.in.req->req1.unknown1	= 0;
 	r.in.req->req1.object_dn	= priv->dcinfo.computer_dn;
 	r.in.req->req1.count		= 2;
 	r.in.req->req1.spn_names	= names;
-	names[0].str = talloc_asprintf(mem_ctx, "smbtortureSPN/%s",priv->dcinfo.netbios_name);
-	names[1].str = talloc_asprintf(mem_ctx, "smbtortureSPN/%s",priv->dcinfo.dns_name);
+	names[0].str = talloc_asprintf(tctx, "smbtortureSPN/%s",priv->dcinfo.netbios_name);
+	names[1].str = talloc_asprintf(tctx, "smbtortureSPN/%s",priv->dcinfo.dns_name);
 
 	r.out.res			= &res;
 	r.out.level_out			= &level_out;
 
-	status = dcerpc_drsuapi_DsWriteAccountSpn(p, mem_ctx, &r);
+	status = dcerpc_drsuapi_DsWriteAccountSpn(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+			errstr = dcerpc_errstr(tctx, p->last_fault_code);
 		}
 		printf("dcerpc_drsuapi_DsWriteAccountSpn failed - %s\n", errstr);
 		ret = false;
@@ -233,11 +237,11 @@ static bool test_DsWriteAccountSpn(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.req->req1.operation	= DRSUAPI_DS_SPN_OPERATION_DELETE;
 	r.in.req->req1.unknown1		= 0;
 
-	status = dcerpc_drsuapi_DsWriteAccountSpn(p, mem_ctx, &r);
+	status = dcerpc_drsuapi_DsWriteAccountSpn(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+			errstr = dcerpc_errstr(tctx, p->last_fault_code);
 		}
 		printf("dcerpc_drsuapi_DsWriteAccountSpn failed - %s\n", errstr);
 		ret = false;
@@ -249,8 +253,9 @@ static bool test_DsWriteAccountSpn(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-static bool test_DsReplicaGetInfo(struct dcerpc_pipe *p, struct torture_context *tctx,
-			struct DsPrivate *priv)
+static bool test_DsReplicaGetInfo(struct dcerpc_pipe *p,
+				  struct torture_context *tctx,
+				  struct DsPrivate *priv)
 {
 	NTSTATUS status;
 	struct drsuapi_DsReplicaGetInfo r;
@@ -328,7 +333,7 @@ static bool test_DsReplicaGetInfo(struct dcerpc_pipe *p, struct torture_context 
 	};
 
 	if (torture_setting_bool(tctx, "samba4", false)) {
-		printf("skipping DsReplicaGetInfo test against Samba4\n");
+		torture_comment(tctx, "skipping DsReplicaGetInfo test against Samba4\n");
 		return true;
 	}
 
@@ -338,8 +343,8 @@ static bool test_DsReplicaGetInfo(struct dcerpc_pipe *p, struct torture_context 
 	for (i=0; i < ARRAY_SIZE(array); i++) {
 		const char *object_dn;
 
-		printf("testing DsReplicaGetInfo level %d infotype %d\n",
-			array[i].level, array[i].infotype);
+		torture_comment(tctx, "testing DsReplicaGetInfo level %d infotype %d\n",
+				array[i].level, array[i].infotype);
 
 		object_dn = (array[i].obj_dn ? array[i].obj_dn : priv->domain_obj_dn);
 
@@ -365,6 +370,7 @@ static bool test_DsReplicaGetInfo(struct dcerpc_pipe *p, struct torture_context 
 		r.out.info_type		= &info_type;
 
 		status = dcerpc_drsuapi_DsReplicaGetInfo(p, tctx, &r);
+		torture_drsuapi_assert_call(tctx, p, status, &r, "dcerpc_drsuapi_DsReplicaGetInfo");
 		if (!NT_STATUS_IS_OK(status)) {
 			const char *errstr = nt_errstr(status);
 			if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
@@ -386,8 +392,9 @@ static bool test_DsReplicaGetInfo(struct dcerpc_pipe *p, struct torture_context 
 	return ret;
 }
 
-static bool test_DsReplicaSync(struct dcerpc_pipe *p, struct torture_context *tctx,
-			struct DsPrivate *priv)
+static bool test_DsReplicaSync(struct dcerpc_pipe *p,
+				struct torture_context *tctx,
+				struct DsPrivate *priv)
 {
 	NTSTATUS status;
 	bool ret = true;
@@ -405,12 +412,12 @@ static bool test_DsReplicaSync(struct dcerpc_pipe *p, struct torture_context *tc
 	};
 
 	if (!torture_setting_bool(tctx, "dangerous", false)) {
-		printf("DsReplicaSync disabled - enable dangerous tests to use\n");
+		torture_comment(tctx, "DsReplicaSync disabled - enable dangerous tests to use\n");
 		return true;
 	}
 
 	if (torture_setting_bool(tctx, "samba4", false)) {
-		printf("skipping DsReplicaSync test against Samba4\n");
+		torture_comment(tctx, "skipping DsReplicaSync test against Samba4\n");
 		return true;
 	}
 
@@ -420,8 +427,8 @@ static bool test_DsReplicaSync(struct dcerpc_pipe *p, struct torture_context *tc
 	r.in.bind_handle	= &priv->bind_handle;
 
 	for (i=0; i < ARRAY_SIZE(array); i++) {
-		printf("testing DsReplicaSync level %d\n",
-			array[i].level);
+		torture_comment(tctx, "testing DsReplicaSync level %d\n",
+				array[i].level);
 
 		r.in.level = array[i].level;
 		switch(r.in.level) {
@@ -473,7 +480,7 @@ static bool test_DsReplicaUpdateRefs(struct dcerpc_pipe *p, struct torture_conte
 	};
 
 	if (torture_setting_bool(tctx, "samba4", false)) {
-		printf("skipping DsReplicaUpdateRefs test against Samba4\n");
+		torture_comment(tctx, "skipping DsReplicaUpdateRefs test against Samba4\n");
 		return true;
 	}
 
@@ -483,15 +490,15 @@ static bool test_DsReplicaUpdateRefs(struct dcerpc_pipe *p, struct torture_conte
 	r.in.bind_handle	= &priv->bind_handle;
 
 	for (i=0; i < ARRAY_SIZE(array); i++) {
-		printf("testing DsReplicaUpdateRefs level %d\n",
-			array[i].level);
+		torture_comment(tctx, "testing DsReplicaUpdateRefs level %d\n",
+				array[i].level);
 
 		r.in.level = array[i].level;
 		switch(r.in.level) {
 		case 1:
 			nc.guid				= null_guid;
 			nc.sid				= null_sid;
-			nc.dn				= priv->domain_obj_dn?priv->domain_obj_dn:"";
+			nc.dn				= priv->domain_obj_dn ? priv->domain_obj_dn : "";
 
 			r.in.req.req1.naming_context	= &nc;
 			r.in.req.req1.dest_dsa_dns_name	= talloc_asprintf(tctx, "__some_dest_dsa_guid_string._msdn.%s",
@@ -518,8 +525,9 @@ static bool test_DsReplicaUpdateRefs(struct dcerpc_pipe *p, struct torture_conte
 	return ret;
 }
 
-static bool test_DsGetNCChanges(struct dcerpc_pipe *p, struct torture_context *tctx, 
-			struct DsPrivate *priv)
+static bool test_DsGetNCChanges(struct dcerpc_pipe *p,
+				struct torture_context *tctx,
+				struct DsPrivate *priv)
 {
 	NTSTATUS status;
 	bool ret = true;
@@ -543,7 +551,7 @@ static bool test_DsGetNCChanges(struct dcerpc_pipe *p, struct torture_context *t
 	};
 
 	if (torture_setting_bool(tctx, "samba4", false)) {
-		printf("skipping DsGetNCChanges test against Samba4\n");
+		torture_comment(tctx, "skipping DsGetNCChanges test against Samba4\n");
 		return true;
 	}
 
@@ -551,8 +559,9 @@ static bool test_DsGetNCChanges(struct dcerpc_pipe *p, struct torture_context *t
 	ZERO_STRUCT(null_sid);
 
 	for (i=0; i < ARRAY_SIZE(array); i++) {
-		printf("testing DsGetNCChanges level %d\n",
-			array[i].level);
+		torture_comment(tctx,
+				"testing DsGetNCChanges level %d\n",
+				array[i].level);
 
 		r.in.bind_handle	= &priv->bind_handle;
 		r.in.level		= array[i].level;
@@ -563,7 +572,7 @@ static bool test_DsGetNCChanges(struct dcerpc_pipe *p, struct torture_context *t
 		case 5:
 			nc.guid	= null_guid;
 			nc.sid	= null_sid;
-			nc.dn	= priv->domain_obj_dn?priv->domain_obj_dn:"";
+			nc.dn	= priv->domain_obj_dn ? priv->domain_obj_dn : "";
 
 			r.in.req					= &req;
 			r.in.req->req5.destination_dsa_guid		= GUID_random();
@@ -574,7 +583,7 @@ static bool test_DsGetNCChanges(struct dcerpc_pipe *p, struct torture_context *t
 			r.in.req->req5.highwatermark.highest_usn	= 0;
 			r.in.req->req5.uptodateness_vector		= NULL;
 			r.in.req->req5.replica_flags			= 0;
-			if (lp_parm_bool(tctx->lp_ctx, NULL, "drsuapi","compression", false)) {
+			if (lp_parm_bool(tctx->lp_ctx, NULL, "drsuapi", "compression", false)) {
 				r.in.req->req5.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
 			}
 			r.in.req->req5.max_object_count			= 0;
@@ -586,7 +595,7 @@ static bool test_DsGetNCChanges(struct dcerpc_pipe *p, struct torture_context *t
 		case 8:
 			nc.guid	= null_guid;
 			nc.sid	= null_sid;
-			nc.dn	= priv->domain_obj_dn?priv->domain_obj_dn:"";
+			nc.dn	= priv->domain_obj_dn ? priv->domain_obj_dn : "";
 
 			r.in.req					= &req;
 			r.in.req->req8.destination_dsa_guid		= GUID_random();
@@ -637,7 +646,8 @@ static bool test_DsGetNCChanges(struct dcerpc_pipe *p, struct torture_context *t
 	return ret;
 }
 
-bool test_QuerySitesByCost(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+bool test_QuerySitesByCost(struct dcerpc_pipe *p,
+			   struct torture_context *tctx,
 			   struct DsPrivate *priv)
 {
 	NTSTATUS status;
@@ -649,22 +659,22 @@ bool test_QuerySitesByCost(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	const char *remote_site1 = "smbtorture-nonexisting-site1";
 	const char *remote_site2 = "smbtorture-nonexisting-site2";
 
-	req.req1.site_from = talloc_strdup(mem_ctx, my_site);
+	req.req1.site_from = talloc_strdup(tctx, my_site);
 	req.req1.num_req = 2;
-	req.req1.site_to = talloc_zero_array(mem_ctx, const char *, 2);
-	req.req1.site_to[0] = talloc_strdup(mem_ctx, remote_site1);
-	req.req1.site_to[1] = talloc_strdup(mem_ctx, remote_site2);
+	req.req1.site_to = talloc_zero_array(tctx, const char *, 2);
+	req.req1.site_to[0] = talloc_strdup(tctx, remote_site1);
+	req.req1.site_to[1] = talloc_strdup(tctx, remote_site2);
 	req.req1.flags = 0;
 
 	r.in.bind_handle = &priv->bind_handle;
 	r.in.level = 1;
 	r.in.req = &req;
 
-	status = dcerpc_drsuapi_QuerySitesByCost(p, mem_ctx, &r);
+	status = dcerpc_drsuapi_QuerySitesByCost(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+			errstr = dcerpc_errstr(tctx, p->last_fault_code);
 		}
 		printf("drsuapi_QuerySitesByCost - %s\n", errstr);
 		ret = false;
@@ -677,15 +687,17 @@ bool test_QuerySitesByCost(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 		if (!W_ERROR_EQUAL(r.out.ctr->ctr1.info[0].error_code, WERR_DS_OBJ_NOT_FOUND) ||
 		    !W_ERROR_EQUAL(r.out.ctr->ctr1.info[1].error_code, WERR_DS_OBJ_NOT_FOUND)) {
-			printf("expected error_code WERR_DS_OBJ_NOT_FOUND, got %s\n", 
-				win_errstr(r.out.ctr->ctr1.info[0].error_code));
+			torture_comment(tctx,
+					"expected error_code WERR_DS_OBJ_NOT_FOUND, got %s\n",
+					win_errstr(r.out.ctr->ctr1.info[0].error_code));
 			ret = false;
 		}
 
 		if ((r.out.ctr->ctr1.info[0].site_cost != (uint32_t) -1) ||
 		    (r.out.ctr->ctr1.info[1].site_cost != (uint32_t) -1)) {
-			printf("expected site_cost %d, got %d\n", 
-				(uint32_t) -1, r.out.ctr->ctr1.info[0].site_cost);
+			torture_comment(tctx,
+					"expected site_cost %d, got %d\n",
+					(uint32_t)-1, r.out.ctr->ctr1.info[0].site_cost);
 			ret = false;
 		}
 	}
@@ -695,7 +707,8 @@ bool test_QuerySitesByCost(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 }
 
-bool test_DsUnbind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+bool test_DsUnbind(struct dcerpc_pipe *p,
+		   struct torture_context *tctx,
 		   struct DsPrivate *priv)
 {
 	NTSTATUS status;
@@ -705,13 +718,13 @@ bool test_DsUnbind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.bind_handle = &priv->bind_handle;
 	r.out.bind_handle = &priv->bind_handle;
 
-	printf("testing DsUnbind\n");
+	torture_comment(tctx, "testing DsUnbind\n");
 
-	status = dcerpc_drsuapi_DsUnbind(p, mem_ctx, &r);
+	status = dcerpc_drsuapi_DsUnbind(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+			errstr = dcerpc_errstr(tctx, p->last_fault_code);
 		}
 		printf("dcerpc_drsuapi_DsUnbind failed - %s\n", errstr);
 		ret = false;
