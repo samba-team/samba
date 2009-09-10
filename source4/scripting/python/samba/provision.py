@@ -1114,6 +1114,7 @@ def provision(setup_dir, message, session_info,
         # Now use the backend credentials to access the databases
         credentials = provision_backend.credentials
         secrets_credentials = provision_backend.adminCredentials
+        ldapi_url = provision_backend.ldapi_uri
 
     # only install a new shares config db if there is none
     if not os.path.exists(paths.shareconf):
@@ -1219,17 +1220,18 @@ def provision(setup_dir, message, session_info,
             message("A Kerberos configuration suitable for Samba 4 has been generated at %s" % paths.krb5conf)
 
 
-    ldapi_db = Ldb(provision_backend.ldapi_uri, lp=lp, credentials=credentials)
+    if provision_backend is not None:
+      ldapi_db = Ldb(provision_backend.ldapi_uri, lp=lp, credentials=credentials)
 
-    # delete default SASL mappings
-    res = ldapi_db.search(expression="(!(cn=samba-admin mapping))", base="cn=mapping,cn=sasl,cn=config", scope=SCOPE_ONELEVEL, attrs=["dn"])
+      # delete default SASL mappings
+      res = ldapi_db.search(expression="(!(cn=samba-admin mapping))", base="cn=mapping,cn=sasl,cn=config", scope=SCOPE_ONELEVEL, attrs=["dn"])
 
-    for i in range (0, len(res)):
+      for i in range (0, len(res)):
         dn = str(res[i]["dn"])
         ldapi_db.delete(dn)
 
-    # configure aci
-    if ldap_backend_type == "fedora-ds":
+        # configure aci
+      if ldap_backend_type == "fedora-ds":
 
         aci = """(targetattr = "*") (version 3.0;acl "full access to all by samba-admin";allow (all)(userdn = "ldap:///CN=samba-admin,%s");)""" % names.sambadn
 
