@@ -2880,6 +2880,28 @@ static bool test_raw_oplock_stream1(struct torture_context *tctx,
 	    NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK | NTCREATEX_FLAGS_EXTENDED;
 	uint32_t exclusive_req = NTCREATEX_FLAGS_REQUEST_OPLOCK |
 	    NTCREATEX_FLAGS_EXTENDED;
+	/* Try some permutations of taking oplocks on streams. */
+#define NSTREAM_OPLOCK_RESULTS 8
+	struct {
+		const char *fname;
+		bool open_base_file;
+		uint32_t oplock_req;
+		uint32_t oplock_granted;
+	} stream_oplock_results[NSTREAM_OPLOCK_RESULTS] = {
+		/* Request oplock on stream without the base file open. */
+		{fname_stream, false, batch_req, NO_OPLOCK_RETURN},
+		{fname_default_stream, false, batch_req, NO_OPLOCK_RETURN},
+		{fname_stream, false, exclusive_req, EXCLUSIVE_OPLOCK_RETURN},
+		{fname_default_stream, false,  exclusive_req, EXCLUSIVE_OPLOCK_RETURN},
+
+		/* Request oplock on stream with the base file open. */
+		{fname_stream, true, batch_req, NO_OPLOCK_RETURN},
+		{fname_default_stream, true, batch_req, NO_OPLOCK_RETURN},
+		{fname_stream, true, exclusive_req, EXCLUSIVE_OPLOCK_RETURN},
+		{fname_default_stream, true,  exclusive_req, LEVEL_II_OPLOCK_RETURN},
+
+	};
+
 
 	/* Only passes against windows at the moment. */
 	if (torture_setting_bool(tctx, "samba3", false) ||
@@ -2922,28 +2944,6 @@ static bool test_raw_oplock_stream1(struct torture_context *tctx,
 
 	/* Change the disposition to open now that the file has been created. */
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
-
-	/* Try some permutations of taking oplocks on streams. */
-#define NSTREAM_OPLOCK_RESULTS 8
-	struct {
-		const char *fname;
-		bool open_base_file;
-		uint32_t oplock_req;
-		uint32_t oplock_granted;
-	} stream_oplock_results[NSTREAM_OPLOCK_RESULTS] = {
-		/* Request oplock on stream without the base file open. */
-		{fname_stream, false, batch_req, NO_OPLOCK_RETURN},
-		{fname_default_stream, false, batch_req, NO_OPLOCK_RETURN},
-		{fname_stream, false, exclusive_req, EXCLUSIVE_OPLOCK_RETURN},
-		{fname_default_stream, false,  exclusive_req, EXCLUSIVE_OPLOCK_RETURN},
-
-		/* Request oplock on stream with the base file open. */
-		{fname_stream, true, batch_req, NO_OPLOCK_RETURN},
-		{fname_default_stream, true, batch_req, NO_OPLOCK_RETURN},
-		{fname_stream, true, exclusive_req, EXCLUSIVE_OPLOCK_RETURN},
-		{fname_default_stream, true,  exclusive_req, LEVEL_II_OPLOCK_RETURN},
-
-	};
 
 	for (i = 0; i < NSTREAM_OPLOCK_RESULTS; i++) {
 		const char *fname = stream_oplock_results[i].fname;
