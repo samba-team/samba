@@ -3,6 +3,7 @@
    Helper functions for applying replicated objects
    
    Copyright (C) Stefan Metzmacher <metze@samba.org> 2007
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2009
     
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -186,3 +187,104 @@ WERROR drsuapi_decrypt_attribute(TALLOC_CTX *mem_ctx,
 
 	return WERR_OK;
 }
+
+WERROR drsuapi_encrypt_attribute_value(TALLOC_CTX *mem_ctx,
+				       const DATA_BLOB *gensec_skey,
+				       bool rid_crypt,
+				       uint32_t rid,
+				       DATA_BLOB *in,
+				       DATA_BLOB *out)
+{
+	DATA_BLOB rid_crypt_out = data_blob(NULL, 0);
+	DATA_BLOB confounder;
+
+	struct MD5Context md5;
+	uint8_t _enc_key[16];
+	DATA_BLOB enc_key;
+
+	DATA_BLOB enc_buffer;
+
+	uint32_t crc32_calc;
+
+	/*
+	 * users with rid == 0 should not exist
+	 */
+	if (rid_crypt && rid == 0) {
+		return WERR_DS_DRA_INVALID_PARAMETER;
+	}
+
+	/*
+	 * The following rid_crypt obfuscation isn't session specific
+	 * and not really needed here, because we allways know the rid of the
+	 * user account.
+	 *
+	 * some attributes with this 'additional encryption' include
+	 * dBCSPwd, unicodePwd, ntPwdHistory, lmPwdHistory
+	 *
+	 * But for the rest of samba it's easier when we remove this static
+	 * obfuscation here
+	 */
+	if (rid_crypt) {
+		uint32_t i, num_hashes;
+		rid_crypt_out = data_blob_talloc(mem_ctx, in->data, in->length);
+		W_ERROR_HAVE_NO_MEMORY(rid_crypt_out.data);
+
+		if ((rid_crypt_out.length % 16) != 0) {
+			return WERR_DS_DRA_INVALID_PARAMETER;
+		}
+
+		num_hashes = rid_crypt_out.length / 16;
+		for (i = 0; i < num_hashes; i++) {
+			uint32_t offset = i * 16;
+			sam_rid_crypt(rid, in->data + offset, rid_crypt_out.data + offset, 1);
+		}
+		in = &rid_crypt_out;
+	}
+
+	/* 
+	 * the first 16 bytes at the beginning are the confounder
+	 * followed by the 4 byte crc32 checksum
+	 */
+
+	enc_buffer = data_blob_talloc(mem_ctx, NULL, in->length+20);
+	if (!enc_buffer.data) {
+		talloc_free(rid_crypt_out.data);
+		return WERR_NOMEM;
+	};
+	
+	confounder = data_blob_const(enc_buffer.data, 16);
+	generate_random_buffer(confounder.data, confounder.length);
+
+	/* 
+	 * build the encryption key md5 over the session key followed
+	 * by the confounder
+	 * 
+	 * here the gensec session key is used and
+	 * not the dcerpc ncacn_ip_tcp "SystemLibraryDTC" key!
+	 */
+	enc_key = data_blob_const(_enc_key, sizeof(_enc_key));
+	MD5Init(&md5);
+	MD5Update(&md5, gensec_skey->data, gensec_skey->length);
+	MD5Update(&md5, confounder.data, confounder.length);
+	MD5Final(enc_key.data, &md5);
+
+	/* 
+	 * the first 4 byte are the crc32 checksum
+	 * of the remaining bytes
+	 */
+	crc32_calc = crc32_calc_buffer(in->data, in->length);
+	SIVAL(enc_buffer.data, 4, crc32_calc);
+
+	/*
+	 * copy the plain buffer part and 
+	 * encrypt it using the created encryption key using arcfour
+	 */
+	memcpy(enc_buffer.data+20, in->data, in->length); 
+	talloc_free(rid_crypt_out.data);
+
+	arcfour_crypt_blob(enc_buffer.data+20, enc_buffer.length-20, &enc_key);
+
+	*out = enc_buffer;
+	return WERR_OK;
+}
+
