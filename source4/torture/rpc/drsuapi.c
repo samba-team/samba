@@ -728,14 +728,14 @@ bool torture_rpc_drsuapi(struct torture_context *torture)
         NTSTATUS status;
         struct dcerpc_pipe *p;
 	bool ret = true;
-	struct DsPrivate priv;
+	struct DsPrivate *priv;
 	struct cli_credentials *machine_credentials;
 
-	ZERO_STRUCT(priv);
+	priv = talloc_zero(torture, struct DsPrivate);
 
-	priv.join = torture_join_domain(torture, TEST_MACHINE_NAME, ACB_SVRTRUST, 
+	priv->join = torture_join_domain(torture, TEST_MACHINE_NAME, ACB_SVRTRUST, 
 				       &machine_credentials);
-	if (!priv.join) {
+	if (!priv->join) {
 		torture_fail(torture, "Failed to join as BDC");
 	}
 
@@ -743,34 +743,36 @@ bool torture_rpc_drsuapi(struct torture_context *torture)
 					&p, 
 					&ndr_table_drsuapi);
 	if (!NT_STATUS_IS_OK(status)) {
-		torture_leave_domain(torture, priv.join);
+		torture_leave_domain(torture, priv->join);
 		torture_fail(torture, "Unable to connect to DRSUAPI pipe");
 	}
 
 	/* cache pipe handle */
-	priv.pipe = p;
+	priv->pipe = p;
 
-	ret &= test_DsBind(p, torture, &priv);
+	ret &= test_DsBind(p, torture, priv);
 #if 0
-	ret &= test_QuerySitesByCost(p, torture, &priv);
+	ret &= test_QuerySitesByCost(p, torture, priv);
 #endif
-	ret &= test_DsGetDomainControllerInfo(p, torture, &priv);
+	ret &= test_DsGetDomainControllerInfo(p, torture, priv);
 
-	ret &= test_DsCrackNames(torture, &priv);
+	ret &= test_DsCrackNames(torture, priv);
 
-	ret &= test_DsWriteAccountSpn(p, torture, &priv);
+	ret &= test_DsWriteAccountSpn(p, torture, priv);
 
-	ret &= test_DsReplicaGetInfo(p, torture, &priv);
+	ret &= test_DsReplicaGetInfo(p, torture, priv);
 
-	ret &= test_DsReplicaSync(p, torture, &priv);
+	ret &= test_DsReplicaSync(p, torture, priv);
 
-	ret &= test_DsReplicaUpdateRefs(p, torture, &priv);
+	ret &= test_DsReplicaUpdateRefs(p, torture, priv);
 
-	ret &= test_DsGetNCChanges(p, torture, &priv);
+	ret &= test_DsGetNCChanges(p, torture, priv);
 
-	ret &= test_DsUnbind(p, torture, &priv);
+	ret &= test_DsUnbind(p, torture, priv);
 
-	torture_leave_domain(torture, priv.join);
+	torture_leave_domain(torture, priv->join);
+
+	talloc_free(priv);
 
 	return ret;
 }
