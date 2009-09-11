@@ -466,6 +466,163 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, down_req);
 }
 
+
+/*
+ * update the replPropertyMetaData for one element
+ */
+static int replmd_update_rpmd_element(struct ldb_context *ldb, 
+				      struct ldb_message *msg,
+				      struct ldb_message_element *el,
+				      struct replPropertyMetaDataBlob *omd,
+				      struct dsdb_schema *schema,
+				      uint64_t seq_num,
+				      const struct GUID *our_invocation_id,
+				      NTTIME now,
+				      bool *modified)
+{
+	int i;
+	const struct dsdb_attribute *a;
+	struct replPropertyMetaData1 *md1;
+
+	a = dsdb_attribute_by_lDAPDisplayName(schema, el->name);
+	if (a == NULL) {
+		DEBUG(0,(__location__ ": Unable to find attribute %s in schema\n",
+			 el->name));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	for (i=0; i<omd->ctr.ctr1.count; i++) {
+		if (a->attributeID_id == omd->ctr.ctr1.array[i].attid) break;
+	}
+	if (i == omd->ctr.ctr1.count) {
+		/* we need to add a new one */
+		omd->ctr.ctr1.array = talloc_realloc(msg, omd->ctr.ctr1.array, 
+						     struct replPropertyMetaData1, omd->ctr.ctr1.count+1);
+		if (omd->ctr.ctr1.array == NULL) {
+			ldb_oom(ldb);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		omd->ctr.ctr1.count++;
+	}
+
+	md1 = &omd->ctr.ctr1.array[i];
+	md1->version                   = 1;
+	md1->attid                     = a->attributeID_id;
+	md1->originating_change_time   = now;
+	md1->originating_invocation_id = *our_invocation_id;
+	md1->originating_usn           = seq_num;
+	md1->local_usn                 = seq_num;
+	
+	*modified = true;
+	return LDB_SUCCESS;
+}
+
+/*
+ * update the replPropertyMetaData object each time we modify an
+ * object. This is needed for DRS replication, as the merge on the
+ * client is based on this object 
+ */
+static int replmd_update_rpmd(struct ldb_context *ldb, struct ldb_message *msg,
+			      uint64_t seq_num)
+{
+	const struct ldb_val *omd_value;
+	enum ndr_err_code ndr_err;
+	struct replPropertyMetaDataBlob omd;
+	int i;
+	bool modified = false;
+	struct dsdb_schema *schema;
+	time_t t = time(NULL);
+	NTTIME now;
+	const struct GUID *our_invocation_id;
+	int ret;
+	const char *attrs[] = { "replPropertyMetaData" , NULL };
+	struct ldb_result *res;
+
+	our_invocation_id = samdb_ntds_invocation_id(ldb);
+	if (!our_invocation_id) {
+		ldb_debug_set(ldb, LDB_DEBUG_ERROR,
+			      __location__ ": replmd_update_rpmd: unable to find invocationId\n");
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	unix_to_nt_time(&now, t);
+
+	/* search for the existing replPropertyMetaDataBlob */
+	ret = ldb_search(ldb, msg, &res, msg->dn, LDB_SCOPE_BASE, attrs, NULL);
+	if (ret != LDB_SUCCESS || res->count < 1) {
+		DEBUG(0,(__location__ ": Object %s failed to find replPropertyMetaData\n",
+			 ldb_dn_get_linearized(msg->dn)));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+		
+
+	omd_value = ldb_msg_find_ldb_val(res->msgs[0], "replPropertyMetaData");
+	if (!omd_value) {
+		DEBUG(0,(__location__ ": Object %s does not have a replPropertyMetaData attribute\n",
+			 ldb_dn_get_linearized(msg->dn)));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ndr_err = ndr_pull_struct_blob(omd_value, msg,
+				       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")), &omd,
+				       (ndr_pull_flags_fn_t)ndr_pull_replPropertyMetaDataBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0,(__location__ ": Failed to parse replPropertyMetaData for %s\n",
+			 ldb_dn_get_linearized(msg->dn)));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (omd.version != 1) {
+		DEBUG(0,(__location__ ": bad version %u in replPropertyMetaData for %s\n",
+			 omd.version, ldb_dn_get_linearized(msg->dn)));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	schema = dsdb_get_schema(ldb);
+
+	for (i=0; i<msg->num_elements; i++) {
+		ret = replmd_update_rpmd_element(ldb, msg, &msg->elements[i], &omd, schema, seq_num, 
+						 our_invocation_id, now, &modified);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	if (modified) {
+		struct ldb_val *md_value;
+		struct ldb_message_element *el;
+
+		md_value = talloc(msg, struct ldb_val);
+		if (md_value == NULL) {
+			ldb_oom(ldb);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		ndr_err = ndr_push_struct_blob(md_value, msg, 
+					       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
+					       &omd,
+					       (ndr_push_flags_fn_t)ndr_push_replPropertyMetaDataBlob);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			DEBUG(0,(__location__ ": Failed to marshall replPropertyMetaData for %s\n",
+				 ldb_dn_get_linearized(msg->dn)));
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		ret = ldb_msg_add_empty(msg, "replPropertyMetaData", LDB_FLAG_MOD_REPLACE, &el);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0,(__location__ ": Failed to add updated replPropertyMetaData %s\n",
+				 ldb_dn_get_linearized(msg->dn)));
+			return ret;
+		}
+
+		el->num_values = 1;
+		el->values = md_value;
+	}
+
+	return LDB_SUCCESS;	
+}
+
+
 static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
@@ -516,21 +673,27 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	 *   if the caller set values to the same value
 	 *   ignore the attribute, return success when no
 	 *   attribute was changed
-	 * - calculate the new replPropertyMetaData attribute
 	 */
+
+	/* Get a sequence number from the backend */
+	ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &seq_num);
+	if (ret != LDB_SUCCESS) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = replmd_update_rpmd(ldb, msg, seq_num);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 
 	if (add_time_element(msg, "whenChanged", t) != LDB_SUCCESS) {
 		talloc_free(ac);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/* Get a sequence number from the backend */
-	ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &seq_num);
-	if (ret == LDB_SUCCESS) {
-		if (add_uint64_element(msg, "uSNChanged", seq_num) != LDB_SUCCESS) {
-			talloc_free(ac);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
+	if (add_uint64_element(msg, "uSNChanged", seq_num) != LDB_SUCCESS) {
+		talloc_free(ac);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* TODO:
