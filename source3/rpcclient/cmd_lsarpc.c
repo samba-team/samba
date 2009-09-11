@@ -420,6 +420,75 @@ static NTSTATUS cmd_lsa_lookup_sids(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	return result;
 }
 
+/* Resolve a list of SIDs to a list of names */
+
+static NTSTATUS cmd_lsa_lookup_sids3(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx,
+				     int argc, const char **argv)
+{
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	int i;
+	struct lsa_SidArray sids;
+	struct lsa_RefDomainList *domains;
+	struct lsa_TransNameArray2 names;
+	uint32_t count = 0;
+
+	if (argc == 1) {
+		printf("Usage: %s [sid1 [sid2 [...]]]\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	ZERO_STRUCT(names);
+
+	/* Convert arguments to sids */
+
+	sids.num_sids = argc-1;
+	sids.sids = talloc_array(mem_ctx, struct lsa_SidPtr, sids.num_sids);
+	if (!sids.sids) {
+		printf("could not allocate memory for %d sids\n", sids.num_sids);
+		goto done;
+	}
+
+	for (i = 0; i < sids.num_sids; i++) {
+		sids.sids[0].sid = string_sid_talloc(sids.sids, argv[i + 1]);
+		if (!sids.sids[0].sid) {
+			result = NT_STATUS_INVALID_SID;
+			goto done;
+		}
+	}
+
+	/* Lookup the SIDs */
+	result = rpccli_lsa_LookupSids3(cli, mem_ctx,
+					&sids,
+					&domains,
+					&names,
+					1,
+					&count,
+					0,
+					0);
+
+	if (!NT_STATUS_IS_OK(result) && NT_STATUS_V(result) !=
+	    NT_STATUS_V(STATUS_SOME_UNMAPPED))
+		goto done;
+
+	result = NT_STATUS_OK;
+
+	/* Print results */
+
+	for (i = 0; i < count; i++) {
+		fstring sid_str;
+
+		sid_to_fstring(sid_str, sids.sids[i].sid);
+		printf("%s %s (%d)\n", sid_str,
+		       names.names[i].name.string,
+		       names.names[i].sid_type);
+	}
+
+ done:
+	return result;
+}
+
+
 /* Enumerate list of trusted domains */
 
 static NTSTATUS cmd_lsa_enum_trust_dom(struct rpc_pipe_client *cli, 
@@ -1776,6 +1845,7 @@ struct cmd_set lsarpc_commands[] = {
 
 	{ "lsaquery", 	         RPC_RTYPE_NTSTATUS, cmd_lsa_query_info_policy,  NULL, &ndr_table_lsarpc.syntax_id, NULL, "Query info policy",                    "" },
 	{ "lookupsids",          RPC_RTYPE_NTSTATUS, cmd_lsa_lookup_sids,        NULL, &ndr_table_lsarpc.syntax_id, NULL, "Convert SIDs to names",                "" },
+	{ "lookupsids3",         RPC_RTYPE_NTSTATUS, cmd_lsa_lookup_sids3,       NULL, &ndr_table_lsarpc.syntax_id, NULL, "Convert SIDs to names",                "" },
 	{ "lookupnames",         RPC_RTYPE_NTSTATUS, cmd_lsa_lookup_names,       NULL, &ndr_table_lsarpc.syntax_id, NULL, "Convert names to SIDs",                "" },
 	{ "lookupnames4",        RPC_RTYPE_NTSTATUS, cmd_lsa_lookup_names4,      NULL, &ndr_table_lsarpc.syntax_id, NULL, "Convert names to SIDs",                "" },
 	{ "lookupnames_level",   RPC_RTYPE_NTSTATUS, cmd_lsa_lookup_names_level, NULL, &ndr_table_lsarpc.syntax_id, NULL, "Convert names to SIDs",                "" },
