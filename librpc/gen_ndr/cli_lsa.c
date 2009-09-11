@@ -2479,7 +2479,7 @@ struct tevent_req *rpccli_lsa_LookupSids_send(TALLOC_CTX *mem_ctx,
 					      struct lsa_SidArray *_sids /* [in] [ref] */,
 					      struct lsa_RefDomainList **_domains /* [out] [ref] */,
 					      struct lsa_TransNameArray *_names /* [in,out] [ref] */,
-					      uint16_t _level /* [in]  */,
+					      enum lsa_LookupNamesLevel _level /* [in]  */,
 					      uint32_t *_count /* [in,out] [ref] */)
 {
 	struct tevent_req *req;
@@ -2602,7 +2602,7 @@ NTSTATUS rpccli_lsa_LookupSids(struct rpc_pipe_client *cli,
 			       struct lsa_SidArray *sids /* [in] [ref] */,
 			       struct lsa_RefDomainList **domains /* [out] [ref] */,
 			       struct lsa_TransNameArray *names /* [in,out] [ref] */,
-			       uint16_t level /* [in]  */,
+			       enum lsa_LookupNamesLevel level /* [in]  */,
 			       uint32_t *count /* [in,out] [ref] */)
 {
 	struct lsa_LookupSids r;
@@ -9365,7 +9365,7 @@ struct tevent_req *rpccli_lsa_LookupSids2_send(TALLOC_CTX *mem_ctx,
 					       struct lsa_SidArray *_sids /* [in] [ref] */,
 					       struct lsa_RefDomainList **_domains /* [out] [ref] */,
 					       struct lsa_TransNameArray2 *_names /* [in,out] [ref] */,
-					       uint16_t _level /* [in]  */,
+					       enum lsa_LookupNamesLevel _level /* [in]  */,
 					       uint32_t *_count /* [in,out] [ref] */,
 					       uint32_t _unknown1 /* [in]  */,
 					       uint32_t _unknown2 /* [in]  */)
@@ -9492,7 +9492,7 @@ NTSTATUS rpccli_lsa_LookupSids2(struct rpc_pipe_client *cli,
 				struct lsa_SidArray *sids /* [in] [ref] */,
 				struct lsa_RefDomainList **domains /* [out] [ref] */,
 				struct lsa_TransNameArray2 *names /* [in,out] [ref] */,
-				uint16_t level /* [in]  */,
+				enum lsa_LookupNamesLevel level /* [in]  */,
 				uint32_t *count /* [in,out] [ref] */,
 				uint32_t unknown1 /* [in]  */,
 				uint32_t unknown2 /* [in]  */)
@@ -12331,7 +12331,7 @@ struct tevent_req *rpccli_lsa_LookupSids3_send(TALLOC_CTX *mem_ctx,
 					       struct lsa_SidArray *_sids /* [in] [ref] */,
 					       struct lsa_RefDomainList **_domains /* [out] [ref] */,
 					       struct lsa_TransNameArray2 *_names /* [in,out] [ref] */,
-					       uint16_t _level /* [in]  */,
+					       enum lsa_LookupNamesLevel _level /* [in]  */,
 					       uint32_t *_count /* [in,out] [ref] */,
 					       uint32_t _unknown1 /* [in]  */,
 					       uint32_t _unknown2 /* [in]  */)
@@ -12456,7 +12456,7 @@ NTSTATUS rpccli_lsa_LookupSids3(struct rpc_pipe_client *cli,
 				struct lsa_SidArray *sids /* [in] [ref] */,
 				struct lsa_RefDomainList **domains /* [out] [ref] */,
 				struct lsa_TransNameArray2 *names /* [in,out] [ref] */,
-				uint16_t level /* [in]  */,
+				enum lsa_LookupNamesLevel level /* [in]  */,
 				uint32_t *count /* [in,out] [ref] */,
 				uint32_t unknown1 /* [in]  */,
 				uint32_t unknown2 /* [in]  */)

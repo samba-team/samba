@@ -1261,6 +1261,8 @@ static int map_remote_search_callback(struct ldb_request *req,
 			return ret;
 		}
 
+		talloc_free(ares);
+
 		ret = map_search_local(ac);
 		if (ret != LDB_SUCCESS) {
 			return ldb_module_done(ac->req, NULL, NULL, ret);
