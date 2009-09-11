@@ -491,6 +491,13 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	if ((a->systemFlags & 0x00000001) || (a->systemFlags & 0x00000004)) {
+		/* if the attribute is not replicated (0x00000001)
+		 * or constructed (0x00000004) it has no metadata
+		 */
+		return LDB_SUCCESS;
+	}
+
 	for (i=0; i<omd->ctr.ctr1.count; i++) {
 		if (a->attributeID_id == omd->ctr.ctr1.array[i].attid) break;
 	}
