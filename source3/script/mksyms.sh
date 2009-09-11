@@ -8,7 +8,7 @@
 #
 # This is the shell wrapper for the mksyms.awk core script.
 #
-# Copyright (C) 2008 Micheal Adam <obnox@samba.org>
+# Copyright (C) 2008 Michael Adam <obnox@samba.org>
 #
 
 LANG=C; export LANG
