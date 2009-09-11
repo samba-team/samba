@@ -33,6 +33,8 @@ abi_checks::
 	@echo ABI checks:
 	@./script/abi_checks.sh tevent tevent.h
 
+test:: abi_checks
+
 clean::
 	rm -f $(TEVENT_SOBASE) $(TEVENT_SONAME) $(TEVENT_SOLIB) $(TEVENT_STLIB)
 	rm -f tevent.pc
