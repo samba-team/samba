@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.89
+Version: 1.0.90
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -131,6 +131,9 @@ fi
 %{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
+* Sat Sep 12 2009 : Version 1.0.90
+ - Be more forgiving for eventscripts that hang during startup
+ - Fix for a banning bug in the new banning logic
 * Thu Sep 3 2009 : Version 1.0.89
  - Make it possible to manage winbind independently of samba.
  - Add new prototype banning code
