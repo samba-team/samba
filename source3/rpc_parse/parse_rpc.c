@@ -508,69 +508,6 @@ bool smb_io_rpc_hdr_auth(const char *desc, RPC_HDR_AUTH *rai, prs_struct *ps, in
 }
 
 /*******************************************************************
- Checks an RPC_AUTH_VERIFIER structure.
-********************************************************************/
-
-bool rpc_auth_verifier_chk(RPC_AUTH_VERIFIER *rav,
-				const char *signature, uint32 msg_type)
-{
-	return (strequal(rav->signature, signature) && rav->msg_type == msg_type);
-}
-
-/*******************************************************************
- Inits an RPC_AUTH_VERIFIER structure.
-********************************************************************/
-
-void init_rpc_auth_verifier(RPC_AUTH_VERIFIER *rav,
-				const char *signature, uint32 msg_type)
-{
-	fstrcpy(rav->signature, signature); /* "NTLMSSP" */
-	rav->msg_type = msg_type; /* NTLMSSP_MESSAGE_TYPE */
-}
-
-/*******************************************************************
- Reads or writes an RPC_AUTH_VERIFIER structure.
-********************************************************************/
-
-bool smb_io_rpc_auth_verifier(const char *desc, RPC_AUTH_VERIFIER *rav, prs_struct *ps, int depth)
-{
-	if (rav == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "smb_io_rpc_auth_verifier");
-	depth++;
-
-	/* "NTLMSSP" */
-	if(!prs_string("signature", ps, depth, rav->signature,
-			sizeof(rav->signature)))
-		return False;
-	if(!prs_uint32("msg_type ", ps, depth, &rav->msg_type)) /* NTLMSSP_MESSAGE_TYPE */
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- This parses an RPC_AUTH_VERIFIER for schannel. I think
-********************************************************************/
-
-bool smb_io_rpc_schannel_verifier(const char *desc, RPC_AUTH_VERIFIER *rav, prs_struct *ps, int depth)
-{
-	if (rav == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "smb_io_rpc_schannel_verifier");
-	depth++;
-
-	if(!prs_string("signature", ps, depth, rav->signature, sizeof(rav->signature)))
-		return False;
-	if(!prs_uint32("msg_type ", ps, depth, &rav->msg_type))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
 reads or writes an RPC_AUTH_SCHANNEL_CHK structure.
 ********************************************************************/
 
