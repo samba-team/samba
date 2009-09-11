@@ -65,3 +65,21 @@ DREPL_SRV_OBJ_FILES = $(addprefix $(dsdbsrcdir)/repl/, \
 		drepl_out_helpers.o)
 
 $(eval $(call proto_header_template,$(dsdbsrcdir)/repl/drepl_service_proto.h,$(DREPL_SRV_OBJ_FILES:.o=.c)))
+
+#######################
+# Start SUBSYSTEM KCC_SRV
+[MODULE::KCC_SRV]
+INIT_FUNCTION = server_service_kcc_init
+SUBSYSTEM = service
+PRIVATE_DEPENDENCIES = \
+		SAMDB \
+		process_model \
+		RPC_NDR_DRSUAPI
+# End SUBSYSTEM KCC_SRV
+#######################
+
+KCC_SRV_OBJ_FILES = $(addprefix $(dsdbsrcdir)/kcc/, \
+		kcc_service.o \
+		kcc_periodic.o)
+
+$(eval $(call proto_header_template,$(dsdbsrcdir)/kcc/kcc_service_proto.h,$(KCC_SRV_OBJ_FILES:.o=.c)))

@@ -212,6 +212,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	extern NTSTATUS server_service_cldapd_init(void);
 	extern NTSTATUS server_service_smb_init(void);
 	extern NTSTATUS server_service_drepl_init(void);
+	extern NTSTATUS server_service_kcc_init(void);
 	extern NTSTATUS server_service_rpc_init(void);
 	extern NTSTATUS server_service_ntp_signd_init(void);
 	extern NTSTATUS server_service_samba3_smb_init(void);
