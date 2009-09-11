@@ -103,7 +103,7 @@ static WERROR drsuapi_add_SPNs(struct drsuapi_bind_state *b_state,
 								"E3514235-4B06-11D1-AB04-00C04FC2DCD2/%s/%s", 
 								ntds_guid_str, dom_string);
 		el->values[0].length = strlen((char *)el->values[0].data);
-		el->values[1].data = (uint8_t *)talloc_asprintf(el->values, "ldap/%s/%s", 
+		el->values[1].data = (uint8_t *)talloc_asprintf(el->values, "ldap/%s._msdcs.%s", 
 								ntds_guid_str, dom_string);
 		el->values[1].length = strlen((char *)el->values[1].data);
 

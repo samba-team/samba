@@ -18,7 +18,7 @@ gc._msdcs		IN CNAME	${HOSTNAME}
 ${NTDSGUID}._msdcs	IN CNAME	${HOSTNAME}
 ;
 ; global catalog servers
-_gc._tcp		IN SRV 2 100 3268	${HOSTNAME}
+_gc._tcp		IN SRV 0 100 3268	${HOSTNAME}
 _gc._tcp.${DEFAULTSITE}._sites	IN SRV 0 100 3268	${HOSTNAME}
 _ldap._tcp.gc._msdcs	IN SRV 0 100 389	${HOSTNAME}
 _ldap._tcp.${DEFAULTSITE}._sites.gc._msdcs	IN SRV 0 100 389 ${HOSTNAME}
