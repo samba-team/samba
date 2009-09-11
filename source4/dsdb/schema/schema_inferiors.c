@@ -82,6 +82,10 @@ static char **schema_subclasses(struct dsdb_schema *schema, TALLOC_CTX *mem_ctx,
 
 	for (i=0; oclist && oclist[i]; i++) {
 		struct dsdb_class *schema_class = dsdb_class_by_lDAPDisplayName(schema, oclist[i]);
+		if (!schema_class) {
+			DEBUG(0, ("ERROR: Unable to locate subClass: '%s'\n", oclist[i]));
+			continue;
+		}
 		list = str_list_append_const(list, schema_class->subclasses);
 	}
 	return list;
@@ -104,6 +108,10 @@ static char **schema_posssuperiors(struct dsdb_schema *schema,
 		list3 = schema_supclasses(schema, schema_class);
 		for (i=0; list3 && list3[i]; i++) {
 			struct dsdb_class *class2 = dsdb_class_by_lDAPDisplayName(schema, list3[i]);
+			if (!class2) {
+				DEBUG(0, ("ERROR: Unable to locate supClass: '%s'\n", list3[i]));
+				continue;
+			}
 			list2 = str_list_append_const(list2, schema_posssuperiors(schema, class2));
 		}
 		list2 = str_list_append_const(list2, schema_subclasses(schema, list2, list2));
