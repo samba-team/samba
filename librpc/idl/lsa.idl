@@ -1099,6 +1099,16 @@ import "misc.idl", "security.idl";
 		[size_is(count)] lsa_TranslatedName2 *names;
 	} lsa_TransNameArray2;
 
+	typedef [v1_enum] enum {
+		LSA_LOOKUP_OPTION_SEARCH_ISOLATED_NAMES		= 0x00000000,
+		LSA_LOOKUP_OPTION_SEARCH_ISOLATED_NAMES_LOCAL	= 0x80000000
+	} lsa_LookupOptions;
+
+	typedef [v1_enum] enum {
+		LSA_CLIENT_REVISION_1	= 0x00000001,
+		LSA_CLIENT_REVISION_2	= 0x00000002
+	} lsa_ClientRevision;
+
 	[public] NTSTATUS lsa_LookupSids2(
 		[in]     policy_handle *handle,
 		[in,ref] lsa_SidArray *sids,
@@ -1106,8 +1116,8 @@ import "misc.idl", "security.idl";
 		[in,out,ref] lsa_TransNameArray2 *names,
 		[in]         lsa_LookupNamesLevel level,
 		[in,out,ref] uint32 *count,
-		[in]         uint32 unknown1,
-		[in]         uint32 unknown2
+		[in]         lsa_LookupOptions lookup_options,
+		[in]         lsa_ClientRevision client_revision
 		);
 
 	/**********************/
@@ -1133,8 +1143,8 @@ import "misc.idl", "security.idl";
 		[in,out,ref] lsa_TransSidArray2 *sids,
 		[in]         lsa_LookupNamesLevel level,
 		[in,out,ref] uint32 *count,
-		[in]         uint32 lookup_options,
-		[in]         uint32 client_revision /* LSA_CLIENT_REVISION* */
+		[in]         lsa_LookupOptions lookup_options,
+		[in]         lsa_ClientRevision client_revision
 		);
 
 	/* Function 0x3b */
@@ -1192,8 +1202,8 @@ import "misc.idl", "security.idl";
 		[in,out,ref] lsa_TransSidArray3 *sids,
 		[in]         lsa_LookupNamesLevel level,
 		[in,out,ref] uint32 *count,
-		[in]         uint32 lookup_options,
-		[in]         uint32 client_revision /* LSA_CLIENT_REVISION* */
+		[in]         lsa_LookupOptions lookup_options,
+		[in]         lsa_ClientRevision client_revision
 		);
 
 	/* Function 0x45 */
@@ -1268,8 +1278,8 @@ import "misc.idl", "security.idl";
 		[in,out,ref] lsa_TransNameArray2 *names,
 		[in]         lsa_LookupNamesLevel level,
 		[in,out,ref] uint32 *count,
-		[in]         uint32 unknown1,
-		[in]         uint32 unknown2
+		[in]         lsa_LookupOptions lookup_options,
+		[in]         lsa_ClientRevision client_revision
 		);
 
 	const int LSA_CLIENT_REVISION_NO_DNS     = 0x00000001;
@@ -1285,8 +1295,8 @@ import "misc.idl", "security.idl";
 		[in,out,ref] lsa_TransSidArray3 *sids,
 		[in]         lsa_LookupNamesLevel level,
 		[in,out,ref] uint32 *count,
-		[in]         uint32 lookup_options,
-		[in]         uint32 client_revision /* LSA_CLIENT_REVISION* */
+		[in]         lsa_LookupOptions lookup_options,
+		[in]         lsa_ClientRevision client_revision
 		);
 
 	/* Function 0x4e */
