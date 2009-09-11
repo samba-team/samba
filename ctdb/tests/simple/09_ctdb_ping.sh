@@ -47,7 +47,7 @@ sanity_check_output \
 
 try_command_on_node -v 0 "$CTDB shutdown -n 1"
 
-onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status 1 disconnected
+wait_until_node_has_status 1 disconnected
 
 try_command_on_node -v 0 "! $CTDB ping -n 1"
 

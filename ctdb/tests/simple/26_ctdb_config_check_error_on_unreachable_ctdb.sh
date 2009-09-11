@@ -52,7 +52,7 @@ echo "There are $num_nodes nodes."
 echo "Shutting down node ${test_node}..."
 try_command_on_node $test_node $CTDB shutdown
 
-onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node disconnected
+wait_until_node_has_status $test_node disconnected
 
 pat="ctdb_control error: 'ctdb_control to disconnected node'|Node $test_node is DISCONNECTED"
 

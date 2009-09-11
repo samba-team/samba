@@ -417,7 +417,7 @@ wait_until_node_has_status ()
 
     echo "Waiting until node $pnn has status \"$status\"..."
 
-    wait_until $timeout node_has_status "$pnn" "$status"
+    onnode any $CTDB_TEST_WRAPPER wait_until $timeout node_has_status "$pnn" "$status"
 }
 
 # Useful for superficially testing IP failover.

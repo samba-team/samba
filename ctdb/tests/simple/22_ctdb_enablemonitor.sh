@@ -59,7 +59,7 @@ sanity_check_output \
     '^Monitoring mode:DISABLED$' \
     "$out"
 
-onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node monoff
+wait_until_node_has_status $test_node monoff
 
 trigger="/tmp/ctdb-test-unhealthy-trigger.${test_node}"
 detected="/tmp/ctdb-test-unhealthy-detected.${test_node}"
@@ -87,7 +87,7 @@ sanity_check_output \
     '^Monitoring mode:ACTIVE$' \
     "$out"
 
-onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node monon
+wait_until_node_has_status $test_node monon
 
 sleep_for $monitor_interval
 
@@ -95,6 +95,6 @@ try_command_on_node $test_node test -e "$detected"
 
 echo "OK: flag file was created so monitoring must be enabled."
 
-onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node unhealthy $monitor_interval
+wait_until_node_has_status $test_node unhealthy $monitor_interval
 
 try_command_on_node -v $test_node ls -l "$detected"
