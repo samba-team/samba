@@ -55,6 +55,8 @@
            tevent_timeval_zero;
            tevent_wakeup_recv;
            tevent_wakeup_send;
+           _tevent_req_cancel;
+           tevent_req_set_cancel_fn;
 
     local: *;
 };
