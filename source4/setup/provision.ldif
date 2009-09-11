@@ -34,6 +34,7 @@ description: Default container for domain controllers
 systemFlags: -1946157056
 isCriticalSystemObject: TRUE
 showInAdvancedViewOnly: FALSE
+gPLink: [LDAP://CN={${POLICYGUID_DC}},CN=Policies,CN=System,${DOMAINDN};0]
 
 # Joined DC located in "provision_self_join.ldif"
 
