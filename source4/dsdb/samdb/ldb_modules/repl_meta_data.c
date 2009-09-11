@@ -48,7 +48,7 @@
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "param/param.h"
 #include "libcli/security/dom_sid.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 
 struct replmd_private {
 	struct la_entry *la_list;
