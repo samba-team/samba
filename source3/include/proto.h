@@ -5728,9 +5728,6 @@ void init_rpc_hdr_auth(RPC_HDR_AUTH *rai,
 				uint8 auth_pad_len,
 				uint32 auth_context_id);
 bool smb_io_rpc_hdr_auth(const char *desc, RPC_HDR_AUTH *rai, prs_struct *ps, int depth);
-bool smb_io_rpc_auth_schannel_chk(const char *desc, int auth_len, 
-                                RPC_AUTH_SCHANNEL_CHK * chk,
-				prs_struct *ps, int depth);
 
 /* The following definitions come from lib/eventlog/eventlog.c  */
 
