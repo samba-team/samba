@@ -1328,11 +1328,10 @@ static bool pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 {
 	RPC_HDR_AUTH auth_info;
 	struct NL_AUTH_MESSAGE neg;
-	RPC_AUTH_VERIFIER auth_verifier;
+	struct NL_AUTH_MESSAGE reply;
 	bool ret;
 	NTSTATUS status;
 	struct netlogon_creds_CredentialState *creds;
-	uint32 flags;
 	DATA_BLOB session_key;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
@@ -1422,17 +1421,25 @@ static bool pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 
 	/*** SCHANNEL verifier ***/
 
-	init_rpc_auth_verifier(&auth_verifier, "\001", 0x0);
-	if(!smb_io_rpc_schannel_verifier("", &auth_verifier, pout_auth, 0)) {
-		DEBUG(0,("pipe_schannel_auth_bind: marshalling of RPC_AUTH_VERIFIER failed.\n"));
-		return False;
+	reply.MessageType			= NL_NEGOTIATE_RESPONSE;
+	reply.Flags				= 0;
+	reply.Buffer.dummy			= 5; /* ??? actually I don't think
+						      * this has any meaning
+						      * here - gd */
+
+	ndr_err = ndr_push_struct_blob(&blob, talloc_tos(), NULL, &reply,
+		       (ndr_push_flags_fn_t)ndr_push_NL_AUTH_MESSAGE);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0,("Failed to marshall NL_AUTH_MESSAGE.\n"));
+		return false;
 	}
 
-	prs_align(pout_auth);
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(NL_AUTH_MESSAGE, &reply);
+	}
 
-	flags = 5;
-	if(!prs_uint32("flags ", pout_auth, 0, &flags)) {
-		return False;
+	if (!prs_copy_data_in(pout_auth, (const char *)blob.data, blob.length)) {
+		return false;
 	}
 
 	DEBUG(10,("pipe_schannel_auth_bind: schannel auth: domain [%s] myname [%s]\n",
