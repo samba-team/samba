@@ -525,7 +525,7 @@ import "misc.idl", "security.idl";
 		[in,ref]     lsa_SidArray *sids,
 		[out,ref]    lsa_RefDomainList **domains,
 		[in,out,ref] lsa_TransNameArray *names,
-		[in]         uint16 level,
+		[in]         lsa_LookupNamesLevel level,
 		[in,out,ref] uint32 *count
 		);
 
@@ -1104,7 +1104,7 @@ import "misc.idl", "security.idl";
 		[in,ref] lsa_SidArray *sids,
 		[out,ref]    lsa_RefDomainList **domains,
 		[in,out,ref] lsa_TransNameArray2 *names,
-		[in]         uint16 level,
+		[in]         lsa_LookupNamesLevel level,
 		[in,out,ref] uint32 *count,
 		[in]         uint32 unknown1,
 		[in]         uint32 unknown2
@@ -1266,7 +1266,7 @@ import "misc.idl", "security.idl";
 		[in,ref]     lsa_SidArray *sids,
 		[out,ref]    lsa_RefDomainList **domains,
 		[in,out,ref] lsa_TransNameArray2 *names,
-		[in]         uint16 level,
+		[in]         lsa_LookupNamesLevel level,
 		[in,out,ref] uint32 *count,
 		[in]         uint32 unknown1,
 		[in]         uint32 unknown2

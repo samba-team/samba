@@ -6607,7 +6607,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_lsa_LookupSids(struct ndr_push *ndr, int fla
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_lsa_TransNameArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.names));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_lsa_LookupNamesLevel(ndr, NDR_SCALARS, r->in.level));
 		if (r->in.count == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -6667,7 +6667,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupSids(struct ndr_pull *ndr, int fla
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.names, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_lsa_TransNameArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.names));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_names_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_lsa_LookupNamesLevel(ndr, NDR_SCALARS, &r->in.level));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.count);
 		}
@@ -6742,7 +6742,7 @@ _PUBLIC_ void ndr_print_lsa_LookupSids(struct ndr_print *ndr, const char *name, 
 		ndr->depth++;
 		ndr_print_lsa_TransNameArray(ndr, "names", r->in.names);
 		ndr->depth--;
-		ndr_print_uint16(ndr, "level", r->in.level);
+		ndr_print_lsa_LookupNamesLevel(ndr, "level", r->in.level);
 		ndr_print_ptr(ndr, "count", r->in.count);
 		ndr->depth++;
 		ndr_print_uint32(ndr, "count", *r->in.count);
@@ -10838,7 +10838,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_lsa_LookupSids2(struct ndr_push *ndr, int fl
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_lsa_TransNameArray2(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.names));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_lsa_LookupNamesLevel(ndr, NDR_SCALARS, r->in.level));
 		if (r->in.count == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -10900,7 +10900,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupSids2(struct ndr_pull *ndr, int fl
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.names, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_lsa_TransNameArray2(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.names));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_names_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_lsa_LookupNamesLevel(ndr, NDR_SCALARS, &r->in.level));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.count);
 		}
@@ -10977,7 +10977,7 @@ _PUBLIC_ void ndr_print_lsa_LookupSids2(struct ndr_print *ndr, const char *name,
 		ndr->depth++;
 		ndr_print_lsa_TransNameArray2(ndr, "names", r->in.names);
 		ndr->depth--;
-		ndr_print_uint16(ndr, "level", r->in.level);
+		ndr_print_lsa_LookupNamesLevel(ndr, "level", r->in.level);
 		ndr_print_ptr(ndr, "count", r->in.count);
 		ndr->depth++;
 		ndr_print_uint32(ndr, "count", *r->in.count);
@@ -12254,7 +12254,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_lsa_LookupSids3(struct ndr_push *ndr, int fl
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_lsa_TransNameArray2(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.names));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_lsa_LookupNamesLevel(ndr, NDR_SCALARS, r->in.level));
 		if (r->in.count == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -12308,7 +12308,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupSids3(struct ndr_pull *ndr, int fl
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.names, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_lsa_TransNameArray2(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.names));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_names_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_lsa_LookupNamesLevel(ndr, NDR_SCALARS, &r->in.level));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.count);
 		}
@@ -12381,7 +12381,7 @@ _PUBLIC_ void ndr_print_lsa_LookupSids3(struct ndr_print *ndr, const char *name,
 		ndr->depth++;
 		ndr_print_lsa_TransNameArray2(ndr, "names", r->in.names);
 		ndr->depth--;
-		ndr_print_uint16(ndr, "level", r->in.level);
+		ndr_print_lsa_LookupNamesLevel(ndr, "level", r->in.level);
 		ndr_print_ptr(ndr, "count", r->in.count);
 		ndr->depth++;
 		ndr_print_uint32(ndr, "count", *r->in.count);

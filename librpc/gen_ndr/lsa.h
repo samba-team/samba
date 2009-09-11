@@ -954,7 +954,7 @@ struct lsa_LookupSids {
 	struct {
 		struct policy_handle *handle;/* [ref] */
 		struct lsa_SidArray *sids;/* [ref] */
-		uint16_t level;
+		enum lsa_LookupNamesLevel level;
 		struct lsa_TransNameArray *names;/* [ref] */
 		uint32_t *count;/* [ref] */
 	} in;
@@ -1549,7 +1549,7 @@ struct lsa_LookupSids2 {
 	struct {
 		struct policy_handle *handle;/* [ref] */
 		struct lsa_SidArray *sids;/* [ref] */
-		uint16_t level;
+		enum lsa_LookupNamesLevel level;
 		uint32_t unknown1;
 		uint32_t unknown2;
 		struct lsa_TransNameArray2 *names;/* [ref] */
@@ -1756,7 +1756,7 @@ struct lsa_CREDRRENAME {
 struct lsa_LookupSids3 {
 	struct {
 		struct lsa_SidArray *sids;/* [ref] */
-		uint16_t level;
+		enum lsa_LookupNamesLevel level;
 		uint32_t unknown1;
 		uint32_t unknown2;
 		struct lsa_TransNameArray2 *names;/* [ref] */
