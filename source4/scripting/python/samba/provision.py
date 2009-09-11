@@ -801,6 +801,7 @@ def setup_self_join(samdb, names,
     # Setup fSMORoleOwner entries to point at the newly created DC entry
     setup_modify_ldif(samdb, setup_path("provision_self_join_modify.ldif"), {
               "DOMAIN": names.domain,
+              "DNSDOMAIN": names.dnsdomain,
               "DOMAINDN": names.domaindn,
               "CONFIGDN": names.configdn,
               "SCHEMADN": names.schemadn, 
