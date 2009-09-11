@@ -739,6 +739,10 @@ int ldb_msg_copy_attr(struct ldb_message *msg, const char *attr, const char *rep
 void ldb_msg_remove_element(struct ldb_message *msg, struct ldb_message_element *el)
 {
 	int n = (el - msg->elements);
+	if (n >= msg->num_elements) {
+		/* should we abort() here? */
+		return;
+	}
 	if (n != msg->num_elements-1) {
 		memmove(el, el+1, ((msg->num_elements-1) - n)*sizeof(*el));
 	}
