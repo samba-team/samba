@@ -4,7 +4,7 @@
 # Extract symbols to export from C-header files.
 # output in version-script format for linking shared libraries.
 #
-# Copyright (C) 2008 Micheal Adam <obnox@samba.org>
+# Copyright (C) 2008 Michael Adam <obnox@samba.org>
 #
 BEGIN {
 	inheader=0;
