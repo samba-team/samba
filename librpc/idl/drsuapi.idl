@@ -751,26 +751,88 @@ interface drsuapi
 		/* TODO ... */
 	} drsuapi_DsReplicaAddOptions;
 
-	[todo] WERROR DRSUAPI_REPLICA_ADD();
+
+	typedef struct {
+		[ref] drsuapi_DsReplicaObjectIdentifier *naming_context;
+		[charset(UTF16),string] uint16 *source_dsa_address;
+		uint8 schedule[84];
+		drsuapi_DsReplicaAddOptions options;
+	} drsuapi_DsReplicaAddRequest1;
+
+	typedef struct {
+		[ref] drsuapi_DsReplicaObjectIdentifier *naming_context;
+		drsuapi_DsReplicaObjectIdentifier *source_dsa_dn;
+		drsuapi_DsReplicaObjectIdentifier *transport_dn;
+		[charset(UTF16),string] uint16 *source_dsa_address;
+		uint8 schedule[84];
+		drsuapi_DsReplicaAddOptions options;
+	} drsuapi_DsReplicaAddRequest2;
+
+	typedef [switch_type(int32)] union {
+		[case(1)] drsuapi_DsReplicaAddRequest1 req1;
+		[case(2)] drsuapi_DsReplicaAddRequest2 req2;
+	} drsuapi_DsReplicaAddRequest;
+
+	WERROR drsuapi_DsReplicaAdd(
+		[in] policy_handle *bind_handle,
+		[in] int32 level,
+		[in,switch_is(level)] drsuapi_DsReplicaAddRequest req
+		);
+		
 
 	/*****************/
         /* Function 0x06 */
 	typedef bitmap {
-		DRSUAPI_DS_REPLICA_DELETE_ASYNCHRONOUS_OPERATION	= 0x00000001,
-		DRSUAPI_DS_REPLICA_DELETE_WRITEABLE			= 0x00000002
+		DRSUAPI_DS_REPLICA_ADD_ASYNCHRONOUS_OPERATION	= 0x00000001,
+		DRSUAPI_DS_REPLICA_ADD_WRITEABLE		= 0x00000002
 		/* TODO ... */
 	} drsuapi_DsReplicaDeleteOptions;
 
-	[todo] WERROR DRSUAPI_REPLICA_DEL();
+
+	typedef struct {
+		[ref] drsuapi_DsReplicaObjectIdentifier *naming_context;
+		[charset(UTF16),string] uint16 *source_dsa_address;
+		drsuapi_DsReplicaDeleteOptions options;
+	} drsuapi_DsReplicaDelRequest1;
+
+	typedef [switch_type(int32)] union {
+		[case(1)] drsuapi_DsReplicaDelRequest1 req1;
+	} drsuapi_DsReplicaDelRequest;
+
+	WERROR drsuapi_DsReplicaDel(
+		[in] policy_handle *bind_handle,
+		[in] int32 level,
+		[in,switch_is(level)] drsuapi_DsReplicaDelRequest req
+		);
 
 	/*****************/
         /* Function 0x07 */
 	typedef bitmap {
-		DRSUAPI_DS_REPLICA_MODIFY_ASYNCHRONOUS_OPERATION	= 0x00000001,
-		DRSUAPI_DS_REPLICA_MODIFY_WRITEABLE			= 0x00000002
+		DRSUAPI_DS_REPLICA_ADD_ASYNCHRONOUS_OPERATION	= 0x00000001,
+		DRSUAPI_DS_REPLICA_ADD_WRITEABLE		= 0x00000002
+		/* TODO ... */
 	} drsuapi_DsReplicaModifyOptions;
 
-	[todo] WERROR DRSUAPI_REPLICA_MODIFY();
+
+	typedef struct {
+		[ref] drsuapi_DsReplicaObjectIdentifier *naming_context;
+		GUID source_dra;
+		[charset(UTF16),string] uint16 *source_dra_address;
+		uint8 schedule[84];
+		uint32 replica_flags;
+		uint32 modify_fields;
+		drsuapi_DsReplicaModifyOptions options;
+	} drsuapi_DsReplicaModRequest1;
+
+	typedef [switch_type(int32)] union {
+		[case(1)] drsuapi_DsReplicaModRequest1 req1;
+	} drsuapi_DsReplicaModRequest;
+
+	WERROR drsuapi_DsReplicaMod(
+		[in] policy_handle *bind_handle,
+		[in] int32 level,
+		[in,switch_is(level)] drsuapi_DsReplicaModRequest req
+		);
 
 	/*****************/
         /* Function 0x08 */

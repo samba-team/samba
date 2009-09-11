@@ -684,13 +684,58 @@ union drsuapi_DsReplicaUpdateRefsRequest {
 #define DRSUAPI_DS_REPLICA_ADD_ASYNCHRONOUS_OPERATION ( 0x00000001 )
 #define DRSUAPI_DS_REPLICA_ADD_WRITEABLE ( 0x00000002 )
 
+struct drsuapi_DsReplicaAddRequest1 {
+	struct drsuapi_DsReplicaObjectIdentifier *naming_context;/* [ref] */
+	const char *source_dsa_address;/* [unique,charset(UTF16)] */
+	uint8_t schedule[84];
+	uint32_t options;
+};
+
+struct drsuapi_DsReplicaAddRequest2 {
+	struct drsuapi_DsReplicaObjectIdentifier *naming_context;/* [ref] */
+	struct drsuapi_DsReplicaObjectIdentifier *source_dsa_dn;/* [unique] */
+	struct drsuapi_DsReplicaObjectIdentifier *transport_dn;/* [unique] */
+	const char *source_dsa_address;/* [unique,charset(UTF16)] */
+	uint8_t schedule[84];
+	uint32_t options;
+};
+
+union drsuapi_DsReplicaAddRequest {
+	struct drsuapi_DsReplicaAddRequest1 req1;/* [case] */
+	struct drsuapi_DsReplicaAddRequest2 req2;/* [case(2)] */
+}/* [switch_type(int32)] */;
+
 /* bitmap drsuapi_DsReplicaDeleteOptions */
-#define DRSUAPI_DS_REPLICA_DELETE_ASYNCHRONOUS_OPERATION ( 0x00000001 )
-#define DRSUAPI_DS_REPLICA_DELETE_WRITEABLE ( 0x00000002 )
+#define DRSUAPI_DS_REPLICA_ADD_ASYNCHRONOUS_OPERATION ( 0x00000001 )
+#define DRSUAPI_DS_REPLICA_ADD_WRITEABLE ( 0x00000002 )
+
+struct drsuapi_DsReplicaDelRequest1 {
+	struct drsuapi_DsReplicaObjectIdentifier *naming_context;/* [ref] */
+	const char *source_dsa_address;/* [unique,charset(UTF16)] */
+	uint32_t options;
+};
+
+union drsuapi_DsReplicaDelRequest {
+	struct drsuapi_DsReplicaDelRequest1 req1;/* [case] */
+}/* [switch_type(int32)] */;
 
 /* bitmap drsuapi_DsReplicaModifyOptions */
-#define DRSUAPI_DS_REPLICA_MODIFY_ASYNCHRONOUS_OPERATION ( 0x00000001 )
-#define DRSUAPI_DS_REPLICA_MODIFY_WRITEABLE ( 0x00000002 )
+#define DRSUAPI_DS_REPLICA_ADD_ASYNCHRONOUS_OPERATION ( 0x00000001 )
+#define DRSUAPI_DS_REPLICA_ADD_WRITEABLE ( 0x00000002 )
+
+struct drsuapi_DsReplicaModRequest1 {
+	struct drsuapi_DsReplicaObjectIdentifier *naming_context;/* [ref] */
+	struct GUID source_dra;
+	const char *source_dra_address;/* [unique,charset(UTF16)] */
+	uint8_t schedule[84];
+	uint32_t replica_flags;
+	uint32_t modify_fields;
+	uint32_t options;
+};
+
+union drsuapi_DsReplicaModRequest {
+	struct drsuapi_DsReplicaModRequest1 req1;/* [case] */
+}/* [switch_type(int32)] */;
 
 enum drsuapi_DsMembershipType
 #ifndef USE_UINT_ENUMS
@@ -1546,7 +1591,13 @@ struct drsuapi_DsReplicaUpdateRefs {
 };
 
 
-struct DRSUAPI_REPLICA_ADD {
+struct drsuapi_DsReplicaAdd {
+	struct {
+		struct policy_handle *bind_handle;/* [ref] */
+		int32_t level;
+		union drsuapi_DsReplicaAddRequest req;/* [switch_is(level)] */
+	} in;
+
 	struct {
 		WERROR result;
 	} out;
@@ -1554,7 +1605,13 @@ struct DRSUAPI_REPLICA_ADD {
 };
 
 
-struct DRSUAPI_REPLICA_DEL {
+struct drsuapi_DsReplicaDel {
+	struct {
+		struct policy_handle *bind_handle;/* [ref] */
+		int32_t level;
+		union drsuapi_DsReplicaDelRequest req;/* [switch_is(level)] */
+	} in;
+
 	struct {
 		WERROR result;
 	} out;
@@ -1562,7 +1619,13 @@ struct DRSUAPI_REPLICA_DEL {
 };
 
 
-struct DRSUAPI_REPLICA_MODIFY {
+struct drsuapi_DsReplicaMod {
+	struct {
+		struct policy_handle *bind_handle;/* [ref] */
+		int32_t level;
+		union drsuapi_DsReplicaModRequest req;/* [switch_is(level)] */
+	} in;
+
 	struct {
 		WERROR result;
 	} out;
