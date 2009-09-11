@@ -105,7 +105,7 @@ static WERROR drsuapi_add_SPNs(struct drsuapi_bind_state *b_state,
 		el->values[0].length = strlen((char *)el->values[0].data);
 		el->values[1].data = (uint8_t *)talloc_asprintf(el->values, "ldap/%s/%s", 
 								ntds_guid_str, dom_string);
-		el->values[1].length = strlen((char *)el->values[0].data);
+		el->values[1].length = strlen((char *)el->values[1].data);
 
 		ret = ldb_modify(b_state->sam_ctx, msg);
 		if (ret != LDB_SUCCESS) {
@@ -173,7 +173,7 @@ WERROR dcesrv_drsuapi_DsAddEntry(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		r->out.ctr->ctr3.count = num;
 		r->out.ctr->ctr3.objects = ids;
 
-		return WERR_OK;
+		break;
 	default:
 		return WERR_FOOBAR;
 	}
