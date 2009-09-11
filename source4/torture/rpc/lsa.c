@@ -543,8 +543,8 @@ static bool test_LookupSids2(struct dcerpc_pipe *p,
 	r.in.names = &names;
 	r.in.level = 1;
 	r.in.count = &count;
-	r.in.unknown1 = 0;
-	r.in.unknown2 = 0;
+	r.in.lookup_options = 0;
+	r.in.client_revision = 0;
 	r.out.count = &count;
 	r.out.names = &names;
 	r.out.domains = &domains;
@@ -587,8 +587,8 @@ static bool test_LookupSids3(struct dcerpc_pipe *p,
 	r.in.names = &names;
 	r.in.level = 1;
 	r.in.count = &count;
-	r.in.unknown1 = 0;
-	r.in.unknown2 = 0;
+	r.in.lookup_options = 0;
+	r.in.client_revision = 0;
 	r.out.domains = &domains;
 	r.out.count = &count;
 	r.out.names = &names;
@@ -678,8 +678,8 @@ bool test_many_LookupSids(struct dcerpc_pipe *p,
 		r.in.names = &names;
 		r.in.level = 1;
 		r.in.count = &count;
-		r.in.unknown1 = 0;
-		r.in.unknown2 = 0;
+		r.in.lookup_options = 0;
+		r.in.client_revision = 0;
 		r.out.count = &count;
 		r.out.names = &names;
 		r.out.domains = &domains;
