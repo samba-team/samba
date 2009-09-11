@@ -118,11 +118,6 @@ while (my $LINE = <>) {
 		}
 	}
 
-	next if ($LINE =~ /^typedef\s/);
-	next if ($LINE =~ /^enum\s+[^\{\(]+\s+\{/);
-	next if ($LINE =~ /^struct\s+[^\{\(]+\s+\{.*\}\s*;/);
-	next if ($LINE =~ /^struct\s+[a-zA-Z0-9_]+\s*;/);
-
 	# concetenate function prototypes that stretch over multiple lines
 	$REST = $LINE;
 	my $parenthesis = 0;
@@ -155,6 +150,11 @@ while (my $LINE = <>) {
 			}
 		}
 	}
+
+	next if ($LINE =~ /^typedef\s/);
+	next if ($LINE =~ /^enum\s+[^\{\(]+\s+\{/);
+	next if ($LINE =~ /^struct\s+[^\{\(]+\s+\{.*\}\s*;/);
+	next if ($LINE =~ /^struct\s+[a-zA-Z0-9_]+\s*;/);
 
 	# remove trailing spaces
 	$LINE =~ s/(.*?)\s*$/$1/;
