@@ -319,19 +319,6 @@ static WERROR dsdb_convert_object(struct ldb_context *ldb,
 					       msg->num_elements);
 	W_ERROR_HAVE_NO_MEMORY(msg->elements);
 
-	/*
-	 * TODO:
-	 *
-	 * The DsAddEntry() call which creates a nTDSDSA object,
-	 * also adds a servicePrincipalName in the following form
-	 * to the computer account of the new domain controller
-	 * referenced by the "serverReferenece" attribute.
-	 *
-	 * E3514235-4B06-11D1-AB04-00C04FC2DCD2/<new-ntdsdsa-object-guid-as-string>/<domain-dns-name>
-	 *
-	 * also note that the "serverReference" isn't added to the new object!
-	 */
-
 	for (i=0; i < msg->num_elements; i++) {
 		struct drsuapi_DsReplicaAttribute *a;
 		struct ldb_message_element *e;
@@ -343,7 +330,9 @@ static WERROR dsdb_convert_object(struct ldb_context *ldb,
 		W_ERROR_NOT_OK_RETURN(status);
 	}
 
+
 	*_msg = msg;
+
 	return WERR_OK;
 }
 
@@ -396,11 +385,6 @@ WERROR dsdb_origin_objects_commit(struct ldb_context *ldb,
 			   num_objects);
 	W_ERROR_HAVE_NO_MEMORY(objects);
 
-	ret = ldb_transaction_start(ldb);
-	if (ret != 0) {
-		goto cancel;
-	}
-
 	for (i=0; i < num_objects; i++) {
 		struct dom_sid *sid = NULL;
 		ret = ldb_add(ldb, objects[i]);
@@ -420,11 +404,6 @@ WERROR dsdb_origin_objects_commit(struct ldb_context *ldb,
 		} else {
 			ZERO_STRUCT(ids[i].sid);
 		}
-	}
-
-	ret = ldb_transaction_commit(ldb);
-	if (ret != 0) {
-		goto cancel;
 	}
 
 	talloc_free(objects);
