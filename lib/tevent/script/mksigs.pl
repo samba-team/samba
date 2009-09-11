@@ -160,6 +160,7 @@ while (my $LINE = <>) {
 	$LINE =~ s/(.*?)\s*$/$1/;
 
 	$LINE =~ s/^(.*\))\s+PRINTF_ATTRIBUTE\(.*\);$/$1;/;
+	$LINE =~ s/^(.*\))\s*[a-zA-Z0-9_]+\s*;$/$1;/;
 
 	# remove parameter names - slightly too coarse probably
 	$LINE =~ s/([\s\(]\*?)[_0-9a-zA-Z]+\s*([,\)])/$1$2/g;
