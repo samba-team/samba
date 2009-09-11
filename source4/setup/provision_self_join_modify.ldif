@@ -27,3 +27,9 @@ dn: CN=NTDS Site Settings,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
 changetype: modify
 replace: interSiteTopologyGenerator
 interSiteTopologyGenerator: CN=NTDS Settings,${SERVERDN}
+
+dn: CN=${NETBIOSNAME},OU=Domain Controllers,${DOMAINDN}
+changetype: modify
+add: servicePrincipalName
+servicePrincipalName: E3514235-4B06-11D1-AB04-00C04FC2DCD2/${NTDSGUID}/${DOMAIN}
+servicePrincipalName: ldap/${NTDSGUID}._msdcs.${DOMAIN}

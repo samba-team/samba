@@ -791,14 +791,23 @@ def setup_self_join(samdb, names,
               "DNSDOMAIN": names.dnsdomain,
               "DOMAINSID": str(domainsid),
               "DOMAINDN": names.domaindn})
+    
+    # add the NTDSGUID based SPNs
+    ntds_dn = "CN=NTDS Settings,CN=%s,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,%s" % (names.hostname, names.domaindn)
+    names.ntdsguid = samdb.searchone(basedn=ntds_dn, attribute="objectGUID",
+                                     expression="", scope=SCOPE_BASE)
+    assert isinstance(names.ntdsguid, str)
 
     # Setup fSMORoleOwner entries to point at the newly created DC entry
     setup_modify_ldif(samdb, setup_path("provision_self_join_modify.ldif"), {
+              "DOMAIN": names.domain,
               "DOMAINDN": names.domaindn,
               "CONFIGDN": names.configdn,
               "SCHEMADN": names.schemadn, 
               "DEFAULTSITE": names.sitename,
-              "SERVERDN": names.serverdn
+              "SERVERDN": names.serverdn,
+              "NETBIOSNAME": names.netbiosname,
+              "NTDSGUID": names.ntdsguid
               })
 
 
@@ -980,6 +989,11 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
                                 domainsid=domainsid, policyguid=policyguid,
                                 setup_path=setup_path,
                                 domainControllerFunctionality=domainControllerFunctionality)
+                # add the NTDSGUID based SPNs
+                ntds_dn = "CN=NTDS Settings,CN=%s,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,%s" % (names.hostname, names.domaindn)
+                names.ntdsguid = samdb.searchone(basedn=ntds_dn, attribute="objectGUID",
+                                                 expression="", scope=SCOPE_BASE)
+                assert isinstance(names.ntdsguid, str)
 
     except:
         samdb.transaction_cancel()
@@ -1194,16 +1208,12 @@ def provision(setup_dir, message, session_info,
 
             domainguid = samdb.searchone(basedn=domaindn, attribute="objectGUID")
             assert isinstance(domainguid, str)
-            hostguid = samdb.searchone(basedn=domaindn, attribute="objectGUID",
-                                       expression="(&(objectClass=computer)(cn=%s))" % names.hostname,
-                                       scope=SCOPE_SUBTREE)
-            assert isinstance(hostguid, str)
 
             create_zone_file(paths.dns, setup_path, dnsdomain=names.dnsdomain,
                              domaindn=names.domaindn, hostip=hostip,
                              hostip6=hostip6, hostname=names.hostname,
                              dnspass=dnspass, realm=names.realm,
-                             domainguid=domainguid, hostguid=hostguid)
+                             domainguid=domainguid, ntdsguid=names.ntdsguid)
 
             create_named_conf(paths.namedconf, setup_path, realm=names.realm,
                               dnsdomain=names.dnsdomain, private_dir=paths.private_dir)
@@ -1804,7 +1814,7 @@ def create_phpldapadmin_config(path, setup_path, ldapi_uri):
 
 def create_zone_file(path, setup_path, dnsdomain, domaindn, 
                      hostip, hostip6, hostname, dnspass, realm, domainguid,
-                     hostguid):
+                     ntdsguid):
     """Write out a DNS zone file, from the info in the current database.
 
     :param path: Path of the new zone file.
@@ -1817,7 +1827,7 @@ def create_zone_file(path, setup_path, dnsdomain, domaindn,
     :param dnspass: Password for DNS
     :param realm: Realm name
     :param domainguid: GUID of the domain.
-    :param hostguid: GUID of the host.
+    :param ntdsguid: GUID of the hosts nTDSDSA record.
     """
     assert isinstance(domainguid, str)
 
@@ -1845,7 +1855,7 @@ def create_zone_file(path, setup_path, dnsdomain, domaindn,
             "DOMAINGUID": domainguid,
             "DATESTRING": time.strftime("%Y%m%d%H"),
             "DEFAULTSITE": DEFAULTSITE,
-            "HOSTGUID": hostguid,
+            "NTDSGUID": ntdsguid,
             "HOSTIP6_BASE_LINE": hostip6_base_line,
             "HOSTIP6_HOST_LINE": hostip6_host_line,
         })
