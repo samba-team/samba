@@ -76,33 +76,51 @@ NTSTATUS rpccli_drsuapi_DsReplicaUpdateRefs(struct rpc_pipe_client *cli,
 					    int32_t level /* [in]  */,
 					    union drsuapi_DsReplicaUpdateRefsRequest req /* [in] [switch_is(level)] */,
 					    WERROR *werror);
-struct tevent_req *rpccli_DRSUAPI_REPLICA_ADD_send(TALLOC_CTX *mem_ctx,
-						   struct tevent_context *ev,
-						   struct rpc_pipe_client *cli);
-NTSTATUS rpccli_DRSUAPI_REPLICA_ADD_recv(struct tevent_req *req,
-					 TALLOC_CTX *mem_ctx,
-					 WERROR *result);
-NTSTATUS rpccli_DRSUAPI_REPLICA_ADD(struct rpc_pipe_client *cli,
-				    TALLOC_CTX *mem_ctx,
-				    WERROR *werror);
-struct tevent_req *rpccli_DRSUAPI_REPLICA_DEL_send(TALLOC_CTX *mem_ctx,
-						   struct tevent_context *ev,
-						   struct rpc_pipe_client *cli);
-NTSTATUS rpccli_DRSUAPI_REPLICA_DEL_recv(struct tevent_req *req,
-					 TALLOC_CTX *mem_ctx,
-					 WERROR *result);
-NTSTATUS rpccli_DRSUAPI_REPLICA_DEL(struct rpc_pipe_client *cli,
-				    TALLOC_CTX *mem_ctx,
-				    WERROR *werror);
-struct tevent_req *rpccli_DRSUAPI_REPLICA_MODIFY_send(TALLOC_CTX *mem_ctx,
-						      struct tevent_context *ev,
-						      struct rpc_pipe_client *cli);
-NTSTATUS rpccli_DRSUAPI_REPLICA_MODIFY_recv(struct tevent_req *req,
-					    TALLOC_CTX *mem_ctx,
-					    WERROR *result);
-NTSTATUS rpccli_DRSUAPI_REPLICA_MODIFY(struct rpc_pipe_client *cli,
-				       TALLOC_CTX *mem_ctx,
-				       WERROR *werror);
+struct tevent_req *rpccli_drsuapi_DsReplicaAdd_send(TALLOC_CTX *mem_ctx,
+						    struct tevent_context *ev,
+						    struct rpc_pipe_client *cli,
+						    struct policy_handle *_bind_handle /* [in] [ref] */,
+						    int32_t _level /* [in]  */,
+						    union drsuapi_DsReplicaAddRequest _req /* [in] [switch_is(level)] */);
+NTSTATUS rpccli_drsuapi_DsReplicaAdd_recv(struct tevent_req *req,
+					  TALLOC_CTX *mem_ctx,
+					  WERROR *result);
+NTSTATUS rpccli_drsuapi_DsReplicaAdd(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx,
+				     struct policy_handle *bind_handle /* [in] [ref] */,
+				     int32_t level /* [in]  */,
+				     union drsuapi_DsReplicaAddRequest req /* [in] [switch_is(level)] */,
+				     WERROR *werror);
+struct tevent_req *rpccli_drsuapi_DsReplicaDel_send(TALLOC_CTX *mem_ctx,
+						    struct tevent_context *ev,
+						    struct rpc_pipe_client *cli,
+						    struct policy_handle *_bind_handle /* [in] [ref] */,
+						    int32_t _level /* [in]  */,
+						    union drsuapi_DsReplicaDelRequest _req /* [in] [switch_is(level)] */);
+NTSTATUS rpccli_drsuapi_DsReplicaDel_recv(struct tevent_req *req,
+					  TALLOC_CTX *mem_ctx,
+					  WERROR *result);
+NTSTATUS rpccli_drsuapi_DsReplicaDel(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx,
+				     struct policy_handle *bind_handle /* [in] [ref] */,
+				     int32_t level /* [in]  */,
+				     union drsuapi_DsReplicaDelRequest req /* [in] [switch_is(level)] */,
+				     WERROR *werror);
+struct tevent_req *rpccli_drsuapi_DsReplicaMod_send(TALLOC_CTX *mem_ctx,
+						    struct tevent_context *ev,
+						    struct rpc_pipe_client *cli,
+						    struct policy_handle *_bind_handle /* [in] [ref] */,
+						    int32_t _level /* [in]  */,
+						    union drsuapi_DsReplicaModRequest _req /* [in] [switch_is(level)] */);
+NTSTATUS rpccli_drsuapi_DsReplicaMod_recv(struct tevent_req *req,
+					  TALLOC_CTX *mem_ctx,
+					  WERROR *result);
+NTSTATUS rpccli_drsuapi_DsReplicaMod(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx,
+				     struct policy_handle *bind_handle /* [in] [ref] */,
+				     int32_t level /* [in]  */,
+				     union drsuapi_DsReplicaModRequest req /* [in] [switch_is(level)] */,
+				     WERROR *werror);
 struct tevent_req *rpccli_DRSUAPI_VERIFY_NAMES_send(TALLOC_CTX *mem_ctx,
 						    struct tevent_context *ev,
 						    struct rpc_pipe_client *cli);

@@ -259,30 +259,30 @@ static WERROR dcesrv_drsuapi_DsReplicaSync(struct dcesrv_call_state *dce_call, T
 }
 
 /* 
-  DRSUAPI_REPLICA_ADD 
+  drsuapi_DsReplicaAdd 
 */
-static WERROR dcesrv_DRSUAPI_REPLICA_ADD(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct DRSUAPI_REPLICA_ADD *r)
+static WERROR dcesrv_drsuapi_DsReplicaAdd(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					  struct drsuapi_DsReplicaAdd *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  DRSUAPI_REPLICA_DEL 
+  drsuapi_DsReplicaDel 
 */
-static WERROR dcesrv_DRSUAPI_REPLICA_DEL(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct DRSUAPI_REPLICA_DEL *r)
+static WERROR dcesrv_drsuapi_DsReplicaDel(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					  struct drsuapi_DsReplicaDel *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  DRSUAPI_REPLICA_MODIFY 
+  drsuapi_DsReplicaModify 
 */
-static WERROR dcesrv_DRSUAPI_REPLICA_MODIFY(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct DRSUAPI_REPLICA_MODIFY *r)
+static WERROR dcesrv_drsuapi_DsReplicaMod(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					  struct drsuapi_DsReplicaMod *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }

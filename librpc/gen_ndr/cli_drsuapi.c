@@ -852,25 +852,28 @@ NTSTATUS rpccli_drsuapi_DsReplicaUpdateRefs(struct rpc_pipe_client *cli,
 	return werror_to_ntstatus(r.out.result);
 }
 
-struct rpccli_DRSUAPI_REPLICA_ADD_state {
-	struct DRSUAPI_REPLICA_ADD orig;
-	struct DRSUAPI_REPLICA_ADD tmp;
+struct rpccli_drsuapi_DsReplicaAdd_state {
+	struct drsuapi_DsReplicaAdd orig;
+	struct drsuapi_DsReplicaAdd tmp;
 	TALLOC_CTX *out_mem_ctx;
 	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
 };
 
-static void rpccli_DRSUAPI_REPLICA_ADD_done(struct tevent_req *subreq);
+static void rpccli_drsuapi_DsReplicaAdd_done(struct tevent_req *subreq);
 
-struct tevent_req *rpccli_DRSUAPI_REPLICA_ADD_send(TALLOC_CTX *mem_ctx,
-						   struct tevent_context *ev,
-						   struct rpc_pipe_client *cli)
+struct tevent_req *rpccli_drsuapi_DsReplicaAdd_send(TALLOC_CTX *mem_ctx,
+						    struct tevent_context *ev,
+						    struct rpc_pipe_client *cli,
+						    struct policy_handle *_bind_handle /* [in] [ref] */,
+						    int32_t _level /* [in]  */,
+						    union drsuapi_DsReplicaAddRequest _req /* [in] [switch_is(level)] */)
 {
 	struct tevent_req *req;
-	struct rpccli_DRSUAPI_REPLICA_ADD_state *state;
+	struct rpccli_drsuapi_DsReplicaAdd_state *state;
 	struct tevent_req *subreq;
 
 	req = tevent_req_create(mem_ctx, &state,
-				struct rpccli_DRSUAPI_REPLICA_ADD_state);
+				struct rpccli_drsuapi_DsReplicaAdd_state);
 	if (req == NULL) {
 		return NULL;
 	}
@@ -878,6 +881,9 @@ struct tevent_req *rpccli_DRSUAPI_REPLICA_ADD_send(TALLOC_CTX *mem_ctx,
 	state->dispatch_recv = cli->dispatch_recv;
 
 	/* In parameters */
+	state->orig.in.bind_handle = _bind_handle;
+	state->orig.in.level = _level;
+	state->orig.in.req = _req;
 
 	/* Out parameters */
 
@@ -885,7 +891,7 @@ struct tevent_req *rpccli_DRSUAPI_REPLICA_ADD_send(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(state->orig.out.result);
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(DRSUAPI_REPLICA_ADD, &state->orig);
+		NDR_PRINT_IN_DEBUG(drsuapi_DsReplicaAdd, &state->orig);
 	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
@@ -893,21 +899,21 @@ struct tevent_req *rpccli_DRSUAPI_REPLICA_ADD_send(TALLOC_CTX *mem_ctx,
 
 	subreq = cli->dispatch_send(state, ev, cli,
 				    &ndr_table_drsuapi,
-				    NDR_DRSUAPI_REPLICA_ADD,
+				    NDR_DRSUAPI_DSREPLICAADD,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, rpccli_DRSUAPI_REPLICA_ADD_done, req);
+	tevent_req_set_callback(subreq, rpccli_drsuapi_DsReplicaAdd_done, req);
 	return req;
 }
 
-static void rpccli_DRSUAPI_REPLICA_ADD_done(struct tevent_req *subreq)
+static void rpccli_drsuapi_DsReplicaAdd_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct rpccli_DRSUAPI_REPLICA_ADD_state *state = tevent_req_data(
-		req, struct rpccli_DRSUAPI_REPLICA_ADD_state);
+	struct rpccli_drsuapi_DsReplicaAdd_state *state = tevent_req_data(
+		req, struct rpccli_drsuapi_DsReplicaAdd_state);
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
 
@@ -933,18 +939,18 @@ static void rpccli_DRSUAPI_REPLICA_ADD_done(struct tevent_req *subreq)
 	ZERO_STRUCT(state->tmp);
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(DRSUAPI_REPLICA_ADD, &state->orig);
+		NDR_PRINT_OUT_DEBUG(drsuapi_DsReplicaAdd, &state->orig);
 	}
 
 	tevent_req_done(req);
 }
 
-NTSTATUS rpccli_DRSUAPI_REPLICA_ADD_recv(struct tevent_req *req,
-					 TALLOC_CTX *mem_ctx,
-					 WERROR *result)
+NTSTATUS rpccli_drsuapi_DsReplicaAdd_recv(struct tevent_req *req,
+					  TALLOC_CTX *mem_ctx,
+					  WERROR *result)
 {
-	struct rpccli_DRSUAPI_REPLICA_ADD_state *state = tevent_req_data(
-		req, struct rpccli_DRSUAPI_REPLICA_ADD_state);
+	struct rpccli_drsuapi_DsReplicaAdd_state *state = tevent_req_data(
+		req, struct rpccli_drsuapi_DsReplicaAdd_state);
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
@@ -962,23 +968,29 @@ NTSTATUS rpccli_DRSUAPI_REPLICA_ADD_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS rpccli_DRSUAPI_REPLICA_ADD(struct rpc_pipe_client *cli,
-				    TALLOC_CTX *mem_ctx,
-				    WERROR *werror)
+NTSTATUS rpccli_drsuapi_DsReplicaAdd(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx,
+				     struct policy_handle *bind_handle /* [in] [ref] */,
+				     int32_t level /* [in]  */,
+				     union drsuapi_DsReplicaAddRequest req /* [in] [switch_is(level)] */,
+				     WERROR *werror)
 {
-	struct DRSUAPI_REPLICA_ADD r;
+	struct drsuapi_DsReplicaAdd r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.bind_handle = bind_handle;
+	r.in.level = level;
+	r.in.req = req;
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(DRSUAPI_REPLICA_ADD, &r);
+		NDR_PRINT_IN_DEBUG(drsuapi_DsReplicaAdd, &r);
 	}
 
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_drsuapi,
-				NDR_DRSUAPI_REPLICA_ADD,
+				NDR_DRSUAPI_DSREPLICAADD,
 				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -986,7 +998,7 @@ NTSTATUS rpccli_DRSUAPI_REPLICA_ADD(struct rpc_pipe_client *cli,
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(DRSUAPI_REPLICA_ADD, &r);
+		NDR_PRINT_OUT_DEBUG(drsuapi_DsReplicaAdd, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1003,25 +1015,28 @@ NTSTATUS rpccli_DRSUAPI_REPLICA_ADD(struct rpc_pipe_client *cli,
 	return werror_to_ntstatus(r.out.result);
 }
 
-struct rpccli_DRSUAPI_REPLICA_DEL_state {
-	struct DRSUAPI_REPLICA_DEL orig;
-	struct DRSUAPI_REPLICA_DEL tmp;
+struct rpccli_drsuapi_DsReplicaDel_state {
+	struct drsuapi_DsReplicaDel orig;
+	struct drsuapi_DsReplicaDel tmp;
 	TALLOC_CTX *out_mem_ctx;
 	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
 };
 
-static void rpccli_DRSUAPI_REPLICA_DEL_done(struct tevent_req *subreq);
+static void rpccli_drsuapi_DsReplicaDel_done(struct tevent_req *subreq);
 
-struct tevent_req *rpccli_DRSUAPI_REPLICA_DEL_send(TALLOC_CTX *mem_ctx,
-						   struct tevent_context *ev,
-						   struct rpc_pipe_client *cli)
+struct tevent_req *rpccli_drsuapi_DsReplicaDel_send(TALLOC_CTX *mem_ctx,
+						    struct tevent_context *ev,
+						    struct rpc_pipe_client *cli,
+						    struct policy_handle *_bind_handle /* [in] [ref] */,
+						    int32_t _level /* [in]  */,
+						    union drsuapi_DsReplicaDelRequest _req /* [in] [switch_is(level)] */)
 {
 	struct tevent_req *req;
-	struct rpccli_DRSUAPI_REPLICA_DEL_state *state;
+	struct rpccli_drsuapi_DsReplicaDel_state *state;
 	struct tevent_req *subreq;
 
 	req = tevent_req_create(mem_ctx, &state,
-				struct rpccli_DRSUAPI_REPLICA_DEL_state);
+				struct rpccli_drsuapi_DsReplicaDel_state);
 	if (req == NULL) {
 		return NULL;
 	}
@@ -1029,6 +1044,9 @@ struct tevent_req *rpccli_DRSUAPI_REPLICA_DEL_send(TALLOC_CTX *mem_ctx,
 	state->dispatch_recv = cli->dispatch_recv;
 
 	/* In parameters */
+	state->orig.in.bind_handle = _bind_handle;
+	state->orig.in.level = _level;
+	state->orig.in.req = _req;
 
 	/* Out parameters */
 
@@ -1036,7 +1054,7 @@ struct tevent_req *rpccli_DRSUAPI_REPLICA_DEL_send(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(state->orig.out.result);
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(DRSUAPI_REPLICA_DEL, &state->orig);
+		NDR_PRINT_IN_DEBUG(drsuapi_DsReplicaDel, &state->orig);
 	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
@@ -1044,21 +1062,21 @@ struct tevent_req *rpccli_DRSUAPI_REPLICA_DEL_send(TALLOC_CTX *mem_ctx,
 
 	subreq = cli->dispatch_send(state, ev, cli,
 				    &ndr_table_drsuapi,
-				    NDR_DRSUAPI_REPLICA_DEL,
+				    NDR_DRSUAPI_DSREPLICADEL,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, rpccli_DRSUAPI_REPLICA_DEL_done, req);
+	tevent_req_set_callback(subreq, rpccli_drsuapi_DsReplicaDel_done, req);
 	return req;
 }
 
-static void rpccli_DRSUAPI_REPLICA_DEL_done(struct tevent_req *subreq)
+static void rpccli_drsuapi_DsReplicaDel_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct rpccli_DRSUAPI_REPLICA_DEL_state *state = tevent_req_data(
-		req, struct rpccli_DRSUAPI_REPLICA_DEL_state);
+	struct rpccli_drsuapi_DsReplicaDel_state *state = tevent_req_data(
+		req, struct rpccli_drsuapi_DsReplicaDel_state);
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
 
@@ -1084,18 +1102,18 @@ static void rpccli_DRSUAPI_REPLICA_DEL_done(struct tevent_req *subreq)
 	ZERO_STRUCT(state->tmp);
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(DRSUAPI_REPLICA_DEL, &state->orig);
+		NDR_PRINT_OUT_DEBUG(drsuapi_DsReplicaDel, &state->orig);
 	}
 
 	tevent_req_done(req);
 }
 
-NTSTATUS rpccli_DRSUAPI_REPLICA_DEL_recv(struct tevent_req *req,
-					 TALLOC_CTX *mem_ctx,
-					 WERROR *result)
+NTSTATUS rpccli_drsuapi_DsReplicaDel_recv(struct tevent_req *req,
+					  TALLOC_CTX *mem_ctx,
+					  WERROR *result)
 {
-	struct rpccli_DRSUAPI_REPLICA_DEL_state *state = tevent_req_data(
-		req, struct rpccli_DRSUAPI_REPLICA_DEL_state);
+	struct rpccli_drsuapi_DsReplicaDel_state *state = tevent_req_data(
+		req, struct rpccli_drsuapi_DsReplicaDel_state);
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
@@ -1113,23 +1131,29 @@ NTSTATUS rpccli_DRSUAPI_REPLICA_DEL_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS rpccli_DRSUAPI_REPLICA_DEL(struct rpc_pipe_client *cli,
-				    TALLOC_CTX *mem_ctx,
-				    WERROR *werror)
+NTSTATUS rpccli_drsuapi_DsReplicaDel(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx,
+				     struct policy_handle *bind_handle /* [in] [ref] */,
+				     int32_t level /* [in]  */,
+				     union drsuapi_DsReplicaDelRequest req /* [in] [switch_is(level)] */,
+				     WERROR *werror)
 {
-	struct DRSUAPI_REPLICA_DEL r;
+	struct drsuapi_DsReplicaDel r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.bind_handle = bind_handle;
+	r.in.level = level;
+	r.in.req = req;
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(DRSUAPI_REPLICA_DEL, &r);
+		NDR_PRINT_IN_DEBUG(drsuapi_DsReplicaDel, &r);
 	}
 
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_drsuapi,
-				NDR_DRSUAPI_REPLICA_DEL,
+				NDR_DRSUAPI_DSREPLICADEL,
 				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1137,7 +1161,7 @@ NTSTATUS rpccli_DRSUAPI_REPLICA_DEL(struct rpc_pipe_client *cli,
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(DRSUAPI_REPLICA_DEL, &r);
+		NDR_PRINT_OUT_DEBUG(drsuapi_DsReplicaDel, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1154,25 +1178,28 @@ NTSTATUS rpccli_DRSUAPI_REPLICA_DEL(struct rpc_pipe_client *cli,
 	return werror_to_ntstatus(r.out.result);
 }
 
-struct rpccli_DRSUAPI_REPLICA_MODIFY_state {
-	struct DRSUAPI_REPLICA_MODIFY orig;
-	struct DRSUAPI_REPLICA_MODIFY tmp;
+struct rpccli_drsuapi_DsReplicaMod_state {
+	struct drsuapi_DsReplicaMod orig;
+	struct drsuapi_DsReplicaMod tmp;
 	TALLOC_CTX *out_mem_ctx;
 	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
 };
 
-static void rpccli_DRSUAPI_REPLICA_MODIFY_done(struct tevent_req *subreq);
+static void rpccli_drsuapi_DsReplicaMod_done(struct tevent_req *subreq);
 
-struct tevent_req *rpccli_DRSUAPI_REPLICA_MODIFY_send(TALLOC_CTX *mem_ctx,
-						      struct tevent_context *ev,
-						      struct rpc_pipe_client *cli)
+struct tevent_req *rpccli_drsuapi_DsReplicaMod_send(TALLOC_CTX *mem_ctx,
+						    struct tevent_context *ev,
+						    struct rpc_pipe_client *cli,
+						    struct policy_handle *_bind_handle /* [in] [ref] */,
+						    int32_t _level /* [in]  */,
+						    union drsuapi_DsReplicaModRequest _req /* [in] [switch_is(level)] */)
 {
 	struct tevent_req *req;
-	struct rpccli_DRSUAPI_REPLICA_MODIFY_state *state;
+	struct rpccli_drsuapi_DsReplicaMod_state *state;
 	struct tevent_req *subreq;
 
 	req = tevent_req_create(mem_ctx, &state,
-				struct rpccli_DRSUAPI_REPLICA_MODIFY_state);
+				struct rpccli_drsuapi_DsReplicaMod_state);
 	if (req == NULL) {
 		return NULL;
 	}
@@ -1180,6 +1207,9 @@ struct tevent_req *rpccli_DRSUAPI_REPLICA_MODIFY_send(TALLOC_CTX *mem_ctx,
 	state->dispatch_recv = cli->dispatch_recv;
 
 	/* In parameters */
+	state->orig.in.bind_handle = _bind_handle;
+	state->orig.in.level = _level;
+	state->orig.in.req = _req;
 
 	/* Out parameters */
 
@@ -1187,7 +1217,7 @@ struct tevent_req *rpccli_DRSUAPI_REPLICA_MODIFY_send(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(state->orig.out.result);
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(DRSUAPI_REPLICA_MODIFY, &state->orig);
+		NDR_PRINT_IN_DEBUG(drsuapi_DsReplicaMod, &state->orig);
 	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
@@ -1195,21 +1225,21 @@ struct tevent_req *rpccli_DRSUAPI_REPLICA_MODIFY_send(TALLOC_CTX *mem_ctx,
 
 	subreq = cli->dispatch_send(state, ev, cli,
 				    &ndr_table_drsuapi,
-				    NDR_DRSUAPI_REPLICA_MODIFY,
+				    NDR_DRSUAPI_DSREPLICAMOD,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, rpccli_DRSUAPI_REPLICA_MODIFY_done, req);
+	tevent_req_set_callback(subreq, rpccli_drsuapi_DsReplicaMod_done, req);
 	return req;
 }
 
-static void rpccli_DRSUAPI_REPLICA_MODIFY_done(struct tevent_req *subreq)
+static void rpccli_drsuapi_DsReplicaMod_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct rpccli_DRSUAPI_REPLICA_MODIFY_state *state = tevent_req_data(
-		req, struct rpccli_DRSUAPI_REPLICA_MODIFY_state);
+	struct rpccli_drsuapi_DsReplicaMod_state *state = tevent_req_data(
+		req, struct rpccli_drsuapi_DsReplicaMod_state);
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
 
@@ -1235,18 +1265,18 @@ static void rpccli_DRSUAPI_REPLICA_MODIFY_done(struct tevent_req *subreq)
 	ZERO_STRUCT(state->tmp);
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(DRSUAPI_REPLICA_MODIFY, &state->orig);
+		NDR_PRINT_OUT_DEBUG(drsuapi_DsReplicaMod, &state->orig);
 	}
 
 	tevent_req_done(req);
 }
 
-NTSTATUS rpccli_DRSUAPI_REPLICA_MODIFY_recv(struct tevent_req *req,
-					    TALLOC_CTX *mem_ctx,
-					    WERROR *result)
+NTSTATUS rpccli_drsuapi_DsReplicaMod_recv(struct tevent_req *req,
+					  TALLOC_CTX *mem_ctx,
+					  WERROR *result)
 {
-	struct rpccli_DRSUAPI_REPLICA_MODIFY_state *state = tevent_req_data(
-		req, struct rpccli_DRSUAPI_REPLICA_MODIFY_state);
+	struct rpccli_drsuapi_DsReplicaMod_state *state = tevent_req_data(
+		req, struct rpccli_drsuapi_DsReplicaMod_state);
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
@@ -1264,23 +1294,29 @@ NTSTATUS rpccli_DRSUAPI_REPLICA_MODIFY_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS rpccli_DRSUAPI_REPLICA_MODIFY(struct rpc_pipe_client *cli,
-				       TALLOC_CTX *mem_ctx,
-				       WERROR *werror)
+NTSTATUS rpccli_drsuapi_DsReplicaMod(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx,
+				     struct policy_handle *bind_handle /* [in] [ref] */,
+				     int32_t level /* [in]  */,
+				     union drsuapi_DsReplicaModRequest req /* [in] [switch_is(level)] */,
+				     WERROR *werror)
 {
-	struct DRSUAPI_REPLICA_MODIFY r;
+	struct drsuapi_DsReplicaMod r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.bind_handle = bind_handle;
+	r.in.level = level;
+	r.in.req = req;
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(DRSUAPI_REPLICA_MODIFY, &r);
+		NDR_PRINT_IN_DEBUG(drsuapi_DsReplicaMod, &r);
 	}
 
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_drsuapi,
-				NDR_DRSUAPI_REPLICA_MODIFY,
+				NDR_DRSUAPI_DSREPLICAMOD,
 				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1288,7 +1324,7 @@ NTSTATUS rpccli_DRSUAPI_REPLICA_MODIFY(struct rpc_pipe_client *cli,
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(DRSUAPI_REPLICA_MODIFY, &r);
+		NDR_PRINT_OUT_DEBUG(drsuapi_DsReplicaMod, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
