@@ -1372,7 +1372,7 @@ interface netlogon
 		uint32 dummy_long4;
 	} netr_OneDomainInfo;
 
- typedef [public,bitmap32bit] bitmap {
+	typedef [public,bitmap32bit] bitmap {
 		ENC_CRC32 = 0x00000001,
 		ENC_RSA_MD5 = 0x00000002,
 		ENC_RC4_HMAC_MD5 = 0x00000004,
