@@ -5691,11 +5691,11 @@ bool prs_unistr(const char *name, prs_struct *ps, int depth, UNISTR *str);
 bool prs_string(const char *name, prs_struct *ps, int depth, char *str, int max_buf_size);
 void schannel_encode(struct schannel_auth_struct *a, enum pipe_auth_level auth_level,
 		   enum schannel_direction direction,
-		   RPC_AUTH_SCHANNEL_CHK * verf,
+		   struct NL_AUTH_SIGNATURE *verf,
 		   char *data, size_t data_len);
 bool schannel_decode(struct schannel_auth_struct *a, enum pipe_auth_level auth_level,
 		   enum schannel_direction direction, 
-		   RPC_AUTH_SCHANNEL_CHK * verf, char *data, size_t data_len);
+		   struct NL_AUTH_SIGNATURE *verf, char *data, size_t data_len);
 bool prs_init_data_blob(prs_struct *prs, DATA_BLOB *blob, TALLOC_CTX *mem_ctx);
 bool prs_data_blob(prs_struct *prs, DATA_BLOB *blob, TALLOC_CTX *mem_ctx);
 

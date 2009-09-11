@@ -670,12 +670,14 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli, RPC_HDR *p
 				uint8 *p_ss_padding_len)
 {
 	RPC_HDR_AUTH auth_info;
-	RPC_AUTH_SCHANNEL_CHK schannel_chk;
+	struct NL_AUTH_SIGNATURE schannel_chk;
 	uint32 auth_len = prhdr->auth_len;
 	uint32 save_offset = prs_offset(current_pdu);
 	struct schannel_auth_struct *schannel_auth =
 		cli->auth->a_u.schannel_auth;
 	uint32 data_len;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
 
 	if (cli->auth->auth_level == PIPE_AUTH_LEVEL_NONE
 	    || cli->auth->auth_level == PIPE_AUTH_LEVEL_CONNECT) {
@@ -718,10 +720,17 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli, RPC_HDR *p
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	if(!smb_io_rpc_auth_schannel_chk("", RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN,
-				&schannel_chk, current_pdu, 0)) {
+	blob = data_blob_const(prs_data_p(current_pdu) + prs_offset(current_pdu), data_len);
+
+	ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), NULL, &schannel_chk,
+			       (ndr_pull_flags_fn_t)ndr_pull_NL_AUTH_SIGNATURE);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0,("cli_pipe_verify_schannel: failed to unmarshal RPC_AUTH_SCHANNEL_CHK.\n"));
-		return NT_STATUS_BUFFER_TOO_SMALL;
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(NL_AUTH_SIGNATURE, &schannel_chk);
 	}
 
 	if (!schannel_decode(schannel_auth,
@@ -1905,10 +1914,12 @@ static NTSTATUS add_schannel_auth_footer(struct rpc_pipe_client *cli,
 					prs_struct *outgoing_pdu)
 {
 	RPC_HDR_AUTH auth_info;
-	RPC_AUTH_SCHANNEL_CHK verf;
+	struct NL_AUTH_SIGNATURE verf;
 	struct schannel_auth_struct *sas = cli->auth->a_u.schannel_auth;
 	char *data_p = prs_data_p(outgoing_pdu) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN;
 	size_t data_and_pad_len = prs_offset(outgoing_pdu) - RPC_HEADER_LEN - RPC_HDR_RESP_LEN;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
 
 	if (!sas) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -1949,12 +1960,20 @@ static NTSTATUS add_schannel_auth_footer(struct rpc_pipe_client *cli,
 			return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	ndr_err = ndr_push_struct_blob(&blob, talloc_tos(), NULL, &verf,
+			       (ndr_push_flags_fn_t)ndr_push_NL_AUTH_SIGNATURE);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(NL_AUTH_SIGNATURE, &verf);
+	}
+
 	/* Finally marshall the blob. */
-	smb_io_rpc_auth_schannel_chk("",
-			RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN,
-			&verf,
-			outgoing_pdu,
-			0);
+	if (!prs_copy_data_in(outgoing_pdu, (const char *)blob.data, blob.length)) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	return NT_STATUS_OK;
 }

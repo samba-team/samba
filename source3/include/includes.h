@@ -653,6 +653,7 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 #include "privileges.h"
 #include "rpc_misc.h"
 #include "rpc_dce.h"
+#include "../librpc/gen_ndr/schannel.h"
 #include "mapping.h"
 #include "passdb.h"
 #include "rpc_secdes.h"
