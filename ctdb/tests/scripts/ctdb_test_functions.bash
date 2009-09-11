@@ -607,7 +607,7 @@ daemons_stop ()
 
 daemons_setup ()
 {
-    local num_nodes="${1:-2}" # default is 2 nodes
+    local num_nodes="${CTDB_TEST_NUM_DAEMONS:-2}" # default is 2 nodes
 
     local var_dir=$CTDB_DIR/tests/var
 
@@ -640,9 +640,9 @@ daemons_setup ()
     done
 }
 
-daemons_start ()
+daemons_start_1 ()
 {
-    local num_nodes="${1:-2}" # default is 2 nodes
+    local pnn="$1"
     shift # "$@" gets passed to ctdbd
 
     local var_dir=$CTDB_DIR/tests/var
@@ -654,27 +654,39 @@ daemons_start ()
     local no_public_ips=-1
     [ -r $no_public_addresses ] && read no_public_ips <$no_public_addresses
 
-    local ctdb_options="--reclock=$var_dir/rec.lock --nlist $nodes --nopublicipcheck --event-script-dir=$CTDB_DIR/tests/events.d --logfile=$var_dir/daemons.log -d 0 --dbdir=$var_dir/test.db --dbdir-persistent=$var_dir/test.db/persistent"
-
-    echo "Starting $num_nodes ctdb daemons..."
-    if  [ "$no_public_ips" != -1 ] ; then
+    if  [ "$no_public_ips" = $pnn ] ; then
 	echo "Node $no_public_ips will have no public IPs."
     fi
 
+    local ctdb_options="--reclock=$var_dir/rec.lock --nlist $nodes --nopublicipcheck --event-script-dir=$CTDB_DIR/tests/events.d --logfile=$var_dir/daemons.log -d 0 --dbdir=$var_dir/test.db --dbdir-persistent=$var_dir/test.db/persistent"
+
+    if [ $(id -u) -eq 0 ]; then
+        ctdb_options="$ctdb_options --public-interface=lo"
+    fi
+
+    if [ $pnn -eq $no_public_ips ] ; then
+	ctdb_options="$ctdb_options --public-addresses=/dev/null"
+    else
+	ctdb_options="$ctdb_options --public-addresses=$public_addresses"
+    fi
+
+    # Need full path so we can use "pkill -f" to kill the daemons.
+    $VALGRIND $CTDB_DIR/bin/ctdbd --socket=$var_dir/sock.$pnn $ctdb_options "$@" ||return 1
+}
+
+daemons_start ()
+{
+    # "$@" gets passed to ctdbd
+
+    local num_nodes="${CTDB_TEST_NUM_DAEMONS:-2}" # default is 2 nodes
+
+    echo "Starting $num_nodes ctdb daemons..."
+
     for i in $(seq 0 $(($num_nodes - 1))) ; do
-	if [ $(id -u) -eq 0 ]; then
-            ctdb_options="$ctdb_options --public-interface=lo"
-	fi
-
-	if [ $i -eq $no_public_ips ] ; then
-	    ctdb_options="$ctdb_options --public-addresses=/dev/null"
-	else
-	    ctdb_options="$ctdb_options --public-addresses=$public_addresses"
-	fi
-
-	# Need full path so we can use "pkill -f" to kill the daemons.
-	$VALGRIND $CTDB_DIR/bin/ctdbd --socket=$var_dir/sock.$i $ctdb_options "$@" ||return 1
+	daemons_start_1 $i "$@"
     done
+
+    local var_dir=$CTDB_DIR/tests/var
 
     if [ -L /tmp/ctdb.socket -o ! -S /tmp/ctdb.socket ] ; then 
 	ln -sf $var_dir/sock.0 /tmp/ctdb.socket || return 1
@@ -683,8 +695,26 @@ daemons_start ()
 
 #######################################
 
+_ctdb_hack_options ()
+{
+    local ctdb_options="$*"
+
+    # We really just want to pass CTDB_OPTIONS but on RH
+    # /etc/sysconfig/ctdb can, and frequently does, set that variable.
+    # So instead, we hack badly.  We'll add these as we use them.
+    # Note that these may still be overridden by the above file... but
+    # we tend to use the exotic options here... so that is unlikely.
+
+    case "$ctdb_options" in
+	*--start-as-stopped*)
+	    export CTDB_START_AS_STOPPED="yes"
+    esac
+}
+
 _restart_ctdb ()
 {
+    _ctdb_hack_options "$@"
+
     if [ -e /etc/redhat-release ] ; then
 	service ctdb restart
     else
@@ -692,31 +722,81 @@ _restart_ctdb ()
     fi
 }
 
+_ctdb_start ()
+{
+    _ctdb_hack_options "$@"
+
+    /etc/init.d/ctdb start
+}
+
 setup_ctdb ()
 {
     if [ -n "$CTDB_NODES_SOCKETS" ] ; then
-	daemons_setup $CTDB_TEST_NUM_DAEMONS
+	daemons_setup
     fi
+}
+
+# Common things to do after starting one or more nodes.
+_ctdb_start_post ()
+{
+    onnode -q 1  $CTDB_TEST_WRAPPER wait_until_healthy || return 1
+
+    echo "Setting RerecoveryTimeout to 1"
+    onnode -pq all "ctdb setvar RerecoveryTimeout 1"
+
+    # In recent versions of CTDB, forcing a recovery like this blocks
+    # until the recovery is complete.  Hopefully this will help the
+    # cluster to stabilise before a subsequent test.
+    echo "Forcing a recovery..."
+    onnode -q 0 ctdb recover
+    sleep_for 1
+    echo "Forcing a recovery..."
+    onnode -q 0 ctdb recover
+
+    echo "ctdb is ready"
+}
+
+# This assumes that ctdbd is not running on the given node.
+ctdb_start_1 ()
+{
+    local pnn="$1"
+    shift # "$@" is passed to ctdbd start.
+
+    echo -n "Starting CTDB on node ${pnn}..."
+    
+    if [ -n "$CTDB_NODES_SOCKETS" ] ; then
+	daemons_start_1 $pnn "$@"
+    else
+	onnode $pnn $CTDB_TEST_WRAPPER _ctdb_start "$@"
+    fi
+
+    # If we're starting only 1 node then we're doing something weird.
+    ctdb_restart_when_done
 }
 
 restart_ctdb ()
 {
+    # "$@" is passed to ctdbd start.
+
     echo -n "Restarting CTDB"
     if $ctdb_test_restart_scheduled ; then
 	echo -n " (scheduled)"
     fi
     echo "..."
     
-    local i
-    for i in $(seq 1 5) ; do
+    local i=0
+    while : ; do
 	if [ -n "$CTDB_NODES_SOCKETS" ] ; then
 	    daemons_stop
-	    daemons_start $CTDB_TEST_NUM_DAEMONS
+	    daemons_start "$@"
 	else
-	    onnode -p all $CTDB_TEST_WRAPPER _restart_ctdb 
+	    onnode -p all $CTDB_TEST_WRAPPER _restart_ctdb "$@"
 	fi && break
 
-	echo "That didn't seem to work - sleeping a while and trying again..."
+	i=$(($i + 1))
+	[ $i -lt 5 ] || break
+
+	echo "That didn't seem to work - sleeping for a while..."
 	sleep_for 5
     done
 	
