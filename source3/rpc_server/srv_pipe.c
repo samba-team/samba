@@ -407,7 +407,9 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 		 * Schannel processing.
 		 */
 		RPC_HDR_AUTH auth_info;
-		RPC_AUTH_SCHANNEL_CHK verf;
+		struct NL_AUTH_SIGNATURE verf;
+		DATA_BLOB blob;
+		enum ndr_err_code ndr_err;
 
 		/* Check it's the type of reply we were expecting to decode */
 
@@ -429,10 +431,22 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 				prs_data_p(&p->out_data.frag) + data_pos,
 				data_len + ss_padding_len);
 
-		if (!smb_io_rpc_auth_schannel_chk("", RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN, 
-				&verf, &p->out_data.frag, 0)) {
+		/* Finally marshall the blob. */
+
+		ndr_err = ndr_push_struct_blob(&blob, talloc_tos(), NULL, &verf,
+				       (ndr_push_flags_fn_t)ndr_push_NL_AUTH_SIGNATURE);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			prs_mem_free(&p->out_data.frag);
-			return False;
+			return false;
+		}
+
+		if (DEBUGLEVEL >= 10) {
+			NDR_PRINT_DEBUG(NL_AUTH_SIGNATURE, &verf);
+		}
+
+		if (!prs_copy_data_in(&p->out_data.frag, (const char *)blob.data, blob.length)) {
+			prs_mem_free(&p->out_data.frag);
+			return false;
 		}
 
 		p->auth.a_u.schannel_auth->seq_num++;
@@ -2135,7 +2149,9 @@ bool api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in, uint32 *p_ss
 	uint32 auth_len;
 	uint32 save_offset = prs_offset(rpc_in);
 	RPC_HDR_AUTH auth_info;
-	RPC_AUTH_SCHANNEL_CHK schannel_chk;
+	struct NL_AUTH_SIGNATURE schannel_chk;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
 
 	auth_len = p->hdr.auth_len;
 
@@ -2183,9 +2199,16 @@ bool api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in, uint32 *p_ss
 		return False;
 	}
 
-	if(!smb_io_rpc_auth_schannel_chk("", RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN, &schannel_chk, rpc_in, 0)) {
-		DEBUG(0,("failed to unmarshal RPC_AUTH_SCHANNEL_CHK.\n"));
-		return False;
+	blob = data_blob_const(prs_data_p(rpc_in) + prs_offset(rpc_in), data_len);
+
+	ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), NULL, &schannel_chk,
+			       (ndr_pull_flags_fn_t)ndr_pull_NL_AUTH_SIGNATURE);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return false;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(NL_AUTH_SIGNATURE, &schannel_chk);
 	}
 
 	if (!schannel_decode(p->auth.a_u.schannel_auth,

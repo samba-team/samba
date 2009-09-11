@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "../librpc/gen_ndr/ndr_schannel.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_PARSE
@@ -1071,24 +1072,31 @@ bool prs_string(const char *name, prs_struct *ps, int depth, char *str, int max_
 
 static void schannel_digest(struct schannel_auth_struct *a,
 			  enum pipe_auth_level auth_level,
-			  RPC_AUTH_SCHANNEL_CHK * verf,
+			  struct NL_AUTH_SIGNATURE *verf,
 			  char *data, size_t data_len,
 			  uchar digest_final[16]) 
 {
 	uchar whole_packet_digest[16];
 	uchar zeros[4];
 	struct MD5Context ctx3;
+	uint8_t sig[8];
 
 	ZERO_STRUCT(zeros);
+	ZERO_STRUCT(sig);
+
+	SSVAL(sig,0,verf->SignatureAlgorithm);
+	SSVAL(sig,2,verf->SealAlgorithm);
+	SSVAL(sig,4,verf->Pad);
+	SSVAL(sig,8,verf->Flags);
 
 	/* verfiy the signature on the packet by MD5 over various bits */
 	MD5Init(&ctx3);
 	/* use our sequence number, which ensures the packet is not
 	   out of order */
 	MD5Update(&ctx3, zeros, sizeof(zeros));
-	MD5Update(&ctx3, verf->sig, sizeof(verf->sig));
+	MD5Update(&ctx3, sig, 8);
 	if (auth_level == PIPE_AUTH_LEVEL_PRIVACY) {
-		MD5Update(&ctx3, verf->confounder, sizeof(verf->confounder));
+		MD5Update(&ctx3, verf->Confounder, sizeof(verf->Confounder));
 	}
 	MD5Update(&ctx3, (const unsigned char *)data, data_len);
 	MD5Final(whole_packet_digest, &ctx3);
@@ -1104,7 +1112,7 @@ static void schannel_digest(struct schannel_auth_struct *a,
  ********************************************************************/
 
 static void schannel_get_sealing_key(struct schannel_auth_struct *a,
-				   RPC_AUTH_SCHANNEL_CHK *verf,
+				   struct NL_AUTH_SIGNATURE *verf,
 				   uchar sealing_key[16]) 
 {
 	uchar zeros[4];
@@ -1125,7 +1133,7 @@ static void schannel_get_sealing_key(struct schannel_auth_struct *a,
 	dump_data_pw("digest2:\n", digest2, sizeof(digest2));
 	
 	/* MD5 of the above result, plus 8 bytes of sequence number */
-	hmac_md5(digest2, verf->seq_num, sizeof(verf->seq_num), sealing_key);
+	hmac_md5(digest2, verf->SequenceNumber, sizeof(verf->SequenceNumber), sealing_key);
 	dump_data_pw("sealing_key:\n", sealing_key, 16);
 }
 
@@ -1134,7 +1142,7 @@ static void schannel_get_sealing_key(struct schannel_auth_struct *a,
  ********************************************************************/
 
 static void schannel_deal_with_seq_num(struct schannel_auth_struct *a,
-				     RPC_AUTH_SCHANNEL_CHK *verf)
+				       struct NL_AUTH_SIGNATURE *verf)
 {
 	uchar zeros[4];
 	uchar sequence_key[16];
@@ -1145,33 +1153,13 @@ static void schannel_deal_with_seq_num(struct schannel_auth_struct *a,
 	hmac_md5(a->sess_key, zeros, sizeof(zeros), digest1);
 	dump_data_pw("(sequence key) digest1:\n", digest1, sizeof(digest1));
 
-	hmac_md5(digest1, verf->packet_digest, 8, sequence_key);
+	hmac_md5(digest1, verf->Checksum, 8, sequence_key);
 
 	dump_data_pw("sequence_key:\n", sequence_key, sizeof(sequence_key));
 
-	dump_data_pw("seq_num (before):\n", verf->seq_num, sizeof(verf->seq_num));
-	arcfour_crypt(verf->seq_num, sequence_key, 8);
-	dump_data_pw("seq_num (after):\n", verf->seq_num, sizeof(verf->seq_num));
-}
-
-/*******************************************************************
-creates an RPC_AUTH_SCHANNEL_CHK structure.
-********************************************************************/
-
-static bool init_rpc_auth_schannel_chk(RPC_AUTH_SCHANNEL_CHK * chk,
-			      const uchar sig[8],
-			      const uchar packet_digest[8],
-			      const uchar seq_num[8], const uchar confounder[8])
-{
-	if (chk == NULL)
-		return False;
-
-	memcpy(chk->sig, sig, sizeof(chk->sig));
-	memcpy(chk->packet_digest, packet_digest, sizeof(chk->packet_digest));
-	memcpy(chk->seq_num, seq_num, sizeof(chk->seq_num));
-	memcpy(chk->confounder, confounder, sizeof(chk->confounder));
-
-	return True;
+	dump_data_pw("seq_num (before):\n", verf->SequenceNumber, sizeof(verf->SequenceNumber));
+	arcfour_crypt(verf->SequenceNumber, sequence_key, 8);
+	dump_data_pw("seq_num (after):\n", verf->SequenceNumber, sizeof(verf->SequenceNumber));
 }
 
 /*******************************************************************
@@ -1183,7 +1171,7 @@ static bool init_rpc_auth_schannel_chk(RPC_AUTH_SCHANNEL_CHK * chk,
 
 void schannel_encode(struct schannel_auth_struct *a, enum pipe_auth_level auth_level,
 		   enum schannel_direction direction,
-		   RPC_AUTH_SCHANNEL_CHK * verf,
+		   struct NL_AUTH_SIGNATURE *verf,
 		   char *data, size_t data_len)
 {
 	uchar digest_final[16];
@@ -1191,18 +1179,8 @@ void schannel_encode(struct schannel_auth_struct *a, enum pipe_auth_level auth_l
 	uchar seq_num[8];
 	static const uchar nullbytes[8] = { 0, };
 
-	static const uchar schannel_seal_sig[8] = SCHANNEL_SEAL_SIGNATURE;
-	static const uchar schannel_sign_sig[8] = SCHANNEL_SIGN_SIGNATURE;
-	const uchar *schannel_sig = NULL;
-
 	DEBUG(10,("SCHANNEL: schannel_encode seq_num=%d data_len=%lu\n", a->seq_num, (unsigned long)data_len));
 	
-	if (auth_level == PIPE_AUTH_LEVEL_PRIVACY) {
-		schannel_sig = schannel_seal_sig;
-	} else {
-		schannel_sig = schannel_sign_sig;
-	}
-
 	/* fill the 'confounder' with random data */
 	generate_random_buffer(confounder, sizeof(confounder));
 
@@ -1219,14 +1197,25 @@ void schannel_encode(struct schannel_auth_struct *a, enum pipe_auth_level auth_l
 		break;
 	}
 
-	dump_data_pw("verf->seq_num:\n", seq_num, sizeof(verf->seq_num));
+	dump_data_pw("verf->SequenceNumber:\n", verf->SequenceNumber, sizeof(verf->SequenceNumber));
 
-	init_rpc_auth_schannel_chk(verf, schannel_sig, nullbytes,
-				 seq_num, confounder);
-				
+	if (auth_level == PIPE_AUTH_LEVEL_PRIVACY) {
+		verf->SealAlgorithm		= NL_SEAL_RC4;
+	} else {
+		verf->SealAlgorithm		= NL_SEAL_NONE;
+	}
+
+	verf->SignatureAlgorithm	= NL_SIGN_HMAC_MD5;
+	verf->Pad			= 0xffff;
+	verf->Flags			= 0x0000;
+
+	memcpy(verf->SequenceNumber, seq_num, sizeof(verf->SequenceNumber));
+	memcpy(verf->Checksum, nullbytes, sizeof(verf->Checksum));
+	memcpy(verf->Confounder, confounder, sizeof(verf->Confounder));
+
 	/* produce a digest of the packet to prove it's legit (before we seal it) */
 	schannel_digest(a, auth_level, verf, data, data_len, digest_final);
-	memcpy(verf->packet_digest, digest_final, sizeof(verf->packet_digest));
+	memcpy(verf->Checksum, digest_final, sizeof(verf->Checksum));
 
 	if (auth_level == PIPE_AUTH_LEVEL_PRIVACY) {
 		uchar sealing_key[16];
@@ -1235,10 +1224,10 @@ void schannel_encode(struct schannel_auth_struct *a, enum pipe_auth_level auth_l
 		schannel_get_sealing_key(a, verf, sealing_key);
 
 		/* encode the verification data */
-		dump_data_pw("verf->confounder:\n", verf->confounder, sizeof(verf->confounder));
-		arcfour_crypt(verf->confounder, sealing_key, 8);
+		dump_data_pw("verf->Confounder:\n", verf->Confounder, sizeof(verf->Confounder));
+		arcfour_crypt(verf->Confounder, sealing_key, 8);
 
-		dump_data_pw("verf->confounder_enc:\n", verf->confounder, sizeof(verf->confounder));
+		dump_data_pw("verf->Confounder_enc:\n", verf->Confounder, sizeof(verf->Confounder));
 		
 		/* encode the packet payload */
 		dump_data_pw("data:\n", (const unsigned char *)data, data_len);
@@ -1262,7 +1251,7 @@ void schannel_encode(struct schannel_auth_struct *a, enum pipe_auth_level auth_l
 
 bool schannel_decode(struct schannel_auth_struct *a, enum pipe_auth_level auth_level,
 		   enum schannel_direction direction, 
-		   RPC_AUTH_SCHANNEL_CHK * verf, char *data, size_t data_len)
+		   struct NL_AUTH_SIGNATURE *verf, char *data, size_t data_len)
 {
 	uchar digest_final[16];
 
@@ -1302,24 +1291,27 @@ bool schannel_decode(struct schannel_auth_struct *a, enum pipe_auth_level auth_l
 	   is used in the sealing stuff... */
 	schannel_deal_with_seq_num(a, verf);
 
-	if (memcmp(verf->seq_num, seq_num, sizeof(seq_num))) {
+	if (memcmp(verf->SequenceNumber, seq_num, sizeof(seq_num))) {
 		/* don't even bother with the below if the sequence number is out */
 		/* The sequence number is MD5'ed with a key based on the whole-packet
 		   digest, as supplied by the client.  We check that it's a valid 
 		   checksum after the decode, below
 		*/
 		DEBUG(2, ("schannel_decode: FAILED: packet sequence number:\n"));
-		dump_data(2, verf->seq_num, sizeof(verf->seq_num));
+		dump_data(2, verf->SequenceNumber, sizeof(verf->SequenceNumber));
 		DEBUG(2, ("should be:\n"));
 		dump_data(2, seq_num, sizeof(seq_num));
 
 		return False;
 	}
 
-	if (memcmp(verf->sig, schannel_sig, sizeof(verf->sig))) {
+	if (memcmp(&verf->SignatureAlgorithm, &schannel_sig[0], 2) ||
+	    memcmp(&verf->SealAlgorithm, &schannel_sig[2], 2) ||
+	    memcmp(&verf->Pad, &schannel_sig[4], 2) ||
+	    memcmp(&verf->Flags, &schannel_sig[6], 2)) {
 		/* Validate that the other end sent the expected header */
 		DEBUG(2, ("schannel_decode: FAILED: packet header:\n"));
-		dump_data(2, verf->sig, sizeof(verf->sig));
+		dump_data(2, (const uint8_t *)verf, sizeof(schannel_sig));
 		DEBUG(2, ("should be:\n"));
 		dump_data(2, schannel_sig, sizeof(schannel_sig));
 		return False;
@@ -1332,12 +1324,12 @@ bool schannel_decode(struct schannel_auth_struct *a, enum pipe_auth_level auth_l
 		schannel_get_sealing_key(a, verf, sealing_key);
 
 		/* extract the verification data */
-		dump_data_pw("verf->confounder:\n", verf->confounder, 
-			     sizeof(verf->confounder));
-		arcfour_crypt(verf->confounder, sealing_key, 8);
+		dump_data_pw("verf->Confounder:\n", verf->Confounder,
+			     sizeof(verf->Confounder));
+		arcfour_crypt(verf->Confounder, sealing_key, 8);
 
-		dump_data_pw("verf->confounder_dec:\n", verf->confounder, 
-			     sizeof(verf->confounder));
+		dump_data_pw("verf->Confounder_dec:\n", verf->Confounder,
+			     sizeof(verf->Confounder));
 		
 		/* extract the packet payload */
 		dump_data_pw("data   :\n", (const unsigned char *)data, data_len);
@@ -1350,13 +1342,13 @@ bool schannel_decode(struct schannel_auth_struct *a, enum pipe_auth_level auth_l
 
 	dump_data_pw("Calculated digest:\n", digest_final, 
 		     sizeof(digest_final));
-	dump_data_pw("verf->packet_digest:\n", verf->packet_digest, 
-		     sizeof(verf->packet_digest));
+	dump_data_pw("verf->Checksum:\n", verf->Checksum,
+		     sizeof(verf->Checksum));
 	
 	/* compare - if the client got the same result as us, then
 	   it must know the session key */
-	return (memcmp(digest_final, verf->packet_digest, 
-		       sizeof(verf->packet_digest)) == 0);
+	return (memcmp(digest_final, verf->Checksum,
+		       sizeof(verf->Checksum)) == 0);
 }
 
 /*******************************************************************
