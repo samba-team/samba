@@ -228,10 +228,4 @@ typedef struct rpc_hdr_ba_info {
 	struct ndr_syntax_id transfer; /* the transfer syntax from the request */
 } RPC_HDR_BA;
 
-/* RPC_AUTH_VERIFIER */
-typedef struct rpc_auth_verif_info {
-	fstring signature; /* "NTLMSSP".. Ok, not quite anymore */
-	uint32  msg_type; /* NTLMSSP_MESSAGE_TYPE (1,2,3) and 5 for schannel */
-} RPC_AUTH_VERIFIER;
-
 #endif /* _DCE_RPC_H */
