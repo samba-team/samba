@@ -150,9 +150,25 @@ static WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 	}
 
 	if (rdn_m) {
-		ret = ldb_msg_add_value(msg, rdn_attr->lDAPDisplayName, rdn_value, NULL);
-		if (ret != LDB_SUCCESS) {
-			return WERR_FOOBAR;
+		struct ldb_message_element *el;
+		el = ldb_msg_find_element(msg, rdn_attr->lDAPDisplayName);
+		if (!el) {
+			ret = ldb_msg_add_value(msg, rdn_attr->lDAPDisplayName, rdn_value, NULL);
+			if (ret != LDB_SUCCESS) {
+				return WERR_FOOBAR;
+			}
+		} else {
+			if (el->num_values != 1) {
+				DEBUG(0,(__location__ ": Unexpected num_values=%u\n",
+					 el->num_values));
+				return WERR_FOOBAR;				
+			}
+			if (!ldb_val_equal_exact(&el->values[0], rdn_value)) {
+				DEBUG(0,(__location__ ": RDN value changed? '%*.*s' '%*.*s'\n",
+					 (int)el->values[0].length, (int)el->values[0].length, el->values[0].data,
+					 (int)rdn_value->length, (int)rdn_value->length, rdn_value->data));
+				return WERR_FOOBAR;				
+			}
 		}
 
 		rdn_m->attid				= rdn_attid;
