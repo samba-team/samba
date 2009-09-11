@@ -1405,8 +1405,8 @@ static bool lsarlookupsids2_in_check(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, r->in.level, 1, "level");
 	torture_assert(tctx, r->in.count != NULL, "count ptr");
 	torture_assert_int_equal(tctx, *r->in.count, 7, "count");
-	torture_assert_int_equal(tctx, r->in.unknown1, 0, "unknown 1");
-	torture_assert_int_equal(tctx, r->in.unknown2, 0, "unknown 2");
+	torture_assert_int_equal(tctx, r->in.lookup_options, 0, "unknown 1");
+	torture_assert_int_equal(tctx, r->in.client_revision, 0, "unknown 2");
 
 	return true;
 }
@@ -1738,8 +1738,8 @@ static bool lsarlookupsids3_in_check(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, r->in.level, 1, "level");
 	torture_assert(tctx, r->in.count != NULL, "count ptr");
 	torture_assert_int_equal(tctx, *r->in.count, 7, "count");
-	torture_assert_int_equal(tctx, r->in.unknown1, 0, "unknown 1");
-	torture_assert_int_equal(tctx, r->in.unknown2, 0, "unknown 2");
+	torture_assert_int_equal(tctx, r->in.lookup_options, 0, "unknown 1");
+	torture_assert_int_equal(tctx, r->in.client_revision, 0, "unknown 2");
 
 	return true;
 }
