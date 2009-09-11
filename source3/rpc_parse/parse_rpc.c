@@ -506,34 +506,3 @@ bool smb_io_rpc_hdr_auth(const char *desc, RPC_HDR_AUTH *rai, prs_struct *ps, in
 
 	return True;
 }
-
-/*******************************************************************
-reads or writes an RPC_AUTH_SCHANNEL_CHK structure.
-********************************************************************/
-
-bool smb_io_rpc_auth_schannel_chk(const char *desc, int auth_len, 
-                                RPC_AUTH_SCHANNEL_CHK * chk,
-				prs_struct *ps, int depth)
-{
-	if (chk == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "smb_io_rpc_auth_schannel_chk");
-	depth++;
-
-	if ( !prs_uint8s(False, "sig  ", ps, depth, chk->sig, sizeof(chk->sig)) )
-		return False;
-		
-	if ( !prs_uint8s(False, "seq_num", ps, depth, chk->seq_num, sizeof(chk->seq_num)) )
-		return False;
-		
-	if ( !prs_uint8s(False, "packet_digest", ps, depth, chk->packet_digest, sizeof(chk->packet_digest)) )
-		return False;
-	
-	if ( auth_len == RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN ) {
-		if ( !prs_uint8s(False, "confounder", ps, depth, chk->confounder, sizeof(chk->confounder)) )
-			return False;
-	}
-
-	return True;
-}
