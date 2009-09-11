@@ -278,6 +278,8 @@ void ndr_print_lsa_DomainInfoEfs(struct ndr_print *ndr, const char *name, const 
 void ndr_print_lsa_DomainInformationPolicy(struct ndr_print *ndr, const char *name, const union lsa_DomainInformationPolicy *r);
 void ndr_print_lsa_TranslatedName2(struct ndr_print *ndr, const char *name, const struct lsa_TranslatedName2 *r);
 void ndr_print_lsa_TransNameArray2(struct ndr_print *ndr, const char *name, const struct lsa_TransNameArray2 *r);
+void ndr_print_lsa_LookupOptions(struct ndr_print *ndr, const char *name, enum lsa_LookupOptions r);
+void ndr_print_lsa_ClientRevision(struct ndr_print *ndr, const char *name, enum lsa_ClientRevision r);
 void ndr_print_lsa_TranslatedSid2(struct ndr_print *ndr, const char *name, const struct lsa_TranslatedSid2 *r);
 void ndr_print_lsa_TransSidArray2(struct ndr_print *ndr, const char *name, const struct lsa_TransSidArray2 *r);
 void ndr_print_lsa_TranslatedSid3(struct ndr_print *ndr, const char *name, const struct lsa_TranslatedSid3 *r);

@@ -9367,8 +9367,8 @@ struct tevent_req *rpccli_lsa_LookupSids2_send(TALLOC_CTX *mem_ctx,
 					       struct lsa_TransNameArray2 *_names /* [in,out] [ref] */,
 					       enum lsa_LookupNamesLevel _level /* [in]  */,
 					       uint32_t *_count /* [in,out] [ref] */,
-					       uint32_t _unknown1 /* [in]  */,
-					       uint32_t _unknown2 /* [in]  */)
+					       enum lsa_LookupOptions _lookup_options /* [in]  */,
+					       enum lsa_ClientRevision _client_revision /* [in]  */)
 {
 	struct tevent_req *req;
 	struct rpccli_lsa_LookupSids2_state *state;
@@ -9388,8 +9388,8 @@ struct tevent_req *rpccli_lsa_LookupSids2_send(TALLOC_CTX *mem_ctx,
 	state->orig.in.names = _names;
 	state->orig.in.level = _level;
 	state->orig.in.count = _count;
-	state->orig.in.unknown1 = _unknown1;
-	state->orig.in.unknown2 = _unknown2;
+	state->orig.in.lookup_options = _lookup_options;
+	state->orig.in.client_revision = _client_revision;
 
 	/* Out parameters */
 	state->orig.out.domains = _domains;
@@ -9494,8 +9494,8 @@ NTSTATUS rpccli_lsa_LookupSids2(struct rpc_pipe_client *cli,
 				struct lsa_TransNameArray2 *names /* [in,out] [ref] */,
 				enum lsa_LookupNamesLevel level /* [in]  */,
 				uint32_t *count /* [in,out] [ref] */,
-				uint32_t unknown1 /* [in]  */,
-				uint32_t unknown2 /* [in]  */)
+				enum lsa_LookupOptions lookup_options /* [in]  */,
+				enum lsa_ClientRevision client_revision /* [in]  */)
 {
 	struct lsa_LookupSids2 r;
 	NTSTATUS status;
@@ -9506,8 +9506,8 @@ NTSTATUS rpccli_lsa_LookupSids2(struct rpc_pipe_client *cli,
 	r.in.names = names;
 	r.in.level = level;
 	r.in.count = count;
-	r.in.unknown1 = unknown1;
-	r.in.unknown2 = unknown2;
+	r.in.lookup_options = lookup_options;
+	r.in.client_revision = client_revision;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(lsa_LookupSids2, &r);
@@ -9559,8 +9559,8 @@ struct tevent_req *rpccli_lsa_LookupNames2_send(TALLOC_CTX *mem_ctx,
 						struct lsa_TransSidArray2 *_sids /* [in,out] [ref] */,
 						enum lsa_LookupNamesLevel _level /* [in]  */,
 						uint32_t *_count /* [in,out] [ref] */,
-						uint32_t _lookup_options /* [in]  */,
-						uint32_t _client_revision /* [in]  */)
+						enum lsa_LookupOptions _lookup_options /* [in]  */,
+						enum lsa_ClientRevision _client_revision /* [in]  */)
 {
 	struct tevent_req *req;
 	struct rpccli_lsa_LookupNames2_state *state;
@@ -9688,8 +9688,8 @@ NTSTATUS rpccli_lsa_LookupNames2(struct rpc_pipe_client *cli,
 				 struct lsa_TransSidArray2 *sids /* [in,out] [ref] */,
 				 enum lsa_LookupNamesLevel level /* [in]  */,
 				 uint32_t *count /* [in,out] [ref] */,
-				 uint32_t lookup_options /* [in]  */,
-				 uint32_t client_revision /* [in]  */)
+				 enum lsa_LookupOptions lookup_options /* [in]  */,
+				 enum lsa_ClientRevision client_revision /* [in]  */)
 {
 	struct lsa_LookupNames2 r;
 	NTSTATUS status;
@@ -11095,8 +11095,8 @@ struct tevent_req *rpccli_lsa_LookupNames3_send(TALLOC_CTX *mem_ctx,
 						struct lsa_TransSidArray3 *_sids /* [in,out] [ref] */,
 						enum lsa_LookupNamesLevel _level /* [in]  */,
 						uint32_t *_count /* [in,out] [ref] */,
-						uint32_t _lookup_options /* [in]  */,
-						uint32_t _client_revision /* [in]  */)
+						enum lsa_LookupOptions _lookup_options /* [in]  */,
+						enum lsa_ClientRevision _client_revision /* [in]  */)
 {
 	struct tevent_req *req;
 	struct rpccli_lsa_LookupNames3_state *state;
@@ -11224,8 +11224,8 @@ NTSTATUS rpccli_lsa_LookupNames3(struct rpc_pipe_client *cli,
 				 struct lsa_TransSidArray3 *sids /* [in,out] [ref] */,
 				 enum lsa_LookupNamesLevel level /* [in]  */,
 				 uint32_t *count /* [in,out] [ref] */,
-				 uint32_t lookup_options /* [in]  */,
-				 uint32_t client_revision /* [in]  */)
+				 enum lsa_LookupOptions lookup_options /* [in]  */,
+				 enum lsa_ClientRevision client_revision /* [in]  */)
 {
 	struct lsa_LookupNames3 r;
 	NTSTATUS status;
@@ -12333,8 +12333,8 @@ struct tevent_req *rpccli_lsa_LookupSids3_send(TALLOC_CTX *mem_ctx,
 					       struct lsa_TransNameArray2 *_names /* [in,out] [ref] */,
 					       enum lsa_LookupNamesLevel _level /* [in]  */,
 					       uint32_t *_count /* [in,out] [ref] */,
-					       uint32_t _unknown1 /* [in]  */,
-					       uint32_t _unknown2 /* [in]  */)
+					       enum lsa_LookupOptions _lookup_options /* [in]  */,
+					       enum lsa_ClientRevision _client_revision /* [in]  */)
 {
 	struct tevent_req *req;
 	struct rpccli_lsa_LookupSids3_state *state;
@@ -12353,8 +12353,8 @@ struct tevent_req *rpccli_lsa_LookupSids3_send(TALLOC_CTX *mem_ctx,
 	state->orig.in.names = _names;
 	state->orig.in.level = _level;
 	state->orig.in.count = _count;
-	state->orig.in.unknown1 = _unknown1;
-	state->orig.in.unknown2 = _unknown2;
+	state->orig.in.lookup_options = _lookup_options;
+	state->orig.in.client_revision = _client_revision;
 
 	/* Out parameters */
 	state->orig.out.domains = _domains;
@@ -12458,8 +12458,8 @@ NTSTATUS rpccli_lsa_LookupSids3(struct rpc_pipe_client *cli,
 				struct lsa_TransNameArray2 *names /* [in,out] [ref] */,
 				enum lsa_LookupNamesLevel level /* [in]  */,
 				uint32_t *count /* [in,out] [ref] */,
-				uint32_t unknown1 /* [in]  */,
-				uint32_t unknown2 /* [in]  */)
+				enum lsa_LookupOptions lookup_options /* [in]  */,
+				enum lsa_ClientRevision client_revision /* [in]  */)
 {
 	struct lsa_LookupSids3 r;
 	NTSTATUS status;
@@ -12469,8 +12469,8 @@ NTSTATUS rpccli_lsa_LookupSids3(struct rpc_pipe_client *cli,
 	r.in.names = names;
 	r.in.level = level;
 	r.in.count = count;
-	r.in.unknown1 = unknown1;
-	r.in.unknown2 = unknown2;
+	r.in.lookup_options = lookup_options;
+	r.in.client_revision = client_revision;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(lsa_LookupSids3, &r);
@@ -12521,8 +12521,8 @@ struct tevent_req *rpccli_lsa_LookupNames4_send(TALLOC_CTX *mem_ctx,
 						struct lsa_TransSidArray3 *_sids /* [in,out] [ref] */,
 						enum lsa_LookupNamesLevel _level /* [in]  */,
 						uint32_t *_count /* [in,out] [ref] */,
-						uint32_t _lookup_options /* [in]  */,
-						uint32_t _client_revision /* [in]  */)
+						enum lsa_LookupOptions _lookup_options /* [in]  */,
+						enum lsa_ClientRevision _client_revision /* [in]  */)
 {
 	struct tevent_req *req;
 	struct rpccli_lsa_LookupNames4_state *state;
@@ -12648,8 +12648,8 @@ NTSTATUS rpccli_lsa_LookupNames4(struct rpc_pipe_client *cli,
 				 struct lsa_TransSidArray3 *sids /* [in,out] [ref] */,
 				 enum lsa_LookupNamesLevel level /* [in]  */,
 				 uint32_t *count /* [in,out] [ref] */,
-				 uint32_t lookup_options /* [in]  */,
-				 uint32_t client_revision /* [in]  */)
+				 enum lsa_LookupOptions lookup_options /* [in]  */,
+				 enum lsa_ClientRevision client_revision /* [in]  */)
 {
 	struct lsa_LookupNames4 r;
 	NTSTATUS status;

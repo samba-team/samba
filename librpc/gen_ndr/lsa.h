@@ -668,6 +668,32 @@ struct lsa_TransNameArray2 {
 	struct lsa_TranslatedName2 *names;/* [unique,size_is(count)] */
 };
 
+enum lsa_LookupOptions
+#ifndef USE_UINT_ENUMS
+ {
+	LSA_LOOKUP_OPTION_SEARCH_ISOLATED_NAMES=0x00000000,
+	LSA_LOOKUP_OPTION_SEARCH_ISOLATED_NAMES_LOCAL=0x80000000
+}
+#else
+ { __donnot_use_enum_lsa_LookupOptions=0x7FFFFFFF}
+#define LSA_LOOKUP_OPTION_SEARCH_ISOLATED_NAMES ( 0x00000000 )
+#define LSA_LOOKUP_OPTION_SEARCH_ISOLATED_NAMES_LOCAL ( 0x80000000 )
+#endif
+;
+
+enum lsa_ClientRevision
+#ifndef USE_UINT_ENUMS
+ {
+	LSA_CLIENT_REVISION_1=0x00000001,
+	LSA_CLIENT_REVISION_2=0x00000002
+}
+#else
+ { __donnot_use_enum_lsa_ClientRevision=0x7FFFFFFF}
+#define LSA_CLIENT_REVISION_1 ( 0x00000001 )
+#define LSA_CLIENT_REVISION_2 ( 0x00000002 )
+#endif
+;
+
 struct lsa_TranslatedSid2 {
 	enum lsa_SidType sid_type;
 	uint32_t rid;
@@ -1550,8 +1576,8 @@ struct lsa_LookupSids2 {
 		struct policy_handle *handle;/* [ref] */
 		struct lsa_SidArray *sids;/* [ref] */
 		enum lsa_LookupNamesLevel level;
-		uint32_t unknown1;
-		uint32_t unknown2;
+		enum lsa_LookupOptions lookup_options;
+		enum lsa_ClientRevision client_revision;
 		struct lsa_TransNameArray2 *names;/* [ref] */
 		uint32_t *count;/* [ref] */
 	} in;
@@ -1572,8 +1598,8 @@ struct lsa_LookupNames2 {
 		uint32_t num_names;/* [range(0,1000)] */
 		struct lsa_String *names;/* [size_is(num_names)] */
 		enum lsa_LookupNamesLevel level;
-		uint32_t lookup_options;
-		uint32_t client_revision;
+		enum lsa_LookupOptions lookup_options;
+		enum lsa_ClientRevision client_revision;
 		struct lsa_TransSidArray2 *sids;/* [ref] */
 		uint32_t *count;/* [ref] */
 	} in;
@@ -1674,8 +1700,8 @@ struct lsa_LookupNames3 {
 		uint32_t num_names;/* [range(0,1000)] */
 		struct lsa_String *names;/* [size_is(num_names)] */
 		enum lsa_LookupNamesLevel level;
-		uint32_t lookup_options;
-		uint32_t client_revision;
+		enum lsa_LookupOptions lookup_options;
+		enum lsa_ClientRevision client_revision;
 		struct lsa_TransSidArray3 *sids;/* [ref] */
 		uint32_t *count;/* [ref] */
 	} in;
@@ -1757,8 +1783,8 @@ struct lsa_LookupSids3 {
 	struct {
 		struct lsa_SidArray *sids;/* [ref] */
 		enum lsa_LookupNamesLevel level;
-		uint32_t unknown1;
-		uint32_t unknown2;
+		enum lsa_LookupOptions lookup_options;
+		enum lsa_ClientRevision client_revision;
 		struct lsa_TransNameArray2 *names;/* [ref] */
 		uint32_t *count;/* [ref] */
 	} in;
@@ -1778,8 +1804,8 @@ struct lsa_LookupNames4 {
 		uint32_t num_names;/* [range(0,1000)] */
 		struct lsa_String *names;/* [size_is(num_names)] */
 		enum lsa_LookupNamesLevel level;
-		uint32_t lookup_options;
-		uint32_t client_revision;
+		enum lsa_LookupOptions lookup_options;
+		enum lsa_ClientRevision client_revision;
 		struct lsa_TransSidArray3 *sids;/* [ref] */
 		uint32_t *count;/* [ref] */
 	} in;

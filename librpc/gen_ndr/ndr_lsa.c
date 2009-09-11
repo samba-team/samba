@@ -4473,6 +4473,56 @@ _PUBLIC_ void ndr_print_lsa_TransNameArray2(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_lsa_LookupOptions(struct ndr_push *ndr, int ndr_flags, enum lsa_LookupOptions r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_lsa_LookupOptions(struct ndr_pull *ndr, int ndr_flags, enum lsa_LookupOptions *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_lsa_LookupOptions(struct ndr_print *ndr, const char *name, enum lsa_LookupOptions r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case LSA_LOOKUP_OPTION_SEARCH_ISOLATED_NAMES: val = "LSA_LOOKUP_OPTION_SEARCH_ISOLATED_NAMES"; break;
+		case LSA_LOOKUP_OPTION_SEARCH_ISOLATED_NAMES_LOCAL: val = "LSA_LOOKUP_OPTION_SEARCH_ISOLATED_NAMES_LOCAL"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+static enum ndr_err_code ndr_push_lsa_ClientRevision(struct ndr_push *ndr, int ndr_flags, enum lsa_ClientRevision r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_lsa_ClientRevision(struct ndr_pull *ndr, int ndr_flags, enum lsa_ClientRevision *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_lsa_ClientRevision(struct ndr_print *ndr, const char *name, enum lsa_ClientRevision r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case LSA_CLIENT_REVISION_1: val = "LSA_CLIENT_REVISION_1"; break;
+		case LSA_CLIENT_REVISION_2: val = "LSA_CLIENT_REVISION_2"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
 static enum ndr_err_code ndr_push_lsa_TranslatedSid2(struct ndr_push *ndr, int ndr_flags, const struct lsa_TranslatedSid2 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -10843,8 +10893,8 @@ _PUBLIC_ enum ndr_err_code ndr_push_lsa_LookupSids2(struct ndr_push *ndr, int fl
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.count));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown1));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown2));
+		NDR_CHECK(ndr_push_lsa_LookupOptions(ndr, NDR_SCALARS, r->in.lookup_options));
+		NDR_CHECK(ndr_push_lsa_ClientRevision(ndr, NDR_SCALARS, r->in.client_revision));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.domains == NULL) {
@@ -10908,8 +10958,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupSids2(struct ndr_pull *ndr, int fl
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.count, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->in.count));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_count_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.unknown1));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.unknown2));
+		NDR_CHECK(ndr_pull_lsa_LookupOptions(ndr, NDR_SCALARS, &r->in.lookup_options));
+		NDR_CHECK(ndr_pull_lsa_ClientRevision(ndr, NDR_SCALARS, &r->in.client_revision));
 		NDR_PULL_ALLOC(ndr, r->out.domains);
 		ZERO_STRUCTP(r->out.domains);
 		NDR_PULL_ALLOC(ndr, r->out.names);
@@ -10982,8 +11032,8 @@ _PUBLIC_ void ndr_print_lsa_LookupSids2(struct ndr_print *ndr, const char *name,
 		ndr->depth++;
 		ndr_print_uint32(ndr, "count", *r->in.count);
 		ndr->depth--;
-		ndr_print_uint32(ndr, "unknown1", r->in.unknown1);
-		ndr_print_uint32(ndr, "unknown2", r->in.unknown2);
+		ndr_print_lsa_LookupOptions(ndr, "lookup_options", r->in.lookup_options);
+		ndr_print_lsa_ClientRevision(ndr, "client_revision", r->in.client_revision);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -11037,8 +11087,8 @@ _PUBLIC_ enum ndr_err_code ndr_push_lsa_LookupNames2(struct ndr_push *ndr, int f
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.count));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.lookup_options));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.client_revision));
+		NDR_CHECK(ndr_push_lsa_LookupOptions(ndr, NDR_SCALARS, r->in.lookup_options));
+		NDR_CHECK(ndr_push_lsa_ClientRevision(ndr, NDR_SCALARS, r->in.client_revision));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.domains == NULL) {
@@ -11111,8 +11161,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupNames2(struct ndr_pull *ndr, int f
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.count, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->in.count));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_count_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.lookup_options));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.client_revision));
+		NDR_CHECK(ndr_pull_lsa_LookupOptions(ndr, NDR_SCALARS, &r->in.lookup_options));
+		NDR_CHECK(ndr_pull_lsa_ClientRevision(ndr, NDR_SCALARS, &r->in.client_revision));
 		NDR_PULL_ALLOC(ndr, r->out.domains);
 		ZERO_STRUCTP(r->out.domains);
 		NDR_PULL_ALLOC(ndr, r->out.sids);
@@ -11196,8 +11246,8 @@ _PUBLIC_ void ndr_print_lsa_LookupNames2(struct ndr_print *ndr, const char *name
 		ndr->depth++;
 		ndr_print_uint32(ndr, "count", *r->in.count);
 		ndr->depth--;
-		ndr_print_uint32(ndr, "lookup_options", r->in.lookup_options);
-		ndr_print_uint32(ndr, "client_revision", r->in.client_revision);
+		ndr_print_lsa_LookupOptions(ndr, "lookup_options", r->in.lookup_options);
+		ndr_print_lsa_ClientRevision(ndr, "client_revision", r->in.client_revision);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -11691,8 +11741,8 @@ _PUBLIC_ enum ndr_err_code ndr_push_lsa_LookupNames3(struct ndr_push *ndr, int f
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.count));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.lookup_options));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.client_revision));
+		NDR_CHECK(ndr_push_lsa_LookupOptions(ndr, NDR_SCALARS, r->in.lookup_options));
+		NDR_CHECK(ndr_push_lsa_ClientRevision(ndr, NDR_SCALARS, r->in.client_revision));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.domains == NULL) {
@@ -11765,8 +11815,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupNames3(struct ndr_pull *ndr, int f
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.count, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->in.count));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_count_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.lookup_options));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.client_revision));
+		NDR_CHECK(ndr_pull_lsa_LookupOptions(ndr, NDR_SCALARS, &r->in.lookup_options));
+		NDR_CHECK(ndr_pull_lsa_ClientRevision(ndr, NDR_SCALARS, &r->in.client_revision));
 		NDR_PULL_ALLOC(ndr, r->out.domains);
 		ZERO_STRUCTP(r->out.domains);
 		NDR_PULL_ALLOC(ndr, r->out.sids);
@@ -11850,8 +11900,8 @@ _PUBLIC_ void ndr_print_lsa_LookupNames3(struct ndr_print *ndr, const char *name
 		ndr->depth++;
 		ndr_print_uint32(ndr, "count", *r->in.count);
 		ndr->depth--;
-		ndr_print_uint32(ndr, "lookup_options", r->in.lookup_options);
-		ndr_print_uint32(ndr, "client_revision", r->in.client_revision);
+		ndr_print_lsa_LookupOptions(ndr, "lookup_options", r->in.lookup_options);
+		ndr_print_lsa_ClientRevision(ndr, "client_revision", r->in.client_revision);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -12259,8 +12309,8 @@ _PUBLIC_ enum ndr_err_code ndr_push_lsa_LookupSids3(struct ndr_push *ndr, int fl
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.count));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown1));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown2));
+		NDR_CHECK(ndr_push_lsa_LookupOptions(ndr, NDR_SCALARS, r->in.lookup_options));
+		NDR_CHECK(ndr_push_lsa_ClientRevision(ndr, NDR_SCALARS, r->in.client_revision));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.domains == NULL) {
@@ -12316,8 +12366,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupSids3(struct ndr_pull *ndr, int fl
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.count, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->in.count));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_count_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.unknown1));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.unknown2));
+		NDR_CHECK(ndr_pull_lsa_LookupOptions(ndr, NDR_SCALARS, &r->in.lookup_options));
+		NDR_CHECK(ndr_pull_lsa_ClientRevision(ndr, NDR_SCALARS, &r->in.client_revision));
 		NDR_PULL_ALLOC(ndr, r->out.domains);
 		ZERO_STRUCTP(r->out.domains);
 		NDR_PULL_ALLOC(ndr, r->out.names);
@@ -12386,8 +12436,8 @@ _PUBLIC_ void ndr_print_lsa_LookupSids3(struct ndr_print *ndr, const char *name,
 		ndr->depth++;
 		ndr_print_uint32(ndr, "count", *r->in.count);
 		ndr->depth--;
-		ndr_print_uint32(ndr, "unknown1", r->in.unknown1);
-		ndr_print_uint32(ndr, "unknown2", r->in.unknown2);
+		ndr_print_lsa_LookupOptions(ndr, "lookup_options", r->in.lookup_options);
+		ndr_print_lsa_ClientRevision(ndr, "client_revision", r->in.client_revision);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -12437,8 +12487,8 @@ static enum ndr_err_code ndr_push_lsa_LookupNames4(struct ndr_push *ndr, int fla
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.count));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.lookup_options));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.client_revision));
+		NDR_CHECK(ndr_push_lsa_LookupOptions(ndr, NDR_SCALARS, r->in.lookup_options));
+		NDR_CHECK(ndr_push_lsa_ClientRevision(ndr, NDR_SCALARS, r->in.client_revision));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.domains == NULL) {
@@ -12503,8 +12553,8 @@ static enum ndr_err_code ndr_pull_lsa_LookupNames4(struct ndr_pull *ndr, int fla
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.count, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->in.count));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_count_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.lookup_options));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.client_revision));
+		NDR_CHECK(ndr_pull_lsa_LookupOptions(ndr, NDR_SCALARS, &r->in.lookup_options));
+		NDR_CHECK(ndr_pull_lsa_ClientRevision(ndr, NDR_SCALARS, &r->in.client_revision));
 		NDR_PULL_ALLOC(ndr, r->out.domains);
 		ZERO_STRUCTP(r->out.domains);
 		NDR_PULL_ALLOC(ndr, r->out.sids);
@@ -12584,8 +12634,8 @@ _PUBLIC_ void ndr_print_lsa_LookupNames4(struct ndr_print *ndr, const char *name
 		ndr->depth++;
 		ndr_print_uint32(ndr, "count", *r->in.count);
 		ndr->depth--;
-		ndr_print_uint32(ndr, "lookup_options", r->in.lookup_options);
-		ndr_print_uint32(ndr, "client_revision", r->in.client_revision);
+		ndr_print_lsa_LookupOptions(ndr, "lookup_options", r->in.lookup_options);
+		ndr_print_lsa_ClientRevision(ndr, "client_revision", r->in.client_revision);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
