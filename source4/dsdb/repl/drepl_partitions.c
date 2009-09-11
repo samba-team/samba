@@ -33,8 +33,6 @@
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "param/param.h"
 
-static WERROR dreplsrv_refresh_partitions(struct dreplsrv_service *s);
-
 WERROR dreplsrv_load_partitions(struct dreplsrv_service *s)
 {
 	WERROR status;
@@ -256,7 +254,7 @@ static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 	return WERR_OK;
 }
 
-static WERROR dreplsrv_refresh_partitions(struct dreplsrv_service *s)
+WERROR dreplsrv_refresh_partitions(struct dreplsrv_service *s)
 {
 	WERROR status;
 	struct dreplsrv_partition *p;

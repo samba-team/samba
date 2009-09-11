@@ -105,5 +105,8 @@ static void dreplsrv_periodic_run(struct dreplsrv_service *service)
 
 	DEBUG(2,("dreplsrv_periodic_run(): run pending_ops\n"));
 
+	/* the KCC might have changed repsFrom */
+	dreplsrv_refresh_partitions(service);
+
 	dreplsrv_run_pending_ops(service);
 }
