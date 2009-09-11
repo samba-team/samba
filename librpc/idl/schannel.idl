@@ -82,8 +82,13 @@ interface schannel
 		[case (NL_FLAG_UTF8_DNS_DOMAIN_NAME)]		nbt_string u;
 		[case (NL_FLAG_UTF8_DNS_HOST_NAME)]		nbt_string u;
 		[case (NL_FLAG_UTF8_NETBIOS_COMPUTER_NAME)]	nbt_string u;
-		[default];
+		[default]					;
 	} NL_AUTH_MESSAGE_BUFFER;
+
+	typedef [public,nodiscriminant,noprint] union {
+		[case (NL_NEGOTIATE_RESPONSE)]			uint32 dummy;
+		[default]					;
+	} NL_AUTH_MESSAGE_BUFFER_REPLY;
 
 	typedef [public,flag(NDR_PAHEX)] struct {
 		NL_AUTH_MESSAGE_TYPE MessageType;
@@ -93,6 +98,7 @@ interface schannel
 		[switch_is(Flags & NL_FLAG_UTF8_DNS_DOMAIN_NAME)]	NL_AUTH_MESSAGE_BUFFER utf8_dns_domain;
 		[switch_is(Flags & NL_FLAG_UTF8_DNS_HOST_NAME)]		NL_AUTH_MESSAGE_BUFFER utf8_dns_host;
 		[switch_is(Flags & NL_FLAG_UTF8_NETBIOS_COMPUTER_NAME)]	NL_AUTH_MESSAGE_BUFFER utf8_netbios_computer;
+		[switch_is(MessageType & NL_NEGOTIATE_RESPONSE)]	NL_AUTH_MESSAGE_BUFFER_REPLY Buffer;
 	} NL_AUTH_MESSAGE;
 
 	/* MS-NRPC 2.2.1.3.2 NL_AUTH_SIGNATURE */

@@ -54,3 +54,18 @@ _PUBLIC_ void ndr_print_NL_AUTH_MESSAGE_BUFFER(struct ndr_print *ndr, const char
 
 	}
 }
+
+_PUBLIC_ void ndr_print_NL_AUTH_MESSAGE_BUFFER_REPLY(struct ndr_print *ndr, const char *name, const union NL_AUTH_MESSAGE_BUFFER_REPLY *r)
+{
+	int level;
+	level = ndr_print_get_switch_value(ndr, r);
+	switch (level) {
+		case NL_NEGOTIATE_RESPONSE:
+			ndr_print_uint32(ndr, name, r->dummy);
+		break;
+
+		default:
+		break;
+
+	}
+}

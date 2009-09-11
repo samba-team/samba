@@ -76,6 +76,10 @@ union NL_AUTH_MESSAGE_BUFFER {
 	const char * u;/* [case(NL_FLAG_UTF8_DNS_DOMAIN_NAME)] */
 }/* [noprint,nodiscriminant,public] */;
 
+union NL_AUTH_MESSAGE_BUFFER_REPLY {
+	uint32_t dummy;/* [case(NL_NEGOTIATE_RESPONSE)] */
+}/* [noprint,nodiscriminant,public] */;
+
 struct NL_AUTH_MESSAGE {
 	enum NL_AUTH_MESSAGE_TYPE MessageType;
 	uint32_t Flags;
@@ -84,6 +88,7 @@ struct NL_AUTH_MESSAGE {
 	union NL_AUTH_MESSAGE_BUFFER utf8_dns_domain;/* [switch_is(Flags&NL_FLAG_UTF8_DNS_DOMAIN_NAME)] */
 	union NL_AUTH_MESSAGE_BUFFER utf8_dns_host;/* [switch_is(Flags&NL_FLAG_UTF8_DNS_HOST_NAME)] */
 	union NL_AUTH_MESSAGE_BUFFER utf8_netbios_computer;/* [switch_is(Flags&NL_FLAG_UTF8_NETBIOS_COMPUTER_NAME)] */
+	union NL_AUTH_MESSAGE_BUFFER_REPLY Buffer;/* [switch_is(MessageType&NL_NEGOTIATE_RESPONSE)] */
 }/* [public,flag(LIBNDR_PRINT_ARRAY_HEX)] */;
 
 enum NL_SIGNATURE_ALGORITHM
