@@ -176,5 +176,8 @@ while (my $LINE = <>) {
 	# normalize unsigned
 	$LINE =~ s/([\s,\(])unsigned([,\)])/$1unsigned int$2/g;
 
+	# normalize bool
+	$LINE =~ s/(\b)bool(\b)/_Bool/g;
+
 	print $LINE . "\n";
 }
