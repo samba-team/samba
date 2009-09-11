@@ -547,9 +547,10 @@ static int replmd_update_rpmd(struct ldb_context *ldb, struct ldb_message *msg,
 
 	our_invocation_id = samdb_ntds_invocation_id(ldb);
 	if (!our_invocation_id) {
-		ldb_debug_set(ldb, LDB_DEBUG_ERROR,
-			      __location__ ": replmd_update_rpmd: unable to find invocationId\n");
-		return LDB_ERR_OPERATIONS_ERROR;
+		/* this happens during an initial vampire while
+		   updating the schema */
+		DEBUG(5,("No invocationID - skipping replPropertyMetaData update\n"));
+		return LDB_SUCCESS;
 	}
 
 	unix_to_nt_time(&now, t);
