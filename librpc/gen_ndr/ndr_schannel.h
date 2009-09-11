@@ -25,6 +25,9 @@ void ndr_print_NL_AUTH_MESSAGE_FLAGS(struct ndr_print *ndr, const char *name, ui
 enum ndr_err_code ndr_push_NL_AUTH_MESSAGE_BUFFER(struct ndr_push *ndr, int ndr_flags, const union NL_AUTH_MESSAGE_BUFFER *r);
 enum ndr_err_code ndr_pull_NL_AUTH_MESSAGE_BUFFER(struct ndr_pull *ndr, int ndr_flags, union NL_AUTH_MESSAGE_BUFFER *r);
 void ndr_print_NL_AUTH_MESSAGE_BUFFER(struct ndr_print *ndr, const char *name, const union NL_AUTH_MESSAGE_BUFFER *r);
+enum ndr_err_code ndr_push_NL_AUTH_MESSAGE_BUFFER_REPLY(struct ndr_push *ndr, int ndr_flags, const union NL_AUTH_MESSAGE_BUFFER_REPLY *r);
+enum ndr_err_code ndr_pull_NL_AUTH_MESSAGE_BUFFER_REPLY(struct ndr_pull *ndr, int ndr_flags, union NL_AUTH_MESSAGE_BUFFER_REPLY *r);
+void ndr_print_NL_AUTH_MESSAGE_BUFFER_REPLY(struct ndr_print *ndr, const char *name, const union NL_AUTH_MESSAGE_BUFFER_REPLY *r);
 enum ndr_err_code ndr_push_NL_AUTH_MESSAGE(struct ndr_push *ndr, int ndr_flags, const struct NL_AUTH_MESSAGE *r);
 enum ndr_err_code ndr_pull_NL_AUTH_MESSAGE(struct ndr_pull *ndr, int ndr_flags, struct NL_AUTH_MESSAGE *r);
 void ndr_print_NL_AUTH_MESSAGE(struct ndr_print *ndr, const char *name, const struct NL_AUTH_MESSAGE *r);

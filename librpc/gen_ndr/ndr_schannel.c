@@ -571,6 +571,62 @@ _PUBLIC_ enum ndr_err_code ndr_pull_NL_AUTH_MESSAGE_BUFFER(struct ndr_pull *ndr,
 	return NDR_ERR_SUCCESS;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_NL_AUTH_MESSAGE_BUFFER_REPLY(struct ndr_push *ndr, int ndr_flags, const union NL_AUTH_MESSAGE_BUFFER_REPLY *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
+		switch (level) {
+			case NL_NEGOTIATE_RESPONSE: {
+				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->dummy));
+			break; }
+
+			default: {
+			break; }
+
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
+		switch (level) {
+			case NL_NEGOTIATE_RESPONSE:
+			break;
+
+			default:
+			break;
+
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_NL_AUTH_MESSAGE_BUFFER_REPLY(struct ndr_pull *ndr, int ndr_flags, union NL_AUTH_MESSAGE_BUFFER_REPLY *r)
+{
+	int level;
+	level = ndr_pull_get_switch_value(ndr, r);
+	if (ndr_flags & NDR_SCALARS) {
+		switch (level) {
+			case NL_NEGOTIATE_RESPONSE: {
+				NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->dummy));
+			break; }
+
+			default: {
+			break; }
+
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		switch (level) {
+			case NL_NEGOTIATE_RESPONSE:
+			break;
+
+			default:
+			break;
+
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
 _PUBLIC_ enum ndr_err_code ndr_push_NL_AUTH_MESSAGE(struct ndr_push *ndr, int ndr_flags, const struct NL_AUTH_MESSAGE *r)
 {
 	{
@@ -590,6 +646,8 @@ _PUBLIC_ enum ndr_err_code ndr_push_NL_AUTH_MESSAGE(struct ndr_push *ndr, int nd
 			NDR_CHECK(ndr_push_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_SCALARS, &r->utf8_dns_host));
 			NDR_CHECK(ndr_push_set_switch_value(ndr, &r->utf8_netbios_computer, r->Flags & NL_FLAG_UTF8_NETBIOS_COMPUTER_NAME));
 			NDR_CHECK(ndr_push_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_SCALARS, &r->utf8_netbios_computer));
+			NDR_CHECK(ndr_push_set_switch_value(ndr, &r->Buffer, r->MessageType & NL_NEGOTIATE_RESPONSE));
+			NDR_CHECK(ndr_push_NL_AUTH_MESSAGE_BUFFER_REPLY(ndr, NDR_SCALARS, &r->Buffer));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 			NDR_CHECK(ndr_push_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_BUFFERS, &r->oem_netbios_domain));
@@ -597,6 +655,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_NL_AUTH_MESSAGE(struct ndr_push *ndr, int nd
 			NDR_CHECK(ndr_push_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_BUFFERS, &r->utf8_dns_domain));
 			NDR_CHECK(ndr_push_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_BUFFERS, &r->utf8_dns_host));
 			NDR_CHECK(ndr_push_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_BUFFERS, &r->utf8_netbios_computer));
+			NDR_CHECK(ndr_push_NL_AUTH_MESSAGE_BUFFER_REPLY(ndr, NDR_BUFFERS, &r->Buffer));
 		}
 		ndr->flags = _flags_save_STRUCT;
 	}
@@ -622,6 +681,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_NL_AUTH_MESSAGE(struct ndr_pull *ndr, int nd
 			NDR_CHECK(ndr_pull_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_SCALARS, &r->utf8_dns_host));
 			NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->utf8_netbios_computer, r->Flags & NL_FLAG_UTF8_NETBIOS_COMPUTER_NAME));
 			NDR_CHECK(ndr_pull_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_SCALARS, &r->utf8_netbios_computer));
+			NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->Buffer, r->MessageType & NL_NEGOTIATE_RESPONSE));
+			NDR_CHECK(ndr_pull_NL_AUTH_MESSAGE_BUFFER_REPLY(ndr, NDR_SCALARS, &r->Buffer));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 			NDR_CHECK(ndr_pull_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_BUFFERS, &r->oem_netbios_domain));
@@ -629,6 +690,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_NL_AUTH_MESSAGE(struct ndr_pull *ndr, int nd
 			NDR_CHECK(ndr_pull_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_BUFFERS, &r->utf8_dns_domain));
 			NDR_CHECK(ndr_pull_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_BUFFERS, &r->utf8_dns_host));
 			NDR_CHECK(ndr_pull_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_BUFFERS, &r->utf8_netbios_computer));
+			NDR_CHECK(ndr_pull_NL_AUTH_MESSAGE_BUFFER_REPLY(ndr, NDR_BUFFERS, &r->Buffer));
 		}
 		ndr->flags = _flags_save_STRUCT;
 	}
@@ -654,6 +716,8 @@ _PUBLIC_ void ndr_print_NL_AUTH_MESSAGE(struct ndr_print *ndr, const char *name,
 		ndr_print_NL_AUTH_MESSAGE_BUFFER(ndr, "utf8_dns_host", &r->utf8_dns_host);
 		ndr_print_set_switch_value(ndr, &r->utf8_netbios_computer, r->Flags & NL_FLAG_UTF8_NETBIOS_COMPUTER_NAME);
 		ndr_print_NL_AUTH_MESSAGE_BUFFER(ndr, "utf8_netbios_computer", &r->utf8_netbios_computer);
+		ndr_print_set_switch_value(ndr, &r->Buffer, r->MessageType & NL_NEGOTIATE_RESPONSE);
+		ndr_print_NL_AUTH_MESSAGE_BUFFER_REPLY(ndr, "Buffer", &r->Buffer);
 		ndr->depth--;
 		ndr->flags = _flags_save_STRUCT;
 	}
