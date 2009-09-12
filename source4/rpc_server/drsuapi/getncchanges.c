@@ -391,7 +391,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 
 
-	DEBUG(4,("DsGetNCChanges with uSNChanged >= %llu on %s gave %u objects\n", 
+	DEBUG(3,("DsGetNCChanges with uSNChanged >= %llu on %s gave %u objects\n", 
 		 (unsigned long long)(r->in.req->req8.highwatermark.highest_usn+1),
 		 ncRoot->dn, r->out.ctr->ctr6.object_count));
 
