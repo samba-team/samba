@@ -70,7 +70,7 @@ test_samba4_ndr("string-wchar-fixed-array-01",
 			   0x00,  0x00, 0x00,  0x00,
 			   0x04,  0x00, 0x00,  0x00,
 			   \'f\', 0x00, \'o\', 0x00,
-			   \'o\', 0x00, 0x00,  0x00
+			   \'o\', 0x00, 0x00,  0x00,
 			   0x02,  0x00, 0x00,  0x00
 	};
 	DATA_BLOB b = { data, sizeof(data) };
@@ -86,16 +86,16 @@ test_samba4_ndr("string-wchar-fixed-array-01",
 	if (r.in.str == NULL)
 		return 2;
 
-	if (r.in.str.l1 == 0x00000001)
+	if (r.in.str->l1 != 0x00000001)
 		return 3;
 
 	if (strncmp(str.str, "foo", 3) != 0)
 		return 4;
 
-	if (r.in.str.str[4] != 0)
+	if (r.in.str->str[4] != 0)
 		return 5;
 
-	if (r.in.str.l3 == 0x00000002)
+	if (r.in.str->l2 != 0x00000002)
 		return 6;
 ');
 
