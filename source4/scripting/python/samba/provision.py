@@ -1040,10 +1040,14 @@ def provision(setup_dir, message, session_info,
     if domainsid is None:
         domainsid = security.random_sid()
 
+    # create/adapt the group policy GUIDs
     if policyguid is None:
         policyguid = str(uuid.uuid4())
+    policyguid = policyguid.upper()
     if policyguid_dc is None:
         policyguid_dc = str(uuid.uuid4())
+    policyguid_dc = policyguid_dc.upper()
+
     if adminpass is None:
         adminpass = glue.generate_random_str(12)
     if krbtgtpass is None:
@@ -1191,16 +1195,16 @@ def provision(setup_dir, message, session_info,
         os.makedirs(policy_path, 0755)
         open(os.path.join(policy_path, "GPT.INI"), 'w').write(
                                    "[General]\r\nVersion=65544")
-        os.makedirs(os.path.join(policy_path, "Machine"), 0755)
-        os.makedirs(os.path.join(policy_path, "User"), 0755)
+        os.makedirs(os.path.join(policy_path, "MACHINE"), 0755)
+        os.makedirs(os.path.join(policy_path, "USER"), 0755)
 
         policy_path_dc = os.path.join(paths.sysvol, names.dnsdomain, "Policies",
                                    "{" + policyguid_dc + "}")
         os.makedirs(policy_path_dc, 0755)
         open(os.path.join(policy_path_dc, "GPT.INI"), 'w').write(
                                    "[General]\r\nVersion=2")
-        os.makedirs(os.path.join(policy_path_dc, "Machine"), 0755)
-        os.makedirs(os.path.join(policy_path_dc, "User"), 0755)
+        os.makedirs(os.path.join(policy_path_dc, "MACHINE"), 0755)
+        os.makedirs(os.path.join(policy_path_dc, "USER"), 0755)
 
         if not os.path.isdir(paths.netlogon):
             os.makedirs(paths.netlogon, 0755)
