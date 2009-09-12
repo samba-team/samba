@@ -316,7 +316,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	ret = drsuapi_search_with_extended_dn(sam_ctx, mem_ctx, &site_res,
 					      ncRoot_dn, LDB_SCOPE_SUBTREE, attrs,
 					      "uSNChanged>=%llu", 
-					      (unsigned long long)r->in.req->req8.highwatermark.highest_usn);
+					      (unsigned long long)(r->in.req->req8.highwatermark.highest_usn+1));
 	if (ret != LDB_SUCCESS) {
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
@@ -391,8 +391,12 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 
 
 	DEBUG(4,("DsGetNCChanges with uSNChanged >= %llu on %s gave %u objects\n", 
-		 (unsigned long long)r->in.req->req8.highwatermark.highest_usn,
+		 (unsigned long long)(r->in.req->req8.highwatermark.highest_usn+1),
 		 ncRoot->dn, r->out.ctr->ctr6.object_count));
+
+	if (r->out.ctr->ctr6.object_count <= 10 && DEBUGLVL(6)) {
+		NDR_PRINT_FUNCTION_DEBUG(drsuapi_DsGetNCChanges, NDR_IN|NDR_OUT, r);
+	}
 
 	return WERR_OK;
 }
