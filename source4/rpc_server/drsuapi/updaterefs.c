@@ -36,110 +36,6 @@ struct repsTo {
 };
 
 /*
-  load the repsTo structure for a given partition GUID
- */
-static WERROR uref_loadreps(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx, struct ldb_dn *dn,
-			    struct repsTo *reps)
-{
-	const char *attrs[] = { "repsTo", NULL };
-	struct ldb_result *res;
-	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
-	int i;
-	struct ldb_message_element *el;
-
-	/* TODO: possibly check in the rootDSE to see that this DN is
-	 * one of our partition roots */	 
-
-	if (ldb_search(sam_ctx, tmp_ctx, &res, dn, LDB_SCOPE_BASE, attrs, NULL) != LDB_SUCCESS) {
-		DEBUG(0,("drsuapi_addref: failed to read partition object\n"));
-		talloc_free(tmp_ctx);
-		return WERR_DS_DRA_INTERNAL_ERROR;
-	}
-
-	ZERO_STRUCTP(reps);
-
-	el = ldb_msg_find_element(res->msgs[0], "repsTo");
-	if (el == NULL) {
-		talloc_free(tmp_ctx);
-		return WERR_OK;
-	}
-
-	reps->count = el->num_values;
-	reps->r = talloc_array(mem_ctx, struct repsFromToBlob, reps->count);
-	if (reps->r == NULL) {
-		talloc_free(tmp_ctx);
-		return WERR_DS_DRA_INTERNAL_ERROR;
-	}
-
-	for (i=0; i<reps->count; i++) {
-		enum ndr_err_code ndr_err;
-		ndr_err = ndr_pull_struct_blob(&el->values[i], 
-					       mem_ctx, lp_iconv_convenience(ldb_get_opaque(sam_ctx, "loadparm")),
-					       &reps->r[i], 
-					       (ndr_pull_flags_fn_t)ndr_pull_repsFromToBlob);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			talloc_free(tmp_ctx);
-			return WERR_DS_DRA_INTERNAL_ERROR;
-		}
-	}
-
-	talloc_free(tmp_ctx);
-	
-	return WERR_OK;
-}
-
-/*
-  save the repsTo structure for a given partition GUID
- */
-static WERROR uref_savereps(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx, struct ldb_dn *dn,
-			    struct repsTo *reps)
-{
-	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
-	struct ldb_message *msg;
-	struct ldb_message_element *el;
-	int i;
-
-	msg = ldb_msg_new(tmp_ctx);
-	msg->dn = dn;
-	if (ldb_msg_add_empty(msg, "repsTo", LDB_FLAG_MOD_REPLACE, &el) != LDB_SUCCESS) {
-		goto failed;
-	}
-
-	el->values = talloc_array(msg, struct ldb_val, reps->count);
-	if (!el->values) {
-		goto failed;
-	}
-
-	for (i=0; i<reps->count; i++) {
-		struct ldb_val v;
-		enum ndr_err_code ndr_err;
-
-		ndr_err = ndr_push_struct_blob(&v, tmp_ctx, lp_iconv_convenience(ldb_get_opaque(sam_ctx, "loadparm")),
-					       &reps->r[i], 
-					       (ndr_push_flags_fn_t)ndr_push_repsFromToBlob);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			goto failed;
-		}
-
-		el->num_values++;
-		el->values[i] = v;
-	}
-
-	if (ldb_modify(sam_ctx, msg) != LDB_SUCCESS) {
-		DEBUG(0,("Failed to store repsTo - %s\n", ldb_errstring(sam_ctx)));
-		goto failed;
-	}
-
-	talloc_free(tmp_ctx);
-	
-	return WERR_OK;
-
-failed:
-	talloc_free(tmp_ctx);
-	return WERR_DS_DRA_INTERNAL_ERROR;
-}
-
-/*
   add a replication destination for a given partition GUID
  */
 static WERROR uref_add_dest(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx, 
@@ -148,7 +44,7 @@ static WERROR uref_add_dest(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	struct repsTo reps;
 	WERROR werr;
 
-	werr = uref_loadreps(sam_ctx, mem_ctx, dn, &reps);
+	werr = dsdb_loadreps(sam_ctx, mem_ctx, dn, "repsTo", &reps.r, &reps.count);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
@@ -162,7 +58,7 @@ static WERROR uref_add_dest(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	reps.r[reps.count].ctr.ctr1 = *dest;
 	reps.count++;
 
-	werr = uref_savereps(sam_ctx, mem_ctx, dn, &reps);
+	werr = dsdb_savereps(sam_ctx, mem_ctx, dn, "repsTo", reps.r, reps.count);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
@@ -180,7 +76,7 @@ static WERROR uref_del_dest(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	WERROR werr;
 	int i;
 
-	werr = uref_loadreps(sam_ctx, mem_ctx, dn, &reps);
+	werr = dsdb_loadreps(sam_ctx, mem_ctx, dn, "repsTo", &reps.r, &reps.count);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
@@ -194,7 +90,7 @@ static WERROR uref_del_dest(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	werr = uref_savereps(sam_ctx, mem_ctx, dn, &reps);
+	werr = dsdb_savereps(sam_ctx, mem_ctx, dn, "repsTo", reps.r, reps.count);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
