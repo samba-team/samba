@@ -846,7 +846,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_struct_blob(const DATA_BLOB *blob, TALLOC_CT
 	struct ndr_pull *ndr;
 	ndr = ndr_pull_init_blob(blob, mem_ctx, iconv_convenience);
 	NDR_ERR_HAVE_NO_MEMORY(ndr);
-	NDR_CHECK(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
+	NDR_CHECK_FREE(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
+	talloc_free(ndr);
 	return NDR_ERR_SUCCESS;
 }
 
@@ -860,12 +861,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull_struct_blob_all(const DATA_BLOB *blob, TALLO
 	struct ndr_pull *ndr;
 	ndr = ndr_pull_init_blob(blob, mem_ctx, iconv_convenience);
 	NDR_ERR_HAVE_NO_MEMORY(ndr);
-	NDR_CHECK(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
+	NDR_CHECK_FREE(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
 	if (ndr->offset < ndr->data_size) {
 		return ndr_pull_error(ndr, NDR_ERR_UNREAD_BYTES,
 				      "not all bytes consumed ofs[%u] size[%u]",
 				      ndr->offset, ndr->data_size);
 	}
+	talloc_free(ndr);
 	return NDR_ERR_SUCCESS;
 }
 
@@ -879,8 +881,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_union_blob(const DATA_BLOB *blob, TALLOC_CTX
 	struct ndr_pull *ndr;
 	ndr = ndr_pull_init_blob(blob, mem_ctx, iconv_convenience);
 	NDR_ERR_HAVE_NO_MEMORY(ndr);
-	NDR_CHECK(ndr_pull_set_switch_value(ndr, p, level));
-	NDR_CHECK(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
+	NDR_CHECK_FREE(ndr_pull_set_switch_value(ndr, p, level));
+	NDR_CHECK_FREE(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
+	talloc_free(ndr);
 	return NDR_ERR_SUCCESS;
 }
 
@@ -895,13 +898,17 @@ _PUBLIC_ enum ndr_err_code ndr_pull_union_blob_all(const DATA_BLOB *blob, TALLOC
 	struct ndr_pull *ndr;
 	ndr = ndr_pull_init_blob(blob, mem_ctx, iconv_convenience);
 	NDR_ERR_HAVE_NO_MEMORY(ndr);
-	NDR_CHECK(ndr_pull_set_switch_value(ndr, p, level));
-	NDR_CHECK(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
+	NDR_CHECK_FREE(ndr_pull_set_switch_value(ndr, p, level));
+	NDR_CHECK_FREE(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
 	if (ndr->offset < ndr->data_size) {
-		return ndr_pull_error(ndr, NDR_ERR_UNREAD_BYTES,
-				      "not all bytes consumed ofs[%u] size[%u]",
-				      ndr->offset, ndr->data_size);
+		enum ndr_err_code ret;
+		ret = ndr_pull_error(ndr, NDR_ERR_UNREAD_BYTES,
+				     "not all bytes consumed ofs[%u] size[%u]",
+				     ndr->offset, ndr->data_size);
+		talloc_free(ndr);
+		return ret;
 	}
+	talloc_free(ndr);
 	return NDR_ERR_SUCCESS;
 }
 
