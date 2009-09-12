@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    dcerpc schannel operations
@@ -10,12 +10,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -36,14 +36,14 @@ static size_t schannel_sig_size(struct gensec_security *gensec_security, size_t 
 	return 32;
 }
 
-static NTSTATUS schannel_session_key(struct gensec_security *gensec_security, 
+static NTSTATUS schannel_session_key(struct gensec_security *gensec_security,
 					    DATA_BLOB *session_key)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx, 
-				       const DATA_BLOB in, DATA_BLOB *out) 
+static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx,
+				       const DATA_BLOB in, DATA_BLOB *out)
 {
 	struct schannel_state *state = (struct schannel_state *)gensec_security->private_data;
 	NTSTATUS status;
@@ -81,8 +81,8 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 		bind_schannel.u.info3.domain = cli_credentials_get_domain(gensec_security->credentials);
 		bind_schannel.u.info3.workstation = cli_credentials_get_workstation(gensec_security->credentials);
 #endif
-		
-		ndr_err = ndr_push_struct_blob(out, out_mem_ctx, 
+
+		ndr_err = ndr_push_struct_blob(out, out_mem_ctx,
 					       gensec_security->settings->iconv_convenience, &bind_schannel,
 					       (ndr_push_flags_fn_t)ndr_push_schannel_bind);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -91,21 +91,21 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 				  nt_errstr(status)));
 			return status;
 		}
-		
+
 		state->state = SCHANNEL_STATE_UPDATE_1;
 
 		return NT_STATUS_MORE_PROCESSING_REQUIRED;
 	case GENSEC_SERVER:
-		
+
 		if (state->state != SCHANNEL_STATE_START) {
 			/* no third leg on this protocol */
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		
+
 		/* parse the schannel startup blob */
 		ndr_err = ndr_pull_struct_blob(&in, out_mem_ctx,
 			gensec_security->settings->iconv_convenience,
-			&bind_schannel, 
+			&bind_schannel,
 			(ndr_pull_flags_fn_t)ndr_pull_schannel_bind);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			status = ndr_map_error2ntstatus(ndr_err);
@@ -113,7 +113,7 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 				  nt_errstr(status)));
 			return status;
 		}
-		
+
 		if (bind_schannel.bind_type == 23) {
 			workstation = bind_schannel.u.info23.workstation;
 			domain = bind_schannel.u.info23.domain;
@@ -121,15 +121,15 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 			workstation = bind_schannel.u.info3.workstation;
 			domain = bind_schannel.u.info3.domain;
 		}
-		
+
 		if (strcasecmp_m(domain, lp_workgroup(gensec_security->settings->lp_ctx)) != 0) {
 			DEBUG(3, ("Request for schannel to incorrect domain: %s != our domain %s\n",
 				  domain, lp_workgroup(gensec_security->settings->lp_ctx)));
-			
+
 			return NT_STATUS_LOGON_FAILURE;
 		}
 
-		schannel_ldb = schannel_db_connect(out_mem_ctx, gensec_security->event_ctx, 
+		schannel_ldb = schannel_db_connect(out_mem_ctx, gensec_security->event_ctx,
 						   gensec_security->settings->lp_ctx);
 		if (!schannel_ldb) {
 			return NT_STATUS_ACCESS_DENIED;
@@ -152,8 +152,8 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 		bind_schannel_ack.unknown1 = 1;
 		bind_schannel_ack.unknown2 = 0;
 		bind_schannel_ack.unknown3 = 0x6c0000;
-		
-		ndr_err = ndr_push_struct_blob(out, out_mem_ctx, 
+
+		ndr_err = ndr_push_struct_blob(out, out_mem_ctx,
 					       gensec_security->settings->iconv_convenience, &bind_schannel_ack,
 					       (ndr_push_flags_fn_t)ndr_push_schannel_bind_ack);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -181,7 +181,7 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 _PUBLIC_ NTSTATUS dcerpc_schannel_creds(struct gensec_security *gensec_security,
 					TALLOC_CTX *mem_ctx,
 					struct netlogon_creds_CredentialState **creds)
-{ 
+{
 	struct schannel_state *state = talloc_get_type(gensec_security->private_data, struct schannel_state);
 
 	*creds = talloc_reference(mem_ctx, state->creds);
@@ -190,15 +190,15 @@ _PUBLIC_ NTSTATUS dcerpc_schannel_creds(struct gensec_security *gensec_security,
 	}
 	return NT_STATUS_OK;
 }
-		
 
-/** 
+
+/**
  * Returns anonymous credentials for schannel, matching Win2k3.
  *
  */
 
 static NTSTATUS schannel_session_info(struct gensec_security *gensec_security,
-					 struct auth_session_info **_session_info) 
+					 struct auth_session_info **_session_info)
 {
 	struct schannel_state *state = talloc_get_type(gensec_security->private_data, struct schannel_state);
 	return auth_anonymous_session_info(state, gensec_security->event_ctx, gensec_security->settings->lp_ctx, _session_info);
@@ -220,7 +220,7 @@ static NTSTATUS schannel_start(struct gensec_security *gensec_security)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS schannel_server_start(struct gensec_security *gensec_security) 
+static NTSTATUS schannel_server_start(struct gensec_security *gensec_security)
 {
 	NTSTATUS status;
 	struct schannel_state *state;
@@ -232,7 +232,7 @@ static NTSTATUS schannel_server_start(struct gensec_security *gensec_security)
 
 	state = (struct schannel_state *)gensec_security->private_data;
 	state->initiator = false;
-		
+
 	return NT_STATUS_OK;
 }
 
@@ -248,7 +248,7 @@ static NTSTATUS schannel_client_start(struct gensec_security *gensec_security)
 
 	state = (struct schannel_state *)gensec_security->private_data;
 	state->initiator = true;
-		
+
 	return NT_STATUS_OK;
 }
 
@@ -256,7 +256,7 @@ static NTSTATUS schannel_client_start(struct gensec_security *gensec_security)
 static bool schannel_have_feature(struct gensec_security *gensec_security,
 					 uint32_t feature)
 {
-	if (feature & (GENSEC_FEATURE_SIGN | 
+	if (feature & (GENSEC_FEATURE_SIGN |
 		       GENSEC_FEATURE_SEAL)) {
 		return true;
 	}
