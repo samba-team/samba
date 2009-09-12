@@ -505,6 +505,7 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		omd->ctr.ctr1.count++;
+		ZERO_STRUCT(omd->ctr.ctr1.array[i]);
 	}
 
 	/* Get a new sequence number from the backend. We only do this
@@ -519,7 +520,7 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
 	}
 
 	md1 = &omd->ctr.ctr1.array[i];
-	md1->version                   = 1;
+	md1->version++;
 	md1->attid                     = a->attributeID_id;
 	md1->originating_change_time   = now;
 	md1->originating_invocation_id = *our_invocation_id;
