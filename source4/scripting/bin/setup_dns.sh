@@ -12,7 +12,9 @@ IP="$3"
 
 RSUFFIX=$(echo $DOMAIN | sed s/[\.]/,DC=/g)
 
-PRIVATEDIR=$(bin/testparm --section-name=global --parameter-name='private dir' --suppress-prompt 2> /dev/null)
+[ -z "$PRIVATEDIR" ] && {
+    PRIVATEDIR=$(bin/testparm --section-name=global --parameter-name='private dir' --suppress-prompt 2> /dev/null)
+}
 
 OBJECTGUID=$(bin/ldbsearch -H "$PRIVATEDIR/sam.ldb" -b "CN=NTDS Settings,CN=$HOSTNAME,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=$RSUFFIX" objectguid|grep ^objectGUID| cut -d: -f2)
 
