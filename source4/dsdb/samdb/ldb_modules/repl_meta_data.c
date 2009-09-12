@@ -6,22 +6,18 @@
    Copyright (C) Andrew Tridgell 2005
    Copyright (C) Stefan Metzmacher <metze@samba.org> 2007
 
-     ** NOTE! The following LGPL license applies to the ldb
-     ** library. This does NOT imply that all of Samba is released
-     ** under the LGPL
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
    
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 3 of the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
+   This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, see <http://www.gnu.org/licenses/>.
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*
@@ -968,11 +964,6 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 		}
 	}
 
-	ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &seq_num);
-	if (ret != LDB_SUCCESS) {
-		return replmd_replicated_request_error(ar, ret);
-	}
-
 	/* find existing meta data */
 	omd_value = ldb_msg_find_ldb_val(ar->search_msg, "replPropertyMetaData");
 	if (omd_value) {
@@ -1006,8 +997,6 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	/* now merge in the new meta data */
 	for (i=0; i < rmd->ctr.ctr1.count; i++) {
 		bool found = false;
-
-		rmd->ctr.ctr1.array[i].local_usn = seq_num;
 
 		for (j=0; j < ni; j++) {
 			int cmp;
@@ -1082,6 +1071,15 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 
 	ldb_debug(ldb, LDB_DEBUG_TRACE, "replmd_replicated_apply_merge[%u]: replace %u attributes\n",
 		  ar->index_current, msg->num_elements);
+
+	ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &seq_num);
+	if (ret != LDB_SUCCESS) {
+		return replmd_replicated_request_error(ar, ret);
+	}
+
+	for (i=0; i<ni; i++) {
+		nmd.ctr.ctr1.array[i].local_usn = seq_num;
+	}
 
 	/*
 	 * when we know that we'll modify the record, add the whenChanged, uSNChanged
