@@ -35,9 +35,69 @@
 #include "param/param.h"
 
 /*
- * add a repsFrom to all our partitions
+ * see if a repsFromToBlob is in a list
  */
+static bool reps_in_list(struct repsFromToBlob *r, struct repsFromToBlob *reps, uint32_t count)
+{
+	int i;
+	for (i=0; i<count; i++) {
+		if (strcmp(r->ctr.ctr1.other_info->dns_name, 
+			   reps[i].ctr.ctr1.other_info->dns_name) == 0 &&
+		    GUID_compare(&r->ctr.ctr1.source_dsa_obj_guid, 
+				 &reps[i].ctr.ctr1.source_dsa_obj_guid) == 0) {
+			return true;
+		}
+	}
+	return false;
+}
 
+
+/*
+ * add any missing repsFrom structures to our partitions
+ */
+static NTSTATUS kccsrv_add_repsFrom(struct kccsrv_service *s, TALLOC_CTX *mem_ctx,
+				    struct repsFromToBlob *reps, uint32_t count)
+{
+	struct kccsrv_partition *p;
+
+	/* update the repsFrom on all partitions */
+	for (p=s->partitions; p; p=p->next) {
+		struct repsFromToBlob *old_reps;
+		uint32_t old_count;
+		WERROR werr;
+		int i;
+		bool modified = false;
+
+		werr = dsdb_loadreps(s->samdb, mem_ctx, p->dn, "repsFrom", &old_reps, &old_count);
+		if (!W_ERROR_IS_OK(werr)) {
+			DEBUG(0,(__location__ ": Failed to load repsFrom from %s - %s\n", 
+				 ldb_dn_get_linearized(p->dn), ldb_errstring(s->samdb)));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		for (i=0; i<count; i++) {
+			if (!reps_in_list(&reps[i], old_reps, old_count)) {
+				old_reps = talloc_realloc(mem_ctx, old_reps, struct repsFromToBlob, old_count+1);
+				NT_STATUS_HAVE_NO_MEMORY(old_reps);
+				old_reps[old_count] = reps[i];
+				old_count++;
+				modified = true;
+			}
+		}
+		
+		if (modified) {
+			werr = dsdb_savereps(s->samdb, mem_ctx, p->dn, "repsFrom", old_reps, old_count);
+			if (!W_ERROR_IS_OK(werr)) {
+				DEBUG(0,(__location__ ": Failed to save repsFrom to %s - %s\n", 
+					 ldb_dn_get_linearized(p->dn), ldb_errstring(s->samdb)));
+				return NT_STATUS_INTERNAL_DB_CORRUPTION;
+			}
+		}
+	}
+
+	return NT_STATUS_OK;
+
+}
 
 /*
   this is the core of our initial simple KCC
@@ -49,9 +109,8 @@ static NTSTATUS kccsrv_simple_update(struct kccsrv_service *s, TALLOC_CTX *mem_c
 	struct ldb_result *res;
 	int ret, i;
 	const char *attrs[] = { "objectGUID", "invocationID", NULL };
-	struct ldb_message *msg;
-	struct ldb_message_element *el;
-	struct kccsrv_partition *p;
+	struct repsFromToBlob *reps = NULL;
+	uint32_t count = 0;
 
 	ret = ldb_search(s->samdb, mem_ctx, &res, s->config_dn, LDB_SCOPE_SUBTREE, 
 			 attrs, "objectClass=nTDSDSA");
@@ -60,21 +119,10 @@ static NTSTATUS kccsrv_simple_update(struct kccsrv_service *s, TALLOC_CTX *mem_c
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	msg = ldb_msg_new(mem_ctx);
-	NT_STATUS_HAVE_NO_MEMORY(msg);
-
-	ret = ldb_msg_add_empty(msg, "repsFrom", LDB_FLAG_MOD_REPLACE, &el);
-	if (ret != LDB_SUCCESS) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	for (i=0; i<res->count; i++) {
-		struct repsFromToBlob r;
 		struct repsFromTo1 *r1;
 		struct repsFromTo1OtherInfo oi;
 		struct GUID ntds_guid, invocation_id;
-		struct ldb_val v;
-		enum ndr_err_code ndr_err;
 
 		ntds_guid = samdb_result_guid(res->msgs[i], "objectGUID");
 		if (GUID_compare(&ntds_guid, &s->ntds_guid) == 0) {
@@ -84,10 +132,13 @@ static NTSTATUS kccsrv_simple_update(struct kccsrv_service *s, TALLOC_CTX *mem_c
 
 		invocation_id = samdb_result_guid(res->msgs[i], "invocationID");
 
-		ZERO_STRUCT(r);
+		reps = talloc_realloc(mem_ctx, reps, struct repsFromToBlob, count+1);
+		NT_STATUS_HAVE_NO_MEMORY(reps);
+
+		ZERO_STRUCT(reps[count]);
 		ZERO_STRUCT(oi);
-		r.version = 1;
-		r1 = &r.ctr.ctr1;
+		reps[count].version = 1;
+		r1 = &reps[count].ctr.ctr1;
 
 		oi.dns_name                  = talloc_asprintf(mem_ctx, "%s._msdcs.%s",
 							       GUID_string(mem_ctx, &ntds_guid),
@@ -100,35 +151,10 @@ static NTSTATUS kccsrv_simple_update(struct kccsrv_service *s, TALLOC_CTX *mem_c
 			DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP | 
 			DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS;
 		memset(r1->schedule, 0x11, sizeof(r1->schedule));
-
-
-		ndr_err = ndr_push_struct_blob(&v, mem_ctx, 
-					       lp_iconv_convenience(s->task->lp_ctx),
-					       &r,
-					       (ndr_push_flags_fn_t)ndr_push_repsFromToBlob);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			DEBUG(0,(__location__ ": Failed tp push repsFrom blob\n"));
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-
-		el->values = talloc_realloc(msg, el->values, struct ldb_val, el->num_values+1);
-		NT_STATUS_HAVE_NO_MEMORY(el->values);
-		el->values[el->num_values] = v;
-		el->num_values++;
+		count++;
 	}
 
-	/* replace the repsFrom on all partitions */
-	for (p=s->partitions; p; p=p->next) {
-		msg->dn = p->dn;
-		ret = ldb_modify(s->samdb, msg);
-		if (ret != LDB_SUCCESS) {
-			DEBUG(0,(__location__ ": Failed to store repsFrom for %s - %s\n",
-				 ldb_dn_get_linearized(msg->dn), ldb_errstring(s->samdb)));
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-	}
-
-	return NT_STATUS_OK;
+	return kccsrv_add_repsFrom(s, mem_ctx, reps, count);
 }
 
 

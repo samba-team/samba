@@ -36,6 +36,7 @@
 #include "libcli/ldap/ldap_ndr.h"
 #include "param/param.h"
 #include "libcli/auth/libcli_auth.h"
+#include "librpc/gen_ndr/ndr_drsblobs.h"
 
 /*
   search the sam for the specified attributes in a specific domain, filter on
@@ -2146,3 +2147,113 @@ int dsdb_find_guid_by_dn(struct ldb_context *ldb,
 	talloc_free(tmp_ctx);
 	return LDB_SUCCESS;
 }
+
+
+
+/*
+  load a repsFromTo blob list for a given partition GUID
+  attr must be "repsFrom" or "repsTo"
+ */
+WERROR dsdb_loadreps(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx, struct ldb_dn *dn,
+		     const char *attr, struct repsFromToBlob **r, uint32_t *count)
+{
+	const char *attrs[] = { attr, NULL };
+	struct ldb_result *res = NULL;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	int i;
+	struct ldb_message_element *el;
+
+	*r = NULL;
+	*count = 0;
+
+	if (ldb_search(sam_ctx, tmp_ctx, &res, dn, LDB_SCOPE_BASE, attrs, NULL) != LDB_SUCCESS ||
+	    res->count < 1) {
+		DEBUG(0,("dsdb_loadreps: failed to read partition object\n"));
+		talloc_free(tmp_ctx);
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+
+	el = ldb_msg_find_element(res->msgs[0], attr);
+	if (el == NULL) {
+		/* it's OK to be empty */
+		talloc_free(tmp_ctx);
+		return WERR_OK;
+	}
+
+	*count = el->num_values;
+	*r = talloc_array(mem_ctx, struct repsFromToBlob, *count);
+	if (*r == NULL) {
+		talloc_free(tmp_ctx);
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+
+	for (i=0; i<(*count); i++) {
+		enum ndr_err_code ndr_err;
+		ndr_err = ndr_pull_struct_blob(&el->values[i], 
+					       mem_ctx, lp_iconv_convenience(ldb_get_opaque(sam_ctx, "loadparm")),
+					       &(*r)[i], 
+					       (ndr_pull_flags_fn_t)ndr_pull_repsFromToBlob);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			talloc_free(tmp_ctx);
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+	}
+
+	talloc_free(tmp_ctx);
+	
+	return WERR_OK;
+}
+
+/*
+  save the repsFromTo blob list for a given partition GUID
+  attr must be "repsFrom" or "repsTo"
+ */
+WERROR dsdb_savereps(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx, struct ldb_dn *dn,
+		     const char *attr, struct repsFromToBlob *r, uint32_t count)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	struct ldb_message *msg;
+	struct ldb_message_element *el;
+	int i;
+
+	msg = ldb_msg_new(tmp_ctx);
+	msg->dn = dn;
+	if (ldb_msg_add_empty(msg, attr, LDB_FLAG_MOD_REPLACE, &el) != LDB_SUCCESS) {
+		goto failed;
+	}
+
+	el->values = talloc_array(msg, struct ldb_val, count);
+	if (!el->values) {
+		goto failed;
+	}
+
+	for (i=0; i<count; i++) {
+		struct ldb_val v;
+		enum ndr_err_code ndr_err;
+
+		ndr_err = ndr_push_struct_blob(&v, tmp_ctx, lp_iconv_convenience(ldb_get_opaque(sam_ctx, "loadparm")),
+					       &r[i], 
+					       (ndr_push_flags_fn_t)ndr_push_repsFromToBlob);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			goto failed;
+		}
+
+		el->num_values++;
+		el->values[i] = v;
+	}
+
+	if (ldb_modify(sam_ctx, msg) != LDB_SUCCESS) {
+		DEBUG(0,("Failed to store %s - %s\n", attr, ldb_errstring(sam_ctx)));
+		goto failed;
+	}
+
+	talloc_free(tmp_ctx);
+	
+	return WERR_OK;
+
+failed:
+	talloc_free(tmp_ctx);
+	return WERR_DS_DRA_INTERNAL_ERROR;
+}
+
+
