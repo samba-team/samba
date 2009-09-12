@@ -763,6 +763,15 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 	struct ldb_seqnum_result *tseqr;
 	struct ldb_extended *ext;
 	struct ldb_result *res;
+	struct dsdb_partition *p;
+
+	p = find_partition(NULL, NULL, req);
+	if (p != NULL) {
+		/* the caller specified what partition they want the
+		 * sequence number operation on - just pass it on
+		 */
+		return ldb_next_request(p->module, req);		
+	}
 
 	seq = talloc_get_type(req->op.extended.data, struct ldb_seqnum_request);
 
