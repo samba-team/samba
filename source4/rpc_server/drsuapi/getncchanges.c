@@ -363,6 +363,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 
 		uSN = ldb_msg_find_attr_as_int(site_res->msgs[i], "uSNChanged", -1);
 		if (uSN > r->out.ctr->ctr6.new_highwatermark.highest_usn) {
+			r->out.ctr->ctr6.new_highwatermark.tmp_highest_usn = uSN;
 			r->out.ctr->ctr6.new_highwatermark.highest_usn = uSN;
 		}
 
