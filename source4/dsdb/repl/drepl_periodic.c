@@ -103,7 +103,8 @@ static void dreplsrv_periodic_run(struct dreplsrv_service *service)
 	dreplsrv_schedule_pull_replication(service, mem_ctx);
 	talloc_free(mem_ctx);
 
-	DEBUG(2,("dreplsrv_periodic_run(): run pending_ops\n"));
+	DEBUG(2,("dreplsrv_periodic_run(): run pending_ops memory=%u\n", 
+		 (unsigned)talloc_total_blocks(service)));
 
 	/* the KCC might have changed repsFrom */
 	dreplsrv_refresh_partitions(service);

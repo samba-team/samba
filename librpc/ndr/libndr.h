@@ -254,6 +254,16 @@ enum ndr_compression_alg {
 	} \
 } while (0)
 
+/* if the call fails then free the ndr pointer */
+#define NDR_CHECK_FREE(call) do { \
+	enum ndr_err_code _status; \
+	_status = call; \
+	if (!NDR_ERR_CODE_IS_SUCCESS(_status)) { \
+		talloc_free(ndr);		 \
+		return _status; \
+	} \
+} while (0)
+
 #define NDR_PULL_GET_MEM_CTX(ndr) (ndr->current_mem_ctx)
 
 #define NDR_PULL_SET_MEM_CTX(ndr, mem_ctx, flgs) do {\
