@@ -964,11 +964,6 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 		}
 	}
 
-	ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &seq_num);
-	if (ret != LDB_SUCCESS) {
-		return replmd_replicated_request_error(ar, ret);
-	}
-
 	/* find existing meta data */
 	omd_value = ldb_msg_find_ldb_val(ar->search_msg, "replPropertyMetaData");
 	if (omd_value) {
@@ -1002,8 +997,6 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	/* now merge in the new meta data */
 	for (i=0; i < rmd->ctr.ctr1.count; i++) {
 		bool found = false;
-
-		rmd->ctr.ctr1.array[i].local_usn = seq_num;
 
 		for (j=0; j < ni; j++) {
 			int cmp;
@@ -1078,6 +1071,15 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 
 	ldb_debug(ldb, LDB_DEBUG_TRACE, "replmd_replicated_apply_merge[%u]: replace %u attributes\n",
 		  ar->index_current, msg->num_elements);
+
+	ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &seq_num);
+	if (ret != LDB_SUCCESS) {
+		return replmd_replicated_request_error(ar, ret);
+	}
+
+	for (i=0; i<ni; i++) {
+		nmd.ctr.ctr1.array[i].local_usn = seq_num;
+	}
 
 	/*
 	 * when we know that we'll modify the record, add the whenChanged, uSNChanged
