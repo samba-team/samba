@@ -148,7 +148,7 @@ static WERROR dreplsrv_partition_add_source_dsa(struct dreplsrv_service *s,
 {
 	WERROR status;
 	enum ndr_err_code ndr_err;
-	struct dreplsrv_partition_source_dsa *source;
+	struct dreplsrv_partition_source_dsa *source, *s2;
 
 	source = talloc_zero(p, struct dreplsrv_partition_source_dsa);
 	W_ERROR_HAVE_NO_MEMORY(source);
@@ -158,10 +158,12 @@ static WERROR dreplsrv_partition_add_source_dsa(struct dreplsrv_service *s,
 				       (ndr_pull_flags_fn_t)ndr_pull_repsFromToBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
+		talloc_free(source);
 		return ntstatus_to_werror(nt_status);
 	}
 	/* NDR_PRINT_DEBUG(repsFromToBlob, &source->_repsFromBlob); */
 	if (source->_repsFromBlob.version != 1) {
+		talloc_free(source);
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
@@ -171,13 +173,24 @@ static WERROR dreplsrv_partition_add_source_dsa(struct dreplsrv_service *s,
 	status = dreplsrv_out_connection_attach(s, source->repsFrom1, &source->conn);
 	W_ERROR_NOT_OK_RETURN(status);
 
+	/* remove any existing source with the same GUID */
+	for (s2=p->sources; s2; s2=s2->next) {
+		if (GUID_compare(&s2->repsFrom1->source_dsa_obj_guid, 
+				 &source->repsFrom1->source_dsa_obj_guid) == 0) {
+			talloc_free(s2->repsFrom1->other_info);
+			*s2->repsFrom1 = *source->repsFrom1;
+			talloc_steal(s2, s2->repsFrom1->other_info);
+			talloc_free(source);
+			return WERR_OK;
+		}
+	}
+
 	DLIST_ADD_END(p->sources, source, struct dreplsrv_partition_source_dsa *);
 	return WERR_OK;
 }
 
 static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
-					 struct dreplsrv_partition *p,
-					 TALLOC_CTX *mem_ctx)
+					 struct dreplsrv_partition *p)
 {
 	WERROR status;
 	const struct ldb_val *ouv_value;
@@ -187,6 +200,7 @@ static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 	struct ldb_result *r;
 	uint32_t i;
 	int ret;
+	TALLOC_CTX *mem_ctx = talloc_new(p);
 	static const char *attrs[] = {
 		"objectSid",
 		"objectGUID",
@@ -201,12 +215,14 @@ static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 	ret = ldb_search(s->samdb, mem_ctx, &r, p->dn, LDB_SCOPE_BASE, attrs,
 			 "(objectClass=*)");
 	if (ret != LDB_SUCCESS) {
+		talloc_free(mem_ctx);
 		return WERR_FOOBAR;
 	} else if (r->count != 1) {
-		talloc_free(r);
+		talloc_free(mem_ctx);
 		return WERR_FOOBAR;
 	}
-
+	
+	talloc_free(discard_const(p->nc.dn));
 	ZERO_STRUCT(p->nc);
 	p->nc.dn	= ldb_dn_alloc_linearized(p, p->dn);
 	W_ERROR_HAVE_NO_MEMORY(p->nc.dn);
@@ -214,6 +230,7 @@ static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 	nc_sid		= samdb_result_dom_sid(p, r->msgs[0], "objectSid");
 	if (nc_sid) {
 		p->nc.sid	= *nc_sid;
+		talloc_free(nc_sid);
 	}
 
 	ouv_value = ldb_msg_find_ldb_val(r->msgs[0], "replUpToDateVector");
@@ -224,15 +241,18 @@ static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 					       (ndr_pull_flags_fn_t)ndr_pull_replUpToDateVectorBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
+			talloc_free(mem_ctx);
 			return ntstatus_to_werror(nt_status);
 		}
 		/* NDR_PRINT_DEBUG(replUpToDateVectorBlob, &ouv); */
 		if (ouv.version != 2) {
+			talloc_free(mem_ctx);
 			return WERR_DS_DRA_INTERNAL_ERROR;
 		}
 
 		p->uptodatevector.count		= ouv.ctr.ctr2.count;
 		p->uptodatevector.reserved	= ouv.ctr.ctr2.reserved;
+		talloc_free(p->uptodatevector.cursors);
 		p->uptodatevector.cursors	= talloc_steal(p, ouv.ctr.ctr2.cursors);
 	}
 
@@ -249,7 +269,7 @@ static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 		}
 	}
 
-	talloc_free(r);
+	talloc_free(mem_ctx);
 
 	return WERR_OK;
 }
@@ -260,7 +280,7 @@ WERROR dreplsrv_refresh_partitions(struct dreplsrv_service *s)
 	struct dreplsrv_partition *p;
 
 	for (p = s->partitions; p; p = p->next) {
-		status = dreplsrv_refresh_partition(s, p, p);
+		status = dreplsrv_refresh_partition(s, p);
 		W_ERROR_NOT_OK_RETURN(status);
 	}
 

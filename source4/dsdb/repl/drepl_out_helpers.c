@@ -464,10 +464,8 @@ static void dreplsrv_update_refs_recv(struct rpc_request *req)
 
 	c->status = dcerpc_ndr_request_recv(req);
 	if (!composite_is_ok(c)) {
-		DEBUG(0,("UpdateRefs failed with %s for %s %s\n", 
-			 nt_errstr(c->status),
-			 r->in.req.req1.dest_dsa_dns_name,
-			 r->in.req.req1.naming_context->dn));
+		DEBUG(0,("UpdateRefs failed with %s\n", 
+			 nt_errstr(c->status)));
 		return;
 	}
 
