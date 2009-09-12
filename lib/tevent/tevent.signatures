@@ -53,3 +53,5 @@ void tevent_req_set_print_fn (struct tevent_req *, tevent_req_print_fn);
 void _tevent_schedule_immediate (struct tevent_immediate *, struct tevent_context *, tevent_immediate_handler_t, void *, const char *, const char *);
 void tevent_set_abort_fn (void (*) (const char *));
 void tevent_set_default_backend (const char *);
+_Bool _tevent_req_cancel (struct tevent_req *, const char *);
+void tevent_req_set_cancel_fn (struct tevent_req *, tevent_req_cancel_fn);

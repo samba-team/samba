@@ -23,6 +23,7 @@ PACKAGE_VERSION = @PACKAGE_VERSION@
 PYTHON = @PYTHON@
 PYTHON_CONFIG = @PYTHON_CONFIG@
 ldbdir = $(srcdir)
+LIB_PATH_VAR = @LIB_PATH_VAR@
 
 LDB_MODULESDIR = @LDB_MODULESDIR@
 
@@ -146,10 +147,10 @@ realdistclean:: distclean
 check:: test @PYTHON_CHECK_TARGET@
 
 check-soloading: sample.$(SHLIBEXT)
-	LDB_MODULES_PATH=$(builddir) $(srcdir)/tests/test-soloading.sh
+	$(LIB_PATH_VAR)=lib LDB_MODULES_PATH=$(builddir) $(srcdir)/tests/test-soloading.sh
 
 test:: all check-soloading
-	for t in $(TESTS); do echo STARTING $${t}; $(srcdir)/tests/$${t} || exit 1; done
+	for t in $(TESTS); do echo STARTING $${t}; $(LIB_PATH_VAR)=lib $(srcdir)/tests/$${t} || exit 1; done
 
 valgrindtest:: all
 	for t in $(TESTS); do echo STARTING $${t}; VALGRIND="valgrind -q --db-attach=yes --num-callers=30" $(srcdir)/tests/$${t} || exit 1; done

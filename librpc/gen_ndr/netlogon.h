@@ -930,7 +930,7 @@ struct netr_OsVersionInfoEx {
 	uint32_t MinorVersion;
 	uint32_t BuildNumber;
 	uint32_t PlatformId;
-	const char *CSDVersion;/* [charset(UTF16)] */
+	const char * CSDVersion;/* [subcontext_size(256),subcontext(0),flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	uint16_t ServicePackMajor;
 	uint16_t ServicePackMinor;
 	uint16_t SuiteMask;

@@ -785,7 +785,6 @@ int ldb_mod_register_control(struct ldb_module *module, const char *oid)
 	LDB_BACKEND(tdb),	\
 	LDAP_BACKEND	\
 	SQLITE3_BACKEND	\
-	LDB_MODULE(operational),	\
 	LDB_MODULE(rdn_name),	\
 	LDB_MODULE(paged_results),	\
 	LDB_MODULE(server_sort),		\

@@ -74,8 +74,8 @@ install-python:: build-python
 	mkdir -p $(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(1, prefix='$(prefix)')"`
 	cp ldb.$(SHLIBEXT) $(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(1, prefix='$(prefix)')"`
 
-check-python:: build-python
-	LD_LIBRARY_PATH=lib PYTHONPATH=.:$(ldbdir) $(PYTHON) $(ldbdir)/tests/python/api.py
+check-python:: build-python lib/$(SONAME)
+	$(LIB_PATH_VAR)=lib PYTHONPATH=.:$(ldbdir) $(PYTHON) $(ldbdir)/tests/python/api.py
 
 clean::
 	rm -f ldb.$(SHLIBEXT)

@@ -53,7 +53,9 @@ parser.add_option("--domain-guid", type="string", metavar="GUID",
 parser.add_option("--domain-sid", type="string", metavar="SID", 
 		help="set domainsid (otherwise random)")
 parser.add_option("--policy-guid", type="string", metavar="GUID",
-				  help="set policy guid")
+				  help="set guid for domain policy")
+parser.add_option("--policy-guid-dc", type="string", metavar="GUID",
+				  help="set guid for domain controller policy")
 parser.add_option("--invocationid", type="string", metavar="GUID", 
 		  help="set invocationid (otherwise random)")
 parser.add_option("--host-name", type="string", metavar="HOSTNAME", 
@@ -181,7 +183,8 @@ provision(setup_dir, message,
           session, creds, smbconf=smbconf, targetdir=opts.targetdir,
           samdb_fill=samdb_fill, realm=opts.realm, domain=opts.domain,
           domainguid=opts.domain_guid, domainsid=opts.domain_sid,
-          policyguid=opts.policy_guid, hostname=opts.host_name,
+          policyguid=opts.policy_guid, policyguid_dc=opts.policy_guid_dc,
+          hostname=opts.host_name,
           hostip=opts.host_ip, hostip6=opts.host_ip6,
           invocationid=opts.invocationid, adminpass=opts.adminpass,
           krbtgtpass=opts.krbtgtpass, machinepass=opts.machinepass,

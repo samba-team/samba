@@ -118,10 +118,6 @@ while (my $LINE = <>) {
 		}
 	}
 
-	next if ($LINE =~ /^typedef\s/);
-	next if ($LINE =~ /^enum\s+[^\{\(]+\s+\{/);
-	next if ($LINE =~ /^struct\s+[^\{\(]+\s+\{.*\}\s*;/);
-
 	# concetenate function prototypes that stretch over multiple lines
 	$REST = $LINE;
 	my $parenthesis = 0;
@@ -155,10 +151,16 @@ while (my $LINE = <>) {
 		}
 	}
 
+	next if ($LINE =~ /^typedef\s/);
+	next if ($LINE =~ /^enum\s+[^\{\(]+\s+\{/);
+	next if ($LINE =~ /^struct\s+[^\{\(]+\s+\{.*\}\s*;/);
+	next if ($LINE =~ /^struct\s+[a-zA-Z0-9_]+\s*;/);
+
 	# remove trailing spaces
 	$LINE =~ s/(.*?)\s*$/$1/;
 
-	$LINE =~ s/^(.*\))\s+PRINTF_ATTRIBUTE\(.*\);$/$1;/;
+	$LINE =~ s/^(.*\))\s+PRINTF_ATTRIBUTE\([^\)]*\)(\s*[;,])/$1$2/;
+	$LINE =~ s/^(.*\))\s*[a-zA-Z0-9_]+\s*;$/$1;/;
 
 	# remove parameter names - slightly too coarse probably
 	$LINE =~ s/([\s\(]\*?)[_0-9a-zA-Z]+\s*([,\)])/$1$2/g;
@@ -173,6 +175,9 @@ while (my $LINE = <>) {
 
 	# normalize unsigned
 	$LINE =~ s/([\s,\(])unsigned([,\)])/$1unsigned int$2/g;
+
+	# normalize bool
+	$LINE =~ s/(\b)bool(\b)/_Bool/g;
 
 	print $LINE . "\n";
 }

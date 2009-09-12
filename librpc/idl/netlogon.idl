@@ -1287,7 +1287,7 @@ interface netlogon
 		uint32 MinorVersion;
 		uint32 BuildNumber;
 		uint32 PlatformId;
-		[charset(UTF16)] uint16 CSDVersion[128];
+		[subcontext(0),subcontext_size(256)] nstring CSDVersion;
 		uint16 ServicePackMajor;
 		uint16 ServicePackMinor;
 		netr_SuiteMask SuiteMask;

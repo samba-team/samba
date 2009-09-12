@@ -29,6 +29,14 @@ installlibs:: installdirs
 
 install:: all installdirs installheaders installlibs $(PYTHON_INSTALL_TARGET)
 
+abi_checks::
+	@echo ABI checks:
+	@./script/abi_checks.sh tevent tevent.h
+
+test:: abi_checks
+
 clean::
 	rm -f $(TEVENT_SOBASE) $(TEVENT_SONAME) $(TEVENT_SOLIB) $(TEVENT_STLIB)
 	rm -f tevent.pc
+	rm -f tevent.exports.sort tevent.exports.check tevent.exports.check.sort
+	rm -f tevent.signatures.sort tevent.signatures.check tevent.signatures.check.sort

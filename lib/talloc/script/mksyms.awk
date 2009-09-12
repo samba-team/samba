@@ -28,7 +28,7 @@ END {
 		current_file=FILENAME
 	}
 	if (inheader) {
-		if (match($0,"[)][ \t]*[;][ \t]*$")) {
+		if (match($0,"[)][^()]*[;][ \t]*$")) {
 			inheader = 0;
 		}
 		next;
@@ -57,10 +57,10 @@ END {
 	}
 }
 
-/[_A-Za-z0-9]+[ \t]*[(].*[)][ \t]*;[ \t]*$/ {
+/[_A-Za-z0-9]+[ \t]*[(].*[)][^()]*;[ \t]*$/ {
 	sub(/[(].*$/, "");
 	gsub(/[^ \t]+[ \t]+/, "");
-	gsub(/^[*]/, "");
+	gsub(/^[*]+/, "");
 	printf "\t\t%s;\n",$0;
 	next;
 }

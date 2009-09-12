@@ -123,7 +123,6 @@ int ldb_connect_backend(struct ldb_context *ldb, const char *url, const char *op
 
 
 extern const struct ldb_module_ops ldb_objectclass_module_ops;
-extern const struct ldb_module_ops ldb_operational_module_ops;
 extern const struct ldb_module_ops ldb_paged_results_module_ops;
 extern const struct ldb_module_ops ldb_rdn_name_module_ops;
 extern const struct ldb_module_ops ldb_schema_module_ops;

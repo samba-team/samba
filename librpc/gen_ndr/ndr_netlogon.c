@@ -7393,7 +7393,17 @@ static enum ndr_err_code ndr_push_netr_OsVersionInfoEx(struct ndr_push *ndr, int
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->MinorVersion));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->BuildNumber));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->PlatformId));
-		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->CSDVersion, 128, sizeof(uint16_t), CH_UTF16));
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			{
+				struct ndr_push *_ndr_CSDVersion;
+				NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_CSDVersion, 0, 256));
+				NDR_CHECK(ndr_push_string(_ndr_CSDVersion, NDR_SCALARS, r->CSDVersion));
+				NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_CSDVersion, 0, 256));
+			}
+			ndr->flags = _flags_save_string;
+		}
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->ServicePackMajor));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->ServicePackMinor));
 		NDR_CHECK(ndr_push_netr_SuiteMask(ndr, NDR_SCALARS, r->SuiteMask));
@@ -7414,7 +7424,17 @@ static enum ndr_err_code ndr_pull_netr_OsVersionInfoEx(struct ndr_pull *ndr, int
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->MinorVersion));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->BuildNumber));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->PlatformId));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->CSDVersion, 128, sizeof(uint16_t), CH_UTF16));
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			{
+				struct ndr_pull *_ndr_CSDVersion;
+				NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_CSDVersion, 0, 256));
+				NDR_CHECK(ndr_pull_string(_ndr_CSDVersion, NDR_SCALARS, &r->CSDVersion));
+				NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_CSDVersion, 0, 256));
+			}
+			ndr->flags = _flags_save_string;
+		}
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->ServicePackMajor));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->ServicePackMinor));
 		NDR_CHECK(ndr_pull_netr_SuiteMask(ndr, NDR_SCALARS, &r->SuiteMask));

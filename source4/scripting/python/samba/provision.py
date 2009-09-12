@@ -766,7 +766,7 @@ def setup_samdb_rootdse(samdb, setup_path, names):
 def setup_self_join(samdb, names,
                     machinepass, dnspass, 
                     domainsid, invocationid, setup_path,
-                    policyguid, domainControllerFunctionality):
+                    policyguid, policyguid_dc, domainControllerFunctionality):
     """Join a host to its own domain."""
     assert isinstance(invocationid, str)
     setup_add_ldif(samdb, setup_path("provision_self_join.ldif"), { 
@@ -788,6 +788,7 @@ def setup_self_join(samdb, names,
 
     setup_add_ldif(samdb, setup_path("provision_group_policy.ldif"), { 
               "POLICYGUID": policyguid,
+              "POLICYGUID_DC": policyguid_dc,
               "DNSDOMAIN": names.dnsdomain,
               "DOMAINSID": str(domainsid),
               "DOMAINDN": names.domaindn})
@@ -814,7 +815,7 @@ def setup_self_join(samdb, names,
 
 def setup_samdb(path, setup_path, session_info, credentials, lp, 
                 names, message, 
-                domainsid, domainguid, policyguid, 
+                domainsid, domainguid, policyguid, policyguid_dc,
                 fill, adminpass, krbtgtpass, 
                 machinepass, invocationid, dnspass,
                 serverrole, schema=None, ldap_backend=None):
@@ -969,7 +970,8 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
             "NETBIOSNAME": names.netbiosname,
             "DEFAULTSITE": names.sitename,
             "CONFIGDN": names.configdn,
-            "SERVERDN": names.serverdn
+            "SERVERDN": names.serverdn,
+            "POLICYGUID_DC": policyguid_dc
             })
 
         if fill == FILL_FULL:
@@ -988,6 +990,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
                                 dnspass=dnspass,  
                                 machinepass=machinepass, 
                                 domainsid=domainsid, policyguid=policyguid,
+                                policyguid_dc=policyguid_dc,
                                 setup_path=setup_path,
                                 domainControllerFunctionality=domainControllerFunctionality)
                 # add the NTDSGUID based SPNs
@@ -1017,7 +1020,8 @@ def provision(setup_dir, message, session_info,
               domain=None, hostname=None, hostip=None, hostip6=None, 
               domainsid=None, adminpass=None, ldapadminpass=None, 
               krbtgtpass=None, domainguid=None, 
-              policyguid=None, invocationid=None, machinepass=None, 
+              policyguid=None, policyguid_dc=None, invocationid=None,
+              machinepass=None, 
               dnspass=None, root=None, nobody=None, users=None, 
               wheel=None, backup=None, aci=None, serverrole=None, 
               ldap_backend_extra_port=None, ldap_backend_type=None,
@@ -1038,6 +1042,8 @@ def provision(setup_dir, message, session_info,
 
     if policyguid is None:
         policyguid = str(uuid.uuid4())
+    if policyguid_dc is None:
+        policyguid_dc = str(uuid.uuid4())
     if adminpass is None:
         adminpass = glue.generate_random_str(12)
     if krbtgtpass is None:
@@ -1157,7 +1163,8 @@ def provision(setup_dir, message, session_info,
                         credentials=credentials, lp=lp, names=names,
                         message=message, 
                         domainsid=domainsid, 
-                        schema=schema, domainguid=domainguid, policyguid=policyguid, 
+                        schema=schema, domainguid=domainguid,
+                        policyguid=policyguid, policyguid_dc=policyguid_dc,
                         fill=samdb_fill, 
                         adminpass=adminpass, krbtgtpass=krbtgtpass,
                         invocationid=invocationid, 
@@ -1177,12 +1184,24 @@ def provision(setup_dir, message, session_info,
                     (paths.smbconf, setup_path("provision.smb.conf.dc")))
             assert(paths.sysvol is not None)            
             
-        policy_path = os.path.join(paths.sysvol, names.dnsdomain, "Policies", 
+        # Set up group policies (domain policy and domain controller policy)
+
+        policy_path = os.path.join(paths.sysvol, names.dnsdomain, "Policies",
                                    "{" + policyguid + "}")
         os.makedirs(policy_path, 0755)
-        open(os.path.join(policy_path, "GPT.INI"), 'w').write("")
+        open(os.path.join(policy_path, "GPT.INI"), 'w').write(
+                                   "[General]\r\nVersion=65544")
         os.makedirs(os.path.join(policy_path, "Machine"), 0755)
         os.makedirs(os.path.join(policy_path, "User"), 0755)
+
+        policy_path_dc = os.path.join(paths.sysvol, names.dnsdomain, "Policies",
+                                   "{" + policyguid_dc + "}")
+        os.makedirs(policy_path_dc, 0755)
+        open(os.path.join(policy_path_dc, "GPT.INI"), 'w').write(
+                                   "[General]\r\nVersion=2")
+        os.makedirs(os.path.join(policy_path_dc, "Machine"), 0755)
+        os.makedirs(os.path.join(policy_path_dc, "User"), 0755)
+
         if not os.path.isdir(paths.netlogon):
             os.makedirs(paths.netlogon, 0755)
 
@@ -1316,7 +1335,8 @@ def provision_become_dc(setup_dir=None,
                         configdn=None, serverdn=None,
                         domain=None, hostname=None, domainsid=None, 
                         adminpass=None, krbtgtpass=None, domainguid=None, 
-                        policyguid=None, invocationid=None, machinepass=None, 
+                        policyguid=None, policyguid_dc=None, invocationid=None,
+                        machinepass=None, 
                         dnspass=None, root=None, nobody=None, users=None, 
                         wheel=None, backup=None, serverrole=None, 
                         ldap_backend=None, ldap_backend_type=None,

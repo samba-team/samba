@@ -478,7 +478,6 @@ static int db_ctdb_transaction_store(struct db_ctdb_transaction_handle *h,
 		   This is only safe because we are in a transaction and this
 		   is a persistent database */
 		ZERO_STRUCT(header);
-		header.dmaster = get_my_vnn();
 	} else {
 		memcpy(&header, rec.dptr, sizeof(struct ctdb_ltdb_header));
 		rec.dsize -= sizeof(struct ctdb_ltdb_header);
@@ -492,6 +491,7 @@ static int db_ctdb_transaction_store(struct db_ctdb_transaction_handle *h,
 		SAFE_FREE(rec.dptr);
 	}
 
+	header.dmaster = get_my_vnn();
 	header.rsn++;
 
 	if (!h->in_replay) {
