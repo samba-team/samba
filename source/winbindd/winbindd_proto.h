@@ -233,6 +233,9 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 			struct rpc_pipe_client **cli, POLICY_HND *sam_handle);
 NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 			struct rpc_pipe_client **cli, POLICY_HND *lsa_policy);
+NTSTATUS cm_connect_lsa_tcp(struct winbindd_domain *domain,
+			    TALLOC_CTX *mem_ctx,
+			    struct rpc_pipe_client **cli);
 NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 			     struct rpc_pipe_client **cli);
 
