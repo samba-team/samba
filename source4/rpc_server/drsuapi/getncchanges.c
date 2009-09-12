@@ -42,14 +42,17 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 					  struct ldb_context *sam_ctx,
 					  struct ldb_dn *ncRoot_dn,
 					  struct dsdb_schema *schema,
-					  DATA_BLOB *session_key)
+					  DATA_BLOB *session_key,
+					  uint64_t highest_usn)
 {
 	const struct ldb_val *md_value;
-	int i;
+	int i, n;
 	struct ldb_dn *obj_dn;
 	struct replPropertyMetaDataBlob md;
 	struct dom_sid *sid;
 	uint32_t rid = 0;
+	enum ndr_err_code ndr_err;
+	uint32_t *attids;
 
 	if (ldb_dn_compare(ncRoot_dn, msg->dn) == 0) {
 		obj->is_nc_prefix = true;
@@ -61,34 +64,44 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	}
 	obj->next_object = NULL;
 	
-	obj->meta_data_ctr = talloc(obj, struct drsuapi_DsReplicaMetaDataCtr);
 	md_value = ldb_msg_find_ldb_val(msg, "replPropertyMetaData");
-	if (md_value) {
-		enum ndr_err_code ndr_err;
-		ndr_err = ndr_pull_struct_blob(md_value, obj,
-					       lp_iconv_convenience(ldb_get_opaque(sam_ctx, "loadparm")), &md,
-					       (ndr_pull_flags_fn_t)ndr_pull_replPropertyMetaDataBlob);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			return WERR_DS_DRA_INTERNAL_ERROR;
-		}
-		
-		if (md.version != 1) {
-			return WERR_DS_DRA_INTERNAL_ERROR;
-		}
-		
-		obj->meta_data_ctr->count = md.ctr.ctr1.count;
-		obj->meta_data_ctr->meta_data = talloc_array(obj, struct drsuapi_DsReplicaMetaData, md.ctr.ctr1.count);
-		for (i=0; i<md.ctr.ctr1.count; i++) {
-			obj->meta_data_ctr->meta_data[i].originating_change_time = md.ctr.ctr1.array[i].originating_change_time;
-			obj->meta_data_ctr->meta_data[i].version = md.ctr.ctr1.array[i].version;
-			obj->meta_data_ctr->meta_data[i].originating_invocation_id = md.ctr.ctr1.array[i].originating_invocation_id;
-			obj->meta_data_ctr->meta_data[i].originating_usn = md.ctr.ctr1.array[i].originating_usn;
-		}
-	} else {
-		obj->meta_data_ctr->meta_data = talloc(obj, struct drsuapi_DsReplicaMetaData);
-		obj->meta_data_ctr->count = 0;
-		ZERO_STRUCT(md);
+	if (!md_value) {
+		/* nothing to send */
+		return WERR_OK;
 	}
+
+	ndr_err = ndr_pull_struct_blob(md_value, obj,
+				       lp_iconv_convenience(ldb_get_opaque(sam_ctx, "loadparm")), &md,
+				       (ndr_pull_flags_fn_t)ndr_pull_replPropertyMetaDataBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+	
+	if (md.version != 1) {
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+
+	obj->meta_data_ctr = talloc(obj, struct drsuapi_DsReplicaMetaDataCtr);
+	attids = talloc_array(obj, uint32_t, md.ctr.ctr1.count);
+	
+	obj->meta_data_ctr->meta_data = talloc_array(obj, struct drsuapi_DsReplicaMetaData, md.ctr.ctr1.count);
+	for (n=i=0; i<md.ctr.ctr1.count; i++) {
+		if (md.ctr.ctr1.array[i].originating_usn < highest_usn) continue;
+		obj->meta_data_ctr->meta_data[n].originating_change_time = md.ctr.ctr1.array[i].originating_change_time;
+		obj->meta_data_ctr->meta_data[n].version = md.ctr.ctr1.array[i].version;
+		obj->meta_data_ctr->meta_data[n].originating_invocation_id = md.ctr.ctr1.array[i].originating_invocation_id;
+		obj->meta_data_ctr->meta_data[n].originating_usn = md.ctr.ctr1.array[i].originating_usn;
+		attids[n] = md.ctr.ctr1.array[i].attid;
+		n++;
+	}
+	if (n == 0) {
+		/* nothing to send */
+		talloc_free(obj->meta_data_ctr);
+		obj->meta_data_ctr = NULL;
+		return WERR_OK;
+	}
+	obj->meta_data_ctr->count = n;
+
 	obj->object.identifier = talloc(obj, struct drsuapi_DsReplicaObjectIdentifier);
 	obj_dn = ldb_msg_find_attr_as_dn(sam_ctx, obj, msg, "distinguishedName");
 	obj->object.identifier->dn = ldb_dn_get_linearized(obj_dn);
@@ -114,18 +127,18 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 		struct ldb_message_element *el;
 		WERROR werr;
 
-		sa = dsdb_attribute_by_attributeID_id(schema, md.ctr.ctr1.array[i].attid);
+		sa = dsdb_attribute_by_attributeID_id(schema, attids[i]);
 		if (!sa) {
-			DEBUG(0,("Unable to find attributeID %u in schema\n", md.ctr.ctr1.array[i].attid));
+			DEBUG(0,("Unable to find attributeID %u in schema\n", attids[i]));
 			return WERR_DS_DRA_INTERNAL_ERROR;
 		}
 
 		el = ldb_msg_find_element(msg, sa->lDAPDisplayName);
 		if (el == NULL) {
 			DEBUG(0,("No element '%s' for attributeID %u in message\n", 
-				 sa->lDAPDisplayName, md.ctr.ctr1.array[i].attid));
+				 sa->lDAPDisplayName, attids[i]));
 			ZERO_STRUCT(obj->object.attribute_ctr.attributes[i]);
-			obj->object.attribute_ctr.attributes[i].attid = md.ctr.ctr1.array[i].attid;
+			obj->object.attribute_ctr.attributes[i].attid = attids[i];
 		} else {
 			werr = dsdb_attribute_ldb_to_drsuapi(sam_ctx, schema, el, obj,
 							     &obj->object.attribute_ctr.attributes[i]);
@@ -150,6 +163,101 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	return WERR_OK;
 }
 
+static int replmd_drsuapi_DsReplicaCursor2_compare(const struct drsuapi_DsReplicaCursor2 *c1,
+						   const struct drsuapi_DsReplicaCursor2 *c2)
+{
+	return GUID_compare(&c1->source_dsa_invocation_id, &c2->source_dsa_invocation_id);
+}
+
+/*
+  load replUpToDateVector from a DN
+ */
+static WERROR load_udv(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
+		       struct ldb_dn *dn, struct replUpToDateVectorBlob *ouv)
+{
+	const char *attrs[] = { "replUpToDateVector", NULL };
+	struct ldb_result *res = NULL;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	struct ldb_message_element *el;
+	enum ndr_err_code ndr_err;
+
+	ZERO_STRUCTP(ouv);
+
+	if (ldb_search(sam_ctx, tmp_ctx, &res, dn, LDB_SCOPE_BASE, attrs, NULL) != LDB_SUCCESS ||
+	    res->count < 1) {
+		DEBUG(0,("load_udv: failed to read partition object\n"));
+		talloc_free(tmp_ctx);
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+
+	el = ldb_msg_find_element(res->msgs[0], "replUpToDateVector");
+	if (el == NULL || el->num_values < 1) {
+		talloc_free(tmp_ctx);
+		ouv->version = 2;
+		return WERR_OK;
+	}
+
+	ndr_err = ndr_pull_struct_blob(&el->values[0], 
+				       mem_ctx, lp_iconv_convenience(ldb_get_opaque(sam_ctx, "loadparm")),
+				       ouv, 
+				       (ndr_pull_flags_fn_t)ndr_pull_replUpToDateVectorBlob);
+	talloc_free(tmp_ctx);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0,(__location__ ": Failed to parse replUpToDateVector for %s\n",
+			 ldb_dn_get_linearized(dn)));
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+	
+	return WERR_OK;
+	
+}
+
+/*
+  fill in the cursors return based on the replUpToDateVector for the ncRoot_dn
+ */
+static WERROR get_nc_changes_udv(struct ldb_context *sam_ctx,
+				 struct ldb_dn *ncRoot_dn,
+				 struct drsuapi_DsReplicaCursor2CtrEx *udv)
+{
+	WERROR werr;
+	struct drsuapi_DsReplicaCursor2 *tmp_cursor;
+	uint64_t highest_commited_usn;
+	NTTIME now;
+	time_t t = time(NULL);
+	int ret;
+	struct replUpToDateVectorBlob ouv;
+
+	werr = load_udv(sam_ctx, udv, ncRoot_dn, &ouv);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+	
+	ret = ldb_sequence_number(sam_ctx, LDB_SEQ_HIGHEST_SEQ, &highest_commited_usn);
+	if (ret != LDB_SUCCESS) {
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+
+	tmp_cursor = talloc(udv, struct drsuapi_DsReplicaCursor2);
+	tmp_cursor->source_dsa_invocation_id = *(samdb_ntds_invocation_id(sam_ctx));
+	tmp_cursor->highest_usn = highest_commited_usn;
+	unix_to_nt_time(&now, t);
+	tmp_cursor->last_sync_success = now;
+
+	udv->count = ouv.ctr.ctr2.count + 1;
+	udv->cursors = talloc_steal(udv, ouv.ctr.ctr2.cursors);
+	udv->cursors = talloc_realloc(udv, udv->cursors, struct drsuapi_DsReplicaCursor2, udv->count);
+	if (!udv->cursors) {
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+	udv->cursors[udv->count - 1] = *tmp_cursor;
+	
+	qsort(udv->cursors, udv->count,
+	      sizeof(struct drsuapi_DsReplicaCursor2),
+	      (comparison_fn_t)replmd_drsuapi_DsReplicaCursor2_compare);
+
+	return WERR_OK;
+}
+
 /* 
   drsuapi_DsGetNCChanges
 */
@@ -164,12 +272,11 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	int i;
 	struct dsdb_schema *schema;
 	struct drsuapi_DsReplicaOIDMapping_Ctr *ctr;
-	time_t t = time(NULL);
-	NTTIME now;
-	struct drsuapi_DsReplicaObjectListItemEx *currentObject;
+	struct drsuapi_DsReplicaObjectListItemEx **currentObject;
 	NTSTATUS status;
 	DATA_BLOB session_key;
 	const char *attrs[] = { "*", "parentGUID", NULL };
+	WERROR werr;
 
 	/*
 	 * connect to the samdb. TODO: We need to check that the caller
@@ -196,9 +303,6 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	if (ncRoot == NULL) {
 		return WERR_DS_DRA_BAD_NC;
 	}
-
-	DEBUG(4,("DsGetNSChanges with uSNChanged >= %llu\n", 
-		 (unsigned long long)r->in.req->req8.highwatermark.highest_usn));
 
 	/* we need the session key for encrypting password attributes */
 	status = dcesrv_inherited_session_key(dce_call->conn, &session_key);
@@ -244,44 +348,51 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	r->out.ctr->ctr6.old_highwatermark = r->in.req->req8.highwatermark;
 	r->out.ctr->ctr6.new_highwatermark = r->in.req->req8.highwatermark;
 
-	r->out.ctr->ctr6.first_object = talloc(mem_ctx, struct drsuapi_DsReplicaObjectListItemEx);
-	currentObject = r->out.ctr->ctr6.first_object;
+	r->out.ctr->ctr6.uptodateness_vector = talloc(mem_ctx, struct drsuapi_DsReplicaCursor2CtrEx);
+	r->out.ctr->ctr6.uptodateness_vector->version = 2;
+	r->out.ctr->ctr6.uptodateness_vector->reserved1 = 0;
+	r->out.ctr->ctr6.uptodateness_vector->reserved2 = 0;
+
+	r->out.ctr->ctr6.first_object = NULL;
+	currentObject = &r->out.ctr->ctr6.first_object;
 
 	for(i=0; i<site_res->count; i++) {
 		int uSN;
-		WERROR werr;
+		struct drsuapi_DsReplicaObjectListItemEx *obj;
+		obj = talloc_zero(mem_ctx, struct drsuapi_DsReplicaObjectListItemEx);
 
 		uSN = ldb_msg_find_attr_as_int(site_res->msgs[i], "uSNChanged", -1);
-		r->out.ctr->ctr6.object_count++;
 		if (uSN > r->out.ctr->ctr6.new_highwatermark.highest_usn) {
 			r->out.ctr->ctr6.new_highwatermark.highest_usn = uSN;
 		}
 
-		werr = get_nc_changes_build_object(currentObject, site_res->msgs[i], sam_ctx, ncRoot_dn, 
-						   schema, &session_key);
+		werr = get_nc_changes_build_object(obj, site_res->msgs[i], sam_ctx, ncRoot_dn, 
+						   schema, &session_key, r->in.req->req8.highwatermark.highest_usn);
 		if (!W_ERROR_IS_OK(werr)) {
-			r->out.ctr->ctr6.first_object = NULL;
 			return werr;
 		}
-		if (i == (site_res->count-1)) {
-			break;
+
+		if (obj->meta_data_ctr == NULL) {
+			/* no attributes to send */
+			talloc_free(obj);
+			continue;
 		}
-		currentObject->next_object = talloc_zero(mem_ctx, struct drsuapi_DsReplicaObjectListItemEx);
-		currentObject = currentObject->next_object;
+
+		r->out.ctr->ctr6.object_count++;
+		
+		*currentObject = obj;
+		currentObject = &obj->next_object;
 	}
 
-	r->out.ctr->ctr6.uptodateness_vector = talloc(mem_ctx, struct drsuapi_DsReplicaCursor2CtrEx);
+	werr = get_nc_changes_udv(sam_ctx, ncRoot_dn, r->out.ctr->ctr6.uptodateness_vector);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
 
-	r->out.ctr->ctr6.uptodateness_vector->version = 2;
-	r->out.ctr->ctr6.uptodateness_vector->count = 1;
-	r->out.ctr->ctr6.uptodateness_vector->reserved1 = 0;
-	r->out.ctr->ctr6.uptodateness_vector->reserved2 = 0;
-	r->out.ctr->ctr6.uptodateness_vector->cursors = talloc(mem_ctx, struct drsuapi_DsReplicaCursor2);
 
-	r->out.ctr->ctr6.uptodateness_vector->cursors[0].source_dsa_invocation_id = *(samdb_ntds_invocation_id(sam_ctx));
-	r->out.ctr->ctr6.uptodateness_vector->cursors[0].highest_usn = r->out.ctr->ctr6.new_highwatermark.highest_usn;
-	unix_to_nt_time(&now, t);
-	r->out.ctr->ctr6.uptodateness_vector->cursors[0].last_sync_success = now;
+	DEBUG(4,("DsGetNSChanges with uSNChanged >= %llu on %s gave %u objects\n", 
+		 (unsigned long long)r->in.req->req8.highwatermark.highest_usn,
+		 ncRoot->dn, r->out.ctr->ctr6.object_count));
 
 	return WERR_OK;
 }
