@@ -1561,6 +1561,14 @@ void invalidate_cm_connection(struct winbindd_cm_conn *conn)
 		}
 	}
 
+	if (conn->lsa_pipe_tcp != NULL) {
+		TALLOC_FREE(conn->lsa_pipe_tcp);
+		/* Ok, it must be dead. Drop timeout to 0.5 sec. */
+		if (conn->cli) {
+			cli_set_timeout(conn->cli, 500);
+		}
+	}
+
 	if (conn->netlogon_pipe != NULL) {
 		TALLOC_FREE(conn->netlogon_pipe);
 		/* Ok, it must be dead. Drop timeout to 0.5 sec. */
@@ -2165,6 +2173,57 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	SAFE_FREE(machine_password);
 	SAFE_FREE(machine_account);
 	return result;
+}
+
+/**********************************************************************
+ open an schanneld ncacn_ip_tcp connection to LSA
+***********************************************************************/
+
+NTSTATUS cm_connect_lsa_tcp(struct winbindd_domain *domain,
+			    TALLOC_CTX *mem_ctx,
+			    struct rpc_pipe_client **cli)
+{
+	struct winbindd_cm_conn *conn;
+	NTSTATUS status;
+
+	DEBUG(10,("cm_connect_lsa_tcp\n"));
+
+	status = init_dc_connection(domain);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	conn = &domain->conn;
+
+	if (conn->lsa_pipe_tcp &&
+	    conn->lsa_pipe_tcp->transport->transport == NCACN_IP_TCP &&
+	    conn->lsa_pipe_tcp->auth->auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
+		goto done;
+	}
+
+	TALLOC_FREE(conn->lsa_pipe_tcp);
+
+	status = cli_rpc_pipe_open_schannel(conn->cli,
+					    &ndr_table_lsarpc.syntax_id,
+					    NCACN_IP_TCP,
+					    DCERPC_AUTH_LEVEL_PRIVACY,
+					    domain->name,
+					    &conn->lsa_pipe_tcp);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10,("cli_rpc_pipe_open_schannel failed: %s\n",
+			nt_errstr(status)));
+		goto done;
+	}
+
+ done:
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(conn->lsa_pipe_tcp);
+		return status;
+	}
+
+	*cli = conn->lsa_pipe_tcp;
+
+	return status;
 }
 
 NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
