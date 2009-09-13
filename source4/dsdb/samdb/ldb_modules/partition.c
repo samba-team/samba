@@ -161,6 +161,10 @@ static struct dsdb_partition *find_partition(struct partition_private_data *data
 		}
 	}
 
+	if (dn == NULL) {
+		return NULL;
+	}
+
 	/* Look at base DN */
 	/* Figure out which partition it is under */
 	/* Skip the lot if 'data' isn't here yet (initialisation) */
@@ -470,10 +474,10 @@ static int partition_replicate(struct ldb_module *module, struct ldb_request *re
 static int partition_search(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_control **saved_controls;
-	
 	/* Find backend */
 	struct partition_private_data *data = talloc_get_type(module->private_data, 
 							      struct partition_private_data);
+
 	/* issue request */
 
 	/* (later) consider if we should be searching multiple
@@ -483,6 +487,17 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_control *domain_scope_control = ldb_request_get_control(req, LDB_CONTROL_DOMAIN_SCOPE_OID);
 	
 	struct ldb_search_options_control *search_options = NULL;
+	struct dsdb_partition *p;
+	
+	p = find_partition(data, NULL, req);
+	if (p != NULL) {
+		/* the caller specified what partition they want the
+		 * search - just pass it on
+		 */
+		return ldb_next_request(p->module, req);		
+	}
+
+
 	if (search_control) {
 		search_options = talloc_get_type(search_control->data, struct ldb_search_options_control);
 	}
@@ -765,7 +780,7 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 	struct ldb_result *res;
 	struct dsdb_partition *p;
 
-	p = find_partition(NULL, NULL, req);
+	p = find_partition(data, NULL, req);
 	if (p != NULL) {
 		/* the caller specified what partition they want the
 		 * sequence number operation on - just pass it on
