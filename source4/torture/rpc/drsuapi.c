@@ -416,51 +416,64 @@ static bool test_DsReplicaUpdateRefs(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p = priv->pipe;
-	int i;
 	struct drsuapi_DsReplicaUpdateRefs r;
 	struct drsuapi_DsReplicaObjectIdentifier nc;
 	struct GUID null_guid;
+	struct GUID dest_dsa_guid;
+	const char *dest_dsa_guid_str;
 	struct dom_sid null_sid;
-	struct {
-		int32_t level;
-	} array[] = {
-		{	
-			1
-		}
-	};
-
-	if (torture_setting_bool(tctx, "samba4", false)) {
-		torture_comment(tctx, "skipping DsReplicaUpdateRefs test against Samba4\n");
-		return true;
-	}
 
 	ZERO_STRUCT(null_guid);
 	ZERO_STRUCT(null_sid);
+	dest_dsa_guid = GUID_random();
+	dest_dsa_guid_str = GUID_string(tctx, &dest_dsa_guid);
 
-	r.in.bind_handle	= &priv->bind_handle;
+	r.in.bind_handle = &priv->bind_handle;
+	r.in.level	 = 1; /* Only version 1 is defined presently */
 
-	for (i=0; i < ARRAY_SIZE(array); i++) {
-		torture_comment(tctx, "testing DsReplicaUpdateRefs level %d\n",
-				array[i].level);
+	/* setup NC */
+	nc.guid		= priv->domain_obj_dn ? null_guid : priv->domain_guid;
+	nc.sid		= null_sid;
+	nc.dn		= priv->domain_obj_dn ? priv->domain_obj_dn : "";
 
-		r.in.level = array[i].level;
-		switch(r.in.level) {
-		case 1:
-			nc.guid				= null_guid;
-			nc.sid				= null_sid;
-			nc.dn				= priv->domain_obj_dn ? priv->domain_obj_dn : "";
+	/* default setup for request */
+	r.in.req.req1.naming_context	= &nc;
+	r.in.req.req1.dest_dsa_dns_name	= talloc_asprintf(tctx, "%s._msdn.%s",
+								dest_dsa_guid_str,
+								priv->domain_dns_name);
+	r.in.req.req1.dest_dsa_guid	= dest_dsa_guid;
 
-			r.in.req.req1.naming_context	= &nc;
-			r.in.req.req1.dest_dsa_dns_name	= talloc_asprintf(tctx, "__some_dest_dsa_guid_string._msdn.%s",
-										priv->domain_dns_name);
-			r.in.req.req1.dest_dsa_guid	= null_guid;
-			r.in.req.req1.options		= 0;
-			break;
-		}
+	/* 1. deleting replica dest should fail */
+	torture_comment(tctx, "delete: %s\n", r.in.req.req1.dest_dsa_dns_name);
+	r.in.req.req1.options		= DRSUAPI_DS_REPLICA_UPDATE_DELETE_REFERENCE;
+	status = dcerpc_drsuapi_DsReplicaUpdateRefs(p, tctx, &r);
+	torture_drsuapi_assert_call_werr(tctx, p,
+					 status, WERR_DS_DRA_REF_NOT_FOUND, &r,
+					 "dcerpc_drsuapi_DsReplicaUpdateRefs");
 
-		status = dcerpc_drsuapi_DsReplicaUpdateRefs(p, tctx, &r);
-		torture_drsuapi_assert_call(tctx, p, status, &r, "dcerpc_drsuapi_DsReplicaUpdateRefs");
-	}
+	/* 2. hopefully adding random replica dest should succeed */
+	torture_comment(tctx, "add   : %s\n", r.in.req.req1.dest_dsa_dns_name);
+	r.in.req.req1.options		= DRSUAPI_DS_REPLICA_UPDATE_ADD_REFERENCE;
+	status = dcerpc_drsuapi_DsReplicaUpdateRefs(p, tctx, &r);
+	torture_drsuapi_assert_call_werr(tctx, p,
+					 status, WERR_OK, &r,
+					 "dcerpc_drsuapi_DsReplicaUpdateRefs");
+
+	/* 3. try adding same replica dest - should fail */
+	torture_comment(tctx, "add   : %s\n", r.in.req.req1.dest_dsa_dns_name);
+	r.in.req.req1.options		= DRSUAPI_DS_REPLICA_UPDATE_ADD_REFERENCE;
+	status = dcerpc_drsuapi_DsReplicaUpdateRefs(p, tctx, &r);
+	torture_drsuapi_assert_call_werr(tctx, p,
+					 status, WERR_DS_DRA_REF_ALREADY_EXISTS, &r,
+					 "dcerpc_drsuapi_DsReplicaUpdateRefs");
+
+	/* 4. delete random replicate added at step 2. */
+	torture_comment(tctx, "delete: %s\n", r.in.req.req1.dest_dsa_dns_name);
+	r.in.req.req1.options		= DRSUAPI_DS_REPLICA_UPDATE_DELETE_REFERENCE;
+	status = dcerpc_drsuapi_DsReplicaUpdateRefs(p, tctx, &r);
+	torture_drsuapi_assert_call_werr(tctx, p,
+					 status, WERR_OK, &r,
+					 "dcerpc_drsuapi_DsReplicaUpdateRefs");
 
 	return true;
 }
