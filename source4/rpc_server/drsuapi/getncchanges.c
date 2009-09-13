@@ -315,7 +315,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	ncRoot_dn = ldb_dn_new(mem_ctx, sam_ctx, ncRoot->dn);
 	ret = drsuapi_search_with_extended_dn(sam_ctx, mem_ctx, &site_res,
 					      ncRoot_dn, LDB_SCOPE_SUBTREE, attrs,
-					      "uSNChanged>=%llu", 
+					      "(uSNChanged>=%llu)", 
 					      (unsigned long long)(r->in.req->req8.highwatermark.highest_usn+1));
 	if (ret != LDB_SUCCESS) {
 		return WERR_DS_DRA_INTERNAL_ERROR;
