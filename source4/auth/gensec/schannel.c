@@ -281,6 +281,49 @@ static bool schannel_have_feature(struct gensec_security *gensec_security,
 	return false;
 }
 
+static NTSTATUS schannel_seal_packet_wrap(struct gensec_security *gensec_security,
+					  TALLOC_CTX *mem_ctx,
+					  uint8_t *data, size_t length,
+					  const uint8_t *whole_pdu, size_t pdu_length,
+					  DATA_BLOB *sig)
+{
+	struct schannel_state *state = talloc_get_type(gensec_security->private_data, struct schannel_state);
+
+	return schannel_seal_packet(state, mem_ctx, data, length, sig);
+}
+
+static NTSTATUS schannel_sign_packet_wrap(struct gensec_security *gensec_security,
+					  TALLOC_CTX *mem_ctx,
+					  const uint8_t *data, size_t length,
+					  const uint8_t *whole_pdu, size_t pdu_length,
+					  DATA_BLOB *sig)
+{
+	struct schannel_state *state = talloc_get_type(gensec_security->private_data, struct schannel_state);
+
+	return schannel_sign_packet(state, mem_ctx, data, length, sig);
+}
+
+static NTSTATUS schannel_check_packet_wrap(struct gensec_security *gensec_security,
+					   TALLOC_CTX *mem_ctx,
+					   const uint8_t *data, size_t length,
+					   const uint8_t *whole_pdu, size_t pdu_length,
+					   const DATA_BLOB *sig)
+{
+	struct schannel_state *state = talloc_get_type(gensec_security->private_data, struct schannel_state);
+
+	return schannel_check_packet(state, mem_ctx, data, length, sig);
+}
+
+static NTSTATUS schannel_unseal_packet_wrap(struct gensec_security *gensec_security,
+					    TALLOC_CTX *mem_ctx,
+					    uint8_t *data, size_t length,
+					    const uint8_t *whole_pdu, size_t pdu_length,
+					    const DATA_BLOB *sig)
+{
+	struct schannel_state *state = talloc_get_type(gensec_security->private_data, struct schannel_state);
+
+	return schannel_unseal_packet(state, mem_ctx, data, length, sig);
+}
 
 static const struct gensec_security_ops gensec_schannel_security_ops = {
 	.name		= "schannel",
@@ -288,10 +331,10 @@ static const struct gensec_security_ops gensec_schannel_security_ops = {
 	.client_start   = schannel_client_start,
 	.server_start   = schannel_server_start,
 	.update 	= schannel_update,
-	.seal_packet 	= schannel_seal_packet,
-	.sign_packet   	= schannel_sign_packet,
-	.check_packet	= schannel_check_packet,
-	.unseal_packet 	= schannel_unseal_packet,
+	.seal_packet 	= schannel_seal_packet_wrap,
+	.sign_packet   	= schannel_sign_packet_wrap,
+	.check_packet	= schannel_check_packet_wrap,
+	.unseal_packet 	= schannel_unseal_packet_wrap,
 	.session_key	= schannel_session_key,
 	.session_info	= schannel_session_info,
 	.sig_size	= schannel_sig_size,

@@ -99,14 +99,11 @@ static void schannel_digest(const uint8_t sess_key[16],
 /*
   unseal a packet
 */
-NTSTATUS schannel_unseal_packet(struct gensec_security *gensec_security,
+NTSTATUS schannel_unseal_packet(struct schannel_state *state,
 				TALLOC_CTX *mem_ctx,
 				uint8_t *data, size_t length,
-				const uint8_t *whole_pdu, size_t pdu_length,
 				const DATA_BLOB *sig)
 {
-	struct schannel_state *state = talloc_get_type(gensec_security->private_data, struct schannel_state);
-
 	uint8_t digest_final[16];
 	uint8_t confounder[8];
 	uint8_t seq_num[8];
@@ -150,14 +147,11 @@ NTSTATUS schannel_unseal_packet(struct gensec_security *gensec_security,
 /*
   check the signature on a packet
 */
-NTSTATUS schannel_check_packet(struct gensec_security *gensec_security,
+NTSTATUS schannel_check_packet(struct schannel_state *state,
 			       TALLOC_CTX *mem_ctx,
 			       const uint8_t *data, size_t length,
-			       const uint8_t *whole_pdu, size_t pdu_length,
 			       const DATA_BLOB *sig)
 {
-	struct schannel_state *state = talloc_get_type(gensec_security->private_data, struct schannel_state);
-
 	uint8_t digest_final[16];
 	uint8_t seq_num[8];
 	static const uint8_t netsec_sig[8] = NETSEC_SIGN_SIGNATURE;
@@ -198,14 +192,11 @@ NTSTATUS schannel_check_packet(struct gensec_security *gensec_security,
 /*
   seal a packet
 */
-NTSTATUS schannel_seal_packet(struct gensec_security *gensec_security,
+NTSTATUS schannel_seal_packet(struct schannel_state *state,
 			      TALLOC_CTX *mem_ctx,
 			      uint8_t *data, size_t length,
-			      const uint8_t *whole_pdu, size_t pdu_length,
 			      DATA_BLOB *sig)
 {
-	struct schannel_state *state = talloc_get_type(gensec_security->private_data, struct schannel_state);
-
 	uint8_t digest_final[16];
 	uint8_t confounder[8];
 	uint8_t seq_num[8];
@@ -246,14 +237,11 @@ NTSTATUS schannel_seal_packet(struct gensec_security *gensec_security,
 /*
   sign a packet
 */
-NTSTATUS schannel_sign_packet(struct gensec_security *gensec_security,
+NTSTATUS schannel_sign_packet(struct schannel_state *state,
 			      TALLOC_CTX *mem_ctx,
 			      const uint8_t *data, size_t length,
-			      const uint8_t *whole_pdu, size_t pdu_length,
 			      DATA_BLOB *sig)
 {
-	struct schannel_state *state = talloc_get_type(gensec_security->private_data, struct schannel_state);
-
 	uint8_t digest_final[16];
 	uint8_t seq_num[8];
 	static const uint8_t netsec_sig[8] = NETSEC_SIGN_SIGNATURE;
