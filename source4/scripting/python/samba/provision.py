@@ -42,8 +42,9 @@ import ldb
 import shutil
 from credentials import Credentials, DONT_USE_KERBEROS
 from auth import system_session, admin_session
-from samba import version, Ldb, substitute_var, valid_netbios_name, check_all_substituted, \
-  DS_BEHAVIOR_WIN2008
+from samba import version, Ldb, substitute_var, valid_netbios_name
+from samba import check_all_substituted
+from samba import DS_DOMAIN_FUNCTION_2008_R2, DS_DC_FUNCTION_2008_R2
 from samba.samdb import SamDB
 from samba.idmap import IDmapDB
 from samba.dcerpc import security
@@ -834,9 +835,9 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
     :note: This will wipe the main SAM database file!
     """
 
-    domainFunctionality = DS_BEHAVIOR_WIN2008
-    forestFunctionality = DS_BEHAVIOR_WIN2008
-    domainControllerFunctionality = DS_BEHAVIOR_WIN2008
+    domainFunctionality = DS_DOMAIN_FUNCTION_2008_R2
+    forestFunctionality = DS_DOMAIN_FUNCTION_2008_R2
+    domainControllerFunctionality = DS_DC_FUNCTION_2008_R2
 
     # Also wipes the database
     setup_samdb_partitions(path, setup_path, message=message, lp=lp,

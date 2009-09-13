@@ -134,15 +134,7 @@ static struct dom_sid *get_default_group(TALLOC_CTX *mem_ctx,
 					 struct ldb_context *ldb,
 					 struct dom_sid *dag)
 {
-	int *domainFunctionality;
-
-	domainFunctionality = talloc_get_type(ldb_get_opaque(ldb, "domainFunctionality"), int);
-
-	if (*domainFunctionality && (*domainFunctionality >= DS_BEHAVIOR_WIN2008)){
-		return dag;
-	}
-
-	return NULL;
+	return dag;
 }
 
 static DATA_BLOB *get_new_descriptor(struct ldb_module *module,
