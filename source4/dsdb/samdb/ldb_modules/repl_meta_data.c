@@ -53,7 +53,6 @@ struct replmd_private {
 		struct ldb_dn *dn;
 		struct GUID guid;
 		uint64_t mod_usn;
-		struct dsdb_control_current_partition *p_ctrl;
 	} *ncs;
 };
 
@@ -165,9 +164,13 @@ static int replmd_load_NCs(struct ldb_module *module)
 				 LDB_SCOPE_BASE, attrs2, NULL);
 		if (ret != LDB_SUCCESS ||
 		    res->count != 1) {
-			DEBUG(0,(__location__ ": Failed to load GUID for %s\n",
-				 ldb_dn_get_linearized(replmd_private->ncs[i].dn)));
-			return LDB_ERR_OPERATIONS_ERROR;
+			/* this happens when the schema is first being
+			   setup */
+			talloc_free(replmd_private->ncs);
+			replmd_private->ncs = NULL;
+			replmd_private->num_ncs = 0;
+			talloc_free(tmp_ctx);
+			return LDB_SUCCESS;
 		}
 		replmd_private->ncs[i].guid = 
 			samdb_result_guid(res->msgs[0], "objectGUID");
@@ -179,19 +182,6 @@ static int replmd_load_NCs(struct ldb_module *module)
 	      sizeof(replmd_private->ncs[0]), QSORT_CAST nc_compare);
 
 	
-	/* pre-create the partition control used in
-	   replmd_notify_store() */
-	for (i=0; i<replmd_private->num_ncs; i++) {
-		replmd_private->ncs[i].p_ctrl = talloc(replmd_private->ncs,
-						       struct dsdb_control_current_partition);
-		if (replmd_private->ncs[i].p_ctrl == NULL) {
-			ldb_oom(ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		replmd_private->ncs[i].p_ctrl->version = DSDB_CONTROL_CURRENT_PARTITION_VERSION;
-		replmd_private->ncs[i].p_ctrl->dn = replmd_private->ncs[i].dn;
-	}
-      
 	talloc_free(tmp_ctx);
 	
 	return LDB_SUCCESS;
@@ -212,6 +202,9 @@ static int replmd_notify(struct ldb_module *module, struct ldb_dn *dn, uint64_t 
 	ret = replmd_load_NCs(module);
 	if (ret != LDB_SUCCESS) {
 		return ret;
+	}
+	if (replmd_private->num_ncs == 0) {
+		return LDB_SUCCESS;
 	}
 
 	for (i=0; i<replmd_private->num_ncs; i++) {
@@ -239,14 +232,13 @@ static int replmd_notify(struct ldb_module *module, struct ldb_dn *dn, uint64_t 
  */
 static int replmd_notify_store(struct ldb_module *module)
 {
-	int ret, i;
+	int i;
 	struct replmd_private *replmd_private = 
 		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 
 	for (i=0; i<replmd_private->num_ncs; i++) {
-		struct ldb_message *msg;
-		struct ldb_request *req;
+		int ret;
 
 		if (replmd_private->ncs[i].mod_usn == 0) {
 			/* this partition has not changed in this
@@ -254,65 +246,11 @@ static int replmd_notify_store(struct ldb_module *module)
 			continue;
 		}
 
-		msg = ldb_msg_new(module);
-		if (msg == NULL) {
-			ldb_oom(ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-
-		msg->dn = ldb_dn_new(msg, ldb, "@REPLCHANGED");
-		if (msg->dn == NULL) {
-			ldb_oom(ldb);
-			talloc_free(msg);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-
-		ret = ldb_msg_add_fmt(msg, "uSNHighest", "%llu", 
-				      (unsigned long long)replmd_private->ncs[i].mod_usn);
+		ret = dsdb_save_partition_usn(ldb, replmd_private->ncs[i].dn, 
+					      replmd_private->ncs[i].mod_usn);
 		if (ret != LDB_SUCCESS) {
-			talloc_free(msg);
-			return ret;
-		}
-		msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
-
-		ret = ldb_build_mod_req(&req, ldb, msg,
-					msg,
-					NULL,
-					NULL, ldb_op_default_callback,
-					NULL);
-again:
-		if (ret != LDB_SUCCESS) {
-			talloc_free(msg);
-			return ret;
-		}
-
-		ret = ldb_request_add_control(req,
-					      DSDB_CONTROL_CURRENT_PARTITION_OID,
-					      false, replmd_private->ncs[i].p_ctrl);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(msg);
-			return ret;
-		}
-
-
-		/* Run the new request */
-		ret = ldb_next_request(module, req);
-
-		if (ret == LDB_SUCCESS) {
-			ret = ldb_wait(req->handle, LDB_WAIT_ALL);
-		}
-		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-			ret = ldb_build_add_req(&req, ldb, msg,
-						msg,
-						NULL,
-						NULL, ldb_op_default_callback,
-						NULL);
-			goto again;
-		}
-
-		talloc_free(msg);
-
-		if (ret != LDB_SUCCESS) {
+			DEBUG(0,(__location__ ": Failed to save partition uSN for %s\n",
+				 ldb_dn_get_linearized(replmd_private->ncs[i].dn)));
 			return ret;
 		}
 	}
