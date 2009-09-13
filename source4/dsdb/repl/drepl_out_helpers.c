@@ -48,7 +48,7 @@ struct dreplsrv_out_drsuapi_state {
 
 static void dreplsrv_out_drsuapi_connect_recv(struct composite_context *creq);
 
-static struct composite_context *dreplsrv_out_drsuapi_send(struct dreplsrv_out_connection *conn)
+struct composite_context *dreplsrv_out_drsuapi_send(struct dreplsrv_out_connection *conn)
 {
 	struct composite_context *c;
 	struct composite_context *creq;
@@ -165,7 +165,7 @@ static void dreplsrv_out_drsuapi_bind_recv(struct rpc_request *req)
 	composite_done(c);
 }
 
-static NTSTATUS dreplsrv_out_drsuapi_recv(struct composite_context *c)
+NTSTATUS dreplsrv_out_drsuapi_recv(struct composite_context *c)
 {
 	NTSTATUS status;
 	struct dreplsrv_out_drsuapi_state *st = talloc_get_type(c->private_data,

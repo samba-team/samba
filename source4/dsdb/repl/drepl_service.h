@@ -69,6 +69,9 @@ struct dreplsrv_partition_source_dsa {
 	struct repsFromToBlob _repsFromBlob;
 	struct repsFromTo1 *repsFrom1;
 
+	/* the last uSN when we sent a notify */
+	uint64_t notify_uSN;
+	
 	/* the reference to the source_dsa and its outgoing connection */
 	struct dreplsrv_out_connection *conn;
 };
@@ -101,6 +104,17 @@ struct dreplsrv_out_operation {
 	struct dreplsrv_out_operation *prev, *next;
 
 	struct dreplsrv_service *service;
+
+	struct dreplsrv_partition_source_dsa *source_dsa;
+
+	struct composite_context *creq;
+};
+
+struct dreplsrv_notify_operation {
+	struct dreplsrv_notify_operation *prev, *next;
+
+	struct dreplsrv_service *service;
+	uint64_t uSN;
 
 	struct dreplsrv_partition_source_dsa *source_dsa;
 
@@ -150,6 +164,23 @@ struct dreplsrv_service {
 		struct tevent_timer *te;
 	} periodic;
 
+	/* some stuff for notify processing */
+	struct {
+		/*
+		 * the interval between notify runs
+		 */
+		uint32_t interval;
+
+		/*
+		 * the timestamp for the next event,
+		 * this is the timstamp passed to event_add_timed()
+		 */
+		struct timeval next_event;
+
+		/* here we have a reference to the timed event the schedules the notifies */
+		struct tevent_timer *te;
+	} notify;
+
 	/*
 	 * the list of partitions we need to replicate
 	 */
@@ -166,6 +197,12 @@ struct dreplsrv_service {
 
 		/* the list of pending operations */
 		struct dreplsrv_out_operation *pending;
+
+		/* the list of pending notify operations */
+		struct dreplsrv_notify_operation *notifies;
+
+		/* an active notify operation */
+		struct dreplsrv_notify_operation *n_current;
 	} ops;
 };
 

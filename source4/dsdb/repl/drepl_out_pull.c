@@ -125,6 +125,7 @@ done:
 	talloc_free(op);
 	s->ops.current = NULL;
 	dreplsrv_run_pending_ops(s);
+	dreplsrv_notify_run_ops(s);
 }
 
 static void dreplsrv_pending_op_callback_creq(struct composite_context *creq)
@@ -140,7 +141,7 @@ void dreplsrv_run_pending_ops(struct dreplsrv_service *s)
 	time_t t;
 	NTTIME now;
 
-	if (s->ops.current) {
+	if (s->ops.current || s->ops.n_current) {
 		/* if there's still one running, we're done */
 		return;
 	}

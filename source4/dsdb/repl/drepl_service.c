@@ -196,6 +196,16 @@ static void dreplsrv_task_init(struct task_server *task)
 		return;
 	}
 
+	service->notify.interval = lp_parm_int(task->lp_ctx, NULL, "dreplsrv", 
+					       "notify_interval", 5); /* in seconds */
+	status = dreplsrv_notify_schedule(service, service->notify.interval);
+	if (!W_ERROR_IS_OK(status)) {
+		task_server_terminate(task, talloc_asprintf(task,
+				      "dreplsrv: Failed to setup notify schedule: %s\n",
+				      win_errstr(status)));
+		return;
+	}
+
 	irpc_add_name(task->msg_ctx, "dreplsrv");
 
 	IRPC_REGISTER(task->msg_ctx, drsuapi, DRSUAPI_DSREPLICASYNC, drepl_replica_sync, service);

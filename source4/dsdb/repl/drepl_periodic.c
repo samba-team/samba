@@ -110,4 +110,5 @@ static void dreplsrv_periodic_run(struct dreplsrv_service *service)
 	dreplsrv_refresh_partitions(service);
 
 	dreplsrv_run_pending_ops(service);
+	dreplsrv_notify_run_ops(service);
 }
