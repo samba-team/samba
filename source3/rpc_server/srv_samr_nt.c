@@ -773,7 +773,7 @@ NTSTATUS _samr_QuerySecurity(pipes_struct *p,
 	struct samr_alias_info *ainfo;
 	NTSTATUS status;
 	SEC_DESC * psd = NULL;
-	size_t sd_size;
+	size_t sd_size = 0;
 
 	cinfo = policy_handle_find(p, r->in.handle,
 				   STD_RIGHT_READ_CONTROL_ACCESS, NULL,
