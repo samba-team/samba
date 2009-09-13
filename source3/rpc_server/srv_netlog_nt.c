@@ -1150,7 +1150,7 @@ NTSTATUS _netr_LogonSamLogonEx(pipes_struct *p,
 			       struct netr_LogonSamLogonEx *r)
 {
 	NTSTATUS status;
-	struct netlogon_creds_CredentialState *creds;
+	struct netlogon_creds_CredentialState *creds = NULL;
 
 	become_root();
 	status = schannel_fetch_session_key(p->mem_ctx, r->in.computer_name, &creds);
