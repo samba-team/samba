@@ -480,6 +480,10 @@ class LdbMsgTests(unittest.TestCase):
         self.msg.dn = ldb.Dn(ldb.Ldb("foo.tdb"), "@BASEINFO")
         self.assertEquals("@BASEINFO", self.msg.get("dn").__str__())
 
+    def test_get_invalid(self):
+        self.msg.dn = ldb.Dn(ldb.Ldb("foo.tdb"), "@BASEINFO")
+        self.assertRaises(TypeError, self.msg.get, 42)
+
     def test_get_other(self):
         self.msg["foo"] = ["bar"]
         self.assertEquals("bar", self.msg.get("foo")[0])
