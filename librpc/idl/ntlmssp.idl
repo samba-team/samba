@@ -94,7 +94,7 @@ interface ntlmssp
 		ntlmssp_NTLMRevisionCurrent NTLMRevisionCurrent;
 	} VERSION;
 
-	typedef [nodiscriminant] union {
+	typedef [noprint,nodiscriminant] union {
 		[case(NTLMSSP_NEGOTIATE_VERSION)] VERSION version;
 		[default];
 	} ntlmssp_Version;
