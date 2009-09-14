@@ -230,6 +230,120 @@ NTSTATUS cli_read_andx_recv(struct tevent_req *req, ssize_t *received,
 	return NT_STATUS_OK;
 }
 
+struct cli_readall_state {
+	struct tevent_context *ev;
+	struct cli_state *cli;
+	uint16_t fnum;
+	off_t start_offset;
+	size_t size;
+	size_t received;
+	uint8_t *buf;
+};
+
+static void cli_readall_done(struct tevent_req *subreq);
+
+static struct tevent_req *cli_readall_send(TALLOC_CTX *mem_ctx,
+					   struct event_context *ev,
+					   struct cli_state *cli,
+					   uint16_t fnum,
+					   off_t offset, size_t size)
+{
+	struct tevent_req *req, *subreq;
+	struct cli_readall_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_readall_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->cli = cli;
+	state->fnum = fnum;
+	state->start_offset = offset;
+	state->size = size;
+	state->received = 0;
+	state->buf = NULL;
+
+	subreq = cli_read_andx_send(state, ev, cli, fnum, offset, size);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_readall_done, req);
+	return req;
+}
+
+static void cli_readall_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_readall_state *state = tevent_req_data(
+		req, struct cli_readall_state);
+	ssize_t received;
+	uint8_t *buf;
+	NTSTATUS status;
+
+	status = cli_read_andx_recv(subreq, &received, &buf);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	if ((state->received == 0) && (received == state->size)) {
+		/* Ideal case: Got it all in one run */
+		state->buf = buf;
+		state->received += received;
+		tevent_req_done(req);
+		return;
+	}
+
+	/*
+	 * We got a short read, issue a read for the
+	 * rest. Unfortunately we have to allocate the buffer
+	 * ourselves now, as our caller expects to receive a single
+	 * buffer. cli_read_andx does it from the buffer received from
+	 * the net, but with a short read we have to put it together
+	 * from several reads.
+	 */
+
+	if (state->buf == NULL) {
+		state->buf = talloc_array(state, uint8_t, state->size);
+		if (tevent_req_nomem(state->buf, req)) {
+			return;
+		}
+	}
+	memcpy(state->buf + state->received, buf, received);
+	state->received += received;
+
+	TALLOC_FREE(subreq);
+
+	if (state->received >= state->size) {
+		tevent_req_done(req);
+		return;
+	}
+
+	subreq = cli_read_andx_send(state, state->ev, state->cli, state->fnum,
+				    state->start_offset + state->received,
+				    state->size - state->received);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, cli_readall_done, req);
+}
+
+static NTSTATUS cli_readall_recv(struct tevent_req *req, ssize_t *received,
+				 uint8_t **rcvbuf)
+{
+	struct cli_readall_state *state = tevent_req_data(
+		req, struct cli_readall_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	*received = state->received;
+	*rcvbuf = state->buf;
+	return NT_STATUS_OK;
+}
+
 struct cli_pull_subreq {
 	struct tevent_req *req;
 	ssize_t received;
@@ -368,7 +482,7 @@ struct tevent_req *cli_pull_send(TALLOC_CTX *mem_ctx,
 		size_left = size - state->requested;
 		request_thistime = MIN(size_left, state->chunk_size);
 
-		subreq->req = cli_read_andx_send(
+		subreq->req = cli_readall_send(
 			state->reqs, ev, cli, fnum,
 			state->start_offset + state->requested,
 			request_thistime);
@@ -413,8 +527,8 @@ static void cli_pull_read_done(struct tevent_req *subreq)
 		return;
 	}
 
-	status = cli_read_andx_recv(subreq, &pull_subreq->received,
-				    &pull_subreq->buf);
+	status = cli_readall_recv(subreq, &pull_subreq->received,
+				  &pull_subreq->buf);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(state->req, status);
 		return;
@@ -472,7 +586,7 @@ static void cli_pull_read_done(struct tevent_req *subreq)
 					 + state->requested),
 				   state->top_req));
 
-			new_req = cli_read_andx_send(
+			new_req = cli_readall_send(
 				state->reqs, state->ev, state->cli,
 				state->fnum,
 				state->start_offset + state->requested,
