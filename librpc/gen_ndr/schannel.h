@@ -9,35 +9,6 @@
 #ifndef _HEADER_schannel
 #define _HEADER_schannel
 
-struct schannel_bind_3 {
-	const char * domain;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * workstation;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
-};
-
-struct schannel_bind_23 {
-	const char * domain;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * workstation;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * dnsdomain;
-	const char * dnsworkstation;
-};
-
-union schannel_bind_info {
-	struct schannel_bind_3 info3;/* [case(3)] */
-	struct schannel_bind_23 info23;/* [case(23)] */
-}/* [nodiscriminant] */;
-
-struct schannel_bind {
-	uint32_t unknown1;
-	uint32_t bind_type;
-	union schannel_bind_info u;/* [switch_is(bind_type)] */
-}/* [public] */;
-
-struct schannel_bind_ack {
-	uint32_t unknown1;
-	uint32_t unknown2;
-	uint32_t unknown3;
-}/* [public] */;
-
 struct netlogon_creds_CredentialState {
 	uint32_t negotiate_flags;
 	uint8_t session_key[16];
