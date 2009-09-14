@@ -932,6 +932,102 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, down_req);
 }
 
+
+/*
+  handle a rename request
+
+  On a rename we need to do an extra ldb_modify which sets the
+  whenChanged and uSNChanged attributes
+ */
+static int replmd_rename(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_context *ldb;
+	int ret, i;
+	time_t t = time(NULL);
+	uint64_t seq_num = 0;
+	struct ldb_message *msg;
+	struct replmd_private *replmd_private = 
+		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
+
+	/* do not manipulate our control entries */
+	if (ldb_dn_is_special(req->op.mod.message->dn)) {
+		return ldb_next_request(module, req);
+	}
+
+	ldb = ldb_module_get_ctx(module);
+
+	ldb_debug(ldb, LDB_DEBUG_TRACE, "replmd_rename\n");
+
+	/* Get a sequence number from the backend */
+	ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &seq_num);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	msg = ldb_msg_new(req);
+	if (msg == NULL) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	msg->dn = req->op.rename.olddn;
+
+	if (add_time_element(msg, "whenChanged", t) != LDB_SUCCESS) {
+		talloc_free(msg);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
+
+	if (add_uint64_element(msg, "uSNChanged", seq_num) != LDB_SUCCESS) {
+		talloc_free(msg);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	msg->elements[1].flags = LDB_FLAG_MOD_REPLACE;
+
+	ret = ldb_modify(ldb, msg);
+	talloc_free(msg);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = replmd_load_NCs(module);
+	if (ret != 0) {
+		return ret;
+	}
+
+	/* now update the highest uSNs of the partitions that are
+	   affected. Note that two partitions could be changing */
+	for (i=0; i<replmd_private->num_ncs; i++) {
+		if (ldb_dn_compare_base(replmd_private->ncs[i].dn, 
+					req->op.rename.olddn) == 0) {
+			break;
+		}
+	}
+	if (i == replmd_private->num_ncs) {
+		DEBUG(0,(__location__ ": rename olddn outside tree? %s\n",
+			 ldb_dn_get_linearized(req->op.rename.olddn)));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	replmd_private->ncs[i].mod_usn = seq_num;
+
+	for (i=0; i<replmd_private->num_ncs; i++) {
+		if (ldb_dn_compare_base(replmd_private->ncs[i].dn, 
+					req->op.rename.newdn) == 0) {
+			break;
+		}
+	}
+	if (i == replmd_private->num_ncs) {
+		DEBUG(0,(__location__ ": rename newdn outside tree? %s\n",
+			 ldb_dn_get_linearized(req->op.rename.newdn)));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	replmd_private->ncs[i].mod_usn = seq_num;
+	
+	/* go on with the call chain */
+	return ldb_next_request(module, req);
+}
+
+
 static int replmd_replicated_request_error(struct replmd_replicated_request *ar, int ret)
 {
 	return ret;
@@ -2171,6 +2267,7 @@ _PUBLIC_ const struct ldb_module_ops ldb_repl_meta_data_module_ops = {
 	.init_context	   = replmd_init,
 	.add               = replmd_add,
 	.modify            = replmd_modify,
+	.rename            = replmd_rename,
 	.extended          = replmd_extended,
 	.start_transaction = replmd_start_transaction,
 	.prepare_commit    = replmd_prepare_commit,
