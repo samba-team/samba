@@ -25,13 +25,12 @@ case $cmd in
      takeip)
 	iface=$1
 	ip=$2
-	shopt -s nullglob
 	# first send a grat arp, to ensure the client knows the updated
 	# mac address for this IP
 	ctdb gratiousarp $ip $iface
 	# send tickle acks for all the connections the old server had
 	for f in $NFS_TICKLE_SHARED_DIRECTORY/*/$ip; do
-		cat $f | while read dest; do
+		[ -f $f ] && cat $f | while read dest; do
 			dip=`echo $dest | cut -d: -f1`
 			dport=`echo $dest | cut -d: -f2`
 			# send three, in case of lost packets
