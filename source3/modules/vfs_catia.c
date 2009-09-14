@@ -61,7 +61,7 @@ static bool build_table(struct char_mappings **cmaps, int value)
 	if (!*cmaps)
 		return False;
 
-	for (i = 0; i <= MAP_SIZE;i++) {
+	for (i = 0; i < MAP_SIZE;i++) {
 		(*cmaps)->entry[i][TO_UNIX] = start + i;
 		(*cmaps)->entry[i][TO_WINDOWS] = start + i;
 	}
