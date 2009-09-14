@@ -55,8 +55,7 @@ static bool build_table(struct char_mappings **cmaps, int value)
 	int i;
 	int start = T_START(value);
 
-	(*cmaps) = (struct char_mappings *)
-			TALLOC_ZERO(NULL, sizeof(struct char_mappings));
+	(*cmaps) = talloc_zero(NULL, struct char_mappings);
 
 	if (!*cmaps)
 		return False;
