@@ -810,7 +810,7 @@ net groupmap add ntgroup="Gnomes" unixgroup=Gnomes type=d
 	Versions of Samba-3 prior to 3.0.23 automatically create default group mapping for the
 	<literal>Domain Admins, Domain Users</literal> and <literal>Domain Guests</literal> Windows
 	groups, but do not map them to UNIX GIDs. This was a cause of administrative confusion and 
-	trouble. Commencing with Samba-3.0.23 this annomaly has been fixed - thus all Windows groups
+	trouble. Commencing with Samba-3.0.23 this anomaly has been fixed - thus all Windows groups
 	must now be manually and explicitly created and mapped to a valid UNIX GID by the Samba 
 	administrator.
 	</para></note>
