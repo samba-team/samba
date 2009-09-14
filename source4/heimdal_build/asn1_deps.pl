@@ -35,7 +35,7 @@ print "\t\@\$(heimdalbuildsrcdir)/asn1_compile_wrapper.sh \$(builddir) $dirname 
 print "$headerx: $output_file\n";
 print "$header: $headerx\n";
 print "\t\@cp $headerx $header\n";
-print "$x_file: $output_file\n";
+print "$x_file: $header\n";
 print "$c_file: $x_file\n";
 print "\t\@echo \"#include \\\"config.h\\\"\" > $c_file && cat $x_file >> $c_file\n\n";
 
