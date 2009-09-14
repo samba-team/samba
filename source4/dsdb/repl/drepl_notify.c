@@ -293,13 +293,16 @@ static WERROR dreplsrv_notify_check(struct dreplsrv_service *s,
 				    struct dreplsrv_partition *p,
 				    TALLOC_CTX *mem_ctx)
 {
-	uint32_t count;
+	uint32_t count=0;
 	struct repsFromToBlob *reps;
 	WERROR werr;
 	uint64_t uSN;
 	int ret, i;
 
 	werr = dsdb_loadreps(s->samdb, mem_ctx, p->dn, "repsTo", &reps, &count);
+	if (count == 0) {
+		werr = dsdb_loadreps(s->samdb, mem_ctx, p->dn, "repsFrom", &reps, &count);
+	}
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(0,(__location__ ": Failed to load repsTo for %s\n",
 			 ldb_dn_get_linearized(p->dn)));
@@ -330,7 +333,6 @@ static WERROR dreplsrv_notify_check(struct dreplsrv_service *s,
 			}
 		}
 	}
-
 
 	return WERR_OK;
 }
