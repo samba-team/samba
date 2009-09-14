@@ -623,7 +623,25 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	SOFF_T(p,0,file_len);
 	p += 8;
 	if (flags & EXTENDED_RESPONSE_REQUIRED) {
-		SSVAL(p,2,0x7);
+		uint16_t file_status = (NO_EAS|NO_SUBSTREAMS|NO_REPARSETAG);
+		size_t num_names = 0;
+		unsigned int num_streams;
+		struct stream_struct *streams = NULL;
+
+		/* Do we have any EA's ? */
+		status = get_ea_names_from_file(ctx, conn, fsp,
+				smb_fname->base_name, NULL, &num_names);
+		if (NT_STATUS_IS_OK(status) && num_names) {
+			file_status &= ~NO_EAS;
+		}
+		status = SMB_VFS_STREAMINFO(conn, NULL, smb_fname->base_name, ctx,
+			&num_streams, &streams);
+		/* There is always one stream, ::$DATA. */
+		if (NT_STATUS_IS_OK(status) && num_streams > 1) {
+			file_status &= ~NO_SUBSTREAMS;
+		}
+		TALLOC_FREE(streams);
+		SSVAL(p,2,file_status);
 	}
 	p += 4;
 	SCVAL(p,0,fsp->is_directory ? 1 : 0);
