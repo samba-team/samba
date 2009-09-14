@@ -47,6 +47,7 @@
 #include "lib/util/dlinklist.h"
 
 struct replmd_private {
+	TALLOC_CTX *la_ctx;
 	struct la_entry *la_list;
 	uint32_t num_ncs;
 	struct nc_entry {
@@ -1896,13 +1897,10 @@ static int replmd_extended_replicated_objects(struct ldb_module *module, struct 
 	for (i=0; i<ar->objs->linked_attributes_count; i++) {
 		struct la_entry *la_entry;
 
-		if (replmd_private->la_list) {
-			la_entry = talloc(replmd_private->la_list,
-					  struct la_entry);
-		} else {
-			la_entry = talloc(replmd_private,
-					  struct la_entry);
+		if (replmd_private->la_ctx == NULL) {
+			replmd_private->la_ctx = talloc_new(replmd_private);
 		}
+		la_entry = talloc(replmd_private->la_ctx, struct la_entry);
 		if (la_entry == NULL) {
 			ldb_oom(ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
@@ -2108,8 +2106,9 @@ static int replmd_start_transaction(struct ldb_module *module)
 	int i;
 	struct replmd_private *replmd_private = talloc_get_type(ldb_module_get_private(module),
 								struct replmd_private);
-	talloc_free(replmd_private->la_list);
+	talloc_free(replmd_private->la_ctx);
 	replmd_private->la_list = NULL;
+	replmd_private->la_ctx = NULL;
 
 	for (i=0; i<replmd_private->num_ncs; i++) {
 		replmd_private->ncs[i].mod_usn = 0;
@@ -2138,14 +2137,14 @@ static int replmd_prepare_commit(struct ldb_module *module)
 		prev = la->prev;
 		DLIST_REMOVE(replmd_private->la_list, la);
 		ret = replmd_process_linked_attribute(module, la);
-		talloc_free(la);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
 	}
 
-	talloc_free(replmd_private->la_list);
+	talloc_free(replmd_private->la_ctx);
 	replmd_private->la_list = NULL;
+	replmd_private->la_ctx = NULL;
 
 	/* possibly change @REPLCHANGED */
 	ret = replmd_notify_store(module);
@@ -2160,8 +2159,9 @@ static int replmd_del_transaction(struct ldb_module *module)
 {
 	struct replmd_private *replmd_private = 
 		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
-	talloc_free(replmd_private->la_list);
+	talloc_free(replmd_private->la_ctx);
 	replmd_private->la_list = NULL;
+	replmd_private->la_ctx = NULL;
 	return ldb_next_del_trans(module);
 }
 
