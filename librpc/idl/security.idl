@@ -159,6 +159,32 @@ interface security
 		 SEC_STD_WRITE_DAC		|
 		 SEC_STD_WRITE_OWNER);	/* 0x000f0000 */
 
+	/* generic->specific mappings for Directory Service objects */
+	/* directory specific part of GENERIC_ALL */
+	const int SEC_ADS_GENERIC_ALL_DS =
+		(SEC_STD_DELETE                 |
+		 SEC_STD_WRITE_DAC              |
+		 SEC_STD_WRITE_OWNER            |
+		 SEC_ADS_CREATE_CHILD           |
+		 SEC_ADS_DELETE_CHILD           |
+		 SEC_ADS_DELETE_TREE            |
+		 SEC_ADS_CONTROL_ACCESS);
+	const int SEC_ADS_GENERIC_EXECUTE = SEC_STD_READ_CONTROL | SEC_ADS_LIST;
+	const int SEC_ADS_GENERIC_WRITE   =
+		(SEC_STD_READ_CONTROL           |
+		 SEC_ADS_SELF_WRITE             |
+		 SEC_ADS_WRITE_PROP);
+	const int SEC_ADS_GENERIC_READ    =
+		(SEC_STD_READ_CONTROL           |
+		 SEC_ADS_LIST                   |
+		 SEC_ADS_READ_PROP              |
+		 SEC_ADS_LIST_OBJECT);
+	const int SEC_ADS_GENERIC_ALL     =
+		(SEC_ADS_GENERIC_EXECUTE        |
+		 SEC_ADS_GENERIC_WRITE          |
+		 SEC_ADS_GENERIC_READ           |
+		 SEC_ADS_GENERIC_ALL_DS);
+
 	/***************************************************************/
 	/* WELL KNOWN SIDS */
 
@@ -397,6 +423,7 @@ interface security
 		uint32 num_sids;
 		[size_is(num_sids)] dom_sid *sids[*];
 		udlong privilege_mask;
+		security_acl *default_dacl;
 	} security_token;
 
 	/* bits that determine which parts of a security descriptor
@@ -420,4 +447,11 @@ interface security
 		KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96 = 0x00000010
 	} kerb_EncTypes;
 
+	typedef [public,bitmap32bit] bitmap {
+		SEC_DACL_AUTO_INHERIT                = 0x00000001,
+		SEC_SACL_AUTO_INHERIT                = 0x00000002,
+		SEC_DEFAULT_DESCRIPTOR               = 0x00000004,
+		SEC_OWNER_FROM_PARENT                = 0x00000008,
+		SEC_GROUP_FROM_PARENT                = 0x00000010
+	} security_autoinherit;
 }

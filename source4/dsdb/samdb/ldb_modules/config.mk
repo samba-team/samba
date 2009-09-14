@@ -334,3 +334,15 @@ INIT_FUNCTION = LDB_MODULE(operational)
 ################################################
 
 ldb_operational_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/operational.o
+
+################################################
+# Start MODULE ldb_descriptor
+[MODULE::ldb_descriptor]
+INIT_FUNCTION = LDB_MODULE(descriptor)
+CFLAGS = -Ilib/ldb/include
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LIBSECURITY NDR_SECURITY SAMDB
+SUBSYSTEM = LIBLDB
+# End MODULE ldb_descriptor
+################################################
+
+ldb_descriptor_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/descriptor.o

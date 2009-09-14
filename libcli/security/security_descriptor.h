@@ -61,4 +61,7 @@ struct security_ace *security_ace_create(TALLOC_CTX *mem_ctx,
 					 uint32_t access_mask,
 					 uint8_t flags);
 
+struct security_acl *security_acl_dup(TALLOC_CTX *mem_ctx,
+				      const struct security_acl *oacl);
+
 #endif /* __SECURITY_DESCRIPTOR_H__ */

@@ -50,7 +50,7 @@ struct security_descriptor *security_descriptor_initialise(TALLOC_CTX *mem_ctx)
 	return sd;
 }
 
-static struct security_acl *security_acl_dup(TALLOC_CTX *mem_ctx,
+struct security_acl *security_acl_dup(TALLOC_CTX *mem_ctx,
 					     const struct security_acl *oacl)
 {
 	struct security_acl *nacl;
