@@ -196,7 +196,7 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 	} else {
 		auth_type = RPC_SPNEGO_AUTH_TYPE;
 	}
-	if (p->auth.auth_level == PIPE_AUTH_LEVEL_PRIVACY) {
+	if (p->auth.auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
 		auth_level = RPC_AUTH_LEVEL_PRIVACY;
 	} else {
 		auth_level = RPC_AUTH_LEVEL_INTEGRITY;
@@ -213,7 +213,7 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 	/* Generate the sign blob. */
 
 	switch (p->auth.auth_level) {
-		case PIPE_AUTH_LEVEL_PRIVACY:
+		case DCERPC_AUTH_LEVEL_PRIVACY:
 			/* Data portion is encrypted. */
 			status = ntlmssp_seal_packet(
 				a->ntlmssp_state,
@@ -229,7 +229,7 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 				return False;
 			}
 			break;
-		case PIPE_AUTH_LEVEL_INTEGRITY:
+		case DCERPC_AUTH_LEVEL_INTEGRITY:
 			/* Data is signed. */
 			status = ntlmssp_sign_packet(
 				a->ntlmssp_state,
@@ -415,7 +415,7 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 
 		init_rpc_hdr_auth(&auth_info,
 				RPC_SCHANNEL_AUTH_TYPE,
-				p->auth.auth_level == PIPE_AUTH_LEVEL_PRIVACY ?
+				p->auth.auth_level == DCERPC_AUTH_LEVEL_PRIVACY ?
 					RPC_AUTH_LEVEL_PRIVACY : RPC_AUTH_LEVEL_INTEGRITY,
 				ss_padding_len, 1);
 
@@ -589,8 +589,8 @@ static bool create_next_pdu_noauth(pipes_struct *p)
 bool create_next_pdu(pipes_struct *p)
 {
 	switch(p->auth.auth_level) {
-		case PIPE_AUTH_LEVEL_NONE:
-		case PIPE_AUTH_LEVEL_CONNECT:
+		case DCERPC_AUTH_LEVEL_NONE:
+		case DCERPC_AUTH_LEVEL_CONNECT:
 			/* This is incorrect for auth level connect. Fixme. JRA */
 			return create_next_pdu_noauth(p);
 
@@ -647,7 +647,7 @@ static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 	   ensure the underlying NTLMSSP flags are also set. If not we should
 	   refuse the bind. */
 
-	if (p->auth.auth_level == PIPE_AUTH_LEVEL_INTEGRITY) {
+	if (p->auth.auth_level == DCERPC_AUTH_LEVEL_INTEGRITY) {
 		if (!(a->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN)) {
 			DEBUG(0,("pipe_ntlmssp_verify_final: pipe %s : packet integrity requested "
 				"but client declined signing.\n",
@@ -655,7 +655,7 @@ static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 			return False;
 		}
 	}
-	if (p->auth.auth_level == PIPE_AUTH_LEVEL_PRIVACY) {
+	if (p->auth.auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
 		if (!(a->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL)) {
 			DEBUG(0,("pipe_ntlmssp_verify_final: pipe %s : packet privacy requested "
 				"but client declined sealing.\n",
@@ -840,7 +840,7 @@ static bool setup_bind_nak(pipes_struct *p)
 	if (p->auth.auth_data_free_func) {
 		(*p->auth.auth_data_free_func)(&p->auth);
 	}
-	p->auth.auth_level = PIPE_AUTH_LEVEL_NONE;
+	p->auth.auth_level = DCERPC_AUTH_LEVEL_NONE;
 	p->auth.auth_type = PIPE_AUTH_TYPE_NONE;
 	p->pipe_bound = False;
 
@@ -1690,10 +1690,10 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 		/* Work out if we have to sign or seal etc. */
 		switch (auth_info.auth_level) {
 			case RPC_AUTH_LEVEL_INTEGRITY:
-				p->auth.auth_level = PIPE_AUTH_LEVEL_INTEGRITY;
+				p->auth.auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
 				break;
 			case RPC_AUTH_LEVEL_PRIVACY:
-				p->auth.auth_level = PIPE_AUTH_LEVEL_PRIVACY;
+				p->auth.auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
 				break;
 			default:
 				DEBUG(0,("api_pipe_bind_req: unexpected auth level (%u).\n",
@@ -1731,7 +1731,7 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 			/* We're finished - no more packets. */
 			p->auth.auth_type = PIPE_AUTH_TYPE_NONE;
 			/* We must set the pipe auth_level here also. */
-			p->auth.auth_level = PIPE_AUTH_LEVEL_NONE;
+			p->auth.auth_level = DCERPC_AUTH_LEVEL_NONE;
 			p->pipe_bound = True;
 			/* The session key was initialized from the SMB
 			 * session in make_internal_rpc_pipe_p */
@@ -2042,7 +2042,7 @@ bool api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in,
 
 	*pstatus = NT_STATUS_OK;
 
-	if (p->auth.auth_level == PIPE_AUTH_LEVEL_NONE || p->auth.auth_level == PIPE_AUTH_LEVEL_CONNECT) {
+	if (p->auth.auth_level == DCERPC_AUTH_LEVEL_NONE || p->auth.auth_level == DCERPC_AUTH_LEVEL_CONNECT) {
 		return True;
 	}
 
@@ -2091,7 +2091,7 @@ bool api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in,
 	auth_blob.length = auth_len;
 
 	switch (p->auth.auth_level) {
-		case PIPE_AUTH_LEVEL_PRIVACY:
+		case DCERPC_AUTH_LEVEL_PRIVACY:
 			/* Data is encrypted. */
 			*pstatus = ntlmssp_unseal_packet(a->ntlmssp_state,
 							data, data_len,
@@ -2102,7 +2102,7 @@ bool api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in,
 				return False;
 			}
 			break;
-		case PIPE_AUTH_LEVEL_INTEGRITY:
+		case DCERPC_AUTH_LEVEL_INTEGRITY:
 			/* Data is signed. */
 			*pstatus = ntlmssp_check_packet(a->ntlmssp_state,
 							data, data_len,

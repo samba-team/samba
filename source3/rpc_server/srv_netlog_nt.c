@@ -595,8 +595,8 @@ static NTSTATUS netr_creds_server_step_check(pipes_struct *p,
 	struct tdb_context *tdb;
 	bool schannel_global_required = (lp_server_schannel() == true) ? true:false;
 	bool schannel_in_use = (p->auth.auth_type == PIPE_AUTH_TYPE_SCHANNEL) ? true:false; /* &&
-		(p->auth.auth_level == PIPE_AUTH_LEVEL_INTEGRITY ||
-		 p->auth.auth_level == PIPE_AUTH_LEVEL_PRIVACY); */
+		(p->auth.auth_level == DCERPC_AUTH_LEVEL_INTEGRITY ||
+		 p->auth.auth_level == DCERPC_AUTH_LEVEL_PRIVACY); */
 
 	tdb = open_schannel_session_store(mem_ctx);
 	if (!tdb) {

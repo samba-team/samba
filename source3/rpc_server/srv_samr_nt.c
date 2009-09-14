@@ -2741,7 +2741,7 @@ static NTSTATUS get_user_info_18(pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (p->auth.auth_level != PIPE_AUTH_LEVEL_PRIVACY) {
+	if (p->auth.auth_level != DCERPC_AUTH_LEVEL_PRIVACY) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
