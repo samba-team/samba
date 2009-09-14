@@ -24,7 +24,6 @@
  * sambaTrustPassword
  * sambaUnixIdPool
  * sambaIdmapEntry
- * sambaAccountPolicy
  * sambaSidEntry
  * sambaAcctFlags -> systemFlags ?
  * sambaPasswordHistory  -> ntPwdHistory*/
