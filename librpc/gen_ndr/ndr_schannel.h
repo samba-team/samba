@@ -8,15 +8,6 @@
 
 #include "../librpc/ndr/ndr_schannel.h"
 #define NDR_SCHANNEL_CALL_COUNT (0)
-void ndr_print_schannel_bind_3(struct ndr_print *ndr, const char *name, const struct schannel_bind_3 *r);
-void ndr_print_schannel_bind_23(struct ndr_print *ndr, const char *name, const struct schannel_bind_23 *r);
-void ndr_print_schannel_bind_info(struct ndr_print *ndr, const char *name, const union schannel_bind_info *r);
-enum ndr_err_code ndr_push_schannel_bind(struct ndr_push *ndr, int ndr_flags, const struct schannel_bind *r);
-enum ndr_err_code ndr_pull_schannel_bind(struct ndr_pull *ndr, int ndr_flags, struct schannel_bind *r);
-void ndr_print_schannel_bind(struct ndr_print *ndr, const char *name, const struct schannel_bind *r);
-enum ndr_err_code ndr_push_schannel_bind_ack(struct ndr_push *ndr, int ndr_flags, const struct schannel_bind_ack *r);
-enum ndr_err_code ndr_pull_schannel_bind_ack(struct ndr_pull *ndr, int ndr_flags, struct schannel_bind_ack *r);
-void ndr_print_schannel_bind_ack(struct ndr_print *ndr, const char *name, const struct schannel_bind_ack *r);
 enum ndr_err_code ndr_push_netlogon_creds_CredentialState(struct ndr_push *ndr, int ndr_flags, const struct netlogon_creds_CredentialState *r);
 enum ndr_err_code ndr_pull_netlogon_creds_CredentialState(struct ndr_pull *ndr, int ndr_flags, struct netlogon_creds_CredentialState *r);
 void ndr_print_netlogon_creds_CredentialState(struct ndr_print *ndr, const char *name, const struct netlogon_creds_CredentialState *r);

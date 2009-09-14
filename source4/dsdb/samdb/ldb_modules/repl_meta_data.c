@@ -47,7 +47,14 @@
 #include "lib/util/dlinklist.h"
 
 struct replmd_private {
+	TALLOC_CTX *la_ctx;
 	struct la_entry *la_list;
+	uint32_t num_ncs;
+	struct nc_entry {
+		struct ldb_dn *dn;
+		struct GUID guid;
+		uint64_t mod_usn;
+	} *ncs;
 };
 
 struct la_entry {
@@ -70,6 +77,188 @@ struct replmd_replicated_request {
 
 	struct ldb_message *search_msg;
 };
+
+
+/*
+  initialise the module
+  allocate the private structure and build the list
+  of partition DNs for use by replmd_notify()
+ */
+static int replmd_init(struct ldb_module *module)
+{
+	struct replmd_private *replmd_private;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+
+	replmd_private = talloc_zero(module, struct replmd_private);
+	if (replmd_private == NULL) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ldb_module_set_private(module, replmd_private);
+
+	return ldb_next_init(module);
+}
+
+
+static int nc_compare(struct nc_entry *n1, struct nc_entry *n2)
+{
+	return ldb_dn_compare(n1->dn, n2->dn);
+}
+
+/*
+  build the list of partition DNs for use by replmd_notify()
+ */
+static int replmd_load_NCs(struct ldb_module *module)
+{
+	const char *attrs[] = { "namingContexts", NULL };
+	struct ldb_result *res = NULL;
+	int i, ret;
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_context *ldb;
+	struct ldb_message_element *el;
+	struct replmd_private *replmd_private = 
+		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
+
+	if (replmd_private->ncs != NULL) {
+		return LDB_SUCCESS;
+	}
+
+	ldb = ldb_module_get_ctx(module);
+	tmp_ctx = talloc_new(module);
+
+	/* load the list of naming contexts */
+	ret = ldb_search(ldb, tmp_ctx, &res, ldb_dn_new(tmp_ctx, ldb, ""), 
+			 LDB_SCOPE_BASE, attrs, NULL);
+	if (ret != LDB_SUCCESS ||
+	    res->count != 1) {
+		DEBUG(0,(__location__ ": Failed to load rootDSE\n"));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	el = ldb_msg_find_element(res->msgs[0], "namingContexts");
+	if (el == NULL) {
+		DEBUG(0,(__location__ ": Failed to load namingContexts\n"));
+		return LDB_ERR_OPERATIONS_ERROR;		
+	}
+
+	replmd_private->num_ncs = el->num_values;
+	replmd_private->ncs = talloc_array(replmd_private, struct nc_entry, 
+					   replmd_private->num_ncs);
+	if (replmd_private->ncs == NULL) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	for (i=0; i<replmd_private->num_ncs; i++) {
+		replmd_private->ncs[i].dn = 
+			ldb_dn_from_ldb_val(replmd_private->ncs, 
+					    ldb, &el->values[i]);
+		replmd_private->ncs[i].mod_usn = 0;
+	}
+
+	talloc_free(res);
+
+	/* now find the GUIDs of each of those DNs */
+	for (i=0; i<replmd_private->num_ncs; i++) {
+		const char *attrs2[] = { "objectGUID", NULL };
+		ret = ldb_search(ldb, tmp_ctx, &res, replmd_private->ncs[i].dn,
+				 LDB_SCOPE_BASE, attrs2, NULL);
+		if (ret != LDB_SUCCESS ||
+		    res->count != 1) {
+			/* this happens when the schema is first being
+			   setup */
+			talloc_free(replmd_private->ncs);
+			replmd_private->ncs = NULL;
+			replmd_private->num_ncs = 0;
+			talloc_free(tmp_ctx);
+			return LDB_SUCCESS;
+		}
+		replmd_private->ncs[i].guid = 
+			samdb_result_guid(res->msgs[0], "objectGUID");
+		talloc_free(res);
+	}	
+
+	/* sort the NCs into order, most to least specific */
+	qsort(replmd_private->ncs, replmd_private->num_ncs,
+	      sizeof(replmd_private->ncs[0]), QSORT_CAST nc_compare);
+
+	
+	talloc_free(tmp_ctx);
+	
+	return LDB_SUCCESS;
+}
+
+
+/*
+ * notify the repl task that a object has changed. The notifies are
+ * gathered up in the replmd_private structure then written to the
+ * @REPLCHANGED object in each partition during the prepare_commit
+ */
+static int replmd_notify(struct ldb_module *module, struct ldb_dn *dn, uint64_t uSN)
+{
+	int ret, i;
+	struct replmd_private *replmd_private = 
+		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
+
+	ret = replmd_load_NCs(module);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	if (replmd_private->num_ncs == 0) {
+		return LDB_SUCCESS;
+	}
+
+	for (i=0; i<replmd_private->num_ncs; i++) {
+		if (ldb_dn_compare_base(replmd_private->ncs[i].dn, dn) == 0) {
+			break;
+		}
+	}
+	if (i == replmd_private->num_ncs) {
+		DEBUG(0,(__location__ ": DN not within known NCs '%s'\n", 
+			 ldb_dn_get_linearized(dn)));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (uSN > replmd_private->ncs[i].mod_usn) {
+	    replmd_private->ncs[i].mod_usn = uSN;
+	}
+
+	return LDB_SUCCESS;
+}
+
+
+/*
+ * update a @REPLCHANGED record in each partition if there have been
+ * any writes of replicated data in the partition
+ */
+static int replmd_notify_store(struct ldb_module *module)
+{
+	int i;
+	struct replmd_private *replmd_private = 
+		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+
+	for (i=0; i<replmd_private->num_ncs; i++) {
+		int ret;
+
+		if (replmd_private->ncs[i].mod_usn == 0) {
+			/* this partition has not changed in this
+			   transaction */
+			continue;
+		}
+
+		ret = dsdb_save_partition_usn(ldb, replmd_private->ncs[i].dn, 
+					      replmd_private->ncs[i].mod_usn);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0,(__location__ ": Failed to save partition uSN for %s\n",
+				 ldb_dn_get_linearized(replmd_private->ncs[i].dn)));
+			return ret;
+		}
+	}
+
+	return LDB_SUCCESS;
+}
+
 
 /*
   created a replmd_replicated_request context
@@ -458,6 +647,11 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 		return ret;
 	}
 
+	ret = replmd_notify(module, msg->dn, seq_num);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	/* go on with the call chain */
 	return ldb_next_request(module, down_req);
 }
@@ -505,6 +699,7 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		omd->ctr.ctr1.count++;
+		ZERO_STRUCT(omd->ctr.ctr1.array[i]);
 	}
 
 	/* Get a new sequence number from the backend. We only do this
@@ -519,7 +714,7 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
 	}
 
 	md1 = &omd->ctr.ctr1.array[i];
-	md1->version                   = 1;
+	md1->version++;
 	md1->attid                     = a->attributeID_id;
 	md1->originating_change_time   = now;
 	md1->originating_invocation_id = *our_invocation_id;
@@ -534,8 +729,8 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
  * object. This is needed for DRS replication, as the merge on the
  * client is based on this object 
  */
-static int replmd_update_rpmd(struct ldb_context *ldb, struct ldb_message *msg,
-			      uint64_t *seq_num)
+static int replmd_update_rpmd(struct ldb_module *module, 
+			      struct ldb_message *msg, uint64_t *seq_num)
 {
 	const struct ldb_val *omd_value;
 	enum ndr_err_code ndr_err;
@@ -548,6 +743,9 @@ static int replmd_update_rpmd(struct ldb_context *ldb, struct ldb_message *msg,
 	int ret;
 	const char *attrs[] = { "replPropertyMetaData" , NULL };
 	struct ldb_result *res;
+	struct ldb_context *ldb;
+
+	ldb = ldb_module_get_ctx(module);
 
 	our_invocation_id = samdb_ntds_invocation_id(ldb);
 	if (!our_invocation_id) {
@@ -631,6 +829,11 @@ static int replmd_update_rpmd(struct ldb_context *ldb, struct ldb_message *msg,
 			return ret;
 		}
 
+		ret = replmd_notify(module, msg->dn, *seq_num);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
 		el->num_values = 1;
 		el->values = md_value;
 	}
@@ -691,7 +894,7 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	 *   attribute was changed
 	 */
 
-	ret = replmd_update_rpmd(ldb, msg, &seq_num);
+	ret = replmd_update_rpmd(module, msg, &seq_num);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -728,6 +931,102 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	/* go on with the call chain */
 	return ldb_next_request(module, down_req);
 }
+
+
+/*
+  handle a rename request
+
+  On a rename we need to do an extra ldb_modify which sets the
+  whenChanged and uSNChanged attributes
+ */
+static int replmd_rename(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_context *ldb;
+	int ret, i;
+	time_t t = time(NULL);
+	uint64_t seq_num = 0;
+	struct ldb_message *msg;
+	struct replmd_private *replmd_private = 
+		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
+
+	/* do not manipulate our control entries */
+	if (ldb_dn_is_special(req->op.mod.message->dn)) {
+		return ldb_next_request(module, req);
+	}
+
+	ldb = ldb_module_get_ctx(module);
+
+	ldb_debug(ldb, LDB_DEBUG_TRACE, "replmd_rename\n");
+
+	/* Get a sequence number from the backend */
+	ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &seq_num);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	msg = ldb_msg_new(req);
+	if (msg == NULL) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	msg->dn = req->op.rename.olddn;
+
+	if (add_time_element(msg, "whenChanged", t) != LDB_SUCCESS) {
+		talloc_free(msg);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
+
+	if (add_uint64_element(msg, "uSNChanged", seq_num) != LDB_SUCCESS) {
+		talloc_free(msg);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	msg->elements[1].flags = LDB_FLAG_MOD_REPLACE;
+
+	ret = ldb_modify(ldb, msg);
+	talloc_free(msg);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = replmd_load_NCs(module);
+	if (ret != 0) {
+		return ret;
+	}
+
+	/* now update the highest uSNs of the partitions that are
+	   affected. Note that two partitions could be changing */
+	for (i=0; i<replmd_private->num_ncs; i++) {
+		if (ldb_dn_compare_base(replmd_private->ncs[i].dn, 
+					req->op.rename.olddn) == 0) {
+			break;
+		}
+	}
+	if (i == replmd_private->num_ncs) {
+		DEBUG(0,(__location__ ": rename olddn outside tree? %s\n",
+			 ldb_dn_get_linearized(req->op.rename.olddn)));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	replmd_private->ncs[i].mod_usn = seq_num;
+
+	for (i=0; i<replmd_private->num_ncs; i++) {
+		if (ldb_dn_compare_base(replmd_private->ncs[i].dn, 
+					req->op.rename.newdn) == 0) {
+			break;
+		}
+	}
+	if (i == replmd_private->num_ncs) {
+		DEBUG(0,(__location__ ": rename newdn outside tree? %s\n",
+			 ldb_dn_get_linearized(req->op.rename.newdn)));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	replmd_private->ncs[i].mod_usn = seq_num;
+	
+	/* go on with the call chain */
+	return ldb_next_request(module, req);
+}
+
 
 static int replmd_replicated_request_error(struct replmd_replicated_request *ar, int ret)
 {
@@ -825,6 +1124,11 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 	}
 
 	ret = samdb_msg_add_uint64(ldb, msg, msg, "uSNChanged", seq_num);
+	if (ret != LDB_SUCCESS) {
+		return replmd_replicated_request_error(ar, ret);
+	}
+
+	ret = replmd_notify(ar->module, msg->dn, seq_num);
 	if (ret != LDB_SUCCESS) {
 		return replmd_replicated_request_error(ar, ret);
 	}
@@ -1103,6 +1407,11 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	/* we want to replace the old values */
 	for (i=0; i < msg->num_elements; i++) {
 		msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
+	}
+
+	ret = replmd_notify(ar->module, msg->dn, seq_num);
+	if (ret != LDB_SUCCESS) {
+		return replmd_replicated_request_error(ar, ret);
 	}
 
 	if (DEBUGLVL(4)) {
@@ -1684,18 +1993,17 @@ static int replmd_extended_replicated_objects(struct ldb_module *module, struct 
 	for (i=0; i<ar->objs->linked_attributes_count; i++) {
 		struct la_entry *la_entry;
 
-		if (replmd_private == NULL) {
-			DEBUG(0,(__location__ ": repl_meta_data not called from within a transaction\n"));
-			return LDB_ERR_OPERATIONS_ERROR;
+		if (replmd_private->la_ctx == NULL) {
+			replmd_private->la_ctx = talloc_new(replmd_private);
 		}
-
-		la_entry = talloc(replmd_private, struct la_entry);
+		la_entry = talloc(replmd_private->la_ctx, struct la_entry);
 		if (la_entry == NULL) {
 			ldb_oom(ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		la_entry->la = talloc(la_entry, struct drsuapi_DsReplicaLinkedAttribute);
 		if (la_entry->la == NULL) {
+			talloc_free(la_entry);
 			ldb_oom(ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
@@ -1891,15 +2199,17 @@ static int replmd_extended(struct ldb_module *module, struct ldb_request *req)
 static int replmd_start_transaction(struct ldb_module *module)
 {
 	/* create our private structure for this transaction */
+	int i;
 	struct replmd_private *replmd_private = talloc_get_type(ldb_module_get_private(module),
 								struct replmd_private);
-	talloc_free(replmd_private);
-	replmd_private = talloc(module, struct replmd_private);
-	if (replmd_private == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
+	talloc_free(replmd_private->la_ctx);
 	replmd_private->la_list = NULL;
-	ldb_module_set_private(module, replmd_private);
+	replmd_private->la_ctx = NULL;
+
+	for (i=0; i<replmd_private->num_ncs; i++) {
+		replmd_private->ncs[i].mod_usn = 0;
+	}
+
 	return ldb_next_start_trans(module);
 }
 
@@ -1911,23 +2221,32 @@ static int replmd_prepare_commit(struct ldb_module *module)
 {
 	struct replmd_private *replmd_private = 
 		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
-	struct la_entry *la;
+	struct la_entry *la, *prev;
+	int ret;
 
 	/* walk the list backwards, to do the first entry first, as we
 	 * added the entries with DLIST_ADD() which puts them at the
 	 * start of the list */
 	for (la = replmd_private->la_list; la && la->next; la=la->next) ;
 
-	for (; la; la=la->prev) {
-		int ret;
+	for (; la; la=prev) {
+		prev = la->prev;
+		DLIST_REMOVE(replmd_private->la_list, la);
 		ret = replmd_process_linked_attribute(module, la);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
 	}
 
-	talloc_free(replmd_private);
-	ldb_module_set_private(module, NULL);
+	talloc_free(replmd_private->la_ctx);
+	replmd_private->la_list = NULL;
+	replmd_private->la_ctx = NULL;
+
+	/* possibly change @REPLCHANGED */
+	ret = replmd_notify_store(module);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 	
 	return ldb_next_prepare_commit(module);
 }
@@ -1936,17 +2255,20 @@ static int replmd_del_transaction(struct ldb_module *module)
 {
 	struct replmd_private *replmd_private = 
 		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
-	talloc_free(replmd_private);
-	ldb_module_set_private(module, NULL);
+	talloc_free(replmd_private->la_ctx);
+	replmd_private->la_list = NULL;
+	replmd_private->la_ctx = NULL;
 	return ldb_next_del_trans(module);
 }
 
 
 _PUBLIC_ const struct ldb_module_ops ldb_repl_meta_data_module_ops = {
 	.name          = "repl_meta_data",
-	.add           = replmd_add,
-	.modify        = replmd_modify,
-	.extended      = replmd_extended,
+	.init_context	   = replmd_init,
+	.add               = replmd_add,
+	.modify            = replmd_modify,
+	.rename            = replmd_rename,
+	.extended          = replmd_extended,
 	.start_transaction = replmd_start_transaction,
 	.prepare_commit    = replmd_prepare_commit,
 	.del_transaction   = replmd_del_transaction,

@@ -114,7 +114,8 @@ static NTSTATUS rpccli_lsa_lookup_sids_noalloc(struct rpc_pipe_client *cli,
 					       const DOM_SID *sids,
 					       char **domains,
 					       char **names,
-					       enum lsa_SidType *types)
+					       enum lsa_SidType *types,
+					       bool use_lookupsids3)
 {
 	NTSTATUS result = NT_STATUS_OK;
 	TALLOC_CTX *tmp_ctx = NULL;
@@ -147,13 +148,41 @@ static NTSTATUS rpccli_lsa_lookup_sids_noalloc(struct rpc_pipe_client *cli,
 		}
 	}
 
-	result = rpccli_lsa_LookupSids(cli, mem_ctx,
-				       pol,
-				       &sid_array,
-				       &ref_domains,
-				       &lsa_names,
-				       level,
-				       &count);
+	if (use_lookupsids3) {
+		struct lsa_TransNameArray2 lsa_names2;
+		uint32_t n;
+
+		result = rpccli_lsa_LookupSids3(cli, mem_ctx,
+						&sid_array,
+						&ref_domains,
+						&lsa_names2,
+						level,
+						&count,
+						0,
+						0);
+
+		if (!NT_STATUS_IS_ERR(result)) {
+			lsa_names.count	= lsa_names2.count;
+			lsa_names.names = talloc_array(mem_ctx, struct lsa_TranslatedName, lsa_names.count);
+			if (!lsa_names.names) {
+				return NT_STATUS_NO_MEMORY;
+			}
+			for (n=0; n < lsa_names.count; n++) {
+				lsa_names.names[n].sid_type	= lsa_names2.names[n].sid_type;
+				lsa_names.names[n].name		= lsa_names2.names[n].name;
+				lsa_names.names[n].sid_index	= lsa_names2.names[n].sid_index;
+			}
+		}
+
+	} else {
+		result = rpccli_lsa_LookupSids(cli, mem_ctx,
+					       pol,
+					       &sid_array,
+					       &ref_domains,
+					       &lsa_names,
+					       level,
+					       &count);
+	}
 
 	DEBUG(10, ("LSA_LOOKUPSIDS returned '%s', mapped count = %d'\n",
 		   nt_errstr(result), count));
@@ -233,14 +262,15 @@ done:
  * at 20480 for win2k3, but we keep it at a save 1000 for now. */
 #define LOOKUP_SIDS_HUNK_SIZE 1000
 
-NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
-				TALLOC_CTX *mem_ctx,
-				struct policy_handle *pol,
-				int num_sids,
-				const DOM_SID *sids,
-				char ***pdomains,
-				char ***pnames,
-				enum lsa_SidType **ptypes)
+static NTSTATUS rpccli_lsa_lookup_sids_generic(struct rpc_pipe_client *cli,
+					       TALLOC_CTX *mem_ctx,
+					       struct policy_handle *pol,
+					       int num_sids,
+					       const DOM_SID *sids,
+					       char ***pdomains,
+					       char ***pnames,
+					       enum lsa_SidType **ptypes,
+					       bool use_lookupsids3)
 {
 	NTSTATUS result = NT_STATUS_OK;
 	int sids_left = 0;
@@ -299,7 +329,8 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 							     hunk_sids,
 							     hunk_domains,
 							     hunk_names,
-							     hunk_types);
+							     hunk_types,
+							     use_lookupsids3);
 
 		if (!NT_STATUS_IS_OK(hunk_result) &&
 		    !NT_STATUS_EQUAL(hunk_result, STATUS_SOME_UNMAPPED) &&
@@ -340,25 +371,54 @@ fail:
 	return result;
 }
 
+NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
+				TALLOC_CTX *mem_ctx,
+				struct policy_handle *pol,
+				int num_sids,
+				const DOM_SID *sids,
+				char ***pdomains,
+				char ***pnames,
+				enum lsa_SidType **ptypes)
+{
+	return rpccli_lsa_lookup_sids_generic(cli, mem_ctx, pol, num_sids, sids,
+					      pdomains, pnames, ptypes, false);
+}
+
+NTSTATUS rpccli_lsa_lookup_sids3(struct rpc_pipe_client *cli,
+				 TALLOC_CTX *mem_ctx,
+				 struct policy_handle *pol,
+				 int num_sids,
+				 const DOM_SID *sids,
+				 char ***pdomains,
+				 char ***pnames,
+				 enum lsa_SidType **ptypes)
+{
+	return rpccli_lsa_lookup_sids_generic(cli, mem_ctx, pol, num_sids, sids,
+					      pdomains, pnames, ptypes, true);
+}
+
 /** Lookup a list of names */
 
-NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
-				 TALLOC_CTX *mem_ctx,
-				 struct policy_handle *pol, int num_names,
-				 const char **names,
-				 const char ***dom_names,
-				 int level,
-				 DOM_SID **sids,
-				 enum lsa_SidType **types)
+static NTSTATUS rpccli_lsa_lookup_names_generic(struct rpc_pipe_client *cli,
+						TALLOC_CTX *mem_ctx,
+						struct policy_handle *pol, int num_names,
+						const char **names,
+						const char ***dom_names,
+						int level,
+						DOM_SID **sids,
+						enum lsa_SidType **types,
+						bool use_lookupnames4)
 {
 	NTSTATUS result;
 	int i;
 	struct lsa_String *lsa_names = NULL;
 	struct lsa_RefDomainList *domains = NULL;
 	struct lsa_TransSidArray sid_array;
+	struct lsa_TransSidArray3 sid_array3;
 	uint32_t count = 0;
 
 	ZERO_STRUCT(sid_array);
+	ZERO_STRUCT(sid_array3);
 
 	lsa_names = TALLOC_ARRAY(mem_ctx, struct lsa_String, num_names);
 	if (!lsa_names) {
@@ -369,14 +429,26 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 		init_lsa_String(&lsa_names[i], names[i]);
 	}
 
-	result = rpccli_lsa_LookupNames(cli, mem_ctx,
-				        pol,
-					num_names,
-					lsa_names,
-					&domains,
-					&sid_array,
-					level,
-					&count);
+	if (use_lookupnames4) {
+		result = rpccli_lsa_LookupNames4(cli, mem_ctx,
+						 num_names,
+						 lsa_names,
+						 &domains,
+						 &sid_array3,
+						 level,
+						 &count,
+						 0,
+						 0);
+	} else {
+		result = rpccli_lsa_LookupNames(cli, mem_ctx,
+					        pol,
+						num_names,
+						lsa_names,
+						&domains,
+						&sid_array,
+						level,
+						&count);
+	}
 
 	if (!NT_STATUS_IS_OK(result) && NT_STATUS_V(result) !=
 	    NT_STATUS_V(STATUS_SOME_UNMAPPED)) {
@@ -423,9 +495,16 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 	}
 
 	for (i = 0; i < num_names; i++) {
-		uint32_t dom_idx = sid_array.sids[i].sid_index;
-		uint32_t dom_rid = sid_array.sids[i].rid;
+		uint32_t dom_idx;
 		DOM_SID *sid = &(*sids)[i];
+
+		if (use_lookupnames4) {
+			dom_idx		= sid_array3.sids[i].sid_index;
+			(*types)[i]	= sid_array3.sids[i].sid_type;
+		} else {
+			dom_idx		= sid_array.sids[i].sid_index;
+			(*types)[i]	= sid_array.sids[i].sid_type;
+		}
 
 		/* Translate optimised sid through domain index array */
 
@@ -436,13 +515,15 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 			continue;
 		}
 
-		sid_copy(sid, domains->domains[dom_idx].sid);
+		if (use_lookupnames4) {
+			sid_copy(sid, sid_array3.sids[i].sid);
+		} else {
+			sid_copy(sid, domains->domains[dom_idx].sid);
 
-		if (dom_rid != 0xffffffff) {
-			sid_append_rid(sid, dom_rid);
+			if (sid_array.sids[i].rid != 0xffffffff) {
+				sid_append_rid(sid, sid_array.sids[i].rid);
+			}
 		}
-
-		(*types)[i] = sid_array.sids[i].sid_type;
 
 		if (dom_names == NULL) {
 			continue;
@@ -454,4 +535,32 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
  done:
 
 	return result;
+}
+
+NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
+				 TALLOC_CTX *mem_ctx,
+				 struct policy_handle *pol, int num_names,
+				 const char **names,
+				 const char ***dom_names,
+				 int level,
+				 DOM_SID **sids,
+				 enum lsa_SidType **types)
+{
+	return rpccli_lsa_lookup_names_generic(cli, mem_ctx, pol, num_names,
+					       names, dom_names, level, sids,
+					       types, false);
+}
+
+NTSTATUS rpccli_lsa_lookup_names4(struct rpc_pipe_client *cli,
+				  TALLOC_CTX *mem_ctx,
+				  struct policy_handle *pol, int num_names,
+				  const char **names,
+				  const char ***dom_names,
+				  int level,
+				  DOM_SID **sids,
+				  enum lsa_SidType **types)
+{
+	return rpccli_lsa_lookup_names_generic(cli, mem_ctx, pol, num_names,
+					       names, dom_names, level, sids,
+					       types, true);
 }

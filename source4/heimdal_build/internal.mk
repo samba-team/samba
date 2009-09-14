@@ -114,7 +114,7 @@ $(eval $(call heimdal_proto_header_template, \
 # Start SUBSYSTEM HEIMDAL_GSSAPI
 [SUBSYSTEM::HEIMDAL_GSSAPI]
 CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/gssapi -I$(heimdalsrcdir)/lib/gssapi/gssapi -I$(heimdalsrcdir)/lib/gssapi/spnego -I$(heimdalsrcdir)/lib/gssapi/krb5 -I$(heimdalsrcdir)/lib/gssapi/mech
-PRIVATE_DEPENDENCIES = HEIMDAL_HCRYPTO HEIMDAL_HEIM_ASN1 HEIMDAL_SPNEGO_ASN1 HEIMDAL_ROKEN HEIMDAL_KRB5
+PRIVATE_DEPENDENCIES = HEIMDAL_HCRYPTO HEIMDAL_HEIM_ASN1 HEIMDAL_SPNEGO_ASN1 HEIMDAL_GSSAPI_ASN1 HEIMDAL_ROKEN HEIMDAL_KRB5
 # End SUBSYSTEM HEIMDAL_GSSAPI
 #######################
 
@@ -250,7 +250,6 @@ HEIMDAL_GSSAPI_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/gssapi/mech/gss_release_name.o \
 	$(heimdalsrcdir)/lib/gssapi/mech/gss_set_cred_option.o \
 	$(heimdalsrcdir)/lib/gssapi/mech/gss_pseudo_random.o \
-	$(heimdalsrcdir)/lib/gssapi/asn1_GSSAPIContextToken.o \
 	$(heimdalbuildsrcdir)/gssapi-glue.o
 
 #######################

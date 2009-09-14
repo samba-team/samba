@@ -45,7 +45,7 @@ fi
 if test x"$libreplace_cv_READDIR_GETDIRENTRIES" = x"yes"; then
 	AC_DEFINE(REPLACE_READDIR,1,[replace readdir])
 	AC_DEFINE(REPLACE_READDIR_GETDIRENTRIES,1,[replace readdir using getdirentries()])
-	LIBREPLACEOBJ="${LIBREPLACEOBJ} repdir_getdirentries.o"
+	LIBREPLACEOBJ="${LIBREPLACEOBJ} $libreplacedir/repdir_getdirentries.o"
 	libreplace_cv_READDIR_NEEDED=no
 fi
 
@@ -68,7 +68,7 @@ fi
 if test x"$libreplace_cv_READDIR_GETDENTS" = x"yes"; then
 	AC_DEFINE(REPLACE_READDIR,1,[replace readdir])
 	AC_DEFINE(REPLACE_READDIR_GETDENTS,1,[replace readdir using getdents()])
-	LIBREPLACEOBJ="${LIBREPLACEOBJ} repdir_getdents.o"
+	LIBREPLACEOBJ="${LIBREPLACEOBJ} $libreplacedir/repdir_getdents.o"
 	libreplace_cv_READDIR_NEEDED=no
 fi
 

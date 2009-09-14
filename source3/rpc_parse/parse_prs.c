@@ -1087,7 +1087,7 @@ static void schannel_digest(struct schannel_auth_struct *a,
 	SSVAL(sig,0,verf->SignatureAlgorithm);
 	SSVAL(sig,2,verf->SealAlgorithm);
 	SSVAL(sig,4,verf->Pad);
-	SSVAL(sig,8,verf->Flags);
+	SSVAL(sig,6,verf->Flags);
 
 	/* verfiy the signature on the packet by MD5 over various bits */
 	MD5Init(&ctx3);

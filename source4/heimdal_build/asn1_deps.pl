@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # Generate make dependency rules for asn1 files
 # Jelmer Vernooij <jelmer@samba.org> 2005
-# Andrew Bartlett <abartlet@samba.org> 2006
+# Andrew Bartlett <abartlet@samba.org> 2006-2009
 # Stefan Metzmacher <metze@samba.org> 2007
 # GPL
 
@@ -11,12 +11,6 @@ my $file = shift;
 my $prefix = shift;
 my $dirname = shift;
 my $options = join(' ', @ARGV);
-my $x_file;
-my @x_files = ();
-my $c_file;
-my @c_files = ();
-my $o_file;
-my @o_files = ();
 my $import;
 my @imports = ();
 my $dep;
@@ -29,31 +23,27 @@ if (not defined $options) {
 
 my $header = "$dirname/$prefix.h";
 my $headerx = "$dirname/$prefix.hx";
+my $o_file = "$dirname/asn1_$prefix.o";
+my $c_file = "$dirname/asn1_$prefix.c";
+my $x_file = "$dirname/asn1_$prefix.x";
+my $output_file = "$dirname/" . $prefix . "_asn1_files";
 
 print "basics:: $header\n";
+print "$output_file: \$(heimdalsrcdir)/$file \$(ASN1C)\n";
+print "\t\@echo \"Compiling ASN1 file \$(heimdalsrcdir)/$file\"\n";
+print "\t\@\$(heimdalbuildsrcdir)/asn1_compile_wrapper.sh \$(builddir) $dirname \$(ASN1C) \$(call abspath,\$(heimdalsrcdir)/$file) $prefix $options --one-code-file\n\n";
+print "$headerx: $output_file\n";
 print "$header: $headerx\n";
 print "\t\@cp $headerx $header\n";
-print "$headerx: \$(heimdalsrcdir)/$file \$(ASN1C)\n";
-print "\t\@echo \"Compiling ASN1 file \$(heimdalsrcdir)/$file\"\n";
-print "\t\@\$(heimdalbuildsrcdir)/asn1_compile_wrapper.sh \$(builddir) $dirname \$(ASN1C) \$(call abspath,\$(heimdalsrcdir)/$file) $prefix $options\n\n";
+print "$x_file: $header\n";
+print "$c_file: $x_file\n";
+print "\t\@echo \"#include \\\"config.h\\\"\" > $c_file && cat $x_file >> $c_file\n\n";
 
 open(IN,"heimdal/$file") or die("Can't open heimdal/$file: $!");
 my @lines = <IN>;
 close(IN);
 foreach my $line (@lines) {
-	if ($line =~ /^([\w]+[\w\-]+)(\s+OBJECT IDENTIFIER)?\s*::=/) {
-		my $output = $1;
-		$output =~ s/-/_/g;
-		$c_file = "$dirname/asn1_$output.c";
-		$x_file = "$dirname/asn1_$output.x";
-		$o_file = "$dirname/asn1_$output.o";
-		print "$x_file: $header\n";
-		print "$c_file: $dirname/asn1_$output.x\n";
-		print "\t\@echo \"#include \\\"config.h\\\"\" > $c_file && cat $x_file >> $c_file\n\n";
-		push @x_files, $x_file;
-		push @c_files, $c_file;
-		push @o_files, $o_file;
-	} elsif ($line =~ /^(\s*IMPORT)([\w\,\s])*(\s+FROM\s+)([\w]+[\w\-]+);/) {
+	if ($line =~ /^(\s*IMPORT)([\w\,\s])*(\s+FROM\s+)([\w]+[\w\-]+);/) {
 		$import = $line;
 		chomp $import;
 		push @imports, $import;
@@ -94,21 +84,16 @@ print "CFLAGS = -Iheimdal_build -Iheimdal/lib/roken -I$dirname\n";
 print "PUBLIC_DEPENDENCIES = $depstr\n\n";
 
 print "HEIMDAL_".uc($prefix)."_OBJ_FILES = ";
-foreach $o_file (@o_files) {
-    print "\\\n\t$o_file";
-}
+print "\\\n\t$o_file";
 
 print "\n\n";
 
 print "clean:: \n";
 print "\t\@echo \"Deleting ASN1 output files generated from $file\"\n";
+print "\t\@rm -f $output_file\n";
 print "\t\@rm -f $header\n";
-foreach $c_file (@c_files) {
-    print "\t\@rm -f $c_file\n";
-}
-foreach $x_file (@x_files) {
-    print "\t\@rm -f $x_file\n";
-}
+print "\t\@rm -f $c_file\n";
+print "\t\@rm -f $x_file\n";
 print "\t\@rm -f $dirname/$prefix\_files\n";
 print "\t\@rm -f $dirname/$prefix\.h\n";
 print "\n";

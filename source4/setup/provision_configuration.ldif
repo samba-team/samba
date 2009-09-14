@@ -2,7 +2,8 @@
 # Configuration Naming Context
 ###############################
 
-# Display specifiers are in "display-specifiers/DisplaySpecifiers-Win2k8R2.txt"
+# Display specifiers are located in
+# display-specifiers/DisplaySpecifiers-Win2k8R2.txt"
 # This file is parsed during provision using the ms_display_specifiers.py
 # script.
 
@@ -746,6 +747,32 @@ objectClass: top
 objectClass: applicationSiteSettings
 objectClass: licensingSiteSettings
 
+dn: CN=Inter-Site Transports,CN=Sites,${CONFIGDN}
+objectClass: top
+objectClass: interSiteTransportContainer
+systemFlags: -2147483648
+
+dn: CN=IP,CN=Inter-Site Transports,CN=Sites,${CONFIGDN}
+objectClass: top
+objectClass: interSiteTransport
+transportAddressAttribute: dNSHostName
+transportDLLName: ismip.dll
+
+dn: CN=DEFAULTIPSITELINK,CN=IP,CN=Inter-Site Transports,CN=Sites,${CONFIGDN}
+objectClass: top
+objectClass: siteLink
+cost: 100
+replInterval: 180
+siteList: CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
+systemFlags: 1073741824
+
+dn: CN=SMTP,CN=Inter-Site Transports,CN=Sites,${CONFIGDN}
+objectClass: top
+objectClass: interSiteTransport
+transportAddressAttribute: mailAddress
+transportDLLName: ismsmtp.dll
+options: 1
+
 dn: CN=NTDS Site Settings,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
 objectClass: top
 objectClass: applicationSiteSettings
@@ -756,7 +783,3 @@ objectClass: top
 objectClass: serversContainer
 systemFlags: 33554432
 
-dn: CN=Subnets,CN=Sites,${CONFIGDN}
-objectClass: top
-objectClass: subnetContainer
-systemFlags: -1073741824

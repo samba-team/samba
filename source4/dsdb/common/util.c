@@ -2257,3 +2257,149 @@ failed:
 }
 
 
+/*
+  load the uSNHighest attribute from the @REPLCHANGED object for a
+  partition
+ */
+int dsdb_load_partition_usn(struct ldb_context *ldb, struct ldb_dn *dn, uint64_t *uSN)
+{
+	struct ldb_request *req;
+	int ret;
+	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+	struct dsdb_control_current_partition *p_ctrl;
+	struct ldb_result *res;
+
+	res = talloc_zero(tmp_ctx, struct ldb_result);
+	if (!res) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ldb_build_search_req(&req, ldb, tmp_ctx,
+				   ldb_dn_new(tmp_ctx, ldb, "@REPLCHANGED"),
+				   LDB_SCOPE_BASE,
+				   NULL, NULL,
+				   NULL,
+				   res, ldb_search_default_callback,
+				   NULL);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	p_ctrl = talloc(req, struct dsdb_control_current_partition);
+	if (p_ctrl == NULL) {
+		talloc_free(res);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	p_ctrl->version = DSDB_CONTROL_CURRENT_PARTITION_VERSION;
+	p_ctrl->dn = dn;
+	
+
+	ret = ldb_request_add_control(req,
+				      DSDB_CONTROL_CURRENT_PARTITION_OID,
+				      false, p_ctrl);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+	
+	/* Run the new request */
+	ret = ldb_request(ldb, req);
+	
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	if (res->count < 1) {
+		*uSN = 0;
+	} else {
+		*uSN = ldb_msg_find_attr_as_uint64(res->msgs[0], "uSNHighest", 0);
+	}
+
+	talloc_free(tmp_ctx);
+
+	return LDB_SUCCESS;	
+}
+
+/*
+  save the uSNHighest attribute in the @REPLCHANGED object for a
+  partition
+ */
+int dsdb_save_partition_usn(struct ldb_context *ldb, struct ldb_dn *dn, uint64_t uSN)
+{
+	struct ldb_request *req;
+	struct ldb_message *msg;
+	struct dsdb_control_current_partition *p_ctrl;
+	int ret;
+
+	msg = ldb_msg_new(ldb);
+	if (msg == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	msg->dn = ldb_dn_new(msg, ldb, "@REPLCHANGED");
+	if (msg->dn == NULL) {
+		talloc_free(msg);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	
+	ret = ldb_msg_add_fmt(msg, "uSNHighest", "%llu", (unsigned long long)uSN);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(msg);
+		return ret;
+	}
+	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
+	
+
+	p_ctrl = talloc(msg, struct dsdb_control_current_partition);
+	if (p_ctrl == NULL) {
+		talloc_free(msg);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	p_ctrl->version = DSDB_CONTROL_CURRENT_PARTITION_VERSION;
+	p_ctrl->dn = dn;
+
+	ret = ldb_build_mod_req(&req, ldb, msg,
+				msg,
+				NULL,
+				NULL, ldb_op_default_callback,
+				NULL);
+again:
+	if (ret != LDB_SUCCESS) {
+		talloc_free(msg);
+		return ret;
+	}
+	
+	ret = ldb_request_add_control(req,
+				      DSDB_CONTROL_CURRENT_PARTITION_OID,
+				      false, p_ctrl);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(msg);
+		return ret;
+	}
+	
+	/* Run the new request */
+	ret = ldb_request(ldb, req);
+	
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		ret = ldb_build_add_req(&req, ldb, msg,
+					msg,
+					NULL,
+					NULL, ldb_op_default_callback,
+					NULL);
+		goto again;
+	}
+	
+	talloc_free(msg);
+	
+	return ret;
+}

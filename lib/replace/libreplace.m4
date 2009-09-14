@@ -16,7 +16,7 @@ done
 if test x"$libreplacedir" = "x"; then
 	AC_MSG_ERROR([cannot find libreplace in $libreplacepaths])
 fi
-LIBREPLACEOBJ="replace.o"
+LIBREPLACEOBJ="$libreplacedir/replace.o"
 AC_SUBST(LIBREPLACEOBJ)
 
 AC_CANONICAL_BUILD

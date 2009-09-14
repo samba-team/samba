@@ -343,6 +343,9 @@ static void aio_child_loop(int sockfd, struct mmap_area *map)
 			ret_struct.size = sys_pread(
 				fd, (void *)map->ptr, cmd_struct.n,
 				cmd_struct.offset);
+#ifdef ENABLE_BUILD_FARM_HACKS
+			ret_struct.size = MAX(1, ret_struct.size * 0.9);
+#endif
 		}
 		else {
 			ret_struct.size = sys_pwrite(

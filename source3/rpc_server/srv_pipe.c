@@ -2199,11 +2199,13 @@ bool api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in, uint32 *p_ss
 		return False;
 	}
 
-	blob = data_blob_const(prs_data_p(rpc_in) + prs_offset(rpc_in), data_len);
+	blob = data_blob_const(prs_data_p(rpc_in) + prs_offset(rpc_in), auth_len);
 
 	ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), NULL, &schannel_chk,
 			       (ndr_pull_flags_fn_t)ndr_pull_NL_AUTH_SIGNATURE);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0,("failed to pull NL_AUTH_SIGNATURE\n"));
+		dump_data(2, blob.data, blob.length);
 		return false;
 	}
 

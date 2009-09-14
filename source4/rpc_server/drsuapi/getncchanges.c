@@ -94,12 +94,13 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 		attids[n] = md.ctr.ctr1.array[i].attid;
 		n++;
 	}
-	if (n == 0) {
-		/* nothing to send */
-		talloc_free(obj->meta_data_ctr);
-		obj->meta_data_ctr = NULL;
-		return WERR_OK;
-	}
+
+	/*
+	  note that if n==0 we still need to send the change, as it
+	  could be a rename, which changes the uSNChanged, but not any
+	  of the replicated attributes
+	 */
+
 	obj->meta_data_ctr->count = n;
 
 	obj->object.identifier = talloc(obj, struct drsuapi_DsReplicaObjectIdentifier);
@@ -315,7 +316,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	ncRoot_dn = ldb_dn_new(mem_ctx, sam_ctx, ncRoot->dn);
 	ret = drsuapi_search_with_extended_dn(sam_ctx, mem_ctx, &site_res,
 					      ncRoot_dn, LDB_SCOPE_SUBTREE, attrs,
-					      "uSNChanged>=%llu", 
+					      "(uSNChanged>=%llu)", 
 					      (unsigned long long)(r->in.req->req8.highwatermark.highest_usn+1));
 	if (ret != LDB_SUCCESS) {
 		return WERR_DS_DRA_INTERNAL_ERROR;

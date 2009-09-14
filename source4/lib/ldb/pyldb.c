@@ -1758,8 +1758,13 @@ static PyObject *py_ldb_msg_keys(PyLdbMessageObject *self)
 static PyObject *py_ldb_msg_getitem_helper(PyLdbMessageObject *self, PyObject *py_name)
 {
 	struct ldb_message_element *el;
-	char *name = PyString_AsString(py_name);
+	char *name;
 	struct ldb_message *msg = PyLdbMessage_AsMessage(self);
+	if (!PyString_Check(py_name)) {
+		PyErr_SetNone(PyExc_TypeError);
+		return NULL;
+	}
+	name = PyString_AsString(py_name);
 	if (!strcmp(name, "dn"))
 		return PyLdbDn_FromDn(msg->dn);
 	el = ldb_msg_find_element(msg, name);
@@ -1786,8 +1791,11 @@ static PyObject *py_ldb_msg_get(PyLdbMessageObject *self, PyObject *args)
 		return NULL;
 
 	ret = py_ldb_msg_getitem_helper(self, name);
-	if (ret == NULL)
+	if (ret == NULL) {
+		if (PyErr_Occurred())
+			return NULL;
 		Py_RETURN_NONE;
+	}
 	return ret;
 }
 
