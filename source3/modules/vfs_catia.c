@@ -103,8 +103,8 @@ static bool build_ranges(struct char_mappings **cmaps,
 	return True;
 }
 
-struct share_mapping_entry *get_srt(connection_struct *conn,
-				    struct share_mapping_entry **global)
+static struct share_mapping_entry *get_srt(connection_struct *conn,
+					   struct share_mapping_entry **global)
 {
 	struct share_mapping_entry *share;
 
@@ -119,7 +119,7 @@ struct share_mapping_entry *get_srt(connection_struct *conn,
 	return share;
 }
 
-struct share_mapping_entry *add_srt(int snum, const char **mappings)
+static struct share_mapping_entry *add_srt(int snum, const char **mappings)
 {
 
 	char *tmp;
