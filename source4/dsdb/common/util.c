@@ -2411,3 +2411,9 @@ again:
 	
 	return ret;
 }
+
+int drsuapi_DsReplicaCursor2_compare(const struct drsuapi_DsReplicaCursor2 *c1,
+						   const struct drsuapi_DsReplicaCursor2 *c2)
+{
+	return GUID_compare(&c1->source_dsa_invocation_id, &c2->source_dsa_invocation_id);
+}

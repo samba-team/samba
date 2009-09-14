@@ -162,12 +162,6 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	return WERR_OK;
 }
 
-static int replmd_drsuapi_DsReplicaCursor2_compare(const struct drsuapi_DsReplicaCursor2 *c1,
-						   const struct drsuapi_DsReplicaCursor2 *c2)
-{
-	return GUID_compare(&c1->source_dsa_invocation_id, &c2->source_dsa_invocation_id);
-}
-
 /*
   load replUpToDateVector from a DN
  */
@@ -252,7 +246,7 @@ static WERROR get_nc_changes_udv(struct ldb_context *sam_ctx,
 	
 	qsort(udv->cursors, udv->count,
 	      sizeof(struct drsuapi_DsReplicaCursor2),
-	      (comparison_fn_t)replmd_drsuapi_DsReplicaCursor2_compare);
+	      (comparison_fn_t)drsuapi_DsReplicaCursor2_compare);
 
 	return WERR_OK;
 }

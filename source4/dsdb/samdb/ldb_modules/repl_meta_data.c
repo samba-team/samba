@@ -1543,12 +1543,6 @@ static int replmd_replicated_uptodate_modify_callback(struct ldb_request *req,
 	return ldb_module_done(ar->req, NULL, NULL, LDB_SUCCESS);
 }
 
-static int replmd_drsuapi_DsReplicaCursor2_compare(const struct drsuapi_DsReplicaCursor2 *c1,
-						   const struct drsuapi_DsReplicaCursor2 *c2)
-{
-	return GUID_compare(&c1->source_dsa_invocation_id, &c2->source_dsa_invocation_id);
-}
-
 static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *ar)
 {
 	struct ldb_context *ldb;
@@ -1703,7 +1697,7 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 	 */
 	qsort(nuv.ctr.ctr2.cursors, nuv.ctr.ctr2.count,
 	      sizeof(struct drsuapi_DsReplicaCursor2),
-	      (comparison_fn_t)replmd_drsuapi_DsReplicaCursor2_compare);
+	      (comparison_fn_t)drsuapi_DsReplicaCursor2_compare);
 
 	/*
 	 * create the change ldb_message
