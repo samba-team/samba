@@ -2056,7 +2056,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	result = cli_rpc_pipe_open_spnego_ntlmssp(conn->cli,
 						  &ndr_table_samr.syntax_id,
 						  NCACN_NP,
-						  PIPE_AUTH_LEVEL_PRIVACY,
+						  DCERPC_AUTH_LEVEL_PRIVACY,
 						  domain_name,
 						  machine_account,
 						  machine_password,
@@ -2100,7 +2100,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	}
 	result = cli_rpc_pipe_open_schannel_with_key
 		(conn->cli, &ndr_table_samr.syntax_id, NCACN_NP,
-		 PIPE_AUTH_LEVEL_PRIVACY,
+		 DCERPC_AUTH_LEVEL_PRIVACY,
 		 domain->name, &p_creds, &conn->samr_pipe);
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -2196,7 +2196,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	 * authenticated LSA pipe with sign & seal. */
 	result = cli_rpc_pipe_open_spnego_ntlmssp
 		(conn->cli, &ndr_table_lsarpc.syntax_id, NCACN_NP,
-		 PIPE_AUTH_LEVEL_PRIVACY,
+		 DCERPC_AUTH_LEVEL_PRIVACY,
 		 conn->cli->domain, conn->cli->user_name, conn->cli->password,
 		 &conn->lsa_pipe);
 
@@ -2237,7 +2237,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	}
 	result = cli_rpc_pipe_open_schannel_with_key
 		(conn->cli, &ndr_table_lsarpc.syntax_id, NCACN_NP,
-		 PIPE_AUTH_LEVEL_PRIVACY,
+		 DCERPC_AUTH_LEVEL_PRIVACY,
 		 domain->name, &p_creds, &conn->lsa_pipe);
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -2384,7 +2384,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 
 	result = cli_rpc_pipe_open_schannel_with_key(
 		conn->cli, &ndr_table_netlogon.syntax_id, NCACN_NP,
-		PIPE_AUTH_LEVEL_PRIVACY, domain->name, &netlogon_pipe->dc,
+		DCERPC_AUTH_LEVEL_PRIVACY, domain->name, &netlogon_pipe->dc,
 		&conn->netlogon_pipe);
 
 	/* We can now close the initial netlogon pipe. */

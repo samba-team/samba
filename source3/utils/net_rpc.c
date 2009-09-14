@@ -159,7 +159,7 @@ int run_rpc_command(struct net_context *c,
 			/* Always try and create an schannel netlogon pipe. */
 			nt_status = cli_rpc_pipe_open_schannel(
 				cli, interface, NCACN_NP,
-				PIPE_AUTH_LEVEL_PRIVACY, domain_name,
+				DCERPC_AUTH_LEVEL_PRIVACY, domain_name,
 				&pipe_hnd);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				DEBUG(0, ("Could not initialise schannel netlogon pipe. Error was %s\n",
@@ -172,7 +172,7 @@ int run_rpc_command(struct net_context *c,
 					cli, interface,
 					(conn_flags & NET_FLAGS_TCP) ?
 					NCACN_IP_TCP : NCACN_NP,
-					PIPE_AUTH_LEVEL_PRIVACY,
+					DCERPC_AUTH_LEVEL_PRIVACY,
 					lp_workgroup(), c->opt_user_name,
 					c->opt_password, &pipe_hnd);
 			} else {

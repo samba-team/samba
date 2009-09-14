@@ -26,7 +26,7 @@
 DOM_SID domain_sid;
 
 static enum pipe_auth_type pipe_default_auth_type = PIPE_AUTH_TYPE_NONE;
-static enum pipe_auth_level pipe_default_auth_level = PIPE_AUTH_LEVEL_NONE;
+static enum dcerpc_AuthLevel pipe_default_auth_level = DCERPC_AUTH_LEVEL_NONE;
 static unsigned int timeout = 0;
 static enum dcerpc_transport_t default_transport = NCACN_NP;
 
@@ -380,7 +380,7 @@ static NTSTATUS cmd_sign(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 {
 	const char *type = "NTLMSSP";
 
-	pipe_default_auth_level = PIPE_AUTH_LEVEL_INTEGRITY;
+	pipe_default_auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
 	pipe_default_auth_type = PIPE_AUTH_TYPE_NTLMSSP;
 
 	if (argc > 2) {
@@ -412,7 +412,7 @@ static NTSTATUS cmd_seal(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 {
 	const char *type = "NTLMSSP";
 
-	pipe_default_auth_level = PIPE_AUTH_LEVEL_PRIVACY;
+	pipe_default_auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
 	pipe_default_auth_type = PIPE_AUTH_TYPE_NTLMSSP;
 
 	if (argc > 2) {
@@ -475,7 +475,7 @@ static NTSTATUS cmd_timeout(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 static NTSTATUS cmd_none(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                          int argc, const char **argv)
 {
-	pipe_default_auth_level = PIPE_AUTH_LEVEL_NONE;
+	pipe_default_auth_level = DCERPC_AUTH_LEVEL_NONE;
 	pipe_default_auth_type = PIPE_AUTH_TYPE_NONE;
 
 	return cmd_set_ss_level();
@@ -485,7 +485,7 @@ static NTSTATUS cmd_schannel(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			     int argc, const char **argv)
 {
 	d_printf("Setting schannel - sign and seal\n");
-	pipe_default_auth_level = PIPE_AUTH_LEVEL_PRIVACY;
+	pipe_default_auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
 	pipe_default_auth_type = PIPE_AUTH_TYPE_SCHANNEL;
 
 	return cmd_set_ss_level();
@@ -495,7 +495,7 @@ static NTSTATUS cmd_schannel_sign(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 			     int argc, const char **argv)
 {
 	d_printf("Setting schannel - sign only\n");
-	pipe_default_auth_level = PIPE_AUTH_LEVEL_INTEGRITY;
+	pipe_default_auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
 	pipe_default_auth_type = PIPE_AUTH_TYPE_SCHANNEL;
 
 	return cmd_set_ss_level();

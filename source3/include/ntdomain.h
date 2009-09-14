@@ -132,13 +132,6 @@ typedef struct pipe_rpc_fns {
 enum pipe_auth_type { PIPE_AUTH_TYPE_NONE = 0, PIPE_AUTH_TYPE_NTLMSSP, PIPE_AUTH_TYPE_SCHANNEL,
 			PIPE_AUTH_TYPE_SPNEGO_NTLMSSP, PIPE_AUTH_TYPE_KRB5, PIPE_AUTH_TYPE_SPNEGO_KRB5 };
 
-/* Possible auth levels - keep these in sync with the wire values. */
-enum pipe_auth_level { PIPE_AUTH_LEVEL_NONE = 0,
-			PIPE_AUTH_LEVEL_CONNECT = 1,	/* We treat as NONE. */
-			PIPE_AUTH_LEVEL_INTEGRITY = 5,	/* Sign. */
-			PIPE_AUTH_LEVEL_PRIVACY = 6	/* Seal. */
-};
-
 /* auth state for krb5. */
 struct kerberos_auth_struct {
 	const char *service_principal;
@@ -155,7 +148,7 @@ struct schannel_auth_struct {
 
 struct pipe_auth_data {
 	enum pipe_auth_type auth_type; /* switch for union below. */
-	enum pipe_auth_level auth_level;
+	enum dcerpc_AuthLevel auth_level;
 	union {
 		struct schannel_auth_struct *schannel_auth;
 		AUTH_NTLMSSP_STATE *auth_ntlmssp_state;

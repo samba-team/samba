@@ -48,7 +48,7 @@ struct print_job_info {
 
 struct cli_pipe_auth_data {
 	enum pipe_auth_type auth_type; /* switch for the union below. Defined in ntdomain.h */
-	enum pipe_auth_level auth_level; /* defined in ntdomain.h */
+	enum dcerpc_AuthLevel auth_level; /* defined in ntdomain.h */
 
 	char *domain;
 	char *user_name;
