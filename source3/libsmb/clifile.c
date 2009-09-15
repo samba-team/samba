@@ -820,7 +820,7 @@ struct async_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	SIVAL(vwv+2, 1, converted_len);
+	SSVAL(vwv+2, 1, converted_len);
 
 	result = cli_request_send(mem_ctx, ev, cli, SMBntcreateX, 0,
 				  24, vwv, 0, talloc_get_size(bytes), bytes);
