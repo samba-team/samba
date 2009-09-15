@@ -1455,6 +1455,26 @@ static bool test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 #define SET_INFO_FILE(finfo, wrtime) \
 	SET_INFO_FILE_EX(finfo, wrtime, cli->tree, fnum1)
 
+#define SET_INFO_FILE_NS(finfo, wrtime, ns, tree, tfnum) do { \
+	NTSTATUS _status; \
+	union smb_setfileinfo sfinfo; \
+	sfinfo.basic_info.level = RAW_SFILEINFO_BASIC_INFO; \
+	sfinfo.basic_info.in.file.fnum = tfnum; \
+	sfinfo.basic_info.in.create_time = 0; \
+	sfinfo.basic_info.in.access_time = 0; \
+	unix_to_nt_time(&sfinfo.basic_info.in.write_time, (wrtime)); \
+	sfinfo.basic_info.in.write_time += (ns); \
+	sfinfo.basic_info.in.change_time = 0; \
+	sfinfo.basic_info.in.attrib = finfo1.basic_info.out.attrib; \
+	_status = smb_raw_setfileinfo(tree, &sfinfo); \
+	if (!NT_STATUS_IS_OK(_status)) { \
+		torture_result(tctx, TORTURE_FAIL, __location__": setfileinfo failed: %s", \
+			       nt_errstr(_status)); \
+		ret = false; \
+		goto done; \
+	} \
+} while (0)
+
 static bool test_delayed_write_update3(struct torture_context *tctx,
 				       struct smbcli_state *cli,
 				       struct smbcli_state *cli2)
@@ -2884,6 +2904,115 @@ again:
 	return ret;
 }
 
+static bool test_delayed_write_update7(struct torture_context *tctx, struct smbcli_state *cli)
+{
+	union smb_open open_parms;
+	union smb_fileinfo finfo1, finfo2, finfo3;
+	const char *fname = BASEDIR "\\torture_file7.txt";
+	NTSTATUS status;
+	int fnum1 = -1;
+	bool ret = true;
+	TALLOC_CTX *mem_ctx; 
+
+	torture_comment(tctx, "\nRunning test_delayed_write_update7 (timestamp resolution test)\n");
+
+        mem_ctx = talloc_init("test_delayed_write_update7");
+        if (!mem_ctx) return false;
+
+	ZERO_STRUCT(finfo1);
+	ZERO_STRUCT(finfo2);
+	ZERO_STRUCT(finfo3);
+	ZERO_STRUCT(open_parms);
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
+
+	/* Create the file. */
+	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
+	if (fnum1 == -1) {
+		torture_result(tctx, TORTURE_FAIL, "Failed to open %s", fname);
+		return false;
+	}
+
+	finfo1.basic_info.level = RAW_FILEINFO_BASIC_INFO;
+	finfo1.basic_info.in.file.fnum = fnum1;
+	finfo2 = finfo1;
+	finfo3 = finfo1;
+
+	/* Get the initial timestamps. */
+	status = smb_raw_fileinfo(cli->tree, tctx, &finfo1);
+
+	torture_assert_ntstatus_ok(tctx, status, "fileinfo failed");
+	
+	/* Set the pending write time to a value with ns. */
+	SET_INFO_FILE_NS(finfo, time(NULL) + 86400, 103, cli->tree, fnum1);
+
+	/* Get the current pending write time by fnum. */
+	status = smb_raw_fileinfo(cli->tree, tctx, &finfo2);
+
+	torture_assert_ntstatus_ok(tctx, status, "fileinfo failed");
+
+	/* Ensure the time is actually different. */
+	if (finfo1.basic_info.out.write_time == finfo2.basic_info.out.write_time) {
+		torture_result(tctx, TORTURE_FAIL,
+			"setfileinfo time matches original fileinfo time");
+		ret = false;
+	}
+
+	/* Get the current pending write time by path. */
+	finfo3.basic_info.in.file.path = fname;
+	status = smb_raw_pathinfo(cli->tree, tctx, &finfo3);
+
+	if (finfo2.basic_info.out.write_time != finfo3.basic_info.out.write_time) {
+		torture_result(tctx, TORTURE_FAIL, 
+			"qpathinfo time doens't match fileinfo time");
+		ret = false;
+	}
+
+	/* Now close the file. Re-open and check that the write
+	   time is identical to the one we wrote. */
+
+	smbcli_close(cli->tree, fnum1);
+
+	open_parms.ntcreatex.level = RAW_OPEN_NTCREATEX;
+	open_parms.ntcreatex.in.flags = 0;
+	open_parms.ntcreatex.in.access_mask = SEC_GENERIC_READ;
+	open_parms.ntcreatex.in.file_attr = 0;
+	open_parms.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_DELETE|
+					NTCREATEX_SHARE_ACCESS_READ|
+					NTCREATEX_SHARE_ACCESS_WRITE;
+	open_parms.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	open_parms.ntcreatex.in.create_options = 0;
+	open_parms.ntcreatex.in.fname = fname;
+
+	status = smb_raw_open(cli->tree, mem_ctx, &open_parms);
+	talloc_free(mem_ctx);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		torture_result(tctx, TORTURE_FAIL,
+			"setfileinfo time matches original fileinfo time");
+		ret = false;
+	}
+
+	fnum1 = open_parms.ntcreatex.out.file.fnum;
+
+	/* Check the returned time matches. */
+        if (open_parms.ntcreatex.out.write_time != finfo2.basic_info.out.write_time) {
+		torture_result(tctx, TORTURE_FAIL,
+			"final open time does not match set time");
+		ret = false;
+	}
+
+ done:
+
+	smbcli_close(cli->tree, fnum1);
+
+	smbcli_unlink(cli->tree, fname);
+	smbcli_deltree(cli->tree, BASEDIR);
+	return ret;
+}
+
 /*
    testing of delayed update of write_time
 */
@@ -2906,6 +3035,8 @@ struct torture_suite *torture_delay_write(void)
 	torture_suite_add_2smb_test(suite, "delayed update of write time 5", test_delayed_write_update5);
 	torture_suite_add_2smb_test(suite, "delayed update of write time 5b", test_delayed_write_update5b);
 	torture_suite_add_2smb_test(suite, "delayed update of write time 6", test_delayed_write_update6);
+	torture_suite_add_1smb_test(suite, "timestamp resolution test", test_delayed_write_update7);
+	torture_suite_add_1smb_test(suite, "timestamp resolution test", test_delayed_write_update7);
 
 	return suite;
 }
