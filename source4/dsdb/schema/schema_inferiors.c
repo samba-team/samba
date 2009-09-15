@@ -127,6 +127,20 @@ static char **schema_subclasses_recurse(struct dsdb_schema *schema, struct dsdb_
 	return list;
 }
 
+/* Walk down the subClass tree, setting a higher index as we go down
+ * each level.  top is 1, subclasses of top are 2, etc */
+void schema_subclasses_order_recurse(struct dsdb_schema *schema, struct dsdb_class *schema_class, int order)
+{
+	const char **list = schema_class->subclasses_direct;
+	int i;
+	schema_class->subClass_order = order;
+	for (i=0;list && list[i]; i++) {
+		struct dsdb_class *schema_class2 = dsdb_class_by_lDAPDisplayName(schema, list[i]);
+		schema_subclasses_order_recurse(schema, schema_class2, order+1);
+	}
+	return;
+}
+
 static void schema_create_subclasses(struct dsdb_schema *schema)
 {
 	struct dsdb_class *schema_class;
@@ -148,7 +162,12 @@ static void schema_create_subclasses(struct dsdb_schema *schema)
 
 	for (schema_class=schema->classes; schema_class; schema_class=schema_class->next) {
 		schema_class->subclasses = str_list_unique(schema_subclasses_recurse(schema, schema_class));
-	}	
+
+		/* Initilise the subClass order, to ensure we can't have uninitilised sort on the subClass hirarchy */
+		schema_class->subClass_order = 0;
+	}
+
+	schema_subclasses_order_recurse(schema, dsdb_class_by_lDAPDisplayName(schema, "top"), 1);
 }
 
 static void schema_fill_possible_inferiors(struct dsdb_schema *schema, struct dsdb_class *schema_class)

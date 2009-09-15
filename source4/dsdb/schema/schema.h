@@ -146,6 +146,13 @@ struct dsdb_class {
 	uint32_t *mustContain_ids;
 	uint32_t *mayContain_ids;
 	uint32_t *systemPossSuperiors_ids;
+
+	/* An ordered index showing how this subClass fits into the
+	 * subClass tree.  that is, an objectclass that is not
+	 * subClassOf anything is 0 (just in case), and top is 1, and
+	 * subClasses of top are 2, subclasses of those classes are
+	 * 3 */ 
+	uint32_t subClass_order;
 };
 
 struct dsdb_schema_oid_prefix {
