@@ -1352,16 +1352,6 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 		replmd_replPropertyMetaDataCtr1_sort(&nmd.ctr.ctr1, &rdn_p->attid);
 	}
 
-	/* create the meta data value */
-	ndr_err = ndr_push_struct_blob(&nmd_value, msg, 
-				       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
-				       &nmd,
-				       (ndr_push_flags_fn_t)ndr_push_replPropertyMetaDataBlob);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
-		return replmd_replicated_request_werror(ar, ntstatus_to_werror(nt_status));
-	}
-
 	/*
 	 * check if some replicated attributes left, otherwise skip the ldb_modify() call
 	 */
@@ -1383,6 +1373,16 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 
 	for (i=0; i<ni; i++) {
 		nmd.ctr.ctr1.array[i].local_usn = seq_num;
+	}
+
+	/* create the meta data value */
+	ndr_err = ndr_push_struct_blob(&nmd_value, msg, 
+				       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
+				       &nmd,
+				       (ndr_push_flags_fn_t)ndr_push_replPropertyMetaDataBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
+		return replmd_replicated_request_werror(ar, ntstatus_to_werror(nt_status));
 	}
 
 	/*
