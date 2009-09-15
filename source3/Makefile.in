@@ -372,7 +372,8 @@ UTIL_OBJ = ../lib/util/rbtree.o ../lib/util/signal.o ../lib/util/time.o \
 CRYPTO_OBJ = ../lib/crypto/crc32.o ../lib/crypto/md5.o \
 			 ../lib/crypto/hmacmd5.o ../lib/crypto/arcfour.o \
 			 ../lib/crypto/md4.o \
-			 ../lib/crypto/sha256.o ../lib/crypto/hmacsha256.o
+			 ../lib/crypto/sha256.o ../lib/crypto/hmacsha256.o \
+			 ../lib/crypto/aes.o ../lib/crypto/rijndael-alg-fst.o
 
 LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) \
 	  lib/messages.o librpc/gen_ndr/ndr_messaging.o lib/messages_local.o \
