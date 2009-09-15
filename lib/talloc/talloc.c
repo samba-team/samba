@@ -1468,6 +1468,9 @@ void talloc_enable_null_tracking(void)
 {
 	if (null_context == NULL) {
 		null_context = _talloc_named_const(NULL, 0, "null_context");
+		if (autofree_context != NULL) {
+			talloc_reparent(NULL, null_context, autofree_context);
+		}
 	}
 }
 
