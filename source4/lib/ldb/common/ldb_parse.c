@@ -267,7 +267,8 @@ static enum ldb_parse_op ldb_parse_filtertype(void *mem_ctx, char **type, char *
 		p++;
 	}
 
-	while ((isascii(*p) && isalnum((unsigned char)*p)) || (*p == '-')) { /* attribute names can only be alphanums */
+	while ((isascii(*p) && isalnum((unsigned char)*p)) || (*p == '-') || (*p == '.')) { 
+		/* attribute names can only be alphanums */
 		p++;
 	}
 
