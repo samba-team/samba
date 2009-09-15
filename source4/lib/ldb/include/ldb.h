@@ -1284,6 +1284,11 @@ int ldb_sequence_number(struct ldb_context *ldb, enum ldb_sequence_type type, ui
 int ldb_transaction_start(struct ldb_context *ldb);
 
 /**
+   first phase of two phase commit
+ */
+int ldb_transaction_prepare_commit(struct ldb_context *ldb);
+
+/**
   commit a transaction
 */
 int ldb_transaction_commit(struct ldb_context *ldb);
