@@ -197,9 +197,9 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 		auth_type = RPC_SPNEGO_AUTH_TYPE;
 	}
 	if (p->auth.auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
-		auth_level = RPC_AUTH_LEVEL_PRIVACY;
+		auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
 	} else {
-		auth_level = RPC_AUTH_LEVEL_INTEGRITY;
+		auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
 	}
 
 	init_rpc_hdr_auth(&auth_info, auth_type, auth_level, ss_padding_len, 1 /* context id. */);
@@ -416,7 +416,7 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 		init_rpc_hdr_auth(&auth_info,
 				RPC_SCHANNEL_AUTH_TYPE,
 				p->auth.auth_level == DCERPC_AUTH_LEVEL_PRIVACY ?
-					RPC_AUTH_LEVEL_PRIVACY : RPC_AUTH_LEVEL_INTEGRITY,
+					DCERPC_AUTH_LEVEL_PRIVACY : DCERPC_AUTH_LEVEL_INTEGRITY,
 				ss_padding_len, 1);
 
 		if(!smb_io_rpc_hdr_auth("hdr_auth", &auth_info,
@@ -1689,10 +1689,10 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 
 		/* Work out if we have to sign or seal etc. */
 		switch (auth_info.auth_level) {
-			case RPC_AUTH_LEVEL_INTEGRITY:
+			case DCERPC_AUTH_LEVEL_INTEGRITY:
 				p->auth.auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
 				break;
-			case RPC_AUTH_LEVEL_PRIVACY:
+			case DCERPC_AUTH_LEVEL_PRIVACY:
 				p->auth.auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
 				break;
 			default:

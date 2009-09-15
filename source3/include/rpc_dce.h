@@ -64,15 +64,6 @@ enum RPC_PKT_TYPE {
 #define RPC_KRB5_AUTH_TYPE        16 /* Not yet implemented. */ 
 #define RPC_SCHANNEL_AUTH_TYPE    68 /* 0x44 */
 
-/* DCE-RPC standard identifiers to indicate 
-   signing or sealing of an RPC pipe */
-#define RPC_AUTH_LEVEL_NONE      1
-#define RPC_AUTH_LEVEL_CONNECT   2
-#define RPC_AUTH_LEVEL_CALL      3
-#define RPC_AUTH_LEVEL_PACKET    4
-#define RPC_AUTH_LEVEL_INTEGRITY 5
-#define RPC_AUTH_LEVEL_PRIVACY   6
-
 #if 0
 #define RPC_PIPE_AUTH_SIGN_LEVEL 0x5
 #define RPC_PIPE_AUTH_SEAL_LEVEL 0x6
