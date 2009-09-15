@@ -31,7 +31,7 @@ my $output_file = "$dirname/" . $prefix . "_asn1_files";
 print "basics:: $header\n";
 print "$output_file: \$(heimdalsrcdir)/$file \$(ASN1C)\n";
 print "\t\@echo \"Compiling ASN1 file \$(heimdalsrcdir)/$file\"\n";
-print "\t\@\$(heimdalbuildsrcdir)/asn1_compile_wrapper.sh \$(builddir) $dirname \$(ASN1C) \$(call abspath,\$(heimdalsrcdir)/$file) $prefix $options --one-code-file\n\n";
+print "\t\@\$(heimdalbuildsrcdir)/asn1_compile_wrapper.sh \$(builddir) $dirname \$(ASN1C) \$(call abspath,\$(heimdalsrcdir)/$file) $prefix $options --one-code-file && touch $output_file\n";
 print "$headerx: $output_file\n";
 print "$header: $headerx\n";
 print "\t\@cp $headerx $header\n";
