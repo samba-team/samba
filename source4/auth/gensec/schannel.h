@@ -21,7 +21,6 @@
 */
 
 #include "libcli/auth/libcli_auth.h"
-#include "auth/gensec/schannel_proto.h"
 #include "auth/gensec/schannel_state.h"
 #include "libcli/auth/schannel_state.h"
 
@@ -37,3 +36,4 @@ struct schannel_state {
 	struct netlogon_creds_CredentialState *creds;
 };
 
+#include "auth/gensec/schannel_proto.h"
