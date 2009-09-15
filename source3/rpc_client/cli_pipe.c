@@ -714,7 +714,7 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli, RPC_HDR *p
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	if (auth_info.auth_type != RPC_SCHANNEL_AUTH_TYPE) {
+	if (auth_info.auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
 		DEBUG(0,("cli_pipe_verify_schannel: Invalid auth info %d on schannel\n",
 			auth_info.auth_type));
 		return NT_STATUS_BUFFER_TOO_SMALL;
@@ -1481,7 +1481,7 @@ static NTSTATUS create_krb5_auth_bind_req( struct rpc_pipe_client *cli,
 	DATA_BLOB tkt_wrapped = data_blob_null;
 
 	/* We may change the pad length before marshalling. */
-	init_rpc_hdr_auth(pauth_out, RPC_KRB5_AUTH_TYPE, (int)auth_level, 0, 1);
+	init_rpc_hdr_auth(pauth_out, DCERPC_AUTH_TYPE_KRB5, (int)auth_level, 0, 1);
 
 	DEBUG(5, ("create_krb5_auth_bind_req: creating a service ticket for principal %s\n",
 		a->service_principal ));
@@ -1539,7 +1539,7 @@ static NTSTATUS create_spnego_ntlmssp_auth_rpc_bind_req( struct rpc_pipe_client 
 	DATA_BLOB spnego_msg = data_blob_null;
 
 	/* We may change the pad length before marshalling. */
-	init_rpc_hdr_auth(pauth_out, RPC_SPNEGO_AUTH_TYPE, (int)auth_level, 0, 1);
+	init_rpc_hdr_auth(pauth_out, DCERPC_AUTH_TYPE_SPNEGO, (int)auth_level, 0, 1);
 
 	DEBUG(5, ("create_spnego_ntlmssp_auth_rpc_bind_req: Processing NTLMSSP Negotiate\n"));
 	nt_status = ntlmssp_update(cli->auth->a_u.ntlmssp_state,
@@ -1585,7 +1585,7 @@ static NTSTATUS create_ntlmssp_auth_rpc_bind_req( struct rpc_pipe_client *cli,
 	DATA_BLOB request = data_blob_null;
 
 	/* We may change the pad length before marshalling. */
-	init_rpc_hdr_auth(pauth_out, RPC_NTLMSSP_AUTH_TYPE, (int)auth_level, 0, 1);
+	init_rpc_hdr_auth(pauth_out, DCERPC_AUTH_TYPE_NTLMSSP, (int)auth_level, 0, 1);
 
 	DEBUG(5, ("create_ntlmssp_auth_rpc_bind_req: Processing NTLMSSP Negotiate\n"));
 	nt_status = ntlmssp_update(cli->auth->a_u.ntlmssp_state,
@@ -1626,7 +1626,7 @@ static NTSTATUS create_schannel_auth_rpc_bind_req( struct rpc_pipe_client *cli,
 	DATA_BLOB blob;
 
 	/* We may change the pad length before marshalling. */
-	init_rpc_hdr_auth(pauth_out, RPC_SCHANNEL_AUTH_TYPE, (int)auth_level, 0, 1);
+	init_rpc_hdr_auth(pauth_out, DCERPC_AUTH_TYPE_SCHANNEL, (int)auth_level, 0, 1);
 
 	/* Use lp_workgroup() if domain not specified */
 
@@ -2477,7 +2477,7 @@ static NTSTATUS create_rpc_alter_context(uint32 rpc_call_id,
 		return NT_STATUS_NO_MEMORY;
 
 	/* We may change the pad length before marshalling. */
-	init_rpc_hdr_auth(&hdr_auth, RPC_SPNEGO_AUTH_TYPE, (int)auth_level, 0, 1);
+	init_rpc_hdr_auth(&hdr_auth, DCERPC_AUTH_TYPE_SPNEGO, (int)auth_level, 0, 1);
 
 	if (pauth_blob->length) {
 		if (!prs_copy_data_in(&auth_info, (const char *)pauth_blob->data, pauth_blob->length)) {
