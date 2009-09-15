@@ -212,7 +212,8 @@ WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
 					       const struct drsuapi_DsReplicaCursor2CtrEx *uptodateness_vector,
 					       const DATA_BLOB *gensec_skey,
 					       TALLOC_CTX *mem_ctx,
-					       struct dsdb_extended_replicated_objects **_out)
+					       struct dsdb_extended_replicated_objects **_out,
+					       uint64_t *notify_uSN)
 {
 	WERROR status;
 	const struct dsdb_schema *schema;
@@ -221,6 +222,7 @@ WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
 	const struct drsuapi_DsReplicaObjectListItemEx *cur;
 	uint32_t i;
 	int ret;
+	uint64_t seq_num1, seq_num2;
 
 	schema = dsdb_get_schema(ldb);
 	if (!schema) {
@@ -280,6 +282,14 @@ WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
 		return WERR_FOOBAR;
 	}
 
+	ret = dsdb_load_partition_usn(ldb, out->partition_dn, &seq_num1);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,(__location__ " Failed to load partition uSN\n"));
+		talloc_free(out);
+		ldb_transaction_cancel(ldb);
+		return WERR_FOOBAR;		
+	}
+
 	ret = ldb_extended(ldb, DSDB_EXTENDED_REPLICATED_OBJECTS_OID, out, &ext_res);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,("Failed to apply records: %s: %s\n",
@@ -290,12 +300,35 @@ WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
 	}
 	talloc_free(ext_res);
 
+	ret = ldb_transaction_prepare_commit(ldb);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,(__location__ " Failed to prepare commit of transaction\n"));
+		talloc_free(out);
+		return WERR_FOOBAR;
+	}
+
+	ret = dsdb_load_partition_usn(ldb, out->partition_dn, &seq_num2);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,(__location__ " Failed to load partition uSN\n"));
+		talloc_free(out);
+		ldb_transaction_cancel(ldb);
+		return WERR_FOOBAR;		
+	}
+
+	/* if this replication partner didn't need to be notified
+	   before this transaction then it still doesn't need to be
+	   notified, as the changes came from this server */	
+	if (seq_num2 > seq_num1 && seq_num1 <= *notify_uSN) {
+		*notify_uSN = seq_num2;
+	}
+
 	ret = ldb_transaction_commit(ldb);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,(__location__ " Failed to commit transaction\n"));
 		talloc_free(out);
 		return WERR_FOOBAR;
 	}
+
 
 	DEBUG(2,("Replicated %u objects (%u linked attributes) for %s\n",
 		 out->num_objects, out->linked_attributes_count,

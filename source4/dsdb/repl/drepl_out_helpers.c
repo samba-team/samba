@@ -414,7 +414,8 @@ static void dreplsrv_op_pull_source_apply_changes_send(struct dreplsrv_op_pull_s
 							 &rf1,
 							 uptodateness_vector,
 							 &drsuapi->gensec_skey,
-							 st, NULL);
+							 st, NULL, 
+							 &st->op->source_dsa->notify_uSN);
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0,("Failed to commit objects: %s\n", win_errstr(status)));
 		composite_error(c, werror_to_ntstatus(status));
