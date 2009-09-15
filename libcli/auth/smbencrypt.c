@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    SMB parameters and setup
    Copyright (C) Andrew Tridgell 1992-1998
@@ -6,17 +6,17 @@
    Copyright (C) Jeremy Allison 1995-2000.
    Copyright (C) Luke Kennethc Casson Leighton 1996-2000.
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2002-2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -47,8 +47,8 @@ void SMBencrypt_hash(const uint8_t lm_hash[16], const uint8_t *c8, uint8_t p24[2
 
 /*
    This implements the X/Open SMB password encryption
-   It takes a password ('unix' string), a 8 byte "crypt key" 
-   and puts 24 bytes of encrypted password into p24 
+   It takes a password ('unix' string), a 8 byte "crypt key"
+   and puts 24 bytes of encrypted password into p24
 
    Returns False if password must have been truncated to create LM hash
 */
@@ -58,7 +58,7 @@ bool SMBencrypt(const char *passwd, const uint8_t *c8, uint8_t p24[24])
 	bool ret;
 	uint8_t lm_hash[16];
 
-	ret = E_deshash(passwd, lm_hash); 
+	ret = E_deshash(passwd, lm_hash);
 	SMBencrypt_hash(lm_hash, c8, p24);
 	return ret;
 }
@@ -68,7 +68,7 @@ bool SMBencrypt(const char *passwd, const uint8_t *c8, uint8_t p24[24])
  * @param passwd password in 'unix' charset.
  * @param p16 return password hashed with md4, caller allocated 16 byte buffer
  */
- 
+
 bool E_md4hash(const char *passwd, uint8_t p16[16])
 {
 	size_t len;
@@ -82,7 +82,7 @@ bool E_md4hash(const char *passwd, uint8_t p16[16])
 		mdfour(p16, (const uint8_t *)passwd, strlen(passwd));
 		return false;
 	}
-	
+
 	len -= 2;
 	mdfour(p16, (const uint8_t *)wpwd, len);
 
@@ -101,7 +101,7 @@ void E_md5hash(const uint8_t salt[16], const uint8_t nthash[16], uint8_t hash_ou
 {
 	struct MD5Context tctx;
 	uint8_t array[32];
-	
+
 	memset(hash_out, '\0', 16);
 	memcpy(array, salt, 16);
 	memcpy(&array[16], nthash, 16);
@@ -117,7 +117,7 @@ void E_md5hash(const uint8_t salt[16], const uint8_t nthash[16], uint8_t hash_ou
  * @return false if password was > 14 characters, and therefore may be incorrect, otherwise true
  * @note p16 is filled in regardless
  */
- 
+
 bool E_deshash(const char *passwd, uint8_t p16[16])
 {
 	bool ret = true;
@@ -134,19 +134,19 @@ bool E_deshash(const char *passwd, uint8_t p16[16])
 		ret = false;
 	}
 
-	ZERO_STRUCT(dospwd);	
+	ZERO_STRUCT(dospwd);
 
 	return ret;
 }
 
 /**
- * Creates the MD4 and DES (LM) Hash of the users password.  
+ * Creates the MD4 and DES (LM) Hash of the users password.
  * MD4 is of the NT Unicode, DES is of the DOS UPPERCASE password.
  * @param passwd password in 'unix' charset.
  * @param nt_p16 return password hashed with md4, caller allocated 16 byte buffer
  * @param p16 return password hashed with des, caller allocated 16 byte buffer
  */
- 
+
 /* Does both the NT and LM owfs of a user's password */
 void nt_lm_owf_gen(const char *pwd, uint8_t nt_p16[16], uint8_t p16[16])
 {
@@ -176,13 +176,13 @@ bool ntv2_owf_gen(const uint8_t owf[16],
 		  uint8_t kr_buf[16])
 {
 	smb_ucs2_t *user;
-	smb_ucs2_t *domain;	
+	smb_ucs2_t *domain;
 	size_t user_byte_len;
 	size_t domain_byte_len;
 	bool ret;
 
 	HMACMD5Context ctx;
-	TALLOC_CTX *mem_ctx = talloc_init("ntv2_owf_gen for %s\\%s", domain_in, user_in); 
+	TALLOC_CTX *mem_ctx = talloc_init("ntv2_owf_gen for %s\\%s", domain_in, user_in);
 
 	if (!mem_ctx) {
 		return false;
@@ -230,7 +230,7 @@ bool ntv2_owf_gen(const uint8_t owf[16],
 	/* We don't want null termination */
 	user_byte_len = user_byte_len - 2;
 	domain_byte_len = domain_byte_len - 2;
-	
+
 	hmac_md5_init_limK_to_64(owf, 16, &ctx);
 	hmac_md5_update((uint8_t *)user, user_byte_len, &ctx);
 	hmac_md5_update((uint8_t *)domain, domain_byte_len, &ctx);
@@ -254,17 +254,17 @@ void SMBOWFencrypt(const uint8_t passwd[16], const uint8_t *c8, uint8_t p24[24])
 	uint8_t p21[21];
 
 	ZERO_STRUCT(p21);
- 
-	memcpy(p21, passwd, 16);    
+
+	memcpy(p21, passwd, 16);
 	E_P24(p21, c8, p24);
 }
 
 /* Does the des encryption. */
- 
+
 void SMBNTencrypt_hash(const uint8_t nt_hash[16], uint8_t *c8, uint8_t *p24)
 {
 	uint8_t p21[21];
- 
+
 	memset(p21,'\0',21);
 	memcpy(p21, nt_hash, 16);
 	SMBOWFencrypt(p21, c8, p24);
@@ -282,7 +282,7 @@ void SMBNTencrypt_hash(const uint8_t nt_hash[16], uint8_t *c8, uint8_t *p24)
 void SMBNTencrypt(const char *passwd, uint8_t *c8, uint8_t *p24)
 {
 	uint8_t nt_hash[16];
-	E_md4hash(passwd, nt_hash);    
+	E_md4hash(passwd, nt_hash);
 	SMBNTencrypt_hash(nt_hash, c8, p24);
 }
 
@@ -312,7 +312,7 @@ void SMBsesskeygen_ntv2(const uint8_t kr[16],
 			const uint8_t * nt_resp, uint8_t sess_key[16])
 {
 	/* a very nice, 128 bit, variable session key */
-	
+
 	HMACMD5Context ctx;
 
 	hmac_md5_init_limK_to_64(kr, 16, &ctx);
@@ -327,9 +327,9 @@ void SMBsesskeygen_ntv2(const uint8_t kr[16],
 
 void SMBsesskeygen_ntv1(const uint8_t kr[16], uint8_t sess_key[16])
 {
-	/* yes, this session key does not change - yes, this 
+	/* yes, this session key does not change - yes, this
 	   is a problem - but it is 128 bits */
-	
+
 	mdfour((uint8_t *)sess_key, kr, 16);
 
 #ifdef DEBUG_PASSWORD
@@ -339,15 +339,15 @@ void SMBsesskeygen_ntv1(const uint8_t kr[16], uint8_t sess_key[16])
 }
 
 void SMBsesskeygen_lm_sess_key(const uint8_t lm_hash[16],
-			       const uint8_t lm_resp[24], /* only uses 8 */ 
+			       const uint8_t lm_resp[24], /* only uses 8 */
 			       uint8_t sess_key[16])
 {
 	/* Calculate the LM session key (effective length 40 bits,
 	   but changes with each session) */
 	uint8_t p24[24];
 	uint8_t partial_lm_hash[14];
- 
-	memcpy(partial_lm_hash, lm_hash, 8);    
+
+	memcpy(partial_lm_hash, lm_hash, 8);
 	memset(partial_lm_hash + 8, 0xbd, 6);
 
 	des_crypt56(p24,   lm_resp, partial_lm_hash,     1);
@@ -361,21 +361,21 @@ void SMBsesskeygen_lm_sess_key(const uint8_t lm_hash[16],
 #endif
 }
 
-DATA_BLOB NTLMv2_generate_names_blob(TALLOC_CTX *mem_ctx, 
-				     const char *hostname, 
+DATA_BLOB NTLMv2_generate_names_blob(TALLOC_CTX *mem_ctx,
+				     const char *hostname,
 				     const char *domain)
 {
 	DATA_BLOB names_blob = data_blob_talloc(mem_ctx, NULL, 0);
-	
-	msrpc_gen(mem_ctx, &names_blob, 
-		  "aaa", 
+
+	msrpc_gen(mem_ctx, &names_blob,
+		  "aaa",
 		  MsvAvNbDomainName, domain,
 		  MsvAvNbComputerName, hostname,
 		  MsvAvEOL, "");
 	return names_blob;
 }
 
-static DATA_BLOB NTLMv2_generate_client_data(TALLOC_CTX *mem_ctx, const DATA_BLOB *names_blob) 
+static DATA_BLOB NTLMv2_generate_client_data(TALLOC_CTX *mem_ctx, const DATA_BLOB *names_blob)
 {
 	uint8_t client_chal[8];
 	DATA_BLOB response = data_blob(NULL, 0);
@@ -390,7 +390,7 @@ static DATA_BLOB NTLMv2_generate_client_data(TALLOC_CTX *mem_ctx, const DATA_BLO
 
 	/* See http://www.ubiqx.org/cifs/SMB.html#SMB.8.5 */
 
-	msrpc_gen(mem_ctx, &response, "ddbbdb", 
+	msrpc_gen(mem_ctx, &response, "ddbbdb",
 		  0x00000101,     /* Header  */
 		  0,              /* 'Reserved'  */
 		  long_date, 8,	  /* Timestamp */
@@ -401,7 +401,7 @@ static DATA_BLOB NTLMv2_generate_client_data(TALLOC_CTX *mem_ctx, const DATA_BLO
 	return response;
 }
 
-static DATA_BLOB NTLMv2_generate_response(TALLOC_CTX *out_mem_ctx, 
+static DATA_BLOB NTLMv2_generate_response(TALLOC_CTX *out_mem_ctx,
 					  const uint8_t ntlm_v2_hash[16],
 					  const DATA_BLOB *server_chal,
 					  const DATA_BLOB *names_blob)
@@ -409,14 +409,14 @@ static DATA_BLOB NTLMv2_generate_response(TALLOC_CTX *out_mem_ctx,
 	uint8_t ntlmv2_response[16];
 	DATA_BLOB ntlmv2_client_data;
 	DATA_BLOB final_response;
-	
-	TALLOC_CTX *mem_ctx = talloc_named(out_mem_ctx, 0, 
+
+	TALLOC_CTX *mem_ctx = talloc_named(out_mem_ctx, 0,
 					   "NTLMv2_generate_response internal context");
 
 	if (!mem_ctx) {
 		return data_blob(NULL, 0);
 	}
-	
+
 	/* NTLMv2 */
 	/* generate some data to pass into the response function - including
 	   the hostname and domain name of the server */
@@ -424,12 +424,12 @@ static DATA_BLOB NTLMv2_generate_response(TALLOC_CTX *out_mem_ctx,
 
 	/* Given that data, and the challenge from the server, generate a response */
 	SMBOWFencrypt_ntv2(ntlm_v2_hash, server_chal, &ntlmv2_client_data, ntlmv2_response);
-	
+
 	final_response = data_blob_talloc(out_mem_ctx, NULL, sizeof(ntlmv2_response) + ntlmv2_client_data.length);
 
 	memcpy(final_response.data, ntlmv2_response, sizeof(ntlmv2_response));
 
-	memcpy(final_response.data+sizeof(ntlmv2_response), 
+	memcpy(final_response.data+sizeof(ntlmv2_response),
 	       ntlmv2_client_data.data, ntlmv2_client_data.length);
 
 	talloc_free(mem_ctx);
@@ -437,25 +437,25 @@ static DATA_BLOB NTLMv2_generate_response(TALLOC_CTX *out_mem_ctx,
 	return final_response;
 }
 
-static DATA_BLOB LMv2_generate_response(TALLOC_CTX *mem_ctx, 
+static DATA_BLOB LMv2_generate_response(TALLOC_CTX *mem_ctx,
 					const uint8_t ntlm_v2_hash[16],
 					const DATA_BLOB *server_chal)
 {
 	uint8_t lmv2_response[16];
 	DATA_BLOB lmv2_client_data = data_blob_talloc(mem_ctx, NULL, 8);
 	DATA_BLOB final_response = data_blob_talloc(mem_ctx, NULL,24);
-	
+
 	/* LMv2 */
 	/* client-supplied random data */
-	generate_random_buffer(lmv2_client_data.data, lmv2_client_data.length);	
+	generate_random_buffer(lmv2_client_data.data, lmv2_client_data.length);
 
 	/* Given that data, and the challenge from the server, generate a response */
 	SMBOWFencrypt_ntv2(ntlm_v2_hash, server_chal, &lmv2_client_data, lmv2_response);
 	memcpy(final_response.data, lmv2_response, sizeof(lmv2_response));
 
-	/* after the first 16 bytes is the random data we generated above, 
+	/* after the first 16 bytes is the random data we generated above,
 	   so the server can verify us with it */
-	memcpy(final_response.data+sizeof(lmv2_response), 
+	memcpy(final_response.data+sizeof(lmv2_response),
 	       lmv2_client_data.data, lmv2_client_data.length);
 
 	data_blob_free(&lmv2_client_data);
@@ -463,12 +463,12 @@ static DATA_BLOB LMv2_generate_response(TALLOC_CTX *mem_ctx,
 	return final_response;
 }
 
-bool SMBNTLMv2encrypt_hash(TALLOC_CTX *mem_ctx, 
+bool SMBNTLMv2encrypt_hash(TALLOC_CTX *mem_ctx,
 			   const char *user, const char *domain, const uint8_t nt_hash[16],
-			   const DATA_BLOB *server_chal, 
+			   const DATA_BLOB *server_chal,
 			   const DATA_BLOB *names_blob,
-			   DATA_BLOB *lm_response, DATA_BLOB *nt_response, 
-			   DATA_BLOB *lm_session_key, DATA_BLOB *user_session_key) 
+			   DATA_BLOB *lm_response, DATA_BLOB *nt_response,
+			   DATA_BLOB *lm_session_key, DATA_BLOB *user_session_key)
 {
 	uint8_t ntlm_v2_hash[16];
 
@@ -479,49 +479,49 @@ bool SMBNTLMv2encrypt_hash(TALLOC_CTX *mem_ctx,
 	if (!ntv2_owf_gen(nt_hash, user, domain, true, ntlm_v2_hash)) {
 		return false;
 	}
-	
+
 	if (nt_response) {
-		*nt_response = NTLMv2_generate_response(mem_ctx, 
+		*nt_response = NTLMv2_generate_response(mem_ctx,
 							ntlm_v2_hash, server_chal,
-							names_blob); 
+							names_blob);
 		if (user_session_key) {
 			*user_session_key = data_blob_talloc(mem_ctx, NULL, 16);
-			
+
 			/* The NTLMv2 calculations also provide a session key, for signing etc later */
 			/* use only the first 16 bytes of nt_response for session key */
 			SMBsesskeygen_ntv2(ntlm_v2_hash, nt_response->data, user_session_key->data);
 		}
 	}
-	
+
 	/* LMv2 */
-	
+
 	if (lm_response) {
-		*lm_response = LMv2_generate_response(mem_ctx, 
+		*lm_response = LMv2_generate_response(mem_ctx,
 						      ntlm_v2_hash, server_chal);
 		if (lm_session_key) {
 			*lm_session_key = data_blob_talloc(mem_ctx, NULL, 16);
-			
+
 			/* The NTLMv2 calculations also provide a session key, for signing etc later */
 			/* use only the first 16 bytes of lm_response for session key */
 			SMBsesskeygen_ntv2(ntlm_v2_hash, lm_response->data, lm_session_key->data);
 		}
 	}
-	
+
 	return true;
 }
 
-bool SMBNTLMv2encrypt(TALLOC_CTX *mem_ctx, 
-		      const char *user, const char *domain, 
-		      const char *password, 
-		      const DATA_BLOB *server_chal, 
+bool SMBNTLMv2encrypt(TALLOC_CTX *mem_ctx,
+		      const char *user, const char *domain,
+		      const char *password,
+		      const DATA_BLOB *server_chal,
 		      const DATA_BLOB *names_blob,
-		      DATA_BLOB *lm_response, DATA_BLOB *nt_response, 
-		      DATA_BLOB *lm_session_key, DATA_BLOB *user_session_key) 
+		      DATA_BLOB *lm_response, DATA_BLOB *nt_response,
+		      DATA_BLOB *lm_session_key, DATA_BLOB *user_session_key)
 {
 	uint8_t nt_hash[16];
 	E_md4hash(password, nt_hash);
 
-	return SMBNTLMv2encrypt_hash(mem_ctx, 
+	return SMBNTLMv2encrypt_hash(mem_ctx,
 				     user, domain, nt_hash, server_chal, names_blob,
 				     lm_response, nt_response, lm_session_key, user_session_key);
 }
@@ -539,14 +539,14 @@ bool encode_pw_buffer(uint8_t buffer[516], const char *password, int string_flag
 	string_flags |= STR_NOALIGN;
 
 	new_pw_len = push_string(new_pw,
-				 password, 
+				 password,
 				 sizeof(new_pw), string_flags);
-	
+
 	memcpy(&buffer[512 - new_pw_len], new_pw, new_pw_len);
 
 	generate_random_buffer(buffer, 512 - new_pw_len);
 
-	/* 
+	/*
 	 * The length of the new password is in the last 4 bytes of
 	 * the data buffer.
 	 */
@@ -596,7 +596,7 @@ bool decode_pw_buffer(TALLOC_CTX *ctx,
 	}
 
 	/* decode into the return buffer. */
-	if (!convert_string_talloc(ctx, string_charset, CH_UNIX, 
+	if (!convert_string_talloc(ctx, string_charset, CH_UNIX,
 				   &in_buffer[512 - byte_len],
 				   byte_len,
 				   (void *)pp_new_pwrd,
@@ -649,7 +649,7 @@ bool set_pw_in_buffer(uint8_t buffer[516], DATA_BLOB *password)
 
 	generate_random_buffer(buffer, 512 - password->length);
 
-	/* 
+	/*
 	 * The length of the new password is in the last 4 bytes of
 	 * the data buffer.
 	 */
@@ -661,7 +661,7 @@ bool set_pw_in_buffer(uint8_t buffer[516], DATA_BLOB *password)
  decode a password buffer
  *new_pw_size is the length in bytes of the extracted unicode password
 ************************************************************/
-bool extract_pw_from_buffer(TALLOC_CTX *mem_ctx, 
+bool extract_pw_from_buffer(TALLOC_CTX *mem_ctx,
 			    uint8_t in_buffer[516], DATA_BLOB *new_pass)
 {
 	int byte_len=0;
