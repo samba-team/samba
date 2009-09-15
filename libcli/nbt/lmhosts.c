@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "lib/util/xfile.h"
+#include "lib/util/util_net.h"
 #include "system/filesys.h"
 #include "system/network.h"
 
