@@ -5307,7 +5307,7 @@ NTSTATUS rpccli_ntlmssp_bind_data(TALLOC_CTX *mem_ctx,
 				  struct cli_pipe_auth_data **presult);
 NTSTATUS rpccli_schannel_bind_data(TALLOC_CTX *mem_ctx, const char *domain,
 				   enum dcerpc_AuthLevel auth_level,
-				   const uint8_t sess_key[16],
+				   struct netlogon_creds_CredentialState *creds,
 				   struct cli_pipe_auth_data **presult);
 NTSTATUS rpccli_kerberos_bind_data(TALLOC_CTX *mem_ctx,
 				   enum dcerpc_AuthLevel auth_level,

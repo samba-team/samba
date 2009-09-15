@@ -46,9 +46,21 @@ static NTSTATUS netlogond_validate(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
+	/*
+	 * We have to fake a struct dcinfo, so that
+	 * rpccli_netlogon_sam_network_logon_ex can decrypt the session keys.
+	 */
+
+	p->dc = netlogon_creds_client_init_session_key(p, schannel_key);
+	if (p->dc == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		TALLOC_FREE(p);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	status = rpccli_schannel_bind_data(p, lp_workgroup(),
 					   DCERPC_AUTH_LEVEL_PRIVACY,
-					   schannel_key, &auth);
+					   p->dc, &auth);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("rpccli_schannel_bind_data failed: %s\n",
 			   nt_errstr(status)));
@@ -62,18 +74,6 @@ static NTSTATUS netlogond_validate(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(p);
 		*schannel_bind_result = status;
 		return status;
-	}
-
-	/*
-	 * We have to fake a struct dcinfo, so that
-	 * rpccli_netlogon_sam_network_logon_ex can decrypt the session keys.
-	 */
-
-	p->dc = netlogon_creds_client_init_session_key(p, schannel_key);
-	if (p->dc == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		TALLOC_FREE(p);
-		return NT_STATUS_NO_MEMORY;
 	}
 
 	status = rpccli_netlogon_sam_network_logon_ex(

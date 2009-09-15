@@ -30,6 +30,8 @@
 #include "includes.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/ndr_schannel.h"
+#include "../libcli/auth/schannel.h"
+#include "../libcli/auth/schannel_proto.h"
 
 extern struct current_user current_user;
 
@@ -285,6 +287,7 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 	uint32 data_space_available;
 	uint32 data_len_left;
 	uint32 data_pos;
+	NTSTATUS status;
 
 	/*
 	 * If we're in the fault state, keep returning fault PDU's until
@@ -426,13 +429,36 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 			return False;
 		}
 
-		schannel_encode(p->auth.a_u.schannel_auth, 
-				p->auth.auth_level, SENDER_IS_ACCEPTOR, &verf,
-				prs_data_p(&p->out_data.frag) + data_pos,
-				data_len + ss_padding_len);
+		switch (p->auth.auth_level) {
+		case DCERPC_AUTH_LEVEL_PRIVACY:
+			status = schannel_seal_packet(p->auth.a_u.schannel_auth,
+						      talloc_tos(),
+						      (uint8_t *)prs_data_p(&p->out_data.frag) + data_pos,
+						      data_len + ss_padding_len,
+						      &blob);
+			break;
+		case DCERPC_AUTH_LEVEL_INTEGRITY:
+			status = schannel_sign_packet(p->auth.a_u.schannel_auth,
+						      talloc_tos(),
+						      (uint8_t *)prs_data_p(&p->out_data.frag) + data_pos,
+						      data_len + ss_padding_len,
+						      &blob);
+			break;
+		default:
+			status = NT_STATUS_INTERNAL_ERROR;
+			break;
+		}
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("create_next_pdu_schannel: failed to process packet: %s\n",
+				nt_errstr(status)));
+			prs_mem_free(&p->out_data.frag);
+			return false;
+		}
 
 		/* Finally marshall the blob. */
 
+#if 0
 		ndr_err = ndr_push_struct_blob(&blob, talloc_tos(), NULL, &verf,
 				       (ndr_push_flags_fn_t)ndr_push_NL_AUTH_SIGNATURE);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -443,13 +469,11 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 		if (DEBUGLEVEL >= 10) {
 			NDR_PRINT_DEBUG(NL_AUTH_SIGNATURE, &verf);
 		}
-
+#endif
 		if (!prs_copy_data_in(&p->out_data.frag, (const char *)blob.data, blob.length)) {
 			prs_mem_free(&p->out_data.frag);
 			return false;
 		}
-
-		p->auth.a_u.schannel_auth->seq_num++;
 	}
 
 	/*
@@ -1376,7 +1400,7 @@ static bool pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 	 */
 
 	become_root();
-	status = schannel_fetch_session_key(p->mem_ctx,
+	status = schannel_fetch_session_key(p,
 					    neg.oem_netbios_computer.a,
 					    &creds);
 	unbecome_root();
@@ -1386,19 +1410,16 @@ static bool pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 		return False;
 	}
 
-	p->auth.a_u.schannel_auth = talloc(p, struct schannel_auth_struct);
+	p->auth.a_u.schannel_auth = talloc(p, struct schannel_state);
 	if (!p->auth.a_u.schannel_auth) {
 		TALLOC_FREE(creds);
 		return False;
 	}
 
-	memset(p->auth.a_u.schannel_auth->sess_key, 0, sizeof(p->auth.a_u.schannel_auth->sess_key));
-	memcpy(p->auth.a_u.schannel_auth->sess_key, creds->session_key,
-			sizeof(creds->session_key));
-
-	TALLOC_FREE(creds);
-
+	p->auth.a_u.schannel_auth->state = SCHANNEL_STATE_START;
 	p->auth.a_u.schannel_auth->seq_num = 0;
+	p->auth.a_u.schannel_auth->initiator = false;
+	p->auth.a_u.schannel_auth->creds = creds;
 
 	/*
 	 * JRA. Should we also copy the schannel session key into the pipe session key p->session_key
@@ -2152,6 +2173,7 @@ bool api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in, uint32 *p_ss
 	struct NL_AUTH_SIGNATURE schannel_chk;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
+	NTSTATUS status;
 
 	auth_len = p->hdr.auth_len;
 
@@ -2213,13 +2235,29 @@ bool api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in, uint32 *p_ss
 		NDR_PRINT_DEBUG(NL_AUTH_SIGNATURE, &schannel_chk);
 	}
 
-	if (!schannel_decode(p->auth.a_u.schannel_auth,
-			   p->auth.auth_level,
-			   SENDER_IS_INITIATOR,
-			   &schannel_chk,
-			   prs_data_p(rpc_in)+RPC_HDR_REQ_LEN, data_len)) {
-		DEBUG(3,("failed to decode PDU\n"));
-		return False;
+	switch (auth_info.auth_level) {
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+		status = schannel_unseal_packet(p->auth.a_u.schannel_auth,
+						talloc_tos(),
+						(uint8_t *)prs_data_p(rpc_in)+RPC_HDR_REQ_LEN,
+						data_len,
+						&blob);
+		break;
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		status = schannel_check_packet(p->auth.a_u.schannel_auth,
+					       talloc_tos(),
+					       (uint8_t *)prs_data_p(rpc_in)+RPC_HDR_REQ_LEN,
+					       data_len,
+					       &blob);
+		break;
+	default:
+		status = NT_STATUS_INTERNAL_ERROR;
+		break;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("failed to unseal packet: %s\n", nt_errstr(status)));
+		return false;
 	}
 
 	/*
@@ -2231,9 +2269,6 @@ bool api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in, uint32 *p_ss
 			 (unsigned int)save_offset ));
 		return False;
 	}
-
-	/* The sequence number gets incremented on both send and receive. */
-	p->auth.a_u.schannel_auth->seq_num++;
 
 	/*
 	 * Remember the padding length. We must remove it from the real data

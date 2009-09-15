@@ -496,6 +496,7 @@ CLDAP_OBJ = libads/cldap.o \
 TLDAP_OBJ = lib/tldap.o lib/tldap_util.o lib/util_tsock.o
 
 SCHANNEL_OBJ = ../libcli/auth/credentials.o \
+	       ../libcli/auth/schannel_sign.o \
 	       ../libcli/auth/schannel_state_tdb.o \
 	       ../librpc/gen_ndr/ndr_schannel.o \
 	       ../librpc/ndr/ndr_schannel.o \
