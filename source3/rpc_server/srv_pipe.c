@@ -1564,7 +1564,7 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	prs_struct out_auth;
 	int i = 0;
 	int auth_len = 0;
-	unsigned int auth_type = RPC_ANONYMOUS_AUTH_TYPE;
+	unsigned int auth_type = DCERPC_AUTH_TYPE_NONE;
 
 	/* No rebinds on a bound pipe - use alter context. */
 	if (p->pipe_bound) {
@@ -1726,7 +1726,7 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 			}
 			break;
 
-		case RPC_ANONYMOUS_AUTH_TYPE:
+		case DCERPC_AUTH_TYPE_NONE:
 			/* Unauthenticated bind request. */
 			/* We're finished - no more packets. */
 			p->auth.auth_type = PIPE_AUTH_TYPE_NONE;
