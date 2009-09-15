@@ -192,14 +192,14 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 
 	/* Now write out the auth header and null blob. */
 	if (p->auth.auth_type == PIPE_AUTH_TYPE_NTLMSSP) {
-		auth_type = RPC_NTLMSSP_AUTH_TYPE;
+		auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
 	} else {
-		auth_type = RPC_SPNEGO_AUTH_TYPE;
+		auth_type = DCERPC_AUTH_TYPE_SPNEGO;
 	}
-	if (p->auth.auth_level == PIPE_AUTH_LEVEL_PRIVACY) {
-		auth_level = RPC_AUTH_LEVEL_PRIVACY;
+	if (p->auth.auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
+		auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
 	} else {
-		auth_level = RPC_AUTH_LEVEL_INTEGRITY;
+		auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
 	}
 
 	init_rpc_hdr_auth(&auth_info, auth_type, auth_level, ss_padding_len, 1 /* context id. */);
@@ -213,7 +213,7 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 	/* Generate the sign blob. */
 
 	switch (p->auth.auth_level) {
-		case PIPE_AUTH_LEVEL_PRIVACY:
+		case DCERPC_AUTH_LEVEL_PRIVACY:
 			/* Data portion is encrypted. */
 			status = ntlmssp_seal_packet(
 				a->ntlmssp_state,
@@ -229,7 +229,7 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 				return False;
 			}
 			break;
-		case PIPE_AUTH_LEVEL_INTEGRITY:
+		case DCERPC_AUTH_LEVEL_INTEGRITY:
 			/* Data is signed. */
 			status = ntlmssp_sign_packet(
 				a->ntlmssp_state,
@@ -414,9 +414,9 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 		/* Check it's the type of reply we were expecting to decode */
 
 		init_rpc_hdr_auth(&auth_info,
-				RPC_SCHANNEL_AUTH_TYPE,
-				p->auth.auth_level == PIPE_AUTH_LEVEL_PRIVACY ?
-					RPC_AUTH_LEVEL_PRIVACY : RPC_AUTH_LEVEL_INTEGRITY,
+				DCERPC_AUTH_TYPE_SCHANNEL,
+				p->auth.auth_level == DCERPC_AUTH_LEVEL_PRIVACY ?
+					DCERPC_AUTH_LEVEL_PRIVACY : DCERPC_AUTH_LEVEL_INTEGRITY,
 				ss_padding_len, 1);
 
 		if(!smb_io_rpc_hdr_auth("hdr_auth", &auth_info,
@@ -589,8 +589,8 @@ static bool create_next_pdu_noauth(pipes_struct *p)
 bool create_next_pdu(pipes_struct *p)
 {
 	switch(p->auth.auth_level) {
-		case PIPE_AUTH_LEVEL_NONE:
-		case PIPE_AUTH_LEVEL_CONNECT:
+		case DCERPC_AUTH_LEVEL_NONE:
+		case DCERPC_AUTH_LEVEL_CONNECT:
 			/* This is incorrect for auth level connect. Fixme. JRA */
 			return create_next_pdu_noauth(p);
 
@@ -647,7 +647,7 @@ static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 	   ensure the underlying NTLMSSP flags are also set. If not we should
 	   refuse the bind. */
 
-	if (p->auth.auth_level == PIPE_AUTH_LEVEL_INTEGRITY) {
+	if (p->auth.auth_level == DCERPC_AUTH_LEVEL_INTEGRITY) {
 		if (!(a->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN)) {
 			DEBUG(0,("pipe_ntlmssp_verify_final: pipe %s : packet integrity requested "
 				"but client declined signing.\n",
@@ -655,7 +655,7 @@ static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 			return False;
 		}
 	}
-	if (p->auth.auth_level == PIPE_AUTH_LEVEL_PRIVACY) {
+	if (p->auth.auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
 		if (!(a->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL)) {
 			DEBUG(0,("pipe_ntlmssp_verify_final: pipe %s : packet privacy requested "
 				"but client declined sealing.\n",
@@ -750,7 +750,7 @@ bool api_pipe_bind_auth3(pipes_struct *p, prs_struct *rpc_in_p)
 		goto err;
 	}
 
-	if (auth_info.auth_type != RPC_NTLMSSP_AUTH_TYPE) {
+	if (auth_info.auth_type != DCERPC_AUTH_TYPE_NTLMSSP) {
 		DEBUG(0,("api_pipe_bind_auth3: incorrect auth type (%u).\n",
 			(unsigned int)auth_info.auth_type ));
 		return False;
@@ -840,7 +840,7 @@ static bool setup_bind_nak(pipes_struct *p)
 	if (p->auth.auth_data_free_func) {
 		(*p->auth.auth_data_free_func)(&p->auth);
 	}
-	p->auth.auth_level = PIPE_AUTH_LEVEL_NONE;
+	p->auth.auth_level = DCERPC_AUTH_LEVEL_NONE;
 	p->auth.auth_type = PIPE_AUTH_TYPE_NONE;
 	p->pipe_bound = False;
 
@@ -1204,7 +1204,7 @@ static bool pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_
 	}
 
 	/* Copy the blob into the pout_auth parse struct */
-	init_rpc_hdr_auth(&auth_info, RPC_SPNEGO_AUTH_TYPE, pauth_info->auth_level, RPC_HDR_AUTH_LEN, 1);
+	init_rpc_hdr_auth(&auth_info, DCERPC_AUTH_TYPE_SPNEGO, pauth_info->auth_level, RPC_HDR_AUTH_LEN, 1);
 	if(!smb_io_rpc_hdr_auth("", &auth_info, pout_auth, 0)) {
 		DEBUG(0,("pipe_spnego_auth_bind_negotiate: marshalling of RPC_HDR_AUTH failed.\n"));
 		goto err;
@@ -1302,7 +1302,7 @@ static bool pipe_spnego_auth_bind_continue(pipes_struct *p, prs_struct *rpc_in_p
 	response = spnego_gen_auth_response(&auth_reply, NT_STATUS_OK, OID_NTLMSSP);
 
 	/* Copy the blob into the pout_auth parse struct */
-	init_rpc_hdr_auth(&auth_info, RPC_SPNEGO_AUTH_TYPE, pauth_info->auth_level, RPC_HDR_AUTH_LEN, 1);
+	init_rpc_hdr_auth(&auth_info, DCERPC_AUTH_TYPE_SPNEGO, pauth_info->auth_level, RPC_HDR_AUTH_LEN, 1);
 	if(!smb_io_rpc_hdr_auth("", &auth_info, pout_auth, 0)) {
 		DEBUG(0,("pipe_spnego_auth_bind_continue: marshalling of RPC_HDR_AUTH failed.\n"));
 		goto err;
@@ -1427,7 +1427,7 @@ static bool pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 		return false;
 	}
 
-	init_rpc_hdr_auth(&auth_info, RPC_SCHANNEL_AUTH_TYPE, pauth_info->auth_level, RPC_HDR_AUTH_LEN, 1);
+	init_rpc_hdr_auth(&auth_info, DCERPC_AUTH_TYPE_SCHANNEL, pauth_info->auth_level, RPC_HDR_AUTH_LEN, 1);
 	if(!smb_io_rpc_hdr_auth("", &auth_info, pout_auth, 0)) {
 		DEBUG(0,("pipe_schannel_auth_bind: marshalling of RPC_HDR_AUTH failed.\n"));
 		return False;
@@ -1516,7 +1516,7 @@ static bool pipe_ntlmssp_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 	data_blob_free(&blob);
 
 	/* Copy the blob into the pout_auth parse struct */
-	init_rpc_hdr_auth(&auth_info, RPC_NTLMSSP_AUTH_TYPE, pauth_info->auth_level, RPC_HDR_AUTH_LEN, 1);
+	init_rpc_hdr_auth(&auth_info, DCERPC_AUTH_TYPE_NTLMSSP, pauth_info->auth_level, RPC_HDR_AUTH_LEN, 1);
 	if(!smb_io_rpc_hdr_auth("", &auth_info, pout_auth, 0)) {
 		DEBUG(0,("pipe_ntlmssp_auth_bind: marshalling of RPC_HDR_AUTH failed.\n"));
 		goto err;
@@ -1564,7 +1564,7 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	prs_struct out_auth;
 	int i = 0;
 	int auth_len = 0;
-	unsigned int auth_type = RPC_ANONYMOUS_AUTH_TYPE;
+	unsigned int auth_type = DCERPC_AUTH_TYPE_NONE;
 
 	/* No rebinds on a bound pipe - use alter context. */
 	if (p->pipe_bound) {
@@ -1689,11 +1689,11 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 
 		/* Work out if we have to sign or seal etc. */
 		switch (auth_info.auth_level) {
-			case RPC_AUTH_LEVEL_INTEGRITY:
-				p->auth.auth_level = PIPE_AUTH_LEVEL_INTEGRITY;
+			case DCERPC_AUTH_LEVEL_INTEGRITY:
+				p->auth.auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
 				break;
-			case RPC_AUTH_LEVEL_PRIVACY:
-				p->auth.auth_level = PIPE_AUTH_LEVEL_PRIVACY;
+			case DCERPC_AUTH_LEVEL_PRIVACY:
+				p->auth.auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
 				break;
 			default:
 				DEBUG(0,("api_pipe_bind_req: unexpected auth level (%u).\n",
@@ -1707,31 +1707,31 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	assoc_gid = hdr_rb.bba.assoc_gid ? hdr_rb.bba.assoc_gid : 0x53f0;
 
 	switch(auth_type) {
-		case RPC_NTLMSSP_AUTH_TYPE:
+		case DCERPC_AUTH_TYPE_NTLMSSP:
 			if (!pipe_ntlmssp_auth_bind(p, rpc_in_p, &auth_info, &out_auth)) {
 				goto err_exit;
 			}
 			assoc_gid = 0x7a77;
 			break;
 
-		case RPC_SCHANNEL_AUTH_TYPE:
+		case DCERPC_AUTH_TYPE_SCHANNEL:
 			if (!pipe_schannel_auth_bind(p, rpc_in_p, &auth_info, &out_auth)) {
 				goto err_exit;
 			}
 			break;
 
-		case RPC_SPNEGO_AUTH_TYPE:
+		case DCERPC_AUTH_TYPE_SPNEGO:
 			if (!pipe_spnego_auth_bind_negotiate(p, rpc_in_p, &auth_info, &out_auth)) {
 				goto err_exit;
 			}
 			break;
 
-		case RPC_ANONYMOUS_AUTH_TYPE:
+		case DCERPC_AUTH_TYPE_NONE:
 			/* Unauthenticated bind request. */
 			/* We're finished - no more packets. */
 			p->auth.auth_type = PIPE_AUTH_TYPE_NONE;
 			/* We must set the pipe auth_level here also. */
-			p->auth.auth_level = PIPE_AUTH_LEVEL_NONE;
+			p->auth.auth_level = DCERPC_AUTH_LEVEL_NONE;
 			p->pipe_bound = True;
 			/* The session key was initialized from the SMB
 			 * session in make_internal_rpc_pipe_p */
@@ -1914,7 +1914,7 @@ bool api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
 		 * response in place of the NTLMSSP auth3 type.
 		 */
 
-		if (auth_info.auth_type == RPC_SPNEGO_AUTH_TYPE) {
+		if (auth_info.auth_type == DCERPC_AUTH_TYPE_SPNEGO) {
 			/* We can only finish if the pipe is unbound. */
 			if (!p->pipe_bound) {
 				if (!pipe_spnego_auth_bind_continue(p, rpc_in_p, &auth_info, &out_auth)) {
@@ -2042,7 +2042,7 @@ bool api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in,
 
 	*pstatus = NT_STATUS_OK;
 
-	if (p->auth.auth_level == PIPE_AUTH_LEVEL_NONE || p->auth.auth_level == PIPE_AUTH_LEVEL_CONNECT) {
+	if (p->auth.auth_level == DCERPC_AUTH_LEVEL_NONE || p->auth.auth_level == DCERPC_AUTH_LEVEL_CONNECT) {
 		return True;
 	}
 
@@ -2091,7 +2091,7 @@ bool api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in,
 	auth_blob.length = auth_len;
 
 	switch (p->auth.auth_level) {
-		case PIPE_AUTH_LEVEL_PRIVACY:
+		case DCERPC_AUTH_LEVEL_PRIVACY:
 			/* Data is encrypted. */
 			*pstatus = ntlmssp_unseal_packet(a->ntlmssp_state,
 							data, data_len,
@@ -2102,7 +2102,7 @@ bool api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in,
 				return False;
 			}
 			break;
-		case PIPE_AUTH_LEVEL_INTEGRITY:
+		case DCERPC_AUTH_LEVEL_INTEGRITY:
 			/* Data is signed. */
 			*pstatus = ntlmssp_check_packet(a->ntlmssp_state,
 							data, data_len,
@@ -2193,7 +2193,7 @@ bool api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in, uint32 *p_ss
 		return False;
 	}
 
-	if (auth_info.auth_type != RPC_SCHANNEL_AUTH_TYPE) {
+	if (auth_info.auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
 		DEBUG(0,("Invalid auth info %d on schannel\n",
 			 auth_info.auth_type));
 		return False;

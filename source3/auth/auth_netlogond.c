@@ -47,7 +47,7 @@ static NTSTATUS netlogond_validate(TALLOC_CTX *mem_ctx,
 	}
 
 	status = rpccli_schannel_bind_data(p, lp_workgroup(),
-					   PIPE_AUTH_LEVEL_PRIVACY,
+					   DCERPC_AUTH_LEVEL_PRIVACY,
 					   schannel_key, &auth);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("rpccli_schannel_bind_data failed: %s\n",

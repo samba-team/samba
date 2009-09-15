@@ -1342,20 +1342,11 @@ NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
 
 /* The following definitions come from lib/util_sock.c  */
 
-bool interpret_string_addr_internal(struct addrinfo **ppres,
-					const char *str, int flags);
 bool is_broadcast_addr(const struct sockaddr *pss);
-bool interpret_string_addr(struct sockaddr_storage *pss,
-		const char *str,
-		int flags);
-bool interpret_string_addr_prefer_ipv4(struct sockaddr_storage *pss,
-		const char *str,
-		int flags);
 bool is_loopback_ip_v4(struct in_addr ip);
 bool is_loopback_addr(const struct sockaddr *pss);
 bool is_zero_addr(const struct sockaddr *pss);
 void zero_ip_v4(struct in_addr *ip);
-void zero_sockaddr(struct sockaddr_storage *pss);
 void in_addr_to_sockaddr_storage(struct sockaddr_storage *ss,
 		struct in_addr ip);
 bool same_net(const struct sockaddr *ip1,
@@ -5300,17 +5291,17 @@ NTSTATUS rpccli_anon_bind_data(TALLOC_CTX *mem_ctx,
 			       struct cli_pipe_auth_data **presult);
 NTSTATUS rpccli_ntlmssp_bind_data(TALLOC_CTX *mem_ctx,
 				  enum pipe_auth_type auth_type,
-				  enum pipe_auth_level auth_level,
+				  enum dcerpc_AuthLevel auth_level,
 				  const char *domain,
 				  const char *username,
 				  const char *password,
 				  struct cli_pipe_auth_data **presult);
 NTSTATUS rpccli_schannel_bind_data(TALLOC_CTX *mem_ctx, const char *domain,
-				   enum pipe_auth_level auth_level,
+				   enum dcerpc_AuthLevel auth_level,
 				   const uint8_t sess_key[16],
 				   struct cli_pipe_auth_data **presult);
 NTSTATUS rpccli_kerberos_bind_data(TALLOC_CTX *mem_ctx,
-				   enum pipe_auth_level auth_level,
+				   enum dcerpc_AuthLevel auth_level,
 				   const char *service_princ,
 				   const char *username,
 				   const char *password,
@@ -5335,7 +5326,7 @@ NTSTATUS cli_rpc_pipe_open_noauth_transport(struct cli_state *cli,
 NTSTATUS cli_rpc_pipe_open_ntlmssp(struct cli_state *cli,
 				   const struct ndr_syntax_id *interface,
 				   enum dcerpc_transport_t transport,
-				   enum pipe_auth_level auth_level,
+				   enum dcerpc_AuthLevel auth_level,
 				   const char *domain,
 				   const char *username,
 				   const char *password,
@@ -5343,7 +5334,7 @@ NTSTATUS cli_rpc_pipe_open_ntlmssp(struct cli_state *cli,
 NTSTATUS cli_rpc_pipe_open_spnego_ntlmssp(struct cli_state *cli,
 					  const struct ndr_syntax_id *interface,
 					  enum dcerpc_transport_t transport,
-					  enum pipe_auth_level auth_level,
+					  enum dcerpc_AuthLevel auth_level,
 					  const char *domain,
 					  const char *username,
 					  const char *password,
@@ -5355,14 +5346,14 @@ NTSTATUS get_schannel_session_key(struct cli_state *cli,
 NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 					     const struct ndr_syntax_id *interface,
 					     enum dcerpc_transport_t transport,
-					     enum pipe_auth_level auth_level,
+					     enum dcerpc_AuthLevel auth_level,
 					     const char *domain,
 					     struct netlogon_creds_CredentialState **pdc,
 					     struct rpc_pipe_client **presult);
 NTSTATUS cli_rpc_pipe_open_ntlmssp_auth_schannel(struct cli_state *cli,
 						 const struct ndr_syntax_id *interface,
 						 enum dcerpc_transport_t transport,
-						 enum pipe_auth_level auth_level,
+						 enum dcerpc_AuthLevel auth_level,
 						 const char *domain,
 						 const char *username,
 						 const char *password,
@@ -5370,12 +5361,12 @@ NTSTATUS cli_rpc_pipe_open_ntlmssp_auth_schannel(struct cli_state *cli,
 NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
 				    const struct ndr_syntax_id *interface,
 				    enum dcerpc_transport_t transport,
-				    enum pipe_auth_level auth_level,
+				    enum dcerpc_AuthLevel auth_level,
 				    const char *domain,
 				    struct rpc_pipe_client **presult);
 NTSTATUS cli_rpc_pipe_open_krb5(struct cli_state *cli,
 				const struct ndr_syntax_id *interface,
-				enum pipe_auth_level auth_level,
+				enum dcerpc_AuthLevel auth_level,
 				const char *service_princ,
 				const char *username,
 				const char *password,
@@ -5715,11 +5706,11 @@ bool prs_uint16s(bool charmode, const char *name, prs_struct *ps, int depth, uin
 bool prs_uint32s(bool charmode, const char *name, prs_struct *ps, int depth, uint32 *data32s, int len);
 bool prs_unistr(const char *name, prs_struct *ps, int depth, UNISTR *str);
 bool prs_string(const char *name, prs_struct *ps, int depth, char *str, int max_buf_size);
-void schannel_encode(struct schannel_auth_struct *a, enum pipe_auth_level auth_level,
+void schannel_encode(struct schannel_auth_struct *a, enum dcerpc_AuthLevel auth_level,
 		   enum schannel_direction direction,
 		   struct NL_AUTH_SIGNATURE *verf,
 		   char *data, size_t data_len);
-bool schannel_decode(struct schannel_auth_struct *a, enum pipe_auth_level auth_level,
+bool schannel_decode(struct schannel_auth_struct *a, enum dcerpc_AuthLevel auth_level,
 		   enum schannel_direction direction, 
 		   struct NL_AUTH_SIGNATURE *verf, char *data, size_t data_len);
 bool prs_init_data_blob(prs_struct *prs, DATA_BLOB *blob, TALLOC_CTX *mem_ctx);

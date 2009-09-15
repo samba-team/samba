@@ -86,7 +86,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	
 	obj->meta_data_ctr->meta_data = talloc_array(obj, struct drsuapi_DsReplicaMetaData, md.ctr.ctr1.count);
 	for (n=i=0; i<md.ctr.ctr1.count; i++) {
-		if (md.ctr.ctr1.array[i].originating_usn < highest_usn) continue;
+		if (md.ctr.ctr1.array[i].local_usn < highest_usn) continue;
 		obj->meta_data_ctr->meta_data[n].originating_change_time = md.ctr.ctr1.array[i].originating_change_time;
 		obj->meta_data_ctr->meta_data[n].version = md.ctr.ctr1.array[i].version;
 		obj->meta_data_ctr->meta_data[n].originating_invocation_id = md.ctr.ctr1.array[i].originating_invocation_id;

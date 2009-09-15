@@ -743,7 +743,7 @@ if test x$enable_cups != xno; then
 		ac_save_PRINT_LIBS=$PRINT_LIBS
 		CFLAGS="$CFLAGS `$CUPS_CONFIG --cflags`"
 		LDFLAGS="$LDFLAGS `$CUPS_CONFIG --ldflags`"
-		PRINT_LIBS="$PRINT_LIBS `$CUPS_CONFIG --libs`"
+		PRINT_LIBS="-lcups"
 		AC_CHECK_HEADERS(cups/cups.h cups/language.h)
 		if test x"$ac_cv_header_cups_cups_h" = xyes -a \
 		        x"$ac_cv_header_cups_language_h" = xyes; then

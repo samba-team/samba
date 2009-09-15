@@ -1071,7 +1071,7 @@ bool prs_string(const char *name, prs_struct *ps, int depth, char *str, int max_
  ********************************************************************/
 
 static void schannel_digest(struct schannel_auth_struct *a,
-			  enum pipe_auth_level auth_level,
+			  enum dcerpc_AuthLevel auth_level,
 			  struct NL_AUTH_SIGNATURE *verf,
 			  char *data, size_t data_len,
 			  uchar digest_final[16]) 
@@ -1095,7 +1095,7 @@ static void schannel_digest(struct schannel_auth_struct *a,
 	   out of order */
 	MD5Update(&ctx3, zeros, sizeof(zeros));
 	MD5Update(&ctx3, sig, 8);
-	if (auth_level == PIPE_AUTH_LEVEL_PRIVACY) {
+	if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
 		MD5Update(&ctx3, verf->Confounder, sizeof(verf->Confounder));
 	}
 	MD5Update(&ctx3, (const unsigned char *)data, data_len);
@@ -1169,7 +1169,7 @@ static void schannel_deal_with_seq_num(struct schannel_auth_struct *a,
  quite compatible with what MS does.
  ********************************************************************/
 
-void schannel_encode(struct schannel_auth_struct *a, enum pipe_auth_level auth_level,
+void schannel_encode(struct schannel_auth_struct *a, enum dcerpc_AuthLevel auth_level,
 		   enum schannel_direction direction,
 		   struct NL_AUTH_SIGNATURE *verf,
 		   char *data, size_t data_len)
@@ -1199,7 +1199,7 @@ void schannel_encode(struct schannel_auth_struct *a, enum pipe_auth_level auth_l
 
 	dump_data_pw("verf->SequenceNumber:\n", verf->SequenceNumber, sizeof(verf->SequenceNumber));
 
-	if (auth_level == PIPE_AUTH_LEVEL_PRIVACY) {
+	if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
 		verf->SealAlgorithm		= NL_SEAL_RC4;
 	} else {
 		verf->SealAlgorithm		= NL_SEAL_NONE;
@@ -1217,7 +1217,7 @@ void schannel_encode(struct schannel_auth_struct *a, enum pipe_auth_level auth_l
 	schannel_digest(a, auth_level, verf, data, data_len, digest_final);
 	memcpy(verf->Checksum, digest_final, sizeof(verf->Checksum));
 
-	if (auth_level == PIPE_AUTH_LEVEL_PRIVACY) {
+	if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
 		uchar sealing_key[16];
 
 		/* get the key to encode the data with */
@@ -1249,7 +1249,7 @@ void schannel_encode(struct schannel_auth_struct *a, enum pipe_auth_level auth_l
  as well as decode sealed messages
  ********************************************************************/
 
-bool schannel_decode(struct schannel_auth_struct *a, enum pipe_auth_level auth_level,
+bool schannel_decode(struct schannel_auth_struct *a, enum dcerpc_AuthLevel auth_level,
 		   enum schannel_direction direction, 
 		   struct NL_AUTH_SIGNATURE *verf, char *data, size_t data_len)
 {
@@ -1263,7 +1263,7 @@ bool schannel_decode(struct schannel_auth_struct *a, enum pipe_auth_level auth_l
 
 	DEBUG(10,("SCHANNEL: schannel_decode seq_num=%d data_len=%lu\n", a->seq_num, (unsigned long)data_len));
 	
-	if (auth_level == PIPE_AUTH_LEVEL_PRIVACY) {
+	if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
 		schannel_sig = schannel_seal_sig;
 	} else {
 		schannel_sig = schannel_sign_sig;
@@ -1317,7 +1317,7 @@ bool schannel_decode(struct schannel_auth_struct *a, enum pipe_auth_level auth_l
 		return False;
 	}
 
-	if (auth_level == PIPE_AUTH_LEVEL_PRIVACY) {
+	if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
 		uchar sealing_key[16];
 		
 		/* get the key to extract the data with */

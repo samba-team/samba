@@ -162,3 +162,20 @@ _PUBLIC_ void ndr_print_ntlmssp_lm_response(TALLOC_CTX *mem_ctx,
 		}
 	}
 }
+
+_PUBLIC_ void ndr_print_ntlmssp_Version(struct ndr_print *ndr, const char *name, const union ntlmssp_Version *r)
+{
+	int level;
+	level = ndr_print_get_switch_value(ndr, r);
+	switch (level) {
+		case NTLMSSP_NEGOTIATE_VERSION:
+			ndr_print_VERSION(ndr, name, &r->version);
+		break;
+
+		default:
+		break;
+
+	}
+}
+
+

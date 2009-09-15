@@ -104,7 +104,7 @@ struct VERSION {
 
 union ntlmssp_Version {
 	struct VERSION version;/* [case(NTLMSSP_NEGOTIATE_VERSION)] */
-}/* [nodiscriminant] */;
+}/* [noprint,nodiscriminant] */;
 
 struct NEGOTIATE_MESSAGE {
 	const char *Signature;/* [value("NTLMSSP"),charset(DOS)] */

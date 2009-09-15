@@ -18,6 +18,8 @@ interface ntlmssp
 		NtLmAuthenticate	= 0x00000003
 	} ntlmssp_MessageType;
 
+	/* [MS-NLMP] 2.2.2.5 NEGOTIATE */
+
 	typedef [bitmap32bit] bitmap {
 		NTLMSSP_NEGOTIATE_UNICODE			= 0x00000001,
 		NTLMSSP_NEGOTIATE_OEM				= 0x00000002, /* NTLM_NEGOTIATE_OEM in MS-NLMP */
@@ -82,6 +84,8 @@ interface ntlmssp
 		NTLMSSP_REVISION_W2K3		= 0x0F
 	} ntlmssp_NTLMRevisionCurrent;
 
+	/* [MS-NLMP] 2.2.2.10 VERSION */
+
 	typedef struct {
 		ntlmssp_WindowsMajorVersion ProductMajorVersion;
 		ntlmssp_WindowsMinorVersion ProductMinorVersion;
@@ -90,12 +94,12 @@ interface ntlmssp
 		ntlmssp_NTLMRevisionCurrent NTLMRevisionCurrent;
 	} VERSION;
 
-	typedef [nodiscriminant] union {
+	typedef [noprint,nodiscriminant] union {
 		[case(NTLMSSP_NEGOTIATE_VERSION)] VERSION version;
 		[default];
 	} ntlmssp_Version;
 
-	/* NTLMSSP negotiate message */
+	/* [MS-NLMP] 2.2.1.1 NEGOTIATE_MESSAGE */
 
 	typedef [public] struct {
 		[charset(DOS),value("NTLMSSP")] uint8 Signature[8];
@@ -123,6 +127,8 @@ interface ntlmssp
 		MsvAvTargetName		= 9,
 		MsvChannelBindings	= 10
 	} ntlmssp_AvId;
+
+	/* [MS-NLMP] 2.2.2.2 Restriction_Encoding */
 
 	typedef struct {
 		uint32 Size;
@@ -152,6 +158,8 @@ interface ntlmssp
 		[default]			[flag(NDR_REMAINING)] DATA_BLOB blob;
 	} ntlmssp_AvValue;
 
+	/* [MS-NLMP] 2.2.2.1 AV_PAIR */
+
 	typedef [public,flag(NDR_NOALIGN)] struct {
 		ntlmssp_AvId AvId;
 		[value(ndr_size_ntlmssp_AvValue(&r->Value, r->AvId, ndr->iconv_convenience, 0))] uint16 AvLen;
@@ -163,7 +171,7 @@ interface ntlmssp
 		AV_PAIR pair[count];
 	} AV_PAIR_LIST;
 
-	/* NTLMSSP challenge message */
+	/* [MS-NLMP] 2.2.1.2 CHALLENGE_MESSAGE */
 
 	typedef [public,flag(NDR_PAHEX)] struct {
 		[charset(DOS),value("NTLMSSP")] uint8 Signature[8];
@@ -180,9 +188,13 @@ interface ntlmssp
 		[switch_is(NegotiateFlags & NTLMSSP_NEGOTIATE_VERSION)] ntlmssp_Version Version;
 	} CHALLENGE_MESSAGE;
 
+	/* [MS-NLMP] 2.2.2.3 LM_RESPONSE */
+
 	typedef [public,flag(NDR_PAHEX)] struct {
 		uint8 Response[24];
 	} LM_RESPONSE;
+
+	/* [MS-NLMP] 2.2.2.4 LMv2_RESPONSE */
 
 	typedef [public,flag(NDR_PAHEX)] struct {
 		uint8 Response[16];
@@ -194,9 +206,13 @@ interface ntlmssp
 		[default];
 	} ntlmssp_LM_RESPONSE;
 
+	/* [MS-NLMP] 2.2.2.6 NTLM_RESPONSE */
+
 	typedef [public,flag(NDR_PAHEX)] struct {
 		uint8 Response[24];
 	} NTLM_RESPONSE;
+
+	/* [MS-NLMP] 2.2.2.7 NTLMv2_CLIENT_CHALLENGE */
 
 	typedef [flag(NDR_PAHEX)] struct {
 		[value(1)] uint8 RespType;
@@ -208,6 +224,8 @@ interface ntlmssp
 		uint32 Reserved3;
 		[subcontext(0)] [flag(NDR_REMAINING)] AV_PAIR_LIST AvPairs;
 	} NTLMv2_CLIENT_CHALLENGE;
+
+	/* [MS-NLMP] 2.2.2.8 NTLMv2_RESPONSE */
 
 	typedef [public,flag(NDR_PAHEX)] struct {
 		uint8 Response[16];
@@ -224,7 +242,7 @@ interface ntlmssp
 		uint8 MIC[16];
 	} MIC;
 
-	/* NTLMSSP authenticate message */
+	/* [MS-NLMP] 2.2.1.3 AUTHENTICATE_MESSAGE */
 
 	typedef [public,flag(NDR_REMAINING)] struct {
 		[charset(DOS),value("NTLMSSP")] uint8 Signature[8];
@@ -260,12 +278,16 @@ interface ntlmssp
 	/* NTLMSSP signature size */
 	const int NTLMSSP_SIG_SIZE = 16;
 
+	/* [MS-NLMP] 2.2.2.9.1 NTLMSSP_MESSAGE_SIGNATURE */
+
 	typedef [public] struct {
 		 [value(NTLMSSP_SIGN_VERSION)] uint32 Version;
 		 uint32 RandomPad;
 		 uint32 Checksum;
 		 uint32 SeqNum;
 	} NTLMSSP_MESSAGE_SIGNATURE;
+
+	/* [MS-NLMP] 2.2.2.9.2 NTLMSSP_MESSAGE_SIGNATURE for Extended Session Security */
 
 	typedef [public,flag(NDR_PAHEX)] struct {
 		 [value(NTLMSSP_SIGN_VERSION)] uint32 Version;

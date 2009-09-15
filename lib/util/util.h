@@ -21,8 +21,6 @@
 #ifndef _SAMBA_UTIL_H_
 #define _SAMBA_UTIL_H_
 
-#include <netinet/in.h>
-
 #if _SAMBA_BUILD_ == 4
 #include "../lib/util/charset/charset.h"
 #endif
@@ -841,5 +839,6 @@ bool add_uid_to_array_unique(TALLOC_CTX *mem_ctx, uid_t uid,
 			     uid_t **uids, size_t *num_uids);
 bool add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
 			     gid_t **gids, size_t *num_gids);
+
 
 #endif /* _SAMBA_UTIL_H_ */

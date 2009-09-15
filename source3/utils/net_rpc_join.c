@@ -102,7 +102,7 @@ NTSTATUS net_rpc_join_ok(struct net_context *c, const char *domain,
 
 	ntret = cli_rpc_pipe_open_schannel_with_key(
 		cli, &ndr_table_netlogon.syntax_id, NCACN_NP,
-		PIPE_AUTH_LEVEL_PRIVACY,
+		DCERPC_AUTH_LEVEL_PRIVACY,
 		domain, &netlogon_pipe->dc, &pipe_hnd);
 
 	if (!NT_STATUS_IS_OK(ntret)) {
@@ -420,7 +420,7 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 
 		result = cli_rpc_pipe_open_schannel_with_key(
 			cli, &ndr_table_netlogon.syntax_id, NCACN_NP,
-			PIPE_AUTH_LEVEL_PRIVACY, domain, &pipe_hnd->dc,
+			DCERPC_AUTH_LEVEL_PRIVACY, domain, &pipe_hnd->dc,
 			&netlogon_schannel_pipe);
 
 		if (!NT_STATUS_IS_OK(result)) {

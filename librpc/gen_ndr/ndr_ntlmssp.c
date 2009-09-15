@@ -250,22 +250,6 @@ static enum ndr_err_code ndr_pull_ntlmssp_Version(struct ndr_pull *ndr, int ndr_
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_ntlmssp_Version(struct ndr_print *ndr, const char *name, const union ntlmssp_Version *r)
-{
-	int level;
-	level = ndr_print_get_switch_value(ndr, r);
-	ndr_print_union(ndr, name, level, "ntlmssp_Version");
-	switch (level) {
-		case NTLMSSP_NEGOTIATE_VERSION:
-			ndr_print_VERSION(ndr, "version", &r->version);
-		break;
-
-		default:
-		break;
-
-	}
-}
-
 _PUBLIC_ enum ndr_err_code ndr_push_NEGOTIATE_MESSAGE(struct ndr_push *ndr, int ndr_flags, const struct NEGOTIATE_MESSAGE *r)
 {
 	if (ndr_flags & NDR_SCALARS) {

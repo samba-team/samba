@@ -53,31 +53,6 @@ enum RPC_PKT_TYPE {
 #define RPC_FLG_LAST  0x02
 #define RPC_FLG_NOCALL 0x20
 
-
-#define SMBD_NTLMSSP_NEG_FLAGS 0x000082b1 /* ALWAYS_SIGN|NEG_NTLM|NEG_LM|NEG_SEAL|NEG_SIGN|NEG_UNICODE */
-
-/* DCE RPC auth types - extended by Microsoft. */
-#define RPC_ANONYMOUS_AUTH_TYPE    0
-#define RPC_AUTH_TYPE_KRB5_1	   1
-#define RPC_SPNEGO_AUTH_TYPE       9 
-#define RPC_NTLMSSP_AUTH_TYPE     10
-#define RPC_KRB5_AUTH_TYPE        16 /* Not yet implemented. */ 
-#define RPC_SCHANNEL_AUTH_TYPE    68 /* 0x44 */
-
-/* DCE-RPC standard identifiers to indicate 
-   signing or sealing of an RPC pipe */
-#define RPC_AUTH_LEVEL_NONE      1
-#define RPC_AUTH_LEVEL_CONNECT   2
-#define RPC_AUTH_LEVEL_CALL      3
-#define RPC_AUTH_LEVEL_PACKET    4
-#define RPC_AUTH_LEVEL_INTEGRITY 5
-#define RPC_AUTH_LEVEL_PRIVACY   6
-
-#if 0
-#define RPC_PIPE_AUTH_SIGN_LEVEL 0x5
-#define RPC_PIPE_AUTH_SEAL_LEVEL 0x6
-#endif
-
 /* Netlogon schannel auth type and level */
 #define SCHANNEL_SIGN_SIGNATURE { 0x77, 0x00, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00 }
 #define SCHANNEL_SEAL_SIGNATURE { 0x77, 0x00, 0x7a, 0x00, 0xff, 0xff, 0x00, 0x00 }
@@ -173,15 +148,6 @@ typedef struct rpc_hdr_auth_info {
 } RPC_HDR_AUTH;
 
 #define RPC_HDR_AUTH_LEN 8
-
-/* attached to the end of encrypted rpc requests and responses */
-/* RPC_AUTH_SCHANNEL_CHK */
-typedef struct rpc_auth_schannel_chk_info {
-	uint8 sig  [8]; /* 77 00 7a 00 ff ff 00 00 */
-	uint8 packet_digest[8]; /* checksum over the packet, MD5'ed with session key */
-	uint8 seq_num[8]; /* verifier, seq num */
-	uint8 confounder[8]; /* random 8-byte nonce */
-} RPC_AUTH_SCHANNEL_CHK;
 
 typedef struct rpc_context {
 	uint16 context_id;		/* presentation context identifier. */
