@@ -150,7 +150,7 @@ struct pipe_auth_data {
 	enum pipe_auth_type auth_type; /* switch for union below. */
 	enum dcerpc_AuthLevel auth_level;
 	union {
-		struct schannel_auth_struct *schannel_auth;
+		struct schannel_state *schannel_auth;
 		AUTH_NTLMSSP_STATE *auth_ntlmssp_state;
 /*		struct kerberos_auth_struct *kerberos_auth; TO BE ADDED... */
 	} a_u;

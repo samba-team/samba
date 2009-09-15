@@ -55,7 +55,7 @@ struct cli_pipe_auth_data {
 	DATA_BLOB user_session_key;
 
 	union {
-		struct schannel_auth_struct *schannel_auth;
+		struct schannel_state *schannel_auth;
 		NTLMSSP_STATE *ntlmssp_state;
 		struct kerberos_auth_struct *kerberos_auth;
 	} a_u;

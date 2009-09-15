@@ -29,6 +29,7 @@
 #include "auth/auth.h"
 #include "param/param.h"
 #include "auth/gensec/schannel_state.h"
+#include "../libcli/auth/schannel_state_proto.h"
 
 static struct ldb_val *schannel_dom_sid_ldb_val(TALLOC_CTX *mem_ctx,
 						struct dom_sid *sid)
