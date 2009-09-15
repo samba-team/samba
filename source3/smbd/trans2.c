@@ -207,7 +207,9 @@ NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx, connection_struct *conn,
 
 	if (sizeret == 0) {
 		TALLOC_FREE(names);
-		*pnames = NULL;
+		if (pnames) {
+			*pnames = NULL;
+		}
 		*pnum_names = 0;
 		return NT_STATUS_OK;
 	}
@@ -244,7 +246,11 @@ NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx, connection_struct *conn,
 		names[num_names++] = p;
 	}
 
-	*pnames = names;
+	if (pnames) {
+		*pnames = names;
+	} else {
+		TALLOC_FREE(names);
+	}
 	*pnum_names = num_names;
 	return NT_STATUS_OK;
 }

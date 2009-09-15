@@ -421,6 +421,15 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
     if not valid_netbios_name(domain):
         raise InvalidNetbiosName(domain)
         
+    if netbiosname.upper() == realm.upper():
+        raise Exception("realm %s must not be equal to netbios domain name %s", realm, netbiosname)
+        
+    if hostname.upper() == realm.upper():
+        raise Exception("realm %s must not be equal to hostname %s", realm, hostname)
+        
+    if domain.upper() == realm.upper():
+        raise Exception("realm %s must not be equal to domain name %s", realm, domain)
+
     if rootdn is None:
        rootdn = domaindn
        

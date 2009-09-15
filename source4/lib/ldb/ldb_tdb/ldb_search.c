@@ -265,6 +265,9 @@ int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_mes
 	ret = ltdb_unpack_data(module, &tdb_data, msg);
 	free(tdb_data.dptr);
 	if (ret == -1) {
+		struct ldb_context *ldb = ldb_module_get_ctx(module);
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "Invalid data for index %s\n",
+			  ldb_dn_get_linearized(msg->dn));
 		return LDB_ERR_OPERATIONS_ERROR;		
 	}
 
@@ -535,7 +538,9 @@ int ltdb_search(struct ltdb_context *ctx)
 	ctx->attrs = req->op.search.attrs;
 
 	if (ret == LDB_SUCCESS) {
-		ret = ltdb_search_indexed(ctx);
+		uint32_t match_count = 0;
+
+		ret = ltdb_search_indexed(ctx, &match_count);
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 			/* Not in the index, therefore OK! */
 			ret = LDB_SUCCESS;
@@ -553,6 +558,17 @@ int ltdb_search(struct ltdb_context *ctx)
 			printf("FULL SEARCH: %s\n", expression);
 			talloc_free(expression);
 #endif
+			if (match_count != 0) {
+				/* the indexing code gave an error
+				 * after having returned at least one
+				 * entry. This means the indexes are
+				 * corrupt or a database record is
+				 * corrupt. We cannot continue with a
+				 * full search or we may return
+				 * duplicate entries
+				 */
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
 			ret = ltdb_search_full(ctx);
 			if (ret != LDB_SUCCESS) {
 				ldb_set_errstring(ldb, "Indexed and full searches both failed!\n");

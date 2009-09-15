@@ -2044,7 +2044,7 @@ struct tevent_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	SIVAL(vwv+2, 1, converted_len);
+	SSVAL(vwv+2, 1, converted_len);
 
 	subreq = cli_smb_send(state, ev, cli, SMBntcreateX, 0, 24, vwv,
 			      talloc_get_size(bytes), bytes);

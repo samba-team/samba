@@ -54,6 +54,10 @@
 #include "includes.h"
 #include "printing.h"
 
+#ifdef HAVE_SYS_SYSCTL_H
+#include <sys/sysctl.h>
+#endif
+
 #ifdef HAVE_HTTPCONNECTENCRYPT
 #include <cups/http.h>
 #endif

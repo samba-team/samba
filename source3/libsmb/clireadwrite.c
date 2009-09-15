@@ -287,6 +287,12 @@ static void cli_readall_done(struct tevent_req *subreq)
 		return;
 	}
 
+	if (received == 0) {
+		/* EOF */
+		tevent_req_done(req);
+		return;
+	}
+
 	if ((state->received == 0) && (received == state->size)) {
 		/* Ideal case: Got it all in one run */
 		state->buf = buf;

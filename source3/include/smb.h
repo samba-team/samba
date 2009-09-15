@@ -1511,6 +1511,15 @@ char *strdup(char *s);
 /* TCONX Flag (smb_vwv2). */
 #define TCONX_FLAG_EXTENDED_RESPONSE	0x8
 
+/* File Status Flags. See:
+
+http://msdn.microsoft.com/en-us/library/cc246334(PROT.13).aspx
+*/
+
+#define NO_EAS			0x1
+#define NO_SUBSTREAMS		0x2
+#define NO_REPARSETAG		0x4
+
 /* Capabilities.  see ftp.microsoft.com/developr/drg/cifs/cifs/cifs4.txt */
 
 #define CAP_RAW_MODE         0x0001
