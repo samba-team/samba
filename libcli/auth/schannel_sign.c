@@ -21,10 +21,10 @@
 */
 
 #include "includes.h"
+#include "../libcli/auth/schannel.h"
 #include "../lib/crypto/crypto.h"
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_proto.h"
-#include "auth/gensec/schannel.h"
 
 #define NETSEC_SIGN_SIGNATURE { 0x77, 0x00, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00 }
 #define NETSEC_SEAL_SIGNATURE { 0x77, 0x00, 0x7a, 0x00, 0xff, 0xff, 0x00, 0x00 }
