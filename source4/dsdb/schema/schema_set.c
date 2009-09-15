@@ -555,7 +555,7 @@ WERROR dsdb_set_schema_from_ldif(struct ldb_context *ldb, const char *pf, const 
 				goto failed;
 			}
 
-			DLIST_ADD_END(schema->attributes, sa, struct dsdb_attribute *);
+			DLIST_ADD(schema->attributes, sa);
 		} else if (is_sc) {
 			struct dsdb_class *sc;
 
@@ -569,7 +569,7 @@ WERROR dsdb_set_schema_from_ldif(struct ldb_context *ldb, const char *pf, const 
 				goto failed;
 			}
 
-			DLIST_ADD_END(schema->classes, sc, struct dsdb_class *);
+			DLIST_ADD(schema->classes, sc);
 		}
 	}
 
