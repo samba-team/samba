@@ -316,6 +316,7 @@ int ldb_transaction_start(struct ldb_context *ldb)
 
 	/* start a new transaction */
 	ldb->transaction_active++;
+	ldb->prepare_commit_done = false;
 
 	FIRST_OP(ldb, start_transaction);
 
@@ -335,6 +336,57 @@ int ldb_transaction_start(struct ldb_context *ldb)
 }
 
 /*
+  prepare for transaction commit (first phase of two phase commit)
+*/
+int ldb_transaction_prepare_commit(struct ldb_context *ldb)
+{
+	struct ldb_module *module;
+	int status;
+
+	if (ldb->prepare_commit_done) {
+		return LDB_SUCCESS;
+	}
+
+	/* commit only when all nested transactions are complete */
+	if (ldb->transaction_active > 1) {
+		return LDB_SUCCESS;
+	}
+
+	ldb->prepare_commit_done = true;
+
+	if (ldb->transaction_active < 0) {
+		ldb_debug(ldb, LDB_DEBUG_FATAL,
+			  "prepare commit called but no ldb transactions are active!");
+		ldb->transaction_active = 0;
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/* call prepare transaction if available */
+	FIRST_OP_NOERR(ldb, prepare_commit);
+	if (module == NULL) {
+		return LDB_SUCCESS;
+	}
+
+	status = module->ops->prepare_commit(module);
+	if (status != LDB_SUCCESS) {
+		/* if a module fails the prepare then we need
+		   to call the end transaction for everyone */
+		FIRST_OP(ldb, end_transaction);
+		module->ops->end_transaction(module);
+		if (ldb->err_string == NULL) {
+			/* no error string was setup by the backend */
+			ldb_asprintf_errstring(ldb,
+					       "ldb transaction prepare commit: %s (%d)",
+					       ldb_strerror(status),
+					       status);
+		}
+	}
+
+	return status;
+}
+
+
+/*
   commit a transaction
 */
 int ldb_transaction_commit(struct ldb_context *ldb)
@@ -342,6 +394,10 @@ int ldb_transaction_commit(struct ldb_context *ldb)
 	struct ldb_module *module;
 	int status;
 
+	status = ldb_transaction_prepare_commit(ldb);
+	if (status != LDB_SUCCESS) {
+		return status;
+	}
 
 	ldb->transaction_active--;
 
@@ -359,27 +415,6 @@ int ldb_transaction_commit(struct ldb_context *ldb)
 			  "commit called but no ldb transactions are active!");
 		ldb->transaction_active = 0;
 		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	/* call prepare transaction if available */
-	FIRST_OP_NOERR(ldb, prepare_commit);
-	if (module != NULL) {
-		status = module->ops->prepare_commit(module);
-		if (status != LDB_SUCCESS) {
-			/* if a module fails the prepare then we need
-			   to call the end transaction for everyone */
-			/* preserve err string */
-			FIRST_OP(ldb, end_transaction);
-			module->ops->end_transaction(module);
-			if (ldb->err_string == NULL) {
-				/* no error string was setup by the backend */
-				ldb_asprintf_errstring(ldb,
-						       "ldb transaction prepare commit: %s (%d)",
-						       ldb_strerror(status),
-						       status);
-			}
-			return status;
-		}
 	}
 
 	ldb_reset_err_string(ldb);
@@ -400,6 +435,7 @@ int ldb_transaction_commit(struct ldb_context *ldb)
 	}
 	return status;
 }
+
 
 /*
   cancel a transaction
