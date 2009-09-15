@@ -1,17 +1,17 @@
 #ifndef _system_passwd_h
 #define _system_passwd_h
 
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    passwd system include wrappers
 
    Copyright (C) Andrew Tridgell 2004
-   
+
      ** NOTE! The following LGPL license applies to the replace
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -80,7 +80,7 @@ char *rep_getpass(const char *prompt);
 #define NGROUPS_MAX 32 /* Guess... */
 #endif
 
-/* what is the longest significant password available on your system? 
+/* what is the longest significant password available on your system?
  Knowing this speeds up password searches a lot */
 #ifndef PASSWORD_LENGTH
 #define PASSWORD_LENGTH 8

@@ -1,16 +1,16 @@
 #ifndef _system_filesys_h
 #define _system_filesys_h
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    filesystem system include wrappers
 
    Copyright (C) Andrew Tridgell 2004
-   
+
      ** NOTE! The following LGPL license applies to the replace
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -53,23 +53,23 @@
 #include <acl/libacl.h>
 #endif
 
-#ifdef HAVE_SYS_FS_S5PARAM_H 
+#ifdef HAVE_SYS_FS_S5PARAM_H
 #include <sys/fs/s5param.h>
 #endif
 
 #if defined (HAVE_SYS_FILSYS_H) && !defined (_CRAY)
-#include <sys/filsys.h> 
+#include <sys/filsys.h>
 #endif
 
 #ifdef HAVE_SYS_STATFS_H
 # include <sys/statfs.h>
 #endif
 
-#ifdef HAVE_DUSTAT_H              
+#ifdef HAVE_DUSTAT_H
 #include <sys/dustat.h>
 #endif
 
-#ifdef HAVE_SYS_STATVFS_H          
+#ifdef HAVE_SYS_STATVFS_H
 #include <sys/statvfs.h>
 #endif
 
@@ -123,7 +123,7 @@
 #endif
 
 /* Some POSIX definitions for those without */
- 
+
 #ifndef S_IFDIR
 #define S_IFDIR         0x4000
 #endif
