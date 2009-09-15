@@ -168,6 +168,7 @@ static NTSTATUS vampire_apply_schema(struct vampire_state *s,
 	uint32_t i;
 	int ret;
 	bool ok;
+	uint64_t seq_num;
 
 	DEBUG(0,("Analyze and apply schema objects\n"));
 
@@ -301,7 +302,7 @@ static NTSTATUS vampire_apply_schema(struct vampire_state *s,
 							 s_dsa,
 							 uptodateness_vector,
 							 c->gensec_skey,
-							 s, &objs);
+							 s, &objs, &seq_num);
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0,("Failed to commit objects: %s\n", win_errstr(status)));
 		return werror_to_ntstatus(status);
@@ -465,6 +466,7 @@ static NTSTATUS vampire_store_chunk(void *private_data,
 	struct repsFromTo1 *s_dsa;
 	char *tmp_dns_name;
 	uint32_t i;
+	uint64_t seq_num;
 
 	s_dsa			= talloc_zero(s, struct repsFromTo1);
 	NT_STATUS_HAVE_NO_MEMORY(s_dsa);
@@ -541,7 +543,7 @@ static NTSTATUS vampire_store_chunk(void *private_data,
 							 s_dsa,
 							 uptodateness_vector,
 							 c->gensec_skey,
-							 s, &objs);
+							 s, &objs, &seq_num);
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0,("Failed to commit objects: %s\n", win_errstr(status)));
 		return werror_to_ntstatus(status);
