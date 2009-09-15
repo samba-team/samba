@@ -53,19 +53,6 @@ enum RPC_PKT_TYPE {
 #define RPC_FLG_LAST  0x02
 #define RPC_FLG_NOCALL 0x20
 
-/* DCE RPC auth types - extended by Microsoft. */
-#define RPC_ANONYMOUS_AUTH_TYPE    0
-#define RPC_AUTH_TYPE_KRB5_1	   1
-#define RPC_SPNEGO_AUTH_TYPE       9 
-#define RPC_NTLMSSP_AUTH_TYPE     10
-#define RPC_KRB5_AUTH_TYPE        16 /* Not yet implemented. */ 
-#define RPC_SCHANNEL_AUTH_TYPE    68 /* 0x44 */
-
-#if 0
-#define RPC_PIPE_AUTH_SIGN_LEVEL 0x5
-#define RPC_PIPE_AUTH_SEAL_LEVEL 0x6
-#endif
-
 /* Netlogon schannel auth type and level */
 #define SCHANNEL_SIGN_SIGNATURE { 0x77, 0x00, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00 }
 #define SCHANNEL_SEAL_SIGNATURE { 0x77, 0x00, 0x7a, 0x00, 0xff, 0xff, 0x00, 0x00 }

@@ -123,20 +123,20 @@ static int map_pipe_auth_type_to_rpc_auth_type(enum pipe_auth_type auth_type)
 	switch (auth_type) {
 
 	case PIPE_AUTH_TYPE_NONE:
-		return RPC_ANONYMOUS_AUTH_TYPE;
+		return DCERPC_AUTH_TYPE_NONE;
 
 	case PIPE_AUTH_TYPE_NTLMSSP:
-		return RPC_NTLMSSP_AUTH_TYPE;
+		return DCERPC_AUTH_TYPE_NTLMSSP;
 
 	case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
 	case PIPE_AUTH_TYPE_SPNEGO_KRB5:
-		return RPC_SPNEGO_AUTH_TYPE;
+		return DCERPC_AUTH_TYPE_SPNEGO;
 
 	case PIPE_AUTH_TYPE_SCHANNEL:
-		return RPC_SCHANNEL_AUTH_TYPE;
+		return DCERPC_AUTH_TYPE_SCHANNEL;
 
 	case PIPE_AUTH_TYPE_KRB5:
-		return RPC_KRB5_AUTH_TYPE;
+		return DCERPC_AUTH_TYPE_KRB5;
 
 	default:
 		DEBUG(0,("map_pipe_auth_type_to_rpc_type: unknown pipe "
