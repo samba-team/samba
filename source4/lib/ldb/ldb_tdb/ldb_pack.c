@@ -236,6 +236,10 @@ int ltdb_unpack_data(struct ldb_module *module,
 			errno = EIO;
 			goto failed;
 		}
+		if (len == 0) {
+			errno = EIO;
+			goto failed;
+		}
 		message->elements[i].flags = 0;
 		message->elements[i].name = talloc_strndup(message->elements, (char *)p, len);
 		if (message->elements[i].name == NULL) {

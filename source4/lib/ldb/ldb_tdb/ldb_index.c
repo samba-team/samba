@@ -1037,7 +1037,8 @@ static int ltdb_index_dn(struct ldb_module *module,
   extracting just the given attributes
 */
 static int ltdb_index_filter(const struct dn_list *dn_list,
-			     struct ltdb_context *ac)
+			     struct ltdb_context *ac, 
+			     uint32_t *match_count)
 {
 	struct ldb_context *ldb;
 	struct ldb_message *msg;
@@ -1093,6 +1094,8 @@ static int ltdb_index_filter(const struct dn_list *dn_list,
 			ac->request_terminated = true;
 			return ret;
 		}
+
+		(*match_count)++;
 	}
 
 	return LDB_SUCCESS;
@@ -1103,7 +1106,7 @@ static int ltdb_index_filter(const struct dn_list *dn_list,
   returns -1 if an indexed search is not possible, in which
   case the caller should call ltdb_search_full()
 */
-int ltdb_search_indexed(struct ltdb_context *ac)
+int ltdb_search_indexed(struct ltdb_context *ac, uint32_t *match_count)
 {
 	struct ldb_context *ldb;
 	void *data = ldb_module_get_private(ac->module);
@@ -1166,7 +1169,7 @@ int ltdb_search_indexed(struct ltdb_context *ac)
 	if (ret == LDB_SUCCESS) {
 		/* we've got a candidate list - now filter by the full tree
 		   and extract the needed attributes */
-		ret = ltdb_index_filter(dn_list, ac);
+		ret = ltdb_index_filter(dn_list, ac, match_count);
 	}
 
 	talloc_free(dn_list);
@@ -1578,6 +1581,8 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 
 	ret = ltdb_unpack_data(module, &data, msg);
 	if (ret != 0) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "Invalid data for index %s\n",
+			  ldb_dn_get_linearized(msg->dn));
 		talloc_free(msg);
 		return -1;
 	}
