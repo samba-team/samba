@@ -114,6 +114,8 @@ struct ldb_context {
 	char *modules_dir;
 
 	struct tevent_context *ev_ctx;
+
+	bool prepare_commit_done;
 };
 
 /* The following definitions come from lib/ldb/common/ldb.c  */
