@@ -56,6 +56,7 @@ mkinclude ../lib/smbconf/config.mk
 mkinclude ../lib/async_req/config.mk
 mkinclude ../libcli/security/config.mk
 mkinclude ../libcli/ldap/config.mk
+mkinclude ../libcli/nbt/config.mk
 mkinclude ../libcli/auth/config.mk
 mkinclude ../libcli/drsuapi/config.mk
 mkinclude ../libcli/samsync/config.mk

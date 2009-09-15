@@ -21,7 +21,7 @@
 #ifndef _SAMBA_UTIL_H_
 #define _SAMBA_UTIL_H_
 
-#include <netinet/in.h>
+#include "system/network.h"
 
 #if _SAMBA_BUILD_ == 4
 #include "../lib/util/charset/charset.h"
@@ -841,5 +841,25 @@ bool add_uid_to_array_unique(TALLOC_CTX *mem_ctx, uid_t uid,
 			     uid_t **uids, size_t *num_uids);
 bool add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
 			     gid_t **gids, size_t *num_gids);
+
+/* The following definitions come from lib/util/util_net.c  */
+
+void zero_sockaddr(struct sockaddr_storage *pss);
+
+bool interpret_string_addr_internal(struct addrinfo **ppres,
+				    const char *str, int flags);
+
+bool interpret_string_addr(struct sockaddr_storage *pss,
+			   const char *str,
+			   int flags);
+
+/*******************************************************************
+ Map a text hostname or IP address (IPv4 or IPv6) into a
+ struct sockaddr_storage. Version that prefers IPv4.
+******************************************************************/
+
+bool interpret_string_addr_prefer_ipv4(struct sockaddr_storage *pss,
+				       const char *str,
+				       int flags);
 
 #endif /* _SAMBA_UTIL_H_ */

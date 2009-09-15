@@ -3,10 +3,11 @@
    Samba utility functions
    Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2008
    Copyright (C) Andrew Tridgell 1992-1998
-   Copyright (C) Jeremy Allison 2001-2007
+   Copyright (C) Jeremy Allison  1992-2007
    Copyright (C) Simo Sorce 2001
    Copyright (C) Jim McDonough (jmcd@us.ibm.com)  2003.
    Copyright (C) James J Myers 2003
+   Copyright (C) Tim Potter      2000-2001
     
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -27,6 +28,17 @@
 #include "system/locale.h"
 #include "system/filesys.h"
 #undef strcasecmp
+
+/*******************************************************************
+ Set an address to INADDR_ANY.
+******************************************************************/
+
+void zero_sockaddr(struct sockaddr_storage *pss)
+{
+	memset(pss, '\0', sizeof(*pss));
+	/* Ensure we're at least a valid sockaddr-storage. */
+	pss->ss_family = AF_INET;
+}
 
 /**
  * Wrap getaddrinfo...
@@ -57,6 +69,110 @@ bool interpret_string_addr_internal(struct addrinfo **ppres,
 		return false;
 	}
 	return true;
+}
+
+/*******************************************************************
+ Map a text hostname or IP address (IPv4 or IPv6) into a
+ struct sockaddr_storage. Takes a flag which allows it to
+ prefer an IPv4 address (needed for DC's).
+******************************************************************/
+
+static bool interpret_string_addr_pref(struct sockaddr_storage *pss,
+		const char *str,
+		int flags,
+		bool prefer_ipv4)
+{
+	struct addrinfo *res = NULL;
+#if defined(HAVE_IPV6)
+	char addr[INET6_ADDRSTRLEN];
+	unsigned int scope_id = 0;
+
+	if (strchr_m(str, ':')) {
+		char *p = strchr_m(str, '%');
+
+		/*
+		 * Cope with link-local.
+		 * This is IP:v6:addr%ifname.
+		 */
+
+		if (p && (p > str) && ((scope_id = if_nametoindex(p+1)) != 0)) {
+			strlcpy(addr, str,
+				MIN(PTR_DIFF(p,str)+1,
+					sizeof(addr)));
+			str = addr;
+		}
+	}
+#endif
+
+	zero_sockaddr(pss);
+
+	if (!interpret_string_addr_internal(&res, str, flags|AI_ADDRCONFIG)) {
+		return false;
+	}
+	if (!res) {
+		return false;
+	}
+
+	if (prefer_ipv4) {
+		struct addrinfo *p;
+
+		for (p = res; p; p = p->ai_next) {
+			if (p->ai_family == AF_INET) {
+				memcpy(pss, p->ai_addr, p->ai_addrlen);
+				break;
+			}
+		}
+		if (p == NULL) {
+			/* Copy the first sockaddr. */
+			memcpy(pss, res->ai_addr, res->ai_addrlen);
+		}
+	} else {
+		/* Copy the first sockaddr. */
+		memcpy(pss, res->ai_addr, res->ai_addrlen);
+	}
+
+#if defined(HAVE_IPV6)
+	if (pss->ss_family == AF_INET6 && scope_id) {
+		struct sockaddr_in6 *ps6 = (struct sockaddr_in6 *)pss;
+		if (IN6_IS_ADDR_LINKLOCAL(&ps6->sin6_addr) &&
+				ps6->sin6_scope_id == 0) {
+			ps6->sin6_scope_id = scope_id;
+		}
+	}
+#endif
+
+	freeaddrinfo(res);
+	return true;
+}
+
+/*******************************************************************
+ Map a text hostname or IP address (IPv4 or IPv6) into a
+ struct sockaddr_storage. Address agnostic version.
+******************************************************************/
+
+bool interpret_string_addr(struct sockaddr_storage *pss,
+		const char *str,
+		int flags)
+{
+	return interpret_string_addr_pref(pss,
+					str,
+					flags,
+					false);
+}
+
+/*******************************************************************
+ Map a text hostname or IP address (IPv4 or IPv6) into a
+ struct sockaddr_storage. Version that prefers IPv4.
+******************************************************************/
+
+bool interpret_string_addr_prefer_ipv4(struct sockaddr_storage *pss,
+		const char *str,
+		int flags)
+{
+	return interpret_string_addr_pref(pss,
+					str,
+					flags,
+					true);
 }
 
 /**

@@ -455,7 +455,7 @@ LIBNBT_OBJ = ../libcli/nbt/nbtname.o \
 	     ../librpc/ndr/ndr_svcctl.o
 
 LIBNMB_OBJ = libsmb/unexpected.o libsmb/namecache.o libsmb/nmblib.o \
-	     libsmb/namequery.o libsmb/conncache.o libads/dns.o
+	     libsmb/namequery.o ../libcli/nbt/lmhosts.o libsmb/conncache.o libads/dns.o
 
 NTERR_OBJ = libsmb/nterr.o libsmb/smberr.o
 DOSERR_OBJ = ../libcli/util/doserr.o

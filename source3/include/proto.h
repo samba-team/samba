@@ -1342,20 +1342,11 @@ NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
 
 /* The following definitions come from lib/util_sock.c  */
 
-bool interpret_string_addr_internal(struct addrinfo **ppres,
-					const char *str, int flags);
 bool is_broadcast_addr(const struct sockaddr *pss);
-bool interpret_string_addr(struct sockaddr_storage *pss,
-		const char *str,
-		int flags);
-bool interpret_string_addr_prefer_ipv4(struct sockaddr_storage *pss,
-		const char *str,
-		int flags);
 bool is_loopback_ip_v4(struct in_addr ip);
 bool is_loopback_addr(const struct sockaddr *pss);
 bool is_zero_addr(const struct sockaddr *pss);
 void zero_ip_v4(struct in_addr *ip);
-void zero_sockaddr(struct sockaddr_storage *pss);
 void in_addr_to_sockaddr_storage(struct sockaddr_storage *ss,
 		struct in_addr ip);
 bool same_net(const struct sockaddr *ip1,
