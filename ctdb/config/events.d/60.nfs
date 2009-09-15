@@ -21,8 +21,6 @@ case $cmd in
 	/bin/mkdir -p $CTDB_BASE/state/statd/ip
 	/bin/mkdir -p $STATD_SHARED_DIRECTORY
 
-	/bin/rm -f $CTDB_BASE/state/statd/statd.restart >/dev/null 2>/dev/null
-
 	# make sure nfs is stopped before we start it, or it may get a bind error
 	startstop_nfs stop
 	startstop_nfs start
@@ -69,29 +67,15 @@ case $cmd in
 
       monitor)
 	# check that statd responds to rpc requests
-	# if statd is not running we try to restart it once and wait
-	# for the next monitoring event to verify if it is running or not
-	# if it still fails we fail and mark the node as UNHEALTHY
-	if [ -f $CTDB_BASE/state/statd/statd.restart ]; then
-		# statd was restarted, see if it came up ok
-		rpcinfo -u localhost 100024 1 > /dev/null || {
-			echo "ERROR: Failed to restart STATD"
-			exit 1
-		}
-		echo "STATD successfully restarted."
-		/bin/rm -f $CTDB_BASE/state/statd/statd.restart
-	else
-		rpcinfo -u localhost 100024 1 > /dev/null || {
-			RPCSTATDOPTS=""
-			[ -n "$STATD_HOSTNAME" ] && RPCSTATDOPTS="$RPCSTATDOPTS -n $STATD_HOSTNAME"
-			[ -n "$STATD_PORT" ] && RPCSTATDOPTS="$RPCSTATDOPTS -p $STATD_PORT"
-			[ -n "$STATD_OUTGOING_PORT" ] && RPCSTATDOPTS="$RPCSTATDOPTS -o $STATD_OUTGOING_PORT"
-			rpc.statd $RPCSTATDOPTS 
-			echo "ERROR: STATD is not responding. Trying to restart it. [rpc.statd $RPCSTATDOPTS]"
-			touch $CTDB_BASE/state/statd/statd.restart
-		}
-	fi
-
+	# if statd is not running we try to restart it
+	rpcinfo -u localhost 100024 1 > /dev/null || {
+		RPCSTATDOPTS=""
+		[ -n "$STATD_HOSTNAME" ] && RPCSTATDOPTS="$RPCSTATDOPTS -n $STATD_HOSTNAME"
+		[ -n "$STATD_PORT" ] && RPCSTATDOPTS="$RPCSTATDOPTS -p $STATD_PORT"
+		[ -n "$STATD_OUTGOING_PORT" ] && RPCSTATDOPTS="$RPCSTATDOPTS -o $STATD_OUTGOING_PORT"
+		rpc.statd $RPCSTATDOPTS 
+		echo "ERROR: STATD is not responding. Trying to restart it. [rpc.statd $RPCSTATDOPTS]"
+	}
 
 
 	# check that NFS responds to rpc requests
