@@ -54,6 +54,10 @@
 #include "includes.h"
 #include "printing.h"
 
+#ifdef HAVE_SYS_SYSCTL_H
+#include <sys/sysctl.h>
+#endif
+
 bool bLoaded = False;
 
 extern enum protocol_types Protocol;
