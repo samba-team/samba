@@ -342,7 +342,7 @@ cluster_is_healthy ()
 	if ! ${ctdb_test_restart_scheduled:-false} ; then
 	    echo "DEBUG:"
 	    local i
-	    for i in "onnode -q 0 ctdb status" "onnode -q 0 onnode all ctdb scriptstatus" ; do
+	    for i in "ctdb status" "onnode -q 0 onnode all ctdb scriptstatus" ; do
 		echo "$i"
 		$i || true
 	    done
@@ -529,7 +529,7 @@ tcpdump_wait ()
     if ! wait_until 30 tcpdump_check ; then
 	echo "DEBUG:"
 	local i
-	for i in "onnode -q 0 ctdb status" "netstat -tanp" "tcpdump -n -e -r $tcpdump_filename" ; do
+	for i in "ctdb status" "netstat -tanp" "tcpdump -n -e -r $tcpdump_filename" ; do
 	    echo "$i"
 	    $i || true
 	done

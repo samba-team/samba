@@ -116,27 +116,21 @@ static void test_store_records(struct ctdb_context *ctdb, struct event_context *
 	while (end_timer() < timelimit) {
 		TDB_DATA data;
 		TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-		struct ctdb_transaction_handle *h;
+		struct ctdb_record_handle *h;
 		int ret;
 		uint32_t *counters;
 
-		h = ctdb_transaction_start(ctdb_db, tmp_ctx);
+		h = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, &data);
 		if (h == NULL) {
-			printf("Failed to start transaction on node %d\n",
-			       ctdb_get_pnn(ctdb));
+			printf("Failed to fetch record '%s' on node %d\n", 
+			       (const char *)key.dptr, ctdb_get_pnn(ctdb));
 			talloc_free(tmp_ctx);
 			return;
 		}
 
-		ret = ctdb_transaction_fetch(h, tmp_ctx, key, &data);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR,("Failed to fetch record\n"));
-			exit(1);
-		}
-
 		if (data.dsize < sizeof(uint32_t) * (pnn+1)) {
 			unsigned char *ptr = data.dptr;
-			
+
 			data.dptr = talloc_zero_size(tmp_ctx, sizeof(uint32_t) * (pnn+1));
 			memcpy(data.dptr, ptr, data.dsize);
 			talloc_free(ptr);
@@ -155,16 +149,10 @@ static void test_store_records(struct ctdb_context *ctdb, struct event_context *
 		/* bump our counter */
 		counters[pnn]++;
 
-		ret = ctdb_transaction_store(h, key, data);
+		ret = ctdb_record_store(h, data);
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR,("Failed to store record\n"));
 			exit(1);
-		}
-
-		ret = ctdb_transaction_commit(h);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR,("Failed to commit transaction\n"));
-			//exit(1);
 		}
 
 		/* store the counters and verify that they are sane */
@@ -172,6 +160,7 @@ static void test_store_records(struct ctdb_context *ctdb, struct event_context *
 			check_counters(ctdb, data);
 		}
 
+		talloc_free(h);
 		talloc_free(tmp_ctx);
 	}
 

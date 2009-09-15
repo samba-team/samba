@@ -35,7 +35,7 @@ Usage: onnode [OPTION] ... <NODES> <COMMAND> ...
     -p          Run command in parallel on specified nodes.
     -q          Do not print node addresses (overrides -v).
     -v          Print node address even for a single node.
-  <NODES>       "all", "any", "ok" (or "healthy"), "con" (or "connected"),
+  <NODES>       "all", "ok" (or "healthy"), "con" (or "connected"),
                 "rm" (or "recmaster"), "lvs" (or "lvsmaster"),
                 "natgw" (or "natgwlist");
                 or a node number (0 base); or
@@ -112,7 +112,7 @@ parse_nodespec ()
 	    case "$i" in
 		*-*) seq "${i%-*}" "${i#*-}" 2>/dev/null || invalid_nodespec ;;
 		# Separate lines for readability.
-		all|any|ok|healthy|con|connected) echo "$i" ;;
+		all|ok|healthy|con|connected) echo "$i" ;;
 		rm|recmaster|lvs|lvsmaster|natgw|natgwlist) echo "$i" ;;
 		*)
 		    [ $i -gt -1 ] 2>/dev/null || invalid_nodespec
@@ -198,24 +198,6 @@ get_node_with_property ()
     fi
 }
 
-get_any_available_node ()
-{
-    local all_nodes="$1"
-
-    # We do a recursive onnode to find which nodes are up and running.
-    local out=$($0 -pq all ctdb pnn 2>&1)
-    local line
-    while read line ; do 
-	local pnn="${line#PNN:}"
-	if [ "$pnn" != "$line" ] ; then
-	    echo_nth "$pnn" $all_nodes
-	    return 0
-	fi
-	# Else must be an error message from a down node.
-    done <<<"$out"
-    return 1
-}
-
 get_nodes ()
 {
     local all_nodes
@@ -234,9 +216,6 @@ get_nodes ()
 	case "$n" in
 	    all)
 		echo "${all_nodes//#DEAD/}"
-		;;
-	    any)
-		get_any_available_node "$all_nodes" || exit 1
 		;;
 	    ok|healthy) 
 		get_nodes_with_status "$all_nodes" "healthy" || exit 1

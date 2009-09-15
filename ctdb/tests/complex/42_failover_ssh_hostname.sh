@@ -51,7 +51,7 @@ echo "Removing ${test_ip} from the local ARP table..."
 arp -d $test_ip >/dev/null 2>&1 || true
 
 echo "SSHing to ${test_ip} and running hostname..."
-original_hostname=$(ssh -o "StrictHostKeyChecking no" $test_ip hostname)
+original_hostname=$(ssh $test_ip hostname)
 [ $? -eq 0 ]
 
 echo "Hostname is: ${original_hostname}"
@@ -65,7 +65,7 @@ onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node disabled
 gratarp_sniff_wait_show
 
 echo "SSHing to ${test_ip} and running hostname (again)..."
-new_hostname=$(ssh -o "StrictHostKeyChecking no" $test_ip hostname)
+new_hostname=$(ssh $test_ip hostname)
 [ $? -eq 0 ]
 
 echo "Hostname is: ${new_hostname}"

@@ -197,7 +197,7 @@ static void test_store_records(struct ctdb_context *ctdb, struct event_context *
 			ret = ctdb_transaction_commit(h);
 			if (ret != 0) {
 				DEBUG(DEBUG_ERR,("Failed to commit transaction\n"));
-				//exit(1);
+				exit(1);
 			}
 			if (verbose) printf("transaction committed\n");
 		} else {

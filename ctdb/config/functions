@@ -22,7 +22,7 @@ detect_init_style() {
     if [ -x /sbin/startproc ]; then
         CTDB_INIT_STYLE="suse"
     elif [ -x /sbin/start-stop-daemon ]; then
-        CTDB_INIT_STYLE="debian"
+        CTDB_INIT_STYLE="ubuntu"
     else
         CTDB_INIT_STYLE="redhat"
     fi
