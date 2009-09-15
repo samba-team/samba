@@ -215,7 +215,6 @@ netbsdwinbind_getgroupmembership(void *nsrv, void *nscb, va_list ap)
 {
 	int		*result	= va_arg(ap, int *);
 	const char 	*uname	= va_arg(ap, const char *);
-	gid_t		 agroup	= va_arg(ap, gid_t);
 	gid_t		*groups	= va_arg(ap, gid_t *);
 	int		 maxgrp	= va_arg(ap, int);
 	int		*groupc	= va_arg(ap, int *);
