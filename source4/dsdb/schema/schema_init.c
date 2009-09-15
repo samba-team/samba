@@ -967,7 +967,7 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 
-		DLIST_ADD_END(schema->attributes, sa, struct dsdb_attribute *);
+		DLIST_ADD(schema->attributes, sa);
 	}
 
 	for (i=0; i < objectclass_res->count; i++) {
@@ -988,7 +988,7 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 
-		DLIST_ADD_END(schema->classes, sc, struct dsdb_class *);
+		DLIST_ADD(schema->classes, sc);
 	}
 
 	schema->fsmo.master_dn = ldb_msg_find_attr_as_dn(ldb, schema, schema_res->msgs[0], "fSMORoleOwner");
