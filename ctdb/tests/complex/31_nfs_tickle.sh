@@ -74,10 +74,16 @@ echo "Source socket is $src_socket"
 echo "Sleeping for MonitorInterval..."
 sleep_for $monitor_interval
 
+echo "Trying to determine NFS_TICKLE_SHARED_DIRECTORY..."
+f="/etc/sysconfig/nfs"
+try_command_on_node -v 0 "[ -r $f ] &&  sed -n -e s@^NFS_TICKLE_SHARED_DIRECTORY=@@p $f" || true
+
+nfs_tickle_shared_directory="${out:-/gpfs/.ctdb/nfs-tickles}"
+
 try_command_on_node $test_node hostname
 test_hostname=$out
 
-try_command_on_node -v 0 cat /gpfs/.ctdb/nfs-tickles/$test_hostname/$test_ip
+try_command_on_node -v 0 cat "${nfs_tickle_shared_directory}/$test_hostname/$test_ip"
 
 if [ "${out/${src_socket}/}" != "$out" ] ; then
     echo "GOOD: NFS connection tracked OK in tickles file."

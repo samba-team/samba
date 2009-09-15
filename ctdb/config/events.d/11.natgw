@@ -50,7 +50,7 @@ case $cmd in
 
 	delete_all
 
-	if [ "$MYPNN" == "$NATGWMASTER" ]; then
+	if [ "$MYPNN" = "$NATGWMASTER" ]; then
 		# This is the first node, set it up as the NAT GW
 		echo 1 >/proc/sys/net/ipv4/ip_forward
 		iptables -A POSTROUTING -t nat -s $CTDB_NATGW_PRIVATE_NETWORK -d ! $CTDB_NATGW_PRIVATE_NETWORK -j MASQUERADE

@@ -15,7 +15,7 @@ case $CTDB_INIT_STYLE in
 		CTDB_SERVICE_HTTP="apache2"
 		CTDB_CONFIG_HTTP="apache2"
 		;;
-	ubuntu)
+	debian)
 		CTDB_SERVICE_HTTP="apache2"
 		CTDB_CONFIG_HTTP="apache2"
 		;;
