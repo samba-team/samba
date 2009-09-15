@@ -82,7 +82,7 @@ int ltdb_check_at_attributes_values(const struct ldb_val *value);
 
 struct ldb_parse_tree;
 
-int ltdb_search_indexed(struct ltdb_context *ctx);
+int ltdb_search_indexed(struct ltdb_context *ctx, uint32_t *);
 int ltdb_index_add(struct ldb_module *module, const struct ldb_message *msg);
 int ltdb_index_del(struct ldb_module *module, const struct ldb_message *msg);
 int ltdb_index_one(struct ldb_module *module, const struct ldb_message *msg, int add);
