@@ -297,6 +297,11 @@ WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
 		return WERR_FOOBAR;
 	}
 
+	DEBUG(2,("Replicated %u objects (%u linked attributes) for %s\n",
+		 out->num_objects, out->linked_attributes_count,
+		 ldb_dn_get_linearized(out->partition_dn)));
+		 
+
 	if (_out) {
 		*_out = out;
 	} else {
