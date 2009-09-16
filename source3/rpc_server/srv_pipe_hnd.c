@@ -264,7 +264,7 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 		 * AS/U doesn't set FIRST flag in a BIND packet it seems.
 		 */
 
-		if ((p->hdr.pkt_type == RPC_REQUEST) && !(p->hdr.flags & RPC_FLG_FIRST)) {
+		if ((p->hdr.pkt_type == DCERPC_PKT_REQUEST) && !(p->hdr.flags & DCERPC_PFC_FLAG_FIRST)) {
 			/*
 			 * Ensure that the FIRST flag is set. If not then we have
 			 * a stream missmatch.
@@ -444,7 +444,7 @@ static bool process_request_pdu(pipes_struct *p, prs_struct *rpc_in_p)
 		return False;
 	}
 
-	if(p->hdr.flags & RPC_FLG_LAST) {
+	if(p->hdr.flags & DCERPC_PFC_FLAG_LAST) {
 		bool ret = False;
 		/*
 		 * Ok - we finally have a complete RPC stream.
@@ -534,35 +534,35 @@ static void process_complete_pdu(pipes_struct *p)
 			(unsigned int)p->hdr.pkt_type ));
 
 	switch (p->hdr.pkt_type) {
-		case RPC_REQUEST:
+		case DCERPC_PKT_REQUEST:
 			reply = process_request_pdu(p, &rpc_in);
 			break;
 
-		case RPC_PING: /* CL request - ignore... */
+		case DCERPC_PKT_PING: /* CL request - ignore... */
 			DEBUG(0,("process_complete_pdu: Error. Connectionless packet type %u received on pipe %s.\n",
 				(unsigned int)p->hdr.pkt_type,
 				get_pipe_name_from_iface(&p->syntax)));
 			break;
 
-		case RPC_RESPONSE: /* No responses here. */
-			DEBUG(0,("process_complete_pdu: Error. RPC_RESPONSE received from client on pipe %s.\n",
+		case DCERPC_PKT_RESPONSE: /* No responses here. */
+			DEBUG(0,("process_complete_pdu: Error. DCERPC_PKT_RESPONSE received from client on pipe %s.\n",
 				get_pipe_name_from_iface(&p->syntax)));
 			break;
 
-		case RPC_FAULT:
-		case RPC_WORKING: /* CL request - reply to a ping when a call in process. */
-		case RPC_NOCALL: /* CL - server reply to a ping call. */
-		case RPC_REJECT:
-		case RPC_ACK:
-		case RPC_CL_CANCEL:
-		case RPC_FACK:
-		case RPC_CANCEL_ACK:
+		case DCERPC_PKT_FAULT:
+		case DCERPC_PKT_WORKING: /* CL request - reply to a ping when a call in process. */
+		case DCERPC_PKT_NOCALL: /* CL - server reply to a ping call. */
+		case DCERPC_PKT_REJECT:
+		case DCERPC_PKT_ACK:
+		case DCERPC_PKT_CL_CANCEL:
+		case DCERPC_PKT_FACK:
+		case DCERPC_PKT_CANCEL_ACK:
 			DEBUG(0,("process_complete_pdu: Error. Connectionless packet type %u received on pipe %s.\n",
 				(unsigned int)p->hdr.pkt_type,
 				get_pipe_name_from_iface(&p->syntax)));
 			break;
 
-		case RPC_BIND:
+		case DCERPC_PKT_BIND:
 			/*
 			 * We assume that a pipe bind is only in one pdu.
 			 */
@@ -571,15 +571,15 @@ static void process_complete_pdu(pipes_struct *p)
 			}
 			break;
 
-		case RPC_BINDACK:
-		case RPC_BINDNACK:
-			DEBUG(0,("process_complete_pdu: Error. RPC_BINDACK/RPC_BINDNACK packet type %u received on pipe %s.\n",
+		case DCERPC_PKT_BIND_ACK:
+		case DCERPC_PKT_BIND_NAK:
+			DEBUG(0,("process_complete_pdu: Error. DCERPC_PKT_BINDACK/DCERPC_PKT_BINDNACK packet type %u received on pipe %s.\n",
 				(unsigned int)p->hdr.pkt_type,
 				get_pipe_name_from_iface(&p->syntax)));
 			break;
 
 
-		case RPC_ALTCONT:
+		case DCERPC_PKT_ALTER:
 			/*
 			 * We assume that a pipe bind is only in one pdu.
 			 */
@@ -588,12 +588,12 @@ static void process_complete_pdu(pipes_struct *p)
 			}
 			break;
 
-		case RPC_ALTCONTRESP:
-			DEBUG(0,("process_complete_pdu: Error. RPC_ALTCONTRESP on pipe %s: Should only be server -> client.\n",
+		case DCERPC_PKT_ALTER_RESP:
+			DEBUG(0,("process_complete_pdu: Error. DCERPC_PKT_ALTER_RESP on pipe %s: Should only be server -> client.\n",
 				get_pipe_name_from_iface(&p->syntax)));
 			break;
 
-		case RPC_AUTH3:
+		case DCERPC_PKT_AUTH3:
 			/*
 			 * The third packet in an NTLMSSP auth exchange.
 			 */
@@ -602,14 +602,14 @@ static void process_complete_pdu(pipes_struct *p)
 			}
 			break;
 
-		case RPC_SHUTDOWN:
-			DEBUG(0,("process_complete_pdu: Error. RPC_SHUTDOWN on pipe %s: Should only be server -> client.\n",
+		case DCERPC_PKT_SHUTDOWN:
+			DEBUG(0,("process_complete_pdu: Error. DCERPC_PKT_SHUTDOWN on pipe %s: Should only be server -> client.\n",
 				get_pipe_name_from_iface(&p->syntax)));
 			break;
 
-		case RPC_CO_CANCEL:
+		case DCERPC_PKT_CO_CANCEL:
 			/* For now just free all client data and continue processing. */
-			DEBUG(3,("process_complete_pdu: RPC_ORPHANED. Abandoning rpc call.\n"));
+			DEBUG(3,("process_complete_pdu: DCERPC_PKT_CO_CANCEL. Abandoning rpc call.\n"));
 			/* As we never do asynchronous RPC serving, we can never cancel a
 			   call (as far as I know). If we ever did we'd have to send a cancel_ack
 			   reply. For now, just free all client data and continue processing. */
@@ -626,10 +626,10 @@ static void process_complete_pdu(pipes_struct *p)
 			break;
 #endif
 
-		case RPC_ORPHANED:
+		case DCERPC_PKT_ORPHANED:
 			/* We should probably check the auth-verifier here.
 			   For now just free all client data and continue processing. */
-			DEBUG(3,("process_complete_pdu: RPC_ORPHANED. Abandoning rpc call.\n"));
+			DEBUG(3,("process_complete_pdu: DCERPC_PKT_ORPHANED. Abandoning rpc call.\n"));
 			reply = True;
 			break;
 
@@ -712,7 +712,7 @@ incoming data size = %u\n", (unsigned int)p->in_data.pdu_received_len, (unsigned
 			return rret;
 		}
 		/* If rret == 0 and pdu_needed_len == 0 here we have a PDU that consists
-		   of an RPC_HEADER only. This is a RPC_SHUTDOWN, RPC_CO_CANCEL or RPC_ORPHANED
+		   of an RPC_HEADER only. This is a DCERPC_PKT_SHUTDOWN, DCERPC_PKT_CO_CANCEL or DCERPC_PKT_ORPHANED
 		   pdu type. Deal with this in process_complete_pdu(). */
 	}
 

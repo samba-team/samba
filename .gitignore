@@ -138,6 +138,7 @@ source4/config.mk
 source4/coverage
 source4/data.mk
 source4/dsdb/common/proto.h
+source4/dsdb/kcc/kcc_service_proto.h
 source4/dsdb/repl/drepl_service_proto.h
 source4/dsdb/samdb/samdb_proto.h
 source4/dsdb/schema/proto.h

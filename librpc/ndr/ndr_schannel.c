@@ -69,3 +69,39 @@ _PUBLIC_ void ndr_print_NL_AUTH_MESSAGE_BUFFER_REPLY(struct ndr_print *ndr, cons
 
 	}
 }
+
+void dump_NL_AUTH_SIGNATURE(TALLOC_CTX *mem_ctx,
+			    const DATA_BLOB *blob)
+{
+	enum ndr_err_code ndr_err;
+	uint16_t signature_algorithm;
+
+	if (blob->length < 2) {
+		return;
+	}
+
+	signature_algorithm = SVAL(blob->data, 0);
+
+	switch (signature_algorithm) {
+	case NL_SIGN_HMAC_MD5: {
+		struct NL_AUTH_SIGNATURE r;
+		ndr_err = ndr_pull_struct_blob(blob, mem_ctx, NULL, &r,
+		       (ndr_pull_flags_fn_t)ndr_pull_NL_AUTH_SIGNATURE);
+		if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			NDR_PRINT_DEBUG(NL_AUTH_SIGNATURE, &r);
+		}
+		break;
+	}
+	case NL_SIGN_HMAC_SHA256: {
+		struct NL_AUTH_SHA2_SIGNATURE r;
+		ndr_err = ndr_pull_struct_blob(blob, mem_ctx, NULL, &r,
+		       (ndr_pull_flags_fn_t)ndr_pull_NL_AUTH_SHA2_SIGNATURE);
+		if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			NDR_PRINT_DEBUG(NL_AUTH_SHA2_SIGNATURE, &r);
+		}
+		break;
+	}
+	default:
+		break;
+	}
+}

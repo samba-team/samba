@@ -22,49 +22,7 @@
 #ifndef _DCE_RPC_H /* _DCE_RPC_H */
 #define _DCE_RPC_H 
 
-/* DCE/RPC packet types */
-
-enum RPC_PKT_TYPE {
-	RPC_REQUEST  = 0x00, 	/* Ordinary request. */
-	RPC_PING     = 0x01,	/* Connectionless is server alive ? */
-	RPC_RESPONSE = 0x02,	/* Ordinary reply. */
-	RPC_FAULT    = 0x03,	/* Fault in processing of call. */
-	RPC_WORKING  = 0x04,	/* Connectionless reply to a ping when server busy. */
-	RPC_NOCALL   = 0x05,	/* Connectionless reply to a ping when server has lost part of clients call. */
-	RPC_REJECT   = 0x06,	/* Refuse a request with a code. */
-	RPC_ACK      = 0x07,	/* Connectionless client to server code. */
-	RPC_CL_CANCEL= 0x08,	/* Connectionless cancel. */
-	RPC_FACK     = 0x09,	/* Connectionless fragment ack. Both client and server send. */
-	RPC_CANCEL_ACK = 0x0A,	/* Server ACK to client cancel request. */
-	RPC_BIND     = 0x0B,	/* Bind to interface. */
-	RPC_BINDACK  = 0x0C,	/* Server ack of bind. */
-	RPC_BINDNACK = 0x0D,	/* Server nack of bind. */
-	RPC_ALTCONT  = 0x0E,	/* Alter auth. */
-	RPC_ALTCONTRESP = 0x0F,	/* Reply to alter auth. */
-	RPC_AUTH3    = 0x10, 	/* not the real name!  this is undocumented! */
-	RPC_SHUTDOWN = 0x11,	/* Server to client request to shutdown. */
-	RPC_CO_CANCEL= 0x12,	/* Connection-oriented cancel request. */
-	RPC_ORPHANED = 0x13	/* Client telling server it's aborting a partially sent request or telling
-				   server to stop sending replies. */
-};
-
-/* DCE/RPC flags */
-#define RPC_FLG_FIRST 0x01
-#define RPC_FLG_LAST  0x02
-#define RPC_FLG_NOCALL 0x20
-
-/* Netlogon schannel auth type and level */
-#define SCHANNEL_SIGN_SIGNATURE { 0x77, 0x00, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00 }
-#define SCHANNEL_SEAL_SIGNATURE { 0x77, 0x00, 0x7a, 0x00, 0xff, 0xff, 0x00, 0x00 }
-
 #define RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN 	0x20
-#define RPC_AUTH_SCHANNEL_SIGN_ONLY_CHK_LEN 	0x18
-
-
-enum schannel_direction {
-	SENDER_IS_INITIATOR,
-	SENDER_IS_ACCEPTOR
-};
 
 /* Maximum size of the signing data in a fragment. */
 #define RPC_MAX_SIGN_SIZE 0x38 /* 56 */
@@ -79,7 +37,7 @@ enum schannel_direction {
 typedef struct rpc_hdr_info {
 	uint8  major; /* 5 - RPC major version */
 	uint8  minor; /* 0 - RPC minor version */
-	uint8  pkt_type; /* RPC_PKT_TYPE - RPC response packet */
+	uint8  pkt_type; /* dcerpc_pkt_type - RPC response packet */
 	uint8  flags; /* DCE/RPC flags */
 	uint8  pack_type[4]; /* 0x1000 0000 - little-endian packed data representation */
 	uint16 frag_len; /* fragment length - data size (bytes) inc header and tail. */
