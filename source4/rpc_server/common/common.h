@@ -25,14 +25,6 @@
 
 struct share_config;
 struct dcesrv_context;
-enum srvsvc_ShareType dcesrv_common_get_share_type(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, struct share_config *scfg);
-enum srvsvc_PlatformId dcesrv_common_get_platform_id(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx);
-const char *dcesrv_common_get_lan_root(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx);
-const char *dcesrv_common_get_server_name(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, const char *server_unc);
-uint32_t dcesrv_common_get_share_permissions(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, struct share_config *scfg);
-uint32_t dcesrv_common_get_share_current_users(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, struct share_config *scfg);
-const char *dcesrv_common_get_share_path(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, struct share_config *scfg);
-
 struct dcesrv_context;
 
 struct dcerpc_server_info { 
@@ -41,5 +33,7 @@ struct dcerpc_server_info {
 	uint32_t version_minor;
 	uint32_t version_build;
 };
+
+#include "rpc_server/common/proto.h"
 
 #endif /* _DCERPC_SERVER_COMMON_H_ */

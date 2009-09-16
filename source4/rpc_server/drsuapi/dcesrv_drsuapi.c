@@ -28,7 +28,6 @@
 #include "lib/ldb/include/ldb_errors.h"
 #include "param/param.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
-#include "messaging/irpc.h"
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
 #include "libcli/security/security.h"
 
@@ -232,34 +231,18 @@ static WERROR dcesrv_drsuapi_DsUnbind(struct dcesrv_call_state *dce_call, TALLOC
 static WERROR dcesrv_drsuapi_DsReplicaSync(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					   struct drsuapi_DsReplicaSync *r)
 {
-	struct server_id *repld;
-	struct irpc_request *ireq;
-
 	if (security_session_user_level(dce_call->conn->auth_state.session_info) <
 	    SECURITY_DOMAIN_CONTROLLER) {
 		DEBUG(0,("DsReplicaSync refused for security token\n"));
 		return WERR_DS_DRA_ACCESS_DENIED;
 	}
 
-	repld = irpc_servers_byname(dce_call->msg_ctx, mem_ctx, "dreplsrv");
-	if (repld == NULL || repld[0].id == 0) {
-		DEBUG(0,("DsReplicaSync: Unable to find dreplsrv task\n"));
-		return WERR_DS_DRA_INTERNAL_ERROR;
-	}
-
-	ireq = IRPC_CALL_SEND(dce_call->msg_ctx, repld[0],
-			      drsuapi, DRSUAPI_DSREPLICASYNC,
-			      r, mem_ctx);
-	if (ireq == NULL) {
-		DEBUG(0,("DsReplicaSync: Failed to forward request to dreplsrv task\n"));
-		return WERR_DS_DRA_INTERNAL_ERROR;
-	}
-
-	/* we are not interested in a reply */
-	talloc_free(ireq);
-
+	dcesrv_irpc_forward_rpc_call(dce_call, mem_ctx, r, NDR_DRSUAPI_DSREPLICASYNC,
+				     &ndr_table_drsuapi,
+				     "dreplsrv", "DsReplicaSync");
 	return WERR_OK;
 }
+
 
 /* 
   drsuapi_DsReplicaAdd 
