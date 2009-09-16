@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "../libcli/auth/spnego.h"
 
 /*
   generate a negTokenInit packet given a GUID, a list of supported
@@ -532,11 +533,11 @@ DATA_BLOB spnego_gen_auth_response(DATA_BLOB *reply, NTSTATUS nt_status,
 	uint8 negResult;
 
 	if (NT_STATUS_IS_OK(nt_status)) {
-		negResult = SPNEGO_NEG_RESULT_ACCEPT;
+		negResult = SPNEGO_ACCEPT_COMPLETED;
 	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		negResult = SPNEGO_NEG_RESULT_INCOMPLETE; 
+		negResult = SPNEGO_ACCEPT_INCOMPLETE;
 	} else {
-		negResult = SPNEGO_NEG_RESULT_REJECT; 
+		negResult = SPNEGO_REJECT;
 	}
 
 	data = asn1_init(talloc_tos());
@@ -581,11 +582,11 @@ bool spnego_parse_auth_response(DATA_BLOB blob, NTSTATUS nt_status,
 	uint8 negResult;
 
 	if (NT_STATUS_IS_OK(nt_status)) {
-		negResult = SPNEGO_NEG_RESULT_ACCEPT;
+		negResult = SPNEGO_ACCEPT_COMPLETED;
 	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		negResult = SPNEGO_NEG_RESULT_INCOMPLETE;
+		negResult = SPNEGO_ACCEPT_INCOMPLETE;
 	} else {
-		negResult = SPNEGO_NEG_RESULT_REJECT;
+		negResult = SPNEGO_REJECT;
 	}
 
 	data = asn1_init(talloc_tos());
@@ -612,7 +613,7 @@ bool spnego_parse_auth_response(DATA_BLOB blob, NTSTATUS nt_status,
 			asn1_read_OctetString(data, talloc_autofree_context(), auth);
 			asn1_end_tag(data);
 		}
-	} else if (negResult == SPNEGO_NEG_RESULT_INCOMPLETE) {
+	} else if (negResult == SPNEGO_ACCEPT_INCOMPLETE) {
 		data->has_error = 1;
 	}
 

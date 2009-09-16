@@ -688,7 +688,6 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 #include "mangle.h"
 #include "module.h"
 #include "nsswitch/winbind_client.h"
-#include "spnego.h"
 #include "rpc_client.h"
 #include "dbwrap.h"
 #include "packet.h"

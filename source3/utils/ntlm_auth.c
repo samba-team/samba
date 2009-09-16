@@ -26,6 +26,7 @@
 #include "includes.h"
 #include "utils/ntlm_auth.h"
 #include "../libcli/auth/libcli_auth.h"
+#include "../libcli/auth/spnego.h"
 #include <iniparser.h>
 
 #ifndef PAM_WINBIND_CONFIG_FILE
@@ -1113,7 +1114,7 @@ static void manage_squid_basic_request(struct ntlm_auth_state *state,
 static void offer_gss_spnego_mechs(void) {
 
 	DATA_BLOB token;
-	SPNEGO_DATA spnego;
+	struct spnego_data spnego;
 	ssize_t len;
 	char *reply_base64;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -1149,8 +1150,8 @@ static void offer_gss_spnego_mechs(void) {
 	spnego.negTokenInit.mechListMIC = data_blob(principal,
 						    strlen(principal));
 
-	len = write_spnego_data(&token, &spnego);
-	free_spnego_data(&spnego);
+	len = spnego_write_data(ctx, &token, &spnego);
+	spnego_free_data(&spnego);
 
 	if (len == -1) {
 		DEBUG(1, ("Could not write SPNEGO data blob\n"));
@@ -1171,7 +1172,7 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 					char *buf, int length)
 {
 	static NTLMSSP_STATE *ntlmssp_state = NULL;
-	SPNEGO_DATA request, response;
+	struct spnego_data request, response;
 	DATA_BLOB token;
 	NTSTATUS status;
 	ssize_t len;
@@ -1219,7 +1220,7 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 	}
 
 	token = base64_decode_data_blob(buf + 3);
-	len = read_spnego_data(token, &request);
+	len = spnego_read_data(ctx, token, &request);
 	data_blob_free(&token);
 
 	if (len == -1) {
@@ -1367,7 +1368,7 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 		}
 	}
 
-	free_spnego_data(&request);
+	spnego_free_data(&request);
 
 	if (NT_STATUS_IS_OK(status)) {
 		response.negTokenTarg.negResult = SPNEGO_ACCEPT_COMPLETED;
@@ -1393,8 +1394,8 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 	SAFE_FREE(user);
 	SAFE_FREE(domain);
 
-	len = write_spnego_data(&token, &response);
-	free_spnego_data(&response);
+	len = spnego_write_data(ctx, &token, &response);
+	spnego_free_data(&response);
 
 	if (len == -1) {
 		DEBUG(1, ("Could not write SPNEGO data blob\n"));
@@ -1415,13 +1416,14 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 
 static NTLMSSP_STATE *client_ntlmssp_state = NULL;
 
-static bool manage_client_ntlmssp_init(SPNEGO_DATA spnego)
+static bool manage_client_ntlmssp_init(struct spnego_data spnego)
 {
 	NTSTATUS status;
 	DATA_BLOB null_blob = data_blob_null;
 	DATA_BLOB to_server;
 	char *to_server_base64;
 	const char *my_mechs[] = {OID_NTLMSSP, NULL};
+	TALLOC_CTX *ctx = talloc_tos();
 
 	DEBUG(10, ("Got spnego negTokenInit with NTLMSSP\n"));
 
@@ -1466,7 +1468,7 @@ static bool manage_client_ntlmssp_init(SPNEGO_DATA spnego)
 		return False;
 	}
 
-	write_spnego_data(&to_server, &spnego);
+	spnego_write_data(ctx, &to_server, &spnego);
 	data_blob_free(&spnego.negTokenInit.mechToken);
 
 	to_server_base64 = base64_encode_data_blob(talloc_tos(), to_server);
@@ -1476,13 +1478,14 @@ static bool manage_client_ntlmssp_init(SPNEGO_DATA spnego)
 	return True;
 }
 
-static void manage_client_ntlmssp_targ(SPNEGO_DATA spnego)
+static void manage_client_ntlmssp_targ(struct spnego_data spnego)
 {
 	NTSTATUS status;
 	DATA_BLOB null_blob = data_blob_null;
 	DATA_BLOB request;
 	DATA_BLOB to_server;
 	char *to_server_base64;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	DEBUG(10, ("Got spnego negTokenTarg with NTLMSSP\n"));
 
@@ -1525,7 +1528,7 @@ static void manage_client_ntlmssp_targ(SPNEGO_DATA spnego)
 	spnego.negTokenTarg.responseToken = request;
 	spnego.negTokenTarg.mechListMIC = null_blob;
 	
-	write_spnego_data(&to_server, &spnego);
+	spnego_write_data(ctx, &to_server, &spnego);
 	data_blob_free(&request);
 
 	to_server_base64 = base64_encode_data_blob(talloc_tos(), to_server);
@@ -1537,17 +1540,18 @@ static void manage_client_ntlmssp_targ(SPNEGO_DATA spnego)
 
 #ifdef HAVE_KRB5
 
-static bool manage_client_krb5_init(SPNEGO_DATA spnego)
+static bool manage_client_krb5_init(struct spnego_data spnego)
 {
 	char *principal;
 	DATA_BLOB tkt, to_server;
 	DATA_BLOB session_key_krb5 = data_blob_null;
-	SPNEGO_DATA reply;
+	struct spnego_data reply;
 	char *reply_base64;
 	int retval;
 
 	const char *my_mechs[] = {OID_KERBEROS5_OLD, NULL};
 	ssize_t len;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	if ( (spnego.negTokenInit.mechListMIC.data == NULL) ||
 	     (spnego.negTokenInit.mechListMIC.length == 0) ) {
@@ -1609,7 +1613,7 @@ static bool manage_client_krb5_init(SPNEGO_DATA spnego)
 	reply.negTokenInit.mechToken = tkt;
 	reply.negTokenInit.mechListMIC = data_blob_null;
 
-	len = write_spnego_data(&to_server, &reply);
+	len = spnego_write_data(ctx, &to_server, &reply);
 	data_blob_free(&tkt);
 
 	if (len == -1) {
@@ -1626,7 +1630,7 @@ static bool manage_client_krb5_init(SPNEGO_DATA spnego)
 	return True;
 }
 
-static void manage_client_krb5_targ(SPNEGO_DATA spnego)
+static void manage_client_krb5_targ(struct spnego_data spnego)
 {
 	switch (spnego.negTokenTarg.negResult) {
 	case SPNEGO_ACCEPT_INCOMPLETE:
@@ -1654,8 +1658,9 @@ static void manage_gss_spnego_client_request(struct ntlm_auth_state *state,
 						char *buf, int length)
 {
 	DATA_BLOB request;
-	SPNEGO_DATA spnego;
+	struct spnego_data spnego;
 	ssize_t len;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	if (!opt_username || !*opt_username) {
 		x_fprintf(x_stderr, "username must be specified!\n\n");
@@ -1700,7 +1705,7 @@ static void manage_gss_spnego_client_request(struct ntlm_auth_state *state,
 	/* So we got a server challenge to generate a SPNEGO
            client-to-server request... */
 
-	len = read_spnego_data(request, &spnego);
+	len = spnego_read_data(ctx, request, &spnego);
 	data_blob_free(&request);
 
 	if (len == -1) {
@@ -1786,7 +1791,7 @@ static void manage_gss_spnego_client_request(struct ntlm_auth_state *state,
 	return;
 
  out:
-	free_spnego_data(&spnego);
+	spnego_free_data(&spnego);
 	return;
 }
 

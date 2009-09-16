@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
+#include "../libcli/auth/spnego.h"
 
 static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *req,
 					uint64_t in_session_id,

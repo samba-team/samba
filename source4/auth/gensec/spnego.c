@@ -23,7 +23,7 @@
 */
 
 #include "includes.h"
-#include "auth/gensec/spnego.h"
+#include "../libcli/auth/spnego.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"

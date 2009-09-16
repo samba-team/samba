@@ -3297,12 +3297,6 @@ const char *smb_dos_err_class(uint8 e_class);
 char *smb_dos_errstr(char *inbuf);
 WERROR map_werror_from_unix(int error);
 
-/* The following definitions come from libsmb/spnego.c  */
-
-ssize_t read_spnego_data(DATA_BLOB data, SPNEGO_DATA *token);
-ssize_t write_spnego_data(DATA_BLOB *blob, SPNEGO_DATA *spnego);
-bool free_spnego_data(SPNEGO_DATA *spnego);
-
 /* The following definitions come from libsmb/trustdom_cache.c  */
 
 bool trustdom_cache_enable(void);

@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "../libcli/auth/libcli_auth.h"
+#include "../libcli/auth/spnego.h"
 
 static const struct {
 	int prot;
