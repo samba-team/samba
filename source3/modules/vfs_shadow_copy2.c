@@ -76,19 +76,86 @@ static int vfs_shadow_copy2_debug_level = DBGC_VFS;
 /*
   make very sure it is one of our special names 
  */
-static inline bool shadow_copy2_match_name(const char *name)
+static inline bool shadow_copy2_match_name(const char *name, const char **gmt_start)
 {
 	unsigned year, month, day, hr, min, sec;
-	if (name[0] != '@') return False;
-	if (strncmp(name, "@GMT-", 5) != 0) return False;
-	if (sscanf(name, "@GMT-%04u.%02u.%02u-%02u.%02u.%02u", &year, &month,
+	const char *p;
+	if (gmt_start) {
+		(*gmt_start) = NULL;
+	}
+	p = strstr_m(name, "@GMT-");
+	if (p == NULL) return false;
+	if (p > name && p[-1] != '/') return False;
+	if (sscanf(p, "@GMT-%04u.%02u.%02u-%02u.%02u.%02u", &year, &month,
 		   &day, &hr, &min, &sec) != 6) {
 		return False;
 	}
-	if (name[24] != 0 && name[24] != '/') {
+	if (p[24] != 0 && p[24] != '/') {
 		return False;
 	}
+	if (gmt_start) {
+		(*gmt_start) = p;
+	}
 	return True;
+}
+
+/*
+  shadow copy paths can also come into the server in this form:
+
+    /foo/bar/@GMT-XXXXX/some/file
+
+  This function normalises the filename to be of the form:
+
+    @GMT-XXXX/foo/bar/some/file
+ */
+static const char *shadow_copy2_normalise_path(TALLOC_CTX *mem_ctx, const char *path, const char *gmt_start)
+{
+	char *pcopy;
+	char buf[GMT_NAME_LEN];
+	size_t prefix_len;
+
+	if (path == gmt_start) {
+		return path;
+	}
+
+	prefix_len = gmt_start - path - 1;
+
+	DEBUG(10, ("path=%s, gmt_start=%s, prefix_len=%d\n", path, gmt_start,
+		   (int)prefix_len));
+
+	/*
+	 * We've got a/b/c/@GMT-YYYY.MM.DD-HH.MM.SS/d/e. convert to
+	 * @GMT-YYYY.MM.DD-HH.MM.SS/a/b/c/d/e before further
+	 * processing. As many VFS calls provide a const char *,
+	 * unfortunately we have to make a copy.
+	 */
+
+	pcopy = talloc_strdup(talloc_tos(), path);
+	if (pcopy == NULL) {
+		return NULL;
+	}
+
+	gmt_start = pcopy + prefix_len;
+
+	/*
+	 * Copy away "@GMT-YYYY.MM.DD-HH.MM.SS"
+	 */
+	memcpy(buf, gmt_start+1, GMT_NAME_LEN);
+
+	/*
+	 * Make space for it including a trailing /
+	 */
+	memmove(pcopy + GMT_NAME_LEN + 1, pcopy, prefix_len);
+
+	/*
+	 * Move in "@GMT-YYYY.MM.DD-HH.MM.SS/" at the beginning again
+	 */
+	memcpy(pcopy, buf, GMT_NAME_LEN);
+	pcopy[GMT_NAME_LEN] = '/';
+
+	DEBUG(10, ("shadow_copy2_normalise_path: %s -> %s\n", path, pcopy));
+
+	return pcopy;
 }
 
 /*
@@ -97,10 +164,11 @@ static inline bool shadow_copy2_match_name(const char *name)
 
 #define _SHADOW2_NEXT(op, args, rtype, eret, extra) do { \
 	const char *name = fname; \
-	if (shadow_copy2_match_name(fname)) { \
+	const char *gmt_start; \
+	if (shadow_copy2_match_name(fname, &gmt_start)) {	\
 		char *name2; \
 		rtype ret; \
-		name2 = convert_shadow2_name(handle, fname); \
+		name2 = convert_shadow2_name(handle, fname, gmt_start);	\
 		if (name2 == NULL) { \
 			errno = EINVAL; \
 			return eret; \
@@ -116,11 +184,12 @@ static inline bool shadow_copy2_match_name(const char *name)
 } while (0)
 
 #define _SHADOW2_NEXT_SMB_FNAME(op, args, rtype, eret, extra) do { \
-	if (shadow_copy2_match_name(smb_fname->base_name)) { \
+		const char *gmt_start; \
+		if (shadow_copy2_match_name(smb_fname->base_name, &gmt_start)) {	\
 		char *name2; \
 		char *smb_base_name_tmp = NULL; \
 		rtype ret; \
-		name2 = convert_shadow2_name(handle, smb_fname->base_name); \
+		name2 = convert_shadow2_name(handle, smb_fname->base_name, gmt_start); \
 		if (name2 == NULL) { \
 			errno = EINVAL; \
 			return eret; \
@@ -143,10 +212,11 @@ static inline bool shadow_copy2_match_name(const char *name)
 
 #define _SHADOW2_NTSTATUS_NEXT(op, args, eret, extra) do { \
         const char *name = fname; \
-        if (shadow_copy2_match_name(fname)) { \
+        const char *gmt_start; \
+        if (shadow_copy2_match_name(fname, &gmt_start)) {	\
                 char *name2; \
                 NTSTATUS ret; \
-                name2 = convert_shadow2_name(handle, fname); \
+                name2 = convert_shadow2_name(handle, fname, gmt_start);	\
                 if (name2 == NULL) { \
                         errno = EINVAL; \
                         return eret; \
@@ -168,7 +238,9 @@ static inline bool shadow_copy2_match_name(const char *name)
 #define SHADOW2_NEXT_SMB_FNAME(op, args, rtype, eret) _SHADOW2_NEXT_SMB_FNAME(op, args, rtype, eret, )
 
 #define SHADOW2_NEXT2(op, args) do { \
-	if (shadow_copy2_match_name(oldname) || shadow_copy2_match_name(newname)) { \
+	const char *gmt_start1, *gmt_start2; \
+	if (shadow_copy2_match_name(oldname, &gmt_start1) || \
+	    shadow_copy2_match_name(newname, &gmt_start2)) {	\
 		errno = EROFS; \
 		return -1; \
 	} else { \
@@ -177,8 +249,9 @@ static inline bool shadow_copy2_match_name(const char *name)
 } while (0)
 
 #define SHADOW2_NEXT2_SMB_FNAME(op, args) do { \
-	if (shadow_copy2_match_name(smb_fname_src->base_name) || \
-	    shadow_copy2_match_name(smb_fname_dst->base_name)) { \
+	const char *gmt_start1, *gmt_start2; \
+	if (shadow_copy2_match_name(smb_fname_src->base_name, &gmt_start1) || \
+	    shadow_copy2_match_name(smb_fname_dst->base_name, &gmt_start2)) { \
 		errno = EROFS; \
 		return -1; \
 	} else { \
@@ -267,7 +340,7 @@ static const char *shadow_copy2_find_basedir(TALLOC_CTX *mem_ctx, vfs_handle_str
   convert a filename from a share relative path, to a path in the
   snapshot directory
  */
-static char *convert_shadow2_name(vfs_handle_struct *handle, const char *fname)
+static char *convert_shadow2_name(vfs_handle_struct *handle, const char *fname, const char *gmt_path)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(handle->data);
 	const char *snapdir, *relpath, *baseoffset, *basedir;
@@ -286,6 +359,14 @@ static char *convert_shadow2_name(vfs_handle_struct *handle, const char *fname)
 		DEBUG(2,("no basedir found for share at %s\n", handle->conn->connectpath));
 		talloc_free(tmp_ctx);
 		return NULL;
+	}
+
+	if (strncmp(fname, "@GMT-", 5) != 0) {
+		fname = shadow_copy2_normalise_path(tmp_ctx, fname, gmt_path);
+		if (fname == NULL) {
+			talloc_free(tmp_ctx);
+			return NULL;
+		}
 	}
 
 	relpath = fname + GMT_NAME_LEN;
@@ -406,7 +487,7 @@ static int shadow_copy2_lstat(vfs_handle_struct *handle,
 static int shadow_copy2_fstat(vfs_handle_struct *handle, files_struct *fsp, SMB_STRUCT_STAT *sbuf)
 {
 	int ret = SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
-	if (ret == 0 && shadow_copy2_match_name(fsp->fsp_name->base_name)) {
+	if (ret == 0 && shadow_copy2_match_name(fsp->fsp_name->base_name, NULL)) {
 		convert_sbuf(handle, fsp->fsp_name->base_name, sbuf);
 	}
 	return ret;
@@ -476,8 +557,24 @@ static int shadow_copy2_mknod(vfs_handle_struct *handle,
 static char *shadow_copy2_realpath(vfs_handle_struct *handle,
 			    const char *fname, char *resolved_path)
 {
-	if (shadow_copy2_match_name(fname) && (fname[GMT_NAME_LEN] == '\0')) {
-		return SMB_VFS_NEXT_REALPATH(handle, ".", resolved_path);
+	const char *gmt;
+
+	if (shadow_copy2_match_name(fname, &gmt)
+	    && (gmt[GMT_NAME_LEN] == '\0')) {
+		char *copy, *result;
+
+		copy = talloc_strdup(talloc_tos(), fname);
+		if (copy == NULL) {
+			errno = ENOMEM;
+			return NULL;
+		}
+
+		copy[gmt - fname] = '.';
+
+		DEBUG(10, ("calling NEXT_REALPATH with %s\n", copy));
+		result = SMB_VFS_NEXT_REALPATH(handle, copy, resolved_path);
+		TALLOC_FREE(copy);
+		return result;
 	}
         SHADOW2_NEXT(REALPATH, (handle, name, resolved_path), char *, NULL);
 }
@@ -486,12 +583,20 @@ static const char *shadow_copy2_connectpath(struct vfs_handle_struct *handle,
 					    const char *fname)
 {
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
-	const char *snapdir, *baseoffset, *basedir;
+	const char *snapdir, *baseoffset, *basedir, *gmt_start;
 	size_t baselen;
 	char *ret;
 
-	if (!shadow_copy2_match_name(fname)) {
+	DEBUG(10, ("shadow_copy2_connectpath called with %s\n", fname));
+
+	if (!shadow_copy2_match_name(fname, &gmt_start)) {
 		return handle->conn->connectpath;
+	}
+
+	fname = shadow_copy2_normalise_path(talloc_tos(), fname, gmt_start);
+	if (fname == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NULL;
 	}
 
 	snapdir = shadow_copy2_find_snapdir(tmp_ctx, handle);
@@ -644,7 +749,7 @@ static int shadow_copy2_get_shadow_copy2_data(vfs_handle_struct *handle,
 		SHADOW_COPY_LABEL *tlabels;
 
 		/* ignore names not of the right form in the snapshot directory */
-		if (!shadow_copy2_match_name(d->d_name)) {
+		if (!shadow_copy2_match_name(d->d_name, NULL)) {
 			continue;
 		}
 
