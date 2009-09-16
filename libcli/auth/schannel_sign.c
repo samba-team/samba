@@ -31,10 +31,28 @@ static void netsec_offset_and_sizes(struct schannel_state *state,
 				    uint32_t *_checksum_length,
 				    uint32_t *_confounder_ofs)
 {
-	uint32_t min_sig_size = 24;
-	uint32_t used_sig_size = 32;
-	uint32_t checksum_length = 8;
-	uint32_t confounder_ofs = 24;
+	uint32_t min_sig_size;
+	uint32_t used_sig_size;
+	uint32_t checksum_length;
+	uint32_t confounder_ofs;
+
+	if (state->creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		min_sig_size = 48;
+		used_sig_size = 56;
+		/*
+		 * Note: windows has a bug here and uses the old values...
+		 *
+		 * checksum_length = 32;
+		 * confounder_ofs = 48;
+		 */
+		checksum_length = 8;
+		confounder_ofs = 24;
+	} else {
+		min_sig_size = 24;
+		used_sig_size = 32;
+		checksum_length = 8;
+		confounder_ofs = 24;
+	}
 
 	if (do_seal) {
 		min_sig_size += 8;
@@ -65,13 +83,25 @@ static void netsec_do_seq_num(struct schannel_state *state,
 			      uint32_t checksum_length,
 			      uint8_t seq_num[8])
 {
-	static const uint8_t zeros[4];
-	uint8_t sequence_key[16];
-	uint8_t digest1[16];
+	if (state->creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		AES_KEY key;
+		uint8_t iv[AES_BLOCK_SIZE];
 
-	hmac_md5(state->creds->session_key, zeros, sizeof(zeros), digest1);
-	hmac_md5(digest1, checksum, checksum_length, sequence_key);
-	arcfour_crypt(seq_num, sequence_key, 8);
+		AES_set_encrypt_key(state->creds->session_key, 128, &key);
+		ZERO_STRUCT(iv);
+		memcpy(iv+0, checksum, 8);
+		memcpy(iv+8, checksum, 8);
+
+		aes_cfb8_encrypt(seq_num, seq_num, 8, &key, iv, AES_ENCRYPT);
+	} else {
+		static const uint8_t zeros[4];
+		uint8_t sequence_key[16];
+		uint8_t digest1[16];
+
+		hmac_md5(state->creds->session_key, zeros, sizeof(zeros), digest1);
+		hmac_md5(digest1, checksum, checksum_length, sequence_key);
+		arcfour_crypt(seq_num, sequence_key, 8);
+	}
 
 	state->seq_num++;
 }
@@ -79,23 +109,48 @@ static void netsec_do_seq_num(struct schannel_state *state,
 static void netsec_do_seal(struct schannel_state *state,
 			   const uint8_t seq_num[8],
 			   uint8_t confounder[8],
-			   uint8_t *data, uint32_t length)
+			   uint8_t *data, uint32_t length,
+			   bool forward)
 {
-	uint8_t sealing_key[16];
-	static const uint8_t zeros[4];
-	uint8_t digest2[16];
-	uint8_t sess_kf0[16];
-	int i;
+	if (state->creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		AES_KEY key;
+		uint8_t iv[AES_BLOCK_SIZE];
+		uint8_t sess_kf0[16];
+		int i;
 
-	for (i = 0; i < 16; i++) {
-		sess_kf0[i] = state->creds->session_key[i] ^ 0xf0;
+		for (i = 0; i < 16; i++) {
+			sess_kf0[i] = state->creds->session_key[i] ^ 0xf0;
+		}
+
+		AES_set_encrypt_key(sess_kf0, 128, &key);
+		ZERO_STRUCT(iv);
+		memcpy(iv+0, seq_num, 8);
+		memcpy(iv+8, seq_num, 8);
+
+		if (forward) {
+			aes_cfb8_encrypt(confounder, confounder, 8, &key, iv, AES_ENCRYPT);
+			aes_cfb8_encrypt(data, data, length, &key, iv, AES_ENCRYPT);
+		} else {
+			aes_cfb8_encrypt(confounder, confounder, 8, &key, iv, AES_DECRYPT);
+			aes_cfb8_encrypt(data, data, length, &key, iv, AES_DECRYPT);
+		}
+	} else {
+		uint8_t sealing_key[16];
+		static const uint8_t zeros[4];
+		uint8_t digest2[16];
+		uint8_t sess_kf0[16];
+		int i;
+
+		for (i = 0; i < 16; i++) {
+			sess_kf0[i] = state->creds->session_key[i] ^ 0xf0;
+		}
+
+		hmac_md5(sess_kf0, zeros, 4, digest2);
+		hmac_md5(digest2, seq_num, 8, sealing_key);
+
+		arcfour_crypt(confounder, sealing_key, 8);
+		arcfour_crypt(data, sealing_key, length);
 	}
-
-	hmac_md5(sess_kf0, zeros, 4, digest2);
-	hmac_md5(digest2, seq_num, 8, sealing_key);
-
-	arcfour_crypt(confounder, sealing_key, 8);
-	arcfour_crypt(data, sealing_key, length);
 }
 
 /*******************************************************************
@@ -104,38 +159,67 @@ static void netsec_do_seal(struct schannel_state *state,
  ********************************************************************/
 static void netsec_do_sign(struct schannel_state *state,
 			   const uint8_t *confounder,
-			   const uint8_t *data, size_t data_len,
+			   const uint8_t *data, size_t length,
 			   uint8_t header[8],
 			   uint8_t *checksum)
 {
-	uint8_t packet_digest[16];
-	static const uint8_t zeros[4];
-	struct MD5Context ctx;
+	if (state->creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		struct HMACSHA256Context ctx;
 
-	MD5Init(&ctx);
-	MD5Update(&ctx, zeros, 4);
-	if (confounder) {
-		SSVAL(header, 0, NL_SIGN_HMAC_MD5);
-		SSVAL(header, 2, NL_SEAL_RC4);
-		SSVAL(header, 4, 0xFFFF);
-		SSVAL(header, 6, 0x0000);
+		hmac_sha256_init(state->creds->session_key,
+				 sizeof(state->creds->session_key),
+				 &ctx);
 
-		MD5Update(&ctx, header, 8);
-		MD5Update(&ctx, confounder, 8);
+		if (confounder) {
+			SSVAL(header, 0, NL_SIGN_HMAC_SHA256);
+			SSVAL(header, 2, NL_SEAL_AES128);
+			SSVAL(header, 4, 0xFFFF);
+			SSVAL(header, 6, 0x0000);
+
+			hmac_sha256_update(header, 8, &ctx);
+			hmac_sha256_update(confounder, 8, &ctx);
+		} else {
+			SSVAL(header, 0, NL_SIGN_HMAC_SHA256);
+			SSVAL(header, 2, NL_SEAL_NONE);
+			SSVAL(header, 4, 0xFFFF);
+			SSVAL(header, 6, 0x0000);
+
+			hmac_sha256_update(header, 8, &ctx);
+		}
+
+		hmac_sha256_update(data, length, &ctx);
+
+		hmac_sha256_final(checksum, &ctx);
 	} else {
-		SSVAL(header, 0, NL_SIGN_HMAC_MD5);
-		SSVAL(header, 2, NL_SEAL_NONE);
-		SSVAL(header, 4, 0xFFFF);
-		SSVAL(header, 6, 0x0000);
+		uint8_t packet_digest[16];
+		static const uint8_t zeros[4];
+		struct MD5Context ctx;
 
-		MD5Update(&ctx, header, 8);
+		MD5Init(&ctx);
+		MD5Update(&ctx, zeros, 4);
+		if (confounder) {
+			SSVAL(header, 0, NL_SIGN_HMAC_MD5);
+			SSVAL(header, 2, NL_SEAL_RC4);
+			SSVAL(header, 4, 0xFFFF);
+			SSVAL(header, 6, 0x0000);
+
+			MD5Update(&ctx, header, 8);
+			MD5Update(&ctx, confounder, 8);
+		} else {
+			SSVAL(header, 0, NL_SIGN_HMAC_MD5);
+			SSVAL(header, 2, NL_SEAL_NONE);
+			SSVAL(header, 4, 0xFFFF);
+			SSVAL(header, 6, 0x0000);
+
+			MD5Update(&ctx, header, 8);
+		}
+		MD5Update(&ctx, data, length);
+		MD5Final(packet_digest, &ctx);
+
+		hmac_md5(state->creds->session_key,
+			 packet_digest, sizeof(packet_digest),
+			 checksum);
 	}
-	MD5Update(&ctx, data, data_len);
-	MD5Final(packet_digest, &ctx);
-
-	hmac_md5(state->creds->session_key,
-		 packet_digest, sizeof(packet_digest),
-		 checksum);
 }
 
 NTSTATUS netsec_incoming_packet(struct schannel_state *state,
@@ -177,7 +261,8 @@ NTSTATUS netsec_incoming_packet(struct schannel_state *state,
 	if (do_unseal) {
 		netsec_do_seal(state, seq_num,
 			       confounder,
-			       data, length);
+			       data, length,
+			       false);
 	}
 
 	netsec_do_sign(state, confounder,
@@ -257,7 +342,8 @@ NTSTATUS netsec_outgoing_packet(struct schannel_state *state,
 	if (do_seal) {
 		netsec_do_seal(state, seq_num,
 			       confounder,
-			       data, length);
+			       data, length,
+			       true);
 	}
 
 	netsec_do_seq_num(state, checksum, checksum_length, seq_num);
