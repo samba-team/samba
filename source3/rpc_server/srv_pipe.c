@@ -411,6 +411,7 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 		 */
 		RPC_HDR_AUTH auth_info;
 		DATA_BLOB blob;
+		uint8_t *data;
 
 		/* Check it's the type of reply we were expecting to decode */
 
@@ -427,20 +428,24 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 			return False;
 		}
 
+		data = (uint8_t *)prs_data_p(&p->out_data.frag) + data_pos;
+
 		switch (p->auth.auth_level) {
 		case DCERPC_AUTH_LEVEL_PRIVACY:
-			status = schannel_seal_packet(p->auth.a_u.schannel_auth,
-						      talloc_tos(),
-						      (uint8_t *)prs_data_p(&p->out_data.frag) + data_pos,
-						      data_len + ss_padding_len,
-						      &blob);
+			status = netsec_outgoing_packet(p->auth.a_u.schannel_auth,
+							talloc_tos(),
+							true,
+							data,
+							data_len + ss_padding_len,
+							&blob);
 			break;
 		case DCERPC_AUTH_LEVEL_INTEGRITY:
-			status = schannel_sign_packet(p->auth.a_u.schannel_auth,
-						      talloc_tos(),
-						      (uint8_t *)prs_data_p(&p->out_data.frag) + data_pos,
-						      data_len + ss_padding_len,
-						      &blob);
+			status = netsec_outgoing_packet(p->auth.a_u.schannel_auth,
+							talloc_tos(),
+							false,
+							data,
+							data_len + ss_padding_len,
+							&blob);
 			break;
 		default:
 			status = NT_STATUS_INTERNAL_ERROR;
@@ -2162,6 +2167,7 @@ bool api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in, uint32 *p_ss
 	RPC_HDR_AUTH auth_info;
 	DATA_BLOB blob;
 	NTSTATUS status;
+	uint8_t *data;
 
 	auth_len = p->hdr.auth_len;
 
@@ -2215,20 +2221,24 @@ bool api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in, uint32 *p_ss
 		dump_NL_AUTH_SIGNATURE(talloc_tos(), &blob);
 	}
 
+	data = (uint8_t *)prs_data_p(rpc_in)+RPC_HDR_REQ_LEN;
+
 	switch (auth_info.auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
-		status = schannel_unseal_packet(p->auth.a_u.schannel_auth,
+		status = netsec_incoming_packet(p->auth.a_u.schannel_auth,
 						talloc_tos(),
-						(uint8_t *)prs_data_p(rpc_in)+RPC_HDR_REQ_LEN,
+						true,
+						data,
 						data_len,
 						&blob);
 		break;
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		status = schannel_check_packet(p->auth.a_u.schannel_auth,
-					       talloc_tos(),
-					       (uint8_t *)prs_data_p(rpc_in)+RPC_HDR_REQ_LEN,
-					       data_len,
-					       &blob);
+		status = netsec_incoming_packet(p->auth.a_u.schannel_auth,
+						talloc_tos(),
+						false,
+						data,
+						data_len,
+						&blob);
 		break;
 	default:
 		status = NT_STATUS_INTERNAL_ERROR;

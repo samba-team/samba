@@ -676,6 +676,7 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli, RPC_HDR *p
 	uint32 save_offset = prs_offset(current_pdu);
 	struct schannel_state *schannel_auth =
 		cli->auth->a_u.schannel_auth;
+	uint8_t *data;
 	uint32 data_len;
 	DATA_BLOB blob;
 	NTSTATUS status;
@@ -727,20 +728,24 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli, RPC_HDR *p
 		dump_NL_AUTH_SIGNATURE(talloc_tos(), &blob);
 	}
 
+	data = (uint8_t *)prs_data_p(current_pdu)+RPC_HEADER_LEN+RPC_HDR_RESP_LEN;
+
 	switch (cli->auth->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
-		status = schannel_unseal_packet(schannel_auth,
+		status = netsec_incoming_packet(schannel_auth,
 						talloc_tos(),
-						(uint8_t *)prs_data_p(current_pdu)+RPC_HEADER_LEN+RPC_HDR_RESP_LEN,
+						true,
+						data,
 						data_len,
 						&blob);
 		break;
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		status = schannel_check_packet(schannel_auth,
-					       talloc_tos(),
-					       (uint8_t *)prs_data_p(current_pdu)+RPC_HEADER_LEN+RPC_HDR_RESP_LEN,
-					       data_len,
-					       &blob);
+		status = netsec_incoming_packet(schannel_auth,
+						talloc_tos(),
+						false,
+						data,
+						data_len,
+						&blob);
 		break;
 	default:
 		status = NT_STATUS_INTERNAL_ERROR;
@@ -1948,18 +1953,20 @@ static NTSTATUS add_schannel_auth_footer(struct rpc_pipe_client *cli,
 
 	switch (cli->auth->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
-		status = schannel_seal_packet(sas,
-					      talloc_tos(),
-					      (uint8_t *)data_p,
-					      data_and_pad_len,
-					      &blob);
+		status = netsec_outgoing_packet(sas,
+						talloc_tos(),
+						true,
+						(uint8_t *)data_p,
+						data_and_pad_len,
+						&blob);
 		break;
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		status = schannel_sign_packet(sas,
-					      talloc_tos(),
-					      (uint8_t *)data_p,
-					      data_and_pad_len,
-					      &blob);
+		status = netsec_outgoing_packet(sas,
+						talloc_tos(),
+						false,
+						(uint8_t *)data_p,
+						data_and_pad_len,
+						&blob);
 		break;
 	default:
 		status = NT_STATUS_INTERNAL_ERROR;
