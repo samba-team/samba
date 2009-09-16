@@ -2311,6 +2311,14 @@ int dsdb_load_partition_usn(struct ldb_context *ldb, struct ldb_dn *dn, uint64_t
 		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
 	}
 
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		/* it hasn't been created yet, which means
+		   an implicit value of zero */
+		*uSN = 0;
+		talloc_free(tmp_ctx);
+		return LDB_SUCCESS;
+	}
+
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
