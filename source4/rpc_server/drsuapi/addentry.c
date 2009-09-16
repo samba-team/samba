@@ -30,6 +30,7 @@
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "auth/auth.h"
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
+#include "libcli/security/security.h"
 
 
 /*
@@ -148,6 +149,12 @@ WERROR dcesrv_drsuapi_DsAddEntry(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
 	b_state = h->data;
+
+	if (security_session_user_level(dce_call->conn->auth_state.session_info) <
+	    SECURITY_DOMAIN_CONTROLLER) {
+		DEBUG(0,("DsAddEntry refused for security token\n"));
+		return WERR_DS_DRA_ACCESS_DENIED;
+	}
 
 	switch (r->in.level) {
 	case 2:

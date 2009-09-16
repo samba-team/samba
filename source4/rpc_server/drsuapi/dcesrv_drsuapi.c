@@ -30,6 +30,7 @@
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "messaging/irpc.h"
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
+#include "libcli/security/security.h"
 
 /* 
   drsuapi_DsBind 
@@ -234,8 +235,10 @@ static WERROR dcesrv_drsuapi_DsReplicaSync(struct dcesrv_call_state *dce_call, T
 	struct server_id *repld;
 	struct irpc_request *ireq;
 
-	if (DEBUGLVL(4)) {
-		NDR_PRINT_IN_DEBUG(drsuapi_DsReplicaSync, r);
+	if (security_session_user_level(dce_call->conn->auth_state.session_info) <
+	    SECURITY_DOMAIN_CONTROLLER) {
+		DEBUG(0,("DsReplicaSync refused for security token\n"));
+		return WERR_DS_DRA_ACCESS_DENIED;
 	}
 
 	repld = irpc_servers_byname(dce_call->msg_ctx, mem_ctx, "dreplsrv");
@@ -473,6 +476,12 @@ static WERROR dcesrv_drsuapi_DsRemoveDSServer(struct dcesrv_call_state *dce_call
 
 	ZERO_STRUCT(r->out.res);
 	*r->out.level_out = 1;
+
+	if (security_session_user_level(dce_call->conn->auth_state.session_info) <
+	    SECURITY_DOMAIN_CONTROLLER) {
+		DEBUG(0,("DsRemoveDSServer refused for security token\n"));
+		return WERR_DS_DRA_ACCESS_DENIED;
+	}
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
 	b_state = h->data;
