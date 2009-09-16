@@ -867,8 +867,7 @@ static ssize_t streams_xattr_pread(vfs_handle_struct *handle,
 
         /* Attempt to read past EOF. */
         if (length <= offset) {
-                errno = EINVAL;
-                return -1;
+                return 0;
         }
 
         overlap = (offset + n) > length ? (length - offset) : n;
