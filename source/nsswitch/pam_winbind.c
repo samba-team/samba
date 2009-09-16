@@ -3056,8 +3056,6 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		ret = winbind_chauthtok_request(ctx, user, pass_old,
 						pass_new, pwdlastset_update);
 		if (ret) {
-			_pam_overwrite(pass_new);
-			_pam_overwrite(pass_old);
 			pass_old = pass_new = NULL;
 			goto out;
 		}
@@ -3086,8 +3084,6 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 						   member, cctype, 0,
 						   &error, &info, &policy,
 						   NULL, &username_ret);
-			_pam_overwrite(pass_new);
-			_pam_overwrite(pass_old);
 			pass_old = pass_new = NULL;
 
 			if (ret == PAM_SUCCESS) {
