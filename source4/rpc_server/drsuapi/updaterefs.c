@@ -29,6 +29,7 @@
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "auth/auth.h"
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
+#include "libcli/security/security.h"
 
 struct repsTo {
 	uint32_t count;
@@ -108,6 +109,12 @@ WERROR dcesrv_drsuapi_DsReplicaUpdateRefs(struct dcesrv_call_state *dce_call, TA
 	struct ldb_context *sam_ctx;
 	WERROR werr;
 	struct ldb_dn *dn;
+
+	if (security_session_user_level(dce_call->conn->auth_state.session_info) <
+	    SECURITY_DOMAIN_CONTROLLER) {
+		DEBUG(0,("DsReplicaUpdateRefs refused for security token\n"));
+		return WERR_DS_DRA_ACCESS_DENIED;
+	}
 
 	if (r->in.level != 1) {
 		DEBUG(0,("DrReplicUpdateRefs - unsupported level %u\n", r->in.level));

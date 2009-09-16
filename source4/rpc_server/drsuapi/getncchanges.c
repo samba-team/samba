@@ -33,6 +33,7 @@
 #include "rpc_server/dcerpc_server_proto.h"
 #include "../libcli/drsuapi/drsuapi.h"
 #include "../libcli/security/dom_sid.h"
+#include "libcli/security/security.h"
 
 /* 
   drsuapi_DsGetNCChanges for one object
@@ -278,17 +279,15 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	DATA_BLOB session_key;
 	const char *attrs[] = { "*", "parentGUID", NULL };
 	WERROR werr;
+	
+	*r->out.level_out = 6;
+	/* TODO: linked attributes*/
+	r->out.ctr->ctr6.linked_attributes_count = 0;
+	r->out.ctr->ctr6.linked_attributes = NULL;
 
-	/*
-	 * connect to the samdb. TODO: We need to check that the caller
-	 * has the rights to do this. This exposes all attributes,
-	 * including all passwords.
-	 */
-	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, 
-				system_session(mem_ctx, dce_call->conn->dce_ctx->lp_ctx));
-	if (!sam_ctx) {
-		return WERR_FOOBAR;
-	}
+	r->out.ctr->ctr6.object_count = 0;
+	r->out.ctr->ctr6.more_data = false;
+	r->out.ctr->ctr6.uptodateness_vector = NULL;
 
 	/* Check request revision. */
 	if (r->in.level != 8) {
@@ -303,6 +302,23 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	ncRoot = r->in.req->req8.naming_context;
 	if (ncRoot == NULL) {
 		return WERR_DS_DRA_BAD_NC;
+	}
+
+	if (security_session_user_level(dce_call->conn->auth_state.session_info) <
+	    SECURITY_DOMAIN_CONTROLLER) {
+		DEBUG(0,("getncchanges refused for security token\n"));
+		return WERR_DS_DRA_ACCESS_DENIED;
+	}
+
+	/*
+	 * connect to the samdb. TODO: We need to check that the caller
+	 * has the rights to do this. This exposes all attributes,
+	 * including all passwords.
+	 */
+	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, 
+				system_session(mem_ctx, dce_call->conn->dce_ctx->lp_ctx));
+	if (!sam_ctx) {
+		return WERR_FOOBAR;
 	}
 
 	/* we need the session key for encrypting password attributes */
@@ -322,16 +338,6 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
-	*r->out.level_out = 6;
-	r->out.ctr->ctr6.naming_context = talloc(mem_ctx, struct drsuapi_DsReplicaObjectIdentifier);
-	*r->out.ctr->ctr6.naming_context = *ncRoot;
-	/* TODO: linked attributes*/
-	r->out.ctr->ctr6.linked_attributes_count = 0;
-	r->out.ctr->ctr6.linked_attributes = NULL;
-
-	r->out.ctr->ctr6.object_count = 0;
-	r->out.ctr->ctr6.more_data = false;
-	r->out.ctr->ctr6.uptodateness_vector = NULL;
 
 	/* Prefix mapping */
 	schema = dsdb_get_schema(sam_ctx);
@@ -339,6 +345,9 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		DEBUG(0,("No schema in sam_ctx\n"));
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
+
+	r->out.ctr->ctr6.naming_context = talloc(mem_ctx, struct drsuapi_DsReplicaObjectIdentifier);
+	*r->out.ctr->ctr6.naming_context = *ncRoot;
 
 	dsdb_get_oid_mappings_drsuapi(schema, true, mem_ctx, &ctr);
 	r->out.ctr->ctr6.mapping_ctr = *ctr;

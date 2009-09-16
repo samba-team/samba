@@ -142,6 +142,11 @@ bool security_token_has_nt_authenticated_users(const struct security_token *toke
 	return security_token_has_sid_string(token, SID_NT_AUTHENTICATED_USERS);
 }
 
+bool security_token_has_enterprise_dcs(const struct security_token *token)
+{
+	return security_token_has_sid_string(token, SID_NT_ENTERPRISE_DCS);
+}
+
 enum security_user_level security_session_user_level(struct auth_session_info *session_info) 
 {
 	if (!session_info) {
@@ -158,6 +163,10 @@ enum security_user_level security_session_user_level(struct auth_session_info *s
 
 	if (security_token_has_builtin_administrators(session_info->security_token)) {
 		return SECURITY_ADMINISTRATOR;
+	}
+
+	if (security_token_has_enterprise_dcs(session_info->security_token)) {
+		return SECURITY_DOMAIN_CONTROLLER;
 	}
 
 	if (security_token_has_nt_authenticated_users(session_info->security_token)) {
