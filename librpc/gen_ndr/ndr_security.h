@@ -51,4 +51,7 @@ void ndr_print_security_secinfo(struct ndr_print *ndr, const char *name, uint32_
 enum ndr_err_code ndr_push_kerb_EncTypes(struct ndr_push *ndr, int ndr_flags, uint32_t r);
 enum ndr_err_code ndr_pull_kerb_EncTypes(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
 void ndr_print_kerb_EncTypes(struct ndr_print *ndr, const char *name, uint32_t r);
+enum ndr_err_code ndr_push_security_autoinherit(struct ndr_push *ndr, int ndr_flags, uint32_t r);
+enum ndr_err_code ndr_pull_security_autoinherit(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
+void ndr_print_security_autoinherit(struct ndr_print *ndr, const char *name, uint32_t r);
 #endif /* _HEADER_NDR_security */
