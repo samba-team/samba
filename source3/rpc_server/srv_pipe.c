@@ -410,9 +410,7 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 		 * Schannel processing.
 		 */
 		RPC_HDR_AUTH auth_info;
-		struct NL_AUTH_SIGNATURE verf;
 		DATA_BLOB blob;
-		enum ndr_err_code ndr_err;
 
 		/* Check it's the type of reply we were expecting to decode */
 
@@ -458,18 +456,10 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 
 		/* Finally marshall the blob. */
 
-#if 0
-		ndr_err = ndr_push_struct_blob(&blob, talloc_tos(), NULL, &verf,
-				       (ndr_push_flags_fn_t)ndr_push_NL_AUTH_SIGNATURE);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			prs_mem_free(&p->out_data.frag);
-			return false;
+		if (DEBUGLEVEL >= 10) {
+			dump_NL_AUTH_SIGNATURE(talloc_tos(), &blob);
 		}
 
-		if (DEBUGLEVEL >= 10) {
-			NDR_PRINT_DEBUG(NL_AUTH_SIGNATURE, &verf);
-		}
-#endif
 		if (!prs_copy_data_in(&p->out_data.frag, (const char *)blob.data, blob.length)) {
 			prs_mem_free(&p->out_data.frag);
 			return false;
@@ -2170,8 +2160,6 @@ bool api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in, uint32 *p_ss
 	uint32 auth_len;
 	uint32 save_offset = prs_offset(rpc_in);
 	RPC_HDR_AUTH auth_info;
-	struct NL_AUTH_SIGNATURE schannel_chk;
-	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	NTSTATUS status;
 
@@ -2223,16 +2211,8 @@ bool api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in, uint32 *p_ss
 
 	blob = data_blob_const(prs_data_p(rpc_in) + prs_offset(rpc_in), auth_len);
 
-	ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), NULL, &schannel_chk,
-			       (ndr_pull_flags_fn_t)ndr_pull_NL_AUTH_SIGNATURE);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(0,("failed to pull NL_AUTH_SIGNATURE\n"));
-		dump_data(2, blob.data, blob.length);
-		return false;
-	}
-
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_DEBUG(NL_AUTH_SIGNATURE, &schannel_chk);
+		dump_NL_AUTH_SIGNATURE(talloc_tos(), &blob);
 	}
 
 	switch (auth_info.auth_level) {
