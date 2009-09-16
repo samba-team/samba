@@ -29,7 +29,7 @@
  Inits an RPC_HDR structure.
 ********************************************************************/
 
-void init_rpc_hdr(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type, uint8 flags,
+void init_rpc_hdr(RPC_HDR *hdr, enum dcerpc_pkt_type pkt_type, uint8 flags,
 				uint32 call_id, int data_len, int auth_len)
 {
 	hdr->major        = 5;               /* RPC version 5 */

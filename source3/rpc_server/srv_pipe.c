@@ -84,11 +84,11 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 	memset((char *)&hdr_resp, '\0', sizeof(hdr_resp));
 
 	/* Change the incoming request header to a response. */
-	p->hdr.pkt_type = RPC_RESPONSE;
+	p->hdr.pkt_type = DCERPC_PKT_RESPONSE;
 
 	/* Set up rpc header flags. */
 	if (p->out_data.data_sent_length == 0) {
-		p->hdr.flags = RPC_FLG_FIRST;
+		p->hdr.flags = DCERPC_PFC_FLAG_FIRST;
 	} else {
 		p->hdr.flags = 0;
 	}
@@ -130,7 +130,7 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 	 */
 
 	if(p->out_data.data_sent_length + data_len >= prs_offset(&p->out_data.rdata)) {
-		p->hdr.flags |= RPC_FLG_LAST;
+		p->hdr.flags |= DCERPC_PFC_FLAG_LAST;
 		if (data_len_left % 8) {
 			ss_padding_len = 8 - (data_len_left % 8);
 			DEBUG(10,("create_next_pdu_ntlmssp: adding sign/seal padding of %u\n",
@@ -302,11 +302,11 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 	memset((char *)&hdr_resp, '\0', sizeof(hdr_resp));
 
 	/* Change the incoming request header to a response. */
-	p->hdr.pkt_type = RPC_RESPONSE;
+	p->hdr.pkt_type = DCERPC_PKT_RESPONSE;
 
 	/* Set up rpc header flags. */
 	if (p->out_data.data_sent_length == 0) {
-		p->hdr.flags = RPC_FLG_FIRST;
+		p->hdr.flags = DCERPC_PFC_FLAG_FIRST;
 	} else {
 		p->hdr.flags = 0;
 	}
@@ -349,7 +349,7 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 	 */
 
 	if(p->out_data.data_sent_length + data_len >= prs_offset(&p->out_data.rdata)) {
-		p->hdr.flags |= RPC_FLG_LAST;
+		p->hdr.flags |= DCERPC_PFC_FLAG_LAST;
 		if (data_len_left % 8) {
 			ss_padding_len = 8 - (data_len_left % 8);
 			DEBUG(10,("create_next_pdu_schannel: adding sign/seal padding of %u\n",
@@ -501,11 +501,11 @@ static bool create_next_pdu_noauth(pipes_struct *p)
 	memset((char *)&hdr_resp, '\0', sizeof(hdr_resp));
 
 	/* Change the incoming request header to a response. */
-	p->hdr.pkt_type = RPC_RESPONSE;
+	p->hdr.pkt_type = DCERPC_PKT_RESPONSE;
 
 	/* Set up rpc header flags. */
 	if (p->out_data.data_sent_length == 0) {
-		p->hdr.flags = RPC_FLG_FIRST;
+		p->hdr.flags = DCERPC_PFC_FLAG_FIRST;
 	} else {
 		p->hdr.flags = 0;
 	}
@@ -547,7 +547,7 @@ static bool create_next_pdu_noauth(pipes_struct *p)
 	 */
 
 	if(p->out_data.data_sent_length + data_len >= prs_offset(&p->out_data.rdata)) {
-		p->hdr.flags |= RPC_FLG_LAST;
+		p->hdr.flags |= DCERPC_PFC_FLAG_LAST;
 	}
 
 	/*
@@ -826,7 +826,7 @@ static bool setup_bind_nak(pipes_struct *p)
 	 * Initialize a bind_nak header.
 	 */
 
-	init_rpc_hdr(&nak_hdr, RPC_BINDNACK, RPC_FLG_FIRST | RPC_FLG_LAST,
+	init_rpc_hdr(&nak_hdr, DCERPC_PKT_BIND_NAK, DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST,
 		p->hdr.call_id, RPC_HEADER_LEN + sizeof(uint16), 0);
 
 	/*
@@ -886,7 +886,7 @@ bool setup_fault_pdu(pipes_struct *p, NTSTATUS status)
 	 * Initialize a fault header.
 	 */
 
-	init_rpc_hdr(&fault_hdr, RPC_FAULT, RPC_FLG_FIRST | RPC_FLG_LAST | RPC_FLG_NOCALL,
+	init_rpc_hdr(&fault_hdr, DCERPC_PKT_FAULT, DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
             p->hdr.call_id, RPC_HEADER_LEN + RPC_HDR_RESP_LEN + RPC_HDR_FAULT_LEN, 0);
 
 	/*
@@ -953,7 +953,7 @@ bool setup_cancel_ack_reply(pipes_struct *p, prs_struct *rpc_in_p)
 	 * Initialize a cancel_ack header.
 	 */
 
-	init_rpc_hdr(&ack_reply_hdr, RPC_CANCEL_ACK, RPC_FLG_FIRST | RPC_FLG_LAST,
+	init_rpc_hdr(&ack_reply_hdr, DCERPC_PKT_CANCEL_ACK, DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST,
 			p->hdr.call_id, RPC_HEADER_LEN, 0);
 
 	/*
@@ -1547,7 +1547,7 @@ static bool pipe_ntlmssp_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 
 	DEBUG(10,("pipe_ntlmssp_auth_bind: NTLMSSP auth started\n"));
 
-	/* We can't set pipe_bound True yet - we need an RPC_AUTH3 response packet... */
+	/* We can't set pipe_bound True yet - we need an DCERPC_PKT_AUTH3 response packet... */
 	return True;
 
   err:
@@ -1798,7 +1798,7 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 		auth_len = prs_offset(&out_auth) - RPC_HDR_AUTH_LEN;
 	}
 
-	init_rpc_hdr(&p->hdr, RPC_BINDACK, RPC_FLG_FIRST | RPC_FLG_LAST,
+	init_rpc_hdr(&p->hdr, DCERPC_PKT_BIND_ACK, DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST,
 			p->hdr.call_id,
 			RPC_HEADER_LEN + prs_offset(&out_hdr_ba) + prs_offset(&out_auth),
 			auth_len);
@@ -1986,7 +1986,7 @@ bool api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
 		auth_len = prs_offset(&out_auth) - RPC_HDR_AUTH_LEN;
 	}
 
-	init_rpc_hdr(&p->hdr, RPC_ALTCONTRESP, RPC_FLG_FIRST | RPC_FLG_LAST,
+	init_rpc_hdr(&p->hdr, DCERPC_PKT_ALTER_RESP, DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST,
 			p->hdr.call_id,
 			RPC_HEADER_LEN + prs_offset(&out_hdr_ba) + prs_offset(&out_auth),
 			auth_len);
