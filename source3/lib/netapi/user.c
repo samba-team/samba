@@ -1696,7 +1696,7 @@ WERROR NetUserGetInfo_r(struct libnetapi_ctx *ctx,
 	}
 
  done:
-	if (is_valid_policy_hnd(&user_handle)) {
+	if (is_valid_policy_hnd(&user_handle) && pipe_cli) {
 		rpccli_samr_Close(pipe_cli, ctx, &user_handle);
 	}
 
