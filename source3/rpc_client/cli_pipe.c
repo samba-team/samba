@@ -21,6 +21,8 @@
 #include "../libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/cli_epmapper.h"
 #include "../librpc/gen_ndr/ndr_schannel.h"
+#include "../libcli/auth/schannel.h"
+#include "../libcli/auth/schannel_proto.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_CLI
@@ -673,11 +675,12 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli, RPC_HDR *p
 	struct NL_AUTH_SIGNATURE schannel_chk;
 	uint32 auth_len = prhdr->auth_len;
 	uint32 save_offset = prs_offset(current_pdu);
-	struct schannel_auth_struct *schannel_auth =
+	struct schannel_state *schannel_auth =
 		cli->auth->a_u.schannel_auth;
 	uint32 data_len;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
+	NTSTATUS status;
 
 	if (cli->auth->auth_level == DCERPC_AUTH_LEVEL_NONE
 	    || cli->auth->auth_level == DCERPC_AUTH_LEVEL_CONNECT) {
@@ -720,7 +723,7 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli, RPC_HDR *p
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	blob = data_blob_const(prs_data_p(current_pdu) + prs_offset(current_pdu), data_len);
+	blob = data_blob_const(prs_data_p(current_pdu) + prs_offset(current_pdu), auth_len);
 
 	ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), NULL, &schannel_chk,
 			       (ndr_pull_flags_fn_t)ndr_pull_NL_AUTH_SIGNATURE);
@@ -733,20 +736,33 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli, RPC_HDR *p
 		NDR_PRINT_DEBUG(NL_AUTH_SIGNATURE, &schannel_chk);
 	}
 
-	if (!schannel_decode(schannel_auth,
-			cli->auth->auth_level,
-			SENDER_IS_ACCEPTOR,
-			&schannel_chk,
-			prs_data_p(current_pdu)+RPC_HEADER_LEN+RPC_HDR_RESP_LEN,
-			data_len)) {
-		DEBUG(3,("cli_pipe_verify_schannel: failed to decode PDU "
-				"Connection to %s.\n",
-				rpccli_pipe_txt(debug_ctx(), cli)));
-		return NT_STATUS_INVALID_PARAMETER;
+	switch (cli->auth->auth_level) {
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+		status = schannel_unseal_packet(schannel_auth,
+						talloc_tos(),
+						(uint8_t *)prs_data_p(current_pdu)+RPC_HEADER_LEN+RPC_HDR_RESP_LEN,
+						data_len,
+						&blob);
+		break;
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		status = schannel_check_packet(schannel_auth,
+					       talloc_tos(),
+					       (uint8_t *)prs_data_p(current_pdu)+RPC_HEADER_LEN+RPC_HDR_RESP_LEN,
+					       data_len,
+					       &blob);
+		break;
+	default:
+		status = NT_STATUS_INTERNAL_ERROR;
+		break;
 	}
 
-	/* The sequence number gets incremented on both send and receive. */
-	schannel_auth->seq_num++;
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3,("cli_pipe_verify_schannel: failed to decode PDU "
+				"Connection to %s (%s).\n",
+				rpccli_pipe_txt(debug_ctx(), cli),
+				nt_errstr(status)));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	/*
 	 * Return the current pointer to the data offset.
@@ -1915,11 +1931,12 @@ static NTSTATUS add_schannel_auth_footer(struct rpc_pipe_client *cli,
 {
 	RPC_HDR_AUTH auth_info;
 	struct NL_AUTH_SIGNATURE verf;
-	struct schannel_auth_struct *sas = cli->auth->a_u.schannel_auth;
+	struct schannel_state *sas = cli->auth->a_u.schannel_auth;
 	char *data_p = prs_data_p(outgoing_pdu) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN;
 	size_t data_and_pad_len = prs_offset(outgoing_pdu) - RPC_HEADER_LEN - RPC_HDR_RESP_LEN;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
+	NTSTATUS status;
 
 	if (!sas) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -1937,29 +1954,35 @@ static NTSTATUS add_schannel_auth_footer(struct rpc_pipe_client *cli,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	DEBUG(10,("add_schannel_auth_footer: SCHANNEL seq_num=%d\n",
+			sas->seq_num));
+
 	switch (cli->auth->auth_level) {
-		case DCERPC_AUTH_LEVEL_PRIVACY:
-		case DCERPC_AUTH_LEVEL_INTEGRITY:
-			DEBUG(10,("add_schannel_auth_footer: SCHANNEL seq_num=%d\n",
-				sas->seq_num));
-
-			schannel_encode(sas,
-					cli->auth->auth_level,
-					SENDER_IS_INITIATOR,
-					&verf,
-					data_p,
-					data_and_pad_len);
-
-			sas->seq_num++;
-			break;
-
-		default:
-			/* Can't happen. */
-			smb_panic("bad auth level");
-			/* Notreached. */
-			return NT_STATUS_INVALID_PARAMETER;
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+		status = schannel_seal_packet(sas,
+					      talloc_tos(),
+					      (uint8_t *)data_p,
+					      data_and_pad_len,
+					      &blob);
+		break;
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		status = schannel_sign_packet(sas,
+					      talloc_tos(),
+					      (uint8_t *)data_p,
+					      data_and_pad_len,
+					      &blob);
+		break;
+	default:
+		status = NT_STATUS_INTERNAL_ERROR;
+		break;
 	}
 
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1,("add_schannel_auth_footer: failed to process packet: %s\n",
+			nt_errstr(status)));
+		return status;
+	}
+#if 0
 	ndr_err = ndr_push_struct_blob(&blob, talloc_tos(), NULL, &verf,
 			       (ndr_push_flags_fn_t)ndr_push_NL_AUTH_SIGNATURE);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -1969,7 +1992,7 @@ static NTSTATUS add_schannel_auth_footer(struct rpc_pipe_client *cli,
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_DEBUG(NL_AUTH_SIGNATURE, &verf);
 	}
-
+#endif
 	/* Finally marshall the blob. */
 	if (!prs_copy_data_in(outgoing_pdu, (const char *)blob.data, blob.length)) {
 		return NT_STATUS_NO_MEMORY;
@@ -3070,7 +3093,7 @@ NTSTATUS rpccli_ntlmssp_bind_data(TALLOC_CTX *mem_ctx,
 
 NTSTATUS rpccli_schannel_bind_data(TALLOC_CTX *mem_ctx, const char *domain,
 				   enum dcerpc_AuthLevel auth_level,
-				   const uint8_t sess_key[16],
+				   struct netlogon_creds_CredentialState *creds,
 				   struct cli_pipe_auth_data **presult)
 {
 	struct cli_pipe_auth_data *result;
@@ -3089,15 +3112,15 @@ NTSTATUS rpccli_schannel_bind_data(TALLOC_CTX *mem_ctx, const char *domain,
 		goto fail;
 	}
 
-	result->a_u.schannel_auth = talloc(result,
-					   struct schannel_auth_struct);
+	result->a_u.schannel_auth = talloc(result, struct schannel_state);
 	if (result->a_u.schannel_auth == NULL) {
 		goto fail;
 	}
 
-	memcpy(result->a_u.schannel_auth->sess_key, sess_key,
-	       sizeof(result->a_u.schannel_auth->sess_key));
+	result->a_u.schannel_auth->state = SCHANNEL_STATE_START;
 	result->a_u.schannel_auth->seq_num = 0;
+	result->a_u.schannel_auth->initiator = true;
+	result->a_u.schannel_auth->creds = creds;
 
 	*presult = result;
 	return NT_STATUS_OK;
@@ -3904,7 +3927,7 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 	}
 
 	status = rpccli_schannel_bind_data(result, domain, auth_level,
-					   (*pdc)->session_key, &auth);
+					   *pdc, &auth);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("rpccli_schannel_bind_data returned %s\n",
 			  nt_errstr(status)));
@@ -4122,7 +4145,7 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 	switch (cli->auth->auth_type) {
 		case PIPE_AUTH_TYPE_SCHANNEL:
 			*session_key = data_blob_talloc(mem_ctx,
-				cli->auth->a_u.schannel_auth->sess_key, 16);
+				cli->auth->a_u.schannel_auth->creds->session_key, 16);
 			break;
 		case PIPE_AUTH_TYPE_NTLMSSP:
 		case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:

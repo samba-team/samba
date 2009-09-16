@@ -1,30 +1,28 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    schannel library code
 
    Copyright (C) Andrew Tridgell 2004
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "includes.h"
+#include "../libcli/auth/schannel.h"
 #include "../lib/crypto/crypto.h"
-#include "auth/gensec/gensec.h"
-#include "auth/gensec/gensec_proto.h"
-#include "auth/gensec/schannel.h"
 
 #define NETSEC_SIGN_SIGNATURE { 0x77, 0x00, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00 }
 #define NETSEC_SEAL_SIGNATURE { 0x77, 0x00, 0x7a, 0x00, 0xff, 0xff, 0x00, 0x00 }
@@ -49,11 +47,11 @@ static void netsec_deal_with_seq_num(struct schannel_state *state,
 
 
 /*******************************************************************
- Calculate the key with which to encode the data payload 
+ Calculate the key with which to encode the data payload
  ********************************************************************/
 static void netsec_get_sealing_key(const uint8_t session_key[16],
 				   const uint8_t seq_num[8],
-				   uint8_t sealing_key[16]) 
+				   uint8_t sealing_key[16])
 {
 	static const uint8_t zeros[4];
 	uint8_t digest2[16];
@@ -63,26 +61,26 @@ static void netsec_get_sealing_key(const uint8_t session_key[16],
 	for (i = 0; i < 16; i++) {
 		sess_kf0[i] = session_key[i] ^ 0xf0;
 	}
-	
+
 	hmac_md5(sess_kf0, zeros, 4, digest2);
 	hmac_md5(digest2, seq_num, 8, sealing_key);
 }
 
 
 /*******************************************************************
- Create a digest over the entire packet (including the data), and 
+ Create a digest over the entire packet (including the data), and
  MD5 it with the session key.
  ********************************************************************/
 static void schannel_digest(const uint8_t sess_key[16],
 			    const uint8_t netsec_sig[8],
 			    const uint8_t *confounder,
 			    const uint8_t *data, size_t data_len,
-			    uint8_t digest_final[16]) 
+			    uint8_t digest_final[16])
 {
 	uint8_t packet_digest[16];
 	static const uint8_t zeros[4];
 	struct MD5Context ctx;
-	
+
 	MD5Init(&ctx);
 	MD5Update(&ctx, zeros, 4);
 	MD5Update(&ctx, netsec_sig, 8);
@@ -91,7 +89,7 @@ static void schannel_digest(const uint8_t sess_key[16],
 	}
 	MD5Update(&ctx, data, data_len);
 	MD5Final(packet_digest, &ctx);
-	
+
 	hmac_md5(sess_key, packet_digest, sizeof(packet_digest), digest_final);
 }
 
@@ -99,14 +97,11 @@ static void schannel_digest(const uint8_t sess_key[16],
 /*
   unseal a packet
 */
-NTSTATUS schannel_unseal_packet(struct gensec_security *gensec_security, 
-				TALLOC_CTX *mem_ctx, 
-				uint8_t *data, size_t length, 
-				const uint8_t *whole_pdu, size_t pdu_length, 
+NTSTATUS schannel_unseal_packet(struct schannel_state *state,
+				TALLOC_CTX *mem_ctx,
+				uint8_t *data, size_t length,
 				const DATA_BLOB *sig)
 {
-	struct schannel_state *state = talloc_get_type(gensec_security->private_data, struct schannel_state);
-	
 	uint8_t digest_final[16];
 	uint8_t confounder[8];
 	uint8_t seq_num[8];
@@ -126,8 +121,8 @@ NTSTATUS schannel_unseal_packet(struct gensec_security *gensec_security,
 	arcfour_crypt(confounder, sealing_key, 8);
 	arcfour_crypt(data, sealing_key, length);
 
-	schannel_digest(state->creds->session_key, 
-			netsec_sig, confounder, 
+	schannel_digest(state->creds->session_key,
+			netsec_sig, confounder,
 			data, length, digest_final);
 
 	if (memcmp(digest_final, sig->data+16, 8) != 0) {
@@ -150,14 +145,11 @@ NTSTATUS schannel_unseal_packet(struct gensec_security *gensec_security,
 /*
   check the signature on a packet
 */
-NTSTATUS schannel_check_packet(struct gensec_security *gensec_security, 
-			       TALLOC_CTX *mem_ctx, 
-			       const uint8_t *data, size_t length, 
-			       const uint8_t *whole_pdu, size_t pdu_length, 
+NTSTATUS schannel_check_packet(struct schannel_state *state,
+			       TALLOC_CTX *mem_ctx,
+			       const uint8_t *data, size_t length,
 			       const DATA_BLOB *sig)
 {
-	struct schannel_state *state = talloc_get_type(gensec_security->private_data, struct schannel_state);
-
 	uint8_t digest_final[16];
 	uint8_t seq_num[8];
 	static const uint8_t netsec_sig[8] = NETSEC_SIGN_SIGNATURE;
@@ -173,8 +165,8 @@ NTSTATUS schannel_check_packet(struct gensec_security *gensec_security,
 	dump_data_pw("seq_num:\n", seq_num, 8);
 	dump_data_pw("sess_key:\n", state->creds->session_key, 16);
 
-	schannel_digest(state->creds->session_key, 
-			netsec_sig, NULL, 
+	schannel_digest(state->creds->session_key,
+			netsec_sig, NULL,
 			data, length, digest_final);
 
 	netsec_deal_with_seq_num(state, digest_final, seq_num);
@@ -198,14 +190,11 @@ NTSTATUS schannel_check_packet(struct gensec_security *gensec_security,
 /*
   seal a packet
 */
-NTSTATUS schannel_seal_packet(struct gensec_security *gensec_security, 
-			      TALLOC_CTX *mem_ctx, 
-			      uint8_t *data, size_t length, 
-			      const uint8_t *whole_pdu, size_t pdu_length, 
+NTSTATUS schannel_seal_packet(struct schannel_state *state,
+			      TALLOC_CTX *mem_ctx,
+			      uint8_t *data, size_t length,
 			      DATA_BLOB *sig)
 {
-	struct schannel_state *state = talloc_get_type(gensec_security->private_data, struct schannel_state);
-
 	uint8_t digest_final[16];
 	uint8_t confounder[8];
 	uint8_t seq_num[8];
@@ -217,8 +206,8 @@ NTSTATUS schannel_seal_packet(struct gensec_security *gensec_security,
 	RSIVAL(seq_num, 0, state->seq_num);
 	SIVAL(seq_num, 4, state->initiator?0x80:0);
 
-	schannel_digest(state->creds->session_key, 
-			netsec_sig, confounder, 
+	schannel_digest(state->creds->session_key,
+			netsec_sig, confounder,
 			data, length, digest_final);
 
 	netsec_get_sealing_key(state->creds->session_key, seq_num, sealing_key);
@@ -246,14 +235,11 @@ NTSTATUS schannel_seal_packet(struct gensec_security *gensec_security,
 /*
   sign a packet
 */
-NTSTATUS schannel_sign_packet(struct gensec_security *gensec_security, 
-			      TALLOC_CTX *mem_ctx, 
-			      const uint8_t *data, size_t length, 
-			      const uint8_t *whole_pdu, size_t pdu_length, 
+NTSTATUS schannel_sign_packet(struct schannel_state *state,
+			      TALLOC_CTX *mem_ctx,
+			      const uint8_t *data, size_t length,
 			      DATA_BLOB *sig)
 {
-	struct schannel_state *state = talloc_get_type(gensec_security->private_data, struct schannel_state);
-
 	uint8_t digest_final[16];
 	uint8_t seq_num[8];
 	static const uint8_t netsec_sig[8] = NETSEC_SIGN_SIGNATURE;
@@ -261,8 +247,8 @@ NTSTATUS schannel_sign_packet(struct gensec_security *gensec_security,
 	RSIVAL(seq_num, 0, state->seq_num);
 	SIVAL(seq_num, 4, state->initiator?0x80:0);
 
-	schannel_digest(state->creds->session_key, 
-			netsec_sig, NULL, 
+	schannel_digest(state->creds->session_key,
+			netsec_sig, NULL,
 			data, length, digest_final);
 
 	netsec_deal_with_seq_num(state, digest_final, seq_num);

@@ -27,6 +27,7 @@
 #include "includes.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../libcli/auth/schannel_state.h"
+#include "../libcli/auth/schannel.h"
 
 extern userdom_struct current_user_info;
 
@@ -1053,7 +1054,7 @@ static NTSTATUS _netr_LogonSamLogon_base(pipes_struct *p,
 		    || (p->auth.a_u.schannel_auth == NULL)) {
 			return NT_STATUS_INVALID_HANDLE;
 		}
-		memcpy(pipe_session_key, p->auth.a_u.schannel_auth->sess_key, 16);
+		memcpy(pipe_session_key, p->auth.a_u.schannel_auth->creds->session_key, 16);
 	}
 
 	switch (r->in.validation_level) {

@@ -72,7 +72,7 @@ OUTPUT_TYPE = MERGED_OBJ
 # End MODULE gensec_schannel
 ################################################
 
-gensec_schannel_OBJ_FILES = $(addprefix $(gensecsrcdir)/, schannel.o schannel_sign.o)
+gensec_schannel_OBJ_FILES = $(addprefix $(gensecsrcdir)/, schannel.o) ../libcli/auth/schannel_sign.o
 $(eval $(call proto_header_template,$(gensecsrcdir)/schannel_proto.h,$(gensec_schannel_OBJ_FILES:.o=.c)))
 
 ################################################
