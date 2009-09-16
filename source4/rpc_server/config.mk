@@ -8,7 +8,8 @@ PRIVATE_DEPENDENCIES = LIBLDB
 # End SUBSYSTEM DCERPC_COMMON
 ################################################
 
-DCERPC_COMMON_OBJ_FILES = $(addprefix $(rpc_serversrcdir)/common/, server_info.o share_info.o)
+DCERPC_COMMON_OBJ_FILES = $(addprefix $(rpc_serversrcdir)/common/, \
+	server_info.o share_info.o forward.o)
 
 $(eval $(call proto_header_template,$(rpc_serversrcdir)/common/proto.h,$(DCERPC_COMMON_OBJ_FILES:.o=.c)))
 
