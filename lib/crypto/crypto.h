@@ -24,5 +24,5 @@
 #include "../lib/crypto/sha256.h"
 #include "../lib/crypto/hmacsha256.h"
 #include "../lib/crypto/arcfour.h"
-
+#include "../lib/crypto/aes.h"
 
