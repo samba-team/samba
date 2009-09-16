@@ -916,6 +916,9 @@ static ssize_t streams_xattr_pread(vfs_handle_struct *handle,
 	NTSTATUS status;
 	size_t length, overlap;
 
+	DEBUG(10, ("streams_xattr_pread: offset=%d, size=%d\n",
+		   (int)offset, (int)n));
+
 	if (sio == NULL) {
 		return SMB_VFS_NEXT_PREAD(handle, fsp, data, n, offset);
 	}
@@ -931,6 +934,9 @@ static ssize_t streams_xattr_pread(vfs_handle_struct *handle,
 	}
 
 	length = ea.value.length-1;
+
+	DEBUG(10, ("streams_xattr_pread: get_ea_value returned %d bytes\n",
+		   (int)length));
 
         /* Attempt to read past EOF. */
         if (length <= offset) {
