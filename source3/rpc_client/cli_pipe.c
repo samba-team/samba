@@ -672,13 +672,11 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli, RPC_HDR *p
 				uint8 *p_ss_padding_len)
 {
 	RPC_HDR_AUTH auth_info;
-	struct NL_AUTH_SIGNATURE schannel_chk;
 	uint32 auth_len = prhdr->auth_len;
 	uint32 save_offset = prs_offset(current_pdu);
 	struct schannel_state *schannel_auth =
 		cli->auth->a_u.schannel_auth;
 	uint32 data_len;
-	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	NTSTATUS status;
 
@@ -725,15 +723,8 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli, RPC_HDR *p
 
 	blob = data_blob_const(prs_data_p(current_pdu) + prs_offset(current_pdu), auth_len);
 
-	ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), NULL, &schannel_chk,
-			       (ndr_pull_flags_fn_t)ndr_pull_NL_AUTH_SIGNATURE);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(0,("cli_pipe_verify_schannel: failed to unmarshal RPC_AUTH_SCHANNEL_CHK.\n"));
-		return ndr_map_error2ntstatus(ndr_err);
-	}
-
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_DEBUG(NL_AUTH_SIGNATURE, &schannel_chk);
+		dump_NL_AUTH_SIGNATURE(talloc_tos(), &blob);
 	}
 
 	switch (cli->auth->auth_level) {
@@ -1930,11 +1921,9 @@ static NTSTATUS add_schannel_auth_footer(struct rpc_pipe_client *cli,
 					prs_struct *outgoing_pdu)
 {
 	RPC_HDR_AUTH auth_info;
-	struct NL_AUTH_SIGNATURE verf;
 	struct schannel_state *sas = cli->auth->a_u.schannel_auth;
 	char *data_p = prs_data_p(outgoing_pdu) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN;
 	size_t data_and_pad_len = prs_offset(outgoing_pdu) - RPC_HEADER_LEN - RPC_HDR_RESP_LEN;
-	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	NTSTATUS status;
 
@@ -1982,17 +1971,11 @@ static NTSTATUS add_schannel_auth_footer(struct rpc_pipe_client *cli,
 			nt_errstr(status)));
 		return status;
 	}
-#if 0
-	ndr_err = ndr_push_struct_blob(&blob, talloc_tos(), NULL, &verf,
-			       (ndr_push_flags_fn_t)ndr_push_NL_AUTH_SIGNATURE);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return ndr_map_error2ntstatus(ndr_err);
-	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_DEBUG(NL_AUTH_SIGNATURE, &verf);
+		dump_NL_AUTH_SIGNATURE(talloc_tos(), &blob);
 	}
-#endif
+
 	/* Finally marshall the blob. */
 	if (!prs_copy_data_in(outgoing_pdu, (const char *)blob.data, blob.length)) {
 		return NT_STATUS_NO_MEMORY;

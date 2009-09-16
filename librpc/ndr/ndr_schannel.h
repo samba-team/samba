@@ -21,4 +21,5 @@
 
 void ndr_print_NL_AUTH_MESSAGE_BUFFER(struct ndr_print *ndr, const char *name, const union NL_AUTH_MESSAGE_BUFFER *r);
 void ndr_print_NL_AUTH_MESSAGE_BUFFER_REPLY(struct ndr_print *ndr, const char *name, const union NL_AUTH_MESSAGE_BUFFER_REPLY *r);
-
+void dump_NL_AUTH_SIGNATURE(TALLOC_CTX *mem_ctx,
+			    const DATA_BLOB *blob);
