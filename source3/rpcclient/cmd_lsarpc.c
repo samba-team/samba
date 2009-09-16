@@ -1731,7 +1731,7 @@ static NTSTATUS cmd_lsa_retrieve_private_data(struct rpc_pipe_client *cli,
 	struct lsa_String name;
 	struct lsa_DATA_BUF *val;
 	DATA_BLOB session_key;
-	DATA_BLOB blob;
+	DATA_BLOB blob = data_blob_null;
 	char *secret;
 
 	if (argc < 2) {
