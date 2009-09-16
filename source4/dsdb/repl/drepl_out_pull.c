@@ -109,7 +109,7 @@ static void dreplsrv_pending_op_callback(struct dreplsrv_out_operation *op)
 	if (W_ERROR_IS_OK(rf->result_last_attempt)) {
 		rf->consecutive_sync_failures	= 0;
 		rf->last_success		= now;
-		DEBUG(2,("dreplsrv_op_pull_source(%s)\n",
+		DEBUG(3,("dreplsrv_op_pull_source(%s)\n",
 			win_errstr(rf->result_last_attempt)));
 		goto done;
 	}
