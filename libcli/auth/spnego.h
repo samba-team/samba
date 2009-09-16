@@ -67,4 +67,4 @@ enum spnego_message_type {
 	SPNEGO_NEG_TOKEN_TARG = 1,
 };
 
-#include "auth/gensec/spnego_proto.h"
+#include "../libcli/auth/spnego_proto.h"
