@@ -2279,7 +2279,7 @@ static const struct ndr_interface_call ntlmssp_calls[] = {
 };
 
 static const char * const ntlmssp_endpoint_strings[] = {
-	"ncacn_np:[\\pipe\\ntlmssp]",
+	"ncacn_np:[\\pipe\\ntlmssp]", 
 };
 
 static const struct ndr_interface_string_array ntlmssp_endpoints = {
@@ -2288,7 +2288,7 @@ static const struct ndr_interface_string_array ntlmssp_endpoints = {
 };
 
 static const char * const ntlmssp_authservice_strings[] = {
-	"host",
+	"host", 
 };
 
 static const struct ndr_interface_string_array ntlmssp_authservices = {

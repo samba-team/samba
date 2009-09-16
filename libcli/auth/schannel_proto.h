@@ -23,20 +23,15 @@
 #ifndef _LIBCLI_AUTH_SCHANNEL_PROTO_H__
 #define _LIBCLI_AUTH_SCHANNEL_PROTO_H__
 
-NTSTATUS schannel_unseal_packet(struct schannel_state *state,
+NTSTATUS netsec_incoming_packet(struct schannel_state *state,
 				TALLOC_CTX *mem_ctx,
+				bool do_unseal,
 				uint8_t *data, size_t length,
 				const DATA_BLOB *sig);
-NTSTATUS schannel_check_packet(struct schannel_state *state,
-			       TALLOC_CTX *mem_ctx,
-			       const uint8_t *data, size_t length,
-			       const DATA_BLOB *sig);
-NTSTATUS schannel_seal_packet(struct schannel_state *state,
-			      TALLOC_CTX *mem_ctx,
-			      uint8_t *data, size_t length,
-			      DATA_BLOB *sig);
-NTSTATUS schannel_sign_packet(struct schannel_state *state,
-			      TALLOC_CTX *mem_ctx,
-			      const uint8_t *data, size_t length,
-			      DATA_BLOB *sig);
+NTSTATUS netsec_outgoing_packet(struct schannel_state *state,
+				TALLOC_CTX *mem_ctx,
+				bool do_seal,
+				uint8_t *data, size_t length,
+				DATA_BLOB *sig);
+
 #endif

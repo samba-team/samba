@@ -672,13 +672,12 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli, RPC_HDR *p
 				uint8 *p_ss_padding_len)
 {
 	RPC_HDR_AUTH auth_info;
-	struct NL_AUTH_SIGNATURE schannel_chk;
 	uint32 auth_len = prhdr->auth_len;
 	uint32 save_offset = prs_offset(current_pdu);
 	struct schannel_state *schannel_auth =
 		cli->auth->a_u.schannel_auth;
+	uint8_t *data;
 	uint32 data_len;
-	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	NTSTATUS status;
 
@@ -725,31 +724,28 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli, RPC_HDR *p
 
 	blob = data_blob_const(prs_data_p(current_pdu) + prs_offset(current_pdu), auth_len);
 
-	ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), NULL, &schannel_chk,
-			       (ndr_pull_flags_fn_t)ndr_pull_NL_AUTH_SIGNATURE);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(0,("cli_pipe_verify_schannel: failed to unmarshal RPC_AUTH_SCHANNEL_CHK.\n"));
-		return ndr_map_error2ntstatus(ndr_err);
+	if (DEBUGLEVEL >= 10) {
+		dump_NL_AUTH_SIGNATURE(talloc_tos(), &blob);
 	}
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_DEBUG(NL_AUTH_SIGNATURE, &schannel_chk);
-	}
+	data = (uint8_t *)prs_data_p(current_pdu)+RPC_HEADER_LEN+RPC_HDR_RESP_LEN;
 
 	switch (cli->auth->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
-		status = schannel_unseal_packet(schannel_auth,
+		status = netsec_incoming_packet(schannel_auth,
 						talloc_tos(),
-						(uint8_t *)prs_data_p(current_pdu)+RPC_HEADER_LEN+RPC_HDR_RESP_LEN,
+						true,
+						data,
 						data_len,
 						&blob);
 		break;
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		status = schannel_check_packet(schannel_auth,
-					       talloc_tos(),
-					       (uint8_t *)prs_data_p(current_pdu)+RPC_HEADER_LEN+RPC_HDR_RESP_LEN,
-					       data_len,
-					       &blob);
+		status = netsec_incoming_packet(schannel_auth,
+						talloc_tos(),
+						false,
+						data,
+						data_len,
+						&blob);
 		break;
 	default:
 		status = NT_STATUS_INTERNAL_ERROR;
@@ -881,14 +877,14 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli, RPC_H
 
 	/* Ensure we have the correct type. */
 	switch (prhdr->pkt_type) {
-		case RPC_ALTCONTRESP:
-		case RPC_BINDACK:
+		case DCERPC_PKT_ALTER_RESP:
+		case DCERPC_PKT_BIND_ACK:
 
 			/* Alter context and bind ack share the same packet definitions. */
 			break;
 
 
-		case RPC_RESPONSE:
+		case DCERPC_PKT_RESPONSE:
 		{
 			RPC_HDR_RESP rhdr_resp;
 			uint8 ss_padding_len = 0;
@@ -944,14 +940,14 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli, RPC_H
 			break;
 		}
 
-		case RPC_BINDNACK:
+		case DCERPC_PKT_BIND_NAK:
 			DEBUG(1, ("cli_pipe_validate_current_pdu: Bind NACK "
 				  "received from %s!\n",
 				  rpccli_pipe_txt(debug_ctx(), cli)));
 			/* Use this for now... */
 			return NT_STATUS_NETWORK_ACCESS_DENIED;
 
-		case RPC_FAULT:
+		case DCERPC_PKT_FAULT:
 		{
 			RPC_HDR_RESP rhdr_resp;
 			RPC_HDR_FAULT fault_resp;
@@ -998,10 +994,10 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli, RPC_H
 	   data before now as we may have needed to do cryptographic actions on
 	   it before. */
 
-	if ((prhdr->pkt_type == RPC_BINDACK) && !(prhdr->flags & RPC_FLG_LAST)) {
+	if ((prhdr->pkt_type == DCERPC_PKT_BIND_ACK) && !(prhdr->flags & DCERPC_PFC_FLAG_LAST)) {
 		DEBUG(5,("cli_pipe_validate_current_pdu: bug in server (AS/U?), "
 			"setting fragment first/last ON.\n"));
-		prhdr->flags |= RPC_FLG_FIRST|RPC_FLG_LAST;
+		prhdr->flags |= DCERPC_PFC_FLAG_FIRST|DCERPC_PFC_FLAG_LAST;
 	}
 
 	return NT_STATUS_OK;
@@ -1401,7 +1397,7 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 		return;
 	}
 
-	if ((state->rhdr.flags & RPC_FLG_FIRST)
+	if ((state->rhdr.flags & DCERPC_PFC_FLAG_FIRST)
 	    && (state->rhdr.pack_type[0] == 0)) {
 		/*
 		 * Set the data type correctly for big-endian data on the
@@ -1442,7 +1438,7 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 		return;
 	}
 
-	if (state->rhdr.flags & RPC_FLG_LAST) {
+	if (state->rhdr.flags & DCERPC_PFC_FLAG_LAST) {
 		DEBUG(10,("rpc_api_pipe: %s returned %u bytes.\n",
 			  rpccli_pipe_txt(debug_ctx(), state->cli),
 			  (unsigned)prs_data_size(&state->incoming_pdu)));
@@ -1688,7 +1684,7 @@ static NTSTATUS create_schannel_auth_rpc_bind_req( struct rpc_pipe_client *cli,
  Creates the internals of a DCE/RPC bind request or alter context PDU.
  ********************************************************************/
 
-static NTSTATUS create_bind_or_alt_ctx_internal(enum RPC_PKT_TYPE pkt_type,
+static NTSTATUS create_bind_or_alt_ctx_internal(enum dcerpc_pkt_type pkt_type,
 						prs_struct *rpc_out, 
 						uint32 rpc_call_id,
 						const struct ndr_syntax_id *abstract,
@@ -1723,7 +1719,7 @@ static NTSTATUS create_bind_or_alt_ctx_internal(enum RPC_PKT_TYPE pkt_type,
 	}
 
 	/* Create the request RPC_HDR */
-	init_rpc_hdr(&hdr, pkt_type, RPC_FLG_FIRST|RPC_FLG_LAST, rpc_call_id, frag_len, auth_len);
+	init_rpc_hdr(&hdr, pkt_type, DCERPC_PFC_FLAG_FIRST|DCERPC_PFC_FLAG_LAST, rpc_call_id, frag_len, auth_len);
 
 	/* Marshall the RPC header */
 	if(!smb_io_rpc_hdr("hdr"   , &hdr, rpc_out, 0)) {
@@ -1827,7 +1823,7 @@ static NTSTATUS create_rpc_bind_req(struct rpc_pipe_client *cli,
 			return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	ret = create_bind_or_alt_ctx_internal(RPC_BIND,
+	ret = create_bind_or_alt_ctx_internal(DCERPC_PKT_BIND,
 						rpc_out, 
 						rpc_call_id,
 						abstract,
@@ -1930,11 +1926,9 @@ static NTSTATUS add_schannel_auth_footer(struct rpc_pipe_client *cli,
 					prs_struct *outgoing_pdu)
 {
 	RPC_HDR_AUTH auth_info;
-	struct NL_AUTH_SIGNATURE verf;
 	struct schannel_state *sas = cli->auth->a_u.schannel_auth;
 	char *data_p = prs_data_p(outgoing_pdu) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN;
 	size_t data_and_pad_len = prs_offset(outgoing_pdu) - RPC_HEADER_LEN - RPC_HDR_RESP_LEN;
-	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	NTSTATUS status;
 
@@ -1959,18 +1953,20 @@ static NTSTATUS add_schannel_auth_footer(struct rpc_pipe_client *cli,
 
 	switch (cli->auth->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
-		status = schannel_seal_packet(sas,
-					      talloc_tos(),
-					      (uint8_t *)data_p,
-					      data_and_pad_len,
-					      &blob);
+		status = netsec_outgoing_packet(sas,
+						talloc_tos(),
+						true,
+						(uint8_t *)data_p,
+						data_and_pad_len,
+						&blob);
 		break;
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		status = schannel_sign_packet(sas,
-					      talloc_tos(),
-					      (uint8_t *)data_p,
-					      data_and_pad_len,
-					      &blob);
+		status = netsec_outgoing_packet(sas,
+						talloc_tos(),
+						false,
+						(uint8_t *)data_p,
+						data_and_pad_len,
+						&blob);
 		break;
 	default:
 		status = NT_STATUS_INTERNAL_ERROR;
@@ -1982,17 +1978,11 @@ static NTSTATUS add_schannel_auth_footer(struct rpc_pipe_client *cli,
 			nt_errstr(status)));
 		return status;
 	}
-#if 0
-	ndr_err = ndr_push_struct_blob(&blob, talloc_tos(), NULL, &verf,
-			       (ndr_push_flags_fn_t)ndr_push_NL_AUTH_SIGNATURE);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return ndr_map_error2ntstatus(ndr_err);
-	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_DEBUG(NL_AUTH_SIGNATURE, &verf);
+		dump_NL_AUTH_SIGNATURE(talloc_tos(), &blob);
 	}
-#endif
+
 	/* Finally marshall the blob. */
 	if (!prs_copy_data_in(outgoing_pdu, (const char *)blob.data, blob.length)) {
 		return NT_STATUS_NO_MEMORY;
@@ -2143,7 +2133,7 @@ struct tevent_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
 	if (is_last_frag) {
 		subreq = rpc_api_pipe_send(state, ev, state->cli,
 					   &state->outgoing_frag,
-					   RPC_RESPONSE);
+					   DCERPC_PKT_RESPONSE);
 		if (subreq == NULL) {
 			goto fail;
 		}
@@ -2189,11 +2179,11 @@ static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 		state->cli, data_left, &frag_len, &auth_len, &ss_padding);
 
 	if (state->req_data_sent == 0) {
-		flags = RPC_FLG_FIRST;
+		flags = DCERPC_PFC_FLAG_FIRST;
 	}
 
 	if (data_sent_thistime == data_left) {
-		flags |= RPC_FLG_LAST;
+		flags |= DCERPC_PFC_FLAG_LAST;
 	}
 
 	if (!prs_set_offset(&state->outgoing_frag, 0)) {
@@ -2201,7 +2191,7 @@ static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 	}
 
 	/* Create and marshall the header and request header. */
-	init_rpc_hdr(&hdr, RPC_REQUEST, flags, state->call_id, frag_len,
+	init_rpc_hdr(&hdr, DCERPC_PKT_REQUEST, flags, state->call_id, frag_len,
 		     auth_len);
 
 	if (!smb_io_rpc_hdr("hdr    ", &hdr, &state->outgoing_frag, 0)) {
@@ -2249,7 +2239,7 @@ static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 	}
 
 	state->req_data_sent += data_sent_thistime;
-	*is_last_frag = ((flags & RPC_FLG_LAST) != 0);
+	*is_last_frag = ((flags & DCERPC_PFC_FLAG_LAST) != 0);
 
 	return status;
 }
@@ -2279,7 +2269,7 @@ static void rpc_api_pipe_req_write_done(struct tevent_req *subreq)
 	if (is_last_frag) {
 		subreq = rpc_api_pipe_send(state, state->ev, state->cli,
 					   &state->outgoing_frag,
-					   RPC_RESPONSE);
+					   DCERPC_PKT_RESPONSE);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}
@@ -2436,7 +2426,7 @@ static NTSTATUS create_rpc_bind_auth3(struct rpc_pipe_client *cli,
 	uint32 pad = 0;
 
 	/* Create the request RPC_HDR */
-	init_rpc_hdr(&hdr, RPC_AUTH3, RPC_FLG_FIRST|RPC_FLG_LAST, rpc_call_id,
+	init_rpc_hdr(&hdr, DCERPC_PKT_AUTH3, DCERPC_PFC_FLAG_FIRST|DCERPC_PFC_FLAG_LAST, rpc_call_id,
 		     RPC_HEADER_LEN + 4 /* pad */ + RPC_HDR_AUTH_LEN + pauth_blob->length,
 		     pauth_blob->length );
 
@@ -2509,7 +2499,7 @@ static NTSTATUS create_rpc_alter_context(uint32 rpc_call_id,
 		}
 	}
 
-	ret = create_bind_or_alt_ctx_internal(RPC_ALTCONT,
+	ret = create_bind_or_alt_ctx_internal(DCERPC_PKT_ALTER,
 						rpc_out, 
 						rpc_call_id,
 						abstract,
@@ -2590,7 +2580,7 @@ struct tevent_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
 	}
 
 	subreq = rpc_api_pipe_send(state, ev, cli, &state->rpc_out,
-				   RPC_BINDACK);
+				   DCERPC_PKT_BIND_ACK);
 	if (subreq == NULL) {
 		goto fail;
 	}
@@ -2858,7 +2848,7 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind_send(struct tevent_req *req,
 	}
 
 	subreq = rpc_api_pipe_send(state, state->ev, state->cli,
-				   &state->rpc_out, RPC_ALTCONTRESP);
+				   &state->rpc_out, DCERPC_PKT_ALTER_RESP);
 	if (subreq == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

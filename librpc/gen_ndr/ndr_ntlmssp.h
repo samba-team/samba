@@ -50,6 +50,7 @@ void ndr_print_LM_RESPONSE(struct ndr_print *ndr, const char *name, const struct
 enum ndr_err_code ndr_push_LMv2_RESPONSE(struct ndr_push *ndr, int ndr_flags, const struct LMv2_RESPONSE *r);
 enum ndr_err_code ndr_pull_LMv2_RESPONSE(struct ndr_pull *ndr, int ndr_flags, struct LMv2_RESPONSE *r);
 void ndr_print_LMv2_RESPONSE(struct ndr_print *ndr, const char *name, const struct LMv2_RESPONSE *r);
+void ndr_print_ntlmssp_LM_RESPONSE(struct ndr_print *ndr, const char *name, const union ntlmssp_LM_RESPONSE *r);
 enum ndr_err_code ndr_push_NTLM_RESPONSE(struct ndr_push *ndr, int ndr_flags, const struct NTLM_RESPONSE *r);
 enum ndr_err_code ndr_pull_NTLM_RESPONSE(struct ndr_pull *ndr, int ndr_flags, struct NTLM_RESPONSE *r);
 void ndr_print_NTLM_RESPONSE(struct ndr_print *ndr, const char *name, const struct NTLM_RESPONSE *r);
