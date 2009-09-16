@@ -636,7 +636,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	}
 
 	if (call->conn->cli_max_recv_frag == 0) {
-		call->conn->cli_max_recv_frag = call->pkt.u.bind.max_recv_frag;
+		call->conn->cli_max_recv_frag = MIN(0x2000, call->pkt.u.bind.max_recv_frag);
 	}
 
 	if ((call->pkt.pfc_flags & DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN) &&
@@ -658,7 +658,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	pkt.call_id = call->pkt.call_id;
 	pkt.ptype = DCERPC_PKT_BIND_ACK;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | extra_flags;
-	pkt.u.bind_ack.max_xmit_frag = 0x2000;
+	pkt.u.bind_ack.max_xmit_frag = call->conn->cli_max_recv_frag;
 	pkt.u.bind_ack.max_recv_frag = 0x2000;
 
 	/*
