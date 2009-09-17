@@ -178,6 +178,8 @@ struct winbindd_domain {
 				  * to False. This variable is around so that
 				  * we don't have to try _ex every time. */
 
+	bool can_do_ncacn_ip_tcp;
+
 	/* Lookup methods for this domain (LDAP or RPC) */
 	struct winbindd_methods *methods;
 

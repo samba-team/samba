@@ -1943,6 +1943,8 @@ done:
 	DEBUG(5,("set_dc_type_and_flags_connect: domain %s is %srunning active directory.\n",
 		  domain->name, domain->active_directory ? "" : "NOT "));
 
+	domain->can_do_ncacn_ip_tcp = domain->active_directory;
+
 	TALLOC_FREE(cli);
 
 	TALLOC_FREE(mem_ctx);
