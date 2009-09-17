@@ -164,6 +164,8 @@ static NTSTATUS rpccli_lsa_lookup_sids_noalloc(struct rpc_pipe_client *cli,
 		struct lsa_TransNameArray2 lsa_names2;
 		uint32_t n;
 
+		ZERO_STRUCT(lsa_names2);
+
 		result = rpccli_lsa_LookupSids3(cli, mem_ctx,
 						&sid_array,
 						&ref_domains,
