@@ -57,6 +57,16 @@ class SecurityDescriptorTests(unittest.TestCase):
         self.assertEquals(desc.sacl, None)
         self.assertEquals(desc.type, 0x8004)
 
+    def test_from_sddl_invalidsddl(self):
+        self.assertRaises(TypeError,security.descriptor.from_sddl, "foo",security.dom_sid("S-2-0-0"))
+
+    def test_from_sddl_invalidtype1(self):
+        self.assertRaises(TypeError,security.descriptor.from_sddl, security.dom_sid('S-2-0-0-512'),security.dom_sid("S-2-0-0"))
+
+    def test_from_sddl_invalidtype1(self):
+        sddl = "O:AOG:DAD:(A;;RPWPCCDCLCSWRCWDWOGA;;;S-1-0-0)"
+        self.assertRaises(TypeError,security.descriptor.from_sddl, sddl,"S-2-0-0")
+
     def test_as_sddl(self):
         text = "O:AOG:DAD:(A;;RPWPCCDCLCSWRCWDWOGA;;;S-1-0-0)"
         dom = security.dom_sid("S-2-0-0")
@@ -66,6 +76,13 @@ class SecurityDescriptorTests(unittest.TestCase):
         self.assertEquals(desc1.owner_sid, desc2.owner_sid)
         self.assertEquals(desc1.sacl, desc2.sacl)
         self.assertEquals(desc1.type, desc2.type)
+
+    def test_as_sddl_invalid(self):
+        text = "O:AOG:DAD:(A;;RPWPCCDCLCSWRCWDWOGA;;;S-1-0-0)"
+        dom = security.dom_sid("S-2-0-0")
+        desc1 = security.descriptor.from_sddl(text, dom)
+        self.assertRaises(TypeError, desc1.as_sddl,text)
+
 
     def test_as_sddl_no_domainsid(self):
         dom = security.dom_sid("S-2-0-0")
