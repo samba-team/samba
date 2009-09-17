@@ -21,6 +21,7 @@ objectClass: top
 objectClass: container
 cn: DisplaySpecifiers
 distinguishedName: CN=DisplaySpecifiers,<Configuration NC Distinguished Name>
+objectVersion: 1
 instanceType: 4
 showInAdvancedViewOnly: TRUE
 name: DisplaySpecifiers

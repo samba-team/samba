@@ -912,7 +912,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
             domainguid_mod = ""
 
         setup_modify_ldif(samdb, setup_path("provision_basedn_modify.ldif"), {
-            "LDAPTIME": timestring(int(time.time())),
+            "CREATTIME": str(int(time.time()) * 1e7), # seconds -> ticks
             "DOMAINSID": str(domainsid),
             "SCHEMADN": names.schemadn, 
             "NETBIOSNAME": names.netbiosname,
@@ -922,7 +922,8 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
             "POLICYGUID": policyguid,
             "DOMAINDN": names.domaindn,
             "DOMAINGUID_MOD": domainguid_mod,
-            "DOMAIN_FUNCTIONALITY": str(domainFunctionality)
+            "DOMAIN_FUNCTIONALITY": str(domainFunctionality),
+            "SAMBA_VERSION_STRING": version
             })
 
         message("Adding configuration container")
@@ -1205,7 +1206,7 @@ def provision(setup_dir, message, session_info,
                                    "{" + policyguid + "}")
         os.makedirs(policy_path, 0755)
         open(os.path.join(policy_path, "GPT.INI"), 'w').write(
-                                   "[General]\r\nVersion=65544")
+                                   "[General]\r\nVersion=65543")
         os.makedirs(os.path.join(policy_path, "MACHINE"), 0755)
         os.makedirs(os.path.join(policy_path, "USER"), 0755)
 

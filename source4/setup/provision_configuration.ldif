@@ -7,6 +7,14 @@
 # This file is parsed during provision using the ms_display_specifiers.py
 # script.
 
+dn: CN=Deleted Objects,${CONFIGDN}
+objectClass: top
+objectClass: container
+description: Container for deleted objects
+isDeleted: TRUE
+isCriticalSystemObject: TRUE
+systemFlags: -1946157056
+
 dn: CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: container
@@ -688,12 +696,6 @@ objectClass: top
 objectClass: locality
 objectClass: physicalLocation
 l: Physical Locations tree root
-
-dn: CN=Deleted Objects,${CONFIGDN}
-objectClass: top
-objectClass: container
-description: Container for deleted objects
-isDeleted: TRUE
 
 # Schema located in "ad-schema/*.txt"
 

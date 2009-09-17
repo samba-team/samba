@@ -24,6 +24,15 @@ systemFlags: -1946157056
 isCriticalSystemObject: TRUE
 showInAdvancedViewOnly: FALSE
 
+dn: CN=Deleted Objects,${DOMAINDN}
+objectClass: top
+objectClass: container
+description: Container for deleted objects
+isDeleted: TRUE
+isCriticalSystemObject: TRUE
+showInAdvancedViewOnly: TRUE
+systemFlags: -1946157056
+
 # Computers located in "provision_computers*.ldif"
 # Users/Groups located in "provision_users*.ldif"
 
@@ -126,6 +135,222 @@ objectClass: top
 objectClass: container
 
 dn: CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=ab402345-d3c3-455d-9ff7-40268a1099b6,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=bab5f54d-06c8-48de-9b87-d78b796564e4,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=f3dd09dd-25e8-4f9c-85df-12d6d2f2f2f5,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=2416c60a-fe15-4d7a-a61e-dffd5df864d3,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=7868d4c8-ac41-4e05-b401-776280e8e9f1,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=860c36ed-5241-4c62-a18b-cf6ff9994173,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=0e660ea3-8a5e-4495-9ad7-ca1bd4638f9e,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=a86fe12a-0f62-4e2a-b271-d27f601f8182,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=d85c0bfd-094f-4cad-a2b5-82ac9268475d,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=6ada9ff7-c9df-45c1-908e-9fef2fab008a,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=10b3ad2a-6883-4fa7-90fc-6377cbdc1b26,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=98de1d3e-6611-443b-8b4e-f4337f1ded0b,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=f607fd87-80cf-45e2-890b-6cf97ec0e284,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=9cac1f66-2167-47ad-a472-2a13251310e4,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=6ff880d6-11e7-4ed1-a20f-aac45da48650,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=446f24ea-cfd5-4c52-8346-96e170bcb912,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=51cba88b-99cf-4e16-bef2-c427b38d0767,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=293f0798-ea5c-4455-9f5d-45f33a30703b,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=5c82b233-75fc-41b3-ac71-c69592e6bf15,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=7ffef925-405b-440a-8d58-35e8cd6e98c3,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=4dfbb973-8a62-4310-a90c-776e00f83222,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=8437C3D8-7689-4200-BF38-79E4AC33DFA0,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=7cfb016c-4f87-4406-8166-bd9df943947f,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=f7ed4553-d82b-49ef-a839-2f38a36bb069,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=8ca38317-13a4-4bd4-806f-ebed6acb5d0c,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=3c784009-1f57-4e2a-9b04-6915c9e71961,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=6bcd5678-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=6bcd5679-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=6bcd567a-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=6bcd567b-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=6bcd567c-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=6bcd567d-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=6bcd567e-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=6bcd567f-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=6bcd5680-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=6bcd5681-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=6bcd5682-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=6bcd5683-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=6bcd5684-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=6bcd5685-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=6bcd5686-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=6bcd5687-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=6bcd5688-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=6bcd5689-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=6bcd568a-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=6bcd568b-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=6bcd568c-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=6bcd568d-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=3051c66f-b332-4a73-9a20-2d6a7d6e6a1c,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=3e4f4182-ac5d-4378-b760-0eab2de593e2,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=c4f17608-e611-11d6-9793-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=13d15cf0-e6c8-11d6-9793-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=8ddf6913-1c7b-4c59-a5af-b9ca3b3d2c4c,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=6E157EDF-4E72-4052-A82A-EC3F91021A22,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
 objectClass: top
 objectClass: container
 
