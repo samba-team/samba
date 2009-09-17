@@ -9062,6 +9062,135 @@ _PUBLIC_ void ndr_print_drsuapi_DsAddEntryCtr(struct ndr_print *ndr, const char 
 	}
 }
 
+static enum ndr_err_code ndr_push_drsuapi_DsExecuteKCCFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_drsuapi_DsExecuteKCCFlags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_drsuapi_DsExecuteKCCFlags(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_EXECUTE_KCC_ASYNCHRONOUS_OPERATION", DRSUAPI_DS_EXECUTE_KCC_ASYNCHRONOUS_OPERATION, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_EXECUTE_KCC_DAMPED", DRSUAPI_DS_EXECUTE_KCC_DAMPED, r);
+	ndr->depth--;
+}
+
+static enum ndr_err_code ndr_push_drsuapi_DsExecuteKCC1(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsExecuteKCC1 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->taskID));
+		NDR_CHECK(ndr_push_drsuapi_DsExecuteKCCFlags(ndr, NDR_SCALARS, r->flags));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_drsuapi_DsExecuteKCC1(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_DsExecuteKCC1 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->taskID));
+		NDR_CHECK(ndr_pull_drsuapi_DsExecuteKCCFlags(ndr, NDR_SCALARS, &r->flags));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_drsuapi_DsExecuteKCC1(struct ndr_print *ndr, const char *name, const struct drsuapi_DsExecuteKCC1 *r)
+{
+	ndr_print_struct(ndr, name, "drsuapi_DsExecuteKCC1");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "taskID", r->taskID);
+	ndr_print_drsuapi_DsExecuteKCCFlags(ndr, "flags", r->flags);
+	ndr->depth--;
+}
+
+static enum ndr_err_code ndr_push_drsuapi_DsExecuteKCCRequest(struct ndr_push *ndr, int ndr_flags, const union drsuapi_DsExecuteKCCRequest *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		switch (level) {
+			case 1: {
+				NDR_CHECK(ndr_push_drsuapi_DsExecuteKCC1(ndr, NDR_SCALARS, &r->ctr1));
+			break; }
+
+			default:
+				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
+		switch (level) {
+			case 1:
+			break;
+
+			default:
+				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_drsuapi_DsExecuteKCCRequest(struct ndr_pull *ndr, int ndr_flags, union drsuapi_DsExecuteKCCRequest *r)
+{
+	int level;
+	uint32_t _level;
+	level = ndr_pull_get_switch_value(ndr, r);
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
+		if (_level != level) {
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
+		}
+		switch (level) {
+			case 1: {
+				NDR_CHECK(ndr_pull_drsuapi_DsExecuteKCC1(ndr, NDR_SCALARS, &r->ctr1));
+			break; }
+
+			default:
+				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		switch (level) {
+			case 1:
+			break;
+
+			default:
+				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_drsuapi_DsExecuteKCCRequest(struct ndr_print *ndr, const char *name, const union drsuapi_DsExecuteKCCRequest *r)
+{
+	int level;
+	level = ndr_print_get_switch_value(ndr, r);
+	ndr_print_union(ndr, name, level, "drsuapi_DsExecuteKCCRequest");
+	switch (level) {
+		case 1:
+			ndr_print_drsuapi_DsExecuteKCC1(ndr, "ctr1", &r->ctr1);
+		break;
+
+		default:
+			ndr_print_bad_level(ndr, name, level);
+	}
+}
+
 static enum ndr_err_code ndr_push_drsuapi_DsReplicaGetInfoLevel(struct ndr_push *ndr, int ndr_flags, enum drsuapi_DsReplicaGetInfoLevel r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
@@ -14497,9 +14626,19 @@ _PUBLIC_ void ndr_print_drsuapi_DsAddEntry(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_DRSUAPI_EXECUTE_KCC(struct ndr_push *ndr, int flags, const struct DRSUAPI_EXECUTE_KCC *r)
+static enum ndr_err_code ndr_push_drsuapi_DsExecuteKCC(struct ndr_push *ndr, int flags, const struct drsuapi_DsExecuteKCC *r)
 {
 	if (flags & NDR_IN) {
+		if (r->in.bind_handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.bind_handle));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.level));
+		if (r->in.req == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_set_switch_value(ndr, r->in.req, r->in.level));
+		NDR_CHECK(ndr_push_drsuapi_DsExecuteKCCRequest(ndr, NDR_SCALARS, r->in.req));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
@@ -14507,9 +14646,27 @@ static enum ndr_err_code ndr_push_DRSUAPI_EXECUTE_KCC(struct ndr_push *ndr, int 
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_DRSUAPI_EXECUTE_KCC(struct ndr_pull *ndr, int flags, struct DRSUAPI_EXECUTE_KCC *r)
+static enum ndr_err_code ndr_pull_drsuapi_DsExecuteKCC(struct ndr_pull *ndr, int flags, struct drsuapi_DsExecuteKCC *r)
 {
+	TALLOC_CTX *_mem_save_bind_handle_0;
+	TALLOC_CTX *_mem_save_req_0;
 	if (flags & NDR_IN) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.bind_handle);
+		}
+		_mem_save_bind_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.bind_handle, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.bind_handle));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_bind_handle_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.req);
+		}
+		_mem_save_req_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.req, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, r->in.req, r->in.level));
+		NDR_CHECK(ndr_pull_drsuapi_DsExecuteKCCRequest(ndr, NDR_SCALARS, r->in.req));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_req_0, LIBNDR_FLAG_REF_ALLOC);
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
@@ -14517,20 +14674,30 @@ static enum ndr_err_code ndr_pull_DRSUAPI_EXECUTE_KCC(struct ndr_pull *ndr, int 
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_DRSUAPI_EXECUTE_KCC(struct ndr_print *ndr, const char *name, int flags, const struct DRSUAPI_EXECUTE_KCC *r)
+_PUBLIC_ void ndr_print_drsuapi_DsExecuteKCC(struct ndr_print *ndr, const char *name, int flags, const struct drsuapi_DsExecuteKCC *r)
 {
-	ndr_print_struct(ndr, name, "DRSUAPI_EXECUTE_KCC");
+	ndr_print_struct(ndr, name, "drsuapi_DsExecuteKCC");
 	ndr->depth++;
 	if (flags & NDR_SET_VALUES) {
 		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
 	}
 	if (flags & NDR_IN) {
-		ndr_print_struct(ndr, "in", "DRSUAPI_EXECUTE_KCC");
+		ndr_print_struct(ndr, "in", "drsuapi_DsExecuteKCC");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "bind_handle", r->in.bind_handle);
+		ndr->depth++;
+		ndr_print_policy_handle(ndr, "bind_handle", r->in.bind_handle);
+		ndr->depth--;
+		ndr_print_uint32(ndr, "level", r->in.level);
+		ndr_print_ptr(ndr, "req", r->in.req);
+		ndr->depth++;
+		ndr_print_set_switch_value(ndr, r->in.req, r->in.level);
+		ndr_print_drsuapi_DsExecuteKCCRequest(ndr, "req", r->in.req);
+		ndr->depth--;
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
-		ndr_print_struct(ndr, "out", "DRSUAPI_EXECUTE_KCC");
+		ndr_print_struct(ndr, "out", "drsuapi_DsExecuteKCC");
 		ndr->depth++;
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
@@ -15167,11 +15334,11 @@ static const struct ndr_interface_call drsuapi_calls[] = {
 		false,
 	},
 	{
-		"DRSUAPI_EXECUTE_KCC",
-		sizeof(struct DRSUAPI_EXECUTE_KCC),
-		(ndr_push_flags_fn_t) ndr_push_DRSUAPI_EXECUTE_KCC,
-		(ndr_pull_flags_fn_t) ndr_pull_DRSUAPI_EXECUTE_KCC,
-		(ndr_print_function_t) ndr_print_DRSUAPI_EXECUTE_KCC,
+		"drsuapi_DsExecuteKCC",
+		sizeof(struct drsuapi_DsExecuteKCC),
+		(ndr_push_flags_fn_t) ndr_push_drsuapi_DsExecuteKCC,
+		(ndr_pull_flags_fn_t) ndr_pull_drsuapi_DsExecuteKCC,
+		(ndr_print_function_t) ndr_print_drsuapi_DsExecuteKCC,
 		false,
 	},
 	{

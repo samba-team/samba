@@ -1167,6 +1167,19 @@ union drsuapi_DsAddEntryCtr {
 	struct drsuapi_DsAddEntryCtr3 ctr3;/* [case(3)] */
 }/* [switch_type(int32)] */;
 
+/* bitmap drsuapi_DsExecuteKCCFlags */
+#define DRSUAPI_DS_EXECUTE_KCC_ASYNCHRONOUS_OPERATION ( 0x00000001 )
+#define DRSUAPI_DS_EXECUTE_KCC_DAMPED ( 0x00000002 )
+
+struct drsuapi_DsExecuteKCC1 {
+	uint32_t taskID;
+	uint32_t flags;
+};
+
+union drsuapi_DsExecuteKCCRequest {
+	struct drsuapi_DsExecuteKCC1 ctr1;/* [case] */
+}/* [switch_type(uint32)] */;
+
 enum drsuapi_DsReplicaGetInfoLevel
 #ifndef USE_UINT_ENUMS
  {
@@ -1769,7 +1782,13 @@ struct drsuapi_DsAddEntry {
 };
 
 
-struct DRSUAPI_EXECUTE_KCC {
+struct drsuapi_DsExecuteKCC {
+	struct {
+		struct policy_handle *bind_handle;/* [ref] */
+		uint32_t level;
+		union drsuapi_DsExecuteKCCRequest *req;/* [ref,switch_is(level)] */
+	} in;
+
 	struct {
 		WERROR result;
 	} out;

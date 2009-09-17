@@ -3047,25 +3047,28 @@ NTSTATUS rpccli_drsuapi_DsAddEntry(struct rpc_pipe_client *cli,
 	return werror_to_ntstatus(r.out.result);
 }
 
-struct rpccli_DRSUAPI_EXECUTE_KCC_state {
-	struct DRSUAPI_EXECUTE_KCC orig;
-	struct DRSUAPI_EXECUTE_KCC tmp;
+struct rpccli_drsuapi_DsExecuteKCC_state {
+	struct drsuapi_DsExecuteKCC orig;
+	struct drsuapi_DsExecuteKCC tmp;
 	TALLOC_CTX *out_mem_ctx;
 	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
 };
 
-static void rpccli_DRSUAPI_EXECUTE_KCC_done(struct tevent_req *subreq);
+static void rpccli_drsuapi_DsExecuteKCC_done(struct tevent_req *subreq);
 
-struct tevent_req *rpccli_DRSUAPI_EXECUTE_KCC_send(TALLOC_CTX *mem_ctx,
-						   struct tevent_context *ev,
-						   struct rpc_pipe_client *cli)
+struct tevent_req *rpccli_drsuapi_DsExecuteKCC_send(TALLOC_CTX *mem_ctx,
+						    struct tevent_context *ev,
+						    struct rpc_pipe_client *cli,
+						    struct policy_handle *_bind_handle /* [in] [ref] */,
+						    uint32_t _level /* [in]  */,
+						    union drsuapi_DsExecuteKCCRequest *_req /* [in] [ref,switch_is(level)] */)
 {
 	struct tevent_req *req;
-	struct rpccli_DRSUAPI_EXECUTE_KCC_state *state;
+	struct rpccli_drsuapi_DsExecuteKCC_state *state;
 	struct tevent_req *subreq;
 
 	req = tevent_req_create(mem_ctx, &state,
-				struct rpccli_DRSUAPI_EXECUTE_KCC_state);
+				struct rpccli_drsuapi_DsExecuteKCC_state);
 	if (req == NULL) {
 		return NULL;
 	}
@@ -3073,6 +3076,9 @@ struct tevent_req *rpccli_DRSUAPI_EXECUTE_KCC_send(TALLOC_CTX *mem_ctx,
 	state->dispatch_recv = cli->dispatch_recv;
 
 	/* In parameters */
+	state->orig.in.bind_handle = _bind_handle;
+	state->orig.in.level = _level;
+	state->orig.in.req = _req;
 
 	/* Out parameters */
 
@@ -3080,7 +3086,7 @@ struct tevent_req *rpccli_DRSUAPI_EXECUTE_KCC_send(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(state->orig.out.result);
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(DRSUAPI_EXECUTE_KCC, &state->orig);
+		NDR_PRINT_IN_DEBUG(drsuapi_DsExecuteKCC, &state->orig);
 	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
@@ -3088,21 +3094,21 @@ struct tevent_req *rpccli_DRSUAPI_EXECUTE_KCC_send(TALLOC_CTX *mem_ctx,
 
 	subreq = cli->dispatch_send(state, ev, cli,
 				    &ndr_table_drsuapi,
-				    NDR_DRSUAPI_EXECUTE_KCC,
+				    NDR_DRSUAPI_DSEXECUTEKCC,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, rpccli_DRSUAPI_EXECUTE_KCC_done, req);
+	tevent_req_set_callback(subreq, rpccli_drsuapi_DsExecuteKCC_done, req);
 	return req;
 }
 
-static void rpccli_DRSUAPI_EXECUTE_KCC_done(struct tevent_req *subreq)
+static void rpccli_drsuapi_DsExecuteKCC_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct rpccli_DRSUAPI_EXECUTE_KCC_state *state = tevent_req_data(
-		req, struct rpccli_DRSUAPI_EXECUTE_KCC_state);
+	struct rpccli_drsuapi_DsExecuteKCC_state *state = tevent_req_data(
+		req, struct rpccli_drsuapi_DsExecuteKCC_state);
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
 
@@ -3128,18 +3134,18 @@ static void rpccli_DRSUAPI_EXECUTE_KCC_done(struct tevent_req *subreq)
 	ZERO_STRUCT(state->tmp);
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(DRSUAPI_EXECUTE_KCC, &state->orig);
+		NDR_PRINT_OUT_DEBUG(drsuapi_DsExecuteKCC, &state->orig);
 	}
 
 	tevent_req_done(req);
 }
 
-NTSTATUS rpccli_DRSUAPI_EXECUTE_KCC_recv(struct tevent_req *req,
-					 TALLOC_CTX *mem_ctx,
-					 WERROR *result)
+NTSTATUS rpccli_drsuapi_DsExecuteKCC_recv(struct tevent_req *req,
+					  TALLOC_CTX *mem_ctx,
+					  WERROR *result)
 {
-	struct rpccli_DRSUAPI_EXECUTE_KCC_state *state = tevent_req_data(
-		req, struct rpccli_DRSUAPI_EXECUTE_KCC_state);
+	struct rpccli_drsuapi_DsExecuteKCC_state *state = tevent_req_data(
+		req, struct rpccli_drsuapi_DsExecuteKCC_state);
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
@@ -3157,23 +3163,29 @@ NTSTATUS rpccli_DRSUAPI_EXECUTE_KCC_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS rpccli_DRSUAPI_EXECUTE_KCC(struct rpc_pipe_client *cli,
-				    TALLOC_CTX *mem_ctx,
-				    WERROR *werror)
+NTSTATUS rpccli_drsuapi_DsExecuteKCC(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx,
+				     struct policy_handle *bind_handle /* [in] [ref] */,
+				     uint32_t level /* [in]  */,
+				     union drsuapi_DsExecuteKCCRequest *req /* [in] [ref,switch_is(level)] */,
+				     WERROR *werror)
 {
-	struct DRSUAPI_EXECUTE_KCC r;
+	struct drsuapi_DsExecuteKCC r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.bind_handle = bind_handle;
+	r.in.level = level;
+	r.in.req = req;
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(DRSUAPI_EXECUTE_KCC, &r);
+		NDR_PRINT_IN_DEBUG(drsuapi_DsExecuteKCC, &r);
 	}
 
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_drsuapi,
-				NDR_DRSUAPI_EXECUTE_KCC,
+				NDR_DRSUAPI_DSEXECUTEKCC,
 				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3181,7 +3193,7 @@ NTSTATUS rpccli_DRSUAPI_EXECUTE_KCC(struct rpc_pipe_client *cli,
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(DRSUAPI_EXECUTE_KCC, &r);
+		NDR_PRINT_OUT_DEBUG(drsuapi_DsExecuteKCC, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
