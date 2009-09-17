@@ -194,7 +194,6 @@ typedef uint32_t WERROR;
 #define WERR_PRINT_MONITOR_IN_USE W_ERROR(ERRprintmonitorinuse)
 #define WERR_PRINTER_HAS_JOBS_QUEUED W_ERROR(ERRprinterhasjobsqueued)
 
-#define WERR_CLASS_NOT_REGISTERED W_ERROR(0x40154)
 #define WERR_NO_SHUTDOWN_IN_PROGRESS W_ERROR(0x45c)
 #define WERR_SHUTDOWN_ALREADY_IN_PROGRESS W_ERROR(0x45b)
 /* Configuration Manager Errors */
@@ -293,6 +292,8 @@ typedef uint32_t WERROR;
 #define WERR_DS_NO_MSDS_INTID W_ERROR(0x00002194)
 #define WERR_DS_DUP_MSDS_INTID W_ERROR(0x00002195)
 
+
+/* RPC/COM/OLE HRESULT error codes */
 /* FRS errors */
 #define WERR_FRS_INSUFFICIENT_PRIV W_ERROR(FRS_ERR_BASE+7)
 #define WERR_FRS_SYSVOL_IS_BUSY W_ERROR(FRS_ERR_BASE+15)
@@ -307,6 +308,10 @@ typedef uint32_t WERROR;
 #define WERR_SEC_E_DECRYPT_FAILURE	W_ERROR(0x80090330)
 #define WERR_SEC_E_ALGORITHM_MISMATCH	W_ERROR(0x80090331)
 
+/* COM REGDB error codes */
+#define WERR_CLASS_NOT_REGISTERED 	W_ERROR(0x80040154)	/* REGDB_E_CLASSNOTREG */
+
+/* Generic error code aliases */
 #define WERR_FOOBAR WERR_GENERAL_FAILURE
 
 /*****************************************************************************
