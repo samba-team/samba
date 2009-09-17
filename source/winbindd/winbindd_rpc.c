@@ -1173,6 +1173,15 @@ static NTSTATUS msrpc_password_policy(struct winbindd_domain *domain,
 	return result;
 }
 
+typedef NTSTATUS (*lookup_sids_fn_t)(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx,
+				     struct policy_handle *pol,
+				     int num_sids,
+				     const DOM_SID *sids,
+				     char ***pdomains,
+				     char ***pnames,
+				     enum lsa_SidType **ptypes);
+
 NTSTATUS winbindd_lookup_sids(TALLOC_CTX *mem_ctx,
 			      struct winbindd_domain *domain,
 			      uint32_t num_sids,
@@ -1185,12 +1194,23 @@ NTSTATUS winbindd_lookup_sids(TALLOC_CTX *mem_ctx,
 	struct rpc_pipe_client *cli = NULL;
 	struct policy_handle lsa_policy;
 	unsigned int orig_timeout;
+	lookup_sids_fn_t lookup_sids_fn = rpccli_lsa_lookup_sids;
 
+	if (domain->can_do_ncacn_ip_tcp) {
+		status = cm_connect_lsa_tcp(domain, mem_ctx, &cli);
+		if (NT_STATUS_IS_OK(status)) {
+			lookup_sids_fn = rpccli_lsa_lookup_sids3;
+			goto lookup;
+		}
+		domain->can_do_ncacn_ip_tcp = false;
+	}
 	status = cm_connect_lsa(domain, mem_ctx, &cli, &lsa_policy);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
+ lookup:
 	/*
 	 * This call can take a long time
 	 * allow the server to time out.
@@ -1198,9 +1218,14 @@ NTSTATUS winbindd_lookup_sids(TALLOC_CTX *mem_ctx,
 	 */
 	orig_timeout = rpccli_set_timeout(cli, 35000);
 
-	status = rpccli_lsa_lookup_sids(cli, mem_ctx, &lsa_policy,
-					num_sids, sids, domains,
-					names, types);
+	status = lookup_sids_fn(cli,
+				mem_ctx,
+				&lsa_policy,
+				num_sids,
+				sids,
+				domains,
+				names,
+				types);
 
 	/* And restore our original timeout. */
 	rpccli_set_timeout(cli, orig_timeout);
@@ -1211,6 +1236,16 @@ NTSTATUS winbindd_lookup_sids(TALLOC_CTX *mem_ctx,
 
 	return status;
 }
+
+typedef NTSTATUS (*lookup_names_fn_t)(struct rpc_pipe_client *cli,
+				      TALLOC_CTX *mem_ctx,
+				      struct policy_handle *pol,
+				      int num_names,
+				      const char **names,
+				      const char ***dom_names,
+				      int level,
+				      struct dom_sid **sids,
+				      enum lsa_SidType **types);
 
 NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
 			       struct winbindd_domain *domain,
@@ -1224,11 +1259,23 @@ NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
 	struct rpc_pipe_client *cli = NULL;
 	struct policy_handle lsa_policy;
 	unsigned int orig_timeout;
+	lookup_names_fn_t lookup_names_fn = rpccli_lsa_lookup_names;
 
+	if (domain->can_do_ncacn_ip_tcp) {
+		status = cm_connect_lsa_tcp(domain, mem_ctx, &cli);
+		if (NT_STATUS_IS_OK(status)) {
+			lookup_names_fn = rpccli_lsa_lookup_names4;
+			goto lookup;
+		}
+		domain->can_do_ncacn_ip_tcp = false;
+	}
 	status = cm_connect_lsa(domain, mem_ctx, &cli, &lsa_policy);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+
+ lookup:
 
 	/*
 	 * This call can take a long time
@@ -1237,8 +1284,15 @@ NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
 	 */
 	orig_timeout = rpccli_set_timeout(cli, 35000);
 
-	status = rpccli_lsa_lookup_names(cli, mem_ctx, &lsa_policy, num_names,
-					 names, domains, 1, sids, types);
+	status = lookup_names_fn(cli,
+				 mem_ctx,
+				 &lsa_policy,
+				 num_names,
+				 (const char **) names,
+				 domains,
+				 1,
+				 sids,
+				 types);
 
 	/* And restore our original timeout. */
 	rpccli_set_timeout(cli, orig_timeout);
