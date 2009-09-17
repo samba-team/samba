@@ -314,7 +314,7 @@ static ssize_t tsmsm_pread(struct vfs_handle_struct *handle, struct files_struct
 }
 
 static ssize_t tsmsm_pwrite(struct vfs_handle_struct *handle, struct files_struct *fsp, 
-			   void *data, size_t n, SMB_OFF_T offset) {
+			    const void *data, size_t n, SMB_OFF_T offset) {
 	ssize_t result;
 	bool notify_online = tsmsm_aio_force(handle, fsp);
 
@@ -367,7 +367,7 @@ static struct vfs_fn_pointers tsmsm_fns = {
 	.connect_fn = tsmsm_connect,
 	.fs_capabilities = tsmsm_fs_capabilities,
 	.aio_force = tsmsm_aio_force,
-	.aio_return = tsmsm_aio_return,
+	.aio_return_fn = tsmsm_aio_return,
 	.pread = tsmsm_pread,
 	.pwrite = tsmsm_pwrite,
 	.sendfile = tsmsm_sendfile,
@@ -379,5 +379,5 @@ NTSTATUS vfs_tsmsm_init(void);
 NTSTATUS vfs_tsmsm_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION,
-				"tsmsm", &vfs_fns);
+				"tsmsm", &tsmsm_fns);
 }
