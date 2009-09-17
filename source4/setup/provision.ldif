@@ -5,24 +5,25 @@
 dn: CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: builtinDomain
+creationTime: ${CREATTIME}
 forceLogoff: -9223372036854775808
+isCriticalSystemObject: TRUE
 lockoutDuration: -18000000000
 lockOutObservationWindow: -18000000000
 lockoutThreshold: 0
 maxPwdAge: -37108517437440
 minPwdAge: 0
 minPwdLength: 0
+modifiedCount: 1
 modifiedCountAtLastProm: 0
 nextRid: 1000
-pwdProperties: 0
-pwdHistoryLength: 0
 objectSid: S-1-5-32
+pwdHistoryLength: 0
+pwdProperties: 0
 serverState: 1
-uASCompat: 1
-modifiedCount: 1
-systemFlags: -1946157056
-isCriticalSystemObject: TRUE
 showInAdvancedViewOnly: FALSE
+systemFlags: -1946157056
+uASCompat: 1
 
 dn: CN=Deleted Objects,${DOMAINDN}
 objectClass: top
@@ -365,6 +366,8 @@ objectClass: applicationSettings
 objectClass: nTFRSSettings
 systemFlags: -1946157056
 isCriticalSystemObject: TRUE
+
+# Here are missing the FRS objects since we don't support this technique yet
 
 dn: CN=FileLinks,CN=System,${DOMAINDN}
 objectClass: top

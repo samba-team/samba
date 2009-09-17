@@ -978,6 +978,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
                 "DOMAINDN": names.domaindn})
         message("Setting up sam.ldb data")
         setup_add_ldif(samdb, setup_path("provision.ldif"), {
+            "CREATTIME": str(int(time.time()) * 1e7), # seconds -> ticks
             "DOMAINDN": names.domaindn,
             "NETBIOSNAME": names.netbiosname,
             "DEFAULTSITE": names.sitename,
@@ -1005,10 +1006,10 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
                                 policyguid_dc=policyguid_dc,
                                 setup_path=setup_path,
                                 domainControllerFunctionality=domainControllerFunctionality)
-                # add the NTDSGUID based SPNs
+
                 ntds_dn = "CN=NTDS Settings,CN=%s,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,%s" % (names.hostname, names.domaindn)
-                names.ntdsguid = samdb.searchone(basedn=ntds_dn, attribute="objectGUID",
-                                                 expression="", scope=SCOPE_BASE)
+                names.ntdsguid = samdb.searchone(basedn=ntds_dn,
+                  attribute="objectGUID", expression="", scope=SCOPE_BASE)
                 assert isinstance(names.ntdsguid, str)
 
     except:
