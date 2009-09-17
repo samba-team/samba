@@ -141,6 +141,8 @@ struct ndr_print {
 /* used to check if alignment padding is zero */
 #define LIBNDR_FLAG_PAD_CHECK     (1<<28)
 
+#define LIBNDR_FLAG_NDR64         (1<<29)
+
 /* set if an object uuid will be present */
 #define LIBNDR_FLAG_OBJECT_PRESENT    (1<<30)
 
@@ -465,6 +467,7 @@ NDR_SCALAR_PROTO(int8, int8_t)
 NDR_SCALAR_PROTO(uint16, uint16_t)
 NDR_SCALAR_PROTO(int16, int16_t)
 NDR_SCALAR_PROTO(uint32, uint32_t)
+NDR_SCALAR_PROTO(uint3264, uint32_t)
 NDR_SCALAR_PROTO(int32, int32_t)
 NDR_SCALAR_PROTO(udlong, uint64_t)
 NDR_SCALAR_PROTO(udlongr, uint64_t)

@@ -736,7 +736,7 @@ _PUBLIC_ uint32_t ndr_token_peek(struct ndr_token_list **list, const void *key)
 _PUBLIC_ enum ndr_err_code ndr_pull_array_size(struct ndr_pull *ndr, const void *p)
 {
 	uint32_t size;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &size));
+	NDR_CHECK(ndr_pull_uint3264(ndr, NDR_SCALARS, &size));
 	return ndr_token_store(ndr, &ndr->array_size_list, p, size);
 }
 
@@ -769,12 +769,12 @@ _PUBLIC_ enum ndr_err_code ndr_check_array_size(struct ndr_pull *ndr, void *p, u
 _PUBLIC_ enum ndr_err_code ndr_pull_array_length(struct ndr_pull *ndr, const void *p)
 {
 	uint32_t length, offset;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &offset));
+	NDR_CHECK(ndr_pull_uint3264(ndr, NDR_SCALARS, &offset));
 	if (offset != 0) {
 		return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, 
 				      "non-zero array offset %u\n", offset);
 	}
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &length));
+	NDR_CHECK(ndr_pull_uint3264(ndr, NDR_SCALARS, &length));
 	return ndr_token_store(ndr, &ndr->array_length_list, p, length);
 }
 

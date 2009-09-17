@@ -118,11 +118,31 @@ _PUBLIC_ enum ndr_err_code ndr_pull_int32(struct ndr_pull *ndr, int ndr_flags, i
 */
 _PUBLIC_ enum ndr_err_code ndr_pull_uint32(struct ndr_pull *ndr, int ndr_flags, uint32_t *v)
 {
+	uint32_t v2;
 	NDR_PULL_ALIGN(ndr, 4);
 	NDR_PULL_NEED_BYTES(ndr, 4);
 	*v = NDR_IVAL(ndr, ndr->offset);
 	ndr->offset += 4;
 	return NDR_ERR_SUCCESS;
+}
+
+/*
+  parse a arch dependent uint32/uint64
+*/
+_PUBLIC_ enum ndr_err_code ndr_pull_uint3264(struct ndr_pull *ndr, int ndr_flags, uint32_t *v)
+{
+	uint64_t v64;
+	enum ndr_err_code err;
+	if (!(ndr->flags & LIBNDR_FLAG_NDR64)) {
+		return ndr_pull_uint32(ndr, ndr_flags, v);
+	}
+	err = ndr_pull_hyper(ndr, ndr_flags, &v64);
+	*v = (uint32_t)v64;
+	if (v64 != *v) {
+		DEBUG(0,(__location__ ": non-zero upper 32 bits 0x%016llx\n",
+			 (unsigned long long)v64));
+	}
+	return err;
 }
 
 /*
@@ -142,7 +162,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_double(struct ndr_pull *ndr, int ndr_flags, 
 */
 _PUBLIC_ enum ndr_err_code ndr_pull_generic_ptr(struct ndr_pull *ndr, uint32_t *v)
 {
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, v));
+	NDR_CHECK(ndr_pull_uint3264(ndr, NDR_SCALARS, v));
 	if (*v != 0) {
 		ndr->ptr_count++;
 	}
@@ -154,7 +174,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_generic_ptr(struct ndr_pull *ndr, uint32_t *
 */
 _PUBLIC_ enum ndr_err_code ndr_pull_ref_ptr(struct ndr_pull *ndr, uint32_t *v)
 {
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, v));
+	NDR_CHECK(ndr_pull_uint3264(ndr, NDR_SCALARS, v));
 	/* ref pointers always point to data */
 	*v = 1;
 	return NDR_ERR_SUCCESS;
