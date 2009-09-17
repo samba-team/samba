@@ -736,7 +736,7 @@ _PUBLIC_ NTSTATUS dcerpc_secondary_context(struct dcerpc_pipe *p,
 
 	p2->syntax = table->syntax_id;
 
-	p2->transfer_syntax = ndr_transfer_syntax;
+	p2->transfer_syntax = p->transfer_syntax;
 
 	p2->binding = talloc_reference(p2, p->binding);
 

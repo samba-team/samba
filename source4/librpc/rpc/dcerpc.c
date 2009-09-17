@@ -182,6 +182,10 @@ static struct ndr_pull *ndr_pull_init_flags(struct dcerpc_connection *c,
 		ndr->flags |= LIBNDR_FLAG_REF_ALLOC;
 	}
 
+	if (c->flags & DCERPC_NDR64) {
+		ndr->flags |= LIBNDR_FLAG_NDR64;
+	}
+
 	return ndr;
 }
 
@@ -366,6 +370,10 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 
 	if (c->flags & DCERPC_PUSH_BIGENDIAN) {
 		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
+	}
+
+	if (c->flags & DCERPC_NDR64) {
+		ndr->flags |= LIBNDR_FLAG_NDR64;
 	}
 
 	if (pkt->pfc_flags & DCERPC_PFC_FLAG_OBJECT_UUID) {
@@ -1376,6 +1384,10 @@ struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
 
 	if (p->conn->flags & DCERPC_PUSH_BIGENDIAN) {
 		push->flags |= LIBNDR_FLAG_BIGENDIAN;
+	}
+
+	if (p->conn->flags & DCERPC_NDR64) {
+		push->flags |= LIBNDR_FLAG_NDR64;
 	}
 
 	/* push the structure into a blob */
