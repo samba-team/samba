@@ -38,14 +38,14 @@ _PUBLIC_ void ndr_print_nbt_operation(struct ndr_print *ndr, const char *name, u
 
 static enum ndr_err_code ndr_push_nbt_name_type(struct ndr_push *ndr, int ndr_flags, enum nbt_name_type r)
 {
-	NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint8(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_nbt_name_type(struct ndr_pull *ndr, int ndr_flags, enum nbt_name_type *r)
 {
 	uint8_t v;
-	NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint8(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -79,14 +79,14 @@ _PUBLIC_ void ndr_print_nbt_name(struct ndr_print *ndr, const char *name, const 
 
 _PUBLIC_ enum ndr_err_code ndr_push_nbt_qclass(struct ndr_push *ndr, int ndr_flags, enum nbt_qclass r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ enum ndr_err_code ndr_pull_nbt_qclass(struct ndr_pull *ndr, int ndr_flags, enum nbt_qclass *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -103,14 +103,14 @@ _PUBLIC_ void ndr_print_nbt_qclass(struct ndr_print *ndr, const char *name, enum
 
 _PUBLIC_ enum ndr_err_code ndr_push_nbt_qtype(struct ndr_push *ndr, int ndr_flags, enum nbt_qtype r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ enum ndr_err_code ndr_pull_nbt_qtype(struct ndr_pull *ndr, int ndr_flags, enum nbt_qtype *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -799,14 +799,14 @@ _PUBLIC_ void ndr_print_nbt_name_packet(struct ndr_print *ndr, const char *name,
 
 static enum ndr_err_code ndr_push_dgram_msg_type(struct ndr_push *ndr, int ndr_flags, enum dgram_msg_type r)
 {
-	NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint8(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_dgram_msg_type(struct ndr_pull *ndr, int ndr_flags, enum dgram_msg_type *r)
 {
 	uint8_t v;
-	NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint8(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -853,14 +853,14 @@ _PUBLIC_ void ndr_print_dgram_flags(struct ndr_print *ndr, const char *name, uin
 
 static enum ndr_err_code ndr_push_smb_command(struct ndr_push *ndr, int ndr_flags, enum smb_command r)
 {
-	NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint8(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_smb_command(struct ndr_pull *ndr, int ndr_flags, enum smb_command *r)
 {
 	uint8_t v;
-	NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint8(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -1265,14 +1265,14 @@ _PUBLIC_ void ndr_print_dgram_message(struct ndr_print *ndr, const char *name, c
 
 static enum ndr_err_code ndr_push_dgram_err_code(struct ndr_push *ndr, int ndr_flags, enum dgram_err_code r)
 {
-	NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint8(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_dgram_err_code(struct ndr_pull *ndr, int ndr_flags, enum dgram_err_code *r)
 {
 	uint8_t v;
-	NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint8(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -1654,14 +1654,14 @@ _PUBLIC_ void ndr_print_netlogon_nt_version_flags(struct ndr_print *ndr, const c
 
 _PUBLIC_ enum ndr_err_code ndr_push_netlogon_command(struct ndr_push *ndr, int ndr_flags, enum netlogon_command r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ enum ndr_err_code ndr_pull_netlogon_command(struct ndr_pull *ndr, int ndr_flags, enum netlogon_command *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -2561,14 +2561,14 @@ _PUBLIC_ void ndr_print_nbt_netlogon_packet(struct ndr_print *ndr, const char *n
 
 static enum ndr_err_code ndr_push_nbt_browse_opcode(struct ndr_push *ndr, int ndr_flags, enum nbt_browse_opcode r)
 {
-	NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint8(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_nbt_browse_opcode(struct ndr_pull *ndr, int ndr_flags, enum nbt_browse_opcode *r)
 {
 	uint8_t v;
-	NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint8(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
