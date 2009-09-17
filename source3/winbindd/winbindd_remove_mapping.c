@@ -96,7 +96,7 @@ static void winbindd_remove_mapping_done(struct tevent_req *subreq)
 		tevent_req_nterror(req, result);
 		return;
 	}
-	return tevent_req_done(req);
+	tevent_req_done(req);
 }
 
 NTSTATUS winbindd_remove_mapping_recv(struct tevent_req *req,
