@@ -257,6 +257,8 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 		}
 	}
 	if (!(logon_parameters & MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT)) {
+		/* TODO: this fails with current solaris client. We
+		   need to work with Gordon to work out why */
 		if (acct_flags & ACB_WSTRUST) {
 			DEBUG(4,("sam_account_ok: Wksta trust account %s denied by server\n", name_for_logs));
 			return NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT;
