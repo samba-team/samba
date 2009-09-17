@@ -110,7 +110,7 @@ struct partialAttributeSetBlob {
 enum prefixMapVersion
 #ifndef USE_UINT_ENUMS
  {
-	PREFIX_MAP_VERSION_DSDB=(int)0x44534442
+	PREFIX_MAP_VERSION_DSDB=(int)(0x44534442)
 }
 #else
  { __donnot_use_enum_prefixMapVersion=0x7FFFFFFF}
@@ -159,7 +159,7 @@ struct supplementalCredentialsPackage {
 enum supplementalCredentialsSignature
 #ifndef USE_UINT_ENUMS
  {
-	SUPPLEMENTAL_CREDENTIALS_SIGNATURE=(int)0x0050
+	SUPPLEMENTAL_CREDENTIALS_SIGNATURE=(int)(0x0050)
 }
 #else
  { __donnot_use_enum_supplementalCredentialsSignature=0x7FFFFFFF}
@@ -344,8 +344,8 @@ struct ExtendedErrorBlob {
 enum ExtendedErrorComputerNamePresent
 #ifndef USE_UINT_ENUMS
  {
-	EXTENDED_ERROR_COMPUTER_NAME_PRESENT=(int)1,
-	EXTENDED_ERROR_COMPUTER_NAME_NOT_PRESENT=(int)2
+	EXTENDED_ERROR_COMPUTER_NAME_PRESENT=(int)(1),
+	EXTENDED_ERROR_COMPUTER_NAME_NOT_PRESENT=(int)(2)
 }
 #else
  { __donnot_use_enum_ExtendedErrorComputerNamePresent=0x7FFFFFFF}
@@ -366,13 +366,13 @@ struct ExtendedErrorComputerName {
 enum ExtendedErrorParamType
 #ifndef USE_UINT_ENUMS
  {
-	EXTENDED_ERROR_PARAM_TYPE_ASCII_STRING=(int)1,
-	EXTENDED_ERROR_PARAM_TYPE_UNICODE_STRING=(int)2,
-	EXTENDED_ERROR_PARAM_TYPE_UINT32=(int)3,
-	EXTENDED_ERROR_PARAM_TYPE_UINT16=(int)4,
-	EXTENDED_ERROR_PARAM_TYPE_UINT64=(int)5,
-	EXTENDED_ERROR_PARAM_TYPE_NONE=(int)6,
-	EXTENDED_ERROR_PARAM_TYPE_BLOB=(int)7
+	EXTENDED_ERROR_PARAM_TYPE_ASCII_STRING=(int)(1),
+	EXTENDED_ERROR_PARAM_TYPE_UNICODE_STRING=(int)(2),
+	EXTENDED_ERROR_PARAM_TYPE_UINT32=(int)(3),
+	EXTENDED_ERROR_PARAM_TYPE_UINT16=(int)(4),
+	EXTENDED_ERROR_PARAM_TYPE_UINT64=(int)(5),
+	EXTENDED_ERROR_PARAM_TYPE_NONE=(int)(6),
+	EXTENDED_ERROR_PARAM_TYPE_BLOB=(int)(7)
 }
 #else
  { __donnot_use_enum_ExtendedErrorParamType=0x7FFFFFFF}

@@ -28,11 +28,11 @@ struct policy_handle {
 enum netr_SchannelType
 #ifndef USE_UINT_ENUMS
  {
-	SEC_CHAN_NULL=(int)0,
-	SEC_CHAN_WKSTA=(int)2,
-	SEC_CHAN_DNS_DOMAIN=(int)3,
-	SEC_CHAN_DOMAIN=(int)4,
-	SEC_CHAN_BDC=(int)6
+	SEC_CHAN_NULL=(int)(0),
+	SEC_CHAN_WKSTA=(int)(2),
+	SEC_CHAN_DNS_DOMAIN=(int)(3),
+	SEC_CHAN_DOMAIN=(int)(4),
+	SEC_CHAN_BDC=(int)(6)
 }
 #else
  { __donnot_use_enum_netr_SchannelType=0x7FFFFFFF}

@@ -13,9 +13,9 @@
 enum ntlmssp_MessageType
 #ifndef USE_UINT_ENUMS
  {
-	NtLmNegotiate=(int)0x00000001,
-	NtLmChallenge=(int)0x00000002,
-	NtLmAuthenticate=(int)0x00000003
+	NtLmNegotiate=(int)(0x00000001),
+	NtLmChallenge=(int)(0x00000002),
+	NtLmAuthenticate=(int)(0x00000003)
 }
 #else
  { __donnot_use_enum_ntlmssp_MessageType=0x7FFFFFFF}
@@ -56,8 +56,8 @@ enum ntlmssp_MessageType
 enum ntlmssp_WindowsMajorVersion
 #ifndef USE_UINT_ENUMS
  {
-	NTLMSSP_WINDOWS_MAJOR_VERSION_5=(int)0x05,
-	NTLMSSP_WINDOWS_MAJOR_VERSION_6=(int)0x06
+	NTLMSSP_WINDOWS_MAJOR_VERSION_5=(int)(0x05),
+	NTLMSSP_WINDOWS_MAJOR_VERSION_6=(int)(0x06)
 }
 #else
  { __donnot_use_enum_ntlmssp_WindowsMajorVersion=0x7FFFFFFF}
@@ -69,9 +69,9 @@ enum ntlmssp_WindowsMajorVersion
 enum ntlmssp_WindowsMinorVersion
 #ifndef USE_UINT_ENUMS
  {
-	NTLMSSP_WINDOWS_MINOR_VERSION_0=(int)0x00,
-	NTLMSSP_WINDOWS_MINOR_VERSION_1=(int)0x01,
-	NTLMSSP_WINDOWS_MINOR_VERSION_2=(int)0x02
+	NTLMSSP_WINDOWS_MINOR_VERSION_0=(int)(0x00),
+	NTLMSSP_WINDOWS_MINOR_VERSION_1=(int)(0x01),
+	NTLMSSP_WINDOWS_MINOR_VERSION_2=(int)(0x02)
 }
 #else
  { __donnot_use_enum_ntlmssp_WindowsMinorVersion=0x7FFFFFFF}
@@ -84,8 +84,8 @@ enum ntlmssp_WindowsMinorVersion
 enum ntlmssp_NTLMRevisionCurrent
 #ifndef USE_UINT_ENUMS
  {
-	NTLMSSP_REVISION_W2K3_RC1=(int)0x0A,
-	NTLMSSP_REVISION_W2K3=(int)0x0F
+	NTLMSSP_REVISION_W2K3_RC1=(int)(0x0A),
+	NTLMSSP_REVISION_W2K3=(int)(0x0F)
 }
 #else
  { __donnot_use_enum_ntlmssp_NTLMRevisionCurrent=0x7FFFFFFF}
@@ -122,17 +122,17 @@ struct NEGOTIATE_MESSAGE {
 enum ntlmssp_AvId
 #ifndef USE_UINT_ENUMS
  {
-	MsvAvEOL=(int)0,
-	MsvAvNbComputerName=(int)1,
-	MsvAvNbDomainName=(int)2,
-	MsvAvDnsComputerName=(int)3,
-	MsvAvDnsDomainName=(int)4,
-	MsvAvDnsTreeName=(int)5,
-	MsvAvFlags=(int)6,
-	MsvAvTimestamp=(int)7,
-	MsAvRestrictions=(int)8,
-	MsvAvTargetName=(int)9,
-	MsvChannelBindings=(int)10
+	MsvAvEOL=(int)(0),
+	MsvAvNbComputerName=(int)(1),
+	MsvAvNbDomainName=(int)(2),
+	MsvAvDnsComputerName=(int)(3),
+	MsvAvDnsDomainName=(int)(4),
+	MsvAvDnsTreeName=(int)(5),
+	MsvAvFlags=(int)(6),
+	MsvAvTimestamp=(int)(7),
+	MsAvRestrictions=(int)(8),
+	MsvAvTargetName=(int)(9),
+	MsvChannelBindings=(int)(10)
 }
 #else
  { __donnot_use_enum_ntlmssp_AvId=0x7FFFFFFF}

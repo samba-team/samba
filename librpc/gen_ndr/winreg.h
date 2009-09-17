@@ -26,18 +26,18 @@
 enum winreg_Type
 #ifndef USE_UINT_ENUMS
  {
-	REG_NONE=(int)0,
-	REG_SZ=(int)1,
-	REG_EXPAND_SZ=(int)2,
-	REG_BINARY=(int)3,
-	REG_DWORD=(int)4,
-	REG_DWORD_BIG_ENDIAN=(int)5,
-	REG_LINK=(int)6,
-	REG_MULTI_SZ=(int)7,
-	REG_RESOURCE_LIST=(int)8,
-	REG_FULL_RESOURCE_DESCRIPTOR=(int)9,
-	REG_RESOURCE_REQUIREMENTS_LIST=(int)10,
-	REG_QWORD=(int)11
+	REG_NONE=(int)(0),
+	REG_SZ=(int)(1),
+	REG_EXPAND_SZ=(int)(2),
+	REG_BINARY=(int)(3),
+	REG_DWORD=(int)(4),
+	REG_DWORD_BIG_ENDIAN=(int)(5),
+	REG_LINK=(int)(6),
+	REG_MULTI_SZ=(int)(7),
+	REG_RESOURCE_LIST=(int)(8),
+	REG_FULL_RESOURCE_DESCRIPTOR=(int)(9),
+	REG_RESOURCE_REQUIREMENTS_LIST=(int)(10),
+	REG_QWORD=(int)(11)
 }
 #else
  { __donnot_use_enum_winreg_Type=0x7FFFFFFF}
@@ -77,9 +77,9 @@ struct winreg_SecBuf {
 enum winreg_CreateAction
 #ifndef USE_UINT_ENUMS
  {
-	REG_ACTION_NONE=(int)0,
-	REG_CREATED_NEW_KEY=(int)1,
-	REG_OPENED_EXISTING_KEY=(int)2
+	REG_ACTION_NONE=(int)(0),
+	REG_CREATED_NEW_KEY=(int)(1),
+	REG_OPENED_EXISTING_KEY=(int)(2)
 }
 #else
  { __donnot_use_enum_winreg_CreateAction=0x7FFFFFFF}
