@@ -355,9 +355,11 @@ _PUBLIC_ void ndr_set_flags(uint32_t *pflags, uint32_t new_flags)
 	/* the big/little endian flags are inter-dependent */
 	if (new_flags & LIBNDR_FLAG_LITTLE_ENDIAN) {
 		(*pflags) &= ~LIBNDR_FLAG_BIGENDIAN;
+		(*pflags) &= ~LIBNDR_FLAG_NDR64;
 	}
 	if (new_flags & LIBNDR_FLAG_BIGENDIAN) {
 		(*pflags) &= ~LIBNDR_FLAG_LITTLE_ENDIAN;
+		(*pflags) &= ~LIBNDR_FLAG_NDR64;
 	}
 	if (new_flags & LIBNDR_FLAG_REMAINING) {
 		(*pflags) &= ~LIBNDR_ALIGN_FLAGS;
@@ -1168,6 +1170,7 @@ const static struct {
 	{ NDR_ERR_IPV4ADDRESS, "IPv4 Address Error" },
 	{ NDR_ERR_INVALID_POINTER, "Invalid Pointer" },
 	{ NDR_ERR_UNREAD_BYTES, "Unread Bytes" },
+	{ NDR_ERR_NDR64, "NDR64 assertion error" },
 	{ 0, NULL }
 };
 
