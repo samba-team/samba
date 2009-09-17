@@ -105,6 +105,7 @@ enum ndr_err_code ndr_pull_drsuapi_DsAttributeId(struct ndr_pull *ndr, int ndr_f
 void ndr_print_drsuapi_DsAttributeId(struct ndr_print *ndr, const char *name, enum drsuapi_DsAttributeId r);
 void ndr_print_drsuapi_DsPartialAttributeSet(struct ndr_print *ndr, const char *name, const struct drsuapi_DsPartialAttributeSet *r);
 void ndr_print_drsuapi_DsGetNCChangesRequest8(struct ndr_print *ndr, const char *name, const struct drsuapi_DsGetNCChangesRequest8 *r);
+void ndr_print_drsuapi_DsGetNCChangesRequest10(struct ndr_print *ndr, const char *name, const struct drsuapi_DsGetNCChangesRequest10 *r);
 void ndr_print_drsuapi_DsGetNCChangesRequest(struct ndr_print *ndr, const char *name, const union drsuapi_DsGetNCChangesRequest *r);
 enum ndr_err_code ndr_push_drsuapi_DsReplicaCursor2(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsReplicaCursor2 *r);
 enum ndr_err_code ndr_pull_drsuapi_DsReplicaCursor2(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_DsReplicaCursor2 *r);

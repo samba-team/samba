@@ -456,9 +456,27 @@ struct drsuapi_DsGetNCChangesRequest8 {
 	struct drsuapi_DsReplicaOIDMapping_Ctr mapping_ctr;
 };
 
+struct drsuapi_DsGetNCChangesRequest10 {
+	struct GUID destination_dsa_guid;
+	struct GUID source_dsa_invocation_id;
+	struct drsuapi_DsReplicaObjectIdentifier *naming_context;/* [ref] */
+	struct drsuapi_DsReplicaHighWaterMark highwatermark;
+	struct drsuapi_DsReplicaCursorCtrEx *uptodateness_vector;/* [unique] */
+	uint32_t replica_flags;
+	uint32_t max_object_count;
+	uint32_t max_ndr_size;
+	enum drsuapi_DsExtendedOperation extended_op;
+	uint64_t fsmo_info;
+	struct drsuapi_DsPartialAttributeSet *partial_attribute_set;/* [unique] */
+	struct drsuapi_DsPartialAttributeSet *partial_attribute_set_ex;/* [unique] */
+	struct drsuapi_DsReplicaOIDMapping_Ctr mapping_ctr;
+	uint32_t more_flags;
+};
+
 union drsuapi_DsGetNCChangesRequest {
 	struct drsuapi_DsGetNCChangesRequest5 req5;/* [case(5)] */
 	struct drsuapi_DsGetNCChangesRequest8 req8;/* [case(8)] */
+	struct drsuapi_DsGetNCChangesRequest10 req10;/* [case(10)] */
 }/* [switch_type(int32)] */;
 
 struct drsuapi_DsReplicaCursor2 {

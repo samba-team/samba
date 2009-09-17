@@ -1548,6 +1548,158 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetNCChangesRequest8(struct ndr_print *ndr, co
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesRequest10(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsGetNCChangesRequest10 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 8));
+		NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->destination_dsa_guid));
+		NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->source_dsa_invocation_id));
+		if (r->naming_context == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_ref_ptr(ndr));
+		NDR_CHECK(ndr_push_drsuapi_DsReplicaHighWaterMark(ndr, NDR_SCALARS, &r->highwatermark));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->uptodateness_vector));
+		NDR_CHECK(ndr_push_drsuapi_DsReplicaNeighbourFlags(ndr, NDR_SCALARS, r->replica_flags));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->max_object_count));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->max_ndr_size));
+		NDR_CHECK(ndr_push_drsuapi_DsExtendedOperation(ndr, NDR_SCALARS, r->extended_op));
+		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->fsmo_info));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->partial_attribute_set));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->partial_attribute_set_ex));
+		NDR_CHECK(ndr_push_drsuapi_DsReplicaOIDMapping_Ctr(ndr, NDR_SCALARS, &r->mapping_ctr));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->more_flags));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		NDR_CHECK(ndr_push_drsuapi_DsReplicaObjectIdentifier(ndr, NDR_SCALARS|NDR_BUFFERS, r->naming_context));
+		if (r->uptodateness_vector) {
+			NDR_CHECK(ndr_push_drsuapi_DsReplicaCursorCtrEx(ndr, NDR_SCALARS, r->uptodateness_vector));
+		}
+		if (r->partial_attribute_set) {
+			NDR_CHECK(ndr_push_drsuapi_DsPartialAttributeSet(ndr, NDR_SCALARS, r->partial_attribute_set));
+		}
+		if (r->partial_attribute_set_ex) {
+			NDR_CHECK(ndr_push_drsuapi_DsPartialAttributeSet(ndr, NDR_SCALARS, r->partial_attribute_set_ex));
+		}
+		NDR_CHECK(ndr_push_drsuapi_DsReplicaOIDMapping_Ctr(ndr, NDR_BUFFERS, &r->mapping_ctr));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesRequest10(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_DsGetNCChangesRequest10 *r)
+{
+	uint32_t _ptr_naming_context;
+	TALLOC_CTX *_mem_save_naming_context_0;
+	uint32_t _ptr_uptodateness_vector;
+	TALLOC_CTX *_mem_save_uptodateness_vector_0;
+	uint32_t _ptr_partial_attribute_set;
+	TALLOC_CTX *_mem_save_partial_attribute_set_0;
+	uint32_t _ptr_partial_attribute_set_ex;
+	TALLOC_CTX *_mem_save_partial_attribute_set_ex_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 8));
+		NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->destination_dsa_guid));
+		NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->source_dsa_invocation_id));
+		NDR_CHECK(ndr_pull_ref_ptr(ndr, &_ptr_naming_context));
+		if (_ptr_naming_context) {
+			NDR_PULL_ALLOC(ndr, r->naming_context);
+		} else {
+			r->naming_context = NULL;
+		}
+		NDR_CHECK(ndr_pull_drsuapi_DsReplicaHighWaterMark(ndr, NDR_SCALARS, &r->highwatermark));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_uptodateness_vector));
+		if (_ptr_uptodateness_vector) {
+			NDR_PULL_ALLOC(ndr, r->uptodateness_vector);
+		} else {
+			r->uptodateness_vector = NULL;
+		}
+		NDR_CHECK(ndr_pull_drsuapi_DsReplicaNeighbourFlags(ndr, NDR_SCALARS, &r->replica_flags));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->max_object_count));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->max_ndr_size));
+		NDR_CHECK(ndr_pull_drsuapi_DsExtendedOperation(ndr, NDR_SCALARS, &r->extended_op));
+		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->fsmo_info));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_partial_attribute_set));
+		if (_ptr_partial_attribute_set) {
+			NDR_PULL_ALLOC(ndr, r->partial_attribute_set);
+		} else {
+			r->partial_attribute_set = NULL;
+		}
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_partial_attribute_set_ex));
+		if (_ptr_partial_attribute_set_ex) {
+			NDR_PULL_ALLOC(ndr, r->partial_attribute_set_ex);
+		} else {
+			r->partial_attribute_set_ex = NULL;
+		}
+		NDR_CHECK(ndr_pull_drsuapi_DsReplicaOIDMapping_Ctr(ndr, NDR_SCALARS, &r->mapping_ctr));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->more_flags));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		_mem_save_naming_context_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->naming_context, 0);
+		NDR_CHECK(ndr_pull_drsuapi_DsReplicaObjectIdentifier(ndr, NDR_SCALARS|NDR_BUFFERS, r->naming_context));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_naming_context_0, 0);
+		if (r->uptodateness_vector) {
+			_mem_save_uptodateness_vector_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->uptodateness_vector, 0);
+			NDR_CHECK(ndr_pull_drsuapi_DsReplicaCursorCtrEx(ndr, NDR_SCALARS, r->uptodateness_vector));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_uptodateness_vector_0, 0);
+		}
+		if (r->partial_attribute_set) {
+			_mem_save_partial_attribute_set_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->partial_attribute_set, 0);
+			NDR_CHECK(ndr_pull_drsuapi_DsPartialAttributeSet(ndr, NDR_SCALARS, r->partial_attribute_set));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_partial_attribute_set_0, 0);
+		}
+		if (r->partial_attribute_set_ex) {
+			_mem_save_partial_attribute_set_ex_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->partial_attribute_set_ex, 0);
+			NDR_CHECK(ndr_pull_drsuapi_DsPartialAttributeSet(ndr, NDR_SCALARS, r->partial_attribute_set_ex));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_partial_attribute_set_ex_0, 0);
+		}
+		NDR_CHECK(ndr_pull_drsuapi_DsReplicaOIDMapping_Ctr(ndr, NDR_BUFFERS, &r->mapping_ctr));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_drsuapi_DsGetNCChangesRequest10(struct ndr_print *ndr, const char *name, const struct drsuapi_DsGetNCChangesRequest10 *r)
+{
+	ndr_print_struct(ndr, name, "drsuapi_DsGetNCChangesRequest10");
+	ndr->depth++;
+	ndr_print_GUID(ndr, "destination_dsa_guid", &r->destination_dsa_guid);
+	ndr_print_GUID(ndr, "source_dsa_invocation_id", &r->source_dsa_invocation_id);
+	ndr_print_ptr(ndr, "naming_context", r->naming_context);
+	ndr->depth++;
+	ndr_print_drsuapi_DsReplicaObjectIdentifier(ndr, "naming_context", r->naming_context);
+	ndr->depth--;
+	ndr_print_drsuapi_DsReplicaHighWaterMark(ndr, "highwatermark", &r->highwatermark);
+	ndr_print_ptr(ndr, "uptodateness_vector", r->uptodateness_vector);
+	ndr->depth++;
+	if (r->uptodateness_vector) {
+		ndr_print_drsuapi_DsReplicaCursorCtrEx(ndr, "uptodateness_vector", r->uptodateness_vector);
+	}
+	ndr->depth--;
+	ndr_print_drsuapi_DsReplicaNeighbourFlags(ndr, "replica_flags", r->replica_flags);
+	ndr_print_uint32(ndr, "max_object_count", r->max_object_count);
+	ndr_print_uint32(ndr, "max_ndr_size", r->max_ndr_size);
+	ndr_print_drsuapi_DsExtendedOperation(ndr, "extended_op", r->extended_op);
+	ndr_print_hyper(ndr, "fsmo_info", r->fsmo_info);
+	ndr_print_ptr(ndr, "partial_attribute_set", r->partial_attribute_set);
+	ndr->depth++;
+	if (r->partial_attribute_set) {
+		ndr_print_drsuapi_DsPartialAttributeSet(ndr, "partial_attribute_set", r->partial_attribute_set);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "partial_attribute_set_ex", r->partial_attribute_set_ex);
+	ndr->depth++;
+	if (r->partial_attribute_set_ex) {
+		ndr_print_drsuapi_DsPartialAttributeSet(ndr, "partial_attribute_set_ex", r->partial_attribute_set_ex);
+	}
+	ndr->depth--;
+	ndr_print_drsuapi_DsReplicaOIDMapping_Ctr(ndr, "mapping_ctr", &r->mapping_ctr);
+	ndr_print_uint32(ndr, "more_flags", r->more_flags);
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesRequest(struct ndr_push *ndr, int ndr_flags, const union drsuapi_DsGetNCChangesRequest *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -1560,6 +1712,10 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesRequest(struct ndr_push 
 
 			case 8: {
 				NDR_CHECK(ndr_push_drsuapi_DsGetNCChangesRequest8(ndr, NDR_SCALARS, &r->req8));
+			break; }
+
+			case 10: {
+				NDR_CHECK(ndr_push_drsuapi_DsGetNCChangesRequest10(ndr, NDR_SCALARS, &r->req10));
 			break; }
 
 			default:
@@ -1575,6 +1731,10 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesRequest(struct ndr_push 
 
 			case 8:
 				NDR_CHECK(ndr_push_drsuapi_DsGetNCChangesRequest8(ndr, NDR_BUFFERS, &r->req8));
+			break;
+
+			case 10:
+				NDR_CHECK(ndr_push_drsuapi_DsGetNCChangesRequest10(ndr, NDR_BUFFERS, &r->req10));
 			break;
 
 			default:
@@ -1603,6 +1763,10 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesRequest(struct ndr_pull 
 				NDR_CHECK(ndr_pull_drsuapi_DsGetNCChangesRequest8(ndr, NDR_SCALARS, &r->req8));
 			break; }
 
+			case 10: {
+				NDR_CHECK(ndr_pull_drsuapi_DsGetNCChangesRequest10(ndr, NDR_SCALARS, &r->req10));
+			break; }
+
 			default:
 				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
@@ -1615,6 +1779,10 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesRequest(struct ndr_pull 
 
 			case 8:
 				NDR_CHECK(ndr_pull_drsuapi_DsGetNCChangesRequest8(ndr, NDR_BUFFERS, &r->req8));
+			break;
+
+			case 10:
+				NDR_CHECK(ndr_pull_drsuapi_DsGetNCChangesRequest10(ndr, NDR_BUFFERS, &r->req10));
 			break;
 
 			default:
@@ -1636,6 +1804,10 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetNCChangesRequest(struct ndr_print *ndr, con
 
 		case 8:
 			ndr_print_drsuapi_DsGetNCChangesRequest8(ndr, "req8", &r->req8);
+		break;
+
+		case 10:
+			ndr_print_drsuapi_DsGetNCChangesRequest10(ndr, "req10", &r->req10);
 		break;
 
 		default:
