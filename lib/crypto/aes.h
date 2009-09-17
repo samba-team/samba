@@ -72,6 +72,10 @@ void AES_cbc_encrypt(const unsigned char *, unsigned char *,
 		     const unsigned long, const AES_KEY *,
 		     unsigned char *, int);
 
+void aes_cfb8_encrypt(const uint8_t *in, uint8_t *out,
+		      size_t length, const AES_KEY *key,
+		      uint8_t *iv, int forward);
+
 #ifdef  __cplusplus
 }
 #endif

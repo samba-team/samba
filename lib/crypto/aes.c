@@ -112,3 +112,25 @@ AES_cbc_encrypt(const unsigned char *in, unsigned char *out,
 	}
     }
 }
+
+void aes_cfb8_encrypt(const uint8_t *in, uint8_t *out,
+		      size_t length, const AES_KEY *key,
+		      uint8_t *iv, int forward)
+{
+	size_t i;
+
+	for (i=0; i < length; i++) {
+		uint8_t tiv[AES_BLOCK_SIZE*2];
+
+		memcpy(tiv, iv, AES_BLOCK_SIZE);
+		AES_encrypt(iv, iv, key);
+		if (!forward) {
+			tiv[AES_BLOCK_SIZE] = in[i];
+		}
+		out[i] = in[i] ^ iv[0];
+		if (forward) {
+			tiv[AES_BLOCK_SIZE] = out[i];
+		}
+		memcpy(iv, tiv+1, AES_BLOCK_SIZE);
+	}
+}
