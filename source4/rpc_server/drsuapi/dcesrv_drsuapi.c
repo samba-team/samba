@@ -779,10 +779,10 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo(struct dcesrv_call_state 
 
 
 /* 
-  DRSUAPI_EXECUTE_KCC 
+  drsuapi_DsExecuteKCC 
 */
-static WERROR dcesrv_DRSUAPI_EXECUTE_KCC(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct DRSUAPI_EXECUTE_KCC *r)
+static WERROR dcesrv_drsuapi_DsExecuteKCC(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				  struct drsuapi_DsExecuteKCC *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }

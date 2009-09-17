@@ -31,13 +31,13 @@
 enum nbt_opcode
 #ifndef USE_UINT_ENUMS
  {
-	NBT_OPCODE_QUERY=(0x0<<11),
-	NBT_OPCODE_REGISTER=(0x5<<11),
-	NBT_OPCODE_RELEASE=(0x6<<11),
-	NBT_OPCODE_WACK=(0x7<<11),
-	NBT_OPCODE_REFRESH=(0x8<<11),
-	NBT_OPCODE_REFRESH2=(0x9<<11),
-	NBT_OPCODE_MULTI_HOME_REG=(0xf<<11)
+	NBT_OPCODE_QUERY=(int)((0x0<<11)),
+	NBT_OPCODE_REGISTER=(int)((0x5<<11)),
+	NBT_OPCODE_RELEASE=(int)((0x6<<11)),
+	NBT_OPCODE_WACK=(int)((0x7<<11)),
+	NBT_OPCODE_REFRESH=(int)((0x8<<11)),
+	NBT_OPCODE_REFRESH2=(int)((0x9<<11)),
+	NBT_OPCODE_MULTI_HOME_REG=(int)((0xf<<11))
 }
 #else
  { __donnot_use_enum_nbt_opcode=0x7FFFFFFF}
@@ -54,14 +54,14 @@ enum nbt_opcode
 enum nbt_rcode
 #ifndef USE_UINT_ENUMS
  {
-	NBT_RCODE_OK=0x0,
-	NBT_RCODE_FMT=0x1,
-	NBT_RCODE_SVR=0x2,
-	NBT_RCODE_NAM=0x3,
-	NBT_RCODE_IMP=0x4,
-	NBT_RCODE_RFS=0x5,
-	NBT_RCODE_ACT=0x6,
-	NBT_RCODE_CFT=0x7
+	NBT_RCODE_OK=(int)(0x0),
+	NBT_RCODE_FMT=(int)(0x1),
+	NBT_RCODE_SVR=(int)(0x2),
+	NBT_RCODE_NAM=(int)(0x3),
+	NBT_RCODE_IMP=(int)(0x4),
+	NBT_RCODE_RFS=(int)(0x5),
+	NBT_RCODE_ACT=(int)(0x6),
+	NBT_RCODE_CFT=(int)(0x7)
 }
 #else
  { __donnot_use_enum_nbt_rcode=0x7FFFFFFF}
@@ -79,14 +79,14 @@ enum nbt_rcode
 enum nbt_name_type
 #ifndef USE_UINT_ENUMS
  {
-	NBT_NAME_CLIENT=0x00,
-	NBT_NAME_MS=0x01,
-	NBT_NAME_USER=0x03,
-	NBT_NAME_SERVER=0x20,
-	NBT_NAME_PDC=0x1B,
-	NBT_NAME_LOGON=0x1C,
-	NBT_NAME_MASTER=0x1D,
-	NBT_NAME_BROWSER=0x1E
+	NBT_NAME_CLIENT=(int)(0x00),
+	NBT_NAME_MS=(int)(0x01),
+	NBT_NAME_USER=(int)(0x03),
+	NBT_NAME_SERVER=(int)(0x20),
+	NBT_NAME_PDC=(int)(0x1B),
+	NBT_NAME_LOGON=(int)(0x1C),
+	NBT_NAME_MASTER=(int)(0x1D),
+	NBT_NAME_BROWSER=(int)(0x1E)
 }
 #else
  { __donnot_use_enum_nbt_name_type=0x7FFFFFFF}
@@ -110,7 +110,7 @@ struct nbt_name {
 enum nbt_qclass
 #ifndef USE_UINT_ENUMS
  {
-	NBT_QCLASS_IP=0x01
+	NBT_QCLASS_IP=(int)(0x01)
 }
 #else
  { __donnot_use_enum_nbt_qclass=0x7FFFFFFF}
@@ -121,11 +121,11 @@ enum nbt_qclass
 enum nbt_qtype
 #ifndef USE_UINT_ENUMS
  {
-	NBT_QTYPE_ADDRESS=0x0001,
-	NBT_QTYPE_NAMESERVICE=0x0002,
-	NBT_QTYPE_NULL=0x000A,
-	NBT_QTYPE_NETBIOS=0x0020,
-	NBT_QTYPE_STATUS=0x0021
+	NBT_QTYPE_ADDRESS=(int)(0x0001),
+	NBT_QTYPE_NAMESERVICE=(int)(0x0002),
+	NBT_QTYPE_NULL=(int)(0x000A),
+	NBT_QTYPE_NETBIOS=(int)(0x0020),
+	NBT_QTYPE_STATUS=(int)(0x0021)
 }
 #else
  { __donnot_use_enum_nbt_qtype=0x7FFFFFFF}
@@ -146,10 +146,10 @@ struct nbt_name_question {
 enum nbt_node_type
 #ifndef USE_UINT_ENUMS
  {
-	NBT_NODE_B=0x0000,
-	NBT_NODE_P=0x2000,
-	NBT_NODE_M=0x4000,
-	NBT_NODE_H=0x6000
+	NBT_NODE_B=(int)(0x0000),
+	NBT_NODE_P=(int)(0x2000),
+	NBT_NODE_M=(int)(0x4000),
+	NBT_NODE_H=(int)(0x6000)
 }
 #else
  { __donnot_use_enum_nbt_node_type=0x7FFFFFFF}
@@ -250,13 +250,13 @@ struct nbt_name_packet {
 enum dgram_msg_type
 #ifndef USE_UINT_ENUMS
  {
-	DGRAM_DIRECT_UNIQUE=0x10,
-	DGRAM_DIRECT_GROUP=0x11,
-	DGRAM_BCAST=0x12,
-	DGRAM_ERROR=0x13,
-	DGRAM_QUERY=0x14,
-	DGRAM_QUERY_POSITIVE=0x15,
-	DGRAM_QUERY_NEGATIVE=0x16
+	DGRAM_DIRECT_UNIQUE=(int)(0x10),
+	DGRAM_DIRECT_GROUP=(int)(0x11),
+	DGRAM_BCAST=(int)(0x12),
+	DGRAM_ERROR=(int)(0x13),
+	DGRAM_QUERY=(int)(0x14),
+	DGRAM_QUERY_POSITIVE=(int)(0x15),
+	DGRAM_QUERY_NEGATIVE=(int)(0x16)
 }
 #else
  { __donnot_use_enum_dgram_msg_type=0x7FFFFFFF}
@@ -278,10 +278,10 @@ enum dgram_msg_type
 enum dgram_node_type
 #ifndef USE_UINT_ENUMS
  {
-	DGRAM_NODE_B=0x00,
-	DGRAM_NODE_P=0x04,
-	DGRAM_NODE_M=0x08,
-	DGRAM_NODE_NBDD=0x0C
+	DGRAM_NODE_B=(int)(0x00),
+	DGRAM_NODE_P=(int)(0x04),
+	DGRAM_NODE_M=(int)(0x08),
+	DGRAM_NODE_NBDD=(int)(0x0C)
 }
 #else
  { __donnot_use_enum_dgram_node_type=0x7FFFFFFF}
@@ -295,7 +295,7 @@ enum dgram_node_type
 enum smb_command
 #ifndef USE_UINT_ENUMS
  {
-	SMB_TRANSACTION=0x25
+	SMB_TRANSACTION=(int)(0x25)
 }
 #else
  { __donnot_use_enum_smb_command=0x7FFFFFFF}
@@ -365,9 +365,9 @@ struct dgram_message {
 enum dgram_err_code
 #ifndef USE_UINT_ENUMS
  {
-	DGRAM_ERROR_NAME_NOT_PRESENT=0x82,
-	DGRAM_ERROR_INVALID_SOURCE=0x83,
-	DGRAM_ERROR_INVALID_DEST=0x84
+	DGRAM_ERROR_NAME_NOT_PRESENT=(int)(0x82),
+	DGRAM_ERROR_INVALID_SOURCE=(int)(0x83),
+	DGRAM_ERROR_INVALID_DEST=(int)(0x84)
 }
 #else
  { __donnot_use_enum_dgram_err_code=0x7FFFFFFF}
@@ -427,16 +427,16 @@ struct nbt_sockaddr {
 enum netlogon_command
 #ifndef USE_UINT_ENUMS
  {
-	LOGON_PRIMARY_QUERY=7,
-	NETLOGON_ANNOUNCE_UAS=10,
-	NETLOGON_RESPONSE_FROM_PDC=12,
-	LOGON_SAM_LOGON_REQUEST=18,
-	LOGON_SAM_LOGON_RESPONSE=19,
-	LOGON_SAM_LOGON_PAUSE_RESPONSE=20,
-	LOGON_SAM_LOGON_USER_UNKNOWN=21,
-	LOGON_SAM_LOGON_RESPONSE_EX=23,
-	LOGON_SAM_LOGON_PAUSE_RESPONSE_EX=24,
-	LOGON_SAM_LOGON_USER_UNKNOWN_EX=25
+	LOGON_PRIMARY_QUERY=(int)(7),
+	NETLOGON_ANNOUNCE_UAS=(int)(10),
+	NETLOGON_RESPONSE_FROM_PDC=(int)(12),
+	LOGON_SAM_LOGON_REQUEST=(int)(18),
+	LOGON_SAM_LOGON_RESPONSE=(int)(19),
+	LOGON_SAM_LOGON_PAUSE_RESPONSE=(int)(20),
+	LOGON_SAM_LOGON_USER_UNKNOWN=(int)(21),
+	LOGON_SAM_LOGON_RESPONSE_EX=(int)(23),
+	LOGON_SAM_LOGON_PAUSE_RESPONSE_EX=(int)(24),
+	LOGON_SAM_LOGON_USER_UNKNOWN_EX=(int)(25)
 }
 #else
  { __donnot_use_enum_netlogon_command=0x7FFFFFFF}
@@ -574,16 +574,16 @@ struct nbt_netlogon_packet {
 enum nbt_browse_opcode
 #ifndef USE_UINT_ENUMS
  {
-	HostAnnouncement=1,
-	AnnouncementRequest=2,
-	Election=8,
-	GetBackupListReq=9,
-	GetBackupListResp=10,
-	BecomeBackup=11,
-	DomainAnnouncement=12,
-	MasterAnnouncement=13,
-	ResetBrowserState=14,
-	LocalMasterAnnouncement=15
+	HostAnnouncement=(int)(1),
+	AnnouncementRequest=(int)(2),
+	Election=(int)(8),
+	GetBackupListReq=(int)(9),
+	GetBackupListResp=(int)(10),
+	BecomeBackup=(int)(11),
+	DomainAnnouncement=(int)(12),
+	MasterAnnouncement=(int)(13),
+	ResetBrowserState=(int)(14),
+	LocalMasterAnnouncement=(int)(15)
 }
 #else
  { __donnot_use_enum_nbt_browse_opcode=0x7FFFFFFF}

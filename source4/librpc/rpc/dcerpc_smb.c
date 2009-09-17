@@ -325,7 +325,7 @@ static NTSTATUS smb_send_request(struct dcerpc_connection *c, DATA_BLOB *blob,
 	union smb_write io;
 	struct smbcli_request *req;
 
-	if (smb->dead) {
+	if (!smb || smb->dead) {
 		return NT_STATUS_CONNECTION_DISCONNECTED;
 	}
 
@@ -388,6 +388,7 @@ static NTSTATUS smb_shutdown_pipe(struct dcerpc_connection *c, NTSTATUS status)
 	}
 
 	talloc_free(smb);
+	c->transport.private_data = NULL;
 
 	return status;
 }
@@ -398,6 +399,7 @@ static NTSTATUS smb_shutdown_pipe(struct dcerpc_connection *c, NTSTATUS status)
 static const char *smb_peer_name(struct dcerpc_connection *c)
 {
 	struct smb_private *smb = (struct smb_private *)c->transport.private_data;
+	if (smb == NULL) return "";
 	return smb->server_name;
 }
 
@@ -407,6 +409,7 @@ static const char *smb_peer_name(struct dcerpc_connection *c)
 static const char *smb_target_hostname(struct dcerpc_connection *c)
 {
 	struct smb_private *smb = talloc_get_type(c->transport.private_data, struct smb_private);
+	if (smb == NULL) return "";
 	return smb->tree->session->transport->socket->hostname;
 }
 
@@ -417,6 +420,7 @@ static NTSTATUS smb_session_key(struct dcerpc_connection *c, DATA_BLOB *session_
 {
 	struct smb_private *smb = (struct smb_private *)c->transport.private_data;
 
+	if (smb == NULL) return NT_STATUS_CONNECTION_DISCONNECTED;
 	if (smb->tree->session->user_session_key.data) {
 		*session_key = smb->tree->session->user_session_key;
 		return NT_STATUS_OK;

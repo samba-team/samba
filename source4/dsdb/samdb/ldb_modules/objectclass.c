@@ -231,49 +231,6 @@ static int objectclass_sort(struct ldb_module *module,
 	return LDB_ERR_OBJECT_CLASS_VIOLATION;
 }
 
-static DATA_BLOB *get_sd(struct ldb_module *module, TALLOC_CTX *mem_ctx, 
-			 const struct dsdb_class *objectclass) 
-{
-	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	enum ndr_err_code ndr_err;
-	DATA_BLOB *linear_sd;
-	struct auth_session_info *session_info
-		= ldb_get_opaque(ldb, "sessionInfo");
-	struct security_descriptor *sd;
-	const struct dom_sid *domain_sid = samdb_domain_sid(ldb);
-
-	if (!objectclass->defaultSecurityDescriptor || !domain_sid) {
-		return NULL;
-	}
-	
-	sd = sddl_decode(mem_ctx, 
-			 objectclass->defaultSecurityDescriptor,
-			 domain_sid);
-
-	if (!sd || !session_info || !session_info->security_token) {
-		return NULL;
-	}
-	
-	sd->owner_sid = session_info->security_token->user_sid;
-	sd->group_sid = session_info->security_token->group_sid;
-	
-	linear_sd = talloc(mem_ctx, DATA_BLOB);
-	if (!linear_sd) {
-		return NULL;
-	}
-
-	ndr_err = ndr_push_struct_blob(linear_sd, mem_ctx, 
-					lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
-				       sd,
-				       (ndr_push_flags_fn_t)ndr_push_security_descriptor);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return NULL;
-	}
-	
-	return linear_sd;
-
-}
-
 static int get_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	struct ldb_context *ldb;
@@ -536,7 +493,6 @@ static int objectclass_do_add(struct oc_context *ac)
 			return LDB_ERR_UNWILLING_TO_PERFORM;						
 		}
 	}
-
 	if (schema) {
 		ret = fix_attributes(ldb, schema, msg);
 		if (ret != LDB_SUCCESS) {
@@ -546,7 +502,7 @@ static int objectclass_do_add(struct oc_context *ac)
 
 		/* This is now the objectClass list from the database */
 		objectclass_element = ldb_msg_find_element(msg, "objectClass");
-		
+
 		if (!objectclass_element) {
 			/* Where did it go?  bail now... */
 			talloc_free(mem_ctx);
@@ -565,10 +521,10 @@ static int objectclass_do_add(struct oc_context *ac)
 			talloc_free(mem_ctx);
 			return ret;
 		}
-		
+
 		/* We must completely replace the existing objectClass entry,
 		 * because we need it sorted */
-		
+
 		/* Move from the linked list back into an ldb msg */
 		for (current = sorted; current; current = current->next) {
 			value = talloc_strdup(msg, current->objectclass->lDAPDisplayName);
@@ -579,7 +535,7 @@ static int objectclass_do_add(struct oc_context *ac)
 			}
 			ret = ldb_msg_add_string(msg, "objectClass", value);
 			if (ret != LDB_SUCCESS) {
-				ldb_set_errstring(ldb, 
+				ldb_set_errstring(ldb,
 						  "objectclass: could not re-add sorted "
 						  "objectclass to modify msg");
 				talloc_free(mem_ctx);
@@ -589,6 +545,7 @@ static int objectclass_do_add(struct oc_context *ac)
 			if (!current->next) {
 				struct ldb_message_element *el;
 				int32_t systemFlags = 0;
+				DATA_BLOB *sd;
 				if (!ldb_msg_find_element(msg, "objectCategory")) {
 					value = talloc_strdup(msg, current->objectclass->defaultObjectCategory);
 					if (value == NULL) {
@@ -599,14 +556,8 @@ static int objectclass_do_add(struct oc_context *ac)
 					ldb_msg_add_string(msg, "objectCategory", value);
 				}
 				if (!ldb_msg_find_element(msg, "showInAdvancedViewOnly") && (current->objectclass->defaultHidingValue == true)) {
-					ldb_msg_add_string(msg, "showInAdvancedViewOnly", 
+					ldb_msg_add_string(msg, "showInAdvancedViewOnly",
 							   "TRUE");
-				}
-				if (!ldb_msg_find_element(msg, "nTSecurityDescriptor")) {
-					DATA_BLOB *sd = get_sd(ac->module, mem_ctx, current->objectclass);
-					if (sd) {
-						ldb_msg_add_steal_value(msg, "nTSecurityDescriptor", sd);
-					}
 				}
 
 				/* There are very special rules for systemFlags, see MS-ADTS 3.1.1.5.2.4 */
@@ -619,7 +570,7 @@ static int objectclass_do_add(struct oc_context *ac)
 					/* systemFlags &= ( SYSTEM_FLAG_CONFIG_ALLOW_RENAME | SYSTEM_FLAG_CONFIG_ALLOW_MOVE | SYSTEM_FLAG_CONFIG_LIMITED_MOVE); */
 					ldb_msg_remove_element(msg, el);
 				}
-				
+
 				/* This flag is only allowed on attributeSchema objects */
 				if (ldb_attr_cmp(current->objectclass->lDAPDisplayName, "attributeSchema") == 0) {
 					systemFlags &= ~SYSTEM_FLAG_ATTR_IS_RDN;
@@ -632,7 +583,7 @@ static int objectclass_do_add(struct oc_context *ac)
 					   || ldb_attr_cmp(current->objectclass->lDAPDisplayName, "ntDSDSA") == 0) {
 					systemFlags |= (int32_t)(SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE);
 
-				} else if (ldb_attr_cmp(current->objectclass->lDAPDisplayName, "siteLink") == 0 
+				} else if (ldb_attr_cmp(current->objectclass->lDAPDisplayName, "siteLink") == 0
 					   || ldb_attr_cmp(current->objectclass->lDAPDisplayName, "siteLinkBridge") == 0
 					   || ldb_attr_cmp(current->objectclass->lDAPDisplayName, "nTDSConnection") == 0) {
 					systemFlags |= (int32_t)(SYSTEM_FLAG_CONFIG_ALLOW_RENAME);

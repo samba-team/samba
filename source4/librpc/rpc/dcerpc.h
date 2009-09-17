@@ -172,6 +172,9 @@ struct dcerpc_pipe {
 /* this triggers the DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN flag in the bind request */
 #define DCERPC_HEADER_SIGNING          (1<<20)
 
+/* use NDR64 transport */
+#define DCERPC_NDR64                   (1<<21)
+
 /* this describes a binding to a particular transport/pipe */
 struct dcerpc_binding {
 	enum dcerpc_transport_t transport;

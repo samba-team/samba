@@ -181,7 +181,7 @@ enum ndr_err_code ndr_pull_dom_sid2(struct ndr_pull *ndr, int ndr_flags, struct 
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NDR_ERR_SUCCESS;
 	}
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &num_auths));
+	NDR_CHECK(ndr_pull_uint3264(ndr, NDR_SCALARS, &num_auths));
 	NDR_CHECK(ndr_pull_dom_sid(ndr, ndr_flags, sid));
 	if (sid->num_auths != num_auths) {
 		return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, 
@@ -199,7 +199,7 @@ enum ndr_err_code ndr_push_dom_sid2(struct ndr_push *ndr, int ndr_flags, const s
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NDR_ERR_SUCCESS;
 	}
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, sid->num_auths));
+	NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, sid->num_auths));
 	return ndr_push_dom_sid(ndr, ndr_flags, sid);
 }
 

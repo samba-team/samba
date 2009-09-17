@@ -528,11 +528,19 @@ bool kpasswdd_process(struct kdc_server *kdc,
 
 	/* The kerberos PRIV packets include these addresses.  MIT
 	 * clients check that they are present */
+#if 0
+	/* Skip this part for now, it breaks with a NetAPP filer and
+	 * in any case where the client address is behind NAT.  If
+	 * older MIT clients need this, we might have to insert more
+	 * complex code */
+
 	nt_status = gensec_set_peer_addr(gensec_security, peer_addr);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
 		return false;
 	}
+#endif
+
 	nt_status = gensec_set_my_addr(gensec_security, my_addr);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);

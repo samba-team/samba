@@ -58,7 +58,7 @@ PRIVATE_DEPENDENCIES = ASN1_UTIL CREDENTIALS
 # End MODULE gensec_spnego
 ################################################
 
-gensec_spnego_OBJ_FILES = $(addprefix $(gensecsrcdir)/, spnego.o spnego_parse.o)
+gensec_spnego_OBJ_FILES = $(addprefix $(gensecsrcdir)/, spnego.o) ../libcli/auth/spnego_parse.o
 
 $(eval $(call proto_header_template,$(gensecsrcdir)/spnego_proto.h,$(gensec_spnego_OBJ_FILES:.o=.c)))
 

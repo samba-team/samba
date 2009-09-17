@@ -42,8 +42,9 @@ import ldb
 import shutil
 from credentials import Credentials, DONT_USE_KERBEROS
 from auth import system_session, admin_session
-from samba import version, Ldb, substitute_var, valid_netbios_name, check_all_substituted, \
-  DS_BEHAVIOR_WIN2008
+from samba import version, Ldb, substitute_var, valid_netbios_name
+from samba import check_all_substituted
+from samba import DS_DOMAIN_FUNCTION_2008_R2, DS_DC_FUNCTION_2008_R2
 from samba.samdb import SamDB
 from samba.idmap import IDmapDB
 from samba.dcerpc import security
@@ -584,6 +585,7 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
                     "extended_dn_in",
                     "rdn_name",
                     "objectclass",
+                    "descriptor",
                     "samldb",
                     "password_hash",
                     "operational",
@@ -833,9 +835,9 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
     :note: This will wipe the main SAM database file!
     """
 
-    domainFunctionality = DS_BEHAVIOR_WIN2008
-    forestFunctionality = DS_BEHAVIOR_WIN2008
-    domainControllerFunctionality = DS_BEHAVIOR_WIN2008
+    domainFunctionality = DS_DOMAIN_FUNCTION_2008_R2
+    forestFunctionality = DS_DOMAIN_FUNCTION_2008_R2
+    domainControllerFunctionality = DS_DC_FUNCTION_2008_R2
 
     # Also wipes the database
     setup_samdb_partitions(path, setup_path, message=message, lp=lp,
@@ -910,7 +912,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
             domainguid_mod = ""
 
         setup_modify_ldif(samdb, setup_path("provision_basedn_modify.ldif"), {
-            "LDAPTIME": timestring(int(time.time())),
+            "CREATTIME": str(int(time.time()) * 1e7), # seconds -> ticks
             "DOMAINSID": str(domainsid),
             "SCHEMADN": names.schemadn, 
             "NETBIOSNAME": names.netbiosname,
@@ -920,7 +922,8 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
             "POLICYGUID": policyguid,
             "DOMAINDN": names.domaindn,
             "DOMAINGUID_MOD": domainguid_mod,
-            "DOMAIN_FUNCTIONALITY": str(domainFunctionality)
+            "DOMAIN_FUNCTIONALITY": str(domainFunctionality),
+            "SAMBA_VERSION_STRING": version
             })
 
         message("Adding configuration container")
@@ -1203,7 +1206,7 @@ def provision(setup_dir, message, session_info,
                                    "{" + policyguid + "}")
         os.makedirs(policy_path, 0755)
         open(os.path.join(policy_path, "GPT.INI"), 'w').write(
-                                   "[General]\r\nVersion=65544")
+                                   "[General]\r\nVersion=65543")
         os.makedirs(os.path.join(policy_path, "MACHINE"), 0755)
         os.makedirs(os.path.join(policy_path, "USER"), 0755)
 

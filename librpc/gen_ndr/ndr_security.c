@@ -35,14 +35,14 @@ _PUBLIC_ void ndr_print_security_ace_flags(struct ndr_print *ndr, const char *na
 
 _PUBLIC_ enum ndr_err_code ndr_push_security_ace_type(struct ndr_push *ndr, int ndr_flags, enum security_ace_type r)
 {
-	NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint8(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ enum ndr_err_code ndr_pull_security_ace_type(struct ndr_pull *ndr, int ndr_flags, enum security_ace_type *r)
 {
 	uint8_t v;
-	NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint8(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -446,14 +446,14 @@ _PUBLIC_ void ndr_print_security_ace(struct ndr_print *ndr, const char *name, co
 
 static enum ndr_err_code ndr_push_security_acl_revision(struct ndr_push *ndr, int ndr_flags, enum security_acl_revision r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_security_acl_revision(struct ndr_pull *ndr, int ndr_flags, enum security_acl_revision *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -543,14 +543,14 @@ _PUBLIC_ void ndr_print_security_acl(struct ndr_print *ndr, const char *name, co
 
 static enum ndr_err_code ndr_push_security_descriptor_revision(struct ndr_push *ndr, int ndr_flags, enum security_descriptor_revision r)
 {
-	NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint8(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_security_descriptor_revision(struct ndr_pull *ndr, int ndr_flags, enum security_descriptor_revision *r)
 {
 	uint8_t v;
-	NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint8(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -608,7 +608,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_security_descriptor(struct ndr_push *ndr, in
 		uint32_t _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_LITTLE_ENDIAN);
 		if (ndr_flags & NDR_SCALARS) {
-			NDR_CHECK(ndr_push_align(ndr, 4));
+			NDR_CHECK(ndr_push_align(ndr, 5));
 			NDR_CHECK(ndr_push_security_descriptor_revision(ndr, NDR_SCALARS, r->revision));
 			NDR_CHECK(ndr_push_security_descriptor_type(ndr, NDR_SCALARS, r->type));
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->owner_sid));
@@ -653,7 +653,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_descriptor(struct ndr_pull *ndr, in
 		uint32_t _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_LITTLE_ENDIAN);
 		if (ndr_flags & NDR_SCALARS) {
-			NDR_CHECK(ndr_pull_align(ndr, 4));
+			NDR_CHECK(ndr_pull_align(ndr, 5));
 			NDR_CHECK(ndr_pull_security_descriptor_revision(ndr, NDR_SCALARS, &r->revision));
 			NDR_CHECK(ndr_pull_security_descriptor_type(ndr, NDR_SCALARS, &r->type));
 			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_owner_sid));
@@ -773,7 +773,7 @@ _PUBLIC_ void ndr_print_security_descriptor(struct ndr_print *ndr, const char *n
 _PUBLIC_ enum ndr_err_code ndr_push_sec_desc_buf(struct ndr_push *ndr, int ndr_flags, const struct sec_desc_buf *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_align(ndr, 5));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_security_descriptor(r->sd, ndr->iconv_convenience, ndr->flags)));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->sd));
 	}
@@ -795,7 +795,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_sec_desc_buf(struct ndr_pull *ndr, int ndr_f
 	uint32_t _ptr_sd;
 	TALLOC_CTX *_mem_save_sd_0;
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_align(ndr, 5));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sd_size));
 		if (r->sd_size > 0x40000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
@@ -841,15 +841,16 @@ _PUBLIC_ enum ndr_err_code ndr_push_security_token(struct ndr_push *ndr, int ndr
 {
 	uint32_t cntr_sids_0;
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_align(ndr, 5));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->user_sid));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->group_sid));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->num_sids));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->num_sids));
+		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->num_sids));
 		for (cntr_sids_0 = 0; cntr_sids_0 < r->num_sids; cntr_sids_0++) {
 			NDR_CHECK(ndr_push_unique_ptr(ndr, r->sids[cntr_sids_0]));
 		}
 		NDR_CHECK(ndr_push_udlong(ndr, NDR_SCALARS, r->privilege_mask));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->default_dacl));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->user_sid) {
@@ -862,6 +863,9 @@ _PUBLIC_ enum ndr_err_code ndr_push_security_token(struct ndr_push *ndr, int ndr
 			if (r->sids[cntr_sids_0]) {
 				NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS, r->sids[cntr_sids_0]));
 			}
+		}
+		if (r->default_dacl) {
+			NDR_CHECK(ndr_push_security_acl(ndr, NDR_SCALARS|NDR_BUFFERS, r->default_dacl));
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -877,8 +881,10 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_token(struct ndr_pull *ndr, int ndr
 	uint32_t cntr_sids_0;
 	TALLOC_CTX *_mem_save_sids_0;
 	TALLOC_CTX *_mem_save_sids_1;
+	uint32_t _ptr_default_dacl;
+	TALLOC_CTX *_mem_save_default_dacl_0;
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_align(ndr, 5));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_user_sid));
 		if (_ptr_user_sid) {
 			NDR_PULL_ALLOC(ndr, r->user_sid);
@@ -906,6 +912,12 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_token(struct ndr_pull *ndr, int ndr
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sids_0, 0);
 		NDR_CHECK(ndr_pull_udlong(ndr, NDR_SCALARS, &r->privilege_mask));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_default_dacl));
+		if (_ptr_default_dacl) {
+			NDR_PULL_ALLOC(ndr, r->default_dacl);
+		} else {
+			r->default_dacl = NULL;
+		}
 		if (r->sids) {
 			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->sids, r->num_sids));
 		}
@@ -934,6 +946,12 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_token(struct ndr_pull *ndr, int ndr
 			}
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sids_0, 0);
+		if (r->default_dacl) {
+			_mem_save_default_dacl_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->default_dacl, 0);
+			NDR_CHECK(ndr_pull_security_acl(ndr, NDR_SCALARS|NDR_BUFFERS, r->default_dacl));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_default_dacl_0, 0);
+		}
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -972,6 +990,12 @@ _PUBLIC_ void ndr_print_security_token(struct ndr_print *ndr, const char *name, 
 	}
 	ndr->depth--;
 	ndr_print_udlong(ndr, "privilege_mask", r->privilege_mask);
+	ndr_print_ptr(ndr, "default_dacl", r->default_dacl);
+	ndr->depth++;
+	if (r->default_dacl) {
+		ndr_print_security_acl(ndr, "default_dacl", r->default_dacl);
+	}
+	ndr->depth--;
 	ndr->depth--;
 }
 
@@ -1027,6 +1051,32 @@ _PUBLIC_ void ndr_print_kerb_EncTypes(struct ndr_print *ndr, const char *name, u
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "KERB_ENCTYPE_RC4_HMAC_MD5", KERB_ENCTYPE_RC4_HMAC_MD5, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96", KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96", KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96, r);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_security_autoinherit(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_security_autoinherit(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_security_autoinherit(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SEC_DACL_AUTO_INHERIT", SEC_DACL_AUTO_INHERIT, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SEC_SACL_AUTO_INHERIT", SEC_SACL_AUTO_INHERIT, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SEC_DEFAULT_DESCRIPTOR", SEC_DEFAULT_DESCRIPTOR, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SEC_OWNER_FROM_PARENT", SEC_OWNER_FROM_PARENT, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SEC_GROUP_FROM_PARENT", SEC_GROUP_FROM_PARENT, r);
 	ndr->depth--;
 }
 

@@ -204,12 +204,12 @@ sub ParseArrayPushHeader($$$$$$)
 	}
 
 	if ((!$l->{IS_SURROUNDING}) and $l->{IS_CONFORMANT}) {
-		$self->pidl("NDR_CHECK(ndr_push_uint32($ndr, NDR_SCALARS, $size));");
+		$self->pidl("NDR_CHECK(ndr_push_uint3264($ndr, NDR_SCALARS, $size));");
 	}
 	
 	if ($l->{IS_VARYING}) {
-		$self->pidl("NDR_CHECK(ndr_push_uint32($ndr, NDR_SCALARS, 0));");  # array offset
-		$self->pidl("NDR_CHECK(ndr_push_uint32($ndr, NDR_SCALARS, $length));");
+		$self->pidl("NDR_CHECK(ndr_push_uint3264($ndr, NDR_SCALARS, 0));");  # array offset
+		$self->pidl("NDR_CHECK(ndr_push_uint3264($ndr, NDR_SCALARS, $length));");
 	} 
 
 	return $length;
@@ -1220,9 +1220,9 @@ sub ParseStructPushPrimitives($$$$$)
 				$size = ParseExpr($e->{LEVELS}[0]->{SIZE_IS}, $env, $e->{ORIGINAL});
 			}
 
-			$self->pidl("NDR_CHECK(ndr_push_uint32($ndr, NDR_SCALARS, $size));");
+			$self->pidl("NDR_CHECK(ndr_push_uint3264($ndr, NDR_SCALARS, $size));");
 		} else {
-			$self->pidl("NDR_CHECK(ndr_push_uint32($ndr, NDR_SCALARS, ndr_string_array_size($ndr, $varname->$e->{NAME})));");
+			$self->pidl("NDR_CHECK(ndr_push_uint3264($ndr, NDR_SCALARS, ndr_string_array_size($ndr, $varname->$e->{NAME})));");
 		}
 	}
 
@@ -1287,7 +1287,7 @@ sub ParseEnumPush($$$$)
 	my($type_fn) = $enum->{BASE_TYPE};
 
 	$self->start_flags($enum, $ndr);
-	$self->pidl("NDR_CHECK(ndr_push_$type_fn($ndr, NDR_SCALARS, $varname));");
+	$self->pidl("NDR_CHECK(ndr_push_enum_$type_fn($ndr, NDR_SCALARS, $varname));");
 	$self->end_flags($enum, $ndr);
 }
 
@@ -1301,7 +1301,7 @@ sub ParseEnumPull($$$$)
 
 	$self->pidl("$type_v_decl v;");
 	$self->start_flags($enum, $ndr);
-	$self->pidl("NDR_CHECK(ndr_pull_$type_fn($ndr, NDR_SCALARS, &v));");
+	$self->pidl("NDR_CHECK(ndr_pull_enum_$type_fn($ndr, NDR_SCALARS, &v));");
 	$self->pidl("*$varname = v;");
 
 	$self->end_flags($enum, $ndr);

@@ -418,12 +418,12 @@ struct wkssvc_NetrWorkstationStatistics {
 enum wkssvc_NetValidateNameType
 #ifndef USE_UINT_ENUMS
  {
-	NetSetupUnknown=0,
-	NetSetupMachine=1,
-	NetSetupWorkgroup=2,
-	NetSetupDomain=3,
-	NetSetupNonExistentDomain=4,
-	NetSetupDnsMachine=5
+	NetSetupUnknown=(int)(0),
+	NetSetupMachine=(int)(1),
+	NetSetupWorkgroup=(int)(2),
+	NetSetupDomain=(int)(3),
+	NetSetupNonExistentDomain=(int)(4),
+	NetSetupDnsMachine=(int)(5)
 }
 #else
  { __donnot_use_enum_wkssvc_NetValidateNameType=0x7FFFFFFF}
@@ -439,10 +439,10 @@ enum wkssvc_NetValidateNameType
 enum wkssvc_NetJoinStatus
 #ifndef USE_UINT_ENUMS
  {
-	NET_SETUP_UNKNOWN_STATUS=0,
-	NET_SETUP_UNJOINED=1,
-	NET_SETUP_WORKGROUP_NAME=2,
-	NET_SETUP_DOMAIN_NAME=3
+	NET_SETUP_UNKNOWN_STATUS=(int)(0),
+	NET_SETUP_UNJOINED=(int)(1),
+	NET_SETUP_WORKGROUP_NAME=(int)(2),
+	NET_SETUP_DOMAIN_NAME=(int)(3)
 }
 #else
  { __donnot_use_enum_wkssvc_NetJoinStatus=0x7FFFFFFF}
@@ -473,10 +473,10 @@ struct wkssvc_PasswordBuffer {
 enum wkssvc_ComputerNameType
 #ifndef USE_UINT_ENUMS
  {
-	NetPrimaryComputerName=0,
-	NetAlternateComputerNames=1,
-	NetAllComputerNames=2,
-	NetComputerNameTypeMax=3
+	NetPrimaryComputerName=(int)(0),
+	NetAlternateComputerNames=(int)(1),
+	NetAllComputerNames=(int)(2),
+	NetComputerNameTypeMax=(int)(3)
 }
 #else
  { __donnot_use_enum_wkssvc_ComputerNameType=0x7FFFFFFF}

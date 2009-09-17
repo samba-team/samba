@@ -51,8 +51,8 @@ union echo_Info {
 enum echo_Enum1
 #ifndef USE_UINT_ENUMS
  {
-	ECHO_ENUM1=1,
-	ECHO_ENUM2=2
+	ECHO_ENUM1=(int)(1),
+	ECHO_ENUM2=(int)(2)
 }
 #else
  { __donnot_use_enum_echo_Enum1=0x7FFFFFFF}
@@ -64,8 +64,8 @@ enum echo_Enum1
 enum echo_Enum1_32
 #ifndef USE_UINT_ENUMS
  {
-	ECHO_ENUM1_32=1,
-	ECHO_ENUM2_32=2
+	ECHO_ENUM1_32=(int)(1),
+	ECHO_ENUM2_32=(int)(2)
 }
 #else
  { __donnot_use_enum_echo_Enum1_32=0x7FFFFFFF}

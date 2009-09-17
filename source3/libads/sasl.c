@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "../libcli/auth/spnego.h"
 
 #ifdef HAVE_LDAP
 

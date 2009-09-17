@@ -63,6 +63,22 @@ int main(int argc, char **argv, char **envp);
 
 /* The following definitions come from winbindd/winbindd_ads.c  */
 
+/* The following definitions come from winbindd/winbindd_rpc.c  */
+
+NTSTATUS winbindd_lookup_sids(TALLOC_CTX *mem_ctx,
+			      struct winbindd_domain *domain,
+			      uint32_t num_sids,
+			      const struct dom_sid *sids,
+			      char ***domains,
+			      char ***names,
+			      enum lsa_SidType **types);
+NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
+			       struct winbindd_domain *domain,
+			       uint32_t num_names,
+			       const char **names,
+			       const char ***domains,
+			       struct dom_sid **sids,
+			       enum lsa_SidType **types);
 
 /* The following definitions come from winbindd/winbindd_async.c  */
 

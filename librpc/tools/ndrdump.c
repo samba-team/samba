@@ -157,18 +157,24 @@ static void ndrdump_data(uint8_t *d, uint32_t l, bool force)
 	const char *plugin = NULL;
 	bool validate = false;
 	bool dumpdata = false;
+	bool assume_ndr64 = false;
 	int opt;
-	enum {OPT_CONTEXT_FILE=1000, OPT_VALIDATE, OPT_DUMP_DATA, OPT_LOAD_DSO};
+	enum {OPT_CONTEXT_FILE=1000, OPT_VALIDATE, OPT_DUMP_DATA, OPT_LOAD_DSO, OPT_NDR64};
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{"context-file", 'c', POPT_ARG_STRING, NULL, OPT_CONTEXT_FILE, "In-filename to parse first", "CTX-FILE" },
 		{"validate", 0, POPT_ARG_NONE, NULL, OPT_VALIDATE, "try to validate the data", NULL },	
 		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMP_DATA, "dump the hex data", NULL },	
 		{"load-dso", 'l', POPT_ARG_STRING, NULL, OPT_LOAD_DSO, "load from shared object file", NULL },
+		{"ndr64", 0, POPT_ARG_NONE, NULL, OPT_NDR64, "Assume NDR64 data", NULL },
 		POPT_COMMON_SAMBA
 		POPT_COMMON_VERSION
 		{ NULL }
 	};
+
+	if (DEBUGLEVEL < 1) {
+		DEBUGLEVEL = 1;
+	}
 
 	ndr_table_init();
 
@@ -199,6 +205,9 @@ static void ndrdump_data(uint8_t *d, uint32_t l, bool force)
 			break;
 		case OPT_LOAD_DSO:
 			plugin = poptGetOptArg(pc);
+			break;
+		case OPT_NDR64:
+			assume_ndr64 = true;
 			break;
 		}
 	}
@@ -287,6 +296,9 @@ static void ndrdump_data(uint8_t *d, uint32_t l, bool force)
 
 		ndr_pull = ndr_pull_init_blob(&blob, mem_ctx, lp_iconv_convenience(cmdline_lp_ctx));
 		ndr_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
+		if (assume_ndr64) {
+			ndr_pull->flags |= LIBNDR_FLAG_NDR64;
+		}
 
 		ndr_err = f->ndr_pull(ndr_pull, NDR_IN, st);
 
@@ -320,6 +332,9 @@ static void ndrdump_data(uint8_t *d, uint32_t l, bool force)
 
 	ndr_pull = ndr_pull_init_blob(&blob, mem_ctx, lp_iconv_convenience(cmdline_lp_ctx));
 	ndr_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
+	if (assume_ndr64) {
+		ndr_pull->flags |= LIBNDR_FLAG_NDR64;
+	}
 
 	ndr_err = f->ndr_pull(ndr_pull, flags, st);
 	status = ndr_map_error2ntstatus(ndr_err);

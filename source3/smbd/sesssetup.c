@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "smbd/globals.h"
+#include "../libcli/auth/spnego.h"
 
 extern enum protocol_types Protocol;
 

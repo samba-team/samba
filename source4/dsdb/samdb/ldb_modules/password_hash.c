@@ -1068,7 +1068,8 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 	/* Per MS-SAMR 3.1.1.8.11.6 we create AES keys if our domain functionality level is 2008 or higher */
 	domainFunctionality = talloc_get_type(ldb_get_opaque(ldb, "domainFunctionality"), int);
 
-	do_newer_keys = *domainFunctionality && (*domainFunctionality >= DS_BEHAVIOR_WIN2008);
+	do_newer_keys = *domainFunctionality &&
+		(*domainFunctionality >= DS_DOMAIN_FUNCTION_2008);
 
 	if (io->domain->store_cleartext &&
 	    (io->u.user_account_control & UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED)) {

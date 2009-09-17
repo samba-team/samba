@@ -281,15 +281,21 @@ NTSTATUS rpccli_drsuapi_DsAddEntry(struct rpc_pipe_client *cli,
 				   int32_t *level_out /* [out] [ref] */,
 				   union drsuapi_DsAddEntryCtr *ctr /* [out] [ref,switch_is(*level_out)] */,
 				   WERROR *werror);
-struct tevent_req *rpccli_DRSUAPI_EXECUTE_KCC_send(TALLOC_CTX *mem_ctx,
-						   struct tevent_context *ev,
-						   struct rpc_pipe_client *cli);
-NTSTATUS rpccli_DRSUAPI_EXECUTE_KCC_recv(struct tevent_req *req,
-					 TALLOC_CTX *mem_ctx,
-					 WERROR *result);
-NTSTATUS rpccli_DRSUAPI_EXECUTE_KCC(struct rpc_pipe_client *cli,
-				    TALLOC_CTX *mem_ctx,
-				    WERROR *werror);
+struct tevent_req *rpccli_drsuapi_DsExecuteKCC_send(TALLOC_CTX *mem_ctx,
+						    struct tevent_context *ev,
+						    struct rpc_pipe_client *cli,
+						    struct policy_handle *_bind_handle /* [in] [ref] */,
+						    uint32_t _level /* [in]  */,
+						    union drsuapi_DsExecuteKCCRequest *_req /* [in] [ref,switch_is(level)] */);
+NTSTATUS rpccli_drsuapi_DsExecuteKCC_recv(struct tevent_req *req,
+					  TALLOC_CTX *mem_ctx,
+					  WERROR *result);
+NTSTATUS rpccli_drsuapi_DsExecuteKCC(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx,
+				     struct policy_handle *bind_handle /* [in] [ref] */,
+				     uint32_t level /* [in]  */,
+				     union drsuapi_DsExecuteKCCRequest *req /* [in] [ref,switch_is(level)] */,
+				     WERROR *werror);
 struct tevent_req *rpccli_drsuapi_DsReplicaGetInfo_send(TALLOC_CTX *mem_ctx,
 							struct tevent_context *ev,
 							struct rpc_pipe_client *cli,

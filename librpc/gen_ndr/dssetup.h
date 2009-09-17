@@ -11,12 +11,12 @@
 enum dssetup_DsRole
 #ifndef USE_UINT_ENUMS
  {
-	DS_ROLE_STANDALONE_WORKSTATION=0,
-	DS_ROLE_MEMBER_WORKSTATION=1,
-	DS_ROLE_STANDALONE_SERVER=2,
-	DS_ROLE_MEMBER_SERVER=3,
-	DS_ROLE_BACKUP_DC=4,
-	DS_ROLE_PRIMARY_DC=5
+	DS_ROLE_STANDALONE_WORKSTATION=(int)(0),
+	DS_ROLE_MEMBER_WORKSTATION=(int)(1),
+	DS_ROLE_STANDALONE_SERVER=(int)(2),
+	DS_ROLE_MEMBER_SERVER=(int)(3),
+	DS_ROLE_BACKUP_DC=(int)(4),
+	DS_ROLE_PRIMARY_DC=(int)(5)
 }
 #else
  { __donnot_use_enum_dssetup_DsRole=0x7FFFFFFF}
@@ -47,8 +47,8 @@ struct dssetup_DsRolePrimaryDomInfoBasic {
 enum dssetup_DsUpgrade
 #ifndef USE_UINT_ENUMS
  {
-	DS_ROLE_NOT_UPGRADING=0,
-	DS_ROLE_UPGRADING=1
+	DS_ROLE_NOT_UPGRADING=(int)(0),
+	DS_ROLE_UPGRADING=(int)(1)
 }
 #else
  { __donnot_use_enum_dssetup_DsUpgrade=0x7FFFFFFF}
@@ -60,9 +60,9 @@ enum dssetup_DsUpgrade
 enum dssetup_DsPrevious
 #ifndef USE_UINT_ENUMS
  {
-	DS_ROLE_PREVIOUS_UNKNOWN=0,
-	DS_ROLE_PREVIOUS_PRIMARY=1,
-	DS_ROLE_PREVIOUS_BACKUP=2
+	DS_ROLE_PREVIOUS_UNKNOWN=(int)(0),
+	DS_ROLE_PREVIOUS_PRIMARY=(int)(1),
+	DS_ROLE_PREVIOUS_BACKUP=(int)(2)
 }
 #else
  { __donnot_use_enum_dssetup_DsPrevious=0x7FFFFFFF}
@@ -80,9 +80,9 @@ struct dssetup_DsRoleUpgradeStatus {
 enum dssetup_DsRoleOp
 #ifndef USE_UINT_ENUMS
  {
-	DS_ROLE_OP_IDLE=0,
-	DS_ROLE_OP_ACTIVE=1,
-	DS_ROLE_OP_NEEDS_REBOOT=2
+	DS_ROLE_OP_IDLE=(int)(0),
+	DS_ROLE_OP_ACTIVE=(int)(1),
+	DS_ROLE_OP_NEEDS_REBOOT=(int)(2)
 }
 #else
  { __donnot_use_enum_dssetup_DsRoleOp=0x7FFFFFFF}
@@ -99,9 +99,9 @@ struct dssetup_DsRoleOpStatus {
 enum dssetup_DsRoleInfoLevel
 #ifndef USE_UINT_ENUMS
  {
-	DS_ROLE_BASIC_INFORMATION=1,
-	DS_ROLE_UPGRADE_STATUS=2,
-	DS_ROLE_OP_STATUS=3
+	DS_ROLE_BASIC_INFORMATION=(int)(1),
+	DS_ROLE_UPGRADE_STATUS=(int)(2),
+	DS_ROLE_OP_STATUS=(int)(3)
 }
 #else
  { __donnot_use_enum_dssetup_DsRoleInfoLevel=0x7FFFFFFF}

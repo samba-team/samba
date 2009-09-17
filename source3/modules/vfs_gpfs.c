@@ -1059,6 +1059,47 @@ static int vfs_gpfs_lstat(struct vfs_handle_struct *handle,
 	return 0;
 }
 
+static int vfs_gpfs_ntimes(struct vfs_handle_struct *handle,
+                        const struct smb_filename *smb_fname,
+			struct smb_file_time *ft)
+{
+
+        struct gpfs_winattr attrs;
+        int ret;
+        char *path = NULL;
+        NTSTATUS status;
+
+        ret = SMB_VFS_NEXT_NTIMES(handle, smb_fname, ft);
+        if(ret == -1){
+                DEBUG(1,("vfs_gpfs_ntimes: SMB_VFS_NEXT_NTIMES failed\n"));
+                return -1;
+        }
+
+        if(null_timespec(ft->create_time)){
+                DEBUG(10,("vfs_gpfs_ntimes:Create Time is NULL\n"));
+                return 0;
+        }
+
+        status = get_full_smb_filename(talloc_tos(), smb_fname, &path);
+        if (!NT_STATUS_IS_OK) {
+                errno = map_errno_from_nt_status(status);
+                return -1;
+        }
+
+        attrs.winAttrs = 0;
+        attrs.creationTime.tv_sec = ft->create_time.tv_sec;
+        attrs.creationTime.tv_nsec = ft->create_time.tv_nsec;
+
+        ret = set_gpfs_winattrs(CONST_DISCARD(char *, path),
+                                GPFS_WINATTR_SET_CREATION_TIME, &attrs);
+        if(ret == -1){
+                DEBUG(1,("vfs_gpfs_ntimes: set GPFS ntimes failed %d\n",ret));
+	        return -1;
+        }
+        return 0;
+
+}
+
 static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.kernel_flock = vfs_gpfs_kernel_flock,
         .setlease = vfs_gpfs_setlease,
@@ -1079,6 +1120,7 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
         .stat = vfs_gpfs_stat,
         .fstat = vfs_gpfs_fstat,
         .lstat = vfs_gpfs_lstat,
+	.ntimes = vfs_gpfs_ntimes,
 };
 
 NTSTATUS vfs_gpfs_init(void);

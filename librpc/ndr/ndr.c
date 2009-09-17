@@ -355,9 +355,11 @@ _PUBLIC_ void ndr_set_flags(uint32_t *pflags, uint32_t new_flags)
 	/* the big/little endian flags are inter-dependent */
 	if (new_flags & LIBNDR_FLAG_LITTLE_ENDIAN) {
 		(*pflags) &= ~LIBNDR_FLAG_BIGENDIAN;
+		(*pflags) &= ~LIBNDR_FLAG_NDR64;
 	}
 	if (new_flags & LIBNDR_FLAG_BIGENDIAN) {
 		(*pflags) &= ~LIBNDR_FLAG_LITTLE_ENDIAN;
+		(*pflags) &= ~LIBNDR_FLAG_NDR64;
 	}
 	if (new_flags & LIBNDR_FLAG_REMAINING) {
 		(*pflags) &= ~LIBNDR_ALIGN_FLAGS;
@@ -457,7 +459,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_subcontext_start(struct ndr_pull *ndr,
 
 	case 4: {
 		uint32_t content_size;
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &content_size));
+		NDR_CHECK(ndr_pull_uint3264(ndr, NDR_SCALARS, &content_size));
 		if (size_is >= 0 && size_is != content_size) {
 			return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext (PULL) size_is(%d) mismatch content_size %d", 
 						(int)size_is, (int)content_size);
@@ -542,7 +544,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_subcontext_start(struct ndr_pull *ndr,
 
 	subndr = talloc_zero(ndr, struct ndr_pull);
 	NDR_ERR_HAVE_NO_MEMORY(subndr);
-	subndr->flags		= ndr->flags;
+	subndr->flags		= ndr->flags & ~LIBNDR_FLAG_NDR64;
 	subndr->current_mem_ctx	= ndr->current_mem_ctx;
 
 	subndr->data = ndr->data + ndr->offset;
@@ -586,7 +588,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_subcontext_start(struct ndr_push *ndr,
 
 	subndr = ndr_push_init_ctx(ndr, ndr->iconv_convenience);
 	NDR_ERR_HAVE_NO_MEMORY(subndr);
-	subndr->flags	= ndr->flags;
+	subndr->flags	= ndr->flags & ~LIBNDR_FLAG_NDR64;
 
 	*_subndr = subndr;
 	return NDR_ERR_SUCCESS;
@@ -621,7 +623,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_subcontext_end(struct ndr_push *ndr,
 		break;
 
 	case 4: 
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, subndr->offset));
+		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, subndr->offset));
 		break;
 
 	case 0xFFFFFC01:
@@ -736,7 +738,7 @@ _PUBLIC_ uint32_t ndr_token_peek(struct ndr_token_list **list, const void *key)
 _PUBLIC_ enum ndr_err_code ndr_pull_array_size(struct ndr_pull *ndr, const void *p)
 {
 	uint32_t size;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &size));
+	NDR_CHECK(ndr_pull_uint3264(ndr, NDR_SCALARS, &size));
 	return ndr_token_store(ndr, &ndr->array_size_list, p, size);
 }
 
@@ -769,12 +771,12 @@ _PUBLIC_ enum ndr_err_code ndr_check_array_size(struct ndr_pull *ndr, void *p, u
 _PUBLIC_ enum ndr_err_code ndr_pull_array_length(struct ndr_pull *ndr, const void *p)
 {
 	uint32_t length, offset;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &offset));
+	NDR_CHECK(ndr_pull_uint3264(ndr, NDR_SCALARS, &offset));
 	if (offset != 0) {
 		return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, 
 				      "non-zero array offset %u\n", offset);
 	}
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &length));
+	NDR_CHECK(ndr_pull_uint3264(ndr, NDR_SCALARS, &length));
 	return ndr_token_store(ndr, &ndr->array_length_list, p, length);
 }
 
@@ -1168,6 +1170,7 @@ const static struct {
 	{ NDR_ERR_IPV4ADDRESS, "IPv4 Address Error" },
 	{ NDR_ERR_INVALID_POINTER, "Invalid Pointer" },
 	{ NDR_ERR_UNREAD_BYTES, "Unread Bytes" },
+	{ NDR_ERR_NDR64, "NDR64 assertion error" },
 	{ 0, NULL }
 };
 

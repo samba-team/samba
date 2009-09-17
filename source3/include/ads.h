@@ -8,6 +8,12 @@
 
 #include "../libds/common/flags.h"
 
+#define TOK_ID_KRB_AP_REQ	((const uint8_t *)"\x01\x00")
+#define TOK_ID_KRB_AP_REP	((const uint8_t *)"\x02\x00")
+#define TOK_ID_KRB_ERROR	((const uint8_t *)"\x03\x00")
+#define TOK_ID_GSS_GETMIC	((const uint8_t *)"\x01\x01")
+#define TOK_ID_GSS_WRAP		((const uint8_t *)"\x02\x01")
+
 enum wb_posix_mapping {
 	WB_POSIX_MAP_UNKNOWN    = -1,
 	WB_POSIX_MAP_TEMPLATE 	= 0, 

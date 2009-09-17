@@ -41,9 +41,9 @@
 enum netr_SamDatabaseID
 #ifndef USE_UINT_ENUMS
  {
-	SAM_DATABASE_DOMAIN=0,
-	SAM_DATABASE_BUILTIN=1,
-	SAM_DATABASE_PRIVS=2
+	SAM_DATABASE_DOMAIN=(int)(0),
+	SAM_DATABASE_BUILTIN=(int)(1),
+	SAM_DATABASE_PRIVS=(int)(2)
 }
 #else
  { __donnot_use_enum_netr_SamDatabaseID=0x7FFFFFFF}
@@ -56,10 +56,10 @@ enum netr_SamDatabaseID
 enum samr_RejectReason
 #ifndef USE_UINT_ENUMS
  {
-	SAMR_REJECT_OTHER=0,
-	SAMR_REJECT_TOO_SHORT=1,
-	SAMR_REJECT_IN_HISTORY=2,
-	SAMR_REJECT_COMPLEXITY=5
+	SAMR_REJECT_OTHER=(int)(0),
+	SAMR_REJECT_TOO_SHORT=(int)(1),
+	SAMR_REJECT_IN_HISTORY=(int)(2),
+	SAMR_REJECT_COMPLEXITY=(int)(5)
 }
 #else
  { __donnot_use_enum_samr_RejectReason=0x7FFFFFFF}
@@ -152,19 +152,19 @@ struct samr_SamArray {
 enum samr_DomainInfoClass
 #ifndef USE_UINT_ENUMS
  {
-	DomainPasswordInformation=1,
-	DomainGeneralInformation=2,
-	DomainLogoffInformation=3,
-	DomainOemInformation=4,
-	DomainNameInformation=5,
-	DomainReplicationInformation=6,
-	DomainServerRoleInformation=7,
-	DomainModifiedInformation=8,
-	DomainStateInformation=9,
-	DomainUasInformation=10,
-	DomainGeneralInformation2=11,
-	DomainLockoutInformation=12,
-	DomainModifiedInformation2=13
+	DomainPasswordInformation=(int)(1),
+	DomainGeneralInformation=(int)(2),
+	DomainLogoffInformation=(int)(3),
+	DomainOemInformation=(int)(4),
+	DomainNameInformation=(int)(5),
+	DomainReplicationInformation=(int)(6),
+	DomainServerRoleInformation=(int)(7),
+	DomainModifiedInformation=(int)(8),
+	DomainStateInformation=(int)(9),
+	DomainUasInformation=(int)(10),
+	DomainGeneralInformation2=(int)(11),
+	DomainLockoutInformation=(int)(12),
+	DomainModifiedInformation2=(int)(13)
 }
 #else
  { __donnot_use_enum_samr_DomainInfoClass=0x7FFFFFFF}
@@ -187,10 +187,10 @@ enum samr_DomainInfoClass
 enum samr_Role
 #ifndef USE_UINT_ENUMS
  {
-	SAMR_ROLE_STANDALONE=0,
-	SAMR_ROLE_DOMAIN_MEMBER=1,
-	SAMR_ROLE_DOMAIN_BDC=2,
-	SAMR_ROLE_DOMAIN_PDC=3
+	SAMR_ROLE_STANDALONE=(int)(0),
+	SAMR_ROLE_DOMAIN_MEMBER=(int)(1),
+	SAMR_ROLE_DOMAIN_BDC=(int)(2),
+	SAMR_ROLE_DOMAIN_PDC=(int)(3)
 }
 #else
  { __donnot_use_enum_samr_Role=0x7FFFFFFF}
@@ -212,8 +212,8 @@ enum samr_Role
 enum samr_DomainServerState
 #ifndef USE_UINT_ENUMS
  {
-	DOMAIN_SERVER_ENABLED=1,
-	DOMAIN_SERVER_DISABLED=2
+	DOMAIN_SERVER_ENABLED=(int)(1),
+	DOMAIN_SERVER_DISABLED=(int)(2)
 }
 #else
  { __donnot_use_enum_samr_DomainServerState=0x7FFFFFFF}
@@ -339,11 +339,11 @@ struct samr_GroupInfoDescription {
 enum samr_GroupInfoEnum
 #ifndef USE_UINT_ENUMS
  {
-	GROUPINFOALL=1,
-	GROUPINFONAME=2,
-	GROUPINFOATTRIBUTES=3,
-	GROUPINFODESCRIPTION=4,
-	GROUPINFOALL2=5
+	GROUPINFOALL=(int)(1),
+	GROUPINFONAME=(int)(2),
+	GROUPINFOATTRIBUTES=(int)(3),
+	GROUPINFODESCRIPTION=(int)(4),
+	GROUPINFOALL2=(int)(5)
 }
 #else
  { __donnot_use_enum_samr_GroupInfoEnum=0x7FFFFFFF}
@@ -378,9 +378,9 @@ struct samr_AliasInfoAll {
 enum samr_AliasInfoEnum
 #ifndef USE_UINT_ENUMS
  {
-	ALIASINFOALL=1,
-	ALIASINFONAME=2,
-	ALIASINFODESCRIPTION=3
+	ALIASINFOALL=(int)(1),
+	ALIASINFONAME=(int)(2),
+	ALIASINFODESCRIPTION=(int)(3)
 }
 #else
  { __donnot_use_enum_samr_AliasInfoEnum=0x7FFFFFFF}
@@ -399,29 +399,29 @@ union samr_AliasInfo {
 enum samr_UserInfoLevel
 #ifndef USE_UINT_ENUMS
  {
-	UserGeneralInformation=1,
-	UserPreferencesInformation=2,
-	UserLogonInformation=3,
-	UserLogonHoursInformation=4,
-	UserAccountInformation=5,
-	UserNameInformation=6,
-	UserAccountNameInformation=7,
-	UserFullNameInformation=8,
-	UserPrimaryGroupInformation=9,
-	UserHomeInformation=10,
-	UserScriptInformation=11,
-	UserProfileInformation=12,
-	UserAdminCommentInformation=13,
-	UserWorkStationsInformation=14,
-	UserControlInformation=16,
-	UserExpiresInformation=17,
-	UserInternal1Information=18,
-	UserParametersInformation=20,
-	UserAllInformation=21,
-	UserInternal4Information=23,
-	UserInternal5Information=24,
-	UserInternal4InformationNew=25,
-	UserInternal5InformationNew=26
+	UserGeneralInformation=(int)(1),
+	UserPreferencesInformation=(int)(2),
+	UserLogonInformation=(int)(3),
+	UserLogonHoursInformation=(int)(4),
+	UserAccountInformation=(int)(5),
+	UserNameInformation=(int)(6),
+	UserAccountNameInformation=(int)(7),
+	UserFullNameInformation=(int)(8),
+	UserPrimaryGroupInformation=(int)(9),
+	UserHomeInformation=(int)(10),
+	UserScriptInformation=(int)(11),
+	UserProfileInformation=(int)(12),
+	UserAdminCommentInformation=(int)(13),
+	UserWorkStationsInformation=(int)(14),
+	UserControlInformation=(int)(16),
+	UserExpiresInformation=(int)(17),
+	UserInternal1Information=(int)(18),
+	UserParametersInformation=(int)(20),
+	UserAllInformation=(int)(21),
+	UserInternal4Information=(int)(23),
+	UserInternal5Information=(int)(24),
+	UserInternal4InformationNew=(int)(25),
+	UserInternal5InformationNew=(int)(26)
 }
 #else
  { __donnot_use_enum_samr_UserInfoLevel=0x7FFFFFFF}
@@ -778,9 +778,9 @@ struct samr_PwInfo {
 enum samr_ConnectVersion
 #ifndef USE_UINT_ENUMS
  {
-	SAMR_CONNECT_PRE_W2K=1,
-	SAMR_CONNECT_W2K=2,
-	SAMR_CONNECT_AFTER_W2K=3
+	SAMR_CONNECT_PRE_W2K=(int)(1),
+	SAMR_CONNECT_W2K=(int)(2),
+	SAMR_CONNECT_AFTER_W2K=(int)(3)
 }
 #else
  { __donnot_use_enum_samr_ConnectVersion=0x7FFFFFFF}
@@ -816,9 +816,9 @@ union samr_ConnectInfo {
 enum samr_ValidatePasswordLevel
 #ifndef USE_UINT_ENUMS
  {
-	NetValidateAuthentication=1,
-	NetValidatePasswordChange=2,
-	NetValidatePasswordReset=3
+	NetValidateAuthentication=(int)(1),
+	NetValidatePasswordChange=(int)(2),
+	NetValidatePasswordReset=(int)(3)
 }
 #else
  { __donnot_use_enum_samr_ValidatePasswordLevel=0x7FFFFFFF}
@@ -831,17 +831,17 @@ enum samr_ValidatePasswordLevel
 enum samr_ValidationStatus
 #ifndef USE_UINT_ENUMS
  {
-	SAMR_VALIDATION_STATUS_SUCCESS=0,
-	SAMR_VALIDATION_STATUS_PASSWORD_MUST_CHANGE=1,
-	SAMR_VALIDATION_STATUS_ACCOUNT_LOCKED_OUT=2,
-	SAMR_VALIDATION_STATUS_PASSWORD_EXPIRED=3,
-	SAMR_VALIDATION_STATUS_BAD_PASSWORD=4,
-	SAMR_VALIDATION_STATUS_PWD_HISTORY_CONFLICT=5,
-	SAMR_VALIDATION_STATUS_PWD_TOO_SHORT=6,
-	SAMR_VALIDATION_STATUS_PWD_TOO_LONG=7,
-	SAMR_VALIDATION_STATUS_NOT_COMPLEX_ENOUGH=8,
-	SAMR_VALIDATION_STATUS_PASSWORD_TOO_RECENT=9,
-	SAMR_VALIDATION_STATUS_PASSWORD_FILTER_ERROR=10
+	SAMR_VALIDATION_STATUS_SUCCESS=(int)(0),
+	SAMR_VALIDATION_STATUS_PASSWORD_MUST_CHANGE=(int)(1),
+	SAMR_VALIDATION_STATUS_ACCOUNT_LOCKED_OUT=(int)(2),
+	SAMR_VALIDATION_STATUS_PASSWORD_EXPIRED=(int)(3),
+	SAMR_VALIDATION_STATUS_BAD_PASSWORD=(int)(4),
+	SAMR_VALIDATION_STATUS_PWD_HISTORY_CONFLICT=(int)(5),
+	SAMR_VALIDATION_STATUS_PWD_TOO_SHORT=(int)(6),
+	SAMR_VALIDATION_STATUS_PWD_TOO_LONG=(int)(7),
+	SAMR_VALIDATION_STATUS_NOT_COMPLEX_ENOUGH=(int)(8),
+	SAMR_VALIDATION_STATUS_PASSWORD_TOO_RECENT=(int)(9),
+	SAMR_VALIDATION_STATUS_PASSWORD_FILTER_ERROR=(int)(10)
 }
 #else
  { __donnot_use_enum_samr_ValidationStatus=0x7FFFFFFF}

@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "smbd/globals.h"
+#include "../libcli/auth/spnego.h"
 
 extern fstring remote_proto;
 extern enum protocol_types Protocol;

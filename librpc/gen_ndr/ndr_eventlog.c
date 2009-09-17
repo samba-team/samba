@@ -32,14 +32,14 @@ _PUBLIC_ void ndr_print_eventlogReadFlags(struct ndr_print *ndr, const char *nam
 
 _PUBLIC_ enum ndr_err_code ndr_push_eventlogEventTypes(struct ndr_push *ndr, int ndr_flags, enum eventlogEventTypes r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ enum ndr_err_code ndr_pull_eventlogEventTypes(struct ndr_pull *ndr, int ndr_flags, enum eventlogEventTypes *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -268,14 +268,14 @@ _PUBLIC_ void ndr_print_eventlog_Record_tdb(struct ndr_print *ndr, const char *n
 
 static enum ndr_err_code ndr_push_EVENTLOG_HEADER_FLAGS(struct ndr_push *ndr, int ndr_flags, enum EVENTLOG_HEADER_FLAGS r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_EVENTLOG_HEADER_FLAGS(struct ndr_pull *ndr, int ndr_flags, enum EVENTLOG_HEADER_FLAGS *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -1581,7 +1581,7 @@ static enum ndr_err_code ndr_push_eventlog_ReadEventLogW(struct ndr_push *ndr, i
 		if (r->out.data == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.number_of_bytes));
+		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->in.number_of_bytes));
 		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->out.data, r->in.number_of_bytes));
 		if (r->out.sent_size == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
@@ -1716,7 +1716,7 @@ static enum ndr_err_code ndr_push_eventlog_ReportEventW(struct ndr_push *ndr, in
 		}
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.strings));
 		if (r->in.strings) {
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.num_of_strings));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->in.num_of_strings));
 			for (cntr_strings_1 = 0; cntr_strings_1 < r->in.num_of_strings; cntr_strings_1++) {
 			}
 			for (cntr_strings_1 = 0; cntr_strings_1 < r->in.num_of_strings; cntr_strings_1++) {
@@ -1728,7 +1728,7 @@ static enum ndr_err_code ndr_push_eventlog_ReportEventW(struct ndr_push *ndr, in
 		}
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.data));
 		if (r->in.data) {
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.data_size));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->in.data_size));
 			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->in.data, r->in.data_size));
 		}
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.flags));
@@ -2438,7 +2438,7 @@ static enum ndr_err_code ndr_push_eventlog_GetLogInformation(struct ndr_push *nd
 		if (r->out.buffer == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buf_size));
+		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->in.buf_size));
 		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->out.buffer, r->in.buf_size));
 		if (r->out.bytes_needed == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
@@ -2614,7 +2614,7 @@ static enum ndr_err_code ndr_push_eventlog_ReportEventAndSourceW(struct ndr_push
 		}
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.strings));
 		if (r->in.strings) {
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.num_of_strings));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->in.num_of_strings));
 			for (cntr_strings_1 = 0; cntr_strings_1 < r->in.num_of_strings; cntr_strings_1++) {
 			}
 			for (cntr_strings_1 = 0; cntr_strings_1 < r->in.num_of_strings; cntr_strings_1++) {
@@ -2626,7 +2626,7 @@ static enum ndr_err_code ndr_push_eventlog_ReportEventAndSourceW(struct ndr_push
 		}
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.data));
 		if (r->in.data) {
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.data_size));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->in.data_size));
 			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->in.data, r->in.data_size));
 		}
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.flags));

@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "../libcli/auth/spnego.h"
 
 /****************************************************************************
  Get UNIX extensions version info.

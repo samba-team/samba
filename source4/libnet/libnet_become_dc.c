@@ -2101,7 +2101,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		vd[0] = data_blob_talloc(vd, NULL, 4);
 		if (composite_nomem(vd[0].data, c)) return;
 
-		SIVAL(vd[0].data, 0, DS_BEHAVIOR_WIN2008);
+		SIVAL(vd[0].data, 0, DS_DC_FUNCTION_2008_R2);
 
 		vs[0].blob		= &vd[0];
 
@@ -2455,9 +2455,9 @@ static WERROR becomeDC_drsuapi_pull_partition_recv(struct libnet_BecomeDC_state 
 	uint32_t ctr_level = 0;
 	struct drsuapi_DsGetNCChangesCtr1 *ctr1 = NULL;
 	struct drsuapi_DsGetNCChangesCtr6 *ctr6 = NULL;
-	struct GUID *source_dsa_guid;
-	struct GUID *source_dsa_invocation_id;
-	struct drsuapi_DsReplicaHighWaterMark *new_highwatermark;
+	struct GUID *source_dsa_guid = NULL;
+	struct GUID *source_dsa_invocation_id = NULL;
+	struct drsuapi_DsReplicaHighWaterMark *new_highwatermark = NULL;
 	bool more_data = false;
 	NTSTATUS nt_status;
 

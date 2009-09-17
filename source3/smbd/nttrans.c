@@ -810,7 +810,7 @@ static NTSTATUS set_sd(files_struct *fsp, uint8 *data, uint32 sd_len,
  Read a list of EA names and data from an incoming data buffer. Create an ea_list with them.
 ****************************************************************************/
 
-static struct ea_list *read_nttrans_ea_list(TALLOC_CTX *ctx, const char *pdata, size_t data_size)
+struct ea_list *read_nttrans_ea_list(TALLOC_CTX *ctx, const char *pdata, size_t data_size)
 {
 	struct ea_list *ea_list_head = NULL;
 	size_t offset = 0;

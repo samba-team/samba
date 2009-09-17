@@ -7,7 +7,7 @@
 static enum ndr_err_code ndr_push_named_pipe_auth_req_info2(struct ndr_push *ndr, int ndr_flags, const struct named_pipe_auth_req_info2 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_align(ndr, 5));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->client_name));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->client_addr));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->client_port));
@@ -20,34 +20,34 @@ static enum ndr_err_code ndr_push_named_pipe_auth_req_info2(struct ndr_push *ndr
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->client_name) {
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->client_name, CH_UTF8)));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->client_name, CH_UTF8)));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->client_name, CH_UTF8)));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->client_name, CH_UTF8)));
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->client_name, ndr_charset_length(r->client_name, CH_UTF8), sizeof(uint8_t), CH_UTF8));
 		}
 		if (r->client_addr) {
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->client_addr, CH_DOS)));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->client_addr, CH_DOS)));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->client_addr, CH_DOS)));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->client_addr, CH_DOS)));
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->client_addr, ndr_charset_length(r->client_addr, CH_DOS), sizeof(uint8_t), CH_DOS));
 		}
 		if (r->server_name) {
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->server_name, CH_UTF8)));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->server_name, CH_UTF8)));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->server_name, CH_UTF8)));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->server_name, CH_UTF8)));
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->server_name, ndr_charset_length(r->server_name, CH_UTF8), sizeof(uint8_t), CH_UTF8));
 		}
 		if (r->server_addr) {
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->server_addr, CH_DOS)));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->server_addr, CH_DOS)));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->server_addr, CH_DOS)));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->server_addr, CH_DOS)));
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->server_addr, ndr_charset_length(r->server_addr, CH_DOS), sizeof(uint8_t), CH_DOS));
 		}
 		if (r->sam_info3) {
 			NDR_CHECK(ndr_push_netr_SamInfo3(ndr, NDR_SCALARS|NDR_BUFFERS, r->sam_info3));
 		}
 		if (r->session_key) {
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->session_key_length));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->session_key_length));
 			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->session_key, r->session_key_length));
 		}
 	}
@@ -69,7 +69,7 @@ static enum ndr_err_code ndr_pull_named_pipe_auth_req_info2(struct ndr_pull *ndr
 	uint32_t _ptr_session_key;
 	TALLOC_CTX *_mem_save_session_key_0;
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_align(ndr, 5));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_client_name));
 		if (_ptr_client_name) {
 			NDR_PULL_ALLOC(ndr, r->client_name);
@@ -339,7 +339,7 @@ _PUBLIC_ void ndr_print_named_pipe_auth_req_info(struct ndr_print *ndr, const ch
 _PUBLIC_ enum ndr_err_code ndr_push_named_pipe_auth_req(struct ndr_push *ndr, int ndr_flags, const struct named_pipe_auth_req *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_align(ndr, 5));
 		{
 			uint32_t _flags_save_uint32 = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_BIGENDIAN);
@@ -360,7 +360,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_named_pipe_auth_req(struct ndr_push *ndr, in
 _PUBLIC_ enum ndr_err_code ndr_pull_named_pipe_auth_req(struct ndr_pull *ndr, int ndr_flags, struct named_pipe_auth_req *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_align(ndr, 5));
 		{
 			uint32_t _flags_save_uint32 = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_BIGENDIAN);

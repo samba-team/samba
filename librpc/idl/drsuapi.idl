@@ -490,9 +490,27 @@ interface drsuapi
 		drsuapi_DsReplicaOIDMapping_Ctr mapping_ctr;
 	} drsuapi_DsGetNCChangesRequest8;
 
+	typedef struct {
+		GUID destination_dsa_guid;
+		GUID source_dsa_invocation_id; /* the 'invocationId' field of the CN=NTDS Settings object */
+		[ref] drsuapi_DsReplicaObjectIdentifier *naming_context;
+		drsuapi_DsReplicaHighWaterMark highwatermark;
+		drsuapi_DsReplicaCursorCtrEx *uptodateness_vector;
+		drsuapi_DsReplicaNeighbourFlags replica_flags;
+		uint32 max_object_count; /* w2k3 uses min(133,max(100,max_object_count)) */
+		uint32 max_ndr_size; /* w2k3 seems to ignore this */
+		drsuapi_DsExtendedOperation extended_op;
+		hyper fsmo_info;
+		drsuapi_DsPartialAttributeSet *partial_attribute_set;
+		drsuapi_DsPartialAttributeSet *partial_attribute_set_ex;
+		drsuapi_DsReplicaOIDMapping_Ctr mapping_ctr;
+		uint32 more_flags;
+	} drsuapi_DsGetNCChangesRequest10;
+
 	typedef [switch_type(int32)] union {
 		[case(5)] drsuapi_DsGetNCChangesRequest5 req5;
 		[case(8)] drsuapi_DsGetNCChangesRequest8 req8;
+		[case(10)] drsuapi_DsGetNCChangesRequest10 req10;
 	} drsuapi_DsGetNCChangesRequest;
 
 	typedef [public] struct {
@@ -1316,7 +1334,25 @@ interface drsuapi
 
 	/*****************/
         /* Function 0x12 */
-	[todo] WERROR DRSUAPI_EXECUTE_KCC();
+	typedef bitmap {
+		DRSUAPI_DS_EXECUTE_KCC_ASYNCHRONOUS_OPERATION	= 0x00000001,
+		DRSUAPI_DS_EXECUTE_KCC_DAMPED			= 0x00000002
+	} drsuapi_DsExecuteKCCFlags;
+
+	typedef struct {
+		uint32 taskID;
+		drsuapi_DsExecuteKCCFlags flags;
+	} drsuapi_DsExecuteKCC1;
+
+	typedef [switch_type(uint32)] union {
+		[case(1)] drsuapi_DsExecuteKCC1 ctr1;
+	} drsuapi_DsExecuteKCCRequest;
+
+	WERROR drsuapi_DsExecuteKCC(
+		[in] policy_handle *bind_handle,
+		[in] uint32 level,
+		[in, ref, switch_is(level)] drsuapi_DsExecuteKCCRequest *req
+		);
 
 	/*****************/
 	/* Function 0x13 */

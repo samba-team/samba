@@ -3297,12 +3297,6 @@ const char *smb_dos_err_class(uint8 e_class);
 char *smb_dos_errstr(char *inbuf);
 WERROR map_werror_from_unix(int error);
 
-/* The following definitions come from libsmb/spnego.c  */
-
-ssize_t read_spnego_data(DATA_BLOB data, SPNEGO_DATA *token);
-ssize_t write_spnego_data(DATA_BLOB *blob, SPNEGO_DATA *spnego);
-bool free_spnego_data(SPNEGO_DATA *spnego);
-
 /* The following definitions come from libsmb/trustdom_cache.c  */
 
 bool trustdom_cache_enable(void);
@@ -5620,6 +5614,10 @@ NTSTATUS serverinfo_to_SamInfo3(struct auth_serversupplied_info *server_info,
 				uint8_t *pipe_session_key,
 				size_t pipe_session_key_len,
 				struct netr_SamInfo3 *sam3);
+NTSTATUS serverinfo_to_SamInfo6(struct auth_serversupplied_info *server_info,
+				uint8_t *pipe_session_key,
+				size_t pipe_session_key_len,
+				struct netr_SamInfo6 *sam6);
 void init_netr_CryptPassword(const char *pwd,
 			     unsigned char session_key[16],
 			     struct netr_CryptPassword *pwd_buf);
@@ -6574,6 +6572,7 @@ void send_nt_replies(connection_struct *conn,
 		     char *params, int paramsize,
 		     char *pdata, int datasize);
 void reply_ntcreate_and_X(struct smb_request *req);
+struct ea_list *read_nttrans_ea_list(TALLOC_CTX *ctx, const char *pdata, size_t data_size);
 void reply_ntcancel(struct smb_request *req);
 void reply_ntrename(struct smb_request *req);
 void reply_nttrans(struct smb_request *req);

@@ -48,7 +48,7 @@ extern const struct ndr_interface_table ndr_table_drsuapi;
 
 #define NDR_DRSUAPI_DSADDENTRY (0x11)
 
-#define NDR_DRSUAPI_EXECUTE_KCC (0x12)
+#define NDR_DRSUAPI_DSEXECUTEKCC (0x12)
 
 #define NDR_DRSUAPI_DSREPLICAGETINFO (0x13)
 
@@ -105,6 +105,7 @@ enum ndr_err_code ndr_pull_drsuapi_DsAttributeId(struct ndr_pull *ndr, int ndr_f
 void ndr_print_drsuapi_DsAttributeId(struct ndr_print *ndr, const char *name, enum drsuapi_DsAttributeId r);
 void ndr_print_drsuapi_DsPartialAttributeSet(struct ndr_print *ndr, const char *name, const struct drsuapi_DsPartialAttributeSet *r);
 void ndr_print_drsuapi_DsGetNCChangesRequest8(struct ndr_print *ndr, const char *name, const struct drsuapi_DsGetNCChangesRequest8 *r);
+void ndr_print_drsuapi_DsGetNCChangesRequest10(struct ndr_print *ndr, const char *name, const struct drsuapi_DsGetNCChangesRequest10 *r);
 void ndr_print_drsuapi_DsGetNCChangesRequest(struct ndr_print *ndr, const char *name, const union drsuapi_DsGetNCChangesRequest *r);
 enum ndr_err_code ndr_push_drsuapi_DsReplicaCursor2(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsReplicaCursor2 *r);
 enum ndr_err_code ndr_pull_drsuapi_DsReplicaCursor2(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_DsReplicaCursor2 *r);
@@ -238,6 +239,9 @@ void ndr_print_drsuapi_DsReplicaObjectIdentifier2(struct ndr_print *ndr, const c
 void ndr_print_drsuapi_DsAddEntryCtr2(struct ndr_print *ndr, const char *name, const struct drsuapi_DsAddEntryCtr2 *r);
 void ndr_print_drsuapi_DsAddEntryCtr3(struct ndr_print *ndr, const char *name, const struct drsuapi_DsAddEntryCtr3 *r);
 void ndr_print_drsuapi_DsAddEntryCtr(struct ndr_print *ndr, const char *name, const union drsuapi_DsAddEntryCtr *r);
+void ndr_print_drsuapi_DsExecuteKCCFlags(struct ndr_print *ndr, const char *name, uint32_t r);
+void ndr_print_drsuapi_DsExecuteKCC1(struct ndr_print *ndr, const char *name, const struct drsuapi_DsExecuteKCC1 *r);
+void ndr_print_drsuapi_DsExecuteKCCRequest(struct ndr_print *ndr, const char *name, const union drsuapi_DsExecuteKCCRequest *r);
 void ndr_print_drsuapi_DsReplicaGetInfoLevel(struct ndr_print *ndr, const char *name, enum drsuapi_DsReplicaGetInfoLevel r);
 void ndr_print_drsuapi_DsReplicaInfoType(struct ndr_print *ndr, const char *name, enum drsuapi_DsReplicaInfoType r);
 void ndr_print_drsuapi_DsReplicaGetInfoRequest1(struct ndr_print *ndr, const char *name, const struct drsuapi_DsReplicaGetInfoRequest1 *r);
@@ -298,7 +302,7 @@ void ndr_print_drsuapi_DsGetDomainControllerInfo(struct ndr_print *ndr, const ch
 enum ndr_err_code ndr_push_drsuapi_DsAddEntry(struct ndr_push *ndr, int flags, const struct drsuapi_DsAddEntry *r);
 enum ndr_err_code ndr_pull_drsuapi_DsAddEntry(struct ndr_pull *ndr, int flags, struct drsuapi_DsAddEntry *r);
 void ndr_print_drsuapi_DsAddEntry(struct ndr_print *ndr, const char *name, int flags, const struct drsuapi_DsAddEntry *r);
-void ndr_print_DRSUAPI_EXECUTE_KCC(struct ndr_print *ndr, const char *name, int flags, const struct DRSUAPI_EXECUTE_KCC *r);
+void ndr_print_drsuapi_DsExecuteKCC(struct ndr_print *ndr, const char *name, int flags, const struct drsuapi_DsExecuteKCC *r);
 void ndr_print_drsuapi_DsReplicaGetInfo(struct ndr_print *ndr, const char *name, int flags, const struct drsuapi_DsReplicaGetInfo *r);
 void ndr_print_DRSUAPI_ADD_SID_HISTORY(struct ndr_print *ndr, const char *name, int flags, const struct DRSUAPI_ADD_SID_HISTORY *r);
 void ndr_print_drsuapi_DsGetMemberships2(struct ndr_print *ndr, const char *name, int flags, const struct drsuapi_DsGetMemberships2 *r);
