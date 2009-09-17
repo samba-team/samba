@@ -49,15 +49,15 @@ struct descriptor_context {
 		int (*step_fn)(struct descriptor_context *);
 };
 
-static struct dsdb_class * get_last_structural_class(const struct dsdb_schema *schema, struct ldb_message_element *element)
+static const struct dsdb_class * get_last_structural_class(const struct dsdb_schema *schema, struct ldb_message_element *element)
 {
-	struct dsdb_class *last_class = NULL;
+	const struct dsdb_class *last_class = NULL;
 	int i;
 	for (i = 0; i < element->num_values; i++){
 		if (!last_class)
 			last_class = dsdb_class_by_lDAPDisplayName_ldb_val(schema, &element->values[i]);
 		else {
-			struct dsdb_class *tmp_class = dsdb_class_by_lDAPDisplayName_ldb_val(schema, &element->values[i]);
+			const struct dsdb_class *tmp_class = dsdb_class_by_lDAPDisplayName_ldb_val(schema, &element->values[i]);
 			if (tmp_class->subClass_order > last_class->subClass_order)
 				last_class = tmp_class;
 		}
@@ -134,14 +134,24 @@ static struct dom_sid *get_default_group(TALLOC_CTX *mem_ctx,
 					 struct ldb_context *ldb,
 					 struct dom_sid *dag)
 {
-	return dag;
+	int *domainFunctionality;
+
+	domainFunctionality = talloc_get_type(
+		ldb_get_opaque(ldb, "domainFunctionality"), int);
+
+	if (*domainFunctionality
+			&& (*domainFunctionality >= DS_DOMAIN_FUNCTION_2008)) {
+		return dag;
+	}
+
+	return NULL;
 }
 
 static DATA_BLOB *get_new_descriptor(struct ldb_module *module,
 				     struct ldb_dn *dn,
 				     TALLOC_CTX *mem_ctx,
 				     const struct dsdb_class *objectclass,
-				     struct ldb_val *parent,
+				     const struct ldb_val *parent,
 				     struct ldb_val *object)
 {
 	struct security_descriptor *user_descriptor = NULL, *parent_descriptor = NULL;
@@ -316,9 +326,10 @@ static int descriptor_do_add(struct descriptor_context *ac)
 	struct ldb_message *msg;
 	TALLOC_CTX *mem_ctx;
 	int ret;
-	struct ldb_val *sd_val = NULL, *parentsd_val = NULL;
+	struct ldb_val *sd_val = NULL;
+	const struct ldb_val *parentsd_val = NULL;
 	DATA_BLOB *sd;
-	struct dsdb_class *objectclass;
+	const struct dsdb_class *objectclass;
 
 	ldb = ldb_module_get_ctx(ac->module);
 	schema = dsdb_get_schema(ldb);
