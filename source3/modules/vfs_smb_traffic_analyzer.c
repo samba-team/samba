@@ -27,6 +27,20 @@ enum sock_type {INTERNET_SOCKET = 0, UNIX_DOMAIN_SOCKET};
 
 #define LOCAL_PATHNAME "/var/tmp/stadsocket"
 
+/* VFS Functions identifier table. In protocol version 2, every vfs     */
+/* function is given a unique id.                                       */
+enum vfs_id {
+	/* care for the order here, required for compatibility	*/
+	/* with protocol version 1.				*/
+        vfs_id_read,
+        vfs_id_pread,
+        vfs_id_write,
+        vfs_id_pwrite,
+	/* end of protocol version 1 identifiers.		*/
+	vfs_id_mkdir
+};
+
+
 static int vfs_smb_traffic_analyzer_debug_level = DBGC_VFS;
 
 static enum sock_type smb_traffic_analyzer_connMode(vfs_handle_struct *handle)
@@ -155,7 +169,7 @@ struct refcounted_sock {
 static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 					ssize_t result,
 					const char *file_name,
-					bool Write)
+					enum vfs_id vfs_operation )
 {
 	struct refcounted_sock *rf_sock = NULL;
 	struct timeval tv;
@@ -166,6 +180,8 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 	char *username = NULL;
 	const char *anon_prefix = NULL;
 	const char *total_anonymization = NULL;
+	const char *protocol_version = NULL;
+	bool Write = false;
 	size_t len;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, rf_sock, struct refcounted_sock, return);
@@ -212,7 +228,22 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 		return;
 	}
 
-	str = talloc_asprintf(talloc_tos(),
+	protocol_version = lp_parm_const_string(SNUM(handle->conn),
+		"smb_traffic_analyzer",
+		"protocol_version", NULL );
+
+	if ( protocol_version == NULL || strcmp( protocol_version,"V1") == 0) {
+
+		/* in case of protocol v1, ignore any vfs operations	*/
+		/* except read,pread,write,pwrite, and set the "Write"	*/
+		/* bool accordingly.					*/
+
+		if ( vfs_operation > vfs_id_pwrite ) return;
+
+		if ( vfs_operation <= vfs_id_pread ) Write=false;
+			else Write=true;
+
+		str = talloc_asprintf(talloc_tos(),
 			"V1,%u,\"%s\",\"%s\",\"%c\",\"%s\",\"%s\","
 			"\"%04d-%02d-%02d %02d:%02d:%02d.%03d\"\n",
 			(unsigned int)result,
@@ -228,8 +259,18 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 			tm->tm_min,
 			tm->tm_sec,
 			(int)seconds);
+	} else if ( strcmp( protocol_version, "V2") == 0) {
+		/* protocol version 2	*/
+		/* in development	*/
+	} else {
+		DEBUG(1, ("smb_traffic_analyzer_send_data_socket: "
+			"error, unkown protocol given!\n"));
+		return;
+	}
 
 	if (!str) {
+		DEBUG(1, ("smb_traffic_analyzer_send_data: "
+			"unable to create string to send!\n"));
 		return;
 	}
 
@@ -336,7 +377,20 @@ static int smb_traffic_analyzer_connect(struct vfs_handle_struct *handle,
 	return 0;
 }
 
-/* VFS Functions: write, read, pread, pwrite for now */
+/* VFS Functions */
+
+static int smb_traffic_analyzer_mkdir(vfs_handle_struct *handle, \
+			const char *path, mode_t mode)
+{
+	int result;
+	result = SMB_VFS_NEXT_MKDIR(handle, path, mode);
+	DEBUG(10, ("smb_traffic_analyzer_mkdir: MKDIR: %s\n", path));
+	smb_traffic_analyzer_send_data(handle,
+			result,
+			path,
+			vfs_id_mkdir);
+	return result;
+}
 
 static ssize_t smb_traffic_analyzer_read(vfs_handle_struct *handle, \
 				files_struct *fsp, void *data, size_t n)
@@ -349,7 +403,7 @@ static ssize_t smb_traffic_analyzer_read(vfs_handle_struct *handle, \
 	smb_traffic_analyzer_send_data(handle,
 			result,
 			fsp->fsp_name->base_name,
-			false);
+			vfs_id_read);
 	return result;
 }
 
@@ -367,7 +421,7 @@ static ssize_t smb_traffic_analyzer_pread(vfs_handle_struct *handle, \
 	smb_traffic_analyzer_send_data(handle,
 			result,
 			fsp->fsp_name->base_name,
-			false);
+			vfs_id_pread);
 
 	return result;
 }
@@ -385,7 +439,7 @@ static ssize_t smb_traffic_analyzer_write(vfs_handle_struct *handle, \
 	smb_traffic_analyzer_send_data(handle,
 			result,
 			fsp->fsp_name->base_name,
-			true);
+			vfs_id_write);
 	return result;
 }
 
@@ -401,7 +455,7 @@ static ssize_t smb_traffic_analyzer_pwrite(vfs_handle_struct *handle, \
 	smb_traffic_analyzer_send_data(handle,
 			result,
 			fsp->fsp_name->base_name,
-			true);
+			vfs_id_pwrite);
 	return result;
 }
 
@@ -411,6 +465,7 @@ static struct vfs_fn_pointers vfs_smb_traffic_analyzer_fns = {
 	.pread = smb_traffic_analyzer_pread,
 	.write = smb_traffic_analyzer_write,
 	.pwrite = smb_traffic_analyzer_pwrite,
+	.mkdir = smb_traffic_analyzer_mkdir
 };
 
 /* Module initialization */
