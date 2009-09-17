@@ -2455,9 +2455,9 @@ static WERROR becomeDC_drsuapi_pull_partition_recv(struct libnet_BecomeDC_state 
 	uint32_t ctr_level = 0;
 	struct drsuapi_DsGetNCChangesCtr1 *ctr1 = NULL;
 	struct drsuapi_DsGetNCChangesCtr6 *ctr6 = NULL;
-	struct GUID *source_dsa_guid;
-	struct GUID *source_dsa_invocation_id;
-	struct drsuapi_DsReplicaHighWaterMark *new_highwatermark;
+	struct GUID *source_dsa_guid = NULL;
+	struct GUID *source_dsa_invocation_id = NULL;
+	struct drsuapi_DsReplicaHighWaterMark *new_highwatermark = NULL;
 	bool more_data = false;
 	NTSTATUS nt_status;
 
