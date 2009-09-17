@@ -120,10 +120,18 @@ sub HeaderEnum($$;$)
 		pidl " {\n";
 		$tab_depth++;
 		foreach my $e (@{$enum->{ELEMENTS}}) {
+			my @enum_els = ();
 			unless ($first) { pidl ",\n"; }
 			$first = 0;
 			pidl tabs();
-			pidl $e;
+			@enum_els = split(/=/, $e);
+			if (@enum_els == 2) {
+				pidl $enum_els[0];
+				pidl "=(int)";
+				pidl $enum_els[1];
+			} else {
+				pidl $e;
+			}
 		}
 		pidl "\n";
 		$tab_depth--;
