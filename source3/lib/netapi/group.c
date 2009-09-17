@@ -784,12 +784,12 @@ WERROR NetGroupAddUser_r(struct libnetapi_ctx *ctx,
 					 &rids,
 					 &types);
 	if (!NT_STATUS_IS_OK(status)) {
-		werr = WERR_GROUP_NOT_FOUND;
+		werr = WERR_GROUPNOTFOUND;
 		goto done;
 	}
 
 	if (types.ids[0] != SID_NAME_DOM_GRP) {
-		werr = WERR_GROUP_NOT_FOUND;
+		werr = WERR_GROUPNOTFOUND;
 		goto done;
 	}
 
@@ -905,12 +905,12 @@ WERROR NetGroupDelUser_r(struct libnetapi_ctx *ctx,
 					 &rids,
 					 &types);
 	if (!NT_STATUS_IS_OK(status)) {
-		werr = WERR_GROUP_NOT_FOUND;
+		werr = WERR_GROUPNOTFOUND;
 		goto done;
 	}
 
 	if (types.ids[0] != SID_NAME_DOM_GRP) {
-		werr = WERR_GROUP_NOT_FOUND;
+		werr = WERR_GROUPNOTFOUND;
 		goto done;
 	}
 
