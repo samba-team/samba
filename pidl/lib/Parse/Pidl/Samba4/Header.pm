@@ -128,7 +128,9 @@ sub HeaderEnum($$;$)
 			if (@enum_els == 2) {
 				pidl $enum_els[0];
 				pidl "=(int)";
+				pidl "(";
 				pidl $enum_els[1];
+				pidl ")";
 			} else {
 				pidl $e;
 			}
