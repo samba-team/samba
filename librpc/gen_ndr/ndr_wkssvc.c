@@ -5428,14 +5428,14 @@ _PUBLIC_ void ndr_print_wkssvc_renameflags(struct ndr_print *ndr, const char *na
 
 static enum ndr_err_code ndr_push_wkssvc_NetValidateNameType(struct ndr_push *ndr, int ndr_flags, enum wkssvc_NetValidateNameType r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_wkssvc_NetValidateNameType(struct ndr_pull *ndr, int ndr_flags, enum wkssvc_NetValidateNameType *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -5457,14 +5457,14 @@ _PUBLIC_ void ndr_print_wkssvc_NetValidateNameType(struct ndr_print *ndr, const 
 
 static enum ndr_err_code ndr_push_wkssvc_NetJoinStatus(struct ndr_push *ndr, int ndr_flags, enum wkssvc_NetJoinStatus r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_wkssvc_NetJoinStatus(struct ndr_pull *ndr, int ndr_flags, enum wkssvc_NetJoinStatus *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -5561,14 +5561,14 @@ _PUBLIC_ void ndr_print_wkssvc_joinflags(struct ndr_print *ndr, const char *name
 
 static enum ndr_err_code ndr_push_wkssvc_ComputerNameType(struct ndr_push *ndr, int ndr_flags, enum wkssvc_ComputerNameType r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_wkssvc_ComputerNameType(struct ndr_pull *ndr, int ndr_flags, enum wkssvc_ComputerNameType *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }

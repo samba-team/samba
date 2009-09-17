@@ -894,7 +894,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsExtendedOperation(struct ndr_push *n
 	{
 		uint32_t _flags_save_ENUM = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+		NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 		ndr->flags = _flags_save_ENUM;
 	}
 	return NDR_ERR_SUCCESS;
@@ -906,7 +906,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsExtendedOperation(struct ndr_pull *n
 	{
 		uint32_t _flags_save_ENUM = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+		NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 		*r = v;
 		ndr->flags = _flags_save_ENUM;
 	}
@@ -940,7 +940,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsExtendedError(struct ndr_push *ndr, 
 	{
 		uint32_t _flags_save_ENUM = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+		NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 		ndr->flags = _flags_save_ENUM;
 	}
 	return NDR_ERR_SUCCESS;
@@ -952,7 +952,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsExtendedError(struct ndr_pull *ndr, 
 	{
 		uint32_t _flags_save_ENUM = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+		NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 		*r = v;
 		ndr->flags = _flags_save_ENUM;
 	}
@@ -1229,7 +1229,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_drsuapi_DsAttributeId(struct ndr_push *ndr, 
 	{
 		uint32_t _flags_save_ENUM = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+		NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 		ndr->flags = _flags_save_ENUM;
 	}
 	return NDR_ERR_SUCCESS;
@@ -1241,7 +1241,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_drsuapi_DsAttributeId(struct ndr_pull *ndr, 
 	{
 		uint32_t _flags_save_ENUM = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+		NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 		*r = v;
 		ndr->flags = _flags_save_ENUM;
 	}
@@ -3289,14 +3289,14 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetNCChangesXPRESSCtr6(struct ndr_print *ndr, 
 
 static enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesCompressionType(struct ndr_push *ndr, int ndr_flags, enum drsuapi_DsGetNCChangesCompressionType r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesCompressionType(struct ndr_pull *ndr, int ndr_flags, enum drsuapi_DsGetNCChangesCompressionType *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -4569,14 +4569,14 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaModRequest(struct ndr_print *ndr, const
 
 static enum ndr_err_code ndr_push_drsuapi_DsMembershipType(struct ndr_push *ndr, int ndr_flags, enum drsuapi_DsMembershipType r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_drsuapi_DsMembershipType(struct ndr_pull *ndr, int ndr_flags, enum drsuapi_DsMembershipType *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -5465,14 +5465,14 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetNT4ChangeLogInfo(struct ndr_print *ndr, con
 
 static enum ndr_err_code ndr_push_drsuapi_DsNameStatus(struct ndr_push *ndr, int ndr_flags, enum drsuapi_DsNameStatus r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_drsuapi_DsNameStatus(struct ndr_pull *ndr, int ndr_flags, enum drsuapi_DsNameStatus *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -5496,14 +5496,14 @@ _PUBLIC_ void ndr_print_drsuapi_DsNameStatus(struct ndr_print *ndr, const char *
 
 static enum ndr_err_code ndr_push_drsuapi_DsNameFlags(struct ndr_push *ndr, int ndr_flags, enum drsuapi_DsNameFlags r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_drsuapi_DsNameFlags(struct ndr_pull *ndr, int ndr_flags, enum drsuapi_DsNameFlags *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -5524,14 +5524,14 @@ _PUBLIC_ void ndr_print_drsuapi_DsNameFlags(struct ndr_print *ndr, const char *n
 
 static enum ndr_err_code ndr_push_drsuapi_DsNameFormat(struct ndr_push *ndr, int ndr_flags, enum drsuapi_DsNameFormat r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_drsuapi_DsNameFormat(struct ndr_pull *ndr, int ndr_flags, enum drsuapi_DsNameFormat *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -6073,14 +6073,14 @@ _PUBLIC_ void ndr_print_drsuapi_DsNameCtr(struct ndr_print *ndr, const char *nam
 
 static enum ndr_err_code ndr_push_drsuapi_DsSpnOperation(struct ndr_push *ndr, int ndr_flags, enum drsuapi_DsSpnOperation r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_drsuapi_DsSpnOperation(struct ndr_pull *ndr, int ndr_flags, enum drsuapi_DsSpnOperation *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -9365,14 +9365,14 @@ _PUBLIC_ void ndr_print_drsuapi_DsExecuteKCCRequest(struct ndr_print *ndr, const
 
 static enum ndr_err_code ndr_push_drsuapi_DsReplicaGetInfoLevel(struct ndr_push *ndr, int ndr_flags, enum drsuapi_DsReplicaGetInfoLevel r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_drsuapi_DsReplicaGetInfoLevel(struct ndr_pull *ndr, int ndr_flags, enum drsuapi_DsReplicaGetInfoLevel *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -9390,14 +9390,14 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaGetInfoLevel(struct ndr_print *ndr, con
 
 static enum ndr_err_code ndr_push_drsuapi_DsReplicaInfoType(struct ndr_push *ndr, int ndr_flags, enum drsuapi_DsReplicaInfoType r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_drsuapi_DsReplicaInfoType(struct ndr_pull *ndr, int ndr_flags, enum drsuapi_DsReplicaInfoType *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -10344,14 +10344,14 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaKccDsaFailuresCtr(struct ndr_print *ndr
 
 static enum ndr_err_code ndr_push_drsuapi_DsReplicaOpType(struct ndr_push *ndr, int ndr_flags, enum drsuapi_DsReplicaOpType r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_drsuapi_DsReplicaOpType(struct ndr_pull *ndr, int ndr_flags, enum drsuapi_DsReplicaOpType *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }

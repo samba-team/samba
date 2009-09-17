@@ -880,14 +880,14 @@ _PUBLIC_ void ndr_print_partialAttributeSetBlob(struct ndr_print *ndr, const cha
 
 static enum ndr_err_code ndr_push_prefixMapVersion(struct ndr_push *ndr, int ndr_flags, enum prefixMapVersion r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_prefixMapVersion(struct ndr_pull *ndr, int ndr_flags, enum prefixMapVersion *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -1243,7 +1243,7 @@ static enum ndr_err_code ndr_push_supplementalCredentialsSignature(struct ndr_pu
 	{
 		uint32_t _flags_save_ENUM = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+		NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 		ndr->flags = _flags_save_ENUM;
 	}
 	return NDR_ERR_SUCCESS;
@@ -1255,7 +1255,7 @@ static enum ndr_err_code ndr_pull_supplementalCredentialsSignature(struct ndr_pu
 	{
 		uint32_t _flags_save_ENUM = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+		NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 		*r = v;
 		ndr->flags = _flags_save_ENUM;
 	}
@@ -2957,14 +2957,14 @@ _PUBLIC_ void ndr_print_ExtendedErrorBlob(struct ndr_print *ndr, const char *nam
 
 static enum ndr_err_code ndr_push_ExtendedErrorComputerNamePresent(struct ndr_push *ndr, int ndr_flags, enum ExtendedErrorComputerNamePresent r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_ExtendedErrorComputerNamePresent(struct ndr_pull *ndr, int ndr_flags, enum ExtendedErrorComputerNamePresent *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -3110,14 +3110,14 @@ _PUBLIC_ void ndr_print_ExtendedErrorComputerName(struct ndr_print *ndr, const c
 
 static enum ndr_err_code ndr_push_ExtendedErrorParamType(struct ndr_push *ndr, int ndr_flags, enum ExtendedErrorParamType r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_ExtendedErrorParamType(struct ndr_pull *ndr, int ndr_flags, enum ExtendedErrorParamType *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }

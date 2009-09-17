@@ -6,14 +6,14 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 static enum ndr_err_code ndr_push_epm_protocol(struct ndr_push *ndr, int ndr_flags, enum epm_protocol r)
 {
-	NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint8(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_epm_protocol(struct ndr_pull *ndr, int ndr_flags, enum epm_protocol *r)
 {
 	uint8_t v;
-	NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint8(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }

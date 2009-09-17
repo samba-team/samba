@@ -6,14 +6,14 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 static enum ndr_err_code ndr_push_dssetup_DsRole(struct ndr_push *ndr, int ndr_flags, enum dssetup_DsRole r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_dssetup_DsRole(struct ndr_pull *ndr, int ndr_flags, enum dssetup_DsRole *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -195,14 +195,14 @@ _PUBLIC_ void ndr_print_dssetup_DsRolePrimaryDomInfoBasic(struct ndr_print *ndr,
 
 static enum ndr_err_code ndr_push_dssetup_DsUpgrade(struct ndr_push *ndr, int ndr_flags, enum dssetup_DsUpgrade r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_dssetup_DsUpgrade(struct ndr_pull *ndr, int ndr_flags, enum dssetup_DsUpgrade *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -220,14 +220,14 @@ _PUBLIC_ void ndr_print_dssetup_DsUpgrade(struct ndr_print *ndr, const char *nam
 
 static enum ndr_err_code ndr_push_dssetup_DsPrevious(struct ndr_push *ndr, int ndr_flags, enum dssetup_DsPrevious r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_dssetup_DsPrevious(struct ndr_pull *ndr, int ndr_flags, enum dssetup_DsPrevious *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -279,14 +279,14 @@ _PUBLIC_ void ndr_print_dssetup_DsRoleUpgradeStatus(struct ndr_print *ndr, const
 
 static enum ndr_err_code ndr_push_dssetup_DsRoleOp(struct ndr_push *ndr, int ndr_flags, enum dssetup_DsRoleOp r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_dssetup_DsRoleOp(struct ndr_pull *ndr, int ndr_flags, enum dssetup_DsRoleOp *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -335,14 +335,14 @@ _PUBLIC_ void ndr_print_dssetup_DsRoleOpStatus(struct ndr_print *ndr, const char
 
 static enum ndr_err_code ndr_push_dssetup_DsRoleInfoLevel(struct ndr_push *ndr, int ndr_flags, enum dssetup_DsRoleInfoLevel r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_dssetup_DsRoleInfoLevel(struct ndr_pull *ndr, int ndr_flags, enum dssetup_DsRoleInfoLevel *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }

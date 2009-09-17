@@ -118,14 +118,14 @@ _PUBLIC_ void ndr_print_spoolss_TimeCtr(struct ndr_print *ndr, const char *name,
 
 static enum ndr_err_code ndr_push_spoolss_ProcessorArchitecture(struct ndr_push *ndr, int ndr_flags, enum spoolss_ProcessorArchitecture r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_ProcessorArchitecture(struct ndr_pull *ndr, int ndr_flags, enum spoolss_ProcessorArchitecture *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -144,14 +144,14 @@ _PUBLIC_ void ndr_print_spoolss_ProcessorArchitecture(struct ndr_print *ndr, con
 
 static enum ndr_err_code ndr_push_spoolss_ProcessorType(struct ndr_push *ndr, int ndr_flags, enum spoolss_ProcessorType r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_ProcessorType(struct ndr_pull *ndr, int ndr_flags, enum spoolss_ProcessorType *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -172,14 +172,14 @@ _PUBLIC_ void ndr_print_spoolss_ProcessorType(struct ndr_print *ndr, const char 
 
 static enum ndr_err_code ndr_push_spoolss_MajorVersion(struct ndr_push *ndr, int ndr_flags, enum spoolss_MajorVersion r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_MajorVersion(struct ndr_pull *ndr, int ndr_flags, enum spoolss_MajorVersion *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -198,14 +198,14 @@ _PUBLIC_ void ndr_print_spoolss_MajorVersion(struct ndr_print *ndr, const char *
 
 static enum ndr_err_code ndr_push_spoolss_MinorVersion(struct ndr_push *ndr, int ndr_flags, enum spoolss_MinorVersion r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_MinorVersion(struct ndr_pull *ndr, int ndr_flags, enum spoolss_MinorVersion *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -568,14 +568,14 @@ _PUBLIC_ void ndr_print_spoolss_DeviceModeFields(struct ndr_print *ndr, const ch
 
 static enum ndr_err_code ndr_push_spoolss_DeviceModeSpecVersion(struct ndr_push *ndr, int ndr_flags, enum spoolss_DeviceModeSpecVersion r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_DeviceModeSpecVersion(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DeviceModeSpecVersion *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -594,14 +594,14 @@ _PUBLIC_ void ndr_print_spoolss_DeviceModeSpecVersion(struct ndr_print *ndr, con
 
 static enum ndr_err_code ndr_push_spoolss_DeviceModeOrientation(struct ndr_push *ndr, int ndr_flags, enum spoolss_DeviceModeOrientation r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_DeviceModeOrientation(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DeviceModeOrientation *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -619,14 +619,14 @@ _PUBLIC_ void ndr_print_spoolss_DeviceModeOrientation(struct ndr_print *ndr, con
 
 static enum ndr_err_code ndr_push_spoolss_DeviceModePaperSize(struct ndr_push *ndr, int ndr_flags, enum spoolss_DeviceModePaperSize r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_DeviceModePaperSize(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DeviceModePaperSize *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -733,14 +733,14 @@ _PUBLIC_ void ndr_print_spoolss_DeviceModePaperSize(struct ndr_print *ndr, const
 
 static enum ndr_err_code ndr_push_spoolss_DeviceModeDefaultSource(struct ndr_push *ndr, int ndr_flags, enum spoolss_DeviceModeDefaultSource r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_DeviceModeDefaultSource(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DeviceModeDefaultSource *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -769,14 +769,14 @@ _PUBLIC_ void ndr_print_spoolss_DeviceModeDefaultSource(struct ndr_print *ndr, c
 
 static enum ndr_err_code ndr_push_spoolss_DeviceModePrintQuality(struct ndr_push *ndr, int ndr_flags, enum spoolss_DeviceModePrintQuality r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_DeviceModePrintQuality(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DeviceModePrintQuality *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -796,14 +796,14 @@ _PUBLIC_ void ndr_print_spoolss_DeviceModePrintQuality(struct ndr_print *ndr, co
 
 static enum ndr_err_code ndr_push_spoolss_DeviceModeColor(struct ndr_push *ndr, int ndr_flags, enum spoolss_DeviceModeColor r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_DeviceModeColor(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DeviceModeColor *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -821,14 +821,14 @@ _PUBLIC_ void ndr_print_spoolss_DeviceModeColor(struct ndr_print *ndr, const cha
 
 static enum ndr_err_code ndr_push_spoolss_DeviceModeDuplex(struct ndr_push *ndr, int ndr_flags, enum spoolss_DeviceModeDuplex r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_DeviceModeDuplex(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DeviceModeDuplex *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -847,14 +847,14 @@ _PUBLIC_ void ndr_print_spoolss_DeviceModeDuplex(struct ndr_print *ndr, const ch
 
 static enum ndr_err_code ndr_push_spoolss_DeviceModeTTOption(struct ndr_push *ndr, int ndr_flags, enum spoolss_DeviceModeTTOption r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_DeviceModeTTOption(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DeviceModeTTOption *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -874,14 +874,14 @@ _PUBLIC_ void ndr_print_spoolss_DeviceModeTTOption(struct ndr_print *ndr, const 
 
 static enum ndr_err_code ndr_push_spoolss_DeviceModeCollate(struct ndr_push *ndr, int ndr_flags, enum spoolss_DeviceModeCollate r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_DeviceModeCollate(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DeviceModeCollate *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -899,14 +899,14 @@ _PUBLIC_ void ndr_print_spoolss_DeviceModeCollate(struct ndr_print *ndr, const c
 
 static enum ndr_err_code ndr_push_spoolss_DeviceModeNUp(struct ndr_push *ndr, int ndr_flags, enum spoolss_DeviceModeNUp r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_DeviceModeNUp(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DeviceModeNUp *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -924,14 +924,14 @@ _PUBLIC_ void ndr_print_spoolss_DeviceModeNUp(struct ndr_print *ndr, const char 
 
 static enum ndr_err_code ndr_push_spoolss_DeviceModeICMMethod(struct ndr_push *ndr, int ndr_flags, enum spoolss_DeviceModeICMMethod r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_DeviceModeICMMethod(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DeviceModeICMMethod *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -951,14 +951,14 @@ _PUBLIC_ void ndr_print_spoolss_DeviceModeICMMethod(struct ndr_print *ndr, const
 
 static enum ndr_err_code ndr_push_spoolss_DeviceModeICMIntent(struct ndr_push *ndr, int ndr_flags, enum spoolss_DeviceModeICMIntent r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_DeviceModeICMIntent(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DeviceModeICMIntent *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -978,14 +978,14 @@ _PUBLIC_ void ndr_print_spoolss_DeviceModeICMIntent(struct ndr_print *ndr, const
 
 static enum ndr_err_code ndr_push_spoolss_DeviceModeMediaType(struct ndr_push *ndr, int ndr_flags, enum spoolss_DeviceModeMediaType r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_DeviceModeMediaType(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DeviceModeMediaType *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -1004,14 +1004,14 @@ _PUBLIC_ void ndr_print_spoolss_DeviceModeMediaType(struct ndr_print *ndr, const
 
 static enum ndr_err_code ndr_push_spoolss_DeviceModeDitherType(struct ndr_push *ndr, int ndr_flags, enum spoolss_DeviceModeDitherType r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_DeviceModeDitherType(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DeviceModeDitherType *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -6192,14 +6192,14 @@ _PUBLIC_ void ndr_print_spoolss_JobInfoContainer(struct ndr_print *ndr, const ch
 
 static enum ndr_err_code ndr_push_spoolss_JobControl(struct ndr_push *ndr, int ndr_flags, enum spoolss_JobControl r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_JobControl(struct ndr_pull *ndr, int ndr_flags, enum spoolss_JobControl *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -6224,14 +6224,14 @@ _PUBLIC_ void ndr_print_spoolss_JobControl(struct ndr_print *ndr, const char *na
 
 static enum ndr_err_code ndr_push_spoolss_PrinterControl(struct ndr_push *ndr, int ndr_flags, enum spoolss_PrinterControl r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_PrinterControl(struct ndr_pull *ndr, int ndr_flags, enum spoolss_PrinterControl *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -7952,14 +7952,14 @@ _PUBLIC_ void ndr_print_spoolss_AddDriverInfo1(struct ndr_print *ndr, const char
 
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_DriverOSVersion(struct ndr_push *ndr, int ndr_flags, enum spoolss_DriverOSVersion r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_DriverOSVersion(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DriverOSVersion *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -13748,14 +13748,14 @@ _PUBLIC_ size_t ndr_size_spoolss_DriverInfo8(const struct spoolss_DriverInfo8 *r
 
 static enum ndr_err_code ndr_push_spoolss_DriverFileType(struct ndr_push *ndr, int ndr_flags, enum spoolss_DriverFileType r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_DriverFileType(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DriverFileType *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -15245,14 +15245,14 @@ _PUBLIC_ size_t ndr_size_spoolss_PrinterData(const union spoolss_PrinterData *r,
 
 static enum ndr_err_code ndr_push_spoolss_FormFlags(struct ndr_push *ndr, int ndr_flags, enum spoolss_FormFlags r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_FormFlags(struct ndr_pull *ndr, int ndr_flags, enum spoolss_FormFlags *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -16495,14 +16495,14 @@ _PUBLIC_ size_t ndr_size_spoolss_PortInfo2(const struct spoolss_PortInfo2 *r, st
 
 static enum ndr_err_code ndr_push_spoolss_PortStatus(struct ndr_push *ndr, int ndr_flags, enum spoolss_PortStatus r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_PortStatus(struct ndr_pull *ndr, int ndr_flags, enum spoolss_PortStatus *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -16531,14 +16531,14 @@ _PUBLIC_ void ndr_print_spoolss_PortStatus(struct ndr_print *ndr, const char *na
 
 static enum ndr_err_code ndr_push_spoolss_PortSeverity(struct ndr_push *ndr, int ndr_flags, enum spoolss_PortSeverity r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_PortSeverity(struct ndr_pull *ndr, int ndr_flags, enum spoolss_PortSeverity *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -17466,14 +17466,14 @@ _PUBLIC_ void ndr_print_spoolss_PrinterChangeFlags(struct ndr_print *ndr, const 
 
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_JobNotifyField(struct ndr_push *ndr, int ndr_flags, enum spoolss_JobNotifyField r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_JobNotifyField(struct ndr_pull *ndr, int ndr_flags, enum spoolss_JobNotifyField *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -17513,14 +17513,14 @@ _PUBLIC_ void ndr_print_spoolss_JobNotifyField(struct ndr_print *ndr, const char
 
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrintNotifyField(struct ndr_push *ndr, int ndr_flags, enum spoolss_PrintNotifyField r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrintNotifyField(struct ndr_pull *ndr, int ndr_flags, enum spoolss_PrintNotifyField *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -17564,14 +17564,14 @@ _PUBLIC_ void ndr_print_spoolss_PrintNotifyField(struct ndr_print *ndr, const ch
 
 static enum ndr_err_code ndr_push_spoolss_NotifyType(struct ndr_push *ndr, int ndr_flags, enum spoolss_NotifyType r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_NotifyType(struct ndr_pull *ndr, int ndr_flags, enum spoolss_NotifyType *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -17929,14 +17929,14 @@ _PUBLIC_ void ndr_print_spoolss_NotifyString(struct ndr_print *ndr, const char *
 
 static enum ndr_err_code ndr_push_spoolss_NotifyTable(struct ndr_push *ndr, int ndr_flags, enum spoolss_NotifyTable r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_NotifyTable(struct ndr_pull *ndr, int ndr_flags, enum spoolss_NotifyTable *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -19026,14 +19026,14 @@ _PUBLIC_ void ndr_print_spoolss_DeleteDriverFlags(struct ndr_print *ndr, const c
 
 static enum ndr_err_code ndr_push_spoolss_PortProtocol(struct ndr_push *ndr, int ndr_flags, enum spoolss_PortProtocol r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_PortProtocol(struct ndr_pull *ndr, int ndr_flags, enum spoolss_PortProtocol *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }

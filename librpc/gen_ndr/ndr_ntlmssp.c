@@ -5,14 +5,14 @@
 
 static enum ndr_err_code ndr_push_ntlmssp_MessageType(struct ndr_push *ndr, int ndr_flags, enum ntlmssp_MessageType r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_ntlmssp_MessageType(struct ndr_pull *ndr, int ndr_flags, enum ntlmssp_MessageType *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -78,14 +78,14 @@ _PUBLIC_ void ndr_print_NEGOTIATE(struct ndr_print *ndr, const char *name, uint3
 
 static enum ndr_err_code ndr_push_ntlmssp_WindowsMajorVersion(struct ndr_push *ndr, int ndr_flags, enum ntlmssp_WindowsMajorVersion r)
 {
-	NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint8(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_ntlmssp_WindowsMajorVersion(struct ndr_pull *ndr, int ndr_flags, enum ntlmssp_WindowsMajorVersion *r)
 {
 	uint8_t v;
-	NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint8(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -103,14 +103,14 @@ _PUBLIC_ void ndr_print_ntlmssp_WindowsMajorVersion(struct ndr_print *ndr, const
 
 static enum ndr_err_code ndr_push_ntlmssp_WindowsMinorVersion(struct ndr_push *ndr, int ndr_flags, enum ntlmssp_WindowsMinorVersion r)
 {
-	NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint8(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_ntlmssp_WindowsMinorVersion(struct ndr_pull *ndr, int ndr_flags, enum ntlmssp_WindowsMinorVersion *r)
 {
 	uint8_t v;
-	NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint8(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -129,14 +129,14 @@ _PUBLIC_ void ndr_print_ntlmssp_WindowsMinorVersion(struct ndr_print *ndr, const
 
 static enum ndr_err_code ndr_push_ntlmssp_NTLMRevisionCurrent(struct ndr_push *ndr, int ndr_flags, enum ntlmssp_NTLMRevisionCurrent r)
 {
-	NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint8(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_ntlmssp_NTLMRevisionCurrent(struct ndr_pull *ndr, int ndr_flags, enum ntlmssp_NTLMRevisionCurrent *r)
 {
 	uint8_t v;
-	NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint8(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -428,14 +428,14 @@ _PUBLIC_ void ndr_print_NEGOTIATE_MESSAGE(struct ndr_print *ndr, const char *nam
 
 static enum ndr_err_code ndr_push_ntlmssp_AvId(struct ndr_push *ndr, int ndr_flags, enum ntlmssp_AvId r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_ntlmssp_AvId(struct ndr_pull *ndr, int ndr_flags, enum ntlmssp_AvId *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }

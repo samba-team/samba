@@ -734,14 +734,14 @@ _PUBLIC_ void ndr_print_dcerpc_fault(struct ndr_print *ndr, const char *name, co
 
 static enum ndr_err_code ndr_push_dcerpc_AuthType(struct ndr_push *ndr, int ndr_flags, enum dcerpc_AuthType r)
 {
-	NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint8(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_dcerpc_AuthType(struct ndr_pull *ndr, int ndr_flags, enum dcerpc_AuthType *r)
 {
 	uint8_t v;
-	NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint8(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -767,14 +767,14 @@ _PUBLIC_ void ndr_print_dcerpc_AuthType(struct ndr_print *ndr, const char *name,
 
 static enum ndr_err_code ndr_push_dcerpc_AuthLevel(struct ndr_push *ndr, int ndr_flags, enum dcerpc_AuthLevel r)
 {
-	NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint8(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_dcerpc_AuthLevel(struct ndr_pull *ndr, int ndr_flags, enum dcerpc_AuthLevel *r)
 {
 	uint8_t v;
-	NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint8(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -1229,14 +1229,14 @@ _PUBLIC_ void ndr_print_dcerpc_working(struct ndr_print *ndr, const char *name, 
 
 static enum ndr_err_code ndr_push_dcerpc_pkt_type(struct ndr_push *ndr, int ndr_flags, enum dcerpc_pkt_type r)
 {
-	NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint8(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_dcerpc_pkt_type(struct ndr_pull *ndr, int ndr_flags, enum dcerpc_pkt_type *r)
 {
 	uint8_t v;
-	NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint8(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }

@@ -6,14 +6,14 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 static enum ndr_err_code ndr_push_dfs_ManagerVersion(struct ndr_push *ndr, int ndr_flags, enum dfs_ManagerVersion r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_dfs_ManagerVersion(struct ndr_pull *ndr, int ndr_flags, enum dfs_ManagerVersion *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -819,14 +819,14 @@ _PUBLIC_ void ndr_print_dfs_Info5(struct ndr_print *ndr, const char *name, const
 
 static enum ndr_err_code ndr_push_dfs_Target_PriorityClass(struct ndr_push *ndr, int ndr_flags, enum dfs_Target_PriorityClass r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_dfs_Target_PriorityClass(struct ndr_pull *ndr, int ndr_flags, enum dfs_Target_PriorityClass *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -1461,14 +1461,14 @@ _PUBLIC_ void ndr_print_dfs_Info200(struct ndr_print *ndr, const char *name, con
 
 static enum ndr_err_code ndr_push_dfs_VolumeFlavor(struct ndr_push *ndr, int ndr_flags, enum dfs_VolumeFlavor r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_dfs_VolumeFlavor(struct ndr_pull *ndr, int ndr_flags, enum dfs_VolumeFlavor *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }

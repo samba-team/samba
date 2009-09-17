@@ -118,14 +118,14 @@ _PUBLIC_ void ndr_print_netlogon_creds_CredentialState(struct ndr_print *ndr, co
 
 static enum ndr_err_code ndr_push_NL_AUTH_MESSAGE_TYPE(struct ndr_push *ndr, int ndr_flags, enum NL_AUTH_MESSAGE_TYPE r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_NL_AUTH_MESSAGE_TYPE(struct ndr_pull *ndr, int ndr_flags, enum NL_AUTH_MESSAGE_TYPE *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -453,14 +453,14 @@ _PUBLIC_ void ndr_print_NL_AUTH_MESSAGE(struct ndr_print *ndr, const char *name,
 
 static enum ndr_err_code ndr_push_NL_SIGNATURE_ALGORITHM(struct ndr_push *ndr, int ndr_flags, enum NL_SIGNATURE_ALGORITHM r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_NL_SIGNATURE_ALGORITHM(struct ndr_pull *ndr, int ndr_flags, enum NL_SIGNATURE_ALGORITHM *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -478,14 +478,14 @@ _PUBLIC_ void ndr_print_NL_SIGNATURE_ALGORITHM(struct ndr_print *ndr, const char
 
 static enum ndr_err_code ndr_push_NL_SEAL_ALGORITHM(struct ndr_push *ndr, int ndr_flags, enum NL_SEAL_ALGORITHM r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_NL_SEAL_ALGORITHM(struct ndr_pull *ndr, int ndr_flags, enum NL_SEAL_ALGORITHM *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
