@@ -57,7 +57,15 @@ export TORTURE_MAXTIME
 WORKGROUP=SAMBA-TEST
 SERVER=localhost2
 SERVER_IP=127.0.0.2
-USERNAME=`PATH=/usr/ucb:$PATH whoami`
+if [ ! "x$USER" = "x" ]; then
+    USERNAME=$USER
+else
+    if [ ! "x$LOGNAME" = "x" ]; then
+        USERNAME=$LOGNAME
+    else
+        USERNAME=`PATH=/usr/ucb:$PATH whoami || id -un`
+    fi
+fi
 USERID=`PATH=/usr/ucb:$PATH id | cut -d ' ' -f1 | sed -e 's/uid=\([0-9]*\).*/\1/g'`
 GROUPID=`PATH=/usr/ucb:$PATH id | cut -d ' ' -f2 | sed -e 's/gid=\([0-9]*\).*/\1/g'`
 PASSWORD=test
