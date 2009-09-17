@@ -1316,7 +1316,25 @@ interface drsuapi
 
 	/*****************/
         /* Function 0x12 */
-	[todo] WERROR DRSUAPI_EXECUTE_KCC();
+	typedef bitmap {
+		DRSUAPI_DS_EXECUTE_KCC_ASYNCHRONOUS_OPERATION	= 0x00000001,
+		DRSUAPI_DS_EXECUTE_KCC_DAMPED			= 0x00000002
+	} drsuapi_DsExecuteKCCFlags;
+
+	typedef struct {
+		uint32 taskID;
+		drsuapi_DsExecuteKCCFlags flags;
+	} drsuapi_DsExecuteKCC1;
+
+	typedef [switch_type(uint32)] union {
+		[case(1)] drsuapi_DsExecuteKCC1 ctr1;
+	} drsuapi_DsExecuteKCCRequest;
+
+	WERROR drsuapi_DsExecuteKCC(
+		[in] policy_handle *bind_handle,
+		[in] uint32 level,
+		[in, ref, switch_is(level)] drsuapi_DsExecuteKCCRequest *req
+		);
 
 	/*****************/
 	/* Function 0x13 */
