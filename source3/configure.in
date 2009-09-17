@@ -4117,12 +4117,12 @@ AC_ARG_WITH(cifsupcall,
 # /usr/include/pam.
 
 with_pam_for_crypt=no
-try_pam=no
+try_pam=auto
 AC_MSG_CHECKING(whether to try PAM support)
 AC_ARG_WITH(pam,
-[AS_HELP_STRING([--with-pam], [Include PAM support (default=no)])],
+[AS_HELP_STRING([--with-pam], [Include PAM support (default=auto)])],
 [ case "$withval" in
-  yes|no)
+  yes|no|auto)
     try_pam=$withval
     ;;
   esac
