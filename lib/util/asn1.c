@@ -205,6 +205,15 @@ bool asn1_write_Integer(struct asn1_data *data, int i)
 	return asn1_pop_tag(data);
 }
 
+/* write a BIT STRING */
+bool asn1_write_BitString(struct asn1_data *data, const void *p, size_t length, uint8_t padding)
+{
+	if (!asn1_push_tag(data, ASN1_BIT_STRING)) return false;
+	if (!asn1_write_uint8(data, padding)) return false;
+	if (!asn1_write(data, p, length)) return false;
+	return asn1_pop_tag(data);
+}
+
 bool ber_write_OID_String(DATA_BLOB *blob, const char *OID)
 {
 	uint_t v, v2;
@@ -725,6 +734,39 @@ bool asn1_read_Integer(struct asn1_data *data, int *i)
 	if (!asn1_start_tag(data, ASN1_INTEGER)) return false;
 	if (!asn1_read_implicit_Integer(data, i)) return false;
 	return asn1_end_tag(data);	
+}
+
+/* read a BIT STRING */
+bool asn1_read_BitString(struct asn1_data *data, TALLOC_CTX *mem_ctx, DATA_BLOB *blob, uint8_t *padding)
+{
+	int len;
+	ZERO_STRUCTP(blob);
+	if (!asn1_start_tag(data, ASN1_BIT_STRING)) return false;
+	len = asn1_tag_remaining(data);
+	if (len < 0) {
+		data->has_error = true;
+		return false;
+	}
+	if (!asn1_read_uint8(data, padding)) return false;
+
+	*blob = data_blob_talloc(mem_ctx, NULL, len);
+	if (!blob->data) {
+		data->has_error = true;
+		return false;
+	}
+	if (asn1_read(data, blob->data, len - 1)) {
+		blob->length--;
+		blob->data[len] = 0;
+		asn1_end_tag(data);
+	}
+
+	if (data->has_error) {
+		data_blob_free(blob);
+		*blob = data_blob_null;
+		*padding = 0;
+		return false;
+	}
+	return true;
 }
 
 /* read an integer */

@@ -62,8 +62,8 @@ static bool read_negTokenInit(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 		/* Read reqFlags */
 		case ASN1_CONTEXT(1):
 			asn1_start_tag(asn1, ASN1_CONTEXT(1));
-			asn1_read_Integer(asn1, &token->reqFlags);
-			token->reqFlags |= SPNEGO_REQ_FLAG;
+			asn1_read_BitString(asn1, mem_ctx, &token->reqFlags,
+					    &token->reqFlagsPadding);
 			asn1_end_tag(asn1);
 			break;
                 /* Read mechToken */
@@ -130,11 +130,11 @@ static bool write_negTokenInit(struct asn1_data *asn1, struct spnego_negTokenIni
 	}
 
 	/* write reqFlags */
-	if (token->reqFlags & SPNEGO_REQ_FLAG) {
-		int flags = token->reqFlags & ~SPNEGO_REQ_FLAG;
-
+	if (token->reqFlags.length > 0) {
 		asn1_push_tag(asn1, ASN1_CONTEXT(1));
-		asn1_write_Integer(asn1, flags);
+		asn1_write_BitString(asn1, token->reqFlags.data,
+				     token->reqFlags.length,
+				     token->reqFlagsPadding);
 		asn1_pop_tag(asn1);
 	}
 
@@ -353,6 +353,7 @@ bool spnego_free_data(struct spnego_data *spnego)
 		if (spnego->negTokenInit.mechTypes) {
 			talloc_free(spnego->negTokenInit.mechTypes);
 		}
+		data_blob_free(&spnego->negTokenInit.reqFlags);
 		data_blob_free(&spnego->negTokenInit.mechToken);
 		data_blob_free(&spnego->negTokenInit.mechListMIC);
 		talloc_free(spnego->negTokenInit.targetPrincipal);
