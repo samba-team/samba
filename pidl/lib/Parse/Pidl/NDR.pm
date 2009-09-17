@@ -363,7 +363,10 @@ sub find_largest_alignment($)
 		my $a = 1;
 
 		if ($e->{POINTERS}) {
-			$a = 4; 
+			# this is a hack for NDR64
+			# the NDR layer translates this into
+			# an alignment of 4 for NDR and 8 for NDR64
+			$a = 5;
 		} elsif (has_property($e, "subcontext")) { 
 			$a = 1;
 		} elsif (has_property($e, "transmit_as")) {
