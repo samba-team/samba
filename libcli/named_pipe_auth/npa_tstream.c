@@ -66,8 +66,9 @@ struct tevent_req *tstream_npa_connect_send(TALLOC_CTX *mem_ctx,
 					const char *client_name_in,
 					const struct tsocket_address *server,
 					const char *server_name,
-					const struct netr_SamInfo3 *info3,
-					DATA_BLOB session_key)
+					const struct netr_SamInfo3 *sam_info3,
+					DATA_BLOB session_key,
+					DATA_BLOB delegated_creds)
 {
 	struct tevent_req *req;
 	struct tstream_npa_connect_state *state;
@@ -109,45 +110,48 @@ struct tevent_req *tstream_npa_connect_send(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(state->auth_req);
 	if (client) {
-		struct named_pipe_auth_req_info2 *info2;
+		struct named_pipe_auth_req_info3 *info3;
 
 		if (!server) {
 			tevent_req_error(req, EINVAL);
 			goto post;
 		}
 
-		state->auth_req.level = 2;
-		info2 = &state->auth_req.info.info2;
+		state->auth_req.level = 3;
+		info3 = &state->auth_req.info.info3;
 
-		info2->client_name = client_name_in;
-		info2->client_addr = tsocket_address_inet_addr_string(client, state);
-		if (!info2->client_addr) {
+		info3->client_name = client_name_in;
+		info3->client_addr = tsocket_address_inet_addr_string(client, state);
+		if (!info3->client_addr) {
 			/* errno might be EINVAL */
 			tevent_req_error(req, errno);
 			goto post;
 		}
-		info2->client_port = tsocket_address_inet_port(client);
-		if (!info2->client_name) {
-			info2->client_name = info2->client_addr;
+		info3->client_port = tsocket_address_inet_port(client);
+		if (!info3->client_name) {
+			info3->client_name = info3->client_addr;
 		}
 
-		info2->server_addr = tsocket_address_inet_addr_string(server, state);
-		if (!info2->server_addr) {
+		info3->server_addr = tsocket_address_inet_addr_string(server, state);
+		if (!info3->server_addr) {
 			/* errno might be EINVAL */
 			tevent_req_error(req, errno);
 			goto post;
 		}
-		info2->server_port = tsocket_address_inet_port(server);
-		if (!info2->server_name) {
-			info2->server_name = info2->server_addr;
+		info3->server_port = tsocket_address_inet_port(server);
+		if (!info3->server_name) {
+			info3->server_name = info3->server_addr;
 		}
 
-		info2->sam_info3 = discard_const_p(struct netr_SamInfo3, info3);
-		info2->session_key_length = session_key.length;
-		info2->session_key = session_key.data;
-	} else if (info3) {
+		info3->sam_info3 = discard_const_p(struct netr_SamInfo3, sam_info3);
+		info3->session_key_length = session_key.length;
+		info3->session_key = session_key.data;
+		info3->gssapi_delegated_creds_length = delegated_creds.length;
+		info3->gssapi_delegated_creds = delegated_creds.data;
+
+	} else if (sam_info3) {
 		state->auth_req.level = 1;
-		state->auth_req.info.info1 = *info3;
+		state->auth_req.info.info1 = *sam_info3;
 	} else {
 		state->auth_req.level = 0;
 	}
@@ -428,6 +432,11 @@ int _tstream_npa_connect_recv(struct tevent_req *req,
 		npas->file_type = state->auth_rep.info.info2.file_type;
 		device_state = state->auth_rep.info.info2.device_state;
 		allocation_size = state->auth_rep.info.info2.allocation_size;
+		break;
+	case 3:
+		npas->file_type = state->auth_rep.info.info3.file_type;
+		device_state = state->auth_rep.info.info3.device_state;
+		allocation_size = state->auth_rep.info.info3.allocation_size;
 		break;
 	}
 

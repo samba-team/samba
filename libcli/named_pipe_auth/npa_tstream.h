@@ -34,7 +34,8 @@ struct tevent_req *tstream_npa_connect_send(TALLOC_CTX *mem_ctx,
 					const struct tsocket_address *server,
 					const char *server_name,
 					const struct netr_SamInfo3 *info3,
-					DATA_BLOB session_key);
+					DATA_BLOB session_key,
+					DATA_BLOB delegated_creds);
 int _tstream_npa_connect_recv(struct tevent_req *req,
 			      int *perrno,
 			      TALLOC_CTX *mem_ctx,
