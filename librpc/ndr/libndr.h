@@ -165,7 +165,7 @@ struct ndr_print {
 #define NDR_PRINT_OUT_STRING(ctx, type, p) NDR_PRINT_FUNCTION_STRING(ctx, type, NDR_OUT, p)
 #define NDR_PRINT_IN_STRING(ctx, type, p) NDR_PRINT_FUNCTION_STRING(ctx, type, NDR_IN | NDR_SET_VALUES, p)
 
-#define NDR_BE(ndr) (((ndr)->flags & (LIBNDR_FLAG_BIGENDIAN|LIBNDR_FLAG_LITTLE_ENDIAN)) == LIBNDR_FLAG_BIGENDIAN)
+#define NDR_BE(ndr) (unlikely(((ndr)->flags & (LIBNDR_FLAG_BIGENDIAN|LIBNDR_FLAG_LITTLE_ENDIAN)) == LIBNDR_FLAG_BIGENDIAN))
 
 enum ndr_err_code {
 	NDR_ERR_SUCCESS = 0,
@@ -185,7 +185,8 @@ enum ndr_err_code {
 	NDR_ERR_TOKEN,
 	NDR_ERR_IPV4ADDRESS,
 	NDR_ERR_INVALID_POINTER,
-	NDR_ERR_UNREAD_BYTES
+	NDR_ERR_UNREAD_BYTES,
+	NDR_ERR_NDR64
 };
 
 #define NDR_ERR_CODE_IS_SUCCESS(x) (x == NDR_ERR_SUCCESS)
@@ -216,7 +217,7 @@ enum ndr_compression_alg {
 #define NDR_SET_VALUES 4
 
 #define NDR_PULL_NEED_BYTES(ndr, n) do { \
-	if ((n) > ndr->data_size || ndr->offset + (n) > ndr->data_size) { \
+	if (unlikely((n) > ndr->data_size || ndr->offset + (n) > ndr->data_size)) { \
 		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE, "Pull bytes %u (%s)", (unsigned)n, __location__); \
 	} \
 } while(0)
@@ -226,13 +227,13 @@ enum ndr_compression_alg {
 #define NDR_ROUND(size, n) (((size)+((n)-1)) & ~((n)-1))
 
 #define NDR_PULL_ALIGN(ndr, n) do { \
-	if (!(ndr->flags & LIBNDR_FLAG_NOALIGN)) { \
-		if (ndr->flags & LIBNDR_FLAG_PAD_CHECK) { \
+	if (unlikely(!(ndr->flags & LIBNDR_FLAG_NOALIGN))) {	\
+		if (unlikely(ndr->flags & LIBNDR_FLAG_PAD_CHECK)) {	\
 			ndr_check_padding(ndr, n); \
 		} \
 		ndr->offset = (ndr->offset + (n-1)) & ~(n-1); \
 	} \
-	if (ndr->offset > ndr->data_size) { \
+	if (unlikely(ndr->offset > ndr->data_size)) {			\
 		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE, "Pull align %u", (unsigned)n); \
 	} \
 } while(0)
@@ -240,7 +241,7 @@ enum ndr_compression_alg {
 #define NDR_PUSH_NEED_BYTES(ndr, n) NDR_CHECK(ndr_push_expand(ndr, n))
 
 #define NDR_PUSH_ALIGN(ndr, n) do { \
-	if (!(ndr->flags & LIBNDR_FLAG_NOALIGN)) { \
+	if (likely(!(ndr->flags & LIBNDR_FLAG_NOALIGN))) {	\
 		uint32_t _pad = ((ndr->offset + (n-1)) & ~(n-1)) - ndr->offset; \
 		while (_pad--) NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, 0)); \
 	} \
@@ -251,7 +252,7 @@ enum ndr_compression_alg {
 #define NDR_CHECK(call) do { \
 	enum ndr_err_code _status; \
 	_status = call; \
-	if (!NDR_ERR_CODE_IS_SUCCESS(_status)) { \
+	if (unlikely(!NDR_ERR_CODE_IS_SUCCESS(_status))) {	\
 		return _status; \
 	} \
 } while (0)
@@ -260,7 +261,7 @@ enum ndr_compression_alg {
 #define NDR_CHECK_FREE(call) do { \
 	enum ndr_err_code _status; \
 	_status = call; \
-	if (!NDR_ERR_CODE_IS_SUCCESS(_status)) { \
+	if (unlikely(!NDR_ERR_CODE_IS_SUCCESS(_status))) {	\
 		talloc_free(ndr);		 \
 		return _status; \
 	} \
@@ -289,24 +290,24 @@ enum ndr_compression_alg {
 #define NDR_PULL_ALLOC(ndr, s) do { \
 	_NDR_PULL_FIX_CURRENT_MEM_CTX(ndr);\
 	(s) = talloc_ptrtype(ndr->current_mem_ctx, (s)); \
-	if (!(s)) return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Alloc %s failed: %s\n", # s, __location__); \
+	if (unlikely(!(s))) return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Alloc %s failed: %s\n", # s, __location__); \
 } while (0)
 
 #define NDR_PULL_ALLOC_N(ndr, s, n) do { \
 	_NDR_PULL_FIX_CURRENT_MEM_CTX(ndr);\
 	(s) = talloc_array_ptrtype(ndr->current_mem_ctx, (s), n); \
-	if (!(s)) return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Alloc %u * %s failed: %s\n", (unsigned)n, # s, __location__); \
+	if (unlikely(!(s))) return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Alloc %u * %s failed: %s\n", (unsigned)n, # s, __location__); \
 } while (0)
 
 
 #define NDR_PUSH_ALLOC_SIZE(ndr, s, size) do { \
        (s) = talloc_array(ndr, uint8_t, size); \
-       if (!(s)) return ndr_push_error(ndr, NDR_ERR_ALLOC, "push alloc %u failed: %s\n", (unsigned)size, __location__); \
+       if (unlikely(!(s))) return ndr_push_error(ndr, NDR_ERR_ALLOC, "push alloc %u failed: %s\n", (unsigned)size, __location__); \
 } while (0)
 
 #define NDR_PUSH_ALLOC(ndr, s) do { \
        (s) = talloc_ptrtype(ndr, (s)); \
-       if (!(s)) return ndr_push_error(ndr, NDR_ERR_ALLOC, "push alloc %s failed: %s\n", # s, __location__); \
+       if (unlikely(!(s))) return ndr_push_error(ndr, NDR_ERR_ALLOC, "push alloc %s failed: %s\n", # s, __location__); \
 } while (0)
 
 /* these are used when generic fn pointers are needed for ndr push/pull fns */
