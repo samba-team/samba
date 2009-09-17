@@ -95,7 +95,7 @@ time_t last_printer_reload_time = 0;
  for processing.
 ****************************************************************************/
 struct pending_message_list *deferred_open_queue = NULL;
-uint32_t common_flags2 = FLAGS2_LONG_PATH_COMPONENTS|FLAGS2_32_BIT_ERROR_CODES;
+uint32_t common_flags2 = FLAGS2_LONG_PATH_COMPONENTS|FLAGS2_32_BIT_ERROR_CODES|FLAGS2_EXTENDED_ATTRIBUTES;
 
 struct smb_srv_trans_enc_ctx *partial_srv_trans_enc_ctx = NULL;
 struct smb_srv_trans_enc_ctx *srv_trans_enc_ctx = NULL;

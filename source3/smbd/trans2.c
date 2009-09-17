@@ -4379,6 +4379,9 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 		case 0xFF0F:/*SMB2_INFO_QUERY_ALL_EAS*/
 		{
+			/* This is FileFullEaInformation - 0xF which maps to
+			 * 1015 (decimal) in smbd_do_setfilepathinfo. */
+
 			/* We have data_size bytes to put EA's into. */
 			size_t total_ea_len = 0;
 			struct ea_list *ea_file_list = NULL;
@@ -5654,6 +5657,53 @@ static NTSTATUS smb_info_set_ea(connection_struct *conn,
 
 	return status;
 }
+
+/****************************************************************************
+ Deal with SMB_FILE_FULL_EA_INFORMATION set.
+****************************************************************************/
+
+static NTSTATUS smb_set_file_full_ea_info(connection_struct *conn,
+				const char *pdata,
+				int total_data,
+				files_struct *fsp)
+{
+	struct ea_list *ea_list = NULL;
+	NTSTATUS status;
+
+	if (!fsp) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (!lp_ea_support(SNUM(conn))) {
+		DEBUG(10, ("smb_set_file_full_ea_info - ea_len = %u but "
+			"EA's not supported.\n",
+			(unsigned int)total_data));
+		return NT_STATUS_EAS_NOT_SUPPORTED;
+	}
+
+	if (total_data < 10) {
+		DEBUG(10, ("smb_set_file_full_ea_info - ea_len = %u "
+			"too small.\n",
+			(unsigned int)total_data));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	ea_list = read_nttrans_ea_list(talloc_tos(),
+				pdata,
+				total_data);
+
+	if (!ea_list) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	status = set_ea(conn, fsp, fsp->fsp_name, ea_list);
+
+	DEBUG(10, ("smb_set_file_full_ea_info on file %s returned %s\n",
+		smb_fname_str_dbg(fsp->fsp_name),
+		nt_errstr(status) ));
+
+	return status;
+}
+
 
 /****************************************************************************
  Deal with SMB_SET_FILE_DISPOSITION_INFO.
@@ -7368,6 +7418,15 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 		case SMB_FILE_POSITION_INFORMATION:
 		{
 			status = smb_file_position_information(conn,
+						pdata,
+						total_data,
+						fsp);
+			break;
+		}
+
+		case SMB_FILE_FULL_EA_INFORMATION:
+		{
+			status = smb_set_file_full_ea_info(conn,
 						pdata,
 						total_data,
 						fsp);

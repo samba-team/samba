@@ -450,9 +450,13 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				return tevent_req_post(req, ev);
 			}
 
-			/* TODO */
-			tevent_req_nterror(req, NT_STATUS_EAS_NOT_SUPPORTED);
-			return tevent_req_post(req, ev);
+			ea_list = read_nttrans_ea_list(mem_ctx,
+				(const char *)exta->data.data, exta->data.length);
+			if (!ea_list) {
+				DEBUG(10,("smbd_smb2_create_send: read_ea_name_list failed.\n"));
+				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+				return tevent_req_post(req, ev);
+			}
 		}
 
 		if (mxac) {
