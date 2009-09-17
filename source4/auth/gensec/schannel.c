@@ -296,7 +296,8 @@ static NTSTATUS schannel_unseal_packet(struct gensec_security *gensec_security,
 				struct schannel_state);
 
 	return netsec_incoming_packet(state, mem_ctx, true,
-				      data, length, sig);
+				      discard_const_p(uint8_t, data),
+				      length, sig);
 }
 
 /*
@@ -346,7 +347,8 @@ static NTSTATUS schannel_sign_packet(struct gensec_security *gensec_security,
 				struct schannel_state);
 
 	return netsec_outgoing_packet(state, mem_ctx, false,
-				      data, length, sig);
+				      discard_const_p(uint8_t, data),
+				      length, sig);
 }
 
 static const struct gensec_security_ops gensec_schannel_security_ops = {
