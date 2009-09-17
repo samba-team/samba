@@ -272,6 +272,73 @@ _PUBLIC_ enum ndr_err_code ndr_pull_WERROR(struct ndr_pull *ndr, int ndr_flags, 
 	return NDR_ERR_SUCCESS;
 }
 
+
+/*
+  parse a uint8_t enum
+*/
+_PUBLIC_ enum ndr_err_code ndr_pull_enum_uint8(struct ndr_pull *ndr, int ndr_flags, uint8_t *v)
+{
+	return ndr_pull_uint8(ndr, ndr_flags, v);
+}
+
+/*
+  parse a uint16_t enum (uint32_t on NDR64)
+*/
+_PUBLIC_ enum ndr_err_code ndr_pull_enum_uint16(struct ndr_pull *ndr, int ndr_flags, uint16_t *v)
+{
+	if (unlikely(ndr->flags & LIBNDR_FLAG_NDR64)) {
+		uint32_t v32;
+		NDR_CHECK(ndr_pull_uint32(ndr, ndr_flags, &v32));
+		*v = v32;
+		if (v32 != *v) {
+			DEBUG(0,(__location__ ": non-zero upper 16 bits 0x%08x\n", (unsigned)v32));
+			return NDR_ERR_NDR64;
+		}
+		return NDR_ERR_SUCCESS;
+	}
+	NDR_PULL_ALIGN(ndr, 2);
+	NDR_PULL_NEED_BYTES(ndr, 2);
+	*v = NDR_SVAL(ndr, ndr->offset);
+	ndr->offset += 2;
+	return NDR_ERR_SUCCESS;
+}
+
+/*
+  parse a uint32_t enum
+*/
+_PUBLIC_ enum ndr_err_code ndr_pull_enum_uint32(struct ndr_pull *ndr, int ndr_flags, uint32_t *v)
+{
+	return ndr_pull_uint32(ndr, ndr_flags, v);
+}
+
+/*
+  push a uint8_t enum
+*/
+_PUBLIC_ enum ndr_err_code ndr_push_enum_uint8(struct ndr_push *ndr, int ndr_flags, uint8_t v)
+{
+	return ndr_push_uint8(ndr, ndr_flags, v);
+}
+
+/*
+  push a uint16_t enum (uint32_t on NDR64)
+*/
+_PUBLIC_ enum ndr_err_code ndr_push_enum_uint16(struct ndr_push *ndr, int ndr_flags, uint16_t v)
+{
+	if (unlikely(ndr->flags & LIBNDR_FLAG_NDR64)) {
+		return ndr_push_uint32(ndr, ndr_flags, v);
+	}
+	return ndr_push_uint16(ndr, ndr_flags, v);
+}
+
+/*
+  push a uint32_t enum
+*/
+_PUBLIC_ enum ndr_err_code ndr_push_enum_uint32(struct ndr_push *ndr, int ndr_flags, uint32_t v)
+{
+	return ndr_push_uint32(ndr, ndr_flags, v);
+}
+
+
 /*
   push a WERROR
 */
