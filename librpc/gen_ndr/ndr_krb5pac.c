@@ -103,7 +103,7 @@ _PUBLIC_ void ndr_print_PAC_SIGNATURE_DATA(struct ndr_print *ndr, const char *na
 static enum ndr_err_code ndr_push_PAC_LOGON_INFO(struct ndr_push *ndr, int ndr_flags, const struct PAC_LOGON_INFO *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_align(ndr, 5));
 		NDR_CHECK(ndr_push_netr_SamInfo3(ndr, NDR_SCALARS, &r->info3));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->res_group_dom_sid));
 		NDR_CHECK(ndr_push_samr_RidWithAttributeArray(ndr, NDR_SCALARS, &r->res_groups));
@@ -123,7 +123,7 @@ static enum ndr_err_code ndr_pull_PAC_LOGON_INFO(struct ndr_pull *ndr, int ndr_f
 	uint32_t _ptr_res_group_dom_sid;
 	TALLOC_CTX *_mem_save_res_group_dom_sid_0;
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_align(ndr, 5));
 		NDR_CHECK(ndr_pull_netr_SamInfo3(ndr, NDR_SCALARS, &r->info3));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_res_group_dom_sid));
 		if (_ptr_res_group_dom_sid) {
@@ -164,7 +164,7 @@ _PUBLIC_ void ndr_print_PAC_LOGON_INFO(struct ndr_print *ndr, const char *name, 
 _PUBLIC_ enum ndr_err_code ndr_push_PAC_LOGON_INFO_CTR(struct ndr_push *ndr, int ndr_flags, const struct PAC_LOGON_INFO_CTR *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_align(ndr, 5));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->info));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -180,7 +180,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_PAC_LOGON_INFO_CTR(struct ndr_pull *ndr, int
 	uint32_t _ptr_info;
 	TALLOC_CTX *_mem_save_info_0;
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_align(ndr, 5));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info));
 		if (_ptr_info) {
 			NDR_PULL_ALLOC(ndr, r->info);
@@ -439,7 +439,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_PAC_DATA(struct ndr_push *ndr, int ndr_flags
 {
 	uint32_t cntr_buffers_0;
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_align(ndr, 5));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->num_buffers));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->version));
 		for (cntr_buffers_0 = 0; cntr_buffers_0 < r->num_buffers; cntr_buffers_0++) {
@@ -459,7 +459,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_PAC_DATA(struct ndr_pull *ndr, int ndr_flags
 	uint32_t cntr_buffers_0;
 	TALLOC_CTX *_mem_save_buffers_0;
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_align(ndr, 5));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->num_buffers));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->version));
 		NDR_PULL_ALLOC_N(ndr, r->buffers, r->num_buffers);
@@ -504,7 +504,7 @@ _PUBLIC_ void ndr_print_PAC_DATA(struct ndr_print *ndr, const char *name, const 
 _PUBLIC_ enum ndr_err_code ndr_push_PAC_BUFFER_RAW(struct ndr_push *ndr, int ndr_flags, const struct PAC_BUFFER_RAW *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_align(ndr, 5));
 		NDR_CHECK(ndr_push_PAC_TYPE(ndr, NDR_SCALARS, r->type));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->ndr_size));
 		{
@@ -539,7 +539,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_PAC_BUFFER_RAW(struct ndr_pull *ndr, int ndr
 	uint32_t _ptr_info;
 	TALLOC_CTX *_mem_save_info_0;
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_align(ndr, 5));
 		NDR_CHECK(ndr_pull_PAC_TYPE(ndr, NDR_SCALARS, &r->type));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->ndr_size));
 		{
@@ -601,7 +601,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_PAC_DATA_RAW(struct ndr_push *ndr, int ndr_f
 {
 	uint32_t cntr_buffers_0;
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_align(ndr, 5));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->num_buffers));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->version));
 		for (cntr_buffers_0 = 0; cntr_buffers_0 < r->num_buffers; cntr_buffers_0++) {
@@ -621,7 +621,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_PAC_DATA_RAW(struct ndr_pull *ndr, int ndr_f
 	uint32_t cntr_buffers_0;
 	TALLOC_CTX *_mem_save_buffers_0;
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_align(ndr, 5));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->num_buffers));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->version));
 		NDR_PULL_ALLOC_N(ndr, r->buffers, r->num_buffers);
@@ -718,7 +718,7 @@ _PUBLIC_ void ndr_print_PAC_Validate(struct ndr_print *ndr, const char *name, co
 _PUBLIC_ enum ndr_err_code ndr_push_netsamlogoncache_entry(struct ndr_push *ndr, int ndr_flags, const struct netsamlogoncache_entry *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_align(ndr, 5));
 		NDR_CHECK(ndr_push_time_t(ndr, NDR_SCALARS, r->timestamp));
 		NDR_CHECK(ndr_push_netr_SamInfo3(ndr, NDR_SCALARS, &r->info3));
 	}
@@ -731,7 +731,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_netsamlogoncache_entry(struct ndr_push *ndr,
 _PUBLIC_ enum ndr_err_code ndr_pull_netsamlogoncache_entry(struct ndr_pull *ndr, int ndr_flags, struct netsamlogoncache_entry *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_align(ndr, 5));
 		NDR_CHECK(ndr_pull_time_t(ndr, NDR_SCALARS, &r->timestamp));
 		NDR_CHECK(ndr_pull_netr_SamInfo3(ndr, NDR_SCALARS, &r->info3));
 	}

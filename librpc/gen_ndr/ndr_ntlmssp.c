@@ -253,7 +253,7 @@ static enum ndr_err_code ndr_pull_ntlmssp_Version(struct ndr_pull *ndr, int ndr_
 _PUBLIC_ enum ndr_err_code ndr_push_NEGOTIATE_MESSAGE(struct ndr_push *ndr, int ndr_flags, const struct NEGOTIATE_MESSAGE *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_align(ndr, 5));
 		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, "NTLMSSP", 8, sizeof(uint8_t), CH_DOS));
 		NDR_CHECK(ndr_push_ntlmssp_MessageType(ndr, NDR_SCALARS, NtLmNegotiate));
 		NDR_CHECK(ndr_push_NEGOTIATE(ndr, NDR_SCALARS, r->NegotiateFlags));
@@ -317,7 +317,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_NEGOTIATE_MESSAGE(struct ndr_pull *ndr, int 
 	uint32_t _ptr_Workstation;
 	TALLOC_CTX *_mem_save_Workstation_0;
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_align(ndr, 5));
 		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->Signature, 8, sizeof(uint8_t), CH_DOS));
 		NDR_CHECK(ndr_pull_ntlmssp_MessageType(ndr, NDR_SCALARS, &r->MessageType));
 		NDR_CHECK(ndr_pull_NEGOTIATE(ndr, NDR_SCALARS, &r->NegotiateFlags));
@@ -968,7 +968,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_CHALLENGE_MESSAGE(struct ndr_push *ndr, int 
 		uint32_t _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
 		if (ndr_flags & NDR_SCALARS) {
-			NDR_CHECK(ndr_push_align(ndr, 4));
+			NDR_CHECK(ndr_push_align(ndr, 5));
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, "NTLMSSP", 8, sizeof(uint8_t), CH_DOS));
 			NDR_CHECK(ndr_push_ntlmssp_MessageType(ndr, NDR_SCALARS, NtLmChallenge));
 			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, ndr_ntlmssp_string_length(r->NegotiateFlags, r->TargetName)));
@@ -1029,7 +1029,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_CHALLENGE_MESSAGE(struct ndr_pull *ndr, int 
 		uint32_t _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
 		if (ndr_flags & NDR_SCALARS) {
-			NDR_CHECK(ndr_pull_align(ndr, 4));
+			NDR_CHECK(ndr_pull_align(ndr, 5));
 			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->Signature, 8, sizeof(uint8_t), CH_DOS));
 			NDR_CHECK(ndr_pull_ntlmssp_MessageType(ndr, NDR_SCALARS, &r->MessageType));
 			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->TargetNameLen));
@@ -1593,7 +1593,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_AUTHENTICATE_MESSAGE(struct ndr_push *ndr, i
 		uint32_t _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
 		if (ndr_flags & NDR_SCALARS) {
-			NDR_CHECK(ndr_push_align(ndr, 4));
+			NDR_CHECK(ndr_push_align(ndr, 5));
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, "NTLMSSP", 8, sizeof(uint8_t), CH_DOS));
 			NDR_CHECK(ndr_push_ntlmssp_MessageType(ndr, NDR_SCALARS, NtLmAuthenticate));
 			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->LmChallengeResponseLen));
@@ -1730,7 +1730,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_AUTHENTICATE_MESSAGE(struct ndr_pull *ndr, i
 		uint32_t _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
 		if (ndr_flags & NDR_SCALARS) {
-			NDR_CHECK(ndr_pull_align(ndr, 4));
+			NDR_CHECK(ndr_pull_align(ndr, 5));
 			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->Signature, 8, sizeof(uint8_t), CH_DOS));
 			NDR_CHECK(ndr_pull_ntlmssp_MessageType(ndr, NDR_SCALARS, &r->MessageType));
 			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->LmChallengeResponseLen));

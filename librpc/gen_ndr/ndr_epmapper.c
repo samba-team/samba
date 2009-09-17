@@ -1630,7 +1630,7 @@ _PUBLIC_ void ndr_print_epm_twr_t(struct ndr_print *ndr, const char *name, const
 static enum ndr_err_code ndr_push_epm_entry_t(struct ndr_push *ndr, int ndr_flags, const struct epm_entry_t *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_align(ndr, 5));
 		NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->object));
 		NDR_CHECK(ndr_push_full_ptr(ndr, r->tower));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
@@ -1650,7 +1650,7 @@ static enum ndr_err_code ndr_pull_epm_entry_t(struct ndr_pull *ndr, int ndr_flag
 	uint32_t _ptr_tower;
 	TALLOC_CTX *_mem_save_tower_0;
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_align(ndr, 5));
 		NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->object));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_tower));
 		if (_ptr_tower) {
@@ -1729,7 +1729,7 @@ _PUBLIC_ void ndr_print_rpc_if_id_t(struct ndr_print *ndr, const char *name, con
 static enum ndr_err_code ndr_push_epm_twr_p_t(struct ndr_push *ndr, int ndr_flags, const struct epm_twr_p_t *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_align(ndr, 5));
 		NDR_CHECK(ndr_push_full_ptr(ndr, r->twr));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -1745,7 +1745,7 @@ static enum ndr_err_code ndr_pull_epm_twr_p_t(struct ndr_pull *ndr, int ndr_flag
 	uint32_t _ptr_twr;
 	TALLOC_CTX *_mem_save_twr_0;
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_align(ndr, 5));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_twr));
 		if (_ptr_twr) {
 			NDR_PULL_ALLOC(ndr, r->twr);
@@ -1782,7 +1782,7 @@ static enum ndr_err_code ndr_push_epm_Insert(struct ndr_push *ndr, int flags, co
 	uint32_t cntr_entries_0;
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.num_ents));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.num_ents));
+		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->in.num_ents));
 		for (cntr_entries_0 = 0; cntr_entries_0 < r->in.num_ents; cntr_entries_0++) {
 			NDR_CHECK(ndr_push_epm_entry_t(ndr, NDR_SCALARS, &r->in.entries[cntr_entries_0]));
 		}
@@ -1864,7 +1864,7 @@ static enum ndr_err_code ndr_push_epm_Delete(struct ndr_push *ndr, int flags, co
 	uint32_t cntr_entries_0;
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.num_ents));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.num_ents));
+		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->in.num_ents));
 		for (cntr_entries_0 = 0; cntr_entries_0 < r->in.num_ents; cntr_entries_0++) {
 			NDR_CHECK(ndr_push_epm_entry_t(ndr, NDR_SCALARS, &r->in.entries[cntr_entries_0]));
 		}
@@ -1967,9 +1967,9 @@ static enum ndr_err_code ndr_push_epm_Lookup(struct ndr_push *ndr, int flags, co
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.num_ents));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.max_ents));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.num_ents));
+		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->in.max_ents));
+		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
+		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, *r->out.num_ents));
 		for (cntr_entries_0 = 0; cntr_entries_0 < *r->out.num_ents; cntr_entries_0++) {
 			NDR_CHECK(ndr_push_epm_entry_t(ndr, NDR_SCALARS, &r->out.entries[cntr_entries_0]));
 		}
@@ -2160,9 +2160,9 @@ _PUBLIC_ enum ndr_err_code ndr_push_epm_Map(struct ndr_push *ndr, int flags, con
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.num_towers));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.max_towers));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.num_towers));
+		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->in.max_towers));
+		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
+		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, *r->out.num_towers));
 		for (cntr_towers_0 = 0; cntr_towers_0 < *r->out.num_towers; cntr_towers_0++) {
 			NDR_CHECK(ndr_push_epm_twr_p_t(ndr, NDR_SCALARS, &r->out.towers[cntr_towers_0]));
 		}

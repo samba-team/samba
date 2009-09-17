@@ -11,7 +11,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_netlogon_creds_CredentialState(struct ndr_pu
 		uint32_t _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
 		if (ndr_flags & NDR_SCALARS) {
-			NDR_CHECK(ndr_push_align(ndr, 4));
+			NDR_CHECK(ndr_push_align(ndr, 5));
 			NDR_CHECK(ndr_push_netr_NegotiateFlags(ndr, NDR_SCALARS, r->negotiate_flags));
 			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->session_key, 16));
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sequence));
@@ -19,13 +19,13 @@ _PUBLIC_ enum ndr_err_code ndr_push_netlogon_creds_CredentialState(struct ndr_pu
 			NDR_CHECK(ndr_push_netr_Credential(ndr, NDR_SCALARS, &r->client));
 			NDR_CHECK(ndr_push_netr_Credential(ndr, NDR_SCALARS, &r->server));
 			NDR_CHECK(ndr_push_netr_SchannelType(ndr, NDR_SCALARS, r->secure_channel_type));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->computer_name, CH_UTF8)));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->computer_name, CH_UTF8)));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->computer_name, CH_UTF8)));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->computer_name, CH_UTF8)));
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->computer_name, ndr_charset_length(r->computer_name, CH_UTF8), sizeof(uint8_t), CH_UTF8));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->account_name, CH_UTF8)));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->account_name, CH_UTF8)));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->account_name, CH_UTF8)));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->account_name, CH_UTF8)));
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->account_name, ndr_charset_length(r->account_name, CH_UTF8), sizeof(uint8_t), CH_UTF8));
 			NDR_CHECK(ndr_push_unique_ptr(ndr, r->sid));
 		}
@@ -47,7 +47,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_netlogon_creds_CredentialState(struct ndr_pu
 		uint32_t _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
 		if (ndr_flags & NDR_SCALARS) {
-			NDR_CHECK(ndr_pull_align(ndr, 4));
+			NDR_CHECK(ndr_pull_align(ndr, 5));
 			NDR_CHECK(ndr_pull_netr_NegotiateFlags(ndr, NDR_SCALARS, &r->negotiate_flags));
 			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->session_key, 16));
 			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sequence));
