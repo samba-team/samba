@@ -637,8 +637,8 @@ NTSTATUS nt_status_string_to_code(const char *nt_status_str);
 /** Used by ntstatus_dos_equal: */
 extern bool ntstatus_check_dos_mapping;
 
-#define NT_STATUS_IS_OK(x) (NT_STATUS_V(x) == 0)
-#define NT_STATUS_IS_ERR(x) ((NT_STATUS_V(x) & 0xc0000000) == 0xc0000000)
+#define NT_STATUS_IS_OK(x) (likely(NT_STATUS_V(x) == 0))
+#define NT_STATUS_IS_ERR(x) (unlikely((NT_STATUS_V(x) & 0xc0000000) == 0xc0000000))
 /* checking for DOS error mapping here is ugly, but unfortunately the
    alternative is a very intrusive rewrite of the torture code */
 #if _SAMBA_BUILD_ == 4
@@ -648,7 +648,7 @@ extern bool ntstatus_check_dos_mapping;
 #endif
 
 #define NT_STATUS_HAVE_NO_MEMORY(x) do { \
-	if (!(x)) {\
+	if (unlikely(!(x))) {		\
 		return NT_STATUS_NO_MEMORY;\
 	}\
 } while (0)
