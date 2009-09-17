@@ -30,6 +30,9 @@
 #include "librpc/gen_ndr/ndr_named_pipe_auth.h"
 #include "system/passwd.h"
 #include "libcli/raw/smb.h"
+#include "auth/credentials/credentials.h"
+#include "auth/credentials/credentials_krb5.h"
+#include <gssapi/gssapi.h>
 
 struct named_pipe_socket {
 	const char *pipe_name;
@@ -53,6 +56,11 @@ static void named_pipe_handover_connection(void *private_data)
 
 	TEVENT_FD_NOT_WRITEABLE(conn->event.fde);
 
+	packet_set_socket(pipe_conn->packet, NULL);
+	packet_set_event_context(pipe_conn->packet, NULL);
+	packet_set_fde(pipe_conn->packet, NULL);
+	TALLOC_FREE(pipe_conn->packet);
+
 	if (!NT_STATUS_IS_OK(pipe_conn->status)) {
 		stream_terminate_connection(conn, nt_errstr(pipe_conn->status));
 		return;
@@ -63,7 +71,7 @@ static void named_pipe_handover_connection(void *private_data)
 	 */
 	conn->ops		= pipe_conn->pipe_sock->ops;
 	conn->private_data	= pipe_conn->pipe_sock->private_data;
-	talloc_free(pipe_conn);
+	talloc_unlink(conn, pipe_conn);
 
 	/* we're now ready to start receiving events on this stream */
 	TEVENT_FD_READABLE(conn->event.fde);
@@ -214,6 +222,94 @@ static NTSTATUS named_pipe_recv_auth_request(void *private_data,
 		talloc_steal(conn->session_info, req.info.info2.session_key);
 
 		break;
+	case 3:
+		rep.level = 3;
+		rep.info.info3.file_type = FILE_TYPE_MESSAGE_MODE_PIPE;
+		rep.info.info3.device_state = 0xff | 0x0400 | 0x0100;
+		rep.info.info3.allocation_size = 4096;
+
+		if (!req.info.info3.sam_info3) {
+			/*
+			 * anon connection, we don't create a session info
+			 * and leave it NULL
+			 */
+			rep.status = NT_STATUS_OK;
+			break;
+		}
+
+		val.sam3 = req.info.info3.sam_info3;
+
+		rep.status = make_server_info_netlogon_validation(pipe_conn,
+						val.sam3->base.account_name.string,
+						3, &val, &server_info);
+		if (!NT_STATUS_IS_OK(rep.status)) {
+			DEBUG(2, ("make_server_info_netlogon_validation returned "
+				  "%s\n", nt_errstr(rep.status)));
+			goto reply;
+		}
+
+		/* setup the session_info on the connection */
+		rep.status = auth_generate_session_info(conn,
+							conn->event.ctx,
+							conn->lp_ctx,
+							server_info,
+							&conn->session_info);
+		if (!NT_STATUS_IS_OK(rep.status)) {
+			DEBUG(2, ("auth_generate_session_info failed: %s\n",
+				  nt_errstr(rep.status)));
+			goto reply;
+		}
+
+		if (req.info.info3.gssapi_delegated_creds_length) {
+			OM_uint32 minor_status;
+			gss_buffer_desc cred_token;
+			gss_cred_id_t cred_handle;
+			int ret;
+
+			DEBUG(10, ("named_pipe_auth: delegated credentials supplied by client\n"));
+
+			cred_token.value = req.info.info3.gssapi_delegated_creds;
+			cred_token.length = req.info.info3.gssapi_delegated_creds_length;
+
+			ret = gss_import_cred(&minor_status,
+					       &cred_token,
+					       &cred_handle);
+			if (ret != GSS_S_COMPLETE) {
+				rep.status = NT_STATUS_INTERNAL_ERROR;
+				goto reply;
+			}
+
+			conn->session_info->credentials = cli_credentials_init(conn->session_info);
+			if (!conn->session_info->credentials) {
+				rep.status = NT_STATUS_NO_MEMORY;
+				goto reply;
+			}
+
+			cli_credentials_set_conf(conn->session_info->credentials,
+						 conn->lp_ctx);
+			/* Just so we don't segfault trying to get at a username */
+			cli_credentials_set_anonymous(conn->session_info->credentials);
+
+			ret = cli_credentials_set_client_gss_creds(conn->session_info->credentials,
+								   conn->event.ctx,
+								   conn->lp_ctx,
+								   cred_handle,
+								   CRED_SPECIFIED);
+			if (ret) {
+				rep.status = NT_STATUS_INTERNAL_ERROR;
+				goto reply;
+			}
+
+			/* This credential handle isn't useful for password authentication, so ensure nobody tries to do that */
+			cli_credentials_set_kerberos_state(conn->session_info->credentials,
+							   CRED_MUST_USE_KERBEROS);
+		}
+
+		conn->session_info->session_key = data_blob_const(req.info.info3.session_key,
+							req.info.info3.session_key_length);
+		talloc_steal(conn->session_info, req.info.info3.session_key);
+
+		break;
 	default:
 		DEBUG(2, ("named_pipe_auth_req: unknown level %u\n",
 			  req.level));
@@ -235,7 +331,7 @@ reply:
 		return status;
 	}
 
-	DEBUG(10,("named_pipe_auth reply[%u]\n", rep_blob.length));
+	DEBUG(10,("named_pipe_auth reply[%u]\n", (unsigned)rep_blob.length));
 	dump_data(11, rep_blob.data, rep_blob.length);
 	if (DEBUGLVL(10)) {
 		NDR_PRINT_DEBUG(named_pipe_auth_rep, &rep);
