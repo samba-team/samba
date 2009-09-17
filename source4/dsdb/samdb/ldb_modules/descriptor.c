@@ -1,4 +1,4 @@
-   /*
+/*
    ldb database library
 
    Copyright (C) Simo Sorce  2006-2008
