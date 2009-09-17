@@ -277,11 +277,8 @@ static NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 	DOM_SID *sids = NULL;
 	enum lsa_SidType *types = NULL;
 	char *full_name = NULL;
-	struct rpc_pipe_client *cli;
-	POLICY_HND lsa_policy;
 	NTSTATUS name_map_status = NT_STATUS_UNSUCCESSFUL;
 	char *mapped_name = NULL;
-	unsigned int orig_timeout;
 
 	if (name == NULL || *name=='\0') {
 		full_name = talloc_asprintf(mem_ctx, "%s", domain_name);
@@ -311,23 +308,9 @@ static NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 	DEBUG(3,("name_to_sid [rpc] %s for domain %s\n",
 		 full_name?full_name:"", domain_name ));
 
-	result = cm_connect_lsa(domain, mem_ctx, &cli, &lsa_policy);
-	if (!NT_STATUS_IS_OK(result))
-		return result;
-
-	/*
-	 * This call can take a long time
-	 * allow the server to time out.
-	 * 35 seconds should do it.
-	 */
-	orig_timeout = rpccli_set_timeout(cli, 35000);
-
-	result = rpccli_lsa_lookup_names(cli, mem_ctx, &lsa_policy, 1, 
-					 (const char**) &full_name, NULL, 1, &sids, &types);
-
-	/* And restore our original timeout. */
-	rpccli_set_timeout(cli, orig_timeout);
-
+	result = winbindd_lookup_names(mem_ctx, domain, 1,
+				       (const char **)&full_name, NULL,
+				       &sids, &types);
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
@@ -1229,6 +1212,43 @@ NTSTATUS winbindd_lookup_sids(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
+NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
+			       struct winbindd_domain *domain,
+			       uint32_t num_names,
+			       const char **names,
+			       const char ***domains,
+			       struct dom_sid **sids,
+			       enum lsa_SidType **types)
+{
+	NTSTATUS status;
+	struct rpc_pipe_client *cli = NULL;
+	struct policy_handle lsa_policy;
+	unsigned int orig_timeout;
+
+	status = cm_connect_lsa(domain, mem_ctx, &cli, &lsa_policy);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/*
+	 * This call can take a long time
+	 * allow the server to time out.
+	 * 35 seconds should do it.
+	 */
+	orig_timeout = rpccli_set_timeout(cli, 35000);
+
+	status = rpccli_lsa_lookup_names(cli, mem_ctx, &lsa_policy, num_names,
+					 names, domains, 1, sids, types);
+
+	/* And restore our original timeout. */
+	rpccli_set_timeout(cli, orig_timeout);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return status;
+}
 
 /* the rpc backend methods are exposed via this structure */
 struct winbindd_methods msrpc_methods = {
