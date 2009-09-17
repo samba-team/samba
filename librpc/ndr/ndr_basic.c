@@ -118,7 +118,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_int32(struct ndr_pull *ndr, int ndr_flags, i
 */
 _PUBLIC_ enum ndr_err_code ndr_pull_uint32(struct ndr_pull *ndr, int ndr_flags, uint32_t *v)
 {
-	uint32_t v2;
 	NDR_PULL_ALIGN(ndr, 4);
 	NDR_PULL_NEED_BYTES(ndr, 4);
 	*v = NDR_IVAL(ndr, ndr->offset);
