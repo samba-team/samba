@@ -952,7 +952,7 @@ msDS-Other-Settings: DisableVLVSupport=0
 msDS-Other-Settings: DynamicObjectMinTTL=900
 msDS-Other-Settings: DynamicObjectDefaultTTL=86400
 # "sPNMappings" needs to be enhanced when we add features
-sPNMappings: host=dns,netlogon,rpc,cifs,wins
+sPNMappings: host=dns,netlogon,rpc,cifs,wins,http
 tombstoneLifetime: 180
 
 dn: CN=Query-Policies,CN=Directory Service,CN=Windows NT,CN=Services,${CONFIGDN}
