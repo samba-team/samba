@@ -2825,7 +2825,6 @@ again:
 	*/
 	switch (verify_recmode(ctdb, nodemap)) {
 	case MONITOR_RECOVERY_NEEDED:
-		ctdb_set_culprit(rec, ctdb->pnn);
 		do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
 		goto again;
 	case MONITOR_FAILED:
