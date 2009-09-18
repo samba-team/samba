@@ -79,13 +79,10 @@ try:
 	min_pwd_age = int(abs(int(res[0]["minPwdAge"][0])) / (1e7 * 60 * 60 * 24))
 	max_pwd_age = int(abs(int(res[0]["maxPwdAge"][0])) / (1e7 * 60 * 60 * 24))
 except:
+	print "ERROR: Could not retrieve password properties!"
 	if args[0] == "show":
-		print "ERROR: Password informations missing in your AD domain object!"
 		print "So no settings can be displayed!"
-		sys.exit(1)
-	else:
-		print "ERROR: Could not retrieve password properties (used for password complexity setting)"
-		sys.exit(1)
+	sys.exit(1)
 
 if args[0] == "show":
 	message("Password informations for domain '" + domain_dn + "'")
