@@ -30,6 +30,8 @@ struct DsPrivate {
 	struct dcerpc_pipe *pipe;
 	struct policy_handle bind_handle;
 	struct GUID bind_guid;
+	struct drsuapi_DsBindInfo28 srv_bind_info;
+
 	const char *domain_obj_dn;
 	const char *domain_guid_str;
 	const char *domain_dns_name;
