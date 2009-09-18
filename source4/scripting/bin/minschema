@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # 
-#  work out the minimal schema for a set of objectclasses 
+# Works out the minimal schema for a set of objectclasses
 #
 
 import base64
