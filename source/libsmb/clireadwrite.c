@@ -154,6 +154,133 @@ NTSTATUS cli_read_andx_recv(struct async_req *req, ssize_t *received,
 	return NT_STATUS_OK;
 }
 
+struct cli_readall_state {
+	struct cli_state *cli;
+	uint16_t fnum;
+	off_t start_offset;
+	size_t size;
+	size_t received;
+	uint8_t *buf;
+};
+
+static void cli_readall_done(struct async_req *subreq);
+
+static struct async_req *cli_readall_send(TALLOC_CTX *mem_ctx,
+					  struct cli_state *cli,
+					  uint16_t fnum,
+					  off_t offset, size_t size)
+{
+	struct async_req *req, *subreq;
+	struct cli_readall_state *state;
+
+	req = async_req_new(mem_ctx, cli->event_ctx);
+	if (req == NULL) {
+		return NULL;
+	}
+	state = talloc(req, struct cli_readall_state);
+	if (state == NULL) {
+		TALLOC_FREE(req);
+		return NULL;
+	}
+	req->private_data = state;
+
+	state->cli = cli;
+	state->fnum = fnum;
+	state->start_offset = offset;
+	state->size = size;
+	state->received = 0;
+	state->buf = NULL;
+
+	subreq = cli_read_andx_send(state, cli, fnum, offset, size);
+	if (subreq == NULL) {
+		TALLOC_FREE(req);
+		return NULL;
+	}
+	subreq->async.fn = cli_readall_done;
+	subreq->async.priv = req;
+	return req;
+}
+
+static void cli_readall_done(struct async_req *subreq)
+{
+	struct async_req *req = talloc_get_type_abort(
+		subreq->async.priv, struct async_req);
+	struct cli_readall_state *state = talloc_get_type_abort(
+		req->private_data, struct cli_readall_state);
+	ssize_t received;
+	uint8_t *buf;
+	NTSTATUS status;
+
+	status = cli_read_andx_recv(subreq, &received, &buf);
+	if (!NT_STATUS_IS_OK(status)) {
+		async_req_error(req, status);
+		return;
+	}
+
+	if (received == 0) {
+		/* EOF */
+		async_req_done(req);
+		return;
+	}
+
+	if ((state->received == 0) && (received == state->size)) {
+		/* Ideal case: Got it all in one run */
+		state->buf = buf;
+		state->received += received;
+		async_req_done(req);
+		return;
+	}
+
+	/*
+	 * We got a short read, issue a read for the
+	 * rest. Unfortunately we have to allocate the buffer
+	 * ourselves now, as our caller expects to receive a single
+	 * buffer. cli_read_andx does it from the buffer received from
+	 * the net, but with a short read we have to put it together
+	 * from several reads.
+	 */
+
+	if (state->buf == NULL) {
+		state->buf = talloc_array(state, uint8_t, state->size);
+		if (async_req_nomem(state->buf, req)) {
+			return;
+		}
+	}
+	memcpy(state->buf + state->received, buf, received);
+	state->received += received;
+
+	TALLOC_FREE(subreq);
+
+	if (state->received >= state->size) {
+		async_req_done(req);
+		return;
+	}
+
+	subreq = cli_read_andx_send(state, state->cli, state->fnum,
+				    state->start_offset + state->received,
+				    state->size - state->received);
+	if (async_req_nomem(subreq, req)) {
+		return;
+	}
+	subreq->async.fn = cli_readall_done;
+	subreq->async.priv = req;
+}
+
+static NTSTATUS cli_readall_recv(struct async_req *req, ssize_t *received,
+				 uint8_t **rcvbuf)
+{
+	struct cli_readall_state *state = talloc_get_type_abort(
+		req->private_data, struct cli_readall_state);
+
+	SMB_ASSERT(req->state >= ASYNC_REQ_DONE);
+	if (req->state == ASYNC_REQ_ERROR) {
+		return req->status;
+	}
+	*received = state->received;
+	*rcvbuf = state->buf;
+	return NT_STATUS_OK;
+}
+
 /*
  * Parallel read support.
  *
@@ -161,6 +288,12 @@ NTSTATUS cli_read_andx_recv(struct async_req *req, ssize_t *received,
  * max_mux at a time. When replies flow back in, the data is written into
  * the callback function "sink" in the right order.
  */
+
+struct cli_pull_subreq {
+	struct async_req *req;
+	size_t received;
+	uint8_t *buf;
+};
 
 struct cli_pull_state {
 	struct async_req *req;
@@ -179,7 +312,7 @@ struct cli_pull_state {
 	 * Outstanding requests
 	 */
 	int num_reqs;
-	struct async_req **reqs;
+	struct cli_pull_subreq *reqs;
 
 	/*
 	 * For how many bytes did we send requests already?
@@ -268,7 +401,7 @@ struct async_req *cli_pull_send(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	state->num_reqs = MAX(window_size/state->chunk_size, 1);
 	state->num_reqs = MIN(state->num_reqs, cli->max_mux);
 
-	state->reqs = TALLOC_ZERO_ARRAY(state, struct async_req *,
+	state->reqs = TALLOC_ZERO_ARRAY(state, struct cli_pull_subreq,
 					state->num_reqs);
 	if (state->reqs == NULL) {
 		goto failed;
@@ -288,17 +421,17 @@ struct async_req *cli_pull_send(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		size_left = size - state->requested;
 		request_thistime = MIN(size_left, state->chunk_size);
 
-		state->reqs[i] = cli_read_andx_send(
+		state->reqs[i].req = cli_readall_send(
 			state->reqs, cli, fnum,
 			state->start_offset + state->requested,
 			request_thistime);
 
-		if (state->reqs[i] == NULL) {
+		if (state->reqs[i].req == NULL) {
 			goto failed;
 		}
 
-		state->reqs[i]->async.fn = cli_pull_read_done;
-		state->reqs[i]->async.priv = result;
+		state->reqs[i].req->async.fn = cli_pull_read_done;
+		state->reqs[i].req->async.priv = result;
 
 		state->requested += request_thistime;
 	}
@@ -320,15 +453,31 @@ static void cli_pull_read_done(struct async_req *read_req)
 		read_req->async.priv, struct async_req);
 	struct cli_pull_state *state = talloc_get_type_abort(
 		pull_req->private_data, struct cli_pull_state);
-	struct cli_request *read_state = cli_request_get(read_req);
+	ssize_t received;
+	uint8_t *buf;
 	NTSTATUS status;
+	int i;
 
-	status = cli_read_andx_recv(read_req, &read_state->data.read.received,
-				    &read_state->data.read.rcvbuf);
+	status = cli_readall_recv(read_req, &received, &buf);
 	if (!NT_STATUS_IS_OK(status)) {
 		async_req_error(state->req, status);
 		return;
 	}
+
+	for (i=0; i<state->num_reqs; i++) {
+		if (state->reqs[i].req == read_req) {
+			break;
+		}
+	}
+
+	if (i == state->num_reqs) {
+		/* Got something we did not send. Just drop it. */
+		TALLOC_FREE(read_req);
+		return;
+	}
+
+	state->reqs[i].received = received;
+	state->reqs[i].buf = buf;
 
 	/*
 	 * This loop is the one to take care of out-of-order replies. All
@@ -339,34 +488,33 @@ static void cli_pull_read_done(struct async_req *read_req)
 	 * requests.
 	 */
 
-	while (state->reqs[state->top_req] != NULL) {
-		struct cli_request *top_read;
+	while (state->reqs[state->top_req].req != NULL) {
+		struct cli_pull_subreq *top_read;
 
 		DEBUG(11, ("cli_pull_read_done: top_req = %d\n",
 			   state->top_req));
 
-		if (state->reqs[state->top_req]->state < ASYNC_REQ_DONE) {
+		if (state->reqs[state->top_req].req->state < ASYNC_REQ_DONE) {
 			DEBUG(11, ("cli_pull_read_done: top request not yet "
 				   "done\n"));
 			return;
 		}
 
-		top_read = cli_request_get(state->reqs[state->top_req]);
+		top_read = &state->reqs[state->top_req];
 
 		DEBUG(10, ("cli_pull_read_done: Pushing %d bytes, %d already "
-			   "pushed\n", (int)top_read->data.read.received,
+			   "pushed\n", (int)top_read->received,
 			   (int)state->pushed));
 
-		status = state->sink((char *)top_read->data.read.rcvbuf,
-				     top_read->data.read.received,
+		status = state->sink((char *)top_read->buf, top_read->received,
 				     state->priv);
 		if (!NT_STATUS_IS_OK(status)) {
 			async_req_error(state->req, status);
 			return;
 		}
-		state->pushed += top_read->data.read.received;
+		state->pushed += top_read->received;
 
-		TALLOC_FREE(state->reqs[state->top_req]);
+		TALLOC_FREE(state->reqs[state->top_req].req);
 
 		if (state->requested < state->size) {
 			struct async_req *new_req;
@@ -383,7 +531,7 @@ static void cli_pull_read_done(struct async_req *read_req)
 					 + state->requested),
 				   state->top_req));
 
-			new_req = cli_read_andx_send(
+			new_req = cli_readall_send(
 				state->reqs, state->cli, state->fnum,
 				state->start_offset + state->requested,
 				request_thistime);
@@ -395,7 +543,7 @@ static void cli_pull_read_done(struct async_req *read_req)
 			new_req->async.fn = cli_pull_read_done;
 			new_req->async.priv = pull_req;
 
-			state->reqs[state->top_req] = new_req;
+			state->reqs[state->top_req].req = new_req;
 			state->requested += request_thistime;
 		}
 
