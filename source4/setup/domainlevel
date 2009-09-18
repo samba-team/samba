@@ -11,7 +11,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(sys.argv[0]), "../bin/python"))
 
 import samba.getopt as options
 import optparse
-import pwd
 import ldb
 
 from samba.auth import system_session
