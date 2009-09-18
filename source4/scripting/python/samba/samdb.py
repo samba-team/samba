@@ -37,7 +37,7 @@ class SamDB(samba.Ldb):
 
     def __init__(self, url=None, lp=None, modules_dir=None, session_info=None,
                  credentials=None, flags=0, options=None):
-        """Opens the Sam Database.
+        """Opens the SAM Database
         For parameter meanings see the super class (samba.Ldb)
         """
 
@@ -55,13 +55,25 @@ class SamDB(samba.Ldb):
         super(SamDB, self).connect(url=self.lp.private_path(url), flags=flags,
                 options=options)
 
-    def enable_account(self, user_dn):
-        """Enable an account.
+    def domain_dn(self):
+        # find the DNs for the domain
+        res = self.search(base="",
+                          scope=ldb.SCOPE_BASE,
+                          expression="(defaultNamingContext=*)",
+                          attrs=["defaultNamingContext"])
+        assert(len(res) == 1 and res[0]["defaultNamingContext"] is not None)
+        return res[0]["defaultNamingContext"][0]
+
+    def enable_account(self, filter):
+        """Enables an account
         
-        :param user_dn: Dn of the account to enable.
+        :param filter: LDAP filter to find the user (eg samccountname=name)
         """
-        res = self.search(user_dn, ldb.SCOPE_BASE, None, ["userAccountControl"])
-        assert len(res) == 1
+        res = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
+                          expression=filter, attrs=["userAccountControl"])
+        assert(len(res) == 1)
+        user_dn = res[0].dn
+
         userAccountControl = int(res[0]["userAccountControl"][0])
         if (userAccountControl & 0x2):
             userAccountControl = userAccountControl & ~0x2 # remove disabled bit
@@ -76,11 +88,16 @@ userAccountControl: %u
 """ % (user_dn, userAccountControl)
         self.modify_ldif(mod)
         
-    def force_password_change_at_next_login(self, user_dn):
-        """Force a password change at next login
+    def force_password_change_at_next_login(self, filter):
+        """Forces a password change at next login
         
-        :param user_dn: Dn of the account to force password change on
+        :param filter: LDAP filter to find the user (eg samccountname=name)
         """
+        res = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
+                          expression=filter, attrs=[])
+        assert(len(res) == 1)
+        user_dn = res[0].dn
+
         mod = """
 dn: %s
 changetype: modify
@@ -89,17 +106,12 @@ pwdLastSet: 0
 """ % (user_dn)
         self.modify_ldif(mod)
 
-    def domain_dn(self):
-        # find the DNs for the domain
-        res = self.search(base="",
-                          scope=ldb.SCOPE_BASE,
-                          expression="(defaultNamingContext=*)", 
-                          attrs=["defaultNamingContext"])
-        assert(len(res) == 1 and res[0]["defaultNamingContext"] is not None)
-        return res[0]["defaultNamingContext"][0]
-
     def newuser(self, username, unixname, password, force_password_change_at_next_login=False):
-        """add a new user record.
+        """Adds a new user
+
+        Note: This call uses the "userPassword" attribute to set the password.
+        This works correctly on SAMBA 4 DCs and on Windows DCs with
+        "2003 Native" or higer domain function level.
         
         :param username: Name of the new user.
         :param unixname: Name of the unix user to map to.
@@ -110,11 +122,8 @@ pwdLastSet: 0
         try:
             user_dn = "CN=%s,CN=Users,%s" % (username, self.domain_dn())
 
-            #
-            #  the new user record. note the reliance on the samdb module to 
-            #  fill in a sid, guid etc
-            #
-            #  now the real work
+            # The new user record. Note the reliance on the SAMLDB module which
+            # fills in the default informations
             self.add({"dn": user_dn, 
                 "sAMAccountName": username,
                 "userPassword": password,
@@ -130,30 +139,34 @@ pwdLastSet: 0
                 idmap = IDmapDB(lp=self.lp)
 
                 user = pwd.getpwnam(unixname)
+
                 # setup ID mapping for this UID
-                
                 idmap.setup_name_mapping(user_sid, idmap.TYPE_UID, user[2])
 
             except KeyError:
                 pass
 
             if force_password_change_at_next_login:
-                self.force_password_change_at_next_login(user_dn)
+                self.force_password_change_at_next_login("(dn=" + user_dn + ")")
 
             #  modify the userAccountControl to remove the disabled bit
-            self.enable_account(user_dn)
+            self.enable_account("(dn=" + user_dn + ")")
         except:
             self.transaction_cancel()
             raise
         self.transaction_commit()
 
     def setpassword(self, filter, password, force_password_change_at_next_login=False):
-        """Set a password on a user record
+        """Sets the password for a user
         
+        Note: This call uses the "userPassword" attribute to set the password.
+        This works correctly on SAMBA 4 DCs and on Windows DCs with
+        "2003 Native" or higer domain function level.
+
         :param filter: LDAP filter to find the user (eg samccountname=name)
         :param password: Password for the user
+        :param force_password_change_at_next_login: Force password change
         """
-        # connect to the sam 
         self.transaction_start()
         try:
             res = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
@@ -174,24 +187,27 @@ userPassword:: %s
                 self.force_password_change_at_next_login(user_dn)
 
             #  modify the userAccountControl to remove the disabled bit
-            self.enable_account(user_dn)
+            self.enable_account(filter)
         except:
             self.transaction_cancel()
             raise
         self.transaction_commit()
 
-    def setexpiry(self, user, expiry_seconds, noexpiry):
-        """Set the account expiry for a user
+    def setexpiry(self, filter, expiry_seconds, noexpiry=False):
+        """Sets the account expiry for a user
         
+        :param filter: LDAP filter to find the user (eg samccountname=name)
         :param expiry_seconds: expiry time from now in seconds
         :param noexpiry: if set, then don't expire password
         """
         self.transaction_start()
         try:
             res = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
-                              expression=("(samAccountName=%s)" % user),
+                              expression=filter,
                               attrs=["userAccountControl", "accountExpires"])
             assert len(res) == 1
+            user_dn = res[0].dn
+
             userAccountControl = int(res[0]["userAccountControl"][0])
             accountExpires     = int(res[0]["accountExpires"][0])
             if noexpiry:
@@ -201,16 +217,16 @@ userPassword:: %s
                 userAccountControl = userAccountControl & ~0x10000
                 accountExpires = glue.unix2nttime(expiry_seconds + int(time.time()))
 
-            mod = """
+            setexp = """
 dn: %s
 changetype: modify
 replace: userAccountControl
 userAccountControl: %u
 replace: accountExpires
 accountExpires: %u
-""" % (res[0].dn, userAccountControl, accountExpires)
-            # now change the database
-            self.modify_ldif(mod)
+""" % (user_dn, userAccountControl, accountExpires)
+
+            self.modify_ldif(setexp)
         except:
             self.transaction_cancel()
             raise
