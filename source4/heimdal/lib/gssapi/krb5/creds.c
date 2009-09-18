@@ -249,5 +249,6 @@ _gsskrb5_import_cred(OM_uint32 * minor_status,
     handle->ccache = id;
     handle->cred_flags = flags;
 
+    *cred_handle = (gss_cred_id_t)handle;
     return GSS_S_COMPLETE;
 }
