@@ -216,6 +216,7 @@ int hpuxacl_sys_acl_set_file(vfs_handle_struct *handle,
 	HPUX_ACL_T hpux_acl = NULL;
 	int count;
 	struct smb_filename *smb_fname = NULL;
+	NTSTATUS status;
 	
 	DEBUG(10, ("hpuxacl_sys_acl_set_file called for file '%s'\n",
 		   name));
