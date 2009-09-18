@@ -1421,8 +1421,10 @@ static void talloc_report_depth_FILE_helper(const void *ptr, int depth, int max_
 */
 void talloc_report_depth_file(const void *ptr, int depth, int max_depth, FILE *f)
 {
-	talloc_report_depth_cb(ptr, depth, max_depth, talloc_report_depth_FILE_helper, f);
-	fflush(f);
+	if (f) {
+		talloc_report_depth_cb(ptr, depth, max_depth, talloc_report_depth_FILE_helper, f);
+		fflush(f);
+	}
 }
 
 /*
