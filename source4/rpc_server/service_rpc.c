@@ -28,6 +28,7 @@
 #include "../lib/util/dlinklist.h"
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/dcerpc_server_proto.h"
+#include "rpc_server/service_rpc.h"
 #include "lib/events/events.h"
 #include "smbd/service_task.h"
 #include "smbd/service_stream.h"
@@ -658,11 +659,11 @@ static NTSTATUS dcesrv_add_ep_tcp(struct dcesrv_context *dce_ctx,
 	return NT_STATUS_OK;
 }
 
-
-static NTSTATUS dcesrv_add_ep(struct dcesrv_context *dce_ctx, 
-			      struct loadparm_context *lp_ctx,
-			      struct dcesrv_endpoint *e,
-			  struct tevent_context *event_ctx, const struct model_ops *model_ops)
+NTSTATUS dcesrv_add_ep(struct dcesrv_context *dce_ctx,
+		       struct loadparm_context *lp_ctx,
+		       struct dcesrv_endpoint *e,
+		       struct tevent_context *event_ctx,
+		       const struct model_ops *model_ops)
 {
 	switch (e->ep_description->transport) {
 	case NCACN_UNIX_STREAM:

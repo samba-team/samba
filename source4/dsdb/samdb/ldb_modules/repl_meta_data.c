@@ -2123,7 +2123,9 @@ linked_attributes[0]:
 		talloc_free(tmp_ctx);
 		return ret;
 	}
-	ret_el->values = talloc_array(msg, struct ldb_val, 1);
+	/* we allocate two entries here, in case we need a remove/add
+	   pair */
+	ret_el->values = talloc_array(msg, struct ldb_val, 2);
 	if (!ret_el->values) {
 		ldb_oom(ldb);
 		talloc_free(tmp_ctx);
@@ -2168,10 +2170,48 @@ linked_attributes[0]:
 		ret = ldb_wait(mod_req->handle, LDB_WAIT_ALL);
 	}
 
+	if (ret == LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS) {
+		/* the link destination exists, we need to update it
+		 * by deleting the old one for the same DN then adding
+		 * the new one */
+		msg->elements = talloc_realloc(msg, msg->elements,
+					       struct ldb_message_element,
+					       msg->num_elements+1);
+		if (msg->elements == NULL) {
+			ldb_oom(ldb);
+			talloc_free(tmp_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		/* this relies on the backend matching the old entry
+		   only by the DN portion of the extended DN */
+		msg->elements[1] = msg->elements[0];
+		msg->elements[0].flags = LDB_FLAG_MOD_DELETE;
+		msg->num_elements++;
+
+		ret = ldb_build_mod_req(&mod_req, ldb, tmp_ctx,
+					msg,
+					NULL,
+					NULL, 
+					ldb_op_default_callback,
+					NULL);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+
+		/* Run the new request */
+		ret = ldb_next_request(module, mod_req);
+		
+		if (ret == LDB_SUCCESS) {
+			ret = ldb_wait(mod_req->handle, LDB_WAIT_ALL);
+		}
+	}
+
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_WARNING, "Failed to apply linked attribute change '%s' %s\n",
 			  ldb_errstring(ldb),
 			  ldb_ldif_message_string(ldb, tmp_ctx, LDB_CHANGETYPE_MODIFY, msg));
+		ret = LDB_SUCCESS;
 	}
 	
 	talloc_free(tmp_ctx);

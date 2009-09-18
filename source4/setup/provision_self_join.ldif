@@ -1,41 +1,43 @@
-# Join the DC to itself
+# Accounts for selfjoin (joins DC to itself)
 
+# Object under "Domain Controllers"
 dn: CN=${NETBIOSNAME},OU=Domain Controllers,${DOMAINDN}
 objectClass: top
 objectClass: person
 objectClass: organizationalPerson
 objectClass: user
 objectClass: computer
-userAccountControl: 532480
-localPolicyFlags: 0
-primaryGroupID: 516
 accountExpires: 9223372036854775807
-sAMAccountName: ${NETBIOSNAME}$
+dNSHostName: ${DNSNAME}
+# "frsComputerReferenceBL" doesn't exist since we still miss FRS support
+isCriticalSystemObject: TRUE
+localPolicyFlags: 0
 operatingSystem: Samba
 operatingSystemVersion: ${SAMBA_VERSION_STRING}
-dNSHostName: ${DNSNAME}
-userPassword:: ${MACHINEPASS_B64}
-servicePrincipalName: HOST/${DNSNAME}
-servicePrincipalName: HOST/${NETBIOSNAME}
-servicePrincipalName: HOST/${DNSNAME}/${REALM}
-servicePrincipalName: HOST/${NETBIOSNAME}/${REALM}
+primaryGroupID: 516
+# "rIDSetReferences" doesn't exist since we still miss distributed RIDs
+sAMAccountName: ${NETBIOSNAME}$
+# "servicePrincipalName" for FRS doesn't exit since we still miss FRS support
+# "servicePrincipalName"s for DNS ("ldap/../ForestDnsZones",
+# "ldap/../DomainDnsZones", "DNS/..") don't exist since we don't support AD DNS
+servicePrincipalName: GC/${DNSNAME}/${REALM}
 servicePrincipalName: HOST/${DNSNAME}/${DOMAIN}
-servicePrincipalName: HOST/${NETBIOSNAME}/${DOMAIN}
-isCriticalSystemObject: TRUE
+servicePrincipalName: HOST/${NETBIOSNAME}
+servicePrincipalName: HOST/${DNSNAME}
+servicePrincipalName: HOST/${DNSNAME}/${REALM}
+# "servicePrincipalName"s with GUIDs are located in
+# "provision_self_join_modify.ldif"
+servicePrincipalName: ldap/${DNSNAME}/${DOMAIN}
+servicePrincipalName: ldap/${NETBIOSNAME}
+servicePrincipalName: ldap/${DNSNAME}
+servicePrincipalName: ldap/${DNSNAME}/${REALM}
+userAccountControl: 532480
+userPassword:: ${MACHINEPASS_B64}
 
-#Provide a account for DNS keytab export
-dn: CN=dns,CN=Users,${DOMAINDN}
-objectClass: top
-objectClass: person
-objectClass: organizationalPerson
-objectClass: user
-description: DNS Service Account
-userAccountControl: 514
-accountExpires: 9223372036854775807
-sAMAccountName: dns
-servicePrincipalName: DNS/${DNSDOMAIN}
-userPassword:: ${DNSPASS_B64}
-isCriticalSystemObject: TRUE
+# Here are missing the objects for the NTFRS subscription and the RID set since
+# we don't support those techniques (FRS, distributed RIDs) yet.
+
+# Objects under "Configuration/Sites/<Default sitename>/Servers"
 
 dn: ${SERVERDN}
 objectClass: top
@@ -48,14 +50,34 @@ dn: CN=NTDS Settings,${SERVERDN}
 objectClass: top
 objectClass: applicationSettings
 objectClass: nTDSDSA
-options: 1
-systemFlags: 33554432
 dMDLocation: ${SCHEMADN}
-invocationId: ${INVOCATIONID}
-msDS-Behavior-Version: ${DOMAIN_CONTROLLER_FUNCTIONALITY}
-msDS-hasMasterNCs: ${CONFIGDN}
-msDS-hasMasterNCs: ${SCHEMADN}
-msDS-hasMasterNCs: ${DOMAINDN}
 hasMasterNCs: ${CONFIGDN}
 hasMasterNCs: ${SCHEMADN}
 hasMasterNCs: ${DOMAINDN}
+invocationId: ${INVOCATIONID}
+msDS-Behavior-Version: ${DOMAIN_CONTROLLER_FUNCTIONALITY}
+msDS-HasDomainNCs: ${DOMAINDN}
+# "msDS-HasInstantiatedNCs"s for DNS don't exist since we don't support AD DNS
+msDS-HasInstantiatedNCs: B:8:0000000D:${CONFIGDN}
+msDS-HasInstantiatedNCs: B:8:0000000D:${SCHEMADN}
+msDS-HasInstantiatedNCs: B:8:00000005:${DOMAINDN}
+# "msDS-hasMasterNCs"s for DNS don't exist since we don't support AD DNS
+msDS-hasMasterNCs: ${CONFIGDN}
+msDS-hasMasterNCs: ${SCHEMADN}
+msDS-hasMasterNCs: ${DOMAINDN}
+options: 1
+systemFlags: 33554432
+
+# Provides an account for DNS keytab export
+dn: CN=dns,CN=Users,${DOMAINDN}
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: user
+description: DNS Service Account
+userAccountControl: 514
+accountExpires: 9223372036854775807
+sAMAccountName: dns
+servicePrincipalName: DNS/${DNSDOMAIN}
+userPassword:: ${DNSPASS_B64}
+isCriticalSystemObject: TRUE

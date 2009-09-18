@@ -34,7 +34,7 @@ class IDmapDB(samba.Ldb):
 
     def __init__(self, url=None, lp=None, modules_dir=None, session_info=None,
                  credentials=None, flags=0, options=None):
-        """Opens the IDmap Database.
+        """Opens the IDMap Database
         For parameter meanings see the super class (samba.Ldb)
         """
 

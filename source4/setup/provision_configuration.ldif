@@ -15,6 +15,8 @@ isDeleted: TRUE
 isCriticalSystemObject: TRUE
 systemFlags: -1946157056
 
+# Extended rights
+
 dn: CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: container
@@ -637,11 +639,161 @@ appliesTo: bf967a8f-0de6-11d0-a285-00aa003049e2
 localizationDisplayId: 28
 validAccesses: 256
 
+# Forest updates
+
 dn: CN=ForestUpdates,${CONFIGDN}
 objectClass: top
 objectClass: container
 
 dn: CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=6b800a81-affe-4a15-8e41-6ea0c7aa89e4,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=dd07182c-3174-4c95-902a-d64fee285bbf,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=ffa5ee3c-1405-476d-b344-7ad37d69cc25,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=099f1587-af70-49c6-ab6c-7b3e82be0fe2,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=94fdebc6-8eeb-4640-80de-ec52b9ca17fa,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=1a3f6b15-55f2-4752-ba27-3d38a8232c4d,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=dee21a17-4e8e-4f40-a58c-c0c009b685a7,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=9bd98bb4-4047-4de5-bf4c-7bd1d0f6d21d,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=3fe80fbf-bf39-4773-b5bd-3e5767a30d2d,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=f02915e2-9141-4f73-b8e7-2804662782da,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=39902c52-ef24-4b4b-8033-2c9dfdd173a2,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=20bf09b4-6d0b-4cd1-9c09-4231edf1209b,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=94f238bb-831c-11d6-977b-00c04f613221,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=94f238bc-831c-11d6-977b-00c04f613221,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=94f238bd-831c-11d6-977b-00c04f613221,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=94f238be-831c-11d6-977b-00c04f613221,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=94f238bf-831c-11d6-977b-00c04f613221,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=94f238c0-831c-11d6-977b-00c04f613221,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=eda27b47-e610-11d6-9793-00c04f613221,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=eda27b48-e610-11d6-9793-00c04f613221,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=eda27b49-e610-11d6-9793-00c04f613221,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=eda27b4a-e610-11d6-9793-00c04f613221,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=26d9c510-e61a-11d6-9793-00c04f613221,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=26d9c511-e61a-11d6-9793-00c04f613221,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=3467dae5-dedd-4648-9066-f48ac186b20a,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=33b7ee33-1386-47cf-baa1-b03e06473253,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=e9ee8d55-c2fb-4723-a333-c80ff4dfbf45,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=ccfae63a-7fb5-454c-83ab-0e8e1214974e,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=ad3c7909-b154-4c16-8bf7-2c3a7870bb3d,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=26ad2ebf-f8f5-44a4-b97c-a616c8b9d09a,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=4444c516-f43a-4c12-9c4b-b5c064941d61,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=436a1a4b-f41a-46e6-ac86-427720ef29f3,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=b2b7fb45-f50d-41bc-a73b-8f580f3b636a,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=1bdf6366-c3db-4d0b-b8cb-f99ba9bce20f,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=63c0f51a-067c-4640-8a4f-044fb33f1049,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=dae441c0-366e-482e-98d9-60a99a1898cc,CN=Operations,CN=ForestUpdates,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=7dd09ca6-f0d6-43bf-b7f8-ef348f435617,CN=Operations,CN=ForestUpdates,${CONFIGDN}
 objectClass: top
 objectClass: container
 
@@ -662,6 +814,8 @@ description: Quota specifications container
 msDS-TombstoneQuotaFactor: 100
 systemFlags: -2147483648
 
+# Partitions
+
 dn: CN=Partitions,${CONFIGDN}
 objectClass: top
 objectClass: crossRefContainer
@@ -669,27 +823,30 @@ systemFlags: -2147483648
 msDS-Behavior-Version: ${FOREST_FUNCTIONALALITY}
 showInAdvancedViewOnly: TRUE
 
+# Partitions for DNS are missing since we don't support AD DNS
+
 dn: CN=Enterprise Configuration,CN=Partitions,${CONFIGDN}
 objectClass: top
 objectClass: crossRef
-systemFlags: 1
-nCName: ${CONFIGDN}
 dnsRoot: ${DNSDOMAIN}
+nCName: ${CONFIGDN}
+systemFlags: 1
 
 dn: CN=Enterprise Schema,CN=Partitions,${CONFIGDN}
 objectClass: top
 objectClass: crossRef
-systemFlags: 1
-nCName: ${SCHEMADN}
 dnsRoot: ${DNSDOMAIN}
+nCName: ${SCHEMADN}
+systemFlags: 1
 
 dn: CN=${DOMAIN},CN=Partitions,${CONFIGDN}
 objectClass: top
 objectClass: crossRef
-systemFlags: 3
+dnsRoot: ${DNSDOMAIN}
 nCName: ${DOMAINDN}
 nETBIOSName: ${DOMAIN}
-dnsRoot: ${DNSDOMAIN}
+nTMixedDomain: 0
+systemFlags: 3
 
 dn: CN=Physical Locations,${CONFIGDN}
 objectClass: top
@@ -699,10 +856,90 @@ l: Physical Locations tree root
 
 # Schema located in "ad-schema/*.txt"
 
+# Services
+
 dn: CN=Services,${CONFIGDN}
 objectClass: top
 objectClass: container
 systemFlags: -2147483648
+
+dn: CN=MsmqServices,CN=Services,${CONFIGDN}
+objectClass: top
+objectClass: mSMQEnterpriseSettings
+mSMQVersion: 200
+
+dn: CN=NetServices,CN=Services,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=Public Key Services,CN=Services,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=Certificate Templates,CN=Public Key Services,CN=Services,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=Enrollment Services,CN=Public Key Services,CN=Services,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=Certification Authorities,CN=Public Key Services,CN=Services,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=AIA,CN=Public Key Services,CN=Services,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=CDP,CN=Public Key Services,CN=Services,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=KRA,CN=Public Key Services,CN=Services,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=OID,CN=Public Key Services,CN=Services,${CONFIGDN}
+objectClass: top
+objectClass: msPKI-Enterprise-Oid
+
+dn: CN=RRAS,CN=Services,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=IdentityDictionary,CN=RRAS,CN=Services,${CONFIGDN}
+objectClass: top
+objectClass: rRASAdministrationDictionary
+msRRASVendorAttributeEntry: 311:6:803:RADIUS Accouting
+msRRASVendorAttributeEntry: 311:6:802:RADIUS Authentication
+msRRASVendorAttributeEntry: 311:6:801:NT Domain Authentication
+msRRASVendorAttributeEntry: 311:6:714:Point to point parallel connection
+msRRASVendorAttributeEntry: 311:6:713:Point to point serial connection
+msRRASVendorAttributeEntry: 311:6:712:Generic LAN
+msRRASVendorAttributeEntry: 311:6:711:Generic WAN
+msRRASVendorAttributeEntry: 311:6:710:X.25
+msRRASVendorAttributeEntry: 311:6:709:IrDA
+msRRASVendorAttributeEntry: 311:6:708:Switched 56
+msRRASVendorAttributeEntry: 311:6:707:SONET
+msRRASVendorAttributeEntry: 311:6:706:Modem
+msRRASVendorAttributeEntry: 311:6:705:ISDN
+msRRASVendorAttributeEntry: 311:6:704:ATM
+msRRASVendorAttributeEntry: 311:6:703:Frame Relay
+msRRASVendorAttributeEntry: 311:6:702:Layer 2 Tunneling Protocol
+msRRASVendorAttributeEntry: 311:6:701:Point-to-Point Tunneling Protocol
+msRRASVendorAttributeEntry: 311:6:604:Network Address and Port Translation
+msRRASVendorAttributeEntry: 311:6:603:Demand Dial Router
+msRRASVendorAttributeEntry: 311:6:602:Remote Access Server
+msRRASVendorAttributeEntry: 311:6:601:LAN-to- LAN Router
+msRRASVendorAttributeEntry: 311:6:503:AppleTalk Forwarding Enabled
+msRRASVendorAttributeEntry: 311:6:502:IPX Forwarding Enabled
+msRRASVendorAttributeEntry: 311:6:501:IP Forwarding Enabled
+msRRASVendorAttributeEntry: 311:5:2:IPX SAP
+msRRASVendorAttributeEntry: 311::5:1:IPX RIP
+msRRASVendorAttributeEntry: 311:1:10:IGMP Only
+msRRASVendorAttributeEntry: 311:0:13:OSPF
+msRRASVendorAttributeEntry: 311:0:8:RIP (version 1 or 2)
 
 dn: CN=Windows NT,CN=Services,${CONFIGDN}
 objectClass: top
@@ -711,7 +948,12 @@ objectClass: container
 dn: CN=Directory Service,CN=Windows NT,CN=Services,${CONFIGDN}
 objectClass: top
 objectClass: nTDSService
-sPNMappings: host=ldap,dns,cifs,http
+msDS-Other-Settings: DisableVLVSupport=0
+msDS-Other-Settings: DynamicObjectMinTTL=900
+msDS-Other-Settings: DynamicObjectDefaultTTL=86400
+# "sPNMappings" needs to be enhanced when we add features
+sPNMappings: host=dns,netlogon,rpc,cifs,wins,http
+tombstoneLifetime: 180
 
 dn: CN=Query-Policies,CN=Directory Service,CN=Windows NT,CN=Services,${CONFIGDN}
 objectClass: top
@@ -733,6 +975,8 @@ lDAPAdminLimits: MaxActiveQueries=20
 lDAPAdminLimits: MaxConnIdleTime=900
 lDAPAdminLimits: InitRecvTimeout=120
 lDAPAdminLimits: MaxConnections=5000
+
+# Sites
 
 dn: CN=Sites,${CONFIGDN}
 objectClass: top
@@ -759,6 +1003,7 @@ objectClass: top
 objectClass: interSiteTransport
 transportAddressAttribute: dNSHostName
 transportDLLName: ismip.dll
+systemFlags: -2147483648
 
 dn: CN=DEFAULTIPSITELINK,CN=IP,CN=Inter-Site Transports,CN=Sites,${CONFIGDN}
 objectClass: top
@@ -785,3 +1030,7 @@ objectClass: top
 objectClass: serversContainer
 systemFlags: 33554432
 
+dn: CN=Subnets,CN=Sites,${CONFIGDN}
+objectClass: top
+objectClass: subnetContainer
+systemFlags: -1073741824

@@ -173,7 +173,7 @@ static PyObject *py_descriptor_from_sddl(PyObject *self, PyObject *args)
 	PyObject *py_sid;
 	struct dom_sid *sid;
 
-	if (!PyArg_ParseTuple(args, "sO", &sddl, &py_sid))
+	if (!PyArg_ParseTuple(args, "sO!", &sddl, &dom_sid_Type, &py_sid))
 		return NULL;
 
 	sid = py_talloc_get_ptr(py_sid);
@@ -195,7 +195,7 @@ static PyObject *py_descriptor_as_sddl(PyObject *self, PyObject *args)
 	char *text;
 	PyObject *ret;
 
-	if (!PyArg_ParseTuple(args, "|O", &py_sid))
+	if (!PyArg_ParseTuple(args, "|O!", &dom_sid_Type, &py_sid))
 		return NULL;
 
 	if (py_sid != Py_None)

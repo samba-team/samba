@@ -226,6 +226,261 @@ _PUBLIC_ void ndr_print_named_pipe_auth_req_info2(struct ndr_print *ndr, const c
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_named_pipe_auth_req_info3(struct ndr_push *ndr, int ndr_flags, const struct named_pipe_auth_req_info3 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 5));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->client_name));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->client_addr));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->client_port));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->server_name));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->server_addr));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->server_port));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->sam_info3));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->session_key_length));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->session_key));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->gssapi_delegated_creds_length));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->gssapi_delegated_creds));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->client_name) {
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->client_name, CH_UTF8)));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->client_name, CH_UTF8)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->client_name, ndr_charset_length(r->client_name, CH_UTF8), sizeof(uint8_t), CH_UTF8));
+		}
+		if (r->client_addr) {
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->client_addr, CH_DOS)));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->client_addr, CH_DOS)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->client_addr, ndr_charset_length(r->client_addr, CH_DOS), sizeof(uint8_t), CH_DOS));
+		}
+		if (r->server_name) {
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->server_name, CH_UTF8)));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->server_name, CH_UTF8)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->server_name, ndr_charset_length(r->server_name, CH_UTF8), sizeof(uint8_t), CH_UTF8));
+		}
+		if (r->server_addr) {
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->server_addr, CH_DOS)));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->server_addr, CH_DOS)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->server_addr, ndr_charset_length(r->server_addr, CH_DOS), sizeof(uint8_t), CH_DOS));
+		}
+		if (r->sam_info3) {
+			NDR_CHECK(ndr_push_netr_SamInfo3(ndr, NDR_SCALARS|NDR_BUFFERS, r->sam_info3));
+		}
+		if (r->session_key) {
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->session_key_length));
+			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->session_key, r->session_key_length));
+		}
+		if (r->gssapi_delegated_creds) {
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->gssapi_delegated_creds_length));
+			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->gssapi_delegated_creds, r->gssapi_delegated_creds_length));
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_named_pipe_auth_req_info3(struct ndr_pull *ndr, int ndr_flags, struct named_pipe_auth_req_info3 *r)
+{
+	uint32_t _ptr_client_name;
+	TALLOC_CTX *_mem_save_client_name_0;
+	uint32_t _ptr_client_addr;
+	TALLOC_CTX *_mem_save_client_addr_0;
+	uint32_t _ptr_server_name;
+	TALLOC_CTX *_mem_save_server_name_0;
+	uint32_t _ptr_server_addr;
+	TALLOC_CTX *_mem_save_server_addr_0;
+	uint32_t _ptr_sam_info3;
+	TALLOC_CTX *_mem_save_sam_info3_0;
+	uint32_t _ptr_session_key;
+	TALLOC_CTX *_mem_save_session_key_0;
+	uint32_t _ptr_gssapi_delegated_creds;
+	TALLOC_CTX *_mem_save_gssapi_delegated_creds_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 5));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_client_name));
+		if (_ptr_client_name) {
+			NDR_PULL_ALLOC(ndr, r->client_name);
+		} else {
+			r->client_name = NULL;
+		}
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_client_addr));
+		if (_ptr_client_addr) {
+			NDR_PULL_ALLOC(ndr, r->client_addr);
+		} else {
+			r->client_addr = NULL;
+		}
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->client_port));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_server_name));
+		if (_ptr_server_name) {
+			NDR_PULL_ALLOC(ndr, r->server_name);
+		} else {
+			r->server_name = NULL;
+		}
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_server_addr));
+		if (_ptr_server_addr) {
+			NDR_PULL_ALLOC(ndr, r->server_addr);
+		} else {
+			r->server_addr = NULL;
+		}
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->server_port));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sam_info3));
+		if (_ptr_sam_info3) {
+			NDR_PULL_ALLOC(ndr, r->sam_info3);
+		} else {
+			r->sam_info3 = NULL;
+		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->session_key_length));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_session_key));
+		if (_ptr_session_key) {
+			NDR_PULL_ALLOC(ndr, r->session_key);
+		} else {
+			r->session_key = NULL;
+		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->gssapi_delegated_creds_length));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_gssapi_delegated_creds));
+		if (_ptr_gssapi_delegated_creds) {
+			NDR_PULL_ALLOC(ndr, r->gssapi_delegated_creds);
+		} else {
+			r->gssapi_delegated_creds = NULL;
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->client_name) {
+			_mem_save_client_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->client_name, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->client_name));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->client_name));
+			if (ndr_get_array_length(ndr, &r->client_name) > ndr_get_array_size(ndr, &r->client_name)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->client_name), ndr_get_array_length(ndr, &r->client_name));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->client_name), sizeof(uint8_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->client_name, ndr_get_array_length(ndr, &r->client_name), sizeof(uint8_t), CH_UTF8));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_client_name_0, 0);
+		}
+		if (r->client_addr) {
+			_mem_save_client_addr_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->client_addr, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->client_addr));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->client_addr));
+			if (ndr_get_array_length(ndr, &r->client_addr) > ndr_get_array_size(ndr, &r->client_addr)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->client_addr), ndr_get_array_length(ndr, &r->client_addr));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->client_addr), sizeof(uint8_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->client_addr, ndr_get_array_length(ndr, &r->client_addr), sizeof(uint8_t), CH_DOS));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_client_addr_0, 0);
+		}
+		if (r->server_name) {
+			_mem_save_server_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->server_name, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->server_name));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->server_name));
+			if (ndr_get_array_length(ndr, &r->server_name) > ndr_get_array_size(ndr, &r->server_name)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->server_name), ndr_get_array_length(ndr, &r->server_name));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->server_name), sizeof(uint8_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->server_name, ndr_get_array_length(ndr, &r->server_name), sizeof(uint8_t), CH_UTF8));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
+		}
+		if (r->server_addr) {
+			_mem_save_server_addr_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->server_addr, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->server_addr));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->server_addr));
+			if (ndr_get_array_length(ndr, &r->server_addr) > ndr_get_array_size(ndr, &r->server_addr)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->server_addr), ndr_get_array_length(ndr, &r->server_addr));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->server_addr), sizeof(uint8_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->server_addr, ndr_get_array_length(ndr, &r->server_addr), sizeof(uint8_t), CH_DOS));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_addr_0, 0);
+		}
+		if (r->sam_info3) {
+			_mem_save_sam_info3_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->sam_info3, 0);
+			NDR_CHECK(ndr_pull_netr_SamInfo3(ndr, NDR_SCALARS|NDR_BUFFERS, r->sam_info3));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sam_info3_0, 0);
+		}
+		if (r->session_key) {
+			_mem_save_session_key_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->session_key, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->session_key));
+			NDR_PULL_ALLOC_N(ndr, r->session_key, ndr_get_array_size(ndr, &r->session_key));
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->session_key, ndr_get_array_size(ndr, &r->session_key)));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_session_key_0, 0);
+		}
+		if (r->gssapi_delegated_creds) {
+			_mem_save_gssapi_delegated_creds_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->gssapi_delegated_creds, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->gssapi_delegated_creds));
+			NDR_PULL_ALLOC_N(ndr, r->gssapi_delegated_creds, ndr_get_array_size(ndr, &r->gssapi_delegated_creds));
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->gssapi_delegated_creds, ndr_get_array_size(ndr, &r->gssapi_delegated_creds)));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_gssapi_delegated_creds_0, 0);
+		}
+		if (r->session_key) {
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->session_key, r->session_key_length));
+		}
+		if (r->gssapi_delegated_creds) {
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->gssapi_delegated_creds, r->gssapi_delegated_creds_length));
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_named_pipe_auth_req_info3(struct ndr_print *ndr, const char *name, const struct named_pipe_auth_req_info3 *r)
+{
+	ndr_print_struct(ndr, name, "named_pipe_auth_req_info3");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "client_name", r->client_name);
+	ndr->depth++;
+	if (r->client_name) {
+		ndr_print_string(ndr, "client_name", r->client_name);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "client_addr", r->client_addr);
+	ndr->depth++;
+	if (r->client_addr) {
+		ndr_print_string(ndr, "client_addr", r->client_addr);
+	}
+	ndr->depth--;
+	ndr_print_uint16(ndr, "client_port", r->client_port);
+	ndr_print_ptr(ndr, "server_name", r->server_name);
+	ndr->depth++;
+	if (r->server_name) {
+		ndr_print_string(ndr, "server_name", r->server_name);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "server_addr", r->server_addr);
+	ndr->depth++;
+	if (r->server_addr) {
+		ndr_print_string(ndr, "server_addr", r->server_addr);
+	}
+	ndr->depth--;
+	ndr_print_uint16(ndr, "server_port", r->server_port);
+	ndr_print_ptr(ndr, "sam_info3", r->sam_info3);
+	ndr->depth++;
+	if (r->sam_info3) {
+		ndr_print_netr_SamInfo3(ndr, "sam_info3", r->sam_info3);
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "session_key_length", r->session_key_length);
+	ndr_print_ptr(ndr, "session_key", r->session_key);
+	ndr->depth++;
+	if (r->session_key) {
+		ndr_print_array_uint8(ndr, "session_key", r->session_key, r->session_key_length);
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "gssapi_delegated_creds_length", r->gssapi_delegated_creds_length);
+	ndr_print_ptr(ndr, "gssapi_delegated_creds", r->gssapi_delegated_creds);
+	ndr->depth++;
+	if (r->gssapi_delegated_creds) {
+		ndr_print_array_uint8(ndr, "gssapi_delegated_creds", r->gssapi_delegated_creds, r->gssapi_delegated_creds_length);
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_named_pipe_auth_req_info(struct ndr_push *ndr, int ndr_flags, const union named_pipe_auth_req_info *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -241,6 +496,10 @@ static enum ndr_err_code ndr_push_named_pipe_auth_req_info(struct ndr_push *ndr,
 
 			case 2: {
 				NDR_CHECK(ndr_push_named_pipe_auth_req_info2(ndr, NDR_SCALARS, &r->info2));
+			break; }
+
+			case 3: {
+				NDR_CHECK(ndr_push_named_pipe_auth_req_info3(ndr, NDR_SCALARS, &r->info3));
 			break; }
 
 			default:
@@ -259,6 +518,10 @@ static enum ndr_err_code ndr_push_named_pipe_auth_req_info(struct ndr_push *ndr,
 
 			case 2:
 				NDR_CHECK(ndr_push_named_pipe_auth_req_info2(ndr, NDR_BUFFERS, &r->info2));
+			break;
+
+			case 3:
+				NDR_CHECK(ndr_push_named_pipe_auth_req_info3(ndr, NDR_BUFFERS, &r->info3));
 			break;
 
 			default:
@@ -290,6 +553,10 @@ static enum ndr_err_code ndr_pull_named_pipe_auth_req_info(struct ndr_pull *ndr,
 				NDR_CHECK(ndr_pull_named_pipe_auth_req_info2(ndr, NDR_SCALARS, &r->info2));
 			break; }
 
+			case 3: {
+				NDR_CHECK(ndr_pull_named_pipe_auth_req_info3(ndr, NDR_SCALARS, &r->info3));
+			break; }
+
 			default:
 				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
@@ -305,6 +572,10 @@ static enum ndr_err_code ndr_pull_named_pipe_auth_req_info(struct ndr_pull *ndr,
 
 			case 2:
 				NDR_CHECK(ndr_pull_named_pipe_auth_req_info2(ndr, NDR_BUFFERS, &r->info2));
+			break;
+
+			case 3:
+				NDR_CHECK(ndr_pull_named_pipe_auth_req_info3(ndr, NDR_BUFFERS, &r->info3));
 			break;
 
 			default:
@@ -329,6 +600,10 @@ _PUBLIC_ void ndr_print_named_pipe_auth_req_info(struct ndr_print *ndr, const ch
 
 		case 2:
 			ndr_print_named_pipe_auth_req_info2(ndr, "info2", &r->info2);
+		break;
+
+		case 3:
+			ndr_print_named_pipe_auth_req_info3(ndr, "info3", &r->info3);
 		break;
 
 		default:
@@ -431,6 +706,42 @@ _PUBLIC_ void ndr_print_named_pipe_auth_rep_info2(struct ndr_print *ndr, const c
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_named_pipe_auth_rep_info3(struct ndr_push *ndr, int ndr_flags, const struct named_pipe_auth_rep_info3 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 8));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->file_type));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->device_state));
+		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->allocation_size));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_named_pipe_auth_rep_info3(struct ndr_pull *ndr, int ndr_flags, struct named_pipe_auth_rep_info3 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 8));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->file_type));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->device_state));
+		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->allocation_size));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_named_pipe_auth_rep_info3(struct ndr_print *ndr, const char *name, const struct named_pipe_auth_rep_info3 *r)
+{
+	ndr_print_struct(ndr, name, "named_pipe_auth_rep_info3");
+	ndr->depth++;
+	ndr_print_uint16(ndr, "file_type", r->file_type);
+	ndr_print_uint16(ndr, "device_state", r->device_state);
+	ndr_print_hyper(ndr, "allocation_size", r->allocation_size);
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_named_pipe_auth_rep_info(struct ndr_push *ndr, int ndr_flags, const union named_pipe_auth_rep_info *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -447,6 +758,10 @@ static enum ndr_err_code ndr_push_named_pipe_auth_rep_info(struct ndr_push *ndr,
 				NDR_CHECK(ndr_push_named_pipe_auth_rep_info2(ndr, NDR_SCALARS, &r->info2));
 			break; }
 
+			case 3: {
+				NDR_CHECK(ndr_push_named_pipe_auth_rep_info3(ndr, NDR_SCALARS, &r->info3));
+			break; }
+
 			default:
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
@@ -461,6 +776,9 @@ static enum ndr_err_code ndr_push_named_pipe_auth_rep_info(struct ndr_push *ndr,
 			break;
 
 			case 2:
+			break;
+
+			case 3:
 			break;
 
 			default:
@@ -491,6 +809,10 @@ static enum ndr_err_code ndr_pull_named_pipe_auth_rep_info(struct ndr_pull *ndr,
 				NDR_CHECK(ndr_pull_named_pipe_auth_rep_info2(ndr, NDR_SCALARS, &r->info2));
 			break; }
 
+			case 3: {
+				NDR_CHECK(ndr_pull_named_pipe_auth_rep_info3(ndr, NDR_SCALARS, &r->info3));
+			break; }
+
 			default:
 				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
@@ -504,6 +826,9 @@ static enum ndr_err_code ndr_pull_named_pipe_auth_rep_info(struct ndr_pull *ndr,
 			break;
 
 			case 2:
+			break;
+
+			case 3:
 			break;
 
 			default:
@@ -527,6 +852,10 @@ _PUBLIC_ void ndr_print_named_pipe_auth_rep_info(struct ndr_print *ndr, const ch
 
 		case 2:
 			ndr_print_named_pipe_auth_rep_info2(ndr, "info2", &r->info2);
+		break;
+
+		case 3:
+			ndr_print_named_pipe_auth_rep_info3(ndr, "info3", &r->info3);
 		break;
 
 		default:

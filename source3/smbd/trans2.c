@@ -156,7 +156,9 @@ NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx, connection_struct *conn,
 	ssize_t sizeret = -1;
 
 	if (!lp_ea_support(SNUM(conn))) {
-		*pnames = NULL;
+		if (pnames) {
+			*pnames = NULL;
+		}
 		*pnum_names = 0;
 		return NT_STATUS_OK;
 	}

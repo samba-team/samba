@@ -20,10 +20,12 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "torture/torture.h"
 #include "torture/rpc/rpc.h"
 #include "librpc/gen_ndr/ndr_spoolss_c.h"
 #include "rpc_server/dcerpc_server.h"
+#include "rpc_server/service_rpc.h"
 #include "lib/events/events.h"
 #include "smbd/process_model.h"
 #include "smb_server/smb_server.h"
@@ -191,6 +193,7 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 	NTSTATUS status;
 	struct dcesrv_context *dce_ctx;
 	const char *endpoints[] = { "spoolss", NULL };
+	struct dcesrv_endpoint *e;
 	struct spoolss_NotifyOption t1;
 	struct spoolss_ClosePrinter cp;
 
@@ -244,6 +247,23 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, 
 				   "unable to initialize DCE/RPC server");
 
+	/* Make sure the directory for NCALRPC exists */
+	if (!directory_exist(lp_ncalrpc_dir(tctx->lp_ctx))) {
+		int ret;
+		ret = mkdir(lp_ncalrpc_dir(tctx->lp_ctx), 0755);
+		torture_assert(tctx, (ret == 0), talloc_asprintf(tctx,
+			       "failed to mkdir(%s) ret[%d] errno[%d - %s]",
+			       lp_ncalrpc_dir(tctx->lp_ctx), ret,
+			       errno, strerror(errno)));
+	}
+
+	for (e=dce_ctx->endpoint_list;e;e=e->next) {
+		status = dcesrv_add_ep(dce_ctx, tctx->lp_ctx,
+				       e, tctx->ev, &single_ops);
+		torture_assert_ntstatus_ok(tctx, status,
+				"unable listen on dcerpc endpoint server");
+	}
+
 	r.in.flags = 0;
 	r.in.local_machine = talloc_asprintf(tctx, "\\\\%s", address);
 	r.in.options = 0;
@@ -293,7 +313,7 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
  * on Samba 4 will cause an irpc broadcast call.
  */
 static bool test_ReplyOpenPrinter(struct torture_context *tctx,
-				  struct dcerpc_pipe *pipe)
+				  struct dcerpc_pipe *p)
 {
 	struct spoolss_ReplyOpenPrinter r;
 	struct spoolss_ReplyClosePrinter s;
@@ -307,7 +327,7 @@ static bool test_ReplyOpenPrinter(struct torture_context *tctx,
 	r.out.handle = &h;
 
 	torture_assert_ntstatus_ok(tctx,
-			dcerpc_spoolss_ReplyOpenPrinter(pipe, tctx, &r),
+			dcerpc_spoolss_ReplyOpenPrinter(p, tctx, &r),
 			"spoolss_ReplyOpenPrinter call failed");
 
 	torture_assert_werr_ok(tctx, r.out.result, "error return code");
@@ -316,7 +336,7 @@ static bool test_ReplyOpenPrinter(struct torture_context *tctx,
 	s.out.handle = &h;
 
 	torture_assert_ntstatus_ok(tctx,
-			dcerpc_spoolss_ReplyClosePrinter(pipe, tctx, &s),
+			dcerpc_spoolss_ReplyClosePrinter(p, tctx, &s),
 			"spoolss_ReplyClosePrinter call failed");
 
 	torture_assert_werr_ok(tctx, r.out.result, "error return code");
