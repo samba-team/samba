@@ -1234,9 +1234,27 @@ static NTSTATUS dcesrv_netr_NetrEnumerateTrustedDomains(struct dcesrv_call_state
 static NTSTATUS dcesrv_netr_LogonGetCapabilities(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_LogonGetCapabilities *r)
 {
+	struct netlogon_creds_CredentialState *creds;
+	NTSTATUS status;
 
-	/* we don't support AES yet */
-	return NT_STATUS_NOT_IMPLEMENTED;
+	status = dcesrv_netr_creds_server_step_check(dce_call,
+						     mem_ctx,
+						     r->in.computer_name,
+						     r->in.credential,
+						     r->out.return_authenticator,
+						     &creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,(__location__ " Bad credentials - error\n"));
+	}
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	if (r->in.query_level != 1) {
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	r->out.capabilities->server_capabilities = creds->negotiate_flags;
+
+	return NT_STATUS_OK;
 }
 
 
