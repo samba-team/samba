@@ -828,24 +828,25 @@ showInAdvancedViewOnly: TRUE
 dn: CN=Enterprise Configuration,CN=Partitions,${CONFIGDN}
 objectClass: top
 objectClass: crossRef
-systemFlags: 1
-nCName: ${CONFIGDN}
 dnsRoot: ${DNSDOMAIN}
+nCName: ${CONFIGDN}
+systemFlags: 1
 
 dn: CN=Enterprise Schema,CN=Partitions,${CONFIGDN}
 objectClass: top
 objectClass: crossRef
-systemFlags: 1
-nCName: ${SCHEMADN}
 dnsRoot: ${DNSDOMAIN}
+nCName: ${SCHEMADN}
+systemFlags: 1
 
 dn: CN=${DOMAIN},CN=Partitions,${CONFIGDN}
 objectClass: top
 objectClass: crossRef
-systemFlags: 3
+dnsRoot: ${DNSDOMAIN}
 nCName: ${DOMAINDN}
 nETBIOSName: ${DOMAIN}
-dnsRoot: ${DNSDOMAIN}
+nTMixedDomain: 0
+systemFlags: 3
 
 dn: CN=Physical Locations,${CONFIGDN}
 objectClass: top
