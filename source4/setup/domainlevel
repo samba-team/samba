@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-#       Raises domain and forest function levels
+#	Raises domain and forest function levels
 #
 #	Copyright Matthias Dieter Wallnoefer 2009
 #	Released under the GNU GPL version 3 or later
@@ -67,7 +67,7 @@ res_domain = samdb.search(domain_dn, scope=ldb.SCOPE_BASE,
 assert(len(res_domain) == 1)
 
 try:
-        level_forest = int(res_forest[0]["msDS-Behavior-Version"][0])
+	level_forest = int(res_forest[0]["msDS-Behavior-Version"][0])
 	level_domain = int(res_domain[0]["msDS-Behavior-Version"][0])
 
 	if level_forest < 0 or level_forest == 1 or level_forest > 4 or level_domain < 0 or level_domain == 1 or level_domain > 4:
@@ -86,7 +86,7 @@ if args[0] == "show":
 	message("Domain and forest function level for domain '" + domain_dn + "'")
 	message("")
 
-        if level_forest == DS_DOMAIN_FUNCTION_2000:
+	if level_forest == DS_DOMAIN_FUNCTION_2000:
 		outstr = "2000"
 	elif level_forest == DS_DOMAIN_FUNCTION_2003:
 		outstr = "2003"
@@ -96,7 +96,7 @@ if args[0] == "show":
 		outstr = "2008 R2"
 	message("Forest function level: (Windows) " + outstr)
 
-        if level_domain == DS_DOMAIN_FUNCTION_2000:
+	if level_domain == DS_DOMAIN_FUNCTION_2000:
 		outstr = "2000"
 	elif level_domain == DS_DOMAIN_FUNCTION_2003:
 		outstr = "2003"
