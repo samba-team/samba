@@ -35,7 +35,7 @@ struct tevent_req *winbindd_remove_mapping_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct winbindd_remove_mapping_state *state;
 	struct winbindd_child *child;
-	enum id_type type;
+	enum wbint_IdType type;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct winbindd_remove_mapping_state);
