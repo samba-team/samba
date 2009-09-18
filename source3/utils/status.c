@@ -367,18 +367,20 @@ static int traverse_sessionid(struct db_record *db, void *state)
 		goto done;
 	}
 
-	/*
-	 * This implicitly initializes the global ctdbd connection, usable by
-	 * the db_open() calls further down.
-	 */
 
-	msg_ctx = messaging_init(NULL, procid_self(),
-				 event_context_init(NULL));
-
-	if (msg_ctx == NULL) {
-		fprintf(stderr, "messaging_init failed\n");
-		ret = -1;
-		goto done;
+	if (lp_clustering()) {
+		/*
+		 * This implicitly initializes the global ctdbd
+		 * connection, usable by the db_open() calls further
+		 * down.
+		 */
+		msg_ctx = messaging_init(NULL, procid_self(),
+					 event_context_init(NULL));
+		if (msg_ctx == NULL) {
+			fprintf(stderr, "messaging_init failed\n");
+			ret = -1;
+			goto done;
+		}
 	}
 
 	if (!lp_load(get_dyn_CONFIGFILE(),False,False,False,True)) {
