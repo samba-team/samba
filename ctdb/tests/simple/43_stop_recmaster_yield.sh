@@ -40,7 +40,7 @@ test_node=$out
 echo "Stopping node ${test_node} - it is the current recmaster..."
 try_command_on_node 1 $CTDB stop -n $test_node
 
-onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node stopped
+wait_until_node_has_status $test_node stopped
 
 echo "Checking which node is the recovery master now..."
 try_command_on_node -v 0 "$CTDB recmaster"

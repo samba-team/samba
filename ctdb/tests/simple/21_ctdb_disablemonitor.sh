@@ -65,7 +65,7 @@ ctdb_test_exit_hook_add "onnode $test_node rm -vf $trigger"
 echo "Creating trigger file on node $test_node to make it unhealthy..."
 try_command_on_node $test_node touch "$trigger"
 
-onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node unhealthy $monitor_interval
+wait_until_node_has_status $test_node unhealthy $monitor_interval
 
 try_command_on_node -v $test_node ls -l "$detected"
 
@@ -81,7 +81,7 @@ sanity_check_output \
     '^Monitoring mode:DISABLED$' \
     "$out"
 
-onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node monoff
+wait_until_node_has_status $test_node monoff
 
 try_command_on_node -v $test_node rm -v "$detected"
 

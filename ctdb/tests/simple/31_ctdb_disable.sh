@@ -47,7 +47,7 @@ echo "Disabling node $test_node"
 try_command_on_node 1 $CTDB disable -n $test_node
 
 # Avoid a potential race condition...
-onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node disabled
+wait_until_node_has_status $test_node disabled
 
 if wait_until_ips_are_on_nodeglob "[!${test_node}]" $test_node_ips ; then
     echo "All IPs moved."
