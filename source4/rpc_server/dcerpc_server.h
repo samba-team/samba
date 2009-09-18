@@ -298,21 +298,6 @@ NTSTATUS dcerpc_register_ep_server(const void *_ep_server);
 NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx, 
 				      struct loadparm_context *lp_ctx,
 				      const char **endpoint_servers, struct dcesrv_context **_dce_ctx);
-NTSTATUS dcesrv_init_ipc_context(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
-					  struct dcesrv_context **_dce_ctx);
-NTSTATUS dcesrv_endpoint_search_connect(struct dcesrv_context *dce_ctx,
-					TALLOC_CTX *mem_ctx,
-					const struct dcerpc_binding *ep_description,
-					struct auth_session_info *session_info,
-					struct tevent_context *event_ctx,
-					struct messaging_context *msg_ctx,
-					struct server_id server_id,
-					uint32_t state_flags,
-					struct dcesrv_connection **dce_conn_p);
-NTSTATUS dcesrv_output(struct dcesrv_connection *dce_conn, 
-		       void *private_data,
-		       NTSTATUS (*write_fn)(void *private_data, DATA_BLOB *output, size_t *nwritten));
-NTSTATUS dcesrv_input(struct dcesrv_connection *dce_conn, const DATA_BLOB *data);
 NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 				 TALLOC_CTX *mem_ctx,
 				 const struct dcesrv_endpoint *ep,
