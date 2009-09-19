@@ -23,8 +23,6 @@
 #include "system/time.h"
 #include "smbd/service_stream.h"
 #include "smb_server/smb_server.h"
-#include "smb_server/service_smb_proto.h"
-#include "ntvfs/ntvfs.h"
 #include "system/filesys.h"
 #include "param/param.h"
 

@@ -18,9 +18,7 @@
 */
 
 #include "includes.h"
-#include "../lib/util/dlinklist.h"
 #include "smb_server/smb_server.h"
-#include "ntvfs/ntvfs.h"
 
 
 /****************************************************************************

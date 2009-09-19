@@ -24,7 +24,6 @@
 #include "smb_server/smb_server.h"
 #include "libcli/smb2/smb2.h"
 #include "smb_server/smb2/smb2_server.h"
-#include "smb_server/service_smb_proto.h"
 #include "smbd/service_stream.h"
 #include "lib/stream/packet.h"
 #include "param/param.h"

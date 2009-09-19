@@ -19,16 +19,13 @@
 */
 
 #include "includes.h"
-#include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "auth/auth.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 #include "smb_server/smb_server.h"
-#include "smb_server/service_smb_proto.h"
 #include "smb_server/smb2/smb2_server.h"
 #include "smbd/service_stream.h"
-#include "param/param.h"
 
 static void smb2srv_sesssetup_send(struct smb2srv_request *req, union smb_sesssetup *io)
 {

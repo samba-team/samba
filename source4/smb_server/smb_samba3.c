@@ -20,17 +20,10 @@
 */
 
 #include "includes.h"
-#include "smbd/service_task.h"
-#include "smbd/service_stream.h"
 #include "smbd/service.h"
-#include "lib/messaging/irpc.h"
-#include "lib/stream/packet.h"
-#include "lib/socket/socket.h"
 #include "libcli/smb2/smb2.h"
-#include "smb_server/smb2/smb2_server.h"
 #include "system/network.h"
 #include "lib/socket/netif.h"
-#include "param/share.h"
 #include "param/param.h"
 #include "dynconfig/dynconfig.h"
 #include "smbd/process_model.h"

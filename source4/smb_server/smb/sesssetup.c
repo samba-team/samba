@@ -24,12 +24,10 @@
 
 #include "includes.h"
 #include "version.h"
-#include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "auth/auth.h"
 #include "smb_server/smb_server.h"
 #include "smbd/service_stream.h"
-#include "librpc/gen_ndr/nbt.h"
 #include "param/param.h"
 
 /*
