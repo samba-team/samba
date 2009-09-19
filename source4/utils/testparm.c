@@ -184,7 +184,7 @@ static int do_share_checks(struct loadparm_context *lp_ctx, const char *cname, c
 	static char *parameter_name = NULL;
 	static const char *cname;
 	static const char *caddr;
-	static bool show_defaults = false;
+	static int show_defaults = false;
 	struct loadparm_context *lp_ctx;
 
 	struct poptOption long_options[] = {
