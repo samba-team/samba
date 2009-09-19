@@ -346,3 +346,14 @@ SUBSYSTEM = LIBLDB
 ################################################
 
 ldb_descriptor_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/descriptor.o
+
+################################################
+# Start MODULE ldb_resolve_oids
+[MODULE::ldb_resolve_oids]
+SUBSYSTEM = LIBLDB
+PRIVATE_DEPENDENCIES = SAMDB LIBTALLOC LIBEVENTS LIBNDR
+INIT_FUNCTION = LDB_MODULE(resolve_oids)
+# End MODULE ldb_resolve_oids
+################################################
+
+ldb_resolve_oids_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/resolve_oids.o
