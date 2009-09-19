@@ -395,6 +395,12 @@ static krb5_error_code hdb_samba4_message2entry_keys(krb5_context context,
 						 pkb4->keys[i].value->data,
 						 pkb4->keys[i].value->length,
 						 &key.key);
+			if (ret == KRB5_PROG_ETYPE_NOSUPP) {
+				DEBUG(2,("Unsupported keytype ignored - type %u\n",
+					 pkb4->keys[i].keytype));
+				ret = 0;
+				continue;
+			}
 			if (ret) {
 				if (key.salt) {
 					free_Salt(key.salt);
