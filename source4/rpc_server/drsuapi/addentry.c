@@ -31,6 +31,8 @@
 #include "auth/auth.h"
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
 #include "libcli/security/security.h"
+#include "librpc/gen_ndr/ndr_drsblobs.h"
+#include "librpc/gen_ndr/ndr_drsuapi.h"
 
 
 /*

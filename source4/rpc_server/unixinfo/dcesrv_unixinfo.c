@@ -21,10 +21,8 @@
 
 #include "includes.h"
 #include "rpc_server/dcerpc_server.h"
-#include "rpc_server/common/common.h"
 #include "librpc/gen_ndr/ndr_unixinfo.h"
 #include "libcli/wbclient/wbclient.h"
-#include "lib/events/events.h"
 #include "system/passwd.h"
 
 static NTSTATUS dcerpc_unixinfo_bind(struct dcesrv_call_state *dce_call,
