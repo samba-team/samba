@@ -10,6 +10,7 @@ use Getopt::Long;
 
 my $opt_help = 0;
 my $opt_remove = 0;
+my $opt_skip_system = 0;
 
 #####################################################################
 # write a string into a file
@@ -62,24 +63,31 @@ sub test_include($$$$)
 	my $i = shift;
 	my $original = shift;
 	my $line = $lines->[$i];
+	my $testfname;
 
 	$lines->[$i] = "";
-	save_lines("_testcompile.c", $lines);
+
+	`/bin/mv -f $fname $fname.misaved` && die "failed to rename $fname";
+	save_lines($fname, $lines);
 	
-	my $out = test_compile("_testcompile.c");
-	$out =~ s/_testcompile.c/$fname/g;
+	my $out = test_compile($fname);
 
 	if ($out eq $original) {
 		if ($opt_remove) {
-			print "$fname: removing $line\n";
-			save_lines($fname, $lines);
-			return;
+			if ($opt_skip_system && 
+			    $line =~ /system\//) {
+				print "$fname: not removing system include $line\n";
+			} else {
+				print "$fname: removing $line\n";
+				return;
+			}
+		} else {
+			print "$fname: might be able to remove $line\n";
 		}
-		print "$fname: might be able to remove $line\n";
 	}
 
 	$lines->[$i] = $line;
-	unlink("_testcompile.c");
+	`/bin/mv -f $fname.misaved $fname` && die "failed to restore $fname";
 }
 
 sub process_file($)
@@ -127,8 +135,9 @@ sub ShowHelp()
 	   Usage: minimal_includes.pl [options] <C files....>
 	   
 	   Options:
-                 --help       show help
-                 --remove     remove includes, don't just list them
+                 --help         show help
+                 --remove       remove includes, don't just list them
+                 --skip-system  don't remove system/ includes
 ";
 }
 
@@ -137,6 +146,7 @@ sub ShowHelp()
 GetOptions (
 	    'h|help|?' => \$opt_help,
 	    'remove' => \$opt_remove,
+	    'skip-system' => \$opt_skip_system,
 	    );
 
 if ($opt_help) {
