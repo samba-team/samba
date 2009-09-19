@@ -179,8 +179,9 @@ static void dreplsrv_notify_op_callback(struct dreplsrv_notify_operation *op)
 
 	status = composite_wait(op->creq);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("dreplsrv_notify: Failed to send DsReplicaSync to %s - %s\n",
+		DEBUG(0,("dreplsrv_notify: Failed to send DsReplicaSync to %s for %s - %s\n",
 			 op->source_dsa->repsFrom1->other_info->dns_name,
+			 ldb_dn_get_linearized(op->source_dsa->partition->dn),
 			 nt_errstr(status)));
 	} else {
 		DEBUG(2,("dreplsrv_notify: DsReplicaSync OK for %s\n",
