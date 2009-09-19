@@ -312,6 +312,10 @@ static bool test_schannel(struct torture_context *tctx,
 	status = dcerpc_schannel_creds(p_netlogon->conn->security_state.generic_state, tctx, &creds);
 	torture_assert_ntstatus_ok(tctx, status, "schannel creds");
 
+	/* checks the capabilities */
+	torture_assert(tctx, test_netlogon_capabilities(p_netlogon, tctx, credentials, creds),
+		       "Failed to process schannel secured capability ops (on fresh connection)");
+
 	/* do a couple of logins */
 	torture_assert(tctx, test_netlogon_ops(p_netlogon, tctx, credentials, creds),
 		"Failed to process schannel secured NETLOGON ops");
@@ -390,6 +394,10 @@ static bool test_schannel(struct torture_context *tctx,
 				  NULL);
 
 	torture_assert_ntstatus_ok(tctx, status, "auth failed");
+
+	/* checks the capabilities */
+	torture_assert(tctx, test_netlogon_capabilities(p_netlogon2, tctx, credentials, creds),
+		       "Failed to process schannel secured capability ops (on fresh connection)");
 
 	/* Try the schannel-only SamLogonEx operation */
 	torture_assert(tctx, test_netlogon_ex_ops(p_netlogon2, tctx, credentials, creds),

@@ -885,6 +885,60 @@ bool test_netlogon_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 }
 
 /*
+  try a netlogon GetCapabilities
+*/
+bool test_netlogon_capabilities(struct dcerpc_pipe *p, struct torture_context *tctx,
+				struct cli_credentials *credentials,
+				struct netlogon_creds_CredentialState *creds)
+{
+	NTSTATUS status;
+	struct netr_LogonGetCapabilities r;
+	union netr_Capabilities capabilities;
+	struct netr_Authenticator auth, return_auth;
+	struct netlogon_creds_CredentialState tmp_creds;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+
+	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.computer_name = cli_credentials_get_workstation(credentials);
+	r.in.credential = &auth;
+	r.in.return_authenticator = &return_auth;
+	r.in.query_level = 1;
+	r.out.capabilities = &capabilities;
+	r.out.return_authenticator = &return_auth;
+
+	torture_comment(tctx, "Testing LogonGetCapabilities\n");
+
+	ZERO_STRUCT(return_auth);
+
+	/*
+	 * we need to operate on a temporary copy of creds
+	 * because dcerpc_netr_LogonGetCapabilities was
+	 * dcerpc_netr_DummyFunction and returns NT_STATUS_NOT_IMPLEMENTED
+	 * without looking a the authenticator.
+	 */
+	tmp_creds = *creds;
+	netlogon_creds_client_authenticator(&tmp_creds, &auth);
+
+	status = dcerpc_netr_LogonGetCapabilities_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "LogonGetCapabilities failed");
+	if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_NOT_IMPLEMENTED)) {
+		return true;
+	}
+
+	*creds = tmp_creds;
+
+	torture_assert(tctx, netlogon_creds_client_check(creds,
+							 &r.out.return_authenticator->cred),
+		       "Credential chaining failed");
+
+	torture_assert_int_equal(tctx, creds->negotiate_flags,
+				 capabilities.server_capabilities,
+				 "negotiate flags");
+
+	return true;
+}
+
+/*
   try a netlogon SamLogon
 */
 static bool test_SamLogon(struct torture_context *tctx, 
