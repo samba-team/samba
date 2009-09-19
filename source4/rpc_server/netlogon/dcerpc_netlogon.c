@@ -1529,9 +1529,31 @@ static WERROR dcesrv_netr_NetrEnumerateTrustedDomainsEx(struct dcesrv_call_state
   netr_DsRAddressToSitenamesExW 
 */
 static WERROR dcesrv_netr_DsRAddressToSitenamesExW(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_DsRAddressToSitenamesExW *r)
+						   struct netr_DsRAddressToSitenamesExW *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct netr_DsRAddressToSitenamesExWCtr *ctr;
+	int i;
+
+	/* we should map the provided IPs to site names, once we have
+	 * sites support
+	 */
+	ctr = talloc(mem_ctx, struct netr_DsRAddressToSitenamesExWCtr);
+	W_ERROR_HAVE_NO_MEMORY(ctr);
+
+	*r->out.ctr = ctr;
+
+	ctr->count = r->in.count;
+	ctr->sitename = talloc_array(ctr, struct lsa_String, ctr->count);
+	W_ERROR_HAVE_NO_MEMORY(ctr->sitename);
+	ctr->subnetname = talloc_array(ctr, struct lsa_String, ctr->count);
+	W_ERROR_HAVE_NO_MEMORY(ctr->subnetname);
+
+	for (i=0; i<ctr->count; i++) {
+		ctr->sitename[i].string   = "Default-First-Site-Name";
+		ctr->subnetname[i].string = NULL;
+	}
+
+	return WERR_OK;
 }
 
 
