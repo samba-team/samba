@@ -488,7 +488,7 @@ struct composite_context* dcerpc_pipe_open_tcp_send(struct dcerpc_connection *co
 	s->resolve_ctx     = resolve_ctx;
 
 	make_nbt_name_server(&name, server);
-	resolve_req = resolve_name_send(resolve_ctx, &name, c->event_ctx);
+	resolve_req = resolve_name_send(resolve_ctx, s, &name, c->event_ctx);
 	composite_continue(c, resolve_req, continue_ip_resolve_name, c);
 	return c;
 }

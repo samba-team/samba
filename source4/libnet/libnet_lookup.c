@@ -88,7 +88,7 @@ struct composite_context *libnet_Lookup_send(struct libnet_context *ctx,
 	}
 
 	/* send resolve request */
-	cresolve_req = resolve_name_send(resolve_ctx, &s->hostname, c->event_ctx);
+	cresolve_req = resolve_name_send(resolve_ctx, s, &s->hostname, c->event_ctx);
 	if (composite_nomem(cresolve_req, c)) return c;
 
 	composite_continue(c, cresolve_req, continue_name_resolved, c);

@@ -136,6 +136,7 @@ static struct composite_context *setup_next_method(struct composite_context *c)
   general name resolution - async send
  */
 struct composite_context *resolve_name_all_send(struct resolve_context *ctx,
+						TALLOC_CTX *mem_ctx,
 						uint32_t flags,
 						uint16_t port,
 						struct nbt_name *name,
@@ -148,7 +149,7 @@ struct composite_context *resolve_name_all_send(struct resolve_context *ctx,
 		return NULL;
 	}
 
-	c = composite_create(ctx, event_ctx);
+	c = composite_create(mem_ctx, event_ctx);
 	if (c == NULL) return NULL;
 
 	if (composite_nomem(c->event_ctx, c)) return c;
@@ -221,10 +222,11 @@ NTSTATUS resolve_name_all_recv(struct composite_context *c,
 }
 
 struct composite_context *resolve_name_send(struct resolve_context *ctx,
+					    TALLOC_CTX *mem_ctx,
 					    struct nbt_name *name,
 					    struct tevent_context *event_ctx)
 {
-	return resolve_name_all_send(ctx, 0, 0, name, event_ctx);
+	return resolve_name_all_send(ctx, mem_ctx, 0, 0, name, event_ctx);
 }
 
 NTSTATUS resolve_name_recv(struct composite_context *c,
@@ -253,7 +255,7 @@ NTSTATUS resolve_name(struct resolve_context *ctx,
 			  const char **reply_addr,
 			  struct tevent_context *ev)
 {
-	struct composite_context *c = resolve_name_send(ctx, name, ev);
+	struct composite_context *c = resolve_name_send(ctx, mem_ctx, name, ev);
 	return resolve_name_recv(c, mem_ctx, reply_addr);
 }
 

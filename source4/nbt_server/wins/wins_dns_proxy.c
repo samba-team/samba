@@ -87,7 +87,7 @@ void nbtd_wins_dns_proxy_query(struct nbt_name_socket *nbtsock,
 	if (resolve_ctx == NULL) goto failed;
 	resolve_context_add_host_method(resolve_ctx);
 
-	creq = resolve_name_send(resolve_ctx, name, iface->nbtsrv->task->event_ctx);
+	creq = resolve_name_send(resolve_ctx, s, name, iface->nbtsrv->task->event_ctx);
 	if (!creq) goto failed;
 
 	creq->async.fn		= nbtd_wins_dns_proxy_handler;

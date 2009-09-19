@@ -102,7 +102,7 @@ struct composite_context *finddcs_send(TALLOC_CTX *mem_ctx,
 	state->msg_ctx = msg_ctx;
 
 	make_nbt_name(&name, state->domain_name, name_type);
-	creq = resolve_name_send(resolve_ctx, &name, event_ctx);
+	creq = resolve_name_send(resolve_ctx, state, &name, event_ctx);
 	composite_continue(c, creq, finddcs_name_resolved, state);
 	return c;
 }

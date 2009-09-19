@@ -103,7 +103,7 @@ _PUBLIC_ struct composite_context *socket_connect_multi_send(
 		struct nbt_name name;
 		struct composite_context *creq;
 		make_nbt_name_server(&name, server_address);
-		creq = resolve_name_send(resolve_ctx, &name, result->event_ctx);
+		creq = resolve_name_send(resolve_ctx, multi, &name, result->event_ctx);
 		if (composite_nomem(creq, result)) goto failed;
 		composite_continue(result, creq, continue_resolve_name, result);
 		return result;
