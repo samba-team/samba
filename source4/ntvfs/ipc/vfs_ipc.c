@@ -39,6 +39,7 @@
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_krb5.h"
 #include <gssapi/gssapi.h>
+#include "system/locale.h"
 
 /* this is the private structure used to keep the state of an open
    ipc$ connection. It needs to keep information about all open
@@ -222,6 +223,18 @@ struct ipc_open_state {
 static void ipc_open_done(struct tevent_req *subreq);
 
 /*
+  check the pipename is valid
+ */
+static NTSTATUS validate_pipename(const char *name)
+{
+	while (*name) {
+		if (!isalnum(*name)) return NT_STATUS_INVALID_PARAMETER;
+		name++;
+	}
+	return NT_STATUS_OK;
+}
+
+/*
   open a file - used for MSRPC pipes
 */
 static NTSTATUS ipc_open(struct ntvfs_module_context *ntvfs,
@@ -274,6 +287,12 @@ static NTSTATUS ipc_open(struct ntvfs_module_context *ntvfs,
 	NT_STATUS_HAVE_NO_MEMORY(p);
 
 	while (fname[0] == '\\') fname++;
+
+	/* check for valid characters in name */
+	fname = strlower_talloc(p, fname);
+
+	status = validate_pipename(fname);
+	NT_STATUS_NOT_OK_RETURN(status);
 
 	p->pipe_name = talloc_asprintf(p, "\\pipe\\%s", fname);
 	NT_STATUS_HAVE_NO_MEMORY(p->pipe_name);
