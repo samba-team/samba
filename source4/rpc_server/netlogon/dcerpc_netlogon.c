@@ -23,22 +23,16 @@
 
 #include "includes.h"
 #include "rpc_server/dcerpc_server.h"
-#include "rpc_server/common/common.h"
-#include "lib/ldb/include/ldb.h"
 #include "auth/auth.h"
 #include "auth/auth_sam_reply.h"
 #include "dsdb/samdb/samdb.h"
-#include "../libds/common/flags.h"
-#include "rpc_server/samr/proto.h"
 #include "../lib/util/util_ldb.h"
-#include "libcli/auth/libcli_auth.h"
 #include "../libcli/auth/schannel.h"
 #include "auth/gensec/schannel_state.h"
 #include "libcli/security/security.h"
 #include "param/param.h"
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_irpc.h"
-#include "librpc/gen_ndr/ndr_netlogon.h"
 
 struct netlogon_server_pipe_state {
 	struct netr_Credential client_challenge;

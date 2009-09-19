@@ -22,18 +22,13 @@
 
 #include "includes.h"
 #include "rpc_server/dcerpc_server.h"
-#include "rpc_server/common/common.h"
 #include "rpc_server/samr/dcesrv_samr.h"
 #include "system/time.h"
 #include "../lib/crypto/crypto.h"
-#include "../libds/common/flags.h"
-#include "libcli/ldap/ldap.h"
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
-#include "rpc_server/samr/proto.h"
 #include "libcli/auth/libcli_auth.h"
 #include "../lib/util/util_ldb.h"
-#include "param/param.h"
 
 /* 
   samr_ChangePasswordUser 

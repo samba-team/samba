@@ -20,13 +20,8 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "rpc_server/dcerpc_server.h"
-#include "rpc_server/common/common.h"
 #include "dsdb/samdb/samdb.h"
-#include "lib/ldb/include/ldb_errors.h"
-#include "param/param.h"
-#include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "libcli/security/dom_sid.h"
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
 
