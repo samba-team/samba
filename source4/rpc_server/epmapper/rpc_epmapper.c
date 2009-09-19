@@ -23,7 +23,6 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
 #include "rpc_server/dcerpc_server.h"
-#include "rpc_server/common/common.h"
 
 typedef uint32_t error_status_t;
 

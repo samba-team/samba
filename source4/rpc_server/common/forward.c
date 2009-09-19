@@ -20,11 +20,7 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/ndr_srvsvc.h"
-#include "librpc/gen_ndr/svcctl.h"
 #include "rpc_server/dcerpc_server.h"
-#include "rpc_server/common/common.h"
-#include "rpc_server/common/proto.h"
 #include "messaging/irpc.h"
 
 struct dcesrv_forward_state {

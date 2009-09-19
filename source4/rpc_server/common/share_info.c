@@ -23,8 +23,6 @@
 #include "param/share.h"
 #include "librpc/gen_ndr/srvsvc.h"
 #include "rpc_server/dcerpc_server.h"
-#include "rpc_server/common/common.h"
-#include "rpc_server/common/proto.h"
 
 /* 
     Here are common server info functions used by some dcerpc server interfaces
