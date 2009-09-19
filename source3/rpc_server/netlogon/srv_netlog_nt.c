@@ -2032,7 +2032,27 @@ WERROR _netr_DsRGetDCName(struct pipes_struct *p,
 NTSTATUS _netr_LogonGetCapabilities(struct pipes_struct *p,
 				    struct netr_LogonGetCapabilities *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct netlogon_creds_CredentialState *creds;
+	NTSTATUS status;
+
+	become_root();
+	status = netr_creds_server_step_check(p, p->mem_ctx,
+					      r->in.computer_name,
+					      r->in.credential,
+					      r->out.return_authenticator,
+					      &creds);
+	unbecome_root();
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (r->in.query_level != 1) {
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	r->out.capabilities->server_capabilities = creds->negotiate_flags;
+
+	return NT_STATUS_OK;
 }
 
 /****************************************************************
