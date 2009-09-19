@@ -125,21 +125,21 @@ static void winbind_task_init(struct task_server *task)
 	model_ops = process_model_startup(task->event_ctx, "single");
 	if (!model_ops) {
 		task_server_terminate(task,
-				      "Can't find 'single' process model_ops");
+				      "Can't find 'single' process model_ops", true);
 		return;
 	}
 
 	/* Make sure the directory for the Samba3 socket exists, and is of the correct permissions */
 	if (!directory_create_or_exist(lp_winbindd_socket_directory(task->lp_ctx), geteuid(), 0755)) {
 		task_server_terminate(task,
-				      "Cannot create winbindd pipe directory");
+				      "Cannot create winbindd pipe directory", true);
 		return;
 	}
 
 	/* Make sure the directory for the Samba3 socket exists, and is of the correct permissions */
 	if (!directory_create_or_exist(lp_winbindd_privileged_socket_directory(task->lp_ctx), geteuid(), 0750)) {
 		task_server_terminate(task,
-				      "Cannot create winbindd privileged pipe directory");
+				      "Cannot create winbindd privileged pipe directory", true);
 		return;
 	}
 
@@ -149,13 +149,13 @@ static void winbind_task_init(struct task_server *task)
 
 	status = wbsrv_setup_domains(service);
 	if (!NT_STATUS_IS_OK(status)) {
-		task_server_terminate(task, nt_errstr(status));
+		task_server_terminate(task, nt_errstr(status), true);
 		return;
 	}
 
 	service->idmap_ctx = idmap_init(service, task->event_ctx, task->lp_ctx);
 	if (service->idmap_ctx == NULL) {
-		task_server_terminate(task, "Failed to load idmap database");
+		task_server_terminate(task, "Failed to load idmap database", true);
 		return;
 	}
 
@@ -202,15 +202,15 @@ static void winbind_task_init(struct task_server *task)
 listen_failed:
 	DEBUG(0,("stream_setup_socket(path=%s) failed - %s\n",
 		 listen_socket->socket_path, nt_errstr(status)));
-	task_server_terminate(task, nt_errstr(status));
+	task_server_terminate(task, nt_errstr(status), true);
 	return;
 irpc_failed:
 	DEBUG(0,("wbsrv_init_irpc() failed - %s\n",
 		 nt_errstr(status)));
-	task_server_terminate(task, nt_errstr(status));
+	task_server_terminate(task, nt_errstr(status), true);
 	return;
 nomem:
-	task_server_terminate(task, nt_errstr(NT_STATUS_NO_MEMORY));
+	task_server_terminate(task, nt_errstr(NT_STATUS_NO_MEMORY), true);
 	return;
 }
 

@@ -151,10 +151,10 @@ static void kccsrv_task_init(struct task_server *task)
 
 	switch (lp_server_role(task->lp_ctx)) {
 	case ROLE_STANDALONE:
-		task_server_terminate(task, "kccsrv: no KCC required in standalone configuration");
+		task_server_terminate(task, "kccsrv: no KCC required in standalone configuration", false);
 		return;
 	case ROLE_DOMAIN_MEMBER:
-		task_server_terminate(task, "kccsrv: no KCC required in domain member configuration");
+		task_server_terminate(task, "kccsrv: no KCC required in domain member configuration", false);
 		return;
 	case ROLE_DOMAIN_CONTROLLER:
 		/* Yes, we want a KCC */
@@ -165,7 +165,7 @@ static void kccsrv_task_init(struct task_server *task)
 
 	service = talloc_zero(task, struct kccsrv_service);
 	if (!service) {
-		task_server_terminate(task, "kccsrv_task_init: out of memory");
+		task_server_terminate(task, "kccsrv_task_init: out of memory", true);
 		return;
 	}
 	service->task		= task;
@@ -174,9 +174,10 @@ static void kccsrv_task_init(struct task_server *task)
 
 	status = kccsrv_init_creds(service);
 	if (!W_ERROR_IS_OK(status)) {
-		task_server_terminate(task, talloc_asprintf(task,
-				      "kccsrv: Failed to obtain server credentials: %s\n",
-				      win_errstr(status)));
+		task_server_terminate(task, 
+				      talloc_asprintf(task,
+						      "kccsrv: Failed to obtain server credentials: %s\n",
+						      win_errstr(status)), true);
 		return;
 	}
 
@@ -184,7 +185,7 @@ static void kccsrv_task_init(struct task_server *task)
 	if (!W_ERROR_IS_OK(status)) {
 		task_server_terminate(task, talloc_asprintf(task,
 				      "kccsrv: Failed to connect to local samdb: %s\n",
-				      win_errstr(status)));
+							    win_errstr(status)), true);
 		return;
 	}
 
@@ -192,7 +193,7 @@ static void kccsrv_task_init(struct task_server *task)
 	if (!W_ERROR_IS_OK(status)) {
 		task_server_terminate(task, talloc_asprintf(task,
 				      "kccsrv: Failed to load partitions: %s\n",
-				      win_errstr(status)));
+							    win_errstr(status)), true);
 		return;
 	}
 
@@ -205,7 +206,7 @@ static void kccsrv_task_init(struct task_server *task)
 	if (!W_ERROR_IS_OK(status)) {
 		task_server_terminate(task, talloc_asprintf(task,
 				      "kccsrv: Failed to periodic schedule: %s\n",
-				      win_errstr(status)));
+							    win_errstr(status)), true);
 		return;
 	}
 

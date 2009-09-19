@@ -347,7 +347,7 @@ static void ntp_signd_task_init(struct task_server *task)
 		char *error = talloc_asprintf(task, "Cannot create NTP signd pipe directory: %s", 
 					      lp_ntp_signd_socket_directory(task->lp_ctx));
 		task_server_terminate(task,
-				      error);
+				      error, true);
 		return;
 	}
 
@@ -364,7 +364,7 @@ static void ntp_signd_task_init(struct task_server *task)
 
 	ntp_signd = talloc(task, struct ntp_signd_server);
 	if (ntp_signd == NULL) {
-		task_server_terminate(task, "ntp_signd: out of memory");
+		task_server_terminate(task, "ntp_signd: out of memory", true);
 		return;
 	}
 
@@ -373,7 +373,7 @@ static void ntp_signd_task_init(struct task_server *task)
 	/* Must be system to get at the password hashes */
 	ntp_signd->samdb = samdb_connect(ntp_signd, task->event_ctx, task->lp_ctx, system_session(ntp_signd, task->lp_ctx));
 	if (ntp_signd->samdb == NULL) {
-		task_server_terminate(task, "ntp_signd failed to open samdb");
+		task_server_terminate(task, "ntp_signd failed to open samdb", true);
 		return;
 	}
 

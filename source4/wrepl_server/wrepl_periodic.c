@@ -55,7 +55,7 @@ static void wreplsrv_periodic_handler_te(struct tevent_context *ev, struct teven
 
 	status = wreplsrv_periodic_schedule(service, service->config.periodic_interval);
 	if (!NT_STATUS_IS_OK(status)) {
-		task_server_terminate(service->task, nt_errstr(status));
+		task_server_terminate(service->task, nt_errstr(status), false);
 		return;
 	}
 

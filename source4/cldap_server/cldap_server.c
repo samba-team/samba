@@ -187,16 +187,18 @@ static void cldapd_task_init(struct task_server *task)
 	load_interfaces(task, lp_interfaces(task->lp_ctx), &ifaces);
 
 	if (iface_count(ifaces) == 0) {
-		task_server_terminate(task, "cldapd: no network interfaces configured");
+		task_server_terminate(task, "cldapd: no network interfaces configured", false);
 		return;
 	}
 
 	switch (lp_server_role(task->lp_ctx)) {
 	case ROLE_STANDALONE:
-		task_server_terminate(task, "cldap_server: no CLDAP server required in standalone configuration");
+		task_server_terminate(task, "cldap_server: no CLDAP server required in standalone configuration", 
+				      false);
 		return;
 	case ROLE_DOMAIN_MEMBER:
-		task_server_terminate(task, "cldap_server: no CLDAP server required in member server configuration");
+		task_server_terminate(task, "cldap_server: no CLDAP server required in member server configuration",
+				      false);
 		return;
 	case ROLE_DOMAIN_CONTROLLER:
 		/* Yes, we want an CLDAP server */
@@ -207,21 +209,21 @@ static void cldapd_task_init(struct task_server *task)
 
 	cldapd = talloc(task, struct cldapd_server);
 	if (cldapd == NULL) {
-		task_server_terminate(task, "cldapd: out of memory");
+		task_server_terminate(task, "cldapd: out of memory", true);
 		return;
 	}
 
 	cldapd->task = task;
 	cldapd->samctx = samdb_connect(cldapd, task->event_ctx, task->lp_ctx, system_session(cldapd, task->lp_ctx));
 	if (cldapd->samctx == NULL) {
-		task_server_terminate(task, "cldapd failed to open samdb");
+		task_server_terminate(task, "cldapd failed to open samdb", true);
 		return;
 	}
 
 	/* start listening on the configured network interfaces */
 	status = cldapd_startup_interfaces(cldapd, task->lp_ctx, ifaces);
 	if (!NT_STATUS_IS_OK(status)) {
-		task_server_terminate(task, "cldapd failed to setup interfaces");
+		task_server_terminate(task, "cldapd failed to setup interfaces", true);
 		return;
 	}
 

@@ -180,7 +180,7 @@ void nbtd_register_irpc(struct nbtd_server *nbtsrv)
 	status = IRPC_REGISTER(task->msg_ctx, irpc, NBTD_INFORMATION, 
 			       nbtd_information, nbtsrv);
 	if (!NT_STATUS_IS_OK(status)) {
-		task_server_terminate(task, "nbtd failed to setup monitoring");
+		task_server_terminate(task, "nbtd failed to setup monitoring", true);
 		return;
 	}
 
@@ -188,7 +188,7 @@ void nbtd_register_irpc(struct nbtd_server *nbtsrv)
 			       nbtd_getdcname, nbtsrv);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "nbtd failed to setup getdcname "
-				      "handler");
+				      "handler", true);
 		return;
 	}
 
@@ -196,7 +196,7 @@ void nbtd_register_irpc(struct nbtd_server *nbtsrv)
 			       nbtd_proxy_wins_challenge, nbtsrv);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "nbtd failed to setup wins challenge "
-				      "handler");
+				      "handler", true);
 		return;
 	}
 
@@ -204,7 +204,7 @@ void nbtd_register_irpc(struct nbtd_server *nbtsrv)
 			       nbtd_proxy_wins_release_demand, nbtsrv);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "nbtd failed to setup wins release demand "
-				      "handler");
+				      "handler", true);
 		return;
 	}
 }

@@ -84,7 +84,9 @@ static void single_new_task(struct tevent_context *ev,
 			    void (*new_task)(struct tevent_context *, struct loadparm_context *, struct server_id, void *), 
 			    void *private_data)
 {
-	static uint32_t taskid = 0;
+	/* start our taskids at 1, zero is reserved for the top
+	   level samba task */
+	static uint32_t taskid = 1;
        
 	/* We use 1 so we cannot collide in with cluster ids generated
 	 * in the accept connection above, and unlikly to collide with

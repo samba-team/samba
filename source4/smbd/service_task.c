@@ -25,15 +25,29 @@
 #include "smbd/service_task.h"
 #include "lib/messaging/irpc.h"
 #include "param/param.h"
+#include "librpc/gen_ndr/ndr_irpc.h"
 
 /*
   terminate a task service
 */
-void task_server_terminate(struct task_server *task, const char *reason)
+void task_server_terminate(struct task_server *task, const char *reason, bool fatal)
 {
 	struct tevent_context *event_ctx = task->event_ctx;
 	const struct model_ops *model_ops = task->model_ops;
 	DEBUG(0,("task_server_terminate: [%s]\n", reason));
+
+	if (fatal) {
+		struct samba_terminate r;
+		struct server_id *sid;
+
+		sid = irpc_servers_byname(task->msg_ctx, task, "samba");
+
+		r.in.reason = reason;
+		IRPC_CALL(task->msg_ctx, sid[0],
+			  irpc, SAMBA_TERMINATE,
+			  &r, NULL);
+	}
+
 	model_ops->terminate(event_ctx, task->lp_ctx, reason);
 	
 	/* don't free this above, it might contain the 'reason' being printed */
@@ -72,7 +86,7 @@ static void task_server_callback(struct tevent_context *event_ctx,
 				       lp_iconv_convenience(task->lp_ctx),
 				       task->event_ctx);
 	if (!task->msg_ctx) {
-		task_server_terminate(task, "messaging_init() failed");
+		task_server_terminate(task, "messaging_init() failed", true);
 		return;
 	}
 

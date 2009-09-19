@@ -36,4 +36,7 @@ struct messaging_context;
 /* temporary messaging endpoints are allocated above this line */
 #define MSG_TMP_BASE		1000
 
+/* taskid for messaging of parent process */
+#define SAMBA_PARENT_TASKID     0
+
 #endif

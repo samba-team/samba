@@ -714,7 +714,7 @@ static void dcesrv_task_init(struct task_server *task)
 
 	return;
 failed:
-	task_server_terminate(task, "Failed to startup dcerpc server task");	
+	task_server_terminate(task, "Failed to startup dcerpc server task", true);	
 }
 
 NTSTATUS server_service_rpc_init(void)

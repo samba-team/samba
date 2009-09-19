@@ -172,7 +172,7 @@ static void kccsrv_periodic_handler_te(struct tevent_context *ev, struct tevent_
 
 	status = kccsrv_periodic_schedule(service, service->periodic.interval);
 	if (!W_ERROR_IS_OK(status)) {
-		task_server_terminate(service->task, win_errstr(status));
+		task_server_terminate(service->task, win_errstr(status), true);
 		return;
 	}
 }

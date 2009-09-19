@@ -141,4 +141,11 @@ import "misc.idl", "security.idl", "nbt.idl";
 		[out,switch_is(level)] smbsrv_info info
 		);
 
+	/*
+	  called when samba should shutdown
+	 */
+	void samba_terminate(
+		[in] astring reason
+		);
+
 }

@@ -249,7 +249,7 @@ static void smbsrv_task_init(struct task_server *task)
 
 	return;
 failed:
-	task_server_terminate(task, "Failed to startup smb server task");	
+	task_server_terminate(task, "Failed to startup smb server task", true);	
 }
 
 /* called at smbd startup - register ourselves as a server service */

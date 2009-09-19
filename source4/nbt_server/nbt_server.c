@@ -42,7 +42,7 @@ static void nbtd_task_init(struct task_server *task)
 	load_interfaces(task, lp_interfaces(task->lp_ctx), &ifaces);
 
 	if (iface_count(ifaces) == 0) {
-		task_server_terminate(task, "nbtd: no network interfaces configured");
+		task_server_terminate(task, "nbtd: no network interfaces configured", false);
 		return;
 	}
 
@@ -50,7 +50,7 @@ static void nbtd_task_init(struct task_server *task)
 
 	nbtsrv = talloc(task, struct nbtd_server);
 	if (nbtsrv == NULL) {
-		task_server_terminate(task, "nbtd: out of memory");
+		task_server_terminate(task, "nbtd: out of memory", true);
 		return;
 	}
 
@@ -62,20 +62,20 @@ static void nbtd_task_init(struct task_server *task)
 	/* start listening on the configured network interfaces */
 	status = nbtd_startup_interfaces(nbtsrv, task->lp_ctx, ifaces);
 	if (!NT_STATUS_IS_OK(status)) {
-		task_server_terminate(task, "nbtd failed to setup interfaces");
+		task_server_terminate(task, "nbtd failed to setup interfaces", true);
 		return;
 	}
 
 	nbtsrv->sam_ctx = samdb_connect(nbtsrv, task->event_ctx, task->lp_ctx, system_session(nbtsrv, task->lp_ctx));
 	if (nbtsrv->sam_ctx == NULL) {
-		task_server_terminate(task, "nbtd failed to open samdb");
+		task_server_terminate(task, "nbtd failed to open samdb", true);
 		return;
 	}
 
 	/* start the WINS server, if appropriate */
 	status = nbtd_winsserver_init(nbtsrv);
 	if (!NT_STATUS_IS_OK(status)) {
-		task_server_terminate(task, "nbtd failed to start WINS server");
+		task_server_terminate(task, "nbtd failed to start WINS server", true);
 		return;
 	}
 

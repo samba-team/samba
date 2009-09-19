@@ -165,7 +165,7 @@ static void samba3_smb_task_init(struct task_server *task)
 
 	return;
 failed:
-	task_server_terminate(task, "Failed to startup samba3 smb task");
+	task_server_terminate(task, "Failed to startup samba3 smb task", true);
 }
 
 /* called at smbd startup - register ourselves as a server service */

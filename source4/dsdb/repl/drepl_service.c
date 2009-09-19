@@ -138,10 +138,12 @@ static void dreplsrv_task_init(struct task_server *task)
 
 	switch (lp_server_role(task->lp_ctx)) {
 	case ROLE_STANDALONE:
-		task_server_terminate(task, "dreplsrv: no DSDB replication required in standalone configuration");
+		task_server_terminate(task, "dreplsrv: no DSDB replication required in standalone configuration", 
+				      false);
 		return;
 	case ROLE_DOMAIN_MEMBER:
-		task_server_terminate(task, "dreplsrv: no DSDB replication required in domain member configuration");
+		task_server_terminate(task, "dreplsrv: no DSDB replication required in domain member configuration", 
+				      false);
 		return;
 	case ROLE_DOMAIN_CONTROLLER:
 		/* Yes, we want DSDB replication */
@@ -152,7 +154,7 @@ static void dreplsrv_task_init(struct task_server *task)
 
 	service = talloc_zero(task, struct dreplsrv_service);
 	if (!service) {
-		task_server_terminate(task, "dreplsrv_task_init: out of memory");
+		task_server_terminate(task, "dreplsrv_task_init: out of memory", true);
 		return;
 	}
 	service->task		= task;
@@ -163,7 +165,7 @@ static void dreplsrv_task_init(struct task_server *task)
 	if (!W_ERROR_IS_OK(status)) {
 		task_server_terminate(task, talloc_asprintf(task,
 				      "dreplsrv: Failed to obtain server credentials: %s\n",
-				      win_errstr(status)));
+							    win_errstr(status)), true);
 		return;
 	}
 
@@ -171,7 +173,7 @@ static void dreplsrv_task_init(struct task_server *task)
 	if (!W_ERROR_IS_OK(status)) {
 		task_server_terminate(task, talloc_asprintf(task,
 				      "dreplsrv: Failed to connect to local samdb: %s\n",
-				      win_errstr(status)));
+							    win_errstr(status)), true);
 		return;
 	}
 
@@ -179,7 +181,7 @@ static void dreplsrv_task_init(struct task_server *task)
 	if (!W_ERROR_IS_OK(status)) {
 		task_server_terminate(task, talloc_asprintf(task,
 				      "dreplsrv: Failed to load partitions: %s\n",
-				      win_errstr(status)));
+							    win_errstr(status)), true);
 		return;
 	}
 
@@ -190,7 +192,7 @@ static void dreplsrv_task_init(struct task_server *task)
 	if (!W_ERROR_IS_OK(status)) {
 		task_server_terminate(task, talloc_asprintf(task,
 				      "dreplsrv: Failed to periodic schedule: %s\n",
-				      win_errstr(status)));
+							    win_errstr(status)), true);
 		return;
 	}
 
@@ -200,7 +202,7 @@ static void dreplsrv_task_init(struct task_server *task)
 	if (!W_ERROR_IS_OK(status)) {
 		task_server_terminate(task, talloc_asprintf(task,
 				      "dreplsrv: Failed to setup notify schedule: %s\n",
-				      win_errstr(status)));
+							    win_errstr(status)), true);
 		return;
 	}
 

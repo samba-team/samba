@@ -568,10 +568,12 @@ static void ldapsrv_task_init(struct task_server *task)
 
 	switch (lp_server_role(task->lp_ctx)) {
 	case ROLE_STANDALONE:
-		task_server_terminate(task, "ldap_server: no LDAP server required in standalone configuration");
+		task_server_terminate(task, "ldap_server: no LDAP server required in standalone configuration", 
+				      false);
 		return;
 	case ROLE_DOMAIN_MEMBER:
-		task_server_terminate(task, "ldap_server: no LDAP server required in member server configuration");
+		task_server_terminate(task, "ldap_server: no LDAP server required in member server configuration", 
+				      false);
 		return;
 	case ROLE_DOMAIN_CONTROLLER:
 		/* Yes, we want an LDAP server */
@@ -642,7 +644,7 @@ static void ldapsrv_task_init(struct task_server *task)
 	 */
 	if (!directory_create_or_exist(priv_dir, geteuid(), 0750)) {
 		task_server_terminate(task, "Cannot create ldap "
-				      "privileged ldapi directory");
+				      "privileged ldapi directory", true);
 		return;
 	}
 	ldapi_path = talloc_asprintf(ldap_service, "%s/ldapi", priv_dir);
@@ -666,7 +668,7 @@ static void ldapsrv_task_init(struct task_server *task)
 	return;
 
 failed:
-	task_server_terminate(task, "Failed to startup ldap server task");	
+	task_server_terminate(task, "Failed to startup ldap server task", true);
 }
 
 
