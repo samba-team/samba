@@ -24,7 +24,7 @@
 
 #include "librpc/gen_ndr/nbt.h"
 #include "librpc/ndr/libndr.h"
-
+#include "system/network.h"
 /*
   possible states for pending requests
 */
@@ -354,5 +354,10 @@ struct composite_context *nbt_name_refresh_wins_send(struct nbt_name_socket *nbt
 NTSTATUS nbt_name_register_wins_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 				     struct nbt_name_register_wins *io);
 
+
+XFILE *startlmhosts(const char *fname);
+bool getlmhostsent(TALLOC_CTX *ctx, XFILE *fp, char **pp_name, int *name_type,
+		struct sockaddr_storage *pss);
+void endlmhosts(XFILE *fp);
 
 #endif /* __LIBNBT_H__ */

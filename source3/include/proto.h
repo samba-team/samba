@@ -3104,10 +3104,6 @@ struct sockaddr_storage *name_query(int fd,
 			int *count,
 			int *flags,
 			bool *timed_out);
-XFILE *startlmhosts(const char *fname);
-bool getlmhostsent(TALLOC_CTX *ctx, XFILE *fp, char **pp_name, int *name_type,
-		struct sockaddr_storage *pss);
-void endlmhosts(XFILE *fp);
 NTSTATUS name_resolve_bcast(const char *name,
 			int name_type,
 			struct ip_service **return_iplist,
