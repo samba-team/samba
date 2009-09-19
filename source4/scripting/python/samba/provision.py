@@ -575,7 +575,8 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
     #   module when expanding the objectclass list)
     # - partition must be last
     # - each partition has its own module list then
-    modules_list = ["rootdse",
+    modules_list = ["resolve_oids",
+                    "rootdse",
                     "paged_results",
                     "ranged_results",
                     "anr",
