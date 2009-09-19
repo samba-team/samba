@@ -23,9 +23,6 @@
 #include "includes.h"
 #include <tevent.h>
 #include "process_model.h"
-#include "lib/socket/socket.h"
-#include "smbd/service.h"
-#include "smbd/service_stream.h"
 #include "lib/messaging/irpc.h"
 #include "cluster/cluster.h"
 #include "param/param.h"

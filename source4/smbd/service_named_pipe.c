@@ -21,7 +21,6 @@
 
 #include "includes.h"
 #include <tevent.h>
-#include "lib/socket/socket.h"
 #include "smbd/service.h"
 #include "param/param.h"
 #include "auth/session.h"
@@ -32,7 +31,6 @@
 #include "libcli/raw/smb.h"
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_krb5.h"
-#include <gssapi/gssapi.h>
 
 struct named_pipe_socket {
 	const char *pipe_name;
