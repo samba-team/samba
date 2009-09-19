@@ -2,6 +2,7 @@
 
 # Unix SMB/CIFS implementation.
 # Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2008
+# Copyright (C) Matthias Dieter Wallnoefer 2009
 #
 # Based on the original in EJS:
 # Copyright (C) Andrew Tridgell <tridge@samba.org> 2005
@@ -109,15 +110,13 @@ pwdLastSet: 0
     def newuser(self, username, unixname, password, force_password_change_at_next_login=False):
         """Adds a new user
 
-        Note: This call uses the "userPassword" attribute to set the password.
-        This works correctly on SAMBA 4 DCs and on Windows DCs with
-        "2003 Native" or higer domain function level.
+        Note: This call adds also the ID mapping for winbind; therefore it works
+        *only* on SAMBA 4.
         
         :param username: Name of the new user.
         :param unixname: Name of the unix user to map to.
         :param password: Password for the new user
         """
-        # connect to the sam 
         self.transaction_start()
         try:
             user_dn = "CN=%s,CN=Users,%s" % (username, self.domain_dn())
@@ -126,9 +125,13 @@ pwdLastSet: 0
             # fills in the default informations
             self.add({"dn": user_dn, 
                 "sAMAccountName": username,
-                "userPassword": password,
                 "objectClass": "user"})
 
+            # Sets the password for it
+            self.setpassword("(dn=" + user_dn + ")", password,
+              force_password_change_at_next_login)
+
+            # Gets the user SID (for the account mapping setup)
             res = self.search(user_dn, scope=ldb.SCOPE_BASE,
                               expression="objectclass=*",
                               attrs=["objectSid"])
@@ -145,12 +148,6 @@ pwdLastSet: 0
 
             except KeyError:
                 pass
-
-            if force_password_change_at_next_login:
-                self.force_password_change_at_next_login("(dn=" + user_dn + ")")
-
-            #  modify the userAccountControl to remove the disabled bit
-            self.enable_account("(dn=" + user_dn + ")")
         except:
             self.transaction_cancel()
             raise
@@ -160,7 +157,7 @@ pwdLastSet: 0
         """Sets the password for a user
         
         Note: This call uses the "userPassword" attribute to set the password.
-        This works correctly on SAMBA 4 DCs and on Windows DCs with
+        This works correctly on SAMBA 4 and on Windows DCs with
         "2003 Native" or higer domain function level.
 
         :param filter: LDAP filter to find the user (eg samccountname=name)
