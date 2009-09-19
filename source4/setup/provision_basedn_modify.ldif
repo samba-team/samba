@@ -4,8 +4,9 @@
 dn: ${DOMAINDN}
 changetype: modify
 -
+# This should be 0x0001, but the 0 byte is not allowed - therefore encoded
 replace: auditingPolicy
-auditingPolicy: 
+auditingPolicy:: AAE=
 -
 replace: creationTime
 creationTime: ${CREATTIME}
