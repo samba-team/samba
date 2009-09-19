@@ -24,6 +24,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "libcli/security/dom_sid.h"
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
+#include "libcli/security/security.h"
 
 /*
   format a drsuapi_DsReplicaObjectIdentifier naming context as a string
@@ -101,3 +102,17 @@ int drsuapi_search_with_extended_dn(struct ldb_context *ldb,
 	return ret;
 }
 
+WERROR drs_security_level_check(struct dcesrv_call_state *dce_call, const char* call)
+{
+	if (lp_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "disable_sec_check", true)) {
+		return WERR_OK;
+	}
+
+	if (security_session_user_level(dce_call->conn->auth_state.session_info) <
+		SECURITY_DOMAIN_CONTROLLER) {
+		DEBUG(0,("DsReplicaGetInfo refused for security token\n"));
+		return WERR_DS_DRA_ACCESS_DENIED;
+	}
+
+	return WERR_OK;
+}

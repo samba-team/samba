@@ -301,10 +301,9 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		return WERR_DS_DRA_BAD_NC;
 	}
 
-	if (security_session_user_level(dce_call->conn->auth_state.session_info) <
-	    SECURITY_DOMAIN_CONTROLLER) {
-		DEBUG(0,("getncchanges refused for security token\n"));
-		return WERR_DS_DRA_ACCESS_DENIED;
+	werr = drs_security_level_check(dce_call, "DsGetNCChanges");
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
 	}
 
 	/*

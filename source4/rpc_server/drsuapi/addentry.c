@@ -151,10 +151,9 @@ WERROR dcesrv_drsuapi_DsAddEntry(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
 	b_state = h->data;
 
-	if (security_session_user_level(dce_call->conn->auth_state.session_info) <
-	    SECURITY_DOMAIN_CONTROLLER) {
-		DEBUG(0,("DsAddEntry refused for security token\n"));
-		return WERR_DS_DRA_ACCESS_DENIED;
+	status = drs_security_level_check(dce_call, "DsAddEntry");
+	if (!W_ERROR_IS_OK(status)) {
+		return status;
 	}
 
 	switch (r->in.level) {

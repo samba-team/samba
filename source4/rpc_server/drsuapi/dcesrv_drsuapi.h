@@ -56,3 +56,5 @@ int drsuapi_search_with_extended_dn(struct ldb_context *ldb,
 				    const char * const *attrs,
 				    const char *format, ...) PRINTF_ATTRIBUTE(7,8);
 
+WERROR drs_security_level_check(struct dcesrv_call_state *dce_call,
+				const char* call);

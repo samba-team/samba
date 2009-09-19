@@ -228,15 +228,17 @@ static WERROR dcesrv_drsuapi_DsUnbind(struct dcesrv_call_state *dce_call, TALLOC
 static WERROR dcesrv_drsuapi_DsReplicaSync(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					   struct drsuapi_DsReplicaSync *r)
 {
-	if (security_session_user_level(dce_call->conn->auth_state.session_info) <
-	    SECURITY_DOMAIN_CONTROLLER) {
-		DEBUG(0,("DsReplicaSync refused for security token\n"));
-		return WERR_DS_DRA_ACCESS_DENIED;
+	WERROR status;
+
+	status = drs_security_level_check(dce_call, "DsReplicaSync");
+	if (!W_ERROR_IS_OK(status)) {
+		return status;
 	}
 
 	dcesrv_irpc_forward_rpc_call(dce_call, mem_ctx, r, NDR_DRSUAPI_DSREPLICASYNC,
 				     &ndr_table_drsuapi,
 				     "dreplsrv", "DsReplicaSync");
+
 	return WERR_OK;
 }
 
@@ -453,14 +455,14 @@ static WERROR dcesrv_drsuapi_DsRemoveDSServer(struct dcesrv_call_state *dce_call
 	struct ldb_dn *ntds_dn;
 	int ret;
 	bool ok;
+	WERROR status;
 
 	ZERO_STRUCT(r->out.res);
 	*r->out.level_out = 1;
 
-	if (security_session_user_level(dce_call->conn->auth_state.session_info) <
-	    SECURITY_DOMAIN_CONTROLLER) {
-		DEBUG(0,("DsRemoveDSServer refused for security token\n"));
-		return WERR_DS_DRA_ACCESS_DENIED;
+	status = drs_security_level_check(dce_call, "DsRemoveDSServer");
+	if (!W_ERROR_IS_OK(status)) {
+		return status;
 	}
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);

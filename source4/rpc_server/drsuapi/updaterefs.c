@@ -105,10 +105,9 @@ WERROR dcesrv_drsuapi_DsReplicaUpdateRefs(struct dcesrv_call_state *dce_call, TA
 	WERROR werr;
 	struct ldb_dn *dn;
 
-	if (security_session_user_level(dce_call->conn->auth_state.session_info) <
-	    SECURITY_DOMAIN_CONTROLLER) {
-		DEBUG(0,("DsReplicaUpdateRefs refused for security token\n"));
-		return WERR_DS_DRA_ACCESS_DENIED;
+	werr = drs_security_level_check(dce_call, "DsReplicaUpdateRefs");
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
 	}
 
 	if (r->in.level != 1) {
