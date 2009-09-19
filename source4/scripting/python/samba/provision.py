@@ -1052,7 +1052,10 @@ def provision(setup_dir, message, session_info,
         return os.path.join(setup_dir, file)
 
     if domainsid is None:
-        domainsid = security.random_sid()
+      domainsid = security.random_sid()
+    else:
+      domainsid = security.dom_sid(domainsid)
+
 
     # create/adapt the group policy GUIDs
     if policyguid is None:
