@@ -188,7 +188,6 @@ static int do_share_checks(struct loadparm_context *lp_ctx, const char *cname, c
 					    * as we take it as we pass
 					    * it's address as an int
 					    * pointer  */
-.c
 	struct loadparm_context *lp_ctx;
 
 	struct poptOption long_options[] = {
