@@ -25,6 +25,7 @@
 #include "libcli/security/dom_sid.h"
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
 #include "libcli/security/security.h"
+#include "param/param.h"
 
 /*
   format a drsuapi_DsReplicaObjectIdentifier naming context as a string
