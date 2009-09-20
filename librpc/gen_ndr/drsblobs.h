@@ -91,7 +91,7 @@ struct repsFromTo2OtherInfo {
 }/* [relative_base,gensize,public] */;
 
 struct repsFromTo2 {
-	uint32_t blobsize;/* [value(ndr_size_repsFromTo1(this,ndr->iconv_convenience,ndr->flags)+8)] */
+	uint32_t blobsize;/* [value(ndr_size_repsFromTo2(this,ndr->iconv_convenience,ndr->flags)+8)] */
 	uint32_t consecutive_sync_failures;
 	NTTIME last_success;
 	NTTIME last_attempt;

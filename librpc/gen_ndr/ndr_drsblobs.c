@@ -764,7 +764,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_repsFromTo2(struct ndr_push *ndr, int ndr_fl
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
 		if (ndr_flags & NDR_SCALARS) {
 			NDR_CHECK(ndr_push_align(ndr, 8));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_repsFromTo1(r, ndr->iconv_convenience, ndr->flags) + 8));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_repsFromTo2(r, ndr->iconv_convenience, ndr->flags) + 8));
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->consecutive_sync_failures));
 			NDR_CHECK(ndr_push_NTTIME_1sec(ndr, NDR_SCALARS, r->last_success));
 			NDR_CHECK(ndr_push_NTTIME_1sec(ndr, NDR_SCALARS, r->last_attempt));
@@ -846,7 +846,7 @@ _PUBLIC_ void ndr_print_repsFromTo2(struct ndr_print *ndr, const char *name, con
 		uint32_t _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
 		ndr->depth++;
-		ndr_print_uint32(ndr, "blobsize", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_repsFromTo1(r, ndr->iconv_convenience, ndr->flags) + 8:r->blobsize);
+		ndr_print_uint32(ndr, "blobsize", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_repsFromTo2(r, ndr->iconv_convenience, ndr->flags) + 8:r->blobsize);
 		ndr_print_uint32(ndr, "consecutive_sync_failures", r->consecutive_sync_failures);
 		ndr_print_NTTIME_1sec(ndr, "last_success", r->last_success);
 		ndr_print_NTTIME_1sec(ndr, "last_attempt", r->last_attempt);
