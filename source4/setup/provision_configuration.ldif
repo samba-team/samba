@@ -951,8 +951,7 @@ objectClass: nTDSService
 msDS-Other-Settings: DisableVLVSupport=0
 msDS-Other-Settings: DynamicObjectMinTTL=900
 msDS-Other-Settings: DynamicObjectDefaultTTL=86400
-# "sPNMappings" needs to be enhanced when we add features
-sPNMappings: host=dns,netlogon,rpc,cifs,wins,http
+sPNMappings: host=alerter,appmgmt,cisvc,clipsrv,browser,dhcp,dnscache,replicator,eventlog,eventsystem,policyagent,oakley,dmserver,dns,mcsvc,fax,msiserver,ias,messenger,netlogon,netman,netdde,netddedsm,nmagent,plugplay,protectedstorage,rasman,rpclocator,rpc,rpcss,remoteaccess,rsvp,samss,scardsvr,scesrv,seclogon,scm,dcom,cifs,spooler,snmp,schedule,tapisrv,trksvr,trkwks,ups,time,wins,www,http,w3svc,iisadmin,msdtc
 tombstoneLifetime: 180
 
 dn: CN=Query-Policies,CN=Directory Service,CN=Windows NT,CN=Services,${CONFIGDN}
