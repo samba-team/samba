@@ -1477,10 +1477,37 @@ void talloc_enable_null_tracking(void)
 }
 
 /*
+  enable tracking of the NULL context, not moving the autofree context
+  into the NULL context. This is needed for the talloc testsuite
+*/
+void talloc_enable_null_tracking_no_autofree(void)
+{
+	if (null_context == NULL) {
+		null_context = _talloc_named_const(NULL, 0, "null_context");
+	}
+}
+
+/*
   disable tracking of the NULL context
 */
 void talloc_disable_null_tracking(void)
 {
+	if (null_context != NULL) {
+		/* we have to move any children onto the real NULL
+		   context */
+		struct talloc_chunk *tc, *tc2;
+		tc = talloc_chunk_from_ptr(null_context);
+		for (tc2 = tc->child; tc2; tc2=tc2->next) {
+			if (tc2->parent == tc) tc2->parent = NULL;
+			if (tc2->prev == tc) tc2->prev = NULL;
+		}
+		for (tc2 = tc->next; tc2; tc2=tc2->next) {
+			if (tc2->parent == tc) tc2->parent = NULL;
+			if (tc2->prev == tc) tc2->prev = NULL;
+		}
+		tc->child = NULL;
+		tc->next = NULL;
+	}
 	talloc_free(null_context);
 	null_context = NULL;
 }

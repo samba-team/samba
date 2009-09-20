@@ -518,6 +518,7 @@ static bool test_misc(void)
 
 	CHECK_SIZE("misc", NULL, 0);
 
+	talloc_enable_null_tracking_no_autofree();
 	talloc_enable_leak_report();
 	talloc_enable_leak_report_full();
 
@@ -1136,7 +1137,7 @@ static void test_reset(void)
 	talloc_set_log_fn(test_log_stdout);
 	test_abort_stop();
 	talloc_disable_null_tracking();
-	talloc_enable_null_tracking();
+	talloc_enable_null_tracking_no_autofree();
 }
 
 struct torture_context;

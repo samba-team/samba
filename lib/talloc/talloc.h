@@ -163,6 +163,7 @@ void talloc_report_depth_file(const void *ptr, int depth, int max_depth, FILE *f
 void talloc_report_full(const void *ptr, FILE *f);
 void talloc_report(const void *ptr, FILE *f);
 void talloc_enable_null_tracking(void);
+void talloc_enable_null_tracking_no_autofree(void);
 void talloc_disable_null_tracking(void);
 void talloc_enable_leak_report(void);
 void talloc_enable_leak_report_full(void);
