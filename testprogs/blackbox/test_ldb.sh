@@ -210,4 +210,20 @@ for SPDN in $SPECIALDNS; do
 	fi
 done
 
+echo "Search using OIDs instead of names"
+nentries1=`$ldbsearch $options $CONFIGURATION -H $p://$SERVER '(objectClass=user)' name | grep "^name: "  | wc -l`
+nentries2=`$ldbsearch $options $CONFIGURATION -H $p://$SERVER '(2.5.4.0=1.2.840.113556.1.5.9)' name | grep "^name: "  | wc -l`
+if [ $nentries1 -lt 1 ]; then
+	echo "Error: Searching user via (objectClass=user): '$nentries1' < 1"
+	failed=`expr $failed + 1`
+fi
+if [ $nentries2 -lt 1 ]; then
+	echo "Error: Searching user via (2.5.4.0=1.2.840.113556.1.5.9) '$nentries2' < 1"
+	failed=`expr $failed + 1`
+fi
+if [ x"$nentries1" != x"$nentries2" ]; then
+	echo "Error: Searching user with OIDS[$nentries1] doesn't return the same as STRINGS[$nentries2]"
+	failed=`expr $failed + 1`
+fi
+
 exit $failed
