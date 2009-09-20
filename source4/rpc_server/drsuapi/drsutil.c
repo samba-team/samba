@@ -105,7 +105,8 @@ int drsuapi_search_with_extended_dn(struct ldb_context *ldb,
 
 WERROR drs_security_level_check(struct dcesrv_call_state *dce_call, const char* call)
 {
-	if (lp_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "disable_sec_check", true)) {
+	if (lp_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, 
+			 "drs", "disable_sec_check", false)) {
 		return WERR_OK;
 	}
 
