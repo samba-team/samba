@@ -669,7 +669,14 @@ def secretsdb_become_dc(secretsdb, setup_path, domain, realm, dnsdomain,
     :param setup_path: Setup path function
     :param machinepass: Machine password
     """
-    setup_ldb(secretsdb, setup_path("secrets_dc.ldif"), { 
+    setup_ldb(secretsdb, setup_path("secrets_dns.ldif"), { 
+            "REALM": realm,
+            "DNSDOMAIN": dnsdomain,
+            "DNS_KEYTAB": dns_keytab_path,
+            "DNSPASS_B64": b64encode(dnspass),
+            })
+
+    setup_ldb(secretsdb, setup_path("secrets_self_join.ldif"), { 
             "MACHINEPASS_B64": b64encode(machinepass),
             "DOMAIN": domain,
             "REALM": realm,
@@ -677,9 +684,8 @@ def secretsdb_become_dc(secretsdb, setup_path, domain, realm, dnsdomain,
             "DOMAINSID": str(domainsid),
             "SECRETS_KEYTAB": keytab_path,
             "NETBIOSNAME": netbiosname,
-            "SAM_LDB": samdb_url,
-            "DNS_KEYTAB": dns_keytab_path,
-            "DNSPASS_B64": b64encode(dnspass),
+            "SALT_PRINCIPAL": "host/%s.%s@%s" % (netbiosname.lower(), dnsdomain.lower(), realm.upper()),
+            "KEY_VERSION_NUMBER": "1"
             })
 
 
