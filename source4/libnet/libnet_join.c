@@ -33,6 +33,7 @@
 #include "auth/credentials/credentials_krb5.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "param/param.h"
+#include "param/provision.h"
 
 /*
  * complete a domain join, when joining to a AD domain:
@@ -860,254 +861,6 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	return status;
 }
 
-NTSTATUS libnet_set_join_secrets(struct libnet_context *ctx, 
-				 TALLOC_CTX *mem_ctx, 
-				 struct libnet_set_join_secrets *r)
-{
-	TALLOC_CTX *tmp_mem;
-	int ret, rtn;
-	struct ldb_context *ldb;
-	struct ldb_dn *base_dn;
-	struct ldb_message **msgs, *msg;
-	const char *sct;
-	const char * const attrs[] = {
-		"whenChanged",
-		"secret",
-		"priorSecret",
-		"priorChanged",
-		"krb5Keytab",
-		"privateKeytab",
-		NULL
-	};
-
-	tmp_mem = talloc_new(mem_ctx);
-	if (!tmp_mem) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* Open the secrets database */
-	ldb = secrets_db_connect(tmp_mem, ctx->event_ctx, ctx->lp_ctx);
-	if (!ldb) {
-		r->out.error_string
-			= talloc_asprintf(mem_ctx, 
-					  "Could not open secrets database");
-		talloc_free(tmp_mem);
-		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-	}
-
-	/*
-	 * now prepare the record for secrets.ldb
-	 */
-	sct = talloc_asprintf(tmp_mem, "%d", r->in.join_type); 
-	if (!sct) {
-		r->out.error_string = NULL;
-		talloc_free(tmp_mem);
-		return NT_STATUS_NO_MEMORY;
-	}
-	
-	msg = ldb_msg_new(tmp_mem);
-	if (!msg) {
-		r->out.error_string = NULL;
-		talloc_free(tmp_mem);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	base_dn = ldb_dn_new(tmp_mem, ldb, "cn=Primary Domains");
-	if (!base_dn) {
-		r->out.error_string = NULL;
-		talloc_free(tmp_mem);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	msg->dn = ldb_dn_copy(tmp_mem, base_dn);
-	if ( ! ldb_dn_add_child_fmt(msg->dn, "flatname=%s", r->in.domain_name)) {
-		r->out.error_string = NULL;
-		talloc_free(tmp_mem);
-		return NT_STATUS_NO_MEMORY;
-	}
-	
-	rtn = samdb_msg_add_string(ldb, tmp_mem, msg, "flatname", r->in.domain_name);
-	if (rtn == -1) {
-		r->out.error_string = NULL;
-		talloc_free(tmp_mem);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (r->in.realm) {
-		rtn = samdb_msg_add_string(ldb, tmp_mem, msg, "realm", r->in.realm);
-		if (rtn == -1) {
-			r->out.error_string = NULL;
-			talloc_free(tmp_mem);
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
-
-	rtn = samdb_msg_add_string(ldb, tmp_mem, msg, "objectClass", "primaryDomain");
-	if (rtn == -1) {
-		r->out.error_string = NULL;
-		talloc_free(tmp_mem);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	rtn = samdb_msg_add_string(ldb, tmp_mem, msg, "objectClass", "kerberosSecret");
-	if (rtn == -1) {
-		r->out.error_string = NULL;
-		talloc_free(tmp_mem);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	rtn = samdb_msg_add_string(ldb, tmp_mem, msg, "secret", r->in.join_password);
-	if (rtn == -1) {
-		r->out.error_string = NULL;
-		talloc_free(tmp_mem);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	rtn = samdb_msg_add_string(ldb, tmp_mem, msg, "samAccountName", r->in.account_name);
-	if (rtn == -1) {
-		r->out.error_string = NULL;
-		talloc_free(tmp_mem);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	rtn = samdb_msg_add_string(ldb, tmp_mem, msg, "secureChannelType", sct);
-	if (rtn == -1) {
-		r->out.error_string = NULL;
-		talloc_free(tmp_mem);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (r->in.kvno) {
-		rtn = samdb_msg_add_uint(ldb, tmp_mem, msg, "msDS-KeyVersionNumber",
-					 r->in.kvno);
-		if (rtn == -1) {
-			r->out.error_string = NULL;
-			talloc_free(tmp_mem);
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
-
-	if (r->in.domain_sid) {
-		rtn = samdb_msg_add_dom_sid(ldb, tmp_mem, msg, "objectSid",
-					    r->in.domain_sid);
-		if (rtn == -1) {
-			r->out.error_string = NULL;
-			talloc_free(tmp_mem);
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
-
-	/* 
-	 * search for the secret record
-	 * - remove the records we find
-	 * - and fetch the old secret and store it under priorSecret
-	 */
-	ret = gendb_search(ldb,
-			   tmp_mem, base_dn,
-			   &msgs, attrs,
-			   "(|" SECRETS_PRIMARY_DOMAIN_FILTER "(realm=%s))",
-			   r->in.domain_name, r->in.realm);
-	if (ret == 0) {
-		rtn = samdb_msg_set_string(ldb, tmp_mem, msg, "privateKeytab", "secrets.keytab");
-		if (rtn == -1) {
-			r->out.error_string = NULL;
-			talloc_free(tmp_mem);
-			return NT_STATUS_NO_MEMORY;
-		}
-	} else if (ret == -1) {
-		r->out.error_string
-			= talloc_asprintf(mem_ctx, 
-					  "Search for domain: %s and realm: %s failed: %s", 
-					  r->in.domain_name, r->in.realm, ldb_errstring(ldb));
-		talloc_free(tmp_mem);
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	} else {
-		const struct ldb_val *private_keytab;
-		const struct ldb_val *krb5_main_keytab;
-		const struct ldb_val *prior_secret;
-		const struct ldb_val *prior_modified_time;
-		int i;
-
-		for (i = 0; i < ret; i++) {
-			ldb_delete(ldb, msgs[i]->dn);
-		}
-
-		prior_secret = ldb_msg_find_ldb_val(msgs[0], "secret");
-		if (prior_secret) {
-			rtn = samdb_msg_set_value(ldb, tmp_mem, msg, "priorSecret", prior_secret);
-			if (rtn == -1) {
-				r->out.error_string = NULL;
-				talloc_free(tmp_mem);
-				return NT_STATUS_NO_MEMORY;
-			}
-		}
-		rtn = samdb_msg_set_string(ldb, tmp_mem, msg, "secret", r->in.join_password);
-		if (rtn == -1) {
-			r->out.error_string = NULL;
-			talloc_free(tmp_mem);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		prior_modified_time = ldb_msg_find_ldb_val(msgs[0], 
-							   "whenChanged");
-		if (prior_modified_time) {
-			rtn = samdb_msg_set_value(ldb, tmp_mem, msg, "priorWhenChanged", 
-						  prior_modified_time);
-			if (rtn == -1) {
-				r->out.error_string = NULL;
-				talloc_free(tmp_mem);
-				return NT_STATUS_NO_MEMORY;
-			}
-		}
-
-		rtn = samdb_msg_set_string(ldb, tmp_mem, msg, "samAccountName", r->in.account_name);
-		if (rtn == -1) {
-			r->out.error_string = NULL;
-			talloc_free(tmp_mem);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		rtn = samdb_msg_set_string(ldb, tmp_mem, msg, "secureChannelType", sct);
-		if (rtn == -1) {
-			r->out.error_string = NULL;
-			talloc_free(tmp_mem);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		/* We will want to keep the keytab names */
-		private_keytab = ldb_msg_find_ldb_val(msgs[0], "privateKeytab");
-		if (private_keytab) {
-			rtn = samdb_msg_set_value(ldb, tmp_mem, msg, "privateKeytab", private_keytab);
-			if (rtn == -1) {
-				r->out.error_string = NULL;
-				talloc_free(tmp_mem);
-				return NT_STATUS_NO_MEMORY;
-			}
-		}
-		krb5_main_keytab = ldb_msg_find_ldb_val(msgs[0], "krb5Keytab");
-		if (krb5_main_keytab) {
-			rtn = samdb_msg_set_value(ldb, tmp_mem, msg,
-					"krb5Keytab", krb5_main_keytab);
-			if (rtn == -1) {
-				r->out.error_string = NULL;
-				talloc_free(tmp_mem);
-				return NT_STATUS_NO_MEMORY;
-			}
-		}
-	}
-
-	/* create the secret */
-	ret = ldb_add(ldb, msg);
-	if (ret != 0) {
-		r->out.error_string = talloc_asprintf(mem_ctx, "Failed to create secret record %s", 
-						      ldb_dn_get_linearized(msg->dn));
-		talloc_free(tmp_mem);
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
-	return NT_STATUS_OK;
-}
-
 static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx, 
 					   TALLOC_CTX *mem_ctx, 
 					   struct libnet_Join *r)
@@ -1115,11 +868,12 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 	NTSTATUS status;
 	TALLOC_CTX *tmp_mem;
 	struct libnet_JoinDomain *r2;
-	struct libnet_set_join_secrets *r3;
+	struct provision_store_self_join_settings *set_secrets;
 	uint32_t acct_type = 0;
 	const char *account_name;
 	const char *netbios_name;
-	
+	const char *error_string;
+
 	r->out.error_string = NULL;
 
 	tmp_mem = talloc_new(mem_ctx);
@@ -1179,26 +933,26 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 		return status;
 	}
 
-	r3 = talloc(tmp_mem, struct libnet_set_join_secrets);
-	if (!r3) {
+	set_secrets = talloc(tmp_mem, struct provision_store_self_join_settings);
+	if (!set_secrets) {
 		r->out.error_string = NULL;
 		talloc_free(tmp_mem);
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	ZERO_STRUCTP(r3);
-	r3->in.domain_name = r2->out.domain_name;
-	r3->in.realm = r2->out.realm;
-	r3->in.account_name = account_name;
-	r3->in.netbios_name = netbios_name;
-	r3->in.join_type = r->in.join_type;
-	r3->in.join_password = r2->out.join_password;
-	r3->in.kvno = r2->out.kvno;
-	r3->in.domain_sid = r2->out.domain_sid;
+	ZERO_STRUCTP(set_secrets);
+	set_secrets->domain_name = r2->out.domain_name;
+	set_secrets->realm = r2->out.realm;
+	set_secrets->account_name = account_name;
+	set_secrets->netbios_name = netbios_name;
+	set_secrets->secure_channel_type = r->in.join_type;
+	set_secrets->machine_password = r2->out.join_password;
+	set_secrets->key_version_number = r2->out.kvno;
+	set_secrets->domain_sid = r2->out.domain_sid;
 	
-	status = libnet_set_join_secrets(ctx, r3, r3);
+	status = provision_store_self_join(ctx, ctx->lp_ctx, ctx->event_ctx, set_secrets, &error_string);
 	if (!NT_STATUS_IS_OK(status)) {
-		r->out.error_string = talloc_steal(mem_ctx, r3->out.error_string);
+		r->out.error_string = talloc_steal(mem_ctx, error_string);
 		talloc_free(tmp_mem);
 		return status;
 	}
@@ -1206,11 +960,11 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 	/* move all out parameter to the callers TALLOC_CTX */
 	r->out.error_string	= NULL;
 	r->out.join_password	= r2->out.join_password;
-	talloc_steal(mem_ctx, r2->out.join_password);
+	talloc_reparent(r2, mem_ctx, r2->out.join_password);
 	r->out.domain_sid	= r2->out.domain_sid;
-	talloc_steal(mem_ctx, r2->out.domain_sid);
+	talloc_reparent(r2, mem_ctx, r2->out.domain_sid);
 	r->out.domain_name      = r2->out.domain_name;
-	talloc_steal(mem_ctx, r2->out.domain_name);
+	talloc_reparent(r2, mem_ctx, r2->out.domain_name);
 	talloc_free(tmp_mem);
 	return NT_STATUS_OK;
 }

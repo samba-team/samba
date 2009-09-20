@@ -44,8 +44,24 @@ struct provision_result {
         struct loadparm_context *lp_ctx;
 };
 
+struct provision_store_self_join_settings {
+	const char *domain_name;
+	const char *realm;
+	const char *netbios_name;
+	const char *account_name;
+	enum netr_SchannelType secure_channel_type;
+	const char *machine_password;
+	int key_version_number;
+	struct dom_sid *domain_sid;
+};
+
 NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 						struct provision_settings *settings,
 						struct provision_result *result);
+
+NTSTATUS provision_store_self_join(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
+				   struct tevent_context *ev_ctx,
+				   struct provision_store_self_join_settings *settings,
+				   const char **error_string);
 
 #endif /* _PROVISION_H_ */
