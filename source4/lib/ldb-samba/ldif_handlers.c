@@ -54,7 +54,9 @@ static int ldif_write_NDR(struct ldb_context *ldb, void *mem_ctx,
 				   p, pull_fn);
 	if (err != NDR_ERR_SUCCESS) {
 		talloc_free(p);
-		return ldb_handler_copy(ldb, mem_ctx, in, out);
+		out->data = (uint8_t *)talloc_strdup(mem_ctx, "<Unable to decode binary data>");
+		out->length = strlen((const char *)out->data);
+		return 0;
 	}
 	out->data = (uint8_t *)ndr_print_struct_string(mem_ctx, print_fn, "NDR", p);
 	talloc_free(p);
