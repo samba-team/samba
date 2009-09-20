@@ -407,6 +407,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	}
 
 	DEBUG(0,("%s: using '%s' process model\n", binary_name, model));
+
 	status = server_service_startup(event_ctx, cmdline_lp_ctx, model, 
 					lp_server_services(cmdline_lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
@@ -425,7 +426,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	return 0;
 }
 
- int main(int argc, const char *argv[])
+int main(int argc, const char *argv[])
 {
 	return binary_smbd_main("samba", argc, argv);
 }
