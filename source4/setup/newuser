@@ -60,4 +60,4 @@ creds = credopts.get_credentials(lp)
 
 samdb = SamDB(url=lp.get("sam database"), session_info=system_session(),
               credentials=creds, lp=lp)
-samdb.newuser(username, opts.unixname, password, force_password_change_at_next_login=opts.must_change_at_next_login)
+samdb.newuser(username, opts.unixname, password, force_password_change_at_next_login_req=opts.must_change_at_next_login)
