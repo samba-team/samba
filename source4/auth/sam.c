@@ -390,6 +390,7 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx,
 	/* SID structures for the expanded group memberships */
 	struct dom_sid **groupSIDs = NULL, **groupSIDs_2 = NULL;
 	int num_groupSIDs = 0, num_groupSIDs_2 = 0, i;
+	uint32_t userAccountControl;
 
 	server_info = talloc(mem_ctx, struct auth_serversupplied_info);
 	NT_STATUS_HAVE_NO_MEMORY(server_info);
@@ -404,7 +405,7 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx,
 
 	/* Expands the primary group */
 	status = authsam_expand_nested_groups(sam_ctx, primary_group_sid, false,
-		server_info, &groupSIDs, &num_groupSIDs);
+					      server_info, &groupSIDs, &num_groupSIDs);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(server_info);
 		return status;
@@ -436,6 +437,17 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx,
 	server_info->account_sid = account_sid;
 	server_info->primary_group_sid = primary_group_sid;
 	
+	/* DCs also get SID_NT_ENTERPRISE_DCS */
+	userAccountControl = ldb_msg_find_attr_as_uint(msg, "userAccountControl", 0);
+	if (userAccountControl & UF_SERVER_TRUST_ACCOUNT) {
+		groupSIDs = talloc_realloc(server_info, groupSIDs, struct dom_sid *,
+					   num_groupSIDs+1);
+		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(groupSIDs, server_info);
+		groupSIDs[num_groupSIDs] = dom_sid_parse_talloc(groupSIDs, SID_NT_ENTERPRISE_DCS);
+		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(groupSIDs[num_groupSIDs], server_info);
+		num_groupSIDs++;
+	}
+
 	server_info->domain_groups = groupSIDs;
 	server_info->n_domain_groups = num_groupSIDs;
 
