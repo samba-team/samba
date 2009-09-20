@@ -40,6 +40,9 @@ static int disable_mmap;
 enum commands {
 	CMD_CREATE_TDB,
 	CMD_OPEN_TDB,
+	CMD_TRANSACTION_START,
+	CMD_TRANSACTION_COMMIT,
+	CMD_TRANSACTION_CANCEL,
 	CMD_ERASE,
 	CMD_DUMP,
 	CMD_INSERT,
@@ -70,6 +73,9 @@ typedef struct {
 COMMAND_TABLE cmd_table[] = {
 	{"create",	CMD_CREATE_TDB},
 	{"open",	CMD_OPEN_TDB},
+	{"transaction_start",	CMD_TRANSACTION_START},
+	{"transaction_commit",	CMD_TRANSACTION_COMMIT},
+	{"transaction_cancel",	CMD_TRANSACTION_CANCEL},
 	{"erase",	CMD_ERASE},
 	{"dump",	CMD_DUMP},
 	{"insert",	CMD_INSERT},
@@ -169,6 +175,9 @@ static void help(void)
 "tdbtool: \n"
 "  create    dbname     : create a database\n"
 "  open      dbname     : open an existing database\n"
+"  transaction_start    : start a transaction\n"
+"  transaction_commit   : commit a transaction\n"
+"  transaction_cancel   : cancel a transaction\n"
 "  erase                : erase the database\n"
 "  dump                 : dump the database as strings\n"
 "  keys                 : dump the database keys as strings\n"
@@ -575,6 +584,18 @@ static int do_command(void)
 		return 0;
 	    }
 	    switch (mycmd) {
+	    case CMD_TRANSACTION_START:
+		bIterate = 0;
+		tdb_transaction_start(tdb);
+		return 0;
+	    case CMD_TRANSACTION_COMMIT:
+		bIterate = 0;
+		tdb_transaction_commit(tdb);
+		return 0;
+	    case CMD_TRANSACTION_CANCEL:
+		bIterate = 0;
+		tdb_transaction_cancel(tdb);
+		return 0;
 	    case CMD_ERASE:
 		bIterate = 0;
 		tdb_traverse(tdb, do_delete_fn, NULL);
