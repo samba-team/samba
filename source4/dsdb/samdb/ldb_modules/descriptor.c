@@ -42,6 +42,10 @@
 #include "auth/auth.h"
 #include "param/param.h"
 
+struct descriptor_data {
+	bool inherit;
+};
+
 struct descriptor_context {
 		struct ldb_module *module;
 		struct ldb_request *req;
@@ -395,9 +399,14 @@ static int descriptor_add(struct ldb_module *module, struct ldb_request *req)
 	struct descriptor_context *ac;
 	struct ldb_dn *parent_dn;
 	int ret;
+	struct descriptor_data *data;
 	static const char * const descr_attrs[] = { "nTSecurityDescriptor", NULL };
 
+	data = talloc_get_type(ldb_module_get_private(module), struct descriptor_data);
 	ldb = ldb_module_get_ctx(module);
+
+	if (!data->inherit)
+		return ldb_next_request(module, req);
 
 	ldb_debug(ldb, LDB_DEBUG_TRACE, "descriptor_add\n");
 
@@ -452,11 +461,31 @@ static int descriptor_rename(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, req);
 }
 
+static int descriptor_init(struct ldb_module *module)
+{
+	struct ldb_context *ldb;
+	struct descriptor_data *data;
+
+	ldb = ldb_module_get_ctx(module);
+	data = talloc(module, struct descriptor_data);
+	if (data == NULL) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	data->inherit = lp_parm_bool(ldb_get_opaque(ldb, "loadparm"),
+				  NULL, "acl", "inheritance", false);
+	ldb_module_set_private(module, data);
+	return ldb_next_init(module);
+}
+
+
 _PUBLIC_ const struct ldb_module_ops ldb_descriptor_module_ops = {
 	.name		   = "descriptor",
 	.add           = descriptor_add,
 	.modify        = descriptor_modify,
 	.rename        = descriptor_rename,
+	.init_context  = descriptor_init
 };
 
 
