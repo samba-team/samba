@@ -24,11 +24,11 @@ from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc import security
 
 from samba.auth import system_session
-from samba import Ldb, DS_BEHAVIOR_WIN2008
+from samba import Ldb, DS_DOMAIN_FUNCTION_2008
 from subunit import SubunitTestRunner
 import unittest
 
-parser = optparse.OptionParser("ldap [options] <host>")
+parser = optparse.OptionParser("sec_descriptor [options] <host>")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))
@@ -374,7 +374,7 @@ changetype: add
 member: """ + user_dn
             self.ldb_admin.modify_ldif(ldif)
         self.results = {
-            # msDS-Behavior-Version < DS_BEHAVIOR_WIN2008
+            # msDS-Behavior-Version < DS_DOMAIN_FUNCTION_2008
             "ds_behavior_win2003" : {
                 "100" : "O:EAG:DU",
                 "101" : "O:DAG:DU",
@@ -481,7 +481,7 @@ member: """ + user_dn
         res = self.ldb_admin.search(base=self.base_dn, expression="distinguishedName=%s" % self.base_dn, \
                 attrs=['msDS-Behavior-Version'])
         res = int(res[0]['msDS-Behavior-Version'][0])
-        if res < DS_BEHAVIOR_WIN2008:
+        if res < DS_DOMAIN_FUNCTION_2008:
             self.DS_BEHAVIOR = "ds_behavior_win2003"
         else:
             self.DS_BEHAVIOR = "ds_behavior_win2008"
