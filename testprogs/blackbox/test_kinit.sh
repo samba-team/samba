@@ -69,7 +69,7 @@ echo $USERPASS > ./tmpuserpassfile
 
 testit "set user password with kerberos ccache" $VALGRIND $net password set $DOMAIN\\nettestuser $USERPASS $CONFIGURATION  -k yes $@ || failed=`expr $failed + 1`
 
-testit "enable user with kerberos cache" $VALGRIND $enableaccount nettestuser -H ldap://$SERVER -k yes $@ || failed=`expr $failed + 1`
+testit "enable user with kerberos cache" $VALGRIND $enableaccount nettestuser -k yes $@ || failed=`expr $failed + 1`
 
 KRB5CCNAME="$PREFIX/tmpuserccache"
 export KRB5CCNAME
