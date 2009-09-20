@@ -839,7 +839,7 @@ struct ldb_parse_tree *ldb_parse_tree_copy_shallow(TALLOC_CTX *mem_ctx,
 	switch (ot->operation) {
 	case LDB_OP_AND:
 	case LDB_OP_OR:
-		nt->u.list.elements = talloc_array(nt, struct ldb_parse_tree,
+		nt->u.list.elements = talloc_array(nt, struct ldb_parse_tree *,
 						   ot->u.list.num_elements);
 		if (!nt->u.list.elements) {
 			talloc_free(nt);
