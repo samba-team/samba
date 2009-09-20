@@ -182,6 +182,7 @@ static void help(void)
 "  list                 : print the database hash table and freelist\n"
 "  free                 : print the database freelist\n"
 "  check                : check the integrity of an opened database\n"
+"  speed                : perform speed tests on the database\n"
 "  ! command            : execute system command\n"
 "  1 | first            : print the first record\n"
 "  n | next             : print the next record\n"
