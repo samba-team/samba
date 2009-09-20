@@ -82,8 +82,35 @@ struct repsFromTo1 {
 	struct GUID transport_guid;
 }/* [gensize,public,flag(LIBNDR_PRINT_ARRAY_HEX)] */;
 
+struct repsFromTo2OtherInfo {
+	uint32_t __ndr_size;/* [value(ndr_size_repsFromTo2OtherInfo(this,ndr->iconv_convenience,ndr->flags))] */
+	const char * dns_name1;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	uint32_t unknown1;
+	const char * dns_name2;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	uint64_t unknown2;
+}/* [relative_base,gensize,public] */;
+
+struct repsFromTo2 {
+	uint32_t blobsize;/* [value(ndr_size_repsFromTo1(this,ndr->iconv_convenience,ndr->flags)+8)] */
+	uint32_t consecutive_sync_failures;
+	NTTIME last_success;
+	NTTIME last_attempt;
+	WERROR result_last_attempt;
+	struct repsFromTo2OtherInfo *other_info;/* [relative] */
+	uint32_t other_info_length;/* [value(ndr_size_repsFromTo2OtherInfo(other_info,ndr->iconv_convenience,ndr->flags))] */
+	uint32_t replica_flags;
+	uint8_t schedule[84];
+	uint32_t reserved;
+	struct drsuapi_DsReplicaHighWaterMark highwatermark;
+	struct GUID source_dsa_obj_guid;
+	struct GUID source_dsa_invocation_id;
+	struct GUID transport_guid;
+	uint64_t unknown1;
+}/* [gensize,public,flag(LIBNDR_PRINT_ARRAY_HEX)] */;
+
 union repsFromTo {
 	struct repsFromTo1 ctr1;/* [case] */
+	struct repsFromTo2 ctr2;/* [case(2)] */
 }/* [nodiscriminant] */;
 
 struct repsFromToBlob {

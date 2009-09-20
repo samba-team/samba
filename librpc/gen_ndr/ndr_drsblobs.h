@@ -61,6 +61,14 @@ enum ndr_err_code ndr_push_repsFromTo1(struct ndr_push *ndr, int ndr_flags, cons
 enum ndr_err_code ndr_pull_repsFromTo1(struct ndr_pull *ndr, int ndr_flags, struct repsFromTo1 *r);
 void ndr_print_repsFromTo1(struct ndr_print *ndr, const char *name, const struct repsFromTo1 *r);
 size_t ndr_size_repsFromTo1(const struct repsFromTo1 *r, struct smb_iconv_convenience *ic, int flags);
+enum ndr_err_code ndr_push_repsFromTo2OtherInfo(struct ndr_push *ndr, int ndr_flags, const struct repsFromTo2OtherInfo *r);
+enum ndr_err_code ndr_pull_repsFromTo2OtherInfo(struct ndr_pull *ndr, int ndr_flags, struct repsFromTo2OtherInfo *r);
+void ndr_print_repsFromTo2OtherInfo(struct ndr_print *ndr, const char *name, const struct repsFromTo2OtherInfo *r);
+size_t ndr_size_repsFromTo2OtherInfo(const struct repsFromTo2OtherInfo *r, struct smb_iconv_convenience *ic, int flags);
+enum ndr_err_code ndr_push_repsFromTo2(struct ndr_push *ndr, int ndr_flags, const struct repsFromTo2 *r);
+enum ndr_err_code ndr_pull_repsFromTo2(struct ndr_pull *ndr, int ndr_flags, struct repsFromTo2 *r);
+void ndr_print_repsFromTo2(struct ndr_print *ndr, const char *name, const struct repsFromTo2 *r);
+size_t ndr_size_repsFromTo2(const struct repsFromTo2 *r, struct smb_iconv_convenience *ic, int flags);
 void ndr_print_repsFromTo(struct ndr_print *ndr, const char *name, const union repsFromTo *r);
 enum ndr_err_code ndr_push_repsFromToBlob(struct ndr_push *ndr, int ndr_flags, const struct repsFromToBlob *r);
 enum ndr_err_code ndr_pull_repsFromToBlob(struct ndr_pull *ndr, int ndr_flags, struct repsFromToBlob *r);

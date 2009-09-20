@@ -608,6 +608,275 @@ _PUBLIC_ size_t ndr_size_repsFromTo1(const struct repsFromTo1 *r, struct smb_ico
 	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_repsFromTo1, ic);
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_repsFromTo2OtherInfo(struct ndr_push *ndr, int ndr_flags, const struct repsFromTo2OtherInfo *r)
+{
+	uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset(ndr);
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 8));
+		NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_repsFromTo2OtherInfo(r, ndr->iconv_convenience, ndr->flags)));
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->dns_name1));
+			ndr->flags = _flags_save_string;
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown1));
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->dns_name2));
+			ndr->flags = _flags_save_string;
+		}
+		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->unknown2));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		NDR_CHECK(ndr_push_setup_relative_base_offset2(ndr, r));
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->dns_name1) {
+				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->dns_name1));
+				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->dns_name1));
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->dns_name2) {
+				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->dns_name2));
+				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->dns_name2));
+			}
+			ndr->flags = _flags_save_string;
+		}
+	}
+	ndr_push_restore_relative_base_offset(ndr, _save_relative_base_offset);
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_repsFromTo2OtherInfo(struct ndr_pull *ndr, int ndr_flags, struct repsFromTo2OtherInfo *r)
+{
+	uint32_t _save_relative_base_offset = ndr_pull_get_relative_base_offset(ndr);
+	uint32_t _ptr_dns_name1;
+	TALLOC_CTX *_mem_save_dns_name1_0;
+	uint32_t _ptr_dns_name2;
+	TALLOC_CTX *_mem_save_dns_name2_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 8));
+		NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->__ndr_size));
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_dns_name1));
+			if (_ptr_dns_name1) {
+				NDR_PULL_ALLOC(ndr, r->dns_name1);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->dns_name1, _ptr_dns_name1));
+			} else {
+				r->dns_name1 = NULL;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown1));
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_dns_name2));
+			if (_ptr_dns_name2) {
+				NDR_PULL_ALLOC(ndr, r->dns_name2);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->dns_name2, _ptr_dns_name2));
+			} else {
+				r->dns_name2 = NULL;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->unknown2));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		NDR_CHECK(ndr_pull_setup_relative_base_offset2(ndr, r));
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->dns_name1) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->dns_name1));
+				_mem_save_dns_name1_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->dns_name1, 0);
+				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->dns_name1));
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dns_name1_0, 0);
+				ndr->offset = _relative_save_offset;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->dns_name2) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->dns_name2));
+				_mem_save_dns_name2_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->dns_name2, 0);
+				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->dns_name2));
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dns_name2_0, 0);
+				ndr->offset = _relative_save_offset;
+			}
+			ndr->flags = _flags_save_string;
+		}
+	}
+	ndr_pull_restore_relative_base_offset(ndr, _save_relative_base_offset);
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_repsFromTo2OtherInfo(struct ndr_print *ndr, const char *name, const struct repsFromTo2OtherInfo *r)
+{
+	ndr_print_struct(ndr, name, "repsFromTo2OtherInfo");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "__ndr_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_repsFromTo2OtherInfo(r, ndr->iconv_convenience, ndr->flags):r->__ndr_size);
+	ndr_print_ptr(ndr, "dns_name1", r->dns_name1);
+	ndr->depth++;
+	if (r->dns_name1) {
+		ndr_print_string(ndr, "dns_name1", r->dns_name1);
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "unknown1", r->unknown1);
+	ndr_print_ptr(ndr, "dns_name2", r->dns_name2);
+	ndr->depth++;
+	if (r->dns_name2) {
+		ndr_print_string(ndr, "dns_name2", r->dns_name2);
+	}
+	ndr->depth--;
+	ndr_print_hyper(ndr, "unknown2", r->unknown2);
+	ndr->depth--;
+}
+
+_PUBLIC_ size_t ndr_size_repsFromTo2OtherInfo(const struct repsFromTo2OtherInfo *r, struct smb_iconv_convenience *ic, int flags)
+{
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_repsFromTo2OtherInfo, ic);
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_repsFromTo2(struct ndr_push *ndr, int ndr_flags, const struct repsFromTo2 *r)
+{
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_push_align(ndr, 8));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_repsFromTo1(r, ndr->iconv_convenience, ndr->flags) + 8));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->consecutive_sync_failures));
+			NDR_CHECK(ndr_push_NTTIME_1sec(ndr, NDR_SCALARS, r->last_success));
+			NDR_CHECK(ndr_push_NTTIME_1sec(ndr, NDR_SCALARS, r->last_attempt));
+			NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->result_last_attempt));
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->other_info));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_repsFromTo2OtherInfo(r->other_info, ndr->iconv_convenience, ndr->flags)));
+			NDR_CHECK(ndr_push_drsuapi_DsReplicaNeighbourFlags(ndr, NDR_SCALARS, r->replica_flags));
+			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->schedule, 84));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->reserved));
+			NDR_CHECK(ndr_push_drsuapi_DsReplicaHighWaterMark(ndr, NDR_SCALARS, &r->highwatermark));
+			NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->source_dsa_obj_guid));
+			NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->source_dsa_invocation_id));
+			NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->transport_guid));
+			NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->unknown1));
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+			if (r->other_info) {
+				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->other_info));
+				NDR_CHECK(ndr_push_repsFromTo2OtherInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->other_info));
+			}
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_repsFromTo2(struct ndr_pull *ndr, int ndr_flags, struct repsFromTo2 *r)
+{
+	uint32_t _ptr_other_info;
+	TALLOC_CTX *_mem_save_other_info_0;
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_pull_align(ndr, 8));
+			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->blobsize));
+			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->consecutive_sync_failures));
+			NDR_CHECK(ndr_pull_NTTIME_1sec(ndr, NDR_SCALARS, &r->last_success));
+			NDR_CHECK(ndr_pull_NTTIME_1sec(ndr, NDR_SCALARS, &r->last_attempt));
+			NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->result_last_attempt));
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_other_info));
+			if (_ptr_other_info) {
+				NDR_PULL_ALLOC(ndr, r->other_info);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->other_info, _ptr_other_info));
+			} else {
+				r->other_info = NULL;
+			}
+			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->other_info_length));
+			NDR_CHECK(ndr_pull_drsuapi_DsReplicaNeighbourFlags(ndr, NDR_SCALARS, &r->replica_flags));
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->schedule, 84));
+			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->reserved));
+			NDR_CHECK(ndr_pull_drsuapi_DsReplicaHighWaterMark(ndr, NDR_SCALARS, &r->highwatermark));
+			NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->source_dsa_obj_guid));
+			NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->source_dsa_invocation_id));
+			NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->transport_guid));
+			NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->unknown1));
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+			if (r->other_info) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->other_info));
+				_mem_save_other_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->other_info, 0);
+				NDR_CHECK(ndr_pull_repsFromTo2OtherInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->other_info));
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_other_info_0, 0);
+				ndr->offset = _relative_save_offset;
+			}
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_repsFromTo2(struct ndr_print *ndr, const char *name, const struct repsFromTo2 *r)
+{
+	ndr_print_struct(ndr, name, "repsFromTo2");
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "blobsize", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_repsFromTo1(r, ndr->iconv_convenience, ndr->flags) + 8:r->blobsize);
+		ndr_print_uint32(ndr, "consecutive_sync_failures", r->consecutive_sync_failures);
+		ndr_print_NTTIME_1sec(ndr, "last_success", r->last_success);
+		ndr_print_NTTIME_1sec(ndr, "last_attempt", r->last_attempt);
+		ndr_print_WERROR(ndr, "result_last_attempt", r->result_last_attempt);
+		ndr_print_ptr(ndr, "other_info", r->other_info);
+		ndr->depth++;
+		if (r->other_info) {
+			ndr_print_repsFromTo2OtherInfo(ndr, "other_info", r->other_info);
+		}
+		ndr->depth--;
+		ndr_print_uint32(ndr, "other_info_length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_repsFromTo2OtherInfo(r->other_info, ndr->iconv_convenience, ndr->flags):r->other_info_length);
+		ndr_print_drsuapi_DsReplicaNeighbourFlags(ndr, "replica_flags", r->replica_flags);
+		ndr_print_array_uint8(ndr, "schedule", r->schedule, 84);
+		ndr_print_uint32(ndr, "reserved", r->reserved);
+		ndr_print_drsuapi_DsReplicaHighWaterMark(ndr, "highwatermark", &r->highwatermark);
+		ndr_print_GUID(ndr, "source_dsa_obj_guid", &r->source_dsa_obj_guid);
+		ndr_print_GUID(ndr, "source_dsa_invocation_id", &r->source_dsa_invocation_id);
+		ndr_print_GUID(ndr, "transport_guid", &r->transport_guid);
+		ndr_print_hyper(ndr, "unknown1", r->unknown1);
+		ndr->depth--;
+		ndr->flags = _flags_save_STRUCT;
+	}
+}
+
+_PUBLIC_ size_t ndr_size_repsFromTo2(const struct repsFromTo2 *r, struct smb_iconv_convenience *ic, int flags)
+{
+	flags |= LIBNDR_PRINT_ARRAY_HEX;
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_repsFromTo2, ic);
+}
+
 static enum ndr_err_code ndr_push_repsFromTo(struct ndr_push *ndr, int ndr_flags, const union repsFromTo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -615,6 +884,10 @@ static enum ndr_err_code ndr_push_repsFromTo(struct ndr_push *ndr, int ndr_flags
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_repsFromTo1(ndr, NDR_SCALARS, &r->ctr1));
+			break; }
+
+			case 2: {
+				NDR_CHECK(ndr_push_repsFromTo2(ndr, NDR_SCALARS, &r->ctr2));
 			break; }
 
 			default:
@@ -626,6 +899,10 @@ static enum ndr_err_code ndr_push_repsFromTo(struct ndr_push *ndr, int ndr_flags
 		switch (level) {
 			case 1:
 				NDR_CHECK(ndr_push_repsFromTo1(ndr, NDR_BUFFERS, &r->ctr1));
+			break;
+
+			case 2:
+				NDR_CHECK(ndr_push_repsFromTo2(ndr, NDR_BUFFERS, &r->ctr2));
 			break;
 
 			default:
@@ -645,6 +922,10 @@ static enum ndr_err_code ndr_pull_repsFromTo(struct ndr_pull *ndr, int ndr_flags
 				NDR_CHECK(ndr_pull_repsFromTo1(ndr, NDR_SCALARS, &r->ctr1));
 			break; }
 
+			case 2: {
+				NDR_CHECK(ndr_pull_repsFromTo2(ndr, NDR_SCALARS, &r->ctr2));
+			break; }
+
 			default:
 				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
@@ -653,6 +934,10 @@ static enum ndr_err_code ndr_pull_repsFromTo(struct ndr_pull *ndr, int ndr_flags
 		switch (level) {
 			case 1:
 				NDR_CHECK(ndr_pull_repsFromTo1(ndr, NDR_BUFFERS, &r->ctr1));
+			break;
+
+			case 2:
+				NDR_CHECK(ndr_pull_repsFromTo2(ndr, NDR_BUFFERS, &r->ctr2));
 			break;
 
 			default:
@@ -670,6 +955,10 @@ _PUBLIC_ void ndr_print_repsFromTo(struct ndr_print *ndr, const char *name, cons
 	switch (level) {
 		case 1:
 			ndr_print_repsFromTo1(ndr, "ctr1", &r->ctr1);
+		break;
+
+		case 2:
+			ndr_print_repsFromTo2(ndr, "ctr2", &r->ctr2);
 		break;
 
 		default:
