@@ -1296,7 +1296,7 @@ static struct tevent_req *rpc_api_pipe_send(TALLOC_CTX *mem_ctx,
 
 	max_recv_frag = cli->max_recv_frag;
 
-#ifdef DEVELOPER
+#if 0
 	max_recv_frag = RPC_HEADER_LEN + 10 + (sys_random() % 32);
 #endif
 
@@ -2005,7 +2005,7 @@ static uint32 calculate_data_len_tosend(struct rpc_pipe_client *cli,
 {
 	uint32 data_space, data_len;
 
-#ifdef DEVELOPER
+#if 0
 	if ((data_left > 0) && (sys_random() % 2)) {
 		data_left = MAX(data_left/2, 1);
 	}
