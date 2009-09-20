@@ -84,6 +84,7 @@ interface drsblobs {
 	 * repsFrom/repsTo
 	 * w2k  uses version 1
 	 * w2k3 uses version 1
+	 * w2k8 uses version 2
 	 */
 	typedef [public,gensize] struct {
 		[value(strlen(dns_name)+1)] uint32 __dns_name_size;
@@ -108,8 +109,37 @@ interface drsblobs {
 		GUID transport_guid;
 	} repsFromTo1;
 
+	typedef [public,relative_base,gensize] struct {
+		[value(ndr_size_repsFromTo2OtherInfo(this,ndr->iconv_convenience, ndr->flags))]
+			uint32 __ndr_size;
+		[relative] nstring *dns_name1;
+		uint32 unknown1;
+		[relative] nstring *dns_name2;
+		hyper unknown2;
+	} repsFromTo2OtherInfo;
+
+	typedef [public,gensize,flag(NDR_PAHEX)] struct {
+		/* this includes the 8 bytes of the repsFromToBlob header */
+		[value(ndr_size_repsFromTo1(this, ndr->iconv_convenience, ndr->flags)+8)] uint32 blobsize;
+		uint32 consecutive_sync_failures;
+		NTTIME_1sec last_success;
+		NTTIME_1sec last_attempt;
+		WERROR result_last_attempt;
+		[relative] repsFromTo2OtherInfo *other_info;
+		[value(ndr_size_repsFromTo2OtherInfo(other_info, ndr->iconv_convenience, ndr->flags))] uint32 other_info_length;
+		drsuapi_DsReplicaNeighbourFlags replica_flags;
+		uint8 schedule[84];
+		uint32 reserved;
+		drsuapi_DsReplicaHighWaterMark highwatermark;
+		GUID source_dsa_obj_guid; /* the 'objectGuid' field of the CN=NTDS Settings object */
+		GUID source_dsa_invocation_id; /* the 'invocationId' field of the CN=NTDS Settings object */
+		GUID transport_guid;
+		hyper unknown1;
+	} repsFromTo2;
+
 	typedef [nodiscriminant] union {
 		[case(1)] repsFromTo1 ctr1;
+		[case(2)] repsFromTo2 ctr2;
 	} repsFromTo;
 
 	typedef [public] struct {
