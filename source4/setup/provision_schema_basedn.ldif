@@ -5,3 +5,4 @@ dn: ${SCHEMADN}
 objectClass: top
 objectClass: dMD
 cn: Schema
+nTSecurityDescriptor:: ${DESCRIPTOR}

@@ -48,6 +48,7 @@ from samba import DS_DOMAIN_FUNCTION_2000, DS_DC_FUNCTION_2008_R2
 from samba.samdb import SamDB
 from samba.idmap import IDmapDB
 from samba.dcerpc import security
+from samba.ndr import ndr_pack
 import urllib
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError, timestring
 from ms_schema import read_ms_schema
@@ -75,6 +76,39 @@ def find_setup_dir():
     if os.path.isdir(ret):
         return ret
     raise Exception("Unable to find setup directory.")
+
+def get_schema_descriptor(domain_sid):
+    sddl = "O:SAG:SAD:(A;CI;RPLCLORC;;;AU)(A;CI;RPWPCRCCLCLORCWOWDSW;;;SA)" \
+           "(A;CI;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)" \
+           "(OA;;CR;1131f6ad-9c07-11d1-f79f-00c04fc2dcd2;;ED)" \
+           "(OA;;CR;89e95b76-444d-4c62-991a-0facbeda640c;;ED)" \
+           "(OA;;CR;1131f6ad-9c07-11d1-f79f-00c04fc2dcd2;;BA)" \
+           "(OA;;CR;89e95b76-444d-4c62-991a-0facbeda640c;;BA)" \
+           "S:(AU;SA;WPCCDCWOWDSDDTSW;;;WD)" \
+           "(AU;CISA;WP;;;WD)(AU;SA;CR;;;BA)" \
+           "(AU;SA;CR;;;DU)(OU;SA;CR;e12b56b6-0a95-11d1-adbb-00c04fd8d5cd;;WD)" \
+           "(OU;SA;CR;45ec5156-db7e-47bb-b53f-dbeb2d03c40f;;WD)"
+    sec = security.descriptor.from_sddl(sddl, domain_sid)
+    return b64encode(ndr_pack(sec))
+
+def get_config_descriptor(domain_sid):
+    sddl = "O:EAG:EAD:(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;ED)" \
+           "(OA;;CR;1131f6ab-9c07-11d1-f79f-00c04fc2dcd2;;ED)" \
+           "(OA;;CR;1131f6ac-9c07-11d1-f79f-00c04fc2dcd2;;ED)" \
+           "(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;BA)" \
+           "(OA;;CR;1131f6ab-9c07-11d1-f79f-00c04fc2dcd2;;BA)" \
+           "(OA;;CR;1131f6ac-9c07-11d1-f79f-00c04fc2dcd2;;BA)" \
+           "(A;;RPLCLORC;;;AU)(A;CI;RPWPCRCCDCLCLORCWOWDSDDTSW;;;EA)" \
+           "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;CIIO;RPWPCRCCLCLORCWOWDSDSW;;;DA)" \
+           "(OA;;CR;1131f6ad-9c07-11d1-f79f-00c04fc2dcd2;;ED)" \
+           "(OA;;CR;89e95b76-444d-4c62-991a-0facbeda640c;;ED)" \
+           "(OA;;CR;1131f6ad-9c07-11d1-f79f-00c04fc2dcd2;;BA)" \
+           "(OA;;CR;89e95b76-444d-4c62-991a-0facbeda640c;;BA)" \
+           "(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;S-1-5-21-3191434175-1265308384-3577286990-498)" \
+           "S:(AU;SA;WPWOWD;;;WD)(AU;SA;CR;;;BA)(AU;SA;CR;;;DU)" \
+           "(OU;SA;CR;45ec5156-db7e-47bb-b53f-dbeb2d03c40f;;WD)"
+    sec = security.descriptor.from_sddl(sddl, domain_sid)
+    return b64encode(ndr_pack(sec))
 
 
 DEFAULTSITE = "Default-First-Site-Name"
@@ -142,7 +176,7 @@ class ProvisionResult(object):
         self.samdb = None
         
 class Schema(object):
-    def __init__(self, setup_path, schemadn=None, 
+    def __init__(self, setup_path, domain_sid, schemadn=None,
                  serverdn=None, sambadn=None, ldap_backend_type=None):
         """Load schema for the SamDB from the AD schema files and samba4_schema.ldif
         
@@ -165,8 +199,11 @@ class Schema(object):
                                                   {"SCHEMADN": schemadn,
                                                    "SERVERDN": serverdn,
                                                    })
+
+        descr = get_schema_descriptor(domain_sid)
         self.schema_dn_add = read_and_sub_file(setup_path("provision_schema_basedn.ldif"),
-                                               {"SCHEMADN": schemadn
+                                               {"SCHEMADN": schemadn,
+                                                "DESCRIPTOR": descr
                                                 })
 
         prefixmap = open(setup_path("prefixMap.txt"), 'r').read()
@@ -847,7 +884,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
                            ldap_backend=ldap_backend, serverrole=serverrole)
 
     if (schema == None):
-        schema = Schema(setup_path, schemadn=names.schemadn, serverdn=names.serverdn,
+        schema = Schema(setup_path, domainsid, schemadn=names.schemadn, serverdn=names.serverdn,
             sambadn=names.sambadn, ldap_backend_type=ldap_backend.ldap_backend_type)
 
     # Load the database, but importantly, use Ldb not SamDB as we don't want to load the global schema
@@ -928,8 +965,10 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
             })
 
         message("Adding configuration container")
+        descr = get_config_descriptor(domainsid);
         setup_add_ldif(samdb, setup_path("provision_configuration_basedn.ldif"), {
             "CONFIGDN": names.configdn, 
+            "DESCRIPTOR": descr,
             })
         message("Modifying configuration container")
         setup_modify_ldif(samdb, setup_path("provision_configuration_basedn_modify.ldif"), {
@@ -1049,7 +1088,7 @@ def provision(setup_dir, message, session_info,
     """
 
     def setup_path(file):
-        return os.path.join(setup_dir, file)
+      return os.path.join(setup_dir, file)
 
     if domainsid is None:
       domainsid = security.random_sid()
@@ -1132,7 +1171,7 @@ def provision(setup_dir, message, session_info,
 
     ldapi_url = "ldapi://%s" % urllib.quote(paths.s4_ldapi_path, safe="")
     
-    schema = Schema(setup_path, schemadn=names.schemadn, serverdn=names.serverdn,
+    schema = Schema(setup_path, domainsid, schemadn=names.schemadn, serverdn=names.serverdn,
         sambadn=names.sambadn, ldap_backend_type=ldap_backend_type)
     
     secrets_credentials = credentials

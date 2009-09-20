@@ -249,7 +249,10 @@ userAccountControl: %s""" % userAccountControl
         desc_sddl = desc.as_sddl( self.domain_sid )
         if ace in desc_sddl:
             return
-        desc_sddl = desc_sddl[0:desc_sddl.index("(")] + ace + desc_sddl[desc_sddl.index("("):]
+        if desc_sddl.find("(") >= 0:
+            desc_sddl = desc_sddl[0:desc_sddl.index("(")] + ace + desc_sddl[desc_sddl.index("("):]
+        else:
+            desc_sddl = desc_sddl + ace
         self.modify_desc(object_dn, desc_sddl)
 
     def get_desc_sddl(self, object_dn):
@@ -809,13 +812,11 @@ member: """ + user_dn
         #mod = ""
         self.dacl_add_ace(object_dn, mod)
         desc_sddl = self.get_desc_sddl(object_dn)
-        #print desc_sddl
         # Create additional object into the first one
         object_dn = "OU=test_domain_ou2," + object_dn
         self.delete_force(self.ldb_admin, object_dn)
         self.create_domain_ou(self.ldb_admin, object_dn)
         desc_sddl = self.get_desc_sddl(object_dn)
-        #print desc_sddl
 
     ## Tests for SCHEMA
 
@@ -1397,6 +1398,10 @@ class DaclDescriptorTests(DescriptorTests):
         # Add flag 'protected' in both DACL and SACL so no inherit ACEs
         # can propagate from above
         desc_sddl = desc_sddl.replace(":AI", ":AIP")
+        # colon at the end breaks ldif parsing, fix it
+        res = re.findall(".*?S:", desc_sddl)
+        if res:
+            desc_sddl = desc_sddl.replace("S:", "")
         self.modify_desc(object_dn, desc_sddl)
         # Verify all inheritable ACEs are gone
         desc_sddl = self.get_desc_sddl(object_dn)
@@ -1429,6 +1434,7 @@ class DaclDescriptorTests(DescriptorTests):
         self.create_domain_group(self.ldb_admin, group_dn, sddl)
         # Make sure created group descriptor has NO additional ACEs
         desc_sddl = self.get_desc_sddl(group_dn)
+        print "group descriptor: " + desc_sddl
         self.assertEqual(desc_sddl, sddl)
 
     def test_202(self):
@@ -1590,7 +1596,6 @@ class DaclDescriptorTests(DescriptorTests):
         # Make sure created group object contains only the above inherited ACE(s)
         # that we've added manually
         desc_sddl = self.get_desc_sddl(group_dn)
-        #print desc_sddl
         self.assertTrue("(D;ID;WP;;;AU)" in desc_sddl)
         self.assertTrue("(D;CIIOID;WP;;;CO)" in desc_sddl)
 

@@ -77,6 +77,56 @@ struct security_acl *security_acl_dup(TALLOC_CTX *mem_ctx,
 	
 }
 
+struct security_acl *security_acl_concatenate(TALLOC_CTX *mem_ctx,
+                                              const struct security_acl *acl1,
+                                              const struct security_acl *acl2)
+{
+        struct security_acl *nacl;
+        int i;
+
+        if (!acl1 && !acl2)
+                return NULL;
+
+        if (!acl1){
+                nacl = security_acl_dup(mem_ctx, acl2);
+                return nacl;
+        }
+
+        if (!acl2){
+                nacl = security_acl_dup(mem_ctx, acl1);
+                return nacl;
+        }
+
+        nacl = talloc (mem_ctx, struct security_acl);
+        if (nacl == NULL) {
+                return NULL;
+        }
+
+        nacl->revision = acl1->revision;
+        nacl->size = acl1->size + acl2->size;
+        nacl->num_aces = acl1->num_aces + acl2->num_aces;
+
+        if (nacl->num_aces == 0)
+                return nacl;
+
+        nacl->aces = (struct security_ace *)talloc_array (mem_ctx, struct security_ace, acl1->num_aces+acl2->num_aces);
+        if ((nacl->aces == NULL) && (nacl->num_aces > 0)) {
+                goto failed;
+        }
+
+        for (i = 0; i < acl1->num_aces; i++)
+                nacl->aces[i] = acl1->aces[i];
+        for (i = 0; i < acl2->num_aces; i++)
+                nacl->aces[i + acl1->num_aces] = acl2->aces[i];
+
+        return nacl;
+
+ failed:
+        talloc_free (nacl);
+        return NULL;
+
+}
+
 /* 
    talloc and copy a security descriptor
  */

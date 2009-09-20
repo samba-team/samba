@@ -64,4 +64,8 @@ struct security_ace *security_ace_create(TALLOC_CTX *mem_ctx,
 struct security_acl *security_acl_dup(TALLOC_CTX *mem_ctx,
 				      const struct security_acl *oacl);
 
+struct security_acl *security_acl_concatenate(TALLOC_CTX *mem_ctx,
+                                              const struct security_acl *acl1,
+                                              const struct security_acl *acl2);
+
 #endif /* __SECURITY_DESCRIPTOR_H__ */
