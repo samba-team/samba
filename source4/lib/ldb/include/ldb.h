@@ -1835,6 +1835,12 @@ void ldb_parse_tree_attr_replace(struct ldb_parse_tree *tree,
 				 const char *attr, 
 				 const char *replace);
 
+/*
+  shallow copy a tree - copying only the elements array so that the caller
+  can safely add new elements without changing the message
+*/
+struct ldb_parse_tree *ldb_parse_tree_copy_shallow(TALLOC_CTX *mem_ctx,
+						   const struct ldb_parse_tree *ot);
 
 /**
    Convert a time structure to a string
