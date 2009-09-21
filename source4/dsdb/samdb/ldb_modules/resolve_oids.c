@@ -21,6 +21,199 @@
 #include "ldb_module.h"
 #include "dsdb/samdb/samdb.h"
 
+static int resolve_oids_need_value(struct ldb_context *ldb,
+				   struct dsdb_schema *schema,
+				   const struct dsdb_attribute *a,
+				   const struct ldb_val *valp)
+{
+	const struct dsdb_attribute *va = NULL;
+	const struct dsdb_class *vo = NULL;
+	const void *p2;
+	char *str = NULL;
+
+	if (a->syntax->oMSyntax != 6) {
+		return LDB_ERR_COMPARE_FALSE;
+	}
+
+	if (valp) {
+		p2 = memchr(valp->data, '.', valp->length);
+	} else {
+		p2 = NULL;
+	}
+
+	if (!p2) {
+		return LDB_ERR_COMPARE_FALSE;
+	}
+
+	switch (a->attributeID_id) {
+	case DRSUAPI_ATTRIBUTE_objectClass:
+	case DRSUAPI_ATTRIBUTE_subClassOf:
+	case DRSUAPI_ATTRIBUTE_auxiliaryClass:
+	case DRSUAPI_ATTRIBUTE_systemPossSuperiors:
+	case DRSUAPI_ATTRIBUTE_possSuperiors:
+		str = talloc_strndup(ldb, (char *)valp->data, valp->length);
+		if (!str) {
+			ldb_oom(ldb);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		vo = dsdb_class_by_governsID_oid(schema, str);
+		talloc_free(str);
+		if (!vo) {
+			return LDB_ERR_COMPARE_FALSE;
+		}
+		return LDB_ERR_COMPARE_TRUE;
+	case DRSUAPI_ATTRIBUTE_systemMustContain:
+	case DRSUAPI_ATTRIBUTE_systemMayContain:
+	case DRSUAPI_ATTRIBUTE_mustContain:
+	case DRSUAPI_ATTRIBUTE_mayContain:
+		str = talloc_strndup(ldb, (char *)valp->data, valp->length);
+		if (!str) {
+			ldb_oom(ldb);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		va = dsdb_attribute_by_attributeID_oid(schema, str);
+		talloc_free(str);
+		if (!va) {
+			return LDB_ERR_COMPARE_FALSE;
+		}
+		return LDB_ERR_COMPARE_TRUE;
+	case DRSUAPI_ATTRIBUTE_governsID:
+	case DRSUAPI_ATTRIBUTE_attributeID:
+	case DRSUAPI_ATTRIBUTE_attributeSyntax:
+		return LDB_ERR_COMPARE_FALSE;
+	}
+
+	return LDB_ERR_COMPARE_FALSE;
+}
+
+static int resolve_oids_parse_tree_need(struct ldb_context *ldb,
+					struct dsdb_schema *schema,
+					const struct ldb_parse_tree *tree)
+{
+	int i;
+	const struct dsdb_attribute *a = NULL;
+	const char *attr;
+	const char *p1;
+	const void *p2;
+	const struct ldb_val *valp = NULL;
+	int ret;
+
+	switch (tree->operation) {
+	case LDB_OP_AND:
+	case LDB_OP_OR:
+		for (i=0;i<tree->u.list.num_elements;i++) {
+			ret = resolve_oids_parse_tree_need(ldb, schema,
+						tree->u.list.elements[i]);
+			if (ret != LDB_ERR_COMPARE_FALSE) {
+				return ret;
+			}
+		}
+		return LDB_ERR_COMPARE_FALSE;
+	case LDB_OP_NOT:
+		return resolve_oids_parse_tree_need(ldb, schema,
+						tree->u.isnot.child);
+	case LDB_OP_EQUALITY:
+	case LDB_OP_GREATER:
+	case LDB_OP_LESS:
+	case LDB_OP_APPROX:
+		attr = tree->u.equality.attr;
+		valp = &tree->u.equality.value;
+		break;
+	case LDB_OP_SUBSTRING:
+		attr = tree->u.substring.attr;
+		break;
+	case LDB_OP_PRESENT:
+		attr = tree->u.present.attr;
+		break;
+	case LDB_OP_EXTENDED:
+		attr = tree->u.extended.attr;
+		valp = &tree->u.extended.value;
+		break;
+	default:
+		return LDB_ERR_COMPARE_FALSE;
+	}
+
+	p1 = strchr(attr, '.');
+
+	if (valp) {
+		p2 = memchr(valp->data, '.', valp->length);
+	} else {
+		p2 = NULL;
+	}
+
+	if (!p1 && !p2) {
+		return LDB_ERR_COMPARE_FALSE;
+	}
+
+	if (p1) {
+		a = dsdb_attribute_by_attributeID_oid(schema, attr);
+	} else {
+		a = dsdb_attribute_by_lDAPDisplayName(schema, attr);
+	}
+	if (!a) {
+		return LDB_ERR_COMPARE_FALSE;
+	}
+
+	if (!p2) {
+		return LDB_ERR_COMPARE_FALSE;
+	}
+
+	if (a->syntax->oMSyntax != 6) {
+		return LDB_ERR_COMPARE_FALSE;
+	}
+
+	return resolve_oids_need_value(ldb, schema, a, valp);
+}
+
+static int resolve_oids_element_need(struct ldb_context *ldb,
+				     struct dsdb_schema *schema,
+				     const struct ldb_message_element *el)
+{
+	int i;
+	const struct dsdb_attribute *a = NULL;
+	const char *p1;
+
+	p1 = strchr(el->name, '.');
+
+	if (p1) {
+		a = dsdb_attribute_by_attributeID_oid(schema, el->name);
+	} else {
+		a = dsdb_attribute_by_lDAPDisplayName(schema, el->name);
+	}
+	if (!a) {
+		return LDB_ERR_COMPARE_FALSE;
+	}
+
+	for (i=0; i < el->num_values; i++) {
+		int ret;
+		ret = resolve_oids_need_value(ldb, schema, a,
+					      &el->values[i]);
+		if (ret != LDB_ERR_COMPARE_FALSE) {
+			return ret;
+		}
+	}
+
+	return LDB_ERR_COMPARE_FALSE;
+}
+
+static int resolve_oids_message_need(struct ldb_context *ldb,
+				     struct dsdb_schema *schema,
+				     const struct ldb_message *msg)
+{
+	int i;
+
+	for (i=0; i < msg->num_elements; i++) {
+		int ret;
+		ret = resolve_oids_element_need(ldb, schema,
+						&msg->elements[i]);
+		if (ret != LDB_ERR_COMPARE_FALSE) {
+			return ret;
+		}
+	}
+
+	return LDB_ERR_COMPARE_FALSE;
+}
+
 static int resolve_oids_replace_value(struct ldb_context *ldb,
 				      struct dsdb_schema *schema,
 				      const struct dsdb_attribute *a,
@@ -278,6 +471,14 @@ static int resolve_oids_search(struct ldb_module *module, struct ldb_request *re
 		return ldb_next_request(module, req);
 	}
 
+	ret = resolve_oids_parse_tree_need(ldb, schema,
+					   req->op.search.tree);
+	if (ret == LDB_ERR_COMPARE_FALSE) {
+		return ldb_next_request(module, req);
+	} else if (ret != LDB_ERR_COMPARE_TRUE) {
+		return ret;
+	}
+
 	ac = talloc(req, struct resolve_oids_context);
 	if (ac == NULL) {
 		ldb_oom(ldb);
@@ -335,6 +536,14 @@ static int resolve_oids_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
+	ret = resolve_oids_message_need(ldb, schema,
+					req->op.add.message);
+	if (ret == LDB_ERR_COMPARE_FALSE) {
+		return ldb_next_request(module, req);
+	} else if (ret != LDB_ERR_COMPARE_TRUE) {
+		return ret;
+	}
+
 	ac = talloc(req, struct resolve_oids_context);
 	if (ac == NULL) {
 		ldb_oom(ldb);
@@ -386,6 +595,14 @@ static int resolve_oids_modify(struct ldb_module *module, struct ldb_request *re
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.mod.message->dn)) {
 		return ldb_next_request(module, req);
+	}
+
+	ret = resolve_oids_message_need(ldb, schema,
+					req->op.mod.message);
+	if (ret == LDB_ERR_COMPARE_FALSE) {
+		return ldb_next_request(module, req);
+	} else if (ret != LDB_ERR_COMPARE_TRUE) {
+		return ret;
 	}
 
 	ac = talloc(req, struct resolve_oids_context);
