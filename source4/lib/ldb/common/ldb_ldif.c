@@ -783,7 +783,7 @@ static int ldif_printf_string(void *private_data, const char *fmt, ...)
 	struct ldif_write_string_state *state =
 		(struct ldif_write_string_state *)private_data;
 	va_list ap;
-	size_t oldlen = strlen(state->string);
+	size_t oldlen = talloc_get_size(state->string);
 	va_start(ap, fmt);
 	
 	state->string = talloc_vasprintf_append(state->string, fmt, ap);
@@ -791,8 +791,8 @@ static int ldif_printf_string(void *private_data, const char *fmt, ...)
 	if (!state->string) {
 		return -1;
 	}
-		
-	return strlen(state->string) - oldlen;
+
+	return talloc_get_size(state->string) - oldlen;
 }
 
 char *ldb_ldif_write_string(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, 
