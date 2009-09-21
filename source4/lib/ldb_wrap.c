@@ -169,6 +169,10 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 		flags |= LDB_FLG_NOSYNC;
 	}
 
+	if (DEBUGLVL(10)) {
+		flags |= LDB_FLG_ENABLE_TRACING;
+	}
+
 	/* we usually want Samba databases to be private. If we later
 	   find we need one public, we will need to add a parameter to
 	   ldb_wrap_connect() */
