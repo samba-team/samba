@@ -1060,17 +1060,21 @@ static NTSTATUS fill_one_domain_info(TALLOC_CTX *mem_ctx,
 {
 	ZERO_STRUCTP(info);
 
-	info->trust_extension.info = talloc_zero(mem_ctx, struct netr_trust_extension);
-	info->trust_extension.length = 16;
-	info->trust_extension.info->flags = 
-		NETR_TRUST_FLAG_TREEROOT |
-		NETR_TRUST_FLAG_IN_FOREST | 
-		NETR_TRUST_FLAG_PRIMARY;
+	if (is_trust_list) {
+		/* w2k8 only fills this on trusted domains */
+		info->trust_extension.info = talloc_zero(mem_ctx, struct netr_trust_extension);
+		info->trust_extension.length = 16;
+		info->trust_extension.info->flags = 
+			NETR_TRUST_FLAG_TREEROOT |
+			NETR_TRUST_FLAG_IN_FOREST | 
+			NETR_TRUST_FLAG_PRIMARY |
+			NETR_TRUST_FLAG_NATIVE;
 
-	info->trust_extension.info->parent_index = 0; /* should be index into array
-							 of parent */
-	info->trust_extension.info->trust_type = LSA_TRUST_TYPE_UPLEVEL; /* should be based on ldb search for trusts */
-	info->trust_extension.info->trust_attributes = LSA_TRUST_ATTRIBUTE_NON_TRANSITIVE; /* needs to be based on ldb search */
+		info->trust_extension.info->parent_index = 0; /* should be index into array
+								 of parent */
+		info->trust_extension.info->trust_type = LSA_TRUST_TYPE_UPLEVEL; /* should be based on ldb search for trusts */
+		info->trust_extension.info->trust_attributes = 0; /* 	TODO: base on ldb search? */
+	}
 
 	if (is_trust_list) {
 		/* MS-NRPC 3.5.4.3.9 - must be set to NULL for trust list */
@@ -1086,6 +1090,8 @@ static NTSTATUS fill_one_domain_info(TALLOC_CTX *mem_ctx,
 		if (p) {
 			*p = '\0';
 		}
+		info->dns_forestname.string = talloc_asprintf(mem_ctx, "%s.", info->dns_forestname.string);
+					
 	}
 
 	if (is_local) {
@@ -1098,6 +1104,9 @@ static NTSTATUS fill_one_domain_info(TALLOC_CTX *mem_ctx,
 		info->dns_domainname.string = samdb_result_string(res, "trustPartner", NULL);
 		info->domain_guid = samdb_result_guid(res, "objectGUID");
 		info->domain_sid = samdb_result_dom_sid(mem_ctx, res, "securityIdentifier");
+	}
+	if (!is_trust_list) {
+		info->dns_domainname.string = talloc_asprintf(mem_ctx, "%s.", info->dns_domainname.string);
 	}
 
 	return NT_STATUS_OK;
@@ -1124,8 +1133,7 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 	struct netr_DomainInformation *domain_info;
 	struct netr_LsaPolicyInformation *lsa_policy_info;
 	struct netr_OsVersionInfoEx *os_version;
-	uint32_t default_supported_enc_types =
-		ENC_CRC32|ENC_RSA_MD5|ENC_RC4_HMAC_MD5;
+	uint32_t default_supported_enc_types = 0xFFFFFFFF;
 	int ret1, ret2, i;
 	NTSTATUS status;
 
