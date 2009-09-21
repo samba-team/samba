@@ -1618,6 +1618,7 @@ _PUBLIC_ void ndr_print_nbt_server_type(struct ndr_print *ndr, const char *name,
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NBT_SERVER_NDNC", NBT_SERVER_NDNC, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NBT_SERVER_SELECT_SECRET_DOMAIN_6", NBT_SERVER_SELECT_SECRET_DOMAIN_6, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NBT_SERVER_FULL_SECRET_DOMAIN_6", NBT_SERVER_FULL_SECRET_DOMAIN_6, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NBT_SERVER_DNS_FOREST", NBT_SERVER_DNS_FOREST, r);
 	ndr->depth--;
 }
 

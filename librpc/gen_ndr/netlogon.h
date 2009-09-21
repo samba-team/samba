@@ -991,15 +991,15 @@ struct netr_trust_extension_container {
 };
 
 struct netr_OneDomainInfo {
-	struct lsa_String domainname;
-	struct lsa_String dns_domainname;
-	struct lsa_String dns_forestname;
+	struct lsa_StringLarge domainname;
+	struct lsa_StringLarge dns_domainname;
+	struct lsa_StringLarge dns_forestname;
 	struct GUID domain_guid;
 	struct dom_sid2 *domain_sid;/* [unique] */
 	struct netr_trust_extension_container trust_extension;
-	struct lsa_String dummy_string2;
-	struct lsa_String dummy_string3;
-	struct lsa_String dummy_string4;
+	struct lsa_StringLarge dummy_string2;
+	struct lsa_StringLarge dummy_string3;
+	struct lsa_StringLarge dummy_string4;
 	uint32_t dummy_long1;
 	uint32_t dummy_long2;
 	uint32_t dummy_long3;
@@ -1018,10 +1018,10 @@ struct netr_DomainInformation {
 	uint32_t trusted_domain_count;
 	struct netr_OneDomainInfo *trusted_domains;/* [unique,size_is(trusted_domain_count)] */
 	struct netr_LsaPolicyInformation lsa_policy;
-	struct lsa_String dns_hostname;
-	struct lsa_String dummy_string2;
-	struct lsa_String dummy_string3;
-	struct lsa_String dummy_string4;
+	struct lsa_StringLarge dns_hostname;
+	struct lsa_StringLarge dummy_string2;
+	struct lsa_StringLarge dummy_string3;
+	struct lsa_StringLarge dummy_string4;
 	uint32_t workstation_flags;
 	uint32_t supported_enc_types;
 	uint32_t dummy_long3;

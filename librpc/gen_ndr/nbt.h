@@ -411,6 +411,7 @@ struct nbt_sockaddr {
 #define NBT_SERVER_NDNC ( 0x00000400 )
 #define NBT_SERVER_SELECT_SECRET_DOMAIN_6 ( 0x00000800 )
 #define NBT_SERVER_FULL_SECRET_DOMAIN_6 ( 0x00001000 )
+#define NBT_SERVER_DNS_FOREST ( 0x01000000 )
 
 /* bitmap netlogon_nt_version_flags */
 #define NETLOGON_NT_VERSION_1 ( 0x00000001 )

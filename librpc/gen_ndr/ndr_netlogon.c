@@ -8064,31 +8064,31 @@ static enum ndr_err_code ndr_push_netr_OneDomainInfo(struct ndr_push *ndr, int n
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 5));
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->domainname));
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->dns_domainname));
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->dns_forestname));
+		NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_SCALARS, &r->domainname));
+		NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_SCALARS, &r->dns_domainname));
+		NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_SCALARS, &r->dns_forestname));
 		NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->domain_guid));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->domain_sid));
 		NDR_CHECK(ndr_push_netr_trust_extension_container(ndr, NDR_SCALARS, &r->trust_extension));
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->dummy_string2));
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->dummy_string3));
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->dummy_string4));
+		NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_SCALARS, &r->dummy_string2));
+		NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_SCALARS, &r->dummy_string3));
+		NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_SCALARS, &r->dummy_string4));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->dummy_long1));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->dummy_long2));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->dummy_long3));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->dummy_long4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->domainname));
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->dns_domainname));
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->dns_forestname));
+		NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_BUFFERS, &r->domainname));
+		NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_BUFFERS, &r->dns_domainname));
+		NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_BUFFERS, &r->dns_forestname));
 		if (r->domain_sid) {
 			NDR_CHECK(ndr_push_dom_sid2(ndr, NDR_SCALARS|NDR_BUFFERS, r->domain_sid));
 		}
 		NDR_CHECK(ndr_push_netr_trust_extension_container(ndr, NDR_BUFFERS, &r->trust_extension));
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->dummy_string2));
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->dummy_string3));
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->dummy_string4));
+		NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_BUFFERS, &r->dummy_string2));
+		NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_BUFFERS, &r->dummy_string3));
+		NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_BUFFERS, &r->dummy_string4));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -8099,9 +8099,9 @@ static enum ndr_err_code ndr_pull_netr_OneDomainInfo(struct ndr_pull *ndr, int n
 	TALLOC_CTX *_mem_save_domain_sid_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->domainname));
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->dns_domainname));
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->dns_forestname));
+		NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_SCALARS, &r->domainname));
+		NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_SCALARS, &r->dns_domainname));
+		NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_SCALARS, &r->dns_forestname));
 		NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->domain_guid));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domain_sid));
 		if (_ptr_domain_sid) {
@@ -8110,18 +8110,18 @@ static enum ndr_err_code ndr_pull_netr_OneDomainInfo(struct ndr_pull *ndr, int n
 			r->domain_sid = NULL;
 		}
 		NDR_CHECK(ndr_pull_netr_trust_extension_container(ndr, NDR_SCALARS, &r->trust_extension));
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->dummy_string2));
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->dummy_string3));
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->dummy_string4));
+		NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_SCALARS, &r->dummy_string2));
+		NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_SCALARS, &r->dummy_string3));
+		NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_SCALARS, &r->dummy_string4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->dummy_long1));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->dummy_long2));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->dummy_long3));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->dummy_long4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->domainname));
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->dns_domainname));
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->dns_forestname));
+		NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_BUFFERS, &r->domainname));
+		NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_BUFFERS, &r->dns_domainname));
+		NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_BUFFERS, &r->dns_forestname));
 		if (r->domain_sid) {
 			_mem_save_domain_sid_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->domain_sid, 0);
@@ -8129,9 +8129,9 @@ static enum ndr_err_code ndr_pull_netr_OneDomainInfo(struct ndr_pull *ndr, int n
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domain_sid_0, 0);
 		}
 		NDR_CHECK(ndr_pull_netr_trust_extension_container(ndr, NDR_BUFFERS, &r->trust_extension));
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->dummy_string2));
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->dummy_string3));
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->dummy_string4));
+		NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_BUFFERS, &r->dummy_string2));
+		NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_BUFFERS, &r->dummy_string3));
+		NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_BUFFERS, &r->dummy_string4));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -8140,9 +8140,9 @@ _PUBLIC_ void ndr_print_netr_OneDomainInfo(struct ndr_print *ndr, const char *na
 {
 	ndr_print_struct(ndr, name, "netr_OneDomainInfo");
 	ndr->depth++;
-	ndr_print_lsa_String(ndr, "domainname", &r->domainname);
-	ndr_print_lsa_String(ndr, "dns_domainname", &r->dns_domainname);
-	ndr_print_lsa_String(ndr, "dns_forestname", &r->dns_forestname);
+	ndr_print_lsa_StringLarge(ndr, "domainname", &r->domainname);
+	ndr_print_lsa_StringLarge(ndr, "dns_domainname", &r->dns_domainname);
+	ndr_print_lsa_StringLarge(ndr, "dns_forestname", &r->dns_forestname);
 	ndr_print_GUID(ndr, "domain_guid", &r->domain_guid);
 	ndr_print_ptr(ndr, "domain_sid", r->domain_sid);
 	ndr->depth++;
@@ -8151,9 +8151,9 @@ _PUBLIC_ void ndr_print_netr_OneDomainInfo(struct ndr_print *ndr, const char *na
 	}
 	ndr->depth--;
 	ndr_print_netr_trust_extension_container(ndr, "trust_extension", &r->trust_extension);
-	ndr_print_lsa_String(ndr, "dummy_string2", &r->dummy_string2);
-	ndr_print_lsa_String(ndr, "dummy_string3", &r->dummy_string3);
-	ndr_print_lsa_String(ndr, "dummy_string4", &r->dummy_string4);
+	ndr_print_lsa_StringLarge(ndr, "dummy_string2", &r->dummy_string2);
+	ndr_print_lsa_StringLarge(ndr, "dummy_string3", &r->dummy_string3);
+	ndr_print_lsa_StringLarge(ndr, "dummy_string4", &r->dummy_string4);
 	ndr_print_uint32(ndr, "dummy_long1", r->dummy_long1);
 	ndr_print_uint32(ndr, "dummy_long2", r->dummy_long2);
 	ndr_print_uint32(ndr, "dummy_long3", r->dummy_long3);
@@ -8196,10 +8196,10 @@ static enum ndr_err_code ndr_push_netr_DomainInformation(struct ndr_push *ndr, i
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->trusted_domain_count));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->trusted_domains));
 		NDR_CHECK(ndr_push_netr_LsaPolicyInformation(ndr, NDR_SCALARS, &r->lsa_policy));
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->dns_hostname));
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->dummy_string2));
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->dummy_string3));
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->dummy_string4));
+		NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_SCALARS, &r->dns_hostname));
+		NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_SCALARS, &r->dummy_string2));
+		NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_SCALARS, &r->dummy_string3));
+		NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_SCALARS, &r->dummy_string4));
 		NDR_CHECK(ndr_push_netr_WorkstationFlags(ndr, NDR_SCALARS, r->workstation_flags));
 		NDR_CHECK(ndr_push_netr_SupportedEncTypes(ndr, NDR_SCALARS, r->supported_enc_types));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->dummy_long3));
@@ -8217,10 +8217,10 @@ static enum ndr_err_code ndr_push_netr_DomainInformation(struct ndr_push *ndr, i
 			}
 		}
 		NDR_CHECK(ndr_push_netr_LsaPolicyInformation(ndr, NDR_BUFFERS, &r->lsa_policy));
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->dns_hostname));
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->dummy_string2));
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->dummy_string3));
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->dummy_string4));
+		NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_BUFFERS, &r->dns_hostname));
+		NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_BUFFERS, &r->dummy_string2));
+		NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_BUFFERS, &r->dummy_string3));
+		NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_BUFFERS, &r->dummy_string4));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -8242,10 +8242,10 @@ static enum ndr_err_code ndr_pull_netr_DomainInformation(struct ndr_pull *ndr, i
 			r->trusted_domains = NULL;
 		}
 		NDR_CHECK(ndr_pull_netr_LsaPolicyInformation(ndr, NDR_SCALARS, &r->lsa_policy));
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->dns_hostname));
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->dummy_string2));
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->dummy_string3));
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->dummy_string4));
+		NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_SCALARS, &r->dns_hostname));
+		NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_SCALARS, &r->dummy_string2));
+		NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_SCALARS, &r->dummy_string3));
+		NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_SCALARS, &r->dummy_string4));
 		NDR_CHECK(ndr_pull_netr_WorkstationFlags(ndr, NDR_SCALARS, &r->workstation_flags));
 		NDR_CHECK(ndr_pull_netr_SupportedEncTypes(ndr, NDR_SCALARS, &r->supported_enc_types));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->dummy_long3));
@@ -8270,10 +8270,10 @@ static enum ndr_err_code ndr_pull_netr_DomainInformation(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_trusted_domains_0, 0);
 		}
 		NDR_CHECK(ndr_pull_netr_LsaPolicyInformation(ndr, NDR_BUFFERS, &r->lsa_policy));
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->dns_hostname));
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->dummy_string2));
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->dummy_string3));
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->dummy_string4));
+		NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_BUFFERS, &r->dns_hostname));
+		NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_BUFFERS, &r->dummy_string2));
+		NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_BUFFERS, &r->dummy_string3));
+		NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_BUFFERS, &r->dummy_string4));
 		if (r->trusted_domains) {
 			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->trusted_domains, r->trusted_domain_count));
 		}
@@ -8304,10 +8304,10 @@ _PUBLIC_ void ndr_print_netr_DomainInformation(struct ndr_print *ndr, const char
 	}
 	ndr->depth--;
 	ndr_print_netr_LsaPolicyInformation(ndr, "lsa_policy", &r->lsa_policy);
-	ndr_print_lsa_String(ndr, "dns_hostname", &r->dns_hostname);
-	ndr_print_lsa_String(ndr, "dummy_string2", &r->dummy_string2);
-	ndr_print_lsa_String(ndr, "dummy_string3", &r->dummy_string3);
-	ndr_print_lsa_String(ndr, "dummy_string4", &r->dummy_string4);
+	ndr_print_lsa_StringLarge(ndr, "dns_hostname", &r->dns_hostname);
+	ndr_print_lsa_StringLarge(ndr, "dummy_string2", &r->dummy_string2);
+	ndr_print_lsa_StringLarge(ndr, "dummy_string3", &r->dummy_string3);
+	ndr_print_lsa_StringLarge(ndr, "dummy_string4", &r->dummy_string4);
 	ndr_print_netr_WorkstationFlags(ndr, "workstation_flags", r->workstation_flags);
 	ndr_print_netr_SupportedEncTypes(ndr, "supported_enc_types", r->supported_enc_types);
 	ndr_print_uint32(ndr, "dummy_long3", r->dummy_long3);
