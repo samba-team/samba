@@ -692,6 +692,8 @@ static void winbind_client_response_written(struct tevent_req *req)
 	ret = wb_resp_write_recv(req, &err);
 	TALLOC_FREE(req);
 	if (ret == -1) {
+		close(state->sock);
+		state->sock = -1;
 		DEBUG(2, ("Could not write response to client: %s\n",
 			  strerror(err)));
 		remove_client(state);
@@ -792,6 +794,8 @@ static void winbind_client_request_read(struct tevent_req *req)
 	ret = wb_req_read_recv(req, state, &state->request, &err);
 	TALLOC_FREE(req);
 	if (ret == -1) {
+		close(state->sock);
+		state->sock = -1;
 		DEBUG(2, ("Could not read client request: %s\n",
 			  strerror(err)));
 		remove_client(state);
@@ -813,22 +817,19 @@ static void remove_client(struct winbindd_cli_state *state)
 		return;
 	}
 
-	/* tell client, we are closing ... */
-	nwritten = write(state->sock, &c, sizeof(c));
-	if (nwritten == -1) {
-		/* 
-		 * ignore EPIPE error here, because the other end might
-		 * have already closed the socket.
-		 */
-		if (errno != EPIPE) {
+	if (state->sock != -1) {
+		/* tell client, we are closing ... */
+		nwritten = write(state->sock, &c, sizeof(c));
+		if (nwritten == -1) {
 			DEBUG(2, ("final write to client failed: %s\n",
-			  	strerror(errno)));
+				strerror(errno)));
 		}
+
+		/* Close socket */
+
+		close(state->sock);
+		state->sock = -1;
 	}
-
-	/* Close socket */
-
-	close(state->sock);
 
 	/* Free any getent state */
 

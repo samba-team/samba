@@ -160,6 +160,10 @@ static void async_recv_handler(struct tevent_context *ev,
 		/* retry */
 		return;
 	}
+	if (state->received == 0) {
+		tevent_req_error(req, EPIPE);
+		return;
+	}
 	if (state->received == -1) {
 		tevent_req_error(req, errno);
 		return;

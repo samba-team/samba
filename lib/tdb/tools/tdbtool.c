@@ -40,6 +40,9 @@ static int disable_mmap;
 enum commands {
 	CMD_CREATE_TDB,
 	CMD_OPEN_TDB,
+	CMD_TRANSACTION_START,
+	CMD_TRANSACTION_COMMIT,
+	CMD_TRANSACTION_CANCEL,
 	CMD_ERASE,
 	CMD_DUMP,
 	CMD_INSERT,
@@ -70,6 +73,9 @@ typedef struct {
 COMMAND_TABLE cmd_table[] = {
 	{"create",	CMD_CREATE_TDB},
 	{"open",	CMD_OPEN_TDB},
+	{"transaction_start",	CMD_TRANSACTION_START},
+	{"transaction_commit",	CMD_TRANSACTION_COMMIT},
+	{"transaction_cancel",	CMD_TRANSACTION_CANCEL},
 	{"erase",	CMD_ERASE},
 	{"dump",	CMD_DUMP},
 	{"insert",	CMD_INSERT},
@@ -169,6 +175,9 @@ static void help(void)
 "tdbtool: \n"
 "  create    dbname     : create a database\n"
 "  open      dbname     : open an existing database\n"
+"  transaction_start    : start a transaction\n"
+"  transaction_commit   : commit a transaction\n"
+"  transaction_cancel   : cancel a transaction\n"
 "  erase                : erase the database\n"
 "  dump                 : dump the database as strings\n"
 "  keys                 : dump the database keys as strings\n"
@@ -182,6 +191,7 @@ static void help(void)
 "  list                 : print the database hash table and freelist\n"
 "  free                 : print the database freelist\n"
 "  check                : check the integrity of an opened database\n"
+"  speed                : perform speed tests on the database\n"
 "  ! command            : execute system command\n"
 "  1 | first            : print the first record\n"
 "  n | next             : print the next record\n"
@@ -536,117 +546,129 @@ static int do_command(void)
 	int cmd_len;
 
 	if (cmdname && strlen(cmdname) == 0) {
-	    mycmd = CMD_NEXT;
+		mycmd = CMD_NEXT;
 	} else {
-	    while (ctp->name) {
-		cmd_len = strlen(ctp->name);
-		if (strncmp(ctp->name,cmdname,cmd_len) == 0) {
-			mycmd = ctp->cmd;
-			break;
+		while (ctp->name) {
+			cmd_len = strlen(ctp->name);
+			if (strncmp(ctp->name,cmdname,cmd_len) == 0) {
+				mycmd = ctp->cmd;
+				break;
+			}
+			ctp++;
 		}
-		ctp++;
-	    }
 	}
 
 	switch (mycmd) {
 	case CMD_CREATE_TDB:
-            bIterate = 0;
-            create_tdb(arg1);
-	    return 0;
+		bIterate = 0;
+		create_tdb(arg1);
+		return 0;
 	case CMD_OPEN_TDB:
-            bIterate = 0;
-            open_tdb(arg1);
-            return 0;
+		bIterate = 0;
+		open_tdb(arg1);
+		return 0;
 	case CMD_SYSTEM:
-	    /* Shell command */
-	    if (system(arg1) == -1) {
-		terror("system() call failed\n");
-	    }
-	    return 0;
+		/* Shell command */
+		if (system(arg1) == -1) {
+			terror("system() call failed\n");
+		}
+		return 0;
 	case CMD_QUIT:
-	    return 1;
+		return 1;
 	default:
-	    /* all the rest require a open database */
-	    if (!tdb) {
-		bIterate = 0;
-		terror("database not open");
-		help();
-		return 0;
-	    }
-	    switch (mycmd) {
-	    case CMD_ERASE:
-		bIterate = 0;
-		tdb_traverse(tdb, do_delete_fn, NULL);
-		return 0;
-	    case CMD_DUMP:
-		bIterate = 0;
-		tdb_traverse(tdb, print_rec, NULL);
-		return 0;
-	    case CMD_INSERT:
-		bIterate = 0;
-		insert_tdb(arg1, arg1len,arg2,arg2len);
-		return 0;
-	    case CMD_MOVE:
-		bIterate = 0;
-		move_rec(arg1,arg1len,arg2);
-		return 0;
-	    case CMD_STORE:
-		bIterate = 0;
-		store_tdb(arg1,arg1len,arg2,arg2len);
-		return 0;
-	    case CMD_SHOW:
-		bIterate = 0;
-		show_tdb(arg1, arg1len);
-		return 0;
-	    case CMD_KEYS:
-		tdb_traverse(tdb, print_key, NULL);
-		return 0;
-	    case CMD_HEXKEYS:
-		tdb_traverse(tdb, print_hexkey, NULL);
-		return 0;
-	    case CMD_DELETE:
-		bIterate = 0;
-		delete_tdb(arg1,arg1len);
-		return 0;
-	    case CMD_LIST_HASH_FREE:
-		tdb_dump_all(tdb);
-		return 0;
-	    case CMD_LIST_FREE:
-		tdb_printfreelist(tdb);
-		return 0;
-	    case CMD_INFO:
-		info_tdb();
-		return 0;
-	    case CMD_SPEED:
-		speed_tdb(arg1);
-		return 0;
-	    case CMD_MMAP:
-		toggle_mmap();
-		return 0;
-	    case CMD_FIRST:
-		bIterate = 1;
-		first_record(tdb, &iterate_kbuf);
-		return 0;
-	    case CMD_NEXT:
-	       if (bIterate)
-		  next_record(tdb, &iterate_kbuf);
-		return 0;
-	    case CMD_CHECK:
-		check_db(tdb);
-		return 0;
-	    case CMD_HELP:
-		help();
-		return 0;
-            case CMD_CREATE_TDB:
-            case CMD_OPEN_TDB:
-            case CMD_SYSTEM:
-            case CMD_QUIT:
-                /*
-                 * unhandled commands.  cases included here to avoid compiler
-                 * warnings.
-                 */
-                return 0;
-	    }
+		/* all the rest require a open database */
+		if (!tdb) {
+			bIterate = 0;
+			terror("database not open");
+			help();
+			return 0;
+		}
+		switch (mycmd) {
+		case CMD_TRANSACTION_START:
+			bIterate = 0;
+			tdb_transaction_start(tdb);
+			return 0;
+		case CMD_TRANSACTION_COMMIT:
+			bIterate = 0;
+			tdb_transaction_commit(tdb);
+			return 0;
+		case CMD_TRANSACTION_CANCEL:
+			bIterate = 0;
+			tdb_transaction_cancel(tdb);
+			return 0;
+		case CMD_ERASE:
+			bIterate = 0;
+			tdb_traverse(tdb, do_delete_fn, NULL);
+			return 0;
+		case CMD_DUMP:
+			bIterate = 0;
+			tdb_traverse(tdb, print_rec, NULL);
+			return 0;
+		case CMD_INSERT:
+			bIterate = 0;
+			insert_tdb(arg1, arg1len,arg2,arg2len);
+			return 0;
+		case CMD_MOVE:
+			bIterate = 0;
+			move_rec(arg1,arg1len,arg2);
+			return 0;
+		case CMD_STORE:
+			bIterate = 0;
+			store_tdb(arg1,arg1len,arg2,arg2len);
+			return 0;
+		case CMD_SHOW:
+			bIterate = 0;
+			show_tdb(arg1, arg1len);
+			return 0;
+		case CMD_KEYS:
+			tdb_traverse(tdb, print_key, NULL);
+			return 0;
+		case CMD_HEXKEYS:
+			tdb_traverse(tdb, print_hexkey, NULL);
+			return 0;
+		case CMD_DELETE:
+			bIterate = 0;
+			delete_tdb(arg1,arg1len);
+			return 0;
+		case CMD_LIST_HASH_FREE:
+			tdb_dump_all(tdb);
+			return 0;
+		case CMD_LIST_FREE:
+			tdb_printfreelist(tdb);
+			return 0;
+		case CMD_INFO:
+			info_tdb();
+			return 0;
+		case CMD_SPEED:
+			speed_tdb(arg1);
+			return 0;
+		case CMD_MMAP:
+			toggle_mmap();
+			return 0;
+		case CMD_FIRST:
+			bIterate = 1;
+			first_record(tdb, &iterate_kbuf);
+			return 0;
+		case CMD_NEXT:
+			if (bIterate)
+				next_record(tdb, &iterate_kbuf);
+			return 0;
+		case CMD_CHECK:
+			check_db(tdb);
+			return 0;
+		case CMD_HELP:
+			help();
+			return 0;
+		case CMD_CREATE_TDB:
+		case CMD_OPEN_TDB:
+		case CMD_SYSTEM:
+		case CMD_QUIT:
+			/*
+			 * unhandled commands.  cases included here to avoid compiler
+			 * warnings.
+			 */
+			return 0;
+		}
 	}
 
 	return 0;
@@ -654,88 +676,87 @@ static int do_command(void)
 
 static char *convert_string(char *instring, size_t *sizep)
 {
-    size_t length = 0;
-    char *outp, *inp;
-    char temp[3];
-    
+	size_t length = 0;
+	char *outp, *inp;
+	char temp[3];
 
-    outp = inp = instring;
+	outp = inp = instring;
 
-    while (*inp) {
-	if (*inp == '\\') {
-	    inp++;
-	    if (*inp && strchr("0123456789abcdefABCDEF",(int)*inp)) {
-		temp[0] = *inp++;
-		temp[1] = '\0';
-		if (*inp && strchr("0123456789abcdefABCDEF",(int)*inp)) {
-		    temp[1] = *inp++;
-		    temp[2] = '\0';
+	while (*inp) {
+		if (*inp == '\\') {
+			inp++;
+			if (*inp && strchr("0123456789abcdefABCDEF",(int)*inp)) {
+				temp[0] = *inp++;
+				temp[1] = '\0';
+				if (*inp && strchr("0123456789abcdefABCDEF",(int)*inp)) {
+					temp[1] = *inp++;
+					temp[2] = '\0';
+				}
+				*outp++ = (char)strtol((const char *)temp,NULL,16);
+			} else {
+				*outp++ = *inp++;
+			}
+		} else {
+			*outp++ = *inp++;
 		}
-		*outp++ = (char)strtol((const char *)temp,NULL,16);
-	    } else {
-		*outp++ = *inp++;
-	    }
-	} else {
-	    *outp++ = *inp++;
+		length++;
 	}
-	length++;
-    }
-    *sizep = length;
-    return instring;
+	*sizep = length;
+	return instring;
 }
 
 int main(int argc, char *argv[])
 {
-    cmdname = "";
-    arg1 = NULL;
-    arg1len = 0;
-    arg2 = NULL;
-    arg2len = 0;
-
-    if (argv[1]) {
-	cmdname = "open";
-	arg1 = argv[1];
-        do_command();
-	cmdname =  "";
+	cmdname = "";
 	arg1 = NULL;
-    }
+	arg1len = 0;
+	arg2 = NULL;
+	arg2len = 0;
 
-    switch (argc) {
+	if (argv[1]) {
+		cmdname = "open";
+		arg1 = argv[1];
+		do_command();
+		cmdname =  "";
+		arg1 = NULL;
+	}
+
+	switch (argc) {
 	case 1:
 	case 2:
-	    /* Interactive mode */
-	    while ((cmdname = tdb_getline("tdb> "))) {
-		arg2 = arg1 = NULL;
-		if ((arg1 = strchr((const char *)cmdname,' ')) != NULL) {
-		    arg1++;
-		    arg2 = arg1;
-		    while (*arg2) {
-			if (*arg2 == ' ') {
-			    *arg2++ = '\0';
-			    break;
+		/* Interactive mode */
+		while ((cmdname = tdb_getline("tdb> "))) {
+			arg2 = arg1 = NULL;
+			if ((arg1 = strchr((const char *)cmdname,' ')) != NULL) {
+				arg1++;
+				arg2 = arg1;
+				while (*arg2) {
+					if (*arg2 == ' ') {
+						*arg2++ = '\0';
+						break;
+					}
+					if ((*arg2++ == '\\') && (*arg2 == ' ')) {
+						arg2++;
+					}
+				}
 			}
-			if ((*arg2++ == '\\') && (*arg2 == ' ')) {
-			    arg2++;
-			}
-		    }
+			if (arg1) arg1 = convert_string(arg1,&arg1len);
+			if (arg2) arg2 = convert_string(arg2,&arg2len);
+			if (do_command()) break;
 		}
-		if (arg1) arg1 = convert_string(arg1,&arg1len);
-		if (arg2) arg2 = convert_string(arg2,&arg2len);
-		if (do_command()) break;
-	    }
-	    break;
+		break;
 	case 5:
-	    arg2 = convert_string(argv[4],&arg2len);
+		arg2 = convert_string(argv[4],&arg2len);
 	case 4:
-	    arg1 = convert_string(argv[3],&arg1len);
+		arg1 = convert_string(argv[3],&arg1len);
 	case 3:
-	    cmdname = argv[2];
+		cmdname = argv[2];
 	default:
-	    do_command();
-	    break;
-    }
+		do_command();
+		break;
+	}
 
-    if (tdb) tdb_close(tdb);
+	if (tdb) tdb_close(tdb);
 
-    return 0;
+	return 0;
 }

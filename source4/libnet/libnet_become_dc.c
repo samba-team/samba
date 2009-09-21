@@ -2101,7 +2101,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		vd[0] = data_blob_talloc(vd, NULL, 4);
 		if (composite_nomem(vd[0].data, c)) return;
 
-		SIVAL(vd[0].data, 0, DS_DC_FUNCTION_2008_R2);
+		SIVAL(vd[0].data, 0, DS_DC_FUNCTION_2008);
 
 		vs[0].blob		= &vd[0];
 

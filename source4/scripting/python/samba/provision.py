@@ -44,7 +44,7 @@ from credentials import Credentials, DONT_USE_KERBEROS
 from auth import system_session, admin_session
 from samba import version, Ldb, substitute_var, valid_netbios_name
 from samba import check_all_substituted
-from samba import DS_DOMAIN_FUNCTION_2000, DS_DC_FUNCTION_2008_R2
+from samba import DS_DOMAIN_FUNCTION_2000, DS_DOMAIN_FUNCTION_2008, DS_DC_FUNCTION_2008, DS_DC_FUNCTION_2008_R2
 from samba.samdb import SamDB
 from samba.idmap import IDmapDB
 from samba.dcerpc import security
@@ -54,13 +54,9 @@ from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError, timestring
 from ms_schema import read_ms_schema
 from ms_display_specifiers import read_ms_ldif
 from signal import SIGTERM
+from dcerpc.misc import SEC_CHAN_BDC, SEC_CHAN_WKSTA
 
 __docformat__ = "restructuredText"
-
-
-class ProvisioningError(ValueError):
-  pass
-
 
 def find_setup_dir():
     """Find the setup directory used by provision."""
@@ -112,6 +108,11 @@ def get_config_descriptor(domain_sid):
 
 
 DEFAULTSITE = "Default-First-Site-Name"
+
+# Exception classes
+
+class ProvisioningError(Exception):
+    """A generic provision error."""
 
 class InvalidNetbiosName(Exception):
     """A specified name was not a valid NetBIOS name."""
@@ -355,7 +356,6 @@ def provision_paths_from_lp(lp, dnsdomain):
     """
     paths = ProvisionPaths()
     paths.private_dir = lp.get("private dir")
-    paths.keytab = "secrets.keytab"
     paths.dns_keytab = "dns.keytab"
 
     paths.shareconf = os.path.join(paths.private_dir, "share.ldb")
@@ -695,26 +695,83 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
 
     samdb.transaction_commit()
     
+def secretsdb_self_join(secretsdb, domain, 
+                        netbiosname, domainsid, machinepass, 
+                        realm=None, dnsdomain=None,
+                        keytab_path=None, 
+                        key_version_number=1,
+                        secure_channel_type=SEC_CHAN_WKSTA):
+    """Add domain join-specific bits to a secrets database.
+    
+    :param secretsdb: Ldb Handle to the secrets database
+    :param machinepass: Machine password
+    """
+    attrs=["whenChanged",
+           "secret",
+           "priorSecret",
+           "priorChanged",
+           "krb5Keytab",
+           "privateKeytab"]
+    
+
+    msg = ldb.Message(ldb.Dn(secretsdb, "flatname=%s,cn=Primary Domains" % domain));
+    msg["secureChannelType"] = str(secure_channel_type)
+    msg["flatname"] = [domain]
+    msg["objectClass"] = ["top", "primaryDomain"]
+    if realm is not None:
+      if dnsdomain is None:
+        dnsdomain = realm.lower()
+      msg["objectClass"] = ["top", "primaryDomain", "kerberosSecret"]
+      msg["realm"] = realm
+      msg["saltPrincipal"] = "host/%s.%s@%s" % (netbiosname.lower(), dnsdomain.lower(), realm.upper())
+      msg["msDS-KeyVersionNumber"] = [str(key_version_number)]
+      msg["privateKeytab"] = ["secrets.keytab"];
 
 
-def secretsdb_become_dc(secretsdb, setup_path, domain, realm, dnsdomain, 
-                        netbiosname, domainsid, keytab_path, samdb_url, 
-                        dns_keytab_path, dnspass, machinepass):
-    """Add DC-specific bits to a secrets database.
+    msg["secret"] = [machinepass]
+    msg["samAccountName"] = ["%s$" % netbiosname]
+    msg["secureChannelType"] = [str(secure_channel_type)]
+    msg["objectSid"] = [ndr_pack(domainsid)]
+    
+    res = secretsdb.search(base="cn=Primary Domains", 
+                           attrs=attrs, 
+                           expression=("(&(|(flatname=%s)(realm=%s)(objectSid=%s))(objectclass=primaryDomain))" % (domain, realm, str(domainsid))), 
+                           scope=SCOPE_ONELEVEL)
+    
+    for del_msg in res:
+      if del_msg.dn is not msg.dn:
+        secretsdb.delete(del_msg.dn)
+
+    res = secretsdb.search(base=msg.dn, attrs=attrs, scope=SCOPE_BASE)
+
+    if len(res) == 1:
+      msg["priorSecret"] = res[0]["secret"]
+      msg["priorWhenChanged"] = res[0]["whenChanged"]
+
+      if res["privateKeytab"] is not None:
+        msg["privateKeytab"] = res[0]["privateKeytab"]
+
+      if res["krb5Keytab"] is not None:
+        msg["krb5Keytab"] = res[0]["krb5Keytab"]
+
+      for el in msg:
+        el.set_flags(ldb.FLAG_MOD_REPLACE)
+        secretsdb.modify(msg)
+    else:
+      secretsdb.add(msg)
+
+
+def secretsdb_setup_dns(secretsdb, setup_path, realm, dnsdomain, 
+                        dns_keytab_path, dnspass):
+    """Add DNS specific bits to a secrets database.
     
     :param secretsdb: Ldb Handle to the secrets database
     :param setup_path: Setup path function
     :param machinepass: Machine password
     """
-    setup_ldb(secretsdb, setup_path("secrets_dc.ldif"), { 
-            "MACHINEPASS_B64": b64encode(machinepass),
-            "DOMAIN": domain,
+    setup_ldb(secretsdb, setup_path("secrets_dns.ldif"), { 
             "REALM": realm,
             "DNSDOMAIN": dnsdomain,
-            "DOMAINSID": str(domainsid),
-            "SECRETS_KEYTAB": keytab_path,
-            "NETBIOSNAME": netbiosname,
-            "SAM_LDB": samdb_url,
             "DNS_KEYTAB": dns_keytab_path,
             "DNSPASS_B64": b64encode(dnspass),
             })
@@ -738,6 +795,7 @@ def setup_secretsdb(path, setup_path, session_info, credentials, lp):
     secrets_ldb.load_ldif_file_add(setup_path("secrets_init.ldif"))
     secrets_ldb = Ldb(path, session_info=session_info, credentials=credentials,
                       lp=lp)
+    secrets_ldb.transaction_start()
     secrets_ldb.load_ldif_file_add(setup_path("secrets.ldif"))
 
     if credentials is not None and credentials.authentication_requested():
@@ -873,9 +931,10 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
     :note: This will wipe the main SAM database file!
     """
 
-    domainFunctionality = DS_DOMAIN_FUNCTION_2000
-    forestFunctionality = DS_DOMAIN_FUNCTION_2000
-    domainControllerFunctionality = DS_DC_FUNCTION_2008_R2
+    # Do NOT change these default values without discussion with the team and reslease manager.  
+    domainFunctionality = DS_DOMAIN_FUNCTION_2008
+    forestFunctionality = DS_DOMAIN_FUNCTION_2008
+    domainControllerFunctionality = DS_DC_FUNCTION_2008
 
     # Also wipes the database
     setup_samdb_partitions(path, setup_path, message=message, lp=lp,
@@ -1275,16 +1334,18 @@ def provision(setup_dir, message, session_info,
 
         # Only make a zone file on the first DC, it should be replicated with DNS replication
         if serverrole == "domain controller":
-            secrets_ldb = Ldb(paths.secrets, session_info=session_info, 
-                              credentials=credentials, lp=lp)
-            secretsdb_become_dc(secrets_ldb, setup_path, domain=domain,
+            secretsdb_self_join(secrets_ldb, domain=domain,
                                 realm=names.realm,
+                                dnsdomain=names.dnsdomain,
                                 netbiosname=names.netbiosname,
                                 domainsid=domainsid, 
-                                keytab_path=paths.keytab, samdb_url=paths.samdb,
+                                machinepass=machinepass,
+                                secure_channel_type=SEC_CHAN_BDC)
+
+            secretsdb_setup_dns(secrets_ldb, setup_path, 
+                                realm=names.realm, dnsdomain=names.dnsdomain,
                                 dns_keytab_path=paths.dns_keytab,
-                                dnspass=dnspass, machinepass=machinepass,
-                                dnsdomain=names.dnsdomain)
+                                dnspass=dnspass)
 
             domainguid = samdb.searchone(basedn=domaindn, attribute="objectGUID")
             assert isinstance(domainguid, str)
@@ -1309,6 +1370,8 @@ def provision(setup_dir, message, session_info,
                              realm=names.realm)
             message("A Kerberos configuration suitable for Samba 4 has been generated at %s" % paths.krb5conf)
 
+    #Now commit the secrets.ldb to disk
+    secrets_ldb.transaction_commit()
 
     if provision_backend is not None: 
       if ldap_backend_type == "fedora-ds":

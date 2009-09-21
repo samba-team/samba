@@ -39,11 +39,15 @@ static volatile unsigned pipe_written, pipe_read;
 
 void sys_select_signal(char c)
 {
+	int saved_errno = errno;
+
 	if (!initialised) return;
 
 	if (pipe_written > pipe_read+256) return;
 
 	if (write(select_pipe[1], &c, 1) == 1) pipe_written++;
+
+	errno = saved_errno;
 }
 
 /*******************************************************************

@@ -595,10 +595,11 @@ NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 			struct libnet_Vampire *r)
 {
 	struct libnet_JoinDomain *join;
-	struct libnet_set_join_secrets *set_secrets;
+	struct provision_store_self_join_settings *set_secrets;
 	struct libnet_BecomeDC b;
 	struct vampire_state *s;
 	struct ldb_message *msg;
+	const char *error_string;
 	int ldb_ret;
 	uint32_t i;
 	NTSTATUS status;
@@ -709,40 +710,52 @@ NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
-	/* commit the transaction - this commits all the changes in
-	   the ldb from the whole vampire.  Note that this commit
+	/* prepare the transaction - this prepares to commit all the changes in
+	   the ldb from the whole vampire.  Note that this 
 	   triggers the writing of the linked attribute backlinks.
 	*/
-	if (ldb_transaction_commit(s->ldb) != LDB_SUCCESS) {
-		printf("Failed to commit vampire transaction\n");
+	if (ldb_transaction_prepare_commit(s->ldb) != LDB_SUCCESS) {
+		printf("Failed to prepare_commit vampire transaction\n");
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
-	set_secrets = talloc_zero(s, struct libnet_set_join_secrets);
+	set_secrets = talloc(s, struct provision_store_self_join_settings);
 	if (!set_secrets) {
+		r->out.error_string = NULL;
+		talloc_free(s);
 		return NT_STATUS_NO_MEMORY;
 	}
-		
-	set_secrets->in.domain_name = join->out.domain_name;
-	set_secrets->in.realm = join->out.realm;
-	set_secrets->in.account_name = account_name;
-	set_secrets->in.netbios_name = netbios_name;
-	set_secrets->in.join_type = SEC_CHAN_BDC;
-	set_secrets->in.join_password = join->out.join_password;
-	set_secrets->in.kvno = join->out.kvno;
-	set_secrets->in.domain_sid = join->out.domain_sid;
 	
-	status = libnet_set_join_secrets(ctx, set_secrets, set_secrets);
+	ZERO_STRUCTP(set_secrets);
+	set_secrets->domain_name = join->out.domain_name;
+	set_secrets->realm = join->out.realm;
+	set_secrets->account_name = account_name;
+	set_secrets->netbios_name = netbios_name;
+	set_secrets->secure_channel_type = SEC_CHAN_BDC;
+	set_secrets->machine_password = join->out.join_password;
+	set_secrets->key_version_number = join->out.kvno;
+	set_secrets->domain_sid = join->out.domain_sid;
+	
+	status = provision_store_self_join(ctx, ctx->lp_ctx, ctx->event_ctx, set_secrets, &error_string);
 	if (!NT_STATUS_IS_OK(status)) {
-		r->out.error_string = talloc_steal(mem_ctx, set_secrets->out.error_string);
+		r->out.error_string = talloc_steal(mem_ctx, error_string);
 		talloc_free(s);
 		return status;
 	}
 
 	r->out.domain_name = talloc_steal(r, join->out.domain_name);
 	r->out.domain_sid = talloc_steal(r, join->out.domain_sid);
-	talloc_free(s);
 	
+	/* commit the transaction now we know the secrets were written
+	 * out properly
+	*/
+	if (ldb_transaction_commit(s->ldb) != LDB_SUCCESS) {
+		printf("Failed to commit vampire transaction\n");
+		return NT_STATUS_INTERNAL_DB_ERROR;
+	}
+
+	talloc_free(s);
+
 	return NT_STATUS_OK;
 
 }
