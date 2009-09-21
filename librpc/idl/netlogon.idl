@@ -1357,15 +1357,15 @@ interface netlogon
 	} netr_trust_extension_container;
 
 	typedef struct {
-		lsa_String domainname;
-		lsa_String dns_domainname;
-		lsa_String dns_forestname;
+		lsa_StringLarge domainname;
+		lsa_StringLarge dns_domainname;
+		lsa_StringLarge dns_forestname;
 		GUID domain_guid;
 		dom_sid2 *domain_sid;
 		netr_trust_extension_container trust_extension;
-		lsa_String dummy_string2;
-		lsa_String dummy_string3;
-		lsa_String dummy_string4;
+		lsa_StringLarge dummy_string2;
+		lsa_StringLarge dummy_string3;
+		lsa_StringLarge dummy_string4;
 		uint32 dummy_long1;
 		uint32 dummy_long2;
 		uint32 dummy_long3;
@@ -1385,10 +1385,10 @@ interface netlogon
 		uint32 trusted_domain_count;
 		[size_is(trusted_domain_count)] netr_OneDomainInfo *trusted_domains;
 		netr_LsaPolicyInformation lsa_policy;
-		lsa_String dns_hostname;
-		lsa_String dummy_string2;
-		lsa_String dummy_string3;
-		lsa_String dummy_string4;
+		lsa_StringLarge dns_hostname;
+		lsa_StringLarge dummy_string2;
+		lsa_StringLarge dummy_string3;
+		lsa_StringLarge dummy_string4;
 		netr_WorkstationFlags workstation_flags;
 		netr_SupportedEncTypes supported_enc_types;
 		uint32 dummy_long3;
