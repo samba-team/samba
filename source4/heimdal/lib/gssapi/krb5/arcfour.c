@@ -173,7 +173,7 @@ _gssapi_get_mic_arcfour(OM_uint32 * minor_status,
     int32_t seq_number;
     size_t len, total_len;
     u_char k6_data[16], *p0, *p;
-    RC4_KEY rc4_key;
+    EVP_CIPHER_CTX rc4_key;
 
     _gsskrb5_encap_length (22, &len, &total_len, GSS_KRB5_MECHANISM);
 
@@ -235,10 +235,11 @@ _gssapi_get_mic_arcfour(OM_uint32 * minor_status,
 
     memset (p + 4, (context_handle->more_flags & LOCAL) ? 0 : 0xff, 4);
 
-    RC4_set_key (&rc4_key, sizeof(k6_data), k6_data);
-    RC4 (&rc4_key, 8, p, p);
-	
-    memset(&rc4_key, 0, sizeof(rc4_key));
+    EVP_CIPHER_CTX_init(&rc4_key);
+    EVP_CipherInit_ex(&rc4_key, EVP_rc4(), NULL, k6_data, NULL, 1);
+    EVP_Cipher(&rc4_key, p, p, 8);
+    EVP_CIPHER_CTX_cleanup(&rc4_key);
+
     memset(k6_data, 0, sizeof(k6_data));
 
     *minor_status = 0;
@@ -300,19 +301,20 @@ _gssapi_verify_mic_arcfour(OM_uint32 * minor_status,
 	return GSS_S_FAILURE;
     }
 
-    cmp = memcmp(cksum_data, p + 8, 8);
+    cmp = ct_memcmp(cksum_data, p + 8, 8);
     if (cmp) {
 	*minor_status = 0;
 	return GSS_S_BAD_MIC;
     }
 
     {
-	RC4_KEY rc4_key;
+	EVP_CIPHER_CTX rc4_key;
 	
-	RC4_set_key (&rc4_key, sizeof(k6_data), (void*)k6_data);
-	RC4 (&rc4_key, 8, p, SND_SEQ);
-	
-	memset(&rc4_key, 0, sizeof(rc4_key));
+	EVP_CIPHER_CTX_init(&rc4_key);
+	EVP_CipherInit_ex(&rc4_key, EVP_rc4(), NULL, (void *)k6_data, NULL, 0);
+	EVP_Cipher(&rc4_key, SND_SEQ, p, 8);
+	EVP_CIPHER_CTX_cleanup(&rc4_key);
+
 	memset(k6_data, 0, sizeof(k6_data));
     }
 
@@ -459,12 +461,12 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
 
 
     if(conf_req_flag) {
-	RC4_KEY rc4_key;
-
-	RC4_set_key (&rc4_key, sizeof(k6_data), (void *)k6_data);
-	/* XXX ? */
-	RC4 (&rc4_key, 8 + datalen, p0 + 24, p0 + 24); /* Confounder + data */
-	memset(&rc4_key, 0, sizeof(rc4_key));
+	EVP_CIPHER_CTX rc4_key;
+	
+	EVP_CIPHER_CTX_init(&rc4_key);
+	EVP_CipherInit_ex(&rc4_key, EVP_rc4(), NULL, k6_data, NULL, 1);
+	EVP_Cipher(&rc4_key, p0 + 24, p0 + 24, 8 + datalen);
+	EVP_CIPHER_CTX_cleanup(&rc4_key);
     }
     memset(k6_data, 0, sizeof(k6_data));
 
@@ -478,11 +480,12 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
     }
 
     {
-	RC4_KEY rc4_key;
+	EVP_CIPHER_CTX rc4_key;
 	
-	RC4_set_key (&rc4_key, sizeof(k6_data), k6_data);
-	RC4 (&rc4_key, 8, p0 + 8, p0 + 8); /* SND_SEQ */
-	memset(&rc4_key, 0, sizeof(rc4_key));
+	EVP_CIPHER_CTX_init(&rc4_key);
+	EVP_CipherInit_ex(&rc4_key, EVP_rc4(), NULL, k6_data, NULL, 1);
+	EVP_Cipher(&rc4_key, p0 + 8, p0 + 8 /* SND_SEQ */, 8);
+	EVP_CIPHER_CTX_cleanup(&rc4_key);
 	memset(k6_data, 0, sizeof(k6_data));
     }
 
@@ -577,11 +580,12 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
     }
 
     {
-	RC4_KEY rc4_key;
+	EVP_CIPHER_CTX rc4_key;
 	
-	RC4_set_key (&rc4_key, sizeof(k6_data), k6_data);
-	RC4 (&rc4_key, 8, p0 + 8, SND_SEQ); /* SND_SEQ */
-	memset(&rc4_key, 0, sizeof(rc4_key));
+	EVP_CIPHER_CTX_init(&rc4_key);
+	EVP_CipherInit_ex(&rc4_key, EVP_rc4(), NULL, k6_data, NULL, 1);
+	EVP_Cipher(&rc4_key, SND_SEQ, p0 + 8, 8);
+	EVP_CIPHER_CTX_cleanup(&rc4_key);
 	memset(k6_data, 0, sizeof(k6_data));
     }
 
@@ -624,13 +628,13 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
     output_message_buffer->length = datalen;
 
     if(conf_flag) {
-	RC4_KEY rc4_key;
-
-	RC4_set_key (&rc4_key, sizeof(k6_data), k6_data);
-	RC4 (&rc4_key, 8, p0 + 24, Confounder); /* Confounder */
-	RC4 (&rc4_key, datalen, p0 + GSS_ARCFOUR_WRAP_TOKEN_SIZE,
-	     output_message_buffer->value);
-	memset(&rc4_key, 0, sizeof(rc4_key));
+	EVP_CIPHER_CTX rc4_key;
+	
+	EVP_CIPHER_CTX_init(&rc4_key);
+	EVP_CipherInit_ex(&rc4_key, EVP_rc4(), NULL, k6_data, NULL, 1);
+	EVP_Cipher(&rc4_key, Confounder, p0 + 24, 8);
+	EVP_Cipher(&rc4_key, output_message_buffer->value, p0 + GSS_ARCFOUR_WRAP_TOKEN_SIZE, datalen);
+	EVP_CIPHER_CTX_cleanup(&rc4_key);
     } else {
 	memcpy(Confounder, p0 + 24, 8); /* Confounder */
 	memcpy(output_message_buffer->value,
@@ -662,7 +666,7 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
 	return GSS_S_FAILURE;
     }
 
-    cmp = memcmp(cksum_data, p0 + 16, 8); /* SGN_CKSUM */
+    cmp = ct_memcmp(cksum_data, p0 + 16, 8); /* SGN_CKSUM */
     if (cmp) {
 	_gsskrb5_release_buffer(minor_status, output_message_buffer);
 	*minor_status = 0;

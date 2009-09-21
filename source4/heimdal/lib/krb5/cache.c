@@ -119,8 +119,8 @@ krb5_cc_register(krb5_context context,
 {
     int i;
 
-    for(i = 0; i < context->num_cc_ops && context->cc_ops[i].prefix; i++) {
-	if(strcmp(context->cc_ops[i].prefix, ops->prefix) == 0) {
+    for(i = 0; i < context->num_cc_ops && context->cc_ops[i]->prefix; i++) {
+	if(strcmp(context->cc_ops[i]->prefix, ops->prefix) == 0) {
 	    if(!override) {
 		krb5_set_error_message(context,
 				       KRB5_CC_TYPE_EXISTS,
@@ -132,20 +132,19 @@ krb5_cc_register(krb5_context context,
 	}
     }
     if(i == context->num_cc_ops) {
-	krb5_cc_ops *o = realloc(context->cc_ops,
-				 (context->num_cc_ops + 1) *
-				 sizeof(*context->cc_ops));
+	const krb5_cc_ops **o = realloc(context->cc_ops,
+					(context->num_cc_ops + 1) *
+					sizeof(context->cc_ops[0]));
 	if(o == NULL) {
 	    krb5_set_error_message(context, KRB5_CC_NOMEM,
 				   N_("malloc: out of memory", ""));
 	    return KRB5_CC_NOMEM;
 	}
-	context->num_cc_ops++;
 	context->cc_ops = o;
-	memset(context->cc_ops + i, 0,
-	       (context->num_cc_ops - i) * sizeof(*context->cc_ops));
+	context->cc_ops[context->num_cc_ops] = NULL;
+	context->num_cc_ops++;
     }
-    memcpy(&context->cc_ops[i], ops, sizeof(context->cc_ops[i]));
+    context->cc_ops[i] = ops;
     return 0;
 }
 
@@ -219,12 +218,12 @@ krb5_cc_resolve(krb5_context context,
 
     *id = NULL;
 
-    for(i = 0; i < context->num_cc_ops && context->cc_ops[i].prefix; i++) {
-	size_t prefix_len = strlen(context->cc_ops[i].prefix);
+    for(i = 0; i < context->num_cc_ops && context->cc_ops[i]->prefix; i++) {
+	size_t prefix_len = strlen(context->cc_ops[i]->prefix);
 
-	if(strncmp(context->cc_ops[i].prefix, name, prefix_len) == 0
+	if(strncmp(context->cc_ops[i]->prefix, name, prefix_len) == 0
 	   && name[prefix_len] == ':') {
-	    return allocate_ccache (context, &context->cc_ops[i],
+	    return allocate_ccache (context, context->cc_ops[i],
 				    name + prefix_len + 1,
 				    id);
 	}
@@ -673,6 +672,13 @@ krb5_cc_store_cred(krb5_context context,
  * from `id' in `creds'. 'creds' must be free by the caller using
  * krb5_free_cred_contents.
  *
+ * @param context A Kerberos 5 context
+ * @param id a Kerberos 5 credential cache
+ * @param whichfields what fields to use for matching credentials, same
+ *        flags as whichfields in krb5_compare_creds()
+ * @param mcreds template credential to use for comparing
+ * @param creds returned credential, free with krb5_free_cred_contents()
+ *
  * @return Return an error code or 0, see krb5_get_error_message().
  *
  * @ingroup krb5_ccache
@@ -970,10 +976,10 @@ krb5_cc_get_prefix_ops(krb5_context context, const char *prefix)
     if (p1)
 	*p1 = '\0';
 
-    for(i = 0; i < context->num_cc_ops && context->cc_ops[i].prefix; i++) {
-	if(strcmp(context->cc_ops[i].prefix, p) == 0) {
+    for(i = 0; i < context->num_cc_ops && context->cc_ops[i]->prefix; i++) {
+	if(strcmp(context->cc_ops[i]->prefix, p) == 0) {
 	    free(p);
-	    return &context->cc_ops[i];
+	    return context->cc_ops[i];
 	}
     }
     free(p);
@@ -1045,6 +1051,10 @@ krb5_cc_cache_get_first (krb5_context context,
 /**
  * Retrieve the next cache pointed to by (`cursor') in `id'
  * and advance `cursor'.
+ *
+ * @param context A Kerberos 5 context
+ * @param cursor the iterator cursor, returned by krb5_cc_cache_get_first()
+ * @param id next ccache
  *
  * @return Return 0 or an error code. Returns KRB5_CC_END when the end
  *         of caches is reached, see krb5_get_error_message().
@@ -1398,7 +1408,7 @@ krb5_cccol_cursor_next(krb5_context context, krb5_cccol_cursor cursor,
 
 	if (cursor->cursor == NULL) {
 	    ret = krb5_cc_cache_get_first (context, 
-					   context->cc_ops[cursor->idx].prefix,
+					   context->cc_ops[cursor->idx]->prefix,
 					   &cursor->cursor);
 	    if (ret) {
 		cursor->idx++;

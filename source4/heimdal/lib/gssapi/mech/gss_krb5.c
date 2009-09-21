@@ -27,7 +27,6 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id$");
 
 #include <krb5.h>
 #include <roken.h>

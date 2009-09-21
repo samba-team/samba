@@ -46,7 +46,8 @@ struct Kx509Request;
 #include <kdc-private.h>
 
 extern sig_atomic_t exit_flag;
-extern size_t max_request;
+extern size_t max_request_udp;
+extern size_t max_request_tcp;
 extern const char *request_log;
 extern const char *port_str;
 extern krb5_addresses explicit_addresses;

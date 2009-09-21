@@ -645,8 +645,10 @@ PA-S4U2Self ::= SEQUENCE {
 
 -- never encoded on the wire, just used to checksum over
 KRB5SignedPathData ::= SEQUENCE {
-	encticket[0]	EncTicketPart,
-	delegated[1]	Principals OPTIONAL
+	client[0]	Principal OPTIONAL,
+	authtime[1]	KerberosTime,
+	delegated[2]	Principals OPTIONAL,
+	method_data[3]  METHOD-DATA OPTIONAL
 }
 
 KRB5SignedPath ::= SEQUENCE {
@@ -655,7 +657,8 @@ KRB5SignedPath ::= SEQUENCE {
 	etype[0]	ENCTYPE,
 	cksum[1]	Checksum,
 	-- srvs delegated though
-	delegated[2]	Principals OPTIONAL
+	delegated[2]	Principals OPTIONAL,
+	method_data[3]  METHOD-DATA OPTIONAL
 }
 
 PA-ClientCanonicalizedNames ::= SEQUENCE{

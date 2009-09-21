@@ -31,7 +31,6 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id$");
 
 OM_uint32 GSSAPI_LIB_FUNCTION
 gss_inquire_sec_context_by_oid (OM_uint32 *minor_status,

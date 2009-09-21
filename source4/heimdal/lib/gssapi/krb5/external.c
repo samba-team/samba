@@ -434,6 +434,7 @@ static gssapi_mech_interface_desc krb5_mech = {
     GMI_VERSION,
     "kerberos 5",
     {9, "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02" },
+    0,
     _gsskrb5_acquire_cred,
     _gsskrb5_release_cred,
     _gsskrb5_init_sec_context,

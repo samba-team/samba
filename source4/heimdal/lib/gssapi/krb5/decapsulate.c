@@ -80,9 +80,9 @@ _gssapi_verify_mech_header(u_char **str,
 
     if (mech_len != mech->length)
 	return GSS_S_BAD_MECH;
-    if (memcmp(p,
-	       mech->elements,
-	       mech->length) != 0)
+    if (ct_memcmp(p,
+		  mech->elements,
+		  mech->length) != 0)
 	return GSS_S_BAD_MECH;
     p += mech_len;
     *str = rk_UNCONST(p);
@@ -108,7 +108,7 @@ _gsskrb5_verify_header(u_char **str,
     if (len < 2)
 	return GSS_S_DEFECTIVE_TOKEN;
 
-    if (memcmp (*str, type, 2) != 0)
+    if (ct_memcmp (*str, type, 2) != 0)
 	return GSS_S_DEFECTIVE_TOKEN;
     *str += 2;
 

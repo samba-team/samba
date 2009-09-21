@@ -27,7 +27,6 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id$");
 
 #define AUSAGE 1
 #define IUSAGE 2

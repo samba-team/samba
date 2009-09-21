@@ -74,10 +74,6 @@
 #define ALLOC(X, N) (X) = calloc((N), sizeof(*(X)))
 
 typedef struct {
-	gss_cred_id_t		negotiated_cred_id;
-} *gssspnego_cred;
-
-typedef struct {
 	MechTypeList		initiator_mech_types;
 	gss_OID			preferred_mech_type;
 	gss_OID			negotiated_mech_type;

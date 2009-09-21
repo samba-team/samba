@@ -1747,6 +1747,7 @@ _kdc_as_rep(krb5_context context,
 				  config,
 				  server,
 				  setype,
+				  client->entry.principal,
 				  NULL,
 				  NULL,
 				  &et);

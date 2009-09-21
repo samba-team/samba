@@ -32,7 +32,6 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id$");
 
 int GSSAPI_LIB_FUNCTION
 gss_oid_equal(const gss_OID a, const gss_OID b)

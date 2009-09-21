@@ -33,7 +33,6 @@
 
 #include "mech_locl.h"
 
-RCSID("$Id$");
 
 OM_uint32 GSSAPI_LIB_FUNCTION
 gss_release_oid(OM_uint32 *minor_status, gss_OID *oid)

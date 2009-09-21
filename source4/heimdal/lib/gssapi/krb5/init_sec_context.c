@@ -175,19 +175,20 @@ gsskrb5_get_creds(
 	const gss_name_t target_name,
 	int use_dns,
 	OM_uint32 time_req,
-	OM_uint32 * time_rec,
-	krb5_creds ** cred)
+	OM_uint32 * time_rec)
 {
     OM_uint32 ret;
     krb5_error_code kret;
     krb5_creds this_cred;
     OM_uint32 lifetime_rec;
 
-    *cred = NULL;
-
     if (ctx->target) {
 	krb5_free_principal(context, ctx->target);
 	ctx->target = NULL;
+    }
+    if (ctx->kcred) {
+	krb5_free_creds(context, ctx->kcred);
+	ctx->kcred = NULL;
     }
 
     ret = _gsskrb5_canon_name(minor_status, context, use_dns,
@@ -214,13 +215,13 @@ gsskrb5_get_creds(
 				0,
 				ccache,
 				&this_cred,
-				cred);
+				&ctx->kcred);
     if (kret) {
 	*minor_status = kret;
 	return GSS_S_FAILURE;
     }
 
-    ctx->lifetime = (*cred)->times.endtime;
+    ctx->lifetime = ctx->kcred->times.endtime;
 
     ret = _gsskrb5_lifetime_left(minor_status, context,
 				 ctx->lifetime, &lifetime_rec);
@@ -427,11 +428,11 @@ init_auth
      */
     ret = gsskrb5_get_creds(minor_status, context, ctx->ccache,
 			    ctx, name, 0, time_req, 
-			    time_rec, &ctx->kcred);
+			    time_rec);
     if (ret && allow_dns)
 	ret = gsskrb5_get_creds(minor_status, context, ctx->ccache,
 				ctx, name, 1, time_req, 
-				time_rec, &ctx->kcred);
+				time_rec);
     if (ret)
 	goto failure;
 

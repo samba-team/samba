@@ -1161,24 +1161,6 @@ pk_rd_pa_reply_enckey(krb5_context context,
     }
     der_free_oid(&contentType);
 
-#if 0 /* windows LH with interesting CMS packets, leaks memory */
-    {
-	size_t ph = 1 + der_length_len (length);
-	unsigned char *ptr = malloc(length + ph);
-	size_t l;
-
-	memcpy(ptr + ph, p, length);
-
-	ret = der_put_length_and_tag (ptr + ph - 1, ph, length,
-				      ASN1_C_UNIV, CONS, UT_Sequence, &l);
-	if (ret)
-	    return ret;
-	ptr += ph - l;
-	length += l;
-	p = ptr;
-    }
-#endif
-
     /* win2k uses ContentInfo */
     if (type == PKINIT_WIN2K) {
 	heim_oid type;
@@ -1882,11 +1864,12 @@ pk_copy_error(krb5_context context,
 {
     va_list va;
     char *s, *f;
+    int ret;
 
     va_start(va, fmt);
-    vasprintf(&f, fmt, va);
+    ret = vasprintf(&f, fmt, va);
     va_end(va);
-    if (f == NULL) {
+    if (ret == -1 || f == NULL) {
 	krb5_clear_error_message(context);
 	return;
     }
@@ -2203,13 +2186,15 @@ _krb5_get_init_creds_opt_free_pkinit(krb5_get_init_creds_opt *opt)
     ctx = opt->opt_private->pk_init_ctx;
     switch (ctx->keyex) {
     case USE_DH:
-	DH_free(ctx->u.dh);
+	if (ctx->u.dh)
+	    DH_free(ctx->u.dh);
 	break;
     case USE_RSA:
 	break;
     case USE_ECDH: 
 #ifdef HAVE_OPENSSL
-	EC_KEY_free(ctx->u.eckey);
+	if (ctx->u.eckey)
+	    EC_KEY_free(ctx->u.eckey);
 #endif
 	break;
     }

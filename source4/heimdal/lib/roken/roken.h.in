@@ -32,8 +32,6 @@
  * SUCH DAMAGE.
  */
 
-/* $Id$ */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -114,7 +112,7 @@ struct sockaddr_dl;
 #ifdef HAVE_TERMIOS_H
 #include <termios.h>
 #endif
-#if defined(HAVE_SYS_IOCTL_H) && SunOS != 40
+#ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
 #endif
 #ifdef TIME_WITH_SYS_TIME
@@ -124,6 +122,10 @@ struct sockaddr_dl;
 #include <sys/time.h>
 #else
 #include <time.h>
+#endif
+
+#ifdef HAVE_WS2TCPIP_H
+#include <ws2tcpip.h>
 #endif
 
 #ifdef HAVE_PATHS_H
@@ -309,7 +311,7 @@ char * ROKEN_LIB_FUNCTION strerror(int);
 #define hstrerror rk_hstrerror
 #endif
 /* This causes a fatal error under Psoriasis */
-#if !(defined(SunOS) && (SunOS >= 50))
+#ifndef SunOS
 const char * ROKEN_LIB_FUNCTION hstrerror(int);
 #endif
 #endif
@@ -337,7 +339,7 @@ int ROKEN_LIB_FUNCTION
 inet_pton(int, const char *, void *);
 #endif
 
-#if !defined(HAVE_GETCWD)
+#ifndef HAVE_GETCWD
 #define getcwd rk_getcwd
 char* ROKEN_LIB_FUNCTION getcwd(char *, size_t);
 #endif
@@ -470,9 +472,13 @@ unsigned short ROKEN_LIB_FUNCTION bswap16(unsigned short);
 #define LOCK_UN   8		/* Unlock */
 #endif
 
-#define flock rk_flock
-int flock(int fd, int operation);
+#define flock(_x,_y) rk_flock(_x,_y)
+int rk_flock(int fd, int operation);
 #endif /* HAVE_FLOCK */
+
+#ifdef SunOS
+#define dirfd(x) ((x)->dd_fd)
+#endif
 
 time_t ROKEN_LIB_FUNCTION tm2time (struct tm, int);
 
@@ -677,26 +683,12 @@ char * ROKEN_LIB_FUNCTION estrdup (const char *);
  * kludges and such
  */
 
-#if 1
 int ROKEN_LIB_FUNCTION
 roken_gethostby_setup(const char*, const char*);
 struct hostent* ROKEN_LIB_FUNCTION
 roken_gethostbyname(const char*);
 struct hostent* ROKEN_LIB_FUNCTION 
 roken_gethostbyaddr(const void*, size_t, int);
-#else
-#ifdef GETHOSTBYNAME_PROTO_COMPATIBLE
-#define roken_gethostbyname(x) gethostbyname(x)
-#else
-#define roken_gethostbyname(x) gethostbyname((char *)x)
-#endif
-
-#ifdef GETHOSTBYADDR_PROTO_COMPATIBLE
-#define roken_gethostbyaddr(a, l, t) gethostbyaddr(a, l, t)
-#else
-#define roken_gethostbyaddr(a, l, t) gethostbyaddr((char *)a, l, t)
-#endif
-#endif
 
 #ifdef GETSERVBYNAME_PROTO_COMPATIBLE
 #define roken_getservbyname(x,y) getservbyname(x,y)

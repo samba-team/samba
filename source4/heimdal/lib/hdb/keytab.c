@@ -49,7 +49,7 @@ struct hdb_cursor {
 
 /*
  * the format for HDB keytabs is:
- * HDB:[database:file:mkey]
+ * HDB:[HDBFORMAT:database-specific-data[:mkey=mkey-file]]
  */
 
 static krb5_error_code
@@ -64,8 +64,8 @@ hdb_resolve(krb5_context context, const char *name, krb5_keytab id)
 	return ENOMEM;
     }
     db = name;
-    mkey = strchr(name, ':');
-    if(mkey == NULL || mkey[1] == '\0') {
+    mkey = strstr(name, ":mkey=");
+    if(mkey == NULL || mkey[5] == '\0') {
 	if(*name == '\0')
 	    d->dbname = NULL;
 	else {
@@ -78,19 +78,16 @@ hdb_resolve(krb5_context context, const char *name, krb5_keytab id)
 	}
 	d->mkey = NULL;
     } else {
-	if((mkey - db) == 0) {
-	    d->dbname = NULL;
-	} else {
-	    d->dbname = malloc(mkey - db + 1);
-	    if(d->dbname == NULL) {
-		free(d);
-		krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
-		return ENOMEM;
-	    }
-	    memmove(d->dbname, db, mkey - db);
-	    d->dbname[mkey - db] = '\0';
+	d->dbname = malloc(mkey - db + 1);
+	if(d->dbname == NULL) {
+	    free(d);
+	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	    return ENOMEM;
 	}
-	d->mkey = strdup(mkey + 1);
+	memmove(d->dbname, db, mkey - db);
+	d->dbname[mkey - db] = '\0';
+
+	d->mkey = strdup(mkey + 5);
 	if(d->mkey == NULL) {
 	    free(d->dbname);
 	    free(d);

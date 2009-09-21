@@ -27,7 +27,6 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id$");
 
 OM_uint32 GSSAPI_LIB_FUNCTION
 gss_acquire_cred(OM_uint32 *minor_status,

@@ -42,8 +42,6 @@
 
 #include "normalize_table.h"
 
-RCSID("$Id$");
-
 static int
 translation_cmp(const void *key, const void *data)
 {

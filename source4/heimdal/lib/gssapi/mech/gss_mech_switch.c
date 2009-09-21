@@ -28,7 +28,6 @@
 
 #include "mech_locl.h"
 #include <heim_threads.h>
-RCSID("$Id$");
 
 #ifndef _PATH_GSS_MECH
 #define _PATH_GSS_MECH	"/etc/gss/mech"
@@ -272,6 +271,7 @@ _gss_load_mech(void)
 			free(m);
 			continue;
 		}
+		m->gm_mech.gm_flags = 0;
 		
 		major_status = gss_add_oid_set_member(&minor_status,
 		    &m->gm_mech.gm_mech_oid, &_gss_mech_oids);

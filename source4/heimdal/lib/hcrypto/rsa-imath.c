@@ -205,6 +205,10 @@ imath_rsa_public_encrypt(int flen, const unsigned char* from,
     mp_int_clear(&dec);
     mp_int_clear(&e);
     mp_int_clear(&n);
+
+    if (res != MP_OK)
+	return -4;
+
     {
 	size_t ssize;
 	ssize = mp_int_unsigned_len(&enc);
@@ -295,9 +299,10 @@ imath_rsa_private_encrypt(int flen, const unsigned char* from,
 {
     unsigned char *p, *p0;
     mp_result res;
-    size_t size;
+    int size;
     mpz_t in, out, n, e, b, bi;
     int blinding = (rsa->flags & RSA_FLAG_NO_BLINDING) == 0;
+    int do_unblind = 0;
 
     if (padding != RSA_PKCS1_PADDING)
 	return -1;
@@ -327,13 +332,14 @@ imath_rsa_private_encrypt(int flen, const unsigned char* from,
 
     if(mp_int_compare_zero(&in) < 0 ||
        mp_int_compare(&in, &n) >= 0) {
-	size = 0;
+	size = -3;
 	goto out;
     }
 
     if (blinding) {
 	setup_blind(&n, &b, &bi);
 	blind(&in, &b, &e, &n);
+	do_unblind = 1;
     }
 
     if (rsa->p && rsa->q && rsa->dmp1 && rsa->dmq1 && rsa->iqmp) {
@@ -352,6 +358,11 @@ imath_rsa_private_encrypt(int flen, const unsigned char* from,
 	mp_int_clear(&dmp1);
 	mp_int_clear(&dmq1);
 	mp_int_clear(&iqmp);
+
+	if (res != MP_OK) {
+	    size = -4;
+	    goto out;
+	}
     } else {
 	mpz_t d;
 
@@ -359,18 +370,15 @@ imath_rsa_private_encrypt(int flen, const unsigned char* from,
 	res = mp_int_exptmod(&in, &d, &n, &out);
 	mp_int_clear(&d);
 	if (res != MP_OK) {
-	    size = 0;
+	    size = -5;
 	    goto out;
 	}
     }
 
-    if (blinding) {
+    if (do_unblind)
 	unblind(&out, &bi, &n);
-	mp_int_clear(&b);
-	mp_int_clear(&bi);
-    }
 
-    {
+    if (size > 0) {
 	size_t ssize;
 	ssize = mp_int_unsigned_len(&out);
 	assert(size >= ssize);
@@ -378,7 +386,12 @@ imath_rsa_private_encrypt(int flen, const unsigned char* from,
 	size = ssize;
     }
 
-out:
+ out:
+    if (do_unblind) {
+	mp_int_clear(&b);
+	mp_int_clear(&bi);
+    }
+
     mp_int_clear(&e);
     mp_int_clear(&n);
     mp_int_clear(&in);
@@ -396,6 +409,7 @@ imath_rsa_private_decrypt(int flen, const unsigned char* from,
     size_t size;
     mpz_t in, out, n, e, b, bi;
     int blinding = (rsa->flags & RSA_FLAG_NO_BLINDING) == 0;
+    int do_unblind = 0;
 
     if (padding != RSA_PKCS1_PADDING)
 	return -1;
@@ -418,13 +432,14 @@ imath_rsa_private_decrypt(int flen, const unsigned char* from,
 
     if(mp_int_compare_zero(&in) < 0 ||
        mp_int_compare(&in, &n) >= 0) {
-	size = 0;
+	size = -2;
 	goto out;
     }
 
     if (blinding) {
 	setup_blind(&n, &b, &bi);
 	blind(&in, &b, &e, &n);
+	do_unblind = 1;
     }
 
     if (rsa->p && rsa->q && rsa->dmp1 && rsa->dmq1 && rsa->iqmp) {
@@ -443,6 +458,12 @@ imath_rsa_private_decrypt(int flen, const unsigned char* from,
 	mp_int_clear(&dmp1);
 	mp_int_clear(&dmq1);
 	mp_int_clear(&iqmp);
+
+	if (res != MP_OK) {
+	    size = -3;
+	    goto out;
+	}
+
     } else {
 	mpz_t d;
 
@@ -454,16 +475,13 @@ imath_rsa_private_decrypt(int flen, const unsigned char* from,
 	res = mp_int_exptmod(&in, &d, &n, &out);
 	mp_int_clear(&d);
 	if (res != MP_OK) {
-	    size = 0;
+	    size = -4;
 	    goto out;
 	}
     }
 
-    if (blinding) {
+    if (do_unblind)
 	unblind(&out, &bi, &n);
-	mp_int_clear(&b);
-	mp_int_clear(&bi);
-    }
 
     ptr = to;
     {
@@ -475,19 +493,26 @@ imath_rsa_private_decrypt(int flen, const unsigned char* from,
     }
 
     /* head zero was skipped by mp_int_to_unsigned */
-    if (*ptr != 2)
-	return -3;
+    if (*ptr != 2) {
+	size = -5;
+	goto out;
+    }
     size--; ptr++;
     while (size && *ptr != 0) {
 	size--; ptr++;
     }
     if (size == 0)
-	return -4;
+	return -6;
     size--; ptr++;
 
     memmove(to, ptr, size);
 
-out:
+ out:
+    if (do_unblind) {
+	mp_int_clear(&b);
+	mp_int_clear(&bi);
+    }
+
     mp_int_clear(&e);
     mp_int_clear(&n);
     mp_int_clear(&in);

@@ -85,32 +85,6 @@ set_etypes (krb5_context context,
 }
 
 /*
- *
- */
-
-static krb5_error_code
-copy_etypes (krb5_context context,
-	     krb5_enctype *enctypes,
-	     krb5_enctype **ret_enctypes)
-{
-    unsigned int i;
-
-    for (i = 0; enctypes[i]; i++)
-	;
-    i++;
-
-    *ret_enctypes = malloc(sizeof(ret_enctypes[0]) * i);
-    if (*ret_enctypes == NULL) {
-	krb5_set_error_message(context, ENOMEM, 
-			       N_("malloc: out of memory", ""));
-	return ENOMEM;
-    }
-    memcpy(*ret_enctypes, enctypes, sizeof(ret_enctypes[0]) * i);
-    return 0;
-}
-
-
-/*
  * read variables from the configuration file and set in `context'
  */
 
@@ -119,6 +93,7 @@ init_context_from_config_file(krb5_context context)
 {
     krb5_error_code ret;
     const char * tmp;
+    char **s;
     krb5_enctype *tmptypes;
 
     INIT_FIELD(context, time, max_skew, 5 * 60, "clockskew");
@@ -229,6 +204,16 @@ init_context_from_config_file(krb5_context context)
 	krb5_enctype_enable(context, ETYPE_DES_PCBC_NONE);
     }
 
+    s = krb5_config_get_strings(context, NULL, "logging", "krb5", NULL);
+    if(s) {
+	char **p;
+	krb5_initlog(context, "libkrb5", &context->debug_dest);
+	for(p = s; *p; p++)
+	    krb5_addlog_dest(context, context->debug_dest, *p);
+	krb5_config_free_strings(s);
+    }
+
+
     return 0;
 }
 
@@ -328,8 +313,35 @@ out:
     return ret;
 }
 
+#ifndef HEIMDAL_SMALLER
+
+/*
+ *
+ */
+
+static krb5_error_code
+copy_etypes (krb5_context context,
+	     krb5_enctype *enctypes,
+	     krb5_enctype **ret_enctypes)
+{
+    unsigned int i;
+
+    for (i = 0; enctypes[i]; i++)
+	;
+    i++;
+
+    *ret_enctypes = malloc(sizeof(ret_enctypes[0]) * i);
+    if (*ret_enctypes == NULL) {
+	krb5_set_error_message(context, ENOMEM, 
+			       N_("malloc: out of memory", ""));
+	return ENOMEM;
+    }
+    memcpy(*ret_enctypes, enctypes, sizeof(ret_enctypes[0]) * i);
+    return 0;
+}
+
 /**
- * Make a copy for the Kerberos 5 context, allocated krb5_contex shoud
+ * Make a copy for the Kerberos 5 context, the new krb5_context shoud
  * be freed with krb5_free_context().
  *
  * @param context the Kerberos context to copy
@@ -399,6 +411,8 @@ krb5_copy_context(krb5_context context, krb5_context *out)
 #if 0 /* XXX */
     if(context->warn_dest != NULL)
 	;
+    if(context->debug_dest != NULL)
+	;
 #endif
 
     ret = krb5_set_extra_addresses(p, context->extra_addresses);
@@ -420,6 +434,8 @@ krb5_copy_context(krb5_context context, krb5_context *out)
     krb5_free_context(p);
     return ret;
 }
+
+#endif
 
 /**
  * Frees the krb5_context allocated by krb5_init_context().
@@ -446,6 +462,8 @@ krb5_free_context(krb5_context context)
     krb5_clear_error_message(context);
     if(context->warn_dest != NULL)
 	krb5_closelog(context, context->warn_dest);
+    if(context->debug_dest != NULL)
+	krb5_closelog(context, context->debug_dest);
     krb5_set_extra_addresses(context, NULL);
     krb5_set_ignore_addresses(context, NULL);
     krb5_set_send_to_kdc_func(context, NULL, NULL);
@@ -835,20 +853,23 @@ krb5_init_ets(krb5_context context)
 {
     if(context->et_list == NULL){
 	krb5_add_et_list(context, initialize_krb5_error_table_r);
-	bindtextdomain(COM_ERR_BINDDOMAIN_krb5, HEIMDAL_LOCALEDIR);
-
 	krb5_add_et_list(context, initialize_asn1_error_table_r);
-	bindtextdomain(COM_ERR_BINDDOMAIN_asn1, HEIMDAL_LOCALEDIR);
-
 	krb5_add_et_list(context, initialize_heim_error_table_r);
-	bindtextdomain(COM_ERR_BINDDOMAIN_heim, HEIMDAL_LOCALEDIR);
 
 	krb5_add_et_list(context, initialize_k524_error_table_r);
+
+#ifdef COM_ERR_BINDDOMAIN_krb5
+	bindtextdomain(COM_ERR_BINDDOMAIN_krb5, HEIMDAL_LOCALEDIR);
+	bindtextdomain(COM_ERR_BINDDOMAIN_asn1, HEIMDAL_LOCALEDIR);
+	bindtextdomain(COM_ERR_BINDDOMAIN_heim, HEIMDAL_LOCALEDIR);
 	bindtextdomain(COM_ERR_BINDDOMAIN_k524, HEIMDAL_LOCALEDIR);
+#endif
 
 #ifdef PKINIT
 	krb5_add_et_list(context, initialize_hx_error_table_r);
+#ifdef COM_ERR_BINDDOMAIN_hx
 	bindtextdomain(COM_ERR_BINDDOMAIN_hx, HEIMDAL_LOCALEDIR);
+#endif
 #endif
     }
 }

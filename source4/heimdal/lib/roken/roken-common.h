@@ -447,6 +447,8 @@ rk_cloexec(int);
 void ROKEN_LIB_FUNCTION
 rk_cloexec_file(FILE *);
 
+int ROKEN_LIB_FUNCTION
+ct_memcmp(const void *, const void *, size_t);
 
 ROKEN_CPP_END
 

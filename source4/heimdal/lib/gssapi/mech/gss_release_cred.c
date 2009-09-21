@@ -27,7 +27,28 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id$");
+
+/**
+ * Release a credentials
+ *
+ * Its ok to release the GSS_C_NO_CREDENTIAL/NULL credential, it will
+ * return a GSS_S_COMPLETE error code. On return cred_handle is set ot
+ * GSS_C_NO_CREDENTIAL.
+ *
+ * Example:
+ *
+ * @code
+ * gss_cred_id_t cred = GSS_C_NO_CREDENTIAL;
+ * major = gss_release_cred(&minor, &cred);
+ * @endcode
+ *
+ * @param minor_status minor status return code, mech specific
+ * @param cred_handle a pointer to the credential too release
+ *
+ * @return an gssapi error code
+ *
+ * @ingroup gssapi
+ */
 
 OM_uint32 GSSAPI_LIB_FUNCTION
 gss_release_cred(OM_uint32 *minor_status, gss_cred_id_t *cred_handle)

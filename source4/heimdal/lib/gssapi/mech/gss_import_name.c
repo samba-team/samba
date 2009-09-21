@@ -27,7 +27,6 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id$");
 
 static OM_uint32
 _gss_import_export_name(OM_uint32 *minor_status,

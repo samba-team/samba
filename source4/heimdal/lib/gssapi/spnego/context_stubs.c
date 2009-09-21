@@ -643,84 +643,70 @@ OM_uint32 _gss_spnego_duplicate_name (
     return gss_duplicate_name(minor_status, src_name, dest_name);
 }
 
+OM_uint32
+_gss_spnego_wrap_iov(OM_uint32 * minor_status,
+		     gss_ctx_id_t  context_handle,
+		     int conf_req_flag,
+		     gss_qop_t qop_req,
+		     int * conf_state,
+		     gss_iov_buffer_desc *iov,
+		     int iov_count)
+{
+    gssspnego_ctx ctx = (gssspnego_ctx)context_handle;
+
+    *minor_status = 0;
+
+    if (ctx == NULL || ctx->negotiated_ctx_id == GSS_C_NO_CONTEXT)
+	return GSS_S_NO_CONTEXT;
+
+    return gss_wrap_iov(minor_status, ctx->negotiated_ctx_id,
+			conf_req_flag, qop_req, conf_state,
+			iov, iov_count);
+}
+
+OM_uint32
+_gss_spnego_unwrap_iov(OM_uint32 *minor_status,
+		       gss_ctx_id_t context_handle,
+		       int *conf_state,
+		       gss_qop_t *qop_state,
+		       gss_iov_buffer_desc *iov,
+		       int iov_count)
+{
+    gssspnego_ctx ctx = (gssspnego_ctx)context_handle;
+
+    *minor_status = 0;
+
+    if (ctx == NULL || ctx->negotiated_ctx_id == GSS_C_NO_CONTEXT)
+	return GSS_S_NO_CONTEXT;
+
+    return gss_unwrap_iov(minor_status,
+			  ctx->negotiated_ctx_id,
+			  conf_state, qop_state,
+			  iov, iov_count);
+}
+
+OM_uint32
+_gss_spnego_wrap_iov_length(OM_uint32 * minor_status,
+			    gss_ctx_id_t context_handle,
+			    int conf_req_flag,
+			    gss_qop_t qop_req,
+			    int *conf_state,
+			    gss_iov_buffer_desc *iov,
+			    int iov_count)
+{
+    gssspnego_ctx ctx = (gssspnego_ctx)context_handle;
+
+    *minor_status = 0;
+
+    if (ctx == NULL || ctx->negotiated_ctx_id == GSS_C_NO_CONTEXT)
+	return GSS_S_NO_CONTEXT;
+
+    return gss_wrap_iov_length(minor_status, ctx->negotiated_ctx_id,
+			       conf_req_flag, qop_req, conf_state,
+			       iov, iov_count);
+}
+
 #if 0
-OM_uint32 _gss_spnego_unwrap_ex
-           (OM_uint32 * minor_status,
-            const gss_ctx_id_t context_handle,
-	    const gss_buffer_t token_header_buffer,
-	    const gss_buffer_t associated_data_buffer,
-	    const gss_buffer_t input_message_buffer,
-	    gss_buffer_t output_message_buffer,
-	    int * conf_state,
-	    gss_qop_t * qop_state)
-{
-    gssspnego_ctx ctx;
-
-    *minor_status = 0;
-
-    if (context_handle == GSS_C_NO_CONTEXT) {
-	return GSS_S_NO_CONTEXT;
-    }
-
-    ctx = (gssspnego_ctx)context_handle;
-
-    if (ctx->negotiated_ctx_id == GSS_C_NO_CONTEXT) {
-	return GSS_S_NO_CONTEXT;
-    }
-
-    return gss_unwrap_ex(minor_status,
-			 ctx->negotiated_ctx_id,
-			 token_header_buffer,
-			 associated_data_buffer,
-			 input_message_buffer,
-			 output_message_buffer,
-			 conf_state,
-			 qop_state);
-}
-
-OM_uint32 _gss_spnego_wrap_ex
-           (OM_uint32 * minor_status,
-            const gss_ctx_id_t context_handle,
-            int conf_req_flag,
-            gss_qop_t qop_req,
-            const gss_buffer_t associated_data_buffer,
-            const gss_buffer_t input_message_buffer,
-            int * conf_state,
-            gss_buffer_t output_token_buffer,
-            gss_buffer_t output_message_buffer
-	   )
-{
-    gssspnego_ctx ctx;
-
-    *minor_status = 0;
-
-    if (context_handle == GSS_C_NO_CONTEXT) {
-	return GSS_S_NO_CONTEXT;
-    }
-
-    ctx = (gssspnego_ctx)context_handle;
-
-    if (ctx->negotiated_ctx_id == GSS_C_NO_CONTEXT) {
-	return GSS_S_NO_CONTEXT;
-    }
-
-    if ((ctx->mech_flags & GSS_C_DCE_STYLE) == 0 &&
-	associated_data_buffer->length != input_message_buffer->length) {
-	*minor_status = EINVAL;
-	return GSS_S_BAD_QOP;
-    }
-
-    return gss_wrap_ex(minor_status,
-		       ctx->negotiated_ctx_id,
-		       conf_req_flag,
-		       qop_req,
-		       associated_data_buffer,
-		       input_message_buffer,
-		       conf_state,
-		       output_token_buffer,
-		       output_message_buffer);
-}
-
 OM_uint32 _gss_spnego_complete_auth_token
            (OM_uint32 * minor_status,
             const gss_ctx_id_t context_handle,

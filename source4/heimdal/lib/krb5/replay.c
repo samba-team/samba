@@ -178,17 +178,20 @@ krb5_rc_close(krb5_context context,
 static void
 checksum_authenticator(Authenticator *auth, void *data)
 {
-    MD5_CTX md5;
-    int i;
+    EVP_MD_CTX *m = EVP_MD_CTX_create();
+    unsigned i;
 
-    MD5_Init (&md5);
-    MD5_Update (&md5, auth->crealm, strlen(auth->crealm));
+    EVP_DigestInit_ex(m, EVP_md5(), NULL);
+
+    EVP_DigestUpdate(m, auth->crealm, strlen(auth->crealm));
     for(i = 0; i < auth->cname.name_string.len; i++)
-	MD5_Update(&md5, auth->cname.name_string.val[i],
+	EVP_DigestUpdate(m, auth->cname.name_string.val[i],
 		   strlen(auth->cname.name_string.val[i]));
-    MD5_Update (&md5, &auth->ctime, sizeof(auth->ctime));
-    MD5_Update (&md5, &auth->cusec, sizeof(auth->cusec));
-    MD5_Final (data, &md5);
+    EVP_DigestUpdate(m, &auth->ctime, sizeof(auth->ctime));
+    EVP_DigestUpdate(m, &auth->cusec, sizeof(auth->cusec));
+
+    EVP_DigestFinal_ex(m, data, NULL);
+    EVP_MD_CTX_destroy(m);
 }
 
 krb5_error_code KRB5_LIB_FUNCTION

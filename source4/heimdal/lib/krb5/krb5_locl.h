@@ -234,7 +234,8 @@ typedef struct krb5_context_data {
     krb5_config_section *cf;
     struct et_list *et_list;
     struct krb5_log_facility *warn_dest;
-    krb5_cc_ops *cc_ops;
+    struct krb5_log_facility *debug_dest;
+    const krb5_cc_ops **cc_ops;
     int num_cc_ops;
     const char *http_proxy;
     const char *time_fmt;

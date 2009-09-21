@@ -106,6 +106,7 @@ _kdc_add_KRB5SignedPath(krb5_context context,
 			krb5_kdc_configuration *config,
 			hdb_entry_ex *krbtgt,
 			krb5_enctype enctype,
+			krb5_principal client,
 			krb5_const_principal server,
 			krb5_principals principals,
 			EncTicketPart *tkt)
@@ -125,8 +126,10 @@ _kdc_add_KRB5SignedPath(krb5_context context,
     {
 	KRB5SignedPathData spd;
 	
-	spd.encticket = *tkt;
+	spd.client = client;
+	spd.authtime = tkt->authtime;
 	spd.delegated = principals;
+	spd.method_data = NULL;
 	
 	ASN1_MALLOC_ENCODE(KRB5SignedPathData, data.data, data.length,
 			   &spd, &size, ret);
@@ -153,6 +156,7 @@ _kdc_add_KRB5SignedPath(krb5_context context,
 
     sp.etype = enctype;
     sp.delegated = principals;
+    sp.method_data = NULL;
 
     ret = krb5_create_checksum(context, crypto, KRB5_KU_KRB5SIGNEDPATH, 0,
 			       data.data, data.length, &sp.cksum);
@@ -185,6 +189,7 @@ static krb5_error_code
 check_KRB5SignedPath(krb5_context context,
 		     krb5_kdc_configuration *config,
 		     hdb_entry_ex *krbtgt,
+		     krb5_principal cp,
 		     EncTicketPart *tkt,
 		     krb5_principals *delegated,
 		     int *signedpath)
@@ -200,7 +205,6 @@ check_KRB5SignedPath(krb5_context context,
     if (ret == 0) {
 	KRB5SignedPathData spd;
 	KRB5SignedPath sp;
-	AuthorizationData *ad;
 	size_t size;
 
 	ret = decode_KRB5SignedPath(data.data, data.length, &sp, NULL);
@@ -208,17 +212,13 @@ check_KRB5SignedPath(krb5_context context,
 	if (ret)
 	    return ret;
 
-	spd.encticket = *tkt;
-	/* the KRB5SignedPath is the last entry */
-	ad = spd.encticket.authorization_data;
-	if (--ad->len == 0)
-	    spd.encticket.authorization_data = NULL;
+	spd.client = cp;
+	spd.authtime = tkt->authtime;
 	spd.delegated = sp.delegated;
+	spd.method_data = sp.method_data;
 
 	ASN1_MALLOC_ENCODE(KRB5SignedPathData, data.data, data.length,
 			   &spd, &size, ret);
-	ad->len++;
-	spd.encticket.authorization_data = ad;
 	if (ret) {
 	    free_KRB5SignedPath(&sp);
 	    return ret;
@@ -244,7 +244,9 @@ check_KRB5SignedPath(krb5_context context,
 	free(data.data);
 	if (ret) {
 	    free_KRB5SignedPath(&sp);
-	    return ret;
+	    kdc_log(context, config, 5,
+		    "KRB5SignedPath not signed correctly, not marking as signed");
+	    return 0;
 	}
 
 	if (delegated && sp.delegated) {
@@ -884,6 +886,7 @@ tgs_make_reply(krb5_context context,
 					  config,
 					  krbtgt,
 					  krbtgt_etype,
+					  client_principal,
 					  NULL,
 					  spp,
 					  &et);
@@ -1663,6 +1666,7 @@ server_lookup:
     ret = check_KRB5SignedPath(context,
 			       config,
 			       krbtgt,
+			       cp,
 			       tgt,
 			       &spp,
 			       &signedpath);
@@ -1855,6 +1859,7 @@ server_lookup:
 	ret = check_KRB5SignedPath(context,
 				   config,
 				   krbtgt,
+				   cp,
 				   &adtkt,
 				   NULL,
 				   &ad_signedpath);

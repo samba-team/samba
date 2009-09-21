@@ -27,7 +27,6 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id$");
 
 OM_uint32 GSSAPI_LIB_FUNCTION
 gss_test_oid_set_member(OM_uint32 *minor_status,

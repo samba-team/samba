@@ -34,8 +34,6 @@
 #include <config.h>
 #include "windlocl.h"
 
-RCSID("$Id$");
-
 static int
 utf8toutf32(const unsigned char **pp, uint32_t *out)
 {

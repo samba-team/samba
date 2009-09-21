@@ -64,6 +64,7 @@
 #define d2i_RSAPrivateKey hc_d2i_RSAPrivateKey
 #define i2d_RSAPrivateKey hc_i2d_RSAPrivateKey
 #define i2d_RSAPublicKey hc_i2d_RSAPublicKey
+#define d2i_RSAPublicKey hc_d2i_RSAPublicKey
 
 /*
  *
@@ -173,5 +174,6 @@ RSA *	d2i_RSAPrivateKey(RSA *, const unsigned char **, size_t);
 int	i2d_RSAPrivateKey(RSA *, unsigned char **);
 
 int	i2d_RSAPublicKey(RSA *, unsigned char **);
+RSA *	d2i_RSAPublicKey(RSA *, const unsigned char **, size_t);
 
 #endif /* _HEIM_RSA_H */

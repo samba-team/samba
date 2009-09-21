@@ -27,7 +27,6 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id$");
 
 static OM_uint32
 parse_header(const gss_buffer_t input_token, gss_OID mech_oid)
@@ -161,6 +160,7 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
 	struct _gss_mechanism_cred *mc;
 	gss_cred_id_t acceptor_mc, delegated_mc;
 	gss_name_t src_mn;
+	gss_OID mech_ret_type = NULL;
 
 	*minor_status = 0;
 	if (src_name)
@@ -228,7 +228,7 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
 	    input_token,
 	    input_chan_bindings,
 	    &src_mn,
-	    mech_type,
+	    &mech_ret_type,
 	    output_token,
 	    &mech_ret_flags,
 	    time_rec,
@@ -240,6 +240,9 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
 		gss_delete_sec_context(&junk, context_handle, NULL);
 		return (major_status);
 	}
+
+	if (mech_type)
+	    *mech_type = mech_ret_type;
 
 	if (src_name && src_mn) {
 		/*
@@ -262,6 +265,15 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
 			m->gm_release_cred(minor_status, &delegated_mc);
 			if (ret_flags)
 				*ret_flags &= ~GSS_C_DELEG_FLAG;
+		} else if (gss_oid_equal(mech_ret_type, &m->gm_mech_oid) == 0) {
+			/* 
+			 * If the returned mech_type is not the same
+			 * as the mech, assume its pseudo mech type
+			 * and the returned type is already a
+			 * mech-glue object
+			 */
+			*delegated_cred_handle = delegated_mc;
+
 		} else if (delegated_mc) {
 			struct _gss_cred *dcred;
 			struct _gss_mechanism_cred *dmc;

@@ -27,7 +27,6 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id$");
 
 OM_uint32 GSSAPI_LIB_FUNCTION
 gss_inquire_names_for_mech(OM_uint32 *minor_status,

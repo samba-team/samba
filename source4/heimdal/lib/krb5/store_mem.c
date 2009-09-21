@@ -110,7 +110,7 @@ mem_no_trunc(krb5_storage *sp, off_t offset)
 }
 
 /**
- * 
+ * Create a fixed size memory storage block
  *
  * @return A krb5_storage on success, or NULL on out of memory error.
  *
@@ -149,7 +149,7 @@ krb5_storage_from_mem(void *buf, size_t len)
 }
 
 /**
- * 
+ * Create a fixed size memory storage block
  *
  * @return A krb5_storage on success, or NULL on out of memory error.
  *
@@ -168,7 +168,7 @@ krb5_storage_from_data(krb5_data *data)
 }
 
 /**
- * 
+ * Create a fixed size memory storage block that is read only
  *
  * @return A krb5_storage on success, or NULL on out of memory error.
  *

@@ -2243,7 +2243,8 @@ hx509_verify_path(hx509_context context,
      */
 
     for (i = path.len - 1; i >= 0; i--) {
-	Certificate *signer, *c;
+	hx509_cert signer;
+	Certificate *c;
 
 	c = _hx509_get_cert(path.val[i]);
 
@@ -2251,9 +2252,9 @@ hx509_verify_path(hx509_context context,
 	if (i + 1 == path.len) {
 	    int selfsigned;
 
-	    signer = path.val[i]->data;
+	    signer = path.val[i];
 
-	    ret = certificate_is_self_signed(context, signer, &selfsigned);
+	    ret = certificate_is_self_signed(context, signer->data, &selfsigned);
 	    if (ret)
 		goto out;
 
@@ -2262,7 +2263,7 @@ hx509_verify_path(hx509_context context,
 		continue;
 	} else {
 	    /* take next certificate in chain */
-	    signer = path.val[i + 1]->data;
+	    signer = path.val[i + 1];
 	}
 
 	/* verify signatureValue */
@@ -2326,8 +2327,30 @@ hx509_verify_signature(hx509_context context,
 		       const heim_octet_string *data,
 		       const heim_octet_string *sig)
 {
-    return _hx509_verify_signature(context, signer->data, alg, data, sig);
+    return _hx509_verify_signature(context, signer, alg, data, sig);
 }
+
+int
+_hx509_verify_signature_bitstring(hx509_context context,
+				  const hx509_cert signer,
+				  const AlgorithmIdentifier *alg,
+				  const heim_octet_string *data,
+				  const heim_bit_string *sig)
+{
+    heim_octet_string os;
+
+    if (sig->length & 7) {
+	hx509_set_error_string(context, 0, HX509_CRYPTO_SIG_INVALID_FORMAT,
+			       "signature not multiple of 8 bits");
+	return HX509_CRYPTO_SIG_INVALID_FORMAT;
+    }
+
+    os.data = sig->data;
+    os.length = sig->length / 8;
+
+    return _hx509_verify_signature(context, signer, alg, data, &os);
+}
+
 
 
 /**

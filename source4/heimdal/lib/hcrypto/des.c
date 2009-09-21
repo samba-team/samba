@@ -182,6 +182,7 @@ DES_is_weak_key(DES_cblock *key)
 {
     int i;
 
+    /* Not constant time size if the key is weak, the app should not use it. */
     for (i = 0; i < sizeof(weak_keys)/sizeof(weak_keys[0]); i++) {
 	if (memcmp(weak_keys[i], key, DES_CBLOCK_LEN) == 0)
 	    return 1;

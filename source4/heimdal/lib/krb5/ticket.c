@@ -33,6 +33,18 @@
 
 #include "krb5_locl.h"
 
+/**
+ * Free ticket and content
+ *
+ * @param context a Kerberos 5 context
+ * @param ticket ticket to free
+ *
+ * @return Returns 0 to indicate success.  Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_free_ticket(krb5_context context,
 		 krb5_ticket *ticket)
@@ -43,6 +55,19 @@ krb5_free_ticket(krb5_context context,
     free(ticket);
     return 0;
 }
+
+/**
+ * Copy ticket and content
+ *
+ * @param context a Kerberos 5 context
+ * @param from ticket to copy
+ * @param to new copy of ticket, free with krb5_free_ticket()
+ *
+ * @return Returns 0 to indicate success.  Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_copy_ticket(krb5_context context,
@@ -80,6 +105,19 @@ krb5_copy_ticket(krb5_context context,
     return 0;
 }
 
+/**
+ * Return client principal in ticket
+ *
+ * @param context a Kerberos 5 context
+ * @param ticket ticket to copy
+ * @param client client principal, free with krb5_free_principal()
+ *
+ * @return Returns 0 to indicate success.  Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_ticket_get_client(krb5_context context,
 		       const krb5_ticket *ticket,
@@ -88,6 +126,19 @@ krb5_ticket_get_client(krb5_context context,
     return krb5_copy_principal(context, ticket->client, client);
 }
 
+/**
+ * Return server principal in ticket
+ *
+ * @param context a Kerberos 5 context
+ * @param ticket ticket to copy
+ * @param server server principal, free with krb5_free_principal()
+ *
+ * @return Returns 0 to indicate success.  Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_ticket_get_server(krb5_context context,
 		       const krb5_ticket *ticket,
@@ -95,6 +146,17 @@ krb5_ticket_get_server(krb5_context context,
 {
     return krb5_copy_principal(context, ticket->server, server);
 }
+
+/**
+ * Return end time of ticket
+ *
+ * @param context a Kerberos 5 context
+ * @param ticket ticket to copy
+ *
+ * @return end time of ticket
+ *
+ * @ingroup krb5
+ */
 
 time_t KRB5_LIB_FUNCTION
 krb5_ticket_get_endtime(krb5_context context,
@@ -261,10 +323,17 @@ out:
     return ret;
 }
 
-/*
- * Extract the authorization data type of `type' from the
- * 'ticket'. Store the field in `data'. This function is to use for
- * kerberos applications.
+/**
+ * Extract the authorization data type of type from the ticket. Store
+ * the field in data. This function is to use for kerberos
+ * applications.
+ *
+ * @param context a Kerberos 5 context
+ * @param ticket Kerberos ticket
+ * @param type type to fetch
+ * @param data returned data, free with krb5_data_free()
+ *
+ * @ingroup krb5
  */
 
 krb5_error_code KRB5_LIB_FUNCTION

@@ -32,7 +32,6 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id$");
 
 OM_uint32 GSSAPI_LIB_FUNCTION
 gss_decapsulate_token(gss_buffer_t input_token,

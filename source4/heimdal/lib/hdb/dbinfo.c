@@ -102,10 +102,10 @@ hdb_get_dbinfo(krb5_context context, struct hdb_dbinfo **dbp)
     dt = NULL;
     databases = NULL;
 
-    db_binding = krb5_config_get(context, NULL, krb5_config_list,
-				 "kdc",
-				 "database",
-				 NULL);
+    db_binding = krb5_config_get_list(context, NULL,
+				      "kdc",
+				      "database",
+				      NULL);
     if (db_binding) {
 
 	ret = get_dbinfo(context, db_binding, "default", &di);

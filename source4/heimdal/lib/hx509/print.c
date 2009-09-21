@@ -1017,7 +1017,7 @@ hx509_validate_cert(hx509_context context,
 
     if (status.selfsigned) {
 	ret = _hx509_verify_signature_bitstring(context,
-						c,
+						cert,
 						&c->signatureAlgorithm,
 						&c->tbsCertificate._save,
 						&c->signatureValue);

@@ -399,7 +399,7 @@ _hx509_name_ds_cmp(const DirectoryString *ds1,
 		   int *diff)
 {
     uint32_t *ds1lp, *ds2lp;
-    size_t ds1len, ds2len;
+    size_t ds1len, ds2len, i;
     int ret;
 
     ret = dsstringprep(ds1, &ds1lp, &ds1len);
@@ -413,9 +413,13 @@ _hx509_name_ds_cmp(const DirectoryString *ds1,
 
     if (ds1len != ds2len)
 	*diff = ds1len - ds2len;
-    else
-	*diff = memcmp(ds1lp, ds2lp, ds1len * sizeof(ds1lp[0]));
-
+    else {
+	for (i = 0; i < ds1len; i++) {
+	    *diff = ds1lp[i] - ds2lp[i];
+	    if (*diff)
+		break;
+	}
+    }
     free(ds1lp);
     free(ds2lp);
 

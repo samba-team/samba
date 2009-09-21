@@ -132,6 +132,7 @@ _gsskrb5_pseudo_random(OM_uint32 *minor_status,
 	krb5_data_free(&output);
 	num++;
     }
+    free(input.data);
 
     krb5_crypto_destroy(context, crypto);
 

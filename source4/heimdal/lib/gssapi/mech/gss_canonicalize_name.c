@@ -27,7 +27,6 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id$");
 
 /**
  *  gss_canonicalize_name takes a Internal Name (IN) and converts in into a

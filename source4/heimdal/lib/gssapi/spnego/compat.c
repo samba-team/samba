@@ -142,7 +142,6 @@ OM_uint32 _gss_spnego_internal_delete_sec_context
     HEIMDAL_MUTEX_destroy(&ctx->ctx_id_mutex);
 
     free(ctx);
-    *context_handle = NULL;
 
     return ret;
 }
@@ -236,7 +235,7 @@ _gss_spnego_indicate_mechtypelist (OM_uint32 *minor_status,
 				   gss_name_t target_name,
 				   OM_uint32 (*func)(gss_name_t, gss_OID),
 				   int includeMSCompatOID,
-				   const gssspnego_cred cred_handle,
+				   const gss_cred_id_t cred_handle,
 				   MechTypeList *mechtypelist,
 				   gss_OID *preferred_mech)
 {
@@ -248,9 +247,9 @@ _gss_spnego_indicate_mechtypelist (OM_uint32 *minor_status,
     mechtypelist->len = 0;
     mechtypelist->val = NULL;
 
-    if (cred_handle != NULL) {
+    if (cred_handle) {
 	ret = gss_inquire_cred(minor_status,
-			       cred_handle->negotiated_cred_id,
+			       cred_handle,
 			       NULL,
 			       NULL,
 			       NULL,

@@ -99,7 +99,7 @@ extern const mp_result MP_MINERR;
 
 /* Values with fewer than this many significant digits use the
    standard multiplication algorithm; otherwise, a recursive algorithm
-   is used.  Choose a value to suit your platform.
+   is used.  Choose a value to suit your platform.  
  */
 #define MP_MULT_THRESH  22
 
@@ -157,14 +157,14 @@ int       mp_int_is_pow2(mp_int z);
 
 mp_result mp_int_exptmod(mp_int a, mp_int b, mp_int m,
 			 mp_int c);                    /* c = a^b (mod m) */
-mp_result mp_int_exptmod_evalue(mp_int a, mp_small value,
+mp_result mp_int_exptmod_evalue(mp_int a, mp_small value, 
 				mp_int m, mp_int c);   /* c = a^v (mod m) */
 mp_result mp_int_exptmod_bvalue(mp_small value, mp_int b,
 				mp_int m, mp_int c);   /* c = v^b (mod m) */
 mp_result mp_int_exptmod_known(mp_int a, mp_int b,
 			       mp_int m, mp_int mu,
 			       mp_int c);              /* c = a^b (mod m) */
-mp_result mp_int_redux_const(mp_int m, mp_int c);
+mp_result mp_int_redux_const(mp_int m, mp_int c); 
 
 mp_result mp_int_invmod(mp_int a, mp_int m, mp_int c); /* c = 1/a (mod m) */
 
@@ -184,16 +184,16 @@ mp_result mp_int_to_uint(mp_int z, mp_usmall *out);
 
 /* Convert to nul-terminated string with the specified radix, writing at
    most limit characters including the nul terminator  */
-mp_result mp_int_to_string(mp_int z, mp_size radix,
+mp_result mp_int_to_string(mp_int z, mp_size radix, 
 			   char *str, int limit);
 
-/* Return the number of characters required to represent
+/* Return the number of characters required to represent 
    z in the given radix.  May over-estimate. */
 mp_result mp_int_string_len(mp_int z, mp_size radix);
 
 /* Read zero-terminated string into z */
 mp_result mp_int_read_string(mp_int z, mp_size radix, const char *str);
-mp_result mp_int_read_cstring(mp_int z, mp_size radix, const char *str,
+mp_result mp_int_read_cstring(mp_int z, mp_size radix, const char *str, 
 			      char **end);
 
 /* Return the number of significant bits in z */

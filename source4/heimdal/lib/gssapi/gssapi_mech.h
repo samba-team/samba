@@ -356,10 +356,15 @@ _gss_import_cred_t(OM_uint32 * minor_status,
 
 #define GMI_VERSION 2
 
+/* gm_flags */
+#define GM_USE_MG_CRED      	1	/* uses mech glue credentials */
+
+
 typedef struct gssapi_mech_interface_desc {
 	unsigned			gm_version;
 	const char			*gm_name;
 	gss_OID_desc			gm_mech_oid;
+        unsigned			gm_flags;
 	_gss_acquire_cred_t		*gm_acquire_cred;
 	_gss_release_cred_t		*gm_release_cred;
 	_gss_init_sec_context_t		*gm_init_sec_context;

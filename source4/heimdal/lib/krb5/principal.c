@@ -425,6 +425,19 @@ unparse_name_fixed(krb5_context context,
     return 0;
 }
 
+/**
+ * Unparse the principal name to a fixed buffer
+ *
+ * @param context A Kerberos context.
+ * @param principal principal to unparse
+ * @param name buffer to write name to
+ * @param len length of buffer
+ *
+ * @return An krb5 error code, see krb5_get_error_message().
+ *
+ * @ingroup krb5_principal
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_unparse_name_fixed(krb5_context context,
 			krb5_const_principal principal,
@@ -433,6 +446,20 @@ krb5_unparse_name_fixed(krb5_context context,
 {
     return unparse_name_fixed(context, principal, name, len, 0);
 }
+
+/**
+ * Unparse the principal name to a fixed buffer. The realm is skipped
+ * if its a default realm.
+ *
+ * @param context A Kerberos context.
+ * @param principal principal to unparse
+ * @param name buffer to write name to
+ * @param len length of buffer
+ *
+ * @return An krb5 error code, see krb5_get_error_message().
+ *
+ * @ingroup krb5_principal
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_unparse_name_fixed_short(krb5_context context,
@@ -443,6 +470,20 @@ krb5_unparse_name_fixed_short(krb5_context context,
     return unparse_name_fixed(context, principal, name, len,
 			      KRB5_PRINCIPAL_UNPARSE_SHORT);
 }
+
+/**
+ * Unparse the principal name with unparse flags to a fixed buffer.
+ *
+ * @param context A Kerberos context.
+ * @param principal principal to unparse
+ * @param flags unparse flags
+ * @param name buffer to write name to
+ * @param len length of buffer
+ *
+ * @return An krb5 error code, see krb5_get_error_message().
+ *
+ * @ingroup krb5_principal
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_unparse_name_fixed_flags(krb5_context context,
@@ -538,6 +579,19 @@ krb5_unparse_name_flags(krb5_context context,
     return unparse_name(context, principal, name, flags);
 }
 
+/**
+ * Unparse the principal name to a allocated buffer. The realm is
+ * skipped if its a default realm.
+ *
+ * @param context A Kerberos context.
+ * @param principal principal to unparse
+ * @param name returned buffer, free with krb5_xfree()
+ *
+ * @return An krb5 error code, see krb5_get_error_message().
+ *
+ * @ingroup krb5_principal
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_unparse_name_short(krb5_context context,
 			krb5_const_principal principal,
@@ -546,18 +600,18 @@ krb5_unparse_name_short(krb5_context context,
     return unparse_name(context, principal, name, KRB5_PRINCIPAL_UNPARSE_SHORT);
 }
 
-#if 0 /* not implemented */
-
-krb5_error_code KRB5_LIB_FUNCTION
-krb5_unparse_name_ext(krb5_context context,
-		      krb5_const_principal principal,
-		      char **name,
-		      size_t *size)
-{
-    krb5_abortx(context, "unimplemented krb5_unparse_name_ext called");
-}
-
-#endif
+/**
+ * Set a new realm for a principal, and as a side-effect free the
+ * previous realm.
+ *
+ * @param context A Kerberos context.
+ * @param principal principal set the realm for
+ * @param realm the new realm to set
+ *
+ * @return An krb5 error code, see krb5_get_error_message().
+ *
+ * @ingroup krb5_principal
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_principal_set_realm(krb5_context context,

@@ -35,6 +35,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 #include "base64.h"
 
 static const char base64_chars[] =

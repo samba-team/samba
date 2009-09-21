@@ -111,11 +111,6 @@ typedef struct Principal *gsskrb5_name;
 extern krb5_keytab _gsskrb5_keytab;
 extern HEIMDAL_MUTEX gssapi_keytab_mutex;
 
-struct gssapi_thr_context {
-    HEIMDAL_MUTEX mutex;
-    char *error_string;
-};
-
 /*
  * Prototypes
  */

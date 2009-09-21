@@ -74,32 +74,36 @@ hash_input_chan_bindings (const gss_channel_bindings_t b,
 			  u_char *p)
 {
   u_char num[4];
-  MD5_CTX md5;
+  EVP_MD_CTX *ctx;
 
-  MD5_Init(&md5);
+  ctx = EVP_MD_CTX_create();
+  EVP_DigestInit_ex(ctx, EVP_md5(), NULL);
+
   _gsskrb5_encode_om_uint32 (b->initiator_addrtype, num);
-  MD5_Update (&md5, num, sizeof(num));
+  EVP_DigestUpdate(ctx, num, sizeof(num));
   _gsskrb5_encode_om_uint32 (b->initiator_address.length, num);
-  MD5_Update (&md5, num, sizeof(num));
+  EVP_DigestUpdate(ctx, num, sizeof(num));
   if (b->initiator_address.length)
-    MD5_Update (&md5,
-		b->initiator_address.value,
-		b->initiator_address.length);
+      EVP_DigestUpdate(ctx,
+		       b->initiator_address.value,
+		       b->initiator_address.length);
   _gsskrb5_encode_om_uint32 (b->acceptor_addrtype, num);
-  MD5_Update (&md5, num, sizeof(num));
+  EVP_DigestUpdate(ctx, num, sizeof(num));
   _gsskrb5_encode_om_uint32 (b->acceptor_address.length, num);
-  MD5_Update (&md5, num, sizeof(num));
+  EVP_DigestUpdate(ctx, num, sizeof(num));
   if (b->acceptor_address.length)
-    MD5_Update (&md5,
-		b->acceptor_address.value,
-		b->acceptor_address.length);
+      EVP_DigestUpdate(ctx, 
+		       b->acceptor_address.value,
+		       b->acceptor_address.length);
   _gsskrb5_encode_om_uint32 (b->application_data.length, num);
-  MD5_Update (&md5, num, sizeof(num));
+  EVP_DigestUpdate(ctx, num, sizeof(num));
   if (b->application_data.length)
-    MD5_Update (&md5,
-		b->application_data.value,
-		b->application_data.length);
-  MD5_Final (p, &md5);
+      EVP_DigestUpdate(ctx,
+		       b->application_data.value,
+		       b->application_data.length);
+  EVP_DigestFinal_ex(ctx, p, NULL);
+  EVP_MD_CTX_destroy(ctx);
+
   return 0;
 }
 
@@ -204,7 +208,7 @@ _gsskrb5_verify_8003_checksum(
 	    *minor_status = 0;
 	    return GSS_S_BAD_BINDINGS;
 	}
-	if(memcmp(hash, p, sizeof(hash)) != 0) {
+	if(ct_memcmp(hash, p, sizeof(hash)) != 0) {
 	    *minor_status = 0;
 	    return GSS_S_BAD_BINDINGS;
 	}

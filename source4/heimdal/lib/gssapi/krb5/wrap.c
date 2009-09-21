@@ -168,7 +168,11 @@ _gsskrb5_wrap_size_limit (
 
   switch (keytype) {
   case KEYTYPE_DES :
+#ifdef HEIM_WEAK_CRYPTO
       ret = sub_wrap_size(req_output_size, max_input_size, 8, 22);
+#else
+      ret = GSS_S_FAILURE;
+#endif
       break;
   case KEYTYPE_ARCFOUR:
   case KEYTYPE_ARCFOUR_56:
@@ -188,6 +192,8 @@ _gsskrb5_wrap_size_limit (
   return ret;
 }
 
+#ifdef HEIM_WEAK_CRYPTO
+
 static OM_uint32
 wrap_des
            (OM_uint32 * minor_status,
@@ -202,9 +208,10 @@ wrap_des
            )
 {
   u_char *p;
-  MD5_CTX md5;
+  EVP_MD_CTX *md5;
   u_char hash[16];
   DES_key_schedule schedule;
+  EVP_CIPHER_CTX des_ctx;
   DES_cblock deskey;
   DES_cblock zero;
   int i;
@@ -262,10 +269,12 @@ wrap_des
   memset (p + 8 + input_message_buffer->length, padlength, padlength);
 
   /* checksum */
-  MD5_Init (&md5);
-  MD5_Update (&md5, p - 24, 8);
-  MD5_Update (&md5, p, datalen);
-  MD5_Final (hash, &md5);
+  md5 = EVP_MD_CTX_create();
+  EVP_DigestInit_ex(md5, EVP_md5(), NULL);
+  EVP_DigestUpdate(md5, p - 24, 8);
+  EVP_DigestUpdate(md5, p, datalen);
+  EVP_DigestFinal_ex(md5, hash, NULL);
+  EVP_MD_CTX_destroy(md5);
 
   memset (&zero, 0, sizeof(zero));
   memcpy (&deskey, key->keyvalue.data, sizeof(deskey));
@@ -289,9 +298,10 @@ wrap_des
 	  (ctx->more_flags & LOCAL) ? 0 : 0xFF,
 	  4);
 
-  DES_set_key_unchecked (&deskey, &schedule);
-  DES_cbc_encrypt ((void *)p, (void *)p, 8,
-		   &schedule, (DES_cblock *)(p + 8), DES_ENCRYPT);
+  EVP_CIPHER_CTX_init(&des_ctx);
+  EVP_CipherInit_ex(&des_ctx, EVP_des_cbc(), NULL, key->keyvalue.data, p + 8, 1);
+  EVP_Cipher(&des_ctx, p, p, 8);
+  EVP_CIPHER_CTX_cleanup(&des_ctx);
 
   krb5_auth_con_setlocalseqnumber (context,
 			       ctx->auth_context,
@@ -306,14 +316,11 @@ wrap_des
 
       for (i = 0; i < sizeof(deskey); ++i)
 	  deskey[i] ^= 0xf0;
-      DES_set_key_unchecked (&deskey, &schedule);
-      memset (&zero, 0, sizeof(zero));
-      DES_cbc_encrypt ((void *)p,
-		       (void *)p,
-		       datalen,
-		       &schedule,
-		       &zero,
-		       DES_ENCRYPT);
+
+      EVP_CIPHER_CTX_init(&des_ctx);
+      EVP_CipherInit_ex(&des_ctx, EVP_des_cbc(), NULL, deskey, zero, 1);
+      EVP_Cipher(&des_ctx, p, p, datalen);
+      EVP_CIPHER_CTX_cleanup(&des_ctx);
   }
   memset (deskey, 0, sizeof(deskey));
   memset (&schedule, 0, sizeof(schedule));
@@ -323,6 +330,8 @@ wrap_des
   *minor_status = 0;
   return GSS_S_COMPLETE;
 }
+
+#endif
 
 static OM_uint32
 wrap_des3
@@ -552,9 +561,13 @@ OM_uint32 _gsskrb5_wrap
 
   switch (keytype) {
   case KEYTYPE_DES :
+#ifdef HEIM_WEAK_CRYPTO
       ret = wrap_des (minor_status, ctx, context, conf_req_flag,
 		      qop_req, input_message_buffer, conf_state,
 		      output_message_buffer, key);
+#else
+      ret = GSS_S_FAILURE;
+#endif
       break;
   case KEYTYPE_DES3 :
       ret = wrap_des3 (minor_status, ctx, context, conf_req_flag,

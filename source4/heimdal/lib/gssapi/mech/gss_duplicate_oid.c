@@ -32,7 +32,6 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id$");
 
 OM_uint32 gss_duplicate_oid (
         OM_uint32 *minor_status,

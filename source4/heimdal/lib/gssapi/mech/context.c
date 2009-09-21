@@ -1,8 +1,6 @@
 #include "mech_locl.h"
 #include "heim_threads.h"
 
-RCSID("$Id$");
-
 struct mg_thread_ctx {
     gss_OID mech;
     OM_uint32 maj_stat;

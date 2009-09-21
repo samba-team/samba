@@ -4,6 +4,9 @@
 #ifndef _ROKEN_H_
 #define _ROKEN_H_
 
+/* Support 'weak' keys for now, it can't be worse than NTLM and we don't want to hard-code the behaviour at this point */
+#define HEIM_WEAK_CRYPTO 1
+
 /* path to sysconf - should we force this to samba LIBDIR ? */
 #define SYSCONFDIR "/etc"
 

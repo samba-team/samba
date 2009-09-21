@@ -39,8 +39,6 @@
 #include <string.h>
 #include <errno.h>
 
-RCSID("$Id$");
-
 /**
  * Process a input UCS4 string according a string-prep profile.
  *

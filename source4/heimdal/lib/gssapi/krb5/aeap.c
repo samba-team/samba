@@ -35,7 +35,7 @@
 
 #include <roken.h>
 
-OM_uint32 GSSAPI_LIB_FUNCTION
+OM_uint32
 _gk_wrap_iov(OM_uint32 * minor_status,
 	     gss_ctx_id_t  context_handle,
 	     int conf_req_flag,
@@ -57,7 +57,7 @@ _gk_wrap_iov(OM_uint32 * minor_status,
     return GSS_S_FAILURE;
 }
 
-OM_uint32 GSSAPI_LIB_FUNCTION
+OM_uint32
 _gk_unwrap_iov(OM_uint32 *minor_status,
 	       gss_ctx_id_t context_handle,
 	       int *conf_state,
@@ -77,7 +77,7 @@ _gk_unwrap_iov(OM_uint32 *minor_status,
     return GSS_S_FAILURE;
 }
 
-OM_uint32  GSSAPI_LIB_FUNCTION
+OM_uint32
 _gk_wrap_iov_length(OM_uint32 * minor_status,
 		    gss_ctx_id_t context_handle,
 		    int conf_req_flag,

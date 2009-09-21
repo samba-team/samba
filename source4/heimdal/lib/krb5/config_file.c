@@ -31,6 +31,8 @@
  * SUCH DAMAGE.
  */
 
+#define KRB5_DEPRECATED
+
 #include "krb5_locl.h"
 
 /* Gaah! I want a portable funopen */
@@ -278,27 +280,6 @@ krb5_config_parse_debug (struct fileptr *f,
     return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
-krb5_config_parse_string_multi(krb5_context context,
-			       const char *string,
-			       krb5_config_section **res)
-{
-    const char *str;
-    unsigned lineno = 0;
-    krb5_error_code ret;
-    struct fileptr f;
-    f.f = NULL;
-    f.s = string;
-
-    ret = krb5_config_parse_debug (&f, res, &lineno, &str);
-    if (ret) {
-	krb5_set_error_message (context, ret, "%s:%u: %s",
-				"<constant>", lineno, str);
-	return ret;
-    }
-    return 0;
-}
-
 /**
  * Parse a configuration file and add the result into res. This
  * interface can be used to parse several configuration files into one
@@ -403,12 +384,27 @@ free_binding (krb5_context context, krb5_config_binding *b)
     }
 }
 
+/**
+ * Free configuration file section, the result of
+ * krb5_config_parse_file() and krb5_config_parse_file_multi().
+ *
+ * @param context A Kerberos 5 context
+ * @param s the configuration section to free
+ *
+ * @return returns 0 on successes, otherwise an error code, see
+ *          krb5_get_error_message()
+ *
+ * @ingroup krb5_support
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_config_file_free (krb5_context context, krb5_config_section *s)
 {
     free_binding (context, s);
     return 0;
 }
+
+#ifndef HEIMDAL_SMALLER
 
 krb5_error_code
 _krb5_config_copy(krb5_context context,
@@ -444,20 +440,20 @@ _krb5_config_copy(krb5_context context,
     return 0;
 }
 
-
+#endif /* HEIMDAL_SMALLER */
 
 const void *
-krb5_config_get_next (krb5_context context,
-		      const krb5_config_section *c,
-		      const krb5_config_binding **pointer,
-		      int type,
-		      ...)
+_krb5_config_get_next (krb5_context context,
+		       const krb5_config_section *c,
+		       const krb5_config_binding **pointer,
+		       int type,
+		       ...)
 {
     const char *ret;
     va_list args;
 
     va_start(args, type);
-    ret = krb5_config_vget_next (context, c, pointer, type, args);
+    ret = _krb5_config_vget_next (context, c, pointer, type, args);
     va_end(args);
     return ret;
 }
@@ -486,11 +482,11 @@ vget_next(krb5_context context,
 }
 
 const void *
-krb5_config_vget_next (krb5_context context,
-		       const krb5_config_section *c,
-		       const krb5_config_binding **pointer,
-		       int type,
-		       va_list args)
+_krb5_config_vget_next (krb5_context context,
+			const krb5_config_section *c,
+			const krb5_config_binding **pointer,
+			int type,
+			va_list args)
 {
     const krb5_config_binding *b;
     const char *p;
@@ -522,30 +518,42 @@ krb5_config_vget_next (krb5_context context,
 }
 
 const void *
-krb5_config_get (krb5_context context,
-		 const krb5_config_section *c,
-		 int type,
-		 ...)
+_krb5_config_get (krb5_context context,
+		  const krb5_config_section *c,
+		  int type,
+		  ...)
 {
     const void *ret;
     va_list args;
 
     va_start(args, type);
-    ret = krb5_config_vget (context, c, type, args);
+    ret = _krb5_config_vget (context, c, type, args);
     va_end(args);
     return ret;
 }
 
 const void *
-krb5_config_vget (krb5_context context,
-		  const krb5_config_section *c,
-		  int type,
-		  va_list args)
+_krb5_config_vget (krb5_context context,
+		   const krb5_config_section *c,
+		   int type,
+		   va_list args)
 {
     const krb5_config_binding *foo = NULL;
 
-    return krb5_config_vget_next (context, c, &foo, type, args);
+    return _krb5_config_vget_next (context, c, &foo, type, args);
 }
+
+/**
+ * Get a list of configuration binding list for more processing
+ *
+ * @param context A Kerberos 5 context.
+ * @param c a configuration section, or NULL to use the section from context
+ * @param ... a list of names, terminated with NULL.
+ *
+ * @return NULL if configuration list is not found, a list otherwise
+ *
+ * @ingroup krb5_support
+ */
 
 const krb5_config_binding *
 krb5_config_get_list (krb5_context context,
@@ -561,14 +569,41 @@ krb5_config_get_list (krb5_context context,
     return ret;
 }
 
+/**
+ * Get a list of configuration binding list for more processing
+ *
+ * @param context A Kerberos 5 context.
+ * @param c a configuration section, or NULL to use the section from context
+ * @param args a va_list of arguments
+ *
+ * @return NULL if configuration list is not found, a list otherwise
+ *
+ * @ingroup krb5_support
+ */
+
 const krb5_config_binding *
 krb5_config_vget_list (krb5_context context,
 		       const krb5_config_section *c,
 		       va_list args)
 {
-    return krb5_config_vget (context, c, krb5_config_list, args);
+    return _krb5_config_vget (context, c, krb5_config_list, args);
 }
 
+/**
+ * Returns a "const char *" to a string in the configuration database.
+ * The string may not be valid after a reload of the configuration
+ * database so a caller should make a local copy if it needs to keep
+ * the string.
+ *
+ * @param context A Kerberos 5 context.
+ * @param c a configuration section, or NULL to use the section from context
+ * @param ... a list of names, terminated with NULL.
+ *
+ * @return NULL if configuration string not found, a string otherwise
+ *
+ * @ingroup krb5_support
+ */
+ 
 const char* KRB5_LIB_FUNCTION
 krb5_config_get_string (krb5_context context,
 			const krb5_config_section *c,
@@ -583,13 +618,40 @@ krb5_config_get_string (krb5_context context,
     return ret;
 }
 
+/**
+ * Like krb5_config_get_string(), but uses a va_list instead of ...
+ *
+ * @param context A Kerberos 5 context.
+ * @param c a configuration section, or NULL to use the section from context
+ * @param args a va_list of arguments
+ *
+ * @return NULL if configuration string not found, a string otherwise
+ *
+ * @ingroup krb5_support
+ */
+
 const char* KRB5_LIB_FUNCTION
 krb5_config_vget_string (krb5_context context,
 			 const krb5_config_section *c,
 			 va_list args)
 {
-    return krb5_config_vget (context, c, krb5_config_string, args);
+    return _krb5_config_vget (context, c, krb5_config_string, args);
 }
+
+/**
+ * Like krb5_config_vget_string(), but instead of returning NULL,
+ * instead return a default value.
+ *
+ * @param context A Kerberos 5 context.
+ * @param c a configuration section, or NULL to use the section from context
+ * @param def_value the default value to return if no configuration
+ *        found in the database.
+ * @param args a va_list of arguments
+ *
+ * @return a configuration string
+ *
+ * @ingroup krb5_support
+ */
 
 const char* KRB5_LIB_FUNCTION
 krb5_config_vget_string_default (krb5_context context,
@@ -604,6 +666,21 @@ krb5_config_vget_string_default (krb5_context context,
 	ret = def_value;
     return ret;
 }
+
+/**
+ * Like krb5_config_get_string(), but instead of returning NULL,
+ * instead return a default value.
+ *
+ * @param context A Kerberos 5 context.
+ * @param c a configuration section, or NULL to use the section from context
+ * @param def_value the default value to return if no configuration
+ *        found in the database.
+ * @param ... a list of names, terminated with NULL.
+ *
+ * @return a configuration string
+ *
+ * @ingroup krb5_support
+ */
 
 const char* KRB5_LIB_FUNCTION
 krb5_config_get_string_default (krb5_context context,
@@ -620,6 +697,19 @@ krb5_config_get_string_default (krb5_context context,
     return ret;
 }
 
+/**
+ * Get a list of configuration strings, free the result with
+ * krb5_config_free_strings().
+ *
+ * @param context A Kerberos 5 context.
+ * @param c a configuration section, or NULL to use the section from context
+ * @param args a va_list of arguments
+ *
+ * @return TRUE or FALSE
+ *
+ * @ingroup krb5_support
+ */
+
 char ** KRB5_LIB_FUNCTION
 krb5_config_vget_strings(krb5_context context,
 			 const krb5_config_section *c,
@@ -630,8 +720,8 @@ krb5_config_vget_strings(krb5_context context,
     const krb5_config_binding *b = NULL;
     const char *p;
 
-    while((p = krb5_config_vget_next(context, c, &b,
-				     krb5_config_string, args))) {
+    while((p = _krb5_config_vget_next(context, c, &b,
+				      krb5_config_string, args))) {
 	char *tmp = strdup(p);
 	char *pos = NULL;
 	char *s;
@@ -667,6 +757,19 @@ cleanup:
 
 }
 
+/**
+ * Get a list of configuration strings, free the result with
+ * krb5_config_free_strings().
+ *
+ * @param context A Kerberos 5 context.
+ * @param c a configuration section, or NULL to use the section from context
+ * @param ... a list of names, terminated with NULL.
+ *
+ * @return TRUE or FALSE
+ *
+ * @ingroup krb5_support
+ */
+
 char**
 krb5_config_get_strings(krb5_context context,
 			const krb5_config_section *c,
@@ -680,6 +783,15 @@ krb5_config_get_strings(krb5_context context,
     return ret;
 }
 
+/**
+ * Free the resulting strings from krb5_config-get_strings() and
+ * krb5_config_vget_strings().
+ *
+ * @param strings strings to free
+ *
+ * @ingroup krb5_support
+ */
+
 void KRB5_LIB_FUNCTION
 krb5_config_free_strings(char **strings)
 {
@@ -690,6 +802,24 @@ krb5_config_free_strings(char **strings)
     }
     free(strings);
 }
+
+/**
+ * Like krb5_config_get_bool_default() but with a va_list list of
+ * configuration selection.
+ *
+ * Configuration value to a boolean value, where yes/true and any
+ * non-zero number means TRUE and other value is FALSE.
+ *
+ * @param context A Kerberos 5 context.
+ * @param c a configuration section, or NULL to use the section from context
+ * @param def_value the default value to return if no configuration
+ *        found in the database.
+ * @param args a va_list of arguments
+ *
+ * @return TRUE or FALSE
+ *
+ * @ingroup krb5_support
+ */
 
 krb5_boolean KRB5_LIB_FUNCTION
 krb5_config_vget_bool_default (krb5_context context,
@@ -707,6 +837,20 @@ krb5_config_vget_bool_default (krb5_context context,
     return FALSE;
 }
 
+/**
+ * krb5_config_get_bool() will convert the configuration
+ * option value to a boolean value, where yes/true and any non-zero
+ * number means TRUE and other value is FALSE.
+ *
+ * @param context A Kerberos 5 context.
+ * @param c a configuration section, or NULL to use the section from context
+ * @param args a va_list of arguments
+ *
+ * @return TRUE or FALSE
+ *
+ * @ingroup krb5_support
+ */
+
 krb5_boolean KRB5_LIB_FUNCTION
 krb5_config_vget_bool  (krb5_context context,
 			const krb5_config_section *c,
@@ -714,6 +858,22 @@ krb5_config_vget_bool  (krb5_context context,
 {
     return krb5_config_vget_bool_default (context, c, FALSE, args);
 }
+
+/**
+ * krb5_config_get_bool_default() will convert the configuration
+ * option value to a boolean value, where yes/true and any non-zero
+ * number means TRUE and other value is FALSE.
+ *
+ * @param context A Kerberos 5 context.
+ * @param c a configuration section, or NULL to use the section from context
+ * @param def_value the default value to return if no configuration
+ *        found in the database.
+ * @param ... a list of names, terminated with NULL.
+ *
+ * @return TRUE or FALSE
+ *
+ * @ingroup krb5_support
+ */
 
 krb5_boolean KRB5_LIB_FUNCTION
 krb5_config_get_bool_default (krb5_context context,
@@ -729,6 +889,22 @@ krb5_config_get_bool_default (krb5_context context,
     return ret;
 }
 
+/**
+ * Like krb5_config_get_bool() but with a va_list list of
+ * configuration selection.
+ *
+ * Configuration value to a boolean value, where yes/true and any
+ * non-zero number means TRUE and other value is FALSE.
+ *
+ * @param context A Kerberos 5 context.
+ * @param c a configuration section, or NULL to use the section from context
+ * @param ... a list of names, terminated with NULL.
+ *
+ * @return TRUE or FALSE
+ *
+ * @ingroup krb5_support
+ */
+
 krb5_boolean KRB5_LIB_FUNCTION
 krb5_config_get_bool (krb5_context context,
 		      const krb5_config_section *c,
@@ -741,6 +917,23 @@ krb5_config_get_bool (krb5_context context,
     va_end(ap);
     return ret;
 }
+
+/**
+ * Get the time from the configuration file using a relative time.
+ *
+ * Like krb5_config_get_time_default() but with a va_list list of
+ * configuration selection.
+ *
+ * @param context A Kerberos 5 context.
+ * @param c a configuration section, or NULL to use the section from context
+ * @param def_value the default value to return if no configuration
+ *        found in the database.
+ * @param args a va_list of arguments
+ *
+ * @return parsed the time (or def_value on parse error)
+ *
+ * @ingroup krb5_support
+ */
 
 int KRB5_LIB_FUNCTION
 krb5_config_vget_time_default (krb5_context context,
@@ -759,13 +952,39 @@ krb5_config_vget_time_default (krb5_context context,
     return t;
 }
 
+/**
+ * Get the time from the configuration file using a relative time, for example: 1h30s
+ *
+ * @param context A Kerberos 5 context.
+ * @param c a configuration section, or NULL to use the section from context
+ * @param args a va_list of arguments
+ *
+ * @return parsed the time or -1 on error
+ *
+ * @ingroup krb5_support
+ */
+
 int KRB5_LIB_FUNCTION
-krb5_config_vget_time  (krb5_context context,
-			const krb5_config_section *c,
-			va_list args)
+krb5_config_vget_time(krb5_context context,
+		      const krb5_config_section *c,
+		      va_list args)
 {
     return krb5_config_vget_time_default (context, c, -1, args);
 }
+
+/**
+ * Get the time from the configuration file using a relative time, for example: 1h30s
+ *
+ * @param context A Kerberos 5 context.
+ * @param c a configuration section, or NULL to use the section from context
+ * @param def_value the default value to return if no configuration
+ *        found in the database.
+ * @param ... a list of names, terminated with NULL.
+ *
+ * @return parsed the time (or def_value on parse error)
+ *
+ * @ingroup krb5_support
+ */
 
 int KRB5_LIB_FUNCTION
 krb5_config_get_time_default (krb5_context context,
@@ -780,6 +999,18 @@ krb5_config_get_time_default (krb5_context context,
     va_end(ap);
     return ret;
 }
+
+/**
+ * Get the time from the configuration file using a relative time, for example: 1h30s
+ *
+ * @param context A Kerberos 5 context.
+ * @param c a configuration section, or NULL to use the section from context
+ * @param ... a list of names, terminated with NULL.
+ *
+ * @return parsed the time or -1 on error
+ *
+ * @ingroup krb5_support
+ */
 
 int KRB5_LIB_FUNCTION
 krb5_config_get_time (krb5_context context,
@@ -850,3 +1081,29 @@ krb5_config_get_int (krb5_context context,
     va_end(ap);
     return ret;
 }
+
+
+#ifndef HEIMDAL_SMALLER
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_config_parse_string_multi(krb5_context context,
+			       const char *string,
+			       krb5_config_section **res) KRB5_DEPRECATED
+{
+    const char *str;
+    unsigned lineno = 0;
+    krb5_error_code ret;
+    struct fileptr f;
+    f.f = NULL;
+    f.s = string;
+
+    ret = krb5_config_parse_debug (&f, res, &lineno, &str);
+    if (ret) {
+	krb5_set_error_message (context, ret, "%s:%u: %s",
+				"<constant>", lineno, str);
+	return ret;
+    }
+    return 0;
+}
+
+#endif

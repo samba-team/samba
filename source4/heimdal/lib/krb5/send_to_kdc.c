@@ -379,6 +379,10 @@ krb5_sendto (krb5_context context,
 	 while (krb5_krbhst_next(context, handle, &hi) == 0) {
 	     struct addrinfo *ai, *a;
 
+	     _krb5_debug(context, 2,
+			 "trying to communicate with host %s in realm %s",
+			 hi->hostname, _krb5_krbhst_get_realm(handle));
+
 	     if (context->send_to_kdc) {
 		 struct send_to_kdc *s = context->send_to_kdc;
 
@@ -441,6 +445,9 @@ krb5_sendto (krb5_context context,
      krb5_clear_error_message (context);
      ret = KRB5_KDC_UNREACH;
 out:
+     _krb5_debug(context, 2,
+		 "result of trying to talk to realm %s = %d",
+		 _krb5_krbhst_get_realm(handle), ret);
      return ret;
 }
 

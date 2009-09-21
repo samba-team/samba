@@ -428,7 +428,7 @@ HEIMDAL_HCRYPTO_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/hcrypto/ui.o \
 	$(heimdalsrcdir)/lib/hcrypto/evp.o \
 	$(heimdalsrcdir)/lib/hcrypto/evp-hcrypto.o \
-	$(heimdalsrcdir)/lib/hcrypto/evp-aes-cts.o \
+	$(heimdalsrcdir)/lib/hcrypto/evp-cc.o \
 	$(heimdalsrcdir)/lib/hcrypto/pkcs5.o \
 	$(heimdalsrcdir)/lib/hcrypto/pkcs12.o \
 	$(heimdalsrcdir)/lib/hcrypto/rand.o \
@@ -608,6 +608,7 @@ PRIVATE_DEPENDENCIES = \
 
 HEIMDAL_ROKEN_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/roken/base64.o \
+	$(heimdalsrcdir)/lib/roken/ct.o \
 	$(heimdalsrcdir)/lib/roken/hex.o \
 	$(heimdalsrcdir)/lib/roken/bswap.o \
 	$(heimdalsrcdir)/lib/roken/dumpdata.o \

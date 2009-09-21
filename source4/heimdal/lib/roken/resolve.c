@@ -48,8 +48,6 @@
 
 #include <assert.h>
 
-RCSID("$Id$");
-
 #ifdef _AIX /* AIX have broken res_nsearch() in 5.1 (5.0 also ?) */
 #undef HAVE_RES_NSEARCH
 #endif

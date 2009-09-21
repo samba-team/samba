@@ -42,5 +42,5 @@ typedef struct rc4_key {
     unsigned int state[256];
 } RC4_KEY;
 
-void RC4_set_key(RC4_KEY *, const int, unsigned char *);
+void RC4_set_key(RC4_KEY *, const int, const unsigned char *);
 void RC4(RC4_KEY *, const int, const unsigned char *, unsigned char *);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 2009 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -31,55 +31,34 @@
  * SUCH DAMAGE.
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
-#include "windlocl.h"
+#include "roken.h"
 
-#include <stdlib.h>
-
-#include "map_table.h"
-
-static int
-translation_cmp(const void *key, const void *data)
-{
-    const struct translation *t1 = (const struct translation *)key;
-    const struct translation *t2 = (const struct translation *)data;
-
-    return t1->key - t2->key;
-}
+/**
+ * Constant time compare to memory regions. The reason for making it
+ * constant time is to make sure that timeing information leak from
+ * where in the function the diffrence is.
+ *
+ * ct_memcmp() can't be used to order memory regions like memcmp(),
+ * for example, use ct_memcmp() with qsort().
+ *
+ * @param p1 memory region 1 to compare
+ * @param p2 memory region 2 to compare
+ * @param len length of memory
+ *
+ * @return 0 when the memory regions are equal, non zero if not
+ *
+ * @ingroup roken
+ */
 
 int
-_wind_stringprep_map(const uint32_t *in, size_t in_len,
-		     uint32_t *out, size_t *out_len,
-		     wind_profile_flags flags)
+ct_memcmp(const void *p1, const void *p2, size_t len)
 {
-    unsigned i;
-    unsigned o = 0;
+    const unsigned char *s1 = p1, *s2 = p2;
+    size_t i;
+    int r = 0;
 
-    for (i = 0; i < in_len; ++i) {
-	struct translation ts = {in[i]};
-	const struct translation *s;
-
-	s = (const struct translation *)
-	    bsearch(&ts, _wind_map_table, _wind_map_table_size,
-		    sizeof(_wind_map_table[0]),
-		    translation_cmp);
-	if (s != NULL && (s->flags & flags)) {
-	    unsigned j;
-
-	    for (j = 0; j < s->val_len; ++j) {
-		if (o >= *out_len)
-		    return WIND_ERR_OVERRUN;
-		out[o++] = _wind_map_table_val[s->val_offset + j];
-	    }
-	} else {
-	    if (o >= *out_len)
-		return WIND_ERR_OVERRUN;
-	    out[o++] = in[i];
-
-	}
-    }
-    *out_len = o;
-    return 0;
+    for (i = 0; i < len; i++)
+	r |= (s1[i] ^ s2[i]);
+    return !!r;
 }

@@ -27,7 +27,6 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id$");
 
 OM_uint32 gss_duplicate_name(OM_uint32 *minor_status,
     const gss_name_t src_name,

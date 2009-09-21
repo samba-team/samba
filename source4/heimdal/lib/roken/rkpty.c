@@ -120,7 +120,7 @@ open_pty(void)
 		strlcpy(line, ptsname(master), sizeof(line));
 		slave = open(line, O_RDWR);
 		if (slave < 0)
-		    errx(1, "failed to open slave when using %s", q);
+		    errx(1, "failed to open slave when using %s", *q);
 		ioctl(slave, I_PUSH, "ptem");
 		ioctl(slave, I_PUSH, "ldterm");
 

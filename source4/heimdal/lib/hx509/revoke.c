@@ -223,7 +223,7 @@ verify_ocsp(hx509_context context,
 	}
 
 	ret = _hx509_verify_signature_bitstring(context,
-						p,
+						parent,
 						&s->signatureAlgorithm,
 						&s->tbsCertificate._save,
 						&s->signatureValue);
@@ -240,7 +240,7 @@ verify_ocsp(hx509_context context,
     }
 
     ret = _hx509_verify_signature_bitstring(context,
-					    _hx509_get_cert(signer),
+					    signer,
 					    &ocsp->ocsp.signatureAlgorithm,
 					    &ocsp->ocsp.tbsResponseData._save,
 					    &ocsp->ocsp.signature);
@@ -506,7 +506,7 @@ verify_crl(hx509_context context,
     }
 
     ret = _hx509_verify_signature_bitstring(context,
-					    _hx509_get_cert(signer),
+					    signer,
 					    &crl->signatureAlgorithm,
 					    &crl->tbsCertList._save,
 					    &crl->signatureValue);

@@ -27,7 +27,6 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id$");
 
 static struct _gss_mechanism_cred *
 _gss_copy_cred(struct _gss_mechanism_cred *mc)

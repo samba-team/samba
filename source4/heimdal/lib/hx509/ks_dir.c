@@ -93,8 +93,6 @@ dir_free(hx509_certs certs, void *data)
     return 0;
 }
 
-
-
 static int
 dir_iter_start(hx509_context context,
 	       hx509_certs certs, void *data, void **cursor)

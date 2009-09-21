@@ -45,7 +45,7 @@
 }
 
 void
-RC4_set_key(RC4_KEY *key, const int len, unsigned char *data)
+RC4_set_key(RC4_KEY *key, const int len, const unsigned char *data)
 {
     int i, j;
 

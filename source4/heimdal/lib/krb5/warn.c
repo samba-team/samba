@@ -269,7 +269,7 @@ krb5_vabort(krb5_context context, krb5_error_code code,
 }
 
 /**
- * Log a warning to the log, default stderr, include bthe error from
+ * Log a warning to the log, default stderr, include the error from
  * the last failure and then abort.
  *
  * @param context A Kerberos 5 context
