@@ -40,6 +40,20 @@ enum vfs_id {
 	vfs_id_mkdir
 };
 
+/* Specific data sets for the VFS functions.				*/
+
+struct mkdir_data {
+	const char *path;
+	mode_t mode;
+	int result;
+};
+
+/* rw_data used for read/write/pread/pwrite 				*/
+struct rw_data {
+	char *filename;
+	size_t len;
+};
+
 
 static int vfs_smb_traffic_analyzer_debug_level = DBGC_VFS;
 
@@ -167,8 +181,7 @@ struct refcounted_sock {
 /* Send data over a socket */
 
 static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
-					ssize_t result,
-					const char *file_name,
+					void *data,
 					enum vfs_id vfs_operation )
 {
 	struct refcounted_sock *rf_sock = NULL;
@@ -234,6 +247,8 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 
 	if ( protocol_version == NULL || strcmp( protocol_version,"V1") == 0) {
 
+		struct rw_data *s_data = (struct rw_data *) data;
+
 		/* in case of protocol v1, ignore any vfs operations	*/
 		/* except read,pread,write,pwrite, and set the "Write"	*/
 		/* bool accordingly.					*/
@@ -246,12 +261,12 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 		str = talloc_asprintf(talloc_tos(),
 			"V1,%u,\"%s\",\"%s\",\"%c\",\"%s\",\"%s\","
 			"\"%04d-%02d-%02d %02d:%02d:%02d.%03d\"\n",
-			(unsigned int)result,
+			(unsigned int) s_data->len,
 			username,
 			pdb_get_domain(handle->conn->server_info->sam_account),
 			Write ? 'W' : 'R',
 			handle->conn->connectpath,
-			file_name,
+			s_data->filename,
 			tm->tm_year+1900,
 			tm->tm_mon+1,
 			tm->tm_mday,
@@ -382,81 +397,80 @@ static int smb_traffic_analyzer_connect(struct vfs_handle_struct *handle,
 static int smb_traffic_analyzer_mkdir(vfs_handle_struct *handle, \
 			const char *path, mode_t mode)
 {
-	int result;
-	result = SMB_VFS_NEXT_MKDIR(handle, path, mode);
+	struct mkdir_data s_data;
+	s_data.result = SMB_VFS_NEXT_MKDIR(handle, path, mode);
+	s_data.path = path;
+	s_data.mode = mode;
 	DEBUG(10, ("smb_traffic_analyzer_mkdir: MKDIR: %s\n", path));
 	smb_traffic_analyzer_send_data(handle,
-			result,
-			path,
+			&s_data,
 			vfs_id_mkdir);
-	return result;
+	return s_data.result;
 }
 
 static ssize_t smb_traffic_analyzer_read(vfs_handle_struct *handle, \
 				files_struct *fsp, void *data, size_t n)
 {
-	ssize_t result;
+	struct rw_data s_data;
 
-	result = SMB_VFS_NEXT_READ(handle, fsp, data, n);
+	s_data.len = SMB_VFS_NEXT_READ(handle, fsp, data, n);
+	s_data.filename = fsp->fsp_name->base_name;
 	DEBUG(10, ("smb_traffic_analyzer_read: READ: %s\n", fsp_str_dbg(fsp)));
 
 	smb_traffic_analyzer_send_data(handle,
-			result,
-			fsp->fsp_name->base_name,
+			&s_data,
 			vfs_id_read);
-	return result;
+	return s_data.len;
 }
 
 
 static ssize_t smb_traffic_analyzer_pread(vfs_handle_struct *handle, \
 		files_struct *fsp, void *data, size_t n, SMB_OFF_T offset)
 {
-	ssize_t result;
+	struct rw_data s_data;
 
-	result = SMB_VFS_NEXT_PREAD(handle, fsp, data, n, offset);
-
+	s_data.len = SMB_VFS_NEXT_PREAD(handle, fsp, data, n, offset);
+	s_data.filename = fsp->fsp_name->base_name;
 	DEBUG(10, ("smb_traffic_analyzer_pread: PREAD: %s\n",
 		   fsp_str_dbg(fsp)));
 
 	smb_traffic_analyzer_send_data(handle,
-			result,
-			fsp->fsp_name->base_name,
+			&s_data,
 			vfs_id_pread);
 
-	return result;
+	return s_data.len;
 }
 
 static ssize_t smb_traffic_analyzer_write(vfs_handle_struct *handle, \
 			files_struct *fsp, const void *data, size_t n)
 {
-	ssize_t result;
+	struct rw_data s_data;
 
-	result = SMB_VFS_NEXT_WRITE(handle, fsp, data, n);
-
+	s_data.len = SMB_VFS_NEXT_WRITE(handle, fsp, data, n);
+	s_data.filename = fsp->fsp_name->base_name;
 	DEBUG(10, ("smb_traffic_analyzer_write: WRITE: %s\n",
 		   fsp_str_dbg(fsp)));
 
 	smb_traffic_analyzer_send_data(handle,
-			result,
-			fsp->fsp_name->base_name,
+			&s_data,
 			vfs_id_write);
-	return result;
+	return s_data.len;
 }
 
 static ssize_t smb_traffic_analyzer_pwrite(vfs_handle_struct *handle, \
 	     files_struct *fsp, const void *data, size_t n, SMB_OFF_T offset)
 {
-	ssize_t result;
+	struct rw_data s_data;
 
-	result = SMB_VFS_NEXT_PWRITE(handle, fsp, data, n, offset);
-
-	DEBUG(10, ("smb_traffic_analyzer_pwrite: PWRITE: %s\n", fsp_str_dbg(fsp)));
+	s_data.len = SMB_VFS_NEXT_PWRITE(handle, fsp, data, n, offset);
+	s_data.filename = fsp->fsp_name->base_name;
+	DEBUG(10, ("smb_traffic_analyzer_pwrite: PWRITE: %s\n", \
+		fsp_str_dbg(fsp)));
 
 	smb_traffic_analyzer_send_data(handle,
-			result,
-			fsp->fsp_name->base_name,
+			&s_data,
 			vfs_id_pwrite);
-	return result;
+	return s_data.len;
 }
 
 static struct vfs_fn_pointers vfs_smb_traffic_analyzer_fns = {
