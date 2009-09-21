@@ -202,8 +202,8 @@ userPassword:: %s
         self.transaction_start()
         try:
             res = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
-                              expression=filter,
-                              attrs=["userAccountControl", "accountExpires"])
+                          expression=filter,
+                          attrs=["userAccountControl", "accountExpires"])
             assert(len(res) == 1)
             user_dn = res[0].dn
 

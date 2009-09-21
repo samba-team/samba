@@ -44,6 +44,8 @@ parser.add_option("--noexpiry", help="Password does never expire", action="store
 
 opts, args = parser.parse_args()
 
+filter = opts.filter
+
 if (len(args) == 0) and (filter is None):
 	print "Either the username or '--filter' must be specified!"
 	parser.print_usage()
