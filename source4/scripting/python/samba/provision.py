@@ -58,11 +58,6 @@ from dcerpc.misc import SEC_CHAN_BDC, SEC_CHAN_WKSTA
 
 __docformat__ = "restructuredText"
 
-
-class ProvisioningError(ValueError):
-  pass
-
-
 def find_setup_dir():
     """Find the setup directory used by provision."""
     dirname = os.path.dirname(__file__)
@@ -80,6 +75,11 @@ def find_setup_dir():
 
 
 DEFAULTSITE = "Default-First-Site-Name"
+
+# Exception classes
+
+class ProvisioningError(Exception):
+    """A generic provision error."""
 
 class InvalidNetbiosName(Exception):
     """A specified name was not a valid NetBIOS name."""
