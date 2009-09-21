@@ -39,6 +39,7 @@ parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))
 credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
+parser.add_option("-H", help="LDB URL for database or target server", type=str)
 parser.add_option("--quiet", help="Be quiet", action="store_true")
 parser.add_option("--complexity",
   help="The password complexity (on | off | default). Default is 'on'", type=str)
@@ -67,8 +68,12 @@ if len(args) == 0:
 lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
 
-samdb = SamDB(url=lp.get("sam database"), session_info=system_session(),
-              credentials=creds, lp=lp)
+if opts.H is not None:
+	url = opts.H
+else:
+	url = lp.get("sam database")
+
+samdb = SamDB(url=url, session_info=system_session(), credentials=creds, lp=lp)
 
 domain_dn = SamDB.domain_dn(samdb)
 res = samdb.search(domain_dn, scope=ldb.SCOPE_BASE,
