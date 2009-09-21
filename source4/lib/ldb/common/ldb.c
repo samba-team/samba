@@ -642,8 +642,12 @@ static void ldb_trace_request(struct ldb_context *ldb, struct ldb_request *req)
 			  req->op.search.scope==LDB_SCOPE_SUBTREE?"sub":"UNKNOWN");
 		ldb_debug(ldb, LDB_DEBUG_TRACE, " expr: %s", 
 			  ldb_filter_from_tree(tmp_ctx, req->op.search.tree));
-		for (i=0; req->op.search.attrs && req->op.search.attrs[i]; i++) {
-			ldb_debug(ldb, LDB_DEBUG_TRACE, " attr: %s", req->op.search.attrs[i]);
+		if (req->op.search.attrs == NULL) {
+			ldb_debug(ldb, LDB_DEBUG_TRACE, " attr: <ALL>");
+		} else {
+			for (i=0; req->op.search.attrs[i]; i++) {
+				ldb_debug(ldb, LDB_DEBUG_TRACE, " attr: %s", req->op.search.attrs[i]);
+			}
 		}
 		break;
 	case LDB_DELETE:
@@ -691,11 +695,15 @@ static void ldb_trace_request(struct ldb_context *ldb, struct ldb_request *req)
 		break;
 	}
 
-	for (i=0; req->controls && req->controls[i]; i++) {
-		ldb_debug(ldb, LDB_DEBUG_TRACE, " control: %s  crit:%u  data:%s", 
-			  req->controls[i]->oid, 
-			  req->controls[i]->critical, 
-			  req->controls[i]->data?"yes":"no");
+	if (req->controls == NULL) {
+		ldb_debug(ldb, LDB_DEBUG_TRACE, " control: <NONE>");
+	} else {
+		for (i=0; req->controls && req->controls[i]; i++) {
+			ldb_debug(ldb, LDB_DEBUG_TRACE, " control: %s  crit:%u  data:%s", 
+				  req->controls[i]->oid, 
+				  req->controls[i]->critical, 
+				  req->controls[i]->data?"yes":"no");
+		}
 	}
 
 	talloc_free(tmp_ctx);
