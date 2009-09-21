@@ -1210,6 +1210,13 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 			"operatingSystem",
 			r->in.query->workstation_info->os_name.string);
 
+		if (r->in.query->workstation_info->dns_hostname) {
+			/* TODO: should this always be done? */
+			samdb_msg_add_string(sam_ctx, mem_ctx, new_msg,
+					     "dNSHostname",
+					     r->in.query->workstation_info->dns_hostname);
+		}
+
 		/*
 		 * Sets informations from "os_version". On a empty structure
 		 * the values are cleared.
@@ -1240,9 +1247,6 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 		if ((r->in.query->workstation_info->workstation_flags
 			& NETR_WS_FLAG_HANDLES_SPN_UPDATE) == 0) {
 
-			samdb_msg_add_string(sam_ctx, mem_ctx, new_msg,
-				"dNSHostname",
-				r->in.query->workstation_info->dns_hostname);
 			samdb_msg_add_string(sam_ctx, mem_ctx, new_msg,
 				"servicePrincipalName",
 				talloc_asprintf(mem_ctx, "HOST/%s",
