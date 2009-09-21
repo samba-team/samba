@@ -323,8 +323,6 @@ nextRid: y
 lastLogon: x
 description: x
 objectSid: S-1-5-21-4231626423-2410014848-2360679739-552
-primaryGroupID: 1-5-21-4231626423-2410014848-2360679739-512
-
 """)
 
         self.ldb.add({
@@ -486,11 +484,8 @@ primaryGroupID: 1-5-21-4231626423-2410014848-2360679739-512
         self.assertEquals(str(res[0]["lastLogon"]), "x")
         self.assertEquals(str(res[0]["primaryGroupID"]), "512")
 
-        # TODO: There should actually be two results, A and X.  The
-        # primaryGroupID of X seems to get corrupted somewhere, and the
-        # objectSid isn't available during the generation of remote (!) data,
-        # which can be observed with the following search.  Also note that Xs
-        # objectSid seems to be fine in the previous search for objectSid... */
+        # Note that Xs "objectSid" seems to be fine in the previous search for
+        # "objectSid"...
         #res = ldb.search(expression="(primaryGroupID=*)", NULL, ldb. SCOPE_DEFAULT, attrs)
         #print len(res) + " results found"
         #for i in range(len(res)):

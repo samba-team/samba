@@ -61,4 +61,4 @@ creds = credopts.get_credentials(lp)
 
 samdb = SamDB(url=lp.get("sam database"), session_info=system_session(),
               credentials=creds, lp=lp)
-samdb.setexpiry(filter, days*24*3600, noexpiry=opts.noexpiry)
+samdb.setexpiry(filter, days*24*3600, no_expiry_req=opts.noexpiry)
