@@ -67,7 +67,7 @@ static int expand_dn_in_message(struct ldb_module *module, struct ldb_message *m
 	struct ldb_extended_dn_control *edn;
 	TALLOC_CTX *tmp_ctx = talloc_new(req);
 	struct ldb_context *ldb;
-	int edn_type = 1;
+	int edn_type = 0;
 
 	ldb = ldb_module_get_ctx(module);
 
