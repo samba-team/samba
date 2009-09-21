@@ -672,6 +672,14 @@ int ldb_module_send_entry(struct ldb_request *req,
 	ares->controls = talloc_steal(ares, ctrls);
 	ares->error = LDB_SUCCESS;
 
+	if (req->handle->ldb->flags & LDB_FLG_ENABLE_TRACING) {
+		char *s;
+		ldb_debug(req->handle->ldb, LDB_DEBUG_TRACE, "ldb_trace_response: ENTRY");
+		s = ldb_ldif_message_string(req->handle->ldb, msg, LDB_CHANGETYPE_NONE, msg);
+		ldb_debug(req->handle->ldb, LDB_DEBUG_TRACE, "%s", s);
+		talloc_free(s);			  
+	}
+
 	return req->callback(req, ares);
 }
 
@@ -696,6 +704,11 @@ int ldb_module_send_referral(struct ldb_request *req,
 	ares->type = LDB_REPLY_REFERRAL;
 	ares->referral = talloc_steal(ares, ref);
 	ares->error = LDB_SUCCESS;
+
+	if (req->handle->ldb->flags & LDB_FLG_ENABLE_TRACING) {
+		ldb_debug(req->handle->ldb, LDB_DEBUG_TRACE, "ldb_trace_response: REFERRAL");
+		ldb_debug(req->handle->ldb, LDB_DEBUG_TRACE, "ref: %s", ref);
+	}
 
 	return req->callback(req, ares);
 }
@@ -728,6 +741,15 @@ int ldb_module_done(struct ldb_request *req,
 	ares->error = error;
 
 	req->handle->flags |= LDB_HANDLE_FLAG_DONE_CALLED;
+
+	if (req->handle->ldb->flags & LDB_FLG_ENABLE_TRACING) {
+		ldb_debug(req->handle->ldb, LDB_DEBUG_TRACE, "ldb_trace_response: DONE");
+		ldb_debug(req->handle->ldb, LDB_DEBUG_TRACE, "error: %u", error);
+		if (ldb_errstring(req->handle->ldb)) {
+			ldb_debug(req->handle->ldb, LDB_DEBUG_TRACE, "msg: %s", 
+				  ldb_errstring(req->handle->ldb));
+		}
+	}
 
 	req->callback(req, ares);
 	return error;
