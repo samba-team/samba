@@ -1135,8 +1135,8 @@ void secrets_fetch_ipc_userpass(char **username, char **domain, char **password)
 *******************************************************************************/
 
 #define SCHANNEL_STORE_VERSION_1 1
-#define SCHANNEL_STORE_VERSION_2 2
-#define SCHANNEL_STORE_VERSION_CURRENT SCHANNEL_STORE_VERSION_2
+#define SCHANNEL_STORE_VERSION_2 2 /* should not be used */
+#define SCHANNEL_STORE_VERSION_CURRENT SCHANNEL_STORE_VERSION_1
 
 TDB_CONTEXT *open_schannel_session_store(TALLOC_CTX *mem_ctx)
 {
@@ -1168,11 +1168,17 @@ TDB_CONTEXT *open_schannel_session_store(TALLOC_CTX *mem_ctx)
 		vers.dptr = NULL;
 	} else if (vers.dsize == 4) {
 		ver = IVAL(vers.dptr,0);
-		if (ver != SCHANNEL_STORE_VERSION_CURRENT) {
+		if (ver == SCHANNEL_STORE_VERSION_2) {
 			DEBUG(0,("open_schannel_session_store: wrong version number %d in %s\n",
 				(int)ver, fname ));
 			tdb_wipe_all(tdb_sc);
 			goto again;
+		}
+		if (ver != SCHANNEL_STORE_VERSION_CURRENT) {
+			DEBUG(0,("open_schannel_session_store: wrong version number %d in %s\n",
+				(int)ver, fname ));
+			tdb_close(tdb_sc);
+			tdb_sc = NULL;
 		}
 	} else {
 		tdb_close(tdb_sc);
