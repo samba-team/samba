@@ -85,6 +85,7 @@ static void tevent_common_signal_handler(int signum)
 	ssize_t res;
 	struct tevent_common_signal_list *sl;
 	struct tevent_context *ev = NULL;
+	int saved_errno = errno;
 
 	SIG_INCREMENT(sig_state->signal_count[signum]);
 	SIG_INCREMENT(sig_state->got_signal);
@@ -103,6 +104,8 @@ static void tevent_common_signal_handler(int signum)
 			ev = sl->se->event_ctx;
 		}
 	}
+
+	errno = saved_errno;
 }
 
 #ifdef SA_SIGINFO
