@@ -1028,6 +1028,7 @@ int dsdb_schema_from_schema_dn(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 		"fSMORoleOwner",
 		NULL
 	};
+	unsigned flags;
 
 	tmp_ctx = talloc_new(mem_ctx);
 	if (!tmp_ctx) {
@@ -1035,27 +1036,28 @@ int dsdb_schema_from_schema_dn(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	/* we don't want to trace the schema load */
+	flags = ldb_get_flags(ldb);
+	ldb_set_flags(ldb, flags & ~LDB_FLG_ENABLE_TRACING);
+
 	/*
 	 * setup the prefix mappings and schema info
 	 */
 	ret = ldb_search(ldb, tmp_ctx, &schema_res,
 			 schema_dn, LDB_SCOPE_BASE, schema_attrs, NULL);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-		talloc_free(tmp_ctx);
-		return ret;
+		goto failed;
 	} else if (ret != LDB_SUCCESS) {
 		*error_string_out = talloc_asprintf(mem_ctx, 
 				       "dsdb_schema: failed to search the schema head: %s",
 				       ldb_errstring(ldb));
-		talloc_free(tmp_ctx);
-		return ret;
+		goto failed;
 	}
 	if (schema_res->count != 1) {
 		*error_string_out = talloc_asprintf(mem_ctx, 
 			      "dsdb_schema: [%u] schema heads found on a base search",
 			      schema_res->count);
-		talloc_free(tmp_ctx);
-		return LDB_ERR_CONSTRAINT_VIOLATION;
+		goto failed;
 	}
 
 	/*
@@ -1068,8 +1070,7 @@ int dsdb_schema_from_schema_dn(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 		*error_string_out = talloc_asprintf(mem_ctx, 
 				       "dsdb_schema: failed to search attributeSchema objects: %s",
 				       ldb_errstring(ldb));
-		talloc_free(tmp_ctx);
-		return ret;
+		goto failed;
 	}
 
 	/*
@@ -1082,8 +1083,7 @@ int dsdb_schema_from_schema_dn(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 		*error_string_out = talloc_asprintf(mem_ctx, 
 				       "dsdb_schema: failed to search attributeSchema objects: %s",
 				       ldb_errstring(ldb));
-		talloc_free(tmp_ctx);
-		return ret;
+		goto failed;
 	}
 
 	ret = dsdb_schema_from_ldb_results(tmp_ctx, ldb,
@@ -1093,13 +1093,25 @@ int dsdb_schema_from_schema_dn(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 		*error_string_out = talloc_asprintf(mem_ctx, 
 						    "dsdb_schema load failed: %s",
 						    error_string);
-		talloc_free(tmp_ctx);
-		return ret;
+		goto failed;
 	}
 	talloc_steal(mem_ctx, *schema);
 	talloc_free(tmp_ctx);
 
+	if (flags & LDB_FLG_ENABLE_TRACING) {
+		flags = ldb_get_flags(ldb);
+		ldb_set_flags(ldb, flags | LDB_FLG_ENABLE_TRACING);
+	}
+
 	return LDB_SUCCESS;
+
+failed:
+	if (flags & LDB_FLG_ENABLE_TRACING) {
+		flags = ldb_get_flags(ldb);
+		ldb_set_flags(ldb, flags | LDB_FLG_ENABLE_TRACING);
+	}
+	talloc_free(tmp_ctx);
+	return ret;
 }	
 
 
