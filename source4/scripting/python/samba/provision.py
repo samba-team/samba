@@ -687,7 +687,7 @@ def secretsdb_self_join(secretsdb, domain,
         dnsdomain = realm.lower()
       msg["objectClass"] = ["top", "primaryDomain", "kerberosSecret"]
       msg["realm"] = realm
-      msg["saltPrincipal"] = "host/%s.%s@%s" % (netbiosname, dnsdomain.lower(), realm.upper())
+      msg["saltPrincipal"] = "host/%s.%s@%s" % (netbiosname.lower(), dnsdomain.lower(), realm.upper())
       msg["msDS-KeyVersionNumber"] = [str(key_version_number)]
       msg["privateKeytab"] = ["secrets.keytab"];
 

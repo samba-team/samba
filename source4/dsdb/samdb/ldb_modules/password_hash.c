@@ -248,7 +248,7 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 		char *name;
 		char *saltbody;
 
-		name = talloc_strdup(io->ac, io->u.sAMAccountName);
+		name = strlower_talloc(io->ac, io->u.sAMAccountName);
 		if (!name) {
 			ldb_oom(ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
