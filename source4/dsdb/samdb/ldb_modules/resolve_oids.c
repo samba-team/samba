@@ -98,19 +98,22 @@ static int resolve_oids_parse_tree_replace(struct ldb_context *ldb,
 	const char *p1;
 	const void *p2;
 	struct ldb_val *valp = NULL;
+	int ret;
 
 	switch (tree->operation) {
 	case LDB_OP_AND:
 	case LDB_OP_OR:
 		for (i=0;i<tree->u.list.num_elements;i++) {
-			resolve_oids_parse_tree_replace(ldb, schema,
+			ret = resolve_oids_parse_tree_replace(ldb, schema,
 							tree->u.list.elements[i]);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
 		}
 		return LDB_SUCCESS;
 	case LDB_OP_NOT:
-		resolve_oids_parse_tree_replace(ldb, schema,
+		return resolve_oids_parse_tree_replace(ldb, schema,
 						tree->u.isnot.child);
-		return LDB_SUCCESS;
 	case LDB_OP_EQUALITY:
 	case LDB_OP_GREATER:
 	case LDB_OP_LESS:
