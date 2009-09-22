@@ -39,6 +39,7 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "libcli/raw/smb.h"
 #include "../libcli/named_pipe_auth/npa_tstream.h"
+#include "smbd/process_model.h"
 
 struct dcesrv_socket_context {
 	const struct dcesrv_endpoint *endpoint;
@@ -685,10 +686,16 @@ static void dcesrv_task_init(struct task_server *task)
 	NTSTATUS status;
 	struct dcesrv_context *dce_ctx;
 	struct dcesrv_endpoint *e;
+	const struct model_ops *model_ops;
 
 	dcerpc_server_init(task->lp_ctx);
 
 	task_server_set_title(task, "task[dcesrv]");
+
+	/* run the rpc server as a single process to allow for shard
+	 * handles, and sharing of ldb contexts */
+	model_ops = process_model_startup(task->event_ctx, "single");
+	if (!model_ops) goto failed;
 
 	status = dcesrv_init_context(task->event_ctx,
 				     task->lp_ctx,
@@ -702,7 +709,7 @@ static void dcesrv_task_init(struct task_server *task)
 	}
 
 	for (e=dce_ctx->endpoint_list;e;e=e->next) {
-		status = dcesrv_add_ep(dce_ctx, task->lp_ctx, e, task->event_ctx, task->model_ops);
+		status = dcesrv_add_ep(dce_ctx, task->lp_ctx, e, task->event_ctx, model_ops);
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 	}
 
