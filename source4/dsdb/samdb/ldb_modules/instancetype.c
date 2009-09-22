@@ -89,6 +89,12 @@ static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
+	if (ldb_msg_find_element(req->op.add.message, "instanceType")) {
+		/* TODO: we need to validate and possibly create a new
+		   partition */
+		return ldb_next_request(module, req);		
+	}
+
 	partition_ctrl = ldb_request_get_control(req, DSDB_CONTROL_CURRENT_PARTITION_OID);
 	if (!partition_ctrl) {
 		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
