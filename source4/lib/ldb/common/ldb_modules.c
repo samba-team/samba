@@ -1,4 +1,4 @@
-/* 
+/*
    ldb database library
 
    Copyright (C) Simo Sorce  2004-2008
@@ -6,7 +6,7 @@
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -127,7 +127,7 @@ static struct backends_list_entry {
 
 static struct ops_list_entry {
 	const struct ldb_module_ops *ops;
-	struct ops_list_entry *next;	
+	struct ops_list_entry *next;
 } *registered_modules = NULL;
 
 static const struct ldb_builtins {
@@ -264,9 +264,9 @@ static const struct ldb_module_ops *ldb_find_module_ops(const char *name)
 		if (strcmp(builtins[i].module_ops->name, name) == 0)
 			return builtins[i].module_ops;
 	}
- 
+
 	for (e = registered_modules; e; e = e->next) {
- 		if (strcmp(e->ops->name, name) == 0) 
+ 		if (strcmp(e->ops->name, name) == 0)
 			return e->ops;
 	}
 
@@ -301,7 +301,7 @@ static void *ldb_dso_load_symbol(struct ldb_context *ldb, const char *name,
 	if (ldb->modules_dir == NULL)
 		return NULL;
 
-	path = talloc_asprintf(ldb, "%s/%s.%s", ldb->modules_dir, name, 
+	path = talloc_asprintf(ldb, "%s/%s.%s", ldb->modules_dir, name,
 			       SHLIBEXT);
 
 	ldb_debug(ldb, LDB_DEBUG_TRACE, "trying to load %s from %s", name, path);
@@ -328,7 +328,7 @@ int ldb_load_modules_list(struct ldb_context *ldb, const char **module_list, str
 {
 	struct ldb_module *module;
 	int i;
-	
+
 	module = backend;
 
 	for (i = 0; module_list[i] != NULL; i++) {
@@ -338,10 +338,10 @@ int ldb_load_modules_list(struct ldb_context *ldb, const char **module_list, str
 		if (strcmp(module_list[i], "") == 0) {
 			continue;
 		}
-		
+
 		ops = ldb_find_module_ops(module_list[i]);
 		if (ops == NULL) {
-			char *symbol_name = talloc_asprintf(ldb, "ldb_%s_module_ops", 
+			char *symbol_name = talloc_asprintf(ldb, "ldb_%s_module_ops",
 												module_list[i]);
 			if (symbol_name == NULL) {
 				return LDB_ERR_OPERATIONS_ERROR;
@@ -349,31 +349,31 @@ int ldb_load_modules_list(struct ldb_context *ldb, const char **module_list, str
 			ops = ldb_dso_load_symbol(ldb, module_list[i], symbol_name);
 			talloc_free(symbol_name);
 		}
-		
+
 		if (ops == NULL) {
 			ldb_debug(ldb, LDB_DEBUG_WARNING, "WARNING: Module [%s] not found",
 				  module_list[i]);
 			continue;
 		}
-		
+
 		current = talloc_zero(ldb, struct ldb_module);
 		if (current == NULL) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		talloc_set_name(current, "ldb_module: %s", module_list[i]);
-		
+
 		current->ldb = ldb;
 		current->ops = ops;
-		
+
 		DLIST_ADD(module, current);
 	}
 	*out = module;
 	return LDB_SUCCESS;
 }
 
-int ldb_init_module_chain(struct ldb_context *ldb, struct ldb_module *module) 
+int ldb_init_module_chain(struct ldb_context *ldb, struct ldb_module *module)
 {
-	while (module && module->ops->init_context == NULL) 
+	while (module && module->ops->init_context == NULL)
 		module = module->next;
 
 	/* init is different in that it is not an error if modules
@@ -412,7 +412,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 	}
 
 	/* if not overloaded by options and the backend is not ldap try to load the modules list from ldb */
-	if ((modules == NULL) && (strcmp("ldap", ldb->modules->ops->name) != 0)) { 
+	if ((modules == NULL) && (strcmp("ldap", ldb->modules->ops->name) != 0)) {
 		const char * const attrs[] = { "@LIST" , NULL};
 		struct ldb_result *res = NULL;
 		struct ldb_dn *mods_dn;
@@ -424,7 +424,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 		}
 
 		ret = ldb_search(ldb, mods_dn, &res, mods_dn, LDB_SCOPE_BASE, attrs, "@LIST=*");
-		
+
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 			ldb_debug(ldb, LDB_DEBUG_TRACE, "no modules required by the db");
 		} else if (ret != LDB_SUCCESS) {
@@ -584,7 +584,7 @@ int ldb_next_request(struct ldb_module *module, struct ldb_request *request)
 		 * guarantees we will end up hanging in
 		 * ldb_wait(). This fixes it without having to rewrite
 		 * all our modules, and leaves us one less sharp
-		 * corner for module developers to cut themselves on 
+		 * corner for module developers to cut themselves on
 		 */
 		ldb_module_done(request, NULL, NULL, ret);
 	}
@@ -674,10 +674,11 @@ int ldb_module_send_entry(struct ldb_request *req,
 
 	if (req->handle->ldb->flags & LDB_FLG_ENABLE_TRACING) {
 		char *s;
-		ldb_debug(req->handle->ldb, LDB_DEBUG_TRACE, "ldb_trace_response: ENTRY");
+		ldb_debug_add(req->handle->ldb, "ldb_trace_response: ENTRY\n");
 		s = ldb_ldif_message_string(req->handle->ldb, msg, LDB_CHANGETYPE_NONE, msg);
-		ldb_debug(req->handle->ldb, LDB_DEBUG_TRACE, "%s", s);
-		talloc_free(s);			  
+		ldb_debug_add(req->handle->ldb, "%s\n", s);
+		talloc_free(s);
+		ldb_debug_end(req->handle->ldb, LDB_DEBUG_TRACE);
 	}
 
 	return req->callback(req, ares);
@@ -706,8 +707,9 @@ int ldb_module_send_referral(struct ldb_request *req,
 	ares->error = LDB_SUCCESS;
 
 	if (req->handle->ldb->flags & LDB_FLG_ENABLE_TRACING) {
-		ldb_debug(req->handle->ldb, LDB_DEBUG_TRACE, "ldb_trace_response: REFERRAL");
-		ldb_debug(req->handle->ldb, LDB_DEBUG_TRACE, "ref: %s", ref);
+		ldb_debug_add(req->handle->ldb, "ldb_trace_response: REFERRAL\n");
+		ldb_debug_add(req->handle->ldb, "ref: %s\n", ref);
+		ldb_debug_end(req->handle->ldb, LDB_DEBUG_TRACE);
 	}
 
 	return req->callback(req, ares);
@@ -743,12 +745,13 @@ int ldb_module_done(struct ldb_request *req,
 	req->handle->flags |= LDB_HANDLE_FLAG_DONE_CALLED;
 
 	if (req->handle->ldb->flags & LDB_FLG_ENABLE_TRACING) {
-		ldb_debug(req->handle->ldb, LDB_DEBUG_TRACE, "ldb_trace_response: DONE");
-		ldb_debug(req->handle->ldb, LDB_DEBUG_TRACE, "error: %u", error);
+		ldb_debug_add(req->handle->ldb, "ldb_trace_response: DONE\n");
+		ldb_debug_add(req->handle->ldb, "error: %u\n", error);
 		if (ldb_errstring(req->handle->ldb)) {
-			ldb_debug(req->handle->ldb, LDB_DEBUG_TRACE, "msg: %s", 
+			ldb_debug_add(req->handle->ldb, "msg: %s\n",
 				  ldb_errstring(req->handle->ldb));
 		}
+		ldb_debug_end(req->handle->ldb, LDB_DEBUG_TRACE);
 	}
 
 	req->callback(req, ares);

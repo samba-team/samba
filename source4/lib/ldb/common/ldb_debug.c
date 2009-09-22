@@ -96,6 +96,31 @@ void ldb_debug(struct ldb_context *ldb, enum ldb_debug_level level, const char *
 	va_end(ap);
 }
 
+/*
+  add to an accumulated log message
+ */
+void ldb_debug_add(struct ldb_context *ldb, const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	if (ldb->partial_debug == NULL) {
+		ldb->partial_debug = talloc_vasprintf(ldb, fmt, ap);
+	} else {
+		ldb->partial_debug = talloc_vasprintf_append(ldb->partial_debug, 
+							     fmt, ap);
+	}
+	va_end(ap);
+}
+
+/*
+  send the accumulated log message, and free it
+ */
+void ldb_debug_end(struct ldb_context *ldb, enum ldb_debug_level level)
+{
+	ldb_debug(ldb, level, "%s", ldb->partial_debug);
+	talloc_free(ldb->partial_debug);
+	ldb->partial_debug = NULL;
+}
 
 /*
   log a message, and set the ldb error string to the same message

@@ -64,6 +64,8 @@ struct ldb_module_ops {
 void ldb_debug(struct ldb_context *ldb, enum ldb_debug_level level, const char *fmt, ...) PRINTF_ATTRIBUTE(3, 4);
 void ldb_debug_set(struct ldb_context *ldb, enum ldb_debug_level level, 
 		   const char *fmt, ...) PRINTF_ATTRIBUTE(3, 4);
+void ldb_debug_add(struct ldb_context *ldb, const char *fmt, ...) PRINTF_ATTRIBUTE(2, 3);
+void ldb_debug_end(struct ldb_context *ldb, enum ldb_debug_level level);
 
 #define ldb_oom(ldb) ldb_debug_set(ldb, LDB_DEBUG_FATAL, "ldb out of memory at %s:%d\n", __FILE__, __LINE__)
 

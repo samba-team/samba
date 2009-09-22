@@ -116,6 +116,8 @@ struct ldb_context {
 	struct tevent_context *ev_ctx;
 
 	bool prepare_commit_done;
+
+	char *partial_debug;
 };
 
 /* The following definitions come from lib/ldb/common/ldb.c  */
