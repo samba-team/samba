@@ -254,7 +254,7 @@ static int ltdb_add_internal(struct ldb_module *module,
 			     const struct ldb_message *msg)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	int ret;
+	int ret, i;
 
 	ret = ltdb_check_special_dn(module, msg);
 	if (ret != LDB_SUCCESS) {
@@ -263,6 +263,24 @@ static int ltdb_add_internal(struct ldb_module *module,
 
 	if (ltdb_cache_load(module) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	for (i=0;i<msg->num_elements;i++) {
+		struct ldb_message_element *el = &msg->elements[i];
+		const struct ldb_schema_attribute *a = ldb_schema_attribute_by_name(ldb, el->name);
+
+		if (el->num_values == 0) {
+			ldb_asprintf_errstring(ldb, "attribute %s on %s speicified, but with 0 values (illigal)", 
+					       el->name, ldb_dn_get_linearized(msg->dn));
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
+		if (a && a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) {
+			if (el->num_values > 1) {
+				ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s speicified more than once", 
+						       el->name, ldb_dn_get_linearized(msg->dn));
+				return LDB_ERR_CONSTRAINT_VIOLATION;
+			}
+		}
 	}
 
 	ret = ltdb_store(module, msg, TDB_INSERT);
@@ -602,20 +620,40 @@ int ltdb_modify_internal(struct ldb_module *module,
 		struct ldb_message_element *el2;
 		struct ldb_val *vals;
 		const char *dn;
-
+		const struct ldb_schema_attribute *a = ldb_schema_attribute_by_name(ldb, el->name);
 		switch (msg->elements[i].flags & LDB_FLAG_MOD_MASK) {
 
 		case LDB_FLAG_MOD_ADD:
+			
 			/* add this element to the message. fail if it
 			   already exists */
 			idx = find_element(msg2, el->name);
 
+			if (el->num_values == 0) {
+				ldb_asprintf_errstring(ldb, "attribute %s on %s speicified, but with 0 values (illigal)", 
+						  el->name, ldb_dn_get_linearized(msg->dn));
+				return LDB_ERR_CONSTRAINT_VIOLATION;
+			}
 			if (idx == -1) {
+				if (a && a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) {
+					if (el->num_values > 1) {
+						ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s speicified more than once", 
+							       el->name, ldb_dn_get_linearized(msg->dn));
+						return LDB_ERR_CONSTRAINT_VIOLATION;
+					}
+				}
 				if (msg_add_element(ldb, msg2, el) != 0) {
 					ret = LDB_ERR_OTHER;
 					goto failed;
 				}
 				continue;
+			}
+
+			/* If this is an add, then if it already
+			 * exists in the object, then we violoate the
+			 * single-value rule */
+			if (a && a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) {
+				return LDB_ERR_CONSTRAINT_VIOLATION;
 			}
 
 			el2 = &msg2->elements[idx];
@@ -657,6 +695,13 @@ int ltdb_modify_internal(struct ldb_module *module,
 			break;
 
 		case LDB_FLAG_MOD_REPLACE:
+			if (a && a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) {
+				if (el->num_values > 1) {
+					ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s speicified more than once", 
+							       el->name, ldb_dn_get_linearized(msg->dn));
+					return LDB_ERR_CONSTRAINT_VIOLATION;
+				}
+			}
 			/* replace all elements of this attribute name with the elements
 			   listed. The attribute not existing is not an error */
 			msg_delete_attribute(module, ldb, msg2, el->name);

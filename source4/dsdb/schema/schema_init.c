@@ -653,6 +653,10 @@ static int dsdb_schema_setup_ldb_schema_attribute(struct ldb_context *ldb,
 	if (dsdb_schema_unique_attribute(a->name)) {
 		a->flags |= LDB_ATTR_FLAG_UNIQUE_INDEX;
 	}
+	if (attr->isSingleValued) {
+		a->flags |= LDB_ATTR_FLAG_SINGLE_VALUE;
+	}
+	
 	
 	return LDB_SUCCESS;
 }

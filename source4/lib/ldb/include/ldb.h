@@ -392,6 +392,11 @@ const struct ldb_dn_extended_syntax *ldb_dn_extended_syntax_by_name(struct ldb_c
  */
 #define LDB_ATTR_FLAG_UNIQUE_INDEX (1<<3)
 
+/*
+  when this is set, attempts to create two attribute values for this attribute on a single DN will return LDB_ERR_CONSTRAINT_VIOLATION
+ */
+#define LDB_ATTR_FLAG_SINGLE_VALUE (1<<4)
+
 /**
   LDAP attribute syntax for a DN
 
