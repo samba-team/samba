@@ -163,8 +163,11 @@ _PUBLIC_ char *data_blob_hex_string(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob)
 		return NULL;
 	}
 
+	/* this must be lowercase or w2k8 cannot join a samba domain,
+	   as this routine is used to encode extended DNs and windows
+	   only accepts lowercase hexadecimal numbers */
 	for (i = 0; i < blob->length; i++)
-		slprintf(&hex_string[i*2], 3, "%02X", blob->data[i]);
+		slprintf(&hex_string[i*2], 3, "%02x", blob->data[i]);
 
 	hex_string[(blob->length*2)] = '\0';
 	return hex_string;
