@@ -622,6 +622,94 @@ int ldb_request_get_status(struct ldb_request *req)
 	return req->handle->status;
 }
 
+
+/*
+  trace a ldb request
+*/
+static void ldb_trace_request(struct ldb_context *ldb, struct ldb_request *req)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(req);
+	int i;
+
+	switch (req->operation) {
+	case LDB_SEARCH:
+		ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_trace_request: SEARCH");
+		ldb_debug(ldb, LDB_DEBUG_TRACE, " dn: %s",
+			  ldb_dn_get_linearized(req->op.search.base));
+		ldb_debug(ldb, LDB_DEBUG_TRACE, " scope: %s", 
+			  req->op.search.scope==LDB_SCOPE_BASE?"base":
+			  req->op.search.scope==LDB_SCOPE_ONELEVEL?"one":
+			  req->op.search.scope==LDB_SCOPE_SUBTREE?"sub":"UNKNOWN");
+		ldb_debug(ldb, LDB_DEBUG_TRACE, " expr: %s", 
+			  ldb_filter_from_tree(tmp_ctx, req->op.search.tree));
+		if (req->op.search.attrs == NULL) {
+			ldb_debug(ldb, LDB_DEBUG_TRACE, " attr: <ALL>");
+		} else {
+			for (i=0; req->op.search.attrs[i]; i++) {
+				ldb_debug(ldb, LDB_DEBUG_TRACE, " attr: %s", req->op.search.attrs[i]);
+			}
+		}
+		break;
+	case LDB_DELETE:
+		ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_trace_request: DELETE");
+		ldb_debug(ldb, LDB_DEBUG_TRACE, " dn: %s", 
+			  ldb_dn_get_linearized(req->op.del.dn));
+		break;
+	case LDB_RENAME:
+		ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_trace_request: RENAME");
+		ldb_debug(ldb, LDB_DEBUG_TRACE, " olddn: %s", 
+			  ldb_dn_get_linearized(req->op.rename.olddn));
+		ldb_debug(ldb, LDB_DEBUG_TRACE, " newdn: %s", 
+			  ldb_dn_get_linearized(req->op.rename.newdn));
+		break;
+	case LDB_EXTENDED:
+		ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_trace_request: EXTENDED");
+		ldb_debug(ldb, LDB_DEBUG_TRACE, " oid: %s", req->op.extended.oid);
+		ldb_debug(ldb, LDB_DEBUG_TRACE, " data: %s", req->op.extended.data?"yes":"no");
+		break;
+	case LDB_ADD:
+		ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_trace_request: ADD");
+		ldb_debug(req->handle->ldb, LDB_DEBUG_TRACE, "%s", 
+			  ldb_ldif_message_string(req->handle->ldb, tmp_ctx, 
+						  LDB_CHANGETYPE_ADD, req->op.add.message));
+		break;
+	case LDB_MODIFY:
+		ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_trace_request: MODIFY");
+		ldb_debug(req->handle->ldb, LDB_DEBUG_TRACE, "%s", 
+			  ldb_ldif_message_string(req->handle->ldb, tmp_ctx, 
+						  LDB_CHANGETYPE_ADD, req->op.mod.message));
+		break;
+	case LDB_REQ_REGISTER_CONTROL:
+		ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_trace_request: REGISTER_CONTROL");
+		ldb_debug(req->handle->ldb, LDB_DEBUG_TRACE, "%s", 
+			  req->op.reg_control.oid);
+		break;
+	case LDB_REQ_REGISTER_PARTITION:
+		ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_trace_request: REGISTER_PARTITION");
+		ldb_debug(req->handle->ldb, LDB_DEBUG_TRACE, "%s", 
+			  ldb_dn_get_linearized(req->op.reg_partition.dn));
+		break;
+	default:
+		ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_trace_request: UNKNOWN(%u)", 
+			  req->operation);
+		break;
+	}
+
+	if (req->controls == NULL) {
+		ldb_debug(ldb, LDB_DEBUG_TRACE, " control: <NONE>");
+	} else {
+		for (i=0; req->controls && req->controls[i]; i++) {
+			ldb_debug(ldb, LDB_DEBUG_TRACE, " control: %s  crit:%u  data:%s", 
+				  req->controls[i]->oid, 
+				  req->controls[i]->critical, 
+				  req->controls[i]->data?"yes":"no");
+		}
+	}
+
+	talloc_free(tmp_ctx);
+}
+
+
 /*
   start an ldb request
   NOTE: the request must be a talloc context.
@@ -638,6 +726,10 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
 	}
 
 	ldb_reset_err_string(ldb);
+
+	if (ldb->flags & LDB_FLG_ENABLE_TRACING) {
+		ldb_trace_request(ldb, req);
+	}
 
 	/* call the first module in the chain */
 	switch (req->operation) {
@@ -1508,4 +1600,10 @@ int ldb_global_init(void)
 unsigned int ldb_get_flags(struct ldb_context *ldb)
 {
 	return ldb->flags;
+}
+
+/* set the ldb flags */
+void ldb_set_flags(struct ldb_context *ldb, unsigned flags)
+{
+	ldb->flags = flags;
 }

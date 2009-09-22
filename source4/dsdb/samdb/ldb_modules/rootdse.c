@@ -51,15 +51,128 @@ static int do_attribute_explicit(const char * const *attrs, const char *name)
 
 
 /*
+  expand a DN attribute to include extended DN information if requested
+ */
+static int expand_dn_in_message(struct ldb_module *module, struct ldb_message *msg,
+				const char *attrname, struct ldb_control *edn_control,
+				struct ldb_request *req)
+{
+	struct ldb_dn *dn, *dn2;
+	struct ldb_val *v;
+	int ret;
+	struct ldb_request *req2;
+	char *dn_string;
+	const char *no_attrs[] = { NULL };
+	struct ldb_result *res;
+	struct ldb_extended_dn_control *edn;
+	TALLOC_CTX *tmp_ctx = talloc_new(req);
+	struct ldb_context *ldb;
+	int edn_type = 0;
+
+	ldb = ldb_module_get_ctx(module);
+
+	edn = talloc_get_type(edn_control->data, struct ldb_extended_dn_control);
+	if (edn) {
+		edn_type = edn->type;
+	}
+
+	v = discard_const_p(struct ldb_val, ldb_msg_find_ldb_val(msg, attrname));
+	if (v == NULL) {
+		talloc_free(tmp_ctx);
+		return 0;
+	}
+
+	dn_string = talloc_strndup(tmp_ctx, (const char *)v->data, v->length);
+	if (dn_string == NULL) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	res = talloc_zero(tmp_ctx, struct ldb_result);
+	if (res == NULL) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	dn = ldb_dn_new(tmp_ctx, ldb, dn_string);
+	if (!ldb_dn_validate(dn)) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ldb_build_search_req(&req2, ldb, tmp_ctx,
+				   dn,
+				   LDB_SCOPE_BASE,
+				   NULL,
+				   no_attrs,
+				   NULL,
+				   res, ldb_search_default_callback,
+				   req);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+
+	ret = ldb_request_add_control(req2,
+				      LDB_CONTROL_EXTENDED_DN_OID,
+				      edn_control->critical, edn);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	ret = ldb_next_request(module, req2);
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req2->handle, LDB_WAIT_ALL);
+	}
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	if (!res || res->count != 1) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	dn2 = res->msgs[0]->dn;
+
+	v->data = (uint8_t *)ldb_dn_get_extended_linearized(msg->elements, dn2, edn_type);
+	v->length = strlen((char *)v->data);
+
+	if (v->data == NULL) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	talloc_free(tmp_ctx);
+
+	return 0;
+}	
+			
+
+/*
   add dynamically generated attributes to rootDSE result
 */
-static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *msg, const char * const *attrs)
+static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *msg, 
+			       const char * const *attrs, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
 	struct private_data *priv = talloc_get_type(ldb_module_get_private(module), struct private_data);
 	char **server_sasl;
 	const struct dsdb_schema *schema;
 	int *val;
+	struct ldb_control *edn_control;
+	const char *dn_attrs[] = {
+		"configurationNamingContext",
+		"defaultNamingContext",
+		"dsServiceName",
+		"rootDomainNamingContext",
+		"schemaNamingContext",
+		"serverName",
+		NULL
+	};
 
 	ldb = ldb_module_get_ctx(module);
 	schema = dsdb_get_schema(ldb);
@@ -233,6 +346,26 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		}
 	}
 
+	edn_control = ldb_request_get_control(req, LDB_CONTROL_EXTENDED_DN_OID);
+
+	/* if the client sent us the EXTENDED_DN control then we need
+	   to expand the DNs to have GUID and SID. W2K8 join relies on
+	   this */
+	if (edn_control) {
+		int i, ret;
+		for (i=0; dn_attrs[i]; i++) {
+			if (!do_attribute(attrs, dn_attrs[i])) continue;
+			ret = expand_dn_in_message(module, msg, dn_attrs[i],
+						   edn_control, req);
+			if (ret != LDB_SUCCESS) {
+				DEBUG(0,(__location__ ": Failed to expand DN in rootDSE for %s\n",
+					 dn_attrs[i]));
+				goto failed;
+			}
+		}
+	}
+
+
 	/* TODO: lots more dynamic attributes should be added here */
 
 	return LDB_SUCCESS;
@@ -301,7 +434,7 @@ static int rootdse_callback(struct ldb_request *req, struct ldb_reply *ares)
 		/* for each record returned post-process to add any dynamic
 		   attributes that have been asked for */
 		ret = rootdse_add_dynamic(ac->module, ares->message,
-					  ac->req->op.search.attrs);
+					  ac->req->op.search.attrs, ac->req);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(ares);
 			return ldb_module_done(ac->req, NULL, NULL, ret);

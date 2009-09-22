@@ -1454,7 +1454,7 @@ bool samdb_is_capable_dc(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 		samdb_base_dn(ldb), "nTMixedDomain", NULL);
 
 	if (errmsg != NULL)
-		*errmsg = talloc_asprintf(mem_ctx, "");
+		*errmsg = talloc_strdup(mem_ctx, "");
 
 	if (level_forest == -1 || level_domain == -1 || level_domain_mixed == -1) {
 		ret = false;

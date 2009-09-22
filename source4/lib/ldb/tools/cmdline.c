@@ -44,6 +44,7 @@ static struct poptOption popt_options[] = {
 	{ "editor",    'e', POPT_ARG_STRING, &options.editor, 0, "external editor", "PROGRAM" },
 	{ "scope",     's', POPT_ARG_STRING, NULL, 's', "search scope", "SCOPE" },
 	{ "verbose",   'v', POPT_ARG_NONE, NULL, 'v', "increase verbosity", NULL },
+	{ "trace",     0,   POPT_ARG_NONE, &options.tracing, 0, "enable tracing", NULL },
 	{ "interactive", 'i', POPT_ARG_NONE, &options.interactive, 0, "input from stdin", NULL },
 	{ "recursive", 'r', POPT_ARG_NONE, &options.recursive, 0, "recursive delete", NULL },
 	{ "modules-path", 0, POPT_ARG_STRING, &options.modules_path, 0, "modules path", "PATH" },
@@ -218,6 +219,10 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb,
 
 	if (options.show_binary) {
 		flags |= LDB_FLG_SHOW_BINARY;
+	}
+
+	if (options.tracing) {
+		flags |= LDB_FLG_ENABLE_TRACING;
 	}
 
 #if (_SAMBA_BUILD_ >= 4)

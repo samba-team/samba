@@ -60,6 +60,15 @@ static void ldb_debug_stderr(void *context, enum ldb_debug_level level,
 	}
 }
 
+static void ldb_debug_stderr_all(void *context, enum ldb_debug_level level, 
+			     const char *fmt, va_list ap) PRINTF_ATTRIBUTE(3,0);
+static void ldb_debug_stderr_all(void *context, enum ldb_debug_level level, 
+			     const char *fmt, va_list ap)
+{
+	vfprintf(stderr, fmt, ap);
+	fprintf(stderr, "\n");
+}
+
 /*
   convenience function to setup debug messages on stderr
   messages of level LDB_DEBUG_WARNING and higher are printed
@@ -76,7 +85,11 @@ void ldb_debug(struct ldb_context *ldb, enum ldb_debug_level level, const char *
 {
 	va_list ap;
 	if (ldb->debug_ops.debug == NULL) {
-		ldb_set_debug_stderr(ldb);
+		if (ldb->flags & LDB_FLG_ENABLE_TRACING) {
+			ldb_set_debug(ldb, ldb_debug_stderr_all, ldb);
+		} else {
+			ldb_set_debug_stderr(ldb);
+		}
 	}
 	va_start(ap, fmt);
 	ldb->debug_ops.debug(ldb->debug_ops.context, level, fmt, ap);

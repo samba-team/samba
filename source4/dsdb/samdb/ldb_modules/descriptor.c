@@ -43,7 +43,6 @@
 #include "param/param.h"
 
 struct descriptor_data {
-	bool inherit;
 };
 
 struct descriptor_context {
@@ -405,9 +404,6 @@ static int descriptor_add(struct ldb_module *module, struct ldb_request *req)
 	data = talloc_get_type(ldb_module_get_private(module), struct descriptor_data);
 	ldb = ldb_module_get_ctx(module);
 
-	if (!data->inherit)
-		return ldb_next_request(module, req);
-
 	ldb_debug(ldb, LDB_DEBUG_TRACE, "descriptor_add\n");
 
 	if (ldb_dn_is_special(req->op.add.message->dn)) {
@@ -473,8 +469,6 @@ static int descriptor_init(struct ldb_module *module)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	data->inherit = lp_parm_bool(ldb_get_opaque(ldb, "loadparm"),
-				  NULL, "acl", "inheritance", false);
 	ldb_module_set_private(module, data);
 	return ldb_next_init(module);
 }

@@ -246,6 +246,11 @@ struct ldb_utf8_fns {
 */
 #define LDB_FLG_SHOW_BINARY 16
 
+/**
+   Flags to enable ldb tracing
+*/
+#define LDB_FLG_ENABLE_TRACING 32
+
 /*
    structures for ldb_parse_tree handling code
 */
@@ -1913,5 +1918,9 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
    return the ldb flags 
 */
 unsigned int ldb_get_flags(struct ldb_context *ldb);
+
+/* set the ldb flags */
+void ldb_set_flags(struct ldb_context *ldb, unsigned flags);
+
 
 #endif

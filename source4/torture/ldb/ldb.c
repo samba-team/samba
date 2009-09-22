@@ -587,6 +587,7 @@ static bool torture_ldb_dn(struct torture_context *torture)
 	struct ldb_dn *dn;
 	struct ldb_dn *child_dn;
 	struct ldb_dn *typo_dn;
+	struct ldb_val val;
 
 	torture_assert(torture, 
 		       ldb = ldb_init(mem_ctx, torture->ev),
@@ -654,6 +655,34 @@ static bool torture_ldb_dn(struct torture_context *torture)
 	torture_assert(torture, 
 		       ldb_dn_compare_base(dn, typo_dn) != 0,
 		       "Base Comparison on dc=samba,dc=org and c=samba,dc=org should != 0");
+
+	/* Check DN based on MS-ADTS:3.1.1.5.1.2 Naming Constraints*/
+	torture_assert(torture,
+		       dn = ldb_dn_new(mem_ctx, ldb, "CN=New\nLine,DC=SAMBA,DC=org"),
+		       "Failed to create a DN with 0xA in it");
+
+	torture_assert(torture,
+		       ldb_dn_validate(dn) == false,
+		       "should have failed to validate a DN with 0xA in it");
+
+	val.data = "CN=Zer\0,DC=SAMBA,DC=org";
+	val.length = 23;
+	torture_assert(torture,
+		       NULL == ldb_dn_from_ldb_val(mem_ctx, ldb, &val),
+		       "should fail to create a DN with 0x0 in it");
+
+	torture_assert(torture,
+		       dn = ldb_dn_new(mem_ctx, ldb, "CN=loooooooooooooooooooooooooooo"
+"ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo"
+"ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo"
+"ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo"
+"ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo"
+"ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooongdn,DC=SAMBA,DC=org"),
+		       "Failed to create a DN with size more than 255 characters");
+
+	torture_assert(torture,
+		       ldb_dn_validate(dn) == false,
+		       "should have failed to validate DN with size more than 255 characters");
 
 	talloc_free(mem_ctx);
 	return true;
