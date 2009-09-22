@@ -656,6 +656,7 @@ static PyObject *py_ldb_modify(PyLdbObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+
 static PyObject *py_ldb_add(PyLdbObject *self, PyObject *args)
 {
 	PyObject *py_msg;
