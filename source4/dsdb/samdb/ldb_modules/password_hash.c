@@ -1956,20 +1956,25 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 	/* check passwords are single valued here */
 	/* TODO: remove this when passwords will be single valued in schema */
 	if (sambaAttr && (sambaAttr->num_values > 1)) {
+		DEBUG(0,(__location__ ": %s\n", ldb_errstring(ldb)));
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 	if (clearTextAttr && (clearTextAttr->num_values > 1)) {
+		DEBUG(0,(__location__ ": %s\n", ldb_errstring(ldb)));
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 	if (ntAttr && (ntAttr->num_values > 1)) {
+		DEBUG(0,(__location__ ": %s\n", ldb_errstring(ldb)));
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 	if (lmAttr && (lmAttr->num_values > 1)) {
+		DEBUG(0,(__location__ ": %s\n", ldb_errstring(ldb)));
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
 	ac = ph_init_context(module, req);
 	if (!ac) {
+		DEBUG(0,(__location__ ": %s\n", ldb_errstring(ldb)));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 

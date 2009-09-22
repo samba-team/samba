@@ -441,6 +441,10 @@ WERROR dsdb_origin_objects_commit(struct ldb_context *ldb,
 
 	for (i=0; i < num_objects; i++) {
 		struct dom_sid *sid = NULL;
+
+		DEBUG(6,(__location__ ": adding %s\n", 
+			 ldb_dn_get_linearized(objects[i]->dn)));
+		
 		ret = ldb_add(ldb, objects[i]);
 		if (ret != 0) {
 			goto cancel;

@@ -933,6 +933,7 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	if (!prefix_val) {
 		*error_string = talloc_asprintf(mem_ctx, 
 						"schema_fsmo_init: no prefixMap attribute found");
+		DEBUG(0,(__location__ ": %s\n", *error_string));
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 	info_val = ldb_msg_find_ldb_val(schema_res->msgs[0], "schemaInfo");
@@ -950,6 +951,7 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 		*error_string = talloc_asprintf(mem_ctx, 
 			      "schema_fsmo_init: failed to load oid mappings: %s",
 			      win_errstr(status));
+		DEBUG(0,(__location__ ": %s\n", *error_string));
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
@@ -968,6 +970,7 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 				      "schema_fsmo_init: failed to load attribute definition: %s:%s",
 				      ldb_dn_get_linearized(attrs_res->msgs[i]->dn),
 				      win_errstr(status));
+			DEBUG(0,(__location__ ": %s\n", *error_string));
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 
@@ -989,6 +992,7 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 				      "schema_fsmo_init: failed to load class definition: %s:%s",
 				      ldb_dn_get_linearized(objectclass_res->msgs[i]->dn),
 				      win_errstr(status));
+			DEBUG(0,(__location__ ": %s\n", *error_string));
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 

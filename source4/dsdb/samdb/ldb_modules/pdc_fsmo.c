@@ -88,6 +88,7 @@ static int pdc_fsmo_init(struct ldb_module *module)
 		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
 			      "pdc_fsmo_init: [%u] domain objects found on a base search",
 			      pdc_res->count);
+		DEBUG(0,(__location__ ": %s\n", ldb_errstring(ldb)));
 		talloc_free(mem_ctx);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}

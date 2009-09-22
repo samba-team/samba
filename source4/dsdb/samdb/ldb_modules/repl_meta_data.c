@@ -466,6 +466,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	if (!schema) {
 		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
 			      "replmd_add: no dsdb_schema loaded");
+		DEBUG(0,(__location__ ": %s\n", ldb_errstring(ldb)));
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
@@ -866,6 +867,7 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	if (!schema) {
 		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
 			      "replmd_modify: no dsdb_schema loaded");
+		DEBUG(0,(__location__ ": %s\n", ldb_errstring(ldb)));
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
@@ -1940,6 +1942,7 @@ static int replmd_extended_replicated_objects(struct ldb_module *module, struct 
 	if (!ar->schema) {
 		ldb_debug_set(ldb, LDB_DEBUG_FATAL, "replmd_ctx_init: no loaded schema found\n");
 		talloc_free(ar);
+		DEBUG(0,(__location__ ": %s\n", ldb_errstring(ldb)));
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 

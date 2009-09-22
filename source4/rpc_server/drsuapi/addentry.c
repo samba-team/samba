@@ -57,6 +57,9 @@ static WERROR drsuapi_add_SPNs(struct drsuapi_bind_state *b_state,
 		const char *ntds_guid_str;
 		const char *dom_string;
 
+		DEBUG(6,(__location__ ": Adding SPNs for %s\n", 
+			 ldb_dn_get_linearized(dn)));
+		 
 		ret = ldb_search(b_state->sam_ctx, mem_ctx, &res,
 				 dn, LDB_SCOPE_BASE, attrs,
 				 "(objectClass=ntDSDSA)");
@@ -71,6 +74,9 @@ static WERROR drsuapi_add_SPNs(struct drsuapi_bind_state *b_state,
 			   serverReference */
 			continue;
 		}
+
+		DEBUG(6,(__location__ ": serverReference %s\n", 
+			 ldb_dn_get_linearized(ref_dn)));
 
 		ntds_guid = samdb_result_guid(res->msgs[0], "objectGUID");
 

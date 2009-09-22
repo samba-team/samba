@@ -213,8 +213,9 @@ int gendb_search_single_extended_dn(struct ldb_context *ldb,
 	}
 
 	if (res->count > 1) {
-		/* the function is only supposed to return a single
-		   entry */
+		/* the function is only supposed to return a single entry */
+		DEBUG(0,(__location__ ": More than one return for baseDN %s  filter %s\n",
+			 ldb_dn_get_linearized(basedn), filter));
 		talloc_free(tmp_ctx);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
