@@ -250,6 +250,8 @@ static int get_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 					ares->response, ares->error);
 	}
 
+	ldb_reset_err_string(ldb);
+
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
 		if (ac->search_res != NULL) {

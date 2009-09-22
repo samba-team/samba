@@ -57,9 +57,9 @@ static const struct dsdb_class * get_last_structural_class(const struct dsdb_sch
 	const struct dsdb_class *last_class = NULL;
 	int i;
 	for (i = 0; i < element->num_values; i++){
-		if (!last_class)
+		if (!last_class) {
 			last_class = dsdb_class_by_lDAPDisplayName_ldb_val(schema, &element->values[i]);
-		else {
+		} else {
 			const struct dsdb_class *tmp_class = dsdb_class_by_lDAPDisplayName_ldb_val(schema, &element->values[i]);
 			if (tmp_class->subClass_order > last_class->subClass_order)
 				last_class = tmp_class;
@@ -169,7 +169,7 @@ static DATA_BLOB *get_new_descriptor(struct ldb_module *module,
 	struct dom_sid *default_owner;
 	struct dom_sid *default_group;
 
-	if (object){
+	if (object) {
 		user_descriptor = talloc(mem_ctx, struct security_descriptor);
 		if(!user_descriptor)
 			return NULL;
@@ -181,9 +181,9 @@ static DATA_BLOB *get_new_descriptor(struct ldb_module *module,
 			talloc_free(user_descriptor);
 			return NULL;
 		}
-	}
-	else
+	} else {
 		user_descriptor = get_sd_unpacked(module, mem_ctx, objectclass);
+	}
 
 	if (parent){
 		parent_descriptor = talloc(mem_ctx, struct security_descriptor);
@@ -267,6 +267,8 @@ static int get_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 					ares->response, ares->error);
 	}
 
+	ldb_reset_err_string(ldb);
+
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
 		if (ac->search_res != NULL) {
@@ -349,32 +351,42 @@ static int descriptor_do_add(struct descriptor_context *ac)
 	objectclass_element = ldb_msg_find_element(msg, "objectClass");
 	objectclass = get_last_structural_class(schema, objectclass_element);
 
-	if (!objectclass)
+	if (!objectclass) {
+		ldb_asprintf_errstring(ldb, "No last structural objectclass found on %s", ldb_dn_get_linearized(msg->dn));
 		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	if (sd_element)
 		sd_val = &sd_element->values[0];
 	/* NC's have no parent */
 	if ((ldb_dn_compare(msg->dn, (ldb_get_schema_basedn(ldb))) == 0) ||
-			(ldb_dn_compare(msg->dn, (ldb_get_config_basedn(ldb))) == 0) ||
-			(ldb_dn_compare(msg->dn, (ldb_get_root_basedn(ldb))) == 0))
+	    (ldb_dn_compare(msg->dn, (ldb_get_config_basedn(ldb))) == 0) ||
+	    (ldb_dn_compare(msg->dn, (ldb_get_root_basedn(ldb))) == 0)) {
 		parentsd_val = NULL;
-	else if (ac->search_res != NULL)
+	} else if (ac->search_res != NULL){
 		parentsd_val = ldb_msg_find_ldb_val(ac->search_res->message, "nTSecurityDescriptor");
-
+	}
 
 	/* get the parent descriptor and the one provided. If not provided, get the default.*/
 	/* convert to security descriptor and calculate */
 	sd = get_new_descriptor(ac->module, msg->dn, mem_ctx, objectclass,
 			parentsd_val, sd_val);
+	if (sd_val) {
+		ldb_msg_remove_attr(msg, "nTSecurityDescriptor");
+	}
+
 	if (sd) {
-		ldb_msg_add_steal_value(msg, "nTSecurityDescriptor", sd);
+		ret = ldb_msg_add_steal_value(msg, "nTSecurityDescriptor", sd);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
 	}
 
 	talloc_free(mem_ctx);
 	ret = ldb_msg_sanity_check(ldb, msg);
 
 	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "No last structural objectclass found on %s", ldb_dn_get_linearized(msg->dn));
 		return ret;
 	}
 
