@@ -278,6 +278,22 @@ AC_ARG_WITH(localedir,
   ;;
   esac])
 
+#################################################
+# set codepage directory location
+AC_ARG_WITH(codepagedir,
+[AS_HELP_STRING([--with-codepagedir=DIR], [Where to put codepages ($ac_default_prefix/lib/samba)])],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody calls it without argument
+  #
+    AC_MSG_WARN([--with-codepagedir called without argument - will use default])
+  ;;
+  * )
+    codepagedir="$withval"
+    ;;
+  esac])
+
 
 AC_SUBST(configdir)
 AC_SUBST(lockdir)
