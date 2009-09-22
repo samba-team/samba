@@ -28,7 +28,7 @@
 */
 static int dcesrv_handle_destructor(struct dcesrv_handle *h)
 {
-	DLIST_REMOVE(h->context->handles, h);
+	DLIST_REMOVE(h->context->assoc_group->handles, h);
 	return 0;
 }
 
@@ -51,7 +51,7 @@ _PUBLIC_ struct dcesrv_handle *dcesrv_handle_new(struct dcesrv_connection_contex
 	h->wire_handle.handle_type = handle_type;
 	h->wire_handle.uuid = GUID_random();
 	
-	DLIST_ADD(context->handles, h);
+	DLIST_ADD(context->assoc_group->handles, h);
 
 	talloc_set_destructor(h, dcesrv_handle_destructor);
 
@@ -70,10 +70,11 @@ _PUBLIC_ struct dcesrv_handle *dcesrv_handle_fetch(
 	struct dcesrv_handle *h;
 
 	if (policy_handle_empty(p)) {
+		/* TODO: we should probably return a NULL handle here */
 		return dcesrv_handle_new(context, handle_type);
 	}
 
-	for (h=context->handles; h; h=h->next) {
+	for (h=context->assoc_group->handles; h; h=h->next) {
 		if (h->wire_handle.handle_type == p->handle_type &&
 		    GUID_equal(&p->uuid, &h->wire_handle.uuid)) {
 			if (handle_type != DCESRV_HANDLE_ANY &&

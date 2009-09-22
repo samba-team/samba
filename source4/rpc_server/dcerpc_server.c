@@ -36,9 +36,69 @@
 #include "libcli/security/security.h"
 #include "param/param.h"
 
-#define SAMBA_ASSOC_GROUP 0x12345678
+/* this is only used when the client asks for an unknown interface */
+#define DUMMY_ASSOC_GROUP 0x0FFFFFFF
 
 extern const struct dcesrv_interface dcesrv_mgmt_interface;
+
+
+/*
+  find an association group given a assoc_group_id
+ */
+static struct dcesrv_assoc_group *dcesrv_assoc_group_find(struct dcesrv_context *dce_ctx,
+							  uint32_t id)
+{
+	void *id_ptr;
+
+	id_ptr = idr_find(dce_ctx->assoc_groups_idr, id);
+	if (id_ptr == NULL) {
+		return NULL;
+	}
+	return talloc_get_type_abort(id_ptr, struct dcesrv_assoc_group);
+}
+
+/*
+  take a reference to an existing association group
+ */
+static struct dcesrv_assoc_group *dcesrv_assoc_group_reference(TALLOC_CTX *mem_ctx,
+							       struct dcesrv_context *dce_ctx,
+							       uint32_t id)
+{
+	struct dcesrv_assoc_group *assoc_group;
+
+	assoc_group = dcesrv_assoc_group_find(dce_ctx, id);
+	if (assoc_group == NULL) {
+		DEBUG(0,(__location__ ": Failed to find assoc_group 0x%08x\n", id));
+		return NULL;
+	}
+	return talloc_reference(mem_ctx, assoc_group);
+}
+
+/*
+  allocate a new association group
+ */
+static struct dcesrv_assoc_group *dcesrv_assoc_group_new(TALLOC_CTX *mem_ctx,
+							 struct dcesrv_context *dce_ctx)
+{
+	struct dcesrv_assoc_group *assoc_group;
+	int id;
+
+	assoc_group = talloc_zero(mem_ctx, struct dcesrv_assoc_group);
+	if (assoc_group == NULL) {
+		return NULL;
+	}
+	
+	id = idr_get_new_random(dce_ctx->assoc_groups_idr, assoc_group, UINT16_MAX);
+	if (id == -1) {
+		talloc_free(assoc_group);
+		DEBUG(0,(__location__ ": Out of association groups!\n"));
+		return NULL;
+	}
+
+	assoc_group->id = id;
+	return assoc_group;
+}
+
 
 /*
   see if two endpoints match
@@ -510,18 +570,11 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	uint32_t extra_flags = 0;
 
 	/*
-	 * Association groups allow policy handles to be shared across
-	 * multiple client connections.  We don't implement this yet.
-	 *
-	 * So we just allow 0 if the client wants to create a new
-	 * association group.
-	 *
-	 * And we allow the 0x12345678 value, we give away as
-	 * assoc_group_id back to the clients
+	  if provided, check the assoc_group is valid
 	 */
 	if (call->pkt.u.bind.assoc_group_id != 0 &&
 	    lp_parm_bool(call->conn->dce_ctx->lp_ctx, NULL, "dcesrv","assoc group checking", true) &&
-	    call->pkt.u.bind.assoc_group_id != SAMBA_ASSOC_GROUP) {
+	    dcesrv_assoc_group_find(call->conn->dce_ctx, call->pkt.u.bind.assoc_group_id) == NULL) {
 		return dcesrv_bind_nak(call, 0);	
 	}
 
@@ -572,13 +625,18 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		context->conn = call->conn;
 		context->iface = iface;
 		context->context_id = context_id;
-		/*
-		 * we need to send a non zero assoc_group_id here to make longhorn happy,
-		 * it also matches samba3
-		 */
-		context->assoc_group_id = SAMBA_ASSOC_GROUP;
+		if (call->pkt.u.bind.assoc_group_id != 0) {
+			context->assoc_group = dcesrv_assoc_group_reference(context,
+									    call->conn->dce_ctx, 
+									    call->pkt.u.bind.assoc_group_id);
+		} else {
+			context->assoc_group = dcesrv_assoc_group_new(context, call->conn->dce_ctx);
+		}
+		if (context->assoc_group == NULL) {
+			talloc_free(context);
+			return dcesrv_bind_nak(call, 0);
+		}
 		context->private_data = NULL;
-		context->handles = NULL;
 		DLIST_ADD(call->conn->contexts, context);
 		call->context = context;
 		talloc_set_destructor(context, dcesrv_connection_context_destructor);
@@ -630,12 +688,9 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	  metze
 	*/
 	if (call->context) {
-		pkt.u.bind_ack.assoc_group_id = call->context->assoc_group_id;
+		pkt.u.bind_ack.assoc_group_id = call->context->assoc_group->id;
 	} else {
-		/* we better pick something - this chosen so as to
-		 * send a non zero assoc_group_id (matching windows),
-		 * it also matches samba3 */
-		pkt.u.bind_ack.assoc_group_id = SAMBA_ASSOC_GROUP;
+		pkt.u.bind_ack.assoc_group_id = DUMMY_ASSOC_GROUP;
 	}
 
 	if (iface) {
@@ -748,9 +803,19 @@ static NTSTATUS dcesrv_alter_new_context(struct dcesrv_call_state *call, uint32_
 	context->conn = call->conn;
 	context->iface = iface;
 	context->context_id = context_id;
-	context->assoc_group_id = SAMBA_ASSOC_GROUP;
+	if (call->pkt.u.alter.assoc_group_id != 0) {
+		context->assoc_group = dcesrv_assoc_group_reference(context,
+								    call->conn->dce_ctx, 
+								    call->pkt.u.alter.assoc_group_id);
+	} else {
+		context->assoc_group = dcesrv_assoc_group_new(context, call->conn->dce_ctx);
+	}
+	if (context->assoc_group == NULL) {
+		talloc_free(context);
+		call->context = NULL;
+		return NT_STATUS_NO_MEMORY;
+	}
 	context->private_data = NULL;
-	context->handles = NULL;
 	DLIST_ADD(call->conn->contexts, context);
 	call->context = context;
 	talloc_set_destructor(context, dcesrv_connection_context_destructor);
@@ -803,8 +868,10 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 	if (result == 0 &&
 	    call->pkt.u.alter.assoc_group_id != 0 &&
 	    lp_parm_bool(call->conn->dce_ctx->lp_ctx, NULL, "dcesrv","assoc group checking", true) &&
-	    call->pkt.u.alter.assoc_group_id != call->context->assoc_group_id) {
-		/* TODO: work out what to return here */
+	    call->pkt.u.alter.assoc_group_id != call->context->assoc_group->id) {
+		DEBUG(0,(__location__ ": Failed attempt to use new assoc_group in alter context (0x%08x 0x%08x)\n",
+			 call->context->assoc_group->id, call->pkt.u.alter.assoc_group_id));
+		/* TODO: can they ask for a new association group? */
 		result = DCERPC_BIND_PROVIDER_REJECT;
 		reason = DCERPC_BIND_REASON_ASYNTAX;
 	}
@@ -818,7 +885,7 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 	pkt.u.alter_resp.max_xmit_frag = 0x2000;
 	pkt.u.alter_resp.max_recv_frag = 0x2000;
 	if (result == 0) {
-		pkt.u.alter_resp.assoc_group_id = call->context->assoc_group_id;
+		pkt.u.alter_resp.assoc_group_id = call->context->assoc_group->id;
 	} else {
 		pkt.u.alter_resp.assoc_group_id = 0;
 	}
@@ -1205,6 +1272,8 @@ _PUBLIC_ NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx,
 	NT_STATUS_HAVE_NO_MEMORY(dce_ctx);
 	dce_ctx->endpoint_list	= NULL;
 	dce_ctx->lp_ctx = lp_ctx;
+	dce_ctx->assoc_groups_idr = idr_init(dce_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(dce_ctx->assoc_groups_idr);
 
 	for (i=0;endpoint_servers[i];i++) {
 		const struct dcesrv_endpoint_server *ep_server;

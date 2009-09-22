@@ -153,7 +153,7 @@ struct dcesrv_connection_context {
 	struct dcesrv_connection_context *next, *prev;
 	uint32_t context_id;
 
-	uint32_t assoc_group_id;
+	struct dcesrv_assoc_group *assoc_group;
 
 	/* the connection this is on */
 	struct dcesrv_connection *conn;
@@ -163,10 +163,6 @@ struct dcesrv_connection_context {
 
 	/* private data for the interface implementation */
 	void *private_data;
-
-	/* current rpc handles - this is really the wrong scope for
-	   them, but it will do for now */
-	struct dcesrv_handle *handles;
 };
 
 
@@ -252,6 +248,15 @@ struct dcesrv_endpoint_server {
 };
 
 
+/* one association groups */
+struct dcesrv_assoc_group {
+	/* the wire id */
+	uint32_t id;
+	
+	/* list of handles in this association group */
+	struct dcesrv_handle *handles;
+};
+
 /* server-wide context information for the dcerpc server */
 struct dcesrv_context {
 	/* the list of endpoints that have registered 
@@ -272,6 +277,8 @@ struct dcesrv_context {
 
 	/* loadparm context to use for this connection */
 	struct loadparm_context *lp_ctx;
+
+	struct idr_context *assoc_groups_idr;
 };
 
 /* this structure is used by modules to determine the size of some critical types */
