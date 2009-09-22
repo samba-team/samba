@@ -288,17 +288,17 @@ def read_and_sub_file(file, subst_vars):
     return data
 
 
-def setup_add_ldif(ldb, ldif_path, subst_vars=None):
+def setup_add_ldif(ldb, ldif_path, subst_vars=None,controls=["relax:0"]):
     """Setup a ldb in the private dir.
     
     :param ldb: LDB file to import data into
     :param ldif_path: Path of the LDIF file to load
     :param subst_vars: Optional variables to subsitute in LDIF.
+    :param nocontrols: Optional list of controls, can be None for no controls
     """
     assert isinstance(ldif_path, str)
-
     data = read_and_sub_file(ldif_path, subst_vars)
-    ldb.add_ldif(data)
+    ldb.add_ldif(data,controls)
 
 
 def setup_modify_ldif(ldb, ldif_path, subst_vars=None):
@@ -874,9 +874,13 @@ def setup_samdb_rootdse(samdb, setup_path, names):
 def setup_self_join(samdb, names,
                     machinepass, dnspass, 
                     domainsid, invocationid, setup_path,
-                    policyguid, policyguid_dc, domainControllerFunctionality):
+                    policyguid, policyguid_dc, domainControllerFunctionality,ntdsguid):
     """Join a host to its own domain."""
     assert isinstance(invocationid, str)
+    if ntdsguid is not None:
+        ntdsguid_mod = "objectGUID: %s\n"%ntdsguid
+    else:
+        ntdsguid_mod = ""
     setup_add_ldif(samdb, setup_path("provision_self_join.ldif"), { 
               "CONFIGDN": names.configdn, 
               "SCHEMADN": names.schemadn,
@@ -892,6 +896,7 @@ def setup_self_join(samdb, names,
               "DOMAIN": names.domain,
               "DNSDOMAIN": names.dnsdomain,
               "SAMBA_VERSION_STRING": version,
+              "NTDSGUID": ntdsguid_mod,
               "DOMAIN_CONTROLLER_FUNCTIONALITY": str(domainControllerFunctionality)})
 
     setup_add_ldif(samdb, setup_path("provision_group_policy.ldif"), { 
@@ -925,7 +930,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
                 names, message, 
                 domainsid, domainguid, policyguid, policyguid_dc,
                 fill, adminpass, krbtgtpass, 
-                machinepass, invocationid, dnspass,
+                machinepass, invocationid, dnspass, ntdsguid,
                 serverrole, dom_for_fun_level=None,
                 schema=None, ldap_backend=None):
     """Setup a complete SAM Database.
@@ -1008,17 +1013,16 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
 #impersonate domain admin
         admin_session_info = admin_session(lp, str(domainsid))
         samdb.set_session_info(admin_session_info)
-
-        setup_add_ldif(samdb, setup_path("provision_basedn.ldif"), {
-                "DOMAINDN": names.domaindn,
-                "DOMAIN_OC": domain_oc
-                })
-
-        message("Modifying DomainDN: " + names.domaindn + "")
         if domainguid is not None:
-            domainguid_mod = "replace: objectGUID\nobjectGUID: %s\n-" % domainguid
+            domainguid_mod = "objectGUID: %s\n-" % domainguid
         else:
             domainguid_mod = ""
+        setup_add_ldif(samdb, setup_path("provision_basedn.ldif"), {
+                "DOMAINDN": names.domaindn,
+                "DOMAIN_OC": domain_oc,
+                "DOMAINGUID": domainguid_mod
+                })
+
 
         setup_modify_ldif(samdb, setup_path("provision_basedn_modify.ldif"), {
             "CREATTIME": str(int(time.time()) * 1e7), # seconds -> ticks
@@ -1030,7 +1034,6 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
             "SERVERDN": names.serverdn,
             "POLICYGUID": policyguid,
             "DOMAINDN": names.domaindn,
-            "DOMAINGUID_MOD": domainguid_mod,
             "DOMAIN_FUNCTIONALITY": str(domainFunctionality),
             "SAMBA_VERSION_STRING": version
             })
@@ -1116,7 +1119,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
                                 domainsid=domainsid, policyguid=policyguid,
                                 policyguid_dc=policyguid_dc,
                                 setup_path=setup_path,
-                                domainControllerFunctionality=domainControllerFunctionality)
+                                domainControllerFunctionality=domainControllerFunctionality,ntdsguid=ntdsguid)
 
                 ntds_dn = "CN=NTDS Settings,CN=%s,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,%s" % (names.hostname, names.domaindn)
                 names.ntdsguid = samdb.searchone(basedn=ntds_dn,
@@ -1145,7 +1148,7 @@ def provision(setup_dir, message, session_info,
               domainsid=None, adminpass=None, ldapadminpass=None, 
               krbtgtpass=None, domainguid=None, 
               policyguid=None, policyguid_dc=None, invocationid=None,
-              machinepass=None, 
+              machinepass=None,ntdsguid=None,
               dnspass=None, root=None, nobody=None, users=None, 
               wheel=None, backup=None, aci=None, serverrole=None,
               dom_for_fun_level=None,
@@ -1299,7 +1302,8 @@ def provision(setup_dir, message, session_info,
                         fill=samdb_fill, 
                         adminpass=adminpass, krbtgtpass=krbtgtpass,
                         invocationid=invocationid, 
-                        machinepass=machinepass, dnspass=dnspass,
+                        machinepass=machinepass, dnspass=dnspass, 
+                        ntdsguid=ntdsguid,
                         serverrole=serverrole,
                         dom_for_fun_level=dom_for_fun_level,
                         ldap_backend=provision_backend)

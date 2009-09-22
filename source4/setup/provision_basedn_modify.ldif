@@ -110,4 +110,3 @@ wellKnownObjects: B:32:a361b2ffffd211d1aa4b00c04fd7d83a:OU=Domain Controllers,${
 wellKnownObjects: B:32:aa312825768811d1aded00c04fd8d5cd:CN=Computers,${DOMAINDN}
 wellKnownObjects: B:32:a9d1ca15768811d1aded00c04fd8d5cd:CN=Users,${DOMAINDN}
 -
-${DOMAINGUID_MOD}
