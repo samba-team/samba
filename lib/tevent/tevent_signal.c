@@ -90,18 +90,12 @@ static void tevent_common_signal_handler(int signum)
 	SIG_INCREMENT(sig_state->signal_count[signum]);
 	SIG_INCREMENT(sig_state->got_signal);
 
-	if (sig_state->sig_handlers[signum] != NULL) {
-		ev = sig_state->sig_handlers[signum]->se->event_ctx;
-		/* doesn't matter if this pipe overflows */
-		res = write(ev->pipe_fds[1], &c, 1);
-	}
-
 	/* Write to each unique event context. */
 	for (sl = sig_state->sig_handlers[signum]; sl; sl = sl->next) {
 		if (sl->se->event_ctx != ev) {
+			ev = sl->se->event_ctx;
 			/* doesn't matter if this pipe overflows */
 			res = write(ev->pipe_fds[1], &c, 1);
-			ev = sl->se->event_ctx;
 		}
 	}
 
