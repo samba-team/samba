@@ -136,8 +136,10 @@ struct dcesrv_call_state {
 /* a dcerpc handle in internal format */
 struct dcesrv_handle {
 	struct dcesrv_handle *next, *prev;
-	struct dcesrv_connection_context *context;
+	struct dcesrv_assoc_group *assoc_group;
 	struct policy_handle wire_handle;
+	struct dom_sid *sid;
+	const struct dcesrv_interface *iface;
 	void *data;
 };
 
@@ -255,6 +257,9 @@ struct dcesrv_assoc_group {
 	
 	/* list of handles in this association group */
 	struct dcesrv_handle *handles;
+
+	/* parent context */
+	struct dcesrv_context *dce_ctx;
 };
 
 /* server-wide context information for the dcerpc server */

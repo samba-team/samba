@@ -74,6 +74,17 @@ static struct dcesrv_assoc_group *dcesrv_assoc_group_reference(TALLOC_CTX *mem_c
 	return talloc_reference(mem_ctx, assoc_group);
 }
 
+static int dcesrv_assoc_group_destructor(struct dcesrv_assoc_group *assoc_group)
+{
+	int ret;
+	ret = idr_remove(assoc_group->dce_ctx->assoc_groups_idr, assoc_group->id);
+	if (ret != 0) {
+		DEBUG(0,(__location__ ": Failed to remove assoc_group 0x%08x\n",
+			 assoc_group->id));
+	}
+	return 0;
+}
+
 /*
   allocate a new association group
  */
@@ -96,6 +107,10 @@ static struct dcesrv_assoc_group *dcesrv_assoc_group_new(TALLOC_CTX *mem_ctx,
 	}
 
 	assoc_group->id = id;
+	assoc_group->dce_ctx = dce_ctx;
+
+	talloc_set_destructor(assoc_group, dcesrv_assoc_group_destructor);
+
 	return assoc_group;
 }
 
