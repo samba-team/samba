@@ -357,3 +357,15 @@ INIT_FUNCTION = LDB_MODULE(resolve_oids)
 ################################################
 
 ldb_resolve_oids_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/resolve_oids.o
+
+################################################
+# Start MODULE ldb_acl
+[MODULE::ldb_acl]
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LIBSECURITY SAMDB
+SUBSYSTEM = LIBLDB
+INIT_FUNCTION = LDB_MODULE(acl)
+
+# End MODULE ldb_acl
+################################################
+
+ldb_acl_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/acl.o
