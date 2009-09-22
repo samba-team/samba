@@ -265,7 +265,7 @@ AC_ARG_WITH(mandir,
 ################################################
 # set locale directory location
 AC_ARG_WITH(localedir,
-[  --with-localedir=DIR    Where to put po files ($ac_default_prefix/share/locale)],
+[AS_HELP_STRING([--with-localedir=DIR],[Where to put po files ($ac_default_prefix/share/locale)])],
 [ case "$withval" in
   yes|no)
     #
