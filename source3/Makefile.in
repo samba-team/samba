@@ -3095,6 +3095,7 @@ showlayout::
 	@echo "  cachedir:    $(CACHEDIR)"
 	@echo "  piddir:      $(PIDDIR)"
 	@echo "  swatdir:     $(SWATDIR)"
+	@echo "  datadir:     ${DATADIR}"
 	@echo "  codepagedir: $(CODEPAGEDIR)"
 
 
