@@ -64,6 +64,65 @@ struct lsa_trusted_domain_state {
 	struct ldb_dn *trusted_domain_user_dn;
 };
 
+/*
+  this is based on the samba3 function make_lsa_object_sd()
+  It uses the same logic, but with samba4 helper functions
+ */
+static NTSTATUS dcesrv_build_lsa_sd(TALLOC_CTX *mem_ctx, 
+				    struct security_descriptor **sd,
+				    struct dom_sid *sid, 
+				    uint32_t sid_access)
+{
+	NTSTATUS status;
+	uint32_t rid;
+	struct dom_sid *domain_sid, *domain_admins_sid;
+	const char *domain_admins_sid_str, *sidstr;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+
+	status = dom_sid_split_rid(tmp_ctx, sid, &domain_sid, &rid);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	domain_admins_sid = dom_sid_add_rid(tmp_ctx, domain_sid, DOMAIN_RID_ADMINS);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(domain_admins_sid, tmp_ctx);
+
+	domain_admins_sid_str = dom_sid_string(tmp_ctx, domain_admins_sid);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(domain_admins_sid_str, tmp_ctx);
+	
+	sidstr = dom_sid_string(tmp_ctx, sid);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(sidstr, tmp_ctx);
+						      
+	*sd = security_descriptor_dacl_create(mem_ctx,
+					      0, sidstr, NULL,
+
+					      SID_WORLD,
+					      SEC_ACE_TYPE_ACCESS_ALLOWED,
+					      SEC_GENERIC_EXECUTE | SEC_GENERIC_READ, 0,
+					      
+					      SID_BUILTIN_ADMINISTRATORS,
+					      SEC_ACE_TYPE_ACCESS_ALLOWED,
+					      SEC_GENERIC_ALL, 0,
+					      
+					      SID_BUILTIN_ACCOUNT_OPERATORS,
+					      SEC_ACE_TYPE_ACCESS_ALLOWED,
+					      SEC_GENERIC_ALL, 0,
+					      
+					      domain_admins_sid_str,
+					      SEC_ACE_TYPE_ACCESS_ALLOWED,
+					      SEC_GENERIC_ALL, 0,
+
+					      sidstr,
+					      SEC_ACE_TYPE_ACCESS_ALLOWED,
+					      sid_access, 0,
+
+					      NULL);
+	talloc_free(tmp_ctx);
+
+	NT_STATUS_HAVE_NO_MEMORY(*sd);
+
+	return NT_STATUS_OK;
+}
+
+
 static NTSTATUS dcesrv_lsa_EnumAccountRights(struct dcesrv_call_state *dce_call, 
 				      TALLOC_CTX *mem_ctx,
 				      struct lsa_EnumAccountRights *r);
@@ -265,9 +324,33 @@ static NTSTATUS dcesrv_lsa_EnumPrivs(struct dcesrv_call_state *dce_call, TALLOC_
   lsa_QuerySecObj 
 */
 static NTSTATUS dcesrv_lsa_QuerySecurity(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-				  struct lsa_QuerySecurity *r)
+					 struct lsa_QuerySecurity *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct security_descriptor *sd;
+	NTSTATUS status;
+	struct dom_sid *sid;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, DCESRV_HANDLE_ANY);
+
+	sid = dce_call->conn->auth_state.session_info->security_token->user_sid;
+
+	if (h->wire_handle.handle_type == LSA_HANDLE_POLICY) {
+		status = dcesrv_build_lsa_sd(mem_ctx, &sd, sid, 0);
+	} else 	if (h->wire_handle.handle_type == LSA_HANDLE_ACCOUNT) {
+		status = dcesrv_build_lsa_sd(mem_ctx, &sd, sid, 
+					     LSA_ACCOUNT_ALL_ACCESS);
+	} else {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	(*r->out.sdbuf) = talloc(mem_ctx, struct sec_desc_buf);
+	NT_STATUS_HAVE_NO_MEMORY(*r->out.sdbuf);
+
+	(*r->out.sdbuf)->sd = sd;
+	
+	return NT_STATUS_OK;
 }
 
 
