@@ -547,7 +547,13 @@ static int objectclass_do_add(struct oc_context *ac)
 			if (!current->next) {
 				struct ldb_message_element *el;
 				int32_t systemFlags = 0;
-				DATA_BLOB *sd;
+				const char *rdn_name = ldb_dn_get_rdn_name(msg->dn);
+				if (ldb_attr_cmp(rdn_name, current->objectclass->rDNAttID) != 0) {
+					ldb_asprintf_errstring(ldb, "RDN %s is not correct for most specific structural objectclass %s, should be %s", 
+							       rdn_name, current->objectclass->lDAPDisplayName, current->objectclass->rDNAttID);
+					return LDB_ERR_NAMING_VIOLATION;
+				}
+
 				if (!ldb_msg_find_element(msg, "objectCategory")) {
 					value = talloc_strdup(msg, current->objectclass->defaultObjectCategory);
 					if (value == NULL) {
