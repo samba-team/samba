@@ -136,6 +136,14 @@ class SimpleLdb(unittest.TestCase):
         finally:
             l.delete(ldb.Dn(l, "dc=foo4"))
 
+    def test_add_w_unhandled_ctrl(self):
+        l = ldb.Ldb(filename())
+        m = ldb.Message()
+        m.dn = ldb.Dn(l, "dc=foo4")
+        m["bla"] = "bla"
+        self.assertEquals(len(l.search()), 1)
+        self.assertRaises(ldb.LdbError, lambda: l.add(m,["search_options:1:2"]))
+
     def test_add_dict(self):
         l = ldb.Ldb(filename())
         m = {"dn": ldb.Dn(l, "dc=foo5"),
