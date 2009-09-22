@@ -168,7 +168,7 @@ static int smb_traffic_analyzer_connect_unix_socket(vfs_handle_struct *handle,
 	return sock;
 }
 
-/* Private data allowing shared connection sockets. */
+/* Private data allowing shared connection sockets. 	*/
 
 struct refcounted_sock {
 	struct refcounted_sock *next, *prev;
@@ -178,7 +178,60 @@ struct refcounted_sock {
 	unsigned int ref_count;
 };
 
-/* Send data over a socket */
+
+/* The marshaller for the protocol version 2.		*/
+static char *smb_traffic_analyzer_create_string( struct tm *tm, \
+	int seconds, vfs_handle_struct *handle, \
+	char *username, int count, ... )
+{
+	
+	va_list ap;
+	char *arg = NULL;
+	char *str = NULL;
+	int len;
+	char *header = NULL;
+	char *buf = NULL;
+	char *timestr = NULL;
+
+	/* first create the data that is transfered with any VFS op	*/
+	len = strlen( username );
+	buf = talloc_asprintf(talloc_tos(),"%04u%s", len, username);
+	len = strlen( handle->conn->connectpath );
+	buf = talloc_asprintf_append( buf, "%04u%s", len, \
+		handle->conn->connectpath );
+	len = strlen( pdb_get_domain(handle->conn->server_info->sam_account) );
+	buf = talloc_asprintf_append( buf, "%04u%s", len, \
+		pdb_get_domain(handle->conn->server_info->sam_account) );
+	timestr = talloc_asprintf(talloc_tos(), \
+		"%04d-%02d-%02d %02d:%02d:%02d.%03d", \
+		tm->tm_year+1900, \
+		tm->tm_mon+1, \
+		tm->tm_mday, \
+		tm->tm_hour, \
+		tm->tm_min, \
+		tm->tm_sec, \
+		(int)seconds);
+	len = strlen( timestr );
+	buf = talloc_asprintf_append( buf, "%04u%s", len, timestr);
+	
+	va_start( ap, count );
+	while ( count-- ) {
+		arg = va_arg( ap, char * );
+		/* protocol v2 sends a four byte string	*/
+		/* as a header to each block, including	*/
+		/* the numbers of bytes to come in the	*/
+		/* next string.				*/
+		len = strlen( arg );
+		buf = talloc_asprintf_append( buf, "%04u%s", len, arg);
+	}
+	va_end( ap );
+
+	/* now create the protocol v2 header.	*/
+	len = strlen( buf );
+	str = talloc_asprintf_append( str, "V2,%017u%s", len, buf);
+	DEBUG(10, ("smb_traffic_analyzer_create_string: %s\n",str));
+	return str;
+}
 
 static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 					void *data,
@@ -275,8 +328,25 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 			tm->tm_sec,
 			(int)seconds);
 	} else if ( strcmp( protocol_version, "V2") == 0) {
-		/* protocol version 2	*/
-		/* in development	*/
+
+		switch( vfs_operation ) {
+			case vfs_id_mkdir: ;
+				struct mkdir_data *s_data = \
+					(struct mkdir_data *) data;
+				str = smb_traffic_analyzer_create_string( tm, \
+					seconds, handle, username, \
+					3, s_data->path, \
+					talloc_asprintf( talloc_tos(), "%u", \
+						s_data->mode), \
+					talloc_asprintf( talloc_tos(), "%u", \
+						s_data->result ));
+				break;
+			default:
+				DEBUG(1, ("smb_traffic_analyzer: error! "
+					"wrong VFS operation id detected!\n"));
+				return;
+		}
+
 	} else {
 		DEBUG(1, ("smb_traffic_analyzer_send_data_socket: "
 			"error, unkown protocol given!\n"));
