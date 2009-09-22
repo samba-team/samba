@@ -632,7 +632,9 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	if (call->context) {
 		pkt.u.bind_ack.assoc_group_id = call->context->assoc_group_id;
 	} else {
-		/* we better pick something - this chosen so as to send a non zero assoc_group_id (matching windows), it also matches samba3 */
+		/* we better pick something - this chosen so as to
+		 * send a non zero assoc_group_id (matching windows),
+		 * it also matches samba3 */
 		pkt.u.bind_ack.assoc_group_id = SAMBA_ASSOC_GROUP;
 	}
 
@@ -1053,37 +1055,6 @@ _PUBLIC_ struct socket_address *dcesrv_connection_get_peer_addr(struct dcesrv_co
 	return conn->transport.get_peer_addr(conn, mem_ctx);
 }
 
-/*
-  work out if we have a full packet yet
-*/
-static bool dce_full_packet(const DATA_BLOB *data)
-{
-	if (data->length < DCERPC_FRAG_LEN_OFFSET+2) {
-		return false;
-	}
-	if (dcerpc_get_frag_length(data) > data->length) {
-		return false;
-	}
-	return true;
-}
-
-/*
-  we might have consumed only part of our input - advance past that part
-*/
-static void dce_partial_advance(struct dcesrv_connection *dce_conn, uint32_t offset)
-{
-	DATA_BLOB blob;
-
-	if (dce_conn->partial_input.length == offset) {
-		data_blob_free(&dce_conn->partial_input);
-		return;
-	}
-
-	blob = dce_conn->partial_input;
-	dce_conn->partial_input = data_blob(blob.data + offset,
-					    blob.length - offset);
-	data_blob_free(&blob);
-}
 
 /*
   remove the call from the right list when freed
