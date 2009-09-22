@@ -103,6 +103,11 @@ struct ldb_dn *ldb_dn_from_ldb_val(void *mem_ctx,
 		dn->ext_linearized = talloc_strndup(dn, data, length);
 		LDB_DN_NULL_FAILED(dn->ext_linearized);
 
+		if (strlen(data) != length) {
+			/* The RDN must not contain a character with value 0x0 */
+			return NULL;
+		}
+
 		if (data[0] == '<') {
 			const char *p_save, *p = dn->ext_linearized;
 			do {
@@ -231,6 +236,9 @@ char *ldb_dn_escape_value(void *mem_ctx, struct ldb_val value)
 /*
   explode a DN string into a ldb_dn structure
   based on RFC4514 except that we don't support multiple valued RDNs
+
+  TODO: according to MS-ADTS:3.1.1.5.2 Naming Constraints
+  DN must be compliant with RFC2253
 */
 static bool ldb_dn_explode(struct ldb_dn *dn)
 {
@@ -261,6 +269,11 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 	}
 
 	if ( ! parse_dn ) {
+		return false;
+	}
+
+	/* The RDN size must be less than 255 characters */
+	if (strlen(parse_dn) > 255) {
 		return false;
 	}
 
