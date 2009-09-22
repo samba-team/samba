@@ -540,6 +540,8 @@ int ldb_next_request(struct ldb_module *module, struct ldb_request *request)
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
+	request->handle->nesting++;
+
 	switch (request->operation) {
 	case LDB_SEARCH:
 		FIND_OP(module, search);
@@ -570,6 +572,9 @@ int ldb_next_request(struct ldb_module *module, struct ldb_request *request)
 		ret = module->ops->request(module, request);
 		break;
 	}
+
+	request->handle->nesting--;
+
 	if (ret == LDB_SUCCESS) {
 		return ret;
 	}
@@ -672,7 +677,8 @@ int ldb_module_send_entry(struct ldb_request *req,
 	ares->controls = talloc_steal(ares, ctrls);
 	ares->error = LDB_SUCCESS;
 
-	if (req->handle->ldb->flags & LDB_FLG_ENABLE_TRACING) {
+	if ((req->handle->ldb->flags & LDB_FLG_ENABLE_TRACING) &&
+	    req->handle->nesting == 0) {
 		char *s;
 		ldb_debug_add(req->handle->ldb, "ldb_trace_response: ENTRY\n");
 		s = ldb_ldif_message_string(req->handle->ldb, msg, LDB_CHANGETYPE_NONE, msg);
@@ -706,7 +712,8 @@ int ldb_module_send_referral(struct ldb_request *req,
 	ares->referral = talloc_steal(ares, ref);
 	ares->error = LDB_SUCCESS;
 
-	if (req->handle->ldb->flags & LDB_FLG_ENABLE_TRACING) {
+	if ((req->handle->ldb->flags & LDB_FLG_ENABLE_TRACING) &&
+	    req->handle->nesting == 0) {
 		ldb_debug_add(req->handle->ldb, "ldb_trace_response: REFERRAL\n");
 		ldb_debug_add(req->handle->ldb, "ref: %s\n", ref);
 		ldb_debug_end(req->handle->ldb, LDB_DEBUG_TRACE);
@@ -744,7 +751,8 @@ int ldb_module_done(struct ldb_request *req,
 
 	req->handle->flags |= LDB_HANDLE_FLAG_DONE_CALLED;
 
-	if (req->handle->ldb->flags & LDB_FLG_ENABLE_TRACING) {
+	if ((req->handle->ldb->flags & LDB_FLG_ENABLE_TRACING) &&
+	    req->handle->nesting == 0) {
 		ldb_debug_add(req->handle->ldb, "ldb_trace_response: DONE\n");
 		ldb_debug_add(req->handle->ldb, "error: %u\n", error);
 		if (ldb_errstring(req->handle->ldb)) {

@@ -635,7 +635,8 @@ static void ldb_trace_request(struct ldb_context *ldb, struct ldb_request *req)
 	case LDB_SEARCH:
 		ldb_debug_add(ldb, "ldb_trace_request: SEARCH\n");
 		ldb_debug_add(ldb, " dn: %s\n",
-			  ldb_dn_get_linearized(req->op.search.base));
+			      ldb_dn_is_null(req->op.search.base)?"<rootDSE>":
+			      ldb_dn_get_linearized(req->op.search.base));
 		ldb_debug_add(ldb, " scope: %s\n", 
 			  req->op.search.scope==LDB_SCOPE_BASE?"base":
 			  req->op.search.scope==LDB_SCOPE_ONELEVEL?"one":
@@ -921,6 +922,10 @@ int ldb_build_search_req_ex(struct ldb_request **ret_req,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	if (parent) {
+		req->handle->nesting++;
+	}
+
 	*ret_req = req;
 	return LDB_SUCCESS;
 }
@@ -988,6 +993,10 @@ int ldb_build_add_req(struct ldb_request **ret_req,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	if (parent) {
+		req->handle->nesting++;
+	}
+
 	*ret_req = req;
 
 	return LDB_SUCCESS;
@@ -1024,6 +1033,10 @@ int ldb_build_mod_req(struct ldb_request **ret_req,
 	if (req->handle == NULL) {
 		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (parent) {
+		req->handle->nesting++;
 	}
 
 	*ret_req = req;
@@ -1064,6 +1077,10 @@ int ldb_build_del_req(struct ldb_request **ret_req,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	if (parent) {
+		req->handle->nesting++;
+	}
+
 	*ret_req = req;
 
 	return LDB_SUCCESS;
@@ -1102,6 +1119,10 @@ int ldb_build_rename_req(struct ldb_request **ret_req,
 	if (req->handle == NULL) {
 		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (parent) {
+		req->handle->nesting++;
 	}
 
 	*ret_req = req;
@@ -1171,6 +1192,10 @@ int ldb_build_extended_req(struct ldb_request **ret_req,
 	if (req->handle == NULL) {
 		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (parent) {
+		req->handle->nesting++;
 	}
 
 	*ret_req = req;

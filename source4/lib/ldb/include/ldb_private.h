@@ -54,6 +54,7 @@ struct ldb_handle {
 	enum ldb_state state;
 	struct ldb_context *ldb;
 	unsigned flags;
+	unsigned nesting;
 };
 
 /* basic module structure */
