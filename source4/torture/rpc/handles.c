@@ -132,6 +132,9 @@ static bool test_handles_lsa_shared(struct torture_context *torture)
 						  assoc_group_id);
 	torture_assert_ntstatus_ok(torture, status, "opening lsa pipe2");
 
+	torture_comment(torture, "got assoc_group_id[0x%08X] for p2\n", 
+			p2->assoc_group_id);
+
 	qos.len = 0;
 	qos.impersonation_level = 2;
 	qos.context_mode = 1;
@@ -411,6 +414,8 @@ static bool test_handles_mixed_shared(struct torture_context *torture)
 						  assoc_group_id);
 	torture_assert_ntstatus_ok(torture, status, "opening lsa pipe2");
 
+	torture_comment(torture, "got assoc_group_id[0x%08X] for p2\n", 
+			p2->assoc_group_id);
 	r.in.system_name = 0;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.connect_handle = &handle;
