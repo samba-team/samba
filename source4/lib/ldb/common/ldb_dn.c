@@ -88,6 +88,12 @@ struct ldb_dn *ldb_dn_from_ldb_val(void *mem_ctx,
 
 	if (! ldb) return NULL;
 
+	if (strdn && strdn->data
+	    && (strlen((const char*)strdn->data) != strdn->length)) {
+		/* The RDN must not contain a character with value 0x0 */
+		return NULL;
+	}
+
 	dn = talloc_zero(mem_ctx, struct ldb_dn);
 	LDB_DN_NULL_FAILED(dn);
 
@@ -102,11 +108,6 @@ struct ldb_dn *ldb_dn_from_ldb_val(void *mem_ctx,
 		}
 		dn->ext_linearized = talloc_strndup(dn, data, length);
 		LDB_DN_NULL_FAILED(dn->ext_linearized);
-
-		if (strlen(data) != length) {
-			/* The RDN must not contain a character with value 0x0 */
-			return NULL;
-		}
 
 		if (data[0] == '<') {
 			const char *p_save, *p = dn->ext_linearized;
