@@ -44,7 +44,7 @@ from credentials import Credentials, DONT_USE_KERBEROS
 from auth import system_session, admin_session
 from samba import version, Ldb, substitute_var, valid_netbios_name
 from samba import check_all_substituted
-from samba import DS_DOMAIN_FUNCTION_2000, DS_DOMAIN_FUNCTION_2008, DS_DC_FUNCTION_2008, DS_DC_FUNCTION_2008_R2
+from samba import DS_DOMAIN_FUNCTION_2003, DS_DOMAIN_FUNCTION_2008, DS_DC_FUNCTION_2008
 from samba.samdb import SamDB
 from samba.idmap import IDmapDB
 from samba.dcerpc import security
@@ -926,22 +926,33 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
                 domainsid, domainguid, policyguid, policyguid_dc,
                 fill, adminpass, krbtgtpass, 
                 machinepass, invocationid, dnspass,
-                serverrole, schema=None, ldap_backend=None):
+                serverrole, dom_for_fun_level=None,
+                schema=None, ldap_backend=None):
     """Setup a complete SAM Database.
     
     :note: This will wipe the main SAM database file!
     """
 
-    # Do NOT change these default values without discussion with the team and reslease manager.  
-    domainFunctionality = DS_DOMAIN_FUNCTION_2008
-    forestFunctionality = DS_DOMAIN_FUNCTION_2008
+    # ATTENTION: Do NOT change these default values without discussion with the
+    # team and/or release manager. They have a big impact on the whole program!
     domainControllerFunctionality = DS_DC_FUNCTION_2008
+
+    if dom_for_fun_level is None:
+        dom_for_fun_level = DS_DOMAIN_FUNCTION_2008
+    if dom_for_fun_level < DS_DOMAIN_FUNCTION_2003:
+        raise ProvisioningError("You want to run SAMBA 4 on a domain and forest function level lower than Windows 2003 (Native). This isn't supported!")
+
+    if dom_for_fun_level > domainControllerFunctionality:
+        raise ProvisioningError("You want to run SAMBA 4 on a domain and forest function level which itself is higher than its actual DC function level (2008). This won't work!")
+
+    domainFunctionality = dom_for_fun_level
+    forestFunctionality = dom_for_fun_level
 
     # Also wipes the database
     setup_samdb_partitions(path, setup_path, message=message, lp=lp,
                            credentials=credentials, session_info=session_info,
-                           names=names, 
-                           ldap_backend=ldap_backend, serverrole=serverrole)
+                           names=names, ldap_backend=ldap_backend,
+                           serverrole=serverrole)
 
     if (schema == None):
         schema = Schema(setup_path, domainsid, schemadn=names.schemadn, serverdn=names.serverdn,
@@ -1136,7 +1147,8 @@ def provision(setup_dir, message, session_info,
               policyguid=None, policyguid_dc=None, invocationid=None,
               machinepass=None, 
               dnspass=None, root=None, nobody=None, users=None, 
-              wheel=None, backup=None, aci=None, serverrole=None, 
+              wheel=None, backup=None, aci=None, serverrole=None,
+              dom_for_fun_level=None,
               ldap_backend_extra_port=None, ldap_backend_type=None,
               sitename=None,
               ol_mmr_urls=None, ol_olc=None, 
@@ -1154,7 +1166,6 @@ def provision(setup_dir, message, session_info,
       domainsid = security.random_sid()
     else:
       domainsid = security.dom_sid(domainsid)
-
 
     # create/adapt the group policy GUIDs
     if policyguid is None:
@@ -1289,7 +1300,9 @@ def provision(setup_dir, message, session_info,
                         adminpass=adminpass, krbtgtpass=krbtgtpass,
                         invocationid=invocationid, 
                         machinepass=machinepass, dnspass=dnspass,
-                        serverrole=serverrole, ldap_backend=provision_backend)
+                        serverrole=serverrole,
+                        dom_for_fun_level=dom_for_fun_level,
+                        ldap_backend=provision_backend)
 
     if serverrole == "domain controller":
         if paths.netlogon is None:
