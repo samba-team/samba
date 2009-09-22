@@ -257,6 +257,9 @@ void ldb_set_errstring(struct ldb_context *ldb, const char *err_string)
 		talloc_free(ldb->err_string);
 	}
 	ldb->err_string = talloc_strdup(ldb, err_string);
+	if (ldb->flags & LDB_FLG_ENABLE_TRACING) {
+		ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_set_errstring: %s", ldb->err_string);
+	}
 }
 
 void ldb_asprintf_errstring(struct ldb_context *ldb, const char *format, ...)
