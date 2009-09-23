@@ -208,9 +208,9 @@ done:
 
 bool gencache_del(const char *keystr)
 {
-	bool exists;
+	bool exists, was_expired;
 	bool ret = false;
-	char *value;
+	DATA_BLOB value;
 
 	if (keystr == NULL) {
 		return false;
@@ -226,9 +226,18 @@ bool gencache_del(const char *keystr)
 	 * element.
 	 */
 
-	exists = gencache_get(keystr, &value, NULL);
+	exists = gencache_get_data_blob(keystr, &value, NULL, &was_expired);
+
+	if (!exists && was_expired) {
+		/*
+		 * gencache_get_data_blob has implicitly deleted this
+		 * entry, so we have to return success here.
+		 */
+		return true;
+	}
+
 	if (exists) {
-		SAFE_FREE(value);
+		data_blob_free(&value);
 		ret = gencache_set(keystr, "", 0);
 	}
 	return ret;
