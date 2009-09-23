@@ -1586,18 +1586,19 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 			    enum samr_RejectReason *reject_reason,
 			    struct samr_DomInfo1 **_dominfo)
 {
-	const char * const user_attrs[] = { "userAccountControl", "lmPwdHistory", 
+	const char * const user_attrs[] = { "userAccountControl",
+					    "lmPwdHistory",
 					    "ntPwdHistory", 
 					    "dBCSPwd", "unicodePwd", 
 					    "objectSid", 
 					    "pwdLastSet", NULL };
-	const char * const domain_attrs[] = { "pwdProperties", "pwdHistoryLength", 
-					      "maxPwdAge", "minPwdAge", 
-					      "minPwdLength", NULL };
+	const char * const domain_attrs[] = { "minPwdLength", "pwdProperties",
+					      "pwdHistoryLength",
+					      "maxPwdAge", "minPwdAge", NULL };
 	NTTIME pwdLastSet;
+	uint32_t minPwdLength, pwdProperties, pwdHistoryLength;
 	int64_t minPwdAge;
-	uint_t minPwdLength, pwdProperties, pwdHistoryLength;
-	uint_t userAccountControl;
+	uint32_t userAccountControl;
 	struct samr_Password *sambaLMPwdHistory, *sambaNTPwdHistory,
 		*lmPwdHash, *ntPwdHash, *lmNewHash, *ntNewHash;
 	struct samr_Password local_lmNewHash, local_ntNewHash;
@@ -1618,14 +1619,14 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 	if (count != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-	userAccountControl = samdb_result_uint(res[0],   "userAccountControl", 0);
-	sambaLMPwdHistory_len =   samdb_result_hashes(mem_ctx, res[0], 
-						 "lmPwdHistory", &sambaLMPwdHistory);
-	sambaNTPwdHistory_len =   samdb_result_hashes(mem_ctx, res[0], 
-						 "ntPwdHistory", &sambaNTPwdHistory);
-	lmPwdHash =          samdb_result_hash(mem_ctx, res[0],   "dBCSPwd");
-	ntPwdHash =          samdb_result_hash(mem_ctx, res[0],   "unicodePwd");
-	pwdLastSet =         samdb_result_uint64(res[0], "pwdLastSet", 0);
+	userAccountControl = samdb_result_uint(res[0], "userAccountControl", 0);
+	sambaLMPwdHistory_len = samdb_result_hashes(mem_ctx, res[0],
+					 "lmPwdHistory", &sambaLMPwdHistory);
+	sambaNTPwdHistory_len = samdb_result_hashes(mem_ctx, res[0],
+					 "ntPwdHistory", &sambaNTPwdHistory);
+	lmPwdHash = samdb_result_hash(mem_ctx, res[0], "dBCSPwd");
+	ntPwdHash = samdb_result_hash(mem_ctx, res[0], "unicodePwd");
+	pwdLastSet = samdb_result_uint64(res[0], "pwdLastSet", 0);
 
 	/* Copy parameters */
 	lmNewHash = param_lmNewHash;
@@ -1638,9 +1639,10 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 					       |UF_WORKSTATION_TRUST_ACCOUNT
 					       |UF_SERVER_TRUST_ACCOUNT)); 
 
-	if (domain_dn) {
+	if (domain_dn != NULL) {
 		/* pull the domain parameters */
-		count = gendb_search_dn(ctx, mem_ctx, domain_dn, &res, domain_attrs);
+		count = gendb_search_dn(ctx, mem_ctx, domain_dn, &res,
+								domain_attrs);
 		if (count != 1) {
 			DEBUG(2, ("samdb_set_password: Domain DN %s is invalid, for user %s\n", 
 				  ldb_dn_get_linearized(domain_dn),
@@ -1649,14 +1651,15 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 		}
 	} else {
 		/* work out the domain sid, and pull the domain from there */
-		domain_sid =         samdb_result_sid_prefix(mem_ctx, res[0], "objectSid");
+		domain_sid = samdb_result_sid_prefix(mem_ctx, res[0],
+								"objectSid");
 		if (domain_sid == NULL) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
 		count = gendb_search(ctx, mem_ctx, NULL, &res, domain_attrs, 
-				     "(objectSid=%s)", 
-				     ldap_encode_ndr_dom_sid(mem_ctx, domain_sid));
+				"(objectSid=%s)",
+				ldap_encode_ndr_dom_sid(mem_ctx, domain_sid));
 		if (count != 1) {
 			DEBUG(2, ("samdb_set_password: Could not find domain to match SID: %s, for user %s\n", 
 				  dom_sid_string(mem_ctx, domain_sid),
@@ -1665,17 +1668,17 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	pwdProperties =    samdb_result_uint(res[0],   "pwdProperties", 0);
-	pwdHistoryLength = samdb_result_uint(res[0],   "pwdHistoryLength", 0);
-	minPwdLength =     samdb_result_uint(res[0],   "minPwdLength", 0);
-	minPwdAge =        samdb_result_int64(res[0],  "minPwdAge", 0);
+	minPwdLength = samdb_result_uint(res[0], "minPwdLength", 0);
+	pwdProperties = samdb_result_uint(res[0], "pwdProperties", 0);
+	pwdHistoryLength = samdb_result_uint(res[0], "pwdHistoryLength", 0);
+	minPwdAge = samdb_result_int64(res[0], "minPwdAge", 0);
 
-	if (userAccountControl & UF_PASSWD_NOTREQD) {
+	if ((userAccountControl & UF_PASSWD_NOTREQD) != 0) {
 		/* see [MS-ADTS] 2.2.15 */
 		minPwdLength = 0;
 	}
 
-	if (_dominfo) {
+	if (_dominfo != NULL) {
 		struct samr_DomInfo1 *dominfo;
 		/* on failure we need to fill in the reject reasons */
 		dominfo = talloc(mem_ctx, struct samr_DomInfo1);
@@ -1690,11 +1693,13 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 		*_dominfo = dominfo;
 	}
 
-	if (restrictions && new_password) {
+	if ((restrictions != 0) && (new_password != 0)) {
 		char *new_pass;
 
-		/* check the various password restrictions */
-		if (restrictions && minPwdLength > utf16_len_n(new_password->data, new_password->length) / 2) {
+		/* checks if the "minPwdLength" property is satisfied */
+		if ((restrictions != 0)
+			&& (minPwdLength > utf16_len_n(
+				new_password->data, new_password->length)/2)) {
 			if (reject_reason) {
 				*reject_reason = SAMR_REJECT_TOO_SHORT;
 			}
@@ -1702,7 +1707,8 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 		}
 
 		/* Create the NT hash */
-		mdfour(local_ntNewHash.hash, new_password->data, new_password->length);
+		mdfour(local_ntNewHash.hash, new_password->data,
+							new_password->length);
 
 		ntNewHash = &local_ntNewHash;
 
@@ -1713,9 +1719,11 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 			  new_password->data, new_password->length,
 			  (void **)&new_pass, NULL, false)) {
 
-			/* possibly check password complexity */
-			if (restrictions && (pwdProperties & DOMAIN_PASSWORD_COMPLEX) &&
-			    !check_password_quality(new_pass)) {
+			/* checks the password complexity */
+			if ((restrictions != 0)
+				&& ((pwdProperties
+					& DOMAIN_PASSWORD_COMPLEX) != 0)
+				&& (!check_password_quality(new_pass))) {
 				if (reject_reason) {
 					*reject_reason = SAMR_REJECT_COMPLEXITY;
 				}
@@ -1729,24 +1737,24 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (restrictions && user_change) {
+	if ((restrictions != 0) && user_change) {
 		/* are all password changes disallowed? */
-		if (pwdProperties & DOMAIN_REFUSE_PASSWORD_CHANGE) {
+		if ((pwdProperties & DOMAIN_REFUSE_PASSWORD_CHANGE) != 0) {
 			if (reject_reason) {
 				*reject_reason = SAMR_REJECT_OTHER;
 			}
 			return NT_STATUS_PASSWORD_RESTRICTION;
 		}
 
-		/* can this user change password? */
-		if (userAccountControl & UF_PASSWD_CANT_CHANGE) {
+		/* can this user change the password? */
+		if ((userAccountControl & UF_PASSWD_CANT_CHANGE) != 0) {
 			if (reject_reason) {
 				*reject_reason = SAMR_REJECT_OTHER;
 			}
 			return NT_STATUS_PASSWORD_RESTRICTION;
 		}
 
-		/* yes, this is a minus. The ages are in negative 100nsec units! */
+		/* Password minimum age: yes, this is a minus. The ages are in negative 100nsec units! */
 		if (pwdLastSet - minPwdAge > now_nt) {
 			if (reject_reason) {
 				*reject_reason = SAMR_REJECT_OTHER;
@@ -1756,13 +1764,15 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 
 		/* check the immediately past password */
 		if (pwdHistoryLength > 0) {
-			if (lmNewHash && lmPwdHash && memcmp(lmNewHash->hash, lmPwdHash->hash, 16) == 0) {
+			if (lmNewHash && lmPwdHash && memcmp(lmNewHash->hash,
+					lmPwdHash->hash, 16) == 0) {
 				if (reject_reason) {
 					*reject_reason = SAMR_REJECT_IN_HISTORY;
 				}
 				return NT_STATUS_PASSWORD_RESTRICTION;
 			}
-			if (ntNewHash && ntPwdHash && memcmp(ntNewHash->hash, ntPwdHash->hash, 16) == 0) {
+			if (ntNewHash && ntPwdHash && memcmp(ntNewHash->hash,
+					ntPwdHash->hash, 16) == 0) {
 				if (reject_reason) {
 					*reject_reason = SAMR_REJECT_IN_HISTORY;
 				}
@@ -1771,11 +1781,14 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 		}
 
 		/* check the password history */
-		sambaLMPwdHistory_len = MIN(sambaLMPwdHistory_len, pwdHistoryLength);
-		sambaNTPwdHistory_len = MIN(sambaNTPwdHistory_len, pwdHistoryLength);
+		sambaLMPwdHistory_len = MIN(sambaLMPwdHistory_len,
+							pwdHistoryLength);
+		sambaNTPwdHistory_len = MIN(sambaNTPwdHistory_len,
+							pwdHistoryLength);
 
 		for (i=0; lmNewHash && i<sambaLMPwdHistory_len;i++) {
-			if (memcmp(lmNewHash->hash, sambaLMPwdHistory[i].hash, 16) == 0) {
+			if (memcmp(lmNewHash->hash, sambaLMPwdHistory[i].hash,
+					16) == 0) {
 				if (reject_reason) {
 					*reject_reason = SAMR_REJECT_IN_HISTORY;
 				}
@@ -1783,7 +1796,8 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 			}
 		}
 		for (i=0; ntNewHash && i<sambaNTPwdHistory_len;i++) {
-			if (memcmp(ntNewHash->hash, sambaNTPwdHistory[i].hash, 16) == 0) {
+			if (memcmp(ntNewHash->hash, sambaNTPwdHistory[i].hash,
+					 16) == 0) {
 				if (reject_reason) {
 					*reject_reason = SAMR_REJECT_IN_HISTORY;
 				}
@@ -1795,7 +1809,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 #define CHECK_RET(x) do { if (x != 0) return NT_STATUS_NO_MEMORY; } while(0)
 
 	/* the password is acceptable. Start forming the new fields */
-	if (new_password) {
+	if (new_password != NULL) {
 		/* if we know the cleartext UTF16 password, then set it.
 		 * Modules in ldb will set all the appropriate
 		 * hashes */
