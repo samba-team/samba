@@ -224,8 +224,15 @@ static NTSTATUS catia_string_replace_allocate(connection_struct *conn,
 	size_t converted_size;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	if (!init_mappings(conn, &selected))
+	if (!init_mappings(conn, &selected)) {
+		/* No mappings found. Just use the old name */
+		*mapped_name = talloc_strdup(NULL, name_in);
+		if (!*mapped_name) {
+			errno = ENOMEM;
+			return NT_STATUS_NO_MEMORY;
+		}
 		return NT_STATUS_OK;
+	}
 
 	if ((push_ucs2_talloc(ctx, &tmpbuf, name_in,
 			      &converted_size)) == -1) {
