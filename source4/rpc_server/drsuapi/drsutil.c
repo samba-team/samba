@@ -52,7 +52,6 @@ int drsuapi_search_with_extended_dn(struct ldb_context *ldb,
 				    const char *sort_attrib,
 				    const char *filter)
 {
-	va_list ap;
 	int ret;
 	struct ldb_request *req;
 	TALLOC_CTX *tmp_ctx;
@@ -133,4 +132,35 @@ WERROR drs_security_level_check(struct dcesrv_call_state *dce_call, const char* 
 	}
 
 	return WERR_OK;
+}
+
+void drsuapi_process_secret_attribute(struct drsuapi_DsReplicaAttribute *attr,
+				      struct drsuapi_DsReplicaMetaData *meta_data)
+{
+	if (attr->value_ctr.num_values == 0) {
+		return;
+	}
+
+	switch (attr->attid) {
+	case DRSUAPI_ATTRIBUTE_dBCSPwd:
+	case DRSUAPI_ATTRIBUTE_unicodePwd:
+	case DRSUAPI_ATTRIBUTE_ntPwdHistory:
+	case DRSUAPI_ATTRIBUTE_lmPwdHistory:
+	case DRSUAPI_ATTRIBUTE_supplementalCredentials:
+	case DRSUAPI_ATTRIBUTE_priorValue:
+	case DRSUAPI_ATTRIBUTE_currentValue:
+	case DRSUAPI_ATTRIBUTE_trustAuthOutgoing:
+	case DRSUAPI_ATTRIBUTE_trustAuthIncoming:
+	case DRSUAPI_ATTRIBUTE_initialAuthOutgoing:
+	case DRSUAPI_ATTRIBUTE_initialAuthIncoming:
+		/*set value to null*/
+		attr->value_ctr.num_values = 0;
+		talloc_free(attr->value_ctr.values);
+		attr->value_ctr.values = NULL;
+		meta_data->originating_change_time = 0;
+		return;
+	default:
+		return;
+	}
+	return;
 }

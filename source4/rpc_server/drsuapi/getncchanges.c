@@ -41,7 +41,8 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 					  struct ldb_dn *ncRoot_dn,
 					  struct dsdb_schema *schema,
 					  DATA_BLOB *session_key,
-					  uint64_t highest_usn)
+					  uint64_t highest_usn,
+					  uint32_t replica_flags)
 {
 	const struct ldb_val *md_value;
 	int i, n;
@@ -182,7 +183,15 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 					 sa->lDAPDisplayName, win_errstr(werr)));
 				return werr;
 			}
-
+			/* if DRSUAPI_DS_REPLICA_NEIGHBOUR_SPECIAL_SECRET_PROCESSING is set
+			 * check if attribute is secret and send a null value
+			 * TODO: check if we can make this in the database layer
+			 */
+			if ((replica_flags & DRSUAPI_DS_REPLICA_NEIGHBOUR_SPECIAL_SECRET_PROCESSING)
+			    == DRSUAPI_DS_REPLICA_NEIGHBOUR_SPECIAL_SECRET_PROCESSING) {
+				drsuapi_process_secret_attribute(&obj->object.attribute_ctr.attributes[i],
+								 &obj->meta_data_ctr->meta_data[i]);
+			}
 			/* some attributes needs to be encrypted
 			   before being sent */
 			werr = drsuapi_encrypt_attribute(obj, session_key, rid, 
@@ -436,7 +445,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		}
 
 		werr = get_nc_changes_build_object(obj, site_res->msgs[i], sam_ctx, ncRoot_dn, 
-						   schema, &session_key, r->in.req->req8.highwatermark.highest_usn);
+						   schema, &session_key, r->in.req->req8.highwatermark.highest_usn, r->in.req->req8.replica_flags);
 		if (!W_ERROR_IS_OK(werr)) {
 			return werr;
 		}
