@@ -95,15 +95,17 @@ int drsuapi_search_with_extended_dn(struct ldb_context *ldb,
 	}
 
 	if (sort_attrib) {
-		struct ldb_server_sort_control *sort_control;
-		sort_control = talloc(req, struct ldb_server_sort_control);
+		struct ldb_server_sort_control **sort_control;
+		sort_control = talloc_array(req, struct ldb_server_sort_control *, 2);
 		if (sort_control == NULL) {
 			talloc_free(tmp_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		sort_control->attributeName = sort_attrib;
-		sort_control->orderingRule = NULL;
-		sort_control->reverse = 1;
+		sort_control[0] = talloc(req, struct ldb_server_sort_control);
+		sort_control[0]->attributeName = sort_attrib;
+		sort_control[0]->orderingRule = NULL;
+		sort_control[0]->reverse = 1;
+		sort_control[1] = NULL;
 
 		ret = ldb_request_add_control(req, LDB_CONTROL_SERVER_SORT_OID, true, sort_control);
 		if (ret != LDB_SUCCESS) {
