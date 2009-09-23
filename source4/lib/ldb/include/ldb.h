@@ -646,8 +646,8 @@ struct ldb_extended_dn_control {
 };
 
 struct ldb_server_sort_control {
-	char *attributeName;
-	char *orderingRule;
+	const char *attributeName;
+	const char *orderingRule;
 	int reverse;
 };
 
