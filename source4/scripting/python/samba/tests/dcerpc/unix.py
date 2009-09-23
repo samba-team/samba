@@ -21,6 +21,7 @@ from samba.dcerpc import unixinfo
 from samba.tests import RpcInterfaceTestCase
 
 class UnixinfoTests(RpcInterfaceTestCase):
+
     def setUp(self):
         self.conn = unixinfo.unixinfo("ncalrpc:", self.get_loadparm())
 

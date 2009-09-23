@@ -43,8 +43,6 @@ class GUIDTests(unittest.TestCase):
         guid2 = misc.GUID(text1)
         self.assertEquals(0, cmp(guid1, guid2))
         self.assertEquals(guid1, guid2)
-
-
          
         
 class PolicyHandleTests(unittest.TestCase):

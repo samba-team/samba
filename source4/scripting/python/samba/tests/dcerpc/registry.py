@@ -18,11 +18,11 @@
 #
 
 from samba.dcerpc import winreg
-import unittest
 from samba.tests import RpcInterfaceTestCase
 
 
 class WinregTests(RpcInterfaceTestCase):
+
     def setUp(self):
         self.conn = winreg.winreg("ncalrpc:", self.get_loadparm(), 
                                   self.get_credentials())

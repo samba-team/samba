@@ -24,6 +24,7 @@ from samba.tests import RpcInterfaceTestCase
 
 
 class RpcEchoTests(RpcInterfaceTestCase):
+
     def setUp(self):
         self.conn = echo.rpcecho("ncalrpc:", self.get_loadparm())
 
@@ -59,6 +60,7 @@ class RpcEchoTests(RpcInterfaceTestCase):
 
 
 class NdrEchoTests(unittest.TestCase):
+
     def test_info1_push(self):
         x = echo.info1()
         x.v = 42
