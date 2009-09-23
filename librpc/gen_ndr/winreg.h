@@ -6,6 +6,7 @@
 
 #include "librpc/gen_ndr/lsa.h"
 #include "librpc/gen_ndr/security.h"
+#include "librpc/gen_ndr/misc.h"
 #ifndef _HEADER_winreg
 #define _HEADER_winreg
 
@@ -22,39 +23,6 @@
 #define KEY_CREATE_LINK ( 0x00020 )
 #define KEY_WOW64_64KEY ( 0x00100 )
 #define KEY_WOW64_32KEY ( 0x00200 )
-
-enum winreg_Type
-#ifndef USE_UINT_ENUMS
- {
-	REG_NONE=0,
-	REG_SZ=1,
-	REG_EXPAND_SZ=2,
-	REG_BINARY=3,
-	REG_DWORD=4,
-	REG_DWORD_BIG_ENDIAN=5,
-	REG_LINK=6,
-	REG_MULTI_SZ=7,
-	REG_RESOURCE_LIST=8,
-	REG_FULL_RESOURCE_DESCRIPTOR=9,
-	REG_RESOURCE_REQUIREMENTS_LIST=10,
-	REG_QWORD=11
-}
-#else
- { __donnot_use_enum_winreg_Type=0x7FFFFFFF}
-#define REG_NONE ( 0 )
-#define REG_SZ ( 1 )
-#define REG_EXPAND_SZ ( 2 )
-#define REG_BINARY ( 3 )
-#define REG_DWORD ( 4 )
-#define REG_DWORD_BIG_ENDIAN ( 5 )
-#define REG_LINK ( 6 )
-#define REG_MULTI_SZ ( 7 )
-#define REG_RESOURCE_LIST ( 8 )
-#define REG_FULL_RESOURCE_DESCRIPTOR ( 9 )
-#define REG_RESOURCE_REQUIREMENTS_LIST ( 10 )
-#define REG_QWORD ( 11 )
-#endif
-;
 
 struct winreg_String {
 	uint16_t name_len;/* [value(strlen_m_term(name)*2)] */

@@ -23,4 +23,10 @@ void ndr_print_netr_SchannelType(struct ndr_print *ndr, const char *name, enum n
 enum ndr_err_code ndr_push_KRB5_EDATA_NTSTATUS(struct ndr_push *ndr, int ndr_flags, const struct KRB5_EDATA_NTSTATUS *r);
 enum ndr_err_code ndr_pull_KRB5_EDATA_NTSTATUS(struct ndr_pull *ndr, int ndr_flags, struct KRB5_EDATA_NTSTATUS *r);
 void ndr_print_KRB5_EDATA_NTSTATUS(struct ndr_print *ndr, const char *name, const struct KRB5_EDATA_NTSTATUS *r);
+enum ndr_err_code ndr_push_winreg_Type(struct ndr_push *ndr, int ndr_flags, enum winreg_Type r);
+enum ndr_err_code ndr_pull_winreg_Type(struct ndr_pull *ndr, int ndr_flags, enum winreg_Type *r);
+void ndr_print_winreg_Type(struct ndr_print *ndr, const char *name, enum winreg_Type r);
+enum ndr_err_code ndr_push_winreg_Data(struct ndr_push *ndr, int ndr_flags, const union winreg_Data *r);
+enum ndr_err_code ndr_pull_winreg_Data(struct ndr_pull *ndr, int ndr_flags, union winreg_Data *r);
+void ndr_print_winreg_Data(struct ndr_print *ndr, const char *name, const union winreg_Data *r);
 #endif /* _HEADER_NDR_misc */

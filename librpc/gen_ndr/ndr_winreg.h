@@ -83,9 +83,6 @@ extern const struct ndr_interface_table ndr_table_winreg;
 
 #define NDR_WINREG_CALL_COUNT (35)
 void ndr_print_winreg_AccessMask(struct ndr_print *ndr, const char *name, uint32_t r);
-enum ndr_err_code ndr_push_winreg_Type(struct ndr_push *ndr, int ndr_flags, enum winreg_Type r);
-enum ndr_err_code ndr_pull_winreg_Type(struct ndr_pull *ndr, int ndr_flags, enum winreg_Type *r);
-void ndr_print_winreg_Type(struct ndr_print *ndr, const char *name, enum winreg_Type r);
 enum ndr_err_code ndr_push_winreg_String(struct ndr_push *ndr, int ndr_flags, const struct winreg_String *r);
 enum ndr_err_code ndr_pull_winreg_String(struct ndr_pull *ndr, int ndr_flags, struct winreg_String *r);
 void ndr_print_winreg_String(struct ndr_print *ndr, const char *name, const struct winreg_String *r);
