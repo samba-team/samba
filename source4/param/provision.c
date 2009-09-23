@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    Samba utility functions
-   Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2008
+   Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2008-2009
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
 
    This program is free software; you can redistribute it and/or modify
@@ -35,7 +35,6 @@
 #include "scripting/python/modules.h"
 #include "lib/ldb/pyldb.h"
 #include "param/pyparam.h"
-#include "librpc/ndr/py_security.h"
 
 NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 			struct provision_settings *settings, 
@@ -155,6 +154,21 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 extern void initldb(void);
 extern void initsecurity(void);
 
+static PyObject *py_dom_sid_FromSid(struct dom_sid *sid)
+{
+	PyObject *mod_security, *dom_sid_Type;
+
+	mod_security = PyImport_ImportModule("samba.dcerpc.security");
+	if (mod_security == NULL)
+		return NULL;
+
+	dom_sid_Type = PyObject_GetAttrString(mod_security, "dom_sid");
+	if (dom_sid_Type == NULL)
+		return NULL;
+
+	return py_talloc_reference((PyTypeObject *)dom_sid_Type, sid);
+}
+
 NTSTATUS provision_store_self_join(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 				   struct tevent_context *event_ctx,
 				   struct provision_store_self_join_settings *settings,
@@ -237,6 +251,10 @@ NTSTATUS provision_store_self_join(TALLOC_CTX *mem_ctx, struct loadparm_context 
 			     PyString_FromString(settings->netbios_name));
 
 	py_sid = py_dom_sid_FromSid(settings->domain_sid);
+	if (py_sid == NULL) {
+		Py_DECREF(parameters);
+		goto failure;
+	}
 
 	PyDict_SetItemString(parameters, "domainsid", 
 			     py_sid);
@@ -252,12 +270,7 @@ NTSTATUS provision_store_self_join(TALLOC_CTX *mem_ctx, struct loadparm_context 
 	Py_DECREF(parameters);
 
 	if (py_result == NULL) {
-		ldb_transaction_cancel(ldb);
-		talloc_free(tmp_mem);
-
-		PyErr_Print();
-		PyErr_Clear();
-		return NT_STATUS_UNSUCCESSFUL;
+		goto failure;
 	}
 
 	ret = ldb_transaction_commit(ldb);
@@ -272,4 +285,12 @@ NTSTATUS provision_store_self_join(TALLOC_CTX *mem_ctx, struct loadparm_context 
 	talloc_free(tmp_mem);
 
 	return NT_STATUS_OK;
+
+failure:
+	ldb_transaction_cancel(ldb);
+	talloc_free(tmp_mem);
+
+	PyErr_Print();
+	PyErr_Clear();
+	return NT_STATUS_UNSUCCESSFUL;
 }

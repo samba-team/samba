@@ -23,11 +23,6 @@
 #define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
 #endif
 
-PyObject *py_dom_sid_FromSid(struct dom_sid *sid)
-{
-	return py_talloc_reference(&dom_sid_Type, sid);
-}
-
 static void PyType_AddMethods(PyTypeObject *type, PyMethodDef *methods)
 {
 	PyObject *dict;
