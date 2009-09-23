@@ -1609,6 +1609,7 @@ int samdb_search_for_parent_domain(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	if (res->count != 1) {
 		*errstring = talloc_asprintf(mem_ctx, "Invalid dn (%s), not child of a domain object",
 					     ldb_dn_get_linearized(dn));
+		DEBUG(0,(__location__ ": %s\n", *errstring));
 		talloc_free(local_ctx);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
@@ -2201,6 +2202,35 @@ int dsdb_find_guid_by_dn(struct ldb_context *ldb,
 		return ret;
 	}
 	*guid = samdb_result_guid(res->msgs[0], "objectGUID");
+	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
+}
+
+/*
+  use a DN to find a SID
+ */
+int dsdb_find_sid_by_dn(struct ldb_context *ldb, 
+			struct ldb_dn *dn, struct dom_sid *sid)
+{
+	int ret;
+	struct ldb_result *res;
+	const char *attrs[] = { "objectSID", NULL };
+	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+	struct dom_sid *s;
+
+	ZERO_STRUCTP(sid);
+
+	ret = ldb_search(ldb, tmp_ctx, &res, dn, LDB_SCOPE_BASE, attrs, NULL);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+	s = samdb_result_dom_sid(tmp_ctx, res->msgs[0], "objectSID");
+	if (s == NULL) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_NO_SUCH_OBJECT;
+	}
+	*sid = *s;
 	talloc_free(tmp_ctx);
 	return LDB_SUCCESS;
 }
