@@ -1067,10 +1067,10 @@ static WERROR dsdb_syntax_DN_drsuapi_to_ldb(struct ldb_context *ldb,
 		}
 
 		
-
-		ndr_err = ndr_pull_struct_blob_all(in->value_ctr.values[i].blob,
-						   tmp_ctx, schema->iconv_convenience, &id3,
-						   (ndr_pull_flags_fn_t)ndr_pull_drsuapi_DsReplicaObjectIdentifier3);
+		/* windows sometimes sends an extra two pad bytes here */
+		ndr_err = ndr_pull_struct_blob(in->value_ctr.values[i].blob,
+					       tmp_ctx, schema->iconv_convenience, &id3,
+					       (ndr_pull_flags_fn_t)ndr_pull_drsuapi_DsReplicaObjectIdentifier3);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
 			talloc_free(tmp_ctx);
