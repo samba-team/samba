@@ -457,11 +457,14 @@ static int replmd_op_callback(struct ldb_request *req, struct ldb_reply *ares)
 static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
+        struct ldb_control *control;
+        struct ldb_control **saved_controls;
 	struct replmd_replicated_request *ac;
 	const struct dsdb_schema *schema;
 	enum ndr_err_code ndr_err;
 	struct ldb_request *down_req;
 	struct ldb_message *msg;
+        const DATA_BLOB *guid_blob;
 	struct GUID guid;
 	struct ldb_val guid_value;
 	struct replPropertyMetaDataBlob nmd;
@@ -473,6 +476,14 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	char *time_str;
 	int ret;
 	uint32_t i, ni=0;
+	int allow_add_guid=0;
+	int remove_current_guid=0;
+
+        /* check if there's a show deleted control */
+        control = ldb_request_get_control(req, LDB_CONTROL_RELAX_OID);
+	if (control) {
+		allow_add_guid = 1;
+	}
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.add.message->dn)) {
@@ -498,10 +509,26 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 
 	ac->schema = schema;
 
-	if (ldb_msg_find_element(req->op.add.message, "objectGUID") != NULL) {
-		ldb_debug_set(ldb, LDB_DEBUG_ERROR,
+        guid_blob = ldb_msg_find_ldb_val(req->op.add.message, "objectGUID");
+	if ( guid_blob != NULL ) {
+		if( !allow_add_guid ) {
+			ldb_debug_set(ldb, LDB_DEBUG_ERROR,
 			      "replmd_add: it's not allowed to add an object with objectGUID\n");
-		return LDB_ERR_UNWILLING_TO_PERFORM;
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		} else {
+			NTSTATUS status = GUID_from_data_blob(guid_blob,&guid);
+		        if ( !NT_STATUS_IS_OK(status)) {
+       				ldb_debug_set(ldb, LDB_DEBUG_ERROR,
+				      "replmd_add: Unable to parse as a GUID the attribute objectGUID\n");
+				return LDB_ERR_UNWILLING_TO_PERFORM;
+			}
+			/* we remove this attribute as it can be a string and will not be treated 
+			correctly and then we will readd it latter on in the good format*/
+			remove_current_guid = 1;
+		}
+	} else {
+		/* a new GUID */
+		guid = GUID_random();
 	}
 
 	/* Get a sequence number from the backend */
@@ -510,8 +537,6 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 		return ret;
 	}
 
-	/* a new GUID */
-	guid = GUID_random();
 
 	/* get our invocationId */
 	our_invocation_id = samdb_ntds_invocation_id(ldb);
@@ -533,6 +558,9 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	time_str = ldb_timestring(msg, t);
 	if (!time_str) {
 		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	if (remove_current_guid) {
+		ldb_msg_remove_attr(msg,"objectGUID");
 	}
 
 	/* 
@@ -679,6 +707,11 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	ret = replmd_notify(module, msg->dn, seq_num);
 	if (ret != LDB_SUCCESS) {
 		return ret;
+	}
+
+       	/* if a control is there remove if from the modified request */
+	if (control && !save_controls(control, down_req, &saved_controls)) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* go on with the call chain */
