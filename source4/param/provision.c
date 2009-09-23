@@ -36,6 +36,14 @@
 #include "lib/ldb/pyldb.h"
 #include "param/pyparam.h"
 
+static PyObject *provision_module(void)
+{
+	PyObject *name = PyString_FromString("samba.provision");
+	if (name == NULL)
+		return NULL;
+	return PyImport_Import(name);
+}
+
 NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 			struct provision_settings *settings, 
 			struct provision_result *result)
@@ -49,7 +57,7 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 	Py_Initialize();
 	py_update_path("bin"); /* FIXME: Can't assume this is always the case */
 
-	provision_mod = PyImport_Import(PyString_FromString("samba.provision"));
+	provision_mod = provision_module();
 
 	if (provision_mod == NULL) {
 		PyErr_Print();
@@ -152,7 +160,6 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 }
 
 extern void initldb(void);
-extern void initsecurity(void);
 
 static PyObject *py_dom_sid_FromSid(struct dom_sid *sid)
 {
@@ -206,8 +213,7 @@ NTSTATUS provision_store_self_join(TALLOC_CTX *mem_ctx, struct loadparm_context 
 	Py_Initialize();
 	py_update_path("bin"); /* FIXME: Can't assume this is always the case */
 	initldb();
-	initsecurity();
-	provision_mod = PyImport_Import(PyString_FromString("samba.provision"));
+	provision_mod = provision_module();
 
 	if (provision_mod == NULL) {
 		PyErr_Print();
