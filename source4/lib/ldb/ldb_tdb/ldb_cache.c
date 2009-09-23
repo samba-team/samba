@@ -190,8 +190,6 @@ static int ltdb_baseinfo_init(struct ldb_module *module)
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	struct ldb_message *msg;
-	struct ldb_message_element el;
-	struct ldb_val val;
 	int ret;
 	/* the initial sequence number must be different from the one
 	   set in ltdb_cache_free(). Thanks to Jon for pointing this
@@ -202,31 +200,21 @@ static int ltdb_baseinfo_init(struct ldb_module *module)
 
 	ltdb->sequence_number = atof(initial_sequence_number);
 
-	msg = talloc(ltdb, struct ldb_message);
-	if (msg == NULL) {
-		goto failed;
-	}
-
-	msg->num_elements = 1;
-	msg->elements = &el;
+	msg = ldb_msg_new(ltdb);
 	msg->dn = ldb_dn_new(msg, ldb, LTDB_BASEINFO);
 	if (!msg->dn) {
 		goto failed;
 	}
-	el.name = talloc_strdup(msg, LTDB_SEQUENCE_NUMBER);
-	if (!el.name) {
+
+	if (ldb_msg_add_string(msg, LTDB_SEQUENCE_NUMBER, initial_sequence_number) != 0) {
 		goto failed;
 	}
-	el.values = &val;
-	el.num_values = 1;
-	el.flags = 0;
-	val.data = (uint8_t *)talloc_strdup(msg, initial_sequence_number);
-	if (!val.data) {
+
+	if (ldb_msg_add_string(msg, LTDB_INDEX_VERSION, "1") != 0) {
 		goto failed;
 	}
-	val.length = 1;
-	
-	ret = ltdb_store(module, msg, TDB_INSERT);
+
+	ret = ltdb_store(module, msg, msg, TDB_INSERT);
 
 	talloc_free(msg);
 
@@ -324,6 +312,16 @@ int ltdb_cache_load(struct ldb_module *module)
 		goto done;
 	}
 	ltdb->sequence_number = seq;
+
+	/* Determine what index format we are in (updated on reindex) */
+	ltdb->index_version = ldb_msg_find_attr_as_uint64(baseinfo, LTDB_INDEX_VERSION, 0);
+
+	if (ltdb->index_version > 1) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR, 
+			  "Invalid index version %d on database.  This ldb supports only index version 0 and 1",
+			  ltdb->index_version);
+		goto failed;
+	}
 
 	/* Read an interpret database options */
 	options = talloc(ltdb->cache, struct ldb_message);
@@ -448,13 +446,15 @@ int ltdb_increase_sequence_number(struct ldb_module *module)
 
 	s = ldb_timestring(msg, t);
 	if (s == NULL) {
+		talloc_free(msg);
+		errno = ENOMEM;
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	val_time.data = (uint8_t *)s;
 	val_time.length = strlen(s);
 
-	ret = ltdb_modify_internal(module, msg);
+	ret = ltdb_modify_internal(module, msg, msg);
 
 	talloc_free(msg);
 
@@ -465,6 +465,50 @@ int ltdb_increase_sequence_number(struct ldb_module *module)
 	/* updating the tdb_seqnum here avoids us reloading the cache
 	   records due to our own modification */
 	ltdb->tdb_seqnum = tdb_get_seqnum(ltdb->tdb);
+
+	return ret;
+}
+
+/*
+  increase the index version number to indicate a database change
+*/
+int ltdb_set_casefold_index(struct ldb_module *module)
+{
+	struct ldb_context *ldb;
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
+	struct ldb_message *msg;
+	struct ldb_message_element *el;
+
+	int ret;
+		
+	ldb = ldb_module_get_ctx(module);
+
+	msg = ldb_msg_new(ltdb);
+	if (msg == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	msg->dn = ldb_dn_new(msg, ldb, LTDB_BASEINFO);
+	if (msg->dn == NULL) {
+		talloc_free(msg);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (ldb_msg_add_string(msg, LTDB_INDEX_VERSION, "1") != 0) {
+		talloc_free(msg);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	el = ldb_msg_find_element(msg, LTDB_INDEX_VERSION);
+	if (!el) {
+		talloc_free(msg);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	el->flags = LDB_FLAG_MOD_REPLACE;
+
+	ret = ltdb_modify_internal(module, msg, msg);
+
+	talloc_free(msg);
 
 	return ret;
 }

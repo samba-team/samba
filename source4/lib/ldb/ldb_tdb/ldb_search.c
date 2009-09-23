@@ -232,29 +232,23 @@ static int ltdb_search_base(struct ldb_module *module, struct ldb_dn *dn)
 }
 
 /*
-  search the database for a single simple dn, returning all attributes
+  search the database for a single tdb key, returning all attributes
   in a single message
 
   return LDB_ERR_NO_SUCH_OBJECT on record-not-found
   and LDB_SUCCESS on success
 */
-int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_message *msg)
+int ltdb_search_dn1_key(struct ldb_module *module, 
+			TDB_DATA tdb_key, struct ldb_message *msg)
 {
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	int ret;
-	TDB_DATA tdb_key, tdb_data;
+	TDB_DATA tdb_data;
 
 	memset(msg, 0, sizeof(*msg));
 
-	/* form the key */
-	tdb_key = ltdb_key(module, dn);
-	if (!tdb_key.dptr) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
 	tdb_data = tdb_fetch(ltdb->tdb, tdb_key);
-	talloc_free(tdb_key.dptr);
 	if (!tdb_data.dptr) {
 		return LDB_ERR_NO_SUCH_OBJECT;
 	}
@@ -272,13 +266,36 @@ int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_mes
 	}
 
 	if (!msg->dn) {
-		msg->dn = ldb_dn_copy(msg, dn);
-	}
-	if (!msg->dn) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	return LDB_SUCCESS;
+}
+
+/*
+  search the database for a single simple dn, returning all attributes
+  in a single message
+
+  return LDB_ERR_NO_SUCH_OBJECT on record-not-found
+  and LDB_SUCCESS on success
+*/
+
+int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_message *msg)
+{
+	int ret;
+	TDB_DATA tdb_key;
+
+	memset(msg, 0, sizeof(*msg));
+
+	/* form the key */
+	tdb_key = ltdb_key(msg, dn);
+	if (!tdb_key.dptr) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ltdb_search_dn1_key(module, tdb_key, msg);
+	talloc_free(tdb_key.dptr);
+	return ret;
 }
 
 /*
