@@ -307,6 +307,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	const char *attrs[] = { "*", "parentGUID", "distinguishedName", NULL };
 	WERROR werr;
 	char* search_filter;
+	enum ldb_scope scope = LDB_SCOPE_SUBTREE;
 
 	*r->out.level_out = 6;
 	/* TODO: linked attributes*/
@@ -372,9 +373,14 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 						"(&%s(isCriticalSystemObject=true))",
 						search_filter);
 	}
+
 	ncRoot_dn = ldb_dn_new(mem_ctx, sam_ctx, ncRoot->dn);
+	if ((r->in.req->req8.replica_flags & DRSUAPI_DS_REPLICA_NEIGHBOUR_ASYNC_REP)
+	    == DRSUAPI_DS_REPLICA_NEIGHBOUR_ASYNC_REP) {
+		scope = LDB_SCOPE_BASE;
+	}
 	ret = drsuapi_search_with_extended_dn(sam_ctx, mem_ctx, &site_res,
-					      ncRoot_dn, LDB_SCOPE_SUBTREE, attrs,
+					      ncRoot_dn, scope, attrs,
 					      "distinguishedName",
 					      search_filter);
 	if (ret != LDB_SUCCESS) {
