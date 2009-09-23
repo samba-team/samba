@@ -18,6 +18,7 @@
  */
 
 #include "includes.h"
+#include "../librpc/gen_ndr/ndr_winreg.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY
@@ -109,4 +110,33 @@ WERROR reg_pull_multi_sz(TALLOC_CTX *mem_ctx, const void *buf, size_t len,
 	}
 
 	return WERR_OK;
+}
+
+/*******************************************************************
+ push a string in unix charset into a REG_SZ UCS2 null terminated blob
+ ********************************************************************/
+
+bool push_reg_sz(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, const char *s)
+{
+	union winreg_Data data;
+	enum ndr_err_code ndr_err;
+	data.string = s;
+	ndr_err = ndr_push_union_blob(blob, mem_ctx, NULL, &data, REG_SZ,
+			(ndr_push_flags_fn_t)ndr_push_winreg_Data);
+	return NDR_ERR_CODE_IS_SUCCESS(ndr_err);
+}
+
+/*******************************************************************
+ push a string_array in unix charset into a REG_MULTI_SZ UCS2 double-null
+ terminated blob
+ ********************************************************************/
+
+bool push_reg_multi_sz(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, const char **a)
+{
+	union winreg_Data data;
+	enum ndr_err_code ndr_err;
+	data.string_array = a;
+	ndr_err = ndr_push_union_blob(blob, mem_ctx, NULL, &data, REG_MULTI_SZ,
+			(ndr_push_flags_fn_t)ndr_push_winreg_Data);
+	return NDR_ERR_CODE_IS_SUCCESS(ndr_err);
 }
