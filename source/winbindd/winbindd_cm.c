@@ -2175,7 +2175,7 @@ NTSTATUS cm_connect_lsa_tcp(struct winbindd_domain *domain,
 
 	status = init_dc_connection(domain);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
+		return status;
 	}
 
 	conn = &domain->conn;
