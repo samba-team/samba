@@ -107,16 +107,6 @@ typedef struct {		/* UNISTR - unicode string size and buffer */
 				   little-endian. ***MUST*** be null-terminated */
 } UNISTR;
 
-typedef struct {		/* UNISTR2 - unicode string size (in 
-				   uint16 unicode chars) and buffer */
-	uint32 uni_max_len;
-	uint32 offset;
-	uint32 uni_str_len;
-	uint16 *buffer;		/* unicode characters. ***MUST*** be little-endian. 
-				  **must** be null-terminated and the uni_str_len 
-				  should include the NULL character */
-} UNISTR2;
-
 /*
  * I'm really wondering how many different time formats
  * I will have to cope with

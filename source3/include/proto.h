@@ -5653,7 +5653,6 @@ bool smb_io_system_time(const char *desc, prs_struct *ps, int depth, SYSTEMTIME 
 bool make_systemtime(SYSTEMTIME *systime, struct tm *unixtime);
 bool smb_io_uuid(const char *desc, struct GUID *uuid, 
 		 prs_struct *ps, int depth);
-void init_unistr2(UNISTR2 *str, const char *buf, enum unistr2_term_codes flags);
 
 /* The following definitions come from rpc_parse/parse_prs.c  */
 
