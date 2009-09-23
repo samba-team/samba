@@ -55,7 +55,7 @@ int drsuapi_search_with_extended_dn(struct ldb_context *ldb,
 				    enum ldb_scope scope,
 				    const char * const *attrs,
 				    const char *sort_attrib,
-				    const char *format, ...) PRINTF_ATTRIBUTE(8,9);
+				    const char *filter);
 
 WERROR drs_security_level_check(struct dcesrv_call_state *dce_call,
 				const char* call);

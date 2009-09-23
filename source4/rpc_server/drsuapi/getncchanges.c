@@ -306,7 +306,8 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	DATA_BLOB session_key;
 	const char *attrs[] = { "*", "parentGUID", "distinguishedName", NULL };
 	WERROR werr;
-	
+	char* search_filter;
+
 	*r->out.level_out = 6;
 	/* TODO: linked attributes*/
 	r->out.ctr->ctr6.linked_attributes_count = 0;
@@ -355,12 +356,21 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 
 	/* Construct response. */
+	search_filter = talloc_asprintf(mem_ctx,
+					"(uSNChanged>=%llu)",
+					(unsigned long long)(r->in.req->req8.highwatermark.highest_usn+1));
+
+	if ((r->in.req->req8.replica_flags & DRSUAPI_DS_REPLICA_NEIGHBOUR_CRITICAL_ONLY)
+	    == DRSUAPI_DS_REPLICA_NEIGHBOUR_CRITICAL_ONLY) {
+		search_filter = talloc_asprintf(mem_ctx,
+						"(&%s(isCriticalSystemObject=true))",
+						search_filter);
+	}
 	ncRoot_dn = ldb_dn_new(mem_ctx, sam_ctx, ncRoot->dn);
 	ret = drsuapi_search_with_extended_dn(sam_ctx, mem_ctx, &site_res,
 					      ncRoot_dn, LDB_SCOPE_SUBTREE, attrs,
 					      "distinguishedName",
-					      "(uSNChanged>=%llu)", 
-					      (unsigned long long)(r->in.req->req8.highwatermark.highest_usn+1));
+					      search_filter);
 	if (ret != LDB_SUCCESS) {
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}

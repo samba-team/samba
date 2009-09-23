@@ -50,12 +50,11 @@ int drsuapi_search_with_extended_dn(struct ldb_context *ldb,
 				    enum ldb_scope scope,
 				    const char * const *attrs,
 				    const char *sort_attrib,
-				    const char *format, ...)
+				    const char *filter)
 {
 	va_list ap;
 	int ret;
 	struct ldb_request *req;
-	char *filter;
 	TALLOC_CTX *tmp_ctx;
 	struct ldb_result *res;
 
@@ -65,10 +64,6 @@ int drsuapi_search_with_extended_dn(struct ldb_context *ldb,
 	if (!res) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-
-	va_start(ap, format);
-	filter = talloc_vasprintf(tmp_ctx, format, ap);
-	va_end(ap);
 
 	if (filter == NULL) {
 		talloc_free(tmp_ctx);
