@@ -332,6 +332,12 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		return WERR_DS_DRA_BAD_NC;
 	}
 
+	if ((r->in.req->req8.replica_flags & DRSUAPI_DS_REPLICA_NEIGHBOUR_FULL_SYNC_PACKET)
+	    == DRSUAPI_DS_REPLICA_NEIGHBOUR_FULL_SYNC_PACKET) {
+		/* Ignore the _in_ uptpdateness vector*/
+		r->in.req->req8.uptodateness_vector = NULL;
+	} 
+
 	werr = drs_security_level_check(dce_call, "DsGetNCChanges");
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
