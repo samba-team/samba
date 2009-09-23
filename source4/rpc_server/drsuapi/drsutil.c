@@ -44,12 +44,13 @@ char *drs_ObjectIdentifier_to_string(TALLOC_CTX *mem_ctx,
 }
 
 int drsuapi_search_with_extended_dn(struct ldb_context *ldb,
-				TALLOC_CTX *mem_ctx,
-				struct ldb_result **_res,
-				struct ldb_dn *basedn,
-				enum ldb_scope scope,
-				const char * const *attrs,
-				const char *format, ...)
+				    TALLOC_CTX *mem_ctx,
+				    struct ldb_result **_res,
+				    struct ldb_dn *basedn,
+				    enum ldb_scope scope,
+				    const char * const *attrs,
+				    const char *sort_attrib,
+				    const char *format, ...)
 {
 	va_list ap;
 	int ret;
@@ -92,6 +93,24 @@ int drsuapi_search_with_extended_dn(struct ldb_context *ldb,
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
+
+	if (sort_attrib) {
+		struct ldb_server_sort_control *sort_control;
+		sort_control = talloc(req, struct ldb_server_sort_control);
+		if (sort_control == NULL) {
+			talloc_free(tmp_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		sort_control->attributeName = sort_attrib;
+		sort_control->orderingRule = NULL;
+		sort_control->reverse = 1;
+
+		ret = ldb_request_add_control(req, LDB_CONTROL_SERVER_SORT_OID, true, sort_control);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
 
 	ret = ldb_request(ldb, req);
 	if (ret == LDB_SUCCESS) {

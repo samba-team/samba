@@ -268,7 +268,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	struct drsuapi_DsReplicaObjectListItemEx **currentObject;
 	NTSTATUS status;
 	DATA_BLOB session_key;
-	const char *attrs[] = { "*", "parentGUID", NULL };
+	const char *attrs[] = { "*", "parentGUID", "distinguishedName", NULL };
 	WERROR werr;
 	
 	*r->out.level_out = 6;
@@ -322,6 +322,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	ncRoot_dn = ldb_dn_new(mem_ctx, sam_ctx, ncRoot->dn);
 	ret = drsuapi_search_with_extended_dn(sam_ctx, mem_ctx, &site_res,
 					      ncRoot_dn, LDB_SCOPE_SUBTREE, attrs,
+					      "distinguishedName",
 					      "(uSNChanged>=%llu)", 
 					      (unsigned long long)(r->in.req->req8.highwatermark.highest_usn+1));
 	if (ret != LDB_SUCCESS) {
