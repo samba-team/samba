@@ -221,7 +221,7 @@ size_t regval_build_multi_sz( char **values, uint16 **buffer )
 	int i;
 	size_t buf_size = 0;
 	uint16 *buf, *b;
-	UNISTR2 sz;
+	DATA_BLOB sz;
 
 	if ( !values || !buffer )
 		return 0;
@@ -234,14 +234,14 @@ size_t regval_build_multi_sz( char **values, uint16 **buffer )
 	}
 
 	for ( i=0; values[i]; i++ ) {
-		ZERO_STRUCT( sz );
+
 		/* DEBUG(0,("regval_build_multi_sz: building [%s]\n",values[i])); */
-		init_unistr2( &sz, values[i], UNI_STR_TERMINATE );
+		push_reg_sz(talloc_tos(), &sz, values[i]);
 
 		/* Alloc some more memory.  Always add one one to account for the 
 		   double NULL termination */
 
-		b = TALLOC_REALLOC_ARRAY( NULL, buf, uint16, buf_size+sz.uni_str_len+1 );
+		b = TALLOC_REALLOC_ARRAY( NULL, buf, uint16, buf_size+sz.length/2+1 );
 		if ( !b ) {
 			DEBUG(0,("regval_build_multi_sz: talloc() reallocation error!\n"));
 			TALLOC_FREE( buffer );
@@ -250,12 +250,12 @@ size_t regval_build_multi_sz( char **values, uint16 **buffer )
 		buf = b;
 
 		/* copy the unistring2 buffer and increment the size */
-		/* dump_data(1,sz.buffer,sz.uni_str_len*2); */
-		memcpy( buf+buf_size, sz.buffer, sz.uni_str_len*2 );
-		buf_size += sz.uni_str_len;
+		/* dump_data(1,sz.data,sz.length); */
+		memcpy( buf+buf_size, sz.data, sz.length);
+		buf_size += sz.length;
 
 		/* cleanup rather than leaving memory hanging around */
-		TALLOC_FREE( sz.buffer );
+		TALLOC_FREE( sz.data );
 	}
 
 	buf[buf_size++] = 0x0;

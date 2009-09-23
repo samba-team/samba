@@ -386,7 +386,7 @@ static bool key_printers_store_keys( const char *key, struct regsubkey_ctr *subk
 static void fill_in_printer_values(NT_PRINTER_INFO_LEVEL_2 *info2, struct regval_ctr *values)
 {
 	struct spoolss_DeviceMode *devmode;
-	UNISTR2		data;
+	DATA_BLOB	data;
 	char 		*p;
 	uint32 printer_status = PRINTER_STATUS_OK;
 	
@@ -406,35 +406,36 @@ static void fill_in_printer_values(NT_PRINTER_INFO_LEVEL_2 *info2, struct regval
 		p = info2->printername;
 	else
 		p++;
-	init_unistr2( &data, p, UNI_STR_TERMINATE);
-	regval_ctr_addvalue( values, "Name", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
 
-	init_unistr2( &data, info2->location, UNI_STR_TERMINATE);
-	regval_ctr_addvalue( values, "Location", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+	push_reg_sz(talloc_tos(), &data, p);
+	regval_ctr_addvalue( values, "Name", REG_SZ, (char*)data.data, data.length);
 
-	init_unistr2( &data, info2->comment, UNI_STR_TERMINATE);
-	regval_ctr_addvalue( values, "Description", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+	push_reg_sz(talloc_tos(), &data, info2->location);
+	regval_ctr_addvalue( values, "Location", REG_SZ, (char*)data.data, data.length);
 
-	init_unistr2( &data, info2->parameters, UNI_STR_TERMINATE);
-	regval_ctr_addvalue( values, "Parameters", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+	push_reg_sz(talloc_tos(), &data, info2->comment);
+	regval_ctr_addvalue( values, "Description", REG_SZ, (char*)data.data, data.length);
 
-	init_unistr2( &data, info2->portname, UNI_STR_TERMINATE);
-	regval_ctr_addvalue( values, "Port", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+	push_reg_sz(talloc_tos(), &data, info2->parameters);
+	regval_ctr_addvalue( values, "Parameters", REG_SZ, (char*)data.data, data.length);
 
-	init_unistr2( &data, info2->sharename, UNI_STR_TERMINATE);
-	regval_ctr_addvalue( values, "Share Name", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+	push_reg_sz(talloc_tos(), &data, info2->portname);
+	regval_ctr_addvalue( values, "Port", REG_SZ, (char*)data.data, data.length);
 
-	init_unistr2( &data, info2->drivername, UNI_STR_TERMINATE);
-	regval_ctr_addvalue( values, "Printer Driver", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+	push_reg_sz(talloc_tos(), &data, info2->sharename);
+	regval_ctr_addvalue( values, "Share Name", REG_SZ, (char*)data.data, data.length);
 
-	init_unistr2( &data, info2->sepfile, UNI_STR_TERMINATE);
-	regval_ctr_addvalue( values, "Separator File", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+	push_reg_sz(talloc_tos(), &data, info2->drivername);
+	regval_ctr_addvalue( values, "Printer Driver", REG_SZ, (char*)data.data, data.length);
 
-	init_unistr2( &data, "WinPrint", UNI_STR_TERMINATE);
-	regval_ctr_addvalue( values, "Print Processor",  REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+	push_reg_sz(talloc_tos(), &data, info2->sepfile);
+	regval_ctr_addvalue( values, "Separator File", REG_SZ, (char*)data.data, data.length);
 
-	init_unistr2( &data, "RAW", UNI_STR_TERMINATE);
-	regval_ctr_addvalue( values, "Datatype", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+	push_reg_sz(talloc_tos(), &data, "WinPrint");
+	regval_ctr_addvalue( values, "Print Processor",  REG_SZ, (char*)data.data, data.length);
+
+	push_reg_sz(talloc_tos(), &data, "RAW");
+	regval_ctr_addvalue( values, "Datatype", REG_SZ, (char*)data.data, data.length);
 
 	/* stream the device mode */
 
@@ -894,31 +895,31 @@ static void fill_in_driver_values(NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3, struct 
 	int buffer_size = 0;
 	int i, length;
 	const char *filename;
-	UNISTR2	data;
+	DATA_BLOB data;
 
 	filename = dos_basename( info3->driverpath );
-	init_unistr2( &data, filename, UNI_STR_TERMINATE);
-	regval_ctr_addvalue( values, "Driver", REG_SZ, (char*)data.buffer,
-		data.uni_str_len*sizeof(uint16) );
+	push_reg_sz(talloc_tos(), &data, filename);
+	regval_ctr_addvalue( values, "Driver", REG_SZ,
+		(char *)data.data, data.length);
 
 	filename = dos_basename( info3->configfile );
-	init_unistr2( &data, filename, UNI_STR_TERMINATE);
-	regval_ctr_addvalue( values, "Configuration File", REG_SZ, (char*)data.buffer, 
-		data.uni_str_len*sizeof(uint16) );
+	push_reg_sz(talloc_tos(), &data, filename);
+	regval_ctr_addvalue( values, "Configuration File", REG_SZ,
+		(char *)data.data, data.length);
 
 	filename = dos_basename( info3->datafile );
-	init_unistr2( &data, filename, UNI_STR_TERMINATE);
-	regval_ctr_addvalue( values, "Data File", REG_SZ, (char*)data.buffer,
-		data.uni_str_len*sizeof(uint16) );
+	push_reg_sz(talloc_tos(), &data, filename);
+	regval_ctr_addvalue( values, "Data File", REG_SZ,
+		(char *)data.data, data.length);
 
 	filename = dos_basename( info3->helpfile );
-	init_unistr2( &data, filename, UNI_STR_TERMINATE);
-	regval_ctr_addvalue( values, "Help File", REG_SZ, (char*)data.buffer,
-		data.uni_str_len*sizeof(uint16) );
+	push_reg_sz(talloc_tos(), &data, filename);
+	regval_ctr_addvalue( values, "Help File", REG_SZ,
+		(char *)data.data, data.length);
 
-	init_unistr2( &data, info3->defaultdatatype, UNI_STR_TERMINATE);
-	regval_ctr_addvalue( values, "Data Type", REG_SZ, (char*)data.buffer,
-		data.uni_str_len*sizeof(uint16) );
+	push_reg_sz(talloc_tos(), &data, info3->defaultdatatype);
+	regval_ctr_addvalue( values, "Data Type", REG_SZ,
+		(char *)data.data, data.length);
 
 	regval_ctr_addvalue( values, "Version", REG_DWORD, (char*)&info3->cversion, 
 		sizeof(info3->cversion) );
@@ -940,8 +941,8 @@ static void fill_in_driver_values(NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3, struct 
 				break;
 			}
 
-			init_unistr2( &data, filename, UNI_STR_TERMINATE);
-			memcpy( buffer+buffer_size, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+			push_reg_sz(talloc_tos(), &data, filename);
+			memcpy( buffer+buffer_size, (char*)data.data, data.length);
 
 			buffer_size += (length + 1)*sizeof(uint16);
 		}

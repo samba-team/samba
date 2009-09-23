@@ -40,7 +40,7 @@ bool eventlog_init_keys(void)
 	uint32 uiMaxSize;
 	uint32 uiRetention;
 	uint32 uiCategoryCount;
-	UNISTR2 data;
+	DATA_BLOB data;
 	TALLOC_CTX *ctx = talloc_tos();
 	WERROR werr;
 
@@ -114,18 +114,16 @@ bool eventlog_init_keys(void)
 			regval_ctr_addvalue(values, "Retention", REG_DWORD,
 					     (char *)&uiRetention,
 					     sizeof(uint32));
-			init_unistr2(&data, *elogs, UNI_STR_TERMINATE);
+			push_reg_sz(talloc_tos(), &data, *elogs);
 
 			regval_ctr_addvalue(values, "PrimaryModule", REG_SZ,
-					     (char *)data.buffer,
-					     data.uni_str_len *
-					     sizeof(uint16));
-			init_unistr2(&data, *elogs, UNI_STR_TERMINATE);
+					     (char *)data.data,
+					     data.length);
+			push_reg_sz(talloc_tos(), &data, *elogs);
 
 			regval_ctr_addvalue(values, "Sources", REG_MULTI_SZ,
-					     (char *)data.buffer,
-					     data.uni_str_len *
-					     sizeof(uint16));
+					     (char *)data.data,
+					     data.length);
 
 			evtfilepath = talloc_asprintf(ctx,
 					"%%SystemRoot%%\\system32\\config\\%s.tdb",
@@ -133,9 +131,9 @@ bool eventlog_init_keys(void)
 			if (!evtfilepath) {
 				TALLOC_FREE(values);
 			}
-			init_unistr2(&data, evtfilepath, UNI_STR_TERMINATE);
-			regval_ctr_addvalue(values, "File", REG_EXPAND_SZ, (char *)data.buffer,
-					     data.uni_str_len * sizeof(uint16));
+			push_reg_sz(talloc_tos(), &data, evtfilepath);
+			regval_ctr_addvalue(values, "File", REG_EXPAND_SZ, (char *)data.data,
+					     data.length);
 			regdb_store_values(evtlogpath, values);
 
 		}
@@ -166,15 +164,13 @@ bool eventlog_init_keys(void)
 					     REG_DWORD,
 					     ( char * ) &uiCategoryCount,
 					     sizeof( uint32 ) );
-			init_unistr2( &data,
-				      "%SystemRoot%\\system32\\eventlog.dll",
-				      UNI_STR_TERMINATE );
+			push_reg_sz(talloc_tos(), &data,
+				      "%SystemRoot%\\system32\\eventlog.dll");
 
 			regval_ctr_addvalue( values, "CategoryMessageFile",
 					     REG_EXPAND_SZ,
-					     ( char * ) data.buffer,
-					     data.uni_str_len *
-					     sizeof( uint16 ) );
+					     ( char * ) data.data,
+					     data.length);
 			regdb_store_values( evtlogpath, values );
 		}
 		TALLOC_FREE(values);
@@ -203,7 +199,7 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 	struct regsubkey_ctr *subkeys;
 	struct regval_ctr *values;
 	struct regval_blob *rval;
-	UNISTR2 data;
+	DATA_BLOB data;
 	uint16 *msz_wp;
 	int mbytes, ii;
 	bool already_in;
@@ -373,11 +369,11 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 
 	regdb_fetch_values( evtlogpath, values );
 
-	init_unistr2( &data, messagefile, UNI_STR_TERMINATE );
+	push_reg_sz(talloc_tos(), &data, messagefile);
 
 	regval_ctr_addvalue( values, "EventMessageFile", REG_SZ,
-			     ( char * ) data.buffer,
-			     data.uni_str_len * sizeof( uint16 ) );
+			     ( char * ) data.data,
+			     data.length);
 	regdb_store_values( evtlogpath, values );
 
 	TALLOC_FREE(values);

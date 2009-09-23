@@ -6074,7 +6074,7 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 	NT_PRINTER_INFO_LEVEL *printer = NULL, *old_printer = NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 	WERROR result;
-	UNISTR2 buffer;
+	DATA_BLOB buffer;
 	fstring asc_buffer;
 
 	DEBUG(8,("update_printer\n"));
@@ -6184,17 +6184,17 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 	 */
 
 	if (!strequal(printer->info_2->comment, old_printer->info_2->comment)) {
-		init_unistr2( &buffer, printer->info_2->comment, UNI_STR_TERMINATE);
+		push_reg_sz(talloc_tos(), &buffer, printer->info_2->comment);
 		set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "description",
-			REG_SZ, (uint8_t *)buffer.buffer, buffer.uni_str_len*2 );
+			REG_SZ, buffer.data, buffer.length);
 
 		notify_printer_comment(snum, printer->info_2->comment);
 	}
 
 	if (!strequal(printer->info_2->sharename, old_printer->info_2->sharename)) {
-		init_unistr2( &buffer, printer->info_2->sharename, UNI_STR_TERMINATE);
+		push_reg_sz(talloc_tos(), &buffer, printer->info_2->sharename);
 		set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "shareName",
-			REG_SZ, (uint8_t *)buffer.buffer, buffer.uni_str_len*2 );
+			REG_SZ, buffer.data, buffer.length);
 
 		notify_printer_sharename(snum, printer->info_2->sharename);
 	}
@@ -6208,25 +6208,25 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 			pname = printer->info_2->printername;
 
 
-		init_unistr2( &buffer, pname, UNI_STR_TERMINATE);
+		push_reg_sz(talloc_tos(), &buffer, pname);
 		set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "printerName",
-			REG_SZ, (uint8_t *)buffer.buffer, buffer.uni_str_len*2 );
+			REG_SZ, buffer.data, buffer.length);
 
 		notify_printer_printername( snum, pname );
 	}
 
 	if (!strequal(printer->info_2->portname, old_printer->info_2->portname)) {
-		init_unistr2( &buffer, printer->info_2->portname, UNI_STR_TERMINATE);
+		push_reg_sz(talloc_tos(), &buffer, printer->info_2->portname);
 		set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "portName",
-			REG_SZ, (uint8_t *)buffer.buffer, buffer.uni_str_len*2 );
+			REG_SZ, buffer.data, buffer.length);
 
 		notify_printer_port(snum, printer->info_2->portname);
 	}
 
 	if (!strequal(printer->info_2->location, old_printer->info_2->location)) {
-		init_unistr2( &buffer, printer->info_2->location, UNI_STR_TERMINATE);
+		push_reg_sz(talloc_tos(), &buffer, printer->info_2->location);
 		set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "location",
-			REG_SZ, (uint8_t *)buffer.buffer, buffer.uni_str_len*2 );
+			REG_SZ, buffer.data, buffer.length);
 
 		notify_printer_location(snum, printer->info_2->location);
 	}
@@ -6234,17 +6234,17 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 	/* here we need to update some more DsSpooler keys */
 	/* uNCName, serverName, shortServerName */
 
-	init_unistr2( &buffer, global_myname(), UNI_STR_TERMINATE);
+	push_reg_sz(talloc_tos(), &buffer, global_myname());
 	set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "serverName",
-		REG_SZ, (uint8_t *)buffer.buffer, buffer.uni_str_len*2 );
+		REG_SZ, buffer.data, buffer.length);
 	set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "shortServerName",
-		REG_SZ, (uint8_t *)buffer.buffer, buffer.uni_str_len*2 );
+		REG_SZ, buffer.data, buffer.length);
 
 	slprintf( asc_buffer, sizeof(asc_buffer)-1, "\\\\%s\\%s",
                  global_myname(), printer->info_2->sharename );
-	init_unistr2( &buffer, asc_buffer, UNI_STR_TERMINATE);
+	push_reg_sz(talloc_tos(), &buffer, asc_buffer);
 	set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "uNCName",
-		REG_SZ, (uint8_t *)buffer.buffer, buffer.uni_str_len*2 );
+		REG_SZ, buffer.data, buffer.length);
 
 	/* Update printer info */
 	result = mod_a_printer(printer, 2);

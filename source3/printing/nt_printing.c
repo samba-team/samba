@@ -3167,7 +3167,7 @@ static void store_printer_guid(NT_PRINTER_INFO_LEVEL_2 *info2,
 {
 	int i;
 	struct regval_ctr *ctr=NULL;
-	UNISTR2 unistr_guid;
+	DATA_BLOB unistr_guid;
 
 	/* find the DsSpooler key */
 	if ((i = lookup_printerkey(info2->data, SPOOL_DSSPOOLER_KEY)) < 0)
@@ -3179,14 +3179,11 @@ static void store_printer_guid(NT_PRINTER_INFO_LEVEL_2 *info2,
 	/* We used to store this as a REG_BINARY but that causes
 	   Vista to whine */
 
-	ZERO_STRUCT( unistr_guid );
-
-	init_unistr2( &unistr_guid, GUID_string(talloc_tos(), &guid),
-		      UNI_STR_TERMINATE );
+	push_reg_sz(talloc_tos(), &unistr_guid, GUID_string(talloc_tos(), &guid));
 
 	regval_ctr_addvalue(ctr, "objectGUID", REG_SZ,
-			    (char *)unistr_guid.buffer,
-			    unistr_guid.uni_max_len*2);
+			    (char *)unistr_guid.data,
+			    unistr_guid.length);
 
 }
 
@@ -3784,22 +3781,19 @@ static int unpack_values(NT_PRINTER_DATA *printer_data, const uint8 *buf, int bu
 		     strequal( valuename, "objectGUID" ) )
 		{
 			struct GUID guid;
-			UNISTR2 unistr_guid;
-
-			ZERO_STRUCT( unistr_guid );
+			DATA_BLOB unistr_guid;
 
 			/* convert the GUID to a UNICODE string */
 
 			memcpy( &guid, data_p, sizeof(struct GUID) );
 
-			init_unistr2( &unistr_guid,
-				      GUID_string(talloc_tos(), &guid),
-				      UNI_STR_TERMINATE );
+			push_reg_sz(&talloc_tos, &unistr_guid,
+				    GUID_string(talloc_tos(), &guid));
 
 			regval_ctr_addvalue( printer_data->keys[key_index].values,
 					     valuename, REG_SZ,
-					     (const char *)unistr_guid.buffer,
-					     unistr_guid.uni_str_len*2 );
+					     (const char *)unistr_guid.data,
+					     unistr_guid.length);
 
 		} else {
 			/* add the value */

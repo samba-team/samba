@@ -161,7 +161,7 @@ static uint32 _reg_perfcount_multi_sz_from_tdb(TDB_CONTEXT *tdb,
 	char temp[256];
 	char *buf1 = *retbuf;
 	uint32 working_size = 0;
-	UNISTR2 name_index, name;
+	DATA_BLOB name_index, name;
 
 	memset(temp, 0, sizeof(temp));
 	snprintf(temp, sizeof(temp), "%d", keyval);
@@ -182,8 +182,8 @@ static uint32 _reg_perfcount_multi_sz_from_tdb(TDB_CONTEXT *tdb,
 		buffer_size = 0;
 		return buffer_size;
 	}
-	init_unistr2(&name_index, (const char *)kbuf.dptr, UNI_STR_TERMINATE);
-	memcpy(buf1+buffer_size, (char *)name_index.buffer, working_size);
+	push_reg_sz(talloc_tos(), &name_index, (const char *)kbuf.dptr);
+	memcpy(buf1+buffer_size, (char *)name_index.data, working_size);
 	buffer_size += working_size;
 	/* Now encode the actual name */
 	working_size = (dbuf.dsize + 1)*sizeof(uint16);
@@ -195,8 +195,8 @@ static uint32 _reg_perfcount_multi_sz_from_tdb(TDB_CONTEXT *tdb,
 	memset(temp, 0, sizeof(temp));
 	memcpy(temp, dbuf.dptr, dbuf.dsize);
 	SAFE_FREE(dbuf.dptr);
-	init_unistr2(&name, temp, UNI_STR_TERMINATE);
-	memcpy(buf1+buffer_size, (char *)name.buffer, working_size);
+	push_reg_sz(talloc_tos(), &name, temp);
+	memcpy(buf1+buffer_size, (char *)name.data, working_size);
 	buffer_size += working_size;
 
 	*retbuf = buf1;
