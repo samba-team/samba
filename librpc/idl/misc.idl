@@ -1,3 +1,5 @@
+#include "idl_types.h"
+
 /*
   miscellaneous IDL structures
 */
@@ -43,4 +45,28 @@ interface misc
 		uint32 unknown1;
 		uint32 unknown2; /* 0x00000001 */
 	} KRB5_EDATA_NTSTATUS;
+
+	typedef [public,v1_enum] enum {
+		REG_NONE                       = 0,
+		REG_SZ                         = 1,
+		REG_EXPAND_SZ                  = 2,
+		REG_BINARY                     = 3,
+		REG_DWORD                      = 4,
+		REG_DWORD_BIG_ENDIAN           = 5,
+		REG_LINK                       = 6,
+		REG_MULTI_SZ                   = 7,
+		REG_RESOURCE_LIST              = 8,
+		REG_FULL_RESOURCE_DESCRIPTOR   = 9,
+		REG_RESOURCE_REQUIREMENTS_LIST = 10,
+		REG_QWORD                      = 11
+	} winreg_Type;
+
+	typedef [nodiscriminant,public] union {
+		[case(REG_NONE)];
+		[case(REG_SZ)] nstring string;
+		[case(REG_BINARY),flag(NDR_REMAINING)] DATA_BLOB binary;
+		[case(REG_DWORD)] uint32 value;
+		[case(REG_MULTI_SZ)] nstring_array string_array;
+		[default,flag(NDR_REMAINING)] DATA_BLOB data;
+	} winreg_Data;
 }

@@ -50,4 +50,45 @@ struct KRB5_EDATA_NTSTATUS {
 	uint32_t unknown2;
 }/* [public] */;
 
+enum winreg_Type
+#ifndef USE_UINT_ENUMS
+ {
+	REG_NONE=(int)(0),
+	REG_SZ=(int)(1),
+	REG_EXPAND_SZ=(int)(2),
+	REG_BINARY=(int)(3),
+	REG_DWORD=(int)(4),
+	REG_DWORD_BIG_ENDIAN=(int)(5),
+	REG_LINK=(int)(6),
+	REG_MULTI_SZ=(int)(7),
+	REG_RESOURCE_LIST=(int)(8),
+	REG_FULL_RESOURCE_DESCRIPTOR=(int)(9),
+	REG_RESOURCE_REQUIREMENTS_LIST=(int)(10),
+	REG_QWORD=(int)(11)
+}
+#else
+ { __donnot_use_enum_winreg_Type=0x7FFFFFFF}
+#define REG_NONE ( 0 )
+#define REG_SZ ( 1 )
+#define REG_EXPAND_SZ ( 2 )
+#define REG_BINARY ( 3 )
+#define REG_DWORD ( 4 )
+#define REG_DWORD_BIG_ENDIAN ( 5 )
+#define REG_LINK ( 6 )
+#define REG_MULTI_SZ ( 7 )
+#define REG_RESOURCE_LIST ( 8 )
+#define REG_FULL_RESOURCE_DESCRIPTOR ( 9 )
+#define REG_RESOURCE_REQUIREMENTS_LIST ( 10 )
+#define REG_QWORD ( 11 )
+#endif
+;
+
+union winreg_Data {
+	const char * string;/* [flag(LIBNDR_FLAG_STR_NULLTERM),case(REG_SZ)] */
+	DATA_BLOB binary;/* [flag(LIBNDR_FLAG_REMAINING),case(REG_BINARY)] */
+	uint32_t value;/* [case(REG_DWORD)] */
+	const char ** string_array;/* [flag(LIBNDR_FLAG_STR_NULLTERM),case(REG_MULTI_SZ)] */
+	DATA_BLOB data;/* [flag(LIBNDR_FLAG_REMAINING),default] */
+}/* [nodiscriminant,public] */;
+
 #endif /* _HEADER_misc */
