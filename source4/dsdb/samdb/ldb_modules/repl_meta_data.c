@@ -1135,6 +1135,19 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 		return replmd_replicated_request_error(ar, ret);
 	}
 
+	/* remove any message elements that have zero values */
+	for (i=0; i<msg->num_elements; i++) {
+		if (msg->elements[i].num_values == 0) {
+			DEBUG(4,(__location__ ": Removing attribute %s with num_values==0\n",
+				 msg->elements[i].name));
+			memmove(&msg->elements[i], 
+				&msg->elements[i+1], 
+				sizeof(msg->elements[i])*(msg->num_elements - (i+1)));
+			msg->num_elements--;
+			i--;
+		}
+	}
+	
 	/*
 	 * the meta data array is already sorted by the caller
 	 */
