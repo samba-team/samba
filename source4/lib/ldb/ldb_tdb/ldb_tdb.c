@@ -270,7 +270,7 @@ static int ltdb_add_internal(struct ldb_module *module,
 		const struct ldb_schema_attribute *a = ldb_schema_attribute_by_name(ldb, el->name);
 
 		if (el->num_values == 0) {
-			ldb_asprintf_errstring(ldb, "attribute %s on %s speicified, but with 0 values (illigal)", 
+			ldb_asprintf_errstring(ldb, "attribute %s on %s specified, but with 0 values (illegal)", 
 					       el->name, ldb_dn_get_linearized(msg->dn));
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
