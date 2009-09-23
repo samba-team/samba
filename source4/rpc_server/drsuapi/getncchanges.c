@@ -51,6 +51,8 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	uint32_t rid = 0;
 	enum ndr_err_code ndr_err;
 	uint32_t *attids;
+	const char *rdn;
+	const struct dsdb_attribute *rdn_sa;
 
 	if (ldb_dn_compare(ncRoot_dn, msg->dn) == 0) {
 		obj->is_nc_prefix = true;
@@ -59,6 +61,21 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 		obj->is_nc_prefix = false;
 		obj->parent_object_guid = talloc(obj, struct GUID);
 		*obj->parent_object_guid = samdb_result_guid(msg, "parentGUID");
+		if (GUID_all_zero(obj->parent_object_guid)) {
+			struct ldb_dn *parent_dn = ldb_dn_copy(msg, msg->dn);
+			if (parent_dn == NULL) {
+				return WERR_DS_DRA_INTERNAL_ERROR;
+			}
+			if (ldb_dn_remove_child_components(parent_dn, 1) != true) {
+				DEBUG(0,(__location__ ": Unable to remove DN component\n"));
+				return WERR_DS_DRA_INTERNAL_ERROR;
+			}
+			if (dsdb_find_guid_by_dn(sam_ctx, parent_dn, obj->parent_object_guid) != LDB_SUCCESS) {
+				DEBUG(0,(__location__ ": Unable to find parent DN %s %s\n", 
+					 ldb_dn_get_linearized(msg->dn), ldb_dn_get_linearized(parent_dn)));
+			}
+			talloc_free(parent_dn);
+		}
 	}
 	obj->next_object = NULL;
 	
@@ -79,12 +96,30 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
+	rdn = ldb_dn_get_rdn_name(msg->dn);
+	if (rdn == NULL) {
+		DEBUG(0,(__location__ ": No rDN for %s\n", ldb_dn_get_linearized(msg->dn)));
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+
+	rdn_sa = dsdb_attribute_by_lDAPDisplayName(schema, rdn);
+	if (rdn_sa == NULL) {
+		DEBUG(0,(__location__ ": Can't find dsds_attribute for rDN %s in %s\n", 
+			 rdn, ldb_dn_get_linearized(msg->dn)));
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+
 	obj->meta_data_ctr = talloc(obj, struct drsuapi_DsReplicaMetaDataCtr);
 	attids = talloc_array(obj, uint32_t, md.ctr.ctr1.count);
 	
 	obj->meta_data_ctr->meta_data = talloc_array(obj, struct drsuapi_DsReplicaMetaData, md.ctr.ctr1.count);
 	for (n=i=0; i<md.ctr.ctr1.count; i++) {
-		if (md.ctr.ctr1.array[i].local_usn < highest_usn) continue;
+		/* if the attribute has not changed, and it is not the
+		   instanceType then don't include it */
+		if (md.ctr.ctr1.array[i].local_usn < highest_usn &&
+		    md.ctr.ctr1.array[i].attid != DRSUAPI_ATTRIBUTE_instanceType) continue;
+		/* don't include the rDN */
+		if (md.ctr.ctr1.array[i].attid == rdn_sa->attributeID_id) continue;
 		obj->meta_data_ctr->meta_data[n].originating_change_time = md.ctr.ctr1.array[i].originating_change_time;
 		obj->meta_data_ctr->meta_data[n].version = md.ctr.ctr1.array[i].version;
 		obj->meta_data_ctr->meta_data[n].originating_invocation_id = md.ctr.ctr1.array[i].originating_invocation_id;
@@ -113,6 +148,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 		ZERO_STRUCT(obj->object.identifier->sid);
 	}
 
+	obj->object.flags = DRSUAPI_DS_REPLICA_OBJECT_FROM_MASTER;
 	obj->object.attribute_ctr.num_attributes = obj->meta_data_ctr->count;
 	obj->object.attribute_ctr.attributes = talloc_array(obj, struct drsuapi_DsReplicaAttribute,
 							    obj->object.attribute_ctr.num_attributes);
@@ -122,10 +158,10 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	 * be the same size and in the same order
 	 */
 	for (i=0; i<obj->object.attribute_ctr.num_attributes; i++) {
-		const struct dsdb_attribute *sa;
 		struct ldb_message_element *el;
 		WERROR werr;
-
+		const struct dsdb_attribute *sa;
+	
 		sa = dsdb_attribute_by_attributeID_id(schema, attids[i]);
 		if (!sa) {
 			DEBUG(0,("Unable to find attributeID %u in schema\n", attids[i]));
@@ -339,6 +375,15 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 
 	r->out.ctr->ctr6.naming_context = talloc(mem_ctx, struct drsuapi_DsReplicaObjectIdentifier);
 	*r->out.ctr->ctr6.naming_context = *ncRoot;
+
+	if (dsdb_find_guid_by_dn(sam_ctx, ncRoot_dn, &r->out.ctr->ctr6.naming_context->guid) != LDB_SUCCESS) {
+		DEBUG(0,(__location__ ": Failed to find GUID of ncRoot_dn %s\n",
+			 ldb_dn_get_linearized(ncRoot_dn)));
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+
+	/* find the SID if there is one */
+	dsdb_find_sid_by_dn(sam_ctx, ncRoot_dn, &r->out.ctr->ctr6.naming_context->sid);
 
 	dsdb_get_oid_mappings_drsuapi(schema, true, mem_ctx, &ctr);
 	r->out.ctr->ctr6.mapping_ctr = *ctr;
