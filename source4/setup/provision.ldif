@@ -131,6 +131,8 @@ objectClass: dfsConfiguration
 isCriticalSystemObject: TRUE
 showInAdvancedViewOnly: FALSE
 
+# Domain updates
+
 dn: CN=DomainUpdates,CN=System,${DOMAINDN}
 objectClass: top
 objectClass: container
@@ -359,6 +361,8 @@ dn: CN=Windows2003Update,CN=DomainUpdates,CN=System,${DOMAINDN}
 objectClass: top
 objectClass: container
 revision: 8
+
+# End domain updates
 
 dn: CN=File Replication Service,CN=System,${DOMAINDN}
 objectClass: top

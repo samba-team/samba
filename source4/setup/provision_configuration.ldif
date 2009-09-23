@@ -639,6 +639,8 @@ appliesTo: bf967a8f-0de6-11d0-a285-00aa003049e2
 localizationDisplayId: 28
 validAccesses: 256
 
+# End extended rights
+
 # Forest updates
 
 dn: CN=ForestUpdates,${CONFIGDN}
@@ -802,6 +804,8 @@ objectClass: top
 objectClass: container
 revision: 9
 
+# End forest updates
+
 dn: CN=LostAndFoundConfig,${CONFIGDN}
 objectClass: top
 objectClass: lostAndFound
@@ -847,6 +851,8 @@ nCName: ${DOMAINDN}
 nETBIOSName: ${DOMAIN}
 nTMixedDomain: 0
 systemFlags: 3
+
+# End partitions
 
 dn: CN=Physical Locations,${CONFIGDN}
 objectClass: top
@@ -974,6 +980,8 @@ lDAPAdminLimits: MaxActiveQueries=20
 lDAPAdminLimits: MaxConnIdleTime=900
 lDAPAdminLimits: InitRecvTimeout=120
 lDAPAdminLimits: MaxConnections=5000
+
+# End services
 
 # Sites
 
