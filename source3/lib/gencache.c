@@ -220,11 +220,6 @@ bool gencache_del(const char *keystr)
 
 	DEBUG(10, ("Deleting cache entry (key = %s)\n", keystr));
 
-	if (tdb_lock_bystring(cache_notrans, keystr) == -1) {
-		DEBUG(5, ("Could not lock key for %s\n", keystr));
-		return false;
-	}
-
 	/*
 	 * We delete an element by setting its timeout to 0. This way we don't
 	 * have to do a transaction on gencache.tdb every time we delete an
@@ -236,7 +231,6 @@ bool gencache_del(const char *keystr)
 		SAFE_FREE(value);
 		ret = gencache_set(keystr, "", 0);
 	}
-	tdb_unlock_bystring(cache_notrans, keystr);
 	return ret;
 }
 
