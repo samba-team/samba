@@ -457,6 +457,14 @@ const struct ldb_dn_extended_syntax *ldb_dn_extended_syntax_by_name(struct ldb_c
 typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 
 /**
+   OID for the allowing client to request temporary relaxed 
+   enforcement of constraints of the x.500 model.
+
+   \sa <a href="http://opends.dev.java.net/public/standards/draft-zeilenga-ldap-managedit.txt">draft managedit</a>.
+*/
+
+#define LDB_CONTROL_RELAX_OID "1.3.6.1.4.1.4203.666.5.12"
+/**
    OID for the paged results control. This control is included in the
    searchRequest and searchResultDone messages as part of the controls
    field of the LDAPMessage, as defined in Section 4.1.12 of
