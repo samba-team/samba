@@ -331,7 +331,7 @@ static NTSTATUS dsgetdcname_cache_fetch(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!gencache_get_data_blob(key, &blob, NULL)) {
+	if (!gencache_get_data_blob(key, &blob, NULL, NULL)) {
 		return NT_STATUS_NOT_FOUND;
 	}
 

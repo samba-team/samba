@@ -535,7 +535,7 @@ bool gencache_set(const char *keystr, const char *value, time_t timeout);
 bool gencache_del(const char *keystr);
 bool gencache_get(const char *keystr, char **valstr, time_t *timeout);
 bool gencache_get_data_blob(const char *keystr, DATA_BLOB *blob,
-			    time_t *timeout);
+			    time_t *timeout, bool *was_expired);
 bool gencache_stabilize(void);
 bool gencache_set_data_blob(const char *keystr, const DATA_BLOB *blob, time_t timeout);
 void gencache_iterate(void (*fn)(const char* key, const char *value, time_t timeout, void* dptr),

@@ -273,24 +273,25 @@ static bool gencache_pull_timeout(char *val, time_t *pres, char **pendptr)
  **/
 
 bool gencache_get_data_blob(const char *keystr, DATA_BLOB *blob,
-			    time_t *timeout)
+			    time_t *timeout, bool *was_expired)
 {
 	TDB_DATA databuf;
 	time_t t;
 	char *endptr;
+	bool expired = false;
 
 	if (keystr == NULL) {
-		return false;
+		goto fail;
 	}
 
 	if (tdb_data_cmp(string_term_tdb_data(keystr),
 			 last_stabilize_key()) == 0) {
 		DEBUG(10, ("Can't get %s as a key\n", keystr));
-		return false;
+		goto fail;
 	}
 
 	if (!gencache_init()) {
-		return False;
+		goto fail;
 	}
 
 	databuf = tdb_fetch_bystring(cache_notrans, keystr);
@@ -302,12 +303,12 @@ bool gencache_get_data_blob(const char *keystr, DATA_BLOB *blob,
 	if (databuf.dptr == NULL) {
 		DEBUG(10, ("Cache entry with key = %s couldn't be found \n",
 			   keystr));
-		return False;
+		goto fail;
 	}
 
 	if (!gencache_pull_timeout((char *)databuf.dptr, &t, &endptr)) {
 		SAFE_FREE(databuf.dptr);
-		return False;
+		goto fail;
 	}
 
 	DEBUG(10, ("Returning %s cache entry: key = %s, value = %s, "
@@ -317,7 +318,7 @@ bool gencache_get_data_blob(const char *keystr, DATA_BLOB *blob,
 	if (t == 0) {
 		/* Deleted */
 		SAFE_FREE(databuf.dptr);
-		return False;
+		goto fail;
 	}
 
 	if (t <= time(NULL)) {
@@ -331,7 +332,9 @@ bool gencache_get_data_blob(const char *keystr, DATA_BLOB *blob,
 		gencache_set(keystr, "", 0);
 
 		SAFE_FREE(databuf.dptr);
-		return False;
+
+		expired = true;
+		goto fail;
 	}
 
 	if (blob != NULL) {
@@ -341,7 +344,7 @@ bool gencache_get_data_blob(const char *keystr, DATA_BLOB *blob,
 		if (blob->data == NULL) {
 			SAFE_FREE(databuf.dptr);
 			DEBUG(0, ("memdup failed\n"));
-			return False;
+			goto fail;
 		}
 	}
 
@@ -352,6 +355,12 @@ bool gencache_get_data_blob(const char *keystr, DATA_BLOB *blob,
 	}
 
 	return True;
+
+fail:
+	if (was_expired != NULL) {
+		*was_expired = expired;
+	}
+	return false;
 } 
 
 struct stabilize_state {
@@ -503,7 +512,7 @@ bool gencache_get(const char *keystr, char **value, time_t *ptimeout)
 	DATA_BLOB blob;
 	bool ret = False;
 
-	ret = gencache_get_data_blob(keystr, &blob, ptimeout);
+	ret = gencache_get_data_blob(keystr, &blob, ptimeout, NULL);
 	if (!ret) {
 		return false;
 	}
