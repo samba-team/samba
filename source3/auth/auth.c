@@ -455,7 +455,7 @@ NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context)
 	NTSTATUS nt_status;
 
 	if (lp_auth_methods()
-	    && !(auth_method_list = str_list_copy(talloc_tos(), 
+	    && !(auth_method_list = (char **) str_list_copy(talloc_tos(), 
 			      lp_auth_methods()))) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -465,13 +465,13 @@ NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context)
 		{
 		case SEC_DOMAIN:
 			DEBUG(5,("Making default auth method list for security=domain\n"));
-			auth_method_list = str_list_make_v3(
+			auth_method_list = (char **) str_list_make_v3(
 				talloc_tos(), "guest sam winbind:ntdomain",
 				NULL);
 			break;
 		case SEC_SERVER:
 			DEBUG(5,("Making default auth method list for security=server\n"));
-			auth_method_list = str_list_make_v3(
+			auth_method_list = (char **) str_list_make_v3(
 				talloc_tos(), "guest sam smbserver",
 				NULL);
 			break;
@@ -479,36 +479,36 @@ NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context)
 			if (lp_encrypted_passwords()) {	
 				if ((lp_server_role() == ROLE_DOMAIN_PDC) || (lp_server_role() == ROLE_DOMAIN_BDC)) {
 					DEBUG(5,("Making default auth method list for DC, security=user, encrypt passwords = yes\n"));
-					auth_method_list = str_list_make_v3(
+					auth_method_list = (char **) str_list_make_v3(
 						talloc_tos(),
 						"guest sam winbind:trustdomain",
 						NULL);
 				} else {
 					DEBUG(5,("Making default auth method list for standalone security=user, encrypt passwords = yes\n"));
-					auth_method_list = str_list_make_v3(
+					auth_method_list = (char **) str_list_make_v3(
 						talloc_tos(), "guest sam",
 						NULL);
 				}
 			} else {
 				DEBUG(5,("Making default auth method list for security=user, encrypt passwords = no\n"));
-				auth_method_list = str_list_make_v3(
+				auth_method_list = (char **) str_list_make_v3(
 					talloc_tos(), "guest unix", NULL);
 			}
 			break;
 		case SEC_SHARE:
 			if (lp_encrypted_passwords()) {
 				DEBUG(5,("Making default auth method list for security=share, encrypt passwords = yes\n"));
-				auth_method_list = str_list_make_v3(
+				auth_method_list = (char **) str_list_make_v3(
 					talloc_tos(), "guest sam", NULL);
 			} else {
 				DEBUG(5,("Making default auth method list for security=share, encrypt passwords = no\n"));
-				auth_method_list = str_list_make_v3(
+				auth_method_list = (char **) str_list_make_v3(
 					talloc_tos(), "guest unix", NULL);
 			}
 			break;
 		case SEC_ADS:
 			DEBUG(5,("Making default auth method list for security=ADS\n"));
-			auth_method_list = str_list_make_v3(
+			auth_method_list = (char **) str_list_make_v3(
 				talloc_tos(), "guest sam winbind:ntdomain",
 				NULL);
 			break;

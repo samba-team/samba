@@ -551,14 +551,13 @@ bool user_in_list(struct smbd_server_connection *sconn,
 static bool user_ok(struct smbd_server_connection *sconn,
 		    const char *user, int snum)
 {
-	char **valid, **invalid;
 	bool ret;
 
-	valid = invalid = NULL;
 	ret = True;
 
 	if (lp_invalid_users(snum)) {
-		invalid = str_list_copy(talloc_tos(), lp_invalid_users(snum));
+		char **invalid = (char **) str_list_copy(talloc_tos(),
+			lp_invalid_users(snum));
 		if (invalid &&
 		    str_list_substitute(invalid, "%S", lp_servicename(snum))) {
 
@@ -567,36 +566,37 @@ static bool user_ok(struct smbd_server_connection *sconn,
 
 			if ( invalid && str_list_sub_basic(invalid, "", "") ) {
 				ret = !user_in_list(sconn, user,
-						    (const char **)invalid);
+						(const char **)invalid);
 			}
 		}
+		TALLOC_FREE(invalid);
 	}
-	TALLOC_FREE(invalid);
 
 	if (ret && lp_valid_users(snum)) {
-		valid = str_list_copy(talloc_tos(), lp_valid_users(snum));
-		if ( valid &&
-		     str_list_substitute(valid, "%S", lp_servicename(snum)) ) {
+		char **valid = (char **) str_list_copy(talloc_tos(),
+			lp_valid_users(snum));
+		if (valid &&
+		     str_list_substitute(valid, "%S", lp_servicename(snum))) {
 
 			/* This is used in sec=share only, so no current user
 			 * around to pass to str_list_sub_basic() */
 
 			if ( valid && str_list_sub_basic(valid, "", "") ) {
 				ret = user_in_list(sconn, user,
-						   (const char **)valid);
+						(const char **)valid);
 			}
 		}
+		TALLOC_FREE(valid);
 	}
-	TALLOC_FREE(valid);
 
 	if (ret && lp_onlyuser(snum)) {
-		char **user_list = str_list_make_v3(
+		char **user_list = (char **) str_list_make_v3(
 			talloc_tos(), lp_username(snum), NULL);
 		if (user_list &&
 		    str_list_substitute(user_list, "%S",
 					lp_servicename(snum))) {
 			ret = user_in_list(sconn, user,
-					   (const char **)user_list);
+						(const char **)user_list);
 		}
 		TALLOC_FREE(user_list);
 	}
