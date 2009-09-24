@@ -5117,6 +5117,7 @@ struct regval_blob *regval_compose(TALLOC_CTX *ctx, const char *name,
 				   const char *data_p, size_t size);
 int regval_ctr_addvalue(struct regval_ctr *ctr, const char *name, uint16 type,
 			const char *data_p, size_t size);
+int regval_ctr_addvalue_sz(struct regval_ctr *ctr, const char *name, const char *data);
 int regval_ctr_copyvalue(struct regval_ctr *ctr, struct regval_blob *val);
 int regval_ctr_delvalue(struct regval_ctr *ctr, const char *name);
 struct regval_blob* regval_ctr_getvalue(struct regval_ctr *ctr,
