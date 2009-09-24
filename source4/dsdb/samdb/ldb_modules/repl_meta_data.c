@@ -363,11 +363,33 @@ static int replmd_replPropertyMetaData1_attid_sort(const struct replPropertyMeta
 	return m1->attid - m2->attid;
 }
 
-static void replmd_replPropertyMetaDataCtr1_sort(struct replPropertyMetaDataCtr1 *ctr1,
-						 const uint32_t *rdn_attid)
+static int replmd_replPropertyMetaDataCtr1_sort(struct replPropertyMetaDataCtr1 *ctr1,
+						const struct dsdb_schema *schema,
+						struct ldb_dn *dn)
 {
+	const char *rdn_name;
+	const struct dsdb_attribute *rdn_sa;
+
+	rdn_name = ldb_dn_get_rdn_name(dn);
+	if (!rdn_name) {
+		DEBUG(0,(__location__ ": No rDN for %s?\n", ldb_dn_get_linearized(dn)));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	rdn_sa = dsdb_attribute_by_lDAPDisplayName(schema, rdn_name);
+	if (rdn_sa == NULL) {
+		DEBUG(0,(__location__ ": No sa found for rDN %s for %s\n", rdn_name, ldb_dn_get_linearized(dn)));
+		return LDB_ERR_OPERATIONS_ERROR;		
+	}
+
+	DEBUG(6,("Sorting rpmd with attid exception %u rDN=%s DN=%s\n", 
+		 rdn_sa->attributeID_id, rdn_name, ldb_dn_get_linearized(dn)));
+
 	ldb_qsort(ctr1->array, ctr1->count, sizeof(struct replPropertyMetaData1),
-		  discard_const_p(void, rdn_attid), (ldb_qsort_cmp_fn_t)replmd_replPropertyMetaData1_attid_sort);
+		  discard_const_p(void, &rdn_sa->attributeID_id), 
+		  (ldb_qsort_cmp_fn_t)replmd_replPropertyMetaData1_attid_sort);
+
+	return LDB_SUCCESS;
 }
 
 static int replmd_ldb_message_element_attid_sort(const struct ldb_message_element *e1,
@@ -440,7 +462,6 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	enum ndr_err_code ndr_err;
 	struct ldb_request *down_req;
 	struct ldb_message *msg;
-	const struct dsdb_attribute *rdn_attr = NULL;
 	struct GUID guid;
 	struct ldb_val guid_value;
 	struct replPropertyMetaDataBlob nmd;
@@ -581,10 +602,6 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 		m->originating_usn		= seq_num;
 		m->local_usn			= seq_num;
 		ni++;
-
-		if (ldb_attr_cmp(e->name, ldb_dn_get_rdn_name(msg->dn))) {
-			rdn_attr = sa;
-		}
 	}
 
 	/* fix meta data count */
@@ -593,7 +610,10 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	/*
 	 * sort meta data array, and move the rdn attribute entry to the end
 	 */
-	replmd_replPropertyMetaDataCtr1_sort(&nmd.ctr.ctr1, &rdn_attr->attributeID_id);
+	ret = replmd_replPropertyMetaDataCtr1_sort(&nmd.ctr.ctr1, schema, msg->dn);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 
 	/* generated NDR encoded values */
 	ndr_err = ndr_push_struct_blob(&guid_value, msg, 
@@ -764,7 +784,7 @@ static int replmd_update_rpmd(struct ldb_module *module,
 	unix_to_nt_time(&now, t);
 
 	/* search for the existing replPropertyMetaDataBlob */
-	ret = ldb_search(ldb, msg, &res, msg->dn, LDB_SCOPE_BASE, attrs, NULL);
+	ret = dsdb_search_dn_with_deleted(ldb, msg, &res, msg->dn, attrs);
 	if (ret != LDB_SUCCESS || res->count < 1) {
 		DEBUG(0,(__location__ ": Object %s failed to find replPropertyMetaData\n",
 			 ldb_dn_get_linearized(msg->dn)));
@@ -811,20 +831,6 @@ static int replmd_update_rpmd(struct ldb_module *module,
 	if (*seq_num != 0) {
 		struct ldb_val *md_value;
 		struct ldb_message_element *el;
-		const char *rdn_name;
-		const struct dsdb_attribute *rdn_sa;
-
-		rdn_name = ldb_dn_get_rdn_name(msg->dn);
-		if (!rdn_name) {
-			DEBUG(0,(__location__ ": No rDN for %s?\n", ldb_dn_get_linearized(msg->dn)));
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		rdn_sa = dsdb_attribute_by_lDAPDisplayName(schema, rdn_name);
-		if (rdn_sa == NULL) {
-			DEBUG(0,(__location__ ": sa not found for rDN %s in %s?\n", 
-				 rdn_name, ldb_dn_get_linearized(msg->dn)));
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
 
 		md_value = talloc(msg, struct ldb_val);
 		if (md_value == NULL) {
@@ -832,7 +838,10 @@ static int replmd_update_rpmd(struct ldb_module *module,
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		replmd_replPropertyMetaDataCtr1_sort(&omd.ctr.ctr1, &rdn_sa->attributeID_id);
+		ret = replmd_replPropertyMetaDataCtr1_sort(&omd.ctr.ctr1, schema, msg->dn);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
 
 		ndr_err = ndr_push_struct_blob(md_value, msg, 
 					       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
@@ -1379,12 +1388,9 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	 *
 	 * sort the new meta data array
 	 */
-	{
-		struct replPropertyMetaData1 *rdn_p;
-		uint32_t rdn_idx = omd.ctr.ctr1.count - 1;
-
-		rdn_p = &nmd.ctr.ctr1.array[rdn_idx];
-		replmd_replPropertyMetaDataCtr1_sort(&nmd.ctr.ctr1, &rdn_p->attid);
+	ret = replmd_replPropertyMetaDataCtr1_sort(&nmd.ctr.ctr1, ar->schema, msg->dn);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
 
 	/*
@@ -1545,6 +1551,13 @@ static int replmd_replicated_apply_next(struct replmd_replicated_request *ar)
 				   ar,
 				   replmd_replicated_apply_search_callback,
 				   ar->req);
+
+	ret = ldb_request_add_control(search_req, LDB_CONTROL_SHOW_DELETED_OID, true, NULL);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	
+
 	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
 
 	return ldb_next_request(ar->module, search_req);
