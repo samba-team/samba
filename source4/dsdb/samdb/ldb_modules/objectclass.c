@@ -2,7 +2,7 @@
    ldb database library
 
    Copyright (C) Simo Sorce  2006-2008
-   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005-2007
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005-2009
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -381,7 +381,7 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 	struct oc_context *ac;
 	struct ldb_dn *parent_dn;
 	int ret;
-	static const char * const parent_attrs[] = { "objectGUID", NULL };
+	static const char * const parent_attrs[] = { "objectGUID", "objectClass", NULL };
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -465,7 +465,7 @@ static int objectclass_do_add(struct oc_context *ac)
 			ldb_asprintf_errstring(ldb, "objectclass: Cannot add %s, parent does not exist!", 
 					       ldb_dn_get_linearized(msg->dn));
 			talloc_free(mem_ctx);
-			return LDB_ERR_UNWILLING_TO_PERFORM;
+			return LDB_ERR_NO_SUCH_OBJECT;
 		}
 	} else {
 		const struct ldb_val *parent_guid;
@@ -491,9 +491,6 @@ static int objectclass_do_add(struct oc_context *ac)
 			return LDB_ERR_UNWILLING_TO_PERFORM;			
 		}
 
-		/* TODO: Check this is a valid child to this parent,
-		 * by reading the allowedChildClasses and
-		 * allowedChildClasssesEffective attributes */
 		ret = ldb_msg_add_steal_value(msg, "parentGUID", discard_const(parent_guid));
 		if (ret != LDB_SUCCESS) {
 			ldb_asprintf_errstring(ldb, "objectclass: Cannot add %s, failed to add parentGUID", 
@@ -555,10 +552,40 @@ static int objectclass_do_add(struct oc_context *ac)
 				struct ldb_message_element *el;
 				int32_t systemFlags = 0;
 				const char *rdn_name = ldb_dn_get_rdn_name(msg->dn);
-				if (ldb_attr_cmp(rdn_name, current->objectclass->rDNAttID) != 0) {
-					ldb_asprintf_errstring(ldb, "RDN %s is not correct for most specific structural objectclass %s, should be %s", 
+				if (current->objectclass->rDNAttID
+				    && ldb_attr_cmp(rdn_name, current->objectclass->rDNAttID) != 0) {
+					ldb_asprintf_errstring(ldb,
+							       "RDN %s is not correct for most specific structural objectclass %s, should be %s",
 							       rdn_name, current->objectclass->lDAPDisplayName, current->objectclass->rDNAttID);
 					return LDB_ERR_NAMING_VIOLATION;
+				}
+
+				if (ac->search_res && ac->search_res->message) {
+					struct ldb_message_element *oc_el
+						= ldb_msg_find_element(ac->search_res->message, "objectClass");
+
+					bool allowed_class = false;
+					int i, j;
+					for (i=0; !allowed_class && oc_el && i < oc_el->num_values; i++) {
+						const struct dsdb_class *sclass;
+
+						sclass = dsdb_class_by_lDAPDisplayName_ldb_val(schema, &oc_el->values[i]);
+						if (!sclass) {
+							/* We don't know this class?  what is going on? */
+							continue;
+						}
+						for (j=0; !allowed_class && sclass->possibleInferiors && sclass->possibleInferiors[j]; j++) {
+							if (ldb_attr_cmp(current->objectclass->lDAPDisplayName, sclass->possibleInferiors[j]) == 0) {
+								allowed_class = true;
+							}
+						}
+					}
+
+					if (!allowed_class) {
+						ldb_asprintf_errstring(ldb, "structural objectClass %s is not a valid child class for %s",
+							       current->objectclass->lDAPDisplayName, ldb_dn_get_linearized(ac->search_res->message->dn));
+						return LDB_ERR_NAMING_VIOLATION;
+					}
 				}
 
 				if (current->objectclass->systemOnly && !ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
