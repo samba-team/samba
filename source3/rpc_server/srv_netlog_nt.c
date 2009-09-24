@@ -229,20 +229,47 @@ WERROR _netr_LogonControl2Ex(pipes_struct *p,
 WERROR _netr_NetrEnumerateTrustedDomains(pipes_struct *p,
 					 struct netr_NetrEnumerateTrustedDomains *r)
 {
-	struct netr_Blob trusted_domains_blob;
+	NTSTATUS status;
 	DATA_BLOB blob;
+	struct trustdom_info **domains;
+	uint32_t num_domains;
+	const char **trusted_domains;
+	int i;
 
 	DEBUG(6,("_netr_NetrEnumerateTrustedDomains: %d\n", __LINE__));
 
 	/* set up the Trusted Domain List response */
 
-	blob = data_blob_talloc_zero(p->mem_ctx, 2);
-	trusted_domains_blob.data = blob.data;
-	trusted_domains_blob.length = blob.length;
+	become_root();
+	status = pdb_enum_trusteddoms(p->mem_ctx, &num_domains, &domains);
+	unbecome_root();
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	trusted_domains = talloc_zero_array(p->mem_ctx, const char *, num_domains + 1);
+	if (!trusted_domains) {
+		return WERR_NOMEM;
+	}
+
+	for (i = 0; i < num_domains; i++) {
+		trusted_domains[i] = talloc_strdup(trusted_domains, domains[i]->name);
+		if (!trusted_domains[i]) {
+			TALLOC_FREE(trusted_domains);
+			return WERR_NOMEM;
+		}
+	}
+
+	if (!push_reg_multi_sz(trusted_domains, &blob, trusted_domains)) {
+		TALLOC_FREE(trusted_domains);
+		return WERR_NOMEM;
+	}
+
+	r->out.trusted_domains_blob->data = blob.data;
+	r->out.trusted_domains_blob->length = blob.length;
 
 	DEBUG(6,("_netr_NetrEnumerateTrustedDomains: %d\n", __LINE__));
-
-	*r->out.trusted_domains_blob = trusted_domains_blob;
 
 	return WERR_OK;
 }
