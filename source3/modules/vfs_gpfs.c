@@ -1084,7 +1084,7 @@ static int vfs_gpfs_ntimes(struct vfs_handle_struct *handle,
         }
 
         status = get_full_smb_filename(talloc_tos(), smb_fname, &path);
-        if (!NT_STATUS_IS_OK) {
+        if (!NT_STATUS_IS_OK(status)) {
                 errno = map_errno_from_nt_status(status);
                 return -1;
         }
