@@ -2165,7 +2165,18 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 
  done:
 
-	if (!NT_STATUS_IS_OK(result)) {
+	if (NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED)) {
+		/*
+		 * if we got access denied, we might just have no access rights
+		 * to talk to the remote samr server server (e.g. when we are a
+		 * PDC and we are connecting a w2k8 pdc via an interdomain
+		 * trust). In that case do not invalidate the whole connection
+		 * stack
+		 */
+		TALLOC_FREE(conn->samr_pipe);
+		ZERO_STRUCT(conn->sam_domain_handle);
+		return result;
+	} else if (!NT_STATUS_IS_OK(result)) {
 		invalidate_cm_connection(conn);
 		return result;
 	}
