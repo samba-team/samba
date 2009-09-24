@@ -652,7 +652,8 @@ static int vfswrap_lstat(vfs_handle_struct *handle,
 }
 
 static NTSTATUS vfswrap_translate_name(vfs_handle_struct *handle,
-				       char **mapped_name)
+				       char **mapped_name,
+				       enum vfs_translate_direction direction)
 {
 	/* Default behavior is a NOOP */
 
