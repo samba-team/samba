@@ -667,27 +667,27 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	ret = ldb_msg_add_value(msg, "objectGUID", &guid_value, NULL);
 	if (ret != LDB_SUCCESS) {
 		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ret;
 	}
 	ret = ldb_msg_add_string(msg, "whenChanged", time_str);
 	if (ret != LDB_SUCCESS) {
 		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ret;
 	}
 	ret = samdb_msg_add_uint64(ldb, msg, msg, "uSNCreated", seq_num);
 	if (ret != LDB_SUCCESS) {
 		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ret;
 	}
 	ret = samdb_msg_add_uint64(ldb, msg, msg, "uSNChanged", seq_num);
 	if (ret != LDB_SUCCESS) {
 		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ret;
 	}
 	ret = ldb_msg_add_value(msg, "replPropertyMetaData", &nmd_value, NULL);
 	if (ret != LDB_SUCCESS) {
 		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ret;
 	}
 
 	/*
