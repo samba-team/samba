@@ -2430,10 +2430,10 @@ char *escape_shell_string(const char *src)
 
 #define S_LIST_ABS 16 /* List Allocation Block Size */
 
-const char **str_list_make_v3(TALLOC_CTX *mem_ctx, const char *string,
+char **str_list_make_v3(TALLOC_CTX *mem_ctx, const char *string,
 	const char *sep)
 {
-	const char **list;
+	char **list;
 	const char *str;
 	char *s, *tok;
 	int num, lsize;
@@ -2441,7 +2441,7 @@ const char **str_list_make_v3(TALLOC_CTX *mem_ctx, const char *string,
 	if (!string || !*string)
 		return NULL;
 
-	list = TALLOC_ARRAY(mem_ctx, const char *, S_LIST_ABS+1);
+	list = TALLOC_ARRAY(mem_ctx, char *, S_LIST_ABS+1);
 	if (list == NULL) {
 		return NULL;
 	}
@@ -2461,11 +2461,11 @@ const char **str_list_make_v3(TALLOC_CTX *mem_ctx, const char *string,
 	while (next_token_talloc(list, &str, &tok, sep)) {
 
 		if (num == lsize) {
-			const char **tmp;
+			char **tmp;
 
 			lsize += S_LIST_ABS;
 
-			tmp = TALLOC_REALLOC_ARRAY(mem_ctx, list, const char *,
+			tmp = TALLOC_REALLOC_ARRAY(mem_ctx, list, char *,
 						   lsize + 1);
 			if (tmp == NULL) {
 				DEBUG(0,("str_list_make: "
@@ -2477,7 +2477,7 @@ const char **str_list_make_v3(TALLOC_CTX *mem_ctx, const char *string,
 			list = tmp;
 
 			memset (&list[num], 0,
-				((sizeof(const char**)) * (S_LIST_ABS +1)));
+				((sizeof(char**)) * (S_LIST_ABS +1)));
 		}
 
 		list[num] = tok;
