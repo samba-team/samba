@@ -340,7 +340,8 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares)
 		}
 
 		/* Look to see if this attributeSyntax is a DN */
-		if (strcmp(attribute->attributeSyntax_oid, "2.5.5.1") != 0) {
+		if (strcmp(attribute->attributeSyntax_oid, "2.5.5.1") != 0 &&
+		    strcmp(attribute->attributeSyntax_oid, "2.5.5.7") != 0) {
 			continue;
 		}
 
@@ -617,7 +618,8 @@ static int extended_dn_out_dereference_init(struct ldb_module *module)
 			NULL
 		};
 
-		if (strcmp(cur->syntax->attributeSyntax_oid, "2.5.5.1") != 0) {
+		if (strcmp(cur->syntax->attributeSyntax_oid, "2.5.5.1") != 0 &&
+		    strcmp(cur->syntax->attributeSyntax_oid, "2.5.5.7") != 0) {
 			continue;
 		}
 		dereference_control->dereference
