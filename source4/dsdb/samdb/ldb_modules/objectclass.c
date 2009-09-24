@@ -42,6 +42,7 @@
 #include "libcli/security/security.h"
 #include "auth/auth.h"
 #include "param/param.h"
+#include "../libds/common/flags.h"
 
 struct oc_context {
 
@@ -566,7 +567,7 @@ static int objectclass_do_add(struct oc_context *ac)
 
 					bool allowed_class = false;
 					int i, j;
-					for (i=0; !allowed_class && oc_el && i < oc_el->num_values; i++) {
+					for (i=0; allowed_class == false && oc_el && i < oc_el->num_values; i++) {
 						const struct dsdb_class *sclass;
 
 						sclass = dsdb_class_by_lDAPDisplayName_ldb_val(schema, &oc_el->values[i]);
@@ -574,9 +575,19 @@ static int objectclass_do_add(struct oc_context *ac)
 							/* We don't know this class?  what is going on? */
 							continue;
 						}
-						for (j=0; !allowed_class && sclass->possibleInferiors && sclass->possibleInferiors[j]; j++) {
-							if (ldb_attr_cmp(current->objectclass->lDAPDisplayName, sclass->possibleInferiors[j]) == 0) {
-								allowed_class = true;
+						if (ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
+							for (j=0; sclass->systemPossibleInferiors && sclass->systemPossibleInferiors[j]; j++) {
+								if (ldb_attr_cmp(current->objectclass->lDAPDisplayName, sclass->systemPossibleInferiors[j]) == 0) {
+									allowed_class = true;
+									break;
+								}
+							}
+						} else {
+							for (j=0; sclass->systemPossibleInferiors && sclass->systemPossibleInferiors[j]; j++) {
+								if (ldb_attr_cmp(current->objectclass->lDAPDisplayName, sclass->systemPossibleInferiors[j]) == 0) {
+									allowed_class = true;
+									break;
+								}
 							}
 						}
 					}
