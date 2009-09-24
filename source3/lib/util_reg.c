@@ -140,3 +140,38 @@ bool push_reg_multi_sz(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, const char **a)
 			(ndr_push_flags_fn_t)ndr_push_winreg_Data);
 	return NDR_ERR_CODE_IS_SUCCESS(ndr_err);
 }
+
+/*******************************************************************
+ pull a string in unix charset out of a REG_SZ UCS2 null terminated blob
+ ********************************************************************/
+
+bool pull_reg_sz(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, const char **s)
+{
+	union winreg_Data data;
+	enum ndr_err_code ndr_err;
+	ndr_err = ndr_pull_union_blob(blob, mem_ctx, NULL, &data, REG_SZ,
+			(ndr_pull_flags_fn_t)ndr_pull_winreg_Data);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return false;
+	}
+	*s = data.string;
+	return true;
+}
+
+/*******************************************************************
+ pull a string_array in unix charset out of a REG_MULTI_SZ UCS2 double-null
+ terminated blob
+ ********************************************************************/
+
+bool pull_reg_multi_sz(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, const char ***a)
+{
+	union winreg_Data data;
+	enum ndr_err_code ndr_err;
+	ndr_err = ndr_pull_union_blob(blob, mem_ctx, NULL, &data, REG_MULTI_SZ,
+			(ndr_pull_flags_fn_t)ndr_pull_winreg_Data);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return false;
+	}
+	*a = data.string_array;
+	return true;
+}
