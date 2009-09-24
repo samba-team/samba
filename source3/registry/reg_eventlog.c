@@ -196,12 +196,13 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 	struct regsubkey_ctr *subkeys;
 	struct regval_ctr *values;
 	struct regval_blob *rval;
-	int ii;
+	int ii = 0;
 	bool already_in;
 	int i;
-	int numsources;
+	int numsources = 0;
 	TALLOC_CTX *ctx = talloc_tos();
 	WERROR werr;
+	DATA_BLOB blob;
 
 	if (!elogs) {
 		return False;
@@ -255,15 +256,21 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 	already_in = False;
 	wrklist = NULL;
 	dump_data( 1, rval->data_p, rval->size );
-	if ( ( numsources =
-	       regval_convert_multi_sz( ( uint16 * ) rval->data_p, rval->size,
-					&wrklist ) ) > 0 ) {
 
-		ii = numsources;
+	blob = data_blob_const(rval->data_p, rval->size);
+	if (!pull_reg_multi_sz(talloc_tos(), &blob, &wrklist)) {
+		return false;
+	}
+
+	for (ii=0; wrklist[ii]; ii++) {
+		numsources++;
+	}
+
+	if (numsources > 0) {
 		/* see if it's in there already */
 		wp = wrklist;
 
-		while ( ii && wp && *wp ) {
+		while (wp && *wp ) {
 			if ( strequal( *wp, sourcename ) ) {
 				DEBUG( 5,
 				       ( "Source name [%s] already in list for [%s] \n",
@@ -272,13 +279,8 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 				break;
 			}
 			wp++;
-			ii--;
 		}
 	} else {
-		if ( numsources < 0 ) {
-			DEBUG( 3, ( "problem in getting the sources\n" ) );
-			return False;
-		}
 		DEBUG( 3,
 		       ( "Nothing in the sources list, this might be a problem\n" ) );
 	}
@@ -286,7 +288,6 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 	wp = wrklist;
 
 	if ( !already_in ) {
-		DATA_BLOB blob;
 		/* make a new list with an additional entry; copy values, add another */
 		wp = TALLOC_ARRAY(ctx, const char *, numsources + 2 );
 
