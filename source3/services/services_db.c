@@ -250,7 +250,7 @@ static bool read_init_file( const char *servicename, struct rcinit_file_informat
 
 static void fill_service_values(const char *name, struct regval_ctr *values)
 {
-	DATA_BLOB data, dname, ipath, description;
+	char *dname, *ipath, *description;
 	uint32 dword;
 	int i;
 
@@ -268,24 +268,17 @@ static void fill_service_values(const char *name, struct regval_ctr *values)
 
 	/* everything runs as LocalSystem */
 
-	push_reg_sz(talloc_tos(), &data, "LocalSystem");
-	regval_ctr_addvalue( values, "ObjectName", REG_SZ, (char *)data.data, data.length);
+	regval_ctr_addvalue_sz(values, "ObjectName", "LocalSystem");
 
 	/* special considerations for internal services and the DisplayName value */
 
 	for ( i=0; builtin_svcs[i].servicename; i++ ) {
 		if ( strequal( name, builtin_svcs[i].servicename ) ) {
-			char *pstr = NULL;
-			if (asprintf(&pstr, "%s/%s/%s",
+			ipath = talloc_asprintf(talloc_tos(), "%s/%s/%s",
 					get_dyn_MODULESDIR(), SVCCTL_SCRIPT_DIR,
-					builtin_svcs[i].daemon) > 0) {
-				push_reg_sz(talloc_tos(), &ipath, pstr);
-				SAFE_FREE(pstr);
-			} else {
-				push_reg_sz(talloc_tos(), &ipath, "");
-			}
-			push_reg_sz(talloc_tos(), &description, builtin_svcs[i].description);
-			push_reg_sz(talloc_tos(), &dname, builtin_svcs[i].dispname);
+					builtin_svcs[i].daemon);
+			description = talloc_strdup(talloc_tos(), builtin_svcs[i].description);
+			dname = talloc_strdup(talloc_tos(), builtin_svcs[i].dispname);
 			break;
 		}
 	}
@@ -293,38 +286,37 @@ static void fill_service_values(const char *name, struct regval_ctr *values)
 	/* default to an external service if we haven't found a match */
 
 	if ( builtin_svcs[i].servicename == NULL ) {
-		char *pstr = NULL;
 		char *dispname = NULL;
 		struct rcinit_file_information *init_info = NULL;
 
-		if (asprintf(&pstr, "%s/%s/%s",get_dyn_MODULESDIR(),
-					SVCCTL_SCRIPT_DIR, name) > 0) {
-			push_reg_sz(talloc_tos(), &ipath, pstr);
-			SAFE_FREE(pstr);
-		} else {
-			push_reg_sz(talloc_tos(), &ipath, "");
-		}
+		ipath = talloc_asprintf(talloc_tos(), "%s/%s/%s",
+					get_dyn_MODULESDIR(), SVCCTL_SCRIPT_DIR,
+					name);
 
 		/* lookup common unix display names */
 		dispname = get_common_service_dispname(name);
-		push_reg_sz(talloc_tos(), &dname, dispname ? dispname : "");
+		dname = talloc_strdup(talloc_tos(), dispname ? dispname : "");
 		SAFE_FREE(dispname);
 
 		/* get info from init file itself */
 		if ( read_init_file( name, &init_info ) ) {
-			push_reg_sz(talloc_tos(), &description, init_info->description);
+			description = talloc_strdup(talloc_tos(), init_info->description);
 			TALLOC_FREE( init_info );
 		}
 		else {
-			push_reg_sz(talloc_tos(), &description, "External Unix Service");
+			description = talloc_strdup(talloc_tos(), "External Unix Service");
 		}
 	}
 
 	/* add the new values */
 
-	regval_ctr_addvalue( values, "DisplayName", REG_SZ, (char*)dname.data, dname.length);
-	regval_ctr_addvalue( values, "ImagePath", REG_SZ, (char*)ipath.data, ipath.length);
-	regval_ctr_addvalue( values, "Description", REG_SZ, (char*)description.data, description.length);
+	regval_ctr_addvalue_sz(values, "DisplayName", dname);
+	regval_ctr_addvalue_sz(values, "ImagePath", ipath);
+	regval_ctr_addvalue_sz(values, "Description", description);
+
+	TALLOC_FREE(dname);
+	TALLOC_FREE(ipath);
+	TALLOC_FREE(description);
 
 	return;
 }

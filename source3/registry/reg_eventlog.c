@@ -114,11 +114,8 @@ bool eventlog_init_keys(void)
 			regval_ctr_addvalue(values, "Retention", REG_DWORD,
 					     (char *)&uiRetention,
 					     sizeof(uint32));
-			push_reg_sz(talloc_tos(), &data, *elogs);
 
-			regval_ctr_addvalue(values, "PrimaryModule", REG_SZ,
-					     (char *)data.data,
-					     data.length);
+			regval_ctr_addvalue_sz(values, "PrimaryModule", *elogs);
 			push_reg_sz(talloc_tos(), &data, *elogs);
 
 			regval_ctr_addvalue(values, "Sources", REG_MULTI_SZ,
@@ -199,7 +196,6 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 	struct regsubkey_ctr *subkeys;
 	struct regval_ctr *values;
 	struct regval_blob *rval;
-	DATA_BLOB data;
 	uint16 *msz_wp;
 	int mbytes, ii;
 	bool already_in;
@@ -369,11 +365,7 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 
 	regdb_fetch_values( evtlogpath, values );
 
-	push_reg_sz(talloc_tos(), &data, messagefile);
-
-	regval_ctr_addvalue( values, "EventMessageFile", REG_SZ,
-			     ( char * ) data.data,
-			     data.length);
+	regval_ctr_addvalue_sz(values, "EventMessageFile", messagefile);
 	regdb_store_values( evtlogpath, values );
 
 	TALLOC_FREE(values);

@@ -386,7 +386,6 @@ static bool key_printers_store_keys( const char *key, struct regsubkey_ctr *subk
 static void fill_in_printer_values(NT_PRINTER_INFO_LEVEL_2 *info2, struct regval_ctr *values)
 {
 	struct spoolss_DeviceMode *devmode;
-	DATA_BLOB	data;
 	char 		*p;
 	uint32 printer_status = PRINTER_STATUS_OK;
 	
@@ -407,35 +406,16 @@ static void fill_in_printer_values(NT_PRINTER_INFO_LEVEL_2 *info2, struct regval
 	else
 		p++;
 
-	push_reg_sz(talloc_tos(), &data, p);
-	regval_ctr_addvalue( values, "Name", REG_SZ, (char*)data.data, data.length);
-
-	push_reg_sz(talloc_tos(), &data, info2->location);
-	regval_ctr_addvalue( values, "Location", REG_SZ, (char*)data.data, data.length);
-
-	push_reg_sz(talloc_tos(), &data, info2->comment);
-	regval_ctr_addvalue( values, "Description", REG_SZ, (char*)data.data, data.length);
-
-	push_reg_sz(talloc_tos(), &data, info2->parameters);
-	regval_ctr_addvalue( values, "Parameters", REG_SZ, (char*)data.data, data.length);
-
-	push_reg_sz(talloc_tos(), &data, info2->portname);
-	regval_ctr_addvalue( values, "Port", REG_SZ, (char*)data.data, data.length);
-
-	push_reg_sz(talloc_tos(), &data, info2->sharename);
-	regval_ctr_addvalue( values, "Share Name", REG_SZ, (char*)data.data, data.length);
-
-	push_reg_sz(talloc_tos(), &data, info2->drivername);
-	regval_ctr_addvalue( values, "Printer Driver", REG_SZ, (char*)data.data, data.length);
-
-	push_reg_sz(talloc_tos(), &data, info2->sepfile);
-	regval_ctr_addvalue( values, "Separator File", REG_SZ, (char*)data.data, data.length);
-
-	push_reg_sz(talloc_tos(), &data, "WinPrint");
-	regval_ctr_addvalue( values, "Print Processor",  REG_SZ, (char*)data.data, data.length);
-
-	push_reg_sz(talloc_tos(), &data, "RAW");
-	regval_ctr_addvalue( values, "Datatype", REG_SZ, (char*)data.data, data.length);
+	regval_ctr_addvalue_sz(values, "Name", p);
+	regval_ctr_addvalue_sz(values, "Location", info2->location);
+	regval_ctr_addvalue_sz(values, "Description", info2->comment);
+	regval_ctr_addvalue_sz(values, "Parameters", info2->parameters);
+	regval_ctr_addvalue_sz(values, "Port", info2->portname);
+	regval_ctr_addvalue_sz(values, "Share Name", info2->sharename);
+	regval_ctr_addvalue_sz(values, "Printer Driver", info2->drivername);
+	regval_ctr_addvalue_sz(values, "Separator File", info2->sepfile);
+	regval_ctr_addvalue_sz(values, "Print Processor", "WinPrint");
+	regval_ctr_addvalue_sz(values, "Datatype", "RAW");
 
 	/* stream the device mode */
 
@@ -898,28 +878,18 @@ static void fill_in_driver_values(NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3, struct 
 	DATA_BLOB data;
 
 	filename = dos_basename( info3->driverpath );
-	push_reg_sz(talloc_tos(), &data, filename);
-	regval_ctr_addvalue( values, "Driver", REG_SZ,
-		(char *)data.data, data.length);
+	regval_ctr_addvalue_sz(values, "Driver", filename);
 
 	filename = dos_basename( info3->configfile );
-	push_reg_sz(talloc_tos(), &data, filename);
-	regval_ctr_addvalue( values, "Configuration File", REG_SZ,
-		(char *)data.data, data.length);
+	regval_ctr_addvalue_sz(values, "Configuration File", filename);
 
 	filename = dos_basename( info3->datafile );
-	push_reg_sz(talloc_tos(), &data, filename);
-	regval_ctr_addvalue( values, "Data File", REG_SZ,
-		(char *)data.data, data.length);
+	regval_ctr_addvalue_sz(values, "Data File", filename);
 
 	filename = dos_basename( info3->helpfile );
-	push_reg_sz(talloc_tos(), &data, filename);
-	regval_ctr_addvalue( values, "Help File", REG_SZ,
-		(char *)data.data, data.length);
+	regval_ctr_addvalue_sz(values, "Help File", filename);
 
-	push_reg_sz(talloc_tos(), &data, info3->defaultdatatype);
-	regval_ctr_addvalue( values, "Data Type", REG_SZ,
-		(char *)data.data, data.length);
+	regval_ctr_addvalue_sz(values, "Data Type", info3->defaultdatatype);
 
 	regval_ctr_addvalue( values, "Version", REG_DWORD, (char*)&info3->cversion, 
 		sizeof(info3->cversion) );

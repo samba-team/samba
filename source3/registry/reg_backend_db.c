@@ -250,8 +250,6 @@ WERROR init_registry_key(const char *add_path)
 static void regdb_ctr_add_value(struct regval_ctr *ctr,
 				struct builtin_regkey_value *value)
 {
-	DATA_BLOB data;
-
 	switch(value->type) {
 	case REG_DWORD:
 		regval_ctr_addvalue(ctr, value->valuename, REG_DWORD,
@@ -260,10 +258,8 @@ static void regdb_ctr_add_value(struct regval_ctr *ctr,
 		break;
 
 	case REG_SZ:
-		push_reg_sz(talloc_tos(), &data, value->data.string);
-		regval_ctr_addvalue(ctr, value->valuename, REG_SZ,
-				    (char*)data.data,
-				    data.length);
+		regval_ctr_addvalue_sz(ctr, value->valuename,
+				       value->data.string);
 		break;
 
 	default:

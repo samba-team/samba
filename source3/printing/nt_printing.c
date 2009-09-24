@@ -3033,14 +3033,8 @@ done:
 static void map_sz_into_ctr(struct regval_ctr *ctr, const char *val_name,
 			    const char *sz)
 {
-	smb_ucs2_t conv_str[1024];
-	size_t str_size;
-
 	regval_ctr_delvalue(ctr, val_name);
-	str_size = push_ucs2(NULL, conv_str, sz, sizeof(conv_str),
-			     STR_TERMINATE | STR_NOALIGN);
-	regval_ctr_addvalue(ctr, val_name, REG_SZ,
-			    (char *) conv_str, str_size);
+	regval_ctr_addvalue_sz(ctr, val_name, sz);
 }
 
 static void map_dword_into_ctr(struct regval_ctr *ctr, const char *val_name,
@@ -3167,7 +3161,6 @@ static void store_printer_guid(NT_PRINTER_INFO_LEVEL_2 *info2,
 {
 	int i;
 	struct regval_ctr *ctr=NULL;
-	DATA_BLOB unistr_guid;
 
 	/* find the DsSpooler key */
 	if ((i = lookup_printerkey(info2->data, SPOOL_DSSPOOLER_KEY)) < 0)
@@ -3179,12 +3172,8 @@ static void store_printer_guid(NT_PRINTER_INFO_LEVEL_2 *info2,
 	/* We used to store this as a REG_BINARY but that causes
 	   Vista to whine */
 
-	push_reg_sz(talloc_tos(), &unistr_guid, GUID_string(talloc_tos(), &guid));
-
-	regval_ctr_addvalue(ctr, "objectGUID", REG_SZ,
-			    (char *)unistr_guid.data,
-			    unistr_guid.length);
-
+	regval_ctr_addvalue_sz(ctr, "objectGUID",
+			       GUID_string(talloc_tos(), &guid));
 }
 
 static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
@@ -3781,19 +3770,14 @@ static int unpack_values(NT_PRINTER_DATA *printer_data, const uint8 *buf, int bu
 		     strequal( valuename, "objectGUID" ) )
 		{
 			struct GUID guid;
-			DATA_BLOB unistr_guid;
 
 			/* convert the GUID to a UNICODE string */
 
 			memcpy( &guid, data_p, sizeof(struct GUID) );
 
-			push_reg_sz(&talloc_tos, &unistr_guid,
-				    GUID_string(talloc_tos(), &guid));
-
-			regval_ctr_addvalue( printer_data->keys[key_index].values,
-					     valuename, REG_SZ,
-					     (const char *)unistr_guid.data,
-					     unistr_guid.length);
+			regval_ctr_addvalue_sz(printer_data->keys[key_index].values,
+					       valuename,
+					       GUID_string(talloc_tos(), &guid));
 
 		} else {
 			/* add the value */
