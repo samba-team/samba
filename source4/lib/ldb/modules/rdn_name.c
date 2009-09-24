@@ -1,7 +1,7 @@
 /* 
    ldb database library
 
-   Copyright (C) Andrew Bartlett 2005
+   Copyright (C) Andrew Bartlett 2005-2009
    Copyright (C) Simo Sorce 2006-2008
 
      ** NOTE! The following LGPL license applies to the ldb
@@ -329,8 +329,37 @@ static int rdn_name_rename(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, down_req);
 }
 
+static int rdn_name_modify(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_context *ldb;
+
+	ldb = ldb_module_get_ctx(module);
+	ldb_debug(ldb, LDB_DEBUG_TRACE, "rdn_name_rename");
+
+	/* do not manipulate our control entries */
+	if (ldb_dn_is_special(req->op.mod.message->dn)) {
+		return ldb_next_request(module, req);
+	}
+
+	if (ldb_msg_find_element(req->op.mod.message, "name")) {
+		ldb_asprintf_errstring(ldb, "Modify of 'name' on %s not permitted, must use 'rename' operation instead",
+				       ldb_dn_get_linearized(req->op.mod.message->dn));
+		return LDB_ERR_NOT_ALLOWED_ON_RDN;
+	}
+
+	if (ldb_msg_find_element(req->op.mod.message, ldb_dn_get_rdn_name(req->op.mod.message->dn))) {
+		ldb_asprintf_errstring(ldb, "Modify of RDN '%s' on %s not permitted, must use 'rename' operation instead",
+				       ldb_dn_get_rdn_name(req->op.mod.message->dn), ldb_dn_get_linearized(req->op.mod.message->dn));
+		return LDB_ERR_NOT_ALLOWED_ON_RDN;
+	}
+
+	/* All OK, they kept their fingers out of the special attributes */
+	return ldb_next_request(module, req);
+}
+
 const struct ldb_module_ops ldb_rdn_name_module_ops = {
 	.name              = "rdn_name",
 	.add               = rdn_name_add,
+	.modify            = rdn_name_modify,
 	.rename            = rdn_name_rename,
 };
