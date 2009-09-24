@@ -6,3 +6,4 @@ objectClass: top
 objectClass: configuration
 cn: Configuration
 nTSecurityDescriptor:: ${DESCRIPTOR}
+instanceType: 13

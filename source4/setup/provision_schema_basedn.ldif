@@ -6,3 +6,4 @@ objectClass: top
 objectClass: dMD
 cn: Schema
 nTSecurityDescriptor:: ${DESCRIPTOR}
+instanceType: 13

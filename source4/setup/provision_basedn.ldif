@@ -4,4 +4,5 @@
 dn: ${DOMAINDN}
 objectClass: top
 objectClass: ${DOMAIN_OC}
+instanceType: 5
 ${DOMAINGUID}
