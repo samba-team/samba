@@ -146,7 +146,7 @@ bool map_username(struct smbd_server_connection *sconn, fstring user)
 	while((s=fgets_slash(buf,sizeof(buf),f))!=NULL) {
 		char *unixname = s;
 		char *dosname = strchr_m(unixname,'=');
-		const char **dosuserlist;
+		char **dosuserlist;
 		bool return_if_mapped = False;
 
 		if (!dosname)
