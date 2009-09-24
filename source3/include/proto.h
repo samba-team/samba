@@ -5159,7 +5159,6 @@ char *normalize_reg_path(TALLOC_CTX *ctx, const char *keyname );
 void normalize_dbkey(char *key);
 char *reg_remaining_path(TALLOC_CTX *ctx, const char *key);
 int regval_convert_multi_sz( uint16 *multi_string, size_t byte_len, char ***values );
-size_t regval_build_multi_sz( char **values, uint16 **buffer );
 
 /* The following definitions come from registry/reg_util_legacy.c  */
 
