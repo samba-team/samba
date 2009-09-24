@@ -198,6 +198,25 @@ static void schema_fill_possible_inferiors(struct dsdb_schema *schema, struct ds
 	schema_class->possibleInferiors = str_list_unique(schema_class->possibleInferiors);
 }
 
+static void schema_fill_system_possible_inferiors(struct dsdb_schema *schema, struct dsdb_class *schema_class)
+{
+	struct dsdb_class *c2;
+
+	for (c2=schema->classes; c2; c2=c2->next) {
+		char **superiors = schema_posssuperiors(schema, c2);
+		if (c2->objectClassCategory != 2
+		    && c2->objectClassCategory != 3
+		    && str_list_check(superiors, schema_class->lDAPDisplayName)) {
+			if (schema_class->possibleInferiors == NULL) {
+				schema_class->systemPossibleInferiors = str_list_make_empty(schema_class);
+			}
+			schema_class->systemPossibleInferiors = str_list_add_const(schema_class->systemPossibleInferiors,
+										   c2->lDAPDisplayName);
+		}
+	}
+	schema_class->systemPossibleInferiors = str_list_unique(schema_class->systemPossibleInferiors);
+}
+
 /*
   fill in a string class name from a governs_ID
  */
@@ -285,6 +304,7 @@ void schema_fill_constructed(struct dsdb_schema *schema)
 
 	for (schema_class=schema->classes; schema_class; schema_class=schema_class->next) {
 		schema_fill_possible_inferiors(schema, schema_class);
+		schema_fill_system_possible_inferiors(schema, schema_class);
 	}
 
 	/* free up our internal cache elements */
