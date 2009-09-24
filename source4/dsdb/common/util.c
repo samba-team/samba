@@ -2184,6 +2184,56 @@ int dsdb_find_dn_by_guid(struct ldb_context *ldb,
 	return LDB_SUCCESS;
 }
 
+/*
+  search for attrs on one DN, allowing for deleted objects
+ */
+static int dsdb_search_dn_with_deleted(struct ldb_context *ldb,
+				       TALLOC_CTX *mem_ctx,
+				       struct ldb_result **_res,
+				       struct ldb_dn *basedn,
+				       const char * const *attrs)
+{
+	int ret;
+	struct ldb_request *req;
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_result *res;
+
+	tmp_ctx = talloc_new(mem_ctx);
+
+	res = talloc_zero(tmp_ctx, struct ldb_result);
+	if (!res) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ldb_build_search_req(&req, ldb, tmp_ctx,
+				   basedn,
+				   LDB_SCOPE_BASE,
+				   NULL,
+				   attrs,
+				   NULL,
+				   res,
+				   ldb_search_default_callback,
+				   NULL);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	ret = ldb_request_add_control(req, LDB_CONTROL_SHOW_DELETED_OID, true, NULL);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = ldb_request(ldb, req);
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+
+	talloc_free(req);
+	*_res = talloc_steal(mem_ctx, res);
+	return ret;
+}
+
 
 /*
   use a DN to find a GUID
@@ -2196,10 +2246,14 @@ int dsdb_find_guid_by_dn(struct ldb_context *ldb,
 	const char *attrs[] = { "objectGUID", NULL };
 	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
 
-	ret = ldb_search(ldb, tmp_ctx, &res, dn, LDB_SCOPE_BASE, attrs, NULL);
+	ret = dsdb_search_dn_with_deleted(ldb, tmp_ctx, &res, dn, attrs);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
+	}
+	if (res->count < 1) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_NO_SUCH_OBJECT;
 	}
 	*guid = samdb_result_guid(res->msgs[0], "objectGUID");
 	talloc_free(tmp_ctx);
@@ -2220,10 +2274,14 @@ int dsdb_find_sid_by_dn(struct ldb_context *ldb,
 
 	ZERO_STRUCTP(sid);
 
-	ret = ldb_search(ldb, tmp_ctx, &res, dn, LDB_SCOPE_BASE, attrs, NULL);
+	ret = dsdb_search_dn_with_deleted(ldb, tmp_ctx, &res, dn, attrs);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
+	}
+	if (res->count < 1) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_NO_SUCH_OBJECT;
 	}
 	s = samdb_result_dom_sid(tmp_ctx, res->msgs[0], "objectSID");
 	if (s == NULL) {
