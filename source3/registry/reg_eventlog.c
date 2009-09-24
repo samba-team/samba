@@ -191,13 +191,12 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 	   need to add KEY of source to KEY_EVENTLOG/<eventlog>/<source> */
 
 	const char **elogs = lp_eventlog_list(  );
-	char **wrklist, **wp;
+	const char **wrklist, **wp;
 	char *evtlogpath = NULL;
 	struct regsubkey_ctr *subkeys;
 	struct regval_ctr *values;
 	struct regval_blob *rval;
-	uint16 *msz_wp;
-	int mbytes, ii;
+	int ii;
 	bool already_in;
 	int i;
 	int numsources;
@@ -287,8 +286,9 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 	wp = wrklist;
 
 	if ( !already_in ) {
+		DATA_BLOB blob;
 		/* make a new list with an additional entry; copy values, add another */
-		wp = TALLOC_ARRAY(ctx, char *, numsources + 2 );
+		wp = TALLOC_ARRAY(ctx, const char *, numsources + 2 );
 
 		if ( !wp ) {
 			DEBUG( 0, ( "talloc() failed \n" ) );
@@ -297,12 +297,14 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 		memcpy( wp, wrklist, sizeof( char * ) * numsources );
 		*( wp + numsources ) = ( char * ) sourcename;
 		*( wp + numsources + 1 ) = NULL;
-		mbytes = regval_build_multi_sz( wp, &msz_wp );
-		dump_data( 1, ( uint8 * ) msz_wp, mbytes );
+		if (!push_reg_multi_sz(ctx, &blob, wp)) {
+			return false;
+		}
+		dump_data( 1, blob.data, blob.length);
 		regval_ctr_addvalue( values, "Sources", REG_MULTI_SZ,
-				     ( char * ) msz_wp, mbytes );
+				     ( char * ) blob.data, blob.length);
 		regdb_store_values( evtlogpath, values );
-		TALLOC_FREE(msz_wp);
+		data_blob_free(&blob);
 	} else {
 		DEBUG( 3,
 		       ( "Source name [%s] found in existing list of sources\n",
