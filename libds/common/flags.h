@@ -180,3 +180,6 @@
 #define DS_DC_FUNCTION_2008		3
 #define DS_DC_FUNCTION_2008_R2		4
 
+/* sa->systemFlags on attributes */
+#define DS_FLAG_ATTR_NOT_REPLICATED    0x00000001
+#define DS_FLAG_ATTR_IS_CONSTRUCTED    0x00000004

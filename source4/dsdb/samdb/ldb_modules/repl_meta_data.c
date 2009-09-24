@@ -567,7 +567,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 			return LDB_ERR_NO_SUCH_ATTRIBUTE;
 		}
 
-		if ((sa->systemFlags & 0x00000001) || (sa->systemFlags & 0x00000004)) {
+		if ((sa->systemFlags & DS_FLAG_ATTR_NOT_REPLICATED) || (sa->systemFlags & DS_FLAG_ATTR_IS_CONSTRUCTED)) {
 			/* if the attribute is not replicated (0x00000001)
 			 * or constructed (0x00000004) it has no metadata
 			 */
@@ -689,10 +689,7 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	if ((a->systemFlags & 0x00000001) || (a->systemFlags & 0x00000004)) {
-		/* if the attribute is not replicated (0x00000001)
-		 * or constructed (0x00000004) it has no metadata
-		 */
+	if ((a->systemFlags & DS_FLAG_ATTR_NOT_REPLICATED) || (a->systemFlags & DS_FLAG_ATTR_IS_CONSTRUCTED)) {
 		return LDB_SUCCESS;
 	}
 
