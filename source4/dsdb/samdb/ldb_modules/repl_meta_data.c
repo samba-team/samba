@@ -814,12 +814,28 @@ static int replmd_update_rpmd(struct ldb_module *module,
 	if (*seq_num != 0) {
 		struct ldb_val *md_value;
 		struct ldb_message_element *el;
+		const char *rdn_name;
+		const struct dsdb_attribute *rdn_sa;
+
+		rdn_name = ldb_dn_get_rdn_name(msg->dn);
+		if (!rdn_name) {
+			DEBUG(0,(__location__ ": No rDN for %s?\n", ldb_dn_get_linearized(msg->dn)));
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		rdn_sa = dsdb_attribute_by_lDAPDisplayName(schema, rdn_name);
+		if (rdn_sa == NULL) {
+			DEBUG(0,(__location__ ": sa not found for rDN %s in %s?\n", 
+				 rdn_name, ldb_dn_get_linearized(msg->dn)));
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 
 		md_value = talloc(msg, struct ldb_val);
 		if (md_value == NULL) {
 			ldb_oom(ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
+
+		replmd_replPropertyMetaDataCtr1_sort(&omd.ctr.ctr1, &rdn_sa->attributeID_id);
 
 		ndr_err = ndr_push_struct_blob(md_value, msg, 
 					       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
@@ -910,7 +926,6 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/* TODO:
-	 * - sort the attributes by attid with replmd_ldb_message_sort()
 	 * - replace the old object with the newly constructed one
 	 */
 
