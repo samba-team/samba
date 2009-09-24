@@ -137,6 +137,11 @@ dn: CN=DomainUpdates,CN=System,${DOMAINDN}
 objectClass: top
 objectClass: container
 
+dn: CN=ActiveDirectoryUpdate,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+revision: 3
+
 dn: CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
 objectClass: top
 objectClass: container
