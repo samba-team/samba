@@ -1616,7 +1616,7 @@ bool str_list_sub_basic( char **list, const char *smb_name,
 }
 
 /******************************************************************************
- substritute a specific pattern in a string list
+ substitute a specific pattern in a string list
  *****************************************************************************/
 
 bool str_list_substitute(char **list, const char *pattern, const char *insert)
@@ -2430,18 +2430,18 @@ char *escape_shell_string(const char *src)
 
 #define S_LIST_ABS 16 /* List Allocation Block Size */
 
-char **str_list_make_v3(TALLOC_CTX *mem_ctx, const char *string, const char *sep)
+const char **str_list_make_v3(TALLOC_CTX *mem_ctx, const char *string,
+	const char *sep)
 {
-	char **list;
+	const char **list;
 	const char *str;
-	char *s;
+	char *s, *tok;
 	int num, lsize;
-	char *tok;
 
 	if (!string || !*string)
 		return NULL;
 
-	list = TALLOC_ARRAY(mem_ctx, char *, S_LIST_ABS+1);
+	list = TALLOC_ARRAY(mem_ctx, const char *, S_LIST_ABS+1);
 	if (list == NULL) {
 		return NULL;
 	}
@@ -2461,11 +2461,11 @@ char **str_list_make_v3(TALLOC_CTX *mem_ctx, const char *string, const char *sep
 	while (next_token_talloc(list, &str, &tok, sep)) {
 
 		if (num == lsize) {
-			char **tmp;
+			const char **tmp;
 
 			lsize += S_LIST_ABS;
 
-			tmp = TALLOC_REALLOC_ARRAY(mem_ctx, list, char *,
+			tmp = TALLOC_REALLOC_ARRAY(mem_ctx, list, const char *,
 						   lsize + 1);
 			if (tmp == NULL) {
 				DEBUG(0,("str_list_make: "
@@ -2477,7 +2477,7 @@ char **str_list_make_v3(TALLOC_CTX *mem_ctx, const char *string, const char *sep
 			list = tmp;
 
 			memset (&list[num], 0,
-				((sizeof(char**)) * (S_LIST_ABS +1)));
+				((sizeof(const char**)) * (S_LIST_ABS +1)));
 		}
 
 		list[num] = tok;
