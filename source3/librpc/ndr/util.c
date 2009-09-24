@@ -107,6 +107,9 @@ const char *ndr_errstr(enum ndr_err_code err)
 	case NDR_ERR_UNREAD_BYTES:
 		return "NDR_ERR_UNREAD_BYTES";
 		break;
+	case NDR_ERR_NDR64:
+		return "NDR_ERR_NDR64";
+		break;
 	}
 
 	return talloc_asprintf(talloc_tos(), "Unknown NDR error: %d", err);
