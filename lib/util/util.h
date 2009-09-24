@@ -407,12 +407,12 @@ _PUBLIC_ bool strequal(const char *s1, const char *s2);
 /**
   build an empty (only NULL terminated) list of strings (for expansion with str_list_add() etc)
 */
-_PUBLIC_ const char **str_list_make_empty(TALLOC_CTX *mem_ctx);
+_PUBLIC_ char **str_list_make_empty(TALLOC_CTX *mem_ctx);
 
 /**
   place the only element 'entry' into a new, NULL terminated string list
 */
-_PUBLIC_ const char **str_list_make_single(TALLOC_CTX *mem_ctx,
+_PUBLIC_ char **str_list_make_single(TALLOC_CTX *mem_ctx,
 	const char *entry);
 
 /**
@@ -420,7 +420,7 @@ _PUBLIC_ const char **str_list_make_single(TALLOC_CTX *mem_ctx,
   separator list. The separator list must contain characters less than
   or equal to 0x2f for this to work correctly on multi-byte strings
 */
-_PUBLIC_ const char **str_list_make(TALLOC_CTX *mem_ctx, const char *string,
+_PUBLIC_ char **str_list_make(TALLOC_CTX *mem_ctx, const char *string,
 	const char *sep);
 
 /**
@@ -428,7 +428,7 @@ _PUBLIC_ const char **str_list_make(TALLOC_CTX *mem_ctx, const char *string,
  * Entries are seperated by spaces and can be enclosed by quotes. 
  * Does NOT support escaping
  */
-_PUBLIC_ const char **str_list_make_shell(TALLOC_CTX *mem_ctx, const char *string, const char *sep);
+_PUBLIC_ char **str_list_make_shell(TALLOC_CTX *mem_ctx, const char *string, const char *sep);
 
 /**
  * join a list back to one string 
@@ -447,7 +447,7 @@ _PUBLIC_ size_t str_list_length(const char * const *list);
 /**
   copy a string list
 */
-_PUBLIC_ const char **str_list_copy(TALLOC_CTX *mem_ctx, const char **list);
+_PUBLIC_ char **str_list_copy(TALLOC_CTX *mem_ctx, const char **list);
 
 /**
    Return true if all the elements of the list match exactly.
