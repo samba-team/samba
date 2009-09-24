@@ -517,7 +517,7 @@ struct drsuapi_DsReplicaObjectIdentifier3 {
 }/* [gensize,public] */;
 
 struct drsuapi_DsReplicaObjectIdentifier3Binary {
-	uint32_t __ndr_size;/* [value(ndr_size_drsuapi_DsReplicaObjectIdentifier3Binary(r,ndr->iconv_convenience,ndr->flags))] */
+	uint32_t __ndr_size;/* [value(ndr_size_drsuapi_DsReplicaObjectIdentifier3(r,ndr->iconv_convenience,ndr->flags))] */
 	uint32_t __ndr_size_sid;/* [value(ndr_size_dom_sid28(&sid,ndr->flags))] */
 	struct GUID guid;
 	struct dom_sid28 sid;
