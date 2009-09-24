@@ -1654,7 +1654,7 @@ static NTSTATUS serverinfo_to_SamInfo_base(TALLOC_CTX *mem_ctx,
 	base->groups			= groups;
 	base->user_flags		= NETLOGON_EXTRA_SIDS;
 	base->key			= user_session_key;
-	base->logon_server.string	= my_name;
+	base->logon_server.string	= talloc_strdup(mem_ctx, my_name);
 	base->domain.string		= talloc_strdup(mem_ctx, pdb_get_domain(sampw));
 	base->domain_sid		= sid;
 	base->LMSessKey			= lm_session_key;
