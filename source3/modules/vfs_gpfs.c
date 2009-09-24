@@ -769,7 +769,6 @@ static int gpfsacl_emu_chmod(const char *path, mode_t mode)
 	int     i;
 	files_struct    fake_fsp; /* TODO: rationalize parametrization */
 	SMB4ACE_T       *smbace;
-	struct smb_filename *smb_fname = NULL;
 	NTSTATUS status;
 
 	DEBUG(10, ("gpfsacl_emu_chmod invoked for %s mode %o\n", path, mode));
