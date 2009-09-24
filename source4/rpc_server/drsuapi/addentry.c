@@ -101,7 +101,7 @@ static WERROR drsuapi_add_SPNs(struct drsuapi_bind_state *b_state,
 		}
 
 		el->num_values = 2;
-		el->values = talloc_array(el, struct ldb_val, 2);
+		el->values = talloc_array(msg->elements, struct ldb_val, 2);
 		if (el->values == NULL) {
 			return WERR_NOMEM;
 		}
