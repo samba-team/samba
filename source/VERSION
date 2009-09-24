@@ -25,7 +25,7 @@
 ########################################################
 SAMBA_VERSION_MAJOR=3
 SAMBA_VERSION_MINOR=0
-SAMBA_VERSION_RELEASE=36
+SAMBA_VERSION_RELEASE=37
 
 ########################################################
 # Bug fix releases use a letter for the patch revision #
