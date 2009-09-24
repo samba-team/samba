@@ -97,6 +97,9 @@ struct samldb_ctx {
 	/* all the async steps necessary to complete the operation */
 	struct samldb_step *steps;
 	struct samldb_step *curstep;
+
+	/* If someone set an ares to forward controls and response back to the caller */
+	struct ldb_reply *ares;
 };
 
 static struct samldb_ctx *samldb_ctx_init(struct ldb_module *module,
@@ -161,9 +164,14 @@ static int samldb_next_step(struct samldb_ctx *ac)
 		return ac->curstep->fn(ac);
 	}
 
-	/* it is an error if the last step does not properly
-	 * return to the upper module by itself */
-	return LDB_ERR_OPERATIONS_ERROR;
+	/* we exit the samldb module here */
+	/* If someone set an ares to forward controls and response back to the caller, use them */
+	if (ac->ares) {
+		return ldb_module_done(ac->req, ac->ares->controls,
+				       ac->ares->response, LDB_SUCCESS);
+	} else {
+		return ldb_module_done(ac->req, NULL, NULL, LDB_SUCCESS);
+	}
 }
 
 /*
@@ -868,6 +876,152 @@ static int samldb_notice_sid(struct samldb_ctx *ac)
 }
 
 /*
+ * samldb_set_defaultObjectCategory_callback (async)
+ */
+
+static int samldb_set_defaultObjectCategory_callback(struct ldb_request *req,
+						     struct ldb_reply *ares)
+{
+	struct ldb_context *ldb;
+	struct samldb_ctx *ac;
+	int ret;
+
+	ac = talloc_get_type(req->context, struct samldb_ctx);
+	ldb = ldb_module_get_ctx(ac->module);
+
+	if (!ares) {
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		goto done;
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
+	}
+	if (ares->type != LDB_REPLY_DONE) {
+		ldb_set_errstring(ldb,
+			"Invalid reply type!\n");
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		goto done;
+	}
+
+	ret = samldb_next_step(ac);
+
+done:
+	if (ret != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, NULL, NULL, ret);
+	}
+
+	return LDB_SUCCESS;
+}
+
+static int samldb_set_defaultObjectCategory(struct samldb_ctx *ac)
+{
+	int ret;
+	if (ac->dn) {
+		struct ldb_request *req;
+		struct ldb_context *ldb;
+		struct ldb_message *msg = ldb_msg_new(ac);
+
+		msg->dn = ac->dn;
+
+		ldb_msg_add_empty(msg, "defaultObjectCategory", LDB_FLAG_MOD_REPLACE, NULL);
+
+		ldb_msg_add_steal_string(msg, "defaultObjectCategory", ldb_dn_alloc_linearized(msg, ac->dn));
+
+		ldb = ldb_module_get_ctx(ac->module);
+
+		ret = ldb_build_mod_req(&req, ldb, ac,
+					msg, NULL,
+					ac, samldb_set_defaultObjectCategory_callback,
+					ac->req);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
+		return ldb_next_request(ac->module, req);
+	}
+
+	ret = samldb_next_step(ac);
+	if (ret != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, NULL, NULL, ret);
+	}
+	return ret;
+}
+
+/*
+ * samldb_find_for_defaultObjectCategory (async)
+ */
+
+static int samldb_find_for_defaultObjectCategory_callback(struct ldb_request *req,
+						struct ldb_reply *ares)
+{
+	struct samldb_ctx *ac;
+	int ret;
+
+	ac = talloc_get_type(req->context, struct samldb_ctx);
+
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+                                       ares->response, ares->error);
+	}
+
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
+		ac->dn = talloc_steal(ac, ares->message->dn);
+		break;
+	case LDB_REPLY_REFERRAL:
+		/* this should not happen */
+		return ldb_module_done(ac->req, NULL, NULL,
+                                       LDB_ERR_OPERATIONS_ERROR);
+
+	case LDB_REPLY_DONE:
+		/* found or not found, go on */
+		talloc_free(ares);
+		ret = samldb_next_step(ac);
+		if (ret != LDB_SUCCESS) {
+			return ldb_module_done(ac->req, NULL, NULL, ret);
+		}
+		break;
+	}
+
+	return LDB_SUCCESS;
+}
+
+static int samldb_find_for_defaultObjectCategory(struct samldb_ctx *ac)
+{
+	struct ldb_context *ldb;
+	struct ldb_request *req;
+        int ret;
+	const char *no_attrs[] = { NULL };
+
+	ldb = ldb_module_get_ctx(ac->module);
+
+	ac->dn = NULL;
+
+        if (ldb_msg_find_element(ac->msg, "defaultObjectCategory") == NULL) {
+		ret = ldb_build_search_req(&req, ldb, ac,
+					   ac->msg->dn, LDB_SCOPE_BASE,
+					   "objectClass=classSchema", no_attrs,
+					   NULL,
+					   ac, samldb_find_for_defaultObjectCategory_callback,
+					   ac->req);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		return ldb_next_request(ac->module, req);
+	}
+
+	ret = samldb_next_step(ac);
+	if (ret != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, NULL, NULL, ret);
+	}
+	return ret;
+
+}
+
+
+
+/*
  * samldb_add_entry (async)
  */
 
@@ -876,6 +1030,7 @@ static int samldb_add_entry_callback(struct ldb_request *req,
 {
 	struct ldb_context *ldb;
 	struct samldb_ctx *ac;
+	int ret;
 
 	ac = talloc_get_type(req->context, struct samldb_ctx);
 	ldb = ldb_module_get_ctx(ac->module);
@@ -895,9 +1050,14 @@ static int samldb_add_entry_callback(struct ldb_request *req,
 					LDB_ERR_OPERATIONS_ERROR);
 	}
 
-	/* we exit the samldb module here */
-	return ldb_module_done(ac->req, ares->controls,
-				ares->response, LDB_SUCCESS);
+	/* The caller may wish to get controls back from the add */
+	ac->ares = talloc_steal(ac, ares);
+
+	ret = samldb_next_step(ac);
+	if (ret != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, NULL, NULL, ret);
+	}
+	return ret;
 }
 
 static int samldb_add_entry(struct samldb_ctx *ac)
@@ -975,8 +1135,102 @@ static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 		ret = samdb_find_or_add_attribute(ldb, ac->msg,
 			"groupType", "-2147483646");
 		if (ret != LDB_SUCCESS) return ret;
+	} else if (strcmp(ac->type, "classSchema") == 0) {
+		const struct ldb_val *rdn_value;
+
+		ret = samdb_find_or_add_attribute(ldb, ac->msg,
+						  "rdnAttId", "cn");
+		if (ret != LDB_SUCCESS) return ret;
+
+		rdn_value = ldb_dn_get_rdn_val(ac->msg->dn);
+		if (!ldb_msg_find_element(ac->msg, "lDAPDisplayName")) {
+			/* the RDN has prefix "CN" */
+			ret = ldb_msg_add_string(ac->msg, "lDAPDisplayName",
+				samdb_cn_to_lDAPDisplayName(ac,
+					(const char *) rdn_value->data));
+			if (ret != LDB_SUCCESS) {
+				ldb_oom(ldb);
+				return ret;
+			}
+		}
+
+		if (!ldb_msg_find_element(ac->msg, "schemaIDGUID")) {
+			enum ndr_err_code ndr_err;
+			struct ldb_val guid_value;
+			struct GUID guid;
+			/* a new GUID */
+			guid = GUID_random();
+			/* generated NDR encoded values */
+			ndr_err = ndr_push_struct_blob(&guid_value, ac->msg,
+						       NULL,
+						       &guid,
+						       (ndr_push_flags_fn_t)ndr_push_GUID);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				ldb_oom(ldb);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+			ret = ldb_msg_add_value(ac->msg, "schemaIDGUID", &guid_value, NULL);
+			if (ret != LDB_SUCCESS) {
+				ldb_oom(ldb);
+				return ret;
+			}
+		}
+
+		ret = samldb_add_step(ac, samldb_add_entry);
+		if (ret != LDB_SUCCESS) return ret;
+
+		ret = samldb_add_step(ac, samldb_find_for_defaultObjectCategory);
+		if (ret != LDB_SUCCESS) return ret;
+
+		ret = samldb_add_step(ac, samldb_set_defaultObjectCategory);
+		if (ret != LDB_SUCCESS) return ret;
+
+		return samldb_first_step(ac);
+	} else if (strcmp(ac->type, "attributeSchema") == 0) {
+		const struct ldb_val *rdn_value;
+		rdn_value = ldb_dn_get_rdn_val(ac->msg->dn);
+		if (!ldb_msg_find_element(ac->msg, "lDAPDisplayName")) {
+			/* the RDN has prefix "CN" */
+			ret = ldb_msg_add_string(ac->msg, "lDAPDisplayName",
+				samdb_cn_to_lDAPDisplayName(ac,
+					(const char *) rdn_value->data));
+			if (ret != LDB_SUCCESS) {
+				ldb_oom(ldb);
+				return ret;
+			}
+		}
+
+		ret = samdb_find_or_add_attribute(ldb, ac->msg,
+						  "isSingleValued", "FALSE");
+		if (ret != LDB_SUCCESS) return ret;
+
+		if (!ldb_msg_find_element(ac->msg, "schemaIDGUID")) {
+			enum ndr_err_code ndr_err;
+			struct ldb_val guid_value;
+			struct GUID guid;
+			/* a new GUID */
+			guid = GUID_random();
+			/* generated NDR encoded values */
+			ndr_err = ndr_push_struct_blob(&guid_value, ac->msg,
+						       NULL,
+						       &guid,
+						       (ndr_push_flags_fn_t)ndr_push_GUID);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				ldb_oom(ldb);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+			ret = ldb_msg_add_value(ac->msg, "schemaIDGUID", &guid_value, NULL);
+			if (ret != LDB_SUCCESS) {
+				ldb_oom(ldb);
+				return ret;
+			}
+		}
+
+		ret = samldb_add_step(ac, samldb_add_entry);
+		if (ret != LDB_SUCCESS) return ret;
+
+		return samldb_first_step(ac);
 	} else {
-		/* we should only have "user" and "group" */
 		ldb_asprintf_errstring(ldb,
 			"Invalid entry type!\n");
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -1950,6 +2204,30 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 		}
 
 		return samldb_fill_foreignSecurityPrincipal_object(ac);
+	}
+
+	if (samdb_find_attribute(ldb, ac->msg,
+				 "objectclass", "classSchema") != NULL) {
+
+		ret = samldb_check_rdn(module, ac->req->op.add.message->dn);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(ac);
+			return ret;
+		}
+
+		return samldb_fill_object(ac, "classSchema");
+	}
+
+	if (samdb_find_attribute(ldb, ac->msg,
+				 "objectclass", "attributeSchema") != NULL) {
+
+		ret = samldb_check_rdn(module, ac->req->op.add.message->dn);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(ac);
+			return ret;
+		}
+
+		return samldb_fill_object(ac, "attributeSchema");
 	}
 
 	talloc_free(ac);
