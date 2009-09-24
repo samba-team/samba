@@ -858,22 +858,26 @@ static int gpfsacl_emu_chmod(const char *path, mode_t mode)
 
 static int vfs_gpfs_chmod(vfs_handle_struct *handle, const char *path, mode_t mode)
 {
-		 SMB_STRUCT_STAT st;
-		 int rc;
+	struct smb_filename *smb_fname_cpath;
+	int rc;
+	NTSTATUS status;
 
-		 if (SMB_VFS_NEXT_STAT(handle, path, &st) != 0) {
-			 return -1;
-		 }
+	status = create_synthetic_smb_fname(
+		talloc_tos(), path, NULL, NULL, &smb_fname_cpath);
 
-		 /* avoid chmod() if possible, to preserve acls */
-		 if ((st.st_ex_mode & ~S_IFMT) == mode) {
-			 return 0;
-		 }
+	if (SMB_VFS_NEXT_STAT(handle, smb_fname_cpath) != 0) {
+		return -1;
+	}
 
-		 rc = gpfsacl_emu_chmod(path, mode);
-		 if (rc == 1)
-			 return SMB_VFS_NEXT_CHMOD(handle, path, mode);
-		 return rc;
+	/* avoid chmod() if possible, to preserve acls */
+	if ((smb_fname_cpath->st.st_ex_mode & ~S_IFMT) == mode) {
+		return 0;
+	}
+
+	rc = gpfsacl_emu_chmod(path, mode);
+	if (rc == 1)
+		return SMB_VFS_NEXT_CHMOD(handle, path, mode);
+	return rc;
 }
 
 static int vfs_gpfs_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t mode)
@@ -944,7 +948,7 @@ static int gpfs_set_xattr(struct vfs_handle_struct *handle,  const char *path,
         return 0;
 }
 
-static size_t gpfs_get_xattr(struct vfs_handle_struct *handle,  const char *path,
+static ssize_t gpfs_get_xattr(struct vfs_handle_struct *handle,  const char *path,
                               const char *name, void *value, size_t size){
         char *attrstr = value;
         unsigned int dosmode = 0;
@@ -999,7 +1003,7 @@ static int vfs_gpfs_stat(struct vfs_handle_struct *handle,
 		return -1;
 	}
 	status = get_full_smb_filename(talloc_tos(), smb_fname, &fname);
-	if (!NT_STATUS_IS_OK) {
+	if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
 		return -1;
 	}
@@ -1046,7 +1050,7 @@ static int vfs_gpfs_lstat(struct vfs_handle_struct *handle,
 		return -1;
 	}
 	status = get_full_smb_filename(talloc_tos(), smb_fname, &path);
-	if (!NT_STATUS_IS_OK) {
+	if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
 		return -1;
 	}
@@ -1102,7 +1106,7 @@ static int vfs_gpfs_ntimes(struct vfs_handle_struct *handle,
 
 static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.kernel_flock = vfs_gpfs_kernel_flock,
-        .setlease = vfs_gpfs_setlease,
+        .linux_setlease = vfs_gpfs_setlease,
         .get_real_filename = vfs_gpfs_get_real_filename,
         .fget_nt_acl = gpfsacl_fget_nt_acl,
         .get_nt_acl = gpfsacl_get_nt_acl,
@@ -1115,8 +1119,8 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
         .chmod = vfs_gpfs_chmod,
         .fchmod = vfs_gpfs_fchmod,
         .close_fn = vfs_gpfs_close,
-        .set_xattr = gpfs_set_xattr,
-        .get_xattr = gpfs_get_xattr,
+        .setxattr = gpfs_set_xattr,
+        .getxattr = gpfs_get_xattr,
         .stat = vfs_gpfs_stat,
         .fstat = vfs_gpfs_fstat,
         .lstat = vfs_gpfs_lstat,
