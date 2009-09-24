@@ -2310,19 +2310,10 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	DEBUG(10,("cm_connect_lsa: connected to LSA pipe for domain %s using "
 		  "schannel.\n", domain->name ));
 
-	domain->can_do_ncacn_ip_tcp = domain->active_directory;
-
 	result = rpccli_lsa_open_policy(conn->lsa_pipe, mem_ctx, True,
 					SEC_FLAG_MAXIMUM_ALLOWED,
 					&conn->lsa_policy);
 	if (NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
-
-	if (NT_STATUS_EQUAL(result, NT_STATUS_RPC_CANNOT_SUPPORT)) {
-		domain->can_do_ncacn_ip_tcp = true;
-		ZERO_STRUCT(conn->lsa_policy);
-		result = NT_STATUS_OK;
 		goto done;
 	}
 
