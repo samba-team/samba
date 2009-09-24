@@ -265,6 +265,9 @@ static struct security_acl *calculate_inherited_from_creator(TALLOC_CTX *mem_ctx
 	if (!tmp_acl)
 		return NULL;
 
+	tmp_acl->revision = acl->revision;
+	DEBUG(6,(__location__ ": acl revision %u\n", acl->revision));
+
 	co = dom_sid_parse_talloc(tmp_ctx,  SID_CREATOR_OWNER);
 	cg = dom_sid_parse_talloc(tmp_ctx,  SID_CREATOR_GROUP);
 
@@ -411,28 +414,35 @@ struct security_descriptor *create_security_descriptor(TALLOC_CTX *mem_ctx,
 	struct dom_sid *new_group = NULL;
 
 	new_sd = security_descriptor_initialise(mem_ctx);
-	if (!new_sd)
+	if (!new_sd) {
 		return NULL;
-	if (!creator_sd || !creator_sd->owner_sid){
-		if (inherit_flags & SEC_OWNER_FROM_PARENT)
-			new_owner = parent_sd->owner_sid;
-		else if (!default_owner)
-			new_owner = token->user_sid;
-		else
-			new_owner = default_owner;
 	}
-	else
+
+	if (!creator_sd || !creator_sd->owner_sid) {
+		if ((inherit_flags & SEC_OWNER_FROM_PARENT) && parent_sd) {
+			new_owner = parent_sd->owner_sid;
+		} else if (!default_owner) {
+			new_owner = token->user_sid;
+		} else {
+			new_owner = default_owner;
+			new_sd->type |= SEC_DESC_OWNER_DEFAULTED;
+		}
+	} else {
 		new_owner = creator_sd->owner_sid;
+	}
 
 	if (!creator_sd || !creator_sd->group_sid){
-		if (inherit_flags & SEC_GROUP_FROM_PARENT && parent_sd)
+		if ((inherit_flags & SEC_GROUP_FROM_PARENT) && parent_sd) {
 			new_group = parent_sd->group_sid;
-		else if (!default_group)
+		} else if (!default_group) {
 			new_group = token->group_sid;
-		else new_group = default_group;
-	}
-	else
+		} else {
+			new_group = default_group;
+			new_sd->type |= SEC_DESC_GROUP_DEFAULTED;
+		}
+	} else {
 		new_group = creator_sd->group_sid;
+	}
 
 	new_sd->owner_sid = talloc_memdup(new_sd, new_owner, sizeof(struct dom_sid));
 	new_sd->group_sid = talloc_memdup(new_sd, new_group, sizeof(struct dom_sid));
