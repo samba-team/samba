@@ -88,6 +88,11 @@ int drsuapi_search_with_extended_dn(struct ldb_context *ldb,
 		return ret;
 	}
 
+	ret = ldb_request_add_control(req, LDB_CONTROL_SHOW_DELETED_OID, true, NULL);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	if (sort_attrib) {
 		struct ldb_server_sort_control **sort_control;
 		sort_control = talloc_array(req, struct ldb_server_sort_control *, 2);
@@ -114,7 +119,7 @@ int drsuapi_search_with_extended_dn(struct ldb_context *ldb,
 	}
 
 	talloc_free(req);
-	*_res = res;
+	*_res = talloc_steal(mem_ctx, res);
 	return ret;
 }
 
