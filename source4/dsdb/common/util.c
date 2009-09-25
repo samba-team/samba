@@ -2155,6 +2155,11 @@ int dsdb_find_dn_by_guid(struct ldb_context *ldb,
 	}
 	options->search_options = LDB_SEARCH_OPTION_PHANTOM_ROOT;
 
+	ret = ldb_request_add_control(search_req, LDB_CONTROL_EXTENDED_DN_OID, true, NULL);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	ret = ldb_request_add_control(search_req,
 				      LDB_CONTROL_SEARCH_OPTIONS_OID,
 				      true, options);
