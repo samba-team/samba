@@ -407,7 +407,7 @@ _PUBLIC_ char** generate_unique_strs(TALLOC_CTX *mem_ctx, size_t len,
 	strs = talloc_array(mem_ctx, char *, num);
 
 	for (i = 0; i < num; i++) {
-		char *retstr = talloc_zero_size(mem_ctx, len + 1);
+		char *retstr = (char *)talloc_zero_size(mem_ctx, len + 1);
 		rem = i;
 		for (j = len - 1; j >= 0; j--) {
 			place = s_pow(c_size, j);
