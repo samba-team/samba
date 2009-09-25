@@ -1597,7 +1597,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 					      "maxPwdAge", "minPwdAge", NULL };
 	NTTIME pwdLastSet;
 	uint32_t minPwdLength, pwdProperties, pwdHistoryLength;
-	int64_t minPwdAge;
+	int64_t maxPwdAge, minPwdAge;
 	uint32_t userAccountControl;
 	struct samr_Password *sambaLMPwdHistory, *sambaNTPwdHistory,
 		*lmPwdHash, *ntPwdHash, *lmNewHash, *ntNewHash;
@@ -1671,6 +1671,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 	minPwdLength = samdb_result_uint(res[0], "minPwdLength", 0);
 	pwdProperties = samdb_result_uint(res[0], "pwdProperties", 0);
 	pwdHistoryLength = samdb_result_uint(res[0], "pwdHistoryLength", 0);
+	maxPwdAge = samdb_result_int64(res[0], "maxPwdAge", 0);
 	minPwdAge = samdb_result_int64(res[0], "minPwdAge", 0);
 
 	if ((userAccountControl & UF_PASSWD_NOTREQD) != 0) {
@@ -1688,7 +1689,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 		dominfo->min_password_length     = minPwdLength;
 		dominfo->password_properties     = pwdProperties;
 		dominfo->password_history_length = pwdHistoryLength;
-		dominfo->max_password_age        = minPwdAge;
+		dominfo->max_password_age        = maxPwdAge;
 		dominfo->min_password_age        = minPwdAge;
 		*_dominfo = dominfo;
 	}
