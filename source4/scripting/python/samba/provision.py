@@ -210,6 +210,8 @@ class Schema(object):
         prefixmap = open(setup_path("prefixMap.txt"), 'r').read()
         prefixmap = b64encode(prefixmap)
 
+        
+
         # We don't actually add this ldif, just parse it
         prefixmap_ldif = "dn: cn=schema\nprefixMap:: %s\n\n" % prefixmap
         self.ldb.set_schema_from_ldif(prefixmap_ldif, self.schema_data)
@@ -1052,10 +1054,10 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
 
         # The LDIF here was created when the Schema object was constructed
         message("Setting up sam.ldb schema")
-        samdb.add_ldif(schema.schema_dn_add)
+        samdb.add_ldif(schema.schema_dn_add, controls=["relax:0"])
         samdb.modify_ldif(schema.schema_dn_modify)
         samdb.write_prefixes_from_schema()
-        samdb.add_ldif(schema.schema_data)
+        samdb.add_ldif(schema.schema_data, controls=["relax:0"])
         setup_add_ldif(samdb, setup_path("aggregate_schema.ldif"), 
                        {"SCHEMADN": names.schemadn})
 
