@@ -64,6 +64,33 @@ struct oid_data oid_data_ok[] = {
 	},
 };
 
+/* Data for successfull Partial OIDs conversions */
+struct oid_data partial_oid_data_ok[] = {
+	{
+		.oid = "2.5.4.130:0x81",
+		.bin_oid = "5504810281"
+	},
+	{
+		.oid = "2.5.4.16387:0x8180",
+		.bin_oid = "55048180038180"
+	},
+	{
+		.oid = "2.5.4.16387:0x81",
+		.bin_oid = "550481800381"
+	},
+	{
+		.oid = "2.5.2097155.4:0x818080",
+		.bin_oid = "558180800304818080"
+	},
+	{
+		.oid = "2.5.2097155.4:0x8180",
+		.bin_oid = "5581808003048180"
+	},
+	{
+		.oid = "2.5.2097155.4:0x81",
+		.bin_oid = "55818080030481"
+	},
+};
 
 
 /* Testing ber_write_OID_String() function */
@@ -95,6 +122,50 @@ static bool test_ber_write_OID_String(struct torture_context *tctx)
 	return true;
 }
 
+/* Testing ber_write_partial_OID_String() function */
+static bool test_ber_write_partial_OID_String(struct torture_context *tctx)
+{
+	int i;
+	char *hex_str;
+	DATA_BLOB blob;
+	TALLOC_CTX *mem_ctx;
+	struct oid_data *data = oid_data_ok;
+
+	mem_ctx = talloc_new(NULL);
+
+	/* ber_write_partial_OID_String() should work with not partial OIDs also */
+	for (i = 0; i < ARRAY_SIZE(oid_data_ok); i++) {
+		torture_assert(tctx, ber_write_partial_OID_String(&blob, data[i].oid),
+				"ber_write_OID_String failed");
+
+		hex_str = hex_encode_talloc(mem_ctx, blob.data, blob.length);
+		torture_assert(tctx, hex_str, "No memory!");
+
+		torture_assert(tctx, strequal(data[i].bin_oid, hex_str),
+				talloc_asprintf(mem_ctx,
+						"Failed: oid=%s, bin_oid:%s",
+						data[i].oid, data[i].bin_oid));
+	}
+
+	/* ber_write_partial_OID_String() test with partial OIDs */
+	data = partial_oid_data_ok;
+	for (i = 0; i < ARRAY_SIZE(partial_oid_data_ok); i++) {
+		torture_assert(tctx, ber_write_partial_OID_String(&blob, data[i].oid),
+				"ber_write_OID_String failed");
+
+		hex_str = hex_encode_talloc(mem_ctx, blob.data, blob.length);
+		torture_assert(tctx, hex_str, "No memory!");
+
+		torture_assert(tctx, strequal(data[i].bin_oid, hex_str),
+				talloc_asprintf(mem_ctx,
+						"Failed: oid=%s, bin_oid:%s",
+						data[i].oid, data[i].bin_oid));
+	}
+
+	talloc_free(mem_ctx);
+
+	return true;
+}
 
 
 /* LOCAL-ASN1 test suite creation */
@@ -104,6 +175,9 @@ struct torture_suite *torture_local_util_asn1(TALLOC_CTX *mem_ctx)
 
 	torture_suite_add_simple_test(suite, "ber_write_OID_String",
 				      test_ber_write_OID_String);
+
+	torture_suite_add_simple_test(suite, "ber_write_partial_OID_String",
+				      test_ber_write_partial_OID_String);
 
 	return suite;
 }
