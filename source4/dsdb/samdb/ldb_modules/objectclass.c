@@ -138,7 +138,13 @@ static int objectclass_sort(struct ldb_module *module,
 		if (!current->objectclass) {
 			ldb_asprintf_errstring(ldb, "objectclass %.*s is not a valid objectClass in schema", 
 					       (int)objectclass_element->values[i].length, (const char *)objectclass_element->values[i].data);
-			return LDB_ERR_OBJECT_CLASS_VIOLATION;
+			/* This looks weird, but windows apparently returns this for invalid objectClass values */
+			return LDB_ERR_NO_SUCH_ATTRIBUTE;
+		} else if (current->objectclass->isDefunct) {
+			ldb_asprintf_errstring(ldb, "objectclass %.*s marked as isDefunct objectClass in schema - not valid for new objects", 
+					       (int)objectclass_element->values[i].length, (const char *)objectclass_element->values[i].data);
+			/* This looks weird, but windows apparently returns this for invalid objectClass values */
+			return LDB_ERR_NO_SUCH_ATTRIBUTE;
 		}
 
 		/* this is the root of the tree.  We will start
