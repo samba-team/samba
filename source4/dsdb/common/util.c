@@ -2187,11 +2187,11 @@ int dsdb_find_dn_by_guid(struct ldb_context *ldb,
 /*
   search for attrs on one DN, allowing for deleted objects
  */
-static int dsdb_search_dn_with_deleted(struct ldb_context *ldb,
-				       TALLOC_CTX *mem_ctx,
-				       struct ldb_result **_res,
-				       struct ldb_dn *basedn,
-				       const char * const *attrs)
+int dsdb_search_dn_with_deleted(struct ldb_context *ldb,
+				TALLOC_CTX *mem_ctx,
+				struct ldb_result **_res,
+				struct ldb_dn *basedn,
+				const char * const *attrs)
 {
 	int ret;
 	struct ldb_request *req;
