@@ -102,9 +102,13 @@ static bool contains_inheritable_aces(struct security_acl *acl)
 static struct security_acl *preprocess_creator_acl(TALLOC_CTX *mem, struct security_acl *acl)
 {
 	int i;
-	struct security_acl *new_acl = talloc_zero(mem, struct security_acl);
+	struct security_acl *new_acl; 
+	if (!acl) {
+		return NULL;
+	}
+	
+	new_acl = talloc_zero(mem, struct security_acl);
 
-	new_acl->revision = acl->revision;
 	for (i=0; i < acl->num_aces; i++) {
 		struct security_ace *ace = &acl->aces[i];
 		if (!(ace->flags & SEC_ACE_FLAG_INHERITED_ACE)){
@@ -369,20 +373,14 @@ static bool compute_acl(int acl_type,
 			goto final;
 	}
 	else{
-		if (!c_acl){
-			if (acl_type == SEC_DESC_DACL_PRESENT && token->default_dacl)
-				*new_acl = security_acl_dup(new_sd, token->default_dacl);
-		}
-		else{
-			*new_acl = preprocess_creator_acl(new_sd,c_acl);
-			if (*new_acl == NULL)
-				goto final;
-			if (!postprocess_acl(*new_acl, new_sd->owner_sid,
-					     new_sd->group_sid,generic_map))
-				return false;
-			else
-				goto final;
-		}
+		*new_acl = preprocess_creator_acl(new_sd,c_acl);
+		if (*new_acl == NULL)
+			goto final;
+		if (!postprocess_acl(*new_acl, new_sd->owner_sid,
+				     new_sd->group_sid,generic_map))
+			return false;
+		else
+			goto final;
 	}
 final:
 	if (acl_type == SEC_DESC_DACL_PRESENT && new_sd->dacl)
