@@ -102,7 +102,7 @@ static bool test_ber_write_OID_String(struct torture_context *tctx)
 	TALLOC_CTX *mem_ctx;
 	struct oid_data *data = oid_data_ok;
 
-	mem_ctx = talloc_new(NULL);
+	mem_ctx = talloc_new(tctx);
 
 	for (i = 0; i < ARRAY_SIZE(oid_data_ok); i++) {
 		torture_assert(tctx, ber_write_OID_String(&blob, data[i].oid),
@@ -159,7 +159,7 @@ static bool test_ber_write_partial_OID_String(struct torture_context *tctx)
 	TALLOC_CTX *mem_ctx;
 	struct oid_data *data = oid_data_ok;
 
-	mem_ctx = talloc_new(NULL);
+	mem_ctx = talloc_new(tctx);
 
 	/* ber_write_partial_OID_String() should work with not partial OIDs also */
 	for (i = 0; i < ARRAY_SIZE(oid_data_ok); i++) {
