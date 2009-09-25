@@ -34,6 +34,7 @@ struct drsuapi_bind_state {
 	struct GUID remote_bind_guid;
 	struct drsuapi_DsBindInfo28 remote_info28;
 	struct drsuapi_DsBindInfo28 local_info28;
+	struct drsuapi_getncchanges_state *getncchanges_state;
 };
 
 
