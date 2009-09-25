@@ -579,18 +579,18 @@ _PUBLIC_ _PURE_ size_t count_chars(const char *s, char c)
 **/
 _PUBLIC_ size_t strhex_to_str(char *p, size_t p_len, const char *strhex, size_t strhex_len)
 {
-	size_t i;
+	size_t i = 0;
 	size_t num_chars = 0;
 	uint8_t   lonybble, hinybble;
 	const char     *hexchars = "0123456789ABCDEF";
 	char           *p1 = NULL, *p2 = NULL;
 
-	for (i = 0; i < strhex_len && strhex[i] != 0; i++) {
-		if (strncasecmp(hexchars, "0x", 2) == 0) {
-			i++; /* skip two chars */
-			continue;
-		}
+	/* skip leading 0x prefix */
+	if (strncasecmp(strhex, "0x", 2) == 0) {
+		i += 2; /* skip two chars */
+	}
 
+	for (; i < strhex_len && strhex[i] != 0; i++) {
 		if (!(p1 = strchr(hexchars, toupper((unsigned char)strhex[i]))))
 			break;
 
