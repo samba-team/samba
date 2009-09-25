@@ -36,7 +36,7 @@ This is followed by an overview of how the IDMAP facility may be implemented.
 The IDMAP facility is of concern where more than one Samba server (or Samba network client)
 is installed in a domain. Where there is a single Samba server, do not be too concerned regarding
 the IDMAP infrastructure &smbmdash; the default behavior of Samba is nearly always sufficient.
-Where mulitple Samba servers are used it is often necessary to move data off one server and onto
+Where multiple Samba servers are used it is often necessary to move data off one server and onto
 another, and that is where the fun begins!
 </para>
 
@@ -426,7 +426,7 @@ on Server Types and Security Modes</link>.
 	<indexterm><primary>passdb backend</primary></indexterm>
 	<indexterm><primary>BDC</primary></indexterm>
 	<indexterm><primary>LDAP backend</primary></indexterm>
-	Security identifiers used within a domain must be managed to avoid conflict and to preserve itegrity.
+	Security identifiers used within a domain must be managed to avoid conflict and to preserve integrity.
 	In an NT4 domain context, the PDC manages the distribution of all security credentials to the backup
 	domain controllers (BDCs). At this time the only passdb backend for a Samba domain controller that is suitable
 	for such information is an LDAP backend.
