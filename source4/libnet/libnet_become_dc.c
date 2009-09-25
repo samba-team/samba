@@ -731,6 +731,20 @@ struct libnet_BecomeDC_state {
 	struct libnet_BecomeDC_Callbacks callbacks;
 };
 
+static int32_t get_dc_function_level(struct loadparm_context *lp_ctx)
+{
+	/* per default we are (Windows) 2008 compatible */
+	return lp_parm_int(lp_ctx, NULL, "ads", "dc function level",
+		DS_DC_FUNCTION_2008);
+}
+
+static int32_t get_min_function_level(struct loadparm_context *lp_ctx)
+{
+	/* per default it is (Windows) 2003 Native compatible */
+	return lp_parm_int(lp_ctx, NULL, "ads", "min function level",
+		DS_DOMAIN_FUNCTION_2003);
+}
+
 static void becomeDC_recv_cldap(struct tevent_req *req);
 
 static void becomeDC_send_cldap(struct libnet_BecomeDC_state *s)
@@ -876,6 +890,20 @@ static NTSTATUS becomeDC_ldap1_crossref_behavior_version(struct libnet_BecomeDC_
 	}
 
 	s->forest.crossref_behavior_version = ldb_msg_find_attr_as_uint(r->msgs[0], "msDs-Behavior-Version", 0);
+	if (s->forest.crossref_behavior_version <
+			 get_min_function_level(s->libnet->lp_ctx)) {
+		talloc_free(r);
+		/* we don't support forest function levels below the specified
+		 * value. */
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+	if (s->forest.crossref_behavior_version >
+			get_dc_function_level(s->libnet->lp_ctx)) {
+		talloc_free(r);
+		/* if the DC function level is lower than the forest one we
+		 * cannot join. */
+		return NT_STATUS_NOT_SUPPORTED;
+	}
 
 	talloc_free(r);
 	return NT_STATUS_OK;
@@ -905,6 +933,20 @@ static NTSTATUS becomeDC_ldap1_domain_behavior_version(struct libnet_BecomeDC_st
 	}
 
 	s->domain.behavior_version = ldb_msg_find_attr_as_uint(r->msgs[0], "msDs-Behavior-Version", 0);
+	if (s->domain.behavior_version <
+			get_min_function_level(s->libnet->lp_ctx)) {
+		talloc_free(r);
+		/* we don't support domain function levels below the specified
+		 * value. */
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+	if (s->domain.behavior_version >
+			get_dc_function_level(s->libnet->lp_ctx)) {
+		talloc_free(r);
+		/* if the DC function level is lower than the forest one we
+		 * cannot join. */
+		return NT_STATUS_NOT_SUPPORTED;
+	}
 
 	talloc_free(r);
 	return NT_STATUS_OK;
@@ -1282,8 +1324,8 @@ static NTSTATUS becomeDC_ldap1_server_object_1(struct libnet_BecomeDC_state *s)
 		NT_STATUS_HAVE_NO_MEMORY(computer_dn);
 
 		/*
-		 * if the server object belongs to another DC in another domain in the forest,
-		 * we should not touch this object!
+		 * if the server object belongs to another DC in another domain
+		 * in the forest, we should not touch this object!
 		 */
 		if (ldb_dn_compare(computer_dn, server_reference_dn) != 0) {
 			talloc_free(r);
@@ -1519,9 +1561,10 @@ static void becomeDC_drsuapi_connect_send(struct libnet_BecomeDC_state *s,
 		 * Note: Replication only works with Windows 2000 when 'krb5' is
 		 *       passed as auth_type here. If NTLMSSP is used, Windows
 		 *       2000 returns garbage in the DsGetNCChanges() response
-		 *       if encrypted password attributes would be in the response.
-		 *       That means the replication of the schema and configuration
-		 *       partition works fine, but it fails for the domain partition.
+		 *       if encrypted password attributes would be in the
+		 *       response. That means the replication of the schema and
+		 *       configuration partition works fine, but it fails for
+		 *       the domain partition.
 		 */
 		if (lp_parm_bool(s->libnet->lp_ctx, NULL, "become_dc",
 				 "force krb5", true))
@@ -1589,7 +1632,7 @@ static void becomeDC_drsuapi_bind_send(struct libnet_BecomeDC_state *s,
 	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_RESTORE_USN_OPTIMIZATION;
 	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_KCC_EXECUTE;
 	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADDENTRY_V2;
-	if (s->domain.behavior_version == 2) {
+	if (s->domain.behavior_version >= DS_DOMAIN_FUNCTION_2003) {
 		/* TODO: find out how this is really triggered! */
 		bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_LINKED_VALUE_REPLICATION;
 	}
@@ -1716,8 +1759,8 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 	s->dest_dsa.invocation_id = GUID_random();
 
 	/*
-	 * if the schema version indicates w2k3, then
-	 * also send some w2k3 specific attributes
+	 * if the schema version indicates w2k3, then also send some w2k3
+	 * specific attributes.
 	 */
 	if (s->forest.schema_object_version >= 30) {
 		w2k3 = true;
@@ -2101,8 +2144,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		vd[0] = data_blob_talloc(vd, NULL, 4);
 		if (composite_nomem(vd[0].data, c)) return;
 
-		SIVAL(vd[0].data, 0, 
-		      lp_parm_int(s->libnet->lp_ctx, NULL, "ads", "functional level", DS_DC_FUNCTION_2008));
+		SIVAL(vd[0].data, 0, get_dc_function_level(s->libnet->lp_ctx));
 
 		vs[0].blob		= &vd[0];
 
