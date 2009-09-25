@@ -621,39 +621,12 @@ nomem:
 /* read an object ID from a data blob */
 bool ber_read_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB blob, const char **OID)
 {
-	int i;
-	uint8_t *b;
-	uint_t v;
-	char *tmp_oid = NULL;
+	size_t bytes_eaten;
 
-	if (blob.length < 2) return false;
-
-	b = blob.data;
-
-	tmp_oid = talloc_asprintf(mem_ctx, "%u",  b[0]/40);
-	if (!tmp_oid) goto nomem;
-	tmp_oid = talloc_asprintf_append_buffer(tmp_oid, ".%u",  b[0]%40);
-	if (!tmp_oid) goto nomem;
-
-	for(i = 1, v = 0; i < blob.length; i++) {
-		v = (v<<7) | (b[i]&0x7f);
-		if ( ! (b[i] & 0x80)) {
-			tmp_oid = talloc_asprintf_append_buffer(tmp_oid, ".%u",  v);
-			v = 0;
-		}
-		if (!tmp_oid) goto nomem;
-	}
-
-	if (v != 0) {
-		talloc_free(tmp_oid);
+	if (!_ber_read_OID_String_impl(mem_ctx, blob, OID, &bytes_eaten))
 		return false;
-	}
 
-	*OID = tmp_oid;
-	return true;
-
-nomem:	
-	return false;
+	return (bytes_eaten == blob.length);
 }
 
 /**
