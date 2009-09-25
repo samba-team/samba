@@ -551,14 +551,13 @@ bool user_in_list(struct smbd_server_connection *sconn,
 static bool user_ok(struct smbd_server_connection *sconn,
 		    const char *user, int snum)
 {
-	char **valid, **invalid;
 	bool ret;
 
-	valid = invalid = NULL;
 	ret = True;
 
 	if (lp_invalid_users(snum)) {
-		invalid = str_list_copy(talloc_tos(), lp_invalid_users(snum));
+		char **invalid = str_list_copy(talloc_tos(),
+			lp_invalid_users(snum));
 		if (invalid &&
 		    str_list_substitute(invalid, "%S", lp_servicename(snum))) {
 
@@ -570,11 +569,12 @@ static bool user_ok(struct smbd_server_connection *sconn,
 						    (const char **)invalid);
 			}
 		}
+		TALLOC_FREE(invalid);
 	}
-	TALLOC_FREE(invalid);
 
 	if (ret && lp_valid_users(snum)) {
-		valid = str_list_copy(talloc_tos(), lp_valid_users(snum));
+		char **valid = str_list_copy(talloc_tos(),
+			lp_valid_users(snum));
 		if ( valid &&
 		     str_list_substitute(valid, "%S", lp_servicename(snum)) ) {
 
@@ -586,8 +586,8 @@ static bool user_ok(struct smbd_server_connection *sconn,
 						   (const char **)valid);
 			}
 		}
+		TALLOC_FREE(valid);
 	}
-	TALLOC_FREE(valid);
 
 	if (ret && lp_onlyuser(snum)) {
 		char **user_list = str_list_make_v3(
