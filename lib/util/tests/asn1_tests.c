@@ -164,7 +164,7 @@ static bool test_ber_write_partial_OID_String(struct torture_context *tctx)
 	/* ber_write_partial_OID_String() should work with not partial OIDs also */
 	for (i = 0; i < ARRAY_SIZE(oid_data_ok); i++) {
 		torture_assert(tctx, ber_write_partial_OID_String(&blob, data[i].oid),
-				"ber_write_OID_String failed");
+				"ber_write_partial_OID_String failed");
 
 		hex_str = hex_encode_talloc(mem_ctx, blob.data, blob.length);
 		torture_assert(tctx, hex_str, "No memory!");
@@ -179,7 +179,7 @@ static bool test_ber_write_partial_OID_String(struct torture_context *tctx)
 	data = partial_oid_data_ok;
 	for (i = 0; i < ARRAY_SIZE(partial_oid_data_ok); i++) {
 		torture_assert(tctx, ber_write_partial_OID_String(&blob, data[i].oid),
-				"ber_write_OID_String failed");
+				"ber_write_partial_OID_String failed");
 
 		hex_str = hex_encode_talloc(mem_ctx, blob.data, blob.length);
 		torture_assert(tctx, hex_str, "No memory!");
