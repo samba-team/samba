@@ -1068,7 +1068,7 @@ mismatch with our scope (%s).\n", inet_ntoa(p->ip), scope, global_scope()));
 
 	pull_ascii_nstring(src_name, sizeof(src_name), dgram->source_name.name);
 	if (is_myname(src_name)) {
-		DEBUG(0,("process_browse_packet: Discarding datagram from IP %s. Source name \
+		DEBUG(7,("process_browse_packet: Discarding datagram from IP %s. Source name \
 %s is one of our names !\n", inet_ntoa(p->ip), nmb_namestr(&dgram->source_name)));
 		return;
 	}
