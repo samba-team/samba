@@ -1409,6 +1409,27 @@ static int do_recovery(struct ctdb_recoverd *rec,
 
 	rec->need_recovery = false;
 
+	/* we managed to complete a full recovery, make sure to forgive
+	   any past sins by the nodes that could now participate in the
+	   recovery.
+	*/
+	DEBUG(DEBUG_ERR,("Resetting ban count to 0 for all nodes\n"));
+	for (i=0;i<nodemap->num;i++) {
+		struct ctdb_banning_state *ban_state;
+
+		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
+			continue;
+		}
+
+		ban_state = (struct ctdb_banning_state *)ctdb->nodes[nodemap->nodes[i].pnn]->ban_state;
+		if (ban_state == NULL) {
+			continue;
+		}
+
+		ban_state->count = 0;
+	}
+
+
 	/* We just finished a recovery successfully. 
 	   We now wait for rerecovery_timeout before we allow 
 	   another recovery to take place.
