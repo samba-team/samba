@@ -1616,7 +1616,7 @@ bool str_list_sub_basic( char **list, const char *smb_name,
 }
 
 /******************************************************************************
- substritute a specific pattern in a string list
+ substitute a specific pattern in a string list
  *****************************************************************************/
 
 bool str_list_substitute(char **list, const char *pattern, const char *insert)
@@ -2430,13 +2430,13 @@ char *escape_shell_string(const char *src)
 
 #define S_LIST_ABS 16 /* List Allocation Block Size */
 
-char **str_list_make_v3(TALLOC_CTX *mem_ctx, const char *string, const char *sep)
+char **str_list_make_v3(TALLOC_CTX *mem_ctx, const char *string,
+	const char *sep)
 {
 	char **list;
 	const char *str;
-	char *s;
+	char *s, *tok;
 	int num, lsize;
-	char *tok;
 
 	if (!string || !*string)
 		return NULL;

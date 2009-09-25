@@ -493,18 +493,6 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		return NT_STATUS_OK;
 	}
 
-	if ( !winbindd_can_contact_domain( domain ) ) {
-		DEBUG(10,("query_user: No incoming trust for domain %s\n",
-			  domain->name));
-		return NT_STATUS_OK;
-	}
-
-	if ( !winbindd_can_contact_domain( domain ) ) {
-		DEBUG(10,("query_user: No incoming trust for domain %s\n",
-			  domain->name));
-		return NT_STATUS_OK;
-	}
-
 	/* no cache; hit the wire */
 
 	result = cm_connect_sam(domain, mem_ctx, &cli, &dom_pol);

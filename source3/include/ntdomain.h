@@ -241,15 +241,4 @@ struct api_struct {
 	bool (*fn) (pipes_struct *);
 };
 
-/*
- * higher order functions for use with msrpc client code
- */
-
-#define PRINT_INFO_FN(fn)\
-        void (*fn)(const char*, uint32, uint32, void  *const *const)
-#define JOB_INFO_FN(fn)\
-        void (*fn)(const char*, const char*, uint32, uint32, void *const *const)
-
-/* end higher order functions */
-
 #endif /* _NT_DOMAIN_H */

@@ -634,7 +634,7 @@ exit 0
 
 		<step><para>
 		Modify the &smb.conf; file so the <literal>NETLOGON</literal> stanza contains the parameters
-		shown in <link linkend="magicnetlogon">the Netlogon Example smb.conf file</link>.
+		shown in <link linkend="magicnetlogon">the Netlogon Example smb.conf file</link> as shown.
 		</para></step>
 
 <example id="magicnetlogon">
@@ -1303,7 +1303,7 @@ Storing SID S-1-5-21-726309263-4128913605-1168186429 \
 	that the addition and deletion of shares using this tool depends on the availability of a suitable
 	interface script. The interface scripts Sambas <command>smbd</command> uses are called
 	<smbconfoption name="add share command"/>, <smbconfoption name="delete share command"/> and
-	<smbconfoption name="change share command"/> A set of example scripts are provided in the Samba source
+	<smbconfoption name="change share command"/>. A set of example scripts are provided in the Samba source
 	code tarball in the directory <filename>~samba/examples/scripts</filename>.
 	</para>
 
@@ -1630,7 +1630,7 @@ net rpc share MIGRATE ALL &lt;share-name&gt; -S &lt;source&gt;
 	Printing needs vary greatly depending on the network environment and may be very simple or complex. If
 	the need is very simple, the best solution to the implementation of printing support may well be to
 	re-install everything from a clean slate instead of migrating older configurations. On the other hand,
-	a complex network that is integrated with many international offices and a multiplexity of local branch
+	a complex network that is integrated with many international offices and a complex arrangement of local branch
 	offices, each of which form an inter-twined maze of printing possibilities, the ability to migrate all
 	printer configurations is decidedly beneficial. To manually re-establish a complex printing network
 	will take much time and frustration. Often it will not be possible to find driver files that are
