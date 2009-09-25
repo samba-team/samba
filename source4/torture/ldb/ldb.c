@@ -31,10 +31,10 @@
 #include "torture/local/proto.h"
 
 static const char *sid = "S-1-5-21-4177067393-1453636373-93818737";
-static const char *hex_sid = "01040000000000051500000081FDF8F815BBA456718F9705";
+static const char *hex_sid = "01040000000000051500000081fdf8f815bba456718f9705";
 static const char *guid = "975ac5fa-35d9-431d-b86a-845bcd34fff9";
 static const char *guid2 = "{975ac5fa-35d9-431d-b86a-845bcd34fff9}";
-static const char *hex_guid = "FAC55A97D9351D43B86A845BCD34FFF9";
+static const char *hex_guid = "fac55a97d9351d43b86a845bcd34fff9";
 
 static const char *prefix_map_newline = "2:1.2.840.113556.1.2\n5:2.16.840.1.101.2.2.3";
 static const char *prefix_map_semi = "2:1.2.840.113556.1.2;5:2.16.840.1.101.2.2.3";
