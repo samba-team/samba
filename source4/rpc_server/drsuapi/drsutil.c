@@ -64,11 +64,6 @@ int drsuapi_search_with_extended_dn(struct ldb_context *ldb,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	if (filter == NULL) {
-		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
 	ret = ldb_build_search_req(&req, ldb, tmp_ctx,
 				   basedn,
 				   scope,
