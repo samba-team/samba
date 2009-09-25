@@ -734,7 +734,7 @@ static NTSTATUS ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
 	int result = LDAP_SUCCESS;
 	int ldb_ret;
 
-	DEBUG(10, ("ModifyDNRequrest"));
+	DEBUG(10, ("ModifyDNRequest"));
 	DEBUGADD(10, (" dn: %s", req->dn));
 	DEBUGADD(10, (" newrdn: %s", req->newrdn));
 
