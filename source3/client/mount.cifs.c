@@ -198,6 +198,11 @@ static int open_cred_file(char * file_name)
 	char * temp_val;
 	FILE * fs;
 	int i, length;
+
+	i = access(file_name, R_OK);
+	if (i)
+		return i;
+
 	fs = fopen(file_name,"r");
 	if(fs == NULL)
 		return errno;
@@ -320,6 +325,12 @@ static int get_password_from_file(int file_descript, char * filename)
 	}
 
 	if(filename != NULL) {
+		rc = access(filename, R_OK);
+		if (rc) {
+			fprintf(stderr, "mount.cifs failed: access check of %s failed: %s\n",
+					filename, strerror(errno));
+			exit(EX_SYSERR);
+		}
 		file_descript = open(filename, O_RDONLY);
 		if(file_descript < 0) {
 			printf("mount.cifs failed. %s attempting to open password file %s\n",
