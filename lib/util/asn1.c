@@ -258,6 +258,41 @@ bool ber_write_OID_String(DATA_BLOB *blob, const char *OID)
 	return true;
 }
 
+/**
+ * Serialize partial OID string.
+ * Partial OIDs are in the form:
+ *   1:2.5.6:0x81
+ *   1:2.5.6:0x8182
+ */
+bool ber_write_partial_OID_String(DATA_BLOB *blob, const char *partial_oid)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	char *oid = talloc_strdup(mem_ctx, partial_oid);
+	char *p;
+
+	/* truncate partial part so ber_write_OID_String() works */
+	p = strchr(oid, ':');
+	if (p) {
+		*p = '\0';
+		p++;
+	}
+
+	if (!ber_write_OID_String(blob, oid)) {
+		talloc_free(mem_ctx);
+		return false;
+	}
+
+	/* Add partially endcoded subidentifier */
+	if (p) {
+		DATA_BLOB tmp_blob = strhex_to_data_blob(mem_ctx, p);
+		data_blob_append(NULL, blob, tmp_blob.data, tmp_blob.length);
+	}
+
+	talloc_free(mem_ctx);
+
+	return true;
+}
+
 /* write an object ID to a ASN1 buffer */
 bool asn1_write_OID(struct asn1_data *data, const char *OID)
 {
