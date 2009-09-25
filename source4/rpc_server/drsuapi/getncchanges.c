@@ -481,8 +481,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 
 	for(i=getnc_state->num_sent; 
 	    i<getnc_state->site_res->count && 
-		    (r->out.ctr->ctr6.object_count < r->in.req->req8.max_object_count) &&
-		    (r->out.ctr->ctr6.object_count < 10);
+		    (r->out.ctr->ctr6.object_count < r->in.req->req8.max_object_count);
 	    i++) {
 		int uSN;
 		struct drsuapi_DsReplicaObjectListItemEx *obj;
