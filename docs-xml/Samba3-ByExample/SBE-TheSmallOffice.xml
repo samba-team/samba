@@ -489,8 +489,8 @@ Users (S-1-5-32-545) -> -1
 <screen>
 &rootprompt; mkdir -p /data/{accounts,finsvcs}
 &rootprompt; chown -R root:root /data
-&rootprompt; chown -R alanm:accounts /data/accounts
-&rootprompt; chown -R alanm:finsvcs /data/finsvcs
+&rootprompt; chown -R alanm:acctsdep /data/accounts
+&rootprompt; chown -R alanm:finsrvcs /data/finsrvcs
 &rootprompt; chmod -R ug+rwx,o+rx-w /data
 </screen>
 		Each department is responsible for creating its own directory structure within its
@@ -688,9 +688,9 @@ hosts:	files wins
 <smbconfoption name="valid users">%G</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 
-<smbconfsection name="[finsvcs]"/>
+<smbconfsection name="[finsrvcs]"/>
 <smbconfoption name="comment">Financial Service Files</smbconfoption>
-<smbconfoption name="path">/data/finsvcs</smbconfoption>
+<smbconfoption name="path">/data/finsrvcs</smbconfoption>
 <smbconfoption name="valid users">%G</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 </smbconfblock>
