@@ -2316,6 +2316,9 @@ static int replmd_prepare_commit(struct ldb_module *module)
 		DLIST_REMOVE(replmd_private->la_list, la);
 		ret = replmd_process_linked_attribute(module, la);
 		if (ret != LDB_SUCCESS) {
+			talloc_free(replmd_private->la_ctx);
+			replmd_private->la_list = NULL;
+			replmd_private->la_ctx = NULL;
 			return ret;
 		}
 	}
