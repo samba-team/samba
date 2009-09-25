@@ -195,6 +195,48 @@ static bool test_ber_write_partial_OID_String(struct torture_context *tctx)
 	return true;
 }
 
+/* Testing ber_read_partial_OID_String() function */
+static bool test_ber_read_partial_OID_String(struct torture_context *tctx)
+{
+	int i;
+	const char *oid;
+	DATA_BLOB oid_blob;
+	TALLOC_CTX *mem_ctx;
+	struct oid_data *data = oid_data_ok;
+
+	mem_ctx = talloc_new(tctx);
+
+	/* ber_read_partial_OID_String() should work with not partial OIDs also */
+	for (i = 0; i < ARRAY_SIZE(oid_data_ok); i++) {
+		oid_blob = strhex_to_data_blob(mem_ctx, data[i].bin_oid);
+
+		torture_assert(tctx, ber_read_partial_OID_String(mem_ctx, oid_blob, &oid),
+				"ber_read_partial_OID_String failed");
+
+		torture_assert(tctx, strequal(data[i].oid, oid),
+				talloc_asprintf(mem_ctx,
+						"Failed: oid=%s, bin_oid:%s",
+						data[i].oid, data[i].bin_oid));
+	}
+
+	/* ber_read_partial_OID_String() test with partial OIDs */
+	data = partial_oid_data_ok;
+	for (i = 0; i < ARRAY_SIZE(partial_oid_data_ok); i++) {
+		oid_blob = strhex_to_data_blob(mem_ctx, data[i].bin_oid);
+
+		torture_assert(tctx, ber_read_partial_OID_String(mem_ctx, oid_blob, &oid),
+				"ber_read_partial_OID_String failed");
+
+		torture_assert(tctx, strequal(data[i].oid, oid),
+				talloc_asprintf(mem_ctx,
+						"Failed: oid=%s, bin_oid:%s",
+						data[i].oid, data[i].bin_oid));
+	}
+
+	talloc_free(mem_ctx);
+
+	return true;
+}
 
 
 /* LOCAL-ASN1 test suite creation */
@@ -210,6 +252,9 @@ struct torture_suite *torture_local_util_asn1(TALLOC_CTX *mem_ctx)
 
 	torture_suite_add_simple_test(suite, "ber_write_partial_OID_String",
 				      test_ber_write_partial_OID_String);
+
+	torture_suite_add_simple_test(suite, "ber_read_partial_OID_String",
+				      test_ber_read_partial_OID_String);
 
 	return suite;
 }
