@@ -314,7 +314,8 @@ static NTSTATUS schannel_check_packet(struct gensec_security *gensec_security,
 				struct schannel_state);
 
 	return netsec_incoming_packet(state, mem_ctx, false,
-				      data, length, sig);
+				      discard_const_p(uint8_t, data),
+				      length, sig);
 }
 /*
   seal a packet
