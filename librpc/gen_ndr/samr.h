@@ -53,23 +53,6 @@ enum netr_SamDatabaseID
 #endif
 ;
 
-enum samr_RejectReason
-#ifndef USE_UINT_ENUMS
- {
-	SAMR_REJECT_OTHER=(int)(0),
-	SAMR_REJECT_TOO_SHORT=(int)(1),
-	SAMR_REJECT_IN_HISTORY=(int)(2),
-	SAMR_REJECT_COMPLEXITY=(int)(5)
-}
-#else
- { __donnot_use_enum_samr_RejectReason=0x7FFFFFFF}
-#define SAMR_REJECT_OTHER ( 0 )
-#define SAMR_REJECT_TOO_SHORT ( 1 )
-#define SAMR_REJECT_IN_HISTORY ( 2 )
-#define SAMR_REJECT_COMPLEXITY ( 5 )
-#endif
-;
-
 /* bitmap samr_AcctFlags */
 #define ACB_DISABLED ( 0x00000001 )
 #define ACB_HOMDIRREQ ( 0x00000002 )
@@ -790,10 +773,36 @@ enum samr_ConnectVersion
 #endif
 ;
 
-struct samr_ChangeReject {
-	enum samr_RejectReason reason;
-	uint32_t unknown1;
-	uint32_t unknown2;
+enum samPwdChangeReason
+#ifndef USE_UINT_ENUMS
+ {
+	SAM_PWD_CHANGE_NO_ERROR=(int)(0),
+	SAM_PWD_CHANGE_PASSWORD_TOO_SHORT=(int)(1),
+	SAM_PWD_CHANGE_PWD_IN_HISTORY=(int)(2),
+	SAM_PWD_CHANGE_USERNAME_IN_PASSWORD=(int)(3),
+	SAM_PWD_CHANGE_FULLNAME_IN_PASSWORD=(int)(4),
+	SAM_PWD_CHANGE_NOT_COMPLEX=(int)(5),
+	SAM_PWD_CHANGE_MACHINE_NOT_DEFAULT=(int)(6),
+	SAM_PWD_CHANGE_FAILED_BY_FILTER=(int)(7),
+	SAM_PWD_CHANGE_PASSWORD_TOO_LONG=(int)(8)
+}
+#else
+ { __donnot_use_enum_samPwdChangeReason=0x7FFFFFFF}
+#define SAM_PWD_CHANGE_NO_ERROR ( 0 )
+#define SAM_PWD_CHANGE_PASSWORD_TOO_SHORT ( 1 )
+#define SAM_PWD_CHANGE_PWD_IN_HISTORY ( 2 )
+#define SAM_PWD_CHANGE_USERNAME_IN_PASSWORD ( 3 )
+#define SAM_PWD_CHANGE_FULLNAME_IN_PASSWORD ( 4 )
+#define SAM_PWD_CHANGE_NOT_COMPLEX ( 5 )
+#define SAM_PWD_CHANGE_MACHINE_NOT_DEFAULT ( 6 )
+#define SAM_PWD_CHANGE_FAILED_BY_FILTER ( 7 )
+#define SAM_PWD_CHANGE_PASSWORD_TOO_LONG ( 8 )
+#endif
+;
+
+struct userPwdChangeFailureInformation {
+	enum samPwdChangeReason extendedFailureReason;
+	const char *filterModuleName;/* [unique,charset(UTF16)] */
 };
 
 struct samr_ConnectInfo1 {
@@ -1852,7 +1861,7 @@ struct samr_ChangePasswordUser3 {
 
 	struct {
 		struct samr_DomInfo1 **dominfo;/* [ref] */
-		struct samr_ChangeReject **reject;/* [ref] */
+		struct userPwdChangeFailureInformation **reject;/* [ref] */
 		NTSTATUS result;
 	} out;
 

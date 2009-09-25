@@ -10448,7 +10448,7 @@ struct tevent_req *rpccli_samr_ChangePasswordUser3_send(TALLOC_CTX *mem_ctx,
 							struct samr_Password *_lm_verifier /* [in] [unique] */,
 							struct samr_CryptPassword *_password3 /* [in] [unique] */,
 							struct samr_DomInfo1 **_dominfo /* [out] [ref] */,
-							struct samr_ChangeReject **_reject /* [out] [ref] */)
+							struct userPwdChangeFailureInformation **_reject /* [out] [ref] */)
 {
 	struct tevent_req *req;
 	struct rpccli_samr_ChangePasswordUser3_state *state;
@@ -10576,7 +10576,7 @@ NTSTATUS rpccli_samr_ChangePasswordUser3(struct rpc_pipe_client *cli,
 					 struct samr_Password *lm_verifier /* [in] [unique] */,
 					 struct samr_CryptPassword *password3 /* [in] [unique] */,
 					 struct samr_DomInfo1 **dominfo /* [out] [ref] */,
-					 struct samr_ChangeReject **reject /* [out] [ref] */)
+					 struct userPwdChangeFailureInformation **reject /* [out] [ref] */)
 {
 	struct samr_ChangePasswordUser3 r;
 	NTSTATUS status;
