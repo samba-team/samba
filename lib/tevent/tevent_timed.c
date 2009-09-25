@@ -114,7 +114,7 @@ struct timeval tevent_timeval_add(const struct timeval *tv, uint32_t secs,
 	tv2.tv_sec += secs;
 	tv2.tv_usec += usecs;
 	tv2.tv_sec += tv2.tv_usec / 1000000;
-	tv2.tv_usec += tv2.tv_usec % 1000000;
+	tv2.tv_usec = tv2.tv_usec % 1000000;
 
 	return tv2;
 }
