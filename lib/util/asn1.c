@@ -578,6 +578,46 @@ int asn1_tag_remaining(struct asn1_data *data)
 	return remaining;
 }
 
+/**
+ * Internal implementation for reading binary OIDs
+ * Reading is done as far in the buffer as valid OID
+ * till buffer ends or not valid sub-identifier is found.
+ */
+static bool _ber_read_OID_String_impl(TALLOC_CTX *mem_ctx, DATA_BLOB blob,
+					const char **OID, size_t *bytes_eaten)
+{
+	int i;
+	uint8_t *b;
+	uint_t v;
+	char *tmp_oid = NULL;
+
+	if (blob.length < 2) return false;
+
+	b = blob.data;
+
+	tmp_oid = talloc_asprintf(mem_ctx, "%u",  b[0]/40);
+	if (!tmp_oid) goto nomem;
+	tmp_oid = talloc_asprintf_append_buffer(tmp_oid, ".%u",  b[0]%40);
+	if (!tmp_oid) goto nomem;
+
+	for(i = 1, v = 0; i < blob.length; i++) {
+		v = (v<<7) | (b[i]&0x7f);
+		if ( ! (b[i] & 0x80)) {
+			tmp_oid = talloc_asprintf_append_buffer(tmp_oid, ".%u",  v);
+			v = 0;
+			if (bytes_eaten)
+				*bytes_eaten = i+1;
+		}
+		if (!tmp_oid) goto nomem;
+	}
+
+	*OID = tmp_oid;
+	return true;
+
+nomem:
+	return false;
+}
+
 /* read an object ID from a data blob */
 bool ber_read_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB blob, const char **OID)
 {
