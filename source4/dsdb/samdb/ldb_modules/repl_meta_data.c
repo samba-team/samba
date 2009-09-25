@@ -2076,10 +2076,10 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	struct ldb_message_element *ret_el;
 	TALLOC_CTX *tmp_ctx = talloc_new(la_entry);
 	enum ndr_err_code ndr_err;
-	char *target_dn;
 	struct ldb_request *mod_req;
 	int ret;
 	const struct dsdb_attribute *attr;
+	struct ldb_dn *target_dn;
 
 /*
 linked_attributes[0]:                                                     
@@ -2176,16 +2176,15 @@ linked_attributes[0]:
 	}
 	ret_el->num_values = 1;
 
-	target_dn = talloc_asprintf(tmp_ctx, "<GUID=%s>;<SID=%s>;%s",
-				    GUID_string(tmp_ctx, &target.guid),
-				    dom_sid_string(tmp_ctx, &target.sid),
-				    target.dn);
-	if (target_dn == NULL) {
-		ldb_oom(ldb);
+	ret = dsdb_find_dn_by_guid(ldb, tmp_ctx, GUID_string(tmp_ctx, &target.guid), &target_dn);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,(__location__ ": Failed to map GUID %s to DN\n", GUID_string(tmp_ctx, &target.guid)));
 		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ret_el->values[0] = data_blob_string_const(target_dn);
+
+	ret_el->values[0].data = (uint8_t *)ldb_dn_get_extended_linearized(tmp_ctx, target_dn, 1);
+	ret_el->values[0].length = strlen((char *)ret_el->values[0].data);
 
 	ret = ldb_build_mod_req(&mod_req, ldb, tmp_ctx,
 				msg,
