@@ -804,8 +804,8 @@ static bool next_token_internal_talloc(TALLOC_CTX *ctx,
                                 const char *sep,
                                 bool ltrim)
 {
-	char *s;
-	char *saved_s;
+	const char *s;
+	const char *saved_s;
 	char *pbuf;
 	bool quoted;
 	size_t len=1;
@@ -815,7 +815,7 @@ static bool next_token_internal_talloc(TALLOC_CTX *ctx,
 		return(false);
 	}
 
-	s = (char *)*ptr;
+	s = *ptr;
 
 	/* default to simple separators */
 	if (!sep) {
