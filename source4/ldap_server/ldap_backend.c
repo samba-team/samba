@@ -750,6 +750,12 @@ static NTSTATUS ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
 	DEBUG(10, ("ModifyDNRequest: olddn: [%s]\n", req->dn));
 	DEBUG(10, ("ModifyDNRequest: newrdn: [%s]\n", req->newrdn));
 
+	if (ldb_dn_get_comp_num(req->newrdn) != 1) {
+		result = LDAP_INVALID_DN_SYNTAX;
+		map_ldb_error(local_ctx, LDB_ERR_INVALID_DN_SYNTAX, &errstr);
+		goto reply;
+	}
+
 	/* we can't handle the rename if we should not remove the old dn */
 	if (!req->deleteolddn) {
 		result = LDAP_UNWILLING_TO_PERFORM;
@@ -779,10 +785,7 @@ static NTSTATUS ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
 		NT_STATUS_HAVE_NO_MEMORY(parentdn);
 	}
 
-	if ( ! ldb_dn_add_child_fmt(parentdn,
-				"%s=%s",
-				ldb_dn_get_rdn_name(newrdn),
-				(char *)ldb_dn_get_rdn_val(newrdn)->data)) {
+	if ( ! ldb_dn_add_child(parentdn, newrdn)) {
 		result = LDAP_OTHER;
 		goto reply;
 	}
