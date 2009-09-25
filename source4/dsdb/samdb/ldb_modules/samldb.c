@@ -2005,6 +2005,16 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 		}
 		el2 = ldb_msg_find_element(msg, "sAMAccountType");
 		el2->flags = LDB_FLAG_MOD_REPLACE;
+
+		if (user_account_control & UF_SERVER_TRUST_ACCOUNT) {
+			ret = samdb_msg_add_string(ldb, msg, msg,
+						   "isCriticalSystemObject", "TRUE");
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+			el2 = ldb_msg_find_element(msg, "isCriticalSystemObject");
+			el2->flags = LDB_FLAG_MOD_REPLACE;
+		}
 	}
 
 	el = ldb_msg_find_element(req->op.mod.message, "primaryGroupID");
