@@ -656,6 +656,42 @@ nomem:
 	return false;
 }
 
+/**
+ * Deserialize partial OID string.
+ * Partial OIDs are in the form:
+ *   1:2.5.6:0x81
+ *   1:2.5.6:0x8182
+ */
+bool ber_read_partial_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB blob, const char **partial_oid)
+{
+	size_t bytes_left;
+	size_t bytes_eaten;
+	char *identifier = NULL;
+	char *tmp_oid = NULL;
+
+	if (!_ber_read_OID_String_impl(mem_ctx, blob, (const char **)&tmp_oid, &bytes_eaten))
+		return false;
+
+	if (bytes_eaten < blob.length) {
+		bytes_left = blob.length - bytes_eaten;
+		identifier = hex_encode_talloc(mem_ctx, &blob.data[bytes_eaten], bytes_left);
+		if (!identifier)	goto nomem;
+
+		*partial_oid = talloc_asprintf_append_buffer(tmp_oid, ":0x%s", identifier);
+		if (!*partial_oid)	goto nomem;
+		TALLOC_FREE(identifier);
+	} else {
+		*partial_oid = tmp_oid;
+	}
+
+	return true;
+
+nomem:
+	TALLOC_FREE(identifier);
+	TALLOC_FREE(tmp_oid);
+	return false;
+}
+
 /* read an object ID from a ASN1 buffer */
 bool asn1_read_OID(struct asn1_data *data, TALLOC_CTX *mem_ctx, const char **OID)
 {

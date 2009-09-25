@@ -84,6 +84,7 @@ bool asn1_start_tag(struct asn1_data *data, uint8_t tag);
 bool asn1_end_tag(struct asn1_data *data);
 int asn1_tag_remaining(struct asn1_data *data);
 bool ber_read_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB blob, const char **OID);
+bool ber_read_partial_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB blob, const char **partial_oid);
 bool asn1_read_OID(struct asn1_data *data, TALLOC_CTX *mem_ctx, const char **OID);
 bool asn1_check_OID(struct asn1_data *data, const char *OID);
 bool asn1_read_LDAPString(struct asn1_data *data, TALLOC_CTX *mem_ctx, char **s);
