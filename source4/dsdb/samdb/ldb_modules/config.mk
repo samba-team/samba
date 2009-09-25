@@ -369,3 +369,15 @@ INIT_FUNCTION = LDB_MODULE(acl)
 ################################################
 
 ldb_acl_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/acl.o
+
+################################################
+# Start MODULE ldb_lazy_commit
+[MODULE::ldb_lazy_commit]
+PRIVATE_DEPENDENCIES = SAMDB
+SUBSYSTEM = LIBLDB
+INIT_FUNCTION = LDB_MODULE(lazy_commit)
+
+# End MODULE ldb_lazy_commit
+################################################
+
+ldb_lazy_commit_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/lazy_commit.o

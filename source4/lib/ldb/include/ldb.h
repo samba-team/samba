@@ -596,6 +596,14 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 */
 #define LDB_CONTROL_PERMISSIVE_MODIFY_OID	"1.2.840.113556.1.4.1413"
 
+/** 
+    OID to allow the server to be more 'fast and loose' with the data being added.  
+
+    \sa 
+
+*/
+#define LDB_CONTROL_SERVER_LAZY_COMMIT   "1.2.840.113556.1.4.619"
+
 /**
    OID for LDAP Extended Operation START_TLS.
 
@@ -611,6 +619,7 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 /**
 */
 #define LDB_EXTENDED_FAST_BIND_OID	"1.2.840.113556.1.4.1781"
+
 
 struct ldb_sd_flags_control {
 	/*
