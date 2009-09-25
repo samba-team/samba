@@ -998,7 +998,7 @@ sub ConvertScalarToPython($$$)
 	}
 
 	# Not yet supported
-	if ($ctypename eq "string_array") { return "PyCObject_FromVoidPtr($cvar)"; }
+	if ($ctypename eq "string_array") { return "PyCObject_FromVoidPtr($cvar, talloc_free)"; }
 	if ($ctypename eq "ipv4address") { return "PyString_FromString($cvar)"; }
 	if ($ctypename eq "pointer") {
 		return "PyCObject_FromVoidPtr($cvar, talloc_free)";
