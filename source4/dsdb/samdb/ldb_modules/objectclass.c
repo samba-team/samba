@@ -361,7 +361,8 @@ static int fix_attributes(struct ldb_context *ldb, const struct dsdb_schema *sch
 		if (!attribute) {
 			if (strcasecmp(msg->elements[i].name, "clearTextPassword") != 0) {
 				ldb_asprintf_errstring(ldb, "attribute %s is not a valid attribute in schema", msg->elements[i].name);
-				return LDB_ERR_UNDEFINED_ATTRIBUTE_TYPE;
+				/* Apparently Windows sends exactly this behaviour */
+				return LDB_ERR_NO_SUCH_ATTRIBUTE;
 			}
 		} else {
 			msg->elements[i].name = attribute->lDAPDisplayName;
