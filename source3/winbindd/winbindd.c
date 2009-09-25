@@ -871,11 +871,13 @@ static void remove_client(struct winbindd_cli_state *state)
 		return;
 	}
 
-	/* tell client, we are closing ... */
-	nwritten = write(state->sock, &c, sizeof(c));
-	if (nwritten == -1) {
-		DEBUG(2, ("final write to client failed: %s\n",
-			  strerror(errno)));
+	if (!state->finished) {
+		/* tell client, we are closing ... */
+		nwritten = write(state->sock, &c, sizeof(c));
+		if (nwritten == -1) {
+			DEBUG(2, ("final write to client failed: %s\n",
+				  strerror(errno)));
+		}
 	}
 
 	/* Close socket */
