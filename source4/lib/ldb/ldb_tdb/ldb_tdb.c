@@ -621,8 +621,14 @@ int ltdb_modify_internal(struct ldb_module *module,
 		struct ldb_val *vals;
 		const char *dn;
 		const struct ldb_schema_attribute *a = ldb_schema_attribute_by_name(ldb, el->name);
-		switch (msg->elements[i].flags & LDB_FLAG_MOD_MASK) {
 
+		if (ldb_attr_cmp(el->name, "distinguishedName") == 0) {
+			ldb_asprintf_errstring(ldb, "it is not permitted to perform a modify on distinguishedName (use rename instead): %s",
+					       ldb_dn_get_linearized(msg->dn));
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+
+		switch (msg->elements[i].flags & LDB_FLAG_MOD_MASK) {
 		case LDB_FLAG_MOD_ADD:
 			
 			/* add this element to the message. fail if it
