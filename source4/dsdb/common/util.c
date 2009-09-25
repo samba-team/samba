@@ -1433,63 +1433,6 @@ struct ldb_dn *samdb_server_site_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx
 }
 
 /*
- * This works out if we are running on a supported forest/domain function
- * level. Basically this means that we don't support mixed/interim (NT 4 DC
- * support) levels.
- * If errmsg isn't NULL we write in an adequate error message for printing out
- * to the screen.
- */
-bool samdb_is_capable_dc(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
-	char **errmsg)
-{
-	int32_t level_forest, level_domain, level_domain_mixed;
-	bool ret = true;
-
-	level_forest = (int32_t) samdb_search_int64(ldb, mem_ctx, -1,
-		samdb_partitions_dn(ldb, mem_ctx), "msDS-Behavior-Version",
-		NULL);
-	level_domain = (int32_t) samdb_search_int64(ldb, mem_ctx, -1,
-		samdb_base_dn(ldb), "msDS-Behavior-Version", NULL);
-	level_domain_mixed = (int32_t) samdb_search_int64(ldb, mem_ctx, -1,
-		samdb_base_dn(ldb), "nTMixedDomain", NULL);
-
-	if (errmsg != NULL)
-		*errmsg = talloc_strdup(mem_ctx, "");
-
-	if (level_forest == -1 || level_domain == -1 || level_domain_mixed == -1) {
-		ret = false;
-		if (errmsg != NULL)
-			*errmsg = talloc_strdup_append(*errmsg,
-				"\nATTENTION: Invalid values for forest and/or domain function level!"
-			);
-	}
-
-	if (level_forest == DS_DOMAIN_FUNCTION_2003_MIXED) {
-		ret = false;
-		if (errmsg != NULL)
-			*errmsg = talloc_strdup_append(*errmsg,
-				"\nATTENTION: You run SAMBA 4 on the 2003 with mixed domains (NT4 DC support) forest level. This isn't supported!"
-			);
-	}
-	if ((level_domain == DS_DOMAIN_FUNCTION_2000 && level_domain_mixed != 0)
-		|| level_domain == DS_DOMAIN_FUNCTION_2003_MIXED) {
-		ret = false;
-		if (errmsg != NULL)
-			*errmsg = talloc_strdup_append(*errmsg,
-				"\nATTENTION: You run SAMBA 4 on a mixed/interim (NT4 DC support) domain level. This isn't supported!"
-			);
-	}
-
-	if ((!ret) && (errmsg != NULL)) {
-		*errmsg = talloc_strdup_append(*errmsg,
-			"\nPlease raise the domain and/or forest level to an adequate value. Use for this the 'domainlevel' tool, the MS AD MMC tools or manipulate the needed attributes directly."
-		);
-	}
-
-	return ret;
-}
-
-/*
   work out if we are the PDC for the domain of the current open ldb
 */
 bool samdb_is_pdc(struct ldb_context *ldb)
