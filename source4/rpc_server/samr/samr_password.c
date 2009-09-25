@@ -177,8 +177,9 @@ NTSTATUS dcesrv_samr_ChangePasswordUser(struct dcesrv_call_state *dce_call,
 /* 
   samr_OemChangePasswordUser2 
 */
-NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-				     struct samr_OemChangePasswordUser2 *r)
+NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
+					    TALLOC_CTX *mem_ctx,
+					    struct samr_OemChangePasswordUser2 *r)
 {
 	NTSTATUS status;
 	DATA_BLOB new_password, new_unicode_password;
@@ -335,8 +336,8 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, 
   samr_ChangePasswordUser3 
 */
 NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call, 
-				  TALLOC_CTX *mem_ctx,
-				  struct samr_ChangePasswordUser3 *r)
+					 TALLOC_CTX *mem_ctx,
+					 struct samr_ChangePasswordUser3 *r)
 {	
 	NTSTATUS status;
 	DATA_BLOB new_password;
@@ -348,8 +349,8 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	struct samr_Password *nt_pwd, *lm_pwd;
 	DATA_BLOB nt_pwd_blob;
 	struct samr_DomInfo1 *dominfo = NULL;
-	struct samr_ChangeReject *reject = NULL;
-	enum samr_RejectReason reason = SAMR_REJECT_OTHER;
+	struct userPwdChangeFailureInformation *reject = NULL;
+	enum samPwdChangeReason reason = SAM_PWD_CHANGE_NO_ERROR;
 	uint8_t new_nt_hash[16], new_lm_hash[16];
 	struct samr_Password nt_verifier, lm_verifier;
 
@@ -465,6 +466,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 				    true, /* this is a user password change */
 				    &reason, 
 				    &dominfo);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}
@@ -494,18 +496,16 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 
 failed:
 	ldb_transaction_cancel(sam_ctx);
-	talloc_free(sam_ctx);
 
-	reject = talloc(mem_ctx, struct samr_ChangeReject);
-	*r->out.dominfo = dominfo;
-	*r->out.reject = reject;
+	reject = talloc(mem_ctx, struct userPwdChangeFailureInformation);
+	if (reject != NULL) {
+		ZERO_STRUCTP(reject);
+		reject->extendedFailureReason = reason;
 
-	if (reject == NULL) {
-		return status;
+		*r->out.reject = reject;
 	}
-	ZERO_STRUCTP(reject);
 
-	reject->reason = reason;
+	*r->out.dominfo = dominfo;
 
 	return status;
 }
@@ -516,12 +516,13 @@ failed:
 
   easy - just a subset of samr_ChangePasswordUser3
 */
-NTSTATUS dcesrv_samr_ChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-				  struct samr_ChangePasswordUser2 *r)
+NTSTATUS dcesrv_samr_ChangePasswordUser2(struct dcesrv_call_state *dce_call,
+					 TALLOC_CTX *mem_ctx,
+					 struct samr_ChangePasswordUser2 *r)
 {
 	struct samr_ChangePasswordUser3 r2;
 	struct samr_DomInfo1 *dominfo = NULL;
-	struct samr_ChangeReject *reject = NULL;
+	struct userPwdChangeFailureInformation *reject = NULL;
 
 	r2.in.server = r->in.server;
 	r2.in.account = r->in.account;
@@ -584,7 +585,8 @@ NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 */
 NTSTATUS samr_set_password_ex(struct dcesrv_call_state *dce_call,
 			      struct ldb_context *sam_ctx,
-			      struct ldb_dn *account_dn, struct ldb_dn *domain_dn,
+			      struct ldb_dn *account_dn,
+			      struct ldb_dn *domain_dn,
 			      TALLOC_CTX *mem_ctx,
 			      struct ldb_message *msg, 
 			      struct samr_CryptPasswordEx *pwbuf)
@@ -626,5 +628,4 @@ NTSTATUS samr_set_password_ex(struct dcesrv_call_state *dce_call,
 				  false, /* This is a password set, not change */
 				  NULL, NULL);
 }
-
 
