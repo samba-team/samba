@@ -701,11 +701,6 @@ static int skel_set_offline(struct vfs_handle_struct *handle, const char *path)
 	return SMB_VFS_NEXT_SET_OFFLINE(handle, path);
 }
 
-static bool skel_is_remotestorage(struct vfs_handle_struct *handle, const char *path)
-{
-	return SMB_VFS_NEXT_IS_REMOTESTORAGE(handle, path);
-}
-
 /* VFS operations structure */
 
 struct vfs_fn_pointers skel_transparent_fns = {
