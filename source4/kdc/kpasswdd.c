@@ -241,7 +241,6 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 		enum samPwdChangeReason reject_reason = SAM_PWD_CHANGE_NO_ERROR;
 		struct samr_DomInfo1 *dominfo = NULL;
 		struct ldb_context *samdb;
-		struct ldb_message *msg;
 		krb5_context context = kdc->smb_krb5_context->krb5_context;
 
 		ChangePasswdDataMS chpw;
@@ -254,11 +253,6 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 
 		size_t len;
 		int ret;
-
-		msg = ldb_msg_new(mem_ctx);
-		if (!msg) {
-			return false;
-		}
 
 		ret = decode_ChangePasswdDataMS(input->data, input->length,
 						&chpw, &len);
@@ -351,7 +345,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 			  dom_sid_string(mem_ctx, session_info->security_token->user_sid),
 			  set_password_on_princ));
 		ret = ldb_transaction_start(samdb);
-		if (ret) {
+		if (ret != LDB_SUCCESS) {
 			status = NT_STATUS_TRANSACTION_ABORTED;
 			return kpasswd_make_pwchange_reply(kdc, mem_ctx,
 							   status,
@@ -379,41 +373,20 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 							   reply);
 		}
 
-		msg = ldb_msg_new(mem_ctx);
-		if (msg == NULL) {
-			ldb_transaction_cancel(samdb);
-			status = NT_STATUS_NO_MEMORY;
-		} else {
-			msg->dn = ldb_dn_copy(msg, set_password_on_dn);
-			if (!msg->dn) {
-				status = NT_STATUS_NO_MEMORY;
-			}
-		}
-
 		if (NT_STATUS_IS_OK(status)) {
 			/* Admin password set */
 			status = samdb_set_password(samdb, mem_ctx,
 						    set_password_on_dn, NULL,
-						    msg, &password, NULL, NULL,
+						    &password, NULL, NULL,
 						    false, /* this is not a user password change */
 						    &reject_reason, &dominfo);
 		}
 
 		if (NT_STATUS_IS_OK(status)) {
-			/* modify the samdb record */
-			ret = dsdb_replace(samdb, msg, 0);
-			if (ret != 0) {
-				DEBUG(2,("Failed to modify record to set password on %s: %s\n",
-					 ldb_dn_get_linearized(msg->dn),
-					 ldb_errstring(samdb)));
-				status = NT_STATUS_ACCESS_DENIED;
-			}
-		}
-		if (NT_STATUS_IS_OK(status)) {
 			ret = ldb_transaction_commit(samdb);
-			if (ret != 0) {
+			if (ret != LDB_SUCCESS) {
 				DEBUG(1,("Failed to commit transaction to set password on %s: %s\n",
-					 ldb_dn_get_linearized(msg->dn),
+					 ldb_dn_get_linearized(set_password_on_dn),
 					 ldb_errstring(samdb)));
 				status = NT_STATUS_TRANSACTION_ABORTED;
 			}

@@ -40,7 +40,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser(struct dcesrv_call_state *dce_call,
 	struct dcesrv_handle *h;
 	struct samr_account_state *a_state;
 	struct ldb_context *sam_ctx;
-	struct ldb_message **res, *msg;
+	struct ldb_message **res;
 	int ret;
 	struct samr_Password new_lmPwdHash, new_ntPwdHash, checkHash;
 	struct samr_Password *lm_pwd, *nt_pwd;
@@ -79,10 +79,10 @@ NTSTATUS dcesrv_samr_ChangePasswordUser(struct dcesrv_call_state *dce_call,
 		ldb_transaction_cancel(sam_ctx);
 		return NT_STATUS_WRONG_PASSWORD;
 	}
-	msg = res[0];
 
-	status = samdb_result_passwords(mem_ctx, dce_call->conn->dce_ctx->lp_ctx,
-					msg, &lm_pwd, &nt_pwd);
+	status = samdb_result_passwords(mem_ctx,
+					dce_call->conn->dce_ctx->lp_ctx,
+					res[0], &lm_pwd, &nt_pwd);
 	if (!NT_STATUS_IS_OK(status) || !nt_pwd) {
 		ldb_transaction_cancel(sam_ctx);
 		return NT_STATUS_WRONG_PASSWORD;
@@ -126,40 +126,18 @@ NTSTATUS dcesrv_samr_ChangePasswordUser(struct dcesrv_call_state *dce_call,
 		}
 	}
 
-	msg = ldb_msg_new(mem_ctx);
-	if (msg == NULL) {
-		ldb_transaction_cancel(sam_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	msg->dn = ldb_dn_copy(msg, a_state->account_dn);
-	if (!msg->dn) {
-		ldb_transaction_cancel(sam_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/* setup password modify mods on the user DN specified.  This may fail
 	 * due to password policies.  */
 	status = samdb_set_password(sam_ctx, mem_ctx,
-				    a_state->account_dn, a_state->domain_state->domain_dn,
-				    msg, NULL, &new_lmPwdHash, &new_ntPwdHash, 
+				    a_state->account_dn,
+				    a_state->domain_state->domain_dn,
+				    NULL, &new_lmPwdHash, &new_ntPwdHash,
 				    true, /* this is a user password change */
 				    NULL,
 				    NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		ldb_transaction_cancel(sam_ctx);
 		return status;
-	}
-
-	/* The above call only setup the modifications, this actually
-	 * makes the write to the database. */
-	ret = dsdb_replace(sam_ctx, msg, 0);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(2,("Failed to modify record to change password on %s: %s\n",
-			 ldb_dn_get_linearized(a_state->account_dn),
-			 ldb_errstring(sam_ctx)));
-		ldb_transaction_cancel(sam_ctx);
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	/* And this confirms it in a transaction commit */
@@ -188,7 +166,7 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 	struct ldb_context *sam_ctx;
 	struct ldb_dn *user_dn;
 	int ret;
-	struct ldb_message **res, *mod;
+	struct ldb_message **res;
 	const char * const attrs[] = { "objectSid", "dBCSPwd", NULL };
 	struct samr_Password *lm_pwd;
 	DATA_BLOB lm_pwd_blob;
@@ -282,23 +260,11 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
-	mod = ldb_msg_new(mem_ctx);
-	if (mod == NULL) {
-		ldb_transaction_cancel(sam_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	mod->dn = ldb_dn_copy(mod, user_dn);
-	if (!mod->dn) {
-		ldb_transaction_cancel(sam_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/* set the password on the user DN specified.  This may fail
 	 * due to password policies */
 	status = samdb_set_password(sam_ctx, mem_ctx,
 				    user_dn, NULL, 
-				    mod, &new_unicode_password, 
+				    &new_unicode_password,
 				    NULL, NULL,
 				    true, /* this is a user password change */
 				    NULL, 
@@ -306,17 +272,6 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 	if (!NT_STATUS_IS_OK(status)) {
 		ldb_transaction_cancel(sam_ctx);
 		return status;
-	}
-
-	/* The above call only setup the modifications, this actually
-	 * makes the write to the database. */
-	ret = dsdb_replace(sam_ctx, mod, 0);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(2,("Failed to modify record to change password on %s: %s\n",
-			 ldb_dn_get_linearized(user_dn),
-			 ldb_errstring(sam_ctx)));
-		ldb_transaction_cancel(sam_ctx);
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	/* And this confirms it in a transaction commit */
@@ -344,7 +299,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	struct ldb_context *sam_ctx = NULL;
 	struct ldb_dn *user_dn;
 	int ret;
-	struct ldb_message **res, *mod;
+	struct ldb_message **res;
 	const char * const attrs[] = { "unicodePwd", "dBCSPwd", NULL };
 	struct samr_Password *nt_pwd, *lm_pwd;
 	DATA_BLOB nt_pwd_blob;
@@ -445,40 +400,17 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 		}
 	}
 
-	mod = ldb_msg_new(mem_ctx);
-	if (mod == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto failed;
-	}
-
-	mod->dn = ldb_dn_copy(mod, user_dn);
-	if (!mod->dn) {
-		status = NT_STATUS_NO_MEMORY;
-		goto failed;
-	}
-
 	/* set the password on the user DN specified.  This may fail
 	 * due to password policies */
 	status = samdb_set_password(sam_ctx, mem_ctx,
 				    user_dn, NULL, 
-				    mod, &new_password, 
+				    &new_password,
 				    NULL, NULL,
 				    true, /* this is a user password change */
 				    &reason, 
 				    &dominfo);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		goto failed;
-	}
-
-	/* The above call only setup the modifications, this actually
-	 * makes the write to the database. */
-	ret = dsdb_replace(sam_ctx, mod, 0);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(2,("dsdb_replace failed to change password for %s: %s\n",
-			 ldb_dn_get_linearized(user_dn),
-			 ldb_errstring(sam_ctx)));
-		status = NT_STATUS_UNSUCCESSFUL;
 		goto failed;
 	}
 
@@ -497,9 +429,8 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 failed:
 	ldb_transaction_cancel(sam_ctx);
 
-	reject = talloc(mem_ctx, struct userPwdChangeFailureInformation);
+	reject = talloc_zero(mem_ctx, struct userPwdChangeFailureInformation);
 	if (reject != NULL) {
-		ZERO_STRUCTP(reject);
 		reject->extendedFailureReason = reason;
 
 		*r->out.reject = reject;
@@ -541,14 +472,11 @@ NTSTATUS dcesrv_samr_ChangePasswordUser2(struct dcesrv_call_state *dce_call,
 
 /*
   set password via a samr_CryptPassword buffer
-  this will in the 'msg' with modify operations that will update the user
-  password when applied
 */
 NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
-			   void *sam_ctx,
+			   struct ldb_context *sam_ctx,
 			   struct ldb_dn *account_dn, struct ldb_dn *domain_dn,
 			   TALLOC_CTX *mem_ctx,
-			   struct ldb_message *msg, 
 			   struct samr_CryptPassword *pwbuf)
 {
 	NTSTATUS nt_status;
@@ -571,7 +499,7 @@ NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 	   so the domain password policy can be used */
 	return samdb_set_password(sam_ctx, mem_ctx,
 				  account_dn, domain_dn, 
-				  msg, &new_password, 
+				  &new_password,
 				  NULL, NULL,
 				  false, /* This is a password set, not change */
 				  NULL, NULL);
@@ -580,15 +508,12 @@ NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 
 /*
   set password via a samr_CryptPasswordEx buffer
-  this will in the 'msg' with modify operations that will update the user
-  password when applied
 */
 NTSTATUS samr_set_password_ex(struct dcesrv_call_state *dce_call,
 			      struct ldb_context *sam_ctx,
 			      struct ldb_dn *account_dn,
 			      struct ldb_dn *domain_dn,
 			      TALLOC_CTX *mem_ctx,
-			      struct ldb_message *msg, 
 			      struct samr_CryptPasswordEx *pwbuf)
 {
 	NTSTATUS nt_status;
@@ -623,7 +548,7 @@ NTSTATUS samr_set_password_ex(struct dcesrv_call_state *dce_call,
 	   so the domain password policy can be used */
 	return samdb_set_password(sam_ctx, mem_ctx,
 				  account_dn, domain_dn, 
-				  msg, &new_password, 
+				  &new_password,
 				  NULL, NULL,
 				  false, /* This is a password set, not change */
 				  NULL, NULL);

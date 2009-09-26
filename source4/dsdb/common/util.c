@@ -1892,275 +1892,181 @@ enum samr_ValidationStatus samdb_check_password(const DATA_BLOB *password,
 }
 
 /*
+ * Callback for "samdb_set_password" password change
+ */
+int samdb_set_password_callback(struct ldb_request *req, struct ldb_reply *ares)
+{
+	int ret;
+
+	if (!ares) {
+		return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
+	}
+
+	if (ares->error != LDB_SUCCESS) {
+		ret = ares->error;
+		req->context = talloc_steal(req,
+					    ldb_reply_get_control(ares, DSDB_CONTROL_PASSWORD_CHANGE_STATUS_OID));
+		talloc_free(ares);
+		return ldb_request_done(req, ret);
+	}
+
+	if (ares->type != LDB_REPLY_DONE) {
+		talloc_free(ares);
+		return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
+	}
+
+	req->context = talloc_steal(req,
+				    ldb_reply_get_control(ares, DSDB_CONTROL_PASSWORD_CHANGE_STATUS_OID));
+	talloc_free(ares);
+	return ldb_request_done(req, LDB_SUCCESS);
+}
+
+/*
  * Sets the user password using plaintext UTF16 (attribute "new_password") or
  * LM (attribute "lmNewHash") or NT (attribute "ntNewHash") hash. Also pass
  * as parameter if it's a user change or not ("userChange"). The "rejectReason"
  * gives some more informations if the changed failed.
  *
- * The caller should have a LDB transaction wrapping this.
- *
  * Results: NT_STATUS_OK, NT_STATUS_INTERNAL_DB_CORRUPTION,
  *   NT_STATUS_INVALID_PARAMETER, NT_STATUS_UNSUCCESSFUL,
- *   NT_STATUS_PASSWORD_RESTRICTION
+ *   NT_STATUS_WRONG_PASSWORD, NT_STATUS_PASSWORD_RESTRICTION
  */
-NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
+NTSTATUS samdb_set_password(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 			    struct ldb_dn *user_dn, struct ldb_dn *domain_dn,
-			    struct ldb_message *mod,
 			    const DATA_BLOB *new_password,
-			    struct samr_Password *param_lmNewHash,
-			    struct samr_Password *param_ntNewHash,
+			    struct samr_Password *lmNewHash,
+			    struct samr_Password *ntNewHash,
 			    bool user_change,
 			    enum samPwdChangeReason *reject_reason,
 			    struct samr_DomInfo1 **_dominfo)
 {
-	const char * const user_attrs[] = { "userAccountControl",
-					    "lmPwdHistory",
-					    "ntPwdHistory", 
-					    "dBCSPwd", "unicodePwd", 
-					    "objectSid", 
-					    "pwdLastSet", NULL };
-	const char * const domain_attrs[] = { "minPwdLength", "pwdProperties",
-					      "pwdHistoryLength",
-					      "maxPwdAge", "minPwdAge", NULL };
-	NTTIME pwdLastSet;
-	uint32_t minPwdLength, pwdProperties, pwdHistoryLength;
-	int64_t maxPwdAge, minPwdAge;
-	uint32_t userAccountControl;
-	struct samr_Password *sambaLMPwdHistory, *sambaNTPwdHistory,
-		*lmPwdHash, *ntPwdHash, *lmNewHash, *ntNewHash;
-	struct samr_Password local_lmNewHash, local_ntNewHash;
-	int sambaLMPwdHistory_len, sambaNTPwdHistory_len;
-	struct dom_sid *domain_sid;
-	struct ldb_message **res;
-	bool restrictions;
-	int count;
-	time_t now = time(NULL);
-	NTTIME now_nt;
-	unsigned int i;
+	struct ldb_message *msg;
+	struct ldb_message_element *el;
+	struct ldb_request *req;
+	struct dsdb_control_password_change_status *pwd_stat = NULL;
+	int ret;
+	NTSTATUS status;
 
-	/* we need to know the time to compute password age */
-	unix_to_nt_time(&now_nt, now);
-
-	/* pull all the user parameters */
-	count = gendb_search_dn(ctx, mem_ctx, user_dn, &res, user_attrs);
-	if (count != 1) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+#define CHECK_RET(x) \
+	if (x != LDB_SUCCESS) { \
+		talloc_free(msg); \
+		return NT_STATUS_NO_MEMORY; \
 	}
-	userAccountControl = samdb_result_uint(res[0], "userAccountControl", 0);
-	sambaLMPwdHistory_len = samdb_result_hashes(mem_ctx, res[0],
-					 "lmPwdHistory", &sambaLMPwdHistory);
-	sambaNTPwdHistory_len = samdb_result_hashes(mem_ctx, res[0],
-					 "ntPwdHistory", &sambaNTPwdHistory);
-	lmPwdHash = samdb_result_hash(mem_ctx, res[0], "dBCSPwd");
-	ntPwdHash = samdb_result_hash(mem_ctx, res[0], "unicodePwd");
-	pwdLastSet = samdb_result_uint64(res[0], "pwdLastSet", 0);
 
-	/* Copy parameters */
-	lmNewHash = param_lmNewHash;
-	ntNewHash = param_ntNewHash;
-
-	/* Only non-trust accounts have restrictions (possibly this
-	 * test is the wrong way around, but I like to be restrictive
-	 * if possible */
-	restrictions = !(userAccountControl & (UF_INTERDOMAIN_TRUST_ACCOUNT
-					       |UF_WORKSTATION_TRUST_ACCOUNT
-					       |UF_SERVER_TRUST_ACCOUNT)); 
-
-	if (domain_dn != NULL) {
-		/* pull the domain parameters */
-		count = gendb_search_dn(ctx, mem_ctx, domain_dn, &res,
-								domain_attrs);
-		if (count != 1) {
-			DEBUG(2, ("samdb_set_password: Domain DN %s is invalid, for user %s\n", 
-				  ldb_dn_get_linearized(domain_dn),
-				  ldb_dn_get_linearized(user_dn)));
-			return NT_STATUS_NO_SUCH_DOMAIN;
+	msg = ldb_msg_new(mem_ctx);
+	if (msg == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	msg->dn = user_dn;
+	if ((new_password != NULL)
+			&& ((lmNewHash == NULL) && (ntNewHash == NULL))) {
+		/* we have the password as plaintext UTF16 */
+		CHECK_RET(samdb_msg_add_value(ldb, mem_ctx, msg,
+			"clearTextPassword", new_password));
+		el = ldb_msg_find_element(msg, "clearTextPassword");
+		el->flags = LDB_FLAG_MOD_REPLACE;
+	} else if ((new_password == NULL)
+			&& ((lmNewHash != NULL) || (ntNewHash != NULL))) {
+		/* we have a password as LM and/or NT hash */
+		if (lmNewHash != NULL) {
+			CHECK_RET(samdb_msg_add_hash(ldb, mem_ctx, msg,
+				"dBCSPwd", lmNewHash));
+			el = ldb_msg_find_element(msg, "dBCSPwd");
+			el->flags = LDB_FLAG_MOD_REPLACE;
+		}
+		if (ntNewHash != NULL) {
+			CHECK_RET(samdb_msg_add_hash(ldb, mem_ctx, msg,
+				"unicodePwd", ntNewHash));
+			el = ldb_msg_find_element(msg, "unicodePwd");
+			el->flags = LDB_FLAG_MOD_REPLACE;
 		}
 	} else {
-		/* work out the domain sid, and pull the domain from there */
-		domain_sid = samdb_result_sid_prefix(mem_ctx, res[0],
-								"objectSid");
-		if (domain_sid == NULL) {
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-
-		count = gendb_search(ctx, mem_ctx, NULL, &res, domain_attrs, 
-				"(objectSid=%s)",
-				ldap_encode_ndr_dom_sid(mem_ctx, domain_sid));
-		if (count != 1) {
-			DEBUG(2, ("samdb_set_password: Could not find domain to match SID: %s, for user %s\n", 
-				  dom_sid_string(mem_ctx, domain_sid),
-				  ldb_dn_get_linearized(user_dn)));
-			return NT_STATUS_NO_SUCH_DOMAIN;
-		}
+		/* the password wasn't specified correctly */
+		talloc_free(msg);
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	minPwdLength = samdb_result_uint(res[0], "minPwdLength", 0);
-	pwdProperties = samdb_result_uint(res[0], "pwdProperties", 0);
-	pwdHistoryLength = samdb_result_uint(res[0], "pwdHistoryLength", 0);
-	maxPwdAge = samdb_result_int64(res[0], "maxPwdAge", 0);
-	minPwdAge = samdb_result_int64(res[0], "minPwdAge", 0);
+	/* build modify request */
+	ret = ldb_build_mod_req(&req, ldb, mem_ctx, msg, NULL, NULL,
+				samdb_set_password_callback, NULL);
+        if (ret != LDB_SUCCESS) {
+		talloc_free(msg);
+		return NT_STATUS_NO_MEMORY;
+        }
 
-	if ((userAccountControl & UF_PASSWD_NOTREQD) != 0) {
-		/* see [MS-ADTS] 2.2.15 */
-		minPwdLength = 0;
+	ret = ldb_request_add_control(req,
+				      DSDB_CONTROL_PASSWORD_HASH_VALUES_OID,
+				      true, NULL);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(req);
+		talloc_free(msg);
+		return NT_STATUS_NO_MEMORY;
+	}
+	ret = ldb_request_add_control(req,
+				      DSDB_CONTROL_PASSWORD_CHANGE_STATUS_OID,
+				      true, NULL);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(req);
+		talloc_free(msg);
+		return NT_STATUS_NO_MEMORY;
 	}
 
+	ret = dsdb_autotransaction_request(ldb, req);
+
+	if (req->context != NULL) {
+		pwd_stat = talloc_steal(mem_ctx,
+					((struct ldb_control *)req->context)->data);
+	}
+
+	talloc_free(req);
+	talloc_free(msg);
+
+	/* Sets the domain info (if requested) */
 	if (_dominfo != NULL) {
 		struct samr_DomInfo1 *dominfo;
-		/* on failure we need to fill in the reject reasons */
-		dominfo = talloc(mem_ctx, struct samr_DomInfo1);
+
+		dominfo = talloc_zero(mem_ctx, struct samr_DomInfo1);
 		if (dominfo == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		dominfo->min_password_length     = minPwdLength;
-		dominfo->password_properties     = pwdProperties;
-		dominfo->password_history_length = pwdHistoryLength;
-		dominfo->max_password_age        = maxPwdAge;
-		dominfo->min_password_age        = minPwdAge;
+
+		if (pwd_stat != NULL) {
+			dominfo->min_password_length     = pwd_stat->domain_data.minPwdLength;
+			dominfo->password_properties     = pwd_stat->domain_data.pwdProperties;
+			dominfo->password_history_length = pwd_stat->domain_data.pwdHistoryLength;
+			dominfo->max_password_age        = pwd_stat->domain_data.maxPwdAge;
+			dominfo->min_password_age        = pwd_stat->domain_data.minPwdAge;
+		}
+
 		*_dominfo = dominfo;
 	}
 
-	if ((restrictions != 0) && (new_password != 0)) {
-		char *new_pass;
-
-		/* checks if the "minPwdLength" property is satisfied */
-		if ((restrictions != 0)
-			&& (minPwdLength > utf16_len_n(
-				new_password->data, new_password->length)/2)) {
-			if (reject_reason) {
-				*reject_reason = SAM_PWD_CHANGE_PASSWORD_TOO_SHORT;
-			}
-			return NT_STATUS_PASSWORD_RESTRICTION;
-		}
-
-		/* Create the NT hash */
-		mdfour(local_ntNewHash.hash, new_password->data,
-							new_password->length);
-
-		ntNewHash = &local_ntNewHash;
-
-		/* Only check complexity if we can convert it at all.  Assuming unconvertable passwords are 'strong' */
-		if (convert_string_talloc_convenience(mem_ctx,
-			  lp_iconv_convenience(ldb_get_opaque(ctx, "loadparm")),
-			  CH_UTF16, CH_UNIX,
-			  new_password->data, new_password->length,
-			  (void **)&new_pass, NULL, false)) {
-
-			/* checks the password complexity */
-			if ((restrictions != 0)
-				&& ((pwdProperties
-					& DOMAIN_PASSWORD_COMPLEX) != 0)
-				&& (!check_password_quality(new_pass))) {
-				if (reject_reason) {
-					*reject_reason = SAM_PWD_CHANGE_NOT_COMPLEX;
-				}
-				return NT_STATUS_PASSWORD_RESTRICTION;
-			}
-
-			/* compute the new lm hashes (for checking history - case insenitivly!) */
-			if (E_deshash(new_pass, local_lmNewHash.hash)) {
-				lmNewHash = &local_lmNewHash;
-			}
+	if (reject_reason != NULL) {
+		if (pwd_stat != NULL) {
+			*reject_reason = pwd_stat->reject_reason;
+		} else {
+			*reject_reason = SAM_PWD_CHANGE_NO_ERROR;
 		}
 	}
 
-	if ((restrictions != 0) && user_change) {
-		/* are all password changes disallowed? */
-		if ((pwdProperties & DOMAIN_REFUSE_PASSWORD_CHANGE) != 0) {
-			if (reject_reason) {
-				*reject_reason = SAM_PWD_CHANGE_NO_ERROR;
-			}
-			return NT_STATUS_PASSWORD_RESTRICTION;
-		}
-
-		/* can this user change the password? */
-		if ((userAccountControl & UF_PASSWD_CANT_CHANGE) != 0) {
-			if (reject_reason) {
-				*reject_reason = SAM_PWD_CHANGE_NO_ERROR;
-			}
-			return NT_STATUS_PASSWORD_RESTRICTION;
-		}
-
-		/* Password minimum age: yes, this is a minus. The ages are in negative 100nsec units! */
-		if (pwdLastSet - minPwdAge > now_nt) {
-			if (reject_reason) {
-				*reject_reason = SAM_PWD_CHANGE_NO_ERROR;
-			}
-			return NT_STATUS_PASSWORD_RESTRICTION;
-		}
-
-		/* check the immediately past password */
-		if (pwdHistoryLength > 0) {
-			if (lmNewHash && lmPwdHash && memcmp(lmNewHash->hash,
-					lmPwdHash->hash, 16) == 0) {
-				if (reject_reason) {
-					*reject_reason = SAM_PWD_CHANGE_PWD_IN_HISTORY;
-				}
-				return NT_STATUS_PASSWORD_RESTRICTION;
-			}
-			if (ntNewHash && ntPwdHash && memcmp(ntNewHash->hash,
-					ntPwdHash->hash, 16) == 0) {
-				if (reject_reason) {
-					*reject_reason = SAM_PWD_CHANGE_PWD_IN_HISTORY;
-				}
-				return NT_STATUS_PASSWORD_RESTRICTION;
-			}
-		}
-
-		/* check the password history */
-		sambaLMPwdHistory_len = MIN(sambaLMPwdHistory_len,
-							pwdHistoryLength);
-		sambaNTPwdHistory_len = MIN(sambaNTPwdHistory_len,
-							pwdHistoryLength);
-
-		for (i=0; lmNewHash && i<sambaLMPwdHistory_len;i++) {
-			if (memcmp(lmNewHash->hash, sambaLMPwdHistory[i].hash,
-					16) == 0) {
-				if (reject_reason) {
-					*reject_reason = SAM_PWD_CHANGE_PWD_IN_HISTORY;
-				}
-				return NT_STATUS_PASSWORD_RESTRICTION;
-			}
-		}
-		for (i=0; ntNewHash && i<sambaNTPwdHistory_len;i++) {
-			if (memcmp(ntNewHash->hash, sambaNTPwdHistory[i].hash,
-					 16) == 0) {
-				if (reject_reason) {
-					*reject_reason = SAM_PWD_CHANGE_PWD_IN_HISTORY;
-				}
-				return NT_STATUS_PASSWORD_RESTRICTION;
-			}
-		}
+	if (pwd_stat != NULL) {
+		talloc_free(pwd_stat);
 	}
 
-#define CHECK_RET(x) do { if (x != 0) return NT_STATUS_NO_MEMORY; } while(0)
-
-	/* the password is acceptable. Start forming the new fields */
-	if (new_password != NULL) {
-		/* if we know the cleartext UTF16 password, then set it.
-		 * Modules in ldb will set all the appropriate
-		 * hashes */
-		CHECK_RET(ldb_msg_add_value(mod, "clearTextPassword", new_password, NULL));
+	/* TODO: Error results taken from "password_hash" module. Are they
+	   correct? */
+	if (ret == LDB_ERR_UNWILLING_TO_PERFORM) {
+		status = NT_STATUS_WRONG_PASSWORD;
+	} else if (ret == LDB_ERR_CONSTRAINT_VIOLATION) {
+		status = NT_STATUS_PASSWORD_RESTRICTION;
+	} else if (ret != LDB_SUCCESS) {
+		status = NT_STATUS_UNSUCCESSFUL;
 	} else {
-		/* we don't have the cleartext, so set what we have of the
-		 * hashes */
-
-		if (lmNewHash) {
-			CHECK_RET(samdb_msg_add_hash(ctx, mem_ctx, mod, "dBCSPwd", lmNewHash));
-		}
-
-		if (ntNewHash) {
-			CHECK_RET(samdb_msg_add_hash(ctx, mem_ctx, mod, "unicodePwd", ntNewHash));
-		}
+		status = NT_STATUS_OK;
 	}
 
-	if (reject_reason) {
-		*reject_reason = SAM_PWD_CHANGE_NO_ERROR;
-	}
-	return NT_STATUS_OK;
+	return status;
 }
-
 
 /*
  * Sets the user password using plaintext UTF16 (attribute "new_password") or
@@ -2176,7 +2082,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
  *
  * Results: NT_STATUS_OK, NT_STATUS_INTERNAL_DB_CORRUPTION,
  *   NT_STATUS_INVALID_PARAMETER, NT_STATUS_UNSUCCESSFUL,
- *   NT_STATUS_PASSWORD_RESTRICTION
+ *   NT_STATUS_WRONG_PASSWORD, NT_STATUS_PASSWORD_RESTRICTION
  */
 NTSTATUS samdb_set_password_sid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 				const struct dom_sid *user_sid,
@@ -2189,7 +2095,6 @@ NTSTATUS samdb_set_password_sid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS nt_status;
 	struct ldb_dn *user_dn;
-	struct ldb_message *msg;
 	int ret;
 
 	ret = ldb_transaction_start(ldb);
@@ -2208,44 +2113,17 @@ NTSTATUS samdb_set_password_sid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	msg = ldb_msg_new(mem_ctx);
-	if (msg == NULL) {
-		ldb_transaction_cancel(ldb);
-		talloc_free(user_dn);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	msg->dn = ldb_dn_copy(msg, user_dn);
-	if (!msg->dn) {
-		ldb_transaction_cancel(ldb);
-		talloc_free(user_dn);
-		talloc_free(msg);
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	nt_status = samdb_set_password(ldb, mem_ctx,
 				       user_dn, NULL,
-				       msg, new_password,
+				       new_password,
 				       lmNewHash, ntNewHash,
 				       user_change,
 				       reject_reason, _dominfo);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		ldb_transaction_cancel(ldb);
 		talloc_free(user_dn);
-		talloc_free(msg);
 		return nt_status;
 	}
-
-	/* modify the samdb record */
-	ret = dsdb_replace(ldb, msg, 0);
-	if (ret != LDB_SUCCESS) {
-		ldb_transaction_cancel(ldb);
-		talloc_free(user_dn);
-		talloc_free(msg);
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	talloc_free(msg);
 
 	ret = ldb_transaction_commit(ldb);
 	if (ret != LDB_SUCCESS) {

@@ -3562,14 +3562,14 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 						   a_state->sam_ctx,
 						   a_state->account_dn,
 						   a_state->domain_state->domain_dn,
-						   mem_ctx, msg, 
+						   mem_ctx,
 						   &r->in.info->info23.password);
 		} else IFSET(SAMR_FIELD_LM_PASSWORD_PRESENT) {
 			status = samr_set_password(dce_call,
 						   a_state->sam_ctx,
 						   a_state->account_dn,
 						   a_state->domain_state->domain_dn,
-						   mem_ctx, msg, 
+						   mem_ctx,
 						   &r->in.info->info23.password);
 		}
 #undef IFSET
@@ -3581,7 +3581,7 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 					   a_state->sam_ctx,
 					   a_state->account_dn,
 					   a_state->domain_state->domain_dn,
-					   mem_ctx, msg, 
+					   mem_ctx,
 					   &r->in.info->info24.password);
 		break;
 
@@ -3625,14 +3625,14 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 						      a_state->sam_ctx,
 						      a_state->account_dn,
 						      a_state->domain_state->domain_dn,
-						      mem_ctx, msg, 
+						      mem_ctx,
 						      &r->in.info->info25.password);
 		} else IFSET(SAMR_FIELD_LM_PASSWORD_PRESENT) {
 			status = samr_set_password_ex(dce_call,
 						      a_state->sam_ctx,
 						      a_state->account_dn,
 						      a_state->domain_state->domain_dn,
-						      mem_ctx, msg, 
+						      mem_ctx,
 						      &r->in.info->info25.password);
 		}
 #undef IFSET
@@ -3644,7 +3644,7 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 					      a_state->sam_ctx,
 					      a_state->account_dn,
 					      a_state->domain_state->domain_dn,
-					      mem_ctx, msg, 
+					      mem_ctx,
 					      &r->in.info->info26.password);
 		break;
 		
