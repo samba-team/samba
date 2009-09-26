@@ -5,6 +5,7 @@
  * Copyright (C) Tim Potter, 1999-2000
  * Copyright (C) Alexander Bokovoy, 2002
  * Copyright (C) Stefan (metze) Metzmacher, 2003
+ * Copyright (C) Jeremy Allison 2009
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -74,6 +75,11 @@ static int skel_statvfs(struct vfs_handle_struct *handle, const char *path, stru
 	return SMB_VFS_NEXT_STATVFS(handle, path, statbuf);
 }
 
+static uint32_t skel_fs_capabilities(struct vfs_handle_struct *handle, enum timestamp_set_resolution *p_ts_res)
+{
+	return SMB_VFS_NEXT_FS_CAPABILITIES(handle, p_ts_res);
+}
+
 static SMB_STRUCT_DIR *skel_opendir(vfs_handle_struct *handle,  const char *fname, const char *mask, uint32 attr)
 {
 	return SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr);
@@ -88,7 +94,7 @@ static SMB_STRUCT_DIRENT *skel_readdir(vfs_handle_struct *handle,
 
 static void skel_seekdir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp, long offset)
 {
-	return SMB_VFS_NEXT_SEEKDIR(handle, dirp, offset);
+	SMB_VFS_NEXT_SEEKDIR(handle, dirp, offset);
 }
 
 static long skel_telldir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
@@ -96,9 +102,9 @@ static long skel_telldir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
 	return SMB_VFS_NEXT_TELLDIR(handle, dirp);
 }
 
-static void skel_rewinddir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
+static void skel_rewind_dir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp)
 {
-	return SMB_VFS_NEXT_REWINDDIR(handle, dirp);
+	SMB_VFS_NEXT_REWINDDIR(handle, dirp);
 }
 
 static int skel_mkdir(vfs_handle_struct *handle,  const char *path, mode_t mode)
@@ -116,18 +122,56 @@ static int skel_closedir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dir)
 	return SMB_VFS_NEXT_CLOSEDIR(handle, dir);
 }
 
+static void skel_init_search_op(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp)
+{
+	SMB_VFS_NEXT_INIT_SEARCH_OP(handle, dirp);
+}
+
 static int skel_open(vfs_handle_struct *handle, struct smb_filename *smb_fname,
 		     files_struct *fsp, int flags, mode_t mode)
 {
 	return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
 }
 
-static int skel_close(vfs_handle_struct *handle, files_struct *fsp)
+static NTSTATUS skel_create_file(struct vfs_handle_struct *handle,
+                                struct smb_request *req,
+                                uint16_t root_dir_fid,
+                                struct smb_filename *smb_fname,
+                                uint32_t access_mask,
+                                uint32_t share_access,
+                                uint32_t create_disposition,
+                                uint32_t create_options,
+                                uint32_t file_attributes,
+                                uint32_t oplock_request,
+                                uint64_t allocation_size,
+                                struct security_descriptor *sd,
+                                struct ea_list *ea_list,
+                                files_struct **result,
+                                int *pinfo)
+{
+	return SMB_VFS_NEXT_CREATE_FILE(handle,
+				req,
+				root_dir_fid,
+				smb_fname,
+				access_mask,
+				share_access,
+				create_disposition,
+				create_options,
+				file_attributes,
+				oplock_request,
+				allocation_size,
+				sd,
+				ea_list,
+				result,
+				pinfo);
+}
+
+static int skel_close_fn(vfs_handle_struct *handle, files_struct *fsp)
 {
 	return SMB_VFS_NEXT_CLOSE(handle, fsp);
 }
 
-static ssize_t skel_read(vfs_handle_struct *handle, files_struct *fsp, void *data, size_t n)
+static ssize_t skel_vfs_read(vfs_handle_struct *handle, files_struct *fsp, void *data, size_t n)
 {
 	return SMB_VFS_NEXT_READ(handle, fsp, data, n);
 }
@@ -163,8 +207,8 @@ static ssize_t skel_recvfile(vfs_handle_struct *handle, int fromfd, files_struct
 }
 
 static int skel_rename(vfs_handle_struct *handle,
-		       const smb_filename *smb_fname_src,
-		       const smb_filename *smb_fname_dst)
+		       const struct smb_filename *smb_fname_src,
+		       const struct smb_filename *smb_fname_dst)
 {
 	return SMB_VFS_NEXT_RENAME(handle, smb_fname_src, smb_fname_dst);
 }
@@ -187,6 +231,11 @@ static int skel_fstat(vfs_handle_struct *handle, files_struct *fsp, SMB_STRUCT_S
 static int skel_lstat(vfs_handle_struct *handle, struct smb_filename *smb_fname)
 {
 	return SMB_VFS_NEXT_LSTAT(handle, smb_fname);
+}
+
+static uint64_t skel_get_alloc_size(struct vfs_handle_struct *handle, struct files_struct *fsp, const SMB_STRUCT_STAT *sbuf)
+{
+	return SMB_VFS_NEXT_GET_ALLOC_SIZE(handle, fsp, sbuf);
 }
 
 static int skel_unlink(vfs_handle_struct *handle,
@@ -247,6 +296,16 @@ static bool skel_lock(vfs_handle_struct *handle, files_struct *fsp, int op, SMB_
 	return SMB_VFS_NEXT_LOCK(handle, fsp, op, offset, count, type);
 }
 
+static int skel_kernel_flock(struct vfs_handle_struct *handle, struct files_struct *fsp, uint32 share_mode)
+{
+	return SMB_VFS_NEXT_KERNEL_FLOCK(handle, fsp, share_mode);
+}
+
+static int skel_linux_setlease(struct vfs_handle_struct *handle, struct files_struct *fsp, int leasetype)
+{
+	return SMB_VFS_NEXT_LINUX_SETLEASE(handle, fsp, leasetype);
+}
+
 static bool skel_getlock(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid)
 {
 	return SMB_VFS_NEXT_GETLOCK(handle, fsp, poffset, pcount, ptype, ppid);
@@ -257,7 +316,7 @@ static int skel_symlink(vfs_handle_struct *handle,  const char *oldpath, const c
 	return SMB_VFS_NEXT_SYMLINK(handle, oldpath, newpath);
 }
 
-static int skel_readlink(vfs_handle_struct *handle,  const char *path, char *buf, size_t bufsiz)
+static int skel_vfs_readlink(vfs_handle_struct *handle, const char *path, char *buf, size_t bufsiz)
 {
 	return SMB_VFS_NEXT_READLINK(handle, path, buf, bufsiz);
 }
@@ -297,6 +356,102 @@ static struct file_id skel_file_id_create(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_FILE_ID_CREATE(handle, sbuf);
 }
 
+static NTSTATUS skel_streaminfo(struct vfs_handle_struct *handle,
+				struct files_struct *fsp,
+				const char *fname,
+				TALLOC_CTX *mem_ctx,
+				unsigned int *num_streams,
+				struct stream_struct **streams)
+{
+	return SMB_VFS_NEXT_STREAMINFO(handle,
+					fsp,
+					fname,
+					mem_ctx,
+					num_streams,
+					streams);
+}
+
+static int skel_get_real_filename(struct vfs_handle_struct *handle,
+				const char *path,
+				const char *name,
+				TALLOC_CTX *mem_ctx,
+				char **found_name)
+{
+	return SMB_VFS_NEXT_GET_REAL_FILENAME(handle,
+					path,
+					name,
+					mem_ctx,
+					found_name);
+}
+
+static const char *skel_connectpath(struct vfs_handle_struct *handle,
+				const char *filename)
+{
+	return SMB_VFS_NEXT_CONNECTPATH(handle, filename);
+}
+
+static NTSTATUS skel_brl_lock_windows(struct vfs_handle_struct *handle,
+				struct byte_range_lock *br_lck,
+				struct lock_struct *plock,
+				bool blocking_lock,
+				struct blocking_lock_record *blr)
+{
+	return SMB_VFS_NEXT_BRL_LOCK_WINDOWS(handle,
+					br_lck,
+					plock,
+					blocking_lock,
+					blr);
+}
+
+static bool skel_brl_unlock_windows(struct vfs_handle_struct *handle,
+				struct messaging_context *msg_ctx,
+				struct byte_range_lock *br_lck,
+				const struct lock_struct *plock)
+{
+	return SMB_VFS_NEXT_BRL_UNLOCK_WINDOWS(handle,
+					msg_ctx,
+					br_lck,
+					plock);
+}
+
+static bool skel_brl_cancel_windows(struct vfs_handle_struct *handle,
+				struct byte_range_lock *br_lck,
+				struct lock_struct *plock,
+				struct blocking_lock_record *blr)
+{
+	return SMB_VFS_NEXT_BRL_CANCEL_WINDOWS(handle,
+				br_lck,
+				plock,
+				blr);
+}
+
+static bool skel_strict_lock(struct vfs_handle_struct *handle,
+				struct files_struct *fsp,
+				struct lock_struct *plock)
+{
+	return SMB_VFS_NEXT_STRICT_LOCK(handle,
+					fsp,
+					plock);
+}
+
+static void skel_strict_unlock(struct vfs_handle_struct *handle,
+				struct files_struct *fsp,
+				struct lock_struct *plock)
+{
+	SMB_VFS_NEXT_STRICT_UNLOCK(handle,
+					fsp,
+					plock);
+}
+
+static NTSTATUS skel_translate_name(struct vfs_handle_struct *handle,
+				char **mapped_name,
+				enum vfs_translate_direction direction)
+{
+	return SMB_VFS_NEXT_TRANSLATE_NAME(handle,
+					mapped_name,
+					direction);
+}
+
 static NTSTATUS skel_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	uint32 security_info, SEC_DESC **ppdesc)
 {
@@ -317,21 +472,11 @@ static NTSTATUS skel_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 
 static int skel_chmod_acl(vfs_handle_struct *handle,  const char *name, mode_t mode)
 {
-	/* If the underlying VFS doesn't have ACL support... */
-	if (!handle->vfs_next.ops.chmod_acl) {
-		errno = ENOSYS;
-		return -1;
-	}
 	return SMB_VFS_NEXT_CHMOD_ACL(handle, name, mode);
 }
 
 static int skel_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, mode_t mode)
 {
-	/* If the underlying VFS doesn't have ACL support... */
-	if (!handle->vfs_next.ops.fchmod_acl) {
-		errno = ENOSYS;
-		return -1;
-	}
 	return SMB_VFS_NEXT_FCHMOD_ACL(handle, fsp, mode);
 }
 
@@ -516,7 +661,7 @@ static int skel_aio_write(struct vfs_handle_struct *handle, struct files_struct 
 	return SMB_VFS_NEXT_AIO_WRITE(handle, fsp, aiocb);
 }
 
-static ssize_t skel_aio_return(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
+static ssize_t skel_aio_return_fn(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
 {
 	return SMB_VFS_NEXT_AIO_RETURN(handle, fsp, aiocb);
 }
@@ -526,7 +671,7 @@ static int skel_aio_cancel(struct vfs_handle_struct *handle, struct files_struct
 	return SMB_VFS_NEXT_AIO_CANCEL(handle, fsp, aiocb);
 }
 
-static int skel_aio_error(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
+static int skel_aio_error_fn(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
 {
 	return SMB_VFS_NEXT_AIO_ERROR(handle, fsp, aiocb);
 }
@@ -563,130 +708,145 @@ static bool skel_is_remotestorage(struct vfs_handle_struct *handle, const char *
 
 /* VFS operations structure */
 
-static vfs_op_tuple skel_op_tuples[] = {
-
+struct vfs_fn_pointers skel_transparent_fns = {
 	/* Disk operations */
 
-	{SMB_VFS_OP(skel_connect),			SMB_VFS_OP_CONNECT, 		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_disconnect),			SMB_VFS_OP_DISCONNECT,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_disk_free),			SMB_VFS_OP_DISK_FREE,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_get_quota),			SMB_VFS_OP_GET_QUOTA,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_set_quota),			SMB_VFS_OP_SET_QUOTA,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_get_shadow_copy_data),		SMB_VFS_OP_GET_SHADOW_COPY_DATA,SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_statvfs),			SMB_VFS_OP_STATVFS,		SMB_VFS_LAYER_TRANSPARENT},
+	.connect_fn = skel_connect,
+	.disconnect = skel_disconnect,
+	.disk_free = skel_disk_free,
+	.get_quota = skel_get_quota,
+	.set_quota = skel_set_quota,
+	.get_shadow_copy_data = skel_get_shadow_copy_data,
+	.statvfs = skel_statvfs,
+	.fs_capabilities = skel_fs_capabilities,
 
 	/* Directory operations */
 
-	{SMB_VFS_OP(skel_opendir),			SMB_VFS_OP_OPENDIR,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_readdir),			SMB_VFS_OP_READDIR,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_seekdir),			SMB_VFS_OP_SEEKDIR,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_telldir),			SMB_VFS_OP_TELLDIR,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_rewinddir),			SMB_VFS_OP_REWINDDIR,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_mkdir),			SMB_VFS_OP_MKDIR,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_rmdir),			SMB_VFS_OP_RMDIR,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_closedir),			SMB_VFS_OP_CLOSEDIR,		SMB_VFS_LAYER_TRANSPARENT},
+	.opendir = skel_opendir,
+	.readdir = skel_readdir,
+	.seekdir = skel_seekdir,
+	.telldir = skel_telldir,
+	.rewind_dir = skel_rewind_dir,
+	.mkdir = skel_mkdir,
+	.rmdir = skel_rmdir,
+	.closedir = skel_closedir,
+	.init_search_op = skel_init_search_op,
 
 	/* File operations */
 
-	{SMB_VFS_OP(skel_open),				SMB_VFS_OP_OPEN,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_close),			SMB_VFS_OP_CLOSE,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_read),				SMB_VFS_OP_READ,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_write),			SMB_VFS_OP_WRITE,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_lseek),			SMB_VFS_OP_LSEEK,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_sendfile),			SMB_VFS_OP_SENDFILE,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_recvfile),			SMB_VFS_OP_RECVFILE,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_rename),			SMB_VFS_OP_RENAME,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_fsync),			SMB_VFS_OP_FSYNC,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_stat),				SMB_VFS_OP_STAT,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_fstat),			SMB_VFS_OP_FSTAT,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_lstat),			SMB_VFS_OP_LSTAT,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_unlink),			SMB_VFS_OP_UNLINK,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_chmod),			SMB_VFS_OP_CHMOD,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_fchmod),			SMB_VFS_OP_FCHMOD,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_chown),			SMB_VFS_OP_CHOWN,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_fchown),			SMB_VFS_OP_FCHOWN,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_lchown),			SMB_VFS_OP_LCHOWN,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_chdir),			SMB_VFS_OP_CHDIR,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_getwd),			SMB_VFS_OP_GETWD,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_ntimes),			SMB_VFS_OP_NTIMES,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_ftruncate),			SMB_VFS_OP_FTRUNCATE,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_lock),				SMB_VFS_OP_LOCK,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_getlock),			SMB_VFS_OP_GETLOCK,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_symlink),			SMB_VFS_OP_SYMLINK,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_readlink),			SMB_VFS_OP_READLINK,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_link),				SMB_VFS_OP_LINK,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_mknod),			SMB_VFS_OP_MKNOD,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_realpath),			SMB_VFS_OP_REALPATH,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_notify_watch),			SMB_VFS_OP_NOTIFY_WATCH,	SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_chflags),			SMB_VFS_OP_CHFLAGS,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_file_id_create),		SMB_VFS_OP_FILE_ID_CREATE,	SMB_VFS_LAYER_TRANSPARENT},
+	.open = skel_open,
+	.create_file = skel_create_file,
+	.close_fn = skel_close_fn,
+	.vfs_read = skel_vfs_read,
+	.pread = skel_pread,
+	.write = skel_write,
+	.pwrite = skel_pwrite,
+	.lseek = skel_lseek,
+	.sendfile = skel_sendfile,
+	.recvfile = skel_recvfile,
+	.rename = skel_rename,
+	.fsync = skel_fsync,
+	.stat = skel_stat,
+	.fstat = skel_fstat,
+	.lstat = skel_lstat,
+	.get_alloc_size = skel_get_alloc_size,
+	.unlink = skel_unlink,
+	.chmod = skel_chmod,
+	.fchmod = skel_fchmod,
+	.chown = skel_chown,
+	.fchown = skel_fchown,
+	.lchown = skel_lchown,
+	.chdir = skel_chdir,
+	.getwd = skel_getwd,
+	.ntimes = skel_ntimes,
+	.ftruncate = skel_ftruncate,
+	.lock = skel_lock,
+	.kernel_flock = skel_kernel_flock,
+	.linux_setlease = skel_linux_setlease,
+	.getlock = skel_getlock,
+	.symlink = skel_symlink,
+	.vfs_readlink = skel_vfs_readlink,
+	.link = skel_link,
+	.mknod = skel_mknod,
+	.realpath = skel_realpath,
+	.notify_watch = skel_notify_watch,
+	.chflags = skel_chflags,
+	.file_id_create = skel_file_id_create,
 
-	/* NT File ACL operations */
+	.streaminfo = skel_streaminfo,
+	.get_real_filename = skel_get_real_filename,
+	.connectpath = skel_connectpath,
+	.brl_lock_windows = skel_brl_lock_windows,
+	.brl_unlock_windows = skel_brl_unlock_windows,
+	.brl_cancel_windows = skel_brl_cancel_windows,
+	.strict_lock = skel_strict_lock,
+	.strict_unlock = skel_strict_unlock,
+	.translate_name = skel_translate_name,
 
-	{SMB_VFS_OP(skel_fget_nt_acl),			SMB_VFS_OP_FGET_NT_ACL,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_get_nt_acl),			SMB_VFS_OP_GET_NT_ACL,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_fset_nt_acl),			SMB_VFS_OP_FSET_NT_ACL,		SMB_VFS_LAYER_TRANSPARENT},
+	/* NT ACL operations. */
 
-	/* POSIX ACL operations */
+	.fget_nt_acl = skel_fget_nt_acl,
+	.get_nt_acl = skel_get_nt_acl,
+	.fset_nt_acl = skel_fset_nt_acl,
 
-	{SMB_VFS_OP(skel_chmod_acl),			SMB_VFS_OP_CHMOD_ACL,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_fchmod_acl),			SMB_VFS_OP_FCHMOD_ACL,		SMB_VFS_LAYER_TRANSPARENT},
+	/* POSIX ACL operations. */
 
-	{SMB_VFS_OP(skel_sys_acl_get_entry),		SMB_VFS_OP_SYS_ACL_GET_ENTRY,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_sys_acl_get_tag_type),		SMB_VFS_OP_SYS_ACL_GET_TAG_TYPE,	SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_sys_acl_get_permset),		SMB_VFS_OP_SYS_ACL_GET_PERMSET,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_sys_acl_get_qualifier),	SMB_VFS_OP_SYS_ACL_GET_QUALIFIER,	SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_sys_acl_get_file),		SMB_VFS_OP_SYS_ACL_GET_FILE,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_sys_acl_get_fd),		SMB_VFS_OP_SYS_ACL_GET_FD,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_sys_acl_clear_perms),		SMB_VFS_OP_SYS_ACL_CLEAR_PERMS,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_sys_acl_add_perm),		SMB_VFS_OP_SYS_ACL_ADD_PERM,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_sys_acl_to_text),		SMB_VFS_OP_SYS_ACL_TO_TEXT,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_sys_acl_init),			SMB_VFS_OP_SYS_ACL_INIT,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_sys_acl_create_entry),		SMB_VFS_OP_SYS_ACL_CREATE_ENTRY,	SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_sys_acl_set_tag_type),		SMB_VFS_OP_SYS_ACL_SET_TAG_TYPE,	SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_sys_acl_set_qualifier),	SMB_VFS_OP_SYS_ACL_SET_QUALIFIER,	SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_sys_acl_set_permset),		SMB_VFS_OP_SYS_ACL_SET_PERMSET,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_sys_acl_valid),		SMB_VFS_OP_SYS_ACL_VALID,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_sys_acl_set_file),		SMB_VFS_OP_SYS_ACL_SET_FILE,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_sys_acl_set_fd),		SMB_VFS_OP_SYS_ACL_SET_FD,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_sys_acl_delete_def_file),	SMB_VFS_OP_SYS_ACL_DELETE_DEF_FILE,	SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_sys_acl_get_perm),		SMB_VFS_OP_SYS_ACL_GET_PERM,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_sys_acl_free_text),		SMB_VFS_OP_SYS_ACL_FREE_TEXT,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_sys_acl_free_acl),		SMB_VFS_OP_SYS_ACL_FREE_ACL,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_sys_acl_free_qualifier),	SMB_VFS_OP_SYS_ACL_FREE_QUALIFIER,	SMB_VFS_LAYER_TRANSPARENT},
+	.chmod_acl = skel_chmod_acl,
+	.fchmod_acl = skel_fchmod_acl,
+
+	.sys_acl_get_entry = skel_sys_acl_get_entry,
+	.sys_acl_get_tag_type = skel_sys_acl_get_tag_type,
+	.sys_acl_get_permset = skel_sys_acl_get_permset,
+	.sys_acl_get_qualifier = skel_sys_acl_get_qualifier,
+	.sys_acl_get_file = skel_sys_acl_get_file,
+	.sys_acl_get_fd = skel_sys_acl_get_fd,
+	.sys_acl_clear_perms = skel_sys_acl_clear_perms,
+	.sys_acl_add_perm = skel_sys_acl_add_perm,
+	.sys_acl_to_text = skel_sys_acl_to_text,
+	.sys_acl_init = skel_sys_acl_init,
+	.sys_acl_create_entry = skel_sys_acl_create_entry,
+	.sys_acl_set_tag_type = skel_sys_acl_set_tag_type,
+	.sys_acl_set_qualifier = skel_sys_acl_set_qualifier,
+	.sys_acl_set_permset = skel_sys_acl_set_permset,
+	.sys_acl_valid = skel_sys_acl_valid,
+	.sys_acl_set_file = skel_sys_acl_set_file,
+	.sys_acl_set_fd = skel_sys_acl_set_fd,
+	.sys_acl_delete_def_file = skel_sys_acl_delete_def_file,
+	.sys_acl_get_perm = skel_sys_acl_get_perm,
+	.sys_acl_free_text = skel_sys_acl_free_text,
+	.sys_acl_free_acl = skel_sys_acl_free_acl,
+	.sys_acl_free_qualifier = skel_sys_acl_free_qualifier,
 
 	/* EA operations. */
-	{SMB_VFS_OP(skel_getxattr),			SMB_VFS_OP_GETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_lgetxattr),			SMB_VFS_OP_LGETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_fgetxattr),			SMB_VFS_OP_FGETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_listxattr),			SMB_VFS_OP_LISTXATTR,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_llistxattr),			SMB_VFS_OP_LLISTXATTR,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_flistxattr),			SMB_VFS_OP_FLISTXATTR,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_removexattr),			SMB_VFS_OP_REMOVEXATTR,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_lremovexattr),			SMB_VFS_OP_LREMOVEXATTR,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_fremovexattr),			SMB_VFS_OP_FREMOVEXATTR,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_setxattr),			SMB_VFS_OP_SETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_lsetxattr),			SMB_VFS_OP_LSETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_fsetxattr),			SMB_VFS_OP_FSETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
+	.getxattr = skel_getxattr,
+	.lgetxattr = skel_lgetxattr,
+	.fgetxattr = skel_fgetxattr,
+	.listxattr = skel_listxattr,
+	.llistxattr = skel_llistxattr,
+	.flistxattr = skel_flistxattr,
+	.removexattr = skel_removexattr,
+	.lremovexattr = skel_lremovexattr,
+	.fremovexattr = skel_fremovexattr,
+	.setxattr = skel_setxattr,
+	.lsetxattr = skel_lsetxattr,
+	.fsetxattr = skel_fsetxattr,
 
-	/* AIO operations. */
-	{SMB_VFS_OP(skel_aio_read),			SMB_VFS_OP_AIO_READ,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_aio_write),			SMB_VFS_OP_AIO_WRITE,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_aio_return),			SMB_VFS_OP_AIO_RETURN,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_aio_cancel),			SMB_VFS_OP_AIO_CANCEL,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_aio_error),			SMB_VFS_OP_AIO_ERROR,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_aio_fsync),			SMB_VFS_OP_AIO_FSYNC,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_aio_suspend),			SMB_VFS_OP_AIO_SUSPEND,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_aio_force),			SMB_VFS_OP_AIO_FORCE,			SMB_VFS_LAYER_TRANSPARENT},
+	/* aio operations */
+	.aio_read = skel_aio_read,
+	.aio_write = skel_aio_write,
+	.aio_return_fn = skel_aio_return_fn,
+	.aio_cancel = skel_aio_cancel,
+	.aio_error_fn = skel_aio_error_fn,
+	.aio_fsync = skel_aio_fsync,
+	.aio_suspend = skel_aio_suspend,
+	.aio_force = skel_aio_force,
 
 	/* offline operations */
-	{SMB_VFS_OP(skel_is_offline),			SMB_VFS_OP_IS_OFFLINE,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_set_offline),			SMB_VFS_OP_SET_OFFLINE,			SMB_VFS_LAYER_TRANSPARENT},
-
-	{NULL,						SMB_VFS_OP_NOOP,			SMB_VFS_LAYER_NOOP}
+	.is_offline = skel_is_offline,
+	.set_offline = skel_set_offline
 };
 
-NTSTATUS init_module(void)
+NTSTATUS vfs_skel_transparent_init(void)
 {
-	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "skel_transparent", skel_op_tuples);
+	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "skel_transparent", &skel_transparent_fns);
 }
