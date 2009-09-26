@@ -338,7 +338,7 @@ static NTSTATUS gensec_spnego_server_try_fallback(struct gensec_security *gensec
 		NTSTATUS nt_status;
 
 	    	if (gensec_security != NULL && 
-				!gensec_security_ops_enabled(all_ops[i], gensec_security->settings->lp_ctx))
+				!gensec_security_ops_enabled(all_ops[i], gensec_security))
 		    continue;
 
 		if (!all_ops[i]->oid) {

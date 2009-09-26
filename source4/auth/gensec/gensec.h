@@ -304,7 +304,7 @@ NTSTATUS gensec_wrap(struct gensec_security *gensec_security,
 		     DATA_BLOB *out);
 
 struct gensec_security_ops **gensec_security_all(void);
-bool gensec_security_ops_enabled(struct gensec_security_ops *ops, struct loadparm_context *lp_ctx);
+bool gensec_security_ops_enabled(struct gensec_security_ops *ops, struct gensec_security *security);
 struct gensec_security_ops **gensec_use_kerberos_mechs(TALLOC_CTX *mem_ctx, 
 						       struct gensec_security_ops **old_gensec_list, 
 						       struct cli_credentials *creds);
