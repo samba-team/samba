@@ -3,6 +3,7 @@
    simple registry frontend
 
    Copyright (C) Jelmer Vernooij 2004-2007
+   Copyright (C) Wilco Baan Hofman 2009
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,9 +31,58 @@
 
 struct regshell_context {
 	struct registry_context *registry;
-	const char *path;
+	char *path;
+	char *predef;
 	struct registry_key *current;
+	struct registry_key *root;
 };
+
+static WERROR get_full_path(struct regshell_context *ctx, char *path, char **ret_path) 
+{
+	char *dir;
+	char *tmp;
+	char *new_path;
+
+	if (path[0] == '\\') {
+		new_path = talloc_strdup(ctx, "");
+	} else {
+ 		new_path = talloc_strdup(ctx, ctx->path);
+	}		
+
+	dir = strtok(path, "\\");
+	if (dir == NULL) {
+		*ret_path = new_path;
+		return WERR_OK;
+	}
+	do {
+		if (strcmp(dir, "..") == 0) {
+			if (strchr(new_path, '\\')) {
+				new_path[strrchr(new_path, '\\') - new_path] = '\0';
+			} else {
+				tmp = new_path;
+				new_path = talloc_strdup(ctx, "");
+				talloc_free(tmp);
+			}
+			continue;
+		} 
+		if (strcmp(dir, ".") == 0) {
+			continue;
+		}
+
+		tmp = new_path;
+		/* No prepending a backslash */
+		if (strcmp(new_path, "") == 0) {
+			new_path = talloc_strdup(ctx, dir);
+		} else {
+			new_path = talloc_asprintf(ctx, "%s\\%s", new_path, dir);
+		}
+		talloc_free(tmp);
+		
+	} while ((dir = strtok(NULL, "\\")));
+
+	*ret_path = new_path;
+	return WERR_OK;
+}
 
 /* *
  * ck/cd - change key
@@ -117,8 +167,9 @@ static WERROR cmd_predef(struct regshell_context *ctx, int argc, char **argv)
 			return error;
 		}
 
-		ctx->path = strupper_talloc(ctx, argv[1]);
+		ctx->predef = strupper_talloc(ctx, argv[1]);
 		ctx->current = ret;
+		ctx->root = ret;
 	}
 
 	return WERR_OK;
@@ -127,6 +178,9 @@ static WERROR cmd_predef(struct regshell_context *ctx, int argc, char **argv)
 static WERROR cmd_pwd(struct regshell_context *ctx,
 		      int argc, char **argv)
 {
+	if (ctx->predef) {
+		printf("%s\\", ctx->predef);
+	}
 	printf("%s\n", ctx->path);
 	return WERR_OK;
 }
@@ -160,10 +214,15 @@ static WERROR cmd_set(struct regshell_context *ctx, int argc, char **argv)
 static WERROR cmd_ck(struct regshell_context *ctx, int argc, char **argv)
 {
 	struct registry_key *nkey = NULL;
+	char *full_path;
 	WERROR error;
 
 	if(argc == 2) {
-		error = reg_open_key(ctx->registry, ctx->current, argv[1],
+		if (!W_ERROR_IS_OK(get_full_path(ctx, argv[1], &full_path))) {
+			fprintf(stderr, "Unable to parse the supplied path\n");
+			return WERR_INVALID_PARAM;
+		}
+		error = reg_open_key(ctx->registry, ctx->root, full_path,
 				     &nkey);
 		if(!W_ERROR_IS_OK(error)) {
 			DEBUG(0, ("Error opening specified key: %s\n",
@@ -171,10 +230,12 @@ static WERROR cmd_ck(struct regshell_context *ctx, int argc, char **argv)
 			return error;
 		}
 
-		ctx->path = talloc_asprintf(ctx, "%s\\%s", ctx->path, argv[1]);
+		talloc_free(ctx->path);
+		ctx->path = full_path;
+
 		ctx->current = nkey;
 	}
-	printf("New path is: %s\n", ctx->path);
+	printf("New path is: %s\\%s\n", ctx->predef?ctx->predef:"", ctx->path);
 
 	return WERR_OK;
 }
@@ -299,7 +360,6 @@ _NORETURN_ static WERROR cmd_exit(struct regshell_context *ctx,
 				  int argc, char **argv)
 {
 	exit(0);
-	return WERR_OK;
 }
 
 static WERROR cmd_help(struct regshell_context *ctx, int, char **);
@@ -523,6 +583,8 @@ int main(int argc, char **argv)
 			return 1;
 		ctx->registry = ctx->current->context;
 		ctx->path = talloc_strdup(ctx, "");
+		ctx->predef = NULL;
+		ctx->root = ctx->current;
 	} else {
 		ctx->registry = reg_common_open_local(cmdline_credentials, ev_ctx, cmdline_lp_ctx);
 	}
@@ -540,11 +602,14 @@ int main(int argc, char **argv)
 						     reg_predefined_keys[i].handle,
 						     &ctx->current);
 			if (W_ERROR_IS_OK(err)) {
-				ctx->path = talloc_strdup(ctx,
+				ctx->predef = talloc_strdup(ctx,
 							  reg_predefined_keys[i].name);
+				ctx->path = talloc_strdup(ctx, "");
+				ctx->root = ctx->current;
 				break;
 			} else {
 				ctx->current = NULL;
+				ctx->root = NULL;
 			}
 		}
 	}
@@ -559,7 +624,7 @@ int main(int argc, char **argv)
 	while (true) {
 		char *line, *prompt;
 
-		asprintf(&prompt, "%s> ", ctx->path);
+		asprintf(&prompt, "%s\\%s> ", ctx->predef?ctx->predef:"", ctx->path);
 
 		current_key = ctx->current; 		/* No way to pass a void * pointer
 							   via readline :-( */
