@@ -19,7 +19,7 @@
 from samba.auth import system_session
 from samba.credentials import Credentials
 import os
-from samba.provision import setup_samdb, guess_names, setup_templatesdb, make_smbconf, find_setup_dir
+from samba.provision import setup_samdb, guess_names, make_smbconf, find_setup_dir
 from samba.samdb import SamDB
 from samba.tests import TestCaseInTempDir
 from samba.dcerpc import security
@@ -71,8 +71,6 @@ class SamDBTestCase(TestCaseInTempDir):
                             serverrole=serverrole, 
                             domaindn=self.domaindn, configdn=configdn, 
                             schemadn=schemadn)
-        setup_templatesdb(os.path.join(self.tempdir, "templates.ldb"), 
-                          self.setup_path, session_info=session_info, lp=self.lp)
         self.samdb = setup_samdb(path, self.setup_path, session_info, creds, 
                                  self.lp, names, 
                                  lambda x: None, domainsid, 
@@ -82,7 +80,7 @@ class SamDBTestCase(TestCaseInTempDir):
                                  "secret", "domain controller")
 
     def tearDown(self):
-        for f in ['templates.ldb', 'schema.ldb', 'configuration.ldb', 
+        for f in ['schema.ldb', 'configuration.ldb',
                   'users.ldb', 'samdb.ldb', 'smb.conf']:
             os.remove(os.path.join(self.tempdir, f))
         super(SamDBTestCase, self).tearDown()
