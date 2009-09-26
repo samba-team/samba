@@ -1288,11 +1288,9 @@ NTSTATUS crack_name_to_nt4_name(TALLOC_CTX *mem_ctx,
 	}
 	p[0] = '\0';
 
-	if (p[1]) {
-		*nt4_account = talloc_strdup(mem_ctx, &p[1]);
-		if (*nt4_account == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
+	*nt4_account = talloc_strdup(mem_ctx, &p[1]);
+	if (*nt4_account == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	return NT_STATUS_OK;
