@@ -2080,6 +2080,7 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	int ret;
 	const struct dsdb_attribute *attr;
 	struct ldb_dn *target_dn;
+	uint64_t seq_num = 0;
 
 /*
 linked_attributes[0]:                                                     
@@ -2185,6 +2186,28 @@ linked_attributes[0]:
 
 	ret_el->values[0].data = (uint8_t *)ldb_dn_get_extended_linearized(tmp_ctx, target_dn, 1);
 	ret_el->values[0].length = strlen((char *)ret_el->values[0].data);
+
+	ret = replmd_update_rpmd(module, msg, &seq_num);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	/* we only change whenChanged and uSNChanged if the seq_num
+	   has changed */
+	if (seq_num != 0) {
+		time_t t = time(NULL);
+
+		if (add_time_element(msg, "whenChanged", t) != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		if (add_uint64_element(msg, "uSNChanged", seq_num) != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+	}
 
 	ret = ldb_build_mod_req(&mod_req, ldb, tmp_ctx,
 				msg,
