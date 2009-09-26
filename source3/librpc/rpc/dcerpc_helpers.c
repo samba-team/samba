@@ -266,6 +266,7 @@ NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
 {
 	size_t max_len;
 	size_t mod_len;
+	struct schannel_state *schannel_auth;
 	struct spnego_context *spnego_ctx;
 	struct gse_context *gse_ctx;
 	enum spnego_mech auth_type;
@@ -336,7 +337,9 @@ NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
 		break;
 
 	case DCERPC_AUTH_TYPE_SCHANNEL:
-		*auth_len = NL_AUTH_SIGNATURE_SIZE;
+		schannel_auth = talloc_get_type_abort(auth->auth_ctx,
+						      struct schannel_state);
+		*auth_len = netsec_outgoing_sig_size(schannel_auth);
 		break;
 
 	case DCERPC_AUTH_TYPE_KRB5:
