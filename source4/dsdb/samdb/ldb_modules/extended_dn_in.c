@@ -255,6 +255,7 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 		"wellKnownObjects",
 		NULL
 	};
+	bool all_partitions = false;
 
 	if (!ldb_dn_has_extended(dn)) {
 		/* Move along there isn't anything to see here */
@@ -268,7 +269,7 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 		wkguid_val = ldb_dn_get_extended_component(dn, "WKGUID");
 
 		if (sid_val) {
-			/* TODO: do a search over all partitions */
+			all_partitions = true;
 			base_dn = ldb_get_default_basedn(ldb_module_get_ctx(module));
 			base_dn_filter = talloc_asprintf(req, "(objectSid=%s)", 
 							 ldb_binary_encode(req, *sid_val));
@@ -281,7 +282,7 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 
 		} else if (guid_val) {
 
-			/* TODO: do a search over all partitions */
+			all_partitions = true;
 			base_dn = ldb_get_default_basedn(ldb_module_get_ctx(module));
 			base_dn_filter = talloc_asprintf(req, "(objectGUID=%s)", 
 							 ldb_binary_encode(req, *guid_val));
@@ -358,6 +359,19 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 					   req);
 		if (ret != LDB_SUCCESS) {
 			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		if (all_partitions) {
+			struct ldb_search_options_control *control;
+			control = talloc(down_req, struct ldb_search_options_control);
+			control->search_options = 2;
+			ret = ldb_request_add_control(down_req,
+						      LDB_CONTROL_SEARCH_OPTIONS_OID,
+						      true, control);
+			if (ret != LDB_SUCCESS) {
+				ldb_oom(ldb_module_get_ctx(module));
+				return ret;
+			}
 		}
 
 		/* perform the search */
