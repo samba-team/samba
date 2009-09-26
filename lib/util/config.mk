@@ -33,6 +33,7 @@ LIBSAMBA-UTIL_OBJ_FILES = $(addprefix $(libutilsrcdir)/, \
 		talloc_stack.o \
 		smb_threads.o \
 		params.o \
+		parmlist.o \
 		util_id.o)
 
 PUBLIC_HEADERS += $(addprefix $(libutilsrcdir)/, util.h \
