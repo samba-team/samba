@@ -2144,7 +2144,7 @@ WERROR reg_open_regf_file(TALLOC_CTX *parent_ctx, const char *location,
 					       regf->header->data_offset);
 
 	/* We can drop our own reference now that *key will have created one */
-	talloc_free(regf);
+	talloc_unlink(parent_ctx, regf);
 
 	return WERR_OK;
 }
