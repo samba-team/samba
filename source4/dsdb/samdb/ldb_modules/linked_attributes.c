@@ -1212,8 +1212,6 @@ static int linked_attributes_prepare_commit(struct ldb_module *module)
 		talloc_get_type(ldb_module_get_private(module), struct la_private);
 	struct la_context *ac;
 
-	DEBUG(0,(__location__ ": prepare commit starting\n"));
-
 	/* walk the list backwards, to do the first entry first, as we
 	 * added the entries with DLIST_ADD() which puts them at the
 	 * start of the list */
@@ -1234,8 +1232,6 @@ static int linked_attributes_prepare_commit(struct ldb_module *module)
 	talloc_free(la_private);
 	ldb_module_set_private(module, NULL);	
 
-	DEBUG(0,(__location__ ": prepare commit done\n"));
-	
 	return ldb_next_prepare_commit(module);
 }
 
