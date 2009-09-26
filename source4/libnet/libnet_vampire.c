@@ -410,7 +410,7 @@ static NTSTATUS vampire_schema_chunk(void *private_data,
 			c->partition->nc.dn, object_count, nc_object_count,
 			linked_attributes_count, nc_linked_attributes_count));
 	} else {
-		DEBUG(0,("Schema-DN[%s] objects[%u] linked_values[%u\n",
+		DEBUG(0,("Schema-DN[%s] objects[%u] linked_values[%u]\n",
 		c->partition->nc.dn, object_count, linked_attributes_count));
 	}
 
@@ -529,7 +529,7 @@ static NTSTATUS vampire_store_chunk(void *private_data,
 			c->partition->nc.dn, s->total_objects, nc_object_count,
 			linked_attributes_count, nc_linked_attributes_count));
 	} else {
-		DEBUG(0,("Partition[%s] objects[%u] linked_values[%u\n",
+		DEBUG(0,("Partition[%s] objects[%u] linked_values[%u]\n",
 		c->partition->nc.dn, s->total_objects, linked_attributes_count));
 	}
 
