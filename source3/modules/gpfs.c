@@ -160,7 +160,7 @@ int get_gpfs_winattrs(char *pathname,struct gpfs_winattr *attrs)
                 errno = ENOSYS;
                 return -1;
         }
-        DEBUG(0, ("gpfs_get_winattrs_path:open call %s\n",pathname));
+        DEBUG(10, ("gpfs_get_winattrs_path:open call %s\n",pathname));
         return gpfs_get_winattrs_path_fn(pathname, attrs);
 }
 
@@ -182,7 +182,7 @@ int set_gpfs_winattrs(char *pathname,int flags,struct gpfs_winattr *attrs)
                 return -1;
         }
 
-        DEBUG(0, ("gpfs_set_winattrs_path:open call %s\n",pathname));
+        DEBUG(10, ("gpfs_set_winattrs_path:open call %s\n",pathname));
         return gpfs_set_winattrs_path_fn(pathname,flags, attrs);
 }
 
