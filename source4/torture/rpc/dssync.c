@@ -489,6 +489,55 @@ static void test_analyse_objects(struct torture_context *tctx,
 	}
 }
 
+/**
+ * Fetch LDAP attribute name and DN by supplied OID
+ */
+static bool _drs_ldap_attr_by_oid(struct torture_context *tctx,
+					struct DsSyncTest *ctx,
+					const char *oid,
+					const char **attr_dn,
+					const char **attr_name)
+{
+	NTSTATUS status;
+	const char *config_dn;
+	const char *expression;
+	struct ldap_message **res_msg;
+	struct ldap_SearchResEntry *search_res;
+	TALLOC_CTX *tmp_ctx = NULL;
+	const char *search_attrs[] = {"lDAPDisplayName", NULL};
+
+	tmp_ctx = talloc_new(ctx);
+
+	config_dn = talloc_asprintf(tmp_ctx, "CN=Schema,CN=Configuration,%s", ctx->domain_dn);
+	expression = talloc_asprintf(tmp_ctx, "(attributeID=%s)", oid);
+
+	status = ildap_search(ctx->admin.ldap.conn,
+				config_dn, LDAP_SEARCH_SCOPE_SUB,
+				expression, search_attrs, false,
+				NULL, NULL, &res_msg);
+	torture_assert_ntstatus_ok(tctx, status, "LDAP search request failed");
+	torture_assert(tctx,
+			ildap_count_entries(ctx->admin.ldap.conn, res_msg) == 1,
+			talloc_asprintf(tmp_ctx, "Failed to find attribute with OID=%s", oid));
+
+	search_res = &res_msg[0]->r.SearchResultEntry;
+	torture_assert(tctx, search_res->num_attributes > 0, "No attributes returned!")
+	torture_assert(tctx, strequal(search_attrs[0], search_res->attributes[0].name),
+			"Requested attributes for attribute class not returned");
+
+	if (attr_dn) {
+		*attr_dn = search_res->dn;
+	}
+
+	if (attr_name) {
+		*attr_name = (const char *)search_res->attributes[0].values[0].data;
+	}
+
+	talloc_free(tmp_ctx);
+
+	return true;
+}
+
 static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 {
 	NTSTATUS status;
