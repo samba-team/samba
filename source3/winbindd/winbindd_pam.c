@@ -726,10 +726,10 @@ static bool check_request_flags(uint32_t flags)
 /****************************************************************
 ****************************************************************/
 
-static NTSTATUS append_data(struct winbindd_cli_state *state,
-			    struct netr_SamInfo3 *info3,
-			    const char *name_domain,
-			    const char *name_user)
+NTSTATUS append_auth_data(struct winbindd_cli_state *state,
+			  struct netr_SamInfo3 *info3,
+			  const char *name_domain,
+			  const char *name_user)
 {
 	NTSTATUS result;
 	uint32_t flags = state->request->flags;
@@ -1635,7 +1635,8 @@ process_result:
 			goto done;
 		}
 
-		result = append_data(state, info3, name_domain, name_user);
+		result = append_auth_data(state, info3, name_domain,
+					  name_user);
 		if (!NT_STATUS_IS_OK(result)) {
 			goto done;
 		}
@@ -1959,7 +1960,8 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 			goto done;
 		}
 
-		result = append_data(state, info3, name_domain, name_user);
+		result = append_auth_data(state, info3, name_domain,
+					  name_user);
 		if (!NT_STATUS_IS_OK(result)) {
 			goto done;
 		}

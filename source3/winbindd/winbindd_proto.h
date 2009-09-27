@@ -496,6 +496,10 @@ void ndr_print_winbindd_domain(struct ndr_print *ndr,
 
 struct winbindd_domain *find_auth_domain(struct winbindd_cli_state *state, 
 					const char *domain_name);
+NTSTATUS append_auth_data(struct winbindd_cli_state *state,
+			  struct netr_SamInfo3 *info3,
+			  const char *name_domain,
+			  const char *name_user);
 void winbindd_pam_auth(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 					    struct winbindd_cli_state *state) ;
