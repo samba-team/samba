@@ -329,7 +329,7 @@ NDR_STANDARD_OBJ_FILES = ../librpc/gen_ndr/ndr_echo.o \
 						 ../librpc/gen_ndr/ndr_eventlog.o \
 						 ../librpc/gen_ndr/ndr_ntsvcs.o
 
-PC_FILES += $(librpcsrcdir)/ndr_standard.pc
+PC_FILES += ../librpc/ndr_standard.pc
 
 PUBLIC_HEADERS += $(addprefix ../librpc/gen_ndr/, samr.h ndr_samr.h lsa.h netlogon.h atsvc.h ndr_atsvc.h ndr_svcctl.h svcctl.h)
 
