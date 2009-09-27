@@ -231,9 +231,8 @@ static NTSTATUS append_afs_token(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
-				     struct netr_SamInfo3 *info3,
-				     const char *group_sid)
+NTSTATUS check_info3_in_group(struct netr_SamInfo3 *info3,
+			      const char *group_sid)
 /**
  * Check whether a user belongs to a group or list of groups.
  *
@@ -253,7 +252,7 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 	DOM_SID sid;
 	size_t i;
 	struct nt_user_token *token;
-	TALLOC_CTX *frame = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
 
 	/* Parse the 'required group' SID */
@@ -263,8 +262,10 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	if (!(token = TALLOC_ZERO_P(mem_ctx, struct nt_user_token))) {
+	token = talloc_zero(talloc_tos(), struct nt_user_token);
+	if (token == NULL) {
 		DEBUG(0, ("talloc failed\n"));
+		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -273,8 +274,7 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 
 	p = group_sid;
 
-	frame = talloc_stackframe();
-	while (next_token_talloc(frame, &p, &req_sid, ",")) {
+	while (next_token_talloc(talloc_tos(), &p, &req_sid, ",")) {
 		if (!string_to_sid(&sid, req_sid)) {
 			DEBUG(0, ("check_info3_in_group: could not parse %s "
 				  "as a SID!", req_sid));
@@ -282,7 +282,7 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		status = add_sid_to_array(mem_ctx, &sid,
+		status = add_sid_to_array(talloc_tos(), &sid,
 					  &require_membership_of_sid,
 					  &num_require_membership_of_sid);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -292,13 +292,12 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	TALLOC_FREE(frame);
-
-	status = sid_array_from_info3(mem_ctx, info3,
+	status = sid_array_from_info3(talloc_tos(), info3,
 				      &token->user_sids,
 				      &token->num_sids,
 				      true, false);
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
 		return status;
 	}
 
@@ -308,6 +307,7 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 						     token))) {
 		DEBUG(3, ("could not add aliases: %s\n",
 			  nt_errstr(status)));
+		TALLOC_FREE(frame);
 		return status;
 	}
 
@@ -319,12 +319,14 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 		if (nt_token_check_sid(&require_membership_of_sid[i],
 				       token)) {
 			DEBUG(10, ("Access ok\n"));
+			TALLOC_FREE(frame);
 			return NT_STATUS_OK;
 		}
 	}
 
 	/* Do not distinguish this error from a wrong username/pw */
 
+	TALLOC_FREE(frame);
 	return NT_STATUS_LOGON_FAILURE;
 }
 
@@ -1628,8 +1630,10 @@ process_result:
 
 		/* Check if the user is in the right group */
 
-		if (!NT_STATUS_IS_OK(result = check_info3_in_group(state->mem_ctx, info3,
-					state->request->data.auth.require_membership_of_sid))) {
+		result = check_info3_in_group(
+			info3,
+			state->request->data.auth.require_membership_of_sid);
+		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(3, ("User %s is not in the required group (%s), so plaintext authentication is rejected\n",
 				  state->request->data.auth.user,
 				  state->request->data.auth.require_membership_of_sid));
@@ -1952,8 +1956,10 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 
 		/* Check if the user is in the right group */
 
-		if (!NT_STATUS_IS_OK(result = check_info3_in_group(state->mem_ctx, info3,
-							state->request->data.auth_crap.require_membership_of_sid))) {
+		result = check_info3_in_group(
+			info3,
+			state->request->data.auth_crap.require_membership_of_sid);
+		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(3, ("User %s is not in the required group (%s), so "
 				  "crap authentication is rejected\n",
 				  state->request->data.auth_crap.user,
