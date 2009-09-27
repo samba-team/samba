@@ -78,3 +78,29 @@ const char **parmlist_get_string_list(struct parmlist *ctx, const char *name,
 
 	return (const char **)str_list_make(ctx, p->value, separator);
 }
+
+static struct parmlist_entry *parmlist_get_add(struct parmlist *ctx, const char *name)
+{
+	struct parmlist_entry *e = parmlist_get(ctx, name);
+
+	if (e != NULL)
+		return e;
+
+	e = talloc(ctx, struct parmlist_entry);
+	if (e == NULL)
+		return NULL;
+	e->key = talloc_strdup(e, name);
+	DLIST_ADD(ctx->entries, e);
+	return e;
+}
+
+int parmlist_set_string(struct parmlist *ctx, const char *name, 
+						const char *value)
+{
+	struct parmlist_entry *e = parmlist_get_add(ctx, name);
+	if (e == NULL)
+		return -1;
+
+	e->value = talloc_strdup(e, value);
+	return 0;
+}

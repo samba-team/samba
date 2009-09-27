@@ -92,16 +92,14 @@ const char *param_get_string(struct param_context *ctx, const char *param, const
 	return parmlist_get_string(section->parameters, param, NULL);
 }
 
-int param_set_string(struct param_context *ctx, const char *param, const char *value, const char *section)
+int param_set_string(struct param_context *ctx, const char *param, const char *value, const char *section_name)
 {
-	struct parmlist_entry *p = param_get_add(ctx, param, section);
+	struct param_section *section = param_get_section(ctx, section_name);
 
-	if (p == NULL)
+	if (section == NULL)
 		return -1;
 
-	p->value = talloc_strdup(p, value);
-
-	return 0;
+	return parmlist_set_string(section->parameters, param, value);
 }
 
 const char **param_get_string_list(struct param_context *ctx, const char *param, const char *separator, const char *section_name)

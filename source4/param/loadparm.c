@@ -182,7 +182,7 @@ struct loadparm_global
 	int bDisableNetbios;
 	int bRpcBigEndian;
 	char *szNTPSignDSocketDirectory;
-	struct param_opt *param_opt;
+	struct parmlist_entry *param_opt;
 };
 
 
@@ -222,7 +222,7 @@ struct loadparm_service
 	int bMSDfsRoot;
 	int bStrictSync;
 	int bCIFileSystem;
-	struct param_opt *param_opt;
+	struct parmlist_entry *param_opt;
 
 	char dummy[3];		/* for alignment */
 };
@@ -749,7 +749,7 @@ const char *lp_get_parametric(struct loadparm_context *lp_ctx,
 			      const char *type, const char *option)
 {
 	char *vfskey;
-        struct param_opt *data;
+        struct parmlist_entry *data;
 
 	if (lp_ctx == NULL)
 		return NULL;
@@ -1020,7 +1020,7 @@ struct loadparm_service *lp_add_service(struct loadparm_context *lp_ctx,
 	int i;
 	struct loadparm_service tservice;
 	int num_to_alloc = lp_ctx->iNumServices + 1;
-	struct param_opt *data, *pdata;
+	struct parmlist_entry *data, *pdata;
 
 	tservice = *pservice;
 
@@ -1260,7 +1260,7 @@ static void copy_service(struct loadparm_service *pserviceDest,
 {
 	int i;
 	bool bcopyall = (pcopymapDest == NULL);
-	struct param_opt *data, *pdata, *paramo;
+	struct parmlist_entry *data, *pdata, *paramo;
 	bool not_added;
 
 	for (i = 0; parm_table[i].label; i++)
@@ -1328,7 +1328,7 @@ static void copy_service(struct loadparm_service *pserviceDest,
 			pdata = pdata->next;
 		}
 		if (not_added) {
-			paramo = talloc(pserviceDest, struct param_opt);
+			paramo = talloc(pserviceDest, struct parmlist_entry);
 			if (paramo == NULL)
 				smb_panic("OOM");
 			paramo->key = talloc_reference(paramo, data->key);
@@ -1544,7 +1544,7 @@ static bool lp_do_parameter_parametric(struct loadparm_context *lp_ctx,
 				       const char *pszParmName,
 				       const char *pszParmValue, int flags)
 {
-	struct param_opt *paramo, *data;
+	struct parmlist_entry *paramo, *data;
 	char *name;
 	TALLOC_CTX *mem_ctx;
 
@@ -1583,7 +1583,7 @@ static bool lp_do_parameter_parametric(struct loadparm_context *lp_ctx,
 		}
 	}
 
-	paramo = talloc(mem_ctx, struct param_opt);
+	paramo = talloc(mem_ctx, struct parmlist_entry);
 	if (!paramo)
 		smb_panic("OOM");
 	paramo->key = talloc_strdup(paramo, name);
@@ -2048,7 +2048,7 @@ static void dump_globals(struct loadparm_context *lp_ctx, FILE *f,
 			 bool show_defaults)
 {
 	int i;
-	struct param_opt *data;
+	struct parmlist_entry *data;
 
 	fprintf(f, "# Global parameters\n[global]\n");
 
@@ -2078,7 +2078,7 @@ static void dump_globals(struct loadparm_context *lp_ctx, FILE *f,
 static void dump_a_service(struct loadparm_service * pService, struct loadparm_service *sDefault, FILE * f)
 {
 	int i;
-	struct param_opt *data;
+	struct parmlist_entry *data;
 
 	if (pService != sDefault)
 		fprintf(f, "\n[%s]\n", pService->szService);
@@ -2217,10 +2217,10 @@ void lp_killunused(struct loadparm_context *lp_ctx,
 
 static int lp_destructor(struct loadparm_context *lp_ctx)
 {
-	struct param_opt *data;
+	struct parmlist_entry *data;
 
 	if (lp_ctx->globals->param_opt != NULL) {
-		struct param_opt *next;
+		struct parmlist_entry *next;
 		for (data = lp_ctx->globals->param_opt; data; data=next) {
 			next = data->next;
 			if (data->priority & FLAG_CMDLINE) continue;

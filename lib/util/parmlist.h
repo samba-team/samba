@@ -50,4 +50,7 @@ const char **parmlist_get_string_list(struct parmlist *ctx, const char *name,
 /** Retrieve boolean from a parameter list. If not set, return default_v. */
 bool parmlist_get_bool(struct parmlist *ctx, const char *name, bool default_v);
 
+/** Set a parameter. */
+int parmlist_set_string(struct parmlist *ctx, const char *name, const char *value);
+
 #endif /* _PARMLIST_H */
