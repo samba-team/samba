@@ -328,8 +328,8 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_LOGON_FAILURE;
 }
 
-struct winbindd_domain *find_auth_domain(struct winbindd_cli_state *state,
-					const char *domain_name)
+struct winbindd_domain *find_auth_domain(uint8_t flags,
+					 const char *domain_name)
 {
 	struct winbindd_domain *domain;
 
@@ -351,7 +351,7 @@ struct winbindd_domain *find_auth_domain(struct winbindd_cli_state *state,
 	}
 
 	/* we can auth against trusted domains */
-	if (state->request->flags & WBFLAG_PAM_CONTACT_TRUSTDOM) {
+	if (flags & WBFLAG_PAM_CONTACT_TRUSTDOM) {
 		domain = find_domain_from_name_noinit(domain_name);
 		if (domain == NULL) {
 			DEBUG(3, ("Authentication for domain [%s] skipped "
@@ -835,7 +835,7 @@ void winbindd_pam_auth(struct winbindd_cli_state *state)
 		goto done;
 	}
 
-	domain = find_auth_domain(state, name_domain);
+	domain = find_auth_domain(state->request->flags, name_domain);
 
 	if (domain == NULL) {
 		result = NT_STATUS_NO_SUCH_USER;
@@ -1764,7 +1764,7 @@ void winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	}
 
 	if (domain_name != NULL)
-		domain = find_auth_domain(state, domain_name);
+		domain = find_auth_domain(state->request->flags, domain_name);
 
 	if (domain != NULL) {
 		sendto_domain(state, domain);
@@ -2224,7 +2224,8 @@ void winbindd_pam_logoff(struct winbindd_cli_state *state)
 		goto failed;
 	}
 
-	if ((domain = find_auth_domain(state, name_domain)) == NULL) {
+	if ((domain = find_auth_domain(state->request->flags,
+				       name_domain)) == NULL) {
 		goto failed;
 	}
 

@@ -169,7 +169,7 @@ void winbindd_ccache_ntlm_auth(struct winbindd_cli_state *state)
 		return;
 	}
 
-	domain = find_auth_domain(state, name_domain);
+	domain = find_auth_domain(state->request->flags, name_domain);
 
 	if (domain == NULL) {
 		DEBUG(5,("winbindd_ccache_ntlm_auth: can't get domain [%s]\n",
