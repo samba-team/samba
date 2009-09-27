@@ -38,6 +38,7 @@ TORTURE_LOCAL_OBJ_FILES = \
 		$(torturesrcdir)/../../lib/nss_wrapper/testsuite.o \
 		$(torturesrcdir)/../libcli/resolve/testsuite.o \
 		$(torturesrcdir)/../../lib/util/tests/strlist.o \
+		$(torturesrcdir)/../../lib/util/tests/parmlist.o \
 		$(torturesrcdir)/../../lib/util/tests/str.o \
 		$(torturesrcdir)/../../lib/util/tests/time.o \
 		$(torturesrcdir)/../../lib/util/tests/data_blob.o \

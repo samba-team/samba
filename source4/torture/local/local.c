@@ -34,6 +34,7 @@
 	torture_local_messaging, 
 	torture_local_irpc, 
 	torture_local_util_strlist, 
+	torture_local_util_parmlist, 
 	torture_local_util_file, 
 	torture_local_util_str, 
 	torture_local_util_time, 
