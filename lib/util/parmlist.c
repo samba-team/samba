@@ -41,7 +41,24 @@ int parmlist_get_int(struct parmlist *ctx, const char *name, int default_v)
 	return default_v;
 }
 
-const char *parmlist_get_string(struct parmlist *ctx, const char *name, const char *default_v)
+bool parmlist_get_bool(struct parmlist *ctx, const char *name, bool default_v)
+{
+	struct parmlist_entry *p = parmlist_get(ctx, name);
+	bool ret;
+
+	if (p == NULL)
+		return default_v;
+
+	if (!set_boolean(p->value, &ret)) {
+		DEBUG(0,("lp_bool(%s): value is not boolean!\n", p->value));
+		return default_v;
+	}
+
+	return ret;
+}
+
+const char *parmlist_get_string(struct parmlist *ctx, const char *name, 
+								const char *default_v)
 {
 	struct parmlist_entry *p = parmlist_get(ctx, name);
 
@@ -51,7 +68,8 @@ const char *parmlist_get_string(struct parmlist *ctx, const char *name, const ch
 	return p->value;
 }
 
-const char **parmlist_get_string_list(struct parmlist *ctx, const char *name, const char *separator)
+const char **parmlist_get_string_list(struct parmlist *ctx, const char *name, 
+									  const char *separator)
 {
 	struct parmlist_entry *p = parmlist_get(ctx, name);
 

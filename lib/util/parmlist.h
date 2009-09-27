@@ -31,9 +31,23 @@ struct parmlist {
 	struct parmlist_entry *entries;
 };
 
+/** Retrieve an integer from a parameter list. If not found, return default_v. */
 int parmlist_get_int(struct parmlist *ctx, const char *name, int default_v);
-const char *parmlist_get_string(struct parmlist *ctx, const char *name, const char *default_v);
+
+/** Retrieve a string from a parameter list. If not found, return default_v. */
+const char *parmlist_get_string(struct parmlist *ctx, const char *name, 
+								const char *default_v);
+
+/** Retrieve the struct for an entry in a parmlist. */
 struct parmlist_entry *parmlist_get(struct parmlist *ctx, const char *name);
-const char **parmlist_get_string_list(struct parmlist *ctx, const char *name, const char *separator);
+
+/** Retrieve a string list from a parameter list. 
+ * separator can contain characters to consider separators or can be 
+ * NULL for the default set. */
+const char **parmlist_get_string_list(struct parmlist *ctx, const char *name, 
+									  const char *separator);
+
+/** Retrieve boolean from a parameter list. If not set, return default_v. */
+bool parmlist_get_bool(struct parmlist *ctx, const char *name, bool default_v);
 
 #endif /* _PARMLIST_H */
