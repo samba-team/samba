@@ -82,7 +82,11 @@ plansmbtorturetest() {
 samba4srcdir="`dirname $0`/.."
 samba4bindir="$BUILDDIR/bin"
 smb4torture="$samba4bindir/smbtorture${EXEEXT}"
-TAP2SUBUNIT="$PERL $samba4srcdir/../lib/subunit/tap2subunit"
+if which tap2subunit 2>/dev/null; then
+	TAP2SUBUNIT=tap2subunit
+else
+	TAP2SUBUNIT="$PERL $samba4srcdir/../lib/subunit/tap2subunit"
+fi
 $smb4torture -V
 
 bbdir=../testprogs/blackbox
