@@ -705,7 +705,7 @@ failed:
 /****************************************************************
 ****************************************************************/
 
-static bool check_request_flags(uint32_t flags)
+bool check_request_flags(uint32_t flags)
 {
 	uint32_t flags_edata = WBFLAG_PAM_AFS_TOKEN |
 			       WBFLAG_PAM_INFO3_TEXT |
@@ -718,7 +718,8 @@ static bool check_request_flags(uint32_t flags)
 		return true;
 	}
 
-	DEBUG(1,("check_request_flags: invalid request flags[0x%08X]\n",flags));
+	DEBUG(1, ("check_request_flags: invalid request flags[0x%08X]\n",
+		  flags));
 
 	return false;
 }

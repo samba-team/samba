@@ -494,6 +494,7 @@ void ndr_print_winbindd_domain(struct ndr_print *ndr,
 
 /* The following definitions come from winbindd/winbindd_pam.c  */
 
+bool check_request_flags(uint32_t flags);
 struct winbindd_domain *find_auth_domain(uint8_t flags,
 					 const char *domain_name);
 NTSTATUS append_auth_data(struct winbindd_cli_state *state,
