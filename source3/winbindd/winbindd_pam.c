@@ -524,7 +524,7 @@ static void setup_return_cc_name(struct winbindd_cli_state *state, const char *c
 
 static uid_t get_uid_from_state(struct winbindd_cli_state *state)
 {
-	uid_t uid = -1;
+	uid_t uid;
 
 	uid = state->request->data.auth.uid;
 
