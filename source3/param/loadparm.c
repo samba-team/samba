@@ -6091,6 +6091,11 @@ bool lp_add_home(const char *pszHomename, int iDefaultService,
 {
 	int i;
 
+	if (pszHomename == NULL || user == NULL || pszHomedir == NULL ||
+			pszHomedir[0] == '\0') {
+		return false;
+	}
+
 	i = add_a_service(ServicePtrs[iDefaultService], pszHomename);
 
 	if (i < 0)
@@ -8062,7 +8067,7 @@ static void lp_add_auto_services(char *str)
 
 		home = get_user_home_dir(talloc_tos(), p);
 
-		if (home && homes >= 0)
+		if (home && home[0] && homes >= 0)
 			lp_add_home(p, homes, p, home);
 
 		TALLOC_FREE(home);
