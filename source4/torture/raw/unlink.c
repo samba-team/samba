@@ -435,6 +435,105 @@ done:
 }
 
 
+struct unlink_defer_cli_state {
+	struct torture_context *tctx;
+	struct smbcli_state *cli1;
+};
+
+/*
+ * A handler function for oplock break requests. Ack it as a break to none
+ */
+static bool oplock_handler_ack_to_none(struct smbcli_transport *transport,
+				       uint16_t tid, uint16_t fnum,
+				       uint8_t level, void *private_data)
+{
+	struct unlink_defer_cli_state *ud_cli_state =
+	    (struct unlink_defer_cli_state *)private_data;
+	union smb_setfileinfo sfinfo;
+	NTSTATUS status;
+	bool ret;
+	struct smbcli_request *req = NULL;
+
+	torture_comment(ud_cli_state->tctx, "delete the file before sending "
+			"the ack.");
+
+	/* cli1: set delete on close */
+	sfinfo.disposition_info.level = RAW_SFILEINFO_DISPOSITION_INFO;
+	sfinfo.disposition_info.in.file.fnum = fnum;
+	sfinfo.disposition_info.in.delete_on_close = 1;
+	req = smb_raw_setfileinfo_send(ud_cli_state->cli1->tree, &sfinfo);
+
+	smbcli_close(ud_cli_state->cli1->tree, fnum);
+
+	torture_comment(ud_cli_state->tctx, "Acking the oplock to NONE\n");
+
+	ret = smbcli_oplock_ack(ud_cli_state->cli1->tree, fnum,
+				 OPLOCK_BREAK_TO_NONE);
+ done:
+	return ret;
+}
+
+static bool test_unlink_defer(struct torture_context *tctx,
+			      struct smbcli_state *cli1,
+			      struct smbcli_state *cli2)
+{
+	const char *fname = BASEDIR "\\test_unlink_defer.dat";
+	NTSTATUS status;
+	bool ret = true;
+	union smb_open io;
+	union smb_unlink unl;
+	uint16_t fnum=0;
+	struct unlink_defer_cli_state ud_cli_state = {};
+
+	if (!torture_setup_dir(cli1, BASEDIR)) {
+		return false;
+	}
+
+	/* cleanup */
+	smbcli_unlink(cli1->tree, fname);
+
+	ud_cli_state.tctx = tctx;
+	ud_cli_state.cli1 = cli1;
+
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_none,
+			      &ud_cli_state);
+
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+	    NTCREATEX_SHARE_ACCESS_WRITE |
+	    NTCREATEX_SHARE_ACCESS_DELETE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname;
+
+	/* cli1: open file with a batch oplock. */
+	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED |
+	    NTCREATEX_FLAGS_REQUEST_OPLOCK |
+	    NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
+
+	status = smb_raw_open(cli1->tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.file.fnum;
+
+	/* cli2: Try to unlink it, but block on the oplock */
+	torture_comment(tctx, "Try an unlink (should defer the open\n");
+	unl.unlink.in.pattern = fname;
+	unl.unlink.in.attrib = 0;
+	status = smb_raw_unlink(cli2->tree, &unl);
+
+done:
+	smb_raw_exit(cli1->session);
+	smb_raw_exit(cli2->session);
+	smbcli_deltree(cli1->tree, BASEDIR);
+	return ret;
+}
+
 /* 
    basic testing of unlink calls
 */
@@ -444,6 +543,7 @@ struct torture_suite *torture_raw_unlink(TALLOC_CTX *mem_ctx)
 
 	torture_suite_add_1smb_test(suite, "unlink", test_unlink);
 	torture_suite_add_1smb_test(suite, "delete_on_close", test_delete_on_close);
+	torture_suite_add_2smb_test(suite, "UNLINK-DEFER", test_unlink_defer);
 
 	return suite;
 }
