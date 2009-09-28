@@ -186,9 +186,11 @@ static int partition_req_callback(struct ldb_request *req,
 	struct partition_context *ac;
 	struct ldb_module *module;
 	struct ldb_request *nreq;
-	int ret;
+	int ret, i;
+	struct partition_private_data *data;
 
 	ac = talloc_get_type(req->context, struct partition_context);
+	data = talloc_get_type(ac->module->private_data, struct partition_private_data);
 
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
@@ -213,6 +215,22 @@ static int partition_req_callback(struct ldb_request *req,
 			return ldb_module_done(ac->req, NULL, NULL,
 						LDB_ERR_OPERATIONS_ERROR);
 		}
+		for (i=0; data && data->partitions && data->partitions[i]; i++) {
+			if (ldb_dn_compare(ares->message->dn, data->partitions[i]->ctrl->dn) == 0) {
+				struct ldb_control *part_control;
+				/* this is a partition root message - make
+				   sure it isn't one of our fake root
+				   entries from a parent partition */
+				part_control = ldb_request_get_control(req, DSDB_CONTROL_CURRENT_PARTITION_OID);
+				if (part_control && part_control->data != data->partitions[i]->ctrl) {
+					DEBUG(6,(__location__ ": Discarding partition mount object %s\n",
+						 ldb_dn_get_linearized(ares->message->dn)));
+					talloc_free(ares);
+					return LDB_SUCCESS;
+				}
+			}
+		}
+		
 		return ldb_module_send_entry(ac->req, ares->message, ares->controls);
 
 	case LDB_REPLY_DONE:
