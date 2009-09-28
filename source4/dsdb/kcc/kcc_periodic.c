@@ -132,7 +132,6 @@ static NTSTATUS kccsrv_simple_update(struct kccsrv_service *s, TALLOC_CTX *mem_c
 
 	for (i=0; i<res->count; i++) {
 		struct repsFromTo1 *r1;
-		struct repsFromTo1OtherInfo oi;
 		struct GUID ntds_guid, invocation_id;
 
 		ntds_guid = samdb_result_guid(res->msgs[i], "objectGUID");
@@ -147,14 +146,13 @@ static NTSTATUS kccsrv_simple_update(struct kccsrv_service *s, TALLOC_CTX *mem_c
 		NT_STATUS_HAVE_NO_MEMORY(reps);
 
 		ZERO_STRUCT(reps[count]);
-		ZERO_STRUCT(oi);
 		reps[count].version = 1;
 		r1 = &reps[count].ctr.ctr1;
 
-		oi.dns_name                  = talloc_asprintf(mem_ctx, "%s._msdcs.%s",
+		r1->other_info               = talloc_zero(reps, struct repsFromTo1OtherInfo);
+		r1->other_info->dns_name     = talloc_asprintf(r1->other_info, "%s._msdcs.%s",
 							       GUID_string(mem_ctx, &ntds_guid),
 							       lp_realm(s->task->lp_ctx));
-		r1->other_info               = &oi;
 		r1->source_dsa_obj_guid      = ntds_guid;
 		r1->source_dsa_invocation_id = invocation_id;
 		r1->replica_flags            = 
