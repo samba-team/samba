@@ -47,6 +47,8 @@ ALL_PREDEP = basics
 .NOTPARALLEL:
 endif
 
+base_srcdirs = $(srcdir) ../librpc/ ../lib/ ../libcli ../libgpo ../nsswitch ../libds
+
 include $(srcdir)/build/make/rules.mk
 include $(srcdir)/build/make/python.mk
 zlibsrcdir := ../lib/zlib
