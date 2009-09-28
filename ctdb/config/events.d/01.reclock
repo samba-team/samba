@@ -12,7 +12,7 @@ PATH=/usr/bin:/bin:/usr/sbin:/sbin:$PATH
 # The size of this file represents the number of intervals that have
 # passed when we have tried to but failed to stat the reclock file.
 # after third failure the node becomes unhealthy
-# after the tenth failure the node we shutdown ctdbd
+# after the twenteth failure the node we shutdown ctdbd
 RECLOCKCOUNT="$CTDB_BASE/state/reclock-fail-count"
 
 case $cmd in 
@@ -24,7 +24,7 @@ case $cmd in
 	echo -n 1 >> $RECLOCKCOUNT
 
 	COUNT=`ls -ln $RECLOCKCOUNT | cut -d" " -f5`
-	[ $COUNT -gt 9 ] && {
+	[ $COUNT -gt 19 ] && {
 		echo "Reclock file can not be accessed. Shutting down."
 		sleep 1
 		ctdb shutdown
