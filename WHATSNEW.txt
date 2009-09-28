@@ -1,4 +1,44 @@
                    ==============================
+                   Release Notes for Samba 3.0.37
+                         September, 29 2009
+                   ==============================
+
+
+This is a security release in order to address CVE-2009-2813 and CVE-2009-2948.
+Please note that Samba 3.0 is not maintained any longer. This security
+release is shipped on a voluntary basis.
+
+   o CVE-2009-2813:
+     In all versions of Samba later than 3.0.11, connecting to the home
+     share of a user will use the root of the filesystem
+     as the home directory if this user is misconfigured to have
+     an empty home directory in /etc/passwd.
+
+   o CVE-2009-2948:
+     If mount.cifs is installed as a setuid program, a user can pass it a
+     credential or password path to which he or she does not have access and
+     then use the --verbose option to view the first line of that file.
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+As 3.0 bugs will not be fixed any longer, it does not make sense to
+create bug reports for this version. If there are any issues, please
+retry with the latest Samba version and file a bug report for that
+version if the issue still exists.
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+-------------------------------------------------
+
+                   ==============================
                    Release Notes for Samba 3.0.36
                            August, 5 2009
                    ==============================
@@ -100,8 +140,8 @@ version if the issue still exists.
 ======================================================================
 
 
-Release notes for older releases follow:
--------------------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 3.0.35
