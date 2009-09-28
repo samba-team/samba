@@ -104,6 +104,7 @@ fi
 %{_docdir}/ctdb/README.eventscripts
 %{_docdir}/ctdb/recovery-process.txt
 %{_sysconfdir}/ctdb/events.d/00.ctdb
+%{_sysconfdir}/ctdb/events.d/01.reclock
 %{_sysconfdir}/ctdb/events.d/10.interface
 %{_sysconfdir}/ctdb/events.d/11.natgw
 %{_sysconfdir}/ctdb/events.d/11.routing
