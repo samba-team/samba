@@ -75,12 +75,23 @@ static NTSTATUS kccsrv_add_repsFrom(struct kccsrv_service *s, TALLOC_CTX *mem_ct
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
+		/* add any new ones */
 		for (i=0; i<count; i++) {
 			if (!reps_in_list(&reps[i], old_reps, old_count)) {
 				old_reps = talloc_realloc(mem_ctx, old_reps, struct repsFromToBlob, old_count+1);
 				NT_STATUS_HAVE_NO_MEMORY(old_reps);
 				old_reps[old_count] = reps[i];
 				old_count++;
+				modified = true;
+			}
+		}
+
+		/* remove any stale ones */
+		for (i=0; i<old_count; i++) {
+			if (!reps_in_list(&old_reps[i], reps, count)) {
+				memmove(&old_reps[i], &old_reps[i+1], (old_count-(i+1))*sizeof(old_reps[0]));
+				old_count--;
+				i--;
 				modified = true;
 			}
 		}
