@@ -153,7 +153,7 @@ include $(srcdir)/static_deps.mk
 endif
 
 clean::
-	@find ../libds ../lib ../libcli ../librpc ../libgpo ../nsswitch -name '*.o' -o -name '*.ho' | xargs rm -f
+	@find $(base_srcdirs) -name '*.o' -o -name '*.ho' | xargs rm -f
 
 PUBLIC_HEADERS += ./version.h
 
