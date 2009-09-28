@@ -52,4 +52,6 @@ PyObject *py_talloc_default_repr(PyObject *py_obj);
 
 #define py_talloc_new(type, typeobj) py_talloc_steal(typeobj, talloc_zero(NULL, type))
 
+PyObject *PyCObject_FromTallocPtr(void *);
+
 #endif /* _PY_TALLOC_H_ */

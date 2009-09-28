@@ -81,3 +81,13 @@ PyObject *py_talloc_default_repr(PyObject *obj)
 	return PyString_FromFormat("<%s talloc object at 0x%p>", 
 				   type->tp_name, talloc_obj->ptr);
 }
+
+static void py_cobject_talloc_free(void *ptr)
+{
+	talloc_free(ptr);
+}
+
+PyObject *PyCObject_FromTallocPtr(void *ptr)
+{
+	return PyCObject_FromVoidPtr(ptr, py_cobject_talloc_free);
+}

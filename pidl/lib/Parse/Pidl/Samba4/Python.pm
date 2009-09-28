@@ -998,10 +998,10 @@ sub ConvertScalarToPython($$$)
 	}
 
 	# Not yet supported
-	if ($ctypename eq "string_array") { return "PyCObject_FromVoidPtr($cvar, talloc_free)"; }
+	if ($ctypename eq "string_array") { return "PyCObject_FromTallocPtr($cvar)"; }
 	if ($ctypename eq "ipv4address") { return "PyString_FromString($cvar)"; }
 	if ($ctypename eq "pointer") {
-		return "PyCObject_FromVoidPtr($cvar, talloc_free)";
+		return "PyCObject_FromTallocPtr($cvar)";
 	}
 
 	die("Unknown scalar type $ctypename");
