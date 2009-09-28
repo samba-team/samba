@@ -1,4 +1,64 @@
                    =============================
+                   Release Notes for Samba 3.3.8
+		        September, 29  2009
+                   =============================
+
+
+This is a security release in order to address CVE-2009-2813 and CVE-2009-2948.
+
+   o CVE-2009-2813:
+     In all versions of Samba later than 3.0.11, connecting to the home
+     share of a user will use the root of the filesystem
+     as the home directory if this user is misconfigured to have
+     an empty home directory in /etc/passwd.
+
+   o CVE-2009-2948:
+     If mount.cifs is installed as a setuid program, a user can pass it a
+     credential or password path to which he or she does not have access and
+     then use the --verbose option to view the first line of that file.
+     All known Samba versions are affected.
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.3.7
+-------------------
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 6763: Fix for CVE-2009-2813.
+
+
+o   Jeff Layton <jlayton@redhat.com>
+    * Fix for CVE-2009-2948.
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 3.3 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 3.3.7
 			  July, 29  2009
                    =============================
@@ -72,8 +132,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 3.3.6
