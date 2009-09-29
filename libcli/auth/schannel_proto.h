@@ -33,6 +33,7 @@ NTSTATUS netsec_incoming_packet(struct schannel_state *state,
 				bool do_unseal,
 				uint8_t *data, size_t length,
 				const DATA_BLOB *sig);
+uint32_t netsec_outgoing_sig_size(struct schannel_state *state);
 NTSTATUS netsec_outgoing_packet(struct schannel_state *state,
 				TALLOC_CTX *mem_ctx,
 				bool do_seal,
