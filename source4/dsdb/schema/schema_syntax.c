@@ -1626,7 +1626,145 @@ static WERROR dsdb_syntax_DN_ldb_to_drsuapi(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
+static WERROR dsdb_syntax_DN_validate_one_val(struct ldb_context *ldb,
+					      const struct dsdb_schema *schema,
+					      const struct dsdb_attribute *attr,
+					      const struct ldb_val *val,
+					      TALLOC_CTX *mem_ctx,
+					      struct dsdb_dn **_dsdb_dn)
+{
+	static const char * const extended_list[] = { "GUID", "SID", NULL };
+	enum ndr_err_code ndr_err;
+	struct GUID guid;
+	struct dom_sid sid;
+	const DATA_BLOB *sid_blob;
+	struct dsdb_dn *dsdb_dn;
+	struct ldb_dn *dn;
+	char *dn_str;
+	struct ldb_dn *dn2;
+	char *dn2_str;
+	int num_components;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	NTSTATUS status;
 
+	W_ERROR_HAVE_NO_MEMORY(tmp_ctx);
+
+	if (attr->attributeID_id == 0xFFFFFFFF) {
+		return WERR_FOOBAR;
+	}
+
+	dsdb_dn = dsdb_dn_parse(tmp_ctx, ldb, val,
+				attr->syntax->ldap_oid);
+	if (!dsdb_dn) {
+		talloc_free(tmp_ctx);
+		return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+	}
+	dn = dsdb_dn->dn;
+
+	dn2 = ldb_dn_copy(tmp_ctx, dn);
+	if (dn == NULL) {
+		talloc_free(tmp_ctx);
+		return WERR_NOMEM;
+	}
+
+	num_components = ldb_dn_get_comp_num(dn);
+
+	status = dsdb_get_extended_dn_guid(dn, &guid, "GUID");
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		num_components++;
+	} else if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+	}
+
+	sid_blob = ldb_dn_get_extended_component(dn, "SID");
+	if (sid_blob) {
+		num_components++;
+		ndr_err = ndr_pull_struct_blob_all(sid_blob,
+						   tmp_ctx,
+						   schema->iconv_convenience,
+						   &sid,
+						   (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			talloc_free(tmp_ctx);
+			return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+		}
+	}
+
+	/* Do not allow links to the RootDSE */
+	if (num_components == 0) {
+		talloc_free(tmp_ctx);
+		return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+	}
+
+	/*
+	 * We need to check that only "GUID" and "SID" are
+	 * specified as extended components, we do that
+	 * by comparing the dn's after removing all components
+	 * from one dn and only the allowed subset from the other
+	 * one.
+	 */
+	ldb_dn_extended_filter(dn, extended_list);
+	ldb_dn_remove_extended_components(dn2);
+
+	dn_str = ldb_dn_get_extended_linearized(tmp_ctx, dn, 0);
+	if (dn_str == NULL) {
+		talloc_free(tmp_ctx);
+		return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+	}
+	dn2_str = ldb_dn_get_extended_linearized(tmp_ctx, dn2, 0);
+	if (dn2_str == NULL) {
+		talloc_free(tmp_ctx);
+		return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+	}
+
+	if (strcmp(dn_str, dn2_str) != 0) {
+		talloc_free(tmp_ctx);
+		return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+	}
+
+	*_dsdb_dn = talloc_move(mem_ctx, &dsdb_dn);
+	talloc_free(tmp_ctx);
+	return WERR_OK;
+}
+
+static WERROR dsdb_syntax_DN_validate_ldb(struct ldb_context *ldb,
+					  const struct dsdb_schema *schema,
+					  const struct dsdb_attribute *attr,
+					  const struct ldb_message_element *in)
+{
+	uint32_t i;
+
+	if (attr->attributeID_id == 0xFFFFFFFF) {
+		return WERR_FOOBAR;
+	}
+
+	for (i=0; i < in->num_values; i++) {
+		WERROR status;
+		struct dsdb_dn *dsdb_dn;
+		TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+		W_ERROR_HAVE_NO_MEMORY(tmp_ctx);
+
+		status = dsdb_syntax_DN_validate_one_val(ldb,
+							 schema,
+							 attr,
+							 &in->values[i],
+							 tmp_ctx, &dsdb_dn);
+		if (!W_ERROR_IS_OK(status)) {
+			talloc_free(tmp_ctx);
+			return status;
+		}
+
+		if (dsdb_dn->dn_format != DSDB_NORMAL_DN) {
+			talloc_free(tmp_ctx);
+			return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+		}
+
+		talloc_free(tmp_ctx);
+	}
+
+	return WERR_OK;
+}
 
 static WERROR dsdb_syntax_DN_BINARY_drsuapi_to_ldb(struct ldb_context *ldb, 
 						   const struct dsdb_schema *schema,
@@ -2131,7 +2269,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.1",
 		.drsuapi_to_ldb		= dsdb_syntax_DN_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_DN_ldb_to_drsuapi,
-		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
+		.validate_ldb		= dsdb_syntax_DN_validate_ldb,
 		.equality               = "distinguishedNameMatch",
 		.comment                = "Object(DS-DN) == a DN",
 	},{
