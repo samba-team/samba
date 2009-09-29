@@ -1,0 +1,58 @@
+#!/bin/sh
+# script to check accessibility to the reclock file on a node
+
+. $CTDB_BASE/functions
+loadconfig ctdb
+
+cmd="$1"
+shift
+
+PATH=/usr/bin:/bin:/usr/sbin:/sbin:$PATH
+
+# The size of this file represents the number of intervals that have
+# passed when we have tried to but failed to stat the reclock file.
+# after third failure the node becomes unhealthy
+# after the twenteth failure the node we shutdown ctdbd
+RECLOCKCOUNT="$CTDB_BASE/state/reclock-fail-count"
+
+case $cmd in 
+     startup)
+	echo -n > $RECLOCKCOUNT
+	;;
+
+      monitor)
+	echo -n 1 >> $RECLOCKCOUNT
+
+	COUNT=`ls -ln $RECLOCKCOUNT | cut -d" " -f5`
+	[ $COUNT -gt 19 ] && {
+		echo "Reclock file can not be accessed. Shutting down."
+		sleep 1
+		ctdb shutdown
+	}
+
+	RECLOCKFILE=`ctdb -Y getreclock`
+	[ -z $RECLOCKFILE ] && {
+		# we are not using a reclock file
+		echo -n > $RECLOCKCOUNT
+		exit 0
+	}
+
+	# try stat the reclock file as a background process
+	# so that we dont block in case the cluster filesystem is unavailable
+	(
+		stat $RECLOCKFILE
+		[ "$?" -eq 0 ] && {
+			# we could stat the file, reset the counter
+			echo -n > $RECLOCKCOUNT
+		}
+	) >/dev/null 2>/dev/null &
+
+
+	[ $COUNT -gt 2 ] && {
+		echo "Reclock file can not be accessed. Mark node UNHEALTHY."
+		exit 1;
+	}
+	;;
+esac
+
+exit 0

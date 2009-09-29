@@ -3107,11 +3107,13 @@ static int ctdb_transaction_fetch_start(struct ctdb_transaction_handle *h)
 {
 	struct ctdb_record_handle *rh;
 	TDB_DATA key;
+	TDB_DATA data;
 	struct ctdb_ltdb_header header;
 	TALLOC_CTX *tmp_ctx;
 	const char *keyname = CTDB_TRANSACTION_LOCK_KEY;
 	int ret;
 	struct ctdb_db_context *ctdb_db = h->ctdb_db;
+	pid_t pid;
 
 	key.dptr = discard_const(keyname);
 	key.dsize = strlen(keyname);
@@ -3130,6 +3132,21 @@ again:
 		talloc_free(tmp_ctx);
 		return -1;
 	}
+	/*
+	 * store the pid in the database:
+	 * it is not enough that the node is dmaster...
+	 */
+	pid = getpid();
+	data.dptr = (unsigned char *)&pid;
+	data.dsize = sizeof(pid_t);
+	ret = ctdb_ltdb_store(ctdb_db, key, &(rh->header), data);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Failed to store pid in "
+				  "transaction record\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
 	talloc_free(rh);
 
 	ret = tdb_transaction_start(ctdb_db->ltdb->tdb);
@@ -3139,8 +3156,14 @@ again:
 		return -1;
 	}
 
-	ret = ctdb_ltdb_fetch(ctdb_db, key, &header, tmp_ctx, NULL);
+	ret = ctdb_ltdb_fetch(ctdb_db, key, &header, tmp_ctx, &data);
 	if (ret != 0 || header.dmaster != ctdb_db->ctdb->pnn) {
+		tdb_transaction_cancel(ctdb_db->ltdb->tdb);
+		talloc_free(tmp_ctx);
+		goto again;
+	}
+
+	if ((data.dsize != sizeof(pid_t)) || (*(pid_t *)(data.dptr) != pid)) {
 		tdb_transaction_cancel(ctdb_db->ltdb->tdb);
 		talloc_free(tmp_ctx);
 		goto again;

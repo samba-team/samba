@@ -207,6 +207,7 @@ install: all
 	${INSTALLCMD} -m 644 config/events.d/README $(DESTDIR)$(docdir)/ctdb/README.eventscripts
 	${INSTALLCMD} -m 644 doc/recovery-process.txt $(DESTDIR)$(docdir)/ctdb/recovery-process.txt
 	${INSTALLCMD} -m 755 config/events.d/00.ctdb $(DESTDIR)$(etcdir)/ctdb/events.d
+	${INSTALLCMD} -m 755 config/events.d/01.reclock $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/10.interface $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/11.natgw $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/11.routing $(DESTDIR)$(etcdir)/ctdb/events.d
