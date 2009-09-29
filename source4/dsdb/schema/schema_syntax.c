@@ -560,6 +560,54 @@ static WERROR dsdb_syntax_NTTIME_UTC_ldb_to_drsuapi(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
+static WERROR dsdb_syntax_NTTIME_UTC_validate_ldb(struct ldb_context *ldb,
+						  const struct dsdb_schema *schema,
+						  const struct dsdb_attribute *attr,
+						  const struct ldb_message_element *in)
+{
+	uint32_t i;
+
+	if (attr->attributeID_id == 0xFFFFFFFF) {
+		return WERR_FOOBAR;
+	}
+
+	for (i=0; i < in->num_values; i++) {
+		time_t t;
+		char buf[sizeof("090826075717Z")];
+
+		ZERO_STRUCT(buf);
+		if (in->values[i].length >= sizeof(buf)) {
+			return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+		}
+		memcpy(buf, in->values[i].data, in->values[i].length);
+
+		errno = 0;
+		t = ldb_string_utc_to_time(buf);
+		if (errno != 0) {
+			return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+		}
+
+		if (attr->rangeLower) {
+			if ((int32_t)t < (int32_t)*attr->rangeLower) {
+				return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+			}
+		}
+
+		if (attr->rangeUpper) {
+			if ((int32_t)t > (int32_t)*attr->rangeLower) {
+				return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+			}
+		}
+
+		/*
+		 * TODO: verify the comment in the
+		 * dsdb_syntax_NTTIME_UTC_drsuapi_to_ldb() function!
+		 */
+	}
+
+	return WERR_OK;
+}
+
 static WERROR dsdb_syntax_NTTIME_drsuapi_to_ldb(struct ldb_context *ldb, 
 						const struct dsdb_schema *schema,
 						const struct dsdb_attribute *attr,
@@ -1854,7 +1902,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.11",
 		.drsuapi_to_ldb		= dsdb_syntax_NTTIME_UTC_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_NTTIME_UTC_ldb_to_drsuapi,
-		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
+		.validate_ldb		= dsdb_syntax_NTTIME_UTC_validate_ldb,
 		.equality               = "generalizedTimeMatch",
 		.comment                = "UTC Time",
 	},{
