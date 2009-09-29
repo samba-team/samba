@@ -966,7 +966,7 @@ NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 					   &mach_pwd,
 					   r->in.credentials,
 					   r->out.return_credentials,
-					   *r->in.negotiate_flags);
+					   srv_flgs);
 	if (!creds) {
 		DEBUG(0,("%s: netlogon_creds_server_check failed. Rejecting auth "
 			"request from client %s machine account %s\n",
