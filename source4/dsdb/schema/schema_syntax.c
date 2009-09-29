@@ -420,6 +420,52 @@ static WERROR dsdb_syntax_INT64_ldb_to_drsuapi(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
+static WERROR dsdb_syntax_INT64_validate_ldb(struct ldb_context *ldb,
+					     const struct dsdb_schema *schema,
+					     const struct dsdb_attribute *attr,
+					     const struct ldb_message_element *in)
+{
+	uint32_t i;
+
+	if (attr->attributeID_id == 0xFFFFFFFF) {
+		return WERR_FOOBAR;
+	}
+
+	for (i=0; i < in->num_values; i++) {
+		long long v;
+		char buf[sizeof("-9223372036854775808")];
+		char *end = NULL;
+
+		ZERO_STRUCT(buf);
+		if (in->values[i].length >= sizeof(buf)) {
+			return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+		}
+		memcpy(buf, in->values[i].data, in->values[i].length);
+
+		errno = 0;
+		v = strtoll(buf, &end, 10);
+		if (errno != 0) {
+			return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+		}
+		if (end && end[0] != '\0') {
+			return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+		}
+
+		if (attr->rangeLower) {
+			if ((int64_t)v < (int64_t)*attr->rangeLower) {
+				return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+			}
+		}
+
+		if (attr->rangeUpper) {
+			if ((int64_t)v > (int64_t)*attr->rangeUpper) {
+				return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+			}
+		}
+	}
+
+	return WERR_OK;
+}
 static WERROR dsdb_syntax_NTTIME_UTC_drsuapi_to_ldb(struct ldb_context *ldb, 
 						    const struct dsdb_schema *schema,
 						    const struct dsdb_attribute *attr,
@@ -1849,7 +1895,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.16",
 		.drsuapi_to_ldb		= dsdb_syntax_INT64_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_INT64_ldb_to_drsuapi,
-		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
+		.validate_ldb		= dsdb_syntax_INT64_validate_ldb,
 		.equality               = "integerMatch",
 		.comment                = "Large Integer",
 		.ldb_syntax             = LDB_SYNTAX_INTEGER,
