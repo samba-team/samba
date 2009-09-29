@@ -1368,6 +1368,74 @@ static WERROR dsdb_syntax_UNICODE_ldb_to_drsuapi(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
+static WERROR dsdb_syntax_UNICODE_validate_one_val(struct ldb_context *ldb,
+						   const struct dsdb_schema *schema,
+						   const struct dsdb_attribute *attr,
+						   const struct ldb_val *val)
+{
+	void *dst = NULL;
+	size_t size;
+	bool ok;
+
+	if (attr->attributeID_id == 0xFFFFFFFF) {
+		return WERR_FOOBAR;
+	}
+
+	ok = convert_string_talloc_convenience(ldb,
+					       schema->iconv_convenience,
+					       CH_UNIX, CH_UTF16,
+					       val->data,
+					       val->length,
+					       (void **)&dst,
+					       &size, false);
+	TALLOC_FREE(dst);
+	if (!ok) {
+		return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+	}
+
+	if (attr->rangeLower) {
+		if ((size/2) < *attr->rangeLower) {
+			return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+		}
+	}
+
+	if (attr->rangeUpper) {
+		if ((size/2) > *attr->rangeUpper) {
+			return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+		}
+	}
+
+	return WERR_OK;
+}
+
+static WERROR dsdb_syntax_UNICODE_validate_ldb(struct ldb_context *ldb,
+					       const struct dsdb_schema *schema,
+					       const struct dsdb_attribute *attr,
+					       const struct ldb_message_element *in)
+{
+	WERROR status;
+	uint32_t i;
+
+	if (attr->attributeID_id == 0xFFFFFFFF) {
+		return WERR_FOOBAR;
+	}
+
+	for (i=0; i < in->num_values; i++) {
+		if (in->values[i].length == 0) {
+			return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+		}
+
+		status = dsdb_syntax_UNICODE_validate_one_val(ldb,
+							      schema,
+							      attr,
+							      &in->values[i]);
+		if (!W_ERROR_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	return WERR_OK;
+}
 
 WERROR dsdb_syntax_one_DN_drsuapi_to_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, 
 					 const struct dsdb_syntax *syntax, 
@@ -2021,7 +2089,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.12",
 		.drsuapi_to_ldb		= dsdb_syntax_UNICODE_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_UNICODE_ldb_to_drsuapi,
-		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
+		.validate_ldb		= dsdb_syntax_UNICODE_validate_ldb,
 		.equality               = "caseIgnoreMatch",
 		.substring              = "caseIgnoreSubstringsMatch",
 		.comment                = "Directory String",
