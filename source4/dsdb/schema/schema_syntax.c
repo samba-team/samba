@@ -182,6 +182,35 @@ static WERROR dsdb_syntax_BOOL_ldb_to_drsuapi(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
+static WERROR dsdb_syntax_BOOL_validate_ldb(struct ldb_context *ldb,
+					    const struct dsdb_schema *schema,
+					    const struct dsdb_attribute *attr,
+					    const struct ldb_message_element *in)
+{
+	uint32_t i;
+
+	if (attr->attributeID_id == 0xFFFFFFFF) {
+		return WERR_FOOBAR;
+	}
+
+	for (i=0; i < in->num_values; i++) {
+		int t, f;
+
+		t = strncmp("TRUE",
+			    (const char *)in->values[i].data,
+			    in->values[i].length);
+		f = strncmp("FALSE",
+			    (const char *)in->values[i].data,
+			    in->values[i].length);
+
+		if (t != 0 && f != 0) {
+			return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+		}
+	}
+
+	return WERR_OK;
+}
+
 static WERROR dsdb_syntax_INT32_drsuapi_to_ldb(struct ldb_context *ldb, 
 					       const struct dsdb_schema *schema,
 					       const struct dsdb_attribute *attr,
@@ -1625,7 +1654,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.8",
 		.drsuapi_to_ldb		= dsdb_syntax_BOOL_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_BOOL_ldb_to_drsuapi,
-		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
+		.validate_ldb		= dsdb_syntax_BOOL_validate_ldb,
 		.equality               = "booleanMatch",
 		.comment                = "Boolean" 
 	},{
