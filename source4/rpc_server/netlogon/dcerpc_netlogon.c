@@ -124,6 +124,10 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 		negotiate_flags |= NETLOGON_NEG_STRONG_KEYS;
 	}
 
+	if (*r->in.negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		negotiate_flags |= NETLOGON_NEG_SUPPORTS_AES;
+	}
+
 	/*
 	 * According to Microsoft (see bugid #6099)
 	 * Windows 7 looks at the negotiate_flags
