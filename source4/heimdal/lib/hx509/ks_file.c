@@ -413,24 +413,24 @@ file_init_common(hx509_context context,
 	goto out;
 
     for (p = f->fn; p != NULL; p = pnext) {
-	FILE *f;
+	FILE *f2;
 
 	pnext = strchr(p, ',');
 	if (pnext)
 	    *pnext++ = '\0';
 	
 
-	if ((f = fopen(p, "r")) == NULL) {
+	if ((f2 = fopen(p, "r")) == NULL) {
 	    ret = ENOENT;
 	    hx509_set_error_string(context, 0, ret,
 				   "Failed to open PEM file \"%s\": %s",
 				   p, strerror(errno));
 	    goto out;
 	}
-	rk_cloexec_file(f);
+	rk_cloexec_file(f2);
 
-	ret = hx509_pem_read(context, f, pem_func, &pem_ctx);
-	fclose(f);		
+	ret = hx509_pem_read(context, f2, pem_func, &pem_ctx);
+	fclose(f2);
 	if (ret != 0 && ret != HX509_PARSING_KEY_FAILED)
 	    goto out;
 	else if (ret == HX509_PARSING_KEY_FAILED) {

@@ -488,14 +488,14 @@ get_new_tickets(krb5_context context,
 						addrs_flag ? FALSE : TRUE);
 
     if (renew_life == NULL && renewable_flag)
-	renewstr = "1 month";
+	asprintf(&renewstr, "1 month");
     if (renew_life)
-	renewstr = renew_life;
+	asprintf(&renewstr, "%s", renew_life);
     if (renewstr) {
 	renew = parse_time (renewstr, "s");
 	if (renew < 0)
 	    errx (1, "unparsable time: %s", renewstr);
-	
+	free(renewstr);
 	krb5_get_init_creds_opt_set_renew_life (opt, renew);
     }
 

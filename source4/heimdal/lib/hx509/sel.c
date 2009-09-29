@@ -176,6 +176,7 @@ _hx509_expr_eval(hx509_context context, hx509_env env, struct hx_expr *expr)
     default:
 	_hx509_abort("hx509 eval expr with unknown op: %d", (int)expr->op);
     }
+    return 0;
 }
 
 void

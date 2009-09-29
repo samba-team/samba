@@ -3383,7 +3383,6 @@ _hx509_cert_to_env(hx509_context context, hx509_cert cert, hx509_env *env)
 	Certificate *c = _hx509_get_cert(cert);
         heim_octet_string os, sig;
 	hx509_env envhash = NULL;
-	char *buf;
 
 	os.data = c->tbsCertificate.subjectPublicKeyInfo.subjectPublicKey.data;
 	os.length =
