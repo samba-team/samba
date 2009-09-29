@@ -702,13 +702,6 @@ static struct functable net_func[] = {
 		N_("  Use 'net help registry' to get more information about "
 		   "'net registry' commands.")
 	},
-	{	"lua",
-		net_lua,
-		NET_TRANSPORT_LOCAL,
-		N_("Open a lua interpreter"),
-		N_("  Use 'net help lua' to get more information about 'net "
-		   "lua' commands.")
-	},
 	{	"eventlog",
 		net_eventlog,
 		NET_TRANSPORT_LOCAL,

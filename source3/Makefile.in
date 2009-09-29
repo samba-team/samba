@@ -79,7 +79,6 @@ POPT_LIBS=@POPTLIBS@
 LIBTALLOC_LIBS=@LIBTALLOC_LIBS@
 LIBTDB_LIBS=@LIBTDB_LIBS@
 LIBNETAPI_LIBS=@LIBNETAPI_LIBS@
-LIBLUA_LIBS=@LIBLUA_LIBS@
 LIBSMBCLIENT_LIBS=@LIBSMBCLIENT_LIBS@
 LIBSMBSHAREMODES_LIBS=@LIBSMBSHAREMODES_LIBS@
 
@@ -997,7 +996,7 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
 	   $(PASSWD_UTIL_OBJ) utils/net_dns.o utils/net_ads_gpo.o \
 	   utils/net_conf.o utils/net_join.o utils/net_user.o \
 	   utils/net_group.o utils/net_file.o utils/net_registry.o \
-	   auth/token_util.o utils/net_dom.o utils/net_share.o utils/net_lua.o \
+	   auth/token_util.o utils/net_dom.o utils/net_share.o \
 	   utils/net_eventlog.o
 
 # these are not processed by make proto
@@ -1563,12 +1562,12 @@ bin/smbclient@EXEEXT@: $(BINARY_PREREQS) $(CLIENT_OBJ) @BUILD_POPT@ @LIBTALLOC_T
 		$(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS) $(DNSSD_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(LIBWBCLIENT_LIBS) $(ZLIB_LIBS)
 
-bin/net@EXEEXT@: $(BINARY_PREREQS) $(NET_OBJ) @BUILD_POPT@ @LIBTALLOC_TARGET@ @LIBTDB_TARGET@ @LIBWBCLIENT_TARGET@ @LIBNETAPI_TARGET@ @LIBLUA_TARGET@
+bin/net@EXEEXT@: $(BINARY_PREREQS) $(NET_OBJ) @BUILD_POPT@ @LIBTALLOC_TARGET@ @LIBTDB_TARGET@ @LIBWBCLIENT_TARGET@ @LIBNETAPI_TARGET@
 	@echo Linking $@
 	@$(CC) -o $@ $(NET_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) \
 		$(POPT_LIBS) $(KRB5LIBS) $(UUID_LIBS) $(LDAP_LIBS) \
 		$(PASSDB_LIBS) $(TERMLDFLAGS) $(TERMLIBS) $(NSCD_LIBS) \
-		@INIPARSERLIBS@ $(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(LIBWBCLIENT_LIBS) $(LIBNETAPI_LIBS)  $(LIBLUA_LIBS) -lm \
+		@INIPARSERLIBS@ $(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(LIBWBCLIENT_LIBS) $(LIBNETAPI_LIBS) \
 		$(ZLIB_LIBS)
 
 bin/profiles@EXEEXT@: $(BINARY_PREREQS) $(PROFILES_OBJ) @BUILD_POPT@ @LIBTALLOC_TARGET@ @LIBTDB_TARGET@
@@ -2426,87 +2425,6 @@ bin/libbigballofmud.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBBIGBALLOFMUD_OBJ) @LIBTAL
 # I get linker errors about dl_open and similar things.  I'm not sure if
 # it can be fixed or if they just can't be called from a static
 # library.
-
-#-------------------------------------------------------------------
-#
-# libsmblua
-#
-#-------------------------------------------------------------------
-
-LIBLUA_OBJ0 = @LIBLUA_OBJ0@
-
-LIBLUA_OBJ = $(LIBLUA_OBJ0)
-
-LIBLUA_SHARED_TARGET=@LIBLUA_SHARED_TARGET@
-LIBLUA_SOVER=@LIBLUA_SOVER@
-LIBLUA_SHARED_TARGET_SONAME=$(LIBLUA_SHARED_TARGET).$(LIBLUA_SOVER)
-LIBLUA_STATIC_TARGET=@LIBLUA_STATIC_TARGET@
-LIBLUA=@LIBLUA_STATIC@ @LIBLUA_SHARED@
-LIBLUA_SYMS=$(srcdir)/exports/liblua.@SYMSEXT@
-LIBLUA_HEADERS=$(srcdir)/lua-5.1.4/src/lua.h
-
-$(LIBLUA_SHARED_TARGET_SONAME): $(BINARY_PREREQS) $(LIBLUA_OBJ) $(LIBLUA_SYMS) @LIBTALLOC_TARGET@ @LIBTDB_TARGET@
-	@echo Linking shared library $@
-	@$(SHLD_DSO) $(LIBLUA_OBJ) \
-		$(LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS) \
-		$(KRB5LIBS) $(LDAP_LIBS) \
-		@SONAMEFLAG@`basename $@`
-
-$(LIBLUA_SHARED_TARGET): $(LIBLUA_SHARED_TARGET_SONAME)
-	@rm -f $@
-	@ln -f -s `basename $(LIBLUA_SHARED_TARGET_SONAME)` $@
-
-$(LIBLUA_STATIC_TARGET): $(BINARY_PREREQS) $(LIBLUA_OBJ0)
-	@echo Linking non-shared library $@
-	@-$(AR) -rc $@ $(LIBLUA_OBJ0)
-
-liblua: $(LIBLUA)
-
-cleanliblua::
-	-rm -f \
-		$(LIBLUA_SHARED_TARGET) \
-		$(LIBLUA_SHARED_TARGET_SONAME) \
-		$(LIBLUA_STATIC_TARGET)
-
-installliblua:: installdirs liblua
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
-	-$(INSTALLLIBCMD_SH) $(LIBLUA_SHARED_TARGET_SONAME) $(DESTDIR)$(LIBDIR)
-	@rm -f $(DESTDIR)$(LIBDIR)/`basename $(LIBLUA_SHARED_TARGET)`
-	-if test -f $(LIBLUA_SHARED_TARGET_SONAME) ; then \
-		ln -f -s `basename $(LIBLUA_SHARED_TARGET_SONAME)` \
-			$(DESTDIR)$(LIBDIR)/`basename $(LIBLUA_SHARED_TARGET)` ; \
-	fi
-	-$(INSTALLLIBCMD_A) $(LIBLUA_STATIC_TARGET) $(DESTDIR)$(LIBDIR)
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) ${prefix}/include
-	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(LIBLUA_HEADERS) $(DESTDIR)${prefix}/include
-
-uninstallliblua::
-	-rm -f $(DESTDIR)$(LIBDIR)/`basename $(LIBLUA_SHARED_TARGET)`
-	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/`basename $(LIBLUA_SHARED_TARGET_SONAME)`
-	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/`basename $(LIBLUA_STATIC_TARGET)`
-	-rm -f $(DESTDIR)${prefix}/include/smb_share_modes.h
-
-libs:: liblua
-installlibs:: @INSTALL_LIBLUA@
-uninstalllibs:: @UNINSTALL_LIBLUA@
-cleanlibs:: cleanliblua
-shlibs test_shlibs: @LIBLUA_SHARED@
-
-showliblua:
-	@echo  ""
-	@echo "LIBLUA_SHARED               = @LIBLUA_SHARED@"
-	@echo "LIBLUA_STATIC               = @LIBLUA_STATIC@"
-	@echo "LIBLUA_TARGET               = @LIBLUA_TARGET@"
-	@echo "LIBLUA_LIBS                 = $(LIBLUA_LIBS)"
-	@echo ""
-	@echo "LIBLUA_SHARED_TARGET        = $(LIBLUA_SHARED_TARGET)"
-	@echo "LIBLUA_SOVER                = $(LIBLUA_SOVER)"
-	@echo "LIBLUA_SHARED TARGET_SONAME = $(LIBLUA_SHARED_TARGET_SONAME)"
-	@echo "LIBLUA_STATIC_TARGET        = $(LIBLUA_STATIC_TARGET)"
-	@echo "LIBLUA                      = $(LIBLUA)"
-
-showlibs:: showliblua
-
 
 #####################################################################
 #

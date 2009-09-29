@@ -378,14 +378,6 @@ msgstr ""
 msgid "  Use 'net help registry' to get more information about 'net registry' commands."
 msgstr ""
 
-#: ../../utils/net.c:584
-msgid "Open a lua interpreter"
-msgstr ""
-
-#: ../../utils/net.c:585
-msgid "  Use 'net help lua' to get more information about 'net lua' commands."
-msgstr ""
-
 #: ../../utils/net.c:591
 msgid "Process Win32 *.evt eventlog files"
 msgstr ""
@@ -3367,62 +3359,6 @@ msgstr ""
 msgid ""
 "\n"
 "Usage: \n"
-msgstr ""
-
-#: ../../utils/net_lua.c:60
-msgid "connect: Expected IP-Address"
-msgstr ""
-
-#: ../../utils/net_lua.c:65
-msgid "connect: Expected port"
-msgstr ""
-
-#: ../../utils/net_lua.c:84
-#, c-format
-msgid "connect failed: %s"
-msgstr ""
-
-#: ../../utils/net_lua.c:132
-#, c-format
-msgid "socket domain %s unknown"
-msgstr ""
-
-#: ../../utils/net_lua.c:144
-#, c-format
-msgid "socket type %s unknown"
-msgstr ""
-
-#: ../../utils/net_lua.c:155
-#, c-format
-msgid "socket() failed: %s"
-msgstr ""
-
-#: ../../utils/net_lua.c:278
-msgid "evt_reference_thread failed\n"
-msgstr ""
-
-#: ../../utils/net_lua.c:287
-msgid "event_add_timed failed"
-msgstr ""
-
-#: ../../utils/net_lua.c:300
-msgid "event_once called from non-base thread"
-msgstr ""
-
-#: ../../utils/net_lua.c:323
-msgid "event_context_init failed"
-msgstr ""
-
-#: ../../utils/net_lua.c:353
-msgid "lua_newstate failed\n"
-msgstr ""
-
-#: ../../utils/net_lua.c:371
-msgid "luaL_dofile returned an error\n"
-msgstr ""
-
-#: ../../utils/net_lua.c:376
-msgid "luaL_dostring returned an error\n"
 msgstr ""
 
 #: ../../utils/net_rap.c:39
