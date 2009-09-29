@@ -458,6 +458,10 @@ static int resolve_oids_search(struct ldb_module *module, struct ldb_request *re
 	struct ldb_request *down_req;
 	struct resolve_oids_context *ac;
 	int ret;
+	bool needed = false;
+	const char * const *attrs1;
+	const char **attrs2;
+	uint32_t i;
 
 	ldb = ldb_module_get_ctx(module);
 	schema = dsdb_get_schema(ldb);
@@ -473,10 +477,34 @@ static int resolve_oids_search(struct ldb_module *module, struct ldb_request *re
 
 	ret = resolve_oids_parse_tree_need(ldb, schema,
 					   req->op.search.tree);
-	if (ret == LDB_ERR_COMPARE_FALSE) {
-		return ldb_next_request(module, req);
-	} else if (ret != LDB_ERR_COMPARE_TRUE) {
+	if (ret == LDB_ERR_COMPARE_TRUE) {
+		needed = true;
+	} else if (ret != LDB_ERR_COMPARE_FALSE) {
 		return ret;
+	}
+
+	attrs1 = req->op.search.attrs;
+
+	for (i=0; attrs1 && attrs1[i]; i++) {
+		const char *p;
+		struct dsdb_attribute *a;
+
+		p = strchr(attrs1[i], '.');
+		if (p == NULL) {
+			continue;
+		}
+
+		a = dsdb_attribute_by_attributeID_oid(schema, attrs1[i]);
+		if (a == NULL) {
+			continue;
+		}
+
+		needed = true;
+		break;
+	}
+
+	if (!needed) {
+		return ldb_next_request(module, req);
 	}
 
 	ac = talloc(req, struct resolve_oids_context);
@@ -499,11 +527,34 @@ static int resolve_oids_search(struct ldb_module *module, struct ldb_request *re
 		return ret;
 	}
 
+	attrs2 = str_list_copy_const(ac, req->op.search.attrs);
+	if (req->op.search.attrs && !attrs2) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	for (i=0; attrs2 && attrs2[i]; i++) {
+		const char *p;
+		struct dsdb_attribute *a;
+
+		p = strchr(attrs2[i], '.');
+		if (p == NULL) {
+			continue;
+		}
+
+		a = dsdb_attribute_by_attributeID_oid(schema, attrs2[i]);
+		if (a == NULL) {
+			continue;
+		}
+
+		attrs2[i] = a->lDAPDisplayName;
+	}
+
 	ret = ldb_build_search_req_ex(&down_req, ldb, ac,
 				      req->op.search.base,
 				      req->op.search.scope,
 				      tree,
-				      req->op.search.attrs,
+				      attrs2,
 				      req->controls,
 				      ac, resolve_oids_callback,
 				      req);
