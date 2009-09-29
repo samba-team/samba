@@ -32,7 +32,12 @@
 
 static size_t schannel_sig_size(struct gensec_security *gensec_security, size_t data_size)
 {
-	return 32;
+	struct schannel_state *state = (struct schannel_state *)gensec_security->private_data;
+	uint32_t sig_size;
+
+	sig_size = netsec_outgoing_sig_size(state);
+
+	return sig_size;
 }
 
 static NTSTATUS schannel_session_key(struct gensec_security *gensec_security,
