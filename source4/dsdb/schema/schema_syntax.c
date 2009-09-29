@@ -698,6 +698,42 @@ static WERROR dsdb_syntax_NTTIME_ldb_to_drsuapi(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
+static WERROR dsdb_syntax_NTTIME_validate_ldb(struct ldb_context *ldb,
+					      const struct dsdb_schema *schema,
+					      const struct dsdb_attribute *attr,
+					      const struct ldb_message_element *in)
+{
+	uint32_t i;
+
+	if (attr->attributeID_id == 0xFFFFFFFF) {
+		return WERR_FOOBAR;
+	}
+
+	for (i=0; i < in->num_values; i++) {
+		time_t t;
+		int ret;
+
+		ret = ldb_val_to_time(&in->values[i], &t);
+		if (ret != LDB_SUCCESS) {
+			return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+		}
+
+		if (attr->rangeLower) {
+			if ((int32_t)t < (int32_t)*attr->rangeLower) {
+				return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+			}
+		}
+
+		if (attr->rangeUpper) {
+			if ((int32_t)t > (int32_t)*attr->rangeLower) {
+				return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+			}
+		}
+	}
+
+	return WERR_OK;
+}
+
 static WERROR dsdb_syntax_DATA_BLOB_drsuapi_to_ldb(struct ldb_context *ldb, 
 						   const struct dsdb_schema *schema,
 						   const struct dsdb_attribute *attr,
@@ -1912,7 +1948,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.11",
 		.drsuapi_to_ldb		= dsdb_syntax_NTTIME_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_NTTIME_ldb_to_drsuapi,
-		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
+		.validate_ldb		= dsdb_syntax_NTTIME_validate_ldb,
 		.equality               = "generalizedTimeMatch",
 		.comment                = "Generalized Time",
 		.ldb_syntax             = LDB_SYNTAX_UTC_TIME,
