@@ -1021,50 +1021,6 @@ bool prs_unistr(const char *name, prs_struct *ps, int depth, UNISTR *str)
 	return True;
 }
 
-
-/*******************************************************************
- Stream a null-terminated string.  len is strlen, and therefore does
- not include the null-termination character.
- ********************************************************************/
-
-bool prs_string(const char *name, prs_struct *ps, int depth, char *str, int max_buf_size)
-{
-	char *q;
-	int i;
-	int len;
-
-	if (UNMARSHALLING(ps))
-		len = strlen(&ps->data_p[ps->data_offset]);
-	else
-		len = strlen(str);
-
-	len = MIN(len, (max_buf_size-1));
-
-	q = prs_mem_get(ps, len+1);
-	if (q == NULL)
-		return False;
-
-	for(i = 0; i < len; i++) {
-		if (UNMARSHALLING(ps))
-			str[i] = q[i];
-		else
-			q[i] = str[i];
-	}
-
-	/* The terminating null. */
-	str[i] = '\0';
-
-	if (MARSHALLING(ps)) {
-		q[i] = '\0';
-	}
-
-	ps->data_offset += len+1;
-
-	dump_data(5+depth, (uint8 *)q, len);
-
-	return True;
-}
-
 /*******************************************************************
 creates a new prs_struct containing a DATA_BLOB
 ********************************************************************/
