@@ -1466,7 +1466,35 @@ static WERROR dsdb_syntax_DN_BINARY_ldb_to_drsuapi(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
+static WERROR dsdb_syntax_DN_STRING_drsuapi_to_ldb(struct ldb_context *ldb,
+						   const struct dsdb_schema *schema,
+						   const struct dsdb_attribute *attr,
+						   const struct drsuapi_DsReplicaAttribute *in,
+						   TALLOC_CTX *mem_ctx,
+						   struct ldb_message_element *out)
+{
+	return dsdb_syntax_DN_BINARY_drsuapi_to_ldb(ldb,
+						    schema,
+						    attr,
+						    in,
+						    mem_ctx,
+						    out);
+}
 
+static WERROR dsdb_syntax_DN_STRING_ldb_to_drsuapi(struct ldb_context *ldb,
+						   const struct dsdb_schema *schema,
+						   const struct dsdb_attribute *attr,
+						   const struct ldb_message_element *in,
+						   TALLOC_CTX *mem_ctx,
+						   struct drsuapi_DsReplicaAttribute *out)
+{
+	return dsdb_syntax_DN_BINARY_ldb_to_drsuapi(ldb,
+						    schema,
+						    attr,
+						    in,
+						    mem_ctx,
+						    out);
+}
 
 static WERROR dsdb_syntax_PRESENTATION_ADDRESS_drsuapi_to_ldb(struct ldb_context *ldb, 
 							      const struct dsdb_schema *schema,
@@ -1793,8 +1821,8 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.oMSyntax		= 127,
 		.oMObjectClass		= OMOBJECTCLASS("\x2a\x86\x48\x86\xf7\x14\x01\x01\x01\x0c"),
 		.attributeSyntax_oid	= "2.5.5.14",
-		.drsuapi_to_ldb		= dsdb_syntax_DN_BINARY_drsuapi_to_ldb,
-		.ldb_to_drsuapi		= dsdb_syntax_DN_BINARY_ldb_to_drsuapi,
+		.drsuapi_to_ldb		= dsdb_syntax_DN_STRING_drsuapi_to_ldb,
+		.ldb_to_drsuapi		= dsdb_syntax_DN_STRING_ldb_to_drsuapi,
 		.equality               = "octetStringMatch",
 		.comment                = "OctetString: String+DN",
 	}
