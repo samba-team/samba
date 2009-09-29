@@ -1951,6 +1951,53 @@ static WERROR dsdb_syntax_DN_BINARY_ldb_to_drsuapi(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
+static WERROR dsdb_syntax_DN_BINARY_validate_ldb(struct ldb_context *ldb,
+						 const struct dsdb_schema *schema,
+						 const struct dsdb_attribute *attr,
+						 const struct ldb_message_element *in)
+{
+	uint32_t i;
+
+	if (attr->attributeID_id == 0xFFFFFFFF) {
+		return WERR_FOOBAR;
+	}
+
+	for (i=0; i < in->num_values; i++) {
+		WERROR status;
+		struct dsdb_dn *dsdb_dn;
+		TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+		W_ERROR_HAVE_NO_MEMORY(tmp_ctx);
+
+		status = dsdb_syntax_DN_validate_one_val(ldb,
+							 schema,
+							 attr,
+							 &in->values[i],
+							 tmp_ctx, &dsdb_dn);
+		if (!W_ERROR_IS_OK(status)) {
+			talloc_free(tmp_ctx);
+			return status;
+		}
+
+		if (dsdb_dn->dn_format != DSDB_BINARY_DN) {
+			talloc_free(tmp_ctx);
+			return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+		}
+
+		status = dsdb_syntax_DATA_BLOB_validate_one_val(ldb,
+								schema,
+								attr,
+								&dsdb_dn->extra_part);
+		if (!W_ERROR_IS_OK(status)) {
+			talloc_free(tmp_ctx);
+			return status;
+		}
+
+		talloc_free(tmp_ctx);
+	}
+
+	return WERR_OK;
+}
+
 static WERROR dsdb_syntax_DN_STRING_drsuapi_to_ldb(struct ldb_context *ldb,
 						   const struct dsdb_schema *schema,
 						   const struct dsdb_attribute *attr,
@@ -2280,7 +2327,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.7",
 		.drsuapi_to_ldb		= dsdb_syntax_DN_BINARY_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_DN_BINARY_ldb_to_drsuapi,
-		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
+		.validate_ldb		= dsdb_syntax_DN_BINARY_validate_ldb,
 		.equality               = "octetStringMatch",
 		.comment                = "OctetString: Binary+DN",
 	},{
@@ -2292,7 +2339,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.7",
 		.drsuapi_to_ldb		= dsdb_syntax_DN_BINARY_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_DN_BINARY_ldb_to_drsuapi,
-		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
+		.validate_ldb		= dsdb_syntax_DN_BINARY_validate_ldb,
 		.equality		= "caseIgnoreMatch",
 		.ldb_syntax		= LDB_SYNTAX_DN,
 	},{
