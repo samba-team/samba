@@ -2028,6 +2028,53 @@ static WERROR dsdb_syntax_DN_STRING_ldb_to_drsuapi(struct ldb_context *ldb,
 						    out);
 }
 
+static WERROR dsdb_syntax_DN_STRING_validate_ldb(struct ldb_context *ldb,
+						 const struct dsdb_schema *schema,
+						 const struct dsdb_attribute *attr,
+						 const struct ldb_message_element *in)
+{
+	uint32_t i;
+
+	if (attr->attributeID_id == 0xFFFFFFFF) {
+		return WERR_FOOBAR;
+	}
+
+	for (i=0; i < in->num_values; i++) {
+		WERROR status;
+		struct dsdb_dn *dsdb_dn;
+		TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+		W_ERROR_HAVE_NO_MEMORY(tmp_ctx);
+
+		status = dsdb_syntax_DN_validate_one_val(ldb,
+							 schema,
+							 attr,
+							 &in->values[i],
+							 tmp_ctx, &dsdb_dn);
+		if (!W_ERROR_IS_OK(status)) {
+			talloc_free(tmp_ctx);
+			return status;
+		}
+
+		if (dsdb_dn->dn_format != DSDB_STRING_DN) {
+			talloc_free(tmp_ctx);
+			return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+		}
+
+		status = dsdb_syntax_UNICODE_validate_one_val(ldb,
+							      schema,
+							      attr,
+							      &dsdb_dn->extra_part);
+		if (!W_ERROR_IS_OK(status)) {
+			talloc_free(tmp_ctx);
+			return status;
+		}
+
+		talloc_free(tmp_ctx);
+	}
+
+	return WERR_OK;
+}
+
 static WERROR dsdb_syntax_PRESENTATION_ADDRESS_drsuapi_to_ldb(struct ldb_context *ldb, 
 							      const struct dsdb_schema *schema,
 							      const struct dsdb_attribute *attr,
@@ -2388,7 +2435,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.14",
 		.drsuapi_to_ldb		= dsdb_syntax_DN_STRING_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_DN_STRING_ldb_to_drsuapi,
-		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
+		.validate_ldb		= dsdb_syntax_DN_STRING_validate_ldb,
 		.equality               = "octetStringMatch",
 		.comment                = "OctetString: String+DN",
 	}
