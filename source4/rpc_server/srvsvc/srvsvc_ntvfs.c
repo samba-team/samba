@@ -128,7 +128,9 @@ NTSTATUS srvsvc_create_ntvfs_context(struct dcesrv_call_state *dce_call,
 	NT_STATUS_HAVE_NO_MEMORY(ntvfs_req);
 
 	/* Invoke NTVFS connection hook */
-	status = ntvfs_connect(ntvfs_req, scfg->name);
+	/* FIXME: Here is the right parameter missing!
+         * status = ntvfs_connect(ntvfs_req, <TODO>); */
+	status = NT_STATUS_UNSUCCESSFUL; /* return this for now */
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("srvsvc_create_ntvfs_context: NTVFS ntvfs_connect() failed!\n"));
 		return status;
