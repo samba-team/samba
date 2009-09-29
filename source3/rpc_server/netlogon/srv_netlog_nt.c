@@ -909,6 +909,10 @@ NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 		srv_flgs |= NETLOGON_NEG_STRONG_KEYS;
 	}
 
+	if (in_neg_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		srv_flgs |= NETLOGON_NEG_SUPPORTS_AES;
+	}
+
 	if (lp_server_schannel() != false) {
 		srv_flgs |= NETLOGON_NEG_SCHANNEL;
 	}
