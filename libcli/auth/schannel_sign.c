@@ -204,6 +204,20 @@ NTSTATUS netsec_incoming_packet(struct schannel_state *state,
 	return NT_STATUS_OK;
 }
 
+uint32_t netsec_outgoing_sig_size(struct schannel_state *state)
+{
+	uint32_t sig_size = 0;
+
+	netsec_offset_and_sizes(state,
+				true,
+				NULL,
+				&sig_size,
+				NULL,
+				NULL);
+
+	return sig_size;
+}
+
 NTSTATUS netsec_outgoing_packet(struct schannel_state *state,
 				TALLOC_CTX *mem_ctx,
 				bool do_seal,
