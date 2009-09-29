@@ -486,6 +486,7 @@ static enum ndr_err_code ndr_push_named_pipe_auth_req_info(struct ndr_push *ndr,
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 0: {
 			break; }
@@ -541,6 +542,7 @@ static enum ndr_err_code ndr_pull_named_pipe_auth_req_info(struct ndr_pull *ndr,
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 0: {
 			break; }
@@ -747,6 +749,7 @@ static enum ndr_err_code ndr_push_named_pipe_auth_rep_info(struct ndr_push *ndr,
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 8));
 		switch (level) {
 			case 0: {
 			break; }
@@ -798,6 +801,7 @@ static enum ndr_err_code ndr_pull_named_pipe_auth_rep_info(struct ndr_pull *ndr,
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 8));
 		switch (level) {
 			case 0: {
 			break; }

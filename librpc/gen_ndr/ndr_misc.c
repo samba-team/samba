@@ -207,6 +207,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_winreg_Data(struct ndr_push *ndr, int ndr_fl
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
 			case REG_NONE: {
 			break; }
@@ -284,6 +285,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_winreg_Data(struct ndr_pull *ndr, int ndr_fl
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 4));
 		switch (level) {
 			case REG_NONE: {
 			break; }

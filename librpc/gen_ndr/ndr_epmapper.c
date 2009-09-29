@@ -867,6 +867,7 @@ static enum ndr_err_code ndr_push_epm_rhs(struct ndr_push *ndr, int ndr_flags, c
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_BIGENDIAN);
 		if (ndr_flags & NDR_SCALARS) {
 			int level = ndr_push_get_switch_value(ndr, r);
+			NDR_CHECK(ndr_push_union_align(ndr, 4));
 			switch (level) {
 				case EPM_PROTOCOL_DNET_NSP: {
 					NDR_CHECK(ndr_push_epm_rhs_dnet_nsp(ndr, NDR_SCALARS, &r->dnet_nsp));
@@ -1082,6 +1083,7 @@ static enum ndr_err_code ndr_pull_epm_rhs(struct ndr_pull *ndr, int ndr_flags, u
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_BIGENDIAN);
 		level = ndr_pull_get_switch_value(ndr, r);
 		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_pull_union_align(ndr, 4));
 			switch (level) {
 				case EPM_PROTOCOL_DNET_NSP: {
 					NDR_CHECK(ndr_pull_epm_rhs_dnet_nsp(ndr, NDR_SCALARS, &r->dnet_nsp));

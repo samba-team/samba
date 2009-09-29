@@ -184,6 +184,7 @@ static enum ndr_err_code ndr_push_dcerpc_object(struct ndr_push *ndr, int ndr_fl
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
 			default: {
 				NDR_CHECK(ndr_push_dcerpc_empty(ndr, NDR_SCALARS, &r->empty));
@@ -214,6 +215,7 @@ static enum ndr_err_code ndr_pull_dcerpc_object(struct ndr_pull *ndr, int ndr_fl
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 4));
 		switch (level) {
 			default: {
 				NDR_CHECK(ndr_pull_dcerpc_empty(ndr, NDR_SCALARS, &r->empty));
@@ -512,6 +514,7 @@ static enum ndr_err_code ndr_push_dcerpc_bind_nak_versions_ctr(struct ndr_push *
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
 			case DECRPC_BIND_PROTOCOL_VERSION_NOT_SUPPORTED: {
 				NDR_CHECK(ndr_push_dcerpc_bind_nak_versions(ndr, NDR_SCALARS, &r->v));
@@ -541,6 +544,7 @@ static enum ndr_err_code ndr_pull_dcerpc_bind_nak_versions_ctr(struct ndr_pull *
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 4));
 		switch (level) {
 			case DECRPC_BIND_PROTOCOL_VERSION_NOT_SUPPORTED: {
 				NDR_CHECK(ndr_pull_dcerpc_bind_nak_versions(ndr, NDR_SCALARS, &r->v));
@@ -1274,6 +1278,7 @@ static enum ndr_err_code ndr_push_dcerpc_payload(struct ndr_push *ndr, int ndr_f
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
 			case DCERPC_PKT_REQUEST: {
 				NDR_CHECK(ndr_push_dcerpc_request(ndr, NDR_SCALARS, &r->request));
@@ -1435,6 +1440,7 @@ static enum ndr_err_code ndr_pull_dcerpc_payload(struct ndr_pull *ndr, int ndr_f
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 4));
 		switch (level) {
 			case DCERPC_PKT_REQUEST: {
 				NDR_CHECK(ndr_pull_dcerpc_request(ndr, NDR_SCALARS, &r->request));

@@ -249,6 +249,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsBindInfo(struct ndr_push *ndr, int n
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 1));
 		switch (level) {
 			case 24: {
 				{
@@ -313,6 +314,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsBindInfo(struct ndr_pull *ndr, int n
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 1));
 		switch (level) {
 			case 24: {
 				{
@@ -643,6 +645,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaSyncRequest(struct ndr_push *
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_drsuapi_DsReplicaSyncRequest1(ndr, NDR_SCALARS, &r->req1));
@@ -676,6 +679,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplicaSyncRequest(struct ndr_pull *
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_drsuapi_DsReplicaSyncRequest1(ndr, NDR_SCALARS, &r->req1));
@@ -1709,6 +1713,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesRequest(struct ndr_push 
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 8));
 		switch (level) {
 			case 5: {
 				NDR_CHECK(ndr_push_drsuapi_DsGetNCChangesRequest5(ndr, NDR_SCALARS, &r->req5));
@@ -1758,6 +1763,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesRequest(struct ndr_pull 
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 8));
 		switch (level) {
 			case 5: {
 				NDR_CHECK(ndr_pull_drsuapi_DsGetNCChangesRequest5(ndr, NDR_SCALARS, &r->req5));
@@ -3323,6 +3329,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesCompressedCtr(struct ndr
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
 		if (ndr_flags & NDR_SCALARS) {
 			int level = ndr_push_get_switch_value(ndr, r);
+			NDR_CHECK(ndr_push_union_align(ndr, 5));
 			switch (level) {
 				case 1|(DRSUAPI_COMPRESSION_TYPE_MSZIP<<16): {
 					NDR_CHECK(ndr_push_drsuapi_DsGetNCChangesMSZIPCtr1(ndr, NDR_SCALARS, &r->mszip1));
@@ -3380,6 +3387,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesCompressedCtr(struct ndr
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
 		level = ndr_pull_get_switch_value(ndr, r);
 		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_pull_union_align(ndr, 5));
 			switch (level) {
 				case 1|(DRSUAPI_COMPRESSION_TYPE_MSZIP<<16): {
 					NDR_CHECK(ndr_pull_drsuapi_DsGetNCChangesMSZIPCtr1(ndr, NDR_SCALARS, &r->mszip1));
@@ -3544,6 +3552,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesCtr(struct ndr_push *ndr
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 8));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_drsuapi_DsGetNCChangesCtr1(ndr, NDR_SCALARS, &r->ctr1));
@@ -3601,6 +3610,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesCtr(struct ndr_pull *ndr
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 8));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_drsuapi_DsGetNCChangesCtr1(ndr, NDR_SCALARS, &r->ctr1));
@@ -3785,6 +3795,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaUpdateRefsRequest(struct ndr_
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_drsuapi_DsReplicaUpdateRefsRequest1(ndr, NDR_SCALARS, &r->req1));
@@ -3818,6 +3829,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplicaUpdateRefsRequest(struct ndr_
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_drsuapi_DsReplicaUpdateRefsRequest1(ndr, NDR_SCALARS, &r->req1));
@@ -4105,6 +4117,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaAddRequest(struct ndr_push *n
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_drsuapi_DsReplicaAddRequest1(ndr, NDR_SCALARS, &r->req1));
@@ -4146,6 +4159,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplicaAddRequest(struct ndr_pull *n
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_drsuapi_DsReplicaAddRequest1(ndr, NDR_SCALARS, &r->req1));
@@ -4307,6 +4321,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaDelRequest(struct ndr_push *n
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_drsuapi_DsReplicaDelRequest1(ndr, NDR_SCALARS, &r->req1));
@@ -4340,6 +4355,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplicaDelRequest(struct ndr_pull *n
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_drsuapi_DsReplicaDelRequest1(ndr, NDR_SCALARS, &r->req1));
@@ -4501,6 +4517,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaModRequest(struct ndr_push *n
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_drsuapi_DsReplicaModRequest1(ndr, NDR_SCALARS, &r->req1));
@@ -4534,6 +4551,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplicaModRequest(struct ndr_pull *n
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_drsuapi_DsReplicaModRequest1(ndr, NDR_SCALARS, &r->req1));
@@ -4846,6 +4864,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetMembershipsCtr(struct ndr_push *n
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_drsuapi_DsGetMembershipsCtr1(ndr, NDR_SCALARS, &r->ctr1));
@@ -4879,6 +4898,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetMembershipsCtr(struct ndr_pull *n
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_drsuapi_DsGetMembershipsCtr1(ndr, NDR_SCALARS, &r->ctr1));
@@ -5058,6 +5078,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetMembershipsRequest(struct ndr_pus
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_drsuapi_DsGetMembershipsRequest1(ndr, NDR_SCALARS, &r->req1));
@@ -5091,6 +5112,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetMembershipsRequest(struct ndr_pul
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_drsuapi_DsGetMembershipsRequest1(ndr, NDR_SCALARS, &r->req1));
@@ -5202,6 +5224,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetNT4ChangeLogRequest(struct ndr_pu
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_drsuapi_DsGetNT4ChangeLogRequest1(ndr, NDR_SCALARS, &r->req1));
@@ -5235,6 +5258,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetNT4ChangeLogRequest(struct ndr_pu
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_drsuapi_DsGetNT4ChangeLogRequest1(ndr, NDR_SCALARS, &r->req1));
@@ -5397,6 +5421,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetNT4ChangeLogInfo(struct ndr_push 
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 8));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_drsuapi_DsGetNT4ChangeLogInfo1(ndr, NDR_SCALARS, &r->info1));
@@ -5430,6 +5455,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetNT4ChangeLogInfo(struct ndr_pull 
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 8));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_drsuapi_DsGetNT4ChangeLogInfo1(ndr, NDR_SCALARS, &r->info1));
@@ -5729,6 +5755,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsNameRequest(struct ndr_push *ndr, in
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_drsuapi_DsNameRequest1(ndr, NDR_SCALARS, &r->req1));
@@ -5762,6 +5789,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsNameRequest(struct ndr_pull *ndr, in
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_drsuapi_DsNameRequest1(ndr, NDR_SCALARS, &r->req1));
@@ -5986,6 +6014,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsNameCtr(struct ndr_push *ndr, int nd
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->ctr1));
@@ -6022,6 +6051,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsNameCtr(struct ndr_pull *ndr, int nd
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				uint32_t _ptr_ctr1;
@@ -6234,6 +6264,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsWriteAccountSpnRequest(struct ndr_pu
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_drsuapi_DsWriteAccountSpnRequest1(ndr, NDR_SCALARS, &r->req1));
@@ -6267,6 +6298,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsWriteAccountSpnRequest(struct ndr_pu
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_drsuapi_DsWriteAccountSpnRequest1(ndr, NDR_SCALARS, &r->req1));
@@ -6339,6 +6371,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsWriteAccountSpnResult(struct ndr_pus
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_drsuapi_DsWriteAccountSpnResult1(ndr, NDR_SCALARS, &r->res1));
@@ -6371,6 +6404,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsWriteAccountSpnResult(struct ndr_pul
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 4));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_drsuapi_DsWriteAccountSpnResult1(ndr, NDR_SCALARS, &r->res1));
@@ -6508,6 +6542,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsRemoveDSServerRequest(struct ndr_pus
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_drsuapi_DsRemoveDSServerRequest1(ndr, NDR_SCALARS, &r->req1));
@@ -6541,6 +6576,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsRemoveDSServerRequest(struct ndr_pul
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_drsuapi_DsRemoveDSServerRequest1(ndr, NDR_SCALARS, &r->req1));
@@ -6613,6 +6649,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsRemoveDSServerResult(struct ndr_push
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_drsuapi_DsRemoveDSServerResult1(ndr, NDR_SCALARS, &r->res1));
@@ -6645,6 +6682,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsRemoveDSServerResult(struct ndr_pull
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 4));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_drsuapi_DsRemoveDSServerResult1(ndr, NDR_SCALARS, &r->res1));
@@ -6749,6 +6787,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetDCInfoRequest(struct ndr_push *nd
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_drsuapi_DsGetDCInfoRequest1(ndr, NDR_SCALARS, &r->req1));
@@ -6782,6 +6821,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetDCInfoRequest(struct ndr_pull *nd
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_drsuapi_DsGetDCInfoRequest1(ndr, NDR_SCALARS, &r->req1));
@@ -8027,6 +8067,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetDCInfoCtr(struct ndr_push *ndr, i
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case DRSUAPI_DC_INFO_CTR_1: {
 				NDR_CHECK(ndr_push_drsuapi_DsGetDCInfoCtr1(ndr, NDR_SCALARS, &r->ctr1));
@@ -8084,6 +8125,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetDCInfoCtr(struct ndr_pull *ndr, i
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case DRSUAPI_DC_INFO_CTR_1: {
 				NDR_CHECK(ndr_pull_drsuapi_DsGetDCInfoCtr1(ndr, NDR_SCALARS, &r->ctr1));
@@ -8236,6 +8278,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsAddEntryRequest(struct ndr_push *ndr
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 2: {
 				NDR_CHECK(ndr_push_drsuapi_DsAddEntryRequest2(ndr, NDR_SCALARS, &r->req2));
@@ -8269,6 +8312,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsAddEntryRequest(struct ndr_pull *ndr
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 2: {
 				NDR_CHECK(ndr_pull_drsuapi_DsAddEntryRequest2(ndr, NDR_SCALARS, &r->req2));
@@ -8569,6 +8613,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsAddEntryErrorInfo(struct ndr_push *n
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_drsuapi_DsAddEntryErrorInfo1(ndr, NDR_SCALARS, &r->error1));
@@ -8630,6 +8675,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsAddEntryErrorInfo(struct ndr_pull *n
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_drsuapi_DsAddEntryErrorInfo1(ndr, NDR_SCALARS, &r->error1));
@@ -8776,6 +8822,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsAddEntryError(struct ndr_push *ndr, 
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_drsuapi_DsAddEntryError1(ndr, NDR_SCALARS, &r->info1));
@@ -8809,6 +8856,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsAddEntryError(struct ndr_pull *ndr, 
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_drsuapi_DsAddEntryError1(ndr, NDR_SCALARS, &r->info1));
@@ -9148,6 +9196,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsAddEntryCtr(struct ndr_push *ndr, in
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 2: {
 				NDR_CHECK(ndr_push_drsuapi_DsAddEntryCtr2(ndr, NDR_SCALARS, &r->ctr2));
@@ -9189,6 +9238,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsAddEntryCtr(struct ndr_pull *ndr, in
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 2: {
 				NDR_CHECK(ndr_pull_drsuapi_DsAddEntryCtr2(ndr, NDR_SCALARS, &r->ctr2));
@@ -9299,6 +9349,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsExecuteKCCRequest(struct ndr_push *n
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_drsuapi_DsExecuteKCC1(ndr, NDR_SCALARS, &r->ctr1));
@@ -9331,6 +9382,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsExecuteKCCRequest(struct ndr_pull *n
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 4));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_drsuapi_DsExecuteKCC1(ndr, NDR_SCALARS, &r->ctr1));
@@ -9639,6 +9691,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaGetInfoRequest(struct ndr_pus
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_drsuapi_DsReplicaGetInfoLevel(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case DRSUAPI_DS_REPLICA_GET_INFO: {
 				NDR_CHECK(ndr_push_drsuapi_DsReplicaGetInfoRequest1(ndr, NDR_SCALARS, &r->req1));
@@ -9680,6 +9733,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplicaGetInfoRequest(struct ndr_pul
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case DRSUAPI_DS_REPLICA_GET_INFO: {
 				NDR_CHECK(ndr_pull_drsuapi_DsReplicaGetInfoRequest1(ndr, NDR_SCALARS, &r->req1));
@@ -10379,6 +10433,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsRplicaOpOptions(struct ndr_push *ndr
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_drsuapi_DsReplicaOpType(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
 			case DRSUAPI_DS_REPLICA_OP_TYPE_SYNC: {
 				NDR_CHECK(ndr_push_drsuapi_DsReplicaSyncOptions(ndr, NDR_SCALARS, r->sync));
@@ -10442,6 +10497,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsRplicaOpOptions(struct ndr_pull *ndr
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 4));
 		switch (level) {
 			case DRSUAPI_DS_REPLICA_OP_TYPE_SYNC: {
 				NDR_CHECK(ndr_pull_drsuapi_DsReplicaSyncOptions(ndr, NDR_SCALARS, &r->sync));
@@ -11869,6 +11925,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaInfo(struct ndr_push *ndr, in
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_drsuapi_DsReplicaInfoType(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case DRSUAPI_DS_REPLICA_INFO_NEIGHBORS: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->neighbours));
@@ -12059,6 +12116,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplicaInfo(struct ndr_pull *ndr, in
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case DRSUAPI_DS_REPLICA_INFO_NEIGHBORS: {
 				uint32_t _ptr_neighbours;
@@ -12509,6 +12567,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetMemberships2Ctr(struct ndr_push *
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_drsuapi_DsGetMembershipsCtr1(ndr, NDR_SCALARS, &r->ctr1));
@@ -12542,6 +12601,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetMemberships2Ctr(struct ndr_pull *
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_drsuapi_DsGetMembershipsCtr1(ndr, NDR_SCALARS, &r->ctr1));
@@ -12691,6 +12751,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetMemberships2Request(struct ndr_pu
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_drsuapi_DsGetMemberships2Request1(ndr, NDR_SCALARS, &r->req1));
@@ -12724,6 +12785,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetMemberships2Request(struct ndr_pu
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_drsuapi_DsGetMemberships2Request1(ndr, NDR_SCALARS, &r->req1));
@@ -12885,6 +12947,7 @@ static enum ndr_err_code ndr_push_drsuapi_QuerySitesByCostCtr(struct ndr_push *n
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_drsuapi_QuerySitesByCostCtr1(ndr, NDR_SCALARS, &r->ctr1));
@@ -12918,6 +12981,7 @@ static enum ndr_err_code ndr_pull_drsuapi_QuerySitesByCostCtr(struct ndr_pull *n
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_drsuapi_QuerySitesByCostCtr1(ndr, NDR_SCALARS, &r->ctr1));
@@ -13112,6 +13176,7 @@ static enum ndr_err_code ndr_push_drsuapi_QuerySitesByCostRequest(struct ndr_pus
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_drsuapi_QuerySitesByCostRequest1(ndr, NDR_SCALARS, &r->req1));
@@ -13145,6 +13210,7 @@ static enum ndr_err_code ndr_pull_drsuapi_QuerySitesByCostRequest(struct ndr_pul
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_drsuapi_QuerySitesByCostRequest1(ndr, NDR_SCALARS, &r->req1));

@@ -198,6 +198,7 @@ static enum ndr_err_code ndr_push_ntlmssp_Version(struct ndr_push *ndr, int ndr_
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 2));
 		switch (level) {
 			case NTLMSSP_NEGOTIATE_VERSION: {
 				NDR_CHECK(ndr_push_VERSION(ndr, NDR_SCALARS, &r->version));
@@ -227,6 +228,7 @@ static enum ndr_err_code ndr_pull_ntlmssp_Version(struct ndr_pull *ndr, int ndr_
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 2));
 		switch (level) {
 			case NTLMSSP_NEGOTIATE_VERSION: {
 				NDR_CHECK(ndr_pull_VERSION(ndr, NDR_SCALARS, &r->version));
@@ -532,6 +534,7 @@ static enum ndr_err_code ndr_push_ntlmssp_AvValue(struct ndr_push *ndr, int ndr_
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 		if (ndr_flags & NDR_SCALARS) {
 			int level = ndr_push_get_switch_value(ndr, r);
+			NDR_CHECK(ndr_push_union_align(ndr, 4));
 			switch (level) {
 				case MsvAvEOL: {
 				break; }
@@ -671,6 +674,7 @@ static enum ndr_err_code ndr_pull_ntlmssp_AvValue(struct ndr_pull *ndr, int ndr_
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 		level = ndr_pull_get_switch_value(ndr, r);
 		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_pull_union_align(ndr, 4));
 			switch (level) {
 				case MsvAvEOL: {
 				break; }
@@ -1236,6 +1240,7 @@ static enum ndr_err_code ndr_push_ntlmssp_LM_RESPONSE(struct ndr_push *ndr, int 
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 1));
 		switch (level) {
 			case 24: {
 				NDR_CHECK(ndr_push_LM_RESPONSE(ndr, NDR_SCALARS, &r->v1));
@@ -1265,6 +1270,7 @@ static enum ndr_err_code ndr_pull_ntlmssp_LM_RESPONSE(struct ndr_pull *ndr, int 
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 1));
 		switch (level) {
 			case 24: {
 				NDR_CHECK(ndr_pull_LM_RESPONSE(ndr, NDR_SCALARS, &r->v1));
@@ -1499,6 +1505,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_ntlmssp_NTLM_RESPONSE(struct ndr_push *ndr, 
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
 			case 0: {
 			break; }
@@ -1536,6 +1543,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_ntlmssp_NTLM_RESPONSE(struct ndr_pull *ndr, 
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 4));
 		switch (level) {
 			case 0: {
 			break; }

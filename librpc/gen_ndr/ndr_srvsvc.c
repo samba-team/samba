@@ -341,6 +341,7 @@ static enum ndr_err_code ndr_push_srvsvc_NetCharDevInfo(struct ndr_push *ndr, in
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 0: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info0));
@@ -390,6 +391,7 @@ static enum ndr_err_code ndr_pull_srvsvc_NetCharDevInfo(struct ndr_pull *ndr, in
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 0: {
 				uint32_t _ptr_info0;
@@ -479,6 +481,7 @@ static enum ndr_err_code ndr_push_srvsvc_NetCharDevCtr(struct ndr_push *ndr, int
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 0: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->ctr0));
@@ -528,6 +531,7 @@ static enum ndr_err_code ndr_pull_srvsvc_NetCharDevCtr(struct ndr_pull *ndr, int
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 0: {
 				uint32_t _ptr_ctr0;
@@ -989,6 +993,7 @@ static enum ndr_err_code ndr_push_srvsvc_NetCharDevQInfo(struct ndr_push *ndr, i
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 0: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info0));
@@ -1038,6 +1043,7 @@ static enum ndr_err_code ndr_pull_srvsvc_NetCharDevQInfo(struct ndr_pull *ndr, i
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 0: {
 				uint32_t _ptr_info0;
@@ -1127,6 +1133,7 @@ static enum ndr_err_code ndr_push_srvsvc_NetCharDevQCtr(struct ndr_push *ndr, in
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 0: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->ctr0));
@@ -1176,6 +1183,7 @@ static enum ndr_err_code ndr_pull_srvsvc_NetCharDevQCtr(struct ndr_pull *ndr, in
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 0: {
 				uint32_t _ptr_ctr0;
@@ -1607,6 +1615,7 @@ static enum ndr_err_code ndr_push_srvsvc_NetConnCtr(struct ndr_push *ndr, int nd
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 0: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->ctr0));
@@ -1656,6 +1665,7 @@ static enum ndr_err_code ndr_pull_srvsvc_NetConnCtr(struct ndr_pull *ndr, int nd
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 0: {
 				uint32_t _ptr_ctr0;
@@ -2081,6 +2091,7 @@ static enum ndr_err_code ndr_push_srvsvc_NetFileInfo(struct ndr_push *ndr, int n
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 2: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info2));
@@ -2130,6 +2141,7 @@ static enum ndr_err_code ndr_pull_srvsvc_NetFileInfo(struct ndr_pull *ndr, int n
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 2: {
 				uint32_t _ptr_info2;
@@ -2219,6 +2231,7 @@ static enum ndr_err_code ndr_push_srvsvc_NetFileCtr(struct ndr_push *ndr, int nd
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 2: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->ctr2));
@@ -2268,6 +2281,7 @@ static enum ndr_err_code ndr_pull_srvsvc_NetFileCtr(struct ndr_pull *ndr, int nd
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 2: {
 				uint32_t _ptr_ctr2;
@@ -3398,6 +3412,7 @@ static enum ndr_err_code ndr_push_srvsvc_NetSessCtr(struct ndr_push *ndr, int nd
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 0: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->ctr0));
@@ -3480,6 +3495,7 @@ static enum ndr_err_code ndr_pull_srvsvc_NetSessCtr(struct ndr_pull *ndr, int nd
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 0: {
 				uint32_t _ptr_ctr0;
@@ -5397,6 +5413,7 @@ static enum ndr_err_code ndr_push_srvsvc_NetShareInfo(struct ndr_push *ndr, int 
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 0: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info0));
@@ -5534,6 +5551,7 @@ static enum ndr_err_code ndr_pull_srvsvc_NetShareInfo(struct ndr_pull *ndr, int 
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 0: {
 				uint32_t _ptr_info0;
@@ -5847,6 +5865,7 @@ static enum ndr_err_code ndr_push_srvsvc_NetShareCtr(struct ndr_push *ndr, int n
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 0: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->ctr0));
@@ -5984,6 +6003,7 @@ static enum ndr_err_code ndr_pull_srvsvc_NetShareCtr(struct ndr_pull *ndr, int n
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 0: {
 				uint32_t _ptr_ctr0;
@@ -9192,6 +9212,7 @@ static enum ndr_err_code ndr_push_srvsvc_NetSrvInfo(struct ndr_push *ndr, int nd
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 100: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info100));
@@ -9868,6 +9889,7 @@ static enum ndr_err_code ndr_pull_srvsvc_NetSrvInfo(struct ndr_pull *ndr, int nd
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 100: {
 				uint32_t _ptr_info100;
@@ -12727,6 +12749,7 @@ static enum ndr_err_code ndr_push_srvsvc_NetTransportCtr(struct ndr_push *ndr, i
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 0: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->ctr0));
@@ -12798,6 +12821,7 @@ static enum ndr_err_code ndr_pull_srvsvc_NetTransportCtr(struct ndr_pull *ndr, i
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 0: {
 				uint32_t _ptr_ctr0;
@@ -13044,6 +13068,7 @@ static enum ndr_err_code ndr_push_srvsvc_NetTransportInfo(struct ndr_push *ndr, 
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 0: {
 				NDR_CHECK(ndr_push_srvsvc_NetTransportInfo0(ndr, NDR_SCALARS, &r->info0));
@@ -13101,6 +13126,7 @@ static enum ndr_err_code ndr_pull_srvsvc_NetTransportInfo(struct ndr_pull *ndr, 
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 0: {
 				NDR_CHECK(ndr_pull_srvsvc_NetTransportInfo0(ndr, NDR_SCALARS, &r->info0));

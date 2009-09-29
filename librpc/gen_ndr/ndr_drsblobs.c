@@ -113,6 +113,7 @@ static enum ndr_err_code ndr_push_replPropertyMetaDataCtr(struct ndr_push *ndr, 
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 8));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_replPropertyMetaDataCtr1(ndr, NDR_SCALARS, &r->ctr1));
@@ -140,6 +141,7 @@ static enum ndr_err_code ndr_pull_replPropertyMetaDataCtr(struct ndr_pull *ndr, 
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 8));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_replPropertyMetaDataCtr1(ndr, NDR_SCALARS, &r->ctr1));
@@ -333,6 +335,7 @@ static enum ndr_err_code ndr_push_replUpToDateVectorCtr(struct ndr_push *ndr, in
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 8));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_replUpToDateVectorCtr1(ndr, NDR_SCALARS, &r->ctr1));
@@ -367,6 +370,7 @@ static enum ndr_err_code ndr_pull_replUpToDateVectorCtr(struct ndr_pull *ndr, in
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 8));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_replUpToDateVectorCtr1(ndr, NDR_SCALARS, &r->ctr1));
@@ -881,6 +885,7 @@ static enum ndr_err_code ndr_push_repsFromTo(struct ndr_push *ndr, int ndr_flags
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 8));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_repsFromTo1(ndr, NDR_SCALARS, &r->ctr1));
@@ -917,6 +922,7 @@ static enum ndr_err_code ndr_pull_repsFromTo(struct ndr_pull *ndr, int ndr_flags
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 8));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_repsFromTo1(ndr, NDR_SCALARS, &r->ctr1));
@@ -1065,6 +1071,7 @@ static enum ndr_err_code ndr_push_partialAttributeSetCtr(struct ndr_push *ndr, i
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_partialAttributeSetCtr1(ndr, NDR_SCALARS, &r->ctr1));
@@ -1092,6 +1099,7 @@ static enum ndr_err_code ndr_pull_partialAttributeSetCtr(struct ndr_pull *ndr, i
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 4));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_partialAttributeSetCtr1(ndr, NDR_SCALARS, &r->ctr1));
@@ -1195,6 +1203,7 @@ static enum ndr_err_code ndr_push_prefixMapCtr(struct ndr_push *ndr, int ndr_fla
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case PREFIX_MAP_VERSION_DSDB: {
 				NDR_CHECK(ndr_push_drsuapi_DsReplicaOIDMapping_Ctr(ndr, NDR_SCALARS, &r->dsdb));
@@ -1223,6 +1232,7 @@ static enum ndr_err_code ndr_pull_prefixMapCtr(struct ndr_pull *ndr, int ndr_fla
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case PREFIX_MAP_VERSION_DSDB: {
 				NDR_CHECK(ndr_pull_drsuapi_DsReplicaOIDMapping_Ctr(ndr, NDR_SCALARS, &r->dsdb));
@@ -1305,6 +1315,7 @@ static enum ndr_err_code ndr_push_ldapControlDirSyncExtra(struct ndr_push *ndr, 
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 8));
 		switch (level) {
 			case 0: {
 			break; }
@@ -1334,6 +1345,7 @@ static enum ndr_err_code ndr_pull_ldapControlDirSyncExtra(struct ndr_pull *ndr, 
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 8));
 		switch (level) {
 			case 0: {
 			break; }
@@ -2318,6 +2330,7 @@ static enum ndr_err_code ndr_push_package_PrimaryKerberosCtr(struct ndr_push *nd
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 3: {
 				NDR_CHECK(ndr_push_package_PrimaryKerberosCtr3(ndr, NDR_SCALARS, &r->ctr3));
@@ -2354,6 +2367,7 @@ static enum ndr_err_code ndr_pull_package_PrimaryKerberosCtr(struct ndr_pull *nd
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 3: {
 				NDR_CHECK(ndr_pull_package_PrimaryKerberosCtr3(ndr, NDR_SCALARS, &r->ctr3));
@@ -2729,6 +2743,7 @@ static enum ndr_err_code ndr_push_AuthInfo(struct ndr_push *ndr, int ndr_flags, 
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
 			case TRUST_AUTH_TYPE_NONE: {
 				NDR_CHECK(ndr_push_AuthInfoNone(ndr, NDR_SCALARS, &r->none));
@@ -2777,6 +2792,7 @@ static enum ndr_err_code ndr_pull_AuthInfo(struct ndr_pull *ndr, int ndr_flags, 
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 4));
 		switch (level) {
 			case TRUST_AUTH_TYPE_NONE: {
 				NDR_CHECK(ndr_pull_AuthInfoNone(ndr, NDR_SCALARS, &r->none));
@@ -3274,6 +3290,7 @@ static enum ndr_err_code ndr_push_ExtendedErrorComputerNameU(struct ndr_push *nd
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_ExtendedErrorComputerNamePresent(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case EXTENDED_ERROR_COMPUTER_NAME_PRESENT: {
 				NDR_CHECK(ndr_push_ExtendedErrorUString(ndr, NDR_SCALARS, &r->name));
@@ -3313,6 +3330,7 @@ static enum ndr_err_code ndr_pull_ExtendedErrorComputerNameU(struct ndr_pull *nd
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case EXTENDED_ERROR_COMPUTER_NAME_PRESENT: {
 				NDR_CHECK(ndr_pull_ExtendedErrorUString(ndr, NDR_SCALARS, &r->name));
@@ -3432,6 +3450,7 @@ static enum ndr_err_code ndr_push_ExtendedErrorParamU(struct ndr_push *ndr, int 
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_ExtendedErrorParamType(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 8));
 		switch (level) {
 			case EXTENDED_ERROR_PARAM_TYPE_ASCII_STRING: {
 				NDR_CHECK(ndr_push_ExtendedErrorAString(ndr, NDR_SCALARS, &r->a_string));
@@ -3508,6 +3527,7 @@ static enum ndr_err_code ndr_pull_ExtendedErrorParamU(struct ndr_pull *ndr, int 
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 8));
 		switch (level) {
 			case EXTENDED_ERROR_PARAM_TYPE_ASCII_STRING: {
 				NDR_CHECK(ndr_pull_ExtendedErrorAString(ndr, NDR_SCALARS, &r->a_string));

@@ -2709,6 +2709,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrinterInfo(struct ndr_push *ndr, in
 	uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset(ndr);
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 0: {
 				NDR_CHECK(ndr_push_align(ndr, 5));
@@ -2833,6 +2834,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrinterInfo(struct ndr_pull *ndr, in
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 0: {
 				NDR_CHECK(ndr_pull_align(ndr, 5));
@@ -4732,6 +4734,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_JobInfo(struct ndr_push *ndr, int nd
 	uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset(ndr);
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_align(ndr, 5));
@@ -4796,6 +4799,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_JobInfo(struct ndr_pull *ndr, int nd
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_align(ndr, 5));
@@ -5941,6 +5945,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_SetJobInfo(struct ndr_push *ndr, int
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1));
@@ -6012,6 +6017,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_SetJobInfo(struct ndr_pull *ndr, int
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				uint32_t _ptr_info1;
@@ -7364,6 +7370,7 @@ static enum ndr_err_code ndr_push_spoolss_SetPrinterInfo(struct ndr_push *ndr, i
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 0: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info0));
@@ -7501,6 +7508,7 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo(struct ndr_pull *ndr, i
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 0: {
 				uint32_t _ptr_info0;
@@ -10002,6 +10010,7 @@ static enum ndr_err_code ndr_push_spoolss_AddDriverInfo(struct ndr_push *ndr, in
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1));
@@ -10093,6 +10102,7 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo(struct ndr_pull *ndr, in
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				uint32_t _ptr_info1;
@@ -13948,6 +13958,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_DriverInfo(struct ndr_push *ndr, int
 	uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset(ndr);
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 8));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_align(ndr, 5));
@@ -14053,6 +14064,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_DriverInfo(struct ndr_pull *ndr, int
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 8));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_align(ndr, 5));
@@ -14250,6 +14262,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_DriverDirectoryInfo(struct ndr_push 
 	uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset(ndr);
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_align(ndr, 4));
@@ -14287,6 +14300,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_DriverDirectoryInfo(struct ndr_pull 
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 4));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -14426,6 +14440,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrintProcessorInfo(struct ndr_push *
 	uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset(ndr);
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_align(ndr, 5));
@@ -14461,6 +14476,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrintProcessorInfo(struct ndr_pull *
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_align(ndr, 5));
@@ -14555,6 +14571,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrintProcessorDirectoryInfo(struct n
 	uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset(ndr);
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_align(ndr, 4));
@@ -14592,6 +14609,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrintProcessorDirectoryInfo(struct n
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 4));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -14775,6 +14793,7 @@ static enum ndr_err_code ndr_push_spoolss_DocumentInfo(struct ndr_push *ndr, int
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1));
@@ -14825,6 +14844,7 @@ static enum ndr_err_code ndr_pull_spoolss_DocumentInfo(struct ndr_pull *ndr, int
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				uint32_t _ptr_info1;
@@ -15058,6 +15078,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrinterData(struct ndr_push *ndr, in
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
 			case REG_NONE: {
 			break; }
@@ -15135,6 +15156,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrinterData(struct ndr_pull *ndr, in
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 4));
 		switch (level) {
 			case REG_NONE: {
 			break; }
@@ -15711,6 +15733,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_FormInfo(struct ndr_push *ndr, int n
 	uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset(ndr);
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_align(ndr, 5));
@@ -15756,6 +15779,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_FormInfo(struct ndr_pull *ndr, int n
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_align(ndr, 5));
@@ -16070,6 +16094,7 @@ static enum ndr_err_code ndr_push_spoolss_AddFormInfo(struct ndr_push *ndr, int 
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1));
@@ -16117,6 +16142,7 @@ static enum ndr_err_code ndr_pull_spoolss_AddFormInfo(struct ndr_pull *ndr, int 
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				uint32_t _ptr_info1;
@@ -16733,6 +16759,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_PortInfo(struct ndr_push *ndr, int n
 	uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset(ndr);
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_align(ndr, 5));
@@ -16798,6 +16825,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PortInfo(struct ndr_pull *ndr, int n
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_align(ndr, 5));
@@ -17153,6 +17181,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_MonitorInfo(struct ndr_push *ndr, in
 	uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset(ndr);
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_align(ndr, 5));
@@ -17198,6 +17227,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_MonitorInfo(struct ndr_pull *ndr, in
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_align(ndr, 5));
@@ -17343,6 +17373,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrintProcDataTypesInfo(struct ndr_pu
 	uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset(ndr);
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_align(ndr, 5));
@@ -17378,6 +17409,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrintProcDataTypesInfo(struct ndr_pu
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_align(ndr, 5));
@@ -17591,6 +17623,7 @@ static enum ndr_err_code ndr_push_spoolss_Field(struct ndr_push *ndr, int ndr_fl
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 2));
 		switch (level) {
 			case PRINTER_NOTIFY_TYPE: {
 				NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->field));
@@ -17628,6 +17661,7 @@ static enum ndr_err_code ndr_pull_spoolss_Field(struct ndr_pull *ndr, int ndr_fl
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 2));
 		switch (level) {
 			case PRINTER_NOTIFY_TYPE: {
 				NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->field));
@@ -17960,6 +17994,7 @@ static enum ndr_err_code ndr_push_spoolss_NotifyData(struct ndr_push *ndr, int n
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				uint32_t cntr_integer_0;
@@ -18027,6 +18062,7 @@ static enum ndr_err_code ndr_pull_spoolss_NotifyData(struct ndr_pull *ndr, int n
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				uint32_t cntr_integer_0;
@@ -18253,6 +18289,7 @@ static enum ndr_err_code ndr_push_spoolss_ReplyPrinterInfo(struct ndr_push *ndr,
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 0: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info0));
@@ -18289,6 +18326,7 @@ static enum ndr_err_code ndr_pull_spoolss_ReplyPrinterInfo(struct ndr_pull *ndr,
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 0: {
 				uint32_t _ptr_info0;
@@ -18626,6 +18664,7 @@ static enum ndr_err_code ndr_push_spoolss_UserLevel(struct ndr_push *ndr, int nd
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->level1));
@@ -18684,6 +18723,7 @@ static enum ndr_err_code ndr_pull_spoolss_UserLevel(struct ndr_pull *ndr, int nd
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				uint32_t _ptr_level1;

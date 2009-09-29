@@ -923,6 +923,7 @@ static enum ndr_err_code ndr_push_samr_DomainInfo(struct ndr_push *ndr, int ndr_
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 8));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_samr_DomInfo1(ndr, NDR_SCALARS, &r->info1));
@@ -1037,6 +1038,7 @@ static enum ndr_err_code ndr_pull_samr_DomainInfo(struct ndr_pull *ndr, int ndr_
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 8));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_samr_DomInfo1(ndr, NDR_SCALARS, &r->info1));
@@ -1416,6 +1418,7 @@ static enum ndr_err_code ndr_push_samr_GroupInfo(struct ndr_push *ndr, int ndr_f
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_samr_GroupInfoEnum(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case GROUPINFOALL: {
 				NDR_CHECK(ndr_push_samr_GroupInfoAll(ndr, NDR_SCALARS, &r->all));
@@ -1480,6 +1483,7 @@ static enum ndr_err_code ndr_pull_samr_GroupInfo(struct ndr_pull *ndr, int ndr_f
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case GROUPINFOALL: {
 				NDR_CHECK(ndr_pull_samr_GroupInfoAll(ndr, NDR_SCALARS, &r->all));
@@ -1765,6 +1769,7 @@ static enum ndr_err_code ndr_push_samr_AliasInfo(struct ndr_push *ndr, int ndr_f
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_samr_AliasInfoEnum(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case ALIASINFOALL: {
 				NDR_CHECK(ndr_push_samr_AliasInfoAll(ndr, NDR_SCALARS, &r->all));
@@ -1814,6 +1819,7 @@ static enum ndr_err_code ndr_pull_samr_AliasInfo(struct ndr_pull *ndr, int ndr_f
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case ALIASINFOALL: {
 				NDR_CHECK(ndr_pull_samr_AliasInfoAll(ndr, NDR_SCALARS, &r->all));
@@ -3267,6 +3273,7 @@ static enum ndr_err_code ndr_push_samr_UserInfo(struct ndr_push *ndr, int ndr_fl
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_samr_UserInfo1(ndr, NDR_SCALARS, &r->info1));
@@ -3470,6 +3477,7 @@ static enum ndr_err_code ndr_pull_samr_UserInfo(struct ndr_pull *ndr, int ndr_fl
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_samr_UserInfo1(ndr, NDR_SCALARS, &r->info1));
@@ -4405,6 +4413,7 @@ static enum ndr_err_code ndr_push_samr_DispInfo(struct ndr_push *ndr, int ndr_fl
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_samr_DispInfoGeneral(ndr, NDR_SCALARS, &r->info1));
@@ -4470,6 +4479,7 @@ static enum ndr_err_code ndr_pull_samr_DispInfo(struct ndr_pull *ndr, int ndr_fl
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_samr_DispInfoGeneral(ndr, NDR_SCALARS, &r->info1));
@@ -4688,6 +4698,7 @@ static enum ndr_err_code ndr_push_samr_ConnectInfo(struct ndr_push *ndr, int ndr
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_samr_ConnectInfo1(ndr, NDR_SCALARS, &r->info1));
@@ -4720,6 +4731,7 @@ static enum ndr_err_code ndr_pull_samr_ConnectInfo(struct ndr_pull *ndr, int ndr
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 4));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_samr_ConnectInfo1(ndr, NDR_SCALARS, &r->info1));
@@ -5044,6 +5056,7 @@ static enum ndr_err_code ndr_push_samr_ValidatePasswordRep(struct ndr_push *ndr,
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 8));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_samr_ValidatePasswordRepCtr(ndr, NDR_SCALARS, &r->ctr1));
@@ -5093,6 +5106,7 @@ static enum ndr_err_code ndr_pull_samr_ValidatePasswordRep(struct ndr_pull *ndr,
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 8));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_samr_ValidatePasswordRepCtr(ndr, NDR_SCALARS, &r->ctr1));
@@ -5297,6 +5311,7 @@ static enum ndr_err_code ndr_push_samr_ValidatePasswordReq(struct ndr_push *ndr,
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 8));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_samr_ValidatePasswordReq1(ndr, NDR_SCALARS, &r->req1));
@@ -5346,6 +5361,7 @@ static enum ndr_err_code ndr_pull_samr_ValidatePasswordReq(struct ndr_pull *ndr,
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 8));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_samr_ValidatePasswordReq1(ndr, NDR_SCALARS, &r->req1));

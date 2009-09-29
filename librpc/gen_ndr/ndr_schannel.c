@@ -171,6 +171,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_NL_AUTH_MESSAGE_BUFFER(struct ndr_push *ndr,
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
 			case NL_FLAG_OEM_NETBIOS_DOMAIN_NAME: {
 				{
@@ -238,6 +239,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_NL_AUTH_MESSAGE_BUFFER(struct ndr_pull *ndr,
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 4));
 		switch (level) {
 			case NL_FLAG_OEM_NETBIOS_DOMAIN_NAME: {
 				{
@@ -303,6 +305,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_NL_AUTH_MESSAGE_BUFFER_REPLY(struct ndr_push
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
 			case NL_NEGOTIATE_RESPONSE: {
 				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->dummy));
@@ -332,6 +335,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_NL_AUTH_MESSAGE_BUFFER_REPLY(struct ndr_pull
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 4));
 		switch (level) {
 			case NL_NEGOTIATE_RESPONSE: {
 				NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->dummy));

@@ -92,6 +92,7 @@ static enum ndr_err_code ndr_push_security_ace_object_type(struct ndr_push *ndr,
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
 			case SEC_ACE_OBJECT_TYPE_PRESENT: {
 				NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->type));
@@ -121,6 +122,7 @@ static enum ndr_err_code ndr_pull_security_ace_object_type(struct ndr_pull *ndr,
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 4));
 		switch (level) {
 			case SEC_ACE_OBJECT_TYPE_PRESENT: {
 				NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->type));
@@ -164,6 +166,7 @@ static enum ndr_err_code ndr_push_security_ace_object_inherited_type(struct ndr_
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
 			case SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT: {
 				NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->inherited_type));
@@ -193,6 +196,7 @@ static enum ndr_err_code ndr_pull_security_ace_object_inherited_type(struct ndr_
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 4));
 		switch (level) {
 			case SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT: {
 				NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->inherited_type));
@@ -282,6 +286,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_security_ace_object_ctr(struct ndr_push *ndr
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
 			case SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT: {
 				NDR_CHECK(ndr_push_security_ace_object(ndr, NDR_SCALARS, &r->object));
@@ -336,6 +341,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_ace_object_ctr(struct ndr_pull *ndr
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 4));
 		switch (level) {
 			case SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT: {
 				NDR_CHECK(ndr_pull_security_ace_object(ndr, NDR_SCALARS, &r->object));

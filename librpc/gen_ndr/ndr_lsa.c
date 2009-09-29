@@ -1496,6 +1496,7 @@ static enum ndr_err_code ndr_push_lsa_PolicyInformation(struct ndr_push *ndr, in
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 8));
 		switch (level) {
 			case LSA_POLICY_INFO_AUDIT_LOG: {
 				NDR_CHECK(ndr_push_lsa_AuditLogInfo(ndr, NDR_SCALARS, &r->audit_log));
@@ -1627,6 +1628,7 @@ static enum ndr_err_code ndr_pull_lsa_PolicyInformation(struct ndr_pull *ndr, in
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 8));
 		switch (level) {
 			case LSA_POLICY_INFO_AUDIT_LOG: {
 				NDR_CHECK(ndr_pull_lsa_AuditLogInfo(ndr, NDR_SCALARS, &r->audit_log));
@@ -3613,6 +3615,7 @@ static enum ndr_err_code ndr_push_lsa_TrustedDomainInfo(struct ndr_push *ndr, in
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_lsa_TrustDomInfoEnum(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case LSA_TRUSTED_DOMAIN_INFO_NAME: {
 				NDR_CHECK(ndr_push_lsa_TrustDomainInfoName(ndr, NDR_SCALARS, &r->name));
@@ -3740,6 +3743,7 @@ static enum ndr_err_code ndr_pull_lsa_TrustedDomainInfo(struct ndr_pull *ndr, in
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case LSA_TRUSTED_DOMAIN_INFO_NAME: {
 				NDR_CHECK(ndr_pull_lsa_TrustDomainInfoName(ndr, NDR_SCALARS, &r->name));
@@ -4255,6 +4259,7 @@ static enum ndr_err_code ndr_push_lsa_DomainInformationPolicy(struct ndr_push *n
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 8));
 		switch (level) {
 			case LSA_DOMAIN_INFO_POLICY_EFS: {
 				NDR_CHECK(ndr_push_lsa_DomainInfoEfs(ndr, NDR_SCALARS, &r->efs_info));
@@ -4295,6 +4300,7 @@ static enum ndr_err_code ndr_pull_lsa_DomainInformationPolicy(struct ndr_pull *n
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 8));
 		switch (level) {
 			case LSA_DOMAIN_INFO_POLICY_EFS: {
 				NDR_CHECK(ndr_pull_lsa_DomainInfoEfs(ndr, NDR_SCALARS, &r->efs_info));
@@ -4923,6 +4929,7 @@ static enum ndr_err_code ndr_push_lsa_ForestTrustData(struct ndr_push *ndr, int 
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case LSA_FOREST_TRUST_TOP_LEVEL_NAME: {
 				NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->top_level_name));
@@ -4976,6 +4983,7 @@ static enum ndr_err_code ndr_pull_lsa_ForestTrustData(struct ndr_pull *ndr, int 
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case LSA_FOREST_TRUST_TOP_LEVEL_NAME: {
 				NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->top_level_name));

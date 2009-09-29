@@ -500,6 +500,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_nbt_rdata(struct ndr_push *ndr, int ndr_flag
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
 			case NBT_QTYPE_NETBIOS: {
 				NDR_CHECK(ndr_push_nbt_rdata_netbios(ndr, NDR_SCALARS, &r->netbios));
@@ -537,6 +538,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_nbt_rdata(struct ndr_pull *ndr, int ndr_flag
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 4));
 		switch (level) {
 			case NBT_QTYPE_NETBIOS: {
 				NDR_CHECK(ndr_pull_nbt_rdata_netbios(ndr, NDR_SCALARS, &r->netbios));
@@ -998,6 +1000,7 @@ static enum ndr_err_code ndr_push_smb_body(struct ndr_push *ndr, int ndr_flags, 
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
 			case SMB_TRANSACTION: {
 				NDR_CHECK(ndr_push_smb_trans_body(ndr, NDR_SCALARS, &r->trans));
@@ -1025,6 +1028,7 @@ static enum ndr_err_code ndr_pull_smb_body(struct ndr_pull *ndr, int ndr_flags, 
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 4));
 		switch (level) {
 			case SMB_TRANSACTION: {
 				NDR_CHECK(ndr_pull_smb_trans_body(ndr, NDR_SCALARS, &r->trans));
@@ -1152,6 +1156,7 @@ static enum ndr_err_code ndr_push_dgram_message_body(struct ndr_push *ndr, int n
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
 			case DGRAM_SMB: {
 				NDR_CHECK(ndr_push_dgram_smb_packet(ndr, NDR_SCALARS, &r->smb));
@@ -1179,6 +1184,7 @@ static enum ndr_err_code ndr_pull_dgram_message_body(struct ndr_pull *ndr, int n
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 4));
 		switch (level) {
 			case DGRAM_SMB: {
 				NDR_CHECK(ndr_pull_dgram_smb_packet(ndr, NDR_SCALARS, &r->smb));
@@ -1293,6 +1299,7 @@ static enum ndr_err_code ndr_push_dgram_data(struct ndr_push *ndr, int ndr_flags
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
 			case DGRAM_DIRECT_UNIQUE: {
 				NDR_CHECK(ndr_push_dgram_message(ndr, NDR_SCALARS, &r->msg));
@@ -1362,6 +1369,7 @@ static enum ndr_err_code ndr_pull_dgram_data(struct ndr_pull *ndr, int ndr_flags
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 4));
 		switch (level) {
 			case DGRAM_DIRECT_UNIQUE: {
 				NDR_CHECK(ndr_pull_dgram_message(ndr, NDR_SCALARS, &r->msg));
@@ -2404,6 +2412,7 @@ static enum ndr_err_code ndr_push_nbt_netlogon_request(struct ndr_push *ndr, int
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 8));
 		switch (level) {
 			case LOGON_SAM_LOGON_REQUEST: {
 				NDR_CHECK(ndr_push_NETLOGON_SAM_LOGON_REQUEST(ndr, NDR_SCALARS, &r->logon));
@@ -2447,6 +2456,7 @@ static enum ndr_err_code ndr_pull_nbt_netlogon_request(struct ndr_pull *ndr, int
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 8));
 		switch (level) {
 			case LOGON_SAM_LOGON_REQUEST: {
 				NDR_CHECK(ndr_pull_NETLOGON_SAM_LOGON_REQUEST(ndr, NDR_SCALARS, &r->logon));
@@ -3087,6 +3097,7 @@ static enum ndr_err_code ndr_push_nbt_browse_payload(struct ndr_push *ndr, int n
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
 			case HostAnnouncement: {
 				NDR_CHECK(ndr_push_nbt_browse_host_announcement(ndr, NDR_SCALARS, &r->host_annoucement));
@@ -3177,6 +3188,7 @@ static enum ndr_err_code ndr_pull_nbt_browse_payload(struct ndr_pull *ndr, int n
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 4));
 		switch (level) {
 			case HostAnnouncement: {
 				NDR_CHECK(ndr_pull_nbt_browse_host_announcement(ndr, NDR_SCALARS, &r->host_annoucement));

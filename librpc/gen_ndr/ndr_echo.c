@@ -227,6 +227,7 @@ static enum ndr_err_code ndr_push_echo_Info(struct ndr_push *ndr, int ndr_flags,
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 8));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_echo_info1(ndr, NDR_SCALARS, &r->info1));
@@ -301,6 +302,7 @@ static enum ndr_err_code ndr_pull_echo_Info(struct ndr_pull *ndr, int ndr_flags,
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 8));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_echo_info1(ndr, NDR_SCALARS, &r->info1));
@@ -491,6 +493,7 @@ static enum ndr_err_code ndr_push_echo_Enum3(struct ndr_push *ndr, int ndr_flags
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
 			case ECHO_ENUM1: {
 				NDR_CHECK(ndr_push_echo_Enum1(ndr, NDR_SCALARS, r->e1));
@@ -530,6 +533,7 @@ static enum ndr_err_code ndr_pull_echo_Enum3(struct ndr_pull *ndr, int ndr_flags
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 4));
 		switch (level) {
 			case ECHO_ENUM1: {
 				NDR_CHECK(ndr_pull_echo_Enum1(ndr, NDR_SCALARS, &r->e1));

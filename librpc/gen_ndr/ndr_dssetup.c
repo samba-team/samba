@@ -364,6 +364,7 @@ static enum ndr_err_code ndr_push_dssetup_DsRoleInfo(struct ndr_push *ndr, int n
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_dssetup_DsRoleInfoLevel(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case DS_ROLE_BASIC_INFORMATION: {
 				NDR_CHECK(ndr_push_dssetup_DsRolePrimaryDomInfoBasic(ndr, NDR_SCALARS, &r->basic));
@@ -411,6 +412,7 @@ static enum ndr_err_code ndr_pull_dssetup_DsRoleInfo(struct ndr_pull *ndr, int n
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case DS_ROLE_BASIC_INFORMATION: {
 				NDR_CHECK(ndr_pull_dssetup_DsRolePrimaryDomInfoBasic(ndr, NDR_SCALARS, &r->basic));
