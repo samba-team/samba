@@ -437,7 +437,6 @@ ldb_resolve_oids_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/resolve_oids.o
 PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LIBSECURITY SAMDB
 SUBSYSTEM = LIBLDB
 INIT_FUNCTION = LDB_MODULE(acl)
-
 # End MODULE ldb_acl
 ################################################
 
@@ -454,3 +453,13 @@ INIT_FUNCTION = LDB_MODULE(lazy_commit)
 ################################################
 
 ldb_lazy_commit_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/lazy_commit.o
+
+# Start MODULE ldb_validate_update
+[MODULE::ldb_validate_update]
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LIBSECURITY SAMDB
+SUBSYSTEM = LIBLDB
+INIT_FUNCTION = LDB_MODULE(validate_update)
+# End MODULE ldb_validate_update
+################################################
+
+ldb_validate_update_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/validate_update.o
