@@ -96,7 +96,7 @@ parser.add_option("--server-role", type="choice", metavar="ROLE",
 		help="The server role (domain controller | dc | member server | member | standalone). Default is standalone.")
 parser.add_option("--function-level", type="choice", metavar="FOR-FUN-LEVEL",
 		  choices=["2003", "2008", "2008_R2"],
-		help="The domain and forest function level (2003 | 2008 | 2008_R2). Default is (Windows) 2008 (Native).")
+		help="The domain and forest function level (2003 | 2008 | 2008_R2). Default is (Windows) 2003 (Native).")
 parser.add_option("--partitions-only", 
 		help="Configure Samba's partitions, but do not modify them (ie, join a BDC)", action="store_true")
 parser.add_option("--targetdir", type="string", metavar="DIR", 
