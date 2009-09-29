@@ -802,6 +802,59 @@ static WERROR dsdb_syntax_DATA_BLOB_ldb_to_drsuapi(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
+static WERROR dsdb_syntax_DATA_BLOB_validate_one_val(struct ldb_context *ldb,
+						     const struct dsdb_schema *schema,
+						     const struct dsdb_attribute *attr,
+						     const struct ldb_val *val)
+{
+	if (attr->attributeID_id == 0xFFFFFFFF) {
+		return WERR_FOOBAR;
+	}
+
+	if (attr->rangeLower) {
+		if ((uint32_t)val->length < (uint32_t)*attr->rangeLower) {
+			return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+		}
+	}
+
+	if (attr->rangeUpper) {
+		if ((uint32_t)val->length > (uint32_t)*attr->rangeUpper) {
+			return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+		}
+	}
+
+	return WERR_OK;
+}
+
+static WERROR dsdb_syntax_DATA_BLOB_validate_ldb(struct ldb_context *ldb,
+						 const struct dsdb_schema *schema,
+						 const struct dsdb_attribute *attr,
+						 const struct ldb_message_element *in)
+{
+	uint32_t i;
+	WERROR status;
+
+	if (attr->attributeID_id == 0xFFFFFFFF) {
+		return WERR_FOOBAR;
+	}
+
+	for (i=0; i < in->num_values; i++) {
+		if (in->values[i].length == 0) {
+			return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+		}
+
+		status = dsdb_syntax_DATA_BLOB_validate_one_val(ldb,
+								schema,
+								attr,
+								&in->values[i]);
+		if (!W_ERROR_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	return WERR_OK;
+}
+
 static WERROR _dsdb_syntax_auto_OID_drsuapi_to_ldb(struct ldb_context *ldb,
 						   const struct dsdb_schema *schema,
 						   const struct dsdb_attribute *attr,
@@ -1852,7 +1905,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.10",
 		.drsuapi_to_ldb		= dsdb_syntax_DATA_BLOB_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_DATA_BLOB_ldb_to_drsuapi,
-		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
+		.validate_ldb		= dsdb_syntax_DATA_BLOB_validate_ldb,
 		.equality               = "octetStringMatch",
 		.comment                = "Octet String",
 	},{
@@ -1862,7 +1915,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.17",
 		.drsuapi_to_ldb		= dsdb_syntax_DATA_BLOB_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_DATA_BLOB_ldb_to_drsuapi,
-		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
+		.validate_ldb		= dsdb_syntax_DATA_BLOB_validate_ldb,
 		.equality               = "octetStringMatch",
 		.comment                = "Octet String - Security Identifier (SID)",
 		.ldb_syntax             = LDB_SYNTAX_SAMBA_SID
@@ -1894,7 +1947,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.6",
 		.drsuapi_to_ldb		= dsdb_syntax_DATA_BLOB_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_DATA_BLOB_ldb_to_drsuapi,
-		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
+		.validate_ldb		= dsdb_syntax_DATA_BLOB_validate_ldb,
 		.equality               = "numericStringMatch",
 		.substring              = "numericStringSubstringsMatch",
 		.comment                = "Numeric String",
@@ -1906,7 +1959,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.5",
 		.drsuapi_to_ldb		= dsdb_syntax_DATA_BLOB_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_DATA_BLOB_ldb_to_drsuapi,
-		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
+		.validate_ldb		= dsdb_syntax_DATA_BLOB_validate_ldb,
 		.ldb_syntax		= LDB_SYNTAX_OCTET_STRING,
 	},{
 		.name			= "String(Teletex)",
@@ -1915,7 +1968,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.4",
 		.drsuapi_to_ldb		= dsdb_syntax_DATA_BLOB_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_DATA_BLOB_ldb_to_drsuapi,
-		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
+		.validate_ldb		= dsdb_syntax_DATA_BLOB_validate_ldb,
 		.equality               = "caseIgnoreMatch",
 		.substring              = "caseIgnoreSubstringsMatch",
 		.comment                = "Case Insensitive String",
@@ -1927,7 +1980,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.5",
 		.drsuapi_to_ldb		= dsdb_syntax_DATA_BLOB_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_DATA_BLOB_ldb_to_drsuapi,
-		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
+		.validate_ldb		= dsdb_syntax_DATA_BLOB_validate_ldb,
 		.equality               = "caseExactIA5Match",
 		.comment                = "Printable String",
 		.ldb_syntax		= LDB_SYNTAX_OCTET_STRING,
@@ -1990,7 +2043,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.15",
 		.drsuapi_to_ldb		= dsdb_syntax_DATA_BLOB_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_DATA_BLOB_ldb_to_drsuapi,
-		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
+		.validate_ldb		= dsdb_syntax_DATA_BLOB_validate_ldb,
 	},{
 		.name			= "Object(DS-DN)",
 		.ldap_oid		= LDB_SYNTAX_DN,
@@ -2039,7 +2092,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.10",
 		.drsuapi_to_ldb		= dsdb_syntax_DATA_BLOB_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_DATA_BLOB_ldb_to_drsuapi,
-		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
+		.validate_ldb		= dsdb_syntax_DATA_BLOB_validate_ldb,
 	},{
 		.name			= "Object(Presentation-Address)",
 		.ldap_oid		= "1.3.6.1.4.1.1466.115.121.1.43",
