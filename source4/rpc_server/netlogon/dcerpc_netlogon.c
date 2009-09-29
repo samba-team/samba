@@ -91,9 +91,38 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 
 	const char *trust_dom_attrs[] = {"flatname", NULL};
 	const char *account_name;
+	uint32_t negotiate_flags = 0;
 
 	ZERO_STRUCTP(r->out.return_credentials);
 	*r->out.rid = 0;
+
+	negotiate_flags = NETLOGON_NEG_ACCOUNT_LOCKOUT |
+			  NETLOGON_NEG_PERSISTENT_SAMREPL |
+			  NETLOGON_NEG_ARCFOUR |
+			  NETLOGON_NEG_PROMOTION_COUNT |
+			  NETLOGON_NEG_CHANGELOG_BDC |
+			  NETLOGON_NEG_FULL_SYNC_REPL |
+			  NETLOGON_NEG_MULTIPLE_SIDS |
+			  NETLOGON_NEG_REDO |
+			  NETLOGON_NEG_PASSWORD_CHANGE_REFUSAL |
+			  NETLOGON_NEG_SEND_PASSWORD_INFO_PDC |
+			  NETLOGON_NEG_GENERIC_PASSTHROUGH |
+			  NETLOGON_NEG_CONCURRENT_RPC |
+			  NETLOGON_NEG_AVOID_ACCOUNT_DB_REPL |
+			  NETLOGON_NEG_AVOID_SECURITYAUTH_DB_REPL |
+			  NETLOGON_NEG_TRANSITIVE_TRUSTS |
+			  NETLOGON_NEG_DNS_DOMAIN_TRUSTS |
+			  NETLOGON_NEG_PASSWORD_SET2 |
+			  NETLOGON_NEG_GETDOMAININFO |
+			  NETLOGON_NEG_CROSS_FOREST_TRUSTS |
+			  NETLOGON_NEG_NEUTRALIZE_NT4_EMULATION |
+			  NETLOGON_NEG_RODC_PASSTHROUGH |
+			  NETLOGON_NEG_AUTHENTICATED_RPC_LSASS |
+			  NETLOGON_NEG_AUTHENTICATED_RPC;
+
+	if (*r->in.negotiate_flags & NETLOGON_NEG_STRONG_KEYS) {
+		negotiate_flags |= NETLOGON_NEG_STRONG_KEYS;
+	}
 
 	/*
 	 * According to Microsoft (see bugid #6099)
@@ -101,30 +130,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 	 * returned in this structure *even if the
 	 * call fails with access denied!
 	 */
-	*r->out.negotiate_flags = NETLOGON_NEG_ACCOUNT_LOCKOUT |
-				  NETLOGON_NEG_PERSISTENT_SAMREPL |
-				  NETLOGON_NEG_ARCFOUR |
-				  NETLOGON_NEG_PROMOTION_COUNT |
-				  NETLOGON_NEG_CHANGELOG_BDC |
-				  NETLOGON_NEG_FULL_SYNC_REPL |
-				  NETLOGON_NEG_MULTIPLE_SIDS |
-				  NETLOGON_NEG_REDO |
-				  NETLOGON_NEG_PASSWORD_CHANGE_REFUSAL |
-				  NETLOGON_NEG_SEND_PASSWORD_INFO_PDC |
-				  NETLOGON_NEG_GENERIC_PASSTHROUGH |
-				  NETLOGON_NEG_CONCURRENT_RPC |
-				  NETLOGON_NEG_AVOID_ACCOUNT_DB_REPL |
-				  NETLOGON_NEG_AVOID_SECURITYAUTH_DB_REPL |
-				  NETLOGON_NEG_STRONG_KEYS |
-				  NETLOGON_NEG_TRANSITIVE_TRUSTS |
-				  NETLOGON_NEG_DNS_DOMAIN_TRUSTS |
-				  NETLOGON_NEG_PASSWORD_SET2 |
-				  NETLOGON_NEG_GETDOMAININFO |
-				  NETLOGON_NEG_CROSS_FOREST_TRUSTS |
-				  NETLOGON_NEG_NEUTRALIZE_NT4_EMULATION |
-				  NETLOGON_NEG_RODC_PASSTHROUGH |
-				  NETLOGON_NEG_AUTHENTICATED_RPC_LSASS |
-				  NETLOGON_NEG_AUTHENTICATED_RPC;
+	*r->out.negotiate_flags = negotiate_flags;
 
 	switch (r->in.secure_channel_type) {
 	case SEC_CHAN_WKSTA:
@@ -261,8 +267,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 					   mach_pwd,
 					   r->in.credentials,
 					   r->out.return_credentials,
-					   *r->in.negotiate_flags);
-
+					   negotiate_flags);
 	if (!creds) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
