@@ -1293,7 +1293,7 @@ static bool test_notify_overflow(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	union smb_notify notify;
 	union smb_open io;
-	int fnum, fnum2;
+	int fnum;
 	int count = 100;
 	struct smbcli_request *req1;
 	int i;
@@ -1371,10 +1371,8 @@ static bool test_notify_basedir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	union smb_notify notify;
 	union smb_open io;
-	int fnum, fnum2;
-	int count = 100;
+	int fnum;
 	struct smbcli_request *req1;
-	int i;
 
 	printf("TESTING CHANGE NOTIFY BASEDIR EVENTS\n");
 

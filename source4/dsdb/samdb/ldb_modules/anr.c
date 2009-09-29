@@ -67,8 +67,10 @@ static struct ldb_parse_tree *make_parse_list(struct ldb_module *module,
  * Make an equality or prefix match tree, from the attribute, operation and matching value supplied
  */
 static struct ldb_parse_tree *make_match_tree(struct ldb_module *module,
-				       TALLOC_CTX *mem_ctx, enum ldb_parse_op op, 
-				       const char *attr, const DATA_BLOB *match)
+					      TALLOC_CTX *mem_ctx,
+					      enum ldb_parse_op op,
+					      const char *attr,
+					      struct ldb_val *match)
 {
 	struct ldb_context *ldb;
 	struct ldb_parse_tree *match_tree;
@@ -123,7 +125,7 @@ struct anr_context {
  */
 static int anr_replace_value(struct anr_context *ac,
 			     TALLOC_CTX *mem_ctx,
-			     const struct ldb_val *match,
+			     struct ldb_val *match,
 			     struct ldb_parse_tree **ntree)
 {
 	struct ldb_parse_tree *tree = NULL;
@@ -146,7 +148,7 @@ static int anr_replace_value(struct anr_context *ac,
 	ac->found_anr = true;
 
 	if (match->length > 1 && match->data[0] == '=') {
-		DATA_BLOB *match2 = talloc(mem_ctx, DATA_BLOB);
+		struct ldb_val *match2 = talloc(mem_ctx, struct ldb_val);
 		*match2 = data_blob_const(match->data+1, match->length - 1);
 		if (match2 == NULL){
 			ldb_oom(ldb);
@@ -181,8 +183,8 @@ static int anr_replace_value(struct anr_context *ac,
 
 	if (p) {
 		struct ldb_parse_tree *first_split_filter, *second_split_filter, *split_filters, *match_tree_1, *match_tree_2;
-		DATA_BLOB *first_match = talloc(tree, DATA_BLOB);
-		DATA_BLOB *second_match = talloc(tree, DATA_BLOB);
+		struct ldb_val *first_match = talloc(tree, struct ldb_val);
+		struct ldb_val *second_match = talloc(tree, struct ldb_val);
 		if (!first_match || !second_match) {
 			ldb_oom(ldb);
 			return LDB_ERR_OPERATIONS_ERROR;

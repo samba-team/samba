@@ -28,7 +28,7 @@
 #include "../lib/crypto/crypto.h"
 #include "system/time.h"
 #include "torture/rpc/rpc.h"
-#include "auth/gensec/schannel_proto.h"
+#include "../libcli/auth/schannel.h"
 #include "auth/gensec/gensec.h"
 #include "libcli/auth/libcli_auth.h"
 #include "libcli/samsync/samsync.h"

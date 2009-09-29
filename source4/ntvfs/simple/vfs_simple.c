@@ -70,9 +70,9 @@ static NTSTATUS svfs_connect(struct ntvfs_module_context *ntvfs,
 	}
 
 	if (strncmp(sharename, "\\\\", 2) == 0) {
-		char *p = strchr(sharename+2, '\\');
-		if (p) {
-			sharename = p + 1;
+		char *p2 = strchr(sharename+2, '\\');
+		if (p2) {
+			sharename = p2 + 1;
 		}
 	}
 

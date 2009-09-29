@@ -27,7 +27,7 @@
 #include "smbd/service_task.h"
 #include "libnet/libnet_proto.h"
 #include "param/param.h"
-#include "libcli/security/proto.h"
+#include "libcli/security/security.h"
 #include "auth/credentials/credentials.h"
 
 struct cmd_getgrgid_state {

@@ -264,9 +264,9 @@ static int do_cd(struct smbclient_context *ctx, const char *newdir)
 	/* Save the current directory in case the
 	   new directory is invalid */
 	if (newdir[0] == '\\')
-		dname = talloc_strdup(NULL, newdir);
+		dname = talloc_strdup(ctx, newdir);
 	else
-		dname = talloc_asprintf(NULL, "%s\\%s", ctx->remote_cur_dir, newdir);
+		dname = talloc_asprintf(ctx, "%s\\%s", ctx->remote_cur_dir, newdir);
 
 	dos_format(dname);
 
@@ -685,7 +685,7 @@ static int cmd_du(struct smbclient_context *ctx, const char **args)
 /****************************************************************************
   get a file from rname to lname
   ****************************************************************************/
-static int do_get(struct smbclient_context *ctx, char *rname, const char *lname, bool reget)
+static int do_get(struct smbclient_context *ctx, char *rname, const char *p_lname, bool reget)
 {  
 	int handle = 0, fnum;
 	bool newhandle = false;
@@ -697,11 +697,14 @@ static int do_get(struct smbclient_context *ctx, char *rname, const char *lname,
 	off_t start = 0;
 	off_t nread = 0;
 	int rc = 0;
+	char *lname;
 
+
+	lname = talloc_strdup(ctx, p_lname);
 	GetTimeOfDay(&tp_start);
 
 	if (ctx->lowercase) {
-		strlower(discard_const_p(char, lname));
+		strlower(lname);
 	}
 
 	fnum = smbcli_open(ctx->cli->tree, rname, O_RDONLY, DENY_NONE);
@@ -858,6 +861,7 @@ static void do_mget(struct smbclient_context *ctx, struct clilist_file_info *fin
 	char *quest;
 	char *mget_mask;
 	char *saved_curdir;
+	char *l_fname;
 
 	if (ISDOT(finfo->name) || ISDOTDOT(finfo->name))
 		return;
@@ -879,27 +883,29 @@ static void do_mget(struct smbclient_context *ctx, struct clilist_file_info *fin
 	}
 
 	/* handle directories */
-	saved_curdir = talloc_strdup(NULL, ctx->remote_cur_dir);
+	saved_curdir = talloc_strdup(ctx, ctx->remote_cur_dir);
 
 	ctx->remote_cur_dir = talloc_asprintf_append_buffer(NULL, "%s\\", finfo->name);
 
-	string_replace(discard_const_p(char, finfo->name), '\\', '/');
+	l_fname = talloc_strdup(ctx, finfo->name);
+
+	string_replace(l_fname, '\\', '/');
 	if (ctx->lowercase) {
-		strlower(discard_const_p(char, finfo->name));
+		strlower(l_fname);
 	}
 	
-	if (!directory_exist(finfo->name) && 
-	    mkdir(finfo->name,0777) != 0) {
-		d_printf("failed to create directory %s\n",finfo->name);
+	if (!directory_exist(l_fname) &&
+	    mkdir(l_fname, 0777) != 0) {
+		d_printf("failed to create directory %s\n", l_fname);
 		return;
 	}
 	
-	if (chdir(finfo->name) != 0) {
-		d_printf("failed to chdir to directory %s\n",finfo->name);
+	if (chdir(l_fname) != 0) {
+		d_printf("failed to chdir to directory %s\n", l_fname);
 		return;
 	}
 
-	mget_mask = talloc_asprintf(NULL, "%s*", ctx->remote_cur_dir);
+	mget_mask = talloc_asprintf(ctx, "%s*", ctx->remote_cur_dir);
 	
 	do_list(ctx, mget_mask, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY,do_mget,false, true);
 	chdir("..");
@@ -963,7 +969,7 @@ static int cmd_mget(struct smbclient_context *ctx, const char **args)
 		attribute |= FILE_ATTRIBUTE_DIRECTORY;
 	
 	for (i = 1; args[i]; i++) {
-		mget_mask = talloc_strdup(ctx,ctx->remote_cur_dir);
+		mget_mask = talloc_strdup(ctx, ctx->remote_cur_dir);
 		if(mget_mask[strlen(mget_mask)-1]!='\\')
 			mget_mask = talloc_append_string(ctx, mget_mask, "\\");
 		
@@ -1292,7 +1298,7 @@ static bool seek_list(struct file_list *list, char *name)
 static int cmd_select(struct smbclient_context *ctx, const char **args)
 {
 	talloc_free(ctx->fileselection);
-	ctx->fileselection = talloc_strdup(NULL, args[1]);
+	ctx->fileselection = talloc_strdup(ctx, args[1]);
 
 	return 0;
 }
@@ -1533,7 +1539,7 @@ static int cmd_del(struct smbclient_context *ctx, const char **args)
 		d_printf("del <filename>\n");
 		return 1;
 	}
-	mask = talloc_asprintf(ctx,"%s%s", ctx->remote_cur_dir, args[1]);
+	mask = talloc_asprintf(ctx, "%s%s", ctx->remote_cur_dir, args[1]);
 
 	if (NT_STATUS_IS_ERR(smbcli_unlink(ctx->cli->tree, mask))) {
 		d_printf("%s deleting remote file %s\n",smbcli_errstr(ctx->cli->tree),mask);
@@ -2994,7 +3000,7 @@ static int process_line(struct smbclient_context *ctx, const char *cline)
 	int i;
 
 	/* and get the first part of the command */
-	args = str_list_make_shell(ctx, cline, NULL);
+	args = (const char **) str_list_make_shell(ctx, cline, NULL);
 	if (!args || !args[0])
 		return 0;
 
@@ -3151,12 +3157,12 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 ****************************************************************************/
  int main(int argc,char *argv[])
 {
-	const char *base_directory = NULL;
+	char *base_directory = NULL;
 	const char *dest_ip = NULL;
 	int opt;
 	const char *query_host = NULL;
 	bool message = false;
-	const char *desthost = NULL;
+	char *desthost = NULL;
 	poptContext pc;
 	const char *service = NULL;
 	int port = 0;

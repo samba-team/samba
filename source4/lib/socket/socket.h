@@ -206,7 +206,7 @@ NTSTATUS socket_connect_multi(TALLOC_CTX *mem_ctx, const char *server_address,
 			      struct socket_context **result,
 			      uint16_t *port);
 void set_socket_options(int fd, const char *options);
-void socket_set_flags(struct socket_context *socket, unsigned flags);
+void socket_set_flags(struct socket_context *sock, unsigned flags);
 
 void socket_tevent_fd_close_fn(struct tevent_context *ev,
 			       struct tevent_fd *fde,

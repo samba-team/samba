@@ -44,7 +44,6 @@ static bool test_compound_related1(struct torture_context *tctx,
 	struct smb2_close cl;
 	bool ret = true;
 	struct smb2_request *req[2];
-	DATA_BLOB data;
 
 	smb2_transport_credits_ask_num(tree->session->transport, 2);
 
@@ -170,8 +169,6 @@ static bool test_compound_unrelated1(struct torture_context *tctx,
 	struct smb2_close cl;
 	bool ret = true;
 	struct smb2_request *req[5];
-	uint64_t uid;
-	uint32_t tid;
 
 	smb2_transport_credits_ask_num(tree->session->transport, 5);
 
@@ -237,7 +234,6 @@ static bool test_compound_invalid1(struct torture_context *tctx,
 	struct smb2_close cl;
 	bool ret = true;
 	struct smb2_request *req[2];
-	DATA_BLOB data;
 
 	smb2_transport_credits_ask_num(tree->session->transport, 2);
 

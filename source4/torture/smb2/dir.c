@@ -1105,7 +1105,7 @@ static bool test_file_index(struct torture_context *tctx,
 	struct smb2_find f;
 	struct smb2_handle h;
 	union smb_search_data *d;
-	int count;
+	unsigned count;
 
 	smb2_deltree(tree, DNAME);
 
@@ -1223,9 +1223,9 @@ static bool test_large_files(struct torture_context *tctx,
 	struct smb2_find f;
 	struct smb2_handle h;
 	union smb_search_data *d;
-	int count, file_count = 0;
+	int i, j, file_count = 0;
 	char **strs = NULL;
-	int i, j;
+	unsigned count;
 
 	torture_comment(tctx,
 	    "Testing directory enumeration in a directory with >1000 files\n");

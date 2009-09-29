@@ -227,8 +227,8 @@ bool torture_rpc_lsa_lookup(struct torture_context *torture)
         struct dcerpc_pipe *p;
 	bool ret = true;
 	struct policy_handle *handle;
-	struct dom_sid *dom_sid;
-	struct dom_sid *trusted_sid;
+	struct dom_sid *dom_sid = NULL;
+	struct dom_sid *trusted_sid = NULL;
 	struct dom_sid *sids[NUM_SIDS];
 
 	status = torture_rpc_connection(torture, &p, &ndr_table_lsarpc);

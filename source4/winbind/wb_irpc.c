@@ -22,7 +22,7 @@
 #include "winbind/wb_server.h"
 #include "lib/messaging/irpc.h"
 #include "libcli/composite/composite.h"
-#include "libcli/security/proto.h"
+#include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_winbind.h"
 #include "smbd/service_task.h"
 
@@ -86,7 +86,7 @@ static NTSTATUS wb_irpc_get_idmap(struct irpc_message *msg,
 	struct wbsrv_service *service = talloc_get_type(msg->private_data,
 					struct wbsrv_service);
 	struct wb_irpc_get_idmap_state *s;
-	struct composite_context *ctx;
+	struct composite_context *ctx = NULL;
 
 	DEBUG(5, ("wb_irpc_get_idmap called\n"));
 
