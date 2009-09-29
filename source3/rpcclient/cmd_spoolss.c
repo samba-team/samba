@@ -723,18 +723,17 @@ static void display_reg_value(struct regval_blob value)
 		break;
 	}
 	case REG_MULTI_SZ: {
-		uint32_t i, num_values;
-		char **values;
+		uint32_t i;
+		const char **values;
+		DATA_BLOB blob = data_blob_const(value.data_p, value.size);
 
-		if (!W_ERROR_IS_OK(reg_pull_multi_sz(NULL, value.data_p,
-						     value.size, &num_values,
-						     &values))) {
-			d_printf("reg_pull_multi_sz failed\n");
+		if (!pull_reg_multi_sz(NULL, &blob, &values)) {
+			d_printf("pull_reg_multi_sz failed\n");
 			break;
 		}
 
 		printf("%s: REG_MULTI_SZ: \n", value.valuename);
-		for (i=0; i<num_values; i++) {
+		for (i=0; values[i] != NULL; i++) {
 			d_printf("%s\n", values[i]);
 		}
 		TALLOC_FREE(values);
