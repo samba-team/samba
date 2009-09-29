@@ -182,6 +182,7 @@ static int samba_dsdb_init(struct ldb_module *module)
 					     "samldb",
 					     "password_hash",
 					     "operational",
+					     "validate_update",
 					     "kludge_acl",
 					     "schema_load",
 					     "instancetype",
