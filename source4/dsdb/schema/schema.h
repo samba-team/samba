@@ -51,6 +51,10 @@ struct dsdb_syntax {
 				 const struct ldb_message_element *in,
 				 TALLOC_CTX *mem_ctx,
 				 struct drsuapi_DsReplicaAttribute *out);
+	WERROR (*validate_ldb)(struct ldb_context *ldb,
+			       const struct dsdb_schema *schema,
+			       const struct dsdb_attribute *attr,
+			       const struct ldb_message_element *in);
 };
 
 struct dsdb_attribute {

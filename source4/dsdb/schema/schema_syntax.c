@@ -75,6 +75,26 @@ static WERROR dsdb_syntax_FOOBAR_ldb_to_drsuapi(struct ldb_context *ldb,
 	return WERR_FOOBAR;
 }
 
+static WERROR dsdb_syntax_FOOBAR_validate_ldb(struct ldb_context *ldb,
+					      const struct dsdb_schema *schema,
+					      const struct dsdb_attribute *attr,
+					      const struct ldb_message_element *in)
+{
+	return WERR_FOOBAR;
+}
+
+static WERROR dsdb_syntax_ALLOW_validate_ldb(struct ldb_context *ldb,
+					     const struct dsdb_schema *schema,
+					     const struct dsdb_attribute *attr,
+					     const struct ldb_message_element *in)
+{
+	if (attr->attributeID_id == 0xFFFFFFFF) {
+		return WERR_FOOBAR;
+	}
+
+	return WERR_OK;
+}
+
 static WERROR dsdb_syntax_BOOL_drsuapi_to_ldb(struct ldb_context *ldb, 
 					      const struct dsdb_schema *schema,
 					      const struct dsdb_attribute *attr,
@@ -1605,6 +1625,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.8",
 		.drsuapi_to_ldb		= dsdb_syntax_BOOL_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_BOOL_ldb_to_drsuapi,
+		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
 		.equality               = "booleanMatch",
 		.comment                = "Boolean" 
 	},{
@@ -1614,6 +1635,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.9",
 		.drsuapi_to_ldb		= dsdb_syntax_INT32_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_INT32_ldb_to_drsuapi,
+		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
 		.equality               = "integerMatch",
 		.comment                = "Integer",
 		.ldb_syntax		= LDB_SYNTAX_SAMBA_INT32
@@ -1624,6 +1646,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.10",
 		.drsuapi_to_ldb		= dsdb_syntax_DATA_BLOB_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_DATA_BLOB_ldb_to_drsuapi,
+		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
 		.equality               = "octetStringMatch",
 		.comment                = "Octet String",
 	},{
@@ -1633,6 +1656,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.17",
 		.drsuapi_to_ldb		= dsdb_syntax_DATA_BLOB_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_DATA_BLOB_ldb_to_drsuapi,
+		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
 		.equality               = "octetStringMatch",
 		.comment                = "Octet String - Security Identifier (SID)",
 		.ldb_syntax             = LDB_SYNTAX_SAMBA_SID
@@ -1643,6 +1667,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.2",
 		.drsuapi_to_ldb		= dsdb_syntax_OID_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_OID_ldb_to_drsuapi,
+		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
 		.equality               = "caseIgnoreMatch", /* Would use "objectIdentifierMatch" but most are ldap attribute/class names */
 		.comment                = "OID String",
 		.ldb_syntax             = LDB_SYNTAX_DIRECTORY_STRING
@@ -1653,6 +1678,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.9",
 		.drsuapi_to_ldb		= dsdb_syntax_INT32_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_INT32_ldb_to_drsuapi,
+		.validate_ldb		= dsdb_syntax_INT32_validate_ldb,
 		.ldb_syntax		= LDB_SYNTAX_SAMBA_INT32
 	},{
 	/* not used in w2k3 forest */
@@ -1662,6 +1688,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.6",
 		.drsuapi_to_ldb		= dsdb_syntax_DATA_BLOB_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_DATA_BLOB_ldb_to_drsuapi,
+		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
 		.equality               = "numericStringMatch",
 		.substring              = "numericStringSubstringsMatch",
 		.comment                = "Numeric String",
@@ -1673,6 +1700,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.5",
 		.drsuapi_to_ldb		= dsdb_syntax_DATA_BLOB_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_DATA_BLOB_ldb_to_drsuapi,
+		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
 		.ldb_syntax		= LDB_SYNTAX_OCTET_STRING,
 	},{
 		.name			= "String(Teletex)",
@@ -1681,6 +1709,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.4",
 		.drsuapi_to_ldb		= dsdb_syntax_DATA_BLOB_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_DATA_BLOB_ldb_to_drsuapi,
+		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
 		.equality               = "caseIgnoreMatch",
 		.substring              = "caseIgnoreSubstringsMatch",
 		.comment                = "Case Insensitive String",
@@ -1692,6 +1721,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.5",
 		.drsuapi_to_ldb		= dsdb_syntax_DATA_BLOB_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_DATA_BLOB_ldb_to_drsuapi,
+		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
 		.equality               = "caseExactIA5Match",
 		.comment                = "Printable String",
 		.ldb_syntax		= LDB_SYNTAX_OCTET_STRING,
@@ -1702,6 +1732,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.11",
 		.drsuapi_to_ldb		= dsdb_syntax_NTTIME_UTC_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_NTTIME_UTC_ldb_to_drsuapi,
+		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
 		.equality               = "generalizedTimeMatch",
 		.comment                = "UTC Time",
 	},{
@@ -1711,6 +1742,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.11",
 		.drsuapi_to_ldb		= dsdb_syntax_NTTIME_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_NTTIME_ldb_to_drsuapi,
+		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
 		.equality               = "generalizedTimeMatch",
 		.comment                = "Generalized Time",
 		.ldb_syntax             = LDB_SYNTAX_UTC_TIME,
@@ -1722,6 +1754,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.3",
 		.drsuapi_to_ldb		= dsdb_syntax_FOOBAR_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_FOOBAR_ldb_to_drsuapi,
+		.validate_ldb		= dsdb_syntax_FOOBAR_validate_ldb,
 	},{
 		.name			= "String(Unicode)",
 		.ldap_oid		= LDB_SYNTAX_DIRECTORY_STRING,
@@ -1729,6 +1762,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.12",
 		.drsuapi_to_ldb		= dsdb_syntax_UNICODE_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_UNICODE_ldb_to_drsuapi,
+		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
 		.equality               = "caseIgnoreMatch",
 		.substring              = "caseIgnoreSubstringsMatch",
 		.comment                = "Directory String",
@@ -1739,6 +1773,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.16",
 		.drsuapi_to_ldb		= dsdb_syntax_INT64_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_INT64_ldb_to_drsuapi,
+		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
 		.equality               = "integerMatch",
 		.comment                = "Large Integer",
 		.ldb_syntax             = LDB_SYNTAX_INTEGER,
@@ -1749,6 +1784,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.15",
 		.drsuapi_to_ldb		= dsdb_syntax_DATA_BLOB_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_DATA_BLOB_ldb_to_drsuapi,
+		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
 	},{
 		.name			= "Object(DS-DN)",
 		.ldap_oid		= LDB_SYNTAX_DN,
@@ -1757,6 +1793,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.1",
 		.drsuapi_to_ldb		= dsdb_syntax_DN_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_DN_ldb_to_drsuapi,
+		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
 		.equality               = "distinguishedNameMatch",
 		.comment                = "Object(DS-DN) == a DN",
 	},{
@@ -1767,6 +1804,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.7",
 		.drsuapi_to_ldb		= dsdb_syntax_DN_BINARY_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_DN_BINARY_ldb_to_drsuapi,
+		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
 		.equality               = "octetStringMatch",
 		.comment                = "OctetString: Binary+DN",
 	},{
@@ -1778,6 +1816,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.7",
 		.drsuapi_to_ldb		= dsdb_syntax_DN_BINARY_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_DN_BINARY_ldb_to_drsuapi,
+		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
 		.equality		= "caseIgnoreMatch",
 		.ldb_syntax		= LDB_SYNTAX_DN,
 	},{
@@ -1794,6 +1833,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.10",
 		.drsuapi_to_ldb		= dsdb_syntax_DATA_BLOB_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_DATA_BLOB_ldb_to_drsuapi,
+		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
 	},{
 		.name			= "Object(Presentation-Address)",
 		.ldap_oid		= "1.3.6.1.4.1.1466.115.121.1.43",
@@ -1802,6 +1842,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.13",
 		.drsuapi_to_ldb		= dsdb_syntax_PRESENTATION_ADDRESS_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_PRESENTATION_ADDRESS_ldb_to_drsuapi,
+		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
 		.comment                = "Presentation Address",
 		.ldb_syntax             = LDB_SYNTAX_DIRECTORY_STRING,
 	},{
@@ -1813,6 +1854,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.14",
 		.drsuapi_to_ldb		= dsdb_syntax_FOOBAR_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_FOOBAR_ldb_to_drsuapi,
+		.validate_ldb		= dsdb_syntax_FOOBAR_validate_ldb,
 		.ldb_syntax             = LDB_SYNTAX_DIRECTORY_STRING,
 	},{
 	/* not used in w2k3 schema */
@@ -1823,6 +1865,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.14",
 		.drsuapi_to_ldb		= dsdb_syntax_DN_STRING_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_DN_STRING_ldb_to_drsuapi,
+		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
 		.equality               = "octetStringMatch",
 		.comment                = "OctetString: String+DN",
 	}
@@ -1915,4 +1958,18 @@ WERROR dsdb_attribute_ldb_to_drsuapi(struct ldb_context *ldb,
 	}
 
 	return sa->syntax->ldb_to_drsuapi(ldb, schema, sa, in, mem_ctx, out);
+}
+
+WERROR dsdb_attribute_validate_ldb(struct ldb_context *ldb,
+				   const struct dsdb_schema *schema,
+				   const struct ldb_message_element *in)
+{
+	const struct dsdb_attribute *sa;
+
+	sa = dsdb_attribute_by_lDAPDisplayName(schema, in->name);
+	if (!sa) {
+		return WERR_DS_ATTRIBUTE_TYPE_UNDEFINED;
+	}
+
+	return sa->syntax->validate_ldb(ldb, schema, sa, in);
 }
