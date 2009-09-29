@@ -1942,6 +1942,17 @@ static WERROR dsdb_syntax_PRESENTATION_ADDRESS_ldb_to_drsuapi(struct ldb_context
 	return WERR_OK;
 }
 
+static WERROR dsdb_syntax_PRESENTATION_ADDRESS_validate_ldb(struct ldb_context *ldb,
+							    const struct dsdb_schema *schema,
+							    const struct dsdb_attribute *attr,
+							    const struct ldb_message_element *in)
+{
+	return dsdb_syntax_UNICODE_validate_ldb(ldb,
+						schema,
+						attr,
+						in);
+}
+
 #define OMOBJECTCLASS(val) { .length = sizeof(val) - 1, .data = discard_const_p(uint8_t, val) }
 
 static const struct dsdb_syntax dsdb_syntaxes[] = {
@@ -2169,7 +2180,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.13",
 		.drsuapi_to_ldb		= dsdb_syntax_PRESENTATION_ADDRESS_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_PRESENTATION_ADDRESS_ldb_to_drsuapi,
-		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
+		.validate_ldb		= dsdb_syntax_PRESENTATION_ADDRESS_validate_ldb,
 		.comment                = "Presentation Address",
 		.ldb_syntax             = LDB_SYNTAX_DIRECTORY_STRING,
 	},{
