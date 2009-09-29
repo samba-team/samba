@@ -1644,6 +1644,10 @@ sub ParseUnionPushPrimitives($$$$)
 		$self->pidl("NDR_CHECK(ndr_push_$e->{SWITCH_TYPE}($ndr, NDR_SCALARS, level));");
 	}
 
+	if (defined($e->{ALIGN})) {
+		$self->pidl("NDR_CHECK(ndr_push_union_align($ndr, $e->{ALIGN}));");
+	}
+
 	$self->pidl("switch (level) {");
 	$self->indent;
 	foreach my $el (@{$e->{ELEMENTS}}) {
@@ -1786,6 +1790,10 @@ sub ParseUnionPullPrimitives($$$$$)
 		$self->pidl("if (_level != level) {"); 
 		$self->pidl("\treturn ndr_pull_error($ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value %u for $varname at \%s\", _level, __location__);");
 		$self->pidl("}");
+	}
+
+	if (defined($e->{ALIGN})) {
+		$self->pidl("NDR_CHECK(ndr_pull_union_align($ndr, $e->{ALIGN}));");
 	}
 
 	$self->pidl("switch (level) {");

@@ -509,7 +509,8 @@ sub ParseUnion($$)
 		ELEMENTS => undef,
 		PROPERTIES => $e->{PROPERTIES},
 		HAS_DEFAULT => $hasdefault,
-		ORIGINAL => $e
+		ORIGINAL => $e,
+		ALIGN => undef
 	} unless defined($e->{ELEMENTS});
 
 	CheckPointerTypes($e, $pointer_default);
@@ -533,6 +534,11 @@ sub ParseUnion($$)
 		push @elements, $t;
 	}
 
+	my $align = undef;
+	if ($e->{NAME}) {
+		$align = align_type($e->{NAME});
+	}
+
 	return {
 		TYPE => "UNION",
 		NAME => $e->{NAME},
@@ -540,7 +546,8 @@ sub ParseUnion($$)
 		ELEMENTS => \@elements,
 		PROPERTIES => $e->{PROPERTIES},
 		HAS_DEFAULT => $hasdefault,
-		ORIGINAL => $e
+		ORIGINAL => $e,
+		ALIGN => $align
 	};
 }
 
