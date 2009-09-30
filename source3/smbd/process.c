@@ -412,6 +412,7 @@ static void smbd_deferred_open_timer(struct event_context *ev,
 	struct pending_message_list *msg = talloc_get_type(private_data,
 					   struct pending_message_list);
 	TALLOC_CTX *mem_ctx = talloc_tos();
+	uint16_t mid = SVAL(msg->buf.data,smb_mid);
 	uint8_t *inbuf;
 
 	inbuf = (uint8_t *)talloc_memdup(mem_ctx, msg->buf.data,
@@ -424,11 +425,21 @@ static void smbd_deferred_open_timer(struct event_context *ev,
 	/* We leave this message on the queue so the open code can
 	   know this is a retry. */
 	DEBUG(5,("smbd_deferred_open_timer: trigger mid %u.\n",
-		(unsigned int)SVAL(msg->buf.data,smb_mid)));
+		(unsigned int)mid));
+
+	/* Mark the message as processed so this is not
+	 * re-processed in error. */
+	msg->processed = true;
 
 	process_smb(smbd_server_conn, inbuf,
 		    msg->buf.length, 0,
 		    msg->encrypted, &msg->pcd);
+
+	/* If it's still there and was processed, remove it. */
+	msg = get_open_deferred_message(mid);
+	if (msg && msg->processed) {
+		remove_deferred_open_smb_message(mid);
+	}
 }
 
 /****************************************************************************
@@ -460,6 +471,7 @@ static bool push_queued_message(struct smb_request *req,
 
 	msg->request_time = request_time;
 	msg->encrypted = req->encrypted;
+	msg->processed = false;
 	SMB_PERFCOUNT_DEFER_OP(&req->pcd, &msg->pcd);
 
 	if (private_data) {
@@ -501,7 +513,7 @@ void remove_deferred_open_smb_message(uint16 mid)
 
 	for (pml = deferred_open_queue; pml; pml = pml->next) {
 		if (mid == SVAL(pml->buf.data,smb_mid)) {
-			DEBUG(10,("remove_sharing_violation_open_smb_message: "
+			DEBUG(10,("remove_deferred_open_smb_message: "
 				  "deleting mid %u len %u\n",
 				  (unsigned int)mid,
 				  (unsigned int)pml->buf.length ));
@@ -531,6 +543,15 @@ void schedule_deferred_open_smb_message(uint16 mid)
 		if (mid == msg_mid) {
 			struct timed_event *te;
 
+			if (pml->processed) {
+				/* A processed message should not be
+				 * rescheduled. */
+				DEBUG(0,("schedule_deferred_open_smb_message: LOGIC ERROR "
+					"message mid %u was already processed\n",
+					msg_mid ));
+				continue;
+			}
+
 			DEBUG(10,("schedule_deferred_open_smb_message: scheduling mid %u\n",
 				mid ));
 
@@ -557,7 +578,7 @@ void schedule_deferred_open_smb_message(uint16 mid)
 }
 
 /****************************************************************************
- Return true if this mid is on the deferred queue.
+ Return true if this mid is on the deferred queue and was not yet processed.
 ****************************************************************************/
 
 bool open_was_deferred(uint16 mid)
@@ -565,7 +586,7 @@ bool open_was_deferred(uint16 mid)
 	struct pending_message_list *pml;
 
 	for (pml = deferred_open_queue; pml; pml = pml->next) {
-		if (SVAL(pml->buf.data,smb_mid) == mid) {
+		if (SVAL(pml->buf.data,smb_mid) == mid && !pml->processed) {
 			return True;
 		}
 	}
@@ -1300,7 +1321,6 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 
 		if (!change_to_user(conn,session_tag)) {
 			reply_nterror(req, NT_STATUS_DOS(ERRSRV, ERRbaduid));
-			remove_deferred_open_smb_message(req->mid);
 			return conn;
 		}
 

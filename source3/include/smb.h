@@ -725,6 +725,7 @@ struct pending_message_list {
 	struct timed_event *te;
 	struct smb_perfcount_data pcd;
 	bool encrypted;
+	bool processed;
 	DATA_BLOB buf;
 	DATA_BLOB private_data;
 };
