@@ -759,6 +759,7 @@ struct pending_message_list {
 	struct timeval request_time; /* When was this first issued? */
 	struct timeval end_time; /* When does this time out? */
 	bool encrypted;
+	bool processed;
 	DATA_BLOB buf;
 	DATA_BLOB private_data;
 };

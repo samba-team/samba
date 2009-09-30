@@ -434,6 +434,7 @@ static bool push_queued_message(struct smb_request *req,
 	msg->request_time = request_time;
 	msg->end_time = end_time;
 	msg->encrypted = req->encrypted;
+	msg->processed = false;
 
 	if (private_data) {
 		msg->private_data = data_blob_talloc(msg, private_data,
@@ -489,6 +490,16 @@ void schedule_deferred_open_smb_message(uint16 mid)
 		DEBUG(10,("schedule_deferred_open_smb_message: [%d] msg_mid = %u\n", i++,
 			(unsigned int)msg_mid ));
 		if (mid == msg_mid) {
+
+			if (pml->processed) {
+				/* A processed message should not be
+				 * rescheduled. */
+				DEBUG(0,("schedule_deferred_open_smb_message: LOGIC ERROR "
+					"message mid %u was already processed\n",
+					(unsigned int)msg_mid ));
+				continue;
+			}
+
 			DEBUG(10,("schedule_deferred_open_smb_message: scheduling mid %u\n",
 				mid ));
 			pml->end_time.tv_sec = 0;
@@ -503,7 +514,7 @@ void schedule_deferred_open_smb_message(uint16 mid)
 }
 
 /****************************************************************************
- Return true if this mid is on the deferred queue.
+ Return true if this mid is on the deferred queue and was not yet processed.
 ****************************************************************************/
 
 bool open_was_deferred(uint16 mid)
@@ -511,7 +522,7 @@ bool open_was_deferred(uint16 mid)
 	struct pending_message_list *pml;
 
 	for (pml = deferred_open_queue; pml; pml = pml->next) {
-		if (SVAL(pml->buf.data,smb_mid) == mid) {
+		if (SVAL(pml->buf.data,smb_mid) == mid && !pml->processed) {
 			return True;
 		}
 	}
@@ -778,6 +789,10 @@ static NTSTATUS receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
 			/* We leave this message on the queue so the open code can
 			   know this is a retry. */
 			DEBUG(5,("receive_message_or_smb: returning deferred open smb message.\n"));
+
+			/* Mark the message as processed so this is not
+			 * re-processed in error. */
+			msg->processed = true;
 			return NT_STATUS_OK;
 		}
 	}
@@ -1405,7 +1420,6 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 
 		if (!change_to_user(conn,session_tag)) {
 			reply_nterror(req, NT_STATUS_DOS(ERRSRV, ERRbaduid));
-			remove_deferred_open_smb_message(req->mid);
 			return conn;
 		}
 
@@ -1470,6 +1484,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 
 static void construct_reply(char *inbuf, int size, size_t unread_bytes, bool encrypted)
 {
+	struct pending_message_list *pml = NULL;
 	uint8 type = CVAL(inbuf,smb_com);
 	connection_struct *conn;
 	struct smb_request *req;
@@ -1484,6 +1499,13 @@ static void construct_reply(char *inbuf, int size, size_t unread_bytes, bool enc
 	init_smb_request(req, (uint8 *)inbuf, unread_bytes, encrypted);
 
 	conn = switch_message(type, req, size);
+
+	/* If this was a deferred message and it's still there and
+	 * was processed, remove it. */
+	pml = get_open_deferred_message(req->mid);
+	if (pml && pml->processed) {
+		remove_deferred_open_smb_message(req->mid);
+	}
 
 	if (req->unread_bytes) {
 		/* writeX failed. drain socket. */
