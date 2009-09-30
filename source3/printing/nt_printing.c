@@ -3436,6 +3436,7 @@ bool is_printer_published(Printer_entry *print_hnd, int snum,
 	WERROR win_rc;
 	int i;
 	bool ret = False;
+	DATA_BLOB blob;
 
 	win_rc = get_a_printer(print_hnd, &printer, 2, lp_servicename(snum));
 
@@ -3452,16 +3453,18 @@ bool is_printer_published(Printer_entry *print_hnd, int snum,
 	/* fetching printer guids really ought to be a separate function. */
 
 	if ( guid ) {
-		fstring guid_str;
+		char *guid_str;
 
 		/* We used to store the guid as REG_BINARY, then swapped
 		   to REG_SZ for Vista compatibility so check for both */
 
 		switch ( regval_type(guid_val) ){
 		case REG_SZ:
-			rpcstr_pull( guid_str, regval_data_p(guid_val),
-				     sizeof(guid_str)-1, -1, STR_TERMINATE );
+			blob = data_blob_const(regval_data_p(guid_val),
+					       regval_size(guid_val));
+			pull_reg_sz(talloc_tos(), &blob, (const char **)&guid_str);
 			ret = NT_STATUS_IS_OK(GUID_from_string( guid_str, guid ));
+			talloc_free(guid_str);
 			break;
 		case REG_BINARY:
 			if ( regval_size(guid_val) != sizeof(struct GUID) ) {

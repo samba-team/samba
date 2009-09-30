@@ -5126,7 +5126,7 @@ int regval_ctr_delvalue(struct regval_ctr *ctr, const char *name);
 struct regval_blob* regval_ctr_getvalue(struct regval_ctr *ctr,
 					const char *name);
 uint32 regval_dword(struct regval_blob *val);
-char *regval_sz(struct regval_blob *val);
+const char *regval_sz(struct regval_blob *val);
 
 /* The following definitions come from registry/reg_perfcount.c  */
 
