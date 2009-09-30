@@ -585,11 +585,12 @@ uint32 regval_dword(struct regval_blob *val)
  return the data_p as a character string
  **********************************************************************/
 
-char *regval_sz(struct regval_blob *val)
+const char *regval_sz(struct regval_blob *val)
 {
-	char *data = NULL;
+	const char *data = NULL;
+	DATA_BLOB blob = data_blob_const(regval_data_p(val), regval_size(val));
 
-	rpcstr_pull_talloc(talloc_tos(), &data,
-			regval_data_p(val), regval_size(val),0);
+	pull_reg_sz(talloc_tos(), &blob, &data);
+
 	return data;
 }

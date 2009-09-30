@@ -611,12 +611,13 @@ bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, SEC_DESC *sec_desc, 
 
 const char *svcctl_lookup_dispname(TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token )
 {
-	char *display_name = NULL;
+	const char *display_name = NULL;
 	struct registry_key_handle *key = NULL;
 	struct regval_ctr *values = NULL;
 	struct regval_blob *val = NULL;
 	char *path = NULL;
 	WERROR wresult;
+	DATA_BLOB blob;
 
 	/* now add the security descriptor */
 
@@ -644,7 +645,8 @@ const char *svcctl_lookup_dispname(TALLOC_CTX *ctx, const char *name, NT_USER_TO
 	if ( !(val = regval_ctr_getvalue( values, "DisplayName" )) )
 		goto fail;
 
-	rpcstr_pull_talloc(ctx, &display_name, regval_data_p(val), regval_size(val), 0 );
+	blob = data_blob_const(regval_data_p(val), regval_size(val));
+	pull_reg_sz(ctx, &blob, &display_name);
 
 	TALLOC_FREE( key );
 
@@ -661,12 +663,13 @@ fail:
 
 const char *svcctl_lookup_description(TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token )
 {
-	char *description = NULL;
+	const char *description = NULL;
 	struct registry_key_handle *key = NULL;
 	struct regval_ctr *values = NULL;
 	struct regval_blob *val = NULL;
 	char *path = NULL;
 	WERROR wresult;
+	DATA_BLOB blob;
 
 	/* now add the security descriptor */
 
@@ -695,7 +698,10 @@ const char *svcctl_lookup_description(TALLOC_CTX *ctx, const char *name, NT_USER
 		TALLOC_FREE( key );
 		return "Unix Service";
 	}
-	rpcstr_pull_talloc(ctx, &description, regval_data_p(val), regval_size(val), 0 );
+
+	blob = data_blob_const(regval_data_p(val), regval_size(val));
+	pull_reg_sz(ctx, &blob, &description);
+
 	TALLOC_FREE(key);
 
 	return description;

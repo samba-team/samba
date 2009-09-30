@@ -895,8 +895,9 @@ static int rpc_registry_save(struct net_context *c, int argc, const char **argv 
 static void dump_values( REGF_NK_REC *nk )
 {
 	int i, j;
-	char *data_str = NULL;
+	const char *data_str = NULL;
 	uint32 data_size, data;
+	DATA_BLOB blob;
 
 	if ( !nk->values )
 		return;
@@ -908,11 +909,8 @@ static void dump_values( REGF_NK_REC *nk )
 		data_size = nk->values[i].data_size & ~VK_DATA_IN_OFFSET;
 		switch ( nk->values[i].type ) {
 			case REG_SZ:
-				rpcstr_pull_talloc(talloc_tos(),
-						&data_str,
-						nk->values[i].data,
-						-1,
-						STR_TERMINATE);
+				blob = data_blob_const(nk->values[i].data, data_size);
+				pull_reg_sz(talloc_tos(), &blob, &data_str);
 				if (!data_str) {
 					break;
 				}
