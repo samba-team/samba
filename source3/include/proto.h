@@ -1576,12 +1576,6 @@ void load_case_tables(void);
 void init_valid_table(void);
 size_t dos_PutUniCode(char *dst,const char *src, size_t len, bool null_terminate);
 char *skip_unibuf(char *src, size_t len);
-int rpcstr_pull(char* dest, void *src, int dest_len, int src_len, int flags);
-int rpcstr_pull_talloc(TALLOC_CTX *ctx,
-			char **dest,
-			void *src,
-			int src_len,
-			int flags);
 int rpcstr_push(void *dest, const char *src, size_t dest_len, int flags);
 int rpcstr_push_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src);
 smb_ucs2_t toupper_w(smb_ucs2_t val);
