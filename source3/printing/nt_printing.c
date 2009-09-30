@@ -3057,26 +3057,13 @@ static void map_bool_into_ctr(struct regval_ctr *ctr, const char *val_name,
 static void map_single_multi_sz_into_ctr(struct regval_ctr *ctr, const char *val_name,
 					 const char *multi_sz)
 {
-	smb_ucs2_t *conv_strs = NULL;
-	size_t str_size;
+	const char *a[2];
 
-	/* a multi-sz has to have a null string terminator, i.e., the last
-	   string must be followed by two nulls */
-	str_size = strlen(multi_sz) + 2;
-	conv_strs = SMB_CALLOC_ARRAY(smb_ucs2_t, str_size);
-	if (!conv_strs) {
-		return;
-	}
-
-	/* Change to byte units. */
-	str_size *= sizeof(smb_ucs2_t);
-	push_ucs2(NULL, conv_strs, multi_sz, str_size,
-		  STR_TERMINATE | STR_NOALIGN);
+	a[0] = multi_sz;
+	a[1] = NULL;
 
 	regval_ctr_delvalue(ctr, val_name);
-	regval_ctr_addvalue(ctr, val_name, REG_MULTI_SZ,
-			    (char *) conv_strs, str_size);
-	SAFE_FREE(conv_strs);
+	regval_ctr_addvalue_multi_sz(ctr, val_name, a);
 }
 
 /****************************************************************************
