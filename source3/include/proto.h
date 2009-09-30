@@ -5416,12 +5416,6 @@ NTSTATUS rpc_transport_smbd_init(TALLOC_CTX *mem_ctx,
 NTSTATUS rpc_transport_sock_init(TALLOC_CTX *mem_ctx, int fd,
 				 struct rpc_cli_transport **presult);
 
-/* The following definitions come from rpc_client/cli_reg.c  */
-
-NTSTATUS rpccli_winreg_Connect(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                         uint32 reg_type, uint32 access_mask,
-                         struct policy_handle *reg_hnd);
-
 /* The following definitions come from rpc_client/cli_samr.c  */
 
 NTSTATUS rpccli_samr_chgpasswd_user(struct rpc_pipe_client *cli,
