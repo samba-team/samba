@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.90
+Version: 1.0.91
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -132,6 +132,13 @@ fi
 %{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
+* Tue Sep 29 2009 : Version 1.0.91
+ - New vacuum and repack design from Wolgang Mueller.
+ - Add a new eventscript 01.reclock that will first mark a node unhealthy and later ban the node if the reclock file can not be accessed.
+ - Add machinereadable output to the ctdb getreclock command
+ - merge transaction updates from Michael Adam
+ - In the new banning code, reset the culprit count to 0 for all nodes that could successfully compelte a full recovery.
+ - dont mark the recovery master as a ban culprit because a node in the cluster needs a recovery. this happens naturally when using ctdb recover command so dont make this cause a node to be banned.
 * Sat Sep 12 2009 : Version 1.0.90
  - Be more forgiving for eventscripts that hang during startup
  - Fix for a banning bug in the new banning logic
