@@ -507,6 +507,23 @@ int regval_ctr_addvalue_sz(struct regval_ctr *ctr, const char *name, const char 
 }
 
 /***********************************************************************
+ Add a new registry MULTI_SZ value to the array
+ **********************************************************************/
+
+int regval_ctr_addvalue_multi_sz(struct regval_ctr *ctr, const char *name, const char **data)
+{
+	DATA_BLOB blob;
+
+	if (!push_reg_multi_sz(ctr, &blob, data)) {
+		return -1;
+	}
+
+	return regval_ctr_addvalue(ctr, name, REG_MULTI_SZ,
+				   (const char *)blob.data,
+				   blob.length);
+}
+
+/***********************************************************************
  Add a new registry value to the array
  **********************************************************************/
 
