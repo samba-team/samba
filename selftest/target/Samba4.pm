@@ -835,7 +835,7 @@ sub provision_member($$$)
 				   "localmember3",
 				   "localmember",
 				   3,
-				   "localmemberpass",
+				   "locMEMpass0",
 				   $dcvars->{SERVER_IP},
 				   "");
 
@@ -882,7 +882,7 @@ sub provision_rpc_proxy($$$)
 				   "localrpcproxy4",
 				   "localrpcproxy",
 				   4,
-				   "localrpcproxypass",
+				   "locRPCproxypass0",
 				   $dcvars->{SERVER_IP},
 				   $extra_smbconf_options);
 
@@ -917,7 +917,7 @@ sub provision_dc($$)
 				   "localdc1",
 				   "localdc",
 				   1,
-				   "localdcpass",
+				   "locDCpass0",
 				   "127.0.0.1", "");
 
 	$self->add_wins_config("$prefix/private") or 
