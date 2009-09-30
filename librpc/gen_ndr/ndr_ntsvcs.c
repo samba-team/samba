@@ -3,7 +3,7 @@
 #include "includes.h"
 #include "../librpc/gen_ndr/ndr_ntsvcs.h"
 
-#include "librpc/gen_ndr/ndr_winreg.h"
+#include "librpc/gen_ndr/ndr_misc.h"
 static enum ndr_err_code ndr_push_PNP_GetIdListFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
