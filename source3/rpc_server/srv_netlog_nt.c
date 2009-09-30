@@ -6,7 +6,7 @@
  *  Copyright (C) Paul Ashton                       1997.
  *  Copyright (C) Jeremy Allison               1998-2001.
  *  Copyright (C) Andrew Bartlett                   2001.
- *  Copyright (C) Guenther Deschner		    2008.
+ *  Copyright (C) Guenther Deschner		    2008-2009.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1443,21 +1443,132 @@ NTSTATUS _netr_AccountSync(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _netr_GetDcName(pipes_struct *p,
-		       struct netr_GetDcName *r)
+static bool wb_getdcname(TALLOC_CTX *mem_ctx,
+			 const char *domain,
+			 const char **dcname,
+			 uint32_t flags,
+			 WERROR *werr)
 {
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
+	wbcErr result;
+	struct wbcDomainControllerInfo *dc_info = NULL;
+
+	result = wbcLookupDomainController(domain,
+					   flags,
+					   &dc_info);
+	switch (result) {
+	case WBC_ERR_SUCCESS:
+		break;
+	case WBC_ERR_WINBIND_NOT_AVAILABLE:
+		return false;
+	case WBC_ERR_DOMAIN_NOT_FOUND:
+		*werr = WERR_NO_SUCH_DOMAIN;
+		return true;
+	default:
+		*werr = WERR_DOMAIN_CONTROLLER_NOT_FOUND;
+		return true;
+	}
+
+	*dcname = talloc_strdup(mem_ctx, dc_info->dc_name);
+	wbcFreeMemory(dc_info);
+	if (!*dcname) {
+		*werr = WERR_NOMEM;
+		return false;
+	}
+
+	*werr = WERR_OK;
+
+	return true;
 }
 
 /****************************************************************
+ _netr_GetDcName
+****************************************************************/
+
+WERROR _netr_GetDcName(pipes_struct *p,
+		       struct netr_GetDcName *r)
+{
+	NTSTATUS status;
+	WERROR werr;
+	uint32_t flags;
+	struct netr_DsRGetDCNameInfo *info;
+	bool ret;
+
+	ret = wb_getdcname(p->mem_ctx,
+			   r->in.domainname,
+			   r->out.dcname,
+			   WBC_LOOKUP_DC_IS_FLAT_NAME |
+			   WBC_LOOKUP_DC_RETURN_FLAT_NAME |
+			   WBC_LOOKUP_DC_PDC_REQUIRED,
+			   &werr);
+	if (ret == true) {
+		return werr;
+	}
+
+	flags = DS_PDC_REQUIRED | DS_IS_FLAT_NAME | DS_RETURN_FLAT_NAME;
+
+	status = dsgetdcname(p->mem_ctx,
+			     smbd_messaging_context(),
+			     r->in.domainname,
+			     NULL,
+			     NULL,
+			     flags,
+			     &info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	*r->out.dcname = talloc_strdup(p->mem_ctx, info->dc_unc);
+	talloc_free(info);
+	if (!*r->out.dcname) {
+		return WERR_NOMEM;
+	}
+
+	return WERR_OK;
+}
+
+/****************************************************************
+ _netr_GetAnyDCName
 ****************************************************************/
 
 WERROR _netr_GetAnyDCName(pipes_struct *p,
 			  struct netr_GetAnyDCName *r)
 {
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
+	NTSTATUS status;
+	WERROR werr;
+	uint32_t flags;
+	struct netr_DsRGetDCNameInfo *info;
+	bool ret;
+
+	ret = wb_getdcname(p->mem_ctx,
+			   r->in.domainname,
+			   r->out.dcname,
+			   WBC_LOOKUP_DC_IS_FLAT_NAME |
+			   WBC_LOOKUP_DC_RETURN_FLAT_NAME,
+			   &werr);
+	if (ret == true) {
+		return werr;
+	}
+
+	flags = DS_IS_FLAT_NAME | DS_RETURN_FLAT_NAME;
+
+	status = dsgetdcname(p->mem_ctx,
+			     smbd_messaging_context(),
+			     r->in.domainname,
+			     NULL,
+			     NULL,
+			     flags,
+			     &info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	*r->out.dcname = talloc_strdup(p->mem_ctx, info->dc_unc);
+	talloc_free(info);
+	if (!*r->out.dcname) {
+		return WERR_NOMEM;
+	}
+
+	return WERR_OK;
 }
 
 /****************************************************************
