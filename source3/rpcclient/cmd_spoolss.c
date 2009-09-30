@@ -689,7 +689,8 @@ static WERROR cmd_spoolss_getprinter(struct rpc_pipe_client *cli,
 
 static void display_reg_value(struct regval_blob value)
 {
-	char *text = NULL;
+	const char *text = NULL;
+	DATA_BLOB blob;
 
 	switch(value.type) {
 	case REG_DWORD:
@@ -697,11 +698,8 @@ static void display_reg_value(struct regval_blob value)
 		       *((uint32_t *) value.data_p));
 		break;
 	case REG_SZ:
-		rpcstr_pull_talloc(talloc_tos(),
-				&text,
-				value.data_p,
-				value.size,
-				STR_TERMINATE);
+		blob = data_blob_const(value.data_p, value.size);
+		pull_reg_sz(talloc_tos(), &blob, &text);
 		printf("%s: REG_SZ: %s\n", value.valuename, text ? text : "");
 		break;
 	case REG_BINARY: {
@@ -725,7 +723,7 @@ static void display_reg_value(struct regval_blob value)
 	case REG_MULTI_SZ: {
 		uint32_t i;
 		const char **values;
-		DATA_BLOB blob = data_blob_const(value.data_p, value.size);
+		blob = data_blob_const(value.data_p, value.size);
 
 		if (!pull_reg_multi_sz(NULL, &blob, &values)) {
 			d_printf("pull_reg_multi_sz failed\n");

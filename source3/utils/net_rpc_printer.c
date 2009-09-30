@@ -72,7 +72,8 @@ static void display_print_driver3(struct spoolss_DriverInfo3 *r)
 
 static void display_reg_value(const char *subkey, struct regval_blob value)
 {
-	char *text;
+	const char *text;
+	DATA_BLOB blob;
 
 	switch(value.type) {
 	case REG_DWORD:
@@ -81,11 +82,8 @@ static void display_reg_value(const char *subkey, struct regval_blob value)
 		break;
 
 	case REG_SZ:
-		rpcstr_pull_talloc(talloc_tos(),
-				&text,
-				value.data_p,
-				value.size,
-				STR_TERMINATE);
+		blob = data_blob_const(value.data_p, value.size);
+		pull_reg_sz(talloc_tos(), &blob, &text);
 		if (!text) {
 			break;
 		}
@@ -102,7 +100,7 @@ static void display_reg_value(const char *subkey, struct regval_blob value)
 	case REG_MULTI_SZ: {
 		uint32_t i;
 		const char **values;
-		DATA_BLOB blob = data_blob_const(value.data_p, value.size);
+		blob = data_blob_const(value.data_p, value.size);
 
 		if (!pull_reg_multi_sz(NULL, &blob, &values)) {
 			d_printf("pull_reg_multi_sz failed\n");
