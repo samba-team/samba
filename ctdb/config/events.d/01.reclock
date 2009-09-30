@@ -9,22 +9,20 @@ shift
 
 PATH=/usr/bin:/bin:/usr/sbin:/sbin:$PATH
 
-# The size of this file represents the number of intervals that have
-# passed when we have tried to but failed to stat the reclock file.
-# after third failure the node becomes unhealthy
-# after the twenteth failure the node we shutdown ctdbd
-RECLOCKCOUNT="$CTDB_BASE/state/reclock-fail-count"
+# Count the number of intervals that have passed when we have tried to
+# but failed to stat the reclock file.  after third failure the node
+# becomes unhealthy after the twentieth failure the node we shutdown
+# ctdbd
+RECLOCKCOUNT="fail-count"
 
 case $cmd in 
      startup)
-	echo -n > $RECLOCKCOUNT
+	ctdb_counter_init "$RECLOCKCOUNT"
 	;;
 
       monitor)
-	echo -n 1 >> $RECLOCKCOUNT
-
-	COUNT=`ls -ln $RECLOCKCOUNT | cut -d" " -f5`
-	[ $COUNT -gt 19 ] && {
+	ctdb_counter_incr "$RECLOCKCOUNT"
+	ctdb_counter_limit "$RECLOCKCOUNT" 20 && {
 		echo "Reclock file can not be accessed. Shutting down."
 		sleep 1
 		ctdb shutdown
@@ -33,7 +31,7 @@ case $cmd in
 	RECLOCKFILE=`ctdb -Y getreclock`
 	[ -z $RECLOCKFILE ] && {
 		# we are not using a reclock file
-		echo -n > $RECLOCKCOUNT
+		ctdb_counter_init "$RECLOCKCOUNT"
 		exit 0
 	}
 
@@ -43,12 +41,12 @@ case $cmd in
 		stat $RECLOCKFILE
 		[ "$?" -eq 0 ] && {
 			# we could stat the file, reset the counter
-			echo -n > $RECLOCKCOUNT
+			ctdb_counter_init "$RECLOCKCOUNT"
 		}
 	) >/dev/null 2>/dev/null &
 
 
-	[ $COUNT -gt 2 ] && {
+	ctdb_counter_limit "$RECLOCKCOUNT" 3 && {
 		echo "Reclock file can not be accessed. Mark node UNHEALTHY."
 		exit 1;
 	}

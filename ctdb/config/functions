@@ -498,6 +498,40 @@ remove_ip() {
 }
 
 ########################################################
+# some simple logic for counting events - per eventscript
+# usage: ctdb_counter_init <tag>
+#        ctdb_counter_incr <tag>
+#        ctdb_counter_limit <tag> <limit>
+#        e.g. <tag> = "fail-count"
+# ctdb_counter_limit succeeds when count >= <limit>
+########################################################
+_ctdb_counter_common () {
+    _tag="$1"
+    _eventscript="${0##*/}" # basename
+
+    _counter_file="$CTDB_BASE/state/${_eventscript}-${_tag}"
+    mkdir -p "${_counter_file%/*}" # dirname
+}
+ctdb_counter_init () {
+    _ctdb_counter_common "$1"
+
+    echo -n > "$_counter_file"
+}
+ctdb_counter_incr () {
+    _ctdb_counter_common "$1"
+
+    # unary counting!
+    echo -n 1 >> "$_counter_file"
+}
+ctdb_counter_limit () {
+    _ctdb_counter_common "$1"
+    _limit="$2"
+
+    # unary counting!
+    _size=$(stat -c "%s" "$_counter_file" 2>/dev/null || echo 0)
+    [ $_size -ge $_limit ]
+}
+########################################################
 # load a site local config file
 ########################################################
 

@@ -10,6 +10,11 @@ loadconfig vsftpd
 cmd="$1"
 shift
 
+# Count the number of monitor failures.  The cluster only becomes
+# unhealthy after 2 failures.
+VSFTPD_FAILS="fail-count"
+VSFTPD_LIMIT=2
+
 case $cmd in 
      startup)
 	/bin/mkdir -p $CTDB_BASE/state/vsftpd
@@ -17,6 +22,8 @@ case $cmd in
 	# make sure the service is stopped first
 	service vsftpd stop > /dev/null 2>&1
 	service vsftpd start
+
+	ctdb_counter_init "$VSFTPD_FAILS"
 	;;
 
      shutdown)
@@ -43,7 +50,19 @@ case $cmd in
 	;;
 
      monitor)
-	ctdb_check_tcp_ports "ftp" 21
+	# Subshell catches the "exit 1"
+	if (ctdb_check_tcp_ports "ftp" 21) ; then
+	    ctdb_counter_init "$VSFTPD_FAILS"
+	else
+	    ctdb_counter_incr "$VSFTPD_FAILS"
+	    if ctdb_counter_limit "$VSFTPD_FAILS" $VSFTPD_LIMIT ; then
+		echo "ERROR: more than $VSFTPD_LIMIT consecutive failures, marking cluster unhealthy"
+		exit 1
+	    else
+		echo "WARNING: less than $VSFTPD_LIMIT consecutive failures, not unhealthy yet"
+	    fi
+		
+	fi
 	;;
 esac
 
