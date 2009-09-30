@@ -1,10 +1,11 @@
                    =============================
                    Release Notes for Samba 3.4.2
-			 September 29, 2009
+			  October 1, 2009
                    =============================
 
 
-This is a security release in order to address CVE-2009-2813 and CVE-2009-2948.
+This is a security release in order to address CVE-2009-2813, CVE-2009-2948
+and CVE-2009-2906.
 
    o CVE-2009-2813:
      In all versions of Samba later than 3.0.11, connecting to the home
@@ -18,6 +19,10 @@ This is a security release in order to address CVE-2009-2813 and CVE-2009-2948.
      then use the --verbose option to view the first line of that file.
      All known Samba versions are affected.
 
+   o CVE-2009-2906:
+     Specially crafted SMB requests on authenticated SMB connections can
+     send smbd into a 100% CPU loop, causing a DoS on the Samba server.
+
 
 ######################################################################
 Changes
@@ -29,6 +34,7 @@ Changes since 3.4.1
 
 o   Jeremy Allison <jra@samba.org>
     * BUG 6763: Fix for CVE-2009-2813.
+    * BUG 6768: Fix for CVE-2009-2906.
 
 
 o   Jeff Layton <jlayton@redhat.com>
