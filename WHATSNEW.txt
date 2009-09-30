@@ -1,10 +1,11 @@
                    ==============================
                    Release Notes for Samba 3.0.37
-                         September, 29 2009
+                          October, 1 2009
                    ==============================
 
 
-This is a security release in order to address CVE-2009-2813 and CVE-2009-2948.
+This is a security release in order to address CVE-2009-2813, CVE-2009-2948
+and CVE-2009-2906.
 Please note that Samba 3.0 is not maintained any longer. This security
 release is shipped on a voluntary basis.
 
@@ -18,6 +19,27 @@ release is shipped on a voluntary basis.
      If mount.cifs is installed as a setuid program, a user can pass it a
      credential or password path to which he or she does not have access and
      then use the --verbose option to view the first line of that file.
+
+   o CVE-2009-2906:
+     Specially crafted SMB requests on authenticated SMB connections can
+     send smbd into a 100% CPU loop, causing a DoS on the Samba server.
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.36
+--------------------
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 6763: Fix for CVE-2009-2813.
+    * BUG 6768: Fix for CVE-2009-2906.
+
+
+o   Jeff Layton <jlayton@redhat.com>
+    * Fix for CVE-2009-2948.
 
 
 ######################################################################
