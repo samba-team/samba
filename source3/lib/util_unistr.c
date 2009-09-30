@@ -256,41 +256,6 @@ char *skip_unibuf(char *src, size_t len)
 	return src;
 }
 
-/* Copy a string from little-endian or big-endian unicode source (depending
- * on flags) to internal samba format destination
- */ 
-
-int rpcstr_pull(char* dest, void *src, int dest_len, int src_len, int flags)
-{
-	if (!src) {
-		dest[0] = 0;
-		return 0;
-	}
-	if(dest_len==-1) {
-		dest_len=MAXUNI-3;
-	}
-	return pull_ucs2(NULL, dest, src, dest_len, src_len, flags|STR_UNICODE|STR_NOALIGN);
-}
-
-/* Copy a string from little-endian or big-endian unicode source (depending
- * on flags) to internal samba format destination. Allocates on talloc ctx.
- */
-
-int rpcstr_pull_talloc(TALLOC_CTX *ctx,
-			char **dest,
-			void *src,
-			int src_len,
-			int flags)
-{
-	return pull_ucs2_base_talloc(ctx,
-			NULL,
-			dest,
-			src,
-			src_len,
-			flags|STR_UNICODE|STR_NOALIGN);
-
-}
-
 /* Converts a string from internal samba format to unicode
  */
 
