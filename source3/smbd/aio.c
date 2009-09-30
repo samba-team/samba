@@ -187,6 +187,7 @@ bool schedule_aio_read_and_X(connection_struct *conn,
 		return False;
 	}
 
+	outstanding_aio_calls++;
 	aio_ex->req = talloc_move(aio_ex, &req);
 
 	DEBUG(10,("schedule_aio_read_and_X: scheduled aio_read for file %s, "
@@ -195,7 +196,6 @@ bool schedule_aio_read_and_X(connection_struct *conn,
 		  (unsigned int)aio_ex->req->mid ));
 
 	srv_defer_sign_response(aio_ex->req->mid);
-	outstanding_aio_calls++;
 	return True;
 }
 
@@ -283,6 +283,7 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 		return False;
 	}
 
+	outstanding_aio_calls++;
 	aio_ex->req = talloc_move(aio_ex, &req);
 
 	/* This should actually be improved to span the write. */
@@ -307,7 +308,6 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 	} else {
 		srv_defer_sign_response(aio_ex->req->mid);
 	}
-	outstanding_aio_calls++;
 
 	DEBUG(10,("schedule_aio_write_and_X: scheduled aio_write for file "
 		  "%s, offset %.0f, len = %u (mid = %u) "
@@ -522,6 +522,8 @@ void smbd_aio_complete_mid(unsigned int mid)
 	files_struct *fsp = NULL;
 	struct aio_extra *aio_ex = find_aio_ex(mid);
 	int ret = 0;
+
+	outstanding_aio_calls--;
 
 	DEBUG(10,("smbd_aio_complete_mid: mid[%u]\n", mid));
 
