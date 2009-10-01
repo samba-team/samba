@@ -1,11 +1,11 @@
 .\"     Title: ctdbd
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
-.\"      Date: 07/09/2009
+.\"      Date: 10/01/2009
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "CTDBD" "1" "07/09/2009" "" ""
+.TH "CTDBD" "1" "10/01/2009" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -16,7 +16,7 @@ ctdbd - The CTDB cluster daemon
 .HP 6
 \fBctdbd\fR
 .HP 6
-\fBctdbd\fR [\-?\ \-\-help] [\-d\ \-\-debug=<INTEGER>] {\-\-dbdir=<directory>} {\-\-dbdir\-persistent=<directory>} [\-\-event\-script\-dir=<directory>] [\-i\ \-\-interactive] [\-\-listen=<address>] [\-\-logfile=<filename>] [\-\-lvs] {\-\-nlist=<filename>} [\-\-no\-lmaster] [\-\-no\-recmaster] [\-\-nosetsched] [\-\-public\-addresses=<filename>] [\-\-public\-interface=<interface>] {\-\-reclock=<filename>} [\-\-single\-public\-ip=<address>] [\-\-socket=<filename>] [\-\-start\-as\-disabled] [\-\-start\-as\-stopped] [\-\-syslog] [\-\-torture] [\-\-transport=<STRING>] [\-\-usage]
+\fBctdbd\fR [\-?\ \-\-help] [\-d\ \-\-debug=<INTEGER>] {\-\-dbdir=<directory>} {\-\-dbdir\-persistent=<directory>} [\-\-event\-script\-dir=<directory>] [\-i\ \-\-interactive] [\-\-listen=<address>] [\-\-logfile=<filename>] [\-\-lvs] {\-\-nlist=<filename>} [\-\-no\-lmaster] [\-\-no\-recmaster] [\-\-nosetsched] {\-\-notification\-script=<filename>} [\-\-public\-addresses=<filename>] [\-\-public\-interface=<interface>] {\-\-reclock=<filename>} [\-\-single\-public\-ip=<address>] [\-\-socket=<filename>] [\-\-start\-as\-disabled] [\-\-start\-as\-stopped] [\-\-syslog] [\-\-torture] [\-\-transport=<STRING>] [\-\-usage]
 .SH "DESCRIPTION"
 .PP
 ctdbd is the main ctdb daemon\.
@@ -111,6 +111,15 @@ This is a ctdbd debugging option\. this option is only used when debugging ctdbd
 Normally ctdb will change its scheduler to run as a real\-time process\. This is the default mode for a normal ctdbd operation to gurarantee that ctdbd always gets the cpu cycles that it needs\.
 .sp
 This option is used to tell ctdbd to NOT run as a real\-time process and instead run ctdbd as a normal userspace process\. This is useful for debugging and when you want to run ctdbd under valgrind or gdb\. (You dont want to attach valgrind or gdb to a real\-time process\.)
+.RE
+.PP
+\-\-notification\-script=<filename>
+.RS 4
+This specifies a script which will be invoked by ctdb when certain state changes occur in ctdbd and when you may want to trigger this to run certain scripts\.
+.sp
+This file is usually /etc/ctdb/notify\.sh \.
+.sp
+See the NOTIFICATION SCRIPT section below for more information\.
 .RE
 .PP
 \-\-public_addresses=<filename>
@@ -508,6 +517,24 @@ The NAT\-GW node is assigned the CTDB_NATGW_PUBLIC_IP to the designated interfac
 All other nodes in the group are configured with a default route of metric 10 pointing to the designated NAT GW node\.
 .PP
 This is implemented in the 11\.natgw eventscript\. Please see the eventscript for further information\.
+.SH "NOTIFICATION SCRIPT"
+.PP
+Notification scripts are used with ctdb to have a call\-out from ctdb to a user\-specified script when certain state changes occur in ctdb\. This is commonly to set up either sending SNMP traps or emails when a node becomes unhealthy and similar\.
+.PP
+This is activated by setting CTDB_NOTIFY_SCRIPT=<your script> in the sysconfig file, or by adding \-\-notification\-script=<your script>\.
+.PP
+See /etc/ctdb/notify\.sh for an example script\.
+.PP
+CTDB currently generates notifications on these state changes:
+.SS "unhealthy"
+.PP
+This call\-out is triggered when the node changes to UNHEALTHY state\.
+.SS "healthy"
+.PP
+This call\-out is triggered when the node changes to HEALTHY state\.
+.SS "startup"
+.PP
+This call\-out is triggered when ctdb has started up and all managed services are up and running\.
 .SH "CLAMAV DAEMON"
 .PP
 CTDB has support to manage the popular anti\-virus daemon ClamAV\. This support is implemented through the eventscript : /etc/ctdb/events\.d/31\.clamd\.
@@ -524,11 +551,11 @@ CTDB_CLAMD_SOCKET="/path/to/clamd\.socket"
 .fi
 .RE
 .PP
-Second, activate the eventscript by making it executable:
+Second, activate the eventscript
 .sp
 .RS 4
 .nf
-chmod +x /etc/ctdb/events\.d/31\.clamd
+ctdb enablescript 31\.clamd
 .fi
 .RE
 .PP

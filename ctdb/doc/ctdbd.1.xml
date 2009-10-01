@@ -33,6 +33,7 @@
 		<arg choice="opt">--no-lmaster</arg>
 		<arg choice="opt">--no-recmaster</arg>
 		<arg choice="opt">--nosetsched</arg>
+		<arg choice="req">--notification-script=&lt;filename&gt;</arg>
 		<arg choice="opt">--public-addresses=&lt;filename&gt;</arg>
 		<arg choice="opt">--public-interface=&lt;interface&gt;</arg>
 		<arg choice="req">--reclock=&lt;filename&gt;</arg>
@@ -215,6 +216,22 @@
 	    This is useful for debugging and when you want to run ctdbd under
 	    valgrind or gdb. (You dont want to attach valgrind or gdb to a
 	    real-time process.)
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>--notification-script=&lt;filename&gt;</term>
+        <listitem>
+          <para>
+	    This specifies a script which will be invoked by ctdb when certain
+	    state changes occur in ctdbd and when you may want to trigger this
+	    to run certain scripts.
+          </para>
+          <para>
+            This file is usually /etc/ctdb/notify.sh .
+          </para>
+          <para>
+	    See the NOTIFICATION SCRIPT section below for more information.
           </para>
         </listitem>
       </varlistentry>
@@ -929,6 +946,43 @@ CTDB_CAPABILITY_RECMASTER=no
 
   </refsect1>
 
+  <refsect1><title>NOTIFICATION SCRIPT</title>
+    <para>
+      Notification scripts are used with ctdb to have a call-out from ctdb
+      to a user-specified script when certain state changes occur in ctdb.
+      This is commonly to set up either sending SNMP traps or emails
+      when a node becomes unhealthy and similar.
+    </para>
+    <para>
+      This is activated by setting CTDB_NOTIFY_SCRIPT=&lt;your script&gt; in the
+	sysconfig file, or by adding --notification-script=&lt;your script&gt;.
+    </para>
+    <para>
+      See /etc/ctdb/notify.sh for an example script.
+    </para>
+    <para>
+      CTDB currently generates notifications on these state changes:
+    </para>
+
+    <refsect2><title>unhealthy</title>
+    <para>
+      This call-out is triggered when the node changes to UNHEALTHY state.
+    </para>
+    </refsect2>
+
+    <refsect2><title>healthy</title>
+    <para>
+      This call-out is triggered when the node changes to HEALTHY state.
+    </para>
+    </refsect2>
+
+    <refsect2><title>startup</title>
+    <para>
+      This call-out is triggered when ctdb has started up and all managed services are up and running.
+    </para>
+    </refsect2>
+
+  </refsect1>
 
 
 <refsect1><title>ClamAV Daemon</title>
@@ -956,10 +1010,10 @@ CTDB_CLAMD_SOCKET="/path/to/clamd.socket"
 </screen>
 
 <para>
-Second, activate the eventscript by making it executable:
+Second, activate the eventscript
 </para>
 <screen format="linespecific">
-chmod +x /etc/ctdb/events.d/31.clamd
+ctdb enablescript 31.clamd
 </screen>
 
 <para>
