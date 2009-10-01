@@ -104,23 +104,4 @@ typedef struct {		/* UNISTR - unicode string size and buffer */
 				   little-endian. ***MUST*** be null-terminated */
 } UNISTR;
 
-/*
- * I'm really wondering how many different time formats
- * I will have to cope with
- *
- * JFM, 09/13/98 In a mad mood ;-(
-*/
-typedef struct systemtime
-{
-	uint16 year;
-	uint16 month;
-	uint16 dayofweek;
-	uint16 day;
-	uint16 hour;
-	uint16 minute;
-	uint16 second;
-	uint16 milliseconds;
-}
-SYSTEMTIME;
-
 #endif /* _RPC_MISC_H */
