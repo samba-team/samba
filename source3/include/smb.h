@@ -727,6 +727,7 @@ struct pending_message_list {
 	struct smb_perfcount_data pcd;
 	uint32_t seqnum;
 	bool encrypted;
+	bool processed;
 	DATA_BLOB buf;
 	DATA_BLOB private_data;
 };
