@@ -593,6 +593,7 @@ REG_FULL_OBJ = $(REG_SMBCONF_OBJ) \
 	       $(REG_INIT_FULL_OBJ) \
 	       registry/reg_eventlog.o \
 	       registry/reg_perfcount.o \
+	       librpc/gen_ndr/ndr_perfcount.o \
 	       registry/reg_util_legacy.o
 
 LIB_EVENTLOG_OBJ = lib/eventlog/eventlog.o
@@ -1395,7 +1396,7 @@ samba3-idl::
 	@PIDL_OUTPUTDIR="librpc/gen_ndr" PIDL_ARGS="$(PIDL_ARGS)" CPP="$(CPP)" PIDL="../pidl/pidl" \
 	 srcdir="$(srcdir)" $(srcdir)/script/build_idl.sh \
 		librpc/idl/messaging.idl librpc/idl/libnetapi.idl librpc/idl/notify.idl \
-		librpc/idl/wbint.idl
+		librpc/idl/wbint.idl librpc/idl/perfcount.idl
 
 #####################################################################
 

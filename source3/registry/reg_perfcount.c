@@ -30,7 +30,7 @@
 #define NAMES_DB	"names.tdb"
 #define DATA_DB		"data.tdb"
 
-PERF_OBJECT_TYPE *_reg_perfcount_find_obj(PERF_DATA_BLOCK *block, int objind);
+struct PERF_OBJECT_TYPE *_reg_perfcount_find_obj(struct PERF_DATA_BLOCK *block, int objind);
 
 /*********************************************************************
 *********************************************************************/
@@ -365,7 +365,7 @@ static uint32 _reg_perfcount_get_numinst(int objInd, TDB_CONTEXT *names)
 /*********************************************************************
 *********************************************************************/
 
-static bool _reg_perfcount_add_object(PERF_DATA_BLOCK *block,
+static bool _reg_perfcount_add_object(struct PERF_DATA_BLOCK *block,
 				      prs_struct *ps,
 				      int num,
 				      TDB_DATA data,
@@ -373,16 +373,16 @@ static bool _reg_perfcount_add_object(PERF_DATA_BLOCK *block,
 {
 	int i;
 	bool success = True;
-	PERF_OBJECT_TYPE *obj;
+	struct PERF_OBJECT_TYPE *obj;
 
-	block->objects = (PERF_OBJECT_TYPE *)TALLOC_REALLOC_ARRAY(ps->mem_ctx,
+	block->objects = (struct PERF_OBJECT_TYPE *)TALLOC_REALLOC_ARRAY(ps->mem_ctx,
 								  block->objects,
-								  PERF_OBJECT_TYPE,
+								  struct PERF_OBJECT_TYPE,
 								  block->NumObjectTypes+1);
 	if(block->objects == NULL)
 		return False;
 	obj = &(block->objects[block->NumObjectTypes]);
-	memset((void *)&(block->objects[block->NumObjectTypes]), 0, sizeof(PERF_OBJECT_TYPE));
+	memset((void *)&(block->objects[block->NumObjectTypes]), 0, sizeof(struct PERF_OBJECT_TYPE));
 	block->objects[block->NumObjectTypes].ObjectNameTitleIndex = num;
 	block->objects[block->NumObjectTypes].ObjectNameTitlePointer = 0;
 	block->objects[block->NumObjectTypes].ObjectHelpTitleIndex = num+1;
@@ -469,10 +469,10 @@ static uint32 _reg_perfcount_compute_scale(int64_t data)
 /*********************************************************************
 *********************************************************************/
 
-static bool _reg_perfcount_get_counter_info(PERF_DATA_BLOCK *block,
+static bool _reg_perfcount_get_counter_info(struct PERF_DATA_BLOCK *block,
 					    prs_struct *ps,
 					    int CounterIndex,
-					    PERF_OBJECT_TYPE *obj,
+					    struct PERF_OBJECT_TYPE *obj,
 					    TDB_CONTEXT *names)
 {
 	TDB_DATA key, data;
@@ -578,11 +578,11 @@ static bool _reg_perfcount_get_counter_info(PERF_DATA_BLOCK *block,
 /*********************************************************************
 *********************************************************************/
 
-PERF_OBJECT_TYPE *_reg_perfcount_find_obj(PERF_DATA_BLOCK *block, int objind)
+struct PERF_OBJECT_TYPE *_reg_perfcount_find_obj(struct PERF_DATA_BLOCK *block, int objind)
 {
 	int i;
 
-	PERF_OBJECT_TYPE *obj = NULL;
+	struct PERF_OBJECT_TYPE *obj = NULL;
 
 	for(i = 0; i < block->NumObjectTypes; i++)
 	{
@@ -598,7 +598,7 @@ PERF_OBJECT_TYPE *_reg_perfcount_find_obj(PERF_DATA_BLOCK *block, int objind)
 /*********************************************************************
 *********************************************************************/
 
-static bool _reg_perfcount_add_counter(PERF_DATA_BLOCK *block,
+static bool _reg_perfcount_add_counter(struct PERF_DATA_BLOCK *block,
 				       prs_struct *ps,
 				       int num,
 				       TDB_DATA data,
@@ -606,7 +606,7 @@ static bool _reg_perfcount_add_counter(PERF_DATA_BLOCK *block,
 {
 	char *begin, *end, *start, *stop;
 	int parent;
-	PERF_OBJECT_TYPE *obj;
+	struct PERF_OBJECT_TYPE *obj;
 	bool success = True;
 	char buf[PERFCOUNT_MAX_LEN];
 
@@ -634,17 +634,17 @@ static bool _reg_perfcount_add_counter(PERF_DATA_BLOCK *block,
 				  parent, num));
 			return False;
 		}
-		obj->counters = (PERF_COUNTER_DEFINITION *)TALLOC_REALLOC_ARRAY(ps->mem_ctx,
+		obj->counters = (struct PERF_COUNTER_DEFINITION *)TALLOC_REALLOC_ARRAY(ps->mem_ctx,
 										obj->counters,
-										PERF_COUNTER_DEFINITION,
+										struct PERF_COUNTER_DEFINITION,
 										obj->NumCounters+1);
 		if(obj->counters == NULL)
 			return False;
-		memset((void *)&(obj->counters[obj->NumCounters]), 0, sizeof(PERF_COUNTER_DEFINITION));
+		memset((void *)&(obj->counters[obj->NumCounters]), 0, sizeof(struct PERF_COUNTER_DEFINITION));
 		obj->counters[obj->NumCounters].CounterNameTitleIndex=num;
 		obj->counters[obj->NumCounters].CounterHelpTitleIndex=num+1;
 		obj->counters[obj->NumCounters].DetailLevel = PERF_DETAIL_NOVICE;
-		obj->counters[obj->NumCounters].ByteLength = sizeof(PERF_COUNTER_DEFINITION);
+		obj->counters[obj->NumCounters].ByteLength = sizeof(struct PERF_COUNTER_DEFINITION);
 		success = _reg_perfcount_get_counter_info(block, ps, num, obj, names);
 		obj->NumCounters += 1;
 		start = stop + 1;
@@ -660,10 +660,10 @@ static bool _reg_perfcount_add_counter(PERF_DATA_BLOCK *block,
 /*********************************************************************
 *********************************************************************/
 
-bool _reg_perfcount_get_instance_info(PERF_INSTANCE_DEFINITION *inst,
+bool _reg_perfcount_get_instance_info(struct PERF_INSTANCE_DEFINITION *inst,
 				      prs_struct *ps,
 				      int instId,
-				      PERF_OBJECT_TYPE *obj,
+				      struct PERF_OBJECT_TYPE *obj,
 				      TDB_CONTEXT *names)
 {
 	TDB_DATA key, data;
@@ -754,23 +754,23 @@ bool _reg_perfcount_get_instance_info(PERF_INSTANCE_DEFINITION *inst,
 /*********************************************************************
 *********************************************************************/
 
-bool _reg_perfcount_add_instance(PERF_OBJECT_TYPE *obj,
+bool _reg_perfcount_add_instance(struct PERF_OBJECT_TYPE *obj,
 				 prs_struct *ps,
 				 int instInd,
 				 TDB_CONTEXT *names)
 {
-	PERF_INSTANCE_DEFINITION *inst;
+	struct PERF_INSTANCE_DEFINITION *inst;
 
 	if(obj->instances == NULL) {
 		obj->instances = TALLOC_REALLOC_ARRAY(ps->mem_ctx, 
 						      obj->instances,
-						      PERF_INSTANCE_DEFINITION,
+						      struct PERF_INSTANCE_DEFINITION,
 						      obj->NumInstances);
 	}
 	if(obj->instances == NULL)
 		return False;
 
-	memset(&(obj->instances[instInd]), 0, sizeof(PERF_INSTANCE_DEFINITION));
+	memset(&(obj->instances[instInd]), 0, sizeof(struct PERF_INSTANCE_DEFINITION));
 	inst = &(obj->instances[instInd]);
 	return _reg_perfcount_get_instance_info(inst, ps, instInd, obj, names);
 }
@@ -778,7 +778,7 @@ bool _reg_perfcount_add_instance(PERF_OBJECT_TYPE *obj,
 /*********************************************************************
 *********************************************************************/
 
-static int _reg_perfcount_assemble_global(PERF_DATA_BLOCK *block,
+static int _reg_perfcount_assemble_global(struct PERF_DATA_BLOCK *block,
 					  prs_struct *ps,
 					  int base_index,
 					  TDB_CONTEXT *names)
@@ -849,7 +849,7 @@ static bool _reg_perfcount_get_64(uint64_t *retval,
 /*********************************************************************
 *********************************************************************/
 
-static bool _reg_perfcount_init_data_block_perf(PERF_DATA_BLOCK *block,
+static bool _reg_perfcount_init_data_block_perf(struct PERF_DATA_BLOCK *block,
 						TDB_CONTEXT *names)
 {
 	uint64_t PerfFreq, PerfTime, PerfTime100nSec;
@@ -893,10 +893,27 @@ static bool _reg_perfcount_init_data_block_perf(PERF_DATA_BLOCK *block,
 	return True;
 }
 
+/*******************************************************************
+********************************************************************/
+
+static bool make_systemtime(struct SYSTEMTIME *systime, struct tm *unixtime)
+{
+	systime->year=unixtime->tm_year+1900;
+	systime->month=unixtime->tm_mon+1;
+	systime->dayofweek=unixtime->tm_wday;
+	systime->day=unixtime->tm_mday;
+	systime->hour=unixtime->tm_hour;
+	systime->minute=unixtime->tm_min;
+	systime->second=unixtime->tm_sec;
+	systime->milliseconds=0;
+
+	return True;
+}
+
 /*********************************************************************
 *********************************************************************/
 
-static bool _reg_perfcount_init_data_block(PERF_DATA_BLOCK *block,
+static bool _reg_perfcount_init_data_block(struct PERF_DATA_BLOCK *block,
 					   prs_struct *ps, TDB_CONTEXT *names)
 {
 	smb_ucs2_t *temp = NULL;
@@ -931,7 +948,7 @@ static bool _reg_perfcount_init_data_block(PERF_DATA_BLOCK *block,
 		return False;
 	}
 	memcpy(block->data, temp, block->SystemNameLength);
-	block->SystemNameOffset = sizeof(PERF_DATA_BLOCK) - sizeof(block->objects) - sizeof(block->data); 
+	block->SystemNameOffset = sizeof(struct PERF_DATA_BLOCK) - sizeof(block->objects) - sizeof(block->data);
 	block->HeaderLength = block->SystemNameOffset + block->SystemNameLength;
 	/* Make sure to adjust for 64-bit alignment for when we finish writing the system name,
 	   so that the PERF_OBJECT_TYPE struct comes out 64-bit aligned */
@@ -943,13 +960,13 @@ static bool _reg_perfcount_init_data_block(PERF_DATA_BLOCK *block,
 /*********************************************************************
 *********************************************************************/
 
-static uint32 _reg_perfcount_perf_data_block_fixup(PERF_DATA_BLOCK *block, prs_struct *ps)
+static uint32 _reg_perfcount_perf_data_block_fixup(struct PERF_DATA_BLOCK *block, prs_struct *ps)
 {
 	int obj, cnt, inst, pad, i;
-	PERF_OBJECT_TYPE *object;
-	PERF_INSTANCE_DEFINITION *instance;
-	PERF_COUNTER_DEFINITION *counter;
-	PERF_COUNTER_BLOCK *counter_data;
+	struct PERF_OBJECT_TYPE *object;
+	struct PERF_INSTANCE_DEFINITION *instance;
+	struct PERF_COUNTER_DEFINITION *counter;
+	struct PERF_COUNTER_BLOCK *counter_data;
 	char *temp = NULL, *src_addr, *dst_addr;
 
 	block->TotalByteLength = 0;
@@ -1024,7 +1041,7 @@ static uint32 _reg_perfcount_perf_data_block_fixup(PERF_DATA_BLOCK *block, prs_s
 			}
 			object[obj].TotalByteLength += object[obj].counter_data.ByteLength;
 		}
-		object[obj].HeaderLength = sizeof(*object) - (sizeof(counter) + sizeof(instance) + sizeof(PERF_COUNTER_BLOCK));
+		object[obj].HeaderLength = sizeof(*object) - (sizeof(counter) + sizeof(instance) + sizeof(struct PERF_COUNTER_BLOCK));
 		object[obj].TotalByteLength += object[obj].HeaderLength;
 		object[obj].DefinitionLength += object[obj].HeaderLength;
 
@@ -1039,7 +1056,7 @@ static uint32 _reg_perfcount_perf_data_block_fixup(PERF_DATA_BLOCK *block, prs_s
 
 uint32 reg_perfcount_get_perf_data_block(uint32 base_index, 
 					 prs_struct *ps, 
-					 PERF_DATA_BLOCK *block,
+					 struct PERF_DATA_BLOCK *block,
 					 const char *object_ids)
 {
 	uint32 buffer_size = 0;
@@ -1084,10 +1101,35 @@ uint32 reg_perfcount_get_perf_data_block(uint32 base_index,
 	return buffer_size + block->HeaderLength;
 }
 
+/*******************************************************************
+********************************************************************/
+
+static bool smb_io_system_time(const char *desc, prs_struct *ps, int depth, struct SYSTEMTIME *systime)
+{
+	if(!prs_uint16("year", ps, depth, &systime->year))
+		return False;
+	if(!prs_uint16("month", ps, depth, &systime->month))
+		return False;
+	if(!prs_uint16("dayofweek", ps, depth, &systime->dayofweek))
+		return False;
+	if(!prs_uint16("day", ps, depth, &systime->day))
+		return False;
+	if(!prs_uint16("hour", ps, depth, &systime->hour))
+		return False;
+	if(!prs_uint16("minute", ps, depth, &systime->minute))
+		return False;
+	if(!prs_uint16("second", ps, depth, &systime->second))
+		return False;
+	if(!prs_uint16("milliseconds", ps, depth, &systime->milliseconds))
+		return False;
+
+	return True;
+}
+
 /*********************************************************************
 *********************************************************************/
 
-static bool _reg_perfcount_marshall_perf_data_block(prs_struct *ps, PERF_DATA_BLOCK block, int depth)
+static bool _reg_perfcount_marshall_perf_data_block(prs_struct *ps, struct PERF_DATA_BLOCK block, int depth)
 {
 	int i;
 	prs_debug(ps, depth, "", "_reg_perfcount_marshall_perf_data_block");
@@ -1142,11 +1184,11 @@ static bool _reg_perfcount_marshall_perf_data_block(prs_struct *ps, PERF_DATA_BL
 *********************************************************************/
 
 static bool _reg_perfcount_marshall_perf_counters(prs_struct *ps,
-						  PERF_OBJECT_TYPE object,
+						  struct PERF_OBJECT_TYPE object,
 						  int depth)
 {
 	int cnt;
-	PERF_COUNTER_DEFINITION counter;
+	struct PERF_COUNTER_DEFINITION counter;
 
 	prs_debug(ps, depth, "", "_reg_perfcount_marshall_perf_counters");
 	depth++;
@@ -1186,7 +1228,7 @@ static bool _reg_perfcount_marshall_perf_counters(prs_struct *ps,
 *********************************************************************/
 
 static bool _reg_perfcount_marshall_perf_counter_data(prs_struct *ps, 
-						      PERF_COUNTER_BLOCK counter_data, 
+						      struct PERF_COUNTER_BLOCK counter_data,
 						      int depth)
 {
 	prs_debug(ps, depth, "", "_reg_perfcount_marshall_perf_counter_data");
@@ -1209,10 +1251,10 @@ static bool _reg_perfcount_marshall_perf_counter_data(prs_struct *ps,
 *********************************************************************/
 
 static bool _reg_perfcount_marshall_perf_instances(prs_struct *ps,
-						   PERF_OBJECT_TYPE object, 
+						   struct PERF_OBJECT_TYPE object,
 						   int depth)
 {
-	PERF_INSTANCE_DEFINITION instance;
+	struct PERF_INSTANCE_DEFINITION instance;
 	int inst;
 
 	prs_debug(ps, depth, "", "_reg_perfcount_marshall_perf_instances");
@@ -1249,11 +1291,11 @@ static bool _reg_perfcount_marshall_perf_instances(prs_struct *ps,
 /*********************************************************************
 *********************************************************************/
 
-static bool _reg_perfcount_marshall_perf_objects(prs_struct *ps, PERF_DATA_BLOCK block, int depth)
+static bool _reg_perfcount_marshall_perf_objects(prs_struct *ps, struct PERF_DATA_BLOCK block, int depth)
 {
 	int obj;
 
-	PERF_OBJECT_TYPE object;
+	struct PERF_OBJECT_TYPE object;
 
 	prs_debug(ps, depth, "", "_reg_perfcount_marshall_perf_objects");
 	depth++;
@@ -1319,7 +1361,7 @@ static bool _reg_perfcount_marshall_perf_objects(prs_struct *ps, PERF_DATA_BLOCK
 /*********************************************************************
 *********************************************************************/
 
-static bool _reg_perfcount_marshall_hkpd(prs_struct *ps, PERF_DATA_BLOCK block)
+static bool _reg_perfcount_marshall_hkpd(prs_struct *ps, struct PERF_DATA_BLOCK block)
 {
 	int depth = 0;
 	if(_reg_perfcount_marshall_perf_data_block(ps, block, depth) == True)
@@ -1343,7 +1385,7 @@ WERROR reg_perfcount_get_hkpd(prs_struct *ps, uint32 max_buf_size, uint32 *outbu
 	 * promising under
 	 * http://msdn2.microsoft.com/en-us/library/aa373105.aspx -- vl
 	 */
-	PERF_DATA_BLOCK block;
+	struct PERF_DATA_BLOCK block;
 	uint32 buffer_size, base_index; 
 
 	buffer_size = 0;
