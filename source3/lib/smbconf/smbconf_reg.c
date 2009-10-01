@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "lib/smbconf/smbconf_private.h"
+#include "registry.h"
 
 #define INCLUDES_VALNAME "includes"
 

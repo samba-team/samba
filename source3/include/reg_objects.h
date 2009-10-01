@@ -167,4 +167,40 @@ struct registry_key {
 	struct nt_user_token *token;
 };
 
+/* The following definitions come from registry/reg_objects.c  */
+
+WERROR regsubkey_ctr_init(TALLOC_CTX *mem_ctx, struct regsubkey_ctr **ctr);
+WERROR regsubkey_ctr_reinit(struct regsubkey_ctr *ctr);
+WERROR regsubkey_ctr_set_seqnum(struct regsubkey_ctr *ctr, int seqnum);
+int regsubkey_ctr_get_seqnum(struct regsubkey_ctr *ctr);
+WERROR regsubkey_ctr_addkey( struct regsubkey_ctr *ctr, const char *keyname );
+WERROR regsubkey_ctr_delkey( struct regsubkey_ctr *ctr, const char *keyname );
+bool regsubkey_ctr_key_exists( struct regsubkey_ctr *ctr, const char *keyname );
+int regsubkey_ctr_numkeys( struct regsubkey_ctr *ctr );
+char* regsubkey_ctr_specific_key( struct regsubkey_ctr *ctr, uint32 key_index );
+int regval_ctr_numvals(struct regval_ctr *ctr);
+struct regval_blob* dup_registry_value(struct regval_blob *val);
+void free_registry_value(struct regval_blob *val);
+uint8* regval_data_p(struct regval_blob *val);
+uint32 regval_size(struct regval_blob *val);
+char* regval_name(struct regval_blob *val);
+uint32 regval_type(struct regval_blob *val);
+struct regval_blob* regval_ctr_specific_value(struct regval_ctr *ctr,
+					      uint32 idx);
+bool regval_ctr_key_exists(struct regval_ctr *ctr, const char *value);
+struct regval_blob *regval_compose(TALLOC_CTX *ctx, const char *name,
+				   uint16 type,
+				   const char *data_p, size_t size);
+int regval_ctr_addvalue(struct regval_ctr *ctr, const char *name, uint16 type,
+			const char *data_p, size_t size);
+int regval_ctr_addvalue_sz(struct regval_ctr *ctr, const char *name, const char *data);
+int regval_ctr_addvalue_multi_sz(struct regval_ctr *ctr, const char *name, const char **data);
+int regval_ctr_copyvalue(struct regval_ctr *ctr, struct regval_blob *val);
+int regval_ctr_delvalue(struct regval_ctr *ctr, const char *name);
+struct regval_blob* regval_ctr_getvalue(struct regval_ctr *ctr,
+					const char *name);
+uint32 regval_dword(struct regval_blob *val);
+const char *regval_sz(struct regval_blob *val);
+
+
 #endif /* _REG_OBJECTS_H */

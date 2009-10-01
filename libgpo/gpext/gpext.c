@@ -24,6 +24,7 @@
 #include "lib/util/dlinklist.h"
 #if _SAMBA_BUILD_ == 3
 #include "libgpo/gpo_proto.h"
+#include "registry.h"
 #endif
 
 static struct gp_extension *extensions = NULL;

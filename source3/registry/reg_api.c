@@ -63,6 +63,7 @@
  */
 
 #include "includes.h"
+#include "registry.h"
 #include "regfio.h"
 
 #undef DBGC_CLASS

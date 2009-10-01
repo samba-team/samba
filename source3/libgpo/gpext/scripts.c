@@ -21,6 +21,7 @@
 #include "../libgpo/gpo_ini.h"
 #include "../libgpo/gpo.h"
 #include "libgpo/gpo_proto.h"
+#include "registry.h"
 
 #define GP_EXT_NAME "scripts"
 

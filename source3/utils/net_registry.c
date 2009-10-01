@@ -20,10 +20,10 @@
  */
 
 #include "includes.h"
+#include "registry.h"
 #include "utils/net.h"
 #include "utils/net_registry_util.h"
 #include "include/g_lock.h"
-
 
 /*
  *

@@ -27,6 +27,8 @@
 #ifndef _REGFIO_H
 #define _REGFIO_H
 
+struct regsubkey_ctr;
+
 /* Macros */
  
 #define REGF_BLOCKSIZE		0x1000

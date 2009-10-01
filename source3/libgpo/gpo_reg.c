@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "../libgpo/gpo.h"
 #include "libgpo/gpo_proto.h"
+#include "registry.h"
 
 
 /****************************************************************

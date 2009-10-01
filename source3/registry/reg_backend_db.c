@@ -21,6 +21,8 @@
 /* Implementation of internal registry database functions. */
 
 #include "includes.h"
+#include "registry.h"
+#include "reg_db.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY

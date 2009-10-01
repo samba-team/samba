@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "../librpc/gen_ndr/srv_ntsvcs.h"
+#include "registry.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "adt_tree.h"
+#include "registry.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY

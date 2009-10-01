@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "regfio.h"
+#include "reg_objects.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY

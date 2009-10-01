@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "../librpc/gen_ndr/cli_spoolss.h"
+#include "registry.h"
 
 #ifdef HAVE_ADS
 
