@@ -1231,7 +1231,11 @@ static NTSTATUS vfswrap_streaminfo(vfs_handle_struct *handle,
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
-		ret = SMB_VFS_STAT(handle->conn, smb_fname);
+		if (lp_posix_pathnames()) {
+			ret = SMB_VFS_LSTAT(handle->conn, smb_fname);
+		} else {
+			ret = SMB_VFS_STAT(handle->conn, smb_fname);
+		}
 		sbuf = smb_fname->st;
 		TALLOC_FREE(smb_fname);
 	}
