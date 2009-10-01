@@ -956,6 +956,10 @@ static PyObject *py_ldb_msg_diff(PyLdbObject *self, PyObject *args)
 	}
 
 	diff = ldb_msg_diff(PyLdb_AsLdbContext(self), PyLdbMessage_AsMessage(py_msg_old), PyLdbMessage_AsMessage(py_msg_new));
+	if (!diff) {
+		PyErr_SetString(PyExc_KeyError, "Failed to generate the Ldb Message diff");
+		return NULL;
+	}
 
 	py_ret = PyLdbMessage_FromMessage(diff);
 

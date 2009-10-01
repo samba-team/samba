@@ -560,6 +560,9 @@ struct ldb_message *ldb_msg_diff(struct ldb_context *ldb,
 	unsigned int i;
 
 	mod = ldb_msg_new(ldb);
+	if (mod == NULL) {
+		return NULL;
+	}
 
 	mod->dn = msg1->dn;
 	mod->num_elements = 0;
@@ -567,6 +570,7 @@ struct ldb_message *ldb_msg_diff(struct ldb_context *ldb,
 
 	msg2 = ldb_msg_canonicalize(ldb, msg2);
 	if (msg2 == NULL) {
+		talloc_free(mod);
 		return NULL;
 	}
 	
@@ -581,7 +585,8 @@ struct ldb_message *ldb_msg_diff(struct ldb_context *ldb,
 
 		if (ldb_msg_add(mod, 
 				&msg2->elements[i],
-				el?LDB_FLAG_MOD_REPLACE:LDB_FLAG_MOD_ADD) != 0) {
+				el?LDB_FLAG_MOD_REPLACE:LDB_FLAG_MOD_ADD) != LDB_SUCCESS) {
+			talloc_free(mod);
 			return NULL;
 		}
 	}
@@ -589,10 +594,11 @@ struct ldb_message *ldb_msg_diff(struct ldb_context *ldb,
 	/* look in msg1 to find elements that need to be deleted */
 	for (i=0;i<msg1->num_elements;i++) {
 		el = ldb_msg_find_element(msg2, msg1->elements[i].name);
-		if (!el) {
+		if (el == NULL) {
 			if (ldb_msg_add_empty(mod, 
 					      msg1->elements[i].name,
-					      LDB_FLAG_MOD_DELETE, NULL) != 0) {
+					      LDB_FLAG_MOD_DELETE, NULL) != LDB_SUCCESS) {
+				talloc_free(mod);
 				return NULL;
 			}
 		}
