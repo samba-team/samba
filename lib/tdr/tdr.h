@@ -55,7 +55,7 @@ struct tdr_print {
                         } while (0)
 
 #define TDR_ALLOC(ctx, s, n) do { \
-	                       (s) = talloc_array_size(ctx, sizeof(*(s)), n); \
+			       (s) = talloc_array_ptrtype(ctx, (s), n); \
                            if ((n) && !(s)) return NT_STATUS_NO_MEMORY; \
                            } while (0)
 
