@@ -605,20 +605,37 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 #define LDB_CONTROL_SERVER_LAZY_COMMIT   "1.2.840.113556.1.4.619"
 
 /**
+   OID for LDAP Extended Operation FAST_BIND
+
+   This Extended operations is used to perform a fast bind.
+*/
+#define LDB_EXTENDED_FAST_BIND_OID	"1.2.840.113556.1.4.1781"
+
+/**
    OID for LDAP Extended Operation START_TLS.
 
-   This Extended operation is used to start a new TLS
-   channel on top of a clear text channel.
+   This Extended operation is used to start a new TLS channel on top of a clear
+   text channel.
 */
 #define LDB_EXTENDED_START_TLS_OID	"1.3.6.1.4.1.1466.20037"
 
 /**
+   OID for LDAP Extended Operation DYNAMIC_REFRESH.
+
+   This Extended operation is used to create and maintain objects which exist
+   only a specific time, e.g. when a certain client or a certain person is
+   logged in. Data refreshes have to be periodically sent in a specific
+   interval. Otherwise the entry is going to be removed.
 */
 #define LDB_EXTENDED_DYNAMIC_OID	"1.3.6.1.4.1.1466.101.119.1"
 
-/**
+/*
+   OID for LDAP Extended Operation PASSWORD_CHANGE.
+
+   This Extended operation is used to allow user password changes by the user
+   itself.
 */
-#define LDB_EXTENDED_FAST_BIND_OID	"1.2.840.113556.1.4.1781"
+#define LDB_EXTENDED_PASSWORD_CHANGE_OID	"1.3.6.1.4.1.4203.1.11.1"
 
 
 struct ldb_sd_flags_control {
