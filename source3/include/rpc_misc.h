@@ -24,7 +24,6 @@
 #define _RPC_MISC_H 
 
 #define SMB_RPC_INTERFACE_VERSION 1
-#define PRS_POINTER_CAST bool (*)(const char*, prs_struct*, int, void*)
 
 
 /********************************************************************** 
