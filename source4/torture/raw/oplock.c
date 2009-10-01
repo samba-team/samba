@@ -3043,7 +3043,7 @@ static bool test_raw_oplock_stream1(struct torture_context *tctx,
 
 		if (open_base_file) {
 			torture_comment(tctx, "Opening base file: %s with "
-			    "%d\n", fname_base, oplock_req);
+			    "%d\n", fname_base, batch_req);
 			io.ntcreatex.in.fname = fname_base;
 			io.ntcreatex.in.flags = batch_req;
 			status = smb_raw_open(cli2->tree, tctx, &io);
