@@ -5130,20 +5130,6 @@ uint32 reg_perfcount_get_last_counter(uint32 base_index);
 uint32 reg_perfcount_get_last_help(uint32 last_counter);
 uint32 reg_perfcount_get_counter_help(uint32 base_index, char **retbuf);
 uint32 reg_perfcount_get_counter_names(uint32 base_index, char **retbuf);
-bool _reg_perfcount_get_counter_data(TDB_DATA key, TDB_DATA *data);
-bool _reg_perfcount_get_instance_info(struct PERF_INSTANCE_DEFINITION *inst,
-				      TALLOC_CTX *mem_ctx,
-				      int instId,
-				      struct PERF_OBJECT_TYPE *obj,
-				      TDB_CONTEXT *names);
-bool _reg_perfcount_add_instance(struct PERF_OBJECT_TYPE *obj,
-				 TALLOC_CTX *mem_ctx,
-				 int instInd,
-				 TDB_CONTEXT *names);
-uint32 reg_perfcount_get_perf_data_block(uint32 base_index, 
-					 prs_struct *ps, 
-					 struct PERF_DATA_BLOCK *block,
-					 const char *object_ids);
 WERROR reg_perfcount_get_hkpd(prs_struct *ps, uint32 max_buf_size, uint32 *outbuf_len, const char *object_ids);
 
 /* The following definitions come from registry/reg_util.c  */
