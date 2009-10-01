@@ -5132,12 +5132,12 @@ uint32 reg_perfcount_get_counter_help(uint32 base_index, char **retbuf);
 uint32 reg_perfcount_get_counter_names(uint32 base_index, char **retbuf);
 bool _reg_perfcount_get_counter_data(TDB_DATA key, TDB_DATA *data);
 bool _reg_perfcount_get_instance_info(struct PERF_INSTANCE_DEFINITION *inst,
-				      prs_struct *ps,
+				      TALLOC_CTX *mem_ctx,
 				      int instId,
 				      struct PERF_OBJECT_TYPE *obj,
 				      TDB_CONTEXT *names);
 bool _reg_perfcount_add_instance(struct PERF_OBJECT_TYPE *obj,
-				 prs_struct *ps,
+				 TALLOC_CTX *mem_ctx,
 				 int instInd,
 				 TDB_CONTEXT *names);
 uint32 reg_perfcount_get_perf_data_block(uint32 base_index, 
