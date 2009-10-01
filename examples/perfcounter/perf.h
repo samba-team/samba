@@ -36,8 +36,8 @@
 #include <sys/time.h>
 #include <sys/wait.h>
 #include <limits.h>
-#include "tdb.h"
-#include <rpc_perfcount_defs.h>
+#include <tdb.h>
+#include "librpc/gen_ndr/perfcount.h"
 #include <sys/statfs.h>
 #include <sys/times.h>
 #include <sys/sysinfo.h>
