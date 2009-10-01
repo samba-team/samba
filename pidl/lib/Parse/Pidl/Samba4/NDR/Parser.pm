@@ -1235,6 +1235,8 @@ sub ParseStructPushPrimitives($$$$$)
 	}
 
 	$self->ParseElementPush($_, $ndr, $env, 1, 0) foreach (@{$struct->{ELEMENTS}});
+
+	$self->pidl("NDR_CHECK(ndr_push_trailer_align($ndr, $struct->{ALIGN}));");
 }
 
 sub ParseStructPushDeferred($$$$)
@@ -1533,6 +1535,8 @@ sub ParseStructPullPrimitives($$$$$)
 	$self->ParseElementPull($_, $ndr, $env, 1, 0) foreach (@{$struct->{ELEMENTS}});
 
 	$self->add_deferred();
+
+	$self->pidl("NDR_CHECK(ndr_pull_trailer_align($ndr, $struct->{ALIGN}));");
 }
 
 sub ParseStructPullDeferred($$$$$)
