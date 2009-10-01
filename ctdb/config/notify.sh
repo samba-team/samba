@@ -32,6 +32,10 @@ case $event in
 #
 #               or do something else ...
 		;;
+	startup)
+#		do some extra magic when ctdb has started?
+		;;
+
 esac
 
 exit 0

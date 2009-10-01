@@ -170,6 +170,7 @@ static void ctdb_startup_callback(struct ctdb_context *ctdb, int status, void *p
 		DEBUG(DEBUG_NOTICE,("startup event OK - enabling monitoring\n"));
 		ctdb->done_startup = true;
 		ctdb->monitor->next_interval = 1;
+		ctdb_run_notification_script(ctdb, "startup");
 	}
 
 	event_add_timed(ctdb->ev, ctdb->monitor->monitor_context, 
