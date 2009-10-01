@@ -573,6 +573,24 @@ _PUBLIC_ enum ndr_err_code ndr_pull_union_align(struct ndr_pull *ndr, size_t siz
 	return NDR_ERR_SUCCESS;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_trailer_align(struct ndr_push *ndr, size_t size)
+{
+	/* MS-RPCE section 2.2.5.3.4.1 */
+	if (ndr->flags & LIBNDR_FLAG_NDR64) {
+		return ndr_push_align(ndr, size);
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_trailer_align(struct ndr_pull *ndr, size_t size)
+{
+	/* MS-RPCE section 2.2.5.3.4.1 */
+	if (ndr->flags & LIBNDR_FLAG_NDR64) {
+		return ndr_pull_align(ndr, size);
+	}
+	return NDR_ERR_SUCCESS;
+}
+
 /*
   push some bytes
 */
