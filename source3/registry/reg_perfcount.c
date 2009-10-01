@@ -366,7 +366,7 @@ static uint32 _reg_perfcount_get_numinst(int objInd, TDB_CONTEXT *names)
 *********************************************************************/
 
 static bool _reg_perfcount_add_object(struct PERF_DATA_BLOCK *block,
-				      prs_struct *ps,
+				      TALLOC_CTX *mem_ctx,
 				      int num,
 				      TDB_DATA data,
 				      TDB_CONTEXT *names)
@@ -375,7 +375,7 @@ static bool _reg_perfcount_add_object(struct PERF_DATA_BLOCK *block,
 	bool success = True;
 	struct PERF_OBJECT_TYPE *obj;
 
-	block->objects = (struct PERF_OBJECT_TYPE *)TALLOC_REALLOC_ARRAY(ps->mem_ctx,
+	block->objects = (struct PERF_OBJECT_TYPE *)TALLOC_REALLOC_ARRAY(mem_ctx,
 								  block->objects,
 								  struct PERF_OBJECT_TYPE,
 								  block->NumObjectTypes+1);
@@ -398,7 +398,7 @@ static bool _reg_perfcount_add_object(struct PERF_DATA_BLOCK *block,
 	block->NumObjectTypes+=1;
 
 	for(i = 0; i < (int)obj->NumInstances; i++) {
-		success = _reg_perfcount_add_instance(obj, ps, i, names);
+		success = _reg_perfcount_add_instance(obj, mem_ctx, i, names);
 	}
 
 	return success;
@@ -470,7 +470,7 @@ static uint32 _reg_perfcount_compute_scale(int64_t data)
 *********************************************************************/
 
 static bool _reg_perfcount_get_counter_info(struct PERF_DATA_BLOCK *block,
-					    prs_struct *ps,
+					    TALLOC_CTX *mem_ctx,
 					    int CounterIndex,
 					    struct PERF_OBJECT_TYPE *obj,
 					    TDB_CONTEXT *names)
@@ -546,7 +546,7 @@ static bool _reg_perfcount_get_counter_info(struct PERF_DATA_BLOCK *block,
 	SAFE_FREE(data.dptr);
 
 	obj->counter_data.ByteLength += dsize + padding;
-	obj->counter_data.data = TALLOC_REALLOC_ARRAY(ps->mem_ctx,
+	obj->counter_data.data = TALLOC_REALLOC_ARRAY(mem_ctx,
 						      obj->counter_data.data,
 						      uint8,
 						      obj->counter_data.ByteLength - sizeof(uint32));
@@ -599,7 +599,7 @@ struct PERF_OBJECT_TYPE *_reg_perfcount_find_obj(struct PERF_DATA_BLOCK *block, 
 *********************************************************************/
 
 static bool _reg_perfcount_add_counter(struct PERF_DATA_BLOCK *block,
-				       prs_struct *ps,
+				       TALLOC_CTX *mem_ctx,
 				       int num,
 				       TDB_DATA data,
 				       TDB_CONTEXT *names)
@@ -634,7 +634,7 @@ static bool _reg_perfcount_add_counter(struct PERF_DATA_BLOCK *block,
 				  parent, num));
 			return False;
 		}
-		obj->counters = (struct PERF_COUNTER_DEFINITION *)TALLOC_REALLOC_ARRAY(ps->mem_ctx,
+		obj->counters = (struct PERF_COUNTER_DEFINITION *)TALLOC_REALLOC_ARRAY(mem_ctx,
 										obj->counters,
 										struct PERF_COUNTER_DEFINITION,
 										obj->NumCounters+1);
@@ -645,7 +645,7 @@ static bool _reg_perfcount_add_counter(struct PERF_DATA_BLOCK *block,
 		obj->counters[obj->NumCounters].CounterHelpTitleIndex=num+1;
 		obj->counters[obj->NumCounters].DetailLevel = PERF_DETAIL_NOVICE;
 		obj->counters[obj->NumCounters].ByteLength = sizeof(struct PERF_COUNTER_DEFINITION);
-		success = _reg_perfcount_get_counter_info(block, ps, num, obj, names);
+		success = _reg_perfcount_get_counter_info(block, mem_ctx, num, obj, names);
 		obj->NumCounters += 1;
 		start = stop + 1;
 	}
@@ -661,7 +661,7 @@ static bool _reg_perfcount_add_counter(struct PERF_DATA_BLOCK *block,
 *********************************************************************/
 
 bool _reg_perfcount_get_instance_info(struct PERF_INSTANCE_DEFINITION *inst,
-				      prs_struct *ps,
+				      TALLOC_CTX *mem_ctx,
 				      int instId,
 				      struct PERF_OBJECT_TYPE *obj,
 				      TDB_CONTEXT *names)
@@ -686,7 +686,7 @@ bool _reg_perfcount_get_instance_info(struct PERF_INSTANCE_DEFINITION *inst,
 		return False;
 	}
 	inst->counter_data.ByteLength = data.dsize + sizeof(inst->counter_data.ByteLength);
-	inst->counter_data.data = TALLOC_REALLOC_ARRAY(ps->mem_ctx,
+	inst->counter_data.data = TALLOC_REALLOC_ARRAY(mem_ctx,
 						       inst->counter_data.data,
 						       uint8,
 						       data.dsize);
@@ -713,12 +713,12 @@ bool _reg_perfcount_get_instance_info(struct PERF_INSTANCE_DEFINITION *inst,
 		memset(buf, 0, PERFCOUNT_MAX_LEN);
 		memcpy(buf, data.dptr, MIN(PERFCOUNT_MAX_LEN-1,data.dsize));
 		buf[PERFCOUNT_MAX_LEN-1] = '\0';
-		inst->NameLength = rpcstr_push_talloc(ps->mem_ctx, &name, buf);
+		inst->NameLength = rpcstr_push_talloc(mem_ctx, &name, buf);
 		if (inst->NameLength == (uint32_t)-1 || !name) {
 			SAFE_FREE(data.dptr);
 			return False;
 		}
-		inst->data = TALLOC_REALLOC_ARRAY(ps->mem_ctx,
+		inst->data = TALLOC_REALLOC_ARRAY(mem_ctx,
 						  inst->data,
 						  uint8,
 						  inst->NameLength);
@@ -740,7 +740,7 @@ bool _reg_perfcount_get_instance_info(struct PERF_INSTANCE_DEFINITION *inst,
 	if((pad = (inst->ByteLength % 8)))
 	{
 		pad = 8 - pad;
-		inst->data = TALLOC_REALLOC_ARRAY(ps->mem_ctx,
+		inst->data = TALLOC_REALLOC_ARRAY(mem_ctx,
 						  inst->data,
 						  uint8,
 						  inst->NameLength + pad);
@@ -755,14 +755,14 @@ bool _reg_perfcount_get_instance_info(struct PERF_INSTANCE_DEFINITION *inst,
 *********************************************************************/
 
 bool _reg_perfcount_add_instance(struct PERF_OBJECT_TYPE *obj,
-				 prs_struct *ps,
+				 TALLOC_CTX *mem_ctx,
 				 int instInd,
 				 TDB_CONTEXT *names)
 {
 	struct PERF_INSTANCE_DEFINITION *inst;
 
 	if(obj->instances == NULL) {
-		obj->instances = TALLOC_REALLOC_ARRAY(ps->mem_ctx, 
+		obj->instances = TALLOC_REALLOC_ARRAY(mem_ctx,
 						      obj->instances,
 						      struct PERF_INSTANCE_DEFINITION,
 						      obj->NumInstances);
@@ -772,14 +772,14 @@ bool _reg_perfcount_add_instance(struct PERF_OBJECT_TYPE *obj,
 
 	memset(&(obj->instances[instInd]), 0, sizeof(struct PERF_INSTANCE_DEFINITION));
 	inst = &(obj->instances[instInd]);
-	return _reg_perfcount_get_instance_info(inst, ps, instInd, obj, names);
+	return _reg_perfcount_get_instance_info(inst, mem_ctx, instInd, obj, names);
 }
 
 /*********************************************************************
 *********************************************************************/
 
 static int _reg_perfcount_assemble_global(struct PERF_DATA_BLOCK *block,
-					  prs_struct *ps,
+					  TALLOC_CTX *mem_ctx,
 					  int base_index,
 					  TDB_CONTEXT *names)
 {
@@ -796,9 +796,9 @@ static int _reg_perfcount_assemble_global(struct PERF_DATA_BLOCK *block,
 		if(data.dptr != NULL)
 		{
 			if(_reg_perfcount_isparent(data))
-				success = _reg_perfcount_add_object(block, ps, j, data, names);
+				success = _reg_perfcount_add_object(block, mem_ctx, j, data, names);
 			else if(_reg_perfcount_ischild(data))
-				success = _reg_perfcount_add_counter(block, ps, j, data, names);
+				success = _reg_perfcount_add_counter(block, mem_ctx, j, data, names);
 			else
 			{
 				DEBUG(3, ("Bogus relationship [%s] for counter [%d].\n", data.dptr, j));
@@ -914,12 +914,13 @@ static bool make_systemtime(struct SYSTEMTIME *systime, struct tm *unixtime)
 *********************************************************************/
 
 static bool _reg_perfcount_init_data_block(struct PERF_DATA_BLOCK *block,
-					   prs_struct *ps, TDB_CONTEXT *names)
+					   TALLOC_CTX *mem_ctx, TDB_CONTEXT *names,
+					   bool bigendian_data)
 {
 	smb_ucs2_t *temp = NULL;
 	time_t tm;
 
-	if (rpcstr_push_talloc(ps->mem_ctx, &temp, "PERF")==(size_t)-1) {
+	if (rpcstr_push_talloc(mem_ctx, &temp, "PERF")==(size_t)-1) {
 		return false;
 	}
 	if (!temp) {
@@ -927,7 +928,7 @@ static bool _reg_perfcount_init_data_block(struct PERF_DATA_BLOCK *block,
 	}
 	memcpy(block->Signature, temp, strlen_w(temp) *2);
 
-	if(ps->bigendian_data == RPC_BIG_ENDIAN)
+	if(bigendian_data)
 		block->LittleEndian = 0;
 	else
 		block->LittleEndian = 1;
@@ -943,7 +944,7 @@ static bool _reg_perfcount_init_data_block(struct PERF_DATA_BLOCK *block,
 	memset(temp, 0, sizeof(temp));
 	rpcstr_push((void *)temp, global_myname(), sizeof(temp), STR_TERMINATE);
 	block->SystemNameLength = (strlen_w(temp) * 2) + 2;
-	block->data = TALLOC_ZERO_ARRAY(ps->mem_ctx, uint8, block->SystemNameLength + (8 - (block->SystemNameLength % 8)));
+	block->data = TALLOC_ZERO_ARRAY(mem_ctx, uint8, block->SystemNameLength + (8 - (block->SystemNameLength % 8)));
 	if (block->data == NULL) {
 		return False;
 	}
@@ -1072,7 +1073,7 @@ uint32 reg_perfcount_get_perf_data_block(uint32 base_index,
 		return 0;
 	}
 
-	if (!_reg_perfcount_init_data_block(block, ps, names)) {
+	if (!_reg_perfcount_init_data_block(block, ps->mem_ctx, names, ps->bigendian_data)) {
 		DEBUG(0, ("_reg_perfcount_init_data_block failed\n"));
 		tdb_close(names);
 		return 0;
@@ -1083,12 +1084,12 @@ uint32 reg_perfcount_get_perf_data_block(uint32 base_index,
 	if(object_ids == NULL)
 	{
 		/* we're getting a request for "Global" here */
-		retval = _reg_perfcount_assemble_global(block, ps, base_index, names);
+		retval = _reg_perfcount_assemble_global(block, ps->mem_ctx, base_index, names);
 	}
 	else
 	{
 		/* we're getting a request for a specific set of PERF_OBJECT_TYPES */
-		retval = _reg_perfcount_assemble_global(block, ps, base_index, names);
+		retval = _reg_perfcount_assemble_global(block, ps->mem_ctx, base_index, names);
 	}
 	buffer_size = _reg_perfcount_perf_data_block_fixup(block, ps);
 
