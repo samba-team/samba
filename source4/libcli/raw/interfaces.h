@@ -1356,6 +1356,7 @@ enum smb_open_level {
 	RAW_OPEN_T2OPEN,
 	RAW_OPEN_NTTRANS_CREATE, 
 	RAW_OPEN_OPENX_READX,
+	RAW_OPEN_NTCREATEX_READX,
 	RAW_OPEN_SMB2
 };
 
@@ -1399,6 +1400,9 @@ union smb_open {
 		break; \
 	case RAW_OPEN_OPENX_READX: \
 		file = &op->openxreadx.out.file; \
+		break; \
+	case RAW_OPEN_NTCREATEX_READX: \
+		file = &op->ntcreatexreadx.out.file; \
 		break; \
 	case RAW_OPEN_SMB2: \
 		file = &op->smb2.out.file; \
@@ -1618,6 +1622,54 @@ union smb_open {
 			uint16_t nread;
 		} out;
 	} openxreadx;
+
+	/* chained NTCreateX/ReadX interface */
+	struct {
+		enum smb_open_level level;
+		struct {
+			uint32_t flags;
+			uint32_t root_fid;
+			uint32_t access_mask;
+			uint64_t alloc_size;
+			uint32_t file_attr;
+			uint32_t share_access;
+			uint32_t open_disposition;
+			uint32_t create_options;
+			uint32_t impersonation;
+			uint8_t  security_flags;
+			/* NOTE: fname can also be a pointer to a
+			 uint64_t file_id if create_options has the
+			 NTCREATEX_OPTIONS_OPEN_BY_FILE_ID flag set */
+			const char *fname;
+
+			/* readx part */
+			uint64_t offset;
+			uint16_t mincnt;
+			uint32_t maxcnt;
+			uint16_t remaining;
+		} in;
+		struct {
+			union smb_handle file;
+			uint8_t oplock_level;
+			uint32_t create_action;
+			NTTIME create_time;
+			NTTIME access_time;
+			NTTIME write_time;
+			NTTIME change_time;
+			uint32_t attrib;
+			uint64_t alloc_size;
+			uint64_t size;
+			uint16_t file_type;
+			uint16_t ipc_state;
+			uint8_t  is_directory;
+
+			/* readx part */
+			uint8_t *data;
+			uint16_t remaining;
+			uint16_t compaction_mode;
+			uint16_t nread;
+		} out;
+	} ntcreatexreadx;
 
 #define SMB2_CREATE_FLAG_REQUEST_OPLOCK           0x0100
 #define SMB2_CREATE_FLAG_REQUEST_EXCLUSIVE_OPLOCK 0x0800

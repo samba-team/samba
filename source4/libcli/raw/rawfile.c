@@ -616,6 +616,45 @@ _PUBLIC_ struct smbcli_request *smb_raw_open_send(struct smbcli_tree *tree, unio
 			SIVAL(req->out.vwv, VWV(10),parms->openxreadx.in.offset>>32);
 		}
 		break;
+
+	case RAW_OPEN_NTCREATEX_READX:
+		SETUP_REQUEST(SMBntcreateX, 24, 0);
+		SSVAL(req->out.vwv, VWV(0),SMB_CHAIN_NONE);
+		SSVAL(req->out.vwv, VWV(1),0);
+		SCVAL(req->out.vwv, VWV(2),0); /* padding */
+		SIVAL(req->out.vwv,  7, parms->ntcreatexreadx.in.flags);
+		SIVAL(req->out.vwv, 11, parms->ntcreatexreadx.in.root_fid);
+		SIVAL(req->out.vwv, 15, parms->ntcreatexreadx.in.access_mask);
+		SBVAL(req->out.vwv, 19, parms->ntcreatexreadx.in.alloc_size);
+		SIVAL(req->out.vwv, 27, parms->ntcreatexreadx.in.file_attr);
+		SIVAL(req->out.vwv, 31, parms->ntcreatexreadx.in.share_access);
+		SIVAL(req->out.vwv, 35, parms->ntcreatexreadx.in.open_disposition);
+		SIVAL(req->out.vwv, 39, parms->ntcreatexreadx.in.create_options);
+		SIVAL(req->out.vwv, 43, parms->ntcreatexreadx.in.impersonation);
+		SCVAL(req->out.vwv, 47, parms->ntcreatexreadx.in.security_flags);
+
+		smbcli_req_append_string_len(req, parms->ntcreatexreadx.in.fname, STR_TERMINATE, &len);
+		SSVAL(req->out.vwv, 5, len);
+
+		if (tree->session->transport->negotiate.capabilities & CAP_LARGE_FILES) {
+			bigoffset = true;
+		}
+
+		smbcli_chained_request_setup(req, SMBreadX, bigoffset ? 12 : 10, 0);
+
+		SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
+		SSVAL(req->out.vwv, VWV(1), 0);
+		SSVAL(req->out.vwv, VWV(2), 0);
+		SIVAL(req->out.vwv, VWV(3), parms->ntcreatexreadx.in.offset);
+		SSVAL(req->out.vwv, VWV(5), parms->ntcreatexreadx.in.maxcnt & 0xFFFF);
+		SSVAL(req->out.vwv, VWV(6), parms->ntcreatexreadx.in.mincnt);
+		SIVAL(req->out.vwv, VWV(7), parms->ntcreatexreadx.in.maxcnt >> 16);
+		SSVAL(req->out.vwv, VWV(9), parms->ntcreatexreadx.in.remaining);
+		if (bigoffset) {
+			SIVAL(req->out.vwv, VWV(10),parms->ntcreatexreadx.in.offset>>32);
+		}
+		break;
+
 	case RAW_OPEN_SMB2:
 		return NULL;
 	}
@@ -753,6 +792,41 @@ _PUBLIC_ NTSTATUS smb_raw_open_recv(struct smbcli_request *req, TALLOC_CTX *mem_
 			req->status = NT_STATUS_BUFFER_TOO_SMALL;
 		}
 		break;
+
+	case RAW_OPEN_NTCREATEX_READX:
+		SMBCLI_CHECK_MIN_WCT(req, 34);
+		parms->ntcreatexreadx.out.oplock_level =              CVAL(req->in.vwv, 4);
+		parms->ntcreatexreadx.out.file.fnum =                 SVAL(req->in.vwv, 5);
+		parms->ntcreatexreadx.out.create_action =             IVAL(req->in.vwv, 7);
+		parms->ntcreatexreadx.out.create_time =   smbcli_pull_nttime(req->in.vwv, 11);
+		parms->ntcreatexreadx.out.access_time =   smbcli_pull_nttime(req->in.vwv, 19);
+		parms->ntcreatexreadx.out.write_time =    smbcli_pull_nttime(req->in.vwv, 27);
+		parms->ntcreatexreadx.out.change_time =   smbcli_pull_nttime(req->in.vwv, 35);
+		parms->ntcreatexreadx.out.attrib =                   IVAL(req->in.vwv, 43);
+		parms->ntcreatexreadx.out.alloc_size =               BVAL(req->in.vwv, 47);
+		parms->ntcreatexreadx.out.size =                     BVAL(req->in.vwv, 55);
+		parms->ntcreatexreadx.out.file_type =                SVAL(req->in.vwv, 63);
+		parms->ntcreatexreadx.out.ipc_state =                SVAL(req->in.vwv, 65);
+		parms->ntcreatexreadx.out.is_directory =             CVAL(req->in.vwv, 67);
+
+		status = smbcli_chained_advance(req);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		SMBCLI_CHECK_WCT(req, 12);
+		parms->ntcreatexreadx.out.remaining       = SVAL(req->in.vwv, VWV(2));
+		parms->ntcreatexreadx.out.compaction_mode = SVAL(req->in.vwv, VWV(3));
+		parms->ntcreatexreadx.out.nread = SVAL(req->in.vwv, VWV(5));
+		if (parms->ntcreatexreadx.out.nread >
+		    MAX(parms->openxreadx.in.mincnt, parms->openxreadx.in.maxcnt) ||
+		    !smbcli_raw_pull_data(&req->in.bufinfo, req->in.hdr + SVAL(req->in.vwv, VWV(6)),
+			                  parms->ntcreatexreadx.out.nread,
+			                  parms->ntcreatexreadx.out.data)) {
+			req->status = NT_STATUS_BUFFER_TOO_SMALL;
+		}
+		break;
+
 	case RAW_OPEN_SMB2:
 		req->status = NT_STATUS_INTERNAL_ERROR;
 		break;

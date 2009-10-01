@@ -1692,8 +1692,175 @@ done:
 	return ret;
 }
 
+/*
+  test chained RAW_OPEN_NTCREATEX_READX
+  Send chained NTCREATEX_READX on a file that doesn't exist, then create
+  the file and try again.
+*/
+static bool test_chained_ntcreatex_readx(struct smbcli_state *cli, struct torture_context *tctx)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	union smb_open io;
+	const char *fname = BASEDIR "\\torture_chained.txt";
+	NTSTATUS status;
+	int fnum = -1;
+	bool ret = true;
+	const char *buf = "test";
+	char buf2[4];
 
-/* basic testing of all RAW_OPEN_* calls 
+	torture_comment(tctx, "Checking RAW_NTCREATEX_READX chained on "
+			      "non-existant file \n");
+	smbcli_unlink(cli->tree, fname);
+
+	/* ntcreatex parameters */
+	io.generic.level = RAW_OPEN_NTCREATEX_READX;
+	io.ntcreatexreadx.in.flags = 0;
+	io.ntcreatexreadx.in.root_fid = 0;
+	io.ntcreatexreadx.in.access_mask = SEC_FILE_READ_DATA;
+	io.ntcreatexreadx.in.alloc_size = 0;
+	io.ntcreatexreadx.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatexreadx.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE | NTCREATEX_SHARE_ACCESS_DELETE;
+	io.ntcreatexreadx.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatexreadx.in.create_options = 0;
+	io.ntcreatexreadx.in.impersonation = NTCREATEX_IMPERSONATION_IMPERSONATION;
+	io.ntcreatexreadx.in.security_flags = 0;
+	io.ntcreatexreadx.in.fname = fname;
+
+	/* readx parameters */
+	io.ntcreatexreadx.in.offset = 0;
+	io.ntcreatexreadx.in.mincnt = sizeof(buf);
+	io.ntcreatexreadx.in.maxcnt = sizeof(buf);
+	io.ntcreatexreadx.in.remaining = 0;
+	io.ntcreatexreadx.out.data = (uint8_t *)buf2;
+
+	/* try to open the non-existant file */
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+	fnum = io.ntcreatexreadx.out.file.fnum;
+
+	smbcli_close(cli->tree, fnum);
+	smbcli_unlink(cli->tree, fname);
+
+	torture_comment(tctx, "Checking RAW_NTCREATEX_READX chained on "
+			      "existing file \n");
+
+	fnum = create_complex_file(cli, mem_ctx, fname);
+	smbcli_write(cli->tree, fnum, 0, buf, 0, sizeof(buf));
+	smbcli_close(cli->tree, fnum);
+
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatexreadx.out.file.fnum;
+
+	if (memcmp(buf, buf2, sizeof(buf)) != 0) {
+		torture_result(tctx, TORTURE_FAIL,
+			"(%s): wrong data in reply buffer\n", __location__);
+		ret = false;
+	}
+
+done:
+	smbcli_close(cli->tree, fnum);
+	smbcli_unlink(cli->tree, fname);
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+#define FILL_NTCREATEX(_struct, _init...)                       \
+	do {                                                    \
+		(_struct)->generic.level = RAW_OPEN_NTCREATEX;  \
+		(_struct)->ntcreatex.in                         \
+		    = (typeof((_struct)->ntcreatex.in)) {_init};\
+	} while (0)
+
+static bool test_ntcreatex_opendisp_dir(struct smbcli_state *cli,
+					struct torture_context *tctx)
+{
+	union smb_open io;
+	const char *dname = BASEDIR "\\torture_ntcreatex_opendisp_dir";
+	NTSTATUS status;
+	bool ret = true;
+	int i;
+	struct {
+		uint32_t open_disp;
+		bool dir_exists;
+		NTSTATUS correct_status;
+	} open_funcs_dir[] = {
+		{ NTCREATEX_DISP_SUPERSEDE,     true,  NT_STATUS_INVALID_PARAMETER },
+		{ NTCREATEX_DISP_SUPERSEDE,     false, NT_STATUS_INVALID_PARAMETER },
+		{ NTCREATEX_DISP_OPEN,          true,  NT_STATUS_OK },
+		{ NTCREATEX_DISP_OPEN,          false, NT_STATUS_OBJECT_NAME_NOT_FOUND },
+		{ NTCREATEX_DISP_CREATE,        true,  NT_STATUS_OBJECT_NAME_COLLISION },
+		{ NTCREATEX_DISP_CREATE,        false, NT_STATUS_OK },
+		{ NTCREATEX_DISP_OPEN_IF,       true,  NT_STATUS_OK },
+		{ NTCREATEX_DISP_OPEN_IF,       false, NT_STATUS_OK },
+		{ NTCREATEX_DISP_OVERWRITE,     true,  NT_STATUS_INVALID_PARAMETER },
+		{ NTCREATEX_DISP_OVERWRITE,     false, NT_STATUS_INVALID_PARAMETER },
+		{ NTCREATEX_DISP_OVERWRITE_IF,  true,  NT_STATUS_INVALID_PARAMETER },
+		{ NTCREATEX_DISP_OVERWRITE_IF,  false, NT_STATUS_INVALID_PARAMETER },
+		{ 6,                            true,  NT_STATUS_INVALID_PARAMETER },
+		{ 6,                            false, NT_STATUS_INVALID_PARAMETER },
+	};
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
+
+	FILL_NTCREATEX(&io,
+	    .flags = NTCREATEX_FLAGS_EXTENDED,
+	    .access_mask = SEC_FLAG_MAXIMUM_ALLOWED,
+	    .file_attr = FILE_ATTRIBUTE_DIRECTORY,
+	    .share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE,
+	    .create_options = NTCREATEX_OPTIONS_DIRECTORY,
+	    .fname = dname,
+	);
+
+	smbcli_rmdir(cli->tree, dname);
+	smbcli_unlink(cli->tree, dname);
+
+	/* test the open disposition for directories */
+	torture_comment(tctx, "Testing open dispositions for directories...\n");
+
+	for (i=0; i<ARRAY_SIZE(open_funcs_dir); i++) {
+		if (open_funcs_dir[i].dir_exists) {
+			status = smbcli_mkdir(cli->tree, dname);
+			if (!NT_STATUS_IS_OK(status)) {
+				torture_result(tctx, TORTURE_FAIL,
+					"(%s): Failed to make directory "
+					"%s - %s\n", __location__, dname,
+					smbcli_errstr(cli->tree));
+				ret = false;
+				goto done;
+			}
+		}
+
+		io.ntcreatex.in.open_disposition = open_funcs_dir[i].open_disp;
+		status = smb_raw_open(cli->tree, tctx, &io);
+		if (!NT_STATUS_EQUAL(status, open_funcs_dir[i].correct_status)) {
+			torture_result(tctx, TORTURE_FAIL,
+				"(%s) incorrect status %s should be %s "
+				"(i=%d dir_exists=%d open_disp=%d)\n",
+				__location__, nt_errstr(status),
+				nt_errstr(open_funcs_dir[i].correct_status),
+				i, (int)open_funcs_dir[i].dir_exists,
+				(int)open_funcs_dir[i].open_disp);
+			ret = false;
+		}
+		if (NT_STATUS_IS_OK(status) || open_funcs_dir[i].dir_exists) {
+			smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
+			smbcli_rmdir(cli->tree, dname);
+		}
+	}
+
+done:
+	smbcli_rmdir(cli->tree, dname);
+	smbcli_deltree(cli->tree, BASEDIR);
+	return ret;
+}
+
+
+/* basic testing of all RAW_OPEN_* calls
 */
 bool torture_raw_open(struct torture_context *torture, struct smbcli_state *cli)
 {
@@ -1714,9 +1881,11 @@ bool torture_raw_open(struct torture_context *torture, struct smbcli_state *cli)
 	ret &= test_create(cli, torture);
 	ret &= test_ctemp(cli, torture);
 	ret &= test_chained(cli, torture);
+	ret &= test_chained_ntcreatex_readx(cli, torture);
 	ret &= test_no_leading_slash(cli, torture);
 	ret &= test_openx_over_dir(cli, torture);
 	ret &= test_open_for_delete(cli, torture);
+	ret &= test_ntcreatex_opendisp_dir(cli, torture);
 
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
