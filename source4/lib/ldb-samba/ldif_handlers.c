@@ -181,38 +181,28 @@ static int extended_dn_read_SID(struct ldb_context *ldb, void *mem_ctx,
 {
 	struct dom_sid sid;
 	enum ndr_err_code ndr_err;
-	TALLOC_CTX *tmp_ctx;
 	if (ldif_comparision_objectSid_isString(in)) {
 		if (ldif_read_objectSid(ldb, mem_ctx, in, out) == 0) {
 			return 0;
 		}
 	}
 	
-	tmp_ctx = talloc_new(mem_ctx);
-	if (!tmp_ctx) {
-		return -1;
-	}
-
 	/* Perhaps not a string after all */
-	*out = data_blob_talloc(tmp_ctx, NULL, in->length/2+1);
+	*out = data_blob_talloc(mem_ctx, NULL, in->length/2+1);
 
 	if (!out->data) {
-		talloc_free(tmp_ctx);
 		return -1;
 	}
 
-	out->length = strhex_to_str((char *)out->data, out->length,
-				    (const char *)in->data, in->length);
+	(*out).length = strhex_to_str((char *)out->data, out->length,
+				     (const char *)in->data, in->length);
 
 	/* Check it looks like a SID */
-	ndr_err = ndr_pull_struct_blob_all(out, tmp_ctx, NULL, &sid,
+	ndr_err = ndr_pull_struct_blob_all(out, mem_ctx, NULL, &sid,
 					   (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		talloc_free(tmp_ctx);
 		return -1;
 	}
-	talloc_steal(mem_ctx, out->data);
-	talloc_free(tmp_ctx);
 	return 0;
 }
 
@@ -225,24 +215,17 @@ static int ldif_read_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 	struct GUID guid;
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;
-	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
-	if (!tmp_ctx) {
-		return -1;
-	}
 
 	status = GUID_from_data_blob(in, &guid);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
 
-	ndr_err = ndr_push_struct_blob(out, tmp_ctx, NULL, &guid,
+	ndr_err = ndr_push_struct_blob(out, mem_ctx, NULL, &guid,
 				       (ndr_push_flags_fn_t)ndr_push_GUID);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		talloc_free(tmp_ctx);
 		return -1;
 	}
-	talloc_steal(mem_ctx, out->data);
-	talloc_free(tmp_ctx);
 	return 0;
 }
 
@@ -254,18 +237,12 @@ static int ldif_write_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 {
 	struct GUID guid;
 	enum ndr_err_code ndr_err;
-	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
-	if (!tmp_ctx) {
-		return -1;
-	}
-	ndr_err = ndr_pull_struct_blob_all(in, tmp_ctx, NULL, &guid,
+	ndr_err = ndr_pull_struct_blob_all(in, mem_ctx, NULL, &guid,
 					   (ndr_pull_flags_fn_t)ndr_pull_GUID);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		talloc_free(tmp_ctx);
 		return -1;
 	}
 	out->data = (uint8_t *)GUID_string(mem_ctx, &guid);
-	talloc_free(tmp_ctx);
 	if (out->data == NULL) {
 		return -1;
 	}
@@ -286,7 +263,6 @@ static int extended_dn_read_GUID(struct ldb_context *ldb, void *mem_ctx,
 {
 	struct GUID guid;
 	enum ndr_err_code ndr_err;
-	TALLOC_CTX *tmp_ctx;
 	if (in->length == 36 && ldif_read_objectGUID(ldb, mem_ctx, in, out) == 0) {
 		return 0;
 	}
@@ -296,30 +272,21 @@ static int extended_dn_read_GUID(struct ldb_context *ldb, void *mem_ctx,
 		return -1;
 	}
 		
-	tmp_ctx = talloc_new(mem_ctx);
-	if (!tmp_ctx) {
-		return -1;
-	}
-
-	*out = data_blob_talloc(tmp_ctx, NULL, in->length/2+1);
+	*out = data_blob_talloc(mem_ctx, NULL, in->length/2+1);
 	
 	if (!out->data) {
-		talloc_free(tmp_ctx);
 		return -1;
 	}
 	
-	out->length = strhex_to_str((char *)out->data, out->length,
-				    (const char *)in->data, in->length);
+	(*out).length = strhex_to_str((char *)out->data, out->length,
+				      (const char *)in->data, in->length);
 	
 	/* Check it looks like a GUID */
-	ndr_err = ndr_pull_struct_blob_all(out, tmp_ctx, NULL, &guid,
+	ndr_err = ndr_pull_struct_blob_all(out, mem_ctx, NULL, &guid,
 					   (ndr_pull_flags_fn_t)ndr_pull_GUID);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		talloc_free(tmp_ctx);
 		return -1;
 	}
-	talloc_steal(mem_ctx, out->data);
-	talloc_free(tmp_ctx);
 	return 0;
 }
 
@@ -401,14 +368,12 @@ static int ldif_read_ntSecurityDescriptor(struct ldb_context *ldb, void *mem_ctx
 		}
 	}
 
-	ndr_err = ndr_push_struct_blob(out, sd, NULL, sd,
+	ndr_err = ndr_push_struct_blob(out, mem_ctx, NULL, sd,
 				       (ndr_push_flags_fn_t)ndr_push_security_descriptor);
+	talloc_free(sd);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		talloc_free(sd);
 		return -1;
 	}
-	talloc_steal(mem_ctx, out->data);
-	talloc_free(sd);
 
 	return 0;
 }
