@@ -247,8 +247,6 @@ NTSTATUS provision_store_self_join(TALLOC_CTX *mem_ctx, struct loadparm_context 
 			     PyLdb_FromLdbContext(ldb));
 	PyDict_SetItemString(parameters, "domain", 
 			     PyString_FromString(settings->domain_name));
-	PyDict_SetItemString(parameters, "domain", 
-			     PyString_FromString(settings->domain_name));
 	PyDict_SetItemString(parameters, "realm", 
 			     PyString_FromString(settings->realm));
 	PyDict_SetItemString(parameters, "machinepass", 
