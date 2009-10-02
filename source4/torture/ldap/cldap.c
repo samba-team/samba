@@ -303,8 +303,8 @@ static bool test_cldap_netlogon_flags(struct torture_context *tctx,
 		printf("DS_DNS_CONTROLLER ");
 	if (server_type & DS_DNS_DOMAIN)
 		printf("DS_DNS_DOMAIN ");
-	if (server_type & DS_DNS_FOREST)
-		printf("DS_DNS_FOREST ");
+	if (server_type & DS_DNS_FOREST_ROOT)
+		printf("DS_DNS_FOREST_ROOT ");
 
 	printf("\n");
 
@@ -352,7 +352,7 @@ static void cldap_dump_results(struct cldap_search *search)
 
 
 /*
-  test cldap netlogon server type flag "NBT_SERVER_DS_DNS_FOREST"
+  test cldap netlogon server type flag "NBT_SERVER_FOREST_ROOT"
 */
 static bool test_cldap_netlogon_flag_ds_dns_forest(struct torture_context *tctx,
 	const char *dest)
@@ -369,7 +369,7 @@ static bool test_cldap_netlogon_flag_ds_dns_forest(struct torture_context *tctx,
 	status = cldap_socket_init(tctx, NULL, NULL, NULL, &cldap);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	printf("Testing netlogon server type flag NBT_SERVER_DS_DNS_FOREST: ");
+	printf("Testing netlogon server type flag NBT_SERVER_FOREST_ROOT: ");
 
 	ZERO_STRUCT(search);
 	search.in.dest_address = dest;
@@ -387,7 +387,7 @@ static bool test_cldap_netlogon_flag_ds_dns_forest(struct torture_context *tctx,
 	else if (n1.ntver == NETLOGON_NT_VERSION_5EX)
 		server_type = n1.data.nt5_ex.server_type;
 
-	if (server_type & DS_DNS_FOREST) {
+	if (server_type & DS_DNS_FOREST_ROOT) {
 		struct cldap_search search2;
 		const char *attrs[] = { "defaultNamingContext", "rootDomainNamingContext", 
 			NULL };

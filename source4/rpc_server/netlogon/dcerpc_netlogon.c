@@ -1440,7 +1440,7 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call, TA
 	info->domain_guid		= samdb_result_guid(res[0], "objectGUID");
 	info->domain_name		= lp_realm(dce_call->conn->dce_ctx->lp_ctx);
 	info->forest_name		= lp_realm(dce_call->conn->dce_ctx->lp_ctx);
-	info->dc_flags			= DS_DNS_FOREST |
+	info->dc_flags			= DS_DNS_FOREST_ROOT |
 					  DS_DNS_DOMAIN |
 					  DS_DNS_CONTROLLER |
 					  DS_SERVER_WRITABLE |
