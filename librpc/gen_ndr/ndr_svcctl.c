@@ -12,6 +12,7 @@ static enum ndr_err_code ndr_push_SERVICE_LOCK_STATUS(struct ndr_push *ndr, int 
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->is_locked));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->lock_owner));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->lock_duration));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->lock_owner) {
@@ -38,6 +39,7 @@ static enum ndr_err_code ndr_pull_SERVICE_LOCK_STATUS(struct ndr_pull *ndr, int 
 			r->lock_owner = NULL;
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->lock_duration));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->lock_owner) {
@@ -141,6 +143,7 @@ static enum ndr_err_code ndr_push_SERVICE_STATUS(struct ndr_push *ndr, int ndr_f
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->service_exit_code));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->check_point));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->wait_hint));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -158,6 +161,7 @@ static enum ndr_err_code ndr_pull_SERVICE_STATUS(struct ndr_pull *ndr, int ndr_f
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->service_exit_code));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->check_point));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->wait_hint));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -185,6 +189,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_SERVICE_STATUS_PROCESS(struct ndr_push *ndr,
 		NDR_CHECK(ndr_push_SERVICE_STATUS(ndr, NDR_SCALARS, &r->status));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->process_id));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->service_flags));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -198,6 +203,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_SERVICE_STATUS_PROCESS(struct ndr_pull *ndr,
 		NDR_CHECK(ndr_pull_SERVICE_STATUS(ndr, NDR_SCALARS, &r->status));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->process_id));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->service_flags));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -231,6 +237,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_ENUM_SERVICE_STATUSW(struct ndr_push *ndr, i
 			ndr->flags = _flags_save_string;
 		}
 		NDR_CHECK(ndr_push_SERVICE_STATUS(ndr, NDR_SCALARS, &r->status));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		{
@@ -288,6 +295,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_ENUM_SERVICE_STATUSW(struct ndr_pull *ndr, i
 			ndr->flags = _flags_save_string;
 		}
 		NDR_CHECK(ndr_pull_SERVICE_STATUS(ndr, NDR_SCALARS, &r->status));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		{
@@ -366,6 +374,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_ENUM_SERVICE_STATUSA(struct ndr_push *ndr, i
 			ndr->flags = _flags_save_string;
 		}
 		NDR_CHECK(ndr_push_SERVICE_STATUS(ndr, NDR_SCALARS, &r->status));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		{
@@ -423,6 +432,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_ENUM_SERVICE_STATUSA(struct ndr_pull *ndr, i
 			ndr->flags = _flags_save_string;
 		}
 		NDR_CHECK(ndr_pull_SERVICE_STATUS(ndr, NDR_SCALARS, &r->status));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		{
@@ -711,6 +721,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_QUERY_SERVICE_CONFIG(struct ndr_push *ndr, i
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->dependencies));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->startname));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->displayname));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->executablepath) {
@@ -795,6 +806,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_QUERY_SERVICE_CONFIG(struct ndr_pull *ndr, i
 		} else {
 			r->displayname = NULL;
 		}
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->executablepath) {
@@ -912,6 +924,7 @@ static enum ndr_err_code ndr_push_svcctl_ArgumentString(struct ndr_push *ndr, in
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 5));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->string));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->string) {
@@ -936,6 +949,7 @@ static enum ndr_err_code ndr_pull_svcctl_ArgumentString(struct ndr_pull *ndr, in
 		} else {
 			r->string = NULL;
 		}
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->string) {
@@ -1002,6 +1016,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_SERVICE_DESCRIPTION(struct ndr_push *ndr, in
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->description));
 			ndr->flags = _flags_save_string;
 		}
+		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		{
@@ -1035,6 +1050,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_SERVICE_DESCRIPTION(struct ndr_pull *ndr, in
 			}
 			ndr->flags = _flags_save_string;
 		}
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		{
@@ -1107,6 +1123,7 @@ static enum ndr_err_code ndr_push_SC_ACTION(struct ndr_push *ndr, int ndr_flags,
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_SC_ACTION_TYPE(ndr, NDR_SCALARS, r->type));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->delay));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -1119,6 +1136,7 @@ static enum ndr_err_code ndr_pull_SC_ACTION(struct ndr_pull *ndr, int ndr_flags,
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_SC_ACTION_TYPE(ndr, NDR_SCALARS, &r->type));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->delay));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -1154,6 +1172,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_SERVICE_FAILURE_ACTIONS(struct ndr_push *ndr
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->num_actions));
 		NDR_CHECK(ndr_push_relative_ptr1(ndr, r->actions));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		{
@@ -1233,6 +1252,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_SERVICE_FAILURE_ACTIONS(struct ndr_pull *ndr
 		} else {
 			r->actions = NULL;
 		}
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		{

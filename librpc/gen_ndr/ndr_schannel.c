@@ -28,6 +28,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_netlogon_creds_CredentialState(struct ndr_pu
 			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->account_name, CH_UTF8)));
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->account_name, ndr_charset_length(r->account_name, CH_UTF8), sizeof(uint8_t), CH_UTF8));
 			NDR_CHECK(ndr_push_unique_ptr(ndr, r->sid));
+			NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 			if (r->sid) {
@@ -75,6 +76,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_netlogon_creds_CredentialState(struct ndr_pu
 			} else {
 				r->sid = NULL;
 			}
+			NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 			if (r->sid) {
@@ -380,6 +382,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_NL_AUTH_MESSAGE(struct ndr_push *ndr, int nd
 			NDR_CHECK(ndr_push_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_SCALARS, &r->utf8_netbios_computer));
 			NDR_CHECK(ndr_push_set_switch_value(ndr, &r->Buffer, r->MessageType & NL_NEGOTIATE_RESPONSE));
 			NDR_CHECK(ndr_push_NL_AUTH_MESSAGE_BUFFER_REPLY(ndr, NDR_SCALARS, &r->Buffer));
+			NDR_CHECK(ndr_push_trailer_align(ndr, 4));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 			NDR_CHECK(ndr_push_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_BUFFERS, &r->oem_netbios_domain));
@@ -415,6 +418,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_NL_AUTH_MESSAGE(struct ndr_pull *ndr, int nd
 			NDR_CHECK(ndr_pull_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_SCALARS, &r->utf8_netbios_computer));
 			NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->Buffer, r->MessageType & NL_NEGOTIATE_RESPONSE));
 			NDR_CHECK(ndr_pull_NL_AUTH_MESSAGE_BUFFER_REPLY(ndr, NDR_SCALARS, &r->Buffer));
+			NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 			NDR_CHECK(ndr_pull_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_BUFFERS, &r->oem_netbios_domain));
@@ -520,6 +524,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_NL_AUTH_SIGNATURE(struct ndr_push *ndr, int 
 			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->SequenceNumber, 8));
 			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->Checksum, 8));
 			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->Confounder, 8));
+			NDR_CHECK(ndr_push_trailer_align(ndr, 2));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 		}
@@ -542,6 +547,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_NL_AUTH_SIGNATURE(struct ndr_pull *ndr, int 
 			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->SequenceNumber, 8));
 			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->Checksum, 8));
 			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->Confounder, 8));
+			NDR_CHECK(ndr_pull_trailer_align(ndr, 2));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 		}
@@ -583,6 +589,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_NL_AUTH_SHA2_SIGNATURE(struct ndr_push *ndr,
 			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->SequenceNumber, 8));
 			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->Checksum, 32));
 			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->Confounder, 8));
+			NDR_CHECK(ndr_push_trailer_align(ndr, 2));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 		}
@@ -605,6 +612,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_NL_AUTH_SHA2_SIGNATURE(struct ndr_pull *ndr,
 			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->SequenceNumber, 8));
 			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->Checksum, 32));
 			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->Confounder, 8));
+			NDR_CHECK(ndr_pull_trailer_align(ndr, 2));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 		}

@@ -245,6 +245,7 @@ static enum ndr_err_code ndr_push_security_ace_object(struct ndr_push *ndr, int 
 		NDR_CHECK(ndr_push_security_ace_object_type(ndr, NDR_SCALARS, &r->type));
 		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->inherited_type, r->flags & SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT));
 		NDR_CHECK(ndr_push_security_ace_object_inherited_type(ndr, NDR_SCALARS, &r->inherited_type));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		NDR_CHECK(ndr_push_security_ace_object_type(ndr, NDR_BUFFERS, &r->type));
@@ -262,6 +263,7 @@ static enum ndr_err_code ndr_pull_security_ace_object(struct ndr_pull *ndr, int 
 		NDR_CHECK(ndr_pull_security_ace_object_type(ndr, NDR_SCALARS, &r->type));
 		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->inherited_type, r->flags & SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT));
 		NDR_CHECK(ndr_pull_security_ace_object_inherited_type(ndr, NDR_SCALARS, &r->inherited_type));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		NDR_CHECK(ndr_pull_security_ace_object_type(ndr, NDR_BUFFERS, &r->type));
@@ -429,6 +431,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_security_ace(struct ndr_push *ndr, int ndr_f
 		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->object, r->type));
 		NDR_CHECK(ndr_push_security_ace_object_ctr(ndr, NDR_SCALARS, &r->object));
 		NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS, &r->trustee));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		NDR_CHECK(ndr_push_security_ace_object_ctr(ndr, NDR_BUFFERS, &r->object));
@@ -486,6 +489,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_security_acl(struct ndr_push *ndr, int ndr_f
 		for (cntr_aces_0 = 0; cntr_aces_0 < r->num_aces; cntr_aces_0++) {
 			NDR_CHECK(ndr_push_security_ace(ndr, NDR_SCALARS, &r->aces[cntr_aces_0]));
 		}
+		NDR_CHECK(ndr_push_trailer_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		for (cntr_aces_0 = 0; cntr_aces_0 < r->num_aces; cntr_aces_0++) {
@@ -514,6 +518,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_acl(struct ndr_pull *ndr, int ndr_f
 			NDR_CHECK(ndr_pull_security_ace(ndr, NDR_SCALARS, &r->aces[cntr_aces_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_aces_0, 0);
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		_mem_save_aces_0 = NDR_PULL_GET_MEM_CTX(ndr);
@@ -621,6 +626,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_security_descriptor(struct ndr_push *ndr, in
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->group_sid));
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->sacl));
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->dacl));
+			NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 			if (r->owner_sid) {
@@ -690,6 +696,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_descriptor(struct ndr_pull *ndr, in
 			} else {
 				r->dacl = NULL;
 			}
+			NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 			if (r->owner_sid) {
@@ -782,6 +789,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_sec_desc_buf(struct ndr_push *ndr, int ndr_f
 		NDR_CHECK(ndr_push_align(ndr, 5));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_security_descriptor(r->sd, ndr->iconv_convenience, ndr->flags)));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->sd));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->sd) {
@@ -812,6 +820,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_sec_desc_buf(struct ndr_pull *ndr, int ndr_f
 		} else {
 			r->sd = NULL;
 		}
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->sd) {
@@ -857,6 +866,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_security_token(struct ndr_push *ndr, int ndr
 		}
 		NDR_CHECK(ndr_push_udlong(ndr, NDR_SCALARS, r->privilege_mask));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->default_dacl));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->user_sid) {
@@ -927,6 +937,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_token(struct ndr_pull *ndr, int ndr
 		if (r->sids) {
 			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->sids, r->num_sids));
 		}
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->user_sid) {

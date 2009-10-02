@@ -68,6 +68,7 @@ static enum ndr_err_code ndr_push_dssetup_DsRolePrimaryDomInfoBasic(struct ndr_p
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->dns_domain));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->forest));
 		NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->domain_guid));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->domain) {
@@ -123,6 +124,7 @@ static enum ndr_err_code ndr_pull_dssetup_DsRolePrimaryDomInfoBasic(struct ndr_p
 			r->forest = NULL;
 		}
 		NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->domain_guid));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->domain) {
@@ -250,6 +252,7 @@ static enum ndr_err_code ndr_push_dssetup_DsRoleUpgradeStatus(struct ndr_push *n
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_dssetup_DsUpgrade(ndr, NDR_SCALARS, r->upgrading));
 		NDR_CHECK(ndr_push_dssetup_DsPrevious(ndr, NDR_SCALARS, r->previous_role));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -262,6 +265,7 @@ static enum ndr_err_code ndr_pull_dssetup_DsRoleUpgradeStatus(struct ndr_pull *n
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_dssetup_DsUpgrade(ndr, NDR_SCALARS, &r->upgrading));
 		NDR_CHECK(ndr_pull_dssetup_DsPrevious(ndr, NDR_SCALARS, &r->previous_role));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -308,6 +312,7 @@ static enum ndr_err_code ndr_push_dssetup_DsRoleOpStatus(struct ndr_push *ndr, i
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 2));
 		NDR_CHECK(ndr_push_dssetup_DsRoleOp(ndr, NDR_SCALARS, r->status));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 2));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -319,6 +324,7 @@ static enum ndr_err_code ndr_pull_dssetup_DsRoleOpStatus(struct ndr_pull *ndr, i
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 2));
 		NDR_CHECK(ndr_pull_dssetup_DsRoleOp(ndr, NDR_SCALARS, &r->status));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 2));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
