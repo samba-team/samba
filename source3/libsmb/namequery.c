@@ -408,7 +408,8 @@ bool name_status_find(const char *q_name,
 		goto done;
 
 	for (i=0;i<count;i++) {
-		if (status[i].type == type)
+                /* Find first one of the requested type that's not a GROUP. */
+		if (status[i].type == type && ! (status[i].flags & 0x80))
 			break;
 	}
 	if (i == count)
