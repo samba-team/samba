@@ -135,7 +135,6 @@ static int ltdb_convert_from_idxptr(struct ldb_module *module, struct ldb_messag
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	talloc_free(el->values);
 	*el = ptr->el;
 
 	if (ptr_out) {
@@ -164,11 +163,7 @@ static int ltdb_update_idxptr(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 	el->values = val2;
 	el->num_values = 1;
 
-	if (strcmp(el->name, LTDB_IDXPTR) == 0) {
-		abort();
-	}
-
-	el->values[0].data = talloc_memdup(val2, &ptr, sizeof(ptr));
+	el->values[0].data = talloc_memdup(el->values, &ptr, sizeof(ptr));
 	el->values[0].length = sizeof(ptr);
 
 	/* update the name */
