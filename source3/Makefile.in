@@ -1690,10 +1690,10 @@ bin/smbcquotas@EXEEXT@: $(BINARY_PREREQS) $(SMBCQUOTAS_OBJ) @BUILD_POPT@ libtall
 		$(LIBS) $(POPT_LIBS) $(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(LIBWBCLIENT_LIBS) $(ZLIB_LIBS)
 
-bin/eventlogadm@EXEEXT@: $(BINARY_PREREQS) $(EVTLOGADM_OBJ) @BUILD_POPT@ libtalloc libtdb
+bin/eventlogadm@EXEEXT@: $(BINARY_PREREQS) $(EVTLOGADM_OBJ) libtalloc libtdb
 	@echo Linking $@
 	@$(CC) -o $@ $(EVTLOGADM_OBJ) $(DYNEXP) $(LDFLAGS) \
-		$(LIBS) $(LDAP_LIBS) $(POPT_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
+		$(LIBS) $(LDAP_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
 bin/sharesec@EXEEXT@: $(BINARY_PREREQS) $(SHARESEC_OBJ) @BUILD_POPT@ libtalloc libtdb
 	@echo Linking $@
