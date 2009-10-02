@@ -769,6 +769,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	talloc_set_destructor(state, event_script_destructor);
 
 	close(state->fd[1]);
+	set_close_on_exec(state->fd[0]);
 
 	event_add_fd(ctdb->ev, state, state->fd[0], EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
 		     ctdb_event_script_handler, state);
