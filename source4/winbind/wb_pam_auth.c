@@ -260,11 +260,31 @@ struct composite_context *wb_cmd_pam_auth_send(TALLOC_CTX *mem_ctx,
 					 chal, nt_resp, lm_resp);
 }
 
-NTSTATUS wb_cmd_pam_auth_recv(struct composite_context *c)
+NTSTATUS wb_cmd_pam_auth_recv(struct composite_context *c,
+			      TALLOC_CTX *mem_ctx,
+			      DATA_BLOB *info3,
+			      struct netr_UserSessionKey *user_session_key,
+			      struct netr_LMSessionKey *lm_key,
+			      char **unix_username)
 {
-       struct pam_auth_crap_state *state =
-               talloc_get_type(c->private_data, struct pam_auth_crap_state);
-       NTSTATUS status = composite_wait(c);
-       talloc_free(state);
-       return status;
+	struct pam_auth_crap_state *state =
+		talloc_get_type(c->private_data, struct pam_auth_crap_state);
+	NTSTATUS status = composite_wait(c);
+	if (NT_STATUS_IS_OK(status)) {
+		if (info3) {
+			info3->length = state->info3.length;
+			info3->data = talloc_steal(mem_ctx, state->info3.data);
+		}
+		if (user_session_key) {
+			*user_session_key = state->user_session_key;
+		}
+		if (lm_key) {
+			*lm_key = state->lm_key;
+		}
+		if (unix_username) {
+			*unix_username = talloc_steal(mem_ctx, state->unix_username);
+		}
+	}
+	talloc_free(state);
+	return status;
 }

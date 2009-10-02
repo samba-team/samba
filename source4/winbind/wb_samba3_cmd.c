@@ -299,7 +299,7 @@ static void check_machacc_recv(struct composite_context *ctx)
 				struct wbsrv_samba3_call);
 	NTSTATUS status;
 
-	status = wb_cmd_pam_auth_recv(ctx);
+	status = wb_cmd_pam_auth_recv(ctx, s3call, NULL, NULL, NULL, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) goto done;
 
@@ -734,10 +734,47 @@ static void pam_auth_recv(struct composite_context *ctx)
 		talloc_get_type(ctx->async.private_data,
 				struct wbsrv_samba3_call);
 	NTSTATUS status;
+	DATA_BLOB info3;
+	struct netr_UserSessionKey user_session_key;
+	struct netr_LMSessionKey lm_key;
+	char *unix_username;
 
-	status = wb_cmd_pam_auth_recv(ctx);
+	status = wb_cmd_pam_auth_recv(ctx, s3call, &info3, 
+				      &user_session_key, &lm_key, &unix_username);
 
 	if (!NT_STATUS_IS_OK(status)) goto done;
+
+	if (s3call->request.flags & WBFLAG_PAM_USER_SESSION_KEY) {
+		memcpy(s3call->response.data.auth.user_session_key, 
+		       &user_session_key.key,
+		       sizeof(s3call->response.data.auth.user_session_key));
+	}
+
+	if (s3call->request.flags & WBFLAG_PAM_INFO3_TEXT) {
+		status = wb_samba3_append_info3_as_txt(ctx, s3call, info3);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10,("Failed to append INFO3 (TXT): %s\n",
+				  nt_errstr(status)));
+			goto done;
+		}
+	}
+
+	if (s3call->request.flags & WBFLAG_PAM_INFO3_NDR) {
+		s3call->response.extra_data.data = info3.data;
+		s3call->response.length += info3.length;
+	}
+
+	if (s3call->request.flags & WBFLAG_PAM_LMKEY) {
+		memcpy(s3call->response.data.auth.first_8_lm_hash, 
+		       lm_key.key,
+		       sizeof(s3call->response.data.auth.first_8_lm_hash));
+	}
+	
+	if (s3call->request.flags & WBFLAG_PAM_UNIX_NAME) {
+		s3call->response.extra_data.data = unix_username;
+		s3call->response.length += strlen(unix_username)+1;
+	}
+	
 
  done:
 	wbsrv_samba3_async_auth_epilogue(status, s3call);
