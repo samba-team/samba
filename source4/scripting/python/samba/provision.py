@@ -1374,9 +1374,9 @@ def provision(setup_dir, message, session_info,
             assert isinstance(domainguid, str)
 
             create_zone_file(paths.dns, setup_path, dnsdomain=names.dnsdomain,
-                             domaindn=names.domaindn, hostip=hostip,
+                             hostip=hostip,
                              hostip6=hostip6, hostname=names.hostname,
-                             dnspass=dnspass, realm=names.realm,
+                             realm=names.realm,
                              domainguid=domainguid, ntdsguid=names.ntdsguid)
 
             create_named_conf(paths.namedconf, setup_path, realm=names.realm,
@@ -1979,8 +1979,8 @@ def create_phpldapadmin_config(path, setup_path, ldapi_uri):
             {"S4_LDAPI_URI": ldapi_uri})
 
 
-def create_zone_file(path, setup_path, dnsdomain, domaindn, 
-                     hostip, hostip6, hostname, dnspass, realm, domainguid,
+def create_zone_file(path, setup_path, dnsdomain, 
+                     hostip, hostip6, hostname, realm, domainguid,
                      ntdsguid):
     """Write out a DNS zone file, from the info in the current database.
 
@@ -1991,7 +1991,6 @@ def create_zone_file(path, setup_path, dnsdomain, domaindn,
     :param hostip: Local IPv4 IP
     :param hostip6: Local IPv6 IP
     :param hostname: Local hostname
-    :param dnspass: Password for DNS
     :param realm: Realm name
     :param domainguid: GUID of the domain.
     :param ntdsguid: GUID of the hosts nTDSDSA record.
@@ -2013,7 +2012,6 @@ def create_zone_file(path, setup_path, dnsdomain, domaindn,
         hostip_host_line = ""
 
     setup_file(setup_path("provision.zone"), path, {
-            "DNSPASS_B64": b64encode(dnspass),
             "HOSTNAME": hostname,
             "DNSDOMAIN": dnsdomain,
             "REALM": realm,
