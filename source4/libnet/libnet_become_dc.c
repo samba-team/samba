@@ -893,15 +893,17 @@ static NTSTATUS becomeDC_ldap1_crossref_behavior_version(struct libnet_BecomeDC_
 	if (s->forest.crossref_behavior_version <
 			 get_min_function_level(s->libnet->lp_ctx)) {
 		talloc_free(r);
-		/* we don't support forest function levels below the specified
-		 * value. */
+		DEBUG(0,("The servers function level %u is below 'ads:min function level' of %u\n", 
+			 s->forest.crossref_behavior_version, 
+			 get_min_function_level(s->libnet->lp_ctx)));
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 	if (s->forest.crossref_behavior_version >
 			get_dc_function_level(s->libnet->lp_ctx)) {
 		talloc_free(r);
-		/* if the DC function level is lower than the forest one we
-		 * cannot join. */
+		DEBUG(0,("The servers function level %u is above 'ads:dc function level' of %u\n", 
+			 s->forest.crossref_behavior_version, 
+			 get_dc_function_level(s->libnet->lp_ctx)));
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
@@ -936,15 +938,17 @@ static NTSTATUS becomeDC_ldap1_domain_behavior_version(struct libnet_BecomeDC_st
 	if (s->domain.behavior_version <
 			get_min_function_level(s->libnet->lp_ctx)) {
 		talloc_free(r);
-		/* we don't support domain function levels below the specified
-		 * value. */
+		DEBUG(0,("The servers function level %u is below 'ads:min function level' of %u\n", 
+			 s->forest.crossref_behavior_version, 
+			 get_min_function_level(s->libnet->lp_ctx)));
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 	if (s->domain.behavior_version >
 			get_dc_function_level(s->libnet->lp_ctx)) {
 		talloc_free(r);
-		/* if the DC function level is lower than the forest one we
-		 * cannot join. */
+		DEBUG(0,("The servers function level %u is above 'ads:dc function level' of %u\n", 
+			 s->forest.crossref_behavior_version, 
+			 get_dc_function_level(s->libnet->lp_ctx)));
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
