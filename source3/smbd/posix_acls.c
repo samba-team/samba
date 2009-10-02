@@ -3494,7 +3494,7 @@ int try_chown(connection_struct *conn, struct smb_filename *smb_fname,
 	}
 
 	if (lp_posix_pathnames()) {
-		ret = SMB_VFS_STAT(conn, smb_fname);
+		ret = SMB_VFS_LSTAT(conn, smb_fname);
 	} else {
 		ret = SMB_VFS_STAT(conn, smb_fname);
 	}
