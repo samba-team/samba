@@ -1,5 +1,6 @@
-# Add default primary groups (domain users, domain guests) - needed for
-# the users to find valid primary groups (samldb module)
+# Add default primary groups (domain users, domain guests, domain computers &
+# domain controllers) - needed for the users to find valid primary groups
+# (samldb module)
 
 dn: CN=Domain Users,CN=Users,${DOMAINDN}
 objectClass: top
@@ -15,6 +16,23 @@ objectClass: group
 description: All domain guests
 objectSid: ${DOMAINSID}-514
 sAMAccountName: Domain Guests
+isCriticalSystemObject: TRUE
+
+dn: CN=Domain Computers,CN=Users,${DOMAINDN}
+objectClass: top
+objectClass: group
+description: All workstations and servers joined to the domain
+objectSid: ${DOMAINSID}-515
+sAMAccountName: Domain Computers
+isCriticalSystemObject: TRUE
+
+dn: CN=Domain Controllers,CN=Users,${DOMAINDN}
+objectClass: top
+objectClass: group
+description: All domain controllers in the domain
+objectSid: ${DOMAINSID}-516
+adminCount: 1
+sAMAccountName: Domain Controllers
 isCriticalSystemObject: TRUE
 
 # Add users
@@ -65,23 +83,6 @@ member: CN=Administrator,CN=Users,${DOMAINDN}
 objectSid: ${DOMAINSID}-519
 adminCount: 1
 sAMAccountName: Enterprise Admins
-isCriticalSystemObject: TRUE
-
-dn: CN=Domain Computers,CN=Users,${DOMAINDN}
-objectClass: top
-objectClass: group
-description: All workstations and servers joined to the domain
-objectSid: ${DOMAINSID}-515
-sAMAccountName: Domain Computers
-isCriticalSystemObject: TRUE
-
-dn: CN=Domain Controllers,CN=Users,${DOMAINDN}
-objectClass: top
-objectClass: group
-description: All domain controllers in the domain
-objectSid: ${DOMAINSID}-516
-adminCount: 1
-sAMAccountName: Domain Controllers
 isCriticalSystemObject: TRUE
 
 dn: CN=Schema Admins,CN=Users,${DOMAINDN}
