@@ -625,7 +625,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
 				/*
 				 * Get the backup list ...
 				 */
-				if (!name_status_find(server, 0, 0,
+				if (!name_status_find(server, 0x20, 0x20,
                                                       &rem_ss, buserver)) {
 
                                         DEBUG(0,("Could not get name of "
