@@ -750,7 +750,7 @@ static NTSTATUS ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
 	DEBUG(10, ("ModifyDNRequest: olddn: [%s]\n", req->dn));
 	DEBUG(10, ("ModifyDNRequest: newrdn: [%s]\n", req->newrdn));
 
-	if (ldb_dn_get_comp_num(req->newrdn) != 1) {
+	if (ldb_dn_get_comp_num(newrdn) != 1) {
 		result = LDAP_INVALID_DN_SYNTAX;
 		map_ldb_error(local_ctx, LDB_ERR_INVALID_DN_SYNTAX, &errstr);
 		goto reply;

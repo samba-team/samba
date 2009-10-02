@@ -3,6 +3,7 @@
 
    Copyright (C) Andrew Bartlett 2005-2009
    Copyright (C) Simo Sorce 2006-2008
+   Copyright (C) Matthias Dieter Wallnöfer 2009
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -39,13 +40,32 @@
 #include "ldb_includes.h"
 #include "ldb_module.h"
 
-struct rename_context {
+struct rdn_name_private {
+	/* rename operation? */
+	bool rename;
+};
 
+struct rename_context {
 	struct ldb_module *module;
 	struct ldb_request *req;
 
 	struct ldb_reply *ares;
 };
+
+static int rdn_name_init(struct ldb_module *module)
+{
+	struct rdn_name_private *rdn_name_private;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+
+	rdn_name_private = talloc_zero(module, struct rdn_name_private);
+	if (rdn_name_private == NULL) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ldb_module_set_private(module, rdn_name_private);
+
+	return ldb_next_init(module);
+}
 
 static struct ldb_message_element *rdn_name_find_attribute(const struct ldb_message *msg, const char *name)
 {
@@ -115,6 +135,7 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 
 	msg = ldb_msg_copy_shallow(req, req->op.add.message);
 	if (msg == NULL) {
+		talloc_free(ac);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -179,6 +200,7 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 				ac, rdn_name_add_callback,
 				req);
 	if (ret != LDB_SUCCESS) {
+		talloc_free(ac);
 		return ret;
 	}
 
@@ -190,9 +212,15 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 
 static int rdn_modify_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
+	struct rdn_name_private *rdn_name_private;
 	struct rename_context *ac;
 
 	ac = talloc_get_type(req->context, struct rename_context);
+	rdn_name_private = talloc_get_type(ldb_module_get_private(ac->module),
+						struct rdn_name_private);
+
+	/* our rename is finished */
+	rdn_name_private->rename = false;
 
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
@@ -216,8 +244,9 @@ static int rdn_modify_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 static int rdn_rename_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
-	struct ldb_context *ldb;
+	struct rdn_name_private *rdn_name_private;
 	struct rename_context *ac;
+	struct ldb_context *ldb;
 	struct ldb_request *mod_req;
 	const char *rdn_name;
 	struct ldb_val rdn_val;
@@ -226,6 +255,8 @@ static int rdn_rename_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 	ac = talloc_get_type(req->context, struct rename_context);
 	ldb = ldb_module_get_ctx(ac->module);
+	rdn_name_private = talloc_get_type(ldb_module_get_private(ac->module),
+						struct rdn_name_private);
 
 	if (!ares) {
 		goto error;
@@ -270,6 +301,9 @@ static int rdn_rename_callback(struct ldb_request *req, struct ldb_reply *ares)
 	if (ldb_msg_add_value(msg, "name", &rdn_val, NULL) != 0) {
 		goto error;
 	}
+
+	/* we do a rename */
+	rdn_name_private->rename = true;
 
 	ret = ldb_build_mod_req(&mod_req, ldb,
 				ac, msg, NULL,
@@ -322,7 +356,8 @@ static int rdn_name_rename(struct ldb_module *module, struct ldb_request *req)
 				   req);
 
 	if (ret != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		talloc_free(ac);
+		return ret;
 	}
 
 	/* rename first, modify "name" if rename is ok */
@@ -331,6 +366,8 @@ static int rdn_name_rename(struct ldb_module *module, struct ldb_request *req)
 
 static int rdn_name_modify(struct ldb_module *module, struct ldb_request *req)
 {
+	struct rdn_name_private *rdn_name_private =
+		talloc_get_type(ldb_module_get_private(module), struct rdn_name_private);
 	struct ldb_context *ldb;
 
 	ldb = ldb_module_get_ctx(module);
@@ -341,13 +378,15 @@ static int rdn_name_modify(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	if (ldb_msg_find_element(req->op.mod.message, "name")) {
+	if ((!rdn_name_private->rename)
+			&& ldb_msg_find_element(req->op.mod.message, "name")) {
 		ldb_asprintf_errstring(ldb, "Modify of 'name' on %s not permitted, must use 'rename' operation instead",
 				       ldb_dn_get_linearized(req->op.mod.message->dn));
 		return LDB_ERR_NOT_ALLOWED_ON_RDN;
 	}
 
-	if (ldb_msg_find_element(req->op.mod.message, ldb_dn_get_rdn_name(req->op.mod.message->dn))) {
+	if ((!rdn_name_private->rename)
+			&& ldb_msg_find_element(req->op.mod.message, ldb_dn_get_rdn_name(req->op.mod.message->dn))) {
 		ldb_asprintf_errstring(ldb, "Modify of RDN '%s' on %s not permitted, must use 'rename' operation instead",
 				       ldb_dn_get_rdn_name(req->op.mod.message->dn), ldb_dn_get_linearized(req->op.mod.message->dn));
 		return LDB_ERR_NOT_ALLOWED_ON_RDN;
@@ -359,7 +398,8 @@ static int rdn_name_modify(struct ldb_module *module, struct ldb_request *req)
 
 const struct ldb_module_ops ldb_rdn_name_module_ops = {
 	.name              = "rdn_name",
+	.init_context	   = rdn_name_init,
 	.add               = rdn_name_add,
 	.modify            = rdn_name_modify,
-	.rename            = rdn_name_rename,
+	.rename            = rdn_name_rename
 };
