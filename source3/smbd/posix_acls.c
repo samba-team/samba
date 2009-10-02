@@ -3377,6 +3377,7 @@ NTSTATUS posix_get_nt_acl(struct connection_struct *conn, const char *name,
 	struct pai_val *pal;
 	struct smb_filename *smb_fname = NULL;
 	NTSTATUS status;
+	int ret;
 
 	*ppdesc = NULL;
 
@@ -3389,7 +3390,13 @@ NTSTATUS posix_get_nt_acl(struct connection_struct *conn, const char *name,
 	}
 
 	/* Get the stat struct for the owner info. */
-	if(SMB_VFS_STAT(conn, smb_fname) != 0) {
+	if (lp_posix_pathnames()) {
+		ret = SMB_VFS_LSTAT(conn, smb_fname);
+	} else {
+		ret = SMB_VFS_STAT(conn, smb_fname);
+	}
+
+	if (ret == -1) {
 		status = map_nt_error_from_unix(errno);
 		goto out;
 	}
@@ -3435,7 +3442,12 @@ int try_chown(connection_struct *conn, struct smb_filename *smb_fname,
 
 	/* Case (1). */
 	/* try the direct way first */
-	ret = SMB_VFS_CHOWN(conn, smb_fname->base_name, uid, gid);
+	if (lp_posix_pathnames()) {
+		ret = SMB_VFS_LCHOWN(conn, smb_fname->base_name, uid, gid);
+	} else {
+		ret = SMB_VFS_CHOWN(conn, smb_fname->base_name, uid, gid);
+	}
+
 	if (ret == 0)
 		return 0;
 
@@ -3454,8 +3466,13 @@ int try_chown(connection_struct *conn, struct smb_filename *smb_fname,
 
 			become_root();
 			/* Keep the current file gid the same - take ownership doesn't imply group change. */
-			ret = SMB_VFS_CHOWN(conn, smb_fname->base_name, uid,
-					    (gid_t)-1);
+			if (lp_posix_pathnames()) {
+				ret = SMB_VFS_LCHOWN(conn, smb_fname->base_name, uid,
+						    (gid_t)-1);
+			} else {
+				ret = SMB_VFS_CHOWN(conn, smb_fname->base_name, uid,
+						    (gid_t)-1);
+			}
 			unbecome_root();
 			return ret;
 		}
@@ -3476,7 +3493,13 @@ int try_chown(connection_struct *conn, struct smb_filename *smb_fname,
 		return -1;
 	}
 
-	if (SMB_VFS_STAT(conn, smb_fname)) {
+	if (lp_posix_pathnames()) {
+		ret = SMB_VFS_STAT(conn, smb_fname);
+	} else {
+		ret = SMB_VFS_STAT(conn, smb_fname);
+	}
+
+	if (ret == -1) {
 		return -1;
 	}
 
@@ -3716,6 +3739,7 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC
 	bool set_acl_as_root = false;
 	bool acl_set_support = false;
 	bool ret = false;
+	int sret;
 
 	DEBUG(10,("set_nt_acl: called for file %s\n",
 		  fsp_str_dbg(fsp)));
@@ -3730,7 +3754,12 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC
 	 */
 
 	if(fsp->is_directory || fsp->fh->fd == -1) {
-		if(SMB_VFS_STAT(fsp->conn, fsp->fsp_name) != 0) {
+		if (fsp->posix_open) {
+			sret = SMB_VFS_LSTAT(fsp->conn, fsp->fsp_name);
+		} else {
+			sret = SMB_VFS_STAT(fsp->conn, fsp->fsp_name);
+		}
+		if (sret == -1) {
 			return map_nt_error_from_unix(errno);
 		}
 	} else {
@@ -3780,21 +3809,18 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC
 		 * (suid/sgid bits, for instance)
 		 */
 
-		if(fsp->is_directory) {
-			if(SMB_VFS_STAT(fsp->conn, fsp->fsp_name) != 0) {
-				return map_nt_error_from_unix(errno);
+		if(fsp->is_directory || fsp->fh->fd == -1) {
+			if (fsp->posix_open) {
+				sret = SMB_VFS_LSTAT(fsp->conn, fsp->fsp_name);
+			} else {
+				sret = SMB_VFS_STAT(fsp->conn, fsp->fsp_name);
 			}
 		} else {
+			sret = SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st);
+		}
 
-			int sret;
-
-			if(fsp->fh->fd == -1)
-				sret = SMB_VFS_STAT(fsp->conn, fsp->fsp_name);
-			else
-				sret = SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st);
-
-			if(sret != 0)
-				return map_nt_error_from_unix(errno);
+		if(sret == -1) {
+			return map_nt_error_from_unix(errno);
 		}
 
 		/* Save the original element we check against. */
