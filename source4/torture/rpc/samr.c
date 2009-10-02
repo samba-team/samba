@@ -6754,6 +6754,35 @@ static bool test_Connect(struct dcerpc_pipe *p, struct torture_context *tctx,
 }
 
 
+static bool test_samr_ValidatePassword(struct dcerpc_pipe *p, struct torture_context *tctx)
+{
+	struct samr_ValidatePassword r;
+	union samr_ValidatePasswordReq req;
+	union samr_ValidatePasswordRep *repp = NULL;
+	NTSTATUS status;
+	const char *passwords[] = { "penguin", "p@ssw0rd", "p@ssw0rd123$", NULL };
+	int i;
+
+	ZERO_STRUCT(r);
+	r.in.level = NetValidatePasswordReset;
+	r.in.req = &req;
+	r.out.rep = &repp;
+	
+	ZERO_STRUCT(req);
+	req.req3.account.string = "non-existant-account-aklsdji";
+
+	for (i=0; passwords[i]; i++) {
+		req.req3.password.string = passwords[i];
+		status = dcerpc_samr_ValidatePassword(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "samr_ValidatePassword");
+		torture_comment(tctx, "Server %s password '%s'\n", 
+				repp->ctr3.status==SAMR_VALIDATION_STATUS_SUCCESS?"allowed":"refused",
+				req.req3.password.string);
+	}
+
+	return true;	
+}
+
 bool torture_rpc_samr(struct torture_context *torture)
 {
 	NTSTATUS status;
@@ -6765,6 +6794,9 @@ bool torture_rpc_samr(struct torture_context *torture)
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
+
+	ret &= test_samr_ValidatePassword(p, torture);
+	exit(1);
 
 	ret &= test_Connect(p, torture, &handle);
 
