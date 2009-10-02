@@ -77,7 +77,16 @@ struct ldb_dn {
 
 	unsigned int ext_comp_num;
 	struct ldb_dn_ext_component *ext_components;
+
+	char extra_type;
+	struct ldb_val extra_val;
 };
+
+/* it is helpful to be able to break on this in gdb */
+static void ldb_dn_mark_invalid(struct ldb_dn *dn)
+{
+	dn->invalid = true;
+}
 
 /* strdn may be NULL */
 struct ldb_dn *ldb_dn_from_ldb_val(void *mem_ctx,
@@ -92,6 +101,13 @@ struct ldb_dn *ldb_dn_from_ldb_val(void *mem_ctx,
 	    && (strlen((const char*)strdn->data) != strdn->length)) {
 		/* The RDN must not contain a character with value 0x0 */
 		return NULL;
+	}
+
+	/* if the DN starts with B: then it has a binary blob
+	 * attached. Called the binary dn parser, which will call back
+	 * here for the rest of the DN */
+	if (strdn->data && strncmp((char *)strdn->data, "B:", 2) == 0) {
+		return ldb_dn_binary_from_ldb_val(mem_ctx, ldb, strdn);
 	}
 
 	dn = talloc_zero(mem_ctx, struct ldb_dn);
@@ -141,13 +157,180 @@ failed:
 	return NULL;
 }
 
+/*
+  a version of strhex_to_str internal to ldb, for use by the binary
+  ldb code
+ */
+static size_t ldb_strhex_to_str(char *p, size_t p_len, const char *strhex, 
+				size_t strhex_len)
+{
+	size_t i;
+	size_t num_chars = 0;
+	uint8_t   lonybble, hinybble;
+	const char     *hexchars = "0123456789ABCDEF";
+	char           *p1 = NULL, *p2 = NULL;
+
+	for (i = 0; i < strhex_len && strhex[i] != 0; i++) {
+		if (!(p1 = strchr(hexchars, toupper((unsigned char)strhex[i]))))
+			break;
+
+		i++; /* next hex digit */
+
+		if (!(p2 = strchr(hexchars, toupper((unsigned char)strhex[i]))))
+			break;
+
+		/* get the two nybbles */
+		hinybble = PTR_DIFF(p1, hexchars);
+		lonybble = PTR_DIFF(p2, hexchars);
+
+		if (num_chars >= p_len) {
+			break;
+		}
+
+		p[num_chars] = (hinybble << 4) | lonybble;
+		num_chars++;
+
+		p1 = NULL;
+		p2 = NULL;
+	}
+	return num_chars;
+}
+
+/* strdn may be NULL */
+struct ldb_dn *ldb_dn_binary_from_ldb_val(void *mem_ctx,
+					  struct ldb_context *ldb,
+					  const struct ldb_val *strdn)
+{
+	struct ldb_dn *dn;
+	const char *data;
+	size_t len;
+	char *linearized;
+	TALLOC_CTX *tmp_ctx;
+	char *p1;
+	char *p2;
+	uint32_t blen;
+	struct ldb_val bval;
+	struct ldb_val dval;
+	char *dn_str;
+	char *old;
+
+	if (strdn && strdn->data
+	    && (strlen((const char*)strdn->data) != strdn->length)) {
+		/* The RDN must not contain a character with value 0x0 */
+		return NULL;
+	}
+
+	if (!strdn->data || strdn->length == 0) {
+		return NULL;
+
+	}
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return NULL;
+	}
+
+	data = (const char *)strdn->data;
+
+	if (data[0] != 'B') {
+		ldb_debug(ldb, LDB_DEBUG_TRACE, __location__ ": no prefix?\n");
+		return NULL;
+	}
+
+	len = strdn->length;
+	linearized = talloc_strndup(tmp_ctx, data, len);
+	if (linearized == NULL) {
+		goto failed;
+	}
+
+	ldb_debug(ldb, LDB_DEBUG_TRACE, __location__ ": processing DN '%s'\n", linearized);
+
+	p1 = linearized;
+
+	p1++; len--;
+	
+	if (p1[0] != ':') {
+		goto failed;
+	}
+	p1++;
+	len--;
+	
+	errno = 0;
+	blen = strtoul(p1, &p2, 10);
+	if (errno != 0) {
+		ldb_debug(ldb, LDB_DEBUG_TRACE, __location__ ": failed\n");
+		goto failed;
+	}
+	if (p2 == NULL) {
+		ldb_debug(ldb, LDB_DEBUG_TRACE, __location__ ": failed\n");
+		goto failed;
+	}
+	if (p2[0] != ':') {
+		ldb_debug(ldb, LDB_DEBUG_TRACE, __location__ ": failed\n");
+		goto failed;
+	}
+	len -= PTR_DIFF(p2,p1);//???
+	p1 = p2+1;
+	len--;
+	
+	if (blen >= len) {
+		ldb_debug(ldb, LDB_DEBUG_TRACE, __location__ ": blen=%u len=%u\n", (unsigned)blen, (unsigned)len);
+		goto failed;
+	}
+
+	p2 = p1 + blen;
+	if (p2[0] != ':') {
+		ldb_debug(ldb, LDB_DEBUG_TRACE, __location__ ": %s", p2);
+		goto failed;
+	}
+	dn_str = p2+1;
+	
+	bval.length = (blen/2)+1;
+	bval.data = talloc_size(tmp_ctx, bval.length);
+	if (bval.data == NULL) {
+		ldb_debug(ldb, LDB_DEBUG_TRACE, __location__ ": err\n");
+		goto failed;
+	}
+	bval.data[bval.length-1] = 0;
+	
+	bval.length = ldb_strhex_to_str((char *)bval.data, bval.length,
+					p1, blen);
+	
+	dval.data = (uint8_t *)dn_str;
+	dval.length = strlen(dn_str);
+	
+	dn = ldb_dn_from_ldb_val(mem_ctx, ldb, &dval);
+	if (dn == NULL) {
+		ldb_debug(ldb, LDB_DEBUG_TRACE, __location__ ": err\n");
+		goto failed;
+	}
+	dn->extra_type = data[0];
+	dn->extra_val = bval;
+	talloc_steal(dn, bval.data);
+
+	*dn_str = '\0';
+	old = dn->linearized;
+	dn->linearized = talloc_asprintf(dn, "%s%s", linearized, dn->linearized);
+	talloc_free(old);
+	if (dn->ext_linearized) {
+		old = dn->ext_linearized;
+		dn->ext_linearized = talloc_asprintf(dn, "%s%s", linearized, dn->ext_linearized);
+		talloc_free(old);
+	}
+	
+	return dn;
+failed:
+	talloc_free(tmp_ctx);
+	return NULL;
+}
+
 /* strdn may be NULL */
 struct ldb_dn *ldb_dn_new(void *mem_ctx,
 			  struct ldb_context *ldb,
 			  const char *strdn)
 {
 	struct ldb_val blob;
-	blob.data = strdn;
+	blob.data = discard_const_p(uint8_t, strdn);
 	blob.length = strdn ? strlen(strdn) : 0;
 	return ldb_dn_from_ldb_val(mem_ctx, ldb, &blob);
 }
@@ -273,6 +456,14 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 		return false;
 	}
 
+
+	if (strncmp(parse_dn, "B:", 2) == 0) {
+		parse_dn = strchr(parse_dn, ':');
+		parse_dn = strchr(parse_dn+1, ':');
+		parse_dn = strchr(parse_dn+1, ':');
+		parse_dn++;
+	}
+
 	/* The RDN size must be less than 255 characters */
 	if (strlen(parse_dn) > 255) {
 		return false;
@@ -383,7 +574,7 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 				ret = ext_syntax->read_fn(dn->ldb, dn->ext_components,
 							  &ex_val, &dn->ext_components[dn->ext_comp_num].value);
 				if (ret != LDB_SUCCESS) {
-					dn->invalid = true;
+					ldb_dn_mark_invalid(dn);
 					goto failed;
 				}
 
@@ -398,7 +589,7 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 					p++;
 					continue;
 				} else {
-					dn->invalid = true;
+					ldb_dn_mark_invalid(dn);
 					goto failed;
 				}
 			}
@@ -418,7 +609,7 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 
 				if (!isascii(*p)) {
 					/* attr names must be ascii only */
-					dn->invalid = true;
+					ldb_dn_mark_invalid(dn);
 					goto failed;
 				}
 
@@ -428,7 +619,7 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 				if ( ! isalpha(*p)) {
 					/* not a digit nor an alpha,
  					 * invalid attribute name */
-					dn->invalid = true;
+					ldb_dn_mark_invalid(dn);
 					goto failed;
 				}
 
@@ -447,7 +638,7 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 
 			if (trim && (*p != '=')) {
 				/* spaces/tabs are not allowed */
-				dn->invalid = true;
+				ldb_dn_mark_invalid(dn);
 				goto failed;
 			}
 
@@ -476,19 +667,19 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 
 			if (!isascii(*p)) {
 				/* attr names must be ascii only */
-				dn->invalid = true;
+				ldb_dn_mark_invalid(dn);
 				goto failed;
 			}
 
 			if (is_oid && ( ! (isdigit(*p) || (*p == '.')))) {
 				/* not a digit nor a dot,
 				 * invalid attribute oid */
-				dn->invalid = true;
+				ldb_dn_mark_invalid(dn);
 				goto failed;
 			} else
 			if ( ! (isalpha(*p) || isdigit(*p) || (*p == '-'))) {
 				/* not ALPHA, DIGIT or HYPHEN */
-				dn->invalid = true;
+				ldb_dn_mark_invalid(dn);
 				goto failed;
 			}
 
@@ -588,7 +779,7 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 			case '\"':
 				/* a string with not escaped specials is invalid (tested) */
 				if ( ! escape) {
-					dn->invalid = true;
+					ldb_dn_mark_invalid(dn);
 					goto failed;
 				}
 				escape = false;
@@ -617,7 +808,7 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 				if (escape) {
 	 				if (sscanf(p, "%02x", &x) != 1) {
 						/* invalid escaping sequence */
-						dn->invalid = true;
+						ldb_dn_mark_invalid(dn);
 						goto failed;
 					}
 					escape = false;
@@ -647,7 +838,7 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 
 	if (in_attr || in_quote) {
 		/* invalid dn */
-		dn->invalid = true;
+		ldb_dn_mark_invalid(dn);
 		goto failed;
 	}
 
@@ -683,18 +874,43 @@ bool ldb_dn_validate(struct ldb_dn *dn)
 	return ldb_dn_explode(dn);
 }
 
+static char *data_blob_hex_string_upper(TALLOC_CTX *mem_ctx, const struct ldb_val *blob)
+{
+	int i;
+	char *hex_string;
+
+	hex_string = talloc_array(mem_ctx, char, (blob->length*2)+1);
+	if (!hex_string) {
+		return NULL;
+	}
+
+	for (i = 0; i < blob->length; i++)
+		slprintf(&hex_string[i*2], 3, "%02X", blob->data[i]);
+
+	hex_string[(blob->length*2)] = '\0';
+	return hex_string;
+}
+
+
 const char *ldb_dn_get_linearized(struct ldb_dn *dn)
 {
 	int i, len;
 	char *d, *n;
+	char *extra_prefix = NULL;
 
 	if ( ! dn || ( dn->invalid)) return NULL;
 
 	if (dn->linearized) return dn->linearized;
 
 	if ( ! dn->components) {
-		dn->invalid = true;
+		ldb_dn_mark_invalid(dn);
 		return NULL;
+	}
+
+	if (dn->extra_type == 'B') {
+		char *hexstr = data_blob_hex_string_upper(dn, &dn->extra_val);
+		extra_prefix = talloc_asprintf(dn, "B:%u:%s:", (unsigned)(dn->extra_val.length*2), hexstr);
+		talloc_free(hexstr);
 	}
 
 	if (dn->comp_num == 0) {
@@ -737,13 +953,20 @@ const char *ldb_dn_get_linearized(struct ldb_dn *dn)
 	dn->linearized = talloc_realloc(dn, dn->linearized,
 					char, (d - dn->linearized + 1));
 
+	if (extra_prefix) {
+		char *old = dn->linearized;
+		dn->linearized = talloc_asprintf(dn, "%s%s", extra_prefix, old);
+		talloc_free(old);
+		talloc_free(extra_prefix);
+	}
+
 	return dn->linearized;
 }
 
 char *ldb_dn_get_extended_linearized(void *mem_ctx, struct ldb_dn *dn, int mode)
 {
 	const char *linearized = ldb_dn_get_linearized(dn);
-	char *p;
+	char *p = NULL;
 	int i;
 
 	if (!linearized) {
@@ -756,6 +979,14 @@ char *ldb_dn_get_extended_linearized(void *mem_ctx, struct ldb_dn *dn, int mode)
 
 	if (!ldb_dn_validate(dn)) {
 		return NULL;
+	}
+
+	if (dn->extra_type == 'B') {
+		char *hexstr = data_blob_hex_string_upper(mem_ctx, &dn->extra_val);
+		p = talloc_asprintf(mem_ctx, "B:%u:%s:", (unsigned)(dn->extra_val.length*2), hexstr);
+		talloc_free(hexstr);
+	} else {
+		p = talloc_strdup(mem_ctx, "");
 	}
 
 	for (i = 0; i < dn->ext_comp_num; i++) {
@@ -782,11 +1013,9 @@ char *ldb_dn_get_extended_linearized(void *mem_ctx, struct ldb_dn *dn, int mode)
 		}
 
 		if (i == 0) {
-			p = talloc_asprintf(mem_ctx, "<%s=%s>",
-							name, val.data);
+			p = talloc_asprintf_append_buffer(p, "<%s=%s>", name, val.data);
 		} else {
-			p = talloc_asprintf_append(p, ";<%s=%s>",
-							name, val.data);
+			p = talloc_asprintf_append_buffer(p, ";<%s=%s>",name, val.data);
 		}
 
 		talloc_free(val.data);
@@ -797,7 +1026,13 @@ char *ldb_dn_get_extended_linearized(void *mem_ctx, struct ldb_dn *dn, int mode)
 	}
 
 	if (dn->ext_comp_num && *linearized) {
-		p = talloc_asprintf_append(p, ";%s", linearized);
+		if (strncmp(linearized, "B:", 2) == 0) {
+			linearized = strchr(linearized, ':');
+			linearized = strchr(linearized+1, ':');
+			linearized = strchr(linearized+1, ':');
+			linearized++;
+		}
+		p = talloc_asprintf_append_buffer(p, ";%s", linearized);
 	}
 
 	if (!p) {
@@ -1287,7 +1522,7 @@ bool ldb_dn_add_base(struct ldb_dn *dn, struct ldb_dn *base)
 						struct ldb_dn_component,
 						dn->comp_num + base->comp_num);
 		if ( ! dn->components) {
-			dn->invalid = true;
+			ldb_dn_mark_invalid(dn);
 			return false;
 		}
 
@@ -1296,7 +1531,7 @@ bool ldb_dn_add_base(struct ldb_dn *dn, struct ldb_dn *base)
 				ldb_dn_copy_component(dn->components,
 							&base->components[i]);
 			if (dn->components[dn->comp_num].value.data == NULL) {
-				dn->invalid = true;
+				ldb_dn_mark_invalid(dn);
 				return false;
 			}
 		}
@@ -1327,7 +1562,7 @@ bool ldb_dn_add_base(struct ldb_dn *dn, struct ldb_dn *base)
 			t = talloc_strdup(dn, s);
 		}
 		if ( ! t) {
-			dn->invalid = true;
+			ldb_dn_mark_invalid(dn);
 			return false;
 		}
 		LDB_FREE(dn->linearized);
@@ -1413,7 +1648,7 @@ bool ldb_dn_add_child(struct ldb_dn *dn, struct ldb_dn *child)
 						struct ldb_dn_component,
 						n);
 		if ( ! dn->components) {
-			dn->invalid = true;
+			ldb_dn_mark_invalid(dn);
 			return false;
 		}
 
@@ -1426,7 +1661,7 @@ bool ldb_dn_add_child(struct ldb_dn *dn, struct ldb_dn *child)
 				ldb_dn_copy_component(dn->components,
 							&child->components[i]);
 			if (dn->components[i].value.data == NULL) {
-				dn->invalid = true;
+				ldb_dn_mark_invalid(dn);
 				return false;
 			}
 		}
@@ -1449,7 +1684,7 @@ bool ldb_dn_add_child(struct ldb_dn *dn, struct ldb_dn *child)
 
 		t = talloc_asprintf(dn, "%s,%s", s, dn->linearized);
 		if ( ! t) {
-			dn->invalid = true;
+			ldb_dn_mark_invalid(dn);
 			return false;
 		}
 		LDB_FREE(dn->linearized);
@@ -1818,7 +2053,7 @@ int ldb_dn_set_extended_component(struct ldb_dn *dn,
 					talloc_strdup(dn->ext_components, name);
 				if (!dn->ext_components[i].name ||
 				    !dn->ext_components[i].value.data) {
-					dn->invalid = true;
+					ldb_dn_mark_invalid(dn);
 					return LDB_ERR_OPERATIONS_ERROR;
 				}
 
@@ -1836,7 +2071,7 @@ int ldb_dn_set_extended_component(struct ldb_dn *dn,
 						   struct ldb_dn_ext_component,
 						   dn->ext_comp_num);
 				if (!dn->ext_components) {
-					dn->invalid = true;
+					ldb_dn_mark_invalid(dn);
 					return LDB_ERR_OPERATIONS_ERROR;
 				}
 				return LDB_SUCCESS;
@@ -1850,7 +2085,7 @@ int ldb_dn_set_extended_component(struct ldb_dn *dn,
 				 struct ldb_dn_ext_component,
 				 dn->ext_comp_num + 1);
 	if (!dn->ext_components) {
-		dn->invalid = true;
+		ldb_dn_mark_invalid(dn);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -1858,7 +2093,7 @@ int ldb_dn_set_extended_component(struct ldb_dn *dn,
 	p[dn->ext_comp_num].name = talloc_strdup(p, name);
 
 	if (!dn->ext_components[i].name || !dn->ext_components[i].value.data) {
-		dn->invalid = true;
+		ldb_dn_mark_invalid(dn);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	dn->ext_components = p;
@@ -1888,7 +2123,7 @@ bool ldb_dn_is_special(struct ldb_dn *dn)
 bool ldb_dn_has_extended(struct ldb_dn *dn)
 {
 	if ( ! dn || dn->invalid) return false;
-	if (dn->ext_linearized && (dn->ext_linearized[0] == '<')) return true;
+	if (dn->ext_linearized && strchr(dn->ext_linearized,'<')) return true;
 	return dn->ext_comp_num != 0;
 }
 
@@ -1904,4 +2139,27 @@ bool ldb_dn_is_null(struct ldb_dn *dn)
 	if (ldb_dn_has_extended(dn)) return false;
 	if (dn->linearized && (dn->linearized[0] == '\0')) return true;
 	return false;
+}
+
+int ldb_dn_get_binary(struct ldb_dn *dn, struct ldb_val *val)
+{
+	ZERO_STRUCTP(val);
+	if (dn->extra_type != 'B') {
+		return LDB_SUCCESS;
+	}
+	*val = dn->extra_val;
+	return LDB_SUCCESS;
+}
+
+int ldb_dn_set_binary(struct ldb_dn *dn, struct ldb_val *val)
+{
+	dn->extra_type = 'B';
+	dn->extra_val.data = talloc_memdup(dn, val->data, val->length);
+	dn->extra_val.length = val->length;
+
+	talloc_free(dn->linearized);
+	talloc_free(dn->ext_linearized);
+	dn->linearized = NULL;
+	dn->ext_linearized = NULL;
+	return LDB_SUCCESS;
 }

@@ -1204,6 +1204,8 @@ static WERROR dsdb_syntax_DN_ldb_to_drsuapi(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
+
+
 static WERROR dsdb_syntax_DN_BINARY_drsuapi_to_ldb(struct ldb_context *ldb, 
 						   const struct dsdb_schema *schema,
 						   const struct dsdb_attribute *attr,
@@ -1212,6 +1214,7 @@ static WERROR dsdb_syntax_DN_BINARY_drsuapi_to_ldb(struct ldb_context *ldb,
 						   struct ldb_message_element *out)
 {
 	uint32_t i;
+	int ret;
 
 	out->flags	= 0;
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
@@ -1222,39 +1225,81 @@ static WERROR dsdb_syntax_DN_BINARY_drsuapi_to_ldb(struct ldb_context *ldb,
 	W_ERROR_HAVE_NO_MEMORY(out->values);
 
 	for (i=0; i < out->num_values; i++) {
-		struct drsuapi_DsReplicaObjectIdentifier3Binary id3b;
-		char *binary;
-		char *str;
+		struct drsuapi_DsReplicaObjectIdentifier3Binary id3;
 		enum ndr_err_code ndr_err;
+		DATA_BLOB guid_blob;
+		struct ldb_dn *dn;
+		TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+		if (!tmp_ctx) {
+			W_ERROR_HAVE_NO_MEMORY(tmp_ctx);
+		}
 
 		if (in->value_ctr.values[i].blob == NULL) {
+			talloc_free(tmp_ctx);
 			return WERR_FOOBAR;
 		}
 
 		if (in->value_ctr.values[i].blob->length == 0) {
+			talloc_free(tmp_ctx);
 			return WERR_FOOBAR;
 		}
 
-		ndr_err = ndr_pull_struct_blob_all(in->value_ctr.values[i].blob,
-						   out->values, schema->iconv_convenience, &id3b,
-						   (ndr_pull_flags_fn_t)ndr_pull_drsuapi_DsReplicaObjectIdentifier3Binary);
+		
+		/* windows sometimes sends an extra two pad bytes here */
+		ndr_err = ndr_pull_struct_blob(in->value_ctr.values[i].blob,
+					       tmp_ctx, schema->iconv_convenience, &id3,
+					       (ndr_pull_flags_fn_t)ndr_pull_drsuapi_DsReplicaObjectIdentifier3Binary);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+			talloc_free(tmp_ctx);
 			return ntstatus_to_werror(status);
 		}
 
-		/* TODO: handle id3.guid and id3.sid */
-		binary = data_blob_hex_string(out->values, &id3b.binary);
-		W_ERROR_HAVE_NO_MEMORY(binary);
+		dn = ldb_dn_new(tmp_ctx, ldb, id3.dn);
+		if (!dn) {
+			talloc_free(tmp_ctx);
+			/* If this fails, it must be out of memory, as it does not do much parsing */
+			W_ERROR_HAVE_NO_MEMORY(dn);
+		}
 
-		str = talloc_asprintf(out->values, "B:%u:%s:%s",
-				      (unsigned int)(id3b.binary.length * 2), /* because of 2 hex chars per byte */
-				      binary,
-				      id3b.dn);
-		W_ERROR_HAVE_NO_MEMORY(str);
+		ndr_err = ndr_push_struct_blob(&guid_blob, tmp_ctx, schema->iconv_convenience, &id3.guid,
+					       (ndr_push_flags_fn_t)ndr_push_GUID);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+			talloc_free(tmp_ctx);
+			return ntstatus_to_werror(status);
+		}
 
-		/* TODO: handle id3.guid and id3.sid */
-		out->values[i] = data_blob_string_const(str);
+		ret = ldb_dn_set_extended_component(dn, "GUID", &guid_blob);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return WERR_FOOBAR;
+		}
+
+		talloc_free(guid_blob.data);
+
+		if (id3.__ndr_size_sid) {
+			DATA_BLOB sid_blob;
+			ndr_err = ndr_push_struct_blob(&sid_blob, tmp_ctx, schema->iconv_convenience, &id3.sid,
+						       (ndr_push_flags_fn_t)ndr_push_dom_sid);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+				talloc_free(tmp_ctx);
+				return ntstatus_to_werror(status);
+			}
+
+			ret = ldb_dn_set_extended_component(dn, "SID", &sid_blob);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(tmp_ctx);
+				return WERR_FOOBAR;
+			}
+		}
+
+		/* set binary stuff */
+		ldb_dn_set_binary(dn, &id3.binary);
+
+		out->values[i] = data_blob_string_const(ldb_dn_get_extended_linearized(out->values, dn, 1));
+		talloc_free(tmp_ctx);
 	}
 
 	return WERR_OK;
@@ -1285,26 +1330,71 @@ static WERROR dsdb_syntax_DN_BINARY_ldb_to_drsuapi(struct ldb_context *ldb,
 	W_ERROR_HAVE_NO_MEMORY(blobs);
 
 	for (i=0; i < in->num_values; i++) {
-		struct drsuapi_DsReplicaObjectIdentifier3Binary id3b;
+		struct drsuapi_DsReplicaObjectIdentifier3Binary id3;
 		enum ndr_err_code ndr_err;
+		const DATA_BLOB *guid_blob, *sid_blob;
+		struct ldb_dn *dn;
+		TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+		W_ERROR_HAVE_NO_MEMORY(tmp_ctx);
 
 		out->value_ctr.values[i].blob	= &blobs[i];
 
-		/* TODO: handle id3b.guid and id3b.sid, id3.binary */
-		ZERO_STRUCT(id3b);
-		id3b.dn		= (const char *)in->values[i].data;
-		id3b.binary	= data_blob(NULL, 0);
+		dn = ldb_dn_from_ldb_val(tmp_ctx, ldb, &in->values[i]);
 
-		ndr_err = ndr_push_struct_blob(&blobs[i], blobs, schema->iconv_convenience, &id3b,
-					       (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3Binary);
+		W_ERROR_HAVE_NO_MEMORY(dn);
+
+		guid_blob = ldb_dn_get_extended_component(dn, "GUID");
+
+		ZERO_STRUCT(id3);
+
+		if (guid_blob) {
+			ndr_err = ndr_pull_struct_blob_all(guid_blob, 
+							   tmp_ctx, schema->iconv_convenience, &id3.guid,
+							   (ndr_pull_flags_fn_t)ndr_pull_GUID);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+				talloc_free(tmp_ctx);
+				return ntstatus_to_werror(status);
+			}
+		}
+
+		sid_blob = ldb_dn_get_extended_component(dn, "SID");
+		if (sid_blob) {
+			
+			ndr_err = ndr_pull_struct_blob_all(sid_blob, 
+							   tmp_ctx, schema->iconv_convenience, &id3.sid,
+							   (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+				talloc_free(tmp_ctx);
+				return ntstatus_to_werror(status);
+			}
+		}
+
+		id3.dn = ldb_dn_get_linearized(dn);
+		if (strncmp(id3.dn, "B:", 2) == 0) {
+			id3.dn = strchr(id3.dn, ':');
+			id3.dn = strchr(id3.dn+1, ':');
+			id3.dn = strchr(id3.dn+1, ':');
+			id3.dn++;
+		}
+
+		/* get binary stuff */
+		ldb_dn_get_binary(dn, &id3.binary);
+
+		ndr_err = ndr_push_struct_blob(&blobs[i], blobs, schema->iconv_convenience, &id3, (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3Binary);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+			talloc_free(tmp_ctx);
 			return ntstatus_to_werror(status);
 		}
+		talloc_free(tmp_ctx);
 	}
 
 	return WERR_OK;
 }
+
+
 
 static WERROR dsdb_syntax_PRESENTATION_ADDRESS_drsuapi_to_ldb(struct ldb_context *ldb, 
 							      const struct dsdb_schema *schema,

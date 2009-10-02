@@ -1928,4 +1928,11 @@ unsigned int ldb_get_flags(struct ldb_context *ldb);
 void ldb_set_flags(struct ldb_context *ldb, unsigned flags);
 
 
+struct ldb_dn *ldb_dn_binary_from_ldb_val(void *mem_ctx,
+					  struct ldb_context *ldb,
+					  const struct ldb_val *strdn);
+
+int ldb_dn_get_binary(struct ldb_dn *dn, struct ldb_val *val);
+int ldb_dn_set_binary(struct ldb_dn *dn, struct ldb_val *val);
+
 #endif
