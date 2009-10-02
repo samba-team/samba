@@ -145,7 +145,7 @@ class BasicTests(unittest.TestCase):
         except LdbError, (num, _):
             self.assertEquals(num, ERR_NO_SUCH_ATTRIBUTE)
 
-        ldb.delete("cn=ldaptestgroup,cn=users," + self.base_dn)
+        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
     def test_distinguished_name(self):
         """Tests the 'distinguishedName' attribute"""
@@ -167,7 +167,7 @@ class BasicTests(unittest.TestCase):
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
-        ldb.delete("cn=ldaptestgroup,cn=users," + self.base_dn)
+        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
     def test_rdn_name(self):
         """Tests the RDN"""
@@ -199,7 +199,26 @@ class BasicTests(unittest.TestCase):
         except LdbError, (num, _):
             self.assertEquals(num, ERR_NOT_ALLOWED_ON_RDN)
 
-        ldb.delete("cn=ldaptestgroup,cn=users," + self.base_dn)
+        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+
+    def test_rename(self):
+        """Tests the rename operation"""
+        print "Tests the rename operations"""
+
+        self.ldb.add({
+             "dn": "cn=ldaptestuser2,cn=users," + self.base_dn,
+             "objectclass": ["user", "person"] })
+
+        ldb.rename("cn=ldaptestuser2,cn=users," + self.base_dn, "cn=ldaptestuser2,cn=users," + self.base_dn)
+        ldb.rename("cn=ldaptestuser2,cn=users," + self.base_dn, "cn=ldaptestuser3,cn=users," + self.base_dn)
+        ldb.rename("cn=ldaptestuser3,cn=users," + self.base_dn, "cn=ldaptestUSER3,cn=users," + self.base_dn)
+        try:
+            ldb.rename("cn=ldaptestuser3,cn=users," + self.base_dn, ",cn=users," + self.base_dn)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_INVALID_DN_SYNTAX)
+
+        self.delete_force(self.ldb, "cn=ldaptestuser3,cn=users," + self.base_dn)
 
     def test_parentGUID(self):
         """Test parentGUID behaviour"""
@@ -744,12 +763,7 @@ servicePrincipalName: host/ldaptest2computer29
         self.assertEquals(len(res_user), 1, "Could not find (&(cn=ldaptestUSer2)(objectClass=user))")
 
         # Check rename works with extended/alternate DN forms
-        ldb.rename("<SID=" + ldb.schema_format_value("objectSID", res_user[0]["objectSID"][0]) + ">" , "cn=ldaptestuser3,cn=users," + self.base_dn)
-        ldb.rename("cn=ldaptestuser2,cn=users," + self.base_dn, "cn=ldaptestuser2,cn=users," + self.base_dn)
-
-        ldb.rename("cn=ldaptestuser3,cn=users," + self.base_dn, "cn=ldaptestuser3,cn=users," + self.base_dn)
-
-        ldb.rename("cn=ldaptestuser3,cn=users," + self.base_dn, "cn=ldaptestUSER3,cn=users," + self.base_dn)
+        ldb.rename("<SID=" + ldb.schema_format_value("objectSID", res_user[0]["objectSID"][0]) + ">" , "cn=ldaptestUSER3,cn=users," + self.base_dn)
 
         print "Testing ldb.search for (&(cn=ldaptestuser3)(objectClass=user))"
         res = ldb.search(expression="(&(cn=ldaptestuser3)(objectClass=user))")
