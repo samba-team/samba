@@ -235,7 +235,20 @@ INIT_FUNCTION = LDB_MODULE(partition)
 # End MODULE ldb_partition
 ################################################
 
-ldb_partition_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/partition.o
+ldb_partition_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/partition.o \
+			  $(dsdbsrcdir)/samdb/ldb_modules/partition_init.o
+$(eval $(call proto_header_template,$(dsdbsrcdir)/samdb/ldb_modules/partition_proto.h,$(ldb_partition_OBJ_FILES:.o=.c)))
+
+################################################
+# Start MODULE ldb_partition
+[MODULE::ldb_new_partition]
+SUBSYSTEM = LIBLDB
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS SAMDB DSDB_MODULE_HELPERS
+INIT_FUNCTION = LDB_MODULE(new_partition)
+# End MODULE ldb_partition
+################################################
+
+ldb_new_partition_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/new_partition.o 
 
 ################################################
 # Start MODULE ldb_update_kt

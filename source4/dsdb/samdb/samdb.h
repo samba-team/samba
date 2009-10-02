@@ -98,6 +98,11 @@ struct dsdb_pdc_fsmo {
 	struct ldb_dn *master_dn;
 };
 
+#define DSDB_EXTENDED_CREATE_PARTITION_OID "1.3.6.1.4.1.7165.4.4.4"
+struct dsdb_create_partition_exop {
+	struct ldb_dn *new_dn;
+};
+
 /*
  * the schema_dn is passed as struct ldb_dn in
  * req->op.extended.data
@@ -125,5 +130,8 @@ struct dsdb_openldap_dereference_result {
 struct dsdb_openldap_dereference_result_control {
 	struct dsdb_openldap_dereference_result **attributes;
 };
+
+#define DSDB_PARTITION_DN "@PARTITION"
+#define DSDB_PARTITION_ATTR "partition"
 
 #endif /* __SAMDB_H__ */

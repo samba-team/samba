@@ -31,6 +31,7 @@
  */
 
 #include "includes.h"
+#include "ldb.h"
 #include "ldb_module.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "dsdb/samdb/samdb.h"
@@ -39,9 +40,10 @@
 struct it_context {
 	struct ldb_module *module;
 	struct ldb_request *req;
+	struct ldb_request *add_req;
 };
 
-static int it_callback(struct ldb_request *req, struct ldb_reply *ares)
+static int it_add_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	struct ldb_context *ldb;
 	struct it_context *ac;
@@ -53,6 +55,7 @@ static int it_callback(struct ldb_request *req, struct ldb_reply *ares)
 		return ldb_module_done(ac->req, NULL, NULL,
 					LDB_ERR_OPERATIONS_ERROR);
 	}
+
 	if (ares->error != LDB_SUCCESS) {
 		return ldb_module_done(ac->req, ares->controls,
 					ares->response, ares->error);
@@ -64,8 +67,10 @@ static int it_callback(struct ldb_request *req, struct ldb_reply *ares)
 					LDB_ERR_OPERATIONS_ERROR);
 	}
 
+	/* Add the boilerplate entries */
+
 	return ldb_module_done(ac->req, ares->controls,
-					ares->response, ares->error);
+			       ares->response, ares->error);
 }
 
 /* add_record: add instancetype attribute */
@@ -89,14 +94,32 @@ static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 
 	if (ldb_msg_find_element(req->op.add.message, "instanceType")) {
 		unsigned int instanceType = ldb_msg_find_attr_as_uint(req->op.add.message, "instanceType", 0);
+		if (!(instanceType & INSTANCE_TYPE_IS_NC_HEAD)) {
+			return ldb_next_request(module, req);		
+		}
 
-		if (instanceType & INSTANCE_TYPE_IS_NC_HEAD) {
-			/* Do something in future */
+		/* Forward the 'add' to the modules below, but if it
+		 * succeeds, then we might need to add the boilerplate
+		 * entries (lost+found, deleted objects) */
+		ac = talloc(req, struct it_context);
+		if (ac == NULL) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		ac->module = module;
+		ac->req = req;
+		
+		ret = ldb_build_add_req(&ac->add_req, ldb_module_get_ctx(ac->module), ac,
+					ac->req->op.add.message,
+					ac->req->controls,
+					ac, it_add_callback,
+					ac->req);
+		
+		if (ret != LDB_SUCCESS) {
+			return ret;
 		}
 		
-		/* TODO: we need to validate and possibly create a new
-		   partition */
-		return ldb_next_request(module, req);		
+		/* Do the original add */
+		return ldb_next_request(ac->module, ac->add_req);
 	}
 
 	/* we have to copy the message as the caller might have it as a const */

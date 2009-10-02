@@ -652,15 +652,11 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
                     "linked_attributes",
                     "extended_dn_out_ldb"]
     modules_list2 = ["show_deleted",
+                     "new_partition",
                     "partition"]
- 
-    domaindn_ldb = "users.ldb"
-    configdn_ldb = "configuration.ldb"
-    schemadn_ldb = "schema.ldb"
+    ldap_backend_line = "# No LDAP backend"
     if ldap_backend is not None:
-        domaindn_ldb = ldap_backend.ldapi_uri
-        configdn_ldb = ldap_backend.ldapi_uri
-        schemadn_ldb = ldap_backend.ldapi_uri
+        ldap_backend_line = "ldapBackend: %s" % ldap_backend.ldapi_uri
         
         if ldap_backend.ldap_backend_type == "fedora-ds":
             backend_modules = ["nsuniqueid", "paged_searches"]
@@ -686,13 +682,10 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
     try:
         message("Setting up sam.ldb partitions and settings")
         setup_add_ldif(samdb, setup_path("provision_partitions.ldif"), {
-                "SCHEMADN": names.schemadn, 
-                "SCHEMADN_LDB": schemadn_ldb,
+                "SCHEMADN": ldb.Dn(samdb, names.schemadn).get_casefold(), 
                 "SCHEMADN_MOD2": ",objectguid",
-                "CONFIGDN": names.configdn,
-                "CONFIGDN_LDB": configdn_ldb,
-                "DOMAINDN": names.domaindn,
-                "DOMAINDN_LDB": domaindn_ldb,
+                "CONFIGDN": ldb.Dn(samdb, names.configdn).get_casefold(),
+                "DOMAINDN": ldb.Dn(samdb, names.domaindn).get_casefold(),
                 "SCHEMADN_MOD": "schema_fsmo",
                 "CONFIGDN_MOD": "naming_fsmo",
                 "DOMAINDN_MOD": "pdc_fsmo",
@@ -700,6 +693,7 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
                 "TDB_MODULES_LIST": tdb_modules_list_as_string,
                 "MODULES_LIST2": ",".join(modules_list2),
                 "BACKEND_MOD": ",".join(backend_modules),
+                "LDAP_BACKEND_LINE": ldap_backend_line,
         })
 
         samdb.load_ldif_file_add(setup_path("provision_init.ldif"))

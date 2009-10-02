@@ -29,22 +29,7 @@
  *  Author: Stefan Metzmacher
  */
 
-#include "includes.h"
-#include "lib/ldb/include/ldb.h"
-#include "lib/ldb/include/ldb_errors.h"
-#include "lib/ldb/include/ldb_module.h"
-#include "lib/ldb/include/ldb_private.h"
-#include "dsdb/samdb/samdb.h"
-
-struct dsdb_partition {
-	struct ldb_module *module;
-	struct dsdb_control_current_partition *ctrl;
-};
-
-struct partition_private_data {
-	struct dsdb_partition **partitions;
-	struct ldb_dn **replicate;
-};
+#include "dsdb/samdb/ldb_modules/partition.h"
 
 struct part_request {
 	struct ldb_module *module;
@@ -76,19 +61,6 @@ static struct partition_context *partition_init_ctx(struct ldb_module *module, s
 
 	return ac;
 }
-
-#define PARTITION_FIND_OP_NOERROR(module, op) do { \
-        while (module && module->ops->op == NULL) module = module->next; \
-} while (0)
-
-#define PARTITION_FIND_OP(module, op) do { \
-	PARTITION_FIND_OP_NOERROR(module, op); \
-        if (module == NULL) { \
-                ldb_asprintf_errstring(ldb_module_get_ctx(module), \
-			"Unable to find backend operation for " #op ); \
-                return LDB_ERR_OPERATIONS_ERROR; \
-        } \
-} while (0)
 
 /*
  *    helper functions to call the next module in chain
@@ -1108,12 +1080,16 @@ static int partition_extended(struct ldb_module *module, struct ldb_request *req
 	struct partition_context *ac;
 
 	data = talloc_get_type(module->private_data, struct partition_private_data);
-	if (!data || !data->partitions) {
+	if (!data) {
 		return ldb_next_request(module, req);
 	}
 
 	if (strcmp(req->op.extended.oid, LDB_EXTENDED_SEQUENCE_NUMBER) == 0) {
 		return partition_sequence_number(module, req);
+	}
+
+	if (strcmp(req->op.extended.oid, DSDB_EXTENDED_CREATE_PARTITION_OID) == 0) {
+		return partition_create(module, req);
 	}
 
 	/* forward schemaUpdateNow operation to schema_fsmo module*/
@@ -1132,279 +1108,6 @@ static int partition_extended(struct ldb_module *module, struct ldb_request *req
 	}
 
 	return partition_send_all(module, ac, req);
-}
-
-static int partition_sort_compare(const void *v1, const void *v2)
-{
-	const struct dsdb_partition *p1;
-	const struct dsdb_partition *p2;
-
-	p1 = *((struct dsdb_partition * const*)v1);
-	p2 = *((struct dsdb_partition * const*)v2);
-
-	return ldb_dn_compare(p1->ctrl->dn, p2->ctrl->dn);
-}
-
-static int partition_init(struct ldb_module *module)
-{
-	int ret, i;
-	TALLOC_CTX *mem_ctx = talloc_new(module);
-	const char *attrs[] = { "partition", "replicateEntries", "modules", NULL };
-	struct ldb_result *res;
-	struct ldb_message *msg;
-	struct ldb_message_element *partition_attributes;
-	struct ldb_message_element *replicate_attributes;
-	struct ldb_message_element *modules_attributes;
-
-	struct partition_private_data *data;
-
-	if (!mem_ctx) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	data = talloc(mem_ctx, struct partition_private_data);
-	if (data == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ret = ldb_search(ldb_module_get_ctx(module), mem_ctx, &res,
-			 ldb_dn_new(mem_ctx, ldb_module_get_ctx(module), "@PARTITION"),
-			 LDB_SCOPE_BASE, attrs, NULL);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(mem_ctx);
-		return ret;
-	}
-	if (res->count == 0) {
-		talloc_free(mem_ctx);
-		return ldb_next_init(module);
-	}
-
-	if (res->count > 1) {
-		talloc_free(mem_ctx);
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
-
-	msg = res->msgs[0];
-
-	partition_attributes = ldb_msg_find_element(msg, "partition");
-	if (!partition_attributes) {
-		ldb_set_errstring(ldb_module_get_ctx(module), "partition_init: no partitions specified");
-		talloc_free(mem_ctx);
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
-	data->partitions = talloc_array(data, struct dsdb_partition *, partition_attributes->num_values + 1);
-	if (!data->partitions) {
-		talloc_free(mem_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	for (i=0; i < partition_attributes->num_values; i++) {
-		char *base = talloc_strdup(data->partitions, (char *)partition_attributes->values[i].data);
-		char *p = strchr(base, ':');
-		const char *backend;
-
-		if (!p) {
-			ldb_asprintf_errstring(ldb_module_get_ctx(module), 
-						"partition_init: "
-						"invalid form for partition record (missing ':'): %s", base);
-			talloc_free(mem_ctx);
-			return LDB_ERR_CONSTRAINT_VIOLATION;
-		}
-		p[0] = '\0';
-		p++;
-		if (!p[0]) {
-			ldb_asprintf_errstring(ldb_module_get_ctx(module), 
-						"partition_init: "
-						"invalid form for partition record (missing backend database): %s", base);
-			talloc_free(mem_ctx);
-			return LDB_ERR_CONSTRAINT_VIOLATION;
-		}
-		data->partitions[i] = talloc(data->partitions, struct dsdb_partition);
-		if (!data->partitions[i]) {
-			talloc_free(mem_ctx);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		data->partitions[i]->ctrl = talloc(data->partitions[i], struct dsdb_control_current_partition);
-		if (!data->partitions[i]->ctrl) {
-			talloc_free(mem_ctx);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		data->partitions[i]->ctrl->version = DSDB_CONTROL_CURRENT_PARTITION_VERSION;
-		data->partitions[i]->ctrl->dn = ldb_dn_new(data->partitions[i], ldb_module_get_ctx(module), base);
-		if (!data->partitions[i]->ctrl->dn) {
-			ldb_asprintf_errstring(ldb_module_get_ctx(module), 
-						"partition_init: invalid DN in partition record: %s", base);
-			talloc_free(mem_ctx);
-			return LDB_ERR_CONSTRAINT_VIOLATION;
-		}
-
-		backend = samdb_relative_path(ldb_module_get_ctx(module), 
-								   data->partitions[i], 
-								   p);
-		if (!backend) {
-			ldb_asprintf_errstring(ldb_module_get_ctx(module), 
-						"partition_init: unable to determine an relative path for partition: %s", base);
-			talloc_free(mem_ctx);			
-		}
-		ret = ldb_connect_backend(ldb_module_get_ctx(module), backend, NULL, &data->partitions[i]->module);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(mem_ctx);
-			return ret;
-		}
-	}
-	data->partitions[i] = NULL;
-
-	/* sort these into order, most to least specific */
-	qsort(data->partitions, partition_attributes->num_values,
-	      sizeof(*data->partitions), partition_sort_compare);
-
-	for (i=0; data->partitions[i]; i++) {
-		struct ldb_request *req;
-		req = talloc_zero(mem_ctx, struct ldb_request);
-		if (req == NULL) {
-			ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_ERROR, "partition: Out of memory!\n");
-			talloc_free(mem_ctx);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		
-		req->operation = LDB_REQ_REGISTER_PARTITION;
-		req->op.reg_partition.dn = data->partitions[i]->ctrl->dn;
-		req->callback = ldb_op_default_callback;
-
-		ldb_set_timeout(ldb_module_get_ctx(module), req, 0);
-
-		req->handle = ldb_handle_new(req, ldb_module_get_ctx(module));
-		if (req->handle == NULL) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		
-		ret = ldb_request(ldb_module_get_ctx(module), req);
-		if (ret == LDB_SUCCESS) {
-			ret = ldb_wait(req->handle, LDB_WAIT_ALL);
-		}
-		if (ret != LDB_SUCCESS) {
-			ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_ERROR, "partition: Unable to register partition with rootdse!\n");
-			talloc_free(mem_ctx);
-			return LDB_ERR_OTHER;
-		}
-		talloc_free(req);
-	}
-
-	replicate_attributes = ldb_msg_find_element(msg, "replicateEntries");
-	if (!replicate_attributes) {
-		data->replicate = NULL;
-	} else {
-		data->replicate = talloc_array(data, struct ldb_dn *, replicate_attributes->num_values + 1);
-		if (!data->replicate) {
-			talloc_free(mem_ctx);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-
-		for (i=0; i < replicate_attributes->num_values; i++) {
-			data->replicate[i] = ldb_dn_from_ldb_val(data->replicate, ldb_module_get_ctx(module), &replicate_attributes->values[i]);
-			if (!ldb_dn_validate(data->replicate[i])) {
-				ldb_asprintf_errstring(ldb_module_get_ctx(module), 
-							"partition_init: "
-							"invalid DN in partition replicate record: %s", 
-							replicate_attributes->values[i].data);
-				talloc_free(mem_ctx);
-				return LDB_ERR_CONSTRAINT_VIOLATION;
-			}
-		}
-		data->replicate[i] = NULL;
-	}
-
-	/* Make the private data available to any searches the modules may trigger in initialisation */
-	module->private_data = data;
-	talloc_steal(module, data);
-	
-	modules_attributes = ldb_msg_find_element(msg, "modules");
-	if (modules_attributes) {
-		for (i=0; i < modules_attributes->num_values; i++) {
-			struct ldb_dn *base_dn;
-			int partition_idx;
-			struct dsdb_partition *partition = NULL;
-			const char **modules = NULL;
-
-			char *base = talloc_strdup(data->partitions, (char *)modules_attributes->values[i].data);
-			char *p = strchr(base, ':');
-			if (!p) {
-				ldb_asprintf_errstring(ldb_module_get_ctx(module), 
-							"partition_init: "
-							"invalid form for partition module record (missing ':'): %s", base);
-				talloc_free(mem_ctx);
-				return LDB_ERR_CONSTRAINT_VIOLATION;
-			}
-			p[0] = '\0';
-			p++;
-			if (!p[0]) {
-				ldb_asprintf_errstring(ldb_module_get_ctx(module), 
-							"partition_init: "
-							"invalid form for partition module record (missing backend database): %s", base);
-				talloc_free(mem_ctx);
-				return LDB_ERR_CONSTRAINT_VIOLATION;
-			}
-
-			modules = ldb_modules_list_from_string(ldb_module_get_ctx(module), mem_ctx,
-							       p);
-			
-			base_dn = ldb_dn_new(mem_ctx, ldb_module_get_ctx(module), base);
-			if (!ldb_dn_validate(base_dn)) {
-				talloc_free(mem_ctx);
-				return LDB_ERR_OPERATIONS_ERROR;
-			}
-			
-			for (partition_idx = 0; data->partitions[partition_idx]; partition_idx++) {
-				if (ldb_dn_compare(data->partitions[partition_idx]->ctrl->dn, base_dn) == 0) {
-					partition = data->partitions[partition_idx];
-					break;
-				}
-			}
-			
-			if (!partition) {
-				ldb_asprintf_errstring(ldb_module_get_ctx(module), 
-							"partition_init: "
-							"invalid form for partition module record (no such partition): %s", base);
-				talloc_free(mem_ctx);
-				return LDB_ERR_CONSTRAINT_VIOLATION;
-			}
-			
-			ret = ldb_load_modules_list(ldb_module_get_ctx(module), modules, partition->module, &partition->module);
-			if (ret != LDB_SUCCESS) {
-				ldb_asprintf_errstring(ldb_module_get_ctx(module), 
-						       "partition_init: "
-						       "loading backend for %s failed: %s", 
-						       base, ldb_errstring(ldb_module_get_ctx(module)));
-				talloc_free(mem_ctx);
-				return ret;
-			}
-			ret = ldb_init_module_chain(ldb_module_get_ctx(module), partition->module);
-			if (ret != LDB_SUCCESS) {
-				ldb_asprintf_errstring(ldb_module_get_ctx(module), 
-						       "partition_init: "
-						       "initialising backend for %s failed: %s", 
-						       base, ldb_errstring(ldb_module_get_ctx(module)));
-				talloc_free(mem_ctx);
-				return ret;
-			}
-		}
-	}
-
-	ret = ldb_mod_register_control(module, LDB_CONTROL_DOMAIN_SCOPE_OID);
-	if (ret != LDB_SUCCESS) {
-		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_ERROR,
-			"partition: Unable to register control with rootdse!\n");
-		return ret;
-	}
-
-	ret = ldb_mod_register_control(module, LDB_CONTROL_SEARCH_OPTIONS_OID);
-	if (ret != LDB_SUCCESS) {
-		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_ERROR,
-			"partition: Unable to register control with rootdse!\n");
-		return ret;
-	}
-
-	talloc_free(mem_ctx);
-	return ldb_next_init(module);
 }
 
 _PUBLIC_ const struct ldb_module_ops ldb_partition_module_ops = {
