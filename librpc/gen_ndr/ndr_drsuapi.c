@@ -1167,18 +1167,55 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetNCChangesRequest5(struct ndr_print *ndr, co
 	ndr->depth--;
 }
 
-_PUBLIC_ void ndr_print_drsuapi_DsReplicaOID(struct ndr_print *ndr, const char *name, const struct drsuapi_DsReplicaOID *r)
+static enum ndr_err_code ndr_push_drsuapi_DsReplicaOID(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsReplicaOID *r)
 {
-	ndr_print_struct(ndr, name, "drsuapi_DsReplicaOID");
-	ndr->depth++;
-	ndr_print_uint32(ndr, "__ndr_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_drsuapi_DsReplicaOID_oid(r->oid, 0):r->__ndr_size);
-	ndr_print_ptr(ndr, "oid", r->oid);
-	ndr->depth++;
-	if (r->oid) {
-		ndr_print_string(ndr, "oid", r->oid);
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 5));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->length));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->binary_oid));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
-	ndr->depth--;
-	ndr->depth--;
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->binary_oid) {
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->length));
+			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->binary_oid, r->length));
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_drsuapi_DsReplicaOID(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_DsReplicaOID *r)
+{
+	uint32_t _ptr_binary_oid;
+	TALLOC_CTX *_mem_save_binary_oid_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 5));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->length));
+		if (r->length > 10000) {
+			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
+		}
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_binary_oid));
+		if (_ptr_binary_oid) {
+			NDR_PULL_ALLOC(ndr, r->binary_oid);
+		} else {
+			r->binary_oid = NULL;
+		}
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->binary_oid) {
+			_mem_save_binary_oid_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->binary_oid, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->binary_oid));
+			NDR_PULL_ALLOC_N(ndr, r->binary_oid, ndr_get_array_size(ndr, &r->binary_oid));
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->binary_oid, ndr_get_array_size(ndr, &r->binary_oid)));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_binary_oid_0, 0);
+		}
+		if (r->binary_oid) {
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->binary_oid, r->length));
+		}
+	}
+	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_push_drsuapi_DsReplicaOIDMapping(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsReplicaOIDMapping *r)

@@ -293,9 +293,9 @@ struct drsuapi_DsGetNCChangesRequest5 {
 };
 
 struct drsuapi_DsReplicaOID {
-	uint32_t __ndr_size;/* [value(ndr_size_drsuapi_DsReplicaOID_oid(oid,0)),range(0,10000)] */
-	const char *oid;/* [unique,charset(DOS),size_is(__ndr_size)] */
-}/* [nopush,nopull] */;
+	uint32_t length;/* [range(0,10000)] */
+	uint8_t *binary_oid;/* [unique,size_is(length)] */
+}/* [noprint] */;
 
 struct drsuapi_DsReplicaOIDMapping {
 	uint32_t id_prefix;
