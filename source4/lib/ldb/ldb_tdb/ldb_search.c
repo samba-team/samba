@@ -401,6 +401,15 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 		return -1;
 	}
 
+	if (!msg->dn) {
+		msg->dn = ldb_dn_new(msg, ldb,
+				     (char *)key.dptr + 3);
+		if (msg->dn == NULL) {
+			talloc_free(msg);
+			return -1;
+		}
+	}
+
 	/* see if it matches the given expression */
 	if (!ldb_match_msg(ldb, msg,
 			   ac->tree, ac->base, ac->scope)) {
