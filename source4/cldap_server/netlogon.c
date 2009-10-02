@@ -206,35 +206,42 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	}
 		
 	server_type      = 
-		NBT_SERVER_DS | NBT_SERVER_TIMESERV |
-		NBT_SERVER_CLOSEST | NBT_SERVER_WRITABLE | 
-		NBT_SERVER_GOOD_TIMESERV | DS_DNS_CONTROLLER |
-		DS_DNS_DOMAIN;
+		DS_SERVER_DS | DS_SERVER_TIMESERV |
+		DS_SERVER_CLOSEST | DS_SERVER_WRITABLE | 
+		DS_SERVER_GOOD_TIMESERV;
+
+#if 0
+	/* w2k8-r2 as a DC does not claim these */
+	server_type |= DS_DNS_CONTROLLER | DS_DNS_DOMAIN;
+#endif
 
 	if (samdb_is_pdc(sam_ctx)) {
 		int *domainFunctionality;
-		server_type |= NBT_SERVER_PDC;
+		server_type |= DS_SERVER_PDC;
 		domainFunctionality = talloc_get_type(ldb_get_opaque(sam_ctx, "domainFunctionality"), int);
 		if (domainFunctionality && *domainFunctionality >= DS_DOMAIN_FUNCTION_2008) {
-			server_type |= NBT_SERVER_FULL_SECRET_DOMAIN_6;
+			server_type |= DS_SERVER_FULL_SECRET_DOMAIN_6;
 		}
 	}
 
 	if (samdb_is_gc(sam_ctx)) {
-		server_type |= NBT_SERVER_GC;
+		server_type |= DS_SERVER_GC;
 	}
 
 	if (str_list_check(services, "ldap")) {
-		server_type |= NBT_SERVER_LDAP;
+		server_type |= DS_SERVER_LDAP;
 	}
 
 	if (str_list_check(services, "kdc")) {
-		server_type |= NBT_SERVER_KDC;
+		server_type |= DS_SERVER_KDC;
 	}
 
+#if 0
+	/* w2k8-r2 as a sole DC does not claim this */
 	if (ldb_dn_compare(ldb_get_root_basedn(sam_ctx), ldb_get_default_basedn(sam_ctx)) == 0) {
-		server_type |= DS_DNS_FOREST;
+		server_type |= DS_DNS_FOREST_ROOT;
 	}
+#endif
 
 	pdc_name         = talloc_asprintf(mem_ctx, "\\\\%s", lp_netbios_name(lp_ctx));
 	domain_uuid      = samdb_result_guid(dom_res->msgs[0], "objectGUID");
