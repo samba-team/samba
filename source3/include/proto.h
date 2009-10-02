@@ -7116,6 +7116,7 @@ int vfs_stat_smb_fname(struct connection_struct *conn, const char *fname,
 		       SMB_STRUCT_STAT *psbuf);
 int vfs_lstat_smb_fname(struct connection_struct *conn, const char *fname,
 			SMB_STRUCT_STAT *psbuf);
+NTSTATUS vfs_stat_fsp(files_struct *fsp);
 
 /* The following definitions come from torture/denytest.c  */
 

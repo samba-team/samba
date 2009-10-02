@@ -380,21 +380,26 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 	}
 
 	if (!psd || psd->dacl == NULL) {
-		int ret;
 
 		TALLOC_FREE(psd);
-		if (fsp && !fsp->is_directory && fsp->fh->fd != -1) {
-			ret = SMB_VFS_FSTAT(fsp, &smb_fname->st);
+		if (fsp) {
+			status = vfs_stat_fsp(fsp);
+			smb_fname->st = fsp->fsp_name->st;
 		} else {
-			if (fsp && fsp->posix_open) {
+			int ret;
+			if (lp_posix_pathnames()) {
 				ret = SMB_VFS_LSTAT(handle->conn, smb_fname);
 			} else {
 				ret = SMB_VFS_STAT(handle->conn, smb_fname);
 			}
+			if (ret == -1) {
+				status = map_nt_error_from_unix(errno);
+			}
 		}
-		if (ret == -1) {
-			return map_nt_error_from_unix(errno);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
+
 		psd = default_file_sd(ctx, &smb_fname->st);
 		if (!psd) {
 			return NT_STATUS_NO_MEMORY;
@@ -580,23 +585,14 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 
 	/* Ensure owner and group are set. */
 	if (!psd->owner_sid || !psd->group_sid) {
-		int ret;
 		DOM_SID owner_sid, group_sid;
 		struct security_descriptor *nc_psd = dup_sec_desc(talloc_tos(), psd);
 
 		if (!nc_psd) {
 			return NT_STATUS_OK;
 		}
-		if (fsp->is_directory || fsp->fh->fd == -1) {
-			if (fsp->posix_open) {
-				ret = SMB_VFS_LSTAT(fsp->conn, fsp->fsp_name);
-			} else {
-				ret = SMB_VFS_STAT(fsp->conn, fsp->fsp_name);
-			}
-		} else {
-			ret = SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st);
-		}
-		if (ret == -1) {
+		status = vfs_stat_fsp(fsp);
+		if (!NT_STATUS_IS_OK(status)) {
 			/* Lower level acl set succeeded,
 			 * so still return OK. */
 			return NT_STATUS_OK;

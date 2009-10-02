@@ -1049,6 +1049,31 @@ int vfs_lstat_smb_fname(struct connection_struct *conn, const char *fname,
 	return ret;
 }
 
+/**
+ * Ensure LSTAT is called for POSIX paths.
+ */
+
+NTSTATUS vfs_stat_fsp(files_struct *fsp)
+{
+	int ret;
+
+	if(fsp->is_directory || fsp->fh->fd == -1) {
+		if (fsp->posix_open) {
+			ret = SMB_VFS_LSTAT(fsp->conn, fsp->fsp_name);
+		} else {
+			ret = SMB_VFS_STAT(fsp->conn, fsp->fsp_name);
+		}
+		if (ret == -1) {
+			return map_nt_error_from_unix(errno);
+		}
+	} else {
+		if(SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st) != 0) {
+			return map_nt_error_from_unix(errno);
+		}
+	}
+	return NT_STATUS_OK;
+}
+
 /*
   generate a file_id from a stat structure
  */

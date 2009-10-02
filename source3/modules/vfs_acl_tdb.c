@@ -147,24 +147,26 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 	TDB_DATA data;
 	struct file_id id;
 	struct db_context *db;
-	int ret = -1;
+	NTSTATUS status;
 	SMB_STRUCT_STAT sbuf;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION);
 
-	if (fsp && fsp->fh->fd != -1) {
-		ret = SMB_VFS_FSTAT(fsp, &sbuf);
+	ZERO_STRUCT(sbuf);
+
+	if (fsp) {
+		status = vfs_stat_fsp(fsp);
+		sbuf = fsp->fsp_name->st;
 	} else {
-		if (fsp && fsp->posix_open) {
-			ret = vfs_lstat_smb_fname(handle->conn, name, &sbuf);
-		} else {
-			ret = vfs_stat_smb_fname(handle->conn, name, &sbuf);
+		int ret = vfs_stat_smb_fname(handle->conn, name, &sbuf);
+		if (ret == -1) {
+			status = map_nt_error_from_unix(errno);
 		}
 	}
 
-	if (ret == -1) {
-		return map_nt_error_from_unix(errno);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	id = vfs_file_id_from_sbuf(handle->conn, &sbuf);
@@ -204,7 +206,7 @@ static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
 	TDB_DATA data;
 	struct db_context *db;
 	struct db_record *rec;
-	int ret = -1;
+	NTSTATUS status;
 
 	DEBUG(10,("store_acl_blob_fsp: storing blob length %u on file %s\n",
 		  (unsigned int)pblob->length, fsp_str_dbg(fsp)));
@@ -212,18 +214,9 @@ static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION);
 
-	if (fsp->fh->fd != -1) {
-		ret = SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st);
-	} else {
-		if (fsp->posix_open) {
-			ret = SMB_VFS_LSTAT(handle->conn, fsp->fsp_name);
-		} else {
-			ret = SMB_VFS_STAT(handle->conn, fsp->fsp_name);
-		}
-	}
-
-	if (ret == -1) {
-		return map_nt_error_from_unix(errno);
+	status = vfs_stat_fsp(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	id = vfs_file_id_from_sbuf(handle->conn, &fsp->fsp_name->st);
@@ -438,20 +431,13 @@ static int sys_acl_set_fd_tdb(vfs_handle_struct *handle,
                             SMB_ACL_T theacl)
 {
 	struct db_context *db;
+	NTSTATUS status;
 	int ret;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
 
-	if (fsp->is_directory || fsp->fh->fd == -1) {
-		if (fsp->posix_open) {
-			ret = SMB_VFS_LSTAT(fsp->conn, fsp->fsp_name);
-		} else {
-			ret = SMB_VFS_STAT(fsp->conn, fsp->fsp_name);
-		}
-	} else {
-		ret = SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st);
-	}
-	if (ret == -1) {
+	status = vfs_stat_fsp(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
 
