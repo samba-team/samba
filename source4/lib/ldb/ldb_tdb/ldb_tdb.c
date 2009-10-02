@@ -103,53 +103,6 @@ int ltdb_unlock_read(struct ldb_module *module)
 	return 0;
 }
 
-struct ldb_val ldb_dn_get_casefold_as_ldb_val(struct ldb_dn *dn) {
-	struct ldb_val val;
-	const char *casefold_dn = ldb_dn_get_casefold(dn);
-	val.data = (uint8_t *)((uintptr_t)casefold_dn);
-	val.length = strlen(casefold_dn);
-	return val;
-}
-
-struct ldb_val ldb_dn_alloc_casefold_as_ldb_val(TALLOC_CTX *mem_ctx, struct ldb_dn *dn) {
-	struct ldb_val val;
-	const char *casefold_dn = ldb_dn_alloc_casefold(mem_ctx, dn);
-	val.data = (uint8_t *)((uintptr_t)casefold_dn);
-	val.length = strlen(casefold_dn);
-	return val;
-}
-
-/*
-  form a TDB_DATA for a record key
-  caller frees
-
-  This version takes the casefolded string form of the DN as an ldb_val
-*/
-struct TDB_DATA ltdb_key_from_casefold_dn(TALLOC_CTX *mem_ctx, 
-					  struct ldb_val dn_folded)
-{
-	TDB_DATA key;
-
-	key.dsize = dn_folded.length + 4;
-	key.dptr = talloc_size(mem_ctx, key.dsize);
-	if (!key.dptr) {
-		goto failed;
-	}
-
-	memcpy(key.dptr, "DN=", 3);
-	memcpy(&key.dptr[3], dn_folded.data, key.dsize - 4);
-
-	key.dptr[key.dsize - 1] = '\0';
-
-	return key;
-
-failed:
-	errno = ENOMEM;
-	key.dptr = NULL;
-	key.dsize = 0;
-	return key;
-}
-
 
 /*
   form a TDB_DATA for a record key
@@ -158,10 +111,12 @@ failed:
   note that the key for a record can depend on whether the
   dn refers to a case sensitive index record or not
 */
-struct TDB_DATA ltdb_key(TALLOC_CTX *mem_ctx, struct ldb_dn *dn)
+struct TDB_DATA ltdb_key(struct ldb_module *module, struct ldb_dn *dn)
 {
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	TDB_DATA key;
-	struct ldb_val dn_folded;
+	char *key_str = NULL;
+	const char *dn_folded = NULL;
 
 	/*
 	  most DNs are case insensitive. The exception is index DNs for
@@ -175,15 +130,31 @@ struct TDB_DATA ltdb_key(TALLOC_CTX *mem_ctx, struct ldb_dn *dn)
 	     the indexing code handles the rest
 	*/
 
-	dn_folded = ldb_dn_get_casefold_as_ldb_val(dn);
-	if (!dn_folded.data) {
-		errno = EINVAL;
-		key.dptr = NULL;
-		key.dsize = 0;
-		return key;
+	dn_folded = ldb_dn_get_casefold(dn);
+	if (!dn_folded) {
+		goto failed;
 	}
 
-	return ltdb_key_from_casefold_dn(mem_ctx, dn_folded);
+	key_str = talloc_strdup(ldb, "DN=");
+	if (!key_str) {
+		goto failed;
+	}
+
+	key_str = talloc_strdup_append_buffer(key_str, dn_folded);
+	if (!key_str) {
+		goto failed;
+	}
+
+	key.dptr = (uint8_t *)key_str;
+	key.dsize = strlen(key_str) + 1;
+
+	return key;
+
+failed:
+	errno = ENOMEM;
+	key.dptr = NULL;
+	key.dsize = 0;
+	return key;
 }
 
 /*
@@ -242,15 +213,14 @@ static int ltdb_modified(struct ldb_module *module, struct ldb_dn *dn)
 /*
   store a record into the db
 */
-int ltdb_store(struct ldb_module *module, TALLOC_CTX *mem_ctx, 
-	       const struct ldb_message *msg, int flgs)
+int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flgs)
 {
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	TDB_DATA tdb_key, tdb_data;
 	int ret;
 
-	tdb_key = ltdb_key(mem_ctx, msg->dn);
+	tdb_key = ltdb_key(module, msg->dn);
 	if (!tdb_key.dptr) {
 		return LDB_ERR_OTHER;
 	}
@@ -267,7 +237,7 @@ int ltdb_store(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	ret = ltdb_index_add(module, mem_ctx, msg);
+	ret = ltdb_index_add(module, msg);
 	if (ret != LDB_SUCCESS) {
 		tdb_delete(ltdb->tdb, tdb_key);
 	}
@@ -281,7 +251,6 @@ done:
 
 
 static int ltdb_add_internal(struct ldb_module *module,
-			     TALLOC_CTX *mem_ctx, 
 			     const struct ldb_message *msg)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
@@ -314,7 +283,7 @@ static int ltdb_add_internal(struct ldb_module *module,
 		}
 	}
 
-	ret = ltdb_store(module, mem_ctx, msg, TDB_INSERT);
+	ret = ltdb_store(module, msg, TDB_INSERT);
 
 	if (ret == LDB_ERR_ENTRY_ALREADY_EXISTS) {
 		ldb_asprintf_errstring(ldb,
@@ -324,7 +293,7 @@ static int ltdb_add_internal(struct ldb_module *module,
 	}
 
 	if (ret == LDB_SUCCESS) {
-		ret = ltdb_index_one(module, mem_ctx, msg, 1);
+		ret = ltdb_index_one(module, msg, 1);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -349,7 +318,7 @@ static int ltdb_add(struct ltdb_context *ctx)
 
 	ldb_request_set_state(req, LDB_ASYNC_PENDING);
 
-	tret = ltdb_add_internal(module, req, req->op.add.message);
+	tret = ltdb_add_internal(module, req->op.add.message);
 	if (tret != LDB_SUCCESS) {
 		return tret;
 	}
@@ -361,14 +330,14 @@ static int ltdb_add(struct ltdb_context *ctx)
   delete a record from the database, not updating indexes (used for deleting
   index records)
 */
-int ltdb_delete_noindex(struct ldb_module *module, TALLOC_CTX *mem_ctx, struct ldb_dn *dn)
+int ltdb_delete_noindex(struct ldb_module *module, struct ldb_dn *dn)
 {
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	TDB_DATA tdb_key;
 	int ret;
 
-	tdb_key = ltdb_key(mem_ctx, dn);
+	tdb_key = ltdb_key(module, dn);
 	if (!tdb_key.dptr) {
 		return LDB_ERR_OTHER;
 	}
@@ -383,12 +352,12 @@ int ltdb_delete_noindex(struct ldb_module *module, TALLOC_CTX *mem_ctx, struct l
 	return ret;
 }
 
-static int ltdb_delete_internal(struct ldb_module *module, TALLOC_CTX *mem_ctx, struct ldb_dn *dn)
+static int ltdb_delete_internal(struct ldb_module *module, struct ldb_dn *dn)
 {
 	struct ldb_message *msg;
 	int ret;
 
-	msg = talloc(mem_ctx, struct ldb_message);
+	msg = talloc(module, struct ldb_message);
 	if (msg == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -401,19 +370,19 @@ static int ltdb_delete_internal(struct ldb_module *module, TALLOC_CTX *mem_ctx, 
 		goto done;
 	}
 
-	ret = ltdb_delete_noindex(module, msg, dn);
+	ret = ltdb_delete_noindex(module, dn);
 	if (ret != LDB_SUCCESS) {
 		goto done;
 	}
 
 	/* remove one level attribute */
-	ret = ltdb_index_one(module, msg, msg, 0);
+	ret = ltdb_index_one(module, msg, 0);
 	if (ret != LDB_SUCCESS) {
 		goto done;
 	}
 
 	/* remove any indexed attributes */
-	ret = ltdb_index_del(module, msg, msg);
+	ret = ltdb_index_del(module, msg);
 	if (ret != LDB_SUCCESS) {
 		goto done;
 	}
@@ -443,7 +412,7 @@ static int ltdb_delete(struct ltdb_context *ctx)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	tret = ltdb_delete_internal(module, req, req->op.del.dn);
+	tret = ltdb_delete_internal(module, req->op.del.dn);
 	if (tret != LDB_SUCCESS) {
 		return tret;
 	}
@@ -520,14 +489,21 @@ static int msg_add_element(struct ldb_context *ldb,
   delete all elements having a specified attribute name
 */
 static int msg_delete_attribute(struct ldb_module *module,
+				struct ldb_context *ldb,
 				struct ldb_message *msg, const char *name)
 {
+	const char *dn;
 	unsigned int i, j;
+
+	dn = ldb_dn_get_linearized(msg->dn);
+	if (dn == NULL) {
+		return -1;
+	}
 
 	for (i=0;i<msg->num_elements;i++) {
 		if (ldb_attr_cmp(msg->elements[i].name, name) == 0) {
 			for (j=0;j<msg->elements[i].num_values;j++) {
-				ltdb_index_del_value(module, msg, msg->dn,
+				ltdb_index_del_value(module, dn,
 						     &msg->elements[i], j);
 			}
 			talloc_free(msg->elements[i].values);
@@ -574,7 +550,7 @@ static int msg_delete_element(struct ldb_module *module,
 	a = ldb_schema_attribute_by_name(ldb, el->name);
 
 	for (i=0;i<el->num_values;i++) {
-		if (a->syntax->comparison_fn(ldb, msg,
+		if (a->syntax->comparison_fn(ldb, ldb,
 						&el->values[i], val) == 0) {
 			if (i<el->num_values-1) {
 				memmove(&el->values[i], &el->values[i+1],
@@ -583,7 +559,7 @@ static int msg_delete_element(struct ldb_module *module,
 			}
 			el->num_values--;
 			if (el->num_values == 0) {
-				return msg_delete_attribute(module, 
+				return msg_delete_attribute(module, ldb,
 							    msg, name);
 			}
 			return 0;
@@ -602,7 +578,6 @@ static int msg_delete_element(struct ldb_module *module,
   then we'll need to look at this again
 */
 int ltdb_modify_internal(struct ldb_module *module,
-			 TALLOC_CTX *mem_ctx, 
 			 const struct ldb_message *msg)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
@@ -612,32 +587,28 @@ int ltdb_modify_internal(struct ldb_module *module,
 	struct ldb_message *msg2;
 	unsigned i, j;
 	int ret, idx;
-	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
-	if (!tmp_ctx) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	tdb_key = ltdb_key(tmp_ctx, msg->dn);
+
+	tdb_key = ltdb_key(module, msg->dn);
 	if (!tdb_key.dptr) {
-		talloc_free(tmp_ctx);
 		return LDB_ERR_OTHER;
 	}
 
 	tdb_data = tdb_fetch(ltdb->tdb, tdb_key);
-	talloc_free(tdb_key.dptr);
-
 	if (!tdb_data.dptr) {
+		talloc_free(tdb_key.dptr);
 		return ltdb_err_map(tdb_error(ltdb->tdb));
 	}
 
-	msg2 = talloc(tmp_ctx, struct ldb_message);
+	msg2 = talloc(tdb_key.dptr, struct ldb_message);
 	if (msg2 == NULL) {
-		ldb_oom(ldb);
-		ret = LDB_ERR_OPERATIONS_ERROR;
-		goto failed;
+		talloc_free(tdb_key.dptr);
+		return LDB_ERR_OTHER;
 	}
 
 	ret = ltdb_unpack_data(module, &tdb_data, msg2);
 	if (ret == -1) {
+		ret = LDB_ERR_OTHER;
+		goto failed;
 	}
 
 	if (!msg2->dn) {
@@ -648,6 +619,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 		struct ldb_message_element *el = &msg->elements[i];
 		struct ldb_message_element *el2;
 		struct ldb_val *vals;
+		const char *dn;
 		const struct ldb_schema_attribute *a = ldb_schema_attribute_by_name(ldb, el->name);
 		switch (msg->elements[i].flags & LDB_FLAG_MOD_MASK) {
 
@@ -708,8 +680,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 						el2->num_values + el->num_values);
 
 			if (vals == NULL) {
-				ldb_oom(ldb);
-				ret = LDB_ERR_OPERATIONS_ERROR;
+				ret = LDB_ERR_OTHER;
 				goto failed;
 			}
 
@@ -733,7 +704,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 			}
 			/* replace all elements of this attribute name with the elements
 			   listed. The attribute not existing is not an error */
-			msg_delete_attribute(module, msg2, el->name);
+			msg_delete_attribute(module, ldb, msg2, el->name);
 
 			for (j=0;j<el->num_values;j++) {
 				if (ldb_msg_find_val(el, &el->values[j]) != &el->values[j]) {
@@ -753,12 +724,17 @@ int ltdb_modify_internal(struct ldb_module *module,
 
 		case LDB_FLAG_MOD_DELETE:
 
+			dn = ldb_dn_get_linearized(msg->dn);
+			if (dn == NULL) {
+				ret = LDB_ERR_OTHER;
+				goto failed;
+			}
+
 			/* we could be being asked to delete all
 			   values or just some values */
 			if (msg->elements[i].num_values == 0) {
-				if (msg_delete_attribute(module, msg2, 
+				if (msg_delete_attribute(module, ldb, msg2, 
 							 msg->elements[i].name) != 0) {
-					const char *dn = ldb_dn_get_linearized(msg->dn);
 					ldb_asprintf_errstring(ldb, "No such attribute: %s for delete on %s", msg->elements[i].name, dn);
 					ret = LDB_ERR_NO_SUCH_ATTRIBUTE;
 					goto failed;
@@ -770,15 +746,11 @@ int ltdb_modify_internal(struct ldb_module *module,
 						       msg2, 
 						       msg->elements[i].name,
 						       &msg->elements[i].values[j]) != 0) {
-					const char *dn = ldb_dn_get_linearized(msg->dn);
-					ldb_asprintf_errstring(ldb, "No matching attribute value (%*.*s) when deleting attribute: %s on %s", 
-							       (int)msg->elements[i].values[j].length, (int)msg->elements[i].values[j].length, 
-							       (const char *)msg->elements[i].values[j].data,
-							       msg->elements[i].name, dn);
+					ldb_asprintf_errstring(ldb, "No matching attribute value when deleting attribute: %s on %s", msg->elements[i].name, dn);
 					ret = LDB_ERR_NO_SUCH_ATTRIBUTE;
 					goto failed;
 				}
-				ret = ltdb_index_del_value(module, tmp_ctx, msg->dn, &msg->elements[i], j);
+				ret = ltdb_index_del_value(module, dn, &msg->elements[i], j);
 				if (ret != LDB_SUCCESS) {
 					goto failed;
 				}
@@ -796,7 +768,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 
 	/* we've made all the mods
 	 * save the modified record back into the database */
-	ret = ltdb_store(module, mem_ctx, msg2, TDB_MODIFY);
+	ret = ltdb_store(module, msg2, TDB_MODIFY);
 	if (ret != LDB_SUCCESS) {
 		goto failed;
 	}
@@ -806,11 +778,12 @@ int ltdb_modify_internal(struct ldb_module *module,
 		goto failed;
 	}
 
+	talloc_free(tdb_key.dptr);
 	free(tdb_data.dptr);
 	return ret;
 
 failed:
-	talloc_free(tmp_ctx);
+	talloc_free(tdb_key.dptr);
 	free(tdb_data.dptr);
 	return ret;
 }
@@ -835,7 +808,7 @@ static int ltdb_modify(struct ltdb_context *ctx)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	tret = ltdb_modify_internal(module, req, req->op.mod.message);
+	tret = ltdb_modify_internal(module, req->op.mod.message);
 	if (tret != LDB_SUCCESS) {
 		return tret;
 	}
@@ -868,14 +841,12 @@ static int ltdb_rename(struct ltdb_context *ctx)
 	   to fetch the old record */
 	tret = ltdb_search_dn1(module, req->op.rename.olddn, msg);
 	if (tret != LDB_SUCCESS) {
-		talloc_free(msg);
 		/* not finding the old record is an error */
 		return tret;
 	}
 
 	msg->dn = ldb_dn_copy(msg, req->op.rename.newdn);
 	if (!msg->dn) {
-		talloc_free(msg);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -883,14 +854,12 @@ static int ltdb_rename(struct ltdb_context *ctx)
 	 * unique indexes. We rely on the transaction to make this
 	 * atomic
 	 */
-	tret = ltdb_delete_internal(module, msg, req->op.rename.olddn);
+	tret = ltdb_delete_internal(module, req->op.rename.olddn);
 	if (tret != LDB_SUCCESS) {
-		talloc_free(msg);
 		return tret;
 	}
 
-	tret = ltdb_add_internal(module, msg, msg);
-	talloc_free(msg);
+	tret = ltdb_add_internal(module, msg);
 	if (tret != LDB_SUCCESS) {
 		return tret;
 	}
@@ -923,7 +892,7 @@ static int ltdb_prepare_commit(struct ldb_module *module)
 		return LDB_SUCCESS;
 	}
 
-	if (ltdb_index_transaction_prepare_commit(module) != 0) {
+	if (ltdb_index_transaction_commit(module) != 0) {
 		tdb_transaction_cancel(ltdb->tdb);
 		ltdb->in_transaction--;
 		return ltdb_err_map(tdb_error(ltdb->tdb));

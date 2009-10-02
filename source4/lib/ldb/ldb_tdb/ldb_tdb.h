@@ -29,8 +29,6 @@ struct ltdb_private {
 	bool check_base;
 	struct ltdb_idxptr *idxptr;
 	bool prepared_commit;
-
-	int index_version;
 };
 
 /*
@@ -67,14 +65,6 @@ struct ltdb_context {
 #define LTDB_OPTIONS    "@OPTIONS"
 #define LTDB_ATTRIBUTES "@ATTRIBUTES"
 
-#define LTDB_INDEX_VERSION   "@INDEX_VERSION"
-
-/* ltdb index versions: 
-   0 - Initial version, DN values as index values, not casefolded
-   1 - DN values as index values, casefolded and sorted (binary compare)
- */
-
-
 /* special attribute types */
 #define LTDB_SEQUENCE_NUMBER "sequenceNumber"
 #define LTDB_CHECK_BASE "checkBaseOnSearch"
@@ -86,7 +76,6 @@ struct ltdb_context {
 int ltdb_cache_reload(struct ldb_module *module);
 int ltdb_cache_load(struct ldb_module *module);
 int ltdb_increase_sequence_number(struct ldb_module *module);
-int ltdb_set_casefold_index(struct ldb_module *module);
 int ltdb_check_at_attributes_values(const struct ldb_val *value);
 
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_index.c  */
@@ -94,15 +83,12 @@ int ltdb_check_at_attributes_values(const struct ldb_val *value);
 struct ldb_parse_tree;
 
 int ltdb_search_indexed(struct ltdb_context *ctx, uint32_t *);
-int ltdb_index_add(struct ldb_module *module, TALLOC_CTX *mem_ctx, 
-		   const struct ldb_message *msg);
-int ltdb_index_del(struct ldb_module *module, TALLOC_CTX *mem_ctx, 
-		   const struct ldb_message *msg);
-int ltdb_index_one(struct ldb_module *module, TALLOC_CTX *mem_ctx, 
-		   const struct ldb_message *msg, int add);
+int ltdb_index_add(struct ldb_module *module, const struct ldb_message *msg);
+int ltdb_index_del(struct ldb_module *module, const struct ldb_message *msg);
+int ltdb_index_one(struct ldb_module *module, const struct ldb_message *msg, int add);
 int ltdb_reindex(struct ldb_module *module);
 int ltdb_index_transaction_start(struct ldb_module *module);
-int ltdb_index_transaction_prepare_commit(struct ldb_module *module);
+int ltdb_index_transaction_commit(struct ldb_module *module);
 int ltdb_index_transaction_cancel(struct ldb_module *module);
 
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_pack.c  */
@@ -121,14 +107,6 @@ int ltdb_unpack_data(struct ldb_module *module,
 int ltdb_has_wildcard(struct ldb_module *module, const char *attr_name, 
 		      const struct ldb_val *val);
 void ltdb_search_dn1_free(struct ldb_module *module, struct ldb_message *msg);
-/*
-  search the database for a single tdb key, returning all attributes
-  in a single message
-
-  return LDB_ERR_NO_SUCH_OBJECT on record-not-found
-  and LDB_SUCCESS on success
-*/
-int ltdb_search_dn1_key(struct ldb_module *module, TDB_DATA tdb_key, struct ldb_message *msg);
 int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_message *msg);
 int ltdb_add_attr_results(struct ldb_module *module,
  			  TALLOC_CTX *mem_ctx, 
@@ -142,26 +120,12 @@ int ltdb_search(struct ltdb_context *ctx);
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_tdb.c  */
 int ltdb_lock_read(struct ldb_module *module);
 int ltdb_unlock_read(struct ldb_module *module);
-struct TDB_DATA ltdb_key(TALLOC_CTX *mem_ctx, struct ldb_dn *dn);
-/*
-  form a TDB_DATA for a record key
-  caller frees
+struct TDB_DATA ltdb_key(struct ldb_module *module, struct ldb_dn *dn);
+int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flgs);
+int ltdb_delete_noindex(struct ldb_module *module, struct ldb_dn *dn);
+int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *msg);
 
-  This version takes the casefolded string form of the DN as an ldb_val
-*/
-struct TDB_DATA ltdb_key_from_casefold_dn(TALLOC_CTX *mem_ctx, 
-					  struct ldb_val dn_folded);
-struct ldb_val ldb_dn_get_casefold_as_ldb_val(struct ldb_dn *dn);
-struct ldb_val ldb_dn_alloc_casefold_as_ldb_val(TALLOC_CTX *mem_ctx, struct ldb_dn *dn);
-int ltdb_store(struct ldb_module *module, TALLOC_CTX *mem_ctx, 
-	       const struct ldb_message *msg, int flgs);
-int ltdb_delete_noindex(struct ldb_module *module, TALLOC_CTX *mem_ctx, 
-			struct ldb_dn *dn);
-int ltdb_modify_internal(struct ldb_module *module, TALLOC_CTX *mem_ctx, 
-			 const struct ldb_message *msg);
-
-int ltdb_index_del_value(struct ldb_module *module, TALLOC_CTX *mem_ctx, 
-			 struct ldb_dn *dn,
+int ltdb_index_del_value(struct ldb_module *module, const char *dn, 
 			 struct ldb_message_element *el, int v_idx);
 
 struct tdb_context *ltdb_wrap_open(TALLOC_CTX *mem_ctx,
