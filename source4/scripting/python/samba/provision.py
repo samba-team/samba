@@ -878,7 +878,8 @@ def setup_samdb_rootdse(samdb, setup_path, names):
 def setup_self_join(samdb, names,
                     machinepass, dnspass, 
                     domainsid, invocationid, setup_path,
-                    policyguid, policyguid_dc, domainControllerFunctionality,ntdsguid):
+                    policyguid, policyguid_dc, domainControllerFunctionality,
+                    ntdsguid):
     """Join a host to its own domain."""
     assert isinstance(invocationid, str)
     if ntdsguid is not None:
@@ -1123,7 +1124,8 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
                                 domainsid=domainsid, policyguid=policyguid,
                                 policyguid_dc=policyguid_dc,
                                 setup_path=setup_path,
-                                domainControllerFunctionality=domainControllerFunctionality,ntdsguid=ntdsguid)
+                                domainControllerFunctionality=domainControllerFunctionality,
+                                ntdsguid=ntdsguid)
 
                 ntds_dn = "CN=NTDS Settings,CN=%s,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,%s" % (names.hostname, names.domaindn)
                 names.ntdsguid = samdb.searchone(basedn=ntds_dn,
@@ -1152,7 +1154,7 @@ def provision(setup_dir, message, session_info,
               domainsid=None, adminpass=None, ldapadminpass=None, 
               krbtgtpass=None, domainguid=None, 
               policyguid=None, policyguid_dc=None, invocationid=None,
-              machinepass=None,ntdsguid=None,
+              machinepass=None, ntdsguid=None,
               dnspass=None, root=None, nobody=None, users=None, 
               wheel=None, backup=None, aci=None, serverrole=None,
               dom_for_fun_level=None,
@@ -1307,8 +1309,7 @@ def provision(setup_dir, message, session_info,
                         adminpass=adminpass, krbtgtpass=krbtgtpass,
                         invocationid=invocationid, 
                         machinepass=machinepass, dnspass=dnspass, 
-                        ntdsguid=ntdsguid,
-                        serverrole=serverrole,
+                        ntdsguid=ntdsguid, serverrole=serverrole,
                         dom_for_fun_level=dom_for_fun_level,
                         ldap_backend=provision_backend)
 
