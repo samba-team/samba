@@ -4342,7 +4342,11 @@ static NTSTATUS dcesrv_samr_SetDsrmPassword(struct dcesrv_call_state *dce_call, 
 static NTSTATUS dcesrv_samr_ValidatePassword(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				      struct samr_ValidatePassword *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	/* just say it's OK for now - we need to hook this into our
+	   password strength code later */
+	DEBUG(0,(__location__ ": Faking samr_ValidatePassword reply\n"));
+	(*r->out.rep) = talloc_zero(mem_ctx, union samr_ValidatePasswordRep);
+	return NT_STATUS_OK;
 }
 
 
