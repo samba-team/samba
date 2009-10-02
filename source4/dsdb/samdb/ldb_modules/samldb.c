@@ -699,8 +699,14 @@ static int samldb_check_primaryGroupID_1(struct samldb_ctx *ac)
 
 static int samldb_check_primaryGroupID_2(struct samldb_ctx *ac)
 {
-	if (ac->res_dn == NULL)
+	if (ac->res_dn == NULL) {
+		struct ldb_context *ldb;
+		ldb = ldb_module_get_ctx(ac->module);
+		ldb_asprintf_errstring(ldb,
+				       "Failed to find group sid %s", 
+				       dom_sid_string(ac->sid, ac->sid));
 		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
 
 	return samldb_next_step(ac);
 }
@@ -1866,7 +1872,7 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 	int ret;
 
 	ldb = ldb_module_get_ctx(module);
-	ldb_debug(ldb, LDB_DEBUG_TRACE, "samldb_add_record\n");
+	ldb_debug(ldb, LDB_DEBUG_TRACE, "samldb_add\n");
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.add.message->dn)) {
