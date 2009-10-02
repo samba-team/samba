@@ -1706,6 +1706,23 @@ fi
 
 AC_MSG_RESULT($BLDSHARED)
 
+if test x"${ac_cv_prog_gnu_ld}" = x"yes"; then
+	saved_ldflags="$LDFLAGS"
+	AC_MSG_CHECKING([if --as-needed works])
+	LDFLAGS="--as-needed $saved_ldflags"
+	AC_TRY_LINK([],[],
+		[AC_MSG_RESULT([yes])
+		LD_AS_NEEDED_FLAG=--as-needed],
+		AC_MSG_RESULT([no]))
+	AC_MSG_CHECKING([if -Wl,--as-needed works])
+	LDFLAGS="-Wl,--as-needed $saved_ldflags"
+	AC_TRY_LINK([],[],
+		[AC_MSG_RESULT([yes])
+		LD_AS_NEEDED_FLAG=-Wl,--as-needed],
+		AC_MSG_RESULT([no]))
+	LDFLAGS="$LD_AS_NEEDED_FLAG $saved_ldflags"
+fi
+
 AC_MSG_CHECKING([LDFLAGS])
 AC_MSG_RESULT([$LDFLAGS])
 AC_MSG_CHECKING([DYNEXP])
