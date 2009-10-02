@@ -211,9 +211,6 @@ typedef void **ADS_MODLIST;
 #define ADS_LDAP_MATCHING_RULE_BIT_OR	"1.2.840.113556.1.4.804"
 
 #define ADS_PINGS          0x0000FFFF  /* Ping response */
-#define ADS_DNS_CONTROLLER 0x20000000  /* DomainControllerName is a DNS name*/
-#define ADS_DNS_DOMAIN     0x40000000  /* DomainName is a DNS name */
-#define ADS_DNS_FOREST     0x80000000  /* DnsForestName is a DNS name */
 
 /* ads auth control flags */
 #define ADS_AUTH_DISABLE_KERBEROS 0x0001
