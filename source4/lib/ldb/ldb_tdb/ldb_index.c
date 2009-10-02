@@ -70,10 +70,8 @@ static int ltdb_idxptr_add(struct ldb_module *module, const struct ldb_message *
 {
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
-	/* we overallocate a bit to save on memory fragmentation */
-	unsigned alloc_length = ((ltdb->idxptr->num_dns+1) + 16) & ~15;
 	ltdb->idxptr->dn_list = talloc_realloc(ltdb->idxptr, ltdb->idxptr->dn_list, 
-					       struct TDB_DATA, alloc_length);
+					       struct TDB_DATA, ltdb->idxptr->num_dns+1);
 	if (ltdb->idxptr->dn_list == NULL) {
 		ltdb->idxptr->num_dns = 0;
 		return LDB_ERR_OPERATIONS_ERROR;
