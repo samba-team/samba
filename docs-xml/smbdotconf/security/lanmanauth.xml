@@ -16,6 +16,13 @@
     case-insensitive nature, and the choice of algorithm.  Servers
     without Windows 95/98/ME or MS DOS clients are advised to disable
     this option.  </para>
+
+    <para>When this parameter is set to <value>no</value> this
+    will also result in sambaLMPassword in Samba's passdb being
+    blanked after the next password change. As a result of that
+    lanman clients won't be able to authenticate, even if lanman
+    auth is reenabled later on.
+    </para>
 		
     <para>Unlike the <command moreinfo="none">encrypt
     passwords</command> option, this parameter cannot alter client
