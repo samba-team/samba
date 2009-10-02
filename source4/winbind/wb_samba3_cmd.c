@@ -29,10 +29,113 @@
 #include "libcli/composite/composite.h"
 #include "version.h"
 #include "librpc/gen_ndr/netlogon.h"
+#include "librpc/gen_ndr/ndr_netlogon.h"
 #include "libcli/security/security.h"
 #include "auth/ntlm/pam_errors.h"
 #include "auth/credentials/credentials.h"
 #include "smbd/service_task.h"
+
+/*
+  support the old Samba3 TXT form of the info3
+ */
+static NTSTATUS wb_samba3_append_info3_as_txt(TALLOC_CTX *mem_ctx,
+					      struct wbsrv_samba3_call *s3call,
+					      DATA_BLOB info3b)
+{
+	struct netr_SamInfo3 *info3;
+	char *ex;
+	uint32_t i;
+	enum ndr_err_code ndr_err;
+
+	info3 = talloc(mem_ctx, struct netr_SamInfo3);
+	NT_STATUS_HAVE_NO_MEMORY(info3);
+
+	/* The Samba3 protocol has a redundent 4 bytes at the start */
+	info3b.data += 4;
+	info3b.length -= 4;
+
+	ndr_err = ndr_pull_struct_blob(&info3b,
+				       mem_ctx,
+				       lp_iconv_convenience(s3call->wbconn->lp_ctx), 
+				       info3,
+				       (ndr_pull_flags_fn_t)ndr_pull_netr_SamInfo3);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	s3call->response.data.auth.info3.logon_time =
+		nt_time_to_unix(info3->base.last_logon);
+	s3call->response.data.auth.info3.logoff_time =
+		nt_time_to_unix(info3->base.last_logoff);
+	s3call->response.data.auth.info3.kickoff_time =
+		nt_time_to_unix(info3->base.acct_expiry);
+	s3call->response.data.auth.info3.pass_last_set_time =
+		nt_time_to_unix(info3->base.last_password_change);
+	s3call->response.data.auth.info3.pass_can_change_time =
+		nt_time_to_unix(info3->base.allow_password_change);
+	s3call->response.data.auth.info3.pass_must_change_time =
+		nt_time_to_unix(info3->base.force_password_change);
+
+	s3call->response.data.auth.info3.logon_count = info3->base.logon_count;
+	s3call->response.data.auth.info3.bad_pw_count = info3->base.bad_password_count;
+
+	s3call->response.data.auth.info3.user_rid = info3->base.rid;
+	s3call->response.data.auth.info3.group_rid = info3->base.primary_gid;
+	fstrcpy(s3call->response.data.auth.info3.dom_sid, dom_sid_string(mem_ctx, info3->base.domain_sid));
+
+	s3call->response.data.auth.info3.num_groups = info3->base.groups.count;
+	s3call->response.data.auth.info3.user_flgs = info3->base.user_flags;
+
+	s3call->response.data.auth.info3.acct_flags = info3->base.acct_flags;
+	s3call->response.data.auth.info3.num_other_sids = info3->sidcount;
+
+	fstrcpy(s3call->response.data.auth.info3.user_name,
+		info3->base.account_name.string);
+	fstrcpy(s3call->response.data.auth.info3.full_name,
+		info3->base.full_name.string);
+	fstrcpy(s3call->response.data.auth.info3.logon_script,
+		info3->base.logon_script.string);
+	fstrcpy(s3call->response.data.auth.info3.profile_path,
+		info3->base.profile_path.string);
+	fstrcpy(s3call->response.data.auth.info3.home_dir,
+		info3->base.home_directory.string);
+	fstrcpy(s3call->response.data.auth.info3.dir_drive,
+		info3->base.home_drive.string);
+
+	fstrcpy(s3call->response.data.auth.info3.logon_srv,
+		info3->base.logon_server.string);
+	fstrcpy(s3call->response.data.auth.info3.logon_dom,
+		info3->base.domain.string);
+
+	ex = talloc_strdup(mem_ctx, "");
+	NT_STATUS_HAVE_NO_MEMORY(ex);
+
+	for (i=0; i < info3->base.groups.count; i++) {
+		ex = talloc_asprintf_append_buffer(ex, "0x%08X:0x%08X\n",
+						   info3->base.groups.rids[i].rid,
+						   info3->base.groups.rids[i].attributes);
+		NT_STATUS_HAVE_NO_MEMORY(ex);
+	}
+
+	for (i=0; i < info3->sidcount; i++) {
+		char *sid;
+
+		sid = dom_sid_string(mem_ctx, info3->sids[i].sid);
+		NT_STATUS_HAVE_NO_MEMORY(sid);
+
+		ex = talloc_asprintf_append_buffer(ex, "%s:0x%08X\n",
+						   sid,
+						   info3->sids[i].attributes);
+		NT_STATUS_HAVE_NO_MEMORY(ex);
+
+		talloc_free(sid);
+	}
+
+	s3call->response.extra_data.data = ex;
+	s3call->response.length += talloc_get_size(ex);
+
+	return NT_STATUS_OK;
+}
 
 /* 
    Send off the reply to an async Samba3 query, handling filling in the PAM, NTSTATUS and string errors.
@@ -552,6 +655,15 @@ static void pam_auth_crap_recv(struct composite_context *ctx)
 		memcpy(s3call->response.data.auth.user_session_key, 
 		       &user_session_key.key,
 		       sizeof(s3call->response.data.auth.user_session_key));
+	}
+
+	if (s3call->request.flags & WBFLAG_PAM_INFO3_TEXT) {
+		status = wb_samba3_append_info3_as_txt(ctx, s3call, info3);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10,("Failed to append INFO3 (TXT): %s\n",
+				  nt_errstr(status)));
+			goto done;
+		}
 	}
 
 	if (s3call->request.flags & WBFLAG_PAM_INFO3_NDR) {
