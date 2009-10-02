@@ -3739,7 +3739,6 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC
 	bool set_acl_as_root = false;
 	bool acl_set_support = false;
 	bool ret = false;
-	int sret;
 
 	DEBUG(10,("set_nt_acl: called for file %s\n",
 		  fsp_str_dbg(fsp)));
@@ -3753,19 +3752,9 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC
 	 * Get the current state of the file.
 	 */
 
-	if(fsp->is_directory || fsp->fh->fd == -1) {
-		if (fsp->posix_open) {
-			sret = SMB_VFS_LSTAT(fsp->conn, fsp->fsp_name);
-		} else {
-			sret = SMB_VFS_STAT(fsp->conn, fsp->fsp_name);
-		}
-		if (sret == -1) {
-			return map_nt_error_from_unix(errno);
-		}
-	} else {
-		if(SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st) != 0) {
-			return map_nt_error_from_unix(errno);
-		}
+	status = vfs_stat_fsp(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	/* Save the original element we check against. */
@@ -3809,18 +3798,9 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC
 		 * (suid/sgid bits, for instance)
 		 */
 
-		if(fsp->is_directory || fsp->fh->fd == -1) {
-			if (fsp->posix_open) {
-				sret = SMB_VFS_LSTAT(fsp->conn, fsp->fsp_name);
-			} else {
-				sret = SMB_VFS_STAT(fsp->conn, fsp->fsp_name);
-			}
-		} else {
-			sret = SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st);
-		}
-
-		if(sret == -1) {
-			return map_nt_error_from_unix(errno);
+		status = vfs_stat_fsp(fsp);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
 
 		/* Save the original element we check against. */
