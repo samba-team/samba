@@ -1564,7 +1564,7 @@ bin/smbclient@EXEEXT@: $(BINARY_PREREQS) $(CLIENT_OBJ) @BUILD_POPT@ libtalloc li
 		$(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS) $(DNSSD_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(LIBWBCLIENT_LIBS) $(ZLIB_LIBS)
 
-bin/net@EXEEXT@: $(BINARY_PREREQS) $(NET_OBJ) @BUILD_POPT@ libtalloc libtdb libwbclient libnetapi
+bin/net@EXEEXT@: $(BINARY_PREREQS) $(NET_OBJ) @BUILD_POPT@ libtalloc libtdb libwbclient @LIBNETAPI_TARGET@
 	@echo Linking $@
 	@$(CC) -o $@ $(NET_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) \
 		$(POPT_LIBS) $(KRB5LIBS) $(UUID_LIBS) $(LDAP_LIBS) \
@@ -2227,6 +2227,7 @@ showlibnetapi:
 	@echo  ""
 	@echo "LIBNETAPI_SHARED               = @LIBNETAPI_SHARED@"
 	@echo "LIBNETAPI_STATIC               = @LIBNETAPI_STATIC@"
+	@echo "LIBNETAPI_TARGET               = @LIBNETAPI_TARGET@"
 	@echo "LIBNETAPI_LIBS                 = $(LIBNETAPI_LIBS)"
 	@echo ""
 	@echo "LIBNETAPI_SHARED_TARGET        = $(LIBNETAPI_SHARED_TARGET)"
