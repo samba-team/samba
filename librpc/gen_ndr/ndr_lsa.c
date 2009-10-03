@@ -642,12 +642,12 @@ _PUBLIC_ void ndr_print_lsa_PrivArray(struct ndr_print *ndr, const char *name, c
 static enum ndr_err_code ndr_push_lsa_QosInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_QosInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->len));
+		NDR_CHECK(ndr_push_align(ndr, 5));
+		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->len));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->impersonation_level));
 		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->context_mode));
 		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->effective_only));
-		NDR_CHECK(ndr_push_trailer_align(ndr, 4));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -657,12 +657,12 @@ static enum ndr_err_code ndr_push_lsa_QosInfo(struct ndr_push *ndr, int ndr_flag
 static enum ndr_err_code ndr_pull_lsa_QosInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_QosInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->len));
+		NDR_CHECK(ndr_pull_align(ndr, 5));
+		NDR_CHECK(ndr_pull_uint3264(ndr, NDR_SCALARS, &r->len));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->impersonation_level));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->context_mode));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->effective_only));
-		NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -673,7 +673,7 @@ _PUBLIC_ void ndr_print_lsa_QosInfo(struct ndr_print *ndr, const char *name, con
 {
 	ndr_print_struct(ndr, name, "lsa_QosInfo");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "len", r->len);
+	ndr_print_uint3264(ndr, "len", r->len);
 	ndr_print_uint16(ndr, "impersonation_level", r->impersonation_level);
 	ndr_print_uint8(ndr, "context_mode", r->context_mode);
 	ndr_print_uint8(ndr, "effective_only", r->effective_only);
@@ -684,7 +684,7 @@ static enum ndr_err_code ndr_push_lsa_ObjectAttribute(struct ndr_push *ndr, int 
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 5));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->len));
+		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->len));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->root_dir));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->object_name));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->attributes));
@@ -724,7 +724,7 @@ static enum ndr_err_code ndr_pull_lsa_ObjectAttribute(struct ndr_pull *ndr, int 
 	TALLOC_CTX *_mem_save_sec_qos_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->len));
+		NDR_CHECK(ndr_pull_uint3264(ndr, NDR_SCALARS, &r->len));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_root_dir));
 		if (_ptr_root_dir) {
 			NDR_PULL_ALLOC(ndr, r->root_dir);
@@ -791,7 +791,7 @@ _PUBLIC_ void ndr_print_lsa_ObjectAttribute(struct ndr_print *ndr, const char *n
 {
 	ndr_print_struct(ndr, name, "lsa_ObjectAttribute");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "len", r->len);
+	ndr_print_uint3264(ndr, "len", r->len);
 	ndr_print_ptr(ndr, "root_dir", r->root_dir);
 	ndr->depth++;
 	if (r->root_dir) {
@@ -2612,8 +2612,8 @@ static enum ndr_err_code ndr_push_lsa_DATA_BUF(struct ndr_push *ndr, int ndr_fla
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
 		if (ndr_flags & NDR_SCALARS) {
 			NDR_CHECK(ndr_push_align(ndr, 5));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->length));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->size));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->length));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->size));
 			NDR_CHECK(ndr_push_unique_ptr(ndr, r->data));
 			NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 		}
@@ -2639,8 +2639,8 @@ static enum ndr_err_code ndr_pull_lsa_DATA_BUF(struct ndr_pull *ndr, int ndr_fla
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
 		if (ndr_flags & NDR_SCALARS) {
 			NDR_CHECK(ndr_pull_align(ndr, 5));
-			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->length));
-			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->size));
+			NDR_CHECK(ndr_pull_uint3264(ndr, NDR_SCALARS, &r->length));
+			NDR_CHECK(ndr_pull_uint3264(ndr, NDR_SCALARS, &r->size));
 			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_data));
 			if (_ptr_data) {
 				NDR_PULL_ALLOC(ndr, r->data);
@@ -2681,8 +2681,8 @@ _PUBLIC_ void ndr_print_lsa_DATA_BUF(struct ndr_print *ndr, const char *name, co
 		uint32_t _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
 		ndr->depth++;
-		ndr_print_uint32(ndr, "length", r->length);
-		ndr_print_uint32(ndr, "size", r->size);
+		ndr_print_uint3264(ndr, "length", r->length);
+		ndr_print_uint3264(ndr, "size", r->size);
 		ndr_print_ptr(ndr, "data", r->data);
 		ndr->depth++;
 		if (r->data) {
@@ -4922,7 +4922,7 @@ static enum ndr_err_code ndr_push_lsa_ForestTrustBinaryData(struct ndr_push *ndr
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 5));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->length));
+		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->length));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->data));
 		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
@@ -4941,7 +4941,7 @@ static enum ndr_err_code ndr_pull_lsa_ForestTrustBinaryData(struct ndr_pull *ndr
 	TALLOC_CTX *_mem_save_data_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->length));
+		NDR_CHECK(ndr_pull_uint3264(ndr, NDR_SCALARS, &r->length));
 		if (r->length > 131072) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
@@ -4973,7 +4973,7 @@ _PUBLIC_ void ndr_print_lsa_ForestTrustBinaryData(struct ndr_print *ndr, const c
 {
 	ndr_print_struct(ndr, name, "lsa_ForestTrustBinaryData");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "length", r->length);
+	ndr_print_uint3264(ndr, "length", r->length);
 	ndr_print_ptr(ndr, "data", r->data);
 	ndr->depth++;
 	if (r->data) {
