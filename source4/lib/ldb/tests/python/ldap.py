@@ -117,6 +117,21 @@ class BasicTests(unittest.TestCase):
         self.delete_force(self.ldb, "cn=parentguidtest,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=parentguidtest,cn=testotherusers," + self.base_dn)
         self.delete_force(self.ldb, "cn=testotherusers," + self.base_dn)
+        self.delete_force(self.ldb, "cn=ldaptestobject," + self.base_dn)
+
+    def test_system_only(self):
+        """Test systemOnly objects"""
+        print "Test systemOnly objects"""
+
+        try:
+            self.ldb.add({
+                "dn": "cn=ldaptestobject," + self.base_dn,
+                "objectclass": "configuration"})
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        self.delete_force(self.ldb, "cn=ldaptestobject," + self.base_dn)
 
     def test_invalid_attribute(self):
         """Test adding invalid attributes (not in schema)"""
@@ -136,7 +151,7 @@ class BasicTests(unittest.TestCase):
              "objectclass": "group"})
 
         m = Message()
-        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["thisdoesnotexist"] = MessageElement("x", FLAG_MOD_REPLACE,
           "thisdoesnotexist")
         try:
