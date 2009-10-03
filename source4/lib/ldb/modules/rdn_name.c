@@ -275,12 +275,12 @@ static int rdn_rename_callback(struct ldb_request *req, struct ldb_reply *ares)
 	}
 	talloc_steal(mod_req, msg);
 
-	/* do the mod call */
-	return ldb_request(ldb, mod_req);
+	/* go on with the call chain */
+	return ldb_next_request(ac->module, mod_req);
 
 error:
 	return ldb_module_done(ac->req, NULL, NULL,
-						LDB_ERR_OPERATIONS_ERROR);
+						 LDB_ERR_OPERATIONS_ERROR);
 }
 
 static int rdn_name_rename(struct ldb_module *module, struct ldb_request *req)
@@ -317,7 +317,7 @@ static int rdn_name_rename(struct ldb_module *module, struct ldb_request *req)
 				   req);
 
 	if (ret != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ret;
 	}
 
 	/* rename first, modify "name" if rename is ok */
