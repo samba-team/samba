@@ -476,10 +476,10 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	char *time_str;
 	int ret;
 	uint32_t i, ni=0;
-	int allow_add_guid=0;
-	int remove_current_guid=0;
+	bool allow_add_guid = false;
+	bool remove_current_guid = false;
 
-        /* check if there's a show deleted control */
+        /* check if there's a show relax control (used by provision to say 'I know what I'm doing') */
         control = ldb_request_get_control(req, LDB_CONTROL_RELAX_OID);
 	if (control) {
 		allow_add_guid = 1;
@@ -526,7 +526,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 			}
 			/* we remove this attribute as it can be a string and will not be treated 
 			correctly and then we will readd it latter on in the good format*/
-			remove_current_guid = 1;
+			remove_current_guid = true;
 		}
 	} else {
 		/* a new GUID */
