@@ -601,11 +601,13 @@ int ltdb_modify_internal(struct ldb_module *module,
 
 	msg2 = talloc(tdb_key.dptr, struct ldb_message);
 	if (msg2 == NULL) {
+		free(tdb_data.dptr);
 		talloc_free(tdb_key.dptr);
 		return LDB_ERR_OTHER;
 	}
 
 	ret = ltdb_unpack_data(module, &tdb_data, msg2);
+	free(tdb_data.dptr);
 	if (ret == -1) {
 		ret = LDB_ERR_OTHER;
 		goto failed;
@@ -625,7 +627,8 @@ int ltdb_modify_internal(struct ldb_module *module,
 		if (ldb_attr_cmp(el->name, "distinguishedName") == 0) {
 			ldb_asprintf_errstring(ldb, "it is not permitted to perform a modify on distinguishedName (use rename instead): %s",
 					       ldb_dn_get_linearized(msg->dn));
-			return LDB_ERR_UNWILLING_TO_PERFORM;
+			ret = LDB_ERR_UNWILLING_TO_PERFORM;
+			goto failed;
 		}
 
 		switch (msg->elements[i].flags & LDB_FLAG_MOD_MASK) {
@@ -638,14 +641,16 @@ int ltdb_modify_internal(struct ldb_module *module,
 			if (el->num_values == 0) {
 				ldb_asprintf_errstring(ldb, "attribute %s on %s speicified, but with 0 values (illigal)", 
 						  el->name, ldb_dn_get_linearized(msg->dn));
-				return LDB_ERR_CONSTRAINT_VIOLATION;
+				ret = LDB_ERR_CONSTRAINT_VIOLATION;
+				goto failed;
 			}
 			if (idx == -1) {
 				if (a && a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) {
 					if (el->num_values > 1) {
 						ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s speicified more than once", 
 							       el->name, ldb_dn_get_linearized(msg->dn));
-						return LDB_ERR_CONSTRAINT_VIOLATION;
+						ret = LDB_ERR_CONSTRAINT_VIOLATION;
+						goto failed;
 					}
 				}
 				if (msg_add_element(ldb, msg2, el) != 0) {
@@ -659,7 +664,8 @@ int ltdb_modify_internal(struct ldb_module *module,
 			 * exists in the object, then we violoate the
 			 * single-value rule */
 			if (a && a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) {
-				return LDB_ERR_CONSTRAINT_VIOLATION;
+				ret = LDB_ERR_CONSTRAINT_VIOLATION;
+				goto failed;
 			}
 
 			el2 = &msg2->elements[idx];
@@ -705,7 +711,8 @@ int ltdb_modify_internal(struct ldb_module *module,
 				if (el->num_values > 1) {
 					ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s speicified more than once", 
 							       el->name, ldb_dn_get_linearized(msg->dn));
-					return LDB_ERR_CONSTRAINT_VIOLATION;
+					ret = LDB_ERR_CONSTRAINT_VIOLATION;
+					goto failed;
 				}
 			}
 			/* replace all elements of this attribute name with the elements
@@ -785,12 +792,10 @@ int ltdb_modify_internal(struct ldb_module *module,
 	}
 
 	talloc_free(tdb_key.dptr);
-	free(tdb_data.dptr);
 	return ret;
 
 failed:
 	talloc_free(tdb_key.dptr);
-	free(tdb_data.dptr);
 	return ret;
 }
 
