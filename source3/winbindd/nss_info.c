@@ -259,8 +259,8 @@ static struct nss_domain_entry *find_nss_domain( const char *domain )
 
 	status = nss_init( lp_winbind_nss_info() );
 	if ( !NT_STATUS_IS_OK(status) ) {
-		DEBUG(4,("nss_get_info: Failed to init nss_info API (%s)!\n",
-			 nt_errstr(status)));
+		DEBUG(4,("find_nss_domain: Failed to init nss_info API "
+			 "(%s)!\n", nt_errstr(status)));
 		return NULL;
 	}
 
