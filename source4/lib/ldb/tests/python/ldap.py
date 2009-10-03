@@ -21,6 +21,7 @@ from ldb import ERR_ENTRY_ALREADY_EXISTS, ERR_UNWILLING_TO_PERFORM
 from ldb import ERR_NOT_ALLOWED_ON_NON_LEAF, ERR_OTHER, ERR_INVALID_DN_SYNTAX
 from ldb import ERR_NO_SUCH_ATTRIBUTE, ERR_INSUFFICIENT_ACCESS_RIGHTS
 from ldb import ERR_OBJECT_CLASS_VIOLATION, ERR_NOT_ALLOWED_ON_RDN
+from ldb import ERR_NAMING_VIOLATION
 from ldb import Message, MessageElement, Dn, FLAG_MOD_ADD, FLAG_MOD_REPLACE
 from samba import Ldb, param, dom_sid_to_rid
 from samba import UF_NORMAL_ACCOUNT, UF_TEMP_DUPLICATE_ACCOUNT
@@ -118,6 +119,8 @@ class BasicTests(unittest.TestCase):
         self.delete_force(self.ldb, "cn=parentguidtest,cn=testotherusers," + self.base_dn)
         self.delete_force(self.ldb, "cn=testotherusers," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestobject," + self.base_dn)
+        self.delete_force(self.ldb, "description=xyz,cn=users," + self.base_dn)
+        self.delete_force(self.ldb, "ou=testou,cn=users," + self.base_dn)
 
     def test_system_only(self):
         """Test systemOnly objects"""
@@ -132,6 +135,32 @@ class BasicTests(unittest.TestCase):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         self.delete_force(self.ldb, "cn=ldaptestobject," + self.base_dn)
+
+    def test_invalid_parent(self):
+        """Test adding an object with invalid parent"""
+        print "Test adding an object with invalid parent"""
+
+        try:
+            self.ldb.add({
+                "dn": "cn=ldaptestgroup,cn=thisdoesnotexist123,"
+                   + self.base_dn,
+                "objectclass": "group"})
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
+
+        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=thisdoesnotexist123,"
+          + self.base_dn)
+
+        try:
+            self.ldb.add({
+                "dn": "ou=testou,cn=users," + self.base_dn,
+                "objectclass": "organizationalUnit"})
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_NAMING_VIOLATION)
+
+        self.delete_force(self.ldb, "ou=testou,cn=users," + self.base_dn)
 
     def test_invalid_attribute(self):
         """Test adding invalid attributes (not in schema)"""
@@ -187,6 +216,16 @@ class BasicTests(unittest.TestCase):
     def test_rdn_name(self):
         """Tests the RDN"""
         print "Tests the RDN"""
+
+        try:
+            self.ldb.add({
+                 "dn": "description=xyz,cn=users," + self.base_dn,
+                 "objectclass": "group"})
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_NAMING_VIOLATION)
+ 
+        self.delete_force(self.ldb, "description=xyz,cn=users," + self.base_dn)
 
         self.ldb.add({
              "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
