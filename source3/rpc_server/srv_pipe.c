@@ -1092,6 +1092,7 @@ bool is_known_pipename(const char *cli_filename, struct ndr_syntax_id *syntax)
 {
 	const char *pipename = cli_filename;
 	int i;
+	NTSTATUS status;
 
 	if (strnequal(pipename, "\\PIPE\\", 6)) {
 		pipename += 5;
@@ -1113,7 +1114,27 @@ bool is_known_pipename(const char *cli_filename, struct ndr_syntax_id *syntax)
 		}
 	}
 
-	DEBUG(10, ("is_known_pipename: %s unknown\n", cli_filename));
+	status = smb_probe_module("rpc", pipename);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("is_known_pipename: %s unknown\n", cli_filename));
+		return false;
+	}
+	DEBUG(10, ("is_known_pipename: %s loaded dynamically\n", pipename));
+
+	/*
+	 * Scan the list again for the interface id
+	 */
+
+	for (i=0; i<rpc_lookup_size; i++) {
+		if (strequal(pipename, rpc_lookup[i].pipe.clnt)) {
+			*syntax = rpc_lookup[i].rpc_interface;
+			return true;
+		}
+	}
+
+	DEBUG(10, ("is_known_pipename: pipe %s did not register itself!\n",
+		   pipename));
+
 	return false;
 }
 
