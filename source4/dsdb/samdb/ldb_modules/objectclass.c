@@ -881,6 +881,8 @@ static int oc_modify_callback(struct ldb_request *req, struct ldb_reply *ares)
 					LDB_ERR_OPERATIONS_ERROR);
 	}
 
+	talloc_free(ares);
+
 	ret = ldb_build_search_req(&search_req, ldb, ac,
 				   ac->req->op.mod.message->dn, LDB_SCOPE_BASE,
 				   "(objectClass=*)",
@@ -1089,6 +1091,7 @@ static int objectclass_rename_callback(struct ldb_request *req, struct ldb_reply
 					ares->response, ares->error);
 	}
 
+	talloc_free(ares);
 
 	/* the ac->search_res should contain the new parents objectGUID */
 	parent_guid = ldb_msg_find_ldb_val(ac->search_res->message, "objectGUID");
