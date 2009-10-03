@@ -47,11 +47,11 @@ bool fillup_pw_field(const char *lp_template,
 	   Otherwise use the template value passed in. */
 
 	if ( in && !strequal(in,"") && lp_security() == SEC_ADS ) {
-		templ = talloc_sub_specified(NULL, in,
+		templ = talloc_sub_specified(talloc_tos(), in,
 					     username, domname,
 				     uid, gid);
 	} else {
-		templ = talloc_sub_specified(NULL, lp_template,
+		templ = talloc_sub_specified(talloc_tos(), lp_template,
 					     username, domname,
 					     uid, gid);
 	}
