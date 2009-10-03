@@ -31,8 +31,7 @@ struct wb_getpwsid_state {
 
 static void wb_getpwsid_queryuser_done(struct tevent_req *subreq);
 static void wb_getpwsid_lookupsid_done(struct tevent_req *subreq);
-static void wb_getpwsid_sid2uid_done(struct tevent_req *subreq);
-static void wb_getpwsid_sid2gid_done(struct tevent_req *subreq);
+static void wb_getpwsid_done(struct tevent_req *subreq);
 
 struct tevent_req *wb_getpwsid_send(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev,
@@ -83,14 +82,14 @@ static void wb_getpwsid_queryuser_done(struct tevent_req *subreq)
 	    && (state->userinfo->acct_name[0] != '\0')) {
 		/*
 		 * QueryUser got us a name, let's got directly to the
-		 * sid2uid step
+		 * fill_pwent step
 		 */
-		subreq = wb_sid2uid_send(state, state->ev,
-					 &state->userinfo->user_sid);
+		subreq = wb_fill_pwent_send(state, state->ev, state->userinfo,
+					    state->pw);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}
-		tevent_req_set_callback(subreq, wb_getpwsid_sid2uid_done, req);
+		tevent_req_set_callback(subreq, wb_getpwsid_done, req);
 		return;
 	}
 
@@ -122,93 +121,25 @@ static void wb_getpwsid_lookupsid_done(struct tevent_req *subreq)
 		tevent_req_nterror(req, status);
 		return;
 	}
-	subreq = wb_sid2uid_send(state, state->ev, &state->userinfo->user_sid);
+	subreq = wb_fill_pwent_send(state, state->ev, state->userinfo,
+				    state->pw);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
-	tevent_req_set_callback(subreq, wb_getpwsid_sid2uid_done, req);
+	tevent_req_set_callback(subreq, wb_getpwsid_done, req);
 }
 
-static void wb_getpwsid_sid2uid_done(struct tevent_req *subreq)
+static void wb_getpwsid_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct wb_getpwsid_state *state = tevent_req_data(
-		req, struct wb_getpwsid_state);
 	NTSTATUS status;
 
-	status = wb_sid2uid_recv(subreq, &state->pw->pw_uid);
-	TALLOC_FREE(subreq);
+	status = wb_fill_pwent_recv(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 		return;
 	}
-	subreq = wb_sid2gid_send(state, state->ev,
-				 &state->userinfo->group_sid);
-	if (tevent_req_nomem(subreq, req)) {
-		return;
-	}
-	tevent_req_set_callback(subreq, wb_getpwsid_sid2gid_done, req);
-}
-
-static void wb_getpwsid_sid2gid_done(struct tevent_req *subreq)
-{
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	struct wb_getpwsid_state *state = tevent_req_data(
-		req, struct wb_getpwsid_state);
-	NTSTATUS status;
-	char *username;
-	char *mapped_name;
-
-	status = wb_sid2gid_recv(subreq, &state->pw->pw_gid);
-	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
-		return;
-	}
-
-	username = talloc_strdup_lower(state, state->userinfo->acct_name);
-	if (tevent_req_nomem(username, req)) {
-		return;
-	}
-
-	status = normalize_name_map(state, state->user_domain, username,
-				    &mapped_name);
-
-	if (NT_STATUS_IS_OK(status)
-	    || NT_STATUS_EQUAL(status, NT_STATUS_FILE_RENAMED)) {
-		/*
-		 * normalize_name_map did something
-		 */
-		fstrcpy(state->pw->pw_name, mapped_name);
-		TALLOC_FREE(mapped_name);
-	} else {
-		fill_domain_username(state->pw->pw_name,
-				     state->user_domain->name,
-				     username, True);
-	}
-	fstrcpy(state->pw->pw_passwd, "*");
-	fstrcpy(state->pw->pw_gecos, state->userinfo->full_name);
-
-	if (!fillup_pw_field(lp_template_homedir(), username,
-			     state->user_domain->name, state->pw->pw_uid,
-			     state->pw->pw_gid, state->userinfo->homedir,
-			     state->pw->pw_dir)) {
-		DEBUG(5, ("Could not compose homedir\n"));
-		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
-		return;
-	}
-
-	if (!fillup_pw_field(lp_template_shell(), state->pw->pw_name,
-			     state->user_domain->name, state->pw->pw_uid,
-			     state->pw->pw_gid, state->userinfo->shell,
-			     state->pw->pw_shell)) {
-		DEBUG(5, ("Could not compose shell\n"));
-		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
-		return;
-	}
-
 	tevent_req_done(req);
 }
 
