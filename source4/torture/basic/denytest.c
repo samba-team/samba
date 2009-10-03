@@ -2302,6 +2302,12 @@ static bool torture_createx_specific(struct torture_context *tctx, struct
 		destroy_func = smbcli_unlink;
 	}
 
+	/* Skip all SACL related tests. */
+	if ((!torture_setting_bool(tctx, "sacl_support", true)) &&
+	    ((cxd->cxd_access1 & SEC_FLAG_SYSTEM_SECURITY) ||
+	     (cxd->cxd_access2 & SEC_FLAG_SYSTEM_SECURITY)))
+		goto done;
+
 	if (cxd->cxd_flags & CXD_FLAGS_MAKE_BEFORE_CREATEX) {
 		ret = make_func(tctx, cli->tree, mem_ctx, fname);
 		if (!ret) {
@@ -2451,6 +2457,9 @@ bool torture_createx_sharemodes(struct torture_context *tctx,
 	if (!mem_ctx)
 		return false;
 
+	if (!torture_setting_bool(tctx, "sacl_support", true))
+		torture_warning(tctx, "Skipping SACL related tests!\n");
+
 	cxd.cxd_test = extended ? CXD_TEST_CREATEX_SHAREMODE_EXTENDED :
 	    CXD_TEST_CREATEX_SHAREMODE;
 	cxd.cxd_flags = dir ? CXD_FLAGS_DIRECTORY: 0;
@@ -2541,6 +2550,9 @@ bool torture_createx_access(struct torture_context *tctx,
 	if (!mem_ctx)
 		return false;
 
+	if (!torture_setting_bool(tctx, "sacl_support", true))
+		torture_warning(tctx, "Skipping SACL related tests!\n");
+
 	cxd.cxd_test = CXD_TEST_CREATEX_ACCESS;
 
 	/* HACK for progress bar: figure out estimated count. */
@@ -2606,6 +2618,9 @@ bool torture_createx_access_exhaustive(struct torture_context *tctx,
 	if (!mem_ctx)
 		return false;
 
+	if (!torture_setting_bool(tctx, "sacl_support", true))
+		torture_warning(tctx, "Skipping SACL related tests!\n");
+
 	data_file = getenv("CREATEX_DATA");
 	if (data_file) {
 		data_file_fd = open(data_file, O_WRONLY|O_CREAT|O_TRUNC, 0666);
@@ -2657,6 +2672,9 @@ bool torture_maximum_allowed(struct torture_context *tctx,
 
 	mem_ctx = talloc_init("torture_maximum_allowed");
 
+	if (!torture_setting_bool(tctx, "sacl_support", true))
+		torture_warning(tctx, "Skipping SACL related tests!\n");
+
 	sd = security_descriptor_dacl_create(mem_ctx,
 	    0, NULL, NULL,
 	    SID_NT_AUTHENTICATED_USERS,
@@ -2684,6 +2702,11 @@ bool torture_maximum_allowed(struct torture_context *tctx,
 
 	for (i = 0; i < 32; i++) {
 		uint32_t mask = SEC_FLAG_MAXIMUM_ALLOWED | (1u << i);
+
+		/* Skip all SACL related tests. */
+		if ((!torture_setting_bool(tctx, "sacl_support", true)) &&
+		    (mask & SEC_FLAG_SYSTEM_SECURITY))
+			continue;
 
 		memset(&io, 0, sizeof(io));
 		io.generic.level = RAW_OPEN_NTTRANS_CREATE;
