@@ -113,14 +113,14 @@ import "misc.idl", "security.idl";
 	/******************/
 	/* Function: 0x06 */
 	typedef struct {
-		uint32  len; /* ignored */
+		uint3264  len; /* ignored */
 		uint16  impersonation_level;
 		uint8   context_mode;
 		uint8   effective_only;
 	} lsa_QosInfo;
 
 	typedef struct {
-		uint32 len; /* ignored */
+		uint3264 len; /* ignored */
 		uint8 *root_dir;
 		[string,charset(UTF16)] uint16 *object_name;
 		uint32 attributes;
@@ -628,8 +628,8 @@ import "misc.idl", "security.idl";
 		);
 
 	typedef [flag(NDR_PAHEX)] struct {
-		uint32 length;
-		uint32 size;
+		uint3264 length;
+		uint3264 size;
 		[size_is(size),length_is(length)] uint8 *data;
 	} lsa_DATA_BUF;
 
@@ -1220,7 +1220,7 @@ import "misc.idl", "security.idl";
 
 	/* Function 0x49 */
 	typedef struct {
-		[range(0,131072)] uint32 length;
+		[range(0,131072)] uint3264 length;
 		[size_is(length)] uint8 *data;
 	} lsa_ForestTrustBinaryData;
 
