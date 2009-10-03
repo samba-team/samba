@@ -46,10 +46,10 @@ bool fillup_pw_field(const char *lp_template,
 	   been set in the nss_info backend), then use that.
 	   Otherwise use the template value passed in. */
 
-	if ( in && !strequal(in,"") && lp_security() == SEC_ADS ) {
+	if ((in != NULL) && (in[0] != '\0') && (lp_security() == SEC_ADS)) {
 		templ = talloc_sub_specified(talloc_tos(), in,
 					     username, domname,
-				     uid, gid);
+					     uid, gid);
 	} else {
 		templ = talloc_sub_specified(talloc_tos(), lp_template,
 					     username, domname,
