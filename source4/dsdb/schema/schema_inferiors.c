@@ -207,7 +207,7 @@ static void schema_fill_system_possible_inferiors(struct dsdb_schema *schema, st
 		if (c2->objectClassCategory != 2
 		    && c2->objectClassCategory != 3
 		    && str_list_check(superiors, schema_class->lDAPDisplayName)) {
-			if (schema_class->possibleInferiors == NULL) {
+			if (schema_class->systemPossibleInferiors == NULL) {
 				schema_class->systemPossibleInferiors = str_list_make_empty(schema_class);
 			}
 			schema_class->systemPossibleInferiors = str_list_add_const(schema_class->systemPossibleInferiors,
