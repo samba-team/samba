@@ -842,6 +842,16 @@ _PUBLIC_ void ndr_print_uint32(struct ndr_print *ndr, const char *name, uint32_t
 	ndr->print(ndr, "%-25s: 0x%08x (%u)", name, v, v);
 }
 
+_PUBLIC_ void ndr_print_int3264(struct ndr_print *ndr, const char *name, int32_t v)
+{
+	ndr->print(ndr, "%-25s: %d", name, v);
+}
+
+_PUBLIC_ void ndr_print_uint3264(struct ndr_print *ndr, const char *name, uint32_t v)
+{
+	ndr->print(ndr, "%-25s: 0x%08x (%u)", name, v, v);
+}
+
 _PUBLIC_ void ndr_print_udlong(struct ndr_print *ndr, const char *name, uint64_t v)
 {
 	ndr->print(ndr, "%-25s: 0x%016llx (%llu)", name, (unsigned long long)v, (unsigned long long)v);
