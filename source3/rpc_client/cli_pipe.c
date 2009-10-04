@@ -3940,11 +3940,6 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 	 * in - reference them in
 	 */
 	result->dc = talloc_move(result, pdc);
-	if (result->dc == NULL) {
-		DEBUG(0, ("talloc reference failed\n"));
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	DEBUG(10,("cli_rpc_pipe_open_schannel_with_key: opened pipe %s to machine %s "
 		  "for domain %s and bound using schannel.\n",
