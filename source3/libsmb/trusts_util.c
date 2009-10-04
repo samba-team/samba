@@ -35,7 +35,7 @@ NTSTATUS trust_pw_change_and_store_it(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	unsigned char new_trust_passwd_hash[16];
 	char *new_trust_passwd;
 	NTSTATUS nt_status;
-		
+
 	/* Create a random machine account password */
 	new_trust_passwd = generate_random_str(mem_ctx, DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
 
@@ -43,7 +43,7 @@ NTSTATUS trust_pw_change_and_store_it(struct rpc_pipe_client *cli, TALLOC_CTX *m
 		DEBUG(0, ("talloc_strdup failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
-	
+
 	E_md4hash(new_trust_passwd, new_trust_passwd_hash);
 
 	nt_status = rpccli_netlogon_set_trust_password(cli, mem_ctx,
@@ -51,7 +51,7 @@ NTSTATUS trust_pw_change_and_store_it(struct rpc_pipe_client *cli, TALLOC_CTX *m
 						       new_trust_passwd,
 						       new_trust_passwd_hash,
 						       sec_channel_type);
-	
+
 	if (NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("%s : trust_pw_change_and_store_it: Changed password.\n", 
 			 current_timestring(debug_ctx(), False)));
@@ -86,7 +86,7 @@ NTSTATUS trust_pw_find_change_and_store_it(struct rpc_pipe_client *cli,
 		DEBUG(0, ("could not fetch domain secrets for domain %s!\n", domain));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	
+
 	return trust_pw_change_and_store_it(cli, mem_ctx, domain,
 					    old_trust_passwd_hash,
 					    sec_channel_type);
