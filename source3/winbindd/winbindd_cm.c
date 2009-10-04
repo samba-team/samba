@@ -2470,6 +2470,8 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 		return !NT_STATUS_IS_OK(result) ? result : NT_STATUS_PIPE_NOT_AVAILABLE;
 	}
 
+	conn->netlogon_pipe->auth_neg_flags = neg_flags;
+
 	/*
 	 * Try NetSamLogonEx for AD domains
 	 */

@@ -30,6 +30,7 @@
 #include "includes.h"
 #include "winbindd.h"
 #include "../../nsswitch/libwbclient/wbc_async.h"
+#include "../libcli/auth/libcli_auth.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -1061,9 +1062,12 @@ static void machine_password_change_handler(struct event_context *ctx,
 	struct winbindd_child *child =
 		(struct winbindd_child *)private_data;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
-	TALLOC_CTX *frame;
 	NTSTATUS result;
 	struct timeval next_change;
+	uint8_t old_trust_passwd_hash[16];
+	uint8_t new_trust_passwd_hash[16];
+	char *new_trust_passwd;
+	uint32_t sec_channel_type = 0;
 
 	DEBUG(10,("machine_password_change_handler called\n"));
 
@@ -1089,21 +1093,41 @@ static void machine_password_change_handler(struct event_context *ctx,
 		return;
 	}
 
-	frame = talloc_stackframe();
+	if (!secrets_fetch_trust_account_password(
+		    child->domain->name, old_trust_passwd_hash, NULL,
+		    &sec_channel_type)) {
+		DEBUG(0, ("could not fetch domain secrets for domain %s!\n",
+			  child->domain->name));
+		return;
+	}
 
-	result = trust_pw_find_change_and_store_it(netlogon_pipe,
-						   frame,
-						   child->domain->name);
-	TALLOC_FREE(frame);
+	new_trust_passwd = generate_random_str(
+		talloc_tos(), DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
+	if (new_trust_passwd == NULL) {
+		DEBUG(0, ("talloc_strdup failed\n"));
+		return;
+	}
+
+	E_md4hash(new_trust_passwd, new_trust_passwd_hash);
+
+	result = rpccli_netlogon_set_trust_password(
+		netlogon_pipe, talloc_tos(), old_trust_passwd_hash,
+		new_trust_passwd, new_trust_passwd_hash, sec_channel_type,
+		netlogon_pipe->auth_neg_flags);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10,("machine_password_change_handler: "
 			"failed to change machine password: %s\n",
 			 nt_errstr(result)));
-	} else {
-		DEBUG(10,("machine_password_change_handler: "
-			"successfully changed machine password\n"));
+		/*
+		 * Don't try a second time, this will very likely also
+		 * fail.
+		 */
+		return;
 	}
+
+	DEBUG(3,("machine_password_change_handler: Changed password at %s.\n",
+		 current_timestring(debug_ctx(), False)));
 
 	child->machine_password_change_event = event_add_timed(winbind_event_context(), NULL,
 							      next_change,

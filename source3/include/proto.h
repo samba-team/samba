@@ -5240,7 +5240,14 @@ NTSTATUS rpccli_netlogon_set_trust_password(struct rpc_pipe_client *cli,
 					    const unsigned char orig_trust_passwd_hash[16],
 					    const char *new_trust_pwd_cleartext,
 					    const unsigned char new_trust_passwd_hash[16],
-					    uint32_t sec_channel_type);
+					    uint32_t sec_channel_type,
+					    uint32_t neg_flags);
+NTSTATUS rpccli_netlogon_auth_set_trust_password(struct rpc_pipe_client *cli,
+						 TALLOC_CTX *mem_ctx,
+						 const unsigned char orig_trust_passwd_hash[16],
+						 const char *new_trust_pwd_cleartext,
+						 const unsigned char new_trust_passwd_hash[16],
+						 uint32_t sec_channel_type);
 
 /* The following definitions come from rpc_client/cli_pipe.c  */
 

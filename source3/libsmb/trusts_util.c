@@ -46,11 +46,9 @@ NTSTATUS trust_pw_change_and_store_it(struct rpc_pipe_client *cli, TALLOC_CTX *m
 
 	E_md4hash(new_trust_passwd, new_trust_passwd_hash);
 
-	nt_status = rpccli_netlogon_set_trust_password(cli, mem_ctx,
-						       orig_trust_passwd_hash,
-						       new_trust_passwd,
-						       new_trust_passwd_hash,
-						       sec_channel_type);
+	nt_status = rpccli_netlogon_auth_set_trust_password(
+		cli, mem_ctx, orig_trust_passwd_hash, new_trust_passwd,
+		new_trust_passwd_hash, sec_channel_type);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("%s : trust_pw_change_and_store_it: Changed password.\n", 

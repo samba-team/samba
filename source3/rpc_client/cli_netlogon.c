@@ -512,26 +512,11 @@ NTSTATUS rpccli_netlogon_set_trust_password(struct rpc_pipe_client *cli,
 					    const unsigned char orig_trust_passwd_hash[16],
 					    const char *new_trust_pwd_cleartext,
 					    const unsigned char new_trust_passwd_hash[16],
-					    uint32_t sec_channel_type)
+					    uint32_t sec_channel_type,
+					    uint32_t neg_flags)
 {
 	NTSTATUS result;
-	uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
 	struct netr_Authenticator clnt_creds, srv_cred;
-
-	result = rpccli_netlogon_setup_creds(cli,
-					     cli->desthost, /* server name */
-					     lp_workgroup(), /* domain */
-					     global_myname(), /* client name */
-					     global_myname(), /* machine account name */
-					     orig_trust_passwd_hash,
-					     sec_channel_type,
-					     &neg_flags);
-
-	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(3,("rpccli_netlogon_set_trust_password: unable to setup creds (%s)!\n",
-			 nt_errstr(result)));
-		return result;
-	}
 
 	netlogon_creds_client_authenticator(cli->dc, &clnt_creds);
 
@@ -586,3 +571,35 @@ NTSTATUS rpccli_netlogon_set_trust_password(struct rpc_pipe_client *cli,
 	return result;
 }
 
+NTSTATUS rpccli_netlogon_auth_set_trust_password(struct rpc_pipe_client *cli,
+						 TALLOC_CTX *mem_ctx,
+						 const unsigned char orig_trust_passwd_hash[16],
+						 const char *new_trust_pwd_cleartext,
+						 const unsigned char new_trust_passwd_hash[16],
+						 uint32_t sec_channel_type)
+{
+	NTSTATUS result;
+	uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
+
+	result = rpccli_netlogon_setup_creds(cli,
+					     cli->desthost, /* server name */
+					     lp_workgroup(), /* domain */
+					     global_myname(), /* client name */
+					     global_myname(), /* machine account name */
+					     orig_trust_passwd_hash,
+					     sec_channel_type,
+					     &neg_flags);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(3,("rpccli_netlogon_set_trust_password: unable to setup creds (%s)!\n",
+			 nt_errstr(result)));
+		return result;
+	}
+
+	return rpccli_netlogon_set_trust_password(cli, mem_ctx,
+						  orig_trust_passwd_hash,
+						  new_trust_pwd_cleartext,
+						  new_trust_passwd_hash,
+						  sec_channel_type,
+						  neg_flags);
+}
