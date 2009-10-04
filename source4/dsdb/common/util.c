@@ -722,6 +722,47 @@ struct ldb_message_element *samdb_find_attribute(struct ldb_context *ldb,
 	return NULL;
 }
 
+/*
+ * This is intended for use by the "password hash" module since there
+ * password changes can be specified through one message element with the
+ * new password (to set) and another one with the old password (to unset).
+ *
+ * The first which sets a password (new value) can have flags
+ * (LDB_FLAG_MOD_ADD, LDB_FLAG_MOD_REPLACE) but also none (on "add" operations
+ * for entries). The latter (old value) has always specified
+ * LDB_FLAG_MOD_DELETE.
+ *
+ * Returns LDB_ERR_NO_SUCH_ATTRIBUTE if the attribute which should be deleted
+ * doesn't contain only one value (this is the Windows Server behaviour)
+ * otherwise LDB_SUCCESS.
+ */
+int samdb_msg_find_old_and_new_ldb_val(const struct ldb_message *msg,
+				       const char *name,
+				       const struct ldb_val **new_val,
+				       const struct ldb_val **old_val)
+{
+	unsigned int i;
+
+	*new_val = NULL;
+	*old_val = NULL;
+
+	if (msg == NULL) {
+		return LDB_SUCCESS;
+	}
+
+	for (i = 0; i < msg->num_elements; i++) {
+		if (ldb_attr_cmp(msg->elements[i].name, name) == 0) {
+			if (msg->elements[i].flags == LDB_FLAG_MOD_DELETE) {
+				*old_val = &msg->elements[i].values[0];
+			} else {
+				*new_val = &msg->elements[i].values[0];
+			}
+		}
+	}
+
+	return LDB_SUCCESS;
+}
+
 int samdb_find_or_add_value(struct ldb_context *ldb, struct ldb_message *msg, const char *name, const char *set_value)
 {
 	if (samdb_find_attribute(ldb, msg, name, set_value) == NULL) {
