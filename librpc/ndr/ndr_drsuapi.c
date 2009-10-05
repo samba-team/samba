@@ -82,6 +82,25 @@ void ndr_print_drsuapi_DsReplicaObjectListItemEx(struct ndr_print *ndr, const ch
 	} \
 } while (0)
 
+_PUBLIC_ void ndr_print_drsuapi_DsReplicaOID(struct ndr_print *ndr, const char *name, const struct drsuapi_DsReplicaOID *r)
+{
+	ndr_print_struct(ndr, name, "drsuapi_DsReplicaOID");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "length", r->length);
+	ndr->print(ndr, "%-25s: length=%u", "oid", r->length);
+	if (r->binary_oid) {
+		char *partial_oid = NULL;
+		DATA_BLOB oid_blob = data_blob_const(r->binary_oid, r->length);
+		char *hex_str = data_blob_hex_string(ndr, &oid_blob);
+		ber_read_partial_OID_String(ndr, oid_blob, (const char **)&partial_oid);
+		ndr->depth++;
+		ndr->print(ndr, "%-25s: 0x%s (%s)", "binary_oid", hex_str, partial_oid);
+		ndr->depth--;
+		talloc_free(hex_str);
+		talloc_free(partial_oid);
+	}
+	ndr->depth--;
+}
 
 enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesMSZIPCtr1(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsGetNCChangesMSZIPCtr1 *r)
 {
