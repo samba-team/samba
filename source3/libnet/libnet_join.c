@@ -788,10 +788,11 @@ static NTSTATUS libnet_join_joindomain_rpc_unsecure(TALLOC_CTX *mem_ctx,
 
 	E_md4hash(trust_passwd, orig_trust_passwd_hash);
 
-	status = rpccli_netlogon_auth_set_trust_password(
-		pipe_hnd, mem_ctx, orig_trust_passwd_hash,
-		r->in.machine_password, new_trust_passwd_hash,
-		r->in.secure_channel_type);
+	status = rpccli_netlogon_set_trust_password(pipe_hnd, mem_ctx,
+						    orig_trust_passwd_hash,
+						    r->in.machine_password,
+						    new_trust_passwd_hash,
+						    r->in.secure_channel_type);
 
 	return status;
 }

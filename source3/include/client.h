@@ -147,7 +147,6 @@ struct rpc_pipe_client {
 
 	/* The following is only non-null on a netlogon client pipe. */
 	struct netlogon_creds_CredentialState *dc;
-	uint32_t auth_neg_flags;
 
 	/* Used by internal rpc_pipe_client */
 	pipes_struct *pipes_struct;
