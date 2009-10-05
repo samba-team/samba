@@ -518,19 +518,20 @@ NTSTATUS rpccli_netlogon_set_trust_password(struct rpc_pipe_client *cli,
 	uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
 	struct netr_Authenticator clnt_creds, srv_cred;
 
-	result = rpccli_netlogon_setup_creds(cli,
-					     cli->desthost, /* server name */
-					     lp_workgroup(), /* domain */
-					     global_myname(), /* client name */
-					     global_myname(), /* machine account name */
-					     orig_trust_passwd_hash,
-					     sec_channel_type,
-					     &neg_flags);
-
-	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(3,("rpccli_netlogon_set_trust_password: unable to setup creds (%s)!\n",
-			 nt_errstr(result)));
-		return result;
+	if (!cli->dc) {
+		result = rpccli_netlogon_setup_creds(cli,
+						     cli->desthost, /* server name */
+						     lp_workgroup(), /* domain */
+						     global_myname(), /* client name */
+						     global_myname(), /* machine account name */
+						     orig_trust_passwd_hash,
+						     sec_channel_type,
+						     &neg_flags);
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(3,("rpccli_netlogon_set_trust_password: unable to setup creds (%s)!\n",
+				 nt_errstr(result)));
+			return result;
+		}
 	}
 
 	netlogon_creds_client_authenticator(cli->dc, &clnt_creds);
