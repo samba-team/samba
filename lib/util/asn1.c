@@ -214,7 +214,7 @@ bool asn1_write_BitString(struct asn1_data *data, const void *p, size_t length, 
 	return asn1_pop_tag(data);
 }
 
-bool ber_write_OID_String(DATA_BLOB *blob, const char *OID)
+bool ber_write_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, const char *OID)
 {
 	uint_t v, v2;
 	const char *p = (const char *)OID;
@@ -230,7 +230,7 @@ bool ber_write_OID_String(DATA_BLOB *blob, const char *OID)
 	p = newp + 1;
 
 	/*the ber representation can't use more space then the string one */
-	*blob = data_blob(NULL, strlen(OID));
+	*blob = data_blob_talloc(mem_ctx, NULL, strlen(OID));
 	if (!blob->data) return false;
 
 	blob->data[0] = 40*v + v2;
@@ -264,10 +264,10 @@ bool ber_write_OID_String(DATA_BLOB *blob, const char *OID)
  *   1:2.5.6:0x81
  *   1:2.5.6:0x8182
  */
-bool ber_write_partial_OID_String(DATA_BLOB *blob, const char *partial_oid)
+bool ber_write_partial_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, const char *partial_oid)
 {
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
-	char *oid = talloc_strdup(mem_ctx, partial_oid);
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	char *oid = talloc_strdup(tmp_ctx, partial_oid);
 	char *p;
 
 	/* truncate partial part so ber_write_OID_String() works */
@@ -277,18 +277,18 @@ bool ber_write_partial_OID_String(DATA_BLOB *blob, const char *partial_oid)
 		p++;
 	}
 
-	if (!ber_write_OID_String(blob, oid)) {
-		talloc_free(mem_ctx);
+	if (!ber_write_OID_String(mem_ctx, blob, oid)) {
+		talloc_free(tmp_ctx);
 		return false;
 	}
 
 	/* Add partially endcoded subidentifier */
 	if (p) {
-		DATA_BLOB tmp_blob = strhex_to_data_blob(mem_ctx, p);
-		data_blob_append(NULL, blob, tmp_blob.data, tmp_blob.length);
+		DATA_BLOB tmp_blob = strhex_to_data_blob(tmp_ctx, p);
+		data_blob_append(mem_ctx, blob, tmp_blob.data, tmp_blob.length);
 	}
 
-	talloc_free(mem_ctx);
+	talloc_free(tmp_ctx);
 
 	return true;
 }
@@ -300,7 +300,7 @@ bool asn1_write_OID(struct asn1_data *data, const char *OID)
 
 	if (!asn1_push_tag(data, ASN1_OID)) return false;
 
-	if (!ber_write_OID_String(&blob, OID)) {
+	if (!ber_write_OID_String(NULL, &blob, OID)) {
 		data->has_error = true;
 		return false;
 	}
