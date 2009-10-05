@@ -502,7 +502,7 @@ int rpc_vampire_keytab(struct net_context *c, int argc, const char **argv)
 				      rpc_vampire_keytab_internals, argc, argv);
 	} else {
 		ret = run_rpc_command(c, cli, &ndr_table_drsuapi.syntax_id,
-				      NET_FLAGS_SEAL,
+				      NET_FLAGS_SEAL | NET_FLAGS_TCP,
 				      rpc_vampire_keytab_ds_internals, argc, argv);
 	}
 

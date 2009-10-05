@@ -587,6 +587,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 			case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
 				ntresult = cli_rpc_pipe_open_spnego_ntlmssp(
 					cli, cmd_entry->interface,
+					NCACN_NP,
 					pipe_default_auth_level,
 					lp_workgroup(),
 					get_cmdline_auth_info_username(),
@@ -596,6 +597,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 			case PIPE_AUTH_TYPE_NTLMSSP:
 				ntresult = cli_rpc_pipe_open_ntlmssp(
 					cli, cmd_entry->interface,
+					NCACN_NP,
 					pipe_default_auth_level,
 					lp_workgroup(),
 					get_cmdline_auth_info_username(),

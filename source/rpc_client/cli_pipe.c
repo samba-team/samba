@@ -3032,6 +3032,7 @@ NTSTATUS cli_rpc_pipe_open_noauth(struct cli_state *cli,
 
 static NTSTATUS cli_rpc_pipe_open_ntlmssp_internal(struct cli_state *cli,
 						   const struct ndr_syntax_id *interface,
+						   enum dcerpc_transport_t transport,
 						   enum pipe_auth_type auth_type,
 						   enum pipe_auth_level auth_level,
 						   const char *domain,
@@ -3043,7 +3044,7 @@ static NTSTATUS cli_rpc_pipe_open_ntlmssp_internal(struct cli_state *cli,
 	struct cli_pipe_auth_data *auth;
 	NTSTATUS status;
 
-	status = cli_rpc_pipe_open(cli, NCACN_NP, interface, &result);
+	status = cli_rpc_pipe_open(cli, transport, interface, &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -3085,6 +3086,7 @@ static NTSTATUS cli_rpc_pipe_open_ntlmssp_internal(struct cli_state *cli,
 
 NTSTATUS cli_rpc_pipe_open_ntlmssp(struct cli_state *cli,
 				   const struct ndr_syntax_id *interface,
+				   enum dcerpc_transport_t transport,
 				   enum pipe_auth_level auth_level,
 				   const char *domain,
 				   const char *username,
@@ -3093,6 +3095,7 @@ NTSTATUS cli_rpc_pipe_open_ntlmssp(struct cli_state *cli,
 {
 	return cli_rpc_pipe_open_ntlmssp_internal(cli,
 						interface,
+						transport,
 						PIPE_AUTH_TYPE_NTLMSSP,
 						auth_level,
 						domain,
@@ -3108,6 +3111,7 @@ NTSTATUS cli_rpc_pipe_open_ntlmssp(struct cli_state *cli,
 
 NTSTATUS cli_rpc_pipe_open_spnego_ntlmssp(struct cli_state *cli,
 					  const struct ndr_syntax_id *interface,
+					  enum dcerpc_transport_t transport,
 					  enum pipe_auth_level auth_level,
 					  const char *domain,
 					  const char *username,
@@ -3116,6 +3120,7 @@ NTSTATUS cli_rpc_pipe_open_spnego_ntlmssp(struct cli_state *cli,
 {
 	return cli_rpc_pipe_open_ntlmssp_internal(cli,
 						interface,
+						transport,
 						PIPE_AUTH_TYPE_SPNEGO_NTLMSSP,
 						auth_level,
 						domain,
@@ -3282,7 +3287,8 @@ static NTSTATUS get_schannel_session_key_auth_ntlmssp(struct cli_state *cli,
 	NTSTATUS status;
 
 	status = cli_rpc_pipe_open_spnego_ntlmssp(
-		cli, &ndr_table_netlogon.syntax_id, PIPE_AUTH_LEVEL_PRIVACY,
+		cli, &ndr_table_netlogon.syntax_id, NCACN_NP,
+		PIPE_AUTH_LEVEL_PRIVACY,
 		domain, username, password, &netlogon_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

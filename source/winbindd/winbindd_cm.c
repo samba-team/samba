@@ -2038,6 +2038,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	   authenticated SAMR pipe with sign & seal. */
 	result = cli_rpc_pipe_open_spnego_ntlmssp(conn->cli,
 						  &ndr_table_samr.syntax_id,
+						  NCACN_NP,
 						  PIPE_AUTH_LEVEL_PRIVACY,
 						  domain_name,
 						  machine_account,
@@ -2178,7 +2179,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	/* We have an authenticated connection. Use a NTLMSSP SPNEGO
 	 * authenticated LSA pipe with sign & seal. */
 	result = cli_rpc_pipe_open_spnego_ntlmssp
-		(conn->cli, &ndr_table_lsarpc.syntax_id,
+		(conn->cli, &ndr_table_lsarpc.syntax_id, NCACN_NP,
 		 PIPE_AUTH_LEVEL_PRIVACY,
 		 conn->cli->domain, conn->cli->user_name, conn_pwd,
 		 &conn->lsa_pipe);
