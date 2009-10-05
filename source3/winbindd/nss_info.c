@@ -177,7 +177,7 @@ static NTSTATUS nss_domain_list_add_domain(const char *domain,
 	if ( NT_STATUS_IS_OK(nss_initialized) )
 		return NT_STATUS_OK;
 
-	/* The "template" backend should alqays be registered as it
+	/* The "template" backend should always be registered as it
 	   is a static module */
 
 	if ( (nss_backend = nss_get_backend( "template" )) == NULL ) {
@@ -241,7 +241,7 @@ static NTSTATUS nss_domain_list_add_domain(const char *domain,
 			 "Defaulting to \"template\".\n"));
 
 
-		/* we shouild default to use template here */
+		/* we should default to use template here */
 	}
 
 	nss_initialized = NT_STATUS_OK;
