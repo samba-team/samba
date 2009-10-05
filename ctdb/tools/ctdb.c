@@ -1121,6 +1121,11 @@ static int control_addip(struct ctdb_context *ctdb, int argc, const char **argv)
 	struct ctdb_control_ip_iface *pub;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	struct ctdb_all_public_ips *ips;
+	struct ctdb_public_ip ip;
+	uint32_t *nodes;
+	struct ctdb_node_map *nodemap=NULL;
+	TDB_DATA data;
+
 
 	if (argc != 2) {
 		talloc_free(tmp_ctx);
@@ -1166,23 +1171,34 @@ static int control_addip(struct ctdb_context *ctdb, int argc, const char **argv)
 		return ret;
 	}
 
-	/* no one has this ip so we claim it */
+	ip.addr = addr;
+
 	if (i == ips->num) {
-		struct ctdb_public_ip ip;
-
+		/* no one has this ip so we claim it */
 		ip.pnn  = options.pnn;
-		ip.addr = addr;
-
-		ret = ctdb_ctrl_takeover_ip(ctdb, TIMELIMIT(), options.pnn, &ip);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR,("Failed to take over IP on node %d\n", options.pnn));
-			return -1;
-		}
+	} else {
+		ip.pnn  = ips->ips[i].pnn;
 	}
 
 
+	/* verify the node exists */
+	if (ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap) != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
+		exit(10);
+	}
+
+	data.dptr  = (uint8_t *)&ip;
+	data.dsize = sizeof(ip);
+
+       	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
+	ret = ctdb_client_async_control(ctdb, CTDB_CONTROL_TAKEOVER_IP,
+					nodes, TIMELIMIT(),
+					false, data,
+					NULL, NULL,
+					NULL);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Failed to send 'change ip' to all nodes\n"));
+		DEBUG(DEBUG_ERR,("Failed to add IP on nodes\n"));
+		talloc_free(tmp_ctx);
 		return -1;
 	}
 
