@@ -137,7 +137,7 @@ static void takeover_ip_callback(struct ctdb_context *ctdb, int status,
 	}
 
 	if (!state->vnn->takeover_ctx) {
-		state->vnn->takeover_ctx = talloc_new(ctdb);
+		state->vnn->takeover_ctx = talloc_new(state->vnn);
 		if (!state->vnn->takeover_ctx) {
 			goto failed;
 		}
@@ -219,7 +219,7 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 		return 0;
 	}
 
-	state = talloc(ctdb, struct takeover_callback_state);
+	state = talloc(vnn, struct takeover_callback_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
 	state->c = talloc_steal(ctdb, c);
