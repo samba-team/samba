@@ -1100,6 +1100,14 @@ static void machine_password_change_handler(struct event_context *ctx,
 		DEBUG(10,("machine_password_change_handler: "
 			"failed to change machine password: %s\n",
 			 nt_errstr(result)));
+		if (NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) ) {
+			DEBUG(3,("machine_password_change_handler: password set returned "
+				"ACCESS_DENIED.  Maybe the trust account "
+				"password was changed and we didn't know it. "
+				"Killing connections to domain %s\n",
+				child->domain->name));
+			invalidate_cm_connection(&child->domain->conn);
+		}
 	} else {
 		DEBUG(10,("machine_password_change_handler: "
 			"successfully changed machine password\n"));
