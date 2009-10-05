@@ -371,10 +371,9 @@ static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
  Cope with POSIX range splits and merges.
 ****************************************************************************/
 
-static unsigned int brlock_posix_split_merge(struct lock_struct *lck_arr,		/* Output array. */
-						const struct lock_struct *ex,		/* existing lock. */
-						const struct lock_struct *plock,	/* proposed lock. */
-						bool *lock_was_added)
+static unsigned int brlock_posix_split_merge(struct lock_struct *lck_arr,	/* Output array. */
+						struct lock_struct *ex,		/* existing lock. */
+						struct lock_struct *plock)	/* proposed lock. */
 {
 	bool lock_types_differ = (ex->lock_type != plock->lock_type);
 
@@ -391,21 +390,23 @@ static unsigned int brlock_posix_split_merge(struct lock_struct *lck_arr,		/* Ou
 	/* Did we overlap ? */
 
 /*********************************************
-                                             +---------+
-                                             | ex      |
-                                             +---------+
-                              +-------+
-                              | plock |
-                              +-------+
+                                        +---------+
+                                        | ex      |
+                                        +---------+
+                         +-------+
+                         | plock |
+                         +-------+
 OR....
-             +---------+
-             |  ex     |
-             +---------+
+        +---------+
+        |  ex     |
+        +---------+
 **********************************************/
 
 	if ( (ex->start > (plock->start + plock->size)) ||
-			(plock->start > (ex->start + ex->size))) {
+		(plock->start > (ex->start + ex->size))) {
+
 		/* No overlap with this lock - copy existing. */
+
 		memcpy(&lck_arr[0], ex, sizeof(struct lock_struct));
 		return 1;
 	}
@@ -417,23 +418,26 @@ OR....
         +---------------------------+
         |       plock               | -> replace with plock.
         +---------------------------+
+OR
+             +---------------+
+             |       ex      |
+             +---------------+
+        +---------------------------+
+        |       plock               | -> replace with plock.
+        +---------------------------+
+
 **********************************************/
 
 	if ( (ex->start >= plock->start) &&
-			(ex->start + ex->size <= plock->start + plock->size) ) {
-		memcpy(&lck_arr[0], plock, sizeof(struct lock_struct));
-		*lock_was_added = True;
-		return 1;
+		(ex->start + ex->size <= plock->start + plock->size) ) {
+
+		/* Replace - discard existing lock. */
+
+		return 0;
 	}
 
 /*********************************************
-        +-----------------------+
-        |          ex           |
-        +-----------------------+
-        +---------------+
-        |   plock       |
-        +---------------+
-OR....
+Adjacent after.
                         +-------+
                         |  ex   |
                         +-------+
@@ -447,60 +451,137 @@ BECOMES....
         +---------------+-------+
 OR.... (merge)
         +-----------------------+
-        |   ex                  | - same lock type.
+        |   plock               | - same lock type.
         +-----------------------+
 **********************************************/
 
-	if ( (ex->start >= plock->start) &&
-				(ex->start <= plock->start + plock->size) &&
-				(ex->start + ex->size > plock->start + plock->size) ) {
-
-		*lock_was_added = True;
+	if (plock->start + plock->size == ex->start) {
 
 		/* If the lock types are the same, we merge, if different, we
-		   add the new lock before the old. */
+		   add the remainder of the old lock. */
 
 		if (lock_types_differ) {
-			/* Add new. */
-			memcpy(&lck_arr[0], plock, sizeof(struct lock_struct));
-			memcpy(&lck_arr[1], ex, sizeof(struct lock_struct));
-			/* Adjust existing start and size. */
-			lck_arr[1].start = plock->start + plock->size;
-			lck_arr[1].size = (ex->start + ex->size) - (plock->start + plock->size);
-			return 2;
-		} else {
-			/* Merge. */
-			memcpy(&lck_arr[0], plock, sizeof(struct lock_struct));
-			/* Set new start and size. */
-			lck_arr[0].start = plock->start;
-			lck_arr[0].size = (ex->start + ex->size) - plock->start;
+			/* Add existing. */
+			memcpy(&lck_arr[0], ex, sizeof(struct lock_struct));
 			return 1;
+		} else {
+			/* Merge - adjust incoming lock as we may have more
+			 * merging to come. */
+			plock->size += ex->size;
+			return 0;
 		}
 	}
 
 /*********************************************
-   +-----------------------+
-   |  ex                   |
-   +-----------------------+
-           +---------------+
-           |   plock       |
-           +---------------+
-OR....
-   +-------+        
-   |  ex   |
-   +-------+
-           +---------------+
-           |   plock       |
-           +---------------+
+Adjacent before.
+        +-------+
+        |  ex   |
+        +-------+
+                +---------------+
+                |   plock       |
+                +---------------+
 BECOMES....
-   +-------+---------------+
-   | ex    |   plock       | - different lock types
-   +-------+---------------+
+        +-------+---------------+
+        | ex    |   plock       | - different lock types
+        +-------+---------------+
 
 OR.... (merge)
-   +-----------------------+
-   | ex                    | - same lock type.
-   +-----------------------+
+        +-----------------------+
+        |      plock            | - same lock type.
+        +-----------------------+
+
+**********************************************/
+
+	if (ex->start + ex->size == plock->start) {
+
+		/* If the lock types are the same, we merge, if different, we
+		   add the existing lock. */
+
+		if (lock_types_differ) {
+			memcpy(&lck_arr[0], ex, sizeof(struct lock_struct));
+			return 1;
+		} else {
+			/* Merge - adjust incoming lock as we may have more
+			 * merging to come. */
+			plock->start = ex->start;
+			plock->size += ex->size;
+			return 0;
+		}
+	}
+
+/*********************************************
+Overlap after.
+        +-----------------------+
+        |          ex           |
+        +-----------------------+
+        +---------------+
+        |   plock       |
+        +---------------+
+OR
+               +----------------+
+               |       ex       |
+               +----------------+
+        +---------------+
+        |   plock       |
+        +---------------+
+
+BECOMES....
+        +---------------+-------+
+        |   plock       | ex    | - different lock types.
+        +---------------+-------+
+OR.... (merge)
+        +-----------------------+
+        |   plock               | - same lock type.
+        +-----------------------+
+**********************************************/
+
+	if ( (ex->start >= plock->start) &&
+		(ex->start <= plock->start + plock->size) &&
+		(ex->start + ex->size > plock->start + plock->size) ) {
+
+		/* If the lock types are the same, we merge, if different, we
+		   add the remainder of the old lock. */
+
+		if (lock_types_differ) {
+			/* Add remaining existing. */
+			memcpy(&lck_arr[0], ex, sizeof(struct lock_struct));
+			/* Adjust existing start and size. */
+			lck_arr[0].start = plock->start + plock->size;
+			lck_arr[0].size = (ex->start + ex->size) - (plock->start + plock->size);
+			return 1;
+		} else {
+			/* Merge - adjust incoming lock as we may have more
+			 * merging to come. */
+			plock->size += (ex->start + ex->size) - (plock->start + plock->size);
+			return 0;
+		}
+	}
+
+/*********************************************
+Overlap before.
+        +-----------------------+
+        |  ex                   |
+        +-----------------------+
+                +---------------+
+                |   plock       |
+                +---------------+
+OR
+        +-------------+
+        |  ex         |
+        +-------------+
+                +---------------+
+                |   plock       |
+                +---------------+
+
+BECOMES....
+        +-------+---------------+
+        | ex    |   plock       | - different lock types
+        +-------+---------------+
+
+OR.... (merge)
+        +-----------------------+
+        |      plock            | - same lock type.
+        +-----------------------+
 
 **********************************************/
 
@@ -508,27 +589,25 @@ OR.... (merge)
 			(ex->start + ex->size >= plock->start) &&
 			(ex->start + ex->size <= plock->start + plock->size) ) {
 
-		*lock_was_added = True;
-
 		/* If the lock types are the same, we merge, if different, we
-		   add the new lock after the old. */
+		   add the truncated old lock. */
 
 		if (lock_types_differ) {
 			memcpy(&lck_arr[0], ex, sizeof(struct lock_struct));
-			memcpy(&lck_arr[1], plock, sizeof(struct lock_struct));
 			/* Adjust existing size. */
 			lck_arr[0].size = plock->start - ex->start;
-			return 2;
-		} else {
-			/* Merge. */
-			memcpy(&lck_arr[0], ex, sizeof(struct lock_struct));
-			/* Adjust existing size. */
-			lck_arr[0].size = (plock->start + plock->size) - ex->start;
 			return 1;
+		} else {
+			/* Merge - adjust incoming lock as we may have more
+			 * merging to come. MUST ADJUST plock SIZE FIRST ! */
+			plock->size += (plock->start - ex->start);
+			plock->start = ex->start;
+			return 0;
 		}
 	}
 
 /*********************************************
+Complete overlap.
         +---------------------------+
         |        ex                 |
         +---------------------------+
@@ -541,32 +620,31 @@ BECOMES.....
         +-------+---------+---------+
 OR
         +---------------------------+
-        |        ex                 | - same lock type.
+        |        plock              | - same lock type.
         +---------------------------+
 **********************************************/
 
 	if ( (ex->start < plock->start) && (ex->start + ex->size > plock->start + plock->size) ) {
-		*lock_was_added = True;
 
 		if (lock_types_differ) {
 
 			/* We have to split ex into two locks here. */
 
 			memcpy(&lck_arr[0], ex, sizeof(struct lock_struct));
-			memcpy(&lck_arr[1], plock, sizeof(struct lock_struct));
-			memcpy(&lck_arr[2], ex, sizeof(struct lock_struct));
+			memcpy(&lck_arr[1], ex, sizeof(struct lock_struct));
 
 			/* Adjust first existing size. */
 			lck_arr[0].size = plock->start - ex->start;
 
 			/* Adjust second existing start and size. */
-			lck_arr[2].start = plock->start + plock->size;
-			lck_arr[2].size = (ex->start + ex->size) - (plock->start + plock->size);
-			return 3;
+			lck_arr[1].start = plock->start + plock->size;
+			lck_arr[1].size = (ex->start + ex->size) - (plock->start + plock->size);
+			return 2;
 		} else {
-			/* Just eat plock. */
-			memcpy(&lck_arr[0], ex, sizeof(struct lock_struct));
-			return 1;
+			/* Just eat the existing locks, merge them into plock. */
+			plock->start = ex->start;
+			plock->size = ex->size;
+			return 0;
 		}
 	}
 
@@ -590,7 +668,6 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 	unsigned int i, count;
 	struct lock_struct *locks = br_lck->lock_data;
 	struct lock_struct *tp;
-	bool lock_was_added = False;
 	bool signal_pending_read = False;
 
 	/* No zero-zero locks for POSIX. */
@@ -612,8 +689,9 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 	if (!tp) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	
+
 	count = 0;
+
 	for (i=0; i < br_lck->num_locks; i++) {
 		struct lock_struct *curr_lock = &locks[i];
 
@@ -648,14 +726,25 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 			}
 
 			/* Work out overlaps. */
-			count += brlock_posix_split_merge(&tp[count], curr_lock, plock, &lock_was_added);
+			count += brlock_posix_split_merge(&tp[count], curr_lock, plock);
 		}
 	}
 
-	if (!lock_was_added) {
-		memcpy(&tp[count], plock, sizeof(struct lock_struct));
-		count++;
+	/* Try and add the lock in order, sorted by lock start. */
+	for (i=0; i < count; i++) {
+		struct lock_struct *curr_lock = &tp[i];
+
+		if (curr_lock->start <= plock->start) {
+			continue;
+		}
 	}
+
+	if (i < count) {
+		memmove(&tp[i+1], &tp[i],
+			(count - i)*sizeof(struct lock_struct));
+	}
+	memcpy(&tp[i], plock, sizeof(struct lock_struct));
+	count++;
 
 	/* We can get the POSIX lock, now see if it needs to
 	   be mapped into a lower level POSIX one, and if so can
@@ -687,11 +776,15 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 		}
 	}
 
-	/* Realloc so we don't leak entries per lock call. */
-	tp = (struct lock_struct *)SMB_REALLOC(tp, count * sizeof(*locks));
-	if (!tp) {
-		return NT_STATUS_NO_MEMORY;
+	/* If we didn't use all the allocated size,
+	 * Realloc so we don't leak entries per lock call. */
+	if (count < br_lck->num_locks + 2) {
+		tp = (struct lock_struct *)SMB_REALLOC(tp, count * sizeof(*locks));
+		if (!tp) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
+
 	br_lck->num_locks = count;
 	SAFE_FREE(br_lck->lock_data);
 	br_lck->lock_data = tp;
@@ -890,7 +983,7 @@ static bool brl_unlock_windows(struct messaging_context *msg_ctx,
 
 static bool brl_unlock_posix(struct messaging_context *msg_ctx,
 			     struct byte_range_lock *br_lck,
-			     const struct lock_struct *plock)
+			     struct lock_struct *plock)
 {
 	unsigned int i, j, count;
 	struct lock_struct *tp;
@@ -922,8 +1015,6 @@ static bool brl_unlock_posix(struct messaging_context *msg_ctx,
 	count = 0;
 	for (i = 0; i < br_lck->num_locks; i++) {
 		struct lock_struct *lock = &locks[i];
-		struct lock_struct tmp_lock[3];
-		bool lock_was_added = False;
 		unsigned int tmp_count;
 
 		/* Only remove our own locks - ignore fnum. */
@@ -934,64 +1025,50 @@ static bool brl_unlock_posix(struct messaging_context *msg_ctx,
 			continue;
 		}
 
+		if (lock->lock_flav == WINDOWS_LOCK) {
+			/* Do any Windows flavour locks conflict ? */
+			if (brl_conflict(lock, plock)) {
+				SAFE_FREE(tp);
+				return false;
+			}
+			/* Just copy the Windows lock into the new array. */
+			memcpy(&tp[count], lock, sizeof(struct lock_struct));
+			count++;
+			continue;
+		}
+
 		/* Work out overlaps. */
-		tmp_count = brlock_posix_split_merge(&tmp_lock[0], &locks[i], plock, &lock_was_added);
+		tmp_count = brlock_posix_split_merge(&tp[count], lock, plock);
 
-		if (tmp_count == 1) {
-			/* Ether the locks didn't overlap, or the unlock completely
-			   overlapped this lock. If it didn't overlap, then there's
-			   no change in the locks. */
-			if (tmp_lock[0].lock_type != UNLOCK_LOCK) {
-				SMB_ASSERT(tmp_lock[0].lock_type == locks[i].lock_type);
-				/* No change in this lock. */
-				memcpy(&tp[count], &tmp_lock[0], sizeof(struct lock_struct));
-				count++;
-			} else {
-				SMB_ASSERT(tmp_lock[0].lock_type == UNLOCK_LOCK);
-				overlap_found = True;
+		if (tmp_count == 0) {
+			/* plock overlapped the existing lock completely,
+			   or replaced it. Don't copy the existing lock. */
+			overlap_found = true;
+		} else if (tmp_count == 1) {
+			/* Either no overlap, (simple copy of existing lock) or
+			 * an overlap of an existing lock. */
+			/* If the lock changed size, we had an overlap. */
+			if (tp[count].size != lock->size) {
+				overlap_found = true;
 			}
-			continue;
+			count += tmp_count;
 		} else if (tmp_count == 2) {
-			/* The unlock overlapped an existing lock. Copy the truncated
-			   lock into the lock array. */
-			if (tmp_lock[0].lock_type != UNLOCK_LOCK) {
-				SMB_ASSERT(tmp_lock[0].lock_type == locks[i].lock_type);
-				SMB_ASSERT(tmp_lock[1].lock_type == UNLOCK_LOCK);
-				memcpy(&tp[count], &tmp_lock[0], sizeof(struct lock_struct));
-				if (tmp_lock[0].size != locks[i].size) {
-					overlap_found = True;
-				}
-			} else {
-				SMB_ASSERT(tmp_lock[0].lock_type == UNLOCK_LOCK);
-				SMB_ASSERT(tmp_lock[1].lock_type == locks[i].lock_type);
-				memcpy(&tp[count], &tmp_lock[1], sizeof(struct lock_struct));
-				if (tmp_lock[1].start != locks[i].start) {
-					overlap_found = True;
-				}
-			}
-			count++;
-			continue;
-		} else {
-			/* tmp_count == 3 - (we split a lock range in two). */
-			SMB_ASSERT(tmp_lock[0].lock_type == locks[i].lock_type);
-			SMB_ASSERT(tmp_lock[1].lock_type == UNLOCK_LOCK);
-			SMB_ASSERT(tmp_lock[2].lock_type == locks[i].lock_type);
+			/* We split a lock range in two. */
+			overlap_found = true;
+			count += tmp_count;
 
-			memcpy(&tp[count], &tmp_lock[0], sizeof(struct lock_struct));
-			count++;
-			memcpy(&tp[count], &tmp_lock[2], sizeof(struct lock_struct));
-			count++;
-			overlap_found = True;
 			/* Optimisation... */
 			/* We know we're finished here as we can't overlap any
 			   more POSIX locks. Copy the rest of the lock array. */
+
 			if (i < br_lck->num_locks - 1) {
-				memcpy(&tp[count], &locks[i+1], 
+				memcpy(&tp[count], &locks[i+1],
 					sizeof(*locks)*((br_lck->num_locks-1) - i));
 				count += ((br_lck->num_locks-1) - i);
 			}
 			break;
 		}
+
 	}
 
 	if (!overlap_found) {
