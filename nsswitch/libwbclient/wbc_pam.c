@@ -502,17 +502,13 @@ wbcErr wbcCheckTrustCredentials(const char *domain,
 	struct winbindd_response response;
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 
-	if (domain) {
-		/*
-		 * the current protocol doesn't support
-		 * specifying a domain
-		 */
-		wbc_status = WBC_ERR_NOT_IMPLEMENTED;
-		BAIL_ON_WBC_ERROR(wbc_status);
-	}
-
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
+
+	if (domain) {
+		strncpy(request.domain_name, domain,
+			sizeof(request.domain_name)-1);
+	}
 
 	/* Send request */
 
