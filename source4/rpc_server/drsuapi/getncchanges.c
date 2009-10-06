@@ -66,7 +66,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 		if (instance_type & INSTANCE_TYPE_IS_NC_HEAD) {
 			struct ldb_result *res;
 			int ret;
-			char *dnstr = ldb_dn_get_linearized(msg->dn);
+			const char *dnstr = ldb_dn_get_linearized(msg->dn);
 			msg->dn = ldb_dn_new(msg, sam_ctx, dnstr);
 			/* we need to re-search the msg, to avoid the
 			 * broken dual message problems with our
@@ -322,7 +322,6 @@ static WERROR get_nc_changes_udv(struct ldb_context *sam_ctx,
 struct drsuapi_getncchanges_state {
 	struct ldb_result *site_res;
 	uint32_t num_sent;
-	struct ldb_context *sam_ctx;
 	struct ldb_dn *ncRoot_dn;
 	uint32_t min_usn;
 };
@@ -393,18 +392,6 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 			return WERR_NOMEM;
 		}
 		b_state->getncchanges_state = getnc_state;
-
-
-		/*
-		 * connect to the samdb. TODO: We need to check that the caller
-		 * has the rights to do this. This exposes all attributes,
-		 * including all passwords.
-		 */
-		getnc_state->sam_ctx = samdb_connect(getnc_state, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, 
-						     system_session(getnc_state, dce_call->conn->dce_ctx->lp_ctx));
-		if (!getnc_state->sam_ctx) {
-			return WERR_FOOBAR;
-		}
 	}
 
 	/* we need the session key for encrypting password attributes */
@@ -431,14 +418,14 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 							search_filter);
 		}
 		
-		getnc_state->ncRoot_dn = ldb_dn_new(getnc_state, getnc_state->sam_ctx, ncRoot->dn);
+		getnc_state->ncRoot_dn = ldb_dn_new(getnc_state, b_state->sam_ctx, ncRoot->dn);
 		if (r->in.req->req8.replica_flags & DRSUAPI_DS_REPLICA_NEIGHBOUR_ASYNC_REP) {
 			scope = LDB_SCOPE_BASE;
 		}
 		
 		DEBUG(6,(__location__ ": getncchanges on %s using filter %s\n",
 			 ldb_dn_get_linearized(getnc_state->ncRoot_dn), search_filter));
-		ret = drsuapi_search_with_extended_dn(getnc_state->sam_ctx, getnc_state, &getnc_state->site_res,
+		ret = drsuapi_search_with_extended_dn(b_state->sam_ctx, getnc_state, &getnc_state->site_res,
 						      getnc_state->ncRoot_dn, scope, attrs,
 						      "distinguishedName",
 						      search_filter);
@@ -448,7 +435,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 
 	/* Prefix mapping */
-	schema = dsdb_get_schema(getnc_state->sam_ctx);
+	schema = dsdb_get_schema(b_state->sam_ctx);
 	if (!schema) {
 		DEBUG(0,("No schema in sam_ctx\n"));
 		return WERR_DS_DRA_INTERNAL_ERROR;
@@ -457,7 +444,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	r->out.ctr->ctr6.naming_context = talloc(mem_ctx, struct drsuapi_DsReplicaObjectIdentifier);
 	*r->out.ctr->ctr6.naming_context = *ncRoot;
 
-	if (dsdb_find_guid_by_dn(getnc_state->sam_ctx, getnc_state->ncRoot_dn, 
+	if (dsdb_find_guid_by_dn(b_state->sam_ctx, getnc_state->ncRoot_dn, 
 				 &r->out.ctr->ctr6.naming_context->guid) != LDB_SUCCESS) {
 		DEBUG(0,(__location__ ": Failed to find GUID of ncRoot_dn %s\n",
 			 ldb_dn_get_linearized(getnc_state->ncRoot_dn)));
@@ -465,13 +452,13 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 
 	/* find the SID if there is one */
-	dsdb_find_sid_by_dn(getnc_state->sam_ctx, getnc_state->ncRoot_dn, &r->out.ctr->ctr6.naming_context->sid);
+	dsdb_find_sid_by_dn(b_state->sam_ctx, getnc_state->ncRoot_dn, &r->out.ctr->ctr6.naming_context->sid);
 
 	dsdb_get_oid_mappings_drsuapi(schema, true, mem_ctx, &ctr);
 	r->out.ctr->ctr6.mapping_ctr = *ctr;
 
-	r->out.ctr->ctr6.source_dsa_guid = *(samdb_ntds_objectGUID(getnc_state->sam_ctx));
-	r->out.ctr->ctr6.source_dsa_invocation_id = *(samdb_ntds_invocation_id(getnc_state->sam_ctx));
+	r->out.ctr->ctr6.source_dsa_guid = *(samdb_ntds_objectGUID(b_state->sam_ctx));
+	r->out.ctr->ctr6.source_dsa_invocation_id = *(samdb_ntds_invocation_id(b_state->sam_ctx));
 
 	r->out.ctr->ctr6.old_highwatermark = r->in.req->req8.highwatermark;
 	r->out.ctr->ctr6.new_highwatermark = r->in.req->req8.highwatermark;
@@ -493,7 +480,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		}
 
 		werr = get_nc_changes_build_object(obj, getnc_state->site_res->msgs[i], 
-						   getnc_state->sam_ctx, getnc_state->ncRoot_dn, 
+						   b_state->sam_ctx, getnc_state->ncRoot_dn, 
 						   schema, &session_key, getnc_state->min_usn,
 						   r->in.req->req8.replica_flags);
 		if (!W_ERROR_IS_OK(werr)) {
@@ -528,7 +515,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 
 		r->out.ctr->ctr6.new_highwatermark.highest_usn = r->out.ctr->ctr6.new_highwatermark.tmp_highest_usn;
 
-		werr = get_nc_changes_udv(getnc_state->sam_ctx, getnc_state->ncRoot_dn, 
+		werr = get_nc_changes_udv(b_state->sam_ctx, getnc_state->ncRoot_dn, 
 					  r->out.ctr->ctr6.uptodateness_vector);
 		if (!W_ERROR_IS_OK(werr)) {
 			return werr;
