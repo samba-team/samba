@@ -92,12 +92,22 @@ NTSTATUS tdr_pull_uint16(struct tdr_pull *tdr, TALLOC_CTX *ctx, uint16_t *v)
 	return NT_STATUS_OK;
 }
 
+NTSTATUS tdr_pull_uint1632(struct tdr_pull *tdr, TALLOC_CTX *ctx, uint16_t *v)
+{
+	return tdr_pull_uint16(tdr, ctx, v);
+}
+
 NTSTATUS tdr_push_uint16(struct tdr_push *tdr, const uint16_t *v)
 {
 	TDR_PUSH_NEED_BYTES(tdr, 2);
 	TDR_SSVAL(tdr, tdr->data.length, *v);
 	tdr->data.length += 2;
 	return NT_STATUS_OK;
+}
+
+NTSTATUS tdr_push_uint1632(struct tdr_push *tdr, const uint16_t *v)
+{
+	return tdr_push_uint16(tdr, v);
 }
 
 NTSTATUS tdr_print_uint16(struct tdr_print *tdr, const char *name, uint16_t *v)
