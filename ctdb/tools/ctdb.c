@@ -855,40 +855,16 @@ static int control_get_tickles(struct ctdb_context *ctdb, int argc, const char *
 }
 
 
-/*
-  move/failover an ip address to a specific node
- */
-static int control_moveip(struct ctdb_context *ctdb, int argc, const char **argv)
+
+static int move_ip(struct ctdb_context *ctdb, ctdb_sock_addr *addr, uint32_t pnn)
 {
-	uint32_t pnn;
-	ctdb_sock_addr addr;
 	struct ctdb_all_public_ips *ips;
 	struct ctdb_public_ip ip;
-	uint32_t *nodes;
 	int i, ret;
+	uint32_t *nodes;
 	TDB_DATA data;
 	struct ctdb_node_map *nodemap=NULL;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-
-	if (argc < 2) {
-		usage();
-		talloc_free(tmp_ctx);
-		return -1;
-	}
-
-	if (parse_ip(argv[0], NULL, 0, &addr) == 0) {
-		DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s'\n", argv[0]));
-		talloc_free(tmp_ctx);
-		return -1;
-	}
-
-
-	if (sscanf(argv[1], "%u", &pnn) != 1) {
-		DEBUG(DEBUG_ERR, ("Badly formed pnn\n"));
-		talloc_free(tmp_ctx);
-		return -1;
-	}
-
 
 	/* read the public ip list from the node */
 	ret = ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), pnn, ctdb, &ips);
@@ -899,13 +875,13 @@ static int control_moveip(struct ctdb_context *ctdb, int argc, const char **argv
 	}
 
 	for (i=0;i<ips->num;i++) {
-		if (ctdb_same_ip(&addr, &ips->ips[i].addr)) {
+		if (ctdb_same_ip(addr, &ips->ips[i].addr)) {
 			break;
 		}
 	}
 	if (i==ips->num) {
 		DEBUG(DEBUG_ERR, ("Node %u can not host ip address '%s'\n",
-			pnn, ctdb_addr_to_str(&addr)));
+			pnn, ctdb_addr_to_str(addr)));
 		talloc_free(tmp_ctx);
 		return -1;
 	}
@@ -917,7 +893,7 @@ static int control_moveip(struct ctdb_context *ctdb, int argc, const char **argv
 	}
 
 	ip.pnn  = pnn;
-	ip.addr = addr;
+	ip.addr = *addr;
 
 	data.dptr  = (uint8_t *)&ip;
 	data.dsize = sizeof(ip);
@@ -929,7 +905,7 @@ static int control_moveip(struct ctdb_context *ctdb, int argc, const char **argv
 		return ret;
 	}
 
-       	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
+       	nodes = list_of_active_nodes_except_pnn(ctdb, nodemap, tmp_ctx, pnn);
 	ret = ctdb_client_async_control(ctdb, CTDB_CONTROL_RELEASE_IP,
 					nodes, TIMELIMIT(),
 					false, data,
@@ -949,6 +925,38 @@ static int control_moveip(struct ctdb_context *ctdb, int argc, const char **argv
 	}
 
 	talloc_free(tmp_ctx);
+	return 0;
+}
+
+/*
+  move/failover an ip address to a specific node
+ */
+static int control_moveip(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t pnn;
+	ctdb_sock_addr addr;
+
+	if (argc < 2) {
+		usage();
+		return -1;
+	}
+
+	if (parse_ip(argv[0], NULL, 0, &addr) == 0) {
+		DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s'\n", argv[0]));
+		return -1;
+	}
+
+
+	if (sscanf(argv[1], "%u", &pnn) != 1) {
+		DEBUG(DEBUG_ERR, ("Badly formed pnn\n"));
+		return -1;
+	}
+
+	if (move_ip(ctdb, &addr, pnn) != 0) {
+		DEBUG(DEBUG_ERR,("Failed to move ip to node %d\n", pnn));
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -1116,15 +1124,12 @@ static int control_addip(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int i, ret;
 	int len;
+	uint32_t pnn;
 	unsigned mask;
 	ctdb_sock_addr addr;
 	struct ctdb_control_ip_iface *pub;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	struct ctdb_all_public_ips *ips;
-	struct ctdb_public_ip ip;
-	uint32_t *nodes;
-	struct ctdb_node_map *nodemap=NULL;
-	TDB_DATA data;
 
 
 	if (argc != 2) {
@@ -1171,34 +1176,15 @@ static int control_addip(struct ctdb_context *ctdb, int argc, const char **argv)
 		return ret;
 	}
 
-	ip.addr = addr;
-
 	if (i == ips->num) {
 		/* no one has this ip so we claim it */
-		ip.pnn  = options.pnn;
+		pnn  = options.pnn;
 	} else {
-		ip.pnn  = ips->ips[i].pnn;
+		pnn  = ips->ips[i].pnn;
 	}
 
-
-	/* verify the node exists */
-	if (ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap) != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
-		exit(10);
-	}
-
-	data.dptr  = (uint8_t *)&ip;
-	data.dsize = sizeof(ip);
-
-       	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
-	ret = ctdb_client_async_control(ctdb, CTDB_CONTROL_TAKEOVER_IP,
-					nodes, TIMELIMIT(),
-					false, data,
-					NULL, NULL,
-					NULL);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,("Failed to add IP on nodes\n"));
-		talloc_free(tmp_ctx);
+	if (move_ip(ctdb, &addr, pnn) != 0) {
+		DEBUG(DEBUG_ERR,("Failed to move ip to node %d\n", pnn));
 		return -1;
 	}
 
@@ -1328,14 +1314,8 @@ static int control_delip(struct ctdb_context *ctdb, int argc, const char **argv)
 	if (ips->ips[i].pnn == options.pnn) {
 		ret = find_other_host_for_public_ip(ctdb, &addr);
 		if (ret != -1) {
-			struct ctdb_public_ip ip;
-
-			ip.pnn  = ret;
-			ip.addr = addr;
-
-			ret = ctdb_ctrl_takeover_ip(ctdb, TIMELIMIT(), ret, &ip);
-			if (ret != 0) {
-				DEBUG(DEBUG_ERR,("Failed to take over IP on node %d\n", options.pnn));
+			if (move_ip(ctdb, &addr, ret) != 0) {
+				DEBUG(DEBUG_ERR,("Failed to move ip to node %d\n", ret));
 				return -1;
 			}
 		}
