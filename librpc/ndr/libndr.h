@@ -467,6 +467,7 @@ NDR_SCALAR_PROTO(uint8, uint8_t)
 NDR_SCALAR_PROTO(int8, int8_t)
 NDR_SCALAR_PROTO(uint16, uint16_t)
 NDR_SCALAR_PROTO(int16, int16_t)
+NDR_SCALAR_PROTO(uint1632, uint16_t)
 NDR_SCALAR_PROTO(uint32, uint32_t)
 NDR_SCALAR_PROTO(uint3264, uint32_t)
 NDR_SCALAR_PROTO(int32, int32_t)
@@ -549,8 +550,10 @@ struct GUID GUID_random(void);
 _PUBLIC_ enum ndr_err_code ndr_pull_enum_uint8(struct ndr_pull *ndr, int ndr_flags, uint8_t *v);
 _PUBLIC_ enum ndr_err_code ndr_pull_enum_uint16(struct ndr_pull *ndr, int ndr_flags, uint16_t *v);
 _PUBLIC_ enum ndr_err_code ndr_pull_enum_uint32(struct ndr_pull *ndr, int ndr_flags, uint32_t *v);
+_PUBLIC_ enum ndr_err_code ndr_pull_enum_uint1632(struct ndr_pull *ndr, int ndr_flags, uint16_t *v);
 _PUBLIC_ enum ndr_err_code ndr_push_enum_uint8(struct ndr_push *ndr, int ndr_flags, uint8_t v);
 _PUBLIC_ enum ndr_err_code ndr_push_enum_uint16(struct ndr_push *ndr, int ndr_flags, uint16_t v);
 _PUBLIC_ enum ndr_err_code ndr_push_enum_uint32(struct ndr_push *ndr, int ndr_flags, uint32_t v);
+_PUBLIC_ enum ndr_err_code ndr_push_enum_uint1632(struct ndr_push *ndr, int ndr_flags, uint16_t v);
 
 #endif /* __LIBNDR_H__ */
