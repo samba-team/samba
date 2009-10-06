@@ -532,6 +532,44 @@ wbcErr wbcCheckTrustCredentials(const char *domain,
 	return wbc_status;
 }
 
+/* Trigger a change of the trust credentials for a specific domain */
+wbcErr wbcChangeTrustCredentials(const char *domain,
+				 struct wbcAuthErrorInfo **error)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	if (domain) {
+		strncpy(request.domain_name, domain,
+			sizeof(request.domain_name)-1);
+	}
+
+	/* Send request */
+
+	wbc_status = wbcRequestResponse(WINBINDD_CHANGE_MACHACC,
+					&request,
+					&response);
+	if (response.data.auth.nt_status != 0) {
+		if (error) {
+			wbc_status = wbc_create_error_info(NULL,
+							   &response,
+							   error);
+			BAIL_ON_WBC_ERROR(wbc_status);
+		}
+
+		wbc_status = WBC_ERR_AUTH_ERROR;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+ done:
+	return wbc_status;
+}
+
 /* Trigger an extended logoff notification to Winbind for a specific user */
 wbcErr wbcLogoffUserEx(const struct wbcLogoffUserParams *params,
 		       struct wbcAuthErrorInfo **error)
