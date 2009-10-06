@@ -49,13 +49,15 @@ extern const struct ndr_interface_table ndr_table_wbint;
 
 #define NDR_WBINT_CHECKMACHINEACCOUNT (0x12)
 
-#define NDR_WBINT_SETMAPPING (0x13)
+#define NDR_WBINT_CHANGEMACHINEACCOUNT (0x13)
 
-#define NDR_WBINT_REMOVEMAPPING (0x14)
+#define NDR_WBINT_SETMAPPING (0x14)
 
-#define NDR_WBINT_SETHWM (0x15)
+#define NDR_WBINT_REMOVEMAPPING (0x15)
 
-#define NDR_WBINT_CALL_COUNT (22)
+#define NDR_WBINT_SETHWM (0x16)
+
+#define NDR_WBINT_CALL_COUNT (23)
 enum ndr_err_code ndr_push_wbint_userinfo(struct ndr_push *ndr, int ndr_flags, const struct wbint_userinfo *r);
 enum ndr_err_code ndr_pull_wbint_userinfo(struct ndr_pull *ndr, int ndr_flags, struct wbint_userinfo *r);
 void ndr_print_wbint_userinfo(struct ndr_print *ndr, const char *name, const struct wbint_userinfo *r);
@@ -96,6 +98,7 @@ void ndr_print_wbint_QueryGroupList(struct ndr_print *ndr, const char *name, int
 void ndr_print_wbint_DsGetDcName(struct ndr_print *ndr, const char *name, int flags, const struct wbint_DsGetDcName *r);
 void ndr_print_wbint_LookupRids(struct ndr_print *ndr, const char *name, int flags, const struct wbint_LookupRids *r);
 void ndr_print_wbint_CheckMachineAccount(struct ndr_print *ndr, const char *name, int flags, const struct wbint_CheckMachineAccount *r);
+void ndr_print_wbint_ChangeMachineAccount(struct ndr_print *ndr, const char *name, int flags, const struct wbint_ChangeMachineAccount *r);
 void ndr_print_wbint_SetMapping(struct ndr_print *ndr, const char *name, int flags, const struct wbint_SetMapping *r);
 void ndr_print_wbint_RemoveMapping(struct ndr_print *ndr, const char *name, int flags, const struct wbint_RemoveMapping *r);
 void ndr_print_wbint_SetHWM(struct ndr_print *ndr, const char *name, int flags, const struct wbint_SetHWM *r);
