@@ -722,9 +722,9 @@ static int rootdse_modify(struct ldb_module *module, struct ldb_request *req)
 }
 
 _PUBLIC_ const struct ldb_module_ops ldb_rootdse_module_ops = {
-	.name			= "rootdse",
+	.name		= "rootdse",
 	.init_context   = rootdse_init,
 	.search         = rootdse_search,
-	.request		= rootdse_request,
+	.request	= rootdse_request,
 	.modify         = rootdse_modify
 };
