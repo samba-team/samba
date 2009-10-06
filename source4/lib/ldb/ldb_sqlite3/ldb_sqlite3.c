@@ -1053,6 +1053,19 @@ static int lsql_add(struct lsql_context *ctx)
 
 		a = ldb_schema_attribute_by_name(ldb, el->name);
 
+		if (el->num_value == 0) {
+			ldb_asprintf_errstring(ldb, "attribute %s on %s specified, but with 0 values (illegal)",
+					       el->name, ldb_dn_get_linearized(msg->dn));
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
+		if (a && a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) {
+			if (el->num_values > 1) {
+				ldb_asprintf_errstring(ldb, "SINGLE-VALUED attribute %s on %s specified more than once",
+						       el->name, ldb_dn_get_linearized(msg->dn));
+				return LDB_ERR_CONSTRAINT_VIOLATION;
+			}
+		}
+
 		/* For each value of the specified attribute name... */
 		for (j = 0; j < el->num_values; j++) {
 			struct ldb_val value;
@@ -1125,6 +1138,12 @@ static int lsql_modify(struct lsql_context *ctx)
 		char *mod;
 		int j;
 
+		if (ldb_attr_cmp(el->name, "distinguishedName") == 0) {
+			ldb_asprintf_errstring(ldb, "it is not permitted to perform a modify on 'distinguishedName' (use rename instead): %s",
+					       ldb_dn_get_linearized(msg->dn));
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
+
 		/* Get a case-folded copy of the attribute name */
 		attr = ldb_attr_casefold(ctx, el->name);
 		if (attr == NULL) {
@@ -1136,6 +1155,21 @@ static int lsql_modify(struct lsql_context *ctx)
 		switch (flags) {
 
 		case LDB_FLAG_MOD_REPLACE:
+
+			if (a && a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) {
+				if (el->num_values > 1) {
+					ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s specified more than once",
+						               el->name, ldb_dn_get_linearized(msg->dn));
+					return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+				}
+			}
+
+			for (j=0; j<el->num_values; j++) {
+				if (ldb_msg_find_val(el, &el->values[j]) != &el->values[j]) {
+					ldb_asprintf_errstring(ldb, "%s: value #%d provided more than once", el->name, j);
+					return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+				}
+			}
 
 			/* remove all attributes before adding the replacements */
 			mod = lsqlite3_tprintf(ctx,
@@ -1159,6 +1193,21 @@ static int lsql_modify(struct lsql_context *ctx)
 			/* MISSING break is INTENTIONAL */
 
 		case LDB_FLAG_MOD_ADD:
+
+			if (el->num_values == 0) {
+				ldb_asprintf_errstring(ldb, "attribute %s on %s specified, but with 0 values (illigal)",
+						       el->name, ldb_dn_get_linearized(msg->dn));
+				return LDB_ERR_CONSTRAINT_VIOLATION;
+			}
+
+			if (a && a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) {
+				if (el->num_values > 1) {
+					ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s specified more than once",
+						               el->name, ldb_dn_get_linearized(msg->dn));
+					return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+				}
+			}
+
 #warning "We should throw an error if no value is provided!"
 			/* For each value of the specified attribute name... */
 			for (j = 0; j < el->num_values; j++) {
