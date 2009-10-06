@@ -897,12 +897,6 @@ static int move_ip(struct ctdb_context *ctdb, ctdb_sock_addr *addr, uint32_t pnn
 		talloc_free(tmp_ctx);
 		return -1;
 	}
-	if (ips->ips[i].pnn == pnn) {
-		DEBUG(DEBUG_ERR, ("Host %u is already hosting '%s'\n",
-			pnn, ctdb_addr_to_str(&ips->ips[i].addr)));
-		talloc_free(tmp_ctx);
-		return -1;
-	}
 
 	ip.pnn  = pnn;
 	ip.addr = *addr;
