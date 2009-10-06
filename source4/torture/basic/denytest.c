@@ -1914,7 +1914,8 @@ bool torture_ntdenytest2(struct torture_context *torture,
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
-		torture_comment(tctx, "(%s) Incorrect status %s - should be %s\n", \
+		torture_result(tctx, TORTURE_FAIL, \
+			"(%s) Incorrect status %s - should be %s\n", \
 		       __location__, nt_errstr(status), nt_errstr(correct)); \
 		ret = false; \
 		goto done; \
@@ -1922,7 +1923,8 @@ bool torture_ntdenytest2(struct torture_context *torture,
 
 #define CHECK_VAL(v, correct) do { \
 	if ((v) != (correct)) { \
-		torture_comment(tctx, "(%s) wrong value for %s  0x%x - should be 0x%x\n", \
+		torture_result(tctx, TORTURE_FAIL, \
+		      "(%s) wrong value for %s  0x%x - should be 0x%x\n", \
 		       __location__, #v, (int)(v), (int)correct); \
 		ret = false; \
 	}} while (0)
