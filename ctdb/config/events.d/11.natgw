@@ -37,7 +37,7 @@ case $cmd in
 	ctdb setnatgwstate on
 	;;
 
-     recovered)
+     recovered|updatenatgw)
 	MYPNN=`ctdb pnn | cut -d: -f2`
 	NATGWMASTER=`ctdb natgwlist | head -1 | sed -e "s/ .*//"`
 	NATGWIP=`ctdb natgwlist | head -1 | sed -e "s/^[^ ]* *//"`
@@ -71,7 +71,7 @@ case $cmd in
 	echo 1 > /proc/sys/net/ipv4/route/flush
 	;;
 
-     shutdown)
+     shutdown|removenatgw)
 	delete_all
 	;;
 
