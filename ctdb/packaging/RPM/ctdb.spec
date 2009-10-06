@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.92
+Version: 1.0.93
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -132,6 +132,16 @@ fi
 %{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
+* Tue Oct 8 2009 : Version 1.0.93
+ - When adding an ip, make sure to update this assignment on all nodes
+   so it wont show up as -1 on other nodes.
+ - When adding an ip and immediately deleting it, it was possible that
+   the daemon would crash accessing already freed memory.
+   Readjust the memory hierarchy so the destructors are called in the right order.
+ - Add a handshake to the recovery daemon to eliminate some rare cases where
+   addip/delip might cause a recovery to occur.
+ - updated onnode documenation from Martin S
+ - Updates to the natgw eventscript to allow disabling natgw at runtime
 * Fri Oct 2 2009 : Version 1.0.92
  - Test updates and merge from martin
  - Add notification for "startup"
