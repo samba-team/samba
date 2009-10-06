@@ -547,6 +547,8 @@ static struct winbindd_async_dispatch_table async_priv_table[] = {
 	  winbindd_remove_mapping_send, winbindd_remove_mapping_recv },
 	{ WINBINDD_SET_HWM, "SET_HWM",
 	  winbindd_set_hwm_send, winbindd_set_hwm_recv },
+	{ WINBINDD_CHANGE_MACHACC, "CHANGE_MACHACC",
+	  winbindd_change_machine_acct_send, winbindd_change_machine_acct_recv },
 
 	{ 0, NULL, NULL, NULL }
 };
