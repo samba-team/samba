@@ -1,5 +1,5 @@
 ##################################################
-# Samba4 NDR parser generator for IDL structures
+# Wireshark NDR parser generator for IDL structures
 # Copyright tridge@samba.org 2000-2003
 # Copyright tpot@samba.org 2001,2005
 # Copyright jelmer@samba.org 2004-2007
@@ -895,7 +895,7 @@ sub Initialize($$)
 sub Parse($$$$$)
 {
 	my($self,$ndr,$idl_file,$h_filename,$cnf_file) = @_;
-	
+
 	$self->Initialize($cnf_file);
 
 	return (undef, undef) if defined($self->{conformance}->{noemit_dissector});

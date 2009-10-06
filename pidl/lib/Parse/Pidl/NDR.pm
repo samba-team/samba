@@ -406,6 +406,8 @@ sub align_type($)
 
 	if ($dt->{TYPE} eq "TYPEDEF") {
 		return align_type($dt->{DATA});
+	} elsif ($dt->{TYPE} eq "CONFORMANCE") {
+		return $dt->{DATA}->{ALIGN};
 	} elsif ($dt->{TYPE} eq "ENUM") {
 		return align_type(Parse::Pidl::Typelist::enum_type_fn($dt));
 	} elsif ($dt->{TYPE} eq "BITMAP") {
