@@ -118,6 +118,7 @@ enum winbindd_cmd {
 	/* Miscellaneous other stuff */
 
 	WINBINDD_CHECK_MACHACC,     /* Check machine account pw works */
+	WINBINDD_CHANGE_MACHACC,    /* Change machine account pw */
 	WINBINDD_PING,              /* Just tell me winbind is running */
 	WINBINDD_INFO,              /* Various bit of info.  Currently just tidbits */
 	WINBINDD_DOMAIN_NAME,       /* The domain this winbind server is a member of (lp_workgroup()) */
