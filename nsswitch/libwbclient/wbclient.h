@@ -1202,6 +1202,17 @@ wbcErr wbcResolveWinsByIP(const char *ip, char **name);
 wbcErr wbcCheckTrustCredentials(const char *domain,
 				struct wbcAuthErrorInfo **error);
 
+/**
+ * @brief Trigger a change of the trust credentials for a specific domain
+ *
+ * @param *domain      The name of the domain.
+ * @param error        Output details on WBC_ERR_AUTH_ERROR
+ *
+ * @return #wbcErr
+ **/
+wbcErr wbcChangeTrustCredentials(const char *domain,
+				 struct wbcAuthErrorInfo **error);
+
 /**********************************************************
  * Helper functions
  **********************************************************/
