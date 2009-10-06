@@ -437,13 +437,13 @@ again:
 	/* Pass back result code - zero for success, other values for
 	   specific failures. */
 
-	DEBUG(3, ("secret is %s\n", NT_STATUS_IS_OK(status) ?
-                  "good" : "bad"));
+	DEBUG(3,("domain %s secret is %s\n", domain->name,
+		NT_STATUS_IS_OK(status) ? "good" : "bad"));
 
  done:
 	DEBUG(NT_STATUS_IS_OK(status) ? 5 : 2,
-	      ("Checking the trust account password returned %s\n",
-	       nt_errstr(status)));
+	      ("Checking the trust account password for domain %s returned %s\n",
+	       domain->name, nt_errstr(status)));
 
 	return status;
 }
