@@ -237,7 +237,7 @@ static int asq_build_first_request(struct asq_context *ac, struct ldb_request **
 					ac, asq_base_callback,
 					ac->req);
 	if (ret != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ret;
 	}
 
 	return LDB_SUCCESS;
@@ -292,7 +292,7 @@ static int asq_build_multiple_requests(struct asq_context *ac, bool *terminated)
 						ac, asq_reqs_callback,
 						ac->req);
 		if (ret != LDB_SUCCESS) {
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ret;
 		}
 
 		/* remove the ASQ control itself */

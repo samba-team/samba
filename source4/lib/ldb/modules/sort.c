@@ -315,7 +315,7 @@ static int server_sort_search(struct ldb_module *module, struct ldb_request *req
 					server_sort_search_callback,
 					req);
 	if (ret != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ret;
 	}
 
 	/* save it locally and remove it from the list */

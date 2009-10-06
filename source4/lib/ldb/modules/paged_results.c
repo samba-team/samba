@@ -347,6 +347,9 @@ static int paged_search(struct ldb_module *module, struct ldb_request *req)
 						ac,
 						paged_search_callback,
 						req);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
 
 		/* save it locally and remove it from the list */
 		/* we do not need to replace them later as we

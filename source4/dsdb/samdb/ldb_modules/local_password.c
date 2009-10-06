@@ -633,8 +633,7 @@ static int lpdb_delete_callabck(struct ldb_request *req,
 
 	ret = ldb_next_request(ac->module, search_req);
 	if (ret != LDB_SUCCESS) {
-		return ldb_module_done(ac->req, NULL, NULL,
-					LDB_ERR_OPERATIONS_ERROR);
+		return ldb_module_done(ac->req, NULL, NULL, ret);
 	}
 	return LDB_SUCCESS;
 }
@@ -1082,7 +1081,7 @@ static int local_password_search(struct ldb_module *module, struct ldb_request *
 					ac, lpdb_remote_search_callback,
 					req);
 	if (ret != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ret;
 	}
 
 	/* perform the search */

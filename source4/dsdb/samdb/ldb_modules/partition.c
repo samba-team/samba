@@ -829,14 +829,22 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 					     res,
 					     ldb_extended_default_callback,
 					     NULL);
-	       	ret = ldb_next_request(module, treq);
-		if (ret == LDB_SUCCESS) {
-			ret = ldb_wait(treq->handle, LDB_WAIT_ALL);
-		}
 		if (ret != LDB_SUCCESS) {
 			talloc_free(res);
 			return ret;
 		}
+
+		ret = ldb_next_request(module, treq);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(res);
+			return ret;
+		}
+		ret = ldb_wait(treq->handle, LDB_WAIT_ALL);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(res);
+			return ret;
+		}
+
 		seqr = talloc_get_type(res->extended->data,
 					struct ldb_seqnum_result);
 		if (seqr->flags & LDB_SEQ_TIMESTAMP_SEQUENCE) {
@@ -1083,7 +1091,7 @@ static int partition_extended_schema_update_now(struct ldb_module *module, struc
 	}
 
 	/* fire the first one */
-	ret =  partition_call_first(ac);
+	ret = partition_call_first(ac);
 
 	if (ret != LDB_SUCCESS){
 		return ret;
@@ -1385,14 +1393,14 @@ static int partition_init(struct ldb_module *module)
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_ERROR,
 			"partition: Unable to register control with rootdse!\n");
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ret;
 	}
 
 	ret = ldb_mod_register_control(module, LDB_CONTROL_SEARCH_OPTIONS_OID);
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_ERROR,
 			"partition: Unable to register control with rootdse!\n");
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ret;
 	}
 
 	talloc_free(mem_ctx);
