@@ -702,7 +702,7 @@ FILE *sys_fopen(const char *path, const char *type)
  A flock() wrapper that will perform the kernel flock.
 ********************************************************************/
 
-void kernel_flock(int fd, uint32 share_mode)
+void kernel_flock(int fd, uint32 share_mode, uint32 access_mask)
 {
 #if HAVE_KERNEL_SHARE_MODES
 	int kernel_mode = 0;

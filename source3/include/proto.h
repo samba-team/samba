@@ -937,7 +937,7 @@ SMB_OFF_T sys_ftell(FILE *fp);
 int sys_creat(const char *path, mode_t mode);
 int sys_open(const char *path, int oflag, mode_t mode);
 FILE *sys_fopen(const char *path, const char *type);
-void kernel_flock(int fd, uint32 share_mode);
+void kernel_flock(int fd, uint32 share_mode, uint32 access_mask);
 SMB_STRUCT_DIR *sys_opendir(const char *name);
 SMB_STRUCT_DIRENT *sys_readdir(SMB_STRUCT_DIR *dirp);
 void sys_seekdir(SMB_STRUCT_DIR *dirp, long offset);

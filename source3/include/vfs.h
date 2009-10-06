@@ -247,7 +247,8 @@ struct vfs_fn_pointers {
 		      struct smb_file_time *ft);
 	int (*ftruncate)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_OFF_T offset);
 	bool (*lock)(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
-	int (*kernel_flock)(struct vfs_handle_struct *handle, struct files_struct *fsp, uint32 share_mode);
+	int (*kernel_flock)(struct vfs_handle_struct *handle, struct files_struct *fsp,
+			    uint32 share_mode, uint32_t access_mask);
 	int (*linux_setlease)(struct vfs_handle_struct *handle, struct files_struct *fsp, int leasetype);
 	bool (*getlock)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid);
 	int (*symlink)(struct vfs_handle_struct *handle, const char *oldpath, const char *newpath);
@@ -598,7 +599,8 @@ bool smb_vfs_call_lock(struct vfs_handle_struct *handle,
 		       struct files_struct *fsp, int op, SMB_OFF_T offset,
 		       SMB_OFF_T count, int type);
 int smb_vfs_call_kernel_flock(struct vfs_handle_struct *handle,
-			      struct files_struct *fsp, uint32 share_mode);
+			      struct files_struct *fsp, uint32 share_mode,
+			      uint32_t access_mask);
 int smb_vfs_call_linux_setlease(struct vfs_handle_struct *handle,
 				struct files_struct *fsp, int leasetype);
 bool smb_vfs_call_getlock(struct vfs_handle_struct *handle,

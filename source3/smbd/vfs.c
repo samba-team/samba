@@ -1417,10 +1417,12 @@ int smb_vfs_call_ftruncate(struct vfs_handle_struct *handle,
 }
 
 int smb_vfs_call_kernel_flock(struct vfs_handle_struct *handle,
-			      struct files_struct *fsp, uint32 share_mode)
+			      struct files_struct *fsp, uint32 share_mode,
+			      uint32_t access_mask)
 {
 	VFS_FIND(kernel_flock);
-	return handle->fns->kernel_flock(handle, fsp, share_mode);
+	return handle->fns->kernel_flock(handle, fsp, share_mode,
+					 access_mask);
 }
 
 int smb_vfs_call_linux_setlease(struct vfs_handle_struct *handle,
