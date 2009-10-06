@@ -116,103 +116,105 @@ WERROR _netr_LogonControl2Ex(pipes_struct *p,
 	const char *fn;
 
 	switch (p->hdr_req.opnum) {
-		case NDR_NETR_LOGONCONTROL:
-			fn = "_netr_LogonControl";
-			break;
-		case NDR_NETR_LOGONCONTROL2:
-			fn = "_netr_LogonControl2";
-			break;
-		case NDR_NETR_LOGONCONTROL2EX:
-			fn = "_netr_LogonControl2Ex";
-			break;
-		default:
-			return WERR_INVALID_PARAM;
+	case NDR_NETR_LOGONCONTROL:
+		fn = "_netr_LogonControl";
+		break;
+	case NDR_NETR_LOGONCONTROL2:
+		fn = "_netr_LogonControl2";
+		break;
+	case NDR_NETR_LOGONCONTROL2EX:
+		fn = "_netr_LogonControl2Ex";
+		break;
+	default:
+		return WERR_INVALID_PARAM;
 	}
 
 	tc_status = WERR_NO_SUCH_DOMAIN;
 
 	switch (r->in.function_code) {
-		case NETLOGON_CONTROL_TC_QUERY:
-			domain = r->in.data->domain;
+	case NETLOGON_CONTROL_TC_QUERY:
+		domain = r->in.data->domain;
 
-			if ( !is_trusted_domain( domain ) )
-				break;
-
-			if ( !get_dc_name( domain, NULL, dc_name2, &dc_ss ) ) {
-				tc_status = WERR_NO_LOGON_SERVERS;
-				break;
-			}
-
-			dc_name = talloc_asprintf(p->mem_ctx, "\\\\%s", dc_name2);
-			if (!dc_name) {
-				return WERR_NOMEM;
-			}
-
-			tc_status = WERR_OK;
-
+		if (!is_trusted_domain(domain)) {
 			break;
+		}
 
-		case NETLOGON_CONTROL_REDISCOVER:
-			domain = r->in.data->domain;
-
-			if ( !is_trusted_domain( domain ) )
-				break;
-
-			if ( !get_dc_name( domain, NULL, dc_name2, &dc_ss ) ) {
-				tc_status = WERR_NO_LOGON_SERVERS;
-				break;
-			}
-
-			dc_name = talloc_asprintf(p->mem_ctx, "\\\\%s", dc_name2);
-			if (!dc_name) {
-				return WERR_NOMEM;
-			}
-
-			tc_status = WERR_OK;
-
+		if (!get_dc_name(domain, NULL, dc_name2, &dc_ss)) {
+			tc_status = WERR_NO_LOGON_SERVERS;
 			break;
+		}
 
-		default:
-			/* no idea what this should be */
-			DEBUG(0,("%s: unimplemented function level [%d]\n",
-				fn, r->in.function_code));
-			return WERR_UNKNOWN_LEVEL;
+		dc_name = talloc_asprintf(p->mem_ctx, "\\\\%s", dc_name2);
+		if (!dc_name) {
+			return WERR_NOMEM;
+		}
+
+		tc_status = WERR_OK;
+
+		break;
+
+	case NETLOGON_CONTROL_REDISCOVER:
+		domain = r->in.data->domain;
+
+		if (!is_trusted_domain(domain)) {
+			break;
+		}
+
+		if (!get_dc_name(domain, NULL, dc_name2, &dc_ss)) {
+			tc_status = WERR_NO_LOGON_SERVERS;
+			break;
+		}
+
+		dc_name = talloc_asprintf(p->mem_ctx, "\\\\%s", dc_name2);
+		if (!dc_name) {
+			return WERR_NOMEM;
+		}
+
+		tc_status = WERR_OK;
+
+		break;
+
+	default:
+		/* no idea what this should be */
+		DEBUG(0,("%s: unimplemented function level [%d]\n",
+			fn, r->in.function_code));
+		return WERR_UNKNOWN_LEVEL;
 	}
 
 	/* prepare the response */
 
 	switch (r->in.level) {
-		case 1:
-			info1 = TALLOC_ZERO_P(p->mem_ctx, struct netr_NETLOGON_INFO_1);
-			W_ERROR_HAVE_NO_MEMORY(info1);
+	case 1:
+		info1 = TALLOC_ZERO_P(p->mem_ctx, struct netr_NETLOGON_INFO_1);
+		W_ERROR_HAVE_NO_MEMORY(info1);
 
-			info1->flags			= flags;
-			info1->pdc_connection_status	= pdc_connection_status;
+		info1->flags			= flags;
+		info1->pdc_connection_status	= pdc_connection_status;
 
-			r->out.query->info1 = info1;
-			break;
-		case 2:
-			info2 = TALLOC_ZERO_P(p->mem_ctx, struct netr_NETLOGON_INFO_2);
-			W_ERROR_HAVE_NO_MEMORY(info2);
+		r->out.query->info1 = info1;
+		break;
+	case 2:
+		info2 = TALLOC_ZERO_P(p->mem_ctx, struct netr_NETLOGON_INFO_2);
+		W_ERROR_HAVE_NO_MEMORY(info2);
 
-			info2->flags			= flags;
-			info2->pdc_connection_status	= pdc_connection_status;
-			info2->trusted_dc_name		= dc_name;
-			info2->tc_connection_status	= tc_status;
+		info2->flags			= flags;
+		info2->pdc_connection_status	= pdc_connection_status;
+		info2->trusted_dc_name		= dc_name;
+		info2->tc_connection_status	= tc_status;
 
-			r->out.query->info2 = info2;
-			break;
-		case 3:
-			info3 = TALLOC_ZERO_P(p->mem_ctx, struct netr_NETLOGON_INFO_3);
-			W_ERROR_HAVE_NO_MEMORY(info3);
+		r->out.query->info2 = info2;
+		break;
+	case 3:
+		info3 = TALLOC_ZERO_P(p->mem_ctx, struct netr_NETLOGON_INFO_3);
+		W_ERROR_HAVE_NO_MEMORY(info3);
 
-			info3->flags			= flags;
-			info3->logon_attempts		= logon_attempts;
+		info3->flags			= flags;
+		info3->logon_attempts		= logon_attempts;
 
-			r->out.query->info3 = info3;
-			break;
-		default:
-			return WERR_UNKNOWN_LEVEL;
+		r->out.query->info3 = info3;
+		break;
+	default:
+		return WERR_UNKNOWN_LEVEL;
 	}
 
         if (lp_server_role() == ROLE_DOMAIN_BDC) {
