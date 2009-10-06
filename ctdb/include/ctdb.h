@@ -101,7 +101,10 @@ struct ctdb_call_info {
  */
 #define CTDB_SRVID_TAKEOVER_RUN 0xFB00000000000000LL
 
-
+/* A message id to ask the recovery daemon to temporarily disable the
+   public ip checks
+*/
+#define CTDB_SRVID_DISABLE_IP_CHECK  0xFC00000000000000LL
 
 /* used on the domain socket, send a pdu to the local daemon */
 #define CTDB_CURRENT_NODE     0xF0000001
@@ -581,6 +584,10 @@ uint32_t *list_of_vnnmap_nodes(struct ctdb_context *ctdb,
 				struct ctdb_vnn_map *vnn_map,
 				TALLOC_CTX *mem_ctx,
 				bool include_self);
+uint32_t *list_of_active_nodes_except_pnn(struct ctdb_context *ctdb,
+				struct ctdb_node_map *node_map,
+				TALLOC_CTX *mem_ctx,
+				uint32_t pnn);
 
 int ctdb_read_pnn_lock(int fd, int32_t pnn);
 

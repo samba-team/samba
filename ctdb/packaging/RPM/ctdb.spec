@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.91
+Version: 1.0.92
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -132,6 +132,11 @@ fi
 %{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
+* Fri Oct 2 2009 : Version 1.0.92
+ - Test updates and merge from martin
+ - Add notification for "startup"
+ - Add documentation for notification
+ - from martin, a fix for restarting vsftpd in the eventscript
 * Tue Sep 29 2009 : Version 1.0.91
  - New vacuum and repack design from Wolgang Mueller.
  - Add a new eventscript 01.reclock that will first mark a node unhealthy and later ban the node if the reclock file can not be accessed.

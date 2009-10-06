@@ -137,7 +137,7 @@ static void takeover_ip_callback(struct ctdb_context *ctdb, int status,
 	}
 
 	if (!state->vnn->takeover_ctx) {
-		state->vnn->takeover_ctx = talloc_new(ctdb);
+		state->vnn->takeover_ctx = talloc_new(state->vnn);
 		if (!state->vnn->takeover_ctx) {
 			goto failed;
 		}
@@ -219,7 +219,7 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 		return 0;
 	}
 
-	state = talloc(ctdb, struct takeover_callback_state);
+	state = talloc(vnn, struct takeover_callback_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
 	state->c = talloc_steal(ctdb, c);
@@ -368,17 +368,18 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 	vnn->takeover_ctx = NULL;
 
 	if (!ctdb_sys_have_ip(&pip->addr)) {
-		DEBUG(DEBUG_INFO,("Redundant release of IP %s/%u on interface %s (ip not held)\n", 
+		DEBUG(DEBUG_NOTICE,("Redundant release of IP %s/%u on interface %s (ip not held)\n", 
 			ctdb_addr_to_str(&pip->addr),
 			vnn->public_netmask_bits, 
 			vnn->iface));
 		return 0;
 	}
 
-	DEBUG(DEBUG_NOTICE,("Release of IP %s/%u on interface %s\n", 
+	DEBUG(DEBUG_NOTICE,("Release of IP %s/%u on interface %s  node:%u\n", 
 		ctdb_addr_to_str(&pip->addr),
 		vnn->public_netmask_bits, 
-		vnn->iface));
+		vnn->iface,
+		pip->pnn));
 
 	state = talloc(ctdb, struct takeover_callback_state);
 	CTDB_NO_MEMORY(ctdb, state);
