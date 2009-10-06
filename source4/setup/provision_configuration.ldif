@@ -650,12 +650,12 @@ objectClass: container
 dn: CN=ActiveDirectoryRodcUpdate,CN=ForestUpdates,${CONFIGDN}
 objectClass: top
 objectClass: container
-revision: 2
+revision: 5
 
 dn: CN=ActiveDirectoryUpdate,CN=ForestUpdates,${CONFIGDN}
 objectClass: top
 objectClass: container
-revision: 2
+revision: 5
 
 dn: CN=Operations,CN=ForestUpdates,${CONFIGDN}
 objectClass: top
