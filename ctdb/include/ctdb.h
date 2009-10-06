@@ -101,7 +101,10 @@ struct ctdb_call_info {
  */
 #define CTDB_SRVID_TAKEOVER_RUN 0xFB00000000000000LL
 
-
+/* A message id to ask the recovery daemon to temporarily disable the
+   public ip checks
+*/
+#define CTDB_SRVID_DISABLE_IP_CHECK  0xFC00000000000000LL
 
 /* used on the domain socket, send a pdu to the local daemon */
 #define CTDB_CURRENT_NODE     0xF0000001

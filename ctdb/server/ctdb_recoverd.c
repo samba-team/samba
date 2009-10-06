@@ -63,6 +63,7 @@ struct ctdb_recoverd {
 	struct vacuum_info *vacuum_info;
 	TALLOC_CTX *ip_reallocate_ctx;
 	struct ip_reallocate_list *reallocate_callers;
+	TALLOC_CTX *ip_check_disable_ctx;
 };
 
 #define CONTROL_TIMEOUT() timeval_current_ofs(ctdb->tunable.recover_timeout, 0)
@@ -1685,6 +1686,46 @@ static void reload_nodes_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	reload_nodes_file(rec->ctdb);
 }
 
+
+static void reenable_ip_check(struct event_context *ev, struct timed_event *te, 
+			      struct timeval yt, void *p)
+{
+	struct ctdb_recoverd *rec = talloc_get_type(p, struct ctdb_recoverd);
+
+	talloc_free(rec->ip_check_disable_ctx);
+	rec->ip_check_disable_ctx = NULL;
+}
+
+static void disable_ip_check_handler(struct ctdb_context *ctdb, uint64_t srvid, 
+			     TDB_DATA data, void *private_data)
+{
+	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
+	uint32_t timeout;
+
+	if (rec->ip_check_disable_ctx != NULL) {
+		talloc_free(rec->ip_check_disable_ctx);
+		rec->ip_check_disable_ctx = NULL;
+	}
+
+	if (data.dsize != sizeof(uint32_t)) {
+		DEBUG(DEBUG_ERR,(__location__ " Wrong size for data :%lu expexting %lu\n", data.dsize, sizeof(uint32_t)));
+		return;
+	}
+	if (data.dptr == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " No data recaived\n"));
+		return;
+	}
+
+	timeout = *((uint32_t *)data.dptr);
+	DEBUG(DEBUG_NOTICE,("Disabling ip check for %u seconds\n", timeout));
+
+	rec->ip_check_disable_ctx = talloc_new(rec);
+	CTDB_NO_MEMORY_VOID(ctdb, rec->ip_check_disable_ctx);
+
+	event_add_timed(ctdb->ev, rec->ip_check_disable_ctx, timeval_current_ofs(timeout, 0), reenable_ip_check, rec);
+}
+
+
 /*
   handler for ip reallocate, just add it to the list of callers and 
   handle this later in the monitor_cluster loop so we do not recurse
@@ -2531,6 +2572,9 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	/* register a message port for performing a takeover run */
 	ctdb_set_message_handler(ctdb, CTDB_SRVID_TAKEOVER_RUN, ip_reallocate_handler, rec);
 
+	/* register a message port for disabling the ip check for a short while */
+	ctdb_set_message_handler(ctdb, CTDB_SRVID_DISABLE_IP_CHECK, disable_ip_check_handler, rec);
+
 again:
 	if (mem_ctx) {
 		talloc_free(mem_ctx);
@@ -2762,9 +2806,11 @@ again:
 	 * have addresses we shouldnt have.
 	 */ 
 	if (ctdb->do_checkpublicip) {
-		if (verify_ip_allocation(ctdb, pnn) != 0) {
-			DEBUG(DEBUG_ERR, (__location__ " Public IPs were inconsistent.\n"));
-			goto again;
+		if (rec->ip_check_disable_ctx == NULL) {
+			if (verify_ip_allocation(ctdb, pnn) != 0) {
+				DEBUG(DEBUG_ERR, (__location__ " Public IPs were inconsistent.\n"));
+				goto again;
+			}
 		}
 	}
 

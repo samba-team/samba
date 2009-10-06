@@ -862,9 +862,21 @@ static int move_ip(struct ctdb_context *ctdb, ctdb_sock_addr *addr, uint32_t pnn
 	struct ctdb_public_ip ip;
 	int i, ret;
 	uint32_t *nodes;
+	uint32_t disable_time;
 	TDB_DATA data;
 	struct ctdb_node_map *nodemap=NULL;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+
+	disable_time = 30;
+	data.dptr  = (uint8_t*)&disable_time;
+	data.dsize = sizeof(disable_time);
+	ret = ctdb_send_message(ctdb, CTDB_BROADCAST_CONNECTED, CTDB_SRVID_DISABLE_IP_CHECK, data);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to send message to disable ipcheck\n"));
+		return -1;
+	}
+
+
 
 	/* read the public ip list from the node */
 	ret = ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), pnn, ctdb, &ips);
