@@ -250,10 +250,10 @@
 #define SMB_VFS_NEXT_LOCK(handle, fsp, op, offset, count, type) \
 	smb_vfs_call_lock((handle)->next, (fsp), (op), (offset), (count), (type))
 
-#define SMB_VFS_KERNEL_FLOCK(fsp, share_mode) \
-	smb_vfs_call_kernel_flock((fsp)->conn->vfs_handles, (fsp), (share_mode))
-#define SMB_VFS_NEXT_KERNEL_FLOCK(handle, fsp, share_mode) \
-	smb_vfs_call_kernel_flock((handle)->next, (fsp), (share_mode))
+#define SMB_VFS_KERNEL_FLOCK(fsp, share_mode, access_mask) \
+	smb_vfs_call_kernel_flock((fsp)->conn->vfs_handles, (fsp), (share_mode), (access_mask))
+#define SMB_VFS_NEXT_KERNEL_FLOCK(handle, fsp, share_mode, access_mask)	\
+	smb_vfs_call_kernel_flock((handle)->next, (fsp), (share_mode), (access_mask))
 
 #define SMB_VFS_LINUX_SETLEASE(fsp, leasetype) \
 	smb_vfs_call_linux_setlease((fsp)->conn->vfs_handles, (fsp), (leasetype))

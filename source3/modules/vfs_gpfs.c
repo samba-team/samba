@@ -31,14 +31,14 @@
 #include "vfs_gpfs.h"
 
 static int vfs_gpfs_kernel_flock(vfs_handle_struct *handle, files_struct *fsp, 
-				 uint32 share_mode)
+				 uint32 share_mode, uint32 access_mask)
 {
 
 	START_PROFILE(syscall_kernel_flock);
 
-	kernel_flock(fsp->fh->fd, share_mode);
+	kernel_flock(fsp->fh->fd, share_mode, access_mask);
 
-	if (!set_gpfs_sharemode(fsp, fsp->access_mask, fsp->share_access)) {
+	if (!set_gpfs_sharemode(fsp, access_mask, fsp->share_access)) {
 
 		return -1;
 
