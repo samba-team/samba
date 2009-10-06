@@ -6795,7 +6795,10 @@ bool torture_rpc_samr(struct torture_context *torture)
 		return false;
 	}
 
-	ret &= test_samr_ValidatePassword(p, torture);
+
+	if (torture_setting_bool(torture, "dangerous", false)) {
+		ret &= test_samr_ValidatePassword(p, torture);
+	}
 
 	ret &= test_Connect(p, torture, &handle);
 
@@ -7039,3 +7042,4 @@ struct torture_suite *torture_rpc_samr_large_dc(TALLOC_CTX *mem_ctx)
 
 	return suite;
 }
+
