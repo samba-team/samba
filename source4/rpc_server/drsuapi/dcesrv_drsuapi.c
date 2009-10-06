@@ -27,6 +27,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
 #include "libcli/security/security.h"
+#include "auth/auth.h"
 
 /* 
   drsuapi_DsBind 
@@ -47,6 +48,8 @@ static WERROR dcesrv_drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_C
 	uint32_t pid;
 	uint32_t repl_epoch;
 	int ret;
+	struct auth_session_info *auth_info;
+	WERROR werr;
 
 	r->out.bind_info = NULL;
 	ZERO_STRUCTP(r->out.bind_handle);
@@ -54,10 +57,20 @@ static WERROR dcesrv_drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_C
 	b_state = talloc_zero(mem_ctx, struct drsuapi_bind_state);
 	W_ERROR_HAVE_NO_MEMORY(b_state);
 
+	/* if this is a DC connecting, give them system level access */
+	werr = drs_security_level_check(dce_call, NULL);
+	if (W_ERROR_IS_OK(werr)) {
+		DEBUG(0,(__location__ ": doing DsBind with system_session\n"));
+		auth_info = system_session(b_state, dce_call->conn->dce_ctx->lp_ctx);
+	} else {
+		auth_info = dce_call->conn->auth_state.session_info;
+	}
+
 	/*
 	 * connect to the samdb
 	 */
-	b_state->sam_ctx = samdb_connect(b_state, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, dce_call->conn->auth_state.session_info); 
+	b_state->sam_ctx = samdb_connect(b_state, dce_call->event_ctx, 
+					 dce_call->conn->dce_ctx->lp_ctx, auth_info); 
 	if (!b_state->sam_ctx) {
 		return WERR_FOOBAR;
 	}
