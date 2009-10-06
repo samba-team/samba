@@ -664,7 +664,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 			 * exists in the object, then we violoate the
 			 * single-value rule */
 			if (a && a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) {
-				ret = LDB_ERR_CONSTRAINT_VIOLATION;
+				ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
 				goto failed;
 			}
 
