@@ -2091,7 +2091,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	   note that GPFS supports it as well - jmcd */
 
 	if (fsp->fh->fd != -1) {
-		ret_flock = SMB_VFS_KERNEL_FLOCK(fsp, share_access);
+		ret_flock = SMB_VFS_KERNEL_FLOCK(fsp, share_access, access_mask);
 		if(ret_flock == -1 ){
 
 			TALLOC_FREE(lck);
