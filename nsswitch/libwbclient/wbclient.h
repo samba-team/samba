@@ -1183,9 +1183,7 @@ wbcErr wbcResolveWinsByIP(const char *ip, char **name);
 /**
  * @brief Trigger a verification of the trust credentials of a specific domain
  *
- * @param *domain      The name of the domain, only NULL for the default domain is
- *                     supported yet. Other values than NULL will result in
- *                     WBC_ERR_NOT_IMPLEMENTED.
+ * @param *domain      The name of the domain.
  * @param error        Output details on WBC_ERR_AUTH_ERROR
  *
  * @return #wbcErr
