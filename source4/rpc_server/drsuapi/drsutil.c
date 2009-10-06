@@ -127,7 +127,9 @@ WERROR drs_security_level_check(struct dcesrv_call_state *dce_call, const char* 
 
 	if (security_session_user_level(dce_call->conn->auth_state.session_info) <
 		SECURITY_DOMAIN_CONTROLLER) {
-		DEBUG(0,("DsReplicaGetInfo refused for security token\n"));
+		if (call) {
+			DEBUG(0,("%s refused for security token\n", call));
+		}
 		return WERR_DS_DRA_ACCESS_DENIED;
 	}
 
