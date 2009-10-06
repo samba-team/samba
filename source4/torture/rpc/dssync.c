@@ -36,6 +36,9 @@
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
 #include "dsdb/samdb/samdb.h"
+#include "torture/rpc/rpc.h"
+#include "torture/drs/proto.h"
+
 
 struct DsSyncBindInfo {
 	struct dcerpc_pipe *pipe;
@@ -538,6 +541,49 @@ static bool _drs_ldap_attr_by_oid(struct torture_context *tctx,
 	return true;
 }
 
+/**
+ * Make Attribute OID and verify such Attribute exists in schema
+ */
+static bool _drs_util_verify_attids(struct torture_context *tctx,
+				    struct DsSyncTest *ctx,
+				    struct drsuapi_DsReplicaOIDMapping_Ctr *prefix_map,
+				    struct drsuapi_DsReplicaObjectListItemEx *cur)
+{
+	uint32_t i;
+
+	DEBUG(1,("drs_test_verify_attids:\n"));
+
+	for (; cur; cur = cur->next_object) {
+		const char *attr_dn = NULL;
+		const char *attr_name = NULL;
+		struct drsuapi_DsReplicaObject *obj = &cur->object;
+
+		DEBUG(1,("%3s %-10s: %s\n", "", "object_dn", obj->identifier->dn));
+
+		for (i = 0; i < obj->attribute_ctr.num_attributes; i++) {
+			int map_idx;
+			const char *oid = NULL;
+			struct drsuapi_DsReplicaAttribute *attr;
+
+			attr = &obj->attribute_ctr.attributes[i];
+			if (!drs_util_oid_from_attid(tctx, prefix_map, attr->attid, &oid, &map_idx)) {
+				return false;
+			}
+
+			if (!_drs_ldap_attr_by_oid(tctx, ctx, oid, &attr_dn, &attr_name)) {
+				return false;
+			}
+
+			DEBUG(1,("%7s attr[%2d]: %-22s {map_idx=%2d; attid=0x%06x; ldap_name=%-26s; idl_name=%s}\n", "",
+					i, oid, map_idx, attr->attid, attr_name,
+					drs_util_DsAttributeId_to_string(attr->attid)));
+		}
+	}
+
+	return true;
+}
+
+
 static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 {
 	NTSTATUS status;
@@ -719,6 +765,8 @@ static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 					(long long)ctr1->new_highwatermark.tmp_highest_usn,
 					(long long)ctr1->new_highwatermark.highest_usn));
 
+				_drs_util_verify_attids(tctx, ctx, &ctr1->mapping_ctr, ctr1->first_object);
+
 				test_analyse_objects(tctx, ctx, &gensec_skey, ctr1->first_object);
 
 				if (ctr1->more_data) {
@@ -748,6 +796,8 @@ static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 				DEBUG(0,("end[%d] tmp_highest_usn: %llu , highest_usn: %llu\n",y,
 					(long long)ctr6->new_highwatermark.tmp_highest_usn,
 					(long long)ctr6->new_highwatermark.highest_usn));
+
+				_drs_util_verify_attids(tctx, ctx, &ctr6->mapping_ctr, ctr6->first_object);
 
 				test_analyse_objects(tctx, ctx, &gensec_skey, ctr6->first_object);
 
