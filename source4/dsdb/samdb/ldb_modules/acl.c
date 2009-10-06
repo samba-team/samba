@@ -802,6 +802,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+/* TODO Is this really right? */
 /*	if (what_is_user(module) == SECURITY_SYSTEM) */
 		return ldb_next_request(module, req);
 
@@ -813,7 +814,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	ac->user_type = what_is_user(module);
 	ac->sec_result = LDB_SUCCESS;
 	if (!is_root_base_dn(ldb, req->op.mod.message->dn) && parent && !is_root_base_dn(ldb, parent)){
-	  filter = talloc_asprintf(req,"(&(objectClass=*)(|(%s=%s)(%s=%s))))",
+		filter = talloc_asprintf(req,"(&(objectClass=*)(|(%s=%s)(%s=%s))))",
 				   ldb_dn_get_component_name(parent,0),
 				   ldb_dn_get_component_val(parent,0)->data,
 				   ldb_dn_get_component_name(req->op.mod.message->dn,0),
