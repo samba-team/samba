@@ -180,6 +180,7 @@ WERROR dcesrv_drsuapi_DsAddEntry(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		if (!W_ERROR_IS_OK(status)) {
 			r->out.ctr->ctr3.error->info1.status = status;
 			ldb_transaction_cancel(b_state->sam_ctx);
+			DEBUG(0,(__location__ ": DsAddEntry failed - %s\n", win_errstr(status)));
 			return status;
 		}
 
@@ -198,11 +199,13 @@ WERROR dcesrv_drsuapi_DsAddEntry(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	if (!W_ERROR_IS_OK(status)) {
 		r->out.ctr->ctr3.error->info1.status = status;
 		ldb_transaction_cancel(b_state->sam_ctx);
+		DEBUG(0,(__location__ ": DsAddEntry add SPNs failed - %s\n", win_errstr(status)));
 		return status;
 	}
 
 	ret = ldb_transaction_commit(b_state->sam_ctx);
 	if (ret != LDB_SUCCESS) {
+		DEBUG(0,(__location__ ": DsAddEntry commit failed\n"));
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
