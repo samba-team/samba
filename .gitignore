@@ -298,6 +298,7 @@ source4/torture/proto.h
 source4/torture/rap/proto.h
 source4/torture/raw/proto.h
 source4/torture/rpc/proto.h
+source4/torture/drs/proto.h
 source4/torture/smb2/proto.h
 source4/torture.tdb
 source4/torture/unix/proto.h
