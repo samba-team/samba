@@ -6796,7 +6796,6 @@ bool torture_rpc_samr(struct torture_context *torture)
 	}
 
 	ret &= test_samr_ValidatePassword(p, torture);
-	exit(1);
 
 	ret &= test_Connect(p, torture, &handle);
 
