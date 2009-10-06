@@ -2319,11 +2319,15 @@ NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 	prs_mem_free(&rbuf);
 	return NT_STATUS_OK;
 }
-
-unsigned int rpccli_set_timeout(struct rpc_pipe_client *cli,
+unsigned int rpccli_set_timeout(struct rpc_pipe_client *rpc_cli,
 				unsigned int timeout)
 {
-	return cli_set_timeout(cli->trans.np.cli, timeout);
+	struct cli_state *cli = rpc_pipe_np_smb_conn(rpc_cli);
+
+	if (cli == NULL) {
+		return 0;
+	}
+	return cli_set_timeout(cli, timeout);
 }
 
 bool rpccli_get_pwd_hash(struct rpc_pipe_client *cli, uint8_t nt_hash[16])
