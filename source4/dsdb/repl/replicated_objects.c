@@ -424,35 +424,78 @@ WERROR dsdb_origin_objects_commit(struct ldb_context *ldb,
 		return WERR_OK;
 	}
 
+	ret = ldb_transaction_start(ldb);
+	if (ret != LDB_SUCCESS) {
+		return WERR_DS_INTERNAL_FAILURE;
+	}
+
 	objects	= talloc_array(mem_ctx, struct ldb_message *,
 			       num_objects);
-	W_ERROR_HAVE_NO_MEMORY(objects);
+	if (objects == NULL) {
+		status = WERR_NOMEM;
+		goto cancel;
+	}
 
 	for (i=0, cur = first_object; cur; cur = cur->next_object, i++) {
 		status = dsdb_convert_object(ldb, schema,
 					     cur, objects, &objects[i]);
-		W_ERROR_NOT_OK_RETURN(status);
+		if (!W_ERROR_IS_OK(status)) {
+			goto cancel;
+		}
 	}
 
-	ids = talloc_array(mem_ctx,
+	ids = talloc_array(objects,
 			   struct drsuapi_DsReplicaObjectIdentifier2,
 			   num_objects);
-	W_ERROR_HAVE_NO_MEMORY(objects);
+	if (ids == NULL) {
+		status = WERR_NOMEM;
+		goto cancel;
+	}
 
 	for (i=0; i < num_objects; i++) {
 		struct dom_sid *sid = NULL;
+		struct ldb_request *add_req;
 
 		DEBUG(6,(__location__ ": adding %s\n", 
 			 ldb_dn_get_linearized(objects[i]->dn)));
-		
-		ret = ldb_add(ldb, objects[i]);
-		if (ret != 0) {
+
+		ret = ldb_build_add_req(&add_req,
+					ldb,
+					objects,
+					objects[i],
+					NULL,
+					NULL,
+					ldb_op_default_callback,
+					NULL);
+		if (ret != LDB_SUCCESS) {
+			status = WERR_DS_INTERNAL_FAILURE;
 			goto cancel;
 		}
+
+		ret = ldb_request_add_control(add_req, LDB_CONTROL_RELAX_OID, true, NULL);
+		if (ret != LDB_SUCCESS) {
+			status = WERR_DS_INTERNAL_FAILURE;
+			goto cancel;
+		}
+		
+		ret = ldb_request(ldb, add_req);
+		if (ret == LDB_SUCCESS) {
+			ret = ldb_wait(add_req->handle, LDB_WAIT_ALL);
+		}
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0,(__location__ ": Failed add of %s - %s\n",
+				 ldb_dn_get_linearized(objects[i]->dn), ldb_errstring(ldb)));
+			status = WERR_DS_INTERNAL_FAILURE;
+			goto cancel;
+		}
+
+		talloc_free(add_req);
+
 		ret = ldb_search(ldb, objects, &res, objects[i]->dn,
 				 LDB_SCOPE_BASE, attrs,
 				 "(objectClass=*)");
-		if (ret != 0) {
+		if (ret != LDB_SUCCESS) {
+			status = WERR_DS_INTERNAL_FAILURE;
 			goto cancel;
 		}
 		ids[i].guid = samdb_result_guid(res->msgs[0], "objectGUID");
@@ -464,13 +507,19 @@ WERROR dsdb_origin_objects_commit(struct ldb_context *ldb,
 		}
 	}
 
+	ret = ldb_transaction_commit(ldb);
+	if (ret != LDB_SUCCESS) {
+		return WERR_DS_INTERNAL_FAILURE;
+	}
+
 	talloc_free(objects);
 
 	*_num = num_objects;
 	*_ids = ids;
 	return WERR_OK;
+
 cancel:
 	talloc_free(objects);
 	ldb_transaction_cancel(ldb);
-	return WERR_FOOBAR;
+	return status;
 }
