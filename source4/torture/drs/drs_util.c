@@ -92,3 +92,77 @@ bool drs_util_oid_from_attid(struct torture_context *tctx,
 
 	return true;
 }
+
+/**
+ * Utility function to convert drsuapi_DsAttributeId to String
+ */
+const char * drs_util_DsAttributeId_to_string(enum drsuapi_DsAttributeId r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+	case DRSUAPI_ATTRIBUTE_objectClass: val = "DRSUAPI_ATTRIBUTE_objectClass"; break;
+	case DRSUAPI_ATTRIBUTE_description: val = "DRSUAPI_ATTRIBUTE_description"; break;
+	case DRSUAPI_ATTRIBUTE_member: val = "DRSUAPI_ATTRIBUTE_member"; break;
+	case DRSUAPI_ATTRIBUTE_instanceType: val = "DRSUAPI_ATTRIBUTE_instanceType"; break;
+	case DRSUAPI_ATTRIBUTE_whenCreated: val = "DRSUAPI_ATTRIBUTE_whenCreated"; break;
+	case DRSUAPI_ATTRIBUTE_hasMasterNCs: val = "DRSUAPI_ATTRIBUTE_hasMasterNCs"; break;
+	case DRSUAPI_ATTRIBUTE_governsID: val = "DRSUAPI_ATTRIBUTE_governsID"; break;
+	case DRSUAPI_ATTRIBUTE_attributeID: val = "DRSUAPI_ATTRIBUTE_attributeID"; break;
+	case DRSUAPI_ATTRIBUTE_attributeSyntax: val = "DRSUAPI_ATTRIBUTE_attributeSyntax"; break;
+	case DRSUAPI_ATTRIBUTE_isSingleValued: val = "DRSUAPI_ATTRIBUTE_isSingleValued"; break;
+	case DRSUAPI_ATTRIBUTE_rangeLower: val = "DRSUAPI_ATTRIBUTE_rangeLower"; break;
+	case DRSUAPI_ATTRIBUTE_rangeUpper: val = "DRSUAPI_ATTRIBUTE_rangeUpper"; break;
+	case DRSUAPI_ATTRIBUTE_dMDLocation: val = "DRSUAPI_ATTRIBUTE_dMDLocation"; break;
+	case DRSUAPI_ATTRIBUTE_objectVersion: val = "DRSUAPI_ATTRIBUTE_objectVersion"; break;
+	case DRSUAPI_ATTRIBUTE_invocationId: val = "DRSUAPI_ATTRIBUTE_invocationId"; break;
+	case DRSUAPI_ATTRIBUTE_showInAdvancedViewOnly: val = "DRSUAPI_ATTRIBUTE_showInAdvancedViewOnly"; break;
+	case DRSUAPI_ATTRIBUTE_adminDisplayName: val = "DRSUAPI_ATTRIBUTE_adminDisplayName"; break;
+	case DRSUAPI_ATTRIBUTE_adminDescription: val = "DRSUAPI_ATTRIBUTE_adminDescription"; break;
+	case DRSUAPI_ATTRIBUTE_oMSyntax: val = "DRSUAPI_ATTRIBUTE_oMSyntax"; break;
+	case DRSUAPI_ATTRIBUTE_ntSecurityDescriptor: val = "DRSUAPI_ATTRIBUTE_ntSecurityDescriptor"; break;
+	case DRSUAPI_ATTRIBUTE_searchFlags: val = "DRSUAPI_ATTRIBUTE_searchFlags"; break;
+	case DRSUAPI_ATTRIBUTE_lDAPDisplayName: val = "DRSUAPI_ATTRIBUTE_lDAPDisplayName"; break;
+	case DRSUAPI_ATTRIBUTE_name: val = "DRSUAPI_ATTRIBUTE_name"; break;
+	case DRSUAPI_ATTRIBUTE_userAccountControl: val = "DRSUAPI_ATTRIBUTE_userAccountControl"; break;
+	case DRSUAPI_ATTRIBUTE_currentValue: val = "DRSUAPI_ATTRIBUTE_currentValue"; break;
+	case DRSUAPI_ATTRIBUTE_homeDirectory: val = "DRSUAPI_ATTRIBUTE_homeDirectory"; break;
+	case DRSUAPI_ATTRIBUTE_homeDrive: val = "DRSUAPI_ATTRIBUTE_homeDrive"; break;
+	case DRSUAPI_ATTRIBUTE_scriptPath: val = "DRSUAPI_ATTRIBUTE_scriptPath"; break;
+	case DRSUAPI_ATTRIBUTE_profilePath: val = "DRSUAPI_ATTRIBUTE_profilePath"; break;
+	case DRSUAPI_ATTRIBUTE_objectSid: val = "DRSUAPI_ATTRIBUTE_objectSid"; break;
+	case DRSUAPI_ATTRIBUTE_schemaIDGUID: val = "DRSUAPI_ATTRIBUTE_schemaIDGUID"; break;
+	case DRSUAPI_ATTRIBUTE_dBCSPwd: val = "DRSUAPI_ATTRIBUTE_dBCSPwd"; break;
+	case DRSUAPI_ATTRIBUTE_logonHours: val = "DRSUAPI_ATTRIBUTE_logonHours"; break;
+	case DRSUAPI_ATTRIBUTE_userWorkstations: val = "DRSUAPI_ATTRIBUTE_userWorkstations"; break;
+	case DRSUAPI_ATTRIBUTE_unicodePwd: val = "DRSUAPI_ATTRIBUTE_unicodePwd"; break;
+	case DRSUAPI_ATTRIBUTE_ntPwdHistory: val = "DRSUAPI_ATTRIBUTE_ntPwdHistory"; break;
+	case DRSUAPI_ATTRIBUTE_priorValue: val = "DRSUAPI_ATTRIBUTE_priorValue"; break;
+	case DRSUAPI_ATTRIBUTE_supplementalCredentials: val = "DRSUAPI_ATTRIBUTE_supplementalCredentials"; break;
+	case DRSUAPI_ATTRIBUTE_trustAuthIncoming: val = "DRSUAPI_ATTRIBUTE_trustAuthIncoming"; break;
+	case DRSUAPI_ATTRIBUTE_trustAuthOutgoing: val = "DRSUAPI_ATTRIBUTE_trustAuthOutgoing"; break;
+	case DRSUAPI_ATTRIBUTE_lmPwdHistory: val = "DRSUAPI_ATTRIBUTE_lmPwdHistory"; break;
+	case DRSUAPI_ATTRIBUTE_sAMAccountName: val = "DRSUAPI_ATTRIBUTE_sAMAccountName"; break;
+	case DRSUAPI_ATTRIBUTE_sAMAccountType: val = "DRSUAPI_ATTRIBUTE_sAMAccountType"; break;
+	case DRSUAPI_ATTRIBUTE_fSMORoleOwner: val = "DRSUAPI_ATTRIBUTE_fSMORoleOwner"; break;
+	case DRSUAPI_ATTRIBUTE_systemFlags: val = "DRSUAPI_ATTRIBUTE_systemFlags"; break;
+	case DRSUAPI_ATTRIBUTE_serverReference: val = "DRSUAPI_ATTRIBUTE_serverReference"; break;
+	case DRSUAPI_ATTRIBUTE_serverReferenceBL: val = "DRSUAPI_ATTRIBUTE_serverReferenceBL"; break;
+	case DRSUAPI_ATTRIBUTE_initialAuthIncoming: val = "DRSUAPI_ATTRIBUTE_initialAuthIncoming"; break;
+	case DRSUAPI_ATTRIBUTE_initialAuthOutgoing: val = "DRSUAPI_ATTRIBUTE_initialAuthOutgoing"; break;
+	case DRSUAPI_ATTRIBUTE_wellKnownObjects: val = "DRSUAPI_ATTRIBUTE_wellKnownObjects"; break;
+	case DRSUAPI_ATTRIBUTE_dNSHostName: val = "DRSUAPI_ATTRIBUTE_dNSHostName"; break;
+	case DRSUAPI_ATTRIBUTE_isMemberOfPartialAttributeSet: val = "DRSUAPI_ATTRIBUTE_isMemberOfPartialAttributeSet"; break;
+	case DRSUAPI_ATTRIBUTE_userPrincipalName: val = "DRSUAPI_ATTRIBUTE_userPrincipalName"; break;
+	case DRSUAPI_ATTRIBUTE_groupType: val = "DRSUAPI_ATTRIBUTE_groupType"; break;
+	case DRSUAPI_ATTRIBUTE_servicePrincipalName: val = "DRSUAPI_ATTRIBUTE_servicePrincipalName"; break;
+	case DRSUAPI_ATTRIBUTE_objectCategory: val = "DRSUAPI_ATTRIBUTE_objectCategory"; break;
+	case DRSUAPI_ATTRIBUTE_gPLink: val = "DRSUAPI_ATTRIBUTE_gPLink"; break;
+	case DRSUAPI_ATTRIBUTE_msDS_Behavior_Version: val = "DRSUAPI_ATTRIBUTE_msDS_Behavior_Version"; break;
+	case DRSUAPI_ATTRIBUTE_msDS_KeyVersionNumber: val = "DRSUAPI_ATTRIBUTE_msDS_KeyVersionNumber"; break;
+	case DRSUAPI_ATTRIBUTE_msDS_HasDomainNCs: val = "DRSUAPI_ATTRIBUTE_msDS_HasDomainNCs"; break;
+	case DRSUAPI_ATTRIBUTE_msDS_hasMasterNCs: val = "DRSUAPI_ATTRIBUTE_msDS_hasMasterNCs"; break;
+	default: val = "UNKNOWN_ENUM_VALUE"; break;
+	}
+	return val;
+}
