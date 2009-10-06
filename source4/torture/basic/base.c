@@ -1767,6 +1767,10 @@ NTSTATUS torture_base_init(void)
 	torture_suite_add_suite(suite, torture_trans2_aliases(suite));
 	torture_suite_add_1smb_test(suite, "TRANS2-SCAN", torture_trans2_scan);
 	torture_suite_add_1smb_test(suite, "NTTRANS", torture_nttrans_scan);
+	torture_suite_add_1smb_test(suite, "CREATEX_ACCESS", torture_createx_access);
+	torture_suite_add_2smb_test(suite, "CREATEX_SHAREMODES_FILE", torture_createx_sharemodes_file);
+	torture_suite_add_2smb_test(suite, "CREATEX_SHAREMODES_DIR", torture_createx_sharemodes_dir);
+	torture_suite_add_1smb_test(suite, "MAXIMUM_ALLOWED", torture_maximum_allowed);
 
 	torture_suite_add_simple_test(suite, "BENCH-HOLDCON", torture_holdcon);
 	torture_suite_add_simple_test(suite, "BENCH-READWRITE", run_benchrw);
