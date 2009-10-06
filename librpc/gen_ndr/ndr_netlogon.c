@@ -654,14 +654,14 @@ _PUBLIC_ void ndr_print_netr_GenericInfo(struct ndr_print *ndr, const char *name
 
 static enum ndr_err_code ndr_push_netr_LogonInfoClass(struct ndr_push *ndr, int ndr_flags, enum netr_LogonInfoClass r)
 {
-	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint1632(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_netr_LogonInfoClass(struct ndr_pull *ndr, int ndr_flags, enum netr_LogonInfoClass *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint1632(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -782,7 +782,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_netr_LogonLevel(struct ndr_pull *ndr, int nd
 	TALLOC_CTX *_mem_save_generic_0;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &_level));
+		NDR_CHECK(ndr_pull_uint1632(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
@@ -4029,14 +4029,14 @@ _PUBLIC_ void ndr_print_netr_DELTA_SECRET(struct ndr_print *ndr, const char *nam
 
 static enum ndr_err_code ndr_push_netr_DeltaEnum(struct ndr_push *ndr, int ndr_flags, enum netr_DeltaEnum r)
 {
-	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint1632(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_netr_DeltaEnum(struct ndr_pull *ndr, int ndr_flags, enum netr_DeltaEnum *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint1632(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -4314,7 +4314,7 @@ static enum ndr_err_code ndr_pull_netr_DELTA_UNION(struct ndr_pull *ndr, int ndr
 	TALLOC_CTX *_mem_save_modified_count_0;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &_level));
+		NDR_CHECK(ndr_pull_uint1632(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
@@ -5061,7 +5061,7 @@ static enum ndr_err_code ndr_pull_netr_DELTA_ID_UNION(struct ndr_pull *ndr, int 
 	TALLOC_CTX *_mem_save_name_0;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &_level));
+		NDR_CHECK(ndr_pull_uint1632(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
@@ -6643,14 +6643,14 @@ _PUBLIC_ void ndr_print_netr_NegotiateFlags(struct ndr_print *ndr, const char *n
 
 static enum ndr_err_code ndr_push_SyncStateEnum(struct ndr_push *ndr, int ndr_flags, enum SyncStateEnum r)
 {
-	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint1632(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_SyncStateEnum(struct ndr_pull *ndr, int ndr_flags, enum SyncStateEnum *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint1632(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }

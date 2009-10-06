@@ -1500,14 +1500,14 @@ _PUBLIC_ void ndr_print_lsa_DnsDomainInfo(struct ndr_print *ndr, const char *nam
 
 static enum ndr_err_code ndr_push_lsa_PolicyInfo(struct ndr_push *ndr, int ndr_flags, enum lsa_PolicyInfo r)
 {
-	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint1632(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_lsa_PolicyInfo(struct ndr_pull *ndr, int ndr_flags, enum lsa_PolicyInfo *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint1632(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -2094,14 +2094,14 @@ _PUBLIC_ void ndr_print_lsa_DomainList(struct ndr_print *ndr, const char *name, 
 
 _PUBLIC_ enum ndr_err_code ndr_push_lsa_SidType(struct ndr_push *ndr, int ndr_flags, enum lsa_SidType r)
 {
-	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint1632(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ enum ndr_err_code ndr_pull_lsa_SidType(struct ndr_pull *ndr, int ndr_flags, enum lsa_SidType *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint1632(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -2344,14 +2344,14 @@ _PUBLIC_ void ndr_print_lsa_RefDomainList(struct ndr_print *ndr, const char *nam
 
 static enum ndr_err_code ndr_push_lsa_LookupNamesLevel(struct ndr_push *ndr, int ndr_flags, enum lsa_LookupNamesLevel r)
 {
-	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint1632(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_lsa_LookupNamesLevel(struct ndr_pull *ndr, int ndr_flags, enum lsa_LookupNamesLevel *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint1632(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -2776,14 +2776,14 @@ _PUBLIC_ void ndr_print_lsa_DATA_BUF2(struct ndr_print *ndr, const char *name, c
 
 static enum ndr_err_code ndr_push_lsa_TrustDomInfoEnum(struct ndr_push *ndr, int ndr_flags, enum lsa_TrustDomInfoEnum r)
 {
-	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint1632(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_lsa_TrustDomInfoEnum(struct ndr_pull *ndr, int ndr_flags, enum lsa_TrustDomInfoEnum *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint1632(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -3835,7 +3835,7 @@ static enum ndr_err_code ndr_pull_lsa_TrustedDomainInfo(struct ndr_pull *ndr, in
 	uint16_t _level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &_level));
+		NDR_CHECK(ndr_pull_uint1632(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}

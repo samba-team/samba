@@ -6,14 +6,14 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 static enum ndr_err_code ndr_push_dssetup_DsRole(struct ndr_push *ndr, int ndr_flags, enum dssetup_DsRole r)
 {
-	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint1632(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_dssetup_DsRole(struct ndr_pull *ndr, int ndr_flags, enum dssetup_DsRole *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint1632(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -222,14 +222,14 @@ _PUBLIC_ void ndr_print_dssetup_DsUpgrade(struct ndr_print *ndr, const char *nam
 
 static enum ndr_err_code ndr_push_dssetup_DsPrevious(struct ndr_push *ndr, int ndr_flags, enum dssetup_DsPrevious r)
 {
-	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint1632(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_dssetup_DsPrevious(struct ndr_pull *ndr, int ndr_flags, enum dssetup_DsPrevious *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint1632(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -283,14 +283,14 @@ _PUBLIC_ void ndr_print_dssetup_DsRoleUpgradeStatus(struct ndr_print *ndr, const
 
 static enum ndr_err_code ndr_push_dssetup_DsRoleOp(struct ndr_push *ndr, int ndr_flags, enum dssetup_DsRoleOp r)
 {
-	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint1632(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_dssetup_DsRoleOp(struct ndr_pull *ndr, int ndr_flags, enum dssetup_DsRoleOp *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint1632(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -310,9 +310,9 @@ _PUBLIC_ void ndr_print_dssetup_DsRoleOp(struct ndr_print *ndr, const char *name
 static enum ndr_err_code ndr_push_dssetup_DsRoleOpStatus(struct ndr_push *ndr, int ndr_flags, const struct dssetup_DsRoleOpStatus *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 2));
+		NDR_CHECK(ndr_push_align(ndr, 3));
 		NDR_CHECK(ndr_push_dssetup_DsRoleOp(ndr, NDR_SCALARS, r->status));
-		NDR_CHECK(ndr_push_trailer_align(ndr, 2));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 3));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -322,9 +322,9 @@ static enum ndr_err_code ndr_push_dssetup_DsRoleOpStatus(struct ndr_push *ndr, i
 static enum ndr_err_code ndr_pull_dssetup_DsRoleOpStatus(struct ndr_pull *ndr, int ndr_flags, struct dssetup_DsRoleOpStatus *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 2));
+		NDR_CHECK(ndr_pull_align(ndr, 3));
 		NDR_CHECK(ndr_pull_dssetup_DsRoleOp(ndr, NDR_SCALARS, &r->status));
-		NDR_CHECK(ndr_pull_trailer_align(ndr, 2));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 3));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -341,14 +341,14 @@ _PUBLIC_ void ndr_print_dssetup_DsRoleOpStatus(struct ndr_print *ndr, const char
 
 static enum ndr_err_code ndr_push_dssetup_DsRoleInfoLevel(struct ndr_push *ndr, int ndr_flags, enum dssetup_DsRoleInfoLevel r)
 {
-	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint1632(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_dssetup_DsRoleInfoLevel(struct ndr_pull *ndr, int ndr_flags, enum dssetup_DsRoleInfoLevel *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint1632(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -414,7 +414,7 @@ static enum ndr_err_code ndr_pull_dssetup_DsRoleInfo(struct ndr_pull *ndr, int n
 	uint16_t _level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &_level));
+		NDR_CHECK(ndr_pull_uint1632(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}

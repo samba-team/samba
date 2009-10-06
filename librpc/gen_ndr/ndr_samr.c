@@ -369,14 +369,14 @@ _PUBLIC_ void ndr_print_samr_SamArray(struct ndr_print *ndr, const char *name, c
 
 static enum ndr_err_code ndr_push_samr_DomainInfoClass(struct ndr_push *ndr, int ndr_flags, enum samr_DomainInfoClass r)
 {
-	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint1632(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_samr_DomainInfoClass(struct ndr_pull *ndr, int ndr_flags, enum samr_DomainInfoClass *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint1632(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -1421,14 +1421,14 @@ _PUBLIC_ void ndr_print_samr_GroupInfoAttributes(struct ndr_print *ndr, const ch
 
 static enum ndr_err_code ndr_push_samr_GroupInfoEnum(struct ndr_push *ndr, int ndr_flags, enum samr_GroupInfoEnum r)
 {
-	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint1632(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_samr_GroupInfoEnum(struct ndr_pull *ndr, int ndr_flags, enum samr_GroupInfoEnum *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint1632(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -1513,7 +1513,7 @@ static enum ndr_err_code ndr_pull_samr_GroupInfo(struct ndr_pull *ndr, int ndr_f
 	uint16_t _level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &_level));
+		NDR_CHECK(ndr_pull_uint1632(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
@@ -1778,14 +1778,14 @@ _PUBLIC_ void ndr_print_samr_AliasInfoAll(struct ndr_print *ndr, const char *nam
 
 static enum ndr_err_code ndr_push_samr_AliasInfoEnum(struct ndr_push *ndr, int ndr_flags, enum samr_AliasInfoEnum r)
 {
-	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint1632(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_samr_AliasInfoEnum(struct ndr_pull *ndr, int ndr_flags, enum samr_AliasInfoEnum *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint1632(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -1853,7 +1853,7 @@ static enum ndr_err_code ndr_pull_samr_AliasInfo(struct ndr_pull *ndr, int ndr_f
 	uint16_t _level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &_level));
+		NDR_CHECK(ndr_pull_uint1632(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
@@ -1921,14 +1921,14 @@ _PUBLIC_ void ndr_print_samr_AliasInfo(struct ndr_print *ndr, const char *name, 
 
 static enum ndr_err_code ndr_push_samr_UserInfoLevel(struct ndr_push *ndr, int ndr_flags, enum samr_UserInfoLevel r)
 {
-	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint1632(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_samr_UserInfoLevel(struct ndr_pull *ndr, int ndr_flags, enum samr_UserInfoLevel *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint1632(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -4915,14 +4915,14 @@ _PUBLIC_ void ndr_print_samr_ValidateFieldsPresent(struct ndr_print *ndr, const 
 
 static enum ndr_err_code ndr_push_samr_ValidatePasswordLevel(struct ndr_push *ndr, int ndr_flags, enum samr_ValidatePasswordLevel r)
 {
-	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint1632(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_samr_ValidatePasswordLevel(struct ndr_pull *ndr, int ndr_flags, enum samr_ValidatePasswordLevel *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint1632(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -4941,14 +4941,14 @@ _PUBLIC_ void ndr_print_samr_ValidatePasswordLevel(struct ndr_print *ndr, const 
 
 static enum ndr_err_code ndr_push_samr_ValidationStatus(struct ndr_push *ndr, int ndr_flags, enum samr_ValidationStatus r)
 {
-	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint1632(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_samr_ValidationStatus(struct ndr_pull *ndr, int ndr_flags, enum samr_ValidationStatus *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint1632(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }

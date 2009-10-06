@@ -10570,14 +10570,14 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaKccDsaFailuresCtr(struct ndr_print *ndr
 
 static enum ndr_err_code ndr_push_drsuapi_DsReplicaOpType(struct ndr_push *ndr, int ndr_flags, enum drsuapi_DsReplicaOpType r)
 {
-	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint1632(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_drsuapi_DsReplicaOpType(struct ndr_pull *ndr, int ndr_flags, enum drsuapi_DsReplicaOpType *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint1632(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -10661,7 +10661,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsRplicaOpOptions(struct ndr_pull *ndr
 	uint16_t _level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &_level));
+		NDR_CHECK(ndr_pull_uint1632(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}

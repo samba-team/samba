@@ -1578,7 +1578,7 @@ static enum ndr_err_code ndr_push_supplementalCredentialsSignature(struct ndr_pu
 	{
 		uint32_t _flags_save_ENUM = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
-		NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
+		NDR_CHECK(ndr_push_enum_uint1632(ndr, NDR_SCALARS, r));
 		ndr->flags = _flags_save_ENUM;
 	}
 	return NDR_ERR_SUCCESS;
@@ -1590,7 +1590,7 @@ static enum ndr_err_code ndr_pull_supplementalCredentialsSignature(struct ndr_pu
 	{
 		uint32_t _flags_save_ENUM = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
-		NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
+		NDR_CHECK(ndr_pull_enum_uint1632(ndr, NDR_SCALARS, &v));
 		*r = v;
 		ndr->flags = _flags_save_ENUM;
 	}
@@ -1616,14 +1616,14 @@ static enum ndr_err_code ndr_push_supplementalCredentialsSubBlob(struct ndr_push
 {
 	uint32_t cntr_packages_0;
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 2));
+		NDR_CHECK(ndr_push_align(ndr, 3));
 		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, SUPPLEMENTAL_CREDENTIALS_PREFIX, 0x30, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_push_supplementalCredentialsSignature(ndr, NDR_SCALARS, SUPPLEMENTAL_CREDENTIALS_SIGNATURE));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->num_packages));
 		for (cntr_packages_0 = 0; cntr_packages_0 < r->num_packages; cntr_packages_0++) {
 			NDR_CHECK(ndr_push_supplementalCredentialsPackage(ndr, NDR_SCALARS, &r->packages[cntr_packages_0]));
 		}
-		NDR_CHECK(ndr_push_trailer_align(ndr, 2));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 3));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -1635,7 +1635,7 @@ static enum ndr_err_code ndr_pull_supplementalCredentialsSubBlob(struct ndr_pull
 	uint32_t cntr_packages_0;
 	TALLOC_CTX *_mem_save_packages_0;
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 2));
+		NDR_CHECK(ndr_pull_align(ndr, 3));
 		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->prefix, 0x30, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_supplementalCredentialsSignature(ndr, NDR_SCALARS, &r->signature));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->num_packages));
@@ -1646,7 +1646,7 @@ static enum ndr_err_code ndr_pull_supplementalCredentialsSubBlob(struct ndr_pull
 			NDR_CHECK(ndr_pull_supplementalCredentialsPackage(ndr, NDR_SCALARS, &r->packages[cntr_packages_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_packages_0, 0);
-		NDR_CHECK(ndr_pull_trailer_align(ndr, 2));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 3));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -3341,14 +3341,14 @@ _PUBLIC_ void ndr_print_ExtendedErrorBlob(struct ndr_print *ndr, const char *nam
 
 static enum ndr_err_code ndr_push_ExtendedErrorComputerNamePresent(struct ndr_push *ndr, int ndr_flags, enum ExtendedErrorComputerNamePresent r)
 {
-	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint1632(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_ExtendedErrorComputerNamePresent(struct ndr_pull *ndr, int ndr_flags, enum ExtendedErrorComputerNamePresent *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint1632(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -3405,7 +3405,7 @@ static enum ndr_err_code ndr_pull_ExtendedErrorComputerNameU(struct ndr_pull *nd
 	uint16_t _level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &_level));
+		NDR_CHECK(ndr_pull_uint1632(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
@@ -3498,14 +3498,14 @@ _PUBLIC_ void ndr_print_ExtendedErrorComputerName(struct ndr_print *ndr, const c
 
 static enum ndr_err_code ndr_push_ExtendedErrorParamType(struct ndr_push *ndr, int ndr_flags, enum ExtendedErrorParamType r)
 {
-	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint1632(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_ExtendedErrorParamType(struct ndr_pull *ndr, int ndr_flags, enum ExtendedErrorParamType *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint1632(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -3604,7 +3604,7 @@ static enum ndr_err_code ndr_pull_ExtendedErrorParamU(struct ndr_pull *ndr, int 
 	uint16_t _level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &_level));
+		NDR_CHECK(ndr_pull_uint1632(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}

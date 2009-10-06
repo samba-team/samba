@@ -32,14 +32,14 @@ _PUBLIC_ void ndr_print_eventlogReadFlags(struct ndr_print *ndr, const char *nam
 
 _PUBLIC_ enum ndr_err_code ndr_push_eventlogEventTypes(struct ndr_push *ndr, int ndr_flags, enum eventlogEventTypes r)
 {
-	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint1632(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ enum ndr_err_code ndr_pull_eventlogEventTypes(struct ndr_pull *ndr, int ndr_flags, enum eventlogEventTypes *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint1632(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
