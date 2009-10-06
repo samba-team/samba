@@ -194,18 +194,34 @@
     </screen>
   </refsect1>
 
-  <refsect1><title>FILES</title>
+  <refsect1><title>ENVIRONMENT</title>
 
     <variablelist>
-      <varlistentry><term>/etc/ctdb/nodes</term>
+      <varlistentry><term><envar>CTDB_NODES_FILE</envar></term>
         <listitem>
           <para>
-            Contains a list of each node's IP address or hostname.
+            Name of alternative nodes file to use instead of
+            <filename>/etc/ctdb/nodes</filename>.
 	  </para>
         </listitem>
       </varlistentry>
 
-      <varlistentry><term>/etc/ctdb/onnode.conf</term>
+    </variablelist>
+  </refsect1>
+
+  <refsect1><title>FILES</title>
+
+    <variablelist>
+      <varlistentry><term><filename>/etc/ctdb/nodes</filename></term>
+        <listitem>
+          <para>
+            Default file containing a list of each node's IP address
+            or hostname.
+	  </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term><filename>/etc/ctdb/onnode.conf</filename></term>
         <listitem>
           <para>
             If this file exists it is sourced by onnode.  The main
