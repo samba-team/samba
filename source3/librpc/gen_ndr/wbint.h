@@ -294,6 +294,14 @@ struct wbint_CheckMachineAccount {
 };
 
 
+struct wbint_ChangeMachineAccount {
+	struct {
+		NTSTATUS result;
+	} out;
+
+};
+
+
 struct wbint_SetMapping {
 	struct {
 		struct dom_sid *sid;/* [ref] */
