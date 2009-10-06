@@ -883,9 +883,9 @@ def setup_self_join(samdb, names,
     """Join a host to its own domain."""
     assert isinstance(invocationid, str)
     if ntdsguid is not None:
-        ntdsguid_mod = "objectGUID: %s\n"%ntdsguid
+        ntdsguid_line = "objectGUID: %s\n"%ntdsguid
     else:
-        ntdsguid_mod = ""
+        ntdsguid_line = ""
     setup_add_ldif(samdb, setup_path("provision_self_join.ldif"), { 
               "CONFIGDN": names.configdn, 
               "SCHEMADN": names.schemadn,
@@ -901,7 +901,7 @@ def setup_self_join(samdb, names,
               "DOMAIN": names.domain,
               "DNSDOMAIN": names.dnsdomain,
               "SAMBA_VERSION_STRING": version,
-              "NTDSGUID": ntdsguid_mod,
+              "NTDSGUID": ntdsguid_line,
               "DOMAIN_CONTROLLER_FUNCTIONALITY": str(domainControllerFunctionality)})
 
     setup_add_ldif(samdb, setup_path("provision_group_policy.ldif"), { 
@@ -1019,13 +1019,13 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
         admin_session_info = admin_session(lp, str(domainsid))
         samdb.set_session_info(admin_session_info)
         if domainguid is not None:
-            domainguid_mod = "objectGUID: %s\n-" % domainguid
+            domainguid_line = "objectGUID: %s\n-" % domainguid
         else:
-            domainguid_mod = ""
+            domainguid_line = ""
         setup_add_ldif(samdb, setup_path("provision_basedn.ldif"), {
                 "DOMAINDN": names.domaindn,
                 "DOMAIN_OC": domain_oc,
-                "DOMAINGUID": domainguid_mod
+                "DOMAINGUID": domainguid_line
                 })
 
 
