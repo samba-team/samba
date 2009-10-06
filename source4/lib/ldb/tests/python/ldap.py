@@ -21,8 +21,9 @@ from ldb import ERR_ENTRY_ALREADY_EXISTS, ERR_UNWILLING_TO_PERFORM
 from ldb import ERR_NOT_ALLOWED_ON_NON_LEAF, ERR_OTHER, ERR_INVALID_DN_SYNTAX
 from ldb import ERR_NO_SUCH_ATTRIBUTE, ERR_INSUFFICIENT_ACCESS_RIGHTS
 from ldb import ERR_OBJECT_CLASS_VIOLATION, ERR_NOT_ALLOWED_ON_RDN
-from ldb import ERR_NAMING_VIOLATION
-from ldb import Message, MessageElement, Dn, FLAG_MOD_ADD, FLAG_MOD_REPLACE
+from ldb import ERR_NAMING_VIOLATION, ERR_CONSTRAINT_VIOLATION
+from ldb import Message, MessageElement, Dn
+from ldb import FLAG_MOD_ADD, FLAG_MOD_REPLACE, FLAG_MOD_DELETE
 from samba import Ldb, param, dom_sid_to_rid
 from samba import UF_NORMAL_ACCOUNT, UF_TEMP_DUPLICATE_ACCOUNT
 from samba import UF_SERVER_TRUST_ACCOUNT, UF_WORKSTATION_TRUST_ACCOUNT
@@ -105,7 +106,8 @@ class BasicTests(unittest.TestCase):
         self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestuser3,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestuser4,cn=users," + self.base_dn)
+        self.delete_force(self.ldb, "cn=ldaptestuser4,cn=ldaptestcontainer," + self.base_dn)
+        self.delete_force(self.ldb, "cn=ldaptestuser4,cn=ldaptestcontainer2," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
@@ -191,6 +193,209 @@ class BasicTests(unittest.TestCase):
 
         self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
+    def test_single_valued_attributes(self):
+        """Test single-valued attributes"""
+        print "Test single-valued attributes"""
+
+        try:
+            self.ldb.add({
+                "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+                "objectclass": "group",
+                "sAMAccountName": ["nam1", "nam2"]})
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
+        self.ldb.add({
+             "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+             "objectclass": "group"})
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["sAMAccountName"] = MessageElement(["nam1","nam2"], FLAG_MOD_REPLACE,
+          "sAMAccountName")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["sAMAccountName"] = MessageElement("testgroup", FLAG_MOD_REPLACE,
+          "sAMAccountName")
+        ldb.modify(m)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["sAMAccountName"] = MessageElement("testgroup2", FLAG_MOD_ADD,
+          "sAMAccountName")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
+
+        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+
+    def test_multi_valued_attributes(self):
+        """Test multi-valued attributes"""
+        print "Test multi-valued attributes"""
+
+# TODO: In this test I added some special tests where I got very unusual
+# results back from a real AD. s4 doesn't match them and I've no idea how to
+# implement those error cases (maybe there exists a special trigger for
+# "description" attributes which handle them)
+
+        self.ldb.add({
+            "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+            "description": "desc2",
+            "objectclass": "group",
+            "description": "desc1"})
+
+        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+
+        self.ldb.add({
+            "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+            "objectclass": "group",
+            "description": ["desc1", "desc2"]})
+
+#        m = Message()
+#        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+#        m["description"] = MessageElement(["desc1","desc2"], FLAG_MOD_REPLACE,
+#          "description")
+#        try:
+#            ldb.modify(m)
+#            self.fail()
+#        except LdbError, (num, _):
+#            self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["description"] = MessageElement("desc1", FLAG_MOD_REPLACE,
+          "description")
+        ldb.modify(m)
+
+#        m = Message()
+#        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+#        m["description"] = MessageElement("desc3", FLAG_MOD_ADD,
+#          "description")
+#        try:
+#            ldb.modify(m)
+#            self.fail()
+#        except LdbError, (num, _):
+#            self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["description"] = MessageElement(["desc1","desc2"], FLAG_MOD_DELETE,
+          "description")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_NO_SUCH_ATTRIBUTE)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["description"] = MessageElement("desc1", FLAG_MOD_DELETE,
+          "description")
+        ldb.modify(m)
+
+#        m = Message()
+#        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+#        m["description"] = MessageElement(["desc1","desc2"], FLAG_MOD_REPLACE,
+#          "description")
+#        try:
+#            ldb.modify(m)
+#            self.fail()
+#        except LdbError, (num, _):
+#            self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
+
+#        m = Message()
+#        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+#        m["description"] = MessageElement(["desc3", "desc4"], FLAG_MOD_ADD,
+#          "description")
+#        try:
+#            ldb.modify(m)
+#            self.fail()
+#        except LdbError, (num, _):
+#            self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["description"] = MessageElement("desc3", FLAG_MOD_ADD,
+          "description")
+        ldb.modify(m)
+
+        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+
+    def test_empty_messages(self):
+        """Test empty messages"""
+        print "Test empty messages"""
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+
+        try:
+            ldb.add(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
+
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+
+    def test_empty_attributes(self):
+        """Test empty attributes"""
+        print "Test empty attributes"""
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["objectClass"] = MessageElement("group", FLAG_MOD_ADD, "objectClass")
+        m["description"] = MessageElement([], FLAG_MOD_ADD, "description")
+
+        try:
+            ldb.add(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
+        self.ldb.add({
+            "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+            "objectclass": "group"})
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["description"] = MessageElement([], FLAG_MOD_ADD, "description")
+
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["description"] = MessageElement([], FLAG_MOD_REPLACE, "description")
+        ldb.modify(m)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["description"] = MessageElement([], FLAG_MOD_DELETE, "description")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_NO_SUCH_ATTRIBUTE)
+
+        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+
     def test_distinguished_name(self):
         """Tests the 'distinguishedName' attribute"""
         print "Tests the 'distinguishedName' attribute"""
@@ -202,6 +407,18 @@ class BasicTests(unittest.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["distinguishedName"] = MessageElement(
+          "cn=ldaptestuser,cn=users," + self.base_dn, FLAG_MOD_ADD,
+          "distinguishedName")
+
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["distinguishedName"] = MessageElement(
           "cn=ldaptestuser,cn=users," + self.base_dn, FLAG_MOD_REPLACE,
           "distinguishedName")
 
@@ -209,7 +426,19 @@ class BasicTests(unittest.TestCase):
             ldb.modify(m)
             self.fail()
         except LdbError, (num, _):
-            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["distinguishedName"] = MessageElement(
+          "cn=ldaptestuser,cn=users," + self.base_dn, FLAG_MOD_DELETE,
+          "distinguishedName")
+
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
         self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
@@ -367,7 +596,7 @@ class BasicTests(unittest.TestCase):
 #                "primaryGroupID": str(group_rid_1)})
 #            self.fail()
 #        except LdbError, (num, _):
-#            self.assertEquasl(num, ERR_UNWILLING_TO_PERFORM)
+#            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 #        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
         ldb.add({
@@ -1356,7 +1585,8 @@ member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + self.base_dn + """
         self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestuser3,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestuser4,cn=users," + self.base_dn)
+        self.delete_force(self.ldb, "cn=ldaptestuser4,cn=ldaptestcontainer," + self.base_dn)
+        self.delete_force(self.ldb, "cn=ldaptestuser4,cn=ldaptestcontainer2," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
