@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "torture/smbtorture.h"
+#include "torture/rpc/drsuapi.h"
 #include "torture/drs/proto.h"
 
 /**
