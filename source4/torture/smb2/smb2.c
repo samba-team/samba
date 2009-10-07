@@ -143,6 +143,7 @@ NTSTATUS torture_smb2_init(void)
 	torture_suite_add_suite(suite, torture_smb2_lease_init());
 	torture_suite_add_suite(suite, torture_smb2_compound_init());
 	torture_suite_add_suite(suite, torture_smb2_oplocks_init());
+	torture_suite_add_suite(suite, torture_smb2_streams_init());
 	torture_suite_add_1smb2_test(suite, "BENCH-OPLOCK", test_smb2_bench_oplock);
 	torture_suite_add_1smb2_test(suite, "HOLD-OPLOCK", test_smb2_hold_oplock);
 
