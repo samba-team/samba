@@ -39,7 +39,8 @@ SAMDB_SCHEMA_OBJ_FILES = $(addprefix $(dsdbsrcdir)/schema/, \
 		schema_syntax.o \
 		schema_description.o \
 		schema_convert_to_ol.o \
-		schema_inferiors.o)
+		schema_inferiors.o \
+		schema_prefixmap.o)
 
 $(eval $(call proto_header_template,$(dsdbsrcdir)/schema/proto.h,$(SAMDB_SCHEMA_OBJ_FILES:.o=.c)))
 # PUBLIC_HEADERS += dsdb/schema/schema.h
