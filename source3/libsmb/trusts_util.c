@@ -29,6 +29,7 @@
 
 NTSTATUS trust_pw_change_and_store_it(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 				      const char *domain,
+				      const char *account_name,
 				      unsigned char orig_trust_passwd_hash[16],
 				      uint32 sec_channel_type)
 {
@@ -47,6 +48,7 @@ NTSTATUS trust_pw_change_and_store_it(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	E_md4hash(new_trust_passwd, new_trust_passwd_hash);
 
 	nt_status = rpccli_netlogon_set_trust_password(cli, mem_ctx,
+						       account_name,
 						       orig_trust_passwd_hash,
 						       new_trust_passwd,
 						       new_trust_passwd_hash,
@@ -88,6 +90,7 @@ NTSTATUS trust_pw_find_change_and_store_it(struct rpc_pipe_client *cli,
 	}
 
 	return trust_pw_change_and_store_it(cli, mem_ctx, domain,
+					    global_myname(),
 					    old_trust_passwd_hash,
 					    sec_channel_type);
 }
