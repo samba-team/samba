@@ -385,13 +385,12 @@ bool file_find_subpath(files_struct *dir_fsp)
 {
 	files_struct *fsp;
 	size_t dlen;
-	bool ret = false;
 	char *d_fullname = talloc_asprintf(talloc_tos(),
 					"%s/%s",
 					dir_fsp->conn->connectpath,
 					dir_fsp->fsp_name);
 	if (!d_fullname) {
-		goto out;
+		return false;
 	}
 
 	dlen = strlen(d_fullname);
@@ -408,28 +407,21 @@ bool file_find_subpath(files_struct *dir_fsp)
 					fsp->conn->connectpath,
 					fsp->fsp_name);
 
-		if (strnequal(d_fullname, d1_fullname, dlen)) {
-			int d1_len = strlen(d1_fullname);
-
-			/*
-			 * If the open file is a second file handle to the
-			 * same name or is a stream on the original file, then
-			 * don't return true.
-			 */
-			if (d1_len == dlen || d1_fullname[dlen] == ':') {
-				TALLOC_FREE(d1_fullname);
-				continue;
-			}
-
+                /*
+		 * If the open file has a path that is a longer
+		 * component, then it's a subpath.
+		 */
+		if (strnequal(d_fullname, d1_fullname, dlen) &&
+				(d1_fullname[dlen] == '/')) {
 			TALLOC_FREE(d1_fullname);
-			ret = true;
-			goto out;
+			TALLOC_FREE(d_fullname);
+			return true;
 		}
 		TALLOC_FREE(d1_fullname);
-	} 
- out:
+	}
+
 	TALLOC_FREE(d_fullname);
-	return ret;
+	return false;
 }
 
 /****************************************************************************
