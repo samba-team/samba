@@ -847,7 +847,9 @@ static void process_loop(void)
 
 	message_dispatch(winbind_messaging_context());
 
-	run_events(winbind_event_context(), 0, NULL, NULL);
+	if (run_events(winbind_event_context(), 0, NULL, NULL)) {
+		return;
+	}
 
 	/* refresh the trusted domain cache */
 
@@ -927,8 +929,10 @@ static void process_loop(void)
 			flags |= EVENT_FD_READ;
 		if (FD_ISSET(ev->fd, &w_fds))
 			flags |= EVENT_FD_WRITE;
-		if (flags)
+		if (flags) {
 			ev->handler(ev, flags);
+			return;
+		}
 		ev = next;
 	}
 
