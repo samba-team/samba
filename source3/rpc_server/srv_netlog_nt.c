@@ -144,6 +144,7 @@ WERROR _netr_LogonControl2Ex(pipes_struct *p,
 	struct netr_NETLOGON_INFO_1 *info1;
 	struct netr_NETLOGON_INFO_2 *info2;
 	struct netr_NETLOGON_INFO_3 *info3;
+	struct netr_NETLOGON_INFO_4 *info4;
 	const char *fn;
 
 	switch (p->hdr_req.opnum) {
@@ -253,6 +254,15 @@ WERROR _netr_LogonControl2Ex(pipes_struct *p,
 		info3->logon_attempts		= logon_attempts;
 
 		r->out.query->info3 = info3;
+		break;
+	case 4:
+		info4 = TALLOC_ZERO_P(p->mem_ctx, struct netr_NETLOGON_INFO_4);
+		W_ERROR_HAVE_NO_MEMORY(info4);
+
+		info4->trusted_dc_name		= dc_name;
+		info4->trusted_domain_name	= r->in.data->domain;
+
+		r->out.query->info4 = info4;
 		break;
 	default:
 		return WERR_UNKNOWN_LEVEL;
