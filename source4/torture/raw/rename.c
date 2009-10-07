@@ -528,8 +528,9 @@ static bool test_dir_rename(struct torture_context *tctx, struct smbcli_state *c
 	NTSTATUS status;
         const char *dname1 = BASEDIR "\\dir_for_rename";
         const char *dname2 = BASEDIR "\\renamed_dir";
+        const char *dname1_long = BASEDIR "\\dir_for_rename_long";
         const char *fname = BASEDIR "\\dir_for_rename\\file.txt";
-	const char *sname = BASEDIR "\\dir_for_rename:a stream:$DATA";
+	const char *sname = BASEDIR "\\renamed_dir:a stream:$DATA";
 	bool ret = true;
 	int fnum = -1;
 
@@ -542,8 +543,10 @@ static bool test_dir_rename(struct torture_context *tctx, struct smbcli_state *c
         /* create a directory */
         smbcli_rmdir(cli->tree, dname1);
         smbcli_rmdir(cli->tree, dname2);
+        smbcli_rmdir(cli->tree, dname1_long);
         smbcli_unlink(cli->tree, dname1);
         smbcli_unlink(cli->tree, dname2);
+        smbcli_unlink(cli->tree, dname1_long);
 
         ZERO_STRUCT(io);
         io.generic.level = RAW_OPEN_NTCREATEX;
@@ -555,6 +558,14 @@ static bool test_dir_rename(struct torture_context *tctx, struct smbcli_state *c
         io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
         io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
         io.ntcreatex.in.fname = dname1;
+        status = smb_raw_open(cli->tree, tctx, &io);
+        CHECK_STATUS(status, NT_STATUS_OK);
+
+        fnum = io.ntcreatex.out.file.fnum;
+	smbcli_close(cli->tree, fnum);
+
+        /* create the longname directory */
+        io.ntcreatex.in.fname = dname1_long;
         status = smb_raw_open(cli->tree, tctx, &io);
         CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -625,11 +636,15 @@ static bool test_dir_rename(struct torture_context *tctx, struct smbcli_state *c
 	/* close our handle to the directory. */
 	smbcli_close(cli->tree, fnum);
 
-	/*
-	 * Now try opening a stream on the directory and holding it open
-	 * across a rename.  This should be allowed.
+	/* Open a handle on the long name, and then
+	 * try a rename. This would catch a regression
+	 * in bug #6781.
 	 */
-	io.ntcreatex.in.fname = sname;
+	io.ntcreatex.in.fname = dname1_long;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+
+	io.ntcreatex.in.access_mask = SEC_STD_READ_CONTROL |
+	    SEC_FILE_READ_ATTRIBUTE | SEC_FILE_READ_EA | SEC_FILE_READ_DATA;
 
 	status = smb_raw_open(cli->tree, tctx, &io);
         CHECK_STATUS(status, NT_STATUS_OK);
@@ -643,8 +658,29 @@ static bool test_dir_rename(struct torture_context *tctx, struct smbcli_state *c
 	status = smb_raw_rename(cli->tree, &ren_io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
+	/* close our handle to the longname directory. */
+	smbcli_close(cli->tree, fnum);
+
+	/*
+	 * Now try opening a stream on the directory and holding it open
+	 * across a rename.  This should be allowed.
+	 */
+	io.ntcreatex.in.fname = sname;
+
+	status = smb_raw_open(cli->tree, tctx, &io);
+        CHECK_STATUS(status, NT_STATUS_OK);
+        fnum = io.ntcreatex.out.file.fnum;
+
+	ren_io.generic.level = RAW_RENAME_RENAME;
+	ren_io.rename.in.pattern1 = dname2;
+	ren_io.rename.in.pattern2 = dname1;
+	ren_io.rename.in.attrib = 0;
+
+	status = smb_raw_rename(cli->tree, &ren_io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
 done:
-	
+
 	if (fnum != -1) {
 		smbcli_close(cli->tree, fnum);
 	}
