@@ -407,13 +407,18 @@ bool file_find_subpath(files_struct *dir_fsp)
 					fsp->conn->connectpath,
 					fsp->fsp_name);
 
-		if (strnequal(d_fullname, d1_fullname, dlen)) {
+		/*
+		 * If the open file has a path that is a longer
+		 * component, then it's a subpath.
+		 */
+		if (strnequal(d_fullname, d1_fullname, dlen) &&
+				(d1_fullname[dlen] == '/')) {
 			TALLOC_FREE(d_fullname);
 			TALLOC_FREE(d1_fullname);
 			return true;
 		}
 		TALLOC_FREE(d1_fullname);
-	} 
+	}
 
 	TALLOC_FREE(d_fullname);
 	return false;
