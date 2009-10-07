@@ -444,7 +444,7 @@ WERROR dsdb_origin_objects_commit(struct ldb_context *ldb,
 		}
 	}
 
-	ids = talloc_array(objects,
+	ids = talloc_array(mem_ctx,
 			   struct drsuapi_DsReplicaObjectIdentifier2,
 			   num_objects);
 	if (ids == NULL) {
