@@ -3307,6 +3307,7 @@ void update_trustdom_cache( void );
 
 NTSTATUS trust_pw_change_and_store_it(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 				      const char *domain,
+				      const char *account_name,
 				      unsigned char orig_trust_passwd_hash[16],
 				      uint32 sec_channel_type);
 NTSTATUS trust_pw_find_change_and_store_it(struct rpc_pipe_client *cli, 
@@ -5238,6 +5239,7 @@ NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
 					      struct netr_SamInfo3 **info3);
 NTSTATUS rpccli_netlogon_set_trust_password(struct rpc_pipe_client *cli,
 					    TALLOC_CTX *mem_ctx,
+					    const char *account_name,
 					    const unsigned char orig_trust_passwd_hash[16],
 					    const char *new_trust_pwd_cleartext,
 					    const unsigned char new_trust_passwd_hash[16],
