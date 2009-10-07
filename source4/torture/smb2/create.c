@@ -23,11 +23,19 @@
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 #include "torture/torture.h"
+#include "torture/util.h"
 #include "torture/smb2/proto.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "libcli/security/security.h"
 
+#include "system/filesys.h"
+#include "auth/credentials/credentials.h"
+#include "lib/cmdline/popt_common.h"
+#include "librpc/gen_ndr/security.h"
+#include "lib/events/events.h"
+
 #define FNAME "test_create.dat"
+#define DNAME "smb2_open"
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
@@ -46,6 +54,76 @@
 		        (unsigned long long)v, \
 		        (unsigned long long)correct); \
 		return false;					\
+	}} while (0)
+
+#define CHECK_TIME(t, field) do { \
+	time_t t1, t2; \
+	finfo.all_info.level = RAW_FILEINFO_ALL_INFORMATION; \
+	finfo.all_info.in.file.handle = h1; \
+	status = smb2_getinfo_file(tree, torture, &finfo); \
+	CHECK_STATUS(status, NT_STATUS_OK); \
+	t1 = t & ~1; \
+	t2 = nt_time_to_unix(finfo.all_info.out.field) & ~1; \
+	if (abs(t1-t2) > 2) { \
+		torture_result(torture, TORTURE_FAIL, \
+			"(%s) wrong time for field %s  %s - %s\n", \
+			__location__, #field, \
+			timestring(torture, t1), \
+			timestring(torture, t2)); \
+		dump_all_info(torture, &finfo); \
+		ret = false; \
+	}} while (0)
+
+#define CHECK_NTTIME(t, field) do { \
+	NTTIME t2; \
+	finfo.all_info.level = RAW_FILEINFO_ALL_INFORMATION; \
+	finfo.all_info.in.file.handle = h1; \
+	status = smb2_getinfo_file(tree, torture, &finfo); \
+	CHECK_STATUS(status, NT_STATUS_OK); \
+	t2 = finfo.all_info.out.field; \
+	if (t != t2) { \
+		torture_result(torture, TORTURE_FAIL, \
+			"(%s) wrong time for field %s  %s - %s\n", \
+		       __location__, #field, \
+		       nt_time_string(torture, t), \
+		       nt_time_string(torture, t2)); \
+		dump_all_info(torture, &finfo); \
+		ret = false; \
+	}} while (0)
+
+#define CHECK_ALL_INFO(v, field) do { \
+	finfo.all_info.level = RAW_FILEINFO_ALL_INFORMATION; \
+	finfo.all_info.in.file.handle = h1; \
+	status = smb2_getinfo_file(tree, torture, &finfo); \
+	CHECK_STATUS(status, NT_STATUS_OK); \
+	if ((v) != (finfo.all_info.out.field)) { \
+	       torture_result(torture, TORTURE_FAIL, \
+			"(%s) wrong value for field %s  0x%x - 0x%x\n", \
+			__location__, #field, (int)v,\
+			(int)(finfo.all_info.out.field)); \
+		dump_all_info(torture, &finfo); \
+		ret = false; \
+	}} while (0)
+
+#define CHECK_VAL(v, correct) do { \
+	if ((v) != (correct)) { \
+		torture_result(torture, TORTURE_FAIL, \
+			"(%s) wrong value for %s  0x%x - should be 0x%x\n", \
+		       __location__, #v, (int)(v), (int)correct); \
+		ret = false; \
+	}} while (0)
+
+#define SET_ATTRIB(sattrib) do { \
+	union smb_setfileinfo sfinfo; \
+	ZERO_STRUCT(sfinfo.basic_info.in); \
+	sfinfo.basic_info.level = RAW_SFILEINFO_BASIC_INFORMATION; \
+	sfinfo.basic_info.in.file.handle = h1; \
+	sfinfo.basic_info.in.attrib = sattrib; \
+	status = smb2_setinfo_file(tree, &sfinfo); \
+	if (!NT_STATUS_IS_OK(status)) { \
+		torture_comment(torture, \
+		    "(%s) Failed to set attrib 0x%x on %s\n", \
+		       __location__, sattrib, fname); \
 	}} while (0)
 
 #define TARGET_IS_WIN7(_tctx) (torture_setting_bool(_tctx, "win7", false))
@@ -469,7 +547,496 @@ static bool test_create_acl(struct torture_context *torture, struct smb2_tree *t
 	return true;
 }
 
-/* 
+/*
+  test SMB2 open
+*/
+static bool test_smb2_open(struct torture_context *torture,
+			   struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(torture);
+	union smb_open io;
+	union smb_fileinfo finfo;
+	const char *fname = DNAME "\\torture_ntcreatex.txt";
+	const char *dname = DNAME "\\torture_ntcreatex.dir";
+	NTSTATUS status;
+	struct smb2_handle h, h1;
+	bool ret = true;
+	int i;
+	struct {
+		uint32_t create_disp;
+		bool with_file;
+		NTSTATUS correct_status;
+	} open_funcs[] = {
+		{ NTCREATEX_DISP_SUPERSEDE,     true,  NT_STATUS_OK },
+		{ NTCREATEX_DISP_SUPERSEDE,     false, NT_STATUS_OK },
+		{ NTCREATEX_DISP_OPEN,          true,  NT_STATUS_OK },
+		{ NTCREATEX_DISP_OPEN,          false, NT_STATUS_OBJECT_NAME_NOT_FOUND },
+		{ NTCREATEX_DISP_CREATE,        true,  NT_STATUS_OBJECT_NAME_COLLISION },
+		{ NTCREATEX_DISP_CREATE,        false, NT_STATUS_OK },
+		{ NTCREATEX_DISP_OPEN_IF,       true,  NT_STATUS_OK },
+		{ NTCREATEX_DISP_OPEN_IF,       false, NT_STATUS_OK },
+		{ NTCREATEX_DISP_OVERWRITE,     true,  NT_STATUS_OK },
+		{ NTCREATEX_DISP_OVERWRITE,     false, NT_STATUS_OBJECT_NAME_NOT_FOUND },
+		{ NTCREATEX_DISP_OVERWRITE_IF,  true,  NT_STATUS_OK },
+		{ NTCREATEX_DISP_OVERWRITE_IF,  false, NT_STATUS_OK },
+		{ 6,                            true,  NT_STATUS_INVALID_PARAMETER },
+		{ 6,                            false, NT_STATUS_INVALID_PARAMETER },
+	};
+
+	torture_comment(torture, "Checking SMB2 Open\n");
+
+	smb2_util_unlink(tree, fname);
+	smb2_util_rmdir(tree, dname);
+
+	status = torture_smb2_testdir(tree, DNAME, &h);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	ZERO_STRUCT(io.smb2);
+	/* reasonable default parameters */
+	io.generic.level = RAW_OPEN_SMB2;
+	io.smb2.in.create_flags = NTCREATEX_FLAGS_EXTENDED;
+	io.smb2.in.desired_access = SEC_RIGHTS_FILE_ALL;
+	io.smb2.in.alloc_size = 1024*1024;
+	io.smb2.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	io.smb2.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+	io.smb2.in.create_disposition = NTCREATEX_DISP_CREATE;
+	io.smb2.in.create_options = 0;
+	io.smb2.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	io.smb2.in.security_flags = 0;
+	io.smb2.in.fname = fname;
+
+	/* test the create disposition */
+	for (i=0; i<ARRAY_SIZE(open_funcs); i++) {
+		if (open_funcs[i].with_file) {
+			io.smb2.in.create_disposition = NTCREATEX_DISP_CREATE;
+			status= smb2_create(tree, mem_ctx, &(io.smb2));
+			if (!NT_STATUS_IS_OK(status)) {
+				torture_comment(torture,
+				    "Failed to create file %s status %s %d\n",
+				    fname, nt_errstr(status), i);
+
+				ret = false;
+				goto done;
+			}
+			smb2_util_close(tree, io.smb2.out.file.handle);
+		}
+		io.smb2.in.create_disposition = open_funcs[i].create_disp;
+		status = smb2_create(tree, mem_ctx, &(io.smb2));
+		if (!NT_STATUS_EQUAL(status, open_funcs[i].correct_status)) {
+			torture_comment(torture,
+			    "(%s) incorrect status %s should be %s (i=%d "
+			    "with_file=%d open_disp=%d)\n",
+			 __location__, nt_errstr(status),
+			nt_errstr(open_funcs[i].correct_status),
+			i, (int)open_funcs[i].with_file,
+			(int)open_funcs[i].create_disp);
+
+			ret = false;
+			goto done;
+		}
+		if (NT_STATUS_IS_OK(status) || open_funcs[i].with_file) {
+			smb2_util_close(tree, io.smb2.out.file.handle);
+			smb2_util_unlink(tree, fname);
+		}
+	}
+
+	/* basic field testing */
+	io.smb2.in.create_disposition = NTCREATEX_DISP_CREATE;
+
+	status = smb2_create(tree, mem_ctx, &(io.smb2));
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h1 = io.smb2.out.file.handle;
+
+	CHECK_VAL(io.smb2.out.oplock_level, 0);
+	CHECK_VAL(io.smb2.out.create_action, NTCREATEX_ACTION_CREATED);
+	CHECK_NTTIME(io.smb2.out.create_time, create_time);
+	CHECK_NTTIME(io.smb2.out.access_time, access_time);
+	CHECK_NTTIME(io.smb2.out.write_time, write_time);
+	CHECK_NTTIME(io.smb2.out.change_time, change_time);
+	CHECK_ALL_INFO(io.smb2.out.file_attr, attrib);
+	CHECK_ALL_INFO(io.smb2.out.alloc_size, alloc_size);
+	CHECK_ALL_INFO(io.smb2.out.size, size);
+
+	/* check fields when the file already existed */
+	smb2_util_close(tree, h1);
+	smb2_util_unlink(tree, fname);
+
+	status = smb2_create_complex_file(tree, fname, &h1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	smb2_util_close(tree, h1);
+
+	io.smb2.in.create_disposition = NTCREATEX_DISP_OPEN;
+	status = smb2_create(tree, mem_ctx, &(io.smb2));
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h1 = io.smb2.out.file.handle;
+
+	CHECK_VAL(io.smb2.out.oplock_level, 0);
+	CHECK_VAL(io.smb2.out.create_action, NTCREATEX_ACTION_EXISTED);
+	CHECK_NTTIME(io.smb2.out.create_time, create_time);
+	CHECK_NTTIME(io.smb2.out.access_time, access_time);
+	CHECK_NTTIME(io.smb2.out.write_time, write_time);
+	CHECK_NTTIME(io.smb2.out.change_time, change_time);
+	CHECK_ALL_INFO(io.smb2.out.file_attr, attrib);
+	CHECK_ALL_INFO(io.smb2.out.alloc_size, alloc_size);
+	CHECK_ALL_INFO(io.smb2.out.size, size);
+	smb2_util_close(tree, h1);
+	smb2_util_unlink(tree, fname);
+
+	/* create a directory */
+	io.smb2.in.create_disposition = NTCREATEX_DISP_CREATE;
+	io.smb2.in.desired_access = SEC_RIGHTS_FILE_ALL;
+	io.smb2.in.alloc_size = 0;
+	io.smb2.in.file_attributes = FILE_ATTRIBUTE_DIRECTORY;
+	io.smb2.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+	io.smb2.in.create_options = 0;
+	io.smb2.in.fname = dname;
+	fname = dname;
+
+	smb2_util_rmdir(tree, fname);
+	smb2_util_unlink(tree, fname);
+
+	io.smb2.in.desired_access = SEC_FLAG_MAXIMUM_ALLOWED;
+	io.smb2.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	io.smb2.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	io.smb2.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+				NTCREATEX_SHARE_ACCESS_WRITE;
+	status = smb2_create(tree, mem_ctx, &(io.smb2));
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h1 = io.smb2.out.file.handle;
+
+	CHECK_VAL(io.smb2.out.oplock_level, 0);
+	CHECK_VAL(io.smb2.out.create_action, NTCREATEX_ACTION_CREATED);
+	CHECK_NTTIME(io.smb2.out.create_time, create_time);
+	CHECK_NTTIME(io.smb2.out.access_time, access_time);
+	CHECK_NTTIME(io.smb2.out.write_time, write_time);
+	CHECK_NTTIME(io.smb2.out.change_time, change_time);
+	CHECK_ALL_INFO(io.smb2.out.file_attr, attrib);
+	CHECK_VAL(io.smb2.out.file_attr & ~FILE_ATTRIBUTE_NONINDEXED,
+		  FILE_ATTRIBUTE_DIRECTORY);
+	CHECK_ALL_INFO(io.smb2.out.alloc_size, alloc_size);
+	CHECK_ALL_INFO(io.smb2.out.size, size);
+	CHECK_VAL(io.smb2.out.size, 0);
+	CHECK_VAL(io.smb2.out.alloc_size, 0);
+	smb2_util_unlink(tree, fname);
+
+done:
+	smb2_util_close(tree, h1);
+	smb2_util_unlink(tree, fname);
+	smb2_deltree(tree, DNAME);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
+/*
+  test with an already opened and byte range locked file
+*/
+
+static bool test_smb2_open_brlocked(struct torture_context *torture,
+				    struct smb2_tree *tree)
+{
+	union smb_open io, io1;
+	union smb_lock io2;
+	struct smb2_lock_element lock[1];
+	const char *fname = DNAME "\\torture_ntcreatex.txt";
+	NTSTATUS status;
+	bool ret = true;
+	struct smb2_handle h;
+
+	torture_comment(torture,
+		"Testing SMB2 open with a byte range locked file\n");
+
+	smb2_util_unlink(tree, fname);
+
+	status = torture_smb2_testdir(tree, DNAME, &h);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	ZERO_STRUCT(io.smb2);
+	io.generic.level = RAW_OPEN_SMB2;
+	io.smb2.in.create_flags = NTCREATEX_FLAGS_EXTENDED;
+	io.smb2.in.desired_access = 0x2019f;
+	io.smb2.in.alloc_size = 0;
+	io.smb2.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	io.smb2.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	io.smb2.in.create_disposition = NTCREATEX_DISP_CREATE;
+	io.smb2.in.create_options = NTCREATEX_OPTIONS_NON_DIRECTORY_FILE;
+	io.smb2.in.impersonation_level = SMB2_IMPERSONATION_IMPERSONATION;
+	io.smb2.in.security_flags = SMB2_SECURITY_DYNAMIC_TRACKING;
+	io.smb2.in.fname = fname;
+
+	status = smb2_create(tree, torture, &(io.smb2));
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	ZERO_STRUCT(io2.smb2);
+	io2.smb2.level = RAW_LOCK_SMB2;
+	io2.smb2.in.file.handle = io.smb2.out.file.handle;
+	io2.smb2.in.lock_count = 1;
+
+	lock[0].offset = 0;
+	lock[0].flags = SMB2_LOCK_FLAG_EXCLUSIVE |
+			SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	io2.smb2.in.locks = &lock[0];
+	status = smb2_lock(tree, &(io2.smb2));
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	ZERO_STRUCT(io1.smb2);
+	io1.smb2.in.create_flags = NTCREATEX_FLAGS_EXTENDED;
+	io1.smb2.in.desired_access = 0x20196;
+	io1.smb2.in.alloc_size = 0;
+	io1.smb2.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	io1.smb2.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	io1.smb2.in.create_disposition = NTCREATEX_DISP_OVERWRITE_IF;
+	io1.smb2.in.create_options = 0;
+	io1.smb2.in.impersonation_level = SMB2_IMPERSONATION_IMPERSONATION;
+	io1.smb2.in.security_flags = SMB2_SECURITY_DYNAMIC_TRACKING;
+	io1.smb2.in.fname = fname;
+
+	status = smb2_create(tree, torture, &(io1.smb2));
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	smb2_util_close(tree, io.smb2.out.file.handle);
+	smb2_util_close(tree, io1.smb2.out.file.handle);
+	smb2_util_unlink(tree, fname);
+	smb2_deltree(tree, DNAME);
+
+	return ret;
+}
+
+/* A little torture test to expose a race condition in Samba 3.0.20 ... :-) */
+
+static bool test_smb2_open_multi(struct torture_context *torture,
+				struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_init("torture_test_oplock_multi");
+	const char *fname = "test_oplock.dat";
+	NTSTATUS status;
+	bool ret = true;
+	union smb_open io;
+	struct smb2_tree **trees;
+	struct smb2_request **requests;
+	union smb_open *ios;
+	int i, num_files = 3;
+	int num_ok = 0;
+	int num_collision = 0;
+
+	if (mem_ctx == NULL) {
+		ret = false;
+		goto done;
+	}
+
+	torture_comment(torture,
+		"Testing SMB2 Open with multiple connections\n");
+	trees = talloc_array(mem_ctx, struct smb2_tree *, num_files);
+	requests = talloc_array(mem_ctx, struct smb2_request *, num_files);
+	ios = talloc_array(mem_ctx, union smb_open, num_files);
+	if ((torture->ev == NULL) || (trees == NULL) || (requests == NULL) ||
+	    (ios == NULL)) {
+		torture_comment(torture, ("talloc failed\n"));
+		ret = false;
+		goto done;
+	}
+
+	tree->session->transport->options.request_timeout = 60;
+
+	for (i=0; i<num_files; i++) {
+		if (!torture_smb2_connection(torture, &(trees[i]))) {
+			torture_comment(torture,
+				"Could not open %d'th connection\n", i);
+			ret = false;
+			goto done;
+		}
+		trees[i]->session->transport->options.request_timeout = 60;
+	}
+
+	/* cleanup */
+	smb2_util_unlink(tree, fname);
+
+	/*
+	  base ntcreatex parms
+	*/
+	ZERO_STRUCT(io.smb2);
+	io.generic.level = RAW_OPEN_SMB2;
+	io.smb2.in.desired_access = SEC_RIGHTS_FILE_ALL;
+	io.smb2.in.alloc_size = 0;
+	io.smb2.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	io.smb2.in.share_access = NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE|
+		NTCREATEX_SHARE_ACCESS_DELETE;
+	io.smb2.in.create_disposition = NTCREATEX_DISP_CREATE;
+	io.smb2.in.create_options = 0;
+	io.smb2.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	io.smb2.in.security_flags = 0;
+	io.smb2.in.fname = fname;
+	io.smb2.in.create_flags = 0;
+
+	for (i=0; i<num_files; i++) {
+		ios[i] = io;
+		requests[i] = smb2_create_send(trees[i], &(ios[i].smb2));
+		if (requests[i] == NULL) {
+			torture_comment(torture,
+				"could not send %d'th request\n", i);
+			ret = false;
+			goto done;
+		}
+	}
+
+	torture_comment(torture, "waiting for replies\n");
+	while (1) {
+		bool unreplied = false;
+		for (i=0; i<num_files; i++) {
+			if (requests[i] == NULL) {
+				continue;
+			}
+			if (requests[i]->state < SMB2_REQUEST_DONE) {
+				unreplied = true;
+				break;
+			}
+			status = smb2_create_recv(requests[i], mem_ctx,
+						  &(ios[i].smb2));
+
+			torture_comment(torture,
+				"File %d returned status %s\n", i,
+				nt_errstr(status));
+
+			if (NT_STATUS_IS_OK(status)) {
+				num_ok += 1;
+			}
+
+			if (NT_STATUS_EQUAL(status,
+					    NT_STATUS_OBJECT_NAME_COLLISION)) {
+				num_collision += 1;
+			}
+
+			requests[i] = NULL;
+		}
+		if (!unreplied) {
+			break;
+		}
+
+		if (event_loop_once(torture->ev) != 0) {
+			torture_comment(torture, "event_loop_once failed\n");
+			ret = false;
+			goto done;
+		}
+	}
+
+	if ((num_ok != 1) || (num_ok + num_collision != num_files)) {
+		ret = false;
+	}
+done:
+	talloc_free(mem_ctx);
+	smb2_deltree(tree, fname);
+
+	return ret;
+}
+
+/*
+  test opening for delete on a read-only attribute file.
+*/
+
+static bool test_smb2_open_for_delete(struct torture_context *torture,
+				      struct smb2_tree *tree)
+{
+	union smb_open io;
+	union smb_fileinfo finfo;
+	const char *fname = DNAME "\\torture_open_for_delete.txt";
+	NTSTATUS status;
+	struct smb2_handle h, h1;
+	bool ret = true;
+
+	torture_comment(torture,
+		"Checking SMB2_OPEN for delete on a readonly file.\n");
+	smb2_util_unlink(tree, fname);
+	smb2_deltree(tree, fname);
+
+	status = torture_smb2_testdir(tree, DNAME, &h);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* reasonable default parameters */
+	ZERO_STRUCT(io.smb2);
+	io.generic.level = RAW_OPEN_SMB2;
+	io.smb2.in.create_flags = NTCREATEX_FLAGS_EXTENDED;
+	io.smb2.in.alloc_size = 0;
+	io.smb2.in.desired_access = SEC_RIGHTS_FILE_ALL;
+	io.smb2.in.file_attributes = FILE_ATTRIBUTE_READONLY;
+	io.smb2.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+	io.smb2.in.create_disposition = NTCREATEX_DISP_CREATE;
+	io.smb2.in.create_options = 0;
+	io.smb2.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	io.smb2.in.security_flags = 0;
+	io.smb2.in.fname = fname;
+
+	/* Create the readonly file. */
+
+	status = smb2_create(tree, torture, &(io.smb2));
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h1 = io.smb2.out.file.handle;
+
+	CHECK_VAL(io.smb2.out.oplock_level, 0);
+	io.smb2.in.create_options = 0;
+	CHECK_VAL(io.smb2.out.create_action, NTCREATEX_ACTION_CREATED);
+	CHECK_ALL_INFO(io.smb2.out.file_attr, attrib);
+	smb2_util_close(tree, h1);
+
+	/* Now try and open for delete only - should succeed. */
+	io.smb2.in.desired_access = SEC_STD_DELETE;
+	io.smb2.in.file_attributes = 0;
+	io.smb2.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+				NTCREATEX_SHARE_ACCESS_WRITE |
+				NTCREATEX_SHARE_ACCESS_DELETE;
+	io.smb2.in.create_disposition = NTCREATEX_DISP_OPEN;
+	status = smb2_create(tree, torture, &(io.smb2));
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	smb2_util_unlink(tree, fname);
+
+	smb2_util_close(tree, h1);
+	smb2_util_unlink(tree, fname);
+	smb2_deltree(tree, DNAME);
+
+	return ret;
+}
+
+/*
+  test SMB2 open with a leading slash on the path.
+  Trying to create a directory with a leading slash
+  should give NT_STATUS_INVALID_PARAMETER error
+*/
+static bool test_smb2_leading_slash(struct torture_context *torture,
+				    struct smb2_tree *tree)
+{
+	union smb_open io;
+	const char *dnameslash = "\\"DNAME;
+	NTSTATUS status;
+	bool ret = true;
+
+	torture_comment(torture,
+		"Trying to create a directory with leading slash on path\n");
+	smb2_deltree(tree, dnameslash);
+
+	ZERO_STRUCT(io.smb2);
+	io.generic.level = RAW_OPEN_SMB2;
+	io.smb2.in.oplock_level = 0;
+	io.smb2.in.desired_access = SEC_RIGHTS_DIR_ALL;
+	io.smb2.in.file_attributes   = FILE_ATTRIBUTE_DIRECTORY;
+	io.smb2.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	io.smb2.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+				NTCREATEX_SHARE_ACCESS_WRITE |
+				NTCREATEX_SHARE_ACCESS_DELETE;
+	io.smb2.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	io.smb2.in.fname = dnameslash;
+
+	status = smb2_create(tree, tree, &(io.smb2));
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	smb2_deltree(tree, dnameslash);
+	return ret;
+}
+
+
+/*
    basic testing of SMB2 read
 */
 struct torture_suite *torture_smb2_create_init(void)
@@ -479,6 +1046,11 @@ struct torture_suite *torture_smb2_create_init(void)
 	torture_suite_add_1smb2_test(suite, "GENTEST", test_create_gentest);
 	torture_suite_add_1smb2_test(suite, "BLOB", test_create_blob);
 	torture_suite_add_1smb2_test(suite, "ACL", test_create_acl);
+	torture_suite_add_1smb2_test(suite, "OPEN", test_smb2_open);
+	torture_suite_add_1smb2_test(suite, "BRLOCKED", test_smb2_open_brlocked);
+	torture_suite_add_1smb2_test(suite, "MULTI", test_smb2_open_multi);
+	torture_suite_add_1smb2_test(suite, "DELETE", test_smb2_open_for_delete);
+	torture_suite_add_1smb2_test(suite, "LEADING-SLASH", test_smb2_leading_slash);
 
 	suite->description = talloc_strdup(suite, "SMB2-CREATE tests");
 
