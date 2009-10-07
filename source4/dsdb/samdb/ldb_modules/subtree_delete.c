@@ -55,6 +55,8 @@ static struct subtree_delete_context *subdel_ctx_init(struct ldb_module *module,
 	ac->module = module;
 	ac->req = req;
 
+	ac->num_children = 0;
+
 	return ac;
 }
 
