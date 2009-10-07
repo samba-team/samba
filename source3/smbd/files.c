@@ -405,14 +405,13 @@ bool file_find_subpath(files_struct *dir_fsp)
 	files_struct *fsp;
 	size_t dlen;
 	char *d_fullname = NULL;
-	bool ret = false;
 
 	d_fullname = talloc_asprintf(talloc_tos(), "%s/%s",
 				     dir_fsp->conn->connectpath,
 				     dir_fsp->fsp_name->base_name);
 
 	if (!d_fullname) {
-		goto out;
+		return false;
 	}
 
 	dlen = strlen(d_fullname);
@@ -443,7 +442,7 @@ bool file_find_subpath(files_struct *dir_fsp)
 	}
 
 	TALLOC_FREE(d_fullname);
-	return ret;
+	return false;
 }
 
 /****************************************************************************
