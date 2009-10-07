@@ -1358,6 +1358,14 @@ int ldb_modify(struct ldb_context *ldb,
 		return ret;
 	}
 
+	if (message->num_elements == 0) {
+		/* this needs also to be returned when the specified object
+		   doesn't exist. Therefore this test is located here. */
+		ldb_asprintf_errstring(ldb, "LDB message has to have elements/attributes (%s)!",
+				       ldb_dn_get_linearized(message->dn));
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
 	ret = ldb_build_mod_req(&req, ldb, ldb,
 					message,
 					NULL,
