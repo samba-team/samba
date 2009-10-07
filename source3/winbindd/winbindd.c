@@ -1037,7 +1037,9 @@ static void process_loop(void)
 	int maxfd = 0, selret;
 	struct timeval timeout, ev_timeout;
 
-	run_events(winbind_event_context(), 0, NULL, NULL);
+	if (run_events(winbind_event_context(), 0, NULL, NULL)) {
+		return;
+	}
 
 	/* Initialise fd lists for select() */
 
@@ -1091,7 +1093,9 @@ static void process_loop(void)
 
 	/* selret > 0 */
 
-	run_events(winbind_event_context(), selret, &r_fds, &w_fds);
+	if (run_events(winbind_event_context(), selret, &r_fds, &w_fds)) {
+		return;
+	}
 
 	ev = fd_events;
 	while (ev != NULL) {
@@ -1101,8 +1105,10 @@ static void process_loop(void)
 			flags |= EVENT_FD_READ;
 		if (FD_ISSET(ev->fd, &w_fds))
 			flags |= EVENT_FD_WRITE;
-		if (flags)
+		if (flags) {
 			ev->handler(ev, flags);
+			return;
+		}
 		ev = next;
 	}
 
