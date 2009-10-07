@@ -31,15 +31,20 @@
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
-		printf("(%s) Incorrect status %s - should be %s\n", \
-		       __location__, nt_errstr(status), nt_errstr(correct)); \
+		torture_result(torture, TORTURE_FAIL, \
+			"(%s) Incorrect status %s - should be %s\n", \
+			 __location__, nt_errstr(status), nt_errstr(correct)); \
 		return false; \
 	}} while (0)
 
 #define CHECK_EQUAL(v, correct) do { \
 	if (v != correct) { \
-		printf("(%s) Incorrect value for %s 0x%08llx - should be 0x%08llx\n", \
-		       __location__, #v, (unsigned long long)v, (unsigned long long)correct); \
+		torture_result(torture, TORTURE_FAIL, \
+			"(%s) Incorrect value for %s 0x%08llx - " \
+		        "should be 0x%08llx\n", \
+			 __location__, #v, \
+		        (unsigned long long)v, \
+		        (unsigned long long)correct); \
 		return false;					\
 	}} while (0)
 
@@ -131,7 +136,9 @@ static bool test_create_gentest(struct torture_context *torture, struct smb2_tre
 				CHECK_STATUS(status, NT_STATUS_OK);
 			} else {
 				unexpected_mask |= 1<<i;
-				printf("create option 0x%08x returned %s\n", 1<<i, nt_errstr(status));
+				torture_comment(torture,
+				    "create option 0x%08x returned %s\n",
+				    1<<i, nt_errstr(status));
 			}
 		}
 	}
@@ -198,7 +205,9 @@ static bool test_create_gentest(struct torture_context *torture, struct smb2_tre
 				CHECK_STATUS(status, NT_STATUS_OK);
 			} else {
 				unexpected_mask |= 1<<i;
-				printf("file attribute 0x%08x returned %s\n", 1<<i, nt_errstr(status));
+				torture_comment(torture,
+				    "file attribute 0x%08x returned %s\n",
+				    1<<i, nt_errstr(status));
 			}
 		}
 	}
@@ -216,7 +225,9 @@ static bool test_create_gentest(struct torture_context *torture, struct smb2_tre
 	io.in.file_attributes = FILE_ATTRIBUTE_ENCRYPTED;
 	status = smb2_create(tree, tmp_ctx, &io);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
-		printf("FILE_ATTRIBUTE_ENCRYPTED returned %s\n", nt_errstr(status));
+		torture_comment(torture,
+		    "FILE_ATTRIBUTE_ENCRYPTED returned %s\n",
+		    nt_errstr(status));
 	} else {
 		CHECK_STATUS(status, NT_STATUS_OK);
 		CHECK_EQUAL(io.out.file_attr, (FILE_ATTRIBUTE_ENCRYPTED | FILE_ATTRIBUTE_ARCHIVE));
@@ -308,7 +319,7 @@ static bool test_create_blob(struct torture_context *torture, struct smb2_tree *
 	status = smb2_util_close(tree, io.out.file.handle);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	printf("testing alloc size\n");
+	torture_comment(torture, "testing alloc size\n");
 	io.in.alloc_size = 4096;
 	status = smb2_create(tree, tmp_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -317,7 +328,7 @@ static bool test_create_blob(struct torture_context *torture, struct smb2_tree *
 	status = smb2_util_close(tree, io.out.file.handle);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	printf("testing durable open\n");
+	torture_comment(torture, "testing durable open\n");
 	io.in.durable_open = true;
 	status = smb2_create(tree, tmp_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -325,7 +336,7 @@ static bool test_create_blob(struct torture_context *torture, struct smb2_tree *
 	status = smb2_util_close(tree, io.out.file.handle);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	printf("testing query maximal access\n");
+	torture_comment(torture, "testing query maximal access\n");
 	io.in.query_maximal_access = true;
 	status = smb2_create(tree, tmp_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -334,13 +345,13 @@ static bool test_create_blob(struct torture_context *torture, struct smb2_tree *
 	status = smb2_util_close(tree, io.out.file.handle);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	printf("testing timewarp\n");
+	torture_comment(torture, "testing timewarp\n");
 	io.in.timewarp = 10000;
 	status = smb2_create(tree, tmp_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 	io.in.timewarp = 0;
 
-	printf("testing query_on_disk\n");
+	torture_comment(torture, "testing query_on_disk\n");
 	io.in.query_on_disk_id = true;
 	status = smb2_create(tree, tmp_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -348,7 +359,7 @@ static bool test_create_blob(struct torture_context *torture, struct smb2_tree *
 	status = smb2_util_close(tree, io.out.file.handle);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	printf("testing unknown tag\n");
+	torture_comment(torture, "testing unknown tag\n");
 	status = smb2_create_blob_add(tmp_ctx, &io.in.blobs,
 				      "FooO", data_blob(NULL, 0));
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -359,7 +370,7 @@ static bool test_create_blob(struct torture_context *torture, struct smb2_tree *
 	status = smb2_util_close(tree, io.out.file.handle);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	printf("testing bad tag length\n");
+	torture_comment(torture, "testing bad tag length\n");
 	status = smb2_create_blob_add(tmp_ctx, &io.in.blobs,
 				      "xxx", data_blob(NULL, 0));
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -421,7 +432,7 @@ static bool test_create_acl(struct torture_context *torture, struct smb2_tree *t
 
 	smb2_util_unlink(tree, FNAME);
 
-	printf("adding a new ACE\n");
+	torture_comment(torture, "adding a new ACE\n");
 	test_sid = dom_sid_parse_talloc(tmp_ctx, "S-1-5-32-1234-54321");
 
 	ace.type = SEC_ACE_TYPE_ACCESS_ALLOWED;
@@ -431,8 +442,8 @@ static bool test_create_acl(struct torture_context *torture, struct smb2_tree *t
 
 	status = security_descriptor_dacl_add(sd, &ace);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	
-	printf("creating a file with an initial ACL\n");
+
+	torture_comment(torture, "creating a file with an initial ACL\n");
 
 	io.in.sec_desc = sd;
 	status = smb2_create(tree, tmp_ctx, &io);
@@ -444,10 +455,11 @@ static bool test_create_acl(struct torture_context *torture, struct smb2_tree *t
 	sd2 = q.query_secdesc.out.sd;
 
 	if (!security_acl_equal(sd->dacl, sd2->dacl)) {
-		printf("%s: security descriptors don't match!\n", __location__);
-		printf("got:\n");
+		torture_comment(torture,
+		    "%s: security descriptors don't match!\n", __location__);
+		torture_comment(torture, "got:\n");
 		NDR_PRINT_DEBUG(security_descriptor, sd2);
-		printf("expected:\n");
+		torture_comment(torture, "expected:\n");
 		NDR_PRINT_DEBUG(security_descriptor, sd);
 		return false;
 	}
