@@ -33,7 +33,7 @@
 enum NET_API_STATUS
 #ifndef USE_UINT_ENUMS
  {
-	NERR_Success=0
+	NERR_Success=(int)(0)
 }
 #else
  { __donnot_use_enum_NET_API_STATUS=0x7FFFFFFF}
@@ -65,10 +65,10 @@ struct domsid {
 enum NETSETUP_JOIN_STATUS
 #ifndef USE_UINT_ENUMS
  {
-	NetSetupUnknownStatus=0,
-	NetSetupUnjoined=1,
-	NetSetupWorkgroupName=2,
-	NetSetupDomainName=3
+	NetSetupUnknownStatus=(int)(0),
+	NetSetupUnjoined=(int)(1),
+	NetSetupWorkgroupName=(int)(2),
+	NetSetupDomainName=(int)(3)
 }
 #else
  { __donnot_use_enum_NETSETUP_JOIN_STATUS=0x7FFFFFFF}
@@ -1170,16 +1170,16 @@ struct LOCALGROUP_INFO_1002 {
 enum SID_NAME_USE
 #ifndef USE_UINT_ENUMS
  {
-	SidTypeUser=1,
-	SidTypeGroup=2,
-	SidTypeDomain=3,
-	SidTypeAlias=4,
-	SidTypeWellKnownGroup=5,
-	SidTypeDeletedAccount=6,
-	SidTypeInvalid=7,
-	SidTypeUnknown=8,
-	SidTypeComputer=9,
-	SidTypeLabel=10
+	SidTypeUser=(int)(1),
+	SidTypeGroup=(int)(2),
+	SidTypeDomain=(int)(3),
+	SidTypeAlias=(int)(4),
+	SidTypeWellKnownGroup=(int)(5),
+	SidTypeDeletedAccount=(int)(6),
+	SidTypeInvalid=(int)(7),
+	SidTypeUnknown=(int)(8),
+	SidTypeComputer=(int)(9),
+	SidTypeLabel=(int)(10)
 }
 #else
  { __donnot_use_enum_SID_NAME_USE=0x7FFFFFFF}
