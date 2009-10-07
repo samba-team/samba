@@ -344,6 +344,7 @@ static NTSTATUS rpc_oldjoin_internals(struct net_context *c,
 	E_md4hash(trust_passwd, orig_trust_passwd_hash);
 
 	result = trust_pw_change_and_store_it(pipe_hnd, mem_ctx, c->opt_target_workgroup,
+					      global_myname(),
 					      orig_trust_passwd_hash,
 					      sec_channel_type);
 
