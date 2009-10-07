@@ -1412,6 +1412,18 @@ interface netlogon
 
 	/*****************/
 	/* Function 0x1e */
+
+	/* [MS-NRPC] 2.2.1.3.8 NL_PASSWORD_VERSION */
+
+	/* someone's birthday ? */
+	const int NETLOGON_PASSWORD_VERSION_NUMBER_PRESENT = 0x02231968;
+
+	typedef struct {
+		uint32 ReservedField;
+		uint32 PasswordVersionNumber;
+		uint32 PasswordVersionPresent;
+	} NL_PASSWORD_VERSION;
+
 	typedef [flag(NDR_PAHEX)] struct {
 		uint8 data[512];
 		uint32 length;
