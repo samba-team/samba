@@ -429,24 +429,19 @@ bool file_find_subpath(files_struct *dir_fsp)
 					fsp->conn->connectpath,
 					fsp->fsp_name->base_name);
 
-		if (strnequal(d_fullname, d1_fullname, dlen)) {
-			/*
-			 * If the open file is a second file handle to the
-			 * same name or is a stream on the original file, then
-			 * don't return true.
-			 */
-			if (d1_fullname[dlen] != '/') {
-				TALLOC_FREE(d1_fullname);
-				continue;
-			}
-
+		/*
+		 * If the open file has a path that is a longer
+		 * component, then it's a subpath.
+		 */
+		if (strnequal(d_fullname, d1_fullname, dlen) &&
+				(d1_fullname[dlen] == '/')) {
 			TALLOC_FREE(d1_fullname);
-			ret = true;
-			goto out;
+			TALLOC_FREE(d_fullname);
+			return true;
 		}
 		TALLOC_FREE(d1_fullname);
-	} 
- out:
+	}
+
 	TALLOC_FREE(d_fullname);
 	return ret;
 }
