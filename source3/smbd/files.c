@@ -430,14 +430,12 @@ bool file_find_subpath(files_struct *dir_fsp)
 					fsp->fsp_name->base_name);
 
 		if (strnequal(d_fullname, d1_fullname, dlen)) {
-			int d1_len = strlen(d1_fullname);
-
 			/*
 			 * If the open file is a second file handle to the
 			 * same name or is a stream on the original file, then
 			 * don't return true.
 			 */
-			if (d1_len == dlen) {
+			if (d1_fullname[dlen] != '/') {
 				TALLOC_FREE(d1_fullname);
 				continue;
 			}
