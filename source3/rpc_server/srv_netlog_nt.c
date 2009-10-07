@@ -95,6 +95,37 @@ WERROR _netr_LogonControl2(pipes_struct *p,
 	return _netr_LogonControl2Ex(p, &l);
 }
 
+/*************************************************************************
+ *************************************************************************/
+
+static bool wb_change_trust_creds(const char *domain, WERROR *tc_status)
+{
+	wbcErr result;
+	struct wbcAuthErrorInfo *error = NULL;
+
+	result = wbcChangeTrustCredentials(domain, &error);
+	switch (result) {
+	case WBC_ERR_WINBIND_NOT_AVAILABLE:
+		return false;
+	case WBC_ERR_DOMAIN_NOT_FOUND:
+		*tc_status = WERR_NO_SUCH_DOMAIN;
+		return true;
+	case WBC_ERR_SUCCESS:
+		*tc_status = WERR_OK;
+		return true;
+	default:
+		break;
+	}
+
+	if (error && error->nt_status != 0) {
+		*tc_status = ntstatus_to_werror(NT_STATUS(error->nt_status));
+	} else {
+		*tc_status = WERR_TRUST_FAILURE;
+	}
+	wbcFreeMemory(error);
+	return true;
+}
+
 /****************************************************************
  _netr_LogonControl2Ex
 ****************************************************************/
@@ -172,6 +203,16 @@ WERROR _netr_LogonControl2Ex(pipes_struct *p,
 
 		tc_status = WERR_OK;
 
+		break;
+
+	case NETLOGON_CONTROL_CHANGE_PASSWORD:
+		if (!r->in.data || !r->in.data->domain) {
+			return WERR_NOT_SUPPORTED;
+		}
+
+		if (!wb_change_trust_creds(r->in.data->domain, &tc_status)) {
+			return WERR_NOT_SUPPORTED;
+		}
 		break;
 
 	default:
