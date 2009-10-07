@@ -45,6 +45,8 @@ static struct torture_suite * torture_drs_unit_suite(TALLOC_CTX *mem_ctx)
 		talloc_autofree_context(),
 		"UNIT");
 
+	torture_drs_unit_prefixmap(suite);
+
 	return suite;
 }
 

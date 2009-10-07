@@ -18,6 +18,7 @@ PRIVATE_DEPENDENCIES = \
 
 TORTURE_DRS_OBJ_FILES = \
 		$(torturesrcdir)/drs/drs_init.o \
-		$(torturesrcdir)/drs/drs_util.o
+		$(torturesrcdir)/drs/drs_util.o \
+		$(torturesrcdir)/drs/internal/prefixmap_tests.o
 
 $(eval $(call proto_header_template,$(torturesrcdir)/drs/proto.h,$(TORTURE_DRS_OBJ_FILES:.o=.c)))
