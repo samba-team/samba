@@ -436,8 +436,9 @@ int main(int argc,char *argv[])
 	static int list_tests = 0;
 	int num_extra_users = 0;
 	enum {OPT_LOADFILE=1000,OPT_UNCLIST,OPT_TIMELIMIT,OPT_DNS, OPT_LIST,
-	      OPT_DANGEROUS,OPT_SMB_PORTS,OPT_ASYNC,OPT_NUMPROGS,OPT_EXTRA_USER};
-	
+	      OPT_DANGEROUS,OPT_SMB_PORTS,OPT_ASYNC,OPT_NUMPROGS,
+	      OPT_EXTRA_USER,};
+
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{"format", 0, POPT_ARG_STRING, &ui_ops_name, 0, "Output format (one of: simple, subunit)", NULL },
@@ -529,6 +530,8 @@ int main(int argc,char *argv[])
 		lp_set_cmdline(cmdline_lp_ctx, "torture:w2k8", "true");
 	} else if (strcmp(target, "win7") == 0) {
 		lp_set_cmdline(cmdline_lp_ctx, "torture:win7", "true");
+	} else if (strcmp(target, "onefs") == 0) {
+		lp_set_cmdline(cmdline_lp_ctx, "torture:sacl_support", "false");
 	}
 
 	if (max_runtime) {
