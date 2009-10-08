@@ -1,6 +1,6 @@
                    =============================
                    Release Notes for Samba 3.3.9
-		          October, 8  2009
+		         October, 15  2009
                    =============================
 
 
@@ -24,6 +24,7 @@ o   Michael Adam <obnox@samba.org>
 
 o   Jeremy Allison <jra@samba.org>
     * BUG 6504: Fix SAMR server for Winbind access.
+    * BUG 6776: Fix core dump when running overlapping Byte Lock test.
 
 
 o   Yannick Bergeron <burgergold@hotmail.com>
@@ -31,10 +32,16 @@ o   Yannick Bergeron <burgergold@hotmail.com>
 
 
 o   Günther Deschner <gd@samba.org>
-    * BUG 6700: Use DNS domain name when needing to guess server principal.
     * BUG 6680: Always activate handling of large (> 256 byte) ntlmv2 blobs
       in wbcAuthenticateUserEx().
     * BUG 6697: Fix interdomain trusts with Windows 2008 R2 DCs.
+    * BUG 6700: Use DNS domain name when needing to guess server principal.
+    * BUG 6711: Fix trust relationships to windows 2008 (2008 r2).
+    * BUG 6789: Remove unrequired dependency on popt for [u]mount.cifs.
+
+
+o   Andrew Klosterman <andrew.klosterman+samba_bugzilla@gmail.com>
+    * BUG 6690: Fix error check.
 
 
 o   Volker Lendecke <vl@samba.org>
@@ -42,6 +49,7 @@ o   Volker Lendecke <vl@samba.org>
     * BUG 6349: Initialize domain info struct.
     * BUG 6585: Fix unqualified "net join".
     * BUG 6646: Correctly chew keepalive packets.
+    * BUG 6785: Only ever handle one event after a select call.
 
 
 o   Derrell Lipman <derrell.lipman@unwireduniverse.com>
@@ -52,6 +60,7 @@ o   Stefan Metzmacher <metze@samba.org>
     * BUG 6627: Raise the timeout for lsa_Lookup*() calls
       from 10 to 35 seconds.
     * BUG 6664: Make sure we don't truncate the session key to 8 bytes.
+    * BUG 6711: Fix trust relationships to windows 2008 (2008 r2).
 
 
 o   Simo Sorce <idra@samba.org>
