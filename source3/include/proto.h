@@ -5427,7 +5427,7 @@ NTSTATUS rpccli_samr_chgpasswd_user3(struct rpc_pipe_client *cli,
 				     const char *newpassword,
 				     const char *oldpassword,
 				     struct samr_DomInfo1 **dominfo1,
-				     struct samr_ChangeReject **reject);
+				     struct userPwdChangeFailureInformation **reject);
 void get_query_dispinfo_params(int loop_count, uint32 *max_entries,
 			       uint32 *max_size);
 NTSTATUS rpccli_try_samr_connects(struct rpc_pipe_client *cli,

@@ -187,7 +187,7 @@ NTSTATUS rpccli_samr_chgpasswd_user3(struct rpc_pipe_client *cli,
 				     const char *newpassword,
 				     const char *oldpassword,
 				     struct samr_DomInfo1 **dominfo1,
-				     struct samr_ChangeReject **reject)
+				     struct userPwdChangeFailureInformation **reject)
 {
 	NTSTATUS status;
 

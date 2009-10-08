@@ -32,33 +32,6 @@ _PUBLIC_ void ndr_print_netr_SamDatabaseID(struct ndr_print *ndr, const char *na
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
 
-_PUBLIC_ enum ndr_err_code ndr_push_samr_RejectReason(struct ndr_push *ndr, int ndr_flags, enum samr_RejectReason r)
-{
-	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
-	return NDR_ERR_SUCCESS;
-}
-
-_PUBLIC_ enum ndr_err_code ndr_pull_samr_RejectReason(struct ndr_pull *ndr, int ndr_flags, enum samr_RejectReason *r)
-{
-	uint32_t v;
-	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
-	*r = v;
-	return NDR_ERR_SUCCESS;
-}
-
-_PUBLIC_ void ndr_print_samr_RejectReason(struct ndr_print *ndr, const char *name, enum samr_RejectReason r)
-{
-	const char *val = NULL;
-
-	switch (r) {
-		case SAMR_REJECT_OTHER: val = "SAMR_REJECT_OTHER"; break;
-		case SAMR_REJECT_TOO_SHORT: val = "SAMR_REJECT_TOO_SHORT"; break;
-		case SAMR_REJECT_IN_HISTORY: val = "SAMR_REJECT_IN_HISTORY"; break;
-		case SAMR_REJECT_COMPLEXITY: val = "SAMR_REJECT_COMPLEXITY"; break;
-	}
-	ndr_print_enum(ndr, name, "ENUM", val, r);
-}
-
 _PUBLIC_ enum ndr_err_code ndr_push_samr_AcctFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
@@ -4738,41 +4711,100 @@ _PUBLIC_ void ndr_print_samr_ConnectVersion(struct ndr_print *ndr, const char *n
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
 
-static enum ndr_err_code ndr_push_samr_ChangeReject(struct ndr_push *ndr, int ndr_flags, const struct samr_ChangeReject *r)
+_PUBLIC_ enum ndr_err_code ndr_push_samPwdChangeReason(struct ndr_push *ndr, int ndr_flags, enum samPwdChangeReason r)
+{
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_samPwdChangeReason(struct ndr_pull *ndr, int ndr_flags, enum samPwdChangeReason *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_samPwdChangeReason(struct ndr_print *ndr, const char *name, enum samPwdChangeReason r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case SAM_PWD_CHANGE_NO_ERROR: val = "SAM_PWD_CHANGE_NO_ERROR"; break;
+		case SAM_PWD_CHANGE_PASSWORD_TOO_SHORT: val = "SAM_PWD_CHANGE_PASSWORD_TOO_SHORT"; break;
+		case SAM_PWD_CHANGE_PWD_IN_HISTORY: val = "SAM_PWD_CHANGE_PWD_IN_HISTORY"; break;
+		case SAM_PWD_CHANGE_USERNAME_IN_PASSWORD: val = "SAM_PWD_CHANGE_USERNAME_IN_PASSWORD"; break;
+		case SAM_PWD_CHANGE_FULLNAME_IN_PASSWORD: val = "SAM_PWD_CHANGE_FULLNAME_IN_PASSWORD"; break;
+		case SAM_PWD_CHANGE_NOT_COMPLEX: val = "SAM_PWD_CHANGE_NOT_COMPLEX"; break;
+		case SAM_PWD_CHANGE_MACHINE_NOT_DEFAULT: val = "SAM_PWD_CHANGE_MACHINE_NOT_DEFAULT"; break;
+		case SAM_PWD_CHANGE_FAILED_BY_FILTER: val = "SAM_PWD_CHANGE_FAILED_BY_FILTER"; break;
+		case SAM_PWD_CHANGE_PASSWORD_TOO_LONG: val = "SAM_PWD_CHANGE_PASSWORD_TOO_LONG"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+static enum ndr_err_code ndr_push_userPwdChangeFailureInformation(struct ndr_push *ndr, int ndr_flags, const struct userPwdChangeFailureInformation *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_samr_RejectReason(ndr, NDR_SCALARS, r->reason));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown1));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown2));
-		NDR_CHECK(ndr_push_trailer_align(ndr, 4));
+		NDR_CHECK(ndr_push_align(ndr, 5));
+		NDR_CHECK(ndr_push_samPwdChangeReason(ndr, NDR_SCALARS, r->extendedFailureReason));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->filterModuleName));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		if (r->filterModuleName) {
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->filterModuleName, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->filterModuleName, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->filterModuleName, ndr_charset_length(r->filterModuleName, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_samr_ChangeReject(struct ndr_pull *ndr, int ndr_flags, struct samr_ChangeReject *r)
+static enum ndr_err_code ndr_pull_userPwdChangeFailureInformation(struct ndr_pull *ndr, int ndr_flags, struct userPwdChangeFailureInformation *r)
 {
+	uint32_t _ptr_filterModuleName;
+	TALLOC_CTX *_mem_save_filterModuleName_0;
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_samr_RejectReason(ndr, NDR_SCALARS, &r->reason));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown1));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown2));
-		NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
+		NDR_CHECK(ndr_pull_align(ndr, 5));
+		NDR_CHECK(ndr_pull_samPwdChangeReason(ndr, NDR_SCALARS, &r->extendedFailureReason));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_filterModuleName));
+		if (_ptr_filterModuleName) {
+			NDR_PULL_ALLOC(ndr, r->filterModuleName);
+		} else {
+			r->filterModuleName = NULL;
+		}
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		if (r->filterModuleName) {
+			_mem_save_filterModuleName_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->filterModuleName, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->filterModuleName));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->filterModuleName));
+			if (ndr_get_array_length(ndr, &r->filterModuleName) > ndr_get_array_size(ndr, &r->filterModuleName)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->filterModuleName), ndr_get_array_length(ndr, &r->filterModuleName));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->filterModuleName), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->filterModuleName, ndr_get_array_length(ndr, &r->filterModuleName), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_filterModuleName_0, 0);
+		}
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_samr_ChangeReject(struct ndr_print *ndr, const char *name, const struct samr_ChangeReject *r)
+_PUBLIC_ void ndr_print_userPwdChangeFailureInformation(struct ndr_print *ndr, const char *name, const struct userPwdChangeFailureInformation *r)
 {
-	ndr_print_struct(ndr, name, "samr_ChangeReject");
+	ndr_print_struct(ndr, name, "userPwdChangeFailureInformation");
 	ndr->depth++;
-	ndr_print_samr_RejectReason(ndr, "reason", r->reason);
-	ndr_print_uint32(ndr, "unknown1", r->unknown1);
-	ndr_print_uint32(ndr, "unknown2", r->unknown2);
+	ndr_print_samPwdChangeReason(ndr, "extendedFailureReason", r->extendedFailureReason);
+	ndr_print_ptr(ndr, "filterModuleName", r->filterModuleName);
+	ndr->depth++;
+	if (r->filterModuleName) {
+		ndr_print_string(ndr, "filterModuleName", r->filterModuleName);
+	}
+	ndr->depth--;
 	ndr->depth--;
 }
 
@@ -11806,7 +11838,7 @@ static enum ndr_err_code ndr_push_samr_ChangePasswordUser3(struct ndr_push *ndr,
 		}
 		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.reject));
 		if (*r->out.reject) {
-			NDR_CHECK(ndr_push_samr_ChangeReject(ndr, NDR_SCALARS, *r->out.reject));
+			NDR_CHECK(ndr_push_userPwdChangeFailureInformation(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.reject));
 		}
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -11955,7 +11987,7 @@ static enum ndr_err_code ndr_pull_samr_ChangePasswordUser3(struct ndr_pull *ndr,
 		if (*r->out.reject) {
 			_mem_save_reject_1 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, *r->out.reject, 0);
-			NDR_CHECK(ndr_pull_samr_ChangeReject(ndr, NDR_SCALARS, *r->out.reject));
+			NDR_CHECK(ndr_pull_userPwdChangeFailureInformation(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.reject));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_reject_1, 0);
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_reject_0, LIBNDR_FLAG_REF_ALLOC);
@@ -12034,7 +12066,7 @@ _PUBLIC_ void ndr_print_samr_ChangePasswordUser3(struct ndr_print *ndr, const ch
 		ndr_print_ptr(ndr, "reject", *r->out.reject);
 		ndr->depth++;
 		if (*r->out.reject) {
-			ndr_print_samr_ChangeReject(ndr, "reject", *r->out.reject);
+			ndr_print_userPwdChangeFailureInformation(ndr, "reject", *r->out.reject);
 		}
 		ndr->depth--;
 		ndr->depth--;

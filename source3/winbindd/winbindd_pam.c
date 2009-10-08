@@ -2060,7 +2060,7 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 	struct rpc_pipe_client *cli;
 	bool got_info = false;
 	struct samr_DomInfo1 *info = NULL;
-	struct samr_ChangeReject *reject = NULL;
+	struct userPwdChangeFailureInformation *reject = NULL;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	fstring domain, user;
 
@@ -2102,7 +2102,7 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 		fill_in_password_policy(state->response, info);
 
 		state->response->data.auth.reject_reason =
-			reject->reason;
+			reject->extendedFailureReason;
 
 		got_info = true;
 	}

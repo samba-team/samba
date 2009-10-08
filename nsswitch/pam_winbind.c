@@ -1862,22 +1862,22 @@ static int winbind_chauthtok_request(struct pwb_context *ctx,
 		switch (reject_reason) {
 			case -1:
 				break;
-			case WBC_PWD_CHANGE_REJECT_OTHER:
+			case WBC_PWD_CHANGE_NO_ERROR:
 				if ((min_pwd_age > 0) &&
 				    (pwd_last_set + min_pwd_age > time(NULL))) {
 					PAM_WB_REMARK_DIRECT(ctx,
 					     "NT_STATUS_PWD_TOO_RECENT");
 				}
 				break;
-			case WBC_PWD_CHANGE_REJECT_TOO_SHORT:
+			case WBC_PWD_CHANGE_PASSWORD_TOO_SHORT:
 				PAM_WB_REMARK_DIRECT(ctx,
 					"NT_STATUS_PWD_TOO_SHORT");
 				break;
-			case WBC_PWD_CHANGE_REJECT_IN_HISTORY:
+			case WBC_PWD_CHANGE_PWD_IN_HISTORY:
 				PAM_WB_REMARK_DIRECT(ctx,
 					"NT_STATUS_PWD_HISTORY_CONFLICT");
 				break;
-			case WBC_PWD_CHANGE_REJECT_COMPLEXITY:
+			case WBC_PWD_CHANGE_NOT_COMPLEX:
 				_make_remark(ctx, PAM_ERROR_MSG,
 					     _("Password does not meet "
 					       "complexity requirements"));

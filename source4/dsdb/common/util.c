@@ -1583,7 +1583,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 			    struct samr_Password *param_lmNewHash,
 			    struct samr_Password *param_ntNewHash,
 			    bool user_change,
-			    enum samr_RejectReason *reject_reason,
+			    enum samPwdChangeReason *reject_reason,
 			    struct samr_DomInfo1 **_dominfo)
 {
 	const char * const user_attrs[] = { "userAccountControl",
@@ -1702,7 +1702,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 			&& (minPwdLength > utf16_len_n(
 				new_password->data, new_password->length)/2)) {
 			if (reject_reason) {
-				*reject_reason = SAMR_REJECT_TOO_SHORT;
+				*reject_reason = SAM_PWD_CHANGE_PASSWORD_TOO_SHORT;
 			}
 			return NT_STATUS_PASSWORD_RESTRICTION;
 		}
@@ -1726,7 +1726,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 					& DOMAIN_PASSWORD_COMPLEX) != 0)
 				&& (!check_password_quality(new_pass))) {
 				if (reject_reason) {
-					*reject_reason = SAMR_REJECT_COMPLEXITY;
+					*reject_reason = SAM_PWD_CHANGE_NOT_COMPLEX;
 				}
 				return NT_STATUS_PASSWORD_RESTRICTION;
 			}
@@ -1742,7 +1742,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 		/* are all password changes disallowed? */
 		if ((pwdProperties & DOMAIN_REFUSE_PASSWORD_CHANGE) != 0) {
 			if (reject_reason) {
-				*reject_reason = SAMR_REJECT_OTHER;
+				*reject_reason = SAM_PWD_CHANGE_NO_ERROR;
 			}
 			return NT_STATUS_PASSWORD_RESTRICTION;
 		}
@@ -1750,7 +1750,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 		/* can this user change the password? */
 		if ((userAccountControl & UF_PASSWD_CANT_CHANGE) != 0) {
 			if (reject_reason) {
-				*reject_reason = SAMR_REJECT_OTHER;
+				*reject_reason = SAM_PWD_CHANGE_NO_ERROR;
 			}
 			return NT_STATUS_PASSWORD_RESTRICTION;
 		}
@@ -1758,7 +1758,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 		/* Password minimum age: yes, this is a minus. The ages are in negative 100nsec units! */
 		if (pwdLastSet - minPwdAge > now_nt) {
 			if (reject_reason) {
-				*reject_reason = SAMR_REJECT_OTHER;
+				*reject_reason = SAM_PWD_CHANGE_NO_ERROR;
 			}
 			return NT_STATUS_PASSWORD_RESTRICTION;
 		}
@@ -1768,14 +1768,14 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 			if (lmNewHash && lmPwdHash && memcmp(lmNewHash->hash,
 					lmPwdHash->hash, 16) == 0) {
 				if (reject_reason) {
-					*reject_reason = SAMR_REJECT_IN_HISTORY;
+					*reject_reason = SAM_PWD_CHANGE_PWD_IN_HISTORY;
 				}
 				return NT_STATUS_PASSWORD_RESTRICTION;
 			}
 			if (ntNewHash && ntPwdHash && memcmp(ntNewHash->hash,
 					ntPwdHash->hash, 16) == 0) {
 				if (reject_reason) {
-					*reject_reason = SAMR_REJECT_IN_HISTORY;
+					*reject_reason = SAM_PWD_CHANGE_PWD_IN_HISTORY;
 				}
 				return NT_STATUS_PASSWORD_RESTRICTION;
 			}
@@ -1791,7 +1791,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 			if (memcmp(lmNewHash->hash, sambaLMPwdHistory[i].hash,
 					16) == 0) {
 				if (reject_reason) {
-					*reject_reason = SAMR_REJECT_IN_HISTORY;
+					*reject_reason = SAM_PWD_CHANGE_PWD_IN_HISTORY;
 				}
 				return NT_STATUS_PASSWORD_RESTRICTION;
 			}
@@ -1800,7 +1800,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 			if (memcmp(ntNewHash->hash, sambaNTPwdHistory[i].hash,
 					 16) == 0) {
 				if (reject_reason) {
-					*reject_reason = SAMR_REJECT_IN_HISTORY;
+					*reject_reason = SAM_PWD_CHANGE_PWD_IN_HISTORY;
 				}
 				return NT_STATUS_PASSWORD_RESTRICTION;
 			}
@@ -1833,6 +1833,9 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	if (reject_reason) {
+		*reject_reason = SAM_PWD_CHANGE_NO_ERROR;
+	}
 	return NT_STATUS_OK;
 }
 
@@ -1851,7 +1854,7 @@ NTSTATUS samdb_set_password_sid(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 				struct samr_Password *lmNewHash, 
 				struct samr_Password *ntNewHash,
 				bool user_change,
-				enum samr_RejectReason *reject_reason,
+				enum samPwdChangeReason *reject_reason,
 				struct samr_DomInfo1 **_dominfo) 
 {
 	NTSTATUS nt_status;
