@@ -2036,7 +2036,7 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 		}
 
 		/* needed_data_count 4 bytes */
-		SIVAL(pdata,8,labels_data_count);
+		SIVAL(pdata, 8, labels_data_count+4);
 
 		cur_pdata+=12;
 
