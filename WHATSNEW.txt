@@ -9,6 +9,7 @@ This is the latest bugfix release of the Samba 3.3 series.
 Major enhancements in Samba 3.3.9 include:
 
    o Fix trust relationships to windows 2008 (2008 r2) (bug #6711).
+   o Fix Windows 7 share access (which defaults to NTLMv2) (bug #6680).
    o Fix SAMR server for Winbind access (bug #6504).
 
 
@@ -33,8 +34,7 @@ o   Yannick Bergeron <burgergold@hotmail.com>
 
 
 o   Günther Deschner <gd@samba.org>
-    * BUG 6680: Always activate handling of large (> 256 byte) ntlmv2 blobs
-      in wbcAuthenticateUserEx().
+    * BUG 6680: Fix Windows 7 share access (which defaults to NTLMv2).
     * BUG 6697: Fix interdomain trusts with Windows 2008 R2 DCs.
     * BUG 6700: Use DNS domain name when needing to guess server principal.
     * BUG 6711: Fix trust relationships to windows 2008 (2008 r2).
