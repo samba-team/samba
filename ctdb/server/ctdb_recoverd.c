@@ -245,10 +245,18 @@ static int update_capabilities(struct ctdb_context *ctdb, struct ctdb_node_map *
 	return 0;
 }
 
+static void set_recmode_fail_callback(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata, void *callback_data)
+{
+	struct ctdb_recoverd *rec = talloc_get_type(callback_data, struct ctdb_recoverd);
+
+	DEBUG(DEBUG_ERR,("Failed to freeze node %u during recovery. Set it as ban culprit for %d credits\n", node_pnn, rec->nodemap->num));
+	ctdb_set_culprit_count(rec, node_pnn, rec->nodemap->num);
+}
+
 /*
   change recovery mode on all nodes
  */
-static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, uint32_t rec_mode)
+static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_recoverd *rec, struct ctdb_node_map *nodemap, uint32_t rec_mode)
 {
 	TDB_DATA data;
 	uint32_t *nodes;
@@ -263,8 +271,9 @@ static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_node_map *no
 		if (ctdb_client_async_control(ctdb, CTDB_CONTROL_FREEZE,
 						nodes, CONTROL_TIMEOUT(),
 						false, tdb_null,
-						NULL, NULL,
-						NULL) != 0) {
+						NULL,
+						set_recmode_fail_callback,
+						rec) != 0) {
 			DEBUG(DEBUG_ERR, (__location__ " Unable to freeze nodes. Recovery failed.\n"));
 			talloc_free(tmp_ctx);
 			return -1;
@@ -1228,7 +1237,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 
 
 	/* set recovery mode to active on all nodes */
-	ret = set_recovery_mode(ctdb, nodemap, CTDB_RECOVERY_ACTIVE);
+	ret = set_recovery_mode(ctdb, rec, nodemap, CTDB_RECOVERY_ACTIVE);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery mode to active on cluster\n"));
 		return -1;
@@ -1374,7 +1383,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - updated flags\n"));
 
 	/* disable recovery mode */
-	ret = set_recovery_mode(ctdb, nodemap, CTDB_RECOVERY_NORMAL);
+	ret = set_recovery_mode(ctdb, rec, nodemap, CTDB_RECOVERY_NORMAL);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery mode to normal on cluster\n"));
 		return -1;
@@ -1858,7 +1867,7 @@ static void force_election(struct ctdb_recoverd *rec, uint32_t pnn,
 	DEBUG(DEBUG_INFO,(__location__ " Force an election\n"));
 
 	/* set all nodes to recovery mode to stop all internode traffic */
-	ret = set_recovery_mode(ctdb, nodemap, CTDB_RECOVERY_ACTIVE);
+	ret = set_recovery_mode(ctdb, rec, nodemap, CTDB_RECOVERY_ACTIVE);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery mode to active on cluster\n"));
 		return;
