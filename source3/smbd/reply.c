@@ -918,10 +918,19 @@ void reply_checkpath(struct smb_request *req)
 		goto path_err;
 	}
 
-	if (!VALID_STAT(sbuf) && (SMB_VFS_STAT(conn,name,&sbuf) != 0)) {
-		DEBUG(3,("reply_checkpath: stat of %s failed (%s)\n",name,strerror(errno)));
-		status = map_nt_error_from_unix(errno);
-		goto path_err;
+	if (!VALID_STAT(sbuf)) {
+		int ret;
+
+		if (lp_posix_pathnames()) {
+			ret = SMB_VFS_LSTAT(conn,name,&sbuf);
+		} else {
+			ret = SMB_VFS_STAT(conn,name,&sbuf);
+		}
+		if (ret != 0) {
+			DEBUG(3,("reply_checkpath: stat of %s failed (%s)\n",name,strerror(errno)));
+			status = map_nt_error_from_unix(errno);
+			goto path_err;
+		}
 	}
 
 	if (!S_ISDIR(sbuf.st_mode)) {
@@ -1027,11 +1036,20 @@ void reply_getatr(struct smb_request *req)
 			END_PROFILE(SMBgetatr);
 			return;
 		}
-		if (!VALID_STAT(sbuf) && (SMB_VFS_STAT(conn,fname,&sbuf) != 0)) {
-			DEBUG(3,("reply_getatr: stat of %s failed (%s)\n",fname,strerror(errno)));
-			reply_unixerror(req, ERRDOS,ERRbadfile);
-			END_PROFILE(SMBgetatr);
-			return;
+		if (!VALID_STAT(sbuf)) {
+			int ret;
+
+			if (lp_posix_pathnames()) {
+				ret = SMB_VFS_LSTAT(conn,fname,&sbuf);
+			} else {
+				ret = SMB_VFS_STAT(conn,fname,&sbuf);
+			}
+			if (ret != 0) {
+				DEBUG(3,("reply_getatr: stat of %s failed (%s)\n",fname,strerror(errno)));
+				reply_unixerror(req, ERRDOS,ERRbadfile);
+				END_PROFILE(SMBgetatr);
+				return;
+			}
 		}
 
 		mode = dos_mode(conn,fname,&sbuf);
@@ -2260,6 +2278,8 @@ static NTSTATUS do_unlink(connection_struct *conn,
 	uint32 fattr;
 	files_struct *fsp;
 	uint32 dirtype_orig = dirtype;
+	bool posix_paths = lp_posix_pathnames();
+	int ret;
 	NTSTATUS status;
 
 	DEBUG(10,("do_unlink: %s, dirtype = %d\n", fname, dirtype ));
@@ -2268,7 +2288,12 @@ static NTSTATUS do_unlink(connection_struct *conn,
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
 	}
 
-	if (SMB_VFS_LSTAT(conn,fname,&sbuf) != 0) {
+	if (posix_paths) {
+		ret = SMB_VFS_LSTAT(conn,fname,&sbuf);
+	} else {
+		ret = SMB_VFS_STAT(conn,fname,&sbuf);
+	}
+	if (ret != 0) {
 		return map_nt_error_from_unix(errno);
 	}
 
@@ -2356,7 +2381,9 @@ static NTSTATUS do_unlink(connection_struct *conn,
 		 FILE_SHARE_NONE,	/* share_access */
 		 FILE_OPEN,		/* create_disposition*/
 		 FILE_NON_DIRECTORY_FILE, /* create_options */
-		 FILE_ATTRIBUTE_NORMAL,	/* file_attributes */
+					/* file_attributes */
+		 posix_paths ? FILE_FLAG_POSIX_SEMANTICS|0777 :
+				FILE_ATTRIBUTE_NORMAL,
 		 0,			/* oplock_request */
 		 0,			/* allocation_size */
 		 NULL,			/* sd */

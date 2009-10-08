@@ -1130,7 +1130,11 @@ static NTSTATUS vfswrap_streaminfo(vfs_handle_struct *handle,
 		ret = SMB_VFS_FSTAT(fsp, &sbuf);
 	}
 	else {
-		ret = SMB_VFS_STAT(handle->conn, fname, &sbuf);
+		if (lp_posix_pathnames()) {
+			ret = SMB_VFS_LSTAT(handle->conn, fname, &sbuf);
+		} else {
+			ret = SMB_VFS_STAT(handle->conn, fname, &sbuf);
+		}
 	}
 
 	if (ret == -1) {
