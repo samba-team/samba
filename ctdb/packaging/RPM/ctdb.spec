@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.93
+Version: 1.0.94
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -132,6 +132,8 @@ fi
 %{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
+* Thu Oct 10 2009 : Version 1.0.94
+ - Be very aggressive and quickly ban nodes that can not freeze their databases
 * Tue Oct 8 2009 : Version 1.0.93
  - When adding an ip, make sure to update this assignment on all nodes
    so it wont show up as -1 on other nodes.
