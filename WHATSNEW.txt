@@ -8,7 +8,8 @@ This is the latest bugfix release of the Samba 3.3 series.
 
 Major enhancements in Samba 3.3.9 include:
 
-   o
+   o Fix trust relationships to windows 2008 (2008 r2) (bug #6711).
+   o Fix SAMR server for Winbind access (bug #6504).
 
 
 ######################################################################
