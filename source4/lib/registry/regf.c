@@ -261,6 +261,11 @@ static uint32_t hbin_store (struct regf_data *data, DATA_BLOB blob)
 
 	memcpy(dest.data, blob.data, blob.length);
 
+	/* Make sure that we have no tailing garbage in the block */
+	if (dest.length > blob.length) {
+		memset(dest.data + blob.length, 0, dest.length - blob.length);
+	}
+
 	return ret;
 }
 
