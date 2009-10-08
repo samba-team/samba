@@ -2383,6 +2383,8 @@ static NTSTATUS do_unlink(connection_struct *conn,
 	files_struct *fsp;
 	uint32 dirtype_orig = dirtype;
 	NTSTATUS status;
+	int ret;
+	bool posix_paths = lp_posix_pathnames();
 
 	DEBUG(10,("do_unlink: %s, dirtype = %d\n",
 		  smb_fname_str_dbg(smb_fname),
@@ -2392,7 +2394,12 @@ static NTSTATUS do_unlink(connection_struct *conn,
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
 	}
 
-	if (SMB_VFS_LSTAT(conn, smb_fname) != 0) {
+	if (posix_paths) {
+		ret = SMB_VFS_LSTAT(conn, smb_fname);
+	} else {
+		ret = SMB_VFS_LSTAT(conn, smb_fname);
+	}
+	if (ret != 0) {
 		return map_nt_error_from_unix(errno);
 	}
 
@@ -2479,7 +2486,9 @@ static NTSTATUS do_unlink(connection_struct *conn,
 		 FILE_SHARE_NONE,	/* share_access */
 		 FILE_OPEN,		/* create_disposition*/
 		 FILE_NON_DIRECTORY_FILE, /* create_options */
-		 FILE_ATTRIBUTE_NORMAL,	/* file_attributes */
+		 			/* file_attributes */
+		 posix_paths ? FILE_FLAG_POSIX_SEMANTICS|0777 :
+				FILE_ATTRIBUTE_NORMAL,
 		 0,			/* oplock_request */
 		 0,			/* allocation_size */
 		 NULL,			/* sd */
