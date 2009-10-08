@@ -48,3 +48,10 @@ extern int _smb_read_password( pam_handle_t *, unsigned int, const char*,
 
 extern int _pam_smb_approve_pass(pam_handle_t *, unsigned int, const char *,
 				 const char *);
+
+int _pam_get_item(const pam_handle_t *pamh,
+		  int item_type,
+		  const void *_item);
+int _pam_get_data(const pam_handle_t *pamh,
+		  const char *module_data_name,
+		  const void *_data);
