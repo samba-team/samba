@@ -32,6 +32,7 @@
 #include "torture/util.h"
 
 #include "system/filesys.h"
+#include "system/locale.h"
 
 #define DNAME "teststreams"
 
