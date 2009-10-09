@@ -193,13 +193,13 @@ int32_t ctdb_control_event_script_stop(struct ctdb_context *ctdb, TDB_DATA indat
  */
 int32_t ctdb_control_event_script_disabled(struct ctdb_context *ctdb, TDB_DATA indata)
 {
-	int32_t res = *((int32_t *)indata.dptr);
+	const char *name = (const char *)indata.dptr;
 	struct ctdb_monitoring_status *monitoring_status =
 		talloc_get_type(ctdb->script_monitoring_ctx,
 			struct ctdb_monitoring_status);
 	struct ctdb_monitor_script_status *script;
 
-	DEBUG(DEBUG_INFO, ("event script disabed called : %d\n", (int)res));
+	DEBUG(DEBUG_INFO, ("event script disabed called for script %s\n", name));
 
 	if (monitoring_status == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " script_status is NULL when script finished.\n"));
@@ -213,7 +213,7 @@ int32_t ctdb_control_event_script_disabled(struct ctdb_context *ctdb, TDB_DATA i
 	}
 
 	script->finished = timeval_current();
-	script->status   = res;
+	script->status   = 0;
 	script->disabled = 1;
 
 	return 0;
