@@ -342,7 +342,9 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 
 	node         = ctdb->nodes[c->pnn];
 	old_flags    = node->flags;
-	c->old_flags  = node->flags;
+	if (c->pnn != ctdb->pnn) {
+		c->old_flags  = node->flags;
+	}
 	node->flags   = c->new_flags & ~NODE_FLAGS_DISCONNECTED;
 	node->flags  |= (c->old_flags & NODE_FLAGS_DISCONNECTED);
 
