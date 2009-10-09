@@ -299,7 +299,7 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 		show_msg(aio_ex->outbuf);
 		if (!srv_send_smb(smbd_server_fd(),aio_ex->outbuf,
 				IS_CONN_ENCRYPTED(fsp->conn),
-				&req->pcd)) {
+				&aio_ex->req->pcd)) {
 			exit_server_cleanly("handle_aio_write: srv_send_smb "
 					    "failed.");
 		}
