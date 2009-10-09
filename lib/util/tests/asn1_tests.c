@@ -28,7 +28,7 @@ struct oid_data {
 	const char *bin_oid;	/* Binary OID represented as string */
 };
 
-/* Data for successfull OIDs conversions */
+/* Data for successful OIDs conversions */
 struct oid_data oid_data_ok[] = {
 	{
 		.oid = "2.5.4.0",
@@ -64,7 +64,7 @@ struct oid_data oid_data_ok[] = {
 	},
 };
 
-/* Data for successfull Partial OIDs conversions */
+/* Data for successful Partial OIDs conversions */
 struct oid_data partial_oid_data_ok[] = {
 	{
 		.oid = "2.5.4.130:0x81",
