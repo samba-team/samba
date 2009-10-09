@@ -17,3 +17,6 @@ passwordAttribute: trustAuthOutgoing
 passwordAttribute: trustAuthIncoming
 passwordAttribute: initialAuthOutgoing
 passwordAttribute: initialAuthIncoming
+
+dn: @OPTIONS
+checkBaseOnSearch: TRUE
