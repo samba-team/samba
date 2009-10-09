@@ -205,10 +205,17 @@ static int ltdb_modified(struct ldb_module *module, struct ldb_dn *dn)
 		ret = ltdb_reindex(module);
 	}
 
+	/* If the modify was to a normal record, or any special except @BASEINFO, update the seq number */
 	if (ret == LDB_SUCCESS &&
 	    !(ldb_dn_is_special(dn) &&
 	      ldb_dn_check_special(dn, LTDB_BASEINFO)) ) {
 		ret = ltdb_increase_sequence_number(module);
+	}
+
+	/* If the modify was to @OPTIONS, reload the cache */
+	if (ldb_dn_is_special(dn) &&
+	    (ldb_dn_check_special(dn, LTDB_OPTIONS)) ) {
+		ret = ltdb_cache_reload(module);
 	}
 
 	return ret;
