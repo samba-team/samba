@@ -602,7 +602,7 @@ instructions on downloading the source code.
 To allow domain users the ability to access Samba shares and files, as well as potentially other services
 provided by your Samba machine, PAM must be set up properly on your
 machine. In order to compile the Winbind modules, the PAM development libraries should be installed
-on your system. Please refer to the PAM Web site <ulink url="http://www.kernel.org/pub/linux/libs/pam/"/>.
+on your system. Please refer to the <ulink url="http://www.kernel.org/pub/linux/libs/pam/">PAM Web Site</ulink>.
 </para>
 </sect2>
 
@@ -1230,7 +1230,7 @@ pre-create the directories of users to make sure users can log in on UNIX with t
 <indexterm><primary>Winbind</primary></indexterm>
 <indexterm><primary>ftp access</primary></indexterm>
 The <filename>/etc/pam.d/ftp</filename> file can be changed to allow Winbind ftp access in a manner similar to
-the <filename>/etc/pam.d/samba</filename> file. My <filename>/etc/pam.d/ftp</filename> file was changed to look like this:
+the <filename>/etc/pam.d/samba</filename>Samba file. My <filename>/etc/pam.d/ftp</filename> file was changed to look like this:
 <programlisting>
 auth       required     /lib/security/pam_listfile.so item=user sense=deny \
 	 file=/etc/ftpusers onerr=succeed
