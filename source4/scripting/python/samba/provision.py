@@ -144,6 +144,11 @@ class ProvisionPaths(object):
         self.fedoradsinf = None
         self.fedoradspartitions = None
         self.fedoradssasl = None
+        self.fedoradspam = None
+        self.fedoradsrefint = None
+        self.fedoradslinkedattributes = None
+        self.fedoradsindex = None
+        self.fedoradssamba = None
         self.olmmron = None
         self.olmmrserveridsconf = None
         self.olmmrsyncreplconf = None
@@ -334,7 +339,7 @@ def setup_ldb(ldb, ldif_path, subst_vars):
     ldb.transaction_commit()
 
 
-def setup_file(template, fname, subst_vars):
+def setup_file(template, fname, subst_vars=None):
     """Setup a file in the private dir.
 
     :param template: Path of the template file.
@@ -388,8 +393,16 @@ def provision_paths_from_lp(lp, dnsdomain):
                                             "fedorads-partitions.ldif")
     paths.fedoradssasl = os.path.join(paths.ldapdir, 
                                       "fedorads-sasl.ldif")
+    paths.fedoradspam = os.path.join(paths.ldapdir,
+                                      "fedorads-pam.ldif")
+    paths.fedoradsrefint = os.path.join(paths.ldapdir,
+                                        "fedorads-refint.ldif")
+    paths.fedoradslinkedattributes = os.path.join(paths.ldapdir,
+                                                  "fedorads-linked-attributes.ldif")
+    paths.fedoradsindex = os.path.join(paths.ldapdir,
+                                       "fedorads-index.ldif")
     paths.fedoradssamba = os.path.join(paths.ldapdir, 
-                                        "fedorads-samba.ldif")
+                                       "fedorads-samba.ldif")
     paths.olmmrserveridsconf = os.path.join(paths.ldapdir, 
                                             "mmr_serverids.conf")
     paths.olmmrsyncreplconf = os.path.join(paths.ldapdir, 
@@ -651,7 +664,7 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
         if ldap_backend.ldap_backend_type == "fedora-ds":
             backend_modules = ["nsuniqueid", "paged_searches"]
             # We can handle linked attributes here, as we don't have directory-side subtree operations
-            tdb_modules_list = ["linked_attributes", "extended_dn_out_dereference"]
+            tdb_modules_list = ["extended_dn_out_dereference"]
         elif ldap_backend.ldap_backend_type == "openldap":
             backend_modules = ["entryuuid", "paged_searches"]
             # OpenLDAP handles subtree renames, so we don't want to do any of these things
@@ -1912,6 +1925,44 @@ def provision_fds_backend(result, paths=None, setup_path=None, names=None,
     setup_file(setup_path("fedorads-sasl.ldif"), paths.fedoradssasl, 
                {"SAMBADN": names.sambadn,
                 })
+
+    setup_file(setup_path("fedorads-pam.ldif"), paths.fedoradspam)
+
+    lnkattr = get_linked_attributes(names.schemadn,schema.ldb)
+
+    refint_config = data = open(setup_path("fedorads-refint-delete.ldif"), 'r').read()
+    memberof_config = ""
+    index_config = ""
+    argnum = 3
+
+    for attr in lnkattr.keys():
+        if lnkattr[attr] is not None:
+            refint_config += read_and_sub_file(setup_path("fedorads-refint-add.ldif"),
+                                                 { "ARG_NUMBER" : str(argnum) ,
+                                                   "LINK_ATTR" : attr })
+            memberof_config += read_and_sub_file(setup_path("fedorads-linked-attributes.ldif"),
+                                                 { "MEMBER_ATTR" : attr ,
+                                                   "MEMBEROF_ATTR" : lnkattr[attr] })
+            index_config += read_and_sub_file(setup_path("fedorads-index.ldif"),
+                                                 { "ATTR" : attr })
+            argnum += 1
+
+    open(paths.fedoradsrefint, 'w').write(refint_config)
+    open(paths.fedoradslinkedattributes, 'w').write(memberof_config)
+
+    attrs = ["lDAPDisplayName"]
+    res = schema.ldb.search(expression="(&(objectclass=attributeSchema)(searchFlags:1.2.840.113556.1.4.803:=1))", base=names.schemadn, scope=SCOPE_ONELEVEL, attrs=attrs)
+
+    for i in range (0, len(res)):
+        attr = res[i]["lDAPDisplayName"][0]
+
+        if attr == "objectGUID":
+            attr = "nsUniqueId"
+
+        index_config += read_and_sub_file(setup_path("fedorads-index.ldif"),
+                                             { "ATTR" : attr })
+
+    open(paths.fedoradsindex, 'w').write(index_config)
 
     setup_file(setup_path("fedorads-samba.ldif"), paths.fedoradssamba,
                 {"SAMBADN": names.sambadn, 
