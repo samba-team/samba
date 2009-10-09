@@ -247,9 +247,13 @@ wbcErr wbcLookupSid(const struct wbcDomainSid *sid,
 	if (WBC_ERROR_IS_OK(wbc_status)) {
 		if (pdomain != NULL) {
 			*pdomain = domain;
+		} else {
+			TALLOC_FREE(domain);
 		}
 		if (pname != NULL) {
 			*pname = name;
+		} else {
+			TALLOC_FREE(name);
 		}
 		if (pname_type != NULL) {
 			*pname_type = name_type;
