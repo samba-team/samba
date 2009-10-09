@@ -2386,7 +2386,7 @@ int ctdb_ctrl_modflags(struct ctdb_context *ctdb, struct timeval timeout, uint32
 					timeout, false, data,
 					NULL, NULL,
 					NULL) != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " ctdb_control to disable node failed\n"));
+		DEBUG(DEBUG_ERR, (__location__ " Unable to update nodeflags on remote nodes\n"));
 
 		talloc_free(tmp_ctx);
 		return -1;
