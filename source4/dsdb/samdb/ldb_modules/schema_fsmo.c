@@ -5,6 +5,7 @@
    checkings, it also loads the dsdb_schema.
    
    Copyright (C) Stefan Metzmacher <metze@samba.org> 2007
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2009
     
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,6 +29,7 @@
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "param/param.h"
+#include "dsdb/samdb/ldb_modules/util.h"
 
 static int generate_objectClasses(struct ldb_context *ldb, struct ldb_message *msg,
 				  const struct dsdb_schema *schema);
@@ -90,13 +92,107 @@ struct schema_fsmo_search_data {
 	const struct dsdb_schema *schema;
 };
 
+/*
+  Given an LDB module (pointing at the schema DB), and the DN, set the populated schema
+*/
+
+static int dsdb_schema_from_schema_dn(TALLOC_CTX *mem_ctx, struct ldb_module *module,
+				      struct smb_iconv_convenience *iconv_convenience, 
+				      struct ldb_dn *schema_dn,
+				      struct dsdb_schema **schema) 
+{
+	TALLOC_CTX *tmp_ctx;
+	char *error_string;
+	int ret;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct ldb_result *schema_res;
+	struct ldb_result *a_res;
+	struct ldb_result *c_res;
+	static const char *schema_attrs[] = {
+		"prefixMap",
+		"schemaInfo",
+		"fSMORoleOwner",
+		NULL
+	};
+	unsigned flags;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (!tmp_ctx) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/* we don't want to trace the schema load */
+	flags = ldb_get_flags(ldb);
+	ldb_set_flags(ldb, flags & ~LDB_FLG_ENABLE_TRACING);
+
+	/*
+	 * setup the prefix mappings and schema info
+	 */
+	ret = dsdb_module_search_dn(module, tmp_ctx, &schema_res,
+				    schema_dn, schema_attrs);
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		goto failed;
+	} else if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, 
+				       "dsdb_schema: failed to search the schema head: %s",
+				       ldb_errstring(ldb));
+		goto failed;
+	}
+
+	/*
+	 * load the attribute definitions
+	 */
+	ret = dsdb_module_search(module, tmp_ctx, &a_res,
+				 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
+				 "(objectClass=attributeSchema)");
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, 
+				       "dsdb_schema: failed to search attributeSchema objects: %s",
+				       ldb_errstring(ldb));
+		goto failed;
+	}
+
+	/*
+	 * load the objectClass definitions
+	 */
+	ret = dsdb_module_search(module, tmp_ctx, &c_res,
+				 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
+				 "(objectClass=classSchema)");
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, 
+				       "dsdb_schema: failed to search attributeSchema objects: %s",
+				       ldb_errstring(ldb));
+		goto failed;
+	}
+
+	ret = dsdb_schema_from_ldb_results(tmp_ctx, ldb,
+					   lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
+					   schema_res, a_res, c_res, schema, &error_string);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, 
+						    "dsdb_schema load failed: %s",
+						    error_string);
+		goto failed;
+	}
+	talloc_steal(mem_ctx, *schema);
+
+failed:
+	if (flags & LDB_FLG_ENABLE_TRACING) {
+		flags = ldb_get_flags(ldb);
+		ldb_set_flags(ldb, flags | LDB_FLG_ENABLE_TRACING);
+	}
+	talloc_free(tmp_ctx);
+	return ret;
+}	
+
+
 static int schema_fsmo_init(struct ldb_module *module)
 {
 	struct ldb_context *ldb;
 	TALLOC_CTX *mem_ctx;
 	struct ldb_dn *schema_dn;
 	struct dsdb_schema *schema;
-	char *error_string = NULL;
 	int ret;
 	struct schema_fsmo_private_data *data;
 
@@ -134,9 +230,9 @@ static int schema_fsmo_init(struct ldb_module *module)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = dsdb_schema_from_schema_dn(mem_ctx, ldb,
+	ret = dsdb_schema_from_schema_dn(mem_ctx, module,
 					 lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
-					 schema_dn, &schema, &error_string);
+					 schema_dn, &schema);
 
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		ldb_reset_err_string(ldb);
@@ -147,9 +243,6 @@ static int schema_fsmo_init(struct ldb_module *module)
 	}
 
 	if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(ldb, 
-				       "schema_fsmo_init: dsdb_schema load failed: %s",
-				       error_string);
 		talloc_free(mem_ctx);
 		return ret;
 	}
@@ -246,7 +339,6 @@ static int schema_fsmo_extended(struct ldb_module *module, struct ldb_request *r
 	struct ldb_context *ldb;
 	struct ldb_dn *schema_dn;
 	struct dsdb_schema *schema;
-	char *error_string = NULL;
 	int ret;
 	TALLOC_CTX *mem_ctx;
 
@@ -270,9 +362,9 @@ static int schema_fsmo_extended(struct ldb_module *module, struct ldb_request *r
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	
-	ret = dsdb_schema_from_schema_dn(mem_ctx, ldb,
+	ret = dsdb_schema_from_schema_dn(mem_ctx, module,
 					 lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
-					 schema_dn, &schema, &error_string);
+					 schema_dn, &schema);
 
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		ldb_reset_err_string(ldb);
@@ -283,9 +375,6 @@ static int schema_fsmo_extended(struct ldb_module *module, struct ldb_request *r
 	}
 
 	if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(ldb, 
-				       "schema_fsmo_extended: dsdb_schema load failed: %s",
-				       error_string);
 		talloc_free(mem_ctx);
 		return ldb_next_request(module, req);
 	}
