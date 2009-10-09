@@ -76,6 +76,8 @@ struct replmd_replicated_request {
 	uint32_t index_current;
 
 	struct ldb_message *search_msg;
+
+	uint64_t seq_num;
 };
 
 
@@ -429,6 +431,7 @@ static int replmd_op_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	struct ldb_context *ldb;
 	struct replmd_replicated_request *ac;
+	int ret;
 
 	ac = talloc_get_type(req->context, struct replmd_replicated_request);
 	ldb = ldb_module_get_ctx(ac->module);
@@ -450,6 +453,11 @@ static int replmd_op_callback(struct ldb_request *req, struct ldb_reply *ares)
 					LDB_ERR_OPERATIONS_ERROR);
 	}
 
+	ret = replmd_notify(ac->module, req->op.add.message->dn, ac->seq_num);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	return ldb_module_done(ac->req, ares->controls,
 				ares->response, LDB_SUCCESS);
 }
@@ -469,7 +477,6 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_val guid_value;
 	struct replPropertyMetaDataBlob nmd;
 	struct ldb_val nmd_value;
-	uint64_t seq_num;
 	const struct GUID *our_invocation_id;
 	time_t t = time(NULL);
 	NTTIME now;
@@ -534,7 +541,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/* Get a sequence number from the backend */
-	ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &seq_num);
+	ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &ac->seq_num);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(ac);
 		return ret;
@@ -637,8 +644,8 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 		m->version			= 1;
 		m->originating_change_time	= now;
 		m->originating_invocation_id	= *our_invocation_id;
-		m->originating_usn		= seq_num;
-		m->local_usn			= seq_num;
+		m->originating_usn		= ac->seq_num;
+		m->local_usn			= ac->seq_num;
 		ni++;
 	}
 
@@ -689,13 +696,13 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 		talloc_free(ac);
 		return ret;
 	}
-	ret = samdb_msg_add_uint64(ldb, msg, msg, "uSNCreated", seq_num);
+	ret = samdb_msg_add_uint64(ldb, msg, msg, "uSNCreated", ac->seq_num);
 	if (ret != LDB_SUCCESS) {
 		ldb_oom(ldb);
 		talloc_free(ac);
 		return ret;
 	}
-	ret = samdb_msg_add_uint64(ldb, msg, msg, "uSNChanged", seq_num);
+	ret = samdb_msg_add_uint64(ldb, msg, msg, "uSNChanged", ac->seq_num);
 	if (ret != LDB_SUCCESS) {
 		ldb_oom(ldb);
 		talloc_free(ac);
@@ -718,12 +725,6 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 				req->controls,
 				ac, replmd_op_callback,
 				req);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(ac);
-		return ret;
-	}
-
-	ret = replmd_notify(module, msg->dn, seq_num);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(ac);
 		return ret;
@@ -914,11 +915,6 @@ static int replmd_update_rpmd(struct ldb_module *module,
 			return ret;
 		}
 
-		ret = replmd_notify(module, msg->dn, *seq_num);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-
 		el->num_values = 1;
 		el->values = md_value;
 	}
@@ -986,7 +982,7 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 		return ret;
 	}
 
-	ret = replmd_update_rpmd(module, msg, &seq_num);
+	ret = replmd_update_rpmd(module, msg, &ac->seq_num);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(ac);
 		return ret;
