@@ -1,36 +1,15 @@
                    =================================
-                   Release Notes for Samba 3.4.0pre1
+                   Release Notes for Samba 3.5.0pre1
 
                    =================================
 
-This is the first preview release of Samba 3.4.  This is *not*
+This is the first preview release of Samba 3.5.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
 
-Major enhancements in Samba 3.4.0 include:
+Major enhancements in Samba 3.5.0 include:
 
-Authentication Changes:
-o Changed the way smbd handles untrusted domain names given during user
-  authentication
-
-Authentication Changes
-======================
-
-Previously, when Samba was a domain member and a client was connecting using an
-untrusted domain name, such as BOGUS\user smbd would remap the untrusted
-domain to the primary domain smbd was a member of and attempt authentication
-using that DOMAIN\user name.  This differed from how a Windows member server
-would behave.  Now, smbd will replace the BOGUS name with it's SAM name.  In
-the case where smbd is acting as a PDC this will be DOMAIN\user.  In the case
-where smbd is acting as a domain member server this will be WORKSTATION\user.
-Thus, smbd will never assume that an incoming user name which is not qualified
-with the same primary domain, is part of smbd's primary domain.
-
-While this behavior matches Windows, it may break some workflows which depended
-on smbd to always pass through bogus names to the DC for verification.  A new
-parameter "map untrusted to domain" can be enabled to revert to the legacy
-behavior.
 
 ######################################################################
 Reporting bugs & Development Discussion
@@ -42,7 +21,7 @@ joining the #samba-technical IRC channel on irc.freenode.net.
 If you do report problems then please try to send high quality
 feedback. If you don't provide vital information to help us track down
 the problem then you will probably be ignored.  All bug reports should
-be filed under the Samba 3.4 product in the project's Bugzilla
+be filed under the Samba 3.5 product in the project's Bugzilla
 database (https://bugzilla.samba.org/).
 
 
