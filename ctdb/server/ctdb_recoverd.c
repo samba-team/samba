@@ -1856,14 +1856,14 @@ static void process_ipreallocate_requests(struct ctdb_context *ctdb, struct ctdb
 
 	for (callers=rec->reallocate_callers; callers; callers=callers->next) {
 		DEBUG(DEBUG_INFO,("Sending ip reallocate reply message to "
-				  "%u:%lu\n", (unsigned)callers->rd->pnn,
-				  (long unsigned)callers->rd->srvid));
+				  "%u:%llu\n", (unsigned)callers->rd->pnn,
+				  (unsigned long long)callers->rd->srvid));
 		ret = ctdb_send_message(ctdb, callers->rd->pnn, callers->rd->srvid, result);
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR,("Failed to send ip reallocate reply "
-					 "message to %u:%lu\n",
+					 "message to %u:%llu\n",
 					 (unsigned)callers->rd->pnn,
-					 (long unsigned)callers->rd->srvid));
+					 (unsigned long long)callers->rd->srvid));
 		}
 	}
 
