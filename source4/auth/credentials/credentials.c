@@ -750,6 +750,11 @@ _PUBLIC_ bool cli_credentials_is_anonymous(struct cli_credentials *cred)
 {
 	const char *username;
 	
+	/* if bind dn is set it's not anonymous */
+	if (cred->bind_dn) {
+		return false;
+	}
+
 	if (cred->machine_account_pending) {
 		cli_credentials_set_machine_account(cred,
 						    cred->machine_account_pending_lp_ctx);
