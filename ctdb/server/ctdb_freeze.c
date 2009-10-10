@@ -34,6 +34,7 @@ static int ctdb_lock_all_databases(struct ctdb_context *ctdb)
 {
 	struct ctdb_db_context *ctdb_db;
 	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
+		DEBUG(DEBUG_INFO,("locking database 0x%08x priority:%u %s\n", ctdb_db->db_id, ctdb_db->priority, ctdb_db->db_name));
 		if (tdb_lockall(ctdb_db->ltdb->tdb) != 0) {
 			return -1;
 		}

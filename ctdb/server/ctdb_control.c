@@ -526,6 +526,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(0);
 		return ctdb_control_get_ban_state(ctdb, outdata);
 
+	case CTDB_CONTROL_SET_DB_PRIORITY:
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_db_priority));
+		return ctdb_control_set_db_priority(ctdb, indata);
+
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;

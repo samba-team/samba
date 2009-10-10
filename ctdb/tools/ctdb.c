@@ -2753,6 +2753,30 @@ static int control_attach(struct ctdb_context *ctdb, int argc, const char **argv
 }
 
 /*
+  set db priority
+ */
+static int control_setdbprio(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	struct ctdb_db_priority db_prio;
+	int ret;
+
+	if (argc < 2) {
+		usage();
+	}
+
+	db_prio.db_id    = strtoul(argv[0], NULL, 0);
+	db_prio.priority = strtoul(argv[1], NULL, 0);
+
+	ret = ctdb_ctrl_set_db_priority(ctdb, TIMELIMIT(), options.pnn, &db_prio);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Unable to set db prio\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
   run an eventscript on a node
  */
 static int control_eventscript(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -3428,6 +3452,7 @@ static const struct {
 	{ "setnatgwstate",    control_setnatgwstate,	false,	false, "Set NATGW state to on/off", "{on|off}"},
 	{ "setlmasterrole",   control_setlmasterrole,	false,	false, "Set LMASTER role to on/off", "{on|off}"},
 	{ "setrecmasterrole", control_setrecmasterrole,	false,	false, "Set RECMASTER role to on/off", "{on|off}"},
+	{ "setdbprio",        control_setdbprio,	false,	false, "Set DB priority", "<dbid> <prio:1-3>"},
 };
 
 /*

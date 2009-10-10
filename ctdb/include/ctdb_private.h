@@ -441,6 +441,7 @@ struct ctdb_db_context {
 	struct ctdb_db_context *next, *prev;
 	struct ctdb_context *ctdb;
 	uint32_t db_id;
+	uint32_t priority;
 	bool persistent;
 	const char *db_name;
 	const char *db_path;
@@ -595,6 +596,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_DISABLE_SCRIPT          = 108,
 		    CTDB_CONTROL_SET_BAN_STATE           = 109,
 		    CTDB_CONTROL_GET_BAN_STATE           = 110,
+		    CTDB_CONTROL_SET_DB_PRIORITY         = 111,
 };	
 
 /*
@@ -1479,5 +1481,6 @@ int32_t ctdb_control_disable_script(struct ctdb_context *ctdb, TDB_DATA indata);
 
 int32_t ctdb_control_set_ban_state(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_get_ban_state(struct ctdb_context *ctdb, TDB_DATA *outdata);
+int32_t ctdb_control_set_db_priority(struct ctdb_context *ctdb, TDB_DATA indata);
 
 #endif

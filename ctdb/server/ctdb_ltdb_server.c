@@ -202,6 +202,7 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name, boo
 	ctdb_db = talloc_zero(ctdb, struct ctdb_db_context);
 	CTDB_NO_MEMORY(ctdb, ctdb_db);
 
+	ctdb_db->priority = 1;
 	ctdb_db->ctdb = ctdb;
 	ctdb_db->db_name = talloc_strdup(ctdb_db, db_name);
 	CTDB_NO_MEMORY(ctdb, ctdb_db->db_name);
@@ -496,4 +497,22 @@ int32_t ctdb_ltdb_enable_seqnum(struct ctdb_context *ctdb, uint32_t db_id)
 	ctdb_db->seqnum = tdb_get_seqnum(ctdb_db->ltdb->tdb);
 	return 0;
 }
+
+int32_t ctdb_control_set_db_priority(struct ctdb_context *ctdb, TDB_DATA indata)
+{
+	struct ctdb_db_priority *db_prio = (struct ctdb_db_priority *)indata.dptr;
+	struct ctdb_db_context *ctdb_db;
+
+	ctdb_db = find_ctdb_db(ctdb, db_prio->db_id);
+	if (!ctdb_db) {
+		DEBUG(DEBUG_ERR,("Unknown db_id 0x%x in ctdb_set_db_priority\n", db_prio->db_id));
+		return -1;
+	}
+
+	ctdb_db->priority = db_prio->priority;
+	DEBUG(DEBUG_INFO,("Setting DB priority to %u for db 0x%08x\n", db_prio->priority, db_prio->db_id));
+
+	return 0;
+}
+
 
