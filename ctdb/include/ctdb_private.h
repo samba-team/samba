@@ -597,6 +597,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_SET_BAN_STATE           = 109,
 		    CTDB_CONTROL_GET_BAN_STATE           = 110,
 		    CTDB_CONTROL_SET_DB_PRIORITY         = 111,
+		    CTDB_CONTROL_GET_DB_PRIORITY         = 112,
 };	
 
 /*

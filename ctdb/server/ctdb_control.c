@@ -530,6 +530,17 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_db_priority));
 		return ctdb_control_set_db_priority(ctdb, indata);
 
+	case CTDB_CONTROL_GET_DB_PRIORITY: {
+		uint32_t db_id;
+		struct ctdb_db_context *ctdb_db;
+
+		CHECK_CONTROL_DATA_SIZE(sizeof(db_id));
+		db_id = *(uint32_t *)indata.dptr;
+		ctdb_db = find_ctdb_db(ctdb, db_id);
+		if (ctdb_db == NULL) return -1;
+		return ctdb_db->priority;
+	}
+
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;

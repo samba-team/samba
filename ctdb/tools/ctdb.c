@@ -2777,6 +2777,31 @@ static int control_setdbprio(struct ctdb_context *ctdb, int argc, const char **a
 }
 
 /*
+  get db priority
+ */
+static int control_getdbprio(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t db_id, priority;
+	int ret;
+
+	if (argc < 1) {
+		usage();
+	}
+
+	db_id = strtoul(argv[0], NULL, 0);
+
+	ret = ctdb_ctrl_get_db_priority(ctdb, TIMELIMIT(), options.pnn, db_id, &priority);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Unable to get db prio\n"));
+		return -1;
+	}
+
+	DEBUG(DEBUG_ERR,("Priority:%u\n", priority));
+
+	return 0;
+}
+
+/*
   run an eventscript on a node
  */
 static int control_eventscript(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -3453,6 +3478,7 @@ static const struct {
 	{ "setlmasterrole",   control_setlmasterrole,	false,	false, "Set LMASTER role to on/off", "{on|off}"},
 	{ "setrecmasterrole", control_setrecmasterrole,	false,	false, "Set RECMASTER role to on/off", "{on|off}"},
 	{ "setdbprio",        control_setdbprio,	false,	false, "Set DB priority", "<dbid> <prio:1-3>"},
+	{ "getdbprio",        control_getdbprio,	false,	false, "Get DB priority", "<dbid>"},
 };
 
 /*
