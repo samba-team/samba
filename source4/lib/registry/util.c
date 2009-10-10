@@ -124,8 +124,9 @@ _PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx,
 		case REG_SZ:
 		case REG_EXPAND_SZ:
       		convert_string_talloc_convenience(mem_ctx, iconv_convenience, CH_UNIX, CH_UTF16,
-						     data_str, strlen(data_str),
+						     data_str, strlen(data_str)+1,
 						     (void **)&data->data, &data->length, false);
+
 			break;
 
 		case REG_DWORD: {
