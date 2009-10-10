@@ -1903,6 +1903,7 @@ static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	uint32_t changed_flags;
 	int i;
 	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
+	int disabled_flag_changed;
 
 	if (data.dsize != sizeof(*c)) {
 		DEBUG(DEBUG_ERR,(__location__ "Invalid data in ctdb_node_flag_change\n"));
@@ -1936,6 +1937,8 @@ static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid,
 		DEBUG(DEBUG_NOTICE,("Node %u has changed flags - now 0x%x  was 0x%x\n", c->pnn, c->new_flags, c->old_flags));
 	}
 
+	disabled_flag_changed =  (nodemap->nodes[i].flags ^ c->new_flags) & NODE_FLAGS_DISABLED;
+
 	nodemap->nodes[i].flags = c->new_flags;
 
 	ret = ctdb_ctrl_getrecmaster(ctdb, tmp_ctx, CONTROL_TIMEOUT(), 
@@ -1956,7 +1959,7 @@ static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid,
 		   lead to an ip address failover but that is handled 
 		   during recovery
 		*/
-		if (changed_flags & NODE_FLAGS_DISABLED) {
+		if (disabled_flag_changed) {
 			rec->need_takeover_run = true;
 		}
 	}
