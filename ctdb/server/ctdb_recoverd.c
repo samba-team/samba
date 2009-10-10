@@ -328,6 +328,50 @@ static int set_recovery_master(struct ctdb_context *ctdb, struct ctdb_node_map *
 	return 0;
 }
 
+/* update all remote nodes to use the same db priority that we have
+   this can fail if the remove node has not yet been upgraded to 
+   support this function, so we always return success and never fail
+   a recovery if this call fails.
+*/
+static int update_db_priority_on_remote_nodes(struct ctdb_context *ctdb,
+	struct ctdb_node_map *nodemap, 
+	uint32_t pnn, struct ctdb_dbid_map *dbmap, TALLOC_CTX *mem_ctx)
+{
+	int db;
+	uint32_t *nodes;
+
+	nodes = list_of_active_nodes(ctdb, nodemap, mem_ctx, true);
+
+	/* step through all local databases */
+	for (db=0; db<dbmap->num;db++) {
+		TDB_DATA data;
+		struct ctdb_db_priority db_prio;
+		int ret;
+
+		db_prio.db_id     = dbmap->dbs[db].dbid;
+		ret = ctdb_ctrl_get_db_priority(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, dbmap->dbs[db].dbid, &db_prio.priority);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,(__location__ " Failed to read database priority from local node for db 0x%08x\n", dbmap->dbs[db].dbid));
+			continue;
+		}
+
+		DEBUG(DEBUG_INFO,("Update DB priority for db 0x%08x to %u\n", dbmap->dbs[db].dbid, db_prio.priority)); 
+
+		data.dptr  = (uint8_t *)&db_prio;
+		data.dsize = sizeof(db_prio);
+
+		if (ctdb_client_async_control(ctdb,
+					CTDB_CONTROL_SET_DB_PRIORITY,
+					nodes,
+					CONTROL_TIMEOUT(), false, data,
+					NULL, NULL,
+					NULL) != 0) {
+			DEBUG(DEBUG_ERR,(__location__ " Failed to set DB priority for 0x%08x\n", db_prio.db_id));
+		}
+	}
+
+	return 0;
+}			
 
 /*
   ensure all other nodes have attached to any databases that we have
@@ -1232,8 +1276,14 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		DEBUG(DEBUG_ERR, (__location__ " Unable to create missing remote databases\n"));
 		return -1;
 	}
-
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - created remote databases\n"));
+
+	/* update the database priority for all remote databases */
+	ret = update_db_priority_on_remote_nodes(ctdb, nodemap, pnn, dbmap, mem_ctx);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to set db priority on remote nodes\n"));
+	}
+	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - updated db priority for all databases\n"));
 
 
 	/* set recovery mode to active on all nodes */
