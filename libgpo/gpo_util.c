@@ -321,10 +321,11 @@ void dump_gpo(ADS_STRUCT *ads,
 		}
 		dump_gp_ext(gp_ext, lvl);
 	}
+	if (gpo->security_descriptor) {
+		DEBUGADD(lvl,("security descriptor:\n"));
 
-	DEBUGADD(lvl,("security descriptor:\n"));
-
-	NDR_PRINT_DEBUG(security_descriptor, gpo->security_descriptor);
+		NDR_PRINT_DEBUG(security_descriptor, gpo->security_descriptor);
+	}
 }
 
 /****************************************************************
