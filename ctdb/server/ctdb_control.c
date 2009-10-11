@@ -249,7 +249,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 	case CTDB_CONTROL_THAW:
 		CHECK_CONTROL_DATA_SIZE(0);
-		return ctdb_control_thaw(ctdb);
+		return ctdb_control_thaw(ctdb, c);
 
 	case CTDB_CONTROL_SET_RECMODE:
 		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));		

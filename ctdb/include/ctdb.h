@@ -456,14 +456,18 @@ int ctdb_ctrl_getpid(struct ctdb_context *ctdb, struct timeval timeout, uint32_t
 
 int ctdb_ctrl_freeze(struct ctdb_context *ctdb, struct timeval timeout, 
 			uint32_t destnode);
+int ctdb_ctrl_freeze_priority(struct ctdb_context *ctdb, struct timeval timeout, 
+			      uint32_t destnode, uint32_t priority);
 
 struct ctdb_client_control_state *
 ctdb_ctrl_freeze_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, 
-			struct timeval timeout, uint32_t destnode);
+		      struct timeval timeout, uint32_t destnode,
+		      uint32_t priority);
 
 int ctdb_ctrl_freeze_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, 
 			struct ctdb_client_control_state *state);
 
+int ctdb_ctrl_thaw_priority(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t priority);
 int ctdb_ctrl_thaw(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode);
 
 int ctdb_ctrl_getpnn(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode);
