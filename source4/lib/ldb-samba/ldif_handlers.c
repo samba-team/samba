@@ -33,6 +33,7 @@
 #include "librpc/ndr/libndr.h"
 #include "libcli/security/security.h"
 #include "param/param.h"
+#include "../lib/util/asn1.h"
 
 /*
   use ndr_print_* to convert a NDR formatted blob to a ldif formatted blob
@@ -507,6 +508,7 @@ static int ldif_read_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 	struct prefixMapBlob *blob;
 	enum ndr_err_code ndr_err;
 	char *string, *line, *p, *oid;
+	DATA_BLOB oid_blob;
 
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 
@@ -563,8 +565,12 @@ static int ldif_read_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 		/* we know there must be at least ":" */
 		oid++;
 
-		blob->ctr.dsdb.mappings[blob->ctr.dsdb.num_mappings].oid.oid
-			= talloc_strdup(blob->ctr.dsdb.mappings, oid);
+		if (!ber_write_partial_OID_String(blob->ctr.dsdb.mappings, &oid_blob, oid)) {
+			talloc_free(tmp_ctx);
+			return -1;
+		}
+		blob->ctr.dsdb.mappings[blob->ctr.dsdb.num_mappings].oid.length = oid_blob.length;
+		blob->ctr.dsdb.mappings[blob->ctr.dsdb.num_mappings].oid.binary_oid = oid_blob.data;
 
 		blob->ctr.dsdb.num_mappings++;
 
@@ -615,32 +621,47 @@ static int ldif_write_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 					   blob,
 					   (ndr_pull_flags_fn_t)ndr_pull_prefixMapBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		talloc_free(blob);
-		return -1;
+		goto failed;
 	}
 	if (blob->version != PREFIX_MAP_VERSION_DSDB) {
-		return -1;
+		goto failed;
 	}
 	string = talloc_strdup(mem_ctx, "");
 	if (string == NULL) {
-		return -1;
+		goto failed;
 	}
 
 	for (i=0; i < blob->ctr.dsdb.num_mappings; i++) {
+		DATA_BLOB oid_blob;
+		const char *partial_oid = NULL;
+
 		if (i > 0) {
 			string = talloc_asprintf_append(string, ";"); 
 		}
+
+		oid_blob = data_blob_const(blob->ctr.dsdb.mappings[i].oid.binary_oid,
+					   blob->ctr.dsdb.mappings[i].oid.length);
+		if (!ber_read_partial_OID_String(blob, oid_blob, &partial_oid)) {
+			DEBUG(0, ("ber_read_partial_OID failed on prefixMap item with id: 0x%X",
+				  blob->ctr.dsdb.mappings[i].id_prefix));
+			goto failed;
+		}
 		string = talloc_asprintf_append(string, "%u:%s", 
 						   blob->ctr.dsdb.mappings[i].id_prefix,
-						   blob->ctr.dsdb.mappings[i].oid.oid);
+						   partial_oid);
+		talloc_free(discard_const(partial_oid));
 		if (string == NULL) {
-			return -1;
+			goto failed;
 		}
 	}
 
 	talloc_free(blob);
 	*out = data_blob_string_const(string);
 	return 0;
+
+failed:
+	talloc_free(blob);
+	return -1;
 }
 
 static bool ldif_comparision_prefixMap_isString(const struct ldb_val *v)
