@@ -149,19 +149,22 @@ void schema_subclasses_order_recurse(struct dsdb_schema *schema, struct dsdb_cla
 	return;
 }
 
-static void schema_create_subclasses(struct dsdb_schema *schema)
+static int schema_create_subclasses(struct dsdb_schema *schema)
 {
-	struct dsdb_class *schema_class;
+	struct dsdb_class *schema_class, *top;
 
 	for (schema_class=schema->classes; schema_class; schema_class=schema_class->next) {
 		struct dsdb_class *schema_class2 = dsdb_class_by_lDAPDisplayName(schema, schema_class->subClassOf);
 		if (schema_class2 == NULL) {
 			DEBUG(0,("ERROR: no subClassOf for '%s'\n", schema_class->lDAPDisplayName));
-			continue;
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		if (schema_class2 && schema_class != schema_class2) {
 			if (schema_class2->subclasses_direct == NULL) {
 				schema_class2->subclasses_direct = str_list_make_empty(schema_class2);
+				if (!schema_class2->subclasses_direct) {
+					return LDB_ERR_OPERATIONS_ERROR;
+				}
 			}
 			schema_class2->subclasses_direct = str_list_add_const(schema_class2->subclasses_direct, 
 									schema_class->lDAPDisplayName);
@@ -175,7 +178,14 @@ static void schema_create_subclasses(struct dsdb_schema *schema)
 		schema_class->subClass_order = 0;
 	}
 
-	schema_subclasses_order_recurse(schema, dsdb_class_by_lDAPDisplayName(schema, "top"), 1);
+	top = dsdb_class_by_lDAPDisplayName(schema, "top");
+	if (!top) {
+		DEBUG(0,("ERROR: no 'top' class in loaded schema\n"));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	schema_subclasses_order_recurse(schema, top, 1);
+	return LDB_SUCCESS;
 }
 
 static void schema_fill_possible_inferiors(struct dsdb_schema *schema, struct dsdb_class *schema_class)
@@ -294,13 +304,17 @@ static void schema_fill_from_ids(struct dsdb_schema *schema)
 	}
 }
 
-void schema_fill_constructed(struct dsdb_schema *schema) 
+int schema_fill_constructed(struct dsdb_schema *schema) 
 {
+	int ret;
 	struct dsdb_class *schema_class;
 
 	schema_fill_from_ids(schema);
 
-	schema_create_subclasses(schema);
+	ret = schema_create_subclasses(schema);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 
 	for (schema_class=schema->classes; schema_class; schema_class=schema_class->next) {
 		schema_fill_possible_inferiors(schema, schema_class);
@@ -318,4 +332,5 @@ void schema_fill_constructed(struct dsdb_schema *schema)
 		schema_class->subclasses = NULL;
 		schema_class->posssuperiors = NULL;
 	}
+	return LDB_SUCCESS;
 }
