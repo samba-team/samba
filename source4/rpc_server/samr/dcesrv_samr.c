@@ -4183,10 +4183,14 @@ static NTSTATUS dcesrv_samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TAL
 	ret = gendb_search_dn(sam_ctx, 
 			   mem_ctx, NULL, &msgs, attrs);
 	if (ret <= 0) {
+		talloc_free(sam_ctx);
+
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 	if (ret > 1) {
 		talloc_free(msgs);
+		talloc_free(sam_ctx);
+
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
