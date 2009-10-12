@@ -601,6 +601,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_GET_BAN_STATE           = 110,
 		    CTDB_CONTROL_SET_DB_PRIORITY         = 111,
 		    CTDB_CONTROL_GET_DB_PRIORITY         = 112,
+		    CTDB_CONTROL_TRANSACTION_CANCEL      = 113,
 };	
 
 /*
@@ -1401,6 +1402,7 @@ int32_t ctdb_control_trans2_commit(struct ctdb_context *ctdb,
 
 int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb, uint32_t id);
 int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb, uint32_t id);
+int32_t ctdb_control_transaction_cancel(struct ctdb_context *ctdb);
 int32_t ctdb_control_wipe_database(struct ctdb_context *ctdb, TDB_DATA indata);
 
 

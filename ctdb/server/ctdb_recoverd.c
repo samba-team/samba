@@ -254,6 +254,14 @@ static void set_recmode_fail_callback(struct ctdb_context *ctdb, uint32_t node_p
 	ctdb_set_culprit_count(rec, node_pnn, rec->nodemap->num);
 }
 
+static void transaction_start_fail_callback(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata, void *callback_data)
+{
+	struct ctdb_recoverd *rec = talloc_get_type(callback_data, struct ctdb_recoverd);
+
+	DEBUG(DEBUG_ERR,("Failed to start recovery transaction on node %u. Set it as ban culprit for %d credits\n", node_pnn, rec->nodemap->num));
+	ctdb_set_culprit_count(rec, node_pnn, rec->nodemap->num);
+}
+
 /*
   change recovery mode on all nodes
  */
@@ -1334,9 +1342,18 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_TRANSACTION_START,
 					nodes, 0,
 					CONTROL_TIMEOUT(), false, data,
-					NULL, NULL,
-					NULL) != 0) {
+					NULL,
+					transaction_start_fail_callback,
+					rec) != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to start transactions. Recovery failed.\n"));
+		if (ctdb_client_async_control(ctdb, CTDB_CONTROL_TRANSACTION_CANCEL,
+					nodes, 0,
+					CONTROL_TIMEOUT(), false, tdb_null,
+					NULL,
+					NULL,
+					NULL) != 0) {
+			DEBUG(DEBUG_ERR,("Failed to cancel recovery transaction\n"));
+		}
 		return -1;
 	}
 
