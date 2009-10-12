@@ -309,7 +309,7 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 {
 	int i, ret;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	struct ldb_request *mod_req;
+	struct ldb_request *mod_req, *last_req;
 	struct ldb_message *mod_msg;
 	struct partition_private_data *data;
 	struct dsdb_partition *partition;
@@ -391,7 +391,7 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 	}
 	
 	/* otherwise, for each replicate, copy from main partition.  If we get an error, we report it up the chain */
-
+	last_req = mod_req;
 	for (i=0; data->replicate && data->replicate[i]; i++) {
 		struct ldb_result *replicate_res;
 		struct ldb_request *add_req;
@@ -413,14 +413,14 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 
 		/* Build add request */
 		ret = ldb_build_add_req(&add_req, ldb, replicate_res, replicate_res->msgs[0], NULL, NULL, 
-					ldb_op_default_callback, mod_req);
+					ldb_op_default_callback, last_req);
+		last_req = add_req;
 		if (ret != LDB_SUCCESS) {
 			/* return directly, this is a very unlikely error */
 			return ret;
 		}
 		/* do request */
 		ret = ldb_next_request(partition->module, add_req);
-		
 		/* wait */
 		if (ret == LDB_SUCCESS) {
 			ret = ldb_wait(add_req->handle, LDB_WAIT_ALL);
@@ -429,7 +429,10 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 		switch (ret) {
 		case LDB_SUCCESS:
 			break;
+
 		case LDB_ERR_ENTRY_ALREADY_EXISTS:
+			/* Handle this case specially - if the
+			 * metadata already exists, replace it */
 		{
 			struct ldb_request *del_req;
 			
@@ -437,7 +440,8 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 			ldb_reset_err_string(ldb);
 			/* Build del request */
 			ret = ldb_build_del_req(&del_req, ldb, replicate_res, replicate_res->msgs[0]->dn, NULL, NULL, 
-						ldb_op_default_callback, add_req);
+						ldb_op_default_callback, last_req);
+			last_req = del_req;
 			if (ret != LDB_SUCCESS) {
 				/* return directly, this is a very unlikely error */
 				return ret;
@@ -461,7 +465,8 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 			
 			/* Build add request */
 			ret = ldb_build_add_req(&add_req, ldb, replicate_res, replicate_res->msgs[0], NULL, NULL, 
-						ldb_op_default_callback, mod_req);
+						ldb_op_default_callback, last_req);
+			last_req = add_req;
 			if (ret != LDB_SUCCESS) {
 				/* return directly, this is a very unlikely error */
 				return ret;
@@ -474,13 +479,17 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 			if (ret == LDB_SUCCESS) {
 				ret = ldb_wait(add_req->handle, LDB_WAIT_ALL);
 			}
-			ldb_asprintf_errstring(ldb,
-					       "Failed to add (after delete) %s from " DSDB_PARTITION_DN 
-					       " replicateEntries to new partition at %s: %s", 
-					       ldb_dn_get_linearized(data->replicate[i]), 
-					       ldb_dn_get_linearized(partition->ctrl->dn), 
-					       ldb_errstring(ldb));
-			return ret;
+
+			if (ret != LDB_SUCCESS) {
+				ldb_asprintf_errstring(ldb,
+						       "Failed to add (after delete) %s from " DSDB_PARTITION_DN 
+						       " replicateEntries to new partition at %s: %s", 
+						       ldb_dn_get_linearized(data->replicate[i]), 
+						       ldb_dn_get_linearized(partition->ctrl->dn), 
+						       ldb_errstring(ldb));
+				return ret;
+			}
+			break;
 		}
 		default: 
 		{
@@ -493,7 +502,6 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 			return ret;
 		}
 		}
-		talloc_free(replicate_res);
 
 		/* And around again, for the next thing we must merge */
 	}
