@@ -30,6 +30,8 @@
 #include "param/param.h"
 #include "lib/ldb/include/ldb_module.h"
 
+static WERROR dsdb_read_prefixes_from_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, uint32_t* num_prefixes, struct dsdb_schema_oid_prefix **prefixes);
+
 struct dsdb_schema *dsdb_new_schema(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience)
 {
 	struct dsdb_schema *schema = talloc_zero(mem_ctx, struct dsdb_schema);
@@ -519,7 +521,7 @@ WERROR dsdb_write_prefixes_from_schema_to_ldb(TALLOC_CTX *mem_ctx, struct ldb_co
 	return WERR_OK;
 }
 
-WERROR dsdb_read_prefixes_from_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, uint32_t* num_prefixes, struct dsdb_schema_oid_prefix **prefixes)
+static WERROR dsdb_read_prefixes_from_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, uint32_t* num_prefixes, struct dsdb_schema_oid_prefix **prefixes)
 {
 	struct prefixMapBlob *blob;
 	enum ndr_err_code ndr_err;
