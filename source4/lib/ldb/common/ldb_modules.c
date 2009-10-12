@@ -337,7 +337,7 @@ int ldb_load_modules_list(struct ldb_context *ldb, const char **module_list, str
 
 	module = backend;
 
-	for (i = 0; module_list[i] != NULL; i++) {
+	for (i = 0; module_list && module_list[i] != NULL; i++) {
 		struct ldb_module *current;
 		const struct ldb_module_ops *ops;
 
