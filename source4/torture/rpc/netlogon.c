@@ -1991,7 +1991,7 @@ static bool test_netr_DsRGetDCName(struct torture_context *tctx,
 	struct netr_DsRGetDCNameInfo *info = NULL;
 
 	r.in.server_unc		= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.domain_name	= talloc_asprintf(tctx, "%s", lp_realm(tctx->lp_ctx));
+	r.in.domain_name	= lp_dnsdomain(tctx->lp_ctx);
 	r.in.domain_guid	= NULL;
 	r.in.site_guid	        = NULL;
 	r.in.flags		= DS_RETURN_DNS_NAME;
@@ -2016,7 +2016,7 @@ static bool test_netr_DsRGetDCNameEx(struct torture_context *tctx,
 	struct netr_DsRGetDCNameInfo *info = NULL;
 
 	r.in.server_unc		= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.domain_name	= talloc_asprintf(tctx, "%s", lp_realm(tctx->lp_ctx));
+	r.in.domain_name	= lp_dnsdomain(tctx->lp_ctx);
 	r.in.domain_guid	= NULL;
 	r.in.site_name	        = NULL;
 	r.in.flags		= DS_RETURN_DNS_NAME;
@@ -2043,7 +2043,7 @@ static bool test_netr_DsRGetDCNameEx2(struct torture_context *tctx,
 	r.in.server_unc		= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.client_account	= NULL;
 	r.in.mask		= 0x00000000;
-	r.in.domain_name	= talloc_asprintf(tctx, "%s", lp_realm(tctx->lp_ctx));
+	r.in.domain_name	= lp_dnsdomain(tctx->lp_ctx);
 	r.in.domain_guid	= NULL;
 	r.in.site_name		= NULL;
 	r.in.flags		= DS_RETURN_DNS_NAME;

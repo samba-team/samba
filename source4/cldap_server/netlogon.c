@@ -61,7 +61,6 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	uint32_t server_type;
 	const char *pdc_name;
 	struct GUID domain_uuid;
-	const char *realm;
 	const char *dns_domain;
 	const char *pdc_dns_name;
 	const char *flatname;
@@ -78,7 +77,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		domain = talloc_strndup(mem_ctx, domain, strlen(domain)-1);
 	}
 
-	if (domain && strcasecmp_m(domain, lp_realm(lp_ctx)) == 0) {
+	if (domain && strcasecmp_m(domain, lp_dnsdomain(lp_ctx)) == 0) {
 		domain_dn = ldb_get_default_basedn(sam_ctx);
 	}
 
@@ -245,8 +244,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 
 	pdc_name         = talloc_asprintf(mem_ctx, "\\\\%s", lp_netbios_name(lp_ctx));
 	domain_uuid      = samdb_result_guid(dom_res->msgs[0], "objectGUID");
-	realm            = lp_realm(lp_ctx);
-	dns_domain       = lp_realm(lp_ctx);
+	dns_domain       = lp_dnsdomain(lp_ctx);
 	pdc_dns_name     = talloc_asprintf(mem_ctx, "%s.%s", 
 					   strlower_talloc(mem_ctx, 
 							   lp_netbios_name(lp_ctx)), 
@@ -274,7 +272,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		}
 		netlogon->data.nt5_ex.server_type  = server_type;
 		netlogon->data.nt5_ex.domain_uuid  = domain_uuid;
-		netlogon->data.nt5_ex.forest       = realm;
+		netlogon->data.nt5_ex.forest       = dns_domain;
 		netlogon->data.nt5_ex.dns_domain   = dns_domain;
 		netlogon->data.nt5_ex.pdc_dns_name = pdc_dns_name;
 		netlogon->data.nt5_ex.domain       = flatname;
@@ -307,7 +305,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		netlogon->data.nt5.user_name    = user;
 		netlogon->data.nt5.domain_name  = flatname;
 		netlogon->data.nt5.domain_uuid  = domain_uuid;
-		netlogon->data.nt5.forest       = realm;
+		netlogon->data.nt5.forest       = dns_domain;
 		netlogon->data.nt5.dns_domain   = dns_domain;
 		netlogon->data.nt5.pdc_dns_name = pdc_dns_name;
 		netlogon->data.nt5.pdc_ip       = pdc_ip;
@@ -403,7 +401,7 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 	}
 
 	if (domain_guid == NULL && domain == NULL) {
-		domain = lp_realm(cldapd->task->lp_ctx);
+		domain = lp_dnsdomain(cldapd->task->lp_ctx);
 	}
 
 	if (version == -1) {

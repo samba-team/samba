@@ -82,7 +82,7 @@ static WERROR drsuapi_add_SPNs(struct drsuapi_bind_state *b_state,
 
 		ntds_guid_str = GUID_string(res, &ntds_guid);
 
-		dom_string = lp_realm(dce_call->conn->dce_ctx->lp_ctx);
+		dom_string = lp_dnsdomain(dce_call->conn->dce_ctx->lp_ctx);
 
 		/*
 		 * construct a modify request to add the new SPNs to

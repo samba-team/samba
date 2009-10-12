@@ -506,10 +506,9 @@ static void dreplsrv_update_refs_send(struct dreplsrv_op_pull_source_state *st)
 	ntds_guid_str = GUID_string(r, &service->ntds_guid);
 	if (composite_nomem(ntds_guid_str, c)) return;
 
-	/* lp_realm() is not really right here */
 	ntds_dns_name = talloc_asprintf(r, "%s._msdcs.%s",
 					ntds_guid_str,
-					lp_realm(service->task->lp_ctx));
+					lp_dnsdomain(service->task->lp_ctx));
 	if (composite_nomem(ntds_dns_name, c)) return;
 
 	r->in.bind_handle	= &drsuapi->bind_handle;

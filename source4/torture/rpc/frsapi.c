@@ -193,8 +193,7 @@ static bool test_ForceReplication(struct torture_context *tctx,
 
 	r.in.replica_set_guid = NULL;
 	r.in.connection_guid = NULL;
-	r.in.replica_set_name = talloc_asprintf(tctx, "%s",
-						lp_realm(tctx->lp_ctx));
+	r.in.replica_set_name = lp_dnsdomain(tctx->lp_ctx);
 	r.in.partner_dns_name = dcerpc_server_name(p);
 
 	torture_assert_ntstatus_ok(tctx,

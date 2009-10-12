@@ -377,7 +377,8 @@ struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx, struct loadparm_context *
 
 	if (!file_exist(cafile)) {
 		char *hostname = talloc_asprintf(mem_ctx, "%s.%s",
-						 lp_netbios_name(lp_ctx), lp_realm(lp_ctx));
+						 lp_netbios_name(lp_ctx),
+						 lp_dnsdomain(lp_ctx));
 		if (hostname == NULL) {
 			goto init_failed;
 		}

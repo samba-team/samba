@@ -152,7 +152,7 @@ static NTSTATUS kccsrv_simple_update(struct kccsrv_service *s, TALLOC_CTX *mem_c
 		r1->other_info               = talloc_zero(reps, struct repsFromTo1OtherInfo);
 		r1->other_info->dns_name     = talloc_asprintf(r1->other_info, "%s._msdcs.%s",
 							       GUID_string(mem_ctx, &ntds_guid),
-							       lp_realm(s->task->lp_ctx));
+							       lp_dnsdomain(s->task->lp_ctx));
 		r1->source_dsa_obj_guid      = ntds_guid;
 		r1->source_dsa_invocation_id = invocation_id;
 		r1->replica_flags            = 

@@ -643,7 +643,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		sam6 = talloc_zero(mem_ctx, struct netr_SamInfo6);
 		NT_STATUS_HAVE_NO_MEMORY(sam6);
 		sam6->base = *sam;
-		sam6->forest.string = lp_realm(dce_call->conn->dce_ctx->lp_ctx);
+		sam6->forest.string = lp_dnsdomain(dce_call->conn->dce_ctx->lp_ctx);
 		sam6->principle.string = talloc_asprintf(mem_ctx, "%s@%s", 
 							 sam->account_name.string, sam6->forest.string);
 		NT_STATUS_HAVE_NO_MEMORY(sam6->principle.string);
@@ -1096,7 +1096,7 @@ static NTSTATUS fill_one_domain_info(TALLOC_CTX *mem_ctx,
 
 	if (is_local) {
 		info->domainname.string = lp_sam_name(lp_ctx);
-		info->dns_domainname.string = lp_realm(lp_ctx);
+		info->dns_domainname.string = lp_dnsdomain(lp_ctx);
 		info->domain_guid = samdb_result_guid(res, "objectGUID");
 		info->domain_sid = samdb_result_dom_sid(mem_ctx, res, "objectSid");
 	} else {
@@ -1432,14 +1432,14 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call, TA
 	 */
 	info->dc_unc			= talloc_asprintf(mem_ctx, "\\\\%s.%s",
 							  lp_netbios_name(dce_call->conn->dce_ctx->lp_ctx), 
-							  lp_realm(dce_call->conn->dce_ctx->lp_ctx));
+							  lp_dnsdomain(dce_call->conn->dce_ctx->lp_ctx));
 	W_ERROR_HAVE_NO_MEMORY(info->dc_unc);
 	info->dc_address		= talloc_strdup(mem_ctx, "\\\\0.0.0.0");
 	W_ERROR_HAVE_NO_MEMORY(info->dc_address);
 	info->dc_address_type		= DS_ADDRESS_TYPE_INET;
 	info->domain_guid		= samdb_result_guid(res[0], "objectGUID");
-	info->domain_name		= lp_realm(dce_call->conn->dce_ctx->lp_ctx);
-	info->forest_name		= lp_realm(dce_call->conn->dce_ctx->lp_ctx);
+	info->domain_name		= lp_dnsdomain(dce_call->conn->dce_ctx->lp_ctx);
+	info->forest_name		= lp_dnsdomain(dce_call->conn->dce_ctx->lp_ctx);
 	info->dc_flags			= DS_DNS_FOREST_ROOT |
 					  DS_DNS_DOMAIN |
 					  DS_DNS_CONTROLLER |
@@ -1614,7 +1614,7 @@ static WERROR dcesrv_netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce
 	/* TODO: add filtering by trust_flags, and correct trust_type
 	   and attributes */
 	trusts->array[0].netbios_name = lp_sam_name(dce_call->conn->dce_ctx->lp_ctx);
-	trusts->array[0].dns_name     = lp_realm(dce_call->conn->dce_ctx->lp_ctx);
+	trusts->array[0].dns_name     = lp_dnsdomain(dce_call->conn->dce_ctx->lp_ctx);
 	trusts->array[0].trust_flags =
 		NETR_TRUST_FLAG_TREEROOT | 
 		NETR_TRUST_FLAG_IN_FOREST | 

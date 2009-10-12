@@ -147,6 +147,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	struct gensec_gssapi_state *gensec_gssapi_state;
 	krb5_error_code ret;
 	struct gsskrb5_send_to_kdc send_to_kdc;
+	const char *realm;
 
 	gensec_gssapi_state = talloc(gensec_security, struct gensec_gssapi_state);
 	if (!gensec_gssapi_state) {
@@ -226,15 +227,10 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 		talloc_free(gensec_gssapi_state);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
-	if (lp_realm(gensec_security->settings->lp_ctx) && *lp_realm(gensec_security->settings->lp_ctx)) {
-		char *upper_realm = strupper_talloc(gensec_gssapi_state, lp_realm(gensec_security->settings->lp_ctx));
-		if (!upper_realm) {
-			DEBUG(1,("gensec_krb5_start: could not uppercase realm: %s\n", lp_realm(gensec_security->settings->lp_ctx)));
-			talloc_free(gensec_gssapi_state);
-			return NT_STATUS_NO_MEMORY;
-		}
-		ret = gsskrb5_set_default_realm(upper_realm);
-		talloc_free(upper_realm);
+
+	realm = lp_realm(gensec_security->settings->lp_ctx);
+	if (realm != NULL) {
+		ret = gsskrb5_set_default_realm(realm);
 		if (ret) {
 			DEBUG(1,("gensec_krb5_start: gsskrb5_set_default_realm failed\n"));
 			talloc_free(gensec_gssapi_state);
