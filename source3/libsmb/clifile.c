@@ -5028,6 +5028,10 @@ NTSTATUS cli_posix_rmdir(struct cli_state *cli, const char *fname)
 	return status;
 }
 
+/****************************************************************************
+ filechangenotify
+****************************************************************************/
+
 struct cli_notify_state {
 	uint8_t setup[8];
 	uint32_t num_changes;
