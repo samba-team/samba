@@ -748,6 +748,9 @@ such as domain name, domain sid and number of users and groups.
 <para>Add a interdomain trust account for <replaceable>DOMAIN</replaceable>. 
 This is in fact a Samba account named <replaceable>DOMAIN$</replaceable> 
 with the account flag <constant>'I'</constant> (interdomain trust account). 
+This is required for incoming trusts to work. It makes Samba be a
+trusted domain of the foreign (trusting) domain.
+Users of the Samba domain will be made available in the foreign domain.
 If the command is used against localhost it has the same effect as 
 <command>smbpasswd -a -i DOMAIN</command>. Please note that both commands
 expect a appropriate UNIX account. 
@@ -769,8 +772,13 @@ it has the same effect as <command>smbpasswd -x DOMAIN$</command>.
 <title>RPC TRUSTDOM ESTABLISH <replaceable>DOMAIN</replaceable></title>
 
 <para>
-Establish a trust relationship to a trusting domain. 
+Establish a trust relationship to a trusted domain. 
 Interdomain account must already be created on the remote PDC.
+This is required for outgoing trusts to work. It makes Samba be a
+trusting domain of a foreign (trusted) domain.
+Users of the foreign domain will be made available in our domain.
+You'll need winbind and a working idmap config to make them
+appear in your system.
 </para>
 
 </refsect3>
@@ -784,7 +792,7 @@ Interdomain account must already be created on the remote PDC.
 <refsect3>
 <title>RPC TRUSTDOM LIST</title>
 
-<para>List all current interdomain trust relationships.</para>
+<para>List all interdomain trust relationships.</para>
 
 </refsect3>
 
