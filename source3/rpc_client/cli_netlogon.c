@@ -509,6 +509,7 @@ NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_netlogon_set_trust_password(struct rpc_pipe_client *cli,
 					    TALLOC_CTX *mem_ctx,
+					    const char *account_name,
 					    const unsigned char orig_trust_passwd_hash[16],
 					    const char *new_trust_pwd_cleartext,
 					    const unsigned char new_trust_passwd_hash[16],
@@ -523,7 +524,7 @@ NTSTATUS rpccli_netlogon_set_trust_password(struct rpc_pipe_client *cli,
 						     cli->desthost, /* server name */
 						     lp_workgroup(), /* domain */
 						     global_myname(), /* client name */
-						     global_myname(), /* machine account name */
+						     account_name, /* machine account name */
 						     orig_trust_passwd_hash,
 						     sec_channel_type,
 						     &neg_flags);

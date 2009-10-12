@@ -429,7 +429,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
     hostname = hostname.lower()
 
     if dnsdomain is None:
-        dnsdomain = lp.get("realm")
+        dnsdomain = lp.get("realm").lower()
 
     if serverrole is None:
         serverrole = lp.get("server role")
@@ -441,8 +441,6 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
         raise Exception("realm '%s' in %s must match chosen realm '%s'" %
                         (lp.get("realm"), lp.configfile, realm))
     
-    dnsdomain = dnsdomain.lower()
-
     if serverrole == "domain controller":
         if domain is None:
             domain = lp.get("workgroup")
@@ -454,20 +452,21 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
     else:
         domain = netbiosname
         if domaindn is None:
-            domaindn = "CN=" + netbiosname
+            domaindn = "DC=" + netbiosname
         
     assert domain is not None
     domain = domain.upper()
+
     if not valid_netbios_name(domain):
         raise InvalidNetbiosName(domain)
         
-    if netbiosname.upper() == realm.upper():
+    if netbiosname.upper() == realm:
         raise Exception("realm %s must not be equal to netbios domain name %s", realm, netbiosname)
         
-    if hostname.upper() == realm.upper():
+    if hostname.upper() == realm:
         raise Exception("realm %s must not be equal to hostname %s", realm, hostname)
         
-    if domain.upper() == realm.upper():
+    if domain.upper() == realm:
         raise Exception("realm %s must not be equal to domain name %s", realm, domain)
 
     if rootdn is None:
@@ -883,9 +882,9 @@ def setup_self_join(samdb, names,
     """Join a host to its own domain."""
     assert isinstance(invocationid, str)
     if ntdsguid is not None:
-        ntdsguid_mod = "objectGUID: %s\n"%ntdsguid
+        ntdsguid_line = "objectGUID: %s\n"%ntdsguid
     else:
-        ntdsguid_mod = ""
+        ntdsguid_line = ""
     setup_add_ldif(samdb, setup_path("provision_self_join.ldif"), { 
               "CONFIGDN": names.configdn, 
               "SCHEMADN": names.schemadn,
@@ -901,7 +900,7 @@ def setup_self_join(samdb, names,
               "DOMAIN": names.domain,
               "DNSDOMAIN": names.dnsdomain,
               "SAMBA_VERSION_STRING": version,
-              "NTDSGUID": ntdsguid_mod,
+              "NTDSGUID": ntdsguid_line,
               "DOMAIN_CONTROLLER_FUNCTIONALITY": str(domainControllerFunctionality)})
 
     setup_add_ldif(samdb, setup_path("provision_group_policy.ldif"), { 
@@ -1010,22 +1009,17 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
             samdb.set_invocation_id(invocationid)
 
         message("Adding DomainDN: %s" % names.domaindn)
-        if serverrole == "domain controller":
-            domain_oc = "domainDNS"
-        else:
-            domain_oc = "samba4LocalDomain"
 
 #impersonate domain admin
         admin_session_info = admin_session(lp, str(domainsid))
         samdb.set_session_info(admin_session_info)
         if domainguid is not None:
-            domainguid_mod = "objectGUID: %s\n-" % domainguid
+            domainguid_line = "objectGUID: %s\n-" % domainguid
         else:
-            domainguid_mod = ""
+            domainguid_line = ""
         setup_add_ldif(samdb, setup_path("provision_basedn.ldif"), {
                 "DOMAINDN": names.domaindn,
-                "DOMAIN_OC": domain_oc,
-                "DOMAINGUID": domainguid_mod
+                "DOMAINGUID": domainguid_line
                 })
 
 

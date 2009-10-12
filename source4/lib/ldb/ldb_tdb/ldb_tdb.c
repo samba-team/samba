@@ -179,6 +179,8 @@ static int ltdb_check_special_dn(struct ldb_module *module,
 	/* we have @ATTRIBUTES, let's check attributes are fine */
 	/* should we check that we deny multivalued attributes ? */
 	for (i = 0; i < msg->num_elements; i++) {
+		if (ldb_attr_cmp(msg->elements[i].name, "distinguishedName") == 0) continue;
+
 		for (j = 0; j < msg->elements[i].num_values; j++) {
 			if (ltdb_check_at_attributes_values(&msg->elements[i].values[j]) != 0) {
 				ldb_set_errstring(ldb, "Invalid attribute value in an @ATTRIBUTES entry");
@@ -205,10 +207,17 @@ static int ltdb_modified(struct ldb_module *module, struct ldb_dn *dn)
 		ret = ltdb_reindex(module);
 	}
 
+	/* If the modify was to a normal record, or any special except @BASEINFO, update the seq number */
 	if (ret == LDB_SUCCESS &&
 	    !(ldb_dn_is_special(dn) &&
 	      ldb_dn_check_special(dn, LTDB_BASEINFO)) ) {
 		ret = ltdb_increase_sequence_number(module);
+	}
+
+	/* If the modify was to @OPTIONS, reload the cache */
+	if (ldb_dn_is_special(dn) &&
+	    (ldb_dn_check_special(dn, LTDB_OPTIONS)) ) {
+		ret = ltdb_cache_reload(module);
 	}
 
 	return ret;

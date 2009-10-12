@@ -706,7 +706,13 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 	if (!schema) {
 		return ldb_next_request(module, req);
 	}
-	objectclass_element = ldb_msg_find_element(req->op.mod.message, "objectClass");
+
+	/* As with the "real" AD we don't accept empty messages */
+	if (req->op.mod.message->num_elements == 0) {
+		ldb_set_errstring(ldb, "objectclass: modify message must have "
+				       "elements/attributes!");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
 
 	ac = oc_init_context(module, req);
 	if (ac == NULL) {
@@ -715,6 +721,7 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 
 	/* If no part of this touches the objectClass, then we don't
 	 * need to make any changes.  */
+	objectclass_element = ldb_msg_find_element(req->op.mod.message, "objectClass");
 
 	/* If the only operation is the deletion of the objectClass
 	 * then go on with just fixing the attribute case */

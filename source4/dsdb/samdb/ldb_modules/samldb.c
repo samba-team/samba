@@ -284,8 +284,7 @@ static int samldb_get_parent_domain(struct samldb_ctx *ac)
 	ret = ldb_build_search_req(&req, ldb, ac,
 				   dn, LDB_SCOPE_BASE,
 				   "(|(objectClass=domain)"
-				     "(objectClass=builtinDomain)"
-				     "(objectClass=samba4LocalDomain))",
+				   "(objectClass=builtinDomain))",
 				   attrs,
 				   NULL,
 				   ac, samldb_get_parent_domain_callback,
@@ -559,10 +558,10 @@ static int samldb_get_sid_domain(struct samldb_ctx *ac)
 	/* get the domain component part of the provided SID */
 	ac->domain_sid->num_auths--;
 
-	filter = talloc_asprintf(ac, "(&(objectSid=%s)"
-				       "(|(objectClass=domain)"
-				         "(objectClass=builtinDomain)"
-				         "(objectClass=samba4LocalDomain)))",
+	filter = talloc_asprintf(ac, 
+				 "(&(objectSid=%s)"
+				 "(|(objectClass=domain)"
+				 "(objectClass=builtinDomain)))",
 				 ldap_encode_ndr_dom_sid(ac, ac->domain_sid));
 	if (filter == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;

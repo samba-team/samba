@@ -438,6 +438,12 @@ enum wbcPasswordChangeRejectReason {
 	WBC_PWD_CHANGE_PASSWORD_TOO_LONG=8
 };
 
+/* Note: this defines exist for compatibility reasons with existing code */
+#define WBC_PWD_CHANGE_REJECT_OTHER      WBC_PWD_CHANGE_NO_ERROR
+#define WBC_PWD_CHANGE_REJECT_TOO_SHORT  WBC_PWD_CHANGE_PASSWORD_TOO_SHORT
+#define WBC_PWD_CHANGE_REJECT_IN_HISTORY WBC_PWD_CHANGE_PWD_IN_HISTORY
+#define WBC_PWD_CHANGE_REJECT_COMPLEXITY WBC_PWD_CHANGE_NOT_COMPLEX
+
 /**
  * @brief Logoff User Parameters
  **/

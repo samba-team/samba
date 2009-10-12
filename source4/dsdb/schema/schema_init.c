@@ -30,6 +30,8 @@
 #include "param/param.h"
 #include "lib/ldb/include/ldb_module.h"
 
+static WERROR dsdb_read_prefixes_from_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, uint32_t* num_prefixes, struct dsdb_schema_oid_prefix **prefixes);
+
 struct dsdb_schema *dsdb_new_schema(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience)
 {
 	struct dsdb_schema *schema = talloc_zero(mem_ctx, struct dsdb_schema);
@@ -519,7 +521,7 @@ WERROR dsdb_write_prefixes_from_schema_to_ldb(TALLOC_CTX *mem_ctx, struct ldb_co
 	return WERR_OK;
 }
 
-WERROR dsdb_read_prefixes_from_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, uint32_t* num_prefixes, struct dsdb_schema_oid_prefix **prefixes)
+static WERROR dsdb_read_prefixes_from_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, uint32_t* num_prefixes, struct dsdb_schema_oid_prefix **prefixes)
 {
 	struct prefixMapBlob *blob;
 	enum ndr_err_code ndr_err;
@@ -906,7 +908,7 @@ WERROR dsdb_class_from_ldb(const struct dsdb_schema *schema,
 /* 
  Create a DSDB schema from the ldb results provided.  This is called
  directly when the schema is provisioned from an on-disk LDIF file, or
- from dsdb_schema_from_schema_dn below
+ from dsdb_schema_from_schema_dn in schema_fsmo
 */
 
 int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
@@ -1012,115 +1014,6 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	*schema_out = schema;
 	return LDB_SUCCESS;
 }
-
-/*
-  Given an LDB, and the DN, return a populated schema
-*/
-
-int dsdb_schema_from_schema_dn(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
-			       struct smb_iconv_convenience *iconv_convenience, 
-			       struct ldb_dn *schema_dn,
-			       struct dsdb_schema **schema,
-			       char **error_string_out) 
-{
-	TALLOC_CTX *tmp_ctx;
-	char *error_string;
-	int ret;
-
-	struct ldb_result *schema_res;
-	struct ldb_result *a_res;
-	struct ldb_result *c_res;
-	static const char *schema_attrs[] = {
-		"prefixMap",
-		"schemaInfo",
-		"fSMORoleOwner",
-		NULL
-	};
-	unsigned flags;
-
-	tmp_ctx = talloc_new(mem_ctx);
-	if (!tmp_ctx) {
-		dsdb_oom(error_string_out, mem_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	/* we don't want to trace the schema load */
-	flags = ldb_get_flags(ldb);
-	ldb_set_flags(ldb, flags & ~LDB_FLG_ENABLE_TRACING);
-
-	/*
-	 * setup the prefix mappings and schema info
-	 */
-	ret = ldb_search(ldb, tmp_ctx, &schema_res,
-			 schema_dn, LDB_SCOPE_BASE, schema_attrs, NULL);
-	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-		goto failed;
-	} else if (ret != LDB_SUCCESS) {
-		*error_string_out = talloc_asprintf(mem_ctx, 
-				       "dsdb_schema: failed to search the schema head: %s",
-				       ldb_errstring(ldb));
-		goto failed;
-	}
-	if (schema_res->count != 1) {
-		*error_string_out = talloc_asprintf(mem_ctx, 
-			      "dsdb_schema: [%u] schema heads found on a base search",
-			      schema_res->count);
-		goto failed;
-	}
-
-	/*
-	 * load the attribute definitions
-	 */
-	ret = ldb_search(ldb, tmp_ctx, &a_res,
-			 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
-			 "(objectClass=attributeSchema)");
-	if (ret != LDB_SUCCESS) {
-		*error_string_out = talloc_asprintf(mem_ctx, 
-				       "dsdb_schema: failed to search attributeSchema objects: %s",
-				       ldb_errstring(ldb));
-		goto failed;
-	}
-
-	/*
-	 * load the objectClass definitions
-	 */
-	ret = ldb_search(ldb, tmp_ctx, &c_res,
-			 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
-			 "(objectClass=classSchema)");
-	if (ret != LDB_SUCCESS) {
-		*error_string_out = talloc_asprintf(mem_ctx, 
-				       "dsdb_schema: failed to search attributeSchema objects: %s",
-				       ldb_errstring(ldb));
-		goto failed;
-	}
-
-	ret = dsdb_schema_from_ldb_results(tmp_ctx, ldb,
-					   lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
-					   schema_res, a_res, c_res, schema, &error_string);
-	if (ret != LDB_SUCCESS) {
-		*error_string_out = talloc_asprintf(mem_ctx, 
-						    "dsdb_schema load failed: %s",
-						    error_string);
-		goto failed;
-	}
-	talloc_steal(mem_ctx, *schema);
-	talloc_free(tmp_ctx);
-
-	if (flags & LDB_FLG_ENABLE_TRACING) {
-		flags = ldb_get_flags(ldb);
-		ldb_set_flags(ldb, flags | LDB_FLG_ENABLE_TRACING);
-	}
-
-	return LDB_SUCCESS;
-
-failed:
-	if (flags & LDB_FLG_ENABLE_TRACING) {
-		flags = ldb_get_flags(ldb);
-		ldb_set_flags(ldb, flags | LDB_FLG_ENABLE_TRACING);
-	}
-	talloc_free(tmp_ctx);
-	return ret;
-}	
 
 
 static const struct {
