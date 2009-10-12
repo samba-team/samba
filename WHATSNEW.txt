@@ -12,6 +12,20 @@ Major enhancements in Samba 3.5.0 include:
 
 
 ######################################################################
+Changes
+#######
+
+smb.conf changes
+----------------
+
+   Parameter Name                      Description     Default
+   --------------                      -----------     -------
+
+   ldap ref follow		       New	       auto
+
+
+
+######################################################################
 Reporting bugs & Development Discussion
 #######################################
 
