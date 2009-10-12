@@ -234,7 +234,7 @@ int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flg
 	int ret = LDB_SUCCESS;
 
 	tdb_key = ltdb_key(module, msg->dn);
-	if (!tdb_key.dptr) {
+	if (tdb_key.dptr == NULL) {
 		return LDB_ERR_OTHER;
 	}
 
@@ -271,12 +271,11 @@ static int ltdb_add_internal(struct ldb_module *module,
 
 	ret = ltdb_check_special_dn(module, msg);
 	if (ret != LDB_SUCCESS) {
-		goto done;
+		return ret;
 	}
 
 	if (ltdb_cache_load(module) != 0) {
-		ret = LDB_ERR_OPERATIONS_ERROR;
-		goto done;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	for (i=0;i<msg->num_elements;i++) {
@@ -286,15 +285,13 @@ static int ltdb_add_internal(struct ldb_module *module,
 		if (el->num_values == 0) {
 			ldb_asprintf_errstring(ldb, "attribute %s on %s specified, but with 0 values (illegal)", 
 					       el->name, ldb_dn_get_linearized(msg->dn));
-			ret = LDB_ERR_CONSTRAINT_VIOLATION;
-			goto done;
+			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 		if (a && a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) {
 			if (el->num_values > 1) {
 				ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s specified more than once",
 						       el->name, ldb_dn_get_linearized(msg->dn));
-				ret = LDB_ERR_CONSTRAINT_VIOLATION;
-				goto done;
+				return LDB_ERR_CONSTRAINT_VIOLATION;
 			}
 		}
 	}
@@ -306,20 +303,16 @@ static int ltdb_add_internal(struct ldb_module *module,
 					       "Entry %s already exists",
 					       ldb_dn_get_linearized(msg->dn));
 		}
-		goto done;
+		return ret;
 	}
 
 	ret = ltdb_index_one(module, msg, 1);
 	if (ret != LDB_SUCCESS) {
-		goto done;
+		return ret;
 	}
 
 	ret = ltdb_modified(module, msg->dn);
-	if (ret != LDB_SUCCESS) {
-		goto done;
-	}
 
-done:
 	return ret;
 }
 
@@ -864,8 +857,7 @@ static int ltdb_rename(struct ltdb_context *ctx)
 
 	msg = talloc(ctx, struct ldb_message);
 	if (msg == NULL) {
-		ret = LDB_ERR_OPERATIONS_ERROR;
-		goto done;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* in case any attribute of the message was indexed, we need
@@ -873,13 +865,12 @@ static int ltdb_rename(struct ltdb_context *ctx)
 	ret = ltdb_search_dn1(module, req->op.rename.olddn, msg);
 	if (ret != LDB_SUCCESS) {
 		/* not finding the old record is an error */
-		goto done;
+		return ret;
 	}
 
 	msg->dn = ldb_dn_copy(msg, req->op.rename.newdn);
 	if (msg->dn == NULL) {
-		ret = LDB_ERR_OPERATIONS_ERROR;
-		goto done;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* Always delete first then add, to avoid conflicts with
@@ -888,12 +879,11 @@ static int ltdb_rename(struct ltdb_context *ctx)
 	 */
 	ret = ltdb_delete_internal(module, req->op.rename.olddn);
 	if (ret != LDB_SUCCESS) {
-		goto done;
+		return ret;
 	}
 
 	ret = ltdb_add_internal(module, msg);
 
-done:
 	return ret;
 }
 
