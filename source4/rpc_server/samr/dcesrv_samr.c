@@ -3611,14 +3611,16 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 	}
 
 	/* modify the samdb record */
-	ret = ldb_modify(a_state->sam_ctx, msg);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(1,("Failed to modify record %s: %s\n",
-			 ldb_dn_get_linearized(a_state->account_dn),
-			 ldb_errstring(a_state->sam_ctx)));
+	if (msg->num_elements > 0) {
+		ret = ldb_modify(a_state->sam_ctx, msg);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(1,("Failed to modify record %s: %s\n",
+				 ldb_dn_get_linearized(a_state->account_dn),
+				 ldb_errstring(a_state->sam_ctx)));
 
-		/* we really need samdb.c to return NTSTATUS */
-		return NT_STATUS_UNSUCCESSFUL;
+			/* we really need samdb.c to return NTSTATUS */
+			return NT_STATUS_UNSUCCESSFUL;
+		}
 	}
 
 	return NT_STATUS_OK;
