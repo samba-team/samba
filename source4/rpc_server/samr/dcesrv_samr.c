@@ -949,7 +949,7 @@ static NTSTATUS dcesrv_samr_SetDomainInfo(struct dcesrv_call_state *dce_call, TA
 
 	/* modify the samdb record */
 	ret = ldb_modify(sam_ctx, msg);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		DEBUG(1,("Failed to modify record %s: %s\n",
 			 ldb_dn_get_linearized(d_state->domain_dn),
 			 ldb_errstring(sam_ctx)));
@@ -1234,7 +1234,7 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 	 */
 
 	ret = ldb_transaction_start(d_state->sam_ctx);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		DEBUG(0,("Failed to start a transaction for user creation: %s\n",
 			 ldb_errstring(d_state->sam_ctx)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -1389,7 +1389,7 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 
 	/* modify the samdb record */
 	ret = samdb_replace(a_state->sam_ctx, mem_ctx, msg);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		DEBUG(0,("Failed to modify account record %s to set userAccountControl: %s\n",
 			 ldb_dn_get_linearized(msg->dn),
 			 ldb_errstring(d_state->sam_ctx)));
@@ -1400,7 +1400,7 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 	}
 
 	ret = ldb_transaction_commit(d_state->sam_ctx);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		DEBUG(0,("Failed to commit transaction to add and modify account record %s: %s\n",
 			 ldb_dn_get_linearized(msg->dn),
 			 ldb_errstring(d_state->sam_ctx)));
@@ -2193,7 +2193,7 @@ static NTSTATUS dcesrv_samr_SetGroupInfo(struct dcesrv_call_state *dce_call, TAL
 
 	/* modify the samdb record */
 	ret = ldb_modify(g_state->sam_ctx, msg);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		/* we really need samdb.c to return NTSTATUS */
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -2224,8 +2224,9 @@ static NTSTATUS dcesrv_samr_AddGroupMember(struct dcesrv_call_state *dce_call, T
 	d_state = a_state->domain_state;
 
 	membersid = dom_sid_add_rid(mem_ctx, d_state->domain_sid, r->in.rid);
-	if (membersid == NULL)
+	if (membersid == NULL) {
 		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* In native mode, AD can also nest domain groups. Not sure yet
 	 * whether this is also available via RPC. */
@@ -2234,7 +2235,7 @@ static NTSTATUS dcesrv_samr_AddGroupMember(struct dcesrv_call_state *dce_call, T
 				 "(&(objectSid=%s)(objectclass=user))",
 				 ldap_encode_ndr_dom_sid(mem_ctx, membersid));
 
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -2258,9 +2259,11 @@ static NTSTATUS dcesrv_samr_AddGroupMember(struct dcesrv_call_state *dce_call, T
 
 	mod->dn = talloc_reference(mem_ctx, a_state->account_dn);
 
-	if (samdb_msg_add_addval(d_state->sam_ctx, mem_ctx, mod, "member",
-				 memberdn) != 0)
+	ret = samdb_msg_add_addval(d_state->sam_ctx, mem_ctx, mod, "member",
+								memberdn);
+	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	ret = ldb_modify(a_state->sam_ctx, mod);
 	switch (ret) {
@@ -2273,7 +2276,6 @@ static NTSTATUS dcesrv_samr_AddGroupMember(struct dcesrv_call_state *dce_call, T
 	default:
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-
 }
 
 
@@ -2294,7 +2296,7 @@ static NTSTATUS dcesrv_samr_DeleteDomainGroup(struct dcesrv_call_state *dce_call
 	a_state = h->data;
 
 	ret = ldb_delete(a_state->sam_ctx, a_state->account_dn);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -2336,7 +2338,7 @@ static NTSTATUS dcesrv_samr_DeleteGroupMember(struct dcesrv_call_state *dce_call
 				 "(&(objectSid=%s)(objectclass=user))",
 				 ldap_encode_ndr_dom_sid(mem_ctx, membersid));
 
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -2360,8 +2362,9 @@ static NTSTATUS dcesrv_samr_DeleteGroupMember(struct dcesrv_call_state *dce_call
 
 	mod->dn = talloc_reference(mem_ctx, a_state->account_dn);
 
-	if (samdb_msg_add_delval(d_state->sam_ctx, mem_ctx, mod, "member",
-				 memberdn) != 0) {
+	ret = samdb_msg_add_delval(d_state->sam_ctx, mem_ctx, mod, "member",
+								memberdn);
+	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -2732,12 +2735,15 @@ static NTSTATUS dcesrv_samr_AddAliasMember(struct dcesrv_call_state *dce_call, T
 
 	mod->dn = talloc_reference(mem_ctx, a_state->account_dn);
 
-	if (samdb_msg_add_addval(d_state->sam_ctx, mem_ctx, mod, "member",
-				 ldb_dn_alloc_linearized(mem_ctx, memberdn)) != 0)
+	ret = samdb_msg_add_addval(d_state->sam_ctx, mem_ctx, mod, "member",
+				 ldb_dn_alloc_linearized(mem_ctx, memberdn));
+	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_UNSUCCESSFUL;
+	}
 
-	if (ldb_modify(a_state->sam_ctx, mod) != 0)
+	if (ldb_modify(a_state->sam_ctx, mod) != LDB_SUCCESS) {
 		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	return NT_STATUS_OK;
 }
@@ -2754,6 +2760,7 @@ static NTSTATUS dcesrv_samr_DeleteAliasMember(struct dcesrv_call_state *dce_call
 	struct samr_domain_state *d_state;
 	struct ldb_message *mod;
 	const char *memberdn;
+	int ret;
 
 	DCESRV_PULL_HANDLE(h, r->in.alias_handle, SAMR_HANDLE_ALIAS);
 
@@ -2774,11 +2781,12 @@ static NTSTATUS dcesrv_samr_DeleteAliasMember(struct dcesrv_call_state *dce_call
 
 	mod->dn = talloc_reference(mem_ctx, a_state->account_dn);
 
-	if (samdb_msg_add_delval(d_state->sam_ctx, mem_ctx, mod, "member",
-				 memberdn) != 0)
+	ret = samdb_msg_add_delval(d_state->sam_ctx, mem_ctx, mod, "member",
+								 memberdn);
+	if (ret != LDB_SUCCESS)
 		return NT_STATUS_UNSUCCESSFUL;
 
-	if (ldb_modify(a_state->sam_ctx, mod) != 0)
+	if (ldb_modify(a_state->sam_ctx, mod) != LDB_SUCCESS)
 		return NT_STATUS_UNSUCCESSFUL;
 
 	return NT_STATUS_OK;
@@ -2947,7 +2955,7 @@ static NTSTATUS dcesrv_samr_DeleteUser(struct dcesrv_call_state *dce_call, TALLO
 	a_state = h->data;
 
 	ret = ldb_delete(a_state->sam_ctx, a_state->account_dn);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		DEBUG(1, ("Failed to delete user: %s: %s\n", 
 			  ldb_dn_get_linearized(a_state->account_dn), 
 			  ldb_errstring(a_state->sam_ctx)));
@@ -3604,7 +3612,7 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 
 	/* modify the samdb record */
 	ret = ldb_modify(a_state->sam_ctx, msg);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		DEBUG(1,("Failed to modify record %s: %s\n",
 			 ldb_dn_get_linearized(a_state->account_dn),
 			 ldb_errstring(a_state->sam_ctx)));
@@ -4188,8 +4196,8 @@ static NTSTATUS dcesrv_samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TAL
 		"pwdProperties", 1);
 
 	talloc_free(msgs);
-
 	talloc_free(sam_ctx);
+
 	return NT_STATUS_OK;
 }
 
