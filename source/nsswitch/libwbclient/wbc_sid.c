@@ -282,12 +282,12 @@ wbcErr wbcLookupSid(const struct wbcDomainSid *sid,
 		if (pdomain != NULL) {
 			*pdomain = domain;
 		} else {
-			TALLOC_FREE(domain);
+			talloc_free(domain);
 		}
 		if (pname != NULL) {
 			*pname = name;
 		} else {
-			TALLOC_FREE(name);
+			talloc_free(name);
 		}
 		if (pname_type != NULL) {
 			*pname_type = name_type;
