@@ -31,14 +31,23 @@
 /*
   lock all databases - mark only
  */
-static int ctdb_lock_all_databases_mark(struct ctdb_context *ctdb)
+static int ctdb_lock_all_databases_mark(struct ctdb_context *ctdb, uint32_t priority)
 {
 	struct ctdb_db_context *ctdb_db;
-	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
+
+	if ((priority < 1) || (priority > NUM_DB_PRIORITIES)) {
+		DEBUG(DEBUG_ERR,(__location__ " Illegal priority when trying to mark all databases Prio:%u\n", priority));
+		return -1;
+	}
+
+	if (ctdb->freeze_mode[priority] != CTDB_FREEZE_FROZEN) {
 		DEBUG(DEBUG_ERR,("Attempt to mark all databases locked when not frozen\n"));
 		return -1;
 	}
 	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
+		if (ctdb_db->priority != priority) {
+			continue;
+		}
 		if (tdb_lockall_mark(ctdb_db->ltdb->tdb) != 0) {
 			return -1;
 		}
@@ -49,14 +58,23 @@ static int ctdb_lock_all_databases_mark(struct ctdb_context *ctdb)
 /*
   lock all databases - unmark only
  */
-static int ctdb_lock_all_databases_unmark(struct ctdb_context *ctdb)
+static int ctdb_lock_all_databases_unmark(struct ctdb_context *ctdb, uint32_t priority)
 {
 	struct ctdb_db_context *ctdb_db;
-	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
+
+	if ((priority < 1) || (priority > NUM_DB_PRIORITIES)) {
+		DEBUG(DEBUG_ERR,(__location__ " Illegal priority when trying to mark all databases Prio:%u\n", priority));
+		return -1;
+	}
+
+	if (ctdb->freeze_mode[priority] != CTDB_FREEZE_FROZEN) {
 		DEBUG(DEBUG_ERR,("Attempt to unmark all databases locked when not frozen\n"));
 		return -1;
 	}
 	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
+		if (ctdb_db->priority != priority) {
+			continue;
+		}
 		if (tdb_lockall_unmark(ctdb_db->ltdb->tdb) != 0) {
 			return -1;
 		}
@@ -90,10 +108,13 @@ int
 ctdb_control_setvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata)
 {
 	struct ctdb_vnn_map_wire *map = (struct ctdb_vnn_map_wire *)indata.dptr;
+	int i;
 
-	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
-		DEBUG(DEBUG_ERR,("Attempt to set vnnmap when not frozen\n"));
-		return -1;
+	for(i=1; i<=NUM_DB_PRIORITIES; i++) {
+		if (ctdb->freeze_mode[i] != CTDB_FREEZE_FROZEN) {
+			DEBUG(DEBUG_ERR,("Attempt to set vnnmap when not frozen\n"));
+			return -1;
+		}
 	}
 
 	talloc_free(ctdb->vnn_map);
@@ -322,16 +343,16 @@ int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DAT
 	struct pulldb_data params;
 	struct ctdb_marshall_buffer *reply;
 
-	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
-		DEBUG(DEBUG_DEBUG,("rejecting ctdb_control_pull_db when not frozen\n"));
-		return -1;
-	}
-
 	pull = (struct ctdb_control_pulldb *)indata.dptr;
 	
 	ctdb_db = find_ctdb_db(ctdb, pull->db_id);
 	if (!ctdb_db) {
 		DEBUG(DEBUG_ERR,(__location__ " Unknown db 0x%08x\n", pull->db_id));
+		return -1;
+	}
+
+	if (ctdb->freeze_mode[ctdb_db->priority] != CTDB_FREEZE_FROZEN) {
+		DEBUG(DEBUG_DEBUG,("rejecting ctdb_control_pull_db when not frozen\n"));
 		return -1;
 	}
 
@@ -345,19 +366,19 @@ int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DAT
 	params.len = offsetof(struct ctdb_marshall_buffer, data);
 	params.failed = false;
 
-	if (ctdb_lock_all_databases_mark(ctdb) != 0) {
+	if (ctdb_lock_all_databases_mark(ctdb, ctdb_db->priority) != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to get lock on entired db - failing\n"));
 		return -1;
 	}
 
 	if (tdb_traverse_read(ctdb_db->ltdb->tdb, traverse_pulldb, &params) == -1) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to get traverse db '%s'\n", ctdb_db->db_name));
-		ctdb_lock_all_databases_unmark(ctdb);
+		ctdb_lock_all_databases_unmark(ctdb, ctdb_db->priority);
 		talloc_free(params.pulldata);
 		return -1;
 	}
 
-	ctdb_lock_all_databases_unmark(ctdb);
+	ctdb_lock_all_databases_unmark(ctdb, ctdb_db->priority);
 
 	outdata->dptr = (uint8_t *)params.pulldata;
 	outdata->dsize = params.len;
@@ -375,11 +396,6 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 	int i, ret;
 	struct ctdb_rec_data *rec;
 
-	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
-		DEBUG(DEBUG_DEBUG,("rejecting ctdb_control_push_db when not frozen\n"));
-		return -1;
-	}
-
 	if (indata.dsize < offsetof(struct ctdb_marshall_buffer, data)) {
 		DEBUG(DEBUG_ERR,(__location__ " invalid data in pulldb reply\n"));
 		return -1;
@@ -391,7 +407,12 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 		return -1;
 	}
 
-	if (ctdb_lock_all_databases_mark(ctdb) != 0) {
+	if (ctdb->freeze_mode[ctdb_db->priority] != CTDB_FREEZE_FROZEN) {
+		DEBUG(DEBUG_DEBUG,("rejecting ctdb_control_push_db when not frozen\n"));
+		return -1;
+	}
+
+	if (ctdb_lock_all_databases_mark(ctdb, ctdb_db->priority) != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to get lock on entired db - failing\n"));
 		return -1;
 	}
@@ -430,11 +451,11 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 	DEBUG(DEBUG_DEBUG,("finished push of %u records for dbid 0x%x\n",
 		 reply->count, reply->db_id));
 
-	ctdb_lock_all_databases_unmark(ctdb);
+	ctdb_lock_all_databases_unmark(ctdb, ctdb_db->priority);
 	return 0;
 
 failed:
-	ctdb_lock_all_databases_unmark(ctdb);
+	ctdb_lock_all_databases_unmark(ctdb, ctdb_db->priority);
 	return -1;
 }
 
@@ -468,25 +489,25 @@ int32_t ctdb_control_set_dmaster(struct ctdb_context *ctdb, TDB_DATA indata)
 	struct ctdb_control_set_dmaster *p = (struct ctdb_control_set_dmaster *)indata.dptr;
 	struct ctdb_db_context *ctdb_db;
 
-	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
-		DEBUG(DEBUG_DEBUG,("rejecting ctdb_control_set_dmaster when not frozen\n"));
-		return -1;
-	}
-
 	ctdb_db = find_ctdb_db(ctdb, p->db_id);
 	if (!ctdb_db) {
 		DEBUG(DEBUG_ERR,(__location__ " Unknown db 0x%08x\n", p->db_id));
 		return -1;
 	}
 
-	if (ctdb_lock_all_databases_mark(ctdb) != 0) {
+	if (ctdb->freeze_mode[ctdb_db->priority] != CTDB_FREEZE_FROZEN) {
+		DEBUG(DEBUG_DEBUG,("rejecting ctdb_control_set_dmaster when not frozen\n"));
+		return -1;
+	}
+
+	if (ctdb_lock_all_databases_mark(ctdb, 	ctdb_db->priority) != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to get lock on entired db - failing\n"));
 		return -1;
 	}
 
 	tdb_traverse(ctdb_db->ltdb->tdb, traverse_setdmaster, &p->dmaster);
 
-	ctdb_lock_all_databases_unmark(ctdb);
+	ctdb_lock_all_databases_unmark(ctdb, ctdb_db->priority);
 	
 	return 0;
 }
@@ -603,7 +624,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 				 const char **errormsg)
 {
 	uint32_t recmode = *(uint32_t *)indata.dptr;
-	int ret;
+	int i, ret;
 	struct ctdb_set_recmode_state *state;
 	pid_t parent = getpid();
 
@@ -622,11 +643,13 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 	}
 
 
-	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
-		DEBUG(DEBUG_ERR,("Attempt to change recovery mode to %u when not frozen\n", 
-			 recmode));
-		(*errormsg) = "Cannot change recovery mode while not frozen";
-		return -1;
+	for (i=1; i<=NUM_DB_PRIORITIES; i++) {
+		if (ctdb->freeze_mode[i] != CTDB_FREEZE_FROZEN) {
+			DEBUG(DEBUG_ERR,("Attempt to change recovery mode to %u when not frozen\n", 
+				 recmode));
+			(*errormsg) = "Cannot change recovery mode while not frozen";
+			return -1;
+		}
 	}
 
 	if (recmode != ctdb->recovery_mode) {
@@ -642,9 +665,11 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 
 	/* some special handling when ending recovery mode */
 
-	/* force the databased to thaw */
-	if (ctdb->freeze_handle) {
-		ctdb_control_thaw(ctdb);
+	/* force the databases to thaw */
+	for (i=1; i<=NUM_DB_PRIORITIES; i++) {
+		if (ctdb->freeze_handles[i] != NULL) {
+			ctdb_control_thaw(ctdb, i);
+		}
 	}
 
 	state = talloc(ctdb, struct ctdb_set_recmode_state);

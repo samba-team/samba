@@ -733,7 +733,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	}
 
 	/* start frozen, then let the first election sort things out */
-	if (!ctdb_blocking_freeze(ctdb)) {
+	if (ctdb_blocking_freeze(ctdb)) {
 		ctdb_fatal(ctdb, "Failed to get initial freeze\n");
 	}
 

@@ -98,9 +98,15 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	}
 
 	case CTDB_CONTROL_STATISTICS: {
+		int i;
 		CHECK_CONTROL_DATA_SIZE(0);
 		ctdb->statistics.memory_used = talloc_total_size(NULL);
-		ctdb->statistics.frozen = (ctdb->freeze_mode == CTDB_FREEZE_FROZEN);
+		ctdb->statistics.frozen = 0;
+		for (i=1; i<= NUM_DB_PRIORITIES; i++) {
+			if (ctdb->freeze_mode[i] == CTDB_FREEZE_FROZEN) {
+				ctdb->statistics.frozen = 1;
+			}
+		}
 		ctdb->statistics.recovering = (ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE);
 		outdata->dptr = (uint8_t *)&ctdb->statistics;
 		outdata->dsize = sizeof(ctdb->statistics);
@@ -249,7 +255,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 	case CTDB_CONTROL_THAW:
 		CHECK_CONTROL_DATA_SIZE(0);
-		return ctdb_control_thaw(ctdb, c);
+		return ctdb_control_thaw(ctdb, (uint32_t)c->srvid);
 
 	case CTDB_CONTROL_SET_RECMODE:
 		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));		

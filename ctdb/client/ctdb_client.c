@@ -1953,7 +1953,14 @@ int ctdb_ctrl_freeze_priority(struct ctdb_context *ctdb, struct timeval timeout,
 /* Freeze all databases */
 int ctdb_ctrl_freeze(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode)
 {
-	return ctdb_ctrl_freeze_priority(ctdb, timeout, destnode, 0);
+	int i;
+
+	for (i=1; i<=NUM_DB_PRIORITIES; i++) {
+		if (ctdb_ctrl_freeze_priority(ctdb, timeout, destnode, i) != 0) {
+			return -1;
+		}
+	}
+	return 0;
 }
 
 /*
@@ -2375,7 +2382,7 @@ int ctdb_ctrl_modflags(struct ctdb_context *ctdb, struct timeval timeout, uint32
 	nodes = list_of_connected_nodes(ctdb, nodemap, tmp_ctx, true);
 
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_MODIFY_FLAGS,
-					nodes,
+					nodes, 0,
 					timeout, false, data,
 					NULL, NULL,
 					NULL) != 0) {
@@ -2880,6 +2887,7 @@ int ctdb_client_async_wait(struct ctdb_context *ctdb, struct client_async_data *
 int ctdb_client_async_control(struct ctdb_context *ctdb,
 				enum ctdb_controls opcode,
 				uint32_t *nodes,
+				uint64_t srvid,
 				struct timeval timeout,
 				bool dont_log_errors,
 				TDB_DATA data,
@@ -2905,7 +2913,7 @@ int ctdb_client_async_control(struct ctdb_context *ctdb,
 	for (j=0; j<num_nodes; j++) {
 		uint32_t pnn = nodes[j];
 
-		state = ctdb_control_send(ctdb, pnn, 0, opcode, 
+		state = ctdb_control_send(ctdb, pnn, srvid, opcode, 
 					  0, data, async_data, &timeout, NULL);
 		if (state == NULL) {
 			DEBUG(DEBUG_ERR,(__location__ " Failed to call async control %u\n", (unsigned)opcode));

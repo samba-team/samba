@@ -30,10 +30,13 @@
 /*
   lock all databases
  */
-static int ctdb_lock_all_databases(struct ctdb_context *ctdb)
+static int ctdb_lock_all_databases(struct ctdb_context *ctdb, uint32_t priority)
 {
 	struct ctdb_db_context *ctdb_db;
 	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
+		if (ctdb_db->priority != priority) {
+			continue;
+		}
 		DEBUG(DEBUG_INFO,("locking database 0x%08x priority:%u %s\n", ctdb_db->db_id, ctdb_db->priority, ctdb_db->db_name));
 		if (tdb_lockall(ctdb_db->ltdb->tdb) != 0) {
 			return -1;
@@ -50,17 +53,17 @@ struct ctdb_freeze_waiter {
 	struct ctdb_freeze_waiter *next, *prev;
 	struct ctdb_context *ctdb;
 	struct ctdb_req_control *c;
+	uint32_t priority;
 	int32_t status;
 };
 
 /* a handle to a freeze lock child process */
 struct ctdb_freeze_handle {
 	struct ctdb_context *ctdb;
+	uint32_t priority;
 	pid_t child;
 	int fd;
 	struct ctdb_freeze_waiter *waiters;
-	bool transaction_started;
-	uint32_t transaction_id;
 };
 
 /*
@@ -71,9 +74,14 @@ static int ctdb_freeze_handle_destructor(struct ctdb_freeze_handle *h)
 	struct ctdb_context *ctdb = h->ctdb;
 	struct ctdb_db_context *ctdb_db;
 
+	DEBUG(DEBUG_ERR,("Release freeze handler for prio %u\n", h->priority));
+
 	/* cancel any pending transactions */
-	if (ctdb->freeze_handle && ctdb->freeze_handle->transaction_started) {
+	if (ctdb->freeze_transaction_started) {
 		for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
+			if (ctdb_db->priority != h->priority) {
+				continue;
+			}
 			tdb_add_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
 			if (tdb_transaction_cancel(ctdb_db->ltdb->tdb) != 0) {
 				DEBUG(DEBUG_ERR,(__location__ " Failed to cancel transaction for db '%s'\n",
@@ -81,11 +89,11 @@ static int ctdb_freeze_handle_destructor(struct ctdb_freeze_handle *h)
 			}
 			tdb_remove_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
 		}
-		ctdb->freeze_handle->transaction_started = false;
+		ctdb->freeze_transaction_started = false;
 	}
 
-	ctdb->freeze_mode = CTDB_FREEZE_NONE;
-	ctdb->freeze_handle = NULL;
+	ctdb->freeze_mode[h->priority]    = CTDB_FREEZE_NONE;
+	ctdb->freeze_handles[h->priority] = NULL;
 
 	kill(h->child, SIGKILL);
 	return 0;
@@ -101,11 +109,8 @@ static void ctdb_freeze_lock_handler(struct event_context *ev, struct fd_event *
 	int32_t status;
 	struct ctdb_freeze_waiter *w;
 
-	if (h->ctdb->freeze_mode == CTDB_FREEZE_FROZEN) {
+	if (h->ctdb->freeze_mode[h->priority] == CTDB_FREEZE_FROZEN) {
 		DEBUG(DEBUG_INFO,("freeze child died - unfreezing\n"));
-		if (h->ctdb->freeze_handle == h) {
-			h->ctdb->freeze_handle = NULL;
-		}
 		talloc_free(h);
 		return;
 	}
@@ -122,12 +127,12 @@ static void ctdb_freeze_lock_handler(struct event_context *ev, struct fd_event *
 		return;
 	}
 
-	h->ctdb->freeze_mode = CTDB_FREEZE_FROZEN;
+	h->ctdb->freeze_mode[h->priority] = CTDB_FREEZE_FROZEN;
 
 	/* notify the waiters */
-	while ((w = h->ctdb->freeze_handle->waiters)) {
+	while ((w = h->ctdb->freeze_handles[h->priority]->waiters)) {
 		w->status = status;
-		DLIST_REMOVE(h->ctdb->freeze_handle->waiters, w);
+		DLIST_REMOVE(h->ctdb->freeze_handles[h->priority]->waiters, w);
 		talloc_free(w);
 	}
 }
@@ -136,7 +141,7 @@ static void ctdb_freeze_lock_handler(struct event_context *ev, struct fd_event *
   create a child which gets locks on all the open databases, then calls the callback telling the parent
   that it is done
  */
-static struct ctdb_freeze_handle *ctdb_freeze_lock(struct ctdb_context *ctdb)
+static struct ctdb_freeze_handle *ctdb_freeze_lock(struct ctdb_context *ctdb, uint32_t priority)
 {
 	struct ctdb_freeze_handle *h;
 	int fd[2];
@@ -145,7 +150,8 @@ static struct ctdb_freeze_handle *ctdb_freeze_lock(struct ctdb_context *ctdb)
 	h = talloc_zero(ctdb, struct ctdb_freeze_handle);
 	CTDB_NO_MEMORY_NULL(ctdb, h);
 
-	h->ctdb = ctdb;
+	h->ctdb     = ctdb;
+	h->priority = priority;
 
 	/* use socketpair() instead of pipe() so we have bi-directional fds */
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, fd) != 0) {
@@ -166,7 +172,7 @@ static struct ctdb_freeze_handle *ctdb_freeze_lock(struct ctdb_context *ctdb)
 		int count = 0;
 		/* in the child */
 		close(fd[0]);
-		ret = ctdb_lock_all_databases(ctdb);
+		ret = ctdb_lock_all_databases(ctdb, priority);
 		if (ret != 0) {
 			_exit(0);
 		}
@@ -214,27 +220,34 @@ static struct ctdb_freeze_handle *ctdb_freeze_lock(struct ctdb_context *ctdb)
  */
 static int ctdb_freeze_waiter_destructor(struct ctdb_freeze_waiter *w)
 {
-	DLIST_REMOVE(w->ctdb->freeze_handle->waiters, w);
+	DLIST_REMOVE(w->ctdb->freeze_handles[w->priority]->waiters, w);
 	ctdb_request_control_reply(w->ctdb, w->c, NULL, w->status, NULL);
 	return 0;
 }
 
 /*
-  start the freeze process
+  start the freeze process for a certain priority
  */
-void ctdb_start_freeze(struct ctdb_context *ctdb)
+int ctdb_start_freeze(struct ctdb_context *ctdb, uint32_t priority)
 {
-	if (ctdb->freeze_mode == CTDB_FREEZE_FROZEN) {
+	if ((priority < 1) || (priority > NUM_DB_PRIORITIES)) {
+		DEBUG(DEBUG_ERR,(__location__ " Invalid db priority : %u\n", priority));
+		return -1;
+	}
+
+	if (ctdb->freeze_mode[priority] == CTDB_FREEZE_FROZEN) {
 		/* we're already frozen */
-		return;
+		return 0;
 	}
 
 	/* if there isn't a freeze lock child then create one */
-	if (!ctdb->freeze_handle) {
-		ctdb->freeze_handle = ctdb_freeze_lock(ctdb);
-		CTDB_NO_MEMORY_VOID(ctdb, ctdb->freeze_handle);
-		ctdb->freeze_mode = CTDB_FREEZE_PENDING;
+	if (!ctdb->freeze_handles[priority]) {
+		ctdb->freeze_handles[priority] = ctdb_freeze_lock(ctdb, priority);
+		CTDB_NO_MEMORY(ctdb, ctdb->freeze_handles[priority]);
+		ctdb->freeze_mode[priority] = CTDB_FREEZE_PENDING;
 	}
+
+	return 0;
 }
 
 /*
@@ -247,21 +260,32 @@ int32_t ctdb_control_freeze(struct ctdb_context *ctdb, struct ctdb_req_control *
 
 	priority = (uint32_t)c->srvid;
 
-	if (ctdb->freeze_mode == CTDB_FREEZE_FROZEN) {
+	DEBUG(DEBUG_ERR, ("Freeze priority %u\n", priority));
+
+	if ((priority < 1) || (priority > NUM_DB_PRIORITIES)) {
+		DEBUG(DEBUG_ERR,(__location__ " Invalid db priority : %u\n", priority));
+		return -1;
+	}
+
+	if (ctdb->freeze_mode[priority] == CTDB_FREEZE_FROZEN) {
 		/* we're already frozen */
 		return 0;
 	}
 
-	ctdb_start_freeze(ctdb);
+	if (ctdb_start_freeze(ctdb, priority) != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to start freezing databases with priority %u\n", priority));
+		return -1;
+	}
 
 	/* add ourselves to list of waiters */
-	w = talloc(ctdb->freeze_handle, struct ctdb_freeze_waiter);
+	w = talloc(ctdb->freeze_handles[priority], struct ctdb_freeze_waiter);
 	CTDB_NO_MEMORY(ctdb, w);
-	w->ctdb   = ctdb;
-	w->c      = talloc_steal(w, c);
-	w->status = -1;
+	w->ctdb     = ctdb;
+	w->c        = talloc_steal(w, c);
+	w->priority = priority;
+	w->status   = -1;
 	talloc_set_destructor(w, ctdb_freeze_waiter_destructor);
-	DLIST_ADD(ctdb->freeze_handle->waiters, w);
+	DLIST_ADD(ctdb->freeze_handles[priority]->waiters, w);
 
 	/* we won't reply till later */
 	*async_reply = True;
@@ -274,29 +298,30 @@ int32_t ctdb_control_freeze(struct ctdb_context *ctdb, struct ctdb_req_control *
  */
 bool ctdb_blocking_freeze(struct ctdb_context *ctdb)
 {
-	ctdb_start_freeze(ctdb);
+	int i;
 
-	/* block until frozen */
-	while (ctdb->freeze_mode == CTDB_FREEZE_PENDING) {
-		event_loop_once(ctdb->ev);
+	for (i=1; i<=NUM_DB_PRIORITIES; i++) {
+		if (ctdb_start_freeze(ctdb, i)) {
+			DEBUG(DEBUG_ERR,(__location__ " Failed to freeze databases of prio %u\n", i));
+			continue;
+		}
+
+		/* block until frozen */
+		while (ctdb->freeze_mode[i] == CTDB_FREEZE_PENDING) {
+			event_loop_once(ctdb->ev);
+		}
 	}
 
-	return ctdb->freeze_mode == CTDB_FREEZE_FROZEN;
+	return 0;
 }
 
 
-
-/*
-  thaw the databases
- */
-int32_t ctdb_control_thaw(struct ctdb_context *ctdb, struct ctdb_req_control *c)
+static void thaw_priority(struct ctdb_context *ctdb, uint32_t priority)
 {
-	uint32_t priority;
-
-	priority = (uint32_t)c->srvid;
+	DEBUG(DEBUG_ERR,("Thawing priority %u\n", priority));
 
 	/* cancel any pending transactions */
-	if (ctdb->freeze_handle && ctdb->freeze_handle->transaction_started) {
+	if (ctdb->freeze_transaction_started) {
 		struct ctdb_db_context *ctdb_db;
 
 		for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
@@ -308,6 +333,7 @@ int32_t ctdb_control_thaw(struct ctdb_context *ctdb, struct ctdb_req_control *c)
 			tdb_remove_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
 		}
 	}
+	ctdb->freeze_transaction_started = false;
 
 #if 0
 	/* this hack can be used to get a copy of the databases at the end of a recovery */
@@ -319,9 +345,30 @@ int32_t ctdb_control_thaw(struct ctdb_context *ctdb, struct ctdb_req_control *c)
 	system("mkdir -p test.db.saved; /usr/bin/rsync --delete -a test.db/ test.db.saved/$$ 2>&1 > /dev/null");
 #endif
 
+	talloc_free(ctdb->freeze_handles[priority]);
+	ctdb->freeze_handles[priority] = NULL;
+}
 
-	talloc_free(ctdb->freeze_handle);
-	ctdb->freeze_handle = NULL;
+/*
+  thaw the databases
+ */
+int32_t ctdb_control_thaw(struct ctdb_context *ctdb, uint32_t priority)
+{
+
+	if (priority > NUM_DB_PRIORITIES) {
+		DEBUG(DEBUG_ERR,(__location__ " Invalid db priority : %u\n", priority));
+		return -1;
+	}
+
+	if (priority == 0) {
+		int i;
+		for (i=1;i<=NUM_DB_PRIORITIES; i++) {
+			thaw_priority(ctdb, i);
+		}
+	} else {
+		thaw_priority(ctdb, priority);
+	}
+
 	ctdb_call_resend_all(ctdb);
 	return 0;
 }
@@ -333,19 +380,21 @@ int32_t ctdb_control_thaw(struct ctdb_context *ctdb, struct ctdb_req_control *c)
 int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb, uint32_t id)
 {
 	struct ctdb_db_context *ctdb_db;
+	int i;
 
-	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed transaction_start while not frozen\n"));
-		return -1;
+	for (i=1;i<=NUM_DB_PRIORITIES; i++) {
+		if (ctdb->freeze_mode[i] != CTDB_FREEZE_FROZEN) {
+			DEBUG(DEBUG_ERR,(__location__ " Failed transaction_start while not frozen\n"));
+			return -1;
+		}
 	}
-
 
 	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
 		int ret;
 
 		tdb_add_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
 
-		if (ctdb->freeze_handle->transaction_started) {
+		if (ctdb->freeze_transaction_started) {
 			if (tdb_transaction_cancel(ctdb_db->ltdb->tdb) != 0) {
 				DEBUG(DEBUG_ERR,(__location__ " Failed to cancel transaction for db '%s'\n",
 					 ctdb_db->db_name));
@@ -364,8 +413,8 @@ int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb, uint32_t id)
 		}
 	}
 
-	ctdb->freeze_handle->transaction_started = true;
-	ctdb->freeze_handle->transaction_id = id;
+	ctdb->freeze_transaction_started = true;
+	ctdb->freeze_transaction_id = id;
 
 	return 0;
 }
@@ -376,18 +425,21 @@ int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb, uint32_t id)
 int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb, uint32_t id)
 {
 	struct ctdb_db_context *ctdb_db;
-
-	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed transaction_start while not frozen\n"));
-		return -1;
+	int i;
+	
+	for (i=1;i<=NUM_DB_PRIORITIES; i++) {
+		if (ctdb->freeze_mode[i] != CTDB_FREEZE_FROZEN) {
+			DEBUG(DEBUG_ERR,(__location__ " Failed transaction_start while not frozen\n"));
+			return -1;
+		}
 	}
 
-	if (!ctdb->freeze_handle->transaction_started) {
+	if (!ctdb->freeze_transaction_started) {
 		DEBUG(DEBUG_ERR,(__location__ " transaction not started\n"));
 		return -1;
 	}
 
-	if (id != ctdb->freeze_handle->transaction_id) {
+	if (id != ctdb->freeze_transaction_id) {
 		DEBUG(DEBUG_ERR,(__location__ " incorrect transaction id 0x%x in commit\n", id));
 		return -1;
 	}
@@ -407,15 +459,15 @@ int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb, uint32_t id)
 				}
 				tdb_remove_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
 			}
-			ctdb->freeze_handle->transaction_started = false;
+			ctdb->freeze_transaction_started = false;
 
 			return -1;
 		}
 		tdb_remove_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
 	}
 
-	ctdb->freeze_handle->transaction_started = false;
-	ctdb->freeze_handle->transaction_id = 0;
+	ctdb->freeze_transaction_started = false;
+	ctdb->freeze_transaction_id = 0;
 
 	return 0;
 }
@@ -428,24 +480,24 @@ int32_t ctdb_control_wipe_database(struct ctdb_context *ctdb, TDB_DATA indata)
 	struct ctdb_control_wipe_database w = *(struct ctdb_control_wipe_database *)indata.dptr;
 	struct ctdb_db_context *ctdb_db;
 
-	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
+	ctdb_db = find_ctdb_db(ctdb, w.db_id);
+	if (!ctdb_db) {
+		DEBUG(DEBUG_ERR,(__location__ " Unknown db 0x%x\n", w.db_id));
+		return -1;
+	}
+
+	if (ctdb->freeze_mode[ctdb_db->priority] != CTDB_FREEZE_FROZEN) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed transaction_start while not frozen\n"));
 		return -1;
 	}
 
-	if (!ctdb->freeze_handle->transaction_started) {
+	if (!ctdb->freeze_transaction_started) {
 		DEBUG(DEBUG_ERR,(__location__ " transaction not started\n"));
 		return -1;
 	}
 
-	if (w.transaction_id != ctdb->freeze_handle->transaction_id) {
+	if (w.transaction_id != ctdb->freeze_transaction_id) {
 		DEBUG(DEBUG_ERR,(__location__ " incorrect transaction id 0x%x in commit\n", w.transaction_id));
-		return -1;
-	}
-
-	ctdb_db = find_ctdb_db(ctdb, w.db_id);
-	if (!ctdb_db) {
-		DEBUG(DEBUG_ERR,(__location__ " Unknown db 0x%x\n", w.db_id));
 		return -1;
 	}
 

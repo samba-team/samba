@@ -113,7 +113,7 @@ static int run_recovered_eventscript(struct ctdb_context *ctdb, struct ctdb_node
 
 	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_END_RECOVERY,
-					nodes,
+					nodes, 0,
 					CONTROL_TIMEOUT(), false, tdb_null,
 					NULL, NULL,
 					NULL) != 0) {
@@ -194,7 +194,7 @@ static int run_startrecovery_eventscript(struct ctdb_recoverd *rec, struct ctdb_
 
 	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_START_RECOVERY,
-					nodes,
+					nodes, 0,
 					CONTROL_TIMEOUT(), false, tdb_null,
 					NULL,
 					startrecovery_fail_callback,
@@ -232,7 +232,8 @@ static int update_capabilities(struct ctdb_context *ctdb, struct ctdb_node_map *
 
 	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_GET_CAPABILITIES,
-					nodes, CONTROL_TIMEOUT(),
+					nodes, 0,
+					CONTROL_TIMEOUT(),
 					false, tdb_null,
 					async_getcap_callback, NULL,
 					NULL) != 0) {
@@ -268,15 +269,20 @@ static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_recoverd *re
 	/* freeze all nodes */
 	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
 	if (rec_mode == CTDB_RECOVERY_ACTIVE) {
-		if (ctdb_client_async_control(ctdb, CTDB_CONTROL_FREEZE,
-						nodes, CONTROL_TIMEOUT(),
+		int i;
+
+		for (i=1; i<=NUM_DB_PRIORITIES; i++) {
+			if (ctdb_client_async_control(ctdb, CTDB_CONTROL_FREEZE,
+						nodes, i,
+						CONTROL_TIMEOUT(),
 						false, tdb_null,
 						NULL,
 						set_recmode_fail_callback,
 						rec) != 0) {
-			DEBUG(DEBUG_ERR, (__location__ " Unable to freeze nodes. Recovery failed.\n"));
-			talloc_free(tmp_ctx);
-			return -1;
+				DEBUG(DEBUG_ERR, (__location__ " Unable to freeze nodes. Recovery failed.\n"));
+				talloc_free(tmp_ctx);
+				return -1;
+			}
 		}
 	}
 
@@ -285,7 +291,8 @@ static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_recoverd *re
 	data.dptr = (unsigned char *)&rec_mode;
 
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_SET_RECMODE,
-					nodes, CONTROL_TIMEOUT(),
+					nodes, 0,
+					CONTROL_TIMEOUT(),
 					false, data,
 					NULL, NULL,
 					NULL) != 0) {
@@ -315,7 +322,7 @@ static int set_recovery_master(struct ctdb_context *ctdb, struct ctdb_node_map *
 
 	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_SET_RECMASTER,
-					nodes,
+					nodes, 0,
 					CONTROL_TIMEOUT(), false, data,
 					NULL, NULL,
 					NULL) != 0) {
@@ -362,7 +369,7 @@ static int update_db_priority_on_remote_nodes(struct ctdb_context *ctdb,
 
 		if (ctdb_client_async_control(ctdb,
 					CTDB_CONTROL_SET_DB_PRIORITY,
-					nodes,
+					nodes, 0,
 					CONTROL_TIMEOUT(), false, data,
 					NULL, NULL,
 					NULL) != 0) {
@@ -1108,7 +1115,7 @@ static int push_recdb_database(struct ctdb_context *ctdb, uint32_t dbid,
 
 	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_PUSH_DB,
-					nodes,
+					nodes, 0,
 					CONTROL_TIMEOUT(), false, outdata,
 					NULL, NULL,
 					NULL) != 0) {
@@ -1168,7 +1175,7 @@ static int recover_database(struct ctdb_recoverd *rec,
 
 	nodes = list_of_active_nodes(ctdb, nodemap, recdb, true);
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_WIPE_DATABASE,
-					nodes,
+					nodes, 0,
 					CONTROL_TIMEOUT(), false, data,
 					NULL, NULL,
 					NULL) != 0) {
@@ -1325,7 +1332,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 
 	nodes = list_of_active_nodes(ctdb, nodemap, mem_ctx, true);
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_TRANSACTION_START,
-					nodes,
+					nodes, 0,
 					CONTROL_TIMEOUT(), false, data,
 					NULL, NULL,
 					NULL) != 0) {
@@ -1346,7 +1353,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 
 	/* commit all the changes */
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_TRANSACTION_COMMIT,
-					nodes,
+					nodes, 0,
 					CONTROL_TIMEOUT(), false, data,
 					NULL, NULL,
 					NULL) != 0) {
@@ -2351,7 +2358,7 @@ static int get_remote_nodemaps(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
 
 	nodes = list_of_active_nodes(ctdb, nodemap, mem_ctx, true);
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_GET_NODEMAP,
-					nodes,
+					nodes, 0,
 					CONTROL_TIMEOUT(), false, tdb_null,
 					async_getnodemap_callback,
 					NULL,

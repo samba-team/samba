@@ -509,6 +509,11 @@ int32_t ctdb_control_set_db_priority(struct ctdb_context *ctdb, TDB_DATA indata)
 		return -1;
 	}
 
+	if ((db_prio->priority<1) || (db_prio->priority>NUM_DB_PRIORITIES)) {
+		DEBUG(DEBUG_ERR,("Trying to set invalid priority : %u\n", db_prio->priority));
+		return -1;
+	}
+
 	ctdb_db->priority = db_prio->priority;
 	DEBUG(DEBUG_INFO,("Setting DB priority to %u for db 0x%08x\n", db_prio->priority, db_prio->db_id));
 

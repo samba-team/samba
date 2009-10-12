@@ -287,7 +287,8 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 	struct ctdb_node_flag_change *c = (struct ctdb_node_flag_change *)indata.dptr;
 	struct ctdb_node *node;
 	uint32_t old_flags;
-	
+	int i;
+
 	if (c->pnn >= ctdb->num_nodes) {
 		DEBUG(DEBUG_ERR,(__location__ " Node %d is invalid, num_nodes :%d\n", c->pnn, ctdb->num_nodes));
 		return -1;
@@ -338,7 +339,11 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 		*/
 		ctdb->vnn_map->generation = INVALID_GENERATION;
 
-		ctdb_start_freeze(ctdb);
+		for (i=1; i<=NUM_DB_PRIORITIES; i++) {
+			if (ctdb_start_freeze(ctdb, i) != 0) {
+				DEBUG(DEBUG_ERR,(__location__ " Failed to freeze db priority %u\n", i));
+			}
+		}
 		ctdb_release_all_ips(ctdb);
 		ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
 	}

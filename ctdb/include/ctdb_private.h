@@ -371,6 +371,7 @@ enum ctdb_freeze_mode {CTDB_FREEZE_NONE, CTDB_FREEZE_PENDING, CTDB_FREEZE_FROZEN
 /* This capability is set if NATGW is enabled */
 #define CTDB_CAP_NATGW			0x00000008
 
+#define NUM_DB_PRIORITIES 3
 /* main state of the ctdb daemon */
 struct ctdb_context {
 	struct event_context *ev;
@@ -381,8 +382,10 @@ struct ctdb_context {
 	TALLOC_CTX *tickle_update_context;
 	TALLOC_CTX *keepalive_ctx;
 	struct ctdb_tunable tunable;
-	enum ctdb_freeze_mode freeze_mode;
-	struct ctdb_freeze_handle *freeze_handle;
+	enum ctdb_freeze_mode freeze_mode[NUM_DB_PRIORITIES+1];
+	struct ctdb_freeze_handle *freeze_handles[NUM_DB_PRIORITIES+1];
+	bool freeze_transaction_started;
+	uint32_t freeze_transaction_id;
 	struct ctdb_address address;
 	const char *name;
 	const char *db_directory;
@@ -1192,7 +1195,7 @@ void ctdb_request_control_reply(struct ctdb_context *ctdb, struct ctdb_req_contr
 				TDB_DATA *outdata, int32_t status, const char *errormsg);
 
 int32_t ctdb_control_freeze(struct ctdb_context *ctdb, struct ctdb_req_control *c, bool *async_reply);
-int32_t ctdb_control_thaw(struct ctdb_context *ctdb, struct ctdb_req_control *c);
+int32_t ctdb_control_thaw(struct ctdb_context *ctdb, uint32_t priority);
 
 int ctdb_start_recoverd(struct ctdb_context *ctdb);
 void ctdb_stop_recoverd(struct ctdb_context *ctdb);
@@ -1331,7 +1334,7 @@ int ctdb_ctrl_get_all_tunables(struct ctdb_context *ctdb,
 			       uint32_t destnode,
 			       struct ctdb_tunable *tunables);
 
-void ctdb_start_freeze(struct ctdb_context *ctdb);
+int ctdb_start_freeze(struct ctdb_context *ctdb, uint32_t priority);
 
 bool parse_ip_mask(const char *s, const char *iface, ctdb_sock_addr *addr, unsigned *mask);
 bool parse_ip_port(const char *s, ctdb_sock_addr *addr);
@@ -1426,6 +1429,7 @@ int ctdb_client_async_wait(struct ctdb_context *ctdb, struct client_async_data *
 int ctdb_client_async_control(struct ctdb_context *ctdb,
 				enum ctdb_controls opcode,
 				uint32_t *nodes,
+			      	uint64_t srvid,
 				struct timeval timeout,
 				bool dont_log_errors,
 				TDB_DATA data,
