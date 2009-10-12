@@ -2659,6 +2659,14 @@ struct tevent_req *cli_posix_rmdir_send(TALLOC_CTX *mem_ctx,
 					const char *fname);
 NTSTATUS cli_posix_rmdir_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx);
 NTSTATUS cli_posix_rmdir(struct cli_state *cli, const char *fname);
+struct tevent_req *cli_notify_send(TALLOC_CTX *mem_ctx,
+				   struct tevent_context *ev,
+				   struct cli_state *cli, uint16_t fnum,
+				   uint32_t buffer_size,
+				   uint32_t completion_filter, bool recursive);
+NTSTATUS cli_notify_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			 uint32_t *pnum_changes,
+			 struct notify_change **pchanges);
 
 /* The following definitions come from libsmb/clifsinfo.c  */
 
