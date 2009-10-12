@@ -22,11 +22,14 @@ Changes since 3.3.8
 
 o   Michael Adam <obnox@samba.org>
     * BUG 6509: Use gid (not uid) cache in fetch_gid_from_cache().
+    * BUG 6692: Fix mount.cifs segfault.
 
 
 o   Jeremy Allison <jra@samba.org>
     * BUG 6504: Fix SAMR server for Winbind access.
+    * BUG 6769: Symlink unlink does nothing.
     * BUG 6776: Fix core dump when running overlapping Byte Lock test.
+    * BUG 6781: Fix renaming of subfolders in Explorer view.
 
 
 o   Yannick Bergeron <burgergold@hotmail.com>
@@ -49,8 +52,10 @@ o   Volker Lendecke <vl@samba.org>
     * BUG 5886: Fix password change propagation.
     * BUG 6349: Initialize domain info struct.
     * BUG 6585: Fix unqualified "net join".
+    * BUG 6606: Fix file corruption using smbclient with NT4 server.
     * BUG 6646: Correctly chew keepalive packets.
     * BUG 6785: Only ever handle one event after a select call.
+    * BUG 6797: Fix a memleak in libwbclient.
 
 
 o   Derrell Lipman <derrell.lipman@unwireduniverse.com>
