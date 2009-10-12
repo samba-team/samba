@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.94
+Version: 1.0.95
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -132,6 +132,13 @@ fi
 %{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
+* Mon Oct 12 2009 : Version 1.0.95
+ - Add database priorities. Allow samba to set the priority of databases
+   and lock the databases in priority order during recovery
+   to avoid a deadlock when samba locks one database then blocks indefinitely
+   while waiting for the second databaso to become locked.
+ - Be aggressive and ban nodes where the recovery transaction start call
+   fails.
 * Thu Oct 10 2009 : Version 1.0.94
  - Be very aggressive and quickly ban nodes that can not freeze their databases
 * Tue Oct 8 2009 : Version 1.0.93
