@@ -5027,3 +5027,143 @@ NTSTATUS cli_posix_rmdir(struct cli_state *cli, const char *fname)
 	}
 	return status;
 }
+
+struct cli_notify_state {
+	uint8_t setup[8];
+	uint32_t num_changes;
+	struct notify_change *changes;
+};
+
+static void cli_notify_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_notify_send(TALLOC_CTX *mem_ctx,
+				   struct tevent_context *ev,
+				   struct cli_state *cli, uint16_t fnum,
+				   uint32_t buffer_size,
+				   uint32_t completion_filter, bool recursive)
+{
+	struct tevent_req *req, *subreq;
+	struct cli_notify_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_notify_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	SIVAL(state->setup, 0, completion_filter);
+	SSVAL(state->setup, 4, fnum);
+	SSVAL(state->setup, 6, recursive);
+
+	subreq = cli_trans_send(
+		state,			/* mem ctx. */
+		ev,			/* event ctx. */
+		cli,			/* cli_state. */
+		SMBnttrans,		/* cmd. */
+		NULL,			/* pipe name. */
+		-1,			/* fid. */
+		NT_TRANSACT_NOTIFY_CHANGE, /* function. */
+		0,			/* flags. */
+		(uint16_t *)state->setup, /* setup. */
+		4,			/* num setup uint16_t words. */
+		0,			/* max returned setup. */
+		NULL,			/* param. */
+		0,			/* num param. */
+		buffer_size,		/* max returned param. */
+		NULL,			/* data. */
+		0,			/* num data. */
+		0);			/* max returned data. */
+
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_notify_done, req);
+	return req;
+}
+
+static void cli_notify_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_notify_state *state = tevent_req_data(
+		req, struct cli_notify_state);
+	NTSTATUS status;
+	uint8_t *params;
+	uint32_t i, ofs, num_params;
+
+	status = cli_trans_recv(subreq, talloc_tos(), NULL, NULL,
+				&params, &num_params, NULL, NULL);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("cli_trans_recv returned %s\n", nt_errstr(status)));
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	state->num_changes = 0;
+	ofs = 0;
+
+	while (num_params - ofs > 12) {
+		uint32_t len = IVAL(params, ofs);
+		state->num_changes += 1;
+
+		if ((len == 0) || (ofs+len >= num_params)) {
+			break;
+		}
+		ofs += len;
+	}
+
+	state->changes = talloc_array(state, struct notify_change,
+				      state->num_changes);
+	if (tevent_req_nomem(state->changes, req)) {
+		TALLOC_FREE(params);
+		return;
+	}
+
+	ofs = 0;
+
+	for (i=0; i<state->num_changes; i++) {
+		uint32_t next = IVAL(params, ofs);
+		uint32_t len = IVAL(params, ofs+8);
+		ssize_t ret;
+		char *name;
+
+		if ((next != 0) && (len+12 != next)) {
+			TALLOC_FREE(params);
+			tevent_req_nterror(
+				req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+
+		state->changes[i].action = IVAL(params, ofs+4);
+		ret = clistr_pull_talloc(params, (char *)params, &name,
+					 params+ofs+12, len,
+					 STR_TERMINATE|STR_UNICODE);
+		if (ret == -1) {
+			TALLOC_FREE(params);
+			tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+			return;
+		}
+		state->changes[i].name = name;
+		ofs += next;
+	}
+
+	TALLOC_FREE(params);
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_notify_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			 uint32_t *pnum_changes,
+			 struct notify_change **pchanges)
+{
+	struct cli_notify_state *state = tevent_req_data(
+		req, struct cli_notify_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+
+	*pnum_changes = state->num_changes;
+	*pchanges = talloc_move(mem_ctx, &state->changes);
+	return NT_STATUS_OK;
+}
