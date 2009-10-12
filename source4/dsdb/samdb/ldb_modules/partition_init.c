@@ -30,7 +30,6 @@
  */
 
 #include "dsdb/samdb/ldb_modules/partition.h"
-
 static int partition_sort_compare(const void *v1, const void *v2)
 {
 	const struct dsdb_partition *p1;
@@ -205,8 +204,25 @@ static int new_partition_from_dn(struct ldb_context *ldb, struct partition_priva
 	if (data->ldapBackend) {
 		backend_name = data->ldapBackend;
 	} else {
-		/* If we don't have a : in the record, then the partition name is the name of the LDB */
-		backend_name = talloc_asprintf(data, "%s.ldb", ldb_dn_get_casefold(dn)); 
+
+		/* the backend LDB is the DN (base64 encoded if not 'plain') followed by .ldb */
+		const char *p;
+		const char *backend_dn  = ldb_dn_get_casefold(dn);
+		char *base64_dn = NULL;
+		for (p = backend_dn; *p; p++) {
+			/* We have such a strict check because I don't want shell metacharacters in the file name, nor ../ */
+			if (!(isalnum(*p) || *p == ' ' || *p == '=' || *p == ',')) {
+				break;
+			}
+		}
+		if (*p) {
+			backend_dn = base64_dn = ldb_base64_encode(data, backend_dn, strlen(backend_dn));
+		}
+		
+		backend_name = talloc_asprintf(data, "%s.ldb", backend_dn); 
+		if (base64_dn) {
+			talloc_free(base64_dn);
+		}
 	}
 
 	ctrl->version = DSDB_CONTROL_CURRENT_PARTITION_VERSION;
@@ -399,6 +415,7 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 		ret = ldb_build_add_req(&add_req, ldb, replicate_res, replicate_res->msgs[0], NULL, NULL, 
 					ldb_op_default_callback, mod_req);
 		if (ret != LDB_SUCCESS) {
+			/* return directly, this is a very unlikely error */
 			return ret;
 		}
 		/* do request */
@@ -408,8 +425,65 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 		if (ret == LDB_SUCCESS) {
 			ret = ldb_wait(add_req->handle, LDB_WAIT_ALL);
 		}
-		talloc_free(replicate_res);
-		if (ret != LDB_SUCCESS) {
+		
+		switch (ret) {
+		case LDB_SUCCESS:
+			break;
+		case LDB_ERR_ENTRY_ALREADY_EXISTS:
+		{
+			struct ldb_request *del_req;
+			
+			/* Don't leave a confusing string in the ldb_errstring() */
+			ldb_reset_err_string(ldb);
+			/* Build del request */
+			ret = ldb_build_del_req(&del_req, ldb, replicate_res, replicate_res->msgs[0]->dn, NULL, NULL, 
+						ldb_op_default_callback, add_req);
+			if (ret != LDB_SUCCESS) {
+				/* return directly, this is a very unlikely error */
+				return ret;
+			}
+			/* do request */
+			ret = ldb_next_request(partition->module, del_req);
+			
+			/* wait */
+			if (ret == LDB_SUCCESS) {
+				ret = ldb_wait(del_req->handle, LDB_WAIT_ALL);
+			}
+			if (ret != LDB_SUCCESS) {
+				ldb_asprintf_errstring(ldb,
+						       "Failed to delete  (for re-add) %s from " DSDB_PARTITION_DN 
+						       " replicateEntries in new partition at %s: %s", 
+						       ldb_dn_get_linearized(data->replicate[i]), 
+						       ldb_dn_get_linearized(partition->ctrl->dn), 
+						       ldb_errstring(ldb));
+				return ret;
+			}
+			
+			/* Build add request */
+			ret = ldb_build_add_req(&add_req, ldb, replicate_res, replicate_res->msgs[0], NULL, NULL, 
+						ldb_op_default_callback, mod_req);
+			if (ret != LDB_SUCCESS) {
+				/* return directly, this is a very unlikely error */
+				return ret;
+			}
+			
+			/* do the add again */
+			ret = ldb_next_request(partition->module, add_req);
+			
+			/* wait */
+			if (ret == LDB_SUCCESS) {
+				ret = ldb_wait(add_req->handle, LDB_WAIT_ALL);
+			}
+			ldb_asprintf_errstring(ldb,
+					       "Failed to add (after delete) %s from " DSDB_PARTITION_DN 
+					       " replicateEntries to new partition at %s: %s", 
+					       ldb_dn_get_linearized(data->replicate[i]), 
+					       ldb_dn_get_linearized(partition->ctrl->dn), 
+					       ldb_errstring(ldb));
+			return ret;
+		}
+		default: 
+		{
 			ldb_asprintf_errstring(ldb,
 					       "Failed to add %s from " DSDB_PARTITION_DN 
 					       " replicateEntries to new partition at %s: %s", 
@@ -417,7 +491,10 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 					       ldb_dn_get_linearized(partition->ctrl->dn), 
 					       ldb_errstring(ldb));
 			return ret;
-		}		
+		}
+		}
+		talloc_free(replicate_res);
+
 		/* And around again, for the next thing we must merge */
 	}
 
