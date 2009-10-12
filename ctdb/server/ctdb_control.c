@@ -471,6 +471,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 			ctdb->recovery_lock_file = talloc_strdup(ctdb, discard_const(indata.dptr));
 		}
 		return 0;
+
 	case CTDB_CONTROL_STOP_NODE:
 		CHECK_CONTROL_DATA_SIZE(0);
 		return ctdb_control_stop_node(ctdb, c, async_reply);
@@ -546,6 +547,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		if (ctdb_db == NULL) return -1;
 		return ctdb_db->priority;
 	}
+
+	case CTDB_CONTROL_TRANSACTION_CANCEL:
+		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
+		return ctdb_control_transaction_cancel(ctdb);
 
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));
