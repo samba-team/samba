@@ -3976,6 +3976,7 @@ char *lp_ldap_suffix(void);
 char *lp_ldap_admin_dn(void);
 int lp_ldap_ssl(void);
 bool lp_ldap_ssl_ads(void);
+int lp_ldap_ref_follow(void);
 int lp_ldap_passwd_sync(void);
 bool lp_ldap_delete_dn(void);
 int lp_ldap_replication_sleep(void);
