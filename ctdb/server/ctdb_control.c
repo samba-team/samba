@@ -549,7 +549,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	}
 
 	case CTDB_CONTROL_TRANSACTION_CANCEL:
-		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
+		CHECK_CONTROL_DATA_SIZE(0);
 		return ctdb_control_transaction_cancel(ctdb);
 
 	default:
