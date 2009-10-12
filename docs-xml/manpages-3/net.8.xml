@@ -843,7 +843,7 @@ Force shutting down all applications.
 Timeout before system will be shut down. An interactive 
 user of the system can use this time to cancel the shutdown.
 </para></listitem>
-</varlistentry>'>
+</varlistentry>
 
 <varlistentry>
 <term>-C message</term>
