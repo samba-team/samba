@@ -2294,7 +2294,7 @@ static int verify_ip_allocation(struct ctdb_context *ctdb, uint32_t pnn)
 			if (!ctdb_sys_have_ip(&ips->ips[j].addr)) {
 				DEBUG(DEBUG_CRIT,("Public address '%s' is missing and we should serve this ip\n",
 					ctdb_addr_to_str(&ips->ips[j].addr)));
-				ret = ctdb_ctrl_freeze(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE);
+				ret = ctdb_ctrl_freeze_priority(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, 1);
 				if (ret != 0) {
 					DEBUG(DEBUG_ERR,(__location__ " Failed to freeze node due to public ip address mismatches\n"));
 
@@ -2314,7 +2314,7 @@ static int verify_ip_allocation(struct ctdb_context *ctdb, uint32_t pnn)
 				DEBUG(DEBUG_CRIT,("We are still serving a public address '%s' that we should not be serving.\n", 
 					ctdb_addr_to_str(&ips->ips[j].addr)));
 
-				ret = ctdb_ctrl_freeze(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE);
+				ret = ctdb_ctrl_freeze_priority(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, 1);
 				if (ret != 0) {
 					DEBUG(DEBUG_ERR,(__location__ " Failed to freeze node due to public ip address mismatches\n"));
 
@@ -2790,7 +2790,7 @@ again:
 		if (ctdb->recovery_mode == CTDB_RECOVERY_NORMAL) {
 			DEBUG(DEBUG_ERR,("Node is stopped but recovery mode is not active. Activate recovery mode and lock databases\n"));
 
-			ret = ctdb_ctrl_freeze(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE);
+			ret = ctdb_ctrl_freeze_priority(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, 1);
 			if (ret != 0) {
 				DEBUG(DEBUG_ERR,(__location__ " Failed to freeze node due to node being STOPPED\n"));
 				goto again;

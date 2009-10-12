@@ -642,16 +642,6 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		event_add_timed(ctdb->ev, ctdb->release_ips_ctx, timeval_current_ofs(ctdb->tunable.recovery_drop_all_ips, 0), ctdb_drop_all_ips_event, ctdb);
 	}
 
-
-	for (i=1; i<=NUM_DB_PRIORITIES; i++) {
-		if (ctdb->freeze_mode[i] != CTDB_FREEZE_FROZEN) {
-			DEBUG(DEBUG_ERR,("Attempt to change recovery mode to %u when not frozen\n", 
-				 recmode));
-			(*errormsg) = "Cannot change recovery mode while not frozen";
-			return -1;
-		}
-	}
-
 	if (recmode != ctdb->recovery_mode) {
 		DEBUG(DEBUG_NOTICE,(__location__ " Recovery mode set to %s\n", 
 			 recmode==CTDB_RECOVERY_NORMAL?"NORMAL":"ACTIVE"));
