@@ -721,9 +721,18 @@ int smb_ldap_setup_conn(LDAP **ldap_struct, const char *uri)
 	rc = ldap_initialize(ldap_struct, uri);
 	if (rc) {
 		DEBUG(0, ("ldap_initialize: %s\n", ldap_err2string(rc)));
+		return rc;
 	}
 
-	return rc;
+	if (lp_ldap_ref_follow() != Auto) {
+		rc = ldap_set_option(*ldap_struct, LDAP_OPT_REFERRALS,
+		     lp_ldap_ref_follow() ? LDAP_OPT_ON : LDAP_OPT_OFF);
+		if (rc != LDAP_SUCCESS)
+			DEBUG(0, ("Failed to set LDAP_OPT_REFERRALS: %s\n",
+				ldap_err2string(rc)));
+	}
+
+	return LDAP_SUCCESS;
 #else 
 
 	/* Parse the string manually */
@@ -773,7 +782,6 @@ int smb_ldap_setup_conn(LDAP **ldap_struct, const char *uri)
 		}
 	}
 #endif /* HAVE_LDAP_INITIALIZE */
-
 
 	/* now set connection timeout */
 #ifdef LDAP_X_OPT_CONNECT_TIMEOUT /* Netscape */
