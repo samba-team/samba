@@ -429,7 +429,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
     hostname = hostname.lower()
 
     if dnsdomain is None:
-        dnsdomain = lp.get("realm")
+        dnsdomain = lp.get("realm").lower()
 
     if serverrole is None:
         serverrole = lp.get("server role")
@@ -441,8 +441,6 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
         raise Exception("realm '%s' in %s must match chosen realm '%s'" %
                         (lp.get("realm"), lp.configfile, realm))
     
-    dnsdomain = dnsdomain.lower()
-
     if serverrole == "domain controller":
         if domain is None:
             domain = lp.get("workgroup")
@@ -458,16 +456,17 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
         
     assert domain is not None
     domain = domain.upper()
+
     if not valid_netbios_name(domain):
         raise InvalidNetbiosName(domain)
         
-    if netbiosname.upper() == realm.upper():
+    if netbiosname.upper() == realm:
         raise Exception("realm %s must not be equal to netbios domain name %s", realm, netbiosname)
         
-    if hostname.upper() == realm.upper():
+    if hostname.upper() == realm:
         raise Exception("realm %s must not be equal to hostname %s", realm, hostname)
         
-    if domain.upper() == realm.upper():
+    if domain.upper() == realm:
         raise Exception("realm %s must not be equal to domain name %s", realm, domain)
 
     if rootdn is None:
