@@ -1687,8 +1687,10 @@ again:
 		if (nodemap->nodes[i].flags & (NODE_FLAGS_DELETED|NODE_FLAGS_BANNED|NODE_FLAGS_STOPPED)) {
 			continue;
 		}
+		break;
 	}
 	if (i == nodemap->num) {
+		DEBUG(DEBUG_ERR,("No possible nodes to host addresses.\n"));
 		return 0;
 	}
 
