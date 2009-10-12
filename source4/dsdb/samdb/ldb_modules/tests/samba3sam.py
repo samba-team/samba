@@ -52,8 +52,8 @@ class MapBaseTestCase(TestCaseInTempDir):
                  "@LIST": "rootdse,paged_results,server_sort,asq,samldb,password_hash,operational,objectguid,rdn_name,samba3sam,partition"})
 
         ldb.add({"dn": "@PARTITION",
-            "partition": ["%s:%s" % (s4.basedn, s4.url), 
-                          "%s:%s" % (s3.basedn, s3.url)],
+            "partition": ["%s" % (s4.basedn_casefold), 
+                          "%s" % (s3.basedn_casefold)],
             "replicateEntries": ["@ATTRIBUTES", "@INDEXLIST"]})
 
     def setUp(self):
@@ -73,12 +73,13 @@ class MapBaseTestCase(TestCaseInTempDir):
         class Target:
             """Simple helper class that contains data for a specific SAM 
             connection."""
-            def __init__(self, file, basedn, dn):
-                self.file = os.path.join(tempdir, file)
-                self.url = "tdb://" + self.file
-                self.basedn = basedn
-                self.substvars = {"BASEDN": self.basedn}
+            def __init__(self, basedn, dn):
                 self.db = Ldb(lp=cmdline_loadparm)
+                self.basedn = basedn
+                self.basedn_casefold = ldb.Dn(self.db, basedn).get_casefold()
+                self.substvars = {"BASEDN": self.basedn}
+                self.file = os.path.join(tempdir, "%s.ldb" % self.basedn_casefold)
+                self.url = "tdb://" + self.file
                 self._dn = dn
 
             def dn(self, rdn):
@@ -99,18 +100,15 @@ class MapBaseTestCase(TestCaseInTempDir):
             def modify_ldif(self, ldif):
                 self.db.modify_ldif(self.subst(ldif))
 
-        self.samba4 = Target("samba4.ldb", "dc=vernstok,dc=nl", make_s4dn)
-        self.samba3 = Target("samba3.ldb", "cn=Samba3Sam", make_dn)
-        self.templates = Target("templates.ldb", "cn=templates", None)
+        self.samba4 = Target("dc=vernstok,dc=nl", make_s4dn)
+        self.samba3 = Target("cn=Samba3Sam", make_dn)
 
         self.samba3.connect()
-        self.templates.connect()
         self.samba4.connect()
 
     def tearDown(self):
         os.unlink(self.ldbfile)
         os.unlink(self.samba3.file)
-        os.unlink(self.templates.file)
         os.unlink(self.samba4.file)
         super(MapBaseTestCase, self).tearDown()
 
@@ -127,7 +125,6 @@ class Samba3SamTestCase(MapBaseTestCase):
         super(Samba3SamTestCase, self).setUp()
         ldb = Ldb(self.ldburl, lp=cmdline_loadparm)
         self.samba3.setup_data("samba3.ldif")
-        self.templates.setup_data("provision_samba3sam_templates.ldif")
         ldif = read_datafile("provision_samba3sam.ldif")
         ldb.add_ldif(self.samba4.subst(ldif))
         self.setup_modules(ldb, self.samba3, self.samba4)
@@ -294,7 +291,6 @@ class MapTestCase(MapBaseTestCase):
     def setUp(self):
         super(MapTestCase, self).setUp()
         ldb = Ldb(self.ldburl, lp=cmdline_loadparm)
-        self.templates.setup_data("provision_samba3sam_templates.ldif")
         ldif = read_datafile("provision_samba3sam.ldif")
         ldb.add_ldif(self.samba4.subst(ldif))
         self.setup_modules(ldb, self.samba3, self.samba4)
