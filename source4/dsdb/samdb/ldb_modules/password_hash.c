@@ -1673,7 +1673,7 @@ static int build_domain_data_request(struct ph_context *ac)
 	ldb = ldb_module_get_ctx(ac->module);
 
 	filter = talloc_asprintf(ac,
-				"(&(objectSid=%s)(|(|(objectClass=domain)(objectClass=builtinDomain))(objectClass=samba4LocalDomain)))",
+				"(&(objectSid=%s)(|(objectClass=domain)(objectClass=builtinDomain)))",
 				 ldap_encode_ndr_dom_sid(ac, ac->domain_sid));
 	if (filter == NULL) {
 		ldb_oom(ldb);

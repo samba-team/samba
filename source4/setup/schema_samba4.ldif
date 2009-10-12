@@ -197,26 +197,29 @@ oMSyntax: 20
 # Based on domainDNS, but without the DNS bits.
 #
 
-dn: CN=Samba4-Local-Domain,${SCHEMADN}
-objectClass: top
-objectClass: classSchema
-cn: Samba4-Local-Domain
-subClassOf: top
-governsID: 1.3.6.1.4.1.7165.4.2.2
-rDNAttID: cn
-adminDisplayName: Samba4-Local-Domain
-adminDescription: Samba4-Local-Domain
-systemMayContain: msDS-Behavior-Version
-systemMayContain: managedBy
-objectClassCategory: 1
-lDAPDisplayName: samba4LocalDomain
-schemaIDGUID: 07be1647-8310-4fba-91ae-34e55d5a8293
-systemOnly: FALSE
-systemAuxiliaryClass: samDomain
-defaultSecurityDescriptor: D:(A;;RPLCLORC;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
-systemFlags: 16
-defaultHidingValue: TRUE
-defaultObjectCategory: CN=Samba4-Local-Domain,${SCHEMADN}
+#
+# Not used anymore
+#
+#dn: CN=Samba4-Local-Domain,${SCHEMADN}
+#objectClass: top
+#objectClass: classSchema
+#cn: Samba4-Local-Domain
+#subClassOf: top
+#governsID: 1.3.6.1.4.1.7165.4.2.2
+#rDNAttID: cn
+#adminDisplayName: Samba4-Local-Domain
+#adminDescription: Samba4-Local-Domain
+#systemMayContain: msDS-Behavior-Version
+#systemMayContain: managedBy
+#objectClassCategory: 1
+#lDAPDisplayName: samba4LocalDomain
+#schemaIDGUID: 07be1647-8310-4fba-91ae-34e55d5a8293
+#systemOnly: FALSE
+#systemAuxiliaryClass: samDomain
+#defaultSecurityDescriptor: D:(A;;RPLCLORC;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
+#systemFlags: 16
+#defaultHidingValue: TRUE
+#defaultObjectCategory: CN=Samba4-Local-Domain,${SCHEMADN}
 
 
 dn: CN=Samba4Top,${SCHEMADN}

@@ -454,7 +454,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
     else:
         domain = netbiosname
         if domaindn is None:
-            domaindn = "CN=" + netbiosname
+            domaindn = "DC=" + netbiosname
         
     assert domain is not None
     domain = domain.upper()
@@ -1010,10 +1010,6 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
             samdb.set_invocation_id(invocationid)
 
         message("Adding DomainDN: %s" % names.domaindn)
-        if serverrole == "domain controller":
-            domain_oc = "domainDNS"
-        else:
-            domain_oc = "samba4LocalDomain"
 
 #impersonate domain admin
         admin_session_info = admin_session(lp, str(domainsid))
@@ -1024,7 +1020,6 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
             domainguid_line = ""
         setup_add_ldif(samdb, setup_path("provision_basedn.ldif"), {
                 "DOMAINDN": names.domaindn,
-                "DOMAIN_OC": domain_oc,
                 "DOMAINGUID": domainguid_line
                 })
 
