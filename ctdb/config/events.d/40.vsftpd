@@ -44,9 +44,9 @@ case $cmd in
 	[ -f $CTDB_BASE/state/vsftpd/restart ] && {
 		service vsftpd stop > /dev/null 2>&1
 		service vsftpd start
+		/bin/rm -f $CTDB_BASE/state/vsftpd/restart 2>/dev/null
+		ctdb_counter_init "$VSFTPD_FAILS"
 	} >/dev/null 2>&1
-
-	/bin/rm -f $CTDB_BASE/state/vsftpd/restart 2>/dev/null
 	;;
 
      monitor)
