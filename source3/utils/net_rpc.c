@@ -6029,7 +6029,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 	if (c->display_usage) {
 		d_printf(_("Usage:\n"
 			   "net rpc trustdom list\n"
-			   "    List trust relationships\n"));
+			   "    List in- and outgoing trust relationships\n"));
 		return 0;
 	}
 
@@ -6300,41 +6300,41 @@ static int rpc_trustdom(struct net_context *c, int argc, const char **argv)
 			"add",
 			rpc_trustdom_add,
 			NET_TRANSPORT_RPC,
-			N_("Add trusted domain's account"),
+			N_("Add trusting domain's account"),
 			N_("net rpc trustdom add\n"
-			   "    Add trusted domain's account")
+			   "    Add trusting domain's account")
 		},
 		{
 			"del",
 			rpc_trustdom_del,
 			NET_TRANSPORT_RPC,
-			N_("Remove trusted domain's account"),
+			N_("Remove trusting domain's account"),
 			N_("net rpc trustdom del\n"
-			   "    Remove trusted domain's account")
+			   "    Remove trusting domain's account")
 		},
 		{
 			"establish",
 			rpc_trustdom_establish,
 			NET_TRANSPORT_RPC,
-			N_("Establish trust relationship"),
+			N_("Establish outgoing trust relationship"),
 			N_("net rpc trustdom establish\n"
-			   "    Establish trust relationship")
+			   "    Establish outgoing trust relationship")
 		},
 		{
 			"revoke",
 			rpc_trustdom_revoke,
 			NET_TRANSPORT_RPC,
-			N_("Revoke trust relationship"),
+			N_("Revoke outgoing trust relationship"),
 			N_("net rpc trustdom revoke\n"
-			   "    Revoke trust relationship")
+			   "    Revoke outgoing trust relationship")
 		},
 		{
 			"list",
 			rpc_trustdom_list,
 			NET_TRANSPORT_RPC,
-			N_("List domain trusts"),
+			N_("List in- and outgoing domain trusts"),
 			N_("net rpc trustdom list\n"
-			   "    List domain trusts")
+			   "    List in- and outgoing domain trusts")
 		},
 		{
 			"vampire",
