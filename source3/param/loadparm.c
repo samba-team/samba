@@ -260,6 +260,7 @@ struct global {
 	char *szLdapGroupSuffix;
 	int ldap_ssl;
 	bool ldap_ssl_ads;
+	int ldap_ref_follow;
 	char *szLdapSuffix;
 	char *szLdapAdminDn;
 	int ldap_debug_level;
@@ -3667,6 +3668,14 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 	{
+		.label		= "ldap ref follow",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.ptr		= &Globals.ldap_ref_follow,
+		.enum_list	= enum_bool_auto,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
 		.label		= "ldap timeout",
 		.type		= P_INTEGER,
 		.p_class	= P_GLOBAL,
@@ -5038,6 +5047,7 @@ static void init_globals(bool first_time_only)
 	Globals.ldap_passwd_sync = LDAP_PASSWD_SYNC_OFF;
 	Globals.ldap_delete_dn = False;
 	Globals.ldap_replication_sleep = 1000; /* wait 1 sec for replication */
+	Globals.ldap_ref_follow = Auto;
 	Globals.ldap_timeout = LDAP_DEFAULT_TIMEOUT;
 	Globals.ldap_connection_timeout = LDAP_CONNECTION_DEFAULT_TIMEOUT;
 	Globals.ldap_page_size = LDAP_PAGE_SIZE;
@@ -5387,6 +5397,7 @@ FN_GLOBAL_STRING(lp_ldap_suffix, &Globals.szLdapSuffix)
 FN_GLOBAL_STRING(lp_ldap_admin_dn, &Globals.szLdapAdminDn)
 FN_GLOBAL_INTEGER(lp_ldap_ssl, &Globals.ldap_ssl)
 FN_GLOBAL_BOOL(lp_ldap_ssl_ads, &Globals.ldap_ssl_ads)
+FN_GLOBAL_INTEGER(lp_ldap_ref_follow, &Globals.ldap_ref_follow)
 FN_GLOBAL_INTEGER(lp_ldap_passwd_sync, &Globals.ldap_passwd_sync)
 FN_GLOBAL_BOOL(lp_ldap_delete_dn, &Globals.ldap_delete_dn)
 FN_GLOBAL_INTEGER(lp_ldap_replication_sleep, &Globals.ldap_replication_sleep)
