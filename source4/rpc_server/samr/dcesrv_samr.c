@@ -2646,7 +2646,7 @@ static NTSTATUS dcesrv_samr_SetAliasInfo(struct dcesrv_call_state *dce_call, TAL
 
 	/* modify the samdb record */
 	ret = ldb_modify(a_state->sam_ctx, msg);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		/* we really need samdb.c to return NTSTATUS */
 		return NT_STATUS_UNSUCCESSFUL;
 	}
