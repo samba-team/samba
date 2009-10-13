@@ -53,7 +53,7 @@ extern bool AllowDebugChange;
 /* end of internationalization section                                 */
 /***********************************************************************/
 
-uint32 get_sec_channel_type(const char *param)
+enum netr_SchannelType get_sec_channel_type(const char *param)
 {
 	if (!(param && *param)) {
 		return get_default_sec_channel();
@@ -91,7 +91,7 @@ static int net_changesecretpw(struct net_context *c, int argc,
 			      const char **argv)
 {
         char *trust_pw;
-        uint32 sec_channel_type = SEC_CHAN_WKSTA;
+        enum netr_SchannelType sec_channel_type = SEC_CHAN_WKSTA;
 
 	if(c->opt_force) {
 		if (c->opt_stdin) {
