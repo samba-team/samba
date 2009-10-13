@@ -1870,4 +1870,53 @@ interface libnetapi
 		[in] string server_name
 	);
 
+	/*******************************************/
+	/* I_NetLogonControl                       */
+	/*******************************************/
+
+	typedef struct {
+		uint32 netlog1_flags;
+		NET_API_STATUS netlog1_pdc_connection_status;
+	} NETLOGON_INFO_1;
+
+	typedef struct {
+		uint32 netlog2_flags;
+		NET_API_STATUS netlog2_pdc_connection_status;
+		string netlog2_trusted_dc_name;
+		NET_API_STATUS netlog2_tc_connection_status;
+	} NETLOGON_INFO_2;
+
+	typedef struct {
+		uint32 netlog1_flags;
+		uint32 netlog3_logon_attempts;
+		uint32 netlog3_reserved1;
+		uint32 netlog3_reserved2;
+		uint32 netlog3_reserved3;
+		uint32 netlog3_reserved4;
+		uint32 netlog3_reserved5;
+	} NETLOGON_INFO_3;
+
+	typedef struct {
+		string netlog4_trusted_dc_name;
+		string netlog4_trusted_domain_name;
+	} NETLOGON_INFO_4;
+
+	[nopush,nopull] NET_API_STATUS I_NetLogonControl(
+		[in] string server_name,
+		[in] uint32 function_code,
+		[in] uint32 query_level,
+		[out,ref] uint8 **buffer
+	);
+
+	/*******************************************/
+	/* I_NetLogonControl2                      */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS I_NetLogonControl2(
+		[in] string server_name,
+		[in] uint32 function_code,
+		[in] uint32 query_level,
+		[in] uint8 *data,
+		[out,ref] uint8 **buffer
+	);
 }
