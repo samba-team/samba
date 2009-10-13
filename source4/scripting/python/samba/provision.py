@@ -598,8 +598,11 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
     :note: This function always removes the local SAM LDB file. The erase 
         parameter controls whether to erase the existing data, which 
         may not be stored locally but in LDAP.
+
     """
     assert session_info is not None
+
+    old_partitions = None
 
     # We use options=["modules:"] to stop the modules loading - we
     # just want to wipe and re-initialise the database, not start it up
@@ -607,6 +610,13 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
     try:
         samdb = Ldb(url=samdb_path, session_info=session_info, 
                       credentials=credentials, lp=lp, options=["modules:"])
+        res = samdb.search(base="@PARTITION", scope=SCOPE_BASE, attrs=["partition"], expression="partition=*")
+        if len(res) == 1:
+            try:
+                old_partitions = res[0]["partition"]
+            except KeyError:
+                pass
+            
         # Wipes the database
         samdb.erase_except_schema_controlled()
     except LdbError:
@@ -615,7 +625,6 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
                       credentials=credentials, lp=lp, options=["modules:"])
          # Wipes the database
         samdb.erase_except_schema_controlled()
-        
 
     #Add modules to the list to activate them by default
     #beware often order is important
@@ -696,6 +705,13 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
                 "LDAP_BACKEND_LINE": ldap_backend_line,
         })
 
+        
+        if old_partitions is not None:
+            m = ldb.Message()
+            m.dn = ldb.Dn(samdb, "@PARTITION")
+            m["partition"] = ldb.MessageElement(old_partitions, ldb.FLAG_MOD_ADD, "partition")
+            samdb.modify(m)
+
         samdb.load_ldif_file_add(setup_path("provision_init.ldif"))
 
         message("Setting up sam.ldb rootDSE")
@@ -706,7 +722,8 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
         raise
 
     samdb.transaction_commit()
-    
+
+        
 def secretsdb_self_join(secretsdb, domain, 
                         netbiosname, domainsid, machinepass, 
                         realm=None, dnsdomain=None,
@@ -1006,7 +1023,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
 
     if fill == FILL_DRS:
         return samdb
-
+        
     samdb.transaction_start()
     try:
         message("Erasing data from partitions")
