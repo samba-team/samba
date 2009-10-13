@@ -411,7 +411,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		search_filter = talloc_asprintf(mem_ctx,
 						"(uSNChanged>=%llu)",
 						(unsigned long long)(getnc_state->min_usn+1));
-		
+	
 		if (r->in.req->req8.replica_flags & DRSUAPI_DS_REPLICA_NEIGHBOUR_CRITICAL_ONLY) {
 			search_filter = talloc_asprintf(mem_ctx,
 							"(&%s(isCriticalSystemObject=TRUE))",
@@ -427,10 +427,23 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 			 ldb_dn_get_linearized(getnc_state->ncRoot_dn), search_filter));
 		ret = drsuapi_search_with_extended_dn(b_state->sam_ctx, getnc_state, &getnc_state->site_res,
 						      getnc_state->ncRoot_dn, scope, attrs,
-						      "distinguishedName",
+						      "uSNChanged",
 						      search_filter);
 		if (ret != LDB_SUCCESS) {
 			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+	} else {
+		/* check that this request is for the same NC as the previous one */
+		struct ldb_dn *dn;
+		dn = ldb_dn_new(getnc_state, b_state->sam_ctx, ncRoot->dn);
+		if (!dn) {
+			return WERR_NOMEM;
+		}
+		if (ldb_dn_compare(dn, getnc_state->ncRoot_dn) != 0) {
+			DEBUG(0,(__location__ ": DsGetNCChanges 2nd replication on different DN %s %s\n",
+				 ldb_dn_get_linearized(dn),
+				 ldb_dn_get_linearized(getnc_state->ncRoot_dn)));
+			return WERR_DS_DRA_BAD_NC;
 		}
 	}
 
@@ -525,7 +538,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		b_state->getncchanges_state = NULL;
 	}
 
-	DEBUG(3,("DsGetNCChanges with uSNChanged >= %llu on %s gave %u objects\n", 
+	DEBUG(2,("DsGetNCChanges with uSNChanged >= %llu on %s gave %u objects\n", 
 		 (unsigned long long)(r->in.req->req8.highwatermark.highest_usn+1),
 		 ncRoot->dn, r->out.ctr->ctr6.object_count));
 
