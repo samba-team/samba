@@ -115,6 +115,7 @@ const char *lp_passwd_chat(struct loadparm_context *);
 const char **lp_passwordserver(struct loadparm_context *);
 const char **lp_name_resolve_order(struct loadparm_context *);
 const char *lp_realm(struct loadparm_context *);
+const char *lp_dnsdomain(struct loadparm_context *);
 const char *lp_socket_options(struct loadparm_context *);
 const char *lp_workgroup(struct loadparm_context *);
 const char *lp_netbios_name(struct loadparm_context *);

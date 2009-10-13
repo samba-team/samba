@@ -103,6 +103,8 @@ struct loadparm_global
 	const char **szPasswordServers;
 	char *szSocketOptions;
 	char *szRealm;
+	char *szRealm_upper;
+	char *szRealm_lower;
 	const char **szWINSservers;
 	const char **szInterfaces;
 	char *szSocketAddress;
@@ -234,6 +236,8 @@ struct loadparm_service
 /* prototypes for the special type handlers */
 static bool handle_include(struct loadparm_context *lp_ctx,
 			   const char *pszParmValue, char **ptr);
+static bool handle_realm(struct loadparm_context *lp_ctx,
+			 const char *pszParmValue, char **ptr);
 static bool handle_copy(struct loadparm_context *lp_ctx,
 			const char *pszParmValue, char **ptr);
 static bool handle_debuglevel(struct loadparm_context *lp_ctx,
@@ -339,7 +343,7 @@ static struct parm_struct parm_table[] = {
 	{"path", P_STRING, P_LOCAL, LOCAL_VAR(szPath), NULL, NULL},
 	{"directory", P_STRING, P_LOCAL, LOCAL_VAR(szPath), NULL, NULL},
 	{"workgroup", P_USTRING, P_GLOBAL, GLOBAL_VAR(szWorkgroup), NULL, NULL},
-	{"realm", P_STRING, P_GLOBAL, GLOBAL_VAR(szRealm), NULL, NULL},
+	{"realm", P_STRING, P_GLOBAL, GLOBAL_VAR(szRealm), handle_realm, NULL},
 	{"netbios name", P_USTRING, P_GLOBAL, GLOBAL_VAR(szNetbiosName), NULL, NULL},
 	{"netbios aliases", P_LIST, P_GLOBAL, GLOBAL_VAR(szNetbiosAliases), NULL, NULL},
 	{"netbios scope", P_USTRING, P_GLOBAL, GLOBAL_VAR(szNetbiosScope), NULL, NULL},
@@ -648,7 +652,8 @@ _PUBLIC_ FN_GLOBAL_STRING(lp_auto_services, szAutoServices)
 _PUBLIC_ FN_GLOBAL_STRING(lp_passwd_chat, szPasswdChat)
 _PUBLIC_ FN_GLOBAL_LIST(lp_passwordserver, szPasswordServers)
 _PUBLIC_ FN_GLOBAL_LIST(lp_name_resolve_order, szNameResolveOrder)
-_PUBLIC_ FN_GLOBAL_STRING(lp_realm, szRealm)
+_PUBLIC_ FN_GLOBAL_STRING(lp_realm, szRealm_upper)
+_PUBLIC_ FN_GLOBAL_STRING(lp_dnsdomain, szRealm_lower)
 _PUBLIC_ FN_GLOBAL_STRING(lp_socket_options, socket_options)
 _PUBLIC_ FN_GLOBAL_STRING(lp_workgroup, szWorkgroup)
 _PUBLIC_ FN_GLOBAL_STRING(lp_netbios_name, szNetbiosName)
@@ -657,7 +662,6 @@ _PUBLIC_ FN_GLOBAL_LIST(lp_wins_server_list, szWINSservers)
 _PUBLIC_ FN_GLOBAL_LIST(lp_interfaces, szInterfaces)
 _PUBLIC_ FN_GLOBAL_STRING(lp_socket_address, szSocketAddress)
 _PUBLIC_ FN_GLOBAL_LIST(lp_netbios_aliases, szNetbiosAliases)
-
 _PUBLIC_ FN_GLOBAL_BOOL(lp_disable_netbios, bDisableNetbios)
 _PUBLIC_ FN_GLOBAL_BOOL(lp_wins_support, bWINSsupport)
 _PUBLIC_ FN_GLOBAL_BOOL(lp_wins_dns_proxy, bWINSdnsProxy)
@@ -695,6 +699,7 @@ _PUBLIC_ FN_GLOBAL_INTEGER(lp_cli_minprotocol, cli_minprotocol)
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_security, security)
 _PUBLIC_ FN_GLOBAL_BOOL(lp_paranoid_server_security, paranoid_server_security)
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_announce_as, announce_as)
+
 const char *lp_servicename(const struct loadparm_service *service)
 {
 	return lp_string((const char *)service->szService);
@@ -1445,6 +1450,21 @@ bool lp_file_list_changed(struct loadparm_context *lp_ctx)
 		}
 	}
 	return false;
+}
+
+/***************************************************************************
+ Handle the "realm" parameter
+***************************************************************************/
+
+static bool handle_realm(struct loadparm_context *lp_ctx,
+			 const char *pszParmValue, char **ptr)
+{
+	string_set(lp_ctx, ptr, pszParmValue);
+
+	lp_ctx->globals->szRealm_upper = strupper_talloc(lp_ctx, pszParmValue);
+	lp_ctx->globals->szRealm_lower = strlower_talloc(lp_ctx, pszParmValue);
+
+	return true;
 }
 
 /***************************************************************************
