@@ -2441,3 +2441,97 @@ NET_API_STATUS NetShutdownAbort(const char * server_name /* [in] */)
 	return r.out.result;
 }
 
+/****************************************************************
+ I_NetLogonControl
+****************************************************************/
+
+NET_API_STATUS I_NetLogonControl(const char * server_name /* [in] */,
+				 uint32_t function_code /* [in] */,
+				 uint32_t query_level /* [in] */,
+				 uint8_t **buffer /* [out] [ref] */)
+{
+	struct I_NetLogonControl r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		return status;
+	}
+
+	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.function_code = function_code;
+	r.in.query_level = query_level;
+
+	/* Out parameters */
+	r.out.buffer = buffer;
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(I_NetLogonControl, &r);
+	}
+
+	if (LIBNETAPI_LOCAL_SERVER(server_name)) {
+		werr = I_NetLogonControl_l(ctx, &r);
+	} else {
+		werr = I_NetLogonControl_r(ctx, &r);
+	}
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(I_NetLogonControl, &r);
+	}
+
+	return r.out.result;
+}
+
+/****************************************************************
+ I_NetLogonControl2
+****************************************************************/
+
+NET_API_STATUS I_NetLogonControl2(const char * server_name /* [in] */,
+				  uint32_t function_code /* [in] */,
+				  uint32_t query_level /* [in] */,
+				  uint8_t *data /* [in] [ref] */,
+				  uint8_t **buffer /* [out] [ref] */)
+{
+	struct I_NetLogonControl2 r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		return status;
+	}
+
+	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.function_code = function_code;
+	r.in.query_level = query_level;
+	r.in.data = data;
+
+	/* Out parameters */
+	r.out.buffer = buffer;
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(I_NetLogonControl2, &r);
+	}
+
+	if (LIBNETAPI_LOCAL_SERVER(server_name)) {
+		werr = I_NetLogonControl2_l(ctx, &r);
+	} else {
+		werr = I_NetLogonControl2_r(ctx, &r);
+	}
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(I_NetLogonControl2, &r);
+	}
+
+	return r.out.result;
+}
+
