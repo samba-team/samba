@@ -283,7 +283,9 @@
 		<term>-t|--check-secret</term>
 		<listitem><para>Verify that the workstation trust account
 		created when the Samba server is added to the Windows NT
-		domain is working. </para></listitem>
+		domain is working. May be used in conjunction with
+		<option>domain</option> in order to verify interdomain
+		trust accounts.</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
