@@ -7654,3 +7654,73 @@ _PUBLIC_ void ndr_print_NetShutdownAbort(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
+_PUBLIC_ void ndr_print_I_NetLogonControl(struct ndr_print *ndr, const char *name, int flags, const struct I_NetLogonControl *r)
+{
+	ndr_print_struct(ndr, name, "I_NetLogonControl");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "I_NetLogonControl");
+		ndr->depth++;
+		ndr_print_string(ndr, "server_name", r->in.server_name);
+		ndr_print_uint32(ndr, "function_code", r->in.function_code);
+		ndr_print_uint32(ndr, "query_level", r->in.query_level);
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "I_NetLogonControl");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "buffer", r->out.buffer);
+		ndr->depth++;
+		ndr_print_ptr(ndr, "buffer", *r->out.buffer);
+		ndr->depth++;
+		if (*r->out.buffer) {
+			ndr_print_uint8(ndr, "buffer", **r->out.buffer);
+		}
+		ndr->depth--;
+		ndr->depth--;
+		ndr_print_NET_API_STATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+_PUBLIC_ void ndr_print_I_NetLogonControl2(struct ndr_print *ndr, const char *name, int flags, const struct I_NetLogonControl2 *r)
+{
+	ndr_print_struct(ndr, name, "I_NetLogonControl2");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "I_NetLogonControl2");
+		ndr->depth++;
+		ndr_print_string(ndr, "server_name", r->in.server_name);
+		ndr_print_uint32(ndr, "function_code", r->in.function_code);
+		ndr_print_uint32(ndr, "query_level", r->in.query_level);
+		ndr_print_ptr(ndr, "data", r->in.data);
+		ndr->depth++;
+		ndr_print_uint8(ndr, "data", *r->in.data);
+		ndr->depth--;
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "I_NetLogonControl2");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "buffer", r->out.buffer);
+		ndr->depth++;
+		ndr_print_ptr(ndr, "buffer", *r->out.buffer);
+		ndr->depth++;
+		if (*r->out.buffer) {
+			ndr_print_uint8(ndr, "buffer", **r->out.buffer);
+		}
+		ndr->depth--;
+		ndr->depth--;
+		ndr_print_NET_API_STATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
