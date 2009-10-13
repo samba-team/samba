@@ -65,7 +65,9 @@ PROGS = bin/getdc@EXEEXT@ \
 	bin/file_getinfo@EXEEXT@ \
 	bin/file_enum@EXEEXT@ \
 	bin/shutdown_init@EXEEXT@ \
-	bin/shutdown_abort@EXEEXT@
+	bin/shutdown_abort@EXEEXT@ \
+	bin/netlogon_control@EXEEXT@ \
+	bin/netlogon_control2@EXEEXT@
 
 all: $(PROGS)
 
@@ -143,6 +145,8 @@ FILEGETINFO_OBJ = file/file_getinfo.o $(CMDLINE_OBJ)
 FILEENUM_OBJ = file/file_enum.o $(CMDLINE_OBJ)
 SHUTDOWNINIT_OBJ = shutdown/shutdown_init.o $(CMDLINE_OBJ)
 SHUTDOWNABORT_OBJ = shutdown/shutdown_abort.o $(CMDLINE_OBJ)
+NETLOGONCONTROL_OBJ = netlogon/netlogon_control.o $(CMDLINE_OBJ)
+NETLOGONCONTROL2_OBJ = netlogon/netlogon_control2.o $(CMDLINE_OBJ)
 
 bin/getdc@EXEEXT@: $(BINARY_PREREQS) $(GETDC_OBJ)
 	@echo Linking $@
@@ -339,6 +343,14 @@ bin/shutdown_init@EXEEXT@: $(BINARY_PREREQS) $(SHUTDOWNINIT_OBJ)
 bin/shutdown_abort@EXEEXT@: $(BINARY_PREREQS) $(SHUTDOWNABORT_OBJ)
 	@echo Linking $@
 	@$(CC) $(CCFLAGS) -o $@ $(SHUTDOWNABORT_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
+
+bin/netlogon_control@EXEEXT@: $(BINARY_PREREQS) $(NETLOGONCONTROL_OBJ)
+	@echo Linking $@
+	@$(CC) $(CCFLAGS) -o $@ $(NETLOGONCONTROL_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
+
+bin/netlogon_control2@EXEEXT@: $(BINARY_PREREQS) $(NETLOGONCONTROL2_OBJ)
+	@echo Linking $@
+	@$(CC) $(CCFLAGS) -o $@ $(NETLOGONCONTROL2_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
 
 clean:
 	-rm -f $(PROGS)
