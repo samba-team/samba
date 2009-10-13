@@ -33,8 +33,29 @@
 static int ctdb_lock_all_databases(struct ctdb_context *ctdb, uint32_t priority)
 {
 	struct ctdb_db_context *ctdb_db;
+	/* REMOVE later */
+	/* This double loop is for backward compatibility and deadlock
+	   avoidance for old samba versions that not yet support
+	   the set prio call.
+	   This code shall be removed later
+	*/
 	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
 		if (ctdb_db->priority != priority) {
+			continue;
+		}
+		if (strstr(ctdb_db->db_name, "notify") != NULL) {
+			continue;
+		}
+		DEBUG(DEBUG_INFO,("locking database 0x%08x priority:%u %s\n", ctdb_db->db_id, ctdb_db->priority, ctdb_db->db_name));
+		if (tdb_lockall(ctdb_db->ltdb->tdb) != 0) {
+			return -1;
+		}
+	}
+	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
+		if (ctdb_db->priority != priority) {
+			continue;
+		}
+		if (strstr(ctdb_db->db_name, "notify") == NULL) {
 			continue;
 		}
 		DEBUG(DEBUG_INFO,("locking database 0x%08x priority:%u %s\n", ctdb_db->db_id, ctdb_db->priority, ctdb_db->db_name));

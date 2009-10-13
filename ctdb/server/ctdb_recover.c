@@ -44,8 +44,28 @@ static int ctdb_lock_all_databases_mark(struct ctdb_context *ctdb, uint32_t prio
 		DEBUG(DEBUG_ERR,("Attempt to mark all databases locked when not frozen\n"));
 		return -1;
 	}
+	/* The dual loop is a woraround for older versions of samba
+	   that does not yet support the set-db-priority/lock order
+	   call. So that we get basic deadlock avoiidance also for
+	   these old versions of samba.
+	   This code will be removed in the future.
+	*/
 	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
 		if (ctdb_db->priority != priority) {
+			continue;
+		}
+		if (strstr(ctdb_db->db_name, "notify") != NULL) {
+			continue;
+		}
+		if (tdb_lockall_mark(ctdb_db->ltdb->tdb) != 0) {
+			return -1;
+		}
+	}
+	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
+		if (ctdb_db->priority != priority) {
+			continue;
+		}
+		if (strstr(ctdb_db->db_name, "notify") == NULL) {
 			continue;
 		}
 		if (tdb_lockall_mark(ctdb_db->ltdb->tdb) != 0) {
