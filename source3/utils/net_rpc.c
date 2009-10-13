@@ -5779,18 +5779,12 @@ static NTSTATUS rpc_query_domain_sid(struct net_context *c,
 
 static void print_trusted_domain(DOM_SID *dom_sid, const char *trusted_dom_name)
 {
-	fstring ascii_sid, padding;
-	int pad_len, col_len = 20;
+	fstring ascii_sid;
 
 	/* convert sid into ascii string */
 	sid_to_fstring(ascii_sid, dom_sid);
 
-	/* calculate padding space for d_printf to look nicer */
-	pad_len = col_len - strlen(trusted_dom_name);
-	padding[pad_len] = 0;
-	do padding[--pad_len] = ' '; while (pad_len);
-
-	d_printf("%s%s%s\n", trusted_dom_name, padding, ascii_sid);
+	d_printf("%-20s%s\n", trusted_dom_name, ascii_sid);
 }
 
 static NTSTATUS vampire_trusted_domain(struct rpc_pipe_client *pipe_hnd,
