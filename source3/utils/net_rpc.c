@@ -6012,14 +6012,13 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 	NTSTATUS nt_status;
 	const char *domain_name = NULL;
 	DOM_SID *queried_dom_sid;
-	fstring padding;
 	int ascii_dom_name_len;
 	struct policy_handle connect_hnd;
 	union lsa_PolicyInformation *info = NULL;
 
 	/* trusted domains listing variables */
 	unsigned int num_domains, enum_ctx = 0;
-	int i, pad_len, col_len = 20;
+	int i;
 	struct lsa_DomainList dom_list;
 	fstring pdc_name;
 
@@ -6228,17 +6227,12 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 			if (ascii_dom_name_len && ascii_dom_name_len < FSTRING_LEN)
 				str[ascii_dom_name_len - 1] = '\0';
 
-			/* calculate padding space for d_printf to look nicer */
-			pad_len = col_len - strlen(str);
-			padding[pad_len] = 0;
-			do padding[--pad_len] = ' '; while (pad_len);
-
 			/* set opt_* variables to remote domain */
 			strupper_m(str);
 			c->opt_workgroup = talloc_strdup(mem_ctx, str);
 			c->opt_target_workgroup = c->opt_workgroup;
 
-			d_printf("%s%s", str, padding);
+			d_printf("%-20s", str);
 
 			/* connect to remote domain controller */
 			nt_status = net_make_ipc_connection(c,
