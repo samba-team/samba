@@ -108,7 +108,11 @@
 
 #define NDR_NETSHUTDOWNABORT (0x32)
 
-#define NDR_LIBNETAPI_CALL_COUNT (51)
+#define NDR_I_NETLOGONCONTROL (0x33)
+
+#define NDR_I_NETLOGONCONTROL2 (0x34)
+
+#define NDR_LIBNETAPI_CALL_COUNT (53)
 enum ndr_err_code ndr_push_NET_API_STATUS(struct ndr_push *ndr, int ndr_flags, enum NET_API_STATUS r);
 enum ndr_err_code ndr_pull_NET_API_STATUS(struct ndr_pull *ndr, int ndr_flags, enum NET_API_STATUS *r);
 void ndr_print_NET_API_STATUS(struct ndr_print *ndr, const char *name, enum NET_API_STATUS r);
@@ -697,4 +701,10 @@ void ndr_print_NetShutdownInit(struct ndr_print *ndr, const char *name, int flag
 enum ndr_err_code ndr_push_NetShutdownAbort(struct ndr_push *ndr, int flags, const struct NetShutdownAbort *r);
 enum ndr_err_code ndr_pull_NetShutdownAbort(struct ndr_pull *ndr, int flags, struct NetShutdownAbort *r);
 void ndr_print_NetShutdownAbort(struct ndr_print *ndr, const char *name, int flags, const struct NetShutdownAbort *r);
+enum ndr_err_code ndr_push_I_NetLogonControl(struct ndr_push *ndr, int flags, const struct I_NetLogonControl *r);
+enum ndr_err_code ndr_pull_I_NetLogonControl(struct ndr_pull *ndr, int flags, struct I_NetLogonControl *r);
+void ndr_print_I_NetLogonControl(struct ndr_print *ndr, const char *name, int flags, const struct I_NetLogonControl *r);
+enum ndr_err_code ndr_push_I_NetLogonControl2(struct ndr_push *ndr, int flags, const struct I_NetLogonControl2 *r);
+enum ndr_err_code ndr_pull_I_NetLogonControl2(struct ndr_pull *ndr, int flags, struct I_NetLogonControl2 *r);
+void ndr_print_I_NetLogonControl2(struct ndr_print *ndr, const char *name, int flags, const struct I_NetLogonControl2 *r);
 #endif /* _HEADER_NDR_libnetapi */

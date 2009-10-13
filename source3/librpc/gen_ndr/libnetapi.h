@@ -1295,6 +1295,33 @@ struct FILE_INFO_3 {
 	const char * fi3_username;
 };
 
+struct NETLOGON_INFO_1 {
+	uint32_t netlog1_flags;
+	enum NET_API_STATUS netlog1_pdc_connection_status;
+};
+
+struct NETLOGON_INFO_2 {
+	uint32_t netlog2_flags;
+	enum NET_API_STATUS netlog2_pdc_connection_status;
+	const char * netlog2_trusted_dc_name;
+	enum NET_API_STATUS netlog2_tc_connection_status;
+};
+
+struct NETLOGON_INFO_3 {
+	uint32_t netlog1_flags;
+	uint32_t netlog3_logon_attempts;
+	uint32_t netlog3_reserved1;
+	uint32_t netlog3_reserved2;
+	uint32_t netlog3_reserved3;
+	uint32_t netlog3_reserved4;
+	uint32_t netlog3_reserved5;
+};
+
+struct NETLOGON_INFO_4 {
+	const char * netlog4_trusted_dc_name;
+	const char * netlog4_trusted_domain_name;
+};
+
 
 struct NetJoinDomain {
 	struct {
@@ -2094,6 +2121,37 @@ struct NetShutdownAbort {
 	} in;
 
 	struct {
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
+struct I_NetLogonControl {
+	struct {
+		const char * server_name;
+		uint32_t function_code;
+		uint32_t query_level;
+	} in;
+
+	struct {
+		uint8_t **buffer;/* [ref] */
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
+struct I_NetLogonControl2 {
+	struct {
+		const char * server_name;
+		uint32_t function_code;
+		uint32_t query_level;
+		uint8_t *data;/* [ref] */
+	} in;
+
+	struct {
+		uint8_t **buffer;/* [ref] */
 		enum NET_API_STATUS result;
 	} out;
 
