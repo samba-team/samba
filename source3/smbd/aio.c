@@ -420,7 +420,7 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex, int errcode)
 		DEBUG( 3,( "handle_aio_write: file %s wanted %u bytes. "
 			   "nwritten == %d. Error = %s\n",
 			   fsp_str_dbg(fsp), (unsigned int)numtowrite,
-			   (int)nwritten, strerror(errno) ));
+			   (int)nwritten, strerror(errcode) ));
 
 		ret = errcode;
 		ERROR_NT(map_nt_error_from_unix(ret));
