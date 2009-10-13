@@ -3245,6 +3245,8 @@ static struct parm_struct parm_table[] = {
 		.type		= P_LIST,
 		.p_class	= P_GLOBAL,
 		.ptr		= &Globals.szInitLogonDelayedHosts,
+		.special        = NULL,
+		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
 
@@ -3253,6 +3255,8 @@ static struct parm_struct parm_table[] = {
 		.type		= P_INTEGER,
 		.p_class	= P_GLOBAL,
 		.ptr		= &Globals.InitLogonDelay,
+		.special        = NULL,
+		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 
 	},
