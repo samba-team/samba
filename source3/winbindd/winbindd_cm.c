@@ -2370,7 +2370,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 
 	uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
 	uint8  mach_pwd[16];
-	uint32  sec_chan_type;
+	enum netr_SchannelType sec_chan_type;
 	const char *account_name;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 

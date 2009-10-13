@@ -195,7 +195,7 @@ machine %s. Error was : %s.\n", dc_name, nt_errstr(result)));
 	if (!lp_client_schannel()) {
 		/* We need to set up a creds chain on an unauthenticated netlogon pipe. */
 		uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
-		uint32 sec_chan_type = 0;
+		enum netr_SchannelType sec_chan_type = 0;
 		unsigned char machine_pwd[16];
 		const char *account_name;
 

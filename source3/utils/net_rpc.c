@@ -309,7 +309,7 @@ static NTSTATUS rpc_oldjoin_internals(struct net_context *c,
 	fstring trust_passwd;
 	unsigned char orig_trust_passwd_hash[16];
 	NTSTATUS result;
-	uint32 sec_channel_type;
+	enum netr_SchannelType sec_channel_type;
 
 	result = cli_rpc_pipe_open_noauth(cli, &ndr_table_netlogon.syntax_id,
 					  &pipe_hnd);
