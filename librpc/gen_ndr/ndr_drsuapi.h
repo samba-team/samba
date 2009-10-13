@@ -63,6 +63,9 @@ extern const struct ndr_interface_table ndr_table_drsuapi;
 #define NDR_DRSUAPI_QUERYSITESBYCOST (0x18)
 
 #define NDR_DRSUAPI_CALL_COUNT (25)
+enum ndr_err_code ndr_push_drsuapi_DrsOptions(struct ndr_push *ndr, int ndr_flags, uint32_t r);
+enum ndr_err_code ndr_pull_drsuapi_DrsOptions(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
+void ndr_print_drsuapi_DrsOptions(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_drsuapi_SupportedExtensions(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_drsuapi_SupportedExtensionsExt(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_drsuapi_DsBindInfo24(struct ndr_print *ndr, const char *name, const struct drsuapi_DsBindInfo24 *r);

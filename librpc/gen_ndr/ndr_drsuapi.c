@@ -7,6 +7,57 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "librpc/ndr/ndr_compression.h"
+_PUBLIC_ enum ndr_err_code ndr_push_drsuapi_DrsOptions(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_drsuapi_DrsOptions(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_drsuapi_DrsOptions(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_ASYNC_OP", DRSUAPI_DRS_ASYNC_OP, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_GETCHG_CHECK", DRSUAPI_DRS_GETCHG_CHECK, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_ADD_REF", DRSUAPI_DRS_ADD_REF, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_SYNC_ALL", DRSUAPI_DRS_SYNC_ALL, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_DEL_REF", DRSUAPI_DRS_DEL_REF, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_WRIT_REP", DRSUAPI_DRS_WRIT_REP, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_INIT_SYNC", DRSUAPI_DRS_INIT_SYNC, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_PER_SYNC", DRSUAPI_DRS_PER_SYNC, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_MAIL_REP", DRSUAPI_DRS_MAIL_REP, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_ASYNC_REP", DRSUAPI_DRS_ASYNC_REP, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_IGNORE_ERROR", DRSUAPI_DRS_IGNORE_ERROR, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_TWOWAY_SYNC", DRSUAPI_DRS_TWOWAY_SYNC, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_CRITICAL_ONLY", DRSUAPI_DRS_CRITICAL_ONLY, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_GET_ANC", DRSUAPI_DRS_GET_ANC, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_GET_NC_SIZE", DRSUAPI_DRS_GET_NC_SIZE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_LOCAL_ONLY", DRSUAPI_DRS_LOCAL_ONLY, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_SYNC_BYNAME", DRSUAPI_DRS_SYNC_BYNAME, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_REF_OK", DRSUAPI_DRS_REF_OK, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_FULL_SYNC_NOW", DRSUAPI_DRS_FULL_SYNC_NOW, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_NO_SOURCE", DRSUAPI_DRS_NO_SOURCE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_FULL_SYNC_PACKET", DRSUAPI_DRS_FULL_SYNC_PACKET, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_REF_GCSPN", DRSUAPI_DRS_REF_GCSPN, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING", DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_SYNC_FORCED", DRSUAPI_DRS_SYNC_FORCED, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_DISABLE_AUTO_SYNC", DRSUAPI_DRS_DISABLE_AUTO_SYNC, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_DISABLE_PERIODIC_SYNC", DRSUAPI_DRS_DISABLE_PERIODIC_SYNC, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_USE_COMPRESSION", DRSUAPI_DRS_USE_COMPRESSION, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_NEVER_NOTIFY", DRSUAPI_DRS_NEVER_NOTIFY, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_SYNC_PAS", DRSUAPI_DRS_SYNC_PAS, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_GET_ALL_GROUP_MEMBERSHIP", DRSUAPI_DRS_GET_ALL_GROUP_MEMBERSHIP, r);
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_drsuapi_SupportedExtensions(struct ndr_push *ndr, int ndr_flags, uint32_t r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
