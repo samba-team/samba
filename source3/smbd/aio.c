@@ -321,7 +321,6 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 
 static int handle_aio_read_complete(struct aio_extra *aio_ex, int errcode)
 {
-	int ret = 0;
 	int outsize;
 	char *outbuf = aio_ex->outbuf;
 	char *data = smb_buf(outbuf);
@@ -335,10 +334,9 @@ static int handle_aio_read_complete(struct aio_extra *aio_ex, int errcode)
 
 		DEBUG( 3,( "handle_aio_read_complete: file %s nread == %d. "
 			   "Error = %s\n",
-			   fsp_str_dbg(aio_ex->fsp), nread, strerror(errcode)));
+			   fsp_str_dbg(aio_ex->fsp), (int)nread, strerror(errcode)));
 
-		ret = errcode;
-		ERROR_NT(map_nt_error_from_unix(ret));
+		ERROR_NT(map_nt_error_from_unix(errcode));
 		outsize = srv_set_message(outbuf,0,0,true);
 	} else {
 		outsize = srv_set_message(outbuf,12,nread,False);
@@ -371,7 +369,7 @@ static int handle_aio_read_complete(struct aio_extra *aio_ex, int errcode)
 		  fsp_str_dbg(aio_ex->fsp), (double)aio_ex->acb.aio_offset,
 		  (unsigned int)nread ));
 
-	return ret;
+	return errcode;
 }
 
 /****************************************************************************
@@ -381,7 +379,6 @@ static int handle_aio_read_complete(struct aio_extra *aio_ex, int errcode)
 
 static int handle_aio_write_complete(struct aio_extra *aio_ex, int errcode)
 {
-	int ret = 0;
 	files_struct *fsp = aio_ex->fsp;
 	char *outbuf = aio_ex->outbuf;
 	ssize_t numtowrite = aio_ex->acb.aio_nbytes;
@@ -394,7 +391,6 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex, int errcode)
 					 "aio_write_behind failed ! File %s "
 					 "is corrupt ! Error %s\n",
 					 fsp_str_dbg(fsp), strerror(errcode)));
-				ret = errcode;
 			} else {
 				DEBUG(0,("handle_aio_write_complete: "
 					 "aio_write_behind failed ! File %s "
@@ -402,7 +398,7 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex, int errcode)
 					 "only wrote %d\n", fsp_str_dbg(fsp),
 					 (unsigned int)numtowrite,
 					 (int)nwritten ));
-				ret = EIO;
+				errcode = EIO;
 			}
 		} else {
 			DEBUG(10,("handle_aio_write_complete: "
@@ -422,8 +418,7 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex, int errcode)
 			   fsp_str_dbg(fsp), (unsigned int)numtowrite,
 			   (int)nwritten, strerror(errcode) ));
 
-		ret = errcode;
-		ERROR_NT(map_nt_error_from_unix(ret));
+		ERROR_NT(map_nt_error_from_unix(errcode));
 		srv_set_message(outbuf,0,0,true);
         } else {
 		bool write_through = BITSETW(aio_ex->req->vwv+7,0);
@@ -440,8 +435,8 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex, int errcode)
 			 fsp->fnum, (int)numtowrite, (int)nwritten));
 		status = sync_file(fsp->conn,fsp, write_through);
 		if (!NT_STATUS_IS_OK(status)) {
-			ret = errno;
-			ERROR_BOTH(map_nt_error_from_unix(ret),
+			errcode = errno;
+			ERROR_BOTH(map_nt_error_from_unix(errcode),
 				   ERRHRD, ERRdiskfull);
 			srv_set_message(outbuf,0,0,true);
                 	DEBUG(5,("handle_aio_write: sync_file for %s returned %s\n",
@@ -464,7 +459,7 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex, int errcode)
 		  fsp_str_dbg(fsp), (double)aio_ex->acb.aio_offset,
 		  (unsigned int)numtowrite, (unsigned int)nwritten ));
 
-	return ret;
+	return errcode;
 }
 
 /****************************************************************************
