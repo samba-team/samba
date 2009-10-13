@@ -56,6 +56,8 @@ parser.add_option("--policy-guid", type="string", metavar="GUID",
 				  help="set guid for domain policy")
 parser.add_option("--policy-guid-dc", type="string", metavar="GUID",
 				  help="set guid for domain controller policy")
+parser.add_option("--ntds-guid", type="string", metavar="GUID", 
+		  help="set NTDS object GUID (otherwise random)")
 parser.add_option("--invocationid", type="string", metavar="GUID", 
 		  help="set invocationid (otherwise random)")
 parser.add_option("--host-name", type="string", metavar="HOSTNAME", 
@@ -198,6 +200,7 @@ provision(setup_dir, message,
           policyguid=opts.policy_guid, policyguid_dc=opts.policy_guid_dc,
           hostname=opts.host_name,
           hostip=opts.host_ip, hostip6=opts.host_ip6,
+	  ntdsguid=opts.ntds_guid,
           invocationid=opts.invocationid, adminpass=opts.adminpass,
           krbtgtpass=opts.krbtgtpass, machinepass=opts.machinepass,
           dnspass=opts.dnspass, root=opts.root, nobody=opts.nobody,
