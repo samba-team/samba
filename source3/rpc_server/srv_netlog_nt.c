@@ -281,7 +281,7 @@ WERROR _netr_NetrEnumerateTrustedDomains(pipes_struct *p,
  ******************************************************************/
 
 static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
-			  uint16_t sec_chan_type, struct dom_sid *sid)
+			  enum netr_SchannelType sec_chan_type, struct dom_sid *sid)
 {
 	struct samu *sampass = NULL;
 	const uint8 *pass;

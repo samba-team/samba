@@ -392,7 +392,7 @@ void *secrets_get_trust_account_lock(TALLOC_CTX *mem_ctx, const char *domain)
  Routine to get the default secure channel type for trust accounts
 ************************************************************************/
 
-uint32 get_default_sec_channel(void)
+enum netr_SchannelType get_default_sec_channel(void)
 {
 	if (lp_server_role() == ROLE_DOMAIN_BDC ||
 	    lp_server_role() == ROLE_DOMAIN_PDC) {
@@ -412,7 +412,7 @@ uint32 get_default_sec_channel(void)
 bool secrets_fetch_trust_account_password_legacy(const char *domain,
 						 uint8 ret_pwd[16],
 						 time_t *pass_last_set_time,
-						 uint32 *channel)
+						 enum netr_SchannelType *channel)
 {
 	struct machine_acct_pass *pass;
 	size_t size = 0;
@@ -458,7 +458,7 @@ bool secrets_fetch_trust_account_password_legacy(const char *domain,
 
 bool secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
 					  time_t *pass_last_set_time,
-					  uint32 *channel)
+					  enum netr_SchannelType *channel)
 {
 	char *plaintext;
 
@@ -793,7 +793,8 @@ bool secrets_delete_domain_sid(const char *domain)
 the password is assumed to be a null terminated ascii string
 ************************************************************************/
 
-bool secrets_store_machine_password(const char *pass, const char *domain, uint32 sec_channel)
+bool secrets_store_machine_password(const char *pass, const char *domain,
+				    enum netr_SchannelType sec_channel)
 {
 	bool ret;
 	uint32 last_change_time;
@@ -819,7 +820,7 @@ bool secrets_store_machine_password(const char *pass, const char *domain, uint32
 
 char *secrets_fetch_machine_password(const char *domain,
 				     time_t *pass_last_set_time,
-				     uint32 *channel)
+				     enum netr_SchannelType *channel)
 {
 	char *ret;
 	ret = (char *)secrets_fetch(machine_password_keystr(domain), NULL);

@@ -31,7 +31,7 @@ NTSTATUS trust_pw_change_and_store_it(struct rpc_pipe_client *cli, TALLOC_CTX *m
 				      const char *domain,
 				      const char *account_name,
 				      unsigned char orig_trust_passwd_hash[16],
-				      uint32 sec_channel_type)
+				      enum netr_SchannelType sec_channel_type)
 {
 	unsigned char new_trust_passwd_hash[16];
 	char *new_trust_passwd;
@@ -113,7 +113,7 @@ NTSTATUS trust_pw_find_change_and_store_it(struct rpc_pipe_client *cli,
 					   const char *domain) 
 {
 	unsigned char old_trust_passwd_hash[16];
-	uint32 sec_channel_type = 0;
+	enum netr_SchannelType sec_channel_type = SEC_CHAN_NULL;
 	const char *account_name;
 
 	if (!get_trust_pw_hash(domain, old_trust_passwd_hash, &account_name,

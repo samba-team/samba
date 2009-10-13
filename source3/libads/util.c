@@ -26,7 +26,7 @@ ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_princip
 	char *password;
 	char *new_password;
 	ADS_STATUS ret;
-	uint32 sec_channel_type;
+	enum netr_SchannelType sec_channel_type;
     
 	if ((password = secrets_fetch_machine_password(lp_workgroup(), NULL, &sec_channel_type)) == NULL) {
 		DEBUG(1,("Failed to retrieve password for principal %s\n", host_principal));

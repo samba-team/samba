@@ -2257,7 +2257,8 @@ bool is_dc_trusted_domain_situation(const char *domain_name)
 *******************************************************************/
 
 bool get_trust_pw_clear(const char *domain, char **ret_pwd,
-			const char **account_name, uint32 *channel)
+			const char **account_name,
+			enum netr_SchannelType *channel)
 {
 	char *pwd;
 	time_t last_set_time;
@@ -2329,7 +2330,8 @@ bool get_trust_pw_clear(const char *domain, char **ret_pwd,
 *******************************************************************/
 
 bool get_trust_pw_hash(const char *domain, uint8 ret_pwd[16],
-		       const char **account_name, uint32 *channel)
+		       const char **account_name,
+		       enum netr_SchannelType *channel)
 {
 	char *pwd = NULL;
 	time_t last_set_time;

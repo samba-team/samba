@@ -3819,7 +3819,7 @@ static NTSTATUS get_schannel_session_key_common(struct rpc_pipe_client *netlogon
 						const char *domain,
 						uint32 *pneg_flags)
 {
-	uint32 sec_chan_type = 0;
+	enum netr_SchannelType sec_chan_type = 0;
 	unsigned char machine_pwd[16];
 	const char *machine_account;
 	NTSTATUS status;

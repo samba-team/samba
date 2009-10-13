@@ -513,7 +513,7 @@ NTSTATUS rpccli_netlogon_set_trust_password(struct rpc_pipe_client *cli,
 					    const unsigned char orig_trust_passwd_hash[16],
 					    const char *new_trust_pwd_cleartext,
 					    const unsigned char new_trust_passwd_hash[16],
-					    uint32_t sec_channel_type)
+					    enum netr_SchannelType sec_channel_type)
 {
 	NTSTATUS result;
 	uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;

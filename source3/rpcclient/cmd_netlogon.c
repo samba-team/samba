@@ -1051,7 +1051,7 @@ static NTSTATUS cmd_netlogon_database_redo(struct rpc_pipe_client *cli,
 	struct netr_Authenticator clnt_creds, srv_cred;
 	struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
 	unsigned char trust_passwd_hash[16];
-	uint32_t sec_channel_type = 0;
+	enum netr_SchannelType sec_channel_type = 0;
 	struct netr_ChangeLogEntry e;
 	uint32_t rid = 500;
 
