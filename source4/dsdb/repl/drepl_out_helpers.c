@@ -519,7 +519,7 @@ static void dreplsrv_update_refs_send(struct dreplsrv_op_pull_source_state *st)
 	r->in.req.req1.options	          = 
 		DRSUAPI_DS_REPLICA_UPDATE_ADD_REFERENCE |
 		DRSUAPI_DS_REPLICA_UPDATE_DELETE_REFERENCE;
-	if (!lp_parm_bool(service->task->lp_ctx, NULL, "repl", "RODC", false)) {
+	if (!samdb_rodc(service->task->lp_ctx)) {
 		r->in.req.req1.options |= DRSUAPI_DS_REPLICA_UPDATE_WRITEABLE;
 	}
 

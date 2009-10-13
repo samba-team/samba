@@ -2528,3 +2528,53 @@ int drsuapi_DsReplicaCursor2_compare(const struct drsuapi_DsReplicaCursor2 *c1,
 {
 	return GUID_compare(&c1->source_dsa_invocation_id, &c2->source_dsa_invocation_id);
 }
+
+/*
+  see if we are a RODC
+
+  TODO: This should take a sam_ctx, and lookup the right object (with
+  a cache)
+*/
+bool samdb_rodc(struct loadparm_context *lp_ctx)
+{
+	return lp_parm_bool(lp_ctx, NULL, "repl", "RODC", false);
+}
+
+
+/*
+  return NTDS options flags. See MS-ADTS 7.1.1.2.2.1.2.1.1 
+
+  flags are DS_NTDS_OPTION_*
+*/
+int samdb_ntds_options(struct ldb_context *ldb, uint32_t *options)
+{
+	TALLOC_CTX *tmp_ctx;
+	const char *attrs[] = { "options", NULL };
+	int ret;
+	struct ldb_result *res;
+
+	tmp_ctx = talloc_new(ldb);
+	if (tmp_ctx == NULL) {
+		goto failed;
+	}
+
+	ret = ldb_search(ldb, tmp_ctx, &res, samdb_ntds_settings_dn(ldb), LDB_SCOPE_BASE, attrs, NULL);
+	if (ret) {
+		goto failed;
+	}
+
+	if (res->count != 1) {
+		goto failed;
+	}
+
+	*options = samdb_result_uint(res->msgs[0], "options", 0);
+
+	talloc_free(tmp_ctx);
+
+	return LDB_SUCCESS;
+
+failed:
+	DEBUG(1,("Failed to find our own NTDS Settings objectGUID in the ldb!\n"));
+	talloc_free(tmp_ctx);
+	return LDB_ERR_NO_SUCH_OBJECT;
+}
