@@ -45,11 +45,11 @@ struct aio_extra {
 	files_struct *fsp;
 	struct smb_request *req;
 	char *outbuf;
-	int (*handle_completion)(struct aio_extra *ex);
+	int (*handle_completion)(struct aio_extra *ex, int errcode);
 };
 
-static int handle_aio_read_complete(struct aio_extra *aio_ex);
-static int handle_aio_write_complete(struct aio_extra *aio_ex);
+static int handle_aio_read_complete(struct aio_extra *aio_ex, int errcode);
+static int handle_aio_write_complete(struct aio_extra *aio_ex, int errcode);
 
 static int aio_extra_destructor(struct aio_extra *aio_ex)
 {
@@ -319,7 +319,7 @@ bool schedule_aio_write_and_X(connection_struct *conn,
  Returns errno or zero if all ok.
 *****************************************************************************/
 
-static int handle_aio_read_complete(struct aio_extra *aio_ex)
+static int handle_aio_read_complete(struct aio_extra *aio_ex, int errcode)
 {
 	int ret = 0;
 	int outsize;
@@ -333,17 +333,11 @@ static int handle_aio_read_complete(struct aio_extra *aio_ex)
 		   will return an error. Hopefully this is
 		   true.... JRA. */
 
-		/* If errno is ECANCELED then don't return anything to the
-		 * client. */
-		if (errno == ECANCELED) {
-			return 0;
-		}
-
-		DEBUG( 3,( "handle_aio_read_complete: file %s nread == -1. "
+		DEBUG( 3,( "handle_aio_read_complete: file %s nread == %d. "
 			   "Error = %s\n",
-			   fsp_str_dbg(aio_ex->fsp), strerror(errno)));
+			   fsp_str_dbg(aio_ex->fsp), nread, strerror(errcode)));
 
-		ret = errno;
+		ret = errcode;
 		ERROR_NT(map_nt_error_from_unix(ret));
 		outsize = srv_set_message(outbuf,0,0,true);
 	} else {
@@ -382,10 +376,10 @@ static int handle_aio_read_complete(struct aio_extra *aio_ex)
 
 /****************************************************************************
  Complete the write and return the data or error back to the client.
- Returns errno or zero if all ok.
+ Returns error code or zero if all ok.
 *****************************************************************************/
 
-static int handle_aio_write_complete(struct aio_extra *aio_ex)
+static int handle_aio_write_complete(struct aio_extra *aio_ex, int errcode)
 {
 	int ret = 0;
 	files_struct *fsp = aio_ex->fsp;
@@ -399,8 +393,8 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex)
 				DEBUG(5,("handle_aio_write_complete: "
 					 "aio_write_behind failed ! File %s "
 					 "is corrupt ! Error %s\n",
-					 fsp_str_dbg(fsp), strerror(errno)));
-				ret = errno;
+					 fsp_str_dbg(fsp), strerror(errcode)));
+				ret = errcode;
 			} else {
 				DEBUG(0,("handle_aio_write_complete: "
 					 "aio_write_behind failed ! File %s "
@@ -415,6 +409,7 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex)
 				  "aio_write_behind completed for file %s\n",
 				  fsp_str_dbg(fsp)));
 		}
+		/* TODO: should no return 0 in case of an error !!! */
 		return 0;
 	}
 
@@ -427,14 +422,8 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex)
 			   fsp_str_dbg(fsp), (unsigned int)numtowrite,
 			   (int)nwritten, strerror(errno) ));
 
-		/* If errno is ECANCELED then don't return anything to the
-		 * client. */
-		if (errno == ECANCELED) {
-			return 0;
-		}
-
-		ret = errno;
-		ERROR_BOTH(map_nt_error_from_unix(ret), ERRHRD, ERRdiskfull);
+		ret = errcode;
+		ERROR_NT(map_nt_error_from_unix(ret));
 		srv_set_message(outbuf,0,0,true);
         } else {
 		bool write_through = BITSETW(aio_ex->req->vwv+7,0);
@@ -493,14 +482,21 @@ static bool handle_aio_completed(struct aio_extra *aio_ex, int *perr)
 	}
 
 	/* Ensure the operation has really completed. */
-	if (SMB_VFS_AIO_ERROR(aio_ex->fsp, &aio_ex->acb) == EINPROGRESS) {
+	err = SMB_VFS_AIO_ERROR(aio_ex->fsp, &aio_ex->acb);
+	if (err == EINPROGRESS) {
 		DEBUG(10,( "handle_aio_completed: operation mid %u still in "
 			   "process for file %s\n",
 			   aio_ex->req->mid, fsp_str_dbg(aio_ex->fsp)));
 		return False;
-	}
+	} else if (err == ECANCELED) {
+		/* If error is ECANCELED then don't return anything to the
+		 * client. */
+	        DEBUG(10,( "handle_aio_completed: operation mid %u"
+                           " canceled\n", aio_ex->req->mid));
+		return True;
+        }
 
-	err = aio_ex->handle_completion(aio_ex);
+	err = aio_ex->handle_completion(aio_ex, err);
 	if (err) {
 		*perr = err; /* Only save non-zero errors. */
 	}
@@ -510,7 +506,6 @@ static bool handle_aio_completed(struct aio_extra *aio_ex, int *perr)
 
 /****************************************************************************
  Handle any aio completion inline.
- Returns non-zero errno if fail or zero if all ok.
 *****************************************************************************/
 
 void smbd_aio_complete_mid(unsigned int mid)
