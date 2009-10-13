@@ -440,7 +440,6 @@ done:
 	}
 
 	talloc_destroy(frame);
-	TALLOC_FREE(entry_dn);
 
 	return nt_status;
 }
