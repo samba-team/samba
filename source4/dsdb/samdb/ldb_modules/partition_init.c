@@ -178,9 +178,9 @@ static const char **find_modules_for_dn(struct partition_private_data *data, str
 }
 
 static int new_partition_from_dn(struct ldb_context *ldb, struct partition_private_data *data, 
-			  TALLOC_CTX *mem_ctx, 
-			  struct ldb_dn *dn,
-			  struct dsdb_partition **partition) {
+				 TALLOC_CTX *mem_ctx, 
+				 struct ldb_dn *dn, const char *casefold_dn,
+				 struct dsdb_partition **partition) {
 	const char *backend_name;
 	const char *full_backend;
 	struct dsdb_control_current_partition *ctrl;
@@ -207,19 +207,18 @@ static int new_partition_from_dn(struct ldb_context *ldb, struct partition_priva
 
 		/* the backend LDB is the DN (base64 encoded if not 'plain') followed by .ldb */
 		const char *p;
-		const char *backend_dn  = ldb_dn_get_casefold(dn);
 		char *base64_dn = NULL;
-		for (p = backend_dn; *p; p++) {
+		for (p = casefold_dn; *p; p++) {
 			/* We have such a strict check because I don't want shell metacharacters in the file name, nor ../ */
 			if (!(isalnum(*p) || *p == ' ' || *p == '=' || *p == ',')) {
 				break;
 			}
 		}
 		if (*p) {
-			backend_dn = base64_dn = ldb_base64_encode(data, backend_dn, strlen(backend_dn));
+			casefold_dn = base64_dn = ldb_base64_encode(data, casefold_dn, strlen(casefold_dn));
 		}
 		
-		backend_name = talloc_asprintf(data, "%s.ldb", backend_dn); 
+		backend_name = talloc_asprintf(data, "%s.ldb", casefold_dn); 
 		if (base64_dn) {
 			talloc_free(base64_dn);
 		}
@@ -313,6 +312,7 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_message *mod_msg;
 	struct partition_private_data *data;
 	struct dsdb_partition *partition;
+	const char *casefold_dn;
 
 	/* Check if this is already a partition */
 
@@ -346,7 +346,10 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	ret = ldb_msg_add_string(mod_msg, DSDB_PARTITION_ATTR, ldb_dn_get_casefold(dn));
+
+	casefold_dn = ldb_dn_get_casefold(dn);
+
+	ret = ldb_msg_add_string(mod_msg, DSDB_PARTITION_ATTR, casefold_dn);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -374,7 +377,7 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/* Make a partition structure for this new partition, so we can copy in the template structure */ 
-	ret = new_partition_from_dn(ldb, data, req, ldb_dn_copy(req, dn), &partition);
+	ret = new_partition_from_dn(ldb, data, req, ldb_dn_copy(req, dn), casefold_dn, &partition);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -576,7 +579,13 @@ int partition_init(struct ldb_module *module)
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 	
-		ret = new_partition_from_dn(ldb, data, data->partitions, dn, &data->partitions[i]);
+		/* We call ldb_dn_get_linearized() because the DN in
+		 * partition_attributes is already casefolded
+		 * correctly.  We don't want to mess that up as the
+		 * schema isn't loaded yet */
+		ret = new_partition_from_dn(ldb, data, data->partitions, dn, 
+					    ldb_dn_get_linearized(dn),
+					    &data->partitions[i]);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(mem_ctx);
 			return ret;
