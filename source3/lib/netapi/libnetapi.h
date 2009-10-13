@@ -440,4 +440,21 @@ WERROR NetShutdownAbort_r(struct libnetapi_ctx *ctx,
 			  struct NetShutdownAbort *r);
 WERROR NetShutdownAbort_l(struct libnetapi_ctx *ctx,
 			  struct NetShutdownAbort *r);
+NET_API_STATUS I_NetLogonControl(const char * server_name /* [in] */,
+				 uint32_t function_code /* [in] */,
+				 uint32_t query_level /* [in] */,
+				 uint8_t **buffer /* [out] [ref] */);
+WERROR I_NetLogonControl_r(struct libnetapi_ctx *ctx,
+			   struct I_NetLogonControl *r);
+WERROR I_NetLogonControl_l(struct libnetapi_ctx *ctx,
+			   struct I_NetLogonControl *r);
+NET_API_STATUS I_NetLogonControl2(const char * server_name /* [in] */,
+				  uint32_t function_code /* [in] */,
+				  uint32_t query_level /* [in] */,
+				  uint8_t *data /* [in] [ref] */,
+				  uint8_t **buffer /* [out] [ref] */);
+WERROR I_NetLogonControl2_r(struct libnetapi_ctx *ctx,
+			    struct I_NetLogonControl2 *r);
+WERROR I_NetLogonControl2_l(struct libnetapi_ctx *ctx,
+			    struct I_NetLogonControl2 *r);
 #endif /* __LIBNETAPI_LIBNETAPI__ */
