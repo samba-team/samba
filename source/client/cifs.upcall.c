@@ -80,7 +80,7 @@ get_krb5_ccname(pid_t pid)
 		}
 		p += 11;
 		left -= 11;
-		value = strndup(p, left);
+		value = SMB_STRNDUP(p, left);
 		break;
 	}
 	return value;
