@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.95
+Version: 1.0.96
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -132,6 +132,23 @@ fi
 %{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
+* Tue Oct 13 2009 : Version 1.0.96
+ - Add more debugging output when eventscripts have trouble. Print a 
+   "pstree -p" to the log when scripts have hung.
+ - Update the initscript,  only print the "No reclock file used" warning
+   when we do "service ctdb start", dont also print them for all other
+   actions.
+ - When changing between unhealthy/healthy state, push a request to the
+   recovery master to perform an ip reallocation   instead of waiting for the
+   recovery master to pull and check the state change.
+ - Fix a bug in the new db-priority handling where a pre-.95 recovery master
+   could no longer lock the databases on a post-.95 daemon.
+ - Always create the nfs state directories during the "monitor" event.
+   This makes it easier to configure and enable nfs at runtime.
+ - From Volker, forward-port a simper deadlock avoiding patch from the 1.0.82
+   branch. This is a simpler versionof the "db priority lock order" patch
+   that went into 1.0.95, and will be kept for a few versions until samba
+   has been updated to use the functionality from 1.0.95.
 * Mon Oct 12 2009 : Version 1.0.95
  - Add database priorities. Allow samba to set the priority of databases
    and lock the databases in priority order during recovery
