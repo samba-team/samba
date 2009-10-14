@@ -981,6 +981,7 @@ static bool winbind_name_to_sid_string(struct pwb_context *ctx,
 				       int sid_list_buffer_size)
 {
 	const char* sid_string;
+	char *sid_str;
 
 	/* lookup name? */
 	if (IS_SID_STRING(name)) {
@@ -989,7 +990,6 @@ static bool winbind_name_to_sid_string(struct pwb_context *ctx,
 		wbcErr wbc_status;
 		struct wbcDomainSid sid;
 		enum wbcSidType type;
-		char *sid_str;
 
 		_pam_log_debug(ctx, LOG_DEBUG,
 			       "no sid given, looking up: %s\n", name);
@@ -1006,15 +1006,16 @@ static bool winbind_name_to_sid_string(struct pwb_context *ctx,
 			return false;
 		}
 
-		wbcFreeMemory(sid_str);
 		sid_string = sid_str;
 	}
 
 	if (!safe_append_string(sid_list_buffer, sid_string,
 				sid_list_buffer_size)) {
+		wbcFreeMemory(sid_str);
 		return false;
 	}
 
+	wbcFreeMemory(sid_str);
 	return true;
 }
 
