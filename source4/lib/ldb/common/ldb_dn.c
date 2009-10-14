@@ -464,11 +464,6 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 		parse_dn++;
 	}
 
-	/* The RDN size must be less than 255 characters */
-	if (strlen(parse_dn) > 255) {
-		return false;
-	}
-
 	/* Empty DNs */
 	if (parse_dn[0] == '\0') {
 		return true;
