@@ -58,14 +58,20 @@ get_krb5_ccname(pid_t pid)
 	buf[4095] = '\0';
 	snprintf(buf, 4095, "/proc/%d/environ", pid);
 	fd = open(buf, O_RDONLY);
-	if (fd < 0)
+	if (fd < 0) {
+		syslog(LOG_DEBUG, "%s: unable to open %s: %d", __func__, buf,
+			errno);
 		return NULL;
+	}
 
 	/* FIXME: don't assume that we get it all in the first read? */
 	len = read(fd, buf, 4096);
 	close(fd);
-	if (len < 0)
+	if (len < 0) {
+		syslog(LOG_DEBUG, "%s: unable to read from /proc/%d/environ: "
+				  "%d", __func__, pid, errno);
 		return NULL;
+	}
 
 	left = len;
 	p = buf;
@@ -83,6 +89,8 @@ get_krb5_ccname(pid_t pid)
 		value = SMB_STRNDUP(p, left);
 		break;
 	}
+	syslog(LOG_DEBUG, "%s: KRB5CCNAME=%s", __func__,
+				value ? value : "(null)");
 	return value;
 }
 
@@ -113,12 +121,20 @@ handle_krb5_mech(const char *oid, const char *principal, DATA_BLOB *secblob,
 	int retval;
 	DATA_BLOB tkt, tkt_wrapped;
 
+	syslog(LOG_DEBUG, "%s: getting service ticket for %s", __func__,
+			  principal);
+
 	/* get a kerberos ticket for the service and extract the session key */
 	retval = cli_krb5_get_ticket(principal, 0, &tkt, sess_key, 0, ccname,
 				     NULL);
 
-	if (retval)
+	if (retval) {
+		syslog(LOG_DEBUG, "%s: failed to obtain service ticket (%d)",
+				  __func__, retval);
 		return retval;
+	}
+
+	syslog(LOG_DEBUG, "%s: obtained service ticket", __func__);
 
 	/* wrap that up in a nice GSS-API wrapping */
 	tkt_wrapped = spnego_gen_krb5_wrap(tkt, TOK_ID_KRB_AP_REQ);
@@ -131,13 +147,13 @@ handle_krb5_mech(const char *oid, const char *principal, DATA_BLOB *secblob,
 	return retval;
 }
 
-#define DKD_HAVE_HOSTNAME	1
-#define DKD_HAVE_VERSION	2
-#define DKD_HAVE_SEC		4
-#define DKD_HAVE_IPV4		8
-#define DKD_HAVE_IPV6		16
-#define DKD_HAVE_UID		32
-#define DKD_HAVE_PID		64
+#define DKD_HAVE_HOSTNAME	0x1
+#define DKD_HAVE_VERSION	0x2
+#define DKD_HAVE_SEC		0x4
+#define DKD_HAVE_IPV4		0x8
+#define DKD_HAVE_IPV6		0x10
+#define DKD_HAVE_UID		0x20
+#define DKD_HAVE_PID		0x40
 #define DKD_MUSTHAVE_SET (DKD_HAVE_HOSTNAME|DKD_HAVE_VERSION|DKD_HAVE_SEC)
 
 static int
@@ -171,7 +187,7 @@ decode_key_description(const char *desc, int *ver, secType_t *sec,
 			errno = 0;
 			*pid = strtol(tkn + 4, NULL, 0);
 			if (errno != 0) {
-				syslog(LOG_WARNING, "Invalid pid format: %s",
+				syslog(LOG_ERR, "Invalid pid format: %s",
 				       strerror(errno));
 				return 1;
 			} else {
@@ -189,7 +205,7 @@ decode_key_description(const char *desc, int *ver, secType_t *sec,
 			errno = 0;
 			*uid = strtol(tkn + 4, NULL, 16);
 			if (errno != 0) {
-				syslog(LOG_WARNING, "Invalid uid format: %s",
+				syslog(LOG_ERR, "Invalid uid format: %s",
 				       strerror(errno));
 				return 1;
 			} else {
@@ -199,8 +215,7 @@ decode_key_description(const char *desc, int *ver, secType_t *sec,
 			errno = 0;
 			*ver = strtol(tkn + 4, NULL, 16);
 			if (errno != 0) {
-				syslog(LOG_WARNING,
-				       "Invalid version format: %s",
+				syslog(LOG_ERR, "Invalid version format: %s",
 				       strerror(errno));
 				return 1;
 			} else {
@@ -226,7 +241,7 @@ cifs_resolver(const key_serial_t key, const char *key_descr)
 	for (c = 1; c <= 4; c++) {
 		keyend = index(keyend+1, ';');
 		if (!keyend) {
-			syslog(LOG_WARNING, "invalid key description: %s",
+			syslog(LOG_ERR, "invalid key description: %s",
 					key_descr);
 			return 1;
 		}
@@ -236,7 +251,7 @@ cifs_resolver(const key_serial_t key, const char *key_descr)
 	/* resolve name to ip */
 	c = getaddrinfo(keyend, NULL, NULL, &addr);
 	if (c) {
-		syslog(LOG_WARNING, "unable to resolve hostname: %s [%s]",
+		syslog(LOG_ERR, "unable to resolve hostname: %s [%s]",
 				keyend, gai_strerror(c));
 		return 1;
 	}
@@ -248,8 +263,7 @@ cifs_resolver(const key_serial_t key, const char *key_descr)
 		p = &(((struct sockaddr_in6 *)addr->ai_addr)->sin6_addr);
 	}
 	if (!inet_ntop(addr->ai_family, p, ip, sizeof(ip))) {
-		syslog(LOG_WARNING, "%s: inet_ntop: %s",
-				__FUNCTION__, strerror(errno));
+		syslog(LOG_ERR, "%s: inet_ntop: %s", __func__, strerror(errno));
 		freeaddrinfo(addr);
 		return 1;
 	}
@@ -257,8 +271,8 @@ cifs_resolver(const key_serial_t key, const char *key_descr)
 	/* setup key */
 	c = keyctl_instantiate(key, ip, strlen(ip)+1, 0);
 	if (c == -1) {
-		syslog(LOG_WARNING, "%s: keyctl_instantiate: %s",
-				__FUNCTION__, strerror(errno));
+		syslog(LOG_ERR, "%s: keyctl_instantiate: %s", __func__,
+				strerror(errno));
 		freeaddrinfo(addr);
 		return 1;
 	}
@@ -270,7 +284,7 @@ cifs_resolver(const key_serial_t key, const char *key_descr)
 static void
 usage(void)
 {
-	syslog(LOG_WARNING, "Usage: %s [-c] [-v] key_serial", prog);
+	syslog(LOG_INFO, "Usage: %s [-c] [-v] key_serial", prog);
 	fprintf(stderr, "Usage: %s [-c] [-v] key_serial\n", prog);
 }
 
@@ -303,7 +317,7 @@ int main(const int argc, char *const argv[])
 			goto out;
 			}
 		default:{
-			syslog(LOG_WARNING, "unknown option: %c", c);
+			syslog(LOG_ERR, "unknown option: %c", c);
 			goto out;
 			}
 		}
@@ -320,17 +334,19 @@ int main(const int argc, char *const argv[])
 	key = strtol(argv[optind], NULL, 10);
 	if (errno != 0) {
 		key = 0;
-		syslog(LOG_WARNING, "Invalid key format: %s", strerror(errno));
+		syslog(LOG_ERR, "Invalid key format: %s", strerror(errno));
 		goto out;
 	}
 
 	rc = keyctl_describe_alloc(key, &buf);
 	if (rc == -1) {
-		syslog(LOG_WARNING, "keyctl_describe_alloc failed: %s",
+		syslog(LOG_ERR, "keyctl_describe_alloc failed: %s",
 		       strerror(errno));
 		rc = 1;
 		goto out;
 	}
+
+	syslog(LOG_DEBUG, "key description: %s", buf);
 
 	if ((strncmp(buf, "cifs.resolver", sizeof("cifs.resolver")-1) == 0) ||
 	    (strncmp(buf, "dns_resolver", sizeof("dns_resolver")-1) == 0)) {
@@ -341,8 +357,8 @@ int main(const int argc, char *const argv[])
 	rc = decode_key_description(buf, &kernel_upcall_version, &sectype,
 				    &hostname, &uid, &pid);
 	if ((rc & DKD_MUSTHAVE_SET) != DKD_MUSTHAVE_SET) {
-		syslog(LOG_WARNING,
-		       "unable to get from description necessary params");
+		syslog(LOG_ERR, "unable to get necessary params from key "
+				"description (0x%x)", rc);
 		rc = 1;
 		SAFE_FREE(buf);
 		goto out;
@@ -350,9 +366,8 @@ int main(const int argc, char *const argv[])
 	SAFE_FREE(buf);
 
 	if (kernel_upcall_version > CIFS_SPNEGO_UPCALL_VERSION) {
-		syslog(LOG_WARNING,
-		       "incompatible kernel upcall version: 0x%x",
-		       kernel_upcall_version);
+		syslog(LOG_ERR, "incompatible kernel upcall version: 0x%x",
+				kernel_upcall_version);
 		rc = 1;
 		goto out;
 	}
@@ -363,7 +378,7 @@ int main(const int argc, char *const argv[])
 	if (rc & DKD_HAVE_UID) {
 		rc = setuid(uid);
 		if (rc == -1) {
-			syslog(LOG_WARNING, "setuid: %s", strerror(errno));
+			syslog(LOG_ERR, "setuid: %s", strerror(errno));
 			goto out;
 		}
 	}
@@ -400,7 +415,7 @@ int main(const int argc, char *const argv[])
 			break;
 		}
 	default:{
-			syslog(LOG_WARNING, "sectype: %d is not implemented",
+			syslog(LOG_ERR, "sectype: %d is not implemented",
 			       sectype);
 			rc = 1;
 			break;
@@ -430,7 +445,7 @@ int main(const int argc, char *const argv[])
 	/* setup key */
 	rc = keyctl_instantiate(key, keydata, datalen, 0);
 	if (rc == -1) {
-		syslog(LOG_WARNING, "keyctl_instantiate: %s", strerror(errno));
+		syslog(LOG_ERR, "keyctl_instantiate: %s", strerror(errno));
 		goto out;
 	}
 
