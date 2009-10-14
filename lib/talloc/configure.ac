@@ -1,5 +1,5 @@
 AC_PREREQ(2.50)
-AC_INIT(talloc, 2.0.0)
+AC_INIT(talloc, 2.0.1)
 AC_CONFIG_SRCDIR([talloc.c])
 AC_SUBST(datarootdir)
 AC_CONFIG_HEADER(config.h)
