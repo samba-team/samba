@@ -33,6 +33,7 @@ LANG=C; export LANG
 LC_ALL=C; export LC_ALL
 LC_COLLATE=C; export LC_COLLATE
 
+exit_status=0
 script=$0
 dir_name=$(dirname ${script})
 
@@ -58,34 +59,22 @@ signatures_file_check=${signatures_file}.check
 
 
 ${dir_name}/mksyms.sh awk ${exports_file_check} ${headers} 2>&1 > /dev/null
+cat ${headers} | ${dir_name}/mksigs.pl | sort| uniq > ${signatures_file_check} 2> /dev/null
 
-cat ${headers} | ${dir_name}/mksigs.pl > ${signatures_file_check} 2> /dev/null
-
-normalize_exports_file() {
-	filename=$1
-	cat ${filename} \
-	| sed -e 's/^[ \t]*//g' \
-	| sed -e 's/^$//g' \
-	| sed -e 's/^#.*$//g' \
-	| sort | uniq > ${filename}.sort
-}
-
-normalize_exports_file ${exports_file}
-normalize_exports_file ${exports_file_check}
-
-normalize_exports_file ${signatures_file}
-normalize_exports_file ${signatures_file_check}
-
-diff -u ${exports_file}.sort ${exports_file_check}.sort
+diff -u ${exports_file} ${exports_file_check}
 if test "x$?" != "x0" ; then
 	echo "WARNING: possible ABI change detected in exports!"
+	let exit_status++
 else
 	echo "exports check: OK"
 fi
 
-diff -u ${signatures_file}.sort ${signatures_file_check}.sort
+diff -u ${signatures_file} ${signatures_file_check}
 if test "x$?" != "x0" ; then
 	echo "WARNING: possible ABI change detected in signatures!"
+	let exit_status++
 else
 	echo "signatures check: OK"
 fi
+
+exit $exit_status
