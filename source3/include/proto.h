@@ -4445,9 +4445,11 @@ bool pdb_update_autolock_flag(struct samu *sampass, bool *updated);
 bool pdb_increment_bad_password_count(struct samu *sampass);
 bool is_dc_trusted_domain_situation(const char *domain_name);
 bool get_trust_pw_clear(const char *domain, char **ret_pwd,
-			const char **account_name, uint32 *channel);
+			const char **account_name,
+			enum netr_SchannelType *channel);
 bool get_trust_pw_hash(const char *domain, uint8 ret_pwd[16],
-		       const char **account_name, uint32 *channel);
+		       const char **account_name,
+		       enum netr_SchannelType *channel);
 struct samr_LogonHours get_logon_hours_from_pdb(TALLOC_CTX *mem_ctx,
 						struct samu *pw);
 /* The following definitions come from passdb/pdb_compat.c  */
