@@ -33,8 +33,29 @@
 static int ctdb_lock_all_databases(struct ctdb_context *ctdb, uint32_t priority)
 {
 	struct ctdb_db_context *ctdb_db;
+	/* REMOVE later */
+	/* This double loop is for backward compatibility and deadlock
+	   avoidance for old samba versions that not yet support
+	   the set prio call.
+	   This code shall be removed later
+	*/
 	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
 		if (ctdb_db->priority != priority) {
+			continue;
+		}
+		if (strstr(ctdb_db->db_name, "notify") != NULL) {
+			continue;
+		}
+		DEBUG(DEBUG_INFO,("locking database 0x%08x priority:%u %s\n", ctdb_db->db_id, ctdb_db->priority, ctdb_db->db_name));
+		if (tdb_lockall(ctdb_db->ltdb->tdb) != 0) {
+			return -1;
+		}
+	}
+	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
+		if (ctdb_db->priority != priority) {
+			continue;
+		}
+		if (strstr(ctdb_db->db_name, "notify") == NULL) {
 			continue;
 		}
 		DEBUG(DEBUG_INFO,("locking database 0x%08x priority:%u %s\n", ctdb_db->db_id, ctdb_db->priority, ctdb_db->db_name));
@@ -230,6 +251,11 @@ static int ctdb_freeze_waiter_destructor(struct ctdb_freeze_waiter *w)
  */
 int ctdb_start_freeze(struct ctdb_context *ctdb, uint32_t priority)
 {
+	if (priority == 0) {
+		DEBUG(DEBUG_ERR,("Freeze priority 0 requested, remapping to priority 1\n"));
+		priority = 1;
+	}
+
 	if ((priority < 1) || (priority > NUM_DB_PRIORITIES)) {
 		DEBUG(DEBUG_ERR,(__location__ " Invalid db priority : %u\n", priority));
 		return -1;
@@ -261,6 +287,11 @@ int32_t ctdb_control_freeze(struct ctdb_context *ctdb, struct ctdb_req_control *
 	priority = (uint32_t)c->srvid;
 
 	DEBUG(DEBUG_ERR, ("Freeze priority %u\n", priority));
+
+	if (priority == 0) {
+		DEBUG(DEBUG_ERR,("Freeze priority 0 requested, remapping to priority 1\n"));
+		priority = 1;
+	}
 
 	if ((priority < 1) || (priority > NUM_DB_PRIORITIES)) {
 		DEBUG(DEBUG_ERR,(__location__ " Invalid db priority : %u\n", priority));
