@@ -268,137 +268,19 @@ static int new_partition_from_dn(struct ldb_context *ldb, struct partition_priva
 	return ret;
 }
 
-static int partition_register(struct ldb_context *ldb, struct dsdb_control_current_partition *ctrl, TALLOC_CTX *mem_ctx) 
-{
-	struct ldb_request *req;
-	int ret;
+/* Copy the metadata (@OPTIONS etc) for the new partition into the partition */
 
-	req = talloc_zero(mem_ctx, struct ldb_request);
-	if (req == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-		
-	req->operation = LDB_REQ_REGISTER_PARTITION;
-	req->op.reg_partition.dn = ctrl->dn;
-	req->callback = ldb_op_default_callback;
-
-	ldb_set_timeout(ldb, req, 0);
-	
-	req->handle = ldb_handle_new(req, ldb);
-	if (req->handle == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	
-	ret = ldb_request(ldb, req);
-	if (ret == LDB_SUCCESS) {
-		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
-	}
-	if (ret != LDB_SUCCESS) {
-		ldb_debug(ldb, LDB_DEBUG_ERROR, "partition: Unable to register partition with rootdse!\n");
-		talloc_free(mem_ctx);
-		return LDB_ERR_OTHER;
-	}
-	talloc_free(req);
-
-	return LDB_SUCCESS;
-}
-
-int partition_create(struct ldb_module *module, struct ldb_request *req)
+static int new_partition_set_replicated_metadata(struct ldb_context *ldb, 
+						 struct ldb_module *module, struct ldb_request *last_req, 
+						 struct partition_private_data *data, 
+						 struct dsdb_partition *partition)
 {
 	int i, ret;
-	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	struct ldb_request *mod_req, *last_req;
-	struct ldb_message *mod_msg;
-	struct partition_private_data *data;
-	struct dsdb_partition *partition;
-	const char *casefold_dn;
-
-	/* Check if this is already a partition */
-
-	struct dsdb_create_partition_exop *ex_op = talloc_get_type(req->op.extended.data, struct dsdb_create_partition_exop);
-	struct ldb_dn *dn = ex_op->new_dn;
-
-	data = talloc_get_type(module->private_data, struct partition_private_data);
-	if (!data) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	
-	if (!data) {
-		/* We are not going to create a partition before we are even set up */
-		return LDB_ERR_UNWILLING_TO_PERFORM;
-	}
-
-	for (i=0; data->partitions && data->partitions[i]; i++) {
-		if (ldb_dn_compare(data->partitions[i]->ctrl->dn, dn) == 0) {
-			return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
-		}
-	}
-
-	mod_msg = ldb_msg_new(req);
-	if (!mod_msg) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	mod_msg->dn = ldb_dn_new(mod_msg, ldb, DSDB_PARTITION_DN);
-	ret = ldb_msg_add_empty(mod_msg, DSDB_PARTITION_ATTR, LDB_FLAG_MOD_ADD, NULL);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	casefold_dn = ldb_dn_get_casefold(dn);
-
-	ret = ldb_msg_add_string(mod_msg, DSDB_PARTITION_ATTR, casefold_dn);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	/* Perform modify on @PARTITION record */
-	ret = ldb_build_mod_req(&mod_req, ldb, req, mod_msg, NULL, NULL, 
-				ldb_op_default_callback, req);
-
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-		
-	ret = ldb_next_request(module, mod_req);
-	if (ret == LDB_SUCCESS) {
-		ret = ldb_wait(mod_req->handle, LDB_WAIT_ALL);
-	}
-
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	ret = partition_reload_metadata(module, data, req, NULL);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	/* Make a partition structure for this new partition, so we can copy in the template structure */ 
-	ret = new_partition_from_dn(ldb, data, req, ldb_dn_copy(req, dn), casefold_dn, &partition);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	/* Start a transaction on the DB (as it won't be in one being brand new) */
-	{
-		struct ldb_module *next = partition->module;
-		PARTITION_FIND_OP(next, start_transaction);
-
-		ret = next->ops->start_transaction(next);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-	}
-	
-	/* otherwise, for each replicate, copy from main partition.  If we get an error, we report it up the chain */
-	last_req = mod_req;
+	/* for each replicate, copy from main partition.  If we get an error, we report it up the chain */
 	for (i=0; data->replicate && data->replicate[i]; i++) {
 		struct ldb_result *replicate_res;
 		struct ldb_request *add_req;
-		ret = dsdb_module_search_dn(module, req, &replicate_res, 
+		ret = dsdb_module_search_dn(module, last_req, &replicate_res, 
 					    data->replicate[i],
 					    NULL);
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
@@ -415,7 +297,8 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 		}
 
 		/* Build add request */
-		ret = ldb_build_add_req(&add_req, ldb, replicate_res, replicate_res->msgs[0], NULL, NULL, 
+		ret = ldb_build_add_req(&add_req, ldb, replicate_res, 
+					replicate_res->msgs[0], NULL, NULL, 
 					ldb_op_default_callback, last_req);
 		last_req = add_req;
 		if (ret != LDB_SUCCESS) {
@@ -508,27 +391,167 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 
 		/* And around again, for the next thing we must merge */
 	}
+	return LDB_SUCCESS;
+}
 
-	/* Count the partitions */
-	for (i=0; data->partitions && data->partitions[i]; i++) { /* noop */};
-	
-	/* Add partition to list of partitions */
-	data->partitions = talloc_realloc(data, data->partitions, struct dsdb_partition *, i + 2);
-	if (!data->partitions) {
+static int partition_register(struct ldb_context *ldb, struct dsdb_control_current_partition *ctrl, TALLOC_CTX *mem_ctx) 
+{
+	struct ldb_request *req;
+	int ret;
+
+	req = talloc_zero(mem_ctx, struct ldb_request);
+	if (req == NULL) {
 		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	data->partitions[i] = talloc_steal(data->partitions, partition);
-	data->partitions[i+1] = NULL;
 		
-	/* Sort again (should use binary insert) */
-	qsort(data->partitions, i+1,
-	      sizeof(*data->partitions), partition_sort_compare);
+	req->operation = LDB_REQ_REGISTER_PARTITION;
+	req->op.reg_partition.dn = ctrl->dn;
+	req->callback = ldb_op_default_callback;
 
-	ret = partition_register(ldb, partition->ctrl, req);
+	ldb_set_timeout(ldb, req, 0);
+	
+	req->handle = ldb_handle_new(req, ldb);
+	if (req->handle == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	
+	ret = ldb_request(ldb, req);
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+	if (ret != LDB_SUCCESS) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "partition: Unable to register partition with rootdse!\n");
+		talloc_free(mem_ctx);
+		return LDB_ERR_OTHER;
+	}
+	talloc_free(req);
+
+	return LDB_SUCCESS;
+}
+
+int partition_create(struct ldb_module *module, struct ldb_request *req)
+{
+	int i, ret;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct ldb_request *mod_req, *last_req = req;
+	struct ldb_message *mod_msg;
+	struct partition_private_data *data;
+	struct dsdb_partition *partition = NULL;
+	const char *casefold_dn;
+	bool new_partition = false;
+
+	/* Check if this is already a partition */
+
+	struct dsdb_create_partition_exop *ex_op = talloc_get_type(req->op.extended.data, struct dsdb_create_partition_exop);
+	struct ldb_dn *dn = ex_op->new_dn;
+
+	data = talloc_get_type(module->private_data, struct partition_private_data);
+	if (!data) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	
+	if (!data) {
+		/* We are not going to create a partition before we are even set up */
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	ret = partition_reload_metadata(module, data, req, NULL);
 	if (ret != LDB_SUCCESS) {
 		return ret;
-	}		
+	}
+		
+	for (i=0; data->partitions && data->partitions[i]; i++) {
+		if (ldb_dn_compare(data->partitions[i]->ctrl->dn, dn) == 0) {
+			partition = data->partitions[i];
+		}
+	}
+
+	if (!partition) {
+		new_partition = true;
+		mod_msg = ldb_msg_new(req);
+		if (!mod_msg) {
+			ldb_oom(ldb);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		
+		mod_msg->dn = ldb_dn_new(mod_msg, ldb, DSDB_PARTITION_DN);
+		ret = ldb_msg_add_empty(mod_msg, DSDB_PARTITION_ATTR, LDB_FLAG_MOD_ADD, NULL);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		
+		casefold_dn = ldb_dn_get_casefold(dn);
+		
+		ret = ldb_msg_add_string(mod_msg, DSDB_PARTITION_ATTR, casefold_dn);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		
+		/* Perform modify on @PARTITION record */
+		ret = ldb_build_mod_req(&mod_req, ldb, req, mod_msg, NULL, NULL, 
+					ldb_op_default_callback, req);
+		
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		
+		last_req = mod_req;
+
+		ret = ldb_next_request(module, mod_req);
+		if (ret == LDB_SUCCESS) {
+			ret = ldb_wait(mod_req->handle, LDB_WAIT_ALL);
+		}
+		
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		
+		/* Make a partition structure for this new partition, so we can copy in the template structure */ 
+		ret = new_partition_from_dn(ldb, data, req, ldb_dn_copy(req, dn), casefold_dn, &partition);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		
+		/* Start a transaction on the DB (as it won't be in one being brand new) */
+		{
+			struct ldb_module *next = partition->module;
+			PARTITION_FIND_OP(next, start_transaction);
+			
+			ret = next->ops->start_transaction(next);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+		}
+	}
+	
+	ret = new_partition_set_replicated_metadata(ldb, module, last_req, data, partition);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	
+	if (new_partition) {
+		/* Count the partitions */
+		for (i=0; data->partitions && data->partitions[i]; i++) { /* noop */};
+		
+		/* Add partition to list of partitions */
+		data->partitions = talloc_realloc(data, data->partitions, struct dsdb_partition *, i + 2);
+		if (!data->partitions) {
+			ldb_oom(ldb);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		data->partitions[i] = talloc_steal(data->partitions, partition);
+		data->partitions[i+1] = NULL;
+		
+		/* Sort again (should use binary insert) */
+		qsort(data->partitions, i+1,
+		      sizeof(*data->partitions), partition_sort_compare);
+		
+		ret = partition_register(ldb, partition->ctrl, req);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
 
 	/* send request done */
 	return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);
