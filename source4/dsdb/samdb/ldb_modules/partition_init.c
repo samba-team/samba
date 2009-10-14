@@ -159,6 +159,38 @@ static int partition_reload_metadata(struct ldb_module *module, struct partition
 	return LDB_SUCCESS;
 }
 
+int partition_reload_if_required(struct ldb_module *module, 
+				 struct partition_private_data *data)
+	
+{
+	uint64_t seq;
+	int ret;
+	TALLOC_CTX *mem_ctx = talloc_new(data);
+	if (!data) {
+		/* Not initilised yet */
+		return LDB_SUCCESS;
+	}
+	if (!mem_ctx) {
+		ldb_oom(ldb_module_get_ctx(module));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ret = partition_primary_sequence_number(module, mem_ctx, LDB_SEQ_HIGHEST_SEQ, &seq);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(mem_ctx);
+		return ret;
+	}
+	if (seq != data->metadata_seq) {
+		ret = partition_reload_metadata(module, data, mem_ctx, NULL);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(mem_ctx);
+			return ret;
+		}
+		data->metadata_seq = seq;
+	}
+	talloc_free(mem_ctx);
+	return LDB_SUCCESS;
+}
+
 static const char **find_modules_for_dn(struct partition_private_data *data, struct ldb_dn *dn) 
 {
 	int i;
@@ -575,6 +607,12 @@ int partition_init(struct ldb_module *module)
 	data = talloc_zero(mem_ctx, struct partition_private_data);
 	if (data == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = partition_primary_sequence_number(module, mem_ctx, LDB_SEQ_HIGHEST_SEQ, &data->metadata_seq);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(mem_ctx);
+		return ret;
 	}
 
 	ret = partition_reload_metadata(module, data, mem_ctx, &msg);

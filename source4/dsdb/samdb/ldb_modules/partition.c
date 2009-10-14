@@ -412,6 +412,11 @@ static int partition_replicate(struct ldb_module *module, struct ldb_request *re
 	if (!data || !data->partitions) {
 		return ldb_next_request(module, req);
 	}
+
+	ret = partition_reload_if_required(module, data);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 	
 	if (req->operation != LDB_SEARCH) {
 		/* Is this a special DN, we need to replicate to every backend? */
@@ -463,6 +468,7 @@ static int partition_replicate(struct ldb_module *module, struct ldb_request *re
 /* search */
 static int partition_search(struct ldb_module *module, struct ldb_request *req)
 {
+	int ret;
 	struct ldb_control **saved_controls;
 	/* Find backend */
 	struct partition_private_data *data = talloc_get_type(module->private_data, 
@@ -479,6 +485,11 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_search_options_control *search_options = NULL;
 	struct dsdb_partition *p;
 	
+	ret = partition_reload_if_required(module, data);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	p = find_partition(data, NULL, req);
 	if (p != NULL) {
 		/* the caller specified what partition they want the
@@ -511,7 +522,7 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 	*/
 	
 	if (search_options && (search_options->search_options & LDB_SEARCH_OPTION_PHANTOM_ROOT)) {
-		int ret, i;
+		int i;
 		struct partition_context *ac;
 		if ((search_options->search_options & ~LDB_SEARCH_OPTION_PHANTOM_ROOT) == 0) {
 			/* We have processed this flag, so we are done with this control now */
@@ -615,6 +626,7 @@ static int partition_delete(struct ldb_module *module, struct ldb_request *req)
 /* rename */
 static int partition_rename(struct ldb_module *module, struct ldb_request *req)
 {
+	int ret;
 	/* Find backend */
 	struct dsdb_partition *backend, *backend2;
 	
@@ -624,6 +636,11 @@ static int partition_rename(struct ldb_module *module, struct ldb_request *req)
 	/* Skip the lot if 'data' isn't here yet (initialisation) */
 	if (!data) {
 		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = partition_reload_if_required(module, data);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
 
 	backend = find_partition(data, req->op.rename.olddn, req);
@@ -751,6 +768,61 @@ static int partition_del_trans(struct ldb_module *module)
 	return final_ret;
 }
 
+int partition_primary_sequence_number(struct ldb_module *module, TALLOC_CTX *mem_ctx, 
+				     enum ldb_sequence_type type, uint64_t *seq_number) 
+{
+	int ret;
+	struct ldb_result *res;
+	struct ldb_seqnum_request *tseq;
+	struct ldb_request *treq;
+	struct ldb_seqnum_result *seqr;
+	res = talloc_zero(mem_ctx, struct ldb_result);
+	if (res == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	tseq = talloc_zero(res, struct ldb_seqnum_request);
+	if (tseq == NULL) {
+		talloc_free(res);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	tseq->type = type;
+	
+	ret = ldb_build_extended_req(&treq, ldb_module_get_ctx(module), res,
+				     LDB_EXTENDED_SEQUENCE_NUMBER,
+				     tseq,
+				     NULL,
+				     res,
+				     ldb_extended_default_callback,
+				     NULL);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(res);
+		return ret;
+	}
+	
+	ret = ldb_next_request(module, treq);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(res);
+		return ret;
+	}
+	ret = ldb_wait(treq->handle, LDB_WAIT_ALL);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(res);
+		return ret;
+	}
+	
+	seqr = talloc_get_type(res->extended->data,
+			       struct ldb_seqnum_result);
+	if (seqr->flags & LDB_SEQ_TIMESTAMP_SEQUENCE) {
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		ldb_set_errstring(ldb_module_get_ctx(module), "Primary backend in partitions module returned a timestamp based seq number (must return a normal number)");
+		talloc_free(res);
+		return ret;
+	} else {
+		*seq_number = seqr->seq_num;
+	}
+	talloc_free(res);
+	return LDB_SUCCESS;
+}
 
 /* FIXME: This function is still semi-async */
 static int partition_sequence_number(struct ldb_module *module, struct ldb_request *req)
@@ -783,48 +855,11 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 	switch (seq->type) {
 	case LDB_SEQ_NEXT:
 	case LDB_SEQ_HIGHEST_SEQ:
-		res = talloc_zero(req, struct ldb_result);
-		if (res == NULL) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		tseq = talloc_zero(res, struct ldb_seqnum_request);
-		if (tseq == NULL) {
-			talloc_free(res);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		tseq->type = seq->type;
 
-		ret = ldb_build_extended_req(&treq, ldb_module_get_ctx(module), res,
-					     LDB_EXTENDED_SEQUENCE_NUMBER,
-					     tseq,
-					     NULL,
-					     res,
-					     ldb_extended_default_callback,
-					     NULL);
+		ret = partition_primary_sequence_number(module, req, seq->type, &seq_number);
 		if (ret != LDB_SUCCESS) {
-			talloc_free(res);
 			return ret;
 		}
-
-		ret = ldb_next_request(module, treq);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(res);
-			return ret;
-		}
-		ret = ldb_wait(treq->handle, LDB_WAIT_ALL);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(res);
-			return ret;
-		}
-
-		seqr = talloc_get_type(res->extended->data,
-					struct ldb_seqnum_result);
-		if (seqr->flags & LDB_SEQ_TIMESTAMP_SEQUENCE) {
-			timestamp_sequence = seqr->seq_num;
-		} else {
-			seq_number += seqr->seq_num;
-		}
-		talloc_free(res);
 
 		/* Skip the lot if 'data' isn't here yet (initialisation) */
 		for (i=0; data && data->partitions && data->partitions[i]; i++) {
@@ -1078,12 +1113,18 @@ static int partition_extended(struct ldb_module *module, struct ldb_request *req
 {
 	struct partition_private_data *data;
 	struct partition_context *ac;
+	int ret;
 
 	data = talloc_get_type(module->private_data, struct partition_private_data);
 	if (!data) {
 		return ldb_next_request(module, req);
 	}
 
+	ret = partition_reload_if_required(module, data);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	
 	if (strcmp(req->op.extended.oid, LDB_EXTENDED_SEQUENCE_NUMBER) == 0) {
 		return partition_sequence_number(module, req);
 	}
