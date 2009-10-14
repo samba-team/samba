@@ -164,7 +164,7 @@ static struct decoded_args {
 	sectype_t	sec;
 };
 
-static int
+static unsigned int
 decode_key_description(const char *desc, struct decoded_args *arg)
 {
 	int retval = 0;
@@ -302,6 +302,7 @@ int main(const int argc, char *const argv[])
 	DATA_BLOB sess_key = data_blob_null;
 	key_serial_t key = 0;
 	size_t datalen;
+	unsigned int have;
 	long rc = 1;
 	int c;
 	char *buf, *princ, *ccname = NULL;
@@ -355,15 +356,14 @@ int main(const int argc, char *const argv[])
 		goto out;
 	}
 
-	rc = decode_key_description(buf, &arg);
-	if ((rc & DKD_MUSTHAVE_SET) != DKD_MUSTHAVE_SET) {
+	have = decode_key_description(buf, &arg);
+	SAFE_FREE(buf);
+	if ((have & DKD_MUSTHAVE_SET) != DKD_MUSTHAVE_SET) {
 		syslog(LOG_ERR, "unable to get necessary params from key "
-				"description (0x%x)", rc);
+				"description (0x%x)", have);
 		rc = 1;
-		SAFE_FREE(buf);
 		goto out;
 	}
-	SAFE_FREE(buf);
 
 	if (arg.ver > CIFS_SPNEGO_UPCALL_VERSION) {
 		syslog(LOG_ERR, "incompatible kernel upcall version: 0x%x",
@@ -372,16 +372,16 @@ int main(const int argc, char *const argv[])
 		goto out;
 	}
 
-	if (rc & DKD_HAVE_PID)
-		ccname = get_krb5_ccname(arg.pid);
-
-	if (rc & DKD_HAVE_UID) {
+	if (have & DKD_HAVE_UID) {
 		rc = setuid(arg.uid);
 		if (rc == -1) {
 			syslog(LOG_ERR, "setuid: %s", strerror(errno));
 			goto out;
 		}
 	}
+
+	if (have & DKD_HAVE_PID)
+		ccname = get_krb5_ccname(arg.pid);
 
 	// do mech specific authorization
 	switch (arg.sec) {
