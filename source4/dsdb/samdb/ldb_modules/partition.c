@@ -621,7 +621,6 @@ static int partition_delete(struct ldb_module *module, struct ldb_request *req)
 /* rename */
 static int partition_rename(struct ldb_module *module, struct ldb_request *req)
 {
-	int ret;
 	/* Find backend */
 	struct dsdb_partition *backend, *backend2;
 	
