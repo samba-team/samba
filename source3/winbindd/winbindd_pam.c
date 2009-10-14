@@ -830,6 +830,8 @@ void winbindd_pam_auth(struct winbindd_cli_state *state)
 	if (NT_STATUS_IS_OK(name_map_status)
 	    ||NT_STATUS_EQUAL(name_map_status, NT_STATUS_FILE_RENAMED)) {
 		fstrcpy(mapped_user, mapped);
+	} else {
+		fstrcpy(mapped_user, state->request.data.auth.user);
 	}
 
 	if (!canonicalize_username(mapped_user, name_domain, name_user)) {
