@@ -170,5 +170,16 @@ int ldb_module_done(struct ldb_request *req,
 int ldb_mod_register_control(struct ldb_module *module, const char *oid);
 
 void ldb_set_default_dns(struct ldb_context *ldb);
+/**
+  Add a ldb_control to a ldb_reply
+
+  \param ares the reply struct where to add the control
+  \param oid the object identifier of the control as string
+  \param critical whether the control should be critical or not
+  \param data a talloc pointer to the control specific data
+
+  \return result code (LDB_SUCCESS on success, or a failure code)
+*/
+int ldb_reply_add_control(struct ldb_reply *ares, const char *oid, bool critical, void *data);
 
 #endif

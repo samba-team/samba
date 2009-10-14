@@ -160,6 +160,40 @@ int ldb_request_add_control(struct ldb_request *req, const char *oid, bool criti
 	return LDB_SUCCESS;
 }
 
+int ldb_reply_add_control(struct ldb_reply *ares, const char *oid, bool critical, void *data)
+{
+	unsigned n;
+	struct ldb_control **ctrls;
+	struct ldb_control *ctrl;
+
+	for (n=0; ares->controls && ares->controls[n];) { 
+		/* having two controls of the same OID makes no sense */
+		if (strcmp(oid, ares->controls[n]->oid) == 0) {
+			return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+		}
+		n++; 
+	}
+
+	ctrls = talloc_realloc(ares, ares->controls,
+			       struct ldb_control *,
+			       n + 2);
+	if (!ctrls) return LDB_ERR_OPERATIONS_ERROR;
+	ares->controls = ctrls;
+	ctrls[n] = NULL;
+	ctrls[n+1] = NULL;
+
+	ctrl = talloc(ctrls, struct ldb_control);
+	if (!ctrl) return LDB_ERR_OPERATIONS_ERROR;
+
+	ctrl->oid	= talloc_strdup(ctrl, oid);
+	if (!ctrl->oid) return LDB_ERR_OPERATIONS_ERROR;
+	ctrl->critical	= critical;
+	ctrl->data	= data;
+
+	ctrls[n] = ctrl;
+	return LDB_SUCCESS;
+}
+
 /* Parse controls from the format used on the command line and in ejs */
 
 struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, void *mem_ctx, const char **control_strings)
