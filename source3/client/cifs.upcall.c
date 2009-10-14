@@ -113,7 +113,7 @@ get_krb5_ccname(pid_t pid)
  * 	sess_key-	pointer for SessionKey data to be stored
  *
  * ret: 0 - success, others - failure
-*/
+ */
 static int
 handle_krb5_mech(const char *oid, const char *principal, DATA_BLOB *secblob,
 		 DATA_BLOB *sess_key, const char *ccname)
@@ -169,11 +169,11 @@ decode_key_description(const char *desc, int *ver, secType_t *sec,
 		if (strncmp(tkn, "host=", 5) == 0) {
 			int len;
 
-			if (pos == NULL) {
+			if (pos == NULL)
 				len = strlen(tkn);
-			} else {
+			else
 				len = pos - tkn;
-			}
+
 			len -= 4;
 			SAFE_FREE(*hostname);
 			*hostname = SMB_XMALLOC_ARRAY(char, len);
@@ -257,11 +257,11 @@ cifs_resolver(const key_serial_t key, const char *key_descr)
 	}
 
 	/* conver ip to string form */
-	if (addr->ai_family == AF_INET) {
+	if (addr->ai_family == AF_INET)
 		p = &(((struct sockaddr_in *)addr->ai_addr)->sin_addr);
-	} else {
+	else
 		p = &(((struct sockaddr_in6 *)addr->ai_addr)->sin6_addr);
-	}
+
 	if (!inet_ntop(addr->ai_family, p, ip, sizeof(ip))) {
 		syslog(LOG_ERR, "%s: inet_ntop: %s", __func__, strerror(errno));
 		freeaddrinfo(addr);
@@ -301,25 +301,22 @@ int main(const int argc, char *const argv[])
 	pid_t pid = 0;
 	int kernel_upcall_version = 0;
 	int c, use_cifs_service_prefix = 0;
-	char *buf, *ccname = NULL, *hostname = NULL;
+	char *buf, *princ, *ccname = NULL, *hostname = NULL;
 	const char *oid;
 
 	openlog(prog, 0, LOG_DAEMON);
 
 	while ((c = getopt(argc, argv, "cv")) != -1) {
 		switch (c) {
-		case 'c':{
+		case 'c':
 			use_cifs_service_prefix = 1;
 			break;
-			}
-		case 'v':{
+		case 'v':
 			printf("version: %s\n", CIFSSPNEGO_VERSION);
 			goto out;
-			}
-		default:{
+		default:
 			syslog(LOG_ERR, "unknown option: %c", c);
 			goto out;
-			}
 		}
 	}
 
@@ -386,45 +383,38 @@ int main(const int argc, char *const argv[])
 	// do mech specific authorization
 	switch (sectype) {
 	case MS_KRB5:
-	case KRB5:{
-			char *princ;
-			size_t len;
-
-			/* for "cifs/" service name + terminating 0 */
-			len = strlen(hostname) + 5 + 1;
-			princ = SMB_XMALLOC_ARRAY(char, len);
-			if (!princ) {
-				rc = 1;
-				break;
-			}
-			if (use_cifs_service_prefix) {
-				strlcpy(princ, "cifs/", len);
-			} else {
-				strlcpy(princ, "host/", len);
-			}
-			strlcpy(princ + 5, hostname, len - 5);
-
-			if (sectype == MS_KRB5)
-				oid = OID_KERBEROS5_OLD;
-			else
-				oid = OID_KERBEROS5;
-
-			rc = handle_krb5_mech(oid, princ, &secblob, &sess_key,
-					      ccname);
-			SAFE_FREE(princ);
-			break;
-		}
-	default:{
-			syslog(LOG_ERR, "sectype: %d is not implemented",
-			       sectype);
+	case KRB5:
+		/* for "cifs/" service name + terminating 0 */
+		datalen = strlen(hostname) + 5 + 1;
+		princ = SMB_XMALLOC_ARRAY(char, datalen);
+		if (!princ) {
 			rc = 1;
 			break;
 		}
+
+		if (use_cifs_service_prefix)
+			strlcpy(princ, "cifs/", datalen);
+		else
+			strlcpy(princ, "host/", datalen);
+
+		strlcpy(princ + 5, hostname, datalen - 5);
+
+		if (sectype == MS_KRB5)
+			oid = OID_KERBEROS5_OLD;
+		else
+			oid = OID_KERBEROS5;
+
+		rc = handle_krb5_mech(oid, princ, &secblob, &sess_key, ccname);
+		SAFE_FREE(princ);
+		break;
+	default:
+		syslog(LOG_ERR, "sectype: %d is not implemented", sectype);
+		rc = 1;
+		break;
 	}
 
-	if (rc) {
+	if (rc)
 		goto out;
-	}
 
 	/* pack SecurityBLob and SessionKey into downcall packet */
 	datalen =
