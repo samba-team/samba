@@ -150,15 +150,15 @@ handle_krb5_mech(const char *oid, const char *principal, DATA_BLOB *secblob,
 #define DKD_HAVE_HOSTNAME	0x1
 #define DKD_HAVE_VERSION	0x2
 #define DKD_HAVE_SEC		0x4
-#define DKD_HAVE_IPV4		0x8
-#define DKD_HAVE_IPV6		0x10
-#define DKD_HAVE_UID		0x20
-#define DKD_HAVE_PID		0x40
-#define DKD_MUSTHAVE_SET (DKD_HAVE_HOSTNAME|DKD_HAVE_VERSION|DKD_HAVE_SEC)
+#define DKD_HAVE_IP		0x8
+#define DKD_HAVE_UID		0x10
+#define DKD_HAVE_PID		0x20
+#define DKD_MUSTHAVE_SET (DKD_HAVE_IP|DKD_HAVE_VERSION|DKD_HAVE_SEC)
 
 static struct decoded_args {
 	int		ver;
 	char		*hostname;
+	char		*ip;
 	uid_t		uid;
 	pid_t		pid;
 	sectype_t	sec;
@@ -167,6 +167,7 @@ static struct decoded_args {
 static unsigned int
 decode_key_description(const char *desc, struct decoded_args *arg)
 {
+	int len;
 	int retval = 0;
 	char *pos;
 	const char *tkn = desc;
@@ -174,7 +175,6 @@ decode_key_description(const char *desc, struct decoded_args *arg)
 	do {
 		pos = index(tkn, ';');
 		if (strncmp(tkn, "host=", 5) == 0) {
-			int len;
 
 			if (pos == NULL)
 				len = strlen(tkn);
@@ -186,10 +186,18 @@ decode_key_description(const char *desc, struct decoded_args *arg)
 			arg->hostname = SMB_XMALLOC_ARRAY(char, len);
 			strlcpy(arg->hostname, tkn + 5, len);
 			retval |= DKD_HAVE_HOSTNAME;
-		} else if (strncmp(tkn, "ipv4=", 5) == 0) {
-			/* BB: do we need it if we have hostname already? */
-		} else if (strncmp(tkn, "ipv6=", 5) == 0) {
-			/* BB: do we need it if we have hostname already? */
+		} else if (!strncmp(tkn, "ip4=", 4) ||
+			   !strncmp(tkn, "ip6=", 4)) {
+			if (pos == NULL)
+				len = strlen(tkn);
+			else
+				len = pos - tkn;
+
+			len -= 3;
+			SAFE_FREE(arg->ip);
+			arg->ip = SMB_XMALLOC_ARRAY(char, len);
+			strlcpy(arg->ip, tkn + 4, len);
+			retval |= DKD_HAVE_IP;
 		} else if (strncmp(tkn, "pid=", 4) == 0) {
 			errno = 0;
 			arg->pid = strtol(tkn + 4, NULL, 0);
@@ -288,6 +296,35 @@ cifs_resolver(const key_serial_t key, const char *key_descr)
 	return 0;
 }
 
+static int
+ip_to_fqdn(const char *ipaddr, char *host, size_t hostlen)
+{
+	int rc;
+	struct addrinfo hints = { .ai_flags = AI_NUMERICHOST };
+	struct addrinfo *res;
+
+	rc = getaddrinfo(ipaddr, NULL, &hints, &res);
+	if (rc) {
+		syslog(LOG_DEBUG, "%s: failed to resolve %s to ipaddr: %s",
+			__func__, ipaddr,
+			rc == EAI_SYSTEM ? strerror(errno) : gai_strerror(rc));
+		return rc;
+	}
+
+	rc = getnameinfo(res->ai_addr, res->ai_addrlen, host, hostlen,
+			 NULL, 0, NI_NAMEREQD);
+	freeaddrinfo(res);
+	if (rc) {
+		syslog(LOG_DEBUG, "%s: failed to resolve %s to fqdn: %s",
+			__func__, ipaddr,
+			rc == EAI_SYSTEM ? strerror(errno) : gai_strerror(rc));
+		return rc;
+	}
+
+	syslog(LOG_DEBUG, "%s: resolved %s to %s", __func__, ipaddr, host);
+	return 0;
+}
+
 static void
 usage(void)
 {
@@ -306,6 +343,7 @@ int main(const int argc, char *const argv[])
 	long rc = 1;
 	int c;
 	char *buf, *princ, *ccname = NULL;
+	char hostbuf[NI_MAXHOST];
 	struct decoded_args arg = { };
 	const char *oid;
 
@@ -383,12 +421,18 @@ int main(const int argc, char *const argv[])
 	if (have & DKD_HAVE_PID)
 		ccname = get_krb5_ccname(arg.pid);
 
+	if (have & DKD_HAVE_IP) {
+		rc = ip_to_fqdn(arg.ip, hostbuf, sizeof(hostbuf));
+		if (rc)
+			goto out;
+	}
+
 	// do mech specific authorization
 	switch (arg.sec) {
 	case MS_KRB5:
 	case KRB5:
 		/* for "cifs/" service name + terminating 0 */
-		datalen = strlen(arg.hostname) + 5 + 1;
+		datalen = strnlen(hostbuf, sizeof(hostbuf)) + 5 + 1;
 		princ = SMB_XMALLOC_ARRAY(char, datalen);
 		if (!princ) {
 			rc = 1;
@@ -405,7 +449,7 @@ int main(const int argc, char *const argv[])
 		 * getting a host/ principal if that doesn't work.
 		 */
 		strlcpy(princ, "cifs/", datalen);
-		strlcpy(princ + 5, arg.hostname, datalen - 5);
+		strlcpy(princ + 5, hostbuf, datalen - 5);
 		rc = handle_krb5_mech(oid, princ, &secblob, &sess_key, ccname);
 		if (rc) {
 			memcpy(princ, "host/", 5);
