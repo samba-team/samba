@@ -31,6 +31,11 @@ create dns_resolver * * /usr/local/sbin/cifs.upcall %k
 
 #include "cifs_spnego.h"
 
+#define	CIFS_DEFAULT_KRB5_DIR		"/tmp"
+#define	CIFS_DEFAULT_KRB5_PREFIX	"krb5cc_"
+
+#define	MAX_CCNAME_LEN			PATH_MAX + 5
+
 const char *CIFSSPNEGO_VERSION = "1.3";
 static const char *prog = "cifs.upcall";
 typedef enum _sectype {
@@ -39,60 +44,148 @@ typedef enum _sectype {
 	MS_KRB5
 } sectype_t;
 
-/*
- * given a process ID, get the value of the KRB5CCNAME environment variable
- * in the context of that process. On error, just return NULL.
- */
-static char *
-get_krb5_ccname(pid_t pid)
+static inline int
+k5_data_equal(krb5_data d1, krb5_data d2, unsigned int length)
 {
-	int fd;
-	ssize_t len, left;
+	if (!length)
+		length = d1.length;
 
-	/*
-	 * FIXME: sysconf for ARG_MAX instead? Kernel seems to be limited to a
-	 * page however, so it may not matter.
-	 */
-	char buf[4096];
-	char *p, *value = NULL;
+	return (d1.length == length &&
+		d1.length == d2.length &&
+		memcmp(d1.data, d2.data, length) == 0);
 
-	buf[4095] = '\0';
-	snprintf(buf, 4095, "/proc/%d/environ", pid);
-	fd = open(buf, O_RDONLY);
-	if (fd < 0) {
-		syslog(LOG_DEBUG, "%s: unable to open %s: %d", __func__, buf,
-			errno);
+}
+
+/* does the ccache have a valid TGT? */
+static time_t
+get_tgt_time(const char *ccname) {
+	krb5_context context;
+	krb5_ccache ccache;
+	krb5_cc_cursor cur;
+	krb5_creds creds;
+	krb5_principal principal;
+	krb5_data tgt = { .data =	"krbtgt",
+			  .length =	6 };
+	time_t credtime = 0;
+
+	if (krb5_init_context(&context)) {
+		syslog(LOG_DEBUG, "%s: unable to init krb5 context", __func__);
+		return 0;
+	}
+
+	if (krb5_cc_resolve(context, ccname, &ccache)) {
+		syslog(LOG_DEBUG, "%s: unable to resolve krb5 cache", __func__);
+		goto err_cache;
+	}
+
+	if (krb5_cc_set_flags(context, ccache, 0)) {
+		syslog(LOG_DEBUG, "%s: unable to set flags", __func__);
+		goto err_cache;
+	}
+
+	if (krb5_cc_get_principal(context, ccache, &principal)) {
+		syslog(LOG_DEBUG, "%s: unable to get principal", __func__);
+		goto err_princ;
+	}
+
+	if (krb5_cc_start_seq_get(context, ccache, &cur)) {
+		syslog(LOG_DEBUG, "%s: unable to seq start", __func__);
+		goto err_ccstart;
+	}
+
+	while (!credtime && !krb5_cc_next_cred(context, ccache, &cur, &creds)) {
+		if (k5_data_equal(creds.server->realm, principal->realm, 0) &&
+		    k5_data_equal(creds.server->data[0], tgt, tgt.length) &&
+		    k5_data_equal(creds.server->data[1], principal->realm, 0) &&
+		    creds.times.endtime > time(NULL))
+			credtime = creds.times.endtime;
+                krb5_free_cred_contents(context, &creds);
+        }
+        krb5_cc_end_seq_get(context, ccache, &cur);
+
+err_ccstart:
+	krb5_free_principal(context, principal);
+err_princ:
+	krb5_cc_set_flags(context, ccache, KRB5_TC_OPENCLOSE);
+	krb5_cc_close(context, ccache);
+err_cache:
+	krb5_free_context(context);
+	return credtime;
+}
+
+static int
+krb5cc_filter(const struct dirent *dirent)
+{
+	if (strstr(dirent->d_name, CIFS_DEFAULT_KRB5_PREFIX))
+		return 1;
+	else
+		return 0;
+}
+
+/* search for a credcache that looks like a likely candidate */
+static char *
+find_krb5_cc(const char *dirname, uid_t uid)
+{
+	struct dirent **namelist;
+	struct stat sbuf;
+	char ccname[MAX_CCNAME_LEN], *credpath, *best_cache = NULL;
+	int i, n;
+	time_t cred_time, best_time = 0;
+
+	n = scandir(dirname, &namelist, krb5cc_filter, NULL);
+	if (n < 0) {
+		syslog(LOG_DEBUG, "%s: scandir error on directory '%s': %s",
+				  __func__, dirname, strerror(errno));
 		return NULL;
 	}
 
-	/* FIXME: don't assume that we get it all in the first read? */
-	len = read(fd, buf, 4096);
-	close(fd);
-	if (len < 0) {
-		syslog(LOG_DEBUG, "%s: unable to read from /proc/%d/environ: "
-				  "%d", __func__, pid, errno);
-		return NULL;
-	}
+	for (i = 0; i < n; i++) {
+		snprintf(ccname, sizeof(ccname), "FILE:%s/%s", dirname,
+			 namelist[i]->d_name);
+		credpath = ccname + 5;
+		syslog(LOG_DEBUG, "%s: considering %s", __func__, credpath);
 
-	left = len;
-	p = buf;
-
-	/* can't have valid KRB5CCNAME if there are < 13 bytes left */
-	while (left > 12) {
-		if (strncmp("KRB5CCNAME=", p, 11)) {
-			p += strnlen(p, left);
-			++p;
-			left = buf + len - p;
+		if (lstat(credpath, &sbuf)) {
+			syslog(LOG_DEBUG, "%s: stat error on '%s': %s",
+					  __func__, credpath, strerror(errno));
+			free(namelist[i]);
 			continue;
 		}
-		p += 11;
-		left -= 11;
-		value = SMB_STRNDUP(p, left);
-		break;
+		if (sbuf.st_uid != uid) {
+			syslog(LOG_DEBUG, "%s: %s is owned by %u, not %u",
+					__func__, credpath, sbuf.st_uid, uid);
+			free(namelist[i]);
+			continue;
+		}
+		if (!S_ISREG(sbuf.st_mode)) {
+			syslog(LOG_DEBUG, "%s: %s is not a regular file",
+					__func__, credpath);
+			free(namelist[i]);
+			continue;
+		}
+		if (!(cred_time = get_tgt_time(ccname))) {
+			syslog(LOG_DEBUG, "%s: %s is not a valid credcache.",
+					__func__, ccname);
+			free(namelist[i]);
+			continue;
+		}
+
+		if (cred_time <= best_time) {
+			syslog(LOG_DEBUG, "%s: %s expires sooner than current "
+					  "best.", __func__, ccname);
+			free(namelist[i]);
+			continue;
+		}
+
+		syslog(LOG_DEBUG, "%s: %s is valid ccache", __func__, ccname);
+		free(best_cache);
+		best_cache = SMB_STRNDUP(ccname, MAX_CCNAME_LEN);
+		best_time = cred_time;
+		free(namelist[i]);
 	}
-	syslog(LOG_DEBUG, "%s: KRB5CCNAME=%s", __func__,
-				value ? value : "(null)");
-	return value;
+	free(namelist);
+
+	return best_cache;
 }
 
 /*
@@ -453,10 +546,9 @@ int main(const int argc, char *const argv[])
 			syslog(LOG_ERR, "setuid: %s", strerror(errno));
 			goto out;
 		}
-	}
 
-	if (have & DKD_HAVE_PID)
-		ccname = get_krb5_ccname(arg.pid);
+		ccname = find_krb5_cc(CIFS_DEFAULT_KRB5_DIR, arg.uid);
+	}
 
 	host = arg.hostname;
 
