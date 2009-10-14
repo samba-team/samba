@@ -413,11 +413,6 @@ static int partition_replicate(struct ldb_module *module, struct ldb_request *re
 		return ldb_next_request(module, req);
 	}
 
-	ret = partition_reload_if_required(module, data);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-	
 	if (req->operation != LDB_SEARCH) {
 		/* Is this a special DN, we need to replicate to every backend? */
 		for (i=0; data->replicate && data->replicate[i]; i++) {
@@ -638,11 +633,6 @@ static int partition_rename(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = partition_reload_if_required(module, data);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
 	backend = find_partition(data, req->op.rename.olddn, req);
 	backend2 = find_partition(data, req->op.rename.newdn, req);
 
@@ -674,6 +664,11 @@ static int partition_start_trans(struct ldb_module *module)
 	/* Figure out which partition it is under */
 	/* Skip the lot if 'data' isn't here yet (initialization) */
 	ret = ldb_next_start_trans(module);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = partition_reload_if_required(module, data);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}

@@ -480,19 +480,10 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 
 	data = talloc_get_type(module->private_data, struct partition_private_data);
 	if (!data) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	
-	if (!data) {
 		/* We are not going to create a partition before we are even set up */
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	ret = partition_reload_metadata(module, data, req, NULL);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-		
 	for (i=0; data->partitions && data->partitions[i]; i++) {
 		if (ldb_dn_compare(data->partitions[i]->ctrl->dn, dn) == 0) {
 			partition = data->partitions[i];
