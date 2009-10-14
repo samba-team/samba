@@ -66,7 +66,7 @@ static struct partition_context *partition_init_ctx(struct ldb_module *module, s
  *    helper functions to call the next module in chain
  *    */
 
-static int partition_request(struct ldb_module *module, struct ldb_request *request)
+int partition_request(struct ldb_module *module, struct ldb_request *request)
 {
 	int ret;
 	switch (request->operation) {
@@ -160,6 +160,7 @@ static int partition_req_callback(struct ldb_request *req,
 	struct ldb_request *nreq;
 	int ret, i;
 	struct partition_private_data *data;
+	struct ldb_control *partition_ctrl;
 
 	ac = talloc_get_type(req->context, struct partition_context);
 	data = talloc_get_type(ac->module->private_data, struct partition_private_data);
@@ -167,6 +168,21 @@ static int partition_req_callback(struct ldb_request *req,
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
 					LDB_ERR_OPERATIONS_ERROR);
+	}
+
+	partition_ctrl = ldb_request_get_control(req, DSDB_CONTROL_CURRENT_PARTITION_OID);
+	if (partition_ctrl && (ac->num_requests == 1 || ares->type == LDB_REPLY_ENTRY)) {
+		/* If we didn't fan this request out to mulitple partitions,
+		 * or this is an individual search result, we can
+		 * deterministily tell the caller what partition this was
+		 * written to (repl_meta_data likes to know) */
+			ret = ldb_reply_add_control(ares,
+						    DSDB_CONTROL_CURRENT_PARTITION_OID,
+						    false, partition_ctrl->data);
+			if (ret != LDB_SUCCESS) {
+				return ldb_module_done(ac->req, NULL, NULL,
+						       ret);
+			}
 	}
 
 	if (ares->error != LDB_SUCCESS && !ac->got_success) {
