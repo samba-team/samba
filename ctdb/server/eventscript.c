@@ -36,8 +36,37 @@ static struct {
  */
 static void sigterm(int sig)
 {
-	DEBUG(DEBUG_ERR,("Timed out running script '%s' after %.1f seconds\n", 
-		 child_state.script_running, timeval_elapsed(&child_state.start)));
+	FILE *p;
+
+	DEBUG(DEBUG_ERR,("Timed out running script '%s' after %.1f seconds pid :%d\n", 
+		 child_state.script_running, timeval_elapsed(&child_state.start), getpid()));
+
+	p = popen("pstree -p", "r");
+	if (p == NULL) {
+		DEBUG(DEBUG_ERR,("Failed popen to collect pstree for hung script\n"));
+	} else {
+		char buf[256];
+		int count;
+
+		DEBUG(DEBUG_ERR,("PSTREE:\n"));
+		while(!feof(p)){
+			count=fread(buf, 1, 255, p);
+			if (count == EOF) {
+				break;
+			}
+			if (count < 0) {
+				break;
+			}
+			if (count == 0) {
+				break;
+			}
+			buf[count] = 0;
+			DEBUG(DEBUG_ERR,("%s", buf)); 
+		}
+		DEBUG(DEBUG_ERR,("END OF PSTREE OUTPUT\n"));
+		pclose(p);
+	}
+
 	/* all the child processes will be running in the same process group */
 	kill(-getpgrp(), SIGKILL);
 	exit(1);
@@ -653,7 +682,15 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 		talloc_get_type(ctdb->script_monitoring_ctx,
 			struct ctdb_monitoring_status);
 
-	DEBUG(DEBUG_ERR,("Event script timed out : %s count : %u\n", state->options, ctdb->event_script_timeouts));
+	DEBUG(DEBUG_ERR,("Event script timed out : %s count : %u  pid : %d\n", state->options, ctdb->event_script_timeouts, state->child));
+	if (kill(state->child, 0) != 0) {
+		DEBUG(DEBUG_ERR,("Event script child process already dead, errno %s(%d)\n", strerror(errno), errno));
+		callback(ctdb, 0, private_data);
+
+		talloc_set_destructor(state, NULL);
+		talloc_free(state);
+		return;
+	}
 
 	options = talloc_strdup(ctdb, state->options);
 	CTDB_NO_MEMORY_VOID(ctdb, options);
@@ -709,7 +746,11 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 static int event_script_destructor(struct ctdb_event_script_state *state)
 {
 	DEBUG(DEBUG_ERR,(__location__ " Sending SIGTERM to child pid:%d\n", state->child));
-	kill(state->child, SIGTERM);
+
+	if (kill(state->child, SIGTERM) != 0) {
+		DEBUG(DEBUG_ERR,("Failed to kill child process for eventscript, errno %s(%d)\n", strerror(errno), errno));
+	}
+
 	return 0;
 }
 
