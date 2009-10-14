@@ -1037,7 +1037,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
 
 
         setup_modify_ldif(samdb, setup_path("provision_basedn_modify.ldif"), {
-            "CREATTIME": str(int(time.time()) * 1e7), # seconds -> ticks
+            "CREATTIME": str(int(time.time() * 1e7)), # seconds -> ticks
             "DOMAINSID": str(domainsid),
             "SCHEMADN": names.schemadn, 
             "NETBIOSNAME": names.netbiosname,
@@ -1104,7 +1104,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
                 "DOMAINDN": names.domaindn})
         message("Setting up sam.ldb data")
         setup_add_ldif(samdb, setup_path("provision.ldif"), {
-            "CREATTIME": str(int(time.time()) * 1e7), # seconds -> ticks
+            "CREATTIME": str(int(time.time() * 1e7)), # seconds -> ticks
             "DOMAINDN": names.domaindn,
             "NETBIOSNAME": names.netbiosname,
             "DEFAULTSITE": names.sitename,
