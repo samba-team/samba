@@ -296,18 +296,43 @@ cifs_resolver(const key_serial_t key, const char *key_descr)
 	return 0;
 }
 
+/*
+ * Older kernels sent IPv6 addresses without colons. Well, at least
+ * they're fixed-length strings. Convert these addresses to have colon
+ * delimiters to make getaddrinfo happy.
+ */
+static void
+convert_inet6_addr(const char *from, char *to)
+{
+	int i = 1;
+
+	while (*from) {
+		*to++ = *from++;
+		if (!(i++ % 4) && *from)
+			*to++ = ':';
+	}
+	*to = 0;
+}
+
 static int
-ip_to_fqdn(const char *ipaddr, char *host, size_t hostlen)
+ip_to_fqdn(const char *addrstr, char *host, size_t hostlen)
 {
 	int rc;
 	struct addrinfo hints = { .ai_flags = AI_NUMERICHOST };
 	struct addrinfo *res;
+	const char *ipaddr = addrstr;
+	char converted[INET6_ADDRSTRLEN + 1];
+
+	if ((strlen(ipaddr) > INET_ADDRSTRLEN) && !strchr(ipaddr, ':')) {
+		convert_inet6_addr(ipaddr, converted);
+		ipaddr = converted;
+	}
 
 	rc = getaddrinfo(ipaddr, NULL, &hints, &res);
 	if (rc) {
-		syslog(LOG_DEBUG, "%s: failed to resolve %s to ipaddr: %s",
-			__func__, ipaddr,
-			rc == EAI_SYSTEM ? strerror(errno) : gai_strerror(rc));
+		syslog(LOG_DEBUG, "%s: failed to resolve %s to "
+			"ipaddr: %s", __func__, ipaddr,
+		rc == EAI_SYSTEM ? strerror(errno) : gai_strerror(rc));
 		return rc;
 	}
 
