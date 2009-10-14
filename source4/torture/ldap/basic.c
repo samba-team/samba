@@ -213,7 +213,8 @@ static bool test_error_codes(struct torture_context *tctx,
 {
 	struct ldap_message *msg, *rep;
 	struct ldap_request *req;
-	char *err_code_str, *endptr;
+	const char *err_code_str;
+	char *endptr;
 	WERROR err;
 	NTSTATUS status;
 
@@ -263,8 +264,8 @@ static bool test_error_codes(struct torture_context *tctx,
 			return false;
 		}
 	} else {
-		if ((!W_ERROR_EQUAL(err, WERR_DS_GENERIC_ERROR))
-			|| (rep->r.AddResponse.resultcode != 80)) {
+		if ((!W_ERROR_EQUAL(err, WERR_DS_OBJ_CLASS_VIOLATION))
+			|| (rep->r.AddResponse.resultcode != 65)) {
 			return false;
 		}
 	}
@@ -304,8 +305,8 @@ static bool test_error_codes(struct torture_context *tctx,
 			return false;
 		}
 	} else {
-		if ((!W_ERROR_EQUAL(err, WERR_DS_GENERIC_ERROR))
-			|| (rep->r.ModifyResponse.resultcode != 80)) {
+		if ((!W_ERROR_EQUAL(err, WERR_DS_OPERATIONS_ERROR))
+			|| (rep->r.ModifyResponse.resultcode != 1)) {
 			return false;
 		}
 	}
