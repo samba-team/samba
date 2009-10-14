@@ -1057,7 +1057,23 @@ static bool winbind_name_list_to_sid_string_list(struct pwb_context *ctx,
 						current_name,
 						sid_list_buffer,
 						sid_list_buffer_size)) {
-			goto out;
+			/*
+			 * If one group name failed, we must not fail
+			 * the authentication totally, continue with
+			 * the following group names. If user belongs to
+			 * one of the valid groups, we must allow it
+			 * login. -- BoYang
+			 */
+
+			_pam_log(ctx, LOG_INFO, "cannot convert group %s to sid, "
+				 "check if group %s is valid group.", current_name,
+				 current_name);
+			_make_remark_format(ctx, PAM_TEXT_INFO, _("Cannot convert group %s "
+					"to sid, please contact your administrator to see "
+					"if group %s is valid."), current_name, current_name);
+			SAFE_FREE(current_name);
+			search_location = comma + 1;
+			continue;
 		}
 
 		SAFE_FREE(current_name);
@@ -1073,7 +1089,12 @@ static bool winbind_name_list_to_sid_string_list(struct pwb_context *ctx,
 	if (!winbind_name_to_sid_string(ctx, user, search_location,
 					sid_list_buffer,
 					sid_list_buffer_size)) {
-		goto out;
+		_pam_log(ctx, LOG_INFO, "cannot convert group %s to sid, "
+			 "check if group %s is valid group.", search_location,
+			 search_location);
+		_make_remark_format(ctx, PAM_TEXT_INFO, _("Cannot convert group %s "
+				"to sid, please contact your administrator to see "
+				"if group %s is valid."), search_location, search_location);
 	}
 
 	result = true;
