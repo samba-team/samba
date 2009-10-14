@@ -141,8 +141,10 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 		   instanceType then don't include it */
 		if (md.ctr.ctr1.array[i].local_usn < highest_usn &&
 		    md.ctr.ctr1.array[i].attid != DRSUAPI_ATTRIBUTE_instanceType) continue;
+
 		/* don't include the rDN */
 		if (md.ctr.ctr1.array[i].attid == rdn_sa->attributeID_id) continue;
+
 		obj->meta_data_ctr->meta_data[n].originating_change_time = md.ctr.ctr1.array[i].originating_change_time;
 		obj->meta_data_ctr->meta_data[n].version = md.ctr.ctr1.array[i].version;
 		obj->meta_data_ctr->meta_data[n].originating_invocation_id = md.ctr.ctr1.array[i].originating_invocation_id;
@@ -205,12 +207,10 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 					 sa->lDAPDisplayName, win_errstr(werr)));
 				return werr;
 			}
-			/* if DRSUAPI_DS_REPLICA_NEIGHBOUR_SPECIAL_SECRET_PROCESSING is set
+			/* if DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING is set
 			 * check if attribute is secret and send a null value
-			 * TODO: check if we can make this in the database layer
 			 */
-			if ((replica_flags & DRSUAPI_DS_REPLICA_NEIGHBOUR_SPECIAL_SECRET_PROCESSING)
-			    == DRSUAPI_DS_REPLICA_NEIGHBOUR_SPECIAL_SECRET_PROCESSING) {
+			if (replica_flags & DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING) {
 				drsuapi_process_secret_attribute(&obj->object.attribute_ctr.attributes[i],
 								 &obj->meta_data_ctr->meta_data[i]);
 			}
@@ -551,6 +551,29 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 
 	r->out.ctr->ctr6.nc_object_count = getnc_state->site_res->count;
 
+	/* the client can us to call UpdateRefs on its behalf to
+	   re-establish monitoring of the NC */
+	if ((req8->replica_flags & DRSUAPI_DRS_ADD_REF) && 
+	    !GUID_all_zero(&req8->destination_dsa_guid)) {
+		struct drsuapi_DsReplicaUpdateRefsRequest1 ureq;
+		ureq.naming_context = ncRoot;
+		ureq.dest_dsa_dns_name = talloc_asprintf(mem_ctx, "%s._msdcs.%s",
+							 GUID_string(mem_ctx, &req8->destination_dsa_guid),
+							 lp_realm(dce_call->conn->dce_ctx->lp_ctx));
+		if (!ureq.dest_dsa_dns_name) {
+			return WERR_NOMEM;
+		}
+		ureq.dest_dsa_guid = req8->destination_dsa_guid;
+		ureq.options = DRSUAPI_DS_REPLICA_UPDATE_ADD_REFERENCE |
+			DRSUAPI_DS_REPLICA_UPDATE_ASYNCHRONOUS_OPERATION |
+			DRSUAPI_DS_REPLICA_UPDATE_GETCHG_CHECK;
+		werr = drsuapi_UpdateRefs(b_state, mem_ctx, &ureq);
+		if (!W_ERROR_IS_OK(werr)) {
+			DEBUG(0,(__location__ ": Failed UpdateRefs in DsGetNCChanges - %s\n",
+				 win_errstr(werr)));
+		}
+	}
+
 	if (i < getnc_state->site_res->count) {
 		r->out.ctr->ctr6.more_data = true;
 	} else {
@@ -571,8 +594,9 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		b_state->getncchanges_state = NULL;
 	}
 
-	DEBUG(2,("DsGetNCChanges with uSNChanged >= %llu on %s gave %u objects\n", 
+	DEBUG(2,("DsGetNCChanges with uSNChanged >= %llu flags 0x%08x on %s gave %u objects\n", 
 		 (unsigned long long)(req8->highwatermark.highest_usn+1),
+		 req8->replica_flags,
 		 ncRoot->dn, r->out.ctr->ctr6.object_count));
 
 	return WERR_OK;
