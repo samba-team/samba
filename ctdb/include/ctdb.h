@@ -106,6 +106,11 @@ struct ctdb_call_info {
 */
 #define CTDB_SRVID_DISABLE_IP_CHECK  0xFC00000000000000LL
 
+/* A dummy port used for sending back ipreallocate resposnes to the main
+   daemon
+*/
+#define CTDB_SRVID_TAKEOVER_RUN_RESPONSE  0xFD00000000000000LL
+
 /* used on the domain socket, send a pdu to the local daemon */
 #define CTDB_CURRENT_NODE     0xF0000001
 /* send a broadcast to all nodes in the cluster, active or not */

@@ -1619,7 +1619,7 @@ static int control_ipreallocate(struct ctdb_context *ctdb, int argc, const char 
 {
 	int i, ret;
 	TDB_DATA data;
-	struct rd_memdump_reply rd;
+	struct takeover_run_reply rd;
 	uint32_t recmaster;
 	struct ctdb_node_map *nodemap=NULL;
 	int retries=0;
