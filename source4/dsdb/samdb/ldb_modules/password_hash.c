@@ -87,9 +87,9 @@ struct domain_data {
 	bool store_cleartext;
 	uint_t pwdProperties;
 	uint_t pwdHistoryLength;
-	char *netbios_domain;
-	char *dns_domain;
-	char *realm;
+	const char *netbios_domain;
+	const char *dns_domain;
+	const char *realm;
 };
 
 struct setup_password_fields_io {
@@ -1552,9 +1552,8 @@ static int get_domain_data_callback(struct ldb_request *req,
 	struct ldb_context *ldb;
 	struct domain_data *data;
 	struct ph_context *ac;
+	struct loadparm_context *lp_ctx;
 	int ret;
-	char *tmp;
-	char *p;
 
 	ac = talloc_get_type(req->context, struct ph_context);
 	ldb = ldb_module_get_ctx(ac->module);
@@ -1591,43 +1590,13 @@ static int get_domain_data_callback(struct ldb_request *req,
 		 * but that doesn't really matter, as it's just used for salt
 		 * and kerberos principals, which don't exist here */
 
-		tmp = ldb_dn_canonical_string(data, ares->message->dn);
-		if (!tmp) {
-			return ldb_module_done(ac->req, NULL, NULL,
-						LDB_ERR_OPERATIONS_ERROR);
-		}
+		lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
+					 struct loadparm_context);
 
-		/* But it puts a trailing (or just before 'builtin') / on things, so kill that */
-		p = strchr(tmp, '/');
-		if (p) {
-			p[0] = '\0';
-		}
+		data->dns_domain = lp_dnsdomain(lp_ctx);
+		data->realm = lp_realm(lp_ctx);
+		data->netbios_domain = lp_workgroup(lp_ctx);
 
-		data->dns_domain = strlower_talloc(data, tmp);
-		if (data->dns_domain == NULL) {
-			ldb_oom(ldb);
-			return ldb_module_done(ac->req, NULL, NULL,
-						LDB_ERR_OPERATIONS_ERROR);
-		}
-		data->realm = strupper_talloc(data, tmp);
-		if (data->realm == NULL) {
-			ldb_oom(ldb);
-			return ldb_module_done(ac->req, NULL, NULL,
-						LDB_ERR_OPERATIONS_ERROR);
-		}
-		/* FIXME: NetbIOS name is *always* the first domain component ?? -SSS */
-		p = strchr(tmp, '.');
-		if (p) {
-			p[0] = '\0';
-		}
-		data->netbios_domain = strupper_talloc(data, tmp);
-		if (data->netbios_domain == NULL) {
-			ldb_oom(ldb);
-			return ldb_module_done(ac->req, NULL, NULL,
-						LDB_ERR_OPERATIONS_ERROR);
-		}
-
-		talloc_free(tmp);
 		ac->domain = data;
 		break;
 
@@ -1673,7 +1642,7 @@ static int build_domain_data_request(struct ph_context *ac)
 	ldb = ldb_module_get_ctx(ac->module);
 
 	filter = talloc_asprintf(ac,
-				"(&(objectSid=%s)(|(objectClass=domain)(objectClass=builtinDomain)))",
+				 "(objectSid=%s)",
 				 ldap_encode_ndr_dom_sid(ac, ac->domain_sid));
 	if (filter == NULL) {
 		ldb_oom(ldb);
@@ -1682,7 +1651,7 @@ static int build_domain_data_request(struct ph_context *ac)
 
 	return ldb_build_search_req(&ac->dom_req, ldb, ac,
 				    ldb_get_default_basedn(ldb),
-				    LDB_SCOPE_SUBTREE,
+				    LDB_SCOPE_BASE,
 				    filter, attrs,
 				    NULL,
 				    ac, get_domain_data_callback,
