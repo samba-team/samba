@@ -32,11 +32,11 @@ create dns_resolver * * /usr/local/sbin/cifs.upcall %k
 
 const char *CIFSSPNEGO_VERSION = "1.2";
 static const char *prog = "cifs.upcall";
-typedef enum _secType {
+typedef enum _sectype {
 	NONE = 0,
 	KRB5,
 	MS_KRB5
-} secType_t;
+} sectype_t;
 
 /*
  * given a process ID, get the value of the KRB5CCNAME environment variable
@@ -156,9 +156,16 @@ handle_krb5_mech(const char *oid, const char *principal, DATA_BLOB *secblob,
 #define DKD_HAVE_PID		0x40
 #define DKD_MUSTHAVE_SET (DKD_HAVE_HOSTNAME|DKD_HAVE_VERSION|DKD_HAVE_SEC)
 
+static struct decoded_args {
+	int		ver;
+	char		*hostname;
+	uid_t		uid;
+	pid_t		pid;
+	sectype_t	sec;
+};
+
 static int
-decode_key_description(const char *desc, int *ver, secType_t *sec,
-			   char **hostname, uid_t *uid, pid_t *pid)
+decode_key_description(const char *desc, struct decoded_args *arg)
 {
 	int retval = 0;
 	char *pos;
@@ -175,9 +182,9 @@ decode_key_description(const char *desc, int *ver, secType_t *sec,
 				len = pos - tkn;
 
 			len -= 4;
-			SAFE_FREE(*hostname);
-			*hostname = SMB_XMALLOC_ARRAY(char, len);
-			strlcpy(*hostname, tkn + 5, len);
+			SAFE_FREE(arg->hostname);
+			arg->hostname = SMB_XMALLOC_ARRAY(char, len);
+			strlcpy(arg->hostname, tkn + 5, len);
 			retval |= DKD_HAVE_HOSTNAME;
 		} else if (strncmp(tkn, "ipv4=", 5) == 0) {
 			/* BB: do we need it if we have hostname already? */
@@ -185,7 +192,7 @@ decode_key_description(const char *desc, int *ver, secType_t *sec,
 			/* BB: do we need it if we have hostname already? */
 		} else if (strncmp(tkn, "pid=", 4) == 0) {
 			errno = 0;
-			*pid = strtol(tkn + 4, NULL, 0);
+			arg->pid = strtol(tkn + 4, NULL, 0);
 			if (errno != 0) {
 				syslog(LOG_ERR, "Invalid pid format: %s",
 				       strerror(errno));
@@ -196,14 +203,14 @@ decode_key_description(const char *desc, int *ver, secType_t *sec,
 		} else if (strncmp(tkn, "sec=", 4) == 0) {
 			if (strncmp(tkn + 4, "krb5", 4) == 0) {
 				retval |= DKD_HAVE_SEC;
-				*sec = KRB5;
+				arg->sec = KRB5;
 			} else if (strncmp(tkn + 4, "mskrb5", 6) == 0) {
 				retval |= DKD_HAVE_SEC;
-				*sec = MS_KRB5;
+				arg->sec = MS_KRB5;
 			}
 		} else if (strncmp(tkn, "uid=", 4) == 0) {
 			errno = 0;
-			*uid = strtol(tkn + 4, NULL, 16);
+			arg->uid = strtol(tkn + 4, NULL, 16);
 			if (errno != 0) {
 				syslog(LOG_ERR, "Invalid uid format: %s",
 				       strerror(errno));
@@ -213,7 +220,7 @@ decode_key_description(const char *desc, int *ver, secType_t *sec,
 			}
 		} else if (strncmp(tkn, "ver=", 4) == 0) {	/* if version */
 			errno = 0;
-			*ver = strtol(tkn + 4, NULL, 16);
+			arg->ver = strtol(tkn + 4, NULL, 16);
 			if (errno != 0) {
 				syslog(LOG_ERR, "Invalid version format: %s",
 				       strerror(errno));
@@ -293,15 +300,12 @@ int main(const int argc, char *const argv[])
 	struct cifs_spnego_msg *keydata = NULL;
 	DATA_BLOB secblob = data_blob_null;
 	DATA_BLOB sess_key = data_blob_null;
-	secType_t sectype = NONE;
 	key_serial_t key = 0;
 	size_t datalen;
 	long rc = 1;
-	uid_t uid = 0;
-	pid_t pid = 0;
-	int kernel_upcall_version = 0;
 	int c, use_cifs_service_prefix = 0;
-	char *buf, *princ, *ccname = NULL, *hostname = NULL;
+	char *buf, *princ, *ccname = NULL;
+	struct decoded_args arg = { };
 	const char *oid;
 
 	openlog(prog, 0, LOG_DAEMON);
@@ -351,8 +355,7 @@ int main(const int argc, char *const argv[])
 		goto out;
 	}
 
-	rc = decode_key_description(buf, &kernel_upcall_version, &sectype,
-				    &hostname, &uid, &pid);
+	rc = decode_key_description(buf, &arg);
 	if ((rc & DKD_MUSTHAVE_SET) != DKD_MUSTHAVE_SET) {
 		syslog(LOG_ERR, "unable to get necessary params from key "
 				"description (0x%x)", rc);
@@ -362,18 +365,18 @@ int main(const int argc, char *const argv[])
 	}
 	SAFE_FREE(buf);
 
-	if (kernel_upcall_version > CIFS_SPNEGO_UPCALL_VERSION) {
+	if (arg.ver > CIFS_SPNEGO_UPCALL_VERSION) {
 		syslog(LOG_ERR, "incompatible kernel upcall version: 0x%x",
-				kernel_upcall_version);
+				arg.ver);
 		rc = 1;
 		goto out;
 	}
 
 	if (rc & DKD_HAVE_PID)
-		ccname = get_krb5_ccname(pid);
+		ccname = get_krb5_ccname(arg.pid);
 
 	if (rc & DKD_HAVE_UID) {
-		rc = setuid(uid);
+		rc = setuid(arg.uid);
 		if (rc == -1) {
 			syslog(LOG_ERR, "setuid: %s", strerror(errno));
 			goto out;
@@ -381,11 +384,11 @@ int main(const int argc, char *const argv[])
 	}
 
 	// do mech specific authorization
-	switch (sectype) {
+	switch (arg.sec) {
 	case MS_KRB5:
 	case KRB5:
 		/* for "cifs/" service name + terminating 0 */
-		datalen = strlen(hostname) + 5 + 1;
+		datalen = strlen(arg.hostname) + 5 + 1;
 		princ = SMB_XMALLOC_ARRAY(char, datalen);
 		if (!princ) {
 			rc = 1;
@@ -397,9 +400,9 @@ int main(const int argc, char *const argv[])
 		else
 			strlcpy(princ, "host/", datalen);
 
-		strlcpy(princ + 5, hostname, datalen - 5);
+		strlcpy(princ + 5, arg.hostname, datalen - 5);
 
-		if (sectype == MS_KRB5)
+		if (arg.sec == MS_KRB5)
 			oid = OID_KERBEROS5_OLD;
 		else
 			oid = OID_KERBEROS5;
@@ -408,7 +411,7 @@ int main(const int argc, char *const argv[])
 		SAFE_FREE(princ);
 		break;
 	default:
-		syslog(LOG_ERR, "sectype: %d is not implemented", sectype);
+		syslog(LOG_ERR, "sectype: %d is not implemented", arg.sec);
 		rc = 1;
 		break;
 	}
@@ -424,7 +427,7 @@ int main(const int argc, char *const argv[])
 		rc = 1;
 		goto out;
 	}
-	keydata->version = kernel_upcall_version;
+	keydata->version = arg.ver;
 	keydata->flags = 0;
 	keydata->sesskey_len = sess_key.length;
 	keydata->secblob_len = secblob.length;
@@ -453,7 +456,7 @@ out:
 	data_blob_free(&secblob);
 	data_blob_free(&sess_key);
 	SAFE_FREE(ccname);
-	SAFE_FREE(hostname);
+	SAFE_FREE(arg.hostname);
 	SAFE_FREE(keydata);
 	return rc;
 }
