@@ -154,9 +154,9 @@ handle_krb5_mech(const char *oid, const char *principal, DATA_BLOB *secblob,
 #define DKD_HAVE_IP		0x8
 #define DKD_HAVE_UID		0x10
 #define DKD_HAVE_PID		0x20
-#define DKD_MUSTHAVE_SET (DKD_HAVE_IP|DKD_HAVE_VERSION|DKD_HAVE_SEC)
+#define DKD_MUSTHAVE_SET (DKD_HAVE_HOSTNAME|DKD_HAVE_VERSION|DKD_HAVE_SEC)
 
-static struct decoded_args {
+struct decoded_args {
 	int		ver;
 	char		*hostname;
 	char		*ip;
@@ -354,11 +354,12 @@ ip_to_fqdn(const char *addrstr, char *host, size_t hostlen)
 static void
 usage(void)
 {
-	syslog(LOG_INFO, "Usage: %s [-v] key_serial", prog);
-	fprintf(stderr, "Usage: %s [-v] key_serial\n", prog);
+	syslog(LOG_INFO, "Usage: %s [-t] [-v] key_serial", prog);
+	fprintf(stderr, "Usage: %s [-t] [-v] key_serial\n", prog);
 }
 
 const struct option long_options[] = {
+	{ "trust-dns",	0, NULL, 't' },
 	{ "version",	0, NULL, 'v' },
 	{ NULL,		0, NULL, 0 }
 };
@@ -372,18 +373,23 @@ int main(const int argc, char *const argv[])
 	size_t datalen;
 	unsigned int have;
 	long rc = 1;
-	int c;
-	char *buf, *princ, *ccname = NULL;
-	char hostbuf[NI_MAXHOST];
+	int c, try_dns = 0;
+	char *buf, *princ = NULL, *ccname = NULL;
+	char hostbuf[NI_MAXHOST], *host;
 	struct decoded_args arg = { };
 	const char *oid;
 
+	hostbuf[0] = '\0';
+
 	openlog(prog, 0, LOG_DAEMON);
 
-	while ((c = getopt_long(argc, argv, "cv", long_options, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "ctv", long_options, NULL)) != -1) {
 		switch (c) {
 		case 'c':
 			/* legacy option -- skip it */
+			break;
+		case 't':
+			try_dns++;
 			break;
 		case 'v':
 			printf("version: %s\n", CIFSSPNEGO_VERSION);
@@ -452,21 +458,18 @@ int main(const int argc, char *const argv[])
 	if (have & DKD_HAVE_PID)
 		ccname = get_krb5_ccname(arg.pid);
 
-	if (have & DKD_HAVE_IP) {
-		rc = ip_to_fqdn(arg.ip, hostbuf, sizeof(hostbuf));
-		if (rc)
-			goto out;
-	}
+	host = arg.hostname;
 
 	// do mech specific authorization
 	switch (arg.sec) {
 	case MS_KRB5:
 	case KRB5:
+retry_new_hostname:
 		/* for "cifs/" service name + terminating 0 */
-		datalen = strnlen(hostbuf, sizeof(hostbuf)) + 5 + 1;
+		datalen = strlen(host) + 5 + 1;
 		princ = SMB_XMALLOC_ARRAY(char, datalen);
 		if (!princ) {
-			rc = 1;
+			rc = -ENOMEM;
 			break;
 		}
 
@@ -480,20 +483,34 @@ int main(const int argc, char *const argv[])
 		 * getting a host/ principal if that doesn't work.
 		 */
 		strlcpy(princ, "cifs/", datalen);
-		strlcpy(princ + 5, hostbuf, datalen - 5);
+		strlcpy(princ + 5, host, datalen - 5);
 		rc = handle_krb5_mech(oid, princ, &secblob, &sess_key, ccname);
-		if (rc) {
-			memcpy(princ, "host/", 5);
-			rc = handle_krb5_mech(oid, princ, &secblob, &sess_key,
-						ccname);
-		}
+		if (!rc)
+			break;
+
+		memcpy(princ, "host/", 5);
+		rc = handle_krb5_mech(oid, princ, &secblob, &sess_key, ccname);
+		if (!rc)
+			break;
+
+		if (!try_dns || !(have & DKD_HAVE_IP))
+			break;
+
+		rc = ip_to_fqdn(arg.ip, hostbuf, sizeof(hostbuf));
+		if (rc)
+			break;
+
 		SAFE_FREE(princ);
-		break;
+		try_dns = 0;
+		host = hostbuf;
+		goto retry_new_hostname;
 	default:
 		syslog(LOG_ERR, "sectype: %d is not implemented", arg.sec);
 		rc = 1;
 		break;
 	}
+
+	SAFE_FREE(princ);
 
 	if (rc)
 		goto out;
@@ -536,6 +553,7 @@ out:
 	data_blob_free(&sess_key);
 	SAFE_FREE(ccname);
 	SAFE_FREE(arg.hostname);
+	SAFE_FREE(arg.ip);
 	SAFE_FREE(keydata);
 	return rc;
 }

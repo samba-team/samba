@@ -19,8 +19,8 @@
 <refsynopsisdiv>
         <cmdsynopsis>
                 <command>cifs.upcall</command>
-                <arg choice="opt">-c</arg>
-                <arg choice="opt">-v</arg>
+                <arg choice="opt">--trust-dns|-t</arg>
+                <arg choice="opt">--version|-v</arg>
                 <arg choice="req">keyid</arg>
         </cmdsynopsis>
 </refsynopsisdiv>
@@ -51,9 +51,14 @@ to be run that way.</para>
 		<listitem><para>This option is deprecated and is currently ignored.
 		</para></listitem>
 		</varlistentry>
-
 		<varlistentry>
-		<term>-v</term>
+		<term>--trust-dns|-t</term>
+		<listitem><para>With krb5 upcalls, the name used as the host portion of the service principal defaults to the hostname portion of the UNC. This option allows the upcall program to reverse resolve the network address of the server in order to get the hostname.</para>
+		<para>This is less secure than not trusting DNS. When using this option, it's possible that an attacker could get control of DNS and trick the client into mounting a different server altogether. It's preferable to instead add server principals to the KDC for every possible hostname, but this option exists for cases where that isn't possible. The default is to not trust reverse hostname lookups in this fashion.
+		</para></listitem>
+		</varlistentry>
+		<varlistentry>
+		<term>--version|-v</term>
 		<listitem><para>Print version number and exit.
 		</para></listitem>
 		</varlistentry>
@@ -85,7 +90,7 @@ to be run that way.</para>
 	<para>To make this program useful for CIFS, you'll need to set up entries for them in request-key.conf<manvolnum>5</manvolnum>. Here's an example of an entry for each key type:</para>
 <programlisting>
 #OPERATION  TYPE           D C PROGRAM ARG1 ARG2...
-#=========  =============  = = ==========================================
+#=========  =============  = = ================================
 create      cifs.spnego    * * /usr/local/sbin/cifs.upcall %k
 create      dns_resolver   * * /usr/local/sbin/cifs.upcall %k
 </programlisting>
