@@ -756,7 +756,7 @@ static int ldif_write_replUpToDateVector(struct ldb_context *ldb, void *mem_ctx,
 	return ldif_write_NDR(ldb, mem_ctx, in, out, 
 			      sizeof(struct replUpToDateVectorBlob),
 			      (ndr_pull_flags_fn_t)ndr_pull_replUpToDateVectorBlob,
-			      (ndr_print_fn_t)ndr_print_replPropertyMetaDataBlob);
+			      (ndr_print_fn_t)ndr_print_replUpToDateVectorBlob);
 }
 
 
