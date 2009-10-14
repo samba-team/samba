@@ -980,8 +980,8 @@ static bool winbind_name_to_sid_string(struct pwb_context *ctx,
 				       char *sid_list_buffer,
 				       int sid_list_buffer_size)
 {
-	const char* sid_string;
-	char *sid_str;
+	const char* sid_string = NULL;
+	char *sid_str = NULL;
 
 	/* lookup name? */
 	if (IS_SID_STRING(name)) {
