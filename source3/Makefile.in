@@ -465,7 +465,7 @@ LIBCLI_LDAP_NDR_OBJ = ../libcli/ldap/ldap_ndr.o
 CLDAP_OBJ = libads/cldap.o $(LIBCLI_LDAP_MESSAGE_OBJ) $(LIBCLI_LDAP_NDR_OBJ)
 
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
-	     libsmb/clikrb5.o libsmb/clispnego.o ../lib/util/asn1.o \
+	     libsmb/clikrb5.o libsmb/clispnego.o libsmb/spnego.o ../lib/util/asn1.o \
 	     libsmb/clirap.o libsmb/clierror.o libsmb/climessage.o \
 	     libsmb/clireadwrite.o libsmb/clilist.o libsmb/cliprint.o \
 	     libsmb/clitrans.o libsmb/clisecdesc.o libsmb/clidgram.o \
