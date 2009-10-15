@@ -671,19 +671,6 @@ static bool torture_ldb_dn(struct torture_context *torture)
 		       NULL == ldb_dn_from_ldb_val(mem_ctx, ldb, &val),
 		       "should fail to create a DN with 0x0 in it");
 
-	torture_assert(torture,
-		       dn = ldb_dn_new(mem_ctx, ldb, "CN=loooooooooooooooooooooooooooo"
-"ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo"
-"ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo"
-"ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo"
-"ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo"
-"ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooongdn,DC=SAMBA,DC=org"),
-		       "Failed to create a DN with size more than 255 characters");
-
-	torture_assert(torture,
-		       ldb_dn_validate(dn) == false,
-		       "should have failed to validate DN with size more than 255 characters");
-
 	talloc_free(mem_ctx);
 	return true;
 }
