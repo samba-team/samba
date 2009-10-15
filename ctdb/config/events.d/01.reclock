@@ -21,19 +21,14 @@ case $cmd in
 	;;
 
       monitor)
-	ctdb_counter_incr "$RECLOCKCOUNT"
-	ctdb_counter_limit "$RECLOCKCOUNT" 20 && {
-		echo "Reclock file can not be accessed. Shutting down."
-		sleep 1
-		ctdb shutdown
-	}
-
 	RECLOCKFILE=`ctdb -Y getreclock`
 	[ -z "$RECLOCKFILE" ] && {
 		# we are not using a reclock file
 		ctdb_counter_init "$RECLOCKCOUNT"
 		exit 0
 	}
+
+	ctdb_counter_incr "$RECLOCKCOUNT"
 
 	# try stat the reclock file as a background process
 	# so that we dont block in case the cluster filesystem is unavailable
