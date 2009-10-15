@@ -119,7 +119,7 @@ static NTSTATUS nttrans_create(struct smbsrv_request *req,
 	params = trans->in.params.data;
 
 	io->ntcreatex.in.flags            = IVAL(params,  0);
-	io->ntcreatex.in.root_fid.fnum    = IVAL(params,  4);
+	io->ntcreatex.in.root_fid.ntvfs   = smbsrv_pull_fnum(req, req->in.vwv, 4);
 	io->ntcreatex.in.access_mask      = IVAL(params,  8);
 	io->ntcreatex.in.alloc_size       = BVAL(params, 12);
 	io->ntcreatex.in.file_attr        = IVAL(params, 20);
