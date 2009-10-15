@@ -336,13 +336,10 @@ NTSTATUS dcesrv_inherited_session_key(struct dcesrv_connection *p,
 	return NT_STATUS_NO_USER_SESSION_KEY;
 }
 
-NTSTATUS dcesrv_generic_session_key(struct dcesrv_connection *p,
+NTSTATUS dcesrv_generic_session_key(struct dcesrv_connection *c,
 				    DATA_BLOB *session_key)
 {
-	/* this took quite a few CPU cycles to find ... */
-	session_key->data = discard_const_p(uint8_t, "SystemLibraryDTC");
-	session_key->length = 16;
-	return NT_STATUS_OK;
+	return dcerpc_generic_session_key(NULL, session_key);
 }
 
 /*
