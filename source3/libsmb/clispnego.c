@@ -494,31 +494,28 @@ DATA_BLOB spnego_gen_auth(DATA_BLOB blob)
 */
 bool spnego_parse_auth(DATA_BLOB blob, DATA_BLOB *auth)
 {
-	ASN1_DATA *data;
+	SPNEGO_DATA token;
+	ssize_t len;
 
-	data = asn1_init(talloc_tos());
-	if (data == NULL) {
+	len = read_spnego_data(talloc_tos(), blob, &token);
+	if (len == -1) {
+		DEBUG(3,("spnego_parse_auth: read_spnego_data failed\n"));
 		return false;
 	}
 
-	asn1_load(data, blob);
-	asn1_start_tag(data, ASN1_CONTEXT(1));
-	asn1_start_tag(data, ASN1_SEQUENCE(0));
-	asn1_start_tag(data, ASN1_CONTEXT(2));
-	asn1_read_OctetString(data, NULL, auth);
-	asn1_end_tag(data);
-	asn1_end_tag(data);
-	asn1_end_tag(data);
-
-	if (data->has_error) {
-		DEBUG(3,("spnego_parse_auth failed at %d\n", (int)data->ofs));
-		data_blob_free(auth);
-		asn1_free(data);
-		return False;
+	if (token.type != SPNEGO_NEG_TOKEN_TARG) {
+		DEBUG(3,("spnego_parse_auth: wrong token type: %d\n",
+			token.type));
+		free_spnego_data(&token);
+		return false;
 	}
 
-	asn1_free(data);
-	return True;
+	*auth = data_blob_talloc(talloc_tos(),
+				 token.negTokenTarg.responseToken.data,
+				 token.negTokenTarg.responseToken.length);
+	free_spnego_data(&token);
+
+	return true;
 }
 
 /*
