@@ -25,7 +25,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
-static bool read_negTokenInit(ASN1_DATA *asn1, negTokenInit_t *token)
+static bool read_negTokenInit(TALLOC_CTX *mem_ctx, ASN1_DATA *asn1, negTokenInit_t *token)
 {
 	ZERO_STRUCTP(token);
 
@@ -41,17 +41,17 @@ static bool read_negTokenInit(ASN1_DATA *asn1, negTokenInit_t *token)
 			asn1_start_tag(asn1, ASN1_CONTEXT(0));
 			asn1_start_tag(asn1, ASN1_SEQUENCE(0));
 
-			token->mechTypes = TALLOC_P(NULL, const char *);
+			token->mechTypes = TALLOC_P(mem_ctx, const char *);
 			for (i = 0; !asn1->has_error &&
 				     0 < asn1_tag_remaining(asn1); i++) {
 				const char *p_oid = NULL;
 				token->mechTypes = 
-					TALLOC_REALLOC_ARRAY(NULL, token->mechTypes, const char *, i + 2);
+					TALLOC_REALLOC_ARRAY(mem_ctx, token->mechTypes, const char *, i + 2);
 				if (!token->mechTypes) {
 					asn1->has_error = True;
 					return False;
 				}
-				asn1_read_OID(asn1, NULL, &p_oid);
+				asn1_read_OID(asn1, mem_ctx, &p_oid);
 				token->mechTypes[i] = p_oid;
 			}
 			token->mechTypes[i] = NULL;
@@ -69,14 +69,14 @@ static bool read_negTokenInit(ASN1_DATA *asn1, negTokenInit_t *token)
                 /* Read mechToken */
 		case ASN1_CONTEXT(2):
 			asn1_start_tag(asn1, ASN1_CONTEXT(2));
-			asn1_read_OctetString(asn1, NULL, &token->mechToken);
+			asn1_read_OctetString(asn1, mem_ctx, &token->mechToken);
 			asn1_end_tag(asn1);
 			break;
 		/* Read mecListMIC */
 		case ASN1_CONTEXT(3):
 			asn1_start_tag(asn1, ASN1_CONTEXT(3));
 			if (asn1->data[asn1->ofs] == ASN1_OCTET_STRING) {
-				asn1_read_OctetString(asn1, NULL,
+				asn1_read_OctetString(asn1, mem_ctx,
 						      &token->mechListMIC);
 			} else {
 				/* RFC 2478 says we have an Octet String here,
@@ -84,7 +84,7 @@ static bool read_negTokenInit(ASN1_DATA *asn1, negTokenInit_t *token)
 				char *mechListMIC;
 				asn1_push_tag(asn1, ASN1_SEQUENCE(0));
 				asn1_push_tag(asn1, ASN1_CONTEXT(0));
-				asn1_read_GeneralString(asn1, NULL, &mechListMIC);
+				asn1_read_GeneralString(asn1, mem_ctx, &mechListMIC);
 				asn1_pop_tag(asn1);
 				asn1_pop_tag(asn1);
 
@@ -169,7 +169,7 @@ static bool write_negTokenInit(ASN1_DATA *asn1, negTokenInit_t *token)
 	return !asn1->has_error;
 }
 
-static bool read_negTokenTarg(ASN1_DATA *asn1, negTokenTarg_t *token)
+static bool read_negTokenTarg(TALLOC_CTX *mem_ctx, ASN1_DATA *asn1, negTokenTarg_t *token)
 {
 	ZERO_STRUCTP(token);
 
@@ -188,19 +188,19 @@ static bool read_negTokenTarg(ASN1_DATA *asn1, negTokenTarg_t *token)
 		case ASN1_CONTEXT(1): {
 			const char *mech = NULL;
 			asn1_start_tag(asn1, ASN1_CONTEXT(1));
-			asn1_read_OID(asn1, NULL, &mech);
+			asn1_read_OID(asn1, mem_ctx, &mech);
 			asn1_end_tag(asn1);
 			token->supportedMech = CONST_DISCARD(char *, mech);
 			}
 			break;
 		case ASN1_CONTEXT(2):
 			asn1_start_tag(asn1, ASN1_CONTEXT(2));
-			asn1_read_OctetString(asn1, NULL, &token->responseToken);
+			asn1_read_OctetString(asn1, mem_ctx, &token->responseToken);
 			asn1_end_tag(asn1);
 			break;
 		case ASN1_CONTEXT(3):
 			asn1_start_tag(asn1, ASN1_CONTEXT(3));
-			asn1_read_OctetString(asn1, NULL, &token->mechListMIC);
+			asn1_read_OctetString(asn1, mem_ctx, &token->mechListMIC);
 			asn1_end_tag(asn1);
 			break;
 		default:
@@ -250,14 +250,14 @@ static bool write_negTokenTarg(ASN1_DATA *asn1, negTokenTarg_t *token)
 	return !asn1->has_error;
 }
 
-ssize_t read_spnego_data(DATA_BLOB data, SPNEGO_DATA *token)
+ssize_t read_spnego_data(TALLOC_CTX *mem_ctx, DATA_BLOB data, SPNEGO_DATA *token)
 {
 	ASN1_DATA *asn1;
 	ssize_t ret = -1;
 
 	ZERO_STRUCTP(token);
 
-	asn1 = asn1_init(talloc_tos());
+	asn1 = asn1_init(mem_ctx);
 	if (asn1 == NULL) {
 		return -1;
 	}
@@ -268,13 +268,13 @@ ssize_t read_spnego_data(DATA_BLOB data, SPNEGO_DATA *token)
 	case ASN1_APPLICATION(0):
 		asn1_start_tag(asn1, ASN1_APPLICATION(0));
 		asn1_check_OID(asn1, OID_SPNEGO);
-		if (read_negTokenInit(asn1, &token->negTokenInit)) {
+		if (read_negTokenInit(mem_ctx, asn1, &token->negTokenInit)) {
 			token->type = SPNEGO_NEG_TOKEN_INIT;
 		}
 		asn1_end_tag(asn1);
 		break;
 	case ASN1_CONTEXT(1):
-		if (read_negTokenTarg(asn1, &token->negTokenTarg)) {
+		if (read_negTokenTarg(mem_ctx, asn1, &token->negTokenTarg)) {
 			token->type = SPNEGO_NEG_TOKEN_TARG;
 		}
 		break;
