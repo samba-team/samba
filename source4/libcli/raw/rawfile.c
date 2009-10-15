@@ -819,7 +819,7 @@ _PUBLIC_ NTSTATUS smb_raw_open_recv(struct smbcli_request *req, TALLOC_CTX *mem_
 		parms->ntcreatexreadx.out.compaction_mode = SVAL(req->in.vwv, VWV(3));
 		parms->ntcreatexreadx.out.nread = SVAL(req->in.vwv, VWV(5));
 		if (parms->ntcreatexreadx.out.nread >
-		    MAX(parms->openxreadx.in.mincnt, parms->openxreadx.in.maxcnt) ||
+		    MAX(parms->ntcreatexreadx.in.mincnt, parms->ntcreatexreadx.in.maxcnt) ||
 		    !smbcli_raw_pull_data(&req->in.bufinfo, req->in.hdr + SVAL(req->in.vwv, VWV(6)),
 			                  parms->ntcreatexreadx.out.nread,
 			                  parms->ntcreatexreadx.out.data)) {
