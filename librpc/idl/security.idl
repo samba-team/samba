@@ -144,6 +144,21 @@ interface security
 	const int SEC_RIGHTS_DIR_EXECUTE  = SEC_RIGHTS_FILE_EXECUTE;
 	const int SEC_RIGHTS_DIR_ALL      = SEC_RIGHTS_FILE_ALL;
 
+	/* rights granted by some specific privileges */
+	const int SEC_RIGHTS_PRIV_BACKUP  = SEC_STD_READ_CONTROL | 
+					    SEC_FLAG_SYSTEM_SECURITY |
+					    SEC_GENERIC_READ;
+	const int SEC_RIGHTS_DIR_PRIV_BACKUP  = SEC_RIGHTS_PRIV_BACKUP 
+					      | SEC_DIR_TRAVERSE;
+
+	const int SEC_RIGHTS_PRIV_RESTORE = SEC_STD_WRITE_DAC | 
+					    SEC_STD_WRITE_OWNER |
+					    SEC_FLAG_SYSTEM_SECURITY |
+					    SEC_STD_DELETE;
+	const int SEC_RIGHTS_DIR_PRIV_RESTORE = SEC_RIGHTS_PRIV_RESTORE | 
+					    SEC_DIR_ADD_FILE |
+					    SEC_DIR_ADD_SUBDIR;
+
 	/* combinations of standard masks. */
 	const int STANDARD_RIGHTS_ALL_ACCESS		= SEC_STD_ALL; /* 0x001f0000 */
 	const int STANDARD_RIGHTS_MODIFY_ACCESS		= SEC_STD_READ_CONTROL; /* 0x00020000 */
