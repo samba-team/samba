@@ -3293,7 +3293,7 @@ WERROR map_werror_from_unix(int error);
 
 /* The following definitions come from libsmb/spnego.c  */
 
-ssize_t read_spnego_data(DATA_BLOB data, SPNEGO_DATA *token);
+ssize_t read_spnego_data(TALLOC_CTX *mem_ctx, DATA_BLOB data, SPNEGO_DATA *token);
 ssize_t write_spnego_data(DATA_BLOB *blob, SPNEGO_DATA *spnego);
 bool free_spnego_data(SPNEGO_DATA *spnego);
 

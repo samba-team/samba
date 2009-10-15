@@ -1165,7 +1165,7 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 	}
 
 	token = base64_decode_data_blob(buf + 3);
-	len = read_spnego_data(token, &request);
+	len = read_spnego_data(talloc_tos(), token, &request);
 	data_blob_free(&token);
 
 	if (len == -1) {
@@ -1646,7 +1646,7 @@ static void manage_gss_spnego_client_request(struct ntlm_auth_state *state,
 	/* So we got a server challenge to generate a SPNEGO
            client-to-server request... */
 
-	len = read_spnego_data(request, &spnego);
+	len = read_spnego_data(talloc_tos(), request, &spnego);
 	data_blob_free(&request);
 
 	if (len == -1) {
