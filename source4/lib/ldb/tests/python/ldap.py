@@ -484,6 +484,30 @@ class BasicTests(unittest.TestCase):
 
         self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
+    def test_largeRDN(self):
+        """Testing large rDN (limit 64 characters)"""
+        rdn = "CN=a012345678901234567890123456789012345678901234567890123456789012";
+        self.delete_force(self.ldb, "%s,%s" % (rdn, self.base_dn))
+        ldif = """
+dn: %s,%s""" % (rdn,self.base_dn) + """
+objectClass: container
+"""
+        self.ldb.add_ldif(ldif)
+        self.delete_force(self.ldb, "%s,%s" % (rdn, self.base_dn))
+
+        rdn = "CN=a0123456789012345678901234567890123456789012345678901234567890120";
+        self.delete_force(self.ldb, "%s,%s" % (rdn, self.base_dn))
+        try:
+            ldif = """
+dn: %s,%s""" % (rdn,self.base_dn) + """
+objectClass: container
+"""
+            self.ldb.add_ldif(ldif)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+        self.delete_force(self.ldb, "%s,%s" % (rdn, self.base_dn))
+
     def test_rename(self):
         """Tests the rename operation"""
         print "Tests the rename operations"""
@@ -1847,6 +1871,7 @@ class SchemaTests(unittest.TestCase):
         self.assertFalse("dITContentRules" in res[0])
         self.assertFalse("objectClasses" in res[0])
         self.assertFalse("attributeTypes" in res[0])
+
 
     def test_schemaUpdateNow(self):
         """Testing schemaUpdateNow"""
