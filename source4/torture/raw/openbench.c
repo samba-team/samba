@@ -173,7 +173,7 @@ static void next_open(struct benchopen_state *state)
 	DEBUG(2,("[%d] opening %u\n", state->client_num, state->pending_file_num));
 	state->open_parms.ntcreatex.level = RAW_OPEN_NTCREATEX;
 	state->open_parms.ntcreatex.in.flags = 0;
-	state->open_parms.ntcreatex.in.root_fid = 0;
+	state->open_parms.ntcreatex.in.root_fid.fnum = 0;
 	state->open_parms.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	state->open_parms.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
 	state->open_parms.ntcreatex.in.alloc_size = 0;

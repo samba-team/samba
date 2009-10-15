@@ -379,7 +379,7 @@ static struct smbcli_request *smb_raw_nttrans_create_send(struct smbcli_tree *tr
 	params = nt.in.params.data;
 
 	SIVAL(params,  0, parms->ntcreatex.in.flags);
-	SIVAL(params,  4, parms->ntcreatex.in.root_fid);
+	SIVAL(params,  4, parms->ntcreatex.in.root_fid.fnum);
 	SIVAL(params,  8, parms->ntcreatex.in.access_mask);
 	SBVAL(params, 12, parms->ntcreatex.in.alloc_size);
 	SIVAL(params, 20, parms->ntcreatex.in.file_attr);
@@ -564,7 +564,7 @@ _PUBLIC_ struct smbcli_request *smb_raw_open_send(struct smbcli_tree *tree, unio
 		SSVAL(req->out.vwv, VWV(1),0);
 		SCVAL(req->out.vwv, VWV(2),0); /* padding */
 		SIVAL(req->out.vwv,  7, parms->ntcreatex.in.flags);
-		SIVAL(req->out.vwv, 11, parms->ntcreatex.in.root_fid);
+		SIVAL(req->out.vwv, 11, parms->ntcreatex.in.root_fid.fnum);
 		SIVAL(req->out.vwv, 15, parms->ntcreatex.in.access_mask);
 		SBVAL(req->out.vwv, 19, parms->ntcreatex.in.alloc_size);
 		SIVAL(req->out.vwv, 27, parms->ntcreatex.in.file_attr);
@@ -623,7 +623,7 @@ _PUBLIC_ struct smbcli_request *smb_raw_open_send(struct smbcli_tree *tree, unio
 		SSVAL(req->out.vwv, VWV(1),0);
 		SCVAL(req->out.vwv, VWV(2),0); /* padding */
 		SIVAL(req->out.vwv,  7, parms->ntcreatexreadx.in.flags);
-		SIVAL(req->out.vwv, 11, parms->ntcreatexreadx.in.root_fid);
+		SIVAL(req->out.vwv, 11, parms->ntcreatexreadx.in.root_fid.fnum);
 		SIVAL(req->out.vwv, 15, parms->ntcreatexreadx.in.access_mask);
 		SBVAL(req->out.vwv, 19, parms->ntcreatexreadx.in.alloc_size);
 		SIVAL(req->out.vwv, 27, parms->ntcreatexreadx.in.file_attr);

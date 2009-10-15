@@ -61,7 +61,7 @@ NTSTATUS create_directory_handle(struct smbcli_tree *tree, const char *dname, in
 	mem_ctx = talloc_named_const(tree, 0, "create_directory_handle");
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;

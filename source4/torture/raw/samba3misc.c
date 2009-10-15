@@ -90,7 +90,7 @@ bool torture_samba3_checkfsp(struct torture_context *torture)
 		union smb_open io;
 		io.generic.level = RAW_OPEN_NTCREATEX;
 		io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
-		io.ntcreatex.in.root_fid = 0;
+		io.ntcreatex.in.root_fid.fnum = 0;
 		io.ntcreatex.in.security_flags = 0;
 		io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
 		io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
@@ -304,7 +304,7 @@ static NTSTATUS raw_smbcli_ntcreate(struct smbcli_tree *tree, const char *fname,
 	memset(&io, '\0', sizeof(io));
         io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -887,7 +887,7 @@ bool torture_samba3_rootdirfid(struct torture_context *tctx)
 	ZERO_STRUCT(io);
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.access_mask =
 		SEC_STD_SYNCHRONIZE | SEC_FILE_EXECUTE;
@@ -912,7 +912,7 @@ bool torture_samba3_rootdirfid(struct torture_context *tctx)
 	io.ntcreatex.in.flags =
 		NTCREATEX_FLAGS_REQUEST_OPLOCK
 		| NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
-	io.ntcreatex.in.root_fid = dnum;
+	io.ntcreatex.in.root_fid.fnum = dnum;
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OVERWRITE_IF;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
@@ -961,7 +961,7 @@ bool torture_samba3_oplock_logoff(struct torture_context *tctx)
 	ZERO_STRUCT(io);
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.access_mask =
 		SEC_STD_SYNCHRONIZE | SEC_FILE_EXECUTE;

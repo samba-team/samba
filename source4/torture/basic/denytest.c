@@ -1768,7 +1768,7 @@ static bool torture_ntdenytest(struct torture_context *tctx,
 	GetTimeOfDay(&tv_start);
 
 	io1.ntcreatex.level = RAW_OPEN_NTCREATEX;
-	io1.ntcreatex.in.root_fid = 0;
+	io1.ntcreatex.in.root_fid.fnum = 0;
 	io1.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
 	io1.ntcreatex.in.create_options = NTCREATEX_OPTIONS_NON_DIRECTORY_FILE;
 	io1.ntcreatex.in.file_attr = 0;
@@ -2150,6 +2150,7 @@ static void createx_fill_file(union smb_open *open_parms, int accessmode,
 	    .open_disposition = NTCREATEX_DISP_OPEN_IF,
 	    .create_options = 0,
 	    .fname = fname,
+            .root_fid = { .fnum = 0 },
 	);
 }
 
@@ -2189,7 +2190,7 @@ static bool createx_test_dir(struct torture_context *tctx,
 	    .open_disposition = NTCREATEX_DISP_CREATE,
 	    .create_options = 0,
 	    .fname = CHILD,
-	    .root_fid = fnum,
+	    .root_fid = { .fnum = fnum },
 	);
 
 	result[CXD_DIR_CREATE_CHILD] =
@@ -2205,7 +2206,7 @@ static bool createx_test_dir(struct torture_context *tctx,
 	    .open_disposition = NTCREATEX_DISP_OPEN,
 	    .create_options = 0,
 	    .fname = KNOWN,
-	    .root_fid = fnum,
+	    .root_fid = {.fnum = fnum},
 	);
 
 	result[CXD_DIR_TRAVERSE] =
@@ -2231,14 +2232,14 @@ static bool createx_test_file(struct torture_context *tctx,
 	rd.readx.in.file.fnum = fnum;
 	rd.readx.in.mincnt = sizeof(buf);
 	rd.readx.in.maxcnt = sizeof(buf);
-	rd.readx.out.data = buf;
+	rd.readx.out.data = (uint8_t *)buf;
 
 	result[CXD_FILE_READ] = smb_raw_read(tree, &rd);
 
 	wr.writex.level = RAW_WRITE_WRITEX;
 	wr.writex.in.file.fnum = fnum;
 	wr.writex.in.count = sizeof(buf);
-	wr.writex.in.data = buf;
+	wr.writex.in.data = (uint8_t *)buf;
 
 	result[CXD_FILE_WRITE] = smb_raw_write(tree, &wr);
 
@@ -2248,7 +2249,7 @@ static bool createx_test_file(struct torture_context *tctx,
 	rd.readx.in.mincnt = sizeof(buf);
 	rd.readx.in.maxcnt = sizeof(buf);
 	rd.readx.in.read_for_execute = 1;
-	rd.readx.out.data = buf;
+	rd.readx.out.data = (uint8_t *)buf;
 
 	result[CXD_FILE_EXECUTE] = smb_raw_read(tree, &rd);
 
@@ -2580,7 +2581,6 @@ bool torture_createx_access(struct torture_context *tctx,
 			torture_createx_specific(tctx, cli, NULL, mem_ctx,
 			    &cxd, est);
 		}
-
 		for (i = 0; i < num_access_bits; i++) {
 			/* And now run through the single access bits. */
 			cxd.cxd_access1 = 1 << i;

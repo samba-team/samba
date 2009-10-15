@@ -57,7 +57,7 @@ static bool test_sd(struct torture_context *tctx,
 	printf("TESTING SETFILEINFO EA_SET\n");
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	io.ntcreatex.in.create_options = 0;
@@ -161,7 +161,7 @@ static bool test_nttrans_create(struct torture_context *tctx,
 	printf("testing nttrans create with sec_desc\n");
 
 	io.generic.level = RAW_OPEN_NTTRANS_CREATE;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	io.ntcreatex.in.create_options = 0;
@@ -267,7 +267,7 @@ static bool test_nttrans_create_null_dacl(struct torture_context *tctx,
 	printf("TESTING SEC_DESC WITH A NULL DACL\n");
 
 	io.generic.level = RAW_OPEN_NTTRANS_CREATE;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_STD_READ_CONTROL | SEC_STD_WRITE_DAC
 		| SEC_STD_WRITE_OWNER;
@@ -512,7 +512,7 @@ static bool test_creator_sid(struct torture_context *tctx,
 	printf("TESTING SID_CREATOR_OWNER\n");
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_STD_READ_CONTROL | SEC_STD_WRITE_DAC | SEC_STD_WRITE_OWNER;
 	io.ntcreatex.in.create_options = 0;
@@ -748,7 +748,7 @@ static bool test_generic_bits(struct torture_context *tctx,
 	printf("TESTING FILE GENERIC BITS\n");
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = 
 		SEC_STD_READ_CONTROL | 
@@ -913,7 +913,7 @@ static bool test_generic_bits(struct torture_context *tctx,
 	printf("TESTING DIR GENERIC BITS\n");
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = 
 		SEC_STD_READ_CONTROL | 
@@ -1102,7 +1102,7 @@ static bool test_owner_bits(struct torture_context *tctx,
 	printf("TESTING FILE OWNER BITS\n");
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = 
 		SEC_STD_READ_CONTROL | 
@@ -1334,7 +1334,7 @@ static bool test_inheritance(struct torture_context *tctx,
 	printf("TESTING ACL INHERITANCE\n");
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
@@ -1655,7 +1655,7 @@ static bool test_inheritance_dynamic(struct torture_context *tctx,
 	}
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
@@ -1848,7 +1848,7 @@ static bool test_sd_get_set(struct torture_context *tctx,
 	sd->type |= SEC_DESC_SACL_PRESENT;
 	sd->sacl = NULL;
 	io.ntcreatex.level = RAW_OPEN_NTTRANS_CREATE;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_GENERIC_ALL;
 	io.ntcreatex.in.create_options = 0;

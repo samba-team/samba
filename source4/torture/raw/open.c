@@ -719,7 +719,7 @@ static bool test_ntcreatex(struct smbcli_state *cli, struct torture_context *tct
 	/* reasonable default parameters */
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 1024*1024;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -900,7 +900,7 @@ static bool test_nttrans_create(struct smbcli_state *cli, struct torture_context
 	/* reasonable default parameters */
 	io.generic.level = RAW_OPEN_NTTRANS_CREATE;
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 1024*1024;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -1151,7 +1151,7 @@ static bool test_ntcreatex_brlocked(struct smbcli_state *cli, struct torture_con
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = 0x2019f;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -1182,7 +1182,7 @@ static bool test_ntcreatex_brlocked(struct smbcli_state *cli, struct torture_con
 
 	io1.generic.level = RAW_OPEN_NTCREATEX;
 	io1.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
-	io1.ntcreatex.in.root_fid = 0;
+	io1.ntcreatex.in.root_fid.fnum = 0;
 	io1.ntcreatex.in.access_mask = 0x20196;
 	io1.ntcreatex.in.alloc_size = 0;
 	io1.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -1560,7 +1560,7 @@ static bool test_raw_open_multi(struct torture_context *tctx)
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -1652,7 +1652,7 @@ static bool test_open_for_delete(struct smbcli_state *cli, struct torture_contex
 	/* reasonable default parameters */
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_READONLY;
@@ -1715,7 +1715,7 @@ static bool test_chained_ntcreatex_readx(struct smbcli_state *cli, struct tortur
 	/* ntcreatex parameters */
 	io.generic.level = RAW_OPEN_NTCREATEX_READX;
 	io.ntcreatexreadx.in.flags = 0;
-	io.ntcreatexreadx.in.root_fid = 0;
+	io.ntcreatexreadx.in.root_fid.fnum = 0;
 	io.ntcreatexreadx.in.access_mask = SEC_FILE_READ_DATA;
 	io.ntcreatexreadx.in.alloc_size = 0;
 	io.ntcreatexreadx.in.file_attr = FILE_ATTRIBUTE_NORMAL;

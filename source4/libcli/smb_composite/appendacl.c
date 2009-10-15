@@ -254,7 +254,7 @@ struct composite_context *smb_composite_appendacl_send(struct smbcli_tree *tree,
 	if (state->io_open == NULL) goto failed;
 	
 	state->io_open->ntcreatex.level               = RAW_OPEN_NTCREATEX;
-	state->io_open->ntcreatex.in.root_fid = 0;
+	state->io_open->ntcreatex.in.root_fid.fnum    = 0;
 	state->io_open->ntcreatex.in.flags            = 0;
 	state->io_open->ntcreatex.in.access_mask      = SEC_FLAG_MAXIMUM_ALLOWED;
 	state->io_open->ntcreatex.in.file_attr        = FILE_ATTRIBUTE_NORMAL;

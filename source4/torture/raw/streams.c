@@ -221,7 +221,7 @@ static bool test_stream_dir(struct torture_context *tctx,
 
 	printf("(%s) opening non-existant directory stream\n", __location__);
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
 	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
@@ -237,7 +237,7 @@ static bool test_stream_dir(struct torture_context *tctx,
 
 	printf("(%s) opening basedir  stream\n", __location__);
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
 	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
@@ -253,7 +253,7 @@ static bool test_stream_dir(struct torture_context *tctx,
 
 	printf("(%s) opening basedir ::$DATA stream\n", __location__);
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0x10;
 	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
 	io.ntcreatex.in.create_options = 0;
@@ -297,7 +297,7 @@ static bool test_stream_io(struct torture_context *tctx,
 
 	printf("(%s) creating a stream on a non-existant file\n", __location__);
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
 	io.ntcreatex.in.create_options = 0;
@@ -434,7 +434,7 @@ static bool test_stream_sharemodes(struct torture_context *tctx,
 
 	printf("(%s) testing stream share mode conflicts\n", __location__);
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
 	io.ntcreatex.in.create_options = 0;
@@ -523,7 +523,7 @@ static bool test_stream_delete(struct torture_context *tctx,
 
 	printf("(%s) opening non-existant file stream\n", __location__);
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_FILE_READ_DATA|SEC_FILE_WRITE_DATA;
 	io.ntcreatex.in.create_options = 0;
@@ -698,7 +698,7 @@ static bool test_stream_names(struct torture_context *tctx,
 
 	printf("(%s) testing stream names\n", __location__);
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
 	io.ntcreatex.in.create_options = 0;
@@ -966,7 +966,7 @@ static bool test_stream_names2(struct torture_context *tctx,
 
 	printf("(%s) testing stream names\n", __location__);
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
 	io.ntcreatex.in.create_options = 0;
@@ -1060,7 +1060,7 @@ static bool test_stream_rename(struct torture_context *tctx,
 
 	printf("(%s) testing stream renames\n", __location__);
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_FILE_READ_ATTRIBUTE |
 				      SEC_FILE_WRITE_ATTRIBUTE |
@@ -1135,7 +1135,7 @@ static bool test_stream_rename2(struct torture_context *tctx,
 	sname2 = talloc_asprintf(mem_ctx, "%s:%s", fname1, "Stream Two");
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = (SEC_FILE_READ_DATA|SEC_FILE_WRITE_DATA|
 	    SEC_STD_DELETE|SEC_FILE_APPEND_DATA|SEC_STD_READ_CONTROL);
@@ -1318,7 +1318,7 @@ static bool create_file_with_stream(struct torture_context *tctx,
 
 	/* Create a file with a stream */
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = (SEC_FILE_READ_DATA|SEC_FILE_WRITE_DATA|
 	    SEC_FILE_APPEND_DATA|SEC_STD_READ_CONTROL);
@@ -1365,7 +1365,7 @@ static bool test_stream_create_disposition(struct torture_context *tctx,
 
 	/* Open the base file with OPEN */
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = (SEC_FILE_READ_DATA|SEC_FILE_WRITE_DATA|
 	    SEC_FILE_APPEND_DATA|SEC_STD_READ_CONTROL);
@@ -1573,7 +1573,7 @@ static bool test_stream_attributes(struct torture_context *tctx,
 	/* Now open the stream name. */
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = (SEC_FILE_READ_DATA|SEC_FILE_WRITE_DATA|
 	    SEC_FILE_APPEND_DATA|SEC_STD_READ_CONTROL|SEC_FILE_WRITE_ATTRIBUTE);

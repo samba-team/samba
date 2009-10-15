@@ -280,7 +280,7 @@ static bool test_raw_oplock_exclusive1(struct torture_context *tctx, struct smbc
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -347,7 +347,7 @@ static bool test_raw_oplock_exclusive2(struct torture_context *tctx, struct smbc
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -445,7 +445,7 @@ static bool test_raw_oplock_exclusive3(struct torture_context *tctx, struct smbc
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -510,7 +510,7 @@ static bool test_raw_oplock_exclusive4(struct torture_context *tctx, struct smbc
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -576,7 +576,7 @@ static bool test_raw_oplock_exclusive5(struct torture_context *tctx, struct smbc
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -650,7 +650,7 @@ static bool test_raw_oplock_exclusive6(struct torture_context *tctx, struct smbc
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -719,7 +719,7 @@ static bool test_raw_oplock_batch1(struct torture_context *tctx, struct smbcli_s
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -805,7 +805,7 @@ static bool test_raw_oplock_batch2(struct torture_context *tctx, struct smbcli_s
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -884,7 +884,7 @@ static bool test_raw_oplock_batch3(struct torture_context *tctx, struct smbcli_s
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -949,7 +949,7 @@ static bool test_raw_oplock_batch4(struct torture_context *tctx, struct smbcli_s
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -1013,7 +1013,7 @@ static bool test_raw_oplock_batch5(struct torture_context *tctx, struct smbcli_s
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -1080,7 +1080,7 @@ static bool test_raw_oplock_batch6(struct torture_context *tctx, struct smbcli_s
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -1160,7 +1160,7 @@ static bool test_raw_oplock_batch7(struct torture_context *tctx, struct smbcli_s
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -1231,7 +1231,7 @@ static bool test_raw_oplock_batch8(struct torture_context *tctx, struct smbcli_s
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -1301,7 +1301,7 @@ static bool test_raw_oplock_batch9(struct torture_context *tctx, struct smbcli_s
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -1406,7 +1406,7 @@ static bool test_raw_oplock_batch10(struct torture_context *tctx, struct smbcli_
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -1502,7 +1502,7 @@ static bool test_raw_oplock_batch11(struct torture_context *tctx, struct smbcli_
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -1578,7 +1578,7 @@ static bool test_raw_oplock_batch12(struct torture_context *tctx, struct smbcli_
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -1655,7 +1655,7 @@ static bool test_raw_oplock_batch13(struct torture_context *tctx, struct smbcli_
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -1731,7 +1731,7 @@ static bool test_raw_oplock_batch14(struct torture_context *tctx, struct smbcli_
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -1808,7 +1808,7 @@ static bool test_raw_oplock_batch15(struct torture_context *tctx, struct smbcli_
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -1883,7 +1883,7 @@ static bool test_raw_oplock_batch16(struct torture_context *tctx, struct smbcli_
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -1963,7 +1963,7 @@ static bool test_raw_oplock_batch17(struct torture_context *tctx, struct smbcli_
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -2035,7 +2035,7 @@ static bool test_raw_oplock_batch18(struct torture_context *tctx, struct smbcli_
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -2110,7 +2110,7 @@ static bool test_raw_oplock_batch19(struct torture_context *tctx, struct smbcli_
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -2216,7 +2216,7 @@ bool test_trans2rename(struct torture_context *tctx, struct smbcli_state *cli1, 
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -2320,7 +2320,7 @@ bool test_nttransrename(struct torture_context *tctx, struct smbcli_state *cli1)
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -2442,7 +2442,7 @@ static bool test_raw_oplock_batch20(struct torture_context *tctx, struct smbcli_
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -2572,7 +2572,7 @@ static bool test_raw_oplock_batch21(struct torture_context *tctx, struct smbcli_
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -2646,7 +2646,7 @@ static bool test_raw_oplock_batch22(struct torture_context *tctx, struct smbcli_
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -2741,7 +2741,7 @@ static bool test_raw_oplock_batch23(struct torture_context *tctx, struct smbcli_
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -2829,7 +2829,7 @@ static bool test_raw_oplock_batch24(struct torture_context *tctx, struct smbcli_
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -2902,7 +2902,7 @@ static bool test_raw_oplock_batch25(struct torture_context *tctx,
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -3010,7 +3010,7 @@ static bool test_raw_oplock_stream1(struct torture_context *tctx,
 
 	/* Setup generic open parameters. */
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = (SEC_FILE_READ_DATA|SEC_FILE_WRITE_DATA|
 	    SEC_FILE_APPEND_DATA|SEC_STD_READ_CONTROL);
 	io.ntcreatex.in.create_options = 0;
@@ -3149,7 +3149,7 @@ static bool test_raw_oplock_doc(struct torture_context *tctx,
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -3212,7 +3212,7 @@ static bool test_raw_oplock_brl1(struct torture_context *tctx,
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_READ |
 				      SEC_RIGHTS_FILE_WRITE;
 	io.ntcreatex.in.alloc_size = 0;
@@ -3323,7 +3323,7 @@ static bool test_raw_oplock_brl2(struct torture_context *tctx, struct smbcli_sta
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_READ |
 				      SEC_RIGHTS_FILE_WRITE;
 	io.ntcreatex.in.alloc_size = 0;
@@ -3416,7 +3416,7 @@ static bool test_raw_oplock_brl3(struct torture_context *tctx,
 	  base ntcreatex parms
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_READ |
 				      SEC_RIGHTS_FILE_WRITE;
 	io.ntcreatex.in.alloc_size = 0;
@@ -3577,7 +3577,7 @@ bool torture_bench_oplock(struct torture_context *torture)
 	}
 
 	io.ntcreatex.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
@@ -3703,7 +3703,7 @@ bool torture_hold_oplock(struct torture_context *torture,
 		char c = 1;
 
 		io.generic.level = RAW_OPEN_NTCREATEX;
-		io.ntcreatex.in.root_fid = 0;
+		io.ntcreatex.in.root_fid.fnum = 0;
 		io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 		io.ntcreatex.in.alloc_size = 0;
 		io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;

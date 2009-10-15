@@ -241,7 +241,7 @@ int smbcli_nt_create_full(struct smbcli_tree *tree, const char *fname,
 
 	open_parms.ntcreatex.level = RAW_OPEN_NTCREATEX;
 	open_parms.ntcreatex.in.flags = CreatFlags;
-	open_parms.ntcreatex.in.root_fid = 0;
+	open_parms.ntcreatex.in.root_fid.fnum = 0;
 	open_parms.ntcreatex.in.access_mask = DesiredAccess;
 	open_parms.ntcreatex.in.file_attr = FileAttributes;
 	open_parms.ntcreatex.in.alloc_size = 0;

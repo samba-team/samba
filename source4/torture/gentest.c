@@ -1819,7 +1819,7 @@ static bool handler_smb_ntcreatex(int instance)
 
 	parm[0].ntcreatex.level = RAW_OPEN_NTCREATEX;
 	parm[0].ntcreatex.in.flags = gen_ntcreatex_flags();
-	parm[0].ntcreatex.in.root_fid = gen_root_fid(instance);
+	parm[0].ntcreatex.in.root_fid.fnum = gen_root_fid(instance);
 	parm[0].ntcreatex.in.access_mask = gen_access_mask();
 	parm[0].ntcreatex.in.alloc_size = gen_alloc_size();
 	parm[0].ntcreatex.in.file_attr = gen_attrib();
@@ -1837,8 +1837,8 @@ static bool handler_smb_ntcreatex(int instance)
 	}
 	
 	GEN_COPY_PARM;
-	if (parm[0].ntcreatex.in.root_fid != 0) {
-		GEN_SET_FNUM_SMB(ntcreatex.in.root_fid);
+	if (parm[0].ntcreatex.in.root_fid.fnum != 0) {
+		GEN_SET_FNUM_SMB(ntcreatex.in.root_fid.fnum);
 	}
 	GEN_CALL_SMB(smb_raw_open(tree, current_op.mem_ctx, &parm[i]));
 

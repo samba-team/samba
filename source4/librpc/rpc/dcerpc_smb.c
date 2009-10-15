@@ -476,7 +476,7 @@ struct composite_context *dcerpc_pipe_open_smb_send(struct dcerpc_pipe *p,
 
 	state->open->ntcreatex.level = RAW_OPEN_NTCREATEX;
 	state->open->ntcreatex.in.flags = 0;
-	state->open->ntcreatex.in.root_fid = 0;
+	state->open->ntcreatex.in.root_fid.fnum = 0;
 	state->open->ntcreatex.in.access_mask = 
 		SEC_STD_READ_CONTROL |
 		SEC_FILE_WRITE_ATTRIBUTE |

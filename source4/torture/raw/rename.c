@@ -67,7 +67,7 @@ static bool test_mv(struct torture_context *tctx,
 	torture_comment(tctx, "Trying simple rename\n");
 
 	op.generic.level = RAW_OPEN_NTCREATEX;
-	op.ntcreatex.in.root_fid = 0;
+	op.ntcreatex.in.root_fid.fnum = 0;
 	op.ntcreatex.in.flags = 0;
 	op.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	op.ntcreatex.in.create_options = 0;
@@ -208,7 +208,7 @@ static bool test_osxrename(struct torture_context *tctx,
 		return false;
 	}
 	op.generic.level = RAW_OPEN_NTCREATEX;
-	op.ntcreatex.in.root_fid = 0;
+	op.ntcreatex.in.root_fid.fnum = 0;
 	op.ntcreatex.in.flags = 0;
 	op.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	op.ntcreatex.in.create_options = 0;
@@ -577,7 +577,7 @@ static bool test_dir_rename(struct torture_context *tctx, struct smbcli_state *c
 
         io.generic.level = RAW_OPEN_NTCREATEX;
         io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
-        io.ntcreatex.in.root_fid = 0;
+        io.ntcreatex.in.root_fid.fnum = 0;
         io.ntcreatex.in.alloc_size = 0;
         io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
         io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;

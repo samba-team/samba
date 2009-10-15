@@ -1418,7 +1418,7 @@ union smb_open {
 		enum smb_open_level level;
 		struct {
 			uint32_t flags;
-			uint32_t root_fid;
+			union smb_handle root_fid;
 			uint32_t access_mask;
 			uint64_t alloc_size;
 			uint32_t file_attr;
@@ -1628,7 +1628,7 @@ union smb_open {
 		enum smb_open_level level;
 		struct {
 			uint32_t flags;
-			uint32_t root_fid;
+			union smb_handle root_fid;
 			uint32_t access_mask;
 			uint64_t alloc_size;
 			uint32_t file_attr;

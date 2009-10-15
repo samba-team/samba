@@ -327,7 +327,7 @@ static bool test_delete_on_close(struct torture_context *tctx,
 	smbcli_close(cli->tree, fnum2);
 
 	op.generic.level = RAW_OPEN_NTCREATEX;
-	op.ntcreatex.in.root_fid = 0;
+	op.ntcreatex.in.root_fid.fnum = 0;
 	op.ntcreatex.in.flags = 0;
 	op.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	op.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY |NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
@@ -359,7 +359,7 @@ static bool test_delete_on_close(struct torture_context *tctx,
 	smbcli_close(cli->tree, fnum2);
 
 	op.generic.level = RAW_OPEN_NTCREATEX;
-	op.ntcreatex.in.root_fid = 0;
+	op.ntcreatex.in.root_fid.fnum = 0;
 	op.ntcreatex.in.flags = 0;
 	op.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	op.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY |NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
@@ -394,7 +394,7 @@ static bool test_delete_on_close(struct torture_context *tctx,
 	/* we have a dir with a file in it, no handles open */
 
 	op.generic.level = RAW_OPEN_NTCREATEX;
-	op.ntcreatex.in.root_fid = 0;
+	op.ntcreatex.in.root_fid.fnum = 0;
 	op.ntcreatex.in.flags = 0;
 	op.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	op.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY |NTCREATEX_OPTIONS_DELETE_ON_CLOSE;

@@ -175,7 +175,7 @@ static bool test_session(struct smbcli_state *cli, struct torture_context *tctx)
 
 	printf("create a file using the new vuid\n");
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	io.ntcreatex.in.create_options = 0;
@@ -311,7 +311,7 @@ static bool test_tree(struct smbcli_state *cli, struct torture_context *tctx)
 
 	printf("create a file using the new tid\n");
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	io.ntcreatex.in.create_options = 0;
@@ -425,7 +425,7 @@ static bool test_tree_ulogoff(struct smbcli_state *cli, struct torture_context *
 
 	printf("create a file using vuid1\n");
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	io.ntcreatex.in.create_options = 0;
@@ -473,7 +473,7 @@ static bool test_tree_ulogoff(struct smbcli_state *cli, struct torture_context *
 
 	printf("create a file using vuid2\n");
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	io.ntcreatex.in.create_options = 0;
@@ -551,7 +551,7 @@ static bool test_pid_exit_only_sees_open(struct smbcli_state *cli, TALLOC_CTX *m
 	printf("create a file using pid1\n");
 	cli->session->pid = pid1;
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	io.ntcreatex.in.create_options = 0;
@@ -677,7 +677,7 @@ static bool test_pid_2sess(struct smbcli_state *cli, struct torture_context *tct
 	printf("create a file using the vuid1\n");
 	cli->session->vuid = vuid1;
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	io.ntcreatex.in.create_options = 0;
@@ -785,7 +785,7 @@ static bool test_pid_2tcon(struct smbcli_state *cli, struct torture_context *tct
 	printf("create a file using the tid1\n");
 	cli->tree->tid = tid1;
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	io.ntcreatex.in.create_options = 0;
@@ -816,7 +816,7 @@ static bool test_pid_2tcon(struct smbcli_state *cli, struct torture_context *tct
 	printf("create a file using the tid2\n");
 	cli->tree->tid = tid2;
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	io.ntcreatex.in.create_options = 0;

@@ -2216,7 +2216,7 @@ void smbsrv_reply_ntcreate_and_X(struct smbsrv_request *req)
 	/* notice that the word parameters are not word aligned, so we don't use VWV() */
 	fname_len =                         SVAL(req->in.vwv, 5);
 	io->ntcreatex.in.flags =            IVAL(req->in.vwv, 7);
-	io->ntcreatex.in.root_fid =         IVAL(req->in.vwv, 11);
+	io->ntcreatex.in.root_fid.ntvfs =   smbsrv_pull_fnum(req, req->in.vwv, 11);
 	io->ntcreatex.in.access_mask =      IVAL(req->in.vwv, 15);
 	io->ntcreatex.in.alloc_size =       BVAL(req->in.vwv, 19);
 	io->ntcreatex.in.file_attr =        IVAL(req->in.vwv, 27);

@@ -1493,7 +1493,7 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 1024*1024;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_DIRECTORY;
@@ -1627,7 +1627,7 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 		smbcli_close(cli_nt->tree, fnum);
 
 		io.generic.level = RAW_OPEN_NTCREATEX;
-		io.ntcreatex.in.root_fid = 0;
+		io.ntcreatex.in.root_fid.fnum = 0;
 		io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 		io.ntcreatex.in.alloc_size = 0;
 		io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_DIRECTORY;
