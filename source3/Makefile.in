@@ -506,7 +506,9 @@ SCHANNEL_OBJ = ../libcli/auth/credentials.o \
 	       passdb/secrets_schannel.o
 
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
-	     libsmb/clikrb5.o libsmb/clispnego.o ../lib/util/asn1.o \
+	     libsmb/clikrb5.o libsmb/clispnego.o \
+	     ../libcli/auth/spnego_parse.o \
+	     ../lib/util/asn1.o \
 	     libsmb/clirap.o libsmb/clierror.o libsmb/climessage.o \
 	     libsmb/clireadwrite.o libsmb/clilist.o libsmb/cliprint.o \
 	     libsmb/clitrans.o libsmb/clisecdesc.o libsmb/clidgram.o \
