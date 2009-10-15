@@ -519,6 +519,9 @@ int main(int argc,char *argv[])
 				talloc_free(option);
 			}
 			break;
+		default:
+			printf("bad command line option\n");
+			exit(1);
 		}
 	}
 
