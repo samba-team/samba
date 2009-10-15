@@ -227,10 +227,31 @@ static void ctdb_check_health(struct event_context *ev, struct timed_event *te,
 						 ctdb->monitor->monitor_context, ctdb_startup_callback, 
 						 ctdb, "startup");
 	} else {
-		ret = ctdb_event_script_callback(ctdb, 
+		int i;
+		int skip_monitoring = 0;
+		
+		if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
+			skip_monitoring = 1;
+			DEBUG(DEBUG_ERR,("Skip monitoring during recovery\n"));
+		}
+		for (i=1; i<=NUM_DB_PRIORITIES; i++) {
+			if (ctdb->freeze_handles[i] != 0) {
+				DEBUG(DEBUG_ERR,("Skip monitoring since databases are frozen\n"));
+				skip_monitoring = 1;
+				break;
+			}
+		}
+		if (skip_monitoring) {
+			event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
+					timeval_current_ofs(ctdb->monitor->next_interval, 0), 
+					ctdb_check_health, ctdb);
+			return;
+		} else {
+			ret = ctdb_event_script_callback(ctdb, 
 						 timeval_current_ofs(ctdb->tunable.script_timeout, 0),
 						 ctdb->monitor->monitor_context, ctdb_health_callback, 
 						 ctdb, "monitor");
+		}
 	}
 
 	if (ret != 0) {
