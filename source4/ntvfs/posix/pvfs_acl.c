@@ -516,7 +516,7 @@ NTSTATUS pvfs_access_check_unix(struct pvfs_state *pvfs,
 		max_bits |= SEC_STD_ALL;
 	}
 
-	if (*access_mask == SEC_FLAG_MAXIMUM_ALLOWED) {
+	if (*access_mask & SEC_FLAG_MAXIMUM_ALLOWED) {
 		*access_mask = max_bits;
 		return NT_STATUS_OK;
 	}
