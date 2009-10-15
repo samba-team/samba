@@ -1858,6 +1858,15 @@ static krb5_error_code ads_krb5_get_fwd_ticket( krb5_context context,
 	char *pChksum = NULL;
 	char *p = NULL;
 
+/* MIT krb5 1.7beta3 (in Ubuntu Karmic) is missing the prototype,
+   but still has the symbol */
+#if !HAVE_DECL_KRB5_AUTH_CON_SET_REQ_CKSUMTYPE
+krb5_error_code krb5_auth_con_set_req_cksumtype(  
+	krb5_context     context,
+	krb5_auth_context      auth_context,  
+	krb5_cksumtype     cksumtype);
+#endif
+
 	ZERO_STRUCT(fwdData);
 	ZERO_STRUCTP(authenticator);
 
