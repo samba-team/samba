@@ -507,10 +507,14 @@ bool spnego_parse_auth(DATA_BLOB blob, DATA_BLOB *auth)
 	if (token.type != SPNEGO_NEG_TOKEN_TARG) {
 		DEBUG(3,("spnego_parse_auth: wrong token type: %d\n",
 			token.type));
+		spnego_free_data(&token);
 		return false;
 	}
 
-	*auth = token.negTokenTarg.responseToken;
+	*auth = data_blob_talloc(talloc_tos(),
+				 token.negTokenTarg.responseToken.data,
+				 token.negTokenTarg.responseToken.length);
+	spnego_free_data(&token);
 
 	return true;
 }
