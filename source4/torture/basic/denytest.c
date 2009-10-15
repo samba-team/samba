@@ -25,6 +25,7 @@
 #include "libcli/security/security.h"
 #include "torture/util.h"
 #include "torture/smbtorture.h"
+#include "libcli/util/clilsa.h"
 #include "cxd_known.h"
 
 extern int torture_failures;
@@ -2663,12 +2664,15 @@ bool torture_createx_access_exhaustive(struct torture_context *tctx,
 bool torture_maximum_allowed(struct torture_context *tctx,
     struct smbcli_state *cli)
 {
-	struct security_descriptor *sd;
+	struct security_descriptor *sd, *sd_orig;
 	union smb_open io = {};
 	static TALLOC_CTX *mem_ctx;
 	int fnum, i;
 	bool ret = true;
 	NTSTATUS status;
+	union smb_fileinfo q;
+	const char *owner_sid;
+	bool has_restore_privilege, has_backup_privilege;
 
 	mem_ctx = talloc_init("torture_maximum_allowed");
 
@@ -2698,10 +2702,44 @@ bool torture_maximum_allowed(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.file.fnum;
 
+	/* the correct answers for this test depends on whether the
+	   user has restore privileges. To find that out we first need
+	   to know our SID - get it from the owner_sid of the file we
+	   just created */
+	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
+	q.query_secdesc.in.file.fnum = fnum;
+	q.query_secdesc.in.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
+	status = smb_raw_fileinfo(cli->tree, tctx, &q);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	sd_orig = q.query_secdesc.out.sd;
+
+	owner_sid = dom_sid_string(tctx, sd_orig->owner_sid);
+
+	status = smblsa_sid_check_privilege(cli, 
+					    owner_sid, 
+					    sec_privilege_name(SEC_PRIV_RESTORE));
+	has_restore_privilege = NT_STATUS_IS_OK(status);
+	torture_comment(tctx, "Checked SEC_PRIV_RESTORE - %s\n", has_restore_privilege?"Yes":"No");
+
+	status = smblsa_sid_check_privilege(cli, 
+					    owner_sid, 
+					    sec_privilege_name(SEC_PRIV_BACKUP));
+	has_backup_privilege = NT_STATUS_IS_OK(status);
+	torture_comment(tctx, "Checked SEC_PRIV_BACKUP - %s\n", has_backup_privilege?"Yes":"No");
+
 	smbcli_close(cli->tree, fnum);
 
 	for (i = 0; i < 32; i++) {
 		uint32_t mask = SEC_FLAG_MAXIMUM_ALLOWED | (1u << i);
+		uint32_t ok_mask = SEC_RIGHTS_FILE_READ | SEC_GENERIC_READ | 
+			SEC_STD_DELETE | SEC_STD_WRITE_DAC;
+
+		if (has_restore_privilege) {
+			ok_mask |= SEC_RIGHTS_PRIV_RESTORE;
+		}
+		if (has_backup_privilege) {
+			ok_mask |= SEC_RIGHTS_PRIV_BACKUP;
+		}
 
 		/* Skip all SACL related tests. */
 		if ((!torture_setting_bool(tctx, "sacl_support", true)) &&
@@ -2718,16 +2756,16 @@ bool torture_maximum_allowed(struct torture_context *tctx,
 		io.ntcreatex.in.fname = MAXIMUM_ALLOWED_FILE;
 
 		status = smb_raw_open(cli->tree, mem_ctx, &io);
-		if (mask & SEC_RIGHTS_FILE_READ ||
-		    mask & SEC_GENERIC_READ ||
-		    mask & SEC_STD_DELETE || /* owner gets delete */
-		    mask & SEC_STD_WRITE_DAC || /* and write_dac */
-		    mask & SEC_STD_WRITE_OWNER ||
-		    mask & SEC_FLAG_SYSTEM_SECURITY ||
-		    mask == SEC_FLAG_MAXIMUM_ALLOWED)
+		if (mask & ok_mask ||
+		    mask == SEC_FLAG_MAXIMUM_ALLOWED) {
 			CHECK_STATUS(status, NT_STATUS_OK);
-		else
-			CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+		} else {
+			if (mask & SEC_FLAG_SYSTEM_SECURITY) {
+				CHECK_STATUS(status, NT_STATUS_PRIVILEGE_NOT_HELD);
+			} else {
+				CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+			}
+		}
 
 		fnum = io.ntcreatex.out.file.fnum;
 
