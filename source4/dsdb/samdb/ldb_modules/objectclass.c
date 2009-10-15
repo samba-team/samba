@@ -330,6 +330,8 @@ static int fix_dn(TALLOC_CTX *mem_ctx,
 		  struct ldb_dn **fixed_dn) 
 {
 	char *upper_rdn_attr;
+	const struct ldb_val *rdn_val;
+
 	/* Fix up the DN to be in the standard form, taking particular care to match the parent DN */
 	*fixed_dn = ldb_dn_copy(mem_ctx, parent_dn);
 
@@ -339,15 +341,21 @@ static int fix_dn(TALLOC_CTX *mem_ctx,
 	if (!upper_rdn_attr) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-					       
+
 	/* Create a new child */
 	if (ldb_dn_add_child_fmt(*fixed_dn, "X=X") == false) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	/* AD doesn't allow the rDN to be longer than 64 characters */
+	rdn_val = ldb_dn_get_rdn_val(newdn);
+	if (!rdn_val || rdn_val->length > 64) {
+		DEBUG(2,(__location__ ": rDN longer than 64 limit for '%s'\n", ldb_dn_get_linearized(newdn)));
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
 	/* And replace it with CN=foo (we need the attribute in upper case */
-	return ldb_dn_set_component(*fixed_dn, 0, upper_rdn_attr,
-				    *ldb_dn_get_rdn_val(newdn));
+	return ldb_dn_set_component(*fixed_dn, 0, upper_rdn_attr, *rdn_val);
 }
 
 /* Fix all attribute names to be in the correct case, and check they are all valid per the schema */
