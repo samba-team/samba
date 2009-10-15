@@ -186,6 +186,10 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 		acb_info = ACB_DOMTRUST;
 		break;
 #endif
+	default:
+		DEBUG(0,("secure channel type %d not yet supported\n",
+			sec_channel_type));
+		break;
 	}
 
 	/* Make authenticated connection to remote machine */
