@@ -48,12 +48,14 @@ rpc="$rpc RPC-NETLOGON-S3 RPC-SCHANNEL RPC-SCHANNEL2 RPC-BENCH-SCHANNEL1 RPC-JOI
 
 local="LOCAL-NSS-WRAPPER"
 
+winbind="WINBIND-WBCLIENT"
+
 # NOTE: to enable the UNIX-WHOAMI test, we need to change the default share
 # config to allow guest access. I'm not sure whether this would break other
 # tests, so leaving it alone for now -- jpeach
 unix="UNIX-INFO2"
 
-tests="$base $raw $rpc $unix $local"
+tests="$base $raw $rpc $unix $local $winbind"
 
 if test "x$POSIX_SUBTESTS" != "x" ; then
 	tests="$POSIX_SUBTESTS"
