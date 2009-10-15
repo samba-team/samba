@@ -736,9 +736,13 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		_exit(0);
 	}
 	close(state->fd[1]);
+	set_close_on_exec(state->fd[0]);
+
 	state->fd[1] = -1;
 
 	talloc_set_destructor(state, set_recmode_destructor);
+
+	DEBUG(DEBUG_NOTICE, (__location__ " Created PIPE FD:%d for setrecmode\n", state->fd[0]));
 
 	state->te = event_add_timed(ctdb->ev, state, timeval_current_ofs(5, 0),
 				    ctdb_set_recmode_timeout, state);

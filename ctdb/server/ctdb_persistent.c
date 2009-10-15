@@ -454,7 +454,11 @@ struct childwrite_handle *ctdb_childwrite(struct ctdb_db_context *ctdb_db,
 	}
 
 	close(result->fd[1]);
+	set_close_on_exec(result->fd[0]);
+
 	talloc_set_destructor(result, childwrite_destructor);
+
+	DEBUG(DEBUG_NOTICE, (__location__ " Created PIPE FD:%d for ctdb_childwrite\n", result->fd[0]));
 
 	result->fde = event_add_fd(ctdb_db->ctdb->ev, result, result->fd[0],
 				   EVENT_FD_READ|EVENT_FD_AUTOCLOSE, childwrite_handler,
