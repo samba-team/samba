@@ -517,8 +517,8 @@ NTSTATUS pvfs_access_check_unix(struct pvfs_state *pvfs,
 	}
 
 	if (*access_mask & SEC_FLAG_MAXIMUM_ALLOWED) {
-		*access_mask = max_bits;
-		return NT_STATUS_OK;
+		*access_mask |= max_bits;
+		*access_mask &= ~SEC_FLAG_MAXIMUM_ALLOWED;
 	}
 
 	if (uid != 0 && (*access_mask & SEC_FLAG_SYSTEM_SECURITY)) {
