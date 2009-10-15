@@ -131,6 +131,7 @@ static NTSTATUS get_credentials( TALLOC_CTX *mem_ctx,
 			DEBUG(2, ("get_credentials: Failed to lookup ldap "
 				  "bind creds. Using anonymous connection.\n"));
 			anon = True;
+			*dn = NULL;
 		} else {
 			*dn = talloc_strdup(mem_ctx, user_dn);
 			SAFE_FREE( user_dn );

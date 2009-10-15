@@ -1054,12 +1054,18 @@ static int smbldap_connect_system(struct smbldap_state *ldap_state, LDAP * ldap_
 	int version;
 
 	if (!ldap_state->anonymous && !ldap_state->bind_dn) {
+		char *bind_dn = NULL;
+		char *bind_secret = NULL;
 
 		/* get the default dn and password only if they are not set already */
-		if (!fetch_ldap_pw(&ldap_state->bind_dn, &ldap_state->bind_secret)) {
+		if (!fetch_ldap_pw(&bind_dn, &bind_secret)) {
 			DEBUG(0, ("ldap_connect_system: Failed to retrieve password from secrets.tdb\n"));
 			return LDAP_INVALID_CREDENTIALS;
 		}
+		smbldap_set_creds(ldap_state, false, bind_dn, bind_secret);
+		SAFE_FREE(bind_dn);
+		memset(bind_secret, '\0', strlen(bind_secret));
+		SAFE_FREE(bind_secret);
 	}
 
 	/* removed the sasl_bind_s "EXTERNAL" stuff, as my testsuite 

@@ -891,6 +891,7 @@ bool fetch_ldap_pw(char **dn, char** pw)
 	if (asprintf(&key, "%s/%s", SECRETS_LDAP_BIND_PW, *dn) < 0) {
 		SAFE_FREE(*dn);
 		DEBUG(0, ("fetch_ldap_pw: asprintf failed!\n"));
+		return false;
 	}
 
 	*pw=(char *)secrets_fetch(key, &size);
