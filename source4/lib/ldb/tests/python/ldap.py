@@ -222,13 +222,13 @@ class BasicTests(unittest.TestCase):
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
-        m["sAMAccountName"] = MessageElement("testgroup", FLAG_MOD_REPLACE,
+        m["sAMAccountName"] = MessageElement("testgroupXX", FLAG_MOD_REPLACE,
           "sAMAccountName")
         ldb.modify(m)
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
-        m["sAMAccountName"] = MessageElement("testgroup2", FLAG_MOD_ADD,
+        m["sAMAccountName"] = MessageElement("testgroupXX2", FLAG_MOD_ADD,
           "sAMAccountName")
         try:
             ldb.modify(m)
