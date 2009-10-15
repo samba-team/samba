@@ -186,8 +186,7 @@ NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security,
 
 		/* Find out the DNS domain name */
 		dnsdomname[0] = '\0';
-		safe_strcpy(dnsdomname, lp_realm(gensec_security->settings->lp_ctx), sizeof(dnsdomname) - 1);
-		strlower_m(dnsdomname);
+		safe_strcpy(dnsdomname, lp_dnsdomain(gensec_security->settings->lp_ctx), sizeof(dnsdomname) - 1);
 
 		/* Find out the DNS host name */
 		safe_strcpy(dnsname, gensec_ntlmssp_state->server_name, sizeof(dnsname) - 1);
