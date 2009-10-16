@@ -34,11 +34,14 @@ Usage: onnode [OPTION] ... <NODES> <COMMAND> ...
     -o <prefix> Save standard output from each node to file <prefix>.<ip>
     -p          Run command in parallel on specified nodes.
     -q          Do not print node addresses (overrides -v).
+    -n          Allow nodes to be specified by name.
+    -f          Specify nodes file, overrides CTDB_NODES_FILE.
     -v          Print node address even for a single node.
   <NODES>       "all", "any", "ok" (or "healthy"), "con" (or "connected"),
                 "rm" (or "recmaster"), "lvs" (or "lvsmaster"),
-                "natgw" (or "natgwlist");
-                or a node number (0 base); or
+                "natgw" (or "natgwlist"); or
+                a node number (0 base); or
+                a hostname (if -n is specified); or
                 list (comma separated) of <NODES>; or
                 range (hyphen separated) of node numbers.
 EOF
@@ -58,13 +61,14 @@ parallel=false
 verbose=false
 quiet=false
 prefix=""
+names_ok=false
 
 parse_options ()
 {
     # $POSIXLY_CORRECT means that the command passed to onnode can
     # take options and getopt won't reorder things to make them
     # options ot onnode.
-    local temp=$(POSIXLY_CORRECT=1 getopt -n "$prog" -o "cho:pqv" -l help -- "$@")
+    local temp=$(POSIXLY_CORRECT=1 getopt -n "$prog" -o "cf:hno:pqv" -l help -- "$@")
 
     [ $? != 0 ] && usage
 
@@ -73,6 +77,8 @@ parse_options ()
     while true ; do
 	case "$1" in
 	    -c) current=true ; shift ;;
+	    -f) CTDB_NODES_FILE="$2" ; shift 2 ;;
+	    -n) names_ok=true ; shift ;;
 	    -o) prefix="$2" ; shift 2 ;;
 	    -p) parallel=true ; shift ;;
 	    -q) quiet=true ; shift ;;
@@ -115,7 +121,7 @@ parse_nodespec ()
 		all|any|ok|healthy|con|connected) echo "$i" ;;
 		rm|recmaster|lvs|lvsmaster|natgw|natgwlist) echo "$i" ;;
 		*)
-		    [ $i -gt -1 ] 2>/dev/null || invalid_nodespec
+		    [ $i -gt -1 ] 2>/dev/null || $names_ok || invalid_nodespec
 		    echo $i
 	    esac
 	done
@@ -223,7 +229,7 @@ get_nodes ()
     if [ -n "$CTDB_NODES_SOCKETS" ] ; then 
 	all_nodes="$CTDB_NODES_SOCKETS"
     else
-	[ -f "$CTDB_NODES_FILE" ] || CTDB_NODES_FILE=/etc/ctdb/nodes
+	[ -e "$CTDB_NODES_FILE" ] || CTDB_NODES_FILE=/etc/ctdb/nodes
 	all_nodes=$(sed -e 's@#.*@@g' -e 's@ *@@g' -e 's@^$@#DEAD@' $CTDB_NODES_FILE)
     fi
 
@@ -253,10 +259,13 @@ get_nodes ()
 	    natgw|natgwlist)
 		get_node_with_property "$all_nodes" "natgwlist" || exit 1
 		;;
-	    *)
+	    [0-9]|[0-9][0-9]|[0-9][0-9][0-9])
 		echo_nth $n $all_nodes
+		;;
+	    *)
+		$names_ok || invalid_nodespec
+		echo $n
 	esac
-	
     done
 }
 
