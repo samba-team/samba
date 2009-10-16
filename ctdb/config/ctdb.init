@@ -43,10 +43,6 @@ unset TMPDIR
 loadconfig network
 loadconfig ctdb
 
-[ -z "$CTDB_RECOVERY_LOCK" ] && {
-    echo "No recovery lock specified. Starting CTDB without split brain prevention"
-}
-
 # check networking is up (for redhat)
 [ "$NETWORKING" = "no" ] && exit 0
 
@@ -83,6 +79,9 @@ build_ctdb_options () {
 	CTDB_OPTIONS="${CTDB_OPTIONS}${CTDB_OPTIONS:+ }${1}${sep}${val}"
     }
 
+    [ -z "$CTDB_RECOVERY_LOCK" ] && {
+        echo "No recovery lock specified. Starting CTDB without split brain prevention"
+    }
     maybe_set "--reclock"                "$CTDB_RECOVERY_LOCK"
 
     # build up CTDB_OPTIONS variable from optional parameters

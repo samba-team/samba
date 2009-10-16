@@ -110,9 +110,18 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 	TDB_DATA data;
 	struct ctdb_node_flag_change c;
 	uint32_t next_interval;
+	int ret;
+	TDB_DATA rddata;
+	struct takeover_run_reply rd;
 
 	c.pnn = ctdb->pnn;
 	c.old_flags = node->flags;
+
+	rd.pnn   = ctdb->pnn;
+	rd.srvid = CTDB_SRVID_TAKEOVER_RUN_RESPONSE;
+
+	rddata.dptr = (uint8_t *)&rd;
+	rddata.dsize = sizeof(rd);
 
 	if (status != 0 && !(node->flags & NODE_FLAGS_UNHEALTHY)) {
 		DEBUG(DEBUG_NOTICE,("monitor event failed - disabling node\n"));
@@ -124,12 +133,28 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 		}
 
 		ctdb_run_notification_script(ctdb, "unhealthy");
+
+		/* ask the recmaster to reallocate all addresses */
+		DEBUG(DEBUG_ERR,("Node became UNHEALTHY. Ask recovery master %u to perform ip reallocation\n", ctdb->recovery_master));
+		ret = ctdb_daemon_send_message(ctdb, ctdb->recovery_master, CTDB_SRVID_TAKEOVER_RUN, rddata);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,(__location__ " Failed to send ip takeover run request message to %u\n", ctdb->recovery_master));
+		}
+
 	} else if (status == 0 && (node->flags & NODE_FLAGS_UNHEALTHY)) {
 		DEBUG(DEBUG_NOTICE,("monitor event OK - node re-enabled\n"));
 		node->flags &= ~NODE_FLAGS_UNHEALTHY;
 		ctdb->monitor->next_interval = 1;
 
 		ctdb_run_notification_script(ctdb, "healthy");
+
+		/* ask the recmaster to reallocate all addresses */
+		DEBUG(DEBUG_ERR,("Node became HEALTHY. Ask recovery master %u to perform ip reallocation\n", ctdb->recovery_master));
+		ret = ctdb_daemon_send_message(ctdb, ctdb->recovery_master, CTDB_SRVID_TAKEOVER_RUN, rddata);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,(__location__ " Failed to send ip takeover run request message to %u\n", ctdb->recovery_master));
+		}
+
 	}
 
 	next_interval = ctdb->monitor->next_interval;

@@ -46,6 +46,14 @@ struct rd_memdump_reply {
 };
 
 /*
+  description for a TAKEOVER_RUN message reply address
+ */
+struct takeover_run_reply {
+	uint32_t pnn;
+	uint64_t srvid;
+};
+
+/*
   a tcp connection description
  */
 struct ctdb_tcp_connection {
