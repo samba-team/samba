@@ -317,32 +317,9 @@ systemMayContain: adminDescription
 systemMustContain: objectCategory
 systemMustContain: nTSecurityDescriptor
 systemMustContain: instanceType
-systemAuxiliaryClass: samba4TopExtra
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
 systemFlags: 16
 defaultHidingValue: TRUE
 objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Samba4Top,${SCHEMADN}
-
-
-dn: CN=Samba4TopExtra,${SCHEMADN}
-objectClass: top
-objectClass: classSchema
-cn: Samba4TopExtra
-subClassOf: top
-governsID: 1.3.6.1.4.1.7165.4.2.3
-rDNAttID: cn
-adminDisplayName: Samba4TopExtra
-adminDescription: Attributes used in top in Samba4 that OpenLDAP does not
-objectClassCategory: 2
-lDAPDisplayName: samba4TopExtra
-schemaIDGUID: 073598d0-635b-4685-a929-da731b98d84e
-systemOnly: TRUE
-mayContain: privilege
-systemPossSuperiors: lostAndFound
-defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
-systemFlags: 16
-defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
-defaultObjectCategory: CN=Samba4TopExtra,${SCHEMADN}
 
