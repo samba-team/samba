@@ -169,10 +169,11 @@ static bool test_wbc_users(struct torture_context *tctx)
 
 	for (i=0; i < MIN(num_users,100); i++) {
 
-		struct wbcDomainSid sid;
+		struct wbcDomainSid sid, *sids;
 		enum wbcSidType name_type;
 		char *domain;
 		char *name;
+		uint32_t num_sids;
 
 		torture_assert_wbc_ok(tctx, wbcLookupName(domain_name, users[i], &sid, &name_type),
 			"wbcLookupName failed");
@@ -184,6 +185,8 @@ static bool test_wbc_users(struct torture_context *tctx)
 			"wbcLookupSid expected WBC_SID_NAME_USER");
 		torture_assert(tctx, name,
 			"wbcLookupSid returned no name");
+		torture_assert_wbc_ok(tctx, wbcLookupUserSids(&sid, true, &num_sids, &sids),
+			"wbcLookupUserSids failed");
 	}
 
 	return true;
