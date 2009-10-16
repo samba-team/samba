@@ -1939,6 +1939,12 @@ static NTSTATUS dcesrv_lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_
 	struct lsa_EnumAccountRights r2;
 	char *dnstr;
 
+	if (security_session_user_level(dce_call->conn->auth_state.session_info) < 
+	    SECURITY_ADMINISTRATOR) {
+		DEBUG(0,("lsa_AddRemoveAccount refused for supplied security token\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	msg = ldb_msg_new(mem_ctx);
 	if (msg == NULL) {
 		return NT_STATUS_NO_MEMORY;
