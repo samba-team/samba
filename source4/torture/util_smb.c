@@ -33,6 +33,8 @@
 #include "auth/credentials/credentials.h"
 #include "libcli/resolve/resolve.h"
 #include "param/param.h"
+#include "libcli/security/security.h"
+#include "libcli/util/clilsa.h"
 
 
 /**
@@ -926,4 +928,38 @@ NTSTATUS torture_second_tcon(TALLOC_CTX *mem_ctx,
 	*res = talloc_steal(mem_ctx, result);
 	talloc_free(tmp_ctx);
 	return NT_STATUS_OK;
+}
+
+/* 
+   a wrapper around smblsa_sid_check_privilege, that tries to take
+   account of the fact that the lsa privileges calls don't expand
+   group memberships, using an explicit check for administrator. There
+   must be a better way ...
+ */
+NTSTATUS torture_check_privilege(struct smbcli_state *cli, 
+				 const char *sid_str,
+				 const char *privilege)
+{
+	struct dom_sid *sid;
+	TALLOC_CTX *tmp_ctx = talloc_new(cli);
+	uint32_t rid;
+	NTSTATUS status;
+
+	sid = dom_sid_parse_talloc(tmp_ctx, sid_str);
+	if (sid == NULL) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INVALID_SID;
+	}
+
+	status = dom_sid_split_rid(tmp_ctx, sid, NULL, &rid);
+	NT_STATUS_NOT_OK_RETURN_AND_FREE(status, tmp_ctx);
+
+	if (rid == DOMAIN_RID_ADMINISTRATOR) {
+		/* assume the administrator has them all */
+		return NT_STATUS_OK;
+	}
+
+	talloc_free(tmp_ctx);
+
+	return smblsa_sid_check_privilege(cli, sid_str, privilege);
 }

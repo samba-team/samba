@@ -778,21 +778,21 @@ static bool test_generic_bits(struct torture_context *tctx,
 
 	owner_sid = dom_sid_string(tctx, sd_orig->owner_sid);
 
-	status = smblsa_sid_check_privilege(cli, 
+	status = torture_check_privilege(cli, 
 					    owner_sid, 
 					    sec_privilege_name(SEC_PRIV_RESTORE));
 	has_restore_privilege = NT_STATUS_IS_OK(status);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("smblsa_sid_check_privilege - %s\n", nt_errstr(status));
+		printf("torture_check_privilege - %s\n", nt_errstr(status));
 	}
 	printf("SEC_PRIV_RESTORE - %s\n", has_restore_privilege?"Yes":"No");
 
-	status = smblsa_sid_check_privilege(cli, 
+	status = torture_check_privilege(cli, 
 					    owner_sid, 
 					    sec_privilege_name(SEC_PRIV_TAKE_OWNERSHIP));
 	has_take_ownership_privilege = NT_STATUS_IS_OK(status);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("smblsa_sid_check_privilege - %s\n", nt_errstr(status));
+		printf("torture_check_privilege - %s\n", nt_errstr(status));
 	}
 	printf("SEC_PRIV_TAKE_OWNERSHIP - %s\n", has_take_ownership_privilege?"Yes":"No");
 
@@ -943,21 +943,21 @@ static bool test_generic_bits(struct torture_context *tctx,
 
 	owner_sid = dom_sid_string(tctx, sd_orig->owner_sid);
 
-	status = smblsa_sid_check_privilege(cli, 
+	status = torture_check_privilege(cli, 
 					    owner_sid, 
 					    sec_privilege_name(SEC_PRIV_RESTORE));
 	has_restore_privilege = NT_STATUS_IS_OK(status);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("smblsa_sid_check_privilege - %s\n", nt_errstr(status));
+		printf("torture_check_privilege - %s\n", nt_errstr(status));
 	}
 	printf("SEC_PRIV_RESTORE - %s\n", has_restore_privilege?"Yes":"No");
 
-	status = smblsa_sid_check_privilege(cli, 
+	status = torture_check_privilege(cli, 
 					    owner_sid, 
 					    sec_privilege_name(SEC_PRIV_TAKE_OWNERSHIP));
 	has_take_ownership_privilege = NT_STATUS_IS_OK(status);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("smblsa_sid_check_privilege - %s\n", nt_errstr(status));
+		printf("torture_check_privilege - %s\n", nt_errstr(status));
 	}
 	printf("SEC_PRIV_TAKE_OWNERSHIP - %s\n", has_take_ownership_privilege?"Yes":"No");
 
@@ -1132,21 +1132,21 @@ static bool test_owner_bits(struct torture_context *tctx,
 
 	owner_sid = dom_sid_string(tctx, sd_orig->owner_sid);
 
-	status = smblsa_sid_check_privilege(cli, 
+	status = torture_check_privilege(cli, 
 					    owner_sid, 
 					    sec_privilege_name(SEC_PRIV_RESTORE));
 	has_restore_privilege = NT_STATUS_IS_OK(status);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("smblsa_sid_check_privilege - %s\n", nt_errstr(status));
+		printf("torture_check_privilege - %s\n", nt_errstr(status));
 	}
 	printf("SEC_PRIV_RESTORE - %s\n", has_restore_privilege?"Yes":"No");
 
-	status = smblsa_sid_check_privilege(cli, 
+	status = torture_check_privilege(cli, 
 					    owner_sid, 
 					    sec_privilege_name(SEC_PRIV_TAKE_OWNERSHIP));
 	has_take_ownership_privilege = NT_STATUS_IS_OK(status);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("smblsa_sid_check_privilege - %s\n", nt_errstr(status));
+		printf("torture_check_privilege - %s\n", nt_errstr(status));
 	}
 	printf("SEC_PRIV_TAKE_OWNERSHIP - %s\n", has_take_ownership_privilege?"Yes":"No");
 

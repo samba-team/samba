@@ -2715,17 +2715,17 @@ bool torture_maximum_allowed(struct torture_context *tctx,
 
 	owner_sid = dom_sid_string(tctx, sd_orig->owner_sid);
 
-	status = smblsa_sid_check_privilege(cli, 
-					    owner_sid, 
-					    sec_privilege_name(SEC_PRIV_RESTORE));
+	status = torture_check_privilege(cli, 
+					 owner_sid, 
+					 sec_privilege_name(SEC_PRIV_RESTORE));
 	has_restore_privilege = NT_STATUS_IS_OK(status);
 	torture_comment(tctx, "Checked SEC_PRIV_RESTORE for %s - %s\n", 
 			owner_sid,
 			has_restore_privilege?"Yes":"No");
 
-	status = smblsa_sid_check_privilege(cli, 
-					    owner_sid, 
-					    sec_privilege_name(SEC_PRIV_BACKUP));
+	status = torture_check_privilege(cli, 
+					 owner_sid, 
+					 sec_privilege_name(SEC_PRIV_BACKUP));
 	has_backup_privilege = NT_STATUS_IS_OK(status);
 	torture_comment(tctx, "Checked SEC_PRIV_BACKUP for %s - %s\n", 
 			owner_sid,
