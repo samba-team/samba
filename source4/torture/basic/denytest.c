@@ -2777,5 +2777,6 @@ bool torture_maximum_allowed(struct torture_context *tctx,
 	}
 
  done:
+	smbcli_unlink(cli->tree, MAXIMUM_ALLOWED_FILE);
 	return ret;
 }
