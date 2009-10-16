@@ -490,15 +490,20 @@ NTSTATUS pvfs_access_check_unix(struct pvfs_state *pvfs,
 {
 	uid_t uid = geteuid();
 	uint32_t max_bits = SEC_RIGHTS_FILE_READ | SEC_FILE_ALL;
+	struct security_token *token = req->session_info->security_token;
 
 	if (pvfs_read_only(pvfs, *access_mask)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	/* owner and root get extra permissions */
-	if (uid == 0) {
-		max_bits |= SEC_STD_ALL | SEC_FLAG_SYSTEM_SECURITY;
-	} else if (uid == name->st.st_uid) {
+	if (security_token_has_privilege(token, SEC_PRIV_RESTORE)) {
+		max_bits |= SEC_RIGHTS_PRIV_RESTORE;
+	}
+	if (security_token_has_privilege(token, SEC_PRIV_BACKUP)) {
+		max_bits |= SEC_RIGHTS_PRIV_BACKUP;
+	}
+
+	if (uid == name->st.st_uid) {
 		max_bits |= SEC_STD_ALL;
 	}
 
@@ -521,8 +526,9 @@ NTSTATUS pvfs_access_check_unix(struct pvfs_state *pvfs,
 		*access_mask &= ~SEC_FLAG_MAXIMUM_ALLOWED;
 	}
 
-	if (uid != 0 && (*access_mask & SEC_FLAG_SYSTEM_SECURITY)) {
-		return NT_STATUS_ACCESS_DENIED;
+	if ((*access_mask & SEC_FLAG_SYSTEM_SECURITY) &&
+	    security_token_has_privilege(token, SEC_PRIV_SECURITY)) {
+		max_bits |= SEC_FLAG_SYSTEM_SECURITY;
 	}
 
 	if (*access_mask & ~max_bits) {
