@@ -268,6 +268,41 @@ static bool test_wbc_trusts(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_wbc_lookupdc(struct torture_context *tctx)
+{
+	const char *domain_name = NULL;
+	struct wbcInterfaceDetails *details;
+	struct wbcDomainControllerInfo *dc_info;
+
+	torture_assert_wbc_ok(tctx, wbcInterfaceDetails(&details),
+		"wbcInterfaceDetails failed");
+
+	domain_name = talloc_strdup(tctx, details->netbios_domain);
+	wbcFreeMemory(details);
+
+	torture_assert_wbc_ok(tctx, wbcLookupDomainController(domain_name, 0, &dc_info),
+		"wbcLookupDomainController failed");
+
+	return true;
+}
+
+static bool test_wbc_lookupdcex(struct torture_context *tctx)
+{
+	const char *domain_name = NULL;
+	struct wbcInterfaceDetails *details;
+	struct wbcDomainControllerInfoEx *dc_info;
+
+	torture_assert_wbc_ok(tctx, wbcInterfaceDetails(&details),
+		"wbcInterfaceDetails failed");
+
+	domain_name = talloc_strdup(tctx, details->netbios_domain);
+	wbcFreeMemory(details);
+
+	torture_assert_wbc_ok(tctx, wbcLookupDomainControllerEx(domain_name, NULL, NULL, 0, &dc_info),
+		"wbcLookupDomainControllerEx failed");
+
+	return true;
+}
 
 
 struct torture_suite *torture_wbclient(void)
@@ -284,6 +319,8 @@ struct torture_suite *torture_wbclient(void)
 	torture_suite_add_simple_test(suite, "wbcListUsers", test_wbc_users);
 	torture_suite_add_simple_test(suite, "wbcListGroups", test_wbc_groups);
 	torture_suite_add_simple_test(suite, "wbcListTrusts", test_wbc_trusts);
+	torture_suite_add_simple_test(suite, "wbcLookupDomainController", test_wbc_lookupdc);
+	torture_suite_add_simple_test(suite, "wbcLookupDomainControllerEx", test_wbc_lookupdcex);
 
 	return suite;
 }
