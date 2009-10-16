@@ -477,7 +477,7 @@ _PUBLIC_ char **str_list_copy(TALLOC_CTX *mem_ctx, const char **list);
 /**
    Return true if all the elements of the list match exactly.
  */
-_PUBLIC_ bool str_list_equal(const char **list1, const char **list2);
+_PUBLIC_ bool str_list_equal(const char * const *list1, const char * const *list2);
 
 /**
   add an entry to a string list
