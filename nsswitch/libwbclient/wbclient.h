@@ -63,9 +63,10 @@ const char *wbcErrorString(wbcErr error);
  *  0.3: Added wbcGetpwsid()
  *	 Added wbcGetSidAliases()
  *  0.4: Added wbcSidTypeString()
+ *  0.5: Added wbcChangeTrustCredentials()
  **/
 #define WBCLIENT_MAJOR_VERSION 0
-#define WBCLIENT_MINOR_VERSION 4
+#define WBCLIENT_MINOR_VERSION 5
 #define WBCLIENT_VENDOR_VERSION "Samba libwbclient"
 struct wbcLibraryDetails {
 	uint16_t major_version;
