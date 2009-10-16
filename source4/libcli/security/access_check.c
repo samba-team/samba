@@ -34,12 +34,8 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 	
 	if (security_token_has_sid(token, sd->owner_sid)) {
 		granted |= SEC_STD_WRITE_DAC | SEC_STD_READ_CONTROL | SEC_STD_DELETE;
-	}
-	if (security_token_has_privilege(token, SEC_PRIV_RESTORE)) {
-		granted |= SEC_RIGHTS_PRIV_RESTORE;
-	}
-	if (security_token_has_privilege(token, SEC_PRIV_BACKUP)) {
-		granted |= SEC_RIGHTS_PRIV_BACKUP;
+	} else if (security_token_has_privilege(token, SEC_PRIV_RESTORE)) {
+		granted |= SEC_STD_DELETE;
 	}
 
 	if (sd->dacl == NULL) {
