@@ -516,10 +516,10 @@ NTSTATUS rpccli_netlogon_set_trust_password(struct rpc_pipe_client *cli,
 					    enum netr_SchannelType sec_channel_type)
 {
 	NTSTATUS result;
-	uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
 	struct netr_Authenticator clnt_creds, srv_cred;
 
 	if (!cli->dc) {
+		uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
 		result = rpccli_netlogon_setup_creds(cli,
 						     cli->desthost, /* server name */
 						     lp_workgroup(), /* domain */
@@ -537,7 +537,7 @@ NTSTATUS rpccli_netlogon_set_trust_password(struct rpc_pipe_client *cli,
 
 	netlogon_creds_client_authenticator(cli->dc, &clnt_creds);
 
-	if (neg_flags & NETLOGON_NEG_PASSWORD_SET2) {
+	if (cli->dc->negotiate_flags & NETLOGON_NEG_PASSWORD_SET2) {
 
 		struct netr_CryptPassword new_password;
 
