@@ -4271,31 +4271,45 @@ fi # try_pam != no
 PAM_MODULES=""
 INSTALL_PAM_MODULES=""
 UNINSTALL_PAM_MODULES=""
+
+try_pam_smbpass=auto
 AC_MSG_CHECKING(whether to use pam_smbpass)
 AC_ARG_WITH(pam_smbpass,
-[AS_HELP_STRING([--with-pam_smbpass], [Build PAM module for authenticating against passdb backends (default=no)])],
+[AS_HELP_STRING([--with-pam_smbpass], [Build PAM module for authenticating against passdb backends (default=auto)])],
 [ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-
-       # Conditions under which pam_smbpass should not be built.
-
-       if test x"$BLDSHARED" != x"true"; then
-          AC_MSG_ERROR([No support for shared modules])
-       elif test x"$create_pam_modules" != x"yes"; then
-	  AC_MSG_ERROR([No support for PAM MODULES])
-       else
-          PAM_MODULES="pam_smbpass"
-          INSTALL_PAM_MODULES="installpammodules"
-          UNINSTALL_PAM_MODULES="uninstallpammodules"
-       fi
-    ;;
+  yes|no|auto)
+    try_pam_smbpass=$withval
+  ;;
   *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(no)
-)
+    AC_MSG_ERROR([valid options are yes,no,auto])
+  ;;
+  esac
+])
+
+if test x"${try_pam_smbpass}" = xno ; then
+	use_pam_smbpass=no
+else
+	use_pam_smbpass=yes
+	# Conditions under which pam_smbpass can't be built.
+	if test x"$BLDSHARED" != xtrue ; then
+		if test x"${try_pam_smbpass}" = xyes ; then
+			AC_MSG_ERROR([No support for shared modules])
+		fi
+		use_pam_smbpass=no
+	elif test x"$create_pam_modules" != xyes ; then
+		if test x"${try_pam_smbpass}" = xyes ; then
+			AC_MSG_ERROR([No support for PAM MODULES])
+		fi
+		use_pam_smbpass=no
+	fi
+
+	if test x"${use_pam_smbpass}" = xyes ; then 
+		PAM_MODULES="pam_smbpass"
+		INSTALL_PAM_MODULES="installpammodules"
+		UNINSTALL_PAM_MODULES="uninstallpammodules"
+	fi
+fi
+AC_MSG_RESULT([$use_pam_smbpass])
 
 
 ##
