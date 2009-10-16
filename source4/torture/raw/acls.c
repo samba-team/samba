@@ -1410,7 +1410,7 @@ static bool test_inheritance(struct torture_context *tctx,
 
 		if (!(test_flags[i].parent_flags & SEC_ACE_FLAG_OBJECT_INHERIT)) {
 			if (!security_descriptor_equal(q.query_secdesc.out.sd, sd_def)) {
-				printf("Expected default sd:\n");
+				printf(__location__ ": Expected default sd for i=%d:\n", i);
 				NDR_PRINT_DEBUG(security_descriptor, sd_def);
 				printf("at %d - got:\n", i);
 				NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
@@ -1639,8 +1639,8 @@ static bool test_inheritance_dynamic(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	union smb_open io;
-	const char *dname = BASEDIR "\\inheritance";
-	const char *fname1 = BASEDIR "\\inheritance\\testfile";
+	const char *dname = BASEDIR "\\inheritance2";
+	const char *fname1 = BASEDIR "\\inheritance2\\testfile";
 	bool ret = true;
 	int fnum=0, fnum2;
 	union smb_fileinfo q;
