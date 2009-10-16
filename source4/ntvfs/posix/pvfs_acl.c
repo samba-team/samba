@@ -496,15 +496,10 @@ NTSTATUS pvfs_access_check_unix(struct pvfs_state *pvfs,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (security_token_has_privilege(token, SEC_PRIV_RESTORE)) {
-		max_bits |= SEC_RIGHTS_PRIV_RESTORE;
-	}
-	if (security_token_has_privilege(token, SEC_PRIV_BACKUP)) {
-		max_bits |= SEC_RIGHTS_PRIV_BACKUP;
-	}
-
 	if (uid == name->st.st_uid) {
 		max_bits |= SEC_STD_ALL;
+	} else if (security_token_has_privilege(token, SEC_PRIV_RESTORE)) {
+		max_bits |= SEC_STD_DELETE;
 	}
 
 	if ((name->st.st_mode & S_IWOTH) ||
@@ -529,6 +524,15 @@ NTSTATUS pvfs_access_check_unix(struct pvfs_state *pvfs,
 	if ((*access_mask & SEC_FLAG_SYSTEM_SECURITY) &&
 	    security_token_has_privilege(token, SEC_PRIV_SECURITY)) {
 		max_bits |= SEC_FLAG_SYSTEM_SECURITY;
+	}
+	
+	if (((*access_mask & ~max_bits) & SEC_RIGHTS_PRIV_RESTORE) &&
+	    security_token_has_privilege(token, SEC_PRIV_RESTORE)) {
+		max_bits |= ~(SEC_RIGHTS_PRIV_RESTORE);
+	}
+	if (((*access_mask & ~max_bits) & SEC_RIGHTS_PRIV_BACKUP) &&
+	    security_token_has_privilege(token, SEC_PRIV_BACKUP)) {
+		max_bits |= ~(SEC_RIGHTS_PRIV_BACKUP);
 	}
 
 	if (*access_mask & ~max_bits) {
