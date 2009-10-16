@@ -369,6 +369,7 @@ def provision_paths_from_lp(lp, dnsdomain):
     paths.samdb = os.path.join(paths.private_dir, lp.get("sam database") or "samdb.ldb")
     paths.idmapdb = os.path.join(paths.private_dir, lp.get("idmap database") or "idmap.ldb")
     paths.secrets = os.path.join(paths.private_dir, lp.get("secrets database") or "secrets.ldb")
+    paths.privilege = os.path.join(paths.private_dir, "privilege.ldb")
     paths.dns = os.path.join(paths.private_dir, dnsdomain + ".zone")
     paths.namedconf = os.path.join(paths.private_dir, "named.conf")
     paths.namedtxt = os.path.join(paths.private_dir, "named.txt")
@@ -829,6 +830,23 @@ def setup_secretsdb(path, setup_path, session_info, credentials, lp):
                     })
 
     return secrets_ldb
+
+def setup_privileges(path, setup_path, session_info, lp):
+    """Setup the privileges database.
+
+    :param path: Path to the privileges database.
+    :param setup_path: Get the path to a setup file.
+    :param session_info: Session info.
+    :param credentials: Credentials
+    :param lp: Loadparm context
+    :return: LDB handle for the created secrets database
+    """
+    if os.path.exists(path):
+        os.unlink(path)
+    privilege_ldb = Ldb(path, session_info=session_info, lp=lp)
+    privilege_ldb.erase()
+    privilege_ldb.load_ldif_file_add(setup_path("provision_privilege.ldif"))
+
 
 def setup_registry(path, setup_path, session_info, lp):
     """Setup the registry.
@@ -1300,6 +1318,9 @@ def provision(setup_dir, message, session_info,
     message("Setting up the registry")
     setup_registry(paths.hklm, setup_path, session_info, 
                    lp=lp)
+
+    message("Setting up the privileges database")
+    setup_privileges(paths.privilege, setup_path, session_info, lp=lp)
 
     message("Setting up idmap db")
     idmap = setup_idmapdb(paths.idmapdb, setup_path, session_info=session_info,
