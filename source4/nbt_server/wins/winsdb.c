@@ -794,11 +794,11 @@ static struct ldb_message *winsdb_message(struct ldb_context *ldb,
 	for (i=0;rec->addresses[i];i++) {
 		ret |= ldb_msg_add_winsdb_addr(msg, rec, "address", rec->addresses[i]);
 	}
-	ret |= ldb_msg_add_empty(msg, "registeredBy", 0, NULL);
 	if (rec->registered_by) {
+		ret |= ldb_msg_add_empty(msg, "registeredBy", 0, NULL);
 		ret |= ldb_msg_add_string(msg, "registeredBy", rec->registered_by);
-		if (ret != 0) goto failed;
 	}
+	if (ret != 0) goto failed;
 	return msg;
 
 failed:
