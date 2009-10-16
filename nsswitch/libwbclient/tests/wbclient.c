@@ -96,6 +96,38 @@ static bool test_wbc_sidtypestring(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_wbc_sidtostring(struct torture_context *tctx)
+{
+	struct wbcDomainSid sid;
+	const char *sid_string = "S-1-5-32";
+	char *sid_string2;
+
+	torture_assert_wbc_ok(tctx, wbcStringToSid(sid_string, &sid),
+		"wbcStringToSid failed");
+	torture_assert_wbc_ok(tctx, wbcSidToString(&sid, &sid_string2),
+		"wbcSidToString failed");
+	torture_assert_str_equal(tctx, sid_string, sid_string2,
+		"sid strings differ");
+
+	return true;
+}
+
+static bool test_wbc_guidtostring(struct torture_context *tctx)
+{
+	struct wbcGuid guid;
+	const char *guid_string = "f7cf07b4-1487-45c7-824d-8b18cc580811";
+	char *guid_string2;
+
+	torture_assert_wbc_ok(tctx, wbcStringToGuid(guid_string, &guid),
+		"wbcStringToGuid failed");
+	torture_assert_wbc_ok(tctx, wbcGuidToString(&guid, &guid_string2),
+		"wbcGuidToString failed");
+	torture_assert_str_equal(tctx, guid_string, guid_string2,
+		"guid strings differ");
+
+	return true;
+}
+
 static bool test_wbc_domain_info(struct torture_context *tctx)
 {
 	const char *domain_name = NULL;
@@ -243,6 +275,8 @@ struct torture_suite *torture_wbclient(void)
 	torture_suite_add_simple_test(suite, "wbcLibraryDetails", test_wbc_library_details);
 	torture_suite_add_simple_test(suite, "wbcInterfaceDetails", test_wbc_interface_details);
 	torture_suite_add_simple_test(suite, "wbcSidTypeString", test_wbc_sidtypestring);
+	torture_suite_add_simple_test(suite, "wbcSidToString", test_wbc_sidtostring);
+	torture_suite_add_simple_test(suite, "wbcGuidToString", test_wbc_guidtostring);
 	torture_suite_add_simple_test(suite, "wbcDomainInfo", test_wbc_domain_info);
 	torture_suite_add_simple_test(suite, "wbcListUsers", test_wbc_users);
 	torture_suite_add_simple_test(suite, "wbcListGroups", test_wbc_groups);
