@@ -26,11 +26,30 @@
 #include "libcli/security/security.h"
 #include "../lib/util/util_ldb.h"
 #include "param/param.h"
+#include "ldb_wrap.h"
+
+/* connect to the privilege database */
+struct ldb_context *privilege_connect(TALLOC_CTX *mem_ctx, 
+				      struct tevent_context *ev_ctx,
+				      struct loadparm_context *lp_ctx)
+{
+	char *path;
+	struct ldb_context *pdb;
+
+	path = private_path(mem_ctx, lp_ctx, "privilege.ldb");
+	if (!path) return NULL;
+
+	pdb = ldb_wrap_connect(mem_ctx, ev_ctx, lp_ctx, path, 
+			       NULL, NULL, 0, NULL);
+	talloc_free(path);
+
+	return pdb;
+}
 
 /*
   add privilege bits for one sid to a security_token
 */
-static NTSTATUS samdb_privilege_setup_sid(void *samctx, TALLOC_CTX *mem_ctx,
+static NTSTATUS samdb_privilege_setup_sid(struct ldb_context *pdb, TALLOC_CTX *mem_ctx,
 					  struct security_token *token,
 					  const struct dom_sid *sid)
 {
@@ -43,7 +62,7 @@ static NTSTATUS samdb_privilege_setup_sid(void *samctx, TALLOC_CTX *mem_ctx,
 	sidstr = ldap_encode_ndr_dom_sid(mem_ctx, sid);
 	NT_STATUS_HAVE_NO_MEMORY(sidstr);
 
-	ret = gendb_search(samctx, mem_ctx, NULL, &res, attrs, "objectSid=%s", sidstr);
+	ret = gendb_search(pdb, mem_ctx, NULL, &res, attrs, "objectSid=%s", sidstr);
 	talloc_free(sidstr);
 	if (ret != 1) {
 		/* not an error to not match */
@@ -76,7 +95,7 @@ static NTSTATUS samdb_privilege_setup_sid(void *samctx, TALLOC_CTX *mem_ctx,
 NTSTATUS samdb_privilege_setup(struct tevent_context *ev_ctx, 
 			       struct loadparm_context *lp_ctx, struct security_token *token)
 {
-	void *samctx;
+	struct ldb_context *pdb;
 	TALLOC_CTX *mem_ctx;
 	int i;
 	NTSTATUS status;
@@ -98,8 +117,8 @@ NTSTATUS samdb_privilege_setup(struct tevent_context *ev_ctx,
 	}
 
 	mem_ctx = talloc_new(token);
-	samctx = samdb_connect(mem_ctx, ev_ctx, lp_ctx, system_session(mem_ctx, lp_ctx));
-	if (samctx == NULL) {
+	pdb = privilege_connect(mem_ctx, ev_ctx, lp_ctx);
+	if (pdb == NULL) {
 		talloc_free(mem_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -107,7 +126,7 @@ NTSTATUS samdb_privilege_setup(struct tevent_context *ev_ctx,
 	token->privilege_mask = 0;
 	
 	for (i=0;i<token->num_sids;i++) {
-		status = samdb_privilege_setup_sid(samctx, mem_ctx,
+		status = samdb_privilege_setup_sid(pdb, mem_ctx,
 						   token, token->sids[i]);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(mem_ctx);

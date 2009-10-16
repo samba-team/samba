@@ -21,6 +21,7 @@
 */
 
 #include "rpc_server/lsa/lsa.h"
+#include "dsdb/samdb/samdb_proto.h"
 
 NTSTATUS dcesrv_lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				     struct lsa_policy_state **_state)
@@ -45,6 +46,12 @@ NTSTATUS dcesrv_lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 	/* make sure the sam database is accessible */
 	state->sam_ldb = samdb_connect(state, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, dce_call->conn->auth_state.session_info); 
 	if (state->sam_ldb == NULL) {
+		return NT_STATUS_INVALID_SYSTEM_SERVICE;
+	}
+
+	/* and the privilege database */
+	state->pdb = privilege_connect(state, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx);
+	if (state->pdb == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 
