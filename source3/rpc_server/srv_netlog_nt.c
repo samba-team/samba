@@ -827,6 +827,7 @@ NTSTATUS _netr_ServerPasswordSet2(pipes_struct *p,
 	struct samu *sampass;
 	DATA_BLOB plaintext;
 	struct samr_CryptPassword password_buf;
+	struct samr_Password nt_hash;
 
 	become_root();
 	status = netr_creds_server_step_check(p, p->mem_ctx,
@@ -852,6 +853,8 @@ NTSTATUS _netr_ServerPasswordSet2(pipes_struct *p,
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
+	mdfour(nt_hash.hash, plaintext.data, plaintext.length);
+
 	status = netr_find_machine_account(p->mem_ctx,
 					   creds->account_name,
 					   &sampass);
@@ -861,8 +864,8 @@ NTSTATUS _netr_ServerPasswordSet2(pipes_struct *p,
 
 	status = netr_set_machine_account_password(sampass,
 						   sampass,
-						   &plaintext,
 						   NULL,
+						   &nt_hash,
 						   NULL);
 	TALLOC_FREE(sampass);
 	return status;
