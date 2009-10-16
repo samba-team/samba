@@ -134,7 +134,7 @@ static bool test_buffer(struct torture_context *test,
 {
 	uint8_t buf1[1000], buf2[1000], buf3[1000];
 	size_t outsize1, outsize2, outsize3;
-	const char *ptr_in;
+	char *ptr_in;
 	char *ptr_out;
 	size_t size_in1, size_in2, size_in3;
 	size_t ret1, ret2, ret3, len1, len2;
@@ -164,25 +164,25 @@ static bool test_buffer(struct torture_context *test,
 	}
 
 	/* internal convert to charset - placing result in buf1 */
-	ptr_in = (const char *)inbuf;
+	ptr_in = (char *)inbuf;
 	ptr_out = (char *)buf1;
 	size_in1 = size;
 	outsize1 = sizeof(buf1);
 
 	memset(ptr_out, 0, outsize1);
 	errno = 0;
-	ret1 = smb_iconv(cd2, &ptr_in, &size_in1, &ptr_out, &outsize1);
+	ret1 = smb_iconv(cd2, (const char **) &ptr_in, &size_in1, &ptr_out, &outsize1);
 	errno1 = errno;
 
 	/* system convert to charset - placing result in buf2 */
-	ptr_in = (const char *)inbuf;
+	ptr_in = (char *)inbuf;
 	ptr_out = (char *)buf2;
 	size_in2 = size;
 	outsize2 = sizeof(buf2);
 	
 	memset(ptr_out, 0, outsize2);
 	errno = 0;
-	ret2 = iconv(cd, discard_const_p(char *, &ptr_in), &size_in2, &ptr_out, &outsize2);
+	ret2 = iconv(cd, &ptr_in, &size_in2, &ptr_out, &outsize2);
 	errno2 = errno;
 
 	len1 = sizeof(buf1) - outsize1;
@@ -236,13 +236,13 @@ static bool test_buffer(struct torture_context *test,
 
 	/* convert back to UTF-16, putting result in buf3 */
 	size = size - size_in1;
-	ptr_in = (const char *)buf1;
+	ptr_in = (char *)buf1;
 	ptr_out = (char *)buf3;
 	size_in3 = len1;
 	outsize3 = sizeof(buf3);
 
 	memset(ptr_out, 0, outsize3);
-	ret3 = smb_iconv(cd3, &ptr_in, &size_in3, &ptr_out, &outsize3);
+	ret3 = smb_iconv(cd3, (const char **) &ptr_in, &size_in3, &ptr_out, &outsize3);
 
 	/* we only internally support the first 1M codepoints */
 	if (outsize3 != sizeof(buf3) - size &&
