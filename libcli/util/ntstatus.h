@@ -674,6 +674,13 @@ extern bool ntstatus_check_dos_mapping;
 	}\
 } while (0)
 
+#define NT_STATUS_NOT_OK_RETURN_AND_FREE(x, ctx) do {	\
+	if (!NT_STATUS_IS_OK(x)) {\
+		talloc_free(ctx); \
+		return x;\
+	}\
+} while (0)
+
 #define NT_STATUS_IS_ERR_RETURN(x) do { \
 	if (NT_STATUS_IS_ERR(x)) {\
 		return x;\
