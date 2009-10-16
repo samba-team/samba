@@ -2023,7 +2023,7 @@ NTSTATUS _samr_ChangePasswordUser3(pipes_struct *p,
 	NTSTATUS status;
 	fstring user_name;
 	const char *wks = NULL;
-	uint32 reject_reason;
+	enum samPwdChangeReason reject_reason;
 	struct samr_DomInfo1 *dominfo = NULL;
 	struct userPwdChangeFailureInformation *reject = NULL;
 	uint32_t tmp;
