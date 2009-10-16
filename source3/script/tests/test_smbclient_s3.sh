@@ -94,6 +94,7 @@ test_bad_symlink()
 
     cat > $tmpfile <<EOF
 posix
+posix_unlink newname
 symlink badname newname
 posix_unlink newname
 quit
@@ -118,6 +119,7 @@ EOF
 	# got the correct prompt .. succeed
 	true
     else
+	echo "$out"
 	echo failed create then delete bad symlink
 	false
     fi
