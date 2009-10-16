@@ -811,13 +811,13 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
  * client is based on this object 
  */
 static int replmd_update_rpmd(struct ldb_module *module, 
+			      struct dsdb_schema *schema, 
 			      struct ldb_message *msg, uint64_t *seq_num)
 {
 	const struct ldb_val *omd_value;
 	enum ndr_err_code ndr_err;
 	struct replPropertyMetaDataBlob omd;
 	int i;
-	struct dsdb_schema *schema;
 	time_t t = time(NULL);
 	NTTIME now;
 	const struct GUID *our_invocation_id;
@@ -868,8 +868,6 @@ static int replmd_update_rpmd(struct ldb_module *module,
 			 omd.version, ldb_dn_get_linearized(msg->dn)));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-
-	schema = dsdb_get_schema(ldb);
 
 	for (i=0; i<msg->num_elements; i++) {
 		ret = replmd_update_rpmd_element(ldb, msg, &msg->elements[i], &omd, schema, seq_num, 
@@ -982,7 +980,7 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 		return ret;
 	}
 
-	ret = replmd_update_rpmd(module, msg, &ac->seq_num);
+	ret = replmd_update_rpmd(module, ac->schema, msg, &ac->seq_num);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(ac);
 		return ret;
@@ -2129,6 +2127,7 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 {					   
 	struct drsuapi_DsReplicaLinkedAttribute *la = la_entry->la;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct dsdb_schema *schema = dsdb_get_schema(ldb);
 	struct drsuapi_DsReplicaObjectIdentifier3 target;
 	struct ldb_message *msg;
 	struct ldb_message_element *ret_el;
@@ -2207,7 +2206,7 @@ linked_attributes[0]:
 	}
 
 	/* find the attribute being modified */
-	attr = dsdb_attribute_by_attributeID_id(dsdb_get_schema(ldb), la->attid);
+	attr = dsdb_attribute_by_attributeID_id(schema, la->attid);
 	if (attr == NULL) {
 		DEBUG(0, (__location__ ": Unable to find attributeID 0x%x\n", la->attid));
 		talloc_free(tmp_ctx);
@@ -2245,7 +2244,7 @@ linked_attributes[0]:
 	ret_el->values[0].data = (uint8_t *)ldb_dn_get_extended_linearized(tmp_ctx, target_dn, 1);
 	ret_el->values[0].length = strlen((char *)ret_el->values[0].data);
 
-	ret = replmd_update_rpmd(module, msg, &seq_num);
+	ret = replmd_update_rpmd(module, schema, msg, &seq_num);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
