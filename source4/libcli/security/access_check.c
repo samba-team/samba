@@ -34,8 +34,12 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 	
 	if (security_token_has_sid(token, sd->owner_sid)) {
 		granted |= SEC_STD_WRITE_DAC | SEC_STD_READ_CONTROL | SEC_STD_DELETE;
-	} else if (security_token_has_privilege(token, SEC_PRIV_RESTORE)) {
-		granted |= SEC_STD_DELETE;
+	}
+	if (security_token_has_privilege(token, SEC_PRIV_RESTORE)) {
+		granted |= SEC_RIGHTS_PRIV_RESTORE;
+	}
+	if (security_token_has_privilege(token, SEC_PRIV_BACKUP)) {
+		granted |= SEC_RIGHTS_PRIV_BACKUP;
 	}
 
 	if (sd->dacl == NULL) {
@@ -125,9 +129,13 @@ NTSTATUS sec_access_check(const struct security_descriptor *sd,
 	    security_token_has_sid(token, sd->owner_sid)) {
 		bits_remaining &= ~(SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL|SEC_STD_DELETE);
 	}
-	if ((bits_remaining & SEC_STD_DELETE) &&
+	if ((bits_remaining & SEC_RIGHTS_PRIV_RESTORE) &&
 	    security_token_has_privilege(token, SEC_PRIV_RESTORE)) {
-		bits_remaining &= ~SEC_STD_DELETE;
+		bits_remaining &= ~(SEC_RIGHTS_PRIV_RESTORE);
+	}
+	if ((bits_remaining & SEC_RIGHTS_PRIV_BACKUP) &&
+	    security_token_has_privilege(token, SEC_PRIV_BACKUP)) {
+		bits_remaining &= ~(SEC_RIGHTS_PRIV_BACKUP);
 	}
 
 	if (sd->dacl == NULL) {
