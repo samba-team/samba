@@ -419,6 +419,7 @@ static void info_tdb(void)
 
 static void speed_tdb(const char *tlimit)
 {
+	const char *str = "store test", *str2 = "transaction test";
 	unsigned timelimit = tlimit?atoi(tlimit):0;
 	double t;
 	int ops;
@@ -430,9 +431,9 @@ static void speed_tdb(const char *tlimit)
 	do {
 		long int r = random();
 		TDB_DATA key, dbuf;
-		key.dptr = (unsigned char *)"store test";
+		key.dptr = discard_const_p(uint8_t, str);
 		key.dsize = strlen((char *)key.dptr);
-		dbuf.dptr = (unsigned char *)&r;
+		dbuf.dptr = (uint8_t *) &r;
 		dbuf.dsize = sizeof(r);
 		tdb_store(tdb, key, dbuf, TDB_REPLACE);
 		t = _end_timer();
@@ -446,9 +447,9 @@ static void speed_tdb(const char *tlimit)
 	do {
 		long int r = random();
 		TDB_DATA key, dbuf;
-		key.dptr = (unsigned char *)"store test";
+		key.dptr = discard_const_p(uint8_t, str);
 		key.dsize = strlen((char *)key.dptr);
-		dbuf.dptr = (unsigned char *)&r;
+		dbuf.dptr = (uint8_t *) &r;
 		dbuf.dsize = sizeof(r);
 		tdb_fetch(tdb, key);
 		t = _end_timer();
@@ -462,9 +463,9 @@ static void speed_tdb(const char *tlimit)
 	do {
 		long int r = random();
 		TDB_DATA key, dbuf;
-		key.dptr = (unsigned char *)"transaction test";
+		key.dptr = discard_const_p(uint8_t, str2);
 		key.dsize = strlen((char *)key.dptr);
-		dbuf.dptr = (unsigned char *)&r;
+		dbuf.dptr = (uint8_t *) &r;
 		dbuf.dsize = sizeof(r);
 		tdb_transaction_start(tdb);
 		tdb_store(tdb, key, dbuf, TDB_REPLACE);
