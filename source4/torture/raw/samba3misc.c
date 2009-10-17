@@ -1007,7 +1007,7 @@ bool torture_samba3_oplock_logoff(struct torture_context *tctx)
 
 	echo_req.in.repeat_count = 1;
 	echo_req.in.size = 1;
-	echo_req.in.data = (uint8_t *)"";
+	echo_req.in.data = discard_const_p(uint8_t, "");
 
 	status = smb_raw_echo(cli->session->transport, &echo_req);
 	if (!NT_STATUS_IS_OK(status)) {
