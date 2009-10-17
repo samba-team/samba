@@ -108,7 +108,7 @@ EOF
 
     if [ $ret != 0 ] ; then
 	echo "$out"
-	echo "failed create then delete bad symlink"
+	echo "failed create then delete bad symlink with error $ret"
 	false
 	return
     fi
