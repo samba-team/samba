@@ -103,10 +103,10 @@ static NTSTATUS pvfs_open_setup_eas_acl(struct pvfs_state *pvfs,
 					struct ntvfs_request *req,
 					struct pvfs_filename *name,
 					int fd,	struct pvfs_file *f,
-					union smb_open *io)
+					union smb_open *io,
+					struct security_descriptor *sd)
 {
 	NTSTATUS status;
-	struct security_descriptor *sd;
 
 	/* setup any EAs that were asked for */
 	if (io->ntcreatex.in.ea_list) {
@@ -118,7 +118,6 @@ static NTSTATUS pvfs_open_setup_eas_acl(struct pvfs_state *pvfs,
 		}
 	}
 
-	sd = io->ntcreatex.in.sec_desc;
 	/* setup an initial sec_desc if requested */
 	if (sd && (sd->type & SEC_DESC_DACL_PRESENT)) {
 		union smb_setfileinfo set;
@@ -134,9 +133,6 @@ static NTSTATUS pvfs_open_setup_eas_acl(struct pvfs_state *pvfs,
 		set.set_secdesc.in.sd = sd;
 
 		status = pvfs_acl_set(pvfs, req, name, fd, SEC_STD_WRITE_DAC, &set);
-	} else {
-		/* otherwise setup an inherited acl from the parent */
-		status = pvfs_acl_inherit(pvfs, req, name, fd);
 	}
 
 	return status;
@@ -185,6 +181,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	uint32_t create_options;
 	uint32_t share_access;
 	bool forced;
+	struct security_descriptor *sd = NULL;
 
 	create_options = io->generic.in.create_options;
 	share_access   = io->generic.in.share_access;
@@ -251,8 +248,9 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	if (name->exists) {
 		/* check the security descriptor */
 		status = pvfs_access_check(pvfs, req, name, &access_mask);
-	} else {
-		status = pvfs_access_check_create(pvfs, req, name, &access_mask);
+	} else {		
+		sd = io->ntcreatex.in.sec_desc;
+		status = pvfs_access_check_create(pvfs, req, name, &access_mask, true, &sd);
 	}
 	NT_STATUS_NOT_OK_RETURN(status);
 
@@ -352,7 +350,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 			goto cleanup_delete;
 		}
 
-		status = pvfs_open_setup_eas_acl(pvfs, req, name, -1, f, io);
+		status = pvfs_open_setup_eas_acl(pvfs, req, name, -1, f, io, sd);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto cleanup_delete;
 		}
@@ -616,6 +614,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	struct pvfs_filename *parent;
 	uint32_t oplock_level = OPLOCK_NONE, oplock_granted;
 	bool allow_level_II_oplock = false;
+	struct security_descriptor *sd = NULL;
 
 	if (io->ntcreatex.in.file_attr & ~FILE_ATTRIBUTE_ALL_MASK) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -630,7 +629,8 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		return NT_STATUS_CANNOT_DELETE;
 	}
 
-	status = pvfs_access_check_create(pvfs, req, name, &access_mask);
+	sd = io->ntcreatex.in.sec_desc;
+	status = pvfs_access_check_create(pvfs, req, name, &access_mask, false, &sd);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* check that the parent isn't opened with delete on close set */
@@ -698,7 +698,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	}
 
 
-	status = pvfs_open_setup_eas_acl(pvfs, req, name, fd, f, io);
+	status = pvfs_open_setup_eas_acl(pvfs, req, name, fd, f, io, sd);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto cleanup_delete;
 	}

@@ -498,13 +498,14 @@ static NTSTATUS pvfs_reduce_name(TALLOC_CTX *mem_ctx,
 
      TODO: ../ collapsing, and outside share checking
 */
-NTSTATUS pvfs_resolve_name(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
+NTSTATUS pvfs_resolve_name(struct pvfs_state *pvfs, 
+			   struct ntvfs_request *req,
 			   const char *cifs_name,
 			   uint_t flags, struct pvfs_filename **name)
 {
 	NTSTATUS status;
 
-	*name = talloc(mem_ctx, struct pvfs_filename);
+	*name = talloc(req, struct pvfs_filename);
 	if (*name == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -514,6 +515,12 @@ NTSTATUS pvfs_resolve_name(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 
 	if (!(pvfs->fs_attribs & FS_ATTR_NAMED_STREAMS)) {
 		flags &= ~PVFS_RESOLVE_STREAMS;
+	}
+
+	/* SMB2 doesn't allow a leading slash */
+	if (req->ctx->protocol == PROTOCOL_SMB2 &&
+	    *cifs_name == '\\') {
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* do the basic conversion to a unix formatted path,

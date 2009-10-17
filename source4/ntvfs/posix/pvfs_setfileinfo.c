@@ -168,7 +168,7 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 	}
 
 	/* resolve the new name */
-	status = pvfs_resolve_name(pvfs, name, new_name, 0, &name2);
+	status = pvfs_resolve_name(pvfs, req, new_name, 0, &name2);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

@@ -485,6 +485,8 @@ static bool pvfs_group_member(struct pvfs_state *pvfs, gid_t gid)
   doing this saves on building a full security descriptor
   for the common case of access check on files with no 
   specific NT ACL
+
+  If name is NULL then treat as a new file creation
 */
 NTSTATUS pvfs_access_check_unix(struct pvfs_state *pvfs, 
 				struct ntvfs_request *req,
@@ -499,13 +501,14 @@ NTSTATUS pvfs_access_check_unix(struct pvfs_state *pvfs,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (uid == name->st.st_uid) {
+	if (name == NULL || uid == name->st.st_uid) {
 		max_bits |= SEC_STD_ALL;
 	} else if (security_token_has_privilege(token, SEC_PRIV_RESTORE)) {
 		max_bits |= SEC_STD_DELETE;
 	}
 
-	if ((name->st.st_mode & S_IWOTH) ||
+	if (name == NULL ||
+	    (name->st.st_mode & S_IWOTH) ||
 	    ((name->st.st_mode & S_IWGRP) && 
 	     pvfs_group_member(pvfs, name->st.st_gid))) {
 		max_bits |= SEC_STD_ALL;
@@ -540,7 +543,7 @@ NTSTATUS pvfs_access_check_unix(struct pvfs_state *pvfs,
 
 	if (*access_mask & ~max_bits) {
 		DEBUG(0,(__location__ " denied access to '%s' - wanted 0x%08x but got 0x%08x (missing 0x%08x)\n",
-			 name->full_name, *access_mask, max_bits, *access_mask & ~max_bits));
+			 name?name->full_name:"(new file)", *access_mask, max_bits, *access_mask & ~max_bits));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -643,26 +646,47 @@ NTSTATUS pvfs_access_check_simple(struct pvfs_state *pvfs,
 NTSTATUS pvfs_access_check_create(struct pvfs_state *pvfs, 
 				  struct ntvfs_request *req,
 				  struct pvfs_filename *name,
-				  uint32_t *access_mask)
+				  uint32_t *access_mask,
+				  bool container,
+				  struct security_descriptor **sd)
 {
 	struct pvfs_filename *parent;
 	NTSTATUS status;
+	struct security_token *token = req->session_info->security_token;
+
+	if (pvfs_read_only(pvfs, *access_mask)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	status = pvfs_resolve_parent(pvfs, req, name, &parent);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	status = pvfs_access_check(pvfs, req, parent, access_mask);
+	status = pvfs_access_check_simple(pvfs, req, parent, SEC_DIR_ADD_FILE);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (! ((*access_mask) & SEC_DIR_ADD_FILE)) {
-		return pvfs_access_check_simple(pvfs, req, parent, SEC_DIR_ADD_FILE);
+	if (*sd == NULL) {
+		status = pvfs_acl_inherited_sd(pvfs, req, req, parent, container, sd);
 	}
 
-	return status;
+	talloc_free(parent);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* expand the generic access bits to file specific bits */
+	*access_mask = pvfs_translate_mask(*access_mask);
+	if (pvfs->ntvfs->ctx->protocol != PROTOCOL_SMB2) {
+		*access_mask &= ~SEC_FILE_READ_ATTRIBUTE;
+	}
+
+	if (*sd == NULL) {
+		return pvfs_access_check_unix(pvfs, req, NULL, access_mask);
+	}
+	return sec_access_check(*sd, token, *access_mask, access_mask);
 }
 
 /*
@@ -790,6 +814,104 @@ static NTSTATUS pvfs_acl_inherit_aces(struct pvfs_state *pvfs,
 
 
 /*
+  calculate the ACL on a new file/directory based on the inherited ACL
+  from the parent. If there is no inherited ACL then return a NULL
+  ACL, which means the default ACL should be used
+*/
+NTSTATUS pvfs_acl_inherited_sd(struct pvfs_state *pvfs, 
+			       TALLOC_CTX *mem_ctx,
+			       struct ntvfs_request *req,
+			       struct pvfs_filename *parent,
+			       bool container,
+			       struct security_descriptor **ret_sd)
+{
+	struct xattr_NTACL *acl;
+	NTSTATUS status;
+	struct security_descriptor *parent_sd, *sd;
+	struct id_mapping *ids;
+	struct composite_context *ctx;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+
+	*ret_sd = NULL;
+
+	acl = talloc(req, struct xattr_NTACL);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(acl, tmp_ctx);
+
+	status = pvfs_acl_load(pvfs, parent, -1, acl);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_OK;
+	}
+	NT_STATUS_NOT_OK_RETURN_AND_FREE(status, tmp_ctx);
+
+	switch (acl->version) {
+	case 1:
+		parent_sd = acl->info.sd;
+		break;
+	default:
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INVALID_ACL;
+	}
+
+	if (parent_sd == NULL ||
+	    parent_sd->dacl == NULL ||
+	    parent_sd->dacl->num_aces == 0) {
+		/* go with the default ACL */
+		talloc_free(tmp_ctx);
+		return NT_STATUS_OK;
+	}
+
+	/* create the new sd */
+	sd = security_descriptor_initialise(req);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(sd, tmp_ctx);
+
+	ids = talloc_array(sd, struct id_mapping, 2);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(ids, tmp_ctx);
+
+	ids[0].unixid = talloc(ids, struct unixid);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(ids[0].unixid, tmp_ctx);
+	ids[0].unixid->id = geteuid();
+	ids[0].unixid->type = ID_TYPE_UID;
+	ids[0].sid = NULL;
+	ids[0].status = NT_STATUS_NONE_MAPPED;
+
+	ids[1].unixid = talloc(ids, struct unixid);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(ids[1].unixid, tmp_ctx);
+	ids[1].unixid->id = getegid();
+	ids[1].unixid->type = ID_TYPE_GID;
+	ids[1].sid = NULL;
+	ids[1].status = NT_STATUS_NONE_MAPPED;
+
+	ctx = wbc_xids_to_sids_send(pvfs->wbc_ctx, ids, 2, ids);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(ctx, tmp_ctx);
+
+	status = wbc_xids_to_sids_recv(ctx, &ids);
+	NT_STATUS_NOT_OK_RETURN_AND_FREE(status, tmp_ctx);
+
+	sd->owner_sid = talloc_steal(sd, ids[0].sid);
+	sd->group_sid = talloc_steal(sd, ids[1].sid);
+
+	sd->type |= SEC_DESC_DACL_PRESENT;
+
+	/* fill in the aces from the parent */
+	status = pvfs_acl_inherit_aces(pvfs, parent_sd, sd, container);
+	NT_STATUS_NOT_OK_RETURN_AND_FREE(status, tmp_ctx);
+
+	/* if there is nothing to inherit then we fallback to the
+	   default acl */
+	if (sd->dacl == NULL || sd->dacl->num_aces == 0) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_OK;
+	}
+
+	*ret_sd = talloc_steal(mem_ctx, sd);
+
+	talloc_free(tmp_ctx);
+	return NT_STATUS_OK;
+}
+
+
+/*
   setup an ACL on a new file/directory based on the inherited ACL from
   the parent. If there is no inherited ACL then we don't set anything,
   as the default ACL applies anyway
@@ -799,100 +921,35 @@ NTSTATUS pvfs_acl_inherit(struct pvfs_state *pvfs,
 			  struct pvfs_filename *name,
 			  int fd)
 {
-	struct xattr_NTACL *acl;
+	struct xattr_NTACL acl;
 	NTSTATUS status;
+	struct security_descriptor *sd;
 	struct pvfs_filename *parent;
-	struct security_descriptor *parent_sd, *sd;
 	bool container;
-	struct id_mapping *ids;
-	struct composite_context *ctx;
 
 	/* form the parents path */
 	status = pvfs_resolve_parent(pvfs, req, name, &parent);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	acl = talloc(req, struct xattr_NTACL);
-	if (acl == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = pvfs_acl_load(pvfs, parent, -1, acl);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
-		return NT_STATUS_OK;
-	}
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	switch (acl->version) {
-	case 1:
-		parent_sd = acl->info.sd;
-		break;
-	default:
-		return NT_STATUS_INVALID_ACL;
-	}
-
-	if (parent_sd == NULL ||
-	    parent_sd->dacl == NULL ||
-	    parent_sd->dacl->num_aces == 0) {
-		/* go with the default ACL */
-		return NT_STATUS_OK;
-	}
-
-	/* create the new sd */
-	sd = security_descriptor_initialise(req);
-	if (sd == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	ids = talloc_array(sd, struct id_mapping, 2);
-	NT_STATUS_HAVE_NO_MEMORY(ids);
-
-	ids[0].unixid = talloc(ids, struct unixid);
-	NT_STATUS_HAVE_NO_MEMORY(ids[0].unixid);
-	ids[0].unixid->id = name->st.st_uid;
-	ids[0].unixid->type = ID_TYPE_UID;
-	ids[0].sid = NULL;
-	ids[0].status = NT_STATUS_NONE_MAPPED;
-
-	ids[1].unixid = talloc(ids, struct unixid);
-	NT_STATUS_HAVE_NO_MEMORY(ids[1].unixid);
-	ids[1].unixid->id = name->st.st_gid;
-	ids[1].unixid->type = ID_TYPE_GID;
-	ids[1].sid = NULL;
-	ids[1].status = NT_STATUS_NONE_MAPPED;
-
-	ctx = wbc_xids_to_sids_send(pvfs->wbc_ctx, ids, 2, ids);
-	NT_STATUS_HAVE_NO_MEMORY(ctx);
-
-	status = wbc_xids_to_sids_recv(ctx, &ids);
 	NT_STATUS_NOT_OK_RETURN(status);
-
-	sd->owner_sid = talloc_steal(sd, ids[0].sid);
-	sd->group_sid = talloc_steal(sd, ids[1].sid);
-
-	sd->type |= SEC_DESC_DACL_PRESENT;
 
 	container = (name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) ? true:false;
 
-	/* fill in the aces from the parent */
-	status = pvfs_acl_inherit_aces(pvfs, parent_sd, sd, container);
+	status = pvfs_acl_inherited_sd(pvfs, req, req, parent, container, &sd);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(parent);
 		return status;
 	}
 
-	/* if there is nothing to inherit then we fallback to the
-	   default acl */
-	if (sd->dacl == NULL || sd->dacl->num_aces == 0) {
+	if (sd == NULL) {
 		return NT_STATUS_OK;
 	}
 
-	acl->info.sd = sd;
+	acl.version = 1;
+	acl.info.sd = sd;
 
-	status = pvfs_acl_save(pvfs, name, fd, acl);
-	
+	status = pvfs_acl_save(pvfs, name, fd, &acl);
+	talloc_free(sd);
+	talloc_free(parent);
+
 	return status;
 }
 
