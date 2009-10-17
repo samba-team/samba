@@ -319,7 +319,6 @@ failed:
 static int ldb_msg_add_winsdb_addr(struct ldb_message *msg, struct winsdb_record *rec,
 				   const char *attr_name, struct winsdb_addr *addr)
 {
-	struct ldb_val val;
 	const char *str;
 
 	if (rec->is_static) {
@@ -336,10 +335,7 @@ static int ldb_msg_add_winsdb_addr(struct ldb_message *msg, struct winsdb_record
 		if (!str) return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	val.data = discard_const_p(uint8_t, str);
-	val.length = strlen(str);
-
-	return ldb_msg_add_value(msg, attr_name, &val, NULL);
+	return ldb_msg_add_string(msg, attr_name, str);
 }
 
 struct winsdb_addr **winsdb_addr_list_make(TALLOC_CTX *mem_ctx)
