@@ -23,15 +23,14 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/drsuapi.h"
-#include "rpc_server/common/common.h"
 #include "lib/events/events.h"
+#include "rpc_server/common/common.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
 #include "libcli/ldap/ldap_ndr.h"
 #include "libcli/security/security.h"
-#include "librpc/gen_ndr/ndr_misc.h"
 #include "auth/auth.h"
 #include "../lib/util/util_ldb.h"
 #include "dsdb/samdb/samdb.h"
@@ -55,7 +54,7 @@ static WERROR dns_domain_from_principal(TALLOC_CTX *mem_ctx, struct smb_krb5_con
 	krb5_error_code ret;
 	krb5_principal principal;
 	/* perhaps it's a principal with a realm, so return the right 'domain only' response */
-	char *realm;
+	const char *realm;
 	ret = krb5_parse_name_flags(smb_krb5_context->krb5_context, name, 
 				    KRB5_PRINCIPAL_PARSE_REQUIRE_REALM, &principal);
 	if (ret) {
@@ -271,7 +270,7 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	const char *result_filter = NULL;
 	krb5_error_code ret;
 	krb5_principal principal;
-	char *realm;
+	const char *realm;
 	char *unparsed_name_short;
 	const char *domain_attrs[] = { NULL };
 	struct ldb_result *domain_res = NULL;
