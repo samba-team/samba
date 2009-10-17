@@ -253,14 +253,14 @@ static int lldb_search(struct lldb_context *lldb_ac)
 	tv.tv_usec = 0;
 
 	ret = ldap_search_ext(lldb->ldap, search_base, ldap_scope, 
-			    expression, 
-			    discard_const_p(char *, req->op.search.attrs), 
-			    0,
-			    NULL,
-			    NULL,
-			    &tv,
-			    LDAP_NO_LIMIT,
-			    &lldb_ac->msgid);
+			      expression, 
+			      discard_const_p(char *, req->op.search.attrs),
+			      0,
+			      NULL,
+			      NULL,
+			      &tv,
+			      LDAP_NO_LIMIT,
+			      &lldb_ac->msgid);
 
 	if (ret != LDAP_SUCCESS) {
 		ldb_set_errstring(ldb, ldap_err2string(ret));
