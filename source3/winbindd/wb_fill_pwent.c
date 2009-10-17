@@ -27,6 +27,14 @@ struct wb_fill_pwent_state {
 	struct winbindd_pw *pw;
 };
 
+static bool fillup_pw_field(const char *lp_template,
+			    const char *username,
+			    const char *domname,
+			    uid_t uid,
+			    gid_t gid,
+			    const char *in,
+			    fstring out);
+
 static void wb_fill_pwent_sid2uid_done(struct tevent_req *subreq);
 static void wb_fill_pwent_sid2gid_done(struct tevent_req *subreq);
 
@@ -152,4 +160,43 @@ static void wb_fill_pwent_sid2gid_done(struct tevent_req *subreq)
 NTSTATUS wb_fill_pwent_recv(struct tevent_req *req)
 {
 	return tevent_req_simple_recv_ntstatus(req);
+}
+
+static bool fillup_pw_field(const char *lp_template,
+			    const char *username,
+			    const char *domname,
+			    uid_t uid,
+			    gid_t gid,
+			    const char *in,
+			    fstring out)
+{
+	char *templ;
+
+	if (out == NULL)
+		return False;
+
+	/* The substitution of %U and %D in the 'template
+	   homedir' is done by talloc_sub_specified() below.
+	   If we have an in string (which means the value has already
+	   been set in the nss_info backend), then use that.
+	   Otherwise use the template value passed in. */
+
+	if ((in != NULL) && (in[0] != '\0') && (lp_security() == SEC_ADS)) {
+		templ = talloc_sub_specified(talloc_tos(), in,
+					     username, domname,
+					     uid, gid);
+	} else {
+		templ = talloc_sub_specified(talloc_tos(), lp_template,
+					     username, domname,
+					     uid, gid);
+	}
+
+	if (!templ)
+		return False;
+
+	safe_strcpy(out, templ, sizeof(fstring) - 1);
+	TALLOC_FREE(templ);
+
+	return True;
+
 }
