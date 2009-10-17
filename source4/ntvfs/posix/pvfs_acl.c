@@ -384,6 +384,9 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 		} else {
 			ret = fchown(fd, new_uid, new_gid);
 		}
+		if (errno == EPERM && uwrap_enabled()) {
+			ret = 0;
+		}
 		if (ret == -1) {
 			return pvfs_map_errno(pvfs, errno);
 		}
