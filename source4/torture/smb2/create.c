@@ -249,6 +249,8 @@ static bool test_create_gentest(struct torture_context *torture, struct smb2_tre
 
 	if (TARGET_IS_WIN7(torture)) {
 		CHECK_EQUAL(access_mask, 0x0de0fe00);
+	} else if (torture_setting_bool(torture, "samba4", false)) {
+		CHECK_EQUAL(access_mask, 0x0cf0fe00);
 	} else {
 		CHECK_EQUAL(access_mask, 0x0df0fe00);
 	}
