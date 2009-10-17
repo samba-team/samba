@@ -1008,7 +1008,12 @@ int vfs_stat_smb_fname(struct connection_struct *conn, const char *fname,
 		return -1;
 	}
 
-	ret = SMB_VFS_STAT(conn, smb_fname);
+	if (lp_posix_pathnames()) {
+		ret = SMB_VFS_LSTAT(conn, smb_fname);
+	} else {
+		ret = SMB_VFS_STAT(conn, smb_fname);
+	}
+
 	if (ret != -1) {
 		*psbuf = smb_fname->st;
 	}
@@ -1042,6 +1047,31 @@ int vfs_lstat_smb_fname(struct connection_struct *conn, const char *fname,
 
 	TALLOC_FREE(smb_fname);
 	return ret;
+}
+
+/**
+ * Ensure LSTAT is called for POSIX paths.
+ */
+
+NTSTATUS vfs_stat_fsp(files_struct *fsp)
+{
+	int ret;
+
+	if(fsp->is_directory || fsp->fh->fd == -1) {
+		if (fsp->posix_open) {
+			ret = SMB_VFS_LSTAT(fsp->conn, fsp->fsp_name);
+		} else {
+			ret = SMB_VFS_STAT(fsp->conn, fsp->fsp_name);
+		}
+		if (ret == -1) {
+			return map_nt_error_from_unix(errno);
+		}
+	} else {
+		if(SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st) != 0) {
+			return map_nt_error_from_unix(errno);
+		}
+	}
+	return NT_STATUS_OK;
 }
 
 /*
@@ -1387,10 +1417,12 @@ int smb_vfs_call_ftruncate(struct vfs_handle_struct *handle,
 }
 
 int smb_vfs_call_kernel_flock(struct vfs_handle_struct *handle,
-			      struct files_struct *fsp, uint32 share_mode)
+			      struct files_struct *fsp, uint32 share_mode,
+			      uint32_t access_mask)
 {
 	VFS_FIND(kernel_flock);
-	return handle->fns->kernel_flock(handle, fsp, share_mode);
+	return handle->fns->kernel_flock(handle, fsp, share_mode,
+					 access_mask);
 }
 
 int smb_vfs_call_linux_setlease(struct vfs_handle_struct *handle,

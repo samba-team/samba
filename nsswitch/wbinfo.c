@@ -724,15 +724,55 @@ static bool wbinfo_dsgetdcname(const char *domain_name, uint32_t flags)
 
 /* Check trust account password */
 
-static bool wbinfo_check_secret(void)
+static bool wbinfo_check_secret(const char *domain)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	struct wbcAuthErrorInfo *error = NULL;
+	const char *domain_name;
 
-	wbc_status = wbcCheckTrustCredentials(NULL, &error);
+	if (domain) {
+		domain_name = domain;
+	} else {
+		domain_name = get_winbind_domain();
+	}
 
-	d_printf("checking the trust secret via RPC calls %s\n",
-		 WBC_ERROR_IS_OK(wbc_status) ? "succeeded" : "failed");
+	wbc_status = wbcCheckTrustCredentials(domain_name, &error);
+
+	d_printf("checking the trust secret for domain %s via RPC calls %s\n",
+		domain_name,
+		WBC_ERROR_IS_OK(wbc_status) ? "succeeded" : "failed");
+
+	if (wbc_status == WBC_ERR_AUTH_ERROR) {
+		d_fprintf(stderr, "error code was %s (0x%x)\n",
+			  error->nt_string, error->nt_status);
+		wbcFreeMemory(error);
+	}
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return false;
+	}
+
+	return true;
+}
+
+/* Change trust account password */
+
+static bool wbinfo_change_secret(const char *domain)
+{
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct wbcAuthErrorInfo *error = NULL;
+	const char *domain_name;
+
+	if (domain) {
+		domain_name = domain;
+	} else {
+		domain_name = get_winbind_domain();
+	}
+
+	wbc_status = wbcChangeTrustCredentials(domain_name, &error);
+
+	d_printf("changing the trust secret for domain %s via RPC calls %s\n",
+		domain_name,
+		WBC_ERROR_IS_OK(wbc_status) ? "succeeded" : "failed");
 
 	if (wbc_status == WBC_ERR_AUTH_ERROR) {
 		d_fprintf(stderr, "error code was %s (0x%x)\n",
@@ -1725,6 +1765,7 @@ int main(int argc, char **argv, char **envp)
 		{ "remove-uid-mapping", 0, POPT_ARG_STRING, &string_arg, OPT_REMOVE_UID_MAPPING, "Remove uid to sid mapping in idmap", "UID,SID" },
 		{ "remove-gid-mapping", 0, POPT_ARG_STRING, &string_arg, OPT_REMOVE_GID_MAPPING, "Remove gid to sid mapping in idmap", "GID,SID" },
 		{ "check-secret", 't', POPT_ARG_NONE, 0, 't', "Check shared secret" },
+		{ "change-secret", 'c', POPT_ARG_NONE, 0, 'c', "Change shared secret" },
 		{ "trusted-domains", 'm', POPT_ARG_NONE, 0, 'm', "List trusted domains" },
 		{ "all-domains", 0, POPT_ARG_NONE, 0, OPT_LIST_ALL_DOMAINS, "List all domains (trusted and own domain)" },
 		{ "own-domain", 0, POPT_ARG_NONE, 0, OPT_LIST_OWN_DOMAIN, "List own domain" },
@@ -1950,8 +1991,14 @@ int main(int argc, char **argv, char **envp)
 			}
 			break;
 		case 't':
-			if (!wbinfo_check_secret()) {
+			if (!wbinfo_check_secret(opt_domain_name)) {
 				d_fprintf(stderr, "Could not check secret\n");
+				goto done;
+			}
+			break;
+		case 'c':
+			if (!wbinfo_change_secret(opt_domain_name)) {
+				d_fprintf(stderr, "Could not change secret\n");
 				goto done;
 			}
 			break;

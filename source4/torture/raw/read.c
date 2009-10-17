@@ -815,7 +815,7 @@ static bool test_read_for_execute(struct torture_context *tctx,
 	printf("Testing RAW_READ_READX with read_for_execute\n");
 
 	op.generic.level = RAW_OPEN_NTCREATEX;
-	op.ntcreatex.in.root_fid = 0;
+	op.ntcreatex.in.root_fid.fnum = 0;
 	op.ntcreatex.in.flags = 0;
 	op.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	op.ntcreatex.in.create_options = 0;
@@ -846,7 +846,7 @@ static bool test_read_for_execute(struct torture_context *tctx,
 
 	printf("open file with SEC_FILE_EXECUTE\n");
 	op.generic.level = RAW_OPEN_NTCREATEX;
-	op.ntcreatex.in.root_fid = 0;
+	op.ntcreatex.in.root_fid.fnum = 0;
 	op.ntcreatex.in.flags = 0;
 	op.ntcreatex.in.access_mask = SEC_FILE_EXECUTE;
 	op.ntcreatex.in.create_options = 0;
@@ -893,7 +893,7 @@ static bool test_read_for_execute(struct torture_context *tctx,
 
 	printf("open file with SEC_FILE_READ_DATA\n");
 	op.generic.level = RAW_OPEN_NTCREATEX;
-	op.ntcreatex.in.root_fid = 0;
+	op.ntcreatex.in.root_fid.fnum = 0;
 	op.ntcreatex.in.flags = 0;
 	op.ntcreatex.in.access_mask = SEC_FILE_READ_DATA;
 	op.ntcreatex.in.create_options = 0;

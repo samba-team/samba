@@ -42,7 +42,7 @@ void debug_unix_user_token(int dbg_class, int dbg_lev, uid_t uid, gid_t gid,
 
 /* The following definitions come from utils/net.c  */
 
-uint32 get_sec_channel_type(const char *param);
+enum netr_SchannelType get_sec_channel_type(const char *param);
 
 /* The following definitions come from utils/net_ads.c  */
 
@@ -422,10 +422,6 @@ int net_user(struct net_context *c, int argc, const char **argv);
 int net_usershare_usage(struct net_context *c, int argc, const char **argv);
 int net_usershare_help(struct net_context *c, int argc, const char **argv);
 int net_usershare(struct net_context *c, int argc, const char **argv);
-
-/* The following definitions come from utils/net_lua.c  */
-
-int net_lua(struct net_context *c, int argc, const char **argv);
 
 /* The following definitions come from utils/net_eventlog.c  */
 

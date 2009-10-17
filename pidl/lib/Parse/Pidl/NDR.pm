@@ -39,7 +39,7 @@ $VERSION = '0.01';
 
 use strict;
 use Parse::Pidl qw(warning fatal);
-use Parse::Pidl::Typelist qw(hasType getType expandAlias);
+use Parse::Pidl::Typelist qw(hasType getType expandAlias mapScalarType);
 use Parse::Pidl::Util qw(has_property property_matches);
 
 # Alignment of the built-in scalar types
@@ -50,8 +50,12 @@ my $scalar_alignment = {
 	'uint8' => 1,
 	'int16' => 2,
 	'uint16' => 2,
+	'int1632' => 3,
+	'uint1632' => 3,
 	'int32' => 4,
 	'uint32' => 4,
+	'int3264' => 5,
+	'uint3264' => 5,
 	'hyper' => 8,
 	'double' => 8,
 	'pointer' => 8,
@@ -404,6 +408,8 @@ sub align_type($)
 
 	if ($dt->{TYPE} eq "TYPEDEF") {
 		return align_type($dt->{DATA});
+	} elsif ($dt->{TYPE} eq "CONFORMANCE") {
+		return $dt->{DATA}->{ALIGN};
 	} elsif ($dt->{TYPE} eq "ENUM") {
 		return align_type(Parse::Pidl::Typelist::enum_type_fn($dt));
 	} elsif ($dt->{TYPE} eq "BITMAP") {
@@ -509,7 +515,8 @@ sub ParseUnion($$)
 		ELEMENTS => undef,
 		PROPERTIES => $e->{PROPERTIES},
 		HAS_DEFAULT => $hasdefault,
-		ORIGINAL => $e
+		ORIGINAL => $e,
+		ALIGN => undef
 	} unless defined($e->{ELEMENTS});
 
 	CheckPointerTypes($e, $pointer_default);
@@ -533,6 +540,11 @@ sub ParseUnion($$)
 		push @elements, $t;
 	}
 
+	my $align = undef;
+	if ($e->{NAME}) {
+		$align = align_type($e->{NAME});
+	}
+
 	return {
 		TYPE => "UNION",
 		NAME => $e->{NAME},
@@ -540,7 +552,8 @@ sub ParseUnion($$)
 		ELEMENTS => \@elements,
 		PROPERTIES => $e->{PROPERTIES},
 		HAS_DEFAULT => $hasdefault,
-		ORIGINAL => $e
+		ORIGINAL => $e,
+		ALIGN => $align
 	};
 }
 
@@ -997,13 +1010,13 @@ sub ValidElement($)
 			my $discriminator_type = has_property($type->{DATA}, "switch_type");
 			$discriminator_type = "uint32" unless defined ($discriminator_type);
 
-			my $t1 = mapToScalar($discriminator_type);
+			my $t1 = mapScalarType(mapToScalar($discriminator_type));
 
 			if (not defined($t1)) {
 				fatal($e, el_name($e) . ": unable to map discriminator type '$discriminator_type' to scalar");
 			}
 
-			my $t2 = mapToScalar($e2->{TYPE});
+			my $t2 = mapScalarType(mapToScalar($e2->{TYPE}));
 			if (not defined($t2)) {
 				fatal($e, el_name($e) . ": unable to map variable used for switch_is() to scalar");
 			}

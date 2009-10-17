@@ -121,19 +121,20 @@
 #attributeSyntax: 2.5.5.4
 #oMSyntax: 20
 
-dn: cn=privilege,${SCHEMADN}
-objectClass: top
-objectClass: attributeSchema
-cn: privilege
-lDAPDisplayName: privilege
-isSingleValued: FALSE
-systemFlags: 17
-systemOnly: TRUE
-schemaIDGUID: 7429BC94-CC6A-4481-8B2C-A97E316EB182
-adminDisplayName: Privilege
-attributeID: 1.3.6.1.4.1.7165.4.1.7
-attributeSyntax: 2.5.5.4
-oMSyntax: 20
+# not used anymore
+#dn: cn=privilege,${SCHEMADN}
+#objectClass: top
+#objectClass: attributeSchema
+#cn: privilege
+#lDAPDisplayName: privilege
+#isSingleValued: FALSE
+#systemFlags: 17
+#systemOnly: TRUE
+#schemaIDGUID: 7429BC94-CC6A-4481-8B2C-A97E316EB182
+#adminDisplayName: Privilege
+#attributeID: 1.3.6.1.4.1.7165.4.1.7
+#attributeSyntax: 2.5.5.4
+#oMSyntax: 20
 
 #
 # Not used anymore
@@ -197,26 +198,29 @@ oMSyntax: 20
 # Based on domainDNS, but without the DNS bits.
 #
 
-dn: CN=Samba4-Local-Domain,${SCHEMADN}
-objectClass: top
-objectClass: classSchema
-cn: Samba4-Local-Domain
-subClassOf: top
-governsID: 1.3.6.1.4.1.7165.4.2.2
-rDNAttID: cn
-adminDisplayName: Samba4-Local-Domain
-adminDescription: Samba4-Local-Domain
-systemMayContain: msDS-Behavior-Version
-systemMayContain: managedBy
-objectClassCategory: 1
-lDAPDisplayName: samba4LocalDomain
-schemaIDGUID: 07be1647-8310-4fba-91ae-34e55d5a8293
-systemOnly: FALSE
-systemAuxiliaryClass: samDomain
-defaultSecurityDescriptor: D:(A;;RPLCLORC;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
-systemFlags: 16
-defaultHidingValue: TRUE
-defaultObjectCategory: CN=Samba4-Local-Domain,${SCHEMADN}
+#
+# Not used anymore
+#
+#dn: CN=Samba4-Local-Domain,${SCHEMADN}
+#objectClass: top
+#objectClass: classSchema
+#cn: Samba4-Local-Domain
+#subClassOf: top
+#governsID: 1.3.6.1.4.1.7165.4.2.2
+#rDNAttID: cn
+#adminDisplayName: Samba4-Local-Domain
+#adminDescription: Samba4-Local-Domain
+#systemMayContain: msDS-Behavior-Version
+#systemMayContain: managedBy
+#objectClassCategory: 1
+#lDAPDisplayName: samba4LocalDomain
+#schemaIDGUID: 07be1647-8310-4fba-91ae-34e55d5a8293
+#systemOnly: FALSE
+#systemAuxiliaryClass: samDomain
+#defaultSecurityDescriptor: D:(A;;RPLCLORC;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
+#systemFlags: 16
+#defaultHidingValue: TRUE
+#defaultObjectCategory: CN=Samba4-Local-Domain,${SCHEMADN}
 
 
 dn: CN=Samba4Top,${SCHEMADN}
@@ -313,32 +317,9 @@ systemMayContain: adminDescription
 systemMustContain: objectCategory
 systemMustContain: nTSecurityDescriptor
 systemMustContain: instanceType
-systemAuxiliaryClass: samba4TopExtra
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
 systemFlags: 16
 defaultHidingValue: TRUE
 objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Samba4Top,${SCHEMADN}
-
-
-dn: CN=Samba4TopExtra,${SCHEMADN}
-objectClass: top
-objectClass: classSchema
-cn: Samba4TopExtra
-subClassOf: top
-governsID: 1.3.6.1.4.1.7165.4.2.3
-rDNAttID: cn
-adminDisplayName: Samba4TopExtra
-adminDescription: Attributes used in top in Samba4 that OpenLDAP does not
-objectClassCategory: 2
-lDAPDisplayName: samba4TopExtra
-schemaIDGUID: 073598d0-635b-4685-a929-da731b98d84e
-systemOnly: TRUE
-mayContain: privilege
-systemPossSuperiors: lostAndFound
-defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
-systemFlags: 16
-defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
-defaultObjectCategory: CN=Samba4TopExtra,${SCHEMADN}
 

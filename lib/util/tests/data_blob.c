@@ -78,7 +78,7 @@ static bool test_cmp(struct torture_context *tctx)
 static bool test_hex_string(struct torture_context *tctx)
 {
 	DATA_BLOB a = data_blob_string_const("\xC\xA\xF\xE");
-	torture_assert_str_equal(tctx, data_blob_hex_string(tctx, &a), "0C0A0F0E", "hex string");
+	torture_assert_str_equal(tctx, data_blob_hex_string(tctx, &a), "0c0a0f0e", "hex string");
 	return true;
 }
 

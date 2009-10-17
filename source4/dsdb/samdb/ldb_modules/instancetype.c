@@ -77,8 +77,6 @@ static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 	struct it_context *ac;
 	uint32_t instance_type;
 	int ret;
-	const struct ldb_control *partition_ctrl;
-	const struct dsdb_control_current_partition *partition;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -90,31 +88,19 @@ static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	if (ldb_msg_find_element(req->op.add.message, "instanceType")) {
+		unsigned int instanceType = ldb_msg_find_attr_as_uint(req->op.add.message, "instanceType", 0);
+
+		if (instanceType & INSTANCE_TYPE_IS_NC_HEAD) {
+			/* Do something in future */
+		}
+		
 		/* TODO: we need to validate and possibly create a new
 		   partition */
 		return ldb_next_request(module, req);		
 	}
 
-	partition_ctrl = ldb_request_get_control(req, DSDB_CONTROL_CURRENT_PARTITION_OID);
-	if (!partition_ctrl) {
-		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
-			      "instancetype_add: no current partition control found");
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
-
-	partition = talloc_get_type(partition_ctrl->data,
-				    struct dsdb_control_current_partition);
-	SMB_ASSERT(partition && partition->version == DSDB_CONTROL_CURRENT_PARTITION_VERSION);
-
-	ac = talloc(req, struct it_context);
-	if (ac == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	ac->module = module;
-	ac->req = req;
-
 	/* we have to copy the message as the caller might have it as a const */
-	msg = ldb_msg_copy_shallow(ac, req->op.add.message);
+	msg = ldb_msg_copy_shallow(req, req->op.add.message);
 	if (msg == NULL) {
 		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -124,12 +110,6 @@ static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 	 * TODO: calculate correct instance type
 	 */
 	instance_type = INSTANCE_TYPE_WRITE;
-	if (ldb_dn_compare(partition->dn, msg->dn) == 0) {
-		instance_type |= INSTANCE_TYPE_IS_NC_HEAD;
-		if (ldb_dn_compare(msg->dn, samdb_base_dn(ldb)) != 0) {
-			instance_type |= INSTANCE_TYPE_NC_ABOVE;
-		}
-	}
 
 	ret = ldb_msg_add_fmt(msg, "instanceType", "%u", instance_type);
 	if (ret != LDB_SUCCESS) {
@@ -137,10 +117,10 @@ static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ldb_build_add_req(&down_req, ldb, ac,
+	ret = ldb_build_add_req(&down_req, ldb, req,
 				msg,
 				req->controls,
-				ac, it_callback,
+				req->context, req->callback,
 				req);
 	if (ret != LDB_SUCCESS) {
 		return ret;

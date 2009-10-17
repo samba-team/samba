@@ -797,8 +797,8 @@ NTSTATUS append_auth_data(struct winbindd_cli_state *state,
 void winbindd_pam_auth(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
-	fstring name_domain, name_user;
-	char *mapped_user = NULL;
+	fstring name_domain, name_user, mapped_user;
+	char *mapped = NULL;
 	NTSTATUS result;
 	NTSTATUS name_map_status = NT_STATUS_UNSUCCESSFUL;
 
@@ -822,15 +822,16 @@ void winbindd_pam_auth(struct winbindd_cli_state *state)
 
 	name_map_status = normalize_name_unmap(state->mem_ctx,
 					       state->request->data.auth.user,
-					       &mapped_user);
+					       &mapped);
 
 	/* If the name normalization didnt' actually do anything,
 	   just use the original name */
 
-	if (!NT_STATUS_IS_OK(name_map_status) &&
-	    !NT_STATUS_EQUAL(name_map_status, NT_STATUS_FILE_RENAMED))
-	{
-		mapped_user = state->request->data.auth.user;
+	if (NT_STATUS_IS_OK(name_map_status)
+	    ||NT_STATUS_EQUAL(name_map_status, NT_STATUS_FILE_RENAMED)) {
+		fstrcpy(mapped_user, mapped);
+	} else {
+		fstrcpy(mapped_user, state->request->data.auth.user);
 	}
 
 	if (!canonicalize_username(mapped_user, name_domain, name_user)) {
@@ -2060,7 +2061,7 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 	struct rpc_pipe_client *cli;
 	bool got_info = false;
 	struct samr_DomInfo1 *info = NULL;
-	struct samr_ChangeReject *reject = NULL;
+	struct userPwdChangeFailureInformation *reject = NULL;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	fstring domain, user;
 
@@ -2102,7 +2103,7 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 		fill_in_password_policy(state->response, info);
 
 		state->response->data.auth.reject_reason =
-			reject->reason;
+			reject->extendedFailureReason;
 
 		got_info = true;
 	}

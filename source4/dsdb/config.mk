@@ -25,7 +25,6 @@ $(eval $(call proto_header_template,$(dsdbsrcdir)/samdb/samdb_proto.h,$(SAMDB_OB
 PRIVATE_DEPENDENCIES = LIBLDB
 
 SAMDB_COMMON_OBJ_FILES = $(addprefix $(dsdbsrcdir)/common/, \
-		sidmap.o \
 		util.o) \
 		../libds/common/flag_mapping.o
 $(eval $(call proto_header_template,$(dsdbsrcdir)/common/proto.h,$(SAMDB_COMMON_OBJ_FILES:.o=.c)))
@@ -40,7 +39,8 @@ SAMDB_SCHEMA_OBJ_FILES = $(addprefix $(dsdbsrcdir)/schema/, \
 		schema_syntax.o \
 		schema_description.o \
 		schema_convert_to_ol.o \
-		schema_inferiors.o)
+		schema_inferiors.o \
+		schema_prefixmap.o)
 
 $(eval $(call proto_header_template,$(dsdbsrcdir)/schema/proto.h,$(SAMDB_SCHEMA_OBJ_FILES:.o=.c)))
 # PUBLIC_HEADERS += dsdb/schema/schema.h

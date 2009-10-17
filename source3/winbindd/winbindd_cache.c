@@ -4359,6 +4359,8 @@ static bool wcache_opnum_cacheable(uint32_t opnum)
 	case NDR_WBINT_QUERYSEQUENCENUMBER:
 	case NDR_WBINT_ALLOCATEUID:
 	case NDR_WBINT_ALLOCATEGID:
+	case NDR_WBINT_CHECKMACHINEACCOUNT:
+	case NDR_WBINT_CHANGEMACHINEACCOUNT:
 		return false;
 	}
 	return true;

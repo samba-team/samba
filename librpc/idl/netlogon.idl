@@ -1142,9 +1142,9 @@ interface netlogon
 		DS_SERVER_NDNC			 = NBT_SERVER_NDNC,
 		DS_SERVER_SELECT_SECRET_DOMAIN_6 = NBT_SERVER_SELECT_SECRET_DOMAIN_6,
 		DS_SERVER_FULL_SECRET_DOMAIN_6	 = NBT_SERVER_FULL_SECRET_DOMAIN_6,
-		DS_DNS_CONTROLLER		 = 0x20000000,
-		DS_DNS_DOMAIN			 = 0x40000000,
-		DS_DNS_FOREST			 = 0x80000000
+		DS_DNS_CONTROLLER		 = NBT_SERVER_HAS_DNS_NAME,
+		DS_DNS_DOMAIN			 = NBT_SERVER_IS_DEFAULT_NC,
+		DS_DNS_FOREST_ROOT		 = NBT_SERVER_FOREST_ROOT
 	} netr_DsR_DcFlags;
 
 	typedef [public] struct {
@@ -1412,6 +1412,18 @@ interface netlogon
 
 	/*****************/
 	/* Function 0x1e */
+
+	/* [MS-NRPC] 2.2.1.3.8 NL_PASSWORD_VERSION */
+
+	/* someone's birthday ? */
+	const int NETLOGON_PASSWORD_VERSION_NUMBER_PRESENT = 0x02231968;
+
+	typedef struct {
+		uint32 ReservedField;
+		uint32 PasswordVersionNumber;
+		uint32 PasswordVersionPresent;
+	} NL_PASSWORD_VERSION;
+
 	typedef [flag(NDR_PAHEX)] struct {
 		uint8 data[512];
 		uint32 length;

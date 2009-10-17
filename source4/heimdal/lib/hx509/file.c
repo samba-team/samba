@@ -121,14 +121,14 @@ hx509_pem_write(hx509_context context, const char *type,
 
 int
 hx509_pem_add_header(hx509_pem_header **headers,
-		     const char *header, const char *value)
+		     const char *hdr, const char *value)
 {
     hx509_pem_header *h;
 
     h = calloc(1, sizeof(*h));
     if (h == NULL)
 	return ENOMEM;
-    h->header = strdup(header);
+    h->header = strdup(hdr);
     if (h->header == NULL) {
 	free(h);
 	return ENOMEM;
@@ -164,10 +164,10 @@ hx509_pem_free_header(hx509_pem_header *headers)
  */
 
 const char *
-hx509_pem_find_header(const hx509_pem_header *h, const char *header)
+hx509_pem_find_header(const hx509_pem_header *h, const char *hdr)
 {
     while(h) {
-	if (strcmp(header, h->header) == 0)
+	if (strcmp(hdr, h->header) == 0)
 	    return h->value;
 	h = h->next;
     }

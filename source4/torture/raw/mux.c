@@ -53,7 +53,7 @@ static bool test_mux_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("send first open\n");
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_FILE_READ_DATA;
 	io.ntcreatex.in.create_options = 0;

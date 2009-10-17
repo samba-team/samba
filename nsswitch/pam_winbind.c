@@ -980,7 +980,8 @@ static bool winbind_name_to_sid_string(struct pwb_context *ctx,
 				       char *sid_list_buffer,
 				       int sid_list_buffer_size)
 {
-	const char* sid_string;
+	const char* sid_string = NULL;
+	char *sid_str = NULL;
 
 	/* lookup name? */
 	if (IS_SID_STRING(name)) {
@@ -989,7 +990,6 @@ static bool winbind_name_to_sid_string(struct pwb_context *ctx,
 		wbcErr wbc_status;
 		struct wbcDomainSid sid;
 		enum wbcSidType type;
-		char *sid_str;
 
 		_pam_log_debug(ctx, LOG_DEBUG,
 			       "no sid given, looking up: %s\n", name);
@@ -1006,15 +1006,16 @@ static bool winbind_name_to_sid_string(struct pwb_context *ctx,
 			return false;
 		}
 
-		wbcFreeMemory(sid_str);
 		sid_string = sid_str;
 	}
 
 	if (!safe_append_string(sid_list_buffer, sid_string,
 				sid_list_buffer_size)) {
+		wbcFreeMemory(sid_str);
 		return false;
 	}
 
+	wbcFreeMemory(sid_str);
 	return true;
 }
 
@@ -1862,22 +1863,22 @@ static int winbind_chauthtok_request(struct pwb_context *ctx,
 		switch (reject_reason) {
 			case -1:
 				break;
-			case WBC_PWD_CHANGE_REJECT_OTHER:
+			case WBC_PWD_CHANGE_NO_ERROR:
 				if ((min_pwd_age > 0) &&
 				    (pwd_last_set + min_pwd_age > time(NULL))) {
 					PAM_WB_REMARK_DIRECT(ctx,
 					     "NT_STATUS_PWD_TOO_RECENT");
 				}
 				break;
-			case WBC_PWD_CHANGE_REJECT_TOO_SHORT:
+			case WBC_PWD_CHANGE_PASSWORD_TOO_SHORT:
 				PAM_WB_REMARK_DIRECT(ctx,
 					"NT_STATUS_PWD_TOO_SHORT");
 				break;
-			case WBC_PWD_CHANGE_REJECT_IN_HISTORY:
+			case WBC_PWD_CHANGE_PWD_IN_HISTORY:
 				PAM_WB_REMARK_DIRECT(ctx,
 					"NT_STATUS_PWD_HISTORY_CONFLICT");
 				break;
-			case WBC_PWD_CHANGE_REJECT_COMPLEXITY:
+			case WBC_PWD_CHANGE_NOT_COMPLEX:
 				_make_remark(ctx, PAM_ERROR_MSG,
 					     _("Password does not meet "
 					       "complexity requirements"));

@@ -284,8 +284,7 @@ static int samldb_get_parent_domain(struct samldb_ctx *ac)
 	ret = ldb_build_search_req(&req, ldb, ac,
 				   dn, LDB_SCOPE_BASE,
 				   "(|(objectClass=domain)"
-				     "(objectClass=builtinDomain)"
-				     "(objectClass=samba4LocalDomain))",
+				   "(objectClass=builtinDomain))",
 				   attrs,
 				   NULL,
 				   ac, samldb_get_parent_domain_callback,
@@ -559,10 +558,10 @@ static int samldb_get_sid_domain(struct samldb_ctx *ac)
 	/* get the domain component part of the provided SID */
 	ac->domain_sid->num_auths--;
 
-	filter = talloc_asprintf(ac, "(&(objectSid=%s)"
-				       "(|(objectClass=domain)"
-				         "(objectClass=builtinDomain)"
-				         "(objectClass=samba4LocalDomain)))",
+	filter = talloc_asprintf(ac, 
+				 "(&(objectSid=%s)"
+				 "(|(objectClass=domain)"
+				 "(objectClass=builtinDomain)))",
 				 ldap_encode_ndr_dom_sid(ac, ac->domain_sid));
 	if (filter == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -699,8 +698,14 @@ static int samldb_check_primaryGroupID_1(struct samldb_ctx *ac)
 
 static int samldb_check_primaryGroupID_2(struct samldb_ctx *ac)
 {
-	if (ac->res_dn == NULL)
+	if (ac->res_dn == NULL) {
+		struct ldb_context *ldb;
+		ldb = ldb_module_get_ctx(ac->module);
+		ldb_asprintf_errstring(ldb,
+				       "Failed to find group sid %s", 
+				       dom_sid_string(ac->sid, ac->sid));
 		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
 
 	return samldb_next_step(ac);
 }
@@ -1866,7 +1871,7 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 	int ret;
 
 	ldb = ldb_module_get_ctx(module);
-	ldb_debug(ldb, LDB_DEBUG_TRACE, "samldb_add_record\n");
+	ldb_debug(ldb, LDB_DEBUG_TRACE, "samldb_add\n");
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.add.message->dn)) {

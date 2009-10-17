@@ -656,6 +656,7 @@ static PyObject *py_ldb_modify(PyLdbObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+
 static PyObject *py_ldb_add(PyLdbObject *self, PyObject *args)
 {
 	PyObject *py_msg;
@@ -956,8 +957,10 @@ static PyObject *py_ldb_msg_diff(PyLdbObject *self, PyObject *args)
 	}
 
 	diff = ldb_msg_diff(PyLdb_AsLdbContext(self), PyLdbMessage_AsMessage(py_msg_old), PyLdbMessage_AsMessage(py_msg_new));
-	if (diff == NULL) 
+	if (!diff) {
+		PyErr_SetString(PyExc_RuntimeError, "Failed to generate the Ldb Message diff");
 		return NULL;
+	}
 
 	py_ret = PyLdbMessage_FromMessage(diff);
 

@@ -313,6 +313,14 @@ class MapTestCase(MapBaseTestCase):
 
         # Add a set of split records
         self.ldb.add_ldif("""
+dn: """+ self.samba4.dn("cn=Domain Users") + """
+objectClass: group
+cn: Domain Users
+objectSid: S-1-5-21-4231626423-2410014848-2360679739-513
+""")
+
+        # Add a set of split records
+        self.ldb.add_ldif("""
 dn: """+ self.samba4.dn("cn=X") + """
 objectClass: user
 cn: X
@@ -459,7 +467,7 @@ objectSid: S-1-5-21-4231626423-2410014848-2360679739-552
         #   errors, letting the search fail with no results.
         #res = self.ldb.search("(objectSid=S-1-5-21-4231626423-2410014848-2360679739-552)", scope=SCOPE_DEFAULT, attrs)
         res = self.ldb.search(expression="(objectSid=*)", base=None, scope=SCOPE_DEFAULT, attrs=["dnsHostName", "lastLogon", "objectSid"])
-        self.assertEquals(len(res), 3)
+        self.assertEquals(len(res), 4)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=X"))
         self.assertEquals(str(res[0]["dnsHostName"]), "x")
         self.assertEquals(str(res[0]["lastLogon"]), "x")
@@ -621,7 +629,7 @@ objectSid: S-1-5-21-4231626423-2410014848-2360679739-552
         # Search by negated local attribute
         res = self.ldb.search(expression="(!(revision=x))", 
                               attrs=["dnsHostName", "lastLogon"])
-        self.assertEquals(len(res), 5)
+        self.assertEquals(len(res), 6)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=B"))
         self.assertTrue(not "dnsHostName" in res[0])
         self.assertEquals(str(res[0]["lastLogon"]), "y")
@@ -638,7 +646,7 @@ objectSid: S-1-5-21-4231626423-2410014848-2360679739-552
         # Search by negated remote attribute
         res = self.ldb.search(expression="(!(description=x))", 
                               attrs=["dnsHostName", "lastLogon"])
-        self.assertEquals(len(res), 3)
+        self.assertEquals(len(res), 4)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=Z"))
         self.assertEquals(str(res[0]["dnsHostName"]), "z")
         self.assertEquals(str(res[0]["lastLogon"]), "z")
@@ -649,7 +657,7 @@ objectSid: S-1-5-21-4231626423-2410014848-2360679739-552
         # Search by negated conjunction of local attributes
         res = self.ldb.search(expression="(!(&(codePage=x)(revision=x)))", 
                               attrs=["dnsHostName", "lastLogon"])
-        self.assertEquals(len(res), 5)
+        self.assertEquals(len(res), 6)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=B"))
         self.assertTrue(not "dnsHostName" in res[0])
         self.assertEquals(str(res[0]["lastLogon"]), "y")
@@ -666,7 +674,7 @@ objectSid: S-1-5-21-4231626423-2410014848-2360679739-552
         # Search by negated conjunction of remote attributes
         res = self.ldb.search(expression="(!(&(lastLogon=x)(description=x)))", 
                               attrs=["dnsHostName", "lastLogon"])
-        self.assertEquals(len(res), 5)
+        self.assertEquals(len(res), 6)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=Y"))
         self.assertEquals(str(res[0]["dnsHostName"]), "y")
         self.assertEquals(str(res[0]["lastLogon"]), "y")
@@ -683,7 +691,7 @@ objectSid: S-1-5-21-4231626423-2410014848-2360679739-552
         # Search by negated conjunction of local and remote attribute
         res = self.ldb.search(expression="(!(&(codePage=x)(description=x)))", 
                               attrs=["dnsHostName", "lastLogon"])
-        self.assertEquals(len(res), 5)
+        self.assertEquals(len(res), 6)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=B"))
         self.assertTrue(not "dnsHostName" in res[0])
         self.assertEquals(str(res[0]["lastLogon"]), "y")
@@ -716,7 +724,7 @@ objectSid: S-1-5-21-4231626423-2410014848-2360679739-552
         # Search by negated disjunction of remote attributes
         res = self.ldb.search(expression="(!(|(badPwdCount=x)(lastLogon=x)))", 
                               attrs=["dnsHostName", "lastLogon"])
-        self.assertEquals(len(res), 4)
+        self.assertEquals(len(res), 5)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=Y"))
         self.assertEquals(str(res[0]["dnsHostName"]), "y")
         self.assertEquals(str(res[0]["lastLogon"]), "y")
@@ -730,7 +738,7 @@ objectSid: S-1-5-21-4231626423-2410014848-2360679739-552
         # Search by negated disjunction of local and remote attribute
         res = self.ldb.search(expression="(!(|(revision=x)(lastLogon=y)))", 
                               attrs=["dnsHostName", "lastLogon"])
-        self.assertEquals(len(res), 4)
+        self.assertEquals(len(res), 5)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=A"))
         self.assertTrue(not "dnsHostName" in res[0])
         self.assertEquals(str(res[0]["lastLogon"]), "x")
@@ -743,7 +751,7 @@ objectSid: S-1-5-21-4231626423-2410014848-2360679739-552
 
         # Search by complex parse tree
         res = self.ldb.search(expression="(|(&(revision=x)(dnsHostName=x))(!(&(description=x)(nextRid=y)))(badPwdCount=y))", attrs=["dnsHostName", "lastLogon"])
-        self.assertEquals(len(res), 6)
+        self.assertEquals(len(res), 7)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=B"))
         self.assertTrue(not "dnsHostName" in res[0])
         self.assertEquals(str(res[0]["lastLogon"]), "y")

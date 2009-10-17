@@ -93,7 +93,6 @@
 <indexterm><primary>idmap uid</primary></indexterm>
 <indexterm><primary>idmap gid</primary></indexterm>
 <indexterm><primary>idmap backend</primary></indexterm>
-<indexterm><primary>LDAP</primary></indexterm>
 		Winbind maintains a database called winbind_idmap.tdb in which it stores
 		mappings between UNIX UIDs, GIDs, and NT SIDs. This mapping is used only
 		for users and groups that do not have a local UID/GID. It stores the UID/GID
@@ -210,7 +209,7 @@
 	Users on the UNIX machine can then use NT user and group
 	names as they would <quote>native</quote> UNIX names. They can chown files
 	so they are owned by NT domain users or even login to the
-	UNIX machine and run a UNIX X-Window session as a domain user.</para>
+	UNIX machine and run a UNIX X Window session as a domain user.</para>
 
 	<para>
 <indexterm><primary>domain controller</primary></indexterm>
@@ -571,7 +570,7 @@ is for you.
 <para>
 <indexterm><primary>PAM</primary></indexterm>
 <indexterm><primary>back up</primary></indexterm>
-<indexterm><primary>boot disk`</primary></indexterm>
+<indexterm><primary>boot disk</primary></indexterm>
 If you have a Samba configuration file that you are currently using, <emphasis>BACK IT UP!</emphasis>
 If your system already uses PAM, <emphasis>back up the <filename>/etc/pam.d</filename> directory
 contents!</emphasis> If you haven't already made a boot disk, <emphasis>MAKE ONE NOW!</emphasis>
@@ -602,8 +601,8 @@ instructions on downloading the source code.
 <indexterm><primary>development libraries</primary></indexterm>
 To allow domain users the ability to access Samba shares and files, as well as potentially other services
 provided by your Samba machine, PAM must be set up properly on your
-machine. In order to compile the Winbind modules, you should have at least the PAM development libraries installed
-on your system. Please refer to the PAM Web site <ulink url="http://www.kernel.org/pub/linux/libs/pam/"/>.
+machine. In order to compile the Winbind modules, the PAM development libraries should be installed
+on your system. Please refer to the <ulink url="http://www.kernel.org/pub/linux/libs/pam/">PAM Web Site</ulink>.
 </para>
 </sect2>
 
@@ -976,9 +975,6 @@ The same thing can be done for groups with the command:
 <indexterm><primary>/etc/init.d/smb</primary></indexterm>
 <indexterm><primary>/etc/init.d/samba</primary></indexterm>
 <indexterm><primary>/usr/local/samba/bin</primary></indexterm>
-<indexterm><primary></primary></indexterm>
-<indexterm><primary></primary></indexterm>
-<indexterm><primary></primary></indexterm>
 The &winbindd; daemon needs to start up after the &smbd; and &nmbd; daemons are running.  To accomplish this
 task, you need to modify the startup scripts of your system.  They are located at
 <filename>/etc/init.d/smb</filename> in Red Hat Linux and in <filename>/etc/init.d/samba</filename> in Debian
@@ -1119,7 +1115,7 @@ usually only starts smbd and nmbd but should now start winbindd, too. If you hav
 </programlisting></para>
 
 <para>
-Again, if you would like to run Samba in dual daemon mode, replace:
+Again, if you would like to run winbindd in dual daemon mode, replace:
 <programlisting>
 /usr/local/samba/sbin/winbindd
 </programlisting>
@@ -1234,7 +1230,7 @@ pre-create the directories of users to make sure users can log in on UNIX with t
 <indexterm><primary>Winbind</primary></indexterm>
 <indexterm><primary>ftp access</primary></indexterm>
 The <filename>/etc/pam.d/ftp</filename> file can be changed to allow Winbind ftp access in a manner similar to
-the samba file. My <filename>/etc/pam.d/ftp</filename> file was changed to look like this:
+the <filename>/etc/pam.d/samba</filename>Samba file. My <filename>/etc/pam.d/ftp</filename> file was changed to look like this:
 <programlisting>
 auth       required     /lib/security/pam_listfile.so item=user sense=deny \
 	 file=/etc/ftpusers onerr=succeed

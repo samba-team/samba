@@ -29,7 +29,7 @@
 #include "../lib/crypto/crypto.h"
 #include "lib/cmdline/popt_common.h"
 #include "torture/rpc/rpc.h"
-#include "auth/gensec/schannel_proto.h"
+#include "../libcli/auth/schannel.h"
 #include "auth/gensec/gensec.h"
 #include "libcli/auth/libcli_auth.h"
 #include "param/param.h"

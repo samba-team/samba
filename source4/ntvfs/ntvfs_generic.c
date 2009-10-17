@@ -515,7 +515,7 @@ NTSTATUS ntvfs_map_open(struct ntvfs_module_context *ntvfs,
 			io2->generic.in.flags = 0;
 			break;
 		}
-		io2->generic.in.root_fid	= 0;
+		io2->generic.in.root_fid.fnum	= 0;
 		io2->generic.in.access_mask	= io->smb2.in.desired_access;
 		io2->generic.in.alloc_size	= io->smb2.in.alloc_size;
 		io2->generic.in.file_attr	= io->smb2.in.file_attributes;

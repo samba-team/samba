@@ -250,8 +250,6 @@ WERROR init_registry_key(const char *add_path)
 static void regdb_ctr_add_value(struct regval_ctr *ctr,
 				struct builtin_regkey_value *value)
 {
-	UNISTR2 data;
-
 	switch(value->type) {
 	case REG_DWORD:
 		regval_ctr_addvalue(ctr, value->valuename, REG_DWORD,
@@ -260,10 +258,8 @@ static void regdb_ctr_add_value(struct regval_ctr *ctr,
 		break;
 
 	case REG_SZ:
-		init_unistr2(&data, value->data.string, UNI_STR_TERMINATE);
-		regval_ctr_addvalue(ctr, value->valuename, REG_SZ,
-				    (char*)data.buffer,
-				    data.uni_str_len*sizeof(uint16));
+		regval_ctr_addvalue_sz(ctr, value->valuename,
+				       value->data.string);
 		break;
 
 	default:

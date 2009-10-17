@@ -401,11 +401,11 @@ hdb_end_seq_get(krb5_context context,
 {
     struct hdb_cursor *c = cursor->data;
 
-    (c->db->hdb_close)(context, c->db);
-    (c->db->hdb_destroy)(context, c->db);
-
     if (!c->next)
 	hdb_free_entry(context, &c->hdb_entry);
+
+    (c->db->hdb_close)(context, c->db);
+    (c->db->hdb_destroy)(context, c->db);
 
     free(c);
     return 0;

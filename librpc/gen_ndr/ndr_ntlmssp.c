@@ -161,6 +161,7 @@ static enum ndr_err_code ndr_push_VERSION(struct ndr_push *ndr, int ndr_flags, c
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->ProductBuild));
 		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->Reserved, 3));
 		NDR_CHECK(ndr_push_ntlmssp_NTLMRevisionCurrent(ndr, NDR_SCALARS, r->NTLMRevisionCurrent));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 2));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -176,6 +177,7 @@ static enum ndr_err_code ndr_pull_VERSION(struct ndr_pull *ndr, int ndr_flags, s
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->ProductBuild));
 		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->Reserved, 3));
 		NDR_CHECK(ndr_pull_ntlmssp_NTLMRevisionCurrent(ndr, NDR_SCALARS, &r->NTLMRevisionCurrent));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 2));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -198,6 +200,7 @@ static enum ndr_err_code ndr_push_ntlmssp_Version(struct ndr_push *ndr, int ndr_
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 2));
 		switch (level) {
 			case NTLMSSP_NEGOTIATE_VERSION: {
 				NDR_CHECK(ndr_push_VERSION(ndr, NDR_SCALARS, &r->version));
@@ -227,6 +230,7 @@ static enum ndr_err_code ndr_pull_ntlmssp_Version(struct ndr_pull *ndr, int ndr_
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 2));
 		switch (level) {
 			case NTLMSSP_NEGOTIATE_VERSION: {
 				NDR_CHECK(ndr_pull_VERSION(ndr, NDR_SCALARS, &r->version));
@@ -275,6 +279,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_NEGOTIATE_MESSAGE(struct ndr_push *ndr, int 
 		}
 		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->Version, r->NegotiateFlags & NTLMSSP_NEGOTIATE_VERSION));
 		NDR_CHECK(ndr_push_ntlmssp_Version(ndr, NDR_SCALARS, &r->Version));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		{
@@ -351,6 +356,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_NEGOTIATE_MESSAGE(struct ndr_pull *ndr, int 
 		}
 		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->Version, r->NegotiateFlags & NTLMSSP_NEGOTIATE_VERSION));
 		NDR_CHECK(ndr_pull_ntlmssp_Version(ndr, NDR_SCALARS, &r->Version));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		{
@@ -428,14 +434,14 @@ _PUBLIC_ void ndr_print_NEGOTIATE_MESSAGE(struct ndr_print *ndr, const char *nam
 
 static enum ndr_err_code ndr_push_ntlmssp_AvId(struct ndr_push *ndr, int ndr_flags, enum ntlmssp_AvId r)
 {
-	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint1632(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_ntlmssp_AvId(struct ndr_pull *ndr, int ndr_flags, enum ntlmssp_AvId *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint1632(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -469,6 +475,7 @@ static enum ndr_err_code ndr_push_Restriction_Encoding(struct ndr_push *ndr, int
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->IntegrityLevel));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->SubjectIntegrityLevel));
 		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->MachineId, 32));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -484,6 +491,7 @@ static enum ndr_err_code ndr_pull_Restriction_Encoding(struct ndr_pull *ndr, int
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->IntegrityLevel));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->SubjectIntegrityLevel));
 		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->MachineId, 32));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -532,6 +540,7 @@ static enum ndr_err_code ndr_push_ntlmssp_AvValue(struct ndr_push *ndr, int ndr_
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 		if (ndr_flags & NDR_SCALARS) {
 			int level = ndr_push_get_switch_value(ndr, r);
+			NDR_CHECK(ndr_push_union_align(ndr, 4));
 			switch (level) {
 				case MsvAvEOL: {
 				break; }
@@ -671,6 +680,7 @@ static enum ndr_err_code ndr_pull_ntlmssp_AvValue(struct ndr_pull *ndr, int ndr_
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 		level = ndr_pull_get_switch_value(ndr, r);
 		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_pull_union_align(ndr, 4));
 			switch (level) {
 				case MsvAvEOL: {
 				break; }
@@ -884,6 +894,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_AV_PAIR(struct ndr_push *ndr, int ndr_flags,
 				NDR_CHECK(ndr_push_ntlmssp_AvValue(_ndr_Value, NDR_SCALARS|NDR_BUFFERS, &r->Value));
 				NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_Value, 0, ndr_size_ntlmssp_AvValue(&r->Value, r->AvId, ndr->iconv_convenience, 0)));
 			}
+			NDR_CHECK(ndr_push_trailer_align(ndr, 4));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 		}
@@ -908,6 +919,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_AV_PAIR(struct ndr_pull *ndr, int ndr_flags,
 				NDR_CHECK(ndr_pull_ntlmssp_AvValue(_ndr_Value, NDR_SCALARS|NDR_BUFFERS, &r->Value));
 				NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_Value, 0, r->AvLen));
 			}
+			NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 		}
@@ -987,6 +999,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_CHALLENGE_MESSAGE(struct ndr_push *ndr, int 
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->TargetInfo));
 			NDR_CHECK(ndr_push_set_switch_value(ndr, &r->Version, r->NegotiateFlags & NTLMSSP_NEGOTIATE_VERSION));
 			NDR_CHECK(ndr_push_ntlmssp_Version(ndr, NDR_SCALARS, &r->Version));
+			NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 			{
@@ -1060,6 +1073,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_CHALLENGE_MESSAGE(struct ndr_pull *ndr, int 
 			}
 			NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->Version, r->NegotiateFlags & NTLMSSP_NEGOTIATE_VERSION));
 			NDR_CHECK(ndr_pull_ntlmssp_Version(ndr, NDR_SCALARS, &r->Version));
+			NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 			{
@@ -1147,6 +1161,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_LM_RESPONSE(struct ndr_push *ndr, int ndr_fl
 		if (ndr_flags & NDR_SCALARS) {
 			NDR_CHECK(ndr_push_align(ndr, 1));
 			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->Response, 24));
+			NDR_CHECK(ndr_push_trailer_align(ndr, 1));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 		}
@@ -1163,6 +1178,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_LM_RESPONSE(struct ndr_pull *ndr, int ndr_fl
 		if (ndr_flags & NDR_SCALARS) {
 			NDR_CHECK(ndr_pull_align(ndr, 1));
 			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->Response, 24));
+			NDR_CHECK(ndr_pull_trailer_align(ndr, 1));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 		}
@@ -1193,6 +1209,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_LMv2_RESPONSE(struct ndr_push *ndr, int ndr_
 			NDR_CHECK(ndr_push_align(ndr, 1));
 			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->Response, 16));
 			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->ChallengeFromClient, 8));
+			NDR_CHECK(ndr_push_trailer_align(ndr, 1));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 		}
@@ -1210,6 +1227,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_LMv2_RESPONSE(struct ndr_pull *ndr, int ndr_
 			NDR_CHECK(ndr_pull_align(ndr, 1));
 			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->Response, 16));
 			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->ChallengeFromClient, 8));
+			NDR_CHECK(ndr_pull_trailer_align(ndr, 1));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 		}
@@ -1236,6 +1254,7 @@ static enum ndr_err_code ndr_push_ntlmssp_LM_RESPONSE(struct ndr_push *ndr, int 
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 1));
 		switch (level) {
 			case 24: {
 				NDR_CHECK(ndr_push_LM_RESPONSE(ndr, NDR_SCALARS, &r->v1));
@@ -1265,6 +1284,7 @@ static enum ndr_err_code ndr_pull_ntlmssp_LM_RESPONSE(struct ndr_pull *ndr, int 
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 1));
 		switch (level) {
 			case 24: {
 				NDR_CHECK(ndr_pull_LM_RESPONSE(ndr, NDR_SCALARS, &r->v1));
@@ -1312,6 +1332,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_NTLM_RESPONSE(struct ndr_push *ndr, int ndr_
 		if (ndr_flags & NDR_SCALARS) {
 			NDR_CHECK(ndr_push_align(ndr, 1));
 			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->Response, 24));
+			NDR_CHECK(ndr_push_trailer_align(ndr, 1));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 		}
@@ -1328,6 +1349,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_NTLM_RESPONSE(struct ndr_pull *ndr, int ndr_
 		if (ndr_flags & NDR_SCALARS) {
 			NDR_CHECK(ndr_pull_align(ndr, 1));
 			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->Response, 24));
+			NDR_CHECK(ndr_pull_trailer_align(ndr, 1));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 		}
@@ -1374,6 +1396,7 @@ static enum ndr_err_code ndr_push_NTLMv2_CLIENT_CHALLENGE(struct ndr_push *ndr, 
 				}
 				ndr->flags = _flags_save_AV_PAIR_LIST;
 			}
+			NDR_CHECK(ndr_push_trailer_align(ndr, 4));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 			{
@@ -1412,6 +1435,7 @@ static enum ndr_err_code ndr_pull_NTLMv2_CLIENT_CHALLENGE(struct ndr_pull *ndr, 
 				}
 				ndr->flags = _flags_save_AV_PAIR_LIST;
 			}
+			NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 			{
@@ -1454,6 +1478,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_NTLMv2_RESPONSE(struct ndr_push *ndr, int nd
 			NDR_CHECK(ndr_push_align(ndr, 4));
 			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->Response, 16));
 			NDR_CHECK(ndr_push_NTLMv2_CLIENT_CHALLENGE(ndr, NDR_SCALARS, &r->Challenge));
+			NDR_CHECK(ndr_push_trailer_align(ndr, 4));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 			NDR_CHECK(ndr_push_NTLMv2_CLIENT_CHALLENGE(ndr, NDR_BUFFERS, &r->Challenge));
@@ -1472,6 +1497,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_NTLMv2_RESPONSE(struct ndr_pull *ndr, int nd
 			NDR_CHECK(ndr_pull_align(ndr, 4));
 			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->Response, 16));
 			NDR_CHECK(ndr_pull_NTLMv2_CLIENT_CHALLENGE(ndr, NDR_SCALARS, &r->Challenge));
+			NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 			NDR_CHECK(ndr_pull_NTLMv2_CLIENT_CHALLENGE(ndr, NDR_BUFFERS, &r->Challenge));
@@ -1499,6 +1525,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_ntlmssp_NTLM_RESPONSE(struct ndr_push *ndr, 
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
 			case 0: {
 			break; }
@@ -1536,6 +1563,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_ntlmssp_NTLM_RESPONSE(struct ndr_pull *ndr, 
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 4));
 		switch (level) {
 			case 0: {
 			break; }
@@ -1632,6 +1660,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_AUTHENTICATE_MESSAGE(struct ndr_push *ndr, i
 			NDR_CHECK(ndr_push_NEGOTIATE(ndr, NDR_SCALARS, r->NegotiateFlags));
 			NDR_CHECK(ndr_push_set_switch_value(ndr, &r->Version, r->NegotiateFlags & NTLMSSP_NEGOTIATE_VERSION));
 			NDR_CHECK(ndr_push_ntlmssp_Version(ndr, NDR_SCALARS, &r->Version));
+			NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 			if (r->LmChallengeResponse) {
@@ -1805,6 +1834,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_AUTHENTICATE_MESSAGE(struct ndr_pull *ndr, i
 			NDR_CHECK(ndr_pull_NEGOTIATE(ndr, NDR_SCALARS, &r->NegotiateFlags));
 			NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->Version, r->NegotiateFlags & NTLMSSP_NEGOTIATE_VERSION));
 			NDR_CHECK(ndr_pull_ntlmssp_Version(ndr, NDR_SCALARS, &r->Version));
+			NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 			if (r->LmChallengeResponse) {
@@ -1996,6 +2026,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_NTLMSSP_MESSAGE_SIGNATURE(struct ndr_push *n
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->RandomPad));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->Checksum));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->SeqNum));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -2010,6 +2041,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_NTLMSSP_MESSAGE_SIGNATURE(struct ndr_pull *n
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->RandomPad));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->Checksum));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->SeqNum));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -2037,6 +2069,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_NTLMSSP_MESSAGE_SIGNATURE_NTLMv2(struct ndr_
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, NTLMSSP_SIGN_VERSION));
 			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->Checksum, 8));
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->SeqNum));
+			NDR_CHECK(ndr_push_trailer_align(ndr, 4));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 		}
@@ -2055,6 +2088,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_NTLMSSP_MESSAGE_SIGNATURE_NTLMv2(struct ndr_
 			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->Version));
 			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->Checksum, 8));
 			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->SeqNum));
+			NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 		}

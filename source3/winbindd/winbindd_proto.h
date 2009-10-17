@@ -545,14 +545,6 @@ enum winbindd_result winbindd_dual_allocate_gid(struct winbindd_domain *domain,
 
 /* The following definitions come from winbindd/winbindd_user.c  */
 
-bool fillup_pw_field(const char *lp_template,
-			    const char *username,
-			    const char *domname,
-			    uid_t uid,
-			    gid_t gid,
-			    const char *in,
-		     fstring out);
-
 enum winbindd_result winbindd_dual_userinfo(struct winbindd_domain *domain,
 					    struct winbindd_cli_state *state);
 void winbindd_getpwnam(struct winbindd_cli_state *state);
@@ -994,6 +986,13 @@ struct tevent_req *winbindd_check_machine_acct_send(TALLOC_CTX *mem_ctx,
 						    struct winbindd_request *request);
 NTSTATUS winbindd_check_machine_acct_recv(struct tevent_req *req,
 					  struct winbindd_response *presp);
+
+struct tevent_req *winbindd_change_machine_acct_send(TALLOC_CTX *mem_ctx,
+						     struct tevent_context *ev,
+						     struct winbindd_cli_state *cli,
+						     struct winbindd_request *request);
+NTSTATUS winbindd_change_machine_acct_recv(struct tevent_req *req,
+					   struct winbindd_response *presp);
 
 struct tevent_req *winbindd_set_mapping_send(TALLOC_CTX *mem_ctx,
 					     struct tevent_context *ev,

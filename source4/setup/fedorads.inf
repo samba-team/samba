@@ -28,3 +28,7 @@ install_full_schema= 0
 SchemaFile=${LDAPDIR}/99_ad.ldif
 ConfigFile = ${LDAPDIR}/fedorads-partitions.ldif
 ConfigFile = ${LDAPDIR}/fedorads-sasl.ldif
+ConfigFile = ${LDAPDIR}/fedorads-pam.ldif
+ConfigFile = ${LDAPDIR}/fedorads-refint.ldif
+ConfigFile = ${LDAPDIR}/fedorads-linked-attributes.ldif
+ConfigFile = ${LDAPDIR}/fedorads-index.ldif

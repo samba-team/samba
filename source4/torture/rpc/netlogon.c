@@ -1567,6 +1567,49 @@ static bool test_GetDcName(struct torture_context *tctx,
 	return true;
 }
 
+static const char *function_code_str(TALLOC_CTX *mem_ctx,
+				     enum netr_LogonControlCode function_code)
+{
+	switch (function_code) {
+	case NETLOGON_CONTROL_QUERY:
+		return "NETLOGON_CONTROL_QUERY";
+	case NETLOGON_CONTROL_REPLICATE:
+		return "NETLOGON_CONTROL_REPLICATE";
+	case NETLOGON_CONTROL_SYNCHRONIZE:
+		return "NETLOGON_CONTROL_SYNCHRONIZE";
+	case NETLOGON_CONTROL_PDC_REPLICATE:
+		return "NETLOGON_CONTROL_PDC_REPLICATE";
+	case NETLOGON_CONTROL_REDISCOVER:
+		return "NETLOGON_CONTROL_REDISCOVER";
+	case NETLOGON_CONTROL_TC_QUERY:
+		return "NETLOGON_CONTROL_TC_QUERY";
+	case NETLOGON_CONTROL_TRANSPORT_NOTIFY:
+		return "NETLOGON_CONTROL_TRANSPORT_NOTIFY";
+	case NETLOGON_CONTROL_FIND_USER:
+		return "NETLOGON_CONTROL_FIND_USER";
+	case NETLOGON_CONTROL_CHANGE_PASSWORD:
+		return "NETLOGON_CONTROL_CHANGE_PASSWORD";
+	case NETLOGON_CONTROL_TC_VERIFY:
+		return "NETLOGON_CONTROL_TC_VERIFY";
+	case NETLOGON_CONTROL_FORCE_DNS_REG:
+		return "NETLOGON_CONTROL_FORCE_DNS_REG";
+	case NETLOGON_CONTROL_QUERY_DNS_REG:
+		return "NETLOGON_CONTROL_QUERY_DNS_REG";
+	case NETLOGON_CONTROL_BACKUP_CHANGE_LOG:
+		return "NETLOGON_CONTROL_BACKUP_CHANGE_LOG";
+	case NETLOGON_CONTROL_TRUNCATE_LOG:
+		return "NETLOGON_CONTROL_TRUNCATE_LOG";
+	case NETLOGON_CONTROL_SET_DBFLAG:
+		return "NETLOGON_CONTROL_SET_DBFLAG";
+	case NETLOGON_CONTROL_BREAKPOINT:
+		return "NETLOGON_CONTROL_BREAKPOINT";
+	default:
+		return talloc_asprintf(mem_ctx, "unknown function code: %d",
+				       function_code);
+	}
+}
+
+
 /*
   try a netlogon LogonControl 
 */
@@ -1576,19 +1619,82 @@ static bool test_LogonControl(struct torture_context *tctx,
 	NTSTATUS status;
 	struct netr_LogonControl r;
 	union netr_CONTROL_QUERY_INFORMATION query;
-	int i;
+	int i,f;
+	uint32_t function_codes[] = {
+		NETLOGON_CONTROL_QUERY,
+		NETLOGON_CONTROL_REPLICATE,
+		NETLOGON_CONTROL_SYNCHRONIZE,
+		NETLOGON_CONTROL_PDC_REPLICATE,
+		NETLOGON_CONTROL_REDISCOVER,
+		NETLOGON_CONTROL_TC_QUERY,
+		NETLOGON_CONTROL_TRANSPORT_NOTIFY,
+		NETLOGON_CONTROL_FIND_USER,
+		NETLOGON_CONTROL_CHANGE_PASSWORD,
+		NETLOGON_CONTROL_TC_VERIFY,
+		NETLOGON_CONTROL_FORCE_DNS_REG,
+		NETLOGON_CONTROL_QUERY_DNS_REG,
+		NETLOGON_CONTROL_BACKUP_CHANGE_LOG,
+		NETLOGON_CONTROL_TRUNCATE_LOG,
+		NETLOGON_CONTROL_SET_DBFLAG,
+		NETLOGON_CONTROL_BREAKPOINT
+	};
 
 	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.function_code = 1;
 	r.out.query = &query;
 
-	for (i=1;i<4;i++) {
+	for (f=0;f<ARRAY_SIZE(function_codes); f++) {
+	for (i=1;i<5;i++) {
+
+		r.in.function_code = function_codes[f];
 		r.in.level = i;
 
-		torture_comment(tctx, "Testing LogonControl level %d\n", i);
+		torture_comment(tctx, "Testing LogonControl function code %s (%d) level %d\n",
+				function_code_str(tctx, r.in.function_code), r.in.function_code, r.in.level);
 
 		status = dcerpc_netr_LogonControl(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "LogonControl");
+
+		switch (r.in.level) {
+		case 1:
+			switch (r.in.function_code) {
+			case NETLOGON_CONTROL_REPLICATE:
+			case NETLOGON_CONTROL_SYNCHRONIZE:
+			case NETLOGON_CONTROL_PDC_REPLICATE:
+			case NETLOGON_CONTROL_BACKUP_CHANGE_LOG:
+			case NETLOGON_CONTROL_TRUNCATE_LOG:
+			case NETLOGON_CONTROL_BREAKPOINT:
+				torture_assert_werr_equal(tctx, r.out.result, WERR_ACCESS_DENIED,
+					"LogonControl returned unexpected error code");
+				break;
+			case NETLOGON_CONTROL_REDISCOVER:
+			case NETLOGON_CONTROL_TC_QUERY:
+			case NETLOGON_CONTROL_TRANSPORT_NOTIFY:
+			case NETLOGON_CONTROL_FIND_USER:
+			case NETLOGON_CONTROL_CHANGE_PASSWORD:
+			case NETLOGON_CONTROL_TC_VERIFY:
+			case NETLOGON_CONTROL_FORCE_DNS_REG:
+			case NETLOGON_CONTROL_QUERY_DNS_REG:
+			case NETLOGON_CONTROL_SET_DBFLAG:
+				torture_assert_werr_equal(tctx, r.out.result, WERR_NOT_SUPPORTED,
+					"LogonControl returned unexpected error code");
+				break;
+			default:
+				torture_assert_werr_ok(tctx, r.out.result,
+					"LogonControl returned unexpected result");
+				break;
+			}
+			break;
+		case 2:
+			torture_assert_werr_equal(tctx, r.out.result, WERR_NOT_SUPPORTED,
+				"LogonControl returned unexpected error code");
+			break;
+		default:
+			torture_assert_werr_equal(tctx, r.out.result, WERR_UNKNOWN_LEVEL,
+				"LogonControl returned unexpected error code");
+			break;
+		}
+	}
 	}
 
 	return true;
@@ -1991,7 +2097,7 @@ static bool test_netr_DsRGetDCName(struct torture_context *tctx,
 	struct netr_DsRGetDCNameInfo *info = NULL;
 
 	r.in.server_unc		= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.domain_name	= talloc_asprintf(tctx, "%s", lp_realm(tctx->lp_ctx));
+	r.in.domain_name	= lp_dnsdomain(tctx->lp_ctx);
 	r.in.domain_guid	= NULL;
 	r.in.site_guid	        = NULL;
 	r.in.flags		= DS_RETURN_DNS_NAME;
@@ -2016,7 +2122,7 @@ static bool test_netr_DsRGetDCNameEx(struct torture_context *tctx,
 	struct netr_DsRGetDCNameInfo *info = NULL;
 
 	r.in.server_unc		= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.domain_name	= talloc_asprintf(tctx, "%s", lp_realm(tctx->lp_ctx));
+	r.in.domain_name	= lp_dnsdomain(tctx->lp_ctx);
 	r.in.domain_guid	= NULL;
 	r.in.site_name	        = NULL;
 	r.in.flags		= DS_RETURN_DNS_NAME;
@@ -2043,7 +2149,7 @@ static bool test_netr_DsRGetDCNameEx2(struct torture_context *tctx,
 	r.in.server_unc		= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.client_account	= NULL;
 	r.in.mask		= 0x00000000;
-	r.in.domain_name	= talloc_asprintf(tctx, "%s", lp_realm(tctx->lp_ctx));
+	r.in.domain_name	= lp_dnsdomain(tctx->lp_ctx);
 	r.in.domain_guid	= NULL;
 	r.in.site_name		= NULL;
 	r.in.flags		= DS_RETURN_DNS_NAME;

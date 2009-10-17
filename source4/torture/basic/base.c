@@ -1493,7 +1493,7 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 1024*1024;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_DIRECTORY;
@@ -1627,7 +1627,7 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 		smbcli_close(cli_nt->tree, fnum);
 
 		io.generic.level = RAW_OPEN_NTCREATEX;
-		io.ntcreatex.in.root_fid = 0;
+		io.ntcreatex.in.root_fid.fnum = 0;
 		io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 		io.ntcreatex.in.alloc_size = 0;
 		io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_DIRECTORY;
@@ -1767,6 +1767,10 @@ NTSTATUS torture_base_init(void)
 	torture_suite_add_suite(suite, torture_trans2_aliases(suite));
 	torture_suite_add_1smb_test(suite, "TRANS2-SCAN", torture_trans2_scan);
 	torture_suite_add_1smb_test(suite, "NTTRANS", torture_nttrans_scan);
+	torture_suite_add_1smb_test(suite, "CREATEX_ACCESS", torture_createx_access);
+	torture_suite_add_2smb_test(suite, "CREATEX_SHAREMODES_FILE", torture_createx_sharemodes_file);
+	torture_suite_add_2smb_test(suite, "CREATEX_SHAREMODES_DIR", torture_createx_sharemodes_dir);
+	torture_suite_add_1smb_test(suite, "MAXIMUM_ALLOWED", torture_maximum_allowed);
 
 	torture_suite_add_simple_test(suite, "BENCH-HOLDCON", torture_holdcon);
 	torture_suite_add_simple_test(suite, "BENCH-READWRITE", run_benchrw);

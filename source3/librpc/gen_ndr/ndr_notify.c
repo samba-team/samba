@@ -20,6 +20,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_notify_entry(struct ndr_push *ndr, int ndr_f
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->path_len));
 		NDR_CHECK(ndr_push_pointer(ndr, NDR_SCALARS, r->private_data));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 8));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		NDR_CHECK(ndr_push_server_id(ndr, NDR_BUFFERS, &r->server));
@@ -45,6 +46,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_notify_entry(struct ndr_pull *ndr, int ndr_f
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->path_len));
 		NDR_CHECK(ndr_pull_pointer(ndr, NDR_SCALARS, &r->private_data));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 8));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		NDR_CHECK(ndr_pull_server_id(ndr, NDR_BUFFERS, &r->server));
@@ -77,6 +79,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_notify_entry_array(struct ndr_push *ndr, int
 		for (cntr_entries_0 = 0; cntr_entries_0 < r->num_entries; cntr_entries_0++) {
 			NDR_CHECK(ndr_push_notify_entry(ndr, NDR_SCALARS, &r->entries[cntr_entries_0]));
 		}
+		NDR_CHECK(ndr_push_trailer_align(ndr, 8));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		for (cntr_entries_0 = 0; cntr_entries_0 < r->num_entries; cntr_entries_0++) {
@@ -100,6 +103,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_notify_entry_array(struct ndr_pull *ndr, int
 			NDR_CHECK(ndr_pull_notify_entry(ndr, NDR_SCALARS, &r->entries[cntr_entries_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_entries_0, 0);
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 8));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		_mem_save_entries_0 = NDR_PULL_GET_MEM_CTX(ndr);
@@ -142,6 +146,7 @@ static enum ndr_err_code ndr_push_notify_depth(struct ndr_push *ndr, int ndr_fla
 		for (cntr_entries_0 = 0; cntr_entries_0 < r->num_entries; cntr_entries_0++) {
 			NDR_CHECK(ndr_push_notify_entry(ndr, NDR_SCALARS, &r->entries[cntr_entries_0]));
 		}
+		NDR_CHECK(ndr_push_trailer_align(ndr, 8));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		for (cntr_entries_0 = 0; cntr_entries_0 < r->num_entries; cntr_entries_0++) {
@@ -167,6 +172,7 @@ static enum ndr_err_code ndr_pull_notify_depth(struct ndr_pull *ndr, int ndr_fla
 			NDR_CHECK(ndr_pull_notify_entry(ndr, NDR_SCALARS, &r->entries[cntr_entries_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_entries_0, 0);
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 8));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		_mem_save_entries_0 = NDR_PULL_GET_MEM_CTX(ndr);
@@ -209,6 +215,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_notify_array(struct ndr_push *ndr, int ndr_f
 		for (cntr_depth_0 = 0; cntr_depth_0 < r->num_depths; cntr_depth_0++) {
 			NDR_CHECK(ndr_push_notify_depth(ndr, NDR_SCALARS, &r->depth[cntr_depth_0]));
 		}
+		NDR_CHECK(ndr_push_trailer_align(ndr, 8));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		for (cntr_depth_0 = 0; cntr_depth_0 < r->num_depths; cntr_depth_0++) {
@@ -232,6 +239,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_notify_array(struct ndr_pull *ndr, int ndr_f
 			NDR_CHECK(ndr_pull_notify_depth(ndr, NDR_SCALARS, &r->depth[cntr_depth_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_depth_0, 0);
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 8));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		_mem_save_depth_0 = NDR_PULL_GET_MEM_CTX(ndr);
@@ -275,6 +283,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_notify_event(struct ndr_push *ndr, int ndr_f
 			ndr->flags = _flags_save_string;
 		}
 		NDR_CHECK(ndr_push_pointer(ndr, NDR_SCALARS, r->private_data));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 8));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -293,6 +302,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_notify_event(struct ndr_pull *ndr, int ndr_f
 			ndr->flags = _flags_save_string;
 		}
 		NDR_CHECK(ndr_pull_pointer(ndr, NDR_SCALARS, &r->private_data));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 8));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}

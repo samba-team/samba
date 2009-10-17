@@ -368,7 +368,7 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 	krb5_error_code ret;
 	TALLOC_CTX *tmp_ctx;
 	char **config_files;
-	const char *config_file;
+	const char *config_file, *realm;
 	
 	initialize_krb5_error_table();
 	
@@ -415,14 +415,9 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 		return ret;
 	}
 						
-	if (lp_realm(lp_ctx) && *lp_realm(lp_ctx)) {
-		char *upper_realm = strupper_talloc(tmp_ctx, lp_realm(lp_ctx));
-		if (!upper_realm) {
-			DEBUG(1,("gensec_krb5_start: could not uppercase realm: %s\n", lp_realm(lp_ctx)));
-			talloc_free(tmp_ctx);
-			return ENOMEM;
-		}
-		ret = krb5_set_default_realm((*smb_krb5_context)->krb5_context, upper_realm);
+	realm = lp_realm(lp_ctx);
+	if (realm != NULL) {
+		ret = krb5_set_default_realm((*smb_krb5_context)->krb5_context, realm);
 		if (ret) {
 			DEBUG(1,("krb5_set_default_realm failed (%s)\n", 
 				 smb_get_krb5_error_message((*smb_krb5_context)->krb5_context, ret, tmp_ctx)));

@@ -150,6 +150,7 @@ static WERROR dcesrv_spoolss_check_server_name(struct dcesrv_call_state *dce_cal
 	bool ret;
 	struct socket_address *myaddr;
 	const char **aliases;
+	const char *dnsdomain;
 	int i;
 
 	/* NULL is ok */
@@ -186,12 +187,13 @@ static WERROR dcesrv_spoolss_check_server_name(struct dcesrv_call_state *dce_cal
 	/* DNS NAME is ok
 	 * TODO: we need to check if aliases are also ok
 	 */
-	if (lp_realm(dce_call->conn->dce_ctx->lp_ctx)) {
+	dnsdomain = lp_dnsdomain(dce_call->conn->dce_ctx->lp_ctx);
+	if (dnsdomain != NULL) {
 		char *str;
 
 		str = talloc_asprintf(mem_ctx, "%s.%s",
 						lp_netbios_name(dce_call->conn->dce_ctx->lp_ctx),
-						lp_realm(dce_call->conn->dce_ctx->lp_ctx));
+						dnsdomain);
 		W_ERROR_HAVE_NO_MEMORY(str);
 
 		ret = strequal(str, server_name);

@@ -33,7 +33,7 @@
 enum NET_API_STATUS
 #ifndef USE_UINT_ENUMS
  {
-	NERR_Success=0
+	NERR_Success=(int)(0)
 }
 #else
  { __donnot_use_enum_NET_API_STATUS=0x7FFFFFFF}
@@ -65,10 +65,10 @@ struct domsid {
 enum NETSETUP_JOIN_STATUS
 #ifndef USE_UINT_ENUMS
  {
-	NetSetupUnknownStatus=0,
-	NetSetupUnjoined=1,
-	NetSetupWorkgroupName=2,
-	NetSetupDomainName=3
+	NetSetupUnknownStatus=(int)(0),
+	NetSetupUnjoined=(int)(1),
+	NetSetupWorkgroupName=(int)(2),
+	NetSetupDomainName=(int)(3)
 }
 #else
  { __donnot_use_enum_NETSETUP_JOIN_STATUS=0x7FFFFFFF}
@@ -1170,16 +1170,16 @@ struct LOCALGROUP_INFO_1002 {
 enum SID_NAME_USE
 #ifndef USE_UINT_ENUMS
  {
-	SidTypeUser=1,
-	SidTypeGroup=2,
-	SidTypeDomain=3,
-	SidTypeAlias=4,
-	SidTypeWellKnownGroup=5,
-	SidTypeDeletedAccount=6,
-	SidTypeInvalid=7,
-	SidTypeUnknown=8,
-	SidTypeComputer=9,
-	SidTypeLabel=10
+	SidTypeUser=(int)(1),
+	SidTypeGroup=(int)(2),
+	SidTypeDomain=(int)(3),
+	SidTypeAlias=(int)(4),
+	SidTypeWellKnownGroup=(int)(5),
+	SidTypeDeletedAccount=(int)(6),
+	SidTypeInvalid=(int)(7),
+	SidTypeUnknown=(int)(8),
+	SidTypeComputer=(int)(9),
+	SidTypeLabel=(int)(10)
 }
 #else
  { __donnot_use_enum_SID_NAME_USE=0x7FFFFFFF}
@@ -1293,6 +1293,33 @@ struct FILE_INFO_3 {
 	uint32_t fi3_num_locks;
 	const char * fi3_pathname;
 	const char * fi3_username;
+};
+
+struct NETLOGON_INFO_1 {
+	uint32_t netlog1_flags;
+	enum NET_API_STATUS netlog1_pdc_connection_status;
+};
+
+struct NETLOGON_INFO_2 {
+	uint32_t netlog2_flags;
+	enum NET_API_STATUS netlog2_pdc_connection_status;
+	const char * netlog2_trusted_dc_name;
+	enum NET_API_STATUS netlog2_tc_connection_status;
+};
+
+struct NETLOGON_INFO_3 {
+	uint32_t netlog1_flags;
+	uint32_t netlog3_logon_attempts;
+	uint32_t netlog3_reserved1;
+	uint32_t netlog3_reserved2;
+	uint32_t netlog3_reserved3;
+	uint32_t netlog3_reserved4;
+	uint32_t netlog3_reserved5;
+};
+
+struct NETLOGON_INFO_4 {
+	const char * netlog4_trusted_dc_name;
+	const char * netlog4_trusted_domain_name;
 };
 
 
@@ -2094,6 +2121,37 @@ struct NetShutdownAbort {
 	} in;
 
 	struct {
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
+struct I_NetLogonControl {
+	struct {
+		const char * server_name;
+		uint32_t function_code;
+		uint32_t query_level;
+	} in;
+
+	struct {
+		uint8_t **buffer;/* [ref] */
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
+struct I_NetLogonControl2 {
+	struct {
+		const char * server_name;
+		uint32_t function_code;
+		uint32_t query_level;
+		uint8_t *data;/* [ref] */
+	} in;
+
+	struct {
+		uint8_t **buffer;/* [ref] */
 		enum NET_API_STATUS result;
 	} out;
 

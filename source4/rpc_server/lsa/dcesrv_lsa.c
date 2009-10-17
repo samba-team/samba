@@ -80,7 +80,7 @@ static NTSTATUS dcesrv_build_lsa_sd(TALLOC_CTX *mem_ctx,
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 
 	status = dom_sid_split_rid(tmp_ctx, sid, &domain_sid, &rid);
-	NT_STATUS_NOT_OK_RETURN(status);
+	NT_STATUS_NOT_OK_RETURN_AND_FREE(status, tmp_ctx);
 
 	domain_admins_sid = dom_sid_add_rid(tmp_ctx, domain_sid, DOMAIN_RID_ADMINS);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(domain_admins_sid, tmp_ctx);
@@ -694,7 +694,7 @@ static NTSTATUS dcesrv_lsa_EnumAccounts(struct dcesrv_call_state *dce_call, TALL
 	/* NOTE: This call must only return accounts that have at least
 	   one privilege set 
 	*/
-	ret = gendb_search(state->sam_ldb, mem_ctx, NULL, &res, attrs, 
+	ret = gendb_search(state->pdb, mem_ctx, NULL, &res, attrs, 
 			   "(&(objectSid=*)(privilege=*))");
 	if (ret < 0) {
 		return NT_STATUS_NO_SUCH_USER;
@@ -1830,7 +1830,7 @@ static NTSTATUS dcesrv_lsa_EnumPrivsAccount(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = gendb_search(astate->policy->sam_ldb, mem_ctx, NULL, &res, attrs, 
+	ret = gendb_search(astate->policy->pdb, mem_ctx, NULL, &res, attrs, 
 			   "objectSid=%s", sidstr);
 	if (ret != 1) {
 		return NT_STATUS_OK;
@@ -1886,7 +1886,7 @@ static NTSTATUS dcesrv_lsa_EnumAccountRights(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = gendb_search(state->sam_ldb, mem_ctx, NULL, &res, attrs, 
+	ret = gendb_search(state->pdb, mem_ctx, NULL, &res, attrs, 
 			   "(&(objectSid=%s)(privilege=*))", sidstr);
 	if (ret == 0) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -1897,7 +1897,7 @@ static NTSTATUS dcesrv_lsa_EnumAccountRights(struct dcesrv_call_state *dce_call,
 	if (ret == -1) {
 		DEBUG(3, ("searching for account rights for SID: %s failed: %s", 
 			  dom_sid_string(mem_ctx, r->in.sid),
-			  ldb_errstring(state->sam_ldb)));
+			  ldb_errstring(state->pdb)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -1932,15 +1932,17 @@ static NTSTATUS dcesrv_lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_
 					   struct dom_sid *sid,
 					   const struct lsa_RightSet *rights)
 {
-	const char *sidstr;
+	const char *sidstr, *sidndrstr;
 	struct ldb_message *msg;
 	struct ldb_message_element *el;
 	int i, ret;
 	struct lsa_EnumAccountRights r2;
+	char *dnstr;
 
-	sidstr = ldap_encode_ndr_dom_sid(mem_ctx, sid);
-	if (sidstr == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	if (security_session_user_level(dce_call->conn->auth_state.session_info) < 
+	    SECURITY_ADMINISTRATOR) {
+		DEBUG(0,("lsa_AddRemoveAccount refused for supplied security token\n"));
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	msg = ldb_msg_new(mem_ctx);
@@ -1948,24 +1950,17 @@ static NTSTATUS dcesrv_lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	msg->dn = samdb_search_dn(state->sam_ldb, mem_ctx, 
-				  NULL, "objectSid=%s", sidstr);
-	if (msg->dn == NULL) {
-		NTSTATUS status;
-		if (ldb_flag == LDB_FLAG_MOD_DELETE) {
-			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-		}
-		status = samdb_create_foreign_security_principal(state->sam_ldb, mem_ctx, 
-								 sid, &msg->dn);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-		return NT_STATUS_NO_SUCH_USER;
-	}
+	sidndrstr = ldap_encode_ndr_dom_sid(msg, sid);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(sidndrstr, msg);
 
-	if (ldb_msg_add_empty(msg, "privilege", ldb_flag, NULL)) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	sidstr = dom_sid_string(msg, sid);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(sidstr, msg);
+
+	dnstr = talloc_asprintf(msg, "sid=%s", sidstr);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(dnstr, msg);
+
+	msg->dn = ldb_dn_new(msg, state->pdb, dnstr);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(msg->dn, msg);
 
 	if (ldb_flag == LDB_FLAG_MOD_ADD) {
 		NTSTATUS status;
@@ -1982,6 +1977,7 @@ static NTSTATUS dcesrv_lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_
 
 	for (i=0;i<rights->count;i++) {
 		if (sec_privilege_id(rights->names[i].string) == -1) {
+			talloc_free(msg);
 			return NT_STATUS_NO_SUCH_PRIVILEGE;
 		}
 
@@ -1998,26 +1994,41 @@ static NTSTATUS dcesrv_lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_
 
 		ret = ldb_msg_add_string(msg, "privilege", rights->names[i].string);
 		if (ret != LDB_SUCCESS) {
+			talloc_free(msg);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
 	el = ldb_msg_find_element(msg, "privilege");
 	if (!el) {
+		talloc_free(msg);
 		return NT_STATUS_OK;
 	}
 
-	ret = ldb_modify(state->sam_ldb, msg);
+	el->flags = ldb_flag;
+
+	ret = ldb_modify(state->pdb, msg);
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		if (samdb_msg_add_dom_sid(state->pdb, msg, msg, "objectSid", sid) != LDB_SUCCESS) {
+			talloc_free(msg);
+			return NT_STATUS_NO_MEMORY;
+		}
+		samdb_msg_add_string(state->pdb, msg, msg, "comment", "added via LSA");
+		ret = ldb_add(state->pdb, msg);		
+	}
 	if (ret != 0) {
 		if (ldb_flag == LDB_FLAG_MOD_DELETE && ret == LDB_ERR_NO_SUCH_ATTRIBUTE) {
-			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+			talloc_free(msg);
+			return NT_STATUS_OK;
 		}
 		DEBUG(3, ("Could not %s attributes from %s: %s", 
 			  ldb_flag == LDB_FLAG_MOD_DELETE ? "delete" : "add",
-			  ldb_dn_get_linearized(msg->dn), ldb_errstring(state->sam_ldb)));
+			  ldb_dn_get_linearized(msg->dn), ldb_errstring(state->pdb)));
+		talloc_free(msg);
 		return NT_STATUS_UNEXPECTED_IO_ERROR;
 	}
 
+	talloc_free(msg);
 	return NT_STATUS_OK;
 }
 
@@ -2880,7 +2891,7 @@ static NTSTATUS dcesrv_lsa_EnumAccountsWithUserRight(struct dcesrv_call_state *d
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
 
-	ret = gendb_search(state->sam_ldb, mem_ctx, NULL, &res, attrs, 
+	ret = gendb_search(state->pdb, mem_ctx, NULL, &res, attrs, 
 			   "privilege=%s", privname);
 	if (ret == -1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;

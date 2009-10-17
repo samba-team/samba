@@ -2023,9 +2023,9 @@ NTSTATUS _samr_ChangePasswordUser3(pipes_struct *p,
 	NTSTATUS status;
 	fstring user_name;
 	const char *wks = NULL;
-	uint32 reject_reason;
+	enum samPwdChangeReason reject_reason;
 	struct samr_DomInfo1 *dominfo = NULL;
-	struct samr_ChangeReject *reject = NULL;
+	struct userPwdChangeFailureInformation *reject = NULL;
 	uint32_t tmp;
 
 	DEBUG(5,("_samr_ChangePasswordUser3: %d\n", __LINE__));
@@ -2070,7 +2070,8 @@ NTSTATUS _samr_ChangePasswordUser3(pipes_struct *p,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		reject = TALLOC_ZERO_P(p->mem_ctx, struct samr_ChangeReject);
+		reject = TALLOC_ZERO_P(p->mem_ctx,
+				struct userPwdChangeFailureInformation);
 		if (!reject) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -2105,7 +2106,7 @@ NTSTATUS _samr_ChangePasswordUser3(pipes_struct *p,
 			dominfo->password_properties |= DOMAIN_PASSWORD_COMPLEX;
 		}
 
-		reject->reason = reject_reason;
+		reject->extendedFailureReason = reject_reason;
 
 		*r->out.dominfo = dominfo;
 		*r->out.reject = reject;

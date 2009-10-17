@@ -17,6 +17,7 @@ static enum ndr_err_code ndr_push_named_pipe_auth_req_info2(struct ndr_push *ndr
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->sam_info3));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->session_key_length));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->session_key));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->client_name) {
@@ -109,6 +110,7 @@ static enum ndr_err_code ndr_pull_named_pipe_auth_req_info2(struct ndr_pull *ndr
 		} else {
 			r->session_key = NULL;
 		}
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->client_name) {
@@ -241,6 +243,7 @@ static enum ndr_err_code ndr_push_named_pipe_auth_req_info3(struct ndr_push *ndr
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->session_key));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->gssapi_delegated_creds_length));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->gssapi_delegated_creds));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->client_name) {
@@ -346,6 +349,7 @@ static enum ndr_err_code ndr_pull_named_pipe_auth_req_info3(struct ndr_pull *ndr
 		} else {
 			r->gssapi_delegated_creds = NULL;
 		}
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->client_name) {
@@ -486,6 +490,7 @@ static enum ndr_err_code ndr_push_named_pipe_auth_req_info(struct ndr_push *ndr,
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 0: {
 			break; }
@@ -541,6 +546,7 @@ static enum ndr_err_code ndr_pull_named_pipe_auth_req_info(struct ndr_pull *ndr,
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 0: {
 			break; }
@@ -625,6 +631,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_named_pipe_auth_req(struct ndr_push *ndr, in
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->level));
 		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->info, r->level));
 		NDR_CHECK(ndr_push_named_pipe_auth_req_info(ndr, NDR_SCALARS, &r->info));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		NDR_CHECK(ndr_push_named_pipe_auth_req_info(ndr, NDR_BUFFERS, &r->info));
@@ -646,6 +653,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_named_pipe_auth_req(struct ndr_pull *ndr, in
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->level));
 		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->info, r->level));
 		NDR_CHECK(ndr_pull_named_pipe_auth_req_info(ndr, NDR_SCALARS, &r->info));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		NDR_CHECK(ndr_pull_named_pipe_auth_req_info(ndr, NDR_BUFFERS, &r->info));
@@ -677,6 +685,7 @@ static enum ndr_err_code ndr_push_named_pipe_auth_rep_info2(struct ndr_push *ndr
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->file_type));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->device_state));
 		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->allocation_size));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 8));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -690,6 +699,7 @@ static enum ndr_err_code ndr_pull_named_pipe_auth_rep_info2(struct ndr_pull *ndr
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->file_type));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->device_state));
 		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->allocation_size));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 8));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -713,6 +723,7 @@ static enum ndr_err_code ndr_push_named_pipe_auth_rep_info3(struct ndr_push *ndr
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->file_type));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->device_state));
 		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->allocation_size));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 8));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -726,6 +737,7 @@ static enum ndr_err_code ndr_pull_named_pipe_auth_rep_info3(struct ndr_pull *ndr
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->file_type));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->device_state));
 		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->allocation_size));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 8));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -747,6 +759,7 @@ static enum ndr_err_code ndr_push_named_pipe_auth_rep_info(struct ndr_push *ndr,
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 8));
 		switch (level) {
 			case 0: {
 			break; }
@@ -798,6 +811,7 @@ static enum ndr_err_code ndr_pull_named_pipe_auth_rep_info(struct ndr_pull *ndr,
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 8));
 		switch (level) {
 			case 0: {
 			break; }
@@ -878,6 +892,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_named_pipe_auth_rep(struct ndr_push *ndr, in
 		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->info, r->level));
 		NDR_CHECK(ndr_push_named_pipe_auth_rep_info(ndr, NDR_SCALARS, &r->info));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->status));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 8));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		NDR_CHECK(ndr_push_named_pipe_auth_rep_info(ndr, NDR_BUFFERS, &r->info));
@@ -900,6 +915,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_named_pipe_auth_rep(struct ndr_pull *ndr, in
 		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->info, r->level));
 		NDR_CHECK(ndr_pull_named_pipe_auth_rep_info(ndr, NDR_SCALARS, &r->info));
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->status));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 8));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		NDR_CHECK(ndr_pull_named_pipe_auth_rep_info(ndr, NDR_BUFFERS, &r->info));

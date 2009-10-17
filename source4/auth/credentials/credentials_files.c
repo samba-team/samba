@@ -266,6 +266,9 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 				cli_credentials_set_anonymous(cred);
 				talloc_free(mem_ctx);
 				return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+			} else {
+				/* store bind dn in credentials */
+				cli_credentials_set_bind_dn(cred, ldap_bind_dn);
 			}
 		}
 	}

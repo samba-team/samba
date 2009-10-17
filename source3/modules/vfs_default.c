@@ -1057,10 +1057,10 @@ static bool vfswrap_lock(vfs_handle_struct *handle, files_struct *fsp, int op, S
 }
 
 static int vfswrap_kernel_flock(vfs_handle_struct *handle, files_struct *fsp,
-				uint32 share_mode)
+				uint32 share_mode, uint32 access_mask)
 {
 	START_PROFILE(syscall_kernel_flock);
-	kernel_flock(fsp->fh->fd, share_mode);
+	kernel_flock(fsp->fh->fd, share_mode, access_mask);
 	END_PROFILE(syscall_kernel_flock);
 	return 0;
 }
@@ -1231,7 +1231,11 @@ static NTSTATUS vfswrap_streaminfo(vfs_handle_struct *handle,
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
-		ret = SMB_VFS_STAT(handle->conn, smb_fname);
+		if (lp_posix_pathnames()) {
+			ret = SMB_VFS_LSTAT(handle->conn, smb_fname);
+		} else {
+			ret = SMB_VFS_STAT(handle->conn, smb_fname);
+		}
 		sbuf = smb_fname->st;
 		TALLOC_FREE(smb_fname);
 	}

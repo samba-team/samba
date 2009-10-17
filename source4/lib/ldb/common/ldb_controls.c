@@ -123,7 +123,7 @@ int check_critical_controls(struct ldb_control **controls)
 
 int ldb_request_add_control(struct ldb_request *req, const char *oid, bool critical, void *data)
 {
-	unsigned n;
+	unsigned i, n;
 	struct ldb_control **ctrls;
 	struct ldb_control *ctrl;
 
@@ -135,10 +135,15 @@ int ldb_request_add_control(struct ldb_request *req, const char *oid, bool criti
 		n++; 
 	}
 
-	ctrls = talloc_realloc(req, req->controls,
+	ctrls = talloc_array(req,
 			       struct ldb_control *,
 			       n + 2);
 	if (!ctrls) return LDB_ERR_OPERATIONS_ERROR;
+
+	for (i=0; i<n; i++) {
+		ctrls[i] = req->controls[i];
+	}
+
 	req->controls = ctrls;
 	ctrls[n] = NULL;
 	ctrls[n+1] = NULL;
@@ -403,6 +408,33 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, void *me
 			control = talloc(ctrl[i], struct ldb_search_options_control);
 			control->search_options = search_options;
 			ctrl[i]->data = control;
+
+			continue;
+		}
+
+		if (strncmp(control_strings[i], "relax:", 6) == 0) {
+			const char *p;
+			int crit, ret;
+
+			p = &(control_strings[i][6]);
+			ret = sscanf(p, "%d", &crit);
+			if ((ret != 1) || (crit < 0) || (crit > 1)) {
+				error_string = talloc_asprintf(mem_ctx, "invalid relax control syntax\n");
+				error_string = talloc_asprintf_append(error_string, " syntax: crit(b)\n");
+				error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
+				ldb_set_errstring(ldb, error_string);
+				talloc_free(error_string);
+				return NULL;
+			}
+
+			ctrl[i] = talloc(ctrl, struct ldb_control);
+			if (!ctrl[i]) {
+				ldb_oom(ldb);
+				return NULL;
+			}
+			ctrl[i]->oid = LDB_CONTROL_RELAX_OID;
+			ctrl[i]->critical = crit;
+			ctrl[i]->data = NULL;
 
 			continue;
 		}

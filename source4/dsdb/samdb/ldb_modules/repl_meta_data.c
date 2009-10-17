@@ -457,11 +457,14 @@ static int replmd_op_callback(struct ldb_request *req, struct ldb_reply *ares)
 static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
+        struct ldb_control *control;
+        struct ldb_control **saved_controls;
 	struct replmd_replicated_request *ac;
 	const struct dsdb_schema *schema;
 	enum ndr_err_code ndr_err;
 	struct ldb_request *down_req;
 	struct ldb_message *msg;
+        const DATA_BLOB *guid_blob;
 	struct GUID guid;
 	struct ldb_val guid_value;
 	struct replPropertyMetaDataBlob nmd;
@@ -473,6 +476,14 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	char *time_str;
 	int ret;
 	uint32_t i, ni=0;
+	bool allow_add_guid = false;
+	bool remove_current_guid = false;
+
+        /* check if there's a show relax control (used by provision to say 'I know what I'm doing') */
+        control = ldb_request_get_control(req, LDB_CONTROL_RELAX_OID);
+	if (control) {
+		allow_add_guid = 1;
+	}
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.add.message->dn)) {
@@ -498,26 +509,43 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 
 	ac->schema = schema;
 
-	if (ldb_msg_find_element(req->op.add.message, "objectGUID") != NULL) {
-		ldb_debug_set(ldb, LDB_DEBUG_ERROR,
+        guid_blob = ldb_msg_find_ldb_val(req->op.add.message, "objectGUID");
+	if ( guid_blob != NULL ) {
+		if( !allow_add_guid ) {
+			ldb_debug_set(ldb, LDB_DEBUG_ERROR,
 			      "replmd_add: it's not allowed to add an object with objectGUID\n");
-		return LDB_ERR_UNWILLING_TO_PERFORM;
+			talloc_free(ac);
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		} else {
+			NTSTATUS status = GUID_from_data_blob(guid_blob,&guid);
+		        if ( !NT_STATUS_IS_OK(status)) {
+       				ldb_debug_set(ldb, LDB_DEBUG_ERROR,
+				      "replmd_add: Unable to parse as a GUID the attribute objectGUID\n");
+				talloc_free(ac);
+				return LDB_ERR_UNWILLING_TO_PERFORM;
+			}
+			/* we remove this attribute as it can be a string and will not be treated 
+			correctly and then we will readd it latter on in the good format*/
+			remove_current_guid = true;
+		}
+	} else {
+		/* a new GUID */
+		guid = GUID_random();
 	}
 
 	/* Get a sequence number from the backend */
 	ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &seq_num);
 	if (ret != LDB_SUCCESS) {
+		talloc_free(ac);
 		return ret;
 	}
-
-	/* a new GUID */
-	guid = GUID_random();
 
 	/* get our invocationId */
 	our_invocation_id = samdb_ntds_invocation_id(ldb);
 	if (!our_invocation_id) {
 		ldb_debug_set(ldb, LDB_DEBUG_ERROR,
 			      "replmd_add: unable to find invocationId\n");
+		talloc_free(ac);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -525,6 +553,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	msg = ldb_msg_copy_shallow(ac, req->op.add.message);
 	if (msg == NULL) {
 		ldb_oom(ldb);
+		talloc_free(ac);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -532,7 +561,12 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	unix_to_nt_time(&now, t);
 	time_str = ldb_timestring(msg, t);
 	if (!time_str) {
+		ldb_oom(ldb);
+		talloc_free(ac);
 		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	if (remove_current_guid) {
+		ldb_msg_remove_attr(msg,"objectGUID");
 	}
 
 	/* 
@@ -548,7 +582,8 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 		ret = ldb_msg_add_fmt(msg, "instanceType", "%u", INSTANCE_TYPE_WRITE);
 		if (ret != LDB_SUCCESS) {
 			ldb_oom(ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
+			talloc_free(ac);
+			return ret;
 		}
 	}
 
@@ -558,7 +593,8 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	ret = ldb_msg_add_string(msg, "whenCreated", time_str);
 	if (ret != LDB_SUCCESS) {
 		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		talloc_free(ac);
+		return ret;
 	}
 
 	/* build the replication meta_data */
@@ -570,6 +606,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 					       nmd.ctr.ctr1.count);
 	if (!nmd.ctr.ctr1.array) {
 		ldb_oom(ldb);
+		talloc_free(ac);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -585,6 +622,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 			ldb_debug_set(ldb, LDB_DEBUG_ERROR,
 				      "replmd_add: attribute '%s' not defined in schema\n",
 				      e->name);
+			talloc_free(ac);
 			return LDB_ERR_NO_SUCH_ATTRIBUTE;
 		}
 
@@ -612,6 +650,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	 */
 	ret = replmd_replPropertyMetaDataCtr1_sort(&nmd.ctr.ctr1, schema, msg->dn);
 	if (ret != LDB_SUCCESS) {
+		talloc_free(ac);
 		return ret;
 	}
 
@@ -622,6 +661,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 				       (ndr_push_flags_fn_t)ndr_push_GUID);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		ldb_oom(ldb);
+		talloc_free(ac);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	ndr_err = ndr_push_struct_blob(&nmd_value, msg, 
@@ -630,6 +670,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 				       (ndr_push_flags_fn_t)ndr_push_replPropertyMetaDataBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		ldb_oom(ldb);
+		talloc_free(ac);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -639,27 +680,32 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	ret = ldb_msg_add_value(msg, "objectGUID", &guid_value, NULL);
 	if (ret != LDB_SUCCESS) {
 		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		talloc_free(ac);
+		return ret;
 	}
 	ret = ldb_msg_add_string(msg, "whenChanged", time_str);
 	if (ret != LDB_SUCCESS) {
 		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		talloc_free(ac);
+		return ret;
 	}
 	ret = samdb_msg_add_uint64(ldb, msg, msg, "uSNCreated", seq_num);
 	if (ret != LDB_SUCCESS) {
 		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		talloc_free(ac);
+		return ret;
 	}
 	ret = samdb_msg_add_uint64(ldb, msg, msg, "uSNChanged", seq_num);
 	if (ret != LDB_SUCCESS) {
 		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		talloc_free(ac);
+		return ret;
 	}
 	ret = ldb_msg_add_value(msg, "replPropertyMetaData", &nmd_value, NULL);
 	if (ret != LDB_SUCCESS) {
 		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		talloc_free(ac);
+		return ret;
 	}
 
 	/*
@@ -673,12 +719,20 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 				ac, replmd_op_callback,
 				req);
 	if (ret != LDB_SUCCESS) {
+		talloc_free(ac);
 		return ret;
 	}
 
 	ret = replmd_notify(module, msg->dn, seq_num);
 	if (ret != LDB_SUCCESS) {
+		talloc_free(ac);
 		return ret;
+	}
+
+       	/* if a control is there remove if from the modified request */
+	if (control && !save_controls(control, down_req, &saved_controls)) {
+		talloc_free(ac);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* go on with the call chain */
@@ -785,7 +839,7 @@ static int replmd_update_rpmd(struct ldb_module *module,
 
 	/* search for the existing replPropertyMetaDataBlob */
 	ret = dsdb_search_dn_with_deleted(ldb, msg, &res, msg->dn, attrs);
-	if (ret != LDB_SUCCESS || res->count < 1) {
+	if (ret != LDB_SUCCESS || res->count != 1) {
 		DEBUG(0,(__location__ ": Object %s failed to find replPropertyMetaData\n",
 			 ldb_dn_get_linearized(msg->dn)));
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -880,9 +934,10 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	const struct dsdb_schema *schema;
 	struct ldb_request *down_req;
 	struct ldb_message *msg;
-	int ret;
+	struct ldb_result *res;
 	time_t t = time(NULL);
 	uint64_t seq_num = 0;
+	int ret;
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.mod.message->dn)) {
@@ -911,13 +966,12 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	/* we have to copy the message as the caller might have it as a const */
 	msg = ldb_msg_copy_shallow(ac, req->op.mod.message);
 	if (msg == NULL) {
+		ldb_oom(ldb);
 		talloc_free(ac);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* TODO:
-	 * - get the whole old object
-	 * - if the old object doesn't exist report an error
 	 * - give an error when a readonly attribute should
 	 *   be modified
 	 * - merge the changed into the old object
@@ -926,8 +980,15 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	 *   attribute was changed
 	 */
 
+	ret = dsdb_search_dn_with_deleted(ldb, msg, &res, msg->dn, NULL);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(ac);
+		return ret;
+	}
+
 	ret = replmd_update_rpmd(module, msg, &seq_num);
 	if (ret != LDB_SUCCESS) {
+		talloc_free(ac);
 		return ret;
 	}
 
@@ -941,6 +1002,7 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 				ac, replmd_op_callback,
 				req);
 	if (ret != LDB_SUCCESS) {
+		talloc_free(ac);
 		return ret;
 	}
 	talloc_steal(down_req, msg);
@@ -950,12 +1012,12 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	if (seq_num != 0) {
 		if (add_time_element(msg, "whenChanged", t) != LDB_SUCCESS) {
 			talloc_free(ac);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ret;
 		}
 
 		if (add_uint64_element(msg, "uSNChanged", seq_num) != LDB_SUCCESS) {
 			talloc_free(ac);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ret;
 		}
 	}
 

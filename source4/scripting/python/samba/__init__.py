@@ -234,14 +234,14 @@ class Ldb(ldb.Ldb):
         """
         self.add_ldif(open(ldif_path, 'r').read())
 
-    def add_ldif(self, ldif):
+    def add_ldif(self, ldif,controls=None):
         """Add data based on a LDIF string.
 
         :param ldif: LDIF text.
         """
         for changetype, msg in self.parse_ldif(ldif):
             assert changetype == ldb.CHANGETYPE_NONE
-            self.add(msg)
+            self.add(msg,controls)
 
     def modify_ldif(self, ldif):
         """Modify database based on a LDIF string.

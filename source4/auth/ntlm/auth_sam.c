@@ -332,6 +332,7 @@ NTSTATUS authsam_get_server_info_principal(TALLOC_CTX *mem_ctx,
 	nt_status = sam_get_results_principal(sam_ctx, tmp_ctx, principal, 
 					      user_attrs, &domain_dn, &msg);
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(tmp_ctx);
 		return nt_status;
 	}
 
@@ -342,11 +343,15 @@ NTSTATUS authsam_get_server_info_principal(TALLOC_CTX *mem_ctx,
 					     msg,
 					     user_sess_key, lm_sess_key,
 					     server_info);
-	if (NT_STATUS_IS_OK(nt_status)) {
-		talloc_steal(mem_ctx, *server_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(tmp_ctx);
+		return nt_status;
 	}
+
+	talloc_steal(mem_ctx, *server_info);
 	talloc_free(tmp_ctx);
-	return nt_status;
+
+	return NT_STATUS_OK;
 }
 
 static const struct auth_operations sam_ignoredomain_ops = {

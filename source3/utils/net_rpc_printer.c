@@ -72,7 +72,8 @@ static void display_print_driver3(struct spoolss_DriverInfo3 *r)
 
 static void display_reg_value(const char *subkey, struct regval_blob value)
 {
-	char *text;
+	const char *text;
+	DATA_BLOB blob;
 
 	switch(value.type) {
 	case REG_DWORD:
@@ -81,11 +82,8 @@ static void display_reg_value(const char *subkey, struct regval_blob value)
 		break;
 
 	case REG_SZ:
-		rpcstr_pull_talloc(talloc_tos(),
-				&text,
-				value.data_p,
-				value.size,
-				STR_TERMINATE);
+		blob = data_blob_const(value.data_p, value.size);
+		pull_reg_sz(talloc_tos(), &blob, &text);
 		if (!text) {
 			break;
 		}
@@ -100,17 +98,17 @@ static void display_reg_value(const char *subkey, struct regval_blob value)
 		break;
 
 	case REG_MULTI_SZ: {
-		uint32_t i, num_values;
-		char **values;
+		uint32_t i;
+		const char **values;
+		blob = data_blob_const(value.data_p, value.size);
 
-		if (!W_ERROR_IS_OK(reg_pull_multi_sz(NULL, value.data_p,
-						     value.size, &num_values,
-						     &values))) {
-			d_printf(_("reg_pull_multi_sz failed\n"));
+		if (!pull_reg_multi_sz(NULL, &blob, &values)) {
+			d_printf("pull_reg_multi_sz failed\n");
 			break;
 		}
 
-		for (i=0; i<num_values; i++) {
+		printf("%s: REG_MULTI_SZ: \n", value.valuename);
+		for (i=0; values[i] != NULL; i++) {
 			d_printf("%s\n", values[i]);
 		}
 		TALLOC_FREE(values);
@@ -2418,7 +2416,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 			for (j=0; j < count; j++) {
 
 				struct regval_blob value;
-				UNISTR2 data;
+				DATA_BLOB blob;
 
 				/* although samba replies with sane data in most cases we
 				   should try to avoid writing wrong registry data */
@@ -2432,7 +2430,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 					if (strequal(info[j].value_name, SPOOL_REG_PORTNAME)) {
 
 						/* although windows uses a multi-sz, we use a sz */
-						init_unistr2(&data, SAMBA_PRINTER_PORT_NAME, UNI_STR_TERMINATE);
+						push_reg_sz(mem_ctx, &blob, SAMBA_PRINTER_PORT_NAME);
 						fstrcpy(value.valuename, SPOOL_REG_PORTNAME);
 					}
 
@@ -2442,7 +2440,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 							nt_status = NT_STATUS_NO_MEMORY;
 							goto done;
 						}
-						init_unistr2(&data, unc_name, UNI_STR_TERMINATE);
+						push_reg_sz(mem_ctx, &blob, unc_name);
 						fstrcpy(value.valuename, SPOOL_REG_UNCNAME);
 					}
 
@@ -2456,27 +2454,27 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 							nt_status = NT_STATUS_NO_MEMORY;
 							goto done;
 						}
-						init_unistr2(&data, url, UNI_STR_TERMINATE);
+						push_reg_sz(mem_ctx, &blob, url);
 						fstrcpy(value.valuename, SPOOL_REG_URL);
 #endif
 					}
 
 					if (strequal(info[j].value_name, SPOOL_REG_SERVERNAME)) {
 
-						init_unistr2(&data, longname, UNI_STR_TERMINATE);
+						push_reg_sz(mem_ctx, &blob, longname);
 						fstrcpy(value.valuename, SPOOL_REG_SERVERNAME);
 					}
 
 					if (strequal(info[j].value_name, SPOOL_REG_SHORTSERVERNAME)) {
 
-						init_unistr2(&data, global_myname(), UNI_STR_TERMINATE);
+						push_reg_sz(mem_ctx, &blob, global_myname());
 						fstrcpy(value.valuename, SPOOL_REG_SHORTSERVERNAME);
 					}
 
 					value.type = REG_SZ;
-					value.size = data.uni_str_len * 2;
+					value.size = blob.length;
 					if (value.size) {
-						value.data_p = (uint8_t *)TALLOC_MEMDUP(mem_ctx, data.buffer, value.size);
+						value.data_p = blob.data;
 					} else {
 						value.data_p = NULL;
 					}
@@ -2492,7 +2490,6 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 				} else {
 
 					struct regval_blob v;
-					DATA_BLOB blob;
 
 					result = push_spoolss_PrinterData(mem_ctx, &blob,
 									  info[j].type,

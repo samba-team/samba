@@ -23,6 +23,46 @@
 #include "regfio.h"
 #include "reg_objects.h"
 
+/*******************************************************************
+ connect to a registry hive root (open a registry policy)
+*******************************************************************/
+
+static NTSTATUS rpccli_winreg_Connect(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
+				      uint32_t reg_type, uint32_t access_mask,
+				      struct policy_handle *reg_hnd)
+{
+	ZERO_STRUCTP(reg_hnd);
+
+	switch (reg_type)
+	{
+	case HKEY_CLASSES_ROOT:
+		return rpccli_winreg_OpenHKCR( cli, mem_ctx, NULL,
+			access_mask, reg_hnd, NULL);
+
+	case HKEY_LOCAL_MACHINE:
+		return rpccli_winreg_OpenHKLM( cli, mem_ctx, NULL,
+			access_mask, reg_hnd, NULL);
+
+	case HKEY_USERS:
+		return rpccli_winreg_OpenHKU( cli, mem_ctx, NULL,
+			access_mask, reg_hnd, NULL);
+
+	case HKEY_CURRENT_USER:
+		return rpccli_winreg_OpenHKCU( cli, mem_ctx, NULL,
+			access_mask, reg_hnd, NULL);
+
+	case HKEY_PERFORMANCE_DATA:
+		return rpccli_winreg_OpenHKPD( cli, mem_ctx, NULL,
+			access_mask, reg_hnd, NULL);
+
+	default:
+		/* fall through to end of function */
+		break;
+	}
+
+	return NT_STATUS_INVALID_PARAMETER;
+}
+
 static bool reg_hive_key(TALLOC_CTX *ctx, const char *fullname,
 			 uint32 *reg_type, const char **key_name)
 {
@@ -895,8 +935,9 @@ static int rpc_registry_save(struct net_context *c, int argc, const char **argv 
 static void dump_values( REGF_NK_REC *nk )
 {
 	int i, j;
-	char *data_str = NULL;
+	const char *data_str = NULL;
 	uint32 data_size, data;
+	DATA_BLOB blob;
 
 	if ( !nk->values )
 		return;
@@ -908,11 +949,8 @@ static void dump_values( REGF_NK_REC *nk )
 		data_size = nk->values[i].data_size & ~VK_DATA_IN_OFFSET;
 		switch ( nk->values[i].type ) {
 			case REG_SZ:
-				rpcstr_pull_talloc(talloc_tos(),
-						&data_str,
-						nk->values[i].data,
-						-1,
-						STR_TERMINATE);
+				blob = data_blob_const(nk->values[i].data, data_size);
+				pull_reg_sz(talloc_tos(), &blob, &data_str);
 				if (!data_str) {
 					break;
 				}

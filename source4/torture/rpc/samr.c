@@ -2132,7 +2132,7 @@ bool test_ChangePasswordUser3(struct dcerpc_pipe *p, struct torture_context *tct
 	uint8_t old_lm_hash[16], new_lm_hash[16];
 	NTTIME t;
 	struct samr_DomInfo1 *dominfo = NULL;
-	struct samr_ChangeReject *reject = NULL;
+	struct userPwdChangeFailureInformation *reject = NULL;
 
 	torture_comment(tctx, "Testing ChangePasswordUser3\n");
 
@@ -2269,9 +2269,9 @@ bool test_ChangePasswordUser3(struct dcerpc_pipe *p, struct torture_context *tct
 	    && (!null_nttime(last_password_change) || !dominfo->min_password_age)) {
 		if (dominfo->password_properties & DOMAIN_REFUSE_PASSWORD_CHANGE ) {
 
-			if (reject && (reject->reason != SAMR_REJECT_OTHER)) {
-				torture_warning(tctx, "expected SAMR_REJECT_OTHER (%d), got %d\n",
-					SAMR_REJECT_OTHER, reject->reason);
+			if (reject && (reject->extendedFailureReason != SAM_PWD_CHANGE_NO_ERROR)) {
+				torture_warning(tctx, "expected SAM_PWD_CHANGE_NO_ERROR (%d), got %d\n",
+					SAM_PWD_CHANGE_NO_ERROR, reject->extendedFailureReason);
 				return false;
 			}
 		}
@@ -2288,40 +2288,40 @@ bool test_ChangePasswordUser3(struct dcerpc_pipe *p, struct torture_context *tct
 		if ((dominfo->min_password_age > 0) && !null_nttime(last_password_change) &&
 			   (last_password_change + dominfo->min_password_age > t)) {
 
-			if (reject->reason != SAMR_REJECT_OTHER) {
-				torture_warning(tctx, "expected SAMR_REJECT_OTHER (%d), got %d\n",
-					SAMR_REJECT_OTHER, reject->reason);
+			if (reject->extendedFailureReason != SAM_PWD_CHANGE_NO_ERROR) {
+				torture_warning(tctx, "expected SAM_PWD_CHANGE_NO_ERROR (%d), got %d\n",
+					SAM_PWD_CHANGE_NO_ERROR, reject->extendedFailureReason);
 				return false;
 			}
 
 		} else if ((dominfo->min_password_length > 0) &&
 			   (strlen(newpass) < dominfo->min_password_length)) {
 
-			if (reject->reason != SAMR_REJECT_TOO_SHORT) {
-				torture_warning(tctx, "expected SAMR_REJECT_TOO_SHORT (%d), got %d\n",
-					SAMR_REJECT_TOO_SHORT, reject->reason);
+			if (reject->extendedFailureReason != SAM_PWD_CHANGE_PASSWORD_TOO_SHORT) {
+				torture_warning(tctx, "expected SAM_PWD_CHANGE_PASSWORD_TOO_SHORT (%d), got %d\n",
+					SAM_PWD_CHANGE_PASSWORD_TOO_SHORT, reject->extendedFailureReason);
 				return false;
 			}
 
 		} else if ((dominfo->password_history_length > 0) &&
 			    strequal(oldpass, newpass)) {
 
-			if (reject->reason != SAMR_REJECT_IN_HISTORY) {
-				torture_warning(tctx, "expected SAMR_REJECT_IN_HISTORY (%d), got %d\n",
-					SAMR_REJECT_IN_HISTORY, reject->reason);
+			if (reject->extendedFailureReason != SAM_PWD_CHANGE_PWD_IN_HISTORY) {
+				torture_warning(tctx, "expected SAM_PWD_CHANGE_PWD_IN_HISTORY (%d), got %d\n",
+					SAM_PWD_CHANGE_PWD_IN_HISTORY, reject->extendedFailureReason);
 				return false;
 			}
 		} else if (dominfo->password_properties & DOMAIN_PASSWORD_COMPLEX) {
 
-			if (reject->reason != SAMR_REJECT_COMPLEXITY) {
-				torture_warning(tctx, "expected SAMR_REJECT_COMPLEXITY (%d), got %d\n",
-					SAMR_REJECT_COMPLEXITY, reject->reason);
+			if (reject->extendedFailureReason != SAM_PWD_CHANGE_NOT_COMPLEX) {
+				torture_warning(tctx, "expected SAM_PWD_CHANGE_NOT_COMPLEX (%d), got %d\n",
+					SAM_PWD_CHANGE_NOT_COMPLEX, reject->extendedFailureReason);
 				return false;
 			}
 
 		}
 
-		if (reject->reason == SAMR_REJECT_TOO_SHORT) {
+		if (reject->extendedFailureReason == SAM_PWD_CHANGE_PASSWORD_TOO_SHORT) {
 			/* retry with adjusted size */
 			return test_ChangePasswordUser3(p, tctx, account_string,
 							dominfo->min_password_length,
@@ -2330,9 +2330,9 @@ bool test_ChangePasswordUser3(struct dcerpc_pipe *p, struct torture_context *tct
 		}
 
 	} else if (NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION)) {
-		if (reject && reject->reason != SAMR_REJECT_OTHER) {
-			torture_warning(tctx, "expected SAMR_REJECT_OTHER (%d), got %d\n",
-			       SAMR_REJECT_OTHER, reject->reason);
+		if (reject && reject->extendedFailureReason != SAM_PWD_CHANGE_NO_ERROR) {
+			torture_warning(tctx, "expected SAM_PWD_CHANGE_NO_ERROR (%d), got %d\n",
+			       SAM_PWD_CHANGE_NO_ERROR, reject->extendedFailureReason);
 			return false;
 		}
 		/* Perhaps the server has a 'min password age' set? */
@@ -2369,7 +2369,7 @@ bool test_ChangePasswordRandomBytes(struct dcerpc_pipe *p, struct torture_contex
 	uint8_t old_nt_hash[16], new_nt_hash[16];
 	NTTIME t;
 	struct samr_DomInfo1 *dominfo = NULL;
-	struct samr_ChangeReject *reject = NULL;
+	struct userPwdChangeFailureInformation *reject = NULL;
 
 	new_random_pass = samr_very_rand_pass(tctx, 128);
 
@@ -2444,9 +2444,9 @@ bool test_ChangePasswordRandomBytes(struct dcerpc_pipe *p, struct torture_contex
 	status = dcerpc_samr_ChangePasswordUser3(p, tctx, &r);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION)) {
-		if (reject && reject->reason != SAMR_REJECT_OTHER) {
-			torture_warning(tctx, "expected SAMR_REJECT_OTHER (%d), got %d\n",
-			       SAMR_REJECT_OTHER, reject->reason);
+		if (reject && reject->extendedFailureReason != SAM_PWD_CHANGE_NO_ERROR) {
+			torture_warning(tctx, "expected SAM_PWD_CHANGE_NO_ERROR (%d), got %d\n",
+			       SAM_PWD_CHANGE_NO_ERROR, reject->extendedFailureReason);
 			return false;
 		}
 		/* Perhaps the server has a 'min password age' set? */
@@ -2482,9 +2482,9 @@ bool test_ChangePasswordRandomBytes(struct dcerpc_pipe *p, struct torture_contex
 	status = dcerpc_samr_ChangePasswordUser3(p, tctx, &r);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION)) {
-		if (reject && reject->reason != SAMR_REJECT_OTHER) {
-			torture_warning(tctx, "expected SAMR_REJECT_OTHER (%d), got %d\n",
-			       SAMR_REJECT_OTHER, reject->reason);
+		if (reject && reject->extendedFailureReason != SAM_PWD_CHANGE_NO_ERROR) {
+			torture_warning(tctx, "expected SAM_PWD_CHANGE_NO_ERROR (%d), got %d\n",
+			       SAM_PWD_CHANGE_NO_ERROR, reject->extendedFailureReason);
 			return false;
 		}
 		/* Perhaps the server has a 'min password age' set? */
@@ -6754,6 +6754,35 @@ static bool test_Connect(struct dcerpc_pipe *p, struct torture_context *tctx,
 }
 
 
+static bool test_samr_ValidatePassword(struct dcerpc_pipe *p, struct torture_context *tctx)
+{
+	struct samr_ValidatePassword r;
+	union samr_ValidatePasswordReq req;
+	union samr_ValidatePasswordRep *repp = NULL;
+	NTSTATUS status;
+	const char *passwords[] = { "penguin", "p@ssw0rd", "p@ssw0rd123$", NULL };
+	int i;
+
+	ZERO_STRUCT(r);
+	r.in.level = NetValidatePasswordReset;
+	r.in.req = &req;
+	r.out.rep = &repp;
+	
+	ZERO_STRUCT(req);
+	req.req3.account.string = "non-existant-account-aklsdji";
+
+	for (i=0; passwords[i]; i++) {
+		req.req3.password.string = passwords[i];
+		status = dcerpc_samr_ValidatePassword(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "samr_ValidatePassword");
+		torture_comment(tctx, "Server %s password '%s'\n", 
+				repp->ctr3.status==SAMR_VALIDATION_STATUS_SUCCESS?"allowed":"refused",
+				req.req3.password.string);
+	}
+
+	return true;	
+}
+
 bool torture_rpc_samr(struct torture_context *torture)
 {
 	NTSTATUS status;
@@ -6764,6 +6793,11 @@ bool torture_rpc_samr(struct torture_context *torture)
 	status = torture_rpc_connection(torture, &p, &ndr_table_samr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
+	}
+
+
+	if (torture_setting_bool(torture, "dangerous", false)) {
+		ret &= test_samr_ValidatePassword(p, torture);
 	}
 
 	ret &= test_Connect(p, torture, &handle);
@@ -7008,3 +7042,4 @@ struct torture_suite *torture_rpc_samr_large_dc(TALLOC_CTX *mem_ctx)
 
 	return suite;
 }
+

@@ -86,7 +86,7 @@ SCHANNELDB_OBJ_FILES = $(addprefix $(gensecsrcdir)/, schannel_state.o)
 $(eval $(call proto_header_template,$(gensecsrcdir)/schannel_state.h,$(SCHANNELDB_OBJ_FILES:.o=.c)))
 
 [PYTHON::pygensec]
-PRIVATE_DEPENDENCIES = gensec PYTALLOC
+PRIVATE_DEPENDENCIES = gensec PYTALLOC pyparam_util
 LIBRARY_REALNAME = samba/gensec.$(SHLIBEXT)
 
 pygensec_OBJ_FILES = $(gensecsrcdir)/pygensec.o

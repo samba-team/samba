@@ -379,7 +379,7 @@ static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 					ac, kludge_acl_callback,
 					req);
 	if (ret != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ret;
 	}
 
 	/* check if there's an SD_FLAGS control */

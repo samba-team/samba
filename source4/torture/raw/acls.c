@@ -57,7 +57,7 @@ static bool test_sd(struct torture_context *tctx,
 	printf("TESTING SETFILEINFO EA_SET\n");
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	io.ntcreatex.in.create_options = 0;
@@ -161,7 +161,7 @@ static bool test_nttrans_create(struct torture_context *tctx,
 	printf("testing nttrans create with sec_desc\n");
 
 	io.generic.level = RAW_OPEN_NTTRANS_CREATE;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	io.ntcreatex.in.create_options = 0;
@@ -267,7 +267,7 @@ static bool test_nttrans_create_null_dacl(struct torture_context *tctx,
 	printf("TESTING SEC_DESC WITH A NULL DACL\n");
 
 	io.generic.level = RAW_OPEN_NTTRANS_CREATE;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_STD_READ_CONTROL | SEC_STD_WRITE_DAC
 		| SEC_STD_WRITE_OWNER;
@@ -512,7 +512,7 @@ static bool test_creator_sid(struct torture_context *tctx,
 	printf("TESTING SID_CREATOR_OWNER\n");
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_STD_READ_CONTROL | SEC_STD_WRITE_DAC | SEC_STD_WRITE_OWNER;
 	io.ntcreatex.in.create_options = 0;
@@ -748,7 +748,7 @@ static bool test_generic_bits(struct torture_context *tctx,
 	printf("TESTING FILE GENERIC BITS\n");
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = 
 		SEC_STD_READ_CONTROL | 
@@ -778,21 +778,21 @@ static bool test_generic_bits(struct torture_context *tctx,
 
 	owner_sid = dom_sid_string(tctx, sd_orig->owner_sid);
 
-	status = smblsa_sid_check_privilege(cli, 
+	status = torture_check_privilege(cli, 
 					    owner_sid, 
 					    sec_privilege_name(SEC_PRIV_RESTORE));
 	has_restore_privilege = NT_STATUS_IS_OK(status);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("smblsa_sid_check_privilege - %s\n", nt_errstr(status));
+		printf("torture_check_privilege - %s\n", nt_errstr(status));
 	}
 	printf("SEC_PRIV_RESTORE - %s\n", has_restore_privilege?"Yes":"No");
 
-	status = smblsa_sid_check_privilege(cli, 
+	status = torture_check_privilege(cli, 
 					    owner_sid, 
 					    sec_privilege_name(SEC_PRIV_TAKE_OWNERSHIP));
 	has_take_ownership_privilege = NT_STATUS_IS_OK(status);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("smblsa_sid_check_privilege - %s\n", nt_errstr(status));
+		printf("torture_check_privilege - %s\n", nt_errstr(status));
 	}
 	printf("SEC_PRIV_TAKE_OWNERSHIP - %s\n", has_take_ownership_privilege?"Yes":"No");
 
@@ -913,7 +913,7 @@ static bool test_generic_bits(struct torture_context *tctx,
 	printf("TESTING DIR GENERIC BITS\n");
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = 
 		SEC_STD_READ_CONTROL | 
@@ -943,21 +943,21 @@ static bool test_generic_bits(struct torture_context *tctx,
 
 	owner_sid = dom_sid_string(tctx, sd_orig->owner_sid);
 
-	status = smblsa_sid_check_privilege(cli, 
+	status = torture_check_privilege(cli, 
 					    owner_sid, 
 					    sec_privilege_name(SEC_PRIV_RESTORE));
 	has_restore_privilege = NT_STATUS_IS_OK(status);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("smblsa_sid_check_privilege - %s\n", nt_errstr(status));
+		printf("torture_check_privilege - %s\n", nt_errstr(status));
 	}
 	printf("SEC_PRIV_RESTORE - %s\n", has_restore_privilege?"Yes":"No");
 
-	status = smblsa_sid_check_privilege(cli, 
+	status = torture_check_privilege(cli, 
 					    owner_sid, 
 					    sec_privilege_name(SEC_PRIV_TAKE_OWNERSHIP));
 	has_take_ownership_privilege = NT_STATUS_IS_OK(status);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("smblsa_sid_check_privilege - %s\n", nt_errstr(status));
+		printf("torture_check_privilege - %s\n", nt_errstr(status));
 	}
 	printf("SEC_PRIV_TAKE_OWNERSHIP - %s\n", has_take_ownership_privilege?"Yes":"No");
 
@@ -1102,7 +1102,7 @@ static bool test_owner_bits(struct torture_context *tctx,
 	printf("TESTING FILE OWNER BITS\n");
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = 
 		SEC_STD_READ_CONTROL | 
@@ -1132,21 +1132,21 @@ static bool test_owner_bits(struct torture_context *tctx,
 
 	owner_sid = dom_sid_string(tctx, sd_orig->owner_sid);
 
-	status = smblsa_sid_check_privilege(cli, 
+	status = torture_check_privilege(cli, 
 					    owner_sid, 
 					    sec_privilege_name(SEC_PRIV_RESTORE));
 	has_restore_privilege = NT_STATUS_IS_OK(status);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("smblsa_sid_check_privilege - %s\n", nt_errstr(status));
+		printf("torture_check_privilege - %s\n", nt_errstr(status));
 	}
 	printf("SEC_PRIV_RESTORE - %s\n", has_restore_privilege?"Yes":"No");
 
-	status = smblsa_sid_check_privilege(cli, 
+	status = torture_check_privilege(cli, 
 					    owner_sid, 
 					    sec_privilege_name(SEC_PRIV_TAKE_OWNERSHIP));
 	has_take_ownership_privilege = NT_STATUS_IS_OK(status);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("smblsa_sid_check_privilege - %s\n", nt_errstr(status));
+		printf("torture_check_privilege - %s\n", nt_errstr(status));
 	}
 	printf("SEC_PRIV_TAKE_OWNERSHIP - %s\n", has_take_ownership_privilege?"Yes":"No");
 
@@ -1219,7 +1219,7 @@ static bool test_inheritance(struct torture_context *tctx,
 	union smb_fileinfo q;
 	union smb_setfileinfo set;
 	struct security_descriptor *sd, *sd2, *sd_orig=NULL, *sd_def;
-	const char *owner_sid;
+	const char *owner_sid, *group_sid;
 	const struct dom_sid *creator_owner;
 	const struct {
 		uint32_t parent_flags;
@@ -1334,7 +1334,7 @@ static bool test_inheritance(struct torture_context *tctx,
 	printf("TESTING ACL INHERITANCE\n");
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
@@ -1353,26 +1353,54 @@ static bool test_inheritance(struct torture_context *tctx,
 	printf("get the original sd\n");
 	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
 	q.query_secdesc.in.file.fnum = fnum;
-	q.query_secdesc.in.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
+	q.query_secdesc.in.secinfo_flags = SECINFO_DACL | SECINFO_OWNER | SECINFO_GROUP;
 	status = smb_raw_fileinfo(cli->tree, tctx, &q);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	sd_orig = q.query_secdesc.out.sd;
 
 	owner_sid = dom_sid_string(tctx, sd_orig->owner_sid);
+	group_sid = dom_sid_string(tctx, sd_orig->group_sid);
 
 	printf("owner_sid is %s\n", owner_sid);
+	printf("group_sid is %s\n", group_sid);
 
-	sd_def = security_descriptor_dacl_create(tctx,
-					    0, owner_sid, NULL,
-					    owner_sid,
-					    SEC_ACE_TYPE_ACCESS_ALLOWED,
-					    SEC_RIGHTS_FILE_ALL,
-					    0,
-					    SID_NT_SYSTEM,
-					    SEC_ACE_TYPE_ACCESS_ALLOWED,
-					    SEC_RIGHTS_FILE_ALL,
-					    0,
-					    NULL);
+	q.query_secdesc.in.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
+
+	if (torture_setting_bool(tctx, "samba4", false)) {
+		/* the default ACL in Samba4 includes the group and
+		   other permissions */
+		sd_def = security_descriptor_dacl_create(tctx,
+							 0, owner_sid, NULL,
+							 owner_sid,
+							 SEC_ACE_TYPE_ACCESS_ALLOWED,
+							 SEC_RIGHTS_FILE_ALL,
+							 0,
+							 group_sid,
+							 SEC_ACE_TYPE_ACCESS_ALLOWED,
+							 SEC_RIGHTS_FILE_READ | SEC_FILE_EXECUTE,
+							 0,
+							 SID_WORLD,
+							 SEC_ACE_TYPE_ACCESS_ALLOWED,
+							 SEC_RIGHTS_FILE_READ | SEC_FILE_EXECUTE,
+							 0,
+							 SID_NT_SYSTEM,
+							 SEC_ACE_TYPE_ACCESS_ALLOWED,
+							 SEC_RIGHTS_FILE_ALL,
+							 0,
+							 NULL);
+	} else {
+		sd_def = security_descriptor_dacl_create(tctx,
+							 0, owner_sid, NULL,
+							 owner_sid,
+							 SEC_ACE_TYPE_ACCESS_ALLOWED,
+							 SEC_RIGHTS_FILE_ALL,
+							 0,
+							 SID_NT_SYSTEM,
+							 SEC_ACE_TYPE_ACCESS_ALLOWED,
+							 SEC_RIGHTS_FILE_ALL,
+							 0,
+							 NULL);
+	}
 
 	creator_owner = dom_sid_parse_talloc(tctx, SID_CREATOR_OWNER);
 
@@ -1410,7 +1438,7 @@ static bool test_inheritance(struct torture_context *tctx,
 
 		if (!(test_flags[i].parent_flags & SEC_ACE_FLAG_OBJECT_INHERIT)) {
 			if (!security_descriptor_equal(q.query_secdesc.out.sd, sd_def)) {
-				printf("Expected default sd:\n");
+				printf(__location__ ": Expected default sd for i=%d:\n", i);
 				NDR_PRINT_DEBUG(security_descriptor, sd_def);
 				printf("at %d - got:\n", i);
 				NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
@@ -1639,8 +1667,8 @@ static bool test_inheritance_dynamic(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	union smb_open io;
-	const char *dname = BASEDIR "\\inheritance";
-	const char *fname1 = BASEDIR "\\inheritance\\testfile";
+	const char *dname = BASEDIR "\\inheritance2";
+	const char *fname1 = BASEDIR "\\inheritance2\\testfile";
 	bool ret = true;
 	int fnum=0, fnum2;
 	union smb_fileinfo q;
@@ -1655,7 +1683,7 @@ static bool test_inheritance_dynamic(struct torture_context *tctx,
 	}
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
@@ -1848,7 +1876,7 @@ static bool test_sd_get_set(struct torture_context *tctx,
 	sd->type |= SEC_DESC_SACL_PRESENT;
 	sd->sacl = NULL;
 	io.ntcreatex.level = RAW_OPEN_NTTRANS_CREATE;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_GENERIC_ALL;
 	io.ntcreatex.in.create_options = 0;

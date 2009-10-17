@@ -220,3 +220,12 @@ int smb2_deltree(struct smb2_tree *tree, const char *dname)
 
 	return total_deleted;
 }
+
+/*
+  check if two SMB2 file handles are the same
+*/
+bool smb2_util_handle_equal(const struct smb2_handle h1,
+			    const struct smb2_handle h2)
+{
+	return (h1.data[0] == h2.data[0]) && (h1.data[1] == h2.data[1]);
+}

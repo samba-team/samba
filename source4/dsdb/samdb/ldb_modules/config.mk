@@ -1,4 +1,14 @@
 ################################################
+# Start SUBSYSTEM DSDB_MODULE_HELPERS
+[SUBSYSTEM::DSDB_MODULE_HELPERS]
+PRIVATE_DEPENDENCIES = LIBLDB
+
+DSDB_MODULE_HELPERS_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/util.o
+
+$(eval $(call proto_header_template,$(dsdbsrcdir)/samdb/ldb_modules/util_proto.h,$(DSDB_MODULE_HELPERS_OBJ_FILES:.o=.c)))
+
+
+################################################
 # Start MODULE ldb_objectguid
 [MODULE::ldb_objectguid]
 SUBSYSTEM = LIBLDB
@@ -15,7 +25,7 @@ ldb_objectguid_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/objectguid.o
 SUBSYSTEM = LIBLDB
 PRIVATE_DEPENDENCIES = SAMDB LIBTALLOC LIBEVENTS \
 			LIBNDR NDR_DRSUAPI \
-			NDR_DRSBLOBS LIBNDR
+			NDR_DRSBLOBS LIBNDR DSDB_MODULE_HELPERS
 INIT_FUNCTION = LDB_MODULE(repl_meta_data)
 # End MODULE ldb_repl_meta_data
 ################################################
@@ -39,7 +49,7 @@ ldb_dsdb_cache_OBJ_FILES = \
 # Start MODULE ldb_schema_fsmo
 [MODULE::ldb_schema_fsmo]
 SUBSYSTEM = LIBLDB
-PRIVATE_DEPENDENCIES = SAMDB LIBTALLOC LIBEVENTS
+PRIVATE_DEPENDENCIES = SAMDB LIBTALLOC LIBEVENTS DSDB_MODULE_HELPERS
 INIT_FUNCTION = LDB_MODULE(schema_fsmo)
 # End MODULE ldb_schema_fsmo
 ################################################
@@ -51,7 +61,7 @@ ldb_schema_fsmo_OBJ_FILES = \
 # Start MODULE ldb_naming_fsmo
 [MODULE::ldb_naming_fsmo]
 SUBSYSTEM = LIBLDB
-PRIVATE_DEPENDENCIES = SAMDB LIBTALLOC LIBEVENTS
+PRIVATE_DEPENDENCIES = SAMDB LIBTALLOC LIBEVENTS DSDB_MODULE_HELPERS
 INIT_FUNCTION = LDB_MODULE(naming_fsmo)
 # End MODULE ldb_naming_fsmo
 ################################################
@@ -63,7 +73,7 @@ ldb_naming_fsmo_OBJ_FILES = \
 # Start MODULE ldb_pdc_fsmo
 [MODULE::ldb_pdc_fsmo]
 SUBSYSTEM = LIBLDB
-PRIVATE_DEPENDENCIES = SAMDB LIBTALLOC LIBEVENTS
+PRIVATE_DEPENDENCIES = SAMDB LIBTALLOC LIBEVENTS DSDB_MODULE_HELPERS
 INIT_FUNCTION = LDB_MODULE(pdc_fsmo)
 # End MODULE ldb_pdc_fsmo
 ################################################
@@ -220,7 +230,7 @@ ldb_show_deleted_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/show_deleted.o
 # Start MODULE ldb_partition
 [MODULE::ldb_partition]
 SUBSYSTEM = LIBLDB
-PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS SAMDB
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS SAMDB DSDB_MODULE_HELPERS
 INIT_FUNCTION = LDB_MODULE(partition)
 # End MODULE ldb_partition
 ################################################
@@ -369,3 +379,15 @@ INIT_FUNCTION = LDB_MODULE(acl)
 ################################################
 
 ldb_acl_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/acl.o
+
+################################################
+# Start MODULE ldb_lazy_commit
+[MODULE::ldb_lazy_commit]
+PRIVATE_DEPENDENCIES = SAMDB
+SUBSYSTEM = LIBLDB
+INIT_FUNCTION = LDB_MODULE(lazy_commit)
+
+# End MODULE ldb_lazy_commit
+################################################
+
+ldb_lazy_commit_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/lazy_commit.o

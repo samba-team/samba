@@ -43,7 +43,7 @@ sub test_compile($)
 {
 	my $fname = shift;
 	my $obj;
-	if ($fname =~ s/(.*)\.c$/$1.o/) {
+	if ($fname =~ s/(.*)\..*$/$1.o/) {
 		$obj = "$1.o";
 	} else {
 		return "NOT A C FILE";

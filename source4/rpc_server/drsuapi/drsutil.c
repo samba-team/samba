@@ -98,7 +98,7 @@ int drsuapi_search_with_extended_dn(struct ldb_context *ldb,
 		sort_control[0] = talloc(req, struct ldb_server_sort_control);
 		sort_control[0]->attributeName = sort_attrib;
 		sort_control[0]->orderingRule = NULL;
-		sort_control[0]->reverse = 1;
+		sort_control[0]->reverse = 0;
 		sort_control[1] = NULL;
 
 		ret = ldb_request_add_control(req, LDB_CONTROL_SERVER_SORT_OID, true, sort_control);
@@ -127,7 +127,9 @@ WERROR drs_security_level_check(struct dcesrv_call_state *dce_call, const char* 
 
 	if (security_session_user_level(dce_call->conn->auth_state.session_info) <
 		SECURITY_DOMAIN_CONTROLLER) {
-		DEBUG(0,("DsReplicaGetInfo refused for security token\n"));
+		if (call) {
+			DEBUG(0,("%s refused for security token\n", call));
+		}
 		return WERR_DS_DRA_ACCESS_DENIED;
 	}
 

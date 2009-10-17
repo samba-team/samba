@@ -42,7 +42,16 @@ struct tevent_req *winbindd_check_machine_acct_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	domain = find_our_domain();
+	if (request->domain_name[0] == '0') {
+		/* preserve old behavior, when no domain name is given */
+		domain = find_our_domain();
+	} else {
+		domain = find_domain_from_name(request->domain_name);
+	}
+	if (domain == NULL) {
+		tevent_req_nterror(req, NT_STATUS_NO_SUCH_DOMAIN);
+		return tevent_req_post(req, ev);
+	}
 	if (domain->internal) {
 		/*
 		 * Internal domains are passdb based, we can always

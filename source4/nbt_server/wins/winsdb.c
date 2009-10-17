@@ -100,17 +100,17 @@ uint64_t winsdb_set_maxVersion(struct winsdb_handle *h, uint64_t newMaxVersion)
 
 
 	ret = ldb_msg_add_empty(msg, "objectClass", LDB_FLAG_MOD_REPLACE, NULL);
-	if (ret != 0) goto failed;
+	if (ret != LDB_SUCCESS) goto failed;
 	ret = ldb_msg_add_string(msg, "objectClass", "winsMaxVersion");
-	if (ret != 0) goto failed;
+	if (ret != LDB_SUCCESS) goto failed;
 	ret = ldb_msg_add_empty(msg, "maxVersion", LDB_FLAG_MOD_REPLACE, NULL);
-	if (ret != 0) goto failed;
+	if (ret != LDB_SUCCESS) goto failed;
 	ret = ldb_msg_add_fmt(msg, "maxVersion", "%llu", (long long)newMaxVersion);
-	if (ret != 0) goto failed;
+	if (ret != LDB_SUCCESS) goto failed;
 
 	ret = ldb_modify(wins_db, msg);
-	if (ret != 0) ret = ldb_add(wins_db, msg);
-	if (ret != 0) goto failed;
+	if (ret != LDB_SUCCESS) ret = ldb_add(wins_db, msg);
+	if (ret != LDB_SUCCESS) goto failed;
 
 	trans = ldb_transaction_commit(wins_db);
 	if (trans != LDB_SUCCESS) goto failed;
@@ -259,7 +259,7 @@ static NTSTATUS winsdb_addr_decode(struct winsdb_handle *h, struct winsdb_record
 		return NT_STATUS_OK;
 	}
 
-	*p = '\0';p++;
+	*p = '\0'; p++;
 	addr->address = talloc_strdup(addr, address);
 	if (!addr->address) {
 		status = NT_STATUS_NO_MEMORY;
@@ -324,16 +324,16 @@ static int ldb_msg_add_winsdb_addr(struct ldb_message *msg, struct winsdb_record
 
 	if (rec->is_static) {
 		str = talloc_strdup(msg, addr->address);
-		if (!str) return -1;
+		if (!str) return LDB_ERR_OPERATIONS_ERROR;
 	} else {
 		char *expire_time;
 		expire_time = ldb_timestring(msg, addr->expire_time);
-		if (!expire_time) return -1;
+		if (!expire_time) return LDB_ERR_OPERATIONS_ERROR;
 		str = talloc_asprintf(msg, "%s;winsOwner:%s;expireTime:%s;",
 				      addr->address, addr->wins_owner,
 				      expire_time);
 		talloc_free(expire_time);
-		if (!str) return -1;
+		if (!str) return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	val.data = discard_const_p(uint8_t, str);
@@ -750,7 +750,7 @@ static struct ldb_message *winsdb_message(struct ldb_context *ldb,
 					  struct winsdb_record *rec,
 					  TALLOC_CTX *mem_ctx)
 {
-	int i, ret=0;
+	int i, ret;
 	size_t addr_count;
 	const char *expire_time;
 	struct ldb_message *msg = ldb_msg_new(mem_ctx);
@@ -772,7 +772,7 @@ static struct ldb_message *winsdb_message(struct ldb_context *ldb,
 
 	msg->dn = winsdb_dn(msg, ldb, rec->name);
 	if (msg->dn == NULL) goto failed;
-	ret |= ldb_msg_add_fmt(msg, "type", "0x%02X", rec->name->type);
+	ret = ldb_msg_add_fmt(msg, "type", "0x%02X", rec->name->type);
 	if (rec->name->name && *rec->name->name) {
 		ret |= ldb_msg_add_string(msg, "name", rec->name->name);
 	}
@@ -794,11 +794,11 @@ static struct ldb_message *winsdb_message(struct ldb_context *ldb,
 	for (i=0;rec->addresses[i];i++) {
 		ret |= ldb_msg_add_winsdb_addr(msg, rec, "address", rec->addresses[i]);
 	}
-	ret |= ldb_msg_add_empty(msg, "registeredBy", 0, NULL);
 	if (rec->registered_by) {
+		ret |= ldb_msg_add_empty(msg, "registeredBy", 0, NULL);
 		ret |= ldb_msg_add_string(msg, "registeredBy", rec->registered_by);
-		if (ret != 0) goto failed;
 	}
+	if (ret != LDB_SUCCESS) goto failed;
 	return msg;
 
 failed:
@@ -815,7 +815,7 @@ uint8_t winsdb_add(struct winsdb_handle *h, struct winsdb_record *rec, uint32_t 
 	struct ldb_context *wins_db = h->ldb;
 	TALLOC_CTX *tmp_ctx = talloc_new(wins_db);
 	int trans = -1;
-	int ret = 0;
+	int ret;
 
 	trans = ldb_transaction_start(wins_db);
 	if (trans != LDB_SUCCESS) goto failed;
@@ -832,7 +832,7 @@ uint8_t winsdb_add(struct winsdb_handle *h, struct winsdb_record *rec, uint32_t 
 	msg = winsdb_message(wins_db, rec, tmp_ctx);
 	if (msg == NULL) goto failed;
 	ret = ldb_add(wins_db, msg);
-	if (ret != 0) goto failed;
+	if (ret != LDB_SUCCESS) goto failed;
 
 	trans = ldb_transaction_commit(wins_db);
 	if (trans != LDB_SUCCESS) goto failed;
@@ -881,7 +881,7 @@ uint8_t winsdb_modify(struct winsdb_handle *h, struct winsdb_record *rec, uint32
 	}
 
 	ret = ldb_modify(wins_db, msg);
-	if (ret != 0) goto failed;
+	if (ret != LDB_SUCCESS) goto failed;
 
 	trans = ldb_transaction_commit(wins_db);
 	if (trans != LDB_SUCCESS) goto failed;
@@ -916,7 +916,7 @@ uint8_t winsdb_delete(struct winsdb_handle *h, struct winsdb_record *rec)
 	if (dn == NULL) goto failed;
 
 	ret = ldb_delete(wins_db, dn);
-	if (ret != 0) goto failed;
+	if (ret != LDB_SUCCESS) goto failed;
 
 	trans = ldb_transaction_commit(wins_db);
 	if (trans != LDB_SUCCESS) goto failed;
@@ -962,10 +962,10 @@ static bool winsdb_check_or_add_module_list(struct tevent_context *ev_ctx,
 	msg->dn = dn;
 
 	ret = ldb_msg_add_string(msg, "@LIST", "wins_ldb");
-	if (ret != 0) goto failed;
+	if (ret != LDB_SUCCESS) goto failed;
 
 	ret = ldb_add(h->ldb, msg);
-	if (ret != 0) goto failed;
+	if (ret != LDB_SUCCESS) goto failed;
 
 	trans = ldb_transaction_commit(h->ldb);
 	if (trans != LDB_SUCCESS) goto failed;
@@ -1037,3 +1037,4 @@ failed:
 	talloc_free(h);
 	return NULL;
 }
+

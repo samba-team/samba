@@ -37,8 +37,6 @@ static int current_version_fetch_values(const char *key, struct regval_ctr *valu
 {
 	const char *sysroot_string = "c:\\Windows";
 	fstring sysversion;
-	fstring value;
-	uint32 value_length;
 	char *path = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
@@ -55,16 +53,12 @@ static int current_version_fetch_values(const char *key, struct regval_ctr *valu
 		return regdb_ops.fetch_values(key, values);
 	}
 
-	value_length = push_ucs2(value, value, sysroot_string, sizeof(value),
-				 STR_TERMINATE|STR_NOALIGN );
-	regval_ctr_addvalue(values, "SystemRoot", REG_SZ, value, value_length);
+	regval_ctr_addvalue_sz(values, "SystemRoot", sysroot_string);
 
 	fstr_sprintf(sysversion, "%d.%d", lp_major_announce_version(),
 		     lp_minor_announce_version());
-	value_length = push_ucs2(value, value, sysversion, sizeof(value),
-				 STR_TERMINATE|STR_NOALIGN);
-	regval_ctr_addvalue(values, "CurrentVersion", REG_SZ, value,
-			    value_length);
+
+	regval_ctr_addvalue_sz(values, "CurrentVersion", sysversion);
 
 	return regval_ctr_numvals(values);
 }

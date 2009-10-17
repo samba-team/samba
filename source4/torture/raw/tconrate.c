@@ -112,6 +112,7 @@ static int fork_tcon_client(struct torture_context *tctx,
 		}
 
 		smbcli_tdis(cli);
+		talloc_free(cli);
 
 		*tcon_count = *tcon_count + 1;
 		now = timeval_current();

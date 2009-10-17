@@ -2616,7 +2616,7 @@ static NTSTATUS find_printers(TALLOC_CTX *ctx, struct loadparm_context *lp_ctx,
 	return NT_STATUS_OK;
 }
 
-static bool enumprinters(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *pipe,
+static bool enumprinters(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p,
 			 const char *servername, int level, int *num_printers)
 {
 	struct spoolss_EnumPrinters r;
@@ -2635,7 +2635,7 @@ static bool enumprinters(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *pipe,
 	r.out.count = &count;
 	r.out.info = &info;
 
-	status = dcerpc_spoolss_EnumPrinters(pipe, mem_ctx, &r);
+	status = dcerpc_spoolss_EnumPrinters(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("(%s) dcerpc_spoolss_EnumPrinters failed: %s\n",
 			 __location__, nt_errstr(status));
@@ -2658,7 +2658,7 @@ static bool enumprinters(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *pipe,
 	r.in.buffer = &blob;
 	r.in.offered = needed;
 
-	status = dcerpc_spoolss_EnumPrinters(pipe, mem_ctx, &r);
+	status = dcerpc_spoolss_EnumPrinters(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
 		d_printf("(%s) dcerpc_spoolss_EnumPrinters failed: %s, "
 			 "%s\n", __location__, nt_errstr(status),
@@ -2671,7 +2671,7 @@ static bool enumprinters(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *pipe,
 	return true;
 }
 
-static NTSTATUS getprinterinfo(TALLOC_CTX *ctx, struct dcerpc_pipe *pipe,
+static NTSTATUS getprinterinfo(TALLOC_CTX *ctx, struct dcerpc_pipe *p,
 			       struct policy_handle *handle, int level,
 			       union spoolss_PrinterInfo **res)
 {
@@ -2692,7 +2692,7 @@ static NTSTATUS getprinterinfo(TALLOC_CTX *ctx, struct dcerpc_pipe *pipe,
 	r.in.offered = 0;
 	r.out.needed = &needed;
 
-	status = dcerpc_spoolss_GetPrinter(pipe, mem_ctx, &r);
+	status = dcerpc_spoolss_GetPrinter(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("(%s) dcerpc_spoolss_GetPrinter failed: %s\n",
 			 __location__, nt_errstr(status));
@@ -2719,7 +2719,7 @@ static NTSTATUS getprinterinfo(TALLOC_CTX *ctx, struct dcerpc_pipe *pipe,
 	r.in.buffer = &blob;
 	r.in.offered = needed;
 
-	status = dcerpc_spoolss_GetPrinter(pipe, mem_ctx, &r);
+	status = dcerpc_spoolss_GetPrinter(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
 		d_printf("(%s) dcerpc_spoolss_GetPrinter failed: %s, "
 			 "%s\n", __location__, nt_errstr(status),

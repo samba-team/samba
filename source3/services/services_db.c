@@ -250,7 +250,7 @@ static bool read_init_file( const char *servicename, struct rcinit_file_informat
 
 static void fill_service_values(const char *name, struct regval_ctr *values)
 {
-	UNISTR2 data, dname, ipath, description;
+	char *dname, *ipath, *description;
 	uint32 dword;
 	int i;
 
@@ -268,24 +268,17 @@ static void fill_service_values(const char *name, struct regval_ctr *values)
 
 	/* everything runs as LocalSystem */
 
-	init_unistr2( &data, "LocalSystem", UNI_STR_TERMINATE );
-	regval_ctr_addvalue( values, "ObjectName", REG_SZ, (char*)data.buffer, data.uni_str_len*2);
+	regval_ctr_addvalue_sz(values, "ObjectName", "LocalSystem");
 
 	/* special considerations for internal services and the DisplayName value */
 
 	for ( i=0; builtin_svcs[i].servicename; i++ ) {
 		if ( strequal( name, builtin_svcs[i].servicename ) ) {
-			char *pstr = NULL;
-			if (asprintf(&pstr, "%s/%s/%s",
+			ipath = talloc_asprintf(talloc_tos(), "%s/%s/%s",
 					get_dyn_MODULESDIR(), SVCCTL_SCRIPT_DIR,
-					builtin_svcs[i].daemon) > 0) {
-				init_unistr2( &ipath, pstr, UNI_STR_TERMINATE );
-				SAFE_FREE(pstr);
-			} else {
-				init_unistr2( &ipath, "", UNI_STR_TERMINATE );
-			}
-			init_unistr2( &description, builtin_svcs[i].description, UNI_STR_TERMINATE );
-			init_unistr2( &dname, builtin_svcs[i].dispname, UNI_STR_TERMINATE );
+					builtin_svcs[i].daemon);
+			description = talloc_strdup(talloc_tos(), builtin_svcs[i].description);
+			dname = talloc_strdup(talloc_tos(), builtin_svcs[i].dispname);
 			break;
 		}
 	}
@@ -293,38 +286,37 @@ static void fill_service_values(const char *name, struct regval_ctr *values)
 	/* default to an external service if we haven't found a match */
 
 	if ( builtin_svcs[i].servicename == NULL ) {
-		char *pstr = NULL;
 		char *dispname = NULL;
 		struct rcinit_file_information *init_info = NULL;
 
-		if (asprintf(&pstr, "%s/%s/%s",get_dyn_MODULESDIR(),
-					SVCCTL_SCRIPT_DIR, name) > 0) {
-			init_unistr2( &ipath, pstr, UNI_STR_TERMINATE );
-			SAFE_FREE(pstr);
-		} else {
-			init_unistr2( &ipath, "", UNI_STR_TERMINATE );
-		}
+		ipath = talloc_asprintf(talloc_tos(), "%s/%s/%s",
+					get_dyn_MODULESDIR(), SVCCTL_SCRIPT_DIR,
+					name);
 
 		/* lookup common unix display names */
 		dispname = get_common_service_dispname(name);
-		init_unistr2( &dname, dispname ? dispname : "", UNI_STR_TERMINATE );
+		dname = talloc_strdup(talloc_tos(), dispname ? dispname : "");
 		SAFE_FREE(dispname);
 
 		/* get info from init file itself */
 		if ( read_init_file( name, &init_info ) ) {
-			init_unistr2( &description, init_info->description, UNI_STR_TERMINATE );
+			description = talloc_strdup(talloc_tos(), init_info->description);
 			TALLOC_FREE( init_info );
 		}
 		else {
-			init_unistr2( &description, "External Unix Service", UNI_STR_TERMINATE );
+			description = talloc_strdup(talloc_tos(), "External Unix Service");
 		}
 	}
 
 	/* add the new values */
 
-	regval_ctr_addvalue( values, "DisplayName", REG_SZ, (char*)dname.buffer, dname.uni_str_len*2);
-	regval_ctr_addvalue( values, "ImagePath", REG_SZ, (char*)ipath.buffer, ipath.uni_str_len*2);
-	regval_ctr_addvalue( values, "Description", REG_SZ, (char*)description.buffer, description.uni_str_len*2);
+	regval_ctr_addvalue_sz(values, "DisplayName", dname);
+	regval_ctr_addvalue_sz(values, "ImagePath", ipath);
+	regval_ctr_addvalue_sz(values, "Description", description);
+
+	TALLOC_FREE(dname);
+	TALLOC_FREE(ipath);
+	TALLOC_FREE(description);
 
 	return;
 }
@@ -619,12 +611,13 @@ bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, SEC_DESC *sec_desc, 
 
 const char *svcctl_lookup_dispname(TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token )
 {
-	char *display_name = NULL;
+	const char *display_name = NULL;
 	struct registry_key_handle *key = NULL;
 	struct regval_ctr *values = NULL;
 	struct regval_blob *val = NULL;
 	char *path = NULL;
 	WERROR wresult;
+	DATA_BLOB blob;
 
 	/* now add the security descriptor */
 
@@ -652,7 +645,8 @@ const char *svcctl_lookup_dispname(TALLOC_CTX *ctx, const char *name, NT_USER_TO
 	if ( !(val = regval_ctr_getvalue( values, "DisplayName" )) )
 		goto fail;
 
-	rpcstr_pull_talloc(ctx, &display_name, regval_data_p(val), regval_size(val), 0 );
+	blob = data_blob_const(regval_data_p(val), regval_size(val));
+	pull_reg_sz(ctx, &blob, &display_name);
 
 	TALLOC_FREE( key );
 
@@ -669,12 +663,13 @@ fail:
 
 const char *svcctl_lookup_description(TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token )
 {
-	char *description = NULL;
+	const char *description = NULL;
 	struct registry_key_handle *key = NULL;
 	struct regval_ctr *values = NULL;
 	struct regval_blob *val = NULL;
 	char *path = NULL;
 	WERROR wresult;
+	DATA_BLOB blob;
 
 	/* now add the security descriptor */
 
@@ -703,7 +698,10 @@ const char *svcctl_lookup_description(TALLOC_CTX *ctx, const char *name, NT_USER
 		TALLOC_FREE( key );
 		return "Unix Service";
 	}
-	rpcstr_pull_talloc(ctx, &description, regval_data_p(val), regval_size(val), 0 );
+
+	blob = data_blob_const(regval_data_p(val), regval_size(val));
+	pull_reg_sz(ctx, &blob, &description);
+
 	TALLOC_FREE(key);
 
 	return description;

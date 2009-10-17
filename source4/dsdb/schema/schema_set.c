@@ -346,7 +346,10 @@ int dsdb_set_schema(struct ldb_context *ldb, struct dsdb_schema *schema)
 		return ret;
 	}
 
-	schema_fill_constructed(schema);
+	ret = schema_fill_constructed(schema);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 
 	ret = ldb_set_opaque(ldb, "dsdb_schema", schema);
 	if (ret != LDB_SUCCESS) {

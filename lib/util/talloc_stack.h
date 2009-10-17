@@ -35,7 +35,7 @@
 #ifndef _TALLOC_STACK_H
 #define _TALLOC_STACK_H
 
-#include "../talloc/talloc.h"
+#include "talloc.h"
 
 /*
  * Create a new talloc stack frame.

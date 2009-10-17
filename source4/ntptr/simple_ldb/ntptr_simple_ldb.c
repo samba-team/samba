@@ -208,12 +208,14 @@ static WERROR sptr_GetPrintServerData(struct ntptr_GenericHandle *server, TALLOC
 		r->out.data->binary	= blob;
 		return WERR_OK;
 	} else if (strcmp("DNSMachineName", r->in.value_name) == 0) {
-		if (!lp_realm(server->ntptr->lp_ctx)) return WERR_INVALID_PARAM;
+		const char *dnsdomain = lp_dnsdomain(server->ntptr->lp_ctx);
+
+		if (dnsdomain == NULL) return WERR_INVALID_PARAM;
 
 		*r->out.type		= REG_SZ;
 		r->out.data->string	= talloc_asprintf(mem_ctx, "%s.%s",
-								   lp_netbios_name(server->ntptr->lp_ctx),
-								   lp_realm(server->ntptr->lp_ctx));
+							  lp_netbios_name(server->ntptr->lp_ctx),
+							  dnsdomain);
 		W_ERROR_HAVE_NO_MEMORY(r->out.data->string);
 		return WERR_OK;
 	}

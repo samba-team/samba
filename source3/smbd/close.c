@@ -271,7 +271,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	bool changed_user = false;
 	struct share_mode_lock *lck = NULL;
 	NTSTATUS status = NT_STATUS_OK;
-	int ret;
+	NTSTATUS tmp_status;
 	struct file_id id;
 
 	/*
@@ -387,16 +387,11 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	/* We can only delete the file if the name we have is still valid and
 	   hasn't been renamed. */
 
-	if (fsp->posix_open) {
-		ret = SMB_VFS_LSTAT(conn, fsp->fsp_name);
-	} else {
-		ret = SMB_VFS_STAT(conn, fsp->fsp_name);
-	}
-
-	if (ret != 0) {
+	tmp_status = vfs_stat_fsp(fsp);
+	if (!NT_STATUS_IS_OK(tmp_status)) {
 		DEBUG(5,("close_remove_share_mode: file %s. Delete on close "
 			 "was set and stat failed with error %s\n",
-			 fsp_str_dbg(fsp), strerror(errno)));
+			 fsp_str_dbg(fsp), nt_errstr(tmp_status)));
 		/*
 		 * Don't save the errno here, we ignore this error
 		 */
@@ -494,7 +489,6 @@ static NTSTATUS update_write_time_on_close(struct files_struct *fsp)
 {
 	struct smb_file_time ft;
 	NTSTATUS status;
-	int ret = -1;
 
 	ZERO_STRUCT(ft);
 
@@ -507,18 +501,9 @@ static NTSTATUS update_write_time_on_close(struct files_struct *fsp)
 	}
 
 	/* Ensure we have a valid stat struct for the source. */
-	if (fsp->fh->fd != -1) {
-		ret = SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st);
-	} else {
-		if (fsp->posix_open) {
-			ret = SMB_VFS_LSTAT(fsp->conn, fsp->fsp_name);
-		} else {
-			ret = SMB_VFS_STAT(fsp->conn, fsp->fsp_name);
-		}
-	}
-
-	if (ret == -1) {
-		return map_nt_error_from_unix(errno);
+	status = vfs_stat_fsp(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	if (!VALID_STAT(fsp->fsp_name->st)) {

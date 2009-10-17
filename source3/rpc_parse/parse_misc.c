@@ -59,48 +59,6 @@ bool smb_io_time(const char *desc, NTTIME *nttime, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
-********************************************************************/
-
-bool smb_io_system_time(const char *desc, prs_struct *ps, int depth, SYSTEMTIME *systime)
-{
-	if(!prs_uint16("year", ps, depth, &systime->year))
-		return False;
-	if(!prs_uint16("month", ps, depth, &systime->month))
-		return False;
-	if(!prs_uint16("dayofweek", ps, depth, &systime->dayofweek))
-		return False;
-	if(!prs_uint16("day", ps, depth, &systime->day))
-		return False;
-	if(!prs_uint16("hour", ps, depth, &systime->hour))
-		return False;
-	if(!prs_uint16("minute", ps, depth, &systime->minute))
-		return False;
-	if(!prs_uint16("second", ps, depth, &systime->second))
-		return False;
-	if(!prs_uint16("milliseconds", ps, depth, &systime->milliseconds))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/
-
-bool make_systemtime(SYSTEMTIME *systime, struct tm *unixtime)
-{
-	systime->year=unixtime->tm_year+1900;
-	systime->month=unixtime->tm_mon+1;
-	systime->dayofweek=unixtime->tm_wday;
-	systime->day=unixtime->tm_mday;
-	systime->hour=unixtime->tm_hour;
-	systime->minute=unixtime->tm_min;
-	systime->second=unixtime->tm_sec;
-	systime->milliseconds=0;
-
-	return True;
-}
-
-/*******************************************************************
  Reads or writes a struct GUID
 ********************************************************************/
 
@@ -126,60 +84,4 @@ bool smb_io_uuid(const char *desc, struct GUID *uuid,
 		return False;
 
 	return True;
-}
-
-/*******************************************************************
- Inits a UNISTR2 structure.
-********************************************************************/
-
-void init_unistr2(UNISTR2 *str, const char *buf, enum unistr2_term_codes flags)
-{
-	size_t len = 0;
-	uint32 num_chars = 0;
-
-	if (buf) {
-		/* We always null terminate the copy. */
-		len = strlen(buf) + 1;
-		if ( flags == UNI_STR_DBLTERMINATE )
-			len++;
-	}
-
-	if (buf == NULL || len == 0) {
-		/* no buffer -- nothing to do */
-		str->uni_max_len = 0;
-		str->offset = 0;
-		str->uni_str_len = 0;
-
-		return;
-	}
-	
-
-	str->buffer = TALLOC_ZERO_ARRAY(talloc_tos(), uint16, len);
-	if (str->buffer == NULL) {
-		smb_panic("init_unistr2: malloc fail");
-		return;
-	}
-
-	/* Ensure len is the length in *bytes* */
-	len *= sizeof(uint16);
-
-	/*
-	 * The UNISTR2 must be initialized !!!
-	 * jfm, 7/7/2001.
-	 */
-	if (buf) {
-		rpcstr_push((char *)str->buffer, buf, len, STR_TERMINATE);
-		num_chars = strlen_w(str->buffer);
-		if (flags == UNI_STR_TERMINATE || flags == UNI_MAXLEN_TERMINATE) {
-			num_chars++;
-		}
-		if ( flags == UNI_STR_DBLTERMINATE )
-			num_chars += 2;
-	}
-
-	str->uni_max_len = num_chars;
-	str->offset = 0;
-	str->uni_str_len = num_chars;
-	if ( num_chars && ((flags == UNI_MAXLEN_TERMINATE) || (flags == UNI_BROKEN_NON_NULL)) )
-		str->uni_max_len++;
 }

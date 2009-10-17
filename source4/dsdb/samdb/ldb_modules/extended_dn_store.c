@@ -303,7 +303,8 @@ static int extended_dn_add(struct ldb_module *module, struct ldb_request *req)
 		}
 
 		/* We only setup an extended DN GUID on these particular DN objects */
-		if (strcmp(schema_attr->attributeSyntax_oid, "2.5.5.1") != 0) {
+		if (strcmp(schema_attr->attributeSyntax_oid, "2.5.5.1") != 0 &&
+		    strcmp(schema_attr->attributeSyntax_oid, "2.5.5.7") != 0) {
 			continue;
 		}
 
@@ -376,7 +377,8 @@ static int extended_dn_modify(struct ldb_module *module, struct ldb_request *req
 		}
 
 		/* We only setup an extended DN GUID on these particular DN objects */
-		if (strcmp(schema_attr->attributeSyntax_oid, "2.5.5.1") != 0) {
+		if (strcmp(schema_attr->attributeSyntax_oid, "2.5.5.1") != 0 &&
+		    strcmp(schema_attr->attributeSyntax_oid, "2.5.5.7") != 0) {
 			continue;
 		}
 		

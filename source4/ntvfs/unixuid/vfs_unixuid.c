@@ -235,7 +235,10 @@ static NTSTATUS unixuid_setup_security(struct ntvfs_module_context *ntvfs,
 	struct unix_sec_ctx *newsec;
 	NTSTATUS status;
 
-	if (req->session_info == NULL) {
+	/* If we are asked to set up, but have not had a successful
+	 * session setup or tree connect, then these may not be filled
+	 * in.  ACCESS_DENIED is the right error code here */
+	if (req->session_info == NULL || priv == NULL) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 

@@ -239,8 +239,16 @@ static NTSTATUS rpc_changetrustpw_internals(struct net_context *c,
 					int argc,
 					const char **argv)
 {
+	NTSTATUS status;
 
-	return trust_pw_find_change_and_store_it(pipe_hnd, mem_ctx, c->opt_target_workgroup);
+	status = trust_pw_find_change_and_store_it(pipe_hnd, mem_ctx, c->opt_target_workgroup);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, _("Failed to change machine account password: %s\n"),
+			nt_errstr(status));
+		return status;
+	}
+
+	return NT_STATUS_OK;
 }
 
 /**
@@ -301,7 +309,7 @@ static NTSTATUS rpc_oldjoin_internals(struct net_context *c,
 	fstring trust_passwd;
 	unsigned char orig_trust_passwd_hash[16];
 	NTSTATUS result;
-	uint32 sec_channel_type;
+	enum netr_SchannelType sec_channel_type;
 
 	result = cli_rpc_pipe_open_noauth(cli, &ndr_table_netlogon.syntax_id,
 					  &pipe_hnd);
@@ -336,6 +344,7 @@ static NTSTATUS rpc_oldjoin_internals(struct net_context *c,
 	E_md4hash(trust_passwd, orig_trust_passwd_hash);
 
 	result = trust_pw_change_and_store_it(pipe_hnd, mem_ctx, c->opt_target_workgroup,
+					      global_myname(),
 					      orig_trust_passwd_hash,
 					      sec_channel_type);
 
@@ -5768,18 +5777,12 @@ static NTSTATUS rpc_query_domain_sid(struct net_context *c,
 
 static void print_trusted_domain(DOM_SID *dom_sid, const char *trusted_dom_name)
 {
-	fstring ascii_sid, padding;
-	int pad_len, col_len = 20;
+	fstring ascii_sid;
 
 	/* convert sid into ascii string */
 	sid_to_fstring(ascii_sid, dom_sid);
 
-	/* calculate padding space for d_printf to look nicer */
-	pad_len = col_len - strlen(trusted_dom_name);
-	padding[pad_len] = 0;
-	do padding[--pad_len] = ' '; while (pad_len);
-
-	d_printf("%s%s%s\n", trusted_dom_name, padding, ascii_sid);
+	d_printf("%-20s%s\n", trusted_dom_name, ascii_sid);
 }
 
 static NTSTATUS vampire_trusted_domain(struct rpc_pipe_client *pipe_hnd,
@@ -6003,14 +6006,13 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 	NTSTATUS nt_status;
 	const char *domain_name = NULL;
 	DOM_SID *queried_dom_sid;
-	fstring padding;
 	int ascii_dom_name_len;
 	struct policy_handle connect_hnd;
 	union lsa_PolicyInformation *info = NULL;
 
 	/* trusted domains listing variables */
 	unsigned int num_domains, enum_ctx = 0;
-	int i, pad_len, col_len = 20;
+	int i;
 	struct lsa_DomainList dom_list;
 	fstring pdc_name;
 
@@ -6021,7 +6023,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 	if (c->display_usage) {
 		d_printf(_("Usage:\n"
 			   "net rpc trustdom list\n"
-			   "    List trust relationships\n"));
+			   "    List in- and outgoing trust relationships\n"));
 		return 0;
 	}
 
@@ -6219,17 +6221,12 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 			if (ascii_dom_name_len && ascii_dom_name_len < FSTRING_LEN)
 				str[ascii_dom_name_len - 1] = '\0';
 
-			/* calculate padding space for d_printf to look nicer */
-			pad_len = col_len - strlen(str);
-			padding[pad_len] = 0;
-			do padding[--pad_len] = ' '; while (pad_len);
-
 			/* set opt_* variables to remote domain */
 			strupper_m(str);
 			c->opt_workgroup = talloc_strdup(mem_ctx, str);
 			c->opt_target_workgroup = c->opt_workgroup;
 
-			d_printf("%s%s", str, padding);
+			d_printf("%-20s", str);
 
 			/* connect to remote domain controller */
 			nt_status = net_make_ipc_connection(c,
@@ -6292,41 +6289,41 @@ static int rpc_trustdom(struct net_context *c, int argc, const char **argv)
 			"add",
 			rpc_trustdom_add,
 			NET_TRANSPORT_RPC,
-			N_("Add trusted domain's account"),
+			N_("Add trusting domain's account"),
 			N_("net rpc trustdom add\n"
-			   "    Add trusted domain's account")
+			   "    Add trusting domain's account")
 		},
 		{
 			"del",
 			rpc_trustdom_del,
 			NET_TRANSPORT_RPC,
-			N_("Remove trusted domain's account"),
+			N_("Remove trusting domain's account"),
 			N_("net rpc trustdom del\n"
-			   "    Remove trusted domain's account")
+			   "    Remove trusting domain's account")
 		},
 		{
 			"establish",
 			rpc_trustdom_establish,
 			NET_TRANSPORT_RPC,
-			N_("Establish trust relationship"),
+			N_("Establish outgoing trust relationship"),
 			N_("net rpc trustdom establish\n"
-			   "    Establish trust relationship")
+			   "    Establish outgoing trust relationship")
 		},
 		{
 			"revoke",
 			rpc_trustdom_revoke,
 			NET_TRANSPORT_RPC,
-			N_("Revoke trust relationship"),
+			N_("Revoke outgoing trust relationship"),
 			N_("net rpc trustdom revoke\n"
-			   "    Revoke trust relationship")
+			   "    Revoke outgoing trust relationship")
 		},
 		{
 			"list",
 			rpc_trustdom_list,
 			NET_TRANSPORT_RPC,
-			N_("List domain trusts"),
+			N_("List in- and outgoing domain trusts"),
 			N_("net rpc trustdom list\n"
-			   "    List domain trusts")
+			   "    List in- and outgoing domain trusts")
 		},
 		{
 			"vampire",

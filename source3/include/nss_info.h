@@ -8,12 +8,12 @@
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
    version 3 of the License, or (at your option) any later version.
-   
+
    This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Library General Public License for more details.
-   
+
    You should have received a copy of the GNU Lesser General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -36,7 +36,7 @@
 
 struct nss_function_entry {
 	struct nss_function_entry *prev, *next;
-	
+
 	const char *name;
 	struct nss_info_methods *methods;
 };
@@ -82,8 +82,6 @@ struct nss_info_methods {
 NTSTATUS smb_register_idmap_nss(int version, 
 				const char *name, 
 				struct nss_info_methods *methods);
-
-NTSTATUS nss_init( const char **nss_list );
 
 NTSTATUS nss_get_info( const char *domain, const DOM_SID *user_sid,
 		       TALLOC_CTX *ctx,

@@ -214,7 +214,7 @@ bool asn1_write_BitString(struct asn1_data *data, const void *p, size_t length, 
 	return asn1_pop_tag(data);
 }
 
-bool ber_write_OID_String(DATA_BLOB *blob, const char *OID)
+bool ber_write_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, const char *OID)
 {
 	uint_t v, v2;
 	const char *p = (const char *)OID;
@@ -230,7 +230,7 @@ bool ber_write_OID_String(DATA_BLOB *blob, const char *OID)
 	p = newp + 1;
 
 	/*the ber representation can't use more space then the string one */
-	*blob = data_blob(NULL, strlen(OID));
+	*blob = data_blob_talloc(mem_ctx, NULL, strlen(OID));
 	if (!blob->data) return false;
 
 	blob->data[0] = 40*v + v2;
@@ -258,6 +258,41 @@ bool ber_write_OID_String(DATA_BLOB *blob, const char *OID)
 	return true;
 }
 
+/**
+ * Serialize partial OID string.
+ * Partial OIDs are in the form:
+ *   1:2.5.6:0x81
+ *   1:2.5.6:0x8182
+ */
+bool ber_write_partial_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, const char *partial_oid)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	char *oid = talloc_strdup(tmp_ctx, partial_oid);
+	char *p;
+
+	/* truncate partial part so ber_write_OID_String() works */
+	p = strchr(oid, ':');
+	if (p) {
+		*p = '\0';
+		p++;
+	}
+
+	if (!ber_write_OID_String(mem_ctx, blob, oid)) {
+		talloc_free(tmp_ctx);
+		return false;
+	}
+
+	/* Add partially endcoded subidentifier */
+	if (p) {
+		DATA_BLOB tmp_blob = strhex_to_data_blob(tmp_ctx, p);
+		data_blob_append(mem_ctx, blob, tmp_blob.data, tmp_blob.length);
+	}
+
+	talloc_free(tmp_ctx);
+
+	return true;
+}
+
 /* write an object ID to a ASN1 buffer */
 bool asn1_write_OID(struct asn1_data *data, const char *OID)
 {
@@ -265,7 +300,7 @@ bool asn1_write_OID(struct asn1_data *data, const char *OID)
 
 	if (!asn1_push_tag(data, ASN1_OID)) return false;
 
-	if (!ber_write_OID_String(&blob, OID)) {
+	if (!ber_write_OID_String(NULL, &blob, OID)) {
 		data->has_error = true;
 		return false;
 	}
@@ -543,8 +578,13 @@ int asn1_tag_remaining(struct asn1_data *data)
 	return remaining;
 }
 
-/* read an object ID from a data blob */
-bool ber_read_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB blob, const char **OID)
+/**
+ * Internal implementation for reading binary OIDs
+ * Reading is done as far in the buffer as valid OID
+ * till buffer ends or not valid sub-identifier is found.
+ */
+static bool _ber_read_OID_String_impl(TALLOC_CTX *mem_ctx, DATA_BLOB blob,
+					const char **OID, size_t *bytes_eaten)
 {
 	int i;
 	uint8_t *b;
@@ -565,19 +605,63 @@ bool ber_read_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB blob, const char **OID)
 		if ( ! (b[i] & 0x80)) {
 			tmp_oid = talloc_asprintf_append_buffer(tmp_oid, ".%u",  v);
 			v = 0;
+			if (bytes_eaten)
+				*bytes_eaten = i+1;
 		}
 		if (!tmp_oid) goto nomem;
-	}
-
-	if (v != 0) {
-		talloc_free(tmp_oid);
-		return false;
 	}
 
 	*OID = tmp_oid;
 	return true;
 
-nomem:	
+nomem:
+	return false;
+}
+
+/* read an object ID from a data blob */
+bool ber_read_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB blob, const char **OID)
+{
+	size_t bytes_eaten;
+
+	if (!_ber_read_OID_String_impl(mem_ctx, blob, OID, &bytes_eaten))
+		return false;
+
+	return (bytes_eaten == blob.length);
+}
+
+/**
+ * Deserialize partial OID string.
+ * Partial OIDs are in the form:
+ *   1:2.5.6:0x81
+ *   1:2.5.6:0x8182
+ */
+bool ber_read_partial_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB blob, const char **partial_oid)
+{
+	size_t bytes_left;
+	size_t bytes_eaten;
+	char *identifier = NULL;
+	char *tmp_oid = NULL;
+
+	if (!_ber_read_OID_String_impl(mem_ctx, blob, (const char **)&tmp_oid, &bytes_eaten))
+		return false;
+
+	if (bytes_eaten < blob.length) {
+		bytes_left = blob.length - bytes_eaten;
+		identifier = hex_encode_talloc(mem_ctx, &blob.data[bytes_eaten], bytes_left);
+		if (!identifier)	goto nomem;
+
+		*partial_oid = talloc_asprintf_append_buffer(tmp_oid, ":0x%s", identifier);
+		if (!*partial_oid)	goto nomem;
+		TALLOC_FREE(identifier);
+	} else {
+		*partial_oid = tmp_oid;
+	}
+
+	return true;
+
+nomem:
+	TALLOC_FREE(identifier);
+	TALLOC_FREE(tmp_oid);
 	return false;
 }
 

@@ -320,6 +320,11 @@ static int open_cred_file(char * file_name)
 	char * temp_val;
 	FILE * fs;
 	int i, length;
+
+	i = access(file_name, R_OK);
+	if (i)
+		return i;
+
 	fs = fopen(file_name,"r");
 	if(fs == NULL)
 		return errno;
@@ -442,6 +447,12 @@ static int get_password_from_file(int file_descript, char * filename)
 	}
 
 	if(filename != NULL) {
+		rc = access(filename, R_OK);
+		if (rc) {
+			fprintf(stderr, "mount.cifs failed: access check of %s failed: %s\n",
+					filename, strerror(errno));
+			exit(EX_SYSERR);
+		}
 		file_descript = open(filename, O_RDONLY);
 		if(file_descript < 0) {
 			fprintf(stderr, "mount.cifs failed. %s attempting to open password file %s\n",
@@ -500,9 +511,6 @@ static int parse_options(char ** optionsp, unsigned long * filesys_flags)
 	if (!optionsp || !*optionsp)
 		return 1;
 	data = *optionsp;
-
-	if(verboseflag)
-		fprintf(stderr, "parsing options: %s\n", data);
 
 	/* BB fixme check for separator override BB */
 
@@ -594,14 +602,23 @@ static int parse_options(char ** optionsp, unsigned long * filesys_flags)
 				} else
 					got_password = 1;
 			} else if (strnlen(value, MOUNT_PASSWD_SIZE) < MOUNT_PASSWD_SIZE) {
-				if(got_password)
+				if (got_password) {
 					fprintf(stderr, "\nmount.cifs warning - password specified twice\n");
-				got_password = 1;
+				} else {
+					mountpassword = strndup(value, MOUNT_PASSWD_SIZE);
+					if (!mountpassword) {
+						fprintf(stderr, "mount.cifs error: %s", strerror(ENOMEM));
+						SAFE_FREE(out);
+						return 1;
+					}
+					got_password = 1;
+				}
 			} else {
 				fprintf(stderr, "password too long\n");
 				SAFE_FREE(out);
 				return 1;
 			}
+			goto nocopy;
 		} else if (strncmp(data, "sec", 3) == 0) {
 			if (value) {
 				if (!strncmp(value, "none", 4) ||
@@ -1501,15 +1518,6 @@ mount_retry:
 			strlcat(options,domain_name,options_size);
 		}
 	}
-	if(mountpassword) {
-		/* Commas have to be doubled, or else they will
-		look like the parameter separator */
-/*		if(sep is not set)*/
-		if(retry == 0)
-			check_for_comma(&mountpassword);
-		strlcat(options,",pass=",options_size);
-		strlcat(options,mountpassword,options_size);
-	}
 
 	strlcat(options,",ver=",options_size);
 	strlcat(options,MOUNT_CIFS_VERSION_MAJOR,options_size);
@@ -1522,8 +1530,6 @@ mount_retry:
 		strlcat(options,",prefixpath=",options_size);
 		strlcat(options,prefixpath,options_size); /* no need to cat the / */
 	}
-	if(verboseflag)
-		fprintf(stderr, "\nmount.cifs kernel mount options %s \n",options);
 
 	/* convert all '\\' to '/' in share portion so that /proc/mounts looks pretty */
 	replace_char(dev_name, '\\', '/', strlen(share_name));
@@ -1564,6 +1570,25 @@ mount_retry:
 		snprintf(optionstail, options_size - current_len, "%u",
 			 addr6->sin6_scope_id);
 	}
+
+	if(verboseflag)
+		fprintf(stderr, "\nmount.cifs kernel mount options: %s", options);
+
+	if (mountpassword) {
+		/*
+		 * Commas have to be doubled, or else they will
+		 * look like the parameter separator
+		 */
+		if(retry == 0)
+			check_for_comma(&mountpassword);
+		strlcat(options,",pass=",options_size);
+		strlcat(options,mountpassword,options_size);
+		if (verboseflag)
+			fprintf(stderr, ",pass=********");
+	}
+
+	if (verboseflag)
+		fprintf(stderr, "\n");
 
 	if (!fakemnt && mount(dev_name, mountpoint, "cifs", flags, options)) {
 		switch (errno) {

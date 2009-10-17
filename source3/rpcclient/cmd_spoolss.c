@@ -689,7 +689,8 @@ static WERROR cmd_spoolss_getprinter(struct rpc_pipe_client *cli,
 
 static void display_reg_value(struct regval_blob value)
 {
-	char *text = NULL;
+	const char *text = NULL;
+	DATA_BLOB blob;
 
 	switch(value.type) {
 	case REG_DWORD:
@@ -697,11 +698,8 @@ static void display_reg_value(struct regval_blob value)
 		       *((uint32_t *) value.data_p));
 		break;
 	case REG_SZ:
-		rpcstr_pull_talloc(talloc_tos(),
-				&text,
-				value.data_p,
-				value.size,
-				STR_TERMINATE);
+		blob = data_blob_const(value.data_p, value.size);
+		pull_reg_sz(talloc_tos(), &blob, &text);
 		printf("%s: REG_SZ: %s\n", value.valuename, text ? text : "");
 		break;
 	case REG_BINARY: {
@@ -723,18 +721,17 @@ static void display_reg_value(struct regval_blob value)
 		break;
 	}
 	case REG_MULTI_SZ: {
-		uint32_t i, num_values;
-		char **values;
+		uint32_t i;
+		const char **values;
+		blob = data_blob_const(value.data_p, value.size);
 
-		if (!W_ERROR_IS_OK(reg_pull_multi_sz(NULL, value.data_p,
-						     value.size, &num_values,
-						     &values))) {
-			d_printf("reg_pull_multi_sz failed\n");
+		if (!pull_reg_multi_sz(NULL, &blob, &values)) {
+			d_printf("pull_reg_multi_sz failed\n");
 			break;
 		}
 
 		printf("%s: REG_MULTI_SZ: \n", value.valuename);
-		for (i=0; i<num_values; i++) {
+		for (i=0; values[i] != NULL; i++) {
 			d_printf("%s\n", values[i]);
 		}
 		TALLOC_FREE(values);

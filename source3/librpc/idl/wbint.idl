@@ -147,6 +147,9 @@ interface wbint
     NTSTATUS wbint_CheckMachineAccount(
 	);
 
+    NTSTATUS wbint_ChangeMachineAccount(
+	);
+
     typedef [public] enum {
 	WBINT_ID_TYPE_NOT_SPECIFIED,
 	WBINT_ID_TYPE_UID,

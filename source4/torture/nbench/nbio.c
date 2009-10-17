@@ -487,7 +487,7 @@ static bool nb_do_createx(struct ftable *f,
 
 	io.ntcreatex.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.flags = flags;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.access_mask = desired_access;
 	io.ntcreatex.in.file_attr = 0;
 	io.ntcreatex.in.alloc_size = 0;

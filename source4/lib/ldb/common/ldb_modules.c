@@ -96,6 +96,12 @@ const char **ldb_modules_list_from_string(struct ldb_context *ldb, TALLOC_CTX *m
 	}
 	talloc_steal(modules, modstr);
 
+	if (modstr[0] == '\0') {
+		modules[0] = NULL;
+		m = (const char **)modules;
+		return m;
+	}
+
 	i = 0;
 	/* The str*r*chr walks backwards:  This is how we get the inverse order mentioned above */
 	while ((p = strrchr(modstr, ',')) != NULL) {
@@ -331,7 +337,7 @@ int ldb_load_modules_list(struct ldb_context *ldb, const char **module_list, str
 
 	module = backend;
 
-	for (i = 0; module_list[i] != NULL; i++) {
+	for (i = 0; module_list && module_list[i] != NULL; i++) {
 		struct ldb_module *current;
 		const struct ldb_module_ops *ops;
 

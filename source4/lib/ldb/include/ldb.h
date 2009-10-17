@@ -457,6 +457,14 @@ const struct ldb_dn_extended_syntax *ldb_dn_extended_syntax_by_name(struct ldb_c
 typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 
 /**
+   OID for the allowing client to request temporary relaxed 
+   enforcement of constraints of the x.500 model.
+
+   \sa <a href="http://opends.dev.java.net/public/standards/draft-zeilenga-ldap-managedit.txt">draft managedit</a>.
+*/
+#define LDB_CONTROL_RELAX_OID "1.3.6.1.4.1.4203.666.5.12"
+
+/**
    OID for the paged results control. This control is included in the
    searchRequest and searchResultDone messages as part of the controls
    field of the LDAPMessage, as defined in Section 4.1.12 of
@@ -588,21 +596,47 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 */
 #define LDB_CONTROL_PERMISSIVE_MODIFY_OID	"1.2.840.113556.1.4.1413"
 
+/** 
+    OID to allow the server to be more 'fast and loose' with the data being added.  
+
+    \sa 
+
+*/
+#define LDB_CONTROL_SERVER_LAZY_COMMIT   "1.2.840.113556.1.4.619"
+
+/**
+   OID for LDAP Extended Operation FAST_BIND
+
+   This Extended operations is used to perform a fast bind.
+*/
+#define LDB_EXTENDED_FAST_BIND_OID	"1.2.840.113556.1.4.1781"
+
 /**
    OID for LDAP Extended Operation START_TLS.
 
-   This Extended operation is used to start a new TLS
-   channel on top of a clear text channel.
+   This Extended operation is used to start a new TLS channel on top of a clear
+   text channel.
 */
 #define LDB_EXTENDED_START_TLS_OID	"1.3.6.1.4.1.1466.20037"
 
 /**
+   OID for LDAP Extended Operation DYNAMIC_REFRESH.
+
+   This Extended operation is used to create and maintain objects which exist
+   only a specific time, e.g. when a certain client or a certain person is
+   logged in. Data refreshes have to be periodically sent in a specific
+   interval. Otherwise the entry is going to be removed.
 */
 #define LDB_EXTENDED_DYNAMIC_OID	"1.3.6.1.4.1.1466.101.119.1"
 
-/**
+/*
+   OID for LDAP Extended Operation PASSWORD_CHANGE.
+
+   This Extended operation is used to allow user password changes by the user
+   itself.
 */
-#define LDB_EXTENDED_FAST_BIND_OID	"1.2.840.113556.1.4.1781"
+#define LDB_EXTENDED_PASSWORD_CHANGE_OID	"1.3.6.1.4.1.4203.1.11.1"
+
 
 struct ldb_sd_flags_control {
 	/*
@@ -1927,5 +1961,12 @@ unsigned int ldb_get_flags(struct ldb_context *ldb);
 /* set the ldb flags */
 void ldb_set_flags(struct ldb_context *ldb, unsigned flags);
 
+
+struct ldb_dn *ldb_dn_binary_from_ldb_val(void *mem_ctx,
+					  struct ldb_context *ldb,
+					  const struct ldb_val *strdn);
+
+int ldb_dn_get_binary(struct ldb_dn *dn, struct ldb_val *val);
+int ldb_dn_set_binary(struct ldb_dn *dn, struct ldb_val *val);
 
 #endif

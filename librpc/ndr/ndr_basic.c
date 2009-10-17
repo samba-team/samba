@@ -102,6 +102,24 @@ _PUBLIC_ enum ndr_err_code ndr_pull_uint16(struct ndr_pull *ndr, int ndr_flags, 
 }
 
 /*
+  parse a uint1632_t
+*/
+_PUBLIC_ enum ndr_err_code ndr_pull_uint1632(struct ndr_pull *ndr, int ndr_flags, uint16_t *v)
+{
+	if (unlikely(ndr->flags & LIBNDR_FLAG_NDR64)) {
+		uint32_t v32 = 0;
+		enum ndr_err_code err = ndr_pull_uint32(ndr, ndr_flags, &v32);
+		*v = v32;
+		if (unlikely(v32 != *v)) {
+			DEBUG(0,(__location__ ": non-zero upper 16 bits 0x%08x\n", (unsigned)v32));
+			return NDR_ERR_NDR64;
+		}
+		return err;
+	}
+	return ndr_pull_uint16(ndr, ndr_flags, v);
+}
+
+/*
   parse a int32_t
 */
 _PUBLIC_ enum ndr_err_code ndr_pull_int32(struct ndr_pull *ndr, int ndr_flags, int32_t *v)
@@ -282,9 +300,17 @@ _PUBLIC_ enum ndr_err_code ndr_pull_enum_uint8(struct ndr_pull *ndr, int ndr_fla
 }
 
 /*
-  parse a uint16_t enum (uint32_t on NDR64)
+  parse a uint16_t enum
 */
 _PUBLIC_ enum ndr_err_code ndr_pull_enum_uint16(struct ndr_pull *ndr, int ndr_flags, uint16_t *v)
+{
+	return ndr_pull_uint16(ndr, ndr_flags, v);
+}
+
+/*
+  parse a uint1632_t enum (uint32_t on NDR64)
+*/
+_PUBLIC_ enum ndr_err_code ndr_pull_enum_uint1632(struct ndr_pull *ndr, int ndr_flags, uint16_t *v)
 {
 	if (unlikely(ndr->flags & LIBNDR_FLAG_NDR64)) {
 		uint32_t v32;
@@ -296,11 +322,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_enum_uint16(struct ndr_pull *ndr, int ndr_fl
 		}
 		return NDR_ERR_SUCCESS;
 	}
-	NDR_PULL_ALIGN(ndr, 2);
-	NDR_PULL_NEED_BYTES(ndr, 2);
-	*v = NDR_SVAL(ndr, ndr->offset);
-	ndr->offset += 2;
-	return NDR_ERR_SUCCESS;
+	return ndr_pull_uint16(ndr, ndr_flags, v);
 }
 
 /*
@@ -320,13 +342,10 @@ _PUBLIC_ enum ndr_err_code ndr_push_enum_uint8(struct ndr_push *ndr, int ndr_fla
 }
 
 /*
-  push a uint16_t enum (uint32_t on NDR64)
+  push a uint16_t enum
 */
 _PUBLIC_ enum ndr_err_code ndr_push_enum_uint16(struct ndr_push *ndr, int ndr_flags, uint16_t v)
 {
-	if (unlikely(ndr->flags & LIBNDR_FLAG_NDR64)) {
-		return ndr_push_uint32(ndr, ndr_flags, v);
-	}
 	return ndr_push_uint16(ndr, ndr_flags, v);
 }
 
@@ -338,6 +357,16 @@ _PUBLIC_ enum ndr_err_code ndr_push_enum_uint32(struct ndr_push *ndr, int ndr_fl
 	return ndr_push_uint32(ndr, ndr_flags, v);
 }
 
+/*
+  push a uint1632_t enum
+*/
+_PUBLIC_ enum ndr_err_code ndr_push_enum_uint1632(struct ndr_push *ndr, int ndr_flags, uint16_t v)
+{
+	if (unlikely(ndr->flags & LIBNDR_FLAG_NDR64)) {
+		return ndr_push_uint32(ndr, ndr_flags, v);
+	}
+	return ndr_push_uint16(ndr, ndr_flags, v);
+}
 
 /*
   push a WERROR
@@ -421,6 +450,17 @@ _PUBLIC_ enum ndr_err_code ndr_push_uint16(struct ndr_push *ndr, int ndr_flags, 
 }
 
 /*
+  push a uint1632
+*/
+_PUBLIC_ enum ndr_err_code ndr_push_uint1632(struct ndr_push *ndr, int ndr_flags, uint16_t v)
+{
+	if (unlikely(ndr->flags & LIBNDR_FLAG_NDR64)) {
+		return ndr_push_uint32(ndr, ndr_flags, v);
+	}
+	return ndr_push_uint16(ndr, ndr_flags, v);
+}
+
+/*
   push a int32_t
 */
 _PUBLIC_ enum ndr_err_code ndr_push_int32(struct ndr_push *ndr, int ndr_flags, int32_t v)
@@ -452,11 +492,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_uint3264(struct ndr_push *ndr, int ndr_flags
 	if (unlikely(ndr->flags & LIBNDR_FLAG_NDR64)) {
 		return ndr_push_hyper(ndr, ndr_flags, v);
 	}
-	NDR_PUSH_ALIGN(ndr, 4);
-	NDR_PUSH_NEED_BYTES(ndr, 4);
-	NDR_SIVAL(ndr, ndr->offset, v);
-	ndr->offset += 4;
-	return NDR_ERR_SUCCESS;
+	return ndr_push_uint32(ndr, ndr_flags, v);
 }
 
 /*
@@ -536,6 +572,12 @@ _PUBLIC_ enum ndr_err_code ndr_push_align(struct ndr_push *ndr, size_t size)
 		} else {
 			size = 4;
 		}
+	} else if (size == 3) {
+		if (ndr->flags & LIBNDR_FLAG_NDR64) {
+			size = 4;
+		} else {
+			size = 2;
+		}
 	}
 	NDR_PUSH_ALIGN(ndr, size);
 	return NDR_ERR_SUCCESS;
@@ -550,8 +592,50 @@ _PUBLIC_ enum ndr_err_code ndr_pull_align(struct ndr_pull *ndr, size_t size)
 		} else {
 			size = 4;
 		}
+	} else if (size == 3) {
+		if (ndr->flags & LIBNDR_FLAG_NDR64) {
+			size = 4;
+		} else {
+			size = 2;
+		}
 	}
 	NDR_PULL_ALIGN(ndr, size);
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_union_align(struct ndr_push *ndr, size_t size)
+{
+	/* MS-RPCE section 2.2.5.3.4.4 */
+	if (ndr->flags & LIBNDR_FLAG_NDR64) {
+		return ndr_push_align(ndr, size);
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_union_align(struct ndr_pull *ndr, size_t size)
+{
+	/* MS-RPCE section 2.2.5.3.4.4 */
+	if (ndr->flags & LIBNDR_FLAG_NDR64) {
+		return ndr_pull_align(ndr, size);
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_trailer_align(struct ndr_push *ndr, size_t size)
+{
+	/* MS-RPCE section 2.2.5.3.4.1 */
+	if (ndr->flags & LIBNDR_FLAG_NDR64) {
+		return ndr_push_align(ndr, size);
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_trailer_align(struct ndr_pull *ndr, size_t size)
+{
+	/* MS-RPCE section 2.2.5.3.4.1 */
+	if (ndr->flags & LIBNDR_FLAG_NDR64) {
+		return ndr_pull_align(ndr, size);
+	}
 	return NDR_ERR_SUCCESS;
 }
 
@@ -802,6 +886,16 @@ _PUBLIC_ void ndr_print_int32(struct ndr_print *ndr, const char *name, int32_t v
 }
 
 _PUBLIC_ void ndr_print_uint32(struct ndr_print *ndr, const char *name, uint32_t v)
+{
+	ndr->print(ndr, "%-25s: 0x%08x (%u)", name, v, v);
+}
+
+_PUBLIC_ void ndr_print_int3264(struct ndr_print *ndr, const char *name, int32_t v)
+{
+	ndr->print(ndr, "%-25s: %d", name, v);
+}
+
+_PUBLIC_ void ndr_print_uint3264(struct ndr_print *ndr, const char *name, uint32_t v)
 {
 	ndr->print(ndr, "%-25s: 0x%08x (%u)", name, v, v);
 }

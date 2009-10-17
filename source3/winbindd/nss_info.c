@@ -164,23 +164,25 @@ static NTSTATUS nss_domain_list_add_domain(const char *domain,
  to initialize the state on a per domain basis.
  *******************************************************************/
 
- NTSTATUS nss_init( const char **nss_list )
+static NTSTATUS nss_init(const char **nss_list)
 {
 	NTSTATUS status;
-	static NTSTATUS nss_initialized = NT_STATUS_UNSUCCESSFUL;
+	static bool nss_initialized = false;
 	int i;
 	char *backend, *domain;
 	struct nss_function_entry *nss_backend;
 
 	/* check for previous successful initializations */
 
-	if ( NT_STATUS_IS_OK(nss_initialized) )
+	if (nss_initialized) {
 		return NT_STATUS_OK;
+	}
 
-	/* The "template" backend should alqays be registered as it
+	/* The "template" backend should always be registered as it
 	   is a static module */
 
-	if ( (nss_backend = nss_get_backend( "template" )) == NULL ) {
+	nss_backend = nss_get_backend("template");
+	if (nss_backend == NULL) {
 		static_init_nss_info;
 	}
 
@@ -200,19 +202,21 @@ static NTSTATUS nss_domain_list_add_domain(const char *domain,
 
 		/* validate the backend */
 
-		if ( (nss_backend = nss_get_backend( backend )) == NULL ) {
+		nss_backend = nss_get_backend(backend);
+		if (nss_backend == NULL) {
 			/* attempt to register the backend */
 			status = smb_probe_module( "nss_info", backend );
 			if ( !NT_STATUS_IS_OK(status) ) {
 				continue;
 			}
+		}
 
-			/* try again */
-			if ( (nss_backend = nss_get_backend( backend )) == NULL ) {
-				DEBUG(0,("nss_init: unregistered backend %s!.  Skipping\n",
-					 backend));
-				continue;
-			}
+		/* try again */
+		nss_backend = nss_get_backend(backend);
+		if (nss_backend == NULL) {
+			DEBUG(0, ("nss_init: unregistered backend %s!. "
+				  "Skipping\n", backend));
+			continue;
 		}
 
 		/*
@@ -241,10 +245,10 @@ static NTSTATUS nss_domain_list_add_domain(const char *domain,
 			 "Defaulting to \"template\".\n"));
 
 
-		/* we shouild default to use template here */
+		/* we should default to use template here */
 	}
 
-	nss_initialized = NT_STATUS_OK;
+	nss_initialized = true;
 
 	return NT_STATUS_OK;
 }
@@ -259,8 +263,8 @@ static struct nss_domain_entry *find_nss_domain( const char *domain )
 
 	status = nss_init( lp_winbind_nss_info() );
 	if ( !NT_STATUS_IS_OK(status) ) {
-		DEBUG(4,("nss_get_info: Failed to init nss_info API (%s)!\n",
-			 nt_errstr(status)));
+		DEBUG(4,("find_nss_domain: Failed to init nss_info API "
+			 "(%s)!\n", nt_errstr(status)));
 		return NULL;
 	}
 

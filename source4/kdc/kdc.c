@@ -602,7 +602,7 @@ static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 	}
 
 	ret = krb5_make_principal(kdc->smb_krb5_context->krb5_context, &principal, 
-				  lp_realm(kdc->task->lp_ctx), 
+				  lp_realm(kdc->task->lp_ctx),
 				  "krbtgt", lp_realm(kdc->task->lp_ctx), 
 				  NULL);
 

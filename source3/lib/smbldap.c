@@ -721,9 +721,18 @@ int smb_ldap_setup_conn(LDAP **ldap_struct, const char *uri)
 	rc = ldap_initialize(ldap_struct, uri);
 	if (rc) {
 		DEBUG(0, ("ldap_initialize: %s\n", ldap_err2string(rc)));
+		return rc;
 	}
 
-	return rc;
+	if (lp_ldap_ref_follow() != Auto) {
+		rc = ldap_set_option(*ldap_struct, LDAP_OPT_REFERRALS,
+		     lp_ldap_ref_follow() ? LDAP_OPT_ON : LDAP_OPT_OFF);
+		if (rc != LDAP_SUCCESS)
+			DEBUG(0, ("Failed to set LDAP_OPT_REFERRALS: %s\n",
+				ldap_err2string(rc)));
+	}
+
+	return LDAP_SUCCESS;
 #else 
 
 	/* Parse the string manually */
@@ -773,7 +782,6 @@ int smb_ldap_setup_conn(LDAP **ldap_struct, const char *uri)
 		}
 	}
 #endif /* HAVE_LDAP_INITIALIZE */
-
 
 	/* now set connection timeout */
 #ifdef LDAP_X_OPT_CONNECT_TIMEOUT /* Netscape */
@@ -1046,12 +1054,18 @@ static int smbldap_connect_system(struct smbldap_state *ldap_state, LDAP * ldap_
 	int version;
 
 	if (!ldap_state->anonymous && !ldap_state->bind_dn) {
+		char *bind_dn = NULL;
+		char *bind_secret = NULL;
 
 		/* get the default dn and password only if they are not set already */
-		if (!fetch_ldap_pw(&ldap_state->bind_dn, &ldap_state->bind_secret)) {
+		if (!fetch_ldap_pw(&bind_dn, &bind_secret)) {
 			DEBUG(0, ("ldap_connect_system: Failed to retrieve password from secrets.tdb\n"));
 			return LDAP_INVALID_CREDENTIALS;
 		}
+		smbldap_set_creds(ldap_state, false, bind_dn, bind_secret);
+		SAFE_FREE(bind_dn);
+		memset(bind_secret, '\0', strlen(bind_secret));
+		SAFE_FREE(bind_secret);
 	}
 
 	/* removed the sasl_bind_s "EXTERNAL" stuff, as my testsuite 

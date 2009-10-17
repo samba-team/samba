@@ -33,5 +33,6 @@ scripting/bin/nsupdate-gss --realm=$DOMAIN --noverify --ntype="CNAME" $OBJECTGUI
     exit 1
 }
 echo "Checking"
+rndc flush
 host $HOSTNAME.$DOMAIN
 host $OBJECTGUID._msdcs.$DOMAIN

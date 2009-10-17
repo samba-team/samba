@@ -86,6 +86,46 @@ EOF
     fi
 }
 
+# Test creating a bad symlink and deleting it.
+test_bad_symlink()
+{
+    prompt="posix_unlink deleted file /newname"
+    tmpfile=/tmp/smbclient.in.$$
+
+    cat > $tmpfile <<EOF
+posix
+posix_unlink newname
+symlink badname newname
+posix_unlink newname
+quit
+EOF
+
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT $CONFIGURATION "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed create then delete bad symlink"
+	false
+	return
+    fi
+
+    echo "$out" | grep $prompt >/dev/null 2>&1
+
+    if [ $? = 0 ] ; then
+	# got the correct prompt .. succeed
+	true
+    else
+	echo "$out"
+	echo failed create then delete bad symlink
+	false
+    fi
+}
+
+
 testit "smbclient -L $SERVER_IP" $SMBCLIENT $CONFIGURATION -L $SERVER_IP -N -p 139 || failed=`expr $failed + 1`
 testit "smbclient -L $SERVER -I $SERVER_IP" $SMBCLIENT $CONFIGURATION -L $SERVER -I $SERVER_IP -N -p 139 || failed=`expr $failed + 1`
 
@@ -104,5 +144,9 @@ testit "interactive smbclient prompts on stdout" \
 testit "interactive smbclient -l prompts on stdout" \
    test_interactive_prompt_stdout -l /tmp || \
     failed=`expr $failed + 1`
+
+testit "creating a bad symlink and deleting it" \
+   test_bad_symlink || \
+   failed=`expr $failed + 1`
 
 testok $0 $failed

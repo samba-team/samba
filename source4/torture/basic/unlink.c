@@ -65,7 +65,7 @@ bool torture_unlinktest(struct torture_context *tctx, struct smbcli_state *cli)
 	torture_comment(tctx, "testing unlink after ntcreatex with DELETE access\n");
 
 	io.ntcreatex.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
 	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_NON_DIRECTORY_FILE;
 	io.ntcreatex.in.file_attr = 0;

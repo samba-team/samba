@@ -8,6 +8,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_echo_info1(struct ndr_push *ndr, int ndr_fla
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 1));
 		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->v));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 1));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -19,6 +20,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_echo_info1(struct ndr_pull *ndr, int ndr_fla
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 1));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->v));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 1));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -38,6 +40,7 @@ static enum ndr_err_code ndr_push_echo_info2(struct ndr_push *ndr, int ndr_flags
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 2));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->v));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 2));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -49,6 +52,7 @@ static enum ndr_err_code ndr_pull_echo_info2(struct ndr_pull *ndr, int ndr_flags
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 2));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->v));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 2));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -68,6 +72,7 @@ static enum ndr_err_code ndr_push_echo_info3(struct ndr_push *ndr, int ndr_flags
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->v));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -79,6 +84,7 @@ static enum ndr_err_code ndr_pull_echo_info3(struct ndr_pull *ndr, int ndr_flags
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->v));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -98,6 +104,7 @@ static enum ndr_err_code ndr_push_STRUCT_echo_info4(struct ndr_push *ndr, int nd
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 8));
 		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->v));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 8));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -109,6 +116,7 @@ static enum ndr_err_code ndr_pull_STRUCT_echo_info4(struct ndr_pull *ndr, int nd
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 8));
 		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->v));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 8));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -129,6 +137,7 @@ static enum ndr_err_code ndr_push_echo_info5(struct ndr_push *ndr, int ndr_flags
 		NDR_CHECK(ndr_push_align(ndr, 8));
 		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->v1));
 		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->v2));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 8));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -141,6 +150,7 @@ static enum ndr_err_code ndr_pull_echo_info5(struct ndr_pull *ndr, int ndr_flags
 		NDR_CHECK(ndr_pull_align(ndr, 8));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->v1));
 		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->v2));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 8));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -162,6 +172,7 @@ static enum ndr_err_code ndr_push_echo_info6(struct ndr_push *ndr, int ndr_flags
 		NDR_CHECK(ndr_push_align(ndr, 1));
 		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->v1));
 		NDR_CHECK(ndr_push_echo_info1(ndr, NDR_SCALARS, &r->info1));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 1));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -174,6 +185,7 @@ static enum ndr_err_code ndr_pull_echo_info6(struct ndr_pull *ndr, int ndr_flags
 		NDR_CHECK(ndr_pull_align(ndr, 1));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->v1));
 		NDR_CHECK(ndr_pull_echo_info1(ndr, NDR_SCALARS, &r->info1));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 1));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -195,6 +207,7 @@ static enum ndr_err_code ndr_push_echo_info7(struct ndr_push *ndr, int ndr_flags
 		NDR_CHECK(ndr_push_align(ndr, 8));
 		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->v1));
 		NDR_CHECK(ndr_push_STRUCT_echo_info4(ndr, NDR_SCALARS, &r->info4));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 8));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -207,6 +220,7 @@ static enum ndr_err_code ndr_pull_echo_info7(struct ndr_pull *ndr, int ndr_flags
 		NDR_CHECK(ndr_pull_align(ndr, 8));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->v1));
 		NDR_CHECK(ndr_pull_STRUCT_echo_info4(ndr, NDR_SCALARS, &r->info4));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 8));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -227,6 +241,7 @@ static enum ndr_err_code ndr_push_echo_Info(struct ndr_push *ndr, int ndr_flags,
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 8));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_echo_info1(ndr, NDR_SCALARS, &r->info1));
@@ -301,6 +316,7 @@ static enum ndr_err_code ndr_pull_echo_Info(struct ndr_pull *ndr, int ndr_flags,
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 8));
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_pull_echo_info1(ndr, NDR_SCALARS, &r->info1));
@@ -405,14 +421,14 @@ _PUBLIC_ void ndr_print_echo_Info(struct ndr_print *ndr, const char *name, const
 
 static enum ndr_err_code ndr_push_echo_Enum1(struct ndr_push *ndr, int ndr_flags, enum echo_Enum1 r)
 {
-	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint1632(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_echo_Enum1(struct ndr_pull *ndr, int ndr_flags, enum echo_Enum1 *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint1632(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -459,6 +475,7 @@ static enum ndr_err_code ndr_push_echo_Enum2(struct ndr_push *ndr, int ndr_flags
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_echo_Enum1(ndr, NDR_SCALARS, r->e1));
 		NDR_CHECK(ndr_push_echo_Enum1_32(ndr, NDR_SCALARS, r->e2));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -471,6 +488,7 @@ static enum ndr_err_code ndr_pull_echo_Enum2(struct ndr_pull *ndr, int ndr_flags
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_echo_Enum1(ndr, NDR_SCALARS, &r->e1));
 		NDR_CHECK(ndr_pull_echo_Enum1_32(ndr, NDR_SCALARS, &r->e2));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -491,6 +509,7 @@ static enum ndr_err_code ndr_push_echo_Enum3(struct ndr_push *ndr, int ndr_flags
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
 			case ECHO_ENUM1: {
 				NDR_CHECK(ndr_push_echo_Enum1(ndr, NDR_SCALARS, r->e1));
@@ -530,6 +549,7 @@ static enum ndr_err_code ndr_pull_echo_Enum3(struct ndr_pull *ndr, int ndr_flags
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
+		NDR_CHECK(ndr_pull_union_align(ndr, 4));
 		switch (level) {
 			case ECHO_ENUM1: {
 				NDR_CHECK(ndr_pull_echo_Enum1(ndr, NDR_SCALARS, &r->e1));
@@ -587,6 +607,7 @@ static enum ndr_err_code ndr_push_echo_Surrounding(struct ndr_push *ndr, int ndr
 		for (cntr_surrounding_0 = 0; cntr_surrounding_0 < r->x; cntr_surrounding_0++) {
 			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->surrounding[cntr_surrounding_0]));
 		}
+		NDR_CHECK(ndr_push_trailer_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -611,6 +632,7 @@ static enum ndr_err_code ndr_pull_echo_Surrounding(struct ndr_pull *ndr, int ndr
 		if (r->surrounding) {
 			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->surrounding, r->x));
 		}
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}

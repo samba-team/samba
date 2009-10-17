@@ -67,6 +67,7 @@ msDS-hasMasterNCs: ${SCHEMADN}
 msDS-hasMasterNCs: ${DOMAINDN}
 options: 1
 systemFlags: 33554432
+${NTDSGUID}
 
 # Provides an account for DNS keytab export
 dn: CN=dns,CN=Users,${DOMAINDN}

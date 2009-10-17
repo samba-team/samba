@@ -29,13 +29,22 @@
 
 NTSTATUS trust_pw_change_and_store_it(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 				      const char *domain,
+				      const char *account_name,
 				      unsigned char orig_trust_passwd_hash[16],
-				      uint32 sec_channel_type)
+				      enum netr_SchannelType sec_channel_type)
 {
 	unsigned char new_trust_passwd_hash[16];
 	char *new_trust_passwd;
 	NTSTATUS nt_status;
-		
+
+	switch (sec_channel_type) {
+	case SEC_CHAN_WKSTA:
+	case SEC_CHAN_DOMAIN:
+		break;
+	default:
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
 	/* Create a random machine account password */
 	new_trust_passwd = generate_random_str(mem_ctx, DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
 
@@ -43,15 +52,16 @@ NTSTATUS trust_pw_change_and_store_it(struct rpc_pipe_client *cli, TALLOC_CTX *m
 		DEBUG(0, ("talloc_strdup failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
-	
+
 	E_md4hash(new_trust_passwd, new_trust_passwd_hash);
 
 	nt_status = rpccli_netlogon_set_trust_password(cli, mem_ctx,
+						       account_name,
 						       orig_trust_passwd_hash,
 						       new_trust_passwd,
 						       new_trust_passwd_hash,
 						       sec_channel_type);
-	
+
 	if (NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("%s : trust_pw_change_and_store_it: Changed password.\n", 
 			 current_timestring(debug_ctx(), False)));
@@ -59,8 +69,33 @@ NTSTATUS trust_pw_change_and_store_it(struct rpc_pipe_client *cli, TALLOC_CTX *m
 		 * Return the result of trying to write the new password
 		 * back into the trust account file.
 		 */
-		if (!secrets_store_machine_password(new_trust_passwd, domain, sec_channel_type)) {
-			nt_status = NT_STATUS_UNSUCCESSFUL;
+
+		switch (sec_channel_type) {
+
+		case SEC_CHAN_WKSTA:
+			if (!secrets_store_machine_password(new_trust_passwd, domain, sec_channel_type)) {
+				nt_status = NT_STATUS_UNSUCCESSFUL;
+			}
+			break;
+
+		case SEC_CHAN_DOMAIN: {
+			char *pwd;
+			struct dom_sid sid;
+			time_t pass_last_set_time;
+
+			/* we need to get the sid first for the
+			 * pdb_set_trusteddom_pw call */
+
+			if (!pdb_get_trusteddom_pw(domain, &pwd, &sid, &pass_last_set_time)) {
+				nt_status = NT_STATUS_TRUSTED_RELATIONSHIP_FAILURE;
+			}
+			if (!pdb_set_trusteddom_pw(domain, new_trust_passwd, &sid)) {
+				nt_status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+			}
+			break;
+		}
+		default:
+			break;
 		}
 	}
 
@@ -78,16 +113,17 @@ NTSTATUS trust_pw_find_change_and_store_it(struct rpc_pipe_client *cli,
 					   const char *domain) 
 {
 	unsigned char old_trust_passwd_hash[16];
-	uint32 sec_channel_type = 0;
+	enum netr_SchannelType sec_channel_type = SEC_CHAN_NULL;
+	const char *account_name;
 
-	if (!secrets_fetch_trust_account_password(domain,
-						  old_trust_passwd_hash, 
-						  NULL, &sec_channel_type)) {
+	if (!get_trust_pw_hash(domain, old_trust_passwd_hash, &account_name,
+			       &sec_channel_type)) {
 		DEBUG(0, ("could not fetch domain secrets for domain %s!\n", domain));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	
+
 	return trust_pw_change_and_store_it(cli, mem_ctx, domain,
+					    account_name,
 					    old_trust_passwd_hash,
 					    sec_channel_type);
 }

@@ -591,6 +591,8 @@ static int ildb_rename(struct ildb_context *ac)
 {
 	struct ldb_request *req = ac->req;
 	struct ldap_message *msg;
+	const char *rdn_name;
+	const struct ldb_val *rdn_val;
 
 	msg = new_ldap_message(req);
 	if (msg == NULL) {
@@ -604,10 +606,16 @@ static int ildb_rename(struct ildb_context *ac)
 		return LDB_ERR_INVALID_DN_SYNTAX;
 	}
 
-	msg->r.ModifyDNRequest.newrdn =
-		talloc_asprintf(msg, "%s=%s",
-				ldb_dn_get_rdn_name(req->op.rename.newdn),
-				ldb_dn_escape_value(msg, *ldb_dn_get_rdn_val(req->op.rename.newdn)));
+	rdn_name = ldb_dn_get_rdn_name(req->op.rename.newdn);
+	rdn_val = ldb_dn_get_rdn_val(req->op.rename.newdn);
+
+	if ((rdn_name != NULL) && (rdn_val != NULL)) {
+		msg->r.ModifyDNRequest.newrdn =
+			talloc_asprintf(msg, "%s=%s", rdn_name,
+				ldb_dn_escape_value(msg, *rdn_val));
+	} else {
+		msg->r.ModifyDNRequest.newrdn = talloc_strdup(msg, "");
+	}
 	if (msg->r.ModifyDNRequest.newrdn == NULL) {
 		talloc_free(msg);
 		return LDB_ERR_OPERATIONS_ERROR;

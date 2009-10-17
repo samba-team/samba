@@ -1132,7 +1132,7 @@ static bool test_NetrJoinDomain(struct torture_context *tctx,
 					user);
 
 	r.in.server_name = dcerpc_server_name(p);
-	r.in.domain_name = lp_realm(tctx->lp_ctx);
+	r.in.domain_name = lp_dnsdomain(tctx->lp_ctx);
 	r.in.account_ou = NULL;
 	r.in.Account = admin_account;
 	r.in.password = NULL;

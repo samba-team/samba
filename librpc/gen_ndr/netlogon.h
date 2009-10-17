@@ -17,6 +17,7 @@
 #define NETLOGON_NEG_128BIT	( NETLOGON_NEG_STRONG_KEYS )
 #define NETLOGON_NEG_SCHANNEL	( NETLOGON_NEG_AUTHENTICATED_RPC )
 #define DSGETDC_VALID_FLAGS	( (DS_FORCE_REDISCOVERY|DS_DIRECTORY_SERVICE_REQUIRED|DS_DIRECTORY_SERVICE_PREFERRED|DS_GC_SERVER_REQUIRED|DS_PDC_REQUIRED|DS_BACKGROUND_ONLY|DS_IP_REQUIRED|DS_KDC_REQUIRED|DS_TIMESERV_REQUIRED|DS_WRITABLE_REQUIRED|DS_GOOD_TIMESERV_PREFERRED|DS_AVOID_SELF|DS_ONLY_LDAP_NEEDED|DS_IS_FLAT_NAME|DS_IS_DNS_NAME|DS_RETURN_FLAT_NAME|DS_RETURN_DNS_NAME) )
+#define NETLOGON_PASSWORD_VERSION_NUMBER_PRESENT	( 0x02231968 )
 #define DS_GFTI_UPDATE_TDO	( 0x1 )
 struct netr_UasInfo {
 	const char *account_name;/* [unique,charset(UTF16)] */
@@ -865,9 +866,9 @@ enum netr_DsRGetDCNameInfo_AddressType
 #define DS_SERVER_NDNC ( NBT_SERVER_NDNC )
 #define DS_SERVER_SELECT_SECRET_DOMAIN_6 ( NBT_SERVER_SELECT_SECRET_DOMAIN_6 )
 #define DS_SERVER_FULL_SECRET_DOMAIN_6 ( NBT_SERVER_FULL_SECRET_DOMAIN_6 )
-#define DS_DNS_CONTROLLER ( 0x20000000 )
-#define DS_DNS_DOMAIN ( 0x40000000 )
-#define DS_DNS_FOREST ( 0x80000000 )
+#define DS_DNS_CONTROLLER ( NBT_SERVER_HAS_DNS_NAME )
+#define DS_DNS_DOMAIN ( NBT_SERVER_IS_DEFAULT_NC )
+#define DS_DNS_FOREST_ROOT ( NBT_SERVER_FOREST_ROOT )
 
 struct netr_DsRGetDCNameInfo {
 	const char *dc_unc;/* [unique,charset(UTF16)] */
@@ -1031,6 +1032,12 @@ struct netr_DomainInformation {
 union netr_DomainInfo {
 	struct netr_DomainInformation *domain_info;/* [unique,case] */
 	struct netr_LsaPolicyInformation *lsa_policy_info;/* [unique,case(2)] */
+};
+
+struct NL_PASSWORD_VERSION {
+	uint32_t ReservedField;
+	uint32_t PasswordVersionNumber;
+	uint32_t PasswordVersionPresent;
 };
 
 struct netr_CryptPassword {

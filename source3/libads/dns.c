@@ -506,9 +506,10 @@ static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx,
 
 		if (rr.type != T_A || rr.rdatalen != 4) {
 #if defined(HAVE_IPV6)
-			/* FIXME. RFC2874 defines A6 records. This
+			/* RFC2874 defines A6 records. This
 			 * requires recusive and horribly complex lookups.
 			 * Bastards. Ignore this for now.... JRA.
+			 * Luckily RFC3363 reprecates A6 records.
 			 */
 			if (rr.type != T_AAAA || rr.rdatalen != 16)
 #endif

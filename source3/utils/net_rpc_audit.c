@@ -40,9 +40,6 @@ static int net_help_audit(struct net_context *c, int argc, const char **argv)
 
 static void print_auditing_category(const char *policy, const char *value)
 {
-	fstring padding;
-	int pad_len, col_len = 30;
-
 	if (policy == NULL) {
 		policy = N_("Unknown");
 	}
@@ -50,12 +47,7 @@ static void print_auditing_category(const char *policy, const char *value)
 		value = N_("Invalid");
 	}
 
-	/* calculate padding space for d_printf to look nicer */
-	pad_len = col_len - strlen(policy);
-	padding[pad_len] = 0;
-	do padding[--pad_len] = ' '; while (pad_len > 0);
-
-	d_printf(_("\t%s%s%s\n"), policy, padding, value);
+	d_printf(_("\t%-30s%s\n"), policy, value);
 }
 
 /********************************************************************

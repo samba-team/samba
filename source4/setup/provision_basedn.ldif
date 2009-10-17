@@ -3,5 +3,6 @@
 ################################
 dn: ${DOMAINDN}
 objectClass: top
-objectClass: ${DOMAIN_OC}
-
+objectClass: domaindns
+instanceType: 5
+${DOMAINGUID}

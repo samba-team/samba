@@ -116,103 +116,105 @@ WERROR _netr_LogonControl2Ex(pipes_struct *p,
 	const char *fn;
 
 	switch (p->hdr_req.opnum) {
-		case NDR_NETR_LOGONCONTROL:
-			fn = "_netr_LogonControl";
-			break;
-		case NDR_NETR_LOGONCONTROL2:
-			fn = "_netr_LogonControl2";
-			break;
-		case NDR_NETR_LOGONCONTROL2EX:
-			fn = "_netr_LogonControl2Ex";
-			break;
-		default:
-			return WERR_INVALID_PARAM;
+	case NDR_NETR_LOGONCONTROL:
+		fn = "_netr_LogonControl";
+		break;
+	case NDR_NETR_LOGONCONTROL2:
+		fn = "_netr_LogonControl2";
+		break;
+	case NDR_NETR_LOGONCONTROL2EX:
+		fn = "_netr_LogonControl2Ex";
+		break;
+	default:
+		return WERR_INVALID_PARAM;
 	}
 
 	tc_status = WERR_NO_SUCH_DOMAIN;
 
 	switch (r->in.function_code) {
-		case NETLOGON_CONTROL_TC_QUERY:
-			domain = r->in.data->domain;
+	case NETLOGON_CONTROL_TC_QUERY:
+		domain = r->in.data->domain;
 
-			if ( !is_trusted_domain( domain ) )
-				break;
-
-			if ( !get_dc_name( domain, NULL, dc_name2, &dc_ss ) ) {
-				tc_status = WERR_NO_LOGON_SERVERS;
-				break;
-			}
-
-			dc_name = talloc_asprintf(p->mem_ctx, "\\\\%s", dc_name2);
-			if (!dc_name) {
-				return WERR_NOMEM;
-			}
-
-			tc_status = WERR_OK;
-
+		if (!is_trusted_domain(domain)) {
 			break;
+		}
 
-		case NETLOGON_CONTROL_REDISCOVER:
-			domain = r->in.data->domain;
-
-			if ( !is_trusted_domain( domain ) )
-				break;
-
-			if ( !get_dc_name( domain, NULL, dc_name2, &dc_ss ) ) {
-				tc_status = WERR_NO_LOGON_SERVERS;
-				break;
-			}
-
-			dc_name = talloc_asprintf(p->mem_ctx, "\\\\%s", dc_name2);
-			if (!dc_name) {
-				return WERR_NOMEM;
-			}
-
-			tc_status = WERR_OK;
-
+		if (!get_dc_name(domain, NULL, dc_name2, &dc_ss)) {
+			tc_status = WERR_NO_LOGON_SERVERS;
 			break;
+		}
 
-		default:
-			/* no idea what this should be */
-			DEBUG(0,("%s: unimplemented function level [%d]\n",
-				fn, r->in.function_code));
-			return WERR_UNKNOWN_LEVEL;
+		dc_name = talloc_asprintf(p->mem_ctx, "\\\\%s", dc_name2);
+		if (!dc_name) {
+			return WERR_NOMEM;
+		}
+
+		tc_status = WERR_OK;
+
+		break;
+
+	case NETLOGON_CONTROL_REDISCOVER:
+		domain = r->in.data->domain;
+
+		if (!is_trusted_domain(domain)) {
+			break;
+		}
+
+		if (!get_dc_name(domain, NULL, dc_name2, &dc_ss)) {
+			tc_status = WERR_NO_LOGON_SERVERS;
+			break;
+		}
+
+		dc_name = talloc_asprintf(p->mem_ctx, "\\\\%s", dc_name2);
+		if (!dc_name) {
+			return WERR_NOMEM;
+		}
+
+		tc_status = WERR_OK;
+
+		break;
+
+	default:
+		/* no idea what this should be */
+		DEBUG(0,("%s: unimplemented function level [%d]\n",
+			fn, r->in.function_code));
+		return WERR_UNKNOWN_LEVEL;
 	}
 
 	/* prepare the response */
 
 	switch (r->in.level) {
-		case 1:
-			info1 = TALLOC_ZERO_P(p->mem_ctx, struct netr_NETLOGON_INFO_1);
-			W_ERROR_HAVE_NO_MEMORY(info1);
+	case 1:
+		info1 = TALLOC_ZERO_P(p->mem_ctx, struct netr_NETLOGON_INFO_1);
+		W_ERROR_HAVE_NO_MEMORY(info1);
 
-			info1->flags			= flags;
-			info1->pdc_connection_status	= pdc_connection_status;
+		info1->flags			= flags;
+		info1->pdc_connection_status	= pdc_connection_status;
 
-			r->out.query->info1 = info1;
-			break;
-		case 2:
-			info2 = TALLOC_ZERO_P(p->mem_ctx, struct netr_NETLOGON_INFO_2);
-			W_ERROR_HAVE_NO_MEMORY(info2);
+		r->out.query->info1 = info1;
+		break;
+	case 2:
+		info2 = TALLOC_ZERO_P(p->mem_ctx, struct netr_NETLOGON_INFO_2);
+		W_ERROR_HAVE_NO_MEMORY(info2);
 
-			info2->flags			= flags;
-			info2->pdc_connection_status	= pdc_connection_status;
-			info2->trusted_dc_name		= dc_name;
-			info2->tc_connection_status	= tc_status;
+		info2->flags			= flags;
+		info2->pdc_connection_status	= pdc_connection_status;
+		info2->trusted_dc_name		= dc_name;
+		info2->tc_connection_status	= tc_status;
 
-			r->out.query->info2 = info2;
-			break;
-		case 3:
-			info3 = TALLOC_ZERO_P(p->mem_ctx, struct netr_NETLOGON_INFO_3);
-			W_ERROR_HAVE_NO_MEMORY(info3);
+		r->out.query->info2 = info2;
+		break;
+	case 3:
+		info3 = TALLOC_ZERO_P(p->mem_ctx, struct netr_NETLOGON_INFO_3);
+		W_ERROR_HAVE_NO_MEMORY(info3);
 
-			info3->flags			= flags;
-			info3->logon_attempts		= logon_attempts;
+		info3->flags			= flags;
+		info3->logon_attempts		= logon_attempts;
 
-			r->out.query->info3 = info3;
-			break;
-		default:
-			return WERR_UNKNOWN_LEVEL;
+		r->out.query->info3 = info3;
+		break;
+	default:
+		return WERR_UNKNOWN_LEVEL;
 	}
 
         if (lp_server_role() == ROLE_DOMAIN_BDC) {
@@ -229,20 +231,47 @@ WERROR _netr_LogonControl2Ex(pipes_struct *p,
 WERROR _netr_NetrEnumerateTrustedDomains(pipes_struct *p,
 					 struct netr_NetrEnumerateTrustedDomains *r)
 {
-	struct netr_Blob trusted_domains_blob;
+	NTSTATUS status;
 	DATA_BLOB blob;
+	struct trustdom_info **domains;
+	uint32_t num_domains;
+	const char **trusted_domains;
+	int i;
 
 	DEBUG(6,("_netr_NetrEnumerateTrustedDomains: %d\n", __LINE__));
 
 	/* set up the Trusted Domain List response */
 
-	blob = data_blob_talloc_zero(p->mem_ctx, 2);
-	trusted_domains_blob.data = blob.data;
-	trusted_domains_blob.length = blob.length;
+	become_root();
+	status = pdb_enum_trusteddoms(p->mem_ctx, &num_domains, &domains);
+	unbecome_root();
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	trusted_domains = talloc_zero_array(p->mem_ctx, const char *, num_domains + 1);
+	if (!trusted_domains) {
+		return WERR_NOMEM;
+	}
+
+	for (i = 0; i < num_domains; i++) {
+		trusted_domains[i] = talloc_strdup(trusted_domains, domains[i]->name);
+		if (!trusted_domains[i]) {
+			TALLOC_FREE(trusted_domains);
+			return WERR_NOMEM;
+		}
+	}
+
+	if (!push_reg_multi_sz(trusted_domains, &blob, trusted_domains)) {
+		TALLOC_FREE(trusted_domains);
+		return WERR_NOMEM;
+	}
+
+	r->out.trusted_domains_blob->data = blob.data;
+	r->out.trusted_domains_blob->length = blob.length;
 
 	DEBUG(6,("_netr_NetrEnumerateTrustedDomains: %d\n", __LINE__));
-
-	*r->out.trusted_domains_blob = trusted_domains_blob;
 
 	return WERR_OK;
 }
@@ -252,7 +281,7 @@ WERROR _netr_NetrEnumerateTrustedDomains(pipes_struct *p,
  ******************************************************************/
 
 static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
-			  uint16_t sec_chan_type, struct dom_sid *sid)
+			  enum netr_SchannelType sec_chan_type, struct dom_sid *sid)
 {
 	struct samu *sampass = NULL;
 	const uint8 *pass;
@@ -798,6 +827,7 @@ NTSTATUS _netr_ServerPasswordSet2(pipes_struct *p,
 	struct samu *sampass;
 	DATA_BLOB plaintext;
 	struct samr_CryptPassword password_buf;
+	struct samr_Password nt_hash;
 
 	become_root();
 	status = netr_creds_server_step_check(p, p->mem_ctx,
@@ -823,6 +853,8 @@ NTSTATUS _netr_ServerPasswordSet2(pipes_struct *p,
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
+	mdfour(nt_hash.hash, plaintext.data, plaintext.length);
+
 	status = netr_find_machine_account(p->mem_ctx,
 					   creds->account_name,
 					   &sampass);
@@ -832,8 +864,8 @@ NTSTATUS _netr_ServerPasswordSet2(pipes_struct *p,
 
 	status = netr_set_machine_account_password(sampass,
 						   sampass,
-						   &plaintext,
 						   NULL,
+						   &nt_hash,
 						   NULL);
 	TALLOC_FREE(sampass);
 	return status;

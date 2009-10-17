@@ -24,15 +24,6 @@ import "misc.idl", "lsa.idl", "security.idl";
 		SAM_DATABASE_PRIVS   = 2 /* Privileges */
 	} netr_SamDatabaseID;
 
-	typedef [public,v1_enum] enum {
-		SAMR_REJECT_OTHER      = 0,
-		SAMR_REJECT_TOO_SHORT  = 1,
-		SAMR_REJECT_IN_HISTORY = 2,
-		SAMR_REJECT_COMPLEXITY = 5
-	} samr_RejectReason;
-
-
-
 	/* account control (acct_flags) bits */
 	typedef [public,bitmap32bit] bitmap {
 		ACB_DISABLED			= 0x00000001,  /* 1 = User account disabled */
@@ -1447,13 +1438,22 @@ import "misc.idl", "lsa.idl", "security.idl";
 	/************************/
 	/* Function    0x3f     */
 
-	typedef enum samr_RejectReason samr_RejectReason;
+	typedef [public,v1_enum] enum {
+		SAM_PWD_CHANGE_NO_ERROR             = 0,
+		SAM_PWD_CHANGE_PASSWORD_TOO_SHORT   = 1,
+		SAM_PWD_CHANGE_PWD_IN_HISTORY       = 2,
+		SAM_PWD_CHANGE_USERNAME_IN_PASSWORD = 3,
+		SAM_PWD_CHANGE_FULLNAME_IN_PASSWORD = 4,
+		SAM_PWD_CHANGE_NOT_COMPLEX          = 5,
+		SAM_PWD_CHANGE_MACHINE_NOT_DEFAULT  = 6,
+		SAM_PWD_CHANGE_FAILED_BY_FILTER     = 7,
+		SAM_PWD_CHANGE_PASSWORD_TOO_LONG    = 8
+	} samPwdChangeReason;
 
 	typedef struct {
-		samr_RejectReason reason;
-		uint32 unknown1;
-		uint32 unknown2;
-	} samr_ChangeReject;
+		samPwdChangeReason extendedFailureReason;
+		[string,charset(UTF16)] uint16 *filterModuleName;
+	} userPwdChangeFailureInformation;
 
 	NTSTATUS samr_ChangePasswordUser3(
 		[in,unique]       lsa_String *server,
@@ -1465,7 +1465,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 		[in,unique]       samr_Password *lm_verifier,
 		[in,unique]       samr_CryptPassword *password3,
 		[out,ref]         samr_DomInfo1 **dominfo,
-		[out,ref]         samr_ChangeReject **reject
+		[out,ref]         userPwdChangeFailureInformation **reject
 		);
 
 	/************************/

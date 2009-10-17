@@ -630,9 +630,15 @@ static int xattr_tdb_unlink(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	if (SMB_VFS_STAT(handle->conn, smb_fname_tmp) == -1) {
+	if (lp_posix_pathnames()) {
+		ret = SMB_VFS_LSTAT(handle->conn, smb_fname_tmp);
+	} else {
+		ret = SMB_VFS_STAT(handle->conn, smb_fname_tmp);
+	}
+	if (ret == -1) {
 		goto out;
 	}
+
 	if (smb_fname_tmp->st.st_ex_nlink == 1) {
 		/* Only remove record on last link to file. */
 		remove_record = true;

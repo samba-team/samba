@@ -52,7 +52,7 @@ WERROR com_create_object(struct com_context *ctx, struct GUID *clsid, int num_if
 	}
 
 	/* Run IClassFactory::CreateInstance() */
-	error = IClassFactory_CreateInstance(factory, ctx, NULL, &classfact_iid, &iunk);
+	error = IClassFactory_CreateInstance(factory, ctx, NULL, &classfact_iid, (struct MInterfacePointer *) &iunk);
 	if (!W_ERROR_IS_OK(error)) {
 		DEBUG(3, ("Error while calling IClassFactory::CreateInstance : %s\n", win_errstr(error)));
 		return error;

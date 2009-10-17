@@ -1,7 +1,7 @@
 /*
  *  Unix SMB/CIFS implementation.
  *  NetApi Support
- *  Copyright (C) Guenther Deschner 2007-2008
+ *  Copyright (C) Guenther Deschner 2007-2009
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1257,7 +1257,55 @@ struct FILE_INFO_3 {
 	const char * fi3_username;
 };
 
+struct NETLOGON_INFO_1 {
+	uint32_t netlog1_flags;
+	NET_API_STATUS netlog1_pdc_connection_status;
+};
+
+struct NETLOGON_INFO_2 {
+	uint32_t netlog2_flags;
+	NET_API_STATUS netlog2_pdc_connection_status;
+	const char * netlog2_trusted_dc_name;
+	NET_API_STATUS netlog2_tc_connection_status;
+};
+
+struct NETLOGON_INFO_3 {
+	uint32_t netlog1_flags;
+	uint32_t netlog3_logon_attempts;
+	uint32_t netlog3_reserved1;
+	uint32_t netlog3_reserved2;
+	uint32_t netlog3_reserved3;
+	uint32_t netlog3_reserved4;
+	uint32_t netlog3_reserved5;
+};
+
+struct NETLOGON_INFO_4 {
+	const char * netlog4_trusted_dc_name;
+	const char * netlog4_trusted_domain_name;
+};
+
 #endif /* _HEADER_libnetapi */
+
+#ifndef _HEADER_netlogon
+
+#define NETLOGON_CONTROL_QUERY ( 0x00000001 )
+#define NETLOGON_CONTROL_REPLICATE ( 0x00000002 )
+#define NETLOGON_CONTROL_SYNCHRONIZE ( 0x00000003 )
+#define NETLOGON_CONTROL_PDC_REPLICATE ( 0x00000004 )
+#define NETLOGON_CONTROL_REDISCOVER ( 0x00000005 )
+#define NETLOGON_CONTROL_TC_QUERY ( 0x00000006 )
+#define NETLOGON_CONTROL_TRANSPORT_NOTIFY ( 0x00000007 )
+#define NETLOGON_CONTROL_FIND_USER ( 0x00000008 )
+#define NETLOGON_CONTROL_CHANGE_PASSWORD ( 0x00000009 )
+#define NETLOGON_CONTROL_TC_VERIFY ( 0x0000000A )
+#define NETLOGON_CONTROL_FORCE_DNS_REG ( 0x0000000B )
+#define NETLOGON_CONTROL_QUERY_DNS_REG ( 0x0000000C )
+#define NETLOGON_CONTROL_BACKUP_CHANGE_LOG ( 0x0000FFFC )
+#define NETLOGON_CONTROL_TRUNCATE_LOG ( 0x0000FFFD )
+#define NETLOGON_CONTROL_SET_DBFLAG ( 0x0000FFFE )
+#define NETLOGON_CONTROL_BREAKPOINT ( 0x0000FFFF )
+
+#endif /* _HEADER_netlogon */
 
 /****************************************************************
 ****************************************************************/
@@ -2480,6 +2528,48 @@ NET_API_STATUS NetShutdownInit(const char * server_name /* [in] */,
  ***************************************************************/
 
 NET_API_STATUS NetShutdownAbort(const char * server_name /* [in] */);
+
+/************************************************************//**
+ *
+ * I_NetLogonControl
+ *
+ * @brief Control various aspects of the NETLOGON service
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] function_code The function code to call on the server
+ * @param[in] query_level The level of the NETLOGON_INFO structure returned
+ * @param[out] buffer The returned buffer containing the NETLOGON_INFO structure
+ * @return NET_API_STATUS
+ *
+ * example netlogon/netlogon_control.c
+ ***************************************************************/
+
+NET_API_STATUS I_NetLogonControl(const char * server_name /* [in] */,
+				 uint32_t function_code /* [in] */,
+				 uint32_t query_level /* [in] */,
+				 uint8_t **buffer /* [out] [ref] */);
+
+/************************************************************//**
+ *
+ * I_NetLogonControl2
+ *
+ * @brief Control various aspects of the NETLOGON service
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] function_code The function code to call on the server
+ * @param[in] query_level The level of the NETLOGON_INFO structure returned
+ * @param[in] data The buffer containing information related to the function code
+ * @param[out] buffer The returned buffer containing the NETLOGON_INFO structure
+ * @return NET_API_STATUS
+ *
+ * example netlogon/netlogon_control2.c
+ ***************************************************************/
+
+NET_API_STATUS I_NetLogonControl2(const char * server_name /* [in] */,
+				  uint32_t function_code /* [in] */,
+				  uint32_t query_level /* [in] */,
+				  uint8_t *data /* [in] [ref] */,
+				  uint8_t **buffer /* [out] [ref] */);
 
 #ifdef __cplusplus
 }

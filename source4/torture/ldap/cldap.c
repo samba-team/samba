@@ -194,6 +194,7 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 	search.in.user = "Administrator";
 	status = cldap_netlogon(cldap, iconv_convenience, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_STRING(search.out.netlogon.data.nt5_ex.forest, n1.data.nt5_ex.dns_domain);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.dns_domain, n1.data.nt5_ex.dns_domain);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.user_name, search.in.user);
 
@@ -201,8 +202,9 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 	search.in.user = "___no_such_user___";
 	status = cldap_netlogon(cldap, iconv_convenience, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_STRING(search.out.netlogon.data.nt5_ex.user_name, search.in.user);
+	CHECK_STRING(search.out.netlogon.data.nt5_ex.forest, n1.data.nt5_ex.dns_domain);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.dns_domain, n1.data.nt5_ex.dns_domain);
+	CHECK_STRING(search.out.netlogon.data.nt5_ex.user_name, search.in.user);
 	CHECK_VAL(search.out.netlogon.data.nt5_ex.command, LOGON_SAM_LOGON_USER_UNKNOWN_EX);
 
 	printf("Trying with just a bad domain\n");
@@ -215,6 +217,7 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 	search.in.domain_guid = GUID_string(tctx, &n1.data.nt5_ex.domain_uuid);
 	status = cldap_netlogon(cldap, iconv_convenience, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_STRING(search.out.netlogon.data.nt5_ex.forest, n1.data.nt5_ex.dns_domain);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.dns_domain, n1.data.nt5_ex.dns_domain);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.user_name, "");
 	CHECK_VAL(search.out.netlogon.data.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE_EX);
@@ -223,6 +226,7 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 	search.in.domain_guid = GUID_string(tctx, &guid);
 	status = cldap_netlogon(cldap, iconv_convenience, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_NOT_FOUND);
+	CHECK_STRING(search.out.netlogon.data.nt5_ex.forest, n1.data.nt5_ex.dns_domain);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.dns_domain, n1.data.nt5_ex.dns_domain);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.user_name, "");
 	CHECK_VAL(search.out.netlogon.data.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE_EX);
@@ -232,6 +236,7 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 	search.in.realm = n1.data.nt5_ex.dns_domain;
 	status = cldap_netlogon(cldap, iconv_convenience, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_STRING(search.out.netlogon.data.nt5_ex.forest, n1.data.nt5_ex.dns_domain);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.dns_domain, n1.data.nt5_ex.dns_domain);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.user_name, "");
 	CHECK_VAL(search.out.netlogon.data.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE_EX);
@@ -303,8 +308,8 @@ static bool test_cldap_netlogon_flags(struct torture_context *tctx,
 		printf("DS_DNS_CONTROLLER ");
 	if (server_type & DS_DNS_DOMAIN)
 		printf("DS_DNS_DOMAIN ");
-	if (server_type & DS_DNS_FOREST)
-		printf("DS_DNS_FOREST ");
+	if (server_type & DS_DNS_FOREST_ROOT)
+		printf("DS_DNS_FOREST_ROOT ");
 
 	printf("\n");
 
@@ -352,7 +357,7 @@ static void cldap_dump_results(struct cldap_search *search)
 
 
 /*
-  test cldap netlogon server type flag "NBT_SERVER_DS_DNS_FOREST"
+  test cldap netlogon server type flag "NBT_SERVER_FOREST_ROOT"
 */
 static bool test_cldap_netlogon_flag_ds_dns_forest(struct torture_context *tctx,
 	const char *dest)
@@ -369,7 +374,7 @@ static bool test_cldap_netlogon_flag_ds_dns_forest(struct torture_context *tctx,
 	status = cldap_socket_init(tctx, NULL, NULL, NULL, &cldap);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	printf("Testing netlogon server type flag NBT_SERVER_DS_DNS_FOREST: ");
+	printf("Testing netlogon server type flag NBT_SERVER_FOREST_ROOT: ");
 
 	ZERO_STRUCT(search);
 	search.in.dest_address = dest;
@@ -387,7 +392,7 @@ static bool test_cldap_netlogon_flag_ds_dns_forest(struct torture_context *tctx,
 	else if (n1.ntver == NETLOGON_NT_VERSION_5EX)
 		server_type = n1.data.nt5_ex.server_type;
 
-	if (server_type & DS_DNS_FOREST) {
+	if (server_type & DS_DNS_FOREST_ROOT) {
 		struct cldap_search search2;
 		const char *attrs[] = { "defaultNamingContext", "rootDomainNamingContext", 
 			NULL };

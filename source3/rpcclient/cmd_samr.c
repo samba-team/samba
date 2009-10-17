@@ -2538,7 +2538,7 @@ static NTSTATUS cmd_samr_chgpasswd3(struct rpc_pipe_client *cli,
 	const char *user, *oldpass, *newpass;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	struct samr_DomInfo1 *info = NULL;
-	struct samr_ChangeReject *reject = NULL;
+	struct userPwdChangeFailureInformation *reject = NULL;
 
 	if (argc < 3) {
 		printf("Usage: %s username oldpass newpass\n", argv[0]);
@@ -2581,22 +2581,19 @@ static NTSTATUS cmd_samr_chgpasswd3(struct rpc_pipe_client *cli,
 
 		display_sam_dom_info_1(info);
 
-		switch (reject->reason) {
-			case SAMR_REJECT_TOO_SHORT:
-				d_printf("SAMR_REJECT_TOO_SHORT\n");
+		switch (reject->extendedFailureReason) {
+			case SAM_PWD_CHANGE_PASSWORD_TOO_SHORT:
+				d_printf("SAM_PWD_CHANGE_PASSWORD_TOO_SHORT\n");
 				break;
-			case SAMR_REJECT_IN_HISTORY:
-				d_printf("SAMR_REJECT_IN_HISTORY\n");
+			case SAM_PWD_CHANGE_PWD_IN_HISTORY:
+				d_printf("SAM_PWD_CHANGE_PWD_IN_HISTORY\n");
 				break;
-			case SAMR_REJECT_COMPLEXITY:
-				d_printf("SAMR_REJECT_COMPLEXITY\n");
-				break;
-			case SAMR_REJECT_OTHER:
-				d_printf("SAMR_REJECT_OTHER\n");
+			case SAM_PWD_CHANGE_NOT_COMPLEX:
+				d_printf("SAM_PWD_CHANGE_NOT_COMPLEX\n");
 				break;
 			default:
 				d_printf("unknown reject reason: %d\n",
-					reject->reason);
+					reject->extendedFailureReason);
 				break;
 		}
 	}

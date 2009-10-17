@@ -37,12 +37,10 @@
 _PUBLIC_ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx) 
 {
 	struct cli_credentials *cred = talloc(mem_ctx, struct cli_credentials);
-	if (!cred) {
+	if (cred == NULL) {
 		return cred;
 	}
 
-	cred->netlogon_creds = NULL;
-	cred->machine_account_pending = false;
 	cred->workstation_obtained = CRED_UNINITIALISED;
 	cred->username_obtained = CRED_UNINITIALISED;
 	cred->password_obtained = CRED_UNINITIALISED;
@@ -50,21 +48,51 @@ _PUBLIC_ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 	cred->realm_obtained = CRED_UNINITIALISED;
 	cred->ccache_obtained = CRED_UNINITIALISED;
 	cred->client_gss_creds_obtained = CRED_UNINITIALISED;
-	cred->server_gss_creds_obtained = CRED_UNINITIALISED;
-	cred->keytab_obtained = CRED_UNINITIALISED;
 	cred->principal_obtained = CRED_UNINITIALISED;
+	cred->keytab_obtained = CRED_UNINITIALISED;
+	cred->server_gss_creds_obtained = CRED_UNINITIALISED;
 
 	cred->ccache_threshold = CRED_UNINITIALISED;
 	cred->client_gss_creds_threshold = CRED_UNINITIALISED;
 
+	cred->workstation = NULL;
+	cred->username = NULL;
+	cred->password = NULL;
 	cred->old_password = NULL;
-	cred->smb_krb5_context = NULL;
+	cred->domain = NULL;
+	cred->realm = NULL;
+	cred->principal = NULL;
 	cred->salt_principal = NULL;
-	cred->machine_account = false;
 
 	cred->bind_dn = NULL;
 
+	cred->nt_hash = NULL;
+
+	cred->ccache = NULL;
+	cred->client_gss_creds = NULL;
+	cred->keytab = NULL;
+	cred->server_gss_creds = NULL;
+
+	cred->workstation_cb = NULL;
+	cred->password_cb = NULL;
+	cred->username_cb = NULL;
+	cred->domain_cb = NULL;
+	cred->realm_cb = NULL;
+	cred->principal_cb = NULL;
+
+	cred->priv_data = NULL;
+
+	cred->netlogon_creds = NULL;
+
+	cred->smb_krb5_context = NULL;
+
+	cred->machine_account_pending = false;
+	cred->machine_account_pending_lp_ctx = NULL;
+
+	cred->machine_account = false;
+
 	cred->tries = 3;
+
 	cred->callback_running = false;
 
 	cli_credentials_set_kerberos_state(cred, CRED_AUTO_USE_KERBEROS);
@@ -722,6 +750,11 @@ _PUBLIC_ bool cli_credentials_is_anonymous(struct cli_credentials *cred)
 {
 	const char *username;
 	
+	/* if bind dn is set it's not anonymous */
+	if (cred->bind_dn) {
+		return false;
+	}
+
 	if (cred->machine_account_pending) {
 		cli_credentials_set_machine_account(cred,
 						    cred->machine_account_pending_lp_ctx);

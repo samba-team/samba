@@ -209,7 +209,7 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 				ac, og_op_callback,
 				req);
 	if (ret != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ret;
 	}
 
 	/* go on with the call chain */
@@ -267,7 +267,7 @@ static int objectguid_modify(struct ldb_module *module, struct ldb_request *req)
 				ac, og_op_callback,
 				req);
 	if (ret != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ret;
 	}
 
 	/* go on with the call chain */

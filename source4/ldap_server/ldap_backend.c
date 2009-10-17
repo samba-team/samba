@@ -534,26 +534,11 @@ static NTSTATUS ldapsrv_ModifyRequest(struct ldapsrv_call *call)
 				NT_STATUS_HAVE_NO_MEMORY(msg->elements[i].values);
 
 				for (j=0; j < msg->elements[i].num_values; j++) {
-					if (!(req->mods[i].attrib.values[j].length > 0)) {
-						result = LDAP_OTHER;
-
-						map_ldb_error(local_ctx,
-							LDB_ERR_OTHER, &errstr);
-						errstr = talloc_asprintf(local_ctx,
-							"%s. Empty attribute values not allowed", errstr);
-						goto reply;
-					}
 					msg->elements[i].values[j].length = req->mods[i].attrib.values[j].length;
 					msg->elements[i].values[j].data = req->mods[i].attrib.values[j].data;			
 				}
 			}
 		}
-	} else {
-		result = LDAP_OTHER;
-		map_ldb_error(local_ctx, LDB_ERR_OTHER, &errstr);
-		errstr = talloc_asprintf(local_ctx,
-			"%s. No mods are not allowed", errstr);
-		goto reply;
 	}
 
 reply:
@@ -628,31 +613,11 @@ static NTSTATUS ldapsrv_AddRequest(struct ldapsrv_call *call)
 				NT_STATUS_HAVE_NO_MEMORY(msg->elements[i].values);
 
 				for (j=0; j < msg->elements[i].num_values; j++) {
-					if (!(req->attributes[i].values[j].length > 0)) {
-						result = LDAP_OTHER;
-						map_ldb_error(local_ctx,
-							LDB_ERR_OTHER, &errstr);
-						errstr = talloc_asprintf(local_ctx,
-							"%s. Empty attribute values not allowed", errstr);
-						goto reply;
-					}
 					msg->elements[i].values[j].length = req->attributes[i].values[j].length;
 					msg->elements[i].values[j].data = req->attributes[i].values[j].data;			
 				}
-			} else {
-				result = LDAP_OTHER;
-				map_ldb_error(local_ctx, LDB_ERR_OTHER, &errstr);
-				errstr = talloc_asprintf(local_ctx,
-					"%s. No attribute values are not allowed", errstr);
-				goto reply;
 			}
 		}
-	} else {
-		result = LDAP_OTHER;
-		map_ldb_error(local_ctx, LDB_ERR_OTHER, &errstr);
-		errstr = talloc_asprintf(local_ctx, 
-			"%s. No attributes are not allowed", errstr);
-		goto reply;
 	}
 
 reply:
@@ -750,6 +715,12 @@ static NTSTATUS ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
 	DEBUG(10, ("ModifyDNRequest: olddn: [%s]\n", req->dn));
 	DEBUG(10, ("ModifyDNRequest: newrdn: [%s]\n", req->newrdn));
 
+	if (ldb_dn_get_comp_num(newrdn) != 1) {
+		result = LDAP_INVALID_DN_SYNTAX;
+		map_ldb_error(local_ctx, LDB_ERR_INVALID_DN_SYNTAX, &errstr);
+		goto reply;
+	}
+
 	/* we can't handle the rename if we should not remove the old dn */
 	if (!req->deleteolddn) {
 		result = LDAP_UNWILLING_TO_PERFORM;
@@ -779,10 +750,7 @@ static NTSTATUS ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
 		NT_STATUS_HAVE_NO_MEMORY(parentdn);
 	}
 
-	if ( ! ldb_dn_add_child_fmt(parentdn,
-				"%s=%s",
-				ldb_dn_get_rdn_name(newrdn),
-				(char *)ldb_dn_get_rdn_val(newrdn)->data)) {
+	if ( ! ldb_dn_add_child(parentdn, newrdn)) {
 		result = LDAP_OTHER;
 		goto reply;
 	}

@@ -138,7 +138,7 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 	TALLOC_CTX *mem_ctx;
         uint32 acb_info = ACB_WSTRUST;
 	uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
-	uint32 sec_channel_type;
+	enum netr_SchannelType sec_channel_type;
 	struct rpc_pipe_client *pipe_hnd = NULL;
 
 	/* rpc variables */
@@ -186,6 +186,10 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 		acb_info = ACB_DOMTRUST;
 		break;
 #endif
+	default:
+		DEBUG(0,("secure channel type %d not yet supported\n",
+			sec_channel_type));
+		break;
 	}
 
 	/* Make authenticated connection to remote machine */

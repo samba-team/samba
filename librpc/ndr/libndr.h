@@ -467,9 +467,11 @@ NDR_SCALAR_PROTO(uint8, uint8_t)
 NDR_SCALAR_PROTO(int8, int8_t)
 NDR_SCALAR_PROTO(uint16, uint16_t)
 NDR_SCALAR_PROTO(int16, int16_t)
+NDR_SCALAR_PROTO(uint1632, uint16_t)
 NDR_SCALAR_PROTO(uint32, uint32_t)
 NDR_SCALAR_PROTO(uint3264, uint32_t)
 NDR_SCALAR_PROTO(int32, int32_t)
+NDR_SCALAR_PROTO(int3264, int32_t)
 NDR_SCALAR_PROTO(udlong, uint64_t)
 NDR_SCALAR_PROTO(udlongr, uint64_t)
 NDR_SCALAR_PROTO(dlong, int64_t)
@@ -498,6 +500,10 @@ enum ndr_err_code ndr_pull_bytes(struct ndr_pull *ndr, uint8_t *data, uint32_t n
 enum ndr_err_code ndr_pull_array_uint8(struct ndr_pull *ndr, int ndr_flags, uint8_t *data, uint32_t n);
 enum ndr_err_code ndr_push_align(struct ndr_push *ndr, size_t size);
 enum ndr_err_code ndr_pull_align(struct ndr_pull *ndr, size_t size);
+enum ndr_err_code ndr_push_union_align(struct ndr_push *ndr, size_t size);
+enum ndr_err_code ndr_pull_union_align(struct ndr_pull *ndr, size_t size);
+enum ndr_err_code ndr_push_trailer_align(struct ndr_push *ndr, size_t size);
+enum ndr_err_code ndr_pull_trailer_align(struct ndr_pull *ndr, size_t size);
 enum ndr_err_code ndr_push_bytes(struct ndr_push *ndr, const uint8_t *data, uint32_t n);
 enum ndr_err_code ndr_push_zero(struct ndr_push *ndr, uint32_t n);
 enum ndr_err_code ndr_push_array_uint8(struct ndr_push *ndr, int ndr_flags, const uint8_t *data, uint32_t n);
@@ -544,8 +550,10 @@ struct GUID GUID_random(void);
 _PUBLIC_ enum ndr_err_code ndr_pull_enum_uint8(struct ndr_pull *ndr, int ndr_flags, uint8_t *v);
 _PUBLIC_ enum ndr_err_code ndr_pull_enum_uint16(struct ndr_pull *ndr, int ndr_flags, uint16_t *v);
 _PUBLIC_ enum ndr_err_code ndr_pull_enum_uint32(struct ndr_pull *ndr, int ndr_flags, uint32_t *v);
+_PUBLIC_ enum ndr_err_code ndr_pull_enum_uint1632(struct ndr_pull *ndr, int ndr_flags, uint16_t *v);
 _PUBLIC_ enum ndr_err_code ndr_push_enum_uint8(struct ndr_push *ndr, int ndr_flags, uint8_t v);
 _PUBLIC_ enum ndr_err_code ndr_push_enum_uint16(struct ndr_push *ndr, int ndr_flags, uint16_t v);
 _PUBLIC_ enum ndr_err_code ndr_push_enum_uint32(struct ndr_push *ndr, int ndr_flags, uint32_t v);
+_PUBLIC_ enum ndr_err_code ndr_push_enum_uint1632(struct ndr_push *ndr, int ndr_flags, uint16_t v);
 
 #endif /* __LIBNDR_H__ */

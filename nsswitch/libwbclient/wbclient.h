@@ -63,9 +63,10 @@ const char *wbcErrorString(wbcErr error);
  *  0.3: Added wbcGetpwsid()
  *	 Added wbcGetSidAliases()
  *  0.4: Added wbcSidTypeString()
+ *  0.5: Added wbcChangeTrustCredentials()
  **/
 #define WBCLIENT_MAJOR_VERSION 0
-#define WBCLIENT_MINOR_VERSION 4
+#define WBCLIENT_MINOR_VERSION 5
 #define WBCLIENT_VENDOR_VERSION "Samba libwbclient"
 struct wbcLibraryDetails {
 	uint16_t major_version;
@@ -427,11 +428,22 @@ struct wbcUserPasswordPolicyInfo {
  **/
 
 enum wbcPasswordChangeRejectReason {
-	WBC_PWD_CHANGE_REJECT_OTHER=0,
-	WBC_PWD_CHANGE_REJECT_TOO_SHORT=1,
-	WBC_PWD_CHANGE_REJECT_IN_HISTORY=2,
-	WBC_PWD_CHANGE_REJECT_COMPLEXITY=5
+	WBC_PWD_CHANGE_NO_ERROR=0,
+	WBC_PWD_CHANGE_PASSWORD_TOO_SHORT=1,
+	WBC_PWD_CHANGE_PWD_IN_HISTORY=2,
+	WBC_PWD_CHANGE_USERNAME_IN_PASSWORD=3,
+	WBC_PWD_CHANGE_FULLNAME_IN_PASSWORD=4,
+	WBC_PWD_CHANGE_NOT_COMPLEX=5,
+	WBC_PWD_CHANGE_MACHINE_NOT_DEFAULT=6,
+	WBC_PWD_CHANGE_FAILED_BY_FILTER=7,
+	WBC_PWD_CHANGE_PASSWORD_TOO_LONG=8
 };
+
+/* Note: this defines exist for compatibility reasons with existing code */
+#define WBC_PWD_CHANGE_REJECT_OTHER      WBC_PWD_CHANGE_NO_ERROR
+#define WBC_PWD_CHANGE_REJECT_TOO_SHORT  WBC_PWD_CHANGE_PASSWORD_TOO_SHORT
+#define WBC_PWD_CHANGE_REJECT_IN_HISTORY WBC_PWD_CHANGE_PWD_IN_HISTORY
+#define WBC_PWD_CHANGE_REJECT_COMPLEXITY WBC_PWD_CHANGE_NOT_COMPLEX
 
 /**
  * @brief Logoff User Parameters
@@ -1183,15 +1195,24 @@ wbcErr wbcResolveWinsByIP(const char *ip, char **name);
 /**
  * @brief Trigger a verification of the trust credentials of a specific domain
  *
- * @param *domain      The name of the domain, only NULL for the default domain is
- *                     supported yet. Other values than NULL will result in
- *                     WBC_ERR_NOT_IMPLEMENTED.
+ * @param *domain      The name of the domain.
  * @param error        Output details on WBC_ERR_AUTH_ERROR
  *
  * @return #wbcErr
  **/
 wbcErr wbcCheckTrustCredentials(const char *domain,
 				struct wbcAuthErrorInfo **error);
+
+/**
+ * @brief Trigger a change of the trust credentials for a specific domain
+ *
+ * @param *domain      The name of the domain.
+ * @param error        Output details on WBC_ERR_AUTH_ERROR
+ *
+ * @return #wbcErr
+ **/
+wbcErr wbcChangeTrustCredentials(const char *domain,
+				 struct wbcAuthErrorInfo **error);
 
 /**********************************************************
  * Helper functions

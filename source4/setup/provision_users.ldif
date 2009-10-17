@@ -1,5 +1,6 @@
-# Add default primary groups (domain users, domain guests) - needed for
-# the users to find valid primary groups (samldb module)
+# Add default primary groups (domain users, domain guests, domain computers &
+# domain controllers) - needed for the users to find valid primary groups
+# (samldb module)
 
 dn: CN=Domain Users,CN=Users,${DOMAINDN}
 objectClass: top
@@ -15,6 +16,23 @@ objectClass: group
 description: All domain guests
 objectSid: ${DOMAINSID}-514
 sAMAccountName: Domain Guests
+isCriticalSystemObject: TRUE
+
+dn: CN=Domain Computers,CN=Users,${DOMAINDN}
+objectClass: top
+objectClass: group
+description: All workstations and servers joined to the domain
+objectSid: ${DOMAINSID}-515
+sAMAccountName: Domain Computers
+isCriticalSystemObject: TRUE
+
+dn: CN=Domain Controllers,CN=Users,${DOMAINDN}
+objectClass: top
+objectClass: group
+description: All domain controllers in the domain
+objectSid: ${DOMAINSID}-516
+adminCount: 1
+sAMAccountName: Domain Controllers
 isCriticalSystemObject: TRUE
 
 # Add users
@@ -65,23 +83,6 @@ member: CN=Administrator,CN=Users,${DOMAINDN}
 objectSid: ${DOMAINSID}-519
 adminCount: 1
 sAMAccountName: Enterprise Admins
-isCriticalSystemObject: TRUE
-
-dn: CN=Domain Computers,CN=Users,${DOMAINDN}
-objectClass: top
-objectClass: group
-description: All workstations and servers joined to the domain
-objectSid: ${DOMAINSID}-515
-sAMAccountName: Domain Computers
-isCriticalSystemObject: TRUE
-
-dn: CN=Domain Controllers,CN=Users,${DOMAINDN}
-objectClass: top
-objectClass: group
-description: All domain controllers in the domain
-objectSid: ${DOMAINSID}-516
-adminCount: 1
-sAMAccountName: Domain Controllers
 isCriticalSystemObject: TRUE
 
 dn: CN=Schema Admins,CN=Users,${DOMAINDN}
@@ -212,30 +213,6 @@ adminCount: 1
 sAMAccountName: Administrators
 systemFlags: -1946157056
 groupType: -2147483643
-privilege: SeSecurityPrivilege
-privilege: SeBackupPrivilege
-privilege: SeRestorePrivilege
-privilege: SeSystemtimePrivilege
-privilege: SeShutdownPrivilege
-privilege: SeRemoteShutdownPrivilege
-privilege: SeTakeOwnershipPrivilege
-privilege: SeDebugPrivilege
-privilege: SeSystemEnvironmentPrivilege
-privilege: SeSystemProfilePrivilege
-privilege: SeProfileSingleProcessPrivilege
-privilege: SeIncreaseBasePriorityPrivilege
-privilege: SeLoadDriverPrivilege
-privilege: SeCreatePagefilePrivilege
-privilege: SeIncreaseQuotaPrivilege
-privilege: SeChangeNotifyPrivilege
-privilege: SeUndockPrivilege
-privilege: SeManageVolumePrivilege
-privilege: SeImpersonatePrivilege
-privilege: SeCreateGlobalPrivilege
-privilege: SeEnableDelegationPrivilege
-privilege: SeInteractiveLogonRight
-privilege: SeNetworkLogonRight
-privilege: SeRemoteInteractiveLogonRight
 isCriticalSystemObject: TRUE
 
 dn: CN=Users,CN=Builtin,${DOMAINDN}
@@ -272,9 +249,6 @@ adminCount: 1
 sAMAccountName: Print Operators
 systemFlags: -1946157056
 groupType: -2147483643
-privilege: SeLoadDriverPrivilege
-privilege: SeShutdownPrivilege
-privilege: SeInteractiveLogonRight
 isCriticalSystemObject: TRUE
 
 dn: CN=Backup Operators,CN=Builtin,${DOMAINDN}
@@ -286,10 +260,6 @@ adminCount: 1
 sAMAccountName: Backup Operators
 systemFlags: -1946157056
 groupType: -2147483643
-privilege: SeBackupPrivilege
-privilege: SeRestorePrivilege
-privilege: SeShutdownPrivilege
-privilege: SeInteractiveLogonRight
 isCriticalSystemObject: TRUE
 
 dn: CN=Replicator,CN=Builtin,${DOMAINDN}
@@ -353,12 +323,6 @@ adminCount: 1
 sAMAccountName: Server Operators
 systemFlags: -1946157056
 groupType: -2147483643
-privilege: SeBackupPrivilege
-privilege: SeSystemtimePrivilege
-privilege: SeRemoteShutdownPrivilege
-privilege: SeRestorePrivilege
-privilege: SeShutdownPrivilege
-privilege: SeInteractiveLogonRight
 isCriticalSystemObject: TRUE
 
 dn: CN=Account Operators,CN=Builtin,${DOMAINDN}
@@ -370,7 +334,6 @@ adminCount: 1
 sAMAccountName: Account Operators
 systemFlags: -1946157056
 groupType: -2147483643
-privilege: SeInteractiveLogonRight
 isCriticalSystemObject: TRUE
 
 dn: CN=Pre-Windows 2000 Compatible Access,CN=Builtin,${DOMAINDN}
@@ -382,8 +345,6 @@ objectSid: S-1-5-32-554
 sAMAccountName: Pre-Windows 2000 Compatible Access
 systemFlags: -1946157056
 groupType: -2147483643
-privilege: SeRemoteInteractiveLogonRight
-privilege: SeChangeNotifyPrivilege
 isCriticalSystemObject: TRUE
 
 dn: CN=Incoming Forest Trust Builders,CN=Builtin,${DOMAINDN}

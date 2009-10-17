@@ -40,7 +40,7 @@ bool eventlog_init_keys(void)
 	uint32 uiMaxSize;
 	uint32 uiRetention;
 	uint32 uiCategoryCount;
-	UNISTR2 data;
+	DATA_BLOB data;
 	TALLOC_CTX *ctx = talloc_tos();
 	WERROR werr;
 
@@ -114,18 +114,13 @@ bool eventlog_init_keys(void)
 			regval_ctr_addvalue(values, "Retention", REG_DWORD,
 					     (char *)&uiRetention,
 					     sizeof(uint32));
-			init_unistr2(&data, *elogs, UNI_STR_TERMINATE);
 
-			regval_ctr_addvalue(values, "PrimaryModule", REG_SZ,
-					     (char *)data.buffer,
-					     data.uni_str_len *
-					     sizeof(uint16));
-			init_unistr2(&data, *elogs, UNI_STR_TERMINATE);
+			regval_ctr_addvalue_sz(values, "PrimaryModule", *elogs);
+			push_reg_sz(talloc_tos(), &data, *elogs);
 
 			regval_ctr_addvalue(values, "Sources", REG_MULTI_SZ,
-					     (char *)data.buffer,
-					     data.uni_str_len *
-					     sizeof(uint16));
+					     (char *)data.data,
+					     data.length);
 
 			evtfilepath = talloc_asprintf(ctx,
 					"%%SystemRoot%%\\system32\\config\\%s.tdb",
@@ -133,9 +128,9 @@ bool eventlog_init_keys(void)
 			if (!evtfilepath) {
 				TALLOC_FREE(values);
 			}
-			init_unistr2(&data, evtfilepath, UNI_STR_TERMINATE);
-			regval_ctr_addvalue(values, "File", REG_EXPAND_SZ, (char *)data.buffer,
-					     data.uni_str_len * sizeof(uint16));
+			push_reg_sz(talloc_tos(), &data, evtfilepath);
+			regval_ctr_addvalue(values, "File", REG_EXPAND_SZ, (char *)data.data,
+					     data.length);
 			regdb_store_values(evtlogpath, values);
 
 		}
@@ -166,15 +161,13 @@ bool eventlog_init_keys(void)
 					     REG_DWORD,
 					     ( char * ) &uiCategoryCount,
 					     sizeof( uint32 ) );
-			init_unistr2( &data,
-				      "%SystemRoot%\\system32\\eventlog.dll",
-				      UNI_STR_TERMINATE );
+			push_reg_sz(talloc_tos(), &data,
+				      "%SystemRoot%\\system32\\eventlog.dll");
 
 			regval_ctr_addvalue( values, "CategoryMessageFile",
 					     REG_EXPAND_SZ,
-					     ( char * ) data.buffer,
-					     data.uni_str_len *
-					     sizeof( uint16 ) );
+					     ( char * ) data.data,
+					     data.length);
 			regdb_store_values( evtlogpath, values );
 		}
 		TALLOC_FREE(values);
@@ -198,19 +191,18 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 	   need to add KEY of source to KEY_EVENTLOG/<eventlog>/<source> */
 
 	const char **elogs = lp_eventlog_list(  );
-	char **wrklist, **wp;
+	const char **wrklist, **wp;
 	char *evtlogpath = NULL;
 	struct regsubkey_ctr *subkeys;
 	struct regval_ctr *values;
 	struct regval_blob *rval;
-	UNISTR2 data;
-	uint16 *msz_wp;
-	int mbytes, ii;
+	int ii = 0;
 	bool already_in;
 	int i;
-	int numsources;
+	int numsources = 0;
 	TALLOC_CTX *ctx = talloc_tos();
 	WERROR werr;
+	DATA_BLOB blob;
 
 	if (!elogs) {
 		return False;
@@ -264,15 +256,21 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 	already_in = False;
 	wrklist = NULL;
 	dump_data( 1, rval->data_p, rval->size );
-	if ( ( numsources =
-	       regval_convert_multi_sz( ( uint16 * ) rval->data_p, rval->size,
-					&wrklist ) ) > 0 ) {
 
-		ii = numsources;
+	blob = data_blob_const(rval->data_p, rval->size);
+	if (!pull_reg_multi_sz(talloc_tos(), &blob, &wrklist)) {
+		return false;
+	}
+
+	for (ii=0; wrklist[ii]; ii++) {
+		numsources++;
+	}
+
+	if (numsources > 0) {
 		/* see if it's in there already */
 		wp = wrklist;
 
-		while ( ii && wp && *wp ) {
+		while (wp && *wp ) {
 			if ( strequal( *wp, sourcename ) ) {
 				DEBUG( 5,
 				       ( "Source name [%s] already in list for [%s] \n",
@@ -281,13 +279,8 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 				break;
 			}
 			wp++;
-			ii--;
 		}
 	} else {
-		if ( numsources < 0 ) {
-			DEBUG( 3, ( "problem in getting the sources\n" ) );
-			return False;
-		}
 		DEBUG( 3,
 		       ( "Nothing in the sources list, this might be a problem\n" ) );
 	}
@@ -296,7 +289,7 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 
 	if ( !already_in ) {
 		/* make a new list with an additional entry; copy values, add another */
-		wp = TALLOC_ARRAY(ctx, char *, numsources + 2 );
+		wp = TALLOC_ARRAY(ctx, const char *, numsources + 2 );
 
 		if ( !wp ) {
 			DEBUG( 0, ( "talloc() failed \n" ) );
@@ -305,12 +298,14 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 		memcpy( wp, wrklist, sizeof( char * ) * numsources );
 		*( wp + numsources ) = ( char * ) sourcename;
 		*( wp + numsources + 1 ) = NULL;
-		mbytes = regval_build_multi_sz( wp, &msz_wp );
-		dump_data( 1, ( uint8 * ) msz_wp, mbytes );
+		if (!push_reg_multi_sz(ctx, &blob, wp)) {
+			return false;
+		}
+		dump_data( 1, blob.data, blob.length);
 		regval_ctr_addvalue( values, "Sources", REG_MULTI_SZ,
-				     ( char * ) msz_wp, mbytes );
+				     ( char * ) blob.data, blob.length);
 		regdb_store_values( evtlogpath, values );
-		TALLOC_FREE(msz_wp);
+		data_blob_free(&blob);
 	} else {
 		DEBUG( 3,
 		       ( "Source name [%s] found in existing list of sources\n",
@@ -373,11 +368,7 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 
 	regdb_fetch_values( evtlogpath, values );
 
-	init_unistr2( &data, messagefile, UNI_STR_TERMINATE );
-
-	regval_ctr_addvalue( values, "EventMessageFile", REG_SZ,
-			     ( char * ) data.buffer,
-			     data.uni_str_len * sizeof( uint16 ) );
+	regval_ctr_addvalue_sz(values, "EventMessageFile", messagefile);
 	regdb_store_values( evtlogpath, values );
 
 	TALLOC_FREE(values);

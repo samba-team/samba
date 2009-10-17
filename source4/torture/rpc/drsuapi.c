@@ -35,17 +35,55 @@ bool test_DsBind(struct dcerpc_pipe *p,
 {
 	NTSTATUS status;
 	struct drsuapi_DsBind r;
+	struct drsuapi_DsBindInfo28 *bind_info28;
+	struct drsuapi_DsBindInfoCtr bind_info_ctr;
+
+	ZERO_STRUCT(bind_info_ctr);
+	bind_info_ctr.length = 28;
+
+	bind_info28 = &bind_info_ctr.info.info28;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_BASE;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ASYNC_REPLICATION;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_REMOVEAPI;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_MOVEREQ_V2;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHG_COMPRESS;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V1;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_RESTORE_USN_OPTIMIZATION;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_KCC_EXECUTE;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADDENTRY_V2;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_LINKED_VALUE_REPLICATION;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V2;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_INSTANCE_TYPE_NOT_REQ_ON_MOD;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_CRYPTO_BIND;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GET_REPL_INFO;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_STRONG_ENCRYPTION;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V01;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_TRANSITIVE_MEMBERSHIP;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADD_SID_HISTORY;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_POST_BETA3;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GET_MEMBERSHIPS2;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V6;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_NONDOMAIN_NCS;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V5;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V6;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADDENTRYREPLY_V3;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V7;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_VERIFY_OBJECT;
 
 	GUID_from_string(DRSUAPI_DS_BIND_GUID, &priv->bind_guid);
 
 	r.in.bind_guid = &priv->bind_guid;
-	r.in.bind_info = NULL;
+	r.in.bind_info = &bind_info_ctr;
 	r.out.bind_handle = &priv->bind_handle;
 
 	torture_comment(tctx, "testing DsBind\n");
 
 	status = dcerpc_drsuapi_DsBind(p, tctx, &r);
 	torture_drsuapi_assert_call(tctx, p, status, &r, "dcerpc_drsuapi_DsBind");
+
+	/* cache server supported extensions, i.e. bind_info */
+	priv->srv_bind_info = r.out.bind_info->info.info28;
 
 	return true;
 }
@@ -416,51 +454,64 @@ static bool test_DsReplicaUpdateRefs(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p = priv->pipe;
-	int i;
 	struct drsuapi_DsReplicaUpdateRefs r;
 	struct drsuapi_DsReplicaObjectIdentifier nc;
 	struct GUID null_guid;
+	struct GUID dest_dsa_guid;
+	const char *dest_dsa_guid_str;
 	struct dom_sid null_sid;
-	struct {
-		int32_t level;
-	} array[] = {
-		{	
-			1
-		}
-	};
-
-	if (torture_setting_bool(tctx, "samba4", false)) {
-		torture_comment(tctx, "skipping DsReplicaUpdateRefs test against Samba4\n");
-		return true;
-	}
 
 	ZERO_STRUCT(null_guid);
 	ZERO_STRUCT(null_sid);
+	dest_dsa_guid = GUID_random();
+	dest_dsa_guid_str = GUID_string(tctx, &dest_dsa_guid);
 
-	r.in.bind_handle	= &priv->bind_handle;
+	r.in.bind_handle = &priv->bind_handle;
+	r.in.level	 = 1; /* Only version 1 is defined presently */
 
-	for (i=0; i < ARRAY_SIZE(array); i++) {
-		torture_comment(tctx, "testing DsReplicaUpdateRefs level %d\n",
-				array[i].level);
+	/* setup NC */
+	nc.guid		= priv->domain_obj_dn ? null_guid : priv->domain_guid;
+	nc.sid		= null_sid;
+	nc.dn		= priv->domain_obj_dn ? priv->domain_obj_dn : "";
 
-		r.in.level = array[i].level;
-		switch(r.in.level) {
-		case 1:
-			nc.guid				= null_guid;
-			nc.sid				= null_sid;
-			nc.dn				= priv->domain_obj_dn ? priv->domain_obj_dn : "";
+	/* default setup for request */
+	r.in.req.req1.naming_context	= &nc;
+	r.in.req.req1.dest_dsa_dns_name	= talloc_asprintf(tctx, "%s._msdn.%s",
+								dest_dsa_guid_str,
+								priv->domain_dns_name);
+	r.in.req.req1.dest_dsa_guid	= dest_dsa_guid;
 
-			r.in.req.req1.naming_context	= &nc;
-			r.in.req.req1.dest_dsa_dns_name	= talloc_asprintf(tctx, "__some_dest_dsa_guid_string._msdn.%s",
-										priv->domain_dns_name);
-			r.in.req.req1.dest_dsa_guid	= null_guid;
-			r.in.req.req1.options		= 0;
-			break;
-		}
+	/* 1. deleting replica dest should fail */
+	torture_comment(tctx, "delete: %s\n", r.in.req.req1.dest_dsa_dns_name);
+	r.in.req.req1.options		= DRSUAPI_DS_REPLICA_UPDATE_DELETE_REFERENCE;
+	status = dcerpc_drsuapi_DsReplicaUpdateRefs(p, tctx, &r);
+	torture_drsuapi_assert_call_werr(tctx, p,
+					 status, WERR_DS_DRA_REF_NOT_FOUND, &r,
+					 "dcerpc_drsuapi_DsReplicaUpdateRefs");
 
-		status = dcerpc_drsuapi_DsReplicaUpdateRefs(p, tctx, &r);
-		torture_drsuapi_assert_call(tctx, p, status, &r, "dcerpc_drsuapi_DsReplicaUpdateRefs");
-	}
+	/* 2. hopefully adding random replica dest should succeed */
+	torture_comment(tctx, "add   : %s\n", r.in.req.req1.dest_dsa_dns_name);
+	r.in.req.req1.options		= DRSUAPI_DS_REPLICA_UPDATE_ADD_REFERENCE;
+	status = dcerpc_drsuapi_DsReplicaUpdateRefs(p, tctx, &r);
+	torture_drsuapi_assert_call_werr(tctx, p,
+					 status, WERR_OK, &r,
+					 "dcerpc_drsuapi_DsReplicaUpdateRefs");
+
+	/* 3. try adding same replica dest - should fail */
+	torture_comment(tctx, "add   : %s\n", r.in.req.req1.dest_dsa_dns_name);
+	r.in.req.req1.options		= DRSUAPI_DS_REPLICA_UPDATE_ADD_REFERENCE;
+	status = dcerpc_drsuapi_DsReplicaUpdateRefs(p, tctx, &r);
+	torture_drsuapi_assert_call_werr(tctx, p,
+					 status, WERR_DS_DRA_REF_ALREADY_EXISTS, &r,
+					 "dcerpc_drsuapi_DsReplicaUpdateRefs");
+
+	/* 4. delete random replicate added at step 2. */
+	torture_comment(tctx, "delete: %s\n", r.in.req.req1.dest_dsa_dns_name);
+	r.in.req.req1.options		= DRSUAPI_DS_REPLICA_UPDATE_DELETE_REFERENCE;
+	status = dcerpc_drsuapi_DsReplicaUpdateRefs(p, tctx, &r);
+	torture_drsuapi_assert_call_werr(tctx, p,
+					 status, WERR_OK, &r,
+					 "dcerpc_drsuapi_DsReplicaUpdateRefs");
 
 	return true;
 }

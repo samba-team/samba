@@ -99,14 +99,19 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		for (j = 0; j < num_dom_users; i++, j++) {
 
 			uint32_t rid = disp_info.info1.entries[j].rid;
+			struct samr_DispEntryGeneral *src;
+			struct wbint_userinfo *dst;
 
-			(*info)[i].acct_name = talloc_strdup(mem_ctx,
-				disp_info.info1.entries[j].account_name.string);
-			(*info)[i].full_name = talloc_strdup(mem_ctx,
-				disp_info.info1.entries[j].full_name.string);
-			(*info)[i].homedir = NULL;
-			(*info)[i].shell = NULL;
-			sid_compose(&(*info)[i].user_sid, &domain->sid, rid);
+			src = &(disp_info.info1.entries[j]);
+			dst = &((*info)[i]);
+
+			dst->acct_name = talloc_strdup(
+				mem_ctx, src->account_name.string);
+			dst->full_name = talloc_strdup(
+				mem_ctx, src->full_name.string);
+			dst->homedir = NULL;
+			dst->shell = NULL;
+			sid_compose(&dst->user_sid, &domain->sid, rid);
 
 			/* For the moment we set the primary group for
 			   every user to be the Domain Users group.
@@ -116,7 +121,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			   force group' smb.conf parameter or
 			   something like that. */
 
-			sid_compose(&(*info)[i].group_sid, &domain->sid, 
+			sid_compose(&dst->group_sid, &domain->sid,
 				    DOMAIN_GROUP_RID_USERS);
 		}
 

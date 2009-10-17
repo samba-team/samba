@@ -692,7 +692,7 @@ add_utf8_san(hx509_context context,
 	     const heim_oid *oid,
 	     const char *string)
 {
-    const PKIXXmppAddr ustring = (const PKIXXmppAddr)string;
+    const PKIXXmppAddr ustring = string;
     heim_octet_string os;
     size_t size;
     int ret;

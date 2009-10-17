@@ -5271,6 +5271,408 @@ static bool run_chain2(int dummy)
 	return True;
 }
 
+
+struct torture_createdel_state {
+	struct tevent_context *ev;
+	struct cli_state *cli;
+};
+
+static void torture_createdel_created(struct tevent_req *subreq);
+static void torture_createdel_closed(struct tevent_req *subreq);
+
+static struct tevent_req *torture_createdel_send(TALLOC_CTX *mem_ctx,
+						 struct tevent_context *ev,
+						 struct cli_state *cli,
+						 const char *name)
+{
+	struct tevent_req *req, *subreq;
+	struct torture_createdel_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct torture_createdel_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->cli = cli;
+
+	subreq = cli_ntcreate_send(
+		state, ev, cli, name, 0,
+		FILE_READ_DATA|FILE_WRITE_DATA|DELETE_ACCESS,
+		FILE_ATTRIBUTE_NORMAL,
+		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+		FILE_OPEN_IF, FILE_DELETE_ON_CLOSE, 0);
+
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, torture_createdel_created, req);
+	return req;
+}
+
+static void torture_createdel_created(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct torture_createdel_state *state = tevent_req_data(
+		req, struct torture_createdel_state);
+	NTSTATUS status;
+	uint16_t fnum;
+
+	status = cli_ntcreate_recv(subreq, &fnum);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("cli_ntcreate_recv returned %s\n",
+			   nt_errstr(status)));
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	subreq = cli_close_send(state, state->ev, state->cli, fnum);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, torture_createdel_closed, req);
+}
+
+static void torture_createdel_closed(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	NTSTATUS status;
+
+	status = cli_close_recv(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("cli_close_recv returned %s\n", nt_errstr(status)));
+		tevent_req_nterror(req, status);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static NTSTATUS torture_createdel_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+struct torture_createdels_state {
+	struct tevent_context *ev;
+	struct cli_state *cli;
+	const char *base_name;
+	int sent;
+	int received;
+	int num_files;
+	struct tevent_req **reqs;
+};
+
+static void torture_createdels_done(struct tevent_req *subreq);
+
+static struct tevent_req *torture_createdels_send(TALLOC_CTX *mem_ctx,
+						  struct tevent_context *ev,
+						  struct cli_state *cli,
+						  const char *base_name,
+						  int num_parallel,
+						  int num_files)
+{
+	struct tevent_req *req;
+	struct torture_createdels_state *state;
+	int i;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct torture_createdels_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->cli = cli;
+	state->base_name = talloc_strdup(state, base_name);
+	if (tevent_req_nomem(state->base_name, req)) {
+		return tevent_req_post(req, ev);
+	}
+	state->num_files = MAX(num_parallel, num_files);
+	state->sent = 0;
+	state->received = 0;
+
+	state->reqs = talloc_array(state, struct tevent_req *, num_parallel);
+	if (tevent_req_nomem(state->reqs, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	for (i=0; i<num_parallel; i++) {
+		char *name;
+
+		name = talloc_asprintf(state, "%s%8.8d", state->base_name,
+				       state->sent);
+		if (tevent_req_nomem(name, req)) {
+			return tevent_req_post(req, ev);
+		}
+		state->reqs[i] = torture_createdel_send(
+			state->reqs, state->ev, state->cli, name);
+		if (tevent_req_nomem(state->reqs[i], req)) {
+			return tevent_req_post(req, ev);
+		}
+		name = talloc_move(state->reqs[i], &name);
+		tevent_req_set_callback(state->reqs[i],
+					torture_createdels_done, req);
+		state->sent += 1;
+	}
+	return req;
+}
+
+static void torture_createdels_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct torture_createdels_state *state = tevent_req_data(
+		req, struct torture_createdels_state);
+	size_t num_parallel = talloc_array_length(state->reqs);
+	NTSTATUS status;
+	char *name;
+	int i;
+
+	status = torture_createdel_recv(subreq);
+	if (!NT_STATUS_IS_OK(status)){
+		DEBUG(10, ("torture_createdel_recv returned %s\n",
+			   nt_errstr(status)));
+		TALLOC_FREE(subreq);
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	for (i=0; i<num_parallel; i++) {
+		if (subreq == state->reqs[i]) {
+			break;
+		}
+	}
+	if (i == num_parallel) {
+		DEBUG(10, ("received something we did not send\n"));
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
+	TALLOC_FREE(state->reqs[i]);
+
+	if (state->sent >= state->num_files) {
+		tevent_req_done(req);
+		return;
+	}
+
+	name = talloc_asprintf(state, "%s%8.8d", state->base_name,
+			       state->sent);
+	if (tevent_req_nomem(name, req)) {
+		return;
+	}
+	state->reqs[i] = torture_createdel_send(state->reqs, state->ev,
+						state->cli, name);
+	if (tevent_req_nomem(state->reqs[i], req)) {
+		return;
+	}
+	name = talloc_move(state->reqs[i], &name);
+	tevent_req_set_callback(state->reqs[i],	torture_createdels_done, req);
+	state->sent += 1;
+}
+
+static NTSTATUS torture_createdels_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+struct swallow_notify_state {
+	struct tevent_context *ev;
+	struct cli_state *cli;
+	uint16_t fnum;
+	uint32_t completion_filter;
+	bool recursive;
+	bool (*fn)(uint32_t action, const char *name, void *priv);
+	void *priv;
+};
+
+static void swallow_notify_done(struct tevent_req *subreq);
+
+static struct tevent_req *swallow_notify_send(TALLOC_CTX *mem_ctx,
+					      struct tevent_context *ev,
+					      struct cli_state *cli,
+					      uint16_t fnum,
+					      uint32_t completion_filter,
+					      bool recursive,
+					      bool (*fn)(uint32_t action,
+							 const char *name,
+							 void *priv),
+					      void *priv)
+{
+	struct tevent_req *req, *subreq;
+	struct swallow_notify_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct swallow_notify_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->cli = cli;
+	state->fnum = fnum;
+	state->completion_filter = completion_filter;
+	state->recursive = recursive;
+	state->fn = fn;
+	state->priv = priv;
+
+	subreq = cli_notify_send(state, state->ev, state->cli, state->fnum,
+				 0xffff, state->completion_filter,
+				 state->recursive);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, swallow_notify_done, req);
+	return req;
+}
+
+static void swallow_notify_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct swallow_notify_state *state = tevent_req_data(
+		req, struct swallow_notify_state);
+	NTSTATUS status;
+	uint32_t i, num_changes;
+	struct notify_change *changes;
+
+	status = cli_notify_recv(subreq, state, &num_changes, &changes);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("cli_notify_recv returned %s\n",
+			   nt_errstr(status)));
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	for (i=0; i<num_changes; i++) {
+		state->fn(changes[i].action, changes[i].name, state->priv);
+	}
+	TALLOC_FREE(changes);
+
+	subreq = cli_notify_send(state, state->ev, state->cli, state->fnum,
+				 0xffff, state->completion_filter,
+				 state->recursive);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, swallow_notify_done, req);
+}
+
+static bool print_notifies(uint32_t action, const char *name, void *priv)
+{
+	if (DEBUGLEVEL > 5) {
+		d_printf("%d %s\n", (int)action, name);
+	}
+	return true;
+}
+
+static void notify_bench_done(struct tevent_req *req)
+{
+	int *num_finished = (int *)tevent_req_callback_data_void(req);
+	*num_finished += 1;
+}
+
+static bool run_notify_bench(int dummy)
+{
+	const char *dname = "\\notify-bench";
+	struct tevent_context *ev;
+	NTSTATUS status;
+	uint16_t dnum;
+	struct tevent_req *req1, *req2;
+	int i, num_unc_names;
+	int num_finished = 0;
+
+	printf("starting notify-bench test\n");
+
+	if (use_multishare_conn) {
+		char **unc_list;
+		unc_list = file_lines_load(multishare_conn_fname,
+					   &num_unc_names, 0, NULL);
+		if (!unc_list || num_unc_names <= 0) {
+			d_printf("Failed to load unc names list from '%s'\n",
+				 multishare_conn_fname);
+			return false;
+		}
+		TALLOC_FREE(unc_list);
+	} else {
+		num_unc_names = 1;
+	}
+
+	ev = tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		d_printf("tevent_context_init failed\n");
+		return false;
+	}
+
+	for (i=0; i<num_unc_names; i++) {
+		struct cli_state *cli;
+		char *base_fname;
+
+		base_fname = talloc_asprintf(talloc_tos(), "%s\\file%3.3d.",
+					     dname, i);
+		if (base_fname == NULL) {
+			return false;
+		}
+
+		if (!torture_open_connection(&cli, i)) {
+			return false;
+		}
+
+		status = cli_ntcreate(cli, dname, 0,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      0, FILE_SHARE_READ|FILE_SHARE_WRITE|
+				      FILE_SHARE_DELETE,
+				      FILE_OPEN_IF, FILE_DIRECTORY_FILE, 0,
+				      &dnum);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("Could not create %s: %s\n", dname,
+				 nt_errstr(status));
+			return false;
+		}
+
+		req1 = swallow_notify_send(talloc_tos(), ev, cli, dnum,
+					   FILE_NOTIFY_CHANGE_FILE_NAME |
+					   FILE_NOTIFY_CHANGE_DIR_NAME |
+					   FILE_NOTIFY_CHANGE_ATTRIBUTES |
+					   FILE_NOTIFY_CHANGE_LAST_WRITE,
+					   false, print_notifies, NULL);
+		if (req1 == NULL) {
+			d_printf("Could not create notify request\n");
+			return false;
+		}
+
+		req2 = torture_createdels_send(talloc_tos(), ev, cli,
+					       base_fname, 10, torture_numops);
+		if (req2 == NULL) {
+			d_printf("Could not create createdels request\n");
+			return false;
+		}
+		TALLOC_FREE(base_fname);
+
+		tevent_req_set_callback(req2, notify_bench_done,
+					&num_finished);
+	}
+
+	while (num_finished < num_unc_names) {
+		int ret;
+		ret = tevent_loop_once(ev);
+		if (ret != 0) {
+			d_printf("tevent_loop_once failed\n");
+			return false;
+		}
+	}
+
+	if (!tevent_req_poll(req2, ev)) {
+		d_printf("tevent_req_poll failed\n");
+	}
+
+	status = torture_createdels_recv(req2);
+	d_printf("torture_createdels_recv returned %s\n", nt_errstr(status));
+
+	return true;
+}
+
 static bool run_mangle1(int dummy)
 {
 	struct cli_state *cli;
@@ -6579,6 +6981,7 @@ static struct {
 	{ "GETADDRINFO", run_getaddrinfo_send, 0},
 	{ "TLDAP", run_tldap },
 	{ "STREAMERROR", run_streamerror },
+	{ "NOTIFY-BENCH", run_notify_bench },
 	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
 	{ "LOCAL-GENCACHE", run_local_gencache, 0},
 	{ "LOCAL-TALLOC-DICT", run_local_talloc_dict, 0},

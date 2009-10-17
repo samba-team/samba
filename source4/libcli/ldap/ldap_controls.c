@@ -214,7 +214,7 @@ static bool decode_sd_flags_request(void *mem_ctx, DATA_BLOB in, void *_out)
 		return false;
 	}
 
-	if (!asn1_read_Integer(data, &(lsdfc->secinfo_flags))) {
+	if (!asn1_read_Integer(data, (int *) &(lsdfc->secinfo_flags))) {
 		return false;
 	}
 
@@ -248,7 +248,7 @@ static bool decode_search_options_request(void *mem_ctx, DATA_BLOB in, void *_ou
 		return false;
 	}
 
-	if (!asn1_read_Integer(data, &(lsoc->search_options))) {
+	if (!asn1_read_Integer(data, (int *) &(lsoc->search_options))) {
 		return false;
 	}
 

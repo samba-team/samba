@@ -126,6 +126,10 @@ torture_rpc_OBJ_FILES = $(addprefix $(torturesrcdir)/rpc/, \
 $(eval $(call proto_header_template,$(torturesrcdir)/rpc/proto.h,$(torture_rpc_OBJ_FILES:.o=.c)))
 
 #################################
+# RPC/Local DRSUAPI tests
+mkinclude drs/config.mk
+
+#################################
 # Start SUBSYSTEM TORTURE_RAP
 [MODULE::TORTURE_RAP]
 OUTPUT_TYPE = MERGED_OBJ

@@ -5030,7 +5030,7 @@ static bool api_samr_ChangePasswordUser3(pipes_struct *p)
 		return false;
 	}
 
-	r->out.reject = talloc_zero(r, struct samr_ChangeReject *);
+	r->out.reject = talloc_zero(r, struct userPwdChangeFailureInformation *);
 	if (r->out.reject == NULL) {
 		talloc_free(r);
 		return false;
@@ -6195,7 +6195,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.reject = talloc_zero(mem_ctx, struct samr_ChangeReject *);
+			r->out.reject = talloc_zero(mem_ctx, struct userPwdChangeFailureInformation *);
 			if (r->out.reject == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}

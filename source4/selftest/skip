@@ -20,7 +20,7 @@ base.iometer
 base.casetable
 base.nttrans
 base.scan.maxfid
-raw.hold.oplock		# Not a test, but a way to block other clients for a test
+hold.oplock		# Not a test, but a way to block other clients for a test
 raw.ping.pong		# Needs second server to test
 rpc.samr.accessmask
 raw.scan.eamax
@@ -64,3 +64,5 @@ raw.offline 			# Samba 4 doesn't have much offline support yet
 rpc.autoidl  # this one just generates a lot of noise, and is no longer useful
 samba4.rpc.countcalls # this is not useful now we have full IDL
 samba4.rap.scan # same thing here - we have docs now
+samba4.gensec.python # not finished
+bench # don't run benchmarks in our selftest

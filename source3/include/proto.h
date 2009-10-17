@@ -937,7 +937,7 @@ SMB_OFF_T sys_ftell(FILE *fp);
 int sys_creat(const char *path, mode_t mode);
 int sys_open(const char *path, int oflag, mode_t mode);
 FILE *sys_fopen(const char *path, const char *type);
-void kernel_flock(int fd, uint32 share_mode);
+void kernel_flock(int fd, uint32 share_mode, uint32 access_mask);
 SMB_STRUCT_DIR *sys_opendir(const char *name);
 SMB_STRUCT_DIRENT *sys_readdir(SMB_STRUCT_DIR *dirp);
 void sys_seekdir(SMB_STRUCT_DIR *dirp, long offset);
@@ -1259,6 +1259,10 @@ struct passwd *getpwuid_alloc(TALLOC_CTX *mem_ctx, uid_t uid) ;
 const char *reg_type_lookup(enum winreg_Type type);
 WERROR reg_pull_multi_sz(TALLOC_CTX *mem_ctx, const void *buf, size_t len,
 			 uint32 *num_values, char ***values);
+bool push_reg_sz(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, const char *s);
+bool push_reg_multi_sz(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, const char **a);
+bool pull_reg_sz(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, const char **s);
+bool pull_reg_multi_sz(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, const char ***a);
 
 /* The following definitions come from lib/util_reg_api.c  */
 
@@ -1572,12 +1576,6 @@ void load_case_tables(void);
 void init_valid_table(void);
 size_t dos_PutUniCode(char *dst,const char *src, size_t len, bool null_terminate);
 char *skip_unibuf(char *src, size_t len);
-int rpcstr_pull(char* dest, void *src, int dest_len, int src_len, int flags);
-int rpcstr_pull_talloc(TALLOC_CTX *ctx,
-			char **dest,
-			void *src,
-			int src_len,
-			int flags);
 int rpcstr_push(void *dest, const char *src, size_t dest_len, int flags);
 int rpcstr_push_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src);
 smb_ucs2_t toupper_w(smb_ucs2_t val);
@@ -2661,6 +2659,14 @@ struct tevent_req *cli_posix_rmdir_send(TALLOC_CTX *mem_ctx,
 					const char *fname);
 NTSTATUS cli_posix_rmdir_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx);
 NTSTATUS cli_posix_rmdir(struct cli_state *cli, const char *fname);
+struct tevent_req *cli_notify_send(TALLOC_CTX *mem_ctx,
+				   struct tevent_context *ev,
+				   struct cli_state *cli, uint16_t fnum,
+				   uint32_t buffer_size,
+				   uint32_t completion_filter, bool recursive);
+NTSTATUS cli_notify_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			 uint32_t *pnum_changes,
+			 struct notify_change **pchanges);
 
 /* The following definitions come from libsmb/clifsinfo.c  */
 
@@ -3309,8 +3315,9 @@ void update_trustdom_cache( void );
 
 NTSTATUS trust_pw_change_and_store_it(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 				      const char *domain,
+				      const char *account_name,
 				      unsigned char orig_trust_passwd_hash[16],
-				      uint32 sec_channel_type);
+				      enum netr_SchannelType sec_channel_type);
 NTSTATUS trust_pw_find_change_and_store_it(struct rpc_pipe_client *cli, 
 					   TALLOC_CTX *mem_ctx, 
 					   const char *domain) ;
@@ -3978,6 +3985,7 @@ char *lp_ldap_suffix(void);
 char *lp_ldap_admin_dn(void);
 int lp_ldap_ssl(void);
 bool lp_ldap_ssl_ads(void);
+int lp_ldap_ref_follow(void);
 int lp_ldap_passwd_sync(void);
 bool lp_ldap_delete_dn(void);
 int lp_ldap_replication_sleep(void);
@@ -4437,9 +4445,11 @@ bool pdb_update_autolock_flag(struct samu *sampass, bool *updated);
 bool pdb_increment_bad_password_count(struct samu *sampass);
 bool is_dc_trusted_domain_situation(const char *domain_name);
 bool get_trust_pw_clear(const char *domain, char **ret_pwd,
-			const char **account_name, uint32 *channel);
+			const char **account_name,
+			enum netr_SchannelType *channel);
 bool get_trust_pw_hash(const char *domain, uint8 ret_pwd[16],
-		       const char **account_name, uint32 *channel);
+		       const char **account_name,
+		       enum netr_SchannelType *channel);
 struct samr_LogonHours get_logon_hours_from_pdb(TALLOC_CTX *mem_ctx,
 						struct samu *pw);
 /* The following definitions come from passdb/pdb_compat.c  */
@@ -4672,14 +4682,14 @@ bool secrets_fetch_domain_sid(const char *domain, DOM_SID *sid);
 bool secrets_store_domain_guid(const char *domain, struct GUID *guid);
 bool secrets_fetch_domain_guid(const char *domain, struct GUID *guid);
 void *secrets_get_trust_account_lock(TALLOC_CTX *mem_ctx, const char *domain);
-uint32 get_default_sec_channel(void);
+enum netr_SchannelType get_default_sec_channel(void);
 bool secrets_fetch_trust_account_password_legacy(const char *domain,
 						 uint8 ret_pwd[16],
 						 time_t *pass_last_set_time,
-						 uint32 *channel);
+						 enum netr_SchannelType *channel);
 bool secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
 					  time_t *pass_last_set_time,
-					  uint32 *channel);
+					  enum netr_SchannelType *channel);
 bool secrets_fetch_trusted_domain_password(const char *domain, char** pwd,
                                            DOM_SID *sid, time_t *pass_last_set_time);
 bool secrets_store_trusted_domain_password(const char* domain, const char* pwd,
@@ -4687,10 +4697,10 @@ bool secrets_store_trusted_domain_password(const char* domain, const char* pwd,
 bool secrets_delete_machine_password(const char *domain);
 bool secrets_delete_machine_password_ex(const char *domain);
 bool secrets_delete_domain_sid(const char *domain);
-bool secrets_store_machine_password(const char *pass, const char *domain, uint32 sec_channel);
+bool secrets_store_machine_password(const char *pass, const char *domain, enum netr_SchannelType sec_channel);
 char *secrets_fetch_machine_password(const char *domain,
 				     time_t *pass_last_set_time,
-				     uint32 *channel);
+				     enum netr_SchannelType *channel);
 bool trusted_domain_password_delete(const char *domain);
 bool secrets_store_ldap_pw(const char* dn, char* pw);
 bool fetch_ldap_pw(char **dn, char** pw);
@@ -5115,12 +5125,14 @@ struct regval_blob *regval_compose(TALLOC_CTX *ctx, const char *name,
 				   const char *data_p, size_t size);
 int regval_ctr_addvalue(struct regval_ctr *ctr, const char *name, uint16 type,
 			const char *data_p, size_t size);
+int regval_ctr_addvalue_sz(struct regval_ctr *ctr, const char *name, const char *data);
+int regval_ctr_addvalue_multi_sz(struct regval_ctr *ctr, const char *name, const char **data);
 int regval_ctr_copyvalue(struct regval_ctr *ctr, struct regval_blob *val);
 int regval_ctr_delvalue(struct regval_ctr *ctr, const char *name);
 struct regval_blob* regval_ctr_getvalue(struct regval_ctr *ctr,
 					const char *name);
 uint32 regval_dword(struct regval_blob *val);
-char *regval_sz(struct regval_blob *val);
+const char *regval_sz(struct regval_blob *val);
 
 /* The following definitions come from registry/reg_perfcount.c  */
 
@@ -5130,20 +5142,6 @@ uint32 reg_perfcount_get_last_counter(uint32 base_index);
 uint32 reg_perfcount_get_last_help(uint32 last_counter);
 uint32 reg_perfcount_get_counter_help(uint32 base_index, char **retbuf);
 uint32 reg_perfcount_get_counter_names(uint32 base_index, char **retbuf);
-bool _reg_perfcount_get_counter_data(TDB_DATA key, TDB_DATA *data);
-bool _reg_perfcount_get_instance_info(PERF_INSTANCE_DEFINITION *inst,
-				      prs_struct *ps,
-				      int instId,
-				      PERF_OBJECT_TYPE *obj,
-				      TDB_CONTEXT *names);
-bool _reg_perfcount_add_instance(PERF_OBJECT_TYPE *obj,
-				 prs_struct *ps,
-				 int instInd,
-				 TDB_CONTEXT *names);
-uint32 reg_perfcount_get_perf_data_block(uint32 base_index, 
-					 prs_struct *ps, 
-					 PERF_DATA_BLOCK *block,
-					 const char *object_ids);
 WERROR reg_perfcount_get_hkpd(prs_struct *ps, uint32 max_buf_size, uint32 *outbuf_len, const char *object_ids);
 
 /* The following definitions come from registry/reg_util.c  */
@@ -5153,8 +5151,6 @@ bool reg_split_key(char *path, char **base, char **key);
 char *normalize_reg_path(TALLOC_CTX *ctx, const char *keyname );
 void normalize_dbkey(char *key);
 char *reg_remaining_path(TALLOC_CTX *ctx, const char *key);
-int regval_convert_multi_sz( uint16 *multi_string, size_t byte_len, char ***values );
-size_t regval_build_multi_sz( char **values, uint16 **buffer );
 
 /* The following definitions come from registry/reg_util_legacy.c  */
 
@@ -5253,10 +5249,11 @@ NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
 					      struct netr_SamInfo3 **info3);
 NTSTATUS rpccli_netlogon_set_trust_password(struct rpc_pipe_client *cli,
 					    TALLOC_CTX *mem_ctx,
+					    const char *account_name,
 					    const unsigned char orig_trust_passwd_hash[16],
 					    const char *new_trust_pwd_cleartext,
 					    const unsigned char new_trust_passwd_hash[16],
-					    uint32_t sec_channel_type);
+					    enum netr_SchannelType sec_channel_type);
 
 /* The following definitions come from rpc_client/cli_pipe.c  */
 
@@ -5418,12 +5415,6 @@ NTSTATUS rpc_transport_smbd_init(TALLOC_CTX *mem_ctx,
 NTSTATUS rpc_transport_sock_init(TALLOC_CTX *mem_ctx, int fd,
 				 struct rpc_cli_transport **presult);
 
-/* The following definitions come from rpc_client/cli_reg.c  */
-
-NTSTATUS rpccli_winreg_Connect(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                         uint32 reg_type, uint32 access_mask,
-                         struct policy_handle *reg_hnd);
-
 /* The following definitions come from rpc_client/cli_samr.c  */
 
 NTSTATUS rpccli_samr_chgpasswd_user(struct rpc_pipe_client *cli,
@@ -5449,7 +5440,7 @@ NTSTATUS rpccli_samr_chgpasswd_user3(struct rpc_pipe_client *cli,
 				     const char *newpassword,
 				     const char *oldpassword,
 				     struct samr_DomInfo1 **dominfo1,
-				     struct samr_ChangeReject **reject);
+				     struct userPwdChangeFailureInformation **reject);
 void get_query_dispinfo_params(int loop_count, uint32 *max_entries,
 			       uint32 *max_size);
 NTSTATUS rpccli_try_samr_connects(struct rpc_pipe_client *cli,
@@ -5644,11 +5635,8 @@ NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli,
 /* The following definitions come from rpc_parse/parse_misc.c  */
 
 bool smb_io_time(const char *desc, NTTIME *nttime, prs_struct *ps, int depth);
-bool smb_io_system_time(const char *desc, prs_struct *ps, int depth, SYSTEMTIME *systime);
-bool make_systemtime(SYSTEMTIME *systime, struct tm *unixtime);
 bool smb_io_uuid(const char *desc, struct GUID *uuid, 
 		 prs_struct *ps, int depth);
-void init_unistr2(UNISTR2 *str, const char *buf, enum unistr2_term_codes flags);
 
 /* The following definitions come from rpc_parse/parse_prs.c  */
 
@@ -5699,7 +5687,6 @@ bool prs_uint8s(bool charmode, const char *name, prs_struct *ps, int depth, uint
 bool prs_uint16s(bool charmode, const char *name, prs_struct *ps, int depth, uint16 *data16s, int len);
 bool prs_uint32s(bool charmode, const char *name, prs_struct *ps, int depth, uint32 *data32s, int len);
 bool prs_unistr(const char *name, prs_struct *ps, int depth, UNISTR *str);
-bool prs_string(const char *name, prs_struct *ps, int depth, char *str, int max_buf_size);
 bool prs_init_data_blob(prs_struct *prs, DATA_BLOB *blob, TALLOC_CTX *mem_ctx);
 bool prs_data_blob(prs_struct *prs, DATA_BLOB *blob, TALLOC_CTX *mem_ctx);
 
@@ -6104,8 +6091,8 @@ NTSTATUS pass_oem_change(char *user,
 			 const uchar old_lm_hash_encrypted[16],
 			 uchar password_encrypted_with_nt_hash[516],
 			 const uchar old_nt_hash_encrypted[16],
-			 uint32 *reject_reason);
-NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passwd, bool as_root, uint32 *samr_reject_reason);
+			 enum samPwdChangeReason *reject_reason);
+NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passwd, bool as_root, enum samPwdChangeReason *samr_reject_reason);
 
 /* The following definitions come from smbd/close.c  */
 
@@ -7142,6 +7129,7 @@ int vfs_stat_smb_fname(struct connection_struct *conn, const char *fname,
 		       SMB_STRUCT_STAT *psbuf);
 int vfs_lstat_smb_fname(struct connection_struct *conn, const char *fname,
 			SMB_STRUCT_STAT *psbuf);
+NTSTATUS vfs_stat_fsp(files_struct *fsp);
 
 /* The following definitions come from torture/denytest.c  */
 

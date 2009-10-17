@@ -24,10 +24,6 @@
 #define _RPC_MISC_H 
 
 #define SMB_RPC_INTERFACE_VERSION 1
-#define PRS_POINTER_CAST bool (*)(const char*, prs_struct*, int, void*)
-
-enum unistr2_term_codes { UNI_FLAGS_NONE = 0, UNI_STR_TERMINATE = 1, UNI_MAXLEN_TERMINATE = 2, UNI_BROKEN_NON_NULL = 3, UNI_STR_DBLTERMINATE = 4 };
-
 
 
 /********************************************************************** 
@@ -106,34 +102,5 @@ typedef struct {		/* UNISTR - unicode string size and buffer */
 	uint16 *buffer;		/* unicode characters. ***MUST*** be 
 				   little-endian. ***MUST*** be null-terminated */
 } UNISTR;
-
-typedef struct {		/* UNISTR2 - unicode string size (in 
-				   uint16 unicode chars) and buffer */
-	uint32 uni_max_len;
-	uint32 offset;
-	uint32 uni_str_len;
-	uint16 *buffer;		/* unicode characters. ***MUST*** be little-endian. 
-				  **must** be null-terminated and the uni_str_len 
-				  should include the NULL character */
-} UNISTR2;
-
-/*
- * I'm really wondering how many different time formats
- * I will have to cope with
- *
- * JFM, 09/13/98 In a mad mood ;-(
-*/
-typedef struct systemtime
-{
-	uint16 year;
-	uint16 month;
-	uint16 dayofweek;
-	uint16 day;
-	uint16 hour;
-	uint16 minute;
-	uint16 second;
-	uint16 milliseconds;
-}
-SYSTEMTIME;
 
 #endif /* _RPC_MISC_H */

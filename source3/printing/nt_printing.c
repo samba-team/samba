@@ -3033,14 +3033,8 @@ done:
 static void map_sz_into_ctr(struct regval_ctr *ctr, const char *val_name,
 			    const char *sz)
 {
-	smb_ucs2_t conv_str[1024];
-	size_t str_size;
-
 	regval_ctr_delvalue(ctr, val_name);
-	str_size = push_ucs2(NULL, conv_str, sz, sizeof(conv_str),
-			     STR_TERMINATE | STR_NOALIGN);
-	regval_ctr_addvalue(ctr, val_name, REG_SZ,
-			    (char *) conv_str, str_size);
+	regval_ctr_addvalue_sz(ctr, val_name, sz);
 }
 
 static void map_dword_into_ctr(struct regval_ctr *ctr, const char *val_name,
@@ -3063,26 +3057,13 @@ static void map_bool_into_ctr(struct regval_ctr *ctr, const char *val_name,
 static void map_single_multi_sz_into_ctr(struct regval_ctr *ctr, const char *val_name,
 					 const char *multi_sz)
 {
-	smb_ucs2_t *conv_strs = NULL;
-	size_t str_size;
+	const char *a[2];
 
-	/* a multi-sz has to have a null string terminator, i.e., the last
-	   string must be followed by two nulls */
-	str_size = strlen(multi_sz) + 2;
-	conv_strs = SMB_CALLOC_ARRAY(smb_ucs2_t, str_size);
-	if (!conv_strs) {
-		return;
-	}
-
-	/* Change to byte units. */
-	str_size *= sizeof(smb_ucs2_t);
-	push_ucs2(NULL, conv_strs, multi_sz, str_size,
-		  STR_TERMINATE | STR_NOALIGN);
+	a[0] = multi_sz;
+	a[1] = NULL;
 
 	regval_ctr_delvalue(ctr, val_name);
-	regval_ctr_addvalue(ctr, val_name, REG_MULTI_SZ,
-			    (char *) conv_strs, str_size);
-	SAFE_FREE(conv_strs);
+	regval_ctr_addvalue_multi_sz(ctr, val_name, a);
 }
 
 /****************************************************************************
@@ -3167,7 +3148,6 @@ static void store_printer_guid(NT_PRINTER_INFO_LEVEL_2 *info2,
 {
 	int i;
 	struct regval_ctr *ctr=NULL;
-	UNISTR2 unistr_guid;
 
 	/* find the DsSpooler key */
 	if ((i = lookup_printerkey(info2->data, SPOOL_DSSPOOLER_KEY)) < 0)
@@ -3179,15 +3159,8 @@ static void store_printer_guid(NT_PRINTER_INFO_LEVEL_2 *info2,
 	/* We used to store this as a REG_BINARY but that causes
 	   Vista to whine */
 
-	ZERO_STRUCT( unistr_guid );
-
-	init_unistr2( &unistr_guid, GUID_string(talloc_tos(), &guid),
-		      UNI_STR_TERMINATE );
-
-	regval_ctr_addvalue(ctr, "objectGUID", REG_SZ,
-			    (char *)unistr_guid.buffer,
-			    unistr_guid.uni_max_len*2);
-
+	regval_ctr_addvalue_sz(ctr, "objectGUID",
+			       GUID_string(talloc_tos(), &guid));
 }
 
 static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
@@ -3463,6 +3436,7 @@ bool is_printer_published(Printer_entry *print_hnd, int snum,
 	WERROR win_rc;
 	int i;
 	bool ret = False;
+	DATA_BLOB blob;
 
 	win_rc = get_a_printer(print_hnd, &printer, 2, lp_servicename(snum));
 
@@ -3479,16 +3453,18 @@ bool is_printer_published(Printer_entry *print_hnd, int snum,
 	/* fetching printer guids really ought to be a separate function. */
 
 	if ( guid ) {
-		fstring guid_str;
+		char *guid_str;
 
 		/* We used to store the guid as REG_BINARY, then swapped
 		   to REG_SZ for Vista compatibility so check for both */
 
 		switch ( regval_type(guid_val) ){
 		case REG_SZ:
-			rpcstr_pull( guid_str, regval_data_p(guid_val),
-				     sizeof(guid_str)-1, -1, STR_TERMINATE );
+			blob = data_blob_const(regval_data_p(guid_val),
+					       regval_size(guid_val));
+			pull_reg_sz(talloc_tos(), &blob, (const char **)&guid_str);
 			ret = NT_STATUS_IS_OK(GUID_from_string( guid_str, guid ));
+			talloc_free(guid_str);
 			break;
 		case REG_BINARY:
 			if ( regval_size(guid_val) != sizeof(struct GUID) ) {
@@ -3784,22 +3760,14 @@ static int unpack_values(NT_PRINTER_DATA *printer_data, const uint8 *buf, int bu
 		     strequal( valuename, "objectGUID" ) )
 		{
 			struct GUID guid;
-			UNISTR2 unistr_guid;
-
-			ZERO_STRUCT( unistr_guid );
 
 			/* convert the GUID to a UNICODE string */
 
 			memcpy( &guid, data_p, sizeof(struct GUID) );
 
-			init_unistr2( &unistr_guid,
-				      GUID_string(talloc_tos(), &guid),
-				      UNI_STR_TERMINATE );
-
-			regval_ctr_addvalue( printer_data->keys[key_index].values,
-					     valuename, REG_SZ,
-					     (const char *)unistr_guid.buffer,
-					     unistr_guid.uni_str_len*2 );
+			regval_ctr_addvalue_sz(printer_data->keys[key_index].values,
+					       valuename,
+					       GUID_string(talloc_tos(), &guid));
 
 		} else {
 			/* add the value */

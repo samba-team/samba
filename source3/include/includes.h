@@ -621,7 +621,7 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 #include "tdb.h"
 #include "util_tdb.h"
 
-#include "../talloc/talloc.h"
+#include "talloc.h"
 
 #include "event.h"
 #include "../lib/util/tevent_unix.h"
@@ -672,8 +672,7 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 #include "ntdomain.h"
 #include "reg_objects.h"
 #include "reg_db.h"
-#include "rpc_perfcount.h"
-#include "rpc_perfcount_defs.h"
+#include "librpc/gen_ndr/perfcount.h"
 #include "librpc/gen_ndr/notify.h"
 #include "librpc/gen_ndr/xattr.h"
 #include "librpc/gen_ndr/messaging.h"

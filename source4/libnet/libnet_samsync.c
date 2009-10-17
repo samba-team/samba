@@ -26,7 +26,7 @@
 #include "../libcli/samsync/samsync.h"
 #include "auth/gensec/gensec.h"
 #include "auth/credentials/credentials.h"
-#include "auth/gensec/schannel_proto.h"
+#include "libcli/auth/schannel.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
 #include "param/param.h"

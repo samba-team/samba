@@ -2,7 +2,7 @@
    ldb database library
 
    Copyright (C) Simo Sorce  2006-2008
-   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005-2007
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005-2009
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -42,6 +42,7 @@
 #include "libcli/security/security.h"
 #include "auth/auth.h"
 #include "param/param.h"
+#include "../libds/common/flags.h"
 
 struct oc_context {
 
@@ -138,7 +139,13 @@ static int objectclass_sort(struct ldb_module *module,
 		if (!current->objectclass) {
 			ldb_asprintf_errstring(ldb, "objectclass %.*s is not a valid objectClass in schema", 
 					       (int)objectclass_element->values[i].length, (const char *)objectclass_element->values[i].data);
-			return LDB_ERR_OBJECT_CLASS_VIOLATION;
+			/* This looks weird, but windows apparently returns this for invalid objectClass values */
+			return LDB_ERR_NO_SUCH_ATTRIBUTE;
+		} else if (current->objectclass->isDefunct) {
+			ldb_asprintf_errstring(ldb, "objectclass %.*s marked as isDefunct objectClass in schema - not valid for new objects", 
+					       (int)objectclass_element->values[i].length, (const char *)objectclass_element->values[i].data);
+			/* This looks weird, but windows apparently returns this for invalid objectClass values */
+			return LDB_ERR_NO_SUCH_ATTRIBUTE;
 		}
 
 		/* this is the root of the tree.  We will start
@@ -323,6 +330,8 @@ static int fix_dn(TALLOC_CTX *mem_ctx,
 		  struct ldb_dn **fixed_dn) 
 {
 	char *upper_rdn_attr;
+	const struct ldb_val *rdn_val;
+
 	/* Fix up the DN to be in the standard form, taking particular care to match the parent DN */
 	*fixed_dn = ldb_dn_copy(mem_ctx, parent_dn);
 
@@ -332,15 +341,21 @@ static int fix_dn(TALLOC_CTX *mem_ctx,
 	if (!upper_rdn_attr) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-					       
+
 	/* Create a new child */
 	if (ldb_dn_add_child_fmt(*fixed_dn, "X=X") == false) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	/* AD doesn't allow the rDN to be longer than 64 characters */
+	rdn_val = ldb_dn_get_rdn_val(newdn);
+	if (!rdn_val || rdn_val->length > 64) {
+		DEBUG(2,(__location__ ": rDN longer than 64 limit for '%s'\n", ldb_dn_get_linearized(newdn)));
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
 	/* And replace it with CN=foo (we need the attribute in upper case */
-	return ldb_dn_set_component(*fixed_dn, 0, upper_rdn_attr,
-				    *ldb_dn_get_rdn_val(newdn));
+	return ldb_dn_set_component(*fixed_dn, 0, upper_rdn_attr, *rdn_val);
 }
 
 /* Fix all attribute names to be in the correct case, and check they are all valid per the schema */
@@ -355,7 +370,8 @@ static int fix_attributes(struct ldb_context *ldb, const struct dsdb_schema *sch
 		if (!attribute) {
 			if (strcasecmp(msg->elements[i].name, "clearTextPassword") != 0) {
 				ldb_asprintf_errstring(ldb, "attribute %s is not a valid attribute in schema", msg->elements[i].name);
-				return LDB_ERR_UNDEFINED_ATTRIBUTE_TYPE;
+				/* Apparently Windows sends exactly this behaviour */
+				return LDB_ERR_NO_SUCH_ATTRIBUTE;
 			}
 		} else {
 			msg->elements[i].name = attribute->lDAPDisplayName;
@@ -374,7 +390,7 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 	struct oc_context *ac;
 	struct ldb_dn *parent_dn;
 	int ret;
-	static const char * const parent_attrs[] = { "objectGUID", NULL };
+	static const char * const parent_attrs[] = { "objectGUID", "objectClass", NULL };
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -458,7 +474,7 @@ static int objectclass_do_add(struct oc_context *ac)
 			ldb_asprintf_errstring(ldb, "objectclass: Cannot add %s, parent does not exist!", 
 					       ldb_dn_get_linearized(msg->dn));
 			talloc_free(mem_ctx);
-			return LDB_ERR_UNWILLING_TO_PERFORM;
+			return LDB_ERR_NO_SUCH_OBJECT;
 		}
 	} else {
 		const struct ldb_val *parent_guid;
@@ -484,9 +500,6 @@ static int objectclass_do_add(struct oc_context *ac)
 			return LDB_ERR_UNWILLING_TO_PERFORM;			
 		}
 
-		/* TODO: Check this is a valid child to this parent,
-		 * by reading the allowedChildClasses and
-		 * allowedChildClasssesEffective attributes */
 		ret = ldb_msg_add_steal_value(msg, "parentGUID", discard_const(parent_guid));
 		if (ret != LDB_SUCCESS) {
 			ldb_asprintf_errstring(ldb, "objectclass: Cannot add %s, failed to add parentGUID", 
@@ -547,7 +560,59 @@ static int objectclass_do_add(struct oc_context *ac)
 			if (!current->next) {
 				struct ldb_message_element *el;
 				int32_t systemFlags = 0;
-				DATA_BLOB *sd;
+				const char *rdn_name = ldb_dn_get_rdn_name(msg->dn);
+				if (current->objectclass->rDNAttID
+				    && ldb_attr_cmp(rdn_name, current->objectclass->rDNAttID) != 0) {
+					ldb_asprintf_errstring(ldb,
+							       "RDN %s is not correct for most specific structural objectclass %s, should be %s",
+							       rdn_name, current->objectclass->lDAPDisplayName, current->objectclass->rDNAttID);
+					return LDB_ERR_NAMING_VIOLATION;
+				}
+
+				if (ac->search_res && ac->search_res->message) {
+					struct ldb_message_element *oc_el
+						= ldb_msg_find_element(ac->search_res->message, "objectClass");
+
+					bool allowed_class = false;
+					int i, j;
+					for (i=0; allowed_class == false && oc_el && i < oc_el->num_values; i++) {
+						const struct dsdb_class *sclass;
+
+						sclass = dsdb_class_by_lDAPDisplayName_ldb_val(schema, &oc_el->values[i]);
+						if (!sclass) {
+							/* We don't know this class?  what is going on? */
+							continue;
+						}
+						if (ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
+							for (j=0; sclass->systemPossibleInferiors && sclass->systemPossibleInferiors[j]; j++) {
+								if (ldb_attr_cmp(current->objectclass->lDAPDisplayName, sclass->systemPossibleInferiors[j]) == 0) {
+									allowed_class = true;
+									break;
+								}
+							}
+						} else {
+							for (j=0; sclass->systemPossibleInferiors && sclass->systemPossibleInferiors[j]; j++) {
+								if (ldb_attr_cmp(current->objectclass->lDAPDisplayName, sclass->systemPossibleInferiors[j]) == 0) {
+									allowed_class = true;
+									break;
+								}
+							}
+						}
+					}
+
+					if (!allowed_class) {
+						ldb_asprintf_errstring(ldb, "structural objectClass %s is not a valid child class for %s",
+							       current->objectclass->lDAPDisplayName, ldb_dn_get_linearized(ac->search_res->message->dn));
+						return LDB_ERR_NAMING_VIOLATION;
+					}
+				}
+
+				if (current->objectclass->systemOnly && !ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
+					ldb_asprintf_errstring(ldb, "objectClass %s is systemOnly, rejecting creation of %s",
+							       current->objectclass->lDAPDisplayName, ldb_dn_get_linearized(msg->dn));
+					return LDB_ERR_UNWILLING_TO_PERFORM;
+				}
+
 				if (!ldb_msg_find_element(msg, "objectCategory")) {
 					value = talloc_strdup(msg, current->objectclass->defaultObjectCategory);
 					if (value == NULL) {
@@ -649,7 +714,13 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 	if (!schema) {
 		return ldb_next_request(module, req);
 	}
-	objectclass_element = ldb_msg_find_element(req->op.mod.message, "objectClass");
+
+	/* As with the "real" AD we don't accept empty messages */
+	if (req->op.mod.message->num_elements == 0) {
+		ldb_set_errstring(ldb, "objectclass: modify message must have "
+				       "elements/attributes!");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
 
 	ac = oc_init_context(module, req);
 	if (ac == NULL) {
@@ -658,6 +729,7 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 
 	/* If no part of this touches the objectClass, then we don't
 	 * need to make any changes.  */
+	objectclass_element = ldb_msg_find_element(req->op.mod.message, "objectClass");
 
 	/* If the only operation is the deletion of the objectClass
 	 * then go on with just fixing the attribute case */
@@ -823,6 +895,8 @@ static int oc_modify_callback(struct ldb_request *req, struct ldb_reply *ares)
 		return ldb_module_done(ac->req, NULL, NULL,
 					LDB_ERR_OPERATIONS_ERROR);
 	}
+
+	talloc_free(ares);
 
 	ret = ldb_build_search_req(&search_req, ldb, ac,
 				   ac->req->op.mod.message->dn, LDB_SCOPE_BASE,
@@ -1032,6 +1106,7 @@ static int objectclass_rename_callback(struct ldb_request *req, struct ldb_reply
 					ares->response, ares->error);
 	}
 
+	talloc_free(ares);
 
 	/* the ac->search_res should contain the new parents objectGUID */
 	parent_guid = ldb_msg_find_ldb_val(ac->search_res->message, "objectGUID");

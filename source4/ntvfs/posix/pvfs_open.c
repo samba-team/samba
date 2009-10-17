@@ -1272,6 +1272,21 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+	/* cope with non-zero root_fid */
+	if (io->ntcreatex.in.root_fid.ntvfs != NULL) {
+		f = pvfs_find_fd(pvfs, req, io->ntcreatex.in.root_fid.ntvfs);
+		if (f == NULL) {
+			return NT_STATUS_INVALID_HANDLE;
+		}
+		if (f->handle->fd != -1) {
+			return NT_STATUS_INVALID_DEVICE_REQUEST;
+		}
+		io->ntcreatex.in.fname = talloc_asprintf(req, "%s\\%s", 
+							 f->handle->name->original_name,
+							 io->ntcreatex.in.fname);
+		NT_STATUS_HAVE_NO_MEMORY(io->ntcreatex.in.fname);			
+	}
+
 	if (io->ntcreatex.in.file_attr & (FILE_ATTRIBUTE_DEVICE|
 					  FILE_ATTRIBUTE_VOLUME| 
 					  (~FILE_ATTRIBUTE_ALL_MASK))) {

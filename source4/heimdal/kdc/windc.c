@@ -61,8 +61,8 @@ krb5_kdc_windc_init(krb5_context context)
 	(*windcft->init)(context, &windcctx);
 	break;
     }
+    _krb5_plugin_free(list);
     if (e == NULL) {
-	_krb5_plugin_free(list);
 	krb5_set_error_message(context, ENOENT, "Did not find any WINDC plugin");
 	windcft = NULL;
 	return ENOENT;

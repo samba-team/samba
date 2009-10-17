@@ -37,4 +37,27 @@ struct torture_test;
 int torture_init(void);
 bool torture_register_suite(struct torture_suite *suite);
 
+/* Server Functionality Support */
+
+/* Not all SMB server implementations support every aspect of the protocol.
+ * To allow smbtorture to provide useful data when run against these servers we
+ * define support parameters here, that will cause some tests to be skipped or
+ * the correctness checking of some tests to be conditional.
+ *
+ * The idea is that different server implementations can be specified on the
+ * command line such as "--target=win7" which will define the list of server
+ * parameters that are not supported.  This is mostly a black list of
+ * unsupported features with the default expectation being that all features are
+ * supported.
+ *
+ * Because we use parametric options we do not need to define these parameters
+ * anywhere, we just define the meaning of each here.*/
+
+/* torture:sacl_support
+ *
+ * This parameter specifies whether the server supports the setting and
+ * retrieval of System Access Control Lists.  This includes whether the server
+ * supports the use of the SEC_FLAG_SYSTEM_SECURITY bit in the open access
+ * mask.*/
+
 #endif /* __SMBTORTURE_H__ */

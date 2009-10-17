@@ -2383,6 +2383,8 @@ static NTSTATUS do_unlink(connection_struct *conn,
 	files_struct *fsp;
 	uint32 dirtype_orig = dirtype;
 	NTSTATUS status;
+	int ret;
+	bool posix_paths = lp_posix_pathnames();
 
 	DEBUG(10,("do_unlink: %s, dirtype = %d\n",
 		  smb_fname_str_dbg(smb_fname),
@@ -2392,7 +2394,12 @@ static NTSTATUS do_unlink(connection_struct *conn,
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
 	}
 
-	if (SMB_VFS_LSTAT(conn, smb_fname) != 0) {
+	if (posix_paths) {
+		ret = SMB_VFS_LSTAT(conn, smb_fname);
+	} else {
+		ret = SMB_VFS_LSTAT(conn, smb_fname);
+	}
+	if (ret != 0) {
 		return map_nt_error_from_unix(errno);
 	}
 
@@ -2479,7 +2486,9 @@ static NTSTATUS do_unlink(connection_struct *conn,
 		 FILE_SHARE_NONE,	/* share_access */
 		 FILE_OPEN,		/* create_disposition*/
 		 FILE_NON_DIRECTORY_FILE, /* create_options */
-		 FILE_ATTRIBUTE_NORMAL,	/* file_attributes */
+		 			/* file_attributes */
+		 posix_paths ? FILE_FLAG_POSIX_SEMANTICS|0777 :
+				FILE_ATTRIBUTE_NORMAL,
 		 0,			/* oplock_request */
 		 0,			/* allocation_size */
 		 NULL,			/* sd */
@@ -5860,25 +5869,17 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 			bool replace_if_exists)
 {
 	TALLOC_CTX *ctx = talloc_tos();
-	struct smb_filename *smb_fname_src = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
-	SMB_STRUCT_STAT sbuf;
 	NTSTATUS status = NT_STATUS_OK;
 	struct share_mode_lock *lck = NULL;
 	bool dst_exists, old_is_stream, new_is_stream;
-
-	ZERO_STRUCT(sbuf);
 
 	status = check_name(conn, smb_fname_dst_in->base_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	/* Make a copy of the src and dst smb_fname structs */
-	status = copy_smb_filename(ctx, fsp->fsp_name, &smb_fname_src);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
+	/* Make a copy of the dst smb_fname structs */
 
 	status = copy_smb_filename(ctx, smb_fname_dst_in, &smb_fname_dst);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -5906,8 +5907,8 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	 * filename).
 	 */
 	if((conn->case_sensitive == False) && (conn->case_preserve == True) &&
-	    strequal(smb_fname_src->base_name, smb_fname_dst->base_name) &&
-	    strequal(smb_fname_src->stream_name, smb_fname_dst->stream_name)) {
+	    strequal(fsp->fsp_name->base_name, smb_fname_dst->base_name) &&
+	    strequal(fsp->fsp_name->stream_name, smb_fname_dst->stream_name)) {
 		char *last_slash;
 		char *fname_dst_lcomp_base_mod = NULL;
 		struct smb_filename *smb_fname_orig_lcomp = NULL;
@@ -5984,8 +5985,8 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	 * don't do the rename, just return success.
 	 */
 
-	if (strcsequal(smb_fname_src->base_name, smb_fname_dst->base_name) &&
-	    strcsequal(smb_fname_src->stream_name,
+	if (strcsequal(fsp->fsp_name->base_name, smb_fname_dst->base_name) &&
+	    strcsequal(fsp->fsp_name->stream_name,
 		       smb_fname_dst->stream_name)) {
 		DEBUG(3, ("rename_internals_fsp: identical names in rename %s "
 			  "- returning success\n",
@@ -5994,7 +5995,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		goto out;
 	}
 
-	old_is_stream = is_ntfs_stream_smb_fname(smb_fname_src);
+	old_is_stream = is_ntfs_stream_smb_fname(fsp->fsp_name);
 	new_is_stream = is_ntfs_stream_smb_fname(smb_fname_dst);
 
 	/* Return the correct error code if both names aren't streams. */
@@ -6012,7 +6013,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 
 	if(!replace_if_exists && dst_exists) {
 		DEBUG(3, ("rename_internals_fsp: dest exists doing rename "
-			  "%s -> %s\n", smb_fname_str_dbg(smb_fname_src),
+			  "%s -> %s\n", smb_fname_str_dbg(fsp->fsp_name),
 			  smb_fname_str_dbg(smb_fname_dst)));
 		status = NT_STATUS_OBJECT_NAME_COLLISION;
 		goto out;
@@ -6031,38 +6032,23 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	}
 
 	/* Ensure we have a valid stat struct for the source. */
-	if (fsp->fh->fd != -1) {
-		if (SMB_VFS_FSTAT(fsp, &sbuf) == -1) {
-			status = map_nt_error_from_unix(errno);
-			goto out;
-		}
-	} else {
-		int ret = -1;
-		if (fsp->posix_open) {
-			ret = SMB_VFS_LSTAT(conn, smb_fname_src);
-		} else {
-
-			ret = SMB_VFS_STAT(conn, smb_fname_src);
-		}
-		if (ret == -1) {
-			status = map_nt_error_from_unix(errno);
-			goto out;
-		}
-		sbuf = smb_fname_src->st;
+	status = vfs_stat_fsp(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
 	}
 
-	status = can_rename(conn, fsp, attrs, &sbuf);
+	status = can_rename(conn, fsp, attrs, &fsp->fsp_name->st);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("rename_internals_fsp: Error %s rename %s -> %s\n",
-			  nt_errstr(status), smb_fname_str_dbg(smb_fname_src),
+			  nt_errstr(status), smb_fname_str_dbg(fsp->fsp_name),
 			  smb_fname_str_dbg(smb_fname_dst)));
 		if (NT_STATUS_EQUAL(status,NT_STATUS_SHARING_VIOLATION))
 			status = NT_STATUS_ACCESS_DENIED;
 		goto out;
 	}
 
-	if (rename_path_prefix_equal(smb_fname_src, smb_fname_dst)) {
+	if (rename_path_prefix_equal(fsp->fsp_name, smb_fname_dst)) {
 		status = NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -6076,14 +6062,14 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 
 	SMB_ASSERT(lck != NULL);
 
-	if(SMB_VFS_RENAME(conn, smb_fname_src, smb_fname_dst) == 0) {
+	if(SMB_VFS_RENAME(conn, fsp->fsp_name, smb_fname_dst) == 0) {
 		uint32 create_options = fsp->fh->private_options;
 
 		DEBUG(3, ("rename_internals_fsp: succeeded doing rename on "
-			  "%s -> %s\n", smb_fname_str_dbg(smb_fname_src),
+			  "%s -> %s\n", smb_fname_str_dbg(fsp->fsp_name),
 			  smb_fname_str_dbg(smb_fname_dst)));
 
-		notify_rename(conn, fsp->is_directory, smb_fname_src,
+		notify_rename(conn, fsp->is_directory, fsp->fsp_name,
 			      smb_fname_dst);
 
 		rename_open_files(conn, lck, smb_fname_dst);
@@ -6120,11 +6106,10 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	}
 
 	DEBUG(3, ("rename_internals_fsp: Error %s rename %s -> %s\n",
-		  nt_errstr(status), smb_fname_str_dbg(smb_fname_src),
+		  nt_errstr(status), smb_fname_str_dbg(fsp->fsp_name),
 		  smb_fname_str_dbg(smb_fname_dst)));
 
  out:
-	TALLOC_FREE(smb_fname_src);
 	TALLOC_FREE(smb_fname_dst);
 
 	return status;
@@ -7707,25 +7692,10 @@ void reply_setattrE(struct smb_request *req)
 	 */
 
 	/* Ensure we have a valid stat struct for the source. */
-	if (fsp->fh->fd != -1) {
-		if (SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st) == -1) {
-			status = map_nt_error_from_unix(errno);
-			reply_nterror(req, status);
-			goto out;
-		}
-	} else {
-		int ret = -1;
-
-		if (fsp->posix_open) {
-			ret = SMB_VFS_LSTAT(conn, fsp->fsp_name);
-		} else {
-			ret = SMB_VFS_STAT(conn, fsp->fsp_name);
-		}
-		if (ret == -1) {
-			status = map_nt_error_from_unix(errno);
-			reply_nterror(req, status);
-			goto out;
-		}
+	status = vfs_stat_fsp(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		goto out;
 	}
 
 	status = smb_set_file_time(conn, fsp, fsp->fsp_name, &ft, true);

@@ -2,7 +2,7 @@
   plug and play services
 */
 
-import "winreg.idl";
+import "misc.idl";
 
 [
   uuid("8d9f4e40-a03d-11ce-8f69-08003e30051b"),
