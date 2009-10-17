@@ -659,14 +659,10 @@ NTSTATUS pvfs_access_check_create(struct pvfs_state *pvfs,
 	}
 
 	status = pvfs_resolve_parent(pvfs, req, name, &parent);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	NT_STATUS_NOT_OK_RETURN(status);
 
 	status = pvfs_access_check_simple(pvfs, req, parent, SEC_DIR_ADD_FILE);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	NT_STATUS_NOT_OK_RETURN(status);
 
 	if (*sd == NULL) {
 		status = pvfs_acl_inherited_sd(pvfs, req, req, parent, container, sd);
@@ -679,14 +675,19 @@ NTSTATUS pvfs_access_check_create(struct pvfs_state *pvfs,
 
 	/* expand the generic access bits to file specific bits */
 	*access_mask = pvfs_translate_mask(*access_mask);
-	if (pvfs->ntvfs->ctx->protocol != PROTOCOL_SMB2) {
-		*access_mask &= ~SEC_FILE_READ_ATTRIBUTE;
+
+	if (*access_mask & SEC_FLAG_MAXIMUM_ALLOWED) {
+		*access_mask |= SEC_RIGHTS_FILE_ALL;
+		*access_mask &= ~SEC_FLAG_MAXIMUM_ALLOWED;
 	}
 
-	if (*sd == NULL) {
-		return pvfs_access_check_unix(pvfs, req, NULL, access_mask);
+	if (pvfs->ntvfs->ctx->protocol != PROTOCOL_SMB2) {
+		/* on SMB, this bit is always granted, even if not
+		   asked for */
+		*access_mask |= SEC_FILE_READ_ATTRIBUTE;
 	}
-	return sec_access_check(*sd, token, *access_mask, access_mask);
+
+	return NT_STATUS_OK;
 }
 
 /*
