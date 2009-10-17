@@ -27,45 +27,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-bool fillup_pw_field(const char *lp_template,
-			    const char *username,
-			    const char *domname,
-			    uid_t uid,
-			    gid_t gid,
-			    const char *in,
-			    fstring out)
-{
-	char *templ;
-
-	if (out == NULL)
-		return False;
-
-	/* The substitution of %U and %D in the 'template
-	   homedir' is done by talloc_sub_specified() below.
-	   If we have an in string (which means the value has already
-	   been set in the nss_info backend), then use that.
-	   Otherwise use the template value passed in. */
-
-	if ( in && !strequal(in,"") && lp_security() == SEC_ADS ) {
-		templ = talloc_sub_specified(NULL, in,
-					     username, domname,
-				     uid, gid);
-	} else {
-		templ = talloc_sub_specified(NULL, lp_template,
-					     username, domname,
-					     uid, gid);
-	}
-
-	if (!templ)
-		return False;
-
-	safe_strcpy(out, templ, sizeof(fstring) - 1);
-	TALLOC_FREE(templ);
-
-	return True;
-
-}
-
 /* Wrapper for domain->methods->query_user, only on the parent->child pipe */
 
 enum winbindd_result winbindd_dual_userinfo(struct winbindd_domain *domain,
