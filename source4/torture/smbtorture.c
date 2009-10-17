@@ -510,7 +510,7 @@ int main(int argc,char *argv[])
 			{
 				char *option = talloc_asprintf(NULL, "torture:extra_user%u",
 							       ++num_extra_users);
-				char *value = poptGetOptArg(pc);
+				const char *value = poptGetOptArg(pc);
 				lp_set_cmdline(cmdline_lp_ctx, option, value);
 				talloc_free(option);
 			}
