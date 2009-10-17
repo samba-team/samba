@@ -1219,7 +1219,7 @@ static bool test_inheritance(struct torture_context *tctx,
 	union smb_fileinfo q;
 	union smb_setfileinfo set;
 	struct security_descriptor *sd, *sd2, *sd_orig=NULL, *sd_def;
-	const char *owner_sid;
+	const char *owner_sid, *group_sid;
 	const struct dom_sid *creator_owner;
 	const struct {
 		uint32_t parent_flags;
@@ -1353,26 +1353,54 @@ static bool test_inheritance(struct torture_context *tctx,
 	printf("get the original sd\n");
 	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
 	q.query_secdesc.in.file.fnum = fnum;
-	q.query_secdesc.in.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
+	q.query_secdesc.in.secinfo_flags = SECINFO_DACL | SECINFO_OWNER | SECINFO_GROUP;
 	status = smb_raw_fileinfo(cli->tree, tctx, &q);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	sd_orig = q.query_secdesc.out.sd;
 
 	owner_sid = dom_sid_string(tctx, sd_orig->owner_sid);
+	group_sid = dom_sid_string(tctx, sd_orig->group_sid);
 
 	printf("owner_sid is %s\n", owner_sid);
+	printf("group_sid is %s\n", group_sid);
 
-	sd_def = security_descriptor_dacl_create(tctx,
-					    0, owner_sid, NULL,
-					    owner_sid,
-					    SEC_ACE_TYPE_ACCESS_ALLOWED,
-					    SEC_RIGHTS_FILE_ALL,
-					    0,
-					    SID_NT_SYSTEM,
-					    SEC_ACE_TYPE_ACCESS_ALLOWED,
-					    SEC_RIGHTS_FILE_ALL,
-					    0,
-					    NULL);
+	q.query_secdesc.in.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
+
+	if (torture_setting_bool(tctx, "samba4", false)) {
+		/* the default ACL in Samba4 includes the group and
+		   other permissions */
+		sd_def = security_descriptor_dacl_create(tctx,
+							 0, owner_sid, NULL,
+							 owner_sid,
+							 SEC_ACE_TYPE_ACCESS_ALLOWED,
+							 SEC_RIGHTS_FILE_ALL,
+							 0,
+							 group_sid,
+							 SEC_ACE_TYPE_ACCESS_ALLOWED,
+							 SEC_RIGHTS_FILE_READ | SEC_FILE_EXECUTE,
+							 0,
+							 SID_WORLD,
+							 SEC_ACE_TYPE_ACCESS_ALLOWED,
+							 SEC_RIGHTS_FILE_READ | SEC_FILE_EXECUTE,
+							 0,
+							 SID_NT_SYSTEM,
+							 SEC_ACE_TYPE_ACCESS_ALLOWED,
+							 SEC_RIGHTS_FILE_ALL,
+							 0,
+							 NULL);
+	} else {
+		sd_def = security_descriptor_dacl_create(tctx,
+							 0, owner_sid, NULL,
+							 owner_sid,
+							 SEC_ACE_TYPE_ACCESS_ALLOWED,
+							 SEC_RIGHTS_FILE_ALL,
+							 0,
+							 SID_NT_SYSTEM,
+							 SEC_ACE_TYPE_ACCESS_ALLOWED,
+							 SEC_RIGHTS_FILE_ALL,
+							 0,
+							 NULL);
+	}
 
 	creator_owner = dom_sid_parse_talloc(tctx, SID_CREATOR_OWNER);
 
