@@ -99,9 +99,10 @@ again:
 			line[strlen(line)-1] = 0;
 		}
 
-		all_string_sub(line,"client1", cname, sizeof(line));
+		all_string_sub(line, "client1", cname, sizeof(line));
 		
-		params = params0 = str_list_make_shell(NULL, line, " ");
+		params = params0 = const_str_list(
+					str_list_make_shell(NULL, line, " "));
 		i = str_list_length(params);
 
 		if (i > 0 && isdigit(params[0][0])) {
