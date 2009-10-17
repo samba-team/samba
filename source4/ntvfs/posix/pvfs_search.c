@@ -666,10 +666,10 @@ static NTSTATUS pvfs_search_first_smb2(struct ntvfs_module_context *ntvfs,
 	}
 
 	if (strequal("", f->handle->name->original_name)) {
-		pattern = talloc_asprintf(req, "\\%s", io->in.pattern);
+		pattern = talloc_asprintf(req, "%s", io->in.pattern);
 		NT_STATUS_HAVE_NO_MEMORY(pattern);
 	} else {
-		pattern = talloc_asprintf(req, "\\%s\\%s",
+		pattern = talloc_asprintf(req, "%s\\%s",
 					  f->handle->name->original_name,
 					  io->in.pattern);
 		NT_STATUS_HAVE_NO_MEMORY(pattern);
