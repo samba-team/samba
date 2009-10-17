@@ -186,7 +186,7 @@ NTSTATUS sec_access_check_ds(const struct security_descriptor *sd,
         int i;
         uint32_t bits_remaining;
         struct object_tree *node;
-        struct GUID *type;
+        const struct GUID *type;
 
         *access_granted = access_desired;
         bits_remaining = access_desired;
