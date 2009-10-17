@@ -138,10 +138,10 @@ struct dsdb_class {
 	bool isDefunct;
 	bool systemOnly;
 
-	char **supclasses;
-	char **subclasses;
-	char **subclasses_direct;
-	char **posssuperiors;
+	const char **supclasses;
+	const char **subclasses;
+	const char **subclasses_direct;
+	const char **posssuperiors;
 	uint32_t subClassOf_id;
 	uint32_t *systemAuxiliaryClass_ids;
 	uint32_t *auxiliaryClass_ids;
