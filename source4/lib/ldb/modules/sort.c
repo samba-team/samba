@@ -44,8 +44,8 @@ struct opaque {
 struct sort_context {
 	struct ldb_module *module;
 
-	char *attributeName;
-	char *orderingRule;
+	const char *attributeName;
+	const char *orderingRule;
 	int reverse;
 
 	struct ldb_request *req;
