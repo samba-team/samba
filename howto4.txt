@@ -101,18 +101,18 @@ example::
 Step 6: starting Samba4
 -----------------------
 
-The simplest is to just run "smbd", but as a developer you may find
+The simplest is to just run "samba", but as a developer you may find
 the following more useful::
 
-   # smbd -i -M single
+   # samba -i -M single
 
-that means "start smbd without messages in stdout, and running a
-single process. That mode of operation makes debugging smbd with gdb
+that means "start samba without messages in stdout, and running a
+single process. That mode of operation makes debugging samba with gdb
 particularly easy.
 
 Note that now it is no longer necessary to have an instance of nmbd
 from Samba 3 running.  If you are running any smbd or nmbd processes
-they need to be stopped before starting smbd from Samba 4.
+they need to be stopped before starting samba from Samba 4.
 
 Make sure you put the bin and sbin directories from your new install
 in your $PATH. Make sure you run the right version!
