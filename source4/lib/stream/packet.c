@@ -526,7 +526,7 @@ _PUBLIC_ void packet_queue_run(struct packet_context *pc)
   put a packet in the send queue.  When the packet is actually sent,
   call send_callback.  
 
-  Useful for operations that must occour after sending a message, such
+  Useful for operations that must occur after sending a message, such
   as the switch to SASL encryption after as sucessful LDAP bind relpy.
 */
 _PUBLIC_ NTSTATUS packet_send_callback(struct packet_context *pc, DATA_BLOB blob,
