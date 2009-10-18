@@ -78,7 +78,7 @@ bool drs_util_oid_from_attid(struct torture_context *tctx,
 		bin_oid.data[bin_oid.length-1] = lo_word;
 	}
 	else {
-		if (lo_word == 32768) {
+		if (lo_word >= 32768) {
 			lo_word -= 32768;
 		}
 		bin_oid.data[bin_oid.length-2] = ((lo_word / 128) % 128) + 128; // (0x80 | ((lo_word>>7)&0x7f))
