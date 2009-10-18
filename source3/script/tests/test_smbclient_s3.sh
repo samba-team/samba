@@ -108,19 +108,20 @@ EOF
 
     if [ $ret != 0 ] ; then
 	echo "$out"
-	echo "failed create then delete bad symlink"
+	echo "failed create then delete bad symlink with error $ret"
 	false
 	return
     fi
 
-    echo "$out" | grep $prompt >/dev/null 2>&1
+    echo "$out" | grep "$prompt" >/dev/null 2>&1
 
-    if [ $? = 0 ] ; then
+    ret=$?
+    if [ $ret = 0 ] ; then
 	# got the correct prompt .. succeed
 	true
     else
 	echo "$out"
-	echo failed create then delete bad symlink
+	echo "failed create then delete bad symlink - grep failed with $ret"
 	false
     fi
 }
