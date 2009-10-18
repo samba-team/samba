@@ -1807,6 +1807,15 @@ struct ldb_message *ldb_msg_diff(struct ldb_context *ldb,
 				 struct ldb_message *msg1,
 				 struct ldb_message *msg2);
 
+/**
+   Tries to find a certain string attribute in a message
+
+   \param msg the message to check
+   \param name attribute name
+   \param value attribute value
+
+   \return 1 on match and 0 otherwise.
+*/
 int ldb_msg_check_string_attribute(const struct ldb_message *msg,
 				   const char *name,
 				   const char *value);

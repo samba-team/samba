@@ -890,7 +890,11 @@ void ldb_dump_results(struct ldb_context *ldb, struct ldb_result *result, FILE *
 	}
 }
 
-int ldb_msg_check_string_attribute(const struct ldb_message *msg, const char *name, const char *value)
+/*
+  checks for a string attribute. Returns "1" on match and otherwise "0".
+*/
+int ldb_msg_check_string_attribute(const struct ldb_message *msg,
+				   const char *name, const char *value)
 {
 	struct ldb_message_element *el;
 	struct ldb_val val;
