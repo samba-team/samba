@@ -1432,6 +1432,16 @@ struct ldb_dn *samdb_server_site_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx
 	return server_site_dn;
 }
 
+const char *samdb_server_site_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx)
+{
+	const struct ldb_val *val = ldb_dn_get_rdn_val(samdb_server_site_dn(ldb, mem_ctx));
+
+	if (val != NULL)
+		return (const char *) val->data;
+	else
+		return NULL;
+}
+
 /*
   work out if we are the PDC for the domain of the current open ldb
 */

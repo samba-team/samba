@@ -1457,8 +1457,9 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call, TA
 					  DS_SERVER_LDAP |
 					  DS_SERVER_GC |
 					  DS_SERVER_PDC;
-	info->dc_site_name	= talloc_strdup(mem_ctx, "Default-First-Site-Name");
+	info->dc_site_name	= samdb_server_site_name(sam_ctx, mem_ctx);
 	W_ERROR_HAVE_NO_MEMORY(info->dc_site_name);
+	/* FIXME: Hardcoded site name */
 	info->client_site_name	= talloc_strdup(mem_ctx, "Default-First-Site-Name");
 	W_ERROR_HAVE_NO_MEMORY(info->client_site_name);
 
@@ -1561,6 +1562,7 @@ static WERROR dcesrv_netr_DsRAddressToSitenamesExW(struct dcesrv_call_state *dce
 	W_ERROR_HAVE_NO_MEMORY(ctr->subnetname);
 
 	for (i=0; i<ctr->count; i++) {
+		/* FIXME: Hardcoded site name */
 		ctr->sitename[i].string   = "Default-First-Site-Name";
 		ctr->subnetname[i].string = NULL;
 	}
