@@ -263,6 +263,16 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 	NTSTATUS status;
 
 	name->original_name = talloc_strdup(name, cifs_name);
+
+	/* remove any :$DATA */
+	p = strrchr(name->original_name, ':');
+	if (p && strcasecmp_m(p, ":$DATA") == 0) {
+		if (p > name->original_name && p[-1] == ':') {
+			p--;
+		}
+		*p = 0;
+	}
+
 	name->stream_name = NULL;
 	name->stream_id = 0;
 	name->has_wildcard = false;
