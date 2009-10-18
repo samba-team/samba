@@ -108,7 +108,8 @@ static NTSTATUS pvfs_setfileinfo_rename_stream(struct pvfs_state *pvfs,
 
 
 	status = pvfs_stream_rename(pvfs, name, fd, 
-				    info->rename_information.in.new_name+1);
+				    info->rename_information.in.new_name+1,
+				    info->rename_information.in.overwrite);
 	return status;
 }
 

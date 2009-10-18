@@ -515,7 +515,8 @@ static NTSTATUS pvfs_rename_stream(struct ntvfs_module_context *ntvfs,
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	status = pvfs_stream_rename(pvfs, name1, -1, 
-				    ren->ntrename.in.new_name+1);
+				    ren->ntrename.in.new_name+1, 
+				    true);
 	NT_STATUS_NOT_OK_RETURN(status);
 	
 	return NT_STATUS_OK;

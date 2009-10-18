@@ -240,7 +240,7 @@ static NTSTATUS pvfs_stream_update_size(struct pvfs_state *pvfs, struct pvfs_fil
   rename a stream
 */
 NTSTATUS pvfs_stream_rename(struct pvfs_state *pvfs, struct pvfs_filename *name, int fd,
-			    const char *new_name)
+			    const char *new_name, bool overwrite)
 {
 	struct xattr_DosStreams *streams;
 	int i, found_old, found_new;
@@ -289,16 +289,26 @@ NTSTATUS pvfs_stream_rename(struct pvfs_state *pvfs, struct pvfs_filename *name,
 		struct xattr_DosStream *s = &streams->streams[found_old];
 		s->name = new_name;
 	} else {
-		/* remove the old one and replace with the new one */
-		streams->streams[found_old].name = new_name;
-		memmove(&streams->streams[found_new],
-			&streams->streams[found_new+1],
-			sizeof(streams->streams[0]) *
-			(streams->num_streams - (found_new+1)));
+		if (!overwrite) {
+			return NT_STATUS_OBJECT_NAME_COLLISION;
+		}
+		if (found_old != found_new) {
+			/* remove the old one and replace with the new one */
+			streams->streams[found_old].name = new_name;
+			memmove(&streams->streams[found_new],
+				&streams->streams[found_new+1],
+				sizeof(streams->streams[0]) *
+				(streams->num_streams - (found_new+1)));
+			streams->num_streams--;
+		}
 	}
 
 	status = pvfs_streams_save(pvfs, name, fd, streams);
 	talloc_free(streams);
+
+	/* update the in-memory copy of the name of the open file */
+	talloc_free(name->stream_name);
+	name->stream_name = talloc_strdup(name, new_name);
 
 	return status;
 }
