@@ -1125,16 +1125,18 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 	struct netlogon_creds_CredentialState *creds;
 	const char * const attrs[] = { "objectSid", "objectGUID", "flatName",
 		"securityIdentifier", "trustPartner", NULL };
+	const char * const attrs2[] = { "dNSHostName",
+		"msDS-SupportedEncryptionTypes", NULL };
 	const char *temp_str;
 	const char *old_dns_hostname;
 	struct ldb_context *sam_ctx;
-	struct ldb_message **res1, **res2, *new_msg;
+	struct ldb_message **res1, **res2, **res3, *new_msg;
 	struct ldb_dn *workstation_dn;
 	struct netr_DomainInformation *domain_info;
 	struct netr_LsaPolicyInformation *lsa_policy_info;
 	struct netr_OsVersionInfoEx *os_version;
 	uint32_t default_supported_enc_types = 0xFFFFFFFF;
-	int ret1, ret2, i;
+	int ret1, ret2, ret3, i;
 	NTSTATUS status;
 
 	status = dcesrv_netr_creds_server_step_check(dce_call,
@@ -1175,11 +1177,16 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 			dom_sid_string(mem_ctx, creds->sid));
 		NT_STATUS_HAVE_NO_MEMORY(workstation_dn);
 
+		/* Lookup for attributes in workstation object */
+		ret1 = gendb_search_dn(sam_ctx, mem_ctx, workstation_dn,
+			&res1, attrs2);
+		if (ret1 != 1) {
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
 		/* Gets the old DNS hostname */
-		old_dns_hostname = samdb_search_string(sam_ctx, mem_ctx,
-							workstation_dn,
-							"dNSHostName",
-							NULL);
+		old_dns_hostname = samdb_result_string(res1[0], "dNSHostName",
+			NULL);
 
 		/* Gets host informations and put them in our directory */
 		new_msg = ldb_msg_new(mem_ctx);
@@ -1273,15 +1280,15 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 		   primary domain is also a "trusted" domain, so we need to
 		   put the primary domain into the lists of returned trusts as
 		   well. */
-		ret1 = gendb_search_dn(sam_ctx, mem_ctx, samdb_base_dn(sam_ctx),
-			&res1, attrs);
-		if (ret1 != 1) {
+		ret2 = gendb_search_dn(sam_ctx, mem_ctx, samdb_base_dn(sam_ctx),
+			&res2, attrs);
+		if (ret2 != 1) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		ret2 = gendb_search(sam_ctx, mem_ctx, NULL, &res2, attrs,
+		ret3 = gendb_search(sam_ctx, mem_ctx, NULL, &res3, attrs,
 			"(objectClass=trustedDomain)");
-		if (ret2 == -1) {
+		if (ret3 == -1) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
@@ -1294,35 +1301,34 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 
 		status = fill_one_domain_info(mem_ctx,
 			dce_call->conn->dce_ctx->lp_ctx,
-			sam_ctx, res1[0], &domain_info->primary_domain,
+			sam_ctx, res2[0], &domain_info->primary_domain,
 			true, false);
 		NT_STATUS_NOT_OK_RETURN(status);
 
-		domain_info->trusted_domain_count = ret2 + 1;
+		domain_info->trusted_domain_count = ret3 + 1;
 		domain_info->trusted_domains = talloc_array(mem_ctx,
 			struct netr_OneDomainInfo,
 			domain_info->trusted_domain_count);
 		NT_STATUS_HAVE_NO_MEMORY(domain_info->trusted_domains);
 
-		for (i=0;i<ret2;i++) {
+		for (i=0;i<ret3;i++) {
 			status = fill_one_domain_info(mem_ctx,
 				dce_call->conn->dce_ctx->lp_ctx,
-				sam_ctx, res2[i],
+				sam_ctx, res3[i],
 				&domain_info->trusted_domains[i],
 				false, true);
 			NT_STATUS_NOT_OK_RETURN(status);
 		}
 
 		status = fill_one_domain_info(mem_ctx,
-			dce_call->conn->dce_ctx->lp_ctx, sam_ctx, res1[0],
+			dce_call->conn->dce_ctx->lp_ctx, sam_ctx, res2[0],
 			&domain_info->trusted_domains[i], true, true);
 		NT_STATUS_NOT_OK_RETURN(status);
 
 		/* Sets the supported encryption types */
-		domain_info->supported_enc_types = samdb_search_uint(
-			sam_ctx, mem_ctx,
-			default_supported_enc_types, workstation_dn,
-			"msDS-SupportedEncryptionTypes", NULL);
+		domain_info->supported_enc_types = samdb_result_uint(res1[0],
+			"msDS-SupportedEncryptionTypes",
+			default_supported_enc_types);
 
 		/* Other host domain informations */
 
