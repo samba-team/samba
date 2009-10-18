@@ -193,12 +193,20 @@ static bool check_stream_list(struct smbcli_state *cli, const char *fname,
 			d_fprintf(stderr, "(%s) expected stream name %s, got "
 				  "%s\n", __location__, exp_sort[i],
 				  stream_sort[i].stream_name.s);
-			goto fail;
+			goto show_streams;
 		}
 	}
 
 	ret = true;
  fail:
+	talloc_free(tmp_ctx);
+	return ret;
+
+show_streams:
+	for (i=0; i<num_exp; i++) {
+		d_fprintf(stderr, "stream names '%s' '%s'\n",
+			  exp_sort[i], stream_sort[i].stream_name.s);
+	}
 	talloc_free(tmp_ctx);
 	return ret;
 }
@@ -360,10 +368,8 @@ static bool test_stream_io(struct torture_context *tctx,
 	ret &= check_stream(cli, __location__, mem_ctx, fname, "Stream One:$DATA", "test MORE DATA ");
 	ret &= check_stream(cli, __location__, mem_ctx, fname, "Stream One:", NULL);
 	ret &= check_stream(cli, __location__, mem_ctx, fname, "Second Stream", "SECOND STREAM");
-	if (!torture_setting_bool(tctx, "samba4", false)) {
-		ret &= check_stream(cli, __location__, mem_ctx, fname,
-				    "SECOND STREAM:$DATA", "SECOND STREAM");
-	}
+	ret &= check_stream(cli, __location__, mem_ctx, fname,
+			    "SECOND STREAM:$DATA", "SECOND STREAM");
 	ret &= check_stream(cli, __location__, mem_ctx, fname, "Second Stream:$DATA", "SECOND STREAM");
 	ret &= check_stream(cli, __location__, mem_ctx, fname, "Second Stream:", NULL);
 	ret &= check_stream(cli, __location__, mem_ctx, fname, "Second Stream:$FOO", NULL);
@@ -393,17 +399,15 @@ static bool test_stream_io(struct torture_context *tctx,
 
 	check_stream_list(cli, fname, 1, one);
 
-	if (!torture_setting_bool(tctx, "samba4", false)) {
-		io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
-		io.ntcreatex.in.fname = sname1;
-		status = smb_raw_open(cli->tree, mem_ctx, &io);
-		CHECK_STATUS(status, NT_STATUS_OK);
-		smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
-		io.ntcreatex.in.fname = sname2;
-		status = smb_raw_open(cli->tree, mem_ctx, &io);
-		CHECK_STATUS(status, NT_STATUS_OK);
-		smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
-	}
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.fname = sname1;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
+	io.ntcreatex.in.fname = sname2;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
 
 	printf("(%s) deleting file\n", __location__);
 	status = smbcli_unlink(cli->tree, fname);
@@ -774,10 +778,6 @@ static bool test_stream_names(struct torture_context *tctx,
 	smbcli_close(cli->tree, fnum2);
 	smbcli_close(cli->tree, fnum3);
 
-	if (torture_setting_bool(tctx, "samba4", true)) {
-		goto done;
-	}
-
 	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
 	finfo.generic.in.file.path = fname;
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
@@ -845,7 +845,7 @@ static bool test_stream_names(struct torture_context *tctx,
 		status = smb_raw_fileinfo(cli->tree, mem_ctx, &stinfo);
 		CHECK_STATUS(status, NT_STATUS_OK);
 		if (!torture_setting_bool(tctx, "samba3", false)) {
-			CHECK_STR(rpath, stinfo.name_info.out.fname.s);
+			CHECK_STR(stinfo.name_info.out.fname.s, rpath);
 		}
 
 		write_time = finfo.all_info.out.write_time;
@@ -936,9 +936,15 @@ static bool test_stream_names(struct torture_context *tctx,
 	sinfo.rename_information.in.root_fid = 0;
 	sinfo.rename_information.in.new_name = ":MStream Two:$DATA";
 	status = smb_raw_setfileinfo(cli->tree, &sinfo);
-	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+	if (torture_setting_bool(tctx, "samba4", false)) {
+		/* why should this rename be considered invalid?? */
+		CHECK_STATUS(status, NT_STATUS_OK);
+		ret &= check_stream_list(cli, fname, 4, four);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+		ret &= check_stream_list(cli, fname, 5, five2);
+	}
 
-	ret &= check_stream_list(cli, fname, 5, five2);
 
 	/* TODO: we need to test more rename combinations */
 

@@ -415,10 +415,8 @@ static bool test_stream_io(struct torture_context *tctx,
 	ret &= check_stream(tree, __location__, mem_ctx, fname,
 			    "Second Stream", "SECOND STREAM");
 
-	if (!torture_setting_bool(tctx, "samba4", false)) {
-		ret &= check_stream(tree, __location__, mem_ctx, fname,
-				    "SECOND STREAM:$DATA", "SECOND STREAM");
-	}
+	ret &= check_stream(tree, __location__, mem_ctx, fname,
+			    "SECOND STREAM:$DATA", "SECOND STREAM");
 	ret &= check_stream(tree, __location__, mem_ctx, fname,
 			    "Second Stream:$DATA", "SECOND STREAM");
 
@@ -482,11 +480,11 @@ static bool test_stream_io(struct torture_context *tctx,
 		status = smb2_create(tree, mem_ctx, &(io.smb2));
 		CHECK_STATUS(status, NT_STATUS_OK);
 		smb2_util_close(tree, io.ntcreatex.out.file.handle);
+		torture_comment(tctx, "(%s) deleting file\n", __location__);
+		status = smb2_util_unlink(tree, fname);
+		CHECK_STATUS(status, NT_STATUS_OK);
 	}
 
-	torture_comment(tctx, "(%s) deleting file\n", __location__);
-	status = smb2_util_unlink(tree, fname);
-	CHECK_STATUS(status, NT_STATUS_OK);
 
 done:
 	smb2_util_close(tree, h2);
@@ -610,7 +608,7 @@ static bool test_stream_delete(struct torture_context *tctx,
 	struct smb2_handle h, h1;
 	struct smb2_read r;
 
-	if (!torture_setting_bool(tctx, "samba4", true)) {
+	if (torture_setting_bool(tctx, "samba4", false)) {
 		torture_comment(tctx, "Skipping test as samba4 is enabled\n");
 		goto done;
 	}
@@ -1355,15 +1353,17 @@ static bool test_stream_rename2(struct torture_context *tctx,
 	status = smb2_setinfo_file(tree, &sinfo);
 	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
 
-	/*
-	 * Check SMB2 rename to the default stream using :<stream>.
-	 */
-	torture_comment(tctx, "(%s) Checking SMB2 rename to defaualt stream "
-			"using :<stream>\n", __location__);
-	sinfo.rename_information.in.file.handle = h1;
-	sinfo.rename_information.in.new_name = stream_name_default;
-	status = smb2_setinfo_file(tree, &sinfo);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	if (!torture_setting_bool(tctx, "samba4", false)) {
+		/*
+		 * Check SMB2 rename to the default stream using :<stream>.
+		 */
+		torture_comment(tctx, "(%s) Checking SMB2 rename to default stream "
+				"using :<stream>\n", __location__);
+		sinfo.rename_information.in.file.handle = h1;
+		sinfo.rename_information.in.new_name = stream_name_default;
+		status = smb2_setinfo_file(tree, &sinfo);
+		CHECK_STATUS(status, NT_STATUS_OK);
+	}
 
 	smb2_util_close(tree, h1);
 
