@@ -89,8 +89,10 @@ static NTSTATUS pvfs_setfileinfo_rename_stream(struct pvfs_state *pvfs,
 	NTSTATUS status;
 	struct odb_lock *lck = NULL;
 
+	/* strangely, this gives a sharing violation, not invalid
+	   parameter */
 	if (info->rename_information.in.new_name[0] != ':') {
-		return NT_STATUS_INVALID_PARAMETER;
+		return NT_STATUS_SHARING_VIOLATION;
 	}
 
 	status = pvfs_access_check_simple(pvfs, req, name, SEC_FILE_WRITE_ATTRIBUTE);
