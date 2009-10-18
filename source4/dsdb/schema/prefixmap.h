@@ -26,8 +26,8 @@
  * oid-prefix in prefixmap
  */
 struct dsdb_schema_prefixmap_oid {
-	uint32_t id;
-	DATA_BLOB *bin_oid; /* partial binary-oid prefix */
+	uint32_t  id;
+	DATA_BLOB bin_oid; /* partial binary-oid prefix */
 };
 
 /**
@@ -38,8 +38,6 @@ struct dsdb_schema_prefixmap {
 	struct dsdb_schema_prefixmap_oid *prefixes;
 };
 
-
-#include "dsdb/schema/proto.h"
 
 
 #endif /* _DSDB_PREFIXMAP_H */

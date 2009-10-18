@@ -22,6 +22,8 @@
 #ifndef _DSDB_SCHEMA_H
 #define _DSDB_SCHEMA_H
 
+#include "prefixmap.h"
+
 struct dsdb_attribute;
 struct dsdb_class;
 struct dsdb_schema;
