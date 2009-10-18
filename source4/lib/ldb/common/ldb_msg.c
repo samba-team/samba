@@ -897,15 +897,16 @@ int ldb_msg_check_string_attribute(const struct ldb_message *msg, const char *na
 	
 	el = ldb_msg_find_element(msg, name);
 	if (el == NULL) {
-		return LDB_SUCCESS;
+		return 0;
 	}
 
 	val.data = discard_const_p(uint8_t, value);
 	val.length = strlen(value);
 
 	if (ldb_msg_find_val(el, &val)) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return 1;
 	}
 
-	return LDB_SUCCESS;
+	return 0;
 }
+
