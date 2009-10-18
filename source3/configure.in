@@ -6197,12 +6197,12 @@ if test x"$enable_avahi" != x"no"; then
     fi
 
     save_LIBS="$LIBS"
-    AC_CHECK_LIB(avahi-client, avahi_client_new)
-    AC_CHECK_LIB(avahi-common, avahi_strerror)
+    AC_CHECK_LIB(avahi-client, avahi_client_new,[have_avahi_client_new=yes])
+    AC_CHECK_LIB(avahi-common, avahi_strerror,[have_avahi_strerror=yes])
     LIBS="$save_LIBS"
 
-    if test x"$ac_cv_lib_ext_avahi_client_avahi_client_new" != x"yes" -o \
-       x"$ac_cv_lib_ext_avahi_common_avahi_strerror" != x"yes" ; then
+    if test x"$have_avahi_client_new" != x"yes" -o \
+       x"$have_avahi_strerror" != x"yes" ; then
 	have_avahi_support=no
     fi
 
