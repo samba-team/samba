@@ -532,11 +532,11 @@ NTSTATUS pvfs_stream_truncate(struct pvfs_state *pvfs,
 
 	status = pvfs_xattr_save(pvfs, name->full_name, fd, XATTR_DOSSTREAM_PREFIX,
 				 name->stream_name, &blob);
-	data_blob_free(&blob);
 
 	if (NT_STATUS_IS_OK(status)) {
 		status = pvfs_stream_update_size(pvfs, name, fd, blob.length);
 	}
+	data_blob_free(&blob);
 
 	return status;
 }
