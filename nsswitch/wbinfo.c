@@ -688,36 +688,29 @@ static bool wbinfo_getdcname(const char *domain_name)
 /* Find a DC */
 static bool wbinfo_dsgetdcname(const char *domain_name, uint32_t flags)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct wbcDomainControllerInfoEx *dc_info;
+	char *str = NULL;
 
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	fstrcpy(request.data.dsgetdcname.domain_name, domain_name);
-	request.data.dsgetdcname.flags = flags;
-
-	request.flags |= DS_DIRECTORY_SERVICE_REQUIRED;
-
-	/* Send request */
-
-	if (winbindd_request_response(WINBINDD_DSGETDCNAME, &request,
-				      &response) != NSS_STATUS_SUCCESS) {
-		d_fprintf(stderr, "Could not find dc for %s\n", domain_name);
+	wbc_status = wbcLookupDomainControllerEx(domain_name, NULL, NULL,
+						 flags | DS_DIRECTORY_SERVICE_REQUIRED,
+						 &dc_info);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		printf("Could not find dc for %s\n", domain_name);
 		return false;
 	}
 
-	/* Display response */
+	wbcGuidToString(dc_info->domain_guid, &str);
 
-	d_printf("%s\n", response.data.dsgetdcname.dc_unc);
-	d_printf("%s\n", response.data.dsgetdcname.dc_address);
-	d_printf("%d\n", response.data.dsgetdcname.dc_address_type);
-	d_printf("%s\n", response.data.dsgetdcname.domain_guid);
-	d_printf("%s\n", response.data.dsgetdcname.domain_name);
-	d_printf("%s\n", response.data.dsgetdcname.forest_name);
-	d_printf("0x%08x\n", response.data.dsgetdcname.dc_flags);
-	d_printf("%s\n", response.data.dsgetdcname.dc_site_name);
-	d_printf("%s\n", response.data.dsgetdcname.client_site_name);
+	d_printf("%s\n", dc_info->dc_unc);
+	d_printf("%s\n", dc_info->dc_address);
+	d_printf("%d\n", dc_info->dc_address_type);
+	d_printf("%s\n", str);
+	d_printf("%s\n", dc_info->domain_name);
+	d_printf("%s\n", dc_info->forest_name);
+	d_printf("0x%08x\n", dc_info->dc_flags);
+	d_printf("%s\n", dc_info->dc_site_name);
+	d_printf("%s\n", dc_info->client_site_name);
 
 	return true;
 }
