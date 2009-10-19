@@ -165,10 +165,16 @@ static int smbacl4_GetFileOwner(struct connection_struct *conn,
 				const char *filename,
 				SMB_STRUCT_STAT *psbuf)
 {
+	int ret;
 	memset(psbuf, 0, sizeof(SMB_STRUCT_STAT));
 
 	/* Get the stat struct for the owner info. */
-	if (SMB_VFS_STAT(conn, filename, psbuf) != 0)
+	if (lp_posix_pathnames()) {
+		ret = SMB_VFS_LSTAT(conn, filename, psbuf);
+	} else {
+		ret = SMB_VFS_STAT(conn, filename, psbuf);
+	}
+	if (ret == -1)
 	{
 		DEBUG(8, ("SMB_VFS_STAT failed with error %s\n",
 			strerror(errno)));
