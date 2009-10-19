@@ -1006,7 +1006,7 @@ static PyObject *py_ldb_schema_format_value(PyLdbObject *self, PyObject *args)
 static PyObject *py_ldb_search(PyLdbObject *self, PyObject *args, PyObject *kwargs)
 {
 	PyObject *py_base = Py_None;
-	enum ldb_scope scope = LDB_SCOPE_DEFAULT;
+	int scope = LDB_SCOPE_DEFAULT;
 	char *expr = NULL;
 	PyObject *py_attrs = Py_None;
 	PyObject *py_controls = Py_None;
@@ -2370,10 +2370,12 @@ static PyObject *py_register_module(PyObject *module, PyObject *args)
 static PyObject *py_timestring(PyObject *module, PyObject *args)
 {
 	time_t t;
+	unsigned long val;
 	char *tresult;
 	PyObject *ret;
-	if (!PyArg_ParseTuple(args, "L", &t))
+	if (!PyArg_ParseTuple(args, "l", &val))
 		return NULL;
+	t = (time_t)val;
 	tresult = ldb_timestring(NULL, t);
 	ret = PyString_FromString(tresult);
 	talloc_free(tresult);
