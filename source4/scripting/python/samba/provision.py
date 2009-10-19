@@ -586,7 +586,7 @@ def setup_name_mappings(samdb, idmap, sid, domaindn, root_uid, nobody_uid,
     idmap.setup_name_mapping(sid + "-513", idmap.TYPE_GID, users_gid)
 
 def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info, 
-                           credentials, names,
+                           credentials, names, schema,
                            serverrole, ldap_backend=None, 
                            erase=False):
     """Setup the partitions for the SAM database. 
@@ -603,6 +603,7 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
     assert session_info is not None
 
     old_partitions = None
+    new_partitions = None
 
     # We use options=["modules:"] to stop the modules loading - we
     # just want to wipe and re-initialise the database, not start it up
@@ -616,7 +617,17 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
                 old_partitions = res[0]["partition"]
             except KeyError:
                 pass
-            
+
+        if old_partitions is not None:
+            new_partitions = [];
+            for old_partition in old_partitions:
+                new_partition = old_partition
+                if old_partition.endswith(".ldb"):
+                    p = old_partition.split(":")[0]
+                    dn = ldb.Dn(schema.ldb, p)
+                    new_partition = dn.get_casefold()
+                new_partitions.append(new_partition)
+
         # Wipes the database
         samdb.erase_except_schema_controlled()
     except LdbError:
@@ -691,10 +702,10 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
     try:
         message("Setting up sam.ldb partitions and settings")
         setup_add_ldif(samdb, setup_path("provision_partitions.ldif"), {
-                "SCHEMADN": ldb.Dn(samdb, names.schemadn).get_casefold(), 
+                "SCHEMADN": ldb.Dn(schema.ldb, names.schemadn).get_casefold(), 
                 "SCHEMADN_MOD2": ",objectguid",
-                "CONFIGDN": ldb.Dn(samdb, names.configdn).get_casefold(),
-                "DOMAINDN": ldb.Dn(samdb, names.domaindn).get_casefold(),
+                "CONFIGDN": ldb.Dn(schema.ldb, names.configdn).get_casefold(),
+                "DOMAINDN": ldb.Dn(schema.ldb, names.domaindn).get_casefold(),
                 "SCHEMADN_MOD": "schema_fsmo",
                 "CONFIGDN_MOD": "naming_fsmo",
                 "DOMAINDN_MOD": "pdc_fsmo",
@@ -706,10 +717,11 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
         })
 
         
-        if old_partitions is not None:
+        if new_partitions is not None:
             m = ldb.Message()
             m.dn = ldb.Dn(samdb, "@PARTITION")
-            m["partition"] = ldb.MessageElement(old_partitions, ldb.FLAG_MOD_ADD, "partition")
+            
+            m["partition"] = ldb.MessageElement(new_partitions, ldb.FLAG_MOD_ADD, "partition")
             samdb.modify(m)
 
         samdb.load_ldif_file_add(setup_path("provision_init.ldif"))
@@ -1003,7 +1015,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
     setup_samdb_partitions(path, setup_path, message=message, lp=lp,
                            credentials=credentials, session_info=session_info,
                            names=names, ldap_backend=ldap_backend,
-                           serverrole=serverrole)
+                           serverrole=serverrole, schema=schema)
 
     if (schema == None):
         schema = Schema(setup_path, domainsid, schemadn=names.schemadn, serverdn=names.serverdn,
