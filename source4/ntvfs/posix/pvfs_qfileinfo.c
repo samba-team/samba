@@ -323,6 +323,7 @@ static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs,
 		info->all_info2.out.access_mask    = 0; /* only set by qfileinfo */
 		info->all_info2.out.position       = 0; /* only set by qfileinfo */
 		info->all_info2.out.mode           = 0; /* only set by qfileinfo */
+		info->all_info2.out.alignment_requirement = 0;
 		/* windows wants the full path on disk for this
 		   result, but I really don't want to expose that on
 		   the wire, so I'll give the path with a share
