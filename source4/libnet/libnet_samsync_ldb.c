@@ -52,7 +52,7 @@ struct samsync_ldb_state {
 	const struct libnet_SamSync_state *samsync_state;
 
 	struct dom_sid *dom_sid[3];
-	struct ldb_context *sam_ldb, *remote_ldb;
+	struct ldb_context *sam_ldb, *remote_ldb, *pdb;
 	struct ldb_dn *base_dn[3];
 	struct samsync_ldb_secret *secrets;
 	struct samsync_ldb_trusted_domain *trusted_domains;
@@ -949,50 +949,39 @@ static NTSTATUS samsync_ldb_handle_account(TALLOC_CTX *mem_ctx,
 	struct netr_DELTA_ACCOUNT *account = delta->delta_union.account;
 
 	struct ldb_message *msg;
-	struct ldb_message **msgs;
-	struct ldb_dn *privilege_dn;
 	int ret;
-	const char *attrs[] = { NULL };
 	int i;
+	char *dnstr, *sidstr;
 
 	msg = ldb_msg_new(mem_ctx);
 	if (msg == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* search for the account, by sid, in the top basedn */
-	ret = gendb_search(state->sam_ldb, mem_ctx, state->base_dn[SAM_DATABASE_DOMAIN], &msgs, attrs,
-			   "(objectSid=%s)", ldap_encode_ndr_dom_sid(mem_ctx, sid)); 
+	sidstr = dom_sid_string(msg, sid);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(sidstr, msg);
 
-	if (ret == -1) {
-		*error_string = talloc_asprintf(mem_ctx, "gendb_search failed: %s", ldb_errstring(state->sam_ldb));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	} else if (ret == 0) {
-		NTSTATUS nt_status;
-		nt_status = samsync_ldb_add_foreignSecurityPrincipal(mem_ctx, state,
-								     sid,
-								     &privilege_dn,
-								     error_string);
-		privilege_dn = talloc_steal(msg, privilege_dn);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			return nt_status;
-		}
-	} else if (ret > 1) {
-		*error_string = talloc_asprintf(mem_ctx, "More than one account with SID: %s", 
-						dom_sid_string(mem_ctx, sid));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	} else {
-		privilege_dn = talloc_steal(msg, msgs[0]->dn);
-	}
+	dnstr = talloc_asprintf(msg, "sid=%s", sidstr);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(dnstr, msg);
 
-	msg->dn = privilege_dn;
+	msg->dn = ldb_dn_new(msg, state->pdb, dnstr);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(msg->dn, msg);
 
 	for (i=0; i< account->privilege_entries; i++) {
-		samdb_msg_add_string(state->sam_ldb, mem_ctx, msg, "privilege",
+		samdb_msg_add_string(state->pdb, mem_ctx, msg, "privilege",
 				     account->privilege_name[i].string);
 	}
 
-	ret = samdb_replace(state->sam_ldb, mem_ctx, msg);
+	ret = samdb_replace(state->pdb, mem_ctx, msg);
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		if (samdb_msg_add_dom_sid(state->pdb, msg, msg, "objectSid", sid) != LDB_SUCCESS) {
+			talloc_free(msg);
+			return NT_STATUS_NO_MEMORY;
+		}
+		samdb_msg_add_string(state->pdb, msg, msg, "comment", "added via samsync");
+		ret = ldb_add(state->pdb, msg);		
+	}
+
 	if (ret != 0) {
 		*error_string = talloc_asprintf(mem_ctx, "Failed to modify privilege record %s",
 						ldb_dn_get_linearized(msg->dn));
@@ -1230,6 +1219,16 @@ NTSTATUS libnet_samsync_ldb(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, str
 					       ctx->event_ctx,
 					       ctx->lp_ctx, 
 					       r->in.session_info);
+	if (!state->sam_ldb) {
+		return NT_STATUS_INTERNAL_DB_ERROR;
+	}
+
+	state->pdb             = privilege_connect(mem_ctx, 
+						   ctx->event_ctx,
+						   ctx->lp_ctx);
+	if (!state->pdb) {
+		return NT_STATUS_INTERNAL_DB_ERROR;
+	}
 
 	r2.out.error_string    = NULL;
 	r2.in.binding_string   = r->in.binding_string;
