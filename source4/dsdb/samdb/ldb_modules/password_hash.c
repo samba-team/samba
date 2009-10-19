@@ -1595,7 +1595,7 @@ static int get_domain_data_callback(struct ldb_request *req,
 
 		data->dns_domain = lp_dnsdomain(lp_ctx);
 		data->realm = lp_realm(lp_ctx);
-		data->netbios_domain = lp_workgroup(lp_ctx);
+		data->netbios_domain = lp_sam_name(lp_ctx);
 
 		ac->domain = data;
 		break;
