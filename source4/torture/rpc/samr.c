@@ -6455,7 +6455,7 @@ static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
 		}
 		ret &= test_CreateUser(p, tctx, &domain_handle, TEST_ACCOUNT_NAME, &user_handle, sid, which_ops, NULL, true);
 		if (!ret) {
-			torture_warning(tctx, "Testing PASSWORDS or PRIVILAGES on domain %s failed!\n", dom_sid_string(tctx, sid));
+			torture_warning(tctx, "Testing PASSWORDS or PRIVILEGES on domain %s failed!\n", dom_sid_string(tctx, sid));
 		}
 		break;
 	case TORTURE_SAMR_USER_ATTRIBUTES:
