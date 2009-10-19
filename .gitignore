@@ -192,8 +192,6 @@ source4/libcli/libcli_proto.h
 libcli/nbt/nbtname.h
 libcli/smb/smb_common_proto.h
 source4/libcli/nbt/nbt_proto.h
-source4/libcli/ndr_netlogon_proto.h
-source4/libcli/netlogon_proto.h
 source4/libcli/raw/raw_proto.h
 source4/libcli/resolve/lp_proto.h
 source4/libcli/resolve/proto.h
