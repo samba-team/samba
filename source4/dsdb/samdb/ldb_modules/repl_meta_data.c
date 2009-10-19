@@ -500,15 +500,6 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	ldb_msg_remove_attr(msg, "uSNChanged");
 	ldb_msg_remove_attr(msg, "replPropertyMetaData");
 
-	if (!ldb_msg_find_element(req->op.add.message, "instanceType")) {
-		ret = ldb_msg_add_fmt(msg, "instanceType", "%u", INSTANCE_TYPE_WRITE);
-		if (ret != LDB_SUCCESS) {
-			ldb_oom(ldb);
-			talloc_free(ac);
-			return ret;
-		}
-	}
-
 	/*
 	 * readd replicated attributes
 	 */
