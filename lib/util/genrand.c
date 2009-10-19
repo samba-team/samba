@@ -362,24 +362,6 @@ again:
 }
 
 /**
- * Define our own pow() function to avoid linking in libm
- */
-static double s_pow(double x, double y)
-{
-	int i;
-	double ret = x;
-
-	if (y == 0)
-		return 1;
-
-	for (i = 1; i < y; i++)
-		ret *= x;
-
-	return ret;
-}
-
-
-/**
  * Generate an array of unique text strings all of the same length.
  * The returned string will be allocated.
  * Returns NULL if the number of unique combinations cannot be created.
@@ -390,30 +372,30 @@ _PUBLIC_ char** generate_unique_strs(TALLOC_CTX *mem_ctx, size_t len,
 				     uint32_t num)
 {
 	const char *c_list = "abcdefghijklmnopqrstuvwxyz0123456789+_-#.,";
-	const int c_size = 42;
-	int i, j, rem;
+	const unsigned c_size = 42;
+	int i, j;
+	unsigned rem;
 	long long place;
 	char ** strs = NULL;
 
 	if (num == 0 || len == 0)
 		return NULL;
 
-	/* We'll never return more than UINT32_MAX strings. Since 42^6 is more
-	 * than UINT32_MAX, we only have to check if we've been asked to return
-	 * more than the total number of permutations for lengths less than 6.*/
-	if ((len < 6) && (num > s_pow(c_size, len)))
-		return NULL;
-
 	strs = talloc_array(mem_ctx, char *, num);
+	if (strs == NULL) return NULL;
 
 	for (i = 0; i < num; i++) {
-		char *retstr = (char *)talloc_zero_size(mem_ctx, len + 1);
-		rem = i;
-		for (j = len - 1; j >= 0; j--) {
-			place = s_pow(c_size, j);
-			retstr[j] = c_list[rem / place];
-			rem = rem % place;
+		char *retstr = (char *)talloc_size(strs, len + 1);
+		if (retstr == NULL) {
+			talloc_free(strs);
+			return NULL;
 		}
+		rem = i;
+		for (j = 0; j < len; j++) {
+			retstr[j] = c_list[rem % c_size];
+			rem = rem / c_size;
+		}
+		retstr[j] = 0;
 		strs[i] = retstr;
 	}
 
