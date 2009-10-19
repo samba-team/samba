@@ -885,11 +885,8 @@ my $failed = 0;
 # if there were any valgrind failures, show them
 foreach (<$prefix/valgrind.log*>) {
 	next unless (-s $_);
-	system("grep DWARF2.CFI.reader $_ > /dev/null");
-	if ($? >> 8 == 0) {
-	    print "VALGRIND FAILURE\n";
-	    $failed++;
-	    system("cat $_");
-	}
+	print "VALGRIND FAILURE\n";
+	$failed++;
+	system("cat $_");
 }
 exit 0;
