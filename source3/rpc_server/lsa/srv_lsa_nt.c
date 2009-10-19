@@ -41,7 +41,10 @@
 
 #define MAX_LOOKUP_SIDS 0x5000 /* 20480 */
 
-enum lsa_handle_type { LSA_HANDLE_POLICY_TYPE = 1, LSA_HANDLE_ACCOUNT_TYPE };
+enum lsa_handle_type {
+	LSA_HANDLE_POLICY_TYPE = 1,
+	LSA_HANDLE_ACCOUNT_TYPE = 2,
+	LSA_HANDLE_TRUST_TYPE = 3};
 
 struct lsa_info {
 	struct dom_sid sid;
