@@ -2271,7 +2271,7 @@ NTSTATUS _samr_OpenUser(pipes_struct *p,
 	se_map_generic(&des_access, &usr_generic_mapping);
 
 	/*
-	 * Get the sampass first as we need to check privilages
+	 * Get the sampass first as we need to check privileges
 	 * based on what kind of user object this is.
 	 * But don't reveal info too early if it didn't exist.
 	 */
@@ -2319,7 +2319,7 @@ NTSTATUS _samr_OpenUser(pipes_struct *p,
 		 * Cheat - allow GENERIC_RIGHTS_USER_WRITE if pipe user is
 		 * in DOMAIN_GROUP_RID_ADMINS. This is almost certainly not
 		 * what Windows does but is a hack for people who haven't
-		 * set up privilages on groups in Samba.
+		 * set up privileges on groups in Samba.
 		 */
 		if (acb_info & (ACB_SVRTRUST|ACB_DOMTRUST)) {
 			if (lp_enable_privileges() && nt_token_check_domain_rid(p->server_info->ptok,

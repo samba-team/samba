@@ -1440,7 +1440,7 @@ changes to samba. This change-log is now obsolete.
 	timezone
 	- attempted alignment fixups (to speed up memcpy)
 	- added some DCE/DFS support (thanks to Jim Doyle <doyle@oec.com>)
-	- added fix so that root doesn't have special privilages to open
+	- added fix so that root doesn't have special privileges to open
 	readonly files for writing (but admin users do). This fixes the MS
 	office install problem.
 	- fixed trans2 response bug in client
