@@ -109,7 +109,7 @@ static NTSTATUS pvfs_unlink_setup_retry(struct ntvfs_module_context *ntvfs,
 static NTSTATUS pvfs_unlink_file(struct pvfs_state *pvfs,
 				 struct pvfs_filename *name)
 {
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 
 	if (name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
