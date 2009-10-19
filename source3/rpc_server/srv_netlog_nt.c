@@ -126,6 +126,37 @@ static bool wb_change_trust_creds(const char *domain, WERROR *tc_status)
 	return true;
 }
 
+/*************************************************************************
+ *************************************************************************/
+
+static bool wb_check_trust_creds(const char *domain, WERROR *tc_status)
+{
+	wbcErr result;
+	struct wbcAuthErrorInfo *error = NULL;
+
+	result = wbcCheckTrustCredentials(domain, &error);
+	switch (result) {
+	case WBC_ERR_WINBIND_NOT_AVAILABLE:
+		return false;
+	case WBC_ERR_DOMAIN_NOT_FOUND:
+		*tc_status = WERR_NO_SUCH_DOMAIN;
+		return true;
+	case WBC_ERR_SUCCESS:
+		*tc_status = WERR_OK;
+		return true;
+	default:
+		break;
+	}
+
+	if (error && error->nt_status != 0) {
+		*tc_status = ntstatus_to_werror(NT_STATUS(error->nt_status));
+	} else {
+		*tc_status = WERR_TRUST_FAILURE;
+	}
+	wbcFreeMemory(error);
+	return true;
+}
+
 /****************************************************************
  _netr_LogonControl2Ex
 ****************************************************************/
@@ -164,7 +195,44 @@ WERROR _netr_LogonControl2Ex(pipes_struct *p,
 	tc_status = WERR_NO_SUCH_DOMAIN;
 
 	switch (r->in.function_code) {
+	case NETLOGON_CONTROL_QUERY:
+		tc_status = WERR_OK;
+		break;
+	case NETLOGON_CONTROL_REPLICATE:
+	case NETLOGON_CONTROL_SYNCHRONIZE:
+	case NETLOGON_CONTROL_PDC_REPLICATE:
+	case NETLOGON_CONTROL_BACKUP_CHANGE_LOG:
+	case NETLOGON_CONTROL_TRUNCATE_LOG:
+	case NETLOGON_CONTROL_BREAKPOINT:
+		return WERR_ACCESS_DENIED;
+	case NETLOGON_CONTROL_TRANSPORT_NOTIFY:
+	case NETLOGON_CONTROL_FORCE_DNS_REG:
+	case NETLOGON_CONTROL_QUERY_DNS_REG:
+		return WERR_NOT_SUPPORTED;
+	case NETLOGON_CONTROL_FIND_USER:
+		if (!r->in.data || !r->in.data->user) {
+			return WERR_NOT_SUPPORTED;
+		}
+		break;
+	case NETLOGON_CONTROL_SET_DBFLAG:
+		if (!r->in.data) {
+			return WERR_NOT_SUPPORTED;
+		}
+		break;
+	case NETLOGON_CONTROL_TC_VERIFY:
+		if (!r->in.data || !r->in.data->domain) {
+			return WERR_NOT_SUPPORTED;
+		}
+
+		if (!wb_check_trust_creds(r->in.data->domain, &tc_status)) {
+			return WERR_NOT_SUPPORTED;
+		}
+		break;
 	case NETLOGON_CONTROL_TC_QUERY:
+		if (!r->in.data || !r->in.data->domain) {
+			return WERR_NOT_SUPPORTED;
+		}
+
 		domain = r->in.data->domain;
 
 		if (!is_trusted_domain(domain)) {
@@ -186,6 +254,10 @@ WERROR _netr_LogonControl2Ex(pipes_struct *p,
 		break;
 
 	case NETLOGON_CONTROL_REDISCOVER:
+		if (!r->in.data || !r->in.data->domain) {
+			return WERR_NOT_SUPPORTED;
+		}
+
 		domain = r->in.data->domain;
 
 		if (!is_trusted_domain(domain)) {
