@@ -76,6 +76,12 @@ sub start_test($$)
 	Subunit::start_test($testname);
 }
 
+sub is_failure($)
+{
+	my ($result) = @_;
+	return $result eq "fail" or $result eq "failure" or $result eq "error";
+}
+
 sub end_test($$$$$)
 {
 	my ($self, $testname, $result, $unexpected, $reason) = @_;
@@ -84,12 +90,12 @@ sub end_test($$$$$)
 		$testname = $self->{prefix}.$testname;
 	}
 
-	if (($result eq "fail" or $result eq "failure") and not $unexpected) {
+	if (is_failure($result) and not $unexpected) {
 		$result = "xfail";
 		$self->{xfail_added}++;
 	}
 	my $xfail_reason = find_in_list($self->{expected_failures}, $testname);
-	if (defined($xfail_reason) and ($result eq "fail" or $result eq "failure")) {
+	if (defined($xfail_reason) and is_failure($result)) {
 		$result = "xfail";
 		$self->{xfail_added}++;
 		$reason .= $xfail_reason;
@@ -121,7 +127,7 @@ sub start_testsuite($;$)
 sub end_testsuite($$;$)
 {
 	my ($self, $name, $result, $reason) = @_;
-	if ($self->{xfail_added} and ($result eq "fail" or $result eq "failure")) {
+	if ($self->{xfail_added} and is_failure($result)) {
 		$result = "xfail";
 	}
 		
