@@ -120,6 +120,7 @@ static int partition_load_modules(struct ldb_context *ldb,
 			}
 		}
 	}
+	data->modules[i] = NULL;
 	return LDB_SUCCESS;
 }
 
@@ -182,10 +183,9 @@ static int new_partition_from_dn(struct ldb_context *ldb, struct partition_priva
 				 TALLOC_CTX *mem_ctx, 
 				 struct ldb_dn *dn, const char *casefold_dn,
 				 struct dsdb_partition **partition) {
-	const char *backend_name;
-	const char *full_backend;
+	const char *backend_url;
 	struct dsdb_control_current_partition *ctrl;
-	struct ldb_module *module;
+	struct ldb_module *backend_module;
 	const char **modules;
 	int ret;
 
@@ -203,11 +203,12 @@ static int new_partition_from_dn(struct ldb_context *ldb, struct partition_priva
 
 	/* See if an LDAP backend has been specified */
 	if (data->ldapBackend) {
-		backend_name = data->ldapBackend;
+		backend_url = data->ldapBackend;
 	} else {
 
 		/* the backend LDB is the DN (base64 encoded if not 'plain') followed by .ldb */
 		const char *p;
+		char *backend_path;
 		char *base64_dn = NULL;
 		for (p = casefold_dn; *p; p++) {
 			/* We have such a strict check because I don't want shell metacharacters in the file name, nor ../ */
@@ -219,33 +220,40 @@ static int new_partition_from_dn(struct ldb_context *ldb, struct partition_priva
 			casefold_dn = base64_dn = ldb_base64_encode(data, casefold_dn, strlen(casefold_dn));
 		}
 		
-		backend_name = talloc_asprintf(data, "%s.ldb", casefold_dn); 
+		backend_path = samdb_relative_path(ldb, 
+						   *partition, 
+						   casefold_dn);
 		if (base64_dn) {
 			talloc_free(base64_dn);
 		}
+		if (!backend_path) {
+			ldb_asprintf_errstring(ldb, 
+					       "partition_init: unable to determine an relative path for partition: %s", casefold_dn);
+			talloc_free(*partition);
+			return LDB_ERR_OPERATIONS_ERROR;		
+		}
+		backend_url = talloc_asprintf(*partition, "tdb://%s.ldb", 
+					      backend_path); 
+		talloc_free(backend_path);
+		if (!backend_url) {
+			ldb_oom(ldb);
+			talloc_free(*partition);
+			return LDB_ERR_OPERATIONS_ERROR;		
+		}
 	}
 
+	(*partition)->backend_url = backend_url;
 	ctrl->version = DSDB_CONTROL_CURRENT_PARTITION_VERSION;
 	ctrl->dn = talloc_steal(ctrl, dn);
 	
-	full_backend = samdb_relative_path(ldb, 
-					   *partition, 
-					   backend_name);
-	if (!full_backend) {
-		ldb_asprintf_errstring(ldb_module_get_ctx(module), 
-				       "partition_init: unable to determine an relative path for partition: %s", backend_name);
-		talloc_free(*partition);
-		return LDB_ERR_OPERATIONS_ERROR;		
-	}
-
-	ret = ldb_connect_backend(ldb, full_backend, NULL, &module);
+	ret = ldb_connect_backend(ldb, backend_url, NULL, &backend_module);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
 	modules = find_modules_for_dn(data, dn);
 
-	ret = ldb_load_modules_list(ldb, modules, module, &(*partition)->module);
+	ret = ldb_load_modules_list(ldb, modules, backend_module, &(*partition)->module);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, 
 				       "partition_init: "
@@ -342,6 +350,8 @@ int partition_reload_if_required(struct ldb_module *module,
 	uint64_t seq;
 	int ret, i;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct ldb_message *msg;
+	struct ldb_message_element *partition_attributes;
 	TALLOC_CTX *mem_ctx = talloc_new(data);
 	if (!data) {
 		/* Not initilised yet */
@@ -356,59 +366,75 @@ int partition_reload_if_required(struct ldb_module *module,
 		talloc_free(mem_ctx);
 		return ret;
 	}
-	if (seq != data->metadata_seq) {
-		struct ldb_message *msg;
-		struct ldb_message_element *partition_attributes;
-		ret = partition_reload_metadata(module, data, mem_ctx, &msg);
+	if (seq == data->metadata_seq) {
+		talloc_free(mem_ctx);
+		return LDB_SUCCESS;
+	}
+
+	ret = partition_reload_metadata(module, data, mem_ctx, &msg);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(mem_ctx);
+		return ret;
+	}
+
+	data->metadata_seq = seq;
+
+	partition_attributes = ldb_msg_find_element(msg, "partition");
+
+	for (i=0; partition_attributes && i < partition_attributes->num_values; i++) {
+		int j;
+		bool new_partition = true;
+		struct ldb_dn *dn;
+		struct dsdb_partition *partition;
+		for (j=0; data->partitions && data->partitions[j]; j++) {
+			DATA_BLOB casefold = data_blob_string_const(ldb_dn_get_casefold(data->partitions[j]->ctrl->dn));
+			if (data_blob_cmp(&casefold, &partition_attributes->values[i]) == 0) {
+				new_partition = false;
+				break;
+			}
+		}
+		if (new_partition == false) {
+			continue;
+		}
+			
+		dn = ldb_dn_from_ldb_val(mem_ctx, ldb, &partition_attributes->values[i]);
+		if (!dn) {
+			ldb_asprintf_errstring(ldb, 
+					       "partition_init: invalid DN in partition record: %s", (const char *)partition_attributes->values[i].data);
+			talloc_free(mem_ctx);
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
+
+		if (ldb_dn_compare_base(ldb_get_default_basedn(ldb), dn) != 0) {
+			ldb_asprintf_errstring(ldb, 
+					       "partition_init: invalid DN in partition record: %s is not under %s.  Perhaps an old " DSDB_PARTITION_DN " format?", 
+					       (const char *)partition_attributes->values[i].data, 
+					       ldb_dn_get_linearized(ldb_get_default_basedn(ldb)));
+			DEBUG(0, ("Unable to load partitions, invalid DN %s found, perhaps you need to reprovision?  See partition-upgrade.txt for instructions\n", 
+				  (const char *)partition_attributes->values[i].data));
+			talloc_free(mem_ctx);
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
+
+		/* We call ldb_dn_get_linearized() because the DN in
+		 * partition_attributes is already casefolded
+		 * correctly.  We don't want to mess that up as the
+		 * schema isn't loaded yet */
+		ret = new_partition_from_dn(ldb, data, data->partitions, dn, 
+					    ldb_dn_get_linearized(dn),
+					    &partition);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(mem_ctx);
 			return ret;
 		}
 
-		data->metadata_seq = seq;
-
-		partition_attributes = ldb_msg_find_element(msg, "partition");
-
-		for (i=0; partition_attributes && i < partition_attributes->num_values; i++) {
-			bool new_partition = true;
-			struct dsdb_partition *partition;
-			struct ldb_dn *dn = ldb_dn_from_ldb_val(mem_ctx, ldb, &partition_attributes->values[i]);
-			if (!dn) {
-				ldb_asprintf_errstring(ldb, 
-						       "partition_init: invalid DN in partition record: %s", (const char *)partition_attributes->values[i].data);
-				talloc_free(mem_ctx);
-				return LDB_ERR_CONSTRAINT_VIOLATION;
-			}
-			
-			for (i=0; data->partitions && data->partitions[i]; i++) {
-				if (ldb_dn_compare(data->partitions[i]->ctrl->dn, dn) == 0) {
-					new_partition = false;
-					break;
-				}
-			}
-			if (new_partition == false) {
-				continue;
-			}
-			
-			/* We call ldb_dn_get_linearized() because the DN in
-			 * partition_attributes is already casefolded
-			 * correctly.  We don't want to mess that up as the
-			 * schema isn't loaded yet */
-			ret = new_partition_from_dn(ldb, data, data->partitions, dn, 
-						    ldb_dn_get_linearized(dn),
-						    &partition);
-			if (ret != LDB_SUCCESS) {
-				talloc_free(mem_ctx);
-				return ret;
-			}
-
-			ret = add_partition_to_data(ldb, data, partition);
-			if (ret != LDB_SUCCESS) {
-				talloc_free(mem_ctx);
-				return ret;
-			}
+		ret = add_partition_to_data(ldb, data, partition);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(mem_ctx);
+			return ret;
 		}
 	}
+
 	talloc_free(mem_ctx);
 	return LDB_SUCCESS;
 }
@@ -434,8 +460,9 @@ static int new_partition_set_replicated_metadata(struct ldb_context *ldb,
 		if (ret != LDB_SUCCESS) {
 			ldb_asprintf_errstring(ldb,
 					       "Failed to search for %s from " DSDB_PARTITION_DN 
-					       " replicateEntries for new partition at %s: %s", 
+					       " replicateEntries for new partition at %s on %s: %s", 
 					       ldb_dn_get_linearized(data->replicate[i]), 
+					       partition->backend_url,
 					       ldb_dn_get_linearized(partition->ctrl->dn), 
 					       ldb_errstring(ldb));
 			return ret;
@@ -451,7 +478,7 @@ static int new_partition_set_replicated_metadata(struct ldb_context *ldb,
 			return ret;
 		}
 		/* do request */
-		ret = ldb_next_request(partition->module, add_req);
+		ret = partition_request(partition->module, add_req);
 		/* wait */
 		if (ret == LDB_SUCCESS) {
 			ret = ldb_wait(add_req->handle, LDB_WAIT_ALL);
@@ -478,7 +505,7 @@ static int new_partition_set_replicated_metadata(struct ldb_context *ldb,
 				return ret;
 			}
 			/* do request */
-			ret = ldb_next_request(partition->module, del_req);
+			ret = partition_request(partition->module, del_req);
 			
 			/* wait */
 			if (ret == LDB_SUCCESS) {
@@ -487,8 +514,9 @@ static int new_partition_set_replicated_metadata(struct ldb_context *ldb,
 			if (ret != LDB_SUCCESS) {
 				ldb_asprintf_errstring(ldb,
 						       "Failed to delete  (for re-add) %s from " DSDB_PARTITION_DN 
-						       " replicateEntries in new partition at %s: %s", 
+						       " replicateEntries in new partition at %s on %s: %s", 
 						       ldb_dn_get_linearized(data->replicate[i]), 
+						       partition->backend_url,
 						       ldb_dn_get_linearized(partition->ctrl->dn), 
 						       ldb_errstring(ldb));
 				return ret;
@@ -504,7 +532,7 @@ static int new_partition_set_replicated_metadata(struct ldb_context *ldb,
 			}
 			
 			/* do the add again */
-			ret = ldb_next_request(partition->module, add_req);
+			ret = partition_request(partition->module, add_req);
 			
 			/* wait */
 			if (ret == LDB_SUCCESS) {
@@ -514,8 +542,9 @@ static int new_partition_set_replicated_metadata(struct ldb_context *ldb,
 			if (ret != LDB_SUCCESS) {
 				ldb_asprintf_errstring(ldb,
 						       "Failed to add (after delete) %s from " DSDB_PARTITION_DN 
-						       " replicateEntries to new partition at %s: %s", 
+						       " replicateEntries to new partition at %s on %s: %s", 
 						       ldb_dn_get_linearized(data->replicate[i]), 
+						       partition->backend_url,
 						       ldb_dn_get_linearized(partition->ctrl->dn), 
 						       ldb_errstring(ldb));
 				return ret;
@@ -526,8 +555,9 @@ static int new_partition_set_replicated_metadata(struct ldb_context *ldb,
 		{
 			ldb_asprintf_errstring(ldb,
 					       "Failed to add %s from " DSDB_PARTITION_DN 
-					       " replicateEntries to new partition at %s: %s", 
+					       " replicateEntries to new partition at %s on %s: %s", 
 					       ldb_dn_get_linearized(data->replicate[i]), 
+					       partition->backend_url,
 					       ldb_dn_get_linearized(partition->ctrl->dn), 
 					       ldb_errstring(ldb));
 			return ret;
@@ -601,7 +631,7 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 		
 		last_req = mod_req;
 
-		ret = ldb_next_request(module, mod_req);
+		ret = partition_request(module, mod_req);
 		if (ret == LDB_SUCCESS) {
 			ret = ldb_wait(mod_req->handle, LDB_WAIT_ALL);
 		}

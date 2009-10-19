@@ -29,6 +29,7 @@
 struct dsdb_partition {
 	struct ldb_module *module;
 	struct dsdb_control_current_partition *ctrl;
+	const char *backend_url;
 };
 
 struct partition_module {
