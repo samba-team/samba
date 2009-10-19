@@ -38,7 +38,7 @@
 <para>The default guest account was <literal>nobody</literal>, uid -1, which produced log messages on one of our machines saying "your server is being unfriendly," so we created a specific Samba guest account for browsing and printing:</para>
 
 
-<programlisting># superuser account - admin privilages to shares, with no
+<programlisting># superuser account - admin privileges to shares, with no
 	# restrictions
 	# WARNING - use this with care: files can be modified,
 	# regardless of file permissions

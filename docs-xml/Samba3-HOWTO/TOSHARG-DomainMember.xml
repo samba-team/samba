@@ -484,7 +484,7 @@ with the version of Windows.
 	A Samba administrator account (i.e., a Samba account that has <literal>root</literal> privileges on the
 	Samba server) must be entered here; the operation will fail if an ordinary user account is given.
 	The necessary privilege can be assured by creating a Samba SAM account for <literal>root</literal> or
-	by granting the <literal>SeMachineAccountPrivilege</literal> privilage to the user account.
+	by granting the <literal>SeMachineAccountPrivilege</literal> privilege to the user account.
 	</para>
 
 	<para>

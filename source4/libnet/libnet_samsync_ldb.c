@@ -1039,7 +1039,7 @@ static NTSTATUS samsync_ldb_delete_account(TALLOC_CTX *mem_ctx,
 	}
 
 	samdb_msg_add_delete(state->sam_ldb, mem_ctx, msg,  
-			     "privilage"); 
+			     "privilege");
 
 	ret = samdb_replace(state->sam_ldb, mem_ctx, msg);
 	if (ret != 0) {

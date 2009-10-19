@@ -52,7 +52,7 @@ import "misc.idl", "security.idl", "nbt.idl";
 		[out,switch_is(level)] nbtd_info info
 		);
 
-	/* Send a GetDCName from the privilaged port (owned by nbtd),
+	/* Send a GetDCName from the privileged port (owned by nbtd),
 	 * and await a reply */
 
 	void nbtd_getdcname(

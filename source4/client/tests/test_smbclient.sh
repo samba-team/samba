@@ -112,7 +112,7 @@ runcmd "Removing file" 'rm tmpfilex'|| failed=`expr $failed + 1`
 
 runcmd "Lookup name" "lookup $DOMAIN\\$USERNAME" || failed=`expr $failed + 1`
 
-#Fails unless there are privilages
+#Fails unless there are privileges
 #runcmd "Lookup privs of name" "privileges $DOMAIN\\$USERNAME" || failed=`expr $failed + 1`
 
 # do some simple operations using old protocol versions
