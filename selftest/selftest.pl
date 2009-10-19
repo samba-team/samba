@@ -835,7 +835,7 @@ if ($opt_testenv) {
 
 	my $envvarstr = exported_envvars_str($testenv_vars);
 
-	my $term = ($ENV{TERM} or "xterm");
+	my $term = ($ENV{TERMINAL} or "xterm");
 	system("$term -e 'echo -e \"
 Welcome to the Samba4 Test environment '$testenv_name'
 
