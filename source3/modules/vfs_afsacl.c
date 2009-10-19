@@ -660,9 +660,15 @@ static size_t afs_to_nt_acl(struct afs_acl *afs_acl,
 			    struct security_descriptor **ppdesc)
 {
 	SMB_STRUCT_STAT sbuf;
+	int ret;
 
 	/* Get the stat struct for the owner info. */
-	if(SMB_VFS_STAT(conn, name, &sbuf) != 0) {
+	if (lp_posix_pathnames()) {
+		ret = SMB_VFS_LSTAT(conn, name, &sbuf);
+	} else {
+		ret = SMB_VFS_STAT(conn, name, &sbuf);
+	}
+	if (ret == -1) {
 		return 0;
 	}
 

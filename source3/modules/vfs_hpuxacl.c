@@ -248,7 +248,13 @@ int hpuxacl_sys_acl_set_file(vfs_handle_struct *handle,
 	 * that has _not_ been specified in "type" from the file first 
 	 * and concatenate it with the acl provided.
 	 */
-	if (SMB_VFS_STAT(handle->conn, name, &s) != 0) {
+	if (lp_posix_pathnames()) {
+		ret = SMB_VFS_LSTAT(handle->conn, name, &s);
+	} else {
+		ret = SMB_VFS_STAT(handle->conn, name, &s);
+	}
+
+	if (ret != 0) {
 		DEBUG(10, ("Error in stat call: %s\n", strerror(errno)));
 		goto done;
 	}

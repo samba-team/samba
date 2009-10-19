@@ -212,10 +212,17 @@ static ssize_t xattr_tdb_getxattr(struct vfs_handle_struct *handle,
 	SMB_STRUCT_STAT sbuf;
 	struct file_id id;
 	struct db_context *db;
+	int ret;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
 
-	if (SMB_VFS_STAT(handle->conn, path, &sbuf) == -1) {
+	if (lp_posix_pathnames()) {
+		ret = SMB_VFS_LSTAT(handle->conn, path, &sbuf);
+	} else {
+		ret = SMB_VFS_STAT(handle->conn, path, &sbuf);
+	}
+
+	if (ret == -1) {
 		return -1;
 	}
 
@@ -334,10 +341,17 @@ static int xattr_tdb_setxattr(struct vfs_handle_struct *handle,
 	SMB_STRUCT_STAT sbuf;
 	struct file_id id;
 	struct db_context *db;
+	int ret;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
 
-	if (SMB_VFS_STAT(handle->conn, path, &sbuf) == -1) {
+	if (lp_posix_pathnames()) {
+		ret = SMB_VFS_LSTAT(handle->conn, path, &sbuf);
+	} else {
+		ret = SMB_VFS_STAT(handle->conn, path, &sbuf);
+	}
+
+	if (ret == -1) {
 		return -1;
 	}
 
@@ -439,10 +453,17 @@ static ssize_t xattr_tdb_listxattr(struct vfs_handle_struct *handle,
 	SMB_STRUCT_STAT sbuf;
 	struct file_id id;
 	struct db_context *db;
+	int ret;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
 
-	if (SMB_VFS_STAT(handle->conn, path, &sbuf) == -1) {
+	if (lp_posix_pathnames()) {
+		ret = SMB_VFS_LSTAT(handle->conn, path, &sbuf);
+	} else {
+		ret = SMB_VFS_STAT(handle->conn, path, &sbuf);
+	}
+
+	if (ret == -1) {
 		return -1;
 	}
 
@@ -539,10 +560,17 @@ static int xattr_tdb_removexattr(struct vfs_handle_struct *handle,
 	SMB_STRUCT_STAT sbuf;
 	struct file_id id;
 	struct db_context *db;
+	int ret;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
 
-	if (SMB_VFS_STAT(handle->conn, path, &sbuf) == -1) {
+	if (lp_posix_pathnames()) {
+		ret = SMB_VFS_LSTAT(handle->conn, path, &sbuf);
+	} else {
+		ret = SMB_VFS_STAT(handle->conn, path, &sbuf);
+	}
+
+	if (ret == -1) {
 		return -1;
 	}
 
@@ -621,7 +649,13 @@ static int xattr_tdb_unlink(vfs_handle_struct *handle, const char *path)
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
 
-	if (SMB_VFS_STAT(handle->conn, path, &sbuf) == -1) {
+	if (lp_posix_pathnames()) {
+		ret = SMB_VFS_LSTAT(handle->conn, path, &sbuf);
+	} else {
+		ret = SMB_VFS_STAT(handle->conn, path, &sbuf);
+	}
+
+	if (ret == -1) {
 		return -1;
 	}
 
@@ -660,7 +694,13 @@ static int xattr_tdb_rmdir(vfs_handle_struct *handle, const char *path)
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
 
-	if (SMB_VFS_STAT(handle->conn, path, &sbuf) == -1) {
+	if (lp_posix_pathnames()) {
+		ret = SMB_VFS_LSTAT(handle->conn, path, &sbuf);
+	} else {
+		ret = SMB_VFS_STAT(handle->conn, path, &sbuf);
+	}
+
+	if (ret == -1) {
 		return -1;
 	}
 
