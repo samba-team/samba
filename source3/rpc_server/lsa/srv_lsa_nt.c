@@ -1565,6 +1565,36 @@ NTSTATUS _lsa_OpenTrustedDomain(struct pipes_struct *p,
 }
 
 /***************************************************************************
+ _lsa_OpenTrustedDomainByName
+ ***************************************************************************/
+
+NTSTATUS _lsa_OpenTrustedDomainByName(struct pipes_struct *p,
+				      struct lsa_OpenTrustedDomainByName *r)
+{
+	struct lsa_info *handle = NULL;
+	struct trustdom_info *info;
+	NTSTATUS status;
+
+	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle)) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (handle->type != LSA_HANDLE_POLICY_TYPE) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	status = lsa_lookup_trusted_domain_by_name(p->mem_ctx,
+						   r->in.name.string,
+						   &info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return _lsa_OpenTrustedDomain_base(p, r->in.access_mask, info,
+					   r->out.trustdom_handle);
+}
+
+/***************************************************************************
  _lsa_CreateTrustedDomainEx2
  ***************************************************************************/
 
@@ -3188,13 +3218,6 @@ NTSTATUS _lsa_QueryDomainInformationPolicy(struct pipes_struct *p,
 
 NTSTATUS _lsa_SetDomainInformationPolicy(struct pipes_struct *p,
 					 struct lsa_SetDomainInformationPolicy *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_OpenTrustedDomainByName(struct pipes_struct *p,
-				      struct lsa_OpenTrustedDomainByName *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
