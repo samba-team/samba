@@ -106,7 +106,7 @@ static NTSTATUS pvfs_open_setup_eas_acl(struct pvfs_state *pvfs,
 					union smb_open *io,
 					struct security_descriptor *sd)
 {
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 
 	/* setup any EAs that were asked for */
 	if (io->ntcreatex.in.ea_list) {
