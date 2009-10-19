@@ -1123,7 +1123,7 @@ static bool samsync_handle_account(TALLOC_CTX *mem_ctx, struct samsync_state *sa
 	}
 	for (j=0;j<account->privilege_entries; j++) {
 		if (!found_priv_in_lsa[j]) {
-			printf("Privilage %s on account %s not found in LSA\n", account->privilege_name[j].string, 
+			printf("Privilege %s on account %s not found in LSA\n", account->privilege_name[j].string,
 			       dom_sid_string(mem_ctx, dom_sid));
 			ret = false;
 		}

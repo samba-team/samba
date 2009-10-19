@@ -465,7 +465,7 @@ void winbindd_netbios_name(struct winbindd_cli_state *state)
 	request_ok(state);
 }
 
-/* Where can I find the privilaged pipe? */
+/* Where can I find the privileged pipe? */
 
 void winbindd_priv_pipe_dir(struct winbindd_cli_state *state)
 {
