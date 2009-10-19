@@ -377,6 +377,10 @@ esac
 
 DYNEXP=
 AC_SUBST(DYNEXP)
+LDSHFLAGS_Z_DEFS=
+AC_SUBST(LDSHFLAGS_Z_DEFS)
+LDSHFLAGS_Z_NODEFS=
+AC_SUBST(LDSHFLAGS_Z_NODEFS)
 
 dnl Add modules that have to be built by default here
 dnl These have to be built static:
@@ -1557,10 +1561,9 @@ DSO_EXPORTS=""
 				AC_DEFINE(LINUX,1,[Whether the host os is linux]) ;;
 			esac
 			BLDSHARED="true"
+			LDSHFLAGS="-shared -Wl,-Bsymbolic"
 			if test "${ac_cv_gnu_ld_no_default_allow_shlib_undefined}" = "yes"; then
-				LDSHFLAGS="-shared -Wl,-Bsymbolic -Wl,--allow-shlib-undefined"
-			else
-				LDSHFLAGS="-shared -Wl,-Bsymbolic"
+				LDSHFLAGS_Z_NODEFS="-Wl,--allow-shlib-undefined"
 			fi
 			DYNEXP="-Wl,--export-dynamic"
 			PICFLAG="-fPIC"
@@ -1772,6 +1775,27 @@ if test x"${ac_cv_prog_gnu_ld}" = x"yes"; then
 	LDFLAGS="$LD_AS_NEEDED_FLAG $saved_ldflags"
 fi
 
+# for historical reasons almost all linkers don't complain about unresolved
+# symbols in shared libs. Except for the internal samba modules we want to get
+# errors when we produce a shared lib with unresolved symbols. On some
+# platforms unresolved symbols might be intended, so we might have to add
+# platform specific exceptions here.
+
+for flags in "-Wl,-z,defs" "-error_unresolved" "-Wl,-error_unresolved" ; do
+	saved_ldflags="$LDFLAGS"
+	AC_MSG_CHECKING([if $flags works])
+	LDFLAGS="$flags $saved_ldflags"
+	AC_TRY_LINK([],[],
+	[AC_MSG_RESULT([yes])
+	LDSHFLAGS_Z_DEFS=$flags
+	ldshflags_z_defs_found=yes],
+	AC_MSG_RESULT([no]))
+	LDFLAGS=$saved_ldflags
+	test x"$ldshflags_z_defs_found" = xyes && break
+done
+
+AC_MSG_CHECKING([LDSHFLAGS_Z_DEFS])
+AC_MSG_RESULT([$LDSHFLAGS_Z_DEFS])
 AC_MSG_CHECKING([LDFLAGS])
 AC_MSG_RESULT([$LDFLAGS])
 AC_MSG_CHECKING([DYNEXP])
