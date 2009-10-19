@@ -36,8 +36,11 @@ static void tdb_log(struct tdb_context *tdb, enum tdb_debug_level level, const c
 static void tdb_log(struct tdb_context *tdb, enum tdb_debug_level level, const char *format, ...)
 {
 	va_list ap;
-    
-	error_count++;
+
+	/* trace level messages do not indicate an error */
+	if (level != TDB_DEBUG_TRACE) {
+		error_count++;
+	}
 
 	va_start(ap, format);
 	vfprintf(stdout, format, ap);
