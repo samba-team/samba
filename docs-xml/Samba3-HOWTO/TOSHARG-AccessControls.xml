@@ -489,13 +489,13 @@ drwsrwsrwx    2 maryo   gnomes       48 2003-05-12 22:29 muchado08
 
 	<para>
 <indexterm><primary>extended attributes</primary></indexterm>
-<indexterm><primary>immutible</primary></indexterm>
+<indexterm><primary>immutable</primary></indexterm>
 <indexterm><primary>chattr</primary></indexterm>
 <indexterm><primary>CAP_LINUX_IMMUTABLE</primary></indexterm>
 	The specific semantics of the extended attributes are not consistent across UNIX and UNIX-like systems such as Linux.
 	For example, it is possible on some implementations of the extended attributes to set a flag that prevents the directory
-	or file from being deleted. The extended attribute that may achieve this is called the <constant>immutible</constant> bit.
-	Unfortunately, the implementation of the immutible flag is NOT consistent with published documentation. For example, the
+	or file from being deleted. The extended attribute that may achieve this is called the <constant>immutable</constant> bit.
+	Unfortunately, the implementation of the immutable flag is NOT consistent with published documentation. For example, the
 	man page for the <command>chattr</command> on SUSE Linux 9.2 says:
 <screen>
 A file with the i attribute cannot be modified: it cannot be deleted
@@ -503,7 +503,7 @@ or renamed, no link can be created to this file and no data can be
 written to the file. Only the superuser or a process possessing the
 CAP_LINUX_IMMUTABLE capability can set or clear this attribute.
 </screen>
-	A simple test can be done to check if the immutible flag is supported on files in the file system of the Samba host
+	A simple test can be done to check if the immutable flag is supported on files in the file system of the Samba host
 	server.
 	</para>
 
@@ -526,12 +526,12 @@ CAP_LINUX_IMMUTABLE capability can set or clear this attribute.
 <screen>
 mystic:/home/hannibal > rm filename
 </screen>
-	It will not be possible to delete the file if the immutible flag is correctly honored.
+	It will not be possible to delete the file if the immutable flag is correctly honored.
 	</para></step>
 	</procedure>
 
 	<para>
-	On operating systems and file system types that support the immutible bit, it is possible to create directories
+	On operating systems and file system types that support the immutable bit, it is possible to create directories
 	that cannot be deleted. Check the man page on your particular host system to determine whether or not
 	immutable directories are writable. If they are not, then the entire directory and its contents will effectively
 	be protected from writing (file creation also) and deletion.
@@ -873,7 +873,7 @@ mystic:/home/hannibal > rm filename
 <indexterm><primary>MMC</primary></indexterm>
 <indexterm><primary>Computer Management</primary></indexterm>
 	At this time Samba does not provide a tool for configuring access control settings on the share
-	itself the only way to create those settings is to use either the NT4 Server Manager or the Windows 200x
+	itself.  The only way to create those settings is to use either the NT4 Server Manager or the Windows 200x
 	Microsoft Management Console (MMC) for Computer Management. There are currently no plans to provide
 	this capability in the Samba command-line tool set.
 	</para>
