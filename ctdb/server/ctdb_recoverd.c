@@ -2520,6 +2520,9 @@ static int check_recovery_lock(struct ctdb_context *ctdb)
 	}
 	close(state->fd[1]);
 	state->fd[1] = -1;
+	set_close_on_exec(state->fd[0]);
+
+	DEBUG(DEBUG_NOTICE, (__location__ " Created PIPE FD:%d for check_recovery_lock\n", state->fd[0]));
 
 	talloc_set_destructor(state, check_reclock_destructor);
 
@@ -3310,6 +3313,8 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 		DEBUG(DEBUG_CRIT, (__location__ "ERROR: failed to switch recovery daemon into client mode. shutting down.\n"));
 		exit(1);
 	}
+
+	DEBUG(DEBUG_NOTICE, (__location__ " Created PIPE FD:%d to recovery daemon\n", fd[0]));
 
 	event_add_fd(ctdb->ev, ctdb, fd[0], EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
 		     ctdb_recoverd_parent, &fd[0]);	

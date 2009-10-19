@@ -250,6 +250,8 @@ int ctdb_set_child_logging(struct ctdb_context *ctdb)
 	set_close_on_exec(p[0]);
 	ctdb->log->pfd = p[0];
 
+	DEBUG(DEBUG_NOTICE, (__location__ " Created PIPE FD:%d for logging\n", p[0]));
+
 	close(1);
 	close(2);
 	if (p[1] != 1) {

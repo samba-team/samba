@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.96
+Version: 1.0.97
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -132,6 +132,12 @@ fi
 %{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
+* Thu Oct 14 2009 : Version 1.0.97
+ - From martins : update onnode.
+   Update onnode to allow specifying an alternative nodes file from
+   the command line and also to be able to specify hostnames on the
+   list of targets :
+   onnode host1,host2,...   
 * Tue Oct 13 2009 : Version 1.0.96
  - Add more debugging output when eventscripts have trouble. Print a 
    "pstree -p" to the log when scripts have hung.

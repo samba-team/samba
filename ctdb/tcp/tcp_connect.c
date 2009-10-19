@@ -158,6 +158,8 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
 	set_nonblocking(tnode->fd);
 	set_close_on_exec(tnode->fd);
 
+	DEBUG(DEBUG_NOTICE, (__location__ " Created TCP SOCKET FD:%d\n", tnode->fd));
+
 	/* Bind our side of the socketpair to the same address we use to listen
 	 * on incoming CTDB traffic.
 	 * We must specify this address to make sure that the address we expose to
@@ -166,6 +168,8 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
 	 */
 	ZERO_STRUCT(sock_in);
 	if (ctdb_tcp_get_address(ctdb, ctdb->address.address, &sock_in) != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Failed to find our address. Failing bind.\n"));
+		close(tnode->fd);
 		return;
 	}
 
@@ -186,6 +190,7 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
 	default:
 		DEBUG(DEBUG_ERR, (__location__ " unknown family %u\n",
 			sock_in.sa.sa_family));
+		close(tnode->fd);
 		return;
 	}
 #ifdef HAVE_SOCK_SIN_LEN
@@ -252,6 +257,8 @@ static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde,
 
 	set_nonblocking(in->fd);
 	set_close_on_exec(in->fd);
+
+	DEBUG(DEBUG_NOTICE, (__location__ " Created SOCKET FD:%d to incoming ctdb connection\n", fd));
 
         setsockopt(in->fd,SOL_SOCKET,SO_KEEPALIVE,(char *)&one,sizeof(one));
 

@@ -540,4 +540,10 @@ ctdb_counter_limit () {
 	. $CTDB_BASE/rc.local
 }
 
+[ -d $CTDB_BASE/rc.local.d ] && {
+	for i in $CTDB_BASE/rc.local.d/* ; do
+		[ -x "$i" ] && . "$i"
+	done
+}
+
 

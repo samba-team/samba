@@ -146,6 +146,10 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 	}
 
 	close(result->fd[1]);
+	set_close_on_exec(result->fd[0]);
+
+	DEBUG(DEBUG_NOTICE, (__location__ " Created PIPE FD:%d to child lockwait process\n", result->fd[0]));
+
 	talloc_set_destructor(result, lockwait_destructor);
 
 	result->fde = event_add_fd(ctdb_db->ctdb->ev, result, result->fd[0],

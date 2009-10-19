@@ -22,8 +22,9 @@ case $cmd in
 
       monitor)
 	ctdb_counter_incr "$RECLOCKCOUNT"
-	ctdb_counter_limit "$RECLOCKCOUNT" 20 && {
-		echo "Reclock file can not be accessed. Shutting down."
+	ctdb_counter_limit "$RECLOCKCOUNT" 200 && {
+		echo "Reclock file \"$RECLOCKFILE\" can not be accessed. Shutting down."
+		df
 		sleep 1
 		ctdb shutdown
 	}
@@ -46,7 +47,8 @@ case $cmd in
 
 
 	ctdb_counter_limit "$RECLOCKCOUNT" 3 && {
-		echo "Reclock file can not be accessed. Mark node UNHEALTHY."
+		echo "Reclock file \"$RECLOCKFILE\" can not be accessed. Mark node UNHEALTHY."
+		df
 		exit 1;
 	}
 	;;
