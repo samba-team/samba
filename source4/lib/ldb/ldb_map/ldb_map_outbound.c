@@ -124,19 +124,19 @@ static const char **map_attrs_collect_remote(struct ldb_module *module, void *me
 		}
 
 		switch (map->type) {
-		case MAP_IGNORE:
+		case LDB_MAP_IGNORE:
 			continue;
 
-		case MAP_KEEP:
+		case LDB_MAP_KEEP:
 			name = attrs[i];
 			goto named;
 
-		case MAP_RENAME:
-		case MAP_CONVERT:
+		case LDB_MAP_RENAME:
+		case LDB_MAP_CONVERT:
 			name = map->u.rename.remote_name;
 			goto named;
 
-		case MAP_GENERATE:
+		case LDB_MAP_GENERATE:
 			/* Add all remote names of "generate" attrs */
 			for (j = 0; map->u.generate.remote_names[j]; j++) {
 				result = talloc_realloc(mem_ctx, result, const char *, last+2);
@@ -281,26 +281,26 @@ static int ldb_msg_el_merge(struct ldb_module *module, struct ldb_message *local
 	}
 
 	switch (map->type) {
-	case MAP_IGNORE:
+	case LDB_MAP_IGNORE:
 		break;
-	case MAP_CONVERT:
+	case LDB_MAP_CONVERT:
 		remote_name = map->u.convert.remote_name;
 		break;
-	case MAP_KEEP:
+	case LDB_MAP_KEEP:
 		remote_name = attr_name;
 		break;
-	case MAP_RENAME:
+	case LDB_MAP_RENAME:
 		remote_name = map->u.rename.remote_name;
 		break;
-	case MAP_GENERATE:
+	case LDB_MAP_GENERATE:
 		break;
 	}
 
 	switch (map->type) {
-	case MAP_IGNORE:
+	case LDB_MAP_IGNORE:
 		return LDB_SUCCESS;
 
-	case MAP_CONVERT:
+	case LDB_MAP_CONVERT:
 		if (map->u.convert.convert_remote == NULL) {
 			ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb_map: "
 				  "Skipping attribute '%s': "
@@ -309,8 +309,8 @@ static int ldb_msg_el_merge(struct ldb_module *module, struct ldb_message *local
 			return LDB_SUCCESS;
 		}
 		/* fall through */
-	case MAP_KEEP:
-	case MAP_RENAME:
+	case LDB_MAP_KEEP:
+	case LDB_MAP_RENAME:
 		old = ldb_msg_find_element(remote, remote_name);
 		if (old) {
 			el = ldb_msg_el_map_remote(module, local, map, attr_name, old);
@@ -319,7 +319,7 @@ static int ldb_msg_el_merge(struct ldb_module *module, struct ldb_message *local
 		}
 		break;
 
-	case MAP_GENERATE:
+	case LDB_MAP_GENERATE:
 		if (map->u.generate.generate_local == NULL) {
 			ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb_map: "
 				  "Skipping attribute '%s': "
@@ -353,7 +353,7 @@ static int ldb_msg_el_merge_wildcard(struct ldb_module *module, struct ldb_messa
 	int i, ret;
 
 	/* Perhaps we have a mapping for "*" */
-	if (map && map->type == MAP_KEEP) {
+	if (map && map->type == LDB_MAP_KEEP) {
 		/* We copy everything over, and hope that anything with a 
 		   more specific rule is overwritten */
 		for (i = 0; i < remote->num_elements; i++) {
@@ -772,7 +772,7 @@ int map_subtree_collect_remote_simple(struct ldb_module *module, void *mem_ctx, 
 	}
 	**new = *tree;
 	
-	if (map->type == MAP_KEEP) {
+	if (map->type == LDB_MAP_KEEP) {
 		/* Nothing to do here */
 		return 0;
 	}
@@ -814,7 +814,7 @@ int map_subtree_collect_remote_simple(struct ldb_module *module, void *mem_ctx, 
 		return 0;
 	}
 
-	if (map->type == MAP_RENAME) {
+	if (map->type == LDB_MAP_RENAME) {
 		/* Nothing more to do here, the attribute has been renamed */
 		return 0;
 	}
@@ -897,7 +897,7 @@ static int map_subtree_collect_remote(struct ldb_module *module, void *mem_ctx, 
 		return map->convert_operator(module, mem_ctx, new, tree);
 	}
 
-	if (map->type == MAP_GENERATE) {
+	if (map->type == LDB_MAP_GENERATE) {
 		ldb_debug(ldb, LDB_DEBUG_WARNING, "ldb_map: "
 			  "Skipping attribute '%s': "
 			  "'convert_operator' not set",

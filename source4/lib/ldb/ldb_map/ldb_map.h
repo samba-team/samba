@@ -59,11 +59,11 @@ struct ldb_map_attribute {
 	const char *local_name; /* local name */
 
 	enum ldb_map_attr_type { 
-		MAP_IGNORE, /* Ignore this local attribute. Doesn't exist remotely.  */
-		MAP_KEEP,   /* Keep as is. Same name locally and remotely. */
-		MAP_RENAME, /* Simply rename the attribute. Name changes, data is the same */
-		MAP_CONVERT, /* Rename + convert data */
-		MAP_GENERATE /* Use generate function for generating new name/data. 
+		LDB_MAP_IGNORE, /* Ignore this local attribute. Doesn't exist remotely.  */
+		LDB_MAP_KEEP,   /* Keep as is. Same name locally and remotely. */
+		LDB_MAP_RENAME, /* Simply rename the attribute. Name changes, data is the same */
+		LDB_MAP_CONVERT, /* Rename + convert data */
+		LDB_MAP_GENERATE /* Use generate function for generating new name/data.
 						Used for generating attributes based on 
 						multiple remote attributes. */
 	} type;

@@ -314,23 +314,23 @@ const struct ldb_map_attribute *map_attr_find_remote(const struct ldb_map_contex
 		}
 
 		switch (map->type) {
-		case MAP_IGNORE:
+		case LDB_MAP_IGNORE:
 			break;
 
-		case MAP_KEEP:
+		case LDB_MAP_KEEP:
 			if (ldb_attr_cmp(map->local_name, name) == 0) {
 				return map;
 			}
 			break;
 
-		case MAP_RENAME:
-		case MAP_CONVERT:
+		case LDB_MAP_RENAME:
+		case LDB_MAP_CONVERT:
 			if (ldb_attr_cmp(map->u.rename.remote_name, name) == 0) {
 				return map;
 			}
 			break;
 
-		case MAP_GENERATE:
+		case LDB_MAP_GENERATE:
 			for (j = 0; map->u.generate.remote_names && map->u.generate.remote_names[j]; j++) {
 				if (ldb_attr_cmp(map->u.generate.remote_names[j], name) == 0) {
 					return map;
@@ -356,7 +356,7 @@ bool map_attr_check_remote(const struct ldb_map_context *data, const char *attr)
 	if (map == NULL) {
 		return false;
 	}
-	if (map->type == MAP_IGNORE) {
+	if (map->type == LDB_MAP_IGNORE) {
 		return false;
 	}
 
@@ -371,11 +371,11 @@ const char *map_attr_map_local(void *mem_ctx, const struct ldb_map_attribute *ma
 	}
 
 	switch (map->type) {
-	case MAP_KEEP:
+	case LDB_MAP_KEEP:
 		return talloc_strdup(mem_ctx, attr);
 
-	case MAP_RENAME:
-	case MAP_CONVERT:
+	case LDB_MAP_RENAME:
+	case LDB_MAP_CONVERT:
 		return talloc_strdup(mem_ctx, map->u.rename.remote_name);
 
 	default:
@@ -390,7 +390,7 @@ const char *map_attr_map_remote(void *mem_ctx, const struct ldb_map_attribute *m
 		return talloc_strdup(mem_ctx, attr);
 	}
 
-	if (map->type == MAP_KEEP) {
+	if (map->type == LDB_MAP_KEEP) {
 		return talloc_strdup(mem_ctx, attr);
 	}
 
@@ -429,7 +429,7 @@ int map_attrs_merge(struct ldb_module *module, void *mem_ctx,
 struct ldb_val ldb_val_map_local(struct ldb_module *module, void *mem_ctx, 
 				 const struct ldb_map_attribute *map, const struct ldb_val *val)
 {
-	if (map && (map->type == MAP_CONVERT) && (map->u.convert.convert_local)) {
+	if (map && (map->type == LDB_MAP_CONVERT) && (map->u.convert.convert_local)) {
 		return map->u.convert.convert_local(module, mem_ctx, val);
 	}
 
@@ -440,7 +440,7 @@ struct ldb_val ldb_val_map_local(struct ldb_module *module, void *mem_ctx,
 struct ldb_val ldb_val_map_remote(struct ldb_module *module, void *mem_ctx, 
 				  const struct ldb_map_attribute *map, const struct ldb_val *val)
 {
-	if (map && (map->type == MAP_CONVERT) && (map->u.convert.convert_remote)) {
+	if (map && (map->type == LDB_MAP_CONVERT) && (map->u.convert.convert_remote)) {
 		return map->u.convert.convert_remote(module, mem_ctx, val);
 	}
 
@@ -493,20 +493,20 @@ struct ldb_dn *ldb_dn_map_local(struct ldb_module *module, void *mem_ctx, struct
 
 		/* Unknown attribute - leave this RDN as is and hope the best... */
 		if (map == NULL) {
-			map_type = MAP_KEEP;
+			map_type = LDB_MAP_KEEP;
 		} else {
 			map_type = map->type;
 		}
 
 		switch (map_type) {
-		case MAP_IGNORE:
-		case MAP_GENERATE:
+		case LDB_MAP_IGNORE:
+		case LDB_MAP_GENERATE:
 			ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb_map: "
-				  "MAP_IGNORE/MAP_GENERATE attribute '%s' "
+				  "LDB_MAP_IGNORE/LDB_MAP_GENERATE attribute '%s' "
 				  "used in DN!", ldb_dn_get_component_name(dn, i));
 			goto failed;
 
-		case MAP_CONVERT:
+		case LDB_MAP_CONVERT:
 			if (map->u.convert.convert_local == NULL) {
 				ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb_map: "
 					  "'convert_local' not set for attribute '%s' "
@@ -514,8 +514,8 @@ struct ldb_dn *ldb_dn_map_local(struct ldb_module *module, void *mem_ctx, struct
 				goto failed;
 			}
 			/* fall through */
-		case MAP_KEEP:
-		case MAP_RENAME:
+		case LDB_MAP_KEEP:
+		case LDB_MAP_RENAME:
 			name = map_attr_map_local(newdn, map, ldb_dn_get_component_name(dn, i));
 			if (name == NULL) goto failed;
 
@@ -568,20 +568,20 @@ struct ldb_dn *ldb_dn_map_remote(struct ldb_module *module, void *mem_ctx, struc
 
 		/* Unknown attribute - leave this RDN as is and hope the best... */
 		if (map == NULL) {
-			map_type = MAP_KEEP;
+			map_type = LDB_MAP_KEEP;
 		} else {
 			map_type = map->type;
 		}
 
 		switch (map_type) {
-		case MAP_IGNORE:
-		case MAP_GENERATE:
+		case LDB_MAP_IGNORE:
+		case LDB_MAP_GENERATE:
 			ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb_map: "
-				  "MAP_IGNORE/MAP_GENERATE attribute '%s' "
+				  "LDB_MAP_IGNORE/LDB_MAP_GENERATE attribute '%s' "
 				  "used in DN!", ldb_dn_get_component_name(dn, i));
 			goto failed;
 
-		case MAP_CONVERT:
+		case LDB_MAP_CONVERT:
 			if (map->u.convert.convert_remote == NULL) {
 				ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb_map: "
 					  "'convert_remote' not set for attribute '%s' "
@@ -589,8 +589,8 @@ struct ldb_dn *ldb_dn_map_remote(struct ldb_module *module, void *mem_ctx, struc
 				goto failed;
 			}
 			/* fall through */
-		case MAP_KEEP:
-		case MAP_RENAME:
+		case LDB_MAP_KEEP:
+		case LDB_MAP_RENAME:
 			name = map_attr_map_remote(newdn, map, ldb_dn_get_component_name(dn, i));
 			if (name == NULL) goto failed;
 
@@ -842,7 +842,7 @@ static struct ldb_message_element *map_objectclass_generate_local(struct ldb_mod
 
 static const struct ldb_map_attribute objectclass_convert_map = {
 	.local_name = "objectClass",
-	.type = MAP_CONVERT,
+	.type = LDB_MAP_CONVERT,
 	.u = {
 		.convert = {
 			.remote_name = "objectClass",
@@ -957,7 +957,7 @@ failed:
 static const struct ldb_map_attribute builtin_attribute_maps[] = {
 	{
 		.local_name = "dn",
-		.type = MAP_CONVERT,
+		.type = LDB_MAP_CONVERT,
 		.u = {
 			.convert = {
 				 .remote_name = "dn",
@@ -973,7 +973,7 @@ static const struct ldb_map_attribute builtin_attribute_maps[] = {
 
 static const struct ldb_map_attribute objectclass_attribute_map	= {
 	.local_name = "objectClass",
-	.type = MAP_GENERATE,
+	.type = LDB_MAP_GENERATE,
 	.convert_operator = map_objectclass_convert_operator,
 	.u = {
 		.generate = {

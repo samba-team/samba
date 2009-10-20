@@ -233,7 +233,7 @@ static const struct ldb_map_attribute entryuuid_attributes[] =
 	/* objectGUID */
 	{
 		.local_name = "objectGUID",
-		.type = MAP_CONVERT,
+		.type = LDB_MAP_CONVERT,
 		.u = {
 			.convert = {
 				.remote_name = "entryUUID", 
@@ -245,7 +245,7 @@ static const struct ldb_map_attribute entryuuid_attributes[] =
 	/* invocationId */
 	{
 		.local_name = "invocationId",
-		.type = MAP_CONVERT,
+		.type = LDB_MAP_CONVERT,
 		.u = {
 			.convert = {
 				.remote_name = "invocationId", 
@@ -257,7 +257,7 @@ static const struct ldb_map_attribute entryuuid_attributes[] =
 	/* objectSid */
 	{
 		.local_name = "objectSid",
-		.type = MAP_CONVERT,
+		.type = LDB_MAP_CONVERT,
 		.u = {
 			.convert = {
 				.remote_name = "objectSid", 
@@ -268,7 +268,7 @@ static const struct ldb_map_attribute entryuuid_attributes[] =
 	},
 	{
 		.local_name = "name",
-		.type = MAP_RENAME,
+		.type = LDB_MAP_RENAME,
 		.u = {
 			.rename = {
 				 .remote_name = "samba4RDN"
@@ -277,7 +277,7 @@ static const struct ldb_map_attribute entryuuid_attributes[] =
 	},
 	{
 		.local_name = "whenCreated",
-		.type = MAP_RENAME,
+		.type = LDB_MAP_RENAME,
 		.u = {
 			.rename = {
 				 .remote_name = "createTimestamp"
@@ -286,7 +286,7 @@ static const struct ldb_map_attribute entryuuid_attributes[] =
 	},
 	{
 		.local_name = "whenChanged",
-		.type = MAP_RENAME,
+		.type = LDB_MAP_RENAME,
 		.u = {
 			.rename = {
 				 .remote_name = "modifyTimestamp"
@@ -295,7 +295,7 @@ static const struct ldb_map_attribute entryuuid_attributes[] =
 	},
 	{
 		.local_name = "objectClasses",
-		.type = MAP_RENAME,
+		.type = LDB_MAP_RENAME,
 		.u = {
 			.rename = {
 				 .remote_name = "samba4ObjectClasses"
@@ -304,7 +304,7 @@ static const struct ldb_map_attribute entryuuid_attributes[] =
 	},
 	{
 		.local_name = "dITContentRules",
-		.type = MAP_RENAME,
+		.type = LDB_MAP_RENAME,
 		.u = {
 			.rename = {
 				 .remote_name = "samba4DITContentRules"
@@ -313,7 +313,7 @@ static const struct ldb_map_attribute entryuuid_attributes[] =
 	},
 	{
 		.local_name = "attributeTypes",
-		.type = MAP_RENAME,
+		.type = LDB_MAP_RENAME,
 		.u = {
 			.rename = {
 				 .remote_name = "samba4AttributeTypes"
@@ -322,7 +322,7 @@ static const struct ldb_map_attribute entryuuid_attributes[] =
 	},
 	{
 		.local_name = "objectCategory",
-		.type = MAP_CONVERT,
+		.type = LDB_MAP_CONVERT,
 		.u = {
 			.convert = {
 				.remote_name = "objectCategory", 
@@ -333,7 +333,7 @@ static const struct ldb_map_attribute entryuuid_attributes[] =
 	},
 	{
 		.local_name = "distinguishedName",
-		.type = MAP_RENAME,
+		.type = LDB_MAP_RENAME,
 		.u = {
 			.rename = {
 				 .remote_name = "entryDN"
@@ -342,7 +342,7 @@ static const struct ldb_map_attribute entryuuid_attributes[] =
 	},
 	{
 		.local_name = "primaryGroupID",
-		.type = MAP_CONVERT,
+		.type = LDB_MAP_CONVERT,
 		.u = {
 			.convert = {
 				 .remote_name = "primaryGroupID",
@@ -353,7 +353,7 @@ static const struct ldb_map_attribute entryuuid_attributes[] =
 	},
 	{
 		.local_name = "groupType",
-		.type = MAP_CONVERT,
+		.type = LDB_MAP_CONVERT,
 		.u = {
 			.convert = {
 				 .remote_name = "groupType",
@@ -364,7 +364,7 @@ static const struct ldb_map_attribute entryuuid_attributes[] =
 	},
 	{
 		.local_name = "userAccountControl",
-		.type = MAP_CONVERT,
+		.type = LDB_MAP_CONVERT,
 		.u = {
 			.convert = {
 				 .remote_name = "userAccountControl",
@@ -375,7 +375,7 @@ static const struct ldb_map_attribute entryuuid_attributes[] =
 	},
 	{
 		.local_name = "sAMAccountType",
-		.type = MAP_CONVERT,
+		.type = LDB_MAP_CONVERT,
 		.u = {
 			.convert = {
 				 .remote_name = "sAMAccountType",
@@ -386,7 +386,7 @@ static const struct ldb_map_attribute entryuuid_attributes[] =
 	},
 	{
 		.local_name = "systemFlags",
-		.type = MAP_CONVERT,
+		.type = LDB_MAP_CONVERT,
 		.u = {
 			.convert = {
 				 .remote_name = "systemFlags",
@@ -397,7 +397,7 @@ static const struct ldb_map_attribute entryuuid_attributes[] =
 	},
 	{
 		.local_name = "usnChanged",
-		.type = MAP_CONVERT,
+		.type = LDB_MAP_CONVERT,
 		.u = {
 			.convert = {
 				 .remote_name = "entryCSN",
@@ -408,7 +408,7 @@ static const struct ldb_map_attribute entryuuid_attributes[] =
 	},
 	{
 		.local_name = "usnCreated",
-		.type = MAP_CONVERT,
+		.type = LDB_MAP_CONVERT,
 		.u = {
 			.convert = {
 				 .remote_name = "createTimestamp",
@@ -419,7 +419,7 @@ static const struct ldb_map_attribute entryuuid_attributes[] =
 	},
 	{
 		.local_name = "*",
-		.type = MAP_KEEP,
+		.type = LDB_MAP_KEEP,
 	},
 	{
 		.local_name = NULL,
@@ -455,7 +455,7 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 	/* objectGUID */
 	{
 		.local_name = "objectGUID",
-		.type = MAP_CONVERT,
+		.type = LDB_MAP_CONVERT,
 		.u = {
 			.convert = {
 				.remote_name = "nsuniqueid", 
@@ -467,7 +467,7 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 	/* objectSid */	
 	{
 		.local_name = "objectSid",
-		.type = MAP_CONVERT,
+		.type = LDB_MAP_CONVERT,
 		.u = {
 			.convert = {
 				.remote_name = "objectSid", 
@@ -478,7 +478,7 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 	},
 	{
 		.local_name = "whenCreated",
-		.type = MAP_RENAME,
+		.type = LDB_MAP_RENAME,
 		.u = {
 			.rename = {
 				 .remote_name = "createTimestamp"
@@ -487,7 +487,7 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 	},
 	{
 		.local_name = "whenChanged",
-		.type = MAP_RENAME,
+		.type = LDB_MAP_RENAME,
 		.u = {
 			.rename = {
 				 .remote_name = "modifyTimestamp"
@@ -496,7 +496,7 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 	},
 	{
 		.local_name = "objectCategory",
-		.type = MAP_CONVERT,
+		.type = LDB_MAP_CONVERT,
 		.u = {
 			.convert = {
 				.remote_name = "objectCategory", 
@@ -507,7 +507,7 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 	},
 	{
 		.local_name = "distinguishedName",
-		.type = MAP_RENAME,
+		.type = LDB_MAP_RENAME,
 		.u = {
 			.rename = {
 				 .remote_name = "entryDN"
@@ -516,7 +516,7 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 	},
 	{
 		.local_name = "primaryGroupID",
-		.type = MAP_CONVERT,
+		.type = LDB_MAP_CONVERT,
 		.u = {
 			.convert = {
 				 .remote_name = "primaryGroupID",
@@ -527,7 +527,7 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 	},
 	{
 		.local_name = "groupType",
-		.type = MAP_CONVERT,
+		.type = LDB_MAP_CONVERT,
 		.u = {
 			.convert = {
 				 .remote_name = "groupType",
@@ -538,7 +538,7 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 	},
 	{
 		.local_name = "userAccountControl",
-		.type = MAP_CONVERT,
+		.type = LDB_MAP_CONVERT,
 		.u = {
 			.convert = {
 				 .remote_name = "userAccountControl",
@@ -549,7 +549,7 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 	},
 	{
 		.local_name = "sAMAccountType",
-		.type = MAP_CONVERT,
+		.type = LDB_MAP_CONVERT,
 		.u = {
 			.convert = {
 				 .remote_name = "sAMAccountType",
@@ -560,7 +560,7 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 	},
 	{
 		.local_name = "systemFlags",
-		.type = MAP_CONVERT,
+		.type = LDB_MAP_CONVERT,
 		.u = {
 			.convert = {
 				 .remote_name = "systemFlags",
@@ -571,7 +571,7 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 	},
 	{
 		.local_name = "usnChanged",
-		.type = MAP_CONVERT,
+		.type = LDB_MAP_CONVERT,
 		.u = {
 			.convert = {
 				 .remote_name = "modifyTimestamp",
@@ -582,7 +582,7 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 	},
 	{
 		.local_name = "usnCreated",
-		.type = MAP_CONVERT,
+		.type = LDB_MAP_CONVERT,
 		.u = {
 			.convert = {
 				 .remote_name = "createTimestamp",
@@ -593,7 +593,7 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 	},
 	{
 		.local_name = "*",
-		.type = MAP_KEEP,
+		.type = LDB_MAP_KEEP,
 	},
 	{
 		.local_name = NULL,

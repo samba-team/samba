@@ -79,10 +79,10 @@ static int ldb_msg_el_partition(struct ldb_module *module, struct ldb_message *l
 	}
 
 	switch (map->type) {
-	case MAP_IGNORE:
+	case LDB_MAP_IGNORE:
 		goto local;
 
-	case MAP_CONVERT:
+	case LDB_MAP_CONVERT:
 		if (map->u.convert.convert_local == NULL) {
 			ldb_debug(ldb, LDB_DEBUG_WARNING, "ldb_map: "
 				  "Not mapping attribute '%s': "
@@ -91,12 +91,12 @@ static int ldb_msg_el_partition(struct ldb_module *module, struct ldb_message *l
 			goto local;
 		}
 		/* fall through */
-	case MAP_KEEP:
-	case MAP_RENAME:
+	case LDB_MAP_KEEP:
+	case LDB_MAP_RENAME:
 		el = ldb_msg_el_map_local(module, remote, map, old);
 		break;
 
-	case MAP_GENERATE:
+	case LDB_MAP_GENERATE:
 		if (map->u.generate.generate_remote == NULL) {
 			ldb_debug(ldb, LDB_DEBUG_WARNING, "ldb_map: "
 				  "Not mapping attribute '%s': "
