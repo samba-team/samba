@@ -124,7 +124,7 @@ tallocsrcdir := $(samba4srcdir)/../lib/talloc
 comsrcdir := $(samba4srcdir)/lib/com
 override ASN1C = bin/asn1_compile4
 override ET_COMPILER = bin/compile_et4
-include $(samba4srcdir)/build/make/python.mk
+#include $(samba4srcdir)/build/make/python.mk
 include samba4-data.mk
 include $(samba4srcdir)/static_deps.mk
 
@@ -165,10 +165,17 @@ clean::
 proto:: $(PROTO_HEADERS)
 modules:: $(PLUGINS)
 
-pythonmods:: $(PYTHON_PYS) $(PYTHON_SO)
+#pythonmods:: $(PYTHON_PYS) $(PYTHON_SO)
 
 all:: bin/samba4 bin/regpatch4 bin/regdiff4 bin/regshell4 bin/regtree4 bin/smbclient4 setup plugins
 torture:: bin/smbtorture4
+
+#
+## This is a fake rule to stop any python being invoked as currently the
+## build system is broken in source3 with python. JRA.
+#
+installpython:: bin/smbtorture4
+
 everything:: $(patsubst %,%4,$(BINARIES))
 setup:
 	@ln -sf ../source4/setup setup
