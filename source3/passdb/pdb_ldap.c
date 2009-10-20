@@ -6013,8 +6013,6 @@ static bool ldapsam_set_trusteddom_pw(struct pdb_methods *methods,
 	smbldap_make_mod(priv2ld(ldap_state), entry, &mods,
 			 "sambaClearTextPassword", pwd);
 
-	talloc_autofree_ldapmod(talloc_tos(), mods);
-
 	if (entry != NULL) {
 		prev_pwd = smbldap_talloc_single_attribute(priv2ld(ldap_state),
 				entry, "sambaClearTextPassword", talloc_tos());
@@ -6024,6 +6022,8 @@ static bool ldapsam_set_trusteddom_pw(struct pdb_methods *methods,
 					 prev_pwd);
 		}
 	}
+
+	talloc_autofree_ldapmod(talloc_tos(), mods);
 
 	trusted_dn = trusteddom_dn(ldap_state, domain);
 	if (trusted_dn == NULL) {
