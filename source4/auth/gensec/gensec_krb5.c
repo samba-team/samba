@@ -26,18 +26,13 @@
 #include "includes.h"
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
-#include "librpc/gen_ndr/krb5pac.h"
 #include "auth/auth.h"
-#include "lib/ldb/include/ldb.h"
-#include "auth/auth_sam.h"
 #include "lib/socket/socket.h"
 #include "librpc/rpc/dcerpc.h"
 #include "auth/credentials/credentials.h"
-#include "auth/credentials/credentials_krb5.h"
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_proto.h"
 #include "param/param.h"
-#include "auth/session_proto.h"
 #include "auth/auth_sam_reply.h"
 
 enum GENSEC_KRB5_STATE {

@@ -18,7 +18,6 @@
 
 #include "includes.h"
 #include <Python.h>
-#include "param/param.h"
 #include "param/pyparam.h"
 #include "auth/gensec/gensec.h"
 #include "libcli/util/pyerrors.h"

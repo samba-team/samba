@@ -23,10 +23,8 @@
 #include "lib/ldb/include/ldb.h"
 #include "ldb_wrap.h"
 #include "../lib/util/util_ldb.h"
-#include "libcli/auth/libcli_auth.h"
 #include "auth/auth.h"
 #include "param/param.h"
-#include "auth/gensec/schannel_state.h"
 
 /**
   connect to the schannel ldb

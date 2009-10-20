@@ -30,7 +30,6 @@
 #include "auth/gensec/schannel_state.h"
 #include "librpc/rpc/dcerpc.h"
 #include "param/param.h"
-#include "auth/session_proto.h"
 
 static size_t schannel_sig_size(struct gensec_security *gensec_security, size_t data_size)
 {
