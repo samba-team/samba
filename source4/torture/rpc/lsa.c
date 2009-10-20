@@ -1995,11 +1995,9 @@ static bool test_EnumTrustDom(struct dcerpc_pipe *p,
 			      struct policy_handle *handle)
 {
 	struct lsa_EnumTrustDom r;
-	struct lsa_EnumTrustedDomainsEx r_ex;
 	NTSTATUS enum_status;
 	uint32_t resume_handle = 0;
 	struct lsa_DomainList domains;
-	struct lsa_DomainListEx domains_ex;
 	bool ret = true;
 
 	torture_comment(tctx, "\nTesting EnumTrustDom\n");
@@ -2064,6 +2062,19 @@ static bool test_EnumTrustDom(struct dcerpc_pipe *p,
 
 	} while ((NT_STATUS_EQUAL(enum_status, STATUS_MORE_ENTRIES)));
 
+	return ret;
+}
+
+static bool test_EnumTrustDomEx(struct dcerpc_pipe *p,
+				struct torture_context *tctx,
+				struct policy_handle *handle)
+{
+	struct lsa_EnumTrustedDomainsEx r_ex;
+	NTSTATUS enum_status;
+	uint32_t resume_handle = 0;
+	struct lsa_DomainListEx domains_ex;
+	bool ret = true;
+
 	torture_comment(tctx, "\nTesting EnumTrustedDomainsEx\n");
 
 	r_ex.in.handle = handle;
@@ -2123,6 +2134,7 @@ static bool test_EnumTrustDom(struct dcerpc_pipe *p,
 	return ret;
 }
 
+
 static bool test_CreateTrustedDomain(struct dcerpc_pipe *p,
 				     struct torture_context *tctx,
 				     struct policy_handle *handle)
@@ -2140,6 +2152,10 @@ static bool test_CreateTrustedDomain(struct dcerpc_pipe *p,
 	torture_comment(tctx, "\nTesting CreateTrustedDomain for 12 domains\n");
 
 	if (!test_EnumTrustDom(p, tctx, handle)) {
+		ret = false;
+	}
+
+	if (!test_EnumTrustDomEx(p, tctx, handle)) {
 		ret = false;
 	}
 
@@ -2203,6 +2219,10 @@ static bool test_CreateTrustedDomain(struct dcerpc_pipe *p,
 
 	/* now that we have some domains to look over, we can test the enum calls */
 	if (!test_EnumTrustDom(p, tctx, handle)) {
+		ret = false;
+	}
+
+	if (!test_EnumTrustDomEx(p, tctx, handle)) {
 		ret = false;
 	}
 
@@ -2338,6 +2358,11 @@ static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 	/* now that we have some domains to look over, we can test the enum calls */
 	if (!test_EnumTrustDom(p, tctx, handle)) {
 		torture_comment(tctx, "test_EnumTrustDom failed\n");
+		ret = false;
+	}
+
+	if (!test_EnumTrustDomEx(p, tctx, handle)) {
+		torture_comment(tctx, "test_EnumTrustDomEx failed\n");
 		ret = false;
 	}
 
