@@ -205,6 +205,10 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 			TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: tdb_new_database failed!"));
 			goto fail;
 		}
+#ifdef TDB_TRACE
+		/* All tracing will fail.  That's ok. */
+		tdb->tracefd = -1;
+#endif
 		goto internal;
 	}
 
@@ -315,6 +319,22 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 		goto fail;
 	}
 
+#ifdef TDB_TRACE
+	{
+		char tracefile[strlen(name) + 32];
+
+		snprintf(tracefile, sizeof(tracefile),
+			 "%s.trace.%li", name, (long)getpid());
+		tdb->tracefd = open(tracefile, O_WRONLY|O_CREAT|O_EXCL, 0600);
+		if (tdb->tracefd >= 0) {
+			tdb_enable_seqnum(tdb);
+			tdb_trace_open(tdb, "tdb_open", hash_size, tdb_flags,
+				       open_flags);
+		} else
+			TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: failed to open trace file %s!\n", tracefile));
+	}
+#endif
+
  internal:
 	/* Internal (memory-only) databases skip all the code above to
 	 * do with disk files, and resume here by releasing their
@@ -330,7 +350,10 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 
 	if (!tdb)
 		return NULL;
-	
+
+#ifdef TDB_TRACE
+	close(tdb->tracefd);
+#endif
 	if (tdb->map_ptr) {
 		if (tdb->flags & TDB_INTERNAL)
 			SAFE_FREE(tdb->map_ptr);
@@ -366,8 +389,9 @@ int tdb_close(struct tdb_context *tdb)
 	struct tdb_context **i;
 	int ret = 0;
 
+	tdb_trace(tdb, "tdb_close");
 	if (tdb->transaction) {
-		tdb_transaction_cancel(tdb);
+		_tdb_transaction_cancel(tdb);
 	}
 
 	if (tdb->map_ptr) {
@@ -389,6 +413,9 @@ int tdb_close(struct tdb_context *tdb)
 		}
 	}
 
+#ifdef TDB_TRACE
+	close(tdb->tracefd);
+#endif
 	memset(tdb, 0, sizeof(*tdb));
 	SAFE_FREE(tdb);
 
