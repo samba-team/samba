@@ -28,8 +28,6 @@
 #include "libcli/libcli.h"
 #include "lib/events/events.h"
 #include "libcli/resolve/resolve.h"
-#include "auth/credentials/credentials.h"
-#include "librpc/gen_ndr/ndr_nbt.h"
 #include "torture/smbtorture.h"
 #include "torture/util.h"
 #include "libcli/smb_composite/smb_composite.h"

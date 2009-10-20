@@ -18,14 +18,10 @@
 */
 
 #include "includes.h"
-#include "torture/torture.h"
 #include "system/filesys.h"
-#include "libcli/raw/libcliraw.h"
 #include "libcli/libcli.h"
 #include "libcli/security/security.h"
 #include "torture/util.h"
-#include "torture/smbtorture.h"
-#include "libcli/util/clilsa.h"
 #include "cxd_known.h"
 
 extern int torture_failures;

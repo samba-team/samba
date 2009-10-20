@@ -22,16 +22,13 @@
 #include "includes.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
-#include "libcli/smb_composite/smb_composite.h"
 #include "lib/cmdline/popt_common.h"
-#include "lib/events/events.h"
 #include "system/time.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
 
 #include "torture/torture.h"
-#include "torture/smb2/proto.h"
 
 
 /*

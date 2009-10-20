@@ -21,9 +21,7 @@
 */
 
 #include "includes.h"
-#include "libcli/raw/libcliraw.h"
 #include "libcli/libcli.h"
-#include "torture/smbtorture.h"
 #include "torture/util.h"
 #include "system/time.h"
 #include "system/filesys.h"

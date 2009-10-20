@@ -1,8 +1,6 @@
 #include "includes.h"
-#include "libnet/libnet.h"
 #include "libcli/libcli.h"
 
-#include "auth/credentials/credentials.h"
 #include "torture/rpc/rpc.h"
 
 #include "libcli/resolve/resolve.h"

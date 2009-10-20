@@ -24,7 +24,6 @@
 #include "libcli/wrepl/winsrepl.h"
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
-#include "libcli/resolve/resolve.h"
 #include "system/network.h"
 #include "lib/socket/netif.h"
 #include "librpc/gen_ndr/ndr_nbt.h"

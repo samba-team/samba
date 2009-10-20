@@ -22,9 +22,7 @@
 #include "includes.h"
 #include "torture/smbtorture.h"
 #include "torture/rpc/drsuapi.h"
-#include "torture/drs/proto.h"
 #include "dsdb/samdb/samdb.h"
-#include "dsdb/schema/prefixmap.h"
 
 
 /**

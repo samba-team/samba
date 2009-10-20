@@ -21,14 +21,9 @@
 
 #include "includes.h"
 #include "lib/cmdline/popt_common.h"
-#include "lib/events/events.h"
-#include "auth/credentials/credentials.h"
 #include "libnet/libnet.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
-#include "libcli/security/security.h"
-#include "librpc/rpc/dcerpc.h"
-#include "torture/torture.h"
 #include "torture/rpc/rpc.h"
 #include "param/param.h"
 

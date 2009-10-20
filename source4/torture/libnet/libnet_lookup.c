@@ -21,11 +21,8 @@
 #include "includes.h"
 #include "lib/cmdline/popt_common.h"
 #include "libnet/libnet.h"
-#include "librpc/gen_ndr/nbt.h"
-#include "librpc/rpc/dcerpc.h"
 #include "libcli/libcli.h"
 #include "torture/rpc/rpc.h"
-#include "torture/torture.h"
 #include "param/param.h"
 
 

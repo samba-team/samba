@@ -20,12 +20,9 @@
 */
 
 #include "includes.h"
-#include "torture/torture.h"
 #include "torture/rpc/rpc.h"
 #include "librpc/gen_ndr/ndr_dfs_c.h"
-#include "librpc/gen_ndr/ndr_srvsvc_c.h"
 #include "libnet/libnet.h"
-#include "libcli/raw/libcliraw.h"
 #include "torture/util.h"
 #include "libcli/libcli.h"
 #include "lib/cmdline/popt_common.h"

@@ -19,7 +19,6 @@
 */
 
 #include "includes.h"
-#include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_atsvc_c.h"
 #include "torture/rpc/rpc.h"
 

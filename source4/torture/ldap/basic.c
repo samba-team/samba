@@ -28,7 +28,6 @@
 #include "torture/torture.h"
 #include "torture/ldap/proto.h"
 
-#include "param/param.h"
 
 static bool test_bind_simple(struct ldap_connection *conn, const char *userdn, const char *password)
 {

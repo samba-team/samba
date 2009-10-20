@@ -20,7 +20,6 @@
 */
 
 #include "includes.h"
-#include <tevent.h>
 #include "libcli/cldap/cldap.h"
 #include "libcli/resolve/resolve.h"
 #include "torture/torture.h"

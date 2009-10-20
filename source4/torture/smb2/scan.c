@@ -23,7 +23,6 @@
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 #include "lib/cmdline/popt_common.h"
-#include "lib/events/events.h"
 #include "torture/torture.h"
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"

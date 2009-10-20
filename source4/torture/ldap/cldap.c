@@ -24,10 +24,8 @@
 #include "includes.h"
 #include "libcli/cldap/cldap.h"
 #include "libcli/ldap/ldap.h"
-#include "librpc/gen_ndr/ndr_nbt.h"
 #include "librpc/gen_ndr/netlogon.h"
 #include "torture/torture.h"
-#include "lib/ldb/include/ldb.h"
 #include "param/param.h"
 #include "../lib/tsocket/tsocket.h"
 

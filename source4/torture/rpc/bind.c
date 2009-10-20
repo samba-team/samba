@@ -21,15 +21,9 @@
 */
 
 #include "includes.h"
-#include "torture/torture.h"
-#include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "lib/cmdline/popt_common.h"
-#include "librpc/rpc/dcerpc.h"
 #include "torture/rpc/rpc.h"
-#include "libcli/libcli.h"
-#include "libcli/composite/composite.h"
-#include "libcli/smb_composite/smb_composite.h"
 
 /*
   This test is 'bogus' in that it doesn't actually perform to the

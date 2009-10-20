@@ -20,19 +20,13 @@
 */
 
 #include "includes.h"
-#include "torture/torture.h"
-#include "lib/events/events.h"
 #include "auth/auth.h"
 #include "auth/gensec/gensec.h"
 #include "lib/cmdline/popt_common.h"
 #include "torture/rpc/rpc.h"
-#include "torture/rpc/netlogon.h"
 #include "libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
-#include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "param/param.h"
-#include "lib/messaging/irpc.h"
-#include "cluster/cluster.h"
 
 #define TEST_MACHINE_NAME "torturepactest"
 

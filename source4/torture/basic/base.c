@@ -27,9 +27,7 @@
 #include "system/filesys.h"
 #include "system/time.h"
 #include "libcli/resolve/resolve.h"
-#include "librpc/gen_ndr/ndr_nbt.h"
 #include "lib/events/events.h"
-#include "lib/cmdline/popt_common.h"
 #include "param/param.h"
 
 

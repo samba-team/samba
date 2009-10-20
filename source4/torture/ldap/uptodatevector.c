@@ -23,15 +23,10 @@
 #include "libcli/ldap/ldap_client.h"
 #include "lib/cmdline/popt_common.h"
 #include "ldb_wrap.h"
-#include "lib/ldb/include/ldb.h"
-#include "lib/ldb/include/ldb_errors.h"
 #include "dsdb/samdb/samdb.h"
-#include "../lib/util/dlinklist.h"
 
 #include "torture/torture.h"
-#include "torture/ldap/proto.h"
 
-#include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 
 #include "param/param.h"

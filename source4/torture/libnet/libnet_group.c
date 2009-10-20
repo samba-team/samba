@@ -24,7 +24,6 @@
 #include "libnet/libnet.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
-#include "torture/torture.h"
 #include "torture/rpc/rpc.h"
 #include "param/param.h"
 

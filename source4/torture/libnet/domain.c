@@ -20,7 +20,6 @@
 
 #include "includes.h"
 #include "torture/rpc/rpc.h"
-#include "lib/events/events.h"
 #include "libnet/libnet.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "param/param.h"

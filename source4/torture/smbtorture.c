@@ -26,17 +26,13 @@
 #include "system/readline.h"
 #include "lib/smbreadline/smbreadline.h"
 #include "libcli/libcli.h"
-#include "lib/ldb/include/ldb.h"
 #include "lib/events/events.h"
-#include "dynconfig/dynconfig.h"
 
 #include "torture/smbtorture.h"
-#include "../lib/util/dlinklist.h"
 #include "librpc/rpc/dcerpc.h"
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
 
-#include "auth/credentials/credentials.h"
 
 static bool run_matching(struct torture_context *torture,
 						 const char *prefix, 

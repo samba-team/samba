@@ -21,12 +21,8 @@
 */
 
 #include "includes.h"
-#include "torture/torture.h"
-#include "lib/events/events.h"
-#include "libcli/composite/composite.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "lib/cmdline/popt_common.h"
-#include "librpc/rpc/dcerpc.h"
 #include "torture/rpc/rpc.h"
 
 /*

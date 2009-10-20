@@ -30,7 +30,6 @@
 #include "system/time.h"
 #include "torture/torture.h"
 #include "../lib/util/dlinklist.h"
-#include "auth/credentials/credentials.h"
 #include "libcli/resolve/resolve.h"
 #include "param/param.h"
 #include "libcli/security/security.h"

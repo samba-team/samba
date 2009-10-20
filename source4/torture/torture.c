@@ -20,8 +20,6 @@
 
 #include "includes.h"
 #include "system/time.h"
-#include "torture/torture.h"
-#include "../lib/util/dlinklist.h"
 #include "param/param.h"
 #include "lib/cmdline/popt_common.h"
 #include "torture/smbtorture.h"

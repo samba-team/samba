@@ -26,7 +26,6 @@
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
 
-#include "librpc/gen_ndr/ndr_security.h"
 
 #define TARGET_IS_WINDOWS(_tctx) (torture_setting_bool(_tctx, "win7", false) || torture_setting_bool(torture, "windows", false))
 #define TARGET_IS_WIN7(_tctx) (torture_setting_bool(_tctx, "win7", false))

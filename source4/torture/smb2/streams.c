@@ -22,14 +22,9 @@
 #include "includes.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
-#include "libcli/smb_composite/smb_composite.h"
-#include "libcli/raw/libcliraw.h"
-#include "libcli/raw/raw_proto.h"
-#include "libcli/libcli.h"
 
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
-#include "torture/util.h"
 
 #include "system/filesys.h"
 #include "system/locale.h"

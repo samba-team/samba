@@ -22,17 +22,13 @@
  */
 
 #include "includes.h"
-#include "torture/torture.h"
-#include "libcli/raw/libcliraw.h"
 #include "system/time.h"
 #include "system/filesys.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
 #include "lib/events/events.h"
-#include "lib/cmdline/popt_common.h"
 #include "libcli/composite/composite.h"
 #include "libcli/smb_composite/smb_composite.h"
-#include "libcli/resolve/resolve.h"
 
 #define BASEDIR "\\testoffline"
 

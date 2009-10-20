@@ -20,7 +20,6 @@
 #include "includes.h"
 #include "torture/smbtorture.h"
 #include "torture/local/proto.h"
-#include "torture/ndr/ndr.h"
 #include "torture/ndr/proto.h"
 #include "torture/auth/proto.h"
 #include "../lib/crypto/test_proto.h"

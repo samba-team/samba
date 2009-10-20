@@ -21,7 +21,6 @@
 #include "includes.h"
 #include "torture/ndr/ndr.h"
 #include "torture/ndr/proto.h"
-#include "torture/torture.h"
 #include "../lib/util/dlinklist.h"
 #include "param/param.h"
 

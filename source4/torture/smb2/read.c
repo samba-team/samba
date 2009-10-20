@@ -26,7 +26,6 @@
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
 
-#include "librpc/gen_ndr/ndr_security.h"
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \

@@ -21,7 +21,6 @@
 */
 
 #include "includes.h"
-#include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_winreg_c.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "libcli/security/security.h"

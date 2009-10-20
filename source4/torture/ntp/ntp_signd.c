@@ -20,18 +20,14 @@
 */
 
 #include "includes.h"
-#include "torture/torture.h"
 #include "torture/smbtorture.h"
 #include <tevent.h>
 #include "lib/socket/socket.h"
 #include "lib/stream/packet.h"
-#include "auth/credentials/credentials.h"
 #include "torture/rpc/rpc.h"
-#include "torture/rpc/netlogon.h"
 #include "../lib/crypto/crypto.h"
 #include "libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
-#include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_ntp_signd.h"
 #include "param/param.h"
 

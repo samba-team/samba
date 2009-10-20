@@ -20,7 +20,6 @@
 
 #include "includes.h"
 #include "torture/torture.h"
-#include "torture/winbind/proto.h"
 #include "nsswitch/winbind_client.h"
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/netlogon.h"

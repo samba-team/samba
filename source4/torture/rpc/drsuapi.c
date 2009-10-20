@@ -22,7 +22,6 @@
 */
 
 #include "includes.h"
-#include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_drsuapi_c.h"
 #include "torture/rpc/rpc.h"
 #include "param/param.h"

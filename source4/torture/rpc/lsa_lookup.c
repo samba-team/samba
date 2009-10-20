@@ -19,9 +19,6 @@
 */
 
 #include "includes.h"
-#include "torture/torture.h"
-#include "lib/events/events.h"
-#include "libnet/libnet_join.h"
 #include "torture/rpc/rpc.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "libcli/security/security.h"

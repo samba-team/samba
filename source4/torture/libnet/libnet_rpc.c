@@ -20,16 +20,12 @@
 
 #include "includes.h"
 #include "lib/cmdline/popt_common.h"
-#include "auth/credentials/credentials.h"
 #include "libnet/libnet.h"
 #include "libcli/security/security.h"
-#include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "librpc/gen_ndr/ndr_srvsvc.h"
-#include "librpc/rpc/dcerpc.h"
 #include "torture/rpc/rpc.h"
-#include "torture/torture.h"
 #include "param/param.h"
 
 

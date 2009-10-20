@@ -26,7 +26,6 @@
 #include "auth/gensec/gensec.h"
 #include "libcli/libcli.h"
 #include "param/param.h"
-#include "dynconfig/dynconfig.h"
 #include "libcli/resolve/resolve.h"
 
 static int numops = 1000;

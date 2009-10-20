@@ -20,12 +20,10 @@
 */
 
 #include "includes.h"
-#include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "torture/rpc/rpc.h"
 #include "param/param.h"
 #include "libcli/security/security.h"
-#include "librpc/gen_ndr/ndr_security.h"
 
 
 /* test user created to test the ACLs associated to SAMR objects */

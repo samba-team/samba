@@ -18,17 +18,12 @@
 */
 
 #include "includes.h"
-#include "torture/torture.h"
 #include "libcli/raw/libcliraw.h"
-#include "libcli/raw/raw_proto.h"
 #include "system/time.h"
 #include "system/filesys.h"
-#include "librpc/gen_ndr/security.h"
 #include "lib/events/events.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
-#include "auth/credentials/credentials.h"
-#include "lib/cmdline/popt_common.h"
 
 /* enum for whether reads/writes are possible on a file */
 enum rdwr_mode {RDWR_NONE, RDWR_RDONLY, RDWR_WRONLY, RDWR_RDWR};

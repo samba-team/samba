@@ -20,10 +20,8 @@
 */
 
 #include "includes.h"
-#include "torture/torture.h"
 #include "torture/rpc/rpc.h"
 #include "librpc/gen_ndr/ndr_frsapi_c.h"
-#include "torture/util.h"
 #include "param/param.h"
 
 static bool test_GetDsPollingIntervalW(struct torture_context *tctx,

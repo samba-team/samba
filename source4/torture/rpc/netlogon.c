@@ -23,18 +23,12 @@
 */
 
 #include "includes.h"
-#include "version.h"
-#include "torture/torture.h"
 #include "lib/events/events.h"
-#include "auth/auth.h"
-#include "auth/gensec/gensec.h"
 #include "lib/cmdline/popt_common.h"
 #include "torture/rpc/rpc.h"
-#include "torture/rpc/netlogon.h"
 #include "../lib/crypto/crypto.h"
 #include "libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
-#include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "param/param.h"
 #include "libcli/security/security.h"

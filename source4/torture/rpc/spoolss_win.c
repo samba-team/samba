@@ -19,12 +19,9 @@
 */
 
 #include "includes.h"
-#include "torture/torture.h"
 #include "torture/rpc/rpc.h"
 #include "librpc/gen_ndr/ndr_spoolss_c.h"
-#include "rpc_server/dcerpc_server.h"
 #include "ntvfs/ntvfs.h"
-#include "param/param.h"
 
 struct test_spoolss_win_context {
 	/* EnumPrinters */

@@ -20,11 +20,8 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "torture/smbtorture.h"
-#include "torture/basic/proto.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
-#include "lib/cmdline/popt_common.h"
-#include "auth/credentials/credentials.h"
 
 #define BASEDIR "\\lookuprate"
 #define MISSINGNAME BASEDIR "\\foo"

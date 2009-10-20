@@ -20,10 +20,8 @@
 */
 
 #include "includes.h"
-#include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_dssetup.h"
-#include "librpc/rpc/dcerpc.h"
 #include "torture/rpc/rpc.h"
 
 bool torture_rpc_alter_context(struct torture_context *torture)

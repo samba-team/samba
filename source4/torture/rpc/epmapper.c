@@ -19,7 +19,6 @@
 */
 
 #include "includes.h"
-#include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_epmapper_c.h"
 #include "librpc/ndr/ndr_table.h"
 #include "librpc/rpc/dcerpc_proto.h"

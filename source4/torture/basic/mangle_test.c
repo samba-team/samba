@@ -18,7 +18,6 @@
 */
 
 #include "includes.h"
-#include "torture/torture.h"
 #include "system/filesys.h"
 #include "system/dir.h"
 #include "../tdb/include/tdb.h"

@@ -26,7 +26,6 @@
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
 
-#include "libcli/raw/libcliraw.h"
 #include "lib/events/events.h"
 
 #define CHECK_STATUS(status, correct) do { \

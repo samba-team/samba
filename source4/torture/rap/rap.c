@@ -24,8 +24,6 @@
 #include "torture/smbtorture.h"
 #include "torture/util.h"
 #include "libcli/rap/rap.h"
-#include "libcli/raw/libcliraw.h"
-#include "libcli/libcli.h"
 #include "librpc/ndr/libndr.h"
 #include "param/param.h"
 
