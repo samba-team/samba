@@ -20,7 +20,6 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "libcli/raw/libcliraw.h"
 #include "libcli/libcli.h"
 #include "lib/cmdline/popt_common.h"
 

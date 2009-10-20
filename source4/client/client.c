@@ -35,9 +35,6 @@
 #include "lib/events/events.h"
 #include "lib/cmdline/popt_common.h"
 #include "librpc/gen_ndr/ndr_srvsvc_c.h"
-#include "librpc/gen_ndr/ndr_lsa.h"
-#include "librpc/gen_ndr/ndr_security.h"
-#include "libcli/raw/libcliraw.h"
 #include "libcli/util/clilsa.h"
 #include "system/dir.h"
 #include "system/filesys.h"
@@ -51,7 +48,6 @@
 #include "lib/smbreadline/smbreadline.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "param/param.h"
-#include "librpc/rpc/dcerpc.h"
 #include "libcli/raw/raw_proto.h"
 
 /* the default pager to use for the client "more" command. Users can
