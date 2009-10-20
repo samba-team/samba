@@ -46,7 +46,7 @@ CPPFLAGS=-DHAVE_CONFIG_H @CPPFLAGS@
 EXEEXT=@EXEEXT@
 AR=@AR@
 LDSHFLAGS=@LDSHFLAGS@ @RELRO_LDFLAGS@ @LDFLAGS@ @LDSHFLAGS_Z_DEFS@
-LDPLUGINFLAGS=@LDSHFLAGS@ @RELRO_LDFLAGS@ @LDFLAGS@ @LDSHFLAGS_Z_NODEFS@
+LDSHFLAGS_MODULES=@LDSHFLAGS@ @RELRO_LDFLAGS@ @LDFLAGS@ @LDSHFLAGS_Z_NODEFS@
 LDFLAGS=@PIE_LDFLAGS@ @RELRO_LDFLAGS@ @LDFLAGS@
 
 WINBIND_NSS_LDSHFLAGS=@WINBIND_NSS_LDSHFLAGS@ @LDFLAGS@ @LDSHFLAGS_Z_DEFS@
@@ -2433,67 +2433,67 @@ bin/libbigballofmud.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBBIGBALLOFMUD_OBJ) $(LIBTA
 #####################################################################
 
 # Linker command to link our shared libraries:
-SHLD_MODULE = $(SHLD) $(LDSHFLAGS) $(MODULE_EXPORTS) \
+SHLD_LIBRARY = $(SHLD) $(LDSHFLAGS) $(MODULE_EXPORTS) \
 	      -o $@ @SONAMEFLAG@`basename $@`
 # Linker command to link samba internal plugin modules:
-SHLD_PLUGIN = $(SHLD) $(LDPLUGINFLAGS) $(MODULE_EXPORTS) \
+SHLD_MODULE = $(SHLD) $(LDSHFLAGS_MODULES) $(MODULE_EXPORTS) \
 	-o $@ @SONAMEFLAG@`basename $@`
 
 bin/librpc_lsarpc.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_LSA_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_LSA_OBJ)
+	@$(SHLD_LIBRARY) $(RPC_LSA_OBJ)
 
 bin/librpc_samr.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_SAMR_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_SAMR_OBJ)
+	@$(SHLD_LIBRARY) $(RPC_SAMR_OBJ)
 
 bin/librpc_srvsvc.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_SVC_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_SVC_OBJ)
+	@$(SHLD_LIBRARY) $(RPC_SVC_OBJ)
 
 bin/librpc_svcctl.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_SVCCTL_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_SVCCTL_OBJ)
+	@$(SHLD_LIBRARY) $(RPC_SVCCTL_OBJ)
 
 bin/librpc_ntsvcs.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_NTSVCS_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_NTSVCS_OBJ)
+	@$(SHLD_LIBRARY) $(RPC_NTSVCS_OBJ)
 
 bin/librpc_wkssvc.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_WKS_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_WKS_OBJ)
+	@$(SHLD_LIBRARY) $(RPC_WKS_OBJ)
 
 bin/librpc_NETLOGON.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_NETLOG_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_NETLOG_OBJ)
+	@$(SHLD_LIBRARY) $(RPC_NETLOG_OBJ)
 
 bin/librpc_winreg.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_REG_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_REG_OBJ)
+	@$(SHLD_LIBRARY) $(RPC_REG_OBJ)
 
 bin/librpc_initshutdown.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_INITSHUTDOWN_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_INITSHUTDOWN_OBJ)
+	@$(SHLD_LIBRARY) $(RPC_INITSHUTDOWN_OBJ)
 
 bin/librpc_dssetup.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_DSSETUP_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_DSSETUP_OBJ)
+	@$(SHLD_LIBRARY) $(RPC_DSSETUP_OBJ)
 
 bin/librpc_spoolss.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_SPOOLSS_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_SPOOLSS_OBJ)
+	@$(SHLD_LIBRARY) $(RPC_SPOOLSS_OBJ)
 
 bin/librpc_eventlog.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_EVENTLOG_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_EVENTLOG_OBJ)
+	@$(SHLD_LIBRARY) $(RPC_EVENTLOG_OBJ)
 
 bin/librpc_netdfs.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_DFS_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_DFS_OBJ)
+	@$(SHLD_LIBRARY) $(RPC_DFS_OBJ)
 
 bin/librpc_echo.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_ECHO_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_ECHO_OBJ)
+	@$(SHLD_LIBRARY) $(RPC_ECHO_OBJ)
 
 bin/winbindd@EXEEXT@: $(BINARY_PREREQS) $(WINBINDD_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo "Linking $@"
@@ -2536,290 +2536,290 @@ bin/pam_winbind.@SHLIBEXT@: $(BINARY_PREREQS) $(PAM_WINBIND_OBJ) $(LIBTALLOC) $(
 
 bin/builtin.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_BUILTIN_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(AUTH_BUILTIN_OBJ)
+	@$(SHLD_MODULE) $(AUTH_BUILTIN_OBJ)
 
 bin/domain.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_DOMAIN_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(AUTH_DOMAIN_OBJ)
+	@$(SHLD_MODULE) $(AUTH_DOMAIN_OBJ)
 
 bin/script.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_SCRIPT_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(AUTH_SCRIPT_OBJ)
+	@$(SHLD_MODULE) $(AUTH_SCRIPT_OBJ)
 
 bin/netlogond.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_NETLOGOND_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(AUTH_NETLOGOND_OBJ)
+	@$(SHLD_MODULE) $(AUTH_NETLOGOND_OBJ)
 
 bin/smbserver.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_SERVER_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(AUTH_SERVER_OBJ)
+	@$(SHLD_MODULE) $(AUTH_SERVER_OBJ)
 
 bin/winbind.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_WINBIND_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(AUTH_WINBIND_OBJ)
+	@$(SHLD_MODULE) $(AUTH_WINBIND_OBJ)
 
 bin/wbc.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_WBC_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(AUTH_WBC_OBJ)
+	@$(SHLD_MODULE) $(AUTH_WBC_OBJ)
 
 bin/unix.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_UNIX_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(AUTH_UNIX_OBJ)
+	@$(SHLD_MODULE) $(AUTH_UNIX_OBJ)
 
 bin/sam.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_SAM_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(AUTH_SAM_OBJ)
+	@$(SHLD_MODULE) $(AUTH_SAM_OBJ)
 
 bin/ldapsam.@SHLIBEXT@: $(BINARY_PREREQS) passdb/pdb_ldap.o passdb/pdb_nds.o
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) passdb/pdb_ldap.o passdb/pdb_nds.o $(LDAP_LIBS)
+	@$(SHLD_MODULE) passdb/pdb_ldap.o passdb/pdb_nds.o $(LDAP_LIBS)
 
 bin/ads.@SHLIBEXT@: $(BINARY_PREREQS) passdb/pdb_ads.o
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) passdb/pdb_ads.o
+	@$(SHLD_MODULE) passdb/pdb_ads.o
 
 bin/tdbsam.@SHLIBEXT@: $(BINARY_PREREQS) passdb/pdb_tdb.o
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) passdb/pdb_tdb.o
+	@$(SHLD_MODULE) passdb/pdb_tdb.o
 
 bin/wbc_sam.@SHLIBEXT@: $(BINARY_PREREQS) passdb/pdb_wbc_sam.o
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) passdb/pdb_wbc_sam.o
+	@$(SHLD_MODULE) passdb/pdb_wbc_sam.o
 
 bin/smbpasswd.@SHLIBEXT@: $(BINARY_PREREQS) passdb/pdb_smbpasswd.o
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) passdb/pdb_smbpasswd.o
+	@$(SHLD_MODULE) passdb/pdb_smbpasswd.o
 
 bin/rid.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_rid.o
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) winbindd/idmap_rid.o
+	@$(SHLD_MODULE) winbindd/idmap_rid.o
 
 bin/ad.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_ad.o
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) winbindd/idmap_ad.o
+	@$(SHLD_MODULE) winbindd/idmap_ad.o
 
 bin/hash.@SHLIBEXT@: $(BINARY_PREREQS) $(IDMAP_HASH_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(IDMAP_HASH_OBJ)
+	@$(SHLD_MODULE) $(IDMAP_HASH_OBJ)
 
 bin/adex.@SHLIBEXT@: $(BINARY_PREREQS) $(IDMAP_ADEX_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(IDMAP_ADEX_OBJ)
+	@$(SHLD_MODULE) $(IDMAP_ADEX_OBJ)
 
 bin/tdb2.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_tdb2.o
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) winbindd/idmap_tdb2.o
+	@$(SHLD_MODULE) winbindd/idmap_tdb2.o
 
 bin/ldap.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_ldap.o
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) winbindd/idmap_ldap.o
+	@$(SHLD_MODULE) winbindd/idmap_ldap.o
 
 bin/weird.@SHLIBEXT@: $(BINARY_PREREQS) $(DEVEL_HELP_WEIRD_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(DEVEL_HELP_WEIRD_OBJ)
+	@$(SHLD_MODULE) $(DEVEL_HELP_WEIRD_OBJ)
 
 bin/CP850.@SHLIBEXT@: $(BINARY_PREREQS) $(CP850_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(CP850_OBJ)
+	@$(SHLD_MODULE) $(CP850_OBJ)
 
 bin/CP437.@SHLIBEXT@: $(BINARY_PREREQS) $(CP437_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(CP437_OBJ)
+	@$(SHLD_MODULE) $(CP437_OBJ)
 
 bin/macosxfs.@SHLIBEXT@: $(BINARY_PREREQS) $(CHARSET_MACOSXFS_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(CHARSET_MACOSXFS_OBJ) -framework CoreFoundation
+	@$(SHLD_MODULE) $(CHARSET_MACOSXFS_OBJ) -framework CoreFoundation
 
 # NOTE, there is no build rule for a dynamic default VFS module because
 # this one MUST MUST MUST be built statically.
 
 bin/audit.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_AUDIT_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_AUDIT_OBJ)
+	@$(SHLD_MODULE) $(VFS_AUDIT_OBJ)
 
 bin/extd_audit.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_EXTD_AUDIT_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_EXTD_AUDIT_OBJ)
+	@$(SHLD_MODULE) $(VFS_EXTD_AUDIT_OBJ)
 
 bin/full_audit.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_FULL_AUDIT_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_FULL_AUDIT_OBJ)
+	@$(SHLD_MODULE) $(VFS_FULL_AUDIT_OBJ)
 
 bin/recycle.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_RECYCLE_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_RECYCLE_OBJ)
+	@$(SHLD_MODULE) $(VFS_RECYCLE_OBJ)
 
 bin/netatalk.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_NETATALK_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_NETATALK_OBJ)
+	@$(SHLD_MODULE) $(VFS_NETATALK_OBJ)
 
 bin/fake_perms.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_FAKE_PERMS_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_FAKE_PERMS_OBJ)
+	@$(SHLD_MODULE) $(VFS_FAKE_PERMS_OBJ)
 
 bin/default_quota.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_DEFAULT_QUOTA_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_DEFAULT_QUOTA_OBJ)
+	@$(SHLD_MODULE) $(VFS_DEFAULT_QUOTA_OBJ)
 
 bin/readonly.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_READONLY_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_READONLY_OBJ)
+	@$(SHLD_MODULE) $(VFS_READONLY_OBJ)
 
 bin/shadow_copy.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_SHADOW_COPY_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_SHADOW_COPY_OBJ)
+	@$(SHLD_MODULE) $(VFS_SHADOW_COPY_OBJ)
 
 bin/shadow_copy2.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_SHADOW_COPY2_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_SHADOW_COPY2_OBJ)
+	@$(SHLD_MODULE) $(VFS_SHADOW_COPY2_OBJ)
 
 bin/syncops.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_SYNCOPS_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_SYNCOPS_OBJ)
+	@$(SHLD_MODULE) $(VFS_SYNCOPS_OBJ)
 
 bin/cap.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_CAP_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_CAP_OBJ)
+	@$(SHLD_MODULE) $(VFS_CAP_OBJ)
 
 bin/expand_msdfs.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_EXPAND_MSDFS_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_EXPAND_MSDFS_OBJ)
+	@$(SHLD_MODULE) $(VFS_EXPAND_MSDFS_OBJ)
 
 bin/afsacl.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_AFSACL_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_AFSACL_OBJ)
+	@$(SHLD_MODULE) $(VFS_AFSACL_OBJ)
 
 bin/xattr_tdb.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_XATTR_TDB_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_XATTR_TDB_OBJ)
+	@$(SHLD_MODULE) $(VFS_XATTR_TDB_OBJ)
 
 bin/posixacl.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_POSIXACL_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_POSIXACL_OBJ)
+	@$(SHLD_MODULE) $(VFS_POSIXACL_OBJ)
 
 bin/aixacl.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_AIXACL_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_AIXACL_OBJ)
+	@$(SHLD_MODULE) $(VFS_AIXACL_OBJ)
 
 bin/aixacl2.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_AIXACL2_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_AIXACL2_OBJ)
+	@$(SHLD_MODULE) $(VFS_AIXACL2_OBJ)
 
 bin/solarisacl.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_SOLARISACL_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_SOLARISACL_OBJ)
+	@$(SHLD_MODULE) $(VFS_SOLARISACL_OBJ)
 
 bin/zfsacl.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_ZFSACL_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_ZFSACL_OBJ)
+	@$(SHLD_MODULE) $(VFS_ZFSACL_OBJ)
 
 bin/irixacl.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_IRIXACL_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_IRIXACL_OBJ)
+	@$(SHLD_MODULE) $(VFS_IRIXACL_OBJ)
 
 bin/hpuxacl.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_HPUXACL_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_HPUXACL_OBJ)
+	@$(SHLD_MODULE) $(VFS_HPUXACL_OBJ)
 
 bin/tru64acl.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_TRU64ACL_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_TRU64ACL_OBJ)
+	@$(SHLD_MODULE) $(VFS_TRU64ACL_OBJ)
 
 bin/catia.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_CATIA_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_CATIA_OBJ)
+	@$(SHLD_MODULE) $(VFS_CATIA_OBJ)
 
 bin/streams_xattr.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_STREAMS_XATTR_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_STREAMS_XATTR_OBJ)
+	@$(SHLD_MODULE) $(VFS_STREAMS_XATTR_OBJ)
 
 bin/streams_depot.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_STREAMS_DEPOT_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_STREAMS_DEPOT_OBJ)
+	@$(SHLD_MODULE) $(VFS_STREAMS_DEPOT_OBJ)
 
 bin/cacheprime.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_CACHEPRIME_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_CACHEPRIME_OBJ)
+	@$(SHLD_MODULE) $(VFS_CACHEPRIME_OBJ)
 
 bin/prealloc.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_PREALLOC_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_PREALLOC_OBJ)
+	@$(SHLD_MODULE) $(VFS_PREALLOC_OBJ)
 
 bin/commit.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_COMMIT_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_COMMIT_OBJ)
+	@$(SHLD_MODULE) $(VFS_COMMIT_OBJ)
 
 bin/gpfs.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_GPFS_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_GPFS_OBJ)
+	@$(SHLD_MODULE) $(VFS_GPFS_OBJ)
 
 bin/notify_fam.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_NOTIFY_FAM_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_NOTIFY_FAM_OBJ) @SMB_FAM_LIBS@
+	@$(SHLD_MODULE) $(VFS_NOTIFY_FAM_OBJ) @SMB_FAM_LIBS@
 
 bin/readahead.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_READAHEAD_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_READAHEAD_OBJ)
+	@$(SHLD_MODULE) $(VFS_READAHEAD_OBJ)
 
 bin/tsmsm.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_TSMSM_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_TSMSM_OBJ)
+	@$(SHLD_MODULE) $(VFS_TSMSM_OBJ)
 
 bin/fileid.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_FILEID_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_FILEID_OBJ)
+	@$(SHLD_MODULE) $(VFS_FILEID_OBJ)
 
 bin/aio_fork.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_AIO_FORK_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_AIO_FORK_OBJ)
+	@$(SHLD_MODULE) $(VFS_AIO_FORK_OBJ)
 
 bin/preopen.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_PREOPEN_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_PREOPEN_OBJ)
+	@$(SHLD_MODULE) $(VFS_PREOPEN_OBJ)
 
 bin/acl_xattr.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_ACL_XATTR_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_ACL_XATTR_OBJ)
+	@$(SHLD_MODULE) $(VFS_ACL_XATTR_OBJ)
 
 bin/smb_traffic_analyzer.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_SMB_TRAFFIC_ANALYZER_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_SMB_TRAFFIC_ANALYZER_OBJ)
+	@$(SHLD_MODULE) $(VFS_SMB_TRAFFIC_ANALYZER_OBJ)
 
 bin/acl_tdb.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_ACL_TDB_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_ACL_TDB_OBJ)
+	@$(SHLD_MODULE) $(VFS_ACL_TDB_OBJ)
 
 bin/onefs.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_ONEFS_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_ONEFS_OBJ) @ONEFS_LIBS@
+	@$(SHLD_MODULE) $(VFS_ONEFS_OBJ) @ONEFS_LIBS@
 
 bin/onefs_shadow_copy.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_ONEFS_SHADOW_COPY_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_ONEFS_SHADOW_COPY_OBJ)
+	@$(SHLD_MODULE) $(VFS_ONEFS_SHADOW_COPY_OBJ)
 
 bin/pc_onefs.@SHLIBEXT@: $(BINARY_PREREQS) $(PERFCOUNT_ONEFS_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(PERFCOUNT_ONEFS_OBJ)
+	@$(SHLD_MODULE) $(PERFCOUNT_ONEFS_OBJ)
 
 bin/pc_test.@SHLIBEXT@: $(BINARY_PREREQS) $(PERFCOUNT_TEST_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(PERFCOUNT_TEST_OBJ)
+	@$(SHLD_MODULE) $(PERFCOUNT_TEST_OBJ)
 
 bin/registry.@SHLIBEXT@: $(BINARY_PREREQS) libgpo/gpext/registry.o
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) libgpo/gpext/registry.o
+	@$(SHLD_MODULE) libgpo/gpext/registry.o
 
 bin/scripts.@SHLIBEXT@: $(BINARY_PREREQS) libgpo/gpext/scripts.o
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) libgpo/gpext/scripts.o
+	@$(SHLD_MODULE) libgpo/gpext/scripts.o
 
 bin/security.@SHLIBEXT@: $(BINARY_PREREQS) libgpo/gpext/security.o
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) libgpo/gpext/security.o
+	@$(SHLD_MODULE) libgpo/gpext/security.o
 
 bin/dirsort.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_DIRSORT_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_PLUGIN) $(VFS_DIRSORT_OBJ)
+	@$(SHLD_MODULE) $(VFS_DIRSORT_OBJ)
 
 #########################################################
 ## IdMap NSS plugins
