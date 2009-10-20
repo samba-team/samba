@@ -1801,6 +1801,44 @@ NTSTATUS _lsa_QueryTrustedDomainInfo(struct pipes_struct *p,
 }
 
 /***************************************************************************
+ _lsa_QueryTrustedDomainInfoBySid
+ ***************************************************************************/
+
+NTSTATUS _lsa_QueryTrustedDomainInfoBySid(struct pipes_struct *p,
+					  struct lsa_QueryTrustedDomainInfoBySid *r)
+{
+	NTSTATUS status;
+	struct policy_handle trustdom_handle;
+	struct lsa_OpenTrustedDomain o;
+	struct lsa_QueryTrustedDomainInfo q;
+	struct lsa_Close c;
+
+	o.in.handle		= r->in.handle;
+	o.in.sid		= r->in.dom_sid;
+	o.in.access_mask	= SEC_FLAG_MAXIMUM_ALLOWED;
+	o.out.trustdom_handle	= &trustdom_handle;
+
+	status = _lsa_OpenTrustedDomain(p, &o);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	q.in.trustdom_handle	= &trustdom_handle;
+	q.in.level		= r->in.level;
+	q.out.info		= r->out.info;
+
+	status = _lsa_QueryTrustedDomainInfo(p, &q);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	c.in.handle		= &trustdom_handle;
+	c.out.handle		= &trustdom_handle;
+
+	return _lsa_Close(p, &c);
+}
+
+/***************************************************************************
  ***************************************************************************/
 
 NTSTATUS _lsa_CreateSecret(struct pipes_struct *p, struct lsa_CreateSecret *r)
@@ -2905,13 +2943,6 @@ NTSTATUS _lsa_SetInformationTrustedDomain(struct pipes_struct *p,
 }
 
 NTSTATUS _lsa_QuerySecret(struct pipes_struct *p, struct lsa_QuerySecret *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_QueryTrustedDomainInfoBySid(struct pipes_struct *p,
-					  struct lsa_QueryTrustedDomainInfoBySid *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
