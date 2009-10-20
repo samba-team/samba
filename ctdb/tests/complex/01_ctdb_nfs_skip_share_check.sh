@@ -69,7 +69,7 @@ select_test_node_and_ips
 
 # We need this for later, so we know how long to sleep.
 try_command_on_node $test_node $CTDB getvar MonitorInterval
-monitor_interval="${out#*= }"
+monitor_interval=$((${out#*= } + 1))
 
 mydir=$(onnode -q $test_node mktemp -d)
 rc_local_d="${CTDB_BASE:-/etc/ctdb}/rc.local.d"
