@@ -422,22 +422,11 @@ NTSTATUS _lsa_EnumTrustDom(pipes_struct *p,
 			   struct lsa_EnumTrustDom *r)
 {
 	struct lsa_info *info;
-	uint32 next_idx;
+	uint32_t count;
 	struct trustdom_info **domains;
-	struct lsa_DomainInfo *lsa_domains = NULL;
+	struct lsa_DomainInfo *entries;
 	int i;
-
-	/*
-	 * preferred length is set to 5 as a "our" preferred length
-	 * nt sets this parameter to 2
-	 * update (20.08.2002): it's not preferred length, but preferred size!
-	 * it needs further investigation how to optimally choose this value
-	 */
-	uint32 max_num_domains =
-		r->in.max_size < 5 ? r->in.max_size : 10;
-	uint32 num_domains;
 	NTSTATUS nt_status;
-	uint32 num_thistime;
 
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
@@ -451,48 +440,43 @@ NTSTATUS _lsa_EnumTrustDom(pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 
 	become_root();
-	nt_status = pdb_enum_trusteddoms(p->mem_ctx, &num_domains, &domains);
+	nt_status = pdb_enum_trusteddoms(p->mem_ctx, &count, &domains);
 	unbecome_root();
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
 
-	if (*r->in.resume_handle < num_domains) {
-		num_thistime = MIN(num_domains, max_num_domains);
-
-		nt_status = STATUS_MORE_ENTRIES;
-
-		if (*r->in.resume_handle + num_thistime > num_domains) {
-			num_thistime = num_domains - *r->in.resume_handle;
-			nt_status = NT_STATUS_OK;
-		}
-
-		next_idx = *r->in.resume_handle + num_thistime;
-	} else {
-		num_thistime = 0;
-		next_idx = 0xffffffff;
-		nt_status = NT_STATUS_NO_MORE_ENTRIES;
-	}
-
-	/* set up the lsa_enum_trust_dom response */
-
-	lsa_domains = TALLOC_ZERO_ARRAY(p->mem_ctx, struct lsa_DomainInfo,
-					num_thistime);
-	if (!lsa_domains) {
+	entries = TALLOC_ZERO_ARRAY(p->mem_ctx, struct lsa_DomainInfo, count);
+	if (!entries) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	for (i=0; i<num_thistime; i++) {
-		init_lsa_StringLarge(&lsa_domains[i].name, domains[i]->name);
-		lsa_domains[i].sid = &domains[i]->sid;
+	for (i=0; i<count; i++) {
+		init_lsa_StringLarge(&entries[i].name, domains[i]->name);
+		entries[i].sid = &domains[i]->sid;
 	}
 
-	*r->out.resume_handle = next_idx;
-	r->out.domains->count = num_thistime;
-	r->out.domains->domains = lsa_domains;
+	if (*r->in.resume_handle >= count) {
+		*r->out.resume_handle = -1;
+		TALLOC_FREE(entries);
+		return NT_STATUS_NO_MORE_ENTRIES;
+	}
 
-	return nt_status;
+	/* return the rest, limit by max_size. Note that we
+	   use the w2k3 element size value of 60 */
+	r->out.domains->count = count - *r->in.resume_handle;
+	r->out.domains->count = MIN(r->out.domains->count,
+				 1+(r->in.max_size/LSA_ENUM_TRUST_DOMAIN_MULTIPLIER));
+
+	r->out.domains->domains = entries + *r->in.resume_handle;
+
+	if (r->out.domains->count < count - *r->in.resume_handle) {
+		*r->out.resume_handle = *r->in.resume_handle + r->out.domains->count;
+		return STATUS_MORE_ENTRIES;
+	}
+
+	return NT_STATUS_OK;
 }
 
 #define LSA_AUDIT_NUM_CATEGORIES_NT4	7
