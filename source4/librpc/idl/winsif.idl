@@ -129,7 +129,7 @@ import "nbt.idl";
 		uint32 verify_interval;
 		winsif_PriorityClass prioritiy_class;
 		uint32 num_worker_threads;
-		winsif_Stat stat;
+		winsif_Stat wstat;
 	} winsif_Results;
 
 	typedef enum {
@@ -307,7 +307,7 @@ import "nbt.idl";
 		uint32 verify_interval;
 		winsif_PriorityClass prioritiy_class;
 		uint32 num_worker_threads;
-		winsif_Stat stat;
+		winsif_Stat wstat;
 	} winsif_ResultsNew;
 
 	WERROR winsif_WinsStatusNew(
