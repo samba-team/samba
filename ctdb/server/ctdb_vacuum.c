@@ -514,7 +514,7 @@ static int update_tuning_db(struct ctdb_db_context *ctdb_db, struct vacuum_data 
 		return -1;
 	}
 
-	tune_tdb = tdb_open(vac_dbname, 0, 0, O_RDWR|O_CREAT, 0600);
+	tune_tdb = tdb_open(vac_dbname, 0, 0, O_RDWR|O_CREAT, 0644);
 	if (tune_tdb == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to create/open %s\n", TUNINGDBNAME));
 		talloc_free(tmp_ctx);
@@ -675,9 +675,9 @@ static int get_vacuum_interval(struct ctdb_db_context *ctdb_db)
 		return interval;
 	}
 
-	tdb = tdb_open(vac_dbname, 0, 0, O_RDONLY, 0600);
+	tdb = tdb_open(vac_dbname, 0, 0, O_RDWR|O_CREAT, 0644);
 	if (!tdb) {
-		DEBUG(DEBUG_ERR,("Unable to open database %s using default interval\n", vac_dbname));
+		DEBUG(DEBUG_ERR,("Unable to open/create database %s using default interval\n", vac_dbname));
 		talloc_free(tmp_ctx);
 		return interval;
 	}
@@ -701,8 +701,6 @@ static int get_vacuum_interval(struct ctdb_db_context *ctdb_db)
 			}
 		}
 		free(value.dptr);
-
-		DEBUG(DEBUG_NOTICE,("Using new interval %u for database %s\n", interval, ctdb_db->db_name));
 	}
 	tdb_close(tdb);
 
@@ -756,7 +754,7 @@ static void vacuum_child_handler(struct event_context *ev, struct fd_event *fde,
 	char c = 0;
 	int ret;
 
-	DEBUG(DEBUG_NOTICE,("Vacuuming child finished for db %s\n", child_ctx->vacuum_handle->ctdb_db->db_name));
+	DEBUG(DEBUG_NOTICE,("Vacuuming child process %d finished for db %s\n", child_ctx->child_pid, child_ctx->vacuum_handle->ctdb_db->db_name));
 	child_ctx->child_pid = -1;
 
 	ret = read(child_ctx->fd[0], &c, 1);
@@ -789,8 +787,6 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 		return;
 	}
 
-	DEBUG(DEBUG_NOTICE,("Start a vacuuming child process for db %s\n", ctdb_db->db_name));
-
 	child_ctx = talloc(vacuum_handle, struct ctdb_vacuum_child_context);
 	if (child_ctx == NULL) {
 		DEBUG(DEBUG_CRIT, (__location__ " Failed to allocate child context for vacuuming of %s\n", ctdb_db->db_name));
@@ -821,6 +817,8 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 		char cc = 0;
 		close(child_ctx->fd[0]);
 
+		DEBUG(DEBUG_NOTICE,("Vacuuming child process %d for db %s started\n", getpid(), ctdb_db->db_name));
+	
 		if (switch_from_server_to_client(ctdb) != 0) {
 			DEBUG(DEBUG_CRIT, (__location__ "ERROR: failed to switch vacuum daemon into client mode. Shutting down.\n"));
 			_exit(1);
