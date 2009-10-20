@@ -202,12 +202,22 @@ static bool test_LookupNames(struct dcerpc_pipe *p,
 	}
 
 	for (i=0;i< tnames->count;i++) {
-		if (i < count && sids.sids[i].sid_type != tnames->names[i].sid_type) {
-			torture_comment(tctx, "LookupName of %s got unexpected name type: %s\n",
-			       tnames->names[i].name.string, sid_type_lookup(sids.sids[i].sid_type));
+		if (i < count) {
+			if (sids.sids[i].sid_type != tnames->names[i].sid_type) {
+				torture_comment(tctx, "LookupName of %s got unexpected name type: %s\n",
+				       tnames->names[i].name.string, sid_type_lookup(sids.sids[i].sid_type));
+				return false;
+			}
+			if ((sids.sids[i].sid_type == SID_NAME_DOMAIN) &&
+			    (sids.sids[i].rid != (uint32_t)-1)) {
+				torture_comment(tctx, "LookupName of %s got unexpected rid: %d\n",
+					tnames->names[i].name.string, sids.sids[i].rid);
+				return false;
+			}
 		} else if (i >=count) {
 			torture_comment(tctx, "LookupName of %s failed to return a result\n",
 			       tnames->names[i].name.string);
+			return false;
 		}
 	}
 	torture_comment(tctx, "\n");
