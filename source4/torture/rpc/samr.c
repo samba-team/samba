@@ -3275,6 +3275,8 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 #undef TEST_SET_LEVELS
 #undef TEST_QUERY_LEVELS
 
+	talloc_free(np);
+
 	return ret;
 }
 
