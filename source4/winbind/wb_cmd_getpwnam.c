@@ -22,11 +22,9 @@
 #include "includes.h"
 #include "libcli/composite/composite.h"
 #include "winbind/wb_server.h"
-#include "winbind/wb_async_helpers.h"
 #include "param/param.h"
 #include "winbind/wb_helper.h"
 #include "smbd/service_task.h"
-#include "libnet/libnet_proto.h"
 #include "libcli/security/security.h"
 
 struct cmd_getpwnam_state {

@@ -23,7 +23,6 @@
 #include "libcli/composite/composite.h"
 #include "winbind/wb_server.h"
 #include "smbd/service_task.h"
-#include "winbind/wb_async_helpers.h"
 #include "libcli/security/security.h"
 #include "../lib/util/dlinklist.h"
 #include "param/param.h"

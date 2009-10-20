@@ -22,20 +22,15 @@
 
 #include "includes.h"
 #include "libcli/composite/composite.h"
-#include "libcli/smb_composite/smb_composite.h"
 #include "winbind/wb_server.h"
-#include "winbind/wb_async_helpers.h"
-#include "winbind/wb_helper.h"
 #include "smbd/service_task.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "libcli/libcli.h"
 
-#include "libcli/auth/credentials.h"
 #include "libcli/security/security.h"
 
-#include "libcli/ldap/ldap_client.h"
 
 #include "auth/credentials/credentials.h"
 #include "param/param.h"

@@ -26,9 +26,6 @@
 #include "libcli/security/security.h"
 #include "winbind/wb_server.h"
 #include "smbd/service_task.h"
-#include "librpc/gen_ndr/ndr_irpc.h"
-#include "librpc/gen_ndr/samr.h"
-#include "lib/messaging/irpc.h"
 #include "libcli/finddcs.h"
 #include "param/param.h"
 

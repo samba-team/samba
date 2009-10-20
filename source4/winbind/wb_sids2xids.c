@@ -23,9 +23,6 @@
 #include "libcli/composite/composite.h"
 #include "winbind/wb_server.h"
 #include "smbd/service_task.h"
-#include "winbind/wb_helper.h"
-#include "libcli/security/security.h"
-#include "winbind/idmap.h"
 
 struct sids2xids_state {
 	struct composite_context *ctx;

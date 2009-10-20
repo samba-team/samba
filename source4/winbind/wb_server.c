@@ -20,17 +20,9 @@
 */
 
 #include "includes.h"
-#include "lib/socket/socket.h"
-#include "../lib/util/dlinklist.h"
-#include "lib/events/events.h"
-#include "smbd/service_task.h"
 #include "smbd/process_model.h"
-#include "smbd/service_stream.h"
-#include "nsswitch/winbind_nss_config.h"
 #include "winbind/wb_server.h"
 #include "lib/stream/packet.h"
-#include "smbd/service.h"
-#include "param/secrets.h"
 #include "param/param.h"
 
 void wbsrv_terminate_connection(struct wbsrv_connection *wbconn, const char *reason)

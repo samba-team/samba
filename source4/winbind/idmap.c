@@ -21,11 +21,8 @@
 
 #include "includes.h"
 #include "auth/auth.h"
-#include "librpc/gen_ndr/lsa.h"
-#include "librpc/gen_ndr/samr.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "lib/ldb/include/ldb.h"
-#include "lib/ldb/include/ldb_errors.h"
 #include "lib/ldb_wrap.h"
 #include "param/param.h"
 #include "winbind/idmap.h"

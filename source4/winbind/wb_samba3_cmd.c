@@ -23,12 +23,10 @@
 
 #include "includes.h"
 #include "winbind/wb_server.h"
-#include "winbind/wb_async_helpers.h"
 #include "param/param.h"
 #include "winbind/wb_helper.h"
 #include "libcli/composite/composite.h"
 #include "version.h"
-#include "librpc/gen_ndr/netlogon.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "libcli/security/security.h"
 #include "auth/ntlm/pam_errors.h"

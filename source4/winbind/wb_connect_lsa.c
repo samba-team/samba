@@ -24,7 +24,6 @@
 #include "includes.h"
 #include "libcli/composite/composite.h"
 
-#include "libcli/raw/libcliraw.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "winbind/wb_server.h"
 

@@ -27,7 +27,6 @@
 #include "smbd/service_task.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
 #include "libcli/libcli.h"
-#include "param/param.h"
 
 struct trusted_dom_info_state {
 	struct composite_context *ctx;

@@ -22,10 +22,7 @@
 #include "includes.h"
 #include "libcli/composite/composite.h"
 #include "winbind/wb_server.h"
-#include "winbind/wb_async_helpers.h"
-#include "winbind/wb_helper.h"
 #include "smbd/service_task.h"
-#include "libnet/libnet_proto.h"
 
 struct cmd_list_users_state {
 	struct composite_context *ctx;

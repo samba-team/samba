@@ -20,7 +20,6 @@
 #include "includes.h"
 #include "winbind/wb_server.h"
 #include "smbd/service_task.h"
-#include "auth/credentials/credentials.h"
 #include "param/secrets.h"
 #include "param/param.h"
 

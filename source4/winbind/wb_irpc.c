@@ -22,7 +22,6 @@
 #include "winbind/wb_server.h"
 #include "lib/messaging/irpc.h"
 #include "libcli/composite/composite.h"
-#include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_winbind.h"
 #include "smbd/service_task.h"
 

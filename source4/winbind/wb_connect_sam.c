@@ -23,7 +23,6 @@
 #include "includes.h"
 #include "libcli/composite/composite.h"
 
-#include "libcli/raw/libcliraw.h"
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "winbind/wb_server.h"
