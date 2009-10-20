@@ -1124,10 +1124,10 @@ WINBIND_WINS_NSS_OBJ = ../nsswitch/wins.o $(PARAM_OBJ) \
 	$(LIBNDR_GEN_OBJ0) $(LDB_OBJ)
 
 PAM_SMBPASS_OBJ_0 = pam_smbpass/pam_smb_auth.o pam_smbpass/pam_smb_passwd.o \
-		pam_smbpass/pam_smb_acct.o pam_smbpass/support.o
+		pam_smbpass/pam_smb_acct.o pam_smbpass/support.o ../lib/util/asn1.o
 PAM_SMBPASS_OBJ = $(PAM_SMBPASS_OBJ_0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 		$(SMBLDAP_OBJ) $(LIBSAMBA_OBJ) \
-		$(LDB_OBJ)
+		$(LDB_OBJ) $(LIBTSOCKET_OBJ)
 
 IDMAP_OBJ     = winbindd/idmap.o winbindd/idmap_util.o @IDMAP_STATIC@
 
