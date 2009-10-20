@@ -2188,7 +2188,7 @@ static bool test_CreateTrustedDomain(struct dcerpc_pipe *p,
 			q.out.info = &info;
 			status = dcerpc_lsa_QueryTrustedDomainInfo(p, tctx, &q);
 			if (!NT_STATUS_IS_OK(status)) {
-				torture_comment(tctx, "QueryTrustedDomainInfo level 1 failed - %s\n", nt_errstr(status));
+				torture_comment(tctx, "QueryTrustedDomainInfo level %d failed - %s\n", q.in.level, nt_errstr(status));
 				ret = false;
 			} else if (!q.out.info) {
 				ret = false;
