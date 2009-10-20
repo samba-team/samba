@@ -13,7 +13,7 @@ URL: http://ctdb.samba.org/
 
 Source: ctdb-%{version}.tar.gz
 
-Prereq: /sbin/chkconfig /bin/mktemp /usr/bin/killall
+Prereq: /bin/mktemp /usr/bin/killall
 Prereq: fileutils sed /etc/init.d
 
 Provides: ctdb = %{version}
@@ -73,15 +73,6 @@ find $RPM_BUILD_ROOT -name "*.old" -exec rm -f {} \;
 
 %clean
 rm -rf $RPM_BUILD_ROOT
-
-%post
-[ -x /sbin/chkconfig ] && /sbin/chkconfig --add ctdb
-
-%preun
-if [ $1 = 0 ] ; then
-    [ -x /sbin/chkconfig ] && /sbin/chkconfig --del ctdb
-fi
-exit 0
 
 
 #######################################################################
