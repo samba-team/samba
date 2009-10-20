@@ -36,4 +36,9 @@
 #define uwrap_enabled() 0
 #endif
 
+/*Workaround for heimdal define vs samba define*/
+#ifdef HAVE_LIBINTL_H
+#define LIBINTL
+#endif
+
 #endif
