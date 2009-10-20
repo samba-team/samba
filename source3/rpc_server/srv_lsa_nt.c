@@ -1665,6 +1665,11 @@ NTSTATUS _lsa_CreateAccount(pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+	/* Work out max allowed. */
+	map_max_allowed_access(p->server_info->ptok,
+			       &p->server_info->utok,
+			       &r->in.access_mask);
+
 	/* map the generic bits to the lsa policy ones */
 	se_map_generic(&r->in.access_mask, &lsa_account_mapping);
 
