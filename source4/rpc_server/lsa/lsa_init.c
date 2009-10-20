@@ -21,7 +21,6 @@
 */
 
 #include "rpc_server/lsa/lsa.h"
-#include "dsdb/samdb/samdb_proto.h"
 
 NTSTATUS dcesrv_lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				     struct lsa_policy_state **_state)

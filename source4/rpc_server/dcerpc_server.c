@@ -21,17 +21,12 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "auth/auth.h"
 #include "auth/gensec/gensec.h"
 #include "../lib/util/dlinklist.h"
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/dcerpc_server_proto.h"
 #include "librpc/rpc/dcerpc_proto.h"
-#include "lib/events/events.h"
-#include "smbd/service_task.h"
-#include "smbd/service_stream.h"
-#include "smbd/service.h"
 #include "system/filesys.h"
 #include "libcli/security/security.h"
 #include "param/param.h"

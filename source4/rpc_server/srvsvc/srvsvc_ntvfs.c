@@ -21,10 +21,6 @@
 #include "includes.h"
 #include "ntvfs/ntvfs.h"
 #include "rpc_server/dcerpc_server.h"
-#include "librpc/gen_ndr/ndr_srvsvc.h"
-#include "rpc_server/common/common.h"
-#include "rpc_server/srvsvc/proto.h"
-#include "lib/socket/socket.h"
 #include "param/param.h"
 
 struct socket_address *srvsvc_get_my_addr(void *p, TALLOC_CTX *mem_ctx)

@@ -25,7 +25,6 @@
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
 #include "param/param.h"
-#include "rpc_server/common/common.h"
 
 /* 
     Here are common server info functions used by some dcerpc server interfaces
