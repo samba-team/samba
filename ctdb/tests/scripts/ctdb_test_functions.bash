@@ -396,7 +396,10 @@ node_has_status ()
 	{
             read x
             while read line ; do
-		[ "${line#:${pnn}:*:${bits}}" != "$line" ] && return 0
+		# This needs to be done in 2 steps to avoid false matches.
+		local line_bits="${line#:${pnn}:*:}"
+		[ "$line_bits" = "$line" ] && continue
+		[ "${line_bits#${bits}}" != "$line_bits" ] && return 0
             done
 	    return 1
 	} <<<"$out" # Yay bash!
