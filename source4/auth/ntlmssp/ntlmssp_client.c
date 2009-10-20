@@ -23,7 +23,6 @@
 
 #include "includes.h"
 #include "auth/ntlmssp/ntlmssp.h"
-#include "../librpc/gen_ndr/ntlmssp.h"
 #include "../lib/crypto/crypto.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "auth/credentials/credentials.h"

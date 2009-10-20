@@ -23,13 +23,10 @@
 
 #include "includes.h"
 #include "auth/ntlmssp/ntlmssp.h"
-#include "../librpc/gen_ndr/ntlmssp.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
-#include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_proto.h"
-#include "param/param.h"
 
 /**
  * Callbacks for NTLMSSP - for both client and server operating modes

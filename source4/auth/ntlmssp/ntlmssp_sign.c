@@ -21,7 +21,6 @@
 
 #include "includes.h"
 #include "auth/ntlmssp/ntlmssp.h"
-#include "../librpc/gen_ndr/ntlmssp.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../lib/crypto/crypto.h"
 #include "auth/gensec/gensec.h"

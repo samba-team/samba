@@ -24,14 +24,11 @@
 #include "includes.h"
 #include "system/network.h"
 #include "auth/ntlmssp/ntlmssp.h"
-#include "../librpc/gen_ndr/ntlmssp.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../lib/crypto/crypto.h"
 #include "auth/gensec/gensec.h"
 #include "auth/auth.h"
-#include "auth/ntlm/auth_proto.h"
 #include "param/param.h"
-#include "auth/session_proto.h"
 
 /** 
  * Set a username on an NTLMSSP context - ensures it is talloc()ed 
