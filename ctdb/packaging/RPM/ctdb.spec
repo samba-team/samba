@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.97
+Version: 1.0.98
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -132,6 +132,15 @@ fi
 %{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
+* Tue Oct 20 2009 : Version 1.0.98
+ - Fix for the vacuuming database from Wolfgang M
+ - Create a directory where the test framework can put temporary overrides
+   to variables and functions.
+ - Wait a lot longer before shutting down the node when the reclock file
+   is incorrectly configured, and log where it is configured.
+ - Try to avoid running the "monitor" event when databases are frozen.
+ - Add logging for every time we create a filedescriptor so we can trap
+   fd leaks.
 * Thu Oct 14 2009 : Version 1.0.97
  - From martins : update onnode.
    Update onnode to allow specifying an alternative nodes file from
