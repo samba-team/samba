@@ -705,10 +705,15 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 
 		ctdb->event_script_timeouts++;
 		if (ctdb->event_script_timeouts > ctdb->tunable.script_ban_count) {
-			ctdb->event_script_timeouts = 0;
-			DEBUG(DEBUG_ERR, ("Maximum timeout count %u reached for eventscript. Banning self for %d seconds\n", ctdb->tunable.script_ban_count, ctdb->tunable.recovery_ban_period));
-			ctdb_ban_self(ctdb, ctdb->tunable.recovery_ban_period);
-			callback(ctdb, -1, private_data);
+			if (ctdb->tunable.script_unhealthy_on_timeout != 0) {
+				DEBUG(DEBUG_ERR, ("Maximum timeout count %u reached for eventscript. Making node unhealthy\n", ctdb->tunable.script_ban_count));
+				callback(ctdb, -ETIME, private_data);
+			} else {
+				ctdb->event_script_timeouts = 0;
+				DEBUG(DEBUG_ERR, ("Maximum timeout count %u reached for eventscript. Banning self for %d seconds\n", ctdb->tunable.script_ban_count, ctdb->tunable.recovery_ban_period));
+				ctdb_ban_self(ctdb, ctdb->tunable.recovery_ban_period);
+				callback(ctdb, -1, private_data);
+			}
 		} else {
 		  	callback(ctdb, 0, private_data);
 		}
