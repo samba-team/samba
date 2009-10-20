@@ -68,3 +68,5 @@ samba4.gensec.python # not finished
 bench # don't run benchmarks in our selftest
 samba4.ldap.secdesc.python # this is expected to fail until the acl module is complete
 trans2.scan # uses huge number of file descriptors
+base.scan.ioctl # bad idea in make test
+base.scan.pipe_number # bad idea in make test
