@@ -43,6 +43,7 @@
 #include "param/param.h"
 
 struct descriptor_data {
+	int _dummy;
 };
 
 struct descriptor_context {
