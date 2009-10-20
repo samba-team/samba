@@ -2137,19 +2137,20 @@ static bool test_EnumTrustDomEx(struct dcerpc_pipe *p,
 
 static bool test_CreateTrustedDomain(struct dcerpc_pipe *p,
 				     struct torture_context *tctx,
-				     struct policy_handle *handle)
+				     struct policy_handle *handle,
+				     uint32_t num_trusts)
 {
 	NTSTATUS status;
 	bool ret = true;
 	struct lsa_CreateTrustedDomain r;
 	struct lsa_DomainInfo trustinfo;
-	struct dom_sid *domsid[12];
-	struct policy_handle trustdom_handle[12];
+	struct dom_sid **domsid;
+	struct policy_handle *trustdom_handle;
 	struct lsa_QueryTrustedDomainInfo q;
 	union lsa_TrustedDomainInfo *info = NULL;
 	int i;
 
-	torture_comment(tctx, "\nTesting CreateTrustedDomain for 12 domains\n");
+	torture_comment(tctx, "\nTesting CreateTrustedDomain for %d domains\n", num_trusts);
 
 	if (!test_EnumTrustDom(p, tctx, handle)) {
 		ret = false;
@@ -2159,7 +2160,10 @@ static bool test_CreateTrustedDomain(struct dcerpc_pipe *p,
 		ret = false;
 	}
 
-	for (i=0; i< 12; i++) {
+	domsid = talloc_array(tctx, struct dom_sid *, num_trusts);
+	trustdom_handle = talloc_array(tctx, struct policy_handle, num_trusts);
+
+	for (i=0; i< num_trusts; i++) {
 		char *trust_name = talloc_asprintf(tctx, "torturedom%02d", i);
 		char *trust_sid = talloc_asprintf(tctx, "S-1-5-21-97398-379795-100%02d", i);
 
@@ -2226,7 +2230,7 @@ static bool test_CreateTrustedDomain(struct dcerpc_pipe *p,
 		ret = false;
 	}
 
-	for (i=0; i<12; i++) {
+	for (i=0; i<num_trusts; i++) {
 		if (!test_DeleteTrustedDomainBySid(p, tctx, handle, domsid[i])) {
 			ret = false;
 		}
@@ -2237,7 +2241,8 @@ static bool test_CreateTrustedDomain(struct dcerpc_pipe *p,
 
 static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 					struct torture_context *tctx,
-					struct policy_handle *handle)
+					struct policy_handle *handle,
+					uint32_t num_trusts)
 {
 	NTSTATUS status;
 	bool ret = true;
@@ -2246,15 +2251,18 @@ static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 	struct lsa_TrustDomainInfoAuthInfoInternal authinfo;
 	struct trustDomainPasswords auth_struct;
 	DATA_BLOB auth_blob;
-	struct dom_sid *domsid[12];
-	struct policy_handle trustdom_handle[12];
+	struct dom_sid **domsid;
+	struct policy_handle *trustdom_handle;
 	struct lsa_QueryTrustedDomainInfo q;
 	union lsa_TrustedDomainInfo *info = NULL;
 	DATA_BLOB session_key;
 	enum ndr_err_code ndr_err;
 	int i;
 
-	torture_comment(tctx, "\nTesting CreateTrustedDomainEx2 for 12 domains\n");
+	torture_comment(tctx, "\nTesting CreateTrustedDomainEx2 for %d domains\n", num_trusts);
+
+	domsid = talloc_array(tctx, struct dom_sid *, num_trusts);
+	trustdom_handle = talloc_array(tctx, struct policy_handle, num_trusts);
 
 	status = dcerpc_fetch_session_key(p, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2262,7 +2270,7 @@ static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 		return false;
 	}
 
-	for (i=0; i< 12; i++) {
+	for (i=0; i< num_trusts; i++) {
 		char *trust_name = talloc_asprintf(tctx, "torturedom%02d", i);
 		char *trust_name_dns = talloc_asprintf(tctx, "torturedom%02d.samba.example.com", i);
 		char *trust_sid = talloc_asprintf(tctx, "S-1-5-21-97398-379795-100%02d", i);
@@ -2366,7 +2374,7 @@ static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 		ret = false;
 	}
 
-	for (i=0; i<12; i++) {
+	for (i=0; i<num_trusts; i++) {
 		if (!test_DeleteTrustedDomainBySid(p, tctx, handle, domsid[i])) {
 			torture_comment(tctx, "test_DeleteTrustedDomainBySid failed\n");
 			ret = false;
@@ -2786,11 +2794,20 @@ struct torture_suite *torture_rpc_lsa_lookup_names(TALLOC_CTX *mem_ctx)
 	return suite;
 }
 
+struct lsa_trustdom_state {
+	uint32_t num_trusts;
+};
+
 static bool testcase_TrustedDomains(struct torture_context *tctx,
-				    struct dcerpc_pipe *p)
+				    struct dcerpc_pipe *p,
+				    void *data)
 {
 	bool ret = true;
 	struct policy_handle *handle;
+	struct lsa_trustdom_state *state =
+		talloc_get_type_abort(data, struct lsa_trustdom_state);
+
+	torture_comment(tctx, "testing %d domains\n", state->num_trusts);
 
 	if (!test_OpenPolicy(p, tctx)) {
 		ret = false;
@@ -2804,11 +2821,11 @@ static bool testcase_TrustedDomains(struct torture_context *tctx,
 		ret = false;
 	}
 
-	if (!test_CreateTrustedDomain(p, tctx, handle)) {
+	if (!test_CreateTrustedDomain(p, tctx, handle, state->num_trusts)) {
 		ret = false;
 	}
 
-	if (!test_CreateTrustedDomainEx2(p, tctx, handle)) {
+	if (!test_CreateTrustedDomainEx2(p, tctx, handle, state->num_trusts)) {
 		ret = false;
 	}
 
@@ -2823,13 +2840,19 @@ struct torture_suite *torture_rpc_lsa_trusted_domains(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite;
 	struct torture_rpc_tcase *tcase;
+	struct lsa_trustdom_state *state;
+
+	state = talloc(mem_ctx, struct lsa_trustdom_state);
+
+	state->num_trusts = 12;
 
 	suite = torture_suite_create(mem_ctx, "LSA-TRUSTED-DOMAINS");
 
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "lsa",
 						  &ndr_table_lsarpc);
-	torture_rpc_tcase_add_test(tcase, "TrustedDomains",
-				   testcase_TrustedDomains);
+	torture_rpc_tcase_add_test_ex(tcase, "TrustedDomains",
+				      testcase_TrustedDomains,
+				      state);
 
 	return suite;
 }
