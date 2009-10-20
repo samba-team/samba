@@ -120,6 +120,7 @@ Options:
     --category          show the test category (ACL, CTDB, Samba ...).
     -d, --description   show test case description.
     --summary           show short test case summary.
+    -x                  trace test using set -x
 EOF
 
     exit $status
@@ -141,7 +142,7 @@ ctdb_test_cmd_options()
         -v|--version)     ctdb_test_version   ;;
         --category)       echo "CTDB"         ;; 
         -d|--description) test_info           ;;
-	--summary)        test_info | head -1 ;;
+	-x)               set -x ; return 0   ;;
 	*)
 	    echo "Error: Unknown parameter = $1"
 	    echo
