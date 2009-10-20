@@ -502,6 +502,8 @@ int tdb_transaction_start(struct tdb_context *tdb)
 	tdb->transaction->io_methods = tdb->methods;
 	tdb->methods = &transaction_methods;
 
+	/* Trace at the end, so we get sequence number correct. */
+	tdb_trace(tdb, "tdb_transaction_start");
 	return 0;
 	
 fail:
@@ -544,10 +546,7 @@ static int transaction_sync(struct tdb_context *tdb, tdb_off_t offset, tdb_len_t
 }
 
 
-/*
-  cancel the current transaction
-*/
-int tdb_transaction_cancel(struct tdb_context *tdb)
+int _tdb_transaction_cancel(struct tdb_context *tdb)
 {	
 	int i, ret = 0;
 
@@ -612,6 +611,14 @@ int tdb_transaction_cancel(struct tdb_context *tdb)
 	return ret;
 }
 
+/*
+  cancel the current transaction
+*/
+int tdb_transaction_cancel(struct tdb_context *tdb)
+{
+	tdb_trace(tdb, "tdb_transaction_cancel");
+	return _tdb_transaction_cancel(tdb);
+}
 
 /*
   work out how much space the linearised recovery data will consume
@@ -859,10 +866,7 @@ static int transaction_setup_recovery(struct tdb_context *tdb,
 	return 0;
 }
 
-/*
-  prepare to commit the current transaction
-*/
-int tdb_transaction_prepare_commit(struct tdb_context *tdb)
+static int _tdb_transaction_prepare_commit(struct tdb_context *tdb)
 {	
 	const struct tdb_methods *methods;
 
@@ -873,14 +877,14 @@ int tdb_transaction_prepare_commit(struct tdb_context *tdb)
 
 	if (tdb->transaction->prepared) {
 		tdb->ecode = TDB_ERR_EINVAL;
-		tdb_transaction_cancel(tdb);
+		_tdb_transaction_cancel(tdb);
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_transaction_prepare_commit: transaction already prepared\n"));
 		return -1;
 	}
 
 	if (tdb->transaction->transaction_error) {
 		tdb->ecode = TDB_ERR_IO;
-		tdb_transaction_cancel(tdb);
+		_tdb_transaction_cancel(tdb);
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_transaction_prepare_commit: transaction error pending\n"));
 		return -1;
 	}
@@ -902,7 +906,7 @@ int tdb_transaction_prepare_commit(struct tdb_context *tdb)
 	if (tdb->num_locks || tdb->global_lock.count) {
 		tdb->ecode = TDB_ERR_LOCK;
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_transaction_prepare_commit: locks pending on commit\n"));
-		tdb_transaction_cancel(tdb);
+		_tdb_transaction_cancel(tdb);
 		return -1;
 	}
 
@@ -910,7 +914,7 @@ int tdb_transaction_prepare_commit(struct tdb_context *tdb)
 	if (tdb_brlock_upgrade(tdb, FREELIST_TOP, 0) == -1) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_transaction_prepare_commit: failed to upgrade hash locks\n"));
 		tdb->ecode = TDB_ERR_LOCK;
-		tdb_transaction_cancel(tdb);
+		_tdb_transaction_cancel(tdb);
 		return -1;
 	}
 
@@ -919,7 +923,7 @@ int tdb_transaction_prepare_commit(struct tdb_context *tdb)
 	if (tdb_brlock(tdb, GLOBAL_LOCK, F_WRLCK, F_SETLKW, 0, 1) == -1) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_transaction_prepare_commit: failed to get global lock\n"));
 		tdb->ecode = TDB_ERR_LOCK;
-		tdb_transaction_cancel(tdb);
+		_tdb_transaction_cancel(tdb);
 		return -1;
 	}
 
@@ -928,7 +932,7 @@ int tdb_transaction_prepare_commit(struct tdb_context *tdb)
 		if (transaction_setup_recovery(tdb, &tdb->transaction->magic_offset) == -1) {
 			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_transaction_prepare_commit: failed to setup recovery data\n"));
 			tdb_brlock(tdb, GLOBAL_LOCK, F_UNLCK, F_SETLKW, 0, 1);
-			tdb_transaction_cancel(tdb);
+			_tdb_transaction_cancel(tdb);
 			return -1;
 		}
 	}
@@ -943,7 +947,7 @@ int tdb_transaction_prepare_commit(struct tdb_context *tdb)
 			tdb->ecode = TDB_ERR_IO;
 			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_transaction_prepare_commit: expansion failed\n"));
 			tdb_brlock(tdb, GLOBAL_LOCK, F_UNLCK, F_SETLKW, 0, 1);
-			tdb_transaction_cancel(tdb);
+			_tdb_transaction_cancel(tdb);
 			return -1;
 		}
 		tdb->map_size = tdb->transaction->old_map_size;
@@ -953,6 +957,15 @@ int tdb_transaction_prepare_commit(struct tdb_context *tdb)
 	/* Keep the global lock until the actual commit */
 
 	return 0;
+}
+
+/*
+   prepare to commit the current transaction
+*/
+int tdb_transaction_prepare_commit(struct tdb_context *tdb)
+{	
+	tdb_trace(tdb, "tdb_transaction_prepare_commit");
+	return _tdb_transaction_prepare_commit(tdb);
 }
 
 /*
@@ -969,9 +982,11 @@ int tdb_transaction_commit(struct tdb_context *tdb)
 		return -1;
 	}
 
+	tdb_trace(tdb, "tdb_transaction_commit");
+
 	if (tdb->transaction->transaction_error) {
 		tdb->ecode = TDB_ERR_IO;
-		tdb_transaction_cancel(tdb);
+		_tdb_transaction_cancel(tdb);
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_transaction_commit: transaction error pending\n"));
 		return -1;
 	}
@@ -984,12 +999,12 @@ int tdb_transaction_commit(struct tdb_context *tdb)
 
 	/* check for a null transaction */
 	if (tdb->transaction->blocks == NULL) {
-		tdb_transaction_cancel(tdb);
+		_tdb_transaction_cancel(tdb);
 		return 0;
 	}
 
 	if (!tdb->transaction->prepared) {
-		int ret = tdb_transaction_prepare_commit(tdb);
+		int ret = _tdb_transaction_prepare_commit(tdb);
 		if (ret)
 			return ret;
 	}
@@ -1020,7 +1035,7 @@ int tdb_transaction_commit(struct tdb_context *tdb)
 			tdb->methods = methods;
 			tdb_transaction_recover(tdb); 
 
-			tdb_transaction_cancel(tdb);
+			_tdb_transaction_cancel(tdb);
 			tdb_brlock(tdb, GLOBAL_LOCK, F_UNLCK, F_SETLKW, 0, 1);
 
 			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_transaction_commit: write failed\n"));
@@ -1058,7 +1073,7 @@ int tdb_transaction_commit(struct tdb_context *tdb)
 
 	/* use a transaction cancel to free memory and remove the
 	   transaction locks */
-	tdb_transaction_cancel(tdb);
+	_tdb_transaction_cancel(tdb);
 
 	if (need_repack) {
 		return tdb_repack(tdb);

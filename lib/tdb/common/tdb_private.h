@@ -31,6 +31,7 @@
 #include "system/wait.h"
 #include "tdb.h"
 
+/* #define TDB_TRACE 1 */
 #ifndef HAVE_GETPAGESIZE
 #define getpagesize() 0x2000
 #endif
@@ -67,6 +68,37 @@ typedef uint32_t tdb_off_t;
  * current context, also takes doubly-parenthesized print-style
  * argument. */
 #define TDB_LOG(x) tdb->log.log_fn x
+
+#ifdef TDB_TRACE
+void tdb_trace(struct tdb_context *tdb, const char *op);
+void tdb_trace_seqnum(struct tdb_context *tdb, uint32_t seqnum, const char *op);
+void tdb_trace_open(struct tdb_context *tdb, const char *op,
+		    unsigned hash_size, unsigned tdb_flags, unsigned open_flags);
+void tdb_trace_ret(struct tdb_context *tdb, const char *op, int ret);
+void tdb_trace_retrec(struct tdb_context *tdb, const char *op, TDB_DATA ret);
+void tdb_trace_1rec(struct tdb_context *tdb, const char *op,
+		    TDB_DATA rec);
+void tdb_trace_1rec_ret(struct tdb_context *tdb, const char *op,
+			TDB_DATA rec, int ret);
+void tdb_trace_1rec_retrec(struct tdb_context *tdb, const char *op,
+			   TDB_DATA rec, TDB_DATA ret);
+void tdb_trace_2rec_flag_ret(struct tdb_context *tdb, const char *op,
+			     TDB_DATA rec1, TDB_DATA rec2, unsigned flag,
+			     int ret);
+void tdb_trace_2rec_retrec(struct tdb_context *tdb, const char *op,
+			   TDB_DATA rec1, TDB_DATA rec2, TDB_DATA ret);
+#else
+#define tdb_trace(tdb, op)
+#define tdb_trace_seqnum(tdb, seqnum, op)
+#define tdb_trace_open(tdb, op, hash_size, tdb_flags, open_flags)
+#define tdb_trace_ret(tdb, op, ret)
+#define tdb_trace_retrec(tdb, op, ret)
+#define tdb_trace_1rec(tdb, op, rec)
+#define tdb_trace_1rec_ret(tdb, op, rec, ret)
+#define tdb_trace_1rec_retrec(tdb, op, rec, ret)
+#define tdb_trace_2rec_flag_ret(tdb, op, rec1, rec2, flag, ret)
+#define tdb_trace_2rec_retrec(tdb, op, rec1, rec2, ret)
+#endif /* !TDB_TRACE */
 
 /* lock offsets */
 #define GLOBAL_LOCK      0
@@ -167,6 +199,9 @@ struct tdb_context {
 	int page_size;
 	int max_dead_records;
 	int transaction_lock_count;
+#ifdef TDB_TRACE
+	int tracefd;
+#endif
 	volatile sig_atomic_t *interrupt_sig_ptr;
 };
 
@@ -194,6 +229,7 @@ int tdb_ofs_read(struct tdb_context *tdb, tdb_off_t offset, tdb_off_t *d);
 int tdb_ofs_write(struct tdb_context *tdb, tdb_off_t offset, tdb_off_t *d);
 int tdb_lock_record(struct tdb_context *tdb, tdb_off_t off);
 int tdb_unlock_record(struct tdb_context *tdb, tdb_off_t off);
+int _tdb_transaction_cancel(struct tdb_context *tdb);
 int tdb_rec_read(struct tdb_context *tdb, tdb_off_t offset, struct list_struct *rec);
 int tdb_rec_write(struct tdb_context *tdb, tdb_off_t offset, struct list_struct *rec);
 int tdb_do_delete(struct tdb_context *tdb, tdb_off_t rec_ptr, struct list_struct *rec);

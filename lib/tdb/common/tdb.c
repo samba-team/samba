@@ -158,7 +158,7 @@ static int tdb_update_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t hash,
  * then the TDB_DATA will have zero length but
  * a non-zero pointer
  */
-TDB_DATA tdb_fetch(struct tdb_context *tdb, TDB_DATA key)
+static TDB_DATA _tdb_fetch(struct tdb_context *tdb, TDB_DATA key)
 {
 	tdb_off_t rec_ptr;
 	struct list_struct rec;
@@ -174,6 +174,14 @@ TDB_DATA tdb_fetch(struct tdb_context *tdb, TDB_DATA key)
 				  rec.data_len);
 	ret.dsize = rec.data_len;
 	tdb_unlock(tdb, BUCKET(rec.full_hash), F_RDLCK);
+	return ret;
+}
+
+TDB_DATA tdb_fetch(struct tdb_context *tdb, TDB_DATA key)
+{
+	TDB_DATA ret = _tdb_fetch(tdb, key);
+
+	tdb_trace_1rec_retrec(tdb, "tdb_fetch", key, ret);
 	return ret;
 }
 
@@ -207,8 +215,10 @@ int tdb_parse_record(struct tdb_context *tdb, TDB_DATA key,
 	hash = tdb->hash_fn(&key);
 
 	if (!(rec_ptr = tdb_find_lock_hash(tdb,key,hash,F_RDLCK,&rec))) {
+		tdb_trace_1rec_ret(tdb, "tdb_parse_record", key, -1);
 		return TDB_ERRCODE(TDB_ERR_NOEXIST, 0);
 	}
+	tdb_trace_1rec_ret(tdb, "tdb_parse_record", key, 0);
 
 	ret = tdb_parse_data(tdb, key, rec_ptr + sizeof(rec) + rec.key_len,
 			     rec.data_len, parser, private_data);
@@ -237,7 +247,11 @@ static int tdb_exists_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t hash)
 int tdb_exists(struct tdb_context *tdb, TDB_DATA key)
 {
 	uint32_t hash = tdb->hash_fn(&key);
-	return tdb_exists_hash(tdb, key, hash);
+	int ret;
+
+	ret = tdb_exists_hash(tdb, key, hash);
+	tdb_trace_1rec_ret(tdb, "tdb_exists", key, ret);
+	return ret;
 }
 
 /* actually delete an entry in the database given the offset */
@@ -392,7 +406,11 @@ static int tdb_delete_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t hash)
 int tdb_delete(struct tdb_context *tdb, TDB_DATA key)
 {
 	uint32_t hash = tdb->hash_fn(&key);
-	return tdb_delete_hash(tdb, key, hash);
+	int ret;
+
+	ret = tdb_delete_hash(tdb, key, hash);
+	tdb_trace_1rec_ret(tdb, "tdb_delete", key, ret);
+	return ret;
 }
 
 /*
@@ -424,28 +442,13 @@ static tdb_off_t tdb_find_dead(struct tdb_context *tdb, uint32_t hash,
 	return 0;
 }
 
-/* store an element in the database, replacing any existing element
-   with the same key 
-
-   return 0 on success, -1 on failure
-*/
-int tdb_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
+static int _tdb_store(struct tdb_context *tdb, TDB_DATA key,
+		       TDB_DATA dbuf, int flag, uint32_t hash)
 {
 	struct list_struct rec;
-	uint32_t hash;
 	tdb_off_t rec_ptr;
 	char *p = NULL;
 	int ret = -1;
-
-	if (tdb->read_only || tdb->traverse_read) {
-		tdb->ecode = TDB_ERR_RDONLY;
-		return -1;
-	}
-
-	/* find which hash bucket it is in */
-	hash = tdb->hash_fn(&key);
-	if (tdb_lock(tdb, BUCKET(hash), F_WRLCK) == -1)
-		return -1;
 
 	/* check for it existing, on insert. */
 	if (flag == TDB_INSERT) {
@@ -562,10 +565,35 @@ int tdb_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 	}
 
 	SAFE_FREE(p); 
-	tdb_unlock(tdb, BUCKET(hash), F_WRLCK);
 	return ret;
 }
 
+/* store an element in the database, replacing any existing element
+   with the same key
+
+   return 0 on success, -1 on failure
+*/
+int tdb_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
+{
+	uint32_t hash;
+	int ret;
+
+	if (tdb->read_only || tdb->traverse_read) {
+		tdb->ecode = TDB_ERR_RDONLY;
+		tdb_trace_2rec_flag_ret(tdb, "tdb_store", key, dbuf, flag, -1);
+		return -1;
+	}
+
+	/* find which hash bucket it is in */
+	hash = tdb->hash_fn(&key);
+	if (tdb_lock(tdb, BUCKET(hash), F_WRLCK) == -1)
+		return -1;
+
+	ret = _tdb_store(tdb, key, dbuf, flag, hash);
+	tdb_trace_2rec_flag_ret(tdb, "tdb_store", key, dbuf, flag, ret);
+	tdb_unlock(tdb, BUCKET(hash), F_WRLCK);
+	return ret;
+}
 
 /* Append to an entry. Create if not exist. */
 int tdb_append(struct tdb_context *tdb, TDB_DATA key, TDB_DATA new_dbuf)
@@ -579,7 +607,7 @@ int tdb_append(struct tdb_context *tdb, TDB_DATA key, TDB_DATA new_dbuf)
 	if (tdb_lock(tdb, BUCKET(hash), F_WRLCK) == -1)
 		return -1;
 
-	dbuf = tdb_fetch(tdb, key);
+	dbuf = _tdb_fetch(tdb, key);
 
 	if (dbuf.dptr == NULL) {
 		dbuf.dptr = (unsigned char *)malloc(new_dbuf.dsize);
@@ -605,7 +633,8 @@ int tdb_append(struct tdb_context *tdb, TDB_DATA key, TDB_DATA new_dbuf)
 	memcpy(dbuf.dptr + dbuf.dsize, new_dbuf.dptr, new_dbuf.dsize);
 	dbuf.dsize += new_dbuf.dsize;
 
-	ret = tdb_store(tdb, key, dbuf, 0);
+	ret = _tdb_store(tdb, key, dbuf, 0, hash);
+	tdb_trace_2rec_retrec(tdb, "tdb_append", key, new_dbuf, dbuf);
 	
 failed:
 	tdb_unlock(tdb, BUCKET(hash), F_WRLCK);
@@ -739,6 +768,8 @@ int tdb_wipe_all(struct tdb_context *tdb)
 		return -1;
 	}
 
+	tdb_trace(tdb, "tdb_wipe_all");
+
 	/* see if the tdb has a recovery area, and remember its size
 	   if so. We don't want to lose this as otherwise each
 	   tdb_wipe_all() in a transaction will increase the size of
@@ -837,6 +868,8 @@ int tdb_repack(struct tdb_context *tdb)
 	struct tdb_context *tmp_db;
 	struct traverse_state state;
 
+	tdb_trace(tdb, "tdb_repack");
+
 	if (tdb_transaction_start(tdb) != 0) {
 		TDB_LOG((tdb, TDB_DEBUG_FATAL, __location__ " Failed to start transaction\n"));
 		return -1;
@@ -899,3 +932,156 @@ int tdb_repack(struct tdb_context *tdb)
 
 	return 0;
 }
+
+#ifdef TDB_TRACE
+static void tdb_trace_write(struct tdb_context *tdb, const char *str)
+{
+	if (write(tdb->tracefd, str, strlen(str)) != strlen(str)) {
+		close(tdb->tracefd);
+		tdb->tracefd = -1;
+	}
+}
+
+static void tdb_trace_start(struct tdb_context *tdb)
+{
+	tdb_off_t seqnum=0;
+	char msg[sizeof(tdb_off_t) * 4 + 1];
+
+	tdb_ofs_read(tdb, TDB_SEQNUM_OFS, &seqnum);
+	snprintf(msg, sizeof(msg), "%u ", seqnum);
+	tdb_trace_write(tdb, msg);
+}
+
+static void tdb_trace_end(struct tdb_context *tdb)
+{
+	tdb_trace_write(tdb, "\n");
+}
+
+static void tdb_trace_end_ret(struct tdb_context *tdb, int ret)
+{
+	char msg[sizeof(ret) * 4 + 4];
+	snprintf(msg, sizeof(msg), " = %i\n", ret);
+	tdb_trace_write(tdb, msg);
+}
+
+static void tdb_trace_record(struct tdb_context *tdb, TDB_DATA rec)
+{
+	char msg[20 + rec.dsize*2], *p;
+	unsigned int i;
+
+	/* We differentiate zero-length records from non-existent ones. */
+	if (rec.dptr == NULL) {
+		tdb_trace_write(tdb, " NULL");
+		return;
+	}
+
+	/* snprintf here is purely cargo-cult programming. */
+	p = msg;
+	p += snprintf(p, sizeof(msg), " %zu:", rec.dsize);
+	for (i = 0; i < rec.dsize; i++)
+		p += snprintf(p, 2, "%02x", rec.dptr[i]);
+
+	tdb_trace_write(tdb, msg);
+}
+
+void tdb_trace(struct tdb_context *tdb, const char *op)
+{
+	tdb_trace_start(tdb);
+	tdb_trace_write(tdb, op);
+	tdb_trace_end(tdb);
+}
+
+void tdb_trace_seqnum(struct tdb_context *tdb, uint32_t seqnum, const char *op)
+{
+	char msg[sizeof(tdb_off_t) * 4 + 1];
+
+	snprintf(msg, sizeof(msg), "%u ", seqnum);
+	tdb_trace_write(tdb, msg);
+	tdb_trace_write(tdb, op);
+	tdb_trace_end(tdb);
+}
+
+void tdb_trace_open(struct tdb_context *tdb, const char *op,
+		    unsigned hash_size, unsigned tdb_flags, unsigned open_flags)
+{
+	char msg[128];
+
+	snprintf(msg, sizeof(msg),
+		 "%s %u 0x%x 0x%x", op, hash_size, tdb_flags, open_flags);
+	tdb_trace_start(tdb);
+	tdb_trace_write(tdb, msg);
+	tdb_trace_end(tdb);
+}
+
+void tdb_trace_ret(struct tdb_context *tdb, const char *op, int ret)
+{
+	tdb_trace_start(tdb);
+	tdb_trace_write(tdb, op);
+	tdb_trace_end_ret(tdb, ret);
+}
+
+void tdb_trace_retrec(struct tdb_context *tdb, const char *op, TDB_DATA ret)
+{
+	tdb_trace_start(tdb);
+	tdb_trace_write(tdb, op);
+	tdb_trace_write(tdb, " =");
+	tdb_trace_record(tdb, ret);
+	tdb_trace_end(tdb);
+}
+
+void tdb_trace_1rec(struct tdb_context *tdb, const char *op,
+		    TDB_DATA rec)
+{
+	tdb_trace_start(tdb);
+	tdb_trace_write(tdb, op);
+	tdb_trace_record(tdb, rec);
+	tdb_trace_end(tdb);
+}
+
+void tdb_trace_1rec_ret(struct tdb_context *tdb, const char *op,
+			TDB_DATA rec, int ret)
+{
+	tdb_trace_start(tdb);
+	tdb_trace_write(tdb, op);
+	tdb_trace_record(tdb, rec);
+	tdb_trace_end_ret(tdb, ret);
+}
+
+void tdb_trace_1rec_retrec(struct tdb_context *tdb, const char *op,
+			   TDB_DATA rec, TDB_DATA ret)
+{
+	tdb_trace_start(tdb);
+	tdb_trace_write(tdb, op);
+	tdb_trace_record(tdb, rec);
+	tdb_trace_write(tdb, " =");
+	tdb_trace_record(tdb, ret);
+	tdb_trace_end(tdb);
+}
+
+void tdb_trace_2rec_flag_ret(struct tdb_context *tdb, const char *op,
+			     TDB_DATA rec1, TDB_DATA rec2, unsigned flag,
+			     int ret)
+{
+	char msg[1 + sizeof(ret) * 4];
+
+	snprintf(msg, sizeof(msg), " %#x", flag);
+	tdb_trace_start(tdb);
+	tdb_trace_write(tdb, op);
+	tdb_trace_record(tdb, rec1);
+	tdb_trace_record(tdb, rec2);
+	tdb_trace_write(tdb, msg);
+	tdb_trace_end_ret(tdb, ret);
+}
+
+void tdb_trace_2rec_retrec(struct tdb_context *tdb, const char *op,
+			   TDB_DATA rec1, TDB_DATA rec2, TDB_DATA ret)
+{
+	tdb_trace_start(tdb);
+	tdb_trace_write(tdb, op);
+	tdb_trace_record(tdb, rec1);
+	tdb_trace_record(tdb, rec2);
+	tdb_trace_write(tdb, " =");
+	tdb_trace_record(tdb, ret);
+	tdb_trace_end(tdb);
+}
+#endif
