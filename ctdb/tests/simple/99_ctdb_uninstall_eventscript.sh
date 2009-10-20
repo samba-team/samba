@@ -21,4 +21,6 @@ EOF
 
 . ctdb_test_functions.bash
 
+ctdb_test_init "$@"
+
 uninstall_eventscript "00.ctdb_test_trigger"
