@@ -195,7 +195,11 @@ static NTSTATUS lookup_lsa_rids(TALLOC_CTX *mem_ctx,
 		dom_idx = -1;
 
 		if (type != SID_NAME_UNKNOWN) {
-			sid_split_rid(&sid, &rid);
+			if (type == SID_NAME_DOMAIN) {
+				rid = (uint32_t)-1;
+			} else {
+				sid_split_rid(&sid, &rid);
+			}
 			dom_idx = init_lsa_ref_domain_list(mem_ctx, ref, domain, &sid);
 			mapped_count++;
 		}
