@@ -86,6 +86,14 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 	if ((flags & LOOKUP_NAME_BUILTIN) &&
 	    strequal(domain, builtin_domain_name()))
 	{
+		if (strlen(name) == 0) {
+			/* Swap domain and name */
+			tmp = name; name = domain; domain = tmp;
+			sid_copy(&sid, &global_sid_Builtin);
+			type = SID_NAME_DOMAIN;
+			goto ok;
+		}
+
 		/* Explicit request for a name in BUILTIN */
 		if (lookup_builtin_name(name, &rid)) {
 			sid_copy(&sid, &global_sid_Builtin);
