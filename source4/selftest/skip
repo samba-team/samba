@@ -70,3 +70,4 @@ samba4.ldap.secdesc.python # this is expected to fail until the acl module is co
 trans2.scan # uses huge number of file descriptors
 base.scan.ioctl # bad idea in make test
 base.scan.pipe_number # bad idea in make test
+base.secleak # no point on build farm
