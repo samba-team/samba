@@ -375,7 +375,6 @@ _PUBLIC_ char** generate_unique_strs(TALLOC_CTX *mem_ctx, size_t len,
 	const unsigned c_size = 42;
 	int i, j;
 	unsigned rem;
-	long long place;
 	char ** strs = NULL;
 
 	if (num == 0 || len == 0)
@@ -397,6 +396,16 @@ _PUBLIC_ char** generate_unique_strs(TALLOC_CTX *mem_ctx, size_t len,
 		}
 		retstr[j] = 0;
 		strs[i] = retstr;
+		if (rem != 0) {
+			/* we were not able to fit the number of
+			 * combinations asked for in the length
+			 * specified */
+			DEBUG(0,(__location__ ": Too many combinations %u for length %u\n",
+				 num, (unsigned)len));
+				 
+			talloc_free(strs);
+			return NULL;			 
+		}
 	}
 
 	return strs;
