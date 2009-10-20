@@ -67,7 +67,10 @@ sub test_include($$$$)
 
 	$lines->[$i] = "";
 
-	`/bin/mv -f $fname $fname.misaved` && die "failed to rename $fname";
+	my $mname = $fname . ".misaved";
+
+	unlink($mname);
+	rename($fname, $mname) || die "failed to rename $fname";
 	save_lines($fname, $lines);
 	
 	my $out = test_compile($fname);
@@ -79,6 +82,7 @@ sub test_include($$$$)
 				print "$fname: not removing system include $line\n";
 			} else {
 				print "$fname: removing $line\n";
+				unlink($mname);
 				return;
 			}
 		} else {
@@ -87,7 +91,7 @@ sub test_include($$$$)
 	}
 
 	$lines->[$i] = $line;
-	`/bin/mv -f $fname.misaved $fname` && die "failed to restore $fname";
+	rename($mname, $fname) || die "failed to restore $fname";
 }
 
 sub process_file($)
