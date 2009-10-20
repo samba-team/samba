@@ -232,31 +232,19 @@ static bool test_LookupNames_bogus(struct dcerpc_pipe *p,
 	struct lsa_LookupNames r;
 	struct lsa_TransSidArray sids;
 	struct lsa_RefDomainList *domains = NULL;
-	struct lsa_String *names;
+	struct lsa_String names[1];
 	uint32_t count = 0;
 	NTSTATUS status;
-	int i;
 
-	struct lsa_TranslatedName name[2];
-	struct lsa_TransNameArray tnames;
-
-	tnames.names = name;
-	tnames.count = 2;
-	name[0].name.string = "NT AUTHORITY\\BOGUS";
-	name[1].name.string = NULL;
-
-	torture_comment(tctx, "\nTesting LookupNames with bogus names\n");
+	torture_comment(tctx, "\nTesting LookupNames with bogus name\n");
 
 	sids.count = 0;
 	sids.sids = NULL;
 
-	names = talloc_array(tctx, struct lsa_String, tnames.count);
-	for (i=0;i<tnames.count;i++) {
-		init_lsa_String(&names[i], tnames.names[i].name.string);
-	}
+	init_lsa_String(&names[0], "NT AUTHORITY\\BOGUS");
 
 	r.in.handle = handle;
-	r.in.num_names = tnames.count;
+	r.in.num_names = 1;
 	r.in.names = names;
 	r.in.sids = &sids;
 	r.in.level = 1;
@@ -270,6 +258,48 @@ static bool test_LookupNames_bogus(struct dcerpc_pipe *p,
 		torture_comment(tctx, "LookupNames failed - %s\n", nt_errstr(status));
 		return false;
 	}
+
+	torture_comment(tctx, "\n");
+
+	return true;
+}
+
+static bool test_LookupNames_NULL(struct dcerpc_pipe *p,
+				  struct torture_context *tctx,
+				  struct policy_handle *handle)
+{
+	struct lsa_LookupNames r;
+	struct lsa_TransSidArray sids;
+	struct lsa_RefDomainList *domains = NULL;
+	struct lsa_String names[1];
+	uint32_t count = 0;
+
+	torture_comment(tctx, "\nTesting LookupNames with NULL name\n");
+
+	sids.count = 0;
+	sids.sids = NULL;
+
+	names[0].string = NULL;
+
+	r.in.handle = handle;
+	r.in.num_names = 1;
+	r.in.names = names;
+	r.in.sids = &sids;
+	r.in.level = 1;
+	r.in.count = &count;
+	r.out.count = &count;
+	r.out.sids = &sids;
+	r.out.domains = &domains;
+
+	/* nt4 returns NT_STATUS_NONE_MAPPED with sid_type
+	 * SID_NAME_UNKNOWN, rid 0, and sid_index -1;
+	 *
+	 * w2k3/w2k8 return NT_STATUS_OK with sid_type
+	 * SID_NAME_DOMAIN, rid -1 and sid_index 0 and BUILTIN domain
+	 */
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_LookupNames(p, tctx, &r),
+		"LookupNames with NULL name failed");
 
 	torture_comment(tctx, "\n");
 
@@ -2765,6 +2795,10 @@ static bool testcase_LookupNames(struct torture_context *tctx,
 	}
 
 	if (!test_LookupNames_wellknown(p, tctx, handle)) {
+		ret = false;
+	}
+
+	if (!test_LookupNames_NULL(p, tctx, handle)) {
 		ret = false;
 	}
 
