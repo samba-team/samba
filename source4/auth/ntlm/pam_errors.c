@@ -18,7 +18,6 @@
  */
 
 #include "includes.h"
-#include "auth/ntlm/pam_errors.h"
 
 #ifdef WITH_HAVE_SECURITY_PAM_APPL_H
 #include <security/pam_appl.h>

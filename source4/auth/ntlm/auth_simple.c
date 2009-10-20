@@ -23,9 +23,6 @@
 
 #include "includes.h"
 #include "auth/auth.h"
-#include "lib/events/events.h"
-#include "param/param.h"
-#include "auth/session_proto.h"
 
 /*
  It's allowed to pass NULL as session_info,

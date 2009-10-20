@@ -20,7 +20,6 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/ndr_netlogon.h"
 #include "system/time.h"
 #include "lib/ldb/include/ldb.h"
 #include "../lib/util/util_ldb.h"
@@ -29,8 +28,6 @@
 #include "auth/ntlm/auth_proto.h"
 #include "auth/auth_sam.h"
 #include "dsdb/samdb/samdb.h"
-#include "libcli/security/security.h"
-#include "libcli/ldap/ldap_ndr.h"
 #include "param/param.h"
 
 extern const char *user_attrs[];

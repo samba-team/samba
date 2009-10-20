@@ -21,10 +21,8 @@
 
 #include "includes.h"
 #include "auth/auth.h"
-#include "auth/ntlm/auth_proto.h"
 #include "auth/credentials/credentials.h"
 #include "libcli/security/security.h"
-#include "librpc/gen_ndr/ndr_samr.h"
 #include "libcli/smb_composite/smb_composite.h"
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
