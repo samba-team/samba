@@ -161,7 +161,10 @@ static NTSTATUS lookup_lsa_rids(TALLOC_CTX *mem_ctx,
 
 		full_name = name[i].string;
 		if (full_name == NULL) {
-			return NT_STATUS_NO_MEMORY;
+			prid[i].sid_type	= type;
+			prid[i].rid		= 0;
+			prid[i].sid_index	= (uint32_t)-1;
+			continue;
 		}
 
 		DEBUG(5, ("lookup_lsa_rids: looking up name %s\n", full_name));
