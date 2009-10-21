@@ -125,7 +125,8 @@ static tdb_off_t tdb_next_lock(struct tdb_context *tdb, struct tdb_traverse_lock
 		want_next = 0;
 	}
 	/* We finished iteration without finding anything */
-	return TDB_ERRCODE(TDB_SUCCESS, 0);
+	tdb->ecode = TDB_SUCCESS;
+	return 0;
 
  fail:
 	tlock->off = 0;
