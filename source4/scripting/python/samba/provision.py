@@ -1266,7 +1266,7 @@ def provision(setup_dir, message, session_info,
     lp.load(smbconf)
 
     names = guess_names(lp=lp, hostname=hostname, domain=domain, 
-                        dnsdomain=realm, serverrole=serverrole, sitename=sitename,
+                        dnsdomain=realm.lower(), serverrole=serverrole, sitename=sitename,
                         rootdn=rootdn, domaindn=domaindn, configdn=configdn, schemadn=schemadn,
                         serverdn=serverdn)
 
