@@ -1296,7 +1296,7 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 	}
 
 	/* add core elements to the ldb_message for the user */
-	msg->dn = ldb_dn_copy(mem_ctx, d_state->domain_dn);
+	msg->dn = ldb_dn_copy(msg, d_state->domain_dn);
 	if ( ! ldb_dn_add_child_fmt(msg->dn, "CN=%s,%s", cn_name, container)) {
 		ldb_transaction_cancel(d_state->sam_ctx);
 		return NT_STATUS_FOOBAR;
@@ -1344,7 +1344,7 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 	a_state->account_dn = talloc_steal(a_state, msg->dn);
 
 	/* retrieve the sid and account control bits for the user just created */
-	ret = gendb_search_dn(d_state->sam_ctx, a_state,
+	ret = gendb_search_dn(d_state->sam_ctx, mem_ctx,
 			      msg->dn, &msgs, attrs);
 
 	if (ret != 1) {
