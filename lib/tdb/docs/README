@@ -73,7 +73,7 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 ----------------------------------------------------------------------
 TDB_CONTEXT *tdb_open_ex(char *name, int hash_size, int tdb_flags,
 		         int open_flags, mode_t mode,
-			 tdb_log_func log_fn,
+			 const struct tdb_logging_context *log_ctx,
 			 tdb_hash_func hash_fn)
 
 This is like tdb_open(), but allows you to pass an initial logging and
@@ -91,13 +91,6 @@ char *tdb_error(TDB_CONTEXT *tdb);
 int tdb_close(TDB_CONTEXT *tdb);
 
    close a database
-
-----------------------------------------------------------------------
-int tdb_update(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf);
-
-   update an entry in place - this only works if the new data size
-   is <= the old data size and the key exists.
-   on failure return -1
 
 ----------------------------------------------------------------------
 TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key);
