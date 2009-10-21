@@ -244,3 +244,14 @@ int tdb_transaction_prepare_commit(TDB_CONTEXT *tdb)
    tdb_transaction_commit() or tdb_transaction_cancel(). Preparing
    allocates disk space for the pending updates, so a subsequent
    commit should succeed (barring any hardware failures).
+
+----------------------------------------------------------------------
+int tdb_check(TDB_CONTEXT *tdb,
+	      int (*check)(TDB_DATA key, TDB_DATA data, void *private_data),
+	      void *private_data);)
+
+   check the consistency of the database, calling back the check function
+   (if non-NULL) with each record.  If some consistency check fails, or
+   the supplied check function returns -1, tdb_check returns -1, otherwise
+   0.  Note that logging function (if set) will be called with additional
+   information on the corruption found.

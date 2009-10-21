@@ -10,7 +10,7 @@ CFLAGS = -I$(tdbsrcdir)/include
 LIBTDB_OBJ_FILES = $(addprefix $(tdbsrcdir)/common/, \
 	tdb.o dump.o io.o lock.o \
 	open.o traverse.o freelist.o \
-	error.o transaction.o)
+	error.o transaction.o check.o)
 
 ################################################
 # Start BINARY tdbtool
