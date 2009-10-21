@@ -56,4 +56,5 @@ void tdb_remove_flags (struct tdb_context *, unsigned int);
 void tdb_setalarm_sigptr (struct tdb_context *, volatile sig_atomic_t *);
 void tdb_set_logging_function (struct tdb_context *, const struct tdb_logging_context *);
 void tdb_set_max_dead (struct tdb_context *, int);
+int tdb_check (struct tdb_context *, int (*)(TDB_DATA, TDB_DATA, void *), void *);
 TDB_DATA tdb_null;
