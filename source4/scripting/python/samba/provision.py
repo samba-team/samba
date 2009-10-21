@@ -428,59 +428,38 @@ def provision_paths_from_lp(lp, dnsdomain):
     return paths
 
 
-def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
-                serverrole=None, rootdn=None, domaindn=None, configdn=None,
-                schemadn=None, serverdn=None, sitename=None, sambadn=None):
+def guess_names(lp=None, hostname=None, rootdn=None,
+                domaindn=None, configdn=None, schemadn=None, serverdn=None,
+                sitename=None, sambadn=None):
     """Guess configuration settings to use."""
 
     if hostname is None:
-        hostname = socket.gethostname().split(".")[0].lower()
+        hostname = socket.gethostname().split(".")[0]
 
     netbiosname = hostname.upper()
     if not valid_netbios_name(netbiosname):
         raise InvalidNetbiosName(netbiosname)
 
-    hostname = hostname.lower()
+    dnsdomain = lp.get("realm").lower()
+    realm = lp.get("realm").upper()
+    serverrole = lp.get("server role").lower()
 
-    if dnsdomain is None:
-        dnsdomain = lp.get("realm").lower()
-
-    if serverrole is None:
-        serverrole = lp.get("server role")
-
-    assert dnsdomain is not None
-    realm = dnsdomain.upper()
-
-    if lp.get("realm").upper() != realm:
-        raise Exception("realm '%s' in %s must match chosen realm '%s'" %
-                        (lp.get("realm"), lp.configfile, realm))
-    
     if serverrole == "domain controller":
-        if domain is None:
-            domain = lp.get("workgroup")
+        domain = lp.get("workgroup").upper()
         if domaindn is None:
             domaindn = "DC=" + dnsdomain.replace(".", ",DC=")
-        if lp.get("workgroup").upper() != domain.upper():
-            raise Exception("workgroup '%s' in smb.conf must match chosen domain '%s'",
-                        lp.get("workgroup"), domain)
     else:
         domain = netbiosname
         if domaindn is None:
             domaindn = "DC=" + netbiosname
         
-    assert domain is not None
-    domain = domain.upper()
-
     if not valid_netbios_name(domain):
         raise InvalidNetbiosName(domain)
         
-    if netbiosname.upper() == realm:
+    if netbiosname == realm:
         raise Exception("realm %s must not be equal to netbios domain name %s", realm, netbiosname)
         
-    if hostname.upper() == realm:
-        raise Exception("realm %s must not be equal to hostname %s", realm, hostname)
-        
-    if domain.upper() == realm:
+    if domain == realm:
         raise Exception("realm %s must not be equal to domain name %s", realm, domain)
 
     if rootdn is None:
@@ -520,7 +499,8 @@ def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
     """
     assert smbconf is not None
     if hostname is None:
-        hostname = socket.gethostname().split(".")[0].lower()
+        hostname = socket.gethostname().split(".")[0]
+    netbiosname = hostname.upper()
 
     if serverrole is None:
         serverrole = "standalone"
@@ -534,7 +514,10 @@ def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
         smbconfsuffix = "standalone"
 
     assert domain is not None
+    domain = domain.upper()
+
     assert realm is not None
+    realm = realm.upper()
 
     default_lp = param.LoadParm()
     #Load non-existant file
@@ -555,7 +538,7 @@ def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
 
     setup_file(setup_path("provision.smb.conf.%s" % smbconfsuffix), 
                smbconf, {
-            "HOSTNAME": hostname,
+            "NETBIOS_NAME": netbiosname,
             "DOMAIN": domain,
             "REALM": realm,
             "SERVERROLE": serverrole,
@@ -1265,10 +1248,8 @@ def provision(setup_dir, message, session_info,
     lp = param.LoadParm()
     lp.load(smbconf)
 
-    names = guess_names(lp=lp, hostname=hostname, domain=domain, 
-                        dnsdomain=realm.lower(), serverrole=serverrole, sitename=sitename,
-                        rootdn=rootdn, domaindn=domaindn, configdn=configdn, schemadn=schemadn,
-                        serverdn=serverdn)
+    names = guess_names(lp=lp, hostname=hostname, domaindn=domaindn,
+                        configdn=configdn, schemadn=schemadn, serverdn=serverdn,                        sitename=sitename)
 
     paths = provision_paths_from_lp(lp, names.dnsdomain)
 
