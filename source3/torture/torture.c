@@ -40,6 +40,7 @@ static bool use_kerberos;
 static fstring multishare_conn_fname;
 static bool use_multishare_conn = False;
 static bool do_encrypt;
+static const char *local_path = NULL;
 
 bool torture_showall = False;
 
@@ -2172,6 +2173,209 @@ fail:
 	torture_close_connection(cli1);
 
 	printf("finished locktest8\n");
+	return correct;
+}
+
+/*
+ * This test is designed to be run in conjunction with
+ * external NFS or POSIX locks taken in the filesystem.
+ * It will block until the lock is taken (and is designed
+ * to do so). Check out scripts/tests/test_nfslock_s3.sh.
+ * JRA.
+ */
+
+static bool got_alarm;
+static int alarm_fd;
+
+static void alarm_handler(int dummy)
+{
+        got_alarm = True;
+}
+
+static void alarm_handler_parent(int dummy)
+{
+	close(alarm_fd);
+}
+
+static void do_local_lock(int read_fd, int write_fd)
+{
+	int fd;
+	char c = '\0';
+	struct flock lock;
+	const char *local_pathname = NULL;
+	int ret;
+
+	local_pathname = talloc_asprintf(talloc_tos(),
+			"%s/lockt9.lck", local_path);
+	if (!local_pathname) {
+		printf("child: alloc fail\n");
+		exit(1);
+	}
+
+	unlink(local_pathname);
+	fd = open(local_pathname, O_RDWR|O_CREAT, 0666);
+	if (fd == -1) {
+		printf("child: open of %s failed %s.\n",
+			local_pathname, strerror(errno));
+		exit(1);
+	}
+
+	/* Now take a fcntl lock. */
+	lock.l_type = F_WRLCK;
+	lock.l_whence = SEEK_SET;
+	lock.l_start = 0;
+	lock.l_len = 4;
+	lock.l_pid = getpid();
+
+	ret = fcntl(fd,F_SETLK,&lock);
+	if (ret == -1) {
+		printf("child: failed to get lock 0:4 on file %s. Error %s\n",
+			local_pathname, strerror(errno));
+		exit(1);
+	} else {
+		printf("child: got lock 0:4 on file %s.\n",
+			local_pathname );
+		fflush(stdout);
+	}
+
+	CatchSignal(SIGALRM, alarm_handler);
+	alarm(5);
+	/* Signal the parent. */
+	if (write(write_fd, &c, 1) != 1) {
+		printf("child: start signal fail %s.\n",
+			strerror(errno));
+		exit(1);
+	}
+	alarm(0);
+
+	alarm(10);
+	/* Wait for the parent to be ready. */
+	if (read(read_fd, &c, 1) != 1) {
+		printf("child: reply signal fail %s.\n",
+			strerror(errno));
+		exit(1);
+	}
+	alarm(0);
+
+	sleep(5);
+	close(fd);
+	printf("child: released lock 0:4 on file %s.\n",
+		local_pathname );
+	fflush(stdout);
+	exit(0);
+}
+
+static bool run_locktest9(int dummy)
+{
+	struct cli_state *cli1;
+	const char *fname = "\\lockt9.lck";
+	uint16_t fnum;
+	bool correct = False;
+	int pipe_in[2], pipe_out[2];
+	pid_t child_pid;
+	char c = '\0';
+	int ret;
+	double seconds;
+	NTSTATUS status;
+
+	printf("starting locktest9\n");
+
+	if (local_path == NULL) {
+		d_fprintf(stderr, "locktest9 must be given a local path via -l <localpath>\n");
+		return false;
+	}
+
+	if (pipe(pipe_in) == -1 || pipe(pipe_out) == -1) {
+		return false;
+	}
+
+	child_pid = fork();
+	if (child_pid == -1) {
+		return false;
+	}
+
+	if (child_pid == 0) {
+		/* Child. */
+		do_local_lock(pipe_out[0], pipe_in[1]);
+		exit(0);
+	}
+
+	close(pipe_out[0]);
+	close(pipe_in[1]);
+	pipe_out[0] = -1;
+	pipe_in[1] = -1;
+
+	/* Parent. */
+	ret = read(pipe_in[0], &c, 1);
+	if (ret != 1) {
+		d_fprintf(stderr, "failed to read start signal from child. %s\n",
+			strerror(errno));
+		return false;
+	}
+
+	if (!torture_open_connection(&cli1, 0)) {
+		return false;
+	}
+
+	cli_sockopt(cli1, sockops);
+
+	status = cli_open(cli1, fname, O_RDWR, DENY_NONE,
+			  &fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "cli_open returned %s\n", cli_errstr(cli1));
+		return false;
+	}
+
+	/* Ensure the child has the lock. */
+	if (cli_lock(cli1, fnum, 0, 4, 0, WRITE_LOCK)) {
+		d_fprintf(stderr, "Got the lock on range 0:4 - this should not happen !\n");
+		goto fail;
+	} else {
+		d_printf("Child has the lock.\n");
+	}
+
+	/* Tell the child to wait 5 seconds then exit. */
+	ret = write(pipe_out[1], &c, 1);
+	if (ret != 1) {
+		d_fprintf(stderr, "failed to send exit signal to child. %s\n",
+			strerror(errno));
+		goto fail;
+	}
+
+	/* Wait 20 seconds for the lock. */
+	alarm_fd = cli1->fd;
+	CatchSignal(SIGALRM, alarm_handler_parent);
+	alarm(20);
+
+	start_timer();
+
+	if (!cli_lock(cli1, fnum, 0, 4, -1, WRITE_LOCK)) {
+		d_fprintf(stderr, "Unable to apply write lock on range 0:4, error was "
+		       "%s\n", cli_errstr(cli1));
+		goto fail_nofd;
+	}
+	alarm(0);
+
+	seconds = end_timer();
+
+	printf("Parent got the lock after %.2f seconds.\n",
+		seconds);
+
+	status = cli_close(cli1, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "cli_close(fnum1) %s\n", cli_errstr(cli1));
+		goto fail;
+	}
+
+	correct = true;
+
+fail:
+	cli_close(cli1, fnum);
+	torture_close_connection(cli1);
+
+fail_nofd:
+
+	printf("finished locktest9\n");
 	return correct;
 }
 
@@ -6927,6 +7131,7 @@ static struct {
 	{"LOCK6",  run_locktest6,  0},
 	{"LOCK7",  run_locktest7,  0},
 	{"LOCK8",  run_locktest8,  0},
+	{"LOCK9",  run_locktest9,  0},
 	{"UNLINK", run_unlinktest, 0},
 	{"BROWSE", run_browsetest, 0},
 	{"ATTR",   run_attrtest,   0},
@@ -7146,7 +7351,7 @@ static void usage(void)
 
 	fstrcpy(workgroup, lp_workgroup());
 
-	while ((opt = getopt(argc, argv, "p:hW:U:n:N:O:o:m:Ld:Aec:ks:b:B:")) != EOF) {
+	while ((opt = getopt(argc, argv, "p:hW:U:n:N:O:o:m:Ll:d:Aec:ks:b:B:")) != EOF) {
 		switch (opt) {
 		case 'p':
 			port_to_use = atoi(optarg);
@@ -7174,6 +7379,9 @@ static void usage(void)
 			break;
 		case 'L':
 			use_oplocks = True;
+			break;
+		case 'l':
+			local_path = optarg;
 			break;
 		case 'A':
 			torture_showall = True;
