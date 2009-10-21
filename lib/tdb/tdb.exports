@@ -9,6 +9,7 @@
            tdb_chainlock_unmark;
            tdb_chainunlock;
            tdb_chainunlock_read;
+           tdb_check;
            tdb_close;
            tdb_delete;
            tdb_dump_all;
