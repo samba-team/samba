@@ -93,6 +93,12 @@ static void block_signal(int signum)
 static int daemon_queue_send(struct ctdb_client *client, struct ctdb_req_header *hdr)
 {
 	client->ctdb->statistics.client_packets_sent++;
+	if (hdr->operation == CTDB_REQ_MESSAGE) {
+		if (ctdb_queue_length(client->queue) > client->ctdb->tunable.max_queue_depth_drop_msg) {
+			DEBUG(DEBUG_ERR,("Drop CTDB_REQ_MESSAGE to client. Queue full.\n"));
+			return 0;
+		}
+	}
 	return ctdb_queue_send(client->queue, (uint8_t *)hdr, hdr->length);
 }
 
