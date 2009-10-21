@@ -593,6 +593,11 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *options)
 		if (ret != -1) {
 			ret = WEXITSTATUS(ret);
 		}
+		if (ret == 127) {
+			ret = 0;
+			DEBUG(DEBUG_ERR,("Script %s returned status 127. Someone just deleted it?\n", cmdstr));
+		}
+ 
 		if (is_monitor == 1) {
 			if (ctdb_ctrl_event_script_stop(ctdb, ret) != 0) {
 				DEBUG(DEBUG_ERR,(__location__ " Failed to stop event script monitoring\n"));
