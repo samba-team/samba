@@ -23,7 +23,7 @@ struct replPropertyMetaData1 {
 
 struct replPropertyMetaDataCtr1 {
 	uint32_t count;
-	uint32_t reserved;
+	uint32_t reserved;/* [value(0)] */
 	struct replPropertyMetaData1 *array;
 };
 
@@ -33,19 +33,19 @@ union replPropertyMetaDataCtr {
 
 struct replPropertyMetaDataBlob {
 	uint32_t version;
-	uint32_t reserved;
+	uint32_t reserved;/* [value(0)] */
 	union replPropertyMetaDataCtr ctr;/* [switch_is(version)] */
 }/* [public] */;
 
 struct replUpToDateVectorCtr1 {
 	uint32_t count;
-	uint32_t reserved;
+	uint32_t reserved;/* [value(0)] */
 	struct drsuapi_DsReplicaCursor *cursors;
 };
 
 struct replUpToDateVectorCtr2 {
 	uint32_t count;
-	uint32_t reserved;
+	uint32_t reserved;/* [value(0)] */
 	struct drsuapi_DsReplicaCursor2 *cursors;
 };
 
@@ -56,7 +56,7 @@ union replUpToDateVectorCtr {
 
 struct replUpToDateVectorBlob {
 	uint32_t version;
-	uint32_t reserved;
+	uint32_t reserved;/* [value(0)] */
 	union replUpToDateVectorCtr ctr;/* [switch_is(version)] */
 }/* [public] */;
 
@@ -75,7 +75,7 @@ struct repsFromTo1 {
 	uint32_t other_info_length;/* [value(ndr_size_repsFromTo1OtherInfo(other_info,ndr->iconv_convenience,ndr->flags))] */
 	uint32_t replica_flags;
 	uint8_t schedule[84];
-	uint32_t reserved;
+	uint32_t reserved;/* [value(0)] */
 	struct drsuapi_DsReplicaHighWaterMark highwatermark;
 	struct GUID source_dsa_obj_guid;
 	struct GUID source_dsa_invocation_id;
@@ -100,7 +100,7 @@ struct repsFromTo2 {
 	uint32_t other_info_length;/* [value(ndr_size_repsFromTo2OtherInfo(other_info,ndr->iconv_convenience,ndr->flags))] */
 	uint32_t replica_flags;
 	uint8_t schedule[84];
-	uint32_t reserved;
+	uint32_t reserved;/* [value(0)] */
 	struct drsuapi_DsReplicaHighWaterMark highwatermark;
 	struct GUID source_dsa_obj_guid;
 	struct GUID source_dsa_invocation_id;
@@ -115,7 +115,7 @@ union repsFromTo {
 
 struct repsFromToBlob {
 	uint32_t version;
-	uint32_t reserved;
+	uint32_t reserved;/* [value(0)] */
 	union repsFromTo ctr;/* [switch_is(version)] */
 }/* [public] */;
 
@@ -130,7 +130,7 @@ union partialAttributeSetCtr {
 
 struct partialAttributeSetBlob {
 	uint32_t version;
-	uint32_t reserved;
+	uint32_t reserved;/* [value(0)] */
 	union partialAttributeSetCtr ctr;/* [switch_is(version)] */
 }/* [public] */;
 
@@ -151,7 +151,7 @@ union prefixMapCtr {
 
 struct prefixMapBlob {
 	enum prefixMapVersion version;
-	uint32_t reserved;
+	uint32_t reserved;/* [value(0)] */
 	union prefixMapCtr ctr;/* [switch_is(version)] */
 }/* [public] */;
 

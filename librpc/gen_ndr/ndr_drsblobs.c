@@ -60,7 +60,7 @@ static enum ndr_err_code ndr_push_replPropertyMetaDataCtr1(struct ndr_push *ndr,
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 8));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->count));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->reserved));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		for (cntr_array_0 = 0; cntr_array_0 < r->count; cntr_array_0++) {
 			NDR_CHECK(ndr_push_replPropertyMetaData1(ndr, NDR_SCALARS, &r->array[cntr_array_0]));
 		}
@@ -99,7 +99,7 @@ _PUBLIC_ void ndr_print_replPropertyMetaDataCtr1(struct ndr_print *ndr, const ch
 	ndr_print_struct(ndr, name, "replPropertyMetaDataCtr1");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
-	ndr_print_uint32(ndr, "reserved", r->reserved);
+	ndr_print_uint32(ndr, "reserved", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->reserved);
 	ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 	ndr->depth++;
 	for (cntr_array_0=0;cntr_array_0<r->count;cntr_array_0++) {
@@ -187,7 +187,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_replPropertyMetaDataBlob(struct ndr_push *nd
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 8));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->version));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->reserved));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->ctr, r->version));
 		NDR_CHECK(ndr_push_replPropertyMetaDataCtr(ndr, NDR_SCALARS, &r->ctr));
 		NDR_CHECK(ndr_push_trailer_align(ndr, 8));
@@ -217,7 +217,7 @@ _PUBLIC_ void ndr_print_replPropertyMetaDataBlob(struct ndr_print *ndr, const ch
 	ndr_print_struct(ndr, name, "replPropertyMetaDataBlob");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "version", r->version);
-	ndr_print_uint32(ndr, "reserved", r->reserved);
+	ndr_print_uint32(ndr, "reserved", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->reserved);
 	ndr_print_set_switch_value(ndr, &r->ctr, r->version);
 	ndr_print_replPropertyMetaDataCtr(ndr, "ctr", &r->ctr);
 	ndr->depth--;
@@ -229,7 +229,7 @@ static enum ndr_err_code ndr_push_replUpToDateVectorCtr1(struct ndr_push *ndr, i
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 8));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->count));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->reserved));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		for (cntr_cursors_0 = 0; cntr_cursors_0 < r->count; cntr_cursors_0++) {
 			NDR_CHECK(ndr_push_drsuapi_DsReplicaCursor(ndr, NDR_SCALARS, &r->cursors[cntr_cursors_0]));
 		}
@@ -268,7 +268,7 @@ _PUBLIC_ void ndr_print_replUpToDateVectorCtr1(struct ndr_print *ndr, const char
 	ndr_print_struct(ndr, name, "replUpToDateVectorCtr1");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
-	ndr_print_uint32(ndr, "reserved", r->reserved);
+	ndr_print_uint32(ndr, "reserved", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->reserved);
 	ndr->print(ndr, "%s: ARRAY(%d)", "cursors", (int)r->count);
 	ndr->depth++;
 	for (cntr_cursors_0=0;cntr_cursors_0<r->count;cntr_cursors_0++) {
@@ -288,7 +288,7 @@ static enum ndr_err_code ndr_push_replUpToDateVectorCtr2(struct ndr_push *ndr, i
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 8));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->count));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->reserved));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		for (cntr_cursors_0 = 0; cntr_cursors_0 < r->count; cntr_cursors_0++) {
 			NDR_CHECK(ndr_push_drsuapi_DsReplicaCursor2(ndr, NDR_SCALARS, &r->cursors[cntr_cursors_0]));
 		}
@@ -327,7 +327,7 @@ _PUBLIC_ void ndr_print_replUpToDateVectorCtr2(struct ndr_print *ndr, const char
 	ndr_print_struct(ndr, name, "replUpToDateVectorCtr2");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
-	ndr_print_uint32(ndr, "reserved", r->reserved);
+	ndr_print_uint32(ndr, "reserved", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->reserved);
 	ndr->print(ndr, "%s: ARRAY(%d)", "cursors", (int)r->count);
 	ndr->depth++;
 	for (cntr_cursors_0=0;cntr_cursors_0<r->count;cntr_cursors_0++) {
@@ -433,7 +433,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_replUpToDateVectorBlob(struct ndr_push *ndr,
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 8));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->version));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->reserved));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->ctr, r->version));
 		NDR_CHECK(ndr_push_replUpToDateVectorCtr(ndr, NDR_SCALARS, &r->ctr));
 		NDR_CHECK(ndr_push_trailer_align(ndr, 8));
@@ -463,7 +463,7 @@ _PUBLIC_ void ndr_print_replUpToDateVectorBlob(struct ndr_print *ndr, const char
 	ndr_print_struct(ndr, name, "replUpToDateVectorBlob");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "version", r->version);
-	ndr_print_uint32(ndr, "reserved", r->reserved);
+	ndr_print_uint32(ndr, "reserved", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->reserved);
 	ndr_print_set_switch_value(ndr, &r->ctr, r->version);
 	ndr_print_replUpToDateVectorCtr(ndr, "ctr", &r->ctr);
 	ndr->depth--;
@@ -525,7 +525,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_repsFromTo1(struct ndr_push *ndr, int ndr_fl
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_repsFromTo1OtherInfo(r->other_info, ndr->iconv_convenience, ndr->flags)));
 			NDR_CHECK(ndr_push_drsuapi_DsReplicaNeighbourFlags(ndr, NDR_SCALARS, r->replica_flags));
 			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->schedule, 84));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->reserved));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 			NDR_CHECK(ndr_push_drsuapi_DsReplicaHighWaterMark(ndr, NDR_SCALARS, &r->highwatermark));
 			NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->source_dsa_obj_guid));
 			NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->source_dsa_invocation_id));
@@ -612,7 +612,7 @@ _PUBLIC_ void ndr_print_repsFromTo1(struct ndr_print *ndr, const char *name, con
 		ndr_print_uint32(ndr, "other_info_length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_repsFromTo1OtherInfo(r->other_info, ndr->iconv_convenience, ndr->flags):r->other_info_length);
 		ndr_print_drsuapi_DsReplicaNeighbourFlags(ndr, "replica_flags", r->replica_flags);
 		ndr_print_array_uint8(ndr, "schedule", r->schedule, 84);
-		ndr_print_uint32(ndr, "reserved", r->reserved);
+		ndr_print_uint32(ndr, "reserved", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->reserved);
 		ndr_print_drsuapi_DsReplicaHighWaterMark(ndr, "highwatermark", &r->highwatermark);
 		ndr_print_GUID(ndr, "source_dsa_obj_guid", &r->source_dsa_obj_guid);
 		ndr_print_GUID(ndr, "source_dsa_invocation_id", &r->source_dsa_invocation_id);
@@ -795,7 +795,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_repsFromTo2(struct ndr_push *ndr, int ndr_fl
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_repsFromTo2OtherInfo(r->other_info, ndr->iconv_convenience, ndr->flags)));
 			NDR_CHECK(ndr_push_drsuapi_DsReplicaNeighbourFlags(ndr, NDR_SCALARS, r->replica_flags));
 			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->schedule, 84));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->reserved));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 			NDR_CHECK(ndr_push_drsuapi_DsReplicaHighWaterMark(ndr, NDR_SCALARS, &r->highwatermark));
 			NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->source_dsa_obj_guid));
 			NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->source_dsa_invocation_id));
@@ -884,7 +884,7 @@ _PUBLIC_ void ndr_print_repsFromTo2(struct ndr_print *ndr, const char *name, con
 		ndr_print_uint32(ndr, "other_info_length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_repsFromTo2OtherInfo(r->other_info, ndr->iconv_convenience, ndr->flags):r->other_info_length);
 		ndr_print_drsuapi_DsReplicaNeighbourFlags(ndr, "replica_flags", r->replica_flags);
 		ndr_print_array_uint8(ndr, "schedule", r->schedule, 84);
-		ndr_print_uint32(ndr, "reserved", r->reserved);
+		ndr_print_uint32(ndr, "reserved", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->reserved);
 		ndr_print_drsuapi_DsReplicaHighWaterMark(ndr, "highwatermark", &r->highwatermark);
 		ndr_print_GUID(ndr, "source_dsa_obj_guid", &r->source_dsa_obj_guid);
 		ndr_print_GUID(ndr, "source_dsa_invocation_id", &r->source_dsa_invocation_id);
@@ -997,7 +997,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_repsFromToBlob(struct ndr_push *ndr, int ndr
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 8));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->version));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->reserved));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->ctr, r->version));
 		NDR_CHECK(ndr_push_repsFromTo(ndr, NDR_SCALARS, &r->ctr));
 		NDR_CHECK(ndr_push_trailer_align(ndr, 8));
@@ -1029,7 +1029,7 @@ _PUBLIC_ void ndr_print_repsFromToBlob(struct ndr_print *ndr, const char *name, 
 	ndr_print_struct(ndr, name, "repsFromToBlob");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "version", r->version);
-	ndr_print_uint32(ndr, "reserved", r->reserved);
+	ndr_print_uint32(ndr, "reserved", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->reserved);
 	ndr_print_set_switch_value(ndr, &r->ctr, r->version);
 	ndr_print_repsFromTo(ndr, "ctr", &r->ctr);
 	ndr->depth--;
@@ -1165,7 +1165,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_partialAttributeSetBlob(struct ndr_push *ndr
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->version));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->reserved));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->ctr, r->version));
 		NDR_CHECK(ndr_push_partialAttributeSetCtr(ndr, NDR_SCALARS, &r->ctr));
 		NDR_CHECK(ndr_push_trailer_align(ndr, 4));
@@ -1195,7 +1195,7 @@ _PUBLIC_ void ndr_print_partialAttributeSetBlob(struct ndr_print *ndr, const cha
 	ndr_print_struct(ndr, name, "partialAttributeSetBlob");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "version", r->version);
-	ndr_print_uint32(ndr, "reserved", r->reserved);
+	ndr_print_uint32(ndr, "reserved", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->reserved);
 	ndr_print_set_switch_value(ndr, &r->ctr, r->version);
 	ndr_print_partialAttributeSetCtr(ndr, "ctr", &r->ctr);
 	ndr->depth--;
@@ -1301,7 +1301,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_prefixMapBlob(struct ndr_push *ndr, int ndr_
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 5));
 		NDR_CHECK(ndr_push_prefixMapVersion(ndr, NDR_SCALARS, r->version));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->reserved));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->ctr, r->version));
 		NDR_CHECK(ndr_push_prefixMapCtr(ndr, NDR_SCALARS, &r->ctr));
 		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
@@ -1333,7 +1333,7 @@ _PUBLIC_ void ndr_print_prefixMapBlob(struct ndr_print *ndr, const char *name, c
 	ndr_print_struct(ndr, name, "prefixMapBlob");
 	ndr->depth++;
 	ndr_print_prefixMapVersion(ndr, "version", r->version);
-	ndr_print_uint32(ndr, "reserved", r->reserved);
+	ndr_print_uint32(ndr, "reserved", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->reserved);
 	ndr_print_set_switch_value(ndr, &r->ctr, r->version);
 	ndr_print_prefixMapCtr(ndr, "ctr", &r->ctr);
 	ndr->depth--;

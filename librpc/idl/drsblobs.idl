@@ -30,7 +30,7 @@ interface drsblobs {
 
 	typedef struct {
 		uint32 count;
-		uint32 reserved;
+		[value(0)] uint32 reserved;
 		replPropertyMetaData1 array[count];
 	} replPropertyMetaDataCtr1;
 
@@ -40,7 +40,7 @@ interface drsblobs {
 	
 	typedef [public] struct {
 		uint32 version;
-		uint32 reserved;
+		[value(0)] uint32 reserved;
 		[switch_is(version)] replPropertyMetaDataCtr ctr;
 	} replPropertyMetaDataBlob;
 
@@ -55,13 +55,13 @@ interface drsblobs {
 	 */
 	typedef struct {
 		uint32 count;
-		uint32 reserved;
+		[value(0)] uint32 reserved;
 		drsuapi_DsReplicaCursor cursors[count];
 	} replUpToDateVectorCtr1;
 
 	typedef struct {
 		uint32 count;
-		uint32 reserved;
+		[value(0)] uint32 reserved;
 		drsuapi_DsReplicaCursor2 cursors[count];
 	} replUpToDateVectorCtr2;
 
@@ -72,7 +72,7 @@ interface drsblobs {
 
 	typedef [public] struct {
 		uint32 version;
-		uint32 reserved;
+		[value(0)] uint32 reserved;
 		[switch_is(version)] replUpToDateVectorCtr ctr;
 	} replUpToDateVectorBlob;
 
@@ -102,7 +102,7 @@ interface drsblobs {
 		[value(ndr_size_repsFromTo1OtherInfo(other_info, ndr->iconv_convenience, ndr->flags))] uint32 other_info_length;
 		drsuapi_DsReplicaNeighbourFlags replica_flags;
 		uint8 schedule[84];
-		uint32 reserved;
+		[value(0)] uint32 reserved;
 		drsuapi_DsReplicaHighWaterMark highwatermark;
 		GUID source_dsa_obj_guid; /* the 'objectGuid' field of the CN=NTDS Settings object */
 		GUID source_dsa_invocation_id; /* the 'invocationId' field of the CN=NTDS Settings object */
@@ -129,7 +129,7 @@ interface drsblobs {
 		[value(ndr_size_repsFromTo2OtherInfo(other_info, ndr->iconv_convenience, ndr->flags))] uint32 other_info_length;
 		drsuapi_DsReplicaNeighbourFlags replica_flags;
 		uint8 schedule[84];
-		uint32 reserved;
+		[value(0)] uint32 reserved;
 		drsuapi_DsReplicaHighWaterMark highwatermark;
 		GUID source_dsa_obj_guid; /* the 'objectGuid' field of the CN=NTDS Settings object */
 		GUID source_dsa_invocation_id; /* the 'invocationId' field of the CN=NTDS Settings object */
@@ -144,7 +144,7 @@ interface drsblobs {
 
 	typedef [public] struct {
 		uint32 version;
-		uint32 reserved;
+		[value(0)] uint32 reserved;
 		[switch_is(version)] repsFromTo ctr;
 	} repsFromToBlob;
 
@@ -168,7 +168,7 @@ interface drsblobs {
 
 	typedef [public] struct {
 		uint32 version;
-		uint32 reserved;
+		[value(0)] uint32 reserved;
 		[switch_is(version)] partialAttributeSetCtr ctr;
 	} partialAttributeSetBlob;
 
@@ -196,7 +196,7 @@ interface drsblobs {
 
 	typedef [public] struct {
 		prefixMapVersion version;
-		uint32 reserved;
+		[value(0)] uint32 reserved;
 		[switch_is(version)] prefixMapCtr ctr;
 	} prefixMapBlob;
 
