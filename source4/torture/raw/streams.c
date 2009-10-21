@@ -1358,7 +1358,7 @@ static bool test_stream_create_disposition(struct torture_context *tctx,
 	const char *fname_stream;
 	const char *default_stream_name = "::$DATA";
 	const char *stream_list[2];
-	bool ret = true;
+	bool ret = false;
 	int fnum = -1;
 
 	fname_stream = talloc_asprintf(mem_ctx, "%s:%s", fname, stream);
@@ -1457,7 +1457,7 @@ static bool test_stream_create_disposition(struct torture_context *tctx,
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
-	if (!check_stream_list(cli, fname, 1, &default_stream_name)) {
+	if (!check_stream_list(cli, fname, 2, stream_list)) {
 		goto done;
 	}
 
@@ -1487,6 +1487,8 @@ static bool test_stream_create_disposition(struct torture_context *tctx,
 	if (!check_stream_list(cli, fname, 1, &default_stream_name)) {
 		goto done;
 	}
+
+	ret = true;
 
  done:
 	smbcli_close(cli->tree, fnum);
