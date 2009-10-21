@@ -688,11 +688,11 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
         if ldap_backend.ldap_backend_type == "fedora-ds":
             backend_modules = ["nsuniqueid", "paged_searches"]
             # We can handle linked attributes here, as we don't have directory-side subtree operations
-            tdb_modules_list = ["extended_dn_out_dereference"]
+            tdb_modules_list = ["extended_dn_out_fds"]
         elif ldap_backend.ldap_backend_type == "openldap":
             backend_modules = ["entryuuid", "paged_searches"]
             # OpenLDAP handles subtree renames, so we don't want to do any of these things
-            tdb_modules_list = ["extended_dn_out_dereference"]
+            tdb_modules_list = ["extended_dn_out_openldap"]
 
     elif serverrole == "domain controller":
         tdb_modules_list.insert(0, "repl_meta_data")

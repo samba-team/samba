@@ -208,9 +208,9 @@ ldb_extended_dn_in_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/extended_dn_in.o
 [MODULE::ldb_extended_dn_out]
 SUBSYSTEM = LIBLDB
 PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LIBNDR LIBSAMBA-UTIL SAMDB
-INIT_FUNCTION = LDB_MODULE(extended_dn_out_ldb),LDB_MODULE(extended_dn_out_dereference)
+INIT_FUNCTION = LDB_MODULE(extended_dn_out_ldb),LDB_MODULE(extended_dn_out_openldap),LDB_MODULE(extended_dn_out_fds)
 ENABLE = YES
-ALIASES = extended_dn_out_ldb extended_dn_out_dereference
+ALIASES = extended_dn_out_ldb extended_dn_out_openldap extended_dn_out_fds
 # End MODULE ldb_extended_dn_out
 ################################################
 
