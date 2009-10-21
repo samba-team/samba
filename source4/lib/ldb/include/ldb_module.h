@@ -101,6 +101,12 @@ void ldb_schema_attribute_set_override_handler(struct ldb_context *ldb,
 /* The following definitions come from lib/ldb/common/ldb_controls.c  */
 struct ldb_control *get_control_from_list(struct ldb_control **controls, const char *oid);
 int save_controls(struct ldb_control *exclude, struct ldb_request *req, struct ldb_control ***saver);
+/* Returns a list of controls, except the one specified.  Included
+ * controls become a child of returned list if they were children of
+ * controls_in */
+struct ldb_control **controls_except_specified(struct ldb_control **controls_in, 
+					       TALLOC_CTX *mem_ctx, 
+					       struct ldb_control *exclude);
 int check_critical_controls(struct ldb_control **controls);
 
 /* The following definitions come from lib/ldb/common/ldb_ldif.c  */

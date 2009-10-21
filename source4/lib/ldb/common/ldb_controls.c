@@ -102,6 +102,47 @@ int save_controls(struct ldb_control *exclude, struct ldb_request *req, struct l
 	return 1;
 }
 
+/* Returns a list of controls, except the one specified.  Included
+ * controls become a child of returned list if they were children of
+ * controls_in */
+struct ldb_control **controls_except_specified(struct ldb_control **controls_in, 
+					       TALLOC_CTX *mem_ctx, 
+					       struct ldb_control *exclude)
+{
+	struct ldb_control **lcs = NULL;
+	int i, j;
+
+	for (i = 0; controls_in && controls_in[i]; i++);
+
+	if (i == 0) {
+		return NULL;
+	}
+
+	for (i = 0, j = 0; controls_in && controls_in[i]; i++) {
+		if (exclude == controls_in[i]) continue;
+
+		if (!lcs) {
+			/* Allocate here so if we remove the only
+			 * control, or there were no controls, we
+			 * don't allocate at all, and just return
+			 * NULL */
+			lcs = talloc_array(mem_ctx, struct ldb_control *, i);
+			if (!lcs) {
+				return NULL;
+			}
+		}
+
+		lcs[j] = controls_in[i];
+		talloc_reparent(controls_in, lcs, lcs[j]);
+		j++;
+	}
+	if (lcs) {
+		lcs[j] = NULL;
+	}
+
+	return lcs;
+}
+
 /* check if there's any control marked as critical in the list */
 /* return True if any, False if none */
 int check_critical_controls(struct ldb_control **controls)
