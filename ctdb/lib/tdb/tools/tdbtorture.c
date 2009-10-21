@@ -28,6 +28,7 @@
 static struct tdb_context *db;
 static int in_transaction;
 static int error_count;
+static int always_transaction = 0;
 
 #ifdef PRINTF_ATTRIBUTE
 static void tdb_log(struct tdb_context *tdb, enum tdb_debug_level level, const char *format, ...) PRINTF_ATTRIBUTE(3,4);
@@ -103,8 +104,16 @@ static void addrec_db(void)
 	data.dptr = (unsigned char *)d;
 	data.dsize = dlen+1;
 
+#if REOPEN_PROB
+	if (in_transaction == 0 && random() % REOPEN_PROB == 0) {
+		tdb_reopen_all(0);
+		goto next;
+	}
+#endif
+
 #if TRANSACTION_PROB
-	if (in_transaction == 0 && random() % TRANSACTION_PROB == 0) {
+	if (in_transaction == 0 &&
+	    (always_transaction || random() % TRANSACTION_PROB == 0)) {
 		if (tdb_transaction_start(db) != 0) {
 			fatal("tdb_transaction_start failed");
 		}
@@ -125,13 +134,6 @@ static void addrec_db(void)
 		in_transaction--;
 		goto next;
 	}
-#endif
-
-#if REOPEN_PROB
-	if (in_transaction == 0 && random() % REOPEN_PROB == 0) {
-		tdb_reopen_all(0);
-		goto next;
-	} 
 #endif
 
 #if DELETE_PROB
@@ -203,7 +205,7 @@ static int traverse_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf,
 
 static void usage(void)
 {
-	printf("Usage: tdbtorture [-n NUM_PROCS] [-l NUM_LOOPS] [-s SEED] [-H HASH_SIZE]\n");
+	printf("Usage: tdbtorture [-t] [-n NUM_PROCS] [-l NUM_LOOPS] [-s SEED] [-H HASH_SIZE]\n");
 	exit(0);
 }
 
@@ -220,7 +222,7 @@ static void usage(void)
 	struct tdb_logging_context log_ctx;
 	log_ctx.log_fn = tdb_log;
 
-	while ((c = getopt(argc, argv, "n:l:s:H:h")) != -1) {
+	while ((c = getopt(argc, argv, "n:l:s:H:th")) != -1) {
 		switch (c) {
 		case 'n':
 			num_procs = strtol(optarg, NULL, 0);
@@ -233,6 +235,9 @@ static void usage(void)
 			break;
 		case 's':
 			seed = strtol(optarg, NULL, 0);
+			break;
+		case 't':
+			always_transaction = 1;
 			break;
 		default:
 			usage();
@@ -259,8 +264,8 @@ static void usage(void)
 	}
 
 	if (i == 0) {
-		printf("testing with %d processes, %d loops, %d hash_size, seed=%d\n", 
-		       num_procs, num_loops, hash_size, seed);
+		printf("testing with %d processes, %d loops, %d hash_size, seed=%d%s\n",
+		       num_procs, num_loops, hash_size, seed, always_transaction ? " (all within transactions)" : "");
 	}
 
 	srand(seed + i);
@@ -272,8 +277,20 @@ static void usage(void)
 
 	if (error_count == 0) {
 		tdb_traverse_read(db, NULL, NULL);
+		if (always_transaction) {
+			while (in_transaction) {
+				tdb_transaction_cancel(db);
+				in_transaction--;
+			}
+			if (tdb_transaction_start(db) != 0)
+				fatal("tdb_transaction_start failed");
+		}
 		tdb_traverse(db, traverse_fn, NULL);
 		tdb_traverse(db, traverse_fn, NULL);
+		if (always_transaction) {
+			if (tdb_transaction_commit(db) != 0)
+				fatal("tdb_transaction_commit failed");
+		}
 	}
 
 	tdb_close(db);
