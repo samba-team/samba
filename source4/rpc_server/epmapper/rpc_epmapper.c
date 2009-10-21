@@ -65,7 +65,7 @@ static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 			description = d->ep_description;
 			description->object = iface->iface.syntax_id;
 
-			status = dcerpc_binding_build_tower(mem_ctx, description, &(*eps)[total].ep);
+			status = dcerpc_binding_build_tower(*eps, description, &(*eps)[total].ep);
 			if (NT_STATUS_IS_ERR(status)) {
 				DEBUG(1, ("Unable to build tower for %s\n", iface->iface.name));
 				continue;
