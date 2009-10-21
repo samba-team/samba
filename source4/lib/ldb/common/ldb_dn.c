@@ -98,7 +98,7 @@ struct ldb_dn *ldb_dn_from_ldb_val(void *mem_ctx,
 	if (! ldb) return NULL;
 
 	if (strdn && strdn->data
-	    && (strlen((const char*)strdn->data) != strdn->length)) {
+	    && (strnlen((const char*)strdn->data, strdn->length) != strdn->length)) {
 		/* The RDN must not contain a character with value 0x0 */
 		return NULL;
 	}
