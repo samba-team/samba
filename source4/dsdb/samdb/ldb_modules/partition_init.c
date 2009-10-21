@@ -394,6 +394,9 @@ int partition_reload_if_required(struct ldb_module *module,
 		DATA_BLOB dn_blob;
 		struct ldb_dn *dn;
 		struct dsdb_partition *partition;
+		struct ldb_result *dn_res;
+		const char *no_attrs[] = { NULL };
+
 		for (j=0; data->partitions && data->partitions[j]; j++) {
 			DATA_BLOB casefold = data_blob_string_const(ldb_dn_get_casefold(data->partitions[j]->ctrl->dn));
 			if (data_blob_cmp(&casefold, &partition_attributes->values[i]) == 0) {
@@ -447,6 +450,25 @@ int partition_reload_if_required(struct ldb_module *module,
 					    filename_base,
 					    &partition);
 		if (ret != LDB_SUCCESS) {
+			talloc_free(mem_ctx);
+			return ret;
+		}
+
+		/* Get the 'correct' case of the partition DNs from the database */
+		ret = dsdb_module_search_dn(partition->module, data, &dn_res, 
+					    dn, no_attrs);
+		if (ret == LDB_SUCCESS) {
+			talloc_free(partition->ctrl->dn);
+			partition->ctrl->dn = talloc_steal(partition->ctrl, dn_res->msgs[0]->dn);
+			talloc_free(dn_res);
+		} else if (ret != LDB_ERR_NO_SUCH_OBJECT) {
+			ldb_asprintf_errstring(ldb,
+					       "Failed to search for %s from " DSDB_PARTITION_DN 
+					       " replicateEntries for new partition at %s on %s: %s", 
+					       ldb_dn_get_linearized(data->replicate[i]), 
+					       partition->backend_url,
+					       ldb_dn_get_linearized(partition->ctrl->dn), 
+					       ldb_errstring(ldb));
 			talloc_free(mem_ctx);
 			return ret;
 		}
