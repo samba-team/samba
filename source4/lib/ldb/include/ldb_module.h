@@ -68,6 +68,7 @@ void ldb_debug_add(struct ldb_context *ldb, const char *fmt, ...) PRINTF_ATTRIBU
 void ldb_debug_end(struct ldb_context *ldb, enum ldb_debug_level level);
 
 #define ldb_oom(ldb) ldb_debug_set(ldb, LDB_DEBUG_FATAL, "ldb out of memory at %s:%d\n", __FILE__, __LINE__)
+#define ldb_module_oom(module) ldb_oom(ldb_module_get_ctx(module))
 
 /* The following definitions come from lib/ldb/common/ldb.c  */
 
