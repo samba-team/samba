@@ -2026,19 +2026,38 @@ static bool test_EnumTrustDom(struct dcerpc_pipe *p,
 {
 	struct lsa_EnumTrustDom r;
 	NTSTATUS enum_status;
-	uint32_t resume_handle = 0;
+	uint32_t in_resume_handle = 0;
+	uint32_t out_resume_handle;
 	struct lsa_DomainList domains;
 	bool ret = true;
 
 	torture_comment(tctx, "\nTesting EnumTrustDom\n");
 
 	r.in.handle = handle;
-	r.in.resume_handle = &resume_handle;
+	r.in.resume_handle = &in_resume_handle;
 	r.in.max_size = 0;
 	r.out.domains = &domains;
-	r.out.resume_handle = &resume_handle;
+	r.out.resume_handle = &out_resume_handle;
 
 	enum_status = dcerpc_lsa_EnumTrustDom(p, tctx, &r);
+
+	/* according to MS-LSAD 3.1.4.7.8 output resume handle MUST
+	 * always be larger than the previous input resume handle, in
+	 * particular when hitting the last query it is vital to set the
+	 * resume handle correctly to avoid infinite client loops, as
+	 * seen e.g.  with Windows XP SP3 when resume handle is 0 and
+	 * status is NT_STATUS_OK - gd */
+
+	if (NT_STATUS_IS_OK(enum_status) ||
+	    NT_STATUS_EQUAL(enum_status, NT_STATUS_NO_MORE_ENTRIES) ||
+	    NT_STATUS_EQUAL(enum_status, STATUS_MORE_ENTRIES))
+	{
+		if (out_resume_handle <= in_resume_handle) {
+			torture_comment(tctx, "EnumTrustDom failed - should have returned output resume_handle (0x%08x) larger than input resume handle (0x%08x)\n",
+				out_resume_handle, in_resume_handle);
+			return false;
+		}
+	}
 
 	if (NT_STATUS_IS_OK(enum_status)) {
 		if (domains.count == 0) {
@@ -2051,16 +2070,34 @@ static bool test_EnumTrustDom(struct dcerpc_pipe *p,
 	}
 
 	/* Start from the bottom again */
-	resume_handle = 0;
+	in_resume_handle = 0;
 
 	do {
 		r.in.handle = handle;
-		r.in.resume_handle = &resume_handle;
+		r.in.resume_handle = &in_resume_handle;
 		r.in.max_size = LSA_ENUM_TRUST_DOMAIN_MULTIPLIER * 3;
 		r.out.domains = &domains;
-		r.out.resume_handle = &resume_handle;
+		r.out.resume_handle = &out_resume_handle;
 
 		enum_status = dcerpc_lsa_EnumTrustDom(p, tctx, &r);
+
+		/* according to MS-LSAD 3.1.4.7.8 output resume handle MUST
+		 * always be larger than the previous input resume handle, in
+		 * particular when hitting the last query it is vital to set the
+		 * resume handle correctly to avoid infinite client loops, as
+		 * seen e.g.  with Windows XP SP3 when resume handle is 0 and
+		 * status is NT_STATUS_OK - gd */
+
+		if (NT_STATUS_IS_OK(enum_status) ||
+		    NT_STATUS_EQUAL(enum_status, NT_STATUS_NO_MORE_ENTRIES) ||
+		    NT_STATUS_EQUAL(enum_status, STATUS_MORE_ENTRIES))
+		{
+			if (out_resume_handle <= in_resume_handle) {
+				torture_comment(tctx, "EnumTrustDom failed - should have returned output resume_handle (0x%08x) larger than input resume handle (0x%08x)\n",
+					out_resume_handle, in_resume_handle);
+				return false;
+			}
+		}
 
 		/* NO_MORE_ENTRIES is allowed */
 		if (NT_STATUS_EQUAL(enum_status, NT_STATUS_NO_MORE_ENTRIES)) {
@@ -2089,6 +2126,8 @@ static bool test_EnumTrustDom(struct dcerpc_pipe *p,
 		}
 
 		ret &= test_query_each_TrustDom(p, tctx, handle, &domains);
+
+		in_resume_handle = out_resume_handle;
 
 	} while ((NT_STATUS_EQUAL(enum_status, STATUS_MORE_ENTRIES)));
 
