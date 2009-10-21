@@ -250,11 +250,6 @@ int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flg
 		goto done;
 	}
 
-	ret = ltdb_index_add(module, msg);
-	if (ret != LDB_SUCCESS) {
-		tdb_delete(ltdb->tdb, tdb_key);
-	}
-
 done:
 	talloc_free(tdb_key.dptr);
 	talloc_free(tdb_data.dptr);
@@ -306,7 +301,7 @@ static int ltdb_add_internal(struct ldb_module *module,
 		return ret;
 	}
 
-	ret = ltdb_index_one(module, msg, 1);
+	ret = ltdb_index_add_new(module, msg);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -340,7 +335,7 @@ static int ltdb_add(struct ltdb_context *ctx)
   delete a record from the database, not updating indexes (used for deleting
   index records)
 */
-int ltdb_delete_noindex(struct ldb_module *module, struct ldb_dn *dn)
+static int ltdb_delete_noindex(struct ldb_module *module, struct ldb_dn *dn)
 {
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
@@ -385,14 +380,8 @@ static int ltdb_delete_internal(struct ldb_module *module, struct ldb_dn *dn)
 		goto done;
 	}
 
-	/* remove one level attribute */
-	ret = ltdb_index_one(module, msg, 0);
-	if (ret != LDB_SUCCESS) {
-		goto done;
-	}
-
 	/* remove any indexed attributes */
-	ret = ltdb_index_del(module, msg);
+	ret = ltdb_index_delete(module, msg);
 	if (ret != LDB_SUCCESS) {
 		goto done;
 	}
@@ -453,9 +442,9 @@ static int find_element(const struct ldb_message *msg, const char *name)
 
   returns 0 on success, -1 on failure (and sets errno)
 */
-static int msg_add_element(struct ldb_context *ldb,
-			   struct ldb_message *msg,
-			   struct ldb_message_element *el)
+static int ltdb_msg_add_element(struct ldb_context *ldb,
+				struct ldb_message *msg,
+				struct ldb_message_element *el)
 {
 	struct ldb_message_element *e2;
 	unsigned int i;
@@ -502,40 +491,35 @@ static int msg_delete_attribute(struct ldb_module *module,
 				struct ldb_message *msg, const char *name)
 {
 	const char *dn;
-	unsigned int i, j;
+	unsigned int i;
+	int ret;
+	struct ldb_message_element *el;
 
 	dn = ldb_dn_get_linearized(msg->dn);
 	if (dn == NULL) {
 		return -1;
 	}
 
-	for (i=0;i<msg->num_elements;i++) {
-		if (ldb_attr_cmp(msg->elements[i].name, name) == 0) {
-			for (j=0;j<msg->elements[i].num_values;j++) {
-				ltdb_index_del_value(module, dn,
-						     &msg->elements[i], j);
-			}
-			talloc_free(msg->elements[i].values);
-			if (msg->num_elements > (i+1)) {
-				memmove(&msg->elements[i],
-					&msg->elements[i+1],
-					sizeof(struct ldb_message_element)*
-					(msg->num_elements - (i+1)));
-			}
-			msg->num_elements--;
-			i--;
-			msg->elements = talloc_realloc(msg, msg->elements,
-						       struct ldb_message_element,
-						       msg->num_elements);
+	el = ldb_msg_find_element(msg, name);
+	if (el == NULL) {
+		return -1;
+	}
+	i = el - msg->elements;
 
-			/* per definition we find in a canonicalised message an
-			   attribute only once. So we are finished here. */
-			return 0;
-		}
+	ret = ltdb_index_del_element(module, dn, el);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
 
-	/* Not found */
-	return -1;
+	talloc_free(el->values);
+	if (msg->num_elements > (i+1)) {
+		memmove(el, el+1, sizeof(*el) * (msg->num_elements - (i+1)));
+	}
+	msg->num_elements--;
+	msg->elements = talloc_realloc(msg, msg->elements,
+				       struct ldb_message_element,
+				       msg->num_elements);
+	return 0;
 }
 
 /*
@@ -550,7 +534,7 @@ static int msg_delete_element(struct ldb_module *module,
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	unsigned int i;
-	int found;
+	int found, ret;
 	struct ldb_message_element *el;
 	const struct ldb_schema_attribute *a;
 
@@ -565,17 +549,22 @@ static int msg_delete_element(struct ldb_module *module,
 
 	for (i=0;i<el->num_values;i++) {
 		if (a->syntax->comparison_fn(ldb, ldb,
-						&el->values[i], val) == 0) {
+					     &el->values[i], val) == 0) {
+			if (el->num_values == 1) {
+				return msg_delete_attribute(module, ldb, msg, name);
+			}
+
+			ret = ltdb_index_del_value(module, ldb_dn_get_linearized(msg->dn), el, i);
+			if (ret != LDB_SUCCESS) {
+				return -1;
+			}
+
 			if (i<el->num_values-1) {
 				memmove(&el->values[i], &el->values[i+1],
 					sizeof(el->values[i])*
 						(el->num_values-(i+1)));
 			}
 			el->num_values--;
-			if (el->num_values == 0) {
-				return msg_delete_attribute(module, ldb,
-							    msg, name);
-			}
 
 			/* per definition we find in a canonicalised message an
 			   attribute value only once. So we are finished here */
@@ -669,8 +658,12 @@ int ltdb_modify_internal(struct ldb_module *module,
 			/* Checks if element already exists */
 			idx = find_element(msg2, el->name);
 			if (idx == -1) {
-				if (msg_add_element(ldb, msg2, el) != 0) {
+				if (ltdb_msg_add_element(ldb, msg2, el) != 0) {
 					ret = LDB_ERR_OTHER;
+					goto done;
+				}
+				ret = ltdb_index_add_element(module, msg->dn, el);
+				if (ret != LDB_SUCCESS) {
 					goto done;
 				}
 			} else {
@@ -703,8 +696,8 @@ int ltdb_modify_internal(struct ldb_module *module,
 				/* Now combine existing and new values to a new
 				   attribute record */
 				vals = talloc_realloc(msg2->elements,
-					el2->values, struct ldb_val,
-					el2->num_values + el->num_values);
+						      el2->values, struct ldb_val,
+						      el2->num_values + el->num_values);
 				if (vals == NULL) {
 					ldb_oom(ldb);
 					ret = LDB_ERR_OTHER;
@@ -718,6 +711,11 @@ int ltdb_modify_internal(struct ldb_module *module,
 
 				el2->values = vals;
 				el2->num_values += el->num_values;
+
+				ret = ltdb_index_add_element(module, msg->dn, el);
+				if (ret != LDB_SUCCESS) {
+					goto done;
+				}
 			}
 
 			break;
@@ -740,12 +738,29 @@ int ltdb_modify_internal(struct ldb_module *module,
 				}
 			}
 
-			/* Delete the attribute if it exists in the DB */
-			msg_delete_attribute(module, ldb, msg2, el->name);
+			idx = find_element(msg2, el->name);
+			if (idx != -1) {
+				el2 = &(msg2->elements[idx]);
+				if (ldb_msg_element_compare(el, el2) == 0) {
+					/* we are replacing with the same values */
+					continue;
+				}
+			
+				/* Delete the attribute if it exists in the DB */
+				ret = msg_delete_attribute(module, ldb, msg2, el->name);
+				if (ret != LDB_SUCCESS) {
+					goto done;
+				}
+			}
 
 			/* Recreate it with the new values */
-			if (msg_add_element(ldb, msg2, el) != 0) {
+			if (ltdb_msg_add_element(ldb, msg2, el) != 0) {
 				ret = LDB_ERR_OTHER;
+				goto done;
+			}
+
+			ret = ltdb_index_add_element(module, msg->dn, el);
+			if (ret != LDB_SUCCESS) {
 				goto done;
 			}
 
@@ -779,15 +794,8 @@ int ltdb_modify_internal(struct ldb_module *module,
 						ret = LDB_ERR_NO_SUCH_ATTRIBUTE;
 						goto done;
 					}
-
-					ret = ltdb_index_del_value(module, dn,
-						&msg->elements[i], j);
-					if (ret != LDB_SUCCESS) {
-						goto done;
-					}
 				}
 			}
-
 			break;
 		default:
 			ldb_asprintf_errstring(ldb,

@@ -17,6 +17,8 @@ struct ltdb_private {
 	struct ltdb_cache {
 		struct ldb_message *indexlist;
 		struct ldb_message *attributes;
+		bool one_level_indexes;
+		bool attribute_indexes;
 
 		struct {
 			char *name;
@@ -58,7 +60,7 @@ struct ltdb_context {
 #define LTDB_INDEX      "@INDEX"
 #define LTDB_INDEXLIST  "@INDEXLIST"
 #define LTDB_IDX        "@IDX"
-#define LTDB_IDXPTR     "@IDXPTR"
+#define LTDB_IDXVERSION "@IDXVERSION"
 #define LTDB_IDXATTR    "@IDXATTR"
 #define LTDB_IDXONE     "@IDXONE"
 #define LTDB_BASEINFO   "@BASEINFO"
@@ -83,9 +85,13 @@ int ltdb_check_at_attributes_values(const struct ldb_val *value);
 struct ldb_parse_tree;
 
 int ltdb_search_indexed(struct ltdb_context *ctx, uint32_t *);
-int ltdb_index_add(struct ldb_module *module, const struct ldb_message *msg);
-int ltdb_index_del(struct ldb_module *module, const struct ldb_message *msg);
-int ltdb_index_one(struct ldb_module *module, const struct ldb_message *msg, int add);
+int ltdb_index_add_new(struct ldb_module *module, const struct ldb_message *msg);
+int ltdb_index_delete(struct ldb_module *module, const struct ldb_message *msg);
+int ltdb_index_del_element(struct ldb_module *module, const char *dn, struct ldb_message_element *el);
+int ltdb_index_add_element(struct ldb_module *module, struct ldb_dn *dn, 
+			   struct ldb_message_element *el);
+int ltdb_index_del_value(struct ldb_module *module, const char *dn, 
+			 struct ldb_message_element *el, int v_idx);
 int ltdb_reindex(struct ldb_module *module);
 int ltdb_index_transaction_start(struct ldb_module *module);
 int ltdb_index_transaction_commit(struct ldb_module *module);
@@ -122,11 +128,7 @@ int ltdb_lock_read(struct ldb_module *module);
 int ltdb_unlock_read(struct ldb_module *module);
 struct TDB_DATA ltdb_key(struct ldb_module *module, struct ldb_dn *dn);
 int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flgs);
-int ltdb_delete_noindex(struct ldb_module *module, struct ldb_dn *dn);
 int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *msg);
-
-int ltdb_index_del_value(struct ldb_module *module, const char *dn, 
-			 struct ldb_message_element *el, int v_idx);
 
 struct tdb_context *ltdb_wrap_open(TALLOC_CTX *mem_ctx,
 				   const char *path, int hash_size, int tdb_flags,

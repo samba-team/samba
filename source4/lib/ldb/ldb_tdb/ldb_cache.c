@@ -357,6 +357,8 @@ int ltdb_cache_load(struct ldb_module *module)
 	    ltdb->cache->attributes == NULL) {
 		goto failed;
 	}
+	ltdb->cache->one_level_indexes = false;
+	ltdb->cache->attribute_indexes = false;
 	    
 	indexlist_dn = ldb_dn_new(module, ldb, LTDB_INDEXLIST);
 	if (indexlist_dn == NULL) goto failed;
@@ -364,6 +366,13 @@ int ltdb_cache_load(struct ldb_module *module)
 	r = ltdb_search_dn1(module, indexlist_dn, ltdb->cache->indexlist);
 	if (r != LDB_SUCCESS && r != LDB_ERR_NO_SUCH_OBJECT) {
 		goto failed;
+	}
+
+	if (ldb_msg_find_element(ltdb->cache->indexlist, LTDB_IDXONE) != NULL) {
+		ltdb->cache->one_level_indexes = true;
+	}
+	if (ldb_msg_find_element(ltdb->cache->indexlist, LTDB_IDXATTR) != NULL) {
+		ltdb->cache->attribute_indexes = true;
 	}
 
 	if (ltdb_attributes_load(module) == -1) {
