@@ -181,7 +181,7 @@ static const char **find_modules_for_dn(struct partition_private_data *data, str
 
 static int new_partition_from_dn(struct ldb_context *ldb, struct partition_private_data *data, 
 				 TALLOC_CTX *mem_ctx, 
-				 struct ldb_dn *dn, const char *casefold_dn,
+				 struct ldb_dn *dn, const char *filename_base,
 				 struct dsdb_partition **partition) {
 	const char *backend_url;
 	struct dsdb_control_current_partition *ctrl;
@@ -210,25 +210,25 @@ static int new_partition_from_dn(struct ldb_context *ldb, struct partition_priva
 		const char *p;
 		char *backend_path;
 		char *base64_dn = NULL;
-		for (p = casefold_dn; *p; p++) {
+		for (p = filename_base; *p; p++) {
 			/* We have such a strict check because I don't want shell metacharacters in the file name, nor ../ */
 			if (!(isalnum(*p) || *p == ' ' || *p == '=' || *p == ',')) {
 				break;
 			}
 		}
 		if (*p) {
-			casefold_dn = base64_dn = ldb_base64_encode(data, casefold_dn, strlen(casefold_dn));
+			filename_base = base64_dn = ldb_base64_encode(data, filename_base, strlen(filename_base));
 		}
 		
 		backend_path = samdb_relative_path(ldb, 
 						   *partition, 
-						   casefold_dn);
+						   filename_base);
 		if (base64_dn) {
 			talloc_free(base64_dn);
 		}
 		if (!backend_path) {
 			ldb_asprintf_errstring(ldb, 
-					       "partition_init: unable to determine an relative path for partition: %s", casefold_dn);
+					       "partition_init: unable to determine an relative path for partition: %s", filename_base);
 			talloc_free(*partition);
 			return LDB_ERR_OPERATIONS_ERROR;		
 		}
@@ -254,6 +254,11 @@ static int new_partition_from_dn(struct ldb_context *ldb, struct partition_priva
 
 	modules = find_modules_for_dn(data, dn);
 
+	if (!modules) {
+		DEBUG(0, ("Unable to load partition modules for new DN %s, perhaps you need to reprovision?  See partition-upgrade.txt for instructions\n", ldb_dn_get_linearized(dn)));
+		talloc_free(*partition);
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
 	ret = ldb_load_modules_list(ldb, modules, backend_module, &(*partition)->module);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, 
@@ -385,6 +390,7 @@ int partition_reload_if_required(struct ldb_module *module,
 	for (i=0; partition_attributes && i < partition_attributes->num_values; i++) {
 		int j;
 		bool new_partition = true;
+		const char *filename_base = NULL;
 		DATA_BLOB dn_blob;
 		struct ldb_dn *dn;
 		struct dsdb_partition *partition;
@@ -401,6 +407,26 @@ int partition_reload_if_required(struct ldb_module *module,
 
 		dn_blob = partition_attributes->values[i];
 		
+		if (dn_blob.length > 4 && 
+		    (strncmp((const char *)&dn_blob.data[dn_blob.length-4], ".ldb", 4) == 0)) {
+
+			/* Look for DN:filename.ldb */
+			char *p = strchr((const char *)dn_blob.data, ':');
+			if (!p) {
+				ldb_asprintf_errstring(ldb, 
+						       "partition_init: invalid DN in attempting to parse old-style partition record: %s", (const char *)dn_blob.data);
+				talloc_free(mem_ctx);
+				return LDB_ERR_CONSTRAINT_VIOLATION;
+			}
+			filename_base = p+1;
+			
+			/* Trim off the .ldb */
+			dn_blob.data[dn_blob.length-4] = '\0';
+			
+			/* Now trim off the filename */
+			dn_blob.length = ((uint8_t *)p - dn_blob.data);
+		}
+
 		dn = ldb_dn_from_ldb_val(mem_ctx, ldb, &dn_blob);
 		if (!dn) {
 			ldb_asprintf_errstring(ldb, 
@@ -408,26 +434,17 @@ int partition_reload_if_required(struct ldb_module *module,
 			talloc_free(mem_ctx);
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
-			
-		if (dn_blob.length > 4 && 
-		    (strncmp((const char *)&dn_blob.data[dn_blob.length-4], ".ldb", 4) == 0) && 
-		    (ldb_dn_compare_base(ldb_get_default_basedn(ldb), dn) != 0)) {
-			ldb_asprintf_errstring(ldb, 
-					       "partition_init: invalid DN in partition record: %s is not under %s.  Perhaps an old " DSDB_PARTITION_DN " format?", 
-					       (const char *)dn_blob.data, 
-					       ldb_dn_get_linearized(ldb_get_default_basedn(ldb)));
-			DEBUG(0, ("Unable to load partitions, invalid DN %s found, perhaps you need to reprovision?  See partition-upgrade.txt for instructions\n", 
-				  (const char *)dn_blob.data));
-			talloc_free(mem_ctx);
-			return LDB_ERR_CONSTRAINT_VIOLATION;
+		
+		if (!filename_base) {
+			filename_base = ldb_dn_get_linearized(dn);
 		}
-
+			
 		/* We call ldb_dn_get_linearized() because the DN in
 		 * partition_attributes is already casefolded
 		 * correctly.  We don't want to mess that up as the
 		 * schema isn't loaded yet */
 		ret = new_partition_from_dn(ldb, data, data->partitions, dn, 
-					    ldb_dn_get_linearized(dn),
+					    filename_base,
 					    &partition);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(mem_ctx);
