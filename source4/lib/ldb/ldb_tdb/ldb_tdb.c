@@ -1352,6 +1352,7 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 		return -1;
 	}
 	ldb_module_set_private(module, ltdb);
+	talloc_steal(module, ltdb);
 
 	if (ltdb_cache_load(module) != 0) {
 		talloc_free(module);
