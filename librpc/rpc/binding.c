@@ -403,6 +403,7 @@ _PUBLIC_ NTSTATUS dcerpc_floor_get_lhs_data(const struct epm_floor *epm_floor,
 
 static DATA_BLOB dcerpc_floor_pack_lhs_data(TALLOC_CTX *mem_ctx, const struct ndr_syntax_id *syntax)
 {
+	DATA_BLOB blob;
 	struct ndr_push *ndr = ndr_push_init_ctx(mem_ctx, NULL);
 
 	ndr->flags |= LIBNDR_FLAG_NOALIGN;
@@ -410,7 +411,10 @@ static DATA_BLOB dcerpc_floor_pack_lhs_data(TALLOC_CTX *mem_ctx, const struct nd
 	ndr_push_GUID(ndr, NDR_SCALARS | NDR_BUFFERS, &syntax->uuid);
 	ndr_push_uint16(ndr, NDR_SCALARS, syntax->if_version);
 
-	return ndr_push_blob(ndr);
+	blob = ndr_push_blob(ndr);
+	talloc_steal(mem_ctx, blob.data);
+	talloc_free(ndr);
+	return blob;
 }
 
 const char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor)
@@ -691,29 +695,29 @@ _PUBLIC_ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx,
 	/* Floor 0 */
 	tower->floors[0].lhs.protocol = EPM_PROTOCOL_UUID;
 
-	tower->floors[0].lhs.lhs_data = dcerpc_floor_pack_lhs_data(mem_ctx, &binding->object);
+	tower->floors[0].lhs.lhs_data = dcerpc_floor_pack_lhs_data(tower->floors, &binding->object);
 
-	tower->floors[0].rhs.uuid.unknown = data_blob_talloc_zero(mem_ctx, 2);
+	tower->floors[0].rhs.uuid.unknown = data_blob_talloc_zero(tower->floors, 2);
 
 	/* Floor 1 */
 	tower->floors[1].lhs.protocol = EPM_PROTOCOL_UUID;
 
-	tower->floors[1].lhs.lhs_data = dcerpc_floor_pack_lhs_data(mem_ctx, 
+	tower->floors[1].lhs.lhs_data = dcerpc_floor_pack_lhs_data(tower->floors, 
 								&ndr_transfer_syntax);
 
-	tower->floors[1].rhs.uuid.unknown = data_blob_talloc_zero(mem_ctx, 2);
+	tower->floors[1].rhs.uuid.unknown = data_blob_talloc_zero(tower->floors, 2);
 
 	/* Floor 2 to num_protocols */
 	for (i = 0; i < num_protocols; i++) {
 		tower->floors[2 + i].lhs.protocol = protseq[i];
-		tower->floors[2 + i].lhs.lhs_data = data_blob_talloc(mem_ctx, NULL, 0);
+		tower->floors[2 + i].lhs.lhs_data = data_blob_talloc(tower->floors, NULL, 0);
 		ZERO_STRUCT(tower->floors[2 + i].rhs);
-		dcerpc_floor_set_rhs_data(mem_ctx, &tower->floors[2 + i], "");
+		dcerpc_floor_set_rhs_data(tower->floors, &tower->floors[2 + i], "");
 	}
 
 	/* The 4th floor contains the endpoint */
 	if (num_protocols >= 2 && binding->endpoint) {
-		status = dcerpc_floor_set_rhs_data(mem_ctx, &tower->floors[3], binding->endpoint);
+		status = dcerpc_floor_set_rhs_data(tower->floors, &tower->floors[3], binding->endpoint);
 		if (NT_STATUS_IS_ERR(status)) {
 			return status;
 		}
@@ -722,7 +726,7 @@ _PUBLIC_ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx,
 	/* The 5th contains the network address */
 	if (num_protocols >= 3 && binding->host) {
 		if (is_ipaddress(binding->host)) {
-			status = dcerpc_floor_set_rhs_data(mem_ctx, &tower->floors[4], 
+			status = dcerpc_floor_set_rhs_data(tower->floors, &tower->floors[4], 
 							   binding->host);
 		} else {
 			/* note that we don't attempt to resolve the
@@ -730,7 +734,7 @@ _PUBLIC_ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx,
 			   are in the client code, and want to put in
 			   a wildcard all-zeros IP for the server to
 			   fill in */
-			status = dcerpc_floor_set_rhs_data(mem_ctx, &tower->floors[4], 
+			status = dcerpc_floor_set_rhs_data(tower->floors, &tower->floors[4], 
 							   "0.0.0.0");
 		}
 		if (NT_STATUS_IS_ERR(status)) {
