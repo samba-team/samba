@@ -665,8 +665,7 @@ static bool torture_ldb_dn(struct torture_context *torture)
 		       ldb_dn_validate(dn) == false,
 		       "should have failed to validate a DN with 0xA in it");
 
-	val.data = "CN=Zer\0,DC=SAMBA,DC=org";
-	val.length = 23;
+	val = data_blob_const("CN=Zer\0,DC=SAMBA,DC=org", 23);
 	torture_assert(torture,
 		       NULL == ldb_dn_from_ldb_val(mem_ctx, ldb, &val),
 		       "should fail to create a DN with 0x0 in it");
