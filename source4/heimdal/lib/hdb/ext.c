@@ -286,7 +286,7 @@ hdb_entry_get_password(krb5_context context, HDB *db,
 
     ext = hdb_find_extension(entry, choice_HDB_extension_data_password);
     if (ext) {
-	heim_utf8_string str;
+	heim_utf8_string str2;
 	heim_octet_string pw;
 
 	if (db->hdb_master_key_set && ext->data.u.password.mkvno) {
@@ -314,13 +314,13 @@ hdb_entry_get_password(krb5_context context, HDB *db,
 	    return ret;
 	}
 
-	str = pw.data;
-	if (str[pw.length - 1] != '\0') {
+	str2 = pw.data;
+	if (str2[pw.length - 1] != '\0') {
 	    krb5_set_error_message(context, EINVAL, "password malformated");
 	    return EINVAL;
 	}
 
-	*p = strdup(str);
+	*p = strdup(str2);
 
 	der_free_octet_string(&pw);
 	if (*p == NULL) {
