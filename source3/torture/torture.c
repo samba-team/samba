@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    SMB torture tester
    Copyright (C) Andrew Tridgell 1997-1998
+   Copyright (C) Jeremy Allison 2009
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -2179,9 +2180,8 @@ fail:
 /*
  * This test is designed to be run in conjunction with
  * external NFS or POSIX locks taken in the filesystem.
- * It will block until the lock is taken (and is designed
- * to do so). Check out scripts/tests/test_nfslock_s3.sh.
- * JRA.
+ * It checks that the smbd server will block until the
+ * lock is released and then acquire it. JRA.
  */
 
 static bool got_alarm;
