@@ -353,8 +353,15 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 	        setsockopt(ctcp->listen_fd,SOL_SOCKET,SO_REUSEADDR,(char *)&one,sizeof(one));
 
 		if (bind(ctcp->listen_fd, (struct sockaddr * )&sock, sock_size) == 0) {
-			DEBUG(DEBUG_ERR,(__location__ " Failed to bind() to socket. %s(%d)\n", strerror(errno), errno));
 			break;
+		}
+
+		if (errno == EADDRNOTAVAIL) {
+			DEBUG(DEBUG_DEBUG,(__location__ " Failed to bind() to socket. %s(%d)\n",
+					strerror(errno), errno));
+		} else {
+			DEBUG(DEBUG_ERR,(__location__ " Failed to bind() to socket. %s(%d)\n",
+					strerror(errno), errno));
 		}
 	}
 	
