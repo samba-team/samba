@@ -159,12 +159,13 @@ static NTSTATUS lookup_lsa_rids(TALLOC_CTX *mem_ctx,
 
 		/* Split name into domain and user component */
 
-		full_name = name[i].string;
-		if (full_name == NULL) {
-			prid[i].sid_type	= type;
-			prid[i].rid		= 0;
-			prid[i].sid_index	= (uint32_t)-1;
-			continue;
+		/* follow w2k8 behavior and return the builtin domain when no
+		 * input has been passed in */
+
+		if (name[i].string) {
+			full_name = name[i].string;
+		} else {
+			full_name = "BUILTIN";
 		}
 
 		DEBUG(5, ("lookup_lsa_rids: looking up name %s\n", full_name));
