@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   Swig interface to tdb.
+   Python interface to tdb.
 
    Copyright (C) 2004-2006 Tim Potter <tpot@samba.org>
    Copyright (C) 2007-2008 Jelmer Vernooij <jelmer@samba.org>
