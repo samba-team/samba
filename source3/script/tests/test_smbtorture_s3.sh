@@ -24,7 +24,7 @@ incdir=`dirname $0`
 SMB_CONF_PATH="$CONFFILE"
 export SMB_CONF_PATH
 
-tests="FDPASS LOCK1 LOCK2 LOCK3 LOCK4 LOCK5 LOCK6 LOCK7"
+tests="FDPASS LOCK1 LOCK2 LOCK3 LOCK4 LOCK5 LOCK6 LOCK7 LOCK9"
 #tests="$tests UNLINK BROWSE ATTR TRANS2 MAXFID TORTURE "
 tests="$tests UNLINK BROWSE ATTR TRANS2 TORTURE "
 tests="$tests OPLOCK1 OPLOCK2 OPLOCK3 STREAMERROR"
@@ -53,7 +53,7 @@ for t in $tests; do
     fi
     start=""
     name="$t"
-    testit "$name" $VALGRIND $BINDIR/smbtorture $unc -U"$username"%"$password" $ADDARGS $t || failed=`expr $failed + 1`
+    testit "$name" $VALGRIND $BINDIR/smbtorture $unc -U"$username"%"$password" -l"$PREFIX_ABS"/tmp $ADDARGS $t || failed=`expr $failed + 1`
 done
 
 testok $0 $failed
