@@ -48,6 +48,22 @@ static void brl_timeout_fn(struct event_context *event_ctx,
 }
 
 /****************************************************************************
+ We need a version of timeval_min that treats zero timval as infinite.
+****************************************************************************/
+
+static struct timeval timeval_brl_min(const struct timeval *tv1,
+					const struct timeval *tv2)
+{
+	if (timeval_is_zero(tv1)) {
+		return *tv2;
+	}
+	if (timeval_is_zero(tv2)) {
+		return *tv1;
+	}
+	return timeval_min(tv1, tv2);
+}
+
+/****************************************************************************
  After a change to blocking_lock_queue, recalculate the timed_event for the
  next processing.
 ****************************************************************************/
@@ -70,19 +86,13 @@ static bool recalc_brl_timeout(void)
 			 */
                         if (blr->blocking_pid == 0xFFFFFFFF) {
 				struct timeval psx_to = timeval_current_ofs(10, 0);
-				next_timeout = timeval_min(&next_timeout, &psx_to);
+				next_timeout = timeval_brl_min(&next_timeout, &psx_to);
                         }
 
 			continue;
 		}
 
-		if (timeval_is_zero(&next_timeout)) {
-			next_timeout = blr->expire_time;
-		}
-		else {
-			next_timeout = timeval_min(&next_timeout,
-						   &blr->expire_time);
-		}
+		next_timeout = timeval_brl_min(&next_timeout, &blr->expire_time);
 	}
 
 	if (timeval_is_zero(&next_timeout)) {
