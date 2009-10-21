@@ -1261,7 +1261,7 @@ static int map_remote_search_callback(struct ldb_request *req,
 			return ret;
 		}
 
-		talloc_free(ares);
+		ac->remote_done_ares = talloc_steal(ac, ares);
 
 		ret = map_search_local(ac);
 		if (ret != LDB_SUCCESS) {
@@ -1333,6 +1333,7 @@ int map_local_merge_callback(struct ldb_request *req, struct ldb_reply *ares)
 		break;
 
 	case LDB_REPLY_DONE:
+		/* We don't need the local 'ares', but we will use the remote one from below */
 		talloc_free(ares);
 
 		/* No local record found, map and send remote record */
@@ -1371,9 +1372,9 @@ int map_local_merge_callback(struct ldb_request *req, struct ldb_reply *ares)
 		/* ok we are done with all search, finally it is time to
 		 * finish operations for this module */
 		return ldb_module_done(ac->req,
-					ac->r_current->remote->controls,
-					ac->r_current->remote->response,
-					ac->r_current->remote->error);
+					ac->remote_done_ares->controls,
+					ac->remote_done_ares->response,
+					ac->remote_done_ares->error);
 	}
 
 	return LDB_SUCCESS;
