@@ -62,7 +62,8 @@ static const struct {
 	{ "RepackLimit",      10000,  offsetof(struct ctdb_tunable, repack_limit) },
 	{ "VacuumLimit",       5000,  offsetof(struct ctdb_tunable, vacuum_limit) },
 	{ "VacuumMinInterval",   60,  offsetof(struct ctdb_tunable, vacuum_min_interval) },
-	{ "VacuumMaxInterval",  600,  offsetof(struct ctdb_tunable, vacuum_max_interval) }
+	{ "VacuumMaxInterval",  600,  offsetof(struct ctdb_tunable, vacuum_max_interval) },
+	{ "MaxQueueDropMsg",  1000,  offsetof(struct ctdb_tunable, max_queue_depth_drop_msg) }
 };
 
 /*

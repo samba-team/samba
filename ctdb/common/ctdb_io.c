@@ -55,6 +55,16 @@ struct ctdb_queue {
 
 
 
+int ctdb_queue_length(struct ctdb_queue *queue)
+{
+	int i;
+	struct ctdb_queue_pkt *pkt;
+
+	for(i=0, pkt=queue->out_queue;pkt;i++,pkt=pkt->next);
+
+	return i;
+}
+
 /*
   called when an incoming connection is readable
 */

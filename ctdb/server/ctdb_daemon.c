@@ -93,6 +93,12 @@ static void block_signal(int signum)
 static int daemon_queue_send(struct ctdb_client *client, struct ctdb_req_header *hdr)
 {
 	client->ctdb->statistics.client_packets_sent++;
+	if (hdr->operation == CTDB_REQ_MESSAGE) {
+		if (ctdb_queue_length(client->queue) > client->ctdb->tunable.max_queue_depth_drop_msg) {
+			DEBUG(DEBUG_ERR,("Drop CTDB_REQ_MESSAGE to client. Queue full.\n"));
+			return 0;
+		}
+	}
 	return ctdb_queue_send(client->queue, (uint8_t *)hdr, hdr->length);
 }
 
@@ -559,7 +565,7 @@ static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde,
 	set_nonblocking(fd);
 	set_close_on_exec(fd);
 
-	DEBUG(DEBUG_NOTICE,(__location__ " Created SOCKET FD:%d to connected child\n", fd));
+	DEBUG(DEBUG_DEBUG,(__location__ " Created SOCKET FD:%d to connected child\n", fd));
 
 	client = talloc_zero(ctdb, struct ctdb_client);
 #ifdef _AIX

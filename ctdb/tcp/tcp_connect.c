@@ -158,7 +158,7 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
 	set_nonblocking(tnode->fd);
 	set_close_on_exec(tnode->fd);
 
-	DEBUG(DEBUG_NOTICE, (__location__ " Created TCP SOCKET FD:%d\n", tnode->fd));
+	DEBUG(DEBUG_DEBUG, (__location__ " Created TCP SOCKET FD:%d\n", tnode->fd));
 
 	/* Bind our side of the socketpair to the same address we use to listen
 	 * on incoming CTDB traffic.

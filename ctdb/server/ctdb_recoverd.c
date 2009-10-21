@@ -2294,7 +2294,7 @@ static int verify_ip_allocation(struct ctdb_context *ctdb, uint32_t pnn)
 	/* skip the check if we have started but not finished recovery */
 	if (timeval_compare(&uptime1->last_recovery_finished,
 			    &uptime1->last_recovery_started) != 1) {
-		DEBUG(DEBUG_NOTICE, (__location__ " in the middle of recovery. skipping public ip address check\n"));
+		DEBUG(DEBUG_NOTICE, (__location__ " in the middle of recovery or ip reallocation. skipping public ip address check\n"));
 		talloc_free(mem_ctx);
 
 		return 0;
@@ -2522,7 +2522,7 @@ static int check_recovery_lock(struct ctdb_context *ctdb)
 	state->fd[1] = -1;
 	set_close_on_exec(state->fd[0]);
 
-	DEBUG(DEBUG_NOTICE, (__location__ " Created PIPE FD:%d for check_recovery_lock\n", state->fd[0]));
+	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d for check_recovery_lock\n", state->fd[0]));
 
 	talloc_set_destructor(state, check_reclock_destructor);
 

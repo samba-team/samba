@@ -123,6 +123,7 @@ struct ctdb_tunable {
 	uint32_t vacuum_limit;
 	uint32_t vacuum_min_interval;
 	uint32_t vacuum_max_interval;
+	uint32_t max_queue_depth_drop_msg;
 };
 
 /*
@@ -936,6 +937,7 @@ struct ctdb_req_header *_ctdb_transport_allocate(struct ctdb_context *ctdb,
 #define ctdb_transport_allocate(ctdb, mem_ctx, operation, length, type) \
 	(type *)_ctdb_transport_allocate(ctdb, mem_ctx, operation, length, sizeof(type), #type)
 
+int ctdb_queue_length(struct ctdb_queue *queue);
 
 /*
   lock a record in the ltdb, given a key

@@ -291,7 +291,7 @@ static int ctdb_persistent_store(struct ctdb_persistent_write_state *state)
 		if (ret != 0) {
 			DEBUG(DEBUG_CRIT,("Failed to store record for db_id 0x%08x in ctdb_persistent_store\n", 
 					  state->ctdb_db->db_id));
-			return -1;
+			goto failed;
 		}
 	}
 

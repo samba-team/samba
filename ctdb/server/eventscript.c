@@ -593,6 +593,11 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *options)
 		if (ret != -1) {
 			ret = WEXITSTATUS(ret);
 		}
+		if (ret == 127) {
+			ret = 0;
+			DEBUG(DEBUG_ERR,("Script %s returned status 127. Someone just deleted it?\n", cmdstr));
+		}
+ 
 		if (is_monitor == 1) {
 			if (ctdb_ctrl_event_script_stop(ctdb, ret) != 0) {
 				DEBUG(DEBUG_ERR,(__location__ " Failed to stop event script monitoring\n"));
@@ -817,7 +822,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	close(state->fd[1]);
 	set_close_on_exec(state->fd[0]);
 
-	DEBUG(DEBUG_NOTICE, (__location__ " Created PIPE FD:%d to child eventscript process\n", state->fd[0]));
+	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d to child eventscript process\n", state->fd[0]));
 
 	event_add_fd(ctdb->ev, state, state->fd[0], EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
 		     ctdb_event_script_handler, state);
