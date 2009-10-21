@@ -142,6 +142,7 @@ source4/dsdb/kcc/kcc_service_proto.h
 source4/dsdb/repl/drepl_service_proto.h
 source4/dsdb/samdb/samdb_proto.h
 source4/dsdb/samdb/ldb_modules/util_proto.h
+source4/dsdb/samdb/ldb_modules/partition_proto.h
 source4/dsdb/schema/proto.h
 source4/extra_cflags.txt
 source4/foo.tdb
