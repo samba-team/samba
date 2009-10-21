@@ -250,6 +250,7 @@ static int new_partition_from_dn(struct ldb_context *ldb, struct partition_priva
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
+	talloc_steal((*partition), backend_module);
 
 	modules = find_modules_for_dn(data, dn);
 
