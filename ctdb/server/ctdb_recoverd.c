@@ -2522,7 +2522,7 @@ static int check_recovery_lock(struct ctdb_context *ctdb)
 	state->fd[1] = -1;
 	set_close_on_exec(state->fd[0]);
 
-	DEBUG(DEBUG_NOTICE, (__location__ " Created PIPE FD:%d for check_recovery_lock\n", state->fd[0]));
+	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d for check_recovery_lock\n", state->fd[0]));
 
 	talloc_set_destructor(state, check_reclock_destructor);
 

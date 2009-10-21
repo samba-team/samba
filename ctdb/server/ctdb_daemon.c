@@ -565,7 +565,7 @@ static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde,
 	set_nonblocking(fd);
 	set_close_on_exec(fd);
 
-	DEBUG(DEBUG_NOTICE,(__location__ " Created SOCKET FD:%d to connected child\n", fd));
+	DEBUG(DEBUG_DEBUG,(__location__ " Created SOCKET FD:%d to connected child\n", fd));
 
 	client = talloc_zero(ctdb, struct ctdb_client);
 #ifdef _AIX
