@@ -2300,6 +2300,7 @@ static NTSTATUS dcesrv_samr_DeleteDomainGroup(struct dcesrv_call_state *dce_call
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
+	talloc_free(h);
 	ZERO_STRUCTP(r->out.group_handle);
 
 	return NT_STATUS_OK;
@@ -2676,6 +2677,7 @@ static NTSTATUS dcesrv_samr_DeleteDomAlias(struct dcesrv_call_state *dce_call, T
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
+	talloc_free(h);
 	ZERO_STRUCTP(r->out.alias_handle);
 
 	return NT_STATUS_OK;
@@ -2962,6 +2964,7 @@ static NTSTATUS dcesrv_samr_DeleteUser(struct dcesrv_call_state *dce_call, TALLO
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
+	talloc_free(h);
 	ZERO_STRUCTP(r->out.user_handle);
 
 	return NT_STATUS_OK;
