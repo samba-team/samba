@@ -55,6 +55,9 @@ char *samdb_relative_path(struct ldb_context *ldb,
 	if (name[0] == 0 || name[0] == '/' || strstr(name, ":/")) {
 		return talloc_strdup(mem_ctx, name);
 	}
+	if (strncmp("tdb://", base_url, 6) == 0) {
+		base_url = base_url+6;
+	}
 	path = talloc_strdup(mem_ctx, base_url);
 	if (path == NULL) {
 		return NULL;

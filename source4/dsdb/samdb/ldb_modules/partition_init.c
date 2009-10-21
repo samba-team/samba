@@ -385,6 +385,7 @@ int partition_reload_if_required(struct ldb_module *module,
 	for (i=0; partition_attributes && i < partition_attributes->num_values; i++) {
 		int j;
 		bool new_partition = true;
+		DATA_BLOB dn_blob;
 		struct ldb_dn *dn;
 		struct dsdb_partition *partition;
 		for (j=0; data->partitions && data->partitions[j]; j++) {
@@ -397,22 +398,26 @@ int partition_reload_if_required(struct ldb_module *module,
 		if (new_partition == false) {
 			continue;
 		}
-			
-		dn = ldb_dn_from_ldb_val(mem_ctx, ldb, &partition_attributes->values[i]);
+
+		dn_blob = partition_attributes->values[i];
+		
+		dn = ldb_dn_from_ldb_val(mem_ctx, ldb, &dn_blob);
 		if (!dn) {
 			ldb_asprintf_errstring(ldb, 
-					       "partition_init: invalid DN in partition record: %s", (const char *)partition_attributes->values[i].data);
+					       "partition_init: invalid DN in partition record: %s", (const char *)dn_blob.data);
 			talloc_free(mem_ctx);
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
-
-		if (ldb_dn_compare_base(ldb_get_default_basedn(ldb), dn) != 0) {
+			
+		if (dn_blob.length > 4 && 
+		    (strncmp((const char *)&dn_blob.data[dn_blob.length-4], ".ldb", 4) == 0) && 
+		    (ldb_dn_compare_base(ldb_get_default_basedn(ldb), dn) != 0)) {
 			ldb_asprintf_errstring(ldb, 
 					       "partition_init: invalid DN in partition record: %s is not under %s.  Perhaps an old " DSDB_PARTITION_DN " format?", 
-					       (const char *)partition_attributes->values[i].data, 
+					       (const char *)dn_blob.data, 
 					       ldb_dn_get_linearized(ldb_get_default_basedn(ldb)));
 			DEBUG(0, ("Unable to load partitions, invalid DN %s found, perhaps you need to reprovision?  See partition-upgrade.txt for instructions\n", 
-				  (const char *)partition_attributes->values[i].data));
+				  (const char *)dn_blob.data));
 			talloc_free(mem_ctx);
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
