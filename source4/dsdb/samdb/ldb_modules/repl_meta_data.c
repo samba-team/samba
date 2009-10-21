@@ -123,8 +123,15 @@ static int replmd_op_callback(struct ldb_request *req, struct ldb_reply *ares)
 	struct ldb_control *partition_ctrl;
 	const struct dsdb_control_current_partition *partition;
 
+	struct ldb_control **controls;
+
+	partition_ctrl = ldb_reply_get_control(ares, DSDB_CONTROL_CURRENT_PARTITION_OID);
+
+	/* Remove the 'partition' control from what we pass up the chain */
+	controls = controls_except_specified(ares->controls, ares, partition_ctrl);
+
 	if (ares->error != LDB_SUCCESS) {
-		return ldb_module_done(ac->req, ares->controls,
+		return ldb_module_done(ac->req, controls,
 					ares->response, ares->error);
 	}
 
@@ -134,11 +141,11 @@ static int replmd_op_callback(struct ldb_request *req, struct ldb_reply *ares)
 				       NULL, LDB_ERR_OPERATIONS_ERROR);
 	}
 
-	partition_ctrl = ldb_reply_get_control(ares, DSDB_CONTROL_CURRENT_PARTITION_OID);
 	if (!partition_ctrl) {
 		return ldb_module_done(ac->req, NULL,
 				       NULL, LDB_ERR_OPERATIONS_ERROR);
 	}
+
 	partition = talloc_get_type_abort(partition_ctrl->data,
 				    struct dsdb_control_current_partition);
 	
@@ -181,7 +188,12 @@ static int replmd_op_callback(struct ldb_request *req, struct ldb_reply *ares)
 		}
 		return ret;
 	} else {
-		return ldb_module_done(ac->req, ares->controls,
+		/* free the partition control container here, for the
+		 * common path.  Other cases will have it cleaned up
+		 * eventually with the ares */
+		talloc_free(partition_ctrl);
+		return ldb_module_done(ac->req, 
+				       controls_except_specified(controls, ares, partition_ctrl),
 				       ares->response, LDB_SUCCESS);
 	}
 }
