@@ -25,7 +25,8 @@ Prerequisites:
 Steps:
 
 1.  Verify that the cluster is healthy.
-2.  Determine the CTDB MonitorInterval setting and remember it.
+2.  Determine a timeout for state changes by adding MonitorInterval
+    and EventScriptTimeout.
 3.  Create a temporary directory using mktemp, remember the name in
     $mydir.
 4.  Create an executable file /etc/ctdb/rc.local.d/fake-testparm that
@@ -45,7 +46,7 @@ Steps:
 9.  Modify /etc/ctdb/rc.local.d/samba-skip-share-check so that it sets
     CTDB_SAMBA_SKIP_SHARE_CHECK="yes".
 10. Remove the directory $mydir/foo.
-11. Wait for MonitorInterval and confirm that the the node is still
+11. Wait for  a monitor event and confirm that the the node is still
     healthy.
 
 Expected results:
@@ -68,15 +69,22 @@ cluster_is_healthy
 select_test_node_and_ips
 
 # We need this for later, so we know how long to sleep.
+# We need this for later, so we know how long to sleep.
 try_command_on_node $test_node $CTDB getvar MonitorInterval
-monitor_interval=$((${out#*= } + 1))
+monitor_interval=${out#*= }
+try_command_on_node $test_node $CTDB getvar EventScriptTimeout
+event_script_timeout=${out#*= }
+
+monitor_timeout=$(($monitor_interval + $event_script_timeout))
+
+echo "Using timeout of ${monitor_timeout}s (MonitorInterval + EventScriptTimeout)..."
 
 mydir=$(onnode -q $test_node mktemp -d)
 rc_local_d="${CTDB_BASE:-/etc/ctdb}/rc.local.d"
-mkdir -p "$rc_local_d"
 
 my_exit_hook ()
 {
+    ctdb_test_eventscript_uninstall
     onnode -q $test_node "rm -f $mydir/*"
     onnode -q $test_node "rmdir --ignore-fail-on-non-empty $mydir"
     onnode -q $test_node "rm -f \"$rc_local_d/\"*"
@@ -84,6 +92,8 @@ my_exit_hook ()
 }
 
 ctdb_test_exit_hook_add my_exit_hook
+
+ctdb_test_eventscript_install
 
 foo_dir=$mydir/foo
 
@@ -114,18 +124,17 @@ n_contents='loadconfig() {
 echo "Installing \"$n\" with CTDB_SAMBA_SKIP_SHARE_CHECK=no..."
 try_command_on_node $test_node "echo '$n_contents' >\"$n\" ; chmod +x \"$n\""
 
-wait_until_node_has_status $test_node unhealthy $monitor_interval
+wait_until_node_has_status $test_node unhealthy $monitor_timeout
 
 try_command_on_node -v $test_node "mkdir $foo_dir"
 
-wait_until_node_has_status $test_node healthy $monitor_interval
+wait_until_node_has_status $test_node healthy $monitor_timeout
 
 echo "Re-installing \"$n\" with CTDB_SAMBA_SKIP_SHARE_CHECK=yes..."
 try_command_on_node $test_node "echo '${n_contents/=no/=yes}' >\"$n\" ; chmod +x \"$n\""
 
 try_command_on_node -v $test_node "rmdir $foo_dir"
 
-echo "Waiting for MonitorInterval to ensure that node $test_node stays healthy..."
-sleep_for $monitor_interval
+wait_for_monitor_event $test_node
 
 wait_until_node_has_status $test_node healthy 1

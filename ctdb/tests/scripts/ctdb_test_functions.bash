@@ -288,10 +288,19 @@ wait_until ()
 {
     local timeout="$1" ; shift # "$@" is the command...
 
+    local negate=false
+    if [ "$1" = "!" ] ; then
+	negate=true
+	shift
+    fi
+
     echo -n "<${timeout}|"
     local t=$timeout
     while [ $t -gt 0 ] ; do
-	if "$@" ; then
+	("$@")
+	local rc=$?
+	if { ! $negate && [ $rc -eq 0 ] ; } || \
+	    { $negate && [ $rc -ne 0 ] ; } ; then
 	    echo "|$(($timeout - $t))|"
 	    echo "OK"
 	    return 0
@@ -863,4 +872,113 @@ uninstall_eventscript ()
     else
 	rm -vf "${CTDB_DIR}/tests/events.d/${script_name}"
     fi
+}
+
+#######################################
+
+# This section deals with the 99.ctdb_test eventscript.
+
+# Metafunctions: Handle a ctdb-test file on a node.
+# given event.
+ctdb_test_eventscript_file_create ()
+{
+    local pnn="$1"
+    local type="$2"
+
+    try_command_on_node $pnn touch "/tmp/ctdb-test-${type}.${pnn}"
+}
+
+ctdb_test_eventscript_file_remove ()
+{
+    local pnn="$1"
+    local type="$2"
+
+    try_command_on_node $pnn rm -f "/tmp/ctdb-test-${type}.${pnn}"
+}
+
+ctdb_test_eventscript_file_exists ()
+{
+    local pnn="$1"
+    local type="$2"
+
+    try_command_on_node $pnn test -f "/tmp/ctdb-test-${type}.${pnn}" >/dev/null 2>&1
+}
+
+
+# Handle a flag file on a node that is removed by 99.ctdb_test on the
+# given event.
+ctdb_test_eventscript_flag ()
+{
+    local cmd="$1"
+    local pnn="$2"
+    local event="$3"
+
+    ctdb_test_eventscript_file_${cmd} "$pnn" "flag-${event}"
+}
+
+
+# Handle a trigger that causes 99.ctdb_test to fail it's monitor
+# event.
+ctdb_test_eventscript_unhealthy_trigger ()
+{
+    local cmd="$1"
+    local pnn="$2"
+
+    ctdb_test_eventscript_file_${cmd} "$pnn" "unhealthy-trigger"
+}
+
+# Handle the file that 99.ctdb_test created to show that it has marked
+# a node unhealthy because it detected the above trigger.
+ctdb_test_eventscript_unhealthy_detected ()
+{
+    local cmd="$1"
+    local pnn="$2"
+
+    ctdb_test_eventscript_file_${cmd} "$pnn" "unhealthy-detected"
+}
+
+# Note that the eventscript can't use the above functions!
+ctdb_test_eventscript_install ()
+{
+
+    local script='#!/bin/sh
+out=$(ctdb pnn)
+pnn="${out#PNN:}"
+
+rm -vf "/tmp/ctdb-test-flag-${1}.${pnn}"
+
+trigger="/tmp/ctdb-test-unhealthy-trigger.${pnn}"
+detected="/tmp/ctdb-test-unhealthy-detected.${pnn}"
+if [ "$1" = "monitor" ] ; then
+    if [ -e "$trigger" ] ; then
+        echo "${0}: Unhealthy because \"$trigger\" detected"
+        touch "$detected"
+        exit 1
+    elif [ -e "$detected" -a ! -e "$trigger" ] ; then
+        echo "${0}: Healthy again, \"$trigger\" no longer detected"
+        rm "$detected"
+    fi
+fi
+
+exit 0
+'
+    install_eventscript "99.ctdb_test" "$script"
+}
+
+ctdb_test_eventscript_uninstall ()
+{
+    uninstall_eventscript "99.ctdb_test"
+}
+
+# Note that this only works if you know all other monitor events will
+# succeed.  You also need to install the eventscript before using it.
+wait_for_monitor_event ()
+{
+    local pnn="$1"
+
+    echo "Waiting for a monitor event on node $pnn to complete..."
+    ctdb_test_eventscript_flag create $pnn "monitor"
+
+    wait_until 120 ! ctdb_test_eventscript_flag exists $pnn "monitor"
+
 }
