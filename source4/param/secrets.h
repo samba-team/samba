@@ -26,7 +26,7 @@
 #define SECRETS_PRIMARY_REALM_FILTER "(&(realm=%s)(objectclass=primaryDomain))"
 #define SECRETS_KRBTGT_SEARCH "(&((|(realm=%s)(flatname=%s))(samAccountName=krbtgt)))"
 #define SECRETS_PRINCIPAL_SEARCH "(&(|(realm=%s)(flatname=%s))(servicePrincipalName=%s))"
-#define SECRETS_LDAP_FILTER "(objectclass=ldapSecret)"
+#define SECRETS_LDAP_FILTER "(&(objectclass=ldapSecret)(cn=SAMDB Credentials))"
 
 /**
  * Use a TDB to store an incrementing random seed.
