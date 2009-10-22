@@ -497,6 +497,8 @@ again:
                         return NULL;
                 }
 	}
+
+	cli_init_creds(c, username_used, *pp_workgroup, *pp_password);
         
 	DEBUG(4,(" session setup ok\n"));
         
