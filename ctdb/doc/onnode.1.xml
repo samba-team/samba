@@ -142,6 +142,27 @@
         </listitem>
       </varlistentry>
 
+      <varlistentry><term>-n</term>
+        <listitem>
+          <para>
+            Allow nodes to be specified by name rather than node
+            numbers.  These nodes don't need to be listed in the nodes
+            file.  You can avoid the nodes file entirely by combining
+            this with <code>-f /dev/null</code>.
+	  </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>-f &lt;file&gt;</term>
+        <listitem>
+          <para>
+            Specify an alternative nodes file to use instead of
+            <filename>/etc/ctdb/nodes</filename>.  This overrides the
+            CTDB_NODES_FILE environment variable.
+	  </para>
+        </listitem>
+      </varlistentry>
+
       <varlistentry><term>-v</term>
         <listitem>
           <para>
