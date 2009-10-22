@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.98
+Version: 1.0.99
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -127,6 +127,14 @@ exit 0
 %{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
+* Thu Oct 22 2009 : Version 1.0.99
+ - Fix a SEGV in the new db priority code.
+ - From Wolfgang : eliminate a ctdb_fatal() if there is a dmaster violation detected.
+ - During testing we often add/delete eventscripts at runtime. This could cause an eventscript to fail and mark the node unhealthy if an eventscript was deleted while we were listing the names. Handle the errorcode and make sure the node does not becomne unhealthy in this case.
+ - Lower the debuglevel for the messages when ctdb creates a filedescruiptor so we dont spam the logs with these messages.
+ - Dont have the RPM automatically restart ctdb
+ - Volker : add a missing transaction_cancel() in the handling of persistent databases
+ - Treat interfaces with the anme ethX* as bond devices in 10.interfaces so we do the correct test for if they are up or not.
 * Tue Oct 20 2009 : Version 1.0.98
  - Fix for the vacuuming database from Wolfgang M
  - Create a directory where the test framework can put temporary overrides
