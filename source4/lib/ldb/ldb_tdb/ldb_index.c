@@ -1065,6 +1065,7 @@ static int ltdb_index_add1(struct ldb_module *module, const char *dn,
 	int ret;
 	const struct ldb_schema_attribute *a;
 	struct dn_list *list;
+	unsigned alloc_len;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -1096,7 +1097,10 @@ static int ltdb_index_add1(struct ldb_module *module, const char *dn,
 		return LDB_ERR_ENTRY_ALREADY_EXISTS;		
 	}
 
-	list->dn = talloc_realloc(list, list->dn, struct ldb_val, list->count+1);
+	/* overallocate the list a bit, to reduce the number of
+	 * realloc trigered copies */	 
+	alloc_len = ((list->count+1)+7) & ~7;
+	list->dn = talloc_realloc(list, list->dn, struct ldb_val, alloc_len);
 	if (list->dn == NULL) {
 		talloc_free(list);
 		return LDB_ERR_OPERATIONS_ERROR;
