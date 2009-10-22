@@ -16,7 +16,6 @@ raw.mkdir
 raw.seek
 raw.open
 raw.write
-raw.unlink
 raw.read
 raw.close
 raw.ioctl
