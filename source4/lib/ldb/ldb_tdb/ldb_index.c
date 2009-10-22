@@ -95,6 +95,31 @@ static int ltdb_dn_list_find_str(struct dn_list *list, const char *dn)
 	return ltdb_dn_list_find_val(list, &v);
 }
 
+static struct dn_list *ltdb_index_idxptr(struct ldb_module *module, TDB_DATA rec, bool check_parent)
+{
+	struct dn_list *list;
+	if (rec.dsize != sizeof(void *)) {
+		ldb_asprintf_errstring(ldb_module_get_ctx(module), 
+				       "Bad data size for idxptr %u", (unsigned)rec.dsize);
+		return NULL;
+	}
+	
+	list = talloc_get_type(*(struct dn_list **)rec.dptr, struct dn_list);
+	if (list == NULL) {
+		ldb_asprintf_errstring(ldb_module_get_ctx(module), 
+				       "Bad type '%s' for idxptr", 
+				       talloc_get_name(*(struct dn_list **)rec.dptr));
+		return NULL;
+	}
+	if (check_parent && list->dn && talloc_parent(list->dn) != list) {
+		ldb_asprintf_errstring(ldb_module_get_ctx(module), 
+				       "Bad parent '%s' for idxptr", 
+				       talloc_get_name(talloc_parent(list->dn)));
+		return NULL;
+	}
+	return list;
+}
+
 /*
   return the @IDX list in an index entry for a dn as a 
   struct dn_list
@@ -128,13 +153,11 @@ static int ltdb_dn_list_load(struct ldb_module *module,
 	}
 
 	/* we've found an in-memory index entry */
-	if (rec.dsize != sizeof(void *)) {
+	list2 = ltdb_index_idxptr(module, rec, true);
+	if (list2 == NULL) {
 		free(rec.dptr);
-		ldb_asprintf_errstring(ldb_module_get_ctx(module), 
-				       "Bad internal index size %u", (unsigned)rec.dsize);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	list2 = *(struct dn_list **)rec.dptr;
 	free(rec.dptr);
 
 	*list = *list2;
@@ -234,13 +257,11 @@ static int ltdb_dn_list_store(struct ldb_module *module, struct ldb_dn *dn,
 
 	rec = tdb_fetch(ltdb->idxptr->itdb, key);
 	if (rec.dptr != NULL) {
-		if (rec.dsize != sizeof(void *)) {
+		list2 = ltdb_index_idxptr(module, rec, false);
+		if (list2 == NULL) {
 			free(rec.dptr);
-			ldb_asprintf_errstring(ldb_module_get_ctx(module), 
-					       "Bad internal index size %u", (unsigned)rec.dsize);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		list2 = *(struct dn_list **)rec.dptr;
 		free(rec.dptr);
 		list2->dn = talloc_steal(list2, list->dn);
 		list2->count = list->count;
@@ -274,13 +295,11 @@ static int ltdb_index_traverse_store(struct tdb_context *tdb, TDB_DATA key, TDB_
 	struct ldb_val v;
 	struct dn_list *list;
 
-	if (data.dsize != sizeof(void *)) {
-		ldb_asprintf_errstring(ldb, "Bad internal index size %u", (unsigned)data.dsize);
+	list = ltdb_index_idxptr(module, data, true);
+	if (list == NULL) {
 		ltdb->idxptr->error = LDB_ERR_OPERATIONS_ERROR;
 		return -1;
 	}
-	
-	list = *(struct dn_list **)data.dptr;
 
 	v.data = key.dptr;
 	v.length = key.dsize;
