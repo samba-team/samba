@@ -38,7 +38,10 @@ struct ldb_context *schannel_db_connect(TALLOC_CTX *mem_ctx, struct tevent_conte
 	const char *init_ldif = 
 		"dn: @ATTRIBUTES\n" \
 		"computerName: CASE_INSENSITIVE\n" \
-		"flatname: CASE_INSENSITIVE\n";
+		"flatname: CASE_INSENSITIVE\n" \
+		"\n" \
+		"dn: @INDEXLIST\n" \
+		"@IDXATTR: computerName\n\n";
 
 	path = private_path(mem_ctx, lp_ctx, "schannel.ldb");
 	if (!path) {
