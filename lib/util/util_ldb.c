@@ -116,11 +116,14 @@ int gendb_search_dn(struct ldb_context *ldb,
 int gendb_add_ldif(struct ldb_context *ldb, const char *ldif_string)
 {
 	struct ldb_ldif *ldif;
+	const char *s = ldif_string;
 	int ret;
-	ldif = ldb_ldif_read_string(ldb, &ldif_string);
-	if (ldif == NULL) return -1;
-	ret = ldb_add(ldb, ldif->msg);
-	talloc_free(ldif);
+	while (s && *s != '\0') {
+		ldif = ldb_ldif_read_string(ldb, &s);
+		if (ldif == NULL) return -1;
+		ret = ldb_add(ldb, ldif->msg);
+		talloc_free(ldif);
+	}
 	return ret;
 }
 
