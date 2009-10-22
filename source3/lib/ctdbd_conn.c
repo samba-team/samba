@@ -57,7 +57,7 @@ static void cluster_fatal(const char *why)
 	   a core file. We need to release this process id immediately
 	   so that someone else can take over without getting sharing
 	   violations */
-	_exit(0);
+	_exit(1);
 }
 
 /*
