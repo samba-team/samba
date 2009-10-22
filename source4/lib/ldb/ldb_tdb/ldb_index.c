@@ -1223,7 +1223,11 @@ static int ltdb_index_onelevel(struct ldb_module *module, const struct ldb_messa
 int ltdb_index_add_element(struct ldb_module *module, struct ldb_dn *dn, 
 			   struct ldb_message_element *el)
 {
+	struct ltdb_private *ltdb = talloc_get_type(ldb_module_get_private(module), struct ltdb_private);
 	if (ldb_dn_is_special(dn)) {
+		return LDB_SUCCESS;
+	}
+	if (!ltdb_is_indexed(ltdb->cache->indexlist, el->name)) {
 		return LDB_SUCCESS;
 	}
 	return ltdb_index_add_el(module, ldb_dn_get_linearized(dn), el);
