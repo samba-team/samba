@@ -498,13 +498,10 @@ again:
                         errno = EPERM;
                         return NULL;
                 }
-		status = cli_init_creds(c, username_used,
-				*pp_workgroup, *pp_password);
-	} else {
-		status = cli_init_creds(c, username_used,
-				*pp_workgroup, *pp_password);
 	}
 
+	status = cli_init_creds(c, username_used,
+				*pp_workgroup, *pp_password);
 	if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
 		cli_shutdown(c);
