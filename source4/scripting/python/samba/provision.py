@@ -428,24 +428,46 @@ def provision_paths_from_lp(lp, dnsdomain):
     return paths
 
 
-def guess_names(lp=None, hostname=None, rootdn=None,
-                domaindn=None, configdn=None, schemadn=None, serverdn=None,
-                sitename=None, sambadn=None):
+def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
+                serverrole=None, rootdn=None, domaindn=None, configdn=None,
+                schemadn=None, serverdn=None, sitename=None, sambadn=None):
     """Guess configuration settings to use."""
 
     if hostname is None:
         hostname = socket.gethostname().split(".")[0]
 
-    netbiosname = hostname.upper()
+    netbiosname = lp.get("netbios name")
+    if netbiosname is None:
+        netbiosname = hostname
+    assert netbiosname is not None
+    netbiosname = netbiosname.upper()
     if not valid_netbios_name(netbiosname):
         raise InvalidNetbiosName(netbiosname)
 
-    dnsdomain = lp.get("realm").lower()
-    realm = lp.get("realm").upper()
-    serverrole = lp.get("server role").lower()
+    if dnsdomain is None:
+        dnsdomain = lp.get("realm")
+    assert dnsdomain is not None
+    dnsdomain = dnsdomain.lower()
+
+    if serverrole is None:
+        serverrole = lp.get("server role")
+    assert serverrole is not None
+    serverrole = serverrole.lower()
+
+    realm = dnsdomain.upper()
+
+    if lp.get("realm").upper() != realm:
+        raise ProvisioningError("guess_names: Realm '%s' in smb.conf must match chosen realm '%s'!", lp.get("realm").upper(), realm)
 
     if serverrole == "domain controller":
-        domain = lp.get("workgroup").upper()
+        if domain is None:
+            domain = lp.get("workgroup")
+        assert domain is not None
+        domain = domain.upper()
+
+        if lp.get("workgroup").upper() != domain:
+            raise ProvisioningError("guess_names: Workgroup '%s' in smb.conf must match chosen domain '%s'!", lp.get("workgroup").upper(), domain)
+
         if domaindn is None:
             domaindn = "DC=" + dnsdomain.replace(".", ",DC=")
     else:
@@ -456,11 +478,12 @@ def guess_names(lp=None, hostname=None, rootdn=None,
     if not valid_netbios_name(domain):
         raise InvalidNetbiosName(domain)
         
+    if hostname.upper() == realm:
+        raise ProvisioningError("guess_names: Realm '%s' must not be equal to hostname '%s'!", realm, hostname)
     if netbiosname == realm:
-        raise Exception("realm %s must not be equal to netbios domain name %s", realm, netbiosname)
-        
+        raise ProvisioningError("guess_names: Realm '%s' must not be equal to netbios hostname '%s'!", realm, netbiosname)
     if domain == realm:
-        raise Exception("realm %s must not be equal to domain name %s", realm, domain)
+        raise ProvisioningError("guess_names: Realm '%s' must not be equal to short domain name '%s'!", realm, domain)
 
     if rootdn is None:
        rootdn = domaindn
@@ -1248,8 +1271,10 @@ def provision(setup_dir, message, session_info,
     lp = param.LoadParm()
     lp.load(smbconf)
 
-    names = guess_names(lp=lp, hostname=hostname, domaindn=domaindn,
-                        configdn=configdn, schemadn=schemadn, serverdn=serverdn,                        sitename=sitename)
+    names = guess_names(lp=lp, hostname=hostname, domain=domain,
+                        dnsdomain=realm, serverrole=serverrole,
+                        domaindn=domaindn, configdn=configdn, schemadn=schemadn,
+                        serverdn=serverdn, sitename=sitename)
 
     paths = provision_paths_from_lp(lp, names.dnsdomain)
 
