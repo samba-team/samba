@@ -1105,7 +1105,7 @@ static int ltdb_index_add1(struct ldb_module *module, const char *dn,
 		talloc_free(list);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	list->dn[list->count].data = discard_const_p(unsigned char, dn);
+	list->dn[list->count].data = (uint8_t *)talloc_strdup(list->dn, dn);
 	list->dn[list->count].length = strlen(dn);
 	list->count++;
 
