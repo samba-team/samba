@@ -239,8 +239,9 @@ static NTSTATUS lookup_well_known_sids(TALLOC_CTX *mem_ctx,
 static NTSTATUS dcesrv_lsa_lookup_name(struct tevent_context *ev_ctx, 
 				       struct loadparm_context *lp_ctx,
 				       struct lsa_policy_state *state, TALLOC_CTX *mem_ctx,
-				const char *name, const char **authority_name, 
-				struct dom_sid **sid, enum lsa_SidType *rtype)
+				       const char *name, const char **authority_name, 
+				       struct dom_sid **sid, enum lsa_SidType *rtype,
+				       uint32_t *rid)
 {
 	int ret, atype, i;
 	struct ldb_message **res;
@@ -274,6 +275,15 @@ static NTSTATUS dcesrv_lsa_lookup_name(struct tevent_context *ev_ctx,
 		/* Look up table of well known names */
 		status = lookup_well_known_names(mem_ctx, NULL, username, authority_name, sid, rtype);
 		if (NT_STATUS_IS_OK(status)) {
+			dom_sid_split_rid(NULL, *sid, NULL, rid);
+			return NT_STATUS_OK;
+		}
+
+		if (username == NULL) {
+			*authority_name = NAME_BUILTIN;
+			*sid = dom_sid_parse_talloc(mem_ctx, SID_BUILTIN);
+			*rtype = SID_NAME_DOMAIN;
+			*rid = 0xFFFFFFFF;
 			return NT_STATUS_OK;
 		}
 
@@ -281,24 +291,28 @@ static NTSTATUS dcesrv_lsa_lookup_name(struct tevent_context *ev_ctx,
 			*authority_name = NAME_NT_AUTHORITY;
 			*sid =  dom_sid_parse_talloc(mem_ctx, SID_NT_AUTHORITY);
 			*rtype = SID_NAME_DOMAIN;
+			dom_sid_split_rid(NULL, *sid, NULL, rid);
 			return NT_STATUS_OK;
 		}
 		if (strcasecmp_m(username, NAME_BUILTIN) == 0) { 
 			*authority_name = NAME_BUILTIN;
 			*sid = dom_sid_parse_talloc(mem_ctx, SID_BUILTIN);
 			*rtype = SID_NAME_DOMAIN;
+			*rid = 0xFFFFFFFF;
 			return NT_STATUS_OK;
 		}
 		if (strcasecmp_m(username, state->domain_dns) == 0) { 
 			*authority_name = state->domain_name;
 			*sid =  state->domain_sid;
 			*rtype = SID_NAME_DOMAIN;
+			*rid = 0xFFFFFFFF;
 			return NT_STATUS_OK;
 		}
 		if (strcasecmp_m(username, state->domain_name) == 0) { 
 			*authority_name = state->domain_name;
 			*sid =  state->domain_sid;
 			*rtype = SID_NAME_DOMAIN;
+			*rid = 0xFFFFFFFF;
 			return NT_STATUS_OK;
 		}
 		
@@ -307,7 +321,7 @@ static NTSTATUS dcesrv_lsa_lookup_name(struct tevent_context *ev_ctx,
 		if (!name) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		status = dcesrv_lsa_lookup_name(ev_ctx, lp_ctx, state, mem_ctx, name, authority_name, sid, rtype);
+		status = dcesrv_lsa_lookup_name(ev_ctx, lp_ctx, state, mem_ctx, name, authority_name, sid, rtype, rid);
 		if (NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -317,7 +331,7 @@ static NTSTATUS dcesrv_lsa_lookup_name(struct tevent_context *ev_ctx,
 		if (!name) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		status = dcesrv_lsa_lookup_name(ev_ctx, lp_ctx, state, mem_ctx, name, authority_name, sid, rtype);
+		status = dcesrv_lsa_lookup_name(ev_ctx, lp_ctx, state, mem_ctx, name, authority_name, sid, rtype, rid);
 		if (NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -327,7 +341,7 @@ static NTSTATUS dcesrv_lsa_lookup_name(struct tevent_context *ev_ctx,
 		if (!name) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		status = dcesrv_lsa_lookup_name(ev_ctx, lp_ctx, state, mem_ctx, name, authority_name, sid, rtype);
+		status = dcesrv_lsa_lookup_name(ev_ctx, lp_ctx, state, mem_ctx, name, authority_name, sid, rtype, rid);
 		if (NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -338,12 +352,17 @@ static NTSTATUS dcesrv_lsa_lookup_name(struct tevent_context *ev_ctx,
 			*authority_name = NAME_NT_AUTHORITY;
 			*sid = dom_sid_parse_talloc(mem_ctx, SID_NT_AUTHORITY);
 			*rtype = SID_NAME_DOMAIN;
+			dom_sid_split_rid(NULL, *sid, NULL, rid);
 			return NT_STATUS_OK;
 		}
 
 		/* Look up table of well known names */
-		return lookup_well_known_names(mem_ctx, domain, username, authority_name, 
-					       sid, rtype);
+		status = lookup_well_known_names(mem_ctx, domain, username, authority_name, 
+						 sid, rtype);
+		if (NT_STATUS_IS_OK(status)) {
+			dom_sid_split_rid(NULL, *sid, NULL, rid);
+		}
+		return status;
 	} else if (strcasecmp_m(domain, NAME_BUILTIN) == 0) {
 		*authority_name = NAME_BUILTIN;
 		domain_dn = state->builtin_dn;
@@ -371,6 +390,7 @@ static NTSTATUS dcesrv_lsa_lookup_name(struct tevent_context *ev_ctx,
 	if (!*username) {
 		*sid = domain_sid;
 		*rtype = SID_NAME_DOMAIN;
+		*rid = 0xFFFFFFFF;
 		return NT_STATUS_OK;
 	}
 	
@@ -774,7 +794,7 @@ NTSTATUS dcesrv_lsa_LookupNames3(struct dcesrv_call_state *dce_call,
 		const char *name = r->in.names[i].string;
 		const char *authority_name;
 		struct dom_sid *sid;
-		uint32_t sid_index;
+		uint32_t sid_index, rid;
 		enum lsa_SidType rtype;
 		NTSTATUS status2;
 
@@ -785,7 +805,8 @@ NTSTATUS dcesrv_lsa_LookupNames3(struct dcesrv_call_state *dce_call,
 		r->out.sids->sids[i].sid_index   = 0xFFFFFFFF;
 		r->out.sids->sids[i].flags       = 0;
 
-		status2 = dcesrv_lsa_lookup_name(dce_call->event_ctx, lp_ctx, policy_state, mem_ctx, name, &authority_name, &sid, &rtype);
+		status2 = dcesrv_lsa_lookup_name(dce_call->event_ctx, lp_ctx, policy_state, mem_ctx, name, 
+						 &authority_name, &sid, &rtype, &rid);
 		if (!NT_STATUS_IS_OK(status2) || sid->num_auths == 0) {
 			continue;
 		}
@@ -915,7 +936,7 @@ NTSTATUS dcesrv_lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 		const char *name = r->in.names[i].string;
 		const char *authority_name;
 		struct dom_sid *sid;
-		uint32_t rtype, sid_index;
+		uint32_t rtype, sid_index, rid=0;
 		NTSTATUS status2;
 
 		r->out.sids->count++;
@@ -929,7 +950,7 @@ NTSTATUS dcesrv_lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 		r->out.sids->sids[i].unknown     = 0;
 
 		status2 = dcesrv_lsa_lookup_name(dce_call->event_ctx, lp_ctx, state, mem_ctx, name, 
-						 &authority_name, &sid, &rtype);
+						 &authority_name, &sid, &rtype, &rid);
 		if (!NT_STATUS_IS_OK(status2)) {
 			continue;
 		}
@@ -941,7 +962,7 @@ NTSTATUS dcesrv_lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 		}
 
 		r->out.sids->sids[i].sid_type    = rtype;
-		r->out.sids->sids[i].rid         = sid->sub_auths[sid->num_auths-1];
+		r->out.sids->sids[i].rid         = rid;
 		r->out.sids->sids[i].sid_index   = sid_index;
 		r->out.sids->sids[i].unknown     = 0;
 
