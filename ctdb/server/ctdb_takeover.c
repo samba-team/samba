@@ -1061,7 +1061,12 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 		tcp_sock = (struct ctdb_control_tcp_addr *)indata.dptr;
 		break;
 	default:
-		DEBUG(DEBUG_ERR,(__location__ " Invalid data structure passed to ctdb_control_tcp_client. size was %d but only allowed sizes are %lu and %lu\n", (int)indata.dsize, sizeof(struct ctdb_control_tcp), sizeof(struct ctdb_control_tcp_addr)));
+		DEBUG(DEBUG_ERR,(__location__ " Invalid data structure passed "
+				 "to ctdb_control_tcp_client. size was %d but "
+				 "only allowed sizes are %lu and %lu\n",
+				 (int)indata.dsize,
+				 (long unsigned)sizeof(struct ctdb_control_tcp),
+				 (long unsigned)sizeof(struct ctdb_control_tcp_addr)));
 		return -1;
 	}
 
