@@ -273,7 +273,6 @@ bool torture_groupinfo_api(struct torture_context *torture)
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("libnet_GroupInfo call failed: %s\n", nt_errstr(status));
 		ret = false;
-		talloc_free(mem_ctx);
 		goto done;
 	}
 
