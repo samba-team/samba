@@ -55,7 +55,7 @@
 /*
   map a tdb error code to a ldb error code
 */
-static int ltdb_err_map(enum TDB_ERROR tdb_code)
+int ltdb_err_map(enum TDB_ERROR tdb_code)
 {
 	switch (tdb_code) {
 	case TDB_SUCCESS:
@@ -335,7 +335,7 @@ static int ltdb_add(struct ltdb_context *ctx)
   delete a record from the database, not updating indexes (used for deleting
   index records)
 */
-static int ltdb_delete_noindex(struct ldb_module *module, struct ldb_dn *dn)
+int ltdb_delete_noindex(struct ldb_module *module, struct ldb_dn *dn)
 {
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
@@ -730,6 +730,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 				}
 			}
 
+			/* TODO: This is O(n^2) - replace with more efficient check */
 			for (j=0; j<el->num_values; j++) {
 				if (ldb_msg_find_val(el, &el->values[j]) != &el->values[j]) {
 					ldb_asprintf_errstring(ldb, "%s: value #%d provided more than once", el->name, j);
