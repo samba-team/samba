@@ -419,6 +419,7 @@ static NTSTATUS dcesrv_lsa_lookup_name(struct tevent_context *ev_ctx,
 			return STATUS_SOME_UNMAPPED;
 		}
 
+		dom_sid_split_rid(NULL, *sid, NULL, rid);
 		return NT_STATUS_OK;
 	}
 
