@@ -26,9 +26,11 @@
 struct db_ctdb_transaction_handle {
 	struct db_ctdb_ctx *ctx;
 	bool in_replay;
-	/* we store the reads and writes done under a transaction one
-	   list stores both reads and writes, the other just writes
-	*/
+	/*
+	 * we store the reads and writes done under a transaction:
+	 * - one list stores both reads and writes (m_all),
+	 * - the other just writes (m_write)
+	 */
 	struct ctdb_marshall_buffer *m_all;
 	struct ctdb_marshall_buffer *m_write;
 	uint32_t nesting;
