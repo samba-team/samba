@@ -75,6 +75,38 @@ static NTSTATUS tdb_error_to_ntstatus(struct tdb_context *tdb)
 }
 
 
+/*
+ * Store a record together with the ctdb record header
+ * in the local copy of the database.
+ */
+static NTSTATUS db_ctdb_ltdb_store(struct db_ctdb_ctx *db,
+				   TDB_DATA key,
+				   struct ctdb_ltdb_header *header,
+				   TDB_DATA data)
+{
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	TDB_DATA rec;
+	int ret;
+
+	rec.dsize = data.dsize + sizeof(struct ctdb_ltdb_header);
+	rec.dptr = (uint8_t *)talloc_size(tmp_ctx, rec.dsize);
+
+	if (rec.dptr == NULL) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	memcpy(rec.dptr, header, sizeof(struct ctdb_ltdb_header));
+	memcpy(sizeof(struct ctdb_ltdb_header) + (uint8_t *)rec.dptr, data.dptr, data.dsize);
+
+	ret = tdb_store(db->wtdb->tdb, key, rec, TDB_REPLACE);
+
+	talloc_free(tmp_ctx);
+
+	return (ret == 0) ? NT_STATUS_OK
+			  : tdb_error_to_ntstatus(db->wtdb->tdb);
+
+}
 
 /*
   form a ctdb_rec_data record from a key/data pair
@@ -472,6 +504,7 @@ static int db_ctdb_transaction_store(struct db_ctdb_transaction_handle *h,
 	int ret;
 	TDB_DATA rec;
 	struct ctdb_ltdb_header header;
+	NTSTATUS status;
 
 	/* we need the header so we can update the RSN */
 	rec = tdb_fetch(h->ctx->wtdb->tdb, key);
@@ -512,17 +545,12 @@ static int db_ctdb_transaction_store(struct db_ctdb_transaction_handle *h,
 		return -1;
 	}
 
-	rec.dsize = data.dsize + sizeof(struct ctdb_ltdb_header);
-	rec.dptr = (uint8_t *)talloc_size(tmp_ctx, rec.dsize);
-	if (rec.dptr == NULL) {
-		DEBUG(0,(__location__ " Failed to alloc record\n"));
-		talloc_free(tmp_ctx);
-		return -1;
+	status = db_ctdb_ltdb_store(h->ctx, key, &header, data);
+	if (NT_STATUS_IS_OK(status)) {
+		ret = 0;
+	} else {
+		ret = -1;
 	}
-	memcpy(rec.dptr, &header, sizeof(struct ctdb_ltdb_header));
-	memcpy(sizeof(struct ctdb_ltdb_header) + (uint8_t *)rec.dptr, data.dptr, data.dsize);
-
-	ret = tdb_store(h->ctx->wtdb->tdb, key, rec, TDB_REPLACE);
 
 	talloc_free(tmp_ctx);
 
@@ -786,24 +814,8 @@ static NTSTATUS db_ctdb_store(struct db_record *rec, TDB_DATA data, int flag)
 {
 	struct db_ctdb_rec *crec = talloc_get_type_abort(
 		rec->private_data, struct db_ctdb_rec);
-	TDB_DATA cdata;
-	int ret;
 
-	cdata.dsize = sizeof(crec->header) + data.dsize;
-
-	if (!(cdata.dptr = SMB_MALLOC_ARRAY(uint8, cdata.dsize))) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	memcpy(cdata.dptr, &crec->header, sizeof(crec->header));
-	memcpy(cdata.dptr + sizeof(crec->header), data.dptr, data.dsize);
-
-	ret = tdb_store(crec->ctdb_ctx->wtdb->tdb, rec->key, cdata, TDB_REPLACE);
-
-	SAFE_FREE(cdata.dptr);
-
-	return (ret == 0) ? NT_STATUS_OK
-			  : tdb_error_to_ntstatus(crec->ctdb_ctx->wtdb->tdb);
+	return db_ctdb_ltdb_store(crec->ctdb_ctx, rec->key, &(crec->header), data);
 }
 
 
