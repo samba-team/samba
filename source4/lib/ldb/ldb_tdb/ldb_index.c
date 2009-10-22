@@ -287,8 +287,10 @@ static int ltdb_dn_list_store(struct ldb_module *module, struct ldb_dn *dn,
 	rec.dsize = sizeof(void *);
 
 	ret = tdb_store(ltdb->idxptr->itdb, key, rec, TDB_INSERT);
-
-	return ret;	
+	if (ret == -1) {
+		return ltdb_err_map(tdb_error(ltdb->idxptr->itdb));
+	}
+	return LDB_SUCCESS;
 }
 
 /*
@@ -320,7 +322,10 @@ static int ltdb_index_traverse_store(struct tdb_context *tdb, TDB_DATA key, TDB_
 
 	ltdb->idxptr->error = ltdb_dn_list_store_full(module, dn, list);
 	talloc_free(dn);
-	return ltdb->idxptr->error;
+	if (ltdb->idxptr->error != 0) {
+		return -1;
+	}
+	return 0;
 }
 
 /* cleanup the idxptr mode when transaction commits */
