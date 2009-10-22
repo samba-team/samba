@@ -235,7 +235,7 @@ static void ctdb_check_health(struct event_context *ev, struct timed_event *te,
 			DEBUG(DEBUG_ERR,("Skip monitoring during recovery\n"));
 		}
 		for (i=1; i<=NUM_DB_PRIORITIES; i++) {
-			if (ctdb->freeze_handles[i] != 0) {
+			if (ctdb->freeze_handles[i] != NULL) {
 				DEBUG(DEBUG_ERR,("Skip monitoring since databases are frozen\n"));
 				skip_monitoring = 1;
 				break;

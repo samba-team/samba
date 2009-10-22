@@ -151,9 +151,12 @@ static void ctdb_freeze_lock_handler(struct event_context *ev, struct fd_event *
 	h->ctdb->freeze_mode[h->priority] = CTDB_FREEZE_FROZEN;
 
 	/* notify the waiters */
-	while ((w = h->ctdb->freeze_handles[h->priority]->waiters)) {
+	if (h != h->ctdb->freeze_handles[h->priority]) {
+		DEBUG(DEBUG_ERR,("lockwait finished but h is not linked\n"));
+	}
+	while ((w = h->waiters)) {
 		w->status = status;
-		DLIST_REMOVE(h->ctdb->freeze_handles[h->priority]->waiters, w);
+		DLIST_REMOVE(h->waiters, w);
 		talloc_free(w);
 	}
 }
@@ -241,7 +244,6 @@ static struct ctdb_freeze_handle *ctdb_freeze_lock(struct ctdb_context *ctdb, ui
  */
 static int ctdb_freeze_waiter_destructor(struct ctdb_freeze_waiter *w)
 {
-	DLIST_REMOVE(w->ctdb->freeze_handles[w->priority]->waiters, w);
 	ctdb_request_control_reply(w->ctdb, w->c, NULL, w->status, NULL);
 	return 0;
 }
@@ -267,7 +269,7 @@ int ctdb_start_freeze(struct ctdb_context *ctdb, uint32_t priority)
 	}
 
 	/* if there isn't a freeze lock child then create one */
-	if (!ctdb->freeze_handles[priority]) {
+	if (ctdb->freeze_handles[priority] == NULL) {
 		ctdb->freeze_handles[priority] = ctdb_freeze_lock(ctdb, priority);
 		CTDB_NO_MEMORY(ctdb, ctdb->freeze_handles[priority]);
 		ctdb->freeze_mode[priority] = CTDB_FREEZE_PENDING;
@@ -309,6 +311,11 @@ int32_t ctdb_control_freeze(struct ctdb_context *ctdb, struct ctdb_req_control *
 	}
 
 	/* add ourselves to list of waiters */
+	if (ctdb->freeze_handles[priority] == NULL) {
+		DEBUG(DEBUG_ERR,("No freeze lock handle when adding a waiter\n"));
+		return -1;
+	}
+
 	w = talloc(ctdb->freeze_handles[priority], struct ctdb_freeze_waiter);
 	CTDB_NO_MEMORY(ctdb, w);
 	w->ctdb     = ctdb;
@@ -376,8 +383,10 @@ static void thaw_priority(struct ctdb_context *ctdb, uint32_t priority)
 	system("mkdir -p test.db.saved; /usr/bin/rsync --delete -a test.db/ test.db.saved/$$ 2>&1 > /dev/null");
 #endif
 
-	talloc_free(ctdb->freeze_handles[priority]);
-	ctdb->freeze_handles[priority] = NULL;
+	if (ctdb->freeze_handles[priority] != NULL) {
+		talloc_free(ctdb->freeze_handles[priority]);
+		ctdb->freeze_handles[priority] = NULL;
+	}
 }
 
 /*
