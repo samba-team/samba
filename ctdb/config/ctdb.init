@@ -210,7 +210,7 @@ stop() {
 	    rc_status -v
 	    ;;
 	redhat)
-	    echo
+            [ $RETVAL -eq 0 ] && success || failure
 	    [ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/ctdb
 	    echo ""
 	    ;;
