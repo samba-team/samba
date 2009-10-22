@@ -356,6 +356,9 @@ unless (defined($ENV{VALGRIND})) {
 	$ENV{MALLOC_CHECK_} = 2;
 }
 
+# make all our python scripts unbuffered
+$ENV{PYTHONUNBUFFERED} = 1;
+
 my $bindir = ($opt_bindir or "$builddir/bin");
 my $bindir_abs = abs_path($bindir);
 
