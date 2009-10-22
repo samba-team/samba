@@ -199,6 +199,14 @@ static int ltdb_dn_list_store_full(struct ldb_module *module, struct ldb_dn *dn,
 	struct ldb_message *msg;
 	int ret;
 
+	if (list->count == 0) {
+		ret = ltdb_delete_noindex(module, dn);
+		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+			return LDB_SUCCESS;
+		}
+		return ret;
+	}
+
 	msg = ldb_msg_new(module);
 	if (!msg) {
 		ldb_module_oom(module);
