@@ -742,6 +742,9 @@ int partition_init(struct ldb_module *module)
 		return ret;
 	}
 
+	module->private_data = talloc_steal(module, data);
+	talloc_free(mem_ctx);
+
 	ret = ldb_mod_register_control(module, LDB_CONTROL_DOMAIN_SCOPE_OID);
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_ERROR,
@@ -756,8 +759,5 @@ int partition_init(struct ldb_module *module)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	module->private_data = talloc_steal(module, data);
-
-	talloc_free(mem_ctx);
 	return ldb_next_init(module);
 }
