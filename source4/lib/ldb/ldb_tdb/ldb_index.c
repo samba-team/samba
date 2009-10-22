@@ -215,6 +215,7 @@ static int ltdb_dn_list_store_full(struct ldb_module *module, struct ldb_dn *dn,
 
 	ret = ldb_msg_add_fmt(msg, LTDB_IDXVERSION, "%u", LTDB_INDEXING_VERSION);
 	if (ret != LDB_SUCCESS) {
+		talloc_free(msg);
 		ldb_module_oom(module);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -1094,6 +1095,7 @@ static int ltdb_index_add1(struct ldb_module *module, const char *dn,
 
 	if (list->count > 0 &&
 	    a->flags & LDB_ATTR_FLAG_UNIQUE_INDEX) {
+		talloc_free(list);
 		return LDB_ERR_ENTRY_ALREADY_EXISTS;		
 	}
 
@@ -1424,7 +1426,7 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 		return 0;
 	}
 
-	msg = talloc(module, struct ldb_message);
+	msg = ldb_msg_new(module);
 	if (msg == NULL) {
 		return -1;
 	}
