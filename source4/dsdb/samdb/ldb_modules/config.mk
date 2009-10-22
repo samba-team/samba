@@ -46,16 +46,28 @@ ldb_dsdb_cache_OBJ_FILES = \
 		$(dsdbsrcdir)/samdb/ldb_modules/dsdb_cache.o
 
 ################################################
-# Start MODULE ldb_schema_fsmo
-[MODULE::ldb_schema_fsmo]
+# Start MODULE ldb_schema_load
+[MODULE::ldb_schema_load]
 SUBSYSTEM = LIBLDB
 PRIVATE_DEPENDENCIES = SAMDB LIBTALLOC LIBEVENTS DSDB_MODULE_HELPERS
-INIT_FUNCTION = LDB_MODULE(schema_fsmo)
-# End MODULE ldb_schema_fsmo
+INIT_FUNCTION = LDB_MODULE(schema_load)
+# End MODULE ldb_schema_load
 ################################################
 
-ldb_schema_fsmo_OBJ_FILES = \
-		$(dsdbsrcdir)/samdb/ldb_modules/schema_fsmo.o
+ldb_schema_load_OBJ_FILES = \
+		$(dsdbsrcdir)/samdb/ldb_modules/schema_load.o
+
+################################################
+# Start MODULE ldb_schema_data
+[MODULE::ldb_schema_data]
+SUBSYSTEM = LIBLDB
+PRIVATE_DEPENDENCIES = SAMDB LIBTALLOC LIBEVENTS DSDB_MODULE_HELPERS
+INIT_FUNCTION = LDB_MODULE(schema_data)
+# End MODULE ldb_schema_data
+################################################
+
+ldb_schema_data_OBJ_FILES = \
+		$(dsdbsrcdir)/samdb/ldb_modules/schema_data.o
 
 ################################################
 # Start MODULE ldb_naming_fsmo

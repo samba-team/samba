@@ -1,8 +1,7 @@
 /* 
    Unix SMB/CIFS mplementation.
 
-   The module that handles the Schema FSMO Role Owner
-   checkings, it also loads the dsdb_schema.
+   The module that handles the Schema checkings and dynamic attributes
    
    Copyright (C) Stefan Metzmacher <metze@samba.org> 2007
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2009
@@ -81,131 +80,42 @@ static const struct {
 	}
 };
 
-struct schema_fsmo_private_data {
+struct schema_data_private_data {
 	struct ldb_dn *aggregate_dn;
+	struct ldb_dn *schema_dn;
 };
 
-struct schema_fsmo_search_data {
+struct schema_data_search_data {
 	struct ldb_module *module;
 	struct ldb_request *req;
 
 	const struct dsdb_schema *schema;
 };
 
-/*
-  Given an LDB module (pointing at the schema DB), and the DN, set the populated schema
-*/
-
-static int dsdb_schema_from_schema_dn(TALLOC_CTX *mem_ctx, struct ldb_module *module,
-				      struct smb_iconv_convenience *iconv_convenience, 
-				      struct ldb_dn *schema_dn,
-				      struct dsdb_schema **schema) 
-{
-	TALLOC_CTX *tmp_ctx;
-	char *error_string;
-	int ret;
-	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	struct ldb_result *schema_res;
-	struct ldb_result *a_res;
-	struct ldb_result *c_res;
-	static const char *schema_attrs[] = {
-		"prefixMap",
-		"schemaInfo",
-		"fSMORoleOwner",
-		NULL
-	};
-	unsigned flags;
-
-	tmp_ctx = talloc_new(mem_ctx);
-	if (!tmp_ctx) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	/* we don't want to trace the schema load */
-	flags = ldb_get_flags(ldb);
-	ldb_set_flags(ldb, flags & ~LDB_FLG_ENABLE_TRACING);
-
-	/*
-	 * setup the prefix mappings and schema info
-	 */
-	ret = dsdb_module_search_dn(module, tmp_ctx, &schema_res,
-				    schema_dn, schema_attrs);
-	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-		goto failed;
-	} else if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(ldb, 
-				       "dsdb_schema: failed to search the schema head: %s",
-				       ldb_errstring(ldb));
-		goto failed;
-	}
-
-	/*
-	 * load the attribute definitions
-	 */
-	ret = dsdb_module_search(module, tmp_ctx, &a_res,
-				 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
-				 "(objectClass=attributeSchema)");
-	if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(ldb, 
-				       "dsdb_schema: failed to search attributeSchema objects: %s",
-				       ldb_errstring(ldb));
-		goto failed;
-	}
-
-	/*
-	 * load the objectClass definitions
-	 */
-	ret = dsdb_module_search(module, tmp_ctx, &c_res,
-				 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
-				 "(objectClass=classSchema)");
-	if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(ldb, 
-				       "dsdb_schema: failed to search attributeSchema objects: %s",
-				       ldb_errstring(ldb));
-		goto failed;
-	}
-
-	ret = dsdb_schema_from_ldb_results(tmp_ctx, ldb,
-					   lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
-					   schema_res, a_res, c_res, schema, &error_string);
-	if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(ldb, 
-						    "dsdb_schema load failed: %s",
-						    error_string);
-		goto failed;
-	}
-	talloc_steal(mem_ctx, *schema);
-
-failed:
-	if (flags & LDB_FLG_ENABLE_TRACING) {
-		flags = ldb_get_flags(ldb);
-		ldb_set_flags(ldb, flags | LDB_FLG_ENABLE_TRACING);
-	}
-	talloc_free(tmp_ctx);
-	return ret;
-}	
-
-
-static int schema_fsmo_init(struct ldb_module *module)
+static int schema_data_init(struct ldb_module *module)
 {
 	struct ldb_context *ldb;
 	TALLOC_CTX *mem_ctx;
 	struct ldb_dn *schema_dn;
 	struct dsdb_schema *schema;
 	int ret;
-	struct schema_fsmo_private_data *data;
+	struct schema_data_private_data *data;
+
+	ret = ldb_next_init(module);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 
 	ldb = ldb_module_get_ctx(module);
 	schema_dn = samdb_schema_dn(ldb);
 	if (!schema_dn) {
 		ldb_reset_err_string(ldb);
 		ldb_debug(ldb, LDB_DEBUG_WARNING,
-			  "schema_fsmo_init: no schema dn present: (skip schema loading)\n");
-		return ldb_next_init(module);
+			  "schema_data_init: no schema dn present: (skip schema loading)\n");
+		return LDB_SUCCESS;
 	}
 
-	data = talloc(module, struct schema_fsmo_private_data);
+	data = talloc(module, struct schema_data_private_data);
 	if (data == NULL) {
 		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -218,50 +128,13 @@ static int schema_fsmo_init(struct ldb_module *module)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	data->schema_dn = schema_dn;
+
 	ldb_module_set_private(module, data);
-
-	if (dsdb_get_schema(ldb)) {
-		return ldb_next_init(module);
-	}
-
-	mem_ctx = talloc_new(module);
-	if (!mem_ctx) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ret = dsdb_schema_from_schema_dn(mem_ctx, module,
-					 lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
-					 schema_dn, &schema);
-
-	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-		ldb_reset_err_string(ldb);
-		ldb_debug(ldb, LDB_DEBUG_WARNING,
-			  "schema_fsmo_init: no schema head present: (skip schema loading)\n");
-		talloc_free(mem_ctx);
-		return ldb_next_init(module);
-	}
-
-	if (ret != LDB_SUCCESS) {
-		talloc_free(mem_ctx);
-		return ret;
-	}
-
-	/* dsdb_set_schema() steal schema into the ldb_context */
-	ret = dsdb_set_schema(ldb, schema);
-	if (ret != LDB_SUCCESS) {
-		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
-			      "schema_fsmo_init: dsdb_set_schema() failed: %d:%s",
-			      ret, ldb_strerror(ret));
-		talloc_free(mem_ctx);
-		return ret;
-	}
-
-	talloc_free(mem_ctx);
-	return ldb_next_init(module);
+	return LDB_SUCCESS;
 }
 
-static int schema_fsmo_add(struct ldb_module *module, struct ldb_request *req)
+static int schema_data_add(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
 	struct dsdb_schema *schema;
@@ -291,7 +164,7 @@ static int schema_fsmo_add(struct ldb_module *module, struct ldb_request *req)
 
 	if (!schema->fsmo.we_are_master) {
 		ldb_debug_set(ldb, LDB_DEBUG_ERROR,
-			  "schema_fsmo_add: we are not master: reject request\n");
+			  "schema_data_add: we are not master: reject request\n");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
@@ -318,7 +191,7 @@ static int schema_fsmo_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	} else if (!W_ERROR_EQUAL(WERR_DS_NO_MSDS_INTID, status)) {
 		ldb_debug_set(ldb, LDB_DEBUG_ERROR,
-			  "schema_fsmo_add: failed to map %s[%s]: %s\n",
+			  "schema_data_add: failed to map %s[%s]: %s\n",
 			  oid_attr, oid, win_errstr(status));
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
@@ -326,73 +199,12 @@ static int schema_fsmo_add(struct ldb_module *module, struct ldb_request *req)
 	status = dsdb_create_prefix_mapping(ldb, schema, oid);
 	if (!W_ERROR_IS_OK(status)) {
 		ldb_debug_set(ldb, LDB_DEBUG_ERROR,
-			  "schema_fsmo_add: failed to create prefix mapping for %s[%s]: %s\n",
+			  "schema_data_add: failed to create prefix mapping for %s[%s]: %s\n",
 			  oid_attr, oid, win_errstr(status));
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
 	return ldb_next_request(module, req);
-}
-
-static int schema_fsmo_extended(struct ldb_module *module, struct ldb_request *req)
-{
-	struct ldb_context *ldb;
-	struct ldb_dn *schema_dn;
-	struct dsdb_schema *schema;
-	int ret;
-	TALLOC_CTX *mem_ctx;
-
-	ldb = ldb_module_get_ctx(module);
-
-	if (strcmp(req->op.extended.oid, DSDB_EXTENDED_SCHEMA_UPDATE_NOW_OID) != 0) {
-		return ldb_next_request(module, req);
-	}
-	
-	schema_dn = samdb_schema_dn(ldb);
-	if (!schema_dn) {
-		ldb_reset_err_string(ldb);
-		ldb_debug(ldb, LDB_DEBUG_WARNING,
-			  "schema_fsmo_extended: no schema dn present: (skip schema loading)\n");
-		return ldb_next_request(module, req);
-	}
-	
-	mem_ctx = talloc_new(module);
-	if (!mem_ctx) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	
-	ret = dsdb_schema_from_schema_dn(mem_ctx, module,
-					 lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
-					 schema_dn, &schema);
-
-	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-		ldb_reset_err_string(ldb);
-		ldb_debug(ldb, LDB_DEBUG_WARNING,
-			  "schema_fsmo_extended: no schema head present: (skip schema loading)\n");
-		talloc_free(mem_ctx);
-		return ldb_next_request(module, req);
-	}
-
-	if (ret != LDB_SUCCESS) {
-		talloc_free(mem_ctx);
-		return ldb_next_request(module, req);
-	}
-
-	/* Replace the old schema*/
-	ret = dsdb_set_schema(ldb, schema);
-	if (ret != LDB_SUCCESS) {
-		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
-			      "schema_fsmo_extended: dsdb_set_schema() failed: %d:%s",
-			      ret, ldb_strerror(ret));
-		talloc_free(mem_ctx);
-		return ret;
-	}
-
-	dsdb_make_schema_global(ldb);
-
-	talloc_free(mem_ctx);
-	return LDB_SUCCESS;
 }
 
 static int generate_objectClasses(struct ldb_context *ldb, struct ldb_message *msg,
@@ -533,15 +345,15 @@ static int generate_possibleInferiors(struct ldb_context *ldb, struct ldb_messag
 /* Add objectClasses, attributeTypes and dITContentRules from the
    schema object (they are not stored in the database)
  */
-static int schema_fsmo_search_callback(struct ldb_request *req, struct ldb_reply *ares)
+static int schema_data_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	struct ldb_context *ldb;
-	struct schema_fsmo_search_data *ac;
-	struct schema_fsmo_private_data *mc;
+	struct schema_data_search_data *ac;
+	struct schema_data_private_data *mc;
 	int i, ret;
 
-	ac = talloc_get_type(req->context, struct schema_fsmo_search_data);
-	mc = talloc_get_type(ldb_module_get_private(ac->module), struct schema_fsmo_private_data);
+	ac = talloc_get_type(req->context, struct schema_data_search_data);
+	mc = talloc_get_type(ldb_module_get_private(ac->module), struct schema_data_private_data);
 	ldb = ldb_module_get_ctx(ac->module);
 
 	if (!ares) {
@@ -567,7 +379,8 @@ static int schema_fsmo_search_callback(struct ldb_request *req, struct ldb_reply
 					}
 				}
 			}
-		} else {
+		} else if ((ldb_dn_compare_base(mc->schema_dn, ares->message->dn) == 0)
+			   && (ldb_dn_compare(mc->schema_dn, ares->message->dn) != 0)) {
 			for (i=0; i < ARRAY_SIZE(generated_attrs); i++) {
 				if (!generated_attrs[i].aggregate &&
 				    ldb_attr_in_list(ac->req->op.search.attrs, generated_attrs[i].attr)) {
@@ -596,11 +409,11 @@ static int schema_fsmo_search_callback(struct ldb_request *req, struct ldb_reply
 }
 
 /* search */
-static int schema_fsmo_search(struct ldb_module *module, struct ldb_request *req)
+static int schema_data_search(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	int i, ret;
-	struct schema_fsmo_search_data *search_context;
+	struct schema_data_search_data *search_context;
 	struct ldb_request *down_req;
 	struct dsdb_schema *schema = dsdb_get_schema(ldb);
 
@@ -619,7 +432,7 @@ static int schema_fsmo_search(struct ldb_module *module, struct ldb_request *req
 		return ldb_next_request(module, req);
 	}
 
-	search_context = talloc(req, struct schema_fsmo_search_data);
+	search_context = talloc(req, struct schema_data_search_data);
 	if (!search_context) {
 		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -635,7 +448,7 @@ static int schema_fsmo_search(struct ldb_module *module, struct ldb_request *req
 					req->op.search.tree,
 					req->op.search.attrs,
 					req->controls,
-					search_context, schema_fsmo_search_callback,
+					search_context, schema_data_search_callback,
 					req);
 	if (ret != LDB_SUCCESS) {
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -645,10 +458,9 @@ static int schema_fsmo_search(struct ldb_module *module, struct ldb_request *req
 }
 
 
-_PUBLIC_ const struct ldb_module_ops ldb_schema_fsmo_module_ops = {
-	.name		= "schema_fsmo",
-	.init_context	= schema_fsmo_init,
-	.add		= schema_fsmo_add,
-	.extended	= schema_fsmo_extended,
-	.search         = schema_fsmo_search
+_PUBLIC_ const struct ldb_module_ops ldb_schema_data_module_ops = {
+	.name		= "schema_data",
+	.init_context	= schema_data_init,
+	.add		= schema_data_add,
+	.search         = schema_data_search
 };

@@ -678,8 +678,9 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
                     "linked_attributes",
                     "extended_dn_out_ldb"]
     modules_list2 = ["show_deleted",
+                     "schema_load",
                      "new_partition",
-                    "partition"]
+                     "partition"]
     ldap_backend_line = "# No LDAP backend"
     if ldap_backend is not None:
         ldap_backend_line = "ldapBackend: %s" % ldap_backend.ldapi_uri
@@ -712,7 +713,7 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
                 "SCHEMADN_MOD2": ",objectguid",
                 "CONFIGDN": ldb.Dn(schema.ldb, names.configdn).get_casefold(),
                 "DOMAINDN": ldb.Dn(schema.ldb, names.domaindn).get_casefold(),
-                "SCHEMADN_MOD": "schema_fsmo",
+                "SCHEMADN_MOD": "schema_data",
                 "CONFIGDN_MOD": "naming_fsmo",
                 "DOMAINDN_MOD": "pdc_fsmo",
                 "MODULES_LIST": ",".join(modules_list),
