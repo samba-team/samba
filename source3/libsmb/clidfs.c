@@ -216,6 +216,15 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 			return NULL;
 		}
 		d_printf("Anonymous login successful\n");
+		status = cli_init_creds(c, "", lp_workgroup(), "");
+	} else {
+		status = cli_init_creds(c, username, lp_workgroup(), password);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10,("cli_init_creds() failed: %s\n", nt_errstr(status)));
+		cli_shutdown(c);
+		return NULL;
 	}
 
 	if ( show_sessetup ) {
