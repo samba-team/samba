@@ -89,32 +89,34 @@ static int partition_load_modules(struct ldb_context *ldb,
 	}
 	
 	for (i=0; i < modules_attributes->num_values; i++) {
-		char *base;
 		char *p;
-
+		DATA_BLOB dn_blob;
 		data->modules[i] = talloc(data->modules, struct partition_module);
 		if (!data->modules[i]) {
 			ldb_oom(ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		base = talloc_strdup(data->partitions, (char *)modules_attributes->values[i].data);
-		p = strchr(base, ':');
+		dn_blob = modules_attributes->values[i];
+
+		p = strchr((const char *)dn_blob.data, ':');
 		if (!p) {
 			ldb_asprintf_errstring(ldb, 
 					       "partition_load_modules: "
-					       "invalid form for partition module record (missing ':'): %s", base);
+					       "invalid form for partition module record (missing ':'): %s", (const char *)dn_blob.data);
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
-		p[0] = '\0';
+		/* Now trim off the filename */
+		dn_blob.length = ((uint8_t *)p - dn_blob.data);
+
 		p++;
 		data->modules[i]->modules = ldb_modules_list_from_string(ldb, data->modules[i],
 									 p);
 		
-		if (strcmp(base, "*") == 0) {
+		if (dn_blob.length == 1 && dn_blob.data[0] == '*') {
 			data->modules[i]->dn = NULL;
 		} else {
-			data->modules[i]->dn = ldb_dn_new(data->modules[i], ldb, base);
+			data->modules[i]->dn = ldb_dn_from_ldb_val(data->modules[i], ldb, &dn_blob);
 			if (!data->modules[i]->dn || !ldb_dn_validate(data->modules[i]->dn)) {
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
