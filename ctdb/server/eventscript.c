@@ -969,7 +969,7 @@ int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb,
 	ret = ctdb_event_script_callback(ctdb, 
 			 timeval_current_ofs(ctdb->tunable.script_timeout, 0),
 			 state, run_eventscripts_callback, state,
-			 (const char *)indata.dptr);
+			 "%s", (const char *)indata.dptr);
 
 	if (ret != 0) {
 		ctdb_enable_monitoring(ctdb);

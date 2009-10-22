@@ -1791,7 +1791,9 @@ static void disable_ip_check_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	}
 
 	if (data.dsize != sizeof(uint32_t)) {
-		DEBUG(DEBUG_ERR,(__location__ " Wrong size for data :%lu expexting %lu\n", data.dsize, sizeof(uint32_t)));
+		DEBUG(DEBUG_ERR,(__location__ " Wrong size for data :%lu "
+				 "expexting %lu\n", (long unsigned)data.dsize,
+				 (long unsigned)sizeof(uint32_t)));
 		return;
 	}
 	if (data.dptr == NULL) {
@@ -1827,7 +1829,7 @@ static void ip_reallocate_handler(struct ctdb_context *ctdb, uint64_t srvid,
 
 	if (rec->ip_reallocate_ctx == NULL) {
 		rec->ip_reallocate_ctx = talloc_new(rec);
-		CTDB_NO_MEMORY_FATAL(ctdb, caller);
+		CTDB_NO_MEMORY_FATAL(ctdb, rec->ip_reallocate_ctx);
 	}
 
 	caller = talloc(rec->ip_reallocate_ctx, struct ip_reallocate_list);
@@ -1853,10 +1855,15 @@ static void process_ipreallocate_requests(struct ctdb_context *ctdb, struct ctdb
 	result.dptr  = (uint8_t *)&ret;
 
 	for (callers=rec->reallocate_callers; callers; callers=callers->next) {
-		DEBUG(DEBUG_INFO,("Sending ip reallocate reply message to %u:%lu\n", callers->rd->pnn, callers->rd->srvid));
+		DEBUG(DEBUG_INFO,("Sending ip reallocate reply message to "
+				  "%u:%lu\n", (unsigned)callers->rd->pnn,
+				  (long unsigned)callers->rd->srvid));
 		ret = ctdb_send_message(ctdb, callers->rd->pnn, callers->rd->srvid, result);
 		if (ret != 0) {
-			DEBUG(DEBUG_ERR,("Failed to send ip reallocate reply message to %u:%lu\n", callers->rd->pnn, callers->rd->srvid));
+			DEBUG(DEBUG_ERR,("Failed to send ip reallocate reply "
+					 "message to %u:%lu\n",
+					 (unsigned)callers->rd->pnn,
+					 (long unsigned)callers->rd->srvid));
 		}
 	}
 
