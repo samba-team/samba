@@ -483,7 +483,7 @@ _PUBLIC_ char *strupper_talloc_n(TALLOC_CTX *ctx, const char *src, size_t n)
 		return NULL;
 	}
 
-	while (*src && n--) {
+	while (n-- && *src) {
 		size_t c_size;
 		codepoint_t c = next_codepoint_convenience(iconv_convenience, src, &c_size);
 		src += c_size;
