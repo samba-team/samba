@@ -428,6 +428,8 @@ static bool ltdb_is_indexed(const struct ldb_message *index_list, const char *at
 	if (el == NULL) {
 		return false;
 	}
+
+	/* TODO: this is too expensive! At least use a binary search */
 	for (i=0; i<el->num_values; i++) {
 		if (ldb_attr_cmp((char *)el->values[i].data, attr) == 0) {
 			return true;
