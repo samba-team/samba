@@ -169,17 +169,41 @@ static WERROR _dsdb_pfm_make_binary_oid(const char *full_oid, TALLOC_CTX *mem_ct
 }
 
 /**
+ * Lookup partial-binary-oid in prefixMap
+ */
+WERROR dsdb_schema_pfm_find_binary_oid(struct dsdb_schema_prefixmap *pfm,
+				       DATA_BLOB bin_oid,
+				       uint32_t *_idx)
+{
+	uint32_t i;
+
+	for (i = 0; i < pfm->length; i++) {
+		if (pfm->prefixes[i].bin_oid.length != bin_oid.length) {
+			continue;
+		}
+
+		if (memcmp(pfm->prefixes[i].bin_oid.data, bin_oid.data, bin_oid.length) == 0) {
+			if (_idx) {
+				*_idx = i;
+			}
+			return WERR_OK;
+		}
+	}
+
+	return WERR_DS_NO_MSDS_INTID;
+}
+
+/**
  * Make ATTID for given OID
  * Reference: [MS-DRSR] section 5.12.2
  */
 WERROR dsdb_schema_pfm_make_attid(struct dsdb_schema_prefixmap *pfm, const char *oid, uint32_t *attid)
 {
 	WERROR werr;
-	uint32_t i;
+	uint32_t idx;
 	uint32_t lo_word, hi_word;
-	uint32_t last_value;
+	uint32_t last_subid;
 	DATA_BLOB bin_oid;
-	struct dsdb_schema_prefixmap_oid *pfm_entry;
 
 	if (!pfm) {
 		return WERR_INVALID_PARAMETER;
@@ -188,42 +212,30 @@ WERROR dsdb_schema_pfm_make_attid(struct dsdb_schema_prefixmap *pfm, const char 
 		return WERR_INVALID_PARAMETER;
 	}
 
-	werr = _dsdb_pfm_make_binary_oid(oid, pfm, &bin_oid, &last_value);
+	werr = _dsdb_pfm_make_binary_oid(oid, pfm, &bin_oid, &last_subid);
 	W_ERROR_NOT_OK_RETURN(werr);
 
 	/* search the prefix in the prefix table, if none found, add
 	 * one entry for new prefix.
 	 */
-	pfm_entry = NULL;
-	for (i = 0; i < pfm->length; i++) {
-		if (pfm->prefixes[i].bin_oid.length != bin_oid.length)
-			continue;
-
-		if (memcmp(pfm->prefixes[i].bin_oid.data, bin_oid.data, bin_oid.length) == 0) {
-			pfm_entry = &pfm->prefixes[i];
-			break;
-		}
-	}
-	/* add entry in no entry exists */
-	if (!pfm_entry) {
-		uint32_t idx;
-		werr = _dsdb_schema_pfm_add_entry(pfm, bin_oid, &idx);
-		W_ERROR_NOT_OK_RETURN(werr);
-
-		pfm_entry = &pfm->prefixes[idx];
-	} else {
+	werr = dsdb_schema_pfm_find_binary_oid(pfm, bin_oid, &idx);
+	if (W_ERROR_IS_OK(werr)) {
 		/* free memory allocated for bin_oid */
 		data_blob_free(&bin_oid);
+	} else {
+		/* entry does not exists, add it */
+		werr = _dsdb_schema_pfm_add_entry(pfm, bin_oid, &idx);
+		W_ERROR_NOT_OK_RETURN(werr);
 	}
 
 	/* compose the attid */
-	lo_word = last_value % 16384;	/* actually get lower 14 bits: lo_word & 0x3FFF */
-	if (last_value >= 16384) {
+	lo_word = last_subid % 16384;	/* actually get lower 14 bits: lo_word & 0x3FFF */
+	if (last_subid >= 16384) {
 		/* mark it so that it is known to not be the whole lastValue
 		 * This will raise 16-th bit*/
 		lo_word += 32768;
 	}
-	hi_word = pfm_entry->id;
+	hi_word = pfm->prefixes[idx].id;
 
 	/* make ATTID:
 	 * HIWORD is prefixMap id
