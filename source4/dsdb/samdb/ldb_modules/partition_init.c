@@ -396,6 +396,7 @@ int partition_reload_if_required(struct ldb_module *module,
 		DATA_BLOB dn_blob;
 		struct ldb_dn *dn;
 		struct dsdb_partition *partition;
+		struct ldb_module tmp_module;
 		struct ldb_result *dn_res;
 		const char *no_attrs[] = { NULL };
 
@@ -456,8 +457,12 @@ int partition_reload_if_required(struct ldb_module *module,
 			return ret;
 		}
 
+		/* Hack to be able to re-use dsdb_module_search_dn, which calls ldb_next_request(), which needs ->next filled out */
+		tmp_module = *partition->module;
+		tmp_module.next = partition->module;
+		
 		/* Get the 'correct' case of the partition DNs from the database */
-		ret = dsdb_module_search_dn(partition->module, data, &dn_res, 
+		ret = dsdb_module_search_dn(&tmp_module, data, &dn_res, 
 					    dn, no_attrs);
 		if (ret == LDB_SUCCESS) {
 			talloc_free(partition->ctrl->dn);
@@ -465,11 +470,9 @@ int partition_reload_if_required(struct ldb_module *module,
 			talloc_free(dn_res);
 		} else if (ret != LDB_ERR_NO_SUCH_OBJECT) {
 			ldb_asprintf_errstring(ldb,
-					       "Failed to search for %s from " DSDB_PARTITION_DN 
-					       " replicateEntries for new partition at %s on %s: %s", 
-					       ldb_dn_get_linearized(data->replicate[i]), 
-					       partition->backend_url,
-					       ldb_dn_get_linearized(partition->ctrl->dn), 
+					       "Failed to search for partition base %s in new partition at %s: %s", 
+					       ldb_dn_get_linearized(dn), 
+					       partition->backend_url, 
 					       ldb_errstring(ldb));
 			talloc_free(mem_ctx);
 			return ret;
