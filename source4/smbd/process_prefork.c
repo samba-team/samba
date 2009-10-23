@@ -32,6 +32,7 @@
 #include "system/filesys.h"
 #include "cluster/cluster.h"
 #include "param/param.h"
+#include "lib/ldb_wrap.h"
 
 #ifdef HAVE_SETPROCTITLE
 #ifdef HAVE_SETPROCTITLE_H
@@ -60,6 +61,7 @@ static void prefork_reload_after_fork(void)
 	if (tdb_reopen_all(1) == -1) {
 		DEBUG(0,("prefork_reload_after_fork: tdb_reopen_all failed.\n"));
 	}
+	ldb_wrap_fork_hook();
 
 	/* Ensure that the forked children do not expose identical random streams */
 	set_need_random_reseed();

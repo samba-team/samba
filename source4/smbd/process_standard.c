@@ -28,6 +28,7 @@
 #include "system/filesys.h"
 #include "cluster/cluster.h"
 #include "param/param.h"
+#include "lib/ldb_wrap.h"
 
 #ifdef HAVE_SETPROCTITLE
 #ifdef HAVE_SETPROCTITLE_H
@@ -127,6 +128,7 @@ static void standard_accept_connection(struct tevent_context *ev,
 	if (tdb_reopen_all(1) == -1) {
 		DEBUG(0,("standard_accept_connection: tdb_reopen_all failed.\n"));
 	}
+	ldb_wrap_fork_hook();
 
 	tevent_add_fd(ev2, ev2, child_pipe[0], TEVENT_FD_READ,
 		      standard_pipe_handler, NULL);
@@ -194,6 +196,7 @@ static void standard_new_task(struct tevent_context *ev,
 	if (tdb_reopen_all(1) == -1) {
 		DEBUG(0,("standard_accept_connection: tdb_reopen_all failed.\n"));
 	}
+	ldb_wrap_fork_hook();
 
 	tevent_add_fd(ev2, ev2, child_pipe[0], TEVENT_FD_READ,
 		      standard_pipe_handler, NULL);
