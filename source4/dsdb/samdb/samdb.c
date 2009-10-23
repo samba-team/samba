@@ -73,6 +73,14 @@ char *samdb_relative_path(struct ldb_context *ldb,
 }
 
 /*
+  make sure the static credentials are not freed
+ */
+static int samdb_credentials_destructor(struct cli_credentials *creds)
+{
+	return -1;
+}
+
+/*
   this returns a static set of system credentials. It is static so
   that we always get the same pointer in ldb_wrap_connect()
  */
@@ -104,6 +112,7 @@ struct cli_credentials *samdb_credentials(struct tevent_context *event_ctx,
 		return NULL;
 	}
 	static_credentials = cred;
+	talloc_set_destructor(cred, samdb_credentials_destructor);
 	return cred;
 }
 
