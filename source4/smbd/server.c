@@ -31,6 +31,7 @@
 #include "ntvfs/ntvfs.h"
 #include "ntptr/ntptr.h"
 #include "auth/gensec/gensec.h"
+#include "auth/gensec/schannel_state.h"
 #include "smbd/process_model.h"
 #include "param/secrets.h"
 #include "smbd/pidfile.h"
@@ -181,15 +182,20 @@ _NORETURN_ static void max_runtime_handler(struct tevent_context *ev,
 }
 
 /*
-  pre-open the sam ldb to ensure the schema has been loaded. This
-  saves a lot of time in child processes  
+  pre-open the key databases. This saves a lot of time in child
+  processes
  */
-static void prime_samdb_schema(struct tevent_context *event_ctx)
+static void prime_ldb_databases(struct tevent_context *event_ctx)
 {
-	TALLOC_CTX *samdb_context;
-	samdb_context = talloc_new(event_ctx);
-	samdb_connect(samdb_context, event_ctx, cmdline_lp_ctx, system_session(samdb_context, cmdline_lp_ctx));
-	talloc_free(samdb_context);
+	TALLOC_CTX *db_context;
+	db_context = talloc_new(event_ctx);
+
+	samdb_connect(db_context, event_ctx, cmdline_lp_ctx, system_session(cmdline_lp_ctx));
+	privilege_connect(db_context, event_ctx, cmdline_lp_ctx);
+	schannel_db_connect(db_context, event_ctx, cmdline_lp_ctx);
+
+	/* we deliberately leave these open, which allows them to be
+	 * re-used in ldb_wrap_connect() */
 }
 
 
@@ -398,7 +404,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 				 discard_const(binary_name));
 	}
 
-	prime_samdb_schema(event_ctx);
+	prime_ldb_databases(event_ctx);
 
 	status = setup_parent_messaging(event_ctx, cmdline_lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
