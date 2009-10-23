@@ -5,6 +5,7 @@
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005-2006
    Copyright (C) Andrew Tridgell 2004
    Copyright (C) Stefan Metzmacher 2007
+   Copyright (C) Matthias Dieter Wallnöfer 2009-2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,7 +26,7 @@
  *
  *  Component: ldb password_hash module
  *
- *  Description: correctly update hash values based on changes to userPassword and friends
+ *  Description: correctly handle AD password changes fields
  *
  *  Author: Andrew Bartlett
  *  Author: Stefan Metzmacher
@@ -49,23 +50,39 @@
 #include "../lib/crypto/crypto.h"
 #include "param/param.h"
 
-/* If we have decided there is reason to work on this request, then
+/* If we have decided there is a reason to work on this request, then
  * setup all the password hash types correctly.
  *
- * If the administrator doesn't want the userPassword stored (set in the
- * domain and per-account policies) then we must strip that out before
- * we do the first operation.
+ * If we haven't the hashes yet but the password given as plain-text (attributes
+ * 'unicodePwd', 'userPassword' and 'clearTextPassword') we have to check for
+ * the constraints. Once this is done, we calculate the password hashes.
  *
- * Once this is done (which could update anything at all), we
- * calculate the password hashes.
+ * Notice: unlike the real AD which only supports the UTF16 special based
+ * 'unicodePwd' and the UTF8 based 'userPassword' plaintext attribute we
+ * understand also a UTF16 based 'clearTextPassword' one.
+ * The latter is also accessible through LDAP so it can also be set by external
+ * tools and scripts. But be aware that this isn't portable on non SAMBA 4 ADs!
+ *
+ * Also when the module receives only the password hashes (possible through
+ * specifying an internal LDB control - for security reasons) some checks are
+ * performed depending on the operation mode (see below) (e.g. if the password
+ * has been in use before if the password memory policy was activated).
+ *
+ * Attention: There is a difference between "modify" and "reset" operations
+ * (see MS-ADTS 3.1.1.3.1.5). If the client sends a "add" and "remove"
+ * operation for a password attribute we thread this as a "modify"; if it sends
+ * only a "replace" one we have an (administrative) reset.
  *
  * Finally, if the administrator has requested that a password history
  * be maintained, then this should also be written out.
  *
  */
 
-struct ph_context {
+/* TODO: [consider always MS-ADTS 3.1.1.3.1.5]
+ * - Check for right connection encryption
+ */
 
+struct ph_context {
 	struct ldb_module *module;
 	struct ldb_request *req;
 
@@ -79,8 +96,11 @@ struct ph_context {
 
 struct domain_data {
 	bool store_cleartext;
-	unsigned int pwdProperties;
-	unsigned int pwdHistoryLength;
+	uint32_t pwdProperties;
+	uint32_t pwdHistoryLength;
+	int64_t maxPwdAge;
+	int64_t minPwdAge;
+	uint32_t minPwdLength;
 	const char *netbios_domain;
 	const char *dns_domain;
 	const char *realm;
@@ -93,7 +113,8 @@ struct setup_password_fields_io {
 
 	/* infos about the user account */
 	struct {
-		uint32_t user_account_control;
+		uint32_t userAccountControl;
+		NTTIME pwdLastSet;
 		const char *sAMAccountName;
 		const char *user_principal_name;
 		bool is_computer;
@@ -289,7 +310,8 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 		ldb_asprintf_errstring(ldb,
 				       "setup_kerberos_keys: "
 				       "generation of a salting principal failed: %s",
-				       smb_get_krb5_error_message(io->smb_krb5_context->krb5_context, krb5_ret, io->ac));
+				       smb_get_krb5_error_message(io->smb_krb5_context->krb5_context,
+								  krb5_ret, io->ac));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -303,7 +325,8 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 		ldb_asprintf_errstring(ldb,
 				       "setup_kerberos_keys: "
 				       "generation of krb5_salt failed: %s",
-				       smb_get_krb5_error_message(io->smb_krb5_context->krb5_context, krb5_ret, io->ac));
+				       smb_get_krb5_error_message(io->smb_krb5_context->krb5_context,
+								  krb5_ret, io->ac));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	/* create a talloc copy */
@@ -331,7 +354,8 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 		ldb_asprintf_errstring(ldb,
 				       "setup_kerberos_keys: "
 				       "generation of a aes256-cts-hmac-sha1-96 key failed: %s",
-				       smb_get_krb5_error_message(io->smb_krb5_context->krb5_context, krb5_ret, io->ac));
+				       smb_get_krb5_error_message(io->smb_krb5_context->krb5_context,
+								  krb5_ret, io->ac));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	io->g.aes_256 = data_blob_talloc(io->ac,
@@ -356,7 +380,8 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 		ldb_asprintf_errstring(ldb,
 				       "setup_kerberos_keys: "
 				       "generation of a aes128-cts-hmac-sha1-96 key failed: %s",
-				       smb_get_krb5_error_message(io->smb_krb5_context->krb5_context, krb5_ret, io->ac));
+				       smb_get_krb5_error_message(io->smb_krb5_context->krb5_context,
+								  krb5_ret, io->ac));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	io->g.aes_128 = data_blob_talloc(io->ac,
@@ -381,7 +406,8 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 		ldb_asprintf_errstring(ldb,
 				       "setup_kerberos_keys: "
 				       "generation of a des-cbc-md5 key failed: %s",
-				       smb_get_krb5_error_message(io->smb_krb5_context->krb5_context, krb5_ret, io->ac));
+				       smb_get_krb5_error_message(io->smb_krb5_context->krb5_context,
+								  krb5_ret, io->ac));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	io->g.des_md5 = data_blob_talloc(io->ac,
@@ -406,7 +432,8 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 		ldb_asprintf_errstring(ldb,
 				       "setup_kerberos_keys: "
 				       "generation of a des-cbc-crc key failed: %s",
-				       smb_get_krb5_error_message(io->smb_krb5_context->krb5_context, krb5_ret, io->ac));
+				       smb_get_krb5_error_message(io->smb_krb5_context->krb5_context,
+								  krb5_ret, io->ac));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	io->g.des_crc = data_blob_talloc(io->ac,
@@ -947,7 +974,8 @@ static int setup_primary_wdigest(struct setup_password_fields_io *io,
 	backslash		= data_blob_string_const("\\");
 
 	pdb->num_hashes	= ARRAY_SIZE(wdigest);
-	pdb->hashes	= talloc_array(io->ac, struct package_PrimaryWDigestHash, pdb->num_hashes);
+	pdb->hashes	= talloc_array(io->ac, struct package_PrimaryWDigestHash,
+				       pdb->num_hashes);
 	if (!pdb->hashes) {
 		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -1060,7 +1088,7 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 	do_newer_keys = (dsdb_functional_level(ldb) >= DS_DOMAIN_FUNCTION_2008);
 
 	if (io->domain->store_cleartext &&
-	    (io->u.user_account_control & UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED)) {
+	    (io->u.userAccountControl & UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED)) {
 		do_cleartext = true;
 	}
 
@@ -1319,15 +1347,20 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 			ldb_oom(ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		if (!convert_string_talloc_convenience(io->ac, lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")), 
-							 CH_UTF8, CH_UTF16, io->n.cleartext_utf8->data, io->n.cleartext_utf8->length, 
-							 (void **)&cleartext_utf16_str, &converted_pw_len, false)) {
+		if (!convert_string_talloc_convenience(io->ac,
+						       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
+						       CH_UTF8, CH_UTF16,
+						       io->n.cleartext_utf8->data,
+						       io->n.cleartext_utf8->length,
+						       (void **)&cleartext_utf16_str,
+						       &converted_pw_len, false)) {
 			ldb_asprintf_errstring(ldb,
 					       "setup_password_fields: "
 					       "failed to generate UTF16 password from cleartext UTF8 password");
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		*cleartext_utf16_blob = data_blob_const(cleartext_utf16_str, converted_pw_len);
+		*cleartext_utf16_blob = data_blob_const(cleartext_utf16_str,
+							converted_pw_len);
 	} else if (io->n.cleartext_utf16) {
 		char *cleartext_utf8_str;
 		struct ldb_val *cleartext_utf8_blob;
@@ -1336,14 +1369,19 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 			ldb_oom(ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		if (!convert_string_talloc_convenience(io->ac, lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")), 
-							 CH_UTF16MUNGED, CH_UTF8, io->n.cleartext_utf16->data, io->n.cleartext_utf16->length, 
-							 (void **)&cleartext_utf8_str, &converted_pw_len, false)) {
+		if (!convert_string_talloc_convenience(io->ac,
+						       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
+						       CH_UTF16MUNGED, CH_UTF8,
+						       io->n.cleartext_utf16->data,
+						       io->n.cleartext_utf16->length,
+						       (void **)&cleartext_utf8_str,
+						       &converted_pw_len, false)) {
 			/* We can't bail out entirely, as these unconvertable passwords are frustratingly valid */
 			io->n.cleartext_utf8 = NULL;	
 			talloc_free(cleartext_utf8_blob);
 		}
-		*cleartext_utf8_blob = data_blob_const(cleartext_utf8_str, converted_pw_len);
+		*cleartext_utf8_blob = data_blob_const(cleartext_utf8_str,
+						       converted_pw_len);
 	}
 	if (io->n.cleartext_utf16) {
 		struct samr_Password *nt_hash;
@@ -1355,23 +1393,28 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 		io->n.nt_hash = nt_hash;
 
 		/* compute the new nt hash */
-		mdfour(nt_hash->hash, io->n.cleartext_utf16->data, io->n.cleartext_utf16->length);
+		mdfour(nt_hash->hash, io->n.cleartext_utf16->data,
+		       io->n.cleartext_utf16->length);
 	}
 
 	if (io->n.cleartext_utf8) {
 		struct samr_Password *lm_hash;
 		char *cleartext_unix;
 		if (lp_lanman_auth(ldb_get_opaque(ldb, "loadparm")) &&
-		    convert_string_talloc_convenience(io->ac, lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")), 
-							 CH_UTF8, CH_UNIX, io->n.cleartext_utf8->data, io->n.cleartext_utf8->length, 
-							 (void **)&cleartext_unix, &converted_pw_len, false)) {
+			convert_string_talloc_convenience(io->ac,
+							  lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
+							  CH_UTF8, CH_UNIX,
+							  io->n.cleartext_utf8->data,
+							  io->n.cleartext_utf8->length,
+							  (void **)&cleartext_unix,
+							  &converted_pw_len, false)) {
 			lm_hash = talloc(io->ac, struct samr_Password);
 			if (!lm_hash) {
 				ldb_oom(ldb);
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
 			
-			/* compute the new lm hash.   */
+			/* compute the new lm hash */
 			ok = E_deshash((char *)cleartext_unix, lm_hash->hash);
 			if (ok) {
 				io->n.lm_hash = lm_hash;
@@ -1410,7 +1453,7 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 }
 
 static int setup_io(struct ph_context *ac, 
-		    const struct ldb_message *new_msg, 
+		    const struct ldb_message *orig_msg,
 		    const struct ldb_message *searched_msg, 
 		    struct setup_password_fields_io *io) 
 { 
@@ -1430,13 +1473,22 @@ static int setup_io(struct ph_context *ac,
 	io->ac				= ac;
 	io->domain			= ac->domain;
 
-	io->u.user_account_control	= samdb_result_uint(searched_msg, "userAccountControl", 0);
-	io->u.sAMAccountName		= samdb_result_string(searched_msg, "samAccountName", NULL);
+	io->u.userAccountControl	= samdb_result_uint(searched_msg, "userAccountControl", 0);
+	io->u.pwdLastSet		= samdb_result_nttime(searched_msg, "pwdLastSet", 0);
+	io->u.sAMAccountName		= samdb_result_string(searched_msg, "sAMAccountName", NULL);
 	io->u.user_principal_name	= samdb_result_string(searched_msg, "userPrincipalName", NULL);
 	io->u.is_computer		= ldb_msg_check_string_attribute(searched_msg, "objectClass", "computer");
 
-	io->n.cleartext_utf8		= ldb_msg_find_ldb_val(new_msg, "userPassword");
-	io->n.cleartext_utf16		= ldb_msg_find_ldb_val(new_msg, "clearTextPassword");
+	if (io->u.sAMAccountName == NULL) {
+		ldb_asprintf_errstring(ldb,
+				       "setup_io: sAMAccountName attribute is missing on %s for attempted password set/change",
+				       ldb_dn_get_linearized(searched_msg->dn));
+
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	io->n.cleartext_utf8		= ldb_msg_find_ldb_val(orig_msg, "userPassword");
+	io->n.cleartext_utf16		= ldb_msg_find_ldb_val(orig_msg, "clearTextPassword");
 
 	/* this rather strange looking piece of code is there to
 	   handle a ldap client setting a password remotely using the
@@ -1450,29 +1502,22 @@ static int setup_io(struct ph_context *ac,
 	   to create a MD4 hash which starts and ends in 0x22 0x00, as
 	   that would then be treated as a UTF16 password rather than
 	   a nthash */
-	quoted_utf16			= ldb_msg_find_ldb_val(new_msg, "unicodePwd");
-	if (quoted_utf16 && 
+	quoted_utf16		= ldb_msg_find_ldb_val(orig_msg, "unicodePwd");
+	if (quoted_utf16 &&
 	    quoted_utf16->length >= 4 &&
-	    quoted_utf16->data[0] == '"' && 
-	    quoted_utf16->data[1] == 0 && 
-	    quoted_utf16->data[quoted_utf16->length-2] == '"' && 
+	    quoted_utf16->data[0] == '"' &&
+	    quoted_utf16->data[1] == 0 &&
+	    quoted_utf16->data[quoted_utf16->length-2] == '"' &&
 	    quoted_utf16->data[quoted_utf16->length-1] == 0) {
 		io->n.quoted_utf16.data = talloc_memdup(io->ac, quoted_utf16->data+2, quoted_utf16->length-4);
 		io->n.quoted_utf16.length = quoted_utf16->length-4;
 		io->n.cleartext_utf16 = &io->n.quoted_utf16;
 		io->n.nt_hash = NULL;
 	} else {
-		io->n.nt_hash		= samdb_result_hash(io->ac, new_msg, "unicodePwd");
+		io->n.nt_hash	= samdb_result_hash(io->ac, orig_msg, "unicodePwd");
 	}
 
-	io->n.lm_hash			= samdb_result_hash(io->ac, new_msg, "dBCSPwd");
-
-	if(io->u.sAMAccountName == NULL)
-	{
-		ldb_asprintf_errstring(ldb, "samAccountName is missing on %s for attempted password set/change",
-			ldb_dn_get_linearized(new_msg->dn));
-		return(LDB_ERR_CONSTRAINT_VIOLATION);
-	}
+	io->n.lm_hash		= samdb_result_hash(io->ac, orig_msg, "dBCSPwd");
 
 	return LDB_SUCCESS;
 }
@@ -1546,8 +1591,8 @@ static int get_domain_data_callback(struct ldb_request *req,
 	ldb = ldb_module_get_ctx(ac->module);
 
 	if (!ares) {
-		return ldb_module_done(ac->req, NULL, NULL,
-					LDB_ERR_OPERATIONS_ERROR);
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		goto done;
 	}
 	if (ares->error != LDB_SUCCESS) {
 		return ldb_module_done(ac->req, ares->controls,
@@ -1557,20 +1602,31 @@ static int get_domain_data_callback(struct ldb_request *req,
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
 		if (ac->domain != NULL) {
+			talloc_free(ares);
+
 			ldb_set_errstring(ldb, "Too many results");
-			return ldb_module_done(ac->req, NULL, NULL,
-						LDB_ERR_OPERATIONS_ERROR);
+			ret = LDB_ERR_OPERATIONS_ERROR;
+			goto done;
 		}
 
 		data = talloc_zero(ac, struct domain_data);
 		if (data == NULL) {
-			return ldb_module_done(ac->req, NULL, NULL,
-						LDB_ERR_OPERATIONS_ERROR);
+			talloc_free(ares);
+
+			ldb_oom(ldb);
+			ret = LDB_ERR_OPERATIONS_ERROR;
+			goto done;
 		}
 
-		data->pwdProperties = samdb_result_uint(ares->message, "pwdProperties", 0);
-		data->store_cleartext = data->pwdProperties & DOMAIN_PASSWORD_STORE_CLEARTEXT;
-		data->pwdHistoryLength = samdb_result_uint(ares->message, "pwdHistoryLength", 0);
+		data->pwdProperties = samdb_result_uint(ares->message, "pwdProperties", -1);
+		data->pwdHistoryLength = samdb_result_uint(ares->message, "pwdHistoryLength", -1);
+		data->maxPwdAge = samdb_result_int64(ares->message, "maxPwdAge", -1);
+		data->minPwdAge = samdb_result_int64(ares->message, "minPwdAge", -1);
+		data->minPwdLength = samdb_result_uint(ares->message, "minPwdLength", -1);
+		data->store_cleartext =
+			data->pwdProperties & DOMAIN_PASSWORD_STORE_CLEARTEXT;
+
+		talloc_free(ares);
 
 		/* For a domain DN, this puts things in dotted notation */
 		/* For builtin domains, this will give details for the host,
@@ -1585,10 +1641,18 @@ static int get_domain_data_callback(struct ldb_request *req,
 		data->netbios_domain = lp_sam_name(lp_ctx);
 
 		ac->domain = data;
+
+		ret = LDB_SUCCESS;
+		break;
+
+	case LDB_REPLY_REFERRAL:
+		/* ignore */
+		talloc_free(ares);
+		ret = LDB_SUCCESS;
 		break;
 
 	case LDB_REPLY_DONE:
-
+		talloc_free(ares);
 		/* call the next step */
 		switch (ac->req->operation) {
 		case LDB_ADD:
@@ -1603,17 +1667,15 @@ static int get_domain_data_callback(struct ldb_request *req,
 			ret = LDB_ERR_OPERATIONS_ERROR;
 			break;
 		}
-		if (ret != LDB_SUCCESS) {
-			return ldb_module_done(ac->req, NULL, NULL, ret);
-		}
 		break;
 
-	case LDB_REPLY_REFERRAL:
-		/* ignore */
-		break;
 	}
 
-	talloc_free(ares);
+done:
+	if (ret != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, NULL, NULL, ret);
+	}
+
 	return LDB_SUCCESS;
 }
 
@@ -1623,7 +1685,12 @@ static int build_domain_data_request(struct ph_context *ac)
 	   ac->dom_req->op.search.attrs, so it must be static, as
 	   otherwise the compiler can put it on the stack */
 	struct ldb_context *ldb;
-	static const char * const attrs[] = { "pwdProperties", "pwdHistoryLength", NULL };
+	static const char * const attrs[] = { "pwdProperties",
+					      "pwdHistoryLength",
+					      "maxPwdAge",
+					      "minPwdAge",
+					      "minPwdLength",
+					      NULL };
 
 	ldb = ldb_module_get_ctx(ac->module);
 
@@ -1640,10 +1707,8 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
 	struct ph_context *ac;
-	struct ldb_message_element *sambaAttr;
-	struct ldb_message_element *clearTextPasswordAttr;
-	struct ldb_message_element *ntAttr;
-	struct ldb_message_element *lmAttr;
+	struct ldb_message_element *userPasswordAttr, *clearTextPasswordAttr,
+		*ntAttr, *lmAttr;
 	int ret;
 
 	ldb = ldb_module_get_ctx(module);
@@ -1660,7 +1725,7 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	/* nobody must touch these fields */
+	/* nobody must touch password histories and 'supplementalCredentials' */
 	if (ldb_msg_find_element(req->op.add.message, "ntPwdHistory")) {
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
@@ -1671,66 +1736,53 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	/* If no part of this ADD touches the userPassword, or the NT
-	 * or LM hashes, then we don't need to make any changes.  */
+	/* If no part of this touches the 'userPassword' OR 'clearTextPassword'
+	 * OR 'unicodePwd' OR 'dBCSPwd' we don't need to make any changes. */
 
-	sambaAttr = ldb_msg_find_element(req->op.add.message, "userPassword");
+	userPasswordAttr = ldb_msg_find_element(req->op.add.message, "userPassword");
 	clearTextPasswordAttr = ldb_msg_find_element(req->op.add.message, "clearTextPassword");
 	ntAttr = ldb_msg_find_element(req->op.add.message, "unicodePwd");
 	lmAttr = ldb_msg_find_element(req->op.add.message, "dBCSPwd");
 
-	if ((!sambaAttr) && (!clearTextPasswordAttr) && (!ntAttr) && (!lmAttr)) {
+	if ((!userPasswordAttr) && (!clearTextPasswordAttr) && (!ntAttr) && (!lmAttr)) {
 		return ldb_next_request(module, req);
 	}
 
-	/* if it is not an entry of type person its an error */
-	/* TODO: remove this when userPassword will be in schema */
-	if (!ldb_msg_check_string_attribute(req->op.add.message, "objectClass", "person")) {
-		ldb_set_errstring(ldb, "Cannot set a password on entry that does not have objectClass 'person'");
-		return LDB_ERR_OBJECT_CLASS_VIOLATION;
-	}
-
-	/* check userPassword is single valued here */
-	/* TODO: remove this when userPassword will be single valued in schema */
-	if (sambaAttr && sambaAttr->num_values > 1) {
-		ldb_set_errstring(ldb, "mupltiple values for userPassword not allowed!\n");
+	if (userPasswordAttr && (userPasswordAttr->num_values != 1)) {
+		ldb_set_errstring(ldb, "'userPassword' must have exactly one value!");
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
-	if (clearTextPasswordAttr && clearTextPasswordAttr->num_values > 1) {
-		ldb_set_errstring(ldb, "mupltiple values for clearTextPassword not allowed!\n");
+	if (clearTextPasswordAttr && (clearTextPasswordAttr->num_values != 1)) {
+		ldb_set_errstring(ldb, "'clearTextPassword' must have exactly one value!");
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
-
-	if (ntAttr && (ntAttr->num_values > 1)) {
-		ldb_set_errstring(ldb, "mupltiple values for unicodePwd not allowed!\n");
+	if (ntAttr && (ntAttr->num_values != 1)) {
+		ldb_set_errstring(ldb, "'unicodePwd' must have exactly one value!");
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
-	if (lmAttr && (lmAttr->num_values > 1)) {
-		ldb_set_errstring(ldb, "mupltiple values for dBCSPwd not allowed!\n");
+	if (lmAttr && (lmAttr->num_values != 1)) {
+		ldb_set_errstring(ldb, "'dBCSPwd' must have exactly one value!");
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
-	if (sambaAttr && sambaAttr->num_values == 0) {
-		ldb_set_errstring(ldb, "userPassword must have a value!\n");
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
+	/* Make sure we are performing the password set action on a (for us)
+	 * valid object. Those are instances of either "user" and/or
+	 * "inetOrgPerson". Otherwise continue with the submodules. */
+	if ((!ldb_msg_check_string_attribute(req->op.add.message, "objectClass", "user"))
+		&& (!ldb_msg_check_string_attribute(req->op.add.message, "objectClass", "inetOrgPerson"))) {
 
-	if (clearTextPasswordAttr && clearTextPasswordAttr->num_values == 0) {
-		ldb_set_errstring(ldb, "clearTextPassword must have a value!\n");
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
+		if (ldb_msg_find_element(req->op.add.message, "clearTextPassword") != NULL) {
+			ldb_set_errstring(ldb,
+					  "'clearTextPassword' is only allowed on objects of class 'user' and/or 'inetOrgPerson'!");
+			return LDB_ERR_NO_SUCH_ATTRIBUTE;
+		}
 
-	if (ntAttr && (ntAttr->num_values == 0)) {
-		ldb_set_errstring(ldb, "unicodePwd must have a value!\n");
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
-	if (lmAttr && (lmAttr->num_values == 0)) {
-		ldb_set_errstring(ldb, "dBCSPwd must have a value!\n");
-		return LDB_ERR_CONSTRAINT_VIOLATION;
+		return ldb_next_request(module, req);
 	}
 
 	ac = ph_init_context(module, req);
 	if (ac == NULL) {
+		DEBUG(0,(__location__ ": %s\n", ldb_errstring(ldb)));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -1838,10 +1890,8 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 {
 	struct ldb_context *ldb;
 	struct ph_context *ac;
-	struct ldb_message_element *sambaAttr;
-	struct ldb_message_element *clearTextAttr;
-	struct ldb_message_element *ntAttr;
-	struct ldb_message_element *lmAttr;
+	struct ldb_message_element *userPasswordAttr, *clearTextPasswordAttr,
+		*ntAttr, *lmAttr;
 	struct ldb_message *msg;
 	struct ldb_request *down_req;
 	int ret;
@@ -1860,7 +1910,7 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 		return ldb_next_request(module, req);
 	}
 
-	/* nobody must touch password Histories */
+	/* nobody must touch password histories and 'supplementalCredentials' */
 	if (ldb_msg_find_element(req->op.mod.message, "ntPwdHistory")) {
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
@@ -1871,36 +1921,34 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	sambaAttr = ldb_msg_find_element(req->op.mod.message, "userPassword");
-	clearTextAttr = ldb_msg_find_element(req->op.mod.message, "clearTextPassword");
+	/* If no part of this touches the 'userPassword' OR 'clearTextPassword'
+	 * OR 'unicodePwd' OR 'dBCSPwd' we don't need to make any changes.
+	 * For password changes/set there should be a 'delete' or a 'modify'
+	 * on these attributes. */
+
+	userPasswordAttr = ldb_msg_find_element(req->op.mod.message, "userPassword");
+	clearTextPasswordAttr = ldb_msg_find_element(req->op.mod.message, "clearTextPassword");
 	ntAttr = ldb_msg_find_element(req->op.mod.message, "unicodePwd");
 	lmAttr = ldb_msg_find_element(req->op.mod.message, "dBCSPwd");
 
-	/* If no part of this touches the userPassword OR
-	 * clearTextPassword OR unicodePwd and/or dBCSPwd, then we
-	 * don't need to make any changes.  For password changes/set
-	 * there should be a 'delete' or a 'modify' on this
-	 * attribute. */
-	if ((!sambaAttr) && (!clearTextAttr) && (!ntAttr) && (!lmAttr)) {
+	if ((!userPasswordAttr) && (!clearTextPasswordAttr) && (!ntAttr) && (!lmAttr)) {
 		return ldb_next_request(module, req);
 	}
 
-	/* check passwords are single valued here */
-	/* TODO: remove this when passwords will be single valued in schema */
-	if (sambaAttr && (sambaAttr->num_values > 1)) {
-		DEBUG(0,(__location__ ": %s\n", ldb_errstring(ldb)));
+	if (userPasswordAttr && (userPasswordAttr->num_values != 1)) {
+		ldb_set_errstring(ldb, "'userPassword' must have exactly one value!");
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
-	if (clearTextAttr && (clearTextAttr->num_values > 1)) {
-		DEBUG(0,(__location__ ": %s\n", ldb_errstring(ldb)));
+	if (clearTextPasswordAttr && (clearTextPasswordAttr->num_values != 1)) {
+		ldb_set_errstring(ldb, "'clearTextPassword' must have exactly one value!");
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
-	if (ntAttr && (ntAttr->num_values > 1)) {
-		DEBUG(0,(__location__ ": %s\n", ldb_errstring(ldb)));
+	if (ntAttr && (ntAttr->num_values != 1)) {
+		ldb_set_errstring(ldb, "'unicodePwd' must have exactly one value!");
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
-	if (lmAttr && (lmAttr->num_values > 1)) {
-		DEBUG(0,(__location__ ": %s\n", ldb_errstring(ldb)));
+	if (lmAttr && (lmAttr->num_values != 1)) {
+		ldb_set_errstring(ldb, "'dBCSPwd' must have exactly one value!");
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
@@ -1919,8 +1967,8 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 
 	/* - remove any modification to the password from the first commit
 	 *   we will make the real modification later */
-	if (sambaAttr) ldb_msg_remove_attr(msg, "userPassword");
-	if (clearTextAttr) ldb_msg_remove_attr(msg, "clearTextPassword");
+	if (userPasswordAttr) ldb_msg_remove_attr(msg, "userPassword");
+	if (clearTextPasswordAttr) ldb_msg_remove_attr(msg, "clearTextPassword");
 	if (ntAttr) ldb_msg_remove_attr(msg, "unicodePwd");
 	if (lmAttr) ldb_msg_remove_attr(msg, "dBCSPwd");
 
@@ -1944,7 +1992,6 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 static int ph_modify_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	struct ph_context *ac;
-	int ret;
 
 	ac = talloc_get_type(req->context, struct ph_context);
 
@@ -1968,13 +2015,9 @@ static int ph_modify_callback(struct ldb_request *req, struct ldb_reply *ares)
 					LDB_ERR_OPERATIONS_ERROR);
 	}
 
-	ret = password_hash_mod_search_self(ac);
-	if (ret != LDB_SUCCESS) {
-		return ldb_module_done(ac->req, NULL, NULL, ret);
-	}
-
 	talloc_free(ares);
-	return LDB_SUCCESS;
+
+	return password_hash_mod_search_self(ac);
 }
 
 static int ph_mod_search_callback(struct ldb_request *req, struct ldb_reply *ares)
@@ -1987,8 +2030,8 @@ static int ph_mod_search_callback(struct ldb_request *req, struct ldb_reply *are
 	ldb = ldb_module_get_ctx(ac->module);
 
 	if (!ares) {
-		return ldb_module_done(ac->req, NULL, NULL,
-					LDB_ERR_OPERATIONS_ERROR);
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		goto done;
 	}
 	if (ares->error != LDB_SUCCESS) {
 		return ldb_module_done(ac->req, ares->controls,
@@ -1998,55 +2041,78 @@ static int ph_mod_search_callback(struct ldb_request *req, struct ldb_reply *are
 	/* we are interested only in the single reply (base search) */
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
-
-		if (ac->search_res != NULL) {
-			ldb_set_errstring(ldb, "Too many results");
+		/* Make sure we are performing the password change action on a
+		 * (for us) valid object. Those are instances of either "user"
+		 * and/or "inetOrgPerson". Otherwise continue with the
+		 * submodules. */
+		if ((!ldb_msg_check_string_attribute(ares->message, "objectClass", "user"))
+			&& (!ldb_msg_check_string_attribute(ares->message, "objectClass", "inetOrgPerson"))) {
 			talloc_free(ares);
-			return ldb_module_done(ac->req, NULL, NULL,
-						LDB_ERR_OPERATIONS_ERROR);
+
+			if (ldb_msg_find_element(ac->req->op.mod.message, "clearTextPassword") != NULL) {
+				ldb_set_errstring(ldb,
+						  "'clearTextPassword' is only allowed on objects of class 'user' and/or 'inetOrgPerson'!");
+				ret = LDB_ERR_NO_SUCH_ATTRIBUTE;
+				goto done;
+			}
+
+			ret = ldb_next_request(ac->module, ac->req);
+			goto done;
 		}
 
-		/* if it is not an entry of type person this is an error */
-		/* TODO: remove this when sambaPassword will be in schema */
-		if (!ldb_msg_check_string_attribute(ares->message, "objectClass", "person")) {
-			ldb_set_errstring(ldb, "Object class violation");
+		if (ac->search_res != NULL) {
 			talloc_free(ares);
-			return ldb_module_done(ac->req, NULL, NULL,
-					LDB_ERR_OBJECT_CLASS_VIOLATION);
+
+			ldb_set_errstring(ldb, "Too many results");
+			ret = LDB_ERR_OPERATIONS_ERROR;
+			goto done;
 		}
 
 		ac->search_res = talloc_steal(ac, ares);
-		return LDB_SUCCESS;
+		ret = LDB_SUCCESS;
+		break;
+
+	case LDB_REPLY_REFERRAL:
+		/* ignore anything else for now */
+		talloc_free(ares);
+		ret = LDB_SUCCESS;
+		break;
 
 	case LDB_REPLY_DONE:
+		talloc_free(ares);
 
 		/* get user domain data */
 		ret = build_domain_data_request(ac);
 		if (ret != LDB_SUCCESS) {
-			return ldb_module_done(ac->req, NULL, NULL,ret);
+			return ldb_module_done(ac->req, NULL, NULL, ret);
 		}
 
-		return ldb_next_request(ac->module, ac->dom_req);
-
-	case LDB_REPLY_REFERRAL:
-		/*ignore anything else for now */
+		ret = ldb_next_request(ac->module, ac->dom_req);
 		break;
 	}
 
-	talloc_free(ares);
+done:
+	if (ret != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, NULL, NULL, ret);
+	}
+
 	return LDB_SUCCESS;
 }
 
 static int password_hash_mod_search_self(struct ph_context *ac)
 {
 	struct ldb_context *ldb;
-	static const char * const attrs[] = { "userAccountControl", "lmPwdHistory", 
-					      "ntPwdHistory", 
+	static const char * const attrs[] = { "objectClass",
+					      "userAccountControl",
+					      "pwdLastSet",
+					      "sAMAccountName",
 					      "objectSid",
-					      "objectClass", "userPrincipalName",
-					      "sAMAccountName", 
-					      "dBCSPwd", "unicodePwd",
+					      "userPrincipalName",
 					      "supplementalCredentials",
+					      "lmPwdHistory",
+					      "ntPwdHistory",
+					      "dBCSPwd",
+					      "unicodePwd",
 					      NULL };
 	struct ldb_request *search_req;
 	int ret;
@@ -2074,7 +2140,7 @@ static int password_hash_mod_do_mod(struct ph_context *ac)
 	struct ldb_context *ldb;
 	struct ldb_request *mod_req;
 	struct ldb_message *msg;
-	const struct ldb_message *searched_msg;
+	const struct ldb_message *orig_msg, *searched_msg;
 	struct setup_password_fields_io io;
 	int ret;
 
@@ -2089,17 +2155,15 @@ static int password_hash_mod_do_mod(struct ph_context *ac)
 	/* modify dn */
 	msg->dn = ac->req->op.mod.message->dn;
 
+	orig_msg = ac->req->op.mod.message;
+	searched_msg = ac->search_res->message;
+
 	/* Prepare the internal data structure containing the passwords */
-	ret = setup_io(ac, 
-		       ac->req->op.mod.message, 
-		       ac->search_res->message, 
-		       &io);
+	ret = setup_io(ac, orig_msg, searched_msg, &io);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 	
-	searched_msg = ac->search_res->message;
-
 	/* Fill in some final details (only relevent once the password has been set) */
 	io.o.nt_history_len		= samdb_result_hashes(io.ac, searched_msg, "ntPwdHistory", &io.o.nt_history);
 	io.o.lm_history_len		= samdb_result_hashes(io.ac, searched_msg, "lmPwdHistory", &io.o.lm_history);
@@ -2179,5 +2243,5 @@ static int password_hash_mod_do_mod(struct ph_context *ac)
 _PUBLIC_ const struct ldb_module_ops ldb_password_hash_module_ops = {
 	.name          = "password_hash",
 	.add           = password_hash_add,
-	.modify        = password_hash_modify,
+	.modify        = password_hash_modify
 };
