@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include <time.h>
 #include "system/filesys.h"
 #include "system/wait.h"
 #include "system/dir.h"
@@ -36,36 +37,19 @@ static struct {
  */
 static void sigterm(int sig)
 {
-	FILE *p;
+	char tbuf[100], buf[200];
+	time_t t;
 
 	DEBUG(DEBUG_ERR,("Timed out running script '%s' after %.1f seconds pid :%d\n", 
 		 child_state.script_running, timeval_elapsed(&child_state.start), getpid()));
 
-	p = popen("pstree -p", "r");
-	if (p == NULL) {
-		DEBUG(DEBUG_ERR,("Failed popen to collect pstree for hung script\n"));
-	} else {
-		char buf[256];
-		int count;
+	t = time(NULL);
 
-		DEBUG(DEBUG_ERR,("PSTREE:\n"));
-		while(!feof(p)){
-			count=fread(buf, 1, 255, p);
-			if (count == EOF) {
-				break;
-			}
-			if (count < 0) {
-				break;
-			}
-			if (count == 0) {
-				break;
-			}
-			buf[count] = 0;
-			DEBUG(DEBUG_ERR,("%s", buf)); 
-		}
-		DEBUG(DEBUG_ERR,("END OF PSTREE OUTPUT\n"));
-		pclose(p);
-	}
+	strftime(tbuf, sizeof(tbuf)-1, "%Y%m%d%H%M%S", 	localtime(&t));
+	sprintf(buf, "pstree -p >/tmp/ctdb.event.%s.%d", tbuf, getpid());
+	system(buf);
+
+	DEBUG(DEBUG_ERR,("Logged timedout eventscript : %s\n", buf));
 
 	/* all the child processes will be running in the same process group */
 	kill(-getpgrp(), SIGKILL);
