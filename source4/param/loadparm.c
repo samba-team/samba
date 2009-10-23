@@ -2609,8 +2609,11 @@ struct loadparm_service *lp_service(struct loadparm_context *lp_ctx,
 			serviceName = standard_sub_basic(
 					lp_ctx->services[iService],
 					lp_ctx->services[iService]->szService);
-			if (strequal(serviceName, service_name))
+			if (strequal(serviceName, service_name)) {
+				talloc_free(serviceName);
 				return lp_ctx->services[iService];
+			}
+			talloc_free(serviceName);
 		}
 	}
 
