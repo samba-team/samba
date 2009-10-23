@@ -1748,23 +1748,6 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	if (userPasswordAttr && (userPasswordAttr->num_values != 1)) {
-		ldb_set_errstring(ldb, "'userPassword' must have exactly one value!");
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
-	if (clearTextPasswordAttr && (clearTextPasswordAttr->num_values != 1)) {
-		ldb_set_errstring(ldb, "'clearTextPassword' must have exactly one value!");
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
-	if (ntAttr && (ntAttr->num_values != 1)) {
-		ldb_set_errstring(ldb, "'unicodePwd' must have exactly one value!");
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
-	if (lmAttr && (lmAttr->num_values != 1)) {
-		ldb_set_errstring(ldb, "'dBCSPwd' must have exactly one value!");
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
-
 	/* Make sure we are performing the password set action on a (for us)
 	 * valid object. Those are instances of either "user" and/or
 	 * "inetOrgPerson". Otherwise continue with the submodules. */
@@ -1890,8 +1873,10 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 {
 	struct ldb_context *ldb;
 	struct ph_context *ac;
-	struct ldb_message_element *userPasswordAttr, *clearTextPasswordAttr,
-		*ntAttr, *lmAttr;
+	const char *passwordAttrs[] = { "userPassword", "clearTextPassword",
+		"unicodePwd", "dBCSPwd", NULL }, **l;
+	unsigned int attr_cnt, del_attr_cnt, add_attr_cnt, rep_attr_cnt;
+	struct ldb_message_element *passwordAttr;
 	struct ldb_message *msg;
 	struct ldb_request *down_req;
 	int ret;
@@ -1925,31 +1910,14 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 	 * OR 'unicodePwd' OR 'dBCSPwd' we don't need to make any changes.
 	 * For password changes/set there should be a 'delete' or a 'modify'
 	 * on these attributes. */
-
-	userPasswordAttr = ldb_msg_find_element(req->op.mod.message, "userPassword");
-	clearTextPasswordAttr = ldb_msg_find_element(req->op.mod.message, "clearTextPassword");
-	ntAttr = ldb_msg_find_element(req->op.mod.message, "unicodePwd");
-	lmAttr = ldb_msg_find_element(req->op.mod.message, "dBCSPwd");
-
-	if ((!userPasswordAttr) && (!clearTextPasswordAttr) && (!ntAttr) && (!lmAttr)) {
+	attr_cnt = 0;
+	for (l = passwordAttrs; *l != NULL; l++) {
+		if (ldb_msg_find_element(req->op.mod.message, *l) != NULL) {
+			++attr_cnt;
+		}
+	}
+	if (attr_cnt == 0) {
 		return ldb_next_request(module, req);
-	}
-
-	if (userPasswordAttr && (userPasswordAttr->num_values != 1)) {
-		ldb_set_errstring(ldb, "'userPassword' must have exactly one value!");
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
-	if (clearTextPasswordAttr && (clearTextPasswordAttr->num_values != 1)) {
-		ldb_set_errstring(ldb, "'clearTextPassword' must have exactly one value!");
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
-	if (ntAttr && (ntAttr->num_values != 1)) {
-		ldb_set_errstring(ldb, "'unicodePwd' must have exactly one value!");
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
-	if (lmAttr && (lmAttr->num_values != 1)) {
-		ldb_set_errstring(ldb, "'dBCSPwd' must have exactly one value!");
-		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
 	ac = ph_init_context(module, req);
@@ -1965,12 +1933,66 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/* - remove any modification to the password from the first commit
-	 *   we will make the real modification later */
-	if (userPasswordAttr) ldb_msg_remove_attr(msg, "userPassword");
-	if (clearTextPasswordAttr) ldb_msg_remove_attr(msg, "clearTextPassword");
-	if (ntAttr) ldb_msg_remove_attr(msg, "unicodePwd");
-	if (lmAttr) ldb_msg_remove_attr(msg, "dBCSPwd");
+	/* - check for single-valued password attributes
+	 *   (if not return "CONSTRAINT_VIOLATION")
+	 * - check that for a password change operation one add and one delete
+	 *   operation exists
+	 *   (if not return "CONSTRAINT_VIOLATION" or "UNWILLING_TO_PERFORM")
+	 * - check that a password change and a password set operation cannot
+	 *   be mixed
+	 *   (if not return "UNWILLING_TO_PERFORM")
+	 * - remove all password attributes modifications from the first change
+	 *   operation (anything without the passwords) - we will make the real
+	 *   modification later */
+	del_attr_cnt = 0;
+	add_attr_cnt = 0;
+	rep_attr_cnt = 0;
+	for (l = passwordAttrs; *l != NULL; l++) {
+		while ((passwordAttr = ldb_msg_find_element(msg, *l)) != NULL) {
+			if (passwordAttr->flags == LDB_FLAG_MOD_DELETE) {
+				++del_attr_cnt;
+			}
+			if (passwordAttr->flags == LDB_FLAG_MOD_ADD) {
+				++add_attr_cnt;
+			}
+			if (passwordAttr->flags == LDB_FLAG_MOD_REPLACE) {
+				++rep_attr_cnt;
+			}
+			if ((passwordAttr->num_values != 1) &&
+			    (passwordAttr->flags != LDB_FLAG_MOD_REPLACE)) {
+				talloc_free(ac);
+				ldb_asprintf_errstring(ldb,
+						       "'%s' attributes must have exactly one value!",
+						       *l);
+				return LDB_ERR_CONSTRAINT_VIOLATION;
+			}
+			ldb_msg_remove_attr(msg, *l);
+		}
+	}
+	if ((del_attr_cnt > 0) && (add_attr_cnt == 0)) {
+		talloc_free(ac);
+		ldb_set_errstring(ldb,
+				  "Only the delete action for a password change specified!");
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+	if ((del_attr_cnt == 0) && (add_attr_cnt > 0)) {
+		talloc_free(ac);
+		ldb_set_errstring(ldb,
+				  "Only the add action for a password change specified!");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+	if ((del_attr_cnt > 1) || (add_attr_cnt > 1)) {
+		talloc_free(ac);
+		ldb_set_errstring(ldb,
+				  "Only one delete and one add action for a password change allowed!");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+	if ((rep_attr_cnt > 0) && ((del_attr_cnt > 0) || (add_attr_cnt > 0))) {
+		talloc_free(ac);
+		ldb_set_errstring(ldb,
+				  "Either a password change or a password set operation is allowed!");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
 
 	/* if there was nothing else to be modified skip to next step */
 	if (msg->num_elements == 0) {
