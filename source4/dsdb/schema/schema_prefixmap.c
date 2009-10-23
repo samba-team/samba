@@ -131,40 +131,65 @@ static WERROR _dsdb_schema_pfm_add_entry(struct dsdb_schema_prefixmap *pfm, DATA
 
 
 /**
+ * Make partial binary OID for supplied OID.
+ * Reference: [MS-DRSR] section 5.12.2
+ */
+static WERROR _dsdb_pfm_make_binary_oid(const char *full_oid, TALLOC_CTX *mem_ctx,
+					DATA_BLOB *_bin_oid, uint32_t *_last_subid)
+{
+	uint32_t last_subid;
+	const char *oid_subid;
+
+	/* make last sub-identifier value */
+	oid_subid = strrchr(full_oid, '.');
+	if (!oid_subid) {
+		return WERR_INVALID_PARAMETER;
+	}
+	oid_subid++;
+	last_subid = strtoul(oid_subid, NULL, 10);
+
+	/* encode oid in BER format */
+	if (!ber_write_OID_String(mem_ctx, _bin_oid, full_oid)) {
+		return WERR_INTERNAL_ERROR;
+	}
+
+	/* get the prefix of the OID */
+	if (last_subid < 128) {
+		_bin_oid->length -= 1;
+	} else {
+		_bin_oid->length -= 2;
+	}
+
+	/* return last_value if requested */
+	if (_last_subid) {
+		*_last_subid = last_subid;
+	}
+
+	return WERR_OK;
+}
+
+/**
  * Make ATTID for given OID
  * Reference: [MS-DRSR] section 5.12.2
  */
 WERROR dsdb_schema_pfm_make_attid(struct dsdb_schema_prefixmap *pfm, const char *oid, uint32_t *attid)
 {
+	WERROR werr;
 	uint32_t i;
 	uint32_t lo_word, hi_word;
-	DATA_BLOB bin_oid;
-	const char *last_subid;
 	uint32_t last_value;
+	DATA_BLOB bin_oid;
 	struct dsdb_schema_prefixmap_oid *pfm_entry;
 
-	if (!pfm)	return WERR_INVALID_PARAMETER;
-	if (!oid)	return WERR_INVALID_PARAMETER;
-
-	/* make last sub-identifier value */
-	last_subid = strrchr(oid, '.');
-	if (!last_subid) {
+	if (!pfm) {
 		return WERR_INVALID_PARAMETER;
 	}
-	last_subid++;
-	last_value = strtoul(last_subid, NULL, 10);
-
-	/* encode oid in BER format */
-	if (!ber_write_OID_String(pfm, &bin_oid, oid)) {
-		return WERR_INTERNAL_ERROR;
+	if (!oid) {
+		return WERR_INVALID_PARAMETER;
 	}
 
-	/* get the prefix of the OID */
-	if (last_value < 128) {
-		bin_oid.length -= 1;
-	} else {
-		bin_oid.length -= 2;
-	}
+	werr = _dsdb_pfm_make_binary_oid(oid, pfm, &bin_oid, &last_value);
+	W_ERROR_NOT_OK_RETURN(werr);
 
 	/* search the prefix in the prefix table, if none found, add
 	 * one entry for new prefix.
@@ -182,7 +207,7 @@ WERROR dsdb_schema_pfm_make_attid(struct dsdb_schema_prefixmap *pfm, const char 
 	/* add entry in no entry exists */
 	if (!pfm_entry) {
 		uint32_t idx;
-		WERROR werr = _dsdb_schema_pfm_add_entry(pfm, bin_oid, &idx);
+		werr = _dsdb_schema_pfm_add_entry(pfm, bin_oid, &idx);
 		W_ERROR_NOT_OK_RETURN(werr);
 
 		pfm_entry = &pfm->prefixes[idx];
