@@ -40,7 +40,6 @@ struct dn_list {
 
 struct ltdb_idxptr {
 	struct tdb_context *itdb;
-	bool repack;
 	int error;
 };
 
@@ -1402,10 +1401,34 @@ int ltdb_index_delete(struct ldb_module *module, const struct ldb_message *msg)
 */
 static int delete_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *state)
 {
-	const char *dn = "DN=" LTDB_INDEX ":";
-	if (strncmp((char *)key.dptr, dn, strlen(dn)) == 0) {
-		return tdb_delete(tdb, key);
+	struct ldb_module *module = state;
+	struct ltdb_private *ltdb = talloc_get_type(ldb_module_get_private(module), struct ltdb_private);
+	const char *dnstr = "DN=" LTDB_INDEX ":";
+	struct dn_list list;
+	struct ldb_dn *dn;
+	struct ldb_val v;
+	int ret;
+
+	if (strncmp((char *)key.dptr, dnstr, strlen(dnstr)) != 0) {
+		return 0;
 	}
+	/* we need to put a empty list in the internal tdb for this
+	 * index entry */
+	list.dn = NULL;
+	list.count = 0;
+	v.data = key.dptr;
+	v.length = strlen((char *)key.dptr);
+
+	dn = ldb_dn_from_ldb_val(ltdb, ldb_module_get_ctx(module), &v);
+	ret = ltdb_dn_list_store(module, dn, &list);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb_module_get_ctx(module), 
+				       "Unable to store null index for %s\n",
+				       ldb_dn_get_linearized(dn));
+		talloc_free(dn);
+		return -1;
+	}
+	talloc_free(dn);
 	return 0;
 }
 
@@ -1493,8 +1516,10 @@ int ltdb_reindex(struct ldb_module *module)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/* first traverse the database deleting any @INDEX records */
-	ret = tdb_traverse(ltdb->tdb, delete_index, NULL);
+	/* first traverse the database deleting any @INDEX records by
+	 * putting NULL entries in the in-memory tdb
+	 */
+	ret = tdb_traverse(ltdb->tdb, delete_index, module);
 	if (ret == -1) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -1508,10 +1533,6 @@ int ltdb_reindex(struct ldb_module *module)
 	ret = tdb_traverse(ltdb->tdb, re_index, module);
 	if (ret == -1) {
 		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	if (ltdb->idxptr) {
-		ltdb->idxptr->repack = true;
 	}
 
 	return LDB_SUCCESS;
