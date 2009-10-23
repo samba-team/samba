@@ -95,7 +95,7 @@ NTSTATUS schannel_store_session_key_ldb(struct ldb_context *ldb,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	msg = ldb_msg_new(ldb);
+	msg = ldb_msg_new(mem_ctx);
 	if (msg == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
