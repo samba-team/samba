@@ -3,7 +3,7 @@
 
    LDB wrap functions
 
-   Copyright (C) Andrew Tridgell 2004
+   Copyright (C) Andrew Tridgell 2004-2009
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -34,6 +34,7 @@
 #include "ldb_wrap.h"
 #include "dsdb/samdb/samdb.h"
 #include "param/param.h"
+#include "dlinklist.h"
 
 /*
   this is used to catch debug messages from ldb
@@ -67,26 +68,53 @@ static void ldb_wrap_debug(void *context, enum ldb_debug_level level,
 	free(s);
 }
 
-/* check for memory leaks on the ldb context */
-static int ldb_wrap_destructor(struct ldb_context *ldb)
-{
-	size_t *startup_blocks = (size_t *)ldb_get_opaque(ldb, "startup_blocks");
 
-	if (startup_blocks &&
-	    talloc_total_blocks(ldb) > *startup_blocks + 400) {
-		DEBUG(0,("WARNING: probable memory leak in ldb %s - %lu blocks (startup %lu) %lu bytes\n",
-			 (char *)ldb_get_opaque(ldb, "wrap_url"), 
-			 (unsigned long)talloc_total_blocks(ldb), 
-			 (unsigned long)*startup_blocks,
-			 (unsigned long)talloc_total_size(ldb)));
-#if 0
-		talloc_report_full(ldb, stdout);
-		call_backtrace();
-		smb_panic("probable memory leak in ldb");
-#endif
-	}
+/*
+  connecting to a ldb can be a relatively expensive operation because
+  of the schema and partition loads. We keep a list of open ldb
+  contexts here, and try to re-use when possible. 
+
+  This means callers of ldb_wrap_connect() must use talloc_unlink() or
+  the free of a parent to destroy the context
+ */
+static struct ldb_wrap {
+	struct ldb_wrap *next, *prev;
+	struct ldb_wrap_context {
+		/* the context is what we use to tell if two ldb
+		 * connections are exactly equivalent 
+		 */		 
+		const char *url;
+		struct tevent_context *ev;
+		struct loadparm_context *lp_ctx;
+		struct auth_session_info *session_info;
+		struct cli_credentials *credentials;
+		unsigned int flags;
+	} context;
+	struct ldb_context *ldb;
+} *ldb_wrap_list;
+
+/*
+  see if two database opens are equivalent
+ */
+static bool ldb_wrap_same_context(const struct ldb_wrap_context *c1,
+				  const struct ldb_wrap_context *c2)
+{
+	return (c1->ev == c2->ev &&
+		c1->lp_ctx == c2->lp_ctx &&
+		c1->session_info == c2->session_info &&
+		c1->credentials == c2->credentials &&
+		c1->flags == c2->flags &&
+		(c1->url == c2->url || strcmp(c1->url, c2->url) == 0));
+}
+
+/* 
+   free a ldb_wrap structure
+ */
+static int ldb_wrap_destructor(struct ldb_wrap *w)
+{
+	DLIST_REMOVE(ldb_wrap_list, w);
 	return 0;
-}				 
+}
 
 /*
   wrapped connection to a ldb database
@@ -100,13 +128,27 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 				     const char *url,
 				     struct auth_session_info *session_info,
 				     struct cli_credentials *credentials,
-				     unsigned int flags,
-				     const char *options[])
+				     unsigned int flags)
 {
 	struct ldb_context *ldb;
 	int ret;
 	char *real_url = NULL;
-	size_t *startup_blocks;
+	struct ldb_wrap *w;
+	struct ldb_wrap_context c;
+
+	c.url          = url;
+	c.ev           = ev;
+	c.lp_ctx       = lp_ctx;
+	c.session_info = session_info;
+	c.credentials  = credentials;
+	c.flags        = flags;
+
+	/* see if we can re-use an existing ldb */
+	for (w=ldb_wrap_list; w; w=w->next) {
+		if (ldb_wrap_same_context(&c, &w->context)) {
+			return talloc_reference(mem_ctx, w->ldb);
+		}
+	}
 
 	/* we want to use the existing event context if possible. This
 	   relies on the fact that in smbd, everything is a child of
@@ -178,7 +220,7 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 	   ldb_wrap_connect() */
 	ldb_set_create_perms(ldb, 0600);
 	
-	ret = ldb_connect(ldb, real_url, flags, options);
+	ret = ldb_connect(ldb, real_url, flags, NULL);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(ldb);
 		return NULL;
@@ -186,11 +228,38 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 
 	/* setup for leak detection */
 	ldb_set_opaque(ldb, "wrap_url", real_url);
-	startup_blocks = talloc(ldb, size_t);
-	*startup_blocks = talloc_total_blocks(ldb);
-	ldb_set_opaque(ldb, "startup_blocks", startup_blocks);
 	
-	talloc_set_destructor(ldb, ldb_wrap_destructor);
+	/* add to the list of open ldb contexts */
+	w = talloc(ldb, struct ldb_wrap);
+	if (w == NULL) {
+		talloc_free(ldb);
+		return NULL;
+	}
+
+	w->context = c;
+	w->context.url = talloc_strdup(w, url);
+	if (w->context.url == NULL) {
+		talloc_free(ldb);
+		return NULL;
+	}
+
+	w->ldb = ldb;
+
+	DLIST_ADD(ldb_wrap_list, w);
+
+	DEBUG(3,("ldb_wrap open of %s\n", url));
+
+	talloc_set_destructor(w, ldb_wrap_destructor);
 
 	return ldb;
 }
+
+/*
+  when we fork() we need to make sure that any open ldb contexts have
+  any open transactions cancelled
+ */
+void ldb_wrap_fork_hook(void)
+{
+	
+}
+

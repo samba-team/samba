@@ -62,7 +62,7 @@ bool torture_ldap_sort(struct torture_context *torture)
 	ldb = ldb_wrap_connect(torture, torture->ev, torture->lp_ctx, url,
 						 NULL,
 						 cmdline_credentials,
-						 0, NULL);
+						 0);
 	torture_assert(torture, ldb, "Failed to make LDB connection to target");
 
 	ctx = talloc_zero(ldb, struct ldb_result);

@@ -56,7 +56,7 @@ static ADS_STATUS ads_connect(ADS_STRUCT *ads)
 
 	url = talloc_asprintf(ads, "ldap://%s", io->out.dcs[0].name);
 	ads->ldbctx = ldb_wrap_connect(ads, ads->netctx->event_ctx, ads->netctx->lp_ctx,
-	                 url, NULL, ads->netctx->cred, 0, NULL);
+	                 url, NULL, ads->netctx->cred, 0);
 	if (ads->ldbctx == NULL) {
 		return ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
 	}

@@ -441,7 +441,7 @@ WERROR reg_open_ldb_file(TALLOC_CTX *parent_ctx, const char *location,
 		return WERR_INVALID_PARAM;
 
 	wrap = ldb_wrap_connect(parent_ctx, ev_ctx, lp_ctx,
-				location, session_info, credentials, 0, NULL);
+				location, session_info, credentials, 0);
 
 	if (wrap == NULL) {
 		DEBUG(1, (__FILE__": unable to connect\n"));

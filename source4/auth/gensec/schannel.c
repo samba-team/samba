@@ -146,7 +146,7 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 		/* pull the session key for this client */
 		status = schannel_fetch_session_key_ldb(schannel_ldb,
 							out_mem_ctx, workstation, &creds);
-		talloc_free(schannel_ldb);
+		talloc_unlink(out_mem_ctx, schannel_ldb);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("Could not find session key for attempted schannel connection from %s: %s\n",
 				  workstation, nt_errstr(status)));

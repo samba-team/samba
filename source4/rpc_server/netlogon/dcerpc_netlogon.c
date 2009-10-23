@@ -256,7 +256,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 	}
 
 	nt_status = schannel_store_session_key_ldb(schannel_ldb, mem_ctx, creds);
-	talloc_free(schannel_ldb);
+	talloc_unlink(mem_ctx, schannel_ldb);
 
 	return nt_status;
 }
@@ -343,7 +343,7 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 							 schannel_in_use,
 							 received_authenticator,
 							 return_authenticator, creds_out);
-	talloc_free(ldb);
+	talloc_unlink(mem_ctx, ldb);
 	return nt_status;
 }
 

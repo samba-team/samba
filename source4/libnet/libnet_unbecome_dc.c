@@ -316,7 +316,7 @@ static NTSTATUS unbecomeDC_ldap_connect(struct libnet_UnbecomeDC_state *s)
 	s->ldap.ldb = ldb_wrap_connect(s, s->libnet->event_ctx, s->libnet->lp_ctx, url,
 				       NULL,
 				       s->libnet->cred,
-				       0, NULL);
+				       0);
 	talloc_free(url);
 	if (s->ldap.ldb == NULL) {
 		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;

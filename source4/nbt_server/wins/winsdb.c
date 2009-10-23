@@ -980,7 +980,7 @@ static bool winsdb_check_or_add_module_list(struct tevent_context *ev_ctx,
 	}
 
 	h->ldb = ldb_wrap_connect(h, ev_ctx, lp_ctx, lock_path(h, lp_ctx, lp_wins_url(lp_ctx)),
-				  NULL, NULL, flags, NULL);
+				  NULL, NULL, flags);
 	if (!h->ldb) goto failed;
 
 	talloc_free(tmp_ctx);
@@ -1016,7 +1016,7 @@ struct winsdb_handle *winsdb_connect(TALLOC_CTX *mem_ctx,
 	}
 
 	h->ldb = ldb_wrap_connect(h, ev_ctx, lp_ctx, lock_path(h, lp_ctx, lp_wins_url(lp_ctx)),
-				  NULL, NULL, flags, NULL);
+				  NULL, NULL, flags);
 	if (!h->ldb) goto failed;	
 
 	h->caller = caller;

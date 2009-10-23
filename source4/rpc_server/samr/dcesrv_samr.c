@@ -4205,7 +4205,7 @@ static NTSTATUS dcesrv_samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TAL
 		"pwdProperties", 1);
 
 	talloc_free(msgs);
-	talloc_free(sam_ctx);
+	talloc_unlink(mem_ctx, sam_ctx);
 
 	return NT_STATUS_OK;
 }

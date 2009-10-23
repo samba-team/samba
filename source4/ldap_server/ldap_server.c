@@ -548,7 +548,7 @@ static NTSTATUS add_socket(struct tevent_context *event_context,
 
 	/* And once we are bound, free the tempoary ldb, it will
 	 * connect again on each incoming LDAP connection */
-	talloc_free(ldb);
+	talloc_unlink(ldap_service, ldb);
 
 	return status;
 }

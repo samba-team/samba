@@ -1191,7 +1191,7 @@ static NTSTATUS libnet_samsync_ldb_init(TALLOC_CTX *mem_ctx,
 						     state->samsync_state->machine_net_ctx->lp_ctx, 
 						     ldap_url, 
 						     NULL, state->samsync_state->machine_net_ctx->cred,
-						     0, NULL);
+						     0);
 		if (!state->remote_ldb) {
 			*error_string = talloc_asprintf(mem_ctx, "Failed to connect to remote LDAP server at %s (used to extract additional data in SamSync replication)", ldap_url);
 			return NT_STATUS_NO_LOGON_SERVERS;

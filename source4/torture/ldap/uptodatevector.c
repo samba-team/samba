@@ -159,7 +159,7 @@ bool torture_ldap_uptodatevector(struct torture_context *torture)
 	ldb = ldb_wrap_connect(torture, torture->ev, torture->lp_ctx, url,
 			       NULL,
 			       cmdline_credentials,
-			       0, NULL);
+			       0);
 	if (!ldb) goto failed;
 
 	ret &= test_check_uptodatevector(torture, ldb, samdb_base_dn(ldb));

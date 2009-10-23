@@ -2330,7 +2330,7 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 		sam_ctx = ldb_wrap_connect(tctx, tctx->ev, tctx->lp_ctx, url,
 					   NULL,
 					   cmdline_credentials,
-					   0, NULL);
+					   0);
 		
 		torture_assert(tctx, sam_ctx, "Connection to the SAMDB on DC failed!");
 	}

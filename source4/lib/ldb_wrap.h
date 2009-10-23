@@ -37,7 +37,7 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 				     const char *url,
 				     struct auth_session_info *session_info,
 				     struct cli_credentials *credentials,
-				     unsigned int flags,
-				     const char *options[]);
+				     unsigned int flags);
 
+void ldb_wrap_fork_hook(void);
 #endif /* _LDB_WRAP_H_ */
