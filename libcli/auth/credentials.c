@@ -248,8 +248,9 @@ struct netlogon_creds_CredentialState *netlogon_creds_client_init(TALLOC_CTX *me
 struct netlogon_creds_CredentialState *netlogon_creds_client_init_session_key(TALLOC_CTX *mem_ctx, 
 									      const uint8_t session_key[16])
 {
-	struct netlogon_creds_CredentialState *creds = talloc(mem_ctx, struct netlogon_creds_CredentialState);
-	
+	struct netlogon_creds_CredentialState *creds;
+
+	creds = talloc_zero(mem_ctx, struct netlogon_creds_CredentialState);
 	if (!creds) {
 		return NULL;
 	}
