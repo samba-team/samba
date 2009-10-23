@@ -280,9 +280,9 @@ plantest "ntp.signd" dc $smb4torture ncacn_np:"\$SERVER" -U"\$USERNAME"%"\$PASSW
 
 # Tests against the NTVFS POSIX backend
 NTVFSARGS=""
-NTVFSARGS="${NTVFSARGS} --option=torture:sharedelay=100000"
+NTVFSARGS="${NTVFSARGS} --option=torture:sharedelay=10000"
 NTVFSARGS="${NTVFSARGS} --option=torture:oplocktimeout=3"
-NTVFSARGS="${NTVFSARGS} --option=torture:writetimeupdatedelay=500000"
+NTVFSARGS="${NTVFSARGS} --option=torture:writetimeupdatedelay=50000"
 
 smb2=`$smb4torture --list | grep "^SMB2-" | xargs`
 #The QFILEINFO-IPC test needs to be on ipc$
