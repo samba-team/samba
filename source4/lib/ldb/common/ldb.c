@@ -217,7 +217,7 @@ int ldb_connect(struct ldb_context *ldb, const char *url,
 		unsigned int flags, const char *options[])
 {
 	int ret;
-	const char *url2;
+	char *url2;
 	/* We seem to need to do this here, or else some utilities don't
 	 * get ldb backends */
 
@@ -228,7 +228,7 @@ int ldb_connect(struct ldb_context *ldb, const char *url,
 		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ret = ldb_set_opaque(ldb, "ldb_url", talloc_strdup(ldb, url2));
+	ret = ldb_set_opaque(ldb, "ldb_url", url2);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
