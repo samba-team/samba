@@ -279,7 +279,8 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 *********************************************************************/
 
 static struct security_descriptor *default_file_sd(TALLOC_CTX *mem_ctx,
-						SMB_STRUCT_STAT *psbuf)
+						SMB_STRUCT_STAT *psbuf,
+						bool force_inherit)
 {
 	struct dom_sid owner_sid, group_sid;
 	size_t sd_size;
@@ -294,10 +295,22 @@ static struct security_descriptor *default_file_sd(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	/* If force_inherit is set, this means we are initializing the ACEs for
+	 * a container and we want the ACEs for owner_sid and "SYSTEM" to be
+	 * inheritable by their children (See Bug #6802).
+	 */
+
 	init_sec_ace(&pace[0], &owner_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
-			SEC_RIGHTS_FILE_ALL, 0);
+			SEC_RIGHTS_FILE_ALL, (force_inherit ?
+					(SEC_ACE_FLAG_OBJECT_INHERIT|
+					SEC_ACE_FLAG_CONTAINER_INHERIT) :
+					0));
+
 	init_sec_ace(&pace[1], &global_sid_System, SEC_ACE_TYPE_ACCESS_ALLOWED,
-			SEC_RIGHTS_FILE_ALL, 0);
+			SEC_RIGHTS_FILE_ALL, (force_inherit ?
+					(SEC_ACE_FLAG_OBJECT_INHERIT|
+					SEC_ACE_FLAG_CONTAINER_INHERIT) :
+					0));
 
 	pacl = make_sec_acl(mem_ctx,
 				NT4_ACL_REVISION,
@@ -332,6 +345,7 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 	DATA_BLOB blob;
 	size_t size;
 	char *parent_name;
+	bool force_inherit = false;
 	uint8_t hash[XATTR_SD_HASH_SIZE];
 
 	if (!parent_dirname(ctx, smb_fname->base_name, &parent_name, NULL)) {
@@ -400,7 +414,27 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 			return status;
 		}
 
-		psd = default_file_sd(ctx, &smb_fname->st);
+		/* If we get here, we could have the following possibilities:
+		 *	1. No ACLs exist on the parent container.
+		 *	2. ACLs exist on the parent container but they were
+		 *	not inheritable.
+		 *
+		 *	Check to see if case #1 occurred.
+		 *
+		 */
+		if (container &&
+			(parent_desc == NULL || parent_desc->dacl == NULL)) {
+
+			/* If no parent descriptor exists, then there were
+			 * no ACLs on the parent and then we must create
+			 * the ACLs on this newly created folder so that they
+			 * will be inherited by their children (See Bug #6802).
+			 */
+
+			force_inherit = true;
+		}
+
+		psd = default_file_sd(ctx, &smb_fname->st, force_inherit);
 		if (!psd) {
 			return NT_STATUS_NO_MEMORY;
 		}
