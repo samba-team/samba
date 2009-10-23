@@ -690,6 +690,9 @@ static int partition_start_trans(struct ldb_module *module)
 			return ret;
 		}
 	}
+
+	data->in_transaction++;
+
 	return LDB_SUCCESS;
 }
 
@@ -737,6 +740,12 @@ static int partition_end_trans(struct ldb_module *module)
 		}
 	}
 
+	if (data->in_transaction == 0) {
+		DEBUG(0,("partition end transaction mismatch\n"));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	data->in_transaction--;
+
 	return ldb_next_end_trans(module);
 }
 
@@ -755,6 +764,12 @@ static int partition_del_trans(struct ldb_module *module)
 			final_ret = ret;
 		}
 	}	
+
+	if (data->in_transaction == 0) {
+		DEBUG(0,("partition del transaction mismatch\n"));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	data->in_transaction--;
 
 	ret = ldb_next_del_trans(module);
 	if (ret != LDB_SUCCESS) {

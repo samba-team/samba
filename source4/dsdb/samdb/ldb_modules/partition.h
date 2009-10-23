@@ -45,6 +45,7 @@ struct partition_private_data {
 	const char *ldapBackend;
 
 	uint64_t metadata_seq;
+	uint32_t in_transaction;
 };
 
 #define PARTITION_FIND_OP_NOERROR(module, op) do { \

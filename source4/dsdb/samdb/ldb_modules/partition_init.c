@@ -282,6 +282,16 @@ static int new_partition_from_dn(struct ldb_context *ldb, struct partition_priva
 
 	talloc_steal((*partition), (*partition)->module);
 
+	/* if we were in a transaction then we need to start a
+	   transaction on this new partition, otherwise we'll get a
+	   transaction mismatch when we end the transaction */
+	if (data->in_transaction) {
+		struct ldb_module *next = (*partition)->module;
+		PARTITION_FIND_OP(next, start_transaction);
+
+		ret = next->ops->start_transaction(next);
+	}
+
 	return ret;
 }
 
@@ -697,17 +707,6 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 		ret = new_partition_from_dn(ldb, data, req, ldb_dn_copy(req, dn), casefold_dn, &partition);
 		if (ret != LDB_SUCCESS) {
 			return ret;
-		}
-		
-		/* Start a transaction on the DB (as it won't be in one being brand new) */
-		{
-			struct ldb_module *next = partition->module;
-			PARTITION_FIND_OP(next, start_transaction);
-			
-			ret = next->ops->start_transaction(next);
-			if (ret != LDB_SUCCESS) {
-				return ret;
-			}
 		}
 	}
 	
