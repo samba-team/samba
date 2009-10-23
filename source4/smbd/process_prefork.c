@@ -25,7 +25,6 @@
 
 #include "includes.h"
 #include "lib/events/events.h"
-#include "../tdb/include/tdb.h"
 #include "lib/socket/socket.h"
 #include "smbd/process_model.h"
 #include "param/secrets.h"
@@ -57,10 +56,6 @@ static void prefork_model_init(struct tevent_context *ev)
 
 static void prefork_reload_after_fork(void)
 {
-	/* tdb needs special fork handling */
-	if (tdb_reopen_all(1) == -1) {
-		DEBUG(0,("prefork_reload_after_fork: tdb_reopen_all failed.\n"));
-	}
 	ldb_wrap_fork_hook();
 
 	/* Ensure that the forked children do not expose identical random streams */

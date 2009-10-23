@@ -23,7 +23,6 @@
 
 #include "includes.h"
 #include "lib/events/events.h"
-#include "../tdb/include/tdb.h"
 #include "smbd/process_model.h"
 #include "system/filesys.h"
 #include "cluster/cluster.h"
@@ -125,9 +124,6 @@ static void standard_accept_connection(struct tevent_context *ev,
 	socket_dup(sock2);
 			
 	/* tdb needs special fork handling */
-	if (tdb_reopen_all(1) == -1) {
-		DEBUG(0,("standard_accept_connection: tdb_reopen_all failed.\n"));
-	}
 	ldb_wrap_fork_hook();
 
 	tevent_add_fd(ev2, ev2, child_pipe[0], TEVENT_FD_READ,
@@ -192,10 +188,7 @@ static void standard_new_task(struct tevent_context *ev,
 	   is not associated with this new connection */
 	talloc_free(ev);
 
-	/* tdb needs special fork handling */
-	if (tdb_reopen_all(1) == -1) {
-		DEBUG(0,("standard_accept_connection: tdb_reopen_all failed.\n"));
-	}
+	/* ldb/tdb need special fork handling */
 	ldb_wrap_fork_hook();
 
 	tevent_add_fd(ev2, ev2, child_pipe[0], TEVENT_FD_READ,

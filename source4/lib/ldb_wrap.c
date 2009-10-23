@@ -35,6 +35,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "param/param.h"
 #include "dlinklist.h"
+#include "../tdb/include/tdb.h"
 
 /*
   this is used to catch debug messages from ldb
@@ -263,7 +264,13 @@ void ldb_wrap_fork_hook(void)
 	struct ldb_wrap *w;
 
 	for (w=ldb_wrap_list; w; w=w->next) {
-		ldb_transaction_cancel_noerr(w->ldb);
+		if (ldb_transaction_cancel_noerr(w->ldb) != LDB_SUCCESS) {
+			smb_panic("Failed to cancel child transactions\n");
+		}
 	}	
+
+	if (tdb_reopen_all(1) == -1) {
+		smb_panic("tdb_reopen_all failed\n");
+	}
 }
 
