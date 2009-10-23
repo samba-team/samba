@@ -860,7 +860,7 @@ static int lldb_connect(struct ldb_context *ldb,
 	int ret;
 
 	module = ldb_module_new(ldb, ldb, "ldb_ldap backend", &lldb_ops);
-	if (!module) return -1;
+	if (!module) return LDB_ERR_OPERATIONS_ERROR;
 
 	lldb = talloc_zero(module, struct lldb_private);
 	if (!lldb) {
@@ -886,11 +886,11 @@ static int lldb_connect(struct ldb_context *ldb,
 	}
 
 	*_module = module;
-	return 0;
+	return LDB_SUCCESS;
 
 failed:
 	talloc_free(module);
-	return -1;
+	return LDB_ERR_OPERATIONS_ERROR;
 }
 
 const struct ldb_backend_ops ldb_ldap_backend_ops = {

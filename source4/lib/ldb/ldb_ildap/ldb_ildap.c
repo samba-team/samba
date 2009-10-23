@@ -771,7 +771,7 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 	struct loadparm_context *lp_ctx;
 
 	module = ldb_module_new(ldb, ldb, "ldb_ildap backend", &ildb_ops);
-	if (!module) return -1;
+	if (!module) return LDB_ERR_OPERATIONS_ERROR;
 
 	ildb = talloc(module, struct ildb_private);
 	if (!ildb) {
@@ -833,11 +833,11 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 	}
 
 	*_module = module;
-	return 0;
+	return LDB_SUCCESS;
 
 failed:
 	talloc_free(module);
-	return -1;
+	return LDB_ERR_OPERATIONS_ERROR;
 }
 
 _PUBLIC_ const struct ldb_backend_ops ldb_ldap_backend_ops = {

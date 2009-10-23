@@ -1897,7 +1897,7 @@ static int lsqlite3_connect(struct ldb_context *ldb,
         int i, ret;
 
 	module = ldb_module_new(ldb, ldb, "ldb_sqlite3 backend", &lsqlite3_ops);
-	if (!module) return -1;
+	if (!module) return LDB_ERR_OPERATIONS_ERROR;
 
 	lsqlite3 = talloc(module, struct lsqlite3_private);
 	if (!lsqlite3) {
@@ -1941,14 +1941,14 @@ static int lsqlite3_connect(struct ldb_context *ldb,
 	}
 
 	*_module = module;
-	return 0;
+	return LDB_SUCCESS;
 
 failed:
         if (lsqlite3 && lsqlite3->sqlite != NULL) {
                 (void) sqlite3_close(lsqlite3->sqlite);
         }
 	talloc_free(lsqlite3);
-	return -1;
+	return LDB_ERR_OPERATIONS_ERROR;
 }
 
 const struct ldb_backend_ops ldb_sqlite3_backend_ops = {
