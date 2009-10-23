@@ -156,7 +156,7 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 			return status;
 		}
 
-		state->creds = talloc_reference(state, creds);
+		state->creds = talloc_steal(state, creds);
 
 		bind_schannel_ack.MessageType = NL_NEGOTIATE_RESPONSE;
 		bind_schannel_ack.Flags = 0;
