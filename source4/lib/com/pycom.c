@@ -17,8 +17,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
 #include <Python.h>
+#include "includes.h"
 #include "lib/com/com.h"
 #include "librpc/ndr/libndr.h"
 #include "libcli/util/pyerrors.h"

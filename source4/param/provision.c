@@ -18,6 +18,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <Python.h>
 #include "includes.h"
 #include "auth/auth.h"
 #include "lib/ldb_wrap.h"
@@ -29,7 +30,6 @@
 #include "param/param.h"
 #include "param/provision.h"
 #include "param/secrets.h"
-#include <Python.h>
 #include "lib/talloc/pytalloc.h"
 #include "librpc/rpc/pyrpc.h"
 #include "scripting/python/modules.h"

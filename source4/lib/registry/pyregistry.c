@@ -17,9 +17,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <Python.h>
 #include "includes.h"
 #include <tevent.h>
-#include <Python.h>
 #include "libcli/util/pyerrors.h"
 #include "lib/registry/registry.h"
 #include "scripting/python/modules.h" /* for py_iconv_convenience() */

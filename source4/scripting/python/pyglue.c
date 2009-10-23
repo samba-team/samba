@@ -17,6 +17,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <Python.h>
 #include "includes.h"
 #include "ldb.h"
 #include "ldb_errors.h"
@@ -27,7 +28,6 @@
 #include "lib/ldb-samba/ldif_handlers.h"
 #include "librpc/ndr/libndr.h"
 #include "version.h"
-#include <Python.h>
 #include "lib/ldb/pyldb.h"
 #include "libcli/util/pyerrors.h"
 #include "libcli/security/security.h"

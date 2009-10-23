@@ -17,8 +17,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
 #include <Python.h>
+#include "includes.h"
 #include <structmember.h>
 #include "librpc/rpc/pyrpc.h"
 #include "librpc/rpc/dcerpc.h"

@@ -16,8 +16,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
 #include <Python.h>
+#include "includes.h"
 #include "pycredentials.h"
 #include "param/param.h"
 #include "lib/cmdline/credentials.h"

@@ -17,8 +17,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
 #include <Python.h>
+#include "includes.h"
 #include "libcli/util/pyerrors.h"
 #include "scripting/python/modules.h"
 #include "../libcli/nbt/libnbt.h"

@@ -20,12 +20,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <Python.h>
 #include "includes.h"
 #include "web_server/web_server.h"
 #include "../lib/util/dlinklist.h"
 #include "../lib/util/data_blob.h"
 #include "lib/tls/tls.h"
-#include <Python.h>
 
 #ifndef Py_RETURN_NONE
 #define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None

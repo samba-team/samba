@@ -17,13 +17,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <stdint.h>
-#include <stdbool.h>
-
+#include <Python.h>
 #include "includes.h"
 #include "param/param.h"
 #include "param/loadparm.h"
-#include <Python.h>
 #include "pytalloc.h"
 
 /* There's no Py_ssize_t in 2.4, apparently */
