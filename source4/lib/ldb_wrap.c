@@ -260,6 +260,10 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
  */
 void ldb_wrap_fork_hook(void)
 {
-	
+	struct ldb_wrap *w;
+
+	for (w=ldb_wrap_list; w; w=w->next) {
+		ldb_transaction_cancel_noerr(w->ldb);
+	}	
 }
 
