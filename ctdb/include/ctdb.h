@@ -111,6 +111,10 @@ struct ctdb_call_info {
 */
 #define CTDB_SRVID_TAKEOVER_RUN_RESPONSE  0xFD00000000000000LL
 
+/* A port reserved for samba (top 32 bits)
+ */
+#define CTDB_SRVID_SAMBA_NOTIFY  0xFE00000000000000LL
+
 /* used on the domain socket, send a pdu to the local daemon */
 #define CTDB_CURRENT_NODE     0xF0000001
 /* send a broadcast to all nodes in the cluster, active or not */
@@ -144,6 +148,15 @@ struct ctdb_client_control_state {
 	} async;	
 };
 
+struct ctdb_client_notify_register {
+	uint64_t srvid;
+	uint32_t len;
+	uint8_t notify_data[1];
+};
+
+struct ctdb_client_notify_deregister {
+	uint64_t srvid;
+};
 
 struct event_context;
 

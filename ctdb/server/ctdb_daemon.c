@@ -31,7 +31,6 @@
 
 static void daemon_incoming_packet(void *, struct ctdb_req_header *);
 
-
 static void print_exit_message(void)
 {
 	DEBUG(DEBUG_NOTICE,("CTDB daemon shutting down\n"));
@@ -1043,3 +1042,105 @@ int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t pnn,
 	return 0;
 }
 
+
+
+struct ctdb_client_notify_list {
+	struct ctdb_client_notify_list *next, *prev;
+	struct ctdb_context *ctdb;
+	uint64_t srvid;
+	TDB_DATA data;
+};
+
+
+static int ctdb_client_notify_destructor(struct ctdb_client_notify_list *nl)
+{
+	int ret;
+
+	DEBUG(DEBUG_ERR,("Sending client notify message for srvid:%llu\n", (unsigned long long)nl->srvid));
+
+	ret = ctdb_daemon_send_message(nl->ctdb, CTDB_BROADCAST_CONNECTED, (unsigned long long)nl->srvid, nl->data);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to send client notify message\n"));
+	}
+
+	return 0;
+}
+
+int32_t ctdb_control_register_notify(struct ctdb_context *ctdb, uint32_t client_id, TDB_DATA indata)
+{
+	struct ctdb_client_notify_register *notify = (struct ctdb_client_notify_register *)indata.dptr;
+        struct ctdb_client *client = ctdb_reqid_find(ctdb, client_id, struct ctdb_client); 
+	struct ctdb_client_notify_list *nl;
+
+	DEBUG(DEBUG_ERR,("Register srvid %llu for client %d\n", (unsigned long long)notify->srvid, client_id));
+
+	if (indata.dsize < offsetof(struct ctdb_client_notify_register, notify_data)) {
+		DEBUG(DEBUG_ERR,(__location__ " Too little data in control : %d\n", (int)indata.dsize));
+		return -1;
+	}
+
+	if (indata.dsize != (notify->len + offsetof(struct ctdb_client_notify_register, notify_data))) {
+		DEBUG(DEBUG_ERR,(__location__ " Wrong amount of data in control. Got %d, expected %d\n", (int)indata.dsize, (int)(notify->len + offsetof(struct ctdb_client_notify_register, notify_data))));
+		return -1;
+	}
+
+
+        if (client == NULL) {
+                DEBUG(DEBUG_ERR,(__location__ " Could not find client parent structure. You can not send this control to a remote node\n"));
+                return -1;
+        }
+
+	for(nl=client->notify; nl; nl=nl->next) {
+		if (nl->srvid == notify->srvid) {
+			break;
+		}
+	}
+	if (nl != NULL) {
+                DEBUG(DEBUG_ERR,(__location__ " Notification for srvid:%llu already exists for this client\n", (unsigned long long)notify->srvid));
+                return -1;
+        }
+
+	nl = talloc(client, struct ctdb_client_notify_list);
+	CTDB_NO_MEMORY(ctdb, nl);
+	nl->ctdb       = ctdb;
+	nl->srvid      = notify->srvid;
+	nl->data.dsize = notify->len;
+	nl->data.dptr  = talloc_size(nl, nl->data.dsize);
+	CTDB_NO_MEMORY(ctdb, nl->data.dptr);
+	memcpy(nl->data.dptr, notify->notify_data, nl->data.dsize);
+	
+	DLIST_ADD(client->notify, nl);
+	talloc_set_destructor(nl, ctdb_client_notify_destructor);
+
+	return 0;
+}
+
+int32_t ctdb_control_deregister_notify(struct ctdb_context *ctdb, uint32_t client_id, TDB_DATA indata)
+{
+	struct ctdb_client_notify_deregister *notify = (struct ctdb_client_notify_deregister *)indata.dptr;
+        struct ctdb_client *client = ctdb_reqid_find(ctdb, client_id, struct ctdb_client); 
+	struct ctdb_client_notify_list *nl;
+
+	DEBUG(DEBUG_ERR,("Deregister srvid %llu for client %d\n", (unsigned long long)notify->srvid, client_id));
+
+        if (client == NULL) {
+                DEBUG(DEBUG_ERR,(__location__ " Could not find client parent structure. You can not send this control to a remote node\n"));
+                return -1;
+        }
+
+	for(nl=client->notify; nl; nl=nl->next) {
+		if (nl->srvid == notify->srvid) {
+			break;
+		}
+	}
+	if (nl == NULL) {
+                DEBUG(DEBUG_ERR,(__location__ " No notification for srvid:%llu found for this client\n", (unsigned long long)notify->srvid));
+                return -1;
+        }
+
+	DLIST_REMOVE(client->notify, nl);
+	talloc_set_destructor(nl, NULL);
+	talloc_free(nl);
+
+	return 0;
+}

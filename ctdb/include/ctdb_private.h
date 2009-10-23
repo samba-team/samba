@@ -160,7 +160,6 @@ typedef void (*ctdb_control_callback_fn_t)(struct ctdb_context *,
 					   int32_t status, TDB_DATA data, 
 					   const char *errormsg,
 					   void *private_data);
-
 /*
   structure describing a connected client in the daemon
  */
@@ -173,6 +172,7 @@ struct ctdb_client {
 	struct ctdb_tcp_list *tcp_list;
 	uint32_t db_id;
 	uint32_t num_persistent_updates;
+	struct ctdb_client_notify_list *notify;
 };
 
 
@@ -612,6 +612,8 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_SET_DB_PRIORITY         = 111,
 		    CTDB_CONTROL_GET_DB_PRIORITY         = 112,
 		    CTDB_CONTROL_TRANSACTION_CANCEL      = 113,
+		    CTDB_CONTROL_REGISTER_NOTIFY         = 114,
+		    CTDB_CONTROL_DEREGISTER_NOTIFY       = 115,
 };	
 
 /*
@@ -1500,5 +1502,9 @@ int32_t ctdb_control_disable_script(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_set_ban_state(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_get_ban_state(struct ctdb_context *ctdb, TDB_DATA *outdata);
 int32_t ctdb_control_set_db_priority(struct ctdb_context *ctdb, TDB_DATA indata);
+
+int32_t ctdb_control_register_notify(struct ctdb_context *ctdb, uint32_t client_id, TDB_DATA indata);
+
+int32_t ctdb_control_deregister_notify(struct ctdb_context *ctdb, uint32_t client_id, TDB_DATA indata);
 
 #endif
