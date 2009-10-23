@@ -95,9 +95,7 @@ struct schema_data_search_data {
 static int schema_data_init(struct ldb_module *module)
 {
 	struct ldb_context *ldb;
-	TALLOC_CTX *mem_ctx;
 	struct ldb_dn *schema_dn;
-	struct dsdb_schema *schema;
 	int ret;
 	struct schema_data_private_data *data;
 
