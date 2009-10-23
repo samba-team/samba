@@ -2273,7 +2273,7 @@ static NTSTATUS dcesrv_lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALL
 		name = &r->in.name.string[2];
 			/* We need to connect to the database as system, as this is one of the rare RPC calls that must read the secrets (and this is denied otherwise) */
 		secret_state->sam_ldb = talloc_reference(secret_state, 
-							 samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, system_session(secret_state, dce_call->conn->dce_ctx->lp_ctx))); 
+							 samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, system_session(dce_call->conn->dce_ctx->lp_ctx))); 
 		secret_state->global = true;
 
 		if (strlen(name) < 1) {
@@ -2410,7 +2410,7 @@ static NTSTATUS dcesrv_lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC
 		name = &r->in.name.string[2];
 		/* We need to connect to the database as system, as this is one of the rare RPC calls that must read the secrets (and this is denied otherwise) */
 		secret_state->sam_ldb = talloc_reference(secret_state, 
-							 samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, system_session(secret_state, dce_call->conn->dce_ctx->lp_ctx))); 
+							 samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, system_session(dce_call->conn->dce_ctx->lp_ctx))); 
 		secret_state->global = true;
 
 		if (strlen(name) < 1) {

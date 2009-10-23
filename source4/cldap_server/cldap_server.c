@@ -214,7 +214,7 @@ static void cldapd_task_init(struct task_server *task)
 	}
 
 	cldapd->task = task;
-	cldapd->samctx = samdb_connect(cldapd, task->event_ctx, task->lp_ctx, system_session(cldapd, task->lp_ctx));
+	cldapd->samctx = samdb_connect(cldapd, task->event_ctx, task->lp_ctx, system_session(task->lp_ctx));
 	if (cldapd->samctx == NULL) {
 		task_server_terminate(task, "cldapd failed to open samdb", true);
 		return;

@@ -202,7 +202,7 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	sam_ctx = samdb_connect(tmp_ctx, ctx->auth_ctx->event_ctx, ctx->auth_ctx->lp_ctx, system_session(mem_ctx, ctx->auth_ctx->lp_ctx));
+	sam_ctx = samdb_connect(tmp_ctx, ctx->auth_ctx->event_ctx, ctx->auth_ctx->lp_ctx, system_session(ctx->auth_ctx->lp_ctx));
 	if (sam_ctx == NULL) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
@@ -320,7 +320,7 @@ NTSTATUS authsam_get_server_info_principal(TALLOC_CTX *mem_ctx,
 	}
 
 	sam_ctx = samdb_connect(tmp_ctx, auth_context->event_ctx, auth_context->lp_ctx, 
-				system_session(tmp_ctx, auth_context->lp_ctx));
+				system_session(auth_context->lp_ctx));
 	if (sam_ctx == NULL) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;

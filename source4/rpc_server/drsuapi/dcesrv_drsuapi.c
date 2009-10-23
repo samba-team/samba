@@ -61,7 +61,7 @@ static WERROR dcesrv_drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_C
 	werr = drs_security_level_check(dce_call, NULL);
 	if (W_ERROR_IS_OK(werr)) {
 		DEBUG(2,(__location__ ": doing DsBind with system_session\n"));
-		auth_info = system_session(b_state, dce_call->conn->dce_ctx->lp_ctx);
+		auth_info = system_session(dce_call->conn->dce_ctx->lp_ctx);
 	} else {
 		auth_info = dce_call->conn->auth_state.session_info;
 	}

@@ -146,22 +146,37 @@ static NTSTATUS generate_session_info(TALLOC_CTX *mem_ctx,
 }
 
 
+/*
+  prevent the static system session being freed
+ */
+static int system_session_destructor(struct auth_session_info *info)
+{
+	return -1;
+}
 
 /* Create a security token for a session SYSTEM (the most
  * trusted/prvilaged account), including the local machine account as
  * the off-host credentials
  */ 
-_PUBLIC_ struct auth_session_info *system_session(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx) 
+_PUBLIC_ struct auth_session_info *system_session(struct loadparm_context *lp_ctx) 
 {
+	static struct auth_session_info *static_session;
 	NTSTATUS nt_status;
-	struct auth_session_info *session_info = NULL;
-	nt_status = auth_system_session_info(mem_ctx,
+
+	if (static_session) {
+		return static_session;
+	}
+
+	nt_status = auth_system_session_info(talloc_autofree_context(),
 					     lp_ctx,
-					     &session_info);
+					     &static_session);
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(static_session);
+		static_session = NULL;
 		return NULL;
 	}
-	return session_info;
+	talloc_set_destructor(static_session, system_session_destructor);
+	return static_session;
 }
 
 static NTSTATUS _auth_system_session_info(TALLOC_CTX *parent_ctx, 

@@ -49,7 +49,7 @@ static PyObject *py_system_session(PyObject *module, PyObject *args)
 	if (lp_ctx == NULL)
 		return NULL;
 
-	session = system_session(NULL, lp_ctx);
+	session = system_session(lp_ctx);
 
 	return PyAuthSession_FromSession(session);
 }

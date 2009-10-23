@@ -35,7 +35,7 @@ struct tevent_context;
 /* Create a security token for a session SYSTEM (the most
  * trusted/prvilaged account), including the local machine account as
  * the off-host credentials */
-struct auth_session_info *system_session(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx) ;
+struct auth_session_info *system_session(struct loadparm_context *lp_ctx) ;
 
 /*
  * Create a system session, but with anonymous credentials (so we do

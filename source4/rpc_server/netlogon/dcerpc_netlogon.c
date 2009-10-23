@@ -129,7 +129,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 	}
 
 	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, 
-				system_session(mem_ctx, dce_call->conn->dce_ctx->lp_ctx));
+				system_session(dce_call->conn->dce_ctx->lp_ctx));
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -366,7 +366,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet(struct dcesrv_call_state *dce_call
 							&creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, system_session(mem_ctx, dce_call->conn->dce_ctx->lp_ctx));
+	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, system_session(dce_call->conn->dce_ctx->lp_ctx));
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -404,7 +404,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 							&creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, system_session(mem_ctx, dce_call->conn->dce_ctx->lp_ctx));
+	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, system_session(dce_call->conn->dce_ctx->lp_ctx));
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -1152,7 +1152,7 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 
 	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx,
 		dce_call->conn->dce_ctx->lp_ctx,
-		system_session(mem_ctx, dce_call->conn->dce_ctx->lp_ctx));
+		system_session(dce_call->conn->dce_ctx->lp_ctx));
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}

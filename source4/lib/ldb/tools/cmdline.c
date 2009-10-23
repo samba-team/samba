@@ -229,7 +229,7 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb,
 	/* Must be after we have processed command line options */
 	gensec_init(cmdline_lp_ctx); 
 	
-	if (ldb_set_opaque(ldb, "sessionInfo", system_session(ldb, cmdline_lp_ctx))) {
+	if (ldb_set_opaque(ldb, "sessionInfo", system_session(cmdline_lp_ctx))) {
 		goto failed;
 	}
 	if (ldb_set_opaque(ldb, "credentials", cmdline_credentials)) {

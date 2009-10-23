@@ -527,7 +527,7 @@ static NTSTATUS add_socket(struct tevent_context *event_context,
 
 	/* Load LDAP database, but only to read our settings */
 	ldb = samdb_connect(ldap_service, ldap_service->task->event_ctx, 
-			    lp_ctx, system_session(ldap_service, lp_ctx));
+			    lp_ctx, system_session(lp_ctx));
 	if (!ldb) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}

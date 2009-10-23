@@ -371,7 +371,7 @@ static void ntp_signd_task_init(struct task_server *task)
 	ntp_signd->task = task;
 
 	/* Must be system to get at the password hashes */
-	ntp_signd->samdb = samdb_connect(ntp_signd, task->event_ctx, task->lp_ctx, system_session(ntp_signd, task->lp_ctx));
+	ntp_signd->samdb = samdb_connect(ntp_signd, task->event_ctx, task->lp_ctx, system_session(task->lp_ctx));
 	if (ntp_signd->samdb == NULL) {
 		task_server_terminate(task, "ntp_signd failed to open samdb", true);
 		return;
