@@ -155,7 +155,7 @@ WERROR dsdb_schema_pfm_make_attid(struct dsdb_schema_prefixmap *pfm, const char 
 	last_value = strtoul(last_subid, NULL, 10);
 
 	/* encode oid in BER format */
-	if (!ber_write_OID_String(NULL, &bin_oid, oid)) {
+	if (!ber_write_OID_String(pfm, &bin_oid, oid)) {
 		return WERR_INTERNAL_ERROR;
 	}
 
@@ -186,6 +186,9 @@ WERROR dsdb_schema_pfm_make_attid(struct dsdb_schema_prefixmap *pfm, const char 
 		W_ERROR_NOT_OK_RETURN(werr);
 
 		pfm_entry = &pfm->prefixes[idx];
+	} else {
+		/* free memory allocated for bin_oid */
+		data_blob_free(&bin_oid);
 	}
 
 	/* compose the attid */
