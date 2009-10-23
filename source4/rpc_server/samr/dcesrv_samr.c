@@ -165,7 +165,7 @@ static NTSTATUS dcesrv_samr_Connect(struct dcesrv_call_state *dce_call, TALLOC_C
 
 	ZERO_STRUCTP(r->out.connect_handle);
 
-	c_state = talloc(dce_call->conn, struct samr_connect_state);
+	c_state = talloc(mem_ctx, struct samr_connect_state);
 	if (!c_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -398,7 +398,7 @@ static NTSTATUS dcesrv_samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLO
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	d_state = talloc(c_state, struct samr_domain_state);
+	d_state = talloc(mem_ctx, struct samr_domain_state);
 	if (!d_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1040,7 +1040,7 @@ static NTSTATUS dcesrv_samr_CreateDomainGroup(struct dcesrv_call_state *dce_call
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	a_state = talloc(d_state, struct samr_account_state);
+	a_state = talloc(mem_ctx, struct samr_account_state);
 	if (!a_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1333,7 +1333,7 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	a_state = talloc(d_state, struct samr_account_state);
+	a_state = talloc(mem_ctx, struct samr_account_state);
 	if (!a_state) {
 		ldb_transaction_cancel(d_state->sam_ctx);
 		return NT_STATUS_NO_MEMORY;
@@ -1614,7 +1614,7 @@ static NTSTATUS dcesrv_samr_CreateDomAlias(struct dcesrv_call_state *dce_call, T
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	a_state = talloc(d_state, struct samr_account_state);
+	a_state = talloc(mem_ctx, struct samr_account_state);
 	if (!a_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2043,7 +2043,7 @@ static NTSTATUS dcesrv_samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	a_state = talloc(d_state, struct samr_account_state);
+	a_state = talloc(mem_ctx, struct samr_account_state);
 	if (!a_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2520,7 +2520,7 @@ static NTSTATUS dcesrv_samr_OpenAlias(struct dcesrv_call_state *dce_call, TALLOC
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	a_state = talloc(d_state, struct samr_account_state);
+	a_state = talloc(mem_ctx, struct samr_account_state);
 	if (!a_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
