@@ -70,6 +70,9 @@ int dsdb_module_search_dn(struct ldb_module *module,
 	if (res->count != 1) {
 		/* we may be reading a DB that does not have the 'check base on search' option... */
 		ret = LDB_ERR_NO_SUCH_OBJECT;
+		ldb_asprintf_errstring(ldb_module_get_ctx(module), 
+				       "dsdb_module_search_dn: did not find base dn %s (%d results)", 
+				       ldb_dn_get_linearized(basedn), res->count);
 	} else {
 		*_res = talloc_steal(mem_ctx, res);
 	}
