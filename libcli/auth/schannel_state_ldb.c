@@ -270,9 +270,20 @@ NTSTATUS schannel_creds_server_step_check_ldb(struct ldb_context *ldb,
 					      struct netr_Authenticator *return_authenticator,
 					      struct netlogon_creds_CredentialState **creds_out)
 {
-	struct netlogon_creds_CredentialState *creds;
+	struct netlogon_creds_CredentialState *creds = NULL;
 	NTSTATUS nt_status;
 	int ret;
+
+	/* If we are flaged that schannel is required for a call, and
+	 * it is not in use, then make this an error */
+
+	/* It would be good to make this mandetory once schannel is
+	 * negoiated, but this is not what windows does */
+	if (schannel_required_for_call && !schannel_in_use) {
+		DEBUG(0,("schannel_creds_server_step_check: client %s not using schannel for netlogon, despite negotiating it\n",
+			creds->computer_name ));
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	ret = ldb_transaction_start(ldb);
 	if (ret != 0) {
@@ -285,37 +296,39 @@ NTSTATUS schannel_creds_server_step_check_ldb(struct ldb_context *ldb,
 
 	nt_status = schannel_fetch_session_key_ldb(ldb, ldb, computer_name,
 						   &creds);
-
-	/* If we are flaged that schannel is required for a call, and
-	 * it is not in use, then make this an error */
-
-	/* It would be good to make this mandetory once schannel is
-	 * negoiated, bu this is not what windows does */
-	if (schannel_required_for_call && !schannel_in_use) {
-		DEBUG(0,("schannel_creds_server_step_check: client %s not using schannel for netlogon, despite negotiating it\n",
-			creds->computer_name ));
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		ldb_transaction_cancel(ldb);
-		return NT_STATUS_ACCESS_DENIED;
+		return nt_status;
 	}
 
-	if (NT_STATUS_IS_OK(nt_status)) {
-		nt_status = netlogon_creds_server_step_check(creds,
-							     received_authenticator,
-							     return_authenticator);
+	nt_status = netlogon_creds_server_step_check(creds,
+						     received_authenticator,
+						     return_authenticator);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		ldb_transaction_cancel(ldb);
+		talloc_free(creds);
+		return nt_status;
 	}
 
-	if (NT_STATUS_IS_OK(nt_status)) {
-		nt_status = schannel_store_session_key_ldb(ldb, mem_ctx, creds);
+	nt_status = schannel_store_session_key_ldb(ldb, mem_ctx, creds);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		ldb_transaction_cancel(ldb);
+		talloc_free(creds);
+		return nt_status;
 	}
 
-	if (NT_STATUS_IS_OK(nt_status)) {
-		ldb_transaction_commit(ldb);
-		if (creds_out) {
-			*creds_out = creds;
-			talloc_steal(mem_ctx, creds);
-		}
+	ldb_transaction_commit(ldb);
+	if (ret != 0) {
+		talloc_free(creds);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	if (creds_out) {
+		*creds_out = creds;
+		talloc_steal(mem_ctx, creds);
 	} else {
-		ldb_transaction_cancel(ldb);
+		talloc_free(creds);
 	}
-	return nt_status;
+
+	return NT_STATUS_OK;
 }
