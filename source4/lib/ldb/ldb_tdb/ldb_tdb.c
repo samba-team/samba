@@ -200,6 +200,14 @@ static int ltdb_check_special_dn(struct ldb_module *module,
 static int ltdb_modified(struct ldb_module *module, struct ldb_dn *dn)
 {
 	int ret = LDB_SUCCESS;
+	struct ltdb_private *ltdb = talloc_get_type(ldb_module_get_private(module), struct ltdb_private);
+
+	/* only allow modifies inside a transaction, otherwise the
+	 * ldb is unsafe */
+	if (ltdb->in_transaction == 0) {
+		ldb_set_errstring(ldb_module_get_ctx(module), "ltdb modify without transaction");
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	if (ldb_dn_is_special(dn) &&
 	    (ldb_dn_check_special(dn, LTDB_INDEXLIST) ||
