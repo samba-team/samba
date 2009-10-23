@@ -353,22 +353,25 @@ static int add_partition_to_data(struct ldb_context *ldb, struct partition_priva
 
 int partition_reload_if_required(struct ldb_module *module, 
 				 struct partition_private_data *data)
-	
 {
 	uint64_t seq;
 	int ret, i;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_message *msg;
 	struct ldb_message_element *partition_attributes;
-	TALLOC_CTX *mem_ctx = talloc_new(data);
+	TALLOC_CTX *mem_ctx;
+
 	if (!data) {
 		/* Not initilised yet */
 		return LDB_SUCCESS;
 	}
+
+	mem_ctx = talloc_new(data);
 	if (!mem_ctx) {
 		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
+
 	ret = partition_primary_sequence_number(module, mem_ctx, LDB_SEQ_HIGHEST_SEQ, &seq);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(mem_ctx);
