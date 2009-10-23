@@ -182,8 +182,8 @@ NTSTATUS ldapsrv_backend_Init(struct ldapsrv_connection *conn)
 				     conn->lp_ctx,
 				     lp_sam_url(conn->lp_ctx), 
 				     conn->session_info,
-				     samdb_credentials(conn, conn->connection->event.ctx, conn->lp_ctx), 
-				     conn->global_catalog ? LDB_FLG_RDONLY : 0, NULL);
+				     samdb_credentials(conn->connection->event.ctx, conn->lp_ctx), 
+				     conn->global_catalog ? LDB_FLG_RDONLY : 0);
 	if (conn->ldb == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}

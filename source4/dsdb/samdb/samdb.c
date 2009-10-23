@@ -72,11 +72,21 @@ char *samdb_relative_path(struct ldb_context *ldb,
 	return full_name;
 }
 
-struct cli_credentials *samdb_credentials(TALLOC_CTX *mem_ctx, 
-					  struct tevent_context *event_ctx, 
+/*
+  this returns a static set of system credentials. It is static so
+  that we always get the same pointer in ldb_wrap_connect()
+ */
+struct cli_credentials *samdb_credentials(struct tevent_context *event_ctx, 
 					  struct loadparm_context *lp_ctx) 
 {
-	struct cli_credentials *cred = cli_credentials_init(mem_ctx);
+	static struct cli_credentials *static_credentials;
+	struct cli_credentials *cred;
+
+	if (static_credentials) {
+		return static_credentials;
+	}
+
+	cred = cli_credentials_init(talloc_autofree_context());
 	if (!cred) {
 		return NULL;
 	}
@@ -90,8 +100,10 @@ struct cli_credentials *samdb_credentials(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(cli_credentials_set_secrets(cred, event_ctx, lp_ctx, NULL, NULL,
 							 SECRETS_LDAP_FILTER))) {
 		/* Perfectly OK - if not against an LDAP backend */
+		talloc_free(cred);
 		return NULL;
 	}
+	static_credentials = cred;
 	return cred;
 }
 
@@ -107,8 +119,8 @@ struct ldb_context *samdb_connect(TALLOC_CTX *mem_ctx,
 	struct ldb_context *ldb;
 	ldb = ldb_wrap_connect(mem_ctx, ev_ctx, lp_ctx, 
 			       lp_sam_url(lp_ctx), session_info,
-			       samdb_credentials(mem_ctx, ev_ctx, lp_ctx), 
-			       0, NULL);
+			       samdb_credentials(ev_ctx, lp_ctx), 
+			       0);
 	if (!ldb) {
 		return NULL;
 	}
