@@ -481,6 +481,19 @@ int ldb_transaction_cancel(struct ldb_context *ldb)
 	return status;
 }
 
+/*
+  cancel a transaction with no error if no transaction is pending
+  used when we fork() to clear any parent transactions
+*/
+int ldb_transaction_cancel_noerr(struct ldb_context *ldb)
+{
+	if (ldb->transaction_active > 0) {
+		return ldb_transaction_cancel(ldb);
+	}
+	return LDB_SUCCESS;
+}
+
+
 /* autostarts a transacion if none active */
 static int ldb_autotransaction_request(struct ldb_context *ldb,
 				       struct ldb_request *req)

@@ -1342,6 +1342,12 @@ int ldb_transaction_commit(struct ldb_context *ldb);
 */
 int ldb_transaction_cancel(struct ldb_context *ldb);
 
+/*
+  cancel a transaction with no error if no transaction is pending
+  used when we fork() to clear any parent transactions
+*/
+int ldb_transaction_cancel_noerr(struct ldb_context *ldb);
+
 
 /**
   return extended error information from the last call
