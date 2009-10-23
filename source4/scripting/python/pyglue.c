@@ -549,5 +549,15 @@ void initglue(void)
 	PyModule_AddObject(m, "DS_DC_FUNCTION_2003", PyInt_FromLong(DS_DC_FUNCTION_2003));
 	PyModule_AddObject(m, "DS_DC_FUNCTION_2008", PyInt_FromLong(DS_DC_FUNCTION_2008));
 	PyModule_AddObject(m, "DS_DC_FUNCTION_2008_R2", PyInt_FromLong(DS_DC_FUNCTION_2008_R2));
+
+	/* one of the most annoying things about python scripts is
+ 	   that they don't die when you hit control-C. This fixes that
+ 	   sillyness. As we do all database operations using
+ 	   transactions, this is also safe. In fact, not dying
+ 	   immediately is unsafe as we could end up treating the
+ 	   control-C exception as a different error and try to modify
+ 	   as database incorrectly 
+	*/
+	signal(SIGINT, SIG_DFL);
 }
 
