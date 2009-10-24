@@ -35,7 +35,9 @@
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_errors.h"
 #include "ldb/include/ldb_module.h"
+#include "libcli/security/dom_sid.h"
 #include "librpc/gen_ndr/ndr_misc.h"
+#include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/ndr/libndr.h"
 #include "dsdb/samdb/samdb.h"
 
@@ -278,9 +280,27 @@ static int handle_dereference_fds(struct ldb_dn *dn,
 	
 	/* Look for the objectSID */
 
-	sidBlob = ldb_msg_find_ldb_val(&fake_msg, "objectSID");
+	sidBlob = ldb_msg_find_ldb_val(&fake_msg, "sambaSID");
 	if (sidBlob) {
-		ldb_dn_set_extended_component(dn, "SID", sidBlob);
+		enum ndr_err_code ndr_err;
+
+		struct ldb_val sid_blob;
+        	struct dom_sid *sid;
+
+        	sid = dom_sid_parse_length(NULL, sidBlob);
+
+        	if (sid == NULL) {
+			return LDB_ERR_INVALID_DN_SYNTAX;
+        	}
+
+        	ndr_err = ndr_push_struct_blob(&sid_blob, NULL, NULL, sid,
+						(ndr_push_flags_fn_t)ndr_push_dom_sid);
+        	talloc_free(sid);
+        	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			return LDB_ERR_INVALID_DN_SYNTAX;
+        	}
+
+		ldb_dn_set_extended_component(dn, "SID", &sid_blob);
 	}
 	return LDB_SUCCESS;
 }

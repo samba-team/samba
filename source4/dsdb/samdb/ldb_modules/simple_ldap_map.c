@@ -33,6 +33,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/ndr/libndr.h"
 #include "dsdb/samdb/samdb.h"
+#include "../../../lib/ldb/include/ldb_handlers.h"
 
 struct entryuuid_private {
 	struct ldb_context *ldb;
@@ -119,6 +120,25 @@ static struct ldb_val sid_always_binary(struct ldb_module *module, TALLOC_CTX *c
 		return data_blob(NULL, 0);
 	}
 
+	return out;
+}
+
+/* Ensure we always convert sids into string, so the backend doesn't have to know about both forms */
+static struct ldb_val sid_always_string(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct ldb_val out = data_blob(NULL, 0);
+
+	if (ldif_comparision_objectSid_isString(val)) {
+		if (ldb_handler_copy(ldb, ctx, val, &out) != LDB_SUCCESS) {
+			return data_blob(NULL, 0);
+		}
+
+	} else {
+		if (ldif_write_objectSid(ldb, ctx, val, &out) != LDB_SUCCESS) {
+			return data_blob(NULL, 0);
+		}
+	}
 	return out;
 }
 
@@ -470,9 +490,9 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 		.type = LDB_MAP_CONVERT,
 		.u = {
 			.convert = {
-				.remote_name = "objectSid", 
-				.convert_local = sid_always_binary,
-				.convert_remote = val_copy,
+				.remote_name = "sambaSID", 
+				.convert_local = sid_always_string,
+				.convert_remote = sid_always_binary,
 			}
 		}
 	},

@@ -75,6 +75,8 @@ nextRid
 nextRid:sambaNextRid
 privilegeDisplayName
 privilegeDisplayName:sambaPrivName
+objectSid
+objectSid:sambaSID
 
 #Resolve conflicting attributes
 1.2.840.113556.1.4.484:fRSDirectoryFilter-oid

@@ -92,7 +92,7 @@ static int ldif_read_objectSid(struct ldb_context *ldb, void *mem_ctx,
 /*
   convert a NDR formatted blob to a ldif formatted objectSid
 */
-static int ldif_write_objectSid(struct ldb_context *ldb, void *mem_ctx,
+int ldif_write_objectSid(struct ldb_context *ldb, void *mem_ctx,
 				const struct ldb_val *in, struct ldb_val *out)
 {
 	struct dom_sid *sid;
@@ -116,7 +116,7 @@ static int ldif_write_objectSid(struct ldb_context *ldb, void *mem_ctx,
 	return 0;
 }
 
-static bool ldif_comparision_objectSid_isString(const struct ldb_val *v)
+bool ldif_comparision_objectSid_isString(const struct ldb_val *v)
 {
 	if (v->length < 3) {
 		return false;
