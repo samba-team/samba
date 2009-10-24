@@ -1586,8 +1586,7 @@ int samdb_search_for_parent_domain(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
   The caller should probably have a transaction wrapping this
 */
 NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
-			    struct ldb_dn *user_dn,
-			    struct ldb_dn *domain_dn,
+			    struct ldb_dn *user_dn, struct ldb_dn *domain_dn,
 			    struct ldb_message *mod,
 			    const DATA_BLOB *new_password,
 			    struct samr_Password *param_lmNewHash,
@@ -1851,16 +1850,24 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 
 
 /*
-  set the user password using plaintext, obeying any user or domain
-  password restrictions
-
-  This wrapper function takes a SID as input, rather than a user DN,
-  and actually performs the password change
-
-*/
-NTSTATUS samdb_set_password_sid(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
+ * Sets the user password using plaintext UTF16 (attribute "new_password") or
+ * LM (attribute "lmNewHash") or NT (attribute "ntNewHash") hash. Also pass
+ * as parameter if it's a user change or not ("userChange"). The "rejectReason"
+ * gives some more informations if the changed failed.
+ *
+ * This wrapper function for "samdb_set_password" takes a SID as input rather
+ * than a user DN.
+ *
+ * This call encapsulates a new LDB transaction for changing the password;
+ * therefore the user hasn't to start a new one.
+ *
+ * Results: NT_STATUS_OK, NT_STATUS_INTERNAL_DB_CORRUPTION,
+ *   NT_STATUS_INVALID_PARAMETER, NT_STATUS_UNSUCCESSFUL,
+ *   NT_STATUS_PASSWORD_RESTRICTION
+ */
+NTSTATUS samdb_set_password_sid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 				const struct dom_sid *user_sid,
-				const DATA_BLOB *new_pass,
+				const DATA_BLOB *new_password,
 				struct samr_Password *lmNewHash, 
 				struct samr_Password *ntNewHash,
 				bool user_change,
@@ -1872,17 +1879,17 @@ NTSTATUS samdb_set_password_sid(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 	struct ldb_message *msg;
 	int ret;
 
-	ret = ldb_transaction_start(ctx);
-	if (ret) {
-		DEBUG(1, ("Failed to start transaction: %s\n", ldb_errstring(ctx)));
+	ret = ldb_transaction_start(ldb);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1, ("Failed to start transaction: %s\n", ldb_errstring(ldb)));
 		return NT_STATUS_TRANSACTION_ABORTED;
 	}
 
-	user_dn = samdb_search_dn(ctx, mem_ctx, NULL, 
+	user_dn = samdb_search_dn(ldb, mem_ctx, NULL,
 				  "(&(objectSid=%s)(objectClass=user))", 
 				  ldap_encode_ndr_dom_sid(mem_ctx, user_sid));
 	if (!user_dn) {
-		ldb_transaction_cancel(ctx);
+		ldb_transaction_cancel(ldb);
 		DEBUG(3, ("samdb_set_password_sid: SID %s not found in samdb, returning NO_SUCH_USER\n",
 			  dom_sid_string(mem_ctx, user_sid)));
 		return NT_STATUS_NO_SUCH_USER;
@@ -1890,44 +1897,43 @@ NTSTATUS samdb_set_password_sid(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 
 	msg = ldb_msg_new(mem_ctx);
 	if (msg == NULL) {
-		ldb_transaction_cancel(ctx);
+		ldb_transaction_cancel(ldb);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	msg->dn = ldb_dn_copy(msg, user_dn);
 	if (!msg->dn) {
-		ldb_transaction_cancel(ctx);
+		ldb_transaction_cancel(ldb);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_status = samdb_set_password(ctx, mem_ctx,
+	nt_status = samdb_set_password(ldb, mem_ctx,
 				       user_dn, NULL,
-				       msg, new_pass, 
+				       msg, new_password,
 				       lmNewHash, ntNewHash,
 				       user_change, /* This is a password set, not change */
 				       reject_reason, _dominfo);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		ldb_transaction_cancel(ctx);
+		ldb_transaction_cancel(ldb);
 		return nt_status;
 	}
 
 	/* modify the samdb record */
-	ret = samdb_replace(ctx, mem_ctx, msg);
-	if (ret != 0) {
-		ldb_transaction_cancel(ctx);
+	ret = samdb_replace(ldb, mem_ctx, msg);
+	if (ret != LDB_SUCCESS) {
+		ldb_transaction_cancel(ldb);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	ret = ldb_transaction_commit(ctx);
-	if (ret != 0) {
+	ret = ldb_transaction_commit(ldb);
+	if (ret != LDB_SUCCESS) {
 		DEBUG(0,("Failed to commit transaction to change password on %s: %s\n",
 			 ldb_dn_get_linearized(msg->dn),
-			 ldb_errstring(ctx)));
+			 ldb_errstring(ldb)));
 		return NT_STATUS_TRANSACTION_ABORTED;
 	}
 	return NT_STATUS_OK;
 }
-
 
 
 NTSTATUS samdb_create_foreign_security_principal(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx, 
