@@ -530,7 +530,7 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 		.type = LDB_MAP_CONVERT,
 		.u = {
 			.convert = {
-				 .remote_name = "groupType",
+				 .remote_name = "sambaGroupType",
 				 .convert_local = normalise_to_signed32,
 				 .convert_remote = val_copy,
 			 }
@@ -592,11 +592,168 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 		}
 	},
 	{
+		.local_name = "unixHomeDirectory",
+		.type = MAP_RENAME,
+		.u = {
+			.rename = {
+				 .remote_name = "homeDirectory"
+			 }
+		}
+	},
+	{
+		.local_name = "pwdLastSet",
+		.type = MAP_RENAME,
+		.u = {
+			.rename = {
+				 .remote_name = "sambaPwdLastSet"
+			 }
+		}
+	},
+	{
+		.local_name = "lastLogon",
+		.type = MAP_RENAME,
+		.u = {
+			.rename = {
+				 .remote_name = "sambaLogonTime"
+			 }
+		}
+	},
+	{
+		.local_name = "lastLogoff",
+		.type = MAP_RENAME,
+		.u = {
+			.rename = {
+				 .remote_name = "sambaLogoffTime"
+			 }
+		}
+	},
+	{
+		.local_name = "badPwdCount",
+		.type = MAP_RENAME,
+		.u = {
+			.rename = {
+				 .remote_name = "sambaBadPasswordCount"
+			 }
+		}
+	},
+	{
+		.local_name = "logonHours",
+		.type = MAP_RENAME,
+		.u = {
+			.rename = {
+				 .remote_name = "sambaLogonHours"
+			 }
+		}
+	},
+	{
+		.local_name = "homeDrive",
+		.type = MAP_RENAME,
+		.u = {
+			.rename = {
+				 .remote_name = "sambaHomeDrive"
+			 }
+		}
+	},
+	{
+		.local_name = "scriptPath",
+		.type = MAP_RENAME,
+		.u = {
+			.rename = {
+				 .remote_name = "sambaLogonScript"
+			 }
+		}
+	},
+	{
+		.local_name = "profilePath",
+		.type = MAP_RENAME,
+		.u = {
+			.rename = {
+				 .remote_name = "sambaProfilePath"
+			 }
+		}
+	},
+	{
+		.local_name = "userWorkstations",
+		.type = MAP_RENAME,
+		.u = {
+			.rename = {
+				 .remote_name = "sambaUserWorkstations"
+			 }
+		}
+	},
+	{
+		.local_name = "homeDirectory",
+		.type = MAP_RENAME,
+		.u = {
+			.rename = {
+				 .remote_name = "sambaHomePath"
+			 }
+		}
+	},
+	{
+		.local_name = "nextRid",
+		.type = MAP_RENAME,
+		.u = {
+			.rename = {
+				 .remote_name = "sambaNextRid"
+			 }
+		}
+	},
+	{
+		.local_name = "privilegeDisplayName",
+		.type = MAP_RENAME,
+		.u = {
+			.rename = {
+				 .remote_name = "sambaPrivName"
+			 }
+		}
+	},
+	{
 		.local_name = "*",
 		.type = LDB_MAP_KEEP,
 	},
 	{
 		.local_name = NULL,
+	}
+};
+
+/* This objectClass conflicts with builtin classes on FDS */
+const struct ldb_map_objectclass nsuniqueid_objectclasses[] =
+{
+	{
+		.local_name = "domain",
+		.remote_name = "samba4Domain"
+	},
+	{
+		.local_name = "rFC822LocalPart",
+		.remote_name = "samba4RFC822LocalPart"
+	},
+	{
+		.local_name = "mailRecipient",
+		.remote_name = "samba4MailRecipient"
+	},
+	{
+		.local_name = "nisMap",
+		.remote_name = "samba4NisMap"
+	},
+	{
+		.local_name = "person",
+		.remote_name = "samba4Person"
+	},
+	{
+		.local_name = "organizationalPerson",
+		.remote_name = "samba4OrganizationalPerson"
+	},
+	{
+		.local_name = "residentialPerson",
+		.remote_name = "samba4ResidentialPerson"
+	},
+	{
+		.local_name = "inetOrgPerson",
+		.remote_name = "samba4InetOrgPerson"
+	},
+	{
+		.local_name = NULL
 	}
 };
 
@@ -626,7 +783,7 @@ static int entryuuid_init(struct ldb_module *module)
 static int nsuniqueid_init(struct ldb_module *module)
 {
         int ret;
-	ret = ldb_map_init(module, nsuniqueid_attributes, NULL, nsuniqueid_wildcard_attributes, "extensibleObject", NULL);
+	ret = ldb_map_init(module, nsuniqueid_attributes, nsuniqueid_objectclasses, nsuniqueid_wildcard_attributes, "extensibleObject", NULL);
         if (ret != LDB_SUCCESS)
                 return ret;
 

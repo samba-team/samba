@@ -91,6 +91,14 @@ static char *print_schema_recursive(char *append_to_string, struct dsdb_schema *
 			}
 		}
 		
+		/* We might have been asked to remap this subClassOf, due to a conflict */
+		for (j=0; subClassOf && attr_map && attr_map[j].old_attr; j++) {
+			if (strcasecmp(subClassOf, attr_map[j].old_attr) == 0) {
+				subClassOf =  attr_map[j].new_attr;
+				break;
+			}
+		}
+		
 		may = dsdb_full_attribute_list(mem_ctx, schema, &objectclass_name_as_el, DSDB_SCHEMA_ALL_MAY);
 
 		for (j=0; may && may[j]; j++) {
