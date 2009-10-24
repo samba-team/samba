@@ -1574,17 +1574,53 @@ int samdb_search_for_parent_domain(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 
 
 /*
-  set the user password using plaintext, obeying any user or domain
-  password restrictions
+ * Performs checks on a user password (plaintext UTF 16 format - attribute
+ * "password"). The remaining parameters have to be extracted from the domain
+ * object in the AD.
+ *
+ * Result codes from "enum samr_ValidationStatus" (consider "samr.idl")
+ */
+enum samr_ValidationStatus samdb_check_password(TALLOC_CTX *mem_ctx,
+						struct loadparm_context *lp_ctx,
+						const DATA_BLOB *password,
+						const uint32_t pwdProperties,
+						const uint32_t minPwdLength)
+{
+	char *utf8_password;
+	size_t utf8_password_len;
 
-  note that this function doesn't actually store the result in the
-  database, it just fills in the "mod" structure with ldb modify
-  elements to setup the correct change when samdb_replace() is
-  called. This allows the caller to combine the change with other
-  changes (as is needed by some of the set user info levels)
+	/* checks if the "minPwdLength" property is satisfied */
+	if (minPwdLength > utf16_len_n(password->data, password->length) / 2)
+		return SAMR_VALIDATION_STATUS_PWD_TOO_SHORT;
 
-  The caller should probably have a transaction wrapping this
-*/
+	/* Try to convert the password to UTF8 and perform other checks */
+	if (convert_string_talloc_convenience(mem_ctx,
+					      lp_iconv_convenience(lp_ctx),
+					      CH_UTF16MUNGED, CH_UTF8,
+					      password->data, password->length,
+					      (void **)&utf8_password,
+					      &utf8_password_len, false)) {
+		/* checks the password complexity */
+		if (((pwdProperties & DOMAIN_PASSWORD_COMPLEX) != 0)
+				&& (!check_password_quality(utf8_password)))
+			return SAMR_VALIDATION_STATUS_NOT_COMPLEX_ENOUGH;
+	}
+
+	return SAMR_VALIDATION_STATUS_SUCCESS;
+}
+
+/*
+ * Sets the user password using plaintext UTF16 (attribute "new_password") or
+ * LM (attribute "lmNewHash") or NT (attribute "ntNewHash") hash. Also pass
+ * as parameter if it's a user change or not ("userChange"). The "rejectReason"
+ * gives some more informations if the changed failed.
+ *
+ * The caller should have a LDB transaction wrapping this.
+ *
+ * Results: NT_STATUS_OK, NT_STATUS_INTERNAL_DB_CORRUPTION,
+ *   NT_STATUS_INVALID_PARAMETER, NT_STATUS_UNSUCCESSFUL,
+ *   NT_STATUS_PASSWORD_RESTRICTION
+ */
 NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 			    struct ldb_dn *user_dn, struct ldb_dn *domain_dn,
 			    struct ldb_message *mod,
