@@ -1788,7 +1788,7 @@ static int winbind_auth_request(struct pwb_context *ctx,
 	if (logon.blobs) {
 		wbcFreeMemory(logon.blobs);
 	}
-	if (info && info->blobs) {
+	if (info && info->blobs && !p_info) {
 		wbcFreeMemory(info->blobs);
 	}
 	if (error && !p_error) {
@@ -3141,9 +3141,13 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 					free(username_ret);
 				}
 
-				wbcFreeMemory(info);
-				wbcFreeMemory(policy);
 			}
+
+			if (info && info->blobs) {
+				wbcFreeMemory(info->blobs);
+			}
+			wbcFreeMemory(info);
+			wbcFreeMemory(policy);
 
 			goto out;
 		}
