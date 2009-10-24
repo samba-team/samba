@@ -180,14 +180,34 @@ static WERROR _drsut_prefixmap_new(const struct drsut_pfm_oid_data *_pfm_init_da
 	return WERR_OK;
 }
 
+static bool _torture_drs_pfm_compare_same(struct torture_context *tctx,
+					  const struct dsdb_schema_prefixmap *pfm_left,
+					  const struct dsdb_schema_prefixmap *pfm_right)
+{
+	uint32_t i;
+
+	torture_assert_int_equal(tctx, pfm_left->length, pfm_right->length,
+				 "prefixMaps differ in size");
+	for (i = 0; i < pfm_left->length; i++) {
+		struct dsdb_schema_prefixmap_oid *entry_left = &pfm_left->prefixes[i];
+		struct dsdb_schema_prefixmap_oid *entry_right = &pfm_right->prefixes[i];
+
+		torture_assert(tctx, entry_left->id == entry_right->id,
+				talloc_asprintf(tctx, "Different IDs for index=%d", i));
+		torture_assert_data_blob_equal(tctx, entry_left->bin_oid, entry_right->bin_oid,
+						talloc_asprintf(tctx, "Different bin_oid for index=%d", i));
+	}
+
+	return true;
+}
 
 /*
  * Tests dsdb_schema_pfm_new()
  */
 static bool torture_drs_unit_pfm_new(struct torture_context *tctx, struct drsut_prefixmap_data *priv)
 {
-	int i;
 	WERROR werr;
+	bool bret;
 	TALLOC_CTX *mem_ctx;
 	struct dsdb_schema_prefixmap *pfm = NULL;
 
@@ -201,21 +221,11 @@ static bool torture_drs_unit_pfm_new(struct torture_context *tctx, struct drsut_
 	torture_assert(tctx, pfm->prefixes != NULL, "No prefixes for newly created prefixMap!");
 
 	/* compare newly created prefixMap with template one */
-	torture_assert(tctx, priv->pfm_new->length == pfm->length,
-			"Newly created prefixMap differs in length with expected one");
-	for (i = 0; i < pfm->length; i++) {
-		struct dsdb_schema_prefixmap_oid *pfm_oid = &pfm->prefixes[i];
-		struct dsdb_schema_prefixmap_oid *pfm_oid_exp = &priv->pfm_new->prefixes[i];
-
-		torture_assert(tctx, pfm_oid->id == pfm_oid_exp->id,
-				talloc_asprintf(mem_ctx, "Different IDs for index=%d", i));
-		torture_assert_data_blob_equal(tctx, pfm_oid->bin_oid, pfm_oid_exp->bin_oid,
-						talloc_asprintf(mem_ctx, "Different bin_oid for index=%d", i));
-	}
+	bret = _torture_drs_pfm_compare_same(tctx, priv->pfm_new, pfm);
 
 	talloc_free(mem_ctx);
 
-	return true;
+	return bret;
 }
 
 /**
