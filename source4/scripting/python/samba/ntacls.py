@@ -63,8 +63,8 @@ def setntacl(lp,file,sddl,domsid,backend=None,eadbfile=None):
 		raise
 	ntacl=xattr.NTACL()
 	ntacl.version = 1
-	anysid=security.dom_sid(domsid)
-	sd = security.descriptor.from_sddl(sddl, anysid)
+	sid=security.dom_sid(domsid)
+	sd = security.descriptor.from_sddl(sddl, sid)
 	ntacl.info = sd
 	eadbname = lp.get("posix:eadb")
 	if eadbname != None  and eadbname != "":
@@ -135,8 +135,8 @@ def ldapmask2filemask(ldm):
 # for files. It's used for Policy object provision
 
 def dsacl2fsacl(dssddl,domsid):
-	anysid = security.dom_sid(domsid)
-	ref = security.descriptor.from_sddl(dssddl,anysid)
+	sid = security.dom_sid(domsid)
+	ref = security.descriptor.from_sddl(dssddl,sid)
 	fdescr = security.descriptor()
 	fdescr.owner_sid = ref.owner_sid
 	fdescr.group_sid = ref.group_sid
@@ -155,4 +155,4 @@ def dsacl2fsacl(dssddl,domsid):
 			ace.access_mask =  ldapmask2filemask(ace.access_mask)
 			fdescr.dacl_add(ace)
 
-	return fdescr.as_sddl(anysid)
+	return fdescr.as_sddl(sid)

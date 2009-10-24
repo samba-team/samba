@@ -143,3 +143,5 @@ from samba.netcmd.enableaccount import cmd_enableaccount
 commands["enableaccount"] = cmd_enableaccount()
 from samba.netcmd.newuser import cmd_newuser
 commands["newuser"] = cmd_newuser()
+from samba.netcmd.ntacl import cmd_acl
+commands["acl"] = cmd_acl()

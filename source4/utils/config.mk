@@ -23,33 +23,7 @@ ntlm_auth_OBJ_FILES = $(utilssrcdir)/ntlm_auth.o
 
 MANPAGES += $(utilssrcdir)/man/ntlm_auth.1
 
-#################################
-# Start BINARY getntacl
-[BINARY::getntacl]
-INSTALLDIR = BINDIR
-PRIVATE_DEPENDENCIES = \
-		LIBSAMBA-HOSTCONFIG \
-		LIBSAMBA-UTIL \
-		NDR_XATTR \
-		WRAP_XATTR \
-		LIBSAMBA-ERRORS
 
-getntacl_OBJ_FILES = $(utilssrcdir)/getntacl.o
-
-# End BINARY getntacl
-#################################
-
-MANPAGES += $(utilssrcdir)/man/getntacl.1
-
-#################################
-# Start BINARY setntacl
-[BINARY::setntacl]
-# disabled until rewritten
-#INSTALLDIR = BINDIR
-# End BINARY setntacl
-#################################
-
-setntacl_OBJ_FILES = $(utilssrcdir)/setntacl.o
 
 #################################
 # Start BINARY setnttoken
