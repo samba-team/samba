@@ -355,6 +355,55 @@ static bool torture_drs_unit_pfm_oid_from_attid(struct torture_context *tctx, st
 	return true;
 }
 
+/**
+ * Test Schema prefixMap conversions to/from drsuapi prefixMap
+ * representation.
+ */
+static bool torture_drs_unit_pfm_to_from_drsuapi(struct torture_context *tctx, struct drsut_prefixmap_data *priv)
+{
+	WERROR werr;
+	const char *schema_info;
+	const char *schema_info_default = "FF0000000000000000000000000000000123456789";
+	struct dsdb_schema_prefixmap *pfm;
+	struct drsuapi_DsReplicaOIDMapping_Ctr *ctr;
+	TALLOC_CTX *mem_ctx;
+
+	mem_ctx = talloc_new(tctx);
+	torture_assert(tctx, mem_ctx, "Unexptected: Have no memory!");
+
+	/* convert Schema_prefixMap to drsuapi_prefixMap */
+	werr = dsdb_drsuapi_pfm_from_schema_pfm(priv->pfm_full, schema_info_default, mem_ctx, &ctr);
+	torture_assert_werr_ok(tctx, werr, "dsdb_drsuapi_pfm_from_schema_pfm() failed");
+	torture_assert(tctx, ctr && ctr->mappings, "drsuapi_prefixMap not constructed correctly");
+	torture_assert_int_equal(tctx, ctr->num_mappings, priv->pfm_full->length + 1,
+				 "drs_mappings count does not match");
+	/* look for schema_info entry - it should be the last one */
+	schema_info = hex_encode_talloc(mem_ctx,
+					ctr->mappings[ctr->num_mappings - 1].oid.binary_oid,
+					ctr->mappings[ctr->num_mappings - 1].oid.length);
+	torture_assert_str_equal(tctx,
+				 schema_info,
+				 schema_info_default,
+				 "schema_info not stored correctly or not last entry");
+
+	/* compare schema_prefixMap and drsuapi_prefixMap */
+	werr = dsdb_schema_pfm_contains_drsuapi_pfm(priv->pfm_full, ctr);
+	torture_assert_werr_ok(tctx, werr, "dsdb_schema_pfm_contains_drsuapi_pfm() failed");
+
+	/* convert back drsuapi_prefixMap to schema_prefixMap */
+	werr = dsdb_schema_pfm_from_drsuapi_pfm(ctr, mem_ctx, &pfm, &schema_info);
+	torture_assert_werr_ok(tctx, werr, "dsdb_schema_pfm_from_drsuapi_pfm() failed");
+
+	/* compare against the original */
+	if (!_torture_drs_pfm_compare_same(tctx, priv->pfm_full, pfm)) {
+		talloc_free(mem_ctx);
+		return false;
+	}
+
+	talloc_free(mem_ctx);
+	return true;
+}
+
 
 /*
  * Setup/Teardown for test case
@@ -405,6 +454,8 @@ struct torture_tcase * torture_drs_unit_prefixmap(struct torture_suite *suite)
 	torture_tcase_add_simple_test(tc, "make_attid_full_map", (pfn_run)torture_drs_unit_pfm_make_attid_full_map);
 	torture_tcase_add_simple_test(tc, "make_attid_small_map", (pfn_run)torture_drs_unit_pfm_make_attid_small_map);
 	torture_tcase_add_simple_test(tc, "oid_from_attid_full_map", (pfn_run)torture_drs_unit_pfm_oid_from_attid);
+
+	torture_tcase_add_simple_test(tc, "pfm_to_from_drsuapi", (pfn_run)torture_drs_unit_pfm_to_from_drsuapi);
 
 	return tc;
 }
