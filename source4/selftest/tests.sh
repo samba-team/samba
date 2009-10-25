@@ -154,7 +154,10 @@ slow_ncacn_ip_tcp_tests="RPC-SAMR RPC-SAMR-PASSWORDS RPC-CRACKNAMES"
 all_tests="$ncalrpc_tests $ncacn_np_tests $ncacn_ip_tcp_tests $slow_ncalrpc_tests $slow_ncacn_np_tests $slow_ncacn_ip_tcp_tests RPC-LSA-SECRETS RPC-SAMBA3-SHARESEC RPC-COUNTCALLS"
 
 # Make sure all tests get run
-for t in `$smb4torture --list | grep "^RPC-"`
+rpc_tests=`$smb4torture --list | grep '^RPC-'`
+drs_rpc_tests=`$smb4torture --list | grep '^DRS-RPC'`
+rpc_tests_list="${rpc_tests} ${drs_rpc_tests}"
+for t in $rpc_tests_list
 do
 	echo $all_tests | grep "$t"  > /dev/null
 	if [ $? -ne 0 ]
