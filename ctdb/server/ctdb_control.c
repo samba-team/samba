@@ -469,6 +469,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		}
 		if (indata.dsize > 0) {
 			ctdb->recovery_lock_file = talloc_strdup(ctdb, discard_const(indata.dptr));
+			ctdb->tunable.verify_recovery_lock = 1;
 		}
 		return 0;
 
