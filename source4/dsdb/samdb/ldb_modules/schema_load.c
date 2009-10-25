@@ -247,7 +247,7 @@ static int schema_load_extended(struct ldb_module *module, struct ldb_request *r
 	dsdb_make_schema_global(ldb);
 
 	talloc_free(mem_ctx);
-	return LDB_SUCCESS;
+	return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);
 }
 
 

@@ -1114,7 +1114,7 @@ static int partition_extended_schema_update_now(struct ldb_module *module, struc
 		return ret;
 	}
 
-	return ldb_request_done(req, ret);
+	return ldb_module_done(req, NULL, NULL, ret);
 }
 
 
