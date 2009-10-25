@@ -168,6 +168,8 @@ struct dsdb_schema {
 	uint32_t num_prefixes;
 	struct dsdb_schema_oid_prefix *prefixes;
 
+	struct dsdb_schema_prefixmap *prefixmap;
+
 	/* 
 	 * the last element of the prefix mapping table isn't a oid,
 	 * it starts with 0xFF and has 21 bytes and is maybe a schema
