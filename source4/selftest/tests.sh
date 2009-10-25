@@ -319,6 +319,8 @@ else
 	skiptestsuite "tdb.stress" "Using system TDB, tdbtorture not available"
 fi
 
+plansmbtorturetest "DRS-UNIT" none ncalrpc: "$*"
+
 # Pidl tests
 
 for f in $samba4srcdir/../pidl/tests/*.pl; do
