@@ -612,6 +612,13 @@ static struct functable net_func[] = {
 		N_("  Use 'net help lookup' to get more information about 'net "
 		   "lookup' commands.")
 	},
+	{	"g_lock",
+		net_g_lock,
+		NET_TRANSPORT_LOCAL,
+		N_("Manipulate the global lock table"),
+		N_("  Use 'net help g_lock' to get more information about "
+		   "'net g_lock' commands.")
+	},
 	{	"join",
 		net_join,
 		NET_TRANSPORT_ADS | NET_TRANSPORT_RPC,
