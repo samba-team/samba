@@ -1,6 +1,6 @@
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>ctdb</title><meta name="generator" content="DocBook XSL Stylesheets V1.73.2"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="ctdb.1"></a><div class="titlepage"></div><div class="refnamediv"><h2>Name</h2><p>ctdb &#8212; clustered tdb database management utility</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><code class="command">ctdb [ OPTIONS ] COMMAND ...</code> </p></div><div class="cmdsynopsis"><p><code class="command">ctdb</code>  [-n &lt;node&gt;] [-Y] [-t &lt;timeout&gt;] [-T &lt;timelimit&gt;] [-? --help] [--usage] [-d --debug=&lt;INTEGER&gt;] [--socket=&lt;filename&gt;]</p></div></div><div class="refsect1" lang="en"><a name="id2478257"></a><h2>DESCRIPTION</h2><p>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>ctdb</title><meta name="generator" content="DocBook XSL Stylesheets V1.73.2"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="ctdb.1"></a><div class="titlepage"></div><div class="refnamediv"><h2>Name</h2><p>ctdb &#8212; clustered tdb database management utility</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><code class="command">ctdb [ OPTIONS ] COMMAND ...</code> </p></div><div class="cmdsynopsis"><p><code class="command">ctdb</code>  [-n &lt;node&gt;] [-Y] [-t &lt;timeout&gt;] [-T &lt;timelimit&gt;] [-? --help] [--usage] [-d --debug=&lt;INTEGER&gt;] [--socket=&lt;filename&gt;]</p></div></div><div class="refsect1" lang="en"><a name="id2478395"></a><h2>DESCRIPTION</h2><p>
       ctdb is a utility to view and manage a ctdb cluster.
-    </p></div><div class="refsect1" lang="en"><a name="id2478267"></a><h2>OPTIONS</h2><div class="variablelist"><dl><dt><span class="term">-n &lt;pnn&gt;</span></dt><dd><p>
+    </p></div><div class="refsect1" lang="en"><a name="id2478405"></a><h2>OPTIONS</h2><div class="variablelist"><dl><dt><span class="term">-n &lt;pnn&gt;</span></dt><dd><p>
             This specifies the physical node number on which to execute the 
 	    command. Default is to run the command on the deamon running on 
 	    the local host.
@@ -28,13 +28,13 @@
             You only need to specify this parameter if you run multiple ctdb 
             daemons on the same physical host and thus can not use the default
             name for the domain socket.
-          </p></dd></dl></div></div><div class="refsect1" lang="en"><a name="id2478404"></a><h2>Administrative Commands</h2><p>
+          </p></dd></dl></div></div><div class="refsect1" lang="en"><a name="id2479674"></a><h2>Administrative Commands</h2><p>
       These are commands used to monitor and administrate a CTDB cluster.
-    </p><div class="refsect2" lang="en"><a name="id2478413"></a><h3>pnn</h3><p>
+    </p><div class="refsect2" lang="en"><a name="id2479683"></a><h3>pnn</h3><p>
         This command displays the pnn of the current node.
-      </p></div><div class="refsect2" lang="en"><a name="id2478423"></a><h3>status</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2479693"></a><h3>status</h3><p>
         This command shows the current status of the ctdb node.
-      </p><div class="refsect3" lang="en"><a name="id2478621"></a><h4>node status</h4><p>
+      </p><div class="refsect3" lang="en"><a name="id2479702"></a><h4>node status</h4><p>
           Node status reflects the current status of the node. There are five possible states:
         </p><p>
           OK - This node is fully functional.
@@ -52,7 +52,7 @@
       RECMASTER or NATGW.
       This node does not perticipate in the CTDB cluster but can still be
       communicated with. I.e. ctdb commands can be sent to it.
-        </p></div><div class="refsect3" lang="en"><a name="id2478682"></a><h4>generation</h4><p>
+        </p></div><div class="refsect3" lang="en"><a name="id2479763"></a><h4>generation</h4><p>
           The generation id is a number that indicates the current generation 
           of a cluster instance. Each time a cluster goes through a 
           reconfiguration or a recovery its generation id will be changed.
@@ -73,10 +73,10 @@
 	  All nodes start with generation "INVALID" and are not assigned a real
 	  generation id until they have successfully been merged with a cluster
 	  through a recovery.
-        </p></div><div class="refsect3" lang="en"><a name="id2478717"></a><h4>VNNMAP</h4><p>
+        </p></div><div class="refsect3" lang="en"><a name="id2479798"></a><h4>VNNMAP</h4><p>
           The list of Virtual Node Numbers. This is a list of all nodes that actively participates in the cluster and that share the workload of hosting the Clustered TDB database records.
           Only nodes that are participating in the vnnmap can become lmaster or dmaster for a database record.
-        </p></div><div class="refsect3" lang="en"><a name="id2478731"></a><h4>Recovery mode</h4><p>
+        </p></div><div class="refsect3" lang="en"><a name="id2479812"></a><h4>Recovery mode</h4><p>
           This is the current recovery mode of the cluster. There are two possible modes:
         </p><p>
           NORMAL - The cluster is fully operational.
@@ -96,7 +96,7 @@
 	have been recovered, the node mode will change into NORMAL mode
 	and the databases will be "thawed", allowing samba to access the
 	databases again.
-	</p></div><div class="refsect3" lang="en"><a name="id2478773"></a><h4>Recovery master</h4><p>
+	</p></div><div class="refsect3" lang="en"><a name="id2528501"></a><h4>Recovery master</h4><p>
           This is the cluster node that is currently designated as the recovery master. This node is responsible of monitoring the consistency of the cluster and to perform the actual recovery process when reqired.
         </p><p>
 	Only one node at a time can be the designated recovery master. Which
@@ -118,9 +118,9 @@ hash:2 lmaster:2
 hash:3 lmaster:3
 Recovery mode:NORMAL (0)
 Recovery master:0
-      </pre></div><div class="refsect2" lang="en"><a name="id2478810"></a><h3>recmaster</h3><p>
+      </pre></div><div class="refsect2" lang="en"><a name="id2528538"></a><h3>recmaster</h3><p>
         This command shows the pnn of the node which is currently the recmaster.
-      </p></div><div class="refsect2" lang="en"><a name="id2478821"></a><h3>uptime</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2528549"></a><h3>uptime</h3><p>
         This command shows the uptime for the ctdb daemon. When the last recovery completed and how long the last recovery took. If the "duration" is shown as a negative number, this indicates that there is a recovery in progress and it started that many seconds ago.
       </p><p>
 	Example: ctdb uptime
@@ -129,7 +129,7 @@ Current time of node  : Tue Mar 24 18:27:54 2009
 Ctdbd start time      : (000 00:00:05) Tue Mar 24 18:27:49 2009
 Time of last recovery : (000 00:00:05) Tue Mar 24 18:27:49 2009
 Duration of last recovery : 0.000000 seconds
-      </pre></div><div class="refsect2" lang="en"><a name="id2478851"></a><h3>listnodes</h3><p>
+      </pre></div><div class="refsect2" lang="en"><a name="id2528579"></a><h3>listnodes</h3><p>
         This command shows lists the ip addresses of all the nodes in the cluster.
       </p><p>
 	Example: ctdb listnodes
@@ -138,7 +138,7 @@ Duration of last recovery : 0.000000 seconds
 10.0.0.72
 10.0.0.73
 10.0.0.74
-      </pre></div><div class="refsect2" lang="en"><a name="id2478874"></a><h3>ping</h3><p>
+      </pre></div><div class="refsect2" lang="en"><a name="id2528602"></a><h3>ping</h3><p>
         This command will "ping" all CTDB daemons in the cluster to verify that they are processing commands correctly.
       </p><p>
 	Example: ctdb ping
@@ -149,7 +149,7 @@ response from 0 time=0.000054 sec  (3 clients)
 response from 1 time=0.000144 sec  (2 clients)
 response from 2 time=0.000105 sec  (2 clients)
 response from 3 time=0.000114 sec  (2 clients)
-      </pre></div><div class="refsect2" lang="en"><a name="id2528491"></a><h3>ip</h3><p>
+      </pre></div><div class="refsect2" lang="en"><a name="id2528629"></a><h3>ip</h3><p>
         This command will display the list of public addresses that are provided by the cluster and which physical node is currently serving this ip. By default this command will ONLY show those public addresses that are known to the node itself. To see the full list of all public ips across the cluster you must use "ctdb ip -n all".
       </p><p>
 	Example: ctdb ip
@@ -161,7 +161,7 @@ Number of addresses:4
 12.1.1.2         1
 12.1.1.3         2
 12.1.1.4         3
-      </pre></div><div class="refsect2" lang="en"><a name="id2528519"></a><h3>scriptstatus</h3><p>
+      </pre></div><div class="refsect2" lang="en"><a name="id2528657"></a><h3>scriptstatus</h3><p>
         This command displays which scripts where run in the previous monitoring cycle and the result of each script. If a script failed with an error, causing the node to become unhealthy, the output from that script is also shown.
       </p><p>
 	Example: ctdb scriptstatus
@@ -178,15 +178,15 @@ Number of addresses:4
 41.httpd             Status:OK    Duration:0.039 Tue Mar 24 18:56:57 2009
 50.samba             Status:ERROR    Duration:0.082 Tue Mar 24 18:56:57 2009
    OUTPUT:ERROR: Samba tcp port 445 is not responding
-      </pre></div><div class="refsect2" lang="en"><a name="id2528555"></a><h3>disablescript &lt;script&gt;</h3><p>
+      </pre></div><div class="refsect2" lang="en"><a name="id2528693"></a><h3>disablescript &lt;script&gt;</h3><p>
 	This command is used to disable an eventscript.
       </p><p>
 	This will take effect the next time the eventscripts are being executed so it can take a short while until this is reflected in 'scriptstatus'.
-      </p></div><div class="refsect2" lang="en"><a name="id2528572"></a><h3>enablescript &lt;script&gt;</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2528710"></a><h3>enablescript &lt;script&gt;</h3><p>
 	This command is used to enable an eventscript.
       </p><p>
 	This will take effect the next time the eventscripts are being executed so it can take a short while until this is reflected in 'scriptstatus'.
-      </p></div><div class="refsect2" lang="en"><a name="id2528588"></a><h3>getvar &lt;name&gt;</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2528726"></a><h3>getvar &lt;name&gt;</h3><p>
         Get the runtime value of a tuneable variable.
       </p><p>
 	Example: ctdb getvar MaxRedirectCount
@@ -194,11 +194,11 @@ Number of addresses:4
 	Example output:
       </p><pre class="screen">
 MaxRedirectCount    = 3
-      </pre></div><div class="refsect2" lang="en"><a name="id2528611"></a><h3>setvar &lt;name&gt; &lt;value&gt;</h3><p>
+      </pre></div><div class="refsect2" lang="en"><a name="id2528749"></a><h3>setvar &lt;name&gt; &lt;value&gt;</h3><p>
         Set the runtime value of a tuneable variable.
       </p><p>
 	Example: ctdb setvar MaxRedirectCount 5
-      </p></div><div class="refsect2" lang="en"><a name="id2528626"></a><h3>listvars</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2528764"></a><h3>listvars</h3><p>
         List all tuneable variables.
       </p><p>
 	Example: ctdb listvars
@@ -220,7 +220,7 @@ MonitorInterval     = 15
 EventScriptTimeout  = 20
 RecoveryGracePeriod = 60
 RecoveryBanPeriod   = 300
-      </pre></div><div class="refsect2" lang="en"><a name="id2528654"></a><h3>lvsmaster</h3><p>
+      </pre></div><div class="refsect2" lang="en"><a name="id2528792"></a><h3>lvsmaster</h3><p>
       This command shows which node is currently the LVSMASTER. The
       LVSMASTER is the node in the cluster which drives the LVS system and
       which receives all incoming traffic from clients.
@@ -231,7 +231,7 @@ RecoveryBanPeriod   = 300
       evenly onto the other nodes in the cluster. This is an alternative to using
       public ip addresses. See the manpage for ctdbd for more information
       about LVS.
-      </p></div><div class="refsect2" lang="en"><a name="id2528676"></a><h3>lvs</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2528814"></a><h3>lvs</h3><p>
       This command shows which nodes in the cluster are currently active in the
       LVS configuration. I.e. which nodes we are currently loadbalancing
       the single ip address across.
@@ -246,7 +246,7 @@ RecoveryBanPeriod   = 300
       </p><pre class="screen">
 2:10.0.0.13
 3:10.0.0.14
-      </pre></div><div class="refsect2" lang="en"><a name="id2528706"></a><h3>getcapabilities</h3><p>
+      </pre></div><div class="refsect2" lang="en"><a name="id2528844"></a><h3>getcapabilities</h3><p>
       This command shows the capabilities of the current node.
       Please see manpage for ctdbd for a full list of all capabilities and
       more detailed description.
@@ -265,7 +265,7 @@ RecoveryBanPeriod   = 300
 RECMASTER: YES
 LMASTER: YES
 LVS: NO
-      </pre></div><div class="refsect2" lang="en"><a name="id2528742"></a><h3>statistics</h3><p>
+      </pre></div><div class="refsect2" lang="en"><a name="id2528880"></a><h3>statistics</h3><p>
         Collect statistics from the CTDB daemon about how many calls it has served.
       </p><p>
 	Example: ctdb statistics
@@ -307,23 +307,23 @@ CTDB version 1
  max_hop_count                      0
  max_call_latency                   4.948321 sec
  max_lockwait_latency               0.000000 sec
-      </pre></div><div class="refsect2" lang="en"><a name="id2528786"></a><h3>statisticsreset</h3><p>
+      </pre></div><div class="refsect2" lang="en"><a name="id2528924"></a><h3>statisticsreset</h3><p>
         This command is used to clear all statistics counters in a node.
       </p><p>
 	Example: ctdb statisticsreset
-      </p></div><div class="refsect2" lang="en"><a name="id2528800"></a><h3>getreclock</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2528938"></a><h3>getreclock</h3><p>
 	This command is used to show the filename of the reclock file that is used.
       </p><p>
 	Example output:
       </p><pre class="screen">
 Reclock file:/gpfs/.ctdb/shared
-      </pre></div><div class="refsect2" lang="en"><a name="id2528820"></a><h3>setreclock [filename]</h3><p>
-	This command is used to modify, or clear, the file that is used as the reclock file at runtime. When this command is used, the reclock file checks are disabled. To re-enable the checks the administrator needs to activate the "VerifyRecoveryLock" tunable using "ctdb setvar".
+      </pre></div><div class="refsect2" lang="en"><a name="id2528958"></a><h3>setreclock [filename]</h3><p>
+	This command is used to modify, or clear, the file that is used as the reclock file at runtime.
       </p><p>
 	If run with no parameter this will remove the reclock file completely. If run with a parameter the parameter specifies the new filename to use for the recovery lock.
       </p><p>
 	This command only affects the runtime settings of a ctdb node and will be lost when ctdb is restarted. For persistent changes to the reclock file setting you must edit /etc/sysconfig/ctdb.
-      </p></div><div class="refsect2" lang="en"><a name="id2528846"></a><h3>getdebug</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2528981"></a><h3>getdebug</h3><p>
         Get the current debug level for the node. the debug level controls what information is written to the log file.
       </p><p>
 	The debug levels are mapped to the corresponding syslog levels.
@@ -333,42 +333,42 @@ Reclock file:/gpfs/.ctdb/shared
 	The list of debug levels from highest to lowest are :
       </p><p>
 	EMERG ALERT CRIT ERR WARNING NOTICE INFO DEBUG
-      </p></div><div class="refsect2" lang="en"><a name="id2528872"></a><h3>setdebug &lt;debuglevel&gt;</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529007"></a><h3>setdebug &lt;debuglevel&gt;</h3><p>
         Set the debug level of a node. This controls what information will be logged.
       </p><p>
 	The debuglevel is one of EMERG ALERT CRIT ERR WARNING NOTICE INFO DEBUG
-      </p></div><div class="refsect2" lang="en"><a name="id2528888"></a><h3>getpid</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529023"></a><h3>getpid</h3><p>
         This command will return the process id of the ctdb daemon.
-      </p></div><div class="refsect2" lang="en"><a name="id2528898"></a><h3>disable</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529033"></a><h3>disable</h3><p>
         This command is used to administratively disable a node in the cluster.
         A disabled node will still participate in the cluster and host
         clustered TDB records but its public ip address has been taken over by
         a different node and it no longer hosts any services.
-      </p></div><div class="refsect2" lang="en"><a name="id2528912"></a><h3>enable</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529047"></a><h3>enable</h3><p>
         Re-enable a node that has been administratively disabled.
-      </p></div><div class="refsect2" lang="en"><a name="id2528922"></a><h3>stop</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529057"></a><h3>stop</h3><p>
         This command is used to administratively STOP a node in the cluster.
         A STOPPED node is connected to the cluster but will not host any
 	public ip addresse, nor does it participate in the VNNMAP.
 	The difference between a DISABLED node and a STOPPED node is that
 	a STOPPED node does not host any parts of the database which means
 	that a recovery is required to stop/continue nodes.
-      </p></div><div class="refsect2" lang="en"><a name="id2528937"></a><h3>continue</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529072"></a><h3>continue</h3><p>
         Re-start a node that has been administratively stopped.
-      </p></div><div class="refsect2" lang="en"><a name="id2528948"></a><h3>addip &lt;public_ip/mask&gt; &lt;iface&gt;</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529083"></a><h3>addip &lt;public_ip/mask&gt; &lt;iface&gt;</h3><p>
 	This command is used to add a new public ip to a node during runtime.
 	This allows public addresses to be added to a cluster without having
 	to restart the ctdb daemons.
       </p><p>
 	Note that this only updates the runtime instance of ctdb. Any changes will be lost next time ctdb is restarted and the public addresses file is re-read.
  If you want this change to be permanent you must also update the public addresses file manually.
-      </p></div><div class="refsect2" lang="en"><a name="id2528968"></a><h3>delip &lt;public_ip&gt;</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529103"></a><h3>delip &lt;public_ip&gt;</h3><p>
 	This command is used to remove a public ip from a node during runtime.
 	If this public ip is currently hosted by the node it being removed from, the ip will first be failed over to another node, if possible, before it is removed.
       </p><p>
 	Note that this only updates the runtime instance of ctdb. Any changes will be lost next time ctdb is restarted and the public addresses file is re-read.
  If you want this change to be permanent you must also update the public addresses file manually.
-      </p></div><div class="refsect2" lang="en"><a name="id2528989"></a><h3>moveip &lt;public_ip&gt; &lt;node&gt;</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529124"></a><h3>moveip &lt;public_ip&gt; &lt;node&gt;</h3><p>
       This command can be used to manually fail a public ip address to a
       specific node.
       </p><p>
@@ -379,14 +379,14 @@ Reclock file:/gpfs/.ctdb/shared
       DeterministicIPs = 0
       </p><p>
       NoIPFailback = 1
-      </p></div><div class="refsect2" lang="en"><a name="id2529014"></a><h3>shutdown</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529149"></a><h3>shutdown</h3><p>
         This command will shutdown a specific CTDB daemon.
-      </p></div><div class="refsect2" lang="en"><a name="id2529024"></a><h3>recover</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529159"></a><h3>recover</h3><p>
         This command will trigger the recovery daemon to do a cluster
         recovery.
-      </p></div><div class="refsect2" lang="en"><a name="id2529034"></a><h3>ipreallocate</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529169"></a><h3>ipreallocate</h3><p>
         This command will force the recovery master to perform a full ip reallocation process and redistribute all ip addresses. This is useful to "reset" the allocations back to its default state if they have been changed using the "moveip" command. While a "recover" will also perform this reallocation, a recovery is much more hevyweight since it will also rebuild all the databases.
-      </p></div><div class="refsect2" lang="en"><a name="id2529050"></a><h3>setlmasterrole &lt;on|off&gt;</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529185"></a><h3>setlmasterrole &lt;on|off&gt;</h3><p>
 	This command is used ot enable/disable the LMASTER capability for a node at runtime. This capability determines whether or not a node can be used as an LMASTER for records in the database. A node that does not have the LMASTER capability will not show up in the vnnmap.
       </p><p>
 	Nodes will by default have this capability, but it can be stripped off nodes by the setting in the sysconfig file or by using this command.
@@ -394,21 +394,21 @@ Reclock file:/gpfs/.ctdb/shared
 	Once this setting has been enabled/disabled, you need to perform a recovery for it to take effect.
       </p><p>
 	See also "ctdb getcapabilities"
-      </p></div><div class="refsect2" lang="en"><a name="id2529079"></a><h3>setrecmasterrole &lt;on|off&gt;</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529214"></a><h3>setrecmasterrole &lt;on|off&gt;</h3><p>
 	This command is used ot enable/disable the RECMASTER capability for a node at runtime. This capability determines whether or not a node can be used as an RECMASTER for the cluster. A node that does not have the RECMASTER capability can not win a recmaster election. A node that already is the recmaster for the cluster when the capability is stripped off the node will remain the recmaster until the next cluster election.
       </p><p>
 	Nodes will by default have this capability, but it can be stripped off nodes by the setting in the sysconfig file or by using this command.
       </p><p>
 	See also "ctdb getcapabilities"
-      </p></div><div class="refsect2" lang="en"><a name="id2529105"></a><h3>killtcp &lt;srcip:port&gt; &lt;dstip:port&gt;</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529240"></a><h3>killtcp &lt;srcip:port&gt; &lt;dstip:port&gt;</h3><p>
         This command will kill the specified TCP connection by issuing a
         TCP RST to the srcip:port endpoint. This is a command used by the 
 	ctdb eventscripts.
-      </p></div><div class="refsect2" lang="en"><a name="id2529118"></a><h3>gratiousarp &lt;ip&gt; &lt;interface&gt;</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529253"></a><h3>gratiousarp &lt;ip&gt; &lt;interface&gt;</h3><p>
 	This command will send out a gratious arp for the specified interface
 	through the specified interface. This command is mainly used by the
 	ctdb eventscripts.
-      </p></div><div class="refsect2" lang="en"><a name="id2529130"></a><h3>reloadnodes</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529265"></a><h3>reloadnodes</h3><p>
       This command is used when adding new nodes, or removing existing nodes from an existing cluster.
       </p><p>
       Procedure to add a node:
@@ -442,7 +442,7 @@ Reclock file:/gpfs/.ctdb/shared
       </p><p>
       5, Use 'ctdb status' on all nodes and verify that the deleted node no longer shows up in the list..
       </p><p>
-      </p></div><div class="refsect2" lang="en"><a name="id2529214"></a><h3>tickle &lt;srcip:port&gt; &lt;dstip:port&gt;</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529349"></a><h3>tickle &lt;srcip:port&gt; &lt;dstip:port&gt;</h3><p>
         This command will will send a TCP tickle to the source host for the
         specified TCP connection.
 	A TCP tickle is a TCP ACK packet with an invalid sequence and 
@@ -454,10 +454,10 @@ Reclock file:/gpfs/.ctdb/shared
         TCP connection has been disrupted and that the client will need
         to reestablish. This greatly speeds up the time it takes for a client
         to detect and reestablish after an IP failover in the ctdb cluster.
-      </p></div><div class="refsect2" lang="en"><a name="id2529239"></a><h3>gettickles &lt;ip&gt;</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529374"></a><h3>gettickles &lt;ip&gt;</h3><p>
 	This command is used to show which TCP connections are registered with
 	CTDB to be "tickled" if there is a failover.
-      </p></div><div class="refsect2" lang="en"><a name="id2529250"></a><h3>repack [max_freelist]</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529385"></a><h3>repack [max_freelist]</h3><p>
 	Over time, when records are created and deleted in a TDB, the TDB list of free space will become fragmented. This can lead to a slowdown in accessing TDB records.
 	This command is used to defragment a TDB database and pruning the freelist.
       </p><p>
@@ -472,7 +472,7 @@ Reclock file:/gpfs/.ctdb/shared
 	Example: ctdb repack 1000
       </p><p>
 	 By default, this operation is issued from the 00.ctdb event script every 5 minutes.
-      </p></div><div class="refsect2" lang="en"><a name="id2529296"></a><h3>vacuum [max_records]</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529431"></a><h3>vacuum [max_records]</h3><p>
 	Over time CTDB databases will fill up with empty deleted records which will lead to a progressive slow down of CTDB database access.
 	This command is used to prune all databases and delete all empty records from the cluster.
       </p><p>
@@ -488,17 +488,17 @@ Reclock file:/gpfs/.ctdb/shared
 	Example: ctdb vacuum
       </p><p>
 	 By default, this operation is issued from the 00.ctdb event script every 5 minutes.
-      </p></div><div class="refsect2" lang="en"><a name="id2529332"></a><h3>backupdb &lt;database&gt; &lt;file&gt;</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529467"></a><h3>backupdb &lt;database&gt; &lt;file&gt;</h3><p>
         This command can be used to copy the entire content of a database out to a file. This file can later be read back into ctdb using the restoredb command.
 This is mainly useful for backing up persistent databases such as secrets.tdb and similar.
-      </p></div><div class="refsect2" lang="en"><a name="id2529346"></a><h3>restoredb &lt;file&gt;</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529481"></a><h3>restoredb &lt;file&gt;</h3><p>
         This command restores a persistent database that was previously backed up using backupdb.
-      </p></div></div><div class="refsect1" lang="en"><a name="id2529358"></a><h2>Debugging Commands</h2><p>
+      </p></div></div><div class="refsect1" lang="en"><a name="id2529493"></a><h2>Debugging Commands</h2><p>
       These commands are primarily used for CTDB development and testing and
       should not be used for normal administration.
-    </p><div class="refsect2" lang="en"><a name="id2529368"></a><h3>process-exists &lt;pid&gt;</h3><p>
+    </p><div class="refsect2" lang="en"><a name="id2529503"></a><h3>process-exists &lt;pid&gt;</h3><p>
         This command checks if a specific process exists on the CTDB host. This is mainly used by Samba to check if remote instances of samba are still running or not.
-      </p></div><div class="refsect2" lang="en"><a name="id2529381"></a><h3>getdbmap</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529516"></a><h3>getdbmap</h3><p>
         This command lists all clustered TDB databases that the CTDB daemon has attached to. Some databases are flagged as PERSISTENT, this means that the database stores data persistently and the data will remain across reboots. One example of such a database is secrets.tdb where information about how the cluster was joined to the domain is stored.
 	</p><p>
 	Most databases are not persistent and only store the state information that the currently running samba daemons need. These databases are always wiped when ctdb/samba starts and when a node is rebooted.
@@ -517,25 +517,25 @@ dbid:0x2672a57f name:idmap2.tdb path:/var/ctdb/persistent/idmap2.tdb.0 PERSISTEN
 dbid:0xb775fff6 name:secrets.tdb path:/var/ctdb/persistent/secrets.tdb.0 PERSISTENT
 dbid:0xe98e08b6 name:group_mapping.tdb path:/var/ctdb/persistent/group_mapping.tdb.0 PERSISTENT
 dbid:0x7bbbd26c name:passdb.tdb path:/var/ctdb/persistent/passdb.tdb.0 PERSISTENT
-      </pre></div><div class="refsect2" lang="en"><a name="id2529427"></a><h3>catdb &lt;dbname&gt;</h3><p>
+      </pre></div><div class="refsect2" lang="en"><a name="id2529562"></a><h3>catdb &lt;dbname&gt;</h3><p>
         This command will dump a clustered TDB database to the screen. This is a debugging command.
-      </p></div><div class="refsect2" lang="en"><a name="id2529438"></a><h3>getmonmode</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2476128"></a><h3>getmonmode</h3><p>
         This command returns the monutoring mode of a node. The monitoring mode is either ACTIVE or DISABLED. Normally a node will continously monitor that all other nodes that are expected are in fact connected and that they respond to commands.
       </p><p>
         ACTIVE - This is the normal mode. The node is actively monitoring all other nodes, both that the transport is connected and also that the node responds to commands. If a node becomes unavailable, it will be marked as DISCONNECTED and a recovery is initiated to restore the cluster.
       </p><p>
         DISABLED - This node is not monitoring that other nodes are available. In this mode a node failure will not be detected and no recovery will be performed. This mode is useful when for debugging purposes one wants to attach GDB to a ctdb process but wants to prevent the rest of the cluster from marking this node as DISCONNECTED and do a recovery.
-      </p></div><div class="refsect2" lang="en"><a name="id2529468"></a><h3>setmonmode &lt;0|1&gt;</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2476164"></a><h3>setmonmode &lt;0|1&gt;</h3><p>
         This command can be used to explicitely disable/enable monitoring mode on a node. The main purpose is if one wants to attach GDB to a running ctdb daemon but wants to prevent the other nodes from marking it as DISCONNECTED and issuing a recovery. To do this, set monitoring mode to 0 on all nodes before attaching with GDB. Remember to set monitoring mode back to 1 afterwards.
-      </p></div><div class="refsect2" lang="en"><a name="id2529484"></a><h3>attach &lt;dbname&gt;</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2476179"></a><h3>attach &lt;dbname&gt;</h3><p>
         This is a debugging command. This command will make the CTDB daemon create a new CTDB database and attach to it.
-      </p></div><div class="refsect2" lang="en"><a name="id2529495"></a><h3>dumpmemory</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2476191"></a><h3>dumpmemory</h3><p>
         This is a debugging command. This command will make the ctdb
         daemon to write a fill memory allocation map to standard output.
-      </p></div><div class="refsect2" lang="en"><a name="id2529507"></a><h3>rddumpmemory</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2476202"></a><h3>rddumpmemory</h3><p>
         This is a debugging command. This command will dump the talloc memory
 	allocation tree for the recovery daemon to standard output.
-      </p></div><div class="refsect2" lang="en"><a name="id2529518"></a><h3>freeze</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2476214"></a><h3>freeze</h3><p>
         This command will lock all the local TDB databases causing clients 
         that are accessing these TDBs such as samba3 to block until the
         databases are thawed.
@@ -543,26 +543,26 @@ dbid:0x7bbbd26c name:passdb.tdb path:/var/ctdb/persistent/passdb.tdb.0 PERSISTEN
         This is primarily used by the recovery daemon to stop all samba
         daemons from accessing any databases while the database is recovered
         and rebuilt.
-      </p></div><div class="refsect2" lang="en"><a name="id2529537"></a><h3>thaw</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2476232"></a><h3>thaw</h3><p>
         Thaw a previously frozen node.
-      </p></div><div class="refsect2" lang="en"><a name="id2529546"></a><h3>eventscript &lt;arguments&gt;</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2476242"></a><h3>eventscript &lt;arguments&gt;</h3><p>
         This is a debugging command. This command can be used to manually
 	invoke and run the eventscritps with arbitrary arguments.
-      </p></div><div class="refsect2" lang="en"><a name="id2529558"></a><h3>ban &lt;bantime|0&gt;</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2476253"></a><h3>ban &lt;bantime|0&gt;</h3><p>
         Administratively ban a node for bantime seconds. A bantime of 0 means that the node should be permanently banned. 
       </p><p>
         A banned node does not participate in the cluster and does not host any records for the clustered TDB. Its ip address has been taken over by an other node and no services are hosted.
       </p><p>
         Nodes are automatically banned if they are the cause of too many
         cluster recoveries.
-      </p></div><div class="refsect2" lang="en"><a name="id2476137"></a><h3>unban</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2476277"></a><h3>unban</h3><p>
         This command is used to unban a node that has either been 
         administratively banned using the ban command or has been automatically
         banned by the recovery daemon.
-      </p></div></div><div class="refsect1" lang="en"><a name="id2476150"></a><h2>SEE ALSO</h2><p>
+      </p></div></div><div class="refsect1" lang="en"><a name="id2476290"></a><h2>SEE ALSO</h2><p>
       ctdbd(1), onnode(1)
       <a class="ulink" href="http://ctdb.samba.org/" target="_top">http://ctdb.samba.org/</a>
-    </p></div><div class="refsect1" lang="en"><a name="id2476163"></a><h2>COPYRIGHT/LICENSE</h2><div class="literallayout"><p><br>
+    </p></div><div class="refsect1" lang="en"><a name="id2476303"></a><h2>COPYRIGHT/LICENSE</h2><div class="literallayout"><p><br>
 Copyright (C) Andrew Tridgell 2007<br>
 Copyright (C) Ronnie sahlberg 2007<br>
 <br>
