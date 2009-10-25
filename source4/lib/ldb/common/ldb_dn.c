@@ -439,6 +439,7 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 	unsigned x;
 	int l, ret;
 	char *parse_dn;
+	bool is_index;
 
 	if ( ! dn || dn->invalid) return false;
 
@@ -456,6 +457,7 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 		return false;
 	}
 
+	is_index = (strncmp(parse_dn, "DN=@INDEX:", 10) == 0);
 
 	if (strncmp(parse_dn, "B:", 2) == 0) {
 		parse_dn = strchr(parse_dn, ':');
@@ -765,6 +767,17 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 				continue;
 
 			case '=':
+				/* to main compatibility with earlier
+				versions of ldb indexing, we have to
+				accept the base64 encoded binary index
+				values, which contain a '=' */
+				if (is_index) {
+					if ( t ) t = NULL;
+					*d++ = *p++;
+					l++;
+					break;
+				}
+				/* fall through */
 			case '\n':
 			case '+':
 			case '<':
