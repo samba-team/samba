@@ -1319,7 +1319,7 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 		if (strncmp(url, "tdb://", 6) != 0) {
 			ldb_debug(ldb, LDB_DEBUG_ERROR,
 				  "Invalid tdb URL '%s'", url);
-			return -1;
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		path = url+6;
 	} else {
@@ -1347,7 +1347,7 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 	ltdb = talloc_zero(ldb, struct ltdb_private);
 	if (!ltdb) {
 		ldb_oom(ldb);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* note that we use quite a large default hash size */
@@ -1358,7 +1358,7 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
 			  "Unable to open tdb '%s'", path);
 		talloc_free(ltdb);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	ltdb->sequence_number = 0;
@@ -1366,7 +1366,7 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 	module = ldb_module_new(ldb, ldb, "ldb_tdb backend", &ltdb_ops);
 	if (!module) {
 		talloc_free(ltdb);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	ldb_module_set_private(module, ltdb);
 	talloc_steal(module, ltdb);
@@ -1374,11 +1374,11 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 	if (ltdb_cache_load(module) != 0) {
 		talloc_free(module);
 		talloc_free(ltdb);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	*_module = module;
-	return 0;
+	return LDB_SUCCESS;
 }
 
 const struct ldb_backend_ops ldb_tdb_backend_ops = {
