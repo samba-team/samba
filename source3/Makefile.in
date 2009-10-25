@@ -265,6 +265,7 @@ EXTRA_ALL_TARGETS = @EXTRA_ALL_TARGETS@
 TDB_LIB_OBJ = lib/util_tdb.o ../lib/util/util_tdb.o \
 	  lib/dbwrap.o lib/dbwrap_tdb.o \
 	  lib/dbwrap_ctdb.o \
+	  lib/g_lock.o \
 	  lib/dbwrap_rbt.o
 
 TDB_VALIDATE_OBJ = lib/tdb_validate.o
@@ -1011,6 +1012,7 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
 	   utils/net_conf.o utils/net_join.o utils/net_user.o \
 	   utils/net_group.o utils/net_file.o utils/net_registry.o \
 	   auth/token_util.o utils/net_dom.o utils/net_share.o \
+	   utils/net_g_lock.o \
 	   utils/net_eventlog.o
 
 # these are not processed by make proto

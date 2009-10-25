@@ -62,7 +62,8 @@ enum messaging_type
 	MSG_WINBIND_VALIDATE_CACHE=(int)(0x0408),
 	MSG_WINBIND_DUMP_DOMAIN_LIST=(int)(0x0409),
 	MSG_DUMP_EVENT_LIST=(int)(0x0500),
-	MSG_DBWRAP_TDB2_CHANGES=(int)(4001)
+	MSG_DBWRAP_TDB2_CHANGES=(int)(4001),
+	MSG_DBWRAP_G_LOCK_RETRY=(int)(4002)
 }
 #else
  { __donnot_use_enum_messaging_type=0x7FFFFFFF}
@@ -118,6 +119,7 @@ enum messaging_type
 #define MSG_WINBIND_DUMP_DOMAIN_LIST ( 0x0409 )
 #define MSG_DUMP_EVENT_LIST ( 0x0500 )
 #define MSG_DBWRAP_TDB2_CHANGES ( 4001 )
+#define MSG_DBWRAP_G_LOCK_RETRY ( 4002 )
 #endif
 ;
 

@@ -88,7 +88,8 @@ interface messaging
 		MSG_DUMP_EVENT_LIST		= 0x0500,
 
 		/* dbwrap messages 4001-4999 */
-		MSG_DBWRAP_TDB2_CHANGES		= 4001
+		MSG_DBWRAP_TDB2_CHANGES		= 4001,
+		MSG_DBWRAP_G_LOCK_RETRY		= 4002
 	} messaging_type;
 
 	/* messaging struct sent across the sockets and stored in the tdb */
