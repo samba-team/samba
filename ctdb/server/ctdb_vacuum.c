@@ -131,7 +131,7 @@ static int vacuum_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 
 		hash = ctdb_hash(&key);
 		if (trbt_lookup32(vdata->delete_tree, hash)) {
-			DEBUG(DEBUG_INFO, (__location__ " Hash collission when vacuuming, skipping this record.\n"));
+			DEBUG(DEBUG_DEBUG, (__location__ " Hash collission when vacuuming, skipping this record.\n"));
 		} 
 		else {
 			struct delete_record_data *dd;
