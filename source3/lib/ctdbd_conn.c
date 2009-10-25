@@ -361,10 +361,18 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32 reqid,
 			goto next_pkt;
 		}
 
-		if (msg->srvid == CTDB_SRVID_RECONFIGURE) {
-			DEBUG(0,("Got cluster reconfigure message in ctdb_read_req\n"));
+		if ((msg->srvid == CTDB_SRVID_RECONFIGURE)
+		    || (msg->srvid == CTDB_SRVID_SAMBA_NOTIFY)) {
+
+			DEBUG(1, ("ctdb_read_req: Got %s message\n",
+				  (msg->srvid == CTDB_SRVID_RECONFIGURE)
+				  ? "cluster reconfigure" : "SAMBA_NOTIFY"));
+
 			messaging_send(conn->msg_ctx, procid_self(),
 				       MSG_SMB_BRL_VALIDATE, &data_blob_null);
+			messaging_send(conn->msg_ctx, procid_self(),
+				       MSG_DBWRAP_G_LOCK_RETRY,
+				       &data_blob_null);
 			TALLOC_FREE(hdr);
 			goto next_pkt;
 		}
@@ -493,6 +501,11 @@ NTSTATUS ctdbd_messaging_connection(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
+	status = register_with_ctdbd(conn, CTDB_SRVID_SAMBA_NOTIFY);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
 	*pconn = conn;
 	return NT_STATUS_OK;
 
@@ -533,14 +546,20 @@ static NTSTATUS ctdb_handle_message(uint8_t *buf, size_t length,
 
 	SMB_ASSERT(conn->msg_ctx != NULL);
 
-	if (msg->srvid == CTDB_SRVID_RECONFIGURE) {
+	if ((msg->srvid == CTDB_SRVID_RECONFIGURE)
+	    || (msg->srvid == CTDB_SRVID_SAMBA_NOTIFY)){
 		DEBUG(0,("Got cluster reconfigure message\n"));
 		/*
-		 * when the cluster is reconfigured, we need to clean the brl
-		 * database
+		 * when the cluster is reconfigured or someone of the
+		 * family has passed away (SAMBA_NOTIFY), we need to
+		 * clean the brl database
 		 */
 		messaging_send(conn->msg_ctx, procid_self(),
 			       MSG_SMB_BRL_VALIDATE, &data_blob_null);
+
+		messaging_send(conn->msg_ctx, procid_self(),
+			       MSG_DBWRAP_G_LOCK_RETRY,
+			       &data_blob_null);
 
 		TALLOC_FREE(buf);
 		return NT_STATUS_OK;
@@ -1300,6 +1319,50 @@ NTSTATUS ctdbd_control_local(struct ctdbd_connection *conn, uint32 opcode,
 			     int *cstatus)
 {
 	return ctdbd_control(conn, CTDB_CURRENT_NODE, opcode, srvid, flags, data, mem_ctx, outdata, cstatus);
+}
+
+NTSTATUS ctdb_watch_us(struct ctdbd_connection *conn)
+{
+	struct ctdb_client_notify_register reg_data;
+	size_t struct_len;
+	NTSTATUS status;
+	int cstatus;
+
+	reg_data.srvid = CTDB_SRVID_SAMBA_NOTIFY;
+	reg_data.len = 1;
+	reg_data.notify_data[0] = 0;
+
+	struct_len = offsetof(struct ctdb_client_notify_register,
+			      notify_data) + reg_data.len;
+
+	status = ctdbd_control_local(
+		conn, CTDB_CONTROL_REGISTER_NOTIFY, conn->rand_srvid, 0,
+		make_tdb_data((uint8_t *)&reg_data, struct_len),
+		NULL, NULL, &cstatus);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("ctdbd_control_local failed: %s\n",
+			  nt_errstr(status)));
+	}
+	return status;
+}
+
+NTSTATUS ctdb_unwatch(struct ctdbd_connection *conn)
+{
+	struct ctdb_client_notify_deregister dereg_data;
+	NTSTATUS status;
+	int cstatus;
+
+	dereg_data.srvid = CTDB_SRVID_SAMBA_NOTIFY;
+
+	status = ctdbd_control_local(
+		conn, CTDB_CONTROL_DEREGISTER_NOTIFY, conn->rand_srvid, 0,
+		make_tdb_data((uint8_t *)&dereg_data, sizeof(dereg_data)),
+		NULL, NULL, &cstatus);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("ctdbd_control_local failed: %s\n",
+			  nt_errstr(status)));
+	}
+	return status;
 }
 
 #else
