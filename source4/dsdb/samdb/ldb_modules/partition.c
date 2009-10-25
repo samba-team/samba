@@ -1072,52 +1072,6 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 	return ldb_module_done(req, NULL, ext, LDB_SUCCESS);
 }
 
-static int partition_extended_schema_update_now(struct ldb_module *module, struct ldb_request *req)
-{
-	struct dsdb_partition *partition;
-	struct partition_private_data *data;
-	struct ldb_dn *schema_dn;
-	struct partition_context *ac;
-	int ret;
-
-	schema_dn = talloc_get_type(req->op.extended.data, struct ldb_dn);
-	if (!schema_dn) {
-		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_FATAL, "partition_extended: invalid extended data\n");
-		return LDB_ERR_PROTOCOL_ERROR;
-	}
-
-	data = talloc_get_type(module->private_data, struct partition_private_data);
-	if (!data) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	
-	partition = find_partition( data, schema_dn, req);
-	if (!partition) {
-		return ldb_next_request(module, req);
-	}
-
-	ac = partition_init_ctx(module, req);
-	if (!ac) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	/* we need to add a control but we never touch the original request */
-	ret = partition_prep_request(ac, partition);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	/* fire the first one */
-	ret = partition_call_first(ac);
-
-	if (ret != LDB_SUCCESS){
-		return ret;
-	}
-
-	return ldb_module_done(req, NULL, NULL, ret);
-}
-
-
 /* extended */
 static int partition_extended(struct ldb_module *module, struct ldb_request *req)
 {
@@ -1142,11 +1096,6 @@ static int partition_extended(struct ldb_module *module, struct ldb_request *req
 	if (strcmp(req->op.extended.oid, DSDB_EXTENDED_CREATE_PARTITION_OID) == 0) {
 		return partition_create(module, req);
 	}
-
-	/* forward schemaUpdateNow operation to schema_fsmo module*/
-	if (strcmp(req->op.extended.oid, DSDB_EXTENDED_SCHEMA_UPDATE_NOW_OID) == 0) {
-		return partition_extended_schema_update_now( module, req );
-	}	
 
 	/* 
 	 * as the extended operation has no dn
