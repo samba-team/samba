@@ -312,7 +312,7 @@ static int ltdb_index_traverse_store(struct tdb_context *tdb, TDB_DATA key, TDB_
 	}
 
 	v.data = key.dptr;
-	v.length = key.dsize;
+	v.length = strnlen((char *)key.dptr, key.dsize);
 
 	dn = ldb_dn_from_ldb_val(module, ldb, &v);
 	if (dn == NULL) {
@@ -1417,7 +1417,7 @@ static int delete_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, vo
 	list.dn = NULL;
 	list.count = 0;
 	v.data = key.dptr;
-	v.length = strlen((char *)key.dptr);
+	v.length = strnlen((char *)key.dptr, key.dsize);
 
 	dn = ldb_dn_from_ldb_val(ltdb, ldb_module_get_ctx(module), &v);
 	ret = ltdb_dn_list_store(module, dn, &list);
