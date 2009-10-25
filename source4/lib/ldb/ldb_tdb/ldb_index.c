@@ -401,6 +401,10 @@ static struct ldb_dn *ltdb_index_key(struct ldb_context *ldb,
 	if (ldb_should_b64_encode(ldb, &v)) {
 		char *vstr = ldb_base64_encode(ldb, (char *)v.data, v.length);
 		if (!vstr) return NULL;
+		/* remove trailing '=' to make it a valid DN */
+		if (vstr[strlen(vstr)-1] == '=') {
+			vstr[strlen(vstr)-1] = 0;
+		}
 		ret = ldb_dn_new_fmt(ldb, ldb, "%s:%s::%s", LTDB_INDEX, attr_folded, vstr);
 		talloc_free(vstr);
 	} else {
