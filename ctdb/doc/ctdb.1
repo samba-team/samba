@@ -1,11 +1,11 @@
 .\"     Title: ctdb
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
-.\"      Date: 10/26/2009
+.\"      Date: 08/13/2009
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "CTDB" "1" "10/26/2009" "" ""
+.TH "CTDB" "1" "08/13/2009" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -430,7 +430,7 @@ Reclock file:/gpfs/\.ctdb/shared
 .RE
 .SS "setreclock [filename]"
 .PP
-This command is used to modify, or clear, the file that is used as the reclock file at runtime\.
+This command is used to modify, or clear, the file that is used as the reclock file at runtime\. When this command is used, the reclock file checks are disabled\. To re\-enable the checks the administrator needs to activate the "VerifyRecoveryLock" tunable using "ctdb setvar"\.
 .PP
 If run with no parameter this will remove the reclock file completely\. If run with a parameter the parameter specifies the new filename to use for the recovery lock\.
 .PP

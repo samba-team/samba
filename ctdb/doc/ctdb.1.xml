@@ -582,7 +582,7 @@ Reclock file:/gpfs/.ctdb/shared
 
     <refsect2><title>setreclock [filename]</title>
       <para>
-	This command is used to modify, or clear, the file that is used as the reclock file at runtime.
+	This command is used to modify, or clear, the file that is used as the reclock file at runtime. When this command is used, the reclock file checks are disabled. To re-enable the checks the administrator needs to activate the "VerifyRecoveryLock" tunable using "ctdb setvar".
       </para>
 
       <para>
