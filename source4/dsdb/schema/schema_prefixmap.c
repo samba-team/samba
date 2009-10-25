@@ -25,11 +25,36 @@
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "../lib/util/asn1.h"
 
+
+/**
+ * Allocates schema_prefixMap object in supplied memory context
+ */
+static struct dsdb_schema_prefixmap *_dsdb_schema_prefixmap_talloc(TALLOC_CTX *mem_ctx,
+								   uint32_t length)
+{
+	struct dsdb_schema_prefixmap *pfm;
+
+	pfm = talloc_zero(mem_ctx, struct dsdb_schema_prefixmap);
+	if (!pfm) {
+		return NULL;
+	}
+
+	pfm->length = length;
+	pfm->prefixes = talloc_zero_array(pfm, struct dsdb_schema_prefixmap_oid,
+					  pfm->length);
+	if (!pfm->prefixes) {
+		talloc_free(pfm);
+		return NULL;
+	}
+
+	return pfm;
+}
+
 /**
  * Initial prefixMap creation according to:
  * [MS-DRSR] section 5.12.2
  */
-WERROR dsdb_schema_pfm_new(TALLOC_CTX *mem_ctx, struct dsdb_schema_prefixmap **ppfm)
+WERROR dsdb_schema_pfm_new(TALLOC_CTX *mem_ctx, struct dsdb_schema_prefixmap **_pfm)
 {
 	uint32_t i;
 	struct dsdb_schema_prefixmap *pfm;
@@ -59,12 +84,8 @@ WERROR dsdb_schema_pfm_new(TALLOC_CTX *mem_ctx, struct dsdb_schema_prefixmap **p
 	};
 
 	/* allocate mem for prefix map */
-	pfm = talloc_zero(mem_ctx, struct dsdb_schema_prefixmap);
+	pfm = _dsdb_schema_prefixmap_talloc(mem_ctx, ARRAY_SIZE(pfm_init_data));
 	W_ERROR_HAVE_NO_MEMORY(pfm);
-
-	pfm->length = ARRAY_SIZE(pfm_init_data);
-	pfm->prefixes = talloc_array(pfm, struct dsdb_schema_prefixmap_oid, pfm->length);
-	W_ERROR_HAVE_NO_MEMORY(pfm->prefixes);
 
 	/* build prefixes */
 	for (i = 0; i < pfm->length; i++) {
@@ -75,7 +96,7 @@ WERROR dsdb_schema_pfm_new(TALLOC_CTX *mem_ctx, struct dsdb_schema_prefixmap **p
 		pfm->prefixes[i].id = pfm_init_data[i].id;
 	}
 
-	*ppfm = pfm;
+	*_pfm = pfm;
 
 	return WERR_OK;
 }
@@ -384,15 +405,8 @@ WERROR dsdb_schema_pfm_from_drsuapi_pfm(const struct drsuapi_DsReplicaOIDMapping
 	W_ERROR_NOT_OK_RETURN(werr);
 
 	/* allocate mem for prefix map */
-	pfm = talloc_zero(mem_ctx, struct dsdb_schema_prefixmap);
+	pfm = _dsdb_schema_prefixmap_talloc(mem_ctx, ctr->num_mappings - 1);
 	W_ERROR_HAVE_NO_MEMORY(pfm);
-
-	pfm->length = ctr->num_mappings - 1;
-	pfm->prefixes = talloc_array(pfm, struct dsdb_schema_prefixmap_oid, pfm->length);
-	if (!pfm->prefixes) {
-		talloc_free(pfm);
-		return WERR_NOMEM;
-	}
 
 	/* copy entries from drsuapi_prefixMap */
 	for (i = 0; i < pfm->length; i++) {
