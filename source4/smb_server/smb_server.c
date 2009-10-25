@@ -200,18 +200,6 @@ _PUBLIC_ NTSTATUS smbsrv_add_socket(struct tevent_context *event_context,
 
 
 /*
-  pre-open some of our ldb databases, to prevent an explosion of memory usage
-  when we fork
- */
-static void smbsrv_preopen_ldb(struct task_server *task)
-{
-	/* yes, this looks strange. It is a hack to preload the
-	   schema. I'd like to share most of the ldb context with the
-	   child too. That will come later */
-	talloc_free(samdb_connect(task, task->event_ctx, task->lp_ctx, NULL));
-}
-
-/*
   open the smb server sockets
 */
 static void smbsrv_task_init(struct task_server *task)
@@ -244,8 +232,6 @@ static void smbsrv_task_init(struct task_server *task)
 					   lp_socket_address(task->lp_ctx));
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 	}
-
-	smbsrv_preopen_ldb(task);
 
 	return;
 failed:

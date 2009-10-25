@@ -1596,9 +1596,9 @@ NTSTATUS hdb_samba4_create_kdc(TALLOC_CTX *mem_ctx,
 	(*db)->hdb_db = NULL;
 	(*db)->hdb_capability_flags = 0;
 
-	nt_status = auth_system_session_info(*db, lp_ctx, &session_info);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
+	session_info = system_session(lp_ctx);
+	if (session_info == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 	
 	/* The idea here is very simple.  Using Kerberos to

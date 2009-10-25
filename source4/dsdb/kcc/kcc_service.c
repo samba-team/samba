@@ -40,12 +40,9 @@
  */
 static WERROR kccsrv_init_creds(struct kccsrv_service *service)
 {
-	NTSTATUS status;
-
-	status = auth_system_session_info(service, service->task->lp_ctx, 
-					  &service->system_session_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		return ntstatus_to_werror(status);
+	service->system_session_info = system_session(service->task->lp_ctx);
+	if (!service->system_session_info) {
+		return WERR_NOMEM;
 	}
 
 	return WERR_OK;

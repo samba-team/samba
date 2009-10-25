@@ -33,17 +33,8 @@ struct ldb_context *privilege_connect(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev_ctx,
 				      struct loadparm_context *lp_ctx)
 {
-	char *path;
-	struct ldb_context *pdb;
-
-	path = private_path(mem_ctx, lp_ctx, "privilege.ldb");
-	if (!path) return NULL;
-
-	pdb = ldb_wrap_connect(mem_ctx, ev_ctx, lp_ctx, path, 
-			       NULL, NULL, 0);
-	talloc_free(path);
-
-	return pdb;
+	return ldb_wrap_connect(mem_ctx, ev_ctx, lp_ctx, "privilege.ldb", 
+				NULL, NULL, 0);
 }
 
 /*
