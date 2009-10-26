@@ -140,7 +140,7 @@ static int schema_data_add(struct ldb_module *module, struct ldb_request *req)
 	const struct ldb_val *governsID = NULL;
 	const char *oid_attr = NULL;
 	const char *oid = NULL;
-	uint32_t id32;
+	uint32_t attid;
 	WERROR status;
 
 	ldb = ldb_module_get_ctx(module);
@@ -184,7 +184,7 @@ static int schema_data_add(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 		
-	status = dsdb_map_oid2int(schema, oid, &id32);
+	status = dsdb_schema_pfm_make_attid(schema->prefixmap, oid, &attid);
 	if (W_ERROR_IS_OK(status)) {
 		return ldb_next_request(module, req);
 	} else if (!W_ERROR_EQUAL(WERR_DS_NO_MSDS_INTID, status)) {

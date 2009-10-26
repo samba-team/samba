@@ -158,12 +158,6 @@ WERROR dsdb_get_oid_mappings_ldb(const struct dsdb_schema *schema,
 }
 
 
-WERROR dsdb_map_oid2int(const struct dsdb_schema *schema, const char *in, uint32_t *out)
-{
-	return dsdb_find_prefix_for_oid(schema->num_prefixes, schema->prefixes, in, out);
-}
-
-
 WERROR dsdb_map_int2oid(const struct dsdb_schema *schema, uint32_t in, TALLOC_CTX *mem_ctx, const char **out)
 {
 	uint32_t i;
@@ -687,7 +681,9 @@ WERROR dsdb_attribute_from_ldb(struct ldb_context *ldb,
 		/* set an invalid value */
 		attr->attributeID_id = 0xFFFFFFFF;
 	} else {
-		status = dsdb_map_oid2int(schema, attr->attributeID_oid, &attr->attributeID_id);
+		status = dsdb_schema_pfm_make_attid(schema->prefixmap,
+						    attr->attributeID_oid,
+						    &attr->attributeID_id);
 		if (!W_ERROR_IS_OK(status)) {
 			DEBUG(0,("%s: '%s': unable to map attributeID %s: %s\n",
 				__location__, attr->lDAPDisplayName, attr->attributeID_oid,
@@ -710,7 +706,9 @@ WERROR dsdb_attribute_from_ldb(struct ldb_context *ldb,
 		/* set an invalid value */
 		attr->attributeSyntax_id = 0xFFFFFFFF;
 	} else {
-		status = dsdb_map_oid2int(schema, attr->attributeSyntax_oid, &attr->attributeSyntax_id);
+		status = dsdb_schema_pfm_make_attid(schema->prefixmap,
+						    attr->attributeSyntax_oid,
+						    &attr->attributeSyntax_id);
 		if (!W_ERROR_IS_OK(status)) {
 			DEBUG(0,("%s: '%s': unable to map attributeSyntax_ %s: %s\n",
 				__location__, attr->lDAPDisplayName, attr->attributeSyntax_oid,
@@ -763,7 +761,9 @@ WERROR dsdb_class_from_ldb(const struct dsdb_schema *schema,
 		/* set an invalid value */
 		obj->governsID_id = 0xFFFFFFFF;
 	} else {
-		status = dsdb_map_oid2int(schema, obj->governsID_oid, &obj->governsID_id);
+		status = dsdb_schema_pfm_make_attid(schema->prefixmap,
+						    obj->governsID_oid,
+						    &obj->governsID_id);
 		if (!W_ERROR_IS_OK(status)) {
 			DEBUG(0,("%s: '%s': unable to map governsID %s: %s\n",
 				__location__, obj->lDAPDisplayName, obj->governsID_oid,
@@ -973,7 +973,7 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 								     uint32_t *idx)
 {
 	WERROR status;
-	uint32_t i, id;
+	uint32_t i, attid;
 	const char *oid = NULL;
 
 	for(i=0; i < ARRAY_SIZE(name_mappings); i++) {
@@ -987,13 +987,13 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 		return NULL;
 	}
 
-	status = dsdb_map_oid2int(schema, oid, &id);
+	status = dsdb_schema_pfm_make_attid(schema->prefixmap, oid, &attid);
 	if (!W_ERROR_IS_OK(status)) {
 		return NULL;
 	}
 
 	for (i=0; i < obj->attribute_ctr.num_attributes; i++) {
-		if (obj->attribute_ctr.attributes[i].attid != id) continue;
+		if (obj->attribute_ctr.attributes[i].attid != attid) continue;
 
 		if (idx) *idx = i;
 		return &obj->attribute_ctr.attributes[i];
