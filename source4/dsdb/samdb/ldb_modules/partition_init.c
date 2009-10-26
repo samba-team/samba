@@ -188,6 +188,7 @@ static int new_partition_from_dn(struct ldb_context *ldb, struct partition_priva
 	const char *backend_url;
 	struct dsdb_control_current_partition *ctrl;
 	struct ldb_module *backend_module;
+	struct ldb_module *module_chain;
 	const char **modules;
 	int ret;
 
@@ -261,7 +262,7 @@ static int new_partition_from_dn(struct ldb_context *ldb, struct partition_priva
 		talloc_free(*partition);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
-	ret = ldb_load_modules_list(ldb, modules, backend_module, &(*partition)->module);
+	ret = ldb_load_modules_list(ldb, modules, backend_module, &module_chain);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, 
 				       "partition_init: "
@@ -270,7 +271,7 @@ static int new_partition_from_dn(struct ldb_context *ldb, struct partition_priva
 		talloc_free(*partition);
 		return ret;
 	}
-	ret = ldb_init_module_chain(ldb, (*partition)->module);
+	ret = ldb_init_module_chain(ldb, module_chain);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb,
 				       "partition_init: "
@@ -280,16 +281,24 @@ static int new_partition_from_dn(struct ldb_context *ldb, struct partition_priva
 		return ret;
 	}
 
-	talloc_steal((*partition), (*partition)->module);
+	/* This weirdness allows us to use ldb_next_request() in partition.c */
+	(*partition)->module = ldb_module_new(*partition, ldb, "partition_next", NULL);
+	if (!(*partition)->module) {
+		ldb_oom(ldb);
+		talloc_free(*partition);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	(*partition)->module->next = talloc_steal((*partition)->module, module_chain);
 
 	/* if we were in a transaction then we need to start a
 	   transaction on this new partition, otherwise we'll get a
 	   transaction mismatch when we end the transaction */
 	if (data->in_transaction) {
-		struct ldb_module *next = (*partition)->module;
-		PARTITION_FIND_OP(next, start_transaction);
-
-		ret = next->ops->start_transaction(next);
+		if (ldb->flags & LDB_FLG_ENABLE_TRACING) {
+			ldb_debug(ldb, LDB_DEBUG_TRACE, "partition_start_trans() -> %s (new partition)", 
+				  ldb_dn_get_linearized((*partition)->ctrl->dn));
+		}
+		ret = ldb_next_start_trans((*partition)->module);
 	}
 
 	return ret;
@@ -409,7 +418,6 @@ int partition_reload_if_required(struct ldb_module *module,
 		DATA_BLOB dn_blob;
 		struct ldb_dn *dn;
 		struct dsdb_partition *partition;
-		struct ldb_module tmp_module;
 		struct ldb_result *dn_res;
 		const char *no_attrs[] = { NULL };
 
@@ -470,12 +478,8 @@ int partition_reload_if_required(struct ldb_module *module,
 			return ret;
 		}
 
-		/* Hack to be able to re-use dsdb_module_search_dn, which calls ldb_next_request(), which needs ->next filled out */
-		tmp_module = *partition->module;
-		tmp_module.next = partition->module;
-		
 		/* Get the 'correct' case of the partition DNs from the database */
-		ret = dsdb_module_search_dn(&tmp_module, data, &dn_res, 
+		ret = dsdb_module_search_dn(partition->module, data, &dn_res, 
 					    dn, no_attrs);
 		if (ret == LDB_SUCCESS) {
 			talloc_free(partition->ctrl->dn);
@@ -541,7 +545,7 @@ static int new_partition_set_replicated_metadata(struct ldb_context *ldb,
 			return ret;
 		}
 		/* do request */
-		ret = partition_request(partition->module, add_req);
+		ret = ldb_next_request(partition->module, add_req);
 		/* wait */
 		if (ret == LDB_SUCCESS) {
 			ret = ldb_wait(add_req->handle, LDB_WAIT_ALL);
@@ -568,7 +572,7 @@ static int new_partition_set_replicated_metadata(struct ldb_context *ldb,
 				return ret;
 			}
 			/* do request */
-			ret = partition_request(partition->module, del_req);
+			ret = ldb_next_request(partition->module, del_req);
 			
 			/* wait */
 			if (ret == LDB_SUCCESS) {
@@ -595,7 +599,7 @@ static int new_partition_set_replicated_metadata(struct ldb_context *ldb,
 			}
 			
 			/* do the add again */
-			ret = partition_request(partition->module, add_req);
+			ret = ldb_next_request(partition->module, add_req);
 			
 			/* wait */
 			if (ret == LDB_SUCCESS) {
@@ -694,7 +698,7 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 		
 		last_req = mod_req;
 
-		ret = partition_request(module, mod_req);
+		ret = ldb_next_request(module, mod_req);
 		if (ret == LDB_SUCCESS) {
 			ret = ldb_wait(mod_req->handle, LDB_WAIT_ALL);
 		}

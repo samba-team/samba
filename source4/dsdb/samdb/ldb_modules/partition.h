@@ -48,17 +48,4 @@ struct partition_private_data {
 	uint32_t in_transaction;
 };
 
-#define PARTITION_FIND_OP_NOERROR(module, op) do { \
-        while (module && module->ops->op == NULL) module = module->next; \
-} while (0)
-
-#define PARTITION_FIND_OP(module, op) do { \
-	PARTITION_FIND_OP_NOERROR(module, op); \
-        if (module == NULL) { \
-                ldb_asprintf_errstring(ldb_module_get_ctx(module), \
-			"Unable to find backend operation for " #op ); \
-                return LDB_ERR_OPERATIONS_ERROR; \
-        } \
-} while (0)
-
 #include "dsdb/samdb/ldb_modules/partition_proto.h"
