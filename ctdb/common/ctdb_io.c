@@ -46,6 +46,7 @@ struct ctdb_queue {
 	struct ctdb_context *ctdb;
 	struct ctdb_partial partial; /* partial input packet */
 	struct ctdb_queue_pkt *out_queue;
+	uint32_t out_queue_length;
 	struct fd_event *fde;
 	int fd;
 	size_t alignment;
@@ -57,12 +58,7 @@ struct ctdb_queue {
 
 int ctdb_queue_length(struct ctdb_queue *queue)
 {
-	int i;
-	struct ctdb_queue_pkt *pkt;
-
-	for(i=0, pkt=queue->out_queue;pkt;i++,pkt=pkt->next);
-
-	return i;
+	return queue->out_queue_length;
 }
 
 /*
@@ -188,6 +184,7 @@ static void queue_io_write(struct ctdb_queue *queue)
 			if (pkt->length != pkt->full_length) {
 				/* partial packet sent - we have to drop it */
 				DLIST_REMOVE(queue->out_queue, pkt);
+				queue->out_queue_length--;
 				talloc_free(pkt);
 			}
 			talloc_free(queue->fde);
@@ -206,6 +203,7 @@ static void queue_io_write(struct ctdb_queue *queue)
 		}
 
 		DLIST_REMOVE(queue->out_queue, pkt);
+		queue->out_queue_length--;
 		talloc_free(pkt);
 	}
 
@@ -286,6 +284,7 @@ int ctdb_queue_send(struct ctdb_queue *queue, uint8_t *data, uint32_t length)
 	}
 
 	DLIST_ADD_END(queue->out_queue, pkt, struct ctdb_queue_pkt *);
+	queue->out_queue_length++;
 
 	if (queue->ctdb->tunable.verbose_memory_names != 0) {
 		struct ctdb_req_header *hdr = (struct ctdb_req_header *)pkt->data;
