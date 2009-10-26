@@ -21,8 +21,9 @@
 
 #include "includes.h"
 #include "torture/smbtorture.h"
-#include "torture/rpc/drsuapi.h"
 #include "dsdb/samdb/samdb.h"
+#include "torture/rpc/drsuapi.h"
+#include "param/param.h"
 
 
 /**
@@ -369,7 +370,7 @@ static bool torture_drs_unit_pfm_to_from_drsuapi(struct torture_context *tctx, s
 	TALLOC_CTX *mem_ctx;
 
 	mem_ctx = talloc_new(tctx);
-	torture_assert(tctx, mem_ctx, "Unexptected: Have no memory!");
+	torture_assert(tctx, mem_ctx, "Unexpected: Have no memory!");
 
 	/* convert Schema_prefixMap to drsuapi_prefixMap */
 	werr = dsdb_drsuapi_pfm_from_schema_pfm(priv->pfm_full, schema_info_default, mem_ctx, &ctr);
@@ -406,6 +407,62 @@ static bool torture_drs_unit_pfm_to_from_drsuapi(struct torture_context *tctx, s
 	torture_assert_werr_ok(tctx, werr, "dsdb_schema_pfm_from_drsuapi_pfm() failed");
 	/* compare against the original */
 	if (!_torture_drs_pfm_compare_same(tctx, priv->pfm_full, pfm)) {
+		talloc_free(mem_ctx);
+		return false;
+	}
+
+	talloc_free(mem_ctx);
+	return true;
+}
+
+
+/**
+ * Test Schema prefixMap conversions to/from ldb_val
+ * blob representation.
+ */
+static bool torture_drs_unit_pfm_to_from_ldb_val(struct torture_context *tctx, struct drsut_prefixmap_data *priv)
+{
+	WERROR werr;
+	const char *schema_info;
+	const char *schema_info_default = "FF0000000000000000000000000000000123456789";
+	struct dsdb_schema *schema;
+	struct ldb_val pfm_ldb_val;
+	struct ldb_val schema_info_ldb_val;
+	TALLOC_CTX *mem_ctx;
+
+	mem_ctx = talloc_new(tctx);
+	torture_assert(tctx, mem_ctx, "Unexpected: Have no memory!");
+
+	schema = dsdb_new_schema(mem_ctx, lp_iconv_convenience(tctx->lp_ctx));
+	torture_assert(tctx, schema, "Unexpected: failed to allocate schema object");
+
+	/* set priv->pfm_full as prefixMap for new schema object */
+	schema->prefixmap = priv->pfm_full;
+	schema->schema_info = schema_info_default;
+
+	/* convert schema_prefixMap to ldb_val blob */
+	werr = dsdb_get_oid_mappings_ldb(schema, mem_ctx, &pfm_ldb_val, &schema_info_ldb_val);
+	torture_assert_werr_ok(tctx, werr, "dsdb_get_oid_mappings_ldb() failed");
+	torture_assert(tctx, pfm_ldb_val.data && pfm_ldb_val.length,
+		       "pfm_ldb_val not constructed correctly");
+	torture_assert(tctx, schema_info_ldb_val.data && schema_info_ldb_val.length,
+		       "schema_info_ldb_val not constructed correctly");
+	/* look for schema_info entry - it should be the last one */
+	schema_info = hex_encode_talloc(mem_ctx,
+					schema_info_ldb_val.data,
+					schema_info_ldb_val.length);
+	torture_assert_str_equal(tctx,
+				 schema_info,
+				 schema_info_default,
+				 "schema_info not stored correctly or not last entry");
+
+	/* convert pfm_ldb_val back to schema_prefixMap */
+	schema->prefixmap = NULL;
+	schema->schema_info = NULL;
+	werr = dsdb_load_oid_mappings_ldb(schema, &pfm_ldb_val, &schema_info_ldb_val);
+	torture_assert_werr_ok(tctx, werr, "dsdb_load_oid_mappings_ldb() failed");
+	/* compare against the original */
+	if (!_torture_drs_pfm_compare_same(tctx, schema->prefixmap, priv->pfm_full)) {
 		talloc_free(mem_ctx);
 		return false;
 	}
@@ -466,6 +523,8 @@ struct torture_tcase * torture_drs_unit_prefixmap(struct torture_suite *suite)
 	torture_tcase_add_simple_test(tc, "oid_from_attid_full_map", (pfn_run)torture_drs_unit_pfm_oid_from_attid);
 
 	torture_tcase_add_simple_test(tc, "pfm_to_from_drsuapi", (pfn_run)torture_drs_unit_pfm_to_from_drsuapi);
+
+	torture_tcase_add_simple_test(tc, "pfm_to_from_ldb_val", (pfn_run)torture_drs_unit_pfm_to_from_ldb_val);
 
 	return tc;
 }
