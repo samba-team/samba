@@ -122,40 +122,9 @@ WERROR dsdb_get_oid_mappings_drsuapi(const struct dsdb_schema *schema,
 				     TALLOC_CTX *mem_ctx,
 				     struct drsuapi_DsReplicaOIDMapping_Ctr **_ctr)
 {
-	DATA_BLOB oid_blob;
-	struct drsuapi_DsReplicaOIDMapping_Ctr *ctr;
-	uint32_t i;
-
-	ctr = talloc(mem_ctx, struct drsuapi_DsReplicaOIDMapping_Ctr);
-	W_ERROR_HAVE_NO_MEMORY(ctr);
-
-	ctr->num_mappings	= schema->num_prefixes;
-	if (include_schema_info) ctr->num_mappings++;
-	ctr->mappings = talloc_array(schema, struct drsuapi_DsReplicaOIDMapping, ctr->num_mappings);
-	W_ERROR_HAVE_NO_MEMORY(ctr->mappings);
-
-	for (i=0; i < schema->num_prefixes; i++) {
-		if (!ber_write_partial_OID_String(ctr->mappings, &oid_blob, schema->prefixes[i].oid)) {
-			DEBUG(0, ("write_partial_OID failed for %s", schema->prefixes[i].oid));
-			return WERR_INTERNAL_ERROR;
-		}
-
-		ctr->mappings[i].id_prefix	= schema->prefixes[i].id>>16;
-		ctr->mappings[i].oid.length	= oid_blob.length;
-		ctr->mappings[i].oid.binary_oid	= oid_blob.data;
-	}
-
-	if (include_schema_info) {
-		oid_blob = strhex_to_data_blob(ctr->mappings, schema->schema_info);
-		W_ERROR_HAVE_NO_MEMORY(oid_blob.data);
-
-		ctr->mappings[i].id_prefix	= 0;
-		ctr->mappings[i].oid.length	= oid_blob.length;
-		ctr->mappings[i].oid.binary_oid	= oid_blob.data;
-	}
-
-	*_ctr = ctr;
-	return WERR_OK;
+	return dsdb_drsuapi_pfm_from_schema_pfm(schema->prefixmap,
+						include_schema_info ? schema->schema_info : NULL,
+						mem_ctx, _ctr);
 }
 
 WERROR dsdb_get_oid_mappings_ldb(const struct dsdb_schema *schema,
