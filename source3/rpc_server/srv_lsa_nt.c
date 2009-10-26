@@ -372,9 +372,8 @@ NTSTATUS _lsa_OpenPolicy2(pipes_struct *p,
 	}
 
 	status = access_check_object(psd, p->server_info->ptok,
-		NULL, 0, des_access,
-		&acc_granted, "_lsa_OpenPolicy2" );
-
+				     NULL, 0, des_access,
+				     &acc_granted, "_lsa_OpenPolicy2" );
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1675,9 +1674,9 @@ NTSTATUS _lsa_CreateAccount(pipes_struct *p,
 		return status;
 	}
 
-        status = access_check_object(psd, p->server_info->ptok,
-                NULL, 0, r->in.access_mask,
-                &acc_granted, "_lsa_CreateAccount");
+	status = access_check_object(psd, p->server_info->ptok,
+				     NULL, 0, r->in.access_mask,
+				     &acc_granted, "_lsa_CreateAccount");
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1746,9 +1745,8 @@ NTSTATUS _lsa_OpenAccount(pipes_struct *p,
 	}
 
 	status = access_check_object(psd, p->server_info->ptok,
-		NULL, 0, des_access,
-		&acc_granted, "_lsa_OpenAccount" );
-
+				     NULL, 0, des_access,
+				     &acc_granted, "_lsa_OpenAccount" );
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2138,10 +2136,10 @@ NTSTATUS _lsa_AddAccountRights(pipes_struct *p,
  	 * on the account sid. We don't check here so just use the latter. JRA.
  	 */
 
-        status = access_check_object(psd, p->server_info->ptok,
-                NULL, 0, LSA_ACCOUNT_ADJUST_PRIVILEGES|LSA_ACCOUNT_ADJUST_SYSTEM_ACCESS|LSA_ACCOUNT_VIEW,
-                &acc_granted, "_lsa_AddAccountRights" );
-
+	status = access_check_object(psd, p->server_info->ptok,
+				     NULL, 0,
+				     LSA_ACCOUNT_ADJUST_PRIVILEGES|LSA_ACCOUNT_ADJUST_SYSTEM_ACCESS|LSA_ACCOUNT_VIEW,
+				     &acc_granted, "_lsa_AddAccountRights" );
         if (!NT_STATUS_IS_OK(status)) {
                 return status;
         }
@@ -2208,11 +2206,11 @@ NTSTATUS _lsa_RemoveAccountRights(pipes_struct *p,
 	 * and DELETE on the account sid.
  	 */
 
-        status = access_check_object(psd, p->server_info->ptok,
-                NULL, 0, LSA_ACCOUNT_ADJUST_PRIVILEGES|LSA_ACCOUNT_ADJUST_SYSTEM_ACCESS|
-			LSA_ACCOUNT_VIEW|STD_RIGHT_DELETE_ACCESS,
-                &acc_granted, "_lsa_AddAccountRights" );
-
+	status = access_check_object(psd, p->server_info->ptok,
+				     NULL, 0,
+				     LSA_ACCOUNT_ADJUST_PRIVILEGES|LSA_ACCOUNT_ADJUST_SYSTEM_ACCESS|
+				     LSA_ACCOUNT_VIEW|STD_RIGHT_DELETE_ACCESS,
+				     &acc_granted, "_lsa_AddAccountRights" );
         if (!NT_STATUS_IS_OK(status)) {
                 return status;
         }
