@@ -3,7 +3,6 @@
                  context="S"
                  basic="1" advanced="1" developer="1"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
- <synonym>public</synonym>
  <description>
      <para>If this parameter is <constant>yes</constant> for a
     service, then the share hosted by the service will only be visible
