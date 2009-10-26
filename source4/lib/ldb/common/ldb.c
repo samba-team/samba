@@ -288,6 +288,10 @@ void ldb_reset_err_string(struct ldb_context *ldb)
 #define FIRST_OP_NOERR(ldb, op) do { \
 	module = ldb->modules;					\
 	while (module && module->ops->op == NULL) module = module->next; \
+	if ((ldb->flags & LDB_FLG_ENABLE_TRACING) && module) { \
+		ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_trace_request: (%s)->" #op, \
+			  module->ops->name);				\
+	}								\
 } while (0)
 
 #define FIRST_OP(ldb, op) do { \
@@ -334,6 +338,10 @@ int ldb_transaction_start(struct ldb_context *ldb)
 				ldb_strerror(status),
 				status);
 		}
+	}
+	if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) { 
+		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "start ldb transaction error: %s", 
+			  ldb_errstring(module->ldb));				
 	}
 	return status;
 }
@@ -382,6 +390,10 @@ int ldb_transaction_prepare_commit(struct ldb_context *ldb)
 					       "ldb transaction prepare commit: %s (%d)",
 					       ldb_strerror(status),
 					       status);
+		}
+		if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) { 
+			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "prepare commit transaction error: %s", 
+				  ldb_errstring(module->ldb));				
 		}
 	}
 
@@ -432,6 +444,10 @@ int ldb_transaction_commit(struct ldb_context *ldb)
 				ldb_strerror(status),
 				status);
 		}
+		if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) { 
+			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "commit ldb transaction error: %s", 
+				  ldb_errstring(module->ldb));				
+		}
 		/* cancel the transaction */
 		FIRST_OP(ldb, del_transaction);
 		module->ops->del_transaction(module);
@@ -476,6 +492,10 @@ int ldb_transaction_cancel(struct ldb_context *ldb)
 				"ldb transaction cancel: %s (%d)",
 				ldb_strerror(status),
 				status);
+		}
+		if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) { 
+			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "cancel ldb transaction error: %s", 
+				  ldb_errstring(module->ldb));				
 		}
 	}
 	return status;

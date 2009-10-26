@@ -481,6 +481,10 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 #define FIND_OP_NOERR(module, op) do { \
 	module = module->next; \
 	while (module && module->ops->op == NULL) module = module->next; \
+	if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) { \
+		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "ldb_trace_next_request: (%s)->" #op, \
+			  module->ops->name);				\
+	}								\
 } while (0)
 
 #define FIND_OP(module, op) do { \
@@ -611,31 +615,83 @@ int ldb_next_init(struct ldb_module *module)
 
 int ldb_next_start_trans(struct ldb_module *module)
 {
+	int ret;
 	FIND_OP(module, start_transaction);
-	return module->ops->start_transaction(module);
+	ret = module->ops->start_transaction(module);
+	if (ret == LDB_SUCCESS) {
+		return ret;
+	}
+	if (!ldb_errstring(module->ldb)) {
+		/* Set a default error string, to place the blame somewhere */
+		ldb_asprintf_errstring(module->ldb, "start_trans error in module %s: %s (%d)", module->ops->name, ldb_strerror(ret), ret);
+	}
+	if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) { 
+		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "ldb_next_start_trans error: %s", 
+			  ldb_errstring(module->ldb));				
+	}
+	return ret;
 }
 
 int ldb_next_end_trans(struct ldb_module *module)
 {
+	int ret;
 	FIND_OP(module, end_transaction);
-	return module->ops->end_transaction(module);
+	ret = module->ops->end_transaction(module);
+	if (ret == LDB_SUCCESS) {
+		return ret;
+	}
+	if (!ldb_errstring(module->ldb)) {
+		/* Set a default error string, to place the blame somewhere */
+		ldb_asprintf_errstring(module->ldb, "end_trans error in module %s: %s (%d)", module->ops->name, ldb_strerror(ret), ret);
+	}
+	if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) { 
+		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "ldb_next_end_trans error: %s", 
+			  ldb_errstring(module->ldb));				
+	}
+	return ret;
 }
 
 int ldb_next_prepare_commit(struct ldb_module *module)
 {
+	int ret;
 	FIND_OP_NOERR(module, prepare_commit);
 	if (module == NULL) {
 		/* we are allowed to have no prepare commit in
 		   backends */
 		return LDB_SUCCESS;
 	}
-	return module->ops->prepare_commit(module);
+	ret = module->ops->prepare_commit(module);
+	if (ret == LDB_SUCCESS) {
+		return ret;
+	}
+	if (!ldb_errstring(module->ldb)) {
+		/* Set a default error string, to place the blame somewhere */
+		ldb_asprintf_errstring(module->ldb, "prepare_commit error in module %s: %s (%d)", module->ops->name, ldb_strerror(ret), ret);
+	}
+	if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) { 
+		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "ldb_next_prepare_commit error: %s", 
+			  ldb_errstring(module->ldb));				
+	}
+	return ret;
 }
 
 int ldb_next_del_trans(struct ldb_module *module)
 {
+	int ret;
 	FIND_OP(module, del_transaction);
-	return module->ops->del_transaction(module);
+	ret = module->ops->del_transaction(module);
+	if (ret == LDB_SUCCESS) {
+		return ret;
+	}
+	if (!ldb_errstring(module->ldb)) {
+		/* Set a default error string, to place the blame somewhere */
+		ldb_asprintf_errstring(module->ldb, "del_trans error in module %s: %s (%d)", module->ops->name, ldb_strerror(ret), ret);
+	}
+	if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) { 
+		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "ldb_next_del_trans error: %s", 
+			  ldb_errstring(module->ldb));				
+	}
+	return ret;
 }
 
 struct ldb_handle *ldb_handle_new(TALLOC_CTX *mem_ctx, struct ldb_context *ldb)
