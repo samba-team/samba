@@ -1513,6 +1513,24 @@ NTSTATUS _lsa_CreateTrustedDomainEx2(struct pipes_struct *p,
 }
 
 /***************************************************************************
+ _lsa_CreateTrustedDomainEx
+ ***************************************************************************/
+
+NTSTATUS _lsa_CreateTrustedDomainEx(struct pipes_struct *p,
+				    struct lsa_CreateTrustedDomainEx *r)
+{
+	struct lsa_CreateTrustedDomainEx2 q;
+
+	q.in.policy_handle	= r->in.policy_handle;
+	q.in.info		= r->in.info;
+	q.in.auth_info		= r->in.auth_info;
+	q.in.access_mask	= r->in.access_mask;
+	q.out.trustdom_handle	= r->out.trustdom_handle;
+
+	return _lsa_CreateTrustedDomainEx2(p, &q);
+}
+
+/***************************************************************************
  ***************************************************************************/
 
 NTSTATUS _lsa_CreateTrustedDomain(struct pipes_struct *p,
@@ -2696,13 +2714,6 @@ NTSTATUS _lsa_SetTrustedDomainInfoByName(struct pipes_struct *p,
 
 NTSTATUS _lsa_EnumTrustedDomainsEx(struct pipes_struct *p,
 				   struct lsa_EnumTrustedDomainsEx *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_CreateTrustedDomainEx(struct pipes_struct *p,
-				    struct lsa_CreateTrustedDomainEx *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
