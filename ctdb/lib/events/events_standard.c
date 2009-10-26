@@ -28,6 +28,7 @@
 */
 
 #include "includes.h"
+#include "system/time.h"
 #include "system/filesys.h"
 #include "system/network.h"
 #include "system/select.h" /* needed for HAVE_EVENTS_EPOLL */
@@ -571,6 +572,8 @@ static int std_event_loop_once(struct event_context *ev)
 */
 static int std_event_loop_wait(struct event_context *ev)
 {
+	static time_t t=0;
+	time_t new_t;
 	struct std_event_context *std_ev = talloc_get_type(ev->additional_data,
 							   struct std_event_context);
 	std_ev->exit_code = 0;
@@ -579,6 +582,17 @@ static int std_event_loop_wait(struct event_context *ev)
 		if (std_event_loop_once(ev) != 0) {
 			break;
 		}
+		new_t=time(NULL);
+		if (t != 0) {
+			if (t > new_t) {
+				DEBUG(0,("ERROR Time skipped backward by %d seconds\n", (int)(t-new_t)));
+			}
+			/* We assume here that we get at least one event every 5 seconds */
+			if (new_t > (t+5)) {
+				DEBUG(0,("ERROR Time jumped forward by %d seconds\n", (int)(new_t-t)));
+			}
+		}
+		t=new_t;
 	}
 
 	return std_ev->exit_code;
