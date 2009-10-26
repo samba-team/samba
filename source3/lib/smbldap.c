@@ -724,9 +724,9 @@ int smb_ldap_setup_conn(LDAP **ldap_struct, const char *uri)
 		return rc;
 	}
 
-	if (lp_ldap_ref_follow() != Auto) {
+	if (lp_ldap_follow_referral() != Auto) {
 		rc = ldap_set_option(*ldap_struct, LDAP_OPT_REFERRALS,
-		     lp_ldap_ref_follow() ? LDAP_OPT_ON : LDAP_OPT_OFF);
+		     lp_ldap_follow_referral() ? LDAP_OPT_ON : LDAP_OPT_OFF);
 		if (rc != LDAP_SUCCESS)
 			DEBUG(0, ("Failed to set LDAP_OPT_REFERRALS: %s\n",
 				ldap_err2string(rc)));
