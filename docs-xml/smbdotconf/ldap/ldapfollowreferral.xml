@@ -1,4 +1,4 @@
-<samba:parameter name="ldap ref follow" context="G" type="enum"
+<samba:parameter name="ldap follow referral" context="G" type="enum"
 	advanced="1" developer="1"
 	xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 
