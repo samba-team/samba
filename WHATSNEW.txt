@@ -21,8 +21,9 @@ smb.conf changes
    Parameter Name                      Description     Default
    --------------                      -----------     -------
 
+   create krb5 conf		       New	       yes
    ldap ref follow		       New	       auto
-
+   store create time		       New	       no
 
 
 ######################################################################
