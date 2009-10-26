@@ -49,9 +49,10 @@
 #define BIT_FIX_INIT    0x04000000
 #define BIT_BADPWRESET	0x08000000
 #define BIT_LOGONHOURS	0x10000000
+#define BIT_KICKOFFTIME	0x20000000
 
 #define MASK_ALWAYS_GOOD	0x0000001F
-#define MASK_USER_GOOD		0x00405FE0
+#define MASK_USER_GOOD		0x20405FE0
 
 static int get_sid_from_cli_string(DOM_SID *sid, const char *str_sid)
 {
@@ -493,7 +494,8 @@ static int set_user_info(const char *username, const char *fullname,
 			 const char *drive, const char *script,
 			 const char *profile, const char *account_control,
 			 const char *user_sid, const char *user_domain,
-			 const bool badpw, const bool hours)
+			 const bool badpw, const bool hours,
+			 const char *kickoff_time)
 {
 	bool updated_autolock = False, updated_badpw = False;
 	struct samu *sam_pwent;
@@ -576,6 +578,24 @@ static int set_user_info(const char *username, const char *fullname,
 	if (badpw) {
 		pdb_set_bad_password_count(sam_pwent, 0, PDB_CHANGED);
 		pdb_set_bad_password_time(sam_pwent, 0, PDB_CHANGED);
+	}
+
+	if (kickoff_time) {
+		char *endptr;
+		time_t value = get_time_t_max();
+
+		if (strcmp(kickoff_time, "never") != 0) {
+			uint32_t num = strtoul(kickoff_time, &endptr, 10);
+
+			if ((endptr == kickoff_time) || (endptr[0] != '\0')) {
+				fprintf(stderr, "Failed to parse kickoff time\n");
+				return -1;
+			}
+
+			value = convert_uint32_to_time_t(num);
+		}
+
+		pdb_set_kickoff_time(sam_pwent, value, PDB_CHANGED);
 	}
 
 	if (NT_STATUS_IS_OK(pdb_update_sam_account(sam_pwent))) {
@@ -985,6 +1005,7 @@ int main (int argc, char **argv)
 	static char *pwd_time_format = NULL;
 	static int pw_from_stdin = False;
 	struct pdb_methods *bin, *bout;
+	static char *kickoff_time = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
 	poptContext pc;
@@ -1021,6 +1042,7 @@ int main (int argc, char **argv)
 		{"logon-hours-reset", 'Z', POPT_ARG_NONE, &hours_reset, 0, "reset logon hours", NULL},
 		{"time-format", 0, POPT_ARG_STRING, &pwd_time_format, 0, "The time format for time parameters", NULL },
 		{"password-from-stdin", 't', POPT_ARG_NONE, &pw_from_stdin, 0, "get password from standard in", NULL},
+		{"kickoff-time", 'K', POPT_ARG_STRING, &kickoff_time, 0, "set the kickoff time", NULL},
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
@@ -1079,7 +1101,8 @@ int main (int argc, char **argv)
 			(backend_in ? BIT_IMPORT : 0) +
 			(backend_out ? BIT_EXPORT : 0) +
 			(badpw_reset ? BIT_BADPWRESET : 0) +
-			(hours_reset ? BIT_LOGONHOURS : 0);
+			(hours_reset ? BIT_LOGONHOURS : 0) +
+			(kickoff_time ? BIT_KICKOFFTIME : 0);
 
 	if (setparms & BIT_BACKEND) {
 		/* HACK: set the global passdb backend by overwriting globals.
@@ -1275,7 +1298,8 @@ int main (int argc, char **argv)
 						     home_drive, logon_script,
 						     profile_path, account_control,
 						     user_sid, user_domain,
-						     badpw_reset, hours_reset);
+						     badpw_reset, hours_reset,
+						     kickoff_time);
 			}
 		}
 	}
