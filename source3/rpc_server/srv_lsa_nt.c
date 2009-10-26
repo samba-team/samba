@@ -1017,23 +1017,24 @@ NTSTATUS _lsa_LookupSids3(pipes_struct *p,
 /***************************************************************************
  ***************************************************************************/
 
-static int lsa_lookup_level_to_flags(uint16 level)
+static int lsa_lookup_level_to_flags(enum lsa_LookupNamesLevel level)
 {
 	int flags;
 
 	switch (level) {
-		case 1:
+		case LSA_LOOKUP_NAMES_ALL: /* 1 */
 			flags = LOOKUP_NAME_ALL;
 			break;
-		case 2:
+		case LSA_LOOKUP_NAMES_DOMAINS_ONLY: /* 2 */
 			flags = LOOKUP_NAME_DOMAIN|LOOKUP_NAME_REMOTE|LOOKUP_NAME_ISOLATED;
 			break;
-		case 3:
+		case LSA_LOOKUP_NAMES_PRIMARY_DOMAIN_ONLY: /* 3 */
 			flags = LOOKUP_NAME_DOMAIN|LOOKUP_NAME_ISOLATED;
 			break;
-		case 4:
-		case 5:
-		case 6:
+		case LSA_LOOKUP_NAMES_UPLEVEL_TRUSTS_ONLY: /* 4 */
+		case LSA_LOOKUP_NAMES_FOREST_TRUSTS_ONLY: /* 5 */
+		case LSA_LOOKUP_NAMES_UPLEVEL_TRUSTS_ONLY2: /* 6 */
+		case LSA_LOOKUP_NAMES_RODC_REFERRAL_TO_FULL_DC: /* 7 */
 		default:
 			flags = LOOKUP_NAME_NONE;
 			break;
