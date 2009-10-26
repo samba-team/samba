@@ -2210,7 +2210,7 @@ NTSTATUS _lsa_RemoveAccountRights(pipes_struct *p,
 				     NULL, 0,
 				     LSA_ACCOUNT_ADJUST_PRIVILEGES|LSA_ACCOUNT_ADJUST_SYSTEM_ACCESS|
 				     LSA_ACCOUNT_VIEW|STD_RIGHT_DELETE_ACCESS,
-				     &acc_granted, "_lsa_AddAccountRights" );
+				     &acc_granted, "_lsa_RemoveAccountRights");
         if (!NT_STATUS_IS_OK(status)) {
                 return status;
         }
