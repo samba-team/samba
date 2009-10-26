@@ -426,7 +426,7 @@ static NTSTATUS vampire_schema_chunk(void *private_data,
 
 		s->schema = s->self_made_schema;
 	} else {
-		status = dsdb_verify_oid_mappings_drsuapi(s->schema, mapping_ctr);
+		status = dsdb_schema_pfm_contains_drsuapi_pfm(s->schema->prefixmap, mapping_ctr);
 		if (!W_ERROR_IS_OK(status)) {
 			return werror_to_ntstatus(status);
 		}

@@ -229,7 +229,7 @@ WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
 		return WERR_DS_SCHEMA_NOT_LOADED;
 	}
 
-	status = dsdb_verify_oid_mappings_drsuapi(schema, mapping_ctr);
+	status = dsdb_schema_pfm_contains_drsuapi_pfm(schema->prefixmap, mapping_ctr);
 	W_ERROR_NOT_OK_RETURN(status);
 
 	out = talloc_zero(mem_ctx, struct dsdb_extended_replicated_objects);
