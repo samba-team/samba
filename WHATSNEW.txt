@@ -22,7 +22,7 @@ smb.conf changes
    --------------                      -----------     -------
 
    create krb5 conf		       New	       yes
-   ldap ref follow		       New	       auto
+   ldap follow referral		       New	       auto
    store create time		       New	       no
 
 
