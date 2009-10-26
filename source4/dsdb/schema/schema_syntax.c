@@ -684,9 +684,9 @@ static WERROR _dsdb_syntax_OID_oid_drsuapi_to_ldb(struct ldb_context *ldb,
 	W_ERROR_HAVE_NO_MEMORY(out->values);
 
 	for (i=0; i < out->num_values; i++) {
-		uint32_t v;
+		uint32_t attid;
 		WERROR status;
-		const char *str;
+		const char *oid;
 
 		if (in->value_ctr.values[i].blob == NULL) {
 			return WERR_FOOBAR;
@@ -696,12 +696,12 @@ static WERROR _dsdb_syntax_OID_oid_drsuapi_to_ldb(struct ldb_context *ldb,
 			return WERR_FOOBAR;
 		}
 
-		v = IVAL(in->value_ctr.values[i].blob->data, 0);
+		attid = IVAL(in->value_ctr.values[i].blob->data, 0);
 
-		status = dsdb_map_int2oid(schema, v, out->values, &str);
+		status = dsdb_schema_pfm_oid_from_attid(schema->prefixmap, attid, out->values, &oid);
 		W_ERROR_NOT_OK_RETURN(status);
 
-		out->values[i] = data_blob_string_const(str);
+		out->values[i] = data_blob_string_const(oid);
 	}
 
 	return WERR_OK;

@@ -190,7 +190,8 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 			const char *oid = NULL;
 
 			a = &cur->object.attribute_ctr.attributes[i];
-			status = dsdb_map_int2oid(s->self_made_schema, a->attid, s, &oid);
+			status = dsdb_schema_pfm_oid_from_attid(s->self_made_schema->prefixmap,
+								a->attid, s, &oid);
 			if (!W_ERROR_IS_OK(status)) {
 				return werror_to_ntstatus(status);
 			}

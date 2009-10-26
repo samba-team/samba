@@ -158,28 +158,6 @@ WERROR dsdb_get_oid_mappings_ldb(const struct dsdb_schema *schema,
 }
 
 
-WERROR dsdb_map_int2oid(const struct dsdb_schema *schema, uint32_t in, TALLOC_CTX *mem_ctx, const char **out)
-{
-	uint32_t i;
-
-	for (i=0; i < schema->num_prefixes; i++) {
-		const char *val;
-		if (schema->prefixes[i].id != (in & 0xFFFF0000)) {
-			continue;
-		}
-
-		val = talloc_asprintf(mem_ctx, "%s.%u",
-				      schema->prefixes[i].oid,
-				      in & 0xFFFF);
-		W_ERROR_HAVE_NO_MEMORY(val);
-
-		*out = val;
-		return WERR_OK;
-	}
-
-	return WERR_DS_NO_MSDS_INTID;
-}
-
 /*
  * this function is called from within a ldb transaction from the schema_fsmo module
  */
@@ -1181,7 +1159,8 @@ WERROR dsdb_attribute_from_drsuapi(struct ldb_context *ldb,
 	GET_STRING_DS(schema, r, "name", mem_ctx, attr, cn, true);
 	GET_STRING_DS(schema, r, "lDAPDisplayName", mem_ctx, attr, lDAPDisplayName, true);
 	GET_UINT32_DS(schema, r, "attributeID", attr, attributeID_id);
-	status = dsdb_map_int2oid(schema, attr->attributeID_id, mem_ctx, &attr->attributeID_oid);
+	status = dsdb_schema_pfm_oid_from_attid(schema->prefixmap, attr->attributeID_id,
+						mem_ctx, &attr->attributeID_oid);
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0,("%s: '%s': unable to map attributeID 0x%08X: %s\n",
 			__location__, attr->lDAPDisplayName, attr->attributeID_id,
@@ -1199,7 +1178,8 @@ WERROR dsdb_attribute_from_drsuapi(struct ldb_context *ldb,
 	GET_UINT32_DS(schema, r, "linkID", attr, linkID);
 
 	GET_UINT32_DS(schema, r, "attributeSyntax", attr, attributeSyntax_id);
-	status = dsdb_map_int2oid(schema, attr->attributeSyntax_id, mem_ctx, &attr->attributeSyntax_oid);
+	status = dsdb_schema_pfm_oid_from_attid(schema->prefixmap, attr->attributeSyntax_id,
+						mem_ctx, &attr->attributeSyntax_oid);
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0,("%s: '%s': unable to map attributeSyntax 0x%08X: %s\n",
 			__location__, attr->lDAPDisplayName, attr->attributeSyntax_id,
@@ -1247,7 +1227,8 @@ WERROR dsdb_class_from_drsuapi(struct dsdb_schema *schema,
 	GET_STRING_DS(schema, r, "name", mem_ctx, obj, cn, true);
 	GET_STRING_DS(schema, r, "lDAPDisplayName", mem_ctx, obj, lDAPDisplayName, true);
 	GET_UINT32_DS(schema, r, "governsID", obj, governsID_id);
-	status = dsdb_map_int2oid(schema, obj->governsID_id, mem_ctx, &obj->governsID_oid);
+	status = dsdb_schema_pfm_oid_from_attid(schema->prefixmap, obj->governsID_id,
+						mem_ctx, &obj->governsID_oid);
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0,("%s: '%s': unable to map governsID 0x%08X: %s\n",
 			__location__, obj->lDAPDisplayName, obj->governsID_id,
