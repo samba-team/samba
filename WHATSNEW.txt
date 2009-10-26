@@ -1,6 +1,6 @@
                    =============================
                    Release Notes for Samba 3.4.3
-			 October , 2009
+			 October 29, 2009
                    =============================
 
 
@@ -29,6 +29,8 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 6781: Fix renaming subfolders in Explorer view.
     * BUG 6793: Fix Winbind crash with "INTERNAL ERROR: Signal 6".
     * BUG 6796: Deleting an event context on shutdown can cause smbd to crash.
+    * BUG 6828: Fix infinite timeout when byte lock held outside of Samba.
+    * BUG 6829: Fix displaying of multibyte characters in smbclient.
 
 
 o   Günther Deschner <gd@samba.org>
@@ -95,6 +97,10 @@ o   Shirish Pargaonkar <shirishpargaonkar@gmail.com>
       a symbolic link.
 
 
+o   Karolin Seeger <kseeger@samba.org>
+    * Fix warning occuring when building the manpages.
+
+
 o   Simo Sorce <ssorce@redhat.com>
     * BUG 6764: Fix timeval calculation.
 
@@ -103,6 +109,9 @@ o   Bo Yang <boyang@samba.org>
     * BUG 6735: Don't overwrite password in pam_winbind, subsequent pam modules
       might use the old password and new password.
     * BUG 6811: Fix reference to freed memory in pam_winbind.
+    * BUG 6826: Don't fail authentication when one or some group of
+      require-membership-of is invalid.
+    * BUG 6840: Fix crash in pam_winbind.
 
 
 ######################################################################
