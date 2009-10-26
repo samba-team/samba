@@ -65,6 +65,41 @@ WERROR dsdb_load_prefixmap_from_drsuapi(struct dsdb_schema *schema,
 	return WERR_OK;
 }
 
+static WERROR _dsdb_prefixmap_from_ldb_val(const struct ldb_val *pfm_ldb_val,
+					   struct smb_iconv_convenience *iconv_convenience,
+					   TALLOC_CTX *mem_ctx,
+					   struct dsdb_schema_prefixmap **_pfm)
+{
+	WERROR werr;
+	enum ndr_err_code ndr_err;
+	struct prefixMapBlob pfm_blob;
+
+	TALLOC_CTX *temp_ctx = talloc_new(mem_ctx);
+	W_ERROR_HAVE_NO_MEMORY(temp_ctx);
+
+	ndr_err = ndr_pull_struct_blob(pfm_ldb_val, temp_ctx,
+				iconv_convenience, &pfm_blob,
+				(ndr_pull_flags_fn_t)ndr_pull_prefixMapBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
+		talloc_free(temp_ctx);
+		return ntstatus_to_werror(nt_status);
+	}
+
+	if (pfm_blob.version != PREFIX_MAP_VERSION_DSDB) {
+		DEBUG(0,("_dsdb_prefixmap_from_ldb_val: pfm_blob->version incorrect\n"));
+		talloc_free(temp_ctx);
+		return WERR_VERSION_PARSE_ERROR;
+	}
+
+	/* call the drsuapi version */
+	werr = dsdb_schema_pfm_from_drsuapi_pfm(&pfm_blob.ctr.dsdb, false, mem_ctx, _pfm, NULL);
+
+	talloc_free(temp_ctx);
+
+	return werr;
+}
+
 WERROR dsdb_load_oid_mappings_ldb(struct dsdb_schema *schema,
 				  const struct ldb_val *prefixMap,
 				  const struct ldb_val *schemaInfo)
