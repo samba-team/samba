@@ -105,49 +105,45 @@ WERROR dsdb_load_oid_mappings_ldb(struct dsdb_schema *schema,
 				  const struct ldb_val *schemaInfo)
 {
 	WERROR status;
-	enum ndr_err_code ndr_err;
-	struct prefixMapBlob pfm;
-	DATA_BLOB schema_info_blob;
+	const char *schema_info;
+	struct dsdb_schema_prefixmap *pfm;
+	TALLOC_CTX *mem_ctx;
 
-	TALLOC_CTX *mem_ctx = talloc_new(schema);
+	/* verify input params */
+	if (schemaInfo->length != 21) {
+		return WERR_INVALID_PARAMETER;
+	}
+	if (schemaInfo->data[0] != 0xFF) {
+		return WERR_INVALID_PARAMETER;
+	}
+
+	mem_ctx = talloc_new(schema);
 	W_ERROR_HAVE_NO_MEMORY(mem_ctx);
-	
-	ndr_err = ndr_pull_struct_blob(prefixMap, mem_ctx, schema->iconv_convenience, &pfm, (ndr_pull_flags_fn_t)ndr_pull_prefixMapBlob);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
-		talloc_free(mem_ctx);
-		return ntstatus_to_werror(nt_status);
-	}
 
-	if (pfm.version != PREFIX_MAP_VERSION_DSDB) {
-		talloc_free(mem_ctx);
-		return WERR_FOOBAR;
-	}
-
-	if (schemaInfo->length != 21 && schemaInfo->data[0] == 0xFF) {
-		talloc_free(mem_ctx);
-		return WERR_FOOBAR;
-	}
-
-	/* append the schema info as last element */
-	pfm.ctr.dsdb.num_mappings++;
-	pfm.ctr.dsdb.mappings = talloc_realloc(mem_ctx, pfm.ctr.dsdb.mappings,
-					       struct drsuapi_DsReplicaOIDMapping,
-					       pfm.ctr.dsdb.num_mappings);
-	W_ERROR_HAVE_NO_MEMORY(pfm.ctr.dsdb.mappings);
-
-	schema_info_blob = data_blob_dup_talloc(pfm.ctr.dsdb.mappings, schemaInfo);
-	W_ERROR_HAVE_NO_MEMORY(schema_info_blob.data);
-
-	pfm.ctr.dsdb.mappings[pfm.ctr.dsdb.num_mappings - 1].id_prefix		= 0;	
-	pfm.ctr.dsdb.mappings[pfm.ctr.dsdb.num_mappings - 1].oid.length		= schemaInfo->length;
-	pfm.ctr.dsdb.mappings[pfm.ctr.dsdb.num_mappings - 1].oid.binary_oid	= schema_info_blob.data;
-
-	/* call the drsuapi version */
-	status = dsdb_load_prefixmap_from_drsuapi(schema, &pfm.ctr.dsdb);
-	talloc_free(mem_ctx);
-
+	/* fetch prefixMap */
+	status = _dsdb_prefixmap_from_ldb_val(prefixMap,
+					      schema->iconv_convenience,
+					      mem_ctx, &pfm);
 	W_ERROR_NOT_OK_RETURN(status);
+
+	/* decode schema_info */
+	schema_info = hex_encode_talloc(mem_ctx,
+					schemaInfo->data,
+					schemaInfo->length);
+	if (!schema_info) {
+		talloc_free(mem_ctx);
+		return WERR_NOMEM;
+	}
+
+	/* store prefixMap and schema_info into cached Schema */
+	talloc_free(schema->prefixmap);
+	schema->prefixmap = talloc_steal(schema, pfm);
+
+	talloc_free(discard_const(schema->schema_info));
+	schema->schema_info = talloc_steal(schema, schema_info);
+
+	/* clean up locally allocated mem */
+	talloc_free(mem_ctx);
 
 	return WERR_OK;
 }
