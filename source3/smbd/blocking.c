@@ -652,7 +652,6 @@ void process_blocking_lock_queue(void)
 {
 	struct timeval tv_curr = timeval_current();
 	struct blocking_lock_record *blr, *next = NULL;
-	bool recalc_timeout = False;
 
 	/*
 	 * Go through the queue and see if we can get any of the locks.
@@ -669,6 +668,14 @@ void process_blocking_lock_queue(void)
 		 */
 
 		DEBUG(10, ("Processing BLR = %p\n", blr));
+
+		/* We use set_current_service so connections with
+		 * pending locks are not marked as idle.
+		 */
+
+		set_current_service(blr->fsp->conn,
+				SVAL(blr->req->inbuf,smb_flg),
+				false);
 
 		if(blocking_lock_record_process(blr)) {
 			struct byte_range_lock *br_lck = brl_get_locks(
@@ -690,7 +697,6 @@ void process_blocking_lock_queue(void)
 
 			DLIST_REMOVE(blocking_lock_queue, blr);
 			TALLOC_FREE(blr);
-			recalc_timeout = True;
 			continue;
 		}
 
@@ -729,13 +735,10 @@ void process_blocking_lock_queue(void)
 			blocking_lock_reply_error(blr,NT_STATUS_FILE_LOCK_CONFLICT);
 			DLIST_REMOVE(blocking_lock_queue, blr);
 			TALLOC_FREE(blr);
-			recalc_timeout = True;
 		}
 	}
 
-	if (recalc_timeout) {
-		recalc_brl_timeout();
-	}
+	recalc_brl_timeout();
 }
 
 /****************************************************************************
