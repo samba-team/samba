@@ -756,8 +756,8 @@ int ltdb_modify_internal(struct ldb_module *module,
 				}
 			
 				/* Delete the attribute if it exists in the DB */
-				ret = msg_delete_attribute(module, ldb, msg2, el->name);
-				if (ret != LDB_SUCCESS) {
+				if (msg_delete_attribute(module, ldb, msg2, el->name) != 0) {
+					ret = LDB_ERR_OTHER;
 					goto done;
 				}
 			}
