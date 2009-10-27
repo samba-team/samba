@@ -1653,6 +1653,100 @@ static bool test_stream_attributes(struct torture_context *tctx,
 	return ret;
 }
 
+/**
+ * A rough approximation of how a windows client creates the streams for use
+ * in the summary tab.
+ */
+static bool test_stream_summary_tab(struct torture_context *tctx,
+				    struct smbcli_state *cli,
+				    TALLOC_CTX *mem_ctx)
+{
+	bool ret = true;
+	NTSTATUS status;
+	union smb_open io;
+	const char *fname = BASEDIR "\\stream_summary.txt";
+	const char *stream = ":\005SummaryInformation:$DATA";
+	const char *fname_stream = NULL;
+	const char *tmp_stream = ":Updt_\005SummaryInformation:$DATA";
+	const char *fname_tmp_stream = NULL;
+	int fnum = -1;
+	union smb_fileinfo finfo;
+	union smb_rename rio;
+	ssize_t retsize;
+
+	fname_stream = talloc_asprintf(mem_ctx, "%s%s", fname, stream);
+	fname_tmp_stream = talloc_asprintf(mem_ctx, "%s%s", fname,
+					   tmp_stream);
+
+	/* Create summary info stream */
+	ret = create_file_with_stream(tctx, cli, mem_ctx, fname_stream);
+	if (!ret) {
+		goto done;
+	}
+
+	/* Create summary info tmp update stream */
+	ret = create_file_with_stream(tctx, cli, mem_ctx, fname_tmp_stream);
+	if (!ret) {
+		goto done;
+	}
+
+	/* Open tmp stream and write to it */
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid.fnum = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FILE_READ_DATA|SEC_FILE_WRITE_DATA;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = 0;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname_tmp_stream;
+
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.file.fnum;
+
+	retsize = smbcli_write(cli->tree, fnum, 0, "test data", 0, 9);
+	CHECK_VALUE(retsize, 9);
+
+	/* close the tmp stream. */
+	smbcli_close(cli->tree, fnum);
+	fnum = -1;
+
+	/* Delete the current stream */
+	smbcli_unlink(cli->tree, fname_stream);
+
+	/* Do the rename. */
+	rio.generic.level = RAW_RENAME_RENAME;
+	rio.rename.in.pattern1 = fname_tmp_stream;
+	rio.rename.in.pattern2 = stream;
+	rio.rename.in.attrib = FILE_ATTRIBUTE_SYSTEM |
+	    FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY;
+	status = smb_raw_rename(cli->tree, &rio);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Try to open the tmp stream that we just renamed away. */
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+	/* Query the base file to make sure it's still there.  */
+	finfo.generic.level = RAW_FILEINFO_BASIC_INFO;
+	finfo.generic.in.file.path = fname;
+
+	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+ done:
+
+	if (fnum != -1) {
+		smbcli_close(cli->tree, fnum);
+	}
+	smbcli_unlink(cli->tree, fname);
+	return ret;
+}
+
 /* 
    basic testing of streams calls
 */
@@ -1686,6 +1780,8 @@ bool torture_raw_streams(struct torture_context *torture,
 	smb_raw_exit(cli->session);
 
 	ret &= test_stream_attributes(torture, cli, torture);
+	smb_raw_exit(cli->session);
+	ret &= test_stream_summary_tab(torture, cli, torture);
 	smb_raw_exit(cli->session);
 
 	/* ret &= test_stream_large_streaminfo(torture, cli, torture); */
