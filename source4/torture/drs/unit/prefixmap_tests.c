@@ -398,6 +398,7 @@ static bool torture_drs_unit_pfm_to_from_drsuapi(struct torture_context *tctx, s
 	werr = dsdb_schema_pfm_from_drsuapi_pfm(ctr, true, mem_ctx, &pfm, &schema_info);
 	torture_assert_werr_ok(tctx, werr, "dsdb_schema_pfm_from_drsuapi_pfm() failed");
 	torture_assert_str_equal(tctx, schema_info, schema_info_default, "Fetched schema_info is different");
+
 	/* compare against the original */
 	if (!_torture_drs_pfm_compare_same(tctx, priv->pfm_full, pfm)) {
 		talloc_free(mem_ctx);
@@ -474,6 +475,46 @@ static bool torture_drs_unit_pfm_to_from_ldb_val(struct torture_context *tctx, s
 	return true;
 }
 
+/**
+ * Test read/write in ldb implementation
+ */
+static bool torture_drs_unit_pfm_read_write_ldb(struct torture_context *tctx, struct drsut_prefixmap_data *priv)
+{
+	WERROR werr;
+	const char *schema_info_default = "FF0000000000000000000000000000000123456789";
+	struct dsdb_schema *schema;
+	struct dsdb_schema_prefixmap *pfm;
+	TALLOC_CTX *mem_ctx;
+
+	mem_ctx = talloc_new(tctx);
+	torture_assert(tctx, mem_ctx, "Unexpected: Have no memory!");
+
+	/* makeup a dsdb_schema to test with */
+	schema = dsdb_new_schema(mem_ctx, lp_iconv_convenience(tctx->lp_ctx));
+	torture_assert(tctx, schema, "Unexpected: failed to allocate schema object");
+	/* set priv->pfm_full as prefixMap for new schema object */
+	schema->prefixmap = priv->pfm_full;
+	schema->schema_info = schema_info_default;
+
+	/* write prfixMap to ldb */
+	werr = dsdb_write_prefixes_from_schema_to_ldb(mem_ctx, priv->ldb_ctx, schema);
+	torture_assert_werr_ok(tctx, werr, "dsdb_write_prefixes_from_schema_to_ldb() failed");
+
+	/* read from ldb what we have written */
+	werr = dsdb_read_prefixes_from_ldb(priv->ldb_ctx, mem_ctx, &pfm);
+	torture_assert_werr_ok(tctx, werr, "dsdb_read_prefixes_from_ldb() failed");
+
+	/* compare data written/read */
+	_torture_drs_pfm_compare_same(tctx, schema->prefixmap, priv->pfm_full);
+
+	talloc_free(mem_ctx);
+
+	if (tctx->last_result != TORTURE_OK) {
+		return false;
+	}
+
+	return true;
+}
 
 /**
  * Prepare temporary LDB and opens it
@@ -592,6 +633,8 @@ struct torture_tcase * torture_drs_unit_prefixmap(struct torture_suite *suite)
 	torture_tcase_add_simple_test(tc, "pfm_to_from_drsuapi", (pfn_run)torture_drs_unit_pfm_to_from_drsuapi);
 
 	torture_tcase_add_simple_test(tc, "pfm_to_from_ldb_val", (pfn_run)torture_drs_unit_pfm_to_from_ldb_val);
+
+	torture_tcase_add_simple_test(tc, "pfm_read_write_ldb", (pfn_run)torture_drs_unit_pfm_read_write_ldb);
 
 	return tc;
 }
