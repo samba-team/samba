@@ -53,7 +53,7 @@ static void sigterm(int sig)
 
 	/* all the child processes will be running in the same process group */
 	kill(-getpgrp(), SIGKILL);
-	exit(1);
+	_exit(1);
 }
 
 struct ctdb_event_script_state {
