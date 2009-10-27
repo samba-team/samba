@@ -426,15 +426,27 @@ static bool test_ntrename(struct torture_context *tctx,
 	io.ntrename.in.attrib = 0;
 	io.ntrename.in.flags = 0;
 	status = smb_raw_rename(cli->tree, &io);
-	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+	if (TARGET_IS_WIN7(tctx)) {
+		CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+	}
 
 	io.ntrename.in.flags = 300;
 	status = smb_raw_rename(cli->tree, &io);
-	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+	if (TARGET_IS_WIN7(tctx)) {
+		CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+	}
 
 	io.ntrename.in.flags = 0x106;
 	status = smb_raw_rename(cli->tree, &io);
-	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+	if (TARGET_IS_WIN7(tctx)) {
+		CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+	}
 
 	torture_comment(tctx, "Checking unknown field\n");
 	io.ntrename.in.old_name = fname1;
@@ -505,8 +517,18 @@ static bool test_ntrename(struct torture_context *tctx,
 		io.ntrename.in.attrib = 0;
 		io.ntrename.in.cluster_size = 0;
 		status = smb_raw_rename(cli->tree, &io);
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
-			torture_warning(tctx, "flags=0x%x status=%s\n", i, nt_errstr(status));
+		if (TARGET_IS_WIN7(tctx)){
+			if (!NT_STATUS_EQUAL(status,
+					     NT_STATUS_INVALID_PARAMETER)) {
+				torture_warning(tctx, "flags=0x%x status=%s\n",
+						i, nt_errstr(status));
+			}
+		} else {
+			if (!NT_STATUS_EQUAL(status,
+					     NT_STATUS_ACCESS_DENIED)) {
+				torture_warning(tctx, "flags=0x%x status=%s\n",
+						i, nt_errstr(status));
+			}
 		}
 	}
 	
