@@ -66,6 +66,13 @@ const struct generic_mapping lsa_secret_mapping = {
 	LSA_SECRET_ALL_ACCESS
 };
 
+const struct generic_mapping lsa_trusted_domain_mapping = {
+	LSA_TRUSTED_DOMAIN_READ,
+	LSA_TRUSTED_DOMAIN_WRITE,
+	LSA_TRUSTED_DOMAIN_EXECUTE,
+	LSA_TRUSTED_DOMAIN_ALL_ACCESS
+};
+
 /***************************************************************************
  init_lsa_ref_domain_list - adds a domain if it's not already in, returns the index.
 ***************************************************************************/
