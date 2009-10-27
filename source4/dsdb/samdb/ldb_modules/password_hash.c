@@ -79,7 +79,6 @@ struct ph_context {
 
 	struct ldb_reply *search_res;
 
-	struct dom_sid *domain_sid;
 	struct domain_data *domain;
 };
 
@@ -1637,22 +1636,13 @@ static int build_domain_data_request(struct ph_context *ac)
 	   otherwise the compiler can put it on the stack */
 	struct ldb_context *ldb;
 	static const char * const attrs[] = { "pwdProperties", "pwdHistoryLength", NULL };
-	char *filter;
 
 	ldb = ldb_module_get_ctx(ac->module);
-
-	filter = talloc_asprintf(ac,
-				 "(objectSid=%s)",
-				 ldap_encode_ndr_dom_sid(ac, ac->domain_sid));
-	if (filter == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
 
 	return ldb_build_search_req(&ac->dom_req, ldb, ac,
 				    ldb_get_default_basedn(ldb),
 				    LDB_SCOPE_BASE,
-				    filter, attrs,
+				    NULL, attrs,
 				    NULL,
 				    ac, get_domain_data_callback,
 				    ac->req);
@@ -1757,13 +1747,6 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/* get user domain data */
-	ac->domain_sid = samdb_result_sid_prefix(ac, req->op.add.message, "objectSid");
-	if (ac->domain_sid == NULL) {
-		ldb_debug(ldb, LDB_DEBUG_ERROR,
-			  "can't handle entry with missing objectSid!\n");
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
 	ret = build_domain_data_request(ac);
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -2051,17 +2034,6 @@ static int ph_mod_search_callback(struct ldb_request *req, struct ldb_reply *are
 		return LDB_SUCCESS;
 
 	case LDB_REPLY_DONE:
-
-		/* get object domain sid */
-		ac->domain_sid = samdb_result_sid_prefix(ac,
-							ac->search_res->message,
-							"objectSid");
-		if (ac->domain_sid == NULL) {
-			ldb_debug(ldb, LDB_DEBUG_ERROR,
-				  "can't handle entry without objectSid!\n");
-			return ldb_module_done(ac->req, NULL, NULL,
-						LDB_ERR_OPERATIONS_ERROR);
-		}
 
 		/* get user domain data */
 		ret = build_domain_data_request(ac);
