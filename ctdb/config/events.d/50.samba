@@ -171,6 +171,10 @@ case $cmd in
 		    killall -q -9 winbindd
 		}
 		service "$CTDB_SERVICE_WINBIND" start
+		wbinfo -t || {
+			echo "Startup failed. wbinfo -t returned error."
+			exit 1
+		}
 	}
 
 	# start Samba service. Start it reniced, as under very heavy load 
