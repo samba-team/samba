@@ -316,7 +316,9 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 {
 	const char *db_name = (const char *)indata.dptr;
 	struct ctdb_db_context *db;
+#if 0
 	struct ctdb_node *node = ctdb->nodes[ctdb->pnn];
+#endif
 
 	/* the client can optionally pass additional tdb flags, but we
 	   only allow a subset of those on the database in ctdb. Note
@@ -324,24 +326,25 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	   srvid to the attach control */
 	tdb_flags &= TDB_NOSYNC;
 
+	/* see if we already have this name */
+	db = ctdb_db_handle(ctdb, db_name);
+	if (db != NULL) {
+		outdata->dptr  = (uint8_t *)&db->db_id;
+		outdata->dsize = sizeof(db->db_id);
+		tdb_add_flags(db->ltdb->tdb, tdb_flags);
+		return 0;
+	}
+
+#if 0
 	/* If the node is inactive it is not part of the cluster
-	   and we should not allow clients to attach to any
+	   and we should not allow clients to attach to any new
 	   databases
 	*/
 	if (node->flags & NODE_FLAGS_INACTIVE) {
 		DEBUG(DEBUG_ERR,("DB Attach to database %s refused since node is inactive (disconnected or banned)\n", db_name));
 		return -1;
 	}
-
-
-	/* see if we already have this name */
-	db = ctdb_db_handle(ctdb, db_name);
-	if (db) {
-		outdata->dptr  = (uint8_t *)&db->db_id;
-		outdata->dsize = sizeof(db->db_id);
-		tdb_add_flags(db->ltdb->tdb, tdb_flags);
-		return 0;
-	}
+#endif
 
 	if (ctdb_local_attach(ctdb, db_name, persistent) != 0) {
 		return -1;
