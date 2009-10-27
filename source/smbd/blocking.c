@@ -696,7 +696,6 @@ static void process_blocking_lock_queue(void)
 {
 	struct timeval tv_curr = timeval_current();
 	blocking_lock_record *blr, *next = NULL;
-	bool recalc_timeout = False;
 
 	/*
 	 * Go through the queue and see if we can get any of the locks.
@@ -746,7 +745,6 @@ static void process_blocking_lock_queue(void)
 			blocking_lock_reply_error(blr,NT_STATUS_ACCESS_DENIED);
 			DLIST_REMOVE(blocking_lock_queue, blr);
 			free_blocking_lock_record(blr);
-			recalc_timeout = True;
 			continue;
 		}
 
@@ -771,7 +769,6 @@ static void process_blocking_lock_queue(void)
 			blocking_lock_reply_error(blr,NT_STATUS_ACCESS_DENIED);
 			DLIST_REMOVE(blocking_lock_queue, blr);
 			free_blocking_lock_record(blr);
-			recalc_timeout = True;
 			change_to_root_user();
 			continue;
 		}
@@ -797,7 +794,6 @@ static void process_blocking_lock_queue(void)
 
 			DLIST_REMOVE(blocking_lock_queue, blr);
 			free_blocking_lock_record(blr);
-			recalc_timeout = True;
 			change_to_root_user();
 			continue;
 		}
@@ -833,13 +829,10 @@ static void process_blocking_lock_queue(void)
 			blocking_lock_reply_error(blr,NT_STATUS_FILE_LOCK_CONFLICT);
 			DLIST_REMOVE(blocking_lock_queue, blr);
 			free_blocking_lock_record(blr);
-			recalc_timeout = True;
 		}
 	}
 
-	if (recalc_timeout) {
-		recalc_brl_timeout();
-	}
+	recalc_brl_timeout();
 }
 
 /****************************************************************************
