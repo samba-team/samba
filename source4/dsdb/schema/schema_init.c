@@ -31,7 +31,6 @@
 #include "lib/ldb/include/ldb_module.h"
 #include "../lib/util/asn1.h"
 
-static WERROR dsdb_read_prefixes_from_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, uint32_t* num_prefixes, struct dsdb_schema_oid_prefix **prefixes);
 
 struct dsdb_schema *dsdb_new_schema(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience)
 {
@@ -416,15 +415,14 @@ WERROR dsdb_write_prefixes_from_schema_to_ldb(TALLOC_CTX *mem_ctx, struct ldb_co
 	return WERR_OK;
 }
 
-static WERROR dsdb_read_prefixes_from_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, uint32_t* num_prefixes, struct dsdb_schema_oid_prefix **prefixes)
+WERROR dsdb_read_prefixes_from_ldb(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct dsdb_schema_prefixmap **_pfm)
 {
-	struct prefixMapBlob *blob;
-	enum ndr_err_code ndr_err;
-	uint32_t i;
+	WERROR werr;
+	int ldb_ret;
 	const struct ldb_val *prefix_val;
+	struct smb_iconv_convenience *iconv_convenience;
 	struct ldb_dn *schema_dn;
 	struct ldb_result *schema_res = NULL;
-	int ret;    
 	static const char *schema_attrs[] = {
 		"prefixMap",
 		NULL
@@ -436,12 +434,12 @@ static WERROR dsdb_read_prefixes_from_ldb(TALLOC_CTX *mem_ctx, struct ldb_contex
 		return WERR_FOOBAR;
 	}
 
-	ret = ldb_search(ldb, mem_ctx, &schema_res, schema_dn, LDB_SCOPE_BASE, schema_attrs, NULL);
-	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+	ldb_ret = ldb_search(ldb, mem_ctx, &schema_res, schema_dn, LDB_SCOPE_BASE, schema_attrs, NULL);
+	if (ldb_ret == LDB_ERR_NO_SUCH_OBJECT) {
 		DEBUG(0,("dsdb_read_prefixes_from_ldb: no prefix map present\n"));
 		talloc_free(schema_res);
 		return WERR_FOOBAR;
-	} else if (ret != LDB_SUCCESS) {
+	} else if (ldb_ret != LDB_SUCCESS) {
 		DEBUG(0,("dsdb_read_prefixes_from_ldb: failed to search the schema head\n"));
 		talloc_free(schema_res);
 		return WERR_FOOBAR;
@@ -454,54 +452,15 @@ static WERROR dsdb_read_prefixes_from_ldb(TALLOC_CTX *mem_ctx, struct ldb_contex
 		return WERR_FOOBAR;
 	}
 
-	blob = talloc(mem_ctx, struct prefixMapBlob);
-	W_ERROR_HAVE_NO_MEMORY(blob);
+	iconv_convenience = lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm"));
 
-	ndr_err = ndr_pull_struct_blob(prefix_val, blob, 
-					   lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")), 
-					   blob,
-					   (ndr_pull_flags_fn_t)ndr_pull_prefixMapBlob);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(0,("dsdb_read_prefixes_from_ldb: ndr_pull_struct_blob failed\n"));
-		talloc_free(blob);
-		talloc_free(schema_res);
-		return WERR_FOOBAR;
-	}
-
+	werr = _dsdb_prefixmap_from_ldb_val(prefix_val,
+					    iconv_convenience,
+					    mem_ctx,
+					    _pfm);
 	talloc_free(schema_res);
+	W_ERROR_NOT_OK_RETURN(werr);
 
-	if (blob->version != PREFIX_MAP_VERSION_DSDB) {
-		DEBUG(0,("dsdb_read_prefixes_from_ldb: blob->version incorect\n"));
-		talloc_free(blob);
-		return WERR_FOOBAR;
-	}
-	
-	*num_prefixes = blob->ctr.dsdb.num_mappings;
-	*prefixes = talloc_array(mem_ctx, struct dsdb_schema_oid_prefix, *num_prefixes);
-	if(!(*prefixes)) {
-		talloc_free(blob);
-		return WERR_NOMEM;
-	}
-	for (i=0; i < blob->ctr.dsdb.num_mappings; i++) {
-		DATA_BLOB oid_blob;
-		const char *partial_oid;
-
-		oid_blob = data_blob_const(blob->ctr.dsdb.mappings[i].oid.binary_oid,
-					   blob->ctr.dsdb.mappings[i].oid.length);
-
-		if (!ber_read_partial_OID_String(mem_ctx, oid_blob, &partial_oid)) {
-			DEBUG(0, ("ber_read_partial_OID failed on prefixMap item with id: 0x%X",
-					blob->ctr.dsdb.mappings[i].id_prefix));
-			talloc_free(blob);
-			return WERR_INVALID_PARAM;
-		}
-
-		(*prefixes)[i].id = blob->ctr.dsdb.mappings[i].id_prefix<<16;
-		(*prefixes)[i].oid = partial_oid;
-		(*prefixes)[i].oid_len = strlen((*prefixes)[i].oid);
-	}
-
-	talloc_free(blob);
 	return WERR_OK;
 }
 
