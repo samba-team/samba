@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "torture/smbtorture.h"
 #include "dsdb/samdb/samdb.h"
 #include "torture/rpc/drsuapi.h"
@@ -32,6 +33,8 @@
 struct drsut_prefixmap_data {
 	struct dsdb_schema_prefixmap *pfm_new;
 	struct dsdb_schema_prefixmap *pfm_full;
+
+	struct ldb_context *ldb_ctx;
 };
 
 /**
@@ -472,6 +475,65 @@ static bool torture_drs_unit_pfm_to_from_ldb_val(struct torture_context *tctx, s
 }
 
 
+/**
+ * Prepare temporary LDB and opens it
+ */
+static bool torture_drs_unit_ldb_setup(struct torture_context *tctx, struct drsut_prefixmap_data *priv)
+{
+	int fd = -1;
+	int ldb_err;
+	char *ldb_url;
+	bool bret = true;
+	TALLOC_CTX* mem_ctx;
+
+	mem_ctx = talloc_new(priv);
+
+	/* try to find to make temporary LDB_ULR */
+	ldb_url = getenv("LDB_URL");
+	if (!ldb_url) {
+		const char *temp_dir;
+		temp_dir = getenv("TEST_DATA_PREFIX");
+		if (!temp_dir) {
+			temp_dir = "/tmp";
+		}
+		ldb_url = talloc_asprintf(priv, "%s/drs_XXXXXX", temp_dir);
+		fd = mkstemp(ldb_url);
+		torture_assert(tctx, fd != -1,
+			       talloc_asprintf(mem_ctx, "mkstemp() failed: %s", strerror(errno)));
+	}
+
+	/* create LDB */
+	priv->ldb_ctx = ldb_init(priv, tctx->ev);
+	ldb_err = ldb_connect(priv->ldb_ctx, ldb_url, 0, NULL);
+	torture_assert_int_equal_goto(tctx, ldb_err, LDB_SUCCESS, bret, DONE, "ldb_connect() failed");
+
+	/* set some schemaNamingContext */
+	ldb_err = ldb_set_opaque(priv->ldb_ctx,
+				 "schemaNamingContext",
+				 ldb_dn_new(priv->ldb_ctx, priv->ldb_ctx, "CN=Schema,CN=Config"));
+	torture_assert_int_equal_goto(tctx, ldb_err, LDB_SUCCESS, bret, DONE, "ldb_set_opaque() failed");
+
+	/* add prefixMap attribute so tested layer could work properly */
+	{
+		struct ldb_message *msg = ldb_msg_new(mem_ctx);
+		msg->dn = samdb_schema_dn(priv->ldb_ctx);
+		ldb_err = ldb_msg_add_string(msg, "prefixMap", "prefixMap");
+		torture_assert_int_equal_goto(tctx, ldb_err, LDB_SUCCESS, bret, DONE,
+					      "ldb_msg_add_empty() failed");
+
+		ldb_err = ldb_add(priv->ldb_ctx, msg);
+		torture_assert_int_equal_goto(tctx, ldb_err, LDB_SUCCESS, bret, DONE, "ldb_add() failed");
+	}
+
+DONE:
+	if (fd != -1) {
+		close(fd);
+		unlink(ldb_url);
+	}
+	talloc_free(mem_ctx);
+	return bret;
+}
+
 /*
  * Setup/Teardown for test case
  */
@@ -487,6 +549,11 @@ static bool torture_drs_unit_prefixmap_setup(struct torture_context *tctx, struc
 
 	werr = _drsut_prefixmap_new(_prefixmap_full_map_data, ARRAY_SIZE(_prefixmap_full_map_data), tctx, &(*priv)->pfm_full);
 	torture_assert_werr_ok(tctx, werr, "failed to create pfm_test");
+
+	/* create temporary LDB and populate with data */
+	if (!torture_drs_unit_ldb_setup(tctx, *priv)) {
+		return false;
+	}
 
 	return true;
 }
