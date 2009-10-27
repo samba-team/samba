@@ -103,17 +103,24 @@ class Ldb(ldb.Ldb):
             if nosync_p is not None and nosync_p == true:
                 flags |= FLG_NOSYNC
 
+        self.set_create_perms()
+
         if url is not None:
             self.connect(url, flags, options)
-
-    def set_credentials(self, credentials):
-        glue.ldb_set_credentials(self, credentials)
 
     def set_session_info(self, session_info):
         glue.ldb_set_session_info(self, session_info)
 
+    def set_credentials(self, credentials):
+        glue.ldb_set_credentials(self, credentials)
+
     def set_loadparm(self, lp_ctx):
         glue.ldb_set_loadparm(self, lp_ctx)
+
+    def set_create_perms(self, perms=0600):
+        # we usually want Samba databases to be private. If we later find we
+        # need one public, we will have to change this here
+        super(Ldb, self).set_create_perms(perms)
 
     def searchone(self, attribute, basedn=None, expression=None, 
                   scope=ldb.SCOPE_BASE):
