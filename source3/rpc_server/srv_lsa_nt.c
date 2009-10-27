@@ -59,6 +59,13 @@ const struct generic_mapping lsa_policy_mapping = {
 	LSA_POLICY_ALL_ACCESS
 };
 
+const struct generic_mapping lsa_secret_mapping = {
+	LSA_SECRET_READ,
+	LSA_SECRET_WRITE,
+	LSA_SECRET_EXECUTE,
+	LSA_SECRET_ALL_ACCESS
+};
+
 /***************************************************************************
  init_lsa_ref_domain_list - adds a domain if it's not already in, returns the index.
 ***************************************************************************/
