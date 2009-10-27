@@ -102,6 +102,27 @@ static PyObject *py_set_debug_level(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_ldb_set_session_info(PyObject *self, PyObject *args)
+{
+	PyObject *py_session_info, *py_ldb;
+	struct auth_session_info *info;
+	struct ldb_context *ldb;
+	if (!PyArg_ParseTuple(args, "OO", &py_ldb, &py_session_info))
+		return NULL;
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+	/*if (!PyAuthSession_Check(py_session_info)) {
+		PyErr_SetString(PyExc_TypeError, "Expected session info object");
+		return NULL;
+	}*/
+
+	info = PyAuthSession_AsSession(py_session_info);
+
+	ldb_set_opaque(ldb, "sessionInfo", info);
+
+	Py_RETURN_NONE;
+}
+
 static PyObject *py_ldb_set_credentials(PyObject *self, PyObject *args)
 {
 	PyObject *py_creds, *py_ldb;
@@ -140,28 +161,6 @@ static PyObject *py_ldb_set_loadparm(PyObject *self, PyObject *args)
 	}
 
     	ldb_set_opaque(ldb, "loadparm", lp_ctx);
-
-	Py_RETURN_NONE;
-}
-
-
-static PyObject *py_ldb_set_session_info(PyObject *self, PyObject *args)
-{
-	PyObject *py_session_info, *py_ldb;
-	struct auth_session_info *info;
-	struct ldb_context *ldb;
-	if (!PyArg_ParseTuple(args, "OO", &py_ldb, &py_session_info))
-		return NULL;
-
-	PyErr_LDB_OR_RAISE(py_ldb, ldb);
-	/*if (!PyAuthSession_Check(py_session_info)) {
-		PyErr_SetString(PyExc_TypeError, "Expected session info object");
-		return NULL;
-	}*/
-
-	info = PyAuthSession_AsSession(py_session_info);
-
-    	ldb_set_opaque(ldb, "sessionInfo", info);
 
 	Py_RETURN_NONE;
 }
@@ -455,12 +454,12 @@ static PyMethodDef py_misc_methods[] = {
 		"Generate random password with specified length." },
 	{ "unix2nttime", (PyCFunction)py_unix2nttime, METH_VARARGS,
 		"unix2nttime(timestamp) -> nttime" },
-	{ "ldb_set_credentials", (PyCFunction)py_ldb_set_credentials, METH_VARARGS, 
-		"ldb_set_credentials(ldb, credentials) -> None\n"
-		"Set credentials to use when connecting." },
 	{ "ldb_set_session_info", (PyCFunction)py_ldb_set_session_info, METH_VARARGS,
 		"ldb_set_session_info(ldb, session_info)\n"
 		"Set session info to use when connecting." },
+	{ "ldb_set_credentials", (PyCFunction)py_ldb_set_credentials, METH_VARARGS,
+		"ldb_set_credentials(ldb, credentials)\n"
+		"Set credentials to use when connecting." },
 	{ "ldb_set_loadparm", (PyCFunction)py_ldb_set_loadparm, METH_VARARGS,
 		"ldb_set_loadparm(ldb, session_info)\n"
 		"Set loadparm context to use when connecting." },
