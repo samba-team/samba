@@ -767,6 +767,7 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 				continue;
 
 			case '=':
+			case '+':
 				/* to main compatibility with earlier
 				versions of ldb indexing, we have to
 				accept the base64 encoded binary index
@@ -779,7 +780,6 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 				}
 				/* fall through */
 			case '\n':
-			case '+':
 			case '<':
 			case '>':
 			case '#':
