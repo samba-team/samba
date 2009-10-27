@@ -133,7 +133,6 @@ struct ldb_context *samdb_connect(TALLOC_CTX *mem_ctx,
 	if (!ldb) {
 		return NULL;
 	}
-	dsdb_make_schema_global(ldb);
 	return ldb;
 }
 

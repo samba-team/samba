@@ -248,6 +248,11 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 
 	DLIST_ADD(ldb_wrap_list, w);
 
+	/* make the resulting schema global */
+	if (lp_ctx != NULL && strcmp(lp_sam_url(lp_ctx), url) == 0) {
+		dsdb_make_schema_global(ldb);
+	}
+
 	DEBUG(3,("ldb_wrap open of %s\n", url));
 
 	talloc_set_destructor(w, ldb_wrap_destructor);
