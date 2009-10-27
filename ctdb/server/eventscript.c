@@ -183,8 +183,6 @@ int32_t ctdb_control_event_script_stop(struct ctdb_context *ctdb, TDB_DATA indat
 			struct ctdb_monitoring_status);
 	struct ctdb_monitor_script_status *script;
 
-	DEBUG(DEBUG_INFO, ("event script stop called : %d\n", (int)res));
-
 	if (monitoring_status == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " script_status is NULL when script finished.\n"));
 		return -1;
@@ -198,6 +196,8 @@ int32_t ctdb_control_event_script_stop(struct ctdb_context *ctdb, TDB_DATA indat
 
 	script->finished = timeval_current();
 	script->status   = res;
+
+	DEBUG(DEBUG_INFO, ("event script stop called for script:%s duration:%.1f status:%d\n", script->name, timeval_elapsed(&script->start), (int)res));
 
 	return 0;
 }
@@ -796,7 +796,8 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 
 		rt = ctdb_event_script_v(ctdb, state->options);
 		while ((ret = write(state->fd[1], &rt, sizeof(rt))) != sizeof(rt)) {
-			sleep(1);
+			write(state->fd[1], &rt, sizeof(rt));
+			usleep(100000);
 		}
 		_exit(rt);
 	}
