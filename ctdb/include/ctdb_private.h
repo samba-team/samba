@@ -54,6 +54,11 @@ struct takeover_run_reply {
 };
 
 /*
+ * pid of the ctdbd daemon
+ */
+extern pid_t ctdbd_pid;
+
+/*
   a tcp connection description
  */
 struct ctdb_tcp_connection {

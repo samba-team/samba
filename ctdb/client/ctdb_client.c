@@ -30,6 +30,8 @@
 #include "../include/ctdb_private.h"
 #include "lib/util/dlinklist.h"
 
+pid_t ctdbd_pid;
+
 /*
   allocate a packet for use in client<->daemon communication
  */

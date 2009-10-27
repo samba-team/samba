@@ -31,7 +31,6 @@
 #include "../common/rb_tree.h"
 #include "db_wrap.h"
 
-
 #define ERR_TIMEOUT	20	/* timed out trying to reach node */
 #define ERR_NONODE	21	/* node does not exist */
 #define ERR_DISNODE	22	/* node is disconnected */

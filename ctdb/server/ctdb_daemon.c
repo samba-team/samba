@@ -36,7 +36,6 @@ static void print_exit_message(void)
 	DEBUG(DEBUG_NOTICE,("CTDB daemon shutting down\n"));
 }
 
-
 /* called when the "startup" event script has finished */
 static void ctdb_start_transport(struct ctdb_context *ctdb)
 {
@@ -689,6 +688,9 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 		}
 	}
 	block_signal(SIGPIPE);
+
+	ctdbd_pid = getpid();
+	DEBUG(DEBUG_ERR, ("Starting CTDBD as pid : %u\n", ctdbd_pid));
 
 	if (ctdb->do_setsched) {
 		/* try to set us up as realtime */
