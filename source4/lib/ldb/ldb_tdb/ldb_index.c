@@ -316,6 +316,7 @@ static int ltdb_index_traverse_store(struct tdb_context *tdb, TDB_DATA key, TDB_
 
 	dn = ldb_dn_from_ldb_val(module, ldb, &v);
 	if (dn == NULL) {
+		ldb_asprintf_errstring(ldb, "Failed to parse index key %*.*s as an LDB DN", (int)v.length, (int)v.length, (const char *)v.data);
 		ltdb->idxptr->error = LDB_ERR_OPERATIONS_ERROR;
 		return -1;
 	}
@@ -334,6 +335,9 @@ int ltdb_index_transaction_commit(struct ldb_module *module)
 	struct ltdb_private *ltdb = talloc_get_type(ldb_module_get_private(module), struct ltdb_private);
 	int ret;
 
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+
+	ldb_reset_err_string(ldb);
 	if (ltdb->idxptr->itdb) {
 		tdb_traverse(ltdb->idxptr->itdb, ltdb_index_traverse_store, module);
 		tdb_close(ltdb->idxptr->itdb);
@@ -342,8 +346,10 @@ int ltdb_index_transaction_commit(struct ldb_module *module)
 	ret = ltdb->idxptr->error;
 
 	if (ret != LDB_SUCCESS) {
-		struct ldb_context *ldb = ldb_module_get_ctx(module);
-		ldb_asprintf_errstring(ldb, "Failed to store index records in transaction commit");
+		if (!ldb_errstring(ldb)) {
+			ldb_set_errstring(ldb, ldb_strerror(ret));
+		}
+		ldb_asprintf_errstring(ldb, "Failed to store index records in transaction commit: %s", ldb_errstring(ldb));
 	}
 
 	talloc_free(ltdb->idxptr);
