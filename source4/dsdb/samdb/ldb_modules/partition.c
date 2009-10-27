@@ -703,33 +703,39 @@ static int partition_prepare_commit(struct ldb_module *module)
 /* end a transaction */
 static int partition_end_trans(struct ldb_module *module)
 {
-	int i;
+	int i, ret, ret2;
 	struct partition_private_data *data = talloc_get_type(module->private_data, 
 							      struct partition_private_data);
-	for (i=0; data && data->partitions && data->partitions[i]; i++) {
-		int ret;
 
+	ret = LDB_SUCCESS;
+
+	if (data->in_transaction == 0) {
+		DEBUG(0,("partition end transaction mismatch\n"));
+		ret = LDB_ERR_OPERATIONS_ERROR;
+	} else {
+		data->in_transaction--;
+	}
+
+	for (i=0; data && data->partitions && data->partitions[i]; i++) {
 		if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) {
 			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "partition_end_trans() -> %s", 
 				  ldb_dn_get_linearized(data->partitions[i]->ctrl->dn));
 		}
-		ret = ldb_next_end_trans(data->partitions[i]->module);
-		if (ret != LDB_SUCCESS) {
+		ret2 = ldb_next_end_trans(data->partitions[i]->module);
+		if (ret2 != LDB_SUCCESS) {
 			ldb_asprintf_errstring(module->ldb, "end_trans error on %s: %s", ldb_dn_get_linearized(data->partitions[i]->ctrl->dn), ldb_errstring(module->ldb));
-			return ret;
+			ret = ret2;
 		}
 	}
-
-	if (data->in_transaction == 0) {
-		DEBUG(0,("partition end transaction mismatch\n"));
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	data->in_transaction--;
 
 	if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) {
 		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "partition_end_trans() -> (metadata partition)");
 	}
-	return ldb_next_end_trans(module);
+	ret2 = ldb_next_end_trans(module);
+	if (ret2 != LDB_SUCCESS) {
+		ret = ret2;
+	}
+	return ret;
 }
 
 /* delete a transaction */
