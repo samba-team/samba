@@ -253,6 +253,16 @@ samba:45:0F2B255F7B67A7A9AAD3B435B51404EE:
 		</varlistentry>
 
 		<varlistentry>
+		<term>-K|--kickoff-time</term>
+		<listitem><para>This option is used to modify the kickoff
+		time for a certain user. Use "never" as argument to set the
+		kickoff time to unlimited.
+		</para>
+		<para>Example: <command>pdbedit -K never user</command></para>
+		</listitem>
+                </varlistentry>
+
+		<varlistentry>
 		<term>-a</term>
 		<listitem><para>This option is used to add a user into the
 		database. This command needs a user name specified with
