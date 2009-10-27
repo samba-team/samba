@@ -1020,6 +1020,7 @@ static PyObject *py_ldb_search(PyLdbObject *self, PyObject *args, PyObject *kwar
 	struct ldb_dn *base;
 	PyObject *py_ret;
 
+	/* type "int" rather than "enum" for "scope" is intentional */
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|OizOO",
 					 discard_const_p(char *, kwnames),
 					 &py_base, &scope, &expr, &py_attrs, &py_controls))
@@ -1354,6 +1355,7 @@ static PyObject *py_ldb_module_search(PyLdbModuleObject *self, PyObject *args, P
 	struct ldb_module *mod;
 	const char * const*attrs;
 
+	/* type "int" rather than "enum" for "scope" is intentional */
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OiOO",
 					 discard_const_p(char *, kwnames),
 					 &py_base, &scope, &py_tree, &py_attrs))
