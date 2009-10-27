@@ -1006,7 +1006,7 @@ static PyObject *py_ldb_schema_format_value(PyLdbObject *self, PyObject *args)
 static PyObject *py_ldb_search(PyLdbObject *self, PyObject *args, PyObject *kwargs)
 {
 	PyObject *py_base = Py_None;
-	enum ldb_scope scope = LDB_SCOPE_DEFAULT;
+	int scope = LDB_SCOPE_DEFAULT;
 	char *expr = NULL;
 	PyObject *py_attrs = Py_None;
 	PyObject *py_controls = Py_None;
@@ -1348,8 +1348,7 @@ static PyObject *py_ldb_module_del_transaction(PyLdbModuleObject *self)
 static PyObject *py_ldb_module_search(PyLdbModuleObject *self, PyObject *args, PyObject *kwargs)
 {
 	PyObject *py_base, *py_tree, *py_attrs, *py_ret;
-	int ret;
-	enum ldb_scope scope;
+	int ret, scope;
 	struct ldb_request *req;
 	const char * const kwnames[] = { "base", "scope", "tree", "attrs", NULL };
 	struct ldb_module *mod;
