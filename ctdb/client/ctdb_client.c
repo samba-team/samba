@@ -3198,6 +3198,7 @@ static int ctdb_transaction_fetch_start(struct ctdb_transaction_handle *h)
 	int ret;
 	struct ctdb_db_context *ctdb_db = h->ctdb_db;
 	pid_t pid;
+	int32_t status;
 
 	key.dptr = discard_const(keyname);
 	key.dsize = strlen(keyname);
@@ -3208,6 +3209,17 @@ static int ctdb_transaction_fetch_start(struct ctdb_transaction_handle *h)
 	}
 
 again:
+	status = ctdb_ctrl_transaction_active(ctdb_db->ctdb,
+					      CTDB_CURRENT_NODE,
+					      ctdb_db->db_id);
+	if (status == 1) {
+		DEBUG(DEBUG_NOTICE, (__location__ " transaction is active "
+				     "on db_id[%u]. waiting for 1 second\n",
+				     ctdb_db->db_id));
+		sleep(1);
+		goto again;
+	}
+
 	tmp_ctx = talloc_new(h);
 
 	rh = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, NULL);
