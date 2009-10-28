@@ -295,6 +295,18 @@ NTSTATUS pdb_del_trusted_domain(const char *domain);
 NTSTATUS pdb_enum_trusted_domains(TALLOC_CTX *mem_ctx, uint32_t *num_domains,
 				  struct pdb_trusted_domain ***domains);
 NTSTATUS make_pdb_method( struct pdb_methods **methods ) ;
+NTSTATUS pdb_get_secret(TALLOC_CTX *mem_ctx,
+			const char *secret_name,
+			DATA_BLOB *secret_current,
+			NTTIME *secret_current_lastchange,
+			DATA_BLOB *secret_old,
+			NTTIME *secret_old_lastchange,
+			struct security_descriptor **sd);
+NTSTATUS pdb_set_secret(const char *secret_name,
+			DATA_BLOB *secret_current,
+			DATA_BLOB *secret_old,
+			struct security_descriptor *sd);
+NTSTATUS pdb_delete_secret(const char *secret_name);
 
 /* The following definitions come from passdb/pdb_ldap.c  */
 

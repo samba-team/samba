@@ -316,9 +316,10 @@ enum pdb_policy_type {
  * Changed to 17, the sampwent interface is gone.
  * Changed to 18, pdb_rid_algorithm -> pdb_capabilities
  * Changed to 19, removed uid_to_rid
+ * Changed to 20, pdb_secret calls
  */
 
-#define PASSDB_INTERFACE_VERSION 19
+#define PASSDB_INTERFACE_VERSION 20
 
 struct pdb_methods 
 {
@@ -484,7 +485,6 @@ struct pdb_methods
 				     TALLOC_CTX *mem_ctx, uint32_t *num_domains,
 				     struct trustdom_info ***domains);
 
-
 	NTSTATUS (*get_trusted_domain)(struct pdb_methods *methods,
 				       TALLOC_CTX *mem_ctx,
 				       const char *domain,
@@ -502,6 +502,22 @@ struct pdb_methods
 					 TALLOC_CTX *mem_ctx,
 					 uint32_t *num_domains,
 					 struct pdb_trusted_domain ***domains);
+
+	NTSTATUS (*get_secret)(struct pdb_methods *methods,
+			       TALLOC_CTX *mem_ctx,
+			       const char *secret_name,
+			       DATA_BLOB *secret_current,
+			       NTTIME *secret_current_lastchange,
+			       DATA_BLOB *secret_old,
+			       NTTIME *secret_old_lastchange,
+			       struct security_descriptor **sd);
+	NTSTATUS (*set_secret)(struct pdb_methods *methods,
+			       const char *secret_name,
+			       DATA_BLOB *secret_current,
+			       DATA_BLOB *secret_old,
+			       struct security_descriptor *sd);
+	NTSTATUS (*delete_secret)(struct pdb_methods *methods,
+				  const char *secret_name);
 
 	void *private_data;  /* Private data of some kind */
 

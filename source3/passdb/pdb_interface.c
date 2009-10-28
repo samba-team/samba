@@ -2283,6 +2283,70 @@ static struct pdb_domain_info *pdb_default_get_domain_info(
 }
 
 /*******************************************************************
+ secret methods
+ *******************************************************************/
+
+NTSTATUS pdb_get_secret(TALLOC_CTX *mem_ctx,
+			const char *secret_name,
+			DATA_BLOB *secret_current,
+			NTTIME *secret_current_lastchange,
+			DATA_BLOB *secret_old,
+			NTTIME *secret_old_lastchange,
+			struct security_descriptor **sd)
+{
+	struct pdb_methods *pdb = pdb_get_methods();
+	return pdb->get_secret(pdb, mem_ctx, secret_name,
+			       secret_current, secret_current_lastchange,
+			       secret_old, secret_old_lastchange,
+			       sd);
+}
+
+NTSTATUS pdb_set_secret(const char *secret_name,
+			DATA_BLOB *secret_current,
+			DATA_BLOB *secret_old,
+			struct security_descriptor *sd)
+{
+	struct pdb_methods *pdb = pdb_get_methods();
+	return pdb->set_secret(pdb, secret_name,
+			       secret_current,
+			       secret_old,
+			       sd);
+}
+
+NTSTATUS pdb_delete_secret(const char *secret_name)
+{
+	struct pdb_methods *pdb = pdb_get_methods();
+	return pdb->delete_secret(pdb, secret_name);
+}
+
+static NTSTATUS pdb_default_get_secret(struct pdb_methods *methods,
+				       TALLOC_CTX *mem_ctx,
+				       const char *secret_name,
+				       DATA_BLOB *secret_current,
+				       NTTIME *secret_current_lastchange,
+				       DATA_BLOB *secret_old,
+				       NTTIME *secret_old_lastchange,
+				       struct security_descriptor **sd)
+{
+	return NT_STATUS_NOT_SUPPORTED;
+}
+
+static NTSTATUS pdb_default_set_secret(struct pdb_methods *methods,
+				       const char *secret_name,
+				       DATA_BLOB *secret_current,
+				       DATA_BLOB *secret_old,
+				       struct security_descriptor *sd)
+{
+	return NT_STATUS_NOT_SUPPORTED;
+}
+
+static NTSTATUS pdb_default_delete_secret(struct pdb_methods *methods,
+					  const char *secret_name)
+{
+	return NT_STATUS_NOT_SUPPORTED;
+}
+
+/*******************************************************************
  Create a pdb_methods structure and initialize it with the default
  operations.  In this way a passdb module can simply implement
  the functionality it cares about.  However, normally this is done 
@@ -2352,6 +2416,10 @@ NTSTATUS make_pdb_method( struct pdb_methods **methods )
 	(*methods)->set_trusted_domain = pdb_default_set_trusted_domain;
 	(*methods)->del_trusted_domain = pdb_default_del_trusted_domain;
 	(*methods)->enum_trusted_domains = pdb_default_enum_trusted_domains;
+
+	(*methods)->get_secret = pdb_default_get_secret;
+	(*methods)->set_secret = pdb_default_set_secret;
+	(*methods)->delete_secret = pdb_default_delete_secret;
 
 	return NT_STATUS_OK;
 }
