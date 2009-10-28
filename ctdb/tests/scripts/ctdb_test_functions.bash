@@ -297,8 +297,8 @@ wait_until ()
     echo -n "<${timeout}|"
     local t=$timeout
     while [ $t -gt 0 ] ; do
-	("$@")
-	local rc=$?
+	local rc=0
+	"$@" || rc=$?
 	if { ! $negate && [ $rc -eq 0 ] ; } || \
 	    { $negate && [ $rc -ne 0 ] ; } ; then
 	    echo "|$(($timeout - $t))|"
