@@ -322,6 +322,8 @@ static int db_ctdb_transaction_fetch_start(struct db_ctdb_transaction_handle *h)
 	int ret;
 	struct db_ctdb_ctx *ctx = h->ctx;
 	TDB_DATA data;
+	NTSTATUS status;
+	struct ctdb_ltdb_header header;
 
 	key.dptr = (uint8_t *)discard_const(keyname);
 	key.dsize = strlen(keyname);
@@ -344,17 +346,13 @@ again:
 		return -1;
 	}
 
-	data = tdb_fetch(ctx->wtdb->tdb, key);
-	if ((data.dptr == NULL) ||
-	    (data.dsize < sizeof(struct ctdb_ltdb_header)) ||
-	    ((struct ctdb_ltdb_header *)data.dptr)->dmaster != get_my_vnn()) {
-		SAFE_FREE(data.dptr);
+	status = db_ctdb_ltdb_fetch(ctx, key, &header, tmp_ctx, &data);
+	if (!NT_STATUS_IS_OK(status) || header.dmaster != get_my_vnn()) {
 		tdb_transaction_cancel(ctx->wtdb->tdb);
 		talloc_free(tmp_ctx);
 		goto again;
 	}
 
-	SAFE_FREE(data.dptr);
 	talloc_free(tmp_ctx);
 
 	return 0;
