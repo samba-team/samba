@@ -2258,6 +2258,15 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 			struct cli_state **targetcli,
 			char **pp_targetpath);
 
+bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
+			struct cli_state *cli,
+			const char *sharename,
+			char **pp_newserver,
+			char **pp_newshare,
+			bool force_encrypt,
+			const char *username,
+			const char *password,
+			const char *domain);
 /* The following definitions come from libsmb/clidgram.c  */
 
 bool send_getdc_request(TALLOC_CTX *mem_ctx,
