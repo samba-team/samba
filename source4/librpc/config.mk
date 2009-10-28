@@ -251,7 +251,7 @@ NDR_KRB5PAC_OBJ_FILES = ../librpc/gen_ndr/ndr_krb5pac.o ../librpc/ndr/ndr_krb5pa
 [SUBSYSTEM::NDR_XATTR]
 PUBLIC_DEPENDENCIES = LIBNDR NDR_SECURITY
 
-NDR_XATTR_OBJ_FILES = ../librpc/gen_ndr/ndr_xattr.o
+NDR_XATTR_OBJ_FILES = ../librpc/gen_ndr/ndr_xattr.o ../librpc/ndr/ndr_xattr.o
 
 [SUBSYSTEM::NDR_OPENDB]
 PUBLIC_DEPENDENCIES = LIBNDR

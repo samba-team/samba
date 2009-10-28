@@ -20,6 +20,10 @@
 #define XATTR_SD_HASH_SIZE	( 64 )
 #define XATTR_SD_HASH_TYPE_NONE	( 0x0 )
 #define XATTR_SD_HASH_TYPE_SHA256	( 0x1 )
+struct xattr_DosInfoFFFFCompat {
+	uint32_t attrib;
+};
+
 struct xattr_DosInfo1 {
 	uint32_t attrib;
 	uint32_t ea_size;
@@ -41,15 +45,41 @@ struct xattr_DosInfo2Old {
 	const char * name;/* [flag(LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NULLTERM)] */
 };
 
+/* bitmap xattr_DosInfoValidFlags */
+#define XATTR_DOSINFO_ATTRIB ( 0x00000001 )
+#define XATTR_DOSINFO_EA_SIZE ( 0x00000002 )
+#define XATTR_DOSINFO_SIZE ( 0x00000004 )
+#define XATTR_DOSINFO_ALLOC_SIZE ( 0x00000008 )
+#define XATTR_DOSINFO_CREATE_TIME ( 0x00000010 )
+#define XATTR_DOSINFO_CHANGE_TIME ( 0x00000020 )
+
+struct xattr_DosInfo3 {
+	uint32_t valid_flags;
+	uint32_t attrib;
+	uint32_t ea_size;
+	uint64_t size;
+	uint64_t alloc_size;
+	NTTIME create_time;
+	NTTIME change_time;
+};
+
 union xattr_DosInfo {
+	struct xattr_DosInfoFFFFCompat compatinfoFFFF;/* [case(0xFFFF)] */
 	struct xattr_DosInfo1 info1;/* [case] */
 	struct xattr_DosInfo2Old oldinfo2;/* [case(2)] */
-}/* [switch_type(uint16)] */;
+	struct xattr_DosInfo3 info3;/* [case(3)] */
+}/* [public,switch_type(uint16)] */;
 
 struct xattr_DosAttrib {
 	uint16_t version;
 	union xattr_DosInfo info;/* [switch_is(version)] */
 }/* [public] */;
+
+struct xattr_DOSATTRIB {
+	const char * attrib_hex;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
+	uint16_t version;
+	union xattr_DosInfo info;/* [switch_is(version)] */
+}/* [noprint,nopull,public,nopush] */;
 
 struct xattr_EA {
 	const char * name;/* [flag(LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NULLTERM)] */
@@ -99,5 +129,13 @@ struct xattr_NTACL {
 	uint16_t version;
 	union xattr_NTACL_Info info;/* [switch_is(version)] */
 }/* [public] */;
+
+
+struct xattr_parse_DOSATTRIB {
+	struct {
+		struct xattr_DOSATTRIB x;
+	} in;
+
+};
 
 #endif /* _HEADER_xattr */
