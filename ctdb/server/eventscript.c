@@ -32,6 +32,8 @@ static struct {
 	const char *script_running;
 } child_state;
 
+static void ctdb_event_script_timeout(struct event_context *ev, struct timed_event *te, struct timeval t, void *p);
+
 /*
   ctdbd sends us a SIGTERM when we should time out the current script
  */
@@ -63,6 +65,8 @@ struct ctdb_event_script_state {
 	int fd[2];
 	void *private_data;
 	const char *options;
+        struct timed_event *te;
+	struct timeval timeout;
 };
 
 
@@ -77,11 +81,12 @@ struct ctdb_monitor_script_status {
 	char *output;
 };
 
-struct ctdb_monitoring_status {
+struct ctdb_monitor_status {
 	struct timeval start;
 	struct timeval finished;
 	int32_t status;
 	struct ctdb_monitor_script_status *scripts;
+	struct ctdb_event_script_state *state;
 };
 
 
@@ -90,9 +95,7 @@ struct ctdb_monitoring_status {
  */
 int ctdb_log_event_script_output(struct ctdb_context *ctdb, char *str, uint16_t len)
 {
-	struct ctdb_monitoring_status *monitoring_status =
-		talloc_get_type(ctdb->script_monitoring_ctx,
-			struct ctdb_monitoring_status);
+	struct ctdb_monitor_status *monitoring_status = (struct ctdb_monitor_status *)ctdb->script_monitor_ctx;
 	struct ctdb_monitor_script_status *script;
 
 	if (monitoring_status == NULL) {
@@ -118,21 +121,15 @@ int ctdb_log_event_script_output(struct ctdb_context *ctdb, char *str, uint16_t 
  */
 int32_t ctdb_control_event_script_init(struct ctdb_context *ctdb)
 {
-	struct ctdb_monitoring_status *monitoring_status;
+	struct ctdb_monitor_status *monitoring_status = (struct ctdb_monitor_status *)ctdb->script_monitor_ctx;
 
 	DEBUG(DEBUG_INFO, ("event script init called\n"));
-	if (ctdb->script_monitoring_ctx != NULL) {
-		talloc_free(ctdb->script_monitoring_ctx);
-		ctdb->script_monitoring_ctx = NULL;
-	}
 
-	monitoring_status = talloc_zero(ctdb, struct ctdb_monitoring_status);
 	if (monitoring_status == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " ERROR: Failed to talloc script_monitoring context\n"));
-		return -1;
+		DEBUG(DEBUG_ERR,(__location__ " Init called when context is NULL\n"));
+		return 0;
 	}
 
-	ctdb->script_monitoring_ctx = monitoring_status;
 	monitoring_status->start = timeval_current();	
 
 	return 0;
@@ -145,9 +142,8 @@ int32_t ctdb_control_event_script_init(struct ctdb_context *ctdb)
 int32_t ctdb_control_event_script_start(struct ctdb_context *ctdb, TDB_DATA indata)
 {
 	const char *name = (const char *)indata.dptr;
-	struct ctdb_monitoring_status *monitoring_status =
-		talloc_get_type(ctdb->script_monitoring_ctx,
-			struct ctdb_monitoring_status);
+	struct ctdb_monitor_status *monitoring_status = (struct ctdb_monitor_status *)ctdb->script_monitor_ctx;
+	struct ctdb_event_script_state *state;
 	struct ctdb_monitor_script_status *script;
 
 	DEBUG(DEBUG_INFO, ("event script start called : %s\n", name));
@@ -169,6 +165,19 @@ int32_t ctdb_control_event_script_start(struct ctdb_context *ctdb, TDB_DATA inda
 	script->start = timeval_current();
 	monitoring_status->scripts = script;
 
+	state = monitoring_status->state;
+	if (state != NULL) {
+		/* reset the timeout for the next eventscript */
+		if (!timeval_is_zero(&state->timeout)) {
+			if (state->te != NULL) {
+				talloc_free(state->te);
+				state->te = NULL;
+			}
+			state->te = event_add_timed(ctdb->ev, state, timeval_current_ofs(state->timeout.tv_sec, state->timeout.tv_usec), ctdb_event_script_timeout, state);
+		}
+
+	}
+
 	return 0;
 }
 
@@ -178,9 +187,7 @@ int32_t ctdb_control_event_script_start(struct ctdb_context *ctdb, TDB_DATA inda
 int32_t ctdb_control_event_script_stop(struct ctdb_context *ctdb, TDB_DATA indata)
 {
 	int32_t res = *((int32_t *)indata.dptr);
-	struct ctdb_monitoring_status *monitoring_status =
-		talloc_get_type(ctdb->script_monitoring_ctx,
-			struct ctdb_monitoring_status);
+	struct ctdb_monitor_status *monitoring_status = (struct ctdb_monitor_status *)ctdb->script_monitor_ctx;
 	struct ctdb_monitor_script_status *script;
 
 	if (monitoring_status == NULL) {
@@ -207,9 +214,7 @@ int32_t ctdb_control_event_script_stop(struct ctdb_context *ctdb, TDB_DATA indat
 int32_t ctdb_control_event_script_disabled(struct ctdb_context *ctdb, TDB_DATA indata)
 {
 	const char *name = (const char *)indata.dptr;
-	struct ctdb_monitoring_status *monitoring_status =
-		talloc_get_type(ctdb->script_monitoring_ctx,
-			struct ctdb_monitoring_status);
+	struct ctdb_monitor_status *monitoring_status = (struct ctdb_monitor_status *)ctdb->script_monitor_ctx;
 	struct ctdb_monitor_script_status *script;
 
 	DEBUG(DEBUG_INFO, ("event script disabed called for script %s\n", name));
@@ -237,9 +242,7 @@ int32_t ctdb_control_event_script_disabled(struct ctdb_context *ctdb, TDB_DATA i
  */
 int32_t ctdb_control_event_script_finished(struct ctdb_context *ctdb)
 {
-	struct ctdb_monitoring_status *monitoring_status =
-		talloc_get_type(ctdb->script_monitoring_ctx,
-			struct ctdb_monitoring_status);
+	struct ctdb_monitor_status *monitoring_status = (struct ctdb_monitor_status *)ctdb->script_monitor_ctx;
 
 	DEBUG(DEBUG_INFO, ("event script finished called\n"));
 
@@ -250,11 +253,13 @@ int32_t ctdb_control_event_script_finished(struct ctdb_context *ctdb)
 
 	monitoring_status->finished = timeval_current();	
 	monitoring_status->status   = MONITOR_SCRIPT_OK;
-	if (ctdb->last_monitoring_ctx) {
-		talloc_free(ctdb->last_monitoring_ctx);
+
+	if (ctdb->last_monitor_ctx) {
+		talloc_free(ctdb->last_monitor_ctx);
+		ctdb->last_monitor_ctx = NULL;
 	}
-	ctdb->last_monitoring_ctx = ctdb->script_monitoring_ctx;
-	ctdb->script_monitoring_ctx = NULL;
+	ctdb->last_monitor_ctx = talloc_steal(ctdb, ctdb->script_monitor_ctx);
+	ctdb->script_monitor_ctx = NULL;
 
 	return 0;
 }
@@ -298,9 +303,7 @@ static struct ctdb_monitoring_wire *marshall_monitoring_scripts(TALLOC_CTX *mem_
 
 int32_t ctdb_control_get_event_script_status(struct ctdb_context *ctdb, TDB_DATA *outdata)
 {
-	struct ctdb_monitoring_status *monitoring_status =
-		talloc_get_type(ctdb->last_monitoring_ctx,
-			struct ctdb_monitoring_status);
+	struct ctdb_monitor_status *monitoring_status = (struct ctdb_monitor_status *)ctdb->last_monitor_ctx;
 	struct ctdb_monitoring_wire *monitoring_scripts;
 
 	if (monitoring_status == NULL) {
@@ -627,8 +630,6 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 {
 	struct ctdb_event_script_state *state = 
 		talloc_get_type(p, struct ctdb_event_script_state);
-	void (*callback)(struct ctdb_context *, int, void *) = state->callback;
-	void *private_data = state->private_data;
 	struct ctdb_context *ctdb = state->ctdb;
 	signed char rt = -1;
 
@@ -636,10 +637,13 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 
 	DEBUG(DEBUG_INFO,(__location__ " Eventscript %s finished with state %d\n", state->options, rt));
 
+	if (state->callback) {
+		state->callback(ctdb, rt, state->private_data);
+		state->callback = NULL;
+	}
+
 	talloc_set_destructor(state, NULL);
 	talloc_free(state);
-	callback(ctdb, rt, private_data);
-
 	ctdb->event_script_timeouts = 0;
 }
 
@@ -663,19 +667,20 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 				      struct timeval t, void *p)
 {
 	struct ctdb_event_script_state *state = talloc_get_type(p, struct ctdb_event_script_state);
-	void (*callback)(struct ctdb_context *, int, void *) = state->callback;
 	void *private_data = state->private_data;
 	struct ctdb_context *ctdb = state->ctdb;
 	char *options;
-	struct ctdb_monitoring_status *monitoring_status =
-		talloc_get_type(ctdb->script_monitoring_ctx,
-			struct ctdb_monitoring_status);
+	struct ctdb_monitor_status *monitoring_status = (struct ctdb_monitor_status *)ctdb->script_monitor_ctx;
+
+	state->te = NULL;
 
 	DEBUG(DEBUG_ERR,("Event script timed out : %s count : %u  pid : %d\n", state->options, ctdb->event_script_timeouts, state->child));
 	if (kill(state->child, 0) != 0) {
 		DEBUG(DEBUG_ERR,("Event script child process already dead, errno %s(%d)\n", strerror(errno), errno));
-		callback(ctdb, 0, private_data);
-
+		if (state->callback) {
+			state->callback(ctdb, 0, private_data);
+			state->callback = NULL;
+		}
 		talloc_set_destructor(state, NULL);
 		talloc_free(state);
 		return;
@@ -696,24 +701,39 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 		if (ctdb->event_script_timeouts > ctdb->tunable.script_ban_count) {
 			if (ctdb->tunable.script_unhealthy_on_timeout != 0) {
 				DEBUG(DEBUG_ERR, ("Maximum timeout count %u reached for eventscript. Making node unhealthy\n", ctdb->tunable.script_ban_count));
-				callback(ctdb, -ETIME, private_data);
+				if (state->callback) {
+					state->callback(ctdb, -ETIME, private_data);
+					state->callback = NULL;
+				}
 			} else {
 				ctdb->event_script_timeouts = 0;
 				DEBUG(DEBUG_ERR, ("Maximum timeout count %u reached for eventscript. Banning self for %d seconds\n", ctdb->tunable.script_ban_count, ctdb->tunable.recovery_ban_period));
 				ctdb_ban_self(ctdb, ctdb->tunable.recovery_ban_period);
-				callback(ctdb, -1, private_data);
+				if (state->callback) {
+					state->callback(ctdb, -1, private_data);
+					state->callback = NULL;
+				}
 			}
 		} else {
-		  	callback(ctdb, 0, private_data);
+			if (state->callback) {
+			  	state->callback(ctdb, 0, private_data);
+				state->callback = NULL;
+			}
 		}
 	} else if (!strcmp(options, "startup")) {
 		DEBUG(DEBUG_ERR, (__location__ " eventscript for startup event timedout.\n"));
-		callback(ctdb, -1, private_data);
+		if (state->callback) {
+			state->callback(ctdb, -1, private_data);
+			state->callback = NULL;
+		}
 	} else {
 		/* if it is not a monitor event we ban ourself immediately */
 		DEBUG(DEBUG_ERR, (__location__ " eventscript for NON-monitor/NON-startup event timedout. Immediately banning ourself for %d seconds\n", ctdb->tunable.recovery_ban_period));
 		ctdb_ban_self(ctdb, ctdb->tunable.recovery_ban_period);
-		callback(ctdb, -1, private_data);
+		if (state->callback) {
+			state->callback(ctdb, -1, private_data);
+			state->callback = NULL;
+		}
 	}
 
 	if (monitoring_status != NULL) {
@@ -724,11 +744,12 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 			script->timedout = 1;
 		}
 		monitoring_status->status = MONITOR_SCRIPT_TIMEOUT;
-		if (ctdb->last_monitoring_ctx) {
-			talloc_free(ctdb->last_monitoring_ctx);
-			ctdb->last_monitoring_ctx = ctdb->script_monitoring_ctx;
-			ctdb->script_monitoring_ctx = NULL;
+		if (ctdb->last_monitor_ctx) {
+			talloc_free(ctdb->last_monitor_ctx);
+			ctdb->last_monitor_ctx = NULL;
 		}
+		ctdb->last_monitor_ctx = talloc_steal(ctdb, ctdb->script_monitor_ctx);
+		ctdb->script_monitor_ctx = NULL;
 	}
 
 	talloc_free(options);
@@ -740,6 +761,11 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 static int event_script_destructor(struct ctdb_event_script_state *state)
 {
 	DEBUG(DEBUG_ERR,(__location__ " Sending SIGTERM to child pid:%d\n", state->child));
+
+	if (state->callback) {
+		state->callback(state->ctdb, -1, state->private_data);
+		state->callback = NULL;
+	}
 
 	if (kill(state->child, SIGTERM) != 0) {
 		DEBUG(DEBUG_ERR,("Failed to kill child process for eventscript, errno %s(%d)\n", strerror(errno), errno));
@@ -754,28 +780,49 @@ static int event_script_destructor(struct ctdb_event_script_state *state)
  */
 static int ctdb_event_script_callback_v(struct ctdb_context *ctdb, 
 					struct timeval timeout,
-					TALLOC_CTX *mem_ctx,
 					void (*callback)(struct ctdb_context *, int, void *),
 					void *private_data,
 					const char *fmt, va_list ap)
 {
+	struct ctdb_monitor_status *monitoring_status;
 	struct ctdb_event_script_state *state;
 	int ret;
 
-	state = talloc(mem_ctx, struct ctdb_event_script_state);
-	CTDB_NO_MEMORY(ctdb, state);
+	if (ctdb->script_monitor_ctx != NULL) {
+		talloc_free(ctdb->script_monitor_ctx);
+		ctdb->script_monitor_ctx = NULL;
+	}
+	monitoring_status = talloc_zero(ctdb, struct ctdb_monitor_status);
+	if (monitoring_status == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " ERROR: Failed to talloc script_monitoring context\n"));
+		return -1;
+	}
+
+	state = talloc(monitoring_status, struct ctdb_event_script_state);
+	if (state == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " could not allocate state\n"));
+		talloc_free(monitoring_status);
+		return -1;
+	}
+	monitoring_status->state = state;
 
 	state->ctdb = ctdb;
 	state->callback = callback;
 	state->private_data = private_data;
 	state->options = talloc_vasprintf(state, fmt, ap);
-	CTDB_NO_MEMORY(ctdb, state->options);
+	state->timeout = timeout;
+	state->te = NULL;
+	if (state->options == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " could not allocate state->options\n"));
+		talloc_free(monitoring_status);
+		return -1;
+	}
 
 	DEBUG(DEBUG_INFO,(__location__ " Starting eventscript %s\n", state->options));
 	
 	ret = pipe(state->fd);
 	if (ret != 0) {
-		talloc_free(state);
+		talloc_free(monitoring_status);
 		return -1;
 	}
 
@@ -784,7 +831,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	if (state->child == (pid_t)-1) {
 		close(state->fd[0]);
 		close(state->fd[1]);
-		talloc_free(state);
+		talloc_free(monitoring_status);
 		return -1;
 	}
 
@@ -803,6 +850,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	}
 
 	talloc_set_destructor(state, event_script_destructor);
+	ctdb->script_monitor_ctx = monitoring_status;
 
 	close(state->fd[1]);
 	set_close_on_exec(state->fd[0]);
@@ -812,8 +860,8 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	event_add_fd(ctdb->ev, state, state->fd[0], EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
 		     ctdb_event_script_handler, state);
 
-	if (!timeval_is_zero(&timeout)) {
-		event_add_timed(ctdb->ev, state, timeout, ctdb_event_script_timeout, state);
+	if (!timeval_is_zero(&state->timeout)) {
+		state->te = event_add_timed(ctdb->ev, state, timeval_current_ofs(state->timeout.tv_sec, state->timeout.tv_usec), ctdb_event_script_timeout, state);
 	} else {
 		DEBUG(DEBUG_ERR, (__location__ " eventscript %s called with no timeout\n", state->options));
 	}
@@ -837,7 +885,7 @@ int ctdb_event_script_callback(struct ctdb_context *ctdb,
 	int ret;
 
 	va_start(ap, fmt);
-	ret = ctdb_event_script_callback_v(ctdb, timeout, mem_ctx, callback, private_data, fmt, ap);
+	ret = ctdb_event_script_callback_v(ctdb, timeout, callback, private_data, fmt, ap);
 	va_end(ap);
 
 	return ret;
@@ -867,17 +915,15 @@ int ctdb_event_script(struct ctdb_context *ctdb, const char *fmt, ...)
 {
 	va_list ap;
 	int ret;
-	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	struct callback_status status;
 
 	va_start(ap, fmt);
 	ret = ctdb_event_script_callback_v(ctdb, 
-			timeval_current_ofs(ctdb->tunable.script_timeout, 0),
-			tmp_ctx, event_script_callback, &status, fmt, ap);
+			timeval_set(ctdb->tunable.script_timeout, 0),
+			event_script_callback, &status, fmt, ap);
 	va_end(ap);
 
 	if (ret != 0) {
-		talloc_free(tmp_ctx);
 		return ret;
 	}
 
@@ -885,8 +931,6 @@ int ctdb_event_script(struct ctdb_context *ctdb, const char *fmt, ...)
 	status.done = false;
 
 	while (status.done == false && event_loop_once(ctdb->ev) == 0) /* noop */;
-
-	talloc_free(tmp_ctx);
 
 	return status.status;
 }
@@ -952,7 +996,7 @@ int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb,
 	ctdb_disable_monitoring(ctdb);
 
 	ret = ctdb_event_script_callback(ctdb, 
-			 timeval_current_ofs(ctdb->tunable.script_timeout, 0),
+			 timeval_set(ctdb->tunable.script_timeout, 0),
 			 state, run_eventscripts_callback, state,
 			 "%s", (const char *)indata.dptr);
 
