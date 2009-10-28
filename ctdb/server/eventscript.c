@@ -763,7 +763,7 @@ static int event_script_destructor(struct ctdb_event_script_state *state)
 	DEBUG(DEBUG_ERR,(__location__ " Sending SIGTERM to child pid:%d\n", state->child));
 
 	if (state->callback) {
-		state->callback(state->ctdb, -1, state->private_data);
+		state->callback(state->ctdb, 0, state->private_data);
 		state->callback = NULL;
 	}
 
