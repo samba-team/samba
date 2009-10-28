@@ -4709,7 +4709,6 @@ NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
 bool secrets_store_afs_keyfile(const char *cell, const struct afs_keyfile *keyfile);
 bool secrets_fetch_afs_key(const char *cell, struct afs_key *result);
 void secrets_fetch_ipc_userpass(char **username, char **domain, char **password);
-TDB_CONTEXT *open_schannel_session_store(TALLOC_CTX *mem_ctx);
 bool secrets_store_generic(const char *owner, const char *key, const char *secret);
 char *secrets_fetch_generic(const char *owner, const char *key);
 bool secrets_delete_generic(const char *owner, const char *key);
@@ -4718,6 +4717,7 @@ bool secrets_fetch_local_schannel_key(uint8_t schannel_key[16]);
 
 /* The following definitions come from passdb/secrets_schannel.c  */
 
+TDB_CONTEXT *open_schannel_session_store(TALLOC_CTX *mem_ctx);
 NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
 				    const char *computer_name,
 				    struct netlogon_creds_CredentialState **pcreds);
