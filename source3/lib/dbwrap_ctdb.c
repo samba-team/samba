@@ -416,24 +416,14 @@ static int db_ctdb_transaction_fetch(struct db_ctdb_ctx *db,
 				     TDB_DATA key, TDB_DATA *data)
 {
 	struct db_ctdb_transaction_handle *h = db->transaction;
+	NTSTATUS status;
 
-	*data = tdb_fetch(h->ctx->wtdb->tdb, key);
+	status = db_ctdb_ltdb_fetch(h->ctx, key, NULL, mem_ctx, data);
 
-	if (data->dptr != NULL) {
-		uint8_t *oldptr = (uint8_t *)data->dptr;
-		data->dsize -= sizeof(struct ctdb_ltdb_header);
-		if (data->dsize == 0) {
-			data->dptr = NULL;
-		} else {
-			data->dptr = (uint8 *)
-				talloc_memdup(
-					mem_ctx, data->dptr+sizeof(struct ctdb_ltdb_header),
-					data->dsize);
-		}
-		SAFE_FREE(oldptr);
-		if (data->dptr == NULL && data->dsize != 0) {
-			return -1;
-		}
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		*data = tdb_null;
+	} else if (!NT_STATUS_IS_OK(status)) {
+		return -1;
 	}
 
 	if (!h->in_replay) {
