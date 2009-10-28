@@ -33,6 +33,8 @@
 #include "auth/credentials/credentials_proto.h"
 #include "param/param.h"
 #include "lib/events/events.h"
+#include "dsdb/samdb/samdb.h"
+
 
 /**
  * Read a file descriptor, and parse it for a password (eg from a file or stdin)
@@ -323,7 +325,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	} else {
 		keytab = ldb_msg_find_attr_as_string(msgs[0], "privateKeytab", NULL);
 		if (keytab) {
-			keytab = talloc_asprintf(mem_ctx, "FILE:%s", private_path(mem_ctx, lp_ctx, keytab));
+			keytab = talloc_asprintf(mem_ctx, "FILE:%s", samdb_relative_path(ldb, mem_ctx, keytab));
 			if (keytab) {
 				cli_credentials_set_keytab_name(cred, event_ctx, lp_ctx, keytab, CRED_SPECIFIED);
 			}
