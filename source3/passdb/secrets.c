@@ -1132,69 +1132,6 @@ void secrets_fetch_ipc_userpass(char **username, char **domain, char **password)
 	}
 }
 
-/******************************************************************************
- Open or create the schannel session store tdb.
-*******************************************************************************/
-
-#define SCHANNEL_STORE_VERSION_1 1
-#define SCHANNEL_STORE_VERSION_2 2 /* should not be used */
-#define SCHANNEL_STORE_VERSION_CURRENT SCHANNEL_STORE_VERSION_1
-
-TDB_CONTEXT *open_schannel_session_store(TALLOC_CTX *mem_ctx)
-{
-	TDB_DATA vers;
-	uint32 ver;
-	TDB_CONTEXT *tdb_sc = NULL;
-	char *fname = talloc_asprintf(mem_ctx, "%s/schannel_store.tdb", lp_private_dir());
-
-	if (!fname) {
-		return NULL;
-	}
-
-        tdb_sc = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
-
-        if (!tdb_sc) {
-                DEBUG(0,("open_schannel_session_store: Failed to open %s\n", fname));
-		TALLOC_FREE(fname);
-                return NULL;
-        }
-
- again:
-	vers = tdb_fetch_bystring(tdb_sc, "SCHANNEL_STORE_VERSION");
-	if (vers.dptr == NULL) {
-		/* First opener, no version. */
-		SIVAL(&ver,0,SCHANNEL_STORE_VERSION_CURRENT);
-		vers.dptr = (uint8 *)&ver;
-		vers.dsize = 4;
-		tdb_store_bystring(tdb_sc, "SCHANNEL_STORE_VERSION", vers, TDB_REPLACE);
-		vers.dptr = NULL;
-	} else if (vers.dsize == 4) {
-		ver = IVAL(vers.dptr,0);
-		if (ver == SCHANNEL_STORE_VERSION_2) {
-			DEBUG(0,("open_schannel_session_store: wrong version number %d in %s\n",
-				(int)ver, fname ));
-			tdb_wipe_all(tdb_sc);
-			goto again;
-		}
-		if (ver != SCHANNEL_STORE_VERSION_CURRENT) {
-			DEBUG(0,("open_schannel_session_store: wrong version number %d in %s\n",
-				(int)ver, fname ));
-			tdb_close(tdb_sc);
-			tdb_sc = NULL;
-		}
-	} else {
-		tdb_close(tdb_sc);
-		tdb_sc = NULL;
-		DEBUG(0,("open_schannel_session_store: wrong version number size %d in %s\n",
-			(int)vers.dsize, fname ));
-	}
-
-	SAFE_FREE(vers.dptr);
-	TALLOC_FREE(fname);
-
-	return tdb_sc;
-}
-
 bool secrets_store_generic(const char *owner, const char *key, const char *secret)
 {
 	char *tdbkey = NULL;
