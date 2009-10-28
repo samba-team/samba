@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "../libcli/auth/libcli_auth.h"
+#include "librpc/gen_ndr/ndr_secrets.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
@@ -476,178 +477,6 @@ bool secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
 							   channel);
 }
 
-/**
- * Pack SID passed by pointer
- *
- * @param pack_buf pointer to buffer which is to be filled with packed data
- * @param bufsize size of packing buffer
- * @param sid pointer to sid to be packed
- *
- * @return length of the packed representation of the whole structure
- **/
-static size_t tdb_sid_pack(uint8 *pack_buf, int bufsize, DOM_SID* sid)
-{
-	int idx;
-	size_t len = 0;
-	uint8 *p = pack_buf;
-	int remaining_space = pack_buf ? bufsize : 0;
-
-	if (!sid) {
-		return -1;
-	}
-
-	len += tdb_pack(p, remaining_space, "bb", sid->sid_rev_num,
-	                sid->num_auths);
-	if (pack_buf) {
-		p = pack_buf + len;
-		remaining_space = bufsize - len;
-	}
-
-	for (idx = 0; idx < 6; idx++) {
-		len += tdb_pack(p, remaining_space, "b",
-				sid->id_auth[idx]);
-		if (pack_buf) {
-			p = pack_buf + len;
-			remaining_space = bufsize - len;
-		}
-	}
-
-	for (idx = 0; idx < MAXSUBAUTHS; idx++) {
-		len += tdb_pack(p, remaining_space, "d",
-				sid->sub_auths[idx]);
-		if (pack_buf) {
-			p = pack_buf + len;
-			remaining_space = bufsize - len;
-		}
-	}
-
-	return len;
-}
-
-/**
- * Unpack SID into a pointer
- *
- * @param pack_buf pointer to buffer with packed representation
- * @param bufsize size of the buffer
- * @param sid pointer to sid structure to be filled with unpacked data
- *
- * @return size of structure unpacked from buffer
- **/
-static size_t tdb_sid_unpack(uint8 *pack_buf, int bufsize, DOM_SID* sid)
-{
-	int idx, len = 0;
-
-	if (!sid || !pack_buf) return -1;
-
-	len += tdb_unpack(pack_buf + len, bufsize - len, "bb",
-	                  &sid->sid_rev_num, &sid->num_auths);
-
-	for (idx = 0; idx < 6; idx++) {
-		len += tdb_unpack(pack_buf + len, bufsize - len, "b",
-				  &sid->id_auth[idx]);
-	}
-
-	for (idx = 0; idx < MAXSUBAUTHS; idx++) {
-		len += tdb_unpack(pack_buf + len, bufsize - len, "d",
-				  &sid->sub_auths[idx]);
-	}
-
-	return len;
-}
-
-/**
- * Pack TRUSTED_DOM_PASS passed by pointer
- *
- * @param pack_buf pointer to buffer which is to be filled with packed data
- * @param bufsize size of the buffer
- * @param pass pointer to trusted domain password to be packed
- *
- * @return length of the packed representation of the whole structure
- **/
-static size_t tdb_trusted_dom_pass_pack(uint8 *pack_buf, int bufsize,
-					TRUSTED_DOM_PASS* pass)
-{
-	int idx, len = 0;
-	uint8 *p = pack_buf;
-	int remaining_space = pack_buf ? bufsize : 0;
-
-	if (!pass) {
-		return -1;
-	}
-
-	/* packing unicode domain name and password */
-	len += tdb_pack(p, remaining_space, "d",
-			pass->uni_name_len);
-	if (pack_buf) {
-		p = pack_buf + len;
-		remaining_space = bufsize - len;
-	}
-
-	for (idx = 0; idx < 32; idx++) {
-		len += tdb_pack(p, remaining_space, "w",
-				 pass->uni_name[idx]);
-		if (pack_buf) {
-			p = pack_buf + len;
-			remaining_space = bufsize - len;
-		}
-	}
-
-	len += tdb_pack(p, remaining_space, "dPd", pass->pass_len,
-	                     pass->pass, pass->mod_time);
-	if (pack_buf) {
-		p = pack_buf + len;
-		remaining_space = bufsize - len;
-	}
-
-	/* packing SID structure */
-	len += tdb_sid_pack(p, remaining_space, &pass->domain_sid);
-	if (pack_buf) {
-		p = pack_buf + len;
-		remaining_space = bufsize - len;
-	}
-
-	return len;
-}
-
-
-/**
- * Unpack TRUSTED_DOM_PASS passed by pointer
- *
- * @param pack_buf pointer to buffer with packed representation
- * @param bufsize size of the buffer
- * @param pass pointer to trusted domain password to be filled with unpacked data
- *
- * @return size of structure unpacked from buffer
- **/
-static size_t tdb_trusted_dom_pass_unpack(uint8 *pack_buf, int bufsize,
-					  TRUSTED_DOM_PASS* pass)
-{
-	int idx, len = 0;
-	char *passp = NULL;
-
-	if (!pack_buf || !pass) return -1;
-
-	/* unpack unicode domain name and plaintext password */
-	len += tdb_unpack(pack_buf, bufsize - len, "d", &pass->uni_name_len);
-
-	for (idx = 0; idx < 32; idx++)
-		len +=  tdb_unpack(pack_buf + len, bufsize - len, "w",
-				   &pass->uni_name[idx]);
-
-	len += tdb_unpack(pack_buf + len, bufsize - len, "dPd",
-			  &pass->pass_len, &passp, &pass->mod_time);
-	if (passp) {
-		fstrcpy(pass->pass, passp);
-	}
-	SAFE_FREE(passp);
-
-	/* unpack domain sid */
-	len += tdb_sid_unpack(pack_buf + len, bufsize - len,
-			      &pass->domain_sid);
-
-	return len;
-}
-
 /************************************************************************
  Routine to get account password to trusted domain
 ************************************************************************/
@@ -655,30 +484,27 @@ static size_t tdb_trusted_dom_pass_unpack(uint8 *pack_buf, int bufsize,
 bool secrets_fetch_trusted_domain_password(const char *domain, char** pwd,
                                            DOM_SID *sid, time_t *pass_last_set_time)
 {
-	struct trusted_dom_pass pass;
-	size_t size = 0;
+	struct TRUSTED_DOM_PASS pass;
+	enum ndr_err_code ndr_err;
 
 	/* unpacking structures */
-	uint8 *pass_buf;
-	int pass_len = 0;
-
-	ZERO_STRUCT(pass);
+	DATA_BLOB blob;
 
 	/* fetching trusted domain password structure */
-	if (!(pass_buf = (uint8 *)secrets_fetch(trustdom_keystr(domain),
-					       &size))) {
+	if (!(blob.data = (uint8_t *)secrets_fetch(trustdom_keystr(domain),
+						   &blob.length))) {
 		DEBUG(5, ("secrets_fetch failed!\n"));
 		return False;
 	}
 
 	/* unpack trusted domain password */
-	pass_len = tdb_trusted_dom_pass_unpack(pass_buf, size, &pass);
-	SAFE_FREE(pass_buf);
-
-	if (pass_len != size) {
-		DEBUG(5, ("Invalid secrets size. Unpacked data doesn't match trusted_dom_pass structure.\n"));
-		return False;
+	ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), NULL, &pass,
+			(ndr_pull_flags_fn_t)ndr_pull_TRUSTED_DOM_PASS);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return false;
 	}
+
+	SAFE_FREE(blob.data);
 
 	/* the trust's password */
 	if (pwd) {
@@ -710,47 +536,37 @@ bool secrets_fetch_trusted_domain_password(const char *domain, char** pwd,
 bool secrets_store_trusted_domain_password(const char* domain, const char* pwd,
                                            const DOM_SID *sid)
 {
-	smb_ucs2_t *uni_dom_name;
 	bool ret;
-	size_t converted_size;
 
 	/* packing structures */
-	uint8 *pass_buf = NULL;
-	int pass_len = 0;
-
-	struct trusted_dom_pass pass;
+	DATA_BLOB blob;
+	enum ndr_err_code ndr_err;
+	struct TRUSTED_DOM_PASS pass;
 	ZERO_STRUCT(pass);
 
-	if (!push_ucs2_talloc(talloc_tos(), &uni_dom_name, domain, &converted_size)) {
-		DEBUG(0, ("Could not convert domain name %s to unicode\n",
-			  domain));
-		return False;
-	}
-
-	strncpy_w(pass.uni_name, uni_dom_name, sizeof(pass.uni_name) - 1);
-	pass.uni_name_len = strlen_w(uni_dom_name)+1;
-	TALLOC_FREE(uni_dom_name);
+	pass.uni_name = domain;
+	pass.uni_name_len = strlen(domain)+1;
 
 	/* last change time */
 	pass.mod_time = time(NULL);
 
 	/* password of the trust */
 	pass.pass_len = strlen(pwd);
-	fstrcpy(pass.pass, pwd);
+	pass.pass = pwd;
 
 	/* domain sid */
 	sid_copy(&pass.domain_sid, sid);
 
-	/* Calculate the length. */
-	pass_len = tdb_trusted_dom_pass_pack(NULL, 0, &pass);
-	pass_buf = talloc_array(talloc_tos(), uint8, pass_len);
-	if (!pass_buf) {
+	ndr_err = ndr_push_struct_blob(&blob, talloc_tos(), NULL, &pass,
+			(ndr_push_flags_fn_t)ndr_push_TRUSTED_DOM_PASS);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return false;
 	}
-	pass_len = tdb_trusted_dom_pass_pack(pass_buf, pass_len, &pass);
-	ret = secrets_store(trustdom_keystr(domain), (void *)pass_buf,
-			pass_len);
-	TALLOC_FREE(pass_buf);
+
+	ret = secrets_store(trustdom_keystr(domain), blob.data, blob.length);
+
+	data_blob_free(&blob);
+
 	return ret;
 }
 
@@ -957,8 +773,9 @@ struct list_trusted_domains_state {
 static int list_trusted_domain(struct db_record *rec, void *private_data)
 {
 	const size_t prefix_len = strlen(SECRETS_DOMTRUST_ACCT_PASS);
-	size_t converted_size, packed_size = 0;
-	struct trusted_dom_pass pass;
+	struct TRUSTED_DOM_PASS pass;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
 	struct trustdom_info *dom_info;
 
 	struct list_trusted_domains_state *state =
@@ -970,12 +787,12 @@ static int list_trusted_domain(struct db_record *rec, void *private_data)
 		return 0;
 	}
 
-	packed_size = tdb_trusted_dom_pass_unpack(
-		rec->value.dptr, rec->value.dsize, &pass);
+	blob = data_blob_const(rec->value.dptr, rec->value.dsize);
 
-	if (rec->value.dsize != packed_size) {
-		DEBUG(2, ("Secrets record is invalid!\n"));
-		return 0;
+	ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), NULL, &pass,
+			(ndr_pull_flags_fn_t)ndr_pull_TRUSTED_DOM_PASS);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return false;
 	}
 
 	if (pass.domain_sid.num_auths != 4) {
@@ -991,9 +808,8 @@ static int list_trusted_domain(struct db_record *rec, void *private_data)
 		return 0;
 	}
 
-	if (!pull_ucs2_talloc(dom_info, &dom_info->name, pass.uni_name,
-			      &converted_size)) {
-		DEBUG(2, ("pull_ucs2_talloc failed\n"));
+	dom_info->name = talloc_strdup(dom_info, pass.uni_name);
+	if (!dom_info->name) {
 		TALLOC_FREE(dom_info);
 		return 0;
 	}
