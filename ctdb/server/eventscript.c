@@ -736,7 +736,7 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 		}
 	}
 
-	if (monitoring_status != NULL) {
+	if ((!strcmp(options, "monitor")) && (monitoring_status != NULL)) {
 		struct ctdb_monitor_script_status *script;
 
 		script = monitoring_status->scripts;
@@ -788,11 +788,19 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	struct ctdb_event_script_state *state;
 	int ret;
 
-	if (ctdb->script_monitor_ctx != NULL) {
-		talloc_free(ctdb->script_monitor_ctx);
-		ctdb->script_monitor_ctx = NULL;
+	if (!strcmp(fmt, "monitor")) {
+		if (ctdb->script_monitor_ctx != NULL) {
+			talloc_free(ctdb->script_monitor_ctx);
+			ctdb->script_monitor_ctx = NULL;
+		}
+		monitoring_status = talloc_zero(ctdb, struct ctdb_monitor_status);
+	} else {
+		if (ctdb->event_script_ctx == NULL) {
+			ctdb->event_script_ctx = talloc_zero(ctdb, struct ctdb_monitor_status);
+		}
+		monitoring_status = ctdb->event_script_ctx;
 	}
-	monitoring_status = talloc_zero(ctdb, struct ctdb_monitor_status);
+
 	if (monitoring_status == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " ERROR: Failed to talloc script_monitoring context\n"));
 		return -1;
@@ -801,7 +809,6 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	state = talloc(monitoring_status, struct ctdb_event_script_state);
 	if (state == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " could not allocate state\n"));
-		talloc_free(monitoring_status);
 		return -1;
 	}
 	monitoring_status->state = state;
@@ -814,7 +821,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	state->te = NULL;
 	if (state->options == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " could not allocate state->options\n"));
-		talloc_free(monitoring_status);
+		talloc_free(state);
 		return -1;
 	}
 
@@ -822,7 +829,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	
 	ret = pipe(state->fd);
 	if (ret != 0) {
-		talloc_free(monitoring_status);
+		talloc_free(state);
 		return -1;
 	}
 
@@ -831,7 +838,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	if (state->child == (pid_t)-1) {
 		close(state->fd[0]);
 		close(state->fd[1]);
-		talloc_free(monitoring_status);
+		talloc_free(state);
 		return -1;
 	}
 
@@ -850,7 +857,11 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	}
 
 	talloc_set_destructor(state, event_script_destructor);
-	ctdb->script_monitor_ctx = monitoring_status;
+	if (!strcmp(fmt, "monitor")) {
+		ctdb->script_monitor_ctx = monitoring_status;
+	} else {
+		ctdb->event_script_ctx  = monitoring_status;
+	}
 
 	close(state->fd[1]);
 	set_close_on_exec(state->fd[0]);
