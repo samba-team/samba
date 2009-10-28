@@ -5770,7 +5770,9 @@ static NTSTATUS rpc_query_domain_sid(struct net_context *c,
 					const char **argv)
 {
 	fstring str_sid;
-	sid_to_fstring(str_sid, domain_sid);
+	if (!sid_to_fstring(str_sid, domain_sid)) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 	d_printf("%s\n", str_sid);
 	return NT_STATUS_OK;
 }
@@ -6245,8 +6247,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 					    &ndr_table_lsarpc.syntax_id, 0,
 					    rpc_query_domain_sid, argc,
 					    argv))
-					d_fprintf(stderr,
-					      _("couldn't get domain's sid\n"));
+					d_printf(_("strange - couldn't get domain's sid\n"));
 
 				cli_shutdown(remote_cli);
 
@@ -6254,6 +6255,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 				d_fprintf(stderr, _("domain controller is not "
 					  "responding: %s\n"),
 					  nt_errstr(nt_status));
+				d_printf(_("couldn't get domain's sid\n"));
 			};
 		};
 
