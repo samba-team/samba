@@ -451,7 +451,8 @@ LIBADS_SERVER_OBJ = libads/kerberos_verify.o libads/authdata.o \
 		    ../librpc/ndr/ndr_krb5pac.o \
 		    ../librpc/gen_ndr/ndr_krb5pac.o
 
-SECRETS_OBJ = passdb/secrets.o passdb/machine_sid.o
+SECRETS_OBJ = passdb/secrets.o passdb/machine_sid.o \
+	      librpc/gen_ndr/ndr_secrets.o
 
 LIBNBT_OBJ = ../libcli/nbt/nbtname.o \
 	     ../libcli/netlogon.o \
