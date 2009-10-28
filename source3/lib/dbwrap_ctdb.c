@@ -347,6 +347,7 @@ static int db_ctdb_transaction_fetch_start(struct db_ctdb_transaction_handle *h)
 	pid_t pid;
 	NTSTATUS status;
 	struct ctdb_ltdb_header header;
+	int32_t transaction_status;
 
 	key.dptr = (uint8_t *)discard_const(keyname);
 	key.dsize = strlen(keyname);
@@ -361,6 +362,17 @@ again:
 		return -1;
 	}
 	crec = talloc_get_type_abort(rh->private_data, struct db_ctdb_rec);
+
+	transaction_status = db_ctdb_transaction_active(ctx->db_id);
+	if (transaction_status == 1) {
+		unsigned long int usec = (1000 + random()) % 100000;
+		DEBUG(3, ("Transaction already active on db_id[0x%08x]."
+			  "Re-trying after %lu microseconds...",
+			  ctx->db_id, usec));
+		talloc_free(tmp_ctx);
+		usleep(usec);
+		goto again;
+	}
 
 	/*
 	 * store the pid in the database:
