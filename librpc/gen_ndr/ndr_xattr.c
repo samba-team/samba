@@ -4,6 +4,38 @@
 #include "../librpc/gen_ndr/ndr_xattr.h"
 
 #include "librpc/gen_ndr/ndr_security.h"
+static enum ndr_err_code ndr_push_xattr_DosInfoFFFFCompat(struct ndr_push *ndr, int ndr_flags, const struct xattr_DosInfoFFFFCompat *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->attrib));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 4));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_xattr_DosInfoFFFFCompat(struct ndr_pull *ndr, int ndr_flags, struct xattr_DosInfoFFFFCompat *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->attrib));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_xattr_DosInfoFFFFCompat(struct ndr_print *ndr, const char *name, const struct xattr_DosInfoFFFFCompat *r)
+{
+	ndr_print_struct(ndr, name, "xattr_DosInfoFFFFCompat");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "attrib", r->attrib);
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_xattr_DosInfo1(struct ndr_push *ndr, int ndr_flags, const struct xattr_DosInfo1 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -113,19 +145,104 @@ _PUBLIC_ void ndr_print_xattr_DosInfo2Old(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_xattr_DosInfo(struct ndr_push *ndr, int ndr_flags, const union xattr_DosInfo *r)
+static enum ndr_err_code ndr_push_xattr_DosInfoValidFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_xattr_DosInfoValidFlags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_xattr_DosInfoValidFlags(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "XATTR_DOSINFO_ATTRIB", XATTR_DOSINFO_ATTRIB, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "XATTR_DOSINFO_EA_SIZE", XATTR_DOSINFO_EA_SIZE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "XATTR_DOSINFO_SIZE", XATTR_DOSINFO_SIZE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "XATTR_DOSINFO_ALLOC_SIZE", XATTR_DOSINFO_ALLOC_SIZE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "XATTR_DOSINFO_CREATE_TIME", XATTR_DOSINFO_CREATE_TIME, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "XATTR_DOSINFO_CHANGE_TIME", XATTR_DOSINFO_CHANGE_TIME, r);
+	ndr->depth--;
+}
+
+static enum ndr_err_code ndr_push_xattr_DosInfo3(struct ndr_push *ndr, int ndr_flags, const struct xattr_DosInfo3 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_xattr_DosInfoValidFlags(ndr, NDR_SCALARS, r->valid_flags));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->attrib));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->ea_size));
+		NDR_CHECK(ndr_push_udlong(ndr, NDR_SCALARS, r->size));
+		NDR_CHECK(ndr_push_udlong(ndr, NDR_SCALARS, r->alloc_size));
+		NDR_CHECK(ndr_push_NTTIME(ndr, NDR_SCALARS, r->create_time));
+		NDR_CHECK(ndr_push_NTTIME(ndr, NDR_SCALARS, r->change_time));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 4));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_xattr_DosInfo3(struct ndr_pull *ndr, int ndr_flags, struct xattr_DosInfo3 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_xattr_DosInfoValidFlags(ndr, NDR_SCALARS, &r->valid_flags));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->attrib));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->ea_size));
+		NDR_CHECK(ndr_pull_udlong(ndr, NDR_SCALARS, &r->size));
+		NDR_CHECK(ndr_pull_udlong(ndr, NDR_SCALARS, &r->alloc_size));
+		NDR_CHECK(ndr_pull_NTTIME(ndr, NDR_SCALARS, &r->create_time));
+		NDR_CHECK(ndr_pull_NTTIME(ndr, NDR_SCALARS, &r->change_time));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_xattr_DosInfo3(struct ndr_print *ndr, const char *name, const struct xattr_DosInfo3 *r)
+{
+	ndr_print_struct(ndr, name, "xattr_DosInfo3");
+	ndr->depth++;
+	ndr_print_xattr_DosInfoValidFlags(ndr, "valid_flags", r->valid_flags);
+	ndr_print_uint32(ndr, "attrib", r->attrib);
+	ndr_print_uint32(ndr, "ea_size", r->ea_size);
+	ndr_print_udlong(ndr, "size", r->size);
+	ndr_print_udlong(ndr, "alloc_size", r->alloc_size);
+	ndr_print_NTTIME(ndr, "create_time", r->create_time);
+	ndr_print_NTTIME(ndr, "change_time", r->change_time);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_xattr_DosInfo(struct ndr_push *ndr, int ndr_flags, const union xattr_DosInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, level));
 		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
+			case 0xFFFF: {
+				NDR_CHECK(ndr_push_xattr_DosInfoFFFFCompat(ndr, NDR_SCALARS, &r->compatinfoFFFF));
+			break; }
+
 			case 1: {
 				NDR_CHECK(ndr_push_xattr_DosInfo1(ndr, NDR_SCALARS, &r->info1));
 			break; }
 
 			case 2: {
 				NDR_CHECK(ndr_push_xattr_DosInfo2Old(ndr, NDR_SCALARS, &r->oldinfo2));
+			break; }
+
+			case 3: {
+				NDR_CHECK(ndr_push_xattr_DosInfo3(ndr, NDR_SCALARS, &r->info3));
 			break; }
 
 			default:
@@ -135,10 +252,16 @@ static enum ndr_err_code ndr_push_xattr_DosInfo(struct ndr_push *ndr, int ndr_fl
 	if (ndr_flags & NDR_BUFFERS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
+			case 0xFFFF:
+			break;
+
 			case 1:
 			break;
 
 			case 2:
+			break;
+
+			case 3:
 			break;
 
 			default:
@@ -148,7 +271,7 @@ static enum ndr_err_code ndr_push_xattr_DosInfo(struct ndr_push *ndr, int ndr_fl
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_xattr_DosInfo(struct ndr_pull *ndr, int ndr_flags, union xattr_DosInfo *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_xattr_DosInfo(struct ndr_pull *ndr, int ndr_flags, union xattr_DosInfo *r)
 {
 	int level;
 	uint16_t _level;
@@ -160,6 +283,10 @@ static enum ndr_err_code ndr_pull_xattr_DosInfo(struct ndr_pull *ndr, int ndr_fl
 		}
 		NDR_CHECK(ndr_pull_union_align(ndr, 4));
 		switch (level) {
+			case 0xFFFF: {
+				NDR_CHECK(ndr_pull_xattr_DosInfoFFFFCompat(ndr, NDR_SCALARS, &r->compatinfoFFFF));
+			break; }
+
 			case 1: {
 				NDR_CHECK(ndr_pull_xattr_DosInfo1(ndr, NDR_SCALARS, &r->info1));
 			break; }
@@ -168,16 +295,26 @@ static enum ndr_err_code ndr_pull_xattr_DosInfo(struct ndr_pull *ndr, int ndr_fl
 				NDR_CHECK(ndr_pull_xattr_DosInfo2Old(ndr, NDR_SCALARS, &r->oldinfo2));
 			break; }
 
+			case 3: {
+				NDR_CHECK(ndr_pull_xattr_DosInfo3(ndr, NDR_SCALARS, &r->info3));
+			break; }
+
 			default:
 				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		switch (level) {
+			case 0xFFFF:
+			break;
+
 			case 1:
 			break;
 
 			case 2:
+			break;
+
+			case 3:
 			break;
 
 			default:
@@ -193,12 +330,20 @@ _PUBLIC_ void ndr_print_xattr_DosInfo(struct ndr_print *ndr, const char *name, c
 	level = ndr_print_get_switch_value(ndr, r);
 	ndr_print_union(ndr, name, level, "xattr_DosInfo");
 	switch (level) {
+		case 0xFFFF:
+			ndr_print_xattr_DosInfoFFFFCompat(ndr, "compatinfoFFFF", &r->compatinfoFFFF);
+		break;
+
 		case 1:
 			ndr_print_xattr_DosInfo1(ndr, "info1", &r->info1);
 		break;
 
 		case 2:
 			ndr_print_xattr_DosInfo2Old(ndr, "oldinfo2", &r->oldinfo2);
+		break;
+
+		case 3:
+			ndr_print_xattr_DosInfo3(ndr, "info3", &r->info3);
 		break;
 
 		default:
@@ -870,4 +1015,89 @@ _PUBLIC_ void ndr_print_xattr_NTACL(struct ndr_print *ndr, const char *name, con
 	ndr_print_xattr_NTACL_Info(ndr, "info", &r->info);
 	ndr->depth--;
 }
+
+static enum ndr_err_code ndr_push_xattr_parse_DOSATTRIB(struct ndr_push *ndr, int flags, const struct xattr_parse_DOSATTRIB *r)
+{
+	if (flags & NDR_IN) {
+		NDR_CHECK(ndr_push_xattr_DOSATTRIB(ndr, NDR_SCALARS, &r->in.x));
+	}
+	if (flags & NDR_OUT) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_xattr_parse_DOSATTRIB(struct ndr_pull *ndr, int flags, struct xattr_parse_DOSATTRIB *r)
+{
+	if (flags & NDR_IN) {
+		NDR_CHECK(ndr_pull_xattr_DOSATTRIB(ndr, NDR_SCALARS, &r->in.x));
+	}
+	if (flags & NDR_OUT) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_xattr_parse_DOSATTRIB(struct ndr_print *ndr, const char *name, int flags, const struct xattr_parse_DOSATTRIB *r)
+{
+	ndr_print_struct(ndr, name, "xattr_parse_DOSATTRIB");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "xattr_parse_DOSATTRIB");
+		ndr->depth++;
+		ndr_print_xattr_DOSATTRIB(ndr, "x", &r->in.x);
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "xattr_parse_DOSATTRIB");
+		ndr->depth++;
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+static const struct ndr_interface_call xattr_calls[] = {
+	{
+		"xattr_parse_DOSATTRIB",
+		sizeof(struct xattr_parse_DOSATTRIB),
+		(ndr_push_flags_fn_t) ndr_push_xattr_parse_DOSATTRIB,
+		(ndr_pull_flags_fn_t) ndr_pull_xattr_parse_DOSATTRIB,
+		(ndr_print_function_t) ndr_print_xattr_parse_DOSATTRIB,
+		false,
+	},
+	{ NULL, 0, NULL, NULL, NULL, false }
+};
+
+static const char * const xattr_endpoint_strings[] = {
+	"ncacn_np:[\\pipe\\xattr]", 
+};
+
+static const struct ndr_interface_string_array xattr_endpoints = {
+	.count	= 1,
+	.names	= xattr_endpoint_strings
+};
+
+static const char * const xattr_authservice_strings[] = {
+	"host", 
+};
+
+static const struct ndr_interface_string_array xattr_authservices = {
+	.count	= 1,
+	.names	= xattr_authservice_strings
+};
+
+
+const struct ndr_interface_table ndr_table_xattr = {
+	.name		= "xattr",
+	.syntax_id	= {
+		{0x12345778,0x1234,0xabcd,{0x00,0x01},{0x00,0x00,0x00,0x02}},
+		NDR_XATTR_VERSION
+	},
+	.helpstring	= NDR_XATTR_HELPSTRING,
+	.num_calls	= 1,
+	.calls		= xattr_calls,
+	.endpoints	= &xattr_endpoints,
+	.authservices	= &xattr_authservices
+};
 

@@ -11,6 +11,9 @@
 import "security.idl";
 
 [
+  uuid("12345778-1234-abcd-0001-00000002"),
+  version(0.0),
+  helper("../librpc/ndr/ndr_xattr.h"),
   pointer_default(unique)
 ]
 interface xattr
@@ -21,6 +24,18 @@ interface xattr
 	/* we store basic dos attributes in a DosAttrib xattr. By
 	   using a union we can cope with new version of this
 	   structure more easily */
+
+	/*
+	 * the FFFF level is never really used,
+	 * it's used to pass the information from
+	 * the old hex string attrib information
+	 * we have a handwritten parser which converts
+	 * the hex string to the xattr_DosInfoFFFFCompat strucure
+	 */
+
+	typedef struct {
+		uint32 attrib;
+	} xattr_DosInfoFFFFCompat;
 
 	typedef struct {
 		uint32 attrib;
@@ -51,16 +66,46 @@ interface xattr
 		utf8string name;
 	} xattr_DosInfo2Old;
 
-	typedef [switch_type(uint16)] union {
-		[case(1)] xattr_DosInfo1 info1;
-		[case(2)] xattr_DosInfo2Old oldinfo2;
-	} xattr_DosInfo;
+	typedef [bitmap32bit] bitmap {
+		XATTR_DOSINFO_ATTRIB            = 0x00000001,
+		XATTR_DOSINFO_EA_SIZE           = 0x00000002,
+		XATTR_DOSINFO_SIZE              = 0x00000004,
+		XATTR_DOSINFO_ALLOC_SIZE        = 0x00000008,
+		XATTR_DOSINFO_CREATE_TIME       = 0x00000010,
+		XATTR_DOSINFO_CHANGE_TIME       = 0x00000020
+	} xattr_DosInfoValidFlags;
+
+	typedef struct {
+		xattr_DosInfoValidFlags valid_flags;
+		uint32 attrib;
+		uint32 ea_size;
+		udlong size;
+		udlong alloc_size;
+		NTTIME create_time;
+		NTTIME change_time;
+	} xattr_DosInfo3;
+
+	typedef [public,switch_type(uint16)] union {
+		[case(0xFFFF)] xattr_DosInfoFFFFCompat compatinfoFFFF;
+                [case(1)] xattr_DosInfo1 info1;
+                [case(2)] xattr_DosInfo2Old oldinfo2;
+		[case(3)] xattr_DosInfo3 info3;
+        } xattr_DosInfo;
 
 	typedef [public] struct {
 		uint16 version;
 		[switch_is(version)] xattr_DosInfo info;
 	} xattr_DosAttrib;
 
+	typedef [public,nopush,nopull,noprint] struct {
+		astring attrib_hex;
+		uint16 version;
+		[switch_is(version)] xattr_DosInfo info;
+	} xattr_DOSATTRIB;
+
+	void xattr_parse_DOSATTRIB(
+		[in] xattr_DOSATTRIB x
+	);
 
 	/* we store DOS style extended attributes in a DosEAs xattr */
 	const char *XATTR_DOSEAS_NAME = "user.DosEAs";
