@@ -32,16 +32,6 @@
    as a separator when looking at the pathname part.... JRA.
 ********************************************************************/
 
-static bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
-				struct cli_state *cli,
-				const char *sharename,
-				char **pp_newserver,
-				char **pp_newshare,
-				bool force_encrypt,
-				const char *username,
-				const char *password,
-				const char *domain);
-
 /********************************************************************
  Ensure a connection is encrypted.
 ********************************************************************/
@@ -241,7 +231,7 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 	/* here's the fun part....to support 'msdfs proxy' shares
 	   (on Samba or windows) we have to issues a TRANS_GET_DFS_REFERRAL
 	   here before trying to connect to the original share.
-	   check_dfs_proxy() will fail if it is a normal share. */
+	   cli_check_msdfs_proxy() will fail if it is a normal share. */
 
 	if ((c->capabilities & CAP_DFS) &&
 			cli_check_msdfs_proxy(ctx, c, sharename,
@@ -984,7 +974,7 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 /********************************************************************
 ********************************************************************/
 
-static bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
+bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 				struct cli_state *cli,
 				const char *sharename,
 				char **pp_newserver,

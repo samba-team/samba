@@ -7,6 +7,7 @@
    Copyright (C) Tom Jansen (Ninja ISD) 2002 
    Copyright (C) Derrell Lipman 2003-2008
    Copyright (C) Jeremy Allison 2007, 2008
+   Copyright (C) SATOH Fumiyasu <fumiyas@osstech.co.jp> 2009.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -227,15 +228,16 @@ check_server_cache:
  * info we need, unless the username and password were passed in.
  */
 
-SMBCSRV *
-SMBC_server(TALLOC_CTX *ctx,
+static SMBCSRV *
+SMBC_server_internal(TALLOC_CTX *ctx,
             SMBCCTX *context,
             bool connect_if_not_found,
             const char *server,
             const char *share,
             char **pp_workgroup,
             char **pp_username,
-            char **pp_password)
+            char **pp_password,
+	    bool *in_cache)
 {
 	SMBCSRV *srv=NULL;
 	char *workgroup = NULL;
@@ -250,9 +252,11 @@ SMBC_server(TALLOC_CTX *ctx,
 	uint32 fs_attrs = 0;
         const char *username_used;
  	NTSTATUS status;
+	char *newserver, *newshare;
 
 	zero_sockaddr(&ss);
 	ZERO_STRUCT(c);
+	*in_cache = false;
 
 	if (server[0] == 0) {
 		errno = EPERM;
@@ -279,9 +283,18 @@ SMBC_server(TALLOC_CTX *ctx,
                  * disconnect if the requested share is not the same as the
                  * one that was already connected.
                  */
+
+		/*
+		 * Use srv->cli->desthost and srv->cli->share instead of
+		 * server and share below to connect to the actual share,
+		 * i.e., a normal share or a referred share from
+		 * 'msdfs proxy' share.
+		 */
                 if (srv->cli->cnum == (uint16) -1) {
                         /* Ensure we have accurate auth info */
-			SMBC_call_auth_fn(ctx, context, server, share,
+			SMBC_call_auth_fn(ctx, context,
+					  srv->cli->desthost,
+					  srv->cli->share,
                                           pp_workgroup,
                                           pp_username,
                                           pp_password);
@@ -301,7 +314,7 @@ SMBC_server(TALLOC_CTX *ctx,
 			 * tid.
 			 */
 
-			status = cli_tcon_andx(srv->cli, share, "?????",
+			status = cli_tcon_andx(srv->cli, srv->cli->share, "?????",
 					       *pp_password,
 					       strlen(*pp_password)+1);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -350,8 +363,8 @@ SMBC_server(TALLOC_CTX *ctx,
                          * server and share
                          */
                         if (srv) {
-                                srv->dev = (dev_t)(str_checksum(server) ^
-                                                   str_checksum(share));
+                                srv->dev = (dev_t)(str_checksum(srv->cli->desthost) ^
+                                                   str_checksum(srv->cli->share));
                         }
                 }
         }
@@ -360,6 +373,7 @@ SMBC_server(TALLOC_CTX *ctx,
         if (srv) {
 
                 /* ... then we're done here.  Give 'em what they came for. */
+		*in_cache = true;
                 goto done;
         }
 
@@ -510,6 +524,32 @@ again:
 
 	DEBUG(4,(" session setup ok\n"));
 
+	/* here's the fun part....to support 'msdfs proxy' shares
+	   (on Samba or windows) we have to issues a TRANS_GET_DFS_REFERRAL
+	   here before trying to connect to the original share.
+	   cli_check_msdfs_proxy() will fail if it is a normal share. */
+
+	if ((c->capabilities & CAP_DFS) &&
+			cli_check_msdfs_proxy(ctx, c, share,
+				&newserver, &newshare,
+				/* FIXME: cli_check_msdfs_proxy() does
+				   not support smbc_smb_encrypt_level type */
+				context->internal->smb_encryption_level ?
+					true : false,
+				*pp_username,
+				*pp_password,
+				*pp_workgroup)) {
+		cli_shutdown(c);
+		srv = SMBC_server_internal(ctx, context, connect_if_not_found,
+				newserver, newshare, pp_workgroup,
+				pp_username, pp_password, in_cache);
+		TALLOC_FREE(newserver);
+		TALLOC_FREE(newshare);
+		return srv;
+	}
+
+	/* must be a normal share */
+
 	status = cli_tcon_andx(c, share, "?????", *pp_password,
 			       strlen(*pp_password)+1);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -579,8 +619,9 @@ again:
 
 	srv = SMB_MALLOC_P(SMBCSRV);
 	if (!srv) {
+		cli_shutdown(c);
 		errno = ENOMEM;
-		goto failed;
+		return NULL;
 	}
 
 	ZERO_STRUCTP(srv);
@@ -590,26 +631,6 @@ again:
         srv->no_pathinfo2 = False;
         srv->no_nt_session = False;
 
-	/* now add it to the cache (internal or external)  */
-	/* Let the cache function set errno if it wants to */
-	errno = 0;
-	if (smbc_getFunctionAddCachedServer(context)(context, srv,
-                                                     server, share,
-                                                     *pp_workgroup,
-                                                     *pp_username)) {
-		int saved_errno = errno;
-		DEBUG(3, (" Failed to add server to cache\n"));
-		errno = saved_errno;
-		if (errno == 0) {
-			errno = ENOMEM;
-		}
-		goto failed;
-	}
-
-	DEBUG(2, ("Server connect ok: //%s/%s: %p\n",
-		  server, share, srv));
-
-	DLIST_ADD(context->internal->servers, srv);
 done:
 	if (!pp_workgroup || !*pp_workgroup || !**pp_workgroup) {
 		workgroup = talloc_strdup(ctx, smbc_getWorkgroup(context));
@@ -619,23 +640,62 @@ done:
 	if(!workgroup) {
 		return NULL;
 	}
-	
+
 	/* set the credentials to make DFS work */
 	smbc_set_credentials_with_fallback(context,
 					   workgroup,
 				    	   *pp_username,
 				   	   *pp_password);
-	
-	return srv;
 
-failed:
-	cli_shutdown(c);
+	return srv;
+}
+
+SMBCSRV *
+SMBC_server(TALLOC_CTX *ctx,
+		SMBCCTX *context,
+		bool connect_if_not_found,
+		const char *server,
+		const char *share,
+		char **pp_workgroup,
+		char **pp_username,
+		char **pp_password)
+{
+	SMBCSRV *srv=NULL;
+	bool in_cache = false;
+
+	srv = SMBC_server_internal(ctx, context, connect_if_not_found,
+			server, share, pp_workgroup,
+			pp_username, pp_password, &in_cache);
+
 	if (!srv) {
 		return NULL;
 	}
+	if (in_cache) {
+		return srv;
+	}
 
-	SAFE_FREE(srv);
-	return NULL;
+	/* Now add it to the cache (internal or external)  */
+	/* Let the cache function set errno if it wants to */
+	errno = 0;
+	if (smbc_getFunctionAddCachedServer(context)(context, srv,
+						server, share,
+						*pp_workgroup,
+						*pp_username)) {
+		int saved_errno = errno;
+		DEBUG(3, (" Failed to add server to cache\n"));
+		errno = saved_errno;
+		if (errno == 0) {
+			errno = ENOMEM;
+		}
+		SAFE_FREE(srv);
+		return NULL;
+	}
+
+	DEBUG(2, ("Server connect ok: //%s/%s: %p\n",
+		server, share, srv));
+
+	DLIST_ADD(context->internal->servers, srv);
+	return srv;
 }
 
 /*
@@ -656,7 +716,22 @@ SMBC_attr_server(TALLOC_CTX *ctx,
 	struct cli_state *ipc_cli;
 	struct rpc_pipe_client *pipe_hnd;
         NTSTATUS nt_status;
+	SMBCSRV *srv=NULL;
 	SMBCSRV *ipc_srv=NULL;
+
+	/*
+	 * Use srv->cli->desthost and srv->cli->share instead of
+	 * server and share below to connect to the actual share,
+	 * i.e., a normal share or a referred share from
+	 * 'msdfs proxy' share.
+	 */
+	srv = SMBC_server(ctx, context, true, server, share,
+			pp_workgroup, pp_username, pp_password);
+	if (!srv) {
+		return NULL;
+	}
+	server = srv->cli->desthost;
+	share = srv->cli->share;
 
         /*
          * See if we've already created this special connection.  Reference
