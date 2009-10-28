@@ -1068,33 +1068,13 @@ AC_CHECK_LIB(exc, trace_back_stack)
 # check for sysctlbyname for BSD systems
 AC_CHECK_FUNCS(sysctlbyname)
 
-printf "%s" "checking for GPFS GPL libs... "
-save_LIBS="$LIBS"
-LIBS="$LIBS -lgpfs_gpl"
-AC_TRY_LINK([#include <gpfs_gpl.h>],
-          [gpfs_set_share(0,GPFS_SHARE_READ,GPFS_DENY_NONE)],
-          samba_cv_HAVE_GPFS=yes,
-          samba_cv_HAVE_GPFS=no)
-echo $samba_cv_HAVE_GPFS
-if test x"$samba_cv_HAVE_GPFS" = x"yes"; then
-    AC_DEFINE(HAVE_GPFS,1,[Whether GPFS GPL libs are available])
+#############################
+# check if building with gpfs
+AC_CHECK_HEADERS(gpfs_gpl.h)
+if test x"$ac_cv_header_gpfs_gpl_h" = x"yes"; then
+    AC_DEFINE(HAVE_GPFS,1,[Whether GPFS GPL headers are available])
     default_shared_modules="$default_shared_modules vfs_gpfs"
 fi
-LIBS="$save_LIBS"
-
-printf "%s" "checking for GPFS libs (with 3.2.1 PTF8 available as GPL)... "
-save_LIBS="$LIBS"
-LIBS="$LIBS -lgpfs"
-AC_TRY_LINK([#include <gpfs.h>],
-          [gpfs_set_share(0,GPFS_SHARE_READ,GPFS_DENY_NONE)],
-          samba_cv_HAVE_GPFS=yes,
-          samba_cv_HAVE_GPFS=no)
-echo $samba_cv_HAVE_GPFS
-if test x"$samba_cv_HAVE_GPFS" = x"yes"; then
-    AC_DEFINE(HAVE_GPFS,1,[Whether GPFS GPL libs are available])
-    default_shared_modules="$default_shared_modules vfs_gpfs"
-fi
-LIBS="$save_LIBS"
 
 #############################################
 # check if building on Isilon OneFS
