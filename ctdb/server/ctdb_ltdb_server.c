@@ -26,6 +26,7 @@
 #include "../include/ctdb_private.h"
 #include "db_wrap.h"
 #include "lib/util/dlinklist.h"
+#include <ctype.h>
 
 /*
   this is the dummy null procedure that all databases support
@@ -389,18 +390,13 @@ int ctdb_attach_persistent(struct ctdb_context *ctdb)
 	}
 
 	while ((de=readdir(d))) {
-		char *p, *s;
+		char *p, *s, *q;
 		size_t len = strlen(de->d_name);
 		uint32_t node;
+		int invalid_name = 0;
 		
 		s = talloc_strdup(ctdb, de->d_name);
 		CTDB_NO_MEMORY(ctdb, s);
-
-		/* ignore names ending in .bak */
-		p = strstr(s, ".bak");
-		if (p != NULL) {
-			continue;
-		}
 
 		/* only accept names ending in .tdb */
 		p = strstr(s, ".tdb.");
@@ -408,7 +404,16 @@ int ctdb_attach_persistent(struct ctdb_context *ctdb)
 			talloc_free(s);
 			continue;
 		}
-		if (sscanf(p+5, "%u", &node) != 1 || node != ctdb->pnn) {
+
+		/* only accept names ending with .tdb. and any number of digits */
+		q = p+5;
+		while (*q != 0 && invalid_name == 0) {
+			if (!isdigit(*q++)) {
+				invalid_name = 1;
+			}
+		}
+		if (invalid_name == 1 || sscanf(p+5, "%u", &node) != 1 || node != ctdb->pnn) {
+			DEBUG(DEBUG_ERR,("Ignoring persistent database '%s'\n", de->d_name));
 			talloc_free(s);
 			continue;
 		}
