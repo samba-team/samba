@@ -61,18 +61,6 @@ struct machine_acct_pass {
 };
 
 /*
- * storage structure for trusted domain
- */
-typedef struct trusted_dom_pass {
-	size_t uni_name_len;
-	smb_ucs2_t uni_name[32]; /* unicode domain name */
-	size_t pass_len;
-	fstring pass;		/* trust relationship's password */
-	time_t mod_time;
-	DOM_SID domain_sid;	/* remote domain's sid */
-} TRUSTED_DOM_PASS;
-
-/*
  * trusted domain entry/entries returned by secrets_get_trusted_domains
  * (used in _lsa_enum_trust_dom call)
  */
