@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.99
+Version: 1.0.100
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -127,6 +127,19 @@ exit 0
 %{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
+* Wed Oct 28 2009 : Version 1.0.100
+ - Change eventscript handling to allow EventScriptTimeout for each individual script instead of for all scripts as a whole.
+ - Enhanced logging from the eventscripts, log the name and the duration for each script as it finishes.
+ - Add a check to use wbinfo -t for the startup event of samba
+ - TEMP: allow clients to attach to databases even when teh node is in recovery mode
+ - dont run the monitor event as frequently after an event has failed
+ - DEBUG: in the eventloops, check the local time and warn if the time changes backward or rapidly forward
+ - From Metze, fix a bug where recovery master becoming unhealthy did not trigger an ip failover.
+ - Disable the multipath script by default
+ - Automatically re-activate the reclock checking if the reclock file is specified at runtime. Update manpage to reflect this.
+ - Add a mechanism where samba can register a SRVID and if samba unexpectedly disconnects, a message will be broadcasted to all other samba daemons.
+ - Log the pstree on hung scripts to a file in /tmp isntead of /var/log/messages
+ - change ban count before unhealthy/banned to 10
 * Thu Oct 22 2009 : Version 1.0.99
  - Fix a SEGV in the new db priority code.
  - From Wolfgang : eliminate a ctdb_fatal() if there is a dmaster violation detected.
