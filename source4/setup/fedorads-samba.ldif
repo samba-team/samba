@@ -9,3 +9,13 @@ objectClass: person
 cn: samba-admin
 sn: samba-admin
 userPassword: {CLEAR}${LDAPADMINPASS}
+
+dn: ou=Ranges,${SAMBADN}
+objectClass: top
+objectClass: organizationalUnit
+ou: Ranges
+
+dn: cn=Samba SIDs,ou=Ranges,${SAMBADN}
+objectClass: top
+objectClass: nsContainer
+cn: Samba SIDs

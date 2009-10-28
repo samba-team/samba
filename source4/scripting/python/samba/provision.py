@@ -144,6 +144,7 @@ class ProvisionPaths(object):
         self.fedoradsinf = None
         self.fedoradspartitions = None
         self.fedoradssasl = None
+        self.fedoradsdna = None
         self.fedoradspam = None
         self.fedoradsrefint = None
         self.fedoradslinkedattributes = None
@@ -394,8 +395,10 @@ def provision_paths_from_lp(lp, dnsdomain):
                                             "fedorads-partitions.ldif")
     paths.fedoradssasl = os.path.join(paths.ldapdir, 
                                       "fedorads-sasl.ldif")
+    paths.fedoradsdna = os.path.join(paths.ldapdir, 
+                                     "fedorads-dna.ldif")
     paths.fedoradspam = os.path.join(paths.ldapdir,
-                                      "fedorads-pam.ldif")
+                                     "fedorads-pam.ldif")
     paths.fedoradsrefint = os.path.join(paths.ldapdir,
                                         "fedorads-refint.ldif")
     paths.fedoradslinkedattributes = os.path.join(paths.ldapdir,
@@ -517,7 +520,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
     
 
 def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole, 
-                 targetdir):
+                 targetdir, sid_generator):
     """Create a new smb.conf file based on a couple of basic settings.
     """
     assert smbconf is not None
@@ -535,6 +538,9 @@ def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
         smbconfsuffix = "member"
     elif serverrole == "standalone":
         smbconfsuffix = "standalone"
+
+    if sid_generator is None:
+        sid_generator = "internal"
 
     assert domain is not None
     domain = domain.upper()
@@ -556,6 +562,11 @@ def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
         privatedir_line = ""
         lockdir_line = ""
 
+    if sid_generator == "internal":
+        sid_generator_line = ""
+    else:
+        sid_generator_line = "sid generator = " + sid_generator
+
     sysvol = os.path.join(default_lp.get("lock dir"), "sysvol")
     netlogon = os.path.join(sysvol, realm.lower(), "scripts")
 
@@ -567,6 +578,7 @@ def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
             "SERVERROLE": serverrole,
             "NETLOGONPATH": netlogon,
             "SYSVOLPATH": sysvol,
+            "SIDGENERATOR_LINE": sid_generator_line,
             "PRIVATEDIR_LINE": privatedir_line,
             "LOCKDIR_LINE": lockdir_line
             })
@@ -1248,6 +1260,9 @@ def provision(setup_dir, message, session_info,
         #Make a new, random password between Samba and it's LDAP server
         ldapadminpass=glue.generate_random_str(12)        
 
+    sid_generator = "internal"
+    if ldap_backend_type == "fedora-ds":
+        sid_generator = "backend"
 
     root_uid = findnss_uid([root or "root"])
     nobody_uid = findnss_uid([nobody or "nobody"])
@@ -1267,7 +1282,7 @@ def provision(setup_dir, message, session_info,
     # only install a new smb.conf if there isn't one there already
     if not os.path.exists(smbconf):
         make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole, 
-                     targetdir)
+                     targetdir, sid_generator)
 
     lp = param.LoadParm()
     lp.load(smbconf)
@@ -1322,7 +1337,8 @@ def provision(setup_dir, message, session_info,
                                              ol_mmr_urls=ol_mmr_urls, 
                                              slapd_path=slapd_path,
                                              setup_ds_path=setup_ds_path,
-                                             ldap_dryrun_mode=ldap_dryrun_mode)
+                                             ldap_dryrun_mode=ldap_dryrun_mode,
+                                             domainsid=domainsid)
 
         # Now use the backend credentials to access the databases
         credentials = provision_backend.credentials
@@ -1579,7 +1595,8 @@ class ProvisionBackend(object):
                  ldap_backend_type=None, ldap_backend_extra_port=None,
                  ol_mmr_urls=None, 
                  setup_ds_path=None, slapd_path=None, 
-                 nosync=False, ldap_dryrun_mode=False):
+                 nosync=False, ldap_dryrun_mode=False,
+                 domainsid=None):
         """Provision an LDAP backend for samba4
         
         This works for OpenLDAP and Fedora DS
@@ -1670,7 +1687,8 @@ class ProvisionBackend(object):
                                   setup_ds_path=setup_ds_path,
                                   slapd_path=slapd_path,
                                   nosync=nosync,
-                                  ldap_dryrun_mode=ldap_dryrun_mode)
+                                  ldap_dryrun_mode=ldap_dryrun_mode,
+                                  domainsid=domainsid)
             
         elif ldap_backend_type == "openldap":
             provision_openldap_backend(self, paths=paths, setup_path=setup_path,
@@ -1947,7 +1965,8 @@ def provision_fds_backend(result, paths=None, setup_path=None, names=None,
                           setup_ds_path=None,
                           slapd_path=None,
                           nosync=False, 
-                          ldap_dryrun_mode=False):
+                          ldap_dryrun_mode=False,
+                          domainsid=None):
 
     if ldap_backend_extra_port is not None:
         serverport = "ServerPort=%d" % ldap_backend_extra_port
@@ -1972,6 +1991,12 @@ def provision_fds_backend(result, paths=None, setup_path=None, names=None,
 
     setup_file(setup_path("fedorads-sasl.ldif"), paths.fedoradssasl, 
                {"SAMBADN": names.sambadn,
+                })
+
+    setup_file(setup_path("fedorads-dna.ldif"), paths.fedoradsdna, 
+               {"DOMAINDN": names.domaindn,
+                "SAMBADN": names.sambadn,
+                "DOMAINSID": str(domainsid),
                 })
 
     setup_file(setup_path("fedorads-pam.ldif"), paths.fedoradspam)

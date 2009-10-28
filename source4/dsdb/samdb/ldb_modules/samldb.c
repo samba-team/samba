@@ -37,6 +37,7 @@
 #include "librpc/gen_ndr/ndr_security.h"
 #include "../lib/util/util_ldb.h"
 #include "ldb_wrap.h"
+#include "param/param.h"
 
 struct samldb_ctx;
 
@@ -923,6 +924,8 @@ static int samldb_add_entry(struct samldb_ctx *ac)
 static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 {
 	struct ldb_context *ldb;
+	struct loadparm_context *lp_ctx;
+	enum sid_generator sid_generator;
 	int ret;
 
 	ldb = ldb_module_get_ctx(ac->module);
@@ -997,18 +1000,24 @@ static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 		if (ret != LDB_SUCCESS) return ret;
 	}
 
-	/* check if we have a valid SID */
-	ac->sid = samdb_result_dom_sid(ac, ac->msg, "objectSid");
-	if ( ! ac->sid) {
-		ret = samldb_add_step(ac, samldb_new_sid);
-		if (ret != LDB_SUCCESS) return ret;
-	} else {
-		ret = samldb_add_step(ac, samldb_get_sid_domain);
+	lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
+		 struct loadparm_context);
+
+	sid_generator = lp_sid_generator(lp_ctx);
+	if (sid_generator == SID_GENERATOR_INTERNAL) {
+		/* check if we have a valid SID */
+		ac->sid = samdb_result_dom_sid(ac, ac->msg, "objectSid");
+		if ( ! ac->sid) {
+			ret = samldb_add_step(ac, samldb_new_sid);
+			if (ret != LDB_SUCCESS) return ret;
+		} else {
+			ret = samldb_add_step(ac, samldb_get_sid_domain);
+			if (ret != LDB_SUCCESS) return ret;
+		}
+
+		ret = samldb_add_step(ac, samldb_notice_sid);
 		if (ret != LDB_SUCCESS) return ret;
 	}
-
-	ret = samldb_add_step(ac, samldb_notice_sid);
-	if (ret != LDB_SUCCESS) return ret;
 
 	/* finally proceed with adding the entry */
 	ret = samldb_add_step(ac, samldb_add_entry);

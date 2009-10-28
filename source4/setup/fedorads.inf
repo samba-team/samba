@@ -33,6 +33,7 @@ SchemaFile=/etc/dirsrv/schema/06inetorgperson.ldif
 SchemaFile=/usr/share/dirsrv/data/60samba3.ldif
 ConfigFile = ${LDAPDIR}/fedorads-partitions.ldif
 ConfigFile = ${LDAPDIR}/fedorads-sasl.ldif
+ConfigFile = ${LDAPDIR}/fedorads-dna.ldif
 ConfigFile = ${LDAPDIR}/fedorads-pam.ldif
 ConfigFile = ${LDAPDIR}/fedorads-refint.ldif
 ConfigFile = ${LDAPDIR}/fedorads-linked-attributes.ldif

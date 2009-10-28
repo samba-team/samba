@@ -3,5 +3,6 @@
 	workgroup	= ${DOMAIN}
 	realm		= ${REALM}
 	server role     = ${SERVERROLE}
+	${SIDGENERATOR_LINE}
 	${PRIVATEDIR_LINE}
 	${LOCKDIR_LINE}

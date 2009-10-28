@@ -51,6 +51,11 @@ enum server_role {
 	ROLE_DOMAIN_CONTROLLER=2,
 };
 
+enum sid_generator {
+	SID_GENERATOR_INTERNAL=0,
+	SID_GENERATOR_BACKEND=1,
+};
+
 enum announce_as {/* Types of machine we can announce as. */
 	ANNOUNCE_AS_NT_SERVER=1,
 	ANNOUNCE_AS_WIN95=2,
@@ -69,6 +74,7 @@ void reload_charcnv(struct loadparm_context *lp_ctx);
 struct loadparm_service *lp_default_service(struct loadparm_context *lp_ctx);
 struct parm_struct *lp_parm_table(void);
 int lp_server_role(struct loadparm_context *);
+int lp_sid_generator(struct loadparm_context *);
 const char **lp_smb_ports(struct loadparm_context *);
 int lp_nbt_port(struct loadparm_context *);
 int lp_dgram_port(struct loadparm_context *);

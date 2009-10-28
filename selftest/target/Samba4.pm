@@ -471,6 +471,7 @@ sub provision_raw_prepare($$$$$$$)
 	$ctx->{realm} = "SAMBA.EXAMPLE.COM";
 	$ctx->{dnsname} = "samba.example.com";
 	$ctx->{basedn} = "dc=samba,dc=example,dc=com";
+	$ctx->{sid_generator} = "internal";
 
 	my $unix_name = ($ENV{USER} or $ENV{LOGNAME} or `whoami`);
 	chomp $unix_name;
@@ -578,7 +579,14 @@ sub provision_raw_step1($$)
 #We don't want to pass our self-tests if the PAC code is wrong
 	gensec:require_pac = true
 	log level = $ctx->{server_loglevel}
-	lanman auth = Yes
+	lanman auth = Yes";
+
+	if (defined($ctx->{sid_generator}) && $ctx->{sid_generator} ne "internal") {
+		print CONFFILE "
+	sid generator = $ctx->{sid_generator}";
+        }
+
+	print CONFFILE "
 
 	# Begin extra options
 	$ctx->{smb_conf_extra_options}
@@ -778,6 +786,10 @@ sub provision($$$$$$$)
 		$ldap_uri =~ s|/|%2F|g;
 		$ldap_uri = "ldapi://$ldap_uri";
 		$ctx->{ldap_uri} = $ldap_uri;
+
+                if ($self->{ldap} eq "fedora-ds") {
+			$ctx->{sid_generator} = "backend";
+		}
 	}
 
 	my $ret = $self->provision_raw_step1($ctx);
