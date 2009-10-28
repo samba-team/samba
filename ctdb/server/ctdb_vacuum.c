@@ -401,8 +401,18 @@ static int repack_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 		 * there might be hash collisions so we have to compare the keys here to be sure
 		 */
 		if (kd && kd->key.dsize == key.dsize && memcmp(kd->key.dptr, key.dptr, key.dsize) == 0) {
-			vdata->vacuumed++;
-			return 0;
+			struct ctdb_ltdb_header *hdr = (struct ctdb_ltdb_header *)data.dptr;
+			/*
+			 * we have to check if the record hasn't changed in the meantime in order to
+			 * savely remove it from the database
+			 */
+			if (data.dsize == sizeof(struct ctdb_ltdb_header) &&
+				hdr->dmaster == kd->ctdb->pnn &&
+				ctdb_lmaster(kd->ctdb, &(kd->key)) == kd->ctdb->pnn &&
+				kd->hdr.rsn == hdr->rsn) {
+				vdata->vacuumed++;
+				return 0;
+			}
 		}
 	}
 	if (tdb_store(vdata->dest_db, key, data, TDB_INSERT) != 0) {
