@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.100
+Version: 1.0.101
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -127,6 +127,9 @@ exit 0
 %{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
+* Wed Oct 28 2009 : Version 1.0.101
+ - create a separate context for non-monitoring events so they dont interfere with the monitor event
+ - make sure to return status 0 in teh callback when we abort an event
 * Wed Oct 28 2009 : Version 1.0.100
  - Change eventscript handling to allow EventScriptTimeout for each individual script instead of for all scripts as a whole.
  - Enhanced logging from the eventscripts, log the name and the duration for each script as it finishes.
