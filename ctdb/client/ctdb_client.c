@@ -3141,6 +3141,34 @@ int ctdb_ctrl_getcapabilities(struct ctdb_context *ctdb, struct timeval timeout,
 	return ret;
 }
 
+/**
+ * check whether a transaction is active on a given db on a given node
+ */
+static int32_t ctdb_ctrl_transaction_active(struct ctdb_context *ctdb,
+					    uint32_t destnode,
+					    uint32_t db_id)
+{
+	int32_t status;
+	int ret;
+	TDB_DATA indata;
+
+	indata.dptr = (uint8_t *)&db_id;
+	indata.dsize = sizeof(db_id);
+
+	ret = ctdb_control(ctdb, destnode, 0,
+			   CTDB_CONTROL_TRANS2_ACTIVE,
+			   0, indata, NULL, NULL, &status,
+			   NULL, NULL);
+
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " ctdb control for transaction_active failed\n"));
+		return -1;
+	}
+
+	return status;
+}
+
+
 struct ctdb_transaction_handle {
 	struct ctdb_db_context *ctdb_db;
 	bool in_replay;
