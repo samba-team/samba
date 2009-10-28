@@ -56,7 +56,7 @@ case $cmd in
 	;;
 
      monitor)
-        # always create these direcotries since NFS might be enabled at runtime
+# always create these direcotries since NFS might be enabled at runtime
 	# and we dont want to restart ctdbd
 	mkdir -p $CTDB_BASE/state/nfstickle
 	mkdir -p $NFS_TICKLE_SHARED_DIRECTORY/`hostname`

@@ -3141,42 +3141,12 @@ int ctdb_ctrl_getcapabilities(struct ctdb_context *ctdb, struct timeval timeout,
 	return ret;
 }
 
-/**
- * check whether a transaction is active on a given db on a given node
- */
-static int32_t ctdb_ctrl_transaction_active(struct ctdb_context *ctdb,
-					    uint32_t destnode,
-					    uint32_t db_id)
-{
-	int32_t status;
-	int ret;
-	TDB_DATA indata;
-
-	indata.dptr = (uint8_t *)&db_id;
-	indata.dsize = sizeof(db_id);
-
-	ret = ctdb_control(ctdb, destnode, 0,
-			   CTDB_CONTROL_TRANS2_ACTIVE,
-			   0, indata, NULL, NULL, &status,
-			   NULL, NULL);
-
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " ctdb control for transaction_active failed\n"));
-		return -1;
-	}
-
-	return status;
-}
-
-
 struct ctdb_transaction_handle {
 	struct ctdb_db_context *ctdb_db;
 	bool in_replay;
-	/*
-	 * we store the reads and writes done under a transaction:
-	 * - one list stores both reads and writes (m_all),
-	 * - the other just writes (m_write)
-	 */
+	/* we store the reads and writes done under a transaction one
+	   list stores both reads and writes, the other just writes
+	*/
 	struct ctdb_marshall_buffer *m_all;
 	struct ctdb_marshall_buffer *m_write;
 };
@@ -3200,7 +3170,6 @@ static int ctdb_transaction_fetch_start(struct ctdb_transaction_handle *h)
 	int ret;
 	struct ctdb_db_context *ctdb_db = h->ctdb_db;
 	pid_t pid;
-	int32_t status;
 
 	key.dptr = discard_const(keyname);
 	key.dsize = strlen(keyname);
@@ -3211,17 +3180,6 @@ static int ctdb_transaction_fetch_start(struct ctdb_transaction_handle *h)
 	}
 
 again:
-	status = ctdb_ctrl_transaction_active(ctdb_db->ctdb,
-					      CTDB_CURRENT_NODE,
-					      ctdb_db->db_id);
-	if (status == 1) {
-		DEBUG(DEBUG_NOTICE, (__location__ " transaction is active "
-				     "on db_id[%u]. waiting for 1 second\n",
-				     ctdb_db->db_id));
-		sleep(1);
-		goto again;
-	}
-
 	tmp_ctx = talloc_new(h);
 
 	rh = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, NULL);
