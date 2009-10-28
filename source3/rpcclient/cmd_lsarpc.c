@@ -1881,6 +1881,94 @@ static NTSTATUS cmd_lsa_create_trusted_domain(struct rpc_pipe_client *cli,
 	return status;
 }
 
+static NTSTATUS cmd_lsa_delete_trusted_domain(struct rpc_pipe_client *cli,
+					      TALLOC_CTX *mem_ctx, int argc,
+					      const char **argv)
+{
+	NTSTATUS status;
+	struct policy_handle handle, trustdom_handle;
+	struct lsa_String name;
+	struct dom_sid *sid = NULL;
+
+	if (argc < 2) {
+		printf("Usage: %s name\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	status = rpccli_lsa_open_policy2(cli, mem_ctx,
+					 true,
+					 SEC_FLAG_MAXIMUM_ALLOWED,
+					 &handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	init_lsa_String(&name, argv[1]);
+
+	status = rpccli_lsa_OpenTrustedDomainByName(cli, mem_ctx,
+						    &handle,
+						    name,
+						    SEC_FLAG_MAXIMUM_ALLOWED,
+						    &trustdom_handle);
+	if (NT_STATUS_IS_OK(status)) {
+		goto delete_object;
+	}
+
+	{
+		uint32_t resume_handle = 0;
+		struct lsa_DomainList domains;
+		int i;
+
+		status = rpccli_lsa_EnumTrustDom(cli, mem_ctx,
+						 &handle,
+						 &resume_handle,
+						 &domains,
+						 0xffff);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+
+		for (i=0; i < domains.count; i++) {
+			if (strequal(domains.domains[i].name.string, argv[1])) {
+				sid = domains.domains[i].sid;
+				break;
+			}
+		}
+
+		if (!sid) {
+			return NT_STATUS_INVALID_SID;
+		}
+	}
+
+	status = rpccli_lsa_OpenTrustedDomain(cli, mem_ctx,
+					      &handle,
+					      sid,
+					      SEC_FLAG_MAXIMUM_ALLOWED,
+					      &trustdom_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+ delete_object:
+	status = rpccli_lsa_DeleteObject(cli, mem_ctx,
+					 &trustdom_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+ done:
+	if (is_valid_policy_hnd(&trustdom_handle)) {
+		rpccli_lsa_Close(cli, mem_ctx, &trustdom_handle);
+	}
+
+	if (is_valid_policy_hnd(&handle)) {
+		rpccli_lsa_Close(cli, mem_ctx, &handle);
+	}
+
+	return status;
+}
+
+
 /* List of commands exported by this module */
 
 struct cmd_set lsarpc_commands[] = {
@@ -1917,6 +2005,7 @@ struct cmd_set lsarpc_commands[] = {
 	{ "retrieveprivatedata",  RPC_RTYPE_NTSTATUS, cmd_lsa_retrieve_private_data, NULL, &ndr_table_lsarpc.syntax_id, NULL, "Retrieve Private Data", "" },
 	{ "storeprivatedata",     RPC_RTYPE_NTSTATUS, cmd_lsa_store_private_data, NULL, &ndr_table_lsarpc.syntax_id, NULL, "Store Private Data", "" },
 	{ "createtrustdom",       RPC_RTYPE_NTSTATUS, cmd_lsa_create_trusted_domain, NULL, &ndr_table_lsarpc.syntax_id, NULL, "Create Trusted Domain", "" },
+	{ "deletetrustdom",       RPC_RTYPE_NTSTATUS, cmd_lsa_delete_trusted_domain, NULL, &ndr_table_lsarpc.syntax_id, NULL, "Delete Trusted Domain", "" },
 
 	{ NULL }
 };
