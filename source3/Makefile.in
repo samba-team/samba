@@ -1405,7 +1405,8 @@ samba3-idl::
 	@PIDL_OUTPUTDIR="librpc/gen_ndr" PIDL_ARGS="$(PIDL_ARGS)" CPP="$(CPP)" PIDL="../pidl/pidl" \
 	 srcdir="$(srcdir)" $(srcdir)/script/build_idl.sh \
 		librpc/idl/messaging.idl librpc/idl/libnetapi.idl librpc/idl/notify.idl \
-		librpc/idl/wbint.idl librpc/idl/perfcount.idl
+		librpc/idl/wbint.idl librpc/idl/perfcount.idl \
+		librpc/idl/secrets.idl
 
 #####################################################################
 
