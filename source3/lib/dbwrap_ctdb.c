@@ -316,12 +316,14 @@ static int db_ctdb_transaction_destructor(struct db_ctdb_transaction_handle *h)
 static int db_ctdb_transaction_fetch_start(struct db_ctdb_transaction_handle *h)
 {
 	struct db_record *rh;
+	struct db_ctdb_rec *crec;
 	TDB_DATA key;
 	TALLOC_CTX *tmp_ctx;
 	const char *keyname = CTDB_TRANSACTION_LOCK_KEY;
 	int ret;
 	struct db_ctdb_ctx *ctx = h->ctx;
 	TDB_DATA data;
+	pid_t pid;
 	NTSTATUS status;
 	struct ctdb_ltdb_header header;
 
@@ -337,6 +339,23 @@ again:
 		talloc_free(tmp_ctx);
 		return -1;
 	}
+	crec = talloc_get_type_abort(rh->private_data, struct db_ctdb_rec);
+
+	/*
+	 * store the pid in the database:
+	 * it is not enought that the node is dmaster...
+	 */
+	pid = getpid();
+	data.dptr = (unsigned char *)&pid;
+	data.dsize = sizeof(pid_t);
+	status = db_ctdb_ltdb_store(ctx, key, &(crec->header), data);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, (__location__ " Failed to store pid in transaction "
+			  "record: %s\n", nt_errstr(status)));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
 	talloc_free(rh);
 
 	ret = tdb_transaction_start(ctx->wtdb->tdb);
@@ -348,6 +367,12 @@ again:
 
 	status = db_ctdb_ltdb_fetch(ctx, key, &header, tmp_ctx, &data);
 	if (!NT_STATUS_IS_OK(status) || header.dmaster != get_my_vnn()) {
+		tdb_transaction_cancel(ctx->wtdb->tdb);
+		talloc_free(tmp_ctx);
+		goto again;
+	}
+
+	if ((data.dsize != sizeof(pid_t)) || (*(pid_t *)(data.dptr) != pid)) {
 		tdb_transaction_cancel(ctx->wtdb->tdb);
 		talloc_free(tmp_ctx);
 		goto again;
