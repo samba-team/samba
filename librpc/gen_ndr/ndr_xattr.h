@@ -6,13 +6,29 @@
 #ifndef _HEADER_NDR_xattr
 #define _HEADER_NDR_xattr
 
-#define NDR_XATTR_CALL_COUNT (0)
+#include "../librpc/ndr/ndr_xattr.h"
+#define NDR_XATTR_UUID "12345778-1234-abcd-0001-00000002"
+#define NDR_XATTR_VERSION 0.0
+#define NDR_XATTR_NAME "xattr"
+#define NDR_XATTR_HELPSTRING NULL
+extern const struct ndr_interface_table ndr_table_xattr;
+#define NDR_XATTR_PARSE_DOSATTRIB (0x00)
+
+#define NDR_XATTR_CALL_COUNT (1)
+void ndr_print_xattr_DosInfoFFFFCompat(struct ndr_print *ndr, const char *name, const struct xattr_DosInfoFFFFCompat *r);
 void ndr_print_xattr_DosInfo1(struct ndr_print *ndr, const char *name, const struct xattr_DosInfo1 *r);
 void ndr_print_xattr_DosInfo2Old(struct ndr_print *ndr, const char *name, const struct xattr_DosInfo2Old *r);
+void ndr_print_xattr_DosInfoValidFlags(struct ndr_print *ndr, const char *name, uint32_t r);
+void ndr_print_xattr_DosInfo3(struct ndr_print *ndr, const char *name, const struct xattr_DosInfo3 *r);
+enum ndr_err_code ndr_push_xattr_DosInfo(struct ndr_push *ndr, int ndr_flags, const union xattr_DosInfo *r);
+enum ndr_err_code ndr_pull_xattr_DosInfo(struct ndr_pull *ndr, int ndr_flags, union xattr_DosInfo *r);
 void ndr_print_xattr_DosInfo(struct ndr_print *ndr, const char *name, const union xattr_DosInfo *r);
 enum ndr_err_code ndr_push_xattr_DosAttrib(struct ndr_push *ndr, int ndr_flags, const struct xattr_DosAttrib *r);
 enum ndr_err_code ndr_pull_xattr_DosAttrib(struct ndr_pull *ndr, int ndr_flags, struct xattr_DosAttrib *r);
 void ndr_print_xattr_DosAttrib(struct ndr_print *ndr, const char *name, const struct xattr_DosAttrib *r);
+enum ndr_err_code ndr_push_xattr_DOSATTRIB(struct ndr_push *ndr, int ndr_flags, const struct xattr_DOSATTRIB *r);
+enum ndr_err_code ndr_pull_xattr_DOSATTRIB(struct ndr_pull *ndr, int ndr_flags, struct xattr_DOSATTRIB *r);
+void ndr_print_xattr_DOSATTRIB(struct ndr_print *ndr, const char *name, const struct xattr_DOSATTRIB *r);
 void ndr_print_xattr_EA(struct ndr_print *ndr, const char *name, const struct xattr_EA *r);
 enum ndr_err_code ndr_push_xattr_DosEAs(struct ndr_push *ndr, int ndr_flags, const struct xattr_DosEAs *r);
 enum ndr_err_code ndr_pull_xattr_DosEAs(struct ndr_pull *ndr, int ndr_flags, struct xattr_DosEAs *r);
@@ -34,4 +50,5 @@ void ndr_print_xattr_NTACL_Info(struct ndr_print *ndr, const char *name, const u
 enum ndr_err_code ndr_push_xattr_NTACL(struct ndr_push *ndr, int ndr_flags, const struct xattr_NTACL *r);
 enum ndr_err_code ndr_pull_xattr_NTACL(struct ndr_pull *ndr, int ndr_flags, struct xattr_NTACL *r);
 void ndr_print_xattr_NTACL(struct ndr_print *ndr, const char *name, const struct xattr_NTACL *r);
+void ndr_print_xattr_parse_DOSATTRIB(struct ndr_print *ndr, const char *name, int flags, const struct xattr_parse_DOSATTRIB *r);
 #endif /* _HEADER_NDR_xattr */

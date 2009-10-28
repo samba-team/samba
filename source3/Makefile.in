@@ -337,6 +337,7 @@ LIBNDR_GEN_OBJ = ../librpc/gen_ndr/ndr_wkssvc.o \
 		 ../librpc/gen_ndr/ndr_dssetup.o \
 		 librpc/gen_ndr/ndr_notify.o \
 		 ../librpc/gen_ndr/ndr_xattr.o \
+		 ../librpc/ndr/ndr_xattr.o \
 		 ../librpc/gen_ndr/ndr_epmapper.o \
 		 ../librpc/gen_ndr/ndr_named_pipe_auth.o \
 		 ../librpc/gen_ndr/ndr_ntsvcs.o \
