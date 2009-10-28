@@ -620,6 +620,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_TRANSACTION_CANCEL      = 113,
 		    CTDB_CONTROL_REGISTER_NOTIFY         = 114,
 		    CTDB_CONTROL_DEREGISTER_NOTIFY       = 115,
+		    CTDB_CONTROL_TRANS2_ACTIVE           = 116,
 };	
 
 /*
@@ -1469,6 +1470,8 @@ int32_t ctdb_control_trans2_finished(struct ctdb_context *ctdb,
 				     struct ctdb_req_control *c);
 int32_t ctdb_control_trans2_error(struct ctdb_context *ctdb, 
 				  struct ctdb_req_control *c);
+int32_t ctdb_control_trans2_active(struct ctdb_context *ctdb,
+				   uint32_t db_id);
 
 char *ctdb_addr_to_str(ctdb_sock_addr *addr);
 unsigned ctdb_addr_to_port(ctdb_sock_addr *addr);
