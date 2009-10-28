@@ -1836,6 +1836,50 @@ static NTSTATUS cmd_lsa_store_private_data(struct rpc_pipe_client *cli,
 	return status;
 }
 
+static NTSTATUS cmd_lsa_create_trusted_domain(struct rpc_pipe_client *cli,
+					      TALLOC_CTX *mem_ctx, int argc,
+					      const char **argv)
+{
+	NTSTATUS status;
+	struct policy_handle handle, trustdom_handle;
+	struct lsa_DomainInfo info;
+
+	if (argc < 3) {
+		printf("Usage: %s name sid\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	status = rpccli_lsa_open_policy2(cli, mem_ctx,
+					 true,
+					 SEC_FLAG_MAXIMUM_ALLOWED,
+					 &handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	init_lsa_StringLarge(&info.name, argv[1]);
+	info.sid = string_sid_talloc(mem_ctx, argv[2]);
+
+	status = rpccli_lsa_CreateTrustedDomain(cli, mem_ctx,
+						&handle,
+						&info,
+						SEC_FLAG_MAXIMUM_ALLOWED,
+						&trustdom_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+ done:
+	if (is_valid_policy_hnd(&trustdom_handle)) {
+		rpccli_lsa_Close(cli, mem_ctx, &trustdom_handle);
+	}
+
+	if (is_valid_policy_hnd(&handle)) {
+		rpccli_lsa_Close(cli, mem_ctx, &handle);
+	}
+
+	return status;
+}
 
 /* List of commands exported by this module */
 
@@ -1872,6 +1916,7 @@ struct cmd_set lsarpc_commands[] = {
 	{ "setsecret",            RPC_RTYPE_NTSTATUS, cmd_lsa_set_secret, NULL, &ndr_table_lsarpc.syntax_id, NULL, "Set Secret", "" },
 	{ "retrieveprivatedata",  RPC_RTYPE_NTSTATUS, cmd_lsa_retrieve_private_data, NULL, &ndr_table_lsarpc.syntax_id, NULL, "Retrieve Private Data", "" },
 	{ "storeprivatedata",     RPC_RTYPE_NTSTATUS, cmd_lsa_store_private_data, NULL, &ndr_table_lsarpc.syntax_id, NULL, "Store Private Data", "" },
+	{ "createtrustdom",       RPC_RTYPE_NTSTATUS, cmd_lsa_create_trusted_domain, NULL, &ndr_table_lsarpc.syntax_id, NULL, "Create Trusted Domain", "" },
 
 	{ NULL }
 };
