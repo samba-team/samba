@@ -298,6 +298,27 @@ static struct ctdb_rec_data *db_ctdb_marshall_loop_next(struct ctdb_marshall_buf
 }
 
 
+static int32_t db_ctdb_transaction_active(uint32_t db_id)
+{
+	int32_t status;
+	NTSTATUS ret;
+	TDB_DATA indata;
+
+	indata.dptr = (uint8_t *)&db_id;
+	indata.dsize = sizeof(db_id);
+
+	ret = ctdbd_control_local(messaging_ctdbd_connection(),
+				  CTDB_CONTROL_TRANS2_ACTIVE, 0, 0,
+				  indata, NULL, NULL, &status);
+
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(2, ("ctdb control TRANS2_ACTIVE failed\n"));
+		return -1;
+	}
+
+	return status;
+}
+
 
 /**
  * CTDB transaction destructor
