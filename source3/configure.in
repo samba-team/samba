@@ -5197,6 +5197,23 @@ else
 	ctdb_broken="missing transaction support"
 fi
 
+AC_HAVE_DECL(CTDB_CONTROL_TRANS2_ACTIVE,[
+#include "confdefs.h"
+#define NO_CONFIG_H
+#include "replace.h"
+#include "system/wait.h"
+#include "system/network.h"
+#include <talloc.h>
+#include <tdb.h>
+#include <ctdb.h>
+#include <ctdb_private.h>
+])
+if test x"$ac_cv_have_CTDB_CONTROL_TRANS2_ACTIVE_decl" = x"yes"; then
+	ctdb_broken=no
+else
+	ctdb_broken="transaction support too old"
+fi
+
 # in ctdb 1.0.57 ctdb_control_tcp was temparary renamed to ctdb_tcp_client
 AC_CHECK_TYPE(struct ctdb_tcp_client,[
 	AC_DEFINE([ctdb_control_tcp],[ctdb_tcp_client],[ctdb ipv4 support])
