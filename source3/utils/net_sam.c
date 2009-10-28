@@ -137,7 +137,7 @@ static int net_sam_set_userflag(struct net_context *c, int argc,
 	enum lsa_SidType type;
 	const char *dom, *name;
 	NTSTATUS status;
-	uint16 acct_flags;
+	uint32_t acct_flags;
 
 	if ((argc != 2) || c->display_usage ||
 	    (!strequal(argv[1], "yes") &&
