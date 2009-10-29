@@ -159,6 +159,12 @@ static bool test_secrets(struct torture_context *torture, const void *_data)
 
 	binding->flags |= settings->bindoptions;
 
+	if (binding->flags & DCERPC_PUSH_BIGENDIAN) {
+		if (torture_setting_bool(torture, "samba3", false)) {
+			torture_skip(torture, "skipping bigendian test against samba3\n");
+		}
+	}
+
 	status = dcerpc_pipe_connect_b(torture, &p, binding,
 				       &ndr_table_lsarpc,
 				       cmdline_credentials,
