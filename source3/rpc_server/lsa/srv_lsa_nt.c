@@ -46,6 +46,8 @@
 #include "auth.h"
 #include "lib/privileges.h"
 #include "rpc_server/srv_access_check.h"
+#include "../librpc/gen_ndr/ndr_wkssvc.h"
+#include "../libcli/auth/proto.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -2287,11 +2289,73 @@ NTSTATUS _lsa_CreateSecret(struct pipes_struct *p,
 }
 
 /***************************************************************************
+ _lsa_SetSecret
  ***************************************************************************/
 
-NTSTATUS _lsa_SetSecret(struct pipes_struct *p, struct lsa_SetSecret *r)
+NTSTATUS _lsa_SetSecret(struct pipes_struct *p,
+			struct lsa_SetSecret *r)
 {
-	return NT_STATUS_ACCESS_DENIED;
+	NTSTATUS status;
+	struct lsa_info *info = NULL;
+	DATA_BLOB blob_new, blob_old;
+	DATA_BLOB cleartext_blob_new = data_blob_null;
+	DATA_BLOB cleartext_blob_old = data_blob_null;
+	DATA_BLOB *cleartext_blob_new_p = NULL;
+	DATA_BLOB *cleartext_blob_old_p = NULL;
+
+	if (!find_policy_by_hnd(p, r->in.sec_handle, (void **)(void *)&info)) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (info->type != LSA_HANDLE_SECRET_TYPE) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (!(info->access & LSA_SECRET_SET_VALUE)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (r->in.new_val) {
+		blob_new = data_blob_const(r->in.new_val->data,
+					   r->in.new_val->length);
+
+		status = sess_decrypt_blob(p->mem_ctx, &blob_new,
+					   &p->session_info->session_key,
+					   &cleartext_blob_new);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		cleartext_blob_new_p = &cleartext_blob_new;
+	}
+
+	if (r->in.old_val) {
+		blob_old = data_blob_const(r->in.old_val->data,
+					   r->in.old_val->length);
+
+		status = sess_decrypt_blob(p->mem_ctx, &blob_old,
+					   &p->session_info->session_key,
+					   &cleartext_blob_old);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		cleartext_blob_old_p = &cleartext_blob_old;
+	}
+
+	status = pdb_set_secret(info->name, cleartext_blob_new_p, cleartext_blob_old_p, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(10,("_lsa_SetSecret: successfully set new secret\n"));
+	dump_data(10, cleartext_blob_new.data, cleartext_blob_new.length);
+	DEBUG(10,("_lsa_SetSecret: successfully set old secret\n"));
+	dump_data(10, cleartext_blob_old.data, cleartext_blob_old.length);
+#endif
+
+	return NT_STATUS_OK;
 }
 
 /***************************************************************************
