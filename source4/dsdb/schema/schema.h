@@ -158,11 +158,6 @@ struct dsdb_class {
 	uint32_t subClass_order;
 };
 
-struct dsdb_schema_oid_prefix {
-	uint32_t id;
-	const char *oid;
-	size_t oid_len;
-};
 
 struct dsdb_schema {
 
