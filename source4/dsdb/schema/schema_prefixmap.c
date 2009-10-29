@@ -215,6 +215,31 @@ WERROR dsdb_schema_pfm_find_binary_oid(const struct dsdb_schema_prefixmap *pfm,
 }
 
 /**
+ * Lookup full-oid in prefixMap
+ * Note: this may be slow.
+ */
+WERROR dsdb_schema_pfm_find_oid(const struct dsdb_schema_prefixmap *pfm,
+				const char *full_oid,
+				uint32_t *_idx)
+{
+	WERROR werr;
+	DATA_BLOB bin_oid;
+
+	ZERO_STRUCT(bin_oid);
+
+	/* make partial-binary-oid to look for */
+	werr = _dsdb_pfm_make_binary_oid(full_oid, NULL, &bin_oid, NULL);
+	W_ERROR_NOT_OK_RETURN(werr);
+
+	/* lookup the partial-oid */
+	werr = dsdb_schema_pfm_find_binary_oid(pfm, bin_oid, _idx);
+
+	data_blob_free(&bin_oid);
+
+	return werr;
+}
+
+/**
  * Make ATTID for given OID
  * Reference: [MS-DRSR] section 5.12.2
  */
