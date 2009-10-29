@@ -22,7 +22,7 @@
 static void smb_nscd_flush_cache(const char *service)
 {
 #ifdef HAVE_NSCD_FLUSH_CACHE
-	if (!nscd_flush_cache(service)) {
+	if (nscd_flush_cache(service)) {
 		DEBUG(10,("failed to flush nscd cache for '%s' service: %s. "
 			  "Is nscd running?\n",
 			  service, strerror(errno)));
