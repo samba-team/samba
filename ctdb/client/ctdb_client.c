@@ -3213,6 +3213,15 @@ static int ctdb_transaction_fetch_start(struct ctdb_transaction_handle *h)
 	}
 
 again:
+	tmp_ctx = talloc_new(h);
+
+	rh = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, NULL);
+	if (rh == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to fetch_lock database\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
 	status = ctdb_ctrl_transaction_active(ctdb_db->ctdb,
 					      CTDB_CURRENT_NODE,
 					      ctdb_db->db_id);
@@ -3220,18 +3229,11 @@ again:
 		DEBUG(DEBUG_NOTICE, (__location__ " transaction is active "
 				     "on db_id[0x%08x]. waiting for 1 second\n",
 				     ctdb_db->db_id));
+		talloc_free(tmp_ctx);
 		sleep(1);
 		goto again;
 	}
 
-	tmp_ctx = talloc_new(h);
-
-	rh = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, NULL);
-	if (rh == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to fetch_lock database\n"));		
-		talloc_free(tmp_ctx);
-		return -1;
-	}
 	/*
 	 * store the pid in the database:
 	 * it is not enough that the node is dmaster...
