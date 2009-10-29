@@ -3218,7 +3218,7 @@ again:
 					      ctdb_db->db_id);
 	if (status == 1) {
 		DEBUG(DEBUG_NOTICE, (__location__ " transaction is active "
-				     "on db_id[%u]. waiting for 1 second\n",
+				     "on db_id[0x%08x]. waiting for 1 second\n",
 				     ctdb_db->db_id));
 		sleep(1);
 		goto again;
