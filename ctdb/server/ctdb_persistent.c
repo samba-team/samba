@@ -113,7 +113,7 @@ int32_t ctdb_control_trans2_commit(struct ctdb_context *ctdb,
 	ctdb_db = find_ctdb_db(ctdb, m->db_id);
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " ctdb_control_trans2_commit: "
-				 "Unknown database 0x%08x\n", m->db_id));
+				 "Unknown database db_id[0x%08x]\n", m->db_id));
 		return -1;
 	}
 
@@ -139,7 +139,7 @@ int32_t ctdb_control_trans2_commit(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_PERSISTENT_STORE:
 		if (ctdb_db->transaction_active) {
 			DEBUG(DEBUG_ERR, (__location__ " trans2_commit client "
-					  "db_id[%d] transaction active - "
+					  "db_id[0x%08x] transaction active - "
 					  "refusing persistent store\n",
 					  client->db_id));
 			return -1;
@@ -152,15 +152,15 @@ int32_t ctdb_control_trans2_commit(struct ctdb_context *ctdb,
 		if (ctdb_db->transaction_active) {
 			DEBUG(DEBUG_ERR,(__location__ " trans2_commit: there is"
 					 " already a transaction commit "
-					 "active on db_id[%d] - forbidding "
-					 "client_id[%d] to commit\n",
+					 "active on db_id[0x%08x] - forbidding "
+					 "client_id[0x%08x] to commit\n",
 					 ctdb_db->db_id, client->client_id));
 			return -1;
 		}
 		if (client->db_id != 0) {
 			DEBUG(DEBUG_ERR,(__location__ " ERROR: trans2_commit: "
-					 "client-db_id[%d] != 0 "
-					 "(client_id[%d])\n",
+					 "client-db_id[0x%08x] != 0 "
+					 "(client_id[0x%08x])\n",
 					 client->db_id, client->client_id));
 			return -1;
 		}
@@ -175,8 +175,9 @@ int32_t ctdb_control_trans2_commit(struct ctdb_context *ctdb,
 		/* already updated from the first commit */
 		if (client->db_id != m->db_id) {
 			DEBUG(DEBUG_ERR,(__location__ " ERROR: trans2_commit "
-					 "retry: client-db_id[%d] != db_id[%d]"
-					 "(client_id[%d])\n", client->db_id,
+					 "retry: client-db_id[0x%08x] != "
+					 "db_id[0x%08x] (client_id[0x%08x])\n",
+					 client->db_id,
 					 m->db_id, client->client_id));
 			return -1;
 		}
