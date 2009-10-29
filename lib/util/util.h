@@ -307,6 +307,31 @@ _PUBLIC_ void all_string_sub(char *s,const char *pattern,const char *insert, siz
 **/
 _PUBLIC_ void rfc1738_unescape(char *buf);
 
+
+/**
+ * rfc1738_escape
+ * Returns a static buffer that contains the RFC
+ * 1738 compliant, escaped version of the given url. (escapes unsafe and % characters)
+ **/
+_PUBLIC_ char *rfc1738_escape(TALLOC_CTX *mem_ctx, const char *url);
+
+/**
+ * rfc1738_escape_unescaped
+ *
+ * Returns a static buffer that contains
+ * the RFC 1738 compliant, escaped version of the given url (escapes unsafe chars only)
+ **/
+_PUBLIC_ char *rfc1738_escape_unescaped(TALLOC_CTX *mem_ctx, const char *url);
+
+/**
+ * rfc1738_escape_part 
+ * Returns a static buffer that contains the RFC
+ * 1738 compliant, escaped version of the given url segment. (escapes
+ * unsafe, reserved and % chars) It would mangle the :// in http://,
+ * and mangle paths (because of /).
+ **/
+_PUBLIC_ char *rfc1738_escape_part(TALLOC_CTX *mem_ctx, const char *url);
+
 /**
   format a string into length-prefixed dotted domain format, as used in NBT
   and in some ADS structures
