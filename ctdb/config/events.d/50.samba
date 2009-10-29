@@ -171,8 +171,10 @@ case $cmd in
 		    killall -q -9 winbindd
 		}
 		service "$CTDB_SERVICE_WINBIND" start
+		sleep 1
 		wbinfo -t || {
-			echo "Startup failed. wbinfo -t returned error."
+			echo "ERROR: wbinfo -t returned error during startup. Aborting startup event."
+			echo "ERROR: This may mean that winbindd can not access the domaincontroller and thus can not authenticate users."
 			exit 1
 		}
 	}
