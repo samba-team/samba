@@ -2477,6 +2477,12 @@ NTSTATUS _lsa_DeleteObject(struct pipes_struct *p,
 		}
 		status = NT_STATUS_OK;
 		break;
+	case LSA_HANDLE_SECRET_TYPE:
+		status = pdb_delete_secret(info->name);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			return NT_STATUS_INVALID_HANDLE;
+		}
+		break;
 	default:
 		return NT_STATUS_INVALID_HANDLE;
 	}
