@@ -1479,11 +1479,67 @@ static NTSTATUS lsa_lookup_trusted_domain_by_name(TALLOC_CTX *mem_ctx,
 }
 
 /***************************************************************************
+ _lsa_OpenSecret
  ***************************************************************************/
 
-NTSTATUS _lsa_OpenSecret(struct pipes_struct *p, struct lsa_OpenSecret *r)
+NTSTATUS _lsa_OpenSecret(struct pipes_struct *p,
+			 struct lsa_OpenSecret *r)
 {
-	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	struct lsa_info *handle;
+	struct security_descriptor *psd;
+	NTSTATUS status;
+	uint32_t acc_granted;
+
+	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle)) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (handle->type != LSA_HANDLE_POLICY_TYPE) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (!r->in.name.string) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* Work out max allowed. */
+	map_max_allowed_access(p->session_info->security_token,
+			       p->session_info->unix_token,
+			       &r->in.access_mask);
+
+	/* map the generic bits to the lsa policy ones */
+	se_map_generic(&r->in.access_mask, &lsa_secret_mapping);
+
+	status = pdb_get_secret(p->mem_ctx, r->in.name.string,
+				NULL,
+				NULL,
+				NULL,
+				NULL,
+				&psd);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = access_check_object(psd, p->session_info->security_token,
+				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0,
+				     r->in.access_mask,
+				     &acc_granted, "_lsa_OpenSecret");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = create_lsa_policy_handle(p->mem_ctx, p,
+					  LSA_HANDLE_SECRET_TYPE,
+					  acc_granted,
+					  NULL,
+					  r->in.name.string,
+					  psd,
+					  r->out.sec_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	return NT_STATUS_OK;
 }
 
 /***************************************************************************
