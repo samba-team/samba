@@ -766,7 +766,9 @@ static void control_timeout_func(struct event_context *ev, struct timed_event *t
 {
 	struct ctdb_client_control_state *state = talloc_get_type(private_data, struct ctdb_client_control_state);
 
-	DEBUG(DEBUG_ERR,("control timed out. reqid:%d opcode:%d dstnode:%d\n", state->reqid, state->c->opcode, state->c->hdr.destnode));
+	DEBUG(DEBUG_ERR,(__location__ " control timed out. reqid:%u opcode:%u "
+			 "dstnode:%u\n", state->reqid, state->c->opcode,
+			 state->c->hdr.destnode));
 
 	state->state = CTDB_CONTROL_TIMEOUT;
 
