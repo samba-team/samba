@@ -1662,6 +1662,16 @@ NTSTATUS _lsa_DeleteTrustedDomain(struct pipes_struct *p,
 }
 
 /***************************************************************************
+ _lsa_CloseTrustedDomainEx
+ ***************************************************************************/
+
+NTSTATUS _lsa_CloseTrustedDomainEx(struct pipes_struct *p,
+				   struct lsa_CloseTrustedDomainEx *r)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/***************************************************************************
  _lsa_QueryTrustedDomainInfo
  ***************************************************************************/
 
@@ -3023,13 +3033,6 @@ NTSTATUS _lsa_SetTrustedDomainInfoByName(struct pipes_struct *p,
 
 NTSTATUS _lsa_EnumTrustedDomainsEx(struct pipes_struct *p,
 				   struct lsa_EnumTrustedDomainsEx *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_CloseTrustedDomainEx(struct pipes_struct *p,
-				   struct lsa_CloseTrustedDomainEx *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
