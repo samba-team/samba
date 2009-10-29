@@ -120,9 +120,7 @@ static WERROR _dsdb_schema_pfm_add_entry(struct dsdb_schema_prefixmap *pfm, DATA
 
 	/* dup memory for bin-oid prefix to be added */
 	bin_oid = data_blob_dup_talloc(pfm, &bin_oid);
-	if (!bin_oid.data) {
-		return WERR_NOMEM;
-	}
+	W_ERROR_HAVE_NO_MEMORY(bin_oid.data);
 
 	/* make room for new entry */
 	prefixes_new = talloc_realloc(pfm, pfm->prefixes, struct dsdb_schema_prefixmap_oid, pfm->length + 1);

@@ -174,7 +174,8 @@ WERROR dsdb_get_oid_mappings_ldb(const struct dsdb_schema *schema,
 	pfm.reserved	= 0;
 	pfm.ctr.dsdb	= *ctr;
 
-	ndr_err = ndr_push_struct_blob(prefixMap, mem_ctx, schema->iconv_convenience, &pfm, (ndr_push_flags_fn_t)ndr_push_prefixMapBlob);
+	ndr_err = ndr_push_struct_blob(prefixMap, mem_ctx, schema->iconv_convenience, &pfm,
+					(ndr_push_flags_fn_t)ndr_push_prefixMapBlob);
 	talloc_free(ctr);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
