@@ -194,16 +194,15 @@ WERROR dsdb_get_oid_mappings_ldb(const struct dsdb_schema *schema,
 WERROR dsdb_create_prefix_mapping(struct ldb_context *ldb, struct dsdb_schema *schema, const char *full_oid)
 {
 	WERROR status;
-	uint32_t num_prefixes;
-	struct dsdb_schema_oid_prefix *prefixes;
+	uint32_t attid;
 	TALLOC_CTX *mem_ctx;
-	uint32_t out;
+	struct dsdb_schema_prefixmap *pfm;
 
 	mem_ctx = talloc_new(ldb);
 	W_ERROR_HAVE_NO_MEMORY(mem_ctx);
 
 	/* Read prefixes from disk*/
-	status = dsdb_read_prefixes_from_ldb( mem_ctx, ldb, &num_prefixes, &prefixes ); 
+	status = dsdb_read_prefixes_from_ldb(ldb, mem_ctx, &pfm);
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0,("dsdb_create_prefix_mapping: dsdb_read_prefixes_from_ldb: %s\n",
 			win_errstr(status)));
@@ -212,7 +211,7 @@ WERROR dsdb_create_prefix_mapping(struct ldb_context *ldb, struct dsdb_schema *s
 	}
 
 	/* Check if there is a prefix for the oid in the prefixes array*/
-	status = dsdb_find_prefix_for_oid( num_prefixes, prefixes, full_oid, &out ); 
+	status = dsdb_schema_pfm_find_oid(pfm, full_oid, NULL);
 	if (W_ERROR_IS_OK(status)) {
 		/* prefix found*/
 		talloc_free(mem_ctx);
@@ -226,17 +225,16 @@ WERROR dsdb_create_prefix_mapping(struct ldb_context *ldb, struct dsdb_schema *s
 	}
 
 	/* Create the new mapping for the prefix of full_oid */
-	status = dsdb_prefix_map_update(mem_ctx, &num_prefixes, &prefixes, full_oid);
+	status = dsdb_schema_pfm_make_attid(pfm, full_oid, &attid);
 	if (!W_ERROR_IS_OK(status)) {
-		DEBUG(0,("dsdb_create_prefix_mapping: dsdb_prefix_map_update: %s\n",
+		DEBUG(0,("dsdb_create_prefix_mapping: dsdb_schema_pfm_make_attid: %s\n",
 			win_errstr(status)));
 		talloc_free(mem_ctx);
 		return status;
 	}
 
-	talloc_free(schema->prefixes);
-	schema->prefixes = talloc_steal(schema, prefixes);
-	schema->num_prefixes = num_prefixes;
+	talloc_unlink(schema, schema->prefixmap);
+	schema->prefixmap = talloc_steal(schema, pfm);
 
 	/* Update prefixMap in ldb*/
 	status = dsdb_write_prefixes_from_schema_to_ldb(mem_ctx, ldb, schema);
@@ -248,7 +246,7 @@ WERROR dsdb_create_prefix_mapping(struct ldb_context *ldb, struct dsdb_schema *s
 	}
 
 	DEBUG(2,(__location__ " Added prefixMap %s - now have %u prefixes\n",
-		 full_oid, num_prefixes));
+		 full_oid, schema->prefixmap->length));
 
 	talloc_free(mem_ctx);
 	return status;
