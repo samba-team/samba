@@ -148,10 +148,10 @@ int32_t ctdb_control_trans2_commit(struct ctdb_context *ctdb,
 		break;
 	case CTDB_CONTROL_TRANS2_COMMIT:
 		if (ctdb_db->transaction_active) {
-			DEBUG(DEBUG_ERR,(__location__ " trans2_commit: client "
-					 "already has a transaction commit "
+			DEBUG(DEBUG_ERR,(__location__ " trans2_commit: there is"
+					 " already a transaction commit "
 					 "active on db_id[%d]\n",
-					 client->db_id));
+					 ctdb_db->db_id));
 			return -1;
 		}
 		if (client->db_id != 0) {
