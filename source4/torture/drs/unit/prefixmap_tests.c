@@ -519,6 +519,92 @@ static bool torture_drs_unit_pfm_read_write_ldb(struct torture_context *tctx, st
 }
 
 /**
+ * Test rdsdb_create_prefix_mapping
+ */
+static bool torture_drs_unit_dsdb_create_prefix_mapping(struct torture_context *tctx, struct drsut_prefixmap_data *priv)
+{
+	WERROR werr;
+	uint32_t i;
+	struct dsdb_schema *schema;
+	TALLOC_CTX *mem_ctx;
+	const struct {
+		const char 	*oid;
+		uint32_t 	attid;
+		bool		exists;	/* if this prefix already exists or should be added */
+	} _test_data[] = {
+		{.oid="2.5.4.0", 		.attid=0x00000000, true},
+		{.oid="2.5.4.42", 		.attid=0x0000002a, true},
+		{.oid="1.2.840.113556.1.2.1", 	.attid=0x00020001, true},
+		{.oid="1.2.840.113556.1.2.13", 	.attid=0x0002000d, true},
+		{.oid="1.2.840.113556.1.2.281", .attid=0x00020119, true},
+		{.oid="1.2.840.113556.1.4.125", .attid=0x0009007d, true},
+		{.oid="1.2.840.113556.1.4.146", .attid=0x00090092, true},
+		{.oid="1.2.250.1", 	 	.attid=0x1b860001, false},
+		{.oid="1.2.250.16386", 	 	.attid=0x1c788002, false},
+		{.oid="1.2.250.2097154", 	.attid=0x1c7b8002, false},
+	};
+
+	mem_ctx = talloc_new(tctx);
+	torture_assert(tctx, mem_ctx, "Unexpected: Have no memory!");
+
+	/* makeup a dsdb_schema to test with */
+	schema = dsdb_new_schema(mem_ctx, lp_iconv_convenience(tctx->lp_ctx));
+	torture_assert(tctx, schema, "Unexpected: failed to allocate schema object");
+	/* set priv->pfm_full as prefixMap for new schema object */
+	schema->schema_info = SCHEMA_INFO_DEFAULT;
+	werr = _drsut_prefixmap_new(_prefixmap_test_new_data, ARRAY_SIZE(_prefixmap_test_new_data),
+				    schema, &schema->prefixmap);
+	torture_assert_werr_ok(tctx, werr, "_drsut_prefixmap_new() failed");
+	/* write prfixMap to ldb */
+	werr = dsdb_write_prefixes_from_schema_to_ldb(mem_ctx, priv->ldb_ctx, schema);
+	torture_assert_werr_ok(tctx, werr, "dsdb_write_prefixes_from_schema_to_ldb() failed");
+
+	for (i = 0; i < ARRAY_SIZE(_test_data); i++) {
+		struct dsdb_schema_prefixmap *pfm_ldb;
+		struct dsdb_schema_prefixmap *pfm_prev;
+
+		/* add ref to prefixMap so we can use it later */
+		pfm_prev = talloc_reference(schema, schema->prefixmap);
+
+		/* call dsdb_create_prefix_mapping() and check result accordingly */
+		werr = dsdb_create_prefix_mapping(priv->ldb_ctx, schema, _test_data[i].oid);
+		torture_assert_werr_ok(tctx, werr, "dsdb_create_prefix_mapping() failed");
+
+		/* verify pfm has been altered or not if needed */
+		if (_test_data[i].exists) {
+			torture_assert(tctx, pfm_prev == schema->prefixmap,
+				       "schema->prefixmap has been reallocated!");
+			if (!_torture_drs_pfm_compare_same(tctx, pfm_prev, schema->prefixmap)) {
+				torture_fail(tctx, "schema->prefixmap has changed");
+			}
+		} else {
+			torture_assert(tctx, pfm_prev != schema->prefixmap,
+				       "schema->prefixmap should be reallocated!");
+			if (_torture_drs_pfm_compare_same(tctx, pfm_prev, schema->prefixmap)) {
+				torture_fail(tctx, "schema->prefixmap should be changed");
+			}
+		}
+
+		/* read from ldb what we have written */
+		werr = dsdb_read_prefixes_from_ldb(priv->ldb_ctx, mem_ctx, &pfm_ldb);
+		torture_assert_werr_ok(tctx, werr, "dsdb_read_prefixes_from_ldb() failed");
+		/* compare data written/read */
+		if (!_torture_drs_pfm_compare_same(tctx, schema->prefixmap, pfm_ldb)) {
+			torture_fail(tctx, "schema->prefixmap and pfm in LDB are different");
+		}
+		/* free mem for pfm read from LDB */
+		talloc_free(pfm_ldb);
+
+		/* release prefixMap pointer */
+		talloc_unlink(schema, pfm_prev);
+	}
+
+	talloc_free(mem_ctx);
+
+	return true;
+}
+
+/**
  * Prepare temporary LDB and opens it
  */
 static bool torture_drs_unit_ldb_setup(struct torture_context *tctx, struct drsut_prefixmap_data *priv)
@@ -637,6 +723,8 @@ struct torture_tcase * torture_drs_unit_prefixmap(struct torture_suite *suite)
 	torture_tcase_add_simple_test(tc, "pfm_to_from_ldb_val", (pfn_run)torture_drs_unit_pfm_to_from_ldb_val);
 
 	torture_tcase_add_simple_test(tc, "pfm_read_write_ldb", (pfn_run)torture_drs_unit_pfm_read_write_ldb);
+
+	torture_tcase_add_simple_test(tc, "dsdb_create_prefix_mapping", (pfn_run)torture_drs_unit_dsdb_create_prefix_mapping);
 
 	return tc;
 }
