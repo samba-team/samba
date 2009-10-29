@@ -150,14 +150,16 @@ int32_t ctdb_control_trans2_commit(struct ctdb_context *ctdb,
 		if (ctdb_db->transaction_active) {
 			DEBUG(DEBUG_ERR,(__location__ " trans2_commit: there is"
 					 " already a transaction commit "
-					 "active on db_id[%d]\n",
-					 ctdb_db->db_id));
+					 "active on db_id[%d] - forbidding "
+					 "client_id[%d] to commit\n",
+					 ctdb_db->db_id, client->client_id));
 			return -1;
 		}
 		if (client->db_id != 0) {
 			DEBUG(DEBUG_ERR,(__location__ " ERROR: trans2_commit: "
-					 "client-db_id[%d] != 0\n",
-					 client->db_id));
+					 "client-db_id[%d] != 0 "
+					 "(client_id[%d])\n",
+					 client->db_id, client->client_id));
 			return -1;
 		}
 		client->num_persistent_updates++;
@@ -172,7 +174,8 @@ int32_t ctdb_control_trans2_commit(struct ctdb_context *ctdb,
 		if (client->db_id != m->db_id) {
 			DEBUG(DEBUG_ERR,(__location__ " ERROR: trans2_commit "
 					 "retry: client-db_id[%d] != db_id[%d]"
-					 "\n", client->db_id, m->db_id));
+					 "(client_id[%d])\n", client->db_id,
+					 m->db_id, client->client_id));
 			return -1;
 		}
 		DEBUG(DEBUG_DEBUG, (__location__ " client id[0x%08x] started "
