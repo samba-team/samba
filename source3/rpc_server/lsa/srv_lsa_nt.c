@@ -40,6 +40,7 @@
 #include "../librpc/gen_ndr/ndr_drsblobs.h"
 #include "../lib/crypto/arcfour.h"
 #include "../libcli/security/dom_sid.h"
+#include "../librpc/gen_ndr/ndr_security.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -2835,13 +2836,10 @@ NTSTATUS _lsa_QuerySecurity(struct pipes_struct *p,
 
 	switch (handle->type) {
 	case LSA_HANDLE_POLICY_TYPE:
-		status = make_lsa_object_sd(p->mem_ctx, &psd, &sd_size,
-				&lsa_policy_mapping, NULL, 0);
-		break;
 	case LSA_HANDLE_ACCOUNT_TYPE:
-		status = make_lsa_object_sd(p->mem_ctx, &psd, &sd_size,
-				&lsa_account_mapping,
-				&handle->sid, LSA_ACCOUNT_ALL_ACCESS);
+		psd = handle->sd;
+		sd_size = ndr_size_security_descriptor(psd, 0);
+		status = NT_STATUS_OK;
 		break;
 	default:
 		status = NT_STATUS_INVALID_HANDLE;
