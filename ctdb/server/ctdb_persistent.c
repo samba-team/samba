@@ -138,10 +138,11 @@ int32_t ctdb_control_trans2_commit(struct ctdb_context *ctdb,
 	switch (c->opcode) {
 	case CTDB_CONTROL_PERSISTENT_STORE:
 		if (ctdb_db->transaction_active) {
-			DEBUG(DEBUG_ERR, (__location__ " trans2_commit client "
-					  "db_id[0x%08x] transaction active - "
-					  "refusing persistent store\n",
-					  client->db_id));
+			DEBUG(DEBUG_ERR, (__location__ " trans2_commit: a "
+					  "transaction is active on database "
+					  "db_id[0x%08x] - refusing persistent "
+					 " store for client id[0x%08x]\n",
+					  ctdb_db->db_id, client->client_id));
 			return -1;
 		}
 		if (client->num_persistent_updates > 0) {
