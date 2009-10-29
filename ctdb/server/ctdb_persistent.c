@@ -163,6 +163,9 @@ int32_t ctdb_control_trans2_commit(struct ctdb_context *ctdb,
 		client->num_persistent_updates++;
 		ctdb_db->transaction_active = true;
 		client->db_id = m->db_id;
+		DEBUG(DEBUG_DEBUG, (__location__ " client id[0x%08x] started to"
+				  " commit transaction on db id[0x%08x]\n",
+				  client->client_id, client->db_id));
 		break;
 	case CTDB_CONTROL_TRANS2_COMMIT_RETRY:
 		/* already updated from the first commit */
@@ -172,6 +175,10 @@ int32_t ctdb_control_trans2_commit(struct ctdb_context *ctdb,
 					 "\n", client->db_id, m->db_id));
 			return -1;
 		}
+		DEBUG(DEBUG_DEBUG, (__location__ " client id[0x%08x] started "
+				    "transaction commit retry on "
+				    "db_id[0x%08x]\n",
+				    client->client_id, client->db_id));
 		break;
 	}
 
@@ -562,6 +569,10 @@ int32_t ctdb_control_trans2_finished(struct ctdb_context *ctdb,
 		return -1;
 	}
 	client->num_persistent_updates--;
+
+	DEBUG(DEBUG_DEBUG, (__location__ " client id[0x%08x] finished "
+			    "transaction commit db_id[0x%08x]\n",
+			    client->client_id, ctdb_db->db_id));
 
 	return 0;
 }
