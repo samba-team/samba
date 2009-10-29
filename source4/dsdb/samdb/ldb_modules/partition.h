@@ -30,6 +30,7 @@ struct dsdb_partition {
 	struct ldb_module *module;
 	struct dsdb_control_current_partition *ctrl;
 	const char *backend_url;
+	DATA_BLOB orig_record;
 };
 
 struct partition_module {

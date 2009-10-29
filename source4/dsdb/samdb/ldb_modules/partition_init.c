@@ -183,7 +183,7 @@ static const char **find_modules_for_dn(struct partition_private_data *data, str
 
 static int new_partition_from_dn(struct ldb_context *ldb, struct partition_private_data *data, 
 				 TALLOC_CTX *mem_ctx, 
-				 struct ldb_dn *dn, const char *filename_base,
+				 struct ldb_dn *dn, const char *filename,
 				 struct dsdb_partition **partition) {
 	const char *backend_url;
 	struct dsdb_control_current_partition *ctrl;
@@ -206,46 +206,36 @@ static int new_partition_from_dn(struct ldb_context *ldb, struct partition_priva
 
 	/* See if an LDAP backend has been specified */
 	if (data->ldapBackend) {
-		backend_url = data->ldapBackend;
+		(*partition)->backend_url = data->ldapBackend;
 	} else {
-
 		/* the backend LDB is the DN (base64 encoded if not 'plain') followed by .ldb */
-		const char *p;
-		char *backend_path;
-		char *base64_dn = NULL;
-		for (p = filename_base; *p; p++) {
-			/* We have such a strict check because I don't want shell metacharacters in the file name, nor ../ */
-			if (!(isalnum(*p) || *p == ' ' || *p == '=' || *p == ',')) {
-				break;
-			}
-		}
-		if (*p) {
-			filename_base = base64_dn = ldb_base64_encode(data, filename_base, strlen(filename_base));
-		}
-		
-		backend_path = samdb_relative_path(ldb, 
-						   *partition, 
-						   filename_base);
-		if (base64_dn) {
-			talloc_free(base64_dn);
-		}
-		if (!backend_path) {
-			ldb_asprintf_errstring(ldb, 
-					       "partition_init: unable to determine an relative path for partition: %s", filename_base);
-			talloc_free(*partition);
-			return LDB_ERR_OPERATIONS_ERROR;		
-		}
-		backend_url = talloc_asprintf(*partition, "tdb://%s.ldb", 
-					      backend_path); 
-		talloc_free(backend_path);
+		backend_url = samdb_relative_path(ldb, 
+						  *partition, 
+						  filename);
 		if (!backend_url) {
-			ldb_oom(ldb);
+			ldb_asprintf_errstring(ldb, 
+					       "partition_init: unable to determine an relative path for partition: %s", filename);
 			talloc_free(*partition);
 			return LDB_ERR_OPERATIONS_ERROR;		
 		}
+		(*partition)->backend_url = talloc_steal((*partition), backend_url);
+
+		if (!(ldb->flags & LDB_FLG_RDONLY)) {
+			char *p;
+			char *backend_dir = talloc_strdup(*partition, backend_url);
+			
+			p = strrchr(backend_dir, '/');
+			if (p) {
+				p[0] = '\0';
+			}
+
+			/* Failure is quite reasonable, it might alredy exist */
+			mkdir(backend_dir, 0700);
+			talloc_free(backend_dir);
+		}
+
 	}
 
-	(*partition)->backend_url = backend_url;
 	ctrl->version = DSDB_CONTROL_CURRENT_PARTITION_VERSION;
 	ctrl->dn = talloc_steal(ctrl, dn);
 	
@@ -414,7 +404,7 @@ int partition_reload_if_required(struct ldb_module *module,
 	for (i=0; partition_attributes && i < partition_attributes->num_values; i++) {
 		int j;
 		bool new_partition = true;
-		const char *filename_base = NULL;
+		const char *filename = NULL;
 		DATA_BLOB dn_blob;
 		struct ldb_dn *dn;
 		struct dsdb_partition *partition;
@@ -422,8 +412,7 @@ int partition_reload_if_required(struct ldb_module *module,
 		const char *no_attrs[] = { NULL };
 
 		for (j=0; data->partitions && data->partitions[j]; j++) {
-			DATA_BLOB casefold = data_blob_string_const(ldb_dn_get_casefold(data->partitions[j]->ctrl->dn));
-			if (data_blob_cmp(&casefold, &partition_attributes->values[i]) == 0) {
+			if (data_blob_cmp(&data->partitions[j]->orig_record, &partition_attributes->values[i]) == 0) {
 				new_partition = false;
 				break;
 			}
@@ -438,17 +427,14 @@ int partition_reload_if_required(struct ldb_module *module,
 		    (strncmp((const char *)&dn_blob.data[dn_blob.length-4], ".ldb", 4) == 0)) {
 
 			/* Look for DN:filename.ldb */
-			char *p = strchr((const char *)dn_blob.data, ':');
+			char *p = strrchr((const char *)dn_blob.data, ':');
 			if (!p) {
 				ldb_asprintf_errstring(ldb, 
-						       "partition_init: invalid DN in attempting to parse old-style partition record: %s", (const char *)dn_blob.data);
+						       "partition_init: invalid DN in attempting to parse partition record: %s", (const char *)dn_blob.data);
 				talloc_free(mem_ctx);
 				return LDB_ERR_CONSTRAINT_VIOLATION;
 			}
-			filename_base = p+1;
-			
-			/* Trim off the .ldb */
-			dn_blob.data[dn_blob.length-4] = '\0';
+			filename = p+1;
 			
 			/* Now trim off the filename */
 			dn_blob.length = ((uint8_t *)p - dn_blob.data);
@@ -462,8 +448,32 @@ int partition_reload_if_required(struct ldb_module *module,
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 		
-		if (!filename_base) {
-			filename_base = ldb_dn_get_linearized(dn);
+		/* Now do a slow check with the DN compare */
+		for (j=0; data->partitions && data->partitions[j]; j++) {
+			if (ldb_dn_compare(dn, data->partitions[j]->ctrl->dn) == 0) {
+				new_partition = false;
+				break;
+			}
+		}
+		if (new_partition == false) {
+			continue;
+		}
+
+		if (!filename) {
+			char *base64_dn = NULL;
+			const char *p;
+			for (p = ldb_dn_get_linearized(dn); *p; p++) {
+				/* We have such a strict check because I don't want shell metacharacters in the file name, nor ../ */
+				if (!(isalnum(*p) || *p == ' ' || *p == '=' || *p == ',')) {
+					break;
+				}
+			}
+			if (*p) {
+				base64_dn = ldb_base64_encode(data, ldb_dn_get_linearized(dn), strlen(ldb_dn_get_linearized(dn)));
+				filename = talloc_asprintf(mem_ctx, "%s.ldb", base64_dn);
+			} else {
+				filename = talloc_asprintf(mem_ctx, "%s.ldb", ldb_dn_get_linearized(dn));
+			}
 		}
 			
 		/* We call ldb_dn_get_linearized() because the DN in
@@ -471,12 +481,15 @@ int partition_reload_if_required(struct ldb_module *module,
 		 * correctly.  We don't want to mess that up as the
 		 * schema isn't loaded yet */
 		ret = new_partition_from_dn(ldb, data, data->partitions, dn, 
-					    filename_base,
+					    filename,
 					    &partition);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(mem_ctx);
 			return ret;
 		}
+
+		talloc_steal(partition, partition_attributes->values[i].data);
+		partition->orig_record = partition_attributes->values[i];
 
 		/* Get the 'correct' case of the partition DNs from the database */
 		ret = dsdb_module_search_dn(partition->module, data, &dn_res, 
@@ -668,6 +681,8 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	if (!partition) {
+		char *filename;
+		char *partition_record;
 		new_partition = true;
 		mod_msg = ldb_msg_new(req);
 		if (!mod_msg) {
@@ -683,7 +698,45 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 		
 		casefold_dn = ldb_dn_get_casefold(dn);
 		
-		ret = ldb_msg_add_string(mod_msg, DSDB_PARTITION_ATTR, casefold_dn);
+		{
+			char *escaped;
+			const char *p, *sam_name;
+			sam_name = strrchr((const char *)ldb_get_opaque(ldb, "ldb_url"), '/');
+			if (!sam_name) {
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+			sam_name++;
+
+			for (p = casefold_dn; *p; p++) {
+				/* We have such a strict check because
+				 * I don't want shell metacharacters
+				 * in the file name, nor ../, but I do
+				 * want it to be easily typed if SAFE
+				 * to do so */
+				if (!(isalnum(*p) || *p == ' ' || *p == '=' || *p == ',')) {
+					break;
+				}
+			}
+			if (*p) {
+				escaped = rfc1738_escape_part(mod_msg, casefold_dn);
+				if (!escaped) {
+					ldb_oom(ldb);
+					return LDB_ERR_OPERATIONS_ERROR;
+				}
+				filename = talloc_asprintf(mod_msg, "%s.d/%s.ldb", sam_name, escaped);
+				talloc_free(escaped);
+			} else {
+				filename = talloc_asprintf(mod_msg, "%s.d/%s.ldb", sam_name, casefold_dn);
+			}
+
+			if (!filename) {
+				ldb_oom(ldb);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+		}
+		partition_record = talloc_asprintf(mod_msg, "%s:%s", casefold_dn, filename);
+
+		ret = ldb_msg_add_steal_string(mod_msg, DSDB_PARTITION_ATTR, partition_record);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -708,10 +761,12 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 		}
 		
 		/* Make a partition structure for this new partition, so we can copy in the template structure */ 
-		ret = new_partition_from_dn(ldb, data, req, ldb_dn_copy(req, dn), casefold_dn, &partition);
+		ret = new_partition_from_dn(ldb, data, req, ldb_dn_copy(req, dn), filename, &partition);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
+		talloc_steal(partition, partition_record);
+		partition->orig_record = data_blob_string_const(partition_record);
 	}
 	
 	ret = new_partition_set_replicated_metadata(ldb, module, last_req, data, partition);
