@@ -2203,11 +2203,87 @@ NTSTATUS _lsa_QueryTrustedDomainInfoByName(struct pipes_struct *p,
 }
 
 /***************************************************************************
+ _lsa_CreateSecret
  ***************************************************************************/
 
-NTSTATUS _lsa_CreateSecret(struct pipes_struct *p, struct lsa_CreateSecret *r)
+NTSTATUS _lsa_CreateSecret(struct pipes_struct *p,
+			   struct lsa_CreateSecret *r)
 {
-	return NT_STATUS_ACCESS_DENIED;
+	NTSTATUS status;
+	struct lsa_info *handle;
+	uint32_t acc_granted;
+	struct security_descriptor *psd;
+	size_t sd_size;
+
+	/* find the connection policy handle. */
+	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle)) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (handle->type != LSA_HANDLE_POLICY_TYPE) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	/* check if the user has enough rights */
+
+	if (!(handle->access & LSA_POLICY_CREATE_SECRET)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/* Work out max allowed. */
+	map_max_allowed_access(p->session_info->security_token,
+			       p->session_info->unix_token,
+			       &r->in.access_mask);
+
+	/* map the generic bits to the lsa policy ones */
+	se_map_generic(&r->in.access_mask, &lsa_secret_mapping);
+
+	status = make_lsa_object_sd(p->mem_ctx, &psd, &sd_size,
+				    &lsa_secret_mapping,
+				    NULL, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = access_check_object(psd, p->session_info->security_token,
+				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0,
+				     r->in.access_mask,
+				     &acc_granted, "_lsa_CreateSecret");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (!r->in.name.string) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (strlen(r->in.name.string) > 128) {
+		return NT_STATUS_NAME_TOO_LONG;
+	}
+
+	status = pdb_get_secret(p->mem_ctx, r->in.name.string,
+				NULL, NULL, NULL, NULL, NULL);
+	if (NT_STATUS_IS_OK(status)) {
+		return NT_STATUS_OBJECT_NAME_COLLISION;
+	}
+
+	status = pdb_set_secret(r->in.name.string, NULL, NULL, psd);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = create_lsa_policy_handle(p->mem_ctx, p,
+					  LSA_HANDLE_SECRET_TYPE,
+					  acc_granted,
+					  NULL,
+					  r->in.name.string,
+					  psd,
+					  r->out.sec_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	return NT_STATUS_OK;
 }
 
 /***************************************************************************
