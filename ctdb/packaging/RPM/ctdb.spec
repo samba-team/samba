@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.101
+Version: 1.0.102
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -127,6 +127,14 @@ exit 0
 %{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
+* Thu Oct 29 2009 : Version 1.0.102
+ - Wolfgang: fix for the vacuuming code
+ - Wolfgang: stronger tests for persistent database filename tests
+ - Improve the log message when we refuse to startup since wbinfo -t fails
+   to make it easier to spot in the log.
+ - Update the uptime command output and the man page to indicate that
+   "time since last ..." if from either the last recovery OR the last failover
+ - Michael A: transaction updates
 * Wed Oct 28 2009 : Version 1.0.101
  - create a separate context for non-monitoring events so they dont interfere with the monitor event
  - make sure to return status 0 in teh callback when we abort an event
