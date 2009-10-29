@@ -609,7 +609,9 @@ int32_t ctdb_control_trans2_error(struct ctdb_context *ctdb,
 		client->num_persistent_updates--;
 	}
 
-	DEBUG(DEBUG_ERR,(__location__ " Forcing recovery\n"));
+	DEBUG(DEBUG_ERR,(__location__ " An error occurred during transaction on"
+			 " db_id[0x%08x] - forcing recovery\n",
+			 ctdb_db->db_id));
 	client->ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
 
 	return 0;
