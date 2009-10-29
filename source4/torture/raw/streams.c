@@ -936,7 +936,8 @@ static bool test_stream_names(struct torture_context *tctx,
 	sinfo.rename_information.in.root_fid = 0;
 	sinfo.rename_information.in.new_name = ":MStream Two:$DATA";
 	status = smb_raw_setfileinfo(cli->tree, &sinfo);
-	if (torture_setting_bool(tctx, "samba4", false)) {
+	if (torture_setting_bool(tctx, "samba4", false) ||
+	    torture_setting_bool(tctx, "samba3", false)) {
 		/* why should this rename be considered invalid?? */
 		CHECK_STATUS(status, NT_STATUS_OK);
 		ret &= check_stream_list(cli, fname, 4, four);
