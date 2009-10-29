@@ -667,46 +667,6 @@ _PUBLIC_ char *hex_encode_talloc(TALLOC_CTX *mem_ctx, const unsigned char *buff_
 }
 
 /**
- Unescape a URL encoded string, in place.
-**/
-
-_PUBLIC_ void rfc1738_unescape(char *buf)
-{
-	char *p=buf;
-
-	while ((p=strchr(p,'+')))
-		*p = ' ';
-
-	p = buf;
-
-	while (p && *p && (p=strchr(p,'%'))) {
-		int c1 = p[1];
-		int c2 = p[2];
-
-		if (c1 >= '0' && c1 <= '9')
-			c1 = c1 - '0';
-		else if (c1 >= 'A' && c1 <= 'F')
-			c1 = 10 + c1 - 'A';
-		else if (c1 >= 'a' && c1 <= 'f')
-			c1 = 10 + c1 - 'a';
-		else {p++; continue;}
-
-		if (c2 >= '0' && c2 <= '9')
-			c2 = c2 - '0';
-		else if (c2 >= 'A' && c2 <= 'F')
-			c2 = 10 + c2 - 'A';
-		else if (c2 >= 'a' && c2 <= 'f')
-			c2 = 10 + c2 - 'a';
-		else {p++; continue;}
-			
-		*p = (c1<<4) | c2;
-
-		memmove(p+1, p+3, strlen(p+3)+1);
-		p++;
-	}
-}
-
-/**
   varient of strcmp() that handles NULL ptrs
 **/
 _PUBLIC_ int strcmp_safe(const char *s1, const char *s2)
