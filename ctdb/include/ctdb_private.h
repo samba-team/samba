@@ -1471,6 +1471,7 @@ int32_t ctdb_control_trans2_finished(struct ctdb_context *ctdb,
 int32_t ctdb_control_trans2_error(struct ctdb_context *ctdb, 
 				  struct ctdb_req_control *c);
 int32_t ctdb_control_trans2_active(struct ctdb_context *ctdb,
+				   struct ctdb_req_control *c,
 				   uint32_t db_id);
 
 char *ctdb_addr_to_str(ctdb_sock_addr *addr);

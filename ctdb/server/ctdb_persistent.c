@@ -608,14 +608,20 @@ int32_t ctdb_control_trans2_error(struct ctdb_context *ctdb,
  * Tell whether a transaction is active on this node on the give DB.
  */
 int32_t ctdb_control_trans2_active(struct ctdb_context *ctdb,
+				   struct ctdb_req_control *c,
 				   uint32_t db_id)
 {
 	struct ctdb_db_context *ctdb_db;
+	struct ctdb_client *client = ctdb_reqid_find(ctdb, c->client_id, struct ctdb_client);
 
 	ctdb_db = find_ctdb_db(ctdb, db_id);
 	if (!ctdb_db) {
 		DEBUG(DEBUG_ERR,(__location__ " Unknown db 0x%08x\n", db_id));
 		return -1;
+	}
+
+	if (client->db_id == db_id) {
+		return 0;
 	}
 
 	if (ctdb_db->transaction_active) {
