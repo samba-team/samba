@@ -10,6 +10,7 @@ Major enhancements in Samba 3.4.3 include:
 
    o Fix trust relationships to windows 2008 (2008 r2) (bug #6711).
    o Fix file corruption using smbclient with NT4 server (bug #6606).
+   o Fix Windows 7 share access (which defaults to NTLMv2) (bug #6680).
 
 
 ######################################################################
