@@ -1,4 +1,20 @@
 /*
+ * NOTE:  
+ *
+ * This file imported from the Squid project.  The licence below is
+ * reproduced intact, but refers to files in Squid's repository, not
+ * in Samba.  See COPYING for the GPLv3 notice (being the later
+ * version mentioned below).
+ *
+ * This file has also been modified, in particular to use talloc to
+ * allocate in rfc1738_escape()
+ *
+ * - Andrew Bartlett Oct-2009
+ *
+ */
+
+
+/*
  * $Id$
  *
  * DEBUG:
@@ -32,14 +48,7 @@
  *
  */
 
-#include "config.h"
-
-#if HAVE_STDIO_H
-#include <stdio.h>
-#endif
-#if HAVE_STRING_H
-#include <string.h>
-#endif
+#include "includes.h"
 
 #include "util.h"
 
@@ -81,21 +90,26 @@ static char rfc1738_reserved_chars[] = {
 /*
  *  rfc1738_escape - Returns a static buffer contains the RFC 1738
  *  compliant, escaped version of the given url.
+ *
  */
 static char *
-rfc1738_do_escape(const char *url, int encode_reserved)
+rfc1738_do_escape(TALLOC_CTX *mem_ctx, const char *url, int encode_reserved)
 {
-    static char *buf;
-    static size_t bufsize = 0;
+    size_t bufsize = 0;
     const char *p;
+    char *buf;
     char *q;
     unsigned int i, do_escape;
 
-    if (buf == NULL || strlen(url) * 3 > bufsize) {
-        xfree(buf);
-        bufsize = strlen(url) * 3 + 1;
-        buf = xcalloc(bufsize, 1);
+    bufsize = strlen(url) * 3 + 1;
+    buf = talloc_array(mem_ctx, char, bufsize);
+    if (!buf) {
+	    return NULL;
     }
+
+    talloc_set_name_const(buf, buf);
+    buf[0] = '\0';
+
     for (p = url, q = buf; *p != '\0' && q < (buf + bufsize - 1); p++, q++) {
         do_escape = 0;
 
@@ -129,11 +143,11 @@ rfc1738_do_escape(const char *url, int encode_reserved)
             do_escape = 1;
         }
         /* Do the triplet encoding, or just copy the char */
-        /* note: we do not need snprintf here as q is appropriately
-         * allocated - KA */
+        /* note: while we do not need snprintf here as q is appropriately
+         * allocated, Samba does to avoid our macro banning it -- abartlet */
 
         if (do_escape == 1) {
-            (void) sprintf(q, "%%%02X", (unsigned char) *p);
+		(void) snprintf(q, 4, "%%%02X", (unsigned char) *p);
             q += sizeof(char) * 2;
         } else {
             *q = *p;
@@ -145,39 +159,41 @@ rfc1738_do_escape(const char *url, int encode_reserved)
 
 /*
  * rfc1738_escape - Returns a static buffer that contains the RFC
- * 1738 compliant, escaped version of the given url.
+ * 1738 compliant, escaped version of the given url. (escapes unsafe and % characters)
  */
 char *
-rfc1738_escape(const char *url)
+rfc1738_escape(TALLOC_CTX *mem_ctx, const char *url)
 {
-    return rfc1738_do_escape(url, 0);
+	return rfc1738_do_escape(mem_ctx, url, 0);
 }
 
 /*
  * rfc1738_escape_unescaped - Returns a static buffer that contains
- * the RFC 1738 compliant, escaped version of the given url.
+ * the RFC 1738 compliant, escaped version of the given url (escapes unsafe chars only)
  */
 char *
-rfc1738_escape_unescaped(const char *url)
+rfc1738_escape_unescaped(TALLOC_CTX *mem_ctx, const char *url)
 {
-    return rfc1738_do_escape(url, -1);
+	return rfc1738_do_escape(mem_ctx, url, -1);
 }
 
 /*
- * rfc1738_escape_part - Returns a static buffer that contains the
- * RFC 1738 compliant, escaped version of the given url segment.
+ * rfc1738_escape_part - Returns a static buffer that contains the RFC
+ * 1738 compliant, escaped version of the given url segment. (escapes
+ * unsafe, reserved and % chars) It would mangle the :// in http://,
+ * and mangle paths (because of /).
  */
 char *
-rfc1738_escape_part(const char *url)
+rfc1738_escape_part(TALLOC_CTX *mem_ctx, const char *url)
 {
-    return rfc1738_do_escape(url, 1);
+	return rfc1738_do_escape(mem_ctx, url, 1);
 }
 
 /*
  *  rfc1738_unescape() - Converts escaped characters (%xy numbers) in
  *  given the string.  %% is a %. %ab is the 8-bit hexadecimal number "ab"
  */
-void
+_PUBLIC_ void
 rfc1738_unescape(char *s)
 {
     char hexnum[3];
