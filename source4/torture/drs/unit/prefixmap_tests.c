@@ -191,23 +191,41 @@ static WERROR _drsut_prefixmap_new(const struct drsut_pfm_oid_data *_pfm_init_da
 
 static bool _torture_drs_pfm_compare_same(struct torture_context *tctx,
 					  const struct dsdb_schema_prefixmap *pfm_left,
-					  const struct dsdb_schema_prefixmap *pfm_right)
+					  const struct dsdb_schema_prefixmap *pfm_right,
+					  bool quiet)
 {
 	uint32_t i;
+	char *err_msg = NULL;
 
-	torture_assert_int_equal(tctx, pfm_left->length, pfm_right->length,
-				 "prefixMaps differ in size");
+	if (pfm_left->length != pfm_right->length) {
+		err_msg = talloc_asprintf(tctx, "prefixMaps differ in size; left = %d, right = %d",
+					  pfm_left->length, pfm_right->length);
+		goto failed;
+	}
+
 	for (i = 0; i < pfm_left->length; i++) {
 		struct dsdb_schema_prefixmap_oid *entry_left = &pfm_left->prefixes[i];
 		struct dsdb_schema_prefixmap_oid *entry_right = &pfm_right->prefixes[i];
 
-		torture_assert(tctx, entry_left->id == entry_right->id,
-				talloc_asprintf(tctx, "Different IDs for index=%d", i));
-		torture_assert_data_blob_equal(tctx, entry_left->bin_oid, entry_right->bin_oid,
-						talloc_asprintf(tctx, "Different bin_oid for index=%d", i));
+		if (entry_left->id != entry_right->id) {
+			err_msg = talloc_asprintf(tctx, "Different IDs for index=%d", i);
+			goto failed;
+		}
+		if (data_blob_cmp(&entry_left->bin_oid, &entry_right->bin_oid)) {
+			err_msg = talloc_asprintf(tctx, "Different bin_oid for index=%d", i);
+			goto failed;
+		}
 	}
 
 	return true;
+
+failed:
+	if (!quiet) {
+		torture_comment(tctx, "_torture_drs_pfm_compare_same: %s", err_msg);
+	}
+	talloc_free(err_msg);
+
+	return false;
 }
 
 /*
@@ -230,7 +248,7 @@ static bool torture_drs_unit_pfm_new(struct torture_context *tctx, struct drsut_
 	torture_assert(tctx, pfm->prefixes != NULL, "No prefixes for newly created prefixMap!");
 
 	/* compare newly created prefixMap with template one */
-	bret = _torture_drs_pfm_compare_same(tctx, priv->pfm_new, pfm);
+	bret = _torture_drs_pfm_compare_same(tctx, priv->pfm_new, pfm, false);
 
 	talloc_free(mem_ctx);
 
@@ -404,7 +422,7 @@ static bool torture_drs_unit_pfm_to_from_drsuapi(struct torture_context *tctx, s
 	torture_assert_str_equal(tctx, schema_info, SCHEMA_INFO_DEFAULT, "Fetched schema_info is different");
 
 	/* compare against the original */
-	if (!_torture_drs_pfm_compare_same(tctx, priv->pfm_full, pfm)) {
+	if (!_torture_drs_pfm_compare_same(tctx, priv->pfm_full, pfm, true)) {
 		talloc_free(mem_ctx);
 		return false;
 	}
@@ -414,7 +432,7 @@ static bool torture_drs_unit_pfm_to_from_drsuapi(struct torture_context *tctx, s
 	werr = dsdb_schema_pfm_from_drsuapi_pfm(ctr, false, mem_ctx, &pfm, NULL);
 	torture_assert_werr_ok(tctx, werr, "dsdb_schema_pfm_from_drsuapi_pfm() failed");
 	/* compare against the original */
-	if (!_torture_drs_pfm_compare_same(tctx, priv->pfm_full, pfm)) {
+	if (!_torture_drs_pfm_compare_same(tctx, priv->pfm_full, pfm, false)) {
 		talloc_free(mem_ctx);
 		return false;
 	}
@@ -469,7 +487,7 @@ static bool torture_drs_unit_pfm_to_from_ldb_val(struct torture_context *tctx, s
 	werr = dsdb_load_oid_mappings_ldb(schema, &pfm_ldb_val, &schema_info_ldb_val);
 	torture_assert_werr_ok(tctx, werr, "dsdb_load_oid_mappings_ldb() failed");
 	/* compare against the original */
-	if (!_torture_drs_pfm_compare_same(tctx, schema->prefixmap, priv->pfm_full)) {
+	if (!_torture_drs_pfm_compare_same(tctx, schema->prefixmap, priv->pfm_full, false)) {
 		talloc_free(mem_ctx);
 		return false;
 	}
@@ -507,13 +525,11 @@ static bool torture_drs_unit_pfm_read_write_ldb(struct torture_context *tctx, st
 	torture_assert_werr_ok(tctx, werr, "dsdb_read_prefixes_from_ldb() failed");
 
 	/* compare data written/read */
-	_torture_drs_pfm_compare_same(tctx, schema->prefixmap, priv->pfm_full);
+	if (!_torture_drs_pfm_compare_same(tctx, schema->prefixmap, priv->pfm_full, false)) {
+		torture_fail(tctx, "prefixMap read/write in LDB is not consistent");
+	}
 
 	talloc_free(mem_ctx);
-
-	if (tctx->last_result != TORTURE_OK) {
-		return false;
-	}
 
 	return true;
 }
@@ -574,13 +590,13 @@ static bool torture_drs_unit_dsdb_create_prefix_mapping(struct torture_context *
 		if (_test_data[i].exists) {
 			torture_assert(tctx, pfm_prev == schema->prefixmap,
 				       "schema->prefixmap has been reallocated!");
-			if (!_torture_drs_pfm_compare_same(tctx, pfm_prev, schema->prefixmap)) {
+			if (!_torture_drs_pfm_compare_same(tctx, pfm_prev, schema->prefixmap, true)) {
 				torture_fail(tctx, "schema->prefixmap has changed");
 			}
 		} else {
 			torture_assert(tctx, pfm_prev != schema->prefixmap,
 				       "schema->prefixmap should be reallocated!");
-			if (_torture_drs_pfm_compare_same(tctx, pfm_prev, schema->prefixmap)) {
+			if (_torture_drs_pfm_compare_same(tctx, pfm_prev, schema->prefixmap, true)) {
 				torture_fail(tctx, "schema->prefixmap should be changed");
 			}
 		}
@@ -589,7 +605,7 @@ static bool torture_drs_unit_dsdb_create_prefix_mapping(struct torture_context *
 		werr = dsdb_read_prefixes_from_ldb(priv->ldb_ctx, mem_ctx, &pfm_ldb);
 		torture_assert_werr_ok(tctx, werr, "dsdb_read_prefixes_from_ldb() failed");
 		/* compare data written/read */
-		if (!_torture_drs_pfm_compare_same(tctx, schema->prefixmap, pfm_ldb)) {
+		if (!_torture_drs_pfm_compare_same(tctx, schema->prefixmap, pfm_ldb, true)) {
 			torture_fail(tctx, "schema->prefixmap and pfm in LDB are different");
 		}
 		/* free mem for pfm read from LDB */
