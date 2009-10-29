@@ -2089,15 +2089,19 @@ NTSTATUS _lsa_QuerySecurity(pipes_struct *p,
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (handle->type == LSA_HANDLE_POLICY_TYPE) {
+	switch (handle->type) {
+	case LSA_HANDLE_POLICY_TYPE:
 		status = make_lsa_object_sd(p->mem_ctx, &psd, &sd_size,
 				&lsa_policy_mapping, NULL, 0);
-	} else if (handle->type == LSA_HANDLE_ACCOUNT_TYPE) {
+		break;
+	case LSA_HANDLE_ACCOUNT_TYPE:
 		status = make_lsa_object_sd(p->mem_ctx, &psd, &sd_size,
 				&lsa_account_mapping,
 				&handle->sid, LSA_ACCOUNT_ALL_ACCESS);
-	} else {
+		break;
+	default:
 		status = NT_STATUS_INVALID_HANDLE;
+		break;
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
