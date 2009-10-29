@@ -65,8 +65,6 @@ static uint32_t hash_fn(DATA_BLOB key)
  * an option to put in a special ACL entry for a non-existing group.
  */
 
-#define SAMBA_XATTR_MARKER "user.SAMBA_STREAMS"
-
 static bool file_is_valid(vfs_handle_struct *handle, const char *path,
 			  bool check_valid)
 {
