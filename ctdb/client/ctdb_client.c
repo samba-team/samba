@@ -3497,6 +3497,9 @@ again:
 			   &timeout, NULL);
 	if (ret != 0 || status != 0) {
 		tdb_transaction_cancel(h->ctdb_db->ltdb->tdb);
+		DEBUG(DEBUG_WARNING, (__location__ " transaction commit%s failed"
+				      ", retrying after 1 second...\n",
+				      (retries==0)?"":"retry "));
 		sleep(1);
 
 		if (ret != 0) {
