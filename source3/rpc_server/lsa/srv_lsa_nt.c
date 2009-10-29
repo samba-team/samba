@@ -2359,6 +2359,92 @@ NTSTATUS _lsa_SetSecret(struct pipes_struct *p,
 }
 
 /***************************************************************************
+ _lsa_QuerySecret
+ ***************************************************************************/
+
+NTSTATUS _lsa_QuerySecret(struct pipes_struct *p,
+			  struct lsa_QuerySecret *r)
+{
+	struct lsa_info *info = NULL;
+	DATA_BLOB blob_new, blob_old;
+	DATA_BLOB blob_new_crypt, blob_old_crypt;
+	NTTIME nttime_new, nttime_old;
+	NTSTATUS status;
+
+	if (!find_policy_by_hnd(p, r->in.sec_handle, (void **)(void *)&info)) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (info->type != LSA_HANDLE_SECRET_TYPE) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (!(info->access & LSA_SECRET_QUERY_VALUE)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	status = pdb_get_secret(p->mem_ctx, info->name,
+				&blob_new, &nttime_new,
+				&blob_old, &nttime_old,
+				NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (r->in.new_val) {
+		if (blob_new.length) {
+			if (!r->out.new_val->buf) {
+				r->out.new_val->buf = talloc_zero(p->mem_ctx, struct lsa_DATA_BUF);
+			}
+			if (!r->out.new_val->buf) {
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			blob_new_crypt = sess_encrypt_blob(p->mem_ctx, &blob_new,
+							   &p->session_info->session_key);
+			if (!blob_new_crypt.length) {
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.new_val->buf->data	= blob_new_crypt.data;
+			r->out.new_val->buf->length	= blob_new_crypt.length;
+			r->out.new_val->buf->size	= blob_new_crypt.length;
+		}
+	}
+
+	if (r->in.old_val) {
+		if (blob_old.length) {
+			if (!r->out.old_val->buf) {
+				r->out.old_val->buf = talloc_zero(p->mem_ctx, struct lsa_DATA_BUF);
+			}
+			if (!r->out.old_val->buf) {
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			blob_old_crypt = sess_encrypt_blob(p->mem_ctx, &blob_old,
+							   &p->session_info->session_key);
+			if (!blob_old_crypt.length) {
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.old_val->buf->data	= blob_old_crypt.data;
+			r->out.old_val->buf->length	= blob_old_crypt.length;
+			r->out.old_val->buf->size	= blob_old_crypt.length;
+		}
+	}
+
+	if (r->out.new_mtime) {
+		*r->out.new_mtime = nttime_new;
+	}
+
+	if (r->out.old_mtime) {
+		*r->out.old_mtime = nttime_old;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/***************************************************************************
  _lsa_DeleteObject
  ***************************************************************************/
 
@@ -3445,12 +3531,6 @@ NTSTATUS _lsa_SetQuotasForAccount(struct pipes_struct *p,
 
 NTSTATUS _lsa_SetInformationTrustedDomain(struct pipes_struct *p,
 					  struct lsa_SetInformationTrustedDomain *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_QuerySecret(struct pipes_struct *p, struct lsa_QuerySecret *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
