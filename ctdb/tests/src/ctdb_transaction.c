@@ -133,32 +133,32 @@ static void test_store_records(struct ctdb_context *ctdb, struct event_context *
 
 
 		if (!no_trans) {
-			if (verbose) printf("starting transaction\n");
+			if (verbose) DEBUG(DEBUG_ERR, ("starting transaction\n"));
 			h = ctdb_transaction_start(ctdb_db, tmp_ctx);
 			if (h == NULL) {
-				printf("Failed to start transaction on node %d\n",
-				       ctdb_get_pnn(ctdb));
+				DEBUG(DEBUG_ERR, ("Failed to start transaction on node %d\n",
+				       ctdb_get_pnn(ctdb)));
 				talloc_free(tmp_ctx);
 				return;
 			}
-			if (verbose) printf("transaction started\n");
+			if (verbose) DEBUG(DEBUG_ERR, ("transaction started\n"));
 			do_sleep(delay);
 
-			if (verbose) printf("calling transaction_fetch\n");
+			if (verbose) DEBUG(DEBUG_ERR, ("calling transaction_fetch\n"));
 			ret = ctdb_transaction_fetch(h, tmp_ctx, key, &data);
 			if (ret != 0) {
 				DEBUG(DEBUG_ERR,("Failed to fetch record\n"));
 				exit(1);
 			}
-			if (verbose) printf("fetched data ok\n");
+			if (verbose) DEBUG(DEBUG_ERR, ("fetched data ok\n"));
 		} else {
-			if (verbose) printf("calling fetch_lock\n");
+			if (verbose) DEBUG(DEBUG_ERR, ("calling fetch_lock\n"));
 			rec = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, &data);
 			if (rec == NULL) {
 				DEBUG(DEBUG_ERR,("Failed to fetch record\n"));
 				exit(1);
 			}
-			if (verbose) printf("fetched record ok\n");
+			if (verbose) DEBUG(DEBUG_ERR, ("fetched record ok\n"));
 		}
 		do_sleep(delay);
 
@@ -173,7 +173,7 @@ static void test_store_records(struct ctdb_context *ctdb, struct event_context *
 		}
 
 		if (data.dptr == NULL) {
-			printf("Failed to realloc array\n");
+			DEBUG(DEBUG_ERR, ("Failed to realloc array\n"));
 			talloc_free(tmp_ctx);
 			return;
 		}
@@ -184,30 +184,30 @@ static void test_store_records(struct ctdb_context *ctdb, struct event_context *
 		counters[pnn]++;
 
 		if (!no_trans) {
-			if (verbose) printf("calling transaction_store\n");
+			if (verbose) DEBUG(DEBUG_ERR, ("calling transaction_store\n"));
 			ret = ctdb_transaction_store(h, key, data);
 			if (ret != 0) {
 				DEBUG(DEBUG_ERR,("Failed to store record\n"));
 				exit(1);
 			}
-			if (verbose) printf("stored data ok\n");
+			if (verbose) DEBUG(DEBUG_ERR, ("stored data ok\n"));
 			do_sleep(delay);
 
-			if (verbose) printf("calling transaction_commit\n");
+			if (verbose) DEBUG(DEBUG_ERR, ("calling transaction_commit\n"));
 			ret = ctdb_transaction_commit(h);
 			if (ret != 0) {
 				DEBUG(DEBUG_ERR,("Failed to commit transaction\n"));
 				exit(1);
 			}
-			if (verbose) printf("transaction committed\n");
+			if (verbose) DEBUG(DEBUG_ERR, ("transaction committed\n"));
 		} else {
-			if (verbose) printf("calling record_store\n");
+			if (verbose) DEBUG(DEBUG_ERR, ("calling record_store\n"));
 			ret = ctdb_record_store(rec, data);
 			if (ret != 0) {
 				DEBUG(DEBUG_ERR,("Failed to store record\n"));
 				exit(1);
 			}
-			if (verbose) printf("stored record ok\n");
+			if (verbose) DEBUG(DEBUG_ERR, ("stored record ok\n"));
 		}
 
 		/* store the counters and verify that they are sane */
@@ -274,7 +274,7 @@ int main(int argc, const char *argv[])
 
 	ctdb = ctdb_cmdline_client(ev);
 	if (ctdb == NULL) {
-		printf("Could not attach to daemon\n");
+		DEBUG(DEBUG_ERR, ("Could not attach to daemon\n"));
 		return 1;
 	}
 
@@ -286,11 +286,11 @@ int main(int argc, const char *argv[])
 	}
 
 	if (!ctdb_db) {
-		printf("ctdb_attach failed - %s\n", ctdb_errstr(ctdb));
+		DEBUG(DEBUG_ERR, ("ctdb_attach failed - %s\n", ctdb_errstr(ctdb)));
 		exit(1);
 	}
 
-	printf("Waiting for cluster\n");
+	DEBUG(DEBUG_ERR, ("Waiting for cluster\n"));
 	while (1) {
 		uint32_t recmode=1;
 		ctdb_ctrl_getrecmode(ctdb, ctdb, timeval_zero(), CTDB_CURRENT_NODE, &recmode);
