@@ -273,7 +273,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 
 	if (schema && do_attribute_explicit(attrs, "dsSchemaPrefixCount")) {
 		if (ldb_msg_add_fmt(msg, "dsSchemaPrefixCount", 
-				    "%u", schema->num_prefixes) != 0) {
+				    "%u", schema->prefixmap->length) != 0) {
 			goto failed;
 		}
 	}

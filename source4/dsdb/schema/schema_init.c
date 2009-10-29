@@ -639,7 +639,7 @@ WERROR dsdb_attribute_from_ldb(struct ldb_context *ldb,
 	GET_STRING_LDB(msg, "cn", mem_ctx, attr, cn, false);
 	GET_STRING_LDB(msg, "lDAPDisplayName", mem_ctx, attr, lDAPDisplayName, true);
 	GET_STRING_LDB(msg, "attributeID", mem_ctx, attr, attributeID_oid, true);
-	if (schema->num_prefixes == 0) {
+	if (!schema->prefixmap || schema->prefixmap->length == 0) {
 		/* set an invalid value */
 		attr->attributeID_id = 0xFFFFFFFF;
 	} else {
@@ -664,7 +664,7 @@ WERROR dsdb_attribute_from_ldb(struct ldb_context *ldb,
 	GET_UINT32_LDB(msg, "linkID", attr, linkID);
 
 	GET_STRING_LDB(msg, "attributeSyntax", mem_ctx, attr, attributeSyntax_oid, true);
-	if (schema->num_prefixes == 0) {
+	if (!schema->prefixmap || schema->prefixmap->length == 0) {
 		/* set an invalid value */
 		attr->attributeSyntax_id = 0xFFFFFFFF;
 	} else {
@@ -719,7 +719,7 @@ WERROR dsdb_class_from_ldb(const struct dsdb_schema *schema,
 	GET_STRING_LDB(msg, "cn", mem_ctx, obj, cn, false);
 	GET_STRING_LDB(msg, "lDAPDisplayName", mem_ctx, obj, lDAPDisplayName, true);
 	GET_STRING_LDB(msg, "governsID", mem_ctx, obj, governsID_oid, true);
-	if (schema->num_prefixes == 0) {
+	if (!schema->prefixmap || schema->prefixmap->length == 0) {
 		/* set an invalid value */
 		obj->governsID_id = 0xFFFFFFFF;
 	} else {

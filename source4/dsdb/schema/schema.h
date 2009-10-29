@@ -165,8 +165,6 @@ struct dsdb_schema_oid_prefix {
 };
 
 struct dsdb_schema {
-	uint32_t num_prefixes;
-	struct dsdb_schema_oid_prefix *prefixes;
 
 	struct dsdb_schema_prefixmap *prefixmap;
 
