@@ -41,8 +41,10 @@ enum lsa_handle_type { LSA_HANDLE_POLICY_TYPE = 1, LSA_HANDLE_ACCOUNT_TYPE };
 
 struct lsa_info {
 	DOM_SID sid;
+	const char *name;
 	uint32 access;
 	enum lsa_handle_type type;
+	struct security_descriptor *sd;
 };
 
 const struct generic_mapping lsa_account_mapping = {
