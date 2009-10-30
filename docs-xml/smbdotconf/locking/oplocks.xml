@@ -10,9 +10,7 @@
 	the speed of access to files on Samba servers. It allows the clients 
 	to aggressively cache files locally and you may want to disable this 
 	option for unreliable network environments (it is turned on by 
-	default in Windows NT Servers).  For more information see the file 
-	<filename moreinfo="none">Speed.txt</filename> in the Samba 
-	<filename moreinfo="none">docs/</filename> directory.
+	default in Windows NT Servers).
 	</para>
 
 	<para>
