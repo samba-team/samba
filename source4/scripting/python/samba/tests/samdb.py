@@ -47,8 +47,6 @@ class SamDBTestCase(TestCaseInTempDir):
         schemadn = "CN=Schema," + configdn
         domainguid = str(uuid.uuid4())
         policyguid = str(uuid.uuid4())
-        creds = Credentials()
-        creds.set_anonymous()
         domainsid = security.random_sid()
         hostguid = str(uuid.uuid4())
         path = os.path.join(self.tempdir, "samdb.ldb")
@@ -71,7 +69,18 @@ class SamDBTestCase(TestCaseInTempDir):
                             serverrole=serverrole, 
                             domaindn=self.domaindn, configdn=configdn, 
                             schemadn=schemadn)
-        self.samdb = setup_samdb(path, self.setup_path, session_info, creds, 
+
+        paths = provision_paths_from_lp(self.lp, names.dnsdomain)
+
+        provision_backend = ProvisionBackend("ldb", backend_type,
+                                             paths=paths, setup_path=self.setup_path,
+                                             lp=self.lp, credentials=None, 
+                                             names=names,
+                                             message=message, hostname=hostname,
+                                             root=root, schema=schema,
+                                             domainsid=domainsid)
+
+        self.samdb = setup_samdb(path, self.setup_path, session_info, provision_backend, 
                                  self.lp, names, 
                                  lambda x: None, domainsid, 
                                  domainguid, 
