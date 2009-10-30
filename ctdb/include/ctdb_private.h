@@ -1517,4 +1517,6 @@ int32_t ctdb_control_register_notify(struct ctdb_context *ctdb, uint32_t client_
 
 int32_t ctdb_control_deregister_notify(struct ctdb_context *ctdb, uint32_t client_id, TDB_DATA indata);
 
+int start_syslog_daemon(struct ctdb_context *ctdb);
+
 #endif

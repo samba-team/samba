@@ -19,10 +19,75 @@
 
 #include "includes.h"
 #include "lib/events/events.h"
+#include "../include/ctdb.h"
 #include "../include/ctdb_private.h"
 #include "system/syslog.h"
 #include "system/time.h"
 #include "system/filesys.h"
+
+
+struct syslog_message {
+	uint32_t level;
+	uint32_t len;
+	char message[1];
+};
+
+
+
+/*
+ * this is for the syslog daemon, we can not use DEBUG here
+ */
+int start_syslog_daemon(struct ctdb_context *ctdb)
+{
+	pid_t child;
+	int syslog_fd = -1;
+	struct sockaddr_in syslog_sin;
+
+	child = fork();
+	if (child == (pid_t)-1) {
+		printf("Failed to create syslog child process\n");
+		return -1;
+	}
+
+	if (child != 0) {
+		return 0;
+	}
+
+	syslog_fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (syslog_fd == -1) {
+		printf("Failed to create syslog socket\n");
+		return -1;
+	}
+
+	syslog_sin.sin_family = AF_INET;
+	syslog_sin.sin_port   = htons(CTDB_PORT);
+	syslog_sin.sin_addr.s_addr = htonl(INADDR_LOOPBACK);	
+
+	if (bind(syslog_fd, &syslog_sin, sizeof(syslog_sin)) == -1) {
+		if (errno == EADDRINUSE) {
+			/* this is ok, we already have a syslog daemon */
+			_exit(0);
+		}
+		printf("syslog daemon failed to bind to socket. errno:%d(%s)\n", errno, strerror(errno));
+		_exit(10);
+	}
+
+	/* just loop over the messages */
+	while (1) {
+		int count;
+		char str[1024];
+		struct syslog_message *msg;
+
+		count = recv(syslog_fd, str, sizeof(str), 0);
+		if (count < sizeof(struct syslog_message)) {
+			continue;
+		}
+		msg = (struct syslog_message *)str;
+
+		syslog(msg->level, "%s", msg->message);
+	}
+	_exit(10);
+}
 
 struct ctdb_log_state {
 	int fd, pfd;
@@ -39,7 +104,18 @@ static struct ctdb_log_state *log_state;
  */
 static void ctdb_syslog_log(const char *format, va_list ap)
 {
+	struct syslog_message *msg;
 	int level = LOG_DEBUG;
+	char *s = NULL;
+	int len, ret;
+	int syslog_fd;
+	struct sockaddr_in syslog_sin;
+
+	ret = vasprintf(&s, format, ap);
+	if (ret == -1) {
+		return;
+	}
+
 	switch (this_log_level) {
 	case DEBUG_EMERG: 
 		level = LOG_EMERG; 
@@ -66,7 +142,35 @@ static void ctdb_syslog_log(const char *format, va_list ap)
 		level = LOG_DEBUG;
 		break;		
 	}
-	vsyslog(level, format, ap);
+
+	len = offsetof(struct syslog_message, message) + strlen(s) + 1;
+	msg = malloc(len);
+	if (msg == NULL) {
+		free(s);
+		return;
+	}
+	msg->level = level;
+	msg->len   = strlen(s);
+	strcpy(msg->message, s);
+
+	syslog_fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (syslog_fd == -1) {
+		printf("Failed to create syslog socket\n");
+		free(s);
+		free(msg);
+		return;
+	}
+
+	syslog_sin.sin_family = AF_INET;
+	syslog_sin.sin_port   = htons(CTDB_PORT);
+	syslog_sin.sin_addr.s_addr = htonl(INADDR_LOOPBACK);	
+
+	ret = sendto(syslog_fd, msg, len, 0, &syslog_sin, sizeof(syslog_sin));
+	/* no point in checking here since we cant log an error */
+
+	close(syslog_fd);
+	free(s);
+	free(msg);
 }
 
 
@@ -128,12 +232,15 @@ static void ctdb_logfile_log_add(const char *format, va_list ap)
 	}
 }
 
+
+
 /*
   choose the logfile location
 */
 int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile, bool use_syslog)
 {
 	int ret;
+
 	ctdb->log = talloc_zero(ctdb, struct ctdb_log_state);
 	if (ctdb->log == NULL) {
 		printf("talloc_zero failed\n");
