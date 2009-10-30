@@ -336,6 +336,22 @@ def read_and_sub_file(file, subst_vars):
     return data
 
 
+def setup_file(template, fname, subst_vars=None):
+    """Setup a file in the private dir.
+
+    :param template: Path of the template file.
+    :param fname: Path of the file to create.
+    :param subst_vars: Substitution variables.
+    """
+    f = fname
+
+    if os.path.exists(f):
+        os.unlink(f)
+
+    data = read_and_sub_file(template, subst_vars)
+    open(f, 'w').write(data)
+
+
 def valid_netbios_name(name):
     """Check whether a name is valid as a NetBIOS name. """
     # See crh's book (1.4.1.1)
