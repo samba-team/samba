@@ -30,6 +30,7 @@ import os
 import sys
 import uuid
 import time
+import shutil
 
 from samba import read_and_sub_file
 from samba import Ldb
@@ -80,6 +81,9 @@ class ProvisionBackend(object):
         if self.type is "ldb":
             self.credentials = None
             self.secrets_credentials = None
+    
+            # Wipe the old sam.ldb databases away
+            shutil.rmtree(paths.samdb + ".d", True)
             return
 
         self.ldapi_uri = "ldapi://" + urllib.quote(os.path.join(paths.ldapdir, "ldapi"), safe="")
@@ -229,6 +233,9 @@ def provision_openldap_backend(result, setup_path=None, names=None,
                                ol_mmr_urls=None, 
                                slapd_path=None, nosync=False,
                                ldap_dryrun_mode=False):
+
+    # Wipe the directories so we can start
+    shutil.rmtree(os.path.join(result.paths.ldapdir, "db"), True)
 
     #Allow the test scripts to turn off fsync() for OpenLDAP as for TDB and LDB
     nosync_config = ""

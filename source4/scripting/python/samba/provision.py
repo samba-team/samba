@@ -39,7 +39,6 @@ import samba
 import subprocess
 import ldb
 
-import shutil
 
 from auth import system_session, admin_session
 from samba import version, Ldb, substitute_var, valid_netbios_name, setup_file
@@ -518,33 +517,12 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
     # just want to wipe and re-initialise the database, not start it up
 
     try:
-        samdb = Ldb(url=samdb_path, session_info=session_info, 
-                      lp=lp, options=["modules:"])
-        res = samdb.search(base="@PARTITION", scope=SCOPE_BASE, attrs=["partition"], expression="partition=*")
-        if len(res) == 1:
-            try:
-                old_partitions = res[0]["partition"]
-            except KeyError:
-                pass
-
-        if old_partitions is not None:
-            new_partitions = [];
-            for old_partition in old_partitions:
-                new_partition = old_partition
-                if old_partition.endswith(".ldb"):
-                    p = old_partition.split(":")[0]
-                    dn = ldb.Dn(schema.ldb, p)
-                    new_partition = dn.get_casefold()
-                new_partitions.append(new_partition)
-
-        # Wipes the database
-        samdb.erase_except_schema_controlled()
-    except LdbError:
         os.unlink(samdb_path)
-        samdb = Ldb(url=samdb_path, session_info=session_info, 
-                      lp=lp, options=["modules:"])
-         # Wipes the database
-        samdb.erase_except_schema_controlled()
+    except OSError:
+        pass
+
+    samdb = Ldb(url=samdb_path, session_info=session_info, 
+                lp=lp, options=["modules:"])
 
     #Add modules to the list to activate them by default
     #beware often order is important
@@ -628,13 +606,6 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
         })
 
         
-        if new_partitions is not None:
-            m = ldb.Message()
-            m.dn = ldb.Dn(samdb, "@PARTITION")
-            
-            m["partition"] = ldb.MessageElement(new_partitions, ldb.FLAG_MOD_ADD, "partition")
-            samdb.modify(m)
-
         samdb.load_ldif_file_add(setup_path("provision_init.ldif"))
 
         message("Setting up sam.ldb rootDSE")
@@ -949,13 +920,6 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
         
     samdb.transaction_start()
     try:
-        message("Erasing data from partitions")
-        # Load the schema (again).  This time it will force a reindex,
-        # and will therefore make the erase_partitions() below
-        # computationally sane
-        samdb.set_schema_from_ldb(schema.ldb)
-        samdb.erase_partitions()
-    
         # Set the domain functionality levels onto the database.
         # Various module (the password_hash module in particular) need
         # to know what level of AD we are emulating.
