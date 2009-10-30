@@ -10,7 +10,7 @@
 	<para>See the section on <smbconfoption name="name mangling"/> for 
 	details on how to control the mangling process.</para>
 
-	<para>If mangling is used then the mangling algorithm is as follows:</para>
+	<para>If mangling is used then the mangling method is as follows:</para>
 
 	<itemizedlist>
 		<listitem>
