@@ -181,6 +181,7 @@ class ProvisionResult(object):
         self.domaindn = None
         self.lp = None
         self.samdb = None
+
         
 class Schema(object):
     def __init__(self, setup_path, domain_sid, schemadn=None,
@@ -194,7 +195,8 @@ class Schema(object):
         
         Returns the schema data loaded, to avoid double-parsing when then needing to add it to the db
         """
-        
+
+        self.schemadn = schemadn
         self.ldb = Ldb()
         self.schema_data = read_ms_schema(setup_path('ad-schema/MS-AD_Schema_2K8_Attributes.txt'),
                                           setup_path('ad-schema/MS-AD_Schema_2K8_Classes.txt'))
@@ -222,6 +224,29 @@ class Schema(object):
         prefixmap_ldif = "dn: cn=schema\nprefixMap:: %s\n\n" % prefixmap
         self.ldb.set_schema_from_ldif(prefixmap_ldif, self.schema_data)
 
+    def write_to_tmp_ldb(self, schemadb_path):
+        self.ldb.connect(schemadb_path)
+        self.ldb.transaction_start()
+    
+        self.ldb.add_ldif("""dn: @ATTRIBUTES
+linkID: INTEGER
+
+dn: @INDEXLIST
+@IDXATTR: linkID
+@IDXATTR: attributeSyntax
+""")
+        # These bits of LDIF are supplied when the Schema object is created
+        self.ldb.add_ldif(self.schema_dn_add)
+        self.ldb.modify_ldif(self.schema_dn_modify)
+        self.ldb.add_ldif(self.schema_data)
+        self.ldb.transaction_commit()
+
+    # Return a hash with the forward attribute as a key and the back as the value 
+    def linked_attributes(self):
+        return get_linked_attributes(self.schemadn, self.ldb)
+
+    def dnsyntax_attributes(self):
+        return get_dnsyntax_attributes(self.schemadn, self.ldb)
 
 # Return a hash with the forward attribute as a key and the back as the value 
 def get_linked_attributes(schemadn,schemaldb):
@@ -247,8 +272,7 @@ def get_dnsyntax_attributes(schemadn,schemaldb):
         attributes.append(str(res[i]["lDAPDisplayName"]))
         
     return attributes
-    
-    
+
 def check_install(lp, session_info, credentials):
     """Check whether the current install seems ok.
     
@@ -1636,24 +1660,16 @@ class ProvisionBackend(object):
         if not os.path.isdir(paths.ldapdir):
             os.makedirs(paths.ldapdir, 0700)
 
+        # Put the LDIF of the schema into a database so we can search on
+        # it to generate schema-dependent configurations in Fedora DS and
+        # OpenLDAP
         schemadb_path = os.path.join(paths.ldapdir, "schema-tmp.ldb")
         try:
             os.unlink(schemadb_path)
         except OSError:
             pass
 
-        # Put the LDIF of the schema into a database so we can search on
-        # it to generate schema-dependent configurations in Fedora DS and
-        # OpenLDAP
-        os.path.join(paths.ldapdir, "schema-tmp.ldb")
-        schema.ldb.connect(schemadb_path)
-        schema.ldb.transaction_start()
-    
-        # These bits of LDIF are supplied when the Schema object is created
-        schema.ldb.add_ldif(schema.schema_dn_add)
-        schema.ldb.modify_ldif(schema.schema_dn_modify)
-        schema.ldb.add_ldif(schema.schema_data)
-        schema.ldb.transaction_commit()
+        schema.write_to_tmp_ldb(schemadb_path);
 
         self.credentials = Credentials()
         self.credentials.guess(lp)
@@ -1736,7 +1752,7 @@ def provision_openldap_backend(result, setup_path=None, names=None,
     if nosync:
         nosync_config = "dbnosync"
         
-    lnkattr = get_linked_attributes(names.schemadn,schema.ldb)
+    lnkattr = schema.linked_attributes()
     refint_attributes = ""
     memberof_config = "# Generated from Samba4 schema\n"
     for att in  lnkattr.keys():
@@ -1995,7 +2011,7 @@ def provision_fds_backend(result, setup_path=None, names=None,
 
     setup_file(setup_path("fedorads-pam.ldif"), result.paths.fedoradspam)
 
-    lnkattr = get_linked_attributes(names.schemadn,schema.ldb)
+    lnkattr = schema.linked_attributes()
 
     refint_config = data = open(setup_path("fedorads-refint-delete.ldif"), 'r').read()
     memberof_config = ""
