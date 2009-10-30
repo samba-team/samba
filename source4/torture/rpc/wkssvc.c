@@ -964,14 +964,16 @@ static bool test_NetrMessageBufferSend(struct torture_context *tctx,
 	struct wkssvc_NetrMessageBufferSend r;
 	const char *message = SMBTORTURE_MESSAGE;
 	size_t size;
-	uint8_t *msg;
+	uint16_t *msg;
 
-	push_ucs2_talloc(tctx, (void **)&msg, message, &size);
+	if (!push_ucs2_talloc(tctx, &msg, message, &size)) {
+		return false;
+	}
 
 	r.in.server_name = dcerpc_server_name(p);
 	r.in.message_name = dcerpc_server_name(p);
 	r.in.message_sender_name = dcerpc_server_name(p);
-	r.in.message_buffer = msg;
+	r.in.message_buffer = (uint8_t *)msg;
 	r.in.message_size = size;
 
 	torture_comment(tctx, "testing NetrMessageBufferSend\n");
