@@ -360,6 +360,52 @@ static NTSTATUS make_lsa_object_sd(TALLOC_CTX *mem_ctx, struct security_descript
 	return NT_STATUS_OK;
 }
 
+/***************************************************************************
+ ***************************************************************************/
+
+static NTSTATUS create_lsa_policy_handle(TALLOC_CTX *mem_ctx,
+					 struct pipes_struct *p,
+					 enum lsa_handle_type type,
+					 uint32_t acc_granted,
+					 struct dom_sid *sid,
+					 const char *name,
+					 const struct security_descriptor *sd,
+					 struct policy_handle *handle)
+{
+	struct lsa_info *info;
+
+	ZERO_STRUCTP(handle);
+
+	info = talloc_zero(mem_ctx, struct lsa_info);
+	if (!info) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	info->type = type;
+	info->access = acc_granted;
+
+	if (sid) {
+		sid_copy(&info->sid, sid);
+	}
+
+	info->name = talloc_strdup(info, name);
+
+	if (sd) {
+		info->sd = dup_sec_desc(info, sd);
+		if (!info->sd) {
+			talloc_free(info);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	if (!create_policy_hnd(p, handle, info)) {
+		talloc_free(info);
+		ZERO_STRUCTP(handle);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
+}
 
 /***************************************************************************
  _lsa_OpenPolicy2
@@ -368,7 +414,6 @@ static NTSTATUS make_lsa_object_sd(TALLOC_CTX *mem_ctx, struct security_descript
 NTSTATUS _lsa_OpenPolicy2(struct pipes_struct *p,
 			  struct lsa_OpenPolicy2 *r)
 {
-	struct lsa_info *info;
 	struct security_descriptor *psd = NULL;
 	size_t sd_size;
 	uint32 des_access = r->in.access_mask;
@@ -397,19 +442,16 @@ NTSTATUS _lsa_OpenPolicy2(struct pipes_struct *p,
 		return status;
 	}
 
-	/* associate the domain SID with the (unique) handle. */
-	info = TALLOC_ZERO_P(p->mem_ctx, struct lsa_info);
-	if (info == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	sid_copy(&info->sid,get_global_sam_sid());
-	info->access = acc_granted;
-	info->type = LSA_HANDLE_POLICY_TYPE;
-
-	/* set up the LSA QUERY INFO response */
-	if (!create_policy_hnd(p, r->out.handle, info))
+	status = create_lsa_policy_handle(p->mem_ctx, p,
+					  LSA_HANDLE_POLICY_TYPE,
+					  acc_granted,
+					  get_global_sam_sid(),
+					  NULL,
+					  psd,
+					  r->out.handle);
+	if (!NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
 
 	return NT_STATUS_OK;
 }
@@ -1690,7 +1732,6 @@ NTSTATUS _lsa_CreateAccount(struct pipes_struct *p,
 {
 	NTSTATUS status;
 	struct lsa_info *handle;
-	struct lsa_info *info;
 	uint32_t acc_granted;
 	struct security_descriptor *psd;
 	size_t sd_size;
@@ -1734,22 +1775,18 @@ NTSTATUS _lsa_CreateAccount(struct pipes_struct *p,
 	if ( is_privileged_sid( r->in.sid ) )
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 
-	/* associate the user/group SID with the (unique) handle. */
-
-	info = TALLOC_ZERO_P(p->mem_ctx, struct lsa_info);
-	if (info == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	status = create_lsa_policy_handle(p->mem_ctx, p,
+					  LSA_HANDLE_ACCOUNT_TYPE,
+					  acc_granted,
+					  r->in.sid,
+					  NULL,
+					  psd,
+					  r->out.acct_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	info->sid = *r->in.sid;
-	info->access = acc_granted;
-	info->type = LSA_HANDLE_ACCOUNT_TYPE;
-
-	/* get a (unique) handle.  open a policy on it. */
-	if (!create_policy_hnd(p, r->out.acct_handle, info))
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-
-	return privilege_create_account( &info->sid );
+	return privilege_create_account(r->in.sid);
 }
 
 /***************************************************************************
@@ -1760,7 +1797,6 @@ NTSTATUS _lsa_OpenAccount(struct pipes_struct *p,
 			  struct lsa_OpenAccount *r)
 {
 	struct lsa_info *handle;
-	struct lsa_info *info;
 	struct security_descriptor *psd = NULL;
 	size_t sd_size;
 	uint32_t des_access = r->in.access_mask;
@@ -1806,19 +1842,17 @@ NTSTATUS _lsa_OpenAccount(struct pipes_struct *p,
 	if (!lookup_sid(&handle->sid, dom_name, name, &type))
 		return NT_STATUS_ACCESS_DENIED;
 	#endif
-	/* associate the user/group SID with the (unique) handle. */
-	info = TALLOC_ZERO_P(p->mem_ctx, struct lsa_info);
-	if (info == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
 
-	info->sid = *r->in.sid;
-	info->access = acc_granted;
-	info->type = LSA_HANDLE_ACCOUNT_TYPE;
-
-	/* get a (unique) handle.  open a policy on it. */
-	if (!create_policy_hnd(p, r->out.acct_handle, info))
+	status = create_lsa_policy_handle(p->mem_ctx, p,
+					  LSA_HANDLE_ACCOUNT_TYPE,
+					  acc_granted,
+					  r->in.sid,
+					  NULL,
+					  psd,
+					  r->out.acct_handle);
+	if (!NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
 
 	return NT_STATUS_OK;
 }
