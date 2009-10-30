@@ -2683,7 +2683,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 
 	values = ldap_get_values(conn->ldap_struct, entry, "memberUid");
 
-	if (values) {
+	if ((values != NULL) && (values[0] != NULL)) {
 
 		filter = talloc_asprintf(mem_ctx, "(&(objectClass=%s)(|", LDAP_OBJ_SAMBASAMACCOUNT);
 		if (filter == NULL) {
