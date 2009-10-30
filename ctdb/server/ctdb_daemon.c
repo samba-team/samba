@@ -656,7 +656,7 @@ static void sig_child_handler(struct event_context *ev,
 /*
   start the protocol going as a daemon
 */
-int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
+int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog)
 {
 	int res, ret = -1;
 	struct fd_event *fde;
@@ -690,6 +690,8 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	block_signal(SIGPIPE);
 
 	ctdbd_pid = getpid();
+
+
 	DEBUG(DEBUG_ERR, ("Starting CTDBD as pid : %u\n", ctdbd_pid));
 
 	if (ctdb->do_setsched) {
@@ -772,6 +774,14 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 		DEBUG(DEBUG_CRIT,("Failed to set up signal handler for SIGCHLD\n"));
 		exit(1);
 	}
+
+	if (use_syslog) {
+		if (start_syslog_daemon(ctdb)) {
+			DEBUG(DEBUG_CRIT, ("Failed to start syslog daemon\n"));
+			exit(10);
+		}
+	}
+
 	  
 	/* go into a wait loop to allow other nodes to complete */
 	event_loop_wait(ctdb->ev);

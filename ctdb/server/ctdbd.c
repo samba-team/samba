@@ -170,13 +170,6 @@ int main(int argc, const char *argv[])
 
 	ctdb = ctdb_cmdline_init(ev);
 
-	if (options.use_syslog) {
-		if (start_syslog_daemon(ctdb)) {
-			printf("Failed to start syslog daemon\n");
-			exit(10);
-		}
-	}
-
 	ctdb->start_as_disabled = options.start_as_disabled;
 	ctdb->start_as_stopped  = options.start_as_stopped;
 
@@ -329,5 +322,5 @@ int main(int argc, const char *argv[])
 	}
 
 	/* start the protocol running (as a child) */
-	return ctdb_start_daemon(ctdb, interactive?False:True);
+	return ctdb_start_daemon(ctdb, interactive?False:True, options.use_syslog);
 }

@@ -25,6 +25,7 @@
 #include "system/time.h"
 #include "system/filesys.h"
 
+static bool syslogd_is_started;
 
 struct syslog_message {
 	uint32_t level;
@@ -48,6 +49,8 @@ int start_syslog_daemon(struct ctdb_context *ctdb)
 		printf("Failed to create syslog child process\n");
 		return -1;
 	}
+
+	syslogd_is_started = 1;
 
 	if (child != 0) {
 		return 0;
@@ -153,22 +156,28 @@ static void ctdb_syslog_log(const char *format, va_list ap)
 	msg->len   = strlen(s);
 	strcpy(msg->message, s);
 
-	syslog_fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	if (syslog_fd == -1) {
-		printf("Failed to create syslog socket\n");
-		free(s);
-		free(msg);
-		return;
+	if (syslogd_is_started == 0) {
+		syslog(msg->level, "%s", msg->message);
+	} else {
+		syslog_fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+		if (syslog_fd == -1) {
+			printf("Failed to create syslog socket\n");
+			free(s);
+			free(msg);
+			return;
+		}
+
+		syslog_sin.sin_family = AF_INET;
+		syslog_sin.sin_port   = htons(CTDB_PORT);
+		syslog_sin.sin_addr.s_addr = htonl(INADDR_LOOPBACK);	
+
+       
+		ret = sendto(syslog_fd, msg, len, 0, &syslog_sin, sizeof(syslog_sin));
+		/* no point in checking here since we cant log an error */
+
+		close(syslog_fd);
 	}
 
-	syslog_sin.sin_family = AF_INET;
-	syslog_sin.sin_port   = htons(CTDB_PORT);
-	syslog_sin.sin_addr.s_addr = htonl(INADDR_LOOPBACK);	
-
-	ret = sendto(syslog_fd, msg, len, 0, &syslog_sin, sizeof(syslog_sin));
-	/* no point in checking here since we cant log an error */
-
-	close(syslog_fd);
 	free(s);
 	free(msg);
 }
