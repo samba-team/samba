@@ -40,7 +40,8 @@ import ldb
 import samba.getopt as options
 from samba.samdb import SamDB
 from samba import param
-from samba.provision import ProvisionPaths, ProvisionNames,provision_paths_from_lp,get_dnsyntax_attributes,get_linked_attributes
+from samba.provision import ProvisionPaths, ProvisionNames, provision_paths_from_lp
+from samba.schema import get_dnsyntax_attributes, get_linked_attributes
 
 parser = optparse.OptionParser("provision [options]")
 sambaopts = options.SambaOptions(parser)

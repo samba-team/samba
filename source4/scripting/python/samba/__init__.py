@@ -323,6 +323,19 @@ def check_all_substituted(text):
     raise Exception("Not all variables substituted: %s" % text[var_start:var_end+1])
 
 
+def read_and_sub_file(file, subst_vars):
+    """Read a file and sub in variables found in it
+    
+    :param file: File to be read (typically from setup directory)
+     param subst_vars: Optional variables to subsitute in the file.
+    """
+    data = open(file, 'r').read()
+    if subst_vars is not None:
+        data = substitute_var(data, subst_vars)
+    check_all_substituted(data)
+    return data
+
+
 def valid_netbios_name(name):
     """Check whether a name is valid as a NetBIOS name. """
     # See crh's book (1.4.1.1)

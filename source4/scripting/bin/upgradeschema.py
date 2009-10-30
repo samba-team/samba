@@ -44,7 +44,8 @@ import ldb
 import samba.getopt as options
 from samba.samdb import SamDB
 from samba import param
-from samba.provision import  ProvisionNames,provision_paths_from_lp,find_setup_dir,Schema,get_linked_attributes,FILL_FULL,provision
+from samba.provision import  ProvisionNames,provision_paths_from_lp,find_setup_dir,FILL_FULL,provision
+from samba.schema import get_dnsyntax_attributes, get_linked_attributes, Schema
 from samba.dcerpc import misc, security
 from samba.ndr import ndr_pack, ndr_unpack
 
@@ -283,7 +284,7 @@ def newprovision(names,setup_dir,creds,session,smbconf):
 		wheel=None, users=None,
 		serverrole="domain controller",
 		ldap_backend_extra_port=None,
-		ldap_backend_type=None,
+		backend_type=None,
 		ldapadminpass=None,
 		ol_mmr_urls=None,
 		slapd_path=None,
