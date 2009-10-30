@@ -447,8 +447,6 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
 	unsigned char trust_md4_password[16];
 	char *trust_password;
-	time_t last_change_time;
-	DOM_SID sid;
 	fstring dc_name;
 	struct sockaddr_storage dc_ss;
 
@@ -481,7 +479,7 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 	 */
 
 	if (!pdb_get_trusteddom_pw(user_info->domain, &trust_password,
-				   &sid, &last_change_time)) {
+				   NULL, NULL)) {
 		DEBUG(0, ("check_trustdomain_security: could not fetch trust "
 			  "account password for domain %s\n",
 			  user_info->domain));

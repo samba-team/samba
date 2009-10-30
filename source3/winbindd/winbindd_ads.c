@@ -84,10 +84,8 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 	SAFE_FREE(ads->auth.realm);
 
 	if ( IS_DC ) {
-		DOM_SID sid;
-		time_t last_set_time;
 
-		if ( !pdb_get_trusteddom_pw( domain->name, &ads->auth.password, &sid, &last_set_time ) ) {
+		if ( !pdb_get_trusteddom_pw( domain->name, &ads->auth.password, NULL, NULL ) ) {
 			ads_destroy( &ads );
 			return NULL;
 		}
