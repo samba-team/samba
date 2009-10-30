@@ -1450,21 +1450,6 @@ def setup_db_config(setup_path, dbdir):
     setup_file(setup_path("DB_CONFIG"), os.path.join(dbdir, "DB_CONFIG"),
                {"LDAPDBDIR": dbdir})
 
-def ldap_backend_shutdown(self):
-      # if an LDAP backend is in use, terminate slapd after final provision and check its proper termination
-      if self.slapd.poll() is None:
-        #Kill the slapd
-        if hasattr(self.slapd, "terminate"):
-          self.slapd.terminate()
-        else:
-          # Older python versions don't have .terminate()
-          import signal
-          os.kill(self.slapd.pid, signal.SIGTERM)
-            
-        #and now wait for it to die
-        self.slapd.communicate()
-
-
 class ProvisionBackend(object):
     def __init__(self, backend_type, paths=None, setup_path=None, lp=None, credentials=None, 
                  names=None, message=None, 
@@ -1562,6 +1547,21 @@ class ProvisionBackend(object):
         self.secrets_credentials.guess(lp)
         #Kerberos to an ldapi:// backend makes no sense
         self.secrets_credentials.set_kerberos_state(DONT_USE_KERBEROS)
+
+
+        def ldap_backend_shutdown(self):
+            # if an LDAP backend is in use, terminate slapd after final provision and check its proper termination
+            if self.slapd.poll() is None:
+                #Kill the slapd
+                if hasattr(self.slapd, "terminate"):
+                    self.slapd.terminate()
+                else:
+                    # Older python versions don't have .terminate()
+                    import signal
+                    os.kill(self.slapd.pid, signal.SIGTERM)
+            
+                #and now wait for it to die
+                self.slapd.communicate()
 
         self.shutdown = ldap_backend_shutdown
 
