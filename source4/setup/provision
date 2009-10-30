@@ -207,7 +207,7 @@ provision(setup_dir, message,
           wheel=opts.wheel, users=opts.users,
           serverrole=server_role, dom_for_fun_level=dom_for_fun_level,
           ldap_backend_extra_port=opts.ldap_backend_extra_port, 
-          ldap_backend_type=opts.ldap_backend_type,
+          backend_type=opts.ldap_backend_type,
           ldapadminpass=opts.ldapadminpass, ol_mmr_urls=opts.ol_mmr_urls,
           slapd_path=opts.slapd_path, setup_ds_path=opts.setup_ds_path,
           nosync=opts.nosync,ldap_dryrun_mode=opts.ldap_dryrun_mode)
