@@ -613,7 +613,7 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 	},
 	{
 		.local_name = "unixHomeDirectory",
-		.type = MAP_RENAME,
+		.type = LDB_MAP_RENAME,
 		.u = {
 			.rename = {
 				 .remote_name = "homeDirectory"
@@ -622,7 +622,7 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 	},
 	{
 		.local_name = "pwdLastSet",
-		.type = MAP_RENAME,
+		.type = LDB_MAP_RENAME,
 		.u = {
 			.rename = {
 				 .remote_name = "sambaPwdLastSet"
@@ -631,7 +631,7 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 	},
 	{
 		.local_name = "lastLogon",
-		.type = MAP_RENAME,
+		.type = LDB_MAP_RENAME,
 		.u = {
 			.rename = {
 				 .remote_name = "sambaLogonTime"
@@ -640,7 +640,7 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 	},
 	{
 		.local_name = "lastLogoff",
-		.type = MAP_RENAME,
+		.type = LDB_MAP_RENAME,
 		.u = {
 			.rename = {
 				 .remote_name = "sambaLogoffTime"
@@ -649,7 +649,7 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 	},
 	{
 		.local_name = "badPwdCount",
-		.type = MAP_RENAME,
+		.type = LDB_MAP_RENAME,
 		.u = {
 			.rename = {
 				 .remote_name = "sambaBadPasswordCount"
@@ -658,7 +658,7 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 	},
 	{
 		.local_name = "logonHours",
-		.type = MAP_RENAME,
+		.type = LDB_MAP_RENAME,
 		.u = {
 			.rename = {
 				 .remote_name = "sambaLogonHours"
@@ -667,7 +667,7 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 	},
 	{
 		.local_name = "homeDrive",
-		.type = MAP_RENAME,
+		.type = LDB_MAP_RENAME,
 		.u = {
 			.rename = {
 				 .remote_name = "sambaHomeDrive"
@@ -676,7 +676,7 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 	},
 	{
 		.local_name = "scriptPath",
-		.type = MAP_RENAME,
+		.type = LDB_MAP_RENAME,
 		.u = {
 			.rename = {
 				 .remote_name = "sambaLogonScript"
@@ -685,7 +685,7 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 	},
 	{
 		.local_name = "profilePath",
-		.type = MAP_RENAME,
+		.type = LDB_MAP_RENAME,
 		.u = {
 			.rename = {
 				 .remote_name = "sambaProfilePath"
@@ -694,7 +694,7 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 	},
 	{
 		.local_name = "userWorkstations",
-		.type = MAP_RENAME,
+		.type = LDB_MAP_RENAME,
 		.u = {
 			.rename = {
 				 .remote_name = "sambaUserWorkstations"
@@ -703,7 +703,7 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 	},
 	{
 		.local_name = "homeDirectory",
-		.type = MAP_RENAME,
+		.type = LDB_MAP_RENAME,
 		.u = {
 			.rename = {
 				 .remote_name = "sambaHomePath"
@@ -712,7 +712,7 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 	},
 	{
 		.local_name = "nextRid",
-		.type = MAP_RENAME,
+		.type = LDB_MAP_RENAME,
 		.u = {
 			.rename = {
 				 .remote_name = "sambaNextRid"
@@ -721,7 +721,7 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 	},
 	{
 		.local_name = "privilegeDisplayName",
-		.type = MAP_RENAME,
+		.type = LDB_MAP_RENAME,
 		.u = {
 			.rename = {
 				 .remote_name = "sambaPrivName"
