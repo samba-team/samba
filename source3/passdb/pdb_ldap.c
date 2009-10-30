@@ -3864,6 +3864,7 @@ static NTSTATUS ldapsam_get_account_policy_from_ldap(struct pdb_methods *methods
 	int count;
 	int rc;
 	char **vals = NULL;
+	char *filter;
 	const char *policy_attr = NULL;
 
 	struct ldapsam_privates *ldap_state =
@@ -3887,8 +3888,12 @@ static NTSTATUS ldapsam_get_account_policy_from_ldap(struct pdb_methods *methods
 	attrs[0] = policy_attr;
 	attrs[1] = NULL;
 
+	filter = talloc_asprintf(NULL, "(objectClass=%s)", LDAP_OBJ_DOMINFO);
+	if (filter == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	rc = smbldap_search(ldap_state->smbldap_state, ldap_state->domain_dn,
-			    LDAP_SCOPE_BASE, "(objectclass=*)", attrs, 0,
+			    LDAP_SCOPE_BASE, filter, attrs, 0,
 			    &result);
 
 	if (rc != LDAP_SUCCESS) {
