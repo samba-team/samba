@@ -6371,7 +6371,7 @@ SMB_MODULE(rpc_spoolss, \$(RPC_SPOOLSS_OBJ), "bin/librpc_spoolss.$SHLIBEXT", RPC
 SMB_MODULE(rpc_eventlog, \$(RPC_EVENTLOG_OBJ), "bin/librpc_eventlog.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_samr, \$(RPC_SAMR_OBJ), "bin/librpc_samr.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_rpcecho, \$(RPC_ECHO_OBJ), "bin/librpc_rpcecho.$SHLIBEXT", RPC)
-SMB_SUBSYSTEM(RPC,smbd/server.o)
+SMB_SUBSYSTEM(RPC,smbd/process.o)
 
 SMB_MODULE(idmap_ldap, winbindd/idmap_ldap.o, "bin/ldap.$SHLIBEXT", IDMAP)
 SMB_MODULE(idmap_tdb, winbindd/idmap_tdb.o, "bin/tdb.$SHLIBEXT", IDMAP)
