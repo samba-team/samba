@@ -399,7 +399,20 @@ again:
 	}
 
 	status = db_ctdb_ltdb_fetch(ctx, key, &header, tmp_ctx, &data);
-	if (!NT_STATUS_IS_OK(status) || header.dmaster != get_my_vnn()) {
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, (__location__ " failed to refetch transaction lock "
+			  "record inside transaction: %s - retrying\n",
+			  nt_errstr(status)));
+		tdb_transaction_cancel(ctx->wtdb->tdb);
+		talloc_free(tmp_ctx);
+		goto again;
+	}
+
+	if (header.dmaster != get_my_vnn()) {
+		DEBUG(3, (__location__ " refetch transaction lock record : "
+			  "we are not dmaster any more "
+			  "(dmaster[%u] != my_vnn[%u]) - retrying\n",
+			  header.dmaster, get_my_vnn()));
 		tdb_transaction_cancel(ctx->wtdb->tdb);
 		talloc_free(tmp_ctx);
 		goto again;
