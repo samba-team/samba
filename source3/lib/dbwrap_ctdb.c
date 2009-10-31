@@ -419,6 +419,10 @@ again:
 	}
 
 	if ((data.dsize != sizeof(pid_t)) || (*(pid_t *)(data.dptr) != pid)) {
+		DEBUG(3, (__location__ " refetch transaction lock record: "
+			  "another local process has started a transaction "
+			  "(stored pid [%u] != my pid [%u]) - retrying\n",
+			  *(pid_t *)(data.dptr), pid));
 		tdb_transaction_cancel(ctx->wtdb->tdb);
 		talloc_free(tmp_ctx);
 		goto again;
