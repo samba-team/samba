@@ -110,7 +110,8 @@ bool init_pipe_handle_list(pipes_struct *p, const struct ndr_syntax_id *syntax)
 		ZERO_STRUCTP(hl);
 
 		DEBUG(10,("init_pipe_handles: created handle list for "
-			  "pipe %s\n", get_pipe_name_from_iface(syntax)));
+			  "pipe %s\n",
+			  get_pipe_name_from_syntax(talloc_tos(), syntax)));
 	}
 
 	/*
@@ -127,7 +128,7 @@ bool init_pipe_handle_list(pipes_struct *p, const struct ndr_syntax_id *syntax)
 
 	DEBUG(10,("init_pipe_handles: pipe_handles ref count = %lu for pipe %s\n",
 		  (unsigned long)p->pipe_handles->pipe_ref_count,
-		  get_pipe_name_from_iface(syntax)));
+		  get_pipe_name_from_syntax(talloc_tos(), syntax)));
 
 	return True;
 }
@@ -285,7 +286,8 @@ void close_policy_by_pipe(pipes_struct *p)
 
 		SAFE_FREE(p->pipe_handles);
 		DEBUG(10,("close_policy_by_pipe: deleted handle list for "
-			  "pipe %s\n", get_pipe_name_from_iface(&p->syntax)));
+			  "pipe %s\n",
+			  get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
 	}
 }
 
@@ -327,7 +329,7 @@ void *_policy_handle_create(struct pipes_struct *p, struct policy_handle *hnd,
 	if (p->pipe_handles->count > MAX_OPEN_POLS) {
 		DEBUG(0, ("policy_handle_create: ERROR: too many handles (%d) "
 			  "on pipe %s.\n", (int)p->pipe_handles->count,
-			  get_pipe_name_from_iface(&p->syntax)));
+			  get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
 		*pstatus = NT_STATUS_INSUFFICIENT_RESOURCES;
 		return NULL;
 	}
