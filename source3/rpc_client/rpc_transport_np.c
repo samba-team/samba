@@ -301,8 +301,8 @@ struct tevent_req *rpc_transport_np_init_send(TALLOC_CTX *mem_ctx,
 	}
 	state->transport->priv = state->transport_np;
 
-	state->transport_np->pipe_name = get_pipe_name_from_iface(
-		abstract_syntax);
+	state->transport_np->pipe_name = get_pipe_name_from_syntax(
+		state->transport_np, abstract_syntax);
 	state->transport_np->cli = cli;
 
 	subreq = cli_ntcreate_send(

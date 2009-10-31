@@ -86,7 +86,8 @@ static const struct pipe_id_info {
  Return the pipe name from the interface.
  ****************************************************************************/
 
-const char *get_pipe_name_from_iface(const struct ndr_syntax_id *interface)
+const char *get_pipe_name_from_syntax(TALLOC_CTX *mem_ctx,
+				      const struct ndr_syntax_id *interface)
 {
 	char *guid_str;
 	const char *result;
@@ -107,7 +108,7 @@ const char *get_pipe_name_from_iface(const struct ndr_syntax_id *interface)
 	if (guid_str == NULL) {
 		return NULL;
 	}
-	result = talloc_asprintf(talloc_tos(), "Interface %s.%d", guid_str,
+	result = talloc_asprintf(mem_ctx, "Interface %s.%d", guid_str,
 				 (int)interface->if_version);
 	TALLOC_FREE(guid_str);
 
@@ -3683,7 +3684,7 @@ NTSTATUS cli_rpc_pipe_open_noauth_transport(struct cli_state *cli,
 		}
 		DEBUG(lvl, ("cli_rpc_pipe_open_noauth: rpc_pipe_bind for pipe "
 			    "%s failed with error %s\n",
-			    get_pipe_name_from_iface(interface),
+			    get_pipe_name_from_syntax(talloc_tos(), interface),
 			    nt_errstr(status) ));
 		TALLOC_FREE(result);
 		return status;
@@ -3691,7 +3692,8 @@ NTSTATUS cli_rpc_pipe_open_noauth_transport(struct cli_state *cli,
 
 	DEBUG(10,("cli_rpc_pipe_open_noauth: opened pipe %s to machine "
 		  "%s and bound anonymously.\n",
-		  get_pipe_name_from_iface(interface), cli->desthost));
+		  get_pipe_name_from_syntax(talloc_tos(), interface),
+		  cli->desthost));
 
 	*presult = result;
 	return NT_STATUS_OK;
@@ -3749,8 +3751,8 @@ static NTSTATUS cli_rpc_pipe_open_ntlmssp_internal(struct cli_state *cli,
 
 	DEBUG(10,("cli_rpc_pipe_open_ntlmssp_internal: opened pipe %s to "
 		"machine %s and bound NTLMSSP as user %s\\%s.\n",
-		  get_pipe_name_from_iface(interface), cli->desthost, domain,
-		  username ));
+		  get_pipe_name_from_syntax(talloc_tos(), interface),
+		  cli->desthost, domain, username ));
 
 	*presult = result;
 	return NT_STATUS_OK;
@@ -3943,7 +3945,7 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 
 	DEBUG(10,("cli_rpc_pipe_open_schannel_with_key: opened pipe %s to machine %s "
 		  "for domain %s and bound using schannel.\n",
-		  get_pipe_name_from_iface(interface),
+		  get_pipe_name_from_syntax(talloc_tos(), interface),
 		  cli->desthost, domain ));
 
 	*presult = result;

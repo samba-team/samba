@@ -5703,7 +5703,8 @@ bool prs_data_blob(prs_struct *prs, DATA_BLOB *blob, TALLOC_CTX *mem_ctx);
 
 /* The following definitions come from rpc_parse/parse_rpc.c  */
 
-const char *get_pipe_name_from_iface(const struct ndr_syntax_id *interface);
+const char *get_pipe_name_from_syntax(TALLOC_CTX *mem_ctx,
+				      const struct ndr_syntax_id *interface);
 void init_rpc_hdr(RPC_HDR *hdr, enum dcerpc_pkt_type pkt_type, uint8 flags,
 				uint32 call_id, int data_len, int auth_len);
 bool smb_io_rpc_hdr(const char *desc,  RPC_HDR *rpc, prs_struct *ps, int depth);
