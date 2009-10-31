@@ -28,59 +28,58 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_CLI
 
-/*******************************************************************
-interface/version dce/rpc pipe identification
-********************************************************************/
-
-#define PIPE_SRVSVC   "\\PIPE\\srvsvc"
-#define PIPE_SAMR     "\\PIPE\\samr"
-#define PIPE_WINREG   "\\PIPE\\winreg"
-#define PIPE_WKSSVC   "\\PIPE\\wkssvc"
-#define PIPE_NETLOGON "\\PIPE\\NETLOGON"
-#define PIPE_NTLSA    "\\PIPE\\ntlsa"
-#define PIPE_NTSVCS   "\\PIPE\\ntsvcs"
-#define PIPE_LSASS    "\\PIPE\\lsass"
-#define PIPE_LSARPC   "\\PIPE\\lsarpc"
-#define PIPE_SPOOLSS  "\\PIPE\\spoolss"
-#define PIPE_NETDFS   "\\PIPE\\netdfs"
-#define PIPE_ECHO     "\\PIPE\\rpcecho"
-#define PIPE_SHUTDOWN "\\PIPE\\initshutdown"
-#define PIPE_EPM      "\\PIPE\\epmapper"
-#define PIPE_SVCCTL   "\\PIPE\\svcctl"
-#define PIPE_EVENTLOG "\\PIPE\\eventlog"
-#define PIPE_EPMAPPER "\\PIPE\\epmapper"
-#define PIPE_DRSUAPI  "\\PIPE\\drsuapi"
-
 /*
  * IMPORTANT!!  If you update this structure, make sure to
  * update the index #defines in smb.h.
  */
 
-static const struct pipe_id_info {
-	/* the names appear not to matter: the syntaxes _do_ matter */
-
-	const char *client_pipe;
-	const struct ndr_syntax_id *abstr_syntax; /* this one is the abstract syntax id */
-} pipe_names [] =
+static const struct ndr_interface_table *pipe_names[] =
 {
-	{ PIPE_LSARPC,		&ndr_table_lsarpc.syntax_id },
-	{ PIPE_LSARPC,		&ndr_table_dssetup.syntax_id },
-	{ PIPE_SAMR,		&ndr_table_samr.syntax_id },
-	{ PIPE_NETLOGON,	&ndr_table_netlogon.syntax_id },
-	{ PIPE_SRVSVC,		&ndr_table_srvsvc.syntax_id },
-	{ PIPE_WKSSVC,		&ndr_table_wkssvc.syntax_id },
-	{ PIPE_WINREG,		&ndr_table_winreg.syntax_id },
-	{ PIPE_SPOOLSS,		&ndr_table_spoolss.syntax_id },
-	{ PIPE_NETDFS,		&ndr_table_netdfs.syntax_id },
-	{ PIPE_ECHO,		&ndr_table_rpcecho.syntax_id },
-	{ PIPE_SHUTDOWN,	&ndr_table_initshutdown.syntax_id },
-	{ PIPE_SVCCTL,		&ndr_table_svcctl.syntax_id },
-	{ PIPE_EVENTLOG,	&ndr_table_eventlog.syntax_id },
-	{ PIPE_NTSVCS,		&ndr_table_ntsvcs.syntax_id },
-	{ PIPE_EPMAPPER,	&ndr_table_epmapper.syntax_id },
-	{ PIPE_DRSUAPI,		&ndr_table_drsuapi.syntax_id },
-	{ NULL, NULL }
+	&ndr_table_lsarpc,
+	&ndr_table_dssetup,
+	&ndr_table_samr,
+	&ndr_table_netlogon,
+	&ndr_table_srvsvc,
+	&ndr_table_wkssvc,
+	&ndr_table_winreg,
+	&ndr_table_spoolss,
+	&ndr_table_netdfs,
+	&ndr_table_rpcecho,
+	&ndr_table_initshutdown,
+	&ndr_table_svcctl,
+	&ndr_table_eventlog,
+	&ndr_table_ntsvcs,
+	&ndr_table_epmapper,
+	&ndr_table_drsuapi,
+	NULL
 };
+
+static const char *get_pipe_name_from_iface(
+	TALLOC_CTX *mem_ctx, const struct ndr_interface_table *interface)
+{
+	int i;
+	const struct ndr_interface_string_array *ep = interface->endpoints;
+	char *p;
+
+	for (i=0; i<ep->count; i++) {
+		if (strncmp(ep->names[i], "ncacn_np:[\\pipe\\", 16) == 0) {
+			break;
+		}
+	}
+	if (i == ep->count) {
+		return NULL;
+	}
+
+	/*
+	 * extract the pipe name without \\pipe from for example
+	 * ncacn_np:[\\pipe\\epmapper]
+	 */
+	p = strchr(ep->names[i]+15, ']');
+	if (p == NULL) {
+		return "PIPE";
+	}
+	return talloc_strndup(mem_ctx, ep->names[i]+15, p - ep->names[i] - 15);
+}
 
 /****************************************************************************
  Return the pipe name from the interface.
@@ -92,10 +91,16 @@ const char *get_pipe_name_from_syntax(TALLOC_CTX *mem_ctx,
 	char *guid_str;
 	const char *result;
 	int i;
-	for (i = 0; pipe_names[i].client_pipe; i++) {
-		if (ndr_syntax_id_equal(pipe_names[i].abstr_syntax,
+
+	for (i = 0; pipe_names[i]; i++) {
+		if (ndr_syntax_id_equal(&pipe_names[i]->syntax_id,
 					interface)) {
-			return &pipe_names[i].client_pipe[5];
+			result = get_pipe_name_from_iface(
+				mem_ctx, pipe_names[i]);
+			if (result == NULL) {
+				break;
+			}
+			return result;
 		}
 	}
 
