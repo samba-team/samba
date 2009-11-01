@@ -129,7 +129,6 @@ _PUBLIC_ NTSTATUS GUID_from_string(const char *s, struct GUID *guid)
 {
 	DATA_BLOB blob = data_blob_string_const(s);
 	return GUID_from_data_blob(&blob, guid);
-	return NT_STATUS_OK;
 }
 
 /**
