@@ -126,8 +126,10 @@ struct cmd_set epmapper_commands[] = {
 	{ "EPMAPPER" },
 
 	{ "epmmap", RPC_RTYPE_NTSTATUS, cmd_epmapper_map,     NULL,
-	  &ndr_table_epmapper.syntax_id, NULL, "Map a binding", "" },
+	  NDR_EPMAPPER_UUID, NDR_EPMAPPER_VERSION, NULL,
+	  "Map a binding", "" },
 	{ "epmlookup", RPC_RTYPE_NTSTATUS, cmd_epmapper_lookup,     NULL,
-	  &ndr_table_epmapper.syntax_id, NULL, "Lookup bindings", "" },
+	  NDR_EPMAPPER_UUID, NDR_EPMAPPER_VERSION, NULL,
+	  "Lookup bindings", "" },
 	{ NULL }
 };
