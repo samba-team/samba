@@ -51,7 +51,6 @@ static const struct ndr_interface_table *pipe_names[] =
 	&ndr_table_ntsvcs,
 	&ndr_table_epmapper,
 	&ndr_table_drsuapi,
-	NULL
 };
 
 static const char *get_pipe_name_from_iface(
@@ -92,7 +91,7 @@ const char *get_pipe_name_from_syntax(TALLOC_CTX *mem_ctx,
 	const char *result;
 	int i;
 
-	for (i = 0; pipe_names[i]; i++) {
+	for (i = 0; i<ARRAY_SIZE(pipe_names); i++) {
 		if (ndr_syntax_id_equal(&pipe_names[i]->syntax_id,
 					interface)) {
 			result = get_pipe_name_from_iface(
