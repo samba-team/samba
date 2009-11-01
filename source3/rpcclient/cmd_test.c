@@ -69,7 +69,7 @@ struct cmd_set test_commands[] = {
 	{ "TESTING" },
 
 	{ "testme", RPC_RTYPE_NTSTATUS, cmd_testme, NULL,
-	  NULL, NULL, "Sample test", "testme" },
+	  NULL, 0, NULL, "Sample test", "testme" },
 
 	{ NULL }
 };

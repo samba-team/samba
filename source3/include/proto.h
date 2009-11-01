@@ -5706,6 +5706,8 @@ bool prs_data_blob(prs_struct *prs, DATA_BLOB *blob, TALLOC_CTX *mem_ctx);
 bool smb_register_ndr_interface(const struct ndr_interface_table *interface);
 const struct ndr_interface_table *get_iface_from_syntax(
         const struct ndr_syntax_id *syntax);
+bool ndr_syntax_from_string(const char *s, uint32_t version,
+                            struct ndr_syntax_id *syntax);
 const char *get_pipe_name_from_syntax(TALLOC_CTX *mem_ctx,
 				      const struct ndr_syntax_id *syntax);
 void init_rpc_hdr(RPC_HDR *hdr, enum dcerpc_pkt_type pkt_type, uint8 flags,
