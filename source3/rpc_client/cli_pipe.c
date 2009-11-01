@@ -28,31 +28,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_CLI
 
-/*
- * IMPORTANT!!  If you update this structure, make sure to
- * update the index #defines in smb.h.
- */
-
-static const struct ndr_interface_table *pipe_names[] =
-{
-	&ndr_table_lsarpc,
-	&ndr_table_dssetup,
-	&ndr_table_samr,
-	&ndr_table_netlogon,
-	&ndr_table_srvsvc,
-	&ndr_table_wkssvc,
-	&ndr_table_winreg,
-	&ndr_table_spoolss,
-	&ndr_table_netdfs,
-	&ndr_table_rpcecho,
-	&ndr_table_initshutdown,
-	&ndr_table_svcctl,
-	&ndr_table_eventlog,
-	&ndr_table_ntsvcs,
-	&ndr_table_epmapper,
-	&ndr_table_drsuapi,
-};
-
 static const char *get_pipe_name_from_iface(
 	TALLOC_CTX *mem_ctx, const struct ndr_interface_table *interface)
 {
@@ -80,25 +55,123 @@ static const char *get_pipe_name_from_iface(
 	return talloc_strndup(mem_ctx, ep->names[i]+15, p - ep->names[i] - 15);
 }
 
+static const struct ndr_interface_table **interfaces;
+
+bool smb_register_ndr_interface(const struct ndr_interface_table *interface)
+{
+	int num_interfaces = talloc_array_length(interfaces);
+	const struct ndr_interface_table **tmp;
+	int i;
+
+	for (i=0; i<num_interfaces; i++) {
+		if (ndr_syntax_id_equal(&interfaces[i]->syntax_id,
+					&interface->syntax_id)) {
+			return true;
+		}
+	}
+
+	tmp = talloc_realloc(NULL, interfaces,
+			     const struct ndr_interface_table *,
+			     num_interfaces + 1);
+	if (tmp == NULL) {
+		DEBUG(1, ("smb_register_ndr_interface: talloc failed\n"));
+		return false;
+	}
+	interfaces = tmp;
+	interfaces[num_interfaces] = interface;
+	return true;
+}
+
+static bool initialize_interfaces(void)
+{
+	if (!smb_register_ndr_interface(&ndr_table_lsarpc)) {
+		return false;
+	}
+	if (!smb_register_ndr_interface(&ndr_table_dssetup)) {
+		return false;
+	}
+	if (!smb_register_ndr_interface(&ndr_table_samr)) {
+		return false;
+	}
+	if (!smb_register_ndr_interface(&ndr_table_netlogon)) {
+		return false;
+	}
+	if (!smb_register_ndr_interface(&ndr_table_srvsvc)) {
+		return false;
+	}
+	if (!smb_register_ndr_interface(&ndr_table_wkssvc)) {
+		return false;
+	}
+	if (!smb_register_ndr_interface(&ndr_table_winreg)) {
+		return false;
+	}
+	if (!smb_register_ndr_interface(&ndr_table_spoolss)) {
+		return false;
+	}
+	if (!smb_register_ndr_interface(&ndr_table_netdfs)) {
+		return false;
+	}
+	if (!smb_register_ndr_interface(&ndr_table_rpcecho)) {
+		return false;
+	}
+	if (!smb_register_ndr_interface(&ndr_table_initshutdown)) {
+		return false;
+	}
+	if (!smb_register_ndr_interface(&ndr_table_svcctl)) {
+		return false;
+	}
+	if (!smb_register_ndr_interface(&ndr_table_eventlog)) {
+		return false;
+	}
+	if (!smb_register_ndr_interface(&ndr_table_ntsvcs)) {
+		return false;
+	}
+	if (!smb_register_ndr_interface(&ndr_table_epmapper)) {
+		return false;
+	}
+	if (!smb_register_ndr_interface(&ndr_table_drsuapi)) {
+		return false;
+	}
+	return true;
+}
+
+const struct ndr_interface_table *get_iface_from_syntax(
+	const struct ndr_syntax_id *syntax)
+{
+	int num_interfaces;
+	int i;
+
+	if (interfaces == NULL) {
+		if (!initialize_interfaces()) {
+			return NULL;
+		}
+	}
+	num_interfaces = talloc_array_length(interfaces);
+
+	for (i=0; i<num_interfaces; i++) {
+		if (ndr_syntax_id_equal(&interfaces[i]->syntax_id, syntax)) {
+			return interfaces[i];
+		}
+	}
+
+	return NULL;
+}
+
 /****************************************************************************
  Return the pipe name from the interface.
  ****************************************************************************/
 
 const char *get_pipe_name_from_syntax(TALLOC_CTX *mem_ctx,
-				      const struct ndr_syntax_id *interface)
+				      const struct ndr_syntax_id *syntax)
 {
+	const struct ndr_interface_table *interface;
 	char *guid_str;
 	const char *result;
-	int i;
 
-	for (i = 0; i<ARRAY_SIZE(pipe_names); i++) {
-		if (ndr_syntax_id_equal(&pipe_names[i]->syntax_id,
-					interface)) {
-			result = get_pipe_name_from_iface(
-				mem_ctx, pipe_names[i]);
-			if (result == NULL) {
-				break;
-			}
+	interface = get_iface_from_syntax(syntax);
+	if (interface != NULL) {
+		result = get_pipe_name_from_iface(mem_ctx, interface);
+		if (result != NULL) {
 			return result;
 		}
 	}
@@ -108,12 +181,12 @@ const char *get_pipe_name_from_syntax(TALLOC_CTX *mem_ctx,
 	 * interested in the known pipes mentioned in pipe_names[]
 	 */
 
-	guid_str = GUID_string(talloc_tos(), &interface->uuid);
+	guid_str = GUID_string(talloc_tos(), &syntax->uuid);
 	if (guid_str == NULL) {
 		return NULL;
 	}
 	result = talloc_asprintf(mem_ctx, "Interface %s.%d", guid_str,
-				 (int)interface->if_version);
+				 (int)syntax->if_version);
 	TALLOC_FREE(guid_str);
 
 	if (result == NULL) {
