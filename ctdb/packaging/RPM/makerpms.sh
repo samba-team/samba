@@ -41,7 +41,18 @@ SPECDIR=`rpm --eval %_specdir`
 SRCDIR=`rpm --eval %_sourcedir`
 
 SPECFILE="ctdb.spec"
+SPECFILE_IN="ctdb.spec.in"
 RPMBUILD="rpmbuild"
+
+GITHASH=".$(git log --pretty=format:%h -1)"
+
+if test "x$USE_GITHASH" = "xno" ; then
+	GITHASH=""
+fi
+
+sed -e s/GITHASH/${GITHASH}/g \
+	< ${DIRNAME}/${SPECFILE_IN} \
+	> ${DIRNAME}/${SPECFILE}
 
 VERSION=$(grep ^Version ${DIRNAME}/${SPECFILE} | sed -e 's/^Version:\ \+//')
 RELEASE=$(grep ^Release ${DIRNAME}/${SPECFILE} | sed -e 's/^Release:\ \+//')
