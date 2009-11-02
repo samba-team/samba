@@ -872,6 +872,11 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
  */
 int ctdb_vacuum_init(struct ctdb_db_context *ctdb_db)
 {
+	if (ctdb_db->persistent != 0) {
+		DEBUG(DEBUG_ERR,("Vacuuming is disabled for persistent database %s\n", ctdb_db->db_name));
+		return 0;
+	}
+
 	ctdb_db->vacuum_handle = talloc(ctdb_db, struct ctdb_vacuum_handle);
 	CTDB_NO_MEMORY(ctdb_db->ctdb, ctdb_db->vacuum_handle);
 
