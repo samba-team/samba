@@ -2506,6 +2506,10 @@ static bool test_QueryInfoPolicyCalls(	bool version2,
 
 	torture_comment(tctx, "\nTesting %s\n", call);
 
+	if (version2 && torture_setting_bool(tctx, "samba3", false)) {
+		torture_skip(tctx, "skipping QueryInfoPolicy2 tests\n");
+	}
+
 	for (i=1;i<=14;i++) {
 		r.in.handle = handle;
 		r.in.level = i;
