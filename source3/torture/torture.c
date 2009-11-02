@@ -6431,6 +6431,11 @@ static bool run_local_gencache(int dummy)
 		return False;
 	}
 
+	if (!gencache_get("foo", NULL, NULL)) {
+		d_printf("%s: gencache_get() failed\n", __location__);
+		return False;
+	}
+
 	if (!gencache_get("foo", &val, &tm)) {
 		d_printf("%s: gencache_get() failed\n", __location__);
 		return False;

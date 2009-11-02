@@ -529,11 +529,15 @@ bool gencache_get(const char *keystr, char **value, time_t *ptimeout)
 		SAFE_FREE(blob.data);
 		return false;
 	}
-	*value = SMB_STRDUP((char *)blob.data);
-	data_blob_free(&blob);
-	if (*value == NULL) {
-		return false;
+	if (value) {
+		*value = SMB_STRDUP((char *)blob.data);
+		data_blob_free(&blob);
+		if (*value == NULL) {
+			return false;
+		}
+		return true;
 	}
+	data_blob_free(&blob);
 	return true;
 }
 
