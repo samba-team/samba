@@ -1470,6 +1470,10 @@ static WERROR regdb_fetch_keys_internal(struct db_context *db, const char *key,
 	buf = value.dptr;
 	buflen = value.dsize;
 	len = tdb_unpack( buf, buflen, "d", &num_items);
+	if (len == (uint32_t)-1) {
+		werr = WERR_NOT_FOUND;
+		goto done;
+	}
 
 	werr = regsubkey_ctr_reinit(ctr);
 	W_ERROR_NOT_OK_GOTO_DONE(werr);
