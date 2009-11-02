@@ -1461,7 +1461,7 @@ static WERROR regdb_fetch_keys_internal(struct db_context *db, const char *key,
 
 	value = regdb_fetch_key_internal(db, frame, key);
 
-	if (value.dptr == NULL) {
+	if (value.dsize == 0 || value.dptr == NULL) {
 		DEBUG(10, ("regdb_fetch_keys: no subkeys found for key [%s]\n",
 			   key));
 		goto done;
