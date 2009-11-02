@@ -438,7 +438,6 @@ interface security
 		uint32 num_sids;
 		[size_is(num_sids)] dom_sid *sids[*];
 		udlong privilege_mask;
-		security_acl *default_dacl;
 	} security_token;
 
 	/* bits that determine which parts of a security descriptor
