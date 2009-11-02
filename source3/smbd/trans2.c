@@ -2575,23 +2575,26 @@ static void call_trans2findnext(connection_struct *conn,
 	requires_resume_key = (findnext_flags & FLAG_TRANS2_FIND_REQUIRE_RESUME);
 	continue_bit = (findnext_flags & FLAG_TRANS2_FIND_CONTINUE);
 
-	srvstr_get_path_wcard(ctx, params, req->flags2, &resume_name,
+	if (!continue_bit) {
+		/* We only need resume_name if continue_bit is zero. */
+		srvstr_get_path_wcard(ctx, params, req->flags2, &resume_name,
 			      params+12,
 			      total_params - 12, STR_TERMINATE, &ntstatus,
 			      &mask_contains_wcard);
-	if (!NT_STATUS_IS_OK(ntstatus)) {
-		/* Win9x or OS/2 can send a resume name of ".." or ".". This will cause the parser to
-		   complain (it thinks we're asking for the directory above the shared
-		   path or an invalid name). Catch this as the resume name is only compared, never used in
-		   a file access. JRA. */
-		srvstr_pull_talloc(ctx, params, req->flags2,
+		if (!NT_STATUS_IS_OK(ntstatus)) {
+			/* Win9x or OS/2 can send a resume name of ".." or ".". This will cause the parser to
+			   complain (it thinks we're asking for the directory above the shared
+			   path or an invalid name). Catch this as the resume name is only compared, never used in
+			   a file access. JRA. */
+			srvstr_pull_talloc(ctx, params, req->flags2,
 				&resume_name, params+12,
 				total_params - 12,
 				STR_TERMINATE);
 
-		if (!resume_name || !(ISDOT(resume_name) || ISDOTDOT(resume_name))) {
-			reply_nterror(req, ntstatus);
-			return;
+			if (!resume_name || !(ISDOT(resume_name) || ISDOTDOT(resume_name))) {
+				reply_nterror(req, ntstatus);
+				return;
+			}
 		}
 	}
 
@@ -2599,7 +2602,8 @@ static void call_trans2findnext(connection_struct *conn,
 close_after_request=%d, close_if_end = %d requires_resume_key = %d \
 resume_key = %d resume name = %s continue=%d level = %d\n",
 		dptr_num, max_data_bytes, maxentries, close_after_request, close_if_end, 
-		requires_resume_key, resume_key, resume_name, continue_bit, info_level));
+		requires_resume_key, resume_key,
+		resume_name ? resume_name : "(NULL)", continue_bit, info_level));
 
 	if (!maxentries) {
 		/* W2K3 seems to treat zero as 1. */
@@ -2724,7 +2728,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	 * depend on the last file name instead.
 	 */
 
-	if(*resume_name && !continue_bit) {
+	if(!continue_bit && resume_name && *resume_name) {
 		SMB_STRUCT_STAT st;
 
 		long current_pos = 0;
