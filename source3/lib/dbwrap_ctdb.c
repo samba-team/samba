@@ -75,6 +75,59 @@ static NTSTATUS tdb_error_to_ntstatus(struct tdb_context *tdb)
 }
 
 
+/**
+ * fetch a record from the tdb, separating out the header
+ * information and returning the body of the record.
+ */
+static NTSTATUS db_ctdb_ltdb_fetch(struct db_ctdb_ctx *db,
+				   TDB_DATA key,
+				   struct ctdb_ltdb_header *header,
+				   TALLOC_CTX *mem_ctx,
+				   TDB_DATA *data)
+{
+	TDB_DATA rec;
+	NTSTATUS status;
+
+	rec = tdb_fetch(db->wtdb->tdb, key);
+	if (rec.dsize < sizeof(struct ctdb_ltdb_header)) {
+		status = NT_STATUS_NOT_FOUND;
+		if (data) {
+			ZERO_STRUCTP(data);
+		}
+		if (header) {
+			header->dmaster = (uint32_t)-1;
+			header->rsn = 0;
+		}
+		goto done;
+	}
+
+	if (header) {
+		*header = *(struct ctdb_ltdb_header *)rec.dptr;
+	}
+
+	if (data) {
+		data->dsize = rec.dsize - sizeof(struct ctdb_ltdb_header);
+		if (data->dsize == 0) {
+			data->dptr = NULL;
+		} else {
+			data->dptr = (unsigned char *)talloc_memdup(mem_ctx,
+					rec.dptr
+					 + sizeof(struct ctdb_ltdb_header),
+					data->dsize);
+			if (data->dptr == NULL) {
+				status = NT_STATUS_NO_MEMORY;
+				goto done;
+			}
+		}
+	}
+
+	status = NT_STATUS_OK;
+
+done:
+	SAFE_FREE(rec.dptr);
+	return status;
+}
+
 /*
  * Store a record together with the ctdb record header
  * in the local copy of the database.
