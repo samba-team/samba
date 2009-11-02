@@ -2463,6 +2463,10 @@ static bool test_QueryDomainInfoPolicy(struct dcerpc_pipe *p,
 	int i;
 	bool ret = true;
 
+	if (torture_setting_bool(tctx, "samba3", false)) {
+		torture_skip(tctx, "skipping QueryDomainInformationPolicy test\n");
+	}
+
 	torture_comment(tctx, "\nTesting QueryDomainInformationPolicy\n");
 
 	for (i=2;i<4;i++) {
