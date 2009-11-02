@@ -4984,7 +4984,7 @@ static void init_globals(bool first_time_only)
 	Globals.bTimestampLogs = True;
 	string_set(&Globals.szLogLevel, "0");
 	Globals.bDebugPrefixTimestamp = False;
-	Globals.bDebugHiresTimestamp = False;
+	Globals.bDebugHiresTimestamp = true;
 	Globals.bDebugPid = False;
 	Globals.bDebugUid = False;
 	Globals.bDebugClass = False;
