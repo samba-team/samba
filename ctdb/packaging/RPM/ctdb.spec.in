@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.102
+Version: 1.0.103
 Release: 1GITHASH
 Epoch: 0
 License: GNU GPL version 3
@@ -118,6 +118,14 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
+* Tue Nov 3 2009 : Version 1.0.103
+ - Dont use vacuuming on persistent databases
+ - Michael A : transaction updates to persistent databases
+ - Dont activate service automatically when installing the RPM. Leave this to the admin.
+ - Create a child process to send all log messages to, to prevent a hung/slow syslogd
+   from blocking the main daemon. In this case, discard log messages instead and let the child
+   process block.
+ - Michael A: updates to log messages
 * Thu Oct 29 2009 : Version 1.0.102
  - Wolfgang: fix for the vacuuming code
  - Wolfgang: stronger tests for persistent database filename tests
