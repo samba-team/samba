@@ -52,7 +52,7 @@ WERROR dsdb_load_prefixmap_from_drsuapi(struct dsdb_schema *schema,
 	const char *schema_info;
 	struct dsdb_schema_prefixmap *pfm;
 
-	werr = dsdb_schema_pfm_from_drsuapi_pfm(ctr, schema, &pfm, &schema_info);
+	werr = dsdb_schema_pfm_from_drsuapi_pfm(ctr, true, schema, &pfm, &schema_info);
 	W_ERROR_NOT_OK_RETURN(werr);
 
 	/* set loaded prefixMap */

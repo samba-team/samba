@@ -329,9 +329,11 @@ WERROR dsdb_schema_pfm_oid_from_attid(struct dsdb_schema_prefixmap *pfm, uint32_
 /**
  * Verifies drsuapi mappings.
  */
-static WERROR _dsdb_drsuapi_pfm_verify(const struct drsuapi_DsReplicaOIDMapping_Ctr *ctr)
+static WERROR _dsdb_drsuapi_pfm_verify(const struct drsuapi_DsReplicaOIDMapping_Ctr *ctr,
+				       bool have_schema_info)
 {
 	uint32_t i;
+	uint32_t num_mappings;
 	struct drsuapi_DsReplicaOIDMapping *mapping;
 
 	/* check input params */
@@ -341,27 +343,34 @@ static WERROR _dsdb_drsuapi_pfm_verify(const struct drsuapi_DsReplicaOIDMapping_
 	if (!ctr->mappings) {
 		return WERR_INVALID_PARAMETER;
 	}
-	if (ctr->num_mappings < 2) {
-		return WERR_INVALID_PARAMETER;
-	}
+	num_mappings = ctr->num_mappings;
 
-	/* check last entry for being special */
-	mapping = &ctr->mappings[ctr->num_mappings - 1];
-	if (!mapping->oid.binary_oid) {
-		return WERR_INVALID_PARAMETER;
-	}
-	if (mapping->id_prefix != 0) {
-		return WERR_INVALID_PARAMETER;
-	}
-	if (mapping->oid.length != 21) {
-		return WERR_INVALID_PARAMETER;
-	}
-	if (*mapping->oid.binary_oid != 0xFF) {
-		return WERR_INVALID_PARAMETER;
+	if (have_schema_info) {
+		if (ctr->num_mappings < 2) {
+			return WERR_INVALID_PARAMETER;
+		}
+
+		/* check last entry for being special */
+		mapping = &ctr->mappings[ctr->num_mappings - 1];
+		if (!mapping->oid.binary_oid) {
+			return WERR_INVALID_PARAMETER;
+		}
+		if (mapping->id_prefix != 0) {
+			return WERR_INVALID_PARAMETER;
+		}
+		if (mapping->oid.length != 21) {
+			return WERR_INVALID_PARAMETER;
+		}
+		if (*mapping->oid.binary_oid != 0xFF) {
+			return WERR_INVALID_PARAMETER;
+		}
+
+		/* get number of read mappings in the map */
+		num_mappings--;
 	}
 
 	/* now, verify rest of entries for being at least not null */
-	for (i = 0; i < ctr->num_mappings - 1; i++) {
+	for (i = 0; i < num_mappings; i++) {
 		mapping = &ctr->mappings[i];
 		if (!mapping->oid.length) {
 			return WERR_INVALID_PARAMETER;
@@ -382,11 +391,13 @@ static WERROR _dsdb_drsuapi_pfm_verify(const struct drsuapi_DsReplicaOIDMapping_
  * Convert drsuapi_ prefix map to prefixMap internal presentation.
  *
  * \param ctr Pointer to drsuapi_DsReplicaOIDMapping_Ctr which represents drsuapi_ prefixMap
+ * \param have_schema_info if drsuapi_prefixMap have schem_info in it or not
  * \param mem_ctx TALLOC_CTX to make allocations in
  * \param _pfm Out pointer to hold newly created prefixMap
  * \param _schema_info Out param to store schema_info to. If NULL, schema_info is not decoded
  */
 WERROR dsdb_schema_pfm_from_drsuapi_pfm(const struct drsuapi_DsReplicaOIDMapping_Ctr *ctr,
+					bool have_schema_info,
 					TALLOC_CTX *mem_ctx,
 					struct dsdb_schema_prefixmap **_pfm,
 					const char **_schema_info)
@@ -394,18 +405,31 @@ WERROR dsdb_schema_pfm_from_drsuapi_pfm(const struct drsuapi_DsReplicaOIDMapping
 	WERROR werr;
 	uint32_t i;
 	DATA_BLOB blob;
+	uint32_t num_mappings;
 	struct dsdb_schema_prefixmap *pfm;
 
 	if (!_pfm) {
 		return WERR_INVALID_PARAMETER;
 	}
 
+	/*
+	 * error out if schema_info is requested
+	 * but it is not in the drsuapi_prefixMap
+	 */
+	if (_schema_info && !have_schema_info) {
+		return WERR_INVALID_PARAMETER;
+	}
+
 	/* verify drsuapi_pefixMap */
-	werr =_dsdb_drsuapi_pfm_verify(ctr));
+	werr =_dsdb_drsuapi_pfm_verify(ctr, have_schema_info);
 	W_ERROR_NOT_OK_RETURN(werr);
 
 	/* allocate mem for prefix map */
-	pfm = _dsdb_schema_prefixmap_talloc(mem_ctx, ctr->num_mappings - 1);
+	num_mappings = ctr->num_mappings;
+	if (have_schema_info) {
+		num_mappings--;
+	}
+	pfm = _dsdb_schema_prefixmap_talloc(mem_ctx, num_mappings);
 	W_ERROR_HAVE_NO_MEMORY(pfm);
 
 	/* copy entries from drsuapi_prefixMap */
@@ -529,7 +553,7 @@ WERROR dsdb_schema_pfm_contains_drsuapi_pfm(const struct dsdb_schema_prefixmap *
 	DATA_BLOB bin_oid;
 
 	/* verify drsuapi_pefixMap */
-	werr = _dsdb_drsuapi_pfm_verify(ctr);
+	werr = _dsdb_drsuapi_pfm_verify(ctr, true);
 	W_ERROR_NOT_OK_RETURN(werr);
 
 	/* check pfm contains every entry from ctr, except the last one */

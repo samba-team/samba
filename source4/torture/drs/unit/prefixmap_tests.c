@@ -391,9 +391,19 @@ static bool torture_drs_unit_pfm_to_from_drsuapi(struct torture_context *tctx, s
 	torture_assert_werr_ok(tctx, werr, "dsdb_schema_pfm_contains_drsuapi_pfm() failed");
 
 	/* convert back drsuapi_prefixMap to schema_prefixMap */
-	werr = dsdb_schema_pfm_from_drsuapi_pfm(ctr, mem_ctx, &pfm, &schema_info);
+	werr = dsdb_schema_pfm_from_drsuapi_pfm(ctr, true, mem_ctx, &pfm, &schema_info);
 	torture_assert_werr_ok(tctx, werr, "dsdb_schema_pfm_from_drsuapi_pfm() failed");
+	torture_assert_str_equal(tctx, schema_info, schema_info_default, "Fetched schema_info is different");
+	/* compare against the original */
+	if (!_torture_drs_pfm_compare_same(tctx, priv->pfm_full, pfm)) {
+		talloc_free(mem_ctx);
+		return false;
+	}
 
+	/* test conversion with partial drsuapi_prefixMap */
+	ctr->num_mappings--;
+	werr = dsdb_schema_pfm_from_drsuapi_pfm(ctr, false, mem_ctx, &pfm, NULL);
+	torture_assert_werr_ok(tctx, werr, "dsdb_schema_pfm_from_drsuapi_pfm() failed");
 	/* compare against the original */
 	if (!_torture_drs_pfm_compare_same(tctx, priv->pfm_full, pfm)) {
 		talloc_free(mem_ctx);
