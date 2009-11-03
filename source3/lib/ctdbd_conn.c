@@ -275,6 +275,17 @@ static struct messaging_rec *ctdb_pull_messaging_rec(TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+static NTSTATUS ctdb_packet_fd_read_sync(struct packet_context *ctx)
+{
+	struct timeval timeout;
+	struct timeval *ptimeout;
+
+	timeout = timeval_set(lp_ctdb_timeout(), 0);
+	ptimeout = (timeout.tv_sec != 0) ? &timeout : NULL;
+
+	return packet_fd_read_sync(ctx, ptimeout);
+}
+
 /*
  * Read a full ctdbd request. If we have a messaging context, defer incoming
  * messages that might come in between.
@@ -289,7 +300,7 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32 reqid,
 
  again:
 
-	status = packet_fd_read_sync(conn->pkt);
+	status = ctdb_packet_fd_read_sync(conn->pkt);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_BUSY)) {
 		/* EAGAIN */
@@ -1156,7 +1167,7 @@ NTSTATUS ctdbd_traverse(uint32 db_id,
 			break;
 		}
 
-		status = packet_fd_read_sync(conn->pkt);
+		status = ctdb_packet_fd_read_sync(conn->pkt);
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
 			/*
