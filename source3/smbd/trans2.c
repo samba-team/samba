@@ -2148,7 +2148,7 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 				const char *path_mask,
 				uint32 dirtype,
 				int info_level,
-				int requires_resume_key,
+				bool requires_resume_key,
 				bool dont_descend,
 				bool ask_sharemode,
 				char **ppdata,
@@ -2160,13 +2160,8 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 				int *last_entry_off,
 				struct ea_list *name_list)
 {
-	bool resume_key = false;
 	uint8_t align = 4;
 	const bool do_pad = true;
-
-	if (requires_resume_key) {
-		resume_key = true;
-	}
 
 	if (info_level >= 1 && info_level <= 3) {
 		/* No alignment on earlier info levels. */
@@ -2175,7 +2170,7 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 
 	return smbd_dirptr_lanman2_entry(ctx, conn, dirptr, flags2,
 					 path_mask, dirtype, info_level,
-					 resume_key, dont_descend, ask_sharemode,
+					 requires_resume_key, dont_descend, ask_sharemode,
 					 align, do_pad,
 					 ppdata, base_data, end_data,
 					 space_remaining,
