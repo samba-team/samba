@@ -417,7 +417,7 @@ static int descriptor_add(struct ldb_module *module, struct ldb_request *req)
 	data = talloc_get_type(ldb_module_get_private(module), struct descriptor_data);
 	ldb = ldb_module_get_ctx(module);
 
-	ldb_debug(ldb, LDB_DEBUG_TRACE, "descriptor_add\n");
+	ldb_debug(ldb, LDB_DEBUG_TRACE,"descriptor_add: %s\n", ldb_dn_get_linearized(req->op.add.message->dn));
 
 	if (ldb_dn_is_special(req->op.add.message->dn)) {
 		return ldb_next_request(module, req);
@@ -459,14 +459,14 @@ static int descriptor_add(struct ldb_module *module, struct ldb_request *req)
 static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	ldb_debug(ldb, LDB_DEBUG_TRACE, "descriptor_modify\n");
+	ldb_debug(ldb, LDB_DEBUG_TRACE,"descriptor_modify: %s\n", ldb_dn_get_linearized(req->op.mod.message->dn));
 	return ldb_next_request(module, req);
 }
 /* TODO */
 static int descriptor_rename(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	ldb_debug(ldb, LDB_DEBUG_TRACE, "descriptor_rename\n");
+	ldb_debug(ldb, LDB_DEBUG_TRACE,"descriptor_rename: %s\n", ldb_dn_get_linearized(req->op.rename.olddn));
 	return ldb_next_request(module, req);
 }
 
