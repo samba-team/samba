@@ -117,8 +117,6 @@ char *tsocket_address_inet_addr_string(const struct tsocket_address *addr,
 uint16_t tsocket_address_inet_port(const struct tsocket_address *addr);
 int tsocket_address_inet_set_port(struct tsocket_address *addr,
 				  uint16_t port);
-void tsocket_address_inet_set_broadcast(struct tsocket_address *addr,
-					bool broadcast);
 
 int _tsocket_address_unix_from_path(TALLOC_CTX *mem_ctx,
 				    const char *path,
