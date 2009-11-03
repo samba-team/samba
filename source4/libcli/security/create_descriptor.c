@@ -28,6 +28,7 @@
  */
 #include "includes.h"
 #include "libcli/security/security.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 /* Todos:
  * build the security token dacl as follows:
@@ -119,14 +120,12 @@ static struct security_acl *preprocess_creator_acl(TALLOC_CTX *mem, struct secur
 				return NULL;
 			}
 			new_acl->aces[new_acl->num_aces] = *ace;
-			/*memcpy(&new_acl->aces[new_acl->num_aces], ace,
-			  sizeof(struct security_ace)); */
 			new_acl->num_aces++;
 		}
 	}
 	if (new_acl)
 		new_acl->revision = acl->revision;
-	/* Todo what to do if all were inherited and this is empty */
+
 	return new_acl;
 }
 
@@ -187,9 +186,6 @@ static struct security_acl *calculate_inherited_from_parent(TALLOC_CTX *mem_ctx,
 
 	for (i=0; i < acl->num_aces; i++){
 		struct security_ace *ace = &acl->aces[i];
-		if (ace->flags & SEC_ACE_FLAG_INHERIT_ONLY)
-			continue;
-
 		if ((ace->flags & SEC_ACE_FLAG_CONTAINER_INHERIT) ||
 		    (ace->flags & SEC_ACE_FLAG_OBJECT_INHERIT)){
 			tmp_acl->aces = talloc_realloc(tmp_acl, tmp_acl->aces, struct security_ace,
@@ -258,7 +254,6 @@ static struct security_acl *calculate_inherited_from_creator(TALLOC_CTX *mem_ctx
 	int i;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	struct security_acl *tmp_acl = talloc_zero(tmp_ctx, struct security_acl);
-/*	struct security_acl *inh_acl = talloc_zero(tmp_ctx, struct security_acl); */
 	struct security_acl *new_acl;
 	struct dom_sid *co, *cg;
 
@@ -279,7 +274,6 @@ static struct security_acl *calculate_inherited_from_creator(TALLOC_CTX *mem_ctx
 		tmp_acl->aces = talloc_realloc(tmp_acl, tmp_acl->aces, struct security_ace,
 					      tmp_acl->num_aces+1);
 		tmp_acl->aces[tmp_acl->num_aces] = *ace;
-		tmp_acl->aces[tmp_acl->num_aces].flags  = 0;
 		tmp_acl->num_aces++;
 
 		if (!dom_sid_equal(&ace->trustee, co) && !dom_sid_equal(&ace->trustee, cg))
@@ -293,8 +287,39 @@ static struct security_acl *calculate_inherited_from_creator(TALLOC_CTX *mem_ctx
 	}
 	new_acl = security_acl_dup(mem_ctx,tmp_acl);
 
+	if (new_acl)
+		new_acl->revision = acl->revision;
+
 	talloc_free(tmp_ctx);
 	return new_acl;
+}
+
+static void cr_descr_log_descriptor(struct security_descriptor *sd,
+				    const char *message,
+				    int level)
+{
+	if (sd) {
+		DEBUG(level,("%s: %s\n", message,
+			     ndr_print_struct_string(0,(ndr_print_fn_t)ndr_print_security_descriptor,
+						     "", sd)));
+	}
+	else {
+		DEBUG(level,("%s: NULL\n", message));
+	}
+}
+
+static void cr_descr_log_acl(struct security_acl *acl,
+				    const char *message,
+				    int level)
+{
+	if (acl) {
+		DEBUG(level,("%s: %s\n", message,
+			     ndr_print_struct_string(0,(ndr_print_fn_t)ndr_print_security_acl,
+						     "", acl)));
+	}
+	else {
+		DEBUG(level,("%s: NULL\n", message));
+	}
 }
 
 static bool compute_acl(int acl_type,
@@ -308,6 +333,7 @@ static bool compute_acl(int acl_type,
 			struct security_descriptor *new_sd) /* INOUT argument */
 {
 	struct security_acl *p_acl = NULL, *c_acl = NULL, **new_acl;
+	int level = 10;
 	if (acl_type == SEC_DESC_DACL_PRESENT){
 		if (parent_sd)
 			p_acl = parent_sd->dacl;
@@ -322,6 +348,10 @@ static bool compute_acl(int acl_type,
 			c_acl = creator_sd->sacl;
 		new_acl = &new_sd->sacl;
 	}
+
+	cr_descr_log_descriptor(parent_sd, __location__"parent_sd", level);
+	cr_descr_log_descriptor(creator_sd,__location__ "creator_sd", level);
+
 	if (contains_inheritable_aces(p_acl)){
 		if (!c_acl || (c_acl && inherit_flags & SEC_DEFAULT_DESCRIPTOR)){
 			*new_acl = calculate_inherited_from_parent(new_sd,
@@ -333,8 +363,11 @@ static bool compute_acl(int acl_type,
 			if (!postprocess_acl(*new_acl, new_sd->owner_sid,
 					     new_sd->group_sid, generic_map))
 				return false;
-			else
+			else {
+				cr_descr_log_descriptor(new_sd,
+							__location__": Nothing from creator, newsd is", level);
 				goto final;
+			}
 		}
 		if (c_acl && !(inherit_flags & SEC_DEFAULT_DESCRIPTOR)){
 			struct security_acl *pr_acl, *tmp_acl, *tpr_acl;
@@ -343,6 +376,8 @@ static bool compute_acl(int acl_type,
 						      tpr_acl,
 						      is_container,
 						      object_list);
+
+			cr_descr_log_acl(tmp_acl, __location__"Inherited from creator", level);
 			/* Todo some refactoring here! */
 			if (acl_type == SEC_DESC_DACL_PRESENT &&
 			    !(creator_sd->type & SECINFO_PROTECTED_DACL) &&
@@ -351,7 +386,7 @@ static bool compute_acl(int acl_type,
 							     p_acl,
 							     is_container,
 							     object_list);
-
+				cr_descr_log_acl(pr_acl, __location__"Inherited from parent", level);
 				*new_acl = security_acl_concatenate(new_sd, tmp_acl, pr_acl);
 				new_sd->type |= SEC_DESC_DACL_AUTO_INHERITED;
 			}
@@ -362,7 +397,7 @@ static bool compute_acl(int acl_type,
 							     p_acl,
 							     is_container,
 							     object_list);
-
+				cr_descr_log_acl(pr_acl, __location__"Inherited from parent", level);
 				*new_acl = security_acl_concatenate(new_sd, tmp_acl, pr_acl);
 				new_sd->type |= SEC_DESC_SACL_AUTO_INHERITED;
 			}
@@ -395,6 +430,7 @@ final:
 	 * apprantly any AI flag provided by the user is preserved */
 	if (creator_sd)
 		new_sd->type |= creator_sd->type;
+	cr_descr_log_descriptor(new_sd, __location__"final sd", level);
 	return true;
 }
 
