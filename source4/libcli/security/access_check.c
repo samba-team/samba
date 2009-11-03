@@ -22,7 +22,6 @@
 #include "includes.h"
 #include "libcli/security/security.h"
 
-
 /*
   perform a SEC_FLAG_MAXIMUM_ALLOWED access check
 */
@@ -267,8 +266,11 @@ NTSTATUS sec_access_check_ds(const struct security_descriptor *sd,
                                 if (!(node = get_object_tree_by_GUID(tree, type)))
                                         continue;
 
-                        if (ace->type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT){
+                        if (ace->type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT) {
                                 object_tree_modify_access(node, ace->access_mask);
+				if (node->remaining_access == 0) {
+					return NT_STATUS_OK;
+				}
                         }
                         else {
                                 if (node->remaining_access & ace->access_mask){
