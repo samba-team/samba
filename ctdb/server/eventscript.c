@@ -689,7 +689,6 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 	options = talloc_strdup(ctdb, state->options);
 	CTDB_NO_MEMORY_VOID(ctdb, options);
 
-	talloc_free(state);
 	if (!strcmp(options, "monitor")) {
 		/* if it is a monitor event, we allow it to "hang" a few times
 		   before we declare it a failure and ban ourself (and make
@@ -752,6 +751,7 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 		ctdb->script_monitor_ctx = NULL;
 	}
 
+	talloc_free(state);
 	talloc_free(options);
 }
 
