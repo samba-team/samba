@@ -38,8 +38,9 @@ static size_t calc_next_entry_offset(const char *base, const char *pdata_end)
 /****************************************************************************
  Interpret a long filename structure - this is mostly guesses at the moment.
  The length of the structure is returned
- The structure of a long filename depends on the info level. 260 is used
- by NT and 2 is used by OS/2
+ The structure of a long filename depends on the info level.
+ SMB_FIND_FILE_BOTH_DIRECTORY_INFO is used
+ by NT and SMB_FIND_EA_SIZE is used by OS/2
 ****************************************************************************/
 
 static size_t interpret_long_filename(TALLOC_CTX *ctx,
@@ -64,7 +65,7 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 	finfo->cli = cli;
 
 	switch (level) {
-		case 1: /* OS/2 understands this */
+		case SMB_FIND_INFO_STANDARD: /* OS/2 understands this */
 			/* these dates are converted to GMT by
                            make_unix_date */
 			if (pdata_end - base < 27) {
@@ -109,7 +110,7 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 			p += ret;
 			return PTR_DIFF(p, base);
 
-		case 2: /* this is what OS/2 uses mostly */
+		case SMB_FIND_EA_SIZE: /* this is what OS/2 uses mostly */
 			/* these dates are converted to GMT by
                            make_unix_date */
 			if (pdata_end - base < 31) {
@@ -138,7 +139,7 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 			p += ret;
 			return PTR_DIFF(p, base) + 1;
 
-		case 260: /* NT uses this, but also accepts 2 */
+		case SMB_FIND_FILE_BOTH_DIRECTORY_INFO: /* NT uses this, but also accepts 2 */
 		{
 			size_t namelen, slen;
 
@@ -248,8 +249,10 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 	TALLOC_CTX *frame = talloc_stackframe();
 	DATA_BLOB last_name_raw = data_blob(NULL, 0);
 
-	/* NT uses 260, OS/2 uses 2. Both accept 1. */
-	info_level = (cli->capabilities&CAP_NT_SMBS)?260:1;
+	/* NT uses SMB_FIND_FILE_BOTH_DIRECTORY_INFO,
+	   OS/2 uses SMB_FIND_EA_SIZE. Both accept SMB_FIND_INFO_STANDARD. */
+	info_level = (cli->capabilities&CAP_NT_SMBS)?
+		SMB_FIND_FILE_BOTH_DIRECTORY_INFO : SMB_FIND_INFO_STANDARD;
 
 	mask = SMB_STRDUP(Mask);
 	if (!mask) {
@@ -389,7 +392,8 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 
 		/* we might need the lastname for continuations */
 		for (p2=p,i=0;i<ff_searchcount && p2 < rdata_end;i++) {
-			if ((info_level == 260) && (i == ff_searchcount-1)) {
+			if ((info_level == SMB_FIND_FILE_BOTH_DIRECTORY_INFO) &&
+					(i == ff_searchcount-1)) {
 				/* Last entry - fixup the last offset length. */
 				SIVAL(p2,0,PTR_DIFF((rdata + data_len),p2));
 			}
