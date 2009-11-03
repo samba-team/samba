@@ -2536,9 +2536,6 @@ static bool test_QueryInfoPolicyCalls(	bool version2,
 			break;
 		case LSA_POLICY_INFO_DOMAIN:
 		case LSA_POLICY_INFO_ACCOUNT_DOMAIN:
-		case LSA_POLICY_INFO_L_ACCOUNT_DOMAIN:
-		case LSA_POLICY_INFO_DNS_INT:
-		case LSA_POLICY_INFO_DNS:
 		case LSA_POLICY_INFO_REPLICA:
 		case LSA_POLICY_INFO_QUOTA:
 		case LSA_POLICY_INFO_ROLE:
@@ -2546,6 +2543,20 @@ static bool test_QueryInfoPolicyCalls(	bool version2,
 		case LSA_POLICY_INFO_AUDIT_EVENTS:
 		case LSA_POLICY_INFO_PD:
 			if (!NT_STATUS_IS_OK(status)) {
+				torture_comment(tctx, "%s failed - %s\n", call, nt_errstr(status));
+				ret = false;
+			}
+			break;
+		case LSA_POLICY_INFO_L_ACCOUNT_DOMAIN:
+		case LSA_POLICY_INFO_DNS_INT:
+		case LSA_POLICY_INFO_DNS:
+			if (torture_setting_bool(tctx, "samba3", false)) {
+				/* Other levels not implemented yet */
+				if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS)) {
+					torture_comment(tctx, "%s failed - %s\n", call, nt_errstr(status));
+					ret = false;
+				}
+			} else if (!NT_STATUS_IS_OK(status)) {
 				torture_comment(tctx, "%s failed - %s\n", call, nt_errstr(status));
 				ret = false;
 			}
