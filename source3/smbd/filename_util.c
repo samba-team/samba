@@ -107,7 +107,7 @@ NTSTATUS create_synthetic_smb_fname_split(TALLOC_CTX *ctx,
 }
 
 /**
- * Return a string using the debug_ctx()
+ * Return a string using the talloc_tos()
  */
 const char *smb_fname_str_dbg(const struct smb_filename *smb_fname)
 {
@@ -117,7 +117,7 @@ const char *smb_fname_str_dbg(const struct smb_filename *smb_fname)
 	if (smb_fname == NULL) {
 		return "";
 	}
-	status = get_full_smb_filename(debug_ctx(), smb_fname, &fname);
+	status = get_full_smb_filename(talloc_tos(), smb_fname, &fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		return "";
 	}
@@ -125,7 +125,7 @@ const char *smb_fname_str_dbg(const struct smb_filename *smb_fname)
 }
 
 /**
- * Return a debug string using the debug_ctx().  This can only be called from
+ * Return a debug string using the talloc_tos().  This can only be called from
  * DEBUG() macros due to the debut_ctx().
  */
 const char *fsp_str_dbg(const struct files_struct *fsp)

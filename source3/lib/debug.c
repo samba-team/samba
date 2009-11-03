@@ -90,8 +90,6 @@ bool    AllowDebugChange = True;
 */
 bool    override_logfile;
 
-static TALLOC_CTX *tmp_debug_ctx;
-
 /*
  * This is to allow assignment to DEBUGLEVEL before the debug
  * system has been initialized.
@@ -888,8 +886,6 @@ void check_log_size( void )
 	}
 
  done:
-	TALLOC_FREE(tmp_debug_ctx);
-
 	errno = old_errno;
 
 	return( 0 );
@@ -1057,12 +1053,12 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 		/* Print it all out at once to prevent split syslog output. */
 		if( lp_debug_prefix_timestamp() ) {
 		    (void)Debug1( "[%s, %2d%s] ",
-			current_timestring(debug_ctx(),
+			current_timestring(talloc_tos(),
 					   lp_debug_hires_timestamp()),
 			level, header_str);
 		} else {
 		    (void)Debug1( "[%s, %2d%s] %s(%s)\n",
-			current_timestring(debug_ctx(),
+			current_timestring(talloc_tos(),
 					   lp_debug_hires_timestamp()),
 			level, header_str, location, func );
 		}
@@ -1109,15 +1105,4 @@ bool dbghdr(int level, const char *location, const char *func)
 	}
 	SAFE_FREE(msgbuf);
 	return ret;
-}
-
-/*
- * Get us a temporary talloc context usable just for DEBUG arguments
- */
-TALLOC_CTX *debug_ctx(void)
-{
-        if (tmp_debug_ctx == NULL) {
-                tmp_debug_ctx = talloc_named_const(NULL, 0, "debug_ctx");
-        }
-        return tmp_debug_ctx;
 }

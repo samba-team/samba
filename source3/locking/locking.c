@@ -545,9 +545,9 @@ static bool parse_share_modes(const TDB_DATA dbuf, struct share_mode_lock *lck)
 	DEBUG(10, ("parse_share_modes: delete_on_close: %d, owrt: %s, "
 		   "cwrt: %s, tok: %u, num_share_modes: %d\n",
 		   lck->delete_on_close,
-		   timestring(debug_ctx(),
+		   timestring(talloc_tos(),
 			      convert_timespec_to_time_t(lck->old_write_time)),
-		   timestring(debug_ctx(),
+		   timestring(talloc_tos(),
 			      convert_timespec_to_time_t(
 				      lck->changed_write_time)),
 		   (unsigned int)data.u.s.delete_token_size,
@@ -719,9 +719,9 @@ static TDB_DATA unparse_share_modes(const struct share_mode_lock *lck)
 
 	DEBUG(10,("unparse_share_modes: del: %d, owrt: %s cwrt: %s, tok: %u, "
 		  "num: %d\n", data->u.s.delete_on_close,
-		  timestring(debug_ctx(),
+		  timestring(talloc_tos(),
 			     convert_timespec_to_time_t(lck->old_write_time)),
-		  timestring(debug_ctx(),
+		  timestring(talloc_tos(),
 			     convert_timespec_to_time_t(
 				     lck->changed_write_time)),
 		  (unsigned int)data->u.s.delete_token_size,
@@ -1476,7 +1476,7 @@ bool set_sticky_write_time(struct file_id fileid, struct timespec write_time)
 	struct share_mode_lock *lck;
 
 	DEBUG(5,("set_sticky_write_time: %s id=%s\n",
-		 timestring(debug_ctx(),
+		 timestring(talloc_tos(),
 			    convert_timespec_to_time_t(write_time)),
 		 file_id_string_tos(&fileid)));
 
@@ -1499,7 +1499,7 @@ bool set_write_time(struct file_id fileid, struct timespec write_time)
 	struct share_mode_lock *lck;
 
 	DEBUG(5,("set_write_time: %s id=%s\n",
-		 timestring(debug_ctx(),
+		 timestring(talloc_tos(),
 			    convert_timespec_to_time_t(write_time)),
 		 file_id_string_tos(&fileid)));
 
