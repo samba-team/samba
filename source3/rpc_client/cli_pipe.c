@@ -618,7 +618,7 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli, RPC_HDR *pr
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(0,("cli_pipe_verify_ntlmssp: failed to unseal "
 					"packet from %s. Error was %s.\n",
-					rpccli_pipe_txt(debug_ctx(), cli),
+					rpccli_pipe_txt(talloc_tos(), cli),
 					nt_errstr(status) ));
 				return status;
 			}
@@ -633,7 +633,7 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli, RPC_HDR *pr
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(0,("cli_pipe_verify_ntlmssp: check signing failed on "
 					"packet from %s. Error was %s.\n",
-					rpccli_pipe_txt(debug_ctx(), cli),
+					rpccli_pipe_txt(talloc_tos(), cli),
 					nt_errstr(status) ));
 				return status;
 			}
@@ -756,7 +756,7 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli, RPC_HDR *p
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3,("cli_pipe_verify_schannel: failed to decode PDU "
 				"Connection to %s (%s).\n",
-				rpccli_pipe_txt(debug_ctx(), cli),
+				rpccli_pipe_txt(talloc_tos(), cli),
 				nt_errstr(status)));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -814,7 +814,7 @@ static NTSTATUS cli_pipe_validate_rpc_response(struct rpc_pipe_client *cli, RPC_
 				DEBUG(3, ("cli_pipe_validate_rpc_response: "
 					  "Connection to %s - got non-zero "
 					  "auth len %u.\n",
-					rpccli_pipe_txt(debug_ctx(), cli),
+					rpccli_pipe_txt(talloc_tos(), cli),
 					(unsigned int)prhdr->auth_len ));
 				return NT_STATUS_INVALID_PARAMETER;
 			}
@@ -840,7 +840,7 @@ static NTSTATUS cli_pipe_validate_rpc_response(struct rpc_pipe_client *cli, RPC_
 		default:
 			DEBUG(3, ("cli_pipe_validate_rpc_response: Connection "
 				  "to %s - unknown internal auth type %u.\n",
-				  rpccli_pipe_txt(debug_ctx(), cli),
+				  rpccli_pipe_txt(talloc_tos(), cli),
 				  cli->auth->auth_type ));
 			return NT_STATUS_INVALID_INFO_CLASS;
 	}
@@ -944,7 +944,7 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli, RPC_H
 		case DCERPC_PKT_BIND_NAK:
 			DEBUG(1, ("cli_pipe_validate_current_pdu: Bind NACK "
 				  "received from %s!\n",
-				  rpccli_pipe_txt(debug_ctx(), cli)));
+				  rpccli_pipe_txt(talloc_tos(), cli)));
 			/* Use this for now... */
 			return NT_STATUS_NETWORK_ACCESS_DENIED;
 
@@ -965,8 +965,8 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli, RPC_H
 
 			DEBUG(1, ("cli_pipe_validate_current_pdu: RPC fault "
 				  "code %s received from %s!\n",
-				dcerpc_errstr(debug_ctx(), NT_STATUS_V(fault_resp.status)),
-				rpccli_pipe_txt(debug_ctx(), cli)));
+				dcerpc_errstr(talloc_tos(), NT_STATUS_V(fault_resp.status)),
+				rpccli_pipe_txt(talloc_tos(), cli)));
 			if (NT_STATUS_IS_OK(fault_resp.status)) {
 				return NT_STATUS_UNSUCCESSFUL;
 			} else {
@@ -978,14 +978,14 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli, RPC_H
 			DEBUG(0, ("cli_pipe_validate_current_pdu: unknown packet type %u received "
 				"from %s!\n",
 				(unsigned int)prhdr->pkt_type,
-				rpccli_pipe_txt(debug_ctx(), cli)));
+				rpccli_pipe_txt(talloc_tos(), cli)));
 			return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
 	if (prhdr->pkt_type != expected_pkt_type) {
 		DEBUG(3, ("cli_pipe_validate_current_pdu: Connection to %s "
 			  "got an unexpected RPC packet type - %u, not %u\n",
-			rpccli_pipe_txt(debug_ctx(), cli),
+			rpccli_pipe_txt(talloc_tos(), cli),
 			prhdr->pkt_type,
 			expected_pkt_type));
 		return NT_STATUS_INVALID_INFO_CLASS;
@@ -1292,7 +1292,7 @@ static struct tevent_req *rpc_api_pipe_send(TALLOC_CTX *mem_ctx,
 		goto post_status;
 	}
 
-	DEBUG(5,("rpc_api_pipe: %s\n", rpccli_pipe_txt(debug_ctx(), cli)));
+	DEBUG(5,("rpc_api_pipe: %s\n", rpccli_pipe_txt(talloc_tos(), cli)));
 
 	max_recv_frag = cli->max_recv_frag;
 
@@ -1338,7 +1338,7 @@ static void rpc_api_pipe_trans_done(struct tevent_req *subreq)
 
 	if (rdata == NULL) {
 		DEBUG(3,("rpc_api_pipe: %s failed to return data.\n",
-			 rpccli_pipe_txt(debug_ctx(), state->cli)));
+			 rpccli_pipe_txt(talloc_tos(), state->cli)));
 		tevent_req_done(req);
 		return;
 	}
@@ -1406,7 +1406,7 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 		 */
 		DEBUG(10,("rpc_api_pipe: On %s PDU data format is "
 			  "big-endian.\n",
-			  rpccli_pipe_txt(debug_ctx(), state->cli)));
+			  rpccli_pipe_txt(talloc_tos(), state->cli)));
 		prs_set_endian_data(&state->incoming_pdu, RPC_BIG_ENDIAN);
 	}
 	/*
@@ -1441,7 +1441,7 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 
 	if (state->rhdr.flags & DCERPC_PFC_FLAG_LAST) {
 		DEBUG(10,("rpc_api_pipe: %s returned %u bytes.\n",
-			  rpccli_pipe_txt(debug_ctx(), state->cli),
+			  rpccli_pipe_txt(talloc_tos(), state->cli),
 			  (unsigned)prs_data_size(&state->incoming_pdu)));
 		tevent_req_done(req);
 		return;
@@ -2555,7 +2555,7 @@ struct tevent_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
 	}
 
 	DEBUG(5,("Bind RPC Pipe: %s auth_type %u, auth_level %u\n",
-		rpccli_pipe_txt(debug_ctx(), cli),
+		rpccli_pipe_txt(talloc_tos(), cli),
 		(unsigned int)auth->auth_type,
 		(unsigned int)auth->auth_level ));
 
@@ -2611,7 +2611,7 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("rpc_pipe_bind: %s bind request returned %s\n",
-			  rpccli_pipe_txt(debug_ctx(), state->cli),
+			  rpccli_pipe_txt(talloc_tos(), state->cli),
 			  nt_errstr(status)));
 		tevent_req_nterror(req, status);
 		return;
@@ -2914,7 +2914,7 @@ static void rpc_bind_ntlmssp_api_done(struct tevent_req *subreq)
 	data_blob_free(&tmp_blob);
 
 	DEBUG(5,("rpc_finish_spnego_ntlmssp_bind: alter context request to "
-		 "%s.\n", rpccli_pipe_txt(debug_ctx(), state->cli)));
+		 "%s.\n", rpccli_pipe_txt(talloc_tos(), state->cli)));
 	tevent_req_done(req);
 }
 

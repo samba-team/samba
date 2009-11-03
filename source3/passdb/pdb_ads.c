@@ -358,7 +358,7 @@ static NTSTATUS pdb_ads_getsamupriv(struct pdb_ads_state *state,
 				&users, "%s", filter);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_search failed %s\n",
-			   tldap_errstr(debug_ctx(), state->ld, rc)));
+			   tldap_errstr(talloc_tos(), state->ld, rc)));
 		TALLOC_FREE(result);
 		return NT_STATUS_LDAP(rc);
 	}
@@ -487,7 +487,7 @@ static NTSTATUS pdb_ads_create_user(struct pdb_methods *m,
 	rc = tldap_add(ld, dn, num_mods, mods, NULL, 0, NULL, 0);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_add failed %s\n",
-			   tldap_errstr(debug_ctx(), ld, rc)));
+			   tldap_errstr(talloc_tos(), ld, rc)));
 		TALLOC_FREE(dn);
 		return NT_STATUS_LDAP(rc);
 	}
@@ -499,7 +499,7 @@ static NTSTATUS pdb_ads_create_user(struct pdb_methods *m,
 				name);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("Could not find just created user %s: %s\n",
-			   name, tldap_errstr(debug_ctx(), state->ld, rc)));
+			   name, tldap_errstr(talloc_tos(), state->ld, rc)));
 		TALLOC_FREE(dn);
 		return NT_STATUS_LDAP(rc);
 	}
@@ -549,7 +549,7 @@ static NTSTATUS pdb_ads_delete_user(struct pdb_methods *m,
 	TALLOC_FREE(dn);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_delete for %s failed: %s\n", dn,
-			   tldap_errstr(debug_ctx(), ld, rc)));
+			   tldap_errstr(talloc_tos(), ld, rc)));
 		return NT_STATUS_LDAP(rc);
 	}
 	return NT_STATUS_OK;
@@ -591,7 +591,7 @@ static NTSTATUS pdb_ads_update_sam_account(struct pdb_methods *m,
 	TALLOC_FREE(mods);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_modify for %s failed: %s\n", priv->dn,
-			   tldap_errstr(debug_ctx(), ld, rc)));
+			   tldap_errstr(talloc_tos(), ld, rc)));
 		return NT_STATUS_LDAP(rc);
 	}
 
@@ -635,7 +635,7 @@ static NTSTATUS pdb_ads_getgrfilter(struct pdb_methods *m, GROUP_MAP *map,
 				&group, "%s", filter);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_search failed %s\n",
-			   tldap_errstr(debug_ctx(), state->ld, rc)));
+			   tldap_errstr(talloc_tos(), state->ld, rc)));
 		return NT_STATUS_LDAP(rc);
 	}
 	if (talloc_array_length(group) != 1) {
@@ -775,7 +775,7 @@ static NTSTATUS pdb_ads_create_dom_group(struct pdb_methods *m,
 	rc = tldap_add(ld, dn, num_mods, mods, NULL, 0, NULL, 0);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_add failed %s\n",
-			   tldap_errstr(debug_ctx(), state->ld, rc)));
+			   tldap_errstr(talloc_tos(), state->ld, rc)));
 		TALLOC_FREE(frame);
 		return NT_STATUS_LDAP(rc);
 	}
@@ -786,7 +786,7 @@ static NTSTATUS pdb_ads_create_dom_group(struct pdb_methods *m,
 		"(&(objectclass=group)(samaccountname=%s))", name);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("Could not find just created alias %s: %s\n",
-			   name, tldap_errstr(debug_ctx(), state->ld, rc)));
+			   name, tldap_errstr(talloc_tos(), state->ld, rc)));
 		TALLOC_FREE(frame);
 		return NT_STATUS_LDAP(rc);
 	}
@@ -834,7 +834,7 @@ static NTSTATUS pdb_ads_delete_dom_group(struct pdb_methods *m,
 	TALLOC_FREE(sidstr);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_search failed %s\n",
-			   tldap_errstr(debug_ctx(), state->ld, rc)));
+			   tldap_errstr(talloc_tos(), state->ld, rc)));
 		return NT_STATUS_LDAP(rc);
 	}
 
@@ -862,7 +862,7 @@ static NTSTATUS pdb_ads_delete_dom_group(struct pdb_methods *m,
 	TALLOC_FREE(msg);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_delete failed: %s\n",
-			   tldap_errstr(debug_ctx(), state->ld, rc)));
+			   tldap_errstr(talloc_tos(), state->ld, rc)));
 		return NT_STATUS_LDAP(rc);
 	}
 
@@ -921,7 +921,7 @@ static NTSTATUS pdb_ads_enum_group_members(struct pdb_methods *m,
 	TALLOC_FREE(sidstr);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_search failed %s\n",
-			   tldap_errstr(debug_ctx(), state->ld, rc)));
+			   tldap_errstr(talloc_tos(), state->ld, rc)));
 		return NT_STATUS_LDAP(rc);
 	}
 	switch talloc_array_length(msg) {
@@ -983,7 +983,7 @@ static NTSTATUS pdb_ads_enum_group_memberships(struct pdb_methods *m,
 		priv->dn, GTYPE_SECURITY_GLOBAL_GROUP);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_search failed %s\n",
-			   tldap_errstr(debug_ctx(), state->ld, rc)));
+			   tldap_errstr(talloc_tos(), state->ld, rc)));
 		return NT_STATUS_LDAP(rc);
 	}
 
@@ -1072,7 +1072,7 @@ static NTSTATUS pdb_ads_mod_groupmem(struct pdb_methods *m,
 	TALLOC_FREE(frame);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_modify failed: %s\n",
-			   tldap_errstr(debug_ctx(), state->ld, rc)));
+			   tldap_errstr(talloc_tos(), state->ld, rc)));
 		if (rc == TLDAP_TYPE_OR_VALUE_EXISTS) {
 			return NT_STATUS_MEMBER_IN_GROUP;
 		}
@@ -1146,7 +1146,7 @@ static NTSTATUS pdb_ads_create_alias(struct pdb_methods *m,
 	rc = tldap_add(ld, dn, num_mods, mods, NULL, 0, NULL, 0);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_add failed %s\n",
-			   tldap_errstr(debug_ctx(), state->ld, rc)));
+			   tldap_errstr(talloc_tos(), state->ld, rc)));
 		TALLOC_FREE(frame);
 		return NT_STATUS_LDAP(rc);
 	}
@@ -1157,7 +1157,7 @@ static NTSTATUS pdb_ads_create_alias(struct pdb_methods *m,
 		"(&(objectclass=group)(samaccountname=%s))", name);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("Could not find just created alias %s: %s\n",
-			   name, tldap_errstr(debug_ctx(), state->ld, rc)));
+			   name, tldap_errstr(talloc_tos(), state->ld, rc)));
 		TALLOC_FREE(frame);
 		return NT_STATUS_LDAP(rc);
 	}
@@ -1210,7 +1210,7 @@ static NTSTATUS pdb_ads_delete_alias(struct pdb_methods *m,
 	TALLOC_FREE(sidstr);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_search failed: %s\n",
-			   tldap_errstr(debug_ctx(), state->ld, rc)));
+			   tldap_errstr(talloc_tos(), state->ld, rc)));
 		TALLOC_FREE(dn);
 		return NT_STATUS_LDAP(rc);
 	}
@@ -1228,7 +1228,7 @@ static NTSTATUS pdb_ads_delete_alias(struct pdb_methods *m,
 	rc = tldap_delete(ld, dn, NULL, 0, NULL, 0);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_delete failed: %s\n",
-			   tldap_errstr(debug_ctx(), state->ld, rc)));
+			   tldap_errstr(talloc_tos(), state->ld, rc)));
 		TALLOC_FREE(dn);
 		return NT_STATUS_LDAP(rc);
 	}
@@ -1269,7 +1269,7 @@ static NTSTATUS pdb_ads_set_aliasinfo(struct pdb_methods *m,
 	TALLOC_FREE(sidstr);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_search failed %s\n",
-			   tldap_errstr(debug_ctx(), state->ld, rc)));
+			   tldap_errstr(talloc_tos(), state->ld, rc)));
 		return NT_STATUS_LDAP(rc);
 	}
 	switch talloc_array_length(msg) {
@@ -1310,7 +1310,7 @@ static NTSTATUS pdb_ads_set_aliasinfo(struct pdb_methods *m,
 	TALLOC_FREE(msg);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_modify failed: %s\n",
-			   tldap_errstr(debug_ctx(), state->ld, rc)));
+			   tldap_errstr(talloc_tos(), state->ld, rc)));
 		return NT_STATUS_LDAP(rc);
 	}
 	return NT_STATUS_OK;
@@ -1333,7 +1333,7 @@ static NTSTATUS pdb_ads_sid2dn(struct pdb_ads_state *state,
 	TALLOC_FREE(sidstr);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_search failed %s\n",
-			   tldap_errstr(debug_ctx(), state->ld, rc)));
+			   tldap_errstr(talloc_tos(), state->ld, rc)));
 		return NT_STATUS_LDAP(rc);
 	}
 
@@ -1406,7 +1406,7 @@ static NTSTATUS pdb_ads_mod_aliasmem(struct pdb_methods *m,
 	TALLOC_FREE(frame);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_modify failed: %s\n",
-			   tldap_errstr(debug_ctx(), state->ld, rc)));
+			   tldap_errstr(talloc_tos(), state->ld, rc)));
 		if (rc == TLDAP_TYPE_OR_VALUE_EXISTS) {
 			return NT_STATUS_MEMBER_IN_ALIAS;
 		}
@@ -1488,7 +1488,7 @@ static NTSTATUS pdb_ads_enum_aliasmem(struct pdb_methods *m,
 	TALLOC_FREE(sidstr);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_search failed %s\n",
-			   tldap_errstr(debug_ctx(), state->ld, rc)));
+			   tldap_errstr(talloc_tos(), state->ld, rc)));
 		return NT_STATUS_LDAP(rc);
 	}
 	switch talloc_array_length(msg) {
@@ -1585,7 +1585,7 @@ static NTSTATUS pdb_ads_enum_alias_memberships(struct pdb_methods *m,
 	TALLOC_FREE(filter);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("tldap_search failed %s\n",
-			   tldap_errstr(debug_ctx(), state->ld, rc)));
+			   tldap_errstr(talloc_tos(), state->ld, rc)));
 		return NT_STATUS_LDAP(rc);
 	}
 
@@ -1658,7 +1658,7 @@ static NTSTATUS pdb_ads_lookup_rids(struct pdb_methods *m,
 		TALLOC_FREE(sidstr);
 		if (rc != TLDAP_SUCCESS) {
 			DEBUG(10, ("ldap_search failed %s\n",
-				   tldap_errstr(debug_ctx(), state->ld, rc)));
+				   tldap_errstr(talloc_tos(), state->ld, rc)));
 			continue;
 		}
 
@@ -1797,7 +1797,7 @@ static bool pdb_ads_search_filter(struct pdb_methods *m,
 		"%s", filter);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_search_ext_s failed: %s\n",
-			   tldap_errstr(debug_ctx(), state->ld, rc)));
+			   tldap_errstr(talloc_tos(), state->ld, rc)));
 		return false;
 	}
 
@@ -2220,7 +2220,7 @@ static NTSTATUS pdb_ads_connect(struct pdb_ads_state *state,
 	rc = tldap_fetch_rootdse(ld);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("Could not retrieve rootdse: %s\n",
-			   tldap_errstr(debug_ctx(), state->ld, rc)));
+			   tldap_errstr(talloc_tos(), state->ld, rc)));
 		status = NT_STATUS_LDAP(rc);
 		goto done;
 	}
@@ -2253,7 +2253,7 @@ static NTSTATUS pdb_ads_connect(struct pdb_ads_state *state,
 		talloc_tos(), &domain, "(objectclass=*)");
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("Could not retrieve domain: %s\n",
-			   tldap_errstr(debug_ctx(), state->ld, rc)));
+			   tldap_errstr(talloc_tos(), state->ld, rc)));
 		status = NT_STATUS_LDAP(rc);
 		goto done;
 	}
@@ -2285,7 +2285,7 @@ static NTSTATUS pdb_ads_connect(struct pdb_ads_state *state,
 		talloc_tos(), &ncname, "(ncname=%s)", state->domaindn);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("Could not retrieve ncname: %s\n",
-			   tldap_errstr(debug_ctx(), state->ld, rc)));
+			   tldap_errstr(talloc_tos(), state->ld, rc)));
 		status = NT_STATUS_LDAP(rc);
 		goto done;
 	}

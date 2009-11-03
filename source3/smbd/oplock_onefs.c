@@ -67,22 +67,22 @@ const char *onefs_cb_record_str_dbg(const struct onefs_callback_record *r)
 	char *result;
 
 	if (r == NULL) {
-		result = talloc_strdup(debug_ctx(), "NULL callback record");
+		result = talloc_strdup(talloc_tos(), "NULL callback record");
 		return result;
 	}
 
 	switch (r->state) {
 	case ONEFS_OPEN_FILE:
-		result = talloc_asprintf(debug_ctx(), "cb record %llu for "
+		result = talloc_asprintf(talloc_tos(), "cb record %llu for "
 					 "file %s", r->id,
 					 fsp_str_dbg(r->data.fsp));
 	case ONEFS_WAITING_FOR_OPLOCK:
-		result = talloc_asprintf(debug_ctx(), "cb record %llu for "
+		result = talloc_asprintf(talloc_tos(), "cb record %llu for "
 					 "pending mid %d", r->id,
 					 (int)r->data.mid);
 		break;
 	default:
-		result = talloc_asprintf(debug_ctx(), "cb record %llu unknown "
+		result = talloc_asprintf(talloc_tos(), "cb record %llu unknown "
 					 "state %d", r->id, r->state);
 		break;
 	}
