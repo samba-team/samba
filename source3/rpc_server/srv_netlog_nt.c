@@ -192,6 +192,19 @@ WERROR _netr_LogonControl2Ex(pipes_struct *p,
 		return WERR_INVALID_PARAM;
 	}
 
+	switch (r->in.function_code) {
+	case NETLOGON_CONTROL_TC_VERIFY:
+	case NETLOGON_CONTROL_CHANGE_PASSWORD:
+	case NETLOGON_CONTROL_REDISCOVER:
+		if (!nt_token_check_domain_rid(p->server_info->ptok, DOMAIN_GROUP_RID_ADMINS) &&
+		    !nt_token_check_sid(&global_sid_Builtin_Administrators, p->server_info->ptok)) {
+			return WERR_ACCESS_DENIED;
+		}
+		break;
+	default:
+		break;
+	}
+
 	tc_status = WERR_NO_SUCH_DOMAIN;
 
 	switch (r->in.function_code) {
