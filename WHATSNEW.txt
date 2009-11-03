@@ -22,6 +22,7 @@ smb.conf changes
    --------------                      -----------     -------
 
    create krb5 conf		       New	       yes
+   cups encrypt			       New	       no
    debug hires timestamp	       Changed Default yes
    ldap follow referral		       New	       auto
    store create time		       New	       no
