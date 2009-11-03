@@ -271,6 +271,7 @@ struct global {
 	char *ctdbdSocket;
 	char **szClusterAddresses;
 	bool clustering;
+	int ctdb_timeout;
 	int ldap_passwd_sync;
 	int ldap_replication_sleep;
 	int ldap_timeout; /* This is initialised in init_globals */
@@ -2537,6 +2538,15 @@ static struct parm_struct parm_table[] = {
 		.type		= P_BOOL,
 		.p_class	= P_GLOBAL,
 		.ptr		= &Globals.clustering,
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED | FLAG_GLOBAL,
+	},
+	{
+		.label		= "ctdb timeout",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.ptr		= &Globals.ctdb_timeout,
 		.special	= NULL,
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED | FLAG_GLOBAL,
@@ -5107,6 +5117,7 @@ static void init_globals(bool first_time_only)
 	string_set(&Globals.ctdbdSocket, "");
 	Globals.szClusterAddresses = NULL;
 	Globals.clustering = False;
+	Globals.ctdb_timeout = 0;
 
 	Globals.winbind_cache_time = 300;	/* 5 minutes */
 	Globals.winbind_reconnect_delay = 30;	/* 30 seconds */
@@ -5557,6 +5568,7 @@ FN_GLOBAL_INTEGER(lp_cups_connection_timeout, &Globals.cups_connection_timeout)
 FN_GLOBAL_CONST_STRING(lp_ctdbd_socket, &Globals.ctdbdSocket)
 FN_GLOBAL_LIST(lp_cluster_addresses, &Globals.szClusterAddresses)
 FN_GLOBAL_BOOL(lp_clustering, &Globals.clustering)
+FN_GLOBAL_INTEGER(lp_ctdb_timeout, &Globals.ctdb_timeout)
 FN_LOCAL_STRING(lp_printcommand, szPrintcommand)
 FN_LOCAL_STRING(lp_lpqcommand, szLpqcommand)
 FN_LOCAL_STRING(lp_lprmcommand, szLprmcommand)

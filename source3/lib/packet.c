@@ -101,7 +101,8 @@ NTSTATUS packet_fd_read(struct packet_context *ctx)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS packet_fd_read_sync(struct packet_context *ctx)
+NTSTATUS packet_fd_read_sync(struct packet_context *ctx,
+			     struct timeval *timeout)
 {
 	int res;
 	fd_set r_fds;
@@ -109,7 +110,12 @@ NTSTATUS packet_fd_read_sync(struct packet_context *ctx)
 	FD_ZERO(&r_fds);
 	FD_SET(ctx->fd, &r_fds);
 
-	res = sys_select(ctx->fd+1, &r_fds, NULL, NULL, NULL);
+	res = sys_select(ctx->fd+1, &r_fds, NULL, NULL, timeout);
+
+	if (res == 0) {
+		DEBUG(10, ("select timed out\n"));
+		return NT_STATUS_IO_TIMEOUT;
+	}
 
 	if (res == -1) {
 		DEBUG(10, ("select returned %s\n", strerror(errno)));
