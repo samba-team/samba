@@ -194,13 +194,18 @@ CTDB_DEBUGLEVEL=ERR
 # The default is not to use syslog.
 # CTDB_SYSLOG=no
 
+# Should the 99.timeout monitor event script be run?
+# This event script just sleeps long enough to trigger the
+# event script timeout. Might be useful for debugging.
+# The default is "no".
+# CTDB_RUN_TIMEOUT_MONITOR=no
+
 # set any default tuning options for ctdb
 # use CTDB_SET_XXXX=value where XXXX is the name of the tuning
 # variable
 # for example
 #    CTDB_SET_TRAVERSETIMEOUT=60
 # you can get a list of variables using "ctdb listvars"
-
 
 # any other options you might want. Run ctdbd --help for a list
 # CTDB_OPTIONS=
