@@ -393,7 +393,7 @@ static NTSTATUS test_become_dc_schema_chunk(void *private_data,
 
 		NT_STATUS_HAVE_NO_MEMORY(s->self_made_schema);
 
-		status = dsdb_load_oid_mappings_drsuapi(s->self_made_schema, mapping_ctr);
+		status = dsdb_load_prefixmap_from_drsuapi(s->self_made_schema, mapping_ctr);
 		if (!W_ERROR_IS_OK(status)) {
 			return werror_to_ntstatus(status);
 		}

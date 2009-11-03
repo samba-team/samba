@@ -45,62 +45,23 @@ struct dsdb_schema *dsdb_new_schema(TALLOC_CTX *mem_ctx, struct smb_iconv_conven
 }
 
 
-WERROR dsdb_load_oid_mappings_drsuapi(struct dsdb_schema *schema, const struct drsuapi_DsReplicaOIDMapping_Ctr *ctr)
+WERROR dsdb_load_prefixmap_from_drsuapi(struct dsdb_schema *schema,
+					const struct drsuapi_DsReplicaOIDMapping_Ctr *ctr)
 {
-	uint32_t i,j;
+	WERROR werr;
+	const char *schema_info;
+	struct dsdb_schema_prefixmap *pfm;
 
-	schema->prefixes = talloc_array(schema, struct dsdb_schema_oid_prefix, ctr->num_mappings);
-	W_ERROR_HAVE_NO_MEMORY(schema->prefixes);
+	werr = dsdb_schema_pfm_from_drsuapi_pfm(ctr, schema, &pfm, &schema_info);
+	W_ERROR_NOT_OK_RETURN(werr);
 
-	for (i=0, j=0; i < ctr->num_mappings; i++) {
-		if (ctr->mappings[i].oid.binary_oid == NULL) {
-			return WERR_INVALID_PARAM;
-		}
+	/* set loaded prefixMap */
+	talloc_free(schema->prefixmap);
+	schema->prefixmap = pfm;
 
-		if (ctr->mappings[i].oid.binary_oid[0] == 0xFF) {
-			if (ctr->mappings[i].id_prefix != 0) {
-				return WERR_INVALID_PARAM;
-			}
+	talloc_free(discard_const(schema->schema_info));
+	schema->schema_info = schema_info;
 
-			/* the magic value should be in the last array member */
-			if (i != (ctr->num_mappings - 1)) {
-				return WERR_INVALID_PARAM;
-			}
-
-			if (ctr->mappings[i].oid.length != 21) {
-				return WERR_INVALID_PARAM;
-			}
-
-			schema->schema_info = hex_encode_talloc(schema,
-								ctr->mappings[i].oid.binary_oid,
-								ctr->mappings[i].oid.length);
-			W_ERROR_HAVE_NO_MEMORY(schema->schema_info);
-		} else {
-			DATA_BLOB oid_blob;
-			const char *partial_oid = NULL;
-
-			/* the last array member should contain the magic value not a oid */
-			if (i == (ctr->num_mappings - 1)) {
-				return WERR_INVALID_PARAM;
-			}
-
-			oid_blob = data_blob_const(ctr->mappings[i].oid.binary_oid,
-						   ctr->mappings[i].oid.length);
-			if (!ber_read_partial_OID_String(schema->prefixes, oid_blob, &partial_oid)) {
-				DEBUG(0, ("ber_read_partial_OID failed on prefixMap item with id: 0x%X",
-					  ctr->mappings[i].id_prefix));
-				return WERR_INVALID_PARAM;
-			}
-
-			schema->prefixes[j].id	= ctr->mappings[i].id_prefix<<16;
-			schema->prefixes[j].oid	= partial_oid;
-			W_ERROR_HAVE_NO_MEMORY(schema->prefixes[j].oid);
-			schema->prefixes[j].oid_len = strlen(schema->prefixes[j].oid);
-			j++;
-		}
-	}
-
-	schema->num_prefixes = j;
 	return WERR_OK;
 }
 
@@ -148,7 +109,7 @@ WERROR dsdb_load_oid_mappings_ldb(struct dsdb_schema *schema,
 	pfm.ctr.dsdb.mappings[pfm.ctr.dsdb.num_mappings - 1].oid.binary_oid	= schema_info_blob.data;
 
 	/* call the drsuapi version */
-	status = dsdb_load_oid_mappings_drsuapi(schema, &pfm.ctr.dsdb);
+	status = dsdb_load_prefixmap_from_drsuapi(schema, &pfm.ctr.dsdb);
 	talloc_free(mem_ctx);
 
 	W_ERROR_NOT_OK_RETURN(status);
