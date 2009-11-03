@@ -771,7 +771,7 @@ bool prs_dcerpc_status(const char *name, prs_struct *ps, int depth, NTSTATUS *st
 	}
 
 	DEBUGADD(5,("%s%04x %s: %s\n", tab_depth(5,depth), ps->data_offset, name,
-		 dcerpc_errstr(debug_ctx(), NT_STATUS_V(*status))));
+		 dcerpc_errstr(talloc_tos(), NT_STATUS_V(*status))));
 
 	ps->data_offset += sizeof(uint32);
 
