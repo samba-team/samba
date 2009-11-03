@@ -2463,6 +2463,10 @@ static bool test_QueryDomainInfoPolicy(struct dcerpc_pipe *p,
 	int i;
 	bool ret = true;
 
+	if (torture_setting_bool(tctx, "samba3", false)) {
+		torture_skip(tctx, "skipping QueryDomainInformationPolicy test\n");
+	}
+
 	torture_comment(tctx, "\nTesting QueryDomainInformationPolicy\n");
 
 	for (i=2;i<4;i++) {
@@ -2498,21 +2502,20 @@ static bool test_QueryInfoPolicyCalls(	bool version2,
 	NTSTATUS status;
 	int i;
 	bool ret = true;
+	const char *call = talloc_asprintf(tctx, "QueryInfoPolicy%s", version2 ? "2":"");
 
-	if (version2)
-		torture_comment(tctx, "\nTesting QueryInfoPolicy2\n");
-	else
-		torture_comment(tctx, "\nTesting QueryInfoPolicy\n");
+	torture_comment(tctx, "\nTesting %s\n", call);
+
+	if (version2 && torture_setting_bool(tctx, "samba3", false)) {
+		torture_skip(tctx, "skipping QueryInfoPolicy2 tests\n");
+	}
 
 	for (i=1;i<=14;i++) {
 		r.in.handle = handle;
 		r.in.level = i;
 		r.out.info = &info;
 
-		if (version2)
-			torture_comment(tctx, "\nTrying QueryInfoPolicy2 level %d\n", i);
-		else
-			torture_comment(tctx, "\nTrying QueryInfoPolicy level %d\n", i);
+		torture_comment(tctx, "\nTrying %s level %d\n", call, i);
 
 		if (version2)
 			/* We can perform the cast, because both types are
@@ -2533,9 +2536,6 @@ static bool test_QueryInfoPolicyCalls(	bool version2,
 			break;
 		case LSA_POLICY_INFO_DOMAIN:
 		case LSA_POLICY_INFO_ACCOUNT_DOMAIN:
-		case LSA_POLICY_INFO_L_ACCOUNT_DOMAIN:
-		case LSA_POLICY_INFO_DNS_INT:
-		case LSA_POLICY_INFO_DNS:
 		case LSA_POLICY_INFO_REPLICA:
 		case LSA_POLICY_INFO_QUOTA:
 		case LSA_POLICY_INFO_ROLE:
@@ -2543,10 +2543,21 @@ static bool test_QueryInfoPolicyCalls(	bool version2,
 		case LSA_POLICY_INFO_AUDIT_EVENTS:
 		case LSA_POLICY_INFO_PD:
 			if (!NT_STATUS_IS_OK(status)) {
-				if (version2)
-					torture_comment(tctx, "QueryInfoPolicy2 failed - %s\n", nt_errstr(status));
-				else
-					torture_comment(tctx, "QueryInfoPolicy failed - %s\n", nt_errstr(status));
+				torture_comment(tctx, "%s failed - %s\n", call, nt_errstr(status));
+				ret = false;
+			}
+			break;
+		case LSA_POLICY_INFO_L_ACCOUNT_DOMAIN:
+		case LSA_POLICY_INFO_DNS_INT:
+		case LSA_POLICY_INFO_DNS:
+			if (torture_setting_bool(tctx, "samba3", false)) {
+				/* Other levels not implemented yet */
+				if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS)) {
+					torture_comment(tctx, "%s failed - %s\n", call, nt_errstr(status));
+					ret = false;
+				}
+			} else if (!NT_STATUS_IS_OK(status)) {
+				torture_comment(tctx, "%s failed - %s\n", call, nt_errstr(status));
 				ret = false;
 			}
 			break;
@@ -2554,17 +2565,11 @@ static bool test_QueryInfoPolicyCalls(	bool version2,
 			if (torture_setting_bool(tctx, "samba4", false)) {
 				/* Other levels not implemented yet */
 				if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS)) {
-					if (version2)
-						torture_comment(tctx, "QueryInfoPolicy2 failed - %s\n", nt_errstr(status));
-					else
-						torture_comment(tctx, "QueryInfoPolicy failed - %s\n", nt_errstr(status));
+					torture_comment(tctx, "%s failed - %s\n", call, nt_errstr(status));
 					ret = false;
 				}
 			} else if (!NT_STATUS_IS_OK(status)) {
-				if (version2)
-					torture_comment(tctx, "QueryInfoPolicy2 failed - %s\n", nt_errstr(status));
-				else
-					torture_comment(tctx, "QueryInfoPolicy failed - %s\n", nt_errstr(status));
+				torture_comment(tctx, "%s failed - %s\n", call, nt_errstr(status));
 				ret = false;
 			}
 			break;
