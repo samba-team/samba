@@ -155,3 +155,82 @@ void endlmhosts(XFILE *fp)
 	x_fclose(fp);
 }
 
+/********************************************************
+ Resolve via "lmhosts" method.
+*********************************************************/
+
+NTSTATUS resolve_lmhosts_file_as_sockaddr(const char *lmhosts_file, 
+					  const char *name, int name_type,
+					  TALLOC_CTX *mem_ctx, 
+					  struct sockaddr_storage **return_iplist,
+					  int *return_count)
+{
+	/*
+	 * "lmhosts" means parse the local lmhosts file.
+	 */
+
+	XFILE *fp;
+	char *lmhost_name = NULL;
+	int name_type2;
+	struct sockaddr_storage return_ss;
+	NTSTATUS status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+	TALLOC_CTX *ctx = NULL;
+
+	*return_iplist = NULL;
+	*return_count = 0;
+
+	DEBUG(3,("resolve_lmhosts: "
+		"Attempting lmhosts lookup for name %s<0x%x>\n",
+		name, name_type));
+
+	fp = startlmhosts(lmhosts_file);
+
+	if ( fp == NULL )
+		return NT_STATUS_NO_SUCH_FILE;
+
+	ctx = talloc_new(mem_ctx);
+	if (!ctx) {
+		endlmhosts(fp);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	while (getlmhostsent(ctx, fp, &lmhost_name, &name_type2, &return_ss)) {
+
+		if (!strequal(name, lmhost_name)) {
+			TALLOC_FREE(lmhost_name);
+			continue;
+		}
+
+		if ((name_type2 != -1) && (name_type != name_type2)) {
+			TALLOC_FREE(lmhost_name);
+			continue;
+		}
+		
+		*return_iplist = talloc_realloc(ctx, (*return_iplist), 
+						struct sockaddr_storage,
+						(*return_count)+1);
+
+		if ((*return_iplist) == NULL) {
+			TALLOC_FREE(ctx);
+			endlmhosts(fp);
+			DEBUG(3,("resolve_lmhosts: talloc_realloc fail !\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		(*return_iplist)[*return_count] = return_ss;
+		*return_count += 1;
+
+		/* we found something */
+		status = NT_STATUS_OK;
+
+		/* Multiple names only for DC lookup */
+		if (name_type != 0x1c)
+			break;
+	}
+
+	talloc_steal(mem_ctx, *return_iplist);
+	TALLOC_FREE(ctx);
+	endlmhosts(fp);
+	return status;
+}
+

@@ -1101,11 +1101,7 @@ static NTSTATUS resolve_lmhosts(const char *name, int name_type,
 	/*
 	 * "lmhosts" means parse the local lmhosts file.
 	 */
-
-	XFILE *fp;
-	char *lmhost_name = NULL;
-	int name_type2;
-	struct sockaddr_storage return_ss;
+	struct sockaddr_storage *ss_list;
 	NTSTATUS status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	TALLOC_CTX *ctx = NULL;
 
@@ -1116,54 +1112,28 @@ static NTSTATUS resolve_lmhosts(const char *name, int name_type,
 		"Attempting lmhosts lookup for name %s<0x%x>\n",
 		name, name_type));
 
-	fp = startlmhosts(get_dyn_LMHOSTSFILE());
-
-	if ( fp == NULL )
-		return NT_STATUS_NO_SUCH_FILE;
-
 	ctx = talloc_init("resolve_lmhosts");
 	if (!ctx) {
-		endlmhosts(fp);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	while (getlmhostsent(ctx, fp, &lmhost_name, &name_type2, &return_ss)) {
-
-		if (!strequal(name, lmhost_name)) {
-			TALLOC_FREE(lmhost_name);
-			continue;
-		}
-
-		if ((name_type2 != -1) && (name_type != name_type2)) {
-			TALLOC_FREE(lmhost_name);
-			continue;
-		}
-
-		*return_iplist = SMB_REALLOC_ARRAY((*return_iplist),
-					struct ip_service,
-					(*return_count)+1);
-
-		if ((*return_iplist) == NULL) {
-			TALLOC_FREE(ctx);
-			endlmhosts(fp);
-			DEBUG(3,("resolve_lmhosts: malloc fail !\n"));
+	status = resolve_lmhosts_file_as_sockaddr(get_dyn_LMHOSTSFILE(), 
+						  name, name_type, 
+						  ctx, 
+						  &ss_list, 
+						  return_count);
+	if (NT_STATUS_IS_OK(status)) {
+		if (convert_ss2service(return_iplist, 
+				       ss_list,
+				       *return_count)) {
+			talloc_free(ctx);
+			return NT_STATUS_OK;
+		} else {
+			talloc_free(ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
-
-		(*return_iplist)[*return_count].ss = return_ss;
-		(*return_iplist)[*return_count].port = PORT_NONE;
-		*return_count += 1;
-
-		/* we found something */
-		status = NT_STATUS_OK;
-
-		/* Multiple names only for DC lookup */
-		if (name_type != 0x1c)
-			break;
 	}
-
-	TALLOC_FREE(ctx);
-	endlmhosts(fp);
+	talloc_free(ctx);
 	return status;
 }
 
