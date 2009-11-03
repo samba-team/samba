@@ -1525,7 +1525,9 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 	pad -= off;
 	off += pad;
 	/* initialize padding to 0 */
-	memset(pdata, 0, pad);
+	if (pad) {
+		memset(pdata, 0, pad);
+	}
 	space_remaining -= pad;
 
 	pdata += pad;
@@ -2159,11 +2161,16 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 				struct ea_list *name_list)
 {
 	bool resume_key = false;
-	const uint8_t align = 4;
+	uint8_t align = 4;
 	const bool do_pad = true;
 
 	if (requires_resume_key) {
 		resume_key = true;
+	}
+
+	if (info_level >= 1 && info_level <= 3) {
+		/* No alignment on earlier info levels. */
+		align = 1;
 	}
 
 	return smbd_dirptr_lanman2_entry(ctx, conn, dirptr, flags2,
