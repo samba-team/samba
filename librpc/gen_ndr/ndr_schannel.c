@@ -28,6 +28,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_netlogon_creds_CredentialState(struct ndr_pu
 			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->account_name, CH_UTF8)));
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->account_name, ndr_charset_length(r->account_name, CH_UTF8), sizeof(uint8_t), CH_UTF8));
 			NDR_CHECK(ndr_push_unique_ptr(ndr, r->sid));
+			NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 			if (r->sid) {
@@ -75,6 +76,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_netlogon_creds_CredentialState(struct ndr_pu
 			} else {
 				r->sid = NULL;
 			}
+			NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 			if (r->sid) {
@@ -380,6 +382,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_NL_AUTH_MESSAGE(struct ndr_push *ndr, int nd
 			NDR_CHECK(ndr_push_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_SCALARS, &r->utf8_netbios_computer));
 			NDR_CHECK(ndr_push_set_switch_value(ndr, &r->Buffer, r->MessageType & NL_NEGOTIATE_RESPONSE));
 			NDR_CHECK(ndr_push_NL_AUTH_MESSAGE_BUFFER_REPLY(ndr, NDR_SCALARS, &r->Buffer));
+			NDR_CHECK(ndr_push_trailer_align(ndr, 4));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 			NDR_CHECK(ndr_push_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_BUFFERS, &r->oem_netbios_domain));
@@ -415,6 +418,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_NL_AUTH_MESSAGE(struct ndr_pull *ndr, int nd
 			NDR_CHECK(ndr_pull_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_SCALARS, &r->utf8_netbios_computer));
 			NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->Buffer, r->MessageType & NL_NEGOTIATE_RESPONSE));
 			NDR_CHECK(ndr_pull_NL_AUTH_MESSAGE_BUFFER_REPLY(ndr, NDR_SCALARS, &r->Buffer));
+			NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 			NDR_CHECK(ndr_pull_NL_AUTH_MESSAGE_BUFFER(ndr, NDR_BUFFERS, &r->oem_netbios_domain));
@@ -457,14 +461,14 @@ _PUBLIC_ void ndr_print_NL_AUTH_MESSAGE(struct ndr_print *ndr, const char *name,
 
 static enum ndr_err_code ndr_push_NL_SIGNATURE_ALGORITHM(struct ndr_push *ndr, int ndr_flags, enum NL_SIGNATURE_ALGORITHM r)
 {
-	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint1632(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_NL_SIGNATURE_ALGORITHM(struct ndr_pull *ndr, int ndr_flags, enum NL_SIGNATURE_ALGORITHM *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint1632(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -482,14 +486,14 @@ _PUBLIC_ void ndr_print_NL_SIGNATURE_ALGORITHM(struct ndr_print *ndr, const char
 
 static enum ndr_err_code ndr_push_NL_SEAL_ALGORITHM(struct ndr_push *ndr, int ndr_flags, enum NL_SEAL_ALGORITHM r)
 {
-	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint1632(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_NL_SEAL_ALGORITHM(struct ndr_pull *ndr, int ndr_flags, enum NL_SEAL_ALGORITHM *r)
 {
 	uint16_t v;
-	NDR_CHECK(ndr_pull_enum_uint16(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint1632(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -512,7 +516,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_NL_AUTH_SIGNATURE(struct ndr_push *ndr, int 
 		uint32_t _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
 		if (ndr_flags & NDR_SCALARS) {
-			NDR_CHECK(ndr_push_align(ndr, 2));
+			NDR_CHECK(ndr_push_align(ndr, 3));
 			NDR_CHECK(ndr_push_NL_SIGNATURE_ALGORITHM(ndr, NDR_SCALARS, NL_SIGN_HMAC_MD5));
 			NDR_CHECK(ndr_push_NL_SEAL_ALGORITHM(ndr, NDR_SCALARS, r->SealAlgorithm));
 			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->Pad));
@@ -520,6 +524,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_NL_AUTH_SIGNATURE(struct ndr_push *ndr, int 
 			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->SequenceNumber, 8));
 			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->Checksum, 8));
 			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->Confounder, 8));
+			NDR_CHECK(ndr_push_trailer_align(ndr, 3));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 		}
@@ -534,7 +539,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_NL_AUTH_SIGNATURE(struct ndr_pull *ndr, int 
 		uint32_t _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
 		if (ndr_flags & NDR_SCALARS) {
-			NDR_CHECK(ndr_pull_align(ndr, 2));
+			NDR_CHECK(ndr_pull_align(ndr, 3));
 			NDR_CHECK(ndr_pull_NL_SIGNATURE_ALGORITHM(ndr, NDR_SCALARS, &r->SignatureAlgorithm));
 			NDR_CHECK(ndr_pull_NL_SEAL_ALGORITHM(ndr, NDR_SCALARS, &r->SealAlgorithm));
 			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->Pad));
@@ -542,6 +547,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_NL_AUTH_SIGNATURE(struct ndr_pull *ndr, int 
 			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->SequenceNumber, 8));
 			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->Checksum, 8));
 			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->Confounder, 8));
+			NDR_CHECK(ndr_pull_trailer_align(ndr, 3));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 		}
@@ -575,7 +581,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_NL_AUTH_SHA2_SIGNATURE(struct ndr_push *ndr,
 		uint32_t _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
 		if (ndr_flags & NDR_SCALARS) {
-			NDR_CHECK(ndr_push_align(ndr, 2));
+			NDR_CHECK(ndr_push_align(ndr, 3));
 			NDR_CHECK(ndr_push_NL_SIGNATURE_ALGORITHM(ndr, NDR_SCALARS, NL_SIGN_HMAC_SHA256));
 			NDR_CHECK(ndr_push_NL_SEAL_ALGORITHM(ndr, NDR_SCALARS, r->SealAlgorithm));
 			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->Pad));
@@ -583,6 +589,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_NL_AUTH_SHA2_SIGNATURE(struct ndr_push *ndr,
 			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->SequenceNumber, 8));
 			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->Checksum, 32));
 			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->Confounder, 8));
+			NDR_CHECK(ndr_push_trailer_align(ndr, 3));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 		}
@@ -597,7 +604,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_NL_AUTH_SHA2_SIGNATURE(struct ndr_pull *ndr,
 		uint32_t _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
 		if (ndr_flags & NDR_SCALARS) {
-			NDR_CHECK(ndr_pull_align(ndr, 2));
+			NDR_CHECK(ndr_pull_align(ndr, 3));
 			NDR_CHECK(ndr_pull_NL_SIGNATURE_ALGORITHM(ndr, NDR_SCALARS, &r->SignatureAlgorithm));
 			NDR_CHECK(ndr_pull_NL_SEAL_ALGORITHM(ndr, NDR_SCALARS, &r->SealAlgorithm));
 			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->Pad));
@@ -605,6 +612,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_NL_AUTH_SHA2_SIGNATURE(struct ndr_pull *ndr,
 			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->SequenceNumber, 8));
 			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->Checksum, 32));
 			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->Confounder, 8));
+			NDR_CHECK(ndr_pull_trailer_align(ndr, 3));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 		}

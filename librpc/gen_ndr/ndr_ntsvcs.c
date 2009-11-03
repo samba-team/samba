@@ -45,6 +45,7 @@ static enum ndr_err_code ndr_push_PNP_HwProfInfo(struct ndr_push *ndr, int ndr_f
 			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->friendly_name[cntr_friendly_name_0]));
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->flags));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -61,6 +62,7 @@ static enum ndr_err_code ndr_pull_PNP_HwProfInfo(struct ndr_pull *ndr, int ndr_f
 			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->friendly_name[cntr_friendly_name_0]));
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->flags));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
