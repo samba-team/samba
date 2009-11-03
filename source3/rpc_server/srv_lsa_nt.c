@@ -577,6 +577,38 @@ NTSTATUS _lsa_QueryInfoPolicy(pipes_struct *p,
 	}
 
 	switch (r->in.level) {
+	/* according to MS-LSAD 3.1.4.4.3 */
+	case LSA_POLICY_INFO_MOD:
+	case LSA_POLICY_INFO_AUDIT_FULL_SET:
+	case LSA_POLICY_INFO_AUDIT_FULL_QUERY:
+		return NT_STATUS_INVALID_PARAMETER;
+	case LSA_POLICY_INFO_AUDIT_LOG:
+		info->audit_log.percent_full		= 0;
+		info->audit_log.maximum_log_size	= 0;
+		info->audit_log.retention_time		= 0;
+		info->audit_log.shutdown_in_progress	= 0;
+		info->audit_log.time_to_shutdown	= 0;
+		info->audit_log.next_audit_record	= 0;
+		status = NT_STATUS_OK;
+		break;
+	case LSA_POLICY_INFO_PD:
+		info->pd.name.string			= NULL;
+		status = NT_STATUS_OK;
+		break;
+	case LSA_POLICY_INFO_REPLICA:
+		info->replica.source.string		= NULL;
+		info->replica.account.string		= NULL;
+		status = NT_STATUS_OK;
+		break;
+	case LSA_POLICY_INFO_QUOTA:
+		info->quota.paged_pool			= 0;
+		info->quota.non_paged_pool		= 0;
+		info->quota.min_wss			= 0;
+		info->quota.max_wss			= 0;
+		info->quota.pagefile			= 0;
+		info->quota.unknown			= 0;
+		status = NT_STATUS_OK;
+		break;
 	case LSA_POLICY_INFO_AUDIT_EVENTS:
 		{
 
