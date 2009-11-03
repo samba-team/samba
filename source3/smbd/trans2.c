@@ -1541,7 +1541,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 
 	switch (info_level) {
 	case SMB_FIND_INFO_STANDARD:
-		DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_INFO_STANDARD\n"));
+		DEBUG(10,("smbd_marshall_dir_entry: SMB_FIND_INFO_STANDARD\n"));
 		if(requires_resume_key) {
 			SIVAL(p,0,reskey);
 			p += 4;
@@ -1577,7 +1577,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		break;
 
 	case SMB_FIND_EA_SIZE:
-		DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_EA_SIZE\n"));
+		DEBUG(10,("smbd_marshall_dir_entry: SMB_FIND_EA_SIZE\n"));
 		if (requires_resume_key) {
 			SIVAL(p,0,reskey);
 			p += 4;
@@ -1621,7 +1621,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		struct ea_list *file_list = NULL;
 		size_t ea_len = 0;
 
-		DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_EA_LIST\n"));
+		DEBUG(10,("smbd_marshall_dir_entry: SMB_FIND_EA_LIST\n"));
 		if (!name_list) {
 			return false;
 		}
@@ -1646,7 +1646,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		/* Max string size is 255 bytes. */
 		if (PTR_DIFF(p + 255 + ea_len,pdata) > space_remaining) {
 			*out_of_space = true;
-			DEBUG(9,("get_lanman2_dir_entry: out of space\n"));
+			DEBUG(9,("smbd_marshall_dir_entry: out of space\n"));
 			return False; /* Not finished - just out of space */
 		}
 
@@ -1676,7 +1676,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 	}
 
 	case SMB_FIND_FILE_BOTH_DIRECTORY_INFO:
-		DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_BOTH_DIRECTORY_INFO\n"));
+		DEBUG(10,("smbd_marshall_dir_entry: SMB_FIND_FILE_BOTH_DIRECTORY_INFO\n"));
 		was_8_3 = mangle_is_8_3(fname, True, conn->params);
 		p += 4;
 		SIVAL(p,0,reskey); p += 4;
@@ -1743,7 +1743,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		break;
 
 	case SMB_FIND_FILE_DIRECTORY_INFO:
-		DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_DIRECTORY_INFO\n"));
+		DEBUG(10,("smbd_marshall_dir_entry: SMB_FIND_FILE_DIRECTORY_INFO\n"));
 		p += 4;
 		SIVAL(p,0,reskey); p += 4;
 		put_long_date_timespec(conn->ts_res,p,create_date_ts); p += 8;
@@ -1779,7 +1779,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		break;
 
 	case SMB_FIND_FILE_FULL_DIRECTORY_INFO:
-		DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_FULL_DIRECTORY_INFO\n"));
+		DEBUG(10,("smbd_marshall_dir_entry: SMB_FIND_FILE_FULL_DIRECTORY_INFO\n"));
 		p += 4;
 		SIVAL(p,0,reskey); p += 4;
 		put_long_date_timespec(conn->ts_res,p,create_date_ts); p += 8;
@@ -1822,7 +1822,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		break;
 
 	case SMB_FIND_FILE_NAMES_INFO:
-		DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_NAMES_INFO\n"));
+		DEBUG(10,("smbd_marshall_dir_entry: SMB_FIND_FILE_NAMES_INFO\n"));
 		p += 4;
 		SIVAL(p,0,reskey); p += 4;
 		p += 4;
@@ -1854,7 +1854,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		break;
 
 	case SMB_FIND_ID_FULL_DIRECTORY_INFO:
-		DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_ID_FULL_DIRECTORY_INFO\n"));
+		DEBUG(10,("smbd_marshall_dir_entry: SMB_FIND_ID_FULL_DIRECTORY_INFO\n"));
 		p += 4;
 		SIVAL(p,0,reskey); p += 4;
 		put_long_date_timespec(conn->ts_res,p,create_date_ts); p += 8;
@@ -1900,7 +1900,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		break;
 
 	case SMB_FIND_ID_BOTH_DIRECTORY_INFO:
-		DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_ID_BOTH_DIRECTORY_INFO\n"));
+		DEBUG(10,("smbd_marshall_dir_entry: SMB_FIND_ID_BOTH_DIRECTORY_INFO\n"));
 		was_8_3 = mangle_is_8_3(fname, True, conn->params);
 		p += 4;
 		SIVAL(p,0,reskey); p += 4;
@@ -1980,14 +1980,14 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		/* Begin of SMB_QUERY_FILE_UNIX_BASIC */
 
 		if (info_level == SMB_FIND_FILE_UNIX) {
-			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_UNIX\n"));
+			DEBUG(10,("smbd_marshall_dir_entry: SMB_FIND_FILE_UNIX\n"));
 			p = store_file_unix_basic(conn, p,
 						NULL, &smb_fname->st);
 			len = srvstr_push(base_data, flags2, p,
 					  fname, PTR_DIFF(end_data, p),
 					  STR_TERMINATE);
 		} else {
-			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_UNIX_INFO2\n"));
+			DEBUG(10,("smbd_marshall_dir_entry: SMB_FIND_FILE_UNIX_INFO2\n"));
 			p = store_file_unix_basic_info2(conn, p,
 						NULL, &smb_fname->st);
 			nameptr = p;
@@ -2026,7 +2026,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 
 	if (PTR_DIFF(p,pdata) > space_remaining) {
 		*out_of_space = true;
-		DEBUG(9,("get_lanman2_dir_entry: out of space\n"));
+		DEBUG(9,("smbd_marshall_dir_entry: out of space\n"));
 		return false; /* Not finished - just out of space */
 	}
 
