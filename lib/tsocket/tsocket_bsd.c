@@ -444,9 +444,14 @@ int _tsocket_address_unix_from_path(TALLOC_CTX *mem_ctx,
 		path = "";
 	}
 
+	if (strlen(path) > sizeof(un.sun_path)-1) {
+		errno = ENAMETOOLONG;
+		return -1;
+	}
+
 	ZERO_STRUCT(un);
 	un.sun_family = AF_UNIX;
-	strncpy(un.sun_path, path, sizeof(un.sun_path));
+	strncpy(un.sun_path, path, sizeof(un.sun_path)-1);
 
 	ret = _tsocket_address_bsd_from_sockaddr(mem_ctx,
 						 (struct sockaddr *)p,
