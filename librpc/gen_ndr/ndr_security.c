@@ -865,7 +865,6 @@ _PUBLIC_ enum ndr_err_code ndr_push_security_token(struct ndr_push *ndr, int ndr
 			NDR_CHECK(ndr_push_unique_ptr(ndr, r->sids[cntr_sids_0]));
 		}
 		NDR_CHECK(ndr_push_udlong(ndr, NDR_SCALARS, r->privilege_mask));
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->default_dacl));
 		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -879,9 +878,6 @@ _PUBLIC_ enum ndr_err_code ndr_push_security_token(struct ndr_push *ndr, int ndr
 			if (r->sids[cntr_sids_0]) {
 				NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS, r->sids[cntr_sids_0]));
 			}
-		}
-		if (r->default_dacl) {
-			NDR_CHECK(ndr_push_security_acl(ndr, NDR_SCALARS|NDR_BUFFERS, r->default_dacl));
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -897,8 +893,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_token(struct ndr_pull *ndr, int ndr
 	uint32_t cntr_sids_0;
 	TALLOC_CTX *_mem_save_sids_0;
 	TALLOC_CTX *_mem_save_sids_1;
-	uint32_t _ptr_default_dacl;
-	TALLOC_CTX *_mem_save_default_dacl_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_user_sid));
@@ -928,12 +922,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_token(struct ndr_pull *ndr, int ndr
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sids_0, 0);
 		NDR_CHECK(ndr_pull_udlong(ndr, NDR_SCALARS, &r->privilege_mask));
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_default_dacl));
-		if (_ptr_default_dacl) {
-			NDR_PULL_ALLOC(ndr, r->default_dacl);
-		} else {
-			r->default_dacl = NULL;
-		}
 		if (r->sids) {
 			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->sids, r->num_sids));
 		}
@@ -963,12 +951,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_token(struct ndr_pull *ndr, int ndr
 			}
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sids_0, 0);
-		if (r->default_dacl) {
-			_mem_save_default_dacl_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->default_dacl, 0);
-			NDR_CHECK(ndr_pull_security_acl(ndr, NDR_SCALARS|NDR_BUFFERS, r->default_dacl));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_default_dacl_0, 0);
-		}
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1007,12 +989,6 @@ _PUBLIC_ void ndr_print_security_token(struct ndr_print *ndr, const char *name, 
 	}
 	ndr->depth--;
 	ndr_print_udlong(ndr, "privilege_mask", r->privilege_mask);
-	ndr_print_ptr(ndr, "default_dacl", r->default_dacl);
-	ndr->depth++;
-	if (r->default_dacl) {
-		ndr_print_security_acl(ndr, "default_dacl", r->default_dacl);
-	}
-	ndr->depth--;
 	ndr->depth--;
 }
 

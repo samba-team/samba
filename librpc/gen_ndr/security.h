@@ -350,7 +350,6 @@ struct security_token {
 	uint32_t num_sids;
 	struct dom_sid **sids;/* [unique,size_is(num_sids)] */
 	uint64_t privilege_mask;
-	struct security_acl *default_dacl;/* [unique] */
 }/* [public] */;
 
 /* bitmap security_secinfo */
