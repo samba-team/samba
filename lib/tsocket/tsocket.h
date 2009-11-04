@@ -179,6 +179,21 @@ int _tstream_unix_socketpair(TALLOC_CTX *mem_ctx1,
 	_tstream_unix_socketpair(mem_ctx1, stream1, mem_ctx2, stream2, \
 				 __location__)
 
+struct sockaddr;
+
+int _tsocket_address_bsd_from_sockaddr(TALLOC_CTX *mem_ctx,
+				       struct sockaddr *sa,
+				       size_t sa_socklen,
+				       struct tsocket_address **_addr,
+				       const char *location);
+#define tsocket_address_bsd_from_sockaddr(mem_ctx, sa, sa_socklen, _addr) \
+	_tsocket_address_bsd_from_sockaddr(mem_ctx, sa, sa_socklen, _addr, \
+					   __location__)
+
+ssize_t tsocket_address_bsd_sockaddr(const struct tsocket_address *addr,
+				     struct sockaddr *sa,
+				     size_t sa_socklen);
+
 int _tstream_bsd_existing_socket(TALLOC_CTX *mem_ctx,
 				 int fd,
 				 struct tstream_context **_stream,
