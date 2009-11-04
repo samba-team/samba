@@ -5,4 +5,5 @@ dn: ${DOMAINDN}
 objectClass: top
 objectClass: domaindns
 instanceType: 5
+nTSecurityDescriptor:: ${DESCRIPTOR}
 ${DOMAINGUID}
