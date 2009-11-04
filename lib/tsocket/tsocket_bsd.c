@@ -201,11 +201,11 @@ struct tsocket_address_bsd {
 	} u;
 };
 
-static int _tsocket_address_bsd_from_sockaddr(TALLOC_CTX *mem_ctx,
-					      struct sockaddr *sa,
-					      socklen_t sa_socklen,
-					      struct tsocket_address **_addr,
-					      const char *location)
+int _tsocket_address_bsd_from_sockaddr(TALLOC_CTX *mem_ctx,
+				       struct sockaddr *sa,
+				       size_t sa_socklen,
+				       struct tsocket_address **_addr,
+				       const char *location)
 {
 	struct tsocket_address *addr;
 	struct tsocket_address_bsd *bsda;
@@ -257,6 +257,50 @@ static int _tsocket_address_bsd_from_sockaddr(TALLOC_CTX *mem_ctx,
 
 	*_addr = addr;
 	return 0;
+}
+
+ssize_t tsocket_address_bsd_sockaddr(const struct tsocket_address *addr,
+				     struct sockaddr *sa,
+				     size_t sa_socklen)
+{
+	struct tsocket_address_bsd *bsda = talloc_get_type(addr->private_data,
+					   struct tsocket_address_bsd);
+	ssize_t rlen = 0;
+
+	if (!bsda) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	switch (bsda->u.sa.sa_family) {
+	case AF_UNIX:
+		rlen = sizeof(struct sockaddr_un);
+		break;
+	case AF_INET:
+		rlen = sizeof(struct sockaddr_in);
+		break;
+#ifdef HAVE_IPV6
+	case AF_INET6:
+		rlen = sizeof(struct sockaddr_in6);
+		break;
+#endif
+	default:
+		errno = EAFNOSUPPORT;
+		return -1;
+	}
+
+	if (sa_socklen < rlen) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (sa_socklen > sizeof(struct sockaddr_storage)) {
+		memset(sa, 0, sa_socklen);
+		sa_socklen = sizeof(struct sockaddr_storage);
+	}
+
+	memcpy(sa, &bsda->u.ss, sa_socklen);
+	return rlen;
 }
 
 int _tsocket_address_inet_from_strings(TALLOC_CTX *mem_ctx,
