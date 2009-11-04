@@ -48,13 +48,6 @@ TALLOC_CTX *hdb_samba4_mem_ctx;
 struct tevent_context *hdb_samba4_ev_ctx;
 struct loadparm_context *hdb_samba4_lp_ctx;
 
-/* hold all the info needed to send a reply */
-struct kdc_reply {
-	struct kdc_reply *next, *prev;
-	struct socket_address *dest;
-	DATA_BLOB packet;
-};
-
 typedef bool (*kdc_process_fn_t)(struct kdc_server *kdc,
 				 TALLOC_CTX *mem_ctx, 
 				 DATA_BLOB *input, 
@@ -65,15 +58,11 @@ typedef bool (*kdc_process_fn_t)(struct kdc_server *kdc,
 
 /* hold information about one kdc socket */
 struct kdc_socket {
-	struct socket_context *sock;
 	struct kdc_server *kdc;
-	struct tevent_fd *fde;
-
-	/* a queue of outgoing replies that have been deferred */
-	struct kdc_reply *send_queue;
-
+	struct tsocket_address *local_address;
 	kdc_process_fn_t process;
 };
+
 /*
   state of an open tcp connection
 */
@@ -88,145 +77,6 @@ struct kdc_tcp_connection {
 
 	kdc_process_fn_t process;
 };
-
-/*
-  handle fd send events on a KDC socket
-*/
-static void kdc_send_handler(struct kdc_socket *kdc_socket)
-{
-	while (kdc_socket->send_queue) {
-		struct kdc_reply *rep = kdc_socket->send_queue;
-		NTSTATUS status;
-		size_t sendlen;
-
-		status = socket_sendto(kdc_socket->sock, &rep->packet, &sendlen,
-				       rep->dest);
-		if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
-			break;
-		}
-		if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_BUFFER_SIZE)) {
-			/* Replace with a krb err, response to big */
-		}
-		
-		DLIST_REMOVE(kdc_socket->send_queue, rep);
-		talloc_free(rep);
-	}
-
-	if (kdc_socket->send_queue == NULL) {
-		EVENT_FD_NOT_WRITEABLE(kdc_socket->fde);
-	}
-}
-
-
-/*
-  handle fd recv events on a KDC socket
-*/
-static void kdc_recv_handler(struct kdc_socket *kdc_socket)
-{
-	NTSTATUS status;
-	TALLOC_CTX *tmp_ctx = talloc_new(kdc_socket);
-	DATA_BLOB blob;
-	struct kdc_reply *rep;
-	DATA_BLOB reply;
-	size_t nread, dsize;
-	struct socket_address *src;
-	struct socket_address *my_addr;
-	struct tsocket_address *tsrcaddr;
-	struct tsocket_address *tmyaddr;
-	int ret;
-
-	status = socket_pending(kdc_socket->sock, &dsize);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(tmp_ctx);
-		return;
-	}
-
-	blob = data_blob_talloc(tmp_ctx, NULL, dsize);
-	if (blob.data == NULL) {
-		/* hope this is a temporary low memory condition */
-		talloc_free(tmp_ctx);
-		return;
-	}
-
-	status = socket_recvfrom(kdc_socket->sock, blob.data, blob.length, &nread,
-				 tmp_ctx, &src);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(tmp_ctx);
-		return;
-	}
-	blob.length = nread;
-	
-	DEBUG(10,("Received krb5 UDP packet of length %lu from %s:%u\n", 
-		 (long)blob.length, src->addr, (uint16_t)src->port));
-	
-	my_addr = socket_get_my_addr(kdc_socket->sock, tmp_ctx);
-	if (!my_addr) {
-		talloc_free(tmp_ctx);
-		return;
-	}
-
-	ret = tsocket_address_bsd_from_sockaddr(tmp_ctx, src->sockaddr,
-				src->sockaddrlen, &tsrcaddr);
-	if (ret < 0) {
-		talloc_free(tmp_ctx);
-		return;
-	}
-
-	ret = tsocket_address_bsd_from_sockaddr(tmp_ctx, my_addr->sockaddr,
-				my_addr->sockaddrlen, &tmyaddr);
-	if (ret < 0) {
-		talloc_free(tmp_ctx);
-		return;
-	}
-
-	/* Call krb5 */
-	ret = kdc_socket->process(kdc_socket->kdc, 
-				  tmp_ctx, 
-				  &blob,  
-				  &reply,
-				  tsrcaddr,
-				  tmyaddr,
-				  1 /* Datagram */);
-	if (!ret) {
-		talloc_free(tmp_ctx);
-		return;
-	}
-
-	/* queue a pending reply */
-	rep = talloc(kdc_socket, struct kdc_reply);
-	if (rep == NULL) {
-		talloc_free(tmp_ctx);
-		return;
-	}
-	rep->dest         = talloc_steal(rep, src);
-	rep->packet       = reply;
-	talloc_steal(rep, reply.data);
-
-	if (rep->packet.data == NULL) {
-		talloc_free(rep);
-		talloc_free(tmp_ctx);
-		return;
-	}
-
-	DLIST_ADD_END(kdc_socket->send_queue, rep, struct kdc_reply *);
-	EVENT_FD_WRITEABLE(kdc_socket->fde);
-	talloc_free(tmp_ctx);
-}
-
-/*
-  handle fd events on a KDC socket
-*/
-static void kdc_socket_handler(struct tevent_context *ev, struct tevent_fd *fde,
-			       uint16_t flags, void *private_data)
-{
-	struct kdc_socket *kdc_socket = talloc_get_type(private_data, struct kdc_socket);
-	if (flags & EVENT_FD_WRITE) {
-		kdc_send_handler(kdc_socket);
-	} 
-	if (flags & EVENT_FD_READ) {
-		kdc_recv_handler(kdc_socket);
-	}
-}
 
 static void kdc_tcp_terminate_connection(struct kdc_tcp_connection *kdcconn, const char *reason)
 {
@@ -437,6 +287,105 @@ static const struct stream_server_ops kdc_tcp_stream_ops = {
 	.send_handler		= kdc_tcp_send
 };
 
+/* hold information about one kdc/kpasswd udp socket */
+struct kdc_udp_socket {
+	struct kdc_socket *kdc_socket;
+	struct tdgram_context *dgram;
+	struct tevent_queue *send_queue;
+};
+
+struct kdc_udp_call {
+	struct tsocket_address *src;
+	DATA_BLOB in;
+	DATA_BLOB out;
+};
+
+static void kdc_udp_call_sendto_done(struct tevent_req *subreq);
+
+static void kdc_udp_call_loop(struct tevent_req *subreq)
+{
+	struct kdc_udp_socket *sock = tevent_req_callback_data(subreq,
+				      struct kdc_udp_socket);
+	struct kdc_udp_call *call;
+	uint8_t *buf;
+	ssize_t len;
+	int sys_errno;
+	int ret;
+
+	call = talloc(sock, struct kdc_udp_call);
+	if (call == NULL) {
+		talloc_free(call);
+		goto done;
+	}
+
+	len = tdgram_recvfrom_recv(subreq, &sys_errno,
+				   call, &buf, &call->src);
+	TALLOC_FREE(subreq);
+	if (len == -1) {
+		talloc_free(call);
+		goto done;
+	}
+
+	call->in.data = buf;
+	call->in.length = len;
+
+	DEBUG(10,("Received krb5 UDP packet of length %lu from %s\n",
+		 (long)call->in.length,
+		 tsocket_address_string(call->src, call)));
+
+	/* Call krb5 */
+	ret = sock->kdc_socket->process(sock->kdc_socket->kdc,
+					call,
+					&call->in,
+					&call->out,
+					call->src,
+					sock->kdc_socket->local_address,
+					1 /* Datagram */);
+	if (!ret) {
+		talloc_free(call);
+		goto done;
+	}
+
+	subreq = tdgram_sendto_queue_send(call,
+					  sock->kdc_socket->kdc->task->event_ctx,
+					  sock->dgram,
+					  sock->send_queue,
+					  call->out.data,
+					  call->out.length,
+					  call->src);
+	if (subreq == NULL) {
+		talloc_free(call);
+		goto done;
+	}
+	tevent_req_set_callback(subreq, kdc_udp_call_sendto_done, call);
+
+done:
+	subreq = tdgram_recvfrom_send(sock,
+				      sock->kdc_socket->kdc->task->event_ctx,
+				      sock->dgram);
+	if (subreq == NULL) {
+		task_server_terminate(sock->kdc_socket->kdc->task,
+				      "no memory for tdgram_recvfrom_send",
+				      true);
+		return;
+	}
+	tevent_req_set_callback(subreq, kdc_udp_call_loop, sock);
+}
+
+static void kdc_udp_call_sendto_done(struct tevent_req *subreq)
+{
+	struct kdc_udp_call *call = tevent_req_callback_data(subreq,
+				       struct kdc_udp_call);
+	ssize_t ret;
+	int sys_errno;
+
+	ret = tdgram_sendto_queue_recv(subreq, &sys_errno);
+
+	/* We don't care about errors */
+
+	talloc_free(call);
+}
+
 /*
   start listening on the given address
 */
@@ -447,38 +396,23 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc,
 			       uint16_t port,
 			       kdc_process_fn_t process)
 {
- 	struct kdc_socket *kdc_socket;
-	struct socket_address *socket_address;
+	struct kdc_socket *kdc_socket;
+	struct kdc_udp_socket *kdc_udp_socket;
+	struct tevent_req *udpsubreq;
 	NTSTATUS status;
+	int ret;
 
 	kdc_socket = talloc(kdc, struct kdc_socket);
 	NT_STATUS_HAVE_NO_MEMORY(kdc_socket);
 
-	status = socket_create("ip", SOCKET_TYPE_DGRAM, &kdc_socket->sock, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(kdc_socket);
-		return status;
-	}
-
 	kdc_socket->kdc = kdc;
-	kdc_socket->send_queue = NULL;
 	kdc_socket->process = process;
 
-	talloc_steal(kdc_socket, kdc_socket->sock);
-
-	kdc_socket->fde = event_add_fd(kdc->task->event_ctx, kdc, 
-					   socket_get_fd(kdc_socket->sock), EVENT_FD_READ,
-					   kdc_socket_handler, kdc_socket);
-	
-	socket_address = socket_address_from_strings(kdc_socket, kdc_socket->sock->backend_name, 
-						      address, port);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(socket_address, kdc_socket);
-
-	status = socket_listen(kdc_socket->sock, socket_address, 0, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to bind to %s:%d UDP for %s - %s\n", 
-			 address, port, name, nt_errstr(status)));
-		talloc_free(kdc_socket);
+	ret = tsocket_address_inet_from_strings(kdc_socket, "ip",
+						address, port,
+						&kdc_socket->local_address);
+	if (ret != 0) {
+		status = map_nt_error_from_unix(errno);
 		return status;
 	}
 
@@ -495,6 +429,32 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc,
 		talloc_free(kdc_socket);
 		return status;
 	}
+
+	kdc_udp_socket = talloc(kdc_socket, struct kdc_udp_socket);
+	NT_STATUS_HAVE_NO_MEMORY(kdc_udp_socket);
+
+	kdc_udp_socket->kdc_socket = kdc_socket;
+
+	ret = tdgram_inet_udp_socket(kdc_socket->local_address,
+				     NULL,
+				     kdc_udp_socket,
+				     &kdc_udp_socket->dgram);
+	if (ret != 0) {
+		status = map_nt_error_from_unix(errno);
+		DEBUG(0,("Failed to bind to %s:%u UDP - %s\n",
+			 address, port, nt_errstr(status)));
+		return status;
+	}
+
+	kdc_udp_socket->send_queue = tevent_queue_create(kdc_udp_socket,
+							 "kdc_udp_send_queue");
+	NT_STATUS_HAVE_NO_MEMORY(kdc_udp_socket->send_queue);
+
+	udpsubreq = tdgram_recvfrom_send(kdc_udp_socket,
+					 kdc->task->event_ctx,
+					 kdc_udp_socket->dgram);
+	NT_STATUS_HAVE_NO_MEMORY(udpsubreq);
+	tevent_req_set_callback(udpsubreq, kdc_udp_call_loop, kdc_udp_socket);
 
 	return NT_STATUS_OK;
 }
