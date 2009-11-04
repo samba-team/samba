@@ -33,7 +33,20 @@ fi
 VERSION=`echo ${VERSION} | sed 's/-/_/g'`
 VERSION=`echo ${VERSION} | sed 's/\"//g'`
 echo "VERSION: ${VERSION}"
+
+# to build a release-rpm, set USE_GITHASH="no"
+# in the environmet
+#
+if test "x$USE_GITHASH" = "xno" ; then
+	GITHASH=""
+	echo "GITHASH: not used"
+else
+	GITHASH=".$(git log --pretty=format:%h -1)"
+	echo "GITHASH: ${GITHASH}"
+fi
+
 sed -e s/PVERSION/${VERSION}/g \
+	-e s/GITHASH/${GITHASH}/g \
 	< ${SPECFILE}.tmpl \
 	> ${SPECFILE}
 
