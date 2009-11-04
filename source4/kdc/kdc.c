@@ -71,11 +71,12 @@ struct kdc_tcp_connection {
 	struct stream_connection *conn;
 
 	/* the kdc_server the connection belongs to */
-	struct kdc_server *kdc;
+	struct kdc_socket *kdc_socket;
+
+	struct tsocket_address *local_address;
+	struct tsocket_address *remote_address;
 
 	struct packet_context *packet;
-
-	kdc_process_fn_t process;
 };
 
 static void kdc_tcp_terminate_connection(struct kdc_tcp_connection *kdcconn, const char *reason)
@@ -94,49 +95,18 @@ static NTSTATUS kdc_tcp_recv(void *private_data, DATA_BLOB blob)
 	TALLOC_CTX *tmp_ctx = talloc_new(kdcconn);
 	int ret;
 	DATA_BLOB input, reply;
-	struct socket_address *src_addr;
-	struct socket_address *my_addr;
-	struct tsocket_address *tsrcaddr;
-	struct tsocket_address *tmyaddr;
-
 	talloc_steal(tmp_ctx, blob.data);
-
-	src_addr = socket_get_peer_addr(kdcconn->conn->socket, tmp_ctx);
-	if (!src_addr) {
-		talloc_free(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	my_addr = socket_get_my_addr(kdcconn->conn->socket, tmp_ctx);
-	if (!my_addr) {
-		talloc_free(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	ret = tsocket_address_bsd_from_sockaddr(tmp_ctx, src_addr->sockaddr,
-				src_addr->sockaddrlen, &tsrcaddr);
-	if (ret < 0) {
-		talloc_free(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	ret = tsocket_address_bsd_from_sockaddr(tmp_ctx, my_addr->sockaddr,
-				my_addr->sockaddrlen, &tmyaddr);
-	if (ret < 0) {
-		talloc_free(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	/* Call krb5 */
 	input = data_blob_const(blob.data + 4, blob.length - 4); 
 
-	ret = kdcconn->process(kdcconn->kdc, 
-			       tmp_ctx,
-			       &input,
-			       &reply,
-			       tsrcaddr,
-			       tmyaddr,
-			       0 /* Not datagram */);
+	ret = kdcconn->kdc_socket->process(kdcconn->kdc_socket->kdc,
+					   tmp_ctx,
+					   &input,
+					   &reply,
+					   kdcconn->remote_address,
+					   kdcconn->local_address,
+					   0 /* Not datagram */);
 	if (!ret) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INTERNAL_ERROR;
@@ -254,16 +224,51 @@ static void kdc_tcp_accept(struct stream_connection *conn)
 {
  	struct kdc_socket *kdc_socket = talloc_get_type(conn->private_data, struct kdc_socket);
 	struct kdc_tcp_connection *kdcconn;
+	struct socket_address *src_addr;
+	struct socket_address *my_addr;
+	int ret;
 
 	kdcconn = talloc_zero(conn, struct kdc_tcp_connection);
 	if (!kdcconn) {
 		stream_terminate_connection(conn, "kdc_tcp_accept: out of memory");
 		return;
 	}
-	kdcconn->conn	 = conn;
-	kdcconn->kdc	 = kdc_socket->kdc;
-	kdcconn->process = kdc_socket->process;
+	kdcconn->conn		= conn;
+	kdcconn->kdc_socket	= kdc_socket;
 	conn->private_data    = kdcconn;
+
+	src_addr = socket_get_peer_addr(kdcconn->conn->socket, kdcconn);
+	if (!src_addr) {
+		kdc_tcp_terminate_connection(kdcconn, "kdc_tcp_accept: out of memory");
+		return;
+	}
+
+	my_addr = socket_get_my_addr(kdcconn->conn->socket, kdcconn);
+	if (!my_addr) {
+		kdc_tcp_terminate_connection(kdcconn, "kdc_tcp_accept: out of memory");
+		return;
+	}
+
+	ret = tsocket_address_bsd_from_sockaddr(kdcconn,
+						src_addr->sockaddr,
+						src_addr->sockaddrlen,
+						&kdcconn->remote_address);
+	if (ret < 0) {
+		kdc_tcp_terminate_connection(kdcconn, "kdc_tcp_accept: out of memory");
+		return;
+	}
+
+	ret = tsocket_address_bsd_from_sockaddr(kdcconn,
+						my_addr->sockaddr,
+						my_addr->sockaddrlen,
+						&kdcconn->local_address);
+	if (ret < 0) {
+		kdc_tcp_terminate_connection(kdcconn, "kdc_tcp_accept: out of memory");
+		return;
+	}
+
+	TALLOC_FREE(src_addr);
+	TALLOC_FREE(my_addr);
 
 	kdcconn->packet = packet_init(kdcconn);
 	if (kdcconn->packet == NULL) {
