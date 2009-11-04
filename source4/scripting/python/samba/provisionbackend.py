@@ -31,6 +31,7 @@ import sys
 import uuid
 import time
 import shutil
+import subprocess
 
 from samba import read_and_sub_file
 from samba import Ldb
@@ -203,7 +204,7 @@ class ProvisionBackend(object):
 
         self.slapd_command_escaped = "\'" + "\' \'".join(self.slapd_command) + "\'"
         setup_file(setup_path("ldap_backend_startup.sh"), paths.ldapdir + "/ldap_backend_startup.sh", {
-                "SLAPD_COMMAND" : slapd_command})
+                "SLAPD_COMMAND" : self.slapd_command_escaped})
 
         # Now start the slapd, so we can provision onto it.  We keep the
         # subprocess context around, to kill this off at the successful

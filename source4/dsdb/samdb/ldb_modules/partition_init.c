@@ -132,7 +132,7 @@ static int partition_reload_metadata(struct ldb_module *module, struct partition
 	struct ldb_message *msg;
 	struct ldb_result *res;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	const char *attrs[] = { "partition", "replicateEntries", "modules", NULL };
+	const char *attrs[] = { "partition", "replicateEntries", "modules", "ldapBackend", NULL };
 	/* perform search for @PARTITION, looking for module, replicateEntries and ldapBackend */
 	ret = dsdb_module_search_dn(module, mem_ctx, &res, 
 				    ldb_dn_new(mem_ctx, ldb, DSDB_PARTITION_DN),
@@ -239,7 +239,7 @@ static int new_partition_from_dn(struct ldb_context *ldb, struct partition_priva
 	ctrl->version = DSDB_CONTROL_CURRENT_PARTITION_VERSION;
 	ctrl->dn = talloc_steal(ctrl, dn);
 	
-	ret = ldb_connect_backend(ldb, backend_url, NULL, &backend_module);
+	ret = ldb_connect_backend(ldb, (*partition)->backend_url, NULL, &backend_module);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
