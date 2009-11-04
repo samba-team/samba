@@ -134,7 +134,9 @@ static uint32_t vfswrap_fs_capabilities(struct vfs_handle_struct *handle,
 		 * we might be able to set sub-second timestamps.
 		 * See what filetime set primitives we have.
 		 */
-#if defined(HAVE_UTIMES)
+#if defined(HAVE_UTIMENSAT)
+		*p_ts_res = TIMESTAMP_SET_NT_OR_BETTER;
+#elif defined(HAVE_UTIMES)
 		/* utimes allows msec timestamps to be set. */
 		*p_ts_res = TIMESTAMP_SET_MSEC;
 #elif defined(HAVE_UTIME)
@@ -142,10 +144,6 @@ static uint32_t vfswrap_fs_capabilities(struct vfs_handle_struct *handle,
 		*p_ts_res = TIMESTAMP_SET_SECONDS;
 #endif
 
-		/* TODO. Add a configure test for the Linux
-		 * nsec timestamp set system call, and use it
-		 * if available....
-		 */
 		DEBUG(10,("vfswrap_fs_capabilities: timestamp "
 			"resolution of %s "
 			"available on share %s, directory %s\n",
@@ -870,7 +868,16 @@ static int vfswrap_ntimes(vfs_handle_struct *handle,
 		return 0;
 	}
 
-#if defined(HAVE_UTIMES)
+#if defined(HAVE_UTIMENSAT)
+	if (ft != NULL) {
+		struct timespec ts[2];
+		ts[0] = ft->atime;
+		ts[1] = ft->mtime;
+		result = utimensat(AT_FDCWD, smb_fname->base_name, ts, 0);
+	} else {
+		result = utimensat(AT_FDCWD, smb_fname->base_name, NULL, 0);
+	}
+#elif defined(HAVE_UTIMES)
 	if (ft != NULL) {
 		struct timeval tv[2];
 		tv[0] = convert_timespec_to_timeval(ft->atime);
