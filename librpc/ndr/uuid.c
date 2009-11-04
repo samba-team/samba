@@ -291,7 +291,7 @@ _PUBLIC_ char *GUID_hexstring(TALLOC_CTX *mem_ctx, const struct GUID *guid)
 		return NULL;
 	}
 
-	ret = data_blob_hex_string(mem_ctx, &guid_blob);
+	ret = data_blob_hex_string_upper(mem_ctx, &guid_blob);
 	talloc_free(tmp_mem);
 	return ret;
 }

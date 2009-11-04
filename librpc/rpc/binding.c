@@ -113,7 +113,7 @@ const char *epm_floor_string(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor)
 				return talloc_asprintf(mem_ctx, " uuid %s/0x%02x", uuidstr, syntax.if_version);
 			} else { /* IPX */
 				return talloc_asprintf(mem_ctx, "IPX:%s", 
-						data_blob_hex_string(mem_ctx, &epm_floor->rhs.uuid.unknown));
+						data_blob_hex_string_upper(mem_ctx, &epm_floor->rhs.uuid.unknown));
 			}
 
 		case EPM_PROTOCOL_NCACN:

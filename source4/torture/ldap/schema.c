@@ -356,7 +356,7 @@ static bool test_dump_sorted_syntax(struct ldb_context *ldb, struct test_rootDSE
 
 			if (strcmp(syntaxes[i], a->attributeSyntax_oid) != 0) continue;
 
-			om_hex = data_blob_hex_string(ldb, &a->oMObjectClass);
+			om_hex = data_blob_hex_string_upper(ldb, &a->oMObjectClass);
 			if (!om_hex) {
 				return false;
 			}

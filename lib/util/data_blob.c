@@ -153,7 +153,7 @@ _PUBLIC_ int data_blob_cmp(const DATA_BLOB *d1, const DATA_BLOB *d2)
 /**
 print the data_blob as hex string
 **/
-_PUBLIC_ char *data_blob_hex_string(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob)
+_PUBLIC_ char *data_blob_hex_string_lower(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob)
 {
 	int i;
 	char *hex_string;
@@ -168,6 +168,23 @@ _PUBLIC_ char *data_blob_hex_string(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob)
 	   only accepts lowercase hexadecimal numbers */
 	for (i = 0; i < blob->length; i++)
 		slprintf(&hex_string[i*2], 3, "%02x", blob->data[i]);
+
+	hex_string[(blob->length*2)] = '\0';
+	return hex_string;
+}
+
+_PUBLIC_ char *data_blob_hex_string_upper(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob)
+{
+	int i;
+	char *hex_string;
+
+	hex_string = talloc_array(mem_ctx, char, (blob->length*2)+1);
+	if (!hex_string) {
+		return NULL;
+	}
+
+	for (i = 0; i < blob->length; i++)
+		slprintf(&hex_string[i*2], 3, "%02X", blob->data[i]);
 
 	hex_string[(blob->length*2)] = '\0';
 	return hex_string;

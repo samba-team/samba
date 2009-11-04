@@ -784,7 +784,7 @@ static int ldif_write_replUpToDateVector(struct ldb_context *ldb, void *mem_ctx,
 static int extended_dn_write_hex(struct ldb_context *ldb, void *mem_ctx,
 				 const struct ldb_val *in, struct ldb_val *out)
 {
-	*out = data_blob_string_const(data_blob_hex_string(mem_ctx, in));
+	*out = data_blob_string_const(data_blob_hex_string_lower(mem_ctx, in));
 	if (!out->data) {
 		return -1;
 	}

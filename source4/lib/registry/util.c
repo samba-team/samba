@@ -68,7 +68,7 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx,
 					      (void **)&ret, NULL, false);
 			return ret;
 		case REG_BINARY:
-			ret = data_blob_hex_string(mem_ctx, &data);
+			ret = data_blob_hex_string_upper(mem_ctx, &data);
 			return ret;
 		case REG_DWORD:
 			if (*(int *)data.data == 0)

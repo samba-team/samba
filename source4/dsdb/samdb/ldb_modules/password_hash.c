@@ -1137,7 +1137,7 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 					       nt_errstr(status));
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		pknb_hexstr = data_blob_hex_string(io->ac, &pknb_blob);
+		pknb_hexstr = data_blob_hex_string_upper(io->ac, &pknb_blob);
 		if (!pknb_hexstr) {
 			ldb_oom(ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
@@ -1169,7 +1169,7 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 				       nt_errstr(status));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	pkb_hexstr = data_blob_hex_string(io->ac, &pkb_blob);
+	pkb_hexstr = data_blob_hex_string_upper(io->ac, &pkb_blob);
 	if (!pkb_hexstr) {
 		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -1200,7 +1200,7 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 				       nt_errstr(status));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	pdb_hexstr = data_blob_hex_string(io->ac, &pdb_blob);
+	pdb_hexstr = data_blob_hex_string_upper(io->ac, &pdb_blob);
 	if (!pdb_hexstr) {
 		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -1229,7 +1229,7 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 					       nt_errstr(status));
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		pcb_hexstr = data_blob_hex_string(io->ac, &pcb_blob);
+		pcb_hexstr = data_blob_hex_string_upper(io->ac, &pcb_blob);
 		if (!pcb_hexstr) {
 			ldb_oom(ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
@@ -1255,7 +1255,7 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 				       nt_errstr(status));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	pb_hexstr = data_blob_hex_string(io->ac, &pb_blob);
+	pb_hexstr = data_blob_hex_string_upper(io->ac, &pb_blob);
 	if (!pb_hexstr) {
 		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
