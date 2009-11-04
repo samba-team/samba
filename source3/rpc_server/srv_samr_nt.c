@@ -3042,7 +3042,7 @@ NTSTATUS _samr_QueryUserInfo(pipes_struct *p,
 	uint32 rid;
 	bool ret = false;
 	struct samu *pwd = NULL;
-	uint32_t acc_required, acc_granted;
+	uint32_t acc_required, acc_granted = 0;
 
 	/* search for the handle */
 	if (!find_policy_by_hnd(p, r->in.user_handle, (void **)(void *)&info))

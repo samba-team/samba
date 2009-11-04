@@ -95,7 +95,6 @@ static uint32_t vfswrap_fs_capabilities(struct vfs_handle_struct *handle)
 	connection_struct *conn = handle->conn;
 	uint32_t caps = FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES;
 	SMB_STRUCT_STAT st;
-	NTSTATUS status;
 	struct timespec mtime_ts, ctime_ts, atime_ts;
 	int ret = -1;
 
