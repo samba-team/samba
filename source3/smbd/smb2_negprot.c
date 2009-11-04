@@ -22,8 +22,6 @@
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
 
-extern enum protocol_types Protocol;
-
 /*
  * this is the entry point if SMB2 is selected via
  * the SMB negprot
@@ -114,7 +112,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 
-	Protocol = PROTOCOL_SMB2;
+	set_Protocol(PROTOCOL_SMB2);
 
 	if (get_remote_arch() != RA_SAMBA) {
 		set_remote_arch(RA_VISTA);

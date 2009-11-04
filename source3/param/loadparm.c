@@ -64,7 +64,6 @@
 
 bool bLoaded = False;
 
-extern enum protocol_types Protocol;
 extern userdom_struct current_user_info;
 
 #ifndef GLOBAL_NAME
@@ -9720,7 +9719,7 @@ bool lp_use_sendfile(int snum, struct smb_signing_state *signing_state)
 	bool sign_active = false;
 
 	/* Using sendfile blows the brains out of any DOS or Win9x TCP stack... JRA. */
-	if (Protocol < PROTOCOL_NT1) {
+	if (get_Protocol() < PROTOCOL_NT1) {
 		return false;
 	}
 	if (signing_state) {

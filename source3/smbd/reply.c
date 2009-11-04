@@ -27,8 +27,6 @@
 #include "includes.h"
 #include "smbd/globals.h"
 
-extern enum protocol_types Protocol;
-
 /****************************************************************************
  Ensure we check the path in *exactly* the same way as W2K for a findfirst/findnext
  path or anything including wildcards.
@@ -787,7 +785,7 @@ void reply_tcon_and_X(struct smb_request *req)
 	else
 		server_devicetype = "A:";
 
-	if (Protocol < PROTOCOL_NT1) {
+	if (get_Protocol() < PROTOCOL_NT1) {
 		reply_outbuf(req, 2, 0);
 		if (message_push_string(&req->outbuf, server_devicetype,
 					STR_TERMINATE|STR_ASCII) == -1) {
@@ -1141,7 +1139,7 @@ void reply_getatr(struct smb_request *req)
 	}
 	SIVAL(req->outbuf,smb_vwv3,(uint32)size);
 
-	if (Protocol >= PROTOCOL_NT1) {
+	if (get_Protocol() >= PROTOCOL_NT1) {
 		SSVAL(req->outbuf, smb_flg2,
 		      SVAL(req->outbuf, smb_flg2) | FLAGS2_IS_LONG_NAME);
 	}
@@ -1266,7 +1264,7 @@ void reply_dskattr(struct smb_request *req)
 
 	reply_outbuf(req, 5, 0);
 
-	if (Protocol <= PROTOCOL_LANMAN2) {
+	if (get_Protocol() <= PROTOCOL_LANMAN2) {
 		double total_space, free_space;
 		/* we need to scale this to a number that DOS6 can handle. We
 		   use floating point so we can handle large drives on systems
@@ -3775,7 +3773,7 @@ void reply_writebraw(struct smb_request *req)
 	/* We have to deal with slightly different formats depending
 		on whether we are using the core+ or lanman1.0 protocol */
 
-	if(Protocol <= PROTOCOL_COREPLUS) {
+	if(get_Protocol() <= PROTOCOL_COREPLUS) {
 		numtowrite = SVAL(smb_buf(req->inbuf),-2);
 		data = smb_buf(req->inbuf);
 	} else {
@@ -3831,7 +3829,7 @@ void reply_writebraw(struct smb_request *req)
 	 * it to send more bytes */
 
 	memcpy(buf, req->inbuf, smb_size);
-	srv_set_message(buf,Protocol>PROTOCOL_COREPLUS?1:0,0,True);
+	srv_set_message(buf,get_Protocol()>PROTOCOL_COREPLUS?1:0,0,True);
 	SCVAL(buf,smb_com,SMBwritebraw);
 	SSVALS(buf,smb_vwv0,0xFFFF);
 	show_msg(buf);

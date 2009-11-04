@@ -23,7 +23,6 @@
 #include "../libcli/auth/spnego.h"
 
 extern fstring remote_proto;
-extern enum protocol_types Protocol;
 
 static void get_challenge(uint8 buff[8])
 {
@@ -61,7 +60,7 @@ static void reply_corep(struct smb_request *req, uint16 choice)
 	reply_outbuf(req, 1, 0);
 	SSVAL(req->outbuf, smb_vwv0, choice);
 
-	Protocol = PROTOCOL_CORE;
+	set_Protocol(PROTOCOL_CORE);
 }
 
 /****************************************************************************
@@ -81,7 +80,7 @@ static void reply_coreplus(struct smb_request *req, uint16 choice)
 	SCVAL(req->outbuf,smb_flg,FLAG_REPLY|FLAG_SUPPORT_LOCKREAD);
 	SSVAL(req->outbuf,smb_vwv1,0x1); /* user level security, don't
 					  * encrypt */
-	Protocol = PROTOCOL_COREPLUS;
+	set_Protocol(PROTOCOL_COREPLUS);
 }
 
 /****************************************************************************
@@ -114,7 +113,7 @@ static void reply_lanman1(struct smb_request *req, uint16 choice)
 		SSVAL(req->outbuf,smb_vwv11, 8);
 	}
 
-	Protocol = PROTOCOL_LANMAN1;
+	set_Protocol(PROTOCOL_LANMAN1);
 
 	/* Reply, SMBlockread, SMBwritelock supported. */
 	SCVAL(req->outbuf,smb_flg,FLAG_REPLY|FLAG_SUPPORT_LOCKREAD);
@@ -163,7 +162,7 @@ static void reply_lanman2(struct smb_request *req, uint16 choice)
 		SSVAL(req->outbuf,smb_vwv11, 8);
 	}
 
-	Protocol = PROTOCOL_LANMAN2;
+	set_Protocol(PROTOCOL_LANMAN2);
 
 	/* Reply, SMBlockread, SMBwritelock supported. */
 	SCVAL(req->outbuf,smb_flg,FLAG_REPLY|FLAG_SUPPORT_LOCKREAD);
@@ -345,7 +344,7 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 	SSVAL(req->outbuf,smb_vwv0,choice);
 	SCVAL(req->outbuf,smb_vwv1,secword);
 	
-	Protocol = PROTOCOL_NT1;
+	set_Protocol(PROTOCOL_NT1);
 	
 	SSVAL(req->outbuf,smb_vwv1+1,lp_maxmux()); /* maxmpx */
 	SSVAL(req->outbuf,smb_vwv2+1,1); /* num vcs */
@@ -698,7 +697,7 @@ void reply_negprot(struct smb_request *req)
   
 	DEBUG( 5, ( "negprot index=%d\n", choice ) );
 
-	if ((lp_server_signing() == Required) && (Protocol < PROTOCOL_NT1)) {
+	if ((lp_server_signing() == Required) && (get_Protocol() < PROTOCOL_NT1)) {
 		exit_server_cleanly("SMB signing is required and "
 			"client negotiated a downlevel protocol");
 	}
