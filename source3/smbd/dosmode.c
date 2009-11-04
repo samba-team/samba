@@ -380,6 +380,12 @@ uint32 dos_mode_msdfs(connection_struct *conn,
 		result |= aHIDDEN;
 	}
 
+	if (get_Protocol() <= PROTOCOL_LANMAN2) {
+		DEBUG(10,("dos_mode_msdfs : filtering protocol 0x%x to 0xff\n",
+			(unsigned int)result ));
+		result &= 0xff;
+	}
+
 	DEBUG(8,("dos_mode_msdfs returning "));
 
 	if (result & aHIDDEN) DEBUG(8, ("h"));
@@ -558,6 +564,12 @@ uint32 dos_mode(connection_struct *conn, const struct smb_filename *smb_fname)
 	if (!(result & aHIDDEN) &&
 	    IS_HIDDEN_PATH(conn, smb_fname->base_name)) {
 		result |= aHIDDEN;
+	}
+
+	if (get_Protocol() <= PROTOCOL_LANMAN2) {
+		DEBUG(10,("dos_mode : filtering protocol 0x%x to 0xff\n",
+			(unsigned int)result ));
+		result &= 0xff;
 	}
 
 	DEBUG(8,("dos_mode returning "));
