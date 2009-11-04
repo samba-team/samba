@@ -43,16 +43,6 @@
 #include "heimdal_build/kpasswdd-glue.h"
 #endif
 
-/* hold information about one kdc socket */
-struct kpasswd_socket {
-	struct socket_context *sock;
-	struct kdc_server *kdc;
-	struct tevent_fd *fde;
-
-	/* a queue of outgoing replies that have been deferred */
-	struct kdc_reply *send_queue;
-};
-
 /* Return true if there is a valid error packet formed in the error_blob */
 static bool kpasswdd_make_error_reply(struct kdc_server *kdc, 
 				     TALLOC_CTX *mem_ctx, 
