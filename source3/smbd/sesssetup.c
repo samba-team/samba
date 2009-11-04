@@ -26,8 +26,6 @@
 #include "smbd/globals.h"
 #include "../libcli/auth/spnego.h"
 
-extern enum protocol_types Protocol;
-
 /* For split krb5 SPNEGO blobs. */
 struct pending_auth_data {
 	struct pending_auth_data *prev, *next;
@@ -1432,7 +1430,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 
 	smb_bufsize = SVAL(req->vwv+2, 0);
 
-	if (Protocol < PROTOCOL_NT1) {
+	if (get_Protocol() < PROTOCOL_NT1) {
 		uint16 passlen1 = SVAL(req->vwv+7, 0);
 
 		/* Never do NT status codes with protocols before NT1 as we
@@ -1759,7 +1757,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 
 	/* it's ok - setup a reply */
 	reply_outbuf(req, 3, 0);
-	if (Protocol >= PROTOCOL_NT1) {
+	if (get_Protocol() >= PROTOCOL_NT1) {
 		push_signature(&req->outbuf);
 		/* perhaps grab OS version here?? */
 	}

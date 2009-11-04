@@ -28,8 +28,6 @@
 #include "smbd/globals.h"
 #include "../libcli/auth/libcli_auth.h"
 
-extern enum protocol_types Protocol;
-
 #define DIR_ENTRY_SAFETY_MARGIN 4096
 
 static char *store_file_unix_basic(connection_struct *conn,
@@ -2466,7 +2464,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 	if(numentries == 0) {
 		dptr_close(sconn, &dptr_num);
-		if (Protocol < PROTOCOL_NT1) {
+		if (get_Protocol() < PROTOCOL_NT1) {
 			reply_doserror(req, ERRDOS, ERRnofiles);
 			goto out;
 		} else {
@@ -8161,7 +8159,7 @@ void reply_findnclose(struct smb_request *req)
 static void handle_trans2(connection_struct *conn, struct smb_request *req,
 			  struct trans_state *state)
 {
-	if (Protocol >= PROTOCOL_NT1) {
+	if (get_Protocol() >= PROTOCOL_NT1) {
 		req->flags2 |= 0x40; /* IS_LONG_NAME */
 		SSVAL(req->inbuf,smb_flg2,req->flags2);
 	}

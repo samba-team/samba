@@ -55,7 +55,17 @@ extern unsigned int global_clobber_region_line;
 #endif /* WITH_NISPLUS_HOME */
 #endif /* HAVE_NETGROUP && WITH_AUTOMOUNT */
 
-enum protocol_types Protocol = PROTOCOL_COREPLUS;
+static enum protocol_types Protocol = PROTOCOL_COREPLUS;
+
+enum protocol_types get_Protocol(void)
+{
+	return Protocol;
+}
+
+void set_Protocol(enum protocol_types  p)
+{
+	Protocol = p;
+}
 
 static enum remote_arch_types ra_type = RA_UNKNOWN;
 

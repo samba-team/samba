@@ -21,7 +21,6 @@
 #include "includes.h"
 #include "smbd/globals.h"
 
-extern enum protocol_types Protocol;
 extern const struct generic_mapping file_generic_mapping;
 
 static char *nttrans_realloc(char **ptr, size_t size)
@@ -2538,7 +2537,7 @@ static void handle_nttrans(connection_struct *conn,
 			   struct trans_state *state,
 			   struct smb_request *req)
 {
-	if (Protocol >= PROTOCOL_NT1) {
+	if (get_Protocol() >= PROTOCOL_NT1) {
 		req->flags2 |= 0x40; /* IS_LONG_NAME */
 		SSVAL(req->inbuf,smb_flg2,req->flags2);
 	}
