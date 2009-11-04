@@ -602,7 +602,7 @@ NTSTATUS rpccli_netlogon_set_trust_password(struct rpc_pipe_client *cli,
 		struct samr_Password new_password;
 
 		des_crypt112_16(new_password.hash,
-				new_trust_passwd_hash,
+				(unsigned char *)new_trust_passwd_hash,
 				cli->dc->sess_key, 1);
 
 		result = rpccli_netr_ServerPasswordSet(cli, mem_ctx,
