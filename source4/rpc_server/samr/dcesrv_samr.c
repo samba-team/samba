@@ -4179,7 +4179,9 @@ static NTSTATUS dcesrv_samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TAL
 
 	ZERO_STRUCTP(r->out.info);
 
-	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, dce_call->conn->auth_state.session_info); 
+	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx,
+					 dce_call->conn->dce_ctx->lp_ctx,
+					 dce_call->conn->auth_state.session_info);
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -4354,15 +4356,55 @@ static NTSTATUS dcesrv_samr_SetDsrmPassword(struct dcesrv_call_state *dce_call, 
 
 
 /* 
-  samr_ValidatePassword 
+  samr_ValidatePassword
+
+  For now the call checks the password complexity (if active) and the minimum
+  password length on level 2 and 3. Level 1 is ignored for now.
 */
-static NTSTATUS dcesrv_samr_ValidatePassword(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-				      struct samr_ValidatePassword *r)
+static NTSTATUS dcesrv_samr_ValidatePassword(struct dcesrv_call_state *dce_call,
+					     TALLOC_CTX *mem_ctx,
+					     struct samr_ValidatePassword *r)
 {
-	/* just say it's OK for now - we need to hook this into our
-	   password strength code later */
-	DEBUG(0,(__location__ ": Faking samr_ValidatePassword reply\n"));
+	struct samr_GetDomPwInfo r2;
+	DATA_BLOB password;
+	enum samr_ValidationStatus res;
+	NTSTATUS status;
+
 	(*r->out.rep) = talloc_zero(mem_ctx, union samr_ValidatePasswordRep);
+
+	r2.in.domain_name = NULL;
+	status = dcesrv_samr_GetDomPwInfo(dce_call, mem_ctx, &r2);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	switch (r->in.level) {
+	case NetValidateAuthentication:
+		/* we don't support this yet */
+		return NT_STATUS_NOT_SUPPORTED;
+	break;
+	case NetValidatePasswordChange:
+		password = data_blob_const(r->in.req->req2.password.string,
+					   r->in.req->req2.password.length);
+		res = samdb_check_password(mem_ctx,
+					   dce_call->conn->dce_ctx->lp_ctx,
+					   &password,
+					   r2.out.info->password_properties,
+					   r2.out.info->min_password_length);
+		(*r->out.rep)->ctr2.status = res;
+	break;
+	case NetValidatePasswordReset:
+		password = data_blob_const(r->in.req->req3.password.string,
+					   r->in.req->req3.password.length);
+		res = samdb_check_password(mem_ctx,
+					   dce_call->conn->dce_ctx->lp_ctx,
+					   &password,
+					   r2.out.info->password_properties,
+					   r2.out.info->min_password_length);
+		(*r->out.rep)->ctr3.status = res;
+	break;
+	}
+
 	return NT_STATUS_OK;
 }
 
