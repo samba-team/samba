@@ -187,6 +187,9 @@ CTDB_RECOVERY_LOCK="/some/place/on/shared/storage"
 # the default is ERR
 CTDB_DEBUGLEVEL=ERR
 
+# whether to suppress core files.  Default is no.
+# CTDB_SUPPRESS_COREFILE=yes
+
 # Write debug messages to syslog instead of logfile?
 # The default is not to use syslog.
 # CTDB_SYSLOG=no
