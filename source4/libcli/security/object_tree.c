@@ -30,7 +30,6 @@
  */
 #include "includes.h"
 #include "libcli/security/security.h"
-#include "lib/util/dlinklist.h"
 #include "librpc/ndr/libndr.h"
 
 /* Adds a new node to the object tree. If attributeSecurityGUID is not zero and
@@ -38,69 +37,85 @@
  * In all other cases as a child of the root
  */
 
-struct object_tree * insert_in_object_tree(TALLOC_CTX *mem_ctx,
-					   const struct GUID *schemaGUIDID,
-					   const struct GUID *attributeSecurityGUID,
-					   uint32_t init_access,
-					   struct object_tree *root)
+bool insert_in_object_tree(TALLOC_CTX *mem_ctx,
+			  const struct GUID *guid,
+			  uint32_t init_access,
+			  struct object_tree **root,
+			  struct object_tree **new_node)
 {
-	struct object_tree * parent = NULL;
-	struct object_tree * new_node;
-
-	new_node = talloc(mem_ctx, struct object_tree);
-	if (!new_node)
-		return NULL;
-	memset(new_node, 0, sizeof(struct object_tree));
-	new_node->remaining_access = init_access;
-
-	if (!root){
-		memcpy(&new_node->guid, schemaGUIDID, sizeof(struct GUID));
-		return new_node;
+	if (!guid || GUID_all_zero(guid)){
+		return true;
 	}
 
-	if (attributeSecurityGUID && !GUID_all_zero(attributeSecurityGUID)){
-		parent = get_object_tree_by_GUID(root, attributeSecurityGUID);
-		memcpy(&new_node->guid, attributeSecurityGUID, sizeof(struct GUID));
+	if (!*root){
+		*root = talloc_zero(mem_ctx, struct object_tree);
+		if (!*root) {
+			return false;
+		}
+		(*root)->guid = *guid;
+		*new_node = *root;
+		return true;
 	}
-	else
-		memcpy(&new_node->guid, schemaGUIDID, sizeof(struct GUID));
 
-	if (!parent)
-		parent = root;
-
-	new_node->remaining_access = init_access;
-	DLIST_ADD(parent, new_node);
-	return new_node;
+	if (!(*root)->children) {
+		(*root)->children = talloc_array(mem_ctx, struct object_tree, 1);
+		(*root)->children[0].guid = *guid;
+		(*root)->children[0].num_of_children = 0;
+		(*root)->children[0].children = NULL;
+		(*root)->num_of_children++;
+		(*root)->children[0].remaining_access = init_access;
+		*new_node = &((*root)->children[0]);
+		return true;
+	}
+	else {
+		int i;
+		for (i = 0; i < (*root)->num_of_children; i++) {
+			if (GUID_equal(&((*root)->children[i].guid), guid)) {
+				*new_node = &((*root)->children[i]);
+				return true;
+			}
+		}
+		(*root)->children = talloc_realloc(mem_ctx, (*root)->children, struct object_tree,
+						   (*root)->num_of_children +1);
+		(*root)->children[(*root)->num_of_children].guid = *guid;
+		(*root)->children[(*root)->num_of_children].remaining_access = init_access;
+		*new_node = &((*root)->children[(*root)->num_of_children]);
+		(*root)->num_of_children++;
+		return true;
+	}
+	return true;
 }
 
 /* search by GUID */
-struct object_tree * get_object_tree_by_GUID(struct object_tree *root,
+struct object_tree *get_object_tree_by_GUID(struct object_tree *root,
 					     const struct GUID *guid)
 {
-	struct object_tree *p;
 	struct object_tree *result = NULL;
+	int i;
 
-	if (!root || GUID_equal(&root->guid, guid))
+	if (!root || GUID_equal(&root->guid, guid)) {
 		result = root;
-	else{
-	for (p = root->children; p != NULL; p = p->next)
-		if ((result = get_object_tree_by_GUID(p, guid)))
-			break;
+		return result;
 	}
-
+	else if (root->num_of_children > 0) {
+		for (i = 0; i < root->num_of_children; i++) {
+		if ((result = get_object_tree_by_GUID(&root->children[i], guid)))
+			break;
+		}
+	}
 	return result;
 }
 
 /* Change the granted access per each ACE */
 
 void object_tree_modify_access(struct object_tree *root,
-			       uint32_t access_mask)
+			       uint32_t access)
 {
-	struct object_tree *p;
-	if (root){
-		root->remaining_access &= ~access_mask;
+	root->remaining_access &= ~access;
+	if (root->num_of_children > 0) {
+		int i;
+		for (i = 0; i < root->num_of_children; i++) {
+			object_tree_modify_access(&root->children[i], access);
+		}
 	}
-
-	for (p = root->children; p != NULL; p = p->next)
-		object_tree_modify_access(p, access_mask);
 }

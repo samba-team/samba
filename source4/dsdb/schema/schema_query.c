@@ -419,12 +419,22 @@ const char **dsdb_full_attribute_list(TALLOC_CTX *mem_ctx,
 
 /* Return the schemaIDGUID of a class */
 
-const struct GUID * class_schemaid_guid_by_lDAPDisplayName(const struct dsdb_schema *schema,
-                                                           const char *name)
+const struct GUID *class_schemaid_guid_by_lDAPDisplayName(const struct dsdb_schema *schema,
+                                                          const char *name)
 {
         const struct dsdb_class *object_class = dsdb_class_by_lDAPDisplayName(schema, name);
         if (!object_class)
                 return NULL;
 
         return &object_class->schemaIDGUID;
+}
+
+const struct GUID *attribute_schemaid_guid_by_lDAPDisplayName(const struct dsdb_schema *schema,
+							      const char *name)
+{
+        const struct dsdb_attribute *attr = dsdb_attribute_by_lDAPDisplayName(schema, name);
+        if (!attr)
+                return NULL;
+
+        return &attr->schemaIDGUID;
 }

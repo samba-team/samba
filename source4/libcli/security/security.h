@@ -32,10 +32,8 @@ struct auth_session_info;
 struct object_tree {
 	uint32_t remaining_access;
 	struct GUID guid;
-	/* linked list of children */
-	struct object_tree * children;
-	struct object_tree * prev;
-	struct object_tree * next;
+	int num_of_children;
+	struct object_tree *children;
 };
 
 /* Moved the dom_sid functions to the top level dir with manual proto header */

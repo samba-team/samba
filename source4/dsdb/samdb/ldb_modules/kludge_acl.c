@@ -527,10 +527,10 @@ done:
 _PUBLIC_ const struct ldb_module_ops ldb_kludge_acl_module_ops = {
 	.name		   = "kludge_acl",
 	.search            = kludge_acl_search,
-	.add               = kludge_acl_change,
+/*	.add               = kludge_acl_change,
 	.modify            = kludge_acl_change,
 	.del               = kludge_acl_change,
-	.rename            = kludge_acl_change,
+	.rename            = kludge_acl_change, */
 	.extended          = kludge_acl_extended,
 	.init_context	   = kludge_acl_init
 };
