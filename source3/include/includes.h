@@ -952,7 +952,10 @@ char *talloc_asprintf_strupper_m(TALLOC_CTX *t, const char *fmt, ...) PRINTF_ATT
 krb5_error_code smb_krb5_parse_name(krb5_context context,
 				const char *name, /* in unix charset */
                                 krb5_principal *principal);
-
+krb5_error_code smb_krb5_parse_name_flags(krb5_context context,
+					  const char *name, /* in unix charset */
+					  int flags,
+					  krb5_principal *principal);
 krb5_error_code smb_krb5_unparse_name(TALLOC_CTX *mem_ctx,
 				      krb5_context context,
 				      krb5_const_principal principal,
