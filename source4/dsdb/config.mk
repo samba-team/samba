@@ -25,7 +25,8 @@ $(eval $(call proto_header_template,$(dsdbsrcdir)/samdb/samdb_proto.h,$(SAMDB_OB
 PRIVATE_DEPENDENCIES = LIBLDB
 
 SAMDB_COMMON_OBJ_FILES = $(addprefix $(dsdbsrcdir)/common/, \
-		util.o) \
+		util.o \
+		dsdb_dn.o) \
 		../libds/common/flag_mapping.o
 $(eval $(call proto_header_template,$(dsdbsrcdir)/common/proto.h,$(SAMDB_COMMON_OBJ_FILES:.o=.c)))
 
