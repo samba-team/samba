@@ -810,6 +810,18 @@ static const struct ldb_schema_syntax samba_syntaxes[] = {
 		.ldif_write_fn	  = ldif_write_replUpToDateVector,
 		.canonicalise_fn  = ldb_handler_copy,
 		.comparison_fn	  = ldb_comparison_binary
+	},{
+		.name		  = DSDB_SYNTAX_BINARY_DN,
+		.ldif_read_fn	  = ldb_handler_copy,
+		.ldif_write_fn	  = ldb_handler_copy,
+		.canonicalise_fn  = dsdb_dn_binary_canonicalise,
+		.comparison_fn	  = dsdb_dn_binary_comparison
+	},{
+		.name		  = DSDB_SYNTAX_STRING_DN,
+		.ldif_read_fn	  = ldb_handler_copy,
+		.ldif_write_fn	  = ldb_handler_copy,
+		.canonicalise_fn  = dsdb_dn_string_canonicalise,
+		.comparison_fn	  = dsdb_dn_string_comparison
 	},
 };
 

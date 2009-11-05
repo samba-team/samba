@@ -1229,6 +1229,7 @@ static WERROR dsdb_syntax_DN_BINARY_drsuapi_to_ldb(struct ldb_context *ldb,
 		enum ndr_err_code ndr_err;
 		DATA_BLOB guid_blob;
 		struct ldb_dn *dn;
+		struct dsdb_dn *dsdb_dn;
 		TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 		if (!tmp_ctx) {
 			W_ERROR_HAVE_NO_MEMORY(tmp_ctx);
@@ -1296,9 +1297,9 @@ static WERROR dsdb_syntax_DN_BINARY_drsuapi_to_ldb(struct ldb_context *ldb,
 		}
 
 		/* set binary stuff */
-		ldb_dn_set_binary(dn, &id3.binary);
+		dsdb_dn = dsdb_dn_construct(tmp_ctx, dn, id3.binary, attr->syntax->ldap_oid);
 
-		out->values[i] = data_blob_string_const(ldb_dn_get_extended_linearized(out->values, dn, 1));
+		out->values[i] = data_blob_string_const(dsdb_dn_get_extended_linearized(out->values, dsdb_dn, 1));
 		talloc_free(tmp_ctx);
 	}
 
@@ -1333,17 +1334,20 @@ static WERROR dsdb_syntax_DN_BINARY_ldb_to_drsuapi(struct ldb_context *ldb,
 		struct drsuapi_DsReplicaObjectIdentifier3Binary id3;
 		enum ndr_err_code ndr_err;
 		const DATA_BLOB *guid_blob, *sid_blob;
-		struct ldb_dn *dn;
+		struct dsdb_dn *dsdb_dn;
 		TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 		W_ERROR_HAVE_NO_MEMORY(tmp_ctx);
 
 		out->value_ctr.values[i].blob	= &blobs[i];
 
-		dn = ldb_dn_from_ldb_val(tmp_ctx, ldb, &in->values[i]);
+		dsdb_dn = dsdb_dn_parse(tmp_ctx, ldb, &in->values[i], attr->syntax->ldap_oid);
 
-		W_ERROR_HAVE_NO_MEMORY(dn);
+		if (dsdb_dn) {
+			talloc_free(tmp_ctx);
+			return ntstatus_to_werror(NT_STATUS_INVALID_PARAMETER);
+		}
 
-		guid_blob = ldb_dn_get_extended_component(dn, "GUID");
+		guid_blob = ldb_dn_get_extended_component(dsdb_dn->dn, "GUID");
 
 		ZERO_STRUCT(id3);
 
@@ -1358,7 +1362,7 @@ static WERROR dsdb_syntax_DN_BINARY_ldb_to_drsuapi(struct ldb_context *ldb,
 			}
 		}
 
-		sid_blob = ldb_dn_get_extended_component(dn, "SID");
+		sid_blob = ldb_dn_get_extended_component(dsdb_dn->dn, "SID");
 		if (sid_blob) {
 			
 			ndr_err = ndr_pull_struct_blob_all(sid_blob, 
@@ -1371,16 +1375,10 @@ static WERROR dsdb_syntax_DN_BINARY_ldb_to_drsuapi(struct ldb_context *ldb,
 			}
 		}
 
-		id3.dn = ldb_dn_get_linearized(dn);
-		if (strncmp(id3.dn, "B:", 2) == 0) {
-			id3.dn = strchr(id3.dn, ':');
-			id3.dn = strchr(id3.dn+1, ':');
-			id3.dn = strchr(id3.dn+1, ':');
-			id3.dn++;
-		}
+		id3.dn = ldb_dn_get_linearized(dsdb_dn->dn);
 
 		/* get binary stuff */
-		ldb_dn_get_binary(dn, &id3.binary);
+		id3.binary = dsdb_dn->extra_part;
 
 		ndr_err = ndr_push_struct_blob(&blobs[i], blobs, schema->iconv_convenience, &id3, (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3Binary);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -1661,7 +1659,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.comment                = "Object(DS-DN) == a DN",
 	},{
 		.name			= "Object(DN-Binary)",
-		.ldap_oid		= "1.2.840.113556.1.4.903",
+		.ldap_oid		= DSDB_SYNTAX_BINARY_DN,
 		.oMSyntax		= 127,
 		.oMObjectClass		= OMOBJECTCLASS("\x2a\x86\x48\x86\xf7\x14\x01\x01\x01\x0b"),
 		.attributeSyntax_oid	= "2.5.5.7",
@@ -1669,7 +1667,6 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.ldb_to_drsuapi		= dsdb_syntax_DN_BINARY_ldb_to_drsuapi,
 		.equality               = "octetStringMatch",
 		.comment                = "OctetString: Binary+DN",
-		.ldb_syntax             = LDB_SYNTAX_OCTET_STRING,
 	},{
 	/* not used in w2k3 schema */
 		.name			= "Object(OR-Name)",
@@ -1716,7 +1713,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 	},{
 	/* not used in w2k3 schema */
 		.name			= "Object(DN-String)",
-		.ldap_oid		= "1.2.840.113556.1.4.904",
+		.ldap_oid		= DSDB_SYNTAX_STRING_DN,
 		.oMSyntax		= 127,
 		.oMObjectClass		= OMOBJECTCLASS("\x2a\x86\x48\x86\xf7\x14\x01\x01\x01\x0c"),
 		.attributeSyntax_oid	= "2.5.5.14",
@@ -1724,7 +1721,6 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.ldb_to_drsuapi		= dsdb_syntax_DN_BINARY_ldb_to_drsuapi,
 		.equality               = "octetStringMatch",
 		.comment                = "OctetString: String+DN",
-		.ldb_syntax             = LDB_SYNTAX_OCTET_STRING,
 	}
 };
 

@@ -2,7 +2,7 @@
    ldb database library
 
    Copyright (C) Simo Sorce 2005-2008
-   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2007-2008
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2007-2009
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@
 
 struct extended_dn_replace_list {
 	struct extended_dn_replace_list *next;
-	struct ldb_dn *dn;
+	struct dsdb_dn *dsdb_dn;
 	TALLOC_CTX *mem_ctx;
 	struct ldb_val *replace_dn;
 	struct extended_dn_context *ac;
@@ -157,12 +157,20 @@ static int extended_replace_dn(struct ldb_request *req, struct ldb_reply *ares)
 		 * search.  We can't check, as it could be an extended
 		 * DN, so a module below will resolve it */
 		struct ldb_dn *dn = ares->message->dn;
-
-		/* Replace the DN with the extended version of the DN
-		 * (ie, add SID and GUID) */
-		*os->replace_dn = data_blob_string_const(
-			ldb_dn_get_extended_linearized(os->mem_ctx, 
-						       dn, 1));
+		
+		/* Rebuild with the string or binary 'extra part' the
+		 * DN may have had as a prefix */
+		struct dsdb_dn *dsdb_dn = dsdb_dn_construct(ares, dn, 
+							    os->dsdb_dn->extra_part,
+							    os->dsdb_dn->oid);
+		if (dsdb_dn) {
+			/* Replace the DN with the extended version of the DN
+			 * (ie, add SID and GUID) */
+			*os->replace_dn = data_blob_string_const(
+				dsdb_dn_get_extended_linearized(os->mem_ctx, 
+								dsdb_dn, 1));
+			talloc_free(dsdb_dn);
+		}
 		if (os->replace_dn->data == NULL) {
 			return ldb_module_done(os->ac->req, NULL, NULL,
 						LDB_ERR_OPERATIONS_ERROR);
@@ -209,7 +217,9 @@ static int extended_replace_dn(struct ldb_request *req, struct ldb_reply *ares)
 
 static int extended_store_replace(struct extended_dn_context *ac,
 				  TALLOC_CTX *callback_mem_ctx,
-				  struct ldb_val *plain_dn)
+				  struct ldb_val *plain_dn,
+				  bool is_delete, 
+				  const char *oid)
 {
 	int ret;
 	struct extended_dn_replace_list *os;
@@ -228,14 +238,25 @@ static int extended_store_replace(struct extended_dn_context *ac,
 	
 	os->mem_ctx = callback_mem_ctx;
 
-	os->dn = ldb_dn_from_ldb_val(os, ldb_module_get_ctx(ac->module), plain_dn);
-	if (!os->dn || !ldb_dn_validate(os->dn)) {
+	os->dsdb_dn = dsdb_dn_parse(os, ldb_module_get_ctx(ac->module), plain_dn, oid);
+	if (!os->dsdb_dn || !ldb_dn_validate(os->dsdb_dn->dn)) {
 		talloc_free(os);
 		ldb_asprintf_errstring(ldb_module_get_ctx(ac->module), 
-				       "could not parse %.*s as a DN", (int)plain_dn->length, plain_dn->data);
+				       "could not parse %.*s as a %s DN", (int)plain_dn->length, plain_dn->data,
+				       oid);
 		return LDB_ERR_INVALID_DN_SYNTAX;
 	}
 
+	if (is_delete && !ldb_dn_has_extended(os->dsdb_dn->dn)) {
+		/* NO need to figure this DN out, this element is
+		 * going to be deleted anyway, and becuase it's not
+		 * extended, we have enough information to do the
+		 * delete */
+		talloc_free(os);
+		return LDB_SUCCESS;
+	}
+	
+		
 	os->replace_dn = plain_dn;
 
 	/* The search request here might happen to be for an
@@ -243,7 +264,7 @@ static int extended_store_replace(struct extended_dn_context *ac,
 	 * module in the stack will convert this into a normal DN for
 	 * processing */
 	ret = ldb_build_search_req(&os->search_req,
-				   ldb_module_get_ctx(ac->module), os, os->dn, LDB_SCOPE_BASE, NULL, 
+				   ldb_module_get_ctx(ac->module), os, os->dsdb_dn->dn, LDB_SCOPE_BASE, NULL, 
 				   attrs, NULL, os, extended_replace_dn,
 				   ac->req);
 
@@ -302,9 +323,8 @@ static int extended_dn_add(struct ldb_module *module, struct ldb_request *req)
 			continue;
 		}
 
-		/* We only setup an extended DN GUID on these particular DN objects */
-		if (strcmp(schema_attr->attributeSyntax_oid, "2.5.5.1") != 0 &&
-		    strcmp(schema_attr->attributeSyntax_oid, "2.5.5.7") != 0) {
+		/* We only setup an extended DN GUID on DN elements */
+		if (dsdb_dn_oid_to_format(schema_attr->syntax->ldap_oid) == DSDB_INVALID_DN) {
 			continue;
 		}
 
@@ -324,14 +344,15 @@ static int extended_dn_add(struct ldb_module *module, struct ldb_request *req)
 		/* Re-calculate el */
 		el = &ac->new_req->op.add.message->elements[i];
 		for (j = 0; j < el->num_values; j++) {
-			ret = extended_store_replace(ac, ac->new_req->op.add.message->elements, &el->values[j]);
+			ret = extended_store_replace(ac, ac->new_req->op.add.message->elements, &el->values[j],
+						     false, schema_attr->syntax->ldap_oid);
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}
 		}
 	}
 
-	/* if DNs were set continue */
+	/* if no DNs were set continue */
 	if (ac->ops == NULL) {
 		talloc_free(ac);
 		return ldb_next_request(module, req);
@@ -377,11 +398,10 @@ static int extended_dn_modify(struct ldb_module *module, struct ldb_request *req
 		}
 
 		/* We only setup an extended DN GUID on these particular DN objects */
-		if (strcmp(schema_attr->attributeSyntax_oid, "2.5.5.1") != 0 &&
-		    strcmp(schema_attr->attributeSyntax_oid, "2.5.5.7") != 0) {
+		if (dsdb_dn_oid_to_format(schema_attr->syntax->ldap_oid) == DSDB_INVALID_DN) {
 			continue;
 		}
-		
+
 		/* Before we setup a procedure to modify the incoming message, we must copy it */
 		if (!ac->new_req) {
 			struct ldb_message *msg = ldb_msg_copy(ac, req->op.mod.message);
@@ -399,17 +419,14 @@ static int extended_dn_modify(struct ldb_module *module, struct ldb_request *req
 		el = &ac->new_req->op.mod.message->elements[i];
 		/* For each value being added, we need to setup the lookups to fill in the extended DN */
 		for (j = 0; j < el->num_values; j++) {
-			struct ldb_dn *dn = ldb_dn_from_ldb_val(ac, ldb_module_get_ctx(module), &el->values[j]);
-			if (!dn || !ldb_dn_validate(dn)) {
-				ldb_asprintf_errstring(ldb_module_get_ctx(module), 
-						       "could not parse attribute %s as a DN", el->name);
-				return LDB_ERR_INVALID_DN_SYNTAX;
-			}
-			if (((el->flags & LDB_FLAG_MOD_MASK) == LDB_FLAG_MOD_DELETE) && !ldb_dn_has_extended(dn)) {
-				/* NO need to figure this DN out, it's going to be deleted anyway */
-				continue;
-			}
-			ret = extended_store_replace(ac, req->op.mod.message->elements, &el->values[j]);
+			/* If we are just going to delete this
+			 * element, only do a lookup if
+			 * extended_store_replace determines it's an
+			 * input of an extended DN */
+			bool is_delete = ((el->flags & LDB_FLAG_MOD_MASK) == LDB_FLAG_MOD_DELETE);
+
+			ret = extended_store_replace(ac, req->op.mod.message->elements, &el->values[j],
+						     is_delete, schema_attr->syntax->ldap_oid);
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}

@@ -2,7 +2,7 @@
    ldb database library
 
    Copyright (C) Simo Sorce 2005-2008
-   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2007-2008
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2007-2009
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -420,21 +420,30 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 		}
 
 		/* Look to see if this attributeSyntax is a DN */
-		if (strcmp(attribute->attributeSyntax_oid, "2.5.5.1") != 0 &&
-		    strcmp(attribute->attributeSyntax_oid, "2.5.5.7") != 0) {
+		if (dsdb_dn_oid_to_format(attribute->syntax->ldap_oid) == DSDB_INVALID_DN) {
 			continue;
 		}
 
 		for (j = 0; j < msg->elements[i].num_values; j++) {
 			const char *dn_str;
-			struct ldb_dn *dn = ldb_dn_from_ldb_val(ac, ldb_module_get_ctx(ac->module), &msg->elements[i].values[j]);
-			if (!dn || !ldb_dn_validate(dn)) {
+			struct ldb_dn *dn;
+			struct dsdb_dn *dsdb_dn = NULL;
+			struct ldb_val *plain_dn = &msg->elements[i].values[j];		
+			dsdb_dn = dsdb_dn_parse(msg, ldb_module_get_ctx(ac->module), plain_dn, attribute->syntax->ldap_oid);
+			
+			if (!dsdb_dn || !ldb_dn_validate(dsdb_dn->dn)) {
+				ldb_asprintf_errstring(ldb_module_get_ctx(ac->module), 
+						       "could not parse %.*s as a %s DN", (int)plain_dn->length, plain_dn->data,
+						       attribute->syntax->ldap_oid);
+				talloc_free(dsdb_dn);
 				return ldb_module_done(ac->req, NULL, NULL, LDB_ERR_INVALID_DN_SYNTAX);
 			}
+			dn = dsdb_dn->dn;
 
 			if (p->normalise) {
 				ret = fix_dn(dn);
 				if (ret != LDB_SUCCESS) {
+					talloc_free(dsdb_dn);
 					return ldb_module_done(ac->req, NULL, NULL, ret);
 				}
 			}
@@ -453,24 +462,26 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 							 msg->elements[i].name,
 							 &msg->elements[i].values[j]);
 				if (ret != LDB_SUCCESS) {
+					talloc_free(dsdb_dn);
 					return ldb_module_done(ac->req, NULL, NULL, ret);
 				}
 			}
 			
 			if (!ac->inject) {
-				dn_str = talloc_steal(msg->elements[i].values, 
-						      ldb_dn_get_linearized(dn));
+				dn_str = dsdb_dn_get_linearized(msg->elements[i].values, 
+								dsdb_dn);
 			} else {
-				dn_str = talloc_steal(msg->elements[i].values, 
-						      ldb_dn_get_extended_linearized(msg->elements[i].values, 
-										     dn, ac->extended_type));
+				dn_str = dsdb_dn_get_extended_linearized(msg->elements[i].values, 
+									 dsdb_dn, ac->extended_type);
 			}
+			
 			if (!dn_str) {
 				ldb_oom(ldb_module_get_ctx(ac->module));
+				talloc_free(dsdb_dn);
 				return ldb_module_done(ac->req, NULL, NULL, LDB_ERR_OPERATIONS_ERROR);
 			}
 			msg->elements[i].values[j] = data_blob_string_const(dn_str);
-			talloc_free(dn);
+			talloc_free(dsdb_dn);
 		}
 	}
 	return ldb_module_send_entry(ac->req, msg, ares->controls);
@@ -717,8 +728,7 @@ static int extended_dn_out_dereference_init(struct ldb_module *module, const cha
 	}
 	
 	for (cur = schema->attributes; cur; cur = cur->next) {
-		if (strcmp(cur->syntax->attributeSyntax_oid, "2.5.5.1") != 0 &&
-		    strcmp(cur->syntax->attributeSyntax_oid, "2.5.5.7") != 0) {
+		if (dsdb_dn_oid_to_format(cur->syntax->ldap_oid) == DSDB_INVALID_DN) {
 			continue;
 		}
 		dereference_control->dereference
