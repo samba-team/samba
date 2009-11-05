@@ -99,6 +99,12 @@ void ldb_schema_attribute_set_override_handler(struct ldb_context *ldb,
 					       ldb_attribute_handler_override_fn_t override,
 					       void *private_data);
 
+/* A useful function to build comparison functions with */
+int ldb_any_comparison(struct ldb_context *ldb, void *mem_ctx, 
+		       ldb_attr_handler_t canonicalise_fn, 
+		       const struct ldb_val *v1,
+		       const struct ldb_val *v2);
+
 /* The following definitions come from lib/ldb/common/ldb_controls.c  */
 struct ldb_control *get_control_from_list(struct ldb_control **controls, const char *oid);
 int save_controls(struct ldb_control *exclude, struct ldb_request *req, struct ldb_control ***saver);
