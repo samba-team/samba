@@ -709,10 +709,13 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 
 	while (!creds_ready && (i < maxtries)) {
 
-		if ((retval = krb5_get_credentials(context, 0, ccache, 
-						   &creds, &credsp))) {
-			DEBUG(1,("ads_krb5_mk_req: krb5_get_credentials failed for %s (%s)\n",
-				 principal, error_message(retval)));
+		if ((retval = smb_krb5_get_credentials(context, ccache,
+						       creds.client,
+						       creds.server,
+						       NULL,
+						       &credsp))) {
+			DEBUG(1,("ads_krb5_mk_req: smb_krb5_get_credentials failed for %s (%s)\n",
+				principal, error_message(retval)));
 			goto cleanup_creds;
 		}
 
