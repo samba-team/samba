@@ -1261,7 +1261,7 @@ def provision(setup_dir, message, session_info,
                                          setup_ds_path=setup_ds_path,
                                          ldap_dryrun_mode=ldap_dryrun_mode,
                                          domainsid=domainsid)
-    else:
+    elif backend_type == "ldb" or backend_type == "existing":
         provision_backend = ProvisionBackend(backend_type,
                                          paths=paths, setup_path=setup_path,
                                          lp=lp, credentials=credentials, 
@@ -1275,7 +1275,10 @@ def provision(setup_dir, message, session_info,
                                          setup_ds_path=setup_ds_path,
                                          ldap_dryrun_mode=ldap_dryrun_mode,
                                          domainsid=domainsid)
+    else:
+        raise ProvisioningError("Unknown LDAP backend type selected")
 
+    provision_backend.provision()
     provision_backend.start()
 
     # only install a new shares config db if there is none

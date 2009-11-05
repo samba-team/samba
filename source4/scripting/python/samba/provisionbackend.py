@@ -74,6 +74,18 @@ class ProvisionBackend(object):
         self.slapd_command_escaped = None
         self.lp = lp
         self.names = names
+        self.message = message
+        self.hostname = hostname
+        self.root = root
+        self.schema = schema
+        self.ldapadminpass = ldapadminpass
+        self.ldap_backend_extra_port = ldap_backend_extra_port
+        self.ol_mmr_urls = ol_mmr_urls
+        self.setup_ds_path = setup_ds_path
+        self.slapd_path = slapd_path
+        self.nosync = nosync
+        self.ldap_dryrun_mode = ldap_dryrun_mode
+        self.domainsid = domainsid
 
         self.type = backend_type
         
@@ -158,33 +170,8 @@ class ProvisionBackend(object):
         self.secrets_credentials.set_username("samba-admin")
         self.secrets_credentials.set_password(ldapadminpass)
 
-
-        if self.type == "fedora-ds":
-            provision_fds_backend(self, setup_path=setup_path,
-                                  names=names, message=message, 
-                                  hostname=hostname,
-                                  ldapadminpass=ldapadminpass, root=root, 
-                                  schema=schema,
-                                  ldap_backend_extra_port=ldap_backend_extra_port, 
-                                  setup_ds_path=setup_ds_path,
-                                  slapd_path=slapd_path,
-                                  nosync=nosync,
-                                  ldap_dryrun_mode=ldap_dryrun_mode,
-                                  domainsid=domainsid)
-            
-        elif self.type == "openldap":
-            provision_openldap_backend(self, setup_path=setup_path,
-                                       names=names, message=message, 
-                                       hostname=hostname,
-                                       ldapadminpass=ldapadminpass, root=root, 
-                                       schema=schema,
-                                       ldap_backend_extra_port=ldap_backend_extra_port, 
-                                       ol_mmr_urls=ol_mmr_urls, 
-                                       slapd_path=slapd_path,
-                                       nosync=nosync,
-                                       ldap_dryrun_mode=ldap_dryrun_mode)
-        else:
-            raise ProvisioningError("Unknown LDAP backend type selected")
+    def provision(self):
+        pass
 
     def start(self):
         pass
@@ -237,372 +224,351 @@ class LDAPBackend(ProvisionBackend):
 
 
 class OpenLDAPBackend(LDAPBackend):
-    pass
+    def provision(self):
+        # Wipe the directories so we can start
+        shutil.rmtree(os.path.join(self.paths.ldapdir, "db"), True)
 
-def provision_openldap_backend(result, setup_path=None, names=None,
-                               message=None, 
-                               hostname=None, ldapadminpass=None, root=None, 
-                               schema=None, 
-                               ldap_backend_extra_port=None,
-                               ol_mmr_urls=None, 
-                               slapd_path=None, nosync=False,
-                               ldap_dryrun_mode=False):
-
-    # Wipe the directories so we can start
-    shutil.rmtree(os.path.join(result.paths.ldapdir, "db"), True)
-
-    #Allow the test scripts to turn off fsync() for OpenLDAP as for TDB and LDB
-    nosync_config = ""
-    if nosync:
-        nosync_config = "dbnosync"
+        #Allow the test scripts to turn off fsync() for OpenLDAP as for TDB and LDB
+        nosync_config = ""
+        if self.nosync:
+            nosync_config = "dbnosync"
         
-    lnkattr = schema.linked_attributes()
-    refint_attributes = ""
-    memberof_config = "# Generated from Samba4 schema\n"
-    for att in  lnkattr.keys():
-        if lnkattr[att] is not None:
-            refint_attributes = refint_attributes + " " + att 
+        lnkattr = self.schema.linked_attributes()
+        refint_attributes = ""
+        memberof_config = "# Generated from Samba4 schema\n"
+        for att in  lnkattr.keys():
+            if lnkattr[att] is not None:
+                refint_attributes = refint_attributes + " " + att 
             
-            memberof_config += read_and_sub_file(setup_path("memberof.conf"),
+                memberof_config += read_and_sub_file(self.setup_path("memberof.conf"),
                                                  { "MEMBER_ATTR" : att ,
                                                    "MEMBEROF_ATTR" : lnkattr[att] })
             
-    refint_config = read_and_sub_file(setup_path("refint.conf"),
+        refint_config = read_and_sub_file(self.setup_path("refint.conf"),
                                       { "LINK_ATTRS" : refint_attributes})
     
-    attrs = ["linkID", "lDAPDisplayName"]
-    res = schema.ldb.search(expression="(&(objectclass=attributeSchema)(searchFlags:1.2.840.113556.1.4.803:=1))", base=names.schemadn, scope=SCOPE_ONELEVEL, attrs=attrs)
-    index_config = ""
-    for i in range (0, len(res)):
-        index_attr = res[i]["lDAPDisplayName"][0]
-        if index_attr == "objectGUID":
-            index_attr = "entryUUID"
+        attrs = ["linkID", "lDAPDisplayName"]
+        res = self.schema.ldb.search(expression="(&(objectclass=attributeSchema)(searchFlags:1.2.840.113556.1.4.803:=1))", base=self.names.schemadn, scope=SCOPE_ONELEVEL, attrs=attrs)
+        index_config = ""
+        for i in range (0, len(res)):
+            index_attr = res[i]["lDAPDisplayName"][0]
+            if index_attr == "objectGUID":
+                index_attr = "entryUUID"
             
-        index_config += "index " + index_attr + " eq\n"
+            index_config += "index " + index_attr + " eq\n"
 
-# generate serverids, ldap-urls and syncrepl-blocks for mmr hosts
-    mmr_on_config = ""
-    mmr_replicator_acl = ""
-    mmr_serverids_config = ""
-    mmr_syncrepl_schema_config = "" 
-    mmr_syncrepl_config_config = "" 
-    mmr_syncrepl_user_config = "" 
+        # generate serverids, ldap-urls and syncrepl-blocks for mmr hosts
+        mmr_on_config = ""
+        mmr_replicator_acl = ""
+        mmr_serverids_config = ""
+        mmr_syncrepl_schema_config = "" 
+        mmr_syncrepl_config_config = "" 
+        mmr_syncrepl_user_config = "" 
        
     
-    if ol_mmr_urls is not None:
-        # For now, make these equal
-        mmr_pass = ldapadminpass
+        if self.ol_mmr_urls is not None:
+            # For now, make these equal
+            mmr_pass = self.ldapadminpass
         
-        url_list=filter(None,ol_mmr_urls.split(' ')) 
-        if (len(url_list) == 1):
-            url_list=filter(None,ol_mmr_urls.split(',')) 
+            url_list=filter(None,self.ol_mmr_urls.split(' ')) 
+            if (len(url_list) == 1):
+                url_list=filter(None,self.ol_mmr_urls.split(',')) 
                      
             
-            mmr_on_config = "MirrorMode On"
-            mmr_replicator_acl = "  by dn=cn=replicator,cn=samba read"
-            serverid=0
-            for url in url_list:
-                serverid=serverid+1
-                mmr_serverids_config += read_and_sub_file(setup_path("mmr_serverids.conf"),
+                mmr_on_config = "MirrorMode On"
+                mmr_replicator_acl = "  by dn=cn=replicator,cn=samba read"
+                serverid=0
+                for url in url_list:
+                    serverid=serverid+1
+                    mmr_serverids_config += read_and_sub_file(self.setup_path("mmr_serverids.conf"),
                                                           { "SERVERID" : str(serverid),
                                                             "LDAPSERVER" : url })
-                rid=serverid*10
-                rid=rid+1
-                mmr_syncrepl_schema_config += read_and_sub_file(setup_path("mmr_syncrepl.conf"),
+                    rid=serverid*10
+                    rid=rid+1
+                    mmr_syncrepl_schema_config += read_and_sub_file(self.setup_path("mmr_syncrepl.conf"),
                                                                 {  "RID" : str(rid),
-                                                                   "MMRDN": names.schemadn,
+                                                                   "MMRDN": self.names.schemadn,
                                                                    "LDAPSERVER" : url,
                                                                    "MMR_PASSWORD": mmr_pass})
                 
-                rid=rid+1
-                mmr_syncrepl_config_config += read_and_sub_file(setup_path("mmr_syncrepl.conf"),
+                    rid=rid+1
+                    mmr_syncrepl_config_config += read_and_sub_file(self.setup_path("mmr_syncrepl.conf"),
                                                                 {  "RID" : str(rid),
-                                                                   "MMRDN": names.configdn,
+                                                                   "MMRDN": self.names.configdn,
                                                                    "LDAPSERVER" : url,
                                                                    "MMR_PASSWORD": mmr_pass})
                 
-                rid=rid+1
-                mmr_syncrepl_user_config += read_and_sub_file(setup_path("mmr_syncrepl.conf"),
+                    rid=rid+1
+                    mmr_syncrepl_user_config += read_and_sub_file(self.setup_path("mmr_syncrepl.conf"),
                                                               {  "RID" : str(rid),
-                                                                 "MMRDN": names.domaindn,
+                                                                 "MMRDN": self.names.domaindn,
                                                                  "LDAPSERVER" : url,
                                                                  "MMR_PASSWORD": mmr_pass })
-    # OpenLDAP cn=config initialisation
-    olc_syncrepl_config = ""
-    olc_mmr_config = "" 
-    # if mmr = yes, generate cn=config-replication directives
-    # and olc_seed.lif for the other mmr-servers
-    if ol_mmr_urls is not None:
-        serverid=0
-        olc_serverids_config = ""
-        olc_syncrepl_seed_config = ""
-        olc_mmr_config += read_and_sub_file(setup_path("olc_mmr.conf"),{})
-        rid=1000
-        for url in url_list:
-            serverid=serverid+1
-            olc_serverids_config += read_and_sub_file(setup_path("olc_serverid.conf"),
+        # OpenLDAP cn=config initialisation
+        olc_syncrepl_config = ""
+        olc_mmr_config = "" 
+        # if mmr = yes, generate cn=config-replication directives
+        # and olc_seed.lif for the other mmr-servers
+        if self.ol_mmr_urls is not None:
+            serverid=0
+            olc_serverids_config = ""
+            olc_syncrepl_seed_config = ""
+            olc_mmr_config += read_and_sub_file(self.setup_path("olc_mmr.conf"),{})
+            rid=1000
+            for url in url_list:
+                serverid=serverid+1
+                olc_serverids_config += read_and_sub_file(self.setup_path("olc_serverid.conf"),
                                                       { "SERVERID" : str(serverid),
                                                         "LDAPSERVER" : url })
             
-            rid=rid+1
-            olc_syncrepl_config += read_and_sub_file(setup_path("olc_syncrepl.conf"),
+                rid=rid+1
+                olc_syncrepl_config += read_and_sub_file(self.setup_path("olc_syncrepl.conf"),
                                                      {  "RID" : str(rid),
                                                         "LDAPSERVER" : url,
                                                         "MMR_PASSWORD": mmr_pass})
             
-            olc_syncrepl_seed_config += read_and_sub_file(setup_path("olc_syncrepl_seed.conf"),
+                olc_syncrepl_seed_config += read_and_sub_file(self.setup_path("olc_syncrepl_seed.conf"),
                                                           {  "RID" : str(rid),
                                                              "LDAPSERVER" : url})
                 
-        setup_file(setup_path("olc_seed.ldif"), result.paths.olcseedldif,
-                   {"OLC_SERVER_ID_CONF": olc_serverids_config,
-                    "OLC_PW": ldapadminpass,
-                    "OLC_SYNCREPL_CONF": olc_syncrepl_seed_config})
-    # end olc
+            setup_file(self.setup_path("olc_seed.ldif"), self.paths.olcseedldif,
+                       {"OLC_SERVER_ID_CONF": olc_serverids_config,
+                        "OLC_PW": self.ldapadminpass,
+                        "OLC_SYNCREPL_CONF": olc_syncrepl_seed_config})
+        # end olc
                 
-    setup_file(setup_path("slapd.conf"), result.paths.slapdconf,
-               {"DNSDOMAIN": names.dnsdomain,
-                "LDAPDIR": result.paths.ldapdir,
-                "DOMAINDN": names.domaindn,
-                "CONFIGDN": names.configdn,
-                "SCHEMADN": names.schemadn,
-                "MEMBEROF_CONFIG": memberof_config,
-                "MIRRORMODE": mmr_on_config,
-                "REPLICATOR_ACL": mmr_replicator_acl,
-                "MMR_SERVERIDS_CONFIG": mmr_serverids_config,
-                "MMR_SYNCREPL_SCHEMA_CONFIG": mmr_syncrepl_schema_config,
-                "MMR_SYNCREPL_CONFIG_CONFIG": mmr_syncrepl_config_config,
-                "MMR_SYNCREPL_USER_CONFIG": mmr_syncrepl_user_config,
-                "OLC_SYNCREPL_CONFIG": olc_syncrepl_config,
-                "OLC_MMR_CONFIG": olc_mmr_config,
-                "REFINT_CONFIG": refint_config,
-                "INDEX_CONFIG": index_config,
-                "NOSYNC": nosync_config})
+        setup_file(self.setup_path("slapd.conf"), self.paths.slapdconf,
+                   {"DNSDOMAIN": self.names.dnsdomain,
+                    "LDAPDIR": self.paths.ldapdir,
+                    "DOMAINDN": self.names.domaindn,
+                    "CONFIGDN": self.names.configdn,
+                    "SCHEMADN": self.names.schemadn,
+                    "MEMBEROF_CONFIG": memberof_config,
+                    "MIRRORMODE": mmr_on_config,
+                    "REPLICATOR_ACL": mmr_replicator_acl,
+                    "MMR_SERVERIDS_CONFIG": mmr_serverids_config,
+                    "MMR_SYNCREPL_SCHEMA_CONFIG": mmr_syncrepl_schema_config,
+                    "MMR_SYNCREPL_CONFIG_CONFIG": mmr_syncrepl_config_config,
+                    "MMR_SYNCREPL_USER_CONFIG": mmr_syncrepl_user_config,
+                    "OLC_SYNCREPL_CONFIG": olc_syncrepl_config,
+                    "OLC_MMR_CONFIG": olc_mmr_config,
+                    "REFINT_CONFIG": refint_config,
+                    "INDEX_CONFIG": index_config,
+                    "NOSYNC": nosync_config})
         
-    setup_db_config(setup_path, os.path.join(result.paths.ldapdir, "db", "user"))
-    setup_db_config(setup_path, os.path.join(result.paths.ldapdir, "db", "config"))
-    setup_db_config(setup_path, os.path.join(result.paths.ldapdir, "db", "schema"))
+        setup_db_config(self.setup_path, os.path.join(self.paths.ldapdir, "db", "user"))
+        setup_db_config(self.setup_path, os.path.join(self.paths.ldapdir, "db", "config"))
+        setup_db_config(self.setup_path, os.path.join(self.paths.ldapdir, "db", "schema"))
     
-    if not os.path.exists(os.path.join(result.paths.ldapdir, "db", "samba",  "cn=samba")):
-        os.makedirs(os.path.join(result.paths.ldapdir, "db", "samba",  "cn=samba"), 0700)
+        if not os.path.exists(os.path.join(self.paths.ldapdir, "db", "samba",  "cn=samba")):
+            os.makedirs(os.path.join(self.paths.ldapdir, "db", "samba",  "cn=samba"), 0700)
         
-    setup_file(setup_path("cn=samba.ldif"), 
-               os.path.join(result.paths.ldapdir, "db", "samba",  "cn=samba.ldif"),
-               { "UUID": str(uuid.uuid4()), 
-                 "LDAPTIME": timestring(int(time.time()))} )
-    setup_file(setup_path("cn=samba-admin.ldif"), 
-               os.path.join(result.paths.ldapdir, "db", "samba",  "cn=samba", "cn=samba-admin.ldif"),
-               {"LDAPADMINPASS_B64": b64encode(ldapadminpass),
-                "UUID": str(uuid.uuid4()), 
-                "LDAPTIME": timestring(int(time.time()))} )
-    
-    if ol_mmr_urls is not None:
-        setup_file(setup_path("cn=replicator.ldif"),
-                   os.path.join(result.paths.ldapdir, "db", "samba",  "cn=samba", "cn=replicator.ldif"),
-                   {"MMR_PASSWORD_B64": b64encode(mmr_pass),
-                    "UUID": str(uuid.uuid4()),
+        setup_file(self.setup_path("cn=samba.ldif"), 
+                   os.path.join(self.paths.ldapdir, "db", "samba",  "cn=samba.ldif"),
+                   { "UUID": str(uuid.uuid4()), 
+                     "LDAPTIME": timestring(int(time.time()))} )
+        setup_file(self.setup_path("cn=samba-admin.ldif"), 
+                   os.path.join(self.paths.ldapdir, "db", "samba",  "cn=samba", "cn=samba-admin.ldif"),
+                   {"LDAPADMINPASS_B64": b64encode(self.ldapadminpass),
+                    "UUID": str(uuid.uuid4()), 
                     "LDAPTIME": timestring(int(time.time()))} )
+    
+        if self.ol_mmr_urls is not None:
+            setup_file(self.setup_path("cn=replicator.ldif"),
+                       os.path.join(self.paths.ldapdir, "db", "samba",  "cn=samba", "cn=replicator.ldif"),
+                       {"MMR_PASSWORD_B64": b64encode(mmr_pass),
+                        "UUID": str(uuid.uuid4()),
+                        "LDAPTIME": timestring(int(time.time()))} )
         
 
-    mapping = "schema-map-openldap-2.3"
-    backend_schema = "backend-schema.schema"
+        mapping = "schema-map-openldap-2.3"
+        backend_schema = "backend-schema.schema"
 
-    backend_schema_data = schema.ldb.convert_schema_to_openldap("openldap", open(setup_path(mapping), 'r').read())
-    assert backend_schema_data is not None
-    open(os.path.join(result.paths.ldapdir, backend_schema), 'w').write(backend_schema_data)
+        backend_schema_data = self.schema.ldb.convert_schema_to_openldap("openldap", open(self.setup_path(mapping), 'r').read())
+        assert backend_schema_data is not None
+        open(os.path.join(self.paths.ldapdir, backend_schema), 'w').write(backend_schema_data)
 
-    # now we generate the needed strings to start slapd automatically,
-    # first ldapi_uri...
-    if ldap_backend_extra_port is not None:
-        # When we use MMR, we can't use 0.0.0.0 as it uses the name
-        # specified there as part of it's clue as to it's own name,
-        # and not to replicate to itself
-        if ol_mmr_urls is None:
-            server_port_string = "ldap://0.0.0.0:%d" % ldap_backend_extra_port
+        # now we generate the needed strings to start slapd automatically,
+        # first ldapi_uri...
+        if self.ldap_backend_extra_port is not None:
+            # When we use MMR, we can't use 0.0.0.0 as it uses the name
+            # specified there as part of it's clue as to it's own name,
+            # and not to replicate to itself
+            if self.ol_mmr_urls is None:
+                server_port_string = "ldap://0.0.0.0:%d" % self.ldap_backend_extra_port
+            else:
+                server_port_string = "ldap://" + self.names.hostname + "." + self.names.dnsdomain +":%d" % self.ldap_backend_extra_port
         else:
-            server_port_string = "ldap://" + names.hostname + "." + names.dnsdomain +":%d" % ldap_backend_extra_port
-    else:
-        server_port_string = ""
+            server_port_string = ""
 
-    # Prepare the 'result' information - the commands to return in particular
-    result.slapd_provision_command = [slapd_path]
+        # Prepare the 'result' information - the commands to return in particular
+        self.slapd_provision_command = [self.slapd_path]
 
-    result.slapd_provision_command.append("-F" + result.paths.olcdir)
+        self.slapd_provision_command.append("-F" + self.paths.olcdir)
 
-    result.slapd_provision_command.append("-h")
+        self.slapd_provision_command.append("-h")
 
-    # copy this command so we have two version, one with -d0 and only ldapi, and one with all the listen commands
-    result.slapd_command = list(result.slapd_provision_command)
+        # copy this command so we have two version, one with -d0 and only ldapi, and one with all the listen commands
+        self.slapd_command = list(self.slapd_provision_command)
     
-    result.slapd_provision_command.append(result.ldapi_uri)
-    result.slapd_provision_command.append("-d0")
+        self.slapd_provision_command.append(self.ldapi_uri)
+        self.slapd_provision_command.append("-d0")
 
-    uris = result.ldapi_uri
-    if server_port_string is not "":
-        uris = uris + " " + server_port_string
+        uris = self.ldapi_uri
+        if server_port_string is not "":
+            uris = uris + " " + server_port_string
 
-    result.slapd_command.append(uris)
+        self.slapd_command.append(uris)
 
-    # Set the username - done here because Fedora DS still uses the admin DN and simple bind
-    result.credentials.set_username("samba-admin")
+        # Set the username - done here because Fedora DS still uses the admin DN and simple bind
+        self.credentials.set_username("samba-admin")
     
-    # If we were just looking for crashes up to this point, it's a
-    # good time to exit before we realise we don't have OpenLDAP on
-    # this system
-    if ldap_dryrun_mode:
-        sys.exit(0)
+        # If we were just looking for crashes up to this point, it's a
+        # good time to exit before we realise we don't have OpenLDAP on
+        # this system
+        if self.ldap_dryrun_mode:
+            sys.exit(0)
 
-    # Finally, convert the configuration into cn=config style!
-    if not os.path.isdir(result.paths.olcdir):
-        os.makedirs(result.paths.olcdir, 0770)
+        # Finally, convert the configuration into cn=config style!
+        if not os.path.isdir(self.paths.olcdir):
+            os.makedirs(self.paths.olcdir, 0770)
 
-        retcode = subprocess.call([slapd_path, "-Ttest", "-f", result.paths.slapdconf, "-F", result.paths.olcdir], close_fds=True, shell=False)
+            retcode = subprocess.call([self.slapd_path, "-Ttest", "-f", self.paths.slapdconf, "-F", self.paths.olcdir], close_fds=True, shell=False)
 
-#        We can't do this, as OpenLDAP is strange.  It gives an error
-#        output to the above, but does the conversion sucessfully...
+#            We can't do this, as OpenLDAP is strange.  It gives an error
+#            output to the above, but does the conversion sucessfully...
 #
-#        if retcode != 0:
-#            raise ProvisioningError("conversion from slapd.conf to cn=config failed")
+#            if retcode != 0:
+#                raise ProvisioningError("conversion from slapd.conf to cn=config failed")
 
-        if not os.path.exists(os.path.join(result.paths.olcdir, "cn=config.ldif")):
-            raise ProvisioningError("conversion from slapd.conf to cn=config failed")
+            if not os.path.exists(os.path.join(self.paths.olcdir, "cn=config.ldif")):
+                raise ProvisioningError("conversion from slapd.conf to cn=config failed")
 
-        # Don't confuse the admin by leaving the slapd.conf around
-        os.remove(result.paths.slapdconf)        
-
-
-def provision_fds_backend(result, setup_path=None, names=None,
-                          message=None, 
-                          hostname=None, ldapadminpass=None, root=None, 
-                          schema=None,
-                          ldap_backend_extra_port=None,
-                          setup_ds_path=None,
-                          slapd_path=None,
-                          nosync=False, 
-                          ldap_dryrun_mode=False,
-                          domainsid=None):
-
-    if ldap_backend_extra_port is not None:
-        serverport = "ServerPort=%d" % ldap_backend_extra_port
-    else:
-        serverport = ""
-        
-    setup_file(setup_path("fedorads.inf"), result.paths.fedoradsinf, 
-               {"ROOT": root,
-                "HOSTNAME": hostname,
-                "DNSDOMAIN": names.dnsdomain,
-                "LDAPDIR": result.paths.ldapdir,
-                "DOMAINDN": names.domaindn,
-                "LDAPMANAGERDN": names.ldapmanagerdn,
-                "LDAPMANAGERPASS": ldapadminpass, 
-                "SERVERPORT": serverport})
-
-    setup_file(setup_path("fedorads-partitions.ldif"), result.paths.fedoradspartitions, 
-               {"CONFIGDN": names.configdn,
-                "SCHEMADN": names.schemadn,
-                "SAMBADN": names.sambadn,
-                })
-
-    setup_file(setup_path("fedorads-sasl.ldif"), result.paths.fedoradssasl, 
-               {"SAMBADN": names.sambadn,
-                })
-
-    setup_file(setup_path("fedorads-dna.ldif"), result.paths.fedoradsdna, 
-               {"DOMAINDN": names.domaindn,
-                "SAMBADN": names.sambadn,
-                "DOMAINSID": str(domainsid),
-                })
-
-    setup_file(setup_path("fedorads-pam.ldif"), result.paths.fedoradspam)
-
-    lnkattr = schema.linked_attributes()
-
-    refint_config = data = open(setup_path("fedorads-refint-delete.ldif"), 'r').read()
-    memberof_config = ""
-    index_config = ""
-    argnum = 3
-
-    for attr in lnkattr.keys():
-        if lnkattr[attr] is not None:
-            refint_config += read_and_sub_file(setup_path("fedorads-refint-add.ldif"),
-                                                 { "ARG_NUMBER" : str(argnum) ,
-                                                   "LINK_ATTR" : attr })
-            memberof_config += read_and_sub_file(setup_path("fedorads-linked-attributes.ldif"),
-                                                 { "MEMBER_ATTR" : attr ,
-                                                   "MEMBEROF_ATTR" : lnkattr[attr] })
-            index_config += read_and_sub_file(setup_path("fedorads-index.ldif"),
-                                                 { "ATTR" : attr })
-            argnum += 1
-
-    open(result.paths.fedoradsrefint, 'w').write(refint_config)
-    open(result.paths.fedoradslinkedattributes, 'w').write(memberof_config)
-
-    attrs = ["lDAPDisplayName"]
-    res = schema.ldb.search(expression="(&(objectclass=attributeSchema)(searchFlags:1.2.840.113556.1.4.803:=1))", base=names.schemadn, scope=SCOPE_ONELEVEL, attrs=attrs)
-
-    for i in range (0, len(res)):
-        attr = res[i]["lDAPDisplayName"][0]
-
-        if attr == "objectGUID":
-            attr = "nsUniqueId"
-
-        index_config += read_and_sub_file(setup_path("fedorads-index.ldif"),
-                                             { "ATTR" : attr })
-
-    open(result.paths.fedoradsindex, 'w').write(index_config)
-
-    setup_file(setup_path("fedorads-samba.ldif"), result.paths.fedoradssamba,
-                {"SAMBADN": names.sambadn, 
-                 "LDAPADMINPASS": ldapadminpass
-                })
-
-    mapping = "schema-map-fedora-ds-1.0"
-    backend_schema = "99_ad.ldif"
-    
-    # Build a schema file in Fedora DS format
-    backend_schema_data = schema.ldb.convert_schema_to_openldap("fedora-ds", open(setup_path(mapping), 'r').read())
-    assert backend_schema_data is not None
-    open(os.path.join(result.paths.ldapdir, backend_schema), 'w').write(backend_schema_data)
-
-    result.credentials.set_bind_dn(names.ldapmanagerdn)
-
-    # Destory the target directory, or else setup-ds.pl will complain
-    fedora_ds_dir = os.path.join(result.paths.ldapdir, "slapd-samba4")
-    shutil.rmtree(fedora_ds_dir, True)
-
-    result.slapd_provision_command = [slapd_path, "-D", fedora_ds_dir, "-i", result.paths.slapdpid];
-    #In the 'provision' command line, stay in the foreground so we can easily kill it
-    result.slapd_provision_command.append("-d0")
-
-    #the command for the final run is the normal script
-    result.slapd_command = [os.path.join(result.paths.ldapdir, "slapd-samba4", "start-slapd")]
-
-    # If we were just looking for crashes up to this point, it's a
-    # good time to exit before we realise we don't have Fedora DS on
-    if ldap_dryrun_mode:
-        sys.exit(0)
-
-    # Try to print helpful messages when the user has not specified the path to the setup-ds tool
-    if setup_ds_path is None:
-        raise ProvisioningError("Warning: Fedora DS LDAP-Backend must be setup with path to setup-ds, e.g. --setup-ds-path=\"/usr/sbin/setup-ds.pl\"!")
-    if not os.path.exists(setup_ds_path):
-        message (setup_ds_path)
-        raise ProvisioningError("Warning: Given Path to slapd does not exist!")
-
-    # Run the Fedora DS setup utility
-    retcode = subprocess.call([setup_ds_path, "--silent", "--file", result.paths.fedoradsinf], close_fds=True, shell=False)
-    if retcode != 0:
-        raise ProvisioningError("setup-ds failed")
-
-    # Load samba-admin
-    retcode = subprocess.call([
-        os.path.join(result.paths.ldapdir, "slapd-samba4", "ldif2db"), "-s", names.sambadn, "-i", result.paths.fedoradssamba],
-        close_fds=True, shell=False)
-    if retcode != 0:
-        raise("ldib2db failed")
+            # Don't confuse the admin by leaving the slapd.conf around
+            os.remove(self.paths.slapdconf)        
 
 
 class FDSBackend(LDAPBackend):
+    def provision(self):
+        if self.ldap_backend_extra_port is not None:
+            serverport = "ServerPort=%d" % self.ldap_backend_extra_port
+        else:
+            serverport = ""
+        
+        setup_file(self.setup_path("fedorads.inf"), self.paths.fedoradsinf, 
+                   {"ROOT": self.root,
+                    "HOSTNAME": self.hostname,
+                    "DNSDOMAIN": self.names.dnsdomain,
+                    "LDAPDIR": self.paths.ldapdir,
+                    "DOMAINDN": self.names.domaindn,
+                    "LDAPMANAGERDN": self.names.ldapmanagerdn,
+                    "LDAPMANAGERPASS": self.ldapadminpass, 
+                    "SERVERPORT": serverport})
+
+        setup_file(self.setup_path("fedorads-partitions.ldif"), self.paths.fedoradspartitions, 
+                   {"CONFIGDN": self.names.configdn,
+                    "SCHEMADN": self.names.schemadn,
+                    "SAMBADN": self.names.sambadn,
+                    })
+
+        setup_file(self.setup_path("fedorads-sasl.ldif"), self.paths.fedoradssasl, 
+                   {"SAMBADN": self.names.sambadn,
+                    })
+
+        setup_file(self.setup_path("fedorads-dna.ldif"), self.paths.fedoradsdna, 
+                   {"DOMAINDN": self.names.domaindn,
+                    "SAMBADN": self.names.sambadn,
+                    "DOMAINSID": str(self.domainsid),
+                    })
+
+        setup_file(self.setup_path("fedorads-pam.ldif"), self.paths.fedoradspam)
+
+        lnkattr = self.schema.linked_attributes()
+
+        refint_config = data = open(self.setup_path("fedorads-refint-delete.ldif"), 'r').read()
+        memberof_config = ""
+        index_config = ""
+        argnum = 3
+
+        for attr in lnkattr.keys():
+            if lnkattr[attr] is not None:
+                refint_config += read_and_sub_file(self.setup_path("fedorads-refint-add.ldif"),
+                                                 { "ARG_NUMBER" : str(argnum) ,
+                                                   "LINK_ATTR" : attr })
+                memberof_config += read_and_sub_file(self.setup_path("fedorads-linked-attributes.ldif"),
+                                                 { "MEMBER_ATTR" : attr ,
+                                                   "MEMBEROF_ATTR" : lnkattr[attr] })
+                index_config += read_and_sub_file(self.setup_path("fedorads-index.ldif"),
+                                                 { "ATTR" : attr })
+                argnum += 1
+
+        open(self.paths.fedoradsrefint, 'w').write(refint_config)
+        open(self.paths.fedoradslinkedattributes, 'w').write(memberof_config)
+
+        attrs = ["lDAPDisplayName"]
+        res = self.schema.ldb.search(expression="(&(objectclass=attributeSchema)(searchFlags:1.2.840.113556.1.4.803:=1))", base=self.names.schemadn, scope=SCOPE_ONELEVEL, attrs=attrs)
+
+        for i in range (0, len(res)):
+            attr = res[i]["lDAPDisplayName"][0]
+
+            if attr == "objectGUID":
+                attr = "nsUniqueId"
+
+            index_config += read_and_sub_file(self.setup_path("fedorads-index.ldif"),
+                                             { "ATTR" : attr })
+
+        open(self.paths.fedoradsindex, 'w').write(index_config)
+
+        setup_file(self.setup_path("fedorads-samba.ldif"), self.paths.fedoradssamba,
+                    {"SAMBADN": self.names.sambadn, 
+                     "LDAPADMINPASS": self.ldapadminpass
+                    })
+
+        mapping = "schema-map-fedora-ds-1.0"
+        backend_schema = "99_ad.ldif"
+    
+        # Build a schema file in Fedora DS format
+        backend_schema_data = self.schema.ldb.convert_schema_to_openldap("fedora-ds", open(self.setup_path(mapping), 'r').read())
+        assert backend_schema_data is not None
+        open(os.path.join(self.paths.ldapdir, backend_schema), 'w').write(backend_schema_data)
+
+        self.credentials.set_bind_dn(self.names.ldapmanagerdn)
+
+        # Destory the target directory, or else setup-ds.pl will complain
+        fedora_ds_dir = os.path.join(self.paths.ldapdir, "slapd-samba4")
+        shutil.rmtree(fedora_ds_dir, True)
+
+        self.slapd_provision_command = [self.slapd_path, "-D", fedora_ds_dir, "-i", self.paths.slapdpid];
+        #In the 'provision' command line, stay in the foreground so we can easily kill it
+        self.slapd_provision_command.append("-d0")
+
+        #the command for the final run is the normal script
+        self.slapd_command = [os.path.join(self.paths.ldapdir, "slapd-samba4", "start-slapd")]
+
+        # If we were just looking for crashes up to this point, it's a
+        # good time to exit before we realise we don't have Fedora DS on
+        if self.ldap_dryrun_mode:
+            sys.exit(0)
+
+        # Try to print helpful messages when the user has not specified the path to the setup-ds tool
+        if self.setup_ds_path is None:
+            raise ProvisioningError("Warning: Fedora DS LDAP-Backend must be setup with path to setup-ds, e.g. --setup-ds-path=\"/usr/sbin/setup-ds.pl\"!")
+        if not os.path.exists(self.setup_ds_path):
+            self.message (self.setup_ds_path)
+            raise ProvisioningError("Warning: Given Path to slapd does not exist!")
+
+        # Run the Fedora DS setup utility
+        retcode = subprocess.call([self.setup_ds_path, "--silent", "--file", self.paths.fedoradsinf], close_fds=True, shell=False)
+        if retcode != 0:
+            raise ProvisioningError("setup-ds failed")
+
+        # Load samba-admin
+        retcode = subprocess.call([
+            os.path.join(self.paths.ldapdir, "slapd-samba4", "ldif2db"), "-s", self.names.sambadn, "-i", self.paths.fedoradssamba],
+            close_fds=True, shell=False)
+        if retcode != 0:
+            raise("ldib2db failed")
+
     def post_setup(self):
         ldapi_db = Ldb(self.ldapi_uri, credentials=self.credentials)
 
