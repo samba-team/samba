@@ -488,7 +488,8 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 				  &sesskey1,
 				  0,
 				  cc,
-				  NULL);
+				  NULL,
+				  impersonate_princ_s);
 	if (ret) {
 		DEBUG(1,("failed to get ticket for %s: %s\n",
 			local_service, error_message(ret)));
