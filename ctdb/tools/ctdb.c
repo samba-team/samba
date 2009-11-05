@@ -676,13 +676,22 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 		i++;
 	}		
 
-	/* print the natgw master
-	 * we dont allow STOPPED or DELETED nodes to become the natgwmaster
+	/* pick a node to be natgwmaster
+	 * we dont allow STOPPED, DELETED, BANNED or UNHEALTHY nodes to become the natgwmaster
 	 */
 	for(i=0;i<nodemap->num;i++){
-		if (!(nodemap->nodes[i].flags & (NODE_FLAGS_DISCONNECTED|NODE_FLAGS_STOPPED|NODE_FLAGS_DELETED))) {
+		if (!(nodemap->nodes[i].flags & (NODE_FLAGS_DISCONNECTED|NODE_FLAGS_STOPPED|NODE_FLAGS_DELETED|NODE_FLAGS_BANNED|NODE_FLAGS_UNHEALTHY))) {
 			printf("%d %s\n", nodemap->nodes[i].pnn,ctdb_addr_to_str(&nodemap->nodes[i].addr));
 			break;
+		}
+	}
+	/* we couldnt find any healthy node, try unhealthy ones */
+	if (i == nodemap->num) {
+		for(i=0;i<nodemap->num;i++){
+			if (!(nodemap->nodes[i].flags & (NODE_FLAGS_DISCONNECTED|NODE_FLAGS_STOPPED|NODE_FLAGS_DELETED))) {
+				printf("%d %s\n", nodemap->nodes[i].pnn,ctdb_addr_to_str(&nodemap->nodes[i].addr));
+				break;
+			}
 		}
 	}
 	/* unless all nodes are STOPPED, when we pick one anyway */
