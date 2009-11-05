@@ -646,8 +646,8 @@ static int ctdb_repack_db(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx)
 	 * decide if a repack is necessary
 	 */
 	if (size < repack_limit && vdata->delete_count < vacuum_limit) {
-		talloc_free(vdata);
 		update_tuning_db(ctdb_db, vdata, size);
+		talloc_free(vdata);
 		return 0;
 	}
 
