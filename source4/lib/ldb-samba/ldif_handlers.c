@@ -2,7 +2,7 @@
    ldb database library - ldif handlers for Samba
 
    Copyright (C) Andrew Tridgell 2005
-   Copyright (C) Andrew Bartlett 2006-2007
+   Copyright (C) Andrew Bartlett 2006-2009
    Copyright (C) Matthias Dieter Wallnöfer 2009
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -477,26 +477,8 @@ static int ldif_comparison_objectCategory(struct ldb_context *ldb, void *mem_ctx
 					  const struct ldb_val *v1,
 					  const struct ldb_val *v2)
 {
-
-	int ret, ret1, ret2;
-	struct ldb_val v1_canon, v2_canon;
-	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
-
-	/* I could try and bail if tmp_ctx was NULL, but what return
-	 * value would I use?
-	 *
-	 * It seems easier to continue on the NULL context 
-	 */
-	ret1 = ldif_canonicalise_objectCategory(ldb, tmp_ctx, v1, &v1_canon);
-	ret2 = ldif_canonicalise_objectCategory(ldb, tmp_ctx, v2, &v2_canon);
-
-	if (ret1 == LDB_SUCCESS && ret2 == LDB_SUCCESS) {
-		ret = data_blob_cmp(&v1_canon, &v2_canon);
-	} else {
-		ret = data_blob_cmp(v1, v2);
-	}
-	talloc_free(tmp_ctx);
-	return ret;
+	return ldb_any_comparison(ldb, mem_ctx, ldif_canonicalise_objectCategory,
+				  v1, v2);
 }
 
 /*
@@ -693,26 +675,8 @@ static int ldif_comparison_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 				     const struct ldb_val *v1,
 				     const struct ldb_val *v2)
 {
-
-	int ret, ret1, ret2;
-	struct ldb_val v1_canon, v2_canon;
-	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
-
-	/* I could try and bail if tmp_ctx was NULL, but what return
-	 * value would I use?
-	 *
-	 * It seems easier to continue on the NULL context 
-	 */
-	ret1 = ldif_canonicalise_prefixMap(ldb, tmp_ctx, v1, &v1_canon);
-	ret2 = ldif_canonicalise_prefixMap(ldb, tmp_ctx, v2, &v2_canon);
-
-	if (ret1 == LDB_SUCCESS && ret2 == LDB_SUCCESS) {
-		ret = data_blob_cmp(&v1_canon, &v2_canon);
-	} else {
-		ret = data_blob_cmp(v1, v2);
-	}
-	talloc_free(tmp_ctx);
-	return ret;
+	return ldb_any_comparison(ldb, mem_ctx, ldif_canonicalise_prefixMap,
+				  v1, v2);
 }
 
 /* Canonicalisation of two 32-bit integers */
