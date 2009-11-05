@@ -318,8 +318,8 @@ kill_tcp_connections() {
 	echo "Killing TCP connection $srcip:$srcport $destip:$destport"
 	ctdb killtcp $srcip:$srcport $destip:$destport >/dev/null 2>&1 || _failed=1
 	case $destport in
-	  # we only do one-way killtcp for NFS and CIFS
-	  139|445|2049) : ;;
+	  # we only do one-way killtcp for CIFS
+	  139|445) : ;;
 	  # for all others we do 2-way
 	  *) 
 	  	ctdb killtcp $destip:$destport $srcip:$srcport >/dev/null 2>&1 || _failed=1
