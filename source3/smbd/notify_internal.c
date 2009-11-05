@@ -551,7 +551,7 @@ NTSTATUS notify_remove_onelevel(struct notify_context *notify,
 	}
 
 	rec = notify->db_onelevel->fetch_locked(
-		notify->db_onelevel, talloc_tos(),
+		notify->db_onelevel, array,
 		make_tdb_data((uint8_t *)fid, sizeof(*fid)));
 	if (rec == NULL) {
 		DEBUG(10, ("notify_remove_onelevel: fetch_locked for %s failed"
