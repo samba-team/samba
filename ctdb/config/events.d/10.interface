@@ -147,6 +147,10 @@ case $cmd in
 	    case $IFACE in 
 	    ethX*|bond*)
 		IFACE=`echo $IFACE |sed -e 's/\....$//'`
+		grep -q 'Currently Active Slave: None' /proc/net/bonding/$IFACE && {
+			echo "ERROR: No active slaves for bond device $IFACE"
+			exit 1
+		}
 		grep -q '^MII Status: up' /proc/net/bonding/$IFACE || {
 			echo "ERROR: public network interface $IFACE is down"
 			exit 1
