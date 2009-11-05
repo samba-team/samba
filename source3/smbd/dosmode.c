@@ -381,7 +381,7 @@ uint32 dos_mode_msdfs(connection_struct *conn,
 	}
 
 	if (get_Protocol() <= PROTOCOL_LANMAN2) {
-		DEBUG(10,("dos_mode_msdfs : filtering protocol 0x%x to 0xff\n",
+		DEBUG(10,("dos_mode_msdfs : filtering result 0x%x\n",
 			(unsigned int)result ));
 		result &= 0xff;
 	}
@@ -567,7 +567,7 @@ uint32 dos_mode(connection_struct *conn, const struct smb_filename *smb_fname)
 	}
 
 	if (get_Protocol() <= PROTOCOL_LANMAN2) {
-		DEBUG(10,("dos_mode : filtering protocol 0x%x to 0xff\n",
+		DEBUG(10,("dos_mode : filtering result 0x%x\n",
 			(unsigned int)result ));
 		result &= 0xff;
 	}
