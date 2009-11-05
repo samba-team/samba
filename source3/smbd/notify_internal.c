@@ -545,6 +545,10 @@ NTSTATUS notify_remove_onelevel(struct notify_context *notify,
 	NTSTATUS status;
 	int i;
 
+	if (notify == NULL) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
 	array = talloc_zero(talloc_tos(), struct notify_entry_array);
 	if (array == NULL) {
 		return NT_STATUS_NO_MEMORY;
