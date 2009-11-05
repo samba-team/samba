@@ -6765,6 +6765,8 @@ static bool test_samr_ValidatePassword(struct dcerpc_pipe *p, struct torture_con
 	const char *passwords[] = { "penguin", "p@ssw0rd", "p@ssw0rd123$", NULL };
 	int i;
 
+	torture_comment(tctx, "testing samr_ValidatePassword\n");
+
 	ZERO_STRUCT(r);
 	r.in.level = NetValidatePasswordReset;
 	r.in.req = &req;
