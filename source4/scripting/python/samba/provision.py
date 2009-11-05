@@ -1276,6 +1276,8 @@ def provision(setup_dir, message, session_info,
                                          ldap_dryrun_mode=ldap_dryrun_mode,
                                          domainsid=domainsid)
 
+    provision_backend.start()
+
     # only install a new shares config db if there is none
     if not os.path.exists(paths.shareconf):
         message("Setting up share.ldb")

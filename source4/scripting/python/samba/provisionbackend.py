@@ -69,8 +69,10 @@ class ProvisionBackend(object):
         This works for OpenLDAP and Fedora DS
         """
         self.paths = paths
+        self.setup_path = setup_path
         self.slapd_command = None
         self.slapd_command_escaped = None
+        self.lp = lp
         self.names = names
 
         self.type = backend_type
@@ -147,11 +149,14 @@ class ProvisionBackend(object):
         self.credentials.guess(lp)
         #Kerberos to an ldapi:// backend makes no sense
         self.credentials.set_kerberos_state(DONT_USE_KERBEROS)
+        self.credentials.set_password(ldapadminpass)
 
         self.secrets_credentials = Credentials()
         self.secrets_credentials.guess(lp)
         #Kerberos to an ldapi:// backend makes no sense
         self.secrets_credentials.set_kerberos_state(DONT_USE_KERBEROS)
+        self.secrets_credentials.set_username("samba-admin")
+        self.secrets_credentials.set_password(ldapadminpass)
 
 
         if self.type == "fedora-ds":
@@ -181,12 +186,20 @@ class ProvisionBackend(object):
         else:
             raise ProvisioningError("Unknown LDAP backend type selected")
 
-        self.credentials.set_password(ldapadminpass)
-        self.secrets_credentials.set_username("samba-admin")
-        self.secrets_credentials.set_password(ldapadminpass)
+    def start(self):
+        pass
 
+    def shutdown(self):
+        pass
+
+    def post_setup(self):
+        pass
+
+
+class LDAPBackend(ProvisionBackend):
+    def start(self):
         self.slapd_command_escaped = "\'" + "\' \'".join(self.slapd_command) + "\'"
-        setup_file(setup_path("ldap_backend_startup.sh"), paths.ldapdir + "/ldap_backend_startup.sh", {
+        setup_file(self.setup_path("ldap_backend_startup.sh"), self.paths.ldapdir + "/ldap_backend_startup.sh", {
                 "SLAPD_COMMAND" : self.slapd_command_escaped})
 
         # Now start the slapd, so we can provision onto it.  We keep the
@@ -197,7 +210,7 @@ class ProvisionBackend(object):
         while self.slapd.poll() is None:
             # Wait until the socket appears
             try:
-                ldapi_db = Ldb(self.ldapi_uri, lp=lp, credentials=self.credentials)
+                ldapi_db = Ldb(self.ldapi_uri, lp=self.lp, credentials=self.credentials)
                 search_ol_rootdse = ldapi_db.search(base="", scope=SCOPE_BASE,
                                                     expression="(objectClass=OpenLDAProotDSE)")
                 # If we have got here, then we must have a valid connection to the LDAP server!
@@ -208,14 +221,6 @@ class ProvisionBackend(object):
         
         raise ProvisioningError("slapd died before we could make a connection to it")
 
-    def shutdown(self):
-        pass
-
-    def post_setup(self):
-        pass
-
-
-class LDAPBackend(ProvisionBackend):
     def shutdown(self):
         # if an LDAP backend is in use, terminate slapd after final provision and check its proper termination
         if self.slapd.poll() is None:
