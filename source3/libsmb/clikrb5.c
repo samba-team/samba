@@ -673,10 +673,12 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 				       const char *principal,
 				       krb5_ccache ccache, 
 				       krb5_data *outbuf, 
-				       time_t *expire_time)
+				       time_t *expire_time,
+				       const char *impersonate_princ_s)
 {
 	krb5_error_code 	  retval;
 	krb5_principal	  server;
+	krb5_principal impersonate_princ = NULL;
 	krb5_creds 		* credsp;
 	krb5_creds 		  creds;
 	krb5_data in_data;
@@ -690,7 +692,16 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 		DEBUG(1,("ads_krb5_mk_req: Failed to parse principal %s\n", principal));
 		return retval;
 	}
-	
+
+	if (impersonate_princ_s) {
+		retval = smb_krb5_parse_name(context, impersonate_princ_s,
+					     &impersonate_princ);
+		if (retval) {
+			DEBUG(1,("ads_krb5_mk_req: Failed to parse principal %s\n", impersonate_princ_s));
+			goto cleanup_princ;
+		}
+	}
+
 	/* obtain ticket & session key */
 	ZERO_STRUCT(creds);
 	if ((retval = krb5_copy_principal(context, server, &creds.server))) {
@@ -702,7 +713,7 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 	if ((retval = krb5_cc_get_principal(context, ccache, &creds.client))) {
 		/* This can commonly fail on smbd startup with no ticket in the cache.
 		 * Report at higher level than 1. */
-		DEBUG(3,("ads_krb5_mk_req: krb5_cc_get_principal failed (%s)\n", 
+		DEBUG(3,("ads_krb5_mk_req: krb5_cc_get_principal failed (%s)\n",
 			 error_message(retval)));
 		goto cleanup_creds;
 	}
@@ -712,7 +723,7 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 		if ((retval = smb_krb5_get_credentials(context, ccache,
 						       creds.client,
 						       creds.server,
-						       NULL,
+						       impersonate_princ,
 						       &credsp))) {
 			DEBUG(1,("ads_krb5_mk_req: smb_krb5_get_credentials failed for %s (%s)\n",
 				principal, error_message(retval)));
@@ -819,6 +830,9 @@ cleanup_creds:
 
 cleanup_princ:
 	krb5_free_principal(context, server);
+	if (impersonate_princ) {
+		krb5_free_principal(context, impersonate_princ);
+	}
 
 	return retval;
 }
@@ -876,7 +890,8 @@ int cli_krb5_get_ticket(const char *principal, time_t time_offset,
 					AP_OPTS_USE_SUBKEY | (krb5_flags)extra_ap_opts,
 					principal,
 					ccdef, &packet,
-					tgs_expire))) {
+					tgs_expire,
+					impersonate_princ_s))) {
 		goto failed;
 	}
 
