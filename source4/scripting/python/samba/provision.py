@@ -52,7 +52,7 @@ import urllib
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError
 from ms_display_specifiers import read_ms_ldif
 from schema import Schema
-from provisionbackend import ProvisionBackend
+from provisionbackend import ProvisionBackend, FDSBackend, OpenLDAPBackend
 from signal import SIGTERM
 from dcerpc.misc import SEC_CHAN_BDC, SEC_CHAN_WKSTA
 
@@ -623,7 +623,7 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
             backend_modules = ["nsuniqueid", "paged_searches"]
             # We can handle linked attributes here, as we don't have directory-side subtree operations
             tdb_modules_list = ["extended_dn_out_fds"]
-        elif ldap_backend.ldap_backend_type == "openldap":
+        elif provision_backend.ldap_backend_type == "openldap":
             backend_modules = ["entryuuid", "paged_searches"]
             # OpenLDAP handles subtree renames, so we don't want to do any of these things
             tdb_modules_list = ["extended_dn_out_openldap"]
@@ -1233,7 +1233,36 @@ def provision(setup_dir, message, session_info,
     
     schema = Schema(setup_path, domainsid, schemadn=names.schemadn, serverdn=names.serverdn)
     
-    provision_backend = ProvisionBackend(backend_type,
+    if backend_type == "fedora-ds":
+        provision_backend = FDSBackend(backend_type,
+                                         paths=paths, setup_path=setup_path,
+                                         lp=lp, credentials=credentials, 
+                                         names=names,
+                                         message=message, hostname=hostname,
+                                         root=root, schema=schema,
+                                         ldapadminpass=ldapadminpass,
+                                         ldap_backend_extra_port=ldap_backend_extra_port,
+                                         ol_mmr_urls=ol_mmr_urls, 
+                                         slapd_path=slapd_path,
+                                         setup_ds_path=setup_ds_path,
+                                         ldap_dryrun_mode=ldap_dryrun_mode,
+                                         domainsid=domainsid)
+    elif backend_type == "openldap":
+        provision_backend = OpenLDAPBackend(backend_type,
+                                         paths=paths, setup_path=setup_path,
+                                         lp=lp, credentials=credentials, 
+                                         names=names,
+                                         message=message, hostname=hostname,
+                                         root=root, schema=schema,
+                                         ldapadminpass=ldapadminpass,
+                                         ldap_backend_extra_port=ldap_backend_extra_port,
+                                         ol_mmr_urls=ol_mmr_urls, 
+                                         slapd_path=slapd_path,
+                                         setup_ds_path=setup_ds_path,
+                                         ldap_dryrun_mode=ldap_dryrun_mode,
+                                         domainsid=domainsid)
+    else:
+        provision_backend = ProvisionBackend(backend_type,
                                          paths=paths, setup_path=setup_path,
                                          lp=lp, credentials=credentials, 
                                          names=names,
@@ -1365,11 +1394,8 @@ def provision(setup_dir, message, session_info,
                              realm=names.realm)
             message("A Kerberos configuration suitable for Samba 4 has been generated at %s" % paths.krb5conf)
 
-    if provision_backend.post_setup is not None:
-        provision_backend.post_setup()
-
-    if provision_backend.shutdown is not None:
-        provision_backend.shutdown()
+    provision_backend.post_setup()
+    provision_backend.shutdown()
     
     create_phpldapadmin_config(paths.phpldapadminconfig, setup_path, 
                                ldapi_url)

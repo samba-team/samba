@@ -26,6 +26,7 @@
 """Functions for setting up a Samba configuration (LDB and LDAP backends)."""
 
 from base64 import b64encode
+import ldb
 import os
 import sys
 import uuid
@@ -70,14 +71,12 @@ class ProvisionBackend(object):
         self.paths = paths
         self.slapd_command = None
         self.slapd_command_escaped = None
+        self.names = names
 
         self.type = backend_type
         
         # Set a default - the code for "existing" below replaces this
         self.ldap_backend_type = backend_type
-
-        self.post_setup = None
-        self.shutdown = None
 
         if self.type is "ldb":
             self.credentials = None
@@ -155,22 +154,6 @@ class ProvisionBackend(object):
         self.secrets_credentials.set_kerberos_state(DONT_USE_KERBEROS)
 
 
-        def ldap_backend_shutdown(self):
-            # if an LDAP backend is in use, terminate slapd after final provision and check its proper termination
-            if self.slapd.poll() is None:
-                #Kill the slapd
-                if hasattr(self.slapd, "terminate"):
-                    self.slapd.terminate()
-                else:
-                    # Older python versions don't have .terminate()
-                    import signal
-                    os.kill(self.slapd.pid, signal.SIGTERM)
-            
-                #and now wait for it to die
-                self.slapd.communicate()
-
-        self.shutdown = ldap_backend_shutdown
-
         if self.type == "fedora-ds":
             provision_fds_backend(self, setup_path=setup_path,
                                   names=names, message=message, 
@@ -225,6 +208,31 @@ class ProvisionBackend(object):
         
         raise ProvisioningError("slapd died before we could make a connection to it")
 
+    def shutdown(self):
+        pass
+
+    def post_setup(self):
+        pass
+
+
+class LDAPBackend(ProvisionBackend):
+    def shutdown(self):
+        # if an LDAP backend is in use, terminate slapd after final provision and check its proper termination
+        if self.slapd.poll() is None:
+            #Kill the slapd
+            if hasattr(self.slapd, "terminate"):
+                self.slapd.terminate()
+            else:
+                # Older python versions don't have .terminate()
+                import signal
+                os.kill(self.slapd.pid, signal.SIGTERM)
+    
+            #and now wait for it to die
+            self.slapd.communicate()
+
+
+class OpenLDAPBackend(LDAPBackend):
+    pass
 
 def provision_openldap_backend(result, setup_path=None, names=None,
                                message=None, 
@@ -588,8 +596,9 @@ def provision_fds_backend(result, setup_path=None, names=None,
     if retcode != 0:
         raise("ldib2db failed")
 
-    # Leave a hook to do the 'post initilisation' setup
-    def fds_post_setup(self):
+
+class FDSBackend(LDAPBackend):
+    def post_setup(self):
         ldapi_db = Ldb(self.ldapi_uri, credentials=self.credentials)
 
         # delete default SASL mappings
@@ -600,20 +609,16 @@ def provision_fds_backend(result, setup_path=None, names=None,
             dn = str(res[i]["dn"])
             ldapi_db.delete(dn)
             
-            aci = """(targetattr = "*") (version 3.0;acl "full access to all by samba-admin";allow (all)(userdn = "ldap:///CN=samba-admin,%s");)""" % names.sambadn
+            aci = """(targetattr = "*") (version 3.0;acl "full access to all by samba-admin";allow (all)(userdn = "ldap:///CN=samba-admin,%s");)""" % self.names.sambadn
         
             m = ldb.Message()
             m["aci"] = ldb.MessageElement([aci], ldb.FLAG_MOD_REPLACE, "aci")
 
-            m.dn = ldb.Dn(1, names.domaindn)
+            m.dn = ldb.Dn(1, self.names.domaindn)
             ldapi_db.modify(m)
             
-            m.dn = ldb.Dn(1, names.configdn)
+            m.dn = ldb.Dn(1, self.names.configdn)
             ldapi_db.modify(m)
             
-            m.dn = ldb.Dn(1, names.schemadn)
+            m.dn = ldb.Dn(1, self.names.schemadn)
             ldapi_db.modify(m)
-            
-    result.post_setup = fds_post_setup
-    
-
