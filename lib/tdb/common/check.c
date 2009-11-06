@@ -329,7 +329,8 @@ int tdb_check(struct tdb_context *tdb,
 	}
 
 	/* One big malloc: pointers then bit arrays. */
-	hashes = calloc(1, sizeof(hashes[0]) * (1+tdb->header.hash_size)
+	hashes = (unsigned char **)calloc(
+			1, sizeof(hashes[0]) * (1+tdb->header.hash_size)
 			+ BITMAP_BITS / CHAR_BIT * (1+tdb->header.hash_size));
 	if (!hashes) {
 		tdb->ecode = TDB_ERR_OOM;
