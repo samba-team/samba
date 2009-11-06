@@ -1574,37 +1574,24 @@ int samdb_search_for_parent_domain(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 
 
 /*
- * Performs checks on a user password (plaintext UTF 16 format - attribute
+ * Performs checks on a user password (plaintext UNIX format - attribute
  * "password"). The remaining parameters have to be extracted from the domain
  * object in the AD.
  *
  * Result codes from "enum samr_ValidationStatus" (consider "samr.idl")
  */
-enum samr_ValidationStatus samdb_check_password(TALLOC_CTX *mem_ctx,
-						struct loadparm_context *lp_ctx,
-						const DATA_BLOB *password,
+enum samr_ValidationStatus samdb_check_password(const DATA_BLOB *password,
 						const uint32_t pwdProperties,
 						const uint32_t minPwdLength)
 {
-	char *utf8_password;
-	size_t utf8_password_len;
-
 	/* checks if the "minPwdLength" property is satisfied */
-	if (minPwdLength > utf16_len_n(password->data, password->length) / 2)
+	if (minPwdLength > password->length)
 		return SAMR_VALIDATION_STATUS_PWD_TOO_SHORT;
 
-	/* Try to convert the password to UTF8 and perform other checks */
-	if (convert_string_talloc_convenience(mem_ctx,
-					      lp_iconv_convenience(lp_ctx),
-					      CH_UTF16MUNGED, CH_UTF8,
-					      password->data, password->length,
-					      (void **)&utf8_password,
-					      &utf8_password_len, false)) {
-		/* checks the password complexity */
-		if (((pwdProperties & DOMAIN_PASSWORD_COMPLEX) != 0)
-				&& (!check_password_quality(utf8_password)))
-			return SAMR_VALIDATION_STATUS_NOT_COMPLEX_ENOUGH;
-	}
+	/* checks the password complexity */
+	if (((pwdProperties & DOMAIN_PASSWORD_COMPLEX) != 0)
+			&& (!check_password_quality((const char *) password->data)))
+		return SAMR_VALIDATION_STATUS_NOT_COMPLEX_ENOUGH;
 
 	return SAMR_VALIDATION_STATUS_SUCCESS;
 }
