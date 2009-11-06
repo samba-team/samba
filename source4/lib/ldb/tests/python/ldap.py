@@ -778,6 +778,23 @@ objectClass: container
         self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
+    def test_wkguid(self):
+        """Test Well known GUID behaviours (including DN+Binary)"""
+        print "Test Well known GUID behaviours (including DN+Binary)"""
+
+        res = self.ldb.search(base=("<WKGUID=ab1d30f3768811d1aded00c04fd8d5cd,%s>" % self.base_dn), scope=SCOPE_BASE, attrs=[])
+        self.assertEquals(len(res), 1)
+        
+        res2 = self.ldb.search(scope=SCOPE_BASE, attrs=["wellKnownObjects"], expression=("wellKnownObjects=B:32:ab1d30f3768811d1aded00c04fd8d5cd:%s" % res[0].dn))
+        self.assertEquals(len(res2), 1)
+
+        # Prove that the matching rule is over the whole DN+Binary
+        res2 = self.ldb.search(scope=SCOPE_BASE, attrs=["wellKnownObjects"], expression=("wellKnownObjects=B:32:ab1d30f3768811d1aded00c04fd8d5cd"))
+        self.assertEquals(len(res2), 0)
+        # Prove that the matching rule is over the whole DN+Binary
+        res2 = self.ldb.search(scope=SCOPE_BASE, attrs=["wellKnownObjects"], expression=("wellKnownObjects=%s") % res[0].dn)
+        self.assertEquals(len(res2), 0)
+
     def test_all(self):
         """Basic tests"""
 
