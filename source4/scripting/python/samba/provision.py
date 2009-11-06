@@ -1278,7 +1278,7 @@ def provision(setup_dir, message, session_info,
     else:
         raise ProvisioningError("Unknown LDAP backend type selected")
 
-    provision_backend.provision()
+    provision_backend.setup()
     provision_backend.start()
 
     # only install a new shares config db if there is none

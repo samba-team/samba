@@ -115,62 +115,8 @@ class ProvisionBackend(object):
 
             self.ldap_backend_type = "openldap" #For now, assume existing backends at least emulate OpenLDAP
             return
-    
-        # we will shortly start slapd with ldapi for final provisioning. first check with ldapsearch -> rootDSE via self.ldapi_uri
-        # if another instance of slapd is already running 
-        try:
-            ldapi_db = Ldb(self.ldapi_uri)
-            search_ol_rootdse = ldapi_db.search(base="", scope=SCOPE_BASE,
-                                                expression="(objectClass=OpenLDAProotDSE)");
-            try:
-                f = open(paths.slapdpid, "r")
-                p = f.read()
-                f.close()
-                message("Check for slapd Process with PID: " + str(p) + " and terminate it manually.")
-            except:
-                pass
-            
-            raise ProvisioningError("Warning: Another slapd Instance seems already running on this host, listening to " + self.ldapi_uri + ". Please shut it down before you continue. ")
-        
-        except LdbError, e:
-            pass
 
-        # Try to print helpful messages when the user has not specified the path to slapd
-        if slapd_path is None:
-            raise ProvisioningError("Warning: LDAP-Backend must be setup with path to slapd, e.g. --slapd-path=\"/usr/local/libexec/slapd\"!")
-        if not os.path.exists(slapd_path):
-            message (slapd_path)
-            raise ProvisioningError("Warning: Given Path to slapd does not exist!")
-
-
-        if not os.path.isdir(paths.ldapdir):
-            os.makedirs(paths.ldapdir, 0700)
-
-        # Put the LDIF of the schema into a database so we can search on
-        # it to generate schema-dependent configurations in Fedora DS and
-        # OpenLDAP
-        schemadb_path = os.path.join(paths.ldapdir, "schema-tmp.ldb")
-        try:
-            os.unlink(schemadb_path)
-        except OSError:
-            pass
-
-        schema.write_to_tmp_ldb(schemadb_path);
-
-        self.credentials = Credentials()
-        self.credentials.guess(lp)
-        #Kerberos to an ldapi:// backend makes no sense
-        self.credentials.set_kerberos_state(DONT_USE_KERBEROS)
-        self.credentials.set_password(ldapadminpass)
-
-        self.secrets_credentials = Credentials()
-        self.secrets_credentials.guess(lp)
-        #Kerberos to an ldapi:// backend makes no sense
-        self.secrets_credentials.set_kerberos_state(DONT_USE_KERBEROS)
-        self.secrets_credentials.set_username("samba-admin")
-        self.secrets_credentials.set_password(ldapadminpass)
-
-    def provision(self):
+    def setup(self):
         pass
 
     def start(self):
@@ -184,6 +130,66 @@ class ProvisionBackend(object):
 
 
 class LDAPBackend(ProvisionBackend):
+    def setup(self):
+        # we will shortly start slapd with ldapi for final provisioning. first check with ldapsearch -> rootDSE via self.ldapi_uri
+        # if another instance of slapd is already running 
+        try:
+            ldapi_db = Ldb(self.ldapi_uri)
+            search_ol_rootdse = ldapi_db.search(base="", scope=SCOPE_BASE,
+                                                expression="(objectClass=OpenLDAProotDSE)");
+            try:
+                f = open(self.paths.slapdpid, "r")
+                p = f.read()
+                f.close()
+                self.message("Check for slapd Process with PID: " + str(p) + " and terminate it manually.")
+            except:
+                pass
+            
+            raise ProvisioningError("Warning: Another slapd Instance seems already running on this host, listening to " + self.ldapi_uri + ". Please shut it down before you continue. ")
+        
+        except LdbError, e:
+            pass
+
+        # Try to print helpful messages when the user has not specified the path to slapd
+        if self.slapd_path is None:
+            raise ProvisioningError("Warning: LDAP-Backend must be setup with path to slapd, e.g. --slapd-path=\"/usr/local/libexec/slapd\"!")
+        if not os.path.exists(self.slapd_path):
+            self.message (self.slapd_path)
+            raise ProvisioningError("Warning: Given Path to slapd does not exist!")
+
+
+        if not os.path.isdir(self.paths.ldapdir):
+            os.makedirs(self.paths.ldapdir, 0700)
+
+        # Put the LDIF of the schema into a database so we can search on
+        # it to generate schema-dependent configurations in Fedora DS and
+        # OpenLDAP
+        schemadb_path = os.path.join(self.paths.ldapdir, "schema-tmp.ldb")
+        try:
+            os.unlink(schemadb_path)
+        except OSError:
+            pass
+
+        self.schema.write_to_tmp_ldb(schemadb_path);
+
+        self.credentials = Credentials()
+        self.credentials.guess(self.lp)
+        #Kerberos to an ldapi:// backend makes no sense
+        self.credentials.set_kerberos_state(DONT_USE_KERBEROS)
+        self.credentials.set_password(self.ldapadminpass)
+
+        self.secrets_credentials = Credentials()
+        self.secrets_credentials.guess(self.lp)
+        #Kerberos to an ldapi:// backend makes no sense
+        self.secrets_credentials.set_kerberos_state(DONT_USE_KERBEROS)
+        self.secrets_credentials.set_username("samba-admin")
+        self.secrets_credentials.set_password(self.ldapadminpass)
+
+        self.provision()
+
+    def provision(self):
+        pass
+
     def start(self):
         self.slapd_command_escaped = "\'" + "\' \'".join(self.slapd_command) + "\'"
         setup_file(self.setup_path("ldap_backend_startup.sh"), self.paths.ldapdir + "/ldap_backend_startup.sh", {
