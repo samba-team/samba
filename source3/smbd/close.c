@@ -274,6 +274,14 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	NTSTATUS tmp_status;
 	struct file_id id;
 
+	/* Ensure any pending write time updates are done. */
+	if (fsp->update_write_time_event) {
+		update_write_time_handler(smbd_event_context(),
+					fsp->update_write_time_event,
+					timeval_current(),
+					(void *)fsp);
+	}
+
 	/*
 	 * Lock the share entries, and determine if we should delete
 	 * on close. If so delete whilst the lock is still in effect.
@@ -294,15 +302,21 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		DEBUG(10,("close_remove_share_mode: write time forced "
 			"for file %s\n",
 			fsp_str_dbg(fsp)));
-		set_close_write_time(lck, fsp, lck->changed_write_time);
+		set_close_write_time(fsp, lck->changed_write_time);
 	} else if (fsp->update_write_time_on_close) {
-		DEBUG(10,("close_remove_share_mode: update_write_time_on_close "
-			"set for file %s\n",
-			fsp_str_dbg(fsp)));
+		/* Someone had a pending write. */
 		if (null_timespec(fsp->close_write_time)) {
-			set_close_write_time(lck, fsp, timespec_current());
+			DEBUG(10,("close_remove_share_mode: update to current time "
+				"for file %s\n",
+				fsp_str_dbg(fsp)));
+			/* Update to current time due to "normal" write. */
+			set_close_write_time(fsp, timespec_current());
 		} else {
-			set_close_write_time(lck, fsp, fsp->close_write_time);
+			DEBUG(10,("close_remove_share_mode: write time pending "
+				"for file %s\n",
+				fsp_str_dbg(fsp)));
+			/* Update to time set on close call. */
+			set_close_write_time(fsp, fsp->close_write_time);
 		}
 	}
 
@@ -480,36 +494,23 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	return status;
 }
 
-void set_close_write_time(struct share_mode_lock *lck,
-			struct files_struct *fsp, struct timespec ts)
+void set_close_write_time(struct files_struct *fsp, struct timespec ts)
 {
 	DEBUG(6,("close_write_time: %s" , time_to_asc(convert_timespec_to_time_t(ts))));
 
 	if (null_timespec(ts)) {
 		return;
 	}
-	/*
-	 * if the write time on close is explict set, then don't
-	 * need to fix it up to the value in the locking db
-	 */
 	fsp->write_time_forced = false;
-
 	fsp->update_write_time_on_close = true;
 	fsp->close_write_time = ts;
-
-	/* On close if we're changing the real file time we
-	 * must update it in the open file db too. */
-	(void)set_write_time(fsp->file_id, ts);
-	/* If someone has a sticky write time then update it as well. */
-	if (lck && !null_timespec(lck->changed_write_time)) {
-		(void)set_sticky_write_time(fsp->file_id, ts);
-	}
 }
 
 static NTSTATUS update_write_time_on_close(struct files_struct *fsp)
 {
 	struct smb_file_time ft;
 	NTSTATUS status;
+	struct share_mode_lock *lck = NULL;
 
 	ZERO_STRUCT(ft);
 
@@ -532,8 +533,22 @@ static NTSTATUS update_write_time_on_close(struct files_struct *fsp)
 		return NT_STATUS_OK;
 	}
 
+	/* On close if we're changing the real file time we
+	 * must update it in the open file db too. */
+	(void)set_write_time(fsp->file_id, fsp->close_write_time);
+
+	lck = get_share_mode_lock(talloc_tos(), fsp->file_id, NULL, NULL, NULL);
+	if (lck) {
+		/* Close write times overwrite sticky write times
+		   so we must replace any sticky write time here. */
+		if (!null_timespec(lck->changed_write_time)) {
+			(void)set_sticky_write_time(fsp->file_id, fsp->close_write_time);
+		}
+		TALLOC_FREE(lck);
+	}
+
 	ft.mtime = fsp->close_write_time;
-	status = smb_set_file_time(fsp->conn, fsp, fsp->fsp_name, &ft, true);
+	status = smb_set_file_time(fsp->conn, fsp, fsp->fsp_name, &ft, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
