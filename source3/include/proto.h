@@ -6108,9 +6108,7 @@ NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passw
 
 /* The following definitions come from smbd/close.c  */
 
-void set_close_write_time(struct share_mode_lock *lck,
-			struct files_struct *fsp,
-			struct timespec ts);
+void set_close_write_time(struct files_struct *fsp, struct timespec ts);
 NTSTATUS close_file(struct smb_request *req, files_struct *fsp,
 		    enum file_close_type close_type);
 void msg_close_file(struct messaging_context *msg_ctx,
@@ -6309,6 +6307,10 @@ bool directory_has_default_acl(connection_struct *conn, const char *fname);
 /* The following definitions come from smbd/fileio.c  */
 
 ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n);
+void update_write_time_handler(struct event_context *ctx,
+                                      struct timed_event *te,
+                                      struct timeval now,
+                                      void *private_data);
 void trigger_write_time_update(struct files_struct *fsp);
 void trigger_write_time_update_immediate(struct files_struct *fsp);
 ssize_t write_file(struct smb_request *req,

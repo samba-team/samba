@@ -1296,7 +1296,7 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 	close_file(NULL, fsp1, NORMAL_CLOSE);
 
 	/* Ensure the modtime is set correctly on the destination file. */
-	set_close_write_time(NULL, fsp2, smb_fname_src->st.st_ex_mtime);
+	set_close_write_time(fsp2, smb_fname_src->st.st_ex_mtime);
 
 	status = close_file(NULL, fsp2, NORMAL_CLOSE);
 
