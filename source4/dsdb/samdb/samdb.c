@@ -144,13 +144,13 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 			       struct loadparm_context *lp_ctx,
 			       struct dom_sid *user_sid,
 			       struct dom_sid *group_sid, 
-			       int n_groupSIDs,
+			       unsigned int n_groupSIDs,
 			       struct dom_sid **groupSIDs, 
 			       bool is_authenticated,
 			       struct security_token **token)
 {
 	struct security_token *ptoken;
-	int i;
+	unsigned int i;
 	NTSTATUS status;
 
 	ptoken = security_token_initialise(mem_ctx);
