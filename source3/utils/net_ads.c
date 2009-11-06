@@ -2368,7 +2368,7 @@ static int net_ads_kerberos_pac(struct net_context *c, int argc, const char **ar
 			     	     0,
 				     NULL,
 				     NULL,
-				     "/tmp/schrott",
+				     NULL,
 				     true,
 				     true,
 				     2592000, /* one month */
