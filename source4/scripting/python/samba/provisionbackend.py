@@ -61,6 +61,7 @@ class ProvisionBackend(object):
         self.paths = paths
         self.setup_path = setup_path
         self.lp = lp
+        self.credentials = credentials
         self.names = names
         self.message = message
 
@@ -68,30 +69,6 @@ class ProvisionBackend(object):
         
         # Set a default - the code for "existing" below replaces this
         self.ldap_backend_type = backend_type
-
-        if self.type is "ldb":
-            self.credentials = None
-            self.secrets_credentials = None
-    
-            # Wipe the old sam.ldb databases away
-            shutil.rmtree(paths.samdb + ".d", True)
-            return
-
-        self.ldapi_uri = "ldapi://" + urllib.quote(os.path.join(paths.ldapdir, "ldapi"), safe="")
-        
-        if self.type == "existing":
-            #Check to see that this 'existing' LDAP backend in fact exists
-            ldapi_db = Ldb(self.ldapi_uri, credentials=credentials)
-            search_ol_rootdse = ldapi_db.search(base="", scope=SCOPE_BASE,
-                                                expression="(objectClass=OpenLDAProotDSE)")
-
-            # If we have got here, then we must have a valid connection to the LDAP server, with valid credentials supplied
-            self.credentials = credentials
-            # This caused them to be set into the long-term database later in the script.
-            self.secrets_credentials = credentials
-
-            self.ldap_backend_type = "openldap" #For now, assume existing backends at least emulate OpenLDAP
-            return
 
     def setup(self):
         pass
@@ -104,6 +81,51 @@ class ProvisionBackend(object):
 
     def post_setup(self):
         pass
+
+
+class LDBBackend(ProvisionBackend):
+    def __init__(self, backend_type, paths=None, setup_path=None, lp=None, credentials=None, 
+                 names=None, message=None):
+
+        super(LDBBackend, self).__init__(
+                backend_type=backend_type,
+                paths=paths, setup_path=setup_path,
+                lp=lp, credentials=credentials,
+                names=names,
+                message=message)
+
+    def setup(self):
+        self.credentials = None
+        self.secrets_credentials = None
+    
+        # Wipe the old sam.ldb databases away
+        shutil.rmtree(self.paths.samdb + ".d", True)
+
+
+class ExistingBackend(ProvisionBackend):
+    def __init__(self, backend_type, paths=None, setup_path=None, lp=None, credentials=None, 
+                 names=None, message=None):
+
+        super(ExistingBackend, self).__init__(
+                backend_type=backend_type,
+                paths=paths, setup_path=setup_path,
+                lp=lp, credentials=credentials,
+                names=names,
+                message=message)
+
+        self.ldapi_uri = "ldapi://" + urllib.quote(os.path.join(paths.ldapdir, "ldapi"), safe="")
+
+    def setup(self):
+        #Check to see that this 'existing' LDAP backend in fact exists
+        ldapi_db = Ldb(self.ldapi_uri, credentials=self.credentials)
+        search_ol_rootdse = ldapi_db.search(base="", scope=SCOPE_BASE,
+                                            expression="(objectClass=OpenLDAProotDSE)")
+
+        # If we have got here, then we must have a valid connection to the LDAP server, with valid credentials supplied
+        # This caused them to be set into the long-term database later in the script.
+        self.secrets_credentials = self.credentials
+
+        self.ldap_backend_type = "openldap" #For now, assume existing backends at least emulate OpenLDAP
 
 
 class LDAPBackend(ProvisionBackend):
@@ -134,6 +156,8 @@ class LDAPBackend(ProvisionBackend):
 
         self.ldap_backend_extra_port = ldap_backend_extra_port
         self.ldap_dryrun_mode = ldap_dryrun_mode
+
+        self.ldapi_uri = "ldapi://" + urllib.quote(os.path.join(paths.ldapdir, "ldapi"), safe="")
 
     def setup(self):
         # we will shortly start slapd with ldapi for final provisioning. first check with ldapsearch -> rootDSE via self.ldapi_uri

@@ -52,7 +52,7 @@ import urllib
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError
 from ms_display_specifiers import read_ms_ldif
 from schema import Schema
-from provisionbackend import ProvisionBackend, FDSBackend, OpenLDAPBackend
+from provisionbackend import LDBBackend, ExistingBackend, FDSBackend, OpenLDAPBackend
 from signal import SIGTERM
 from dcerpc.misc import SEC_CHAN_BDC, SEC_CHAN_WKSTA
 
@@ -1233,7 +1233,19 @@ def provision(setup_dir, message, session_info,
     
     schema = Schema(setup_path, domainsid, schemadn=names.schemadn, serverdn=names.serverdn)
     
-    if backend_type == "fedora-ds":
+    if backend_type == "ldb":
+        provision_backend = LDBBackend(backend_type,
+                                         paths=paths, setup_path=setup_path,
+                                         lp=lp, credentials=credentials, 
+                                         names=names,
+                                         message=message)
+    elif backend_type == "existing":
+        provision_backend = ExistingBackend(backend_type,
+                                         paths=paths, setup_path=setup_path,
+                                         lp=lp, credentials=credentials, 
+                                         names=names,
+                                         message=message)
+    elif backend_type == "fedora-ds":
         provision_backend = FDSBackend(backend_type,
                                          paths=paths, setup_path=setup_path,
                                          lp=lp, credentials=credentials, 
@@ -1260,12 +1272,6 @@ def provision(setup_dir, message, session_info,
                                          ldap_dryrun_mode=ldap_dryrun_mode,
                                          ol_mmr_urls=ol_mmr_urls, 
                                          nosync=nosync)
-    elif backend_type == "ldb" or backend_type == "existing":
-        provision_backend = ProvisionBackend(backend_type,
-                                         paths=paths, setup_path=setup_path,
-                                         lp=lp, credentials=credentials, 
-                                         names=names,
-                                         message=message)
     else:
         raise ProvisioningError("Unknown LDAP backend type selected")
 
