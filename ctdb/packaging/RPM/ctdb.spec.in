@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.103
+Version: 1.0.104
 Release: 1GITHASH
 Epoch: 0
 License: GNU GPL version 3
@@ -118,6 +118,24 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
+* Fri Nov 6 2009 : Version 1.0.104
+ - Suggestion from Metze, we can now use killtcp to kill local connections
+   for nfs so change the killtcp script to kill both directions of an NFS
+   connection.
+   We used to deliberately only kill one direction in these cases due to
+   limitations.
+ - Suggestion from christian Ambach, when using natgw, try to avoid using a
+   UNHEALTHY node as the natgw master.
+ - From Michael Adam: Fix a SEGV bug in the recent change to the eventscripts
+   to allow the timeout to apply to each individual script.
+ - fix a talloc bug in teh vacuuming code that produced nasty valgrind
+   warnings.
+ - From Rusty: Set up ulimit to create core files for ctdb, and spawned
+   processes by default. This is useful for debugging and testing but can be
+   disabled by setting CTDB_SUPRESS_COREFILE=yes in the sysconfig file.
+ - Remove the wbinfo -t check from the startup check that winbindd is happy.
+ - Enhance the test for bond devices so we also check if the sysadmin have
+   disabled all slave devices using "ifdown".
 * Tue Nov 3 2009 : Version 1.0.103
  - Dont use vacuuming on persistent databases
  - Michael A : transaction updates to persistent databases
