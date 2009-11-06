@@ -483,8 +483,8 @@ static bool lldb_parse_result(struct lldb_context *ac, LDAPMessage *result)
 	bool callback_failed;
 	bool request_done;
 	bool lret;
+	unsigned int i;
 	int ret;
-	int i;
 
 	ldb = ldb_module_get_ctx(ac->module);
 
