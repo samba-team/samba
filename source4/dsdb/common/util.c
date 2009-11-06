@@ -557,7 +557,7 @@ struct samr_Password *samdb_result_hash(TALLOC_CTX *mem_ctx, const struct ldb_me
 }
 
 /*
-  pull an array of samr_Password structutres from a result set. 
+  pull an array of samr_Password structures from a result set.
 */
 unsigned int samdb_result_hashes(TALLOC_CTX *mem_ctx, const struct ldb_message *msg,
 			   const char *attr, struct samr_Password **hashes)
@@ -591,7 +591,7 @@ NTSTATUS samdb_result_passwords(TALLOC_CTX *mem_ctx, struct loadparm_context *lp
 {
 	struct samr_Password *lmPwdHash, *ntPwdHash;
 	if (nt_pwd) {
-		int num_nt;
+		unsigned int num_nt;
 		num_nt = samdb_result_hashes(mem_ctx, msg, "unicodePwd", &ntPwdHash);
 		if (num_nt == 0) {
 			*nt_pwd = NULL;
@@ -606,7 +606,7 @@ NTSTATUS samdb_result_passwords(TALLOC_CTX *mem_ctx, struct loadparm_context *lp
 		 * authentication, that we never use the LM hash, even
 		 * if we store it */
 		if (lp_lanman_auth(lp_ctx)) {
-			int num_lm;
+			unsigned int num_lm;
 			num_lm = samdb_result_hashes(mem_ctx, msg, "dBCSPwd", &lmPwdHash);
 			if (num_lm == 0) {
 				*lm_pwd = NULL;
@@ -704,7 +704,7 @@ struct ldb_message_element *samdb_find_attribute(struct ldb_context *ldb,
 						 const struct ldb_message *msg, 
 						 const char *name, const char *value)
 {
-	int i;
+	unsigned int i;
 	struct ldb_message_element *el = ldb_msg_find_element(msg, name);
 
 	if (!el) {
@@ -894,10 +894,11 @@ int samdb_msg_add_hash(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct 
   add a samr_Password array to a message
 */
 int samdb_msg_add_hashes(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
-			 const char *attr_name, struct samr_Password *hashes, unsigned int count)
+			 const char *attr_name, struct samr_Password *hashes,
+			 unsigned int count)
 {
 	struct ldb_val val;
-	int i;
+	unsigned int i;
 	val.data = talloc_array_size(mem_ctx, 16, count);
 	val.length = count*16;
 	if (!val.data) {
@@ -1759,7 +1760,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 	int count;
 	time_t now = time(NULL);
 	NTTIME now_nt;
-	int i;
+	unsigned int i;
 
 	/* we need to know the time to compute password age */
 	unix_to_nt_time(&now_nt, now);
@@ -2149,7 +2150,7 @@ NTSTATUS samdb_create_foreign_security_principal(struct ldb_context *sam_ctx, TA
 
 struct ldb_dn *samdb_dns_domain_to_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, const char *dns_domain) 
 {
-	int i;
+	unsigned int i;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	const char *binary_encoded;
 	const char **split_realm;
@@ -2390,7 +2391,7 @@ WERROR dsdb_loadreps(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx, struct ld
 	const char *attrs[] = { attr, NULL };
 	struct ldb_result *res = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
-	int i;
+	unsigned int i;
 	struct ldb_message_element *el;
 
 	*r = NULL;
@@ -2444,7 +2445,7 @@ WERROR dsdb_savereps(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx, struct ld
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	struct ldb_message *msg;
 	struct ldb_message_element *el;
-	int i;
+	unsigned int i;
 
 	msg = ldb_msg_new(tmp_ctx);
 	msg->dn = dn;
@@ -3136,7 +3137,8 @@ int dsdb_load_udv_v2(struct ldb_context *samdb, struct ldb_dn *dn, TALLOC_CTX *m
 	static const char *attrs[] = { "replUpToDateVector", NULL };
 	struct ldb_result *r;
 	const struct ldb_val *ouv_value;
-	int ret, i;
+	unsigned int i;
+	int ret;
 	uint64_t highest_usn;
 	const struct GUID *our_invocation_id;
 	struct timeval now = timeval_current();
@@ -3220,7 +3222,8 @@ int dsdb_load_udv_v1(struct ldb_context *samdb, struct ldb_dn *dn, TALLOC_CTX *m
 		     struct drsuapi_DsReplicaCursor **cursors, uint32_t *count)
 {
 	struct drsuapi_DsReplicaCursor2 *v2;
-	int ret, i;
+	unsigned int i;
+	int ret;
 
 	ret = dsdb_load_udv_v2(samdb, dn, mem_ctx, &v2, count);
 	if (ret != LDB_SUCCESS) {
@@ -3365,7 +3368,7 @@ int dsdb_modify(struct ldb_context *ldb, const struct ldb_message *message,
  */
 int dsdb_replace(struct ldb_context *ldb, struct ldb_message *msg, uint32_t dsdb_flags)
 {
-	int i;
+	unsigned int i;
 
 	/* mark all the message elements as LDB_FLAG_MOD_REPLACE */
 	for (i=0;i<msg->num_elements;i++) {
