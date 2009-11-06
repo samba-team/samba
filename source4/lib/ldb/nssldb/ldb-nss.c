@@ -191,7 +191,7 @@ NSS_STATUS _ldb_nss_fill_group(struct group *result,
 	size_t len;
 	size_t bufpos;
 	size_t lsize;
-	int i;
+	unsigned int i;
 
 	bufpos = 0;
 
@@ -280,7 +280,7 @@ NSS_STATUS _ldb_nss_fill_initgr(gid_t group,
 				struct ldb_result *grlist)
 {
 	NSS_STATUS ret;
-	int i;
+	unsigned int i;
 
 	for (i = 0; i < grlist->count; i++) {
 
