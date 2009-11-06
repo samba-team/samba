@@ -291,7 +291,15 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	}
 
 	if (fsp->write_time_forced) {
-		set_close_write_time(fsp, lck->changed_write_time);
+		DEBUG(10,("close_remove_share_mode: write time forced "
+			"for file %s\n",
+			fsp_str_dbg(fsp)));
+		set_close_write_time(lck, fsp, lck->changed_write_time);
+	} else if (fsp->update_write_time_on_close) {
+		DEBUG(10,("close_remove_share_mode: update_write_time_on_close "
+			"set for file %s\n",
+			fsp_str_dbg(fsp)));
+		set_close_write_time(lck, fsp, timespec_current());
 	}
 
 	if (!del_share_mode(lck, fsp)) {
@@ -468,7 +476,8 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	return status;
 }
 
-void set_close_write_time(struct files_struct *fsp, struct timespec ts)
+void set_close_write_time(struct share_mode_lock *lck,
+			struct files_struct *fsp, struct timespec ts)
 {
 	DEBUG(6,("close_write_time: %s" , time_to_asc(convert_timespec_to_time_t(ts))));
 
@@ -483,6 +492,14 @@ void set_close_write_time(struct files_struct *fsp, struct timespec ts)
 
 	fsp->update_write_time_on_close = true;
 	fsp->close_write_time = ts;
+
+	/* On close if we're changing the real file time we
+	 * must update it in the open file db too. */
+	(void)set_write_time(fsp->file_id, ts);
+	/* If someone has a sticky write time then update it as well. */
+	if (lck && !null_timespec(lck->changed_write_time)) {
+		(void)set_sticky_write_time(fsp->file_id, ts);
+	}
 }
 
 static NTSTATUS update_write_time_on_close(struct files_struct *fsp)

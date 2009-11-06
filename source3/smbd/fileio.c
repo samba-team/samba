@@ -180,10 +180,15 @@ static void update_write_time_handler(struct event_context *ctx,
 
 	/* Remove the timed event handler. */
 	TALLOC_FREE(fsp->update_write_time_event);
+
 	DEBUG(5, ("Update write time on %s\n", fsp_str_dbg(fsp)));
 
-	/* change the write time if not already changed by someone else */
-	update_write_time(fsp);
+	/* change the write time in the open file db. */
+	(void)set_write_time(fsp->file_id, timespec_current());
+
+	/* And notify. */
+        notify_fname(fsp->conn, NOTIFY_ACTION_MODIFIED,
+                     FILE_NOTIFY_CHANGE_LAST_WRITE, fsp->fsp_name->base_name);
 }
 
 /*********************************************************
@@ -207,11 +212,16 @@ void trigger_write_time_update(struct files_struct *fsp)
 		return;
 	}
 
+	/* We need to remember someone did a write
+	 * and update to current time on close. */
+
+	fsp->update_write_time_on_close = true;
+
 	if (fsp->update_write_time_triggered) {
 		/*
-		 * We only update the write time
-		 * on the first write. After that
-		 * no other writes affect this.
+		 * We only update the write time after 2 seconds
+		 * on the first normal write. After that
+		 * no other writes affect this until close.
 		 */
 		return;
 	}
@@ -221,8 +231,10 @@ void trigger_write_time_update(struct files_struct *fsp)
 			    "smbd", "writetimeupdatedelay",
 			    WRITE_TIME_UPDATE_USEC_DELAY);
 
+	DEBUG(5, ("Update write time %d usec later on %s\n",
+		  delay, fsp_str_dbg(fsp)));
+
 	/* trigger the update 2 seconds later */
-	fsp->update_write_time_on_close = true;
 	fsp->update_write_time_event =
 		event_add_timed(smbd_event_context(), NULL,
 				timeval_current_ofs(0, delay),
@@ -231,6 +243,8 @@ void trigger_write_time_update(struct files_struct *fsp)
 
 void trigger_write_time_update_immediate(struct files_struct *fsp)
 {
+	struct smb_file_time ft;
+
 	if (fsp->posix_open) {
 		/* Don't use delayed writes on POSIX files. */
 		return;
@@ -248,10 +262,18 @@ void trigger_write_time_update_immediate(struct files_struct *fsp)
 	DEBUG(5, ("Update write time immediate on %s\n",
 		  fsp_str_dbg(fsp)));
 
+	/* After an immediate update, reset the trigger. */
 	fsp->update_write_time_triggered = true;
-
         fsp->update_write_time_on_close = false;
-	update_write_time(fsp);
+
+	ZERO_STRUCT(ft);
+	ft.mtime = timespec_current();
+
+	/* Update the time in the open file db. */
+	(void)set_write_time(fsp->file_id, ft.mtime);
+
+	/* Now set on disk - takes care of notify. */
+	(void)smb_set_file_time(fsp->conn, fsp, fsp->fsp_name, &ft, false);
 }
 
 /****************************************************************************
