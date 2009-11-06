@@ -316,7 +316,7 @@ WERROR dsdb_schema_pfm_make_attid(struct dsdb_schema_prefixmap *pfm, const char 
 WERROR dsdb_schema_pfm_oid_from_attid(struct dsdb_schema_prefixmap *pfm, uint32_t attid,
 				      TALLOC_CTX *mem_ctx, const char **_oid)
 {
-	int i;
+	uint32_t i;
 	uint32_t hi_word, lo_word;
 	DATA_BLOB bin_oid = {NULL, 0};
 	struct dsdb_schema_prefixmap_oid *pfm_entry;

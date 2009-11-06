@@ -79,7 +79,7 @@ static const char **schema_subclasses(const struct dsdb_schema *schema,
 				      const char **oclist)
 {
 	const char **list = const_str_list(str_list_make_empty(mem_ctx));
-	int i;
+	unsigned int i;
 
 	for (i=0; oclist && oclist[i]; i++) {
 		const struct dsdb_class *schema_class =	dsdb_class_by_lDAPDisplayName(schema, oclist[i]);
@@ -102,7 +102,7 @@ static const char **schema_posssuperiors(const struct dsdb_schema *schema,
 	if (schema_class->posssuperiors == NULL) {
 		const char **list2 = const_str_list(str_list_make_empty(schema_class));
 		const char **list3;
-		int i;
+		unsigned int i;
 
 		list2 = str_list_append_const(list2, schema_class->systemPossSuperiors);
 		list2 = str_list_append_const(list2, schema_class->possSuperiors);
@@ -128,7 +128,7 @@ static const char **schema_subclasses_recurse(const struct dsdb_schema *schema,
 					      struct dsdb_class *schema_class)
 {
 	const char **list = str_list_copy_const(schema_class, schema_class->subclasses_direct);
-	int i;
+	unsigned int i;
 	for (i=0;list && list[i]; i++) {
 		const struct dsdb_class *schema_class2 = dsdb_class_by_lDAPDisplayName(schema, list[i]);
 		if (schema_class != schema_class2) {
@@ -146,7 +146,7 @@ void schema_subclasses_order_recurse(const struct dsdb_schema *schema,
 				     const int order)
 {
 	const char **list = schema_class->subclasses_direct;
-	int i;
+	unsigned int i;
 	schema_class->subClass_order = order;
 	for (i=0;list && list[i]; i++) {
 		const struct dsdb_class *schema_class2 = dsdb_class_by_lDAPDisplayName(schema, list[i]);
@@ -262,7 +262,7 @@ static void schema_fill_from_class_list(const struct dsdb_schema *schema,
 					const uint32_t *ids)
 {
 	if (*s == NULL && ids != NULL) {
-		int i;
+		unsigned int i;
 		for (i=0;ids[i];i++) ;
 		*s = talloc_array(c, const char *, i+1);
 		for (i=0;ids[i];i++) {
@@ -287,7 +287,7 @@ static void schema_fill_from_attribute_list(const struct dsdb_schema *schema,
 					    const uint32_t *ids)
 {
 	if (*s == NULL && ids != NULL) {
-		int i;
+		unsigned int i;
 		for (i=0;ids[i];i++) ;
 		*s = talloc_array(c, const char *, i+1);
 		for (i=0;ids[i];i++) {

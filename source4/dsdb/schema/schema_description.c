@@ -177,7 +177,7 @@ char *schema_attribute_to_extendedInfo(TALLOC_CTX *mem_ctx, const struct dsdb_at
 
 #define APPEND_ATTRS(attributes)				\
 	do {								\
-		int k;							\
+		unsigned int k;						\
 		for (k=0; attributes && attributes[k]; k++) {		\
 			const char *attr_name = attributes[k];		\
 									\
@@ -342,7 +342,7 @@ char *schema_class_to_description(TALLOC_CTX *mem_ctx, const struct dsdb_class *
 char *schema_class_to_dITContentRule(TALLOC_CTX *mem_ctx, const struct dsdb_class *sclass,
 				     const struct dsdb_schema *schema)
 {
-	int i;
+	unsigned int i;
 	char *schema_description;
 	const char **aux_class_list = NULL;
 	const char **attrs;

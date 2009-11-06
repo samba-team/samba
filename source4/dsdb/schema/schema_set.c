@@ -229,7 +229,7 @@ static int dsdb_setup_sorted_accessors(struct ldb_context *ldb,
 {
 	struct dsdb_class *cur;
 	struct dsdb_attribute *a;
-	uint32_t i;
+	unsigned int i;
 
 	talloc_free(schema->classes_by_lDAPDisplayName);
 	talloc_free(schema->classes_by_governsID_id);

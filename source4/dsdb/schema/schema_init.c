@@ -379,7 +379,7 @@ WERROR dsdb_read_prefixes_from_ldb(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 static bool dsdb_schema_unique_attribute(const char *attr)
 {
 	const char *attrs[] = { "objectGUID", "objectSID" , NULL };
-	int i;
+	unsigned int i;
 	for (i=0;attrs[i];i++) {
 		if (strcasecmp(attr, attrs[i]) == 0) {
 			return true;
@@ -713,7 +713,7 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 				 char **error_string)
 {
 	WERROR status;
-	uint32_t i;
+	unsigned int i;
 	const struct ldb_val *prefix_val;
 	const struct ldb_val *info_val;
 	struct ldb_val info_val_default;
@@ -845,7 +845,8 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 								     uint32_t *idx)
 {
 	WERROR status;
-	uint32_t i, attid;
+	unsigned int i;
+	uint32_t attid;
 	const char *oid = NULL;
 
 	for(i=0; i < ARRAY_SIZE(name_mappings); i++) {
@@ -904,7 +905,7 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 } while (0)
 
 #define GET_UINT32_LIST_DS(s, r, attr, mem_ctx, p, elem) do { \
-	int list_counter;					\
+	unsigned int list_counter;				\
 	struct drsuapi_DsReplicaAttribute *_a; \
 	_a = dsdb_find_object_attr_name(s, r, attr, NULL); \
 	(p)->elem = _a ? talloc_array(mem_ctx, uint32_t, _a->value_ctr.num_values + 1) : NULL; \
