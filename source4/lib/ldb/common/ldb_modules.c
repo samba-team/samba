@@ -48,7 +48,7 @@ void ldb_set_modules_dir(struct ldb_context *ldb, const char *path)
 
 static char *ldb_modules_strdup_no_spaces(TALLOC_CTX *mem_ctx, const char *string)
 {
-	int i, len;
+	size_t i, len;
 	char *trimmed;
 
 	trimmed = talloc_strdup(mem_ctx, string);
@@ -79,7 +79,7 @@ const char **ldb_modules_list_from_string(struct ldb_context *ldb, TALLOC_CTX *m
 	char **modules = NULL;
 	const char **m;
 	char *modstr, *p;
-	int i;
+	unsigned int i;
 
 	/* spaces not admitted */
 	modstr = ldb_modules_strdup_no_spaces(mem_ctx, string);
@@ -144,7 +144,7 @@ static const struct ldb_builtins {
 static ldb_connect_fn ldb_find_backend(const char *url)
 {
 	struct backends_list_entry *backend;
-	int i;
+	unsigned int i;
 
 	for (i = 0; builtins[i].backend_ops || builtins[i].module_ops; i++) {
 		if (builtins[i].backend_ops == NULL) continue;
@@ -262,7 +262,7 @@ int ldb_connect_backend(struct ldb_context *ldb,
 static const struct ldb_module_ops *ldb_find_module_ops(const char *name)
 {
 	struct ops_list_entry *e;
-	int i;
+	unsigned int i;
 
 	for (i = 0; builtins[i].backend_ops || builtins[i].module_ops; i++) {
 		if (builtins[i].module_ops == NULL) continue;
@@ -333,7 +333,7 @@ static void *ldb_dso_load_symbol(struct ldb_context *ldb, const char *name,
 int ldb_load_modules_list(struct ldb_context *ldb, const char **module_list, struct ldb_module *backend, struct ldb_module **out)
 {
 	struct ldb_module *module;
-	int i;
+	unsigned int i;
 
 	module = backend;
 
@@ -399,7 +399,7 @@ int ldb_init_module_chain(struct ldb_context *ldb, struct ldb_module *module)
 int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 {
 	const char **modules = NULL;
-	int i;
+	unsigned int i;
 	int ret;
 	TALLOC_CTX *mem_ctx = talloc_new(ldb);
 	if (!mem_ctx) {

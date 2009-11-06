@@ -476,7 +476,7 @@ struct ldb_message *ldb_msg_copy_shallow(TALLOC_CTX *mem_ctx,
 					 const struct ldb_message *msg)
 {
 	struct ldb_message *msg2;
-	int i;
+	unsigned int i;
 
 	msg2 = talloc(mem_ctx, struct ldb_message);
 	if (msg2 == NULL) return NULL;
@@ -506,7 +506,7 @@ struct ldb_message *ldb_msg_copy(TALLOC_CTX *mem_ctx,
 				 const struct ldb_message *msg)
 {
 	struct ldb_message *msg2;
-	int i, j;
+	unsigned int i, j;
 
 	msg2 = ldb_msg_copy_shallow(mem_ctx, msg);
 	if (msg2 == NULL) return NULL;
@@ -542,7 +542,7 @@ failed:
 struct ldb_message *ldb_msg_canonicalize(struct ldb_context *ldb, 
 					 const struct ldb_message *msg)
 {
-	int i;
+	unsigned int i;
 	struct ldb_message *msg2;
 
 	msg2 = ldb_msg_copy(ldb, msg);
@@ -640,7 +640,7 @@ struct ldb_message *ldb_msg_diff(struct ldb_context *ldb,
 int ldb_msg_sanity_check(struct ldb_context *ldb, 
 			 const struct ldb_message *msg)
 {
-	int i, j;
+	unsigned int i, j;
 
 	/* basic check on DN */
 	if (msg->dn == NULL) {
@@ -678,7 +678,8 @@ int ldb_msg_sanity_check(struct ldb_context *ldb,
 const char **ldb_attr_list_copy(TALLOC_CTX *mem_ctx, const char * const *attrs)
 {
 	const char **ret;
-	int i;
+	unsigned int i;
+
 	for (i=0;attrs && attrs[i];i++) /* noop */ ;
 	ret = talloc_array(mem_ctx, const char *, i+1);
 	if (ret == NULL) {
@@ -699,8 +700,9 @@ const char **ldb_attr_list_copy(TALLOC_CTX *mem_ctx, const char * const *attrs)
 const char **ldb_attr_list_copy_add(TALLOC_CTX *mem_ctx, const char * const *attrs, const char *new_attr)
 {
 	const char **ret;
-	int i;
+	unsigned int i;
 	bool found = false;
+
 	for (i=0;attrs && attrs[i];i++) {
 		if (ldb_attr_cmp(attrs[i], new_attr) == 0) {
 			found = true;
@@ -727,7 +729,7 @@ const char **ldb_attr_list_copy_add(TALLOC_CTX *mem_ctx, const char * const *att
 */
 int ldb_attr_in_list(const char * const *attrs, const char *attr)
 {
-	int i;
+	unsigned int i;
 	for (i=0;attrs && attrs[i];i++) {
 		if (ldb_attr_cmp(attrs[i], attr) == 0) {
 			return 1;
@@ -774,7 +776,7 @@ int ldb_msg_copy_attr(struct ldb_message *msg, const char *attr, const char *rep
 */
 void ldb_msg_remove_element(struct ldb_message *msg, struct ldb_message_element *el)
 {
-	int n = (el - msg->elements);
+	ptrdiff_t n = (el - msg->elements);
 	if (n >= msg->num_elements) {
 		/* should we abort() here? */
 		return;
@@ -936,7 +938,7 @@ time_t ldb_string_utc_to_time(const char *s)
 */
 void ldb_dump_results(struct ldb_context *ldb, struct ldb_result *result, FILE *f)
 {
-	int i;
+	unsigned int i;
 
 	for (i = 0; i < result->count; i++) {
 		struct ldb_ldif ldif;

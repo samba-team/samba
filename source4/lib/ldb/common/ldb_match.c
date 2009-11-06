@@ -189,7 +189,7 @@ static int ldb_wildcard_compare(struct ldb_context *ldb,
 	struct ldb_val *chunk;
 	char *p, *g;
 	uint8_t *save_p = NULL;
-	int c = 0;
+	unsigned int c = 0;
 
 	a = ldb_schema_attribute_by_name(ldb, tree->u.substring.attr);
 
@@ -304,7 +304,7 @@ static int ldb_match_extended(struct ldb_context *ldb,
 			      const struct ldb_parse_tree *tree,
 			      enum ldb_scope scope)
 {
-	int i;
+	unsigned int i;
 	const struct {
 		const char *oid;
 		int (*comparator)(const struct ldb_val *, const struct ldb_val *);

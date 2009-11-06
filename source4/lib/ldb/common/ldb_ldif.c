@@ -219,7 +219,7 @@ int ldb_should_b64_encode(struct ldb_context *ldb, const struct ldb_val *val)
 static int fold_string(int (*fprintf_fn)(void *, const char *, ...), void *private_data,
 			const char *buf, size_t length, int start_pos)
 {
-	unsigned int i;
+	size_t i;
 	int total=0, ret;
 
 	for (i=0;i<length;i++) {

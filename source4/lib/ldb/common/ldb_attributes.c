@@ -49,7 +49,7 @@ int ldb_schema_attribute_add_with_syntax(struct ldb_context *ldb,
 					 unsigned flags,
 					 const struct ldb_schema_syntax *syntax)
 {
-	int i, n;
+	unsigned int i, n;
 	struct ldb_schema_attribute *a;
 
 	if (!syntax) {
@@ -122,7 +122,9 @@ static const struct ldb_schema_attribute *ldb_schema_attribute_by_name_internal(
 	struct ldb_context *ldb,
 	const char *name)
 {
-	int i, e, b = 0, r;
+	/* for binary search we need signed variables */
+	long long int i, e, b = 0;
+	int r;
 	const struct ldb_schema_attribute *def = &ldb_attribute_default;
 
 	/* as handlers are sorted, '*' must be the first if present */
@@ -135,7 +137,6 @@ static const struct ldb_schema_attribute *ldb_schema_attribute_by_name_internal(
 	e = ldb->schema.num_attributes - 1;
 
 	while (b <= e) {
-
 		i = (b + e) / 2;
 
 		r = ldb_attr_cmp(name, ldb->schema.attributes[i].name);
@@ -179,7 +180,7 @@ const struct ldb_schema_attribute *ldb_schema_attribute_by_name(struct ldb_conte
 void ldb_schema_attribute_remove(struct ldb_context *ldb, const char *name)
 {
 	const struct ldb_schema_attribute *a;
-	int i;
+	ptrdiff_t i;
 
 	a = ldb_schema_attribute_by_name_internal(ldb, name);
 	if (a == NULL || a->name == NULL) {
@@ -232,7 +233,7 @@ int ldb_setup_wellknown_attributes(struct ldb_context *ldb)
 		{ "ou", LDB_SYNTAX_DIRECTORY_STRING },
 		{ "objectClass", LDB_SYNTAX_OBJECTCLASS }
 	};
-	int i;
+	unsigned int i;
 	int ret;
 
 	for (i=0;i<ARRAY_SIZE(wellknown);i++) {
@@ -254,7 +255,7 @@ int ldb_dn_extended_add_syntax(struct ldb_context *ldb,
 			       unsigned flags,
 			       const struct ldb_dn_extended_syntax *syntax)
 {
-	int n;
+	unsigned int n;
 	struct ldb_dn_extended_syntax *a;
 
 	if (!syntax) {
@@ -284,7 +285,7 @@ int ldb_dn_extended_add_syntax(struct ldb_context *ldb,
 const struct ldb_dn_extended_syntax *ldb_dn_extended_syntax_by_name(struct ldb_context *ldb,
 								    const char *name)
 {
-	int i;
+	unsigned int i;
 	for (i=0; i < ldb->schema.num_dn_extended_syntax; i++) {
 		if (ldb_attr_cmp(ldb->schema.dn_extended_syntax[i].name, name) == 0) {
 			return &ldb->schema.dn_extended_syntax[i];

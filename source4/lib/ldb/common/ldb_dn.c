@@ -191,7 +191,7 @@ static int ldb_dn_escape_internal(char *dst, const char *src, int len)
 {
 	const char *p, *s;
 	char *d;
-	int l;
+	size_t l;
 
 	p = s = src;
 	d = dst;
@@ -297,8 +297,9 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 	bool in_quote = false;
 	bool is_oid = false;
 	bool escape = false;
-	unsigned x;
-	int l, ret;
+	unsigned int x;
+	size_t l;
+	int ret;
 	char *parse_dn;
 	bool is_index;
 
@@ -740,7 +741,8 @@ bool ldb_dn_validate(struct ldb_dn *dn)
 
 const char *ldb_dn_get_linearized(struct ldb_dn *dn)
 {
-	int i, len;
+	unsigned int i;
+	size_t len;
 	char *d, *n;
 
 	if ( ! dn || ( dn->invalid)) return NULL;
@@ -806,7 +808,7 @@ char *ldb_dn_get_extended_linearized(void *mem_ctx, struct ldb_dn *dn, int mode)
 {
 	const char *linearized = ldb_dn_get_linearized(dn);
 	char *p = NULL;
-	int i;
+	unsigned int i;
 
 	if (!linearized) {
 		return NULL;
@@ -884,7 +886,7 @@ char *ldb_dn_get_extended_linearized(void *mem_ctx, struct ldb_dn *dn, int mode)
  */
 void ldb_dn_extended_filter(struct ldb_dn *dn, const char * const *accept)
 {
-	int i;
+	unsigned int i;
 	for (i=0; i<dn->ext_comp_num; i++) {
 		if (!ldb_attr_in_list(accept, dn->ext_components[i].name)) {
 			memmove(&dn->ext_components[i],
@@ -910,7 +912,8 @@ char *ldb_dn_alloc_linearized(void *mem_ctx, struct ldb_dn *dn)
 
 static bool ldb_dn_casefold_internal(struct ldb_dn *dn)
 {
-	int i, ret;
+	unsigned int i;
+	int ret;
 
 	if ( ! dn || dn->invalid) return false;
 
@@ -955,7 +958,8 @@ failed:
 
 const char *ldb_dn_get_casefold(struct ldb_dn *dn)
 {
-	int i, len;
+	unsigned int i;
+	size_t len;
 	char *d, *n;
 
 	if (dn->casefold) return dn->casefold;
@@ -1025,7 +1029,7 @@ char *ldb_dn_alloc_casefold(void *mem_ctx, struct ldb_dn *dn)
 int ldb_dn_compare_base(struct ldb_dn *base, struct ldb_dn *dn)
 {
 	int ret;
-	int n_base, n_dn;
+	long long int n_base, n_dn;
 
 	if ( ! base || base->invalid) return 1;
 	if ( ! dn || dn->invalid) return -1;
@@ -1111,7 +1115,8 @@ int ldb_dn_compare_base(struct ldb_dn *base, struct ldb_dn *dn)
 
 int ldb_dn_compare(struct ldb_dn *dn0, struct ldb_dn *dn1)
 {
-	int i, ret;
+	unsigned int i;
+	int ret;
 
 	if (( ! dn0) || dn0->invalid || ! dn1 || dn1->invalid) {
 		return -1;
@@ -1269,7 +1274,7 @@ struct ldb_dn *ldb_dn_copy(void *mem_ctx, struct ldb_dn *dn)
 	*new_dn = *dn;
 
 	if (dn->components) {
-		int i;
+		unsigned int i;
 
 		new_dn->components =
 			talloc_zero_array(new_dn,
@@ -1292,7 +1297,7 @@ struct ldb_dn *ldb_dn_copy(void *mem_ctx, struct ldb_dn *dn)
 	}
 
 	if (dn->ext_components) {
-		int i;
+		unsigned int i;
 
 		new_dn->ext_components =
 			talloc_zero_array(new_dn,
@@ -1358,7 +1363,7 @@ bool ldb_dn_add_base(struct ldb_dn *dn, struct ldb_dn *base)
 	}
 
 	if (dn->components) {
-		int i;
+		unsigned int i;
 
 		if ( ! ldb_dn_validate(base)) {
 			return false;
@@ -1480,7 +1485,8 @@ bool ldb_dn_add_child(struct ldb_dn *dn, struct ldb_dn *child)
 	}
 
 	if (dn->components) {
-		int n, i, j;
+		unsigned int n;
+		long long int i, j;
 
 		if ( ! ldb_dn_validate(child)) {
 			return false;
@@ -1588,7 +1594,7 @@ bool ldb_dn_add_child_fmt(struct ldb_dn *dn, const char *child_fmt, ...)
 
 bool ldb_dn_remove_base_components(struct ldb_dn *dn, unsigned int num)
 {
-	int i;
+	long long int i;
 
 	if ( ! ldb_dn_validate(dn)) {
 		return false;
@@ -1631,7 +1637,7 @@ bool ldb_dn_remove_base_components(struct ldb_dn *dn, unsigned int num)
 
 bool ldb_dn_remove_child_components(struct ldb_dn *dn, unsigned int num)
 {
-	int i, j;
+	unsigned int i, j;
 
 	if ( ! ldb_dn_validate(dn)) {
 		return false;
@@ -1706,7 +1712,7 @@ struct ldb_dn *ldb_dn_get_parent(void *mem_ctx, struct ldb_dn *dn)
 
 */
 static char *ldb_dn_canonical(void *mem_ctx, struct ldb_dn *dn, int ex_format) {
-	int i;
+	long long int i;
 	TALLOC_CTX *tmpctx;
 	char *cracked = NULL;
 	const char *format = (ex_format ? "\n" : "/" );
@@ -1851,7 +1857,7 @@ int ldb_dn_set_component(struct ldb_dn *dn, int num,
 	dn->components[num].value = v;
 
 	if (dn->valid_case) {
-		int i;
+		unsigned int i;
 		for (i = 0; i < dn->comp_num; i++) {
 			LDB_FREE(dn->components[i].cf_name);
 			LDB_FREE(dn->components[i].cf_value.data);
@@ -1873,7 +1879,7 @@ int ldb_dn_set_component(struct ldb_dn *dn, int num,
 const struct ldb_val *ldb_dn_get_extended_component(struct ldb_dn *dn,
 						    const char *name)
 {
-	int i;
+	unsigned int i;
 	if ( ! ldb_dn_validate(dn)) {
 		return NULL;
 	}
@@ -1889,7 +1895,7 @@ int ldb_dn_set_extended_component(struct ldb_dn *dn,
 				  const char *name, const struct ldb_val *val)
 {
 	struct ldb_dn_ext_component *p;
-	int i;
+	unsigned int i;
 	struct ldb_val v2;
 
 	if ( ! ldb_dn_validate(dn)) {

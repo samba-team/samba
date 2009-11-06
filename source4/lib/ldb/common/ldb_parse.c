@@ -61,9 +61,9 @@ a filter is defined by:
 */
 struct ldb_val ldb_binary_decode(void *mem_ctx, const char *str)
 {
-	int i, j;
+	size_t i, j;
 	struct ldb_val ret;
-	int slen = str?strlen(str):0;
+	size_t slen = str?strlen(str):0;
 
 	ret.data = (uint8_t *)talloc_size(mem_ctx, slen+1);
 	ret.length = 0;
@@ -96,9 +96,9 @@ struct ldb_val ldb_binary_decode(void *mem_ctx, const char *str)
 */
 char *ldb_binary_encode(void *mem_ctx, struct ldb_val val)
 {
-	int i;
+	size_t i;
 	char *ret;
-	int len = val.length;
+	size_t len = val.length;
 	unsigned char *buf = val.data;
 
 	for (i=0;i<val.length;i++) {
@@ -162,7 +162,7 @@ static char *ldb_parse_find_wildcard(char *value)
 static struct ldb_val **ldb_wildcard_decode(void *mem_ctx, const char *string)
 {
 	struct ldb_val **ret = NULL;
-	int val = 0;
+	unsigned int val = 0;
 	char *wc, *str;
 
 	wc = talloc_strdup(mem_ctx, string);
@@ -657,7 +657,7 @@ struct ldb_parse_tree *ldb_parse_tree(void *mem_ctx, const char *s)
 char *ldb_filter_from_tree(void *mem_ctx, struct ldb_parse_tree *tree)
 {
 	char *s, *s2, *ret;
-	int i;
+	unsigned int i;
 
 	if (tree == NULL) {
 		return NULL;
@@ -780,7 +780,7 @@ void ldb_parse_tree_attr_replace(struct ldb_parse_tree *tree,
 				 const char *attr, 
 				 const char *replace)
 {
-	int i;
+	unsigned int i;
 	switch (tree->operation) {
 	case LDB_OP_AND:
 	case LDB_OP_OR:
@@ -826,7 +826,7 @@ void ldb_parse_tree_attr_replace(struct ldb_parse_tree *tree,
 struct ldb_parse_tree *ldb_parse_tree_copy_shallow(TALLOC_CTX *mem_ctx,
 						   const struct ldb_parse_tree *ot)
 {
-	int i;
+	unsigned int i;
 	struct ldb_parse_tree *nt;
 
 	nt = talloc(mem_ctx, struct ldb_parse_tree);

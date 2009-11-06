@@ -37,7 +37,7 @@
 /* returns NULL if not found */
 struct ldb_control *ldb_request_get_control(struct ldb_request *req, const char *oid)
 {
-	int i;
+	unsigned int i;
 
 	if (req->controls != NULL) {
 		for (i = 0; req->controls[i]; i++) {
@@ -56,7 +56,7 @@ struct ldb_control *ldb_request_get_control(struct ldb_request *req, const char 
 /* returns NULL if not found */
 struct ldb_control *ldb_reply_get_control(struct ldb_reply *rep, const char *oid)
 {
-	int i;
+	unsigned int i;
 
 	if (rep->controls != NULL) {
 		for (i = 0; rep->controls[i]; i++) {
@@ -77,7 +77,7 @@ the "exclude" control */
 int save_controls(struct ldb_control *exclude, struct ldb_request *req, struct ldb_control ***saver)
 {
 	struct ldb_control **lcs;
-	int i, j;
+	unsigned int i, j;
 
 	*saver = req->controls;
 	for (i = 0; req->controls[i]; i++);
@@ -110,7 +110,7 @@ struct ldb_control **controls_except_specified(struct ldb_control **controls_in,
 					       struct ldb_control *exclude)
 {
 	struct ldb_control **lcs = NULL;
-	int i, j;
+	unsigned int i, j;
 
 	for (i = 0; controls_in && controls_in[i]; i++);
 
@@ -147,7 +147,7 @@ struct ldb_control **controls_except_specified(struct ldb_control **controls_in,
 /* return True if any, False if none */
 int check_critical_controls(struct ldb_control **controls)
 {
-	int i;
+	unsigned int i;
 
 	if (controls == NULL) {
 		return 0;
@@ -164,7 +164,7 @@ int check_critical_controls(struct ldb_control **controls)
 
 int ldb_request_add_control(struct ldb_request *req, const char *oid, bool critical, void *data)
 {
-	unsigned i, n;
+	unsigned int i, n;
 	struct ldb_control **ctrls;
 	struct ldb_control *ctrl;
 
@@ -238,7 +238,7 @@ int ldb_reply_add_control(struct ldb_reply *ares, const char *oid, bool critical
 
 struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, void *mem_ctx, const char **control_strings)
 {
-	int i;
+	unsigned int i;
 	struct ldb_control **ctrl;
 
 	char *error_string = NULL;

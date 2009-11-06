@@ -665,7 +665,7 @@ int ldb_request_get_status(struct ldb_request *req)
 static void ldb_trace_request(struct ldb_context *ldb, struct ldb_request *req)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(req);
-	int i;
+	unsigned int i;
 
 	switch (req->operation) {
 	case LDB_SEARCH:
@@ -845,7 +845,7 @@ int ldb_search_default_callback(struct ldb_request *req,
 				struct ldb_reply *ares)
 {
 	struct ldb_result *res;
-	int n;
+	unsigned int n;
 
 	res = talloc_get_type(req->context, struct ldb_result);
 

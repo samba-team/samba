@@ -55,7 +55,7 @@ void ldb_set_utf8_fns(struct ldb_context *ldb,
 */
 char *ldb_casefold_default(void *context, void *mem_ctx, const char *s, size_t n)
 {
-	int i;
+	size_t i;
 	char *ret = talloc_strndup(mem_ctx, s, n);
 	if (!s) {
 		errno = ENOMEM;
@@ -84,7 +84,7 @@ char *ldb_casefold(struct ldb_context *ldb, void *mem_ctx, const char *s, size_t
 
 int ldb_valid_attr_name(const char *s)
 {
-	int i;
+	size_t i;
 
 	if (!s || !s[0])
 		return 0;
@@ -111,7 +111,7 @@ int ldb_valid_attr_name(const char *s)
 
 char *ldb_attr_casefold(void *mem_ctx, const char *s)
 {
-	int i;
+	size_t i;
 	char *ret = talloc_strdup(mem_ctx, s);
 	if (!ret) {
 		errno = ENOMEM;

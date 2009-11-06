@@ -55,7 +55,7 @@ int ldb_handler_fold(struct ldb_context *ldb, void *mem_ctx,
 			    const struct ldb_val *in, struct ldb_val *out)
 {
 	char *s, *t;
-	int l;
+	size_t l;
 
 	if (!in || !out || !(in->data)) {
 		return -1;
@@ -456,7 +456,7 @@ static const struct ldb_schema_syntax ldb_standard_syntaxes[] = {
 const struct ldb_schema_syntax *ldb_standard_syntax_by_name(struct ldb_context *ldb,
 							    const char *syntax)
 {
-	int i;
+	unsigned int i;
 	unsigned num_handlers = sizeof(ldb_standard_syntaxes)/sizeof(ldb_standard_syntaxes[0]);
 	/* TODO: should be replaced with a binary search */
 	for (i=0;i<num_handlers;i++) {
