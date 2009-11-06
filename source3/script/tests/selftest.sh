@@ -249,7 +249,7 @@ cat >$SERVERCONFFILE<<EOF
 
 	read only = no
 	smbd:sharedelay = 100000
-	smbd:writetimeupdatedelay = 500000
+#	smbd:writetimeupdatedelay = 500000
 	map hidden = no
 	map system = no
 	map readonly = no
