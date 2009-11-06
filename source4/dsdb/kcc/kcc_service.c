@@ -80,7 +80,7 @@ static WERROR kccsrv_load_partitions(struct kccsrv_service *s)
 	struct ldb_result *r;
 	struct ldb_message_element *el;
 	static const char *attrs[] = { "namingContexts", "configurationNamingContext", NULL };
-	uint32_t i;
+	unsigned int i;
 	int ret;
 
 	basedn = ldb_dn_new(s, s->samdb, NULL);

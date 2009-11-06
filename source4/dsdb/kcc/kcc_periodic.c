@@ -40,7 +40,7 @@
  */
 static bool reps_in_list(struct repsFromToBlob *r, struct repsFromToBlob *reps, uint32_t count)
 {
-	int i;
+	unsigned int i;
 	for (i=0; i<count; i++) {
 		if (strcmp(r->ctr.ctr1.other_info->dns_name, 
 			   reps[i].ctr.ctr1.other_info->dns_name) == 0 &&
@@ -66,7 +66,7 @@ static NTSTATUS kccsrv_add_repsFrom(struct kccsrv_service *s, TALLOC_CTX *mem_ct
 		struct repsFromToBlob *old_reps;
 		uint32_t old_count;
 		WERROR werr;
-		int i;
+		unsigned int i;
 		bool modified = false;
 
 		werr = dsdb_loadreps(s->samdb, mem_ctx, p->dn, "repsFrom", &old_reps, &old_count);
@@ -119,7 +119,8 @@ static NTSTATUS kccsrv_add_repsFrom(struct kccsrv_service *s, TALLOC_CTX *mem_ct
 NTSTATUS kccsrv_simple_update(struct kccsrv_service *s, TALLOC_CTX *mem_ctx)
 {
 	struct ldb_result *res;
-	int ret, i;
+	unsigned int i;
+	int ret;
 	const char *attrs[] = { "objectGUID", "invocationID", NULL };
 	struct repsFromToBlob *reps = NULL;
 	uint32_t count = 0;
