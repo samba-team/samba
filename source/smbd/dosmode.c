@@ -20,6 +20,8 @@
 
 #include "includes.h"
 
+extern enum protocol_types Protocol;
+
 static int set_sparse_flag(const SMB_STRUCT_STAT * const sbuf)
 {
 #if defined (HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
@@ -335,6 +337,12 @@ uint32 dos_mode_msdfs(connection_struct *conn, const char *path,SMB_STRUCT_STAT 
 		result |= aHIDDEN;
 	}
 
+	if (Protocol <= PROTOCOL_LANMAN2) {
+		DEBUG(10,("dos_mode_msdfs : filtering result 0x%x\n",
+			(unsigned int)result ));
+		result &= 0xff;
+	}
+
 	DEBUG(8,("dos_mode_msdfs returning "));
 
 	if (result & aHIDDEN) DEBUG(8, ("h"));
@@ -398,6 +406,12 @@ uint32 dos_mode(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf)
 	   hidden. */
 	if (!(result & aHIDDEN) && IS_HIDDEN_PATH(conn,path)) {
 		result |= aHIDDEN;
+	}
+
+	if (Protocol <= PROTOCOL_LANMAN2) {
+		DEBUG(10,("dos_mode : filtering result 0x%x\n",
+			(unsigned int)result ));
+		result &= 0xff;
 	}
 
 	DEBUG(8,("dos_mode returning "));
