@@ -6779,9 +6779,9 @@ static bool test_samr_ValidatePassword(struct dcerpc_pipe *p, struct torture_con
 		req.req3.password.string = passwords[i];
 		status = dcerpc_samr_ValidatePassword(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "samr_ValidatePassword");
-		torture_comment(tctx, "Server %s password '%s'\n", 
+		torture_comment(tctx, "Server %s password '%s' with code %i\n",
 				repp->ctr3.status==SAMR_VALIDATION_STATUS_SUCCESS?"allowed":"refused",
-				req.req3.password.string);
+				req.req3.password.string, repp->ctr3.status);
 	}
 
 	return true;	
