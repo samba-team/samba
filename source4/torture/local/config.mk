@@ -18,7 +18,9 @@ PRIVATE_DEPENDENCIES = \
 		share \
 		torture_registry \
 		PROVISION \
-		NSS_WRAPPER
+		NSS_WRAPPER \
+		LDB \
+		SAMDB
 # End SUBSYSTEM TORTURE_LOCAL
 #################################
 
@@ -56,6 +58,7 @@ TORTURE_LOCAL_OBJ_FILES = \
 		$(torturesrcdir)/local/local.o \
 		$(torturesrcdir)/local/dbspeed.o \
 		$(torturesrcdir)/local/torture.o \
-		$(torturesrcdir)/ldb/ldb.o
+		$(torturesrcdir)/ldb/ldb.o \
+		$(torturesrcdir)/../dsdb/common/tests/dsdb_dn.o
 
 $(eval $(call proto_header_template,$(torturesrcdir)/local/proto.h,$(TORTURE_LOCAL_OBJ_FILES:.o=.c)))
