@@ -299,7 +299,11 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		DEBUG(10,("close_remove_share_mode: update_write_time_on_close "
 			"set for file %s\n",
 			fsp_str_dbg(fsp)));
-		set_close_write_time(lck, fsp, timespec_current());
+		if (null_timespec(fsp->close_write_time)) {
+			set_close_write_time(lck, fsp, timespec_current());
+		} else {
+			set_close_write_time(lck, fsp, fsp->close_write_time);
+		}
 	}
 
 	if (!del_share_mode(lck, fsp)) {
