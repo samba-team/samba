@@ -145,7 +145,7 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_module *module,
 					   const char * const *attrs)
 {
 	struct ldb_message *ret;
-	int i;
+	unsigned int i;
 
 	ret = talloc(mem_ctx, struct ldb_message);
 	if (!ret) {
@@ -325,7 +325,8 @@ int ltdb_add_attr_results(struct ldb_module *module,
  */
 int ltdb_filter_attrs(struct ldb_message *msg, const char * const *attrs)
 {
-	int i, keep_all = 0;
+	unsigned int i;
+	int keep_all = 0;
 
 	if (attrs) {
 		/* check for special attrs */

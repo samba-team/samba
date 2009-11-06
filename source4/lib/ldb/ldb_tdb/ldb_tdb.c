@@ -176,7 +176,7 @@ static int ltdb_check_special_dn(struct ldb_module *module,
 			  const struct ldb_message *msg)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	int i, j;
+	unsigned int i, j;
 
 	if (! ldb_dn_is_special(msg->dn) ||
 	    ! ldb_dn_check_special(msg->dn, LTDB_ATTRIBUTES)) {
@@ -278,7 +278,8 @@ static int ltdb_add_internal(struct ldb_module *module,
 			     const struct ldb_message *msg)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	int ret = LDB_SUCCESS, i;
+	int ret = LDB_SUCCESS;
+	unsigned int i;
 
 	ret = ltdb_check_special_dn(module, msg);
 	if (ret != LDB_SUCCESS) {

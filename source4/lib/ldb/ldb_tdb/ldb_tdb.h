@@ -93,7 +93,7 @@ int ltdb_index_del_element(struct ldb_module *module, struct ldb_dn *dn,
 int ltdb_index_add_element(struct ldb_module *module, struct ldb_dn *dn, 
 			   struct ldb_message_element *el);
 int ltdb_index_del_value(struct ldb_module *module, struct ldb_dn *dn,
-			 struct ldb_message_element *el, int v_idx);
+			 struct ldb_message_element *el, unsigned int v_idx);
 int ltdb_reindex(struct ldb_module *module);
 int ltdb_index_transaction_start(struct ldb_module *module);
 int ltdb_index_transaction_commit(struct ldb_module *module);

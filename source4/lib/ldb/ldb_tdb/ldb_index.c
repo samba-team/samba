@@ -76,7 +76,7 @@ static int dn_list_cmp(const struct ldb_val *v1, const struct ldb_val *v2)
  */
 static int ltdb_dn_list_find_val(const struct dn_list *list, const struct ldb_val *v)
 {
-	int i;
+	unsigned int i;
 	for (i=0; i<list->count; i++) {
 		if (dn_list_cmp(&list->dn[i], v) == 0) return i;
 	}
@@ -967,7 +967,7 @@ static int ltdb_index_filter(const struct dn_list *dn_list,
  */
 static void ltdb_dn_list_remove_duplicates(struct dn_list *list)
 {
-	int i, new_count;
+	unsigned int i, new_count;
 
 	if (list->count < 2) {
 		return;
@@ -1279,12 +1279,13 @@ int ltdb_index_add_new(struct ldb_module *module, const struct ldb_message *msg)
   delete an index entry for one message element
 */
 int ltdb_index_del_value(struct ldb_module *module, struct ldb_dn *dn,
-			 struct ldb_message_element *el, int v_idx)
+			 struct ldb_message_element *el, unsigned int v_idx)
 {
 	struct ldb_context *ldb;
 	struct ldb_dn *dn_key;
 	const char *dn_str;
 	int ret, i;
+	unsigned int j;
 	struct dn_list *list;
 
 	ldb = ldb_module_get_ctx(module);
@@ -1329,9 +1330,8 @@ int ltdb_index_del_value(struct ldb_module *module, struct ldb_dn *dn,
 		return LDB_SUCCESS;		
 	}
 
-	if (i != list->count-1) {
-		memmove(&list->dn[i], &list->dn[i+1], sizeof(list->dn[0])*(list->count - (i+1)));
-	}
+	j = (unsigned int) i;
+	memmove(&list->dn[j], &list->dn[j+1], sizeof(list->dn[0])*(list->count - (i+1)));
 	list->count--;
 	list->dn = talloc_realloc(list, list->dn, struct ldb_val, list->count);
 
