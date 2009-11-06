@@ -71,7 +71,7 @@ skipped="$skipped RAW-SFILEINFO"
 echo "WARNING: Skipping tests $skipped"
 
 ADDARGS="$ADDARGS --option=torture:sharedelay=100000"
-ADDARGS="$ADDARGS --option=torture:writetimeupdatedelay=500000"
+#ADDARGS="$ADDARGS --option=torture:writetimeupdatedelay=500000"
 
 failed=0
 for t in $tests; do
@@ -90,7 +90,11 @@ for t in $tests; do
     fi
     start=""
     name="$t"
-    testit "$name" $VALGRIND $SMBTORTURE4 $TORTURE4_OPTIONS $ADDARGS $unc -U"$username"%"$password" $t || failed=`expr $failed + 1`
+    if [ "$t" = "BASE-DELAYWRITE" ]; then
+	    testit "$name" $VALGRIND $SMBTORTURE4 $TORTURE4_OPTIONS --maximum-runtime=900 $ADDARGS $unc -U"$username"%"$password" $t || failed=`expr $failed + 1`
+    else
+	    testit "$name" $VALGRIND $SMBTORTURE4 $TORTURE4_OPTIONS $ADDARGS $unc -U"$username"%"$password" $t || failed=`expr $failed + 1`
+    fi
 done
 
 testok $0 $failed
