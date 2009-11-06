@@ -38,7 +38,7 @@ static WERROR dsdb_syntax_FOOBAR_drsuapi_to_ldb(struct ldb_context *ldb,
 						TALLOC_CTX *mem_ctx,
 						struct ldb_message_element *out)
 {
-	uint32_t i;
+	unsigned int i;
 
 	out->flags	= 0;
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
@@ -90,7 +90,7 @@ static WERROR dsdb_syntax_BOOL_drsuapi_to_ldb(struct ldb_context *ldb,
 					      TALLOC_CTX *mem_ctx,
 					      struct ldb_message_element *out)
 {
-	uint32_t i;
+	unsigned int i;
 
 	out->flags	= 0;
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
@@ -135,7 +135,7 @@ static WERROR dsdb_syntax_BOOL_ldb_to_drsuapi(struct ldb_context *ldb,
 					      TALLOC_CTX *mem_ctx,
 					      struct drsuapi_DsReplicaAttribute *out)
 {
-	uint32_t i;
+	unsigned int i;
 	DATA_BLOB *blobs;
 
 	if (attr->attributeID_id == 0xFFFFFFFF) {
@@ -175,7 +175,7 @@ static WERROR dsdb_syntax_BOOL_validate_ldb(struct ldb_context *ldb,
 					    const struct dsdb_attribute *attr,
 					    const struct ldb_message_element *in)
 {
-	uint32_t i;
+	unsigned int i;
 
 	if (attr->attributeID_id == 0xFFFFFFFF) {
 		return WERR_FOOBAR;
@@ -206,7 +206,7 @@ static WERROR dsdb_syntax_INT32_drsuapi_to_ldb(struct ldb_context *ldb,
 					       TALLOC_CTX *mem_ctx,
 					       struct ldb_message_element *out)
 {
-	uint32_t i;
+	unsigned int i;
 
 	out->flags	= 0;
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
@@ -246,7 +246,7 @@ static WERROR dsdb_syntax_INT32_ldb_to_drsuapi(struct ldb_context *ldb,
 					       TALLOC_CTX *mem_ctx,
 					       struct drsuapi_DsReplicaAttribute *out)
 {
-	uint32_t i;
+	unsigned int i;
 	DATA_BLOB *blobs;
 
 	if (attr->attributeID_id == 0xFFFFFFFF) {
@@ -286,7 +286,7 @@ static WERROR dsdb_syntax_INT32_validate_ldb(struct ldb_context *ldb,
 					     const struct dsdb_attribute *attr,
 					     const struct ldb_message_element *in)
 {
-	uint32_t i;
+	unsigned int i;
 
 	if (attr->attributeID_id == 0xFFFFFFFF) {
 		return WERR_FOOBAR;
@@ -335,7 +335,7 @@ static WERROR dsdb_syntax_INT64_drsuapi_to_ldb(struct ldb_context *ldb,
 					       TALLOC_CTX *mem_ctx,
 					       struct ldb_message_element *out)
 {
-	uint32_t i;
+	unsigned int i;
 
 	out->flags	= 0;
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
@@ -375,7 +375,7 @@ static WERROR dsdb_syntax_INT64_ldb_to_drsuapi(struct ldb_context *ldb,
 					       TALLOC_CTX *mem_ctx,
 					       struct drsuapi_DsReplicaAttribute *out)
 {
-	uint32_t i;
+	unsigned int i;
 	DATA_BLOB *blobs;
 
 	if (attr->attributeID_id == 0xFFFFFFFF) {
@@ -413,7 +413,7 @@ static WERROR dsdb_syntax_INT64_validate_ldb(struct ldb_context *ldb,
 					     const struct dsdb_attribute *attr,
 					     const struct ldb_message_element *in)
 {
-	uint32_t i;
+	unsigned int i;
 
 	if (attr->attributeID_id == 0xFFFFFFFF) {
 		return WERR_FOOBAR;
@@ -461,7 +461,7 @@ static WERROR dsdb_syntax_NTTIME_UTC_drsuapi_to_ldb(struct ldb_context *ldb,
 						    TALLOC_CTX *mem_ctx,
 						    struct ldb_message_element *out)
 {
-	uint32_t i;
+	unsigned int i;
 
 	out->flags	= 0;
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
@@ -512,7 +512,7 @@ static WERROR dsdb_syntax_NTTIME_UTC_ldb_to_drsuapi(struct ldb_context *ldb,
 						    TALLOC_CTX *mem_ctx,
 						    struct drsuapi_DsReplicaAttribute *out)
 {
-	uint32_t i;
+	unsigned int i;
 	DATA_BLOB *blobs;
 
 	if (attr->attributeID_id == 0xFFFFFFFF) {
@@ -553,7 +553,7 @@ static WERROR dsdb_syntax_NTTIME_UTC_validate_ldb(struct ldb_context *ldb,
 						  const struct dsdb_attribute *attr,
 						  const struct ldb_message_element *in)
 {
-	uint32_t i;
+	unsigned int i;
 
 	if (attr->attributeID_id == 0xFFFFFFFF) {
 		return WERR_FOOBAR;
@@ -603,7 +603,7 @@ static WERROR dsdb_syntax_NTTIME_drsuapi_to_ldb(struct ldb_context *ldb,
 						TALLOC_CTX *mem_ctx,
 						struct ldb_message_element *out)
 {
-	uint32_t i;
+	unsigned int i;
 
 	out->flags	= 0;
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
@@ -646,7 +646,7 @@ static WERROR dsdb_syntax_NTTIME_ldb_to_drsuapi(struct ldb_context *ldb,
 						TALLOC_CTX *mem_ctx,
 						struct drsuapi_DsReplicaAttribute *out)
 {
-	uint32_t i;
+	unsigned int i;
 	DATA_BLOB *blobs;
 
 	if (attr->attributeID_id == 0xFFFFFFFF) {
@@ -691,7 +691,7 @@ static WERROR dsdb_syntax_NTTIME_validate_ldb(struct ldb_context *ldb,
 					      const struct dsdb_attribute *attr,
 					      const struct ldb_message_element *in)
 {
-	uint32_t i;
+	unsigned int i;
 
 	if (attr->attributeID_id == 0xFFFFFFFF) {
 		return WERR_FOOBAR;
@@ -729,7 +729,7 @@ static WERROR dsdb_syntax_DATA_BLOB_drsuapi_to_ldb(struct ldb_context *ldb,
 						   TALLOC_CTX *mem_ctx,
 						   struct ldb_message_element *out)
 {
-	uint32_t i;
+	unsigned int i;
 
 	out->flags	= 0;
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
@@ -763,7 +763,7 @@ static WERROR dsdb_syntax_DATA_BLOB_ldb_to_drsuapi(struct ldb_context *ldb,
 						   TALLOC_CTX *mem_ctx,
 						   struct drsuapi_DsReplicaAttribute *out)
 {
-	uint32_t i;
+	unsigned int i;
 	DATA_BLOB *blobs;
 
 	if (attr->attributeID_id == 0xFFFFFFFF) {
@@ -819,7 +819,7 @@ static WERROR dsdb_syntax_DATA_BLOB_validate_ldb(struct ldb_context *ldb,
 						 const struct dsdb_attribute *attr,
 						 const struct ldb_message_element *in)
 {
-	uint32_t i;
+	unsigned int i;
 	WERROR status;
 
 	if (attr->attributeID_id == 0xFFFFFFFF) {
@@ -850,7 +850,7 @@ static WERROR _dsdb_syntax_auto_OID_drsuapi_to_ldb(struct ldb_context *ldb,
 						   TALLOC_CTX *mem_ctx,
 						   struct ldb_message_element *out)
 {
-	uint32_t i;
+	unsigned int i;
 
 	out->flags	= 0;
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
@@ -901,7 +901,7 @@ static WERROR _dsdb_syntax_OID_obj_drsuapi_to_ldb(struct ldb_context *ldb,
 						  TALLOC_CTX *mem_ctx,
 						  struct ldb_message_element *out)
 {
-	uint32_t i;
+	unsigned int i;
 
 	out->flags	= 0;
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
@@ -948,7 +948,7 @@ static WERROR _dsdb_syntax_OID_attr_drsuapi_to_ldb(struct ldb_context *ldb,
 						   TALLOC_CTX *mem_ctx,
 						   struct ldb_message_element *out)
 {
-	uint32_t i;
+	unsigned int i;
 
 	out->flags	= 0;
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
@@ -995,7 +995,7 @@ static WERROR _dsdb_syntax_OID_oid_drsuapi_to_ldb(struct ldb_context *ldb,
 						  TALLOC_CTX *mem_ctx,
 						  struct ldb_message_element *out)
 {
-	uint32_t i;
+	unsigned int i;
 
 	out->flags	= 0;
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
@@ -1036,7 +1036,7 @@ static WERROR _dsdb_syntax_auto_OID_ldb_to_drsuapi(struct ldb_context *ldb,
 						   TALLOC_CTX *mem_ctx,
 						  struct drsuapi_DsReplicaAttribute *out)
 {
-        uint32_t i;
+        unsigned int i;
         DATA_BLOB *blobs;
 
         out->attid= attr->attributeID_id;
@@ -1090,7 +1090,7 @@ static WERROR _dsdb_syntax_OID_obj_ldb_to_drsuapi(struct ldb_context *ldb,
 						  TALLOC_CTX *mem_ctx,
 						  struct drsuapi_DsReplicaAttribute *out)
 {
-        uint32_t i;
+        unsigned int i;
         DATA_BLOB *blobs;
 
         out->attid= attr->attributeID_id;
@@ -1132,7 +1132,7 @@ static WERROR _dsdb_syntax_OID_attr_ldb_to_drsuapi(struct ldb_context *ldb,
 						   TALLOC_CTX *mem_ctx,
 						   struct drsuapi_DsReplicaAttribute *out)
 {
-        uint32_t i;
+        unsigned int i;
         DATA_BLOB *blobs;
 
         out->attid= attr->attributeID_id;
@@ -1171,7 +1171,7 @@ static WERROR _dsdb_syntax_OID_oid_ldb_to_drsuapi(struct ldb_context *ldb,
 						  TALLOC_CTX *mem_ctx,
 						  struct drsuapi_DsReplicaAttribute *out)
 {
-	uint32_t i;
+	unsigned int i;
 	DATA_BLOB *blobs;
 
 	out->attid= attr->attributeID_id;
@@ -1331,7 +1331,7 @@ static WERROR dsdb_syntax_UNICODE_drsuapi_to_ldb(struct ldb_context *ldb,
 						 TALLOC_CTX *mem_ctx,
 						 struct ldb_message_element *out)
 {
-	uint32_t i;
+	unsigned int i;
 
 	out->flags	= 0;
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
@@ -1374,7 +1374,7 @@ static WERROR dsdb_syntax_UNICODE_ldb_to_drsuapi(struct ldb_context *ldb,
 						 TALLOC_CTX *mem_ctx,
 						 struct drsuapi_DsReplicaAttribute *out)
 {
-	uint32_t i;
+	unsigned int i;
 	DATA_BLOB *blobs;
 
 	if (attr->attributeID_id == 0xFFFFFFFF) {
@@ -1451,7 +1451,7 @@ static WERROR dsdb_syntax_UNICODE_validate_ldb(struct ldb_context *ldb,
 					       const struct ldb_message_element *in)
 {
 	WERROR status;
-	uint32_t i;
+	unsigned int i;
 
 	if (attr->attributeID_id == 0xFFFFFFFF) {
 		return WERR_FOOBAR;
@@ -1563,7 +1563,7 @@ static WERROR dsdb_syntax_DN_drsuapi_to_ldb(struct ldb_context *ldb,
 					    TALLOC_CTX *mem_ctx,
 					    struct ldb_message_element *out)
 {
-	uint32_t i;
+	unsigned int i;
 
 	out->flags	= 0;
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
@@ -1594,7 +1594,7 @@ static WERROR dsdb_syntax_DN_ldb_to_drsuapi(struct ldb_context *ldb,
 					    TALLOC_CTX *mem_ctx,
 					    struct drsuapi_DsReplicaAttribute *out)
 {
-	uint32_t i;
+	unsigned int i;
 	DATA_BLOB *blobs;
 
 	if (attr->attributeID_id == 0xFFFFFFFF) {
@@ -1769,7 +1769,7 @@ static WERROR dsdb_syntax_DN_validate_ldb(struct ldb_context *ldb,
 					  const struct dsdb_attribute *attr,
 					  const struct ldb_message_element *in)
 {
-	uint32_t i;
+	unsigned int i;
 
 	if (attr->attributeID_id == 0xFFFFFFFF) {
 		return WERR_FOOBAR;
@@ -1809,7 +1809,7 @@ static WERROR dsdb_syntax_DN_BINARY_drsuapi_to_ldb(struct ldb_context *ldb,
 						   TALLOC_CTX *mem_ctx,
 						   struct ldb_message_element *out)
 {
-	uint32_t i;
+	unsigned int i;
 	int ret;
 
 	out->flags	= 0;
@@ -1912,7 +1912,7 @@ static WERROR dsdb_syntax_DN_BINARY_ldb_to_drsuapi(struct ldb_context *ldb,
 						   TALLOC_CTX *mem_ctx,
 						   struct drsuapi_DsReplicaAttribute *out)
 {
-	uint32_t i;
+	unsigned int i;
 	DATA_BLOB *blobs;
 
 	if (attr->attributeID_id == 0xFFFFFFFF) {
@@ -1992,7 +1992,7 @@ static WERROR dsdb_syntax_DN_BINARY_validate_ldb(struct ldb_context *ldb,
 						 const struct dsdb_attribute *attr,
 						 const struct ldb_message_element *in)
 {
-	uint32_t i;
+	unsigned int i;
 
 	if (attr->attributeID_id == 0xFFFFFFFF) {
 		return WERR_FOOBAR;
@@ -2069,7 +2069,7 @@ static WERROR dsdb_syntax_DN_STRING_validate_ldb(struct ldb_context *ldb,
 						 const struct dsdb_attribute *attr,
 						 const struct ldb_message_element *in)
 {
-	uint32_t i;
+	unsigned int i;
 
 	if (attr->attributeID_id == 0xFFFFFFFF) {
 		return WERR_FOOBAR;
@@ -2118,7 +2118,7 @@ static WERROR dsdb_syntax_PRESENTATION_ADDRESS_drsuapi_to_ldb(struct ldb_context
 							      TALLOC_CTX *mem_ctx,
 							      struct ldb_message_element *out)
 {
-	uint32_t i;
+	unsigned int i;
 
 	out->flags	= 0;
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
@@ -2129,7 +2129,7 @@ static WERROR dsdb_syntax_PRESENTATION_ADDRESS_drsuapi_to_ldb(struct ldb_context
 	W_ERROR_HAVE_NO_MEMORY(out->values);
 
 	for (i=0; i < out->num_values; i++) {
-		uint32_t len;
+		size_t len;
 		char *str;
 
 		if (in->value_ctr.values[i].blob == NULL) {
@@ -2166,7 +2166,7 @@ static WERROR dsdb_syntax_PRESENTATION_ADDRESS_ldb_to_drsuapi(struct ldb_context
 							      TALLOC_CTX *mem_ctx,
 							      struct drsuapi_DsReplicaAttribute *out)
 {
-	uint32_t i;
+	unsigned int i;
 	DATA_BLOB *blobs;
 
 	if (attr->attributeID_id == 0xFFFFFFFF) {
@@ -2479,7 +2479,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 
 const struct dsdb_syntax *find_syntax_map_by_ad_oid(const char *ad_oid) 
 {
-	int i;
+	unsigned int i;
 	for (i=0; dsdb_syntaxes[i].ldap_oid; i++) {
 		if (strcasecmp(ad_oid, dsdb_syntaxes[i].attributeSyntax_oid) == 0) {
 			return &dsdb_syntaxes[i];
@@ -2490,7 +2490,7 @@ const struct dsdb_syntax *find_syntax_map_by_ad_oid(const char *ad_oid)
 
 const struct dsdb_syntax *find_syntax_map_by_ad_syntax(int oMSyntax) 
 {
-	int i;
+	unsigned int i;
 	for (i=0; dsdb_syntaxes[i].ldap_oid; i++) {
 		if (oMSyntax == dsdb_syntaxes[i].oMSyntax) {
 			return &dsdb_syntaxes[i];
@@ -2501,7 +2501,7 @@ const struct dsdb_syntax *find_syntax_map_by_ad_syntax(int oMSyntax)
 
 const struct dsdb_syntax *find_syntax_map_by_standard_oid(const char *standard_oid) 
 {
-	int i;
+	unsigned int i;
 	for (i=0; dsdb_syntaxes[i].ldap_oid; i++) {
 		if (strcasecmp(standard_oid, dsdb_syntaxes[i].ldap_oid) == 0) {
 			return &dsdb_syntaxes[i];
@@ -2511,7 +2511,7 @@ const struct dsdb_syntax *find_syntax_map_by_standard_oid(const char *standard_o
 }
 const struct dsdb_syntax *dsdb_syntax_for_attribute(const struct dsdb_attribute *attr)
 {
-	uint32_t i;
+	unsigned int i;
 
 	for (i=0; i < ARRAY_SIZE(dsdb_syntaxes); i++) {
 		if (attr->oMSyntax != dsdb_syntaxes[i].oMSyntax) continue;
