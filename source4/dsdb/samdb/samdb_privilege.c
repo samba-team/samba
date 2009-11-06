@@ -47,7 +47,8 @@ static NTSTATUS samdb_privilege_setup_sid(struct ldb_context *pdb, TALLOC_CTX *m
 	const char * const attrs[] = { "privilege", NULL };
 	struct ldb_message **res = NULL;
 	struct ldb_message_element *el;
-	int ret, i;
+	unsigned int i;
+	int ret;
 	char *sidstr;
 
 	sidstr = ldap_encode_ndr_dom_sid(mem_ctx, sid);
@@ -88,7 +89,7 @@ NTSTATUS samdb_privilege_setup(struct tevent_context *ev_ctx,
 {
 	struct ldb_context *pdb;
 	TALLOC_CTX *mem_ctx;
-	int i;
+	unsigned int i;
 	NTSTATUS status;
 
 	/* Shortcuts to prevent recursion and avoid lookups */
