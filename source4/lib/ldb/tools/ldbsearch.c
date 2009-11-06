@@ -54,15 +54,15 @@ struct search_context {
 	struct ldb_control **req_ctrls;
 
 	int sort;
-	int num_stored;
+	unsigned int num_stored;
 	struct ldb_message **store;
-	int refs_stored;
+	unsigned int refs_stored;
 	char **refs_store;
 
-	int entries;
-	int refs;
+	unsigned int entries;
+	unsigned int refs;
 
-	int pending;
+	unsigned int pending;
 	int status;
 };
 
@@ -240,7 +240,7 @@ again:
 		goto again;
 
 	if (sctx->sort && (sctx->num_stored != 0 || sctx->refs != 0)) {
-		int i;
+		unsigned int i;
 
 		if (sctx->num_stored) {
 			LDB_TYPESAFE_QSORT(sctx->store, sctx->num_stored, ldb, do_compare_msg);

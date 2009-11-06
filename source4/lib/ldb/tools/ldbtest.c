@@ -52,10 +52,10 @@ static double _end_timer(void)
 
 static void add_records(struct ldb_context *ldb,
 			struct ldb_dn *basedn,
-			int count)
+			unsigned int count)
 {
 	struct ldb_message msg;
-	int i;
+	unsigned int i;
 
 #if 0
         if (ldb_lock(ldb, "transaction") != 0) {
@@ -141,10 +141,10 @@ static void add_records(struct ldb_context *ldb,
 
 static void modify_records(struct ldb_context *ldb,
 			   struct ldb_dn *basedn,
-			   int count)
+			   unsigned int count)
 {
 	struct ldb_message msg;
-	int i;
+	unsigned int i;
 
 	for (i=0;i<count;i++) {
 		struct ldb_message_element el[3];
@@ -194,9 +194,9 @@ static void modify_records(struct ldb_context *ldb,
 
 static void delete_records(struct ldb_context *ldb,
 			   struct ldb_dn *basedn,
-			   int count)
+			   unsigned int count)
 {
-	int i;
+	unsigned int i;
 
 	for (i=0;i<count;i++) {
 		struct ldb_dn *dn;
@@ -217,9 +217,10 @@ static void delete_records(struct ldb_context *ldb,
 	printf("\n");
 }
 
-static void search_uid(struct ldb_context *ldb, struct ldb_dn *basedn, int nrecords, int nsearches)
+static void search_uid(struct ldb_context *ldb, struct ldb_dn *basedn,
+		       unsigned int nrecords, unsigned int nsearches)
 {
-	int i;
+	unsigned int i;
 
 	for (i=0;i<nsearches;i++) {
 		int uid = (i * 700 + 17) % (nrecords * 2);
@@ -250,7 +251,8 @@ static void search_uid(struct ldb_context *ldb, struct ldb_dn *basedn, int nreco
 	printf("\n");
 }
 
-static void start_test(struct ldb_context *ldb, int nrecords, int nsearches)
+static void start_test(struct ldb_context *ldb, unsigned int nrecords,
+		       unsigned int nsearches)
 {
 	struct ldb_dn *basedn;
 
@@ -411,7 +413,9 @@ int main(int argc, const char **argv)
 	printf("Testing with num-records=%d and num-searches=%d\n", 
 	       options->num_records, options->num_searches);
 
-	start_test(ldb, options->num_records, options->num_searches);
+	start_test(ldb,
+		   (unsigned int) options->num_records,
+		   (unsigned int) options->num_searches);
 
 	start_test_index(&ldb);
 

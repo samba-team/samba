@@ -43,7 +43,8 @@ static int dn_cmp(struct ldb_message **msg1, struct ldb_message **msg2)
 
 static int ldb_delete_recursive(struct ldb_context *ldb, struct ldb_dn *dn,struct ldb_control **req_ctrls)
 {
-	int ret, i, total=0;
+	int ret;
+	unsigned int i, total=0;
 	const char *attrs[] = { NULL };
 	struct ldb_result *res;
 	

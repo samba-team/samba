@@ -347,8 +347,8 @@ failed:
  */
 int handle_controls_reply(struct ldb_control **reply, struct ldb_control **request)
 {
-	int i, j;
-       	int ret = 0;
+	unsigned int i, j;
+	int ret = 0;
 
 	if (reply == NULL || request == NULL) return -1;
 	

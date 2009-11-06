@@ -88,10 +88,10 @@ static int modify_record(struct ldb_context *ldb,
 */
 static struct ldb_message *msg_find(struct ldb_context *ldb,
 				    struct ldb_message **msgs,
-				    int count,
+				    unsigned int count,
 				    struct ldb_dn *dn)
 {
-	int i;
+	unsigned int i;
 	for (i=0;i<count;i++) {
 		if (ldb_dn_compare(dn, msgs[i]->dn) == 0) {
 			return msgs[i];
@@ -104,10 +104,10 @@ static struct ldb_message *msg_find(struct ldb_context *ldb,
   merge the changes in msgs2 into the messages from msgs1
 */
 static int merge_edits(struct ldb_context *ldb,
-		       struct ldb_message **msgs1, int count1,
-		       struct ldb_message **msgs2, int count2)
+		       struct ldb_message **msgs1, unsigned int count1,
+		       struct ldb_message **msgs2, unsigned int count2)
 {
-	int i;
+	unsigned int i;
 	struct ldb_message *msg;
 	int ret = 0;
 	int adds=0, modifies=0, deletes=0;
@@ -171,9 +171,9 @@ static int merge_edits(struct ldb_context *ldb,
   save a set of messages as ldif to a file
 */
 static int save_ldif(struct ldb_context *ldb, 
-		     FILE *f, struct ldb_message **msgs, int count)
+		     FILE *f, struct ldb_message **msgs, unsigned int count)
 {
-	int i;
+	unsigned int i;
 
 	fprintf(f, "# editing %d records\n", count);
 
@@ -194,8 +194,8 @@ static int save_ldif(struct ldb_context *ldb,
 /*
   edit the ldb search results in msgs using the user selected editor
 */
-static int do_edit(struct ldb_context *ldb, struct ldb_message **msgs1, int count1,
-		   const char *editor)
+static int do_edit(struct ldb_context *ldb, struct ldb_message **msgs1,
+		   unsigned int count1, const char *editor)
 {
 	int fd, ret;
 	FILE *f;
@@ -203,7 +203,7 @@ static int do_edit(struct ldb_context *ldb, struct ldb_message **msgs1, int coun
 	char *cmd;
 	struct ldb_ldif *ldif;
 	struct ldb_message **msgs2 = NULL;
-	int count2 = 0;
+	unsigned int count2 = 0;
 
 	/* write out the original set of messages to a temporary
 	   file */

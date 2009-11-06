@@ -35,7 +35,7 @@
 #include "tools/cmdline.h"
 #include "ldbutil.h"
 
-static int failures;
+static unsigned int failures;
 static struct ldb_cmdline *options;
 
 static void usage(void)
@@ -50,7 +50,7 @@ static void usage(void)
 /*
   add records from an opened file
 */
-static int process_file(struct ldb_context *ldb, FILE *f, int *count)
+static int process_file(struct ldb_context *ldb, FILE *f, unsigned int *count)
 {
 	struct ldb_ldif *ldif;
 	int ret = LDB_SUCCESS;
@@ -93,7 +93,8 @@ static int process_file(struct ldb_context *ldb, FILE *f, int *count)
 int main(int argc, const char **argv)
 {
 	struct ldb_context *ldb;
-	int i, ret=0, count=0;
+	unsigned int i, count = 0;
+	int ret=0;
 
 	ldb = ldb_init(NULL, NULL);
 
