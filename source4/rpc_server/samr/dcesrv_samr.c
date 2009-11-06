@@ -4394,7 +4394,6 @@ static NTSTATUS dcesrv_samr_ValidatePassword(struct dcesrv_call_state *dce_call,
 		(*r->out.rep)->ctr2.status = res;
 	break;
 	case NetValidatePasswordReset:
-printf("Length/Size: %i|%i\n", r->in.req->req3.password.length, r->in.req->req3.password.size);
 		password = data_blob_const(r->in.req->req3.password.string,
 					   r->in.req->req3.password.length);
 		res = samdb_check_password(&password,
