@@ -1239,13 +1239,13 @@ def provision(setup_dir, message, session_info,
                                          lp=lp, credentials=credentials, 
                                          names=names,
                                          message=message, hostname=hostname,
-                                         root=root, schema=schema,
+                                         schema=schema,
                                          ldapadminpass=ldapadminpass,
-                                         ldap_backend_extra_port=ldap_backend_extra_port,
-                                         ol_mmr_urls=ol_mmr_urls, 
                                          slapd_path=slapd_path,
-                                         setup_ds_path=setup_ds_path,
+                                         ldap_backend_extra_port=ldap_backend_extra_port,
                                          ldap_dryrun_mode=ldap_dryrun_mode,
+                                         root=root,
+                                         setup_ds_path=setup_ds_path,
                                          domainsid=domainsid)
     elif backend_type == "openldap":
         provision_backend = OpenLDAPBackend(backend_type,
@@ -1253,28 +1253,19 @@ def provision(setup_dir, message, session_info,
                                          lp=lp, credentials=credentials, 
                                          names=names,
                                          message=message, hostname=hostname,
-                                         root=root, schema=schema,
+                                         schema=schema,
                                          ldapadminpass=ldapadminpass,
-                                         ldap_backend_extra_port=ldap_backend_extra_port,
-                                         ol_mmr_urls=ol_mmr_urls, 
                                          slapd_path=slapd_path,
-                                         setup_ds_path=setup_ds_path,
+                                         ldap_backend_extra_port=ldap_backend_extra_port,
                                          ldap_dryrun_mode=ldap_dryrun_mode,
-                                         domainsid=domainsid)
+                                         ol_mmr_urls=ol_mmr_urls, 
+                                         nosync=nosync)
     elif backend_type == "ldb" or backend_type == "existing":
         provision_backend = ProvisionBackend(backend_type,
                                          paths=paths, setup_path=setup_path,
                                          lp=lp, credentials=credentials, 
                                          names=names,
-                                         message=message, hostname=hostname,
-                                         root=root, schema=schema,
-                                         ldapadminpass=ldapadminpass,
-                                         ldap_backend_extra_port=ldap_backend_extra_port,
-                                         ol_mmr_urls=ol_mmr_urls, 
-                                         slapd_path=slapd_path,
-                                         setup_ds_path=setup_ds_path,
-                                         ldap_dryrun_mode=ldap_dryrun_mode,
-                                         domainsid=domainsid)
+                                         message=message)
     else:
         raise ProvisioningError("Unknown LDAP backend type selected")
 
