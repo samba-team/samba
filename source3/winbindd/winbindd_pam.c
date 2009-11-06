@@ -986,7 +986,9 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 #ifdef HAVE_KRB5
 		if ((state->request->flags & WBFLAG_PAM_KRB5) &&
 		    ((tdc_domain = wcache_tdc_fetch_domain(state->mem_ctx, name_domain)) != NULL) &&
-		    (tdc_domain->trust_type & NETR_TRUST_TYPE_UPLEVEL)) {
+		    ((tdc_domain->trust_type & NETR_TRUST_TYPE_UPLEVEL) ||
+		    /* used to cope with the case winbindd starting without network. */
+		    !strequal(tdc_domain->domain_name, tdc_domain->dns_name))) {
 
 			uid_t uid = -1;
 			const char *cc = NULL;
