@@ -255,7 +255,7 @@ static char *parsetree_to_sql(struct ldb_module *module,
 	char *child, *tmp;
 	char *ret = NULL;
 	char *attr;
-	int i;
+	unsigned int i;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -667,7 +667,8 @@ static int lsqlite3_search_callback(void *result, int col_num, char **cols, char
 	struct lsql_context *ac;
 	struct ldb_message *msg;
 	long long eid;
-	int i, ret;
+	unsigned int i;
+	int ret;
 
 	ac = talloc_get_type(result, struct lsql_context);
 	ldb = ldb_module_get_ctx(ac->module);
@@ -986,7 +987,7 @@ static int lsql_add(struct lsql_context *ctx)
 	char *dn, *ndn;
 	char *errmsg;
 	char *query;
-	int i;
+	unsigned int i;
 	int ret;
 
 	ldb = ldb_module_get_ctx(module);
@@ -1043,7 +1044,7 @@ static int lsql_add(struct lsql_context *ctx)
 		const struct ldb_message_element *el = &msg->elements[i];
 		const struct ldb_schema_attribute *a;
 		char *attr;
-		int j;
+		unsigned int j;
 
 		/* Get a case-folded copy of the attribute name */
 		attr = ldb_attr_casefold(ctx, el->name);
@@ -1110,9 +1111,9 @@ static int lsql_modify(struct lsql_context *ctx)
 	struct lsqlite3_private *lsqlite3;
 	struct ldb_context *ldb;
 	struct ldb_message *msg = req->op.mod.message;
-        long long eid;
+	long long eid;
 	char *errmsg;
-	int i;
+	unsigned int i;
 	int ret;
 
 	ldb = ldb_module_get_ctx(module);
@@ -1136,7 +1137,7 @@ static int lsql_modify(struct lsql_context *ctx)
 		int flags = el->flags & LDB_FLAG_MOD_MASK;
 		char *attr;
 		char *mod;
-		int j;
+		unsigned int j;
 
 		if (ldb_attr_cmp(el->name, "distinguishedName") == 0) {
 			ldb_asprintf_errstring(ldb, "it is not permitted to perform a modify on 'distinguishedName' (use rename instead): %s",
@@ -1894,7 +1895,8 @@ static int lsqlite3_connect(struct ldb_context *ldb,
 {
 	struct ldb_module *module;
 	struct lsqlite3_private *lsqlite3;
-        int i, ret;
+	unsigned int i;
+	int ret;
 
 	module = ldb_module_new(ldb, ldb, "ldb_sqlite3 backend", &lsqlite3_ops);
 	if (!module) return LDB_ERR_OPERATIONS_ERROR;
