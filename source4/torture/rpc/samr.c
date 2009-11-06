@@ -6799,11 +6799,6 @@ bool torture_rpc_samr(struct torture_context *torture)
 		return false;
 	}
 
-
-	if (torture_setting_bool(torture, "dangerous", false)) {
-		ret &= test_samr_ValidatePassword(p, torture);
-	}
-
 	ret &= test_Connect(p, torture, &handle);
 
 	if (!torture_setting_bool(torture, "samba3", false)) {
@@ -6869,6 +6864,8 @@ bool torture_rpc_samr_passwords(struct torture_context *torture)
 	ret &= test_EnumDomains(p, torture, &handle, TORTURE_SAMR_PASSWORDS, NULL);
 
 	ret &= test_samr_handle_Close(p, torture, &handle);
+
+	ret &= test_samr_ValidatePassword(p, torture);
 
 	return ret;
 }
