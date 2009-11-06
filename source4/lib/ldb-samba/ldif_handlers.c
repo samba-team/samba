@@ -594,7 +594,7 @@ static int ldif_write_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 	struct prefixMapBlob *blob;
 	enum ndr_err_code ndr_err;
 	char *string;
-	uint32_t i;
+	unsigned int i;
 
 	if (ldb_get_flags(ldb) & LDB_FLG_SHOW_BINARY) {
 		int err;
@@ -1075,7 +1075,7 @@ static const struct {
 
 const struct ldb_schema_syntax *ldb_samba_syntax_by_name(struct ldb_context *ldb, const char *name)
 {
-	uint32_t j;
+	unsigned int j;
 	const struct ldb_schema_syntax *s = NULL;
 	
 	for (j=0; j < ARRAY_SIZE(samba_syntaxes); j++) {
@@ -1089,7 +1089,7 @@ const struct ldb_schema_syntax *ldb_samba_syntax_by_name(struct ldb_context *ldb
 
 const struct ldb_schema_syntax *ldb_samba_syntax_by_lDAPDisplayName(struct ldb_context *ldb, const char *name)
 {
-	uint32_t j;
+	unsigned int j;
 	const struct ldb_schema_syntax *s = NULL;
 
 	for (j=0; j < ARRAY_SIZE(samba_attributes); j++) {
@@ -1107,7 +1107,7 @@ const struct ldb_schema_syntax *ldb_samba_syntax_by_lDAPDisplayName(struct ldb_c
 */
 int ldb_register_samba_handlers(struct ldb_context *ldb)
 {
-	uint32_t i;
+	unsigned int i;
 
 	for (i=0; i < ARRAY_SIZE(samba_attributes); i++) {
 		int ret;
