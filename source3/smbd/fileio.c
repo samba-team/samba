@@ -171,15 +171,12 @@ static int wcp_file_size_change(files_struct *fsp)
 	return ret;
 }
 
-static void update_write_time_handler(struct event_context *ctx,
+void update_write_time_handler(struct event_context *ctx,
 				      struct timed_event *te,
 				      struct timeval now,
 				      void *private_data)
 {
 	files_struct *fsp = (files_struct *)private_data;
-
-	/* Remove the timed event handler. */
-	TALLOC_FREE(fsp->update_write_time_event);
 
 	DEBUG(5, ("Update write time on %s\n", fsp_str_dbg(fsp)));
 
@@ -189,6 +186,9 @@ static void update_write_time_handler(struct event_context *ctx,
 	/* And notify. */
         notify_fname(fsp->conn, NOTIFY_ACTION_MODIFIED,
                      FILE_NOTIFY_CHANGE_LAST_WRITE, fsp->fsp_name->base_name);
+
+	/* Remove the timed event handler. */
+	TALLOC_FREE(fsp->update_write_time_event);
 }
 
 /*********************************************************
