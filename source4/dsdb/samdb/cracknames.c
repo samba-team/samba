@@ -80,7 +80,7 @@ static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, stru
 						      const char *alias_from,
 						      char **alias_to)
 {
-	int i;
+	unsigned int i;
 	int ret;
 	struct ldb_result *res;
 	struct ldb_message_element *spnmappings;
@@ -374,7 +374,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	switch (format_offered) {
 	case DRSUAPI_DS_NAME_FORMAT_UNKNOWN:
 	{
-		int i;
+		unsigned int i;
 		enum drsuapi_DsNameFormat formats[] = {
 			DRSUAPI_DS_NAME_FORMAT_FQDN_1779, DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL,
 			DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT, DRSUAPI_DS_NAME_FORMAT_CANONICAL,
