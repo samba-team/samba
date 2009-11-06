@@ -40,7 +40,7 @@ WERROR dreplsrv_load_partitions(struct dreplsrv_service *s)
 	struct ldb_result *r;
 	struct ldb_message_element *el;
 	static const char *attrs[] = { "hasMasterNCs", NULL };
-	uint32_t i;
+	unsigned int i;
 	int ret;
 
 	basedn = samdb_ntds_settings_dn(s->samdb);
@@ -195,7 +195,7 @@ static WERROR udv_convert(TALLOC_CTX *mem_ctx,
 			  const struct replUpToDateVectorCtr2 *udv,
 			  struct drsuapi_DsReplicaCursorCtrEx *udv_ex)
 {
-	int i;
+	uint32_t i;
 
 	udv_ex->version = 2;
 	udv_ex->reserved1 = 0;
@@ -220,7 +220,7 @@ static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 	struct dom_sid *nc_sid;
 	struct ldb_message_element *orf_el = NULL;
 	struct ldb_result *r;
-	uint32_t i;
+	unsigned int i;
 	int ret;
 	TALLOC_CTX *mem_ctx = talloc_new(p);
 	static const char *attrs[] = {

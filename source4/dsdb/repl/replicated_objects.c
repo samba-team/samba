@@ -115,7 +115,7 @@ static WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 		struct drsuapi_DsReplicaMetaData *d;
 		struct replPropertyMetaData1 *m;
 		struct ldb_message_element *e;
-		int j;
+		uint32_t j;
 
 		a = &in->object.attribute_ctr.attributes[i];
 		d = &in->meta_data_ctr->meta_data[i];
@@ -342,7 +342,7 @@ static WERROR dsdb_convert_object(struct ldb_context *ldb,
 				  struct ldb_message **_msg)
 {
 	WERROR status;
-	uint32_t i;
+	unsigned int i;
 	struct ldb_message *msg;
 
 	if (!in->object.identifier) {

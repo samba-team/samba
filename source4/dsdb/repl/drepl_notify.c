@@ -170,7 +170,7 @@ static void dreplsrv_notify_del_repsTo(struct dreplsrv_notify_operation *op)
 	struct repsFromToBlob *reps;
 	WERROR werr;
 	struct dreplsrv_service *s = op->service;
-	int i;
+	uint32_t i;
 
 	werr = dsdb_loadreps(s->samdb, op, op->source_dsa->partition->dn, "repsTo", &reps, &count);
 	if (!W_ERROR_IS_OK(werr)) {
@@ -324,7 +324,8 @@ static WERROR dreplsrv_notify_check(struct dreplsrv_service *s,
 	WERROR werr;
 	uint64_t uSNHighest;
 	uint64_t uSNUrgent;
-	int ret, i;
+	uint32_t i;
+	int ret;
 
 	werr = dsdb_loadreps(s->samdb, mem_ctx, p->dn, "repsTo", &reps, &count);
 	if (count == 0) {
