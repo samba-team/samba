@@ -366,7 +366,7 @@ static krb5_error_code smb_krb5_get_tkt_from_creds(krb5_creds *creds,
 	if (!context) {
 		return ret;
 	}
-	krb5_free_data_contents(context, &outbuf);
+	kerberos_free_data_contents(context, &outbuf);
 	if (auth_context) {
 		krb5_auth_con_free(context, auth_context);
 	}
