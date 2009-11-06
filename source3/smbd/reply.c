@@ -4646,7 +4646,7 @@ void reply_close(struct smb_request *req)
 		 */
 
 		t = srv_make_unix_date3(req->vwv+1);
-		set_close_write_time(NULL, fsp, convert_time_t_to_timespec(t));
+		set_close_write_time(fsp, convert_time_t_to_timespec(t));
 
 		/*
 		 * close_file() returns the unix errno if an error
@@ -4723,7 +4723,7 @@ void reply_writeclose(struct smb_request *req)
 
 	nwritten = write_file(req,fsp,data,startpos,numtowrite);
 
-	set_close_write_time(NULL, fsp, mtime);
+	set_close_write_time(fsp, mtime);
 
 	/*
 	 * More insanity. W2K only closes the file if writelen > 0.
@@ -6691,7 +6691,7 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 	close_file(NULL, fsp1, NORMAL_CLOSE);
 
 	/* Ensure the modtime is set correctly on the destination file. */
-	set_close_write_time(NULL, fsp2, smb_fname_src->st.st_ex_mtime);
+	set_close_write_time(fsp2, smb_fname_src->st.st_ex_mtime);
 
 	/*
 	 * As we are opening fsp1 read-only we only expect
