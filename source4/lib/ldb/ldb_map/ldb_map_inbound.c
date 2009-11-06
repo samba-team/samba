@@ -36,7 +36,7 @@
 static struct ldb_message_element *ldb_msg_el_map_local(struct ldb_module *module, void *mem_ctx, const struct ldb_map_attribute *map, const struct ldb_message_element *old)
 {
 	struct ldb_message_element *el;
-	int i;
+	unsigned int i;
 
 	el = talloc_zero(mem_ctx, struct ldb_message_element);
 	if (el == NULL) {
@@ -141,7 +141,7 @@ static bool ldb_msg_check_remote(struct ldb_module *module, const struct ldb_mes
 {
 	const struct ldb_map_context *data = map_get_context(module);
 	bool ret;
-	int i;
+	unsigned int i;
 
 	for (i = 0; i < msg->num_elements; i++) {
 		ret = map_attr_check_remote(data, msg->elements[i].name);
@@ -159,7 +159,8 @@ static int ldb_msg_partition(struct ldb_module *module, struct ldb_message *loca
 {
 	/* const char * const names[]; */
 	struct ldb_context *ldb;
-	int i, ret;
+	unsigned int i;
+	int ret;
 
 	ldb = ldb_module_get_ctx(module);
 

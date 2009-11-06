@@ -256,7 +256,7 @@ int ldb_next_remote_request(struct ldb_module *module, struct ldb_request *reque
 /* Find an objectClass mapping by the local name. */
 static const struct ldb_map_objectclass *map_objectclass_find_local(const struct ldb_map_context *data, const char *name)
 {
-	int i;
+	unsigned int i;
 
 	for (i = 0; data->objectclass_maps && data->objectclass_maps[i].local_name; i++) {
 		if (ldb_attr_cmp(data->objectclass_maps[i].local_name, name) == 0) {
@@ -270,7 +270,7 @@ static const struct ldb_map_objectclass *map_objectclass_find_local(const struct
 /* Find an objectClass mapping by the remote name. */
 static const struct ldb_map_objectclass *map_objectclass_find_remote(const struct ldb_map_context *data, const char *name)
 {
-	int i;
+	unsigned int i;
 
 	for (i = 0; data->objectclass_maps && data->objectclass_maps[i].remote_name; i++) {
 		if (ldb_attr_cmp(data->objectclass_maps[i].remote_name, name) == 0) {
@@ -284,7 +284,7 @@ static const struct ldb_map_objectclass *map_objectclass_find_remote(const struc
 /* Find an attribute mapping by the local name. */
 const struct ldb_map_attribute *map_attr_find_local(const struct ldb_map_context *data, const char *name)
 {
-	int i;
+	unsigned int i;
 
 	for (i = 0; data->attribute_maps[i].local_name; i++) {
 		if (ldb_attr_cmp(data->attribute_maps[i].local_name, name) == 0) {
@@ -305,7 +305,7 @@ const struct ldb_map_attribute *map_attr_find_remote(const struct ldb_map_contex
 {
 	const struct ldb_map_attribute *map;
 	const struct ldb_map_attribute *wildcard = NULL;
-	int i, j;
+	unsigned int i, j;
 
 	for (i = 0; data->attribute_maps[i].local_name; i++) {
 		map = &data->attribute_maps[i];
@@ -402,7 +402,7 @@ const char *map_attr_map_remote(void *mem_ctx, const struct ldb_map_attribute *m
 int map_attrs_merge(struct ldb_module *module, void *mem_ctx, 
 		    const char ***attrs, const char * const *more_attrs)
 {
-	int i, j, k;
+	unsigned int i, j, k;
 
 	for (i = 0; *attrs && (*attrs)[i]; i++) /* noop */ ;
 	for (j = 0; more_attrs && more_attrs[j]; j++) /* noop */ ;
@@ -714,7 +714,7 @@ static void map_objectclass_generate_remote(struct ldb_module *module, const cha
 	struct ldb_message_element *el, *oc;
 	struct ldb_val val;
 	bool found_extensibleObject = false;
-	int i;
+	unsigned int i;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -789,7 +789,7 @@ static struct ldb_message_element *map_objectclass_generate_local(struct ldb_mod
 	struct ldb_context *ldb;
 	struct ldb_message_element *el, *oc;
 	struct ldb_val val;
-	int i;
+	unsigned int i;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -1043,7 +1043,7 @@ static int map_init_maps(struct ldb_module *module, struct ldb_map_context *data
 			 const struct ldb_map_objectclass *ocls, 
 			 const char * const *wildcard_attributes)
 {
-	int i, j, last;
+	unsigned int i, j, last;
 	last = 0;
 
 	/* Count specified attribute maps */
