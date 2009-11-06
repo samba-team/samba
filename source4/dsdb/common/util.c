@@ -1590,6 +1590,7 @@ enum samr_ValidationStatus samdb_check_password(const DATA_BLOB *password,
 
 	/* checks the password complexity */
 	if (((pwdProperties & DOMAIN_PASSWORD_COMPLEX) != 0)
+			&& (password->data != NULL)
 			&& (!check_password_quality((const char *) password->data)))
 		return SAMR_VALIDATION_STATUS_NOT_COMPLEX_ENOUGH;
 
