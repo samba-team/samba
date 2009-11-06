@@ -65,24 +65,6 @@ static krb5_error_code ads_krb5_get_fwd_ticket( krb5_context context,
 	return ret;
 }
 
-krb5_error_code smb_krb5_parse_name_flags(krb5_context context,
-					  const char *name, /* in unix charset */
-					  int flags,
-					  krb5_principal *principal)
-{
-	krb5_error_code ret;
-	char *utf8_name;
-	size_t converted_size;
-
-	if (!push_utf8_talloc(talloc_tos(), &utf8_name, name, &converted_size)) {
-		return ENOMEM;
-	}
-
-	ret = krb5_parse_name_flags(context, utf8_name, flags, principal);
-	TALLOC_FREE(utf8_name);
-	return ret;
-}
-
 #ifdef HAVE_KRB5_PARSE_NAME_NOREALM
 /**************************************************************
  krb5_parse_name_norealm that takes a UNIX charset.
