@@ -4366,6 +4366,7 @@ static NTSTATUS dcesrv_samr_ValidatePassword(struct dcesrv_call_state *dce_call,
 					     struct samr_ValidatePassword *r)
 {
 	struct samr_GetDomPwInfo r2;
+	struct samr_PwInfo pwInfo;
 	DATA_BLOB password;
 	enum samr_ValidationStatus res;
 	NTSTATUS status;
@@ -4373,6 +4374,7 @@ static NTSTATUS dcesrv_samr_ValidatePassword(struct dcesrv_call_state *dce_call,
 	(*r->out.rep) = talloc_zero(mem_ctx, union samr_ValidatePasswordRep);
 
 	r2.in.domain_name = NULL;
+	r2.out.info = &pwInfo;
 	status = dcesrv_samr_GetDomPwInfo(dce_call, mem_ctx, &r2);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -4389,8 +4391,8 @@ static NTSTATUS dcesrv_samr_ValidatePassword(struct dcesrv_call_state *dce_call,
 		res = samdb_check_password(mem_ctx,
 					   dce_call->conn->dce_ctx->lp_ctx,
 					   &password,
-					   r2.out.info->password_properties,
-					   r2.out.info->min_password_length);
+					   pwInfo.password_properties,
+					   pwInfo.min_password_length);
 		(*r->out.rep)->ctr2.status = res;
 	break;
 	case NetValidatePasswordReset:
@@ -4399,8 +4401,8 @@ static NTSTATUS dcesrv_samr_ValidatePassword(struct dcesrv_call_state *dce_call,
 		res = samdb_check_password(mem_ctx,
 					   dce_call->conn->dce_ctx->lp_ctx,
 					   &password,
-					   r2.out.info->password_properties,
-					   r2.out.info->min_password_length);
+					   pwInfo.password_properties,
+					   pwInfo.min_password_length);
 		(*r->out.rep)->ctr3.status = res;
 	break;
 	}
