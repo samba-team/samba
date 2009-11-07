@@ -138,8 +138,9 @@ static PyObject *py_messaging_send(PyObject *self, PyObject *args, PyObject *kwa
 	const char *kwnames[] = { "target", "msg_type", "data", NULL };
 	int length;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "Ois#|:send", 
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "Ois#:send", 
 		discard_const_p(char *, kwnames), &target, &msg_type, &data.data, &length)) {
+
 		return NULL;
 	}
 
@@ -176,7 +177,7 @@ static PyObject *py_messaging_register(PyObject *self, PyObject *args, PyObject 
 	NTSTATUS status;
 	const char *kwnames[] = { "callback", "msg_type", NULL };
 	
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|i:send", 
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|i:register", 
 		discard_const_p(char *, kwnames), &callback, &msg_type)) {
 		return NULL;
 	}
@@ -207,7 +208,7 @@ static PyObject *py_messaging_deregister(PyObject *self, PyObject *args, PyObjec
 	PyObject *callback;
 	const char *kwnames[] = { "callback", "msg_type", NULL };
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|i:send", 
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|i:deregister",
 		discard_const_p(char *, kwnames), &callback, &msg_type)) {
 		return NULL;
 	}
@@ -226,7 +227,7 @@ static PyObject *py_messaging_add_name(PyObject *self, PyObject *args, PyObject 
 	char *name;
 	const char *kwnames[] = { "name", NULL };
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|:send", 
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|:add_name", 
 		discard_const_p(char *, kwnames), &name)) {
 		return NULL;
 	}
@@ -247,7 +248,7 @@ static PyObject *py_messaging_remove_name(PyObject *self, PyObject *args, PyObje
 	char *name;
 	const char *kwnames[] = { "name", NULL };
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|:send", 
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|:remove_name",
 		discard_const_p(char *, kwnames), &name)) {
 		return NULL;
 	}

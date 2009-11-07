@@ -52,6 +52,6 @@ class MessagingTests(TestCase):
         client_ctx = self.get_context((0, 2))
         msg_pong = client_ctx.register(pong_callback)
 
-        client_ctx.send((0,1), msg_ping, "testing")
-        client_ctx.send((0,1), msg_ping, "")
+        client_ctx.send((0, 1), msg_ping, "testing")
+        client_ctx.send((0, 1), msg_ping, "")
 
