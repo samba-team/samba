@@ -563,9 +563,8 @@ struct samr_Password *samdb_result_hash(TALLOC_CTX *mem_ctx, const struct ldb_me
 uint_t samdb_result_hashes(TALLOC_CTX *mem_ctx, const struct ldb_message *msg, 
 			   const char *attr, struct samr_Password **hashes)
 {
-	uint_t count = 0;
+	uint_t count, i;
 	const struct ldb_val *val = ldb_msg_find_ldb_val(msg, attr);
-	int i;
 
 	*hashes = NULL;
 	if (!val) {
