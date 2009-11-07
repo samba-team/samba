@@ -149,11 +149,6 @@ struct dsdb_dn *dsdb_dn_parse(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	p1 = p2+1;
 	len--;
 		
-	if ((blen % 2 != 0)) {
-		DEBUG(10, (__location__ ": blen=%u - not an even number\n", (unsigned)blen));
-		goto failed;
-	}
-		
 	if (blen >= len) {
 		DEBUG(10, (__location__ ": blen=%u len=%u\n", (unsigned)blen, (unsigned)len));
 		goto failed;
@@ -169,6 +164,11 @@ struct dsdb_dn *dsdb_dn_parse(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 		
 	switch (dn_format) {
 	case DSDB_BINARY_DN:
+		if ((blen % 2 != 0)) {
+			DEBUG(10, (__location__ ": blen=%u - not an even number\n", (unsigned)blen));
+			goto failed;
+		}
+		
 		if (blen >= 2) {
 			bval.length = (blen/2)+1;
 			bval.data = talloc_size(tmp_ctx, bval.length);
