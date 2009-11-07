@@ -1722,7 +1722,8 @@ static NTSTATUS predict_share_conflict(uint32_t sa1, uint32_t am1, uint32_t sa2,
   a denytest for ntcreatex
  */
 static bool torture_ntdenytest(struct torture_context *tctx, 
-							   struct smbcli_state *cli1, struct smbcli_state *cli2, int client)
+			       struct smbcli_state *cli1,
+			       struct smbcli_state *cli2, int client)
 {
 	const struct bit_value share_access_bits[] = {
 		{ NTCREATEX_SHARE_ACCESS_READ,   "S_R" },
@@ -2110,7 +2111,7 @@ static bool createx_make_file(struct torture_context *tctx,
 	    .share_access = 0,
 	    .open_disposition = NTCREATEX_DISP_CREATE,
 	    .create_options = 0,
-	    .fname = fname,
+	    .fname = fname
 	);
 	status = smb_raw_open(tree, mem_ctx, &open_parms);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -2132,7 +2133,7 @@ static void createx_fill_dir(union smb_open *open_parms, int accessmode,
 	    .share_access = sharemode,
 	    .open_disposition = NTCREATEX_DISP_OPEN_IF,
 	    .create_options = NTCREATEX_OPTIONS_DIRECTORY,
-	    .fname = fname,
+	    .fname = fname
 	);
 }
 
@@ -2147,7 +2148,7 @@ static void createx_fill_file(union smb_open *open_parms, int accessmode,
 	    .open_disposition = NTCREATEX_DISP_OPEN_IF,
 	    .create_options = 0,
 	    .fname = fname,
-            .root_fid = { .fnum = 0 },
+            .root_fid = { .fnum = 0 }
 	);
 }
 
@@ -2170,7 +2171,7 @@ static bool createx_test_dir(struct torture_context *tctx,
 	    .share_access = 0,
 	    .open_disposition = NTCREATEX_DISP_CREATE,
 	    .create_options = 0,
-	    .fname = CREATEX_NAME "\\" KNOWN,
+	    .fname = CREATEX_NAME "\\" KNOWN
 	);
 	status = smb_raw_open(tree, mem_ctx, &open_parms);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -2187,7 +2188,7 @@ static bool createx_test_dir(struct torture_context *tctx,
 	    .open_disposition = NTCREATEX_DISP_CREATE,
 	    .create_options = 0,
 	    .fname = CHILD,
-	    .root_fid = { .fnum = fnum },
+	    .root_fid = { .fnum = fnum }
 	);
 
 	result[CXD_DIR_CREATE_CHILD] =
@@ -2203,7 +2204,7 @@ static bool createx_test_dir(struct torture_context *tctx,
 	    .open_disposition = NTCREATEX_DISP_OPEN,
 	    .create_options = 0,
 	    .fname = KNOWN,
-	    .root_fid = {.fnum = fnum},
+	    .root_fid = {.fnum = fnum}
 	);
 
 	result[CXD_DIR_TRAVERSE] =
@@ -2221,10 +2222,11 @@ static bool createx_test_dir(struct torture_context *tctx,
 static bool createx_test_file(struct torture_context *tctx,
     struct smbcli_tree *tree, int fnum, TALLOC_CTX *mem_ctx, NTSTATUS *result)
 {
-	union smb_read rd = {};
-	union smb_write wr = {};
+	union smb_read rd;
+	union smb_write wr;
 	char buf[256] = "";
 
+	memset(&rd, 0, sizeof(rd));
 	rd.readx.level = RAW_READ_READX;
 	rd.readx.in.file.fnum = fnum;
 	rd.readx.in.mincnt = sizeof(buf);
@@ -2233,6 +2235,7 @@ static bool createx_test_file(struct torture_context *tctx,
 
 	result[CXD_FILE_READ] = smb_raw_read(tree, &rd);
 
+	memset(&wr, 0, sizeof(wr));
 	wr.writex.level = RAW_WRITE_WRITEX;
 	wr.writex.in.file.fnum = fnum;
 	wr.writex.in.count = sizeof(buf);
@@ -2661,7 +2664,7 @@ bool torture_maximum_allowed(struct torture_context *tctx,
     struct smbcli_state *cli)
 {
 	struct security_descriptor *sd, *sd_orig;
-	union smb_open io = {};
+	union smb_open io;
 	static TALLOC_CTX *mem_ctx;
 	int fnum, i;
 	bool ret = true;
@@ -2686,6 +2689,7 @@ bool torture_maximum_allowed(struct torture_context *tctx,
 	smbcli_unlink(cli->tree, MAXIMUM_ALLOWED_FILE);
 
 	/* create initial file with restrictive SD */
+	memset(&io, 0, sizeof(io));
 	io.generic.level = RAW_OPEN_NTTRANS_CREATE;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
