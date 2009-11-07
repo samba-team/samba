@@ -260,6 +260,7 @@ static NTSTATUS ipc_open(struct ntvfs_module_context *ntvfs,
 
 	switch (oi->generic.level) {
 	case RAW_OPEN_NTCREATEX:
+	case RAW_OPEN_NTTRANS_CREATE:
 		fname = oi->ntcreatex.in.fname;
 		break;
 	case RAW_OPEN_OPENX:
@@ -269,8 +270,7 @@ static NTSTATUS ipc_open(struct ntvfs_module_context *ntvfs,
 		fname = oi->smb2.in.fname;
 		break;
 	default:
-		status = NT_STATUS_NOT_SUPPORTED;
-		break;
+		return NT_STATUS_NOT_SUPPORTED;
 	}
 
 	directory = talloc_asprintf(req, "%s/np",
