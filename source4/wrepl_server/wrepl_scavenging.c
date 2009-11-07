@@ -52,7 +52,7 @@ static NTSTATUS wreplsrv_scavenging_owned_records(struct wreplsrv_service *servi
 	struct ldb_result *res = NULL;
 	const char *owner_filter;
 	const char *filter;
-	uint32_t i;
+	unsigned int i;
 	int ret;
 	time_t now = time(NULL);
 	const char *now_timestr;
@@ -206,7 +206,7 @@ static NTSTATUS wreplsrv_scavenging_replica_non_active_records(struct wreplsrv_s
 	struct ldb_result *res = NULL;
 	const char *owner_filter;
 	const char *filter;
-	uint32_t i;
+	unsigned int i;
 	int ret;
 	time_t now = time(NULL);
 	const char *now_timestr;
@@ -421,7 +421,7 @@ static NTSTATUS wreplsrv_scavenging_replica_active_records(struct wreplsrv_servi
 	struct ldb_result *res = NULL;
 	const char *owner_filter;
 	const char *filter;
-	uint32_t i;
+	unsigned int i;
 	int ret;
 	time_t now = time(NULL);
 	const char *now_timestr;

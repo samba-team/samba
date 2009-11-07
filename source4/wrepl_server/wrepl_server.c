@@ -139,7 +139,7 @@ NTSTATUS wreplsrv_load_partners(struct wreplsrv_service *service)
 	struct ldb_result *res = NULL;
 	int ret;
 	TALLOC_CTX *tmp_ctx;
-	int i;
+	unsigned int i;
 	uint64_t new_seqnumber;
 
 	new_seqnumber = wins_config_db_get_seqnumber(service->config.ldb);
@@ -363,7 +363,7 @@ static NTSTATUS wreplsrv_load_table(struct wreplsrv_service *service)
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = talloc_new(service);
 	struct ldb_context *ldb = service->wins_db->ldb;
-	int i;
+	unsigned int i;
 	struct wreplsrv_owner *local_owner;
 	const char *wins_owner;
 	uint64_t version;

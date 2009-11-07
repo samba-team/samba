@@ -200,7 +200,7 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 	struct wrepl_wins_name *names;
 	struct winsdb_record *rec;
 	NTSTATUS status;
-	uint32_t i, j;
+	unsigned int i, j;
 	time_t now = time(NULL);
 
 	owner = wreplsrv_find_owner(service, service->table, owner_in->address);
