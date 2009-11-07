@@ -208,8 +208,20 @@ static int sys_acl_set_fd_xattr(vfs_handle_struct *handle,
 	return ret;
 }
 
+static int connect_acl_xattr(struct vfs_handle_struct *handle,
+				const char *service,
+				const char *user)
+{
+	/* Ensure we have "inherit acls = yes" if we're
+	 * using this module. */
+	DEBUG(2,("connect_acl_xattr: setting 'inherit acls = true' for service %s\n",
+		service ));
+	set_inherit_acls(SNUM(handle->conn));
+	return 0;
+}
 
 static struct vfs_fn_pointers vfs_acl_xattr_fns = {
+	.connect_fn = connect_acl_xattr,
 	.mkdir = mkdir_acl_common,
 	.open = open_acl_common,
 	.fget_nt_acl = fget_nt_acl_common,
