@@ -340,7 +340,7 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 			     struct ldb_parse_tree *tree,
 			     struct tsocket_address *src)
 {
-	int i;
+	unsigned int i;
 	const char *domain = NULL;
 	const char *host = NULL;
 	const char *user = NULL;

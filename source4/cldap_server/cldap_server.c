@@ -151,7 +151,7 @@ static NTSTATUS cldapd_startup_interfaces(struct cldapd_server *cldapd, struct l
 	int num_interfaces;
 	TALLOC_CTX *tmp_ctx = talloc_new(cldapd);
 	NTSTATUS status;
-	int i;
+	unsigned int i;
 
 	num_interfaces = iface_count(ifaces);
 
