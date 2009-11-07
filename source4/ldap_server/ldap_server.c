@@ -237,7 +237,8 @@ static int ldapsrv_load_limits(struct ldapsrv_connection *conn)
 	struct ldb_dn *basedn;
 	struct ldb_dn *conf_dn;
 	struct ldb_dn *policy_dn;
-	int i,ret;
+	unsigned int i;
+	int ret;
 
 	/* set defaults limits in case of failure */
 	conn->limits.initial_timeout = 120;

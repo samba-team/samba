@@ -104,7 +104,7 @@ NTSTATUS ldapsrv_ExtendedRequest(struct ldapsrv_call *call)
 	int result = LDAP_PROTOCOL_ERROR;
 	const char *error_str = NULL;
 	NTSTATUS status = NT_STATUS_OK;
-	uint32_t i;
+	unsigned int i;
 
 	DEBUG(10, ("Extended\n"));
 

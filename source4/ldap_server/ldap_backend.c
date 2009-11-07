@@ -237,7 +237,7 @@ NTSTATUS ldapsrv_backend_Init(struct ldapsrv_connection *conn)
 		struct gensec_security_ops **backends = gensec_security_all();
 		struct gensec_security_ops **ops
 			= gensec_use_kerberos_mechs(conn, backends, conn->server_credentials);
-		int i, j = 0;
+		unsigned int i, j = 0;
 		for (i = 0; ops && ops[i]; i++) {
 			if (!lp_parm_bool(conn->lp_ctx,  NULL, "gensec", ops[i]->name, ops[i]->enabled))
 				continue;
@@ -336,7 +336,7 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	int success_limit = 1;
 	int result = -1;
 	int ldb_ret = -1;
-	int i, j;
+	unsigned int i, j;
 	int extended_type = 1;
 
 	DEBUG(10, ("SearchRequest"));
@@ -544,7 +544,7 @@ static NTSTATUS ldapsrv_ModifyRequest(struct ldapsrv_call *call)
 	const char *errstr = NULL;
 	int result = LDAP_SUCCESS;
 	int ldb_ret;
-	int i,j;
+	unsigned int i,j;
 
 	DEBUG(10, ("ModifyRequest"));
 	DEBUGADD(10, (" dn: %s", req->dn));
@@ -641,7 +641,7 @@ static NTSTATUS ldapsrv_AddRequest(struct ldapsrv_call *call)
 	const char *errstr = NULL;
 	int result = LDAP_SUCCESS;
 	int ldb_ret;
-	int i,j;
+	unsigned int i,j;
 
 	DEBUG(10, ("AddRequest"));
 	DEBUGADD(10, (" dn: %s", req->dn));
@@ -924,7 +924,7 @@ static NTSTATUS ldapsrv_AbandonRequest(struct ldapsrv_call *call)
 
 NTSTATUS ldapsrv_do_call(struct ldapsrv_call *call)
 {
-	int i;
+	unsigned int i;
 	struct ldap_message *msg = call->request;
 	/* Check for undecoded critical extensions */
 	for (i=0; msg->controls && msg->controls[i]; i++) {
