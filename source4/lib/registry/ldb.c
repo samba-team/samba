@@ -34,7 +34,7 @@ struct ldb_key_data
 	struct ldb_context *ldb;
 	struct ldb_dn *dn;
 	struct ldb_message **subkeys, **values;
-	int subkey_count, value_count;
+	unsigned int subkey_count, value_count;
 };
 
 static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx, 
@@ -329,7 +329,7 @@ static WERROR ldb_get_default_value(TALLOC_CTX *mem_ctx, struct hive_key *k,
 }
 
 static WERROR ldb_get_value_by_id(TALLOC_CTX *mem_ctx, struct hive_key *k,
-				  int idx, const char **name,
+				  uint32_t idx, const char **name,
 				  uint32_t *data_type, DATA_BLOB *data)
 {
 	struct ldb_key_data *kd = talloc_get_type(k, struct ldb_key_data);
@@ -572,7 +572,8 @@ static WERROR ldb_del_value (struct hive_key *key, const char *child)
 
 static WERROR ldb_del_key(const struct hive_key *key, const char *name)
 {
-	int i, ret;
+	unsigned int i;
+	int ret;
 	struct ldb_key_data *parentkd = talloc_get_type(key, struct ldb_key_data);
 	struct ldb_dn *ldap_path;
 	TALLOC_CTX *mem_ctx = talloc_init("ldb_del_key");
@@ -711,7 +712,7 @@ static WERROR ldb_set_value(struct hive_key *parent,
 
 	ret = ldb_add(kd->ldb, msg);
 	if (ret == LDB_ERR_ENTRY_ALREADY_EXISTS) {
-		int i;
+		unsigned int i;
 		for (i = 0; i < msg->num_elements; i++) {
 			if (msg->elements[i].flags != LDB_FLAG_MOD_DELETE)
 				msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
@@ -778,7 +779,7 @@ static WERROR ldb_get_key_info(TALLOC_CTX *mem_ctx,
 
 
 	if (max_subkeynamelen != NULL) {
-		int i;
+		unsigned int i;
 		struct ldb_message_element *el;
 
 		*max_subkeynamelen = 0;
@@ -790,7 +791,7 @@ static WERROR ldb_get_key_info(TALLOC_CTX *mem_ctx,
 	}
 
 	if (max_valnamelen != NULL || max_valbufsize != NULL) {
-		int i;
+		unsigned int i;
 		struct ldb_message_element *el;
 		W_ERROR_NOT_OK_RETURN(cache_values(kd));
 

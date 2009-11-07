@@ -41,7 +41,7 @@ static const struct {
 /** Return string description of registry value type */
 _PUBLIC_ const char *str_regtype(int type)
 {
-	int i;
+	unsigned int i;
 	for (i = 0; reg_value_types[i].name; i++) {
 		if (reg_value_types[i].id == type)
 			return reg_value_types[i].name;
@@ -115,7 +115,7 @@ _PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx,
 				const char *data_str, uint32_t *type,
 				DATA_BLOB *data)
 {
-	int i;
+	unsigned int i;
 	*type = -1;
 
 	/* Find the correct type */
@@ -171,7 +171,7 @@ WERROR reg_open_key_abs(TALLOC_CTX *mem_ctx, struct registry_context *handle,
 {
 	struct registry_key *predef;
 	WERROR error;
-	int predeflength;
+	size_t predeflength;
 	char *predefname;
 
 	if (strchr(name, '\\') != NULL)

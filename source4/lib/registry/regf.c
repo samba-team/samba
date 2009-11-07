@@ -64,7 +64,7 @@ struct regf_key_data {
 static struct hbin_block *hbin_by_offset(const struct regf_data *data,
 					 uint32_t offset, uint32_t *rel_offset)
 {
-	int i;
+	unsigned int i;
 
 	for (i = 0; data->hbins[i]; i++) {
 		if (offset >= data->hbins[i]->offset_from_first &&
@@ -86,7 +86,7 @@ static struct hbin_block *hbin_by_offset(const struct regf_data *data,
 static uint32_t regf_hdr_checksum(const uint8_t *buffer)
 {
 	uint32_t checksum = 0, x;
-	int i;
+	unsigned int i;
 
 	for (i = 0; i < 0x01FB; i+= 4) {
 		x = IVAL(buffer, i);
@@ -161,7 +161,7 @@ static DATA_BLOB hbin_alloc(struct regf_data *data, uint32_t size,
 	DATA_BLOB ret;
 	uint32_t rel_offset = -1; /* Relative offset ! */
 	struct hbin_block *hbin = NULL;
-	int i;
+	unsigned int i;
 
 	*offset = 0;
 
@@ -340,7 +340,7 @@ static uint32_t hbin_store_resize(struct regf_data *data,
 	int32_t orig_size;
 	int32_t needed_size;
 	int32_t possible_size;
-	int i;
+	unsigned int i;
 
 	SMB_ASSERT(orig_offset > 0);
 
@@ -504,7 +504,7 @@ static struct regf_key_data *regf_get_key(TALLOC_CTX *ctx,
 
 
 static WERROR regf_get_value(TALLOC_CTX *ctx, struct hive_key *key,
-			     int idx, const char **name,
+			     uint32_t idx, const char **name,
 			     uint32_t *data_type, DATA_BLOB *data)
 {
 	const struct regf_key_data *private_data =
@@ -567,7 +567,7 @@ static WERROR regf_get_value_by_name(TALLOC_CTX *mem_ctx,
 				     struct hive_key *key, const char *name,
 				     uint32_t *type, DATA_BLOB *data)
 {
-	int i;
+	unsigned int i;
 	const char *vname;
 	WERROR error;
 
@@ -1551,7 +1551,7 @@ static WERROR regf_del_value (struct hive_key *key, const char *name)
 	uint32_t vk_offset;
 	bool found_offset = false;
 	DATA_BLOB values;
-	uint32_t i;
+	unsigned int i;
 
 	if (nk->values_offset == -1) {
 		return WERR_BADFILE;
@@ -1627,7 +1627,7 @@ static WERROR regf_del_key(const struct hive_key *parent, const char *name)
 	if (key->nk->subkeys_offset != -1) {
 		char *sk_name;
 		struct hive_key *sk = (struct hive_key *)key;
-		int i = key->nk->num_subkeys;
+		unsigned int i = key->nk->num_subkeys;
 		while (i--) {
 			/* Get subkey information. */
 			error = regf_get_subkey_by_index(parent_nk, sk, 0,
@@ -1653,7 +1653,7 @@ static WERROR regf_del_key(const struct hive_key *parent, const char *name)
 		char *val_name;
 		struct hive_key *sk = (struct hive_key *)key;
 		DATA_BLOB data;
-		int i = key->nk->num_values;
+		unsigned int i = key->nk->num_values;
 		while (i--) {
 			/* Get value information. */
 			error = regf_get_value(parent_nk, sk, 0,
@@ -1878,7 +1878,7 @@ static WERROR regf_set_value(struct hive_key *key, const char *name,
 static WERROR regf_save_hbin(struct regf_data *regf)
 {
 	struct tdr_push *push = tdr_push_init(regf, regf->iconv_convenience);
-	int i;
+	unsigned int i;
 
 	W_ERROR_HAVE_NO_MEMORY(push);
 
@@ -2053,7 +2053,7 @@ WERROR reg_open_regf_file(TALLOC_CTX *parent_ctx, const char *location,
 	struct regf_data *regf;
 	struct regf_hdr *regf_hdr;
 	struct tdr_pull *pull;
-	int i;
+	unsigned int i;
 
 	regf = (struct regf_data *)talloc_zero(parent_ctx, struct regf_data);
 

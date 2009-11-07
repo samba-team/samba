@@ -44,7 +44,7 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 			     const struct reg_diff_callbacks *callbacks,
 			     void *callback_data)
 {
-	int i;
+	unsigned int i;
 	struct registry_key *t1 = NULL, *t2 = NULL;
 	char *tmppath;
 	const char *keyname1;
@@ -256,7 +256,7 @@ _PUBLIC_ WERROR reg_generate_diff(struct registry_context *ctx1,
 				  const struct reg_diff_callbacks *callbacks,
 				  void *callback_data)
 {
-	int i;
+	unsigned int i;
 	WERROR error;
 
 	for (i = 0; reg_predefined_keys[i].name; i++) {

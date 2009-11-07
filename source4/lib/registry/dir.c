@@ -159,7 +159,7 @@ static WERROR reg_dir_key_by_index(TALLOC_CTX *mem_ctx,
 {
 	struct dirent *e;
 	const struct dir_key *dk = talloc_get_type(k, struct dir_key);
-	int i = 0;
+	unsigned int i = 0;
 	DIR *d;
 
 	d = opendir(dk->path);
@@ -342,14 +342,14 @@ static WERROR reg_dir_get_value(TALLOC_CTX *mem_ctx,
 }
 
 static WERROR reg_dir_enum_value(TALLOC_CTX *mem_ctx,
-				 struct hive_key *key, int idx,
+				 struct hive_key *key, uint32_t idx,
 				 const char **name,
 				 uint32_t *type, DATA_BLOB *data)
 {
 	const struct dir_key *dk = talloc_get_type(key, struct dir_key);
 	DIR *d;
 	struct dirent *e;
-	int i;
+	unsigned int i;
 
 	d = opendir(dk->path);
 	if (d == NULL) {

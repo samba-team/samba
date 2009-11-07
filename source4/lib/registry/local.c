@@ -167,7 +167,7 @@ static WERROR local_create_key(TALLOC_CTX *mem_ctx,
 	struct local_key *local_parent;
 	struct hive_key *hivekey;
 	const char **elements;
-	int i;
+	unsigned int i;
 	const char *last_part;
 
 	last_part = strrchr(name, '\\');
@@ -328,7 +328,7 @@ WERROR reg_mount_hive(struct registry_context *rctx,
 	struct registry_local *reg_local = talloc_get_type(rctx,
 							   struct registry_local);
 	struct mountpoint *mp = talloc(rctx, struct mountpoint);
-	int i = 0;
+	unsigned int i = 0;
 
 	mp->path.predefined_key = key_id;
 	mp->prev = mp->next = NULL;

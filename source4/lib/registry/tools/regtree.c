@@ -43,7 +43,7 @@ static void print_tree(int level, struct registry_key *p,
 	DATA_BLOB valuedata;
 	struct security_descriptor *sec_desc;
 	WERROR error;
-	int i;
+	unsigned int i;
 	TALLOC_CTX *mem_ctx;
 
 	for(i = 0; i < level; i++) putchar(' '); puts(name);

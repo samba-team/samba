@@ -44,7 +44,7 @@ const struct reg_predefined_key reg_predefined_keys[] = {
 /** Obtain name of specific hkey. */
 _PUBLIC_ const char *reg_get_predef_name(uint32_t hkey)
 {
-	int i;
+	unsigned int i;
 	for (i = 0; reg_predefined_keys[i].name; i++) {
 		if (reg_predefined_keys[i].handle == hkey)
 			return reg_predefined_keys[i].name;
@@ -58,7 +58,7 @@ _PUBLIC_ WERROR reg_get_predefined_key_by_name(struct registry_context *ctx,
 					       const char *name,
 					       struct registry_key **key)
 {
-	int i;
+	unsigned int i;
 
 	for (i = 0; reg_predefined_keys[i].name; i++) {
 		if (!strcasecmp(reg_predefined_keys[i].name, name))
@@ -150,7 +150,7 @@ _PUBLIC_ WERROR reg_key_get_info(TALLOC_CTX *mem_ctx,
  */
 _PUBLIC_ WERROR reg_key_get_subkey_by_index(TALLOC_CTX *mem_ctx,
 					    const struct registry_key *key,
-					    int idx, const char **name,
+					    uint32_t idx, const char **name,
 					    const char **keyclass,
 					    NTTIME *last_changed_time)
 {

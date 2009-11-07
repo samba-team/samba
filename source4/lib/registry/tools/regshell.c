@@ -266,7 +266,7 @@ static WERROR cmd_print(struct regshell_context *ctx, int argc, char **argv)
 
 static WERROR cmd_ls(struct regshell_context *ctx, int argc, char **argv)
 {
-	int i;
+	unsigned int i;
 	WERROR error;
 	uint32_t valuetype;
 	DATA_BLOB valuedata;
@@ -388,7 +388,7 @@ static struct {
 static WERROR cmd_help(struct regshell_context *ctx,
 		       int argc, char **argv)
 {
-	int i;
+	unsigned int i;
 	printf("Available commands:\n");
 	for(i = 0; regshell_cmds[i].name; i++) {
 		printf("%s - %s\n", regshell_cmds[i].name,
@@ -429,7 +429,8 @@ static char **reg_complete_command(const char *text, int start, int end)
 {
 	/* Complete command */
 	char **matches;
-	int i, len, samelen=0, count=1;
+	size_t len, samelen=0;
+	unsigned int i, count=1;
 
 	matches = malloc_array_p(char *, MAX_COMPLETIONS);
 	if (!matches) return NULL;
@@ -477,9 +478,8 @@ static char **reg_complete_key(const char *text, int start, int end)
 {
 	struct registry_key *base;
 	const char *subkeyname;
-	int i, j = 1;
-	int samelen = 0;
-	int len;
+	unsigned int i, j = 1;
+	size_t len, samelen = 0;
 	char **matches;
 	const char *base_n = "";
 	TALLOC_CTX *mem_ctx;
@@ -593,7 +593,7 @@ int main(int argc, char **argv)
 		return 1;
 
 	if (ctx->current == NULL) {
-		int i;
+		unsigned int i;
 
 		for (i = 0; (reg_predefined_keys[i].handle != 0) &&
 			(ctx->current == NULL); i++) {
