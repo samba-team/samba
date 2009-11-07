@@ -102,7 +102,7 @@ struct ldb_context *ldb_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev_ctx)
 	}
 
 	ret = ldb_setup_wellknown_attributes(ldb);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		talloc_free(ldb);
 		return NULL;
 	}
