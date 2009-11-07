@@ -63,7 +63,8 @@ static struct dsdb_dn *dsdb_dn_construct_internal(TALLOC_CTX *mem_ctx,
 struct dsdb_dn *dsdb_dn_construct(TALLOC_CTX *mem_ctx, struct ldb_dn *dn, DATA_BLOB extra_part, 
 				  const char *oid) 
 {
-	return dsdb_dn_construct_internal(mem_ctx, dn, extra_part, dsdb_dn_oid_to_format(oid), oid);
+	enum dsdb_dn_format dn_format = dsdb_dn_oid_to_format(oid);
+	return dsdb_dn_construct_internal(mem_ctx, dn, extra_part, dn_format, oid);
 }
 
 struct dsdb_dn *dsdb_dn_parse(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, 

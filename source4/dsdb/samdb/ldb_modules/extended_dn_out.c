@@ -327,10 +327,10 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 	int ret, i, j;
 	struct ldb_message *msg = ares->message;
 	struct extended_dn_out_private *p;
-
+	struct ldb_context *ldb;
 	ac = talloc_get_type(req->context, struct extended_search_context);
 	p = talloc_get_type(ldb_module_get_private(ac->module), struct extended_dn_out_private);
-
+	ldb = ldb_module_get_ctx(ac->module);
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
 					LDB_ERR_OPERATIONS_ERROR);
@@ -361,7 +361,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 	if (ac->inject) {
 		/* for each record returned post-process to add any derived
 		   attributes that have been asked for */
-		ret = inject_extended_dn_out(ares, ldb_module_get_ctx(ac->module),
+		ret = inject_extended_dn_out(ares, ldb,
 					     ac->extended_type, ac->remove_guid,
 					     ac->remove_sid);
 		if (ret != LDB_SUCCESS) {
@@ -381,7 +381,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 							 ldb_dn_get_linearized(ares->message->dn));
 			}
 			if (ret != LDB_SUCCESS) {
-				ldb_oom(ldb_module_get_ctx(ac->module));
+				ldb_oom(ldb);
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
 		}
@@ -409,7 +409,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 			 * correct case */
 			msg->elements[i].name = talloc_strdup(msg->elements, attribute->lDAPDisplayName);
 			if (!msg->elements[i].name) {
-				ldb_oom(ldb_module_get_ctx(ac->module));
+				ldb_oom(ldb);
 				return ldb_module_done(ac->req, NULL, NULL, LDB_ERR_OPERATIONS_ERROR);
 			}
 		}
@@ -429,10 +429,10 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 			struct ldb_dn *dn;
 			struct dsdb_dn *dsdb_dn = NULL;
 			struct ldb_val *plain_dn = &msg->elements[i].values[j];		
-			dsdb_dn = dsdb_dn_parse(msg, ldb_module_get_ctx(ac->module), plain_dn, attribute->syntax->ldap_oid);
+			dsdb_dn = dsdb_dn_parse(msg, ldb, plain_dn, attribute->syntax->ldap_oid);
 			
 			if (!dsdb_dn || !ldb_dn_validate(dsdb_dn->dn)) {
-				ldb_asprintf_errstring(ldb_module_get_ctx(ac->module), 
+				ldb_asprintf_errstring(ldb, 
 						       "could not parse %.*s as a %s DN", (int)plain_dn->length, plain_dn->data,
 						       attribute->syntax->ldap_oid);
 				talloc_free(dsdb_dn);
@@ -476,7 +476,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 			}
 			
 			if (!dn_str) {
-				ldb_oom(ldb_module_get_ctx(ac->module));
+				ldb_oom(ldb);
 				talloc_free(dsdb_dn);
 				return ldb_module_done(ac->req, NULL, NULL, LDB_ERR_OPERATIONS_ERROR);
 			}
@@ -508,6 +508,7 @@ static int extended_dn_out_search(struct ldb_module *module, struct ldb_request 
 	struct ldb_request *down_req;
 	char **new_attrs;
 	const char * const *const_attrs;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	int ret;
 
 	struct extended_dn_out_private *p = talloc_get_type(ldb_module_get_private(module), struct extended_dn_out_private);
@@ -528,19 +529,19 @@ static int extended_dn_out_search(struct ldb_module *module, struct ldb_request 
 	if (!control && storage_format_control && storage_format_control->data) {
 		extended_ctrl = talloc_get_type(storage_format_control->data, struct ldb_extended_dn_control);
 		if (!extended_ctrl) {
-			ldb_set_errstring(ldb_module_get_ctx(module), "extended_dn_out: extended_ctrl was of the wrong data type");
+			ldb_set_errstring(ldb, "extended_dn_out: extended_ctrl was of the wrong data type");
 			return LDB_ERR_PROTOCOL_ERROR;
 		}
 	}
 
 	ac = talloc_zero(req, struct extended_search_context);
 	if (ac == NULL) {
-		ldb_oom(ldb_module_get_ctx(module));
+		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	ac->module = module;
-	ac->schema = dsdb_get_schema(ldb_module_get_ctx(module));
+	ac->schema = dsdb_get_schema(ldb);
 	ac->req = req;
 	ac->inject = false;
 	ac->remove_guid = false;
@@ -571,7 +572,7 @@ static int extended_dn_out_search(struct ldb_module *module, struct ldb_request 
 			if (ac->remove_guid || ac->remove_sid) {
 				new_attrs = copy_attrs(ac, req->op.search.attrs);
 				if (new_attrs == NULL) {
-					ldb_oom(ldb_module_get_ctx(module));
+					ldb_oom(ldb);
 					return LDB_ERR_OPERATIONS_ERROR;
 				}
 
@@ -589,7 +590,7 @@ static int extended_dn_out_search(struct ldb_module *module, struct ldb_request 
 	}
 
 	ret = ldb_build_search_req_ex(&down_req,
-				      ldb_module_get_ctx(module), ac,
+				      ldb, ac,
 				      req->op.search.base,
 				      req->op.search.scope,
 				      req->op.search.tree,
@@ -684,13 +685,13 @@ static int extended_dn_out_dereference_init(struct ldb_module *module, const cha
 	struct extended_dn_out_private *p = talloc_zero(module, struct extended_dn_out_private);
 	struct dsdb_openldap_dereference_control *dereference_control;
 	struct dsdb_attribute *cur;
-
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct dsdb_schema *schema;
 
 	ldb_module_set_private(module, p);
 
 	if (!p) {
-		ldb_oom(ldb_module_get_ctx(module));
+		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -702,7 +703,7 @@ static int extended_dn_out_dereference_init(struct ldb_module *module, const cha
 
 	ret = ldb_mod_register_control(module, LDB_CONTROL_EXTENDED_DN_OID);
 	if (ret != LDB_SUCCESS) {
-		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_ERROR,
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
 			"extended_dn_out: Unable to register control with rootdse!\n");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -713,7 +714,7 @@ static int extended_dn_out_dereference_init(struct ldb_module *module, const cha
 		return ret;
 	}
 
-	schema = dsdb_get_schema(ldb_module_get_ctx(module));
+	schema = dsdb_get_schema(ldb);
 	if (!schema) {
 		/* No schema on this DB (yet) */
 		return LDB_SUCCESS;
@@ -723,7 +724,7 @@ static int extended_dn_out_dereference_init(struct ldb_module *module, const cha
 		= talloc_zero(p, struct dsdb_openldap_dereference_control);
 
 	if (!p->dereference_control) {
-		ldb_oom(ldb_module_get_ctx(module));
+		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	
@@ -735,13 +736,13 @@ static int extended_dn_out_dereference_init(struct ldb_module *module, const cha
 			= talloc_realloc(p, dereference_control->dereference,
 					 struct dsdb_openldap_dereference *, i + 2);
 		if (!dereference_control) {
-			ldb_oom(ldb_module_get_ctx(module));
+			ldb_oom(ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		dereference_control->dereference[i] = talloc(dereference_control->dereference,  
 					 struct dsdb_openldap_dereference);
 		if (!dereference_control->dereference[i]) {
-			ldb_oom(ldb_module_get_ctx(module));
+			ldb_oom(ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		dereference_control->dereference[i]->source_attribute = cur->lDAPDisplayName;
