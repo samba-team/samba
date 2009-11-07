@@ -42,10 +42,6 @@ struct tevent_req *rpccli_eventlog_ClearEventLogW_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_ClearEventLogW, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -90,10 +86,6 @@ static void rpccli_eventlog_ClearEventLogW_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_ClearEventLogW, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -132,10 +124,6 @@ NTSTATUS rpccli_eventlog_ClearEventLogW(struct rpc_pipe_client *cli,
 	r.in.handle = handle;
 	r.in.backupfile = backupfile;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_ClearEventLogW, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
@@ -144,10 +132,6 @@ NTSTATUS rpccli_eventlog_ClearEventLogW(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_ClearEventLogW, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -196,10 +180,6 @@ struct tevent_req *rpccli_eventlog_BackupEventLogW_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_BackupEventLogW, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -244,10 +224,6 @@ static void rpccli_eventlog_BackupEventLogW_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_BackupEventLogW, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -286,10 +262,6 @@ NTSTATUS rpccli_eventlog_BackupEventLogW(struct rpc_pipe_client *cli,
 	r.in.handle = handle;
 	r.in.backup_filename = backup_filename;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_BackupEventLogW, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
@@ -298,10 +270,6 @@ NTSTATUS rpccli_eventlog_BackupEventLogW(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_BackupEventLogW, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -348,10 +316,6 @@ struct tevent_req *rpccli_eventlog_CloseEventLog_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_CloseEventLog, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_eventlog_CloseEventLog_out_memory");
@@ -404,10 +368,6 @@ static void rpccli_eventlog_CloseEventLog_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_CloseEventLog, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -444,10 +404,6 @@ NTSTATUS rpccli_eventlog_CloseEventLog(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.handle = handle;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_CloseEventLog, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
@@ -456,10 +412,6 @@ NTSTATUS rpccli_eventlog_CloseEventLog(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_CloseEventLog, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -507,10 +459,6 @@ struct tevent_req *rpccli_eventlog_DeregisterEventSource_send(TALLOC_CTX *mem_ct
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_DeregisterEventSource, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_eventlog_DeregisterEventSource_out_memory");
@@ -563,10 +511,6 @@ static void rpccli_eventlog_DeregisterEventSource_done(struct tevent_req *subreq
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_DeregisterEventSource, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -603,10 +547,6 @@ NTSTATUS rpccli_eventlog_DeregisterEventSource(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.handle = handle;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_DeregisterEventSource, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
@@ -615,10 +555,6 @@ NTSTATUS rpccli_eventlog_DeregisterEventSource(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_DeregisterEventSource, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -667,10 +603,6 @@ struct tevent_req *rpccli_eventlog_GetNumRecords_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_GetNumRecords, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_eventlog_GetNumRecords_out_memory");
@@ -723,10 +655,6 @@ static void rpccli_eventlog_GetNumRecords_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_GetNumRecords, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -764,10 +692,6 @@ NTSTATUS rpccli_eventlog_GetNumRecords(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.handle = handle;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_GetNumRecords, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
@@ -776,10 +700,6 @@ NTSTATUS rpccli_eventlog_GetNumRecords(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_GetNumRecords, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -828,10 +748,6 @@ struct tevent_req *rpccli_eventlog_GetOldestRecord_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_GetOldestRecord, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_eventlog_GetOldestRecord_out_memory");
@@ -884,10 +800,6 @@ static void rpccli_eventlog_GetOldestRecord_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_GetOldestRecord, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -925,10 +837,6 @@ NTSTATUS rpccli_eventlog_GetOldestRecord(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.handle = handle;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_GetOldestRecord, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
@@ -937,10 +845,6 @@ NTSTATUS rpccli_eventlog_GetOldestRecord(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_GetOldestRecord, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -986,10 +890,6 @@ struct tevent_req *rpccli_eventlog_ChangeNotify_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_ChangeNotify, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -1034,10 +934,6 @@ static void rpccli_eventlog_ChangeNotify_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_ChangeNotify, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1072,10 +968,6 @@ NTSTATUS rpccli_eventlog_ChangeNotify(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_ChangeNotify, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
@@ -1084,10 +976,6 @@ NTSTATUS rpccli_eventlog_ChangeNotify(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_ChangeNotify, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1144,10 +1032,6 @@ struct tevent_req *rpccli_eventlog_OpenEventLogW_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_OpenEventLogW, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_eventlog_OpenEventLogW_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -1199,10 +1083,6 @@ static void rpccli_eventlog_OpenEventLogW_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_OpenEventLogW, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1248,10 +1128,6 @@ NTSTATUS rpccli_eventlog_OpenEventLogW(struct rpc_pipe_client *cli,
 	r.in.major_version = major_version;
 	r.in.minor_version = minor_version;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_OpenEventLogW, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
@@ -1260,10 +1136,6 @@ NTSTATUS rpccli_eventlog_OpenEventLogW(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_OpenEventLogW, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1321,10 +1193,6 @@ struct tevent_req *rpccli_eventlog_RegisterEventSourceW_send(TALLOC_CTX *mem_ctx
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_RegisterEventSourceW, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_eventlog_RegisterEventSourceW_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -1376,10 +1244,6 @@ static void rpccli_eventlog_RegisterEventSourceW_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_RegisterEventSourceW, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1425,10 +1289,6 @@ NTSTATUS rpccli_eventlog_RegisterEventSourceW(struct rpc_pipe_client *cli,
 	r.in.major_version = major_version;
 	r.in.minor_version = minor_version;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_RegisterEventSourceW, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
@@ -1437,10 +1297,6 @@ NTSTATUS rpccli_eventlog_RegisterEventSourceW(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_RegisterEventSourceW, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1496,10 +1352,6 @@ struct tevent_req *rpccli_eventlog_OpenBackupEventLogW_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_OpenBackupEventLogW, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_eventlog_OpenBackupEventLogW_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -1551,10 +1403,6 @@ static void rpccli_eventlog_OpenBackupEventLogW_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_OpenBackupEventLogW, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1598,10 +1446,6 @@ NTSTATUS rpccli_eventlog_OpenBackupEventLogW(struct rpc_pipe_client *cli,
 	r.in.major_version = major_version;
 	r.in.minor_version = minor_version;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_OpenBackupEventLogW, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
@@ -1610,10 +1454,6 @@ NTSTATUS rpccli_eventlog_OpenBackupEventLogW(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_OpenBackupEventLogW, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1673,10 +1513,6 @@ struct tevent_req *rpccli_eventlog_ReadEventLogW_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_ReadEventLogW, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_eventlog_ReadEventLogW_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -1730,10 +1566,6 @@ static void rpccli_eventlog_ReadEventLogW_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_ReadEventLogW, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1779,10 +1611,6 @@ NTSTATUS rpccli_eventlog_ReadEventLogW(struct rpc_pipe_client *cli,
 	r.in.offset = offset;
 	r.in.number_of_bytes = number_of_bytes;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_ReadEventLogW, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
@@ -1791,10 +1619,6 @@ NTSTATUS rpccli_eventlog_ReadEventLogW(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_ReadEventLogW, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1872,10 +1696,6 @@ struct tevent_req *rpccli_eventlog_ReportEventW_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_ReportEventW, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_eventlog_ReportEventW_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -1931,10 +1751,6 @@ static void rpccli_eventlog_ReportEventW_done(struct tevent_req *subreq)
 
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_ReportEventW, &state->orig);
-	}
 
 	tevent_req_done(req);
 }
@@ -1998,10 +1814,6 @@ NTSTATUS rpccli_eventlog_ReportEventW(struct rpc_pipe_client *cli,
 	r.in.record_number = record_number;
 	r.in.time_written = time_written;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_ReportEventW, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
@@ -2010,10 +1822,6 @@ NTSTATUS rpccli_eventlog_ReportEventW(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_ReportEventW, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2064,10 +1872,6 @@ struct tevent_req *rpccli_eventlog_ClearEventLogA_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_ClearEventLogA, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -2112,10 +1916,6 @@ static void rpccli_eventlog_ClearEventLogA_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_ClearEventLogA, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2150,10 +1950,6 @@ NTSTATUS rpccli_eventlog_ClearEventLogA(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_ClearEventLogA, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
@@ -2162,10 +1958,6 @@ NTSTATUS rpccli_eventlog_ClearEventLogA(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_ClearEventLogA, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2209,10 +2001,6 @@ struct tevent_req *rpccli_eventlog_BackupEventLogA_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_BackupEventLogA, &state->orig);
-	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
@@ -2258,10 +2046,6 @@ static void rpccli_eventlog_BackupEventLogA_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_BackupEventLogA, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2296,10 +2080,6 @@ NTSTATUS rpccli_eventlog_BackupEventLogA(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_BackupEventLogA, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
@@ -2308,10 +2088,6 @@ NTSTATUS rpccli_eventlog_BackupEventLogA(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_BackupEventLogA, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2355,10 +2131,6 @@ struct tevent_req *rpccli_eventlog_OpenEventLogA_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_OpenEventLogA, &state->orig);
-	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
@@ -2404,10 +2176,6 @@ static void rpccli_eventlog_OpenEventLogA_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_OpenEventLogA, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2442,10 +2210,6 @@ NTSTATUS rpccli_eventlog_OpenEventLogA(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_OpenEventLogA, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
@@ -2454,10 +2218,6 @@ NTSTATUS rpccli_eventlog_OpenEventLogA(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_OpenEventLogA, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2501,10 +2261,6 @@ struct tevent_req *rpccli_eventlog_RegisterEventSourceA_send(TALLOC_CTX *mem_ctx
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_RegisterEventSourceA, &state->orig);
-	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
@@ -2550,10 +2306,6 @@ static void rpccli_eventlog_RegisterEventSourceA_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_RegisterEventSourceA, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2588,10 +2340,6 @@ NTSTATUS rpccli_eventlog_RegisterEventSourceA(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_RegisterEventSourceA, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
@@ -2600,10 +2348,6 @@ NTSTATUS rpccli_eventlog_RegisterEventSourceA(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_RegisterEventSourceA, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2647,10 +2391,6 @@ struct tevent_req *rpccli_eventlog_OpenBackupEventLogA_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_OpenBackupEventLogA, &state->orig);
-	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
@@ -2696,10 +2436,6 @@ static void rpccli_eventlog_OpenBackupEventLogA_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_OpenBackupEventLogA, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2734,10 +2470,6 @@ NTSTATUS rpccli_eventlog_OpenBackupEventLogA(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_OpenBackupEventLogA, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
@@ -2746,10 +2478,6 @@ NTSTATUS rpccli_eventlog_OpenBackupEventLogA(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_OpenBackupEventLogA, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2793,10 +2521,6 @@ struct tevent_req *rpccli_eventlog_ReadEventLogA_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_ReadEventLogA, &state->orig);
-	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
@@ -2842,10 +2566,6 @@ static void rpccli_eventlog_ReadEventLogA_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_ReadEventLogA, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2880,10 +2600,6 @@ NTSTATUS rpccli_eventlog_ReadEventLogA(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_ReadEventLogA, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
@@ -2892,10 +2608,6 @@ NTSTATUS rpccli_eventlog_ReadEventLogA(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_ReadEventLogA, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2939,10 +2651,6 @@ struct tevent_req *rpccli_eventlog_ReportEventA_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_ReportEventA, &state->orig);
-	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
@@ -2988,10 +2696,6 @@ static void rpccli_eventlog_ReportEventA_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_ReportEventA, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3026,10 +2730,6 @@ NTSTATUS rpccli_eventlog_ReportEventA(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_ReportEventA, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
@@ -3038,10 +2738,6 @@ NTSTATUS rpccli_eventlog_ReportEventA(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_ReportEventA, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3085,10 +2781,6 @@ struct tevent_req *rpccli_eventlog_RegisterClusterSvc_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_RegisterClusterSvc, &state->orig);
-	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
@@ -3134,10 +2826,6 @@ static void rpccli_eventlog_RegisterClusterSvc_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_RegisterClusterSvc, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3172,10 +2860,6 @@ NTSTATUS rpccli_eventlog_RegisterClusterSvc(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_RegisterClusterSvc, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
@@ -3184,10 +2868,6 @@ NTSTATUS rpccli_eventlog_RegisterClusterSvc(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_RegisterClusterSvc, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3231,10 +2911,6 @@ struct tevent_req *rpccli_eventlog_DeregisterClusterSvc_send(TALLOC_CTX *mem_ctx
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_DeregisterClusterSvc, &state->orig);
-	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
@@ -3280,10 +2956,6 @@ static void rpccli_eventlog_DeregisterClusterSvc_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_DeregisterClusterSvc, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3318,10 +2990,6 @@ NTSTATUS rpccli_eventlog_DeregisterClusterSvc(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_DeregisterClusterSvc, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
@@ -3330,10 +2998,6 @@ NTSTATUS rpccli_eventlog_DeregisterClusterSvc(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_DeregisterClusterSvc, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3377,10 +3041,6 @@ struct tevent_req *rpccli_eventlog_WriteClusterEvents_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_WriteClusterEvents, &state->orig);
-	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
@@ -3426,10 +3086,6 @@ static void rpccli_eventlog_WriteClusterEvents_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_WriteClusterEvents, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3464,10 +3120,6 @@ NTSTATUS rpccli_eventlog_WriteClusterEvents(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_WriteClusterEvents, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
@@ -3476,10 +3128,6 @@ NTSTATUS rpccli_eventlog_WriteClusterEvents(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_WriteClusterEvents, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3534,10 +3182,6 @@ struct tevent_req *rpccli_eventlog_GetLogInformation_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_GetLogInformation, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_eventlog_GetLogInformation_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -3590,10 +3234,6 @@ static void rpccli_eventlog_GetLogInformation_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_GetLogInformation, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3636,10 +3276,6 @@ NTSTATUS rpccli_eventlog_GetLogInformation(struct rpc_pipe_client *cli,
 	r.in.level = level;
 	r.in.buf_size = buf_size;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_GetLogInformation, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
@@ -3648,10 +3284,6 @@ NTSTATUS rpccli_eventlog_GetLogInformation(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_GetLogInformation, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3700,10 +3332,6 @@ struct tevent_req *rpccli_eventlog_FlushEventLog_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_FlushEventLog, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -3748,10 +3376,6 @@ static void rpccli_eventlog_FlushEventLog_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_FlushEventLog, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3788,10 +3412,6 @@ NTSTATUS rpccli_eventlog_FlushEventLog(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.handle = handle;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_FlushEventLog, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
@@ -3800,10 +3420,6 @@ NTSTATUS rpccli_eventlog_FlushEventLog(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_FlushEventLog, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3880,10 +3496,6 @@ struct tevent_req *rpccli_eventlog_ReportEventAndSourceW_send(TALLOC_CTX *mem_ct
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_ReportEventAndSourceW, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_eventlog_ReportEventAndSourceW_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -3939,10 +3551,6 @@ static void rpccli_eventlog_ReportEventAndSourceW_done(struct tevent_req *subreq
 
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_ReportEventAndSourceW, &state->orig);
-	}
 
 	tevent_req_done(req);
 }
@@ -4008,10 +3616,6 @@ NTSTATUS rpccli_eventlog_ReportEventAndSourceW(struct rpc_pipe_client *cli,
 	r.in.record_number = record_number;
 	r.in.time_written = time_written;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_ReportEventAndSourceW, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
@@ -4020,10 +3624,6 @@ NTSTATUS rpccli_eventlog_ReportEventAndSourceW(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_ReportEventAndSourceW, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {

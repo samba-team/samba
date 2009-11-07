@@ -59,6 +59,11 @@ struct tevent_req *cli_do_rpc_ndr_send(TALLOC_CTX *mem_ctx,
 	state->r = r;
 	state->call = &table->calls[opnum];
 
+	if (DEBUGLEVEL >= 10) {
+		ndr_print_function_debug(state->call->ndr_print,
+					 state->call->name, NDR_IN, r);
+	}
+
 	push = ndr_push_init_ctx(talloc_tos(), NULL);
 	if (tevent_req_nomem(push, req)) {
 		return tevent_req_post(req, ev);
@@ -136,7 +141,13 @@ NTSTATUS cli_do_rpc_ndr_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx)
 	ndr_err = state->call->ndr_pull(pull, NDR_OUT, state->r);
 	TALLOC_FREE(pull);
 
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+	if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		if (DEBUGLEVEL >= 10) {
+			ndr_print_function_debug(state->call->ndr_print,
+						 state->call->name, NDR_OUT,
+						 state->r);
+		}
+	} else {
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 

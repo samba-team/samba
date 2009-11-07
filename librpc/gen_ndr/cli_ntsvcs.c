@@ -38,10 +38,6 @@ struct tevent_req *rpccli_PNP_Disconnect_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_Disconnect, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -86,10 +82,6 @@ static void rpccli_PNP_Disconnect_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_Disconnect, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -125,10 +117,6 @@ NTSTATUS rpccli_PNP_Disconnect(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_Disconnect, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -137,10 +125,6 @@ NTSTATUS rpccli_PNP_Disconnect(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_Disconnect, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -189,10 +173,6 @@ struct tevent_req *rpccli_PNP_Connect_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_Connect, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -237,10 +217,6 @@ static void rpccli_PNP_Connect_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_Connect, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -276,10 +252,6 @@ NTSTATUS rpccli_PNP_Connect(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_Connect, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -288,10 +260,6 @@ NTSTATUS rpccli_PNP_Connect(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_Connect, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -341,10 +309,6 @@ struct tevent_req *rpccli_PNP_GetVersion_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetVersion, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_PNP_GetVersion_out_memory");
@@ -397,10 +361,6 @@ static void rpccli_PNP_GetVersion_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetVersion, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -437,10 +397,6 @@ NTSTATUS rpccli_PNP_GetVersion(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetVersion, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -449,10 +405,6 @@ NTSTATUS rpccli_PNP_GetVersion(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetVersion, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -502,10 +454,6 @@ struct tevent_req *rpccli_PNP_GetGlobalState_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetGlobalState, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -550,10 +498,6 @@ static void rpccli_PNP_GetGlobalState_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetGlobalState, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -589,10 +533,6 @@ NTSTATUS rpccli_PNP_GetGlobalState(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetGlobalState, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -601,10 +541,6 @@ NTSTATUS rpccli_PNP_GetGlobalState(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetGlobalState, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -653,10 +589,6 @@ struct tevent_req *rpccli_PNP_InitDetection_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_InitDetection, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -701,10 +633,6 @@ static void rpccli_PNP_InitDetection_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_InitDetection, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -740,10 +668,6 @@ NTSTATUS rpccli_PNP_InitDetection(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_InitDetection, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -752,10 +676,6 @@ NTSTATUS rpccli_PNP_InitDetection(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_InitDetection, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -804,10 +724,6 @@ struct tevent_req *rpccli_PNP_ReportLogOn_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_ReportLogOn, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -852,10 +768,6 @@ static void rpccli_PNP_ReportLogOn_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_ReportLogOn, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -891,10 +803,6 @@ NTSTATUS rpccli_PNP_ReportLogOn(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_ReportLogOn, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -903,10 +811,6 @@ NTSTATUS rpccli_PNP_ReportLogOn(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_ReportLogOn, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -959,10 +863,6 @@ struct tevent_req *rpccli_PNP_ValidateDeviceInstance_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_ValidateDeviceInstance, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -1007,10 +907,6 @@ static void rpccli_PNP_ValidateDeviceInstance_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_ValidateDeviceInstance, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1050,10 +946,6 @@ NTSTATUS rpccli_PNP_ValidateDeviceInstance(struct rpc_pipe_client *cli,
 	r.in.devicepath = devicepath;
 	r.in.flags = flags;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_ValidateDeviceInstance, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -1062,10 +954,6 @@ NTSTATUS rpccli_PNP_ValidateDeviceInstance(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_ValidateDeviceInstance, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1114,10 +1002,6 @@ struct tevent_req *rpccli_PNP_GetRootDeviceInstance_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetRootDeviceInstance, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -1162,10 +1046,6 @@ static void rpccli_PNP_GetRootDeviceInstance_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetRootDeviceInstance, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1201,10 +1081,6 @@ NTSTATUS rpccli_PNP_GetRootDeviceInstance(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetRootDeviceInstance, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -1213,10 +1089,6 @@ NTSTATUS rpccli_PNP_GetRootDeviceInstance(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetRootDeviceInstance, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1265,10 +1137,6 @@ struct tevent_req *rpccli_PNP_GetRelatedDeviceInstance_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetRelatedDeviceInstance, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -1313,10 +1181,6 @@ static void rpccli_PNP_GetRelatedDeviceInstance_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetRelatedDeviceInstance, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1352,10 +1216,6 @@ NTSTATUS rpccli_PNP_GetRelatedDeviceInstance(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetRelatedDeviceInstance, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -1364,10 +1224,6 @@ NTSTATUS rpccli_PNP_GetRelatedDeviceInstance(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetRelatedDeviceInstance, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1416,10 +1272,6 @@ struct tevent_req *rpccli_PNP_EnumerateSubKeys_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_EnumerateSubKeys, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -1464,10 +1316,6 @@ static void rpccli_PNP_EnumerateSubKeys_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_EnumerateSubKeys, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1503,10 +1351,6 @@ NTSTATUS rpccli_PNP_EnumerateSubKeys(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_EnumerateSubKeys, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -1515,10 +1359,6 @@ NTSTATUS rpccli_PNP_EnumerateSubKeys(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_EnumerateSubKeys, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1576,10 +1416,6 @@ struct tevent_req *rpccli_PNP_GetDeviceList_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetDeviceList, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_PNP_GetDeviceList_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -1632,10 +1468,6 @@ static void rpccli_PNP_GetDeviceList_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetDeviceList, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1678,10 +1510,6 @@ NTSTATUS rpccli_PNP_GetDeviceList(struct rpc_pipe_client *cli,
 	r.in.length = length;
 	r.in.flags = flags;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetDeviceList, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -1690,10 +1518,6 @@ NTSTATUS rpccli_PNP_GetDeviceList(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetDeviceList, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1750,10 +1574,6 @@ struct tevent_req *rpccli_PNP_GetDeviceListSize_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetDeviceListSize, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_PNP_GetDeviceListSize_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -1805,10 +1625,6 @@ static void rpccli_PNP_GetDeviceListSize_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetDeviceListSize, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1849,10 +1665,6 @@ NTSTATUS rpccli_PNP_GetDeviceListSize(struct rpc_pipe_client *cli,
 	r.in.devicename = devicename;
 	r.in.flags = flags;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetDeviceListSize, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -1861,10 +1673,6 @@ NTSTATUS rpccli_PNP_GetDeviceListSize(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetDeviceListSize, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1914,10 +1722,6 @@ struct tevent_req *rpccli_PNP_GetDepth_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetDepth, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -1962,10 +1766,6 @@ static void rpccli_PNP_GetDepth_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetDepth, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2001,10 +1801,6 @@ NTSTATUS rpccli_PNP_GetDepth(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetDepth, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -2013,10 +1809,6 @@ NTSTATUS rpccli_PNP_GetDepth(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetDepth, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2082,10 +1874,6 @@ struct tevent_req *rpccli_PNP_GetDeviceRegProp_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetDeviceRegProp, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_PNP_GetDeviceRegProp_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -2140,10 +1928,6 @@ static void rpccli_PNP_GetDeviceRegProp_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetDeviceRegProp, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2192,10 +1976,6 @@ NTSTATUS rpccli_PNP_GetDeviceRegProp(struct rpc_pipe_client *cli,
 	r.in.needed = needed;
 	r.in.flags = flags;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetDeviceRegProp, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -2204,10 +1984,6 @@ NTSTATUS rpccli_PNP_GetDeviceRegProp(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetDeviceRegProp, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2260,10 +2036,6 @@ struct tevent_req *rpccli_PNP_SetDeviceRegProp_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_SetDeviceRegProp, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -2308,10 +2080,6 @@ static void rpccli_PNP_SetDeviceRegProp_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_SetDeviceRegProp, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2347,10 +2115,6 @@ NTSTATUS rpccli_PNP_SetDeviceRegProp(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_SetDeviceRegProp, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -2359,10 +2123,6 @@ NTSTATUS rpccli_PNP_SetDeviceRegProp(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_SetDeviceRegProp, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2411,10 +2171,6 @@ struct tevent_req *rpccli_PNP_GetClassInstance_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetClassInstance, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -2459,10 +2215,6 @@ static void rpccli_PNP_GetClassInstance_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetClassInstance, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2498,10 +2250,6 @@ NTSTATUS rpccli_PNP_GetClassInstance(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetClassInstance, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -2510,10 +2258,6 @@ NTSTATUS rpccli_PNP_GetClassInstance(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetClassInstance, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2562,10 +2306,6 @@ struct tevent_req *rpccli_PNP_CreateKey_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_CreateKey, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -2610,10 +2350,6 @@ static void rpccli_PNP_CreateKey_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_CreateKey, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2649,10 +2385,6 @@ NTSTATUS rpccli_PNP_CreateKey(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_CreateKey, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -2661,10 +2393,6 @@ NTSTATUS rpccli_PNP_CreateKey(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_CreateKey, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2713,10 +2441,6 @@ struct tevent_req *rpccli_PNP_DeleteRegistryKey_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_DeleteRegistryKey, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -2761,10 +2485,6 @@ static void rpccli_PNP_DeleteRegistryKey_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_DeleteRegistryKey, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2800,10 +2520,6 @@ NTSTATUS rpccli_PNP_DeleteRegistryKey(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_DeleteRegistryKey, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -2812,10 +2528,6 @@ NTSTATUS rpccli_PNP_DeleteRegistryKey(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_DeleteRegistryKey, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2864,10 +2576,6 @@ struct tevent_req *rpccli_PNP_GetClassCount_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetClassCount, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -2912,10 +2620,6 @@ static void rpccli_PNP_GetClassCount_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetClassCount, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2951,10 +2655,6 @@ NTSTATUS rpccli_PNP_GetClassCount(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetClassCount, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -2963,10 +2663,6 @@ NTSTATUS rpccli_PNP_GetClassCount(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetClassCount, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3015,10 +2711,6 @@ struct tevent_req *rpccli_PNP_GetClassName_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetClassName, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -3063,10 +2755,6 @@ static void rpccli_PNP_GetClassName_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetClassName, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3102,10 +2790,6 @@ NTSTATUS rpccli_PNP_GetClassName(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetClassName, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -3114,10 +2798,6 @@ NTSTATUS rpccli_PNP_GetClassName(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetClassName, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3166,10 +2846,6 @@ struct tevent_req *rpccli_PNP_DeleteClassKey_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_DeleteClassKey, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -3214,10 +2890,6 @@ static void rpccli_PNP_DeleteClassKey_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_DeleteClassKey, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3253,10 +2925,6 @@ NTSTATUS rpccli_PNP_DeleteClassKey(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_DeleteClassKey, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -3265,10 +2933,6 @@ NTSTATUS rpccli_PNP_DeleteClassKey(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_DeleteClassKey, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3317,10 +2981,6 @@ struct tevent_req *rpccli_PNP_GetInterfaceDeviceAlias_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetInterfaceDeviceAlias, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -3365,10 +3025,6 @@ static void rpccli_PNP_GetInterfaceDeviceAlias_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetInterfaceDeviceAlias, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3404,10 +3060,6 @@ NTSTATUS rpccli_PNP_GetInterfaceDeviceAlias(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetInterfaceDeviceAlias, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -3416,10 +3068,6 @@ NTSTATUS rpccli_PNP_GetInterfaceDeviceAlias(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetInterfaceDeviceAlias, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3468,10 +3116,6 @@ struct tevent_req *rpccli_PNP_GetInterfaceDeviceList_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetInterfaceDeviceList, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -3516,10 +3160,6 @@ static void rpccli_PNP_GetInterfaceDeviceList_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetInterfaceDeviceList, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3555,10 +3195,6 @@ NTSTATUS rpccli_PNP_GetInterfaceDeviceList(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetInterfaceDeviceList, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -3567,10 +3203,6 @@ NTSTATUS rpccli_PNP_GetInterfaceDeviceList(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetInterfaceDeviceList, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3619,10 +3251,6 @@ struct tevent_req *rpccli_PNP_GetInterfaceDeviceListSize_send(TALLOC_CTX *mem_ct
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetInterfaceDeviceListSize, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -3667,10 +3295,6 @@ static void rpccli_PNP_GetInterfaceDeviceListSize_done(struct tevent_req *subreq
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetInterfaceDeviceListSize, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3706,10 +3330,6 @@ NTSTATUS rpccli_PNP_GetInterfaceDeviceListSize(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetInterfaceDeviceListSize, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -3718,10 +3338,6 @@ NTSTATUS rpccli_PNP_GetInterfaceDeviceListSize(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetInterfaceDeviceListSize, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3770,10 +3386,6 @@ struct tevent_req *rpccli_PNP_RegisterDeviceClassAssociation_send(TALLOC_CTX *me
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_RegisterDeviceClassAssociation, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -3818,10 +3430,6 @@ static void rpccli_PNP_RegisterDeviceClassAssociation_done(struct tevent_req *su
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_RegisterDeviceClassAssociation, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3857,10 +3465,6 @@ NTSTATUS rpccli_PNP_RegisterDeviceClassAssociation(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_RegisterDeviceClassAssociation, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -3869,10 +3473,6 @@ NTSTATUS rpccli_PNP_RegisterDeviceClassAssociation(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_RegisterDeviceClassAssociation, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3921,10 +3521,6 @@ struct tevent_req *rpccli_PNP_UnregisterDeviceClassAssociation_send(TALLOC_CTX *
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_UnregisterDeviceClassAssociation, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -3969,10 +3565,6 @@ static void rpccli_PNP_UnregisterDeviceClassAssociation_done(struct tevent_req *
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_UnregisterDeviceClassAssociation, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -4008,10 +3600,6 @@ NTSTATUS rpccli_PNP_UnregisterDeviceClassAssociation(struct rpc_pipe_client *cli
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_UnregisterDeviceClassAssociation, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -4020,10 +3608,6 @@ NTSTATUS rpccli_PNP_UnregisterDeviceClassAssociation(struct rpc_pipe_client *cli
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_UnregisterDeviceClassAssociation, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -4072,10 +3656,6 @@ struct tevent_req *rpccli_PNP_GetClassRegProp_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetClassRegProp, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -4120,10 +3700,6 @@ static void rpccli_PNP_GetClassRegProp_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetClassRegProp, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -4159,10 +3735,6 @@ NTSTATUS rpccli_PNP_GetClassRegProp(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetClassRegProp, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -4171,10 +3743,6 @@ NTSTATUS rpccli_PNP_GetClassRegProp(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetClassRegProp, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -4223,10 +3791,6 @@ struct tevent_req *rpccli_PNP_SetClassRegProp_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_SetClassRegProp, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -4271,10 +3835,6 @@ static void rpccli_PNP_SetClassRegProp_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_SetClassRegProp, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -4310,10 +3870,6 @@ NTSTATUS rpccli_PNP_SetClassRegProp(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_SetClassRegProp, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -4322,10 +3878,6 @@ NTSTATUS rpccli_PNP_SetClassRegProp(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_SetClassRegProp, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -4374,10 +3926,6 @@ struct tevent_req *rpccli_PNP_CreateDevInst_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_CreateDevInst, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -4422,10 +3970,6 @@ static void rpccli_PNP_CreateDevInst_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_CreateDevInst, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -4461,10 +4005,6 @@ NTSTATUS rpccli_PNP_CreateDevInst(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_CreateDevInst, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -4473,10 +4013,6 @@ NTSTATUS rpccli_PNP_CreateDevInst(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_CreateDevInst, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -4525,10 +4061,6 @@ struct tevent_req *rpccli_PNP_DeviceInstanceAction_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_DeviceInstanceAction, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -4573,10 +4105,6 @@ static void rpccli_PNP_DeviceInstanceAction_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_DeviceInstanceAction, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -4612,10 +4140,6 @@ NTSTATUS rpccli_PNP_DeviceInstanceAction(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_DeviceInstanceAction, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -4624,10 +4148,6 @@ NTSTATUS rpccli_PNP_DeviceInstanceAction(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_DeviceInstanceAction, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -4676,10 +4196,6 @@ struct tevent_req *rpccli_PNP_GetDeviceStatus_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetDeviceStatus, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -4724,10 +4240,6 @@ static void rpccli_PNP_GetDeviceStatus_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetDeviceStatus, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -4763,10 +4275,6 @@ NTSTATUS rpccli_PNP_GetDeviceStatus(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetDeviceStatus, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -4775,10 +4283,6 @@ NTSTATUS rpccli_PNP_GetDeviceStatus(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetDeviceStatus, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -4827,10 +4331,6 @@ struct tevent_req *rpccli_PNP_SetDeviceProblem_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_SetDeviceProblem, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -4875,10 +4375,6 @@ static void rpccli_PNP_SetDeviceProblem_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_SetDeviceProblem, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -4914,10 +4410,6 @@ NTSTATUS rpccli_PNP_SetDeviceProblem(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_SetDeviceProblem, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -4926,10 +4418,6 @@ NTSTATUS rpccli_PNP_SetDeviceProblem(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_SetDeviceProblem, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -4978,10 +4466,6 @@ struct tevent_req *rpccli_PNP_DisableDevInst_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_DisableDevInst, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -5026,10 +4510,6 @@ static void rpccli_PNP_DisableDevInst_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_DisableDevInst, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -5065,10 +4545,6 @@ NTSTATUS rpccli_PNP_DisableDevInst(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_DisableDevInst, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -5077,10 +4553,6 @@ NTSTATUS rpccli_PNP_DisableDevInst(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_DisableDevInst, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -5129,10 +4601,6 @@ struct tevent_req *rpccli_PNP_UninstallDevInst_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_UninstallDevInst, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -5177,10 +4645,6 @@ static void rpccli_PNP_UninstallDevInst_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_UninstallDevInst, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -5216,10 +4680,6 @@ NTSTATUS rpccli_PNP_UninstallDevInst(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_UninstallDevInst, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -5228,10 +4688,6 @@ NTSTATUS rpccli_PNP_UninstallDevInst(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_UninstallDevInst, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -5280,10 +4736,6 @@ struct tevent_req *rpccli_PNP_AddID_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_AddID, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -5328,10 +4780,6 @@ static void rpccli_PNP_AddID_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_AddID, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -5367,10 +4815,6 @@ NTSTATUS rpccli_PNP_AddID(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_AddID, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -5379,10 +4823,6 @@ NTSTATUS rpccli_PNP_AddID(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_AddID, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -5431,10 +4871,6 @@ struct tevent_req *rpccli_PNP_RegisterDriver_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_RegisterDriver, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -5479,10 +4915,6 @@ static void rpccli_PNP_RegisterDriver_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_RegisterDriver, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -5518,10 +4950,6 @@ NTSTATUS rpccli_PNP_RegisterDriver(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_RegisterDriver, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -5530,10 +4958,6 @@ NTSTATUS rpccli_PNP_RegisterDriver(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_RegisterDriver, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -5582,10 +5006,6 @@ struct tevent_req *rpccli_PNP_QueryRemove_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_QueryRemove, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -5630,10 +5050,6 @@ static void rpccli_PNP_QueryRemove_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_QueryRemove, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -5669,10 +5085,6 @@ NTSTATUS rpccli_PNP_QueryRemove(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_QueryRemove, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -5681,10 +5093,6 @@ NTSTATUS rpccli_PNP_QueryRemove(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_QueryRemove, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -5733,10 +5141,6 @@ struct tevent_req *rpccli_PNP_RequestDeviceEject_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_RequestDeviceEject, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -5781,10 +5185,6 @@ static void rpccli_PNP_RequestDeviceEject_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_RequestDeviceEject, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -5820,10 +5220,6 @@ NTSTATUS rpccli_PNP_RequestDeviceEject(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_RequestDeviceEject, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -5832,10 +5228,6 @@ NTSTATUS rpccli_PNP_RequestDeviceEject(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_RequestDeviceEject, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -5884,10 +5276,6 @@ struct tevent_req *rpccli_PNP_IsDockStationPresent_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_IsDockStationPresent, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -5932,10 +5320,6 @@ static void rpccli_PNP_IsDockStationPresent_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_IsDockStationPresent, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -5971,10 +5355,6 @@ NTSTATUS rpccli_PNP_IsDockStationPresent(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_IsDockStationPresent, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -5983,10 +5363,6 @@ NTSTATUS rpccli_PNP_IsDockStationPresent(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_IsDockStationPresent, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -6035,10 +5411,6 @@ struct tevent_req *rpccli_PNP_RequestEjectPC_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_RequestEjectPC, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -6083,10 +5455,6 @@ static void rpccli_PNP_RequestEjectPC_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_RequestEjectPC, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -6122,10 +5490,6 @@ NTSTATUS rpccli_PNP_RequestEjectPC(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_RequestEjectPC, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -6134,10 +5498,6 @@ NTSTATUS rpccli_PNP_RequestEjectPC(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_RequestEjectPC, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -6206,10 +5566,6 @@ struct tevent_req *rpccli_PNP_HwProfFlags_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_HwProfFlags, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_PNP_HwProfFlags_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -6267,10 +5623,6 @@ static void rpccli_PNP_HwProfFlags_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_HwProfFlags, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -6323,10 +5675,6 @@ NTSTATUS rpccli_PNP_HwProfFlags(struct rpc_pipe_client *cli,
 	r.in.name_length = name_length;
 	r.in.flags = flags;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_HwProfFlags, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -6335,10 +5683,6 @@ NTSTATUS rpccli_PNP_HwProfFlags(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_HwProfFlags, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -6403,10 +5747,6 @@ struct tevent_req *rpccli_PNP_GetHwProfInfo_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetHwProfInfo, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_PNP_GetHwProfInfo_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -6458,10 +5798,6 @@ static void rpccli_PNP_GetHwProfInfo_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetHwProfInfo, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -6505,10 +5841,6 @@ NTSTATUS rpccli_PNP_GetHwProfInfo(struct rpc_pipe_client *cli,
 	r.in.size = size;
 	r.in.flags = flags;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetHwProfInfo, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -6517,10 +5849,6 @@ NTSTATUS rpccli_PNP_GetHwProfInfo(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetHwProfInfo, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -6570,10 +5898,6 @@ struct tevent_req *rpccli_PNP_AddEmptyLogConf_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_AddEmptyLogConf, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -6618,10 +5942,6 @@ static void rpccli_PNP_AddEmptyLogConf_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_AddEmptyLogConf, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -6657,10 +5977,6 @@ NTSTATUS rpccli_PNP_AddEmptyLogConf(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_AddEmptyLogConf, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -6669,10 +5985,6 @@ NTSTATUS rpccli_PNP_AddEmptyLogConf(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_AddEmptyLogConf, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -6721,10 +6033,6 @@ struct tevent_req *rpccli_PNP_FreeLogConf_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_FreeLogConf, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -6769,10 +6077,6 @@ static void rpccli_PNP_FreeLogConf_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_FreeLogConf, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -6808,10 +6112,6 @@ NTSTATUS rpccli_PNP_FreeLogConf(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_FreeLogConf, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -6820,10 +6120,6 @@ NTSTATUS rpccli_PNP_FreeLogConf(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_FreeLogConf, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -6872,10 +6168,6 @@ struct tevent_req *rpccli_PNP_GetFirstLogConf_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetFirstLogConf, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -6920,10 +6212,6 @@ static void rpccli_PNP_GetFirstLogConf_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetFirstLogConf, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -6959,10 +6247,6 @@ NTSTATUS rpccli_PNP_GetFirstLogConf(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetFirstLogConf, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -6971,10 +6255,6 @@ NTSTATUS rpccli_PNP_GetFirstLogConf(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetFirstLogConf, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -7023,10 +6303,6 @@ struct tevent_req *rpccli_PNP_GetNextLogConf_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetNextLogConf, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -7071,10 +6347,6 @@ static void rpccli_PNP_GetNextLogConf_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetNextLogConf, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -7110,10 +6382,6 @@ NTSTATUS rpccli_PNP_GetNextLogConf(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetNextLogConf, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -7122,10 +6390,6 @@ NTSTATUS rpccli_PNP_GetNextLogConf(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetNextLogConf, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -7174,10 +6438,6 @@ struct tevent_req *rpccli_PNP_GetLogConfPriority_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetLogConfPriority, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -7222,10 +6482,6 @@ static void rpccli_PNP_GetLogConfPriority_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetLogConfPriority, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -7261,10 +6517,6 @@ NTSTATUS rpccli_PNP_GetLogConfPriority(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetLogConfPriority, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -7273,10 +6525,6 @@ NTSTATUS rpccli_PNP_GetLogConfPriority(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetLogConfPriority, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -7325,10 +6573,6 @@ struct tevent_req *rpccli_PNP_AddResDes_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_AddResDes, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -7373,10 +6617,6 @@ static void rpccli_PNP_AddResDes_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_AddResDes, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -7412,10 +6652,6 @@ NTSTATUS rpccli_PNP_AddResDes(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_AddResDes, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -7424,10 +6660,6 @@ NTSTATUS rpccli_PNP_AddResDes(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_AddResDes, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -7476,10 +6708,6 @@ struct tevent_req *rpccli_PNP_FreeResDes_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_FreeResDes, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -7524,10 +6752,6 @@ static void rpccli_PNP_FreeResDes_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_FreeResDes, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -7563,10 +6787,6 @@ NTSTATUS rpccli_PNP_FreeResDes(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_FreeResDes, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -7575,10 +6795,6 @@ NTSTATUS rpccli_PNP_FreeResDes(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_FreeResDes, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -7627,10 +6843,6 @@ struct tevent_req *rpccli_PNP_GetNextResDes_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetNextResDes, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -7675,10 +6887,6 @@ static void rpccli_PNP_GetNextResDes_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetNextResDes, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -7714,10 +6922,6 @@ NTSTATUS rpccli_PNP_GetNextResDes(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetNextResDes, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -7726,10 +6930,6 @@ NTSTATUS rpccli_PNP_GetNextResDes(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetNextResDes, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -7778,10 +6978,6 @@ struct tevent_req *rpccli_PNP_GetResDesData_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetResDesData, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -7826,10 +7022,6 @@ static void rpccli_PNP_GetResDesData_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetResDesData, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -7865,10 +7057,6 @@ NTSTATUS rpccli_PNP_GetResDesData(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetResDesData, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -7877,10 +7065,6 @@ NTSTATUS rpccli_PNP_GetResDesData(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetResDesData, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -7929,10 +7113,6 @@ struct tevent_req *rpccli_PNP_GetResDesDataSize_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetResDesDataSize, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -7977,10 +7157,6 @@ static void rpccli_PNP_GetResDesDataSize_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetResDesDataSize, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -8016,10 +7192,6 @@ NTSTATUS rpccli_PNP_GetResDesDataSize(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetResDesDataSize, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -8028,10 +7200,6 @@ NTSTATUS rpccli_PNP_GetResDesDataSize(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetResDesDataSize, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -8080,10 +7248,6 @@ struct tevent_req *rpccli_PNP_ModifyResDes_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_ModifyResDes, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -8128,10 +7292,6 @@ static void rpccli_PNP_ModifyResDes_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_ModifyResDes, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -8167,10 +7327,6 @@ NTSTATUS rpccli_PNP_ModifyResDes(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_ModifyResDes, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -8179,10 +7335,6 @@ NTSTATUS rpccli_PNP_ModifyResDes(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_ModifyResDes, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -8231,10 +7383,6 @@ struct tevent_req *rpccli_PNP_DetectResourceLimit_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_DetectResourceLimit, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -8279,10 +7427,6 @@ static void rpccli_PNP_DetectResourceLimit_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_DetectResourceLimit, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -8318,10 +7462,6 @@ NTSTATUS rpccli_PNP_DetectResourceLimit(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_DetectResourceLimit, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -8330,10 +7470,6 @@ NTSTATUS rpccli_PNP_DetectResourceLimit(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_DetectResourceLimit, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -8382,10 +7518,6 @@ struct tevent_req *rpccli_PNP_QueryResConfList_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_QueryResConfList, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -8430,10 +7562,6 @@ static void rpccli_PNP_QueryResConfList_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_QueryResConfList, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -8469,10 +7597,6 @@ NTSTATUS rpccli_PNP_QueryResConfList(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_QueryResConfList, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -8481,10 +7605,6 @@ NTSTATUS rpccli_PNP_QueryResConfList(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_QueryResConfList, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -8533,10 +7653,6 @@ struct tevent_req *rpccli_PNP_SetHwProf_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_SetHwProf, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -8581,10 +7697,6 @@ static void rpccli_PNP_SetHwProf_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_SetHwProf, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -8620,10 +7732,6 @@ NTSTATUS rpccli_PNP_SetHwProf(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_SetHwProf, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -8632,10 +7740,6 @@ NTSTATUS rpccli_PNP_SetHwProf(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_SetHwProf, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -8684,10 +7788,6 @@ struct tevent_req *rpccli_PNP_QueryArbitratorFreeData_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_QueryArbitratorFreeData, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -8732,10 +7832,6 @@ static void rpccli_PNP_QueryArbitratorFreeData_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_QueryArbitratorFreeData, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -8771,10 +7867,6 @@ NTSTATUS rpccli_PNP_QueryArbitratorFreeData(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_QueryArbitratorFreeData, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -8783,10 +7875,6 @@ NTSTATUS rpccli_PNP_QueryArbitratorFreeData(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_QueryArbitratorFreeData, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -8835,10 +7923,6 @@ struct tevent_req *rpccli_PNP_QueryArbitratorFreeSize_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_QueryArbitratorFreeSize, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -8883,10 +7967,6 @@ static void rpccli_PNP_QueryArbitratorFreeSize_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_QueryArbitratorFreeSize, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -8922,10 +8002,6 @@ NTSTATUS rpccli_PNP_QueryArbitratorFreeSize(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_QueryArbitratorFreeSize, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -8934,10 +8010,6 @@ NTSTATUS rpccli_PNP_QueryArbitratorFreeSize(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_QueryArbitratorFreeSize, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -8986,10 +8058,6 @@ struct tevent_req *rpccli_PNP_RunDetection_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_RunDetection, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -9034,10 +8102,6 @@ static void rpccli_PNP_RunDetection_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_RunDetection, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -9073,10 +8137,6 @@ NTSTATUS rpccli_PNP_RunDetection(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_RunDetection, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -9085,10 +8145,6 @@ NTSTATUS rpccli_PNP_RunDetection(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_RunDetection, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -9137,10 +8193,6 @@ struct tevent_req *rpccli_PNP_RegisterNotification_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_RegisterNotification, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -9185,10 +8237,6 @@ static void rpccli_PNP_RegisterNotification_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_RegisterNotification, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -9224,10 +8272,6 @@ NTSTATUS rpccli_PNP_RegisterNotification(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_RegisterNotification, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -9236,10 +8280,6 @@ NTSTATUS rpccli_PNP_RegisterNotification(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_RegisterNotification, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -9288,10 +8328,6 @@ struct tevent_req *rpccli_PNP_UnregisterNotification_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_UnregisterNotification, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -9336,10 +8372,6 @@ static void rpccli_PNP_UnregisterNotification_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_UnregisterNotification, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -9375,10 +8407,6 @@ NTSTATUS rpccli_PNP_UnregisterNotification(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_UnregisterNotification, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -9387,10 +8415,6 @@ NTSTATUS rpccli_PNP_UnregisterNotification(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_UnregisterNotification, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -9439,10 +8463,6 @@ struct tevent_req *rpccli_PNP_GetCustomDevProp_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetCustomDevProp, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -9487,10 +8507,6 @@ static void rpccli_PNP_GetCustomDevProp_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetCustomDevProp, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -9526,10 +8542,6 @@ NTSTATUS rpccli_PNP_GetCustomDevProp(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetCustomDevProp, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -9538,10 +8550,6 @@ NTSTATUS rpccli_PNP_GetCustomDevProp(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetCustomDevProp, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -9590,10 +8598,6 @@ struct tevent_req *rpccli_PNP_GetVersionInternal_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetVersionInternal, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -9638,10 +8642,6 @@ static void rpccli_PNP_GetVersionInternal_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetVersionInternal, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -9677,10 +8677,6 @@ NTSTATUS rpccli_PNP_GetVersionInternal(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetVersionInternal, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -9689,10 +8685,6 @@ NTSTATUS rpccli_PNP_GetVersionInternal(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetVersionInternal, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -9741,10 +8733,6 @@ struct tevent_req *rpccli_PNP_GetBlockedDriverInfo_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetBlockedDriverInfo, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -9789,10 +8777,6 @@ static void rpccli_PNP_GetBlockedDriverInfo_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetBlockedDriverInfo, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -9828,10 +8812,6 @@ NTSTATUS rpccli_PNP_GetBlockedDriverInfo(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetBlockedDriverInfo, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -9840,10 +8820,6 @@ NTSTATUS rpccli_PNP_GetBlockedDriverInfo(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetBlockedDriverInfo, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -9892,10 +8868,6 @@ struct tevent_req *rpccli_PNP_GetServerSideDeviceInstallFlags_send(TALLOC_CTX *m
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetServerSideDeviceInstallFlags, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -9940,10 +8912,6 @@ static void rpccli_PNP_GetServerSideDeviceInstallFlags_done(struct tevent_req *s
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetServerSideDeviceInstallFlags, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -9979,10 +8947,6 @@ NTSTATUS rpccli_PNP_GetServerSideDeviceInstallFlags(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(PNP_GetServerSideDeviceInstallFlags, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
@@ -9991,10 +8955,6 @@ NTSTATUS rpccli_PNP_GetServerSideDeviceInstallFlags(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(PNP_GetServerSideDeviceInstallFlags, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
