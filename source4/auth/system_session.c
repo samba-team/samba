@@ -38,13 +38,13 @@
 static NTSTATUS create_token(TALLOC_CTX *mem_ctx, 
 			       struct dom_sid *user_sid,
 			       struct dom_sid *group_sid, 
-			       int n_groupSIDs,
+			       unsigned int n_groupSIDs,
 			       struct dom_sid **groupSIDs, 
 			       bool is_authenticated,
 			       struct security_token **token)
 {
 	struct security_token *ptoken;
-	int i;
+	unsigned int i;
 
 	ptoken = security_token_initialise(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(ptoken);
@@ -325,12 +325,12 @@ NTSTATUS auth_system_server_info(TALLOC_CTX *mem_ctx, const char *netbios_name,
 static NTSTATUS create_admin_token(TALLOC_CTX *mem_ctx,
 				   struct dom_sid *user_sid,
 				   struct dom_sid *group_sid,
-				   int n_groupSIDs,
+				   unsigned int n_groupSIDs,
 				   struct dom_sid **groupSIDs,
 				   struct security_token **token)
 {
 	struct security_token *ptoken;
-	int i;
+	unsigned int i;
 
 	ptoken = security_token_initialise(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(ptoken);

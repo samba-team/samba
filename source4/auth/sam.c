@@ -299,10 +299,11 @@ static bool sids_contains_sid(const struct dom_sid **sids, const int num_sids,
 static NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
 	const struct dom_sid *sid, const bool only_childs,
 	TALLOC_CTX *res_sids_ctx, struct dom_sid ***res_sids,
-	int *num_res_sids)
+	unsigned int *num_res_sids)
 {
 	const char * const attrs[] = { "memberOf", NULL };
-	int i, ret;
+	unsigned int i;
+	int ret;
 	bool already_there;
 	struct ldb_dn *tmp_dn;
 	struct dom_sid *tmp_sid;
@@ -390,7 +391,7 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx,
 	struct dom_sid *primary_group_sid;
 	/* SID structures for the expanded group memberships */
 	struct dom_sid **groupSIDs = NULL, **groupSIDs_2 = NULL;
-	int num_groupSIDs = 0, num_groupSIDs_2 = 0, i;
+	unsigned int num_groupSIDs = 0, num_groupSIDs_2 = 0, i;
 	uint32_t userAccountControl;
 
 	server_info = talloc(mem_ctx, struct auth_serversupplied_info);
