@@ -181,6 +181,7 @@ static char *create_pai_buf_v2(canon_ace *file_ace_list,
 	char *entry_offset = NULL;
 	unsigned int num_entries = 0;
 	unsigned int num_def_entries = 0;
+	unsigned int i;
 
 	for (ace_list = file_ace_list; ace_list; ace_list = ace_list->next) {
 		num_entries++;
@@ -207,8 +208,12 @@ static char *create_pai_buf_v2(canon_ace *file_ace_list,
 	SSVAL(pai_buf,PAI_V2_NUM_ENTRIES_OFFSET,num_entries);
 	SSVAL(pai_buf,PAI_V2_NUM_DEFAULT_ENTRIES_OFFSET,num_def_entries);
 
+	DEBUG(10,("create_pai_buf_v2: sd_type = 0x%x\n",
+			(unsigned int)sd_type ));
+
 	entry_offset = pai_buf + PAI_V2_ENTRIES_BASE;
 
+	i = 0;
 	for (ace_list = file_ace_list; ace_list; ace_list = ace_list->next) {
 		uint8_t type_val = (uint8_t)ace_list->owner_type;
 		uint32_t entry_val = get_entry_val(ace_list);
@@ -216,6 +221,12 @@ static char *create_pai_buf_v2(canon_ace *file_ace_list,
 		SCVAL(entry_offset,0,ace_list->ace_flags);
 		SCVAL(entry_offset,1,type_val);
 		SIVAL(entry_offset,2,entry_val);
+		DEBUG(10,("create_pai_buf_v2: entry %u [0x%x] [0x%x] [0x%x]\n",
+			i,
+			(unsigned int)ace_list->ace_flags,
+			(unsigned int)type_val,
+			(unsigned int)entry_val ));
+		i++;
 		entry_offset += PAI_V2_ENTRY_LENGTH;
 	}
 
@@ -226,6 +237,12 @@ static char *create_pai_buf_v2(canon_ace *file_ace_list,
 		SCVAL(entry_offset,0,ace_list->ace_flags);
 		SCVAL(entry_offset,1,type_val);
 		SIVAL(entry_offset,2,entry_val);
+		DEBUG(10,("create_pai_buf_v2: entry %u [0x%x] [0x%x] [0x%x]\n",
+			i,
+			(unsigned int)ace_list->ace_flags,
+			(unsigned int)type_val,
+			(unsigned int)entry_val ));
+		i++;
 		entry_offset += PAI_V2_ENTRY_LENGTH;
 	}
 
@@ -400,6 +417,8 @@ static bool get_pai_owner_type(struct pai_entry *paie, const char *entry_offset)
 			DEBUG(10,("get_pai_owner_type: world ace\n"));
 			break;
 		default:
+			DEBUG(10,("get_pai_owner_type: unknown type %u\n",
+				(unsigned int)paie->owner_type ));
 			return false;
 	}
 	return true;
@@ -486,12 +505,13 @@ static struct pai_val *create_pai_val_v1(const char *buf, size_t size)
 ************************************************************************/
 
 static const char *create_pai_v2_entries(struct pai_val *paiv,
+				unsigned int num_entries,
 				const char *entry_offset,
 				bool def_entry)
 {
-	int i;
+	unsigned int i;
 
-	for (i = 0; i < paiv->num_entries; i++) {
+	for (i = 0; i < num_entries; i++) {
 		struct pai_entry *paie = SMB_MALLOC_P(struct pai_entry);
 		if (!paie) {
 			return NULL;
@@ -499,9 +519,7 @@ static const char *create_pai_v2_entries(struct pai_val *paiv,
 
 		paie->ace_flags = CVAL(entry_offset,0);
 
-		entry_offset++;
-
-		if (!get_pai_owner_type(paie, entry_offset)) {
+		if (!get_pai_owner_type(paie, entry_offset+1)) {
 			return NULL;
 		}
 		if (!def_entry) {
@@ -541,15 +559,18 @@ static struct pai_val *create_pai_val_v2(const char *buf, size_t size)
 
 	entry_offset = buf + PAI_V2_ENTRIES_BASE;
 
-	DEBUG(10,("create_pai_val_v2: num_entries = %u, num_def_entries = %u\n",
+	DEBUG(10,("create_pai_val_v2: sd_type = 0x%x num_entries = %u, num_def_entries = %u\n",
+			(unsigned int)paiv->sd_type,
 			paiv->num_entries, paiv->num_def_entries ));
 
-	entry_offset = create_pai_v2_entries(paiv, entry_offset, false);
+	entry_offset = create_pai_v2_entries(paiv, paiv->num_entries,
+				entry_offset, false);
 	if (entry_offset == NULL) {
 		free_inherited_info(paiv);
 		return NULL;
 	}
-	entry_offset = create_pai_v2_entries(paiv, entry_offset, true);
+	entry_offset = create_pai_v2_entries(paiv, paiv->num_def_entries,
+				entry_offset, true);
 	if (entry_offset == NULL) {
 		free_inherited_info(paiv);
 		return NULL;
