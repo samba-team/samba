@@ -48,10 +48,6 @@ struct tevent_req *rpccli_initshutdown_Init_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(initshutdown_Init, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -95,10 +91,6 @@ static void rpccli_initshutdown_Init_done(struct tevent_req *subreq)
 
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(initshutdown_Init, &state->orig);
-	}
 
 	tevent_req_done(req);
 }
@@ -145,10 +137,6 @@ NTSTATUS rpccli_initshutdown_Init(struct rpc_pipe_client *cli,
 	r.in.force_apps = force_apps;
 	r.in.do_reboot = do_reboot;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(initshutdown_Init, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_initshutdown,
@@ -157,10 +145,6 @@ NTSTATUS rpccli_initshutdown_Init(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(initshutdown_Init, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -211,10 +195,6 @@ struct tevent_req *rpccli_initshutdown_Abort_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(initshutdown_Abort, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -259,10 +239,6 @@ static void rpccli_initshutdown_Abort_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(initshutdown_Abort, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -300,10 +276,6 @@ NTSTATUS rpccli_initshutdown_Abort(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.server = server;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(initshutdown_Abort, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_initshutdown,
@@ -312,10 +284,6 @@ NTSTATUS rpccli_initshutdown_Abort(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(initshutdown_Abort, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -376,10 +344,6 @@ struct tevent_req *rpccli_initshutdown_InitEx_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(initshutdown_InitEx, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -423,10 +387,6 @@ static void rpccli_initshutdown_InitEx_done(struct tevent_req *subreq)
 
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(initshutdown_InitEx, &state->orig);
-	}
 
 	tevent_req_done(req);
 }
@@ -475,10 +435,6 @@ NTSTATUS rpccli_initshutdown_InitEx(struct rpc_pipe_client *cli,
 	r.in.do_reboot = do_reboot;
 	r.in.reason = reason;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(initshutdown_InitEx, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_initshutdown,
@@ -487,10 +443,6 @@ NTSTATUS rpccli_initshutdown_InitEx(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(initshutdown_InitEx, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {

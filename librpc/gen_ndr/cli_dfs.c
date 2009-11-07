@@ -37,10 +37,6 @@ struct tevent_req *rpccli_dfs_GetManagerVersion_send(TALLOC_CTX *mem_ctx,
 	/* Out parameters */
 	state->orig.out.version = _version;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_GetManagerVersion, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_dfs_GetManagerVersion_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -89,10 +85,6 @@ static void rpccli_dfs_GetManagerVersion_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_GetManagerVersion, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -124,10 +116,6 @@ NTSTATUS rpccli_dfs_GetManagerVersion(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_GetManagerVersion, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
@@ -136,10 +124,6 @@ NTSTATUS rpccli_dfs_GetManagerVersion(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_GetManagerVersion, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -195,10 +179,6 @@ struct tevent_req *rpccli_dfs_Add_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_Add, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -242,10 +222,6 @@ static void rpccli_dfs_Add_done(struct tevent_req *subreq)
 
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_Add, &state->orig);
-	}
 
 	tevent_req_done(req);
 }
@@ -292,10 +268,6 @@ NTSTATUS rpccli_dfs_Add(struct rpc_pipe_client *cli,
 	r.in.comment = comment;
 	r.in.flags = flags;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_Add, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
@@ -304,10 +276,6 @@ NTSTATUS rpccli_dfs_Add(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_Add, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -362,10 +330,6 @@ struct tevent_req *rpccli_dfs_Remove_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_Remove, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -410,10 +374,6 @@ static void rpccli_dfs_Remove_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_Remove, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -455,10 +415,6 @@ NTSTATUS rpccli_dfs_Remove(struct rpc_pipe_client *cli,
 	r.in.servername = servername;
 	r.in.sharename = sharename;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_Remove, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
@@ -467,10 +423,6 @@ NTSTATUS rpccli_dfs_Remove(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_Remove, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -529,10 +481,6 @@ struct tevent_req *rpccli_dfs_SetInfo_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_SetInfo, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -576,10 +524,6 @@ static void rpccli_dfs_SetInfo_done(struct tevent_req *subreq)
 
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_SetInfo, &state->orig);
-	}
 
 	tevent_req_done(req);
 }
@@ -626,10 +570,6 @@ NTSTATUS rpccli_dfs_SetInfo(struct rpc_pipe_client *cli,
 	r.in.level = level;
 	r.in.info = info;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_SetInfo, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
@@ -638,10 +578,6 @@ NTSTATUS rpccli_dfs_SetInfo(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_SetInfo, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -700,10 +636,6 @@ struct tevent_req *rpccli_dfs_GetInfo_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_GetInfo, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_dfs_GetInfo_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -755,10 +687,6 @@ static void rpccli_dfs_GetInfo_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_GetInfo, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -803,10 +731,6 @@ NTSTATUS rpccli_dfs_GetInfo(struct rpc_pipe_client *cli,
 	r.in.sharename = sharename;
 	r.in.level = level;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_GetInfo, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
@@ -815,10 +739,6 @@ NTSTATUS rpccli_dfs_GetInfo(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_GetInfo, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -878,10 +798,6 @@ struct tevent_req *rpccli_dfs_Enum_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_Enum, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_dfs_Enum_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -938,10 +854,6 @@ static void rpccli_dfs_Enum_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_Enum, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -985,10 +897,6 @@ NTSTATUS rpccli_dfs_Enum(struct rpc_pipe_client *cli,
 	r.in.info = info;
 	r.in.total = total;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_Enum, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
@@ -997,10 +905,6 @@ NTSTATUS rpccli_dfs_Enum(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_Enum, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1055,10 +959,6 @@ struct tevent_req *rpccli_dfs_Rename_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_Rename, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -1103,10 +1003,6 @@ static void rpccli_dfs_Rename_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_Rename, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1142,10 +1038,6 @@ NTSTATUS rpccli_dfs_Rename(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_Rename, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
@@ -1154,10 +1046,6 @@ NTSTATUS rpccli_dfs_Rename(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_Rename, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1206,10 +1094,6 @@ struct tevent_req *rpccli_dfs_Move_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_Move, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -1254,10 +1138,6 @@ static void rpccli_dfs_Move_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_Move, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1293,10 +1173,6 @@ NTSTATUS rpccli_dfs_Move(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_Move, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
@@ -1305,10 +1181,6 @@ NTSTATUS rpccli_dfs_Move(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_Move, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1357,10 +1229,6 @@ struct tevent_req *rpccli_dfs_ManagerGetConfigInfo_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_ManagerGetConfigInfo, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -1405,10 +1273,6 @@ static void rpccli_dfs_ManagerGetConfigInfo_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_ManagerGetConfigInfo, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1444,10 +1308,6 @@ NTSTATUS rpccli_dfs_ManagerGetConfigInfo(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_ManagerGetConfigInfo, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
@@ -1456,10 +1316,6 @@ NTSTATUS rpccli_dfs_ManagerGetConfigInfo(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_ManagerGetConfigInfo, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1508,10 +1364,6 @@ struct tevent_req *rpccli_dfs_ManagerSendSiteInfo_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_ManagerSendSiteInfo, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -1556,10 +1408,6 @@ static void rpccli_dfs_ManagerSendSiteInfo_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_ManagerSendSiteInfo, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1595,10 +1443,6 @@ NTSTATUS rpccli_dfs_ManagerSendSiteInfo(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_ManagerSendSiteInfo, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
@@ -1607,10 +1451,6 @@ NTSTATUS rpccli_dfs_ManagerSendSiteInfo(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_ManagerSendSiteInfo, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1678,10 +1518,6 @@ struct tevent_req *rpccli_dfs_AddFtRoot_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_AddFtRoot, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_dfs_AddFtRoot_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -1734,10 +1570,6 @@ static void rpccli_dfs_AddFtRoot_done(struct tevent_req *subreq)
 
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_AddFtRoot, &state->orig);
-	}
 
 	tevent_req_done(req);
 }
@@ -1792,10 +1624,6 @@ NTSTATUS rpccli_dfs_AddFtRoot(struct rpc_pipe_client *cli,
 	r.in.flags = flags;
 	r.in.unknown2 = unknown2;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_AddFtRoot, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
@@ -1804,10 +1632,6 @@ NTSTATUS rpccli_dfs_AddFtRoot(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_AddFtRoot, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1872,10 +1696,6 @@ struct tevent_req *rpccli_dfs_RemoveFtRoot_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_RemoveFtRoot, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_dfs_RemoveFtRoot_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -1929,10 +1749,6 @@ static void rpccli_dfs_RemoveFtRoot_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_RemoveFtRoot, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1980,10 +1796,6 @@ NTSTATUS rpccli_dfs_RemoveFtRoot(struct rpc_pipe_client *cli,
 	r.in.flags = flags;
 	r.in.unknown = unknown;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_RemoveFtRoot, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
@@ -1992,10 +1804,6 @@ NTSTATUS rpccli_dfs_RemoveFtRoot(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_RemoveFtRoot, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2055,10 +1863,6 @@ struct tevent_req *rpccli_dfs_AddStdRoot_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_AddStdRoot, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -2103,10 +1907,6 @@ static void rpccli_dfs_AddStdRoot_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_AddStdRoot, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2150,10 +1950,6 @@ NTSTATUS rpccli_dfs_AddStdRoot(struct rpc_pipe_client *cli,
 	r.in.comment = comment;
 	r.in.flags = flags;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_AddStdRoot, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
@@ -2162,10 +1958,6 @@ NTSTATUS rpccli_dfs_AddStdRoot(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_AddStdRoot, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2220,10 +2012,6 @@ struct tevent_req *rpccli_dfs_RemoveStdRoot_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_RemoveStdRoot, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -2268,10 +2056,6 @@ static void rpccli_dfs_RemoveStdRoot_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_RemoveStdRoot, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2313,10 +2097,6 @@ NTSTATUS rpccli_dfs_RemoveStdRoot(struct rpc_pipe_client *cli,
 	r.in.rootshare = rootshare;
 	r.in.flags = flags;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_RemoveStdRoot, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
@@ -2325,10 +2105,6 @@ NTSTATUS rpccli_dfs_RemoveStdRoot(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_RemoveStdRoot, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2381,10 +2157,6 @@ struct tevent_req *rpccli_dfs_ManagerInitialize_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_ManagerInitialize, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -2429,10 +2201,6 @@ static void rpccli_dfs_ManagerInitialize_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_ManagerInitialize, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2472,10 +2240,6 @@ NTSTATUS rpccli_dfs_ManagerInitialize(struct rpc_pipe_client *cli,
 	r.in.servername = servername;
 	r.in.flags = flags;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_ManagerInitialize, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
@@ -2484,10 +2248,6 @@ NTSTATUS rpccli_dfs_ManagerInitialize(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_ManagerInitialize, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2544,10 +2304,6 @@ struct tevent_req *rpccli_dfs_AddStdRootForced_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_AddStdRootForced, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -2592,10 +2348,6 @@ static void rpccli_dfs_AddStdRootForced_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_AddStdRootForced, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2639,10 +2391,6 @@ NTSTATUS rpccli_dfs_AddStdRootForced(struct rpc_pipe_client *cli,
 	r.in.comment = comment;
 	r.in.store = store;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_AddStdRootForced, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
@@ -2651,10 +2399,6 @@ NTSTATUS rpccli_dfs_AddStdRootForced(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_AddStdRootForced, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2714,10 +2458,6 @@ struct tevent_req *rpccli_dfs_GetDcAddress_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_GetDcAddress, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_dfs_GetDcAddress_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -2771,10 +2511,6 @@ static void rpccli_dfs_GetDcAddress_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_GetDcAddress, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2818,10 +2554,6 @@ NTSTATUS rpccli_dfs_GetDcAddress(struct rpc_pipe_client *cli,
 	r.in.is_root = is_root;
 	r.in.ttl = ttl;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_GetDcAddress, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
@@ -2830,10 +2562,6 @@ NTSTATUS rpccli_dfs_GetDcAddress(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_GetDcAddress, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2893,10 +2621,6 @@ struct tevent_req *rpccli_dfs_SetDcAddress_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_SetDcAddress, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -2941,10 +2665,6 @@ static void rpccli_dfs_SetDcAddress_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_SetDcAddress, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2988,10 +2708,6 @@ NTSTATUS rpccli_dfs_SetDcAddress(struct rpc_pipe_client *cli,
 	r.in.flags = flags;
 	r.in.ttl = ttl;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_SetDcAddress, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
@@ -3000,10 +2716,6 @@ NTSTATUS rpccli_dfs_SetDcAddress(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_SetDcAddress, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3056,10 +2768,6 @@ struct tevent_req *rpccli_dfs_FlushFtTable_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_FlushFtTable, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -3104,10 +2812,6 @@ static void rpccli_dfs_FlushFtTable_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_FlushFtTable, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3147,10 +2851,6 @@ NTSTATUS rpccli_dfs_FlushFtTable(struct rpc_pipe_client *cli,
 	r.in.servername = servername;
 	r.in.rootshare = rootshare;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_FlushFtTable, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
@@ -3159,10 +2859,6 @@ NTSTATUS rpccli_dfs_FlushFtTable(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_FlushFtTable, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3211,10 +2907,6 @@ struct tevent_req *rpccli_dfs_Add2_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_Add2, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -3259,10 +2951,6 @@ static void rpccli_dfs_Add2_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_Add2, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3298,10 +2986,6 @@ NTSTATUS rpccli_dfs_Add2(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_Add2, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
@@ -3310,10 +2994,6 @@ NTSTATUS rpccli_dfs_Add2(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_Add2, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3362,10 +3042,6 @@ struct tevent_req *rpccli_dfs_Remove2_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_Remove2, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -3410,10 +3086,6 @@ static void rpccli_dfs_Remove2_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_Remove2, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3449,10 +3121,6 @@ NTSTATUS rpccli_dfs_Remove2(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_Remove2, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
@@ -3461,10 +3129,6 @@ NTSTATUS rpccli_dfs_Remove2(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_Remove2, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3525,10 +3189,6 @@ struct tevent_req *rpccli_dfs_EnumEx_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_EnumEx, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_dfs_EnumEx_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -3585,10 +3245,6 @@ static void rpccli_dfs_EnumEx_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_EnumEx, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3634,10 +3290,6 @@ NTSTATUS rpccli_dfs_EnumEx(struct rpc_pipe_client *cli,
 	r.in.info = info;
 	r.in.total = total;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_EnumEx, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
@@ -3646,10 +3298,6 @@ NTSTATUS rpccli_dfs_EnumEx(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_EnumEx, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3704,10 +3352,6 @@ struct tevent_req *rpccli_dfs_SetInfo2_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_SetInfo2, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -3752,10 +3396,6 @@ static void rpccli_dfs_SetInfo2_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_SetInfo2, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3791,10 +3431,6 @@ NTSTATUS rpccli_dfs_SetInfo2(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dfs_SetInfo2, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
@@ -3803,10 +3439,6 @@ NTSTATUS rpccli_dfs_SetInfo2(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dfs_SetInfo2, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {

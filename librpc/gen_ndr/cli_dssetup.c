@@ -42,10 +42,6 @@ struct tevent_req *rpccli_dssetup_DsRoleGetPrimaryDomainInformation_send(TALLOC_
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dssetup_DsRoleGetPrimaryDomainInformation, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_dssetup_DsRoleGetPrimaryDomainInformation_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -99,10 +95,6 @@ static void rpccli_dssetup_DsRoleGetPrimaryDomainInformation_done(struct tevent_
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleGetPrimaryDomainInformation, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -141,10 +133,6 @@ NTSTATUS rpccli_dssetup_DsRoleGetPrimaryDomainInformation(struct rpc_pipe_client
 	/* In parameters */
 	r.in.level = level;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dssetup_DsRoleGetPrimaryDomainInformation, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_dssetup,
@@ -153,10 +141,6 @@ NTSTATUS rpccli_dssetup_DsRoleGetPrimaryDomainInformation(struct rpc_pipe_client
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleGetPrimaryDomainInformation, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -208,10 +192,6 @@ struct tevent_req *rpccli_dssetup_DsRoleDnsNameToFlatName_send(TALLOC_CTX *mem_c
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dssetup_DsRoleDnsNameToFlatName, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -256,10 +236,6 @@ static void rpccli_dssetup_DsRoleDnsNameToFlatName_done(struct tevent_req *subre
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleDnsNameToFlatName, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -295,10 +271,6 @@ NTSTATUS rpccli_dssetup_DsRoleDnsNameToFlatName(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dssetup_DsRoleDnsNameToFlatName, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_dssetup,
@@ -307,10 +279,6 @@ NTSTATUS rpccli_dssetup_DsRoleDnsNameToFlatName(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleDnsNameToFlatName, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -359,10 +327,6 @@ struct tevent_req *rpccli_dssetup_DsRoleDcAsDc_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dssetup_DsRoleDcAsDc, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -407,10 +371,6 @@ static void rpccli_dssetup_DsRoleDcAsDc_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleDcAsDc, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -446,10 +406,6 @@ NTSTATUS rpccli_dssetup_DsRoleDcAsDc(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dssetup_DsRoleDcAsDc, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_dssetup,
@@ -458,10 +414,6 @@ NTSTATUS rpccli_dssetup_DsRoleDcAsDc(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleDcAsDc, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -510,10 +462,6 @@ struct tevent_req *rpccli_dssetup_DsRoleDcAsReplica_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dssetup_DsRoleDcAsReplica, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -558,10 +506,6 @@ static void rpccli_dssetup_DsRoleDcAsReplica_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleDcAsReplica, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -597,10 +541,6 @@ NTSTATUS rpccli_dssetup_DsRoleDcAsReplica(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dssetup_DsRoleDcAsReplica, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_dssetup,
@@ -609,10 +549,6 @@ NTSTATUS rpccli_dssetup_DsRoleDcAsReplica(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleDcAsReplica, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -661,10 +597,6 @@ struct tevent_req *rpccli_dssetup_DsRoleDemoteDc_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dssetup_DsRoleDemoteDc, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -709,10 +641,6 @@ static void rpccli_dssetup_DsRoleDemoteDc_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleDemoteDc, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -748,10 +676,6 @@ NTSTATUS rpccli_dssetup_DsRoleDemoteDc(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dssetup_DsRoleDemoteDc, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_dssetup,
@@ -760,10 +684,6 @@ NTSTATUS rpccli_dssetup_DsRoleDemoteDc(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleDemoteDc, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -812,10 +732,6 @@ struct tevent_req *rpccli_dssetup_DsRoleGetDcOperationProgress_send(TALLOC_CTX *
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dssetup_DsRoleGetDcOperationProgress, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -860,10 +776,6 @@ static void rpccli_dssetup_DsRoleGetDcOperationProgress_done(struct tevent_req *
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleGetDcOperationProgress, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -899,10 +811,6 @@ NTSTATUS rpccli_dssetup_DsRoleGetDcOperationProgress(struct rpc_pipe_client *cli
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dssetup_DsRoleGetDcOperationProgress, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_dssetup,
@@ -911,10 +819,6 @@ NTSTATUS rpccli_dssetup_DsRoleGetDcOperationProgress(struct rpc_pipe_client *cli
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleGetDcOperationProgress, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -963,10 +867,6 @@ struct tevent_req *rpccli_dssetup_DsRoleGetDcOperationResults_send(TALLOC_CTX *m
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dssetup_DsRoleGetDcOperationResults, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -1011,10 +911,6 @@ static void rpccli_dssetup_DsRoleGetDcOperationResults_done(struct tevent_req *s
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleGetDcOperationResults, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1050,10 +946,6 @@ NTSTATUS rpccli_dssetup_DsRoleGetDcOperationResults(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dssetup_DsRoleGetDcOperationResults, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_dssetup,
@@ -1062,10 +954,6 @@ NTSTATUS rpccli_dssetup_DsRoleGetDcOperationResults(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleGetDcOperationResults, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1114,10 +1002,6 @@ struct tevent_req *rpccli_dssetup_DsRoleCancel_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dssetup_DsRoleCancel, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -1162,10 +1046,6 @@ static void rpccli_dssetup_DsRoleCancel_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleCancel, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1201,10 +1081,6 @@ NTSTATUS rpccli_dssetup_DsRoleCancel(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dssetup_DsRoleCancel, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_dssetup,
@@ -1213,10 +1089,6 @@ NTSTATUS rpccli_dssetup_DsRoleCancel(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleCancel, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1265,10 +1137,6 @@ struct tevent_req *rpccli_dssetup_DsRoleServerSaveStateForUpgrade_send(TALLOC_CT
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dssetup_DsRoleServerSaveStateForUpgrade, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -1313,10 +1181,6 @@ static void rpccli_dssetup_DsRoleServerSaveStateForUpgrade_done(struct tevent_re
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleServerSaveStateForUpgrade, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1352,10 +1216,6 @@ NTSTATUS rpccli_dssetup_DsRoleServerSaveStateForUpgrade(struct rpc_pipe_client *
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dssetup_DsRoleServerSaveStateForUpgrade, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_dssetup,
@@ -1364,10 +1224,6 @@ NTSTATUS rpccli_dssetup_DsRoleServerSaveStateForUpgrade(struct rpc_pipe_client *
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleServerSaveStateForUpgrade, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1416,10 +1272,6 @@ struct tevent_req *rpccli_dssetup_DsRoleUpgradeDownlevelServer_send(TALLOC_CTX *
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dssetup_DsRoleUpgradeDownlevelServer, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -1464,10 +1316,6 @@ static void rpccli_dssetup_DsRoleUpgradeDownlevelServer_done(struct tevent_req *
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleUpgradeDownlevelServer, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1503,10 +1351,6 @@ NTSTATUS rpccli_dssetup_DsRoleUpgradeDownlevelServer(struct rpc_pipe_client *cli
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dssetup_DsRoleUpgradeDownlevelServer, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_dssetup,
@@ -1515,10 +1359,6 @@ NTSTATUS rpccli_dssetup_DsRoleUpgradeDownlevelServer(struct rpc_pipe_client *cli
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleUpgradeDownlevelServer, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1567,10 +1407,6 @@ struct tevent_req *rpccli_dssetup_DsRoleAbortDownlevelServerUpgrade_send(TALLOC_
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dssetup_DsRoleAbortDownlevelServerUpgrade, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -1615,10 +1451,6 @@ static void rpccli_dssetup_DsRoleAbortDownlevelServerUpgrade_done(struct tevent_
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleAbortDownlevelServerUpgrade, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1654,10 +1486,6 @@ NTSTATUS rpccli_dssetup_DsRoleAbortDownlevelServerUpgrade(struct rpc_pipe_client
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(dssetup_DsRoleAbortDownlevelServerUpgrade, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_dssetup,
@@ -1666,10 +1494,6 @@ NTSTATUS rpccli_dssetup_DsRoleAbortDownlevelServerUpgrade(struct rpc_pipe_client
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(dssetup_DsRoleAbortDownlevelServerUpgrade, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {

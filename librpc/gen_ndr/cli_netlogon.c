@@ -46,10 +46,6 @@ struct tevent_req *rpccli_netr_LogonUasLogon_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_LogonUasLogon, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_LogonUasLogon_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -101,10 +97,6 @@ static void rpccli_netr_LogonUasLogon_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_LogonUasLogon, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -147,10 +139,6 @@ NTSTATUS rpccli_netr_LogonUasLogon(struct rpc_pipe_client *cli,
 	r.in.account_name = account_name;
 	r.in.workstation = workstation;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_LogonUasLogon, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -159,10 +147,6 @@ NTSTATUS rpccli_netr_LogonUasLogon(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_LogonUasLogon, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -220,10 +204,6 @@ struct tevent_req *rpccli_netr_LogonUasLogoff_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_LogonUasLogoff, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_LogonUasLogoff_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -275,10 +255,6 @@ static void rpccli_netr_LogonUasLogoff_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_LogonUasLogoff, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -321,10 +297,6 @@ NTSTATUS rpccli_netr_LogonUasLogoff(struct rpc_pipe_client *cli,
 	r.in.account_name = account_name;
 	r.in.workstation = workstation;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_LogonUasLogoff, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -333,10 +305,6 @@ NTSTATUS rpccli_netr_LogonUasLogoff(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_LogonUasLogoff, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -405,10 +373,6 @@ struct tevent_req *rpccli_netr_LogonSamLogon_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_LogonSamLogon, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_LogonSamLogon_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -464,10 +428,6 @@ static void rpccli_netr_LogonSamLogon_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_LogonSamLogon, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -518,10 +478,6 @@ NTSTATUS rpccli_netr_LogonSamLogon(struct rpc_pipe_client *cli,
 	r.in.logon = logon;
 	r.in.validation_level = validation_level;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_LogonSamLogon, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -530,10 +486,6 @@ NTSTATUS rpccli_netr_LogonSamLogon(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_LogonSamLogon, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -596,10 +548,6 @@ struct tevent_req *rpccli_netr_LogonSamLogoff_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_LogonSamLogoff, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_LogonSamLogoff_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -653,10 +601,6 @@ static void rpccli_netr_LogonSamLogoff_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_LogonSamLogoff, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -703,10 +647,6 @@ NTSTATUS rpccli_netr_LogonSamLogoff(struct rpc_pipe_client *cli,
 	r.in.logon_level = logon_level;
 	r.in.logon = logon;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_LogonSamLogoff, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -715,10 +655,6 @@ NTSTATUS rpccli_netr_LogonSamLogoff(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_LogonSamLogoff, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -774,10 +710,6 @@ struct tevent_req *rpccli_netr_ServerReqChallenge_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_ServerReqChallenge, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_ServerReqChallenge_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -829,10 +761,6 @@ static void rpccli_netr_ServerReqChallenge_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_ServerReqChallenge, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -874,10 +802,6 @@ NTSTATUS rpccli_netr_ServerReqChallenge(struct rpc_pipe_client *cli,
 	r.in.computer_name = computer_name;
 	r.in.credentials = credentials;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_ServerReqChallenge, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -886,10 +810,6 @@ NTSTATUS rpccli_netr_ServerReqChallenge(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_ServerReqChallenge, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -947,10 +867,6 @@ struct tevent_req *rpccli_netr_ServerAuthenticate_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_ServerAuthenticate, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_ServerAuthenticate_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -1002,10 +918,6 @@ static void rpccli_netr_ServerAuthenticate_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_ServerAuthenticate, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1051,10 +963,6 @@ NTSTATUS rpccli_netr_ServerAuthenticate(struct rpc_pipe_client *cli,
 	r.in.computer_name = computer_name;
 	r.in.credentials = credentials;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_ServerAuthenticate, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -1063,10 +971,6 @@ NTSTATUS rpccli_netr_ServerAuthenticate(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_ServerAuthenticate, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1126,10 +1030,6 @@ struct tevent_req *rpccli_netr_ServerPasswordSet_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_ServerPasswordSet, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_ServerPasswordSet_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -1181,10 +1081,6 @@ static void rpccli_netr_ServerPasswordSet_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_ServerPasswordSet, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1232,10 +1128,6 @@ NTSTATUS rpccli_netr_ServerPasswordSet(struct rpc_pipe_client *cli,
 	r.in.credential = credential;
 	r.in.new_password = new_password;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_ServerPasswordSet, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -1244,10 +1136,6 @@ NTSTATUS rpccli_netr_ServerPasswordSet(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_ServerPasswordSet, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1311,10 +1199,6 @@ struct tevent_req *rpccli_netr_DatabaseDeltas_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DatabaseDeltas, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_DatabaseDeltas_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -1368,10 +1252,6 @@ static void rpccli_netr_DatabaseDeltas_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DatabaseDeltas, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1421,10 +1301,6 @@ NTSTATUS rpccli_netr_DatabaseDeltas(struct rpc_pipe_client *cli,
 	r.in.sequence_num = sequence_num;
 	r.in.preferredmaximumlength = preferredmaximumlength;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DatabaseDeltas, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -1433,10 +1309,6 @@ NTSTATUS rpccli_netr_DatabaseDeltas(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DatabaseDeltas, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1502,10 +1374,6 @@ struct tevent_req *rpccli_netr_DatabaseSync_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DatabaseSync, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_DatabaseSync_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -1559,10 +1427,6 @@ static void rpccli_netr_DatabaseSync_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DatabaseSync, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1612,10 +1476,6 @@ NTSTATUS rpccli_netr_DatabaseSync(struct rpc_pipe_client *cli,
 	r.in.sync_context = sync_context;
 	r.in.preferredmaximumlength = preferredmaximumlength;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DatabaseSync, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -1624,10 +1484,6 @@ NTSTATUS rpccli_netr_DatabaseSync(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DatabaseSync, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1700,10 +1556,6 @@ struct tevent_req *rpccli_netr_AccountDeltas_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_AccountDeltas, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_AccountDeltas_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -1759,10 +1611,6 @@ static void rpccli_netr_AccountDeltas_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_AccountDeltas, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1817,10 +1665,6 @@ NTSTATUS rpccli_netr_AccountDeltas(struct rpc_pipe_client *cli,
 	r.in.level = level;
 	r.in.buffersize = buffersize;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_AccountDeltas, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -1829,10 +1673,6 @@ NTSTATUS rpccli_netr_AccountDeltas(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_AccountDeltas, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1908,10 +1748,6 @@ struct tevent_req *rpccli_netr_AccountSync_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_AccountSync, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_AccountSync_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -1968,10 +1804,6 @@ static void rpccli_netr_AccountSync_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_AccountSync, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2026,10 +1858,6 @@ NTSTATUS rpccli_netr_AccountSync(struct rpc_pipe_client *cli,
 	r.in.buffersize = buffersize;
 	r.in.recordid = recordid;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_AccountSync, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -2038,10 +1866,6 @@ NTSTATUS rpccli_netr_AccountSync(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_AccountSync, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2098,10 +1922,6 @@ struct tevent_req *rpccli_netr_GetDcName_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_GetDcName, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_GetDcName_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -2153,10 +1973,6 @@ static void rpccli_netr_GetDcName_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_GetDcName, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2197,10 +2013,6 @@ NTSTATUS rpccli_netr_GetDcName(struct rpc_pipe_client *cli,
 	r.in.logon_server = logon_server;
 	r.in.domainname = domainname;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_GetDcName, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -2209,10 +2021,6 @@ NTSTATUS rpccli_netr_GetDcName(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_GetDcName, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2270,10 +2078,6 @@ struct tevent_req *rpccli_netr_LogonControl_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_LogonControl, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_LogonControl_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -2325,10 +2129,6 @@ static void rpccli_netr_LogonControl_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_LogonControl, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2371,10 +2171,6 @@ NTSTATUS rpccli_netr_LogonControl(struct rpc_pipe_client *cli,
 	r.in.function_code = function_code;
 	r.in.level = level;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_LogonControl, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -2383,10 +2179,6 @@ NTSTATUS rpccli_netr_LogonControl(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_LogonControl, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2442,10 +2234,6 @@ struct tevent_req *rpccli_netr_GetAnyDCName_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_GetAnyDCName, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_GetAnyDCName_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -2497,10 +2285,6 @@ static void rpccli_netr_GetAnyDCName_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_GetAnyDCName, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2541,10 +2325,6 @@ NTSTATUS rpccli_netr_GetAnyDCName(struct rpc_pipe_client *cli,
 	r.in.logon_server = logon_server;
 	r.in.domainname = domainname;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_GetAnyDCName, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -2553,10 +2333,6 @@ NTSTATUS rpccli_netr_GetAnyDCName(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_GetAnyDCName, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2616,10 +2392,6 @@ struct tevent_req *rpccli_netr_LogonControl2_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_LogonControl2, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_LogonControl2_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -2671,10 +2443,6 @@ static void rpccli_netr_LogonControl2_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_LogonControl2, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2719,10 +2487,6 @@ NTSTATUS rpccli_netr_LogonControl2(struct rpc_pipe_client *cli,
 	r.in.level = level;
 	r.in.data = data;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_LogonControl2, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -2731,10 +2495,6 @@ NTSTATUS rpccli_netr_LogonControl2(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_LogonControl2, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2799,10 +2559,6 @@ struct tevent_req *rpccli_netr_ServerAuthenticate2_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_ServerAuthenticate2, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_ServerAuthenticate2_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -2855,10 +2611,6 @@ static void rpccli_netr_ServerAuthenticate2_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_ServerAuthenticate2, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2906,10 +2658,6 @@ NTSTATUS rpccli_netr_ServerAuthenticate2(struct rpc_pipe_client *cli,
 	r.in.credentials = credentials;
 	r.in.negotiate_flags = negotiate_flags;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_ServerAuthenticate2, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -2918,10 +2666,6 @@ NTSTATUS rpccli_netr_ServerAuthenticate2(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_ServerAuthenticate2, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2988,10 +2732,6 @@ struct tevent_req *rpccli_netr_DatabaseSync2_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DatabaseSync2, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_DatabaseSync2_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -3045,10 +2785,6 @@ static void rpccli_netr_DatabaseSync2_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DatabaseSync2, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3100,10 +2836,6 @@ NTSTATUS rpccli_netr_DatabaseSync2(struct rpc_pipe_client *cli,
 	r.in.sync_context = sync_context;
 	r.in.preferredmaximumlength = preferredmaximumlength;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DatabaseSync2, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -3112,10 +2844,6 @@ NTSTATUS rpccli_netr_DatabaseSync2(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DatabaseSync2, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3178,10 +2906,6 @@ struct tevent_req *rpccli_netr_DatabaseRedo_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DatabaseRedo, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_DatabaseRedo_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -3234,10 +2958,6 @@ static void rpccli_netr_DatabaseRedo_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DatabaseRedo, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3285,10 +3005,6 @@ NTSTATUS rpccli_netr_DatabaseRedo(struct rpc_pipe_client *cli,
 	r.in.change_log_entry = change_log_entry;
 	r.in.change_log_entry_size = change_log_entry_size;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DatabaseRedo, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -3297,10 +3013,6 @@ NTSTATUS rpccli_netr_DatabaseRedo(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DatabaseRedo, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3357,10 +3069,6 @@ struct tevent_req *rpccli_netr_LogonControl2Ex_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_LogonControl2Ex, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_LogonControl2Ex_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -3412,10 +3120,6 @@ static void rpccli_netr_LogonControl2Ex_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_LogonControl2Ex, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3460,10 +3164,6 @@ NTSTATUS rpccli_netr_LogonControl2Ex(struct rpc_pipe_client *cli,
 	r.in.level = level;
 	r.in.data = data;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_LogonControl2Ex, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -3472,10 +3172,6 @@ NTSTATUS rpccli_netr_LogonControl2Ex(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_LogonControl2Ex, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3529,10 +3225,6 @@ struct tevent_req *rpccli_netr_NetrEnumerateTrustedDomains_send(TALLOC_CTX *mem_
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_NetrEnumerateTrustedDomains, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_NetrEnumerateTrustedDomains_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -3584,10 +3276,6 @@ static void rpccli_netr_NetrEnumerateTrustedDomains_done(struct tevent_req *subr
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_NetrEnumerateTrustedDomains, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3626,10 +3314,6 @@ NTSTATUS rpccli_netr_NetrEnumerateTrustedDomains(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.server_name = server_name;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_NetrEnumerateTrustedDomains, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -3638,10 +3322,6 @@ NTSTATUS rpccli_netr_NetrEnumerateTrustedDomains(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_NetrEnumerateTrustedDomains, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3703,10 +3383,6 @@ struct tevent_req *rpccli_netr_DsRGetDCName_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DsRGetDCName, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_DsRGetDCName_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -3758,10 +3434,6 @@ static void rpccli_netr_DsRGetDCName_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DsRGetDCName, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3808,10 +3480,6 @@ NTSTATUS rpccli_netr_DsRGetDCName(struct rpc_pipe_client *cli,
 	r.in.site_guid = site_guid;
 	r.in.flags = flags;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DsRGetDCName, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -3820,10 +3488,6 @@ NTSTATUS rpccli_netr_DsRGetDCName(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DsRGetDCName, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3886,10 +3550,6 @@ struct tevent_req *rpccli_netr_LogonGetCapabilities_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_LogonGetCapabilities, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_LogonGetCapabilities_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -3942,10 +3602,6 @@ static void rpccli_netr_LogonGetCapabilities_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_LogonGetCapabilities, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3991,10 +3647,6 @@ NTSTATUS rpccli_netr_LogonGetCapabilities(struct rpc_pipe_client *cli,
 	r.in.return_authenticator = return_authenticator;
 	r.in.query_level = query_level;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_LogonGetCapabilities, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -4003,10 +3655,6 @@ NTSTATUS rpccli_netr_LogonGetCapabilities(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_LogonGetCapabilities, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -4053,10 +3701,6 @@ struct tevent_req *rpccli_netr_NETRLOGONSETSERVICEBITS_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_NETRLOGONSETSERVICEBITS, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -4101,10 +3745,6 @@ static void rpccli_netr_NETRLOGONSETSERVICEBITS_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONSETSERVICEBITS, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -4140,10 +3780,6 @@ NTSTATUS rpccli_netr_NETRLOGONSETSERVICEBITS(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_NETRLOGONSETSERVICEBITS, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -4152,10 +3788,6 @@ NTSTATUS rpccli_netr_NETRLOGONSETSERVICEBITS(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONSETSERVICEBITS, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -4210,10 +3842,6 @@ struct tevent_req *rpccli_netr_LogonGetTrustRid_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_LogonGetTrustRid, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_LogonGetTrustRid_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -4265,10 +3893,6 @@ static void rpccli_netr_LogonGetTrustRid_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_LogonGetTrustRid, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -4309,10 +3933,6 @@ NTSTATUS rpccli_netr_LogonGetTrustRid(struct rpc_pipe_client *cli,
 	r.in.server_name = server_name;
 	r.in.domain_name = domain_name;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_LogonGetTrustRid, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -4321,10 +3941,6 @@ NTSTATUS rpccli_netr_LogonGetTrustRid(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_LogonGetTrustRid, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -4374,10 +3990,6 @@ struct tevent_req *rpccli_netr_NETRLOGONCOMPUTESERVERDIGEST_send(TALLOC_CTX *mem
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_NETRLOGONCOMPUTESERVERDIGEST, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -4422,10 +4034,6 @@ static void rpccli_netr_NETRLOGONCOMPUTESERVERDIGEST_done(struct tevent_req *sub
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONCOMPUTESERVERDIGEST, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -4461,10 +4069,6 @@ NTSTATUS rpccli_netr_NETRLOGONCOMPUTESERVERDIGEST(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_NETRLOGONCOMPUTESERVERDIGEST, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -4473,10 +4077,6 @@ NTSTATUS rpccli_netr_NETRLOGONCOMPUTESERVERDIGEST(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONCOMPUTESERVERDIGEST, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -4525,10 +4125,6 @@ struct tevent_req *rpccli_netr_NETRLOGONCOMPUTECLIENTDIGEST_send(TALLOC_CTX *mem
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_NETRLOGONCOMPUTECLIENTDIGEST, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -4573,10 +4169,6 @@ static void rpccli_netr_NETRLOGONCOMPUTECLIENTDIGEST_done(struct tevent_req *sub
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONCOMPUTECLIENTDIGEST, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -4612,10 +4204,6 @@ NTSTATUS rpccli_netr_NETRLOGONCOMPUTECLIENTDIGEST(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_NETRLOGONCOMPUTECLIENTDIGEST, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -4624,10 +4212,6 @@ NTSTATUS rpccli_netr_NETRLOGONCOMPUTECLIENTDIGEST(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONCOMPUTECLIENTDIGEST, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -4693,10 +4277,6 @@ struct tevent_req *rpccli_netr_ServerAuthenticate3_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_ServerAuthenticate3, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_ServerAuthenticate3_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -4750,10 +4330,6 @@ static void rpccli_netr_ServerAuthenticate3_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_ServerAuthenticate3, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -4802,10 +4378,6 @@ NTSTATUS rpccli_netr_ServerAuthenticate3(struct rpc_pipe_client *cli,
 	r.in.credentials = credentials;
 	r.in.negotiate_flags = negotiate_flags;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_ServerAuthenticate3, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -4814,10 +4386,6 @@ NTSTATUS rpccli_netr_ServerAuthenticate3(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_ServerAuthenticate3, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -4877,10 +4445,6 @@ struct tevent_req *rpccli_netr_DsRGetDCNameEx_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DsRGetDCNameEx, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_DsRGetDCNameEx_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -4932,10 +4496,6 @@ static void rpccli_netr_DsRGetDCNameEx_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DsRGetDCNameEx, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -4982,10 +4542,6 @@ NTSTATUS rpccli_netr_DsRGetDCNameEx(struct rpc_pipe_client *cli,
 	r.in.site_name = site_name;
 	r.in.flags = flags;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DsRGetDCNameEx, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -4994,10 +4550,6 @@ NTSTATUS rpccli_netr_DsRGetDCNameEx(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DsRGetDCNameEx, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -5051,10 +4603,6 @@ struct tevent_req *rpccli_netr_DsRGetSiteName_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DsRGetSiteName, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_DsRGetSiteName_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -5106,10 +4654,6 @@ static void rpccli_netr_DsRGetSiteName_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DsRGetSiteName, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -5148,10 +4692,6 @@ NTSTATUS rpccli_netr_DsRGetSiteName(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.computer_name = computer_name;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DsRGetSiteName, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -5160,10 +4700,6 @@ NTSTATUS rpccli_netr_DsRGetSiteName(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DsRGetSiteName, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -5228,10 +4764,6 @@ struct tevent_req *rpccli_netr_LogonGetDomainInfo_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_LogonGetDomainInfo, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_LogonGetDomainInfo_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -5284,10 +4816,6 @@ static void rpccli_netr_LogonGetDomainInfo_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_LogonGetDomainInfo, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -5335,10 +4863,6 @@ NTSTATUS rpccli_netr_LogonGetDomainInfo(struct rpc_pipe_client *cli,
 	r.in.level = level;
 	r.in.query = query;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_LogonGetDomainInfo, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -5347,10 +4871,6 @@ NTSTATUS rpccli_netr_LogonGetDomainInfo(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_LogonGetDomainInfo, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -5411,10 +4931,6 @@ struct tevent_req *rpccli_netr_ServerPasswordSet2_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_ServerPasswordSet2, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_ServerPasswordSet2_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -5466,10 +4982,6 @@ static void rpccli_netr_ServerPasswordSet2_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_ServerPasswordSet2, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -5517,10 +5029,6 @@ NTSTATUS rpccli_netr_ServerPasswordSet2(struct rpc_pipe_client *cli,
 	r.in.credential = credential;
 	r.in.new_password = new_password;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_ServerPasswordSet2, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -5529,10 +5037,6 @@ NTSTATUS rpccli_netr_ServerPasswordSet2(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_ServerPasswordSet2, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -5592,10 +5096,6 @@ struct tevent_req *rpccli_netr_ServerPasswordGet_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_ServerPasswordGet, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_ServerPasswordGet_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -5648,10 +5148,6 @@ static void rpccli_netr_ServerPasswordGet_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_ServerPasswordGet, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -5699,10 +5195,6 @@ NTSTATUS rpccli_netr_ServerPasswordGet(struct rpc_pipe_client *cli,
 	r.in.computer_name = computer_name;
 	r.in.credential = credential;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_ServerPasswordGet, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -5711,10 +5203,6 @@ NTSTATUS rpccli_netr_ServerPasswordGet(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_ServerPasswordGet, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -5765,10 +5253,6 @@ struct tevent_req *rpccli_netr_NETRLOGONSENDTOSAM_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_NETRLOGONSENDTOSAM, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -5813,10 +5297,6 @@ static void rpccli_netr_NETRLOGONSENDTOSAM_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONSENDTOSAM, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -5852,10 +5332,6 @@ NTSTATUS rpccli_netr_NETRLOGONSENDTOSAM(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_NETRLOGONSENDTOSAM, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -5864,10 +5340,6 @@ NTSTATUS rpccli_netr_NETRLOGONSENDTOSAM(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONSENDTOSAM, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -5924,10 +5396,6 @@ struct tevent_req *rpccli_netr_DsRAddressToSitenamesW_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DsRAddressToSitenamesW, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_DsRAddressToSitenamesW_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -5979,10 +5447,6 @@ static void rpccli_netr_DsRAddressToSitenamesW_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DsRAddressToSitenamesW, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -6025,10 +5489,6 @@ NTSTATUS rpccli_netr_DsRAddressToSitenamesW(struct rpc_pipe_client *cli,
 	r.in.count = count;
 	r.in.addresses = addresses;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DsRAddressToSitenamesW, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -6037,10 +5497,6 @@ NTSTATUS rpccli_netr_DsRAddressToSitenamesW(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DsRAddressToSitenamesW, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -6106,10 +5562,6 @@ struct tevent_req *rpccli_netr_DsRGetDCNameEx2_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DsRGetDCNameEx2, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_DsRGetDCNameEx2_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -6161,10 +5613,6 @@ static void rpccli_netr_DsRGetDCNameEx2_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DsRGetDCNameEx2, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -6215,10 +5663,6 @@ NTSTATUS rpccli_netr_DsRGetDCNameEx2(struct rpc_pipe_client *cli,
 	r.in.site_name = site_name;
 	r.in.flags = flags;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DsRGetDCNameEx2, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -6227,10 +5671,6 @@ NTSTATUS rpccli_netr_DsRGetDCNameEx2(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DsRGetDCNameEx2, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -6280,10 +5720,6 @@ struct tevent_req *rpccli_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN_send(TALLOC_C
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -6328,10 +5764,6 @@ static void rpccli_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN_done(struct tevent_r
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -6367,10 +5799,6 @@ NTSTATUS rpccli_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(struct rpc_pipe_client 
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -6379,10 +5807,6 @@ NTSTATUS rpccli_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(struct rpc_pipe_client 
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -6435,10 +5859,6 @@ struct tevent_req *rpccli_netr_NetrEnumerateTrustedDomainsEx_send(TALLOC_CTX *me
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_NetrEnumerateTrustedDomainsEx, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_NetrEnumerateTrustedDomainsEx_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -6490,10 +5910,6 @@ static void rpccli_netr_NetrEnumerateTrustedDomainsEx_done(struct tevent_req *su
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_NetrEnumerateTrustedDomainsEx, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -6532,10 +5948,6 @@ NTSTATUS rpccli_netr_NetrEnumerateTrustedDomainsEx(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.server_name = server_name;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_NetrEnumerateTrustedDomainsEx, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -6544,10 +5956,6 @@ NTSTATUS rpccli_netr_NetrEnumerateTrustedDomainsEx(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_NetrEnumerateTrustedDomainsEx, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -6605,10 +6013,6 @@ struct tevent_req *rpccli_netr_DsRAddressToSitenamesExW_send(TALLOC_CTX *mem_ctx
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DsRAddressToSitenamesExW, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_DsRAddressToSitenamesExW_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -6660,10 +6064,6 @@ static void rpccli_netr_DsRAddressToSitenamesExW_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DsRAddressToSitenamesExW, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -6706,10 +6106,6 @@ NTSTATUS rpccli_netr_DsRAddressToSitenamesExW(struct rpc_pipe_client *cli,
 	r.in.count = count;
 	r.in.addresses = addresses;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DsRAddressToSitenamesExW, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -6718,10 +6114,6 @@ NTSTATUS rpccli_netr_DsRAddressToSitenamesExW(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DsRAddressToSitenamesExW, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -6775,10 +6167,6 @@ struct tevent_req *rpccli_netr_DsrGetDcSiteCoverageW_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DsrGetDcSiteCoverageW, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_DsrGetDcSiteCoverageW_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -6830,10 +6218,6 @@ static void rpccli_netr_DsrGetDcSiteCoverageW_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DsrGetDcSiteCoverageW, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -6872,10 +6256,6 @@ NTSTATUS rpccli_netr_DsrGetDcSiteCoverageW(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.server_name = server_name;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DsrGetDcSiteCoverageW, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -6884,10 +6264,6 @@ NTSTATUS rpccli_netr_DsrGetDcSiteCoverageW(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DsrGetDcSiteCoverageW, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -6954,10 +6330,6 @@ struct tevent_req *rpccli_netr_LogonSamLogonEx_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_LogonSamLogonEx, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_LogonSamLogonEx_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -7011,10 +6383,6 @@ static void rpccli_netr_LogonSamLogonEx_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_LogonSamLogonEx, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -7063,10 +6431,6 @@ NTSTATUS rpccli_netr_LogonSamLogonEx(struct rpc_pipe_client *cli,
 	r.in.validation_level = validation_level;
 	r.in.flags = flags;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_LogonSamLogonEx, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -7075,10 +6439,6 @@ NTSTATUS rpccli_netr_LogonSamLogonEx(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_LogonSamLogonEx, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -7132,10 +6492,6 @@ struct tevent_req *rpccli_netr_DsrEnumerateDomainTrusts_send(TALLOC_CTX *mem_ctx
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DsrEnumerateDomainTrusts, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_DsrEnumerateDomainTrusts_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -7187,10 +6543,6 @@ static void rpccli_netr_DsrEnumerateDomainTrusts_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DsrEnumerateDomainTrusts, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -7231,10 +6583,6 @@ NTSTATUS rpccli_netr_DsrEnumerateDomainTrusts(struct rpc_pipe_client *cli,
 	r.in.server_name = server_name;
 	r.in.trust_flags = trust_flags;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DsrEnumerateDomainTrusts, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -7243,10 +6591,6 @@ NTSTATUS rpccli_netr_DsrEnumerateDomainTrusts(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DsrEnumerateDomainTrusts, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -7306,10 +6650,6 @@ struct tevent_req *rpccli_netr_DsrDeregisterDNSHostRecords_send(TALLOC_CTX *mem_
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DsrDeregisterDNSHostRecords, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -7353,10 +6693,6 @@ static void rpccli_netr_DsrDeregisterDNSHostRecords_done(struct tevent_req *subr
 
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DsrDeregisterDNSHostRecords, &state->orig);
-	}
 
 	tevent_req_done(req);
 }
@@ -7403,10 +6739,6 @@ NTSTATUS rpccli_netr_DsrDeregisterDNSHostRecords(struct rpc_pipe_client *cli,
 	r.in.dsa_guid = dsa_guid;
 	r.in.dns_host = dns_host;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DsrDeregisterDNSHostRecords, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -7415,10 +6747,6 @@ NTSTATUS rpccli_netr_DsrDeregisterDNSHostRecords(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DsrDeregisterDNSHostRecords, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -7483,10 +6811,6 @@ struct tevent_req *rpccli_netr_ServerTrustPasswordsGet_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_ServerTrustPasswordsGet, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_ServerTrustPasswordsGet_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -7540,10 +6864,6 @@ static void rpccli_netr_ServerTrustPasswordsGet_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_ServerTrustPasswordsGet, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -7591,10 +6911,6 @@ NTSTATUS rpccli_netr_ServerTrustPasswordsGet(struct rpc_pipe_client *cli,
 	r.in.computer_name = computer_name;
 	r.in.credential = credential;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_ServerTrustPasswordsGet, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -7603,10 +6919,6 @@ NTSTATUS rpccli_netr_ServerTrustPasswordsGet(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_ServerTrustPasswordsGet, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -7662,10 +6974,6 @@ struct tevent_req *rpccli_netr_DsRGetForestTrustInformation_send(TALLOC_CTX *mem
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DsRGetForestTrustInformation, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_DsRGetForestTrustInformation_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -7717,10 +7025,6 @@ static void rpccli_netr_DsRGetForestTrustInformation_done(struct tevent_req *sub
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DsRGetForestTrustInformation, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -7763,10 +7067,6 @@ NTSTATUS rpccli_netr_DsRGetForestTrustInformation(struct rpc_pipe_client *cli,
 	r.in.trusted_domain_name = trusted_domain_name;
 	r.in.flags = flags;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DsRGetForestTrustInformation, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -7775,10 +7075,6 @@ NTSTATUS rpccli_netr_DsRGetForestTrustInformation(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DsRGetForestTrustInformation, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -7840,10 +7136,6 @@ struct tevent_req *rpccli_netr_GetForestTrustInformation_send(TALLOC_CTX *mem_ct
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_GetForestTrustInformation, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_GetForestTrustInformation_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -7896,10 +7188,6 @@ static void rpccli_netr_GetForestTrustInformation_done(struct tevent_req *subreq
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_GetForestTrustInformation, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -7945,10 +7233,6 @@ NTSTATUS rpccli_netr_GetForestTrustInformation(struct rpc_pipe_client *cli,
 	r.in.credential = credential;
 	r.in.flags = flags;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_GetForestTrustInformation, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -7957,10 +7241,6 @@ NTSTATUS rpccli_netr_GetForestTrustInformation(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_GetForestTrustInformation, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -8033,10 +7313,6 @@ struct tevent_req *rpccli_netr_LogonSamLogonWithFlags_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_LogonSamLogonWithFlags, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_LogonSamLogonWithFlags_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -8093,10 +7369,6 @@ static void rpccli_netr_LogonSamLogonWithFlags_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_LogonSamLogonWithFlags, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -8149,10 +7421,6 @@ NTSTATUS rpccli_netr_LogonSamLogonWithFlags(struct rpc_pipe_client *cli,
 	r.in.validation_level = validation_level;
 	r.in.flags = flags;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_LogonSamLogonWithFlags, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -8161,10 +7429,6 @@ NTSTATUS rpccli_netr_LogonSamLogonWithFlags(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_LogonSamLogonWithFlags, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -8233,10 +7497,6 @@ struct tevent_req *rpccli_netr_ServerGetTrustInfo_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_ServerGetTrustInfo, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_netr_ServerGetTrustInfo_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -8291,10 +7551,6 @@ static void rpccli_netr_ServerGetTrustInfo_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_ServerGetTrustInfo, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -8343,10 +7599,6 @@ NTSTATUS rpccli_netr_ServerGetTrustInfo(struct rpc_pipe_client *cli,
 	r.in.computer_name = computer_name;
 	r.in.credential = credential;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_ServerGetTrustInfo, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
@@ -8355,10 +7607,6 @@ NTSTATUS rpccli_netr_ServerGetTrustInfo(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_ServerGetTrustInfo, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {

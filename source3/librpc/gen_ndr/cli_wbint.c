@@ -39,10 +39,6 @@ struct tevent_req *rpccli_wbint_Ping_send(TALLOC_CTX *mem_ctx,
 	/* Out parameters */
 	state->orig.out.out_data = _out_data;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_Ping, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wbint_Ping_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -91,10 +87,6 @@ static void rpccli_wbint_Ping_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_Ping, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -128,10 +120,6 @@ NTSTATUS rpccli_wbint_Ping(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.in_data = in_data;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_Ping, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wbint,
@@ -140,10 +128,6 @@ NTSTATUS rpccli_wbint_Ping(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_Ping, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -196,10 +180,6 @@ struct tevent_req *rpccli_wbint_LookupSid_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_LookupSid, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wbint_LookupSid_out_memory");
@@ -254,10 +234,6 @@ static void rpccli_wbint_LookupSid_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_LookupSid, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -297,10 +273,6 @@ NTSTATUS rpccli_wbint_LookupSid(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.sid = sid;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_LookupSid, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wbint,
@@ -309,10 +281,6 @@ NTSTATUS rpccli_wbint_LookupSid(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_LookupSid, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -370,10 +338,6 @@ struct tevent_req *rpccli_wbint_LookupName_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_LookupName, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wbint_LookupName_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -426,10 +390,6 @@ static void rpccli_wbint_LookupName_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_LookupName, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -472,10 +432,6 @@ NTSTATUS rpccli_wbint_LookupName(struct rpc_pipe_client *cli,
 	r.in.name = name;
 	r.in.flags = flags;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_LookupName, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wbint,
@@ -484,10 +440,6 @@ NTSTATUS rpccli_wbint_LookupName(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_LookupName, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -540,10 +492,6 @@ struct tevent_req *rpccli_wbint_Sid2Uid_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_Sid2Uid, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wbint_Sid2Uid_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -595,10 +543,6 @@ static void rpccli_wbint_Sid2Uid_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_Sid2Uid, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -638,10 +582,6 @@ NTSTATUS rpccli_wbint_Sid2Uid(struct rpc_pipe_client *cli,
 	r.in.dom_name = dom_name;
 	r.in.sid = sid;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_Sid2Uid, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wbint,
@@ -650,10 +590,6 @@ NTSTATUS rpccli_wbint_Sid2Uid(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_Sid2Uid, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -704,10 +640,6 @@ struct tevent_req *rpccli_wbint_Sid2Gid_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_Sid2Gid, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wbint_Sid2Gid_out_memory");
@@ -760,10 +692,6 @@ static void rpccli_wbint_Sid2Gid_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_Sid2Gid, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -803,10 +731,6 @@ NTSTATUS rpccli_wbint_Sid2Gid(struct rpc_pipe_client *cli,
 	r.in.dom_name = dom_name;
 	r.in.sid = sid;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_Sid2Gid, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wbint,
@@ -815,10 +739,6 @@ NTSTATUS rpccli_wbint_Sid2Gid(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_Sid2Gid, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -869,10 +789,6 @@ struct tevent_req *rpccli_wbint_Uid2Sid_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_Uid2Sid, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wbint_Uid2Sid_out_memory");
@@ -925,10 +841,6 @@ static void rpccli_wbint_Uid2Sid_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_Uid2Sid, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -968,10 +880,6 @@ NTSTATUS rpccli_wbint_Uid2Sid(struct rpc_pipe_client *cli,
 	r.in.dom_name = dom_name;
 	r.in.uid = uid;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_Uid2Sid, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wbint,
@@ -980,10 +888,6 @@ NTSTATUS rpccli_wbint_Uid2Sid(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_Uid2Sid, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1034,10 +938,6 @@ struct tevent_req *rpccli_wbint_Gid2Sid_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_Gid2Sid, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wbint_Gid2Sid_out_memory");
@@ -1090,10 +990,6 @@ static void rpccli_wbint_Gid2Sid_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_Gid2Sid, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1133,10 +1029,6 @@ NTSTATUS rpccli_wbint_Gid2Sid(struct rpc_pipe_client *cli,
 	r.in.dom_name = dom_name;
 	r.in.gid = gid;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_Gid2Sid, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wbint,
@@ -1145,10 +1037,6 @@ NTSTATUS rpccli_wbint_Gid2Sid(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_Gid2Sid, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1195,10 +1083,6 @@ struct tevent_req *rpccli_wbint_AllocateUid_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_AllocateUid, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wbint_AllocateUid_out_memory");
@@ -1251,10 +1135,6 @@ static void rpccli_wbint_AllocateUid_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_AllocateUid, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1290,10 +1170,6 @@ NTSTATUS rpccli_wbint_AllocateUid(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_AllocateUid, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wbint,
@@ -1302,10 +1178,6 @@ NTSTATUS rpccli_wbint_AllocateUid(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_AllocateUid, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1352,10 +1224,6 @@ struct tevent_req *rpccli_wbint_AllocateGid_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_AllocateGid, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wbint_AllocateGid_out_memory");
@@ -1408,10 +1276,6 @@ static void rpccli_wbint_AllocateGid_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_AllocateGid, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1447,10 +1311,6 @@ NTSTATUS rpccli_wbint_AllocateGid(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_AllocateGid, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wbint,
@@ -1459,10 +1319,6 @@ NTSTATUS rpccli_wbint_AllocateGid(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_AllocateGid, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1511,10 +1367,6 @@ struct tevent_req *rpccli_wbint_QueryUser_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_QueryUser, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wbint_QueryUser_out_memory");
@@ -1567,10 +1419,6 @@ static void rpccli_wbint_QueryUser_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_QueryUser, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1608,10 +1456,6 @@ NTSTATUS rpccli_wbint_QueryUser(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.sid = sid;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_QueryUser, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wbint,
@@ -1620,10 +1464,6 @@ NTSTATUS rpccli_wbint_QueryUser(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_QueryUser, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1672,10 +1512,6 @@ struct tevent_req *rpccli_wbint_LookupUserAliases_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_LookupUserAliases, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wbint_LookupUserAliases_out_memory");
@@ -1728,10 +1564,6 @@ static void rpccli_wbint_LookupUserAliases_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_LookupUserAliases, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1769,10 +1601,6 @@ NTSTATUS rpccli_wbint_LookupUserAliases(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.sids = sids;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_LookupUserAliases, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wbint,
@@ -1781,10 +1609,6 @@ NTSTATUS rpccli_wbint_LookupUserAliases(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_LookupUserAliases, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1833,10 +1657,6 @@ struct tevent_req *rpccli_wbint_LookupUserGroups_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_LookupUserGroups, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wbint_LookupUserGroups_out_memory");
@@ -1889,10 +1709,6 @@ static void rpccli_wbint_LookupUserGroups_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_LookupUserGroups, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1930,10 +1746,6 @@ NTSTATUS rpccli_wbint_LookupUserGroups(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.sid = sid;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_LookupUserGroups, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wbint,
@@ -1942,10 +1754,6 @@ NTSTATUS rpccli_wbint_LookupUserGroups(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_LookupUserGroups, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1992,10 +1800,6 @@ struct tevent_req *rpccli_wbint_QuerySequenceNumber_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_QuerySequenceNumber, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wbint_QuerySequenceNumber_out_memory");
@@ -2048,10 +1852,6 @@ static void rpccli_wbint_QuerySequenceNumber_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_QuerySequenceNumber, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2087,10 +1887,6 @@ NTSTATUS rpccli_wbint_QuerySequenceNumber(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_QuerySequenceNumber, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wbint,
@@ -2099,10 +1895,6 @@ NTSTATUS rpccli_wbint_QuerySequenceNumber(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_QuerySequenceNumber, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2153,10 +1945,6 @@ struct tevent_req *rpccli_wbint_LookupGroupMembers_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_LookupGroupMembers, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wbint_LookupGroupMembers_out_memory");
@@ -2209,10 +1997,6 @@ static void rpccli_wbint_LookupGroupMembers_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_LookupGroupMembers, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2252,10 +2036,6 @@ NTSTATUS rpccli_wbint_LookupGroupMembers(struct rpc_pipe_client *cli,
 	r.in.sid = sid;
 	r.in.type = type;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_LookupGroupMembers, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wbint,
@@ -2264,10 +2044,6 @@ NTSTATUS rpccli_wbint_LookupGroupMembers(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_LookupGroupMembers, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2314,10 +2090,6 @@ struct tevent_req *rpccli_wbint_QueryUserList_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_QueryUserList, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wbint_QueryUserList_out_memory");
@@ -2370,10 +2142,6 @@ static void rpccli_wbint_QueryUserList_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_QueryUserList, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2409,10 +2177,6 @@ NTSTATUS rpccli_wbint_QueryUserList(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_QueryUserList, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wbint,
@@ -2421,10 +2185,6 @@ NTSTATUS rpccli_wbint_QueryUserList(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_QueryUserList, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2471,10 +2231,6 @@ struct tevent_req *rpccli_wbint_QueryGroupList_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_QueryGroupList, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wbint_QueryGroupList_out_memory");
@@ -2527,10 +2283,6 @@ static void rpccli_wbint_QueryGroupList_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_QueryGroupList, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2566,10 +2318,6 @@ NTSTATUS rpccli_wbint_QueryGroupList(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_QueryGroupList, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wbint,
@@ -2578,10 +2326,6 @@ NTSTATUS rpccli_wbint_QueryGroupList(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_QueryGroupList, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2637,10 +2381,6 @@ struct tevent_req *rpccli_wbint_DsGetDcName_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_DsGetDcName, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wbint_DsGetDcName_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -2692,10 +2432,6 @@ static void rpccli_wbint_DsGetDcName_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_DsGetDcName, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2739,10 +2475,6 @@ NTSTATUS rpccli_wbint_DsGetDcName(struct rpc_pipe_client *cli,
 	r.in.site_name = site_name;
 	r.in.flags = flags;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_DsGetDcName, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wbint,
@@ -2751,10 +2483,6 @@ NTSTATUS rpccli_wbint_DsGetDcName(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_DsGetDcName, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2803,10 +2531,6 @@ struct tevent_req *rpccli_wbint_LookupRids_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_LookupRids, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wbint_LookupRids_out_memory");
@@ -2859,10 +2583,6 @@ static void rpccli_wbint_LookupRids_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_LookupRids, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2900,10 +2620,6 @@ NTSTATUS rpccli_wbint_LookupRids(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.rids = rids;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_LookupRids, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wbint,
@@ -2912,10 +2628,6 @@ NTSTATUS rpccli_wbint_LookupRids(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_LookupRids, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2961,10 +2673,6 @@ struct tevent_req *rpccli_wbint_CheckMachineAccount_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_CheckMachineAccount, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -3009,10 +2717,6 @@ static void rpccli_wbint_CheckMachineAccount_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_CheckMachineAccount, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3047,10 +2751,6 @@ NTSTATUS rpccli_wbint_CheckMachineAccount(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_CheckMachineAccount, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wbint,
@@ -3059,10 +2759,6 @@ NTSTATUS rpccli_wbint_CheckMachineAccount(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_CheckMachineAccount, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3106,10 +2802,6 @@ struct tevent_req *rpccli_wbint_ChangeMachineAccount_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_ChangeMachineAccount, &state->orig);
-	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
@@ -3155,10 +2847,6 @@ static void rpccli_wbint_ChangeMachineAccount_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_ChangeMachineAccount, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3193,10 +2881,6 @@ NTSTATUS rpccli_wbint_ChangeMachineAccount(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_ChangeMachineAccount, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wbint,
@@ -3205,10 +2889,6 @@ NTSTATUS rpccli_wbint_ChangeMachineAccount(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_ChangeMachineAccount, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3259,10 +2939,6 @@ struct tevent_req *rpccli_wbint_SetMapping_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_SetMapping, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -3307,10 +2983,6 @@ static void rpccli_wbint_SetMapping_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_SetMapping, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3351,10 +3023,6 @@ NTSTATUS rpccli_wbint_SetMapping(struct rpc_pipe_client *cli,
 	r.in.type = type;
 	r.in.id = id;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_SetMapping, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wbint,
@@ -3363,10 +3031,6 @@ NTSTATUS rpccli_wbint_SetMapping(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_SetMapping, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3417,10 +3081,6 @@ struct tevent_req *rpccli_wbint_RemoveMapping_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_RemoveMapping, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -3465,10 +3125,6 @@ static void rpccli_wbint_RemoveMapping_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_RemoveMapping, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3509,10 +3165,6 @@ NTSTATUS rpccli_wbint_RemoveMapping(struct rpc_pipe_client *cli,
 	r.in.type = type;
 	r.in.id = id;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_RemoveMapping, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wbint,
@@ -3521,10 +3173,6 @@ NTSTATUS rpccli_wbint_RemoveMapping(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_RemoveMapping, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3573,10 +3221,6 @@ struct tevent_req *rpccli_wbint_SetHWM_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_SetHWM, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -3621,10 +3265,6 @@ static void rpccli_wbint_SetHWM_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_SetHWM, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3663,10 +3303,6 @@ NTSTATUS rpccli_wbint_SetHWM(struct rpc_pipe_client *cli,
 	r.in.type = type;
 	r.in.id = id;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wbint_SetHWM, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wbint,
@@ -3675,10 +3311,6 @@ NTSTATUS rpccli_wbint_SetHWM(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wbint_SetHWM, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
