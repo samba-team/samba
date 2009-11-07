@@ -382,6 +382,12 @@ static int connect_acl_tdb(struct vfs_handle_struct *handle,
 	SMB_VFS_HANDLE_SET_DATA(handle, db, free_acl_tdb_data,
 				struct db_context, return -1);
 
+	/* Ensure we have "inherit acls = yes" if we're
+	 * using this module. */
+	DEBUG(2,("connect_acl_tdb: setting 'inherit acls = true' for service %s\n",
+		service ));
+	set_inherit_acls(SNUM(handle->conn));
+
 	return 0;
 }
 

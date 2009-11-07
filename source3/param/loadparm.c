@@ -9843,3 +9843,11 @@ void lp_set_passdb_backend(const char *backend)
 {
 	string_set(&Globals.szPassdbBackend, backend);
 }
+
+bool set_inherit_acls(int i)
+{
+	if (!LP_SNUM_OK(i)) {
+		return false;
+	}
+	ServicePtrs[(i)]->bInheritACLS = true;
+}
