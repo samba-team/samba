@@ -44,10 +44,6 @@ struct tevent_req *rpccli_winreg_OpenHKCR_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_OpenHKCR, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_winreg_OpenHKCR_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -99,10 +95,6 @@ static void rpccli_winreg_OpenHKCR_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_OpenHKCR, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -143,10 +135,6 @@ NTSTATUS rpccli_winreg_OpenHKCR(struct rpc_pipe_client *cli,
 	r.in.system_name = system_name;
 	r.in.access_mask = access_mask;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_OpenHKCR, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -155,10 +143,6 @@ NTSTATUS rpccli_winreg_OpenHKCR(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_OpenHKCR, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -214,10 +198,6 @@ struct tevent_req *rpccli_winreg_OpenHKCU_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_OpenHKCU, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_winreg_OpenHKCU_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -269,10 +249,6 @@ static void rpccli_winreg_OpenHKCU_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_OpenHKCU, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -313,10 +289,6 @@ NTSTATUS rpccli_winreg_OpenHKCU(struct rpc_pipe_client *cli,
 	r.in.system_name = system_name;
 	r.in.access_mask = access_mask;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_OpenHKCU, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -325,10 +297,6 @@ NTSTATUS rpccli_winreg_OpenHKCU(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_OpenHKCU, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -384,10 +352,6 @@ struct tevent_req *rpccli_winreg_OpenHKLM_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_OpenHKLM, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_winreg_OpenHKLM_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -439,10 +403,6 @@ static void rpccli_winreg_OpenHKLM_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_OpenHKLM, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -483,10 +443,6 @@ NTSTATUS rpccli_winreg_OpenHKLM(struct rpc_pipe_client *cli,
 	r.in.system_name = system_name;
 	r.in.access_mask = access_mask;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_OpenHKLM, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -495,10 +451,6 @@ NTSTATUS rpccli_winreg_OpenHKLM(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_OpenHKLM, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -554,10 +506,6 @@ struct tevent_req *rpccli_winreg_OpenHKPD_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_OpenHKPD, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_winreg_OpenHKPD_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -609,10 +557,6 @@ static void rpccli_winreg_OpenHKPD_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_OpenHKPD, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -653,10 +597,6 @@ NTSTATUS rpccli_winreg_OpenHKPD(struct rpc_pipe_client *cli,
 	r.in.system_name = system_name;
 	r.in.access_mask = access_mask;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_OpenHKPD, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -665,10 +605,6 @@ NTSTATUS rpccli_winreg_OpenHKPD(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_OpenHKPD, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -724,10 +660,6 @@ struct tevent_req *rpccli_winreg_OpenHKU_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_OpenHKU, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_winreg_OpenHKU_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -779,10 +711,6 @@ static void rpccli_winreg_OpenHKU_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_OpenHKU, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -823,10 +751,6 @@ NTSTATUS rpccli_winreg_OpenHKU(struct rpc_pipe_client *cli,
 	r.in.system_name = system_name;
 	r.in.access_mask = access_mask;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_OpenHKU, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -835,10 +759,6 @@ NTSTATUS rpccli_winreg_OpenHKU(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_OpenHKU, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -891,10 +811,6 @@ struct tevent_req *rpccli_winreg_CloseKey_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_CloseKey, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_winreg_CloseKey_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -946,10 +862,6 @@ static void rpccli_winreg_CloseKey_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_CloseKey, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -987,10 +899,6 @@ NTSTATUS rpccli_winreg_CloseKey(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.handle = handle;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_CloseKey, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -999,10 +907,6 @@ NTSTATUS rpccli_winreg_CloseKey(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_CloseKey, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1069,10 +973,6 @@ struct tevent_req *rpccli_winreg_CreateKey_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_CreateKey, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_winreg_CreateKey_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -1127,10 +1027,6 @@ static void rpccli_winreg_CreateKey_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_CreateKey, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1181,10 +1077,6 @@ NTSTATUS rpccli_winreg_CreateKey(struct rpc_pipe_client *cli,
 	r.in.secdesc = secdesc;
 	r.in.action_taken = action_taken;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_CreateKey, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -1193,10 +1085,6 @@ NTSTATUS rpccli_winreg_CreateKey(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_CreateKey, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1253,10 +1141,6 @@ struct tevent_req *rpccli_winreg_DeleteKey_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_DeleteKey, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -1301,10 +1185,6 @@ static void rpccli_winreg_DeleteKey_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_DeleteKey, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1344,10 +1224,6 @@ NTSTATUS rpccli_winreg_DeleteKey(struct rpc_pipe_client *cli,
 	r.in.handle = handle;
 	r.in.key = key;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_DeleteKey, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -1356,10 +1232,6 @@ NTSTATUS rpccli_winreg_DeleteKey(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_DeleteKey, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1412,10 +1284,6 @@ struct tevent_req *rpccli_winreg_DeleteValue_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_DeleteValue, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -1460,10 +1328,6 @@ static void rpccli_winreg_DeleteValue_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_DeleteValue, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1503,10 +1367,6 @@ NTSTATUS rpccli_winreg_DeleteValue(struct rpc_pipe_client *cli,
 	r.in.handle = handle;
 	r.in.value = value;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_DeleteValue, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -1515,10 +1375,6 @@ NTSTATUS rpccli_winreg_DeleteValue(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_DeleteValue, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1580,10 +1436,6 @@ struct tevent_req *rpccli_winreg_EnumKey_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_EnumKey, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_winreg_EnumKey_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -1641,10 +1493,6 @@ static void rpccli_winreg_EnumKey_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_EnumKey, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1690,10 +1538,6 @@ NTSTATUS rpccli_winreg_EnumKey(struct rpc_pipe_client *cli,
 	r.in.keyclass = keyclass;
 	r.in.last_changed_time = last_changed_time;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_EnumKey, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -1702,10 +1546,6 @@ NTSTATUS rpccli_winreg_EnumKey(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_EnumKey, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1780,10 +1620,6 @@ struct tevent_req *rpccli_winreg_EnumValue_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_EnumValue, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_winreg_EnumValue_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -1847,10 +1683,6 @@ static void rpccli_winreg_EnumValue_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_EnumValue, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1900,10 +1732,6 @@ NTSTATUS rpccli_winreg_EnumValue(struct rpc_pipe_client *cli,
 	r.in.size = size;
 	r.in.length = length;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_EnumValue, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -1912,10 +1740,6 @@ NTSTATUS rpccli_winreg_EnumValue(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_EnumValue, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1979,10 +1803,6 @@ struct tevent_req *rpccli_winreg_FlushKey_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_FlushKey, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -2027,10 +1847,6 @@ static void rpccli_winreg_FlushKey_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_FlushKey, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2068,10 +1884,6 @@ NTSTATUS rpccli_winreg_FlushKey(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.handle = handle;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_FlushKey, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -2080,10 +1892,6 @@ NTSTATUS rpccli_winreg_FlushKey(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_FlushKey, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2139,10 +1947,6 @@ struct tevent_req *rpccli_winreg_GetKeySecurity_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_GetKeySecurity, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_winreg_GetKeySecurity_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -2194,10 +1998,6 @@ static void rpccli_winreg_GetKeySecurity_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_GetKeySecurity, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2239,10 +2039,6 @@ NTSTATUS rpccli_winreg_GetKeySecurity(struct rpc_pipe_client *cli,
 	r.in.sec_info = sec_info;
 	r.in.sd = sd;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_GetKeySecurity, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -2251,10 +2047,6 @@ NTSTATUS rpccli_winreg_GetKeySecurity(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_GetKeySecurity, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2310,10 +2102,6 @@ struct tevent_req *rpccli_winreg_LoadKey_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_LoadKey, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -2358,10 +2146,6 @@ static void rpccli_winreg_LoadKey_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_LoadKey, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2403,10 +2187,6 @@ NTSTATUS rpccli_winreg_LoadKey(struct rpc_pipe_client *cli,
 	r.in.keyname = keyname;
 	r.in.filename = filename;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_LoadKey, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -2415,10 +2195,6 @@ NTSTATUS rpccli_winreg_LoadKey(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_LoadKey, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2481,10 +2257,6 @@ struct tevent_req *rpccli_winreg_NotifyChangeKeyValue_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_NotifyChangeKeyValue, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -2528,10 +2300,6 @@ static void rpccli_winreg_NotifyChangeKeyValue_done(struct tevent_req *subreq)
 
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_NotifyChangeKeyValue, &state->orig);
-	}
 
 	tevent_req_done(req);
 }
@@ -2582,10 +2350,6 @@ NTSTATUS rpccli_winreg_NotifyChangeKeyValue(struct rpc_pipe_client *cli,
 	r.in.string2 = string2;
 	r.in.unknown2 = unknown2;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_NotifyChangeKeyValue, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -2594,10 +2358,6 @@ NTSTATUS rpccli_winreg_NotifyChangeKeyValue(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_NotifyChangeKeyValue, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2656,10 +2416,6 @@ struct tevent_req *rpccli_winreg_OpenKey_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_OpenKey, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_winreg_OpenKey_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -2711,10 +2467,6 @@ static void rpccli_winreg_OpenKey_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_OpenKey, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2759,10 +2511,6 @@ NTSTATUS rpccli_winreg_OpenKey(struct rpc_pipe_client *cli,
 	r.in.unknown = unknown;
 	r.in.access_mask = access_mask;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_OpenKey, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -2771,10 +2519,6 @@ NTSTATUS rpccli_winreg_OpenKey(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_OpenKey, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2845,10 +2589,6 @@ struct tevent_req *rpccli_winreg_QueryInfoKey_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_QueryInfoKey, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_winreg_QueryInfoKey_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -2908,10 +2648,6 @@ static void rpccli_winreg_QueryInfoKey_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_QueryInfoKey, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2959,10 +2695,6 @@ NTSTATUS rpccli_winreg_QueryInfoKey(struct rpc_pipe_client *cli,
 	r.in.handle = handle;
 	r.in.classname = classname;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_QueryInfoKey, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -2971,10 +2703,6 @@ NTSTATUS rpccli_winreg_QueryInfoKey(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_QueryInfoKey, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3048,10 +2776,6 @@ struct tevent_req *rpccli_winreg_QueryValue_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_QueryValue, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_winreg_QueryValue_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -3114,10 +2838,6 @@ static void rpccli_winreg_QueryValue_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_QueryValue, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3165,10 +2885,6 @@ NTSTATUS rpccli_winreg_QueryValue(struct rpc_pipe_client *cli,
 	r.in.data_size = data_size;
 	r.in.data_length = data_length;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_QueryValue, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -3177,10 +2893,6 @@ NTSTATUS rpccli_winreg_QueryValue(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_QueryValue, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3241,10 +2953,6 @@ struct tevent_req *rpccli_winreg_ReplaceKey_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_ReplaceKey, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -3289,10 +2997,6 @@ static void rpccli_winreg_ReplaceKey_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_ReplaceKey, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3328,10 +3032,6 @@ NTSTATUS rpccli_winreg_ReplaceKey(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_ReplaceKey, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -3340,10 +3040,6 @@ NTSTATUS rpccli_winreg_ReplaceKey(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_ReplaceKey, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3398,10 +3094,6 @@ struct tevent_req *rpccli_winreg_RestoreKey_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_RestoreKey, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -3446,10 +3138,6 @@ static void rpccli_winreg_RestoreKey_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_RestoreKey, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3491,10 +3179,6 @@ NTSTATUS rpccli_winreg_RestoreKey(struct rpc_pipe_client *cli,
 	r.in.filename = filename;
 	r.in.flags = flags;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_RestoreKey, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -3503,10 +3187,6 @@ NTSTATUS rpccli_winreg_RestoreKey(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_RestoreKey, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3561,10 +3241,6 @@ struct tevent_req *rpccli_winreg_SaveKey_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_SaveKey, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -3609,10 +3285,6 @@ static void rpccli_winreg_SaveKey_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_SaveKey, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3654,10 +3326,6 @@ NTSTATUS rpccli_winreg_SaveKey(struct rpc_pipe_client *cli,
 	r.in.filename = filename;
 	r.in.sec_attrib = sec_attrib;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_SaveKey, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -3666,10 +3334,6 @@ NTSTATUS rpccli_winreg_SaveKey(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_SaveKey, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3724,10 +3388,6 @@ struct tevent_req *rpccli_winreg_SetKeySecurity_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_SetKeySecurity, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -3772,10 +3432,6 @@ static void rpccli_winreg_SetKeySecurity_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_SetKeySecurity, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3817,10 +3473,6 @@ NTSTATUS rpccli_winreg_SetKeySecurity(struct rpc_pipe_client *cli,
 	r.in.sec_info = sec_info;
 	r.in.sd = sd;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_SetKeySecurity, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -3829,10 +3481,6 @@ NTSTATUS rpccli_winreg_SetKeySecurity(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_SetKeySecurity, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3891,10 +3539,6 @@ struct tevent_req *rpccli_winreg_SetValue_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_SetValue, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -3938,10 +3582,6 @@ static void rpccli_winreg_SetValue_done(struct tevent_req *subreq)
 
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_SetValue, &state->orig);
-	}
 
 	tevent_req_done(req);
 }
@@ -3988,10 +3628,6 @@ NTSTATUS rpccli_winreg_SetValue(struct rpc_pipe_client *cli,
 	r.in.data = data;
 	r.in.size = size;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_SetValue, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -4000,10 +3636,6 @@ NTSTATUS rpccli_winreg_SetValue(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_SetValue, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -4052,10 +3684,6 @@ struct tevent_req *rpccli_winreg_UnLoadKey_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_UnLoadKey, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -4100,10 +3728,6 @@ static void rpccli_winreg_UnLoadKey_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_UnLoadKey, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -4139,10 +3763,6 @@ NTSTATUS rpccli_winreg_UnLoadKey(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_UnLoadKey, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -4151,10 +3771,6 @@ NTSTATUS rpccli_winreg_UnLoadKey(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_UnLoadKey, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -4213,10 +3829,6 @@ struct tevent_req *rpccli_winreg_InitiateSystemShutdown_send(TALLOC_CTX *mem_ctx
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_InitiateSystemShutdown, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -4260,10 +3872,6 @@ static void rpccli_winreg_InitiateSystemShutdown_done(struct tevent_req *subreq)
 
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_InitiateSystemShutdown, &state->orig);
-	}
 
 	tevent_req_done(req);
 }
@@ -4310,10 +3918,6 @@ NTSTATUS rpccli_winreg_InitiateSystemShutdown(struct rpc_pipe_client *cli,
 	r.in.force_apps = force_apps;
 	r.in.do_reboot = do_reboot;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_InitiateSystemShutdown, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -4322,10 +3926,6 @@ NTSTATUS rpccli_winreg_InitiateSystemShutdown(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_InitiateSystemShutdown, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -4376,10 +3976,6 @@ struct tevent_req *rpccli_winreg_AbortSystemShutdown_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_AbortSystemShutdown, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -4424,10 +4020,6 @@ static void rpccli_winreg_AbortSystemShutdown_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_AbortSystemShutdown, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -4465,10 +4057,6 @@ NTSTATUS rpccli_winreg_AbortSystemShutdown(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.server = server;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_AbortSystemShutdown, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -4477,10 +4065,6 @@ NTSTATUS rpccli_winreg_AbortSystemShutdown(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_AbortSystemShutdown, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -4533,10 +4117,6 @@ struct tevent_req *rpccli_winreg_GetVersion_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_GetVersion, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_winreg_GetVersion_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -4588,10 +4168,6 @@ static void rpccli_winreg_GetVersion_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_GetVersion, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -4630,10 +4206,6 @@ NTSTATUS rpccli_winreg_GetVersion(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.handle = handle;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_GetVersion, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -4642,10 +4214,6 @@ NTSTATUS rpccli_winreg_GetVersion(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_GetVersion, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -4701,10 +4269,6 @@ struct tevent_req *rpccli_winreg_OpenHKCC_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_OpenHKCC, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_winreg_OpenHKCC_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -4756,10 +4320,6 @@ static void rpccli_winreg_OpenHKCC_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_OpenHKCC, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -4800,10 +4360,6 @@ NTSTATUS rpccli_winreg_OpenHKCC(struct rpc_pipe_client *cli,
 	r.in.system_name = system_name;
 	r.in.access_mask = access_mask;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_OpenHKCC, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -4812,10 +4368,6 @@ NTSTATUS rpccli_winreg_OpenHKCC(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_OpenHKCC, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -4871,10 +4423,6 @@ struct tevent_req *rpccli_winreg_OpenHKDD_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_OpenHKDD, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_winreg_OpenHKDD_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -4926,10 +4474,6 @@ static void rpccli_winreg_OpenHKDD_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_OpenHKDD, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -4970,10 +4514,6 @@ NTSTATUS rpccli_winreg_OpenHKDD(struct rpc_pipe_client *cli,
 	r.in.system_name = system_name;
 	r.in.access_mask = access_mask;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_OpenHKDD, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -4982,10 +4522,6 @@ NTSTATUS rpccli_winreg_OpenHKDD(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_OpenHKDD, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -5048,10 +4584,6 @@ struct tevent_req *rpccli_winreg_QueryMultipleValues_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_QueryMultipleValues, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_winreg_QueryMultipleValues_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -5107,10 +4639,6 @@ static void rpccli_winreg_QueryMultipleValues_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_QueryMultipleValues, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -5156,10 +4684,6 @@ NTSTATUS rpccli_winreg_QueryMultipleValues(struct rpc_pipe_client *cli,
 	r.in.buffer = buffer;
 	r.in.buffer_size = buffer_size;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_QueryMultipleValues, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -5168,10 +4692,6 @@ NTSTATUS rpccli_winreg_QueryMultipleValues(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_QueryMultipleValues, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -5237,10 +4757,6 @@ struct tevent_req *rpccli_winreg_InitiateSystemShutdownEx_send(TALLOC_CTX *mem_c
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_InitiateSystemShutdownEx, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -5284,10 +4800,6 @@ static void rpccli_winreg_InitiateSystemShutdownEx_done(struct tevent_req *subre
 
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_InitiateSystemShutdownEx, &state->orig);
-	}
 
 	tevent_req_done(req);
 }
@@ -5336,10 +4848,6 @@ NTSTATUS rpccli_winreg_InitiateSystemShutdownEx(struct rpc_pipe_client *cli,
 	r.in.do_reboot = do_reboot;
 	r.in.reason = reason;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_InitiateSystemShutdownEx, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -5348,10 +4856,6 @@ NTSTATUS rpccli_winreg_InitiateSystemShutdownEx(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_InitiateSystemShutdownEx, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -5400,10 +4904,6 @@ struct tevent_req *rpccli_winreg_SaveKeyEx_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_SaveKeyEx, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -5448,10 +4948,6 @@ static void rpccli_winreg_SaveKeyEx_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_SaveKeyEx, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -5487,10 +4983,6 @@ NTSTATUS rpccli_winreg_SaveKeyEx(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_SaveKeyEx, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -5499,10 +4991,6 @@ NTSTATUS rpccli_winreg_SaveKeyEx(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_SaveKeyEx, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -5557,10 +5045,6 @@ struct tevent_req *rpccli_winreg_OpenHKPT_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_OpenHKPT, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_winreg_OpenHKPT_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -5612,10 +5096,6 @@ static void rpccli_winreg_OpenHKPT_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_OpenHKPT, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -5656,10 +5136,6 @@ NTSTATUS rpccli_winreg_OpenHKPT(struct rpc_pipe_client *cli,
 	r.in.system_name = system_name;
 	r.in.access_mask = access_mask;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_OpenHKPT, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -5668,10 +5144,6 @@ NTSTATUS rpccli_winreg_OpenHKPT(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_OpenHKPT, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -5727,10 +5199,6 @@ struct tevent_req *rpccli_winreg_OpenHKPN_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_OpenHKPN, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_winreg_OpenHKPN_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -5782,10 +5250,6 @@ static void rpccli_winreg_OpenHKPN_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_OpenHKPN, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -5826,10 +5290,6 @@ NTSTATUS rpccli_winreg_OpenHKPN(struct rpc_pipe_client *cli,
 	r.in.system_name = system_name;
 	r.in.access_mask = access_mask;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_OpenHKPN, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -5838,10 +5298,6 @@ NTSTATUS rpccli_winreg_OpenHKPN(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_OpenHKPN, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -5891,10 +5347,6 @@ struct tevent_req *rpccli_winreg_QueryMultipleValues2_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_QueryMultipleValues2, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -5939,10 +5391,6 @@ static void rpccli_winreg_QueryMultipleValues2_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_QueryMultipleValues2, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -5978,10 +5426,6 @@ NTSTATUS rpccli_winreg_QueryMultipleValues2(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(winreg_QueryMultipleValues2, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
@@ -5990,10 +5434,6 @@ NTSTATUS rpccli_winreg_QueryMultipleValues2(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(winreg_QueryMultipleValues2, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {

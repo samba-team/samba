@@ -44,10 +44,6 @@ struct tevent_req *rpccli_epm_Insert_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(epm_Insert, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -92,10 +88,6 @@ static void rpccli_epm_Insert_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(epm_Insert, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -136,10 +128,6 @@ NTSTATUS rpccli_epm_Insert(struct rpc_pipe_client *cli,
 	r.in.entries = entries;
 	r.in.replace = replace;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(epm_Insert, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_epmapper,
@@ -148,10 +136,6 @@ NTSTATUS rpccli_epm_Insert(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(epm_Insert, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -200,10 +184,6 @@ struct tevent_req *rpccli_epm_Delete_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(epm_Delete, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -248,10 +228,6 @@ static void rpccli_epm_Delete_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(epm_Delete, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -290,10 +266,6 @@ NTSTATUS rpccli_epm_Delete(struct rpc_pipe_client *cli,
 	r.in.num_ents = num_ents;
 	r.in.entries = entries;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(epm_Delete, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_epmapper,
@@ -302,10 +274,6 @@ NTSTATUS rpccli_epm_Delete(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(epm_Delete, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -367,10 +335,6 @@ struct tevent_req *rpccli_epm_Lookup_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(epm_Lookup, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_epm_Lookup_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -424,10 +388,6 @@ static void rpccli_epm_Lookup_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(epm_Lookup, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -476,10 +436,6 @@ NTSTATUS rpccli_epm_Lookup(struct rpc_pipe_client *cli,
 	r.in.entry_handle = entry_handle;
 	r.in.max_ents = max_ents;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(epm_Lookup, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_epmapper,
@@ -488,10 +444,6 @@ NTSTATUS rpccli_epm_Lookup(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(epm_Lookup, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -552,10 +504,6 @@ struct tevent_req *rpccli_epm_Map_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(epm_Map, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_epm_Map_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -609,10 +557,6 @@ static void rpccli_epm_Map_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(epm_Map, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -657,10 +601,6 @@ NTSTATUS rpccli_epm_Map(struct rpc_pipe_client *cli,
 	r.in.entry_handle = entry_handle;
 	r.in.max_towers = max_towers;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(epm_Map, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_epmapper,
@@ -669,10 +609,6 @@ NTSTATUS rpccli_epm_Map(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(epm_Map, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -722,10 +658,6 @@ struct tevent_req *rpccli_epm_LookupHandleFree_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(epm_LookupHandleFree, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_epm_LookupHandleFree_out_memory");
@@ -778,10 +710,6 @@ static void rpccli_epm_LookupHandleFree_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(epm_LookupHandleFree, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -818,10 +746,6 @@ NTSTATUS rpccli_epm_LookupHandleFree(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.entry_handle = entry_handle;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(epm_LookupHandleFree, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_epmapper,
@@ -830,10 +754,6 @@ NTSTATUS rpccli_epm_LookupHandleFree(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(epm_LookupHandleFree, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -881,10 +801,6 @@ struct tevent_req *rpccli_epm_InqObject_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(epm_InqObject, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -929,10 +845,6 @@ static void rpccli_epm_InqObject_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(epm_InqObject, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -969,10 +881,6 @@ NTSTATUS rpccli_epm_InqObject(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.epm_object = epm_object;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(epm_InqObject, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_epmapper,
@@ -981,10 +889,6 @@ NTSTATUS rpccli_epm_InqObject(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(epm_InqObject, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1035,10 +939,6 @@ struct tevent_req *rpccli_epm_MgmtDelete_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(epm_MgmtDelete, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -1083,10 +983,6 @@ static void rpccli_epm_MgmtDelete_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(epm_MgmtDelete, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1127,10 +1023,6 @@ NTSTATUS rpccli_epm_MgmtDelete(struct rpc_pipe_client *cli,
 	r.in.object = object;
 	r.in.tower = tower;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(epm_MgmtDelete, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_epmapper,
@@ -1139,10 +1031,6 @@ NTSTATUS rpccli_epm_MgmtDelete(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(epm_MgmtDelete, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1186,10 +1074,6 @@ struct tevent_req *rpccli_epm_MapAuth_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(epm_MapAuth, &state->orig);
-	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
@@ -1235,10 +1119,6 @@ static void rpccli_epm_MapAuth_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(epm_MapAuth, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1273,10 +1153,6 @@ NTSTATUS rpccli_epm_MapAuth(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(epm_MapAuth, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_epmapper,
@@ -1285,10 +1161,6 @@ NTSTATUS rpccli_epm_MapAuth(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(epm_MapAuth, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {

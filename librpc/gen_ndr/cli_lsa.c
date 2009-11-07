@@ -41,10 +41,6 @@ struct tevent_req *rpccli_lsa_Close_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_Close, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_Close_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -96,10 +92,6 @@ static void rpccli_lsa_Close_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_Close, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -136,10 +128,6 @@ NTSTATUS rpccli_lsa_Close(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.handle = handle;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_Close, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -148,10 +136,6 @@ NTSTATUS rpccli_lsa_Close(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_Close, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -199,10 +183,6 @@ struct tevent_req *rpccli_lsa_Delete_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_Delete, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -247,10 +227,6 @@ static void rpccli_lsa_Delete_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_Delete, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -287,10 +263,6 @@ NTSTATUS rpccli_lsa_Delete(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.handle = handle;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_Delete, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -299,10 +271,6 @@ NTSTATUS rpccli_lsa_Delete(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_Delete, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -356,10 +324,6 @@ struct tevent_req *rpccli_lsa_EnumPrivs_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_EnumPrivs, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_EnumPrivs_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -412,10 +376,6 @@ static void rpccli_lsa_EnumPrivs_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_EnumPrivs, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -457,10 +417,6 @@ NTSTATUS rpccli_lsa_EnumPrivs(struct rpc_pipe_client *cli,
 	r.in.resume_handle = resume_handle;
 	r.in.max_count = max_count;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_EnumPrivs, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -469,10 +425,6 @@ NTSTATUS rpccli_lsa_EnumPrivs(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_EnumPrivs, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -525,10 +477,6 @@ struct tevent_req *rpccli_lsa_QuerySecurity_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_QuerySecurity, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_QuerySecurity_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -580,10 +528,6 @@ static void rpccli_lsa_QuerySecurity_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_QuerySecurity, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -623,10 +567,6 @@ NTSTATUS rpccli_lsa_QuerySecurity(struct rpc_pipe_client *cli,
 	r.in.handle = handle;
 	r.in.sec_info = sec_info;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_QuerySecurity, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -635,10 +575,6 @@ NTSTATUS rpccli_lsa_QuerySecurity(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_QuerySecurity, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -690,10 +626,6 @@ struct tevent_req *rpccli_lsa_SetSecObj_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_SetSecObj, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -738,10 +670,6 @@ static void rpccli_lsa_SetSecObj_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_SetSecObj, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -782,10 +710,6 @@ NTSTATUS rpccli_lsa_SetSecObj(struct rpc_pipe_client *cli,
 	r.in.sec_info = sec_info;
 	r.in.sdbuf = sdbuf;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_SetSecObj, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -794,10 +718,6 @@ NTSTATUS rpccli_lsa_SetSecObj(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_SetSecObj, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -841,10 +761,6 @@ struct tevent_req *rpccli_lsa_ChangePassword_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_ChangePassword, &state->orig);
-	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
@@ -890,10 +806,6 @@ static void rpccli_lsa_ChangePassword_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_ChangePassword, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -928,10 +840,6 @@ NTSTATUS rpccli_lsa_ChangePassword(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_ChangePassword, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -940,10 +848,6 @@ NTSTATUS rpccli_lsa_ChangePassword(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_ChangePassword, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -996,10 +900,6 @@ struct tevent_req *rpccli_lsa_OpenPolicy_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_OpenPolicy, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_OpenPolicy_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -1051,10 +951,6 @@ static void rpccli_lsa_OpenPolicy_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_OpenPolicy, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1096,10 +992,6 @@ NTSTATUS rpccli_lsa_OpenPolicy(struct rpc_pipe_client *cli,
 	r.in.attr = attr;
 	r.in.access_mask = access_mask;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_OpenPolicy, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -1108,10 +1000,6 @@ NTSTATUS rpccli_lsa_OpenPolicy(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_OpenPolicy, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1162,10 +1050,6 @@ struct tevent_req *rpccli_lsa_QueryInfoPolicy_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_QueryInfoPolicy, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_QueryInfoPolicy_out_memory");
@@ -1218,10 +1102,6 @@ static void rpccli_lsa_QueryInfoPolicy_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_QueryInfoPolicy, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1261,10 +1141,6 @@ NTSTATUS rpccli_lsa_QueryInfoPolicy(struct rpc_pipe_client *cli,
 	r.in.handle = handle;
 	r.in.level = level;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_QueryInfoPolicy, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -1273,10 +1149,6 @@ NTSTATUS rpccli_lsa_QueryInfoPolicy(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_QueryInfoPolicy, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1328,10 +1200,6 @@ struct tevent_req *rpccli_lsa_SetInfoPolicy_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_SetInfoPolicy, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -1376,10 +1244,6 @@ static void rpccli_lsa_SetInfoPolicy_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_SetInfoPolicy, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1420,10 +1284,6 @@ NTSTATUS rpccli_lsa_SetInfoPolicy(struct rpc_pipe_client *cli,
 	r.in.level = level;
 	r.in.info = info;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_SetInfoPolicy, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -1432,10 +1292,6 @@ NTSTATUS rpccli_lsa_SetInfoPolicy(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_SetInfoPolicy, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1479,10 +1335,6 @@ struct tevent_req *rpccli_lsa_ClearAuditLog_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_ClearAuditLog, &state->orig);
-	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
@@ -1528,10 +1380,6 @@ static void rpccli_lsa_ClearAuditLog_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_ClearAuditLog, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1566,10 +1414,6 @@ NTSTATUS rpccli_lsa_ClearAuditLog(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_ClearAuditLog, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -1578,10 +1422,6 @@ NTSTATUS rpccli_lsa_ClearAuditLog(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_ClearAuditLog, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1634,10 +1474,6 @@ struct tevent_req *rpccli_lsa_CreateAccount_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CreateAccount, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_CreateAccount_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -1689,10 +1525,6 @@ static void rpccli_lsa_CreateAccount_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CreateAccount, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1734,10 +1566,6 @@ NTSTATUS rpccli_lsa_CreateAccount(struct rpc_pipe_client *cli,
 	r.in.sid = sid;
 	r.in.access_mask = access_mask;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CreateAccount, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -1746,10 +1574,6 @@ NTSTATUS rpccli_lsa_CreateAccount(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CreateAccount, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1804,10 +1628,6 @@ struct tevent_req *rpccli_lsa_EnumAccounts_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_EnumAccounts, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_EnumAccounts_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -1860,10 +1680,6 @@ static void rpccli_lsa_EnumAccounts_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_EnumAccounts, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1905,10 +1721,6 @@ NTSTATUS rpccli_lsa_EnumAccounts(struct rpc_pipe_client *cli,
 	r.in.resume_handle = resume_handle;
 	r.in.num_entries = num_entries;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_EnumAccounts, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -1917,10 +1729,6 @@ NTSTATUS rpccli_lsa_EnumAccounts(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_EnumAccounts, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1975,10 +1783,6 @@ struct tevent_req *rpccli_lsa_CreateTrustedDomain_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CreateTrustedDomain, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_CreateTrustedDomain_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -2030,10 +1834,6 @@ static void rpccli_lsa_CreateTrustedDomain_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CreateTrustedDomain, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2075,10 +1875,6 @@ NTSTATUS rpccli_lsa_CreateTrustedDomain(struct rpc_pipe_client *cli,
 	r.in.info = info;
 	r.in.access_mask = access_mask;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CreateTrustedDomain, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -2087,10 +1883,6 @@ NTSTATUS rpccli_lsa_CreateTrustedDomain(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CreateTrustedDomain, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2145,10 +1937,6 @@ struct tevent_req *rpccli_lsa_EnumTrustDom_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_EnumTrustDom, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_EnumTrustDom_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -2201,10 +1989,6 @@ static void rpccli_lsa_EnumTrustDom_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_EnumTrustDom, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2246,10 +2030,6 @@ NTSTATUS rpccli_lsa_EnumTrustDom(struct rpc_pipe_client *cli,
 	r.in.resume_handle = resume_handle;
 	r.in.max_size = max_size;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_EnumTrustDom, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -2258,10 +2038,6 @@ NTSTATUS rpccli_lsa_EnumTrustDom(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_EnumTrustDom, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2324,10 +2100,6 @@ struct tevent_req *rpccli_lsa_LookupNames_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LookupNames, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_LookupNames_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -2381,10 +2153,6 @@ static void rpccli_lsa_LookupNames_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LookupNames, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2432,10 +2200,6 @@ NTSTATUS rpccli_lsa_LookupNames(struct rpc_pipe_client *cli,
 	r.in.level = level;
 	r.in.count = count;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LookupNames, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -2444,10 +2208,6 @@ NTSTATUS rpccli_lsa_LookupNames(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LookupNames, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2509,10 +2269,6 @@ struct tevent_req *rpccli_lsa_LookupSids_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LookupSids, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_LookupSids_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -2566,10 +2322,6 @@ static void rpccli_lsa_LookupSids_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LookupSids, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2615,10 +2367,6 @@ NTSTATUS rpccli_lsa_LookupSids(struct rpc_pipe_client *cli,
 	r.in.level = level;
 	r.in.count = count;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LookupSids, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -2627,10 +2375,6 @@ NTSTATUS rpccli_lsa_LookupSids(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LookupSids, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2686,10 +2430,6 @@ struct tevent_req *rpccli_lsa_CreateSecret_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CreateSecret, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_CreateSecret_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -2741,10 +2481,6 @@ static void rpccli_lsa_CreateSecret_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CreateSecret, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2786,10 +2522,6 @@ NTSTATUS rpccli_lsa_CreateSecret(struct rpc_pipe_client *cli,
 	r.in.name = name;
 	r.in.access_mask = access_mask;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CreateSecret, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -2798,10 +2530,6 @@ NTSTATUS rpccli_lsa_CreateSecret(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CreateSecret, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2855,10 +2583,6 @@ struct tevent_req *rpccli_lsa_OpenAccount_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_OpenAccount, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_OpenAccount_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -2910,10 +2634,6 @@ static void rpccli_lsa_OpenAccount_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_OpenAccount, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2955,10 +2675,6 @@ NTSTATUS rpccli_lsa_OpenAccount(struct rpc_pipe_client *cli,
 	r.in.sid = sid;
 	r.in.access_mask = access_mask;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_OpenAccount, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -2967,10 +2683,6 @@ NTSTATUS rpccli_lsa_OpenAccount(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_OpenAccount, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3019,10 +2731,6 @@ struct tevent_req *rpccli_lsa_EnumPrivsAccount_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_EnumPrivsAccount, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_EnumPrivsAccount_out_memory");
@@ -3075,10 +2783,6 @@ static void rpccli_lsa_EnumPrivsAccount_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_EnumPrivsAccount, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3116,10 +2820,6 @@ NTSTATUS rpccli_lsa_EnumPrivsAccount(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.handle = handle;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_EnumPrivsAccount, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -3128,10 +2828,6 @@ NTSTATUS rpccli_lsa_EnumPrivsAccount(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_EnumPrivsAccount, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3181,10 +2877,6 @@ struct tevent_req *rpccli_lsa_AddPrivilegesToAccount_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_AddPrivilegesToAccount, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -3229,10 +2921,6 @@ static void rpccli_lsa_AddPrivilegesToAccount_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_AddPrivilegesToAccount, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3271,10 +2959,6 @@ NTSTATUS rpccli_lsa_AddPrivilegesToAccount(struct rpc_pipe_client *cli,
 	r.in.handle = handle;
 	r.in.privs = privs;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_AddPrivilegesToAccount, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -3283,10 +2967,6 @@ NTSTATUS rpccli_lsa_AddPrivilegesToAccount(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_AddPrivilegesToAccount, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3337,10 +3017,6 @@ struct tevent_req *rpccli_lsa_RemovePrivilegesFromAccount_send(TALLOC_CTX *mem_c
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_RemovePrivilegesFromAccount, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -3385,10 +3061,6 @@ static void rpccli_lsa_RemovePrivilegesFromAccount_done(struct tevent_req *subre
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_RemovePrivilegesFromAccount, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3429,10 +3101,6 @@ NTSTATUS rpccli_lsa_RemovePrivilegesFromAccount(struct rpc_pipe_client *cli,
 	r.in.remove_all = remove_all;
 	r.in.privs = privs;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_RemovePrivilegesFromAccount, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -3441,10 +3109,6 @@ NTSTATUS rpccli_lsa_RemovePrivilegesFromAccount(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_RemovePrivilegesFromAccount, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3488,10 +3152,6 @@ struct tevent_req *rpccli_lsa_GetQuotasForAccount_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_GetQuotasForAccount, &state->orig);
-	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
@@ -3537,10 +3197,6 @@ static void rpccli_lsa_GetQuotasForAccount_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_GetQuotasForAccount, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3575,10 +3231,6 @@ NTSTATUS rpccli_lsa_GetQuotasForAccount(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_GetQuotasForAccount, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -3587,10 +3239,6 @@ NTSTATUS rpccli_lsa_GetQuotasForAccount(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_GetQuotasForAccount, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3634,10 +3282,6 @@ struct tevent_req *rpccli_lsa_SetQuotasForAccount_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_SetQuotasForAccount, &state->orig);
-	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
@@ -3683,10 +3327,6 @@ static void rpccli_lsa_SetQuotasForAccount_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_SetQuotasForAccount, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3721,10 +3361,6 @@ NTSTATUS rpccli_lsa_SetQuotasForAccount(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_SetQuotasForAccount, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -3733,10 +3369,6 @@ NTSTATUS rpccli_lsa_SetQuotasForAccount(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_SetQuotasForAccount, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3784,10 +3416,6 @@ struct tevent_req *rpccli_lsa_GetSystemAccessAccount_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_GetSystemAccessAccount, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_GetSystemAccessAccount_out_memory");
@@ -3840,10 +3468,6 @@ static void rpccli_lsa_GetSystemAccessAccount_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_GetSystemAccessAccount, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3881,10 +3505,6 @@ NTSTATUS rpccli_lsa_GetSystemAccessAccount(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.handle = handle;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_GetSystemAccessAccount, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -3893,10 +3513,6 @@ NTSTATUS rpccli_lsa_GetSystemAccessAccount(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_GetSystemAccessAccount, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3946,10 +3562,6 @@ struct tevent_req *rpccli_lsa_SetSystemAccessAccount_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_SetSystemAccessAccount, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -3994,10 +3606,6 @@ static void rpccli_lsa_SetSystemAccessAccount_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_SetSystemAccessAccount, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -4036,10 +3644,6 @@ NTSTATUS rpccli_lsa_SetSystemAccessAccount(struct rpc_pipe_client *cli,
 	r.in.handle = handle;
 	r.in.access_mask = access_mask;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_SetSystemAccessAccount, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -4048,10 +3652,6 @@ NTSTATUS rpccli_lsa_SetSystemAccessAccount(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_SetSystemAccessAccount, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -4104,10 +3704,6 @@ struct tevent_req *rpccli_lsa_OpenTrustedDomain_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_OpenTrustedDomain, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_OpenTrustedDomain_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -4159,10 +3755,6 @@ static void rpccli_lsa_OpenTrustedDomain_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_OpenTrustedDomain, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -4204,10 +3796,6 @@ NTSTATUS rpccli_lsa_OpenTrustedDomain(struct rpc_pipe_client *cli,
 	r.in.sid = sid;
 	r.in.access_mask = access_mask;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_OpenTrustedDomain, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -4216,10 +3804,6 @@ NTSTATUS rpccli_lsa_OpenTrustedDomain(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_OpenTrustedDomain, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -4270,10 +3854,6 @@ struct tevent_req *rpccli_lsa_QueryTrustedDomainInfo_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_QueryTrustedDomainInfo, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_QueryTrustedDomainInfo_out_memory");
@@ -4326,10 +3906,6 @@ static void rpccli_lsa_QueryTrustedDomainInfo_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_QueryTrustedDomainInfo, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -4369,10 +3945,6 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfo(struct rpc_pipe_client *cli,
 	r.in.trustdom_handle = trustdom_handle;
 	r.in.level = level;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_QueryTrustedDomainInfo, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -4381,10 +3953,6 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfo(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_QueryTrustedDomainInfo, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -4436,10 +4004,6 @@ struct tevent_req *rpccli_lsa_SetInformationTrustedDomain_send(TALLOC_CTX *mem_c
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_SetInformationTrustedDomain, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -4484,10 +4048,6 @@ static void rpccli_lsa_SetInformationTrustedDomain_done(struct tevent_req *subre
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_SetInformationTrustedDomain, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -4528,10 +4088,6 @@ NTSTATUS rpccli_lsa_SetInformationTrustedDomain(struct rpc_pipe_client *cli,
 	r.in.level = level;
 	r.in.info = info;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_SetInformationTrustedDomain, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -4540,10 +4096,6 @@ NTSTATUS rpccli_lsa_SetInformationTrustedDomain(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_SetInformationTrustedDomain, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -4596,10 +4148,6 @@ struct tevent_req *rpccli_lsa_OpenSecret_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_OpenSecret, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_OpenSecret_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -4651,10 +4199,6 @@ static void rpccli_lsa_OpenSecret_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_OpenSecret, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -4696,10 +4240,6 @@ NTSTATUS rpccli_lsa_OpenSecret(struct rpc_pipe_client *cli,
 	r.in.name = name;
 	r.in.access_mask = access_mask;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_OpenSecret, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -4708,10 +4248,6 @@ NTSTATUS rpccli_lsa_OpenSecret(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_OpenSecret, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -4763,10 +4299,6 @@ struct tevent_req *rpccli_lsa_SetSecret_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_SetSecret, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -4811,10 +4343,6 @@ static void rpccli_lsa_SetSecret_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_SetSecret, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -4855,10 +4383,6 @@ NTSTATUS rpccli_lsa_SetSecret(struct rpc_pipe_client *cli,
 	r.in.new_val = new_val;
 	r.in.old_val = old_val;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_SetSecret, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -4867,10 +4391,6 @@ NTSTATUS rpccli_lsa_SetSecret(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_SetSecret, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -4928,10 +4448,6 @@ struct tevent_req *rpccli_lsa_QuerySecret_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_QuerySecret, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_QuerySecret_out_memory");
@@ -4995,10 +4511,6 @@ static void rpccli_lsa_QuerySecret_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_QuerySecret, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -5043,10 +4555,6 @@ NTSTATUS rpccli_lsa_QuerySecret(struct rpc_pipe_client *cli,
 	r.in.old_val = old_val;
 	r.in.old_mtime = old_mtime;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_QuerySecret, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -5055,10 +4563,6 @@ NTSTATUS rpccli_lsa_QuerySecret(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_QuerySecret, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -5121,10 +4625,6 @@ struct tevent_req *rpccli_lsa_LookupPrivValue_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LookupPrivValue, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_LookupPrivValue_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -5176,10 +4676,6 @@ static void rpccli_lsa_LookupPrivValue_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LookupPrivValue, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -5219,10 +4715,6 @@ NTSTATUS rpccli_lsa_LookupPrivValue(struct rpc_pipe_client *cli,
 	r.in.handle = handle;
 	r.in.name = name;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LookupPrivValue, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -5231,10 +4723,6 @@ NTSTATUS rpccli_lsa_LookupPrivValue(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LookupPrivValue, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -5285,10 +4773,6 @@ struct tevent_req *rpccli_lsa_LookupPrivName_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LookupPrivName, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_LookupPrivName_out_memory");
@@ -5341,10 +4825,6 @@ static void rpccli_lsa_LookupPrivName_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LookupPrivName, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -5384,10 +4864,6 @@ NTSTATUS rpccli_lsa_LookupPrivName(struct rpc_pipe_client *cli,
 	r.in.handle = handle;
 	r.in.luid = luid;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LookupPrivName, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -5396,10 +4872,6 @@ NTSTATUS rpccli_lsa_LookupPrivName(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LookupPrivName, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -5457,10 +4929,6 @@ struct tevent_req *rpccli_lsa_LookupPrivDisplayName_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LookupPrivDisplayName, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_LookupPrivDisplayName_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -5513,10 +4981,6 @@ static void rpccli_lsa_LookupPrivDisplayName_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LookupPrivDisplayName, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -5561,10 +5025,6 @@ NTSTATUS rpccli_lsa_LookupPrivDisplayName(struct rpc_pipe_client *cli,
 	r.in.language_id = language_id;
 	r.in.language_id_sys = language_id_sys;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LookupPrivDisplayName, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -5573,10 +5033,6 @@ NTSTATUS rpccli_lsa_LookupPrivDisplayName(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LookupPrivDisplayName, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -5625,10 +5081,6 @@ struct tevent_req *rpccli_lsa_DeleteObject_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_DeleteObject, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_DeleteObject_out_memory");
@@ -5681,10 +5133,6 @@ static void rpccli_lsa_DeleteObject_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_DeleteObject, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -5721,10 +5169,6 @@ NTSTATUS rpccli_lsa_DeleteObject(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.handle = handle;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_DeleteObject, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -5733,10 +5177,6 @@ NTSTATUS rpccli_lsa_DeleteObject(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_DeleteObject, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -5787,10 +5227,6 @@ struct tevent_req *rpccli_lsa_EnumAccountsWithUserRight_send(TALLOC_CTX *mem_ctx
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_EnumAccountsWithUserRight, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_EnumAccountsWithUserRight_out_memory");
@@ -5843,10 +5279,6 @@ static void rpccli_lsa_EnumAccountsWithUserRight_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_EnumAccountsWithUserRight, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -5886,10 +5318,6 @@ NTSTATUS rpccli_lsa_EnumAccountsWithUserRight(struct rpc_pipe_client *cli,
 	r.in.handle = handle;
 	r.in.name = name;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_EnumAccountsWithUserRight, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -5898,10 +5326,6 @@ NTSTATUS rpccli_lsa_EnumAccountsWithUserRight(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_EnumAccountsWithUserRight, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -5952,10 +5376,6 @@ struct tevent_req *rpccli_lsa_EnumAccountRights_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_EnumAccountRights, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_EnumAccountRights_out_memory");
@@ -6008,10 +5428,6 @@ static void rpccli_lsa_EnumAccountRights_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_EnumAccountRights, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -6051,10 +5467,6 @@ NTSTATUS rpccli_lsa_EnumAccountRights(struct rpc_pipe_client *cli,
 	r.in.handle = handle;
 	r.in.sid = sid;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_EnumAccountRights, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -6063,10 +5475,6 @@ NTSTATUS rpccli_lsa_EnumAccountRights(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_EnumAccountRights, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -6118,10 +5526,6 @@ struct tevent_req *rpccli_lsa_AddAccountRights_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_AddAccountRights, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -6166,10 +5570,6 @@ static void rpccli_lsa_AddAccountRights_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_AddAccountRights, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -6210,10 +5610,6 @@ NTSTATUS rpccli_lsa_AddAccountRights(struct rpc_pipe_client *cli,
 	r.in.sid = sid;
 	r.in.rights = rights;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_AddAccountRights, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -6222,10 +5618,6 @@ NTSTATUS rpccli_lsa_AddAccountRights(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_AddAccountRights, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -6278,10 +5670,6 @@ struct tevent_req *rpccli_lsa_RemoveAccountRights_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_RemoveAccountRights, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -6326,10 +5714,6 @@ static void rpccli_lsa_RemoveAccountRights_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_RemoveAccountRights, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -6372,10 +5756,6 @@ NTSTATUS rpccli_lsa_RemoveAccountRights(struct rpc_pipe_client *cli,
 	r.in.remove_all = remove_all;
 	r.in.rights = rights;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_RemoveAccountRights, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -6384,10 +5764,6 @@ NTSTATUS rpccli_lsa_RemoveAccountRights(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_RemoveAccountRights, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -6440,10 +5816,6 @@ struct tevent_req *rpccli_lsa_QueryTrustedDomainInfoBySid_send(TALLOC_CTX *mem_c
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_QueryTrustedDomainInfoBySid, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_QueryTrustedDomainInfoBySid_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -6495,10 +5867,6 @@ static void rpccli_lsa_QueryTrustedDomainInfoBySid_done(struct tevent_req *subre
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_QueryTrustedDomainInfoBySid, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -6540,10 +5908,6 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfoBySid(struct rpc_pipe_client *cli,
 	r.in.dom_sid = dom_sid;
 	r.in.level = level;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_QueryTrustedDomainInfoBySid, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -6552,10 +5916,6 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfoBySid(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_QueryTrustedDomainInfoBySid, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -6609,10 +5969,6 @@ struct tevent_req *rpccli_lsa_SetTrustedDomainInfo_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_SetTrustedDomainInfo, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -6657,10 +6013,6 @@ static void rpccli_lsa_SetTrustedDomainInfo_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_SetTrustedDomainInfo, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -6703,10 +6055,6 @@ NTSTATUS rpccli_lsa_SetTrustedDomainInfo(struct rpc_pipe_client *cli,
 	r.in.level = level;
 	r.in.info = info;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_SetTrustedDomainInfo, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -6715,10 +6063,6 @@ NTSTATUS rpccli_lsa_SetTrustedDomainInfo(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_SetTrustedDomainInfo, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -6767,10 +6111,6 @@ struct tevent_req *rpccli_lsa_DeleteTrustedDomain_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_DeleteTrustedDomain, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -6815,10 +6155,6 @@ static void rpccli_lsa_DeleteTrustedDomain_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_DeleteTrustedDomain, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -6857,10 +6193,6 @@ NTSTATUS rpccli_lsa_DeleteTrustedDomain(struct rpc_pipe_client *cli,
 	r.in.handle = handle;
 	r.in.dom_sid = dom_sid;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_DeleteTrustedDomain, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -6869,10 +6201,6 @@ NTSTATUS rpccli_lsa_DeleteTrustedDomain(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_DeleteTrustedDomain, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -6923,10 +6251,6 @@ struct tevent_req *rpccli_lsa_StorePrivateData_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_StorePrivateData, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -6971,10 +6295,6 @@ static void rpccli_lsa_StorePrivateData_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_StorePrivateData, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -7015,10 +6335,6 @@ NTSTATUS rpccli_lsa_StorePrivateData(struct rpc_pipe_client *cli,
 	r.in.name = name;
 	r.in.val = val;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_StorePrivateData, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -7027,10 +6343,6 @@ NTSTATUS rpccli_lsa_StorePrivateData(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_StorePrivateData, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -7081,10 +6393,6 @@ struct tevent_req *rpccli_lsa_RetrievePrivateData_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_RetrievePrivateData, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_RetrievePrivateData_out_memory");
@@ -7137,10 +6445,6 @@ static void rpccli_lsa_RetrievePrivateData_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_RetrievePrivateData, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -7181,10 +6485,6 @@ NTSTATUS rpccli_lsa_RetrievePrivateData(struct rpc_pipe_client *cli,
 	r.in.name = name;
 	r.in.val = val;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_RetrievePrivateData, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -7193,10 +6493,6 @@ NTSTATUS rpccli_lsa_RetrievePrivateData(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_RetrievePrivateData, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -7250,10 +6546,6 @@ struct tevent_req *rpccli_lsa_OpenPolicy2_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_OpenPolicy2, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_OpenPolicy2_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -7305,10 +6597,6 @@ static void rpccli_lsa_OpenPolicy2_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_OpenPolicy2, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -7350,10 +6638,6 @@ NTSTATUS rpccli_lsa_OpenPolicy2(struct rpc_pipe_client *cli,
 	r.in.attr = attr;
 	r.in.access_mask = access_mask;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_OpenPolicy2, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -7362,10 +6646,6 @@ NTSTATUS rpccli_lsa_OpenPolicy2(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_OpenPolicy2, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -7418,10 +6698,6 @@ struct tevent_req *rpccli_lsa_GetUserName_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_GetUserName, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_GetUserName_out_memory");
@@ -7477,10 +6753,6 @@ static void rpccli_lsa_GetUserName_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_GetUserName, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -7521,10 +6793,6 @@ NTSTATUS rpccli_lsa_GetUserName(struct rpc_pipe_client *cli,
 	r.in.account_name = account_name;
 	r.in.authority_name = authority_name;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_GetUserName, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -7533,10 +6801,6 @@ NTSTATUS rpccli_lsa_GetUserName(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_GetUserName, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -7591,10 +6855,6 @@ struct tevent_req *rpccli_lsa_QueryInfoPolicy2_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_QueryInfoPolicy2, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_QueryInfoPolicy2_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -7646,10 +6906,6 @@ static void rpccli_lsa_QueryInfoPolicy2_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_QueryInfoPolicy2, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -7689,10 +6945,6 @@ NTSTATUS rpccli_lsa_QueryInfoPolicy2(struct rpc_pipe_client *cli,
 	r.in.handle = handle;
 	r.in.level = level;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_QueryInfoPolicy2, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -7701,10 +6953,6 @@ NTSTATUS rpccli_lsa_QueryInfoPolicy2(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_QueryInfoPolicy2, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -7756,10 +7004,6 @@ struct tevent_req *rpccli_lsa_SetInfoPolicy2_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_SetInfoPolicy2, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -7804,10 +7048,6 @@ static void rpccli_lsa_SetInfoPolicy2_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_SetInfoPolicy2, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -7848,10 +7088,6 @@ NTSTATUS rpccli_lsa_SetInfoPolicy2(struct rpc_pipe_client *cli,
 	r.in.level = level;
 	r.in.info = info;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_SetInfoPolicy2, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -7860,10 +7096,6 @@ NTSTATUS rpccli_lsa_SetInfoPolicy2(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_SetInfoPolicy2, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -7916,10 +7148,6 @@ struct tevent_req *rpccli_lsa_QueryTrustedDomainInfoByName_send(TALLOC_CTX *mem_
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_QueryTrustedDomainInfoByName, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_QueryTrustedDomainInfoByName_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -7971,10 +7199,6 @@ static void rpccli_lsa_QueryTrustedDomainInfoByName_done(struct tevent_req *subr
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_QueryTrustedDomainInfoByName, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -8016,10 +7240,6 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfoByName(struct rpc_pipe_client *cli,
 	r.in.trusted_domain = trusted_domain;
 	r.in.level = level;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_QueryTrustedDomainInfoByName, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -8028,10 +7248,6 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfoByName(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_QueryTrustedDomainInfoByName, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -8085,10 +7301,6 @@ struct tevent_req *rpccli_lsa_SetTrustedDomainInfoByName_send(TALLOC_CTX *mem_ct
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_SetTrustedDomainInfoByName, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -8133,10 +7345,6 @@ static void rpccli_lsa_SetTrustedDomainInfoByName_done(struct tevent_req *subreq
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_SetTrustedDomainInfoByName, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -8179,10 +7387,6 @@ NTSTATUS rpccli_lsa_SetTrustedDomainInfoByName(struct rpc_pipe_client *cli,
 	r.in.level = level;
 	r.in.info = info;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_SetTrustedDomainInfoByName, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -8191,10 +7395,6 @@ NTSTATUS rpccli_lsa_SetTrustedDomainInfoByName(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_SetTrustedDomainInfoByName, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -8248,10 +7448,6 @@ struct tevent_req *rpccli_lsa_EnumTrustedDomainsEx_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_EnumTrustedDomainsEx, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_EnumTrustedDomainsEx_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -8304,10 +7500,6 @@ static void rpccli_lsa_EnumTrustedDomainsEx_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_EnumTrustedDomainsEx, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -8349,10 +7541,6 @@ NTSTATUS rpccli_lsa_EnumTrustedDomainsEx(struct rpc_pipe_client *cli,
 	r.in.resume_handle = resume_handle;
 	r.in.max_size = max_size;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_EnumTrustedDomainsEx, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -8361,10 +7549,6 @@ NTSTATUS rpccli_lsa_EnumTrustedDomainsEx(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_EnumTrustedDomainsEx, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -8421,10 +7605,6 @@ struct tevent_req *rpccli_lsa_CreateTrustedDomainEx_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CreateTrustedDomainEx, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_CreateTrustedDomainEx_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -8476,10 +7656,6 @@ static void rpccli_lsa_CreateTrustedDomainEx_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CreateTrustedDomainEx, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -8523,10 +7699,6 @@ NTSTATUS rpccli_lsa_CreateTrustedDomainEx(struct rpc_pipe_client *cli,
 	r.in.auth_info = auth_info;
 	r.in.access_mask = access_mask;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CreateTrustedDomainEx, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -8535,10 +7707,6 @@ NTSTATUS rpccli_lsa_CreateTrustedDomainEx(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CreateTrustedDomainEx, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -8586,10 +7754,6 @@ struct tevent_req *rpccli_lsa_CloseTrustedDomainEx_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CloseTrustedDomainEx, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_CloseTrustedDomainEx_out_memory");
@@ -8642,10 +7806,6 @@ static void rpccli_lsa_CloseTrustedDomainEx_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CloseTrustedDomainEx, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -8682,10 +7842,6 @@ NTSTATUS rpccli_lsa_CloseTrustedDomainEx(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.handle = handle;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CloseTrustedDomainEx, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -8694,10 +7850,6 @@ NTSTATUS rpccli_lsa_CloseTrustedDomainEx(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CloseTrustedDomainEx, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -8748,10 +7900,6 @@ struct tevent_req *rpccli_lsa_QueryDomainInformationPolicy_send(TALLOC_CTX *mem_
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_QueryDomainInformationPolicy, &state->orig);
-	}
 
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_QueryDomainInformationPolicy_out_memory");
@@ -8804,10 +7952,6 @@ static void rpccli_lsa_QueryDomainInformationPolicy_done(struct tevent_req *subr
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_QueryDomainInformationPolicy, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -8847,10 +7991,6 @@ NTSTATUS rpccli_lsa_QueryDomainInformationPolicy(struct rpc_pipe_client *cli,
 	r.in.handle = handle;
 	r.in.level = level;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_QueryDomainInformationPolicy, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -8859,10 +7999,6 @@ NTSTATUS rpccli_lsa_QueryDomainInformationPolicy(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_QueryDomainInformationPolicy, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -8914,10 +8050,6 @@ struct tevent_req *rpccli_lsa_SetDomainInformationPolicy_send(TALLOC_CTX *mem_ct
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_SetDomainInformationPolicy, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -8962,10 +8094,6 @@ static void rpccli_lsa_SetDomainInformationPolicy_done(struct tevent_req *subreq
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_SetDomainInformationPolicy, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -9006,10 +8134,6 @@ NTSTATUS rpccli_lsa_SetDomainInformationPolicy(struct rpc_pipe_client *cli,
 	r.in.level = level;
 	r.in.info = info;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_SetDomainInformationPolicy, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -9018,10 +8142,6 @@ NTSTATUS rpccli_lsa_SetDomainInformationPolicy(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_SetDomainInformationPolicy, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -9074,10 +8194,6 @@ struct tevent_req *rpccli_lsa_OpenTrustedDomainByName_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_OpenTrustedDomainByName, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_OpenTrustedDomainByName_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -9129,10 +8245,6 @@ static void rpccli_lsa_OpenTrustedDomainByName_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_OpenTrustedDomainByName, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -9174,10 +8286,6 @@ NTSTATUS rpccli_lsa_OpenTrustedDomainByName(struct rpc_pipe_client *cli,
 	r.in.name = name;
 	r.in.access_mask = access_mask;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_OpenTrustedDomainByName, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -9186,10 +8294,6 @@ NTSTATUS rpccli_lsa_OpenTrustedDomainByName(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_OpenTrustedDomainByName, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -9235,10 +8339,6 @@ struct tevent_req *rpccli_lsa_TestCall_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_TestCall, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -9283,10 +8383,6 @@ static void rpccli_lsa_TestCall_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_TestCall, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -9321,10 +8417,6 @@ NTSTATUS rpccli_lsa_TestCall(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_TestCall, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -9333,10 +8425,6 @@ NTSTATUS rpccli_lsa_TestCall(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_TestCall, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -9399,10 +8487,6 @@ struct tevent_req *rpccli_lsa_LookupSids2_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LookupSids2, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_LookupSids2_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -9456,10 +8540,6 @@ static void rpccli_lsa_LookupSids2_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LookupSids2, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -9509,10 +8589,6 @@ NTSTATUS rpccli_lsa_LookupSids2(struct rpc_pipe_client *cli,
 	r.in.lookup_options = lookup_options;
 	r.in.client_revision = client_revision;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LookupSids2, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -9521,10 +8597,6 @@ NTSTATUS rpccli_lsa_LookupSids2(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LookupSids2, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -9592,10 +8664,6 @@ struct tevent_req *rpccli_lsa_LookupNames2_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LookupNames2, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_LookupNames2_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -9649,10 +8717,6 @@ static void rpccli_lsa_LookupNames2_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LookupNames2, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -9704,10 +8768,6 @@ NTSTATUS rpccli_lsa_LookupNames2(struct rpc_pipe_client *cli,
 	r.in.lookup_options = lookup_options;
 	r.in.client_revision = client_revision;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LookupNames2, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -9716,10 +8776,6 @@ NTSTATUS rpccli_lsa_LookupNames2(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LookupNames2, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -9777,10 +8833,6 @@ struct tevent_req *rpccli_lsa_CreateTrustedDomainEx2_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CreateTrustedDomainEx2, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_CreateTrustedDomainEx2_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -9832,10 +8884,6 @@ static void rpccli_lsa_CreateTrustedDomainEx2_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CreateTrustedDomainEx2, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -9879,10 +8927,6 @@ NTSTATUS rpccli_lsa_CreateTrustedDomainEx2(struct rpc_pipe_client *cli,
 	r.in.auth_info = auth_info;
 	r.in.access_mask = access_mask;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CreateTrustedDomainEx2, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -9891,10 +8935,6 @@ NTSTATUS rpccli_lsa_CreateTrustedDomainEx2(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CreateTrustedDomainEx2, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -9940,10 +8980,6 @@ struct tevent_req *rpccli_lsa_CREDRWRITE_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CREDRWRITE, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -9988,10 +9024,6 @@ static void rpccli_lsa_CREDRWRITE_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CREDRWRITE, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -10026,10 +9058,6 @@ NTSTATUS rpccli_lsa_CREDRWRITE(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CREDRWRITE, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -10038,10 +9066,6 @@ NTSTATUS rpccli_lsa_CREDRWRITE(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CREDRWRITE, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -10085,10 +9109,6 @@ struct tevent_req *rpccli_lsa_CREDRREAD_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CREDRREAD, &state->orig);
-	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
@@ -10134,10 +9154,6 @@ static void rpccli_lsa_CREDRREAD_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CREDRREAD, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -10172,10 +9188,6 @@ NTSTATUS rpccli_lsa_CREDRREAD(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CREDRREAD, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -10184,10 +9196,6 @@ NTSTATUS rpccli_lsa_CREDRREAD(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CREDRREAD, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -10231,10 +9239,6 @@ struct tevent_req *rpccli_lsa_CREDRENUMERATE_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CREDRENUMERATE, &state->orig);
-	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
@@ -10280,10 +9284,6 @@ static void rpccli_lsa_CREDRENUMERATE_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CREDRENUMERATE, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -10318,10 +9318,6 @@ NTSTATUS rpccli_lsa_CREDRENUMERATE(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CREDRENUMERATE, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -10330,10 +9326,6 @@ NTSTATUS rpccli_lsa_CREDRENUMERATE(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CREDRENUMERATE, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -10377,10 +9369,6 @@ struct tevent_req *rpccli_lsa_CREDRWRITEDOMAINCREDENTIALS_send(TALLOC_CTX *mem_c
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CREDRWRITEDOMAINCREDENTIALS, &state->orig);
-	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
@@ -10426,10 +9414,6 @@ static void rpccli_lsa_CREDRWRITEDOMAINCREDENTIALS_done(struct tevent_req *subre
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CREDRWRITEDOMAINCREDENTIALS, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -10464,10 +9448,6 @@ NTSTATUS rpccli_lsa_CREDRWRITEDOMAINCREDENTIALS(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CREDRWRITEDOMAINCREDENTIALS, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -10476,10 +9456,6 @@ NTSTATUS rpccli_lsa_CREDRWRITEDOMAINCREDENTIALS(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CREDRWRITEDOMAINCREDENTIALS, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -10523,10 +9499,6 @@ struct tevent_req *rpccli_lsa_CREDRREADDOMAINCREDENTIALS_send(TALLOC_CTX *mem_ct
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CREDRREADDOMAINCREDENTIALS, &state->orig);
-	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
@@ -10572,10 +9544,6 @@ static void rpccli_lsa_CREDRREADDOMAINCREDENTIALS_done(struct tevent_req *subreq
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CREDRREADDOMAINCREDENTIALS, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -10610,10 +9578,6 @@ NTSTATUS rpccli_lsa_CREDRREADDOMAINCREDENTIALS(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CREDRREADDOMAINCREDENTIALS, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -10622,10 +9586,6 @@ NTSTATUS rpccli_lsa_CREDRREADDOMAINCREDENTIALS(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CREDRREADDOMAINCREDENTIALS, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -10669,10 +9629,6 @@ struct tevent_req *rpccli_lsa_CREDRDELETE_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CREDRDELETE, &state->orig);
-	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
@@ -10718,10 +9674,6 @@ static void rpccli_lsa_CREDRDELETE_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CREDRDELETE, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -10756,10 +9708,6 @@ NTSTATUS rpccli_lsa_CREDRDELETE(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CREDRDELETE, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -10768,10 +9716,6 @@ NTSTATUS rpccli_lsa_CREDRDELETE(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CREDRDELETE, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -10815,10 +9759,6 @@ struct tevent_req *rpccli_lsa_CREDRGETTARGETINFO_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CREDRGETTARGETINFO, &state->orig);
-	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
@@ -10864,10 +9804,6 @@ static void rpccli_lsa_CREDRGETTARGETINFO_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CREDRGETTARGETINFO, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -10902,10 +9838,6 @@ NTSTATUS rpccli_lsa_CREDRGETTARGETINFO(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CREDRGETTARGETINFO, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -10914,10 +9846,6 @@ NTSTATUS rpccli_lsa_CREDRGETTARGETINFO(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CREDRGETTARGETINFO, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -10961,10 +9889,6 @@ struct tevent_req *rpccli_lsa_CREDRPROFILELOADED_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CREDRPROFILELOADED, &state->orig);
-	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
@@ -11010,10 +9934,6 @@ static void rpccli_lsa_CREDRPROFILELOADED_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CREDRPROFILELOADED, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -11048,10 +9968,6 @@ NTSTATUS rpccli_lsa_CREDRPROFILELOADED(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CREDRPROFILELOADED, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -11060,10 +9976,6 @@ NTSTATUS rpccli_lsa_CREDRPROFILELOADED(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CREDRPROFILELOADED, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -11128,10 +10040,6 @@ struct tevent_req *rpccli_lsa_LookupNames3_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LookupNames3, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_LookupNames3_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -11185,10 +10093,6 @@ static void rpccli_lsa_LookupNames3_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LookupNames3, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -11240,10 +10144,6 @@ NTSTATUS rpccli_lsa_LookupNames3(struct rpc_pipe_client *cli,
 	r.in.lookup_options = lookup_options;
 	r.in.client_revision = client_revision;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LookupNames3, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -11252,10 +10152,6 @@ NTSTATUS rpccli_lsa_LookupNames3(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LookupNames3, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -11303,10 +10199,6 @@ struct tevent_req *rpccli_lsa_CREDRGETSESSIONTYPES_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CREDRGETSESSIONTYPES, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -11351,10 +10243,6 @@ static void rpccli_lsa_CREDRGETSESSIONTYPES_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CREDRGETSESSIONTYPES, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -11389,10 +10277,6 @@ NTSTATUS rpccli_lsa_CREDRGETSESSIONTYPES(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CREDRGETSESSIONTYPES, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -11401,10 +10285,6 @@ NTSTATUS rpccli_lsa_CREDRGETSESSIONTYPES(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CREDRGETSESSIONTYPES, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -11448,10 +10328,6 @@ struct tevent_req *rpccli_lsa_LSARREGISTERAUDITEVENT_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LSARREGISTERAUDITEVENT, &state->orig);
-	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
@@ -11497,10 +10373,6 @@ static void rpccli_lsa_LSARREGISTERAUDITEVENT_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LSARREGISTERAUDITEVENT, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -11535,10 +10407,6 @@ NTSTATUS rpccli_lsa_LSARREGISTERAUDITEVENT(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LSARREGISTERAUDITEVENT, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -11547,10 +10415,6 @@ NTSTATUS rpccli_lsa_LSARREGISTERAUDITEVENT(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LSARREGISTERAUDITEVENT, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -11594,10 +10458,6 @@ struct tevent_req *rpccli_lsa_LSARGENAUDITEVENT_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LSARGENAUDITEVENT, &state->orig);
-	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
@@ -11643,10 +10503,6 @@ static void rpccli_lsa_LSARGENAUDITEVENT_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LSARGENAUDITEVENT, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -11681,10 +10537,6 @@ NTSTATUS rpccli_lsa_LSARGENAUDITEVENT(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LSARGENAUDITEVENT, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -11693,10 +10545,6 @@ NTSTATUS rpccli_lsa_LSARGENAUDITEVENT(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LSARGENAUDITEVENT, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -11740,10 +10588,6 @@ struct tevent_req *rpccli_lsa_LSARUNREGISTERAUDITEVENT_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LSARUNREGISTERAUDITEVENT, &state->orig);
-	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
@@ -11789,10 +10633,6 @@ static void rpccli_lsa_LSARUNREGISTERAUDITEVENT_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LSARUNREGISTERAUDITEVENT, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -11827,10 +10667,6 @@ NTSTATUS rpccli_lsa_LSARUNREGISTERAUDITEVENT(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LSARUNREGISTERAUDITEVENT, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -11839,10 +10675,6 @@ NTSTATUS rpccli_lsa_LSARUNREGISTERAUDITEVENT(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LSARUNREGISTERAUDITEVENT, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -11895,10 +10727,6 @@ struct tevent_req *rpccli_lsa_lsaRQueryForestTrustInformation_send(TALLOC_CTX *m
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_lsaRQueryForestTrustInformation, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_lsaRQueryForestTrustInformation_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -11950,10 +10778,6 @@ static void rpccli_lsa_lsaRQueryForestTrustInformation_done(struct tevent_req *s
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_lsaRQueryForestTrustInformation, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -11995,10 +10819,6 @@ NTSTATUS rpccli_lsa_lsaRQueryForestTrustInformation(struct rpc_pipe_client *cli,
 	r.in.trusted_domain_name = trusted_domain_name;
 	r.in.unknown = unknown;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_lsaRQueryForestTrustInformation, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -12007,10 +10827,6 @@ NTSTATUS rpccli_lsa_lsaRQueryForestTrustInformation(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_lsaRQueryForestTrustInformation, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -12056,10 +10872,6 @@ struct tevent_req *rpccli_lsa_LSARSETFORESTTRUSTINFORMATION_send(TALLOC_CTX *mem
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LSARSETFORESTTRUSTINFORMATION, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -12104,10 +10916,6 @@ static void rpccli_lsa_LSARSETFORESTTRUSTINFORMATION_done(struct tevent_req *sub
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LSARSETFORESTTRUSTINFORMATION, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -12142,10 +10950,6 @@ NTSTATUS rpccli_lsa_LSARSETFORESTTRUSTINFORMATION(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LSARSETFORESTTRUSTINFORMATION, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -12154,10 +10958,6 @@ NTSTATUS rpccli_lsa_LSARSETFORESTTRUSTINFORMATION(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LSARSETFORESTTRUSTINFORMATION, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -12201,10 +11001,6 @@ struct tevent_req *rpccli_lsa_CREDRRENAME_send(TALLOC_CTX *mem_ctx,
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CREDRRENAME, &state->orig);
-	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
@@ -12250,10 +11046,6 @@ static void rpccli_lsa_CREDRRENAME_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CREDRRENAME, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -12288,10 +11080,6 @@ NTSTATUS rpccli_lsa_CREDRRENAME(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_CREDRRENAME, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -12300,10 +11088,6 @@ NTSTATUS rpccli_lsa_CREDRRENAME(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_CREDRRENAME, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -12364,10 +11148,6 @@ struct tevent_req *rpccli_lsa_LookupSids3_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LookupSids3, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_LookupSids3_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -12421,10 +11201,6 @@ static void rpccli_lsa_LookupSids3_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LookupSids3, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -12472,10 +11248,6 @@ NTSTATUS rpccli_lsa_LookupSids3(struct rpc_pipe_client *cli,
 	r.in.lookup_options = lookup_options;
 	r.in.client_revision = client_revision;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LookupSids3, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -12484,10 +11256,6 @@ NTSTATUS rpccli_lsa_LookupSids3(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LookupSids3, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -12553,10 +11321,6 @@ struct tevent_req *rpccli_lsa_LookupNames4_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LookupNames4, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_lsa_LookupNames4_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -12610,10 +11374,6 @@ static void rpccli_lsa_LookupNames4_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LookupNames4, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -12663,10 +11423,6 @@ NTSTATUS rpccli_lsa_LookupNames4(struct rpc_pipe_client *cli,
 	r.in.lookup_options = lookup_options;
 	r.in.client_revision = client_revision;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LookupNames4, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -12675,10 +11431,6 @@ NTSTATUS rpccli_lsa_LookupNames4(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LookupNames4, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -12726,10 +11478,6 @@ struct tevent_req *rpccli_lsa_LSAROPENPOLICYSCE_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LSAROPENPOLICYSCE, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -12774,10 +11522,6 @@ static void rpccli_lsa_LSAROPENPOLICYSCE_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LSAROPENPOLICYSCE, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -12812,10 +11556,6 @@ NTSTATUS rpccli_lsa_LSAROPENPOLICYSCE(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LSAROPENPOLICYSCE, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -12824,10 +11564,6 @@ NTSTATUS rpccli_lsa_LSAROPENPOLICYSCE(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LSAROPENPOLICYSCE, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -12871,10 +11607,6 @@ struct tevent_req *rpccli_lsa_LSARADTREGISTERSECURITYEVENTSOURCE_send(TALLOC_CTX
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LSARADTREGISTERSECURITYEVENTSOURCE, &state->orig);
-	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
@@ -12920,10 +11652,6 @@ static void rpccli_lsa_LSARADTREGISTERSECURITYEVENTSOURCE_done(struct tevent_req
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LSARADTREGISTERSECURITYEVENTSOURCE, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -12958,10 +11686,6 @@ NTSTATUS rpccli_lsa_LSARADTREGISTERSECURITYEVENTSOURCE(struct rpc_pipe_client *c
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LSARADTREGISTERSECURITYEVENTSOURCE, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -12970,10 +11694,6 @@ NTSTATUS rpccli_lsa_LSARADTREGISTERSECURITYEVENTSOURCE(struct rpc_pipe_client *c
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LSARADTREGISTERSECURITYEVENTSOURCE, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -13017,10 +11737,6 @@ struct tevent_req *rpccli_lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE_send(TALLOC_C
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE, &state->orig);
-	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
@@ -13066,10 +11782,6 @@ static void rpccli_lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE_done(struct tevent_r
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -13104,10 +11816,6 @@ NTSTATUS rpccli_lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE(struct rpc_pipe_client 
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -13116,10 +11824,6 @@ NTSTATUS rpccli_lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE(struct rpc_pipe_client 
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -13163,10 +11867,6 @@ struct tevent_req *rpccli_lsa_LSARADTREPORTSECURITYEVENT_send(TALLOC_CTX *mem_ct
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LSARADTREPORTSECURITYEVENT, &state->orig);
-	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
@@ -13212,10 +11912,6 @@ static void rpccli_lsa_LSARADTREPORTSECURITYEVENT_done(struct tevent_req *subreq
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LSARADTREPORTSECURITYEVENT, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -13250,10 +11946,6 @@ NTSTATUS rpccli_lsa_LSARADTREPORTSECURITYEVENT(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LSARADTREPORTSECURITYEVENT, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
@@ -13262,10 +11954,6 @@ NTSTATUS rpccli_lsa_LSARADTREPORTSECURITYEVENT(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LSARADTREPORTSECURITYEVENT, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {

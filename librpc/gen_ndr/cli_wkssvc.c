@@ -44,10 +44,6 @@ struct tevent_req *rpccli_wkssvc_NetWkstaGetInfo_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetWkstaGetInfo, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wkssvc_NetWkstaGetInfo_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -99,10 +95,6 @@ static void rpccli_wkssvc_NetWkstaGetInfo_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetWkstaGetInfo, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -143,10 +135,6 @@ NTSTATUS rpccli_wkssvc_NetWkstaGetInfo(struct rpc_pipe_client *cli,
 	r.in.server_name = server_name;
 	r.in.level = level;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetWkstaGetInfo, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
@@ -155,10 +143,6 @@ NTSTATUS rpccli_wkssvc_NetWkstaGetInfo(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetWkstaGetInfo, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -217,10 +201,6 @@ struct tevent_req *rpccli_wkssvc_NetWkstaSetInfo_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetWkstaSetInfo, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wkssvc_NetWkstaSetInfo_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -272,10 +252,6 @@ static void rpccli_wkssvc_NetWkstaSetInfo_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetWkstaSetInfo, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -319,10 +295,6 @@ NTSTATUS rpccli_wkssvc_NetWkstaSetInfo(struct rpc_pipe_client *cli,
 	r.in.info = info;
 	r.in.parm_error = parm_error;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetWkstaSetInfo, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
@@ -331,10 +303,6 @@ NTSTATUS rpccli_wkssvc_NetWkstaSetInfo(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetWkstaSetInfo, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -396,10 +364,6 @@ struct tevent_req *rpccli_wkssvc_NetWkstaEnumUsers_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetWkstaEnumUsers, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wkssvc_NetWkstaEnumUsers_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -455,10 +419,6 @@ static void rpccli_wkssvc_NetWkstaEnumUsers_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetWkstaEnumUsers, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -503,10 +463,6 @@ NTSTATUS rpccli_wkssvc_NetWkstaEnumUsers(struct rpc_pipe_client *cli,
 	r.in.prefmaxlen = prefmaxlen;
 	r.in.resume_handle = resume_handle;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetWkstaEnumUsers, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
@@ -515,10 +471,6 @@ NTSTATUS rpccli_wkssvc_NetWkstaEnumUsers(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetWkstaEnumUsers, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -578,10 +530,6 @@ struct tevent_req *rpccli_wkssvc_NetrWkstaUserGetInfo_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrWkstaUserGetInfo, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wkssvc_NetrWkstaUserGetInfo_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -633,10 +581,6 @@ static void rpccli_wkssvc_NetrWkstaUserGetInfo_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrWkstaUserGetInfo, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -677,10 +621,6 @@ NTSTATUS rpccli_wkssvc_NetrWkstaUserGetInfo(struct rpc_pipe_client *cli,
 	r.in.unknown = unknown;
 	r.in.level = level;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrWkstaUserGetInfo, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
@@ -689,10 +629,6 @@ NTSTATUS rpccli_wkssvc_NetrWkstaUserGetInfo(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrWkstaUserGetInfo, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -751,10 +687,6 @@ struct tevent_req *rpccli_wkssvc_NetrWkstaUserSetInfo_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrWkstaUserSetInfo, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wkssvc_NetrWkstaUserSetInfo_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -808,10 +740,6 @@ static void rpccli_wkssvc_NetrWkstaUserSetInfo_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrWkstaUserSetInfo, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -855,10 +783,6 @@ NTSTATUS rpccli_wkssvc_NetrWkstaUserSetInfo(struct rpc_pipe_client *cli,
 	r.in.info = info;
 	r.in.parm_err = parm_err;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrWkstaUserSetInfo, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
@@ -867,10 +791,6 @@ NTSTATUS rpccli_wkssvc_NetrWkstaUserSetInfo(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrWkstaUserSetInfo, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -934,10 +854,6 @@ struct tevent_req *rpccli_wkssvc_NetWkstaTransportEnum_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetWkstaTransportEnum, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wkssvc_NetWkstaTransportEnum_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -993,10 +909,6 @@ static void rpccli_wkssvc_NetWkstaTransportEnum_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetWkstaTransportEnum, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1041,10 +953,6 @@ NTSTATUS rpccli_wkssvc_NetWkstaTransportEnum(struct rpc_pipe_client *cli,
 	r.in.max_buffer = max_buffer;
 	r.in.resume_handle = resume_handle;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetWkstaTransportEnum, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
@@ -1053,10 +961,6 @@ NTSTATUS rpccli_wkssvc_NetWkstaTransportEnum(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetWkstaTransportEnum, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1119,10 +1023,6 @@ struct tevent_req *rpccli_wkssvc_NetrWkstaTransportAdd_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrWkstaTransportAdd, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wkssvc_NetrWkstaTransportAdd_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -1176,10 +1076,6 @@ static void rpccli_wkssvc_NetrWkstaTransportAdd_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrWkstaTransportAdd, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1223,10 +1119,6 @@ NTSTATUS rpccli_wkssvc_NetrWkstaTransportAdd(struct rpc_pipe_client *cli,
 	r.in.info0 = info0;
 	r.in.parm_err = parm_err;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrWkstaTransportAdd, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
@@ -1235,10 +1127,6 @@ NTSTATUS rpccli_wkssvc_NetrWkstaTransportAdd(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrWkstaTransportAdd, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1296,10 +1184,6 @@ struct tevent_req *rpccli_wkssvc_NetrWkstaTransportDel_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrWkstaTransportDel, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -1344,10 +1228,6 @@ static void rpccli_wkssvc_NetrWkstaTransportDel_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrWkstaTransportDel, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1389,10 +1269,6 @@ NTSTATUS rpccli_wkssvc_NetrWkstaTransportDel(struct rpc_pipe_client *cli,
 	r.in.transport_name = transport_name;
 	r.in.unknown3 = unknown3;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrWkstaTransportDel, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
@@ -1401,10 +1277,6 @@ NTSTATUS rpccli_wkssvc_NetrWkstaTransportDel(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrWkstaTransportDel, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1462,10 +1334,6 @@ struct tevent_req *rpccli_wkssvc_NetrUseAdd_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrUseAdd, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wkssvc_NetrUseAdd_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -1519,10 +1387,6 @@ static void rpccli_wkssvc_NetrUseAdd_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrUseAdd, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1566,10 +1430,6 @@ NTSTATUS rpccli_wkssvc_NetrUseAdd(struct rpc_pipe_client *cli,
 	r.in.ctr = ctr;
 	r.in.parm_err = parm_err;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrUseAdd, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
@@ -1578,10 +1438,6 @@ NTSTATUS rpccli_wkssvc_NetrUseAdd(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrUseAdd, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1641,10 +1497,6 @@ struct tevent_req *rpccli_wkssvc_NetrUseGetInfo_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrUseGetInfo, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wkssvc_NetrUseGetInfo_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -1696,10 +1548,6 @@ static void rpccli_wkssvc_NetrUseGetInfo_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrUseGetInfo, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1742,10 +1590,6 @@ NTSTATUS rpccli_wkssvc_NetrUseGetInfo(struct rpc_pipe_client *cli,
 	r.in.use_name = use_name;
 	r.in.level = level;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrUseGetInfo, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
@@ -1754,10 +1598,6 @@ NTSTATUS rpccli_wkssvc_NetrUseGetInfo(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrUseGetInfo, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1813,10 +1653,6 @@ struct tevent_req *rpccli_wkssvc_NetrUseDel_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrUseDel, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -1861,10 +1697,6 @@ static void rpccli_wkssvc_NetrUseDel_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrUseDel, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -1906,10 +1738,6 @@ NTSTATUS rpccli_wkssvc_NetrUseDel(struct rpc_pipe_client *cli,
 	r.in.use_name = use_name;
 	r.in.force_cond = force_cond;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrUseDel, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
@@ -1918,10 +1746,6 @@ NTSTATUS rpccli_wkssvc_NetrUseDel(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrUseDel, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1982,10 +1806,6 @@ struct tevent_req *rpccli_wkssvc_NetrUseEnum_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrUseEnum, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wkssvc_NetrUseEnum_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -2041,10 +1861,6 @@ static void rpccli_wkssvc_NetrUseEnum_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrUseEnum, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2089,10 +1905,6 @@ NTSTATUS rpccli_wkssvc_NetrUseEnum(struct rpc_pipe_client *cli,
 	r.in.prefmaxlen = prefmaxlen;
 	r.in.resume_handle = resume_handle;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrUseEnum, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
@@ -2101,10 +1913,6 @@ NTSTATUS rpccli_wkssvc_NetrUseEnum(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrUseEnum, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2168,10 +1976,6 @@ struct tevent_req *rpccli_wkssvc_NetrMessageBufferSend_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrMessageBufferSend, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -2215,10 +2019,6 @@ static void rpccli_wkssvc_NetrMessageBufferSend_done(struct tevent_req *subreq)
 
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrMessageBufferSend, &state->orig);
-	}
 
 	tevent_req_done(req);
 }
@@ -2265,10 +2065,6 @@ NTSTATUS rpccli_wkssvc_NetrMessageBufferSend(struct rpc_pipe_client *cli,
 	r.in.message_buffer = message_buffer;
 	r.in.message_size = message_size;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrMessageBufferSend, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
@@ -2277,10 +2073,6 @@ NTSTATUS rpccli_wkssvc_NetrMessageBufferSend(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrMessageBufferSend, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2339,10 +2131,6 @@ struct tevent_req *rpccli_wkssvc_NetrWorkstationStatisticsGet_send(TALLOC_CTX *m
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrWorkstationStatisticsGet, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wkssvc_NetrWorkstationStatisticsGet_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -2394,10 +2182,6 @@ static void rpccli_wkssvc_NetrWorkstationStatisticsGet_done(struct tevent_req *s
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrWorkstationStatisticsGet, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2442,10 +2226,6 @@ NTSTATUS rpccli_wkssvc_NetrWorkstationStatisticsGet(struct rpc_pipe_client *cli,
 	r.in.unknown3 = unknown3;
 	r.in.unknown4 = unknown4;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrWorkstationStatisticsGet, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
@@ -2454,10 +2234,6 @@ NTSTATUS rpccli_wkssvc_NetrWorkstationStatisticsGet(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrWorkstationStatisticsGet, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2509,10 +2285,6 @@ struct tevent_req *rpccli_wkssvc_NetrLogonDomainNameAdd_send(TALLOC_CTX *mem_ctx
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrLogonDomainNameAdd, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -2557,10 +2329,6 @@ static void rpccli_wkssvc_NetrLogonDomainNameAdd_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrLogonDomainNameAdd, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2598,10 +2366,6 @@ NTSTATUS rpccli_wkssvc_NetrLogonDomainNameAdd(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.domain_name = domain_name;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrLogonDomainNameAdd, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
@@ -2610,10 +2374,6 @@ NTSTATUS rpccli_wkssvc_NetrLogonDomainNameAdd(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrLogonDomainNameAdd, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2664,10 +2424,6 @@ struct tevent_req *rpccli_wkssvc_NetrLogonDomainNameDel_send(TALLOC_CTX *mem_ctx
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrLogonDomainNameDel, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -2712,10 +2468,6 @@ static void rpccli_wkssvc_NetrLogonDomainNameDel_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrLogonDomainNameDel, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -2753,10 +2505,6 @@ NTSTATUS rpccli_wkssvc_NetrLogonDomainNameDel(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.domain_name = domain_name;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrLogonDomainNameDel, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
@@ -2765,10 +2513,6 @@ NTSTATUS rpccli_wkssvc_NetrLogonDomainNameDel(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrLogonDomainNameDel, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2829,10 +2573,6 @@ struct tevent_req *rpccli_wkssvc_NetrJoinDomain_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrJoinDomain, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -2876,10 +2616,6 @@ static void rpccli_wkssvc_NetrJoinDomain_done(struct tevent_req *subreq)
 
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrJoinDomain, &state->orig);
-	}
 
 	tevent_req_done(req);
 }
@@ -2928,10 +2664,6 @@ NTSTATUS rpccli_wkssvc_NetrJoinDomain(struct rpc_pipe_client *cli,
 	r.in.password = password;
 	r.in.join_flags = join_flags;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrJoinDomain, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
@@ -2940,10 +2672,6 @@ NTSTATUS rpccli_wkssvc_NetrJoinDomain(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrJoinDomain, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3000,10 +2728,6 @@ struct tevent_req *rpccli_wkssvc_NetrUnjoinDomain_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrUnjoinDomain, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -3048,10 +2772,6 @@ static void rpccli_wkssvc_NetrUnjoinDomain_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrUnjoinDomain, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3095,10 +2815,6 @@ NTSTATUS rpccli_wkssvc_NetrUnjoinDomain(struct rpc_pipe_client *cli,
 	r.in.password = password;
 	r.in.unjoin_flags = unjoin_flags;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrUnjoinDomain, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
@@ -3107,10 +2823,6 @@ NTSTATUS rpccli_wkssvc_NetrUnjoinDomain(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrUnjoinDomain, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3169,10 +2881,6 @@ struct tevent_req *rpccli_wkssvc_NetrRenameMachineInDomain_send(TALLOC_CTX *mem_
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrRenameMachineInDomain, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -3216,10 +2924,6 @@ static void rpccli_wkssvc_NetrRenameMachineInDomain_done(struct tevent_req *subr
 
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrRenameMachineInDomain, &state->orig);
-	}
 
 	tevent_req_done(req);
 }
@@ -3266,10 +2970,6 @@ NTSTATUS rpccli_wkssvc_NetrRenameMachineInDomain(struct rpc_pipe_client *cli,
 	r.in.password = password;
 	r.in.RenameOptions = RenameOptions;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrRenameMachineInDomain, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
@@ -3278,10 +2978,6 @@ NTSTATUS rpccli_wkssvc_NetrRenameMachineInDomain(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrRenameMachineInDomain, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3340,10 +3036,6 @@ struct tevent_req *rpccli_wkssvc_NetrValidateName_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrValidateName, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -3387,10 +3079,6 @@ static void rpccli_wkssvc_NetrValidateName_done(struct tevent_req *subreq)
 
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrValidateName, &state->orig);
-	}
 
 	tevent_req_done(req);
 }
@@ -3437,10 +3125,6 @@ NTSTATUS rpccli_wkssvc_NetrValidateName(struct rpc_pipe_client *cli,
 	r.in.Password = Password;
 	r.in.name_type = name_type;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrValidateName, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
@@ -3449,10 +3133,6 @@ NTSTATUS rpccli_wkssvc_NetrValidateName(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrValidateName, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3508,10 +3188,6 @@ struct tevent_req *rpccli_wkssvc_NetrGetJoinInformation_send(TALLOC_CTX *mem_ctx
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrGetJoinInformation, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wkssvc_NetrGetJoinInformation_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -3564,10 +3240,6 @@ static void rpccli_wkssvc_NetrGetJoinInformation_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrGetJoinInformation, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3608,10 +3280,6 @@ NTSTATUS rpccli_wkssvc_NetrGetJoinInformation(struct rpc_pipe_client *cli,
 	r.in.server_name = server_name;
 	r.in.name_buffer = name_buffer;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrGetJoinInformation, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
@@ -3620,10 +3288,6 @@ NTSTATUS rpccli_wkssvc_NetrGetJoinInformation(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrGetJoinInformation, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3687,10 +3351,6 @@ struct tevent_req *rpccli_wkssvc_NetrGetJoinableOus_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrGetJoinableOus, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wkssvc_NetrGetJoinableOus_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -3743,10 +3403,6 @@ static void rpccli_wkssvc_NetrGetJoinableOus_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrGetJoinableOus, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -3793,10 +3449,6 @@ NTSTATUS rpccli_wkssvc_NetrGetJoinableOus(struct rpc_pipe_client *cli,
 	r.in.unknown = unknown;
 	r.in.num_ous = num_ous;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrGetJoinableOus, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
@@ -3805,10 +3457,6 @@ NTSTATUS rpccli_wkssvc_NetrGetJoinableOus(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrGetJoinableOus, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3871,10 +3519,6 @@ struct tevent_req *rpccli_wkssvc_NetrJoinDomain2_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrJoinDomain2, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -3918,10 +3562,6 @@ static void rpccli_wkssvc_NetrJoinDomain2_done(struct tevent_req *subreq)
 
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrJoinDomain2, &state->orig);
-	}
 
 	tevent_req_done(req);
 }
@@ -3970,10 +3610,6 @@ NTSTATUS rpccli_wkssvc_NetrJoinDomain2(struct rpc_pipe_client *cli,
 	r.in.encrypted_password = encrypted_password;
 	r.in.join_flags = join_flags;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrJoinDomain2, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
@@ -3982,10 +3618,6 @@ NTSTATUS rpccli_wkssvc_NetrJoinDomain2(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrJoinDomain2, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -4042,10 +3674,6 @@ struct tevent_req *rpccli_wkssvc_NetrUnjoinDomain2_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrUnjoinDomain2, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -4090,10 +3718,6 @@ static void rpccli_wkssvc_NetrUnjoinDomain2_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrUnjoinDomain2, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -4137,10 +3761,6 @@ NTSTATUS rpccli_wkssvc_NetrUnjoinDomain2(struct rpc_pipe_client *cli,
 	r.in.encrypted_password = encrypted_password;
 	r.in.unjoin_flags = unjoin_flags;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrUnjoinDomain2, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
@@ -4149,10 +3769,6 @@ NTSTATUS rpccli_wkssvc_NetrUnjoinDomain2(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrUnjoinDomain2, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -4211,10 +3827,6 @@ struct tevent_req *rpccli_wkssvc_NetrRenameMachineInDomain2_send(TALLOC_CTX *mem
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrRenameMachineInDomain2, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -4258,10 +3870,6 @@ static void rpccli_wkssvc_NetrRenameMachineInDomain2_done(struct tevent_req *sub
 
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrRenameMachineInDomain2, &state->orig);
-	}
 
 	tevent_req_done(req);
 }
@@ -4308,10 +3916,6 @@ NTSTATUS rpccli_wkssvc_NetrRenameMachineInDomain2(struct rpc_pipe_client *cli,
 	r.in.EncryptedPassword = EncryptedPassword;
 	r.in.RenameOptions = RenameOptions;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrRenameMachineInDomain2, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
@@ -4320,10 +3924,6 @@ NTSTATUS rpccli_wkssvc_NetrRenameMachineInDomain2(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrRenameMachineInDomain2, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -4382,10 +3982,6 @@ struct tevent_req *rpccli_wkssvc_NetrValidateName2_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrValidateName2, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -4429,10 +4025,6 @@ static void rpccli_wkssvc_NetrValidateName2_done(struct tevent_req *subreq)
 
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrValidateName2, &state->orig);
-	}
 
 	tevent_req_done(req);
 }
@@ -4479,10 +4071,6 @@ NTSTATUS rpccli_wkssvc_NetrValidateName2(struct rpc_pipe_client *cli,
 	r.in.EncryptedPassword = EncryptedPassword;
 	r.in.name_type = name_type;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrValidateName2, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
@@ -4491,10 +4079,6 @@ NTSTATUS rpccli_wkssvc_NetrValidateName2(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrValidateName2, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -4556,10 +4140,6 @@ struct tevent_req *rpccli_wkssvc_NetrGetJoinableOus2_send(TALLOC_CTX *mem_ctx,
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrGetJoinableOus2, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wkssvc_NetrGetJoinableOus2_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -4612,10 +4192,6 @@ static void rpccli_wkssvc_NetrGetJoinableOus2_done(struct tevent_req *subreq)
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrGetJoinableOus2, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -4662,10 +4238,6 @@ NTSTATUS rpccli_wkssvc_NetrGetJoinableOus2(struct rpc_pipe_client *cli,
 	r.in.EncryptedPassword = EncryptedPassword;
 	r.in.num_ous = num_ous;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrGetJoinableOus2, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
@@ -4674,10 +4246,6 @@ NTSTATUS rpccli_wkssvc_NetrGetJoinableOus2(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrGetJoinableOus2, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -4738,10 +4306,6 @@ struct tevent_req *rpccli_wkssvc_NetrAddAlternateComputerName_send(TALLOC_CTX *m
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrAddAlternateComputerName, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -4785,10 +4349,6 @@ static void rpccli_wkssvc_NetrAddAlternateComputerName_done(struct tevent_req *s
 
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrAddAlternateComputerName, &state->orig);
-	}
 
 	tevent_req_done(req);
 }
@@ -4835,10 +4395,6 @@ NTSTATUS rpccli_wkssvc_NetrAddAlternateComputerName(struct rpc_pipe_client *cli,
 	r.in.EncryptedPassword = EncryptedPassword;
 	r.in.Reserved = Reserved;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrAddAlternateComputerName, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
@@ -4847,10 +4403,6 @@ NTSTATUS rpccli_wkssvc_NetrAddAlternateComputerName(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrAddAlternateComputerName, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -4909,10 +4461,6 @@ struct tevent_req *rpccli_wkssvc_NetrRemoveAlternateComputerName_send(TALLOC_CTX
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrRemoveAlternateComputerName, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -4956,10 +4504,6 @@ static void rpccli_wkssvc_NetrRemoveAlternateComputerName_done(struct tevent_req
 
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrRemoveAlternateComputerName, &state->orig);
-	}
 
 	tevent_req_done(req);
 }
@@ -5006,10 +4550,6 @@ NTSTATUS rpccli_wkssvc_NetrRemoveAlternateComputerName(struct rpc_pipe_client *c
 	r.in.EncryptedPassword = EncryptedPassword;
 	r.in.Reserved = Reserved;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrRemoveAlternateComputerName, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
@@ -5018,10 +4558,6 @@ NTSTATUS rpccli_wkssvc_NetrRemoveAlternateComputerName(struct rpc_pipe_client *c
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrRemoveAlternateComputerName, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -5080,10 +4616,6 @@ struct tevent_req *rpccli_wkssvc_NetrSetPrimaryComputername_send(TALLOC_CTX *mem
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrSetPrimaryComputername, &state->orig);
-	}
-
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
 
@@ -5127,10 +4659,6 @@ static void rpccli_wkssvc_NetrSetPrimaryComputername_done(struct tevent_req *sub
 
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrSetPrimaryComputername, &state->orig);
-	}
 
 	tevent_req_done(req);
 }
@@ -5177,10 +4705,6 @@ NTSTATUS rpccli_wkssvc_NetrSetPrimaryComputername(struct rpc_pipe_client *cli,
 	r.in.EncryptedPassword = EncryptedPassword;
 	r.in.Reserved = Reserved;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrSetPrimaryComputername, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
@@ -5189,10 +4713,6 @@ NTSTATUS rpccli_wkssvc_NetrSetPrimaryComputername(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrSetPrimaryComputername, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -5249,10 +4769,6 @@ struct tevent_req *rpccli_wkssvc_NetrEnumerateComputerNames_send(TALLOC_CTX *mem
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrEnumerateComputerNames, &state->orig);
-	}
-
 	state->out_mem_ctx = talloc_named_const(state, 0,
 			     "rpccli_wkssvc_NetrEnumerateComputerNames_out_memory");
 	if (tevent_req_nomem(state->out_mem_ctx, req)) {
@@ -5304,10 +4820,6 @@ static void rpccli_wkssvc_NetrEnumerateComputerNames_done(struct tevent_req *sub
 	/* Reset temporary structure */
 	ZERO_STRUCT(state->tmp);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrEnumerateComputerNames, &state->orig);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -5350,10 +4862,6 @@ NTSTATUS rpccli_wkssvc_NetrEnumerateComputerNames(struct rpc_pipe_client *cli,
 	r.in.name_type = name_type;
 	r.in.Reserved = Reserved;
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(wkssvc_NetrEnumerateComputerNames, &r);
-	}
-
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
@@ -5362,10 +4870,6 @@ NTSTATUS rpccli_wkssvc_NetrEnumerateComputerNames(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(wkssvc_NetrEnumerateComputerNames, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
