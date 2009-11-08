@@ -70,7 +70,13 @@ static NTSTATUS net_sh_run(struct net_context *c,
 {
 	TALLOC_CTX *mem_ctx;
 	struct rpc_pipe_client *pipe_hnd;
+	struct ndr_syntax_id syntax;
 	NTSTATUS status;
+
+	if (!ndr_syntax_from_string(cmd->interface, cmd->interface_version,
+				    &syntax)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	mem_ctx = talloc_new(ctx);
 	if (mem_ctx == NULL) {
@@ -78,8 +84,7 @@ static NTSTATUS net_sh_run(struct net_context *c,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = cli_rpc_pipe_open_noauth(ctx->cli, cmd->interface,
-					  &pipe_hnd);
+	status = cli_rpc_pipe_open_noauth(ctx->cli, &syntax, &pipe_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, _("Could not open pipe: %s\n"),
 			  nt_errstr(status));
@@ -190,22 +195,22 @@ static bool net_sh_process(struct net_context *c,
 
 static struct rpc_sh_cmd sh_cmds[6] = {
 
-	{ "info", NULL, &ndr_table_samr.syntax_id, rpc_sh_info,
+	{ "info", NULL, NDR_SAMR_UUID, NDR_SAMR_VERSION, rpc_sh_info,
 	  N_("Print information about the domain connected to") },
 
-	{ "rights", net_rpc_rights_cmds, 0, NULL,
+	{ "rights", net_rpc_rights_cmds, NULL, 0, NULL,
 	  N_("List/Grant/Revoke user rights") },
 
-	{ "share", net_rpc_share_cmds, 0, NULL,
+	{ "share", net_rpc_share_cmds, NULL, 0, NULL,
 	  N_("List/Add/Remove etc shares") },
 
-	{ "user", net_rpc_user_cmds, 0, NULL,
+	{ "user", net_rpc_user_cmds, NULL, 0, NULL,
 	  N_("List/Add/Remove user info") },
 
-	{ "account", net_rpc_acct_cmds, 0, NULL,
+	{ "account", net_rpc_acct_cmds, NULL, 0, NULL,
 	  N_("Show/Change account policy settings") },
 
-	{ NULL, NULL, 0, NULL, NULL }
+	{ NULL, NULL, NULL, 0, NULL, NULL }
 };
 
 int net_rpc_shell(struct net_context *c, int argc, const char **argv)

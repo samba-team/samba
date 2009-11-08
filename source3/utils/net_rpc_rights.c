@@ -583,8 +583,8 @@ static int rpc_rights_list(struct net_context *c, int argc, const char **argv )
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, &ndr_table_lsarpc.syntax_id, 0,
-		rpc_rights_list_internal, argc, argv );
+	return run_rpc_command(c, NULL, NDR_LSARPC_UUID, NDR_LSARPC_VERSION, 0,
+			       rpc_rights_list_internal, argc, argv );
 }
 
 /********************************************************************
@@ -604,8 +604,8 @@ static int rpc_rights_grant(struct net_context *c, int argc, const char **argv )
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, &ndr_table_lsarpc.syntax_id, 0,
-		rpc_rights_grant_internal, argc, argv );
+	return run_rpc_command(c, NULL, NDR_LSARPC_UUID, NDR_LSARPC_VERSION, 0,
+			       rpc_rights_grant_internal, argc, argv );
 }
 
 /********************************************************************
@@ -625,8 +625,8 @@ static int rpc_rights_revoke(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, &ndr_table_lsarpc.syntax_id, 0,
-		rpc_rights_revoke_internal, argc, argv );
+	return run_rpc_command(c, NULL, NDR_LSARPC_UUID, NDR_LSARPC_VERSION, 0,
+			       rpc_rights_revoke_internal, argc, argv );
 }
 
 /********************************************************************
@@ -702,16 +702,19 @@ struct rpc_sh_cmd *net_rpc_rights_cmds(struct net_context *c, TALLOC_CTX *mem_ct
 {
 	static struct rpc_sh_cmd cmds[] = {
 
-	{ "list", NULL, &ndr_table_lsarpc.syntax_id, rpc_sh_rights_list,
-	  N_("View available or assigned privileges") },
+		{ "list", NULL, NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+		  rpc_sh_rights_list,
+		  N_("View available or assigned privileges") },
 
-	{ "grant", NULL, &ndr_table_lsarpc.syntax_id, rpc_sh_rights_grant,
-	  N_("Assign privilege[s]") },
+		{ "grant", NULL, NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+		  rpc_sh_rights_grant,
+		  N_("Assign privilege[s]") },
 
-	{ "revoke", NULL, &ndr_table_lsarpc.syntax_id, rpc_sh_rights_revoke,
-	  N_("Revoke privilege[s]") },
+		{ "revoke", NULL, NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+		  rpc_sh_rights_revoke,
+		  N_("Revoke privilege[s]") },
 
-	{ NULL, NULL, 0, NULL, NULL }
+		{ NULL, NULL, 0, 0, NULL, NULL }
 	};
 
 	return cmds;
