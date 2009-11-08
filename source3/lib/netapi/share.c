@@ -199,7 +199,7 @@ WERROR NetShareAdd_r(struct libnetapi_ctx *ctx,
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_srvsvc.syntax_id,
+				   NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -252,7 +252,7 @@ WERROR NetShareDel_r(struct libnetapi_ctx *ctx,
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_srvsvc.syntax_id,
+				   NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -315,7 +315,7 @@ WERROR NetShareEnum_r(struct libnetapi_ctx *ctx,
 	ZERO_STRUCT(info_ctr);
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_srvsvc.syntax_id,
+				   NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -416,7 +416,7 @@ WERROR NetShareGetInfo_r(struct libnetapi_ctx *ctx,
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_srvsvc.syntax_id,
+				   NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -486,7 +486,7 @@ WERROR NetShareSetInfo_r(struct libnetapi_ctx *ctx,
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_srvsvc.syntax_id,
+				   NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
