@@ -84,7 +84,7 @@ NTSTATUS _lsa_LSARADTREGISTERSECURITYEVENTSOURCE(pipes_struct *p, struct lsa_LSA
 NTSTATUS _lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE(pipes_struct *p, struct lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE *r);
 NTSTATUS _lsa_LSARADTREPORTSECURITYEVENT(pipes_struct *p, struct lsa_LSARADTREPORTSECURITYEVENT *r);
 void lsarpc_get_pipe_fns(struct api_struct **fns, int *n_fns);
-NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *interface, uint32_t interface_version, uint32_t opnum, void *r);
+NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *r);
 NTSTATUS _lsa_Close(pipes_struct *p, struct lsa_Close *r);
 NTSTATUS _lsa_Delete(pipes_struct *p, struct lsa_Delete *r);
 NTSTATUS _lsa_EnumPrivs(pipes_struct *p, struct lsa_EnumPrivs *r);

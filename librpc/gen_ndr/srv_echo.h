@@ -12,7 +12,7 @@ void _echo_TestEnum(pipes_struct *p, struct echo_TestEnum *r);
 void _echo_TestSurrounding(pipes_struct *p, struct echo_TestSurrounding *r);
 uint16 _echo_TestDoublePointer(pipes_struct *p, struct echo_TestDoublePointer *r);
 void rpcecho_get_pipe_fns(struct api_struct **fns, int *n_fns);
-NTSTATUS rpc_rpcecho_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *interface, uint32_t interface_version, uint32_t opnum, void *r);
+NTSTATUS rpc_rpcecho_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *r);
 void _echo_AddOne(pipes_struct *p, struct echo_AddOne *r);
 void _echo_EchoData(pipes_struct *p, struct echo_EchoData *r);
 void _echo_SinkData(pipes_struct *p, struct echo_SinkData *r);

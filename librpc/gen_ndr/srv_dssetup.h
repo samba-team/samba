@@ -13,7 +13,7 @@ WERROR _dssetup_DsRoleServerSaveStateForUpgrade(pipes_struct *p, struct dssetup_
 WERROR _dssetup_DsRoleUpgradeDownlevelServer(pipes_struct *p, struct dssetup_DsRoleUpgradeDownlevelServer *r);
 WERROR _dssetup_DsRoleAbortDownlevelServerUpgrade(pipes_struct *p, struct dssetup_DsRoleAbortDownlevelServerUpgrade *r);
 void dssetup_get_pipe_fns(struct api_struct **fns, int *n_fns);
-NTSTATUS rpc_dssetup_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *interface, uint32_t interface_version, uint32_t opnum, void *r);
+NTSTATUS rpc_dssetup_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *r);
 WERROR _dssetup_DsRoleGetPrimaryDomainInformation(pipes_struct *p, struct dssetup_DsRoleGetPrimaryDomainInformation *r);
 WERROR _dssetup_DsRoleDnsNameToFlatName(pipes_struct *p, struct dssetup_DsRoleDnsNameToFlatName *r);
 WERROR _dssetup_DsRoleDcAsDc(pipes_struct *p, struct dssetup_DsRoleDcAsDc *r);

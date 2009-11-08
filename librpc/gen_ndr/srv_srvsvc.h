@@ -56,7 +56,7 @@ WERROR _srvsvc_NETRDFSFIXLOCALVOLUME(pipes_struct *p, struct srvsvc_NETRDFSFIXLO
 WERROR _srvsvc_NETRDFSMANAGERREPORTSITEINFO(pipes_struct *p, struct srvsvc_NETRDFSMANAGERREPORTSITEINFO *r);
 WERROR _srvsvc_NETRSERVERTRANSPORTDELEX(pipes_struct *p, struct srvsvc_NETRSERVERTRANSPORTDELEX *r);
 void srvsvc_get_pipe_fns(struct api_struct **fns, int *n_fns);
-NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *interface, uint32_t interface_version, uint32_t opnum, void *r);
+NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *r);
 WERROR _srvsvc_NetCharDevEnum(pipes_struct *p, struct srvsvc_NetCharDevEnum *r);
 WERROR _srvsvc_NetCharDevGetInfo(pipes_struct *p, struct srvsvc_NetCharDevGetInfo *r);
 WERROR _srvsvc_NetCharDevControl(pipes_struct *p, struct srvsvc_NetCharDevControl *r);

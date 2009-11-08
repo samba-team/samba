@@ -52,7 +52,7 @@ struct tevent_req *rpccli_initshutdown_Init_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_INITSHUTDOWN_UUID, NDR_INITSHUTDOWN_VERSION,
+				    &ndr_table_initshutdown,
 				    NDR_INITSHUTDOWN_INIT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -139,7 +139,7 @@ NTSTATUS rpccli_initshutdown_Init(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_INITSHUTDOWN_UUID, NDR_INITSHUTDOWN_VERSION,
+				&ndr_table_initshutdown,
 				NDR_INITSHUTDOWN_INIT,
 				&r);
 
@@ -199,7 +199,7 @@ struct tevent_req *rpccli_initshutdown_Abort_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_INITSHUTDOWN_UUID, NDR_INITSHUTDOWN_VERSION,
+				    &ndr_table_initshutdown,
 				    NDR_INITSHUTDOWN_ABORT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -278,7 +278,7 @@ NTSTATUS rpccli_initshutdown_Abort(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_INITSHUTDOWN_UUID, NDR_INITSHUTDOWN_VERSION,
+				&ndr_table_initshutdown,
 				NDR_INITSHUTDOWN_ABORT,
 				&r);
 
@@ -348,7 +348,7 @@ struct tevent_req *rpccli_initshutdown_InitEx_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_INITSHUTDOWN_UUID, NDR_INITSHUTDOWN_VERSION,
+				    &ndr_table_initshutdown,
 				    NDR_INITSHUTDOWN_INITEX,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -437,7 +437,7 @@ NTSTATUS rpccli_initshutdown_InitEx(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_INITSHUTDOWN_UUID, NDR_INITSHUTDOWN_VERSION,
+				&ndr_table_initshutdown,
 				NDR_INITSHUTDOWN_INITEX,
 				&r);
 

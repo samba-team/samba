@@ -51,8 +51,7 @@ static void wb_ndr_dispatch_done(struct tevent_req *subreq);
 static struct tevent_req *wb_ndr_dispatch_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
 					       struct rpc_pipe_client *cli,
-					       const char *interface,
-					       uint32_t interface_version,
+					       const struct ndr_interface_table *table,
 					       uint32_t opnum,
 					       void *r)
 {
@@ -70,7 +69,7 @@ static struct tevent_req *wb_ndr_dispatch_send(TALLOC_CTX *mem_ctx,
 	}
 
 	state->r = r;
-	state->call = &ndr_table_wbint.calls[opnum];
+	state->call = &table->calls[opnum];
 	state->transport = transport;
 	state->opnum = opnum;
 
@@ -168,8 +167,7 @@ static NTSTATUS wb_ndr_dispatch_recv(struct tevent_req *req,
 
 static NTSTATUS wb_ndr_dispatch(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
-				const char *interface,
-				uint32_t interface_version,
+				const struct ndr_interface_table *table,
 				uint32_t opnum, void *r)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -183,8 +181,7 @@ static NTSTATUS wb_ndr_dispatch(struct rpc_pipe_client *cli,
 		goto fail;
 	}
 
-	req = wb_ndr_dispatch_send(frame, ev, cli, interface,
-				   interface_version, opnum, r);
+	req = wb_ndr_dispatch_send(frame, ev, cli, table, opnum, r);
 	if (req == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;

@@ -37,7 +37,7 @@ WERROR _winreg_OpenHKPT(pipes_struct *p, struct winreg_OpenHKPT *r);
 WERROR _winreg_OpenHKPN(pipes_struct *p, struct winreg_OpenHKPN *r);
 WERROR _winreg_QueryMultipleValues2(pipes_struct *p, struct winreg_QueryMultipleValues2 *r);
 void winreg_get_pipe_fns(struct api_struct **fns, int *n_fns);
-NTSTATUS rpc_winreg_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *interface, uint32_t interface_version, uint32_t opnum, void *r);
+NTSTATUS rpc_winreg_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *r);
 WERROR _winreg_OpenHKCR(pipes_struct *p, struct winreg_OpenHKCR *r);
 WERROR _winreg_OpenHKCU(pipes_struct *p, struct winreg_OpenHKCU *r);
 WERROR _winreg_OpenHKLM(pipes_struct *p, struct winreg_OpenHKLM *r);

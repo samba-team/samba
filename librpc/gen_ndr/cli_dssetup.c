@@ -52,7 +52,7 @@ struct tevent_req *rpccli_dssetup_DsRoleGetPrimaryDomainInformation_send(TALLOC_
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_DSSETUP_UUID, NDR_DSSETUP_VERSION,
+				    &ndr_table_dssetup,
 				    NDR_DSSETUP_DSROLEGETPRIMARYDOMAININFORMATION,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -135,7 +135,7 @@ NTSTATUS rpccli_dssetup_DsRoleGetPrimaryDomainInformation(struct rpc_pipe_client
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_DSSETUP_UUID, NDR_DSSETUP_VERSION,
+				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLEGETPRIMARYDOMAININFORMATION,
 				&r);
 
@@ -196,7 +196,7 @@ struct tevent_req *rpccli_dssetup_DsRoleDnsNameToFlatName_send(TALLOC_CTX *mem_c
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_DSSETUP_UUID, NDR_DSSETUP_VERSION,
+				    &ndr_table_dssetup,
 				    NDR_DSSETUP_DSROLEDNSNAMETOFLATNAME,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -273,7 +273,7 @@ NTSTATUS rpccli_dssetup_DsRoleDnsNameToFlatName(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_DSSETUP_UUID, NDR_DSSETUP_VERSION,
+				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLEDNSNAMETOFLATNAME,
 				&r);
 
@@ -331,7 +331,7 @@ struct tevent_req *rpccli_dssetup_DsRoleDcAsDc_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_DSSETUP_UUID, NDR_DSSETUP_VERSION,
+				    &ndr_table_dssetup,
 				    NDR_DSSETUP_DSROLEDCASDC,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -408,7 +408,7 @@ NTSTATUS rpccli_dssetup_DsRoleDcAsDc(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_DSSETUP_UUID, NDR_DSSETUP_VERSION,
+				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLEDCASDC,
 				&r);
 
@@ -466,7 +466,7 @@ struct tevent_req *rpccli_dssetup_DsRoleDcAsReplica_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_DSSETUP_UUID, NDR_DSSETUP_VERSION,
+				    &ndr_table_dssetup,
 				    NDR_DSSETUP_DSROLEDCASREPLICA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -543,7 +543,7 @@ NTSTATUS rpccli_dssetup_DsRoleDcAsReplica(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_DSSETUP_UUID, NDR_DSSETUP_VERSION,
+				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLEDCASREPLICA,
 				&r);
 
@@ -601,7 +601,7 @@ struct tevent_req *rpccli_dssetup_DsRoleDemoteDc_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_DSSETUP_UUID, NDR_DSSETUP_VERSION,
+				    &ndr_table_dssetup,
 				    NDR_DSSETUP_DSROLEDEMOTEDC,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -678,7 +678,7 @@ NTSTATUS rpccli_dssetup_DsRoleDemoteDc(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_DSSETUP_UUID, NDR_DSSETUP_VERSION,
+				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLEDEMOTEDC,
 				&r);
 
@@ -736,7 +736,7 @@ struct tevent_req *rpccli_dssetup_DsRoleGetDcOperationProgress_send(TALLOC_CTX *
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_DSSETUP_UUID, NDR_DSSETUP_VERSION,
+				    &ndr_table_dssetup,
 				    NDR_DSSETUP_DSROLEGETDCOPERATIONPROGRESS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -813,7 +813,7 @@ NTSTATUS rpccli_dssetup_DsRoleGetDcOperationProgress(struct rpc_pipe_client *cli
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_DSSETUP_UUID, NDR_DSSETUP_VERSION,
+				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLEGETDCOPERATIONPROGRESS,
 				&r);
 
@@ -871,7 +871,7 @@ struct tevent_req *rpccli_dssetup_DsRoleGetDcOperationResults_send(TALLOC_CTX *m
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_DSSETUP_UUID, NDR_DSSETUP_VERSION,
+				    &ndr_table_dssetup,
 				    NDR_DSSETUP_DSROLEGETDCOPERATIONRESULTS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -948,7 +948,7 @@ NTSTATUS rpccli_dssetup_DsRoleGetDcOperationResults(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_DSSETUP_UUID, NDR_DSSETUP_VERSION,
+				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLEGETDCOPERATIONRESULTS,
 				&r);
 
@@ -1006,7 +1006,7 @@ struct tevent_req *rpccli_dssetup_DsRoleCancel_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_DSSETUP_UUID, NDR_DSSETUP_VERSION,
+				    &ndr_table_dssetup,
 				    NDR_DSSETUP_DSROLECANCEL,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1083,7 +1083,7 @@ NTSTATUS rpccli_dssetup_DsRoleCancel(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_DSSETUP_UUID, NDR_DSSETUP_VERSION,
+				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLECANCEL,
 				&r);
 
@@ -1141,7 +1141,7 @@ struct tevent_req *rpccli_dssetup_DsRoleServerSaveStateForUpgrade_send(TALLOC_CT
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_DSSETUP_UUID, NDR_DSSETUP_VERSION,
+				    &ndr_table_dssetup,
 				    NDR_DSSETUP_DSROLESERVERSAVESTATEFORUPGRADE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1218,7 +1218,7 @@ NTSTATUS rpccli_dssetup_DsRoleServerSaveStateForUpgrade(struct rpc_pipe_client *
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_DSSETUP_UUID, NDR_DSSETUP_VERSION,
+				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLESERVERSAVESTATEFORUPGRADE,
 				&r);
 
@@ -1276,7 +1276,7 @@ struct tevent_req *rpccli_dssetup_DsRoleUpgradeDownlevelServer_send(TALLOC_CTX *
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_DSSETUP_UUID, NDR_DSSETUP_VERSION,
+				    &ndr_table_dssetup,
 				    NDR_DSSETUP_DSROLEUPGRADEDOWNLEVELSERVER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1353,7 +1353,7 @@ NTSTATUS rpccli_dssetup_DsRoleUpgradeDownlevelServer(struct rpc_pipe_client *cli
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_DSSETUP_UUID, NDR_DSSETUP_VERSION,
+				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLEUPGRADEDOWNLEVELSERVER,
 				&r);
 
@@ -1411,7 +1411,7 @@ struct tevent_req *rpccli_dssetup_DsRoleAbortDownlevelServerUpgrade_send(TALLOC_
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_DSSETUP_UUID, NDR_DSSETUP_VERSION,
+				    &ndr_table_dssetup,
 				    NDR_DSSETUP_DSROLEABORTDOWNLEVELSERVERUPGRADE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1488,7 +1488,7 @@ NTSTATUS rpccli_dssetup_DsRoleAbortDownlevelServerUpgrade(struct rpc_pipe_client
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_DSSETUP_UUID, NDR_DSSETUP_VERSION,
+				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLEABORTDOWNLEVELSERVERUPGRADE,
 				&r);
 

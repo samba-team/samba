@@ -25,7 +25,7 @@ WERROR _dfs_Remove2(pipes_struct *p, struct dfs_Remove2 *r);
 WERROR _dfs_EnumEx(pipes_struct *p, struct dfs_EnumEx *r);
 WERROR _dfs_SetInfo2(pipes_struct *p, struct dfs_SetInfo2 *r);
 void netdfs_get_pipe_fns(struct api_struct **fns, int *n_fns);
-NTSTATUS rpc_netdfs_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *interface, uint32_t interface_version, uint32_t opnum, void *r);
+NTSTATUS rpc_netdfs_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *r);
 void _dfs_GetManagerVersion(pipes_struct *p, struct dfs_GetManagerVersion *r);
 WERROR _dfs_Add(pipes_struct *p, struct dfs_Add *r);
 WERROR _dfs_Remove(pipes_struct *p, struct dfs_Remove *r);
