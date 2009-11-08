@@ -49,7 +49,7 @@ struct tevent_req *rpccli_wbint_Ping_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wbint,
+				    NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				    NDR_WBINT_PING,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -122,7 +122,7 @@ NTSTATUS rpccli_wbint_Ping(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wbint,
+				NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				NDR_WBINT_PING,
 				&r);
 
@@ -191,7 +191,7 @@ struct tevent_req *rpccli_wbint_LookupSid_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wbint,
+				    NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				    NDR_WBINT_LOOKUPSID,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -275,7 +275,7 @@ NTSTATUS rpccli_wbint_LookupSid(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wbint,
+				NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				NDR_WBINT_LOOKUPSID,
 				&r);
 
@@ -348,7 +348,7 @@ struct tevent_req *rpccli_wbint_LookupName_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wbint,
+				    NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				    NDR_WBINT_LOOKUPNAME,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -434,7 +434,7 @@ NTSTATUS rpccli_wbint_LookupName(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wbint,
+				NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				NDR_WBINT_LOOKUPNAME,
 				&r);
 
@@ -502,7 +502,7 @@ struct tevent_req *rpccli_wbint_Sid2Uid_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wbint,
+				    NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				    NDR_WBINT_SID2UID,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -584,7 +584,7 @@ NTSTATUS rpccli_wbint_Sid2Uid(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wbint,
+				NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				NDR_WBINT_SID2UID,
 				&r);
 
@@ -651,7 +651,7 @@ struct tevent_req *rpccli_wbint_Sid2Gid_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wbint,
+				    NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				    NDR_WBINT_SID2GID,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -733,7 +733,7 @@ NTSTATUS rpccli_wbint_Sid2Gid(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wbint,
+				NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				NDR_WBINT_SID2GID,
 				&r);
 
@@ -800,7 +800,7 @@ struct tevent_req *rpccli_wbint_Uid2Sid_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wbint,
+				    NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				    NDR_WBINT_UID2SID,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -882,7 +882,7 @@ NTSTATUS rpccli_wbint_Uid2Sid(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wbint,
+				NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				NDR_WBINT_UID2SID,
 				&r);
 
@@ -949,7 +949,7 @@ struct tevent_req *rpccli_wbint_Gid2Sid_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wbint,
+				    NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				    NDR_WBINT_GID2SID,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1031,7 +1031,7 @@ NTSTATUS rpccli_wbint_Gid2Sid(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wbint,
+				NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				NDR_WBINT_GID2SID,
 				&r);
 
@@ -1094,7 +1094,7 @@ struct tevent_req *rpccli_wbint_AllocateUid_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wbint,
+				    NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				    NDR_WBINT_ALLOCATEUID,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1172,7 +1172,7 @@ NTSTATUS rpccli_wbint_AllocateUid(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wbint,
+				NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				NDR_WBINT_ALLOCATEUID,
 				&r);
 
@@ -1235,7 +1235,7 @@ struct tevent_req *rpccli_wbint_AllocateGid_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wbint,
+				    NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				    NDR_WBINT_ALLOCATEGID,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1313,7 +1313,7 @@ NTSTATUS rpccli_wbint_AllocateGid(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wbint,
+				NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				NDR_WBINT_ALLOCATEGID,
 				&r);
 
@@ -1378,7 +1378,7 @@ struct tevent_req *rpccli_wbint_QueryUser_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wbint,
+				    NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				    NDR_WBINT_QUERYUSER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1458,7 +1458,7 @@ NTSTATUS rpccli_wbint_QueryUser(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wbint,
+				NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				NDR_WBINT_QUERYUSER,
 				&r);
 
@@ -1523,7 +1523,7 @@ struct tevent_req *rpccli_wbint_LookupUserAliases_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wbint,
+				    NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				    NDR_WBINT_LOOKUPUSERALIASES,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1603,7 +1603,7 @@ NTSTATUS rpccli_wbint_LookupUserAliases(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wbint,
+				NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				NDR_WBINT_LOOKUPUSERALIASES,
 				&r);
 
@@ -1668,7 +1668,7 @@ struct tevent_req *rpccli_wbint_LookupUserGroups_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wbint,
+				    NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				    NDR_WBINT_LOOKUPUSERGROUPS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1748,7 +1748,7 @@ NTSTATUS rpccli_wbint_LookupUserGroups(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wbint,
+				NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				NDR_WBINT_LOOKUPUSERGROUPS,
 				&r);
 
@@ -1811,7 +1811,7 @@ struct tevent_req *rpccli_wbint_QuerySequenceNumber_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wbint,
+				    NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				    NDR_WBINT_QUERYSEQUENCENUMBER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1889,7 +1889,7 @@ NTSTATUS rpccli_wbint_QuerySequenceNumber(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wbint,
+				NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				NDR_WBINT_QUERYSEQUENCENUMBER,
 				&r);
 
@@ -1956,7 +1956,7 @@ struct tevent_req *rpccli_wbint_LookupGroupMembers_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wbint,
+				    NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				    NDR_WBINT_LOOKUPGROUPMEMBERS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2038,7 +2038,7 @@ NTSTATUS rpccli_wbint_LookupGroupMembers(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wbint,
+				NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				NDR_WBINT_LOOKUPGROUPMEMBERS,
 				&r);
 
@@ -2101,7 +2101,7 @@ struct tevent_req *rpccli_wbint_QueryUserList_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wbint,
+				    NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				    NDR_WBINT_QUERYUSERLIST,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2179,7 +2179,7 @@ NTSTATUS rpccli_wbint_QueryUserList(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wbint,
+				NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				NDR_WBINT_QUERYUSERLIST,
 				&r);
 
@@ -2242,7 +2242,7 @@ struct tevent_req *rpccli_wbint_QueryGroupList_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wbint,
+				    NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				    NDR_WBINT_QUERYGROUPLIST,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2320,7 +2320,7 @@ NTSTATUS rpccli_wbint_QueryGroupList(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wbint,
+				NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				NDR_WBINT_QUERYGROUPLIST,
 				&r);
 
@@ -2391,7 +2391,7 @@ struct tevent_req *rpccli_wbint_DsGetDcName_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wbint,
+				    NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				    NDR_WBINT_DSGETDCNAME,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2477,7 +2477,7 @@ NTSTATUS rpccli_wbint_DsGetDcName(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wbint,
+				NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				NDR_WBINT_DSGETDCNAME,
 				&r);
 
@@ -2542,7 +2542,7 @@ struct tevent_req *rpccli_wbint_LookupRids_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wbint,
+				    NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				    NDR_WBINT_LOOKUPRIDS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2622,7 +2622,7 @@ NTSTATUS rpccli_wbint_LookupRids(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wbint,
+				NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				NDR_WBINT_LOOKUPRIDS,
 				&r);
 
@@ -2677,7 +2677,7 @@ struct tevent_req *rpccli_wbint_CheckMachineAccount_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wbint,
+				    NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				    NDR_WBINT_CHECKMACHINEACCOUNT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2753,7 +2753,7 @@ NTSTATUS rpccli_wbint_CheckMachineAccount(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wbint,
+				NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				NDR_WBINT_CHECKMACHINEACCOUNT,
 				&r);
 
@@ -2807,7 +2807,7 @@ struct tevent_req *rpccli_wbint_ChangeMachineAccount_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wbint,
+				    NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				    NDR_WBINT_CHANGEMACHINEACCOUNT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2883,7 +2883,7 @@ NTSTATUS rpccli_wbint_ChangeMachineAccount(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wbint,
+				NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				NDR_WBINT_CHANGEMACHINEACCOUNT,
 				&r);
 
@@ -2943,7 +2943,7 @@ struct tevent_req *rpccli_wbint_SetMapping_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wbint,
+				    NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				    NDR_WBINT_SETMAPPING,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3025,7 +3025,7 @@ NTSTATUS rpccli_wbint_SetMapping(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wbint,
+				NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				NDR_WBINT_SETMAPPING,
 				&r);
 
@@ -3085,7 +3085,7 @@ struct tevent_req *rpccli_wbint_RemoveMapping_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wbint,
+				    NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				    NDR_WBINT_REMOVEMAPPING,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3167,7 +3167,7 @@ NTSTATUS rpccli_wbint_RemoveMapping(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wbint,
+				NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				NDR_WBINT_REMOVEMAPPING,
 				&r);
 
@@ -3225,7 +3225,7 @@ struct tevent_req *rpccli_wbint_SetHWM_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wbint,
+				    NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				    NDR_WBINT_SETHWM,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3305,7 +3305,7 @@ NTSTATUS rpccli_wbint_SetHWM(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wbint,
+				NDR_WBINT_UUID, NDR_WBINT_VERSION,
 				NDR_WBINT_SETHWM,
 				&r);
 

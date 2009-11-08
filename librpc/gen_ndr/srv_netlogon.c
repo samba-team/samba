@@ -3898,7 +3898,7 @@ void netlogon_get_pipe_fns(struct api_struct **fns, int *n_fns)
 	*n_fns = sizeof(api_netlogon_cmds) / sizeof(struct api_struct);
 }
 
-NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *_r)
+NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *interface, uint32_t interface_version, uint32_t opnum, void *_r)
 {
 	if (cli->pipes_struct == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;

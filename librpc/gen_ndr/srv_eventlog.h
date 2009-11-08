@@ -27,7 +27,7 @@ NTSTATUS _eventlog_GetLogInformation(pipes_struct *p, struct eventlog_GetLogInfo
 NTSTATUS _eventlog_FlushEventLog(pipes_struct *p, struct eventlog_FlushEventLog *r);
 NTSTATUS _eventlog_ReportEventAndSourceW(pipes_struct *p, struct eventlog_ReportEventAndSourceW *r);
 void eventlog_get_pipe_fns(struct api_struct **fns, int *n_fns);
-NTSTATUS rpc_eventlog_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *r);
+NTSTATUS rpc_eventlog_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *interface, uint32_t interface_version, uint32_t opnum, void *r);
 NTSTATUS _eventlog_ClearEventLogW(pipes_struct *p, struct eventlog_ClearEventLogW *r);
 NTSTATUS _eventlog_BackupEventLogW(pipes_struct *p, struct eventlog_BackupEventLogW *r);
 NTSTATUS _eventlog_CloseEventLog(pipes_struct *p, struct eventlog_CloseEventLog *r);

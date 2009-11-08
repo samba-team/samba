@@ -67,7 +67,7 @@ WERROR _PNP_GetVersionInternal(pipes_struct *p, struct PNP_GetVersionInternal *r
 WERROR _PNP_GetBlockedDriverInfo(pipes_struct *p, struct PNP_GetBlockedDriverInfo *r);
 WERROR _PNP_GetServerSideDeviceInstallFlags(pipes_struct *p, struct PNP_GetServerSideDeviceInstallFlags *r);
 void ntsvcs_get_pipe_fns(struct api_struct **fns, int *n_fns);
-NTSTATUS rpc_ntsvcs_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *r);
+NTSTATUS rpc_ntsvcs_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *interface, uint32_t interface_version, uint32_t opnum, void *r);
 WERROR _PNP_Disconnect(pipes_struct *p, struct PNP_Disconnect *r);
 WERROR _PNP_Connect(pipes_struct *p, struct PNP_Connect *r);
 WERROR _PNP_GetVersion(pipes_struct *p, struct PNP_GetVersion *r);

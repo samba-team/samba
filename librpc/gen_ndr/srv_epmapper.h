@@ -10,7 +10,7 @@ uint32 _epm_InqObject(pipes_struct *p, struct epm_InqObject *r);
 uint32 _epm_MgmtDelete(pipes_struct *p, struct epm_MgmtDelete *r);
 uint32 _epm_MapAuth(pipes_struct *p, struct epm_MapAuth *r);
 void epmapper_get_pipe_fns(struct api_struct **fns, int *n_fns);
-NTSTATUS rpc_epmapper_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *r);
+NTSTATUS rpc_epmapper_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *interface, uint32_t interface_version, uint32_t opnum, void *r);
 uint32 _epm_Insert(pipes_struct *p, struct epm_Insert *r);
 uint32 _epm_Delete(pipes_struct *p, struct epm_Delete *r);
 uint32 _epm_Lookup(pipes_struct *p, struct epm_Lookup *r);

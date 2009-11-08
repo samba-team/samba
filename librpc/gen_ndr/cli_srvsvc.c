@@ -60,7 +60,7 @@ struct tevent_req *rpccli_srvsvc_NetCharDevEnum_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETCHARDEVENUM,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -151,7 +151,7 @@ NTSTATUS rpccli_srvsvc_NetCharDevEnum(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETCHARDEVENUM,
 				&r);
 
@@ -228,7 +228,7 @@ struct tevent_req *rpccli_srvsvc_NetCharDevGetInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETCHARDEVGETINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -313,7 +313,7 @@ NTSTATUS rpccli_srvsvc_NetCharDevGetInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETCHARDEVGETINFO,
 				&r);
 
@@ -378,7 +378,7 @@ struct tevent_req *rpccli_srvsvc_NetCharDevControl_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETCHARDEVCONTROL,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -461,7 +461,7 @@ NTSTATUS rpccli_srvsvc_NetCharDevControl(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETCHARDEVCONTROL,
 				&r);
 
@@ -539,7 +539,7 @@ struct tevent_req *rpccli_srvsvc_NetCharDevQEnum_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETCHARDEVQENUM,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -632,7 +632,7 @@ NTSTATUS rpccli_srvsvc_NetCharDevQEnum(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETCHARDEVQENUM,
 				&r);
 
@@ -711,7 +711,7 @@ struct tevent_req *rpccli_srvsvc_NetCharDevQGetInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETCHARDEVQGETINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -798,7 +798,7 @@ NTSTATUS rpccli_srvsvc_NetCharDevQGetInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETCHARDEVQGETINFO,
 				&r);
 
@@ -874,7 +874,7 @@ struct tevent_req *rpccli_srvsvc_NetCharDevQSetInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETCHARDEVQSETINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -964,7 +964,7 @@ NTSTATUS rpccli_srvsvc_NetCharDevQSetInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETCHARDEVQSETINFO,
 				&r);
 
@@ -1029,7 +1029,7 @@ struct tevent_req *rpccli_srvsvc_NetCharDevQPurge_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETCHARDEVQPURGE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1110,7 +1110,7 @@ NTSTATUS rpccli_srvsvc_NetCharDevQPurge(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETCHARDEVQPURGE,
 				&r);
 
@@ -1174,7 +1174,7 @@ struct tevent_req *rpccli_srvsvc_NetCharDevQPurgeSelf_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETCHARDEVQPURGESELF,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1257,7 +1257,7 @@ NTSTATUS rpccli_srvsvc_NetCharDevQPurgeSelf(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETCHARDEVQPURGESELF,
 				&r);
 
@@ -1335,7 +1335,7 @@ struct tevent_req *rpccli_srvsvc_NetConnEnum_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETCONNENUM,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1428,7 +1428,7 @@ NTSTATUS rpccli_srvsvc_NetConnEnum(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETCONNENUM,
 				&r);
 
@@ -1513,7 +1513,7 @@ struct tevent_req *rpccli_srvsvc_NetFileEnum_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETFILEENUM,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1608,7 +1608,7 @@ NTSTATUS rpccli_srvsvc_NetFileEnum(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETFILEENUM,
 				&r);
 
@@ -1685,7 +1685,7 @@ struct tevent_req *rpccli_srvsvc_NetFileGetInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETFILEGETINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1770,7 +1770,7 @@ NTSTATUS rpccli_srvsvc_NetFileGetInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETFILEGETINFO,
 				&r);
 
@@ -1833,7 +1833,7 @@ struct tevent_req *rpccli_srvsvc_NetFileClose_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETFILECLOSE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1914,7 +1914,7 @@ NTSTATUS rpccli_srvsvc_NetFileClose(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETFILECLOSE,
 				&r);
 
@@ -1994,7 +1994,7 @@ struct tevent_req *rpccli_srvsvc_NetSessEnum_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETSESSENUM,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2089,7 +2089,7 @@ NTSTATUS rpccli_srvsvc_NetSessEnum(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETSESSENUM,
 				&r);
 
@@ -2158,7 +2158,7 @@ struct tevent_req *rpccli_srvsvc_NetSessDel_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETSESSDEL,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2241,7 +2241,7 @@ NTSTATUS rpccli_srvsvc_NetSessDel(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETSESSDEL,
 				&r);
 
@@ -2314,7 +2314,7 @@ struct tevent_req *rpccli_srvsvc_NetShareAdd_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETSHAREADD,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2402,7 +2402,7 @@ NTSTATUS rpccli_srvsvc_NetShareAdd(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETSHAREADD,
 				&r);
 
@@ -2481,7 +2481,7 @@ struct tevent_req *rpccli_srvsvc_NetShareEnumAll_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETSHAREENUMALL,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2572,7 +2572,7 @@ NTSTATUS rpccli_srvsvc_NetShareEnumAll(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETSHAREENUMALL,
 				&r);
 
@@ -2649,7 +2649,7 @@ struct tevent_req *rpccli_srvsvc_NetShareGetInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETSHAREGETINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2734,7 +2734,7 @@ NTSTATUS rpccli_srvsvc_NetShareGetInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETSHAREGETINFO,
 				&r);
 
@@ -2810,7 +2810,7 @@ struct tevent_req *rpccli_srvsvc_NetShareSetInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETSHARESETINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2900,7 +2900,7 @@ NTSTATUS rpccli_srvsvc_NetShareSetInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETSHARESETINFO,
 				&r);
 
@@ -2967,7 +2967,7 @@ struct tevent_req *rpccli_srvsvc_NetShareDel_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETSHAREDEL,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3050,7 +3050,7 @@ NTSTATUS rpccli_srvsvc_NetShareDel(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETSHAREDEL,
 				&r);
 
@@ -3114,7 +3114,7 @@ struct tevent_req *rpccli_srvsvc_NetShareDelSticky_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETSHAREDELSTICKY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3197,7 +3197,7 @@ NTSTATUS rpccli_srvsvc_NetShareDelSticky(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETSHAREDELSTICKY,
 				&r);
 
@@ -3267,7 +3267,7 @@ struct tevent_req *rpccli_srvsvc_NetShareCheck_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETSHARECHECK,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3350,7 +3350,7 @@ NTSTATUS rpccli_srvsvc_NetShareCheck(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETSHARECHECK,
 				&r);
 
@@ -3421,7 +3421,7 @@ struct tevent_req *rpccli_srvsvc_NetSrvGetInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETSRVGETINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3504,7 +3504,7 @@ NTSTATUS rpccli_srvsvc_NetSrvGetInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETSRVGETINFO,
 				&r);
 
@@ -3578,7 +3578,7 @@ struct tevent_req *rpccli_srvsvc_NetSrvSetInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETSRVSETINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3666,7 +3666,7 @@ NTSTATUS rpccli_srvsvc_NetSrvSetInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETSRVSETINFO,
 				&r);
 
@@ -3747,7 +3747,7 @@ struct tevent_req *rpccli_srvsvc_NetDiskEnum_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETDISKENUM,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3840,7 +3840,7 @@ NTSTATUS rpccli_srvsvc_NetDiskEnum(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETDISKENUM,
 				&r);
 
@@ -3919,7 +3919,7 @@ struct tevent_req *rpccli_srvsvc_NetServerStatisticsGet_send(TALLOC_CTX *mem_ctx
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETSERVERSTATISTICSGET,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4006,7 +4006,7 @@ NTSTATUS rpccli_srvsvc_NetServerStatisticsGet(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETSERVERSTATISTICSGET,
 				&r);
 
@@ -4071,7 +4071,7 @@ struct tevent_req *rpccli_srvsvc_NetTransportAdd_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETTRANSPORTADD,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4154,7 +4154,7 @@ NTSTATUS rpccli_srvsvc_NetTransportAdd(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETTRANSPORTADD,
 				&r);
 
@@ -4230,7 +4230,7 @@ struct tevent_req *rpccli_srvsvc_NetTransportEnum_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETTRANSPORTENUM,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4321,7 +4321,7 @@ NTSTATUS rpccli_srvsvc_NetTransportEnum(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETTRANSPORTENUM,
 				&r);
 
@@ -4390,7 +4390,7 @@ struct tevent_req *rpccli_srvsvc_NetTransportDel_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETTRANSPORTDEL,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4473,7 +4473,7 @@ NTSTATUS rpccli_srvsvc_NetTransportDel(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETTRANSPORTDEL,
 				&r);
 
@@ -4541,7 +4541,7 @@ struct tevent_req *rpccli_srvsvc_NetRemoteTOD_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETREMOTETOD,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4622,7 +4622,7 @@ NTSTATUS rpccli_srvsvc_NetRemoteTOD(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETREMOTETOD,
 				&r);
 
@@ -4689,7 +4689,7 @@ struct tevent_req *rpccli_srvsvc_NetSetServiceBits_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETSETSERVICEBITS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4774,7 +4774,7 @@ NTSTATUS rpccli_srvsvc_NetSetServiceBits(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETSETSERVICEBITS,
 				&r);
 
@@ -4846,7 +4846,7 @@ struct tevent_req *rpccli_srvsvc_NetPathType_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETPATHTYPE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4931,7 +4931,7 @@ NTSTATUS rpccli_srvsvc_NetPathType(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETPATHTYPE,
 				&r);
 
@@ -5011,7 +5011,7 @@ struct tevent_req *rpccli_srvsvc_NetPathCanonicalize_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETPATHCANONICALIZE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5103,7 +5103,7 @@ NTSTATUS rpccli_srvsvc_NetPathCanonicalize(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETPATHCANONICALIZE,
 				&r);
 
@@ -5173,7 +5173,7 @@ struct tevent_req *rpccli_srvsvc_NetPathCompare_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETPATHCOMPARE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5260,7 +5260,7 @@ NTSTATUS rpccli_srvsvc_NetPathCompare(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETPATHCOMPARE,
 				&r);
 
@@ -5326,7 +5326,7 @@ struct tevent_req *rpccli_srvsvc_NetNameValidate_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETNAMEVALIDATE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5411,7 +5411,7 @@ NTSTATUS rpccli_srvsvc_NetNameValidate(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETNAMEVALIDATE,
 				&r);
 
@@ -5469,7 +5469,7 @@ struct tevent_req *rpccli_srvsvc_NETRPRNAMECANONICALIZE_send(TALLOC_CTX *mem_ctx
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETRPRNAMECANONICALIZE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5546,7 +5546,7 @@ NTSTATUS rpccli_srvsvc_NETRPRNAMECANONICALIZE(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETRPRNAMECANONICALIZE,
 				&r);
 
@@ -5614,7 +5614,7 @@ struct tevent_req *rpccli_srvsvc_NetPRNameCompare_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETPRNAMECOMPARE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5701,7 +5701,7 @@ NTSTATUS rpccli_srvsvc_NetPRNameCompare(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETPRNAMECOMPARE,
 				&r);
 
@@ -5777,7 +5777,7 @@ struct tevent_req *rpccli_srvsvc_NetShareEnum_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETSHAREENUM,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5868,7 +5868,7 @@ NTSTATUS rpccli_srvsvc_NetShareEnum(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETSHAREENUM,
 				&r);
 
@@ -5945,7 +5945,7 @@ struct tevent_req *rpccli_srvsvc_NetShareDelStart_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETSHAREDELSTART,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6032,7 +6032,7 @@ NTSTATUS rpccli_srvsvc_NetShareDelStart(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETSHAREDELSTART,
 				&r);
 
@@ -6102,7 +6102,7 @@ struct tevent_req *rpccli_srvsvc_NetShareDelCommit_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETSHAREDELCOMMIT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6184,7 +6184,7 @@ NTSTATUS rpccli_srvsvc_NetShareDelCommit(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETSHAREDELCOMMIT,
 				&r);
 
@@ -6261,7 +6261,7 @@ struct tevent_req *rpccli_srvsvc_NetGetFileSecurity_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETGETFILESECURITY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6348,7 +6348,7 @@ NTSTATUS rpccli_srvsvc_NetGetFileSecurity(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETGETFILESECURITY,
 				&r);
 
@@ -6417,7 +6417,7 @@ struct tevent_req *rpccli_srvsvc_NetSetFileSecurity_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETSETFILESECURITY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6504,7 +6504,7 @@ NTSTATUS rpccli_srvsvc_NetSetFileSecurity(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETSETFILESECURITY,
 				&r);
 
@@ -6568,7 +6568,7 @@ struct tevent_req *rpccli_srvsvc_NetServerTransportAddEx_send(TALLOC_CTX *mem_ct
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETSERVERTRANSPORTADDEX,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6651,7 +6651,7 @@ NTSTATUS rpccli_srvsvc_NetServerTransportAddEx(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETSERVERTRANSPORTADDEX,
 				&r);
 
@@ -6721,7 +6721,7 @@ struct tevent_req *rpccli_srvsvc_NetServerSetServiceBitsEx_send(TALLOC_CTX *mem_
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETSERVERSETSERVICEBITSEX,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6810,7 +6810,7 @@ NTSTATUS rpccli_srvsvc_NetServerSetServiceBitsEx(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETSERVERSETSERVICEBITSEX,
 				&r);
 
@@ -6868,7 +6868,7 @@ struct tevent_req *rpccli_srvsvc_NETRDFSGETVERSION_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETRDFSGETVERSION,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6945,7 +6945,7 @@ NTSTATUS rpccli_srvsvc_NETRDFSGETVERSION(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETRDFSGETVERSION,
 				&r);
 
@@ -7003,7 +7003,7 @@ struct tevent_req *rpccli_srvsvc_NETRDFSCREATELOCALPARTITION_send(TALLOC_CTX *me
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETRDFSCREATELOCALPARTITION,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7080,7 +7080,7 @@ NTSTATUS rpccli_srvsvc_NETRDFSCREATELOCALPARTITION(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETRDFSCREATELOCALPARTITION,
 				&r);
 
@@ -7138,7 +7138,7 @@ struct tevent_req *rpccli_srvsvc_NETRDFSDELETELOCALPARTITION_send(TALLOC_CTX *me
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETRDFSDELETELOCALPARTITION,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7215,7 +7215,7 @@ NTSTATUS rpccli_srvsvc_NETRDFSDELETELOCALPARTITION(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETRDFSDELETELOCALPARTITION,
 				&r);
 
@@ -7273,7 +7273,7 @@ struct tevent_req *rpccli_srvsvc_NETRDFSSETLOCALVOLUMESTATE_send(TALLOC_CTX *mem
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETRDFSSETLOCALVOLUMESTATE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7350,7 +7350,7 @@ NTSTATUS rpccli_srvsvc_NETRDFSSETLOCALVOLUMESTATE(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETRDFSSETLOCALVOLUMESTATE,
 				&r);
 
@@ -7408,7 +7408,7 @@ struct tevent_req *rpccli_srvsvc_NETRDFSSETSERVERINFO_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETRDFSSETSERVERINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7485,7 +7485,7 @@ NTSTATUS rpccli_srvsvc_NETRDFSSETSERVERINFO(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETRDFSSETSERVERINFO,
 				&r);
 
@@ -7543,7 +7543,7 @@ struct tevent_req *rpccli_srvsvc_NETRDFSCREATEEXITPOINT_send(TALLOC_CTX *mem_ctx
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETRDFSCREATEEXITPOINT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7620,7 +7620,7 @@ NTSTATUS rpccli_srvsvc_NETRDFSCREATEEXITPOINT(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETRDFSCREATEEXITPOINT,
 				&r);
 
@@ -7678,7 +7678,7 @@ struct tevent_req *rpccli_srvsvc_NETRDFSDELETEEXITPOINT_send(TALLOC_CTX *mem_ctx
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETRDFSDELETEEXITPOINT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7755,7 +7755,7 @@ NTSTATUS rpccli_srvsvc_NETRDFSDELETEEXITPOINT(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETRDFSDELETEEXITPOINT,
 				&r);
 
@@ -7813,7 +7813,7 @@ struct tevent_req *rpccli_srvsvc_NETRDFSMODIFYPREFIX_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETRDFSMODIFYPREFIX,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7890,7 +7890,7 @@ NTSTATUS rpccli_srvsvc_NETRDFSMODIFYPREFIX(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETRDFSMODIFYPREFIX,
 				&r);
 
@@ -7948,7 +7948,7 @@ struct tevent_req *rpccli_srvsvc_NETRDFSFIXLOCALVOLUME_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETRDFSFIXLOCALVOLUME,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -8025,7 +8025,7 @@ NTSTATUS rpccli_srvsvc_NETRDFSFIXLOCALVOLUME(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETRDFSFIXLOCALVOLUME,
 				&r);
 
@@ -8083,7 +8083,7 @@ struct tevent_req *rpccli_srvsvc_NETRDFSMANAGERREPORTSITEINFO_send(TALLOC_CTX *m
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETRDFSMANAGERREPORTSITEINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -8160,7 +8160,7 @@ NTSTATUS rpccli_srvsvc_NETRDFSMANAGERREPORTSITEINFO(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETRDFSMANAGERREPORTSITEINFO,
 				&r);
 
@@ -8218,7 +8218,7 @@ struct tevent_req *rpccli_srvsvc_NETRSERVERTRANSPORTDELEX_send(TALLOC_CTX *mem_c
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_srvsvc,
+				    NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				    NDR_SRVSVC_NETRSERVERTRANSPORTDELEX,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -8295,7 +8295,7 @@ NTSTATUS rpccli_srvsvc_NETRSERVERTRANSPORTDELEX(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_srvsvc,
+				NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				NDR_SRVSVC_NETRSERVERTRANSPORTDELEX,
 				&r);
 

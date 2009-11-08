@@ -55,7 +55,7 @@ struct tevent_req *rpccli_drsuapi_DsBind_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_drsuapi,
+				    NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				    NDR_DRSUAPI_DSBIND,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -141,7 +141,7 @@ NTSTATUS rpccli_drsuapi_DsBind(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_drsuapi,
+				NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				NDR_DRSUAPI_DSBIND,
 				&r);
 
@@ -212,7 +212,7 @@ struct tevent_req *rpccli_drsuapi_DsUnbind_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_drsuapi,
+				    NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				    NDR_DRSUAPI_DSUNBIND,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -292,7 +292,7 @@ NTSTATUS rpccli_drsuapi_DsUnbind(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_drsuapi,
+				NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				NDR_DRSUAPI_DSUNBIND,
 				&r);
 
@@ -357,7 +357,7 @@ struct tevent_req *rpccli_drsuapi_DsReplicaSync_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_drsuapi,
+				    NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				    NDR_DRSUAPI_DSREPLICASYNC,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -440,7 +440,7 @@ NTSTATUS rpccli_drsuapi_DsReplicaSync(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_drsuapi,
+				NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				NDR_DRSUAPI_DSREPLICASYNC,
 				&r);
 
@@ -514,7 +514,7 @@ struct tevent_req *rpccli_drsuapi_DsGetNCChanges_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_drsuapi,
+				    NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				    NDR_DRSUAPI_DSGETNCCHANGES,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -601,7 +601,7 @@ NTSTATUS rpccli_drsuapi_DsGetNCChanges(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_drsuapi,
+				NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				NDR_DRSUAPI_DSGETNCCHANGES,
 				&r);
 
@@ -667,7 +667,7 @@ struct tevent_req *rpccli_drsuapi_DsReplicaUpdateRefs_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_drsuapi,
+				    NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				    NDR_DRSUAPI_DSREPLICAUPDATEREFS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -750,7 +750,7 @@ NTSTATUS rpccli_drsuapi_DsReplicaUpdateRefs(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_drsuapi,
+				NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				NDR_DRSUAPI_DSREPLICAUPDATEREFS,
 				&r);
 
@@ -814,7 +814,7 @@ struct tevent_req *rpccli_drsuapi_DsReplicaAdd_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_drsuapi,
+				    NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				    NDR_DRSUAPI_DSREPLICAADD,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -897,7 +897,7 @@ NTSTATUS rpccli_drsuapi_DsReplicaAdd(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_drsuapi,
+				NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				NDR_DRSUAPI_DSREPLICAADD,
 				&r);
 
@@ -961,7 +961,7 @@ struct tevent_req *rpccli_drsuapi_DsReplicaDel_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_drsuapi,
+				    NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				    NDR_DRSUAPI_DSREPLICADEL,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1044,7 +1044,7 @@ NTSTATUS rpccli_drsuapi_DsReplicaDel(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_drsuapi,
+				NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				NDR_DRSUAPI_DSREPLICADEL,
 				&r);
 
@@ -1108,7 +1108,7 @@ struct tevent_req *rpccli_drsuapi_DsReplicaMod_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_drsuapi,
+				    NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				    NDR_DRSUAPI_DSREPLICAMOD,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1191,7 +1191,7 @@ NTSTATUS rpccli_drsuapi_DsReplicaMod(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_drsuapi,
+				NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				NDR_DRSUAPI_DSREPLICAMOD,
 				&r);
 
@@ -1249,7 +1249,7 @@ struct tevent_req *rpccli_DRSUAPI_VERIFY_NAMES_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_drsuapi,
+				    NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				    NDR_DRSUAPI_VERIFY_NAMES,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1326,7 +1326,7 @@ NTSTATUS rpccli_DRSUAPI_VERIFY_NAMES(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_drsuapi,
+				NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				NDR_DRSUAPI_VERIFY_NAMES,
 				&r);
 
@@ -1400,7 +1400,7 @@ struct tevent_req *rpccli_drsuapi_DsGetMemberships_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_drsuapi,
+				    NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				    NDR_DRSUAPI_DSGETMEMBERSHIPS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1487,7 +1487,7 @@ NTSTATUS rpccli_drsuapi_DsGetMemberships(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_drsuapi,
+				NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				NDR_DRSUAPI_DSGETMEMBERSHIPS,
 				&r);
 
@@ -1547,7 +1547,7 @@ struct tevent_req *rpccli_DRSUAPI_INTER_DOMAIN_MOVE_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_drsuapi,
+				    NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				    NDR_DRSUAPI_INTER_DOMAIN_MOVE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1624,7 +1624,7 @@ NTSTATUS rpccli_DRSUAPI_INTER_DOMAIN_MOVE(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_drsuapi,
+				NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				NDR_DRSUAPI_INTER_DOMAIN_MOVE,
 				&r);
 
@@ -1698,7 +1698,7 @@ struct tevent_req *rpccli_drsuapi_DsGetNT4ChangeLog_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_drsuapi,
+				    NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				    NDR_DRSUAPI_DSGETNT4CHANGELOG,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1785,7 +1785,7 @@ NTSTATUS rpccli_drsuapi_DsGetNT4ChangeLog(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_drsuapi,
+				NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				NDR_DRSUAPI_DSGETNT4CHANGELOG,
 				&r);
 
@@ -1861,7 +1861,7 @@ struct tevent_req *rpccli_drsuapi_DsCrackNames_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_drsuapi,
+				    NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				    NDR_DRSUAPI_DSCRACKNAMES,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1948,7 +1948,7 @@ NTSTATUS rpccli_drsuapi_DsCrackNames(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_drsuapi,
+				NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				NDR_DRSUAPI_DSCRACKNAMES,
 				&r);
 
@@ -2024,7 +2024,7 @@ struct tevent_req *rpccli_drsuapi_DsWriteAccountSpn_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_drsuapi,
+				    NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				    NDR_DRSUAPI_DSWRITEACCOUNTSPN,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2111,7 +2111,7 @@ NTSTATUS rpccli_drsuapi_DsWriteAccountSpn(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_drsuapi,
+				NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				NDR_DRSUAPI_DSWRITEACCOUNTSPN,
 				&r);
 
@@ -2187,7 +2187,7 @@ struct tevent_req *rpccli_drsuapi_DsRemoveDSServer_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_drsuapi,
+				    NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				    NDR_DRSUAPI_DSREMOVEDSSERVER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2274,7 +2274,7 @@ NTSTATUS rpccli_drsuapi_DsRemoveDSServer(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_drsuapi,
+				NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				NDR_DRSUAPI_DSREMOVEDSSERVER,
 				&r);
 
@@ -2334,7 +2334,7 @@ struct tevent_req *rpccli_DRSUAPI_REMOVE_DS_DOMAIN_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_drsuapi,
+				    NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				    NDR_DRSUAPI_REMOVE_DS_DOMAIN,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2411,7 +2411,7 @@ NTSTATUS rpccli_DRSUAPI_REMOVE_DS_DOMAIN(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_drsuapi,
+				NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				NDR_DRSUAPI_REMOVE_DS_DOMAIN,
 				&r);
 
@@ -2485,7 +2485,7 @@ struct tevent_req *rpccli_drsuapi_DsGetDomainControllerInfo_send(TALLOC_CTX *mem
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_drsuapi,
+				    NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				    NDR_DRSUAPI_DSGETDOMAINCONTROLLERINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2572,7 +2572,7 @@ NTSTATUS rpccli_drsuapi_DsGetDomainControllerInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_drsuapi,
+				NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				NDR_DRSUAPI_DSGETDOMAINCONTROLLERINFO,
 				&r);
 
@@ -2648,7 +2648,7 @@ struct tevent_req *rpccli_drsuapi_DsAddEntry_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_drsuapi,
+				    NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				    NDR_DRSUAPI_DSADDENTRY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2735,7 +2735,7 @@ NTSTATUS rpccli_drsuapi_DsAddEntry(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_drsuapi,
+				NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				NDR_DRSUAPI_DSADDENTRY,
 				&r);
 
@@ -2801,7 +2801,7 @@ struct tevent_req *rpccli_drsuapi_DsExecuteKCC_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_drsuapi,
+				    NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				    NDR_DRSUAPI_DSEXECUTEKCC,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2884,7 +2884,7 @@ NTSTATUS rpccli_drsuapi_DsExecuteKCC(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_drsuapi,
+				NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				NDR_DRSUAPI_DSEXECUTEKCC,
 				&r);
 
@@ -2958,7 +2958,7 @@ struct tevent_req *rpccli_drsuapi_DsReplicaGetInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_drsuapi,
+				    NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				    NDR_DRSUAPI_DSREPLICAGETINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3045,7 +3045,7 @@ NTSTATUS rpccli_drsuapi_DsReplicaGetInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_drsuapi,
+				NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				NDR_DRSUAPI_DSREPLICAGETINFO,
 				&r);
 
@@ -3105,7 +3105,7 @@ struct tevent_req *rpccli_DRSUAPI_ADD_SID_HISTORY_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_drsuapi,
+				    NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				    NDR_DRSUAPI_ADD_SID_HISTORY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3182,7 +3182,7 @@ NTSTATUS rpccli_DRSUAPI_ADD_SID_HISTORY(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_drsuapi,
+				NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				NDR_DRSUAPI_ADD_SID_HISTORY,
 				&r);
 
@@ -3256,7 +3256,7 @@ struct tevent_req *rpccli_drsuapi_DsGetMemberships2_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_drsuapi,
+				    NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				    NDR_DRSUAPI_DSGETMEMBERSHIPS2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3343,7 +3343,7 @@ NTSTATUS rpccli_drsuapi_DsGetMemberships2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_drsuapi,
+				NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				NDR_DRSUAPI_DSGETMEMBERSHIPS2,
 				&r);
 
@@ -3403,7 +3403,7 @@ struct tevent_req *rpccli_DRSUAPI_REPLICA_VERIFY_OBJECTS_send(TALLOC_CTX *mem_ct
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_drsuapi,
+				    NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				    NDR_DRSUAPI_REPLICA_VERIFY_OBJECTS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3480,7 +3480,7 @@ NTSTATUS rpccli_DRSUAPI_REPLICA_VERIFY_OBJECTS(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_drsuapi,
+				NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				NDR_DRSUAPI_REPLICA_VERIFY_OBJECTS,
 				&r);
 
@@ -3538,7 +3538,7 @@ struct tevent_req *rpccli_DRSUAPI_GET_OBJECT_EXISTENCE_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_drsuapi,
+				    NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				    NDR_DRSUAPI_GET_OBJECT_EXISTENCE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3615,7 +3615,7 @@ NTSTATUS rpccli_DRSUAPI_GET_OBJECT_EXISTENCE(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_drsuapi,
+				NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				NDR_DRSUAPI_GET_OBJECT_EXISTENCE,
 				&r);
 
@@ -3689,7 +3689,7 @@ struct tevent_req *rpccli_drsuapi_QuerySitesByCost_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_drsuapi,
+				    NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				    NDR_DRSUAPI_QUERYSITESBYCOST,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3776,7 +3776,7 @@ NTSTATUS rpccli_drsuapi_QuerySitesByCost(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_drsuapi,
+				NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
 				NDR_DRSUAPI_QUERYSITESBYCOST,
 				&r);
 
