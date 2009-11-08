@@ -5836,7 +5836,6 @@ bool api_pipe_request(pipes_struct *p);
 
 pipes_struct *get_first_internal_pipe(void);
 pipes_struct *get_next_internal_pipe(pipes_struct *p);
-const char *get_pipe_name_tos(struct pipes_struct *p);
 
 bool fsp_is_np(struct files_struct *fsp);
 NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
