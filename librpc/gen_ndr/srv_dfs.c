@@ -1927,5 +1927,5 @@ NTSTATUS rpc_netdfs_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 
 NTSTATUS rpc_netdfs_init(void)
 {
-	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "netdfs", "netdfs", NDR_NETDFS_UUID, NDR_NETDFS_VERSION, api_netdfs_cmds, sizeof(api_netdfs_cmds) / sizeof(struct api_struct));
+	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "netdfs", "netdfs", &ndr_table_netdfs, api_netdfs_cmds, sizeof(api_netdfs_cmds) / sizeof(struct api_struct));
 }

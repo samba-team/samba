@@ -926,5 +926,5 @@ NTSTATUS rpc_dssetup_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 
 NTSTATUS rpc_dssetup_init(void)
 {
-	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "dssetup", "dssetup", NDR_DSSETUP_UUID, NDR_DSSETUP_VERSION, api_dssetup_cmds, sizeof(api_dssetup_cmds) / sizeof(struct api_struct));
+	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "dssetup", "dssetup", &ndr_table_dssetup, api_dssetup_cmds, sizeof(api_dssetup_cmds) / sizeof(struct api_struct));
 }

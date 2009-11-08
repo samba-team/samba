@@ -4540,5 +4540,5 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 NTSTATUS rpc_netlogon_init(void)
 {
-	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "netlogon", "netlogon", NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION, api_netlogon_cmds, sizeof(api_netlogon_cmds) / sizeof(struct api_struct));
+	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "netlogon", "netlogon", &ndr_table_netlogon, api_netlogon_cmds, sizeof(api_netlogon_cmds) / sizeof(struct api_struct));
 }

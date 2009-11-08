@@ -729,5 +729,5 @@ NTSTATUS rpc_epmapper_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 NTSTATUS rpc_epmapper_init(void)
 {
-	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "epmapper", "epmapper", NDR_EPMAPPER_UUID, NDR_EPMAPPER_VERSION, api_epmapper_cmds, sizeof(api_epmapper_cmds) / sizeof(struct api_struct));
+	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "epmapper", "epmapper", &ndr_table_epmapper, api_epmapper_cmds, sizeof(api_epmapper_cmds) / sizeof(struct api_struct));
 }
