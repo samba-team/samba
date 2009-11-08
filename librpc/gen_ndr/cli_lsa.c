@@ -51,7 +51,7 @@ struct tevent_req *rpccli_lsa_Close_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_CLOSE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -130,7 +130,7 @@ NTSTATUS rpccli_lsa_Close(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_CLOSE,
 				&r);
 
@@ -187,7 +187,7 @@ struct tevent_req *rpccli_lsa_Delete_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_DELETE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -265,7 +265,7 @@ NTSTATUS rpccli_lsa_Delete(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_DELETE,
 				&r);
 
@@ -334,7 +334,7 @@ struct tevent_req *rpccli_lsa_EnumPrivs_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_ENUMPRIVS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -419,7 +419,7 @@ NTSTATUS rpccli_lsa_EnumPrivs(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_ENUMPRIVS,
 				&r);
 
@@ -487,7 +487,7 @@ struct tevent_req *rpccli_lsa_QuerySecurity_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_QUERYSECURITY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -569,7 +569,7 @@ NTSTATUS rpccli_lsa_QuerySecurity(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_QUERYSECURITY,
 				&r);
 
@@ -630,7 +630,7 @@ struct tevent_req *rpccli_lsa_SetSecObj_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_SETSECOBJ,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -712,7 +712,7 @@ NTSTATUS rpccli_lsa_SetSecObj(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_SETSECOBJ,
 				&r);
 
@@ -766,7 +766,7 @@ struct tevent_req *rpccli_lsa_ChangePassword_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_CHANGEPASSWORD,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -842,7 +842,7 @@ NTSTATUS rpccli_lsa_ChangePassword(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_CHANGEPASSWORD,
 				&r);
 
@@ -910,7 +910,7 @@ struct tevent_req *rpccli_lsa_OpenPolicy_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_OPENPOLICY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -994,7 +994,7 @@ NTSTATUS rpccli_lsa_OpenPolicy(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_OPENPOLICY,
 				&r);
 
@@ -1061,7 +1061,7 @@ struct tevent_req *rpccli_lsa_QueryInfoPolicy_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_QUERYINFOPOLICY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1143,7 +1143,7 @@ NTSTATUS rpccli_lsa_QueryInfoPolicy(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_QUERYINFOPOLICY,
 				&r);
 
@@ -1204,7 +1204,7 @@ struct tevent_req *rpccli_lsa_SetInfoPolicy_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_SETINFOPOLICY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1286,7 +1286,7 @@ NTSTATUS rpccli_lsa_SetInfoPolicy(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_SETINFOPOLICY,
 				&r);
 
@@ -1340,7 +1340,7 @@ struct tevent_req *rpccli_lsa_ClearAuditLog_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_CLEARAUDITLOG,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1416,7 +1416,7 @@ NTSTATUS rpccli_lsa_ClearAuditLog(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_CLEARAUDITLOG,
 				&r);
 
@@ -1484,7 +1484,7 @@ struct tevent_req *rpccli_lsa_CreateAccount_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_CREATEACCOUNT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1568,7 +1568,7 @@ NTSTATUS rpccli_lsa_CreateAccount(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_CREATEACCOUNT,
 				&r);
 
@@ -1638,7 +1638,7 @@ struct tevent_req *rpccli_lsa_EnumAccounts_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_ENUMACCOUNTS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1723,7 +1723,7 @@ NTSTATUS rpccli_lsa_EnumAccounts(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_ENUMACCOUNTS,
 				&r);
 
@@ -1793,7 +1793,7 @@ struct tevent_req *rpccli_lsa_CreateTrustedDomain_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_CREATETRUSTEDDOMAIN,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1877,7 +1877,7 @@ NTSTATUS rpccli_lsa_CreateTrustedDomain(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_CREATETRUSTEDDOMAIN,
 				&r);
 
@@ -1947,7 +1947,7 @@ struct tevent_req *rpccli_lsa_EnumTrustDom_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_ENUMTRUSTDOM,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2032,7 +2032,7 @@ NTSTATUS rpccli_lsa_EnumTrustDom(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_ENUMTRUSTDOM,
 				&r);
 
@@ -2110,7 +2110,7 @@ struct tevent_req *rpccli_lsa_LookupNames_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_LOOKUPNAMES,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2202,7 +2202,7 @@ NTSTATUS rpccli_lsa_LookupNames(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_LOOKUPNAMES,
 				&r);
 
@@ -2279,7 +2279,7 @@ struct tevent_req *rpccli_lsa_LookupSids_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_LOOKUPSIDS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2369,7 +2369,7 @@ NTSTATUS rpccli_lsa_LookupSids(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_LOOKUPSIDS,
 				&r);
 
@@ -2440,7 +2440,7 @@ struct tevent_req *rpccli_lsa_CreateSecret_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_CREATESECRET,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2524,7 +2524,7 @@ NTSTATUS rpccli_lsa_CreateSecret(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_CREATESECRET,
 				&r);
 
@@ -2593,7 +2593,7 @@ struct tevent_req *rpccli_lsa_OpenAccount_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_OPENACCOUNT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2677,7 +2677,7 @@ NTSTATUS rpccli_lsa_OpenAccount(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_OPENACCOUNT,
 				&r);
 
@@ -2742,7 +2742,7 @@ struct tevent_req *rpccli_lsa_EnumPrivsAccount_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_ENUMPRIVSACCOUNT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2822,7 +2822,7 @@ NTSTATUS rpccli_lsa_EnumPrivsAccount(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_ENUMPRIVSACCOUNT,
 				&r);
 
@@ -2881,7 +2881,7 @@ struct tevent_req *rpccli_lsa_AddPrivilegesToAccount_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_ADDPRIVILEGESTOACCOUNT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2961,7 +2961,7 @@ NTSTATUS rpccli_lsa_AddPrivilegesToAccount(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_ADDPRIVILEGESTOACCOUNT,
 				&r);
 
@@ -3021,7 +3021,7 @@ struct tevent_req *rpccli_lsa_RemovePrivilegesFromAccount_send(TALLOC_CTX *mem_c
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_REMOVEPRIVILEGESFROMACCOUNT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3103,7 +3103,7 @@ NTSTATUS rpccli_lsa_RemovePrivilegesFromAccount(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_REMOVEPRIVILEGESFROMACCOUNT,
 				&r);
 
@@ -3157,7 +3157,7 @@ struct tevent_req *rpccli_lsa_GetQuotasForAccount_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_GETQUOTASFORACCOUNT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3233,7 +3233,7 @@ NTSTATUS rpccli_lsa_GetQuotasForAccount(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_GETQUOTASFORACCOUNT,
 				&r);
 
@@ -3287,7 +3287,7 @@ struct tevent_req *rpccli_lsa_SetQuotasForAccount_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_SETQUOTASFORACCOUNT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3363,7 +3363,7 @@ NTSTATUS rpccli_lsa_SetQuotasForAccount(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_SETQUOTASFORACCOUNT,
 				&r);
 
@@ -3427,7 +3427,7 @@ struct tevent_req *rpccli_lsa_GetSystemAccessAccount_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_GETSYSTEMACCESSACCOUNT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3507,7 +3507,7 @@ NTSTATUS rpccli_lsa_GetSystemAccessAccount(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_GETSYSTEMACCESSACCOUNT,
 				&r);
 
@@ -3566,7 +3566,7 @@ struct tevent_req *rpccli_lsa_SetSystemAccessAccount_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_SETSYSTEMACCESSACCOUNT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3646,7 +3646,7 @@ NTSTATUS rpccli_lsa_SetSystemAccessAccount(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_SETSYSTEMACCESSACCOUNT,
 				&r);
 
@@ -3714,7 +3714,7 @@ struct tevent_req *rpccli_lsa_OpenTrustedDomain_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_OPENTRUSTEDDOMAIN,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3798,7 +3798,7 @@ NTSTATUS rpccli_lsa_OpenTrustedDomain(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_OPENTRUSTEDDOMAIN,
 				&r);
 
@@ -3865,7 +3865,7 @@ struct tevent_req *rpccli_lsa_QueryTrustedDomainInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_QUERYTRUSTEDDOMAININFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3947,7 +3947,7 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_QUERYTRUSTEDDOMAININFO,
 				&r);
 
@@ -4008,7 +4008,7 @@ struct tevent_req *rpccli_lsa_SetInformationTrustedDomain_send(TALLOC_CTX *mem_c
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_SETINFORMATIONTRUSTEDDOMAIN,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4090,7 +4090,7 @@ NTSTATUS rpccli_lsa_SetInformationTrustedDomain(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_SETINFORMATIONTRUSTEDDOMAIN,
 				&r);
 
@@ -4158,7 +4158,7 @@ struct tevent_req *rpccli_lsa_OpenSecret_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_OPENSECRET,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4242,7 +4242,7 @@ NTSTATUS rpccli_lsa_OpenSecret(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_OPENSECRET,
 				&r);
 
@@ -4303,7 +4303,7 @@ struct tevent_req *rpccli_lsa_SetSecret_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_SETSECRET,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4385,7 +4385,7 @@ NTSTATUS rpccli_lsa_SetSecret(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_SETSECRET,
 				&r);
 
@@ -4459,7 +4459,7 @@ struct tevent_req *rpccli_lsa_QuerySecret_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_QUERYSECRET,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4557,7 +4557,7 @@ NTSTATUS rpccli_lsa_QuerySecret(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_QUERYSECRET,
 				&r);
 
@@ -4635,7 +4635,7 @@ struct tevent_req *rpccli_lsa_LookupPrivValue_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_LOOKUPPRIVVALUE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4717,7 +4717,7 @@ NTSTATUS rpccli_lsa_LookupPrivValue(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_LOOKUPPRIVVALUE,
 				&r);
 
@@ -4784,7 +4784,7 @@ struct tevent_req *rpccli_lsa_LookupPrivName_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_LOOKUPPRIVNAME,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4866,7 +4866,7 @@ NTSTATUS rpccli_lsa_LookupPrivName(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_LOOKUPPRIVNAME,
 				&r);
 
@@ -4939,7 +4939,7 @@ struct tevent_req *rpccli_lsa_LookupPrivDisplayName_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_LOOKUPPRIVDISPLAYNAME,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5027,7 +5027,7 @@ NTSTATUS rpccli_lsa_LookupPrivDisplayName(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_LOOKUPPRIVDISPLAYNAME,
 				&r);
 
@@ -5092,7 +5092,7 @@ struct tevent_req *rpccli_lsa_DeleteObject_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_DELETEOBJECT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5171,7 +5171,7 @@ NTSTATUS rpccli_lsa_DeleteObject(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_DELETEOBJECT,
 				&r);
 
@@ -5238,7 +5238,7 @@ struct tevent_req *rpccli_lsa_EnumAccountsWithUserRight_send(TALLOC_CTX *mem_ctx
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_ENUMACCOUNTSWITHUSERRIGHT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5320,7 +5320,7 @@ NTSTATUS rpccli_lsa_EnumAccountsWithUserRight(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_ENUMACCOUNTSWITHUSERRIGHT,
 				&r);
 
@@ -5387,7 +5387,7 @@ struct tevent_req *rpccli_lsa_EnumAccountRights_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_ENUMACCOUNTRIGHTS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5469,7 +5469,7 @@ NTSTATUS rpccli_lsa_EnumAccountRights(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_ENUMACCOUNTRIGHTS,
 				&r);
 
@@ -5530,7 +5530,7 @@ struct tevent_req *rpccli_lsa_AddAccountRights_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_ADDACCOUNTRIGHTS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5612,7 +5612,7 @@ NTSTATUS rpccli_lsa_AddAccountRights(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_ADDACCOUNTRIGHTS,
 				&r);
 
@@ -5674,7 +5674,7 @@ struct tevent_req *rpccli_lsa_RemoveAccountRights_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_REMOVEACCOUNTRIGHTS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5758,7 +5758,7 @@ NTSTATUS rpccli_lsa_RemoveAccountRights(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_REMOVEACCOUNTRIGHTS,
 				&r);
 
@@ -5826,7 +5826,7 @@ struct tevent_req *rpccli_lsa_QueryTrustedDomainInfoBySid_send(TALLOC_CTX *mem_c
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_QUERYTRUSTEDDOMAININFOBYSID,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5910,7 +5910,7 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfoBySid(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_QUERYTRUSTEDDOMAININFOBYSID,
 				&r);
 
@@ -5973,7 +5973,7 @@ struct tevent_req *rpccli_lsa_SetTrustedDomainInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_SETTRUSTEDDOMAININFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6057,7 +6057,7 @@ NTSTATUS rpccli_lsa_SetTrustedDomainInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_SETTRUSTEDDOMAININFO,
 				&r);
 
@@ -6115,7 +6115,7 @@ struct tevent_req *rpccli_lsa_DeleteTrustedDomain_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_DELETETRUSTEDDOMAIN,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6195,7 +6195,7 @@ NTSTATUS rpccli_lsa_DeleteTrustedDomain(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_DELETETRUSTEDDOMAIN,
 				&r);
 
@@ -6255,7 +6255,7 @@ struct tevent_req *rpccli_lsa_StorePrivateData_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_STOREPRIVATEDATA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6337,7 +6337,7 @@ NTSTATUS rpccli_lsa_StorePrivateData(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_STOREPRIVATEDATA,
 				&r);
 
@@ -6404,7 +6404,7 @@ struct tevent_req *rpccli_lsa_RetrievePrivateData_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_RETRIEVEPRIVATEDATA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6487,7 +6487,7 @@ NTSTATUS rpccli_lsa_RetrievePrivateData(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_RETRIEVEPRIVATEDATA,
 				&r);
 
@@ -6556,7 +6556,7 @@ struct tevent_req *rpccli_lsa_OpenPolicy2_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_OPENPOLICY2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6640,7 +6640,7 @@ NTSTATUS rpccli_lsa_OpenPolicy2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_OPENPOLICY2,
 				&r);
 
@@ -6709,7 +6709,7 @@ struct tevent_req *rpccli_lsa_GetUserName_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_GETUSERNAME,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6795,7 +6795,7 @@ NTSTATUS rpccli_lsa_GetUserName(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_GETUSERNAME,
 				&r);
 
@@ -6865,7 +6865,7 @@ struct tevent_req *rpccli_lsa_QueryInfoPolicy2_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_QUERYINFOPOLICY2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6947,7 +6947,7 @@ NTSTATUS rpccli_lsa_QueryInfoPolicy2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_QUERYINFOPOLICY2,
 				&r);
 
@@ -7008,7 +7008,7 @@ struct tevent_req *rpccli_lsa_SetInfoPolicy2_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_SETINFOPOLICY2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7090,7 +7090,7 @@ NTSTATUS rpccli_lsa_SetInfoPolicy2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_SETINFOPOLICY2,
 				&r);
 
@@ -7158,7 +7158,7 @@ struct tevent_req *rpccli_lsa_QueryTrustedDomainInfoByName_send(TALLOC_CTX *mem_
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_QUERYTRUSTEDDOMAININFOBYNAME,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7242,7 +7242,7 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfoByName(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_QUERYTRUSTEDDOMAININFOBYNAME,
 				&r);
 
@@ -7305,7 +7305,7 @@ struct tevent_req *rpccli_lsa_SetTrustedDomainInfoByName_send(TALLOC_CTX *mem_ct
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_SETTRUSTEDDOMAININFOBYNAME,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7389,7 +7389,7 @@ NTSTATUS rpccli_lsa_SetTrustedDomainInfoByName(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_SETTRUSTEDDOMAININFOBYNAME,
 				&r);
 
@@ -7458,7 +7458,7 @@ struct tevent_req *rpccli_lsa_EnumTrustedDomainsEx_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_ENUMTRUSTEDDOMAINSEX,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7543,7 +7543,7 @@ NTSTATUS rpccli_lsa_EnumTrustedDomainsEx(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_ENUMTRUSTEDDOMAINSEX,
 				&r);
 
@@ -7615,7 +7615,7 @@ struct tevent_req *rpccli_lsa_CreateTrustedDomainEx_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_CREATETRUSTEDDOMAINEX,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7701,7 +7701,7 @@ NTSTATUS rpccli_lsa_CreateTrustedDomainEx(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_CREATETRUSTEDDOMAINEX,
 				&r);
 
@@ -7765,7 +7765,7 @@ struct tevent_req *rpccli_lsa_CloseTrustedDomainEx_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_CLOSETRUSTEDDOMAINEX,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7844,7 +7844,7 @@ NTSTATUS rpccli_lsa_CloseTrustedDomainEx(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_CLOSETRUSTEDDOMAINEX,
 				&r);
 
@@ -7911,7 +7911,7 @@ struct tevent_req *rpccli_lsa_QueryDomainInformationPolicy_send(TALLOC_CTX *mem_
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_QUERYDOMAININFORMATIONPOLICY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7993,7 +7993,7 @@ NTSTATUS rpccli_lsa_QueryDomainInformationPolicy(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_QUERYDOMAININFORMATIONPOLICY,
 				&r);
 
@@ -8054,7 +8054,7 @@ struct tevent_req *rpccli_lsa_SetDomainInformationPolicy_send(TALLOC_CTX *mem_ct
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_SETDOMAININFORMATIONPOLICY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -8136,7 +8136,7 @@ NTSTATUS rpccli_lsa_SetDomainInformationPolicy(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_SETDOMAININFORMATIONPOLICY,
 				&r);
 
@@ -8204,7 +8204,7 @@ struct tevent_req *rpccli_lsa_OpenTrustedDomainByName_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_OPENTRUSTEDDOMAINBYNAME,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -8288,7 +8288,7 @@ NTSTATUS rpccli_lsa_OpenTrustedDomainByName(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_OPENTRUSTEDDOMAINBYNAME,
 				&r);
 
@@ -8343,7 +8343,7 @@ struct tevent_req *rpccli_lsa_TestCall_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_TESTCALL,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -8419,7 +8419,7 @@ NTSTATUS rpccli_lsa_TestCall(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_TESTCALL,
 				&r);
 
@@ -8497,7 +8497,7 @@ struct tevent_req *rpccli_lsa_LookupSids2_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_LOOKUPSIDS2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -8591,7 +8591,7 @@ NTSTATUS rpccli_lsa_LookupSids2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_LOOKUPSIDS2,
 				&r);
 
@@ -8674,7 +8674,7 @@ struct tevent_req *rpccli_lsa_LookupNames2_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_LOOKUPNAMES2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -8770,7 +8770,7 @@ NTSTATUS rpccli_lsa_LookupNames2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_LOOKUPNAMES2,
 				&r);
 
@@ -8843,7 +8843,7 @@ struct tevent_req *rpccli_lsa_CreateTrustedDomainEx2_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_CREATETRUSTEDDOMAINEX2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -8929,7 +8929,7 @@ NTSTATUS rpccli_lsa_CreateTrustedDomainEx2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_CREATETRUSTEDDOMAINEX2,
 				&r);
 
@@ -8984,7 +8984,7 @@ struct tevent_req *rpccli_lsa_CREDRWRITE_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_CREDRWRITE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -9060,7 +9060,7 @@ NTSTATUS rpccli_lsa_CREDRWRITE(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_CREDRWRITE,
 				&r);
 
@@ -9114,7 +9114,7 @@ struct tevent_req *rpccli_lsa_CREDRREAD_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_CREDRREAD,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -9190,7 +9190,7 @@ NTSTATUS rpccli_lsa_CREDRREAD(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_CREDRREAD,
 				&r);
 
@@ -9244,7 +9244,7 @@ struct tevent_req *rpccli_lsa_CREDRENUMERATE_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_CREDRENUMERATE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -9320,7 +9320,7 @@ NTSTATUS rpccli_lsa_CREDRENUMERATE(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_CREDRENUMERATE,
 				&r);
 
@@ -9374,7 +9374,7 @@ struct tevent_req *rpccli_lsa_CREDRWRITEDOMAINCREDENTIALS_send(TALLOC_CTX *mem_c
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_CREDRWRITEDOMAINCREDENTIALS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -9450,7 +9450,7 @@ NTSTATUS rpccli_lsa_CREDRWRITEDOMAINCREDENTIALS(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_CREDRWRITEDOMAINCREDENTIALS,
 				&r);
 
@@ -9504,7 +9504,7 @@ struct tevent_req *rpccli_lsa_CREDRREADDOMAINCREDENTIALS_send(TALLOC_CTX *mem_ct
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_CREDRREADDOMAINCREDENTIALS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -9580,7 +9580,7 @@ NTSTATUS rpccli_lsa_CREDRREADDOMAINCREDENTIALS(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_CREDRREADDOMAINCREDENTIALS,
 				&r);
 
@@ -9634,7 +9634,7 @@ struct tevent_req *rpccli_lsa_CREDRDELETE_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_CREDRDELETE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -9710,7 +9710,7 @@ NTSTATUS rpccli_lsa_CREDRDELETE(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_CREDRDELETE,
 				&r);
 
@@ -9764,7 +9764,7 @@ struct tevent_req *rpccli_lsa_CREDRGETTARGETINFO_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_CREDRGETTARGETINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -9840,7 +9840,7 @@ NTSTATUS rpccli_lsa_CREDRGETTARGETINFO(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_CREDRGETTARGETINFO,
 				&r);
 
@@ -9894,7 +9894,7 @@ struct tevent_req *rpccli_lsa_CREDRPROFILELOADED_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_CREDRPROFILELOADED,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -9970,7 +9970,7 @@ NTSTATUS rpccli_lsa_CREDRPROFILELOADED(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_CREDRPROFILELOADED,
 				&r);
 
@@ -10050,7 +10050,7 @@ struct tevent_req *rpccli_lsa_LookupNames3_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_LOOKUPNAMES3,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -10146,7 +10146,7 @@ NTSTATUS rpccli_lsa_LookupNames3(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_LOOKUPNAMES3,
 				&r);
 
@@ -10203,7 +10203,7 @@ struct tevent_req *rpccli_lsa_CREDRGETSESSIONTYPES_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_CREDRGETSESSIONTYPES,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -10279,7 +10279,7 @@ NTSTATUS rpccli_lsa_CREDRGETSESSIONTYPES(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_CREDRGETSESSIONTYPES,
 				&r);
 
@@ -10333,7 +10333,7 @@ struct tevent_req *rpccli_lsa_LSARREGISTERAUDITEVENT_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_LSARREGISTERAUDITEVENT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -10409,7 +10409,7 @@ NTSTATUS rpccli_lsa_LSARREGISTERAUDITEVENT(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_LSARREGISTERAUDITEVENT,
 				&r);
 
@@ -10463,7 +10463,7 @@ struct tevent_req *rpccli_lsa_LSARGENAUDITEVENT_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_LSARGENAUDITEVENT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -10539,7 +10539,7 @@ NTSTATUS rpccli_lsa_LSARGENAUDITEVENT(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_LSARGENAUDITEVENT,
 				&r);
 
@@ -10593,7 +10593,7 @@ struct tevent_req *rpccli_lsa_LSARUNREGISTERAUDITEVENT_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_LSARUNREGISTERAUDITEVENT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -10669,7 +10669,7 @@ NTSTATUS rpccli_lsa_LSARUNREGISTERAUDITEVENT(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_LSARUNREGISTERAUDITEVENT,
 				&r);
 
@@ -10737,7 +10737,7 @@ struct tevent_req *rpccli_lsa_lsaRQueryForestTrustInformation_send(TALLOC_CTX *m
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_LSARQUERYFORESTTRUSTINFORMATION,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -10821,7 +10821,7 @@ NTSTATUS rpccli_lsa_lsaRQueryForestTrustInformation(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_LSARQUERYFORESTTRUSTINFORMATION,
 				&r);
 
@@ -10876,7 +10876,7 @@ struct tevent_req *rpccli_lsa_LSARSETFORESTTRUSTINFORMATION_send(TALLOC_CTX *mem
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_LSARSETFORESTTRUSTINFORMATION,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -10952,7 +10952,7 @@ NTSTATUS rpccli_lsa_LSARSETFORESTTRUSTINFORMATION(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_LSARSETFORESTTRUSTINFORMATION,
 				&r);
 
@@ -11006,7 +11006,7 @@ struct tevent_req *rpccli_lsa_CREDRRENAME_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_CREDRRENAME,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -11082,7 +11082,7 @@ NTSTATUS rpccli_lsa_CREDRRENAME(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_CREDRRENAME,
 				&r);
 
@@ -11158,7 +11158,7 @@ struct tevent_req *rpccli_lsa_LookupSids3_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_LOOKUPSIDS3,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -11250,7 +11250,7 @@ NTSTATUS rpccli_lsa_LookupSids3(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_LOOKUPSIDS3,
 				&r);
 
@@ -11331,7 +11331,7 @@ struct tevent_req *rpccli_lsa_LookupNames4_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_LOOKUPNAMES4,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -11425,7 +11425,7 @@ NTSTATUS rpccli_lsa_LookupNames4(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_LOOKUPNAMES4,
 				&r);
 
@@ -11482,7 +11482,7 @@ struct tevent_req *rpccli_lsa_LSAROPENPOLICYSCE_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_LSAROPENPOLICYSCE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -11558,7 +11558,7 @@ NTSTATUS rpccli_lsa_LSAROPENPOLICYSCE(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_LSAROPENPOLICYSCE,
 				&r);
 
@@ -11612,7 +11612,7 @@ struct tevent_req *rpccli_lsa_LSARADTREGISTERSECURITYEVENTSOURCE_send(TALLOC_CTX
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_LSARADTREGISTERSECURITYEVENTSOURCE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -11688,7 +11688,7 @@ NTSTATUS rpccli_lsa_LSARADTREGISTERSECURITYEVENTSOURCE(struct rpc_pipe_client *c
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_LSARADTREGISTERSECURITYEVENTSOURCE,
 				&r);
 
@@ -11742,7 +11742,7 @@ struct tevent_req *rpccli_lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE_send(TALLOC_C
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_LSARADTUNREGISTERSECURITYEVENTSOURCE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -11818,7 +11818,7 @@ NTSTATUS rpccli_lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE(struct rpc_pipe_client 
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_LSARADTUNREGISTERSECURITYEVENTSOURCE,
 				&r);
 
@@ -11872,7 +11872,7 @@ struct tevent_req *rpccli_lsa_LSARADTREPORTSECURITYEVENT_send(TALLOC_CTX *mem_ct
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				    &ndr_table_lsarpc,
 				    NDR_LSA_LSARADTREPORTSECURITYEVENT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -11948,7 +11948,7 @@ NTSTATUS rpccli_lsa_LSARADTREPORTSECURITYEVENT(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_LSARPC_UUID, NDR_LSARPC_VERSION,
+				&ndr_table_lsarpc,
 				NDR_LSA_LSARADTREPORTSECURITYEVENT,
 				&r);
 

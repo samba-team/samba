@@ -49,7 +49,7 @@ struct tevent_req *rpccli_echo_AddOne_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_RPCECHO_UUID, NDR_RPCECHO_VERSION,
+				    &ndr_table_rpcecho,
 				    NDR_ECHO_ADDONE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -122,7 +122,7 @@ NTSTATUS rpccli_echo_AddOne(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_RPCECHO_UUID, NDR_RPCECHO_VERSION,
+				&ndr_table_rpcecho,
 				NDR_ECHO_ADDONE,
 				&r);
 
@@ -186,7 +186,7 @@ struct tevent_req *rpccli_echo_EchoData_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_RPCECHO_UUID, NDR_RPCECHO_VERSION,
+				    &ndr_table_rpcecho,
 				    NDR_ECHO_ECHODATA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -261,7 +261,7 @@ NTSTATUS rpccli_echo_EchoData(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_RPCECHO_UUID, NDR_RPCECHO_VERSION,
+				&ndr_table_rpcecho,
 				NDR_ECHO_ECHODATA,
 				&r);
 
@@ -317,7 +317,7 @@ struct tevent_req *rpccli_echo_SinkData_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_RPCECHO_UUID, NDR_RPCECHO_VERSION,
+				    &ndr_table_rpcecho,
 				    NDR_ECHO_SINKDATA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -390,7 +390,7 @@ NTSTATUS rpccli_echo_SinkData(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_RPCECHO_UUID, NDR_RPCECHO_VERSION,
+				&ndr_table_rpcecho,
 				NDR_ECHO_SINKDATA,
 				&r);
 
@@ -451,7 +451,7 @@ struct tevent_req *rpccli_echo_SourceData_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_RPCECHO_UUID, NDR_RPCECHO_VERSION,
+				    &ndr_table_rpcecho,
 				    NDR_ECHO_SOURCEDATA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -524,7 +524,7 @@ NTSTATUS rpccli_echo_SourceData(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_RPCECHO_UUID, NDR_RPCECHO_VERSION,
+				&ndr_table_rpcecho,
 				NDR_ECHO_SOURCEDATA,
 				&r);
 
@@ -586,7 +586,7 @@ struct tevent_req *rpccli_echo_TestCall_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_RPCECHO_UUID, NDR_RPCECHO_VERSION,
+				    &ndr_table_rpcecho,
 				    NDR_ECHO_TESTCALL,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -659,7 +659,7 @@ NTSTATUS rpccli_echo_TestCall(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_RPCECHO_UUID, NDR_RPCECHO_VERSION,
+				&ndr_table_rpcecho,
 				NDR_ECHO_TESTCALL,
 				&r);
 
@@ -724,7 +724,7 @@ struct tevent_req *rpccli_echo_TestCall2_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_RPCECHO_UUID, NDR_RPCECHO_VERSION,
+				    &ndr_table_rpcecho,
 				    NDR_ECHO_TESTCALL2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -804,7 +804,7 @@ NTSTATUS rpccli_echo_TestCall2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_RPCECHO_UUID, NDR_RPCECHO_VERSION,
+				&ndr_table_rpcecho,
 				NDR_ECHO_TESTCALL2,
 				&r);
 
@@ -861,7 +861,7 @@ struct tevent_req *rpccli_echo_TestSleep_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_RPCECHO_UUID, NDR_RPCECHO_VERSION,
+				    &ndr_table_rpcecho,
 				    NDR_ECHO_TESTSLEEP,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -939,7 +939,7 @@ NTSTATUS rpccli_echo_TestSleep(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_RPCECHO_UUID, NDR_RPCECHO_VERSION,
+				&ndr_table_rpcecho,
 				NDR_ECHO_TESTSLEEP,
 				&r);
 
@@ -1005,7 +1005,7 @@ struct tevent_req *rpccli_echo_TestEnum_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_RPCECHO_UUID, NDR_RPCECHO_VERSION,
+				    &ndr_table_rpcecho,
 				    NDR_ECHO_TESTENUM,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1083,7 +1083,7 @@ NTSTATUS rpccli_echo_TestEnum(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_RPCECHO_UUID, NDR_RPCECHO_VERSION,
+				&ndr_table_rpcecho,
 				NDR_ECHO_TESTENUM,
 				&r);
 
@@ -1146,7 +1146,7 @@ struct tevent_req *rpccli_echo_TestSurrounding_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_RPCECHO_UUID, NDR_RPCECHO_VERSION,
+				    &ndr_table_rpcecho,
 				    NDR_ECHO_TESTSURROUNDING,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1218,7 +1218,7 @@ NTSTATUS rpccli_echo_TestSurrounding(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_RPCECHO_UUID, NDR_RPCECHO_VERSION,
+				&ndr_table_rpcecho,
 				NDR_ECHO_TESTSURROUNDING,
 				&r);
 
@@ -1275,7 +1275,7 @@ struct tevent_req *rpccli_echo_TestDoublePointer_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_RPCECHO_UUID, NDR_RPCECHO_VERSION,
+				    &ndr_table_rpcecho,
 				    NDR_ECHO_TESTDOUBLEPOINTER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1353,7 +1353,7 @@ NTSTATUS rpccli_echo_TestDoublePointer(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_RPCECHO_UUID, NDR_RPCECHO_VERSION,
+				&ndr_table_rpcecho,
 				NDR_ECHO_TESTDOUBLEPOINTER,
 				&r);
 

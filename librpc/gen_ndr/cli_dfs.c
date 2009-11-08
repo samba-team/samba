@@ -47,7 +47,7 @@ struct tevent_req *rpccli_dfs_GetManagerVersion_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				    &ndr_table_netdfs,
 				    NDR_DFS_GETMANAGERVERSION,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -118,7 +118,7 @@ NTSTATUS rpccli_dfs_GetManagerVersion(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				&ndr_table_netdfs,
 				NDR_DFS_GETMANAGERVERSION,
 				&r);
 
@@ -183,7 +183,7 @@ struct tevent_req *rpccli_dfs_Add_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				    &ndr_table_netdfs,
 				    NDR_DFS_ADD,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -270,7 +270,7 @@ NTSTATUS rpccli_dfs_Add(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				&ndr_table_netdfs,
 				NDR_DFS_ADD,
 				&r);
 
@@ -334,7 +334,7 @@ struct tevent_req *rpccli_dfs_Remove_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				    &ndr_table_netdfs,
 				    NDR_DFS_REMOVE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -417,7 +417,7 @@ NTSTATUS rpccli_dfs_Remove(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				&ndr_table_netdfs,
 				NDR_DFS_REMOVE,
 				&r);
 
@@ -485,7 +485,7 @@ struct tevent_req *rpccli_dfs_SetInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				    &ndr_table_netdfs,
 				    NDR_DFS_SETINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -572,7 +572,7 @@ NTSTATUS rpccli_dfs_SetInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				&ndr_table_netdfs,
 				NDR_DFS_SETINFO,
 				&r);
 
@@ -646,7 +646,7 @@ struct tevent_req *rpccli_dfs_GetInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				    &ndr_table_netdfs,
 				    NDR_DFS_GETINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -733,7 +733,7 @@ NTSTATUS rpccli_dfs_GetInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				&ndr_table_netdfs,
 				NDR_DFS_GETINFO,
 				&r);
 
@@ -808,7 +808,7 @@ struct tevent_req *rpccli_dfs_Enum_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				    &ndr_table_netdfs,
 				    NDR_DFS_ENUM,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -899,7 +899,7 @@ NTSTATUS rpccli_dfs_Enum(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				&ndr_table_netdfs,
 				NDR_DFS_ENUM,
 				&r);
 
@@ -963,7 +963,7 @@ struct tevent_req *rpccli_dfs_Rename_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				    &ndr_table_netdfs,
 				    NDR_DFS_RENAME,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1040,7 +1040,7 @@ NTSTATUS rpccli_dfs_Rename(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				&ndr_table_netdfs,
 				NDR_DFS_RENAME,
 				&r);
 
@@ -1098,7 +1098,7 @@ struct tevent_req *rpccli_dfs_Move_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				    &ndr_table_netdfs,
 				    NDR_DFS_MOVE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1175,7 +1175,7 @@ NTSTATUS rpccli_dfs_Move(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				&ndr_table_netdfs,
 				NDR_DFS_MOVE,
 				&r);
 
@@ -1233,7 +1233,7 @@ struct tevent_req *rpccli_dfs_ManagerGetConfigInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				    &ndr_table_netdfs,
 				    NDR_DFS_MANAGERGETCONFIGINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1310,7 +1310,7 @@ NTSTATUS rpccli_dfs_ManagerGetConfigInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				&ndr_table_netdfs,
 				NDR_DFS_MANAGERGETCONFIGINFO,
 				&r);
 
@@ -1368,7 +1368,7 @@ struct tevent_req *rpccli_dfs_ManagerSendSiteInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				    &ndr_table_netdfs,
 				    NDR_DFS_MANAGERSENDSITEINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1445,7 +1445,7 @@ NTSTATUS rpccli_dfs_ManagerSendSiteInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				&ndr_table_netdfs,
 				NDR_DFS_MANAGERSENDSITEINFO,
 				&r);
 
@@ -1528,7 +1528,7 @@ struct tevent_req *rpccli_dfs_AddFtRoot_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				    &ndr_table_netdfs,
 				    NDR_DFS_ADDFTROOT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1626,7 +1626,7 @@ NTSTATUS rpccli_dfs_AddFtRoot(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				&ndr_table_netdfs,
 				NDR_DFS_ADDFTROOT,
 				&r);
 
@@ -1706,7 +1706,7 @@ struct tevent_req *rpccli_dfs_RemoveFtRoot_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				    &ndr_table_netdfs,
 				    NDR_DFS_REMOVEFTROOT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1798,7 +1798,7 @@ NTSTATUS rpccli_dfs_RemoveFtRoot(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				&ndr_table_netdfs,
 				NDR_DFS_REMOVEFTROOT,
 				&r);
 
@@ -1867,7 +1867,7 @@ struct tevent_req *rpccli_dfs_AddStdRoot_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				    &ndr_table_netdfs,
 				    NDR_DFS_ADDSTDROOT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1952,7 +1952,7 @@ NTSTATUS rpccli_dfs_AddStdRoot(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				&ndr_table_netdfs,
 				NDR_DFS_ADDSTDROOT,
 				&r);
 
@@ -2016,7 +2016,7 @@ struct tevent_req *rpccli_dfs_RemoveStdRoot_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				    &ndr_table_netdfs,
 				    NDR_DFS_REMOVESTDROOT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2099,7 +2099,7 @@ NTSTATUS rpccli_dfs_RemoveStdRoot(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				&ndr_table_netdfs,
 				NDR_DFS_REMOVESTDROOT,
 				&r);
 
@@ -2161,7 +2161,7 @@ struct tevent_req *rpccli_dfs_ManagerInitialize_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				    &ndr_table_netdfs,
 				    NDR_DFS_MANAGERINITIALIZE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2242,7 +2242,7 @@ NTSTATUS rpccli_dfs_ManagerInitialize(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				&ndr_table_netdfs,
 				NDR_DFS_MANAGERINITIALIZE,
 				&r);
 
@@ -2308,7 +2308,7 @@ struct tevent_req *rpccli_dfs_AddStdRootForced_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				    &ndr_table_netdfs,
 				    NDR_DFS_ADDSTDROOTFORCED,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2393,7 +2393,7 @@ NTSTATUS rpccli_dfs_AddStdRootForced(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				&ndr_table_netdfs,
 				NDR_DFS_ADDSTDROOTFORCED,
 				&r);
 
@@ -2468,7 +2468,7 @@ struct tevent_req *rpccli_dfs_GetDcAddress_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				    &ndr_table_netdfs,
 				    NDR_DFS_GETDCADDRESS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2556,7 +2556,7 @@ NTSTATUS rpccli_dfs_GetDcAddress(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				&ndr_table_netdfs,
 				NDR_DFS_GETDCADDRESS,
 				&r);
 
@@ -2625,7 +2625,7 @@ struct tevent_req *rpccli_dfs_SetDcAddress_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				    &ndr_table_netdfs,
 				    NDR_DFS_SETDCADDRESS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2710,7 +2710,7 @@ NTSTATUS rpccli_dfs_SetDcAddress(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				&ndr_table_netdfs,
 				NDR_DFS_SETDCADDRESS,
 				&r);
 
@@ -2772,7 +2772,7 @@ struct tevent_req *rpccli_dfs_FlushFtTable_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				    &ndr_table_netdfs,
 				    NDR_DFS_FLUSHFTTABLE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2853,7 +2853,7 @@ NTSTATUS rpccli_dfs_FlushFtTable(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				&ndr_table_netdfs,
 				NDR_DFS_FLUSHFTTABLE,
 				&r);
 
@@ -2911,7 +2911,7 @@ struct tevent_req *rpccli_dfs_Add2_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				    &ndr_table_netdfs,
 				    NDR_DFS_ADD2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2988,7 +2988,7 @@ NTSTATUS rpccli_dfs_Add2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				&ndr_table_netdfs,
 				NDR_DFS_ADD2,
 				&r);
 
@@ -3046,7 +3046,7 @@ struct tevent_req *rpccli_dfs_Remove2_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				    &ndr_table_netdfs,
 				    NDR_DFS_REMOVE2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3123,7 +3123,7 @@ NTSTATUS rpccli_dfs_Remove2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				&ndr_table_netdfs,
 				NDR_DFS_REMOVE2,
 				&r);
 
@@ -3199,7 +3199,7 @@ struct tevent_req *rpccli_dfs_EnumEx_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				    &ndr_table_netdfs,
 				    NDR_DFS_ENUMEX,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3292,7 +3292,7 @@ NTSTATUS rpccli_dfs_EnumEx(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				&ndr_table_netdfs,
 				NDR_DFS_ENUMEX,
 				&r);
 
@@ -3356,7 +3356,7 @@ struct tevent_req *rpccli_dfs_SetInfo2_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				    &ndr_table_netdfs,
 				    NDR_DFS_SETINFO2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3433,7 +3433,7 @@ NTSTATUS rpccli_dfs_SetInfo2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETDFS_UUID, NDR_NETDFS_VERSION,
+				&ndr_table_netdfs,
 				NDR_DFS_SETINFO2,
 				&r);
 
