@@ -15,7 +15,7 @@ static bool api_epm_Insert(pipes_struct *p)
 	DATA_BLOB blob;
 	struct epm_Insert *r;
 
-	call = &ndr_table_epmapper.calls[NDR_EPM_INSERT];
+	call = &p->interface->calls[NDR_EPM_INSERT];
 
 	r = talloc(talloc_tos(), struct epm_Insert);
 	if (r == NULL) {
@@ -88,7 +88,7 @@ static bool api_epm_Delete(pipes_struct *p)
 	DATA_BLOB blob;
 	struct epm_Delete *r;
 
-	call = &ndr_table_epmapper.calls[NDR_EPM_DELETE];
+	call = &p->interface->calls[NDR_EPM_DELETE];
 
 	r = talloc(talloc_tos(), struct epm_Delete);
 	if (r == NULL) {
@@ -161,7 +161,7 @@ static bool api_epm_Lookup(pipes_struct *p)
 	DATA_BLOB blob;
 	struct epm_Lookup *r;
 
-	call = &ndr_table_epmapper.calls[NDR_EPM_LOOKUP];
+	call = &p->interface->calls[NDR_EPM_LOOKUP];
 
 	r = talloc(talloc_tos(), struct epm_Lookup);
 	if (r == NULL) {
@@ -248,7 +248,7 @@ static bool api_epm_Map(pipes_struct *p)
 	DATA_BLOB blob;
 	struct epm_Map *r;
 
-	call = &ndr_table_epmapper.calls[NDR_EPM_MAP];
+	call = &p->interface->calls[NDR_EPM_MAP];
 
 	r = talloc(talloc_tos(), struct epm_Map);
 	if (r == NULL) {
@@ -335,7 +335,7 @@ static bool api_epm_LookupHandleFree(pipes_struct *p)
 	DATA_BLOB blob;
 	struct epm_LookupHandleFree *r;
 
-	call = &ndr_table_epmapper.calls[NDR_EPM_LOOKUPHANDLEFREE];
+	call = &p->interface->calls[NDR_EPM_LOOKUPHANDLEFREE];
 
 	r = talloc(talloc_tos(), struct epm_LookupHandleFree);
 	if (r == NULL) {
@@ -410,7 +410,7 @@ static bool api_epm_InqObject(pipes_struct *p)
 	DATA_BLOB blob;
 	struct epm_InqObject *r;
 
-	call = &ndr_table_epmapper.calls[NDR_EPM_INQOBJECT];
+	call = &p->interface->calls[NDR_EPM_INQOBJECT];
 
 	r = talloc(talloc_tos(), struct epm_InqObject);
 	if (r == NULL) {
@@ -483,7 +483,7 @@ static bool api_epm_MgmtDelete(pipes_struct *p)
 	DATA_BLOB blob;
 	struct epm_MgmtDelete *r;
 
-	call = &ndr_table_epmapper.calls[NDR_EPM_MGMTDELETE];
+	call = &p->interface->calls[NDR_EPM_MGMTDELETE];
 
 	r = talloc(talloc_tos(), struct epm_MgmtDelete);
 	if (r == NULL) {
@@ -556,7 +556,7 @@ static bool api_epm_MapAuth(pipes_struct *p)
 	DATA_BLOB blob;
 	struct epm_MapAuth *r;
 
-	call = &ndr_table_epmapper.calls[NDR_EPM_MAPAUTH];
+	call = &p->interface->calls[NDR_EPM_MAPAUTH];
 
 	r = talloc(talloc_tos(), struct epm_MapAuth);
 	if (r == NULL) {
