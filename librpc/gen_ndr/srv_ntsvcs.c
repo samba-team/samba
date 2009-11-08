@@ -5314,5 +5314,5 @@ NTSTATUS rpc_ntsvcs_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 
 NTSTATUS rpc_ntsvcs_init(void)
 {
-	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "ntsvcs", "ntsvcs", NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION, api_ntsvcs_cmds, sizeof(api_ntsvcs_cmds) / sizeof(struct api_struct));
+	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "ntsvcs", "ntsvcs", &ndr_table_ntsvcs, api_ntsvcs_cmds, sizeof(api_ntsvcs_cmds) / sizeof(struct api_struct));
 }

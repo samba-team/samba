@@ -273,5 +273,5 @@ NTSTATUS rpc_initshutdown_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 
 NTSTATUS rpc_initshutdown_init(void)
 {
-	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "initshutdown", "initshutdown", NDR_INITSHUTDOWN_UUID, NDR_INITSHUTDOWN_VERSION, api_initshutdown_cmds, sizeof(api_initshutdown_cmds) / sizeof(struct api_struct));
+	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "initshutdown", "initshutdown", &ndr_table_initshutdown, api_initshutdown_cmds, sizeof(api_initshutdown_cmds) / sizeof(struct api_struct));
 }

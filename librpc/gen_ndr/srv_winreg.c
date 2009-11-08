@@ -3129,5 +3129,5 @@ NTSTATUS rpc_winreg_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 
 NTSTATUS rpc_winreg_init(void)
 {
-	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "winreg", "winreg", NDR_WINREG_UUID, NDR_WINREG_VERSION, api_winreg_cmds, sizeof(api_winreg_cmds) / sizeof(struct api_struct));
+	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "winreg", "winreg", &ndr_table_winreg, api_winreg_cmds, sizeof(api_winreg_cmds) / sizeof(struct api_struct));
 }
