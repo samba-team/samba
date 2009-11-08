@@ -112,7 +112,7 @@ WERROR _spoolss_6b(pipes_struct *p, struct spoolss_6b *r);
 WERROR _spoolss_6c(pipes_struct *p, struct spoolss_6c *r);
 WERROR _spoolss_6d(pipes_struct *p, struct spoolss_6d *r);
 void spoolss_get_pipe_fns(struct api_struct **fns, int *n_fns);
-NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *r);
+NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *interface, uint32_t interface_version, uint32_t opnum, void *r);
 WERROR _spoolss_EnumPrinters(pipes_struct *p, struct spoolss_EnumPrinters *r);
 WERROR _spoolss_OpenPrinter(pipes_struct *p, struct spoolss_OpenPrinter *r);
 WERROR _spoolss_SetJob(pipes_struct *p, struct spoolss_SetJob *r);

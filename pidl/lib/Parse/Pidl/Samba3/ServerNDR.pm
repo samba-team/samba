@@ -226,8 +226,8 @@ sub ParseDispatchFunction($)
 {
 	my ($if) = @_;
 
-	pidl_hdr "NTSTATUS rpc_$if->{NAME}_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *r);";
-	pidl "NTSTATUS rpc_$if->{NAME}_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *_r)";
+	pidl_hdr "NTSTATUS rpc_$if->{NAME}_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *interface, uint32_t interface_version, uint32_t opnum, void *r);";
+	pidl "NTSTATUS rpc_$if->{NAME}_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *interface, uint32_t interface_version, uint32_t opnum, void *_r)";
 	pidl "{";
 	indent;
 	pidl "if (cli->pipes_struct == NULL) {";

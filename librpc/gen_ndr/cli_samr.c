@@ -54,7 +54,7 @@ struct tevent_req *rpccli_samr_Connect_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_CONNECT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -136,7 +136,7 @@ NTSTATUS rpccli_samr_Connect(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_CONNECT,
 				&r);
 
@@ -200,7 +200,7 @@ struct tevent_req *rpccli_samr_Close_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_CLOSE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -279,7 +279,7 @@ NTSTATUS rpccli_samr_Close(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_CLOSE,
 				&r);
 
@@ -340,7 +340,7 @@ struct tevent_req *rpccli_samr_SetSecurity_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_SETSECURITY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -422,7 +422,7 @@ NTSTATUS rpccli_samr_SetSecurity(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_SETSECURITY,
 				&r);
 
@@ -488,7 +488,7 @@ struct tevent_req *rpccli_samr_QuerySecurity_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_QUERYSECURITY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -570,7 +570,7 @@ NTSTATUS rpccli_samr_QuerySecurity(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_QUERYSECURITY,
 				&r);
 
@@ -627,7 +627,7 @@ struct tevent_req *rpccli_samr_Shutdown_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_SHUTDOWN,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -705,7 +705,7 @@ NTSTATUS rpccli_samr_Shutdown(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_SHUTDOWN,
 				&r);
 
@@ -771,7 +771,7 @@ struct tevent_req *rpccli_samr_LookupDomain_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_LOOKUPDOMAIN,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -853,7 +853,7 @@ NTSTATUS rpccli_samr_LookupDomain(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_LOOKUPDOMAIN,
 				&r);
 
@@ -925,7 +925,7 @@ struct tevent_req *rpccli_samr_EnumDomains_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_ENUMDOMAINS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1012,7 +1012,7 @@ NTSTATUS rpccli_samr_EnumDomains(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_ENUMDOMAINS,
 				&r);
 
@@ -1083,7 +1083,7 @@ struct tevent_req *rpccli_samr_OpenDomain_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_OPENDOMAIN,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1167,7 +1167,7 @@ NTSTATUS rpccli_samr_OpenDomain(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_OPENDOMAIN,
 				&r);
 
@@ -1234,7 +1234,7 @@ struct tevent_req *rpccli_samr_QueryDomainInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_QUERYDOMAININFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1316,7 +1316,7 @@ NTSTATUS rpccli_samr_QueryDomainInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_QUERYDOMAININFO,
 				&r);
 
@@ -1377,7 +1377,7 @@ struct tevent_req *rpccli_samr_SetDomainInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_SETDOMAININFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1459,7 +1459,7 @@ NTSTATUS rpccli_samr_SetDomainInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_SETDOMAININFO,
 				&r);
 
@@ -1529,7 +1529,7 @@ struct tevent_req *rpccli_samr_CreateDomainGroup_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_CREATEDOMAINGROUP,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1615,7 +1615,7 @@ NTSTATUS rpccli_samr_CreateDomainGroup(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_CREATEDOMAINGROUP,
 				&r);
 
@@ -1688,7 +1688,7 @@ struct tevent_req *rpccli_samr_EnumDomainGroups_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_ENUMDOMAINGROUPS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1775,7 +1775,7 @@ NTSTATUS rpccli_samr_EnumDomainGroups(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_ENUMDOMAINGROUPS,
 				&r);
 
@@ -1848,7 +1848,7 @@ struct tevent_req *rpccli_samr_CreateUser_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_CREATEUSER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1934,7 +1934,7 @@ NTSTATUS rpccli_samr_CreateUser(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_CREATEUSER,
 				&r);
 
@@ -2009,7 +2009,7 @@ struct tevent_req *rpccli_samr_EnumDomainUsers_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_ENUMDOMAINUSERS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2098,7 +2098,7 @@ NTSTATUS rpccli_samr_EnumDomainUsers(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_ENUMDOMAINUSERS,
 				&r);
 
@@ -2171,7 +2171,7 @@ struct tevent_req *rpccli_samr_CreateDomAlias_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_CREATEDOMALIAS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2257,7 +2257,7 @@ NTSTATUS rpccli_samr_CreateDomAlias(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_CREATEDOMALIAS,
 				&r);
 
@@ -2330,7 +2330,7 @@ struct tevent_req *rpccli_samr_EnumDomainAliases_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_ENUMDOMAINALIASES,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2417,7 +2417,7 @@ NTSTATUS rpccli_samr_EnumDomainAliases(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_ENUMDOMAINALIASES,
 				&r);
 
@@ -2486,7 +2486,7 @@ struct tevent_req *rpccli_samr_GetAliasMembership_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_GETALIASMEMBERSHIP,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2568,7 +2568,7 @@ NTSTATUS rpccli_samr_GetAliasMembership(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_GETALIASMEMBERSHIP,
 				&r);
 
@@ -2639,7 +2639,7 @@ struct tevent_req *rpccli_samr_LookupNames_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_LOOKUPNAMES,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2725,7 +2725,7 @@ NTSTATUS rpccli_samr_LookupNames(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_LOOKUPNAMES,
 				&r);
 
@@ -2797,7 +2797,7 @@ struct tevent_req *rpccli_samr_LookupRids_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_LOOKUPRIDS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2883,7 +2883,7 @@ NTSTATUS rpccli_samr_LookupRids(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_LOOKUPRIDS,
 				&r);
 
@@ -2953,7 +2953,7 @@ struct tevent_req *rpccli_samr_OpenGroup_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_OPENGROUP,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3037,7 +3037,7 @@ NTSTATUS rpccli_samr_OpenGroup(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_OPENGROUP,
 				&r);
 
@@ -3104,7 +3104,7 @@ struct tevent_req *rpccli_samr_QueryGroupInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_QUERYGROUPINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3186,7 +3186,7 @@ NTSTATUS rpccli_samr_QueryGroupInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_QUERYGROUPINFO,
 				&r);
 
@@ -3247,7 +3247,7 @@ struct tevent_req *rpccli_samr_SetGroupInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_SETGROUPINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3329,7 +3329,7 @@ NTSTATUS rpccli_samr_SetGroupInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_SETGROUPINFO,
 				&r);
 
@@ -3389,7 +3389,7 @@ struct tevent_req *rpccli_samr_AddGroupMember_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_ADDGROUPMEMBER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3471,7 +3471,7 @@ NTSTATUS rpccli_samr_AddGroupMember(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_ADDGROUPMEMBER,
 				&r);
 
@@ -3534,7 +3534,7 @@ struct tevent_req *rpccli_samr_DeleteDomainGroup_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_DELETEDOMAINGROUP,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3613,7 +3613,7 @@ NTSTATUS rpccli_samr_DeleteDomainGroup(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_DELETEDOMAINGROUP,
 				&r);
 
@@ -3672,7 +3672,7 @@ struct tevent_req *rpccli_samr_DeleteGroupMember_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_DELETEGROUPMEMBER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3752,7 +3752,7 @@ NTSTATUS rpccli_samr_DeleteGroupMember(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_DELETEGROUPMEMBER,
 				&r);
 
@@ -3816,7 +3816,7 @@ struct tevent_req *rpccli_samr_QueryGroupMember_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_QUERYGROUPMEMBER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3896,7 +3896,7 @@ NTSTATUS rpccli_samr_QueryGroupMember(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_QUERYGROUPMEMBER,
 				&r);
 
@@ -3957,7 +3957,7 @@ struct tevent_req *rpccli_samr_SetMemberAttributesOfGroup_send(TALLOC_CTX *mem_c
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_SETMEMBERATTRIBUTESOFGROUP,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4039,7 +4039,7 @@ NTSTATUS rpccli_samr_SetMemberAttributesOfGroup(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_SETMEMBERATTRIBUTESOFGROUP,
 				&r);
 
@@ -4107,7 +4107,7 @@ struct tevent_req *rpccli_samr_OpenAlias_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_OPENALIAS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4191,7 +4191,7 @@ NTSTATUS rpccli_samr_OpenAlias(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_OPENALIAS,
 				&r);
 
@@ -4258,7 +4258,7 @@ struct tevent_req *rpccli_samr_QueryAliasInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_QUERYALIASINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4340,7 +4340,7 @@ NTSTATUS rpccli_samr_QueryAliasInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_QUERYALIASINFO,
 				&r);
 
@@ -4401,7 +4401,7 @@ struct tevent_req *rpccli_samr_SetAliasInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_SETALIASINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4483,7 +4483,7 @@ NTSTATUS rpccli_samr_SetAliasInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_SETALIASINFO,
 				&r);
 
@@ -4546,7 +4546,7 @@ struct tevent_req *rpccli_samr_DeleteDomAlias_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_DELETEDOMALIAS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4625,7 +4625,7 @@ NTSTATUS rpccli_samr_DeleteDomAlias(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_DELETEDOMALIAS,
 				&r);
 
@@ -4684,7 +4684,7 @@ struct tevent_req *rpccli_samr_AddAliasMember_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_ADDALIASMEMBER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4764,7 +4764,7 @@ NTSTATUS rpccli_samr_AddAliasMember(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_ADDALIASMEMBER,
 				&r);
 
@@ -4822,7 +4822,7 @@ struct tevent_req *rpccli_samr_DeleteAliasMember_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_DELETEALIASMEMBER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4902,7 +4902,7 @@ NTSTATUS rpccli_samr_DeleteAliasMember(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_DELETEALIASMEMBER,
 				&r);
 
@@ -4966,7 +4966,7 @@ struct tevent_req *rpccli_samr_GetMembersInAlias_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_GETMEMBERSINALIAS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5046,7 +5046,7 @@ NTSTATUS rpccli_samr_GetMembersInAlias(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_GETMEMBERSINALIAS,
 				&r);
 
@@ -5115,7 +5115,7 @@ struct tevent_req *rpccli_samr_OpenUser_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_OPENUSER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5199,7 +5199,7 @@ NTSTATUS rpccli_samr_OpenUser(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_OPENUSER,
 				&r);
 
@@ -5263,7 +5263,7 @@ struct tevent_req *rpccli_samr_DeleteUser_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_DELETEUSER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5342,7 +5342,7 @@ NTSTATUS rpccli_samr_DeleteUser(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_DELETEUSER,
 				&r);
 
@@ -5409,7 +5409,7 @@ struct tevent_req *rpccli_samr_QueryUserInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_QUERYUSERINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5491,7 +5491,7 @@ NTSTATUS rpccli_samr_QueryUserInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_QUERYUSERINFO,
 				&r);
 
@@ -5552,7 +5552,7 @@ struct tevent_req *rpccli_samr_SetUserInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_SETUSERINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5634,7 +5634,7 @@ NTSTATUS rpccli_samr_SetUserInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_SETUSERINFO,
 				&r);
 
@@ -5710,7 +5710,7 @@ struct tevent_req *rpccli_samr_ChangePasswordUser_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_CHANGEPASSWORDUSER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5808,7 +5808,7 @@ NTSTATUS rpccli_samr_ChangePasswordUser(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_CHANGEPASSWORDUSER,
 				&r);
 
@@ -5872,7 +5872,7 @@ struct tevent_req *rpccli_samr_GetGroupsForUser_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_GETGROUPSFORUSER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5952,7 +5952,7 @@ NTSTATUS rpccli_samr_GetGroupsForUser(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_GETGROUPSFORUSER,
 				&r);
 
@@ -6029,7 +6029,7 @@ struct tevent_req *rpccli_samr_QueryDisplayInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_QUERYDISPLAYINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6121,7 +6121,7 @@ NTSTATUS rpccli_samr_QueryDisplayInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_QUERYDISPLAYINFO,
 				&r);
 
@@ -6192,7 +6192,7 @@ struct tevent_req *rpccli_samr_GetDisplayEnumerationIndex_send(TALLOC_CTX *mem_c
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_GETDISPLAYENUMERATIONINDEX,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6276,7 +6276,7 @@ NTSTATUS rpccli_samr_GetDisplayEnumerationIndex(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_GETDISPLAYENUMERATIONINDEX,
 				&r);
 
@@ -6333,7 +6333,7 @@ struct tevent_req *rpccli_samr_TestPrivateFunctionsDomain_send(TALLOC_CTX *mem_c
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_TESTPRIVATEFUNCTIONSDOMAIN,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6411,7 +6411,7 @@ NTSTATUS rpccli_samr_TestPrivateFunctionsDomain(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_TESTPRIVATEFUNCTIONSDOMAIN,
 				&r);
 
@@ -6467,7 +6467,7 @@ struct tevent_req *rpccli_samr_TestPrivateFunctionsUser_send(TALLOC_CTX *mem_ctx
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_TESTPRIVATEFUNCTIONSUSER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6545,7 +6545,7 @@ NTSTATUS rpccli_samr_TestPrivateFunctionsUser(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_TESTPRIVATEFUNCTIONSUSER,
 				&r);
 
@@ -6609,7 +6609,7 @@ struct tevent_req *rpccli_samr_GetUserPwInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_GETUSERPWINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6689,7 +6689,7 @@ NTSTATUS rpccli_samr_GetUserPwInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_GETUSERPWINFO,
 				&r);
 
@@ -6748,7 +6748,7 @@ struct tevent_req *rpccli_samr_RemoveMemberFromForeignDomain_send(TALLOC_CTX *me
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_REMOVEMEMBERFROMFOREIGNDOMAIN,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6828,7 +6828,7 @@ NTSTATUS rpccli_samr_RemoveMemberFromForeignDomain(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_REMOVEMEMBERFROMFOREIGNDOMAIN,
 				&r);
 
@@ -6894,7 +6894,7 @@ struct tevent_req *rpccli_samr_QueryDomainInfo2_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_QUERYDOMAININFO2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6976,7 +6976,7 @@ NTSTATUS rpccli_samr_QueryDomainInfo2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_QUERYDOMAININFO2,
 				&r);
 
@@ -7043,7 +7043,7 @@ struct tevent_req *rpccli_samr_QueryUserInfo2_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_QUERYUSERINFO2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7125,7 +7125,7 @@ NTSTATUS rpccli_samr_QueryUserInfo2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_QUERYUSERINFO2,
 				&r);
 
@@ -7202,7 +7202,7 @@ struct tevent_req *rpccli_samr_QueryDisplayInfo2_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_QUERYDISPLAYINFO2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7294,7 +7294,7 @@ NTSTATUS rpccli_samr_QueryDisplayInfo2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_QUERYDISPLAYINFO2,
 				&r);
 
@@ -7365,7 +7365,7 @@ struct tevent_req *rpccli_samr_GetDisplayEnumerationIndex2_send(TALLOC_CTX *mem_
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_GETDISPLAYENUMERATIONINDEX2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7449,7 +7449,7 @@ NTSTATUS rpccli_samr_GetDisplayEnumerationIndex2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_GETDISPLAYENUMERATIONINDEX2,
 				&r);
 
@@ -7524,7 +7524,7 @@ struct tevent_req *rpccli_samr_CreateUser2_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_CREATEUSER2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7614,7 +7614,7 @@ NTSTATUS rpccli_samr_CreateUser2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_CREATEUSER2,
 				&r);
 
@@ -7693,7 +7693,7 @@ struct tevent_req *rpccli_samr_QueryDisplayInfo3_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_QUERYDISPLAYINFO3,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7785,7 +7785,7 @@ NTSTATUS rpccli_samr_QueryDisplayInfo3(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_QUERYDISPLAYINFO3,
 				&r);
 
@@ -7846,7 +7846,7 @@ struct tevent_req *rpccli_samr_AddMultipleMembersToAlias_send(TALLOC_CTX *mem_ct
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_ADDMULTIPLEMEMBERSTOALIAS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7926,7 +7926,7 @@ NTSTATUS rpccli_samr_AddMultipleMembersToAlias(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_ADDMULTIPLEMEMBERSTOALIAS,
 				&r);
 
@@ -7984,7 +7984,7 @@ struct tevent_req *rpccli_samr_RemoveMultipleMembersFromAlias_send(TALLOC_CTX *m
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_REMOVEMULTIPLEMEMBERSFROMALIAS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -8064,7 +8064,7 @@ NTSTATUS rpccli_samr_RemoveMultipleMembersFromAlias(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_REMOVEMULTIPLEMEMBERSFROMALIAS,
 				&r);
 
@@ -8126,7 +8126,7 @@ struct tevent_req *rpccli_samr_OemChangePasswordUser2_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_OEMCHANGEPASSWORDUSER2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -8210,7 +8210,7 @@ NTSTATUS rpccli_samr_OemChangePasswordUser2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_OEMCHANGEPASSWORDUSER2,
 				&r);
 
@@ -8278,7 +8278,7 @@ struct tevent_req *rpccli_samr_ChangePasswordUser2_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_CHANGEPASSWORDUSER2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -8368,7 +8368,7 @@ NTSTATUS rpccli_samr_ChangePasswordUser2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_CHANGEPASSWORDUSER2,
 				&r);
 
@@ -8432,7 +8432,7 @@ struct tevent_req *rpccli_samr_GetDomPwInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_GETDOMPWINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -8512,7 +8512,7 @@ NTSTATUS rpccli_samr_GetDomPwInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_GETDOMPWINFO,
 				&r);
 
@@ -8579,7 +8579,7 @@ struct tevent_req *rpccli_samr_Connect2_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_CONNECT2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -8661,7 +8661,7 @@ NTSTATUS rpccli_samr_Connect2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_CONNECT2,
 				&r);
 
@@ -8722,7 +8722,7 @@ struct tevent_req *rpccli_samr_SetUserInfo2_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_SETUSERINFO2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -8804,7 +8804,7 @@ NTSTATUS rpccli_samr_SetUserInfo2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_SETUSERINFO2,
 				&r);
 
@@ -8866,7 +8866,7 @@ struct tevent_req *rpccli_samr_SetBootKeyInformation_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_SETBOOTKEYINFORMATION,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -8950,7 +8950,7 @@ NTSTATUS rpccli_samr_SetBootKeyInformation(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_SETBOOTKEYINFORMATION,
 				&r);
 
@@ -9014,7 +9014,7 @@ struct tevent_req *rpccli_samr_GetBootKeyInformation_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_GETBOOTKEYINFORMATION,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -9094,7 +9094,7 @@ NTSTATUS rpccli_samr_GetBootKeyInformation(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_GETBOOTKEYINFORMATION,
 				&r);
 
@@ -9163,7 +9163,7 @@ struct tevent_req *rpccli_samr_Connect3_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_CONNECT3,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -9247,7 +9247,7 @@ NTSTATUS rpccli_samr_Connect3(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_CONNECT3,
 				&r);
 
@@ -9316,7 +9316,7 @@ struct tevent_req *rpccli_samr_Connect4_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_CONNECT4,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -9400,7 +9400,7 @@ NTSTATUS rpccli_samr_Connect4(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_CONNECT4,
 				&r);
 
@@ -9481,7 +9481,7 @@ struct tevent_req *rpccli_samr_ChangePasswordUser3_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_CHANGEPASSWORDUSER3,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -9577,7 +9577,7 @@ NTSTATUS rpccli_samr_ChangePasswordUser3(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_CHANGEPASSWORDUSER3,
 				&r);
 
@@ -9653,7 +9653,7 @@ struct tevent_req *rpccli_samr_Connect5_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_CONNECT5,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -9743,7 +9743,7 @@ NTSTATUS rpccli_samr_Connect5(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_CONNECT5,
 				&r);
 
@@ -9812,7 +9812,7 @@ struct tevent_req *rpccli_samr_RidToSid_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_RIDTOSID,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -9894,7 +9894,7 @@ NTSTATUS rpccli_samr_RidToSid(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_RIDTOSID,
 				&r);
 
@@ -9955,7 +9955,7 @@ struct tevent_req *rpccli_samr_SetDsrmPassword_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_SETDSRMPASSWORD,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -10037,7 +10037,7 @@ NTSTATUS rpccli_samr_SetDsrmPassword(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_SETDSRMPASSWORD,
 				&r);
 
@@ -10103,7 +10103,7 @@ struct tevent_req *rpccli_samr_ValidatePassword_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_samr,
+				    NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				    NDR_SAMR_VALIDATEPASSWORD,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -10185,7 +10185,7 @@ NTSTATUS rpccli_samr_ValidatePassword(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_samr,
+				NDR_SAMR_UUID, NDR_SAMR_VERSION,
 				NDR_SAMR_VALIDATEPASSWORD,
 				&r);
 

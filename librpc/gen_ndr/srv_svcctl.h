@@ -46,7 +46,7 @@ WERROR _EnumServicesStatusExA(pipes_struct *p, struct EnumServicesStatusExA *r);
 WERROR _EnumServicesStatusExW(pipes_struct *p, struct EnumServicesStatusExW *r);
 WERROR _svcctl_SCSendTSMessage(pipes_struct *p, struct svcctl_SCSendTSMessage *r);
 void svcctl_get_pipe_fns(struct api_struct **fns, int *n_fns);
-NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *r);
+NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *interface, uint32_t interface_version, uint32_t opnum, void *r);
 WERROR _svcctl_CloseServiceHandle(pipes_struct *p, struct svcctl_CloseServiceHandle *r);
 WERROR _svcctl_ControlService(pipes_struct *p, struct svcctl_ControlService *r);
 WERROR _svcctl_DeleteService(pipes_struct *p, struct svcctl_DeleteService *r);

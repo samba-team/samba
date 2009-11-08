@@ -42,7 +42,7 @@ struct tevent_req *rpccli_PNP_Disconnect_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_DISCONNECT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -119,7 +119,7 @@ NTSTATUS rpccli_PNP_Disconnect(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_DISCONNECT,
 				&r);
 
@@ -177,7 +177,7 @@ struct tevent_req *rpccli_PNP_Connect_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_CONNECT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -254,7 +254,7 @@ NTSTATUS rpccli_PNP_Connect(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_CONNECT,
 				&r);
 
@@ -320,7 +320,7 @@ struct tevent_req *rpccli_PNP_GetVersion_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_GETVERSION,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -399,7 +399,7 @@ NTSTATUS rpccli_PNP_GetVersion(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_GETVERSION,
 				&r);
 
@@ -458,7 +458,7 @@ struct tevent_req *rpccli_PNP_GetGlobalState_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_GETGLOBALSTATE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -535,7 +535,7 @@ NTSTATUS rpccli_PNP_GetGlobalState(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_GETGLOBALSTATE,
 				&r);
 
@@ -593,7 +593,7 @@ struct tevent_req *rpccli_PNP_InitDetection_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_INITDETECTION,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -670,7 +670,7 @@ NTSTATUS rpccli_PNP_InitDetection(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_INITDETECTION,
 				&r);
 
@@ -728,7 +728,7 @@ struct tevent_req *rpccli_PNP_ReportLogOn_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_REPORTLOGON,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -805,7 +805,7 @@ NTSTATUS rpccli_PNP_ReportLogOn(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_REPORTLOGON,
 				&r);
 
@@ -867,7 +867,7 @@ struct tevent_req *rpccli_PNP_ValidateDeviceInstance_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_VALIDATEDEVICEINSTANCE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -948,7 +948,7 @@ NTSTATUS rpccli_PNP_ValidateDeviceInstance(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_VALIDATEDEVICEINSTANCE,
 				&r);
 
@@ -1006,7 +1006,7 @@ struct tevent_req *rpccli_PNP_GetRootDeviceInstance_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_GETROOTDEVICEINSTANCE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1083,7 +1083,7 @@ NTSTATUS rpccli_PNP_GetRootDeviceInstance(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_GETROOTDEVICEINSTANCE,
 				&r);
 
@@ -1141,7 +1141,7 @@ struct tevent_req *rpccli_PNP_GetRelatedDeviceInstance_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_GETRELATEDDEVICEINSTANCE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1218,7 +1218,7 @@ NTSTATUS rpccli_PNP_GetRelatedDeviceInstance(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_GETRELATEDDEVICEINSTANCE,
 				&r);
 
@@ -1276,7 +1276,7 @@ struct tevent_req *rpccli_PNP_EnumerateSubKeys_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_ENUMERATESUBKEYS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1353,7 +1353,7 @@ NTSTATUS rpccli_PNP_EnumerateSubKeys(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_ENUMERATESUBKEYS,
 				&r);
 
@@ -1426,7 +1426,7 @@ struct tevent_req *rpccli_PNP_GetDeviceList_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_GETDEVICELIST,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1512,7 +1512,7 @@ NTSTATUS rpccli_PNP_GetDeviceList(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_GETDEVICELIST,
 				&r);
 
@@ -1584,7 +1584,7 @@ struct tevent_req *rpccli_PNP_GetDeviceListSize_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_GETDEVICELISTSIZE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1667,7 +1667,7 @@ NTSTATUS rpccli_PNP_GetDeviceListSize(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_GETDEVICELISTSIZE,
 				&r);
 
@@ -1726,7 +1726,7 @@ struct tevent_req *rpccli_PNP_GetDepth_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_GETDEPTH,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1803,7 +1803,7 @@ NTSTATUS rpccli_PNP_GetDepth(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_GETDEPTH,
 				&r);
 
@@ -1884,7 +1884,7 @@ struct tevent_req *rpccli_PNP_GetDeviceRegProp_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_GETDEVICEREGPROP,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1978,7 +1978,7 @@ NTSTATUS rpccli_PNP_GetDeviceRegProp(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_GETDEVICEREGPROP,
 				&r);
 
@@ -2040,7 +2040,7 @@ struct tevent_req *rpccli_PNP_SetDeviceRegProp_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_SETDEVICEREGPROP,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2117,7 +2117,7 @@ NTSTATUS rpccli_PNP_SetDeviceRegProp(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_SETDEVICEREGPROP,
 				&r);
 
@@ -2175,7 +2175,7 @@ struct tevent_req *rpccli_PNP_GetClassInstance_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_GETCLASSINSTANCE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2252,7 +2252,7 @@ NTSTATUS rpccli_PNP_GetClassInstance(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_GETCLASSINSTANCE,
 				&r);
 
@@ -2310,7 +2310,7 @@ struct tevent_req *rpccli_PNP_CreateKey_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_CREATEKEY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2387,7 +2387,7 @@ NTSTATUS rpccli_PNP_CreateKey(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_CREATEKEY,
 				&r);
 
@@ -2445,7 +2445,7 @@ struct tevent_req *rpccli_PNP_DeleteRegistryKey_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_DELETEREGISTRYKEY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2522,7 +2522,7 @@ NTSTATUS rpccli_PNP_DeleteRegistryKey(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_DELETEREGISTRYKEY,
 				&r);
 
@@ -2580,7 +2580,7 @@ struct tevent_req *rpccli_PNP_GetClassCount_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_GETCLASSCOUNT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2657,7 +2657,7 @@ NTSTATUS rpccli_PNP_GetClassCount(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_GETCLASSCOUNT,
 				&r);
 
@@ -2715,7 +2715,7 @@ struct tevent_req *rpccli_PNP_GetClassName_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_GETCLASSNAME,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2792,7 +2792,7 @@ NTSTATUS rpccli_PNP_GetClassName(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_GETCLASSNAME,
 				&r);
 
@@ -2850,7 +2850,7 @@ struct tevent_req *rpccli_PNP_DeleteClassKey_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_DELETECLASSKEY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2927,7 +2927,7 @@ NTSTATUS rpccli_PNP_DeleteClassKey(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_DELETECLASSKEY,
 				&r);
 
@@ -2985,7 +2985,7 @@ struct tevent_req *rpccli_PNP_GetInterfaceDeviceAlias_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_GETINTERFACEDEVICEALIAS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3062,7 +3062,7 @@ NTSTATUS rpccli_PNP_GetInterfaceDeviceAlias(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_GETINTERFACEDEVICEALIAS,
 				&r);
 
@@ -3120,7 +3120,7 @@ struct tevent_req *rpccli_PNP_GetInterfaceDeviceList_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_GETINTERFACEDEVICELIST,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3197,7 +3197,7 @@ NTSTATUS rpccli_PNP_GetInterfaceDeviceList(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_GETINTERFACEDEVICELIST,
 				&r);
 
@@ -3255,7 +3255,7 @@ struct tevent_req *rpccli_PNP_GetInterfaceDeviceListSize_send(TALLOC_CTX *mem_ct
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_GETINTERFACEDEVICELISTSIZE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3332,7 +3332,7 @@ NTSTATUS rpccli_PNP_GetInterfaceDeviceListSize(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_GETINTERFACEDEVICELISTSIZE,
 				&r);
 
@@ -3390,7 +3390,7 @@ struct tevent_req *rpccli_PNP_RegisterDeviceClassAssociation_send(TALLOC_CTX *me
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_REGISTERDEVICECLASSASSOCIATION,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3467,7 +3467,7 @@ NTSTATUS rpccli_PNP_RegisterDeviceClassAssociation(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_REGISTERDEVICECLASSASSOCIATION,
 				&r);
 
@@ -3525,7 +3525,7 @@ struct tevent_req *rpccli_PNP_UnregisterDeviceClassAssociation_send(TALLOC_CTX *
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_UNREGISTERDEVICECLASSASSOCIATION,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3602,7 +3602,7 @@ NTSTATUS rpccli_PNP_UnregisterDeviceClassAssociation(struct rpc_pipe_client *cli
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_UNREGISTERDEVICECLASSASSOCIATION,
 				&r);
 
@@ -3660,7 +3660,7 @@ struct tevent_req *rpccli_PNP_GetClassRegProp_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_GETCLASSREGPROP,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3737,7 +3737,7 @@ NTSTATUS rpccli_PNP_GetClassRegProp(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_GETCLASSREGPROP,
 				&r);
 
@@ -3795,7 +3795,7 @@ struct tevent_req *rpccli_PNP_SetClassRegProp_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_SETCLASSREGPROP,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3872,7 +3872,7 @@ NTSTATUS rpccli_PNP_SetClassRegProp(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_SETCLASSREGPROP,
 				&r);
 
@@ -3930,7 +3930,7 @@ struct tevent_req *rpccli_PNP_CreateDevInst_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_CREATEDEVINST,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4007,7 +4007,7 @@ NTSTATUS rpccli_PNP_CreateDevInst(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_CREATEDEVINST,
 				&r);
 
@@ -4065,7 +4065,7 @@ struct tevent_req *rpccli_PNP_DeviceInstanceAction_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_DEVICEINSTANCEACTION,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4142,7 +4142,7 @@ NTSTATUS rpccli_PNP_DeviceInstanceAction(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_DEVICEINSTANCEACTION,
 				&r);
 
@@ -4200,7 +4200,7 @@ struct tevent_req *rpccli_PNP_GetDeviceStatus_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_GETDEVICESTATUS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4277,7 +4277,7 @@ NTSTATUS rpccli_PNP_GetDeviceStatus(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_GETDEVICESTATUS,
 				&r);
 
@@ -4335,7 +4335,7 @@ struct tevent_req *rpccli_PNP_SetDeviceProblem_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_SETDEVICEPROBLEM,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4412,7 +4412,7 @@ NTSTATUS rpccli_PNP_SetDeviceProblem(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_SETDEVICEPROBLEM,
 				&r);
 
@@ -4470,7 +4470,7 @@ struct tevent_req *rpccli_PNP_DisableDevInst_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_DISABLEDEVINST,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4547,7 +4547,7 @@ NTSTATUS rpccli_PNP_DisableDevInst(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_DISABLEDEVINST,
 				&r);
 
@@ -4605,7 +4605,7 @@ struct tevent_req *rpccli_PNP_UninstallDevInst_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_UNINSTALLDEVINST,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4682,7 +4682,7 @@ NTSTATUS rpccli_PNP_UninstallDevInst(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_UNINSTALLDEVINST,
 				&r);
 
@@ -4740,7 +4740,7 @@ struct tevent_req *rpccli_PNP_AddID_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_ADDID,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4817,7 +4817,7 @@ NTSTATUS rpccli_PNP_AddID(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_ADDID,
 				&r);
 
@@ -4875,7 +4875,7 @@ struct tevent_req *rpccli_PNP_RegisterDriver_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_REGISTERDRIVER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4952,7 +4952,7 @@ NTSTATUS rpccli_PNP_RegisterDriver(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_REGISTERDRIVER,
 				&r);
 
@@ -5010,7 +5010,7 @@ struct tevent_req *rpccli_PNP_QueryRemove_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_QUERYREMOVE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5087,7 +5087,7 @@ NTSTATUS rpccli_PNP_QueryRemove(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_QUERYREMOVE,
 				&r);
 
@@ -5145,7 +5145,7 @@ struct tevent_req *rpccli_PNP_RequestDeviceEject_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_REQUESTDEVICEEJECT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5222,7 +5222,7 @@ NTSTATUS rpccli_PNP_RequestDeviceEject(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_REQUESTDEVICEEJECT,
 				&r);
 
@@ -5280,7 +5280,7 @@ struct tevent_req *rpccli_PNP_IsDockStationPresent_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_ISDOCKSTATIONPRESENT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5357,7 +5357,7 @@ NTSTATUS rpccli_PNP_IsDockStationPresent(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_ISDOCKSTATIONPRESENT,
 				&r);
 
@@ -5415,7 +5415,7 @@ struct tevent_req *rpccli_PNP_RequestEjectPC_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_REQUESTEJECTPC,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5492,7 +5492,7 @@ NTSTATUS rpccli_PNP_RequestEjectPC(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_REQUESTEJECTPC,
 				&r);
 
@@ -5576,7 +5576,7 @@ struct tevent_req *rpccli_PNP_HwProfFlags_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_HWPROFFLAGS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5677,7 +5677,7 @@ NTSTATUS rpccli_PNP_HwProfFlags(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_HWPROFFLAGS,
 				&r);
 
@@ -5757,7 +5757,7 @@ struct tevent_req *rpccli_PNP_GetHwProfInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_GETHWPROFINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5843,7 +5843,7 @@ NTSTATUS rpccli_PNP_GetHwProfInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_GETHWPROFINFO,
 				&r);
 
@@ -5902,7 +5902,7 @@ struct tevent_req *rpccli_PNP_AddEmptyLogConf_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_ADDEMPTYLOGCONF,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5979,7 +5979,7 @@ NTSTATUS rpccli_PNP_AddEmptyLogConf(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_ADDEMPTYLOGCONF,
 				&r);
 
@@ -6037,7 +6037,7 @@ struct tevent_req *rpccli_PNP_FreeLogConf_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_FREELOGCONF,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6114,7 +6114,7 @@ NTSTATUS rpccli_PNP_FreeLogConf(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_FREELOGCONF,
 				&r);
 
@@ -6172,7 +6172,7 @@ struct tevent_req *rpccli_PNP_GetFirstLogConf_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_GETFIRSTLOGCONF,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6249,7 +6249,7 @@ NTSTATUS rpccli_PNP_GetFirstLogConf(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_GETFIRSTLOGCONF,
 				&r);
 
@@ -6307,7 +6307,7 @@ struct tevent_req *rpccli_PNP_GetNextLogConf_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_GETNEXTLOGCONF,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6384,7 +6384,7 @@ NTSTATUS rpccli_PNP_GetNextLogConf(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_GETNEXTLOGCONF,
 				&r);
 
@@ -6442,7 +6442,7 @@ struct tevent_req *rpccli_PNP_GetLogConfPriority_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_GETLOGCONFPRIORITY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6519,7 +6519,7 @@ NTSTATUS rpccli_PNP_GetLogConfPriority(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_GETLOGCONFPRIORITY,
 				&r);
 
@@ -6577,7 +6577,7 @@ struct tevent_req *rpccli_PNP_AddResDes_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_ADDRESDES,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6654,7 +6654,7 @@ NTSTATUS rpccli_PNP_AddResDes(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_ADDRESDES,
 				&r);
 
@@ -6712,7 +6712,7 @@ struct tevent_req *rpccli_PNP_FreeResDes_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_FREERESDES,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6789,7 +6789,7 @@ NTSTATUS rpccli_PNP_FreeResDes(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_FREERESDES,
 				&r);
 
@@ -6847,7 +6847,7 @@ struct tevent_req *rpccli_PNP_GetNextResDes_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_GETNEXTRESDES,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6924,7 +6924,7 @@ NTSTATUS rpccli_PNP_GetNextResDes(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_GETNEXTRESDES,
 				&r);
 
@@ -6982,7 +6982,7 @@ struct tevent_req *rpccli_PNP_GetResDesData_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_GETRESDESDATA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7059,7 +7059,7 @@ NTSTATUS rpccli_PNP_GetResDesData(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_GETRESDESDATA,
 				&r);
 
@@ -7117,7 +7117,7 @@ struct tevent_req *rpccli_PNP_GetResDesDataSize_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_GETRESDESDATASIZE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7194,7 +7194,7 @@ NTSTATUS rpccli_PNP_GetResDesDataSize(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_GETRESDESDATASIZE,
 				&r);
 
@@ -7252,7 +7252,7 @@ struct tevent_req *rpccli_PNP_ModifyResDes_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_MODIFYRESDES,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7329,7 +7329,7 @@ NTSTATUS rpccli_PNP_ModifyResDes(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_MODIFYRESDES,
 				&r);
 
@@ -7387,7 +7387,7 @@ struct tevent_req *rpccli_PNP_DetectResourceLimit_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_DETECTRESOURCELIMIT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7464,7 +7464,7 @@ NTSTATUS rpccli_PNP_DetectResourceLimit(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_DETECTRESOURCELIMIT,
 				&r);
 
@@ -7522,7 +7522,7 @@ struct tevent_req *rpccli_PNP_QueryResConfList_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_QUERYRESCONFLIST,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7599,7 +7599,7 @@ NTSTATUS rpccli_PNP_QueryResConfList(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_QUERYRESCONFLIST,
 				&r);
 
@@ -7657,7 +7657,7 @@ struct tevent_req *rpccli_PNP_SetHwProf_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_SETHWPROF,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7734,7 +7734,7 @@ NTSTATUS rpccli_PNP_SetHwProf(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_SETHWPROF,
 				&r);
 
@@ -7792,7 +7792,7 @@ struct tevent_req *rpccli_PNP_QueryArbitratorFreeData_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_QUERYARBITRATORFREEDATA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7869,7 +7869,7 @@ NTSTATUS rpccli_PNP_QueryArbitratorFreeData(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_QUERYARBITRATORFREEDATA,
 				&r);
 
@@ -7927,7 +7927,7 @@ struct tevent_req *rpccli_PNP_QueryArbitratorFreeSize_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_QUERYARBITRATORFREESIZE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -8004,7 +8004,7 @@ NTSTATUS rpccli_PNP_QueryArbitratorFreeSize(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_QUERYARBITRATORFREESIZE,
 				&r);
 
@@ -8062,7 +8062,7 @@ struct tevent_req *rpccli_PNP_RunDetection_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_RUNDETECTION,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -8139,7 +8139,7 @@ NTSTATUS rpccli_PNP_RunDetection(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_RUNDETECTION,
 				&r);
 
@@ -8197,7 +8197,7 @@ struct tevent_req *rpccli_PNP_RegisterNotification_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_REGISTERNOTIFICATION,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -8274,7 +8274,7 @@ NTSTATUS rpccli_PNP_RegisterNotification(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_REGISTERNOTIFICATION,
 				&r);
 
@@ -8332,7 +8332,7 @@ struct tevent_req *rpccli_PNP_UnregisterNotification_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_UNREGISTERNOTIFICATION,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -8409,7 +8409,7 @@ NTSTATUS rpccli_PNP_UnregisterNotification(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_UNREGISTERNOTIFICATION,
 				&r);
 
@@ -8467,7 +8467,7 @@ struct tevent_req *rpccli_PNP_GetCustomDevProp_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_GETCUSTOMDEVPROP,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -8544,7 +8544,7 @@ NTSTATUS rpccli_PNP_GetCustomDevProp(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_GETCUSTOMDEVPROP,
 				&r);
 
@@ -8602,7 +8602,7 @@ struct tevent_req *rpccli_PNP_GetVersionInternal_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_GETVERSIONINTERNAL,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -8679,7 +8679,7 @@ NTSTATUS rpccli_PNP_GetVersionInternal(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_GETVERSIONINTERNAL,
 				&r);
 
@@ -8737,7 +8737,7 @@ struct tevent_req *rpccli_PNP_GetBlockedDriverInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_GETBLOCKEDDRIVERINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -8814,7 +8814,7 @@ NTSTATUS rpccli_PNP_GetBlockedDriverInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_GETBLOCKEDDRIVERINFO,
 				&r);
 
@@ -8872,7 +8872,7 @@ struct tevent_req *rpccli_PNP_GetServerSideDeviceInstallFlags_send(TALLOC_CTX *m
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_ntsvcs,
+				    NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				    NDR_PNP_GETSERVERSIDEDEVICEINSTALLFLAGS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -8949,7 +8949,7 @@ NTSTATUS rpccli_PNP_GetServerSideDeviceInstallFlags(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_ntsvcs,
+				NDR_NTSVCS_UUID, NDR_NTSVCS_VERSION,
 				NDR_PNP_GETSERVERSIDEDEVICEINSTALLFLAGS,
 				&r);
 
