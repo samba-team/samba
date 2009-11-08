@@ -258,8 +258,7 @@ int rpc_vampire_passdb(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL,
-			       NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION, 0,
+	return run_rpc_command(c, NULL, &ndr_table_netlogon.syntax_id, 0,
 			       rpc_vampire_internals, argc, argv);
 }
 
@@ -341,8 +340,7 @@ int rpc_vampire_ldif(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL,
-			       NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION, 0,
+	return run_rpc_command(c, NULL, &ndr_table_netlogon.syntax_id, 0,
 			       rpc_vampire_ldif_internals, argc, argv);
 }
 
@@ -498,25 +496,20 @@ int rpc_vampire_keytab(struct net_context *c, int argc, const char **argv)
 
 	if (!dc_info.is_ad) {
 		printf(_("DC is not running Active Directory\n"));
-		ret = run_rpc_command(c, cli,
-				      NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
-				      0, rpc_vampire_keytab_internals,
-				      argc, argv);
+		ret = run_rpc_command(c, cli, &ndr_table_netlogon.syntax_id,
+				      0,
+				      rpc_vampire_keytab_internals, argc, argv);
 		return -1;
 	} else {
-		ret = run_rpc_command(c, cli,
-				      NDR_DRSUAPI_UUID, NDR_DRSUAPI_VERSION,
+		ret = run_rpc_command(c, cli, &ndr_table_drsuapi.syntax_id,
 				      NET_FLAGS_SEAL | NET_FLAGS_TCP,
 				      rpc_vampire_keytab_ds_internals, argc, argv);
 		if (ret != 0 && dc_info.is_mixed_mode) {
 			printf(_("Fallback to NT4 vampire on Mixed-Mode AD "
 				 "Domain\n"));
-			ret = run_rpc_command(c, cli,
-					      NDR_NETLOGON_UUID,
-					      NDR_NETLOGON_VERSION,
+			ret = run_rpc_command(c, cli, &ndr_table_netlogon.syntax_id,
 					      0,
-					      rpc_vampire_keytab_internals,
-					      argc, argv);
+					      rpc_vampire_keytab_internals, argc, argv);
 		}
 	}
 
