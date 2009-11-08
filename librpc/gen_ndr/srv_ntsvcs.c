@@ -15,7 +15,7 @@ static bool api_PNP_Disconnect(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_Disconnect *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_DISCONNECT];
+	call = &p->interface->calls[NDR_PNP_DISCONNECT];
 
 	r = talloc(talloc_tos(), struct PNP_Disconnect);
 	if (r == NULL) {
@@ -88,7 +88,7 @@ static bool api_PNP_Connect(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_Connect *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_CONNECT];
+	call = &p->interface->calls[NDR_PNP_CONNECT];
 
 	r = talloc(talloc_tos(), struct PNP_Connect);
 	if (r == NULL) {
@@ -161,7 +161,7 @@ static bool api_PNP_GetVersion(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_GetVersion *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_GETVERSION];
+	call = &p->interface->calls[NDR_PNP_GETVERSION];
 
 	r = talloc(talloc_tos(), struct PNP_GetVersion);
 	if (r == NULL) {
@@ -241,7 +241,7 @@ static bool api_PNP_GetGlobalState(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_GetGlobalState *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_GETGLOBALSTATE];
+	call = &p->interface->calls[NDR_PNP_GETGLOBALSTATE];
 
 	r = talloc(talloc_tos(), struct PNP_GetGlobalState);
 	if (r == NULL) {
@@ -314,7 +314,7 @@ static bool api_PNP_InitDetection(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_InitDetection *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_INITDETECTION];
+	call = &p->interface->calls[NDR_PNP_INITDETECTION];
 
 	r = talloc(talloc_tos(), struct PNP_InitDetection);
 	if (r == NULL) {
@@ -387,7 +387,7 @@ static bool api_PNP_ReportLogOn(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_ReportLogOn *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_REPORTLOGON];
+	call = &p->interface->calls[NDR_PNP_REPORTLOGON];
 
 	r = talloc(talloc_tos(), struct PNP_ReportLogOn);
 	if (r == NULL) {
@@ -460,7 +460,7 @@ static bool api_PNP_ValidateDeviceInstance(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_ValidateDeviceInstance *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_VALIDATEDEVICEINSTANCE];
+	call = &p->interface->calls[NDR_PNP_VALIDATEDEVICEINSTANCE];
 
 	r = talloc(talloc_tos(), struct PNP_ValidateDeviceInstance);
 	if (r == NULL) {
@@ -533,7 +533,7 @@ static bool api_PNP_GetRootDeviceInstance(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_GetRootDeviceInstance *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_GETROOTDEVICEINSTANCE];
+	call = &p->interface->calls[NDR_PNP_GETROOTDEVICEINSTANCE];
 
 	r = talloc(talloc_tos(), struct PNP_GetRootDeviceInstance);
 	if (r == NULL) {
@@ -606,7 +606,7 @@ static bool api_PNP_GetRelatedDeviceInstance(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_GetRelatedDeviceInstance *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_GETRELATEDDEVICEINSTANCE];
+	call = &p->interface->calls[NDR_PNP_GETRELATEDDEVICEINSTANCE];
 
 	r = talloc(talloc_tos(), struct PNP_GetRelatedDeviceInstance);
 	if (r == NULL) {
@@ -679,7 +679,7 @@ static bool api_PNP_EnumerateSubKeys(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_EnumerateSubKeys *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_ENUMERATESUBKEYS];
+	call = &p->interface->calls[NDR_PNP_ENUMERATESUBKEYS];
 
 	r = talloc(talloc_tos(), struct PNP_EnumerateSubKeys);
 	if (r == NULL) {
@@ -752,7 +752,7 @@ static bool api_PNP_GetDeviceList(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_GetDeviceList *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_GETDEVICELIST];
+	call = &p->interface->calls[NDR_PNP_GETDEVICELIST];
 
 	r = talloc(talloc_tos(), struct PNP_GetDeviceList);
 	if (r == NULL) {
@@ -833,7 +833,7 @@ static bool api_PNP_GetDeviceListSize(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_GetDeviceListSize *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_GETDEVICELISTSIZE];
+	call = &p->interface->calls[NDR_PNP_GETDEVICELISTSIZE];
 
 	r = talloc(talloc_tos(), struct PNP_GetDeviceListSize);
 	if (r == NULL) {
@@ -913,7 +913,7 @@ static bool api_PNP_GetDepth(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_GetDepth *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_GETDEPTH];
+	call = &p->interface->calls[NDR_PNP_GETDEPTH];
 
 	r = talloc(talloc_tos(), struct PNP_GetDepth);
 	if (r == NULL) {
@@ -986,7 +986,7 @@ static bool api_PNP_GetDeviceRegProp(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_GetDeviceRegProp *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_GETDEVICEREGPROP];
+	call = &p->interface->calls[NDR_PNP_GETDEVICEREGPROP];
 
 	r = talloc(talloc_tos(), struct PNP_GetDeviceRegProp);
 	if (r == NULL) {
@@ -1069,7 +1069,7 @@ static bool api_PNP_SetDeviceRegProp(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_SetDeviceRegProp *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_SETDEVICEREGPROP];
+	call = &p->interface->calls[NDR_PNP_SETDEVICEREGPROP];
 
 	r = talloc(talloc_tos(), struct PNP_SetDeviceRegProp);
 	if (r == NULL) {
@@ -1142,7 +1142,7 @@ static bool api_PNP_GetClassInstance(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_GetClassInstance *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_GETCLASSINSTANCE];
+	call = &p->interface->calls[NDR_PNP_GETCLASSINSTANCE];
 
 	r = talloc(talloc_tos(), struct PNP_GetClassInstance);
 	if (r == NULL) {
@@ -1215,7 +1215,7 @@ static bool api_PNP_CreateKey(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_CreateKey *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_CREATEKEY];
+	call = &p->interface->calls[NDR_PNP_CREATEKEY];
 
 	r = talloc(talloc_tos(), struct PNP_CreateKey);
 	if (r == NULL) {
@@ -1288,7 +1288,7 @@ static bool api_PNP_DeleteRegistryKey(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_DeleteRegistryKey *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_DELETEREGISTRYKEY];
+	call = &p->interface->calls[NDR_PNP_DELETEREGISTRYKEY];
 
 	r = talloc(talloc_tos(), struct PNP_DeleteRegistryKey);
 	if (r == NULL) {
@@ -1361,7 +1361,7 @@ static bool api_PNP_GetClassCount(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_GetClassCount *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_GETCLASSCOUNT];
+	call = &p->interface->calls[NDR_PNP_GETCLASSCOUNT];
 
 	r = talloc(talloc_tos(), struct PNP_GetClassCount);
 	if (r == NULL) {
@@ -1434,7 +1434,7 @@ static bool api_PNP_GetClassName(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_GetClassName *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_GETCLASSNAME];
+	call = &p->interface->calls[NDR_PNP_GETCLASSNAME];
 
 	r = talloc(talloc_tos(), struct PNP_GetClassName);
 	if (r == NULL) {
@@ -1507,7 +1507,7 @@ static bool api_PNP_DeleteClassKey(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_DeleteClassKey *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_DELETECLASSKEY];
+	call = &p->interface->calls[NDR_PNP_DELETECLASSKEY];
 
 	r = talloc(talloc_tos(), struct PNP_DeleteClassKey);
 	if (r == NULL) {
@@ -1580,7 +1580,7 @@ static bool api_PNP_GetInterfaceDeviceAlias(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_GetInterfaceDeviceAlias *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_GETINTERFACEDEVICEALIAS];
+	call = &p->interface->calls[NDR_PNP_GETINTERFACEDEVICEALIAS];
 
 	r = talloc(talloc_tos(), struct PNP_GetInterfaceDeviceAlias);
 	if (r == NULL) {
@@ -1653,7 +1653,7 @@ static bool api_PNP_GetInterfaceDeviceList(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_GetInterfaceDeviceList *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_GETINTERFACEDEVICELIST];
+	call = &p->interface->calls[NDR_PNP_GETINTERFACEDEVICELIST];
 
 	r = talloc(talloc_tos(), struct PNP_GetInterfaceDeviceList);
 	if (r == NULL) {
@@ -1726,7 +1726,7 @@ static bool api_PNP_GetInterfaceDeviceListSize(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_GetInterfaceDeviceListSize *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_GETINTERFACEDEVICELISTSIZE];
+	call = &p->interface->calls[NDR_PNP_GETINTERFACEDEVICELISTSIZE];
 
 	r = talloc(talloc_tos(), struct PNP_GetInterfaceDeviceListSize);
 	if (r == NULL) {
@@ -1799,7 +1799,7 @@ static bool api_PNP_RegisterDeviceClassAssociation(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_RegisterDeviceClassAssociation *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_REGISTERDEVICECLASSASSOCIATION];
+	call = &p->interface->calls[NDR_PNP_REGISTERDEVICECLASSASSOCIATION];
 
 	r = talloc(talloc_tos(), struct PNP_RegisterDeviceClassAssociation);
 	if (r == NULL) {
@@ -1872,7 +1872,7 @@ static bool api_PNP_UnregisterDeviceClassAssociation(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_UnregisterDeviceClassAssociation *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_UNREGISTERDEVICECLASSASSOCIATION];
+	call = &p->interface->calls[NDR_PNP_UNREGISTERDEVICECLASSASSOCIATION];
 
 	r = talloc(talloc_tos(), struct PNP_UnregisterDeviceClassAssociation);
 	if (r == NULL) {
@@ -1945,7 +1945,7 @@ static bool api_PNP_GetClassRegProp(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_GetClassRegProp *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_GETCLASSREGPROP];
+	call = &p->interface->calls[NDR_PNP_GETCLASSREGPROP];
 
 	r = talloc(talloc_tos(), struct PNP_GetClassRegProp);
 	if (r == NULL) {
@@ -2018,7 +2018,7 @@ static bool api_PNP_SetClassRegProp(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_SetClassRegProp *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_SETCLASSREGPROP];
+	call = &p->interface->calls[NDR_PNP_SETCLASSREGPROP];
 
 	r = talloc(talloc_tos(), struct PNP_SetClassRegProp);
 	if (r == NULL) {
@@ -2091,7 +2091,7 @@ static bool api_PNP_CreateDevInst(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_CreateDevInst *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_CREATEDEVINST];
+	call = &p->interface->calls[NDR_PNP_CREATEDEVINST];
 
 	r = talloc(talloc_tos(), struct PNP_CreateDevInst);
 	if (r == NULL) {
@@ -2164,7 +2164,7 @@ static bool api_PNP_DeviceInstanceAction(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_DeviceInstanceAction *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_DEVICEINSTANCEACTION];
+	call = &p->interface->calls[NDR_PNP_DEVICEINSTANCEACTION];
 
 	r = talloc(talloc_tos(), struct PNP_DeviceInstanceAction);
 	if (r == NULL) {
@@ -2237,7 +2237,7 @@ static bool api_PNP_GetDeviceStatus(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_GetDeviceStatus *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_GETDEVICESTATUS];
+	call = &p->interface->calls[NDR_PNP_GETDEVICESTATUS];
 
 	r = talloc(talloc_tos(), struct PNP_GetDeviceStatus);
 	if (r == NULL) {
@@ -2310,7 +2310,7 @@ static bool api_PNP_SetDeviceProblem(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_SetDeviceProblem *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_SETDEVICEPROBLEM];
+	call = &p->interface->calls[NDR_PNP_SETDEVICEPROBLEM];
 
 	r = talloc(talloc_tos(), struct PNP_SetDeviceProblem);
 	if (r == NULL) {
@@ -2383,7 +2383,7 @@ static bool api_PNP_DisableDevInst(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_DisableDevInst *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_DISABLEDEVINST];
+	call = &p->interface->calls[NDR_PNP_DISABLEDEVINST];
 
 	r = talloc(talloc_tos(), struct PNP_DisableDevInst);
 	if (r == NULL) {
@@ -2456,7 +2456,7 @@ static bool api_PNP_UninstallDevInst(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_UninstallDevInst *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_UNINSTALLDEVINST];
+	call = &p->interface->calls[NDR_PNP_UNINSTALLDEVINST];
 
 	r = talloc(talloc_tos(), struct PNP_UninstallDevInst);
 	if (r == NULL) {
@@ -2529,7 +2529,7 @@ static bool api_PNP_AddID(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_AddID *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_ADDID];
+	call = &p->interface->calls[NDR_PNP_ADDID];
 
 	r = talloc(talloc_tos(), struct PNP_AddID);
 	if (r == NULL) {
@@ -2602,7 +2602,7 @@ static bool api_PNP_RegisterDriver(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_RegisterDriver *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_REGISTERDRIVER];
+	call = &p->interface->calls[NDR_PNP_REGISTERDRIVER];
 
 	r = talloc(talloc_tos(), struct PNP_RegisterDriver);
 	if (r == NULL) {
@@ -2675,7 +2675,7 @@ static bool api_PNP_QueryRemove(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_QueryRemove *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_QUERYREMOVE];
+	call = &p->interface->calls[NDR_PNP_QUERYREMOVE];
 
 	r = talloc(talloc_tos(), struct PNP_QueryRemove);
 	if (r == NULL) {
@@ -2748,7 +2748,7 @@ static bool api_PNP_RequestDeviceEject(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_RequestDeviceEject *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_REQUESTDEVICEEJECT];
+	call = &p->interface->calls[NDR_PNP_REQUESTDEVICEEJECT];
 
 	r = talloc(talloc_tos(), struct PNP_RequestDeviceEject);
 	if (r == NULL) {
@@ -2821,7 +2821,7 @@ static bool api_PNP_IsDockStationPresent(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_IsDockStationPresent *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_ISDOCKSTATIONPRESENT];
+	call = &p->interface->calls[NDR_PNP_ISDOCKSTATIONPRESENT];
 
 	r = talloc(talloc_tos(), struct PNP_IsDockStationPresent);
 	if (r == NULL) {
@@ -2894,7 +2894,7 @@ static bool api_PNP_RequestEjectPC(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_RequestEjectPC *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_REQUESTEJECTPC];
+	call = &p->interface->calls[NDR_PNP_REQUESTEJECTPC];
 
 	r = talloc(talloc_tos(), struct PNP_RequestEjectPC);
 	if (r == NULL) {
@@ -2967,7 +2967,7 @@ static bool api_PNP_HwProfFlags(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_HwProfFlags *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_HWPROFFLAGS];
+	call = &p->interface->calls[NDR_PNP_HWPROFFLAGS];
 
 	r = talloc(talloc_tos(), struct PNP_HwProfFlags);
 	if (r == NULL) {
@@ -3049,7 +3049,7 @@ static bool api_PNP_GetHwProfInfo(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_GetHwProfInfo *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_GETHWPROFINFO];
+	call = &p->interface->calls[NDR_PNP_GETHWPROFINFO];
 
 	r = talloc(talloc_tos(), struct PNP_GetHwProfInfo);
 	if (r == NULL) {
@@ -3124,7 +3124,7 @@ static bool api_PNP_AddEmptyLogConf(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_AddEmptyLogConf *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_ADDEMPTYLOGCONF];
+	call = &p->interface->calls[NDR_PNP_ADDEMPTYLOGCONF];
 
 	r = talloc(talloc_tos(), struct PNP_AddEmptyLogConf);
 	if (r == NULL) {
@@ -3197,7 +3197,7 @@ static bool api_PNP_FreeLogConf(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_FreeLogConf *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_FREELOGCONF];
+	call = &p->interface->calls[NDR_PNP_FREELOGCONF];
 
 	r = talloc(talloc_tos(), struct PNP_FreeLogConf);
 	if (r == NULL) {
@@ -3270,7 +3270,7 @@ static bool api_PNP_GetFirstLogConf(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_GetFirstLogConf *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_GETFIRSTLOGCONF];
+	call = &p->interface->calls[NDR_PNP_GETFIRSTLOGCONF];
 
 	r = talloc(talloc_tos(), struct PNP_GetFirstLogConf);
 	if (r == NULL) {
@@ -3343,7 +3343,7 @@ static bool api_PNP_GetNextLogConf(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_GetNextLogConf *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_GETNEXTLOGCONF];
+	call = &p->interface->calls[NDR_PNP_GETNEXTLOGCONF];
 
 	r = talloc(talloc_tos(), struct PNP_GetNextLogConf);
 	if (r == NULL) {
@@ -3416,7 +3416,7 @@ static bool api_PNP_GetLogConfPriority(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_GetLogConfPriority *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_GETLOGCONFPRIORITY];
+	call = &p->interface->calls[NDR_PNP_GETLOGCONFPRIORITY];
 
 	r = talloc(talloc_tos(), struct PNP_GetLogConfPriority);
 	if (r == NULL) {
@@ -3489,7 +3489,7 @@ static bool api_PNP_AddResDes(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_AddResDes *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_ADDRESDES];
+	call = &p->interface->calls[NDR_PNP_ADDRESDES];
 
 	r = talloc(talloc_tos(), struct PNP_AddResDes);
 	if (r == NULL) {
@@ -3562,7 +3562,7 @@ static bool api_PNP_FreeResDes(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_FreeResDes *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_FREERESDES];
+	call = &p->interface->calls[NDR_PNP_FREERESDES];
 
 	r = talloc(talloc_tos(), struct PNP_FreeResDes);
 	if (r == NULL) {
@@ -3635,7 +3635,7 @@ static bool api_PNP_GetNextResDes(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_GetNextResDes *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_GETNEXTRESDES];
+	call = &p->interface->calls[NDR_PNP_GETNEXTRESDES];
 
 	r = talloc(talloc_tos(), struct PNP_GetNextResDes);
 	if (r == NULL) {
@@ -3708,7 +3708,7 @@ static bool api_PNP_GetResDesData(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_GetResDesData *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_GETRESDESDATA];
+	call = &p->interface->calls[NDR_PNP_GETRESDESDATA];
 
 	r = talloc(talloc_tos(), struct PNP_GetResDesData);
 	if (r == NULL) {
@@ -3781,7 +3781,7 @@ static bool api_PNP_GetResDesDataSize(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_GetResDesDataSize *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_GETRESDESDATASIZE];
+	call = &p->interface->calls[NDR_PNP_GETRESDESDATASIZE];
 
 	r = talloc(talloc_tos(), struct PNP_GetResDesDataSize);
 	if (r == NULL) {
@@ -3854,7 +3854,7 @@ static bool api_PNP_ModifyResDes(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_ModifyResDes *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_MODIFYRESDES];
+	call = &p->interface->calls[NDR_PNP_MODIFYRESDES];
 
 	r = talloc(talloc_tos(), struct PNP_ModifyResDes);
 	if (r == NULL) {
@@ -3927,7 +3927,7 @@ static bool api_PNP_DetectResourceLimit(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_DetectResourceLimit *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_DETECTRESOURCELIMIT];
+	call = &p->interface->calls[NDR_PNP_DETECTRESOURCELIMIT];
 
 	r = talloc(talloc_tos(), struct PNP_DetectResourceLimit);
 	if (r == NULL) {
@@ -4000,7 +4000,7 @@ static bool api_PNP_QueryResConfList(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_QueryResConfList *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_QUERYRESCONFLIST];
+	call = &p->interface->calls[NDR_PNP_QUERYRESCONFLIST];
 
 	r = talloc(talloc_tos(), struct PNP_QueryResConfList);
 	if (r == NULL) {
@@ -4073,7 +4073,7 @@ static bool api_PNP_SetHwProf(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_SetHwProf *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_SETHWPROF];
+	call = &p->interface->calls[NDR_PNP_SETHWPROF];
 
 	r = talloc(talloc_tos(), struct PNP_SetHwProf);
 	if (r == NULL) {
@@ -4146,7 +4146,7 @@ static bool api_PNP_QueryArbitratorFreeData(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_QueryArbitratorFreeData *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_QUERYARBITRATORFREEDATA];
+	call = &p->interface->calls[NDR_PNP_QUERYARBITRATORFREEDATA];
 
 	r = talloc(talloc_tos(), struct PNP_QueryArbitratorFreeData);
 	if (r == NULL) {
@@ -4219,7 +4219,7 @@ static bool api_PNP_QueryArbitratorFreeSize(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_QueryArbitratorFreeSize *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_QUERYARBITRATORFREESIZE];
+	call = &p->interface->calls[NDR_PNP_QUERYARBITRATORFREESIZE];
 
 	r = talloc(talloc_tos(), struct PNP_QueryArbitratorFreeSize);
 	if (r == NULL) {
@@ -4292,7 +4292,7 @@ static bool api_PNP_RunDetection(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_RunDetection *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_RUNDETECTION];
+	call = &p->interface->calls[NDR_PNP_RUNDETECTION];
 
 	r = talloc(talloc_tos(), struct PNP_RunDetection);
 	if (r == NULL) {
@@ -4365,7 +4365,7 @@ static bool api_PNP_RegisterNotification(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_RegisterNotification *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_REGISTERNOTIFICATION];
+	call = &p->interface->calls[NDR_PNP_REGISTERNOTIFICATION];
 
 	r = talloc(talloc_tos(), struct PNP_RegisterNotification);
 	if (r == NULL) {
@@ -4438,7 +4438,7 @@ static bool api_PNP_UnregisterNotification(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_UnregisterNotification *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_UNREGISTERNOTIFICATION];
+	call = &p->interface->calls[NDR_PNP_UNREGISTERNOTIFICATION];
 
 	r = talloc(talloc_tos(), struct PNP_UnregisterNotification);
 	if (r == NULL) {
@@ -4511,7 +4511,7 @@ static bool api_PNP_GetCustomDevProp(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_GetCustomDevProp *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_GETCUSTOMDEVPROP];
+	call = &p->interface->calls[NDR_PNP_GETCUSTOMDEVPROP];
 
 	r = talloc(talloc_tos(), struct PNP_GetCustomDevProp);
 	if (r == NULL) {
@@ -4584,7 +4584,7 @@ static bool api_PNP_GetVersionInternal(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_GetVersionInternal *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_GETVERSIONINTERNAL];
+	call = &p->interface->calls[NDR_PNP_GETVERSIONINTERNAL];
 
 	r = talloc(talloc_tos(), struct PNP_GetVersionInternal);
 	if (r == NULL) {
@@ -4657,7 +4657,7 @@ static bool api_PNP_GetBlockedDriverInfo(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_GetBlockedDriverInfo *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_GETBLOCKEDDRIVERINFO];
+	call = &p->interface->calls[NDR_PNP_GETBLOCKEDDRIVERINFO];
 
 	r = talloc(talloc_tos(), struct PNP_GetBlockedDriverInfo);
 	if (r == NULL) {
@@ -4730,7 +4730,7 @@ static bool api_PNP_GetServerSideDeviceInstallFlags(pipes_struct *p)
 	DATA_BLOB blob;
 	struct PNP_GetServerSideDeviceInstallFlags *r;
 
-	call = &ndr_table_ntsvcs.calls[NDR_PNP_GETSERVERSIDEDEVICEINSTALLFLAGS];
+	call = &p->interface->calls[NDR_PNP_GETSERVERSIDEDEVICEINSTALLFLAGS];
 
 	r = talloc(talloc_tos(), struct PNP_GetServerSideDeviceInstallFlags);
 	if (r == NULL) {

@@ -148,7 +148,7 @@ sub ParseFunction($$)
 	pidl "DATA_BLOB blob;";
 	pidl "struct $fn->{NAME} *r;";
 	pidl "";
-	pidl "call = &ndr_table_$if->{NAME}.calls[$op];";
+	pidl "call = &p->interface->calls[$op];";
 	pidl "";
 	pidl "r = talloc(talloc_tos(), struct $fn->{NAME});";
 	pidl "if (r == NULL) {";

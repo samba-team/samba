@@ -15,7 +15,7 @@ static bool api_svcctl_CloseServiceHandle(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_CloseServiceHandle *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_CLOSESERVICEHANDLE];
+	call = &p->interface->calls[NDR_SVCCTL_CLOSESERVICEHANDLE];
 
 	r = talloc(talloc_tos(), struct svcctl_CloseServiceHandle);
 	if (r == NULL) {
@@ -90,7 +90,7 @@ static bool api_svcctl_ControlService(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_ControlService *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_CONTROLSERVICE];
+	call = &p->interface->calls[NDR_SVCCTL_CONTROLSERVICE];
 
 	r = talloc(talloc_tos(), struct svcctl_ControlService);
 	if (r == NULL) {
@@ -170,7 +170,7 @@ static bool api_svcctl_DeleteService(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_DeleteService *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_DELETESERVICE];
+	call = &p->interface->calls[NDR_SVCCTL_DELETESERVICE];
 
 	r = talloc(talloc_tos(), struct svcctl_DeleteService);
 	if (r == NULL) {
@@ -243,7 +243,7 @@ static bool api_svcctl_LockServiceDatabase(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_LockServiceDatabase *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_LOCKSERVICEDATABASE];
+	call = &p->interface->calls[NDR_SVCCTL_LOCKSERVICEDATABASE];
 
 	r = talloc(talloc_tos(), struct svcctl_LockServiceDatabase);
 	if (r == NULL) {
@@ -323,7 +323,7 @@ static bool api_svcctl_QueryServiceObjectSecurity(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_QueryServiceObjectSecurity *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_QUERYSERVICEOBJECTSECURITY];
+	call = &p->interface->calls[NDR_SVCCTL_QUERYSERVICEOBJECTSECURITY];
 
 	r = talloc(talloc_tos(), struct svcctl_QueryServiceObjectSecurity);
 	if (r == NULL) {
@@ -409,7 +409,7 @@ static bool api_svcctl_SetServiceObjectSecurity(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_SetServiceObjectSecurity *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_SETSERVICEOBJECTSECURITY];
+	call = &p->interface->calls[NDR_SVCCTL_SETSERVICEOBJECTSECURITY];
 
 	r = talloc(talloc_tos(), struct svcctl_SetServiceObjectSecurity);
 	if (r == NULL) {
@@ -482,7 +482,7 @@ static bool api_svcctl_QueryServiceStatus(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_QueryServiceStatus *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_QUERYSERVICESTATUS];
+	call = &p->interface->calls[NDR_SVCCTL_QUERYSERVICESTATUS];
 
 	r = talloc(talloc_tos(), struct svcctl_QueryServiceStatus);
 	if (r == NULL) {
@@ -562,7 +562,7 @@ static bool api_svcctl_SetServiceStatus(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_SetServiceStatus *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_SETSERVICESTATUS];
+	call = &p->interface->calls[NDR_SVCCTL_SETSERVICESTATUS];
 
 	r = talloc(talloc_tos(), struct svcctl_SetServiceStatus);
 	if (r == NULL) {
@@ -635,7 +635,7 @@ static bool api_svcctl_UnlockServiceDatabase(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_UnlockServiceDatabase *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_UNLOCKSERVICEDATABASE];
+	call = &p->interface->calls[NDR_SVCCTL_UNLOCKSERVICEDATABASE];
 
 	r = talloc(talloc_tos(), struct svcctl_UnlockServiceDatabase);
 	if (r == NULL) {
@@ -710,7 +710,7 @@ static bool api_svcctl_NotifyBootConfigStatus(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_NotifyBootConfigStatus *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_NOTIFYBOOTCONFIGSTATUS];
+	call = &p->interface->calls[NDR_SVCCTL_NOTIFYBOOTCONFIGSTATUS];
 
 	r = talloc(talloc_tos(), struct svcctl_NotifyBootConfigStatus);
 	if (r == NULL) {
@@ -783,7 +783,7 @@ static bool api_svcctl_SCSetServiceBitsW(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_SCSetServiceBitsW *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_SCSETSERVICEBITSW];
+	call = &p->interface->calls[NDR_SVCCTL_SCSETSERVICEBITSW];
 
 	r = talloc(talloc_tos(), struct svcctl_SCSetServiceBitsW);
 	if (r == NULL) {
@@ -856,7 +856,7 @@ static bool api_svcctl_ChangeServiceConfigW(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_ChangeServiceConfigW *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_CHANGESERVICECONFIGW];
+	call = &p->interface->calls[NDR_SVCCTL_CHANGESERVICECONFIGW];
 
 	r = talloc(talloc_tos(), struct svcctl_ChangeServiceConfigW);
 	if (r == NULL) {
@@ -936,7 +936,7 @@ static bool api_svcctl_CreateServiceW(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_CreateServiceW *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_CREATESERVICEW];
+	call = &p->interface->calls[NDR_SVCCTL_CREATESERVICEW];
 
 	r = talloc(talloc_tos(), struct svcctl_CreateServiceW);
 	if (r == NULL) {
@@ -1017,7 +1017,7 @@ static bool api_svcctl_EnumDependentServicesW(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_EnumDependentServicesW *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_ENUMDEPENDENTSERVICESW];
+	call = &p->interface->calls[NDR_SVCCTL_ENUMDEPENDENTSERVICESW];
 
 	r = talloc(talloc_tos(), struct svcctl_EnumDependentServicesW);
 	if (r == NULL) {
@@ -1109,7 +1109,7 @@ static bool api_svcctl_EnumServicesStatusW(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_EnumServicesStatusW *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_ENUMSERVICESSTATUSW];
+	call = &p->interface->calls[NDR_SVCCTL_ENUMSERVICESSTATUSW];
 
 	r = talloc(talloc_tos(), struct svcctl_EnumServicesStatusW);
 	if (r == NULL) {
@@ -1202,7 +1202,7 @@ static bool api_svcctl_OpenSCManagerW(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_OpenSCManagerW *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_OPENSCMANAGERW];
+	call = &p->interface->calls[NDR_SVCCTL_OPENSCMANAGERW];
 
 	r = talloc(talloc_tos(), struct svcctl_OpenSCManagerW);
 	if (r == NULL) {
@@ -1282,7 +1282,7 @@ static bool api_svcctl_OpenServiceW(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_OpenServiceW *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_OPENSERVICEW];
+	call = &p->interface->calls[NDR_SVCCTL_OPENSERVICEW];
 
 	r = talloc(talloc_tos(), struct svcctl_OpenServiceW);
 	if (r == NULL) {
@@ -1362,7 +1362,7 @@ static bool api_svcctl_QueryServiceConfigW(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_QueryServiceConfigW *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_QUERYSERVICECONFIGW];
+	call = &p->interface->calls[NDR_SVCCTL_QUERYSERVICECONFIGW];
 
 	r = talloc(talloc_tos(), struct svcctl_QueryServiceConfigW);
 	if (r == NULL) {
@@ -1448,7 +1448,7 @@ static bool api_svcctl_QueryServiceLockStatusW(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_QueryServiceLockStatusW *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_QUERYSERVICELOCKSTATUSW];
+	call = &p->interface->calls[NDR_SVCCTL_QUERYSERVICELOCKSTATUSW];
 
 	r = talloc(talloc_tos(), struct svcctl_QueryServiceLockStatusW);
 	if (r == NULL) {
@@ -1534,7 +1534,7 @@ static bool api_svcctl_StartServiceW(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_StartServiceW *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_STARTSERVICEW];
+	call = &p->interface->calls[NDR_SVCCTL_STARTSERVICEW];
 
 	r = talloc(talloc_tos(), struct svcctl_StartServiceW);
 	if (r == NULL) {
@@ -1607,7 +1607,7 @@ static bool api_svcctl_GetServiceDisplayNameW(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_GetServiceDisplayNameW *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_GETSERVICEDISPLAYNAMEW];
+	call = &p->interface->calls[NDR_SVCCTL_GETSERVICEDISPLAYNAMEW];
 
 	r = talloc(talloc_tos(), struct svcctl_GetServiceDisplayNameW);
 	if (r == NULL) {
@@ -1688,7 +1688,7 @@ static bool api_svcctl_GetServiceKeyNameW(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_GetServiceKeyNameW *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_GETSERVICEKEYNAMEW];
+	call = &p->interface->calls[NDR_SVCCTL_GETSERVICEKEYNAMEW];
 
 	r = talloc(talloc_tos(), struct svcctl_GetServiceKeyNameW);
 	if (r == NULL) {
@@ -1769,7 +1769,7 @@ static bool api_svcctl_SCSetServiceBitsA(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_SCSetServiceBitsA *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_SCSETSERVICEBITSA];
+	call = &p->interface->calls[NDR_SVCCTL_SCSETSERVICEBITSA];
 
 	r = talloc(talloc_tos(), struct svcctl_SCSetServiceBitsA);
 	if (r == NULL) {
@@ -1842,7 +1842,7 @@ static bool api_svcctl_ChangeServiceConfigA(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_ChangeServiceConfigA *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_CHANGESERVICECONFIGA];
+	call = &p->interface->calls[NDR_SVCCTL_CHANGESERVICECONFIGA];
 
 	r = talloc(talloc_tos(), struct svcctl_ChangeServiceConfigA);
 	if (r == NULL) {
@@ -1922,7 +1922,7 @@ static bool api_svcctl_CreateServiceA(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_CreateServiceA *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_CREATESERVICEA];
+	call = &p->interface->calls[NDR_SVCCTL_CREATESERVICEA];
 
 	r = talloc(talloc_tos(), struct svcctl_CreateServiceA);
 	if (r == NULL) {
@@ -2002,7 +2002,7 @@ static bool api_svcctl_EnumDependentServicesA(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_EnumDependentServicesA *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_ENUMDEPENDENTSERVICESA];
+	call = &p->interface->calls[NDR_SVCCTL_ENUMDEPENDENTSERVICESA];
 
 	r = talloc(talloc_tos(), struct svcctl_EnumDependentServicesA);
 	if (r == NULL) {
@@ -2094,7 +2094,7 @@ static bool api_svcctl_EnumServicesStatusA(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_EnumServicesStatusA *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_ENUMSERVICESSTATUSA];
+	call = &p->interface->calls[NDR_SVCCTL_ENUMSERVICESSTATUSA];
 
 	r = talloc(talloc_tos(), struct svcctl_EnumServicesStatusA);
 	if (r == NULL) {
@@ -2187,7 +2187,7 @@ static bool api_svcctl_OpenSCManagerA(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_OpenSCManagerA *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_OPENSCMANAGERA];
+	call = &p->interface->calls[NDR_SVCCTL_OPENSCMANAGERA];
 
 	r = talloc(talloc_tos(), struct svcctl_OpenSCManagerA);
 	if (r == NULL) {
@@ -2267,7 +2267,7 @@ static bool api_svcctl_OpenServiceA(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_OpenServiceA *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_OPENSERVICEA];
+	call = &p->interface->calls[NDR_SVCCTL_OPENSERVICEA];
 
 	r = talloc(talloc_tos(), struct svcctl_OpenServiceA);
 	if (r == NULL) {
@@ -2340,7 +2340,7 @@ static bool api_svcctl_QueryServiceConfigA(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_QueryServiceConfigA *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_QUERYSERVICECONFIGA];
+	call = &p->interface->calls[NDR_SVCCTL_QUERYSERVICECONFIGA];
 
 	r = talloc(talloc_tos(), struct svcctl_QueryServiceConfigA);
 	if (r == NULL) {
@@ -2426,7 +2426,7 @@ static bool api_svcctl_QueryServiceLockStatusA(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_QueryServiceLockStatusA *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_QUERYSERVICELOCKSTATUSA];
+	call = &p->interface->calls[NDR_SVCCTL_QUERYSERVICELOCKSTATUSA];
 
 	r = talloc(talloc_tos(), struct svcctl_QueryServiceLockStatusA);
 	if (r == NULL) {
@@ -2512,7 +2512,7 @@ static bool api_svcctl_StartServiceA(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_StartServiceA *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_STARTSERVICEA];
+	call = &p->interface->calls[NDR_SVCCTL_STARTSERVICEA];
 
 	r = talloc(talloc_tos(), struct svcctl_StartServiceA);
 	if (r == NULL) {
@@ -2585,7 +2585,7 @@ static bool api_svcctl_GetServiceDisplayNameA(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_GetServiceDisplayNameA *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_GETSERVICEDISPLAYNAMEA];
+	call = &p->interface->calls[NDR_SVCCTL_GETSERVICEDISPLAYNAMEA];
 
 	r = talloc(talloc_tos(), struct svcctl_GetServiceDisplayNameA);
 	if (r == NULL) {
@@ -2666,7 +2666,7 @@ static bool api_svcctl_GetServiceKeyNameA(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_GetServiceKeyNameA *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_GETSERVICEKEYNAMEA];
+	call = &p->interface->calls[NDR_SVCCTL_GETSERVICEKEYNAMEA];
 
 	r = talloc(talloc_tos(), struct svcctl_GetServiceKeyNameA);
 	if (r == NULL) {
@@ -2747,7 +2747,7 @@ static bool api_svcctl_GetCurrentGroupeStateW(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_GetCurrentGroupeStateW *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_GETCURRENTGROUPESTATEW];
+	call = &p->interface->calls[NDR_SVCCTL_GETCURRENTGROUPESTATEW];
 
 	r = talloc(talloc_tos(), struct svcctl_GetCurrentGroupeStateW);
 	if (r == NULL) {
@@ -2820,7 +2820,7 @@ static bool api_svcctl_EnumServiceGroupW(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_EnumServiceGroupW *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_ENUMSERVICEGROUPW];
+	call = &p->interface->calls[NDR_SVCCTL_ENUMSERVICEGROUPW];
 
 	r = talloc(talloc_tos(), struct svcctl_EnumServiceGroupW);
 	if (r == NULL) {
@@ -2893,7 +2893,7 @@ static bool api_svcctl_ChangeServiceConfig2A(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_ChangeServiceConfig2A *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_CHANGESERVICECONFIG2A];
+	call = &p->interface->calls[NDR_SVCCTL_CHANGESERVICECONFIG2A];
 
 	r = talloc(talloc_tos(), struct svcctl_ChangeServiceConfig2A);
 	if (r == NULL) {
@@ -2966,7 +2966,7 @@ static bool api_svcctl_ChangeServiceConfig2W(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_ChangeServiceConfig2W *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_CHANGESERVICECONFIG2W];
+	call = &p->interface->calls[NDR_SVCCTL_CHANGESERVICECONFIG2W];
 
 	r = talloc(talloc_tos(), struct svcctl_ChangeServiceConfig2W);
 	if (r == NULL) {
@@ -3039,7 +3039,7 @@ static bool api_svcctl_QueryServiceConfig2A(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_QueryServiceConfig2A *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_QUERYSERVICECONFIG2A];
+	call = &p->interface->calls[NDR_SVCCTL_QUERYSERVICECONFIG2A];
 
 	r = talloc(talloc_tos(), struct svcctl_QueryServiceConfig2A);
 	if (r == NULL) {
@@ -3125,7 +3125,7 @@ static bool api_svcctl_QueryServiceConfig2W(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_QueryServiceConfig2W *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_QUERYSERVICECONFIG2W];
+	call = &p->interface->calls[NDR_SVCCTL_QUERYSERVICECONFIG2W];
 
 	r = talloc(talloc_tos(), struct svcctl_QueryServiceConfig2W);
 	if (r == NULL) {
@@ -3211,7 +3211,7 @@ static bool api_svcctl_QueryServiceStatusEx(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_QueryServiceStatusEx *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_QUERYSERVICESTATUSEX];
+	call = &p->interface->calls[NDR_SVCCTL_QUERYSERVICESTATUSEX];
 
 	r = talloc(talloc_tos(), struct svcctl_QueryServiceStatusEx);
 	if (r == NULL) {
@@ -3297,7 +3297,7 @@ static bool api_EnumServicesStatusExA(pipes_struct *p)
 	DATA_BLOB blob;
 	struct EnumServicesStatusExA *r;
 
-	call = &ndr_table_svcctl.calls[NDR_ENUMSERVICESSTATUSEXA];
+	call = &p->interface->calls[NDR_ENUMSERVICESSTATUSEXA];
 
 	r = talloc(talloc_tos(), struct EnumServicesStatusExA);
 	if (r == NULL) {
@@ -3396,7 +3396,7 @@ static bool api_EnumServicesStatusExW(pipes_struct *p)
 	DATA_BLOB blob;
 	struct EnumServicesStatusExW *r;
 
-	call = &ndr_table_svcctl.calls[NDR_ENUMSERVICESSTATUSEXW];
+	call = &p->interface->calls[NDR_ENUMSERVICESSTATUSEXW];
 
 	r = talloc(talloc_tos(), struct EnumServicesStatusExW);
 	if (r == NULL) {
@@ -3489,7 +3489,7 @@ static bool api_svcctl_SCSendTSMessage(pipes_struct *p)
 	DATA_BLOB blob;
 	struct svcctl_SCSendTSMessage *r;
 
-	call = &ndr_table_svcctl.calls[NDR_SVCCTL_SCSENDTSMESSAGE];
+	call = &p->interface->calls[NDR_SVCCTL_SCSENDTSMESSAGE];
 
 	r = talloc(talloc_tos(), struct svcctl_SCSendTSMessage);
 	if (r == NULL) {
