@@ -55,6 +55,11 @@ pipes_struct *get_next_internal_pipe(pipes_struct *p)
 	return p->next;
 }
 
+const char *get_pipe_name_tos(struct pipes_struct *p)
+{
+	return get_pipe_name_from_syntax(talloc_tos(), &p->syntax);
+}
+
 /****************************************************************************
  Initialise an outgoing packet.
 ****************************************************************************/
@@ -177,7 +182,7 @@ static void set_incoming_fault(pipes_struct *p)
 	p->in_data.pdu_received_len = 0;
 	p->fault_state = True;
 	DEBUG(10, ("set_incoming_fault: Setting fault state on pipe %s\n",
-		   get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
+		   get_pipe_name_tos(p)));
 }
 
 /****************************************************************************
@@ -344,10 +349,8 @@ static void free_pipe_context(pipes_struct *p)
 			 "%lu\n", (unsigned long)talloc_total_size(p->mem_ctx) ));
 		talloc_free_children(p->mem_ctx);
 	} else {
-		p->mem_ctx = talloc_init(
-			"pipe %s %p", get_pipe_name_from_syntax(talloc_tos(),
-								&p->syntax),
-			p);
+		p->mem_ctx = talloc_init("pipe %s %p", get_pipe_name_tos(p),
+					 p);
 		if (p->mem_ctx == NULL) {
 			p->fault_state = True;
 		}
@@ -515,7 +518,7 @@ static void process_complete_pdu(pipes_struct *p)
 
 	if(p->fault_state) {
 		DEBUG(10,("process_complete_pdu: pipe %s in fault state.\n",
-			  get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
+			  get_pipe_name_tos(p)));
 		set_incoming_fault(p);
 		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
 		return;
@@ -544,14 +547,12 @@ static void process_complete_pdu(pipes_struct *p)
 		case DCERPC_PKT_PING: /* CL request - ignore... */
 			DEBUG(0,("process_complete_pdu: Error. Connectionless packet type %u received on pipe %s.\n",
 				(unsigned int)p->hdr.pkt_type,
-				 get_pipe_name_from_syntax(talloc_tos(),
-							   &p->syntax)));
+				 get_pipe_name_tos(p)));
 			break;
 
 		case DCERPC_PKT_RESPONSE: /* No responses here. */
 			DEBUG(0,("process_complete_pdu: Error. DCERPC_PKT_RESPONSE received from client on pipe %s.\n",
-				 get_pipe_name_from_syntax(talloc_tos(),
-							   &p->syntax)));
+				 get_pipe_name_tos(p)));
 			break;
 
 		case DCERPC_PKT_FAULT:
@@ -564,8 +565,7 @@ static void process_complete_pdu(pipes_struct *p)
 		case DCERPC_PKT_CANCEL_ACK:
 			DEBUG(0,("process_complete_pdu: Error. Connectionless packet type %u received on pipe %s.\n",
 				(unsigned int)p->hdr.pkt_type,
-				 get_pipe_name_from_syntax(talloc_tos(),
-							   &p->syntax)));
+				 get_pipe_name_tos(p)));
 			break;
 
 		case DCERPC_PKT_BIND:
@@ -581,8 +581,7 @@ static void process_complete_pdu(pipes_struct *p)
 		case DCERPC_PKT_BIND_NAK:
 			DEBUG(0,("process_complete_pdu: Error. DCERPC_PKT_BINDACK/DCERPC_PKT_BINDNACK packet type %u received on pipe %s.\n",
 				(unsigned int)p->hdr.pkt_type,
-				 get_pipe_name_from_syntax(talloc_tos(),
-							   &p->syntax)));
+				 get_pipe_name_tos(p)));
 			break;
 
 
@@ -597,8 +596,7 @@ static void process_complete_pdu(pipes_struct *p)
 
 		case DCERPC_PKT_ALTER_RESP:
 			DEBUG(0,("process_complete_pdu: Error. DCERPC_PKT_ALTER_RESP on pipe %s: Should only be server -> client.\n",
-				 get_pipe_name_from_syntax(talloc_tos(),
-							   &p->syntax)));
+				 get_pipe_name_tos(p)));
 			break;
 
 		case DCERPC_PKT_AUTH3:
@@ -612,8 +610,7 @@ static void process_complete_pdu(pipes_struct *p)
 
 		case DCERPC_PKT_SHUTDOWN:
 			DEBUG(0,("process_complete_pdu: Error. DCERPC_PKT_SHUTDOWN on pipe %s: Should only be server -> client.\n",
-				 get_pipe_name_from_syntax(talloc_tos(),
-							   &p->syntax)));
+				 get_pipe_name_tos(p)));
 			break;
 
 		case DCERPC_PKT_CO_CANCEL:
@@ -652,8 +649,7 @@ static void process_complete_pdu(pipes_struct *p)
 
 	if (!reply) {
 		DEBUG(3,("process_complete_pdu: DCE/RPC fault sent on "
-			 "pipe %s\n", get_pipe_name_from_syntax(talloc_tos(),
-								&p->syntax)));
+			 "pipe %s\n", get_pipe_name_tos(p)));
 		set_incoming_fault(p);
 		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
 		prs_mem_free(&rpc_in);
@@ -808,8 +804,7 @@ static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data, size_
 		return -1;		
 	}
 
-	DEBUG(6,(" name: %s len: %u\n",
-		 get_pipe_name_from_syntax(talloc_tos(), &p->syntax),
+	DEBUG(6,(" name: %s len: %u\n", get_pipe_name_tos(p),
 		 (unsigned int)n));
 
 	/*
@@ -826,8 +821,7 @@ static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data, size_
 	if(n > RPC_MAX_PDU_FRAG_LEN) {
                 DEBUG(5,("read_from_pipe: too large read (%u) requested on "
 			 "pipe %s. We can only service %d sized reads.\n",
-			 (unsigned int)n,
-			 get_pipe_name_from_syntax(talloc_tos(), &p->syntax),
+			 (unsigned int)n, get_pipe_name_tos(p),
 			 RPC_MAX_PDU_FRAG_LEN ));
 		n = RPC_MAX_PDU_FRAG_LEN;
 	}
@@ -848,7 +842,7 @@ static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data, size_
 
 		DEBUG(10,("read_from_pipe: %s: current_pdu_len = %u, "
 			  "current_pdu_sent = %u returning %d bytes.\n",
-			  get_pipe_name_from_syntax(talloc_tos(), &p->syntax),
+			  get_pipe_name_tos(p),
 			  (unsigned int)prs_offset(&p->out_data.frag),
 			  (unsigned int)p->out_data.current_pdu_sent,
 			  (int)data_returned));
@@ -869,8 +863,7 @@ static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data, size_
 
 	DEBUG(10,("read_from_pipe: %s: fault_state = %d : data_sent_length "
 		  "= %u, prs_offset(&p->out_data.rdata) = %u.\n",
-		  get_pipe_name_from_syntax(talloc_tos(), &p->syntax),
-		  (int)p->fault_state,
+		  get_pipe_name_tos(p), (int)p->fault_state,
 		  (unsigned int)p->out_data.data_sent_length,
 		  (unsigned int)prs_offset(&p->out_data.rdata) ));
 
@@ -891,7 +884,7 @@ static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data, size_
 
 	if(!create_next_pdu(p)) {
 		DEBUG(0,("read_from_pipe: %s: create_next_pdu failed.\n",
-			 get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
+			 get_pipe_name_tos(p)));
 		return -1;
 	}
 
