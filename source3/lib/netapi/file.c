@@ -35,7 +35,7 @@ WERROR NetFileClose_r(struct libnetapi_ctx *ctx,
 	struct rpc_pipe_client *pipe_cli = NULL;
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_srvsvc.syntax_id,
+				   NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -129,7 +129,7 @@ WERROR NetFileGetInfo_r(struct libnetapi_ctx *ctx,
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_srvsvc.syntax_id,
+				   NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -195,7 +195,7 @@ WERROR NetFileEnum_r(struct libnetapi_ctx *ctx,
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_srvsvc.syntax_id,
+				   NDR_SRVSVC_UUID, NDR_SRVSVC_VERSION,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
