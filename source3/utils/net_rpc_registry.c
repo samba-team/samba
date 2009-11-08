@@ -475,8 +475,8 @@ static int rpc_registry_setvalue(struct net_context *c, int argc,
 		return -1;
 	}
 
-	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
-		rpc_registry_setvalue_internal, argc, argv );
+	return run_rpc_command(c, NULL, NDR_WINREG_UUID, NDR_WINREG_VERSION, 0,
+			       rpc_registry_setvalue_internal, argc, argv );
 }
 
 static NTSTATUS rpc_registry_deletevalue_internal(struct net_context *c,
@@ -528,8 +528,8 @@ static int rpc_registry_deletevalue(struct net_context *c, int argc,
 		return -1;
 	}
 
-	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
-		rpc_registry_deletevalue_internal, argc, argv );
+	return run_rpc_command(c, NULL, NDR_WINREG_UUID, NDR_WINREG_VERSION, 0,
+			       rpc_registry_deletevalue_internal, argc, argv );
 }
 
 static NTSTATUS rpc_registry_getvalue_internal(struct net_context *c,
@@ -643,8 +643,8 @@ static int rpc_registry_getvalue(struct net_context *c, int argc,
 		return -1;
 	}
 
-	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
-		rpc_registry_getvalue_full, argc, argv);
+	return run_rpc_command(c, NULL, NDR_WINREG_UUID, NDR_WINREG_VERSION, 0,
+			       rpc_registry_getvalue_full, argc, argv);
 }
 
 static NTSTATUS rpc_registry_getvalue_raw(struct net_context *c,
@@ -670,8 +670,8 @@ static int rpc_registry_getvalueraw(struct net_context *c, int argc,
 		return -1;
 	}
 
-	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
-		rpc_registry_getvalue_raw, argc, argv);
+	return run_rpc_command(c, NULL, NDR_WINREG_UUID, NDR_WINREG_VERSION, 0,
+			       rpc_registry_getvalue_raw, argc, argv);
 }
 
 static NTSTATUS rpc_registry_createkey_internal(struct net_context *c,
@@ -743,8 +743,8 @@ static int rpc_registry_createkey(struct net_context *c, int argc,
 		return -1;
 	}
 
-	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
-		rpc_registry_createkey_internal, argc, argv );
+	return run_rpc_command(c, NULL, NDR_WINREG_UUID, NDR_WINREG_VERSION, 0,
+			       rpc_registry_createkey_internal, argc, argv );
 }
 
 static NTSTATUS rpc_registry_deletekey_internal(struct net_context *c,
@@ -793,8 +793,8 @@ static int rpc_registry_deletekey(struct net_context *c, int argc, const char **
 		return -1;
 	}
 
-	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
-		rpc_registry_deletekey_internal, argc, argv );
+	return run_rpc_command(c, NULL, NDR_WINREG_UUID, NDR_WINREG_VERSION, 0,
+			       rpc_registry_deletekey_internal, argc, argv );
 }
 
 /********************************************************************
@@ -869,8 +869,8 @@ static NTSTATUS rpc_registry_enumerate_internal(struct net_context *c,
 static int rpc_registry_enumerate(struct net_context *c, int argc,
 				  const char **argv )
 {
-	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
-		rpc_registry_enumerate_internal, argc, argv );
+	return run_rpc_command(c, NULL, NDR_WINREG_UUID, NDR_WINREG_VERSION, 0,
+			       rpc_registry_enumerate_internal, argc, argv );
 }
 
 /********************************************************************
@@ -924,8 +924,8 @@ static NTSTATUS rpc_registry_save_internal(struct net_context *c,
 
 static int rpc_registry_save(struct net_context *c, int argc, const char **argv )
 {
-	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
-		rpc_registry_save_internal, argc, argv );
+	return run_rpc_command(c, NULL, NDR_WINREG_UUID, NDR_WINREG_VERSION, 0,
+			       rpc_registry_save_internal, argc, argv );
 }
 
 
@@ -1255,8 +1255,8 @@ static NTSTATUS rpc_registry_getsd_internal(struct net_context *c,
 
 static int rpc_registry_getsd(struct net_context *c, int argc, const char **argv)
 {
-	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
-		rpc_registry_getsd_internal, argc, argv);
+	return run_rpc_command(c, NULL, NDR_WINREG_UUID, NDR_WINREG_VERSION, 0,
+			       rpc_registry_getsd_internal, argc, argv);
 }
 
 /********************************************************************

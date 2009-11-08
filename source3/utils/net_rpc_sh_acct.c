@@ -430,24 +430,31 @@ struct rpc_sh_cmd *net_rpc_acct_cmds(struct net_context *c, TALLOC_CTX *mem_ctx,
 				     struct rpc_sh_ctx *ctx)
 {
 	static struct rpc_sh_cmd cmds[9] = {
-		{ "show", NULL, &ndr_table_samr.syntax_id, rpc_sh_acct_pol_show,
+		{ "show", NULL, NDR_SAMR_UUID, NDR_SAMR_VERSION,
+		  rpc_sh_acct_pol_show,
 		  N_("Show current account policy settings") },
-		{ "badpw", NULL, &ndr_table_samr.syntax_id, rpc_sh_acct_set_badpw,
+		{ "badpw", NULL, NDR_SAMR_UUID, NDR_SAMR_VERSION,
+		  rpc_sh_acct_set_badpw,
 		  N_("Set bad password count before lockout") },
-		{ "lockduration", NULL, &ndr_table_samr.syntax_id, rpc_sh_acct_set_lockduration,
+		{ "lockduration", NULL, NDR_SAMR_UUID, NDR_SAMR_VERSION,
+		  rpc_sh_acct_set_lockduration,
 		  N_("Set account lockout duration") },
-		{ "resetduration", NULL, &ndr_table_samr.syntax_id,
+		{ "resetduration", NULL, NDR_SAMR_UUID, NDR_SAMR_VERSION,
 		  rpc_sh_acct_set_resetduration,
 		  N_("Set bad password count reset duration") },
-		{ "minpwage", NULL, &ndr_table_samr.syntax_id, rpc_sh_acct_set_minpwage,
+		{ "minpwage", NULL, NDR_SAMR_UUID, NDR_SAMR_VERSION,
+		  rpc_sh_acct_set_minpwage,
 		  N_("Set minimum password age") },
-		{ "maxpwage", NULL, &ndr_table_samr.syntax_id, rpc_sh_acct_set_maxpwage,
+		{ "maxpwage", NULL, NDR_SAMR_UUID, NDR_SAMR_VERSION,
+		  rpc_sh_acct_set_maxpwage,
 		  N_("Set maximum password age") },
-		{ "minpwlen", NULL, &ndr_table_samr.syntax_id, rpc_sh_acct_set_minpwlen,
+		{ "minpwlen", NULL, NDR_SAMR_UUID, NDR_SAMR_VERSION,
+		  rpc_sh_acct_set_minpwlen,
 		  N_("Set minimum password length") },
-		{ "pwhistlen", NULL, &ndr_table_samr.syntax_id, rpc_sh_acct_set_pwhistlen,
+		{ "pwhistlen", NULL, NDR_SAMR_UUID, NDR_SAMR_VERSION,
+		  rpc_sh_acct_set_pwhistlen,
 		  N_("Set the password history length") },
-		{ NULL, NULL, 0, NULL, NULL }
+		{ NULL, NULL, NULL, 0, NULL, NULL }
 	};
 
 	return cmds;
