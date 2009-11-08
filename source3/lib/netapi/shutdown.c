@@ -36,7 +36,8 @@ WERROR NetShutdownInit_r(struct libnetapi_ctx *ctx,
 	struct lsa_StringLarge message;
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_initshutdown.syntax_id,
+				   NDR_INITSHUTDOWN_UUID,
+				   NDR_INITSHUTDOWN_VERSION,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -80,7 +81,8 @@ WERROR NetShutdownAbort_r(struct libnetapi_ctx *ctx,
 	struct rpc_pipe_client *pipe_cli = NULL;
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_initshutdown.syntax_id,
+				   NDR_INITSHUTDOWN_UUID,
+				   NDR_INITSHUTDOWN_VERSION,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;

@@ -129,7 +129,7 @@ WERROR I_NetLogonControl_r(struct libnetapi_ctx *ctx,
 	union netr_CONTROL_QUERY_INFORMATION query;
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_netlogon.syntax_id,
+				   NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -183,7 +183,7 @@ WERROR I_NetLogonControl2_r(struct libnetapi_ctx *ctx,
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_netlogon.syntax_id,
+				   NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;

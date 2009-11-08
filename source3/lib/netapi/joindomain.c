@@ -106,7 +106,7 @@ WERROR NetJoinDomain_r(struct libnetapi_ctx *ctx,
 	unsigned int old_timeout = 0;
 
 	werr = libnetapi_open_pipe(ctx, r->in.server,
-				   &ndr_table_wkssvc.syntax_id,
+				   NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -232,7 +232,7 @@ WERROR NetUnjoinDomain_r(struct libnetapi_ctx *ctx,
 	unsigned int old_timeout = 0;
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_wkssvc.syntax_id,
+				   NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -278,7 +278,7 @@ WERROR NetGetJoinInformation_r(struct libnetapi_ctx *ctx,
 	const char *buffer = NULL;
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_wkssvc.syntax_id,
+				   NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -408,7 +408,7 @@ WERROR NetGetJoinableOUs_r(struct libnetapi_ctx *ctx,
 	WERROR werr;
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_wkssvc.syntax_id,
+				   NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -450,7 +450,7 @@ WERROR NetRenameMachineInDomain_r(struct libnetapi_ctx *ctx,
 	WERROR werr;
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_wkssvc.syntax_id,
+				   NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
