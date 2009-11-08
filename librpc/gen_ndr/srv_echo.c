@@ -910,5 +910,5 @@ NTSTATUS rpc_rpcecho_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 
 NTSTATUS rpc_rpcecho_init(void)
 {
-	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "rpcecho", "rpcecho", NDR_RPCECHO_UUID, NDR_RPCECHO_VERSION, api_rpcecho_cmds, sizeof(api_rpcecho_cmds) / sizeof(struct api_struct));
+	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "rpcecho", "rpcecho", &ndr_table_rpcecho, api_rpcecho_cmds, sizeof(api_rpcecho_cmds) / sizeof(struct api_struct));
 }

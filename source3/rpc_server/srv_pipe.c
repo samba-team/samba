@@ -1034,17 +1034,12 @@ static bool check_bind_req(struct pipes_struct *p,
 *******************************************************************/
 
 NTSTATUS rpc_srv_register(int version, const char *clnt, const char *srv,
-			  const char *interface, uint32_t interface_version,
+			  const struct ndr_interface_table *iface,
 			  const struct api_struct *cmds, int size)
 {
         struct rpc_table *rpc_entry;
-	struct ndr_syntax_id syntax;
 
 	if (!clnt || !srv || !cmds) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (!ndr_syntax_from_string(interface, interface_version, &syntax)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -1080,7 +1075,7 @@ NTSTATUS rpc_srv_register(int version, const char *clnt, const char *srv,
         ZERO_STRUCTP(rpc_entry);
         rpc_entry->pipe.clnt = SMB_STRDUP(clnt);
         rpc_entry->pipe.srv = SMB_STRDUP(srv);
-	rpc_entry->rpc_interface = syntax;
+	rpc_entry->rpc_interface = iface->syntax_id;
         rpc_entry->cmds = cmds;
         rpc_entry->n_cmds = size;
 
