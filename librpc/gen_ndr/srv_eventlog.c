@@ -2177,5 +2177,5 @@ NTSTATUS rpc_eventlog_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 NTSTATUS rpc_eventlog_init(void)
 {
-	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "eventlog", "eventlog", &ndr_table_eventlog, api_eventlog_cmds, sizeof(api_eventlog_cmds) / sizeof(struct api_struct));
+	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "eventlog", "eventlog", NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION, api_eventlog_cmds, sizeof(api_eventlog_cmds) / sizeof(struct api_struct));
 }
