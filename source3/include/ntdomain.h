@@ -169,7 +169,7 @@ typedef struct pipes_struct {
 
 	struct auth_serversupplied_info *server_info;
 
-	struct ndr_syntax_id syntax;
+	const struct ndr_interface_table *interface;
 
 	/* linked list of rpc dispatch tables associated 
 	   with the open rpc contexts */

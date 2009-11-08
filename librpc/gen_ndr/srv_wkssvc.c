@@ -15,7 +15,7 @@ static bool api_wkssvc_NetWkstaGetInfo(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wkssvc_NetWkstaGetInfo *r;
 
-	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETWKSTAGETINFO];
+	call = &p->interface->calls[NDR_WKSSVC_NETWKSTAGETINFO];
 
 	r = talloc(talloc_tos(), struct wkssvc_NetWkstaGetInfo);
 	if (r == NULL) {
@@ -95,7 +95,7 @@ static bool api_wkssvc_NetWkstaSetInfo(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wkssvc_NetWkstaSetInfo *r;
 
-	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETWKSTASETINFO];
+	call = &p->interface->calls[NDR_WKSSVC_NETWKSTASETINFO];
 
 	r = talloc(talloc_tos(), struct wkssvc_NetWkstaSetInfo);
 	if (r == NULL) {
@@ -170,7 +170,7 @@ static bool api_wkssvc_NetWkstaEnumUsers(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wkssvc_NetWkstaEnumUsers *r;
 
-	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETWKSTAENUMUSERS];
+	call = &p->interface->calls[NDR_WKSSVC_NETWKSTAENUMUSERS];
 
 	r = talloc(talloc_tos(), struct wkssvc_NetWkstaEnumUsers);
 	if (r == NULL) {
@@ -252,7 +252,7 @@ static bool api_wkssvc_NetrWkstaUserGetInfo(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wkssvc_NetrWkstaUserGetInfo *r;
 
-	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRWKSTAUSERGETINFO];
+	call = &p->interface->calls[NDR_WKSSVC_NETRWKSTAUSERGETINFO];
 
 	r = talloc(talloc_tos(), struct wkssvc_NetrWkstaUserGetInfo);
 	if (r == NULL) {
@@ -332,7 +332,7 @@ static bool api_wkssvc_NetrWkstaUserSetInfo(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wkssvc_NetrWkstaUserSetInfo *r;
 
-	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRWKSTAUSERSETINFO];
+	call = &p->interface->calls[NDR_WKSSVC_NETRWKSTAUSERSETINFO];
 
 	r = talloc(talloc_tos(), struct wkssvc_NetrWkstaUserSetInfo);
 	if (r == NULL) {
@@ -407,7 +407,7 @@ static bool api_wkssvc_NetWkstaTransportEnum(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wkssvc_NetWkstaTransportEnum *r;
 
-	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETWKSTATRANSPORTENUM];
+	call = &p->interface->calls[NDR_WKSSVC_NETWKSTATRANSPORTENUM];
 
 	r = talloc(talloc_tos(), struct wkssvc_NetWkstaTransportEnum);
 	if (r == NULL) {
@@ -489,7 +489,7 @@ static bool api_wkssvc_NetrWkstaTransportAdd(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wkssvc_NetrWkstaTransportAdd *r;
 
-	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRWKSTATRANSPORTADD];
+	call = &p->interface->calls[NDR_WKSSVC_NETRWKSTATRANSPORTADD];
 
 	r = talloc(talloc_tos(), struct wkssvc_NetrWkstaTransportAdd);
 	if (r == NULL) {
@@ -564,7 +564,7 @@ static bool api_wkssvc_NetrWkstaTransportDel(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wkssvc_NetrWkstaTransportDel *r;
 
-	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRWKSTATRANSPORTDEL];
+	call = &p->interface->calls[NDR_WKSSVC_NETRWKSTATRANSPORTDEL];
 
 	r = talloc(talloc_tos(), struct wkssvc_NetrWkstaTransportDel);
 	if (r == NULL) {
@@ -637,7 +637,7 @@ static bool api_wkssvc_NetrUseAdd(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wkssvc_NetrUseAdd *r;
 
-	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRUSEADD];
+	call = &p->interface->calls[NDR_WKSSVC_NETRUSEADD];
 
 	r = talloc(talloc_tos(), struct wkssvc_NetrUseAdd);
 	if (r == NULL) {
@@ -712,7 +712,7 @@ static bool api_wkssvc_NetrUseGetInfo(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wkssvc_NetrUseGetInfo *r;
 
-	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRUSEGETINFO];
+	call = &p->interface->calls[NDR_WKSSVC_NETRUSEGETINFO];
 
 	r = talloc(talloc_tos(), struct wkssvc_NetrUseGetInfo);
 	if (r == NULL) {
@@ -792,7 +792,7 @@ static bool api_wkssvc_NetrUseDel(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wkssvc_NetrUseDel *r;
 
-	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRUSEDEL];
+	call = &p->interface->calls[NDR_WKSSVC_NETRUSEDEL];
 
 	r = talloc(talloc_tos(), struct wkssvc_NetrUseDel);
 	if (r == NULL) {
@@ -865,7 +865,7 @@ static bool api_wkssvc_NetrUseEnum(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wkssvc_NetrUseEnum *r;
 
-	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRUSEENUM];
+	call = &p->interface->calls[NDR_WKSSVC_NETRUSEENUM];
 
 	r = talloc(talloc_tos(), struct wkssvc_NetrUseEnum);
 	if (r == NULL) {
@@ -947,7 +947,7 @@ static bool api_wkssvc_NetrMessageBufferSend(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wkssvc_NetrMessageBufferSend *r;
 
-	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRMESSAGEBUFFERSEND];
+	call = &p->interface->calls[NDR_WKSSVC_NETRMESSAGEBUFFERSEND];
 
 	r = talloc(talloc_tos(), struct wkssvc_NetrMessageBufferSend);
 	if (r == NULL) {
@@ -1020,7 +1020,7 @@ static bool api_wkssvc_NetrWorkstationStatisticsGet(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wkssvc_NetrWorkstationStatisticsGet *r;
 
-	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRWORKSTATIONSTATISTICSGET];
+	call = &p->interface->calls[NDR_WKSSVC_NETRWORKSTATIONSTATISTICSGET];
 
 	r = talloc(talloc_tos(), struct wkssvc_NetrWorkstationStatisticsGet);
 	if (r == NULL) {
@@ -1100,7 +1100,7 @@ static bool api_wkssvc_NetrLogonDomainNameAdd(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wkssvc_NetrLogonDomainNameAdd *r;
 
-	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRLOGONDOMAINNAMEADD];
+	call = &p->interface->calls[NDR_WKSSVC_NETRLOGONDOMAINNAMEADD];
 
 	r = talloc(talloc_tos(), struct wkssvc_NetrLogonDomainNameAdd);
 	if (r == NULL) {
@@ -1173,7 +1173,7 @@ static bool api_wkssvc_NetrLogonDomainNameDel(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wkssvc_NetrLogonDomainNameDel *r;
 
-	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRLOGONDOMAINNAMEDEL];
+	call = &p->interface->calls[NDR_WKSSVC_NETRLOGONDOMAINNAMEDEL];
 
 	r = talloc(talloc_tos(), struct wkssvc_NetrLogonDomainNameDel);
 	if (r == NULL) {
@@ -1246,7 +1246,7 @@ static bool api_wkssvc_NetrJoinDomain(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wkssvc_NetrJoinDomain *r;
 
-	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRJOINDOMAIN];
+	call = &p->interface->calls[NDR_WKSSVC_NETRJOINDOMAIN];
 
 	r = talloc(talloc_tos(), struct wkssvc_NetrJoinDomain);
 	if (r == NULL) {
@@ -1319,7 +1319,7 @@ static bool api_wkssvc_NetrUnjoinDomain(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wkssvc_NetrUnjoinDomain *r;
 
-	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRUNJOINDOMAIN];
+	call = &p->interface->calls[NDR_WKSSVC_NETRUNJOINDOMAIN];
 
 	r = talloc(talloc_tos(), struct wkssvc_NetrUnjoinDomain);
 	if (r == NULL) {
@@ -1392,7 +1392,7 @@ static bool api_wkssvc_NetrRenameMachineInDomain(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wkssvc_NetrRenameMachineInDomain *r;
 
-	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRRENAMEMACHINEINDOMAIN];
+	call = &p->interface->calls[NDR_WKSSVC_NETRRENAMEMACHINEINDOMAIN];
 
 	r = talloc(talloc_tos(), struct wkssvc_NetrRenameMachineInDomain);
 	if (r == NULL) {
@@ -1465,7 +1465,7 @@ static bool api_wkssvc_NetrValidateName(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wkssvc_NetrValidateName *r;
 
-	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRVALIDATENAME];
+	call = &p->interface->calls[NDR_WKSSVC_NETRVALIDATENAME];
 
 	r = talloc(talloc_tos(), struct wkssvc_NetrValidateName);
 	if (r == NULL) {
@@ -1538,7 +1538,7 @@ static bool api_wkssvc_NetrGetJoinInformation(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wkssvc_NetrGetJoinInformation *r;
 
-	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRGETJOININFORMATION];
+	call = &p->interface->calls[NDR_WKSSVC_NETRGETJOININFORMATION];
 
 	r = talloc(talloc_tos(), struct wkssvc_NetrGetJoinInformation);
 	if (r == NULL) {
@@ -1619,7 +1619,7 @@ static bool api_wkssvc_NetrGetJoinableOus(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wkssvc_NetrGetJoinableOus *r;
 
-	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRGETJOINABLEOUS];
+	call = &p->interface->calls[NDR_WKSSVC_NETRGETJOINABLEOUS];
 
 	r = talloc(talloc_tos(), struct wkssvc_NetrGetJoinableOus);
 	if (r == NULL) {
@@ -1700,7 +1700,7 @@ static bool api_wkssvc_NetrJoinDomain2(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wkssvc_NetrJoinDomain2 *r;
 
-	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRJOINDOMAIN2];
+	call = &p->interface->calls[NDR_WKSSVC_NETRJOINDOMAIN2];
 
 	r = talloc(talloc_tos(), struct wkssvc_NetrJoinDomain2);
 	if (r == NULL) {
@@ -1773,7 +1773,7 @@ static bool api_wkssvc_NetrUnjoinDomain2(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wkssvc_NetrUnjoinDomain2 *r;
 
-	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRUNJOINDOMAIN2];
+	call = &p->interface->calls[NDR_WKSSVC_NETRUNJOINDOMAIN2];
 
 	r = talloc(talloc_tos(), struct wkssvc_NetrUnjoinDomain2);
 	if (r == NULL) {
@@ -1846,7 +1846,7 @@ static bool api_wkssvc_NetrRenameMachineInDomain2(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wkssvc_NetrRenameMachineInDomain2 *r;
 
-	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRRENAMEMACHINEINDOMAIN2];
+	call = &p->interface->calls[NDR_WKSSVC_NETRRENAMEMACHINEINDOMAIN2];
 
 	r = talloc(talloc_tos(), struct wkssvc_NetrRenameMachineInDomain2);
 	if (r == NULL) {
@@ -1919,7 +1919,7 @@ static bool api_wkssvc_NetrValidateName2(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wkssvc_NetrValidateName2 *r;
 
-	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRVALIDATENAME2];
+	call = &p->interface->calls[NDR_WKSSVC_NETRVALIDATENAME2];
 
 	r = talloc(talloc_tos(), struct wkssvc_NetrValidateName2);
 	if (r == NULL) {
@@ -1992,7 +1992,7 @@ static bool api_wkssvc_NetrGetJoinableOus2(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wkssvc_NetrGetJoinableOus2 *r;
 
-	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRGETJOINABLEOUS2];
+	call = &p->interface->calls[NDR_WKSSVC_NETRGETJOINABLEOUS2];
 
 	r = talloc(talloc_tos(), struct wkssvc_NetrGetJoinableOus2);
 	if (r == NULL) {
@@ -2073,7 +2073,7 @@ static bool api_wkssvc_NetrAddAlternateComputerName(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wkssvc_NetrAddAlternateComputerName *r;
 
-	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRADDALTERNATECOMPUTERNAME];
+	call = &p->interface->calls[NDR_WKSSVC_NETRADDALTERNATECOMPUTERNAME];
 
 	r = talloc(talloc_tos(), struct wkssvc_NetrAddAlternateComputerName);
 	if (r == NULL) {
@@ -2146,7 +2146,7 @@ static bool api_wkssvc_NetrRemoveAlternateComputerName(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wkssvc_NetrRemoveAlternateComputerName *r;
 
-	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRREMOVEALTERNATECOMPUTERNAME];
+	call = &p->interface->calls[NDR_WKSSVC_NETRREMOVEALTERNATECOMPUTERNAME];
 
 	r = talloc(talloc_tos(), struct wkssvc_NetrRemoveAlternateComputerName);
 	if (r == NULL) {
@@ -2219,7 +2219,7 @@ static bool api_wkssvc_NetrSetPrimaryComputername(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wkssvc_NetrSetPrimaryComputername *r;
 
-	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRSETPRIMARYCOMPUTERNAME];
+	call = &p->interface->calls[NDR_WKSSVC_NETRSETPRIMARYCOMPUTERNAME];
 
 	r = talloc(talloc_tos(), struct wkssvc_NetrSetPrimaryComputername);
 	if (r == NULL) {
@@ -2292,7 +2292,7 @@ static bool api_wkssvc_NetrEnumerateComputerNames(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wkssvc_NetrEnumerateComputerNames *r;
 
-	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRENUMERATECOMPUTERNAMES];
+	call = &p->interface->calls[NDR_WKSSVC_NETRENUMERATECOMPUTERNAMES];
 
 	r = talloc(talloc_tos(), struct wkssvc_NetrEnumerateComputerNames);
 	if (r == NULL) {

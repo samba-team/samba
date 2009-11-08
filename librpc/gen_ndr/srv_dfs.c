@@ -15,7 +15,7 @@ static bool api_dfs_GetManagerVersion(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dfs_GetManagerVersion *r;
 
-	call = &ndr_table_netdfs.calls[NDR_DFS_GETMANAGERVERSION];
+	call = &p->interface->calls[NDR_DFS_GETMANAGERVERSION];
 
 	r = talloc(talloc_tos(), struct dfs_GetManagerVersion);
 	if (r == NULL) {
@@ -95,7 +95,7 @@ static bool api_dfs_Add(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dfs_Add *r;
 
-	call = &ndr_table_netdfs.calls[NDR_DFS_ADD];
+	call = &p->interface->calls[NDR_DFS_ADD];
 
 	r = talloc(talloc_tos(), struct dfs_Add);
 	if (r == NULL) {
@@ -168,7 +168,7 @@ static bool api_dfs_Remove(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dfs_Remove *r;
 
-	call = &ndr_table_netdfs.calls[NDR_DFS_REMOVE];
+	call = &p->interface->calls[NDR_DFS_REMOVE];
 
 	r = talloc(talloc_tos(), struct dfs_Remove);
 	if (r == NULL) {
@@ -241,7 +241,7 @@ static bool api_dfs_SetInfo(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dfs_SetInfo *r;
 
-	call = &ndr_table_netdfs.calls[NDR_DFS_SETINFO];
+	call = &p->interface->calls[NDR_DFS_SETINFO];
 
 	r = talloc(talloc_tos(), struct dfs_SetInfo);
 	if (r == NULL) {
@@ -314,7 +314,7 @@ static bool api_dfs_GetInfo(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dfs_GetInfo *r;
 
-	call = &ndr_table_netdfs.calls[NDR_DFS_GETINFO];
+	call = &p->interface->calls[NDR_DFS_GETINFO];
 
 	r = talloc(talloc_tos(), struct dfs_GetInfo);
 	if (r == NULL) {
@@ -394,7 +394,7 @@ static bool api_dfs_Enum(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dfs_Enum *r;
 
-	call = &ndr_table_netdfs.calls[NDR_DFS_ENUM];
+	call = &p->interface->calls[NDR_DFS_ENUM];
 
 	r = talloc(talloc_tos(), struct dfs_Enum);
 	if (r == NULL) {
@@ -470,7 +470,7 @@ static bool api_dfs_Rename(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dfs_Rename *r;
 
-	call = &ndr_table_netdfs.calls[NDR_DFS_RENAME];
+	call = &p->interface->calls[NDR_DFS_RENAME];
 
 	r = talloc(talloc_tos(), struct dfs_Rename);
 	if (r == NULL) {
@@ -543,7 +543,7 @@ static bool api_dfs_Move(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dfs_Move *r;
 
-	call = &ndr_table_netdfs.calls[NDR_DFS_MOVE];
+	call = &p->interface->calls[NDR_DFS_MOVE];
 
 	r = talloc(talloc_tos(), struct dfs_Move);
 	if (r == NULL) {
@@ -616,7 +616,7 @@ static bool api_dfs_ManagerGetConfigInfo(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dfs_ManagerGetConfigInfo *r;
 
-	call = &ndr_table_netdfs.calls[NDR_DFS_MANAGERGETCONFIGINFO];
+	call = &p->interface->calls[NDR_DFS_MANAGERGETCONFIGINFO];
 
 	r = talloc(talloc_tos(), struct dfs_ManagerGetConfigInfo);
 	if (r == NULL) {
@@ -689,7 +689,7 @@ static bool api_dfs_ManagerSendSiteInfo(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dfs_ManagerSendSiteInfo *r;
 
-	call = &ndr_table_netdfs.calls[NDR_DFS_MANAGERSENDSITEINFO];
+	call = &p->interface->calls[NDR_DFS_MANAGERSENDSITEINFO];
 
 	r = talloc(talloc_tos(), struct dfs_ManagerSendSiteInfo);
 	if (r == NULL) {
@@ -762,7 +762,7 @@ static bool api_dfs_AddFtRoot(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dfs_AddFtRoot *r;
 
-	call = &ndr_table_netdfs.calls[NDR_DFS_ADDFTROOT];
+	call = &p->interface->calls[NDR_DFS_ADDFTROOT];
 
 	r = talloc(talloc_tos(), struct dfs_AddFtRoot);
 	if (r == NULL) {
@@ -837,7 +837,7 @@ static bool api_dfs_RemoveFtRoot(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dfs_RemoveFtRoot *r;
 
-	call = &ndr_table_netdfs.calls[NDR_DFS_REMOVEFTROOT];
+	call = &p->interface->calls[NDR_DFS_REMOVEFTROOT];
 
 	r = talloc(talloc_tos(), struct dfs_RemoveFtRoot);
 	if (r == NULL) {
@@ -912,7 +912,7 @@ static bool api_dfs_AddStdRoot(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dfs_AddStdRoot *r;
 
-	call = &ndr_table_netdfs.calls[NDR_DFS_ADDSTDROOT];
+	call = &p->interface->calls[NDR_DFS_ADDSTDROOT];
 
 	r = talloc(talloc_tos(), struct dfs_AddStdRoot);
 	if (r == NULL) {
@@ -985,7 +985,7 @@ static bool api_dfs_RemoveStdRoot(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dfs_RemoveStdRoot *r;
 
-	call = &ndr_table_netdfs.calls[NDR_DFS_REMOVESTDROOT];
+	call = &p->interface->calls[NDR_DFS_REMOVESTDROOT];
 
 	r = talloc(talloc_tos(), struct dfs_RemoveStdRoot);
 	if (r == NULL) {
@@ -1058,7 +1058,7 @@ static bool api_dfs_ManagerInitialize(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dfs_ManagerInitialize *r;
 
-	call = &ndr_table_netdfs.calls[NDR_DFS_MANAGERINITIALIZE];
+	call = &p->interface->calls[NDR_DFS_MANAGERINITIALIZE];
 
 	r = talloc(talloc_tos(), struct dfs_ManagerInitialize);
 	if (r == NULL) {
@@ -1131,7 +1131,7 @@ static bool api_dfs_AddStdRootForced(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dfs_AddStdRootForced *r;
 
-	call = &ndr_table_netdfs.calls[NDR_DFS_ADDSTDROOTFORCED];
+	call = &p->interface->calls[NDR_DFS_ADDSTDROOTFORCED];
 
 	r = talloc(talloc_tos(), struct dfs_AddStdRootForced);
 	if (r == NULL) {
@@ -1204,7 +1204,7 @@ static bool api_dfs_GetDcAddress(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dfs_GetDcAddress *r;
 
-	call = &ndr_table_netdfs.calls[NDR_DFS_GETDCADDRESS];
+	call = &p->interface->calls[NDR_DFS_GETDCADDRESS];
 
 	r = talloc(talloc_tos(), struct dfs_GetDcAddress);
 	if (r == NULL) {
@@ -1281,7 +1281,7 @@ static bool api_dfs_SetDcAddress(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dfs_SetDcAddress *r;
 
-	call = &ndr_table_netdfs.calls[NDR_DFS_SETDCADDRESS];
+	call = &p->interface->calls[NDR_DFS_SETDCADDRESS];
 
 	r = talloc(talloc_tos(), struct dfs_SetDcAddress);
 	if (r == NULL) {
@@ -1354,7 +1354,7 @@ static bool api_dfs_FlushFtTable(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dfs_FlushFtTable *r;
 
-	call = &ndr_table_netdfs.calls[NDR_DFS_FLUSHFTTABLE];
+	call = &p->interface->calls[NDR_DFS_FLUSHFTTABLE];
 
 	r = talloc(talloc_tos(), struct dfs_FlushFtTable);
 	if (r == NULL) {
@@ -1427,7 +1427,7 @@ static bool api_dfs_Add2(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dfs_Add2 *r;
 
-	call = &ndr_table_netdfs.calls[NDR_DFS_ADD2];
+	call = &p->interface->calls[NDR_DFS_ADD2];
 
 	r = talloc(talloc_tos(), struct dfs_Add2);
 	if (r == NULL) {
@@ -1500,7 +1500,7 @@ static bool api_dfs_Remove2(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dfs_Remove2 *r;
 
-	call = &ndr_table_netdfs.calls[NDR_DFS_REMOVE2];
+	call = &p->interface->calls[NDR_DFS_REMOVE2];
 
 	r = talloc(talloc_tos(), struct dfs_Remove2);
 	if (r == NULL) {
@@ -1573,7 +1573,7 @@ static bool api_dfs_EnumEx(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dfs_EnumEx *r;
 
-	call = &ndr_table_netdfs.calls[NDR_DFS_ENUMEX];
+	call = &p->interface->calls[NDR_DFS_ENUMEX];
 
 	r = talloc(talloc_tos(), struct dfs_EnumEx);
 	if (r == NULL) {
@@ -1649,7 +1649,7 @@ static bool api_dfs_SetInfo2(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dfs_SetInfo2 *r;
 
-	call = &ndr_table_netdfs.calls[NDR_DFS_SETINFO2];
+	call = &p->interface->calls[NDR_DFS_SETINFO2];
 
 	r = talloc(talloc_tos(), struct dfs_SetInfo2);
 	if (r == NULL) {

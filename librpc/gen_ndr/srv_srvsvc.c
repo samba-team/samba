@@ -15,7 +15,7 @@ static bool api_srvsvc_NetCharDevEnum(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetCharDevEnum *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETCHARDEVENUM];
+	call = &p->interface->calls[NDR_SRVSVC_NETCHARDEVENUM];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetCharDevEnum);
 	if (r == NULL) {
@@ -97,7 +97,7 @@ static bool api_srvsvc_NetCharDevGetInfo(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetCharDevGetInfo *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETCHARDEVGETINFO];
+	call = &p->interface->calls[NDR_SRVSVC_NETCHARDEVGETINFO];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetCharDevGetInfo);
 	if (r == NULL) {
@@ -177,7 +177,7 @@ static bool api_srvsvc_NetCharDevControl(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetCharDevControl *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETCHARDEVCONTROL];
+	call = &p->interface->calls[NDR_SRVSVC_NETCHARDEVCONTROL];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetCharDevControl);
 	if (r == NULL) {
@@ -250,7 +250,7 @@ static bool api_srvsvc_NetCharDevQEnum(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetCharDevQEnum *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETCHARDEVQENUM];
+	call = &p->interface->calls[NDR_SRVSVC_NETCHARDEVQENUM];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetCharDevQEnum);
 	if (r == NULL) {
@@ -332,7 +332,7 @@ static bool api_srvsvc_NetCharDevQGetInfo(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetCharDevQGetInfo *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETCHARDEVQGETINFO];
+	call = &p->interface->calls[NDR_SRVSVC_NETCHARDEVQGETINFO];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetCharDevQGetInfo);
 	if (r == NULL) {
@@ -412,7 +412,7 @@ static bool api_srvsvc_NetCharDevQSetInfo(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetCharDevQSetInfo *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETCHARDEVQSETINFO];
+	call = &p->interface->calls[NDR_SRVSVC_NETCHARDEVQSETINFO];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetCharDevQSetInfo);
 	if (r == NULL) {
@@ -487,7 +487,7 @@ static bool api_srvsvc_NetCharDevQPurge(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetCharDevQPurge *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETCHARDEVQPURGE];
+	call = &p->interface->calls[NDR_SRVSVC_NETCHARDEVQPURGE];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetCharDevQPurge);
 	if (r == NULL) {
@@ -560,7 +560,7 @@ static bool api_srvsvc_NetCharDevQPurgeSelf(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetCharDevQPurgeSelf *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETCHARDEVQPURGESELF];
+	call = &p->interface->calls[NDR_SRVSVC_NETCHARDEVQPURGESELF];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetCharDevQPurgeSelf);
 	if (r == NULL) {
@@ -633,7 +633,7 @@ static bool api_srvsvc_NetConnEnum(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetConnEnum *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETCONNENUM];
+	call = &p->interface->calls[NDR_SRVSVC_NETCONNENUM];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetConnEnum);
 	if (r == NULL) {
@@ -715,7 +715,7 @@ static bool api_srvsvc_NetFileEnum(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetFileEnum *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETFILEENUM];
+	call = &p->interface->calls[NDR_SRVSVC_NETFILEENUM];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetFileEnum);
 	if (r == NULL) {
@@ -797,7 +797,7 @@ static bool api_srvsvc_NetFileGetInfo(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetFileGetInfo *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETFILEGETINFO];
+	call = &p->interface->calls[NDR_SRVSVC_NETFILEGETINFO];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetFileGetInfo);
 	if (r == NULL) {
@@ -877,7 +877,7 @@ static bool api_srvsvc_NetFileClose(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetFileClose *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETFILECLOSE];
+	call = &p->interface->calls[NDR_SRVSVC_NETFILECLOSE];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetFileClose);
 	if (r == NULL) {
@@ -950,7 +950,7 @@ static bool api_srvsvc_NetSessEnum(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetSessEnum *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETSESSENUM];
+	call = &p->interface->calls[NDR_SRVSVC_NETSESSENUM];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetSessEnum);
 	if (r == NULL) {
@@ -1032,7 +1032,7 @@ static bool api_srvsvc_NetSessDel(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetSessDel *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETSESSDEL];
+	call = &p->interface->calls[NDR_SRVSVC_NETSESSDEL];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetSessDel);
 	if (r == NULL) {
@@ -1105,7 +1105,7 @@ static bool api_srvsvc_NetShareAdd(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetShareAdd *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETSHAREADD];
+	call = &p->interface->calls[NDR_SRVSVC_NETSHAREADD];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetShareAdd);
 	if (r == NULL) {
@@ -1180,7 +1180,7 @@ static bool api_srvsvc_NetShareEnumAll(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetShareEnumAll *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETSHAREENUMALL];
+	call = &p->interface->calls[NDR_SRVSVC_NETSHAREENUMALL];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetShareEnumAll);
 	if (r == NULL) {
@@ -1262,7 +1262,7 @@ static bool api_srvsvc_NetShareGetInfo(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetShareGetInfo *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETSHAREGETINFO];
+	call = &p->interface->calls[NDR_SRVSVC_NETSHAREGETINFO];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetShareGetInfo);
 	if (r == NULL) {
@@ -1342,7 +1342,7 @@ static bool api_srvsvc_NetShareSetInfo(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetShareSetInfo *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETSHARESETINFO];
+	call = &p->interface->calls[NDR_SRVSVC_NETSHARESETINFO];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetShareSetInfo);
 	if (r == NULL) {
@@ -1417,7 +1417,7 @@ static bool api_srvsvc_NetShareDel(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetShareDel *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETSHAREDEL];
+	call = &p->interface->calls[NDR_SRVSVC_NETSHAREDEL];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetShareDel);
 	if (r == NULL) {
@@ -1490,7 +1490,7 @@ static bool api_srvsvc_NetShareDelSticky(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetShareDelSticky *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETSHAREDELSTICKY];
+	call = &p->interface->calls[NDR_SRVSVC_NETSHAREDELSTICKY];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetShareDelSticky);
 	if (r == NULL) {
@@ -1563,7 +1563,7 @@ static bool api_srvsvc_NetShareCheck(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetShareCheck *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETSHARECHECK];
+	call = &p->interface->calls[NDR_SRVSVC_NETSHARECHECK];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetShareCheck);
 	if (r == NULL) {
@@ -1643,7 +1643,7 @@ static bool api_srvsvc_NetSrvGetInfo(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetSrvGetInfo *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETSRVGETINFO];
+	call = &p->interface->calls[NDR_SRVSVC_NETSRVGETINFO];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetSrvGetInfo);
 	if (r == NULL) {
@@ -1723,7 +1723,7 @@ static bool api_srvsvc_NetSrvSetInfo(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetSrvSetInfo *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETSRVSETINFO];
+	call = &p->interface->calls[NDR_SRVSVC_NETSRVSETINFO];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetSrvSetInfo);
 	if (r == NULL) {
@@ -1798,7 +1798,7 @@ static bool api_srvsvc_NetDiskEnum(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetDiskEnum *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETDISKENUM];
+	call = &p->interface->calls[NDR_SRVSVC_NETDISKENUM];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetDiskEnum);
 	if (r == NULL) {
@@ -1880,7 +1880,7 @@ static bool api_srvsvc_NetServerStatisticsGet(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetServerStatisticsGet *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETSERVERSTATISTICSGET];
+	call = &p->interface->calls[NDR_SRVSVC_NETSERVERSTATISTICSGET];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetServerStatisticsGet);
 	if (r == NULL) {
@@ -1960,7 +1960,7 @@ static bool api_srvsvc_NetTransportAdd(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetTransportAdd *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETTRANSPORTADD];
+	call = &p->interface->calls[NDR_SRVSVC_NETTRANSPORTADD];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetTransportAdd);
 	if (r == NULL) {
@@ -2033,7 +2033,7 @@ static bool api_srvsvc_NetTransportEnum(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetTransportEnum *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETTRANSPORTENUM];
+	call = &p->interface->calls[NDR_SRVSVC_NETTRANSPORTENUM];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetTransportEnum);
 	if (r == NULL) {
@@ -2115,7 +2115,7 @@ static bool api_srvsvc_NetTransportDel(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetTransportDel *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETTRANSPORTDEL];
+	call = &p->interface->calls[NDR_SRVSVC_NETTRANSPORTDEL];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetTransportDel);
 	if (r == NULL) {
@@ -2188,7 +2188,7 @@ static bool api_srvsvc_NetRemoteTOD(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetRemoteTOD *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETREMOTETOD];
+	call = &p->interface->calls[NDR_SRVSVC_NETREMOTETOD];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetRemoteTOD);
 	if (r == NULL) {
@@ -2268,7 +2268,7 @@ static bool api_srvsvc_NetSetServiceBits(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetSetServiceBits *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETSETSERVICEBITS];
+	call = &p->interface->calls[NDR_SRVSVC_NETSETSERVICEBITS];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetSetServiceBits);
 	if (r == NULL) {
@@ -2341,7 +2341,7 @@ static bool api_srvsvc_NetPathType(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetPathType *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETPATHTYPE];
+	call = &p->interface->calls[NDR_SRVSVC_NETPATHTYPE];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetPathType);
 	if (r == NULL) {
@@ -2421,7 +2421,7 @@ static bool api_srvsvc_NetPathCanonicalize(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetPathCanonicalize *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETPATHCANONICALIZE];
+	call = &p->interface->calls[NDR_SRVSVC_NETPATHCANONICALIZE];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetPathCanonicalize);
 	if (r == NULL) {
@@ -2502,7 +2502,7 @@ static bool api_srvsvc_NetPathCompare(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetPathCompare *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETPATHCOMPARE];
+	call = &p->interface->calls[NDR_SRVSVC_NETPATHCOMPARE];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetPathCompare);
 	if (r == NULL) {
@@ -2575,7 +2575,7 @@ static bool api_srvsvc_NetNameValidate(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetNameValidate *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETNAMEVALIDATE];
+	call = &p->interface->calls[NDR_SRVSVC_NETNAMEVALIDATE];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetNameValidate);
 	if (r == NULL) {
@@ -2648,7 +2648,7 @@ static bool api_srvsvc_NETRPRNAMECANONICALIZE(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NETRPRNAMECANONICALIZE *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETRPRNAMECANONICALIZE];
+	call = &p->interface->calls[NDR_SRVSVC_NETRPRNAMECANONICALIZE];
 
 	r = talloc(talloc_tos(), struct srvsvc_NETRPRNAMECANONICALIZE);
 	if (r == NULL) {
@@ -2721,7 +2721,7 @@ static bool api_srvsvc_NetPRNameCompare(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetPRNameCompare *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETPRNAMECOMPARE];
+	call = &p->interface->calls[NDR_SRVSVC_NETPRNAMECOMPARE];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetPRNameCompare);
 	if (r == NULL) {
@@ -2794,7 +2794,7 @@ static bool api_srvsvc_NetShareEnum(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetShareEnum *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETSHAREENUM];
+	call = &p->interface->calls[NDR_SRVSVC_NETSHAREENUM];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetShareEnum);
 	if (r == NULL) {
@@ -2876,7 +2876,7 @@ static bool api_srvsvc_NetShareDelStart(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetShareDelStart *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETSHAREDELSTART];
+	call = &p->interface->calls[NDR_SRVSVC_NETSHAREDELSTART];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetShareDelStart);
 	if (r == NULL) {
@@ -2956,7 +2956,7 @@ static bool api_srvsvc_NetShareDelCommit(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetShareDelCommit *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETSHAREDELCOMMIT];
+	call = &p->interface->calls[NDR_SRVSVC_NETSHAREDELCOMMIT];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetShareDelCommit);
 	if (r == NULL) {
@@ -3031,7 +3031,7 @@ static bool api_srvsvc_NetGetFileSecurity(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetGetFileSecurity *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETGETFILESECURITY];
+	call = &p->interface->calls[NDR_SRVSVC_NETGETFILESECURITY];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetGetFileSecurity);
 	if (r == NULL) {
@@ -3111,7 +3111,7 @@ static bool api_srvsvc_NetSetFileSecurity(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetSetFileSecurity *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETSETFILESECURITY];
+	call = &p->interface->calls[NDR_SRVSVC_NETSETFILESECURITY];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetSetFileSecurity);
 	if (r == NULL) {
@@ -3184,7 +3184,7 @@ static bool api_srvsvc_NetServerTransportAddEx(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetServerTransportAddEx *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETSERVERTRANSPORTADDEX];
+	call = &p->interface->calls[NDR_SRVSVC_NETSERVERTRANSPORTADDEX];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetServerTransportAddEx);
 	if (r == NULL) {
@@ -3257,7 +3257,7 @@ static bool api_srvsvc_NetServerSetServiceBitsEx(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NetServerSetServiceBitsEx *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETSERVERSETSERVICEBITSEX];
+	call = &p->interface->calls[NDR_SRVSVC_NETSERVERSETSERVICEBITSEX];
 
 	r = talloc(talloc_tos(), struct srvsvc_NetServerSetServiceBitsEx);
 	if (r == NULL) {
@@ -3330,7 +3330,7 @@ static bool api_srvsvc_NETRDFSGETVERSION(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NETRDFSGETVERSION *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETRDFSGETVERSION];
+	call = &p->interface->calls[NDR_SRVSVC_NETRDFSGETVERSION];
 
 	r = talloc(talloc_tos(), struct srvsvc_NETRDFSGETVERSION);
 	if (r == NULL) {
@@ -3403,7 +3403,7 @@ static bool api_srvsvc_NETRDFSCREATELOCALPARTITION(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NETRDFSCREATELOCALPARTITION *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETRDFSCREATELOCALPARTITION];
+	call = &p->interface->calls[NDR_SRVSVC_NETRDFSCREATELOCALPARTITION];
 
 	r = talloc(talloc_tos(), struct srvsvc_NETRDFSCREATELOCALPARTITION);
 	if (r == NULL) {
@@ -3476,7 +3476,7 @@ static bool api_srvsvc_NETRDFSDELETELOCALPARTITION(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NETRDFSDELETELOCALPARTITION *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETRDFSDELETELOCALPARTITION];
+	call = &p->interface->calls[NDR_SRVSVC_NETRDFSDELETELOCALPARTITION];
 
 	r = talloc(talloc_tos(), struct srvsvc_NETRDFSDELETELOCALPARTITION);
 	if (r == NULL) {
@@ -3549,7 +3549,7 @@ static bool api_srvsvc_NETRDFSSETLOCALVOLUMESTATE(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NETRDFSSETLOCALVOLUMESTATE *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETRDFSSETLOCALVOLUMESTATE];
+	call = &p->interface->calls[NDR_SRVSVC_NETRDFSSETLOCALVOLUMESTATE];
 
 	r = talloc(talloc_tos(), struct srvsvc_NETRDFSSETLOCALVOLUMESTATE);
 	if (r == NULL) {
@@ -3622,7 +3622,7 @@ static bool api_srvsvc_NETRDFSSETSERVERINFO(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NETRDFSSETSERVERINFO *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETRDFSSETSERVERINFO];
+	call = &p->interface->calls[NDR_SRVSVC_NETRDFSSETSERVERINFO];
 
 	r = talloc(talloc_tos(), struct srvsvc_NETRDFSSETSERVERINFO);
 	if (r == NULL) {
@@ -3695,7 +3695,7 @@ static bool api_srvsvc_NETRDFSCREATEEXITPOINT(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NETRDFSCREATEEXITPOINT *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETRDFSCREATEEXITPOINT];
+	call = &p->interface->calls[NDR_SRVSVC_NETRDFSCREATEEXITPOINT];
 
 	r = talloc(talloc_tos(), struct srvsvc_NETRDFSCREATEEXITPOINT);
 	if (r == NULL) {
@@ -3768,7 +3768,7 @@ static bool api_srvsvc_NETRDFSDELETEEXITPOINT(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NETRDFSDELETEEXITPOINT *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETRDFSDELETEEXITPOINT];
+	call = &p->interface->calls[NDR_SRVSVC_NETRDFSDELETEEXITPOINT];
 
 	r = talloc(talloc_tos(), struct srvsvc_NETRDFSDELETEEXITPOINT);
 	if (r == NULL) {
@@ -3841,7 +3841,7 @@ static bool api_srvsvc_NETRDFSMODIFYPREFIX(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NETRDFSMODIFYPREFIX *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETRDFSMODIFYPREFIX];
+	call = &p->interface->calls[NDR_SRVSVC_NETRDFSMODIFYPREFIX];
 
 	r = talloc(talloc_tos(), struct srvsvc_NETRDFSMODIFYPREFIX);
 	if (r == NULL) {
@@ -3914,7 +3914,7 @@ static bool api_srvsvc_NETRDFSFIXLOCALVOLUME(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NETRDFSFIXLOCALVOLUME *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETRDFSFIXLOCALVOLUME];
+	call = &p->interface->calls[NDR_SRVSVC_NETRDFSFIXLOCALVOLUME];
 
 	r = talloc(talloc_tos(), struct srvsvc_NETRDFSFIXLOCALVOLUME);
 	if (r == NULL) {
@@ -3987,7 +3987,7 @@ static bool api_srvsvc_NETRDFSMANAGERREPORTSITEINFO(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NETRDFSMANAGERREPORTSITEINFO *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETRDFSMANAGERREPORTSITEINFO];
+	call = &p->interface->calls[NDR_SRVSVC_NETRDFSMANAGERREPORTSITEINFO];
 
 	r = talloc(talloc_tos(), struct srvsvc_NETRDFSMANAGERREPORTSITEINFO);
 	if (r == NULL) {
@@ -4060,7 +4060,7 @@ static bool api_srvsvc_NETRSERVERTRANSPORTDELEX(pipes_struct *p)
 	DATA_BLOB blob;
 	struct srvsvc_NETRSERVERTRANSPORTDELEX *r;
 
-	call = &ndr_table_srvsvc.calls[NDR_SRVSVC_NETRSERVERTRANSPORTDELEX];
+	call = &p->interface->calls[NDR_SRVSVC_NETRSERVERTRANSPORTDELEX];
 
 	r = talloc(talloc_tos(), struct srvsvc_NETRSERVERTRANSPORTDELEX);
 	if (r == NULL) {

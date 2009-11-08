@@ -15,7 +15,7 @@ static bool api_dssetup_DsRoleGetPrimaryDomainInformation(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dssetup_DsRoleGetPrimaryDomainInformation *r;
 
-	call = &ndr_table_dssetup.calls[NDR_DSSETUP_DSROLEGETPRIMARYDOMAININFORMATION];
+	call = &p->interface->calls[NDR_DSSETUP_DSROLEGETPRIMARYDOMAININFORMATION];
 
 	r = talloc(talloc_tos(), struct dssetup_DsRoleGetPrimaryDomainInformation);
 	if (r == NULL) {
@@ -95,7 +95,7 @@ static bool api_dssetup_DsRoleDnsNameToFlatName(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dssetup_DsRoleDnsNameToFlatName *r;
 
-	call = &ndr_table_dssetup.calls[NDR_DSSETUP_DSROLEDNSNAMETOFLATNAME];
+	call = &p->interface->calls[NDR_DSSETUP_DSROLEDNSNAMETOFLATNAME];
 
 	r = talloc(talloc_tos(), struct dssetup_DsRoleDnsNameToFlatName);
 	if (r == NULL) {
@@ -168,7 +168,7 @@ static bool api_dssetup_DsRoleDcAsDc(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dssetup_DsRoleDcAsDc *r;
 
-	call = &ndr_table_dssetup.calls[NDR_DSSETUP_DSROLEDCASDC];
+	call = &p->interface->calls[NDR_DSSETUP_DSROLEDCASDC];
 
 	r = talloc(talloc_tos(), struct dssetup_DsRoleDcAsDc);
 	if (r == NULL) {
@@ -241,7 +241,7 @@ static bool api_dssetup_DsRoleDcAsReplica(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dssetup_DsRoleDcAsReplica *r;
 
-	call = &ndr_table_dssetup.calls[NDR_DSSETUP_DSROLEDCASREPLICA];
+	call = &p->interface->calls[NDR_DSSETUP_DSROLEDCASREPLICA];
 
 	r = talloc(talloc_tos(), struct dssetup_DsRoleDcAsReplica);
 	if (r == NULL) {
@@ -314,7 +314,7 @@ static bool api_dssetup_DsRoleDemoteDc(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dssetup_DsRoleDemoteDc *r;
 
-	call = &ndr_table_dssetup.calls[NDR_DSSETUP_DSROLEDEMOTEDC];
+	call = &p->interface->calls[NDR_DSSETUP_DSROLEDEMOTEDC];
 
 	r = talloc(talloc_tos(), struct dssetup_DsRoleDemoteDc);
 	if (r == NULL) {
@@ -387,7 +387,7 @@ static bool api_dssetup_DsRoleGetDcOperationProgress(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dssetup_DsRoleGetDcOperationProgress *r;
 
-	call = &ndr_table_dssetup.calls[NDR_DSSETUP_DSROLEGETDCOPERATIONPROGRESS];
+	call = &p->interface->calls[NDR_DSSETUP_DSROLEGETDCOPERATIONPROGRESS];
 
 	r = talloc(talloc_tos(), struct dssetup_DsRoleGetDcOperationProgress);
 	if (r == NULL) {
@@ -460,7 +460,7 @@ static bool api_dssetup_DsRoleGetDcOperationResults(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dssetup_DsRoleGetDcOperationResults *r;
 
-	call = &ndr_table_dssetup.calls[NDR_DSSETUP_DSROLEGETDCOPERATIONRESULTS];
+	call = &p->interface->calls[NDR_DSSETUP_DSROLEGETDCOPERATIONRESULTS];
 
 	r = talloc(talloc_tos(), struct dssetup_DsRoleGetDcOperationResults);
 	if (r == NULL) {
@@ -533,7 +533,7 @@ static bool api_dssetup_DsRoleCancel(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dssetup_DsRoleCancel *r;
 
-	call = &ndr_table_dssetup.calls[NDR_DSSETUP_DSROLECANCEL];
+	call = &p->interface->calls[NDR_DSSETUP_DSROLECANCEL];
 
 	r = talloc(talloc_tos(), struct dssetup_DsRoleCancel);
 	if (r == NULL) {
@@ -606,7 +606,7 @@ static bool api_dssetup_DsRoleServerSaveStateForUpgrade(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dssetup_DsRoleServerSaveStateForUpgrade *r;
 
-	call = &ndr_table_dssetup.calls[NDR_DSSETUP_DSROLESERVERSAVESTATEFORUPGRADE];
+	call = &p->interface->calls[NDR_DSSETUP_DSROLESERVERSAVESTATEFORUPGRADE];
 
 	r = talloc(talloc_tos(), struct dssetup_DsRoleServerSaveStateForUpgrade);
 	if (r == NULL) {
@@ -679,7 +679,7 @@ static bool api_dssetup_DsRoleUpgradeDownlevelServer(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dssetup_DsRoleUpgradeDownlevelServer *r;
 
-	call = &ndr_table_dssetup.calls[NDR_DSSETUP_DSROLEUPGRADEDOWNLEVELSERVER];
+	call = &p->interface->calls[NDR_DSSETUP_DSROLEUPGRADEDOWNLEVELSERVER];
 
 	r = talloc(talloc_tos(), struct dssetup_DsRoleUpgradeDownlevelServer);
 	if (r == NULL) {
@@ -752,7 +752,7 @@ static bool api_dssetup_DsRoleAbortDownlevelServerUpgrade(pipes_struct *p)
 	DATA_BLOB blob;
 	struct dssetup_DsRoleAbortDownlevelServerUpgrade *r;
 
-	call = &ndr_table_dssetup.calls[NDR_DSSETUP_DSROLEABORTDOWNLEVELSERVERUPGRADE];
+	call = &p->interface->calls[NDR_DSSETUP_DSROLEABORTDOWNLEVELSERVERUPGRADE];
 
 	r = talloc(talloc_tos(), struct dssetup_DsRoleAbortDownlevelServerUpgrade);
 	if (r == NULL) {
