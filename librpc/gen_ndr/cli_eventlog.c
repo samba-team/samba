@@ -46,7 +46,7 @@ struct tevent_req *rpccli_eventlog_ClearEventLogW_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_eventlog,
+				    NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				    NDR_EVENTLOG_CLEAREVENTLOGW,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -126,7 +126,7 @@ NTSTATUS rpccli_eventlog_ClearEventLogW(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_eventlog,
+				NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				NDR_EVENTLOG_CLEAREVENTLOGW,
 				&r);
 
@@ -184,7 +184,7 @@ struct tevent_req *rpccli_eventlog_BackupEventLogW_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_eventlog,
+				    NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				    NDR_EVENTLOG_BACKUPEVENTLOGW,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -264,7 +264,7 @@ NTSTATUS rpccli_eventlog_BackupEventLogW(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_eventlog,
+				NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				NDR_EVENTLOG_BACKUPEVENTLOGW,
 				&r);
 
@@ -327,7 +327,7 @@ struct tevent_req *rpccli_eventlog_CloseEventLog_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_eventlog,
+				    NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				    NDR_EVENTLOG_CLOSEEVENTLOG,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -406,7 +406,7 @@ NTSTATUS rpccli_eventlog_CloseEventLog(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_eventlog,
+				NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				NDR_EVENTLOG_CLOSEEVENTLOG,
 				&r);
 
@@ -470,7 +470,7 @@ struct tevent_req *rpccli_eventlog_DeregisterEventSource_send(TALLOC_CTX *mem_ct
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_eventlog,
+				    NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				    NDR_EVENTLOG_DEREGISTEREVENTSOURCE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -549,7 +549,7 @@ NTSTATUS rpccli_eventlog_DeregisterEventSource(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_eventlog,
+				NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				NDR_EVENTLOG_DEREGISTEREVENTSOURCE,
 				&r);
 
@@ -614,7 +614,7 @@ struct tevent_req *rpccli_eventlog_GetNumRecords_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_eventlog,
+				    NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				    NDR_EVENTLOG_GETNUMRECORDS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -694,7 +694,7 @@ NTSTATUS rpccli_eventlog_GetNumRecords(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_eventlog,
+				NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				NDR_EVENTLOG_GETNUMRECORDS,
 				&r);
 
@@ -759,7 +759,7 @@ struct tevent_req *rpccli_eventlog_GetOldestRecord_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_eventlog,
+				    NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				    NDR_EVENTLOG_GETOLDESTRECORD,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -839,7 +839,7 @@ NTSTATUS rpccli_eventlog_GetOldestRecord(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_eventlog,
+				NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				NDR_EVENTLOG_GETOLDESTRECORD,
 				&r);
 
@@ -894,7 +894,7 @@ struct tevent_req *rpccli_eventlog_ChangeNotify_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_eventlog,
+				    NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				    NDR_EVENTLOG_CHANGENOTIFY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -970,7 +970,7 @@ NTSTATUS rpccli_eventlog_ChangeNotify(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_eventlog,
+				NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				NDR_EVENTLOG_CHANGENOTIFY,
 				&r);
 
@@ -1042,7 +1042,7 @@ struct tevent_req *rpccli_eventlog_OpenEventLogW_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_eventlog,
+				    NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				    NDR_EVENTLOG_OPENEVENTLOGW,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1130,7 +1130,7 @@ NTSTATUS rpccli_eventlog_OpenEventLogW(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_eventlog,
+				NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				NDR_EVENTLOG_OPENEVENTLOGW,
 				&r);
 
@@ -1203,7 +1203,7 @@ struct tevent_req *rpccli_eventlog_RegisterEventSourceW_send(TALLOC_CTX *mem_ctx
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_eventlog,
+				    NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				    NDR_EVENTLOG_REGISTEREVENTSOURCEW,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1291,7 +1291,7 @@ NTSTATUS rpccli_eventlog_RegisterEventSourceW(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_eventlog,
+				NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				NDR_EVENTLOG_REGISTEREVENTSOURCEW,
 				&r);
 
@@ -1362,7 +1362,7 @@ struct tevent_req *rpccli_eventlog_OpenBackupEventLogW_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_eventlog,
+				    NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				    NDR_EVENTLOG_OPENBACKUPEVENTLOGW,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1448,7 +1448,7 @@ NTSTATUS rpccli_eventlog_OpenBackupEventLogW(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_eventlog,
+				NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				NDR_EVENTLOG_OPENBACKUPEVENTLOGW,
 				&r);
 
@@ -1523,7 +1523,7 @@ struct tevent_req *rpccli_eventlog_ReadEventLogW_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_eventlog,
+				    NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				    NDR_EVENTLOG_READEVENTLOGW,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1613,7 +1613,7 @@ NTSTATUS rpccli_eventlog_ReadEventLogW(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_eventlog,
+				NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				NDR_EVENTLOG_READEVENTLOGW,
 				&r);
 
@@ -1706,7 +1706,7 @@ struct tevent_req *rpccli_eventlog_ReportEventW_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_eventlog,
+				    NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				    NDR_EVENTLOG_REPORTEVENTW,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1816,7 +1816,7 @@ NTSTATUS rpccli_eventlog_ReportEventW(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_eventlog,
+				NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				NDR_EVENTLOG_REPORTEVENTW,
 				&r);
 
@@ -1876,7 +1876,7 @@ struct tevent_req *rpccli_eventlog_ClearEventLogA_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_eventlog,
+				    NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				    NDR_EVENTLOG_CLEAREVENTLOGA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1952,7 +1952,7 @@ NTSTATUS rpccli_eventlog_ClearEventLogA(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_eventlog,
+				NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				NDR_EVENTLOG_CLEAREVENTLOGA,
 				&r);
 
@@ -2006,7 +2006,7 @@ struct tevent_req *rpccli_eventlog_BackupEventLogA_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_eventlog,
+				    NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				    NDR_EVENTLOG_BACKUPEVENTLOGA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2082,7 +2082,7 @@ NTSTATUS rpccli_eventlog_BackupEventLogA(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_eventlog,
+				NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				NDR_EVENTLOG_BACKUPEVENTLOGA,
 				&r);
 
@@ -2136,7 +2136,7 @@ struct tevent_req *rpccli_eventlog_OpenEventLogA_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_eventlog,
+				    NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				    NDR_EVENTLOG_OPENEVENTLOGA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2212,7 +2212,7 @@ NTSTATUS rpccli_eventlog_OpenEventLogA(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_eventlog,
+				NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				NDR_EVENTLOG_OPENEVENTLOGA,
 				&r);
 
@@ -2266,7 +2266,7 @@ struct tevent_req *rpccli_eventlog_RegisterEventSourceA_send(TALLOC_CTX *mem_ctx
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_eventlog,
+				    NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				    NDR_EVENTLOG_REGISTEREVENTSOURCEA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2342,7 +2342,7 @@ NTSTATUS rpccli_eventlog_RegisterEventSourceA(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_eventlog,
+				NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				NDR_EVENTLOG_REGISTEREVENTSOURCEA,
 				&r);
 
@@ -2396,7 +2396,7 @@ struct tevent_req *rpccli_eventlog_OpenBackupEventLogA_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_eventlog,
+				    NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				    NDR_EVENTLOG_OPENBACKUPEVENTLOGA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2472,7 +2472,7 @@ NTSTATUS rpccli_eventlog_OpenBackupEventLogA(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_eventlog,
+				NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				NDR_EVENTLOG_OPENBACKUPEVENTLOGA,
 				&r);
 
@@ -2526,7 +2526,7 @@ struct tevent_req *rpccli_eventlog_ReadEventLogA_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_eventlog,
+				    NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				    NDR_EVENTLOG_READEVENTLOGA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2602,7 +2602,7 @@ NTSTATUS rpccli_eventlog_ReadEventLogA(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_eventlog,
+				NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				NDR_EVENTLOG_READEVENTLOGA,
 				&r);
 
@@ -2656,7 +2656,7 @@ struct tevent_req *rpccli_eventlog_ReportEventA_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_eventlog,
+				    NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				    NDR_EVENTLOG_REPORTEVENTA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2732,7 +2732,7 @@ NTSTATUS rpccli_eventlog_ReportEventA(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_eventlog,
+				NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				NDR_EVENTLOG_REPORTEVENTA,
 				&r);
 
@@ -2786,7 +2786,7 @@ struct tevent_req *rpccli_eventlog_RegisterClusterSvc_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_eventlog,
+				    NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				    NDR_EVENTLOG_REGISTERCLUSTERSVC,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2862,7 +2862,7 @@ NTSTATUS rpccli_eventlog_RegisterClusterSvc(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_eventlog,
+				NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				NDR_EVENTLOG_REGISTERCLUSTERSVC,
 				&r);
 
@@ -2916,7 +2916,7 @@ struct tevent_req *rpccli_eventlog_DeregisterClusterSvc_send(TALLOC_CTX *mem_ctx
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_eventlog,
+				    NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				    NDR_EVENTLOG_DEREGISTERCLUSTERSVC,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2992,7 +2992,7 @@ NTSTATUS rpccli_eventlog_DeregisterClusterSvc(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_eventlog,
+				NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				NDR_EVENTLOG_DEREGISTERCLUSTERSVC,
 				&r);
 
@@ -3046,7 +3046,7 @@ struct tevent_req *rpccli_eventlog_WriteClusterEvents_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_eventlog,
+				    NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				    NDR_EVENTLOG_WRITECLUSTEREVENTS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3122,7 +3122,7 @@ NTSTATUS rpccli_eventlog_WriteClusterEvents(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_eventlog,
+				NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				NDR_EVENTLOG_WRITECLUSTEREVENTS,
 				&r);
 
@@ -3192,7 +3192,7 @@ struct tevent_req *rpccli_eventlog_GetLogInformation_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_eventlog,
+				    NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				    NDR_EVENTLOG_GETLOGINFORMATION,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3278,7 +3278,7 @@ NTSTATUS rpccli_eventlog_GetLogInformation(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_eventlog,
+				NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				NDR_EVENTLOG_GETLOGINFORMATION,
 				&r);
 
@@ -3336,7 +3336,7 @@ struct tevent_req *rpccli_eventlog_FlushEventLog_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_eventlog,
+				    NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				    NDR_EVENTLOG_FLUSHEVENTLOG,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3414,7 +3414,7 @@ NTSTATUS rpccli_eventlog_FlushEventLog(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_eventlog,
+				NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				NDR_EVENTLOG_FLUSHEVENTLOG,
 				&r);
 
@@ -3506,7 +3506,7 @@ struct tevent_req *rpccli_eventlog_ReportEventAndSourceW_send(TALLOC_CTX *mem_ct
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_eventlog,
+				    NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				    NDR_EVENTLOG_REPORTEVENTANDSOURCEW,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3618,7 +3618,7 @@ NTSTATUS rpccli_eventlog_ReportEventAndSourceW(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_eventlog,
+				NDR_EVENTLOG_UUID, NDR_EVENTLOG_VERSION,
 				NDR_EVENTLOG_REPORTEVENTANDSOURCEW,
 				&r);
 

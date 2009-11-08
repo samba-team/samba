@@ -64,7 +64,7 @@ struct tevent_req *rpccli_spoolss_EnumPrinters_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_ENUMPRINTERS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -157,7 +157,7 @@ NTSTATUS rpccli_spoolss_EnumPrinters(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_ENUMPRINTERS,
 				&r);
 
@@ -234,7 +234,7 @@ struct tevent_req *rpccli_spoolss_OpenPrinter_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_OPENPRINTER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -321,7 +321,7 @@ NTSTATUS rpccli_spoolss_OpenPrinter(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_OPENPRINTER,
 				&r);
 
@@ -388,7 +388,7 @@ struct tevent_req *rpccli_spoolss_SetJob_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_SETJOB,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -473,7 +473,7 @@ NTSTATUS rpccli_spoolss_SetJob(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_SETJOB,
 				&r);
 
@@ -551,7 +551,7 @@ struct tevent_req *rpccli_spoolss_GetJob_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_GETJOB,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -644,7 +644,7 @@ NTSTATUS rpccli_spoolss_GetJob(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_GETJOB,
 				&r);
 
@@ -730,7 +730,7 @@ struct tevent_req *rpccli_spoolss_EnumJobs_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_ENUMJOBS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -825,7 +825,7 @@ NTSTATUS rpccli_spoolss_EnumJobs(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_ENUMJOBS,
 				&r);
 
@@ -902,7 +902,7 @@ struct tevent_req *rpccli_spoolss_AddPrinter_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_ADDPRINTER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -989,7 +989,7 @@ NTSTATUS rpccli_spoolss_AddPrinter(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_ADDPRINTER,
 				&r);
 
@@ -1050,7 +1050,7 @@ struct tevent_req *rpccli_spoolss_DeletePrinter_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_DELETEPRINTER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1129,7 +1129,7 @@ NTSTATUS rpccli_spoolss_DeletePrinter(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_DELETEPRINTER,
 				&r);
 
@@ -1197,7 +1197,7 @@ struct tevent_req *rpccli_spoolss_SetPrinter_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_SETPRINTER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1284,7 +1284,7 @@ NTSTATUS rpccli_spoolss_SetPrinter(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_SETPRINTER,
 				&r);
 
@@ -1360,7 +1360,7 @@ struct tevent_req *rpccli_spoolss_GetPrinter_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_GETPRINTER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1451,7 +1451,7 @@ NTSTATUS rpccli_spoolss_GetPrinter(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_GETPRINTER,
 				&r);
 
@@ -1517,7 +1517,7 @@ struct tevent_req *rpccli_spoolss_AddPrinterDriver_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_ADDPRINTERDRIVER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1598,7 +1598,7 @@ NTSTATUS rpccli_spoolss_AddPrinterDriver(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_ADDPRINTERDRIVER,
 				&r);
 
@@ -1678,7 +1678,7 @@ struct tevent_req *rpccli_spoolss_EnumPrinterDrivers_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_ENUMPRINTERDRIVERS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1771,7 +1771,7 @@ NTSTATUS rpccli_spoolss_EnumPrinterDrivers(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_ENUMPRINTERDRIVERS,
 				&r);
 
@@ -1852,7 +1852,7 @@ struct tevent_req *rpccli_spoolss_GetPrinterDriver_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_GETPRINTERDRIVER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1945,7 +1945,7 @@ NTSTATUS rpccli_spoolss_GetPrinterDriver(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_GETPRINTERDRIVER,
 				&r);
 
@@ -2027,7 +2027,7 @@ struct tevent_req *rpccli_spoolss_GetPrinterDriverDirectory_send(TALLOC_CTX *mem
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_GETPRINTERDRIVERDIRECTORY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2120,7 +2120,7 @@ NTSTATUS rpccli_spoolss_GetPrinterDriverDirectory(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_GETPRINTERDRIVERDIRECTORY,
 				&r);
 
@@ -2188,7 +2188,7 @@ struct tevent_req *rpccli_spoolss_DeletePrinterDriver_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_DELETEPRINTERDRIVER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2271,7 +2271,7 @@ NTSTATUS rpccli_spoolss_DeletePrinterDriver(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_DELETEPRINTERDRIVER,
 				&r);
 
@@ -2337,7 +2337,7 @@ struct tevent_req *rpccli_spoolss_AddPrintProcessor_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_ADDPRINTPROCESSOR,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2422,7 +2422,7 @@ NTSTATUS rpccli_spoolss_AddPrintProcessor(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_ADDPRINTPROCESSOR,
 				&r);
 
@@ -2502,7 +2502,7 @@ struct tevent_req *rpccli_spoolss_EnumPrintProcessors_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_ENUMPRINTPROCESSORS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2595,7 +2595,7 @@ NTSTATUS rpccli_spoolss_EnumPrintProcessors(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_ENUMPRINTPROCESSORS,
 				&r);
 
@@ -2676,7 +2676,7 @@ struct tevent_req *rpccli_spoolss_GetPrintProcessorDirectory_send(TALLOC_CTX *me
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_GETPRINTPROCESSORDIRECTORY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2769,7 +2769,7 @@ NTSTATUS rpccli_spoolss_GetPrintProcessorDirectory(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_GETPRINTPROCESSORDIRECTORY,
 				&r);
 
@@ -2845,7 +2845,7 @@ struct tevent_req *rpccli_spoolss_StartDocPrinter_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_STARTDOCPRINTER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2930,7 +2930,7 @@ NTSTATUS rpccli_spoolss_StartDocPrinter(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_STARTDOCPRINTER,
 				&r);
 
@@ -2991,7 +2991,7 @@ struct tevent_req *rpccli_spoolss_StartPagePrinter_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_STARTPAGEPRINTER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3070,7 +3070,7 @@ NTSTATUS rpccli_spoolss_StartPagePrinter(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_STARTPAGEPRINTER,
 				&r);
 
@@ -3142,7 +3142,7 @@ struct tevent_req *rpccli_spoolss_WritePrinter_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_WRITEPRINTER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3227,7 +3227,7 @@ NTSTATUS rpccli_spoolss_WritePrinter(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_WRITEPRINTER,
 				&r);
 
@@ -3288,7 +3288,7 @@ struct tevent_req *rpccli_spoolss_EndPagePrinter_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_ENDPAGEPRINTER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3367,7 +3367,7 @@ NTSTATUS rpccli_spoolss_EndPagePrinter(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_ENDPAGEPRINTER,
 				&r);
 
@@ -3427,7 +3427,7 @@ struct tevent_req *rpccli_spoolss_AbortPrinter_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_ABORTPRINTER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3506,7 +3506,7 @@ NTSTATUS rpccli_spoolss_AbortPrinter(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_ABORTPRINTER,
 				&r);
 
@@ -3578,7 +3578,7 @@ struct tevent_req *rpccli_spoolss_ReadPrinter_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_READPRINTER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3663,7 +3663,7 @@ NTSTATUS rpccli_spoolss_ReadPrinter(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_READPRINTER,
 				&r);
 
@@ -3725,7 +3725,7 @@ struct tevent_req *rpccli_spoolss_EndDocPrinter_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_ENDDOCPRINTER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3804,7 +3804,7 @@ NTSTATUS rpccli_spoolss_EndDocPrinter(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_ENDDOCPRINTER,
 				&r);
 
@@ -3879,7 +3879,7 @@ struct tevent_req *rpccli_spoolss_AddJob_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_ADDJOB,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3969,7 +3969,7 @@ NTSTATUS rpccli_spoolss_AddJob(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_ADDJOB,
 				&r);
 
@@ -4035,7 +4035,7 @@ struct tevent_req *rpccli_spoolss_ScheduleJob_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_SCHEDULEJOB,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4116,7 +4116,7 @@ NTSTATUS rpccli_spoolss_ScheduleJob(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_SCHEDULEJOB,
 				&r);
 
@@ -4192,7 +4192,7 @@ struct tevent_req *rpccli_spoolss_GetPrinterData_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_GETPRINTERDATA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4281,7 +4281,7 @@ NTSTATUS rpccli_spoolss_GetPrinterData(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_GETPRINTERDATA,
 				&r);
 
@@ -4352,7 +4352,7 @@ struct tevent_req *rpccli_spoolss_SetPrinterData_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_SETPRINTERDATA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4439,7 +4439,7 @@ NTSTATUS rpccli_spoolss_SetPrinterData(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_SETPRINTERDATA,
 				&r);
 
@@ -4497,7 +4497,7 @@ struct tevent_req *rpccli_spoolss_WaitForPrinterChange_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_WAITFORPRINTERCHANGE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4574,7 +4574,7 @@ NTSTATUS rpccli_spoolss_WaitForPrinterChange(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_WAITFORPRINTERCHANGE,
 				&r);
 
@@ -4641,7 +4641,7 @@ struct tevent_req *rpccli_spoolss_ClosePrinter_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_CLOSEPRINTER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4721,7 +4721,7 @@ NTSTATUS rpccli_spoolss_ClosePrinter(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_CLOSEPRINTER,
 				&r);
 
@@ -4786,7 +4786,7 @@ struct tevent_req *rpccli_spoolss_AddForm_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_ADDFORM,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4869,7 +4869,7 @@ NTSTATUS rpccli_spoolss_AddForm(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_ADDFORM,
 				&r);
 
@@ -4931,7 +4931,7 @@ struct tevent_req *rpccli_spoolss_DeleteForm_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_DELETEFORM,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5012,7 +5012,7 @@ NTSTATUS rpccli_spoolss_DeleteForm(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_DELETEFORM,
 				&r);
 
@@ -5090,7 +5090,7 @@ struct tevent_req *rpccli_spoolss_GetForm_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_GETFORM,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5183,7 +5183,7 @@ NTSTATUS rpccli_spoolss_GetForm(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_GETFORM,
 				&r);
 
@@ -5253,7 +5253,7 @@ struct tevent_req *rpccli_spoolss_SetForm_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_SETFORM,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5338,7 +5338,7 @@ NTSTATUS rpccli_spoolss_SetForm(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_SETFORM,
 				&r);
 
@@ -5416,7 +5416,7 @@ struct tevent_req *rpccli_spoolss_EnumForms_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_ENUMFORMS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5507,7 +5507,7 @@ NTSTATUS rpccli_spoolss_EnumForms(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_ENUMFORMS,
 				&r);
 
@@ -5588,7 +5588,7 @@ struct tevent_req *rpccli_spoolss_EnumPorts_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_ENUMPORTS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5679,7 +5679,7 @@ NTSTATUS rpccli_spoolss_EnumPorts(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_ENUMPORTS,
 				&r);
 
@@ -5760,7 +5760,7 @@ struct tevent_req *rpccli_spoolss_EnumMonitors_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_ENUMMONITORS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5851,7 +5851,7 @@ NTSTATUS rpccli_spoolss_EnumMonitors(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_ENUMMONITORS,
 				&r);
 
@@ -5918,7 +5918,7 @@ struct tevent_req *rpccli_spoolss_AddPort_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_ADDPORT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6001,7 +6001,7 @@ NTSTATUS rpccli_spoolss_AddPort(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_ADDPORT,
 				&r);
 
@@ -6059,7 +6059,7 @@ struct tevent_req *rpccli_spoolss_ConfigurePort_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_CONFIGUREPORT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6136,7 +6136,7 @@ NTSTATUS rpccli_spoolss_ConfigurePort(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_CONFIGUREPORT,
 				&r);
 
@@ -6194,7 +6194,7 @@ struct tevent_req *rpccli_spoolss_DeletePort_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_DELETEPORT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6271,7 +6271,7 @@ NTSTATUS rpccli_spoolss_DeletePort(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_DELETEPORT,
 				&r);
 
@@ -6341,7 +6341,7 @@ struct tevent_req *rpccli_spoolss_CreatePrinterIC_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_CREATEPRINTERIC,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6424,7 +6424,7 @@ NTSTATUS rpccli_spoolss_CreatePrinterIC(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_CREATEPRINTERIC,
 				&r);
 
@@ -6483,7 +6483,7 @@ struct tevent_req *rpccli_spoolss_PlayGDIScriptOnPrinterIC_send(TALLOC_CTX *mem_
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_PLAYGDISCRIPTONPRINTERIC,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6560,7 +6560,7 @@ NTSTATUS rpccli_spoolss_PlayGDIScriptOnPrinterIC(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_PLAYGDISCRIPTONPRINTERIC,
 				&r);
 
@@ -6627,7 +6627,7 @@ struct tevent_req *rpccli_spoolss_DeletePrinterIC_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_DELETEPRINTERIC,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6707,7 +6707,7 @@ NTSTATUS rpccli_spoolss_DeletePrinterIC(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_DELETEPRINTERIC,
 				&r);
 
@@ -6766,7 +6766,7 @@ struct tevent_req *rpccli_spoolss_AddPrinterConnection_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_ADDPRINTERCONNECTION,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6843,7 +6843,7 @@ NTSTATUS rpccli_spoolss_AddPrinterConnection(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_ADDPRINTERCONNECTION,
 				&r);
 
@@ -6901,7 +6901,7 @@ struct tevent_req *rpccli_spoolss_DeletePrinterConnection_send(TALLOC_CTX *mem_c
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_DELETEPRINTERCONNECTION,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6978,7 +6978,7 @@ NTSTATUS rpccli_spoolss_DeletePrinterConnection(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_DELETEPRINTERCONNECTION,
 				&r);
 
@@ -7036,7 +7036,7 @@ struct tevent_req *rpccli_spoolss_PrinterMessageBox_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_PRINTERMESSAGEBOX,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7113,7 +7113,7 @@ NTSTATUS rpccli_spoolss_PrinterMessageBox(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_PRINTERMESSAGEBOX,
 				&r);
 
@@ -7171,7 +7171,7 @@ struct tevent_req *rpccli_spoolss_AddMonitor_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_ADDMONITOR,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7248,7 +7248,7 @@ NTSTATUS rpccli_spoolss_AddMonitor(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_ADDMONITOR,
 				&r);
 
@@ -7306,7 +7306,7 @@ struct tevent_req *rpccli_spoolss_DeleteMonitor_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_DELETEMONITOR,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7383,7 +7383,7 @@ NTSTATUS rpccli_spoolss_DeleteMonitor(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_DELETEMONITOR,
 				&r);
 
@@ -7441,7 +7441,7 @@ struct tevent_req *rpccli_spoolss_DeletePrintProcessor_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_DELETEPRINTPROCESSOR,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7518,7 +7518,7 @@ NTSTATUS rpccli_spoolss_DeletePrintProcessor(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_DELETEPRINTPROCESSOR,
 				&r);
 
@@ -7576,7 +7576,7 @@ struct tevent_req *rpccli_spoolss_AddPrintProvidor_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_ADDPRINTPROVIDOR,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7653,7 +7653,7 @@ NTSTATUS rpccli_spoolss_AddPrintProvidor(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_ADDPRINTPROVIDOR,
 				&r);
 
@@ -7711,7 +7711,7 @@ struct tevent_req *rpccli_spoolss_DeletePrintProvidor_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_DELETEPRINTPROVIDOR,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7788,7 +7788,7 @@ NTSTATUS rpccli_spoolss_DeletePrintProvidor(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_DELETEPRINTPROVIDOR,
 				&r);
 
@@ -7868,7 +7868,7 @@ struct tevent_req *rpccli_spoolss_EnumPrintProcDataTypes_send(TALLOC_CTX *mem_ct
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_ENUMPRINTPROCDATATYPES,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7961,7 +7961,7 @@ NTSTATUS rpccli_spoolss_EnumPrintProcDataTypes(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_ENUMPRINTPROCDATATYPES,
 				&r);
 
@@ -8028,7 +8028,7 @@ struct tevent_req *rpccli_spoolss_ResetPrinter_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_RESETPRINTER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -8111,7 +8111,7 @@ NTSTATUS rpccli_spoolss_ResetPrinter(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_RESETPRINTER,
 				&r);
 
@@ -8197,7 +8197,7 @@ struct tevent_req *rpccli_spoolss_GetPrinterDriver2_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_GETPRINTERDRIVER2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -8298,7 +8298,7 @@ NTSTATUS rpccli_spoolss_GetPrinterDriver2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_GETPRINTERDRIVER2,
 				&r);
 
@@ -8362,7 +8362,7 @@ struct tevent_req *rpccli_spoolss_FindFirstPrinterChangeNotification_send(TALLOC
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_FINDFIRSTPRINTERCHANGENOTIFICATION,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -8439,7 +8439,7 @@ NTSTATUS rpccli_spoolss_FindFirstPrinterChangeNotification(struct rpc_pipe_clien
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_FINDFIRSTPRINTERCHANGENOTIFICATION,
 				&r);
 
@@ -8497,7 +8497,7 @@ struct tevent_req *rpccli_spoolss_FindNextPrinterChangeNotification_send(TALLOC_
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_FINDNEXTPRINTERCHANGENOTIFICATION,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -8574,7 +8574,7 @@ NTSTATUS rpccli_spoolss_FindNextPrinterChangeNotification(struct rpc_pipe_client
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_FINDNEXTPRINTERCHANGENOTIFICATION,
 				&r);
 
@@ -8634,7 +8634,7 @@ struct tevent_req *rpccli_spoolss_FindClosePrinterNotify_send(TALLOC_CTX *mem_ct
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_FINDCLOSEPRINTERNOTIFY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -8713,7 +8713,7 @@ NTSTATUS rpccli_spoolss_FindClosePrinterNotify(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_FINDCLOSEPRINTERNOTIFY,
 				&r);
 
@@ -8771,7 +8771,7 @@ struct tevent_req *rpccli_spoolss_RouterFindFirstPrinterChangeNotificationOld_se
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_ROUTERFINDFIRSTPRINTERCHANGENOTIFICATIONOLD,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -8848,7 +8848,7 @@ NTSTATUS rpccli_spoolss_RouterFindFirstPrinterChangeNotificationOld(struct rpc_p
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_ROUTERFINDFIRSTPRINTERCHANGENOTIFICATIONOLD,
 				&r);
 
@@ -8924,7 +8924,7 @@ struct tevent_req *rpccli_spoolss_ReplyOpenPrinter_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_REPLYOPENPRINTER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -9013,7 +9013,7 @@ NTSTATUS rpccli_spoolss_ReplyOpenPrinter(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_REPLYOPENPRINTER,
 				&r);
 
@@ -9080,7 +9080,7 @@ struct tevent_req *rpccli_spoolss_RouterReplyPrinter_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_ROUTERREPLYPRINTER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -9165,7 +9165,7 @@ NTSTATUS rpccli_spoolss_RouterReplyPrinter(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_ROUTERREPLYPRINTER,
 				&r);
 
@@ -9232,7 +9232,7 @@ struct tevent_req *rpccli_spoolss_ReplyClosePrinter_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_REPLYCLOSEPRINTER,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -9312,7 +9312,7 @@ NTSTATUS rpccli_spoolss_ReplyClosePrinter(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_REPLYCLOSEPRINTER,
 				&r);
 
@@ -9371,7 +9371,7 @@ struct tevent_req *rpccli_spoolss_AddPortEx_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_ADDPORTEX,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -9448,7 +9448,7 @@ NTSTATUS rpccli_spoolss_AddPortEx(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_ADDPORTEX,
 				&r);
 
@@ -9506,7 +9506,7 @@ struct tevent_req *rpccli_spoolss_RouterFindFirstPrinterChangeNotification_send(
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_ROUTERFINDFIRSTPRINTERCHANGENOTIFICATION,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -9583,7 +9583,7 @@ NTSTATUS rpccli_spoolss_RouterFindFirstPrinterChangeNotification(struct rpc_pipe
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_ROUTERFINDFIRSTPRINTERCHANGENOTIFICATION,
 				&r);
 
@@ -9641,7 +9641,7 @@ struct tevent_req *rpccli_spoolss_SpoolerInit_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_SPOOLERINIT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -9718,7 +9718,7 @@ NTSTATUS rpccli_spoolss_SpoolerInit(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_SPOOLERINIT,
 				&r);
 
@@ -9776,7 +9776,7 @@ struct tevent_req *rpccli_spoolss_ResetPrinterEx_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_RESETPRINTEREX,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -9853,7 +9853,7 @@ NTSTATUS rpccli_spoolss_ResetPrinterEx(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_RESETPRINTEREX,
 				&r);
 
@@ -9923,7 +9923,7 @@ struct tevent_req *rpccli_spoolss_RemoteFindFirstPrinterChangeNotifyEx_send(TALL
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_REMOTEFINDFIRSTPRINTERCHANGENOTIFYEX,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -10012,7 +10012,7 @@ NTSTATUS rpccli_spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct rpc_pipe_cli
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_REMOTEFINDFIRSTPRINTERCHANGENOTIFYEX,
 				&r);
 
@@ -10088,7 +10088,7 @@ struct tevent_req *rpccli_spoolss_RouterReplyPrinterEx_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_ROUTERREPLYPRINTEREX,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -10177,7 +10177,7 @@ NTSTATUS rpccli_spoolss_RouterReplyPrinterEx(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_ROUTERREPLYPRINTEREX,
 				&r);
 
@@ -10250,7 +10250,7 @@ struct tevent_req *rpccli_spoolss_RouterRefreshPrinterChangeNotify_send(TALLOC_C
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_ROUTERREFRESHPRINTERCHANGENOTIFY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -10335,7 +10335,7 @@ NTSTATUS rpccli_spoolss_RouterRefreshPrinterChangeNotify(struct rpc_pipe_client 
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_ROUTERREFRESHPRINTERCHANGENOTIFY,
 				&r);
 
@@ -10394,7 +10394,7 @@ struct tevent_req *rpccli_spoolss_44_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_44,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -10471,7 +10471,7 @@ NTSTATUS rpccli_spoolss_44(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_44,
 				&r);
 
@@ -10549,7 +10549,7 @@ struct tevent_req *rpccli_spoolss_OpenPrinterEx_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_OPENPRINTEREX,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -10640,7 +10640,7 @@ NTSTATUS rpccli_spoolss_OpenPrinterEx(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_OPENPRINTEREX,
 				&r);
 
@@ -10717,7 +10717,7 @@ struct tevent_req *rpccli_spoolss_AddPrinterEx_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_ADDPRINTEREX,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -10806,7 +10806,7 @@ NTSTATUS rpccli_spoolss_AddPrinterEx(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_ADDPRINTEREX,
 				&r);
 
@@ -10865,7 +10865,7 @@ struct tevent_req *rpccli_spoolss_47_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_47,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -10942,7 +10942,7 @@ NTSTATUS rpccli_spoolss_47(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_47,
 				&r);
 
@@ -11024,7 +11024,7 @@ struct tevent_req *rpccli_spoolss_EnumPrinterData_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_ENUMPRINTERDATA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -11119,7 +11119,7 @@ NTSTATUS rpccli_spoolss_EnumPrinterData(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_ENUMPRINTERDATA,
 				&r);
 
@@ -11186,7 +11186,7 @@ struct tevent_req *rpccli_spoolss_DeletePrinterData_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_DELETEPRINTERDATA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -11267,7 +11267,7 @@ NTSTATUS rpccli_spoolss_DeletePrinterData(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_DELETEPRINTERDATA,
 				&r);
 
@@ -11325,7 +11325,7 @@ struct tevent_req *rpccli_spoolss_4a_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_4A,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -11402,7 +11402,7 @@ NTSTATUS rpccli_spoolss_4a(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_4A,
 				&r);
 
@@ -11460,7 +11460,7 @@ struct tevent_req *rpccli_spoolss_4b_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_4B,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -11537,7 +11537,7 @@ NTSTATUS rpccli_spoolss_4b(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_4B,
 				&r);
 
@@ -11595,7 +11595,7 @@ struct tevent_req *rpccli_spoolss_4c_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_4C,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -11672,7 +11672,7 @@ NTSTATUS rpccli_spoolss_4c(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_4C,
 				&r);
 
@@ -11742,7 +11742,7 @@ struct tevent_req *rpccli_spoolss_SetPrinterDataEx_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_SETPRINTERDATAEX,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -11831,7 +11831,7 @@ NTSTATUS rpccli_spoolss_SetPrinterDataEx(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_SETPRINTERDATAEX,
 				&r);
 
@@ -11909,7 +11909,7 @@ struct tevent_req *rpccli_spoolss_GetPrinterDataEx_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_GETPRINTERDATAEX,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -12000,7 +12000,7 @@ NTSTATUS rpccli_spoolss_GetPrinterDataEx(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_GETPRINTERDATAEX,
 				&r);
 
@@ -12079,7 +12079,7 @@ struct tevent_req *rpccli_spoolss_EnumPrinterDataEx_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_ENUMPRINTERDATAEX,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -12168,7 +12168,7 @@ NTSTATUS rpccli_spoolss_EnumPrinterDataEx(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_ENUMPRINTERDATAEX,
 				&r);
 
@@ -12245,7 +12245,7 @@ struct tevent_req *rpccli_spoolss_EnumPrinterKey_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_ENUMPRINTERKEY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -12332,7 +12332,7 @@ NTSTATUS rpccli_spoolss_EnumPrinterKey(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_ENUMPRINTERKEY,
 				&r);
 
@@ -12398,7 +12398,7 @@ struct tevent_req *rpccli_spoolss_DeletePrinterDataEx_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_DELETEPRINTERDATAEX,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -12481,7 +12481,7 @@ NTSTATUS rpccli_spoolss_DeletePrinterDataEx(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_DELETEPRINTERDATAEX,
 				&r);
 
@@ -12543,7 +12543,7 @@ struct tevent_req *rpccli_spoolss_DeletePrinterKey_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_DELETEPRINTERKEY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -12624,7 +12624,7 @@ NTSTATUS rpccli_spoolss_DeletePrinterKey(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_DELETEPRINTERKEY,
 				&r);
 
@@ -12682,7 +12682,7 @@ struct tevent_req *rpccli_spoolss_53_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_53,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -12759,7 +12759,7 @@ NTSTATUS rpccli_spoolss_53(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_53,
 				&r);
 
@@ -12827,7 +12827,7 @@ struct tevent_req *rpccli_spoolss_DeletePrinterDriverEx_send(TALLOC_CTX *mem_ctx
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_DELETEPRINTERDRIVEREX,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -12914,7 +12914,7 @@ NTSTATUS rpccli_spoolss_DeletePrinterDriverEx(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_DELETEPRINTERDRIVEREX,
 				&r);
 
@@ -12972,7 +12972,7 @@ struct tevent_req *rpccli_spoolss_55_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_55,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -13049,7 +13049,7 @@ NTSTATUS rpccli_spoolss_55(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_55,
 				&r);
 
@@ -13107,7 +13107,7 @@ struct tevent_req *rpccli_spoolss_56_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_56,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -13184,7 +13184,7 @@ NTSTATUS rpccli_spoolss_56(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_56,
 				&r);
 
@@ -13242,7 +13242,7 @@ struct tevent_req *rpccli_spoolss_57_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_57,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -13319,7 +13319,7 @@ NTSTATUS rpccli_spoolss_57(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_57,
 				&r);
 
@@ -13400,7 +13400,7 @@ struct tevent_req *rpccli_spoolss_XcvData_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_XCVDATA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -13494,7 +13494,7 @@ NTSTATUS rpccli_spoolss_XcvData(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_XCVDATA,
 				&r);
 
@@ -13561,7 +13561,7 @@ struct tevent_req *rpccli_spoolss_AddPrinterDriverEx_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_ADDPRINTERDRIVEREX,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -13644,7 +13644,7 @@ NTSTATUS rpccli_spoolss_AddPrinterDriverEx(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_ADDPRINTERDRIVEREX,
 				&r);
 
@@ -13702,7 +13702,7 @@ struct tevent_req *rpccli_spoolss_5a_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_5A,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -13779,7 +13779,7 @@ NTSTATUS rpccli_spoolss_5a(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_5A,
 				&r);
 
@@ -13837,7 +13837,7 @@ struct tevent_req *rpccli_spoolss_5b_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_5B,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -13914,7 +13914,7 @@ NTSTATUS rpccli_spoolss_5b(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_5B,
 				&r);
 
@@ -13972,7 +13972,7 @@ struct tevent_req *rpccli_spoolss_5c_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_5C,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -14049,7 +14049,7 @@ NTSTATUS rpccli_spoolss_5c(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_5C,
 				&r);
 
@@ -14107,7 +14107,7 @@ struct tevent_req *rpccli_spoolss_5d_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_5D,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -14184,7 +14184,7 @@ NTSTATUS rpccli_spoolss_5d(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_5D,
 				&r);
 
@@ -14242,7 +14242,7 @@ struct tevent_req *rpccli_spoolss_5e_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_5E,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -14319,7 +14319,7 @@ NTSTATUS rpccli_spoolss_5e(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_5E,
 				&r);
 
@@ -14377,7 +14377,7 @@ struct tevent_req *rpccli_spoolss_5f_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_5F,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -14454,7 +14454,7 @@ NTSTATUS rpccli_spoolss_5f(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_5F,
 				&r);
 
@@ -14512,7 +14512,7 @@ struct tevent_req *rpccli_spoolss_60_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_60,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -14589,7 +14589,7 @@ NTSTATUS rpccli_spoolss_60(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_60,
 				&r);
 
@@ -14647,7 +14647,7 @@ struct tevent_req *rpccli_spoolss_61_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_61,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -14724,7 +14724,7 @@ NTSTATUS rpccli_spoolss_61(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_61,
 				&r);
 
@@ -14782,7 +14782,7 @@ struct tevent_req *rpccli_spoolss_62_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_62,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -14859,7 +14859,7 @@ NTSTATUS rpccli_spoolss_62(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_62,
 				&r);
 
@@ -14917,7 +14917,7 @@ struct tevent_req *rpccli_spoolss_63_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_63,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -14994,7 +14994,7 @@ NTSTATUS rpccli_spoolss_63(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_63,
 				&r);
 
@@ -15052,7 +15052,7 @@ struct tevent_req *rpccli_spoolss_64_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_64,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -15129,7 +15129,7 @@ NTSTATUS rpccli_spoolss_64(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_64,
 				&r);
 
@@ -15187,7 +15187,7 @@ struct tevent_req *rpccli_spoolss_65_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_65,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -15264,7 +15264,7 @@ NTSTATUS rpccli_spoolss_65(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_65,
 				&r);
 
@@ -15340,7 +15340,7 @@ struct tevent_req *rpccli_spoolss_GetCorePrinterDrivers_send(TALLOC_CTX *mem_ctx
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_GETCOREPRINTERDRIVERS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -15429,7 +15429,7 @@ NTSTATUS rpccli_spoolss_GetCorePrinterDrivers(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_GETCOREPRINTERDRIVERS,
 				&r);
 
@@ -15488,7 +15488,7 @@ struct tevent_req *rpccli_spoolss_67_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_67,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -15565,7 +15565,7 @@ NTSTATUS rpccli_spoolss_67(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_67,
 				&r);
 
@@ -15644,7 +15644,7 @@ struct tevent_req *rpccli_spoolss_GetPrinterDriverPackagePath_send(TALLOC_CTX *m
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_GETPRINTERDRIVERPACKAGEPATH,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -15738,7 +15738,7 @@ NTSTATUS rpccli_spoolss_GetPrinterDriverPackagePath(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_GETPRINTERDRIVERPACKAGEPATH,
 				&r);
 
@@ -15800,7 +15800,7 @@ struct tevent_req *rpccli_spoolss_69_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_69,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -15877,7 +15877,7 @@ NTSTATUS rpccli_spoolss_69(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_69,
 				&r);
 
@@ -15935,7 +15935,7 @@ struct tevent_req *rpccli_spoolss_6a_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_6A,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -16012,7 +16012,7 @@ NTSTATUS rpccli_spoolss_6a(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_6A,
 				&r);
 
@@ -16070,7 +16070,7 @@ struct tevent_req *rpccli_spoolss_6b_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_6B,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -16147,7 +16147,7 @@ NTSTATUS rpccli_spoolss_6b(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_6B,
 				&r);
 
@@ -16205,7 +16205,7 @@ struct tevent_req *rpccli_spoolss_6c_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_6C,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -16282,7 +16282,7 @@ NTSTATUS rpccli_spoolss_6c(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_6C,
 				&r);
 
@@ -16340,7 +16340,7 @@ struct tevent_req *rpccli_spoolss_6d_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_spoolss,
+				    NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				    NDR_SPOOLSS_6D,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -16417,7 +16417,7 @@ NTSTATUS rpccli_spoolss_6d(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_spoolss,
+				NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION,
 				NDR_SPOOLSS_6D,
 				&r);
 

@@ -33,12 +33,15 @@ static void cli_do_rpc_ndr_done(struct tevent_req *subreq);
 struct tevent_req *cli_do_rpc_ndr_send(TALLOC_CTX *mem_ctx,
 				       struct tevent_context *ev,
 				       struct rpc_pipe_client *cli,
-				       const struct ndr_interface_table *table,
+				       const char *interface,
+				       uint32_t interface_version,
 				       uint32_t opnum,
 				       void *r)
 {
 	struct tevent_req *req, *subreq;
 	struct cli_do_rpc_ndr_state *state;
+	struct ndr_syntax_id syntax;
+	const struct ndr_interface_table *table;
 	struct ndr_push *push;
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
@@ -48,6 +51,17 @@ struct tevent_req *cli_do_rpc_ndr_send(TALLOC_CTX *mem_ctx,
 				struct cli_do_rpc_ndr_state);
 	if (req == NULL) {
 		return NULL;
+	}
+
+	if (!ndr_syntax_from_string(interface, interface_version, &syntax)) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+	}
+
+	table = get_iface_from_syntax(&syntax);
+	if (table == NULL) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
 	}
 
 	if (!ndr_syntax_id_equal(&table->syntax_id, &cli->abstract_syntax)
@@ -156,7 +170,7 @@ NTSTATUS cli_do_rpc_ndr_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx)
 
 NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli,
 			TALLOC_CTX *mem_ctx,
-			const struct ndr_interface_table *table,
+			const char *interface, uint32_t interface_version,
 			uint32_t opnum, void *r)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -170,7 +184,8 @@ NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli,
 		goto fail;
 	}
 
-	req = cli_do_rpc_ndr_send(frame, ev, cli, table, opnum, r);
+	req = cli_do_rpc_ndr_send(frame, ev, cli, interface, interface_version,
+				  opnum, r);
 	if (req == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;

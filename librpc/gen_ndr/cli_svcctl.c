@@ -51,7 +51,7 @@ struct tevent_req *rpccli_svcctl_CloseServiceHandle_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_CLOSESERVICEHANDLE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -131,7 +131,7 @@ NTSTATUS rpccli_svcctl_CloseServiceHandle(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_CLOSESERVICEHANDLE,
 				&r);
 
@@ -202,7 +202,7 @@ struct tevent_req *rpccli_svcctl_ControlService_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_CONTROLSERVICE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -285,7 +285,7 @@ NTSTATUS rpccli_svcctl_ControlService(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_CONTROLSERVICE,
 				&r);
 
@@ -346,7 +346,7 @@ struct tevent_req *rpccli_svcctl_DeleteService_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_DELETESERVICE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -425,7 +425,7 @@ NTSTATUS rpccli_svcctl_DeleteService(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_DELETESERVICE,
 				&r);
 
@@ -493,7 +493,7 @@ struct tevent_req *rpccli_svcctl_LockServiceDatabase_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_LOCKSERVICEDATABASE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -574,7 +574,7 @@ NTSTATUS rpccli_svcctl_LockServiceDatabase(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_LOCKSERVICEDATABASE,
 				&r);
 
@@ -649,7 +649,7 @@ struct tevent_req *rpccli_svcctl_QueryServiceObjectSecurity_send(TALLOC_CTX *mem
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_QUERYSERVICEOBJECTSECURITY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -736,7 +736,7 @@ NTSTATUS rpccli_svcctl_QueryServiceObjectSecurity(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_QUERYSERVICEOBJECTSECURITY,
 				&r);
 
@@ -804,7 +804,7 @@ struct tevent_req *rpccli_svcctl_SetServiceObjectSecurity_send(TALLOC_CTX *mem_c
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_SETSERVICEOBJECTSECURITY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -889,7 +889,7 @@ NTSTATUS rpccli_svcctl_SetServiceObjectSecurity(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_SETSERVICEOBJECTSECURITY,
 				&r);
 
@@ -957,7 +957,7 @@ struct tevent_req *rpccli_svcctl_QueryServiceStatus_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_QUERYSERVICESTATUS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1038,7 +1038,7 @@ NTSTATUS rpccli_svcctl_QueryServiceStatus(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_QUERYSERVICESTATUS,
 				&r);
 
@@ -1097,7 +1097,7 @@ struct tevent_req *rpccli_svcctl_SetServiceStatus_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_SETSERVICESTATUS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1174,7 +1174,7 @@ NTSTATUS rpccli_svcctl_SetServiceStatus(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_SETSERVICESTATUS,
 				&r);
 
@@ -1241,7 +1241,7 @@ struct tevent_req *rpccli_svcctl_UnlockServiceDatabase_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_UNLOCKSERVICEDATABASE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1321,7 +1321,7 @@ NTSTATUS rpccli_svcctl_UnlockServiceDatabase(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_UNLOCKSERVICEDATABASE,
 				&r);
 
@@ -1380,7 +1380,7 @@ struct tevent_req *rpccli_svcctl_NotifyBootConfigStatus_send(TALLOC_CTX *mem_ctx
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_NOTIFYBOOTCONFIGSTATUS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1457,7 +1457,7 @@ NTSTATUS rpccli_svcctl_NotifyBootConfigStatus(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_NOTIFYBOOTCONFIGSTATUS,
 				&r);
 
@@ -1523,7 +1523,7 @@ struct tevent_req *rpccli_svcctl_SCSetServiceBitsW_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_SCSETSERVICEBITSW,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1608,7 +1608,7 @@ NTSTATUS rpccli_svcctl_SCSetServiceBitsW(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_SCSETSERVICEBITSW,
 				&r);
 
@@ -1694,7 +1694,7 @@ struct tevent_req *rpccli_svcctl_ChangeServiceConfigW_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_CHANGESERVICECONFIGW,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1793,7 +1793,7 @@ NTSTATUS rpccli_svcctl_ChangeServiceConfigW(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_CHANGESERVICECONFIGW,
 				&r);
 
@@ -1891,7 +1891,7 @@ struct tevent_req *rpccli_svcctl_CreateServiceW_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_CREATESERVICEW,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2003,7 +2003,7 @@ NTSTATUS rpccli_svcctl_CreateServiceW(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_CREATESERVICEW,
 				&r);
 
@@ -2083,7 +2083,7 @@ struct tevent_req *rpccli_svcctl_EnumDependentServicesW_send(TALLOC_CTX *mem_ctx
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_ENUMDEPENDENTSERVICESW,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2172,7 +2172,7 @@ NTSTATUS rpccli_svcctl_EnumDependentServicesW(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_ENUMDEPENDENTSERVICESW,
 				&r);
 
@@ -2256,7 +2256,7 @@ struct tevent_req *rpccli_svcctl_EnumServicesStatusW_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_ENUMSERVICESSTATUSW,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2352,7 +2352,7 @@ NTSTATUS rpccli_svcctl_EnumServicesStatusW(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_ENUMSERVICESSTATUSW,
 				&r);
 
@@ -2430,7 +2430,7 @@ struct tevent_req *rpccli_svcctl_OpenSCManagerW_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_OPENSCMANAGERW,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2515,7 +2515,7 @@ NTSTATUS rpccli_svcctl_OpenSCManagerW(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_OPENSCMANAGERW,
 				&r);
 
@@ -2588,7 +2588,7 @@ struct tevent_req *rpccli_svcctl_OpenServiceW_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_OPENSERVICEW,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2673,7 +2673,7 @@ NTSTATUS rpccli_svcctl_OpenServiceW(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_OPENSERVICEW,
 				&r);
 
@@ -2746,7 +2746,7 @@ struct tevent_req *rpccli_svcctl_QueryServiceConfigW_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_QUERYSERVICECONFIGW,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2831,7 +2831,7 @@ NTSTATUS rpccli_svcctl_QueryServiceConfigW(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_QUERYSERVICECONFIGW,
 				&r);
 
@@ -2905,7 +2905,7 @@ struct tevent_req *rpccli_svcctl_QueryServiceLockStatusW_send(TALLOC_CTX *mem_ct
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_QUERYSERVICELOCKSTATUSW,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2990,7 +2990,7 @@ NTSTATUS rpccli_svcctl_QueryServiceLockStatusW(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_QUERYSERVICELOCKSTATUSW,
 				&r);
 
@@ -3056,7 +3056,7 @@ struct tevent_req *rpccli_svcctl_StartServiceW_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_STARTSERVICEW,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3139,7 +3139,7 @@ NTSTATUS rpccli_svcctl_StartServiceW(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_STARTSERVICEW,
 				&r);
 
@@ -3212,7 +3212,7 @@ struct tevent_req *rpccli_svcctl_GetServiceDisplayNameW_send(TALLOC_CTX *mem_ctx
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_GETSERVICEDISPLAYNAMEW,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3300,7 +3300,7 @@ NTSTATUS rpccli_svcctl_GetServiceDisplayNameW(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_GETSERVICEDISPLAYNAMEW,
 				&r);
 
@@ -3377,7 +3377,7 @@ struct tevent_req *rpccli_svcctl_GetServiceKeyNameW_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_GETSERVICEKEYNAMEW,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3465,7 +3465,7 @@ NTSTATUS rpccli_svcctl_GetServiceKeyNameW(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_GETSERVICEKEYNAMEW,
 				&r);
 
@@ -3535,7 +3535,7 @@ struct tevent_req *rpccli_svcctl_SCSetServiceBitsA_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_SCSETSERVICEBITSA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3620,7 +3620,7 @@ NTSTATUS rpccli_svcctl_SCSetServiceBitsA(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_SCSETSERVICEBITSA,
 				&r);
 
@@ -3706,7 +3706,7 @@ struct tevent_req *rpccli_svcctl_ChangeServiceConfigA_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_CHANGESERVICECONFIGA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3805,7 +3805,7 @@ NTSTATUS rpccli_svcctl_ChangeServiceConfigA(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_CHANGESERVICECONFIGA,
 				&r);
 
@@ -3896,7 +3896,7 @@ struct tevent_req *rpccli_svcctl_CreateServiceA_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_CREATESERVICEA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4001,7 +4001,7 @@ NTSTATUS rpccli_svcctl_CreateServiceA(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_CREATESERVICEA,
 				&r);
 
@@ -4080,7 +4080,7 @@ struct tevent_req *rpccli_svcctl_EnumDependentServicesA_send(TALLOC_CTX *mem_ctx
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_ENUMDEPENDENTSERVICESA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4171,7 +4171,7 @@ NTSTATUS rpccli_svcctl_EnumDependentServicesA(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_ENUMDEPENDENTSERVICESA,
 				&r);
 
@@ -4257,7 +4257,7 @@ struct tevent_req *rpccli_svcctl_EnumServicesStatusA_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_ENUMSERVICESSTATUSA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4353,7 +4353,7 @@ NTSTATUS rpccli_svcctl_EnumServicesStatusA(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_ENUMSERVICESSTATUSA,
 				&r);
 
@@ -4431,7 +4431,7 @@ struct tevent_req *rpccli_svcctl_OpenSCManagerA_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_OPENSCMANAGERA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4516,7 +4516,7 @@ NTSTATUS rpccli_svcctl_OpenSCManagerA(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_OPENSCMANAGERA,
 				&r);
 
@@ -4581,7 +4581,7 @@ struct tevent_req *rpccli_svcctl_OpenServiceA_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_OPENSERVICEA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4664,7 +4664,7 @@ NTSTATUS rpccli_svcctl_OpenServiceA(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_OPENSERVICEA,
 				&r);
 
@@ -4736,7 +4736,7 @@ struct tevent_req *rpccli_svcctl_QueryServiceConfigA_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_QUERYSERVICECONFIGA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4821,7 +4821,7 @@ NTSTATUS rpccli_svcctl_QueryServiceConfigA(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_QUERYSERVICECONFIGA,
 				&r);
 
@@ -4895,7 +4895,7 @@ struct tevent_req *rpccli_svcctl_QueryServiceLockStatusA_send(TALLOC_CTX *mem_ct
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_QUERYSERVICELOCKSTATUSA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4980,7 +4980,7 @@ NTSTATUS rpccli_svcctl_QueryServiceLockStatusA(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_QUERYSERVICELOCKSTATUSA,
 				&r);
 
@@ -5046,7 +5046,7 @@ struct tevent_req *rpccli_svcctl_StartServiceA_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_STARTSERVICEA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5129,7 +5129,7 @@ NTSTATUS rpccli_svcctl_StartServiceA(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_STARTSERVICEA,
 				&r);
 
@@ -5202,7 +5202,7 @@ struct tevent_req *rpccli_svcctl_GetServiceDisplayNameA_send(TALLOC_CTX *mem_ctx
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_GETSERVICEDISPLAYNAMEA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5290,7 +5290,7 @@ NTSTATUS rpccli_svcctl_GetServiceDisplayNameA(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_GETSERVICEDISPLAYNAMEA,
 				&r);
 
@@ -5367,7 +5367,7 @@ struct tevent_req *rpccli_svcctl_GetServiceKeyNameA_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_GETSERVICEKEYNAMEA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5455,7 +5455,7 @@ NTSTATUS rpccli_svcctl_GetServiceKeyNameA(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_GETSERVICEKEYNAMEA,
 				&r);
 
@@ -5517,7 +5517,7 @@ struct tevent_req *rpccli_svcctl_GetCurrentGroupeStateW_send(TALLOC_CTX *mem_ctx
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_GETCURRENTGROUPESTATEW,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5594,7 +5594,7 @@ NTSTATUS rpccli_svcctl_GetCurrentGroupeStateW(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_GETCURRENTGROUPESTATEW,
 				&r);
 
@@ -5652,7 +5652,7 @@ struct tevent_req *rpccli_svcctl_EnumServiceGroupW_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_ENUMSERVICEGROUPW,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5729,7 +5729,7 @@ NTSTATUS rpccli_svcctl_EnumServiceGroupW(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_ENUMSERVICEGROUPW,
 				&r);
 
@@ -5793,7 +5793,7 @@ struct tevent_req *rpccli_svcctl_ChangeServiceConfig2A_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_CHANGESERVICECONFIG2A,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5876,7 +5876,7 @@ NTSTATUS rpccli_svcctl_ChangeServiceConfig2A(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_CHANGESERVICECONFIG2A,
 				&r);
 
@@ -5940,7 +5940,7 @@ struct tevent_req *rpccli_svcctl_ChangeServiceConfig2W_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_CHANGESERVICECONFIG2W,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6023,7 +6023,7 @@ NTSTATUS rpccli_svcctl_ChangeServiceConfig2W(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_CHANGESERVICECONFIG2W,
 				&r);
 
@@ -6097,7 +6097,7 @@ struct tevent_req *rpccli_svcctl_QueryServiceConfig2A_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_QUERYSERVICECONFIG2A,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6184,7 +6184,7 @@ NTSTATUS rpccli_svcctl_QueryServiceConfig2A(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_QUERYSERVICECONFIG2A,
 				&r);
 
@@ -6260,7 +6260,7 @@ struct tevent_req *rpccli_svcctl_QueryServiceConfig2W_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_QUERYSERVICECONFIG2W,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6347,7 +6347,7 @@ NTSTATUS rpccli_svcctl_QueryServiceConfig2W(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_QUERYSERVICECONFIG2W,
 				&r);
 
@@ -6423,7 +6423,7 @@ struct tevent_req *rpccli_svcctl_QueryServiceStatusEx_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_QUERYSERVICESTATUSEX,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6510,7 +6510,7 @@ NTSTATUS rpccli_svcctl_QueryServiceStatusEx(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_QUERYSERVICESTATUSEX,
 				&r);
 
@@ -6597,7 +6597,7 @@ struct tevent_req *rpccli_EnumServicesStatusExA_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_ENUMSERVICESSTATUSEXA,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6697,7 +6697,7 @@ NTSTATUS rpccli_EnumServicesStatusExA(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_ENUMSERVICESSTATUSEXA,
 				&r);
 
@@ -6789,7 +6789,7 @@ struct tevent_req *rpccli_EnumServicesStatusExW_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_ENUMSERVICESSTATUSEXW,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6889,7 +6889,7 @@ NTSTATUS rpccli_EnumServicesStatusExW(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_ENUMSERVICESSTATUSEXW,
 				&r);
 
@@ -6953,7 +6953,7 @@ struct tevent_req *rpccli_svcctl_SCSendTSMessage_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_svcctl,
+				    NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				    NDR_SVCCTL_SCSENDTSMESSAGE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7030,7 +7030,7 @@ NTSTATUS rpccli_svcctl_SCSendTSMessage(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_svcctl,
+				NDR_SVCCTL_UUID, NDR_SVCCTL_VERSION,
 				NDR_SVCCTL_SCSENDTSMESSAGE,
 				&r);
 

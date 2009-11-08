@@ -54,7 +54,7 @@ struct tevent_req *rpccli_wkssvc_NetWkstaGetInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wkssvc,
+				    NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				    NDR_WKSSVC_NETWKSTAGETINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -137,7 +137,7 @@ NTSTATUS rpccli_wkssvc_NetWkstaGetInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wkssvc,
+				NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				NDR_WKSSVC_NETWKSTAGETINFO,
 				&r);
 
@@ -211,7 +211,7 @@ struct tevent_req *rpccli_wkssvc_NetWkstaSetInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wkssvc,
+				    NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				    NDR_WKSSVC_NETWKSTASETINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -297,7 +297,7 @@ NTSTATUS rpccli_wkssvc_NetWkstaSetInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wkssvc,
+				NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				NDR_WKSSVC_NETWKSTASETINFO,
 				&r);
 
@@ -374,7 +374,7 @@ struct tevent_req *rpccli_wkssvc_NetWkstaEnumUsers_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wkssvc,
+				    NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				    NDR_WKSSVC_NETWKSTAENUMUSERS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -465,7 +465,7 @@ NTSTATUS rpccli_wkssvc_NetWkstaEnumUsers(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wkssvc,
+				NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				NDR_WKSSVC_NETWKSTAENUMUSERS,
 				&r);
 
@@ -540,7 +540,7 @@ struct tevent_req *rpccli_wkssvc_NetrWkstaUserGetInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wkssvc,
+				    NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				    NDR_WKSSVC_NETRWKSTAUSERGETINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -623,7 +623,7 @@ NTSTATUS rpccli_wkssvc_NetrWkstaUserGetInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wkssvc,
+				NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				NDR_WKSSVC_NETRWKSTAUSERGETINFO,
 				&r);
 
@@ -697,7 +697,7 @@ struct tevent_req *rpccli_wkssvc_NetrWkstaUserSetInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wkssvc,
+				    NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				    NDR_WKSSVC_NETRWKSTAUSERSETINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -785,7 +785,7 @@ NTSTATUS rpccli_wkssvc_NetrWkstaUserSetInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wkssvc,
+				NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				NDR_WKSSVC_NETRWKSTAUSERSETINFO,
 				&r);
 
@@ -864,7 +864,7 @@ struct tevent_req *rpccli_wkssvc_NetWkstaTransportEnum_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wkssvc,
+				    NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				    NDR_WKSSVC_NETWKSTATRANSPORTENUM,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -955,7 +955,7 @@ NTSTATUS rpccli_wkssvc_NetWkstaTransportEnum(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wkssvc,
+				NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				NDR_WKSSVC_NETWKSTATRANSPORTENUM,
 				&r);
 
@@ -1033,7 +1033,7 @@ struct tevent_req *rpccli_wkssvc_NetrWkstaTransportAdd_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wkssvc,
+				    NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				    NDR_WKSSVC_NETRWKSTATRANSPORTADD,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1121,7 +1121,7 @@ NTSTATUS rpccli_wkssvc_NetrWkstaTransportAdd(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wkssvc,
+				NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				NDR_WKSSVC_NETRWKSTATRANSPORTADD,
 				&r);
 
@@ -1188,7 +1188,7 @@ struct tevent_req *rpccli_wkssvc_NetrWkstaTransportDel_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wkssvc,
+				    NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				    NDR_WKSSVC_NETRWKSTATRANSPORTDEL,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1271,7 +1271,7 @@ NTSTATUS rpccli_wkssvc_NetrWkstaTransportDel(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wkssvc,
+				NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				NDR_WKSSVC_NETRWKSTATRANSPORTDEL,
 				&r);
 
@@ -1344,7 +1344,7 @@ struct tevent_req *rpccli_wkssvc_NetrUseAdd_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wkssvc,
+				    NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				    NDR_WKSSVC_NETRUSEADD,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1432,7 +1432,7 @@ NTSTATUS rpccli_wkssvc_NetrUseAdd(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wkssvc,
+				NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				NDR_WKSSVC_NETRUSEADD,
 				&r);
 
@@ -1507,7 +1507,7 @@ struct tevent_req *rpccli_wkssvc_NetrUseGetInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wkssvc,
+				    NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				    NDR_WKSSVC_NETRUSEGETINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1592,7 +1592,7 @@ NTSTATUS rpccli_wkssvc_NetrUseGetInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wkssvc,
+				NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				NDR_WKSSVC_NETRUSEGETINFO,
 				&r);
 
@@ -1657,7 +1657,7 @@ struct tevent_req *rpccli_wkssvc_NetrUseDel_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wkssvc,
+				    NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				    NDR_WKSSVC_NETRUSEDEL,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1740,7 +1740,7 @@ NTSTATUS rpccli_wkssvc_NetrUseDel(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wkssvc,
+				NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				NDR_WKSSVC_NETRUSEDEL,
 				&r);
 
@@ -1816,7 +1816,7 @@ struct tevent_req *rpccli_wkssvc_NetrUseEnum_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wkssvc,
+				    NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				    NDR_WKSSVC_NETRUSEENUM,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1907,7 +1907,7 @@ NTSTATUS rpccli_wkssvc_NetrUseEnum(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wkssvc,
+				NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				NDR_WKSSVC_NETRUSEENUM,
 				&r);
 
@@ -1980,7 +1980,7 @@ struct tevent_req *rpccli_wkssvc_NetrMessageBufferSend_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wkssvc,
+				    NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				    NDR_WKSSVC_NETRMESSAGEBUFFERSEND,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2067,7 +2067,7 @@ NTSTATUS rpccli_wkssvc_NetrMessageBufferSend(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wkssvc,
+				NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				NDR_WKSSVC_NETRMESSAGEBUFFERSEND,
 				&r);
 
@@ -2141,7 +2141,7 @@ struct tevent_req *rpccli_wkssvc_NetrWorkstationStatisticsGet_send(TALLOC_CTX *m
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wkssvc,
+				    NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				    NDR_WKSSVC_NETRWORKSTATIONSTATISTICSGET,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2228,7 +2228,7 @@ NTSTATUS rpccli_wkssvc_NetrWorkstationStatisticsGet(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wkssvc,
+				NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				NDR_WKSSVC_NETRWORKSTATIONSTATISTICSGET,
 				&r);
 
@@ -2289,7 +2289,7 @@ struct tevent_req *rpccli_wkssvc_NetrLogonDomainNameAdd_send(TALLOC_CTX *mem_ctx
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wkssvc,
+				    NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				    NDR_WKSSVC_NETRLOGONDOMAINNAMEADD,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2368,7 +2368,7 @@ NTSTATUS rpccli_wkssvc_NetrLogonDomainNameAdd(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wkssvc,
+				NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				NDR_WKSSVC_NETRLOGONDOMAINNAMEADD,
 				&r);
 
@@ -2428,7 +2428,7 @@ struct tevent_req *rpccli_wkssvc_NetrLogonDomainNameDel_send(TALLOC_CTX *mem_ctx
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wkssvc,
+				    NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				    NDR_WKSSVC_NETRLOGONDOMAINNAMEDEL,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2507,7 +2507,7 @@ NTSTATUS rpccli_wkssvc_NetrLogonDomainNameDel(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wkssvc,
+				NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				NDR_WKSSVC_NETRLOGONDOMAINNAMEDEL,
 				&r);
 
@@ -2577,7 +2577,7 @@ struct tevent_req *rpccli_wkssvc_NetrJoinDomain_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wkssvc,
+				    NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				    NDR_WKSSVC_NETRJOINDOMAIN,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2666,7 +2666,7 @@ NTSTATUS rpccli_wkssvc_NetrJoinDomain(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wkssvc,
+				NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				NDR_WKSSVC_NETRJOINDOMAIN,
 				&r);
 
@@ -2732,7 +2732,7 @@ struct tevent_req *rpccli_wkssvc_NetrUnjoinDomain_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wkssvc,
+				    NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				    NDR_WKSSVC_NETRUNJOINDOMAIN,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2817,7 +2817,7 @@ NTSTATUS rpccli_wkssvc_NetrUnjoinDomain(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wkssvc,
+				NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				NDR_WKSSVC_NETRUNJOINDOMAIN,
 				&r);
 
@@ -2885,7 +2885,7 @@ struct tevent_req *rpccli_wkssvc_NetrRenameMachineInDomain_send(TALLOC_CTX *mem_
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wkssvc,
+				    NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				    NDR_WKSSVC_NETRRENAMEMACHINEINDOMAIN,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2972,7 +2972,7 @@ NTSTATUS rpccli_wkssvc_NetrRenameMachineInDomain(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wkssvc,
+				NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				NDR_WKSSVC_NETRRENAMEMACHINEINDOMAIN,
 				&r);
 
@@ -3040,7 +3040,7 @@ struct tevent_req *rpccli_wkssvc_NetrValidateName_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wkssvc,
+				    NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				    NDR_WKSSVC_NETRVALIDATENAME,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3127,7 +3127,7 @@ NTSTATUS rpccli_wkssvc_NetrValidateName(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wkssvc,
+				NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				NDR_WKSSVC_NETRVALIDATENAME,
 				&r);
 
@@ -3198,7 +3198,7 @@ struct tevent_req *rpccli_wkssvc_NetrGetJoinInformation_send(TALLOC_CTX *mem_ctx
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wkssvc,
+				    NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				    NDR_WKSSVC_NETRGETJOININFORMATION,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3282,7 +3282,7 @@ NTSTATUS rpccli_wkssvc_NetrGetJoinInformation(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wkssvc,
+				NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				NDR_WKSSVC_NETRGETJOININFORMATION,
 				&r);
 
@@ -3361,7 +3361,7 @@ struct tevent_req *rpccli_wkssvc_NetrGetJoinableOus_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wkssvc,
+				    NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				    NDR_WKSSVC_NETRGETJOINABLEOUS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3451,7 +3451,7 @@ NTSTATUS rpccli_wkssvc_NetrGetJoinableOus(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wkssvc,
+				NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				NDR_WKSSVC_NETRGETJOINABLEOUS,
 				&r);
 
@@ -3523,7 +3523,7 @@ struct tevent_req *rpccli_wkssvc_NetrJoinDomain2_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wkssvc,
+				    NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				    NDR_WKSSVC_NETRJOINDOMAIN2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3612,7 +3612,7 @@ NTSTATUS rpccli_wkssvc_NetrJoinDomain2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wkssvc,
+				NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				NDR_WKSSVC_NETRJOINDOMAIN2,
 				&r);
 
@@ -3678,7 +3678,7 @@ struct tevent_req *rpccli_wkssvc_NetrUnjoinDomain2_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wkssvc,
+				    NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				    NDR_WKSSVC_NETRUNJOINDOMAIN2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3763,7 +3763,7 @@ NTSTATUS rpccli_wkssvc_NetrUnjoinDomain2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wkssvc,
+				NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				NDR_WKSSVC_NETRUNJOINDOMAIN2,
 				&r);
 
@@ -3831,7 +3831,7 @@ struct tevent_req *rpccli_wkssvc_NetrRenameMachineInDomain2_send(TALLOC_CTX *mem
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wkssvc,
+				    NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				    NDR_WKSSVC_NETRRENAMEMACHINEINDOMAIN2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3918,7 +3918,7 @@ NTSTATUS rpccli_wkssvc_NetrRenameMachineInDomain2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wkssvc,
+				NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				NDR_WKSSVC_NETRRENAMEMACHINEINDOMAIN2,
 				&r);
 
@@ -3986,7 +3986,7 @@ struct tevent_req *rpccli_wkssvc_NetrValidateName2_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wkssvc,
+				    NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				    NDR_WKSSVC_NETRVALIDATENAME2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4073,7 +4073,7 @@ NTSTATUS rpccli_wkssvc_NetrValidateName2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wkssvc,
+				NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				NDR_WKSSVC_NETRVALIDATENAME2,
 				&r);
 
@@ -4150,7 +4150,7 @@ struct tevent_req *rpccli_wkssvc_NetrGetJoinableOus2_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wkssvc,
+				    NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				    NDR_WKSSVC_NETRGETJOINABLEOUS2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4240,7 +4240,7 @@ NTSTATUS rpccli_wkssvc_NetrGetJoinableOus2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wkssvc,
+				NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				NDR_WKSSVC_NETRGETJOINABLEOUS2,
 				&r);
 
@@ -4310,7 +4310,7 @@ struct tevent_req *rpccli_wkssvc_NetrAddAlternateComputerName_send(TALLOC_CTX *m
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wkssvc,
+				    NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				    NDR_WKSSVC_NETRADDALTERNATECOMPUTERNAME,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4397,7 +4397,7 @@ NTSTATUS rpccli_wkssvc_NetrAddAlternateComputerName(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wkssvc,
+				NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				NDR_WKSSVC_NETRADDALTERNATECOMPUTERNAME,
 				&r);
 
@@ -4465,7 +4465,7 @@ struct tevent_req *rpccli_wkssvc_NetrRemoveAlternateComputerName_send(TALLOC_CTX
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wkssvc,
+				    NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				    NDR_WKSSVC_NETRREMOVEALTERNATECOMPUTERNAME,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4552,7 +4552,7 @@ NTSTATUS rpccli_wkssvc_NetrRemoveAlternateComputerName(struct rpc_pipe_client *c
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wkssvc,
+				NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				NDR_WKSSVC_NETRREMOVEALTERNATECOMPUTERNAME,
 				&r);
 
@@ -4620,7 +4620,7 @@ struct tevent_req *rpccli_wkssvc_NetrSetPrimaryComputername_send(TALLOC_CTX *mem
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wkssvc,
+				    NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				    NDR_WKSSVC_NETRSETPRIMARYCOMPUTERNAME,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4707,7 +4707,7 @@ NTSTATUS rpccli_wkssvc_NetrSetPrimaryComputername(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wkssvc,
+				NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				NDR_WKSSVC_NETRSETPRIMARYCOMPUTERNAME,
 				&r);
 
@@ -4779,7 +4779,7 @@ struct tevent_req *rpccli_wkssvc_NetrEnumerateComputerNames_send(TALLOC_CTX *mem
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    &ndr_table_wkssvc,
+				    NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				    NDR_WKSSVC_NETRENUMERATECOMPUTERNAMES,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4864,7 +4864,7 @@ NTSTATUS rpccli_wkssvc_NetrEnumerateComputerNames(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				&ndr_table_wkssvc,
+				NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION,
 				NDR_WKSSVC_NETRENUMERATECOMPUTERNAMES,
 				&r);
 
