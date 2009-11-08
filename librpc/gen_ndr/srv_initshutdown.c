@@ -15,7 +15,7 @@ static bool api_initshutdown_Init(pipes_struct *p)
 	DATA_BLOB blob;
 	struct initshutdown_Init *r;
 
-	call = &p->interface->calls[NDR_INITSHUTDOWN_INIT];
+	call = &ndr_table_initshutdown.calls[NDR_INITSHUTDOWN_INIT];
 
 	r = talloc(talloc_tos(), struct initshutdown_Init);
 	if (r == NULL) {
@@ -88,7 +88,7 @@ static bool api_initshutdown_Abort(pipes_struct *p)
 	DATA_BLOB blob;
 	struct initshutdown_Abort *r;
 
-	call = &p->interface->calls[NDR_INITSHUTDOWN_ABORT];
+	call = &ndr_table_initshutdown.calls[NDR_INITSHUTDOWN_ABORT];
 
 	r = talloc(talloc_tos(), struct initshutdown_Abort);
 	if (r == NULL) {
@@ -161,7 +161,7 @@ static bool api_initshutdown_InitEx(pipes_struct *p)
 	DATA_BLOB blob;
 	struct initshutdown_InitEx *r;
 
-	call = &p->interface->calls[NDR_INITSHUTDOWN_INITEX];
+	call = &ndr_table_initshutdown.calls[NDR_INITSHUTDOWN_INITEX];
 
 	r = talloc(talloc_tos(), struct initshutdown_InitEx);
 	if (r == NULL) {

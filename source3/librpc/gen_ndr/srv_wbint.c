@@ -15,7 +15,7 @@ static bool api_wbint_Ping(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wbint_Ping *r;
 
-	call = &p->interface->calls[NDR_WBINT_PING];
+	call = &ndr_table_wbint.calls[NDR_WBINT_PING];
 
 	r = talloc(talloc_tos(), struct wbint_Ping);
 	if (r == NULL) {
@@ -95,7 +95,7 @@ static bool api_wbint_LookupSid(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wbint_LookupSid *r;
 
-	call = &p->interface->calls[NDR_WBINT_LOOKUPSID];
+	call = &ndr_table_wbint.calls[NDR_WBINT_LOOKUPSID];
 
 	r = talloc(talloc_tos(), struct wbint_LookupSid);
 	if (r == NULL) {
@@ -187,7 +187,7 @@ static bool api_wbint_LookupName(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wbint_LookupName *r;
 
-	call = &p->interface->calls[NDR_WBINT_LOOKUPNAME];
+	call = &ndr_table_wbint.calls[NDR_WBINT_LOOKUPNAME];
 
 	r = talloc(talloc_tos(), struct wbint_LookupName);
 	if (r == NULL) {
@@ -273,7 +273,7 @@ static bool api_wbint_Sid2Uid(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wbint_Sid2Uid *r;
 
-	call = &p->interface->calls[NDR_WBINT_SID2UID];
+	call = &ndr_table_wbint.calls[NDR_WBINT_SID2UID];
 
 	r = talloc(talloc_tos(), struct wbint_Sid2Uid);
 	if (r == NULL) {
@@ -353,7 +353,7 @@ static bool api_wbint_Sid2Gid(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wbint_Sid2Gid *r;
 
-	call = &p->interface->calls[NDR_WBINT_SID2GID];
+	call = &ndr_table_wbint.calls[NDR_WBINT_SID2GID];
 
 	r = talloc(talloc_tos(), struct wbint_Sid2Gid);
 	if (r == NULL) {
@@ -433,7 +433,7 @@ static bool api_wbint_Uid2Sid(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wbint_Uid2Sid *r;
 
-	call = &p->interface->calls[NDR_WBINT_UID2SID];
+	call = &ndr_table_wbint.calls[NDR_WBINT_UID2SID];
 
 	r = talloc(talloc_tos(), struct wbint_Uid2Sid);
 	if (r == NULL) {
@@ -513,7 +513,7 @@ static bool api_wbint_Gid2Sid(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wbint_Gid2Sid *r;
 
-	call = &p->interface->calls[NDR_WBINT_GID2SID];
+	call = &ndr_table_wbint.calls[NDR_WBINT_GID2SID];
 
 	r = talloc(talloc_tos(), struct wbint_Gid2Sid);
 	if (r == NULL) {
@@ -593,7 +593,7 @@ static bool api_wbint_AllocateUid(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wbint_AllocateUid *r;
 
-	call = &p->interface->calls[NDR_WBINT_ALLOCATEUID];
+	call = &ndr_table_wbint.calls[NDR_WBINT_ALLOCATEUID];
 
 	r = talloc(talloc_tos(), struct wbint_AllocateUid);
 	if (r == NULL) {
@@ -673,7 +673,7 @@ static bool api_wbint_AllocateGid(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wbint_AllocateGid *r;
 
-	call = &p->interface->calls[NDR_WBINT_ALLOCATEGID];
+	call = &ndr_table_wbint.calls[NDR_WBINT_ALLOCATEGID];
 
 	r = talloc(talloc_tos(), struct wbint_AllocateGid);
 	if (r == NULL) {
@@ -753,7 +753,7 @@ static bool api_wbint_QueryUser(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wbint_QueryUser *r;
 
-	call = &p->interface->calls[NDR_WBINT_QUERYUSER];
+	call = &ndr_table_wbint.calls[NDR_WBINT_QUERYUSER];
 
 	r = talloc(talloc_tos(), struct wbint_QueryUser);
 	if (r == NULL) {
@@ -833,7 +833,7 @@ static bool api_wbint_LookupUserAliases(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wbint_LookupUserAliases *r;
 
-	call = &p->interface->calls[NDR_WBINT_LOOKUPUSERALIASES];
+	call = &ndr_table_wbint.calls[NDR_WBINT_LOOKUPUSERALIASES];
 
 	r = talloc(talloc_tos(), struct wbint_LookupUserAliases);
 	if (r == NULL) {
@@ -913,7 +913,7 @@ static bool api_wbint_LookupUserGroups(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wbint_LookupUserGroups *r;
 
-	call = &p->interface->calls[NDR_WBINT_LOOKUPUSERGROUPS];
+	call = &ndr_table_wbint.calls[NDR_WBINT_LOOKUPUSERGROUPS];
 
 	r = talloc(talloc_tos(), struct wbint_LookupUserGroups);
 	if (r == NULL) {
@@ -993,7 +993,7 @@ static bool api_wbint_QuerySequenceNumber(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wbint_QuerySequenceNumber *r;
 
-	call = &p->interface->calls[NDR_WBINT_QUERYSEQUENCENUMBER];
+	call = &ndr_table_wbint.calls[NDR_WBINT_QUERYSEQUENCENUMBER];
 
 	r = talloc(talloc_tos(), struct wbint_QuerySequenceNumber);
 	if (r == NULL) {
@@ -1073,7 +1073,7 @@ static bool api_wbint_LookupGroupMembers(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wbint_LookupGroupMembers *r;
 
-	call = &p->interface->calls[NDR_WBINT_LOOKUPGROUPMEMBERS];
+	call = &ndr_table_wbint.calls[NDR_WBINT_LOOKUPGROUPMEMBERS];
 
 	r = talloc(talloc_tos(), struct wbint_LookupGroupMembers);
 	if (r == NULL) {
@@ -1153,7 +1153,7 @@ static bool api_wbint_QueryUserList(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wbint_QueryUserList *r;
 
-	call = &p->interface->calls[NDR_WBINT_QUERYUSERLIST];
+	call = &ndr_table_wbint.calls[NDR_WBINT_QUERYUSERLIST];
 
 	r = talloc(talloc_tos(), struct wbint_QueryUserList);
 	if (r == NULL) {
@@ -1233,7 +1233,7 @@ static bool api_wbint_QueryGroupList(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wbint_QueryGroupList *r;
 
-	call = &p->interface->calls[NDR_WBINT_QUERYGROUPLIST];
+	call = &ndr_table_wbint.calls[NDR_WBINT_QUERYGROUPLIST];
 
 	r = talloc(talloc_tos(), struct wbint_QueryGroupList);
 	if (r == NULL) {
@@ -1313,7 +1313,7 @@ static bool api_wbint_DsGetDcName(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wbint_DsGetDcName *r;
 
-	call = &p->interface->calls[NDR_WBINT_DSGETDCNAME];
+	call = &ndr_table_wbint.calls[NDR_WBINT_DSGETDCNAME];
 
 	r = talloc(talloc_tos(), struct wbint_DsGetDcName);
 	if (r == NULL) {
@@ -1393,7 +1393,7 @@ static bool api_wbint_LookupRids(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wbint_LookupRids *r;
 
-	call = &p->interface->calls[NDR_WBINT_LOOKUPRIDS];
+	call = &ndr_table_wbint.calls[NDR_WBINT_LOOKUPRIDS];
 
 	r = talloc(talloc_tos(), struct wbint_LookupRids);
 	if (r == NULL) {
@@ -1473,7 +1473,7 @@ static bool api_wbint_CheckMachineAccount(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wbint_CheckMachineAccount *r;
 
-	call = &p->interface->calls[NDR_WBINT_CHECKMACHINEACCOUNT];
+	call = &ndr_table_wbint.calls[NDR_WBINT_CHECKMACHINEACCOUNT];
 
 	r = talloc(talloc_tos(), struct wbint_CheckMachineAccount);
 	if (r == NULL) {
@@ -1546,7 +1546,7 @@ static bool api_wbint_ChangeMachineAccount(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wbint_ChangeMachineAccount *r;
 
-	call = &p->interface->calls[NDR_WBINT_CHANGEMACHINEACCOUNT];
+	call = &ndr_table_wbint.calls[NDR_WBINT_CHANGEMACHINEACCOUNT];
 
 	r = talloc(talloc_tos(), struct wbint_ChangeMachineAccount);
 	if (r == NULL) {
@@ -1619,7 +1619,7 @@ static bool api_wbint_SetMapping(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wbint_SetMapping *r;
 
-	call = &p->interface->calls[NDR_WBINT_SETMAPPING];
+	call = &ndr_table_wbint.calls[NDR_WBINT_SETMAPPING];
 
 	r = talloc(talloc_tos(), struct wbint_SetMapping);
 	if (r == NULL) {
@@ -1692,7 +1692,7 @@ static bool api_wbint_RemoveMapping(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wbint_RemoveMapping *r;
 
-	call = &p->interface->calls[NDR_WBINT_REMOVEMAPPING];
+	call = &ndr_table_wbint.calls[NDR_WBINT_REMOVEMAPPING];
 
 	r = talloc(talloc_tos(), struct wbint_RemoveMapping);
 	if (r == NULL) {
@@ -1765,7 +1765,7 @@ static bool api_wbint_SetHWM(pipes_struct *p)
 	DATA_BLOB blob;
 	struct wbint_SetHWM *r;
 
-	call = &p->interface->calls[NDR_WBINT_SETHWM];
+	call = &ndr_table_wbint.calls[NDR_WBINT_SETHWM];
 
 	r = talloc(talloc_tos(), struct wbint_SetHWM);
 	if (r == NULL) {
