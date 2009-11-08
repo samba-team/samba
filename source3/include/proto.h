@@ -5310,13 +5310,8 @@ NTSTATUS rpc_pipe_open_tcp(TALLOC_CTX *mem_ctx, const char *host,
 NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 			       const struct ndr_syntax_id *abstract_syntax,
 			       struct rpc_pipe_client **presult);
-NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
-				const struct ndr_syntax_id *abstract_syntax,
-				NTSTATUS (*dispatch) (struct rpc_pipe_client *cli,
-						      TALLOC_CTX *mem_ctx,
-						      const char *interface,
-						      uint32_t interface_version,
-						      uint32_t opnum, void *r),
+NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx, const struct ndr_syntax_id *abstract_syntax,
+				NTSTATUS (*dispatch) (struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *r),
 				struct auth_serversupplied_info *serversupplied_info,
 				struct rpc_pipe_client **presult);
 NTSTATUS cli_rpc_pipe_open_noauth(struct cli_state *cli,
@@ -5639,15 +5634,14 @@ void init_samr_CryptPassword(const char *pwd,
 struct tevent_req *cli_do_rpc_ndr_send(TALLOC_CTX *mem_ctx,
 				       struct tevent_context *ev,
 				       struct rpc_pipe_client *cli,
-				       const char *interface,
-				       uint32_t interface_version,
+				       const struct ndr_interface_table *table,
 				       uint32_t opnum,
 				       void *r);
 NTSTATUS cli_do_rpc_ndr_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx);
 NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli,
 			TALLOC_CTX *mem_ctx,
-			const char *interface, uint32_t interface_version,
-			uint32_t opnum, void *r);
+			const struct ndr_interface_table *table,
+			uint32 opnum, void *r);
 
 /* The following definitions come from rpc_parse/parse_misc.c  */
 

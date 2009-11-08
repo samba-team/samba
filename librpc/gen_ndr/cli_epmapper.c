@@ -48,7 +48,7 @@ struct tevent_req *rpccli_epm_Insert_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_EPMAPPER_UUID, NDR_EPMAPPER_VERSION,
+				    &ndr_table_epmapper,
 				    NDR_EPM_INSERT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -130,7 +130,7 @@ NTSTATUS rpccli_epm_Insert(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_EPMAPPER_UUID, NDR_EPMAPPER_VERSION,
+				&ndr_table_epmapper,
 				NDR_EPM_INSERT,
 				&r);
 
@@ -188,7 +188,7 @@ struct tevent_req *rpccli_epm_Delete_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_EPMAPPER_UUID, NDR_EPMAPPER_VERSION,
+				    &ndr_table_epmapper,
 				    NDR_EPM_DELETE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -268,7 +268,7 @@ NTSTATUS rpccli_epm_Delete(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_EPMAPPER_UUID, NDR_EPMAPPER_VERSION,
+				&ndr_table_epmapper,
 				NDR_EPM_DELETE,
 				&r);
 
@@ -345,7 +345,7 @@ struct tevent_req *rpccli_epm_Lookup_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_EPMAPPER_UUID, NDR_EPMAPPER_VERSION,
+				    &ndr_table_epmapper,
 				    NDR_EPM_LOOKUP,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -438,7 +438,7 @@ NTSTATUS rpccli_epm_Lookup(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_EPMAPPER_UUID, NDR_EPMAPPER_VERSION,
+				&ndr_table_epmapper,
 				NDR_EPM_LOOKUP,
 				&r);
 
@@ -514,7 +514,7 @@ struct tevent_req *rpccli_epm_Map_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_EPMAPPER_UUID, NDR_EPMAPPER_VERSION,
+				    &ndr_table_epmapper,
 				    NDR_EPM_MAP,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -603,7 +603,7 @@ NTSTATUS rpccli_epm_Map(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_EPMAPPER_UUID, NDR_EPMAPPER_VERSION,
+				&ndr_table_epmapper,
 				NDR_EPM_MAP,
 				&r);
 
@@ -669,7 +669,7 @@ struct tevent_req *rpccli_epm_LookupHandleFree_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_EPMAPPER_UUID, NDR_EPMAPPER_VERSION,
+				    &ndr_table_epmapper,
 				    NDR_EPM_LOOKUPHANDLEFREE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -748,7 +748,7 @@ NTSTATUS rpccli_epm_LookupHandleFree(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_EPMAPPER_UUID, NDR_EPMAPPER_VERSION,
+				&ndr_table_epmapper,
 				NDR_EPM_LOOKUPHANDLEFREE,
 				&r);
 
@@ -805,7 +805,7 @@ struct tevent_req *rpccli_epm_InqObject_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_EPMAPPER_UUID, NDR_EPMAPPER_VERSION,
+				    &ndr_table_epmapper,
 				    NDR_EPM_INQOBJECT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -883,7 +883,7 @@ NTSTATUS rpccli_epm_InqObject(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_EPMAPPER_UUID, NDR_EPMAPPER_VERSION,
+				&ndr_table_epmapper,
 				NDR_EPM_INQOBJECT,
 				&r);
 
@@ -943,7 +943,7 @@ struct tevent_req *rpccli_epm_MgmtDelete_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_EPMAPPER_UUID, NDR_EPMAPPER_VERSION,
+				    &ndr_table_epmapper,
 				    NDR_EPM_MGMTDELETE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1025,7 +1025,7 @@ NTSTATUS rpccli_epm_MgmtDelete(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_EPMAPPER_UUID, NDR_EPMAPPER_VERSION,
+				&ndr_table_epmapper,
 				NDR_EPM_MGMTDELETE,
 				&r);
 
@@ -1079,7 +1079,7 @@ struct tevent_req *rpccli_epm_MapAuth_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_EPMAPPER_UUID, NDR_EPMAPPER_VERSION,
+				    &ndr_table_epmapper,
 				    NDR_EPM_MAPAUTH,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1155,7 +1155,7 @@ NTSTATUS rpccli_epm_MapAuth(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_EPMAPPER_UUID, NDR_EPMAPPER_VERSION,
+				&ndr_table_epmapper,
 				NDR_EPM_MAPAUTH,
 				&r);
 

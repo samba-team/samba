@@ -54,7 +54,7 @@ struct tevent_req *rpccli_winreg_OpenHKCR_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_OPENHKCR,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -137,7 +137,7 @@ NTSTATUS rpccli_winreg_OpenHKCR(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_OPENHKCR,
 				&r);
 
@@ -208,7 +208,7 @@ struct tevent_req *rpccli_winreg_OpenHKCU_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_OPENHKCU,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -291,7 +291,7 @@ NTSTATUS rpccli_winreg_OpenHKCU(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_OPENHKCU,
 				&r);
 
@@ -362,7 +362,7 @@ struct tevent_req *rpccli_winreg_OpenHKLM_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_OPENHKLM,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -445,7 +445,7 @@ NTSTATUS rpccli_winreg_OpenHKLM(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_OPENHKLM,
 				&r);
 
@@ -516,7 +516,7 @@ struct tevent_req *rpccli_winreg_OpenHKPD_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_OPENHKPD,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -599,7 +599,7 @@ NTSTATUS rpccli_winreg_OpenHKPD(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_OPENHKPD,
 				&r);
 
@@ -670,7 +670,7 @@ struct tevent_req *rpccli_winreg_OpenHKU_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_OPENHKU,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -753,7 +753,7 @@ NTSTATUS rpccli_winreg_OpenHKU(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_OPENHKU,
 				&r);
 
@@ -821,7 +821,7 @@ struct tevent_req *rpccli_winreg_CloseKey_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_CLOSEKEY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -901,7 +901,7 @@ NTSTATUS rpccli_winreg_CloseKey(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_CLOSEKEY,
 				&r);
 
@@ -983,7 +983,7 @@ struct tevent_req *rpccli_winreg_CreateKey_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_CREATEKEY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1079,7 +1079,7 @@ NTSTATUS rpccli_winreg_CreateKey(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_CREATEKEY,
 				&r);
 
@@ -1145,7 +1145,7 @@ struct tevent_req *rpccli_winreg_DeleteKey_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_DELETEKEY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1226,7 +1226,7 @@ NTSTATUS rpccli_winreg_DeleteKey(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_DELETEKEY,
 				&r);
 
@@ -1288,7 +1288,7 @@ struct tevent_req *rpccli_winreg_DeleteValue_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_DELETEVALUE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1369,7 +1369,7 @@ NTSTATUS rpccli_winreg_DeleteValue(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_DELETEVALUE,
 				&r);
 
@@ -1446,7 +1446,7 @@ struct tevent_req *rpccli_winreg_EnumKey_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_ENUMKEY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1540,7 +1540,7 @@ NTSTATUS rpccli_winreg_EnumKey(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_ENUMKEY,
 				&r);
 
@@ -1630,7 +1630,7 @@ struct tevent_req *rpccli_winreg_EnumValue_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_ENUMVALUE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1734,7 +1734,7 @@ NTSTATUS rpccli_winreg_EnumValue(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_ENUMVALUE,
 				&r);
 
@@ -1807,7 +1807,7 @@ struct tevent_req *rpccli_winreg_FlushKey_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_FLUSHKEY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1886,7 +1886,7 @@ NTSTATUS rpccli_winreg_FlushKey(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_FLUSHKEY,
 				&r);
 
@@ -1957,7 +1957,7 @@ struct tevent_req *rpccli_winreg_GetKeySecurity_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_GETKEYSECURITY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2041,7 +2041,7 @@ NTSTATUS rpccli_winreg_GetKeySecurity(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_GETKEYSECURITY,
 				&r);
 
@@ -2106,7 +2106,7 @@ struct tevent_req *rpccli_winreg_LoadKey_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_LOADKEY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2189,7 +2189,7 @@ NTSTATUS rpccli_winreg_LoadKey(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_LOADKEY,
 				&r);
 
@@ -2261,7 +2261,7 @@ struct tevent_req *rpccli_winreg_NotifyChangeKeyValue_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_NOTIFYCHANGEKEYVALUE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2352,7 +2352,7 @@ NTSTATUS rpccli_winreg_NotifyChangeKeyValue(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_NOTIFYCHANGEKEYVALUE,
 				&r);
 
@@ -2426,7 +2426,7 @@ struct tevent_req *rpccli_winreg_OpenKey_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_OPENKEY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2513,7 +2513,7 @@ NTSTATUS rpccli_winreg_OpenKey(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_OPENKEY,
 				&r);
 
@@ -2599,7 +2599,7 @@ struct tevent_req *rpccli_winreg_QueryInfoKey_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_QUERYINFOKEY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2697,7 +2697,7 @@ NTSTATUS rpccli_winreg_QueryInfoKey(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_QUERYINFOKEY,
 				&r);
 
@@ -2786,7 +2786,7 @@ struct tevent_req *rpccli_winreg_QueryValue_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_QUERYVALUE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2887,7 +2887,7 @@ NTSTATUS rpccli_winreg_QueryValue(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_QUERYVALUE,
 				&r);
 
@@ -2957,7 +2957,7 @@ struct tevent_req *rpccli_winreg_ReplaceKey_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_REPLACEKEY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3034,7 +3034,7 @@ NTSTATUS rpccli_winreg_ReplaceKey(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_REPLACEKEY,
 				&r);
 
@@ -3098,7 +3098,7 @@ struct tevent_req *rpccli_winreg_RestoreKey_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_RESTOREKEY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3181,7 +3181,7 @@ NTSTATUS rpccli_winreg_RestoreKey(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_RESTOREKEY,
 				&r);
 
@@ -3245,7 +3245,7 @@ struct tevent_req *rpccli_winreg_SaveKey_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_SAVEKEY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3328,7 +3328,7 @@ NTSTATUS rpccli_winreg_SaveKey(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_SAVEKEY,
 				&r);
 
@@ -3392,7 +3392,7 @@ struct tevent_req *rpccli_winreg_SetKeySecurity_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_SETKEYSECURITY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3475,7 +3475,7 @@ NTSTATUS rpccli_winreg_SetKeySecurity(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_SETKEYSECURITY,
 				&r);
 
@@ -3543,7 +3543,7 @@ struct tevent_req *rpccli_winreg_SetValue_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_SETVALUE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3630,7 +3630,7 @@ NTSTATUS rpccli_winreg_SetValue(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_SETVALUE,
 				&r);
 
@@ -3688,7 +3688,7 @@ struct tevent_req *rpccli_winreg_UnLoadKey_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_UNLOADKEY,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3765,7 +3765,7 @@ NTSTATUS rpccli_winreg_UnLoadKey(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_UNLOADKEY,
 				&r);
 
@@ -3833,7 +3833,7 @@ struct tevent_req *rpccli_winreg_InitiateSystemShutdown_send(TALLOC_CTX *mem_ctx
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_INITIATESYSTEMSHUTDOWN,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3920,7 +3920,7 @@ NTSTATUS rpccli_winreg_InitiateSystemShutdown(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_INITIATESYSTEMSHUTDOWN,
 				&r);
 
@@ -3980,7 +3980,7 @@ struct tevent_req *rpccli_winreg_AbortSystemShutdown_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_ABORTSYSTEMSHUTDOWN,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4059,7 +4059,7 @@ NTSTATUS rpccli_winreg_AbortSystemShutdown(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_ABORTSYSTEMSHUTDOWN,
 				&r);
 
@@ -4127,7 +4127,7 @@ struct tevent_req *rpccli_winreg_GetVersion_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_GETVERSION,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4208,7 +4208,7 @@ NTSTATUS rpccli_winreg_GetVersion(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_GETVERSION,
 				&r);
 
@@ -4279,7 +4279,7 @@ struct tevent_req *rpccli_winreg_OpenHKCC_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_OPENHKCC,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4362,7 +4362,7 @@ NTSTATUS rpccli_winreg_OpenHKCC(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_OPENHKCC,
 				&r);
 
@@ -4433,7 +4433,7 @@ struct tevent_req *rpccli_winreg_OpenHKDD_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_OPENHKDD,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4516,7 +4516,7 @@ NTSTATUS rpccli_winreg_OpenHKDD(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_OPENHKDD,
 				&r);
 
@@ -4594,7 +4594,7 @@ struct tevent_req *rpccli_winreg_QueryMultipleValues_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_QUERYMULTIPLEVALUES,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4686,7 +4686,7 @@ NTSTATUS rpccli_winreg_QueryMultipleValues(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_QUERYMULTIPLEVALUES,
 				&r);
 
@@ -4761,7 +4761,7 @@ struct tevent_req *rpccli_winreg_InitiateSystemShutdownEx_send(TALLOC_CTX *mem_c
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_INITIATESYSTEMSHUTDOWNEX,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4850,7 +4850,7 @@ NTSTATUS rpccli_winreg_InitiateSystemShutdownEx(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_INITIATESYSTEMSHUTDOWNEX,
 				&r);
 
@@ -4908,7 +4908,7 @@ struct tevent_req *rpccli_winreg_SaveKeyEx_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_SAVEKEYEX,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4985,7 +4985,7 @@ NTSTATUS rpccli_winreg_SaveKeyEx(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_SAVEKEYEX,
 				&r);
 
@@ -5055,7 +5055,7 @@ struct tevent_req *rpccli_winreg_OpenHKPT_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_OPENHKPT,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5138,7 +5138,7 @@ NTSTATUS rpccli_winreg_OpenHKPT(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_OPENHKPT,
 				&r);
 
@@ -5209,7 +5209,7 @@ struct tevent_req *rpccli_winreg_OpenHKPN_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_OPENHKPN,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5292,7 +5292,7 @@ NTSTATUS rpccli_winreg_OpenHKPN(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_OPENHKPN,
 				&r);
 
@@ -5351,7 +5351,7 @@ struct tevent_req *rpccli_winreg_QueryMultipleValues2_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				    &ndr_table_winreg,
 				    NDR_WINREG_QUERYMULTIPLEVALUES2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5428,7 +5428,7 @@ NTSTATUS rpccli_winreg_QueryMultipleValues2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_WINREG_UUID, NDR_WINREG_VERSION,
+				&ndr_table_winreg,
 				NDR_WINREG_QUERYMULTIPLEVALUES2,
 				&r);
 

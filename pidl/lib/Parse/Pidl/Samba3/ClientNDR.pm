@@ -223,7 +223,7 @@ sub ParseFunctionAsyncSend($$$)
 	$self->pidl("");
 
 	$self->pidl("subreq = cli->dispatch_send(state, ev, cli,");
-	$self->pidl("\t\t\t    NDR_".$uif."_UUID, NDR_".$uif."_VERSION,");
+	$self->pidl("\t\t\t    &ndr_table_$if,");
 	$self->pidl("\t\t\t    $ufn,");
 	$self->pidl("\t\t\t    &state->tmp);");
 	$self->pidl("if (tevent_req_nomem(subreq, req)) {");
@@ -387,7 +387,7 @@ sub ParseFunctionSync($$$)
 	$self->pidl("");
 	$self->pidl("status = cli->dispatch(cli,");
 	$self->pidl("\t\t\tmem_ctx,");
-	$self->pidl("\t\t\tNDR_".$uif."_UUID, NDR_".$uif."_VERSION,");
+	$self->pidl("\t\t\t&ndr_table_$if,");
 	$self->pidl("\t\t\t$ufn,");
 	$self->pidl("\t\t\t&r);");
 	$self->pidl("");

@@ -70,7 +70,7 @@ NTSTATUS _samr_RidToSid(pipes_struct *p, struct samr_RidToSid *r);
 NTSTATUS _samr_SetDsrmPassword(pipes_struct *p, struct samr_SetDsrmPassword *r);
 NTSTATUS _samr_ValidatePassword(pipes_struct *p, struct samr_ValidatePassword *r);
 void samr_get_pipe_fns(struct api_struct **fns, int *n_fns);
-NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *interface, uint32_t interface_version, uint32_t opnum, void *r);
+NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *r);
 NTSTATUS _samr_Connect(pipes_struct *p, struct samr_Connect *r);
 NTSTATUS _samr_Close(pipes_struct *p, struct samr_Close *r);
 NTSTATUS _samr_SetSecurity(pipes_struct *p, struct samr_SetSecurity *r);

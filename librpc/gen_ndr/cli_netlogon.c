@@ -56,7 +56,7 @@ struct tevent_req *rpccli_netr_LogonUasLogon_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_LOGONUASLOGON,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -141,7 +141,7 @@ NTSTATUS rpccli_netr_LogonUasLogon(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_LOGONUASLOGON,
 				&r);
 
@@ -214,7 +214,7 @@ struct tevent_req *rpccli_netr_LogonUasLogoff_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_LOGONUASLOGOFF,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -299,7 +299,7 @@ NTSTATUS rpccli_netr_LogonUasLogoff(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_LOGONUASLOGOFF,
 				&r);
 
@@ -383,7 +383,7 @@ struct tevent_req *rpccli_netr_LogonSamLogon_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_LOGONSAMLOGON,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -480,7 +480,7 @@ NTSTATUS rpccli_netr_LogonSamLogon(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_LOGONSAMLOGON,
 				&r);
 
@@ -558,7 +558,7 @@ struct tevent_req *rpccli_netr_LogonSamLogoff_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_LOGONSAMLOGOFF,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -649,7 +649,7 @@ NTSTATUS rpccli_netr_LogonSamLogoff(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_LOGONSAMLOGOFF,
 				&r);
 
@@ -720,7 +720,7 @@ struct tevent_req *rpccli_netr_ServerReqChallenge_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_SERVERREQCHALLENGE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -804,7 +804,7 @@ NTSTATUS rpccli_netr_ServerReqChallenge(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_SERVERREQCHALLENGE,
 				&r);
 
@@ -877,7 +877,7 @@ struct tevent_req *rpccli_netr_ServerAuthenticate_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_SERVERAUTHENTICATE,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -965,7 +965,7 @@ NTSTATUS rpccli_netr_ServerAuthenticate(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_SERVERAUTHENTICATE,
 				&r);
 
@@ -1040,7 +1040,7 @@ struct tevent_req *rpccli_netr_ServerPasswordSet_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_SERVERPASSWORDSET,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1130,7 +1130,7 @@ NTSTATUS rpccli_netr_ServerPasswordSet(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_SERVERPASSWORDSET,
 				&r);
 
@@ -1209,7 +1209,7 @@ struct tevent_req *rpccli_netr_DatabaseDeltas_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_DATABASEDELTAS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1303,7 +1303,7 @@ NTSTATUS rpccli_netr_DatabaseDeltas(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_DATABASEDELTAS,
 				&r);
 
@@ -1384,7 +1384,7 @@ struct tevent_req *rpccli_netr_DatabaseSync_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_DATABASESYNC,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1478,7 +1478,7 @@ NTSTATUS rpccli_netr_DatabaseSync(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_DATABASESYNC,
 				&r);
 
@@ -1566,7 +1566,7 @@ struct tevent_req *rpccli_netr_AccountDeltas_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_ACCOUNTDELTAS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1667,7 +1667,7 @@ NTSTATUS rpccli_netr_AccountDeltas(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_ACCOUNTDELTAS,
 				&r);
 
@@ -1758,7 +1758,7 @@ struct tevent_req *rpccli_netr_AccountSync_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_ACCOUNTSYNC,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1860,7 +1860,7 @@ NTSTATUS rpccli_netr_AccountSync(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_ACCOUNTSYNC,
 				&r);
 
@@ -1932,7 +1932,7 @@ struct tevent_req *rpccli_netr_GetDcName_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_GETDCNAME,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2015,7 +2015,7 @@ NTSTATUS rpccli_netr_GetDcName(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_GETDCNAME,
 				&r);
 
@@ -2088,7 +2088,7 @@ struct tevent_req *rpccli_netr_LogonControl_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_LOGONCONTROL,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2173,7 +2173,7 @@ NTSTATUS rpccli_netr_LogonControl(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_LOGONCONTROL,
 				&r);
 
@@ -2244,7 +2244,7 @@ struct tevent_req *rpccli_netr_GetAnyDCName_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_GETANYDCNAME,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2327,7 +2327,7 @@ NTSTATUS rpccli_netr_GetAnyDCName(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_GETANYDCNAME,
 				&r);
 
@@ -2402,7 +2402,7 @@ struct tevent_req *rpccli_netr_LogonControl2_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_LOGONCONTROL2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2489,7 +2489,7 @@ NTSTATUS rpccli_netr_LogonControl2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_LOGONCONTROL2,
 				&r);
 
@@ -2569,7 +2569,7 @@ struct tevent_req *rpccli_netr_ServerAuthenticate2_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_SERVERAUTHENTICATE2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2660,7 +2660,7 @@ NTSTATUS rpccli_netr_ServerAuthenticate2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_SERVERAUTHENTICATE2,
 				&r);
 
@@ -2742,7 +2742,7 @@ struct tevent_req *rpccli_netr_DatabaseSync2_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_DATABASESYNC2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2838,7 +2838,7 @@ NTSTATUS rpccli_netr_DatabaseSync2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_DATABASESYNC2,
 				&r);
 
@@ -2916,7 +2916,7 @@ struct tevent_req *rpccli_netr_DatabaseRedo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_DATABASEREDO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3007,7 +3007,7 @@ NTSTATUS rpccli_netr_DatabaseRedo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_DATABASEREDO,
 				&r);
 
@@ -3079,7 +3079,7 @@ struct tevent_req *rpccli_netr_LogonControl2Ex_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_LOGONCONTROL2EX,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3166,7 +3166,7 @@ NTSTATUS rpccli_netr_LogonControl2Ex(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_LOGONCONTROL2EX,
 				&r);
 
@@ -3235,7 +3235,7 @@ struct tevent_req *rpccli_netr_NetrEnumerateTrustedDomains_send(TALLOC_CTX *mem_
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_NETRENUMERATETRUSTEDDOMAINS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3316,7 +3316,7 @@ NTSTATUS rpccli_netr_NetrEnumerateTrustedDomains(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_NETRENUMERATETRUSTEDDOMAINS,
 				&r);
 
@@ -3393,7 +3393,7 @@ struct tevent_req *rpccli_netr_DsRGetDCName_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_DSRGETDCNAME,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3482,7 +3482,7 @@ NTSTATUS rpccli_netr_DsRGetDCName(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_DSRGETDCNAME,
 				&r);
 
@@ -3560,7 +3560,7 @@ struct tevent_req *rpccli_netr_LogonGetCapabilities_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_LOGONGETCAPABILITIES,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3649,7 +3649,7 @@ NTSTATUS rpccli_netr_LogonGetCapabilities(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_LOGONGETCAPABILITIES,
 				&r);
 
@@ -3705,7 +3705,7 @@ struct tevent_req *rpccli_netr_NETRLOGONSETSERVICEBITS_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_NETRLOGONSETSERVICEBITS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3782,7 +3782,7 @@ NTSTATUS rpccli_netr_NETRLOGONSETSERVICEBITS(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_NETRLOGONSETSERVICEBITS,
 				&r);
 
@@ -3852,7 +3852,7 @@ struct tevent_req *rpccli_netr_LogonGetTrustRid_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_LOGONGETTRUSTRID,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3935,7 +3935,7 @@ NTSTATUS rpccli_netr_LogonGetTrustRid(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_LOGONGETTRUSTRID,
 				&r);
 
@@ -3994,7 +3994,7 @@ struct tevent_req *rpccli_netr_NETRLOGONCOMPUTESERVERDIGEST_send(TALLOC_CTX *mem
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_NETRLOGONCOMPUTESERVERDIGEST,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4071,7 +4071,7 @@ NTSTATUS rpccli_netr_NETRLOGONCOMPUTESERVERDIGEST(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_NETRLOGONCOMPUTESERVERDIGEST,
 				&r);
 
@@ -4129,7 +4129,7 @@ struct tevent_req *rpccli_netr_NETRLOGONCOMPUTECLIENTDIGEST_send(TALLOC_CTX *mem
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_NETRLOGONCOMPUTECLIENTDIGEST,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4206,7 +4206,7 @@ NTSTATUS rpccli_netr_NETRLOGONCOMPUTECLIENTDIGEST(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_NETRLOGONCOMPUTECLIENTDIGEST,
 				&r);
 
@@ -4287,7 +4287,7 @@ struct tevent_req *rpccli_netr_ServerAuthenticate3_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_SERVERAUTHENTICATE3,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4380,7 +4380,7 @@ NTSTATUS rpccli_netr_ServerAuthenticate3(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_SERVERAUTHENTICATE3,
 				&r);
 
@@ -4455,7 +4455,7 @@ struct tevent_req *rpccli_netr_DsRGetDCNameEx_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_DSRGETDCNAMEEX,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4544,7 +4544,7 @@ NTSTATUS rpccli_netr_DsRGetDCNameEx(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_DSRGETDCNAMEEX,
 				&r);
 
@@ -4613,7 +4613,7 @@ struct tevent_req *rpccli_netr_DsRGetSiteName_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_DSRGETSITENAME,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4694,7 +4694,7 @@ NTSTATUS rpccli_netr_DsRGetSiteName(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_DSRGETSITENAME,
 				&r);
 
@@ -4774,7 +4774,7 @@ struct tevent_req *rpccli_netr_LogonGetDomainInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_LOGONGETDOMAININFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -4865,7 +4865,7 @@ NTSTATUS rpccli_netr_LogonGetDomainInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_LOGONGETDOMAININFO,
 				&r);
 
@@ -4941,7 +4941,7 @@ struct tevent_req *rpccli_netr_ServerPasswordSet2_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_SERVERPASSWORDSET2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5031,7 +5031,7 @@ NTSTATUS rpccli_netr_ServerPasswordSet2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_SERVERPASSWORDSET2,
 				&r);
 
@@ -5106,7 +5106,7 @@ struct tevent_req *rpccli_netr_ServerPasswordGet_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_SERVERPASSWORDGET,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5197,7 +5197,7 @@ NTSTATUS rpccli_netr_ServerPasswordGet(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_SERVERPASSWORDGET,
 				&r);
 
@@ -5257,7 +5257,7 @@ struct tevent_req *rpccli_netr_NETRLOGONSENDTOSAM_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_NETRLOGONSENDTOSAM,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5334,7 +5334,7 @@ NTSTATUS rpccli_netr_NETRLOGONSENDTOSAM(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_NETRLOGONSENDTOSAM,
 				&r);
 
@@ -5406,7 +5406,7 @@ struct tevent_req *rpccli_netr_DsRAddressToSitenamesW_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_DSRADDRESSTOSITENAMESW,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5491,7 +5491,7 @@ NTSTATUS rpccli_netr_DsRAddressToSitenamesW(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_DSRADDRESSTOSITENAMESW,
 				&r);
 
@@ -5572,7 +5572,7 @@ struct tevent_req *rpccli_netr_DsRGetDCNameEx2_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_DSRGETDCNAMEEX2,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5665,7 +5665,7 @@ NTSTATUS rpccli_netr_DsRGetDCNameEx2(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_DSRGETDCNAMEEX2,
 				&r);
 
@@ -5724,7 +5724,7 @@ struct tevent_req *rpccli_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN_send(TALLOC_C
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_NETRLOGONGETTIMESERVICEPARENTDOMAIN,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5801,7 +5801,7 @@ NTSTATUS rpccli_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(struct rpc_pipe_client 
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_NETRLOGONGETTIMESERVICEPARENTDOMAIN,
 				&r);
 
@@ -5869,7 +5869,7 @@ struct tevent_req *rpccli_netr_NetrEnumerateTrustedDomainsEx_send(TALLOC_CTX *me
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_NETRENUMERATETRUSTEDDOMAINSEX,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -5950,7 +5950,7 @@ NTSTATUS rpccli_netr_NetrEnumerateTrustedDomainsEx(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_NETRENUMERATETRUSTEDDOMAINSEX,
 				&r);
 
@@ -6023,7 +6023,7 @@ struct tevent_req *rpccli_netr_DsRAddressToSitenamesExW_send(TALLOC_CTX *mem_ctx
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_DSRADDRESSTOSITENAMESEXW,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6108,7 +6108,7 @@ NTSTATUS rpccli_netr_DsRAddressToSitenamesExW(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_DSRADDRESSTOSITENAMESEXW,
 				&r);
 
@@ -6177,7 +6177,7 @@ struct tevent_req *rpccli_netr_DsrGetDcSiteCoverageW_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_DSRGETDCSITECOVERAGEW,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6258,7 +6258,7 @@ NTSTATUS rpccli_netr_DsrGetDcSiteCoverageW(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_DSRGETDCSITECOVERAGEW,
 				&r);
 
@@ -6340,7 +6340,7 @@ struct tevent_req *rpccli_netr_LogonSamLogonEx_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_LOGONSAMLOGONEX,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6433,7 +6433,7 @@ NTSTATUS rpccli_netr_LogonSamLogonEx(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_LOGONSAMLOGONEX,
 				&r);
 
@@ -6502,7 +6502,7 @@ struct tevent_req *rpccli_netr_DsrEnumerateDomainTrusts_send(TALLOC_CTX *mem_ctx
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_DSRENUMERATEDOMAINTRUSTS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6585,7 +6585,7 @@ NTSTATUS rpccli_netr_DsrEnumerateDomainTrusts(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_DSRENUMERATEDOMAINTRUSTS,
 				&r);
 
@@ -6654,7 +6654,7 @@ struct tevent_req *rpccli_netr_DsrDeregisterDNSHostRecords_send(TALLOC_CTX *mem_
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_DSRDEREGISTERDNSHOSTRECORDS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6741,7 +6741,7 @@ NTSTATUS rpccli_netr_DsrDeregisterDNSHostRecords(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_DSRDEREGISTERDNSHOSTRECORDS,
 				&r);
 
@@ -6821,7 +6821,7 @@ struct tevent_req *rpccli_netr_ServerTrustPasswordsGet_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_SERVERTRUSTPASSWORDSGET,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -6913,7 +6913,7 @@ NTSTATUS rpccli_netr_ServerTrustPasswordsGet(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_SERVERTRUSTPASSWORDSGET,
 				&r);
 
@@ -6984,7 +6984,7 @@ struct tevent_req *rpccli_netr_DsRGetForestTrustInformation_send(TALLOC_CTX *mem
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_DSRGETFORESTTRUSTINFORMATION,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7069,7 +7069,7 @@ NTSTATUS rpccli_netr_DsRGetForestTrustInformation(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_DSRGETFORESTTRUSTINFORMATION,
 				&r);
 
@@ -7146,7 +7146,7 @@ struct tevent_req *rpccli_netr_GetForestTrustInformation_send(TALLOC_CTX *mem_ct
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_GETFORESTTRUSTINFORMATION,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7235,7 +7235,7 @@ NTSTATUS rpccli_netr_GetForestTrustInformation(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_GETFORESTTRUSTINFORMATION,
 				&r);
 
@@ -7323,7 +7323,7 @@ struct tevent_req *rpccli_netr_LogonSamLogonWithFlags_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_LOGONSAMLOGONWITHFLAGS,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7423,7 +7423,7 @@ NTSTATUS rpccli_netr_LogonSamLogonWithFlags(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_LOGONSAMLOGONWITHFLAGS,
 				&r);
 
@@ -7507,7 +7507,7 @@ struct tevent_req *rpccli_netr_ServerGetTrustInfo_send(TALLOC_CTX *mem_ctx,
 	state->tmp = state->orig;
 
 	subreq = cli->dispatch_send(state, ev, cli,
-				    NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				    &ndr_table_netlogon,
 				    NDR_NETR_SERVERGETTRUSTINFO,
 				    &state->tmp);
 	if (tevent_req_nomem(subreq, req)) {
@@ -7601,7 +7601,7 @@ NTSTATUS rpccli_netr_ServerGetTrustInfo(struct rpc_pipe_client *cli,
 
 	status = cli->dispatch(cli,
 				mem_ctx,
-				NDR_NETLOGON_UUID, NDR_NETLOGON_VERSION,
+				&ndr_table_netlogon,
 				NDR_NETR_SERVERGETTRUSTINFO,
 				&r);
 

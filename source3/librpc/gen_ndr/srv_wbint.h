@@ -25,7 +25,7 @@ NTSTATUS _wbint_SetMapping(pipes_struct *p, struct wbint_SetMapping *r);
 NTSTATUS _wbint_RemoveMapping(pipes_struct *p, struct wbint_RemoveMapping *r);
 NTSTATUS _wbint_SetHWM(pipes_struct *p, struct wbint_SetHWM *r);
 void wbint_get_pipe_fns(struct api_struct **fns, int *n_fns);
-NTSTATUS rpc_wbint_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *interface, uint32_t interface_version, uint32_t opnum, void *r);
+NTSTATUS rpc_wbint_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *r);
 void _wbint_Ping(pipes_struct *p, struct wbint_Ping *r);
 NTSTATUS _wbint_LookupSid(pipes_struct *p, struct wbint_LookupSid *r);
 NTSTATUS _wbint_LookupName(pipes_struct *p, struct wbint_LookupName *r);

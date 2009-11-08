@@ -49,7 +49,7 @@ WERROR _netr_GetForestTrustInformation(pipes_struct *p, struct netr_GetForestTru
 NTSTATUS _netr_LogonSamLogonWithFlags(pipes_struct *p, struct netr_LogonSamLogonWithFlags *r);
 NTSTATUS _netr_ServerGetTrustInfo(pipes_struct *p, struct netr_ServerGetTrustInfo *r);
 void netlogon_get_pipe_fns(struct api_struct **fns, int *n_fns);
-NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *interface, uint32_t interface_version, uint32_t opnum, void *r);
+NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *r);
 WERROR _netr_LogonUasLogon(pipes_struct *p, struct netr_LogonUasLogon *r);
 WERROR _netr_LogonUasLogoff(pipes_struct *p, struct netr_LogonUasLogoff *r);
 NTSTATUS _netr_LogonSamLogon(pipes_struct *p, struct netr_LogonSamLogon *r);
