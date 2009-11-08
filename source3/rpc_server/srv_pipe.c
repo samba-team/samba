@@ -647,7 +647,7 @@ static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 	bool ret;
 
 	DEBUG(5,("pipe_ntlmssp_verify_final: pipe %s checking user details\n",
-		 get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
+		 get_pipe_name_tos(p)));
 
 	ZERO_STRUCT(reply);
 
@@ -671,8 +671,7 @@ static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 		if (!(a->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN)) {
 			DEBUG(0,("pipe_ntlmssp_verify_final: pipe %s : packet integrity requested "
 				"but client declined signing.\n",
-				 get_pipe_name_from_syntax(talloc_tos(),
-							   &p->syntax)));
+				 get_pipe_name_tos(p)));
 			return False;
 		}
 	}
@@ -680,8 +679,7 @@ static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 		if (!(a->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL)) {
 			DEBUG(0,("pipe_ntlmssp_verify_final: pipe %s : packet privacy requested "
 				"but client declined sealing.\n",
-				 get_pipe_name_from_syntax(talloc_tos(),
-							   &p->syntax)));
+				 get_pipe_name_tos(p)));
 			return False;
 		}
 	}
@@ -996,8 +994,7 @@ static bool check_bind_req(struct pipes_struct *p,
 	int i=0;
 	struct pipe_rpc_fns *context_fns;
 
-	DEBUG(3,("check_bind_req for %s\n",
-		 get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
+	DEBUG(3,("check_bind_req for %s\n", get_pipe_name_tos(p)));
 
 	/* we have to check all now since win2k introduced a new UUID on the lsaprpc pipe */
 
@@ -1609,8 +1606,7 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	/* No rebinds on a bound pipe - use alter context. */
 	if (p->pipe_bound) {
 		DEBUG(2,("api_pipe_bind_req: rejecting bind request on bound "
-			 "pipe %s.\n",
-			 get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
+			 "pipe %s.\n", get_pipe_name_tos(p)));
 		return setup_bind_nak(p);
 	}
 
@@ -1693,8 +1689,7 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 
                 for (i = 0; i < rpc_lookup_size; i++) {
                        if (strequal(rpc_lookup[i].pipe.clnt,
-				    get_pipe_name_from_syntax(talloc_tos(),
-							      &p->syntax))) {
+				    get_pipe_name_tos(p))) {
                                DEBUG(3, ("api_pipe_bind_req: \\PIPE\\%s -> \\PIPE\\%s\n",
                                          rpc_lookup[i].pipe.clnt, rpc_lookup[i].pipe.srv));
                                break;
@@ -1703,11 +1698,8 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 
 		if (i == rpc_lookup_size) {
 			DEBUG(0, ("module %s doesn't provide functions for "
-				  "pipe %s!\n",
-				  get_pipe_name_from_syntax(talloc_tos(),
-							    &p->syntax),
-				  get_pipe_name_from_syntax(talloc_tos(),
-							    &p->syntax)));
+				  "pipe %s!\n", get_pipe_name_tos(p),
+				  get_pipe_name_tos(p)));
 			goto err_exit;
 		}
 	}
@@ -2364,8 +2356,7 @@ bool api_pipe_request(pipes_struct *p)
 		changed_user = True;
 	}
 
-	DEBUG(5, ("Requested \\PIPE\\%s\n",
-		  get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
+	DEBUG(5, ("Requested \\PIPE\\%s\n", get_pipe_name_tos(p)));
 
 	/* get the set of RPC functions for this context */
 
@@ -2378,8 +2369,7 @@ bool api_pipe_request(pipes_struct *p)
 	}
 	else {
 		DEBUG(0,("api_pipe_request: No rpc function table associated with context [%d] on pipe [%s]\n",
-			p->hdr_req.context_id,
-			 get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
+			 p->hdr_req.context_id, get_pipe_name_tos(p)));
 	}
 
 	if (changed_user) {
@@ -2400,14 +2390,12 @@ static bool api_rpcTNP(pipes_struct *p,
 	uint32 offset1, offset2;
 
 	/* interpret the command */
-	DEBUG(4,("api_rpcTNP: %s op 0x%x - ",
-		 get_pipe_name_from_syntax(talloc_tos(), &p->syntax),
+	DEBUG(4,("api_rpcTNP: %s op 0x%x - ", get_pipe_name_tos(p),
 		 p->hdr_req.opnum));
 
 	if (DEBUGLEVEL >= 50) {
 		fstring name;
-		slprintf(name, sizeof(name)-1, "in_%s",
-			 get_pipe_name_from_syntax(talloc_tos(), &p->syntax));
+		slprintf(name, sizeof(name)-1, "in_%s", get_pipe_name_tos(p));
 		prs_dump(name, p->hdr_req.opnum, &p->in_data.data);
 	}
 
@@ -2435,8 +2423,7 @@ static bool api_rpcTNP(pipes_struct *p,
                 fn_num, api_rpc_cmds[fn_num].fn));
 	/* do the actual command */
 	if(!api_rpc_cmds[fn_num].fn(p)) {
-		DEBUG(0,("api_rpcTNP: %s: %s failed.\n",
-			 get_pipe_name_from_syntax(talloc_tos(), &p->syntax),
+		DEBUG(0,("api_rpcTNP: %s: %s failed.\n", get_pipe_name_tos(p),
 			 api_rpc_cmds[fn_num].name));
 		prs_mem_free(&p->out_data.rdata);
 		return False;
@@ -2460,14 +2447,13 @@ static bool api_rpcTNP(pipes_struct *p,
 	prs_set_offset(&p->out_data.rdata, offset1);
 	if (DEBUGLEVEL >= 50) {
 		fstring name;
-		slprintf(name, sizeof(name)-1, "out_%s",
-			 get_pipe_name_from_syntax(talloc_tos(), &p->syntax));
+		slprintf(name, sizeof(name)-1, "out_%s", get_pipe_name_tos(p));
 		prs_dump(name, p->hdr_req.opnum, &p->out_data.rdata);
 	}
 	prs_set_offset(&p->out_data.rdata, offset2);
 
 	DEBUG(5,("api_rpcTNP: called %s successfully\n",
-		 get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
+		 get_pipe_name_tos(p)));
 
 	/* Check for buffer underflow in rpc parsing */
 
