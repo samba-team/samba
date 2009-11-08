@@ -15,7 +15,7 @@ static bool api_spoolss_EnumPrinters(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_EnumPrinters *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_ENUMPRINTERS];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ENUMPRINTERS];
 
 	r = talloc(talloc_tos(), struct spoolss_EnumPrinters);
 	if (r == NULL) {
@@ -107,7 +107,7 @@ static bool api_spoolss_OpenPrinter(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_OpenPrinter *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_OPENPRINTER];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_OPENPRINTER];
 
 	r = talloc(talloc_tos(), struct spoolss_OpenPrinter);
 	if (r == NULL) {
@@ -187,7 +187,7 @@ static bool api_spoolss_SetJob(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_SetJob *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_SETJOB];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_SETJOB];
 
 	r = talloc(talloc_tos(), struct spoolss_SetJob);
 	if (r == NULL) {
@@ -260,7 +260,7 @@ static bool api_spoolss_GetJob(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_GetJob *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_GETJOB];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_GETJOB];
 
 	r = talloc(talloc_tos(), struct spoolss_GetJob);
 	if (r == NULL) {
@@ -346,7 +346,7 @@ static bool api_spoolss_EnumJobs(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_EnumJobs *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_ENUMJOBS];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ENUMJOBS];
 
 	r = talloc(talloc_tos(), struct spoolss_EnumJobs);
 	if (r == NULL) {
@@ -438,7 +438,7 @@ static bool api_spoolss_AddPrinter(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_AddPrinter *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_ADDPRINTER];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ADDPRINTER];
 
 	r = talloc(talloc_tos(), struct spoolss_AddPrinter);
 	if (r == NULL) {
@@ -518,7 +518,7 @@ static bool api_spoolss_DeletePrinter(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_DeletePrinter *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_DELETEPRINTER];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_DELETEPRINTER];
 
 	r = talloc(talloc_tos(), struct spoolss_DeletePrinter);
 	if (r == NULL) {
@@ -591,7 +591,7 @@ static bool api_spoolss_SetPrinter(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_SetPrinter *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_SETPRINTER];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_SETPRINTER];
 
 	r = talloc(talloc_tos(), struct spoolss_SetPrinter);
 	if (r == NULL) {
@@ -664,7 +664,7 @@ static bool api_spoolss_GetPrinter(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_GetPrinter *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_GETPRINTER];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_GETPRINTER];
 
 	r = talloc(talloc_tos(), struct spoolss_GetPrinter);
 	if (r == NULL) {
@@ -750,7 +750,7 @@ static bool api_spoolss_AddPrinterDriver(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_AddPrinterDriver *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_ADDPRINTERDRIVER];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ADDPRINTERDRIVER];
 
 	r = talloc(talloc_tos(), struct spoolss_AddPrinterDriver);
 	if (r == NULL) {
@@ -823,7 +823,7 @@ static bool api_spoolss_EnumPrinterDrivers(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_EnumPrinterDrivers *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_ENUMPRINTERDRIVERS];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ENUMPRINTERDRIVERS];
 
 	r = talloc(talloc_tos(), struct spoolss_EnumPrinterDrivers);
 	if (r == NULL) {
@@ -915,7 +915,7 @@ static bool api_spoolss_GetPrinterDriver(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_GetPrinterDriver *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_GETPRINTERDRIVER];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_GETPRINTERDRIVER];
 
 	r = talloc(talloc_tos(), struct spoolss_GetPrinterDriver);
 	if (r == NULL) {
@@ -1001,7 +1001,7 @@ static bool api_spoolss_GetPrinterDriverDirectory(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_GetPrinterDriverDirectory *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_GETPRINTERDRIVERDIRECTORY];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_GETPRINTERDRIVERDIRECTORY];
 
 	r = talloc(talloc_tos(), struct spoolss_GetPrinterDriverDirectory);
 	if (r == NULL) {
@@ -1087,7 +1087,7 @@ static bool api_spoolss_DeletePrinterDriver(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_DeletePrinterDriver *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_DELETEPRINTERDRIVER];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_DELETEPRINTERDRIVER];
 
 	r = talloc(talloc_tos(), struct spoolss_DeletePrinterDriver);
 	if (r == NULL) {
@@ -1160,7 +1160,7 @@ static bool api_spoolss_AddPrintProcessor(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_AddPrintProcessor *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_ADDPRINTPROCESSOR];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ADDPRINTPROCESSOR];
 
 	r = talloc(talloc_tos(), struct spoolss_AddPrintProcessor);
 	if (r == NULL) {
@@ -1233,7 +1233,7 @@ static bool api_spoolss_EnumPrintProcessors(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_EnumPrintProcessors *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_ENUMPRINTPROCESSORS];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ENUMPRINTPROCESSORS];
 
 	r = talloc(talloc_tos(), struct spoolss_EnumPrintProcessors);
 	if (r == NULL) {
@@ -1325,7 +1325,7 @@ static bool api_spoolss_GetPrintProcessorDirectory(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_GetPrintProcessorDirectory *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_GETPRINTPROCESSORDIRECTORY];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_GETPRINTPROCESSORDIRECTORY];
 
 	r = talloc(talloc_tos(), struct spoolss_GetPrintProcessorDirectory);
 	if (r == NULL) {
@@ -1411,7 +1411,7 @@ static bool api_spoolss_StartDocPrinter(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_StartDocPrinter *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_STARTDOCPRINTER];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_STARTDOCPRINTER];
 
 	r = talloc(talloc_tos(), struct spoolss_StartDocPrinter);
 	if (r == NULL) {
@@ -1491,7 +1491,7 @@ static bool api_spoolss_StartPagePrinter(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_StartPagePrinter *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_STARTPAGEPRINTER];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_STARTPAGEPRINTER];
 
 	r = talloc(talloc_tos(), struct spoolss_StartPagePrinter);
 	if (r == NULL) {
@@ -1564,7 +1564,7 @@ static bool api_spoolss_WritePrinter(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_WritePrinter *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_WRITEPRINTER];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_WRITEPRINTER];
 
 	r = talloc(talloc_tos(), struct spoolss_WritePrinter);
 	if (r == NULL) {
@@ -1644,7 +1644,7 @@ static bool api_spoolss_EndPagePrinter(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_EndPagePrinter *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_ENDPAGEPRINTER];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ENDPAGEPRINTER];
 
 	r = talloc(talloc_tos(), struct spoolss_EndPagePrinter);
 	if (r == NULL) {
@@ -1717,7 +1717,7 @@ static bool api_spoolss_AbortPrinter(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_AbortPrinter *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_ABORTPRINTER];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ABORTPRINTER];
 
 	r = talloc(talloc_tos(), struct spoolss_AbortPrinter);
 	if (r == NULL) {
@@ -1790,7 +1790,7 @@ static bool api_spoolss_ReadPrinter(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_ReadPrinter *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_READPRINTER];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_READPRINTER];
 
 	r = talloc(talloc_tos(), struct spoolss_ReadPrinter);
 	if (r == NULL) {
@@ -1876,7 +1876,7 @@ static bool api_spoolss_EndDocPrinter(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_EndDocPrinter *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_ENDDOCPRINTER];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ENDDOCPRINTER];
 
 	r = talloc(talloc_tos(), struct spoolss_EndDocPrinter);
 	if (r == NULL) {
@@ -1949,7 +1949,7 @@ static bool api_spoolss_AddJob(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_AddJob *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_ADDJOB];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ADDJOB];
 
 	r = talloc(talloc_tos(), struct spoolss_AddJob);
 	if (r == NULL) {
@@ -2030,7 +2030,7 @@ static bool api_spoolss_ScheduleJob(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_ScheduleJob *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_SCHEDULEJOB];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_SCHEDULEJOB];
 
 	r = talloc(talloc_tos(), struct spoolss_ScheduleJob);
 	if (r == NULL) {
@@ -2103,7 +2103,7 @@ static bool api_spoolss_GetPrinterData(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_GetPrinterData *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_GETPRINTERDATA];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_GETPRINTERDATA];
 
 	r = talloc(talloc_tos(), struct spoolss_GetPrinterData);
 	if (r == NULL) {
@@ -2195,7 +2195,7 @@ static bool api_spoolss_SetPrinterData(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_SetPrinterData *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_SETPRINTERDATA];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_SETPRINTERDATA];
 
 	r = talloc(talloc_tos(), struct spoolss_SetPrinterData);
 	if (r == NULL) {
@@ -2268,7 +2268,7 @@ static bool api_spoolss_WaitForPrinterChange(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_WaitForPrinterChange *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_WAITFORPRINTERCHANGE];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_WAITFORPRINTERCHANGE];
 
 	r = talloc(talloc_tos(), struct spoolss_WaitForPrinterChange);
 	if (r == NULL) {
@@ -2341,7 +2341,7 @@ static bool api_spoolss_ClosePrinter(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_ClosePrinter *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_CLOSEPRINTER];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_CLOSEPRINTER];
 
 	r = talloc(talloc_tos(), struct spoolss_ClosePrinter);
 	if (r == NULL) {
@@ -2416,7 +2416,7 @@ static bool api_spoolss_AddForm(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_AddForm *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_ADDFORM];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ADDFORM];
 
 	r = talloc(talloc_tos(), struct spoolss_AddForm);
 	if (r == NULL) {
@@ -2489,7 +2489,7 @@ static bool api_spoolss_DeleteForm(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_DeleteForm *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_DELETEFORM];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_DELETEFORM];
 
 	r = talloc(talloc_tos(), struct spoolss_DeleteForm);
 	if (r == NULL) {
@@ -2562,7 +2562,7 @@ static bool api_spoolss_GetForm(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_GetForm *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_GETFORM];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_GETFORM];
 
 	r = talloc(talloc_tos(), struct spoolss_GetForm);
 	if (r == NULL) {
@@ -2648,7 +2648,7 @@ static bool api_spoolss_SetForm(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_SetForm *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_SETFORM];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_SETFORM];
 
 	r = talloc(talloc_tos(), struct spoolss_SetForm);
 	if (r == NULL) {
@@ -2721,7 +2721,7 @@ static bool api_spoolss_EnumForms(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_EnumForms *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_ENUMFORMS];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ENUMFORMS];
 
 	r = talloc(talloc_tos(), struct spoolss_EnumForms);
 	if (r == NULL) {
@@ -2813,7 +2813,7 @@ static bool api_spoolss_EnumPorts(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_EnumPorts *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_ENUMPORTS];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ENUMPORTS];
 
 	r = talloc(talloc_tos(), struct spoolss_EnumPorts);
 	if (r == NULL) {
@@ -2905,7 +2905,7 @@ static bool api_spoolss_EnumMonitors(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_EnumMonitors *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_ENUMMONITORS];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ENUMMONITORS];
 
 	r = talloc(talloc_tos(), struct spoolss_EnumMonitors);
 	if (r == NULL) {
@@ -2997,7 +2997,7 @@ static bool api_spoolss_AddPort(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_AddPort *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_ADDPORT];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ADDPORT];
 
 	r = talloc(talloc_tos(), struct spoolss_AddPort);
 	if (r == NULL) {
@@ -3070,7 +3070,7 @@ static bool api_spoolss_ConfigurePort(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_ConfigurePort *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_CONFIGUREPORT];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_CONFIGUREPORT];
 
 	r = talloc(talloc_tos(), struct spoolss_ConfigurePort);
 	if (r == NULL) {
@@ -3143,7 +3143,7 @@ static bool api_spoolss_DeletePort(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_DeletePort *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_DELETEPORT];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_DELETEPORT];
 
 	r = talloc(talloc_tos(), struct spoolss_DeletePort);
 	if (r == NULL) {
@@ -3216,7 +3216,7 @@ static bool api_spoolss_CreatePrinterIC(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_CreatePrinterIC *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_CREATEPRINTERIC];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_CREATEPRINTERIC];
 
 	r = talloc(talloc_tos(), struct spoolss_CreatePrinterIC);
 	if (r == NULL) {
@@ -3296,7 +3296,7 @@ static bool api_spoolss_PlayGDIScriptOnPrinterIC(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_PlayGDIScriptOnPrinterIC *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_PLAYGDISCRIPTONPRINTERIC];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_PLAYGDISCRIPTONPRINTERIC];
 
 	r = talloc(talloc_tos(), struct spoolss_PlayGDIScriptOnPrinterIC);
 	if (r == NULL) {
@@ -3369,7 +3369,7 @@ static bool api_spoolss_DeletePrinterIC(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_DeletePrinterIC *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_DELETEPRINTERIC];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_DELETEPRINTERIC];
 
 	r = talloc(talloc_tos(), struct spoolss_DeletePrinterIC);
 	if (r == NULL) {
@@ -3444,7 +3444,7 @@ static bool api_spoolss_AddPrinterConnection(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_AddPrinterConnection *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_ADDPRINTERCONNECTION];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ADDPRINTERCONNECTION];
 
 	r = talloc(talloc_tos(), struct spoolss_AddPrinterConnection);
 	if (r == NULL) {
@@ -3517,7 +3517,7 @@ static bool api_spoolss_DeletePrinterConnection(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_DeletePrinterConnection *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_DELETEPRINTERCONNECTION];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_DELETEPRINTERCONNECTION];
 
 	r = talloc(talloc_tos(), struct spoolss_DeletePrinterConnection);
 	if (r == NULL) {
@@ -3590,7 +3590,7 @@ static bool api_spoolss_PrinterMessageBox(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_PrinterMessageBox *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_PRINTERMESSAGEBOX];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_PRINTERMESSAGEBOX];
 
 	r = talloc(talloc_tos(), struct spoolss_PrinterMessageBox);
 	if (r == NULL) {
@@ -3663,7 +3663,7 @@ static bool api_spoolss_AddMonitor(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_AddMonitor *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_ADDMONITOR];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ADDMONITOR];
 
 	r = talloc(talloc_tos(), struct spoolss_AddMonitor);
 	if (r == NULL) {
@@ -3736,7 +3736,7 @@ static bool api_spoolss_DeleteMonitor(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_DeleteMonitor *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_DELETEMONITOR];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_DELETEMONITOR];
 
 	r = talloc(talloc_tos(), struct spoolss_DeleteMonitor);
 	if (r == NULL) {
@@ -3809,7 +3809,7 @@ static bool api_spoolss_DeletePrintProcessor(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_DeletePrintProcessor *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_DELETEPRINTPROCESSOR];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_DELETEPRINTPROCESSOR];
 
 	r = talloc(talloc_tos(), struct spoolss_DeletePrintProcessor);
 	if (r == NULL) {
@@ -3882,7 +3882,7 @@ static bool api_spoolss_AddPrintProvidor(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_AddPrintProvidor *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_ADDPRINTPROVIDOR];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ADDPRINTPROVIDOR];
 
 	r = talloc(talloc_tos(), struct spoolss_AddPrintProvidor);
 	if (r == NULL) {
@@ -3955,7 +3955,7 @@ static bool api_spoolss_DeletePrintProvidor(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_DeletePrintProvidor *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_DELETEPRINTPROVIDOR];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_DELETEPRINTPROVIDOR];
 
 	r = talloc(talloc_tos(), struct spoolss_DeletePrintProvidor);
 	if (r == NULL) {
@@ -4028,7 +4028,7 @@ static bool api_spoolss_EnumPrintProcDataTypes(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_EnumPrintProcDataTypes *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_ENUMPRINTPROCDATATYPES];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ENUMPRINTPROCDATATYPES];
 
 	r = talloc(talloc_tos(), struct spoolss_EnumPrintProcDataTypes);
 	if (r == NULL) {
@@ -4120,7 +4120,7 @@ static bool api_spoolss_ResetPrinter(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_ResetPrinter *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_RESETPRINTER];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_RESETPRINTER];
 
 	r = talloc(talloc_tos(), struct spoolss_ResetPrinter);
 	if (r == NULL) {
@@ -4193,7 +4193,7 @@ static bool api_spoolss_GetPrinterDriver2(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_GetPrinterDriver2 *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_GETPRINTERDRIVER2];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_GETPRINTERDRIVER2];
 
 	r = talloc(talloc_tos(), struct spoolss_GetPrinterDriver2);
 	if (r == NULL) {
@@ -4291,7 +4291,7 @@ static bool api_spoolss_FindFirstPrinterChangeNotification(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_FindFirstPrinterChangeNotification *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_FINDFIRSTPRINTERCHANGENOTIFICATION];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_FINDFIRSTPRINTERCHANGENOTIFICATION];
 
 	r = talloc(talloc_tos(), struct spoolss_FindFirstPrinterChangeNotification);
 	if (r == NULL) {
@@ -4364,7 +4364,7 @@ static bool api_spoolss_FindNextPrinterChangeNotification(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_FindNextPrinterChangeNotification *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_FINDNEXTPRINTERCHANGENOTIFICATION];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_FINDNEXTPRINTERCHANGENOTIFICATION];
 
 	r = talloc(talloc_tos(), struct spoolss_FindNextPrinterChangeNotification);
 	if (r == NULL) {
@@ -4437,7 +4437,7 @@ static bool api_spoolss_FindClosePrinterNotify(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_FindClosePrinterNotify *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_FINDCLOSEPRINTERNOTIFY];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_FINDCLOSEPRINTERNOTIFY];
 
 	r = talloc(talloc_tos(), struct spoolss_FindClosePrinterNotify);
 	if (r == NULL) {
@@ -4510,7 +4510,7 @@ static bool api_spoolss_RouterFindFirstPrinterChangeNotificationOld(pipes_struct
 	DATA_BLOB blob;
 	struct spoolss_RouterFindFirstPrinterChangeNotificationOld *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_ROUTERFINDFIRSTPRINTERCHANGENOTIFICATIONOLD];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ROUTERFINDFIRSTPRINTERCHANGENOTIFICATIONOLD];
 
 	r = talloc(talloc_tos(), struct spoolss_RouterFindFirstPrinterChangeNotificationOld);
 	if (r == NULL) {
@@ -4583,7 +4583,7 @@ static bool api_spoolss_ReplyOpenPrinter(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_ReplyOpenPrinter *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_REPLYOPENPRINTER];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_REPLYOPENPRINTER];
 
 	r = talloc(talloc_tos(), struct spoolss_ReplyOpenPrinter);
 	if (r == NULL) {
@@ -4663,7 +4663,7 @@ static bool api_spoolss_RouterReplyPrinter(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_RouterReplyPrinter *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_ROUTERREPLYPRINTER];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ROUTERREPLYPRINTER];
 
 	r = talloc(talloc_tos(), struct spoolss_RouterReplyPrinter);
 	if (r == NULL) {
@@ -4736,7 +4736,7 @@ static bool api_spoolss_ReplyClosePrinter(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_ReplyClosePrinter *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_REPLYCLOSEPRINTER];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_REPLYCLOSEPRINTER];
 
 	r = talloc(talloc_tos(), struct spoolss_ReplyClosePrinter);
 	if (r == NULL) {
@@ -4811,7 +4811,7 @@ static bool api_spoolss_AddPortEx(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_AddPortEx *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_ADDPORTEX];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ADDPORTEX];
 
 	r = talloc(talloc_tos(), struct spoolss_AddPortEx);
 	if (r == NULL) {
@@ -4884,7 +4884,7 @@ static bool api_spoolss_RouterFindFirstPrinterChangeNotification(pipes_struct *p
 	DATA_BLOB blob;
 	struct spoolss_RouterFindFirstPrinterChangeNotification *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_ROUTERFINDFIRSTPRINTERCHANGENOTIFICATION];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ROUTERFINDFIRSTPRINTERCHANGENOTIFICATION];
 
 	r = talloc(talloc_tos(), struct spoolss_RouterFindFirstPrinterChangeNotification);
 	if (r == NULL) {
@@ -4957,7 +4957,7 @@ static bool api_spoolss_SpoolerInit(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_SpoolerInit *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_SPOOLERINIT];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_SPOOLERINIT];
 
 	r = talloc(talloc_tos(), struct spoolss_SpoolerInit);
 	if (r == NULL) {
@@ -5030,7 +5030,7 @@ static bool api_spoolss_ResetPrinterEx(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_ResetPrinterEx *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_RESETPRINTEREX];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_RESETPRINTEREX];
 
 	r = talloc(talloc_tos(), struct spoolss_ResetPrinterEx);
 	if (r == NULL) {
@@ -5103,7 +5103,7 @@ static bool api_spoolss_RemoteFindFirstPrinterChangeNotifyEx(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_RemoteFindFirstPrinterChangeNotifyEx *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_REMOTEFINDFIRSTPRINTERCHANGENOTIFYEX];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_REMOTEFINDFIRSTPRINTERCHANGENOTIFYEX];
 
 	r = talloc(talloc_tos(), struct spoolss_RemoteFindFirstPrinterChangeNotifyEx);
 	if (r == NULL) {
@@ -5176,7 +5176,7 @@ static bool api_spoolss_RouterReplyPrinterEx(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_RouterReplyPrinterEx *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_ROUTERREPLYPRINTEREX];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ROUTERREPLYPRINTEREX];
 
 	r = talloc(talloc_tos(), struct spoolss_RouterReplyPrinterEx);
 	if (r == NULL) {
@@ -5256,7 +5256,7 @@ static bool api_spoolss_RouterRefreshPrinterChangeNotify(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_RouterRefreshPrinterChangeNotify *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_ROUTERREFRESHPRINTERCHANGENOTIFY];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ROUTERREFRESHPRINTERCHANGENOTIFY];
 
 	r = talloc(talloc_tos(), struct spoolss_RouterRefreshPrinterChangeNotify);
 	if (r == NULL) {
@@ -5336,7 +5336,7 @@ static bool api_spoolss_44(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_44 *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_44];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_44];
 
 	r = talloc(talloc_tos(), struct spoolss_44);
 	if (r == NULL) {
@@ -5409,7 +5409,7 @@ static bool api_spoolss_OpenPrinterEx(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_OpenPrinterEx *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_OPENPRINTEREX];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_OPENPRINTEREX];
 
 	r = talloc(talloc_tos(), struct spoolss_OpenPrinterEx);
 	if (r == NULL) {
@@ -5489,7 +5489,7 @@ static bool api_spoolss_AddPrinterEx(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_AddPrinterEx *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_ADDPRINTEREX];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ADDPRINTEREX];
 
 	r = talloc(talloc_tos(), struct spoolss_AddPrinterEx);
 	if (r == NULL) {
@@ -5569,7 +5569,7 @@ static bool api_spoolss_47(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_47 *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_47];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_47];
 
 	r = talloc(talloc_tos(), struct spoolss_47);
 	if (r == NULL) {
@@ -5642,7 +5642,7 @@ static bool api_spoolss_EnumPrinterData(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_EnumPrinterData *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_ENUMPRINTERDATA];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ENUMPRINTERDATA];
 
 	r = talloc(talloc_tos(), struct spoolss_EnumPrinterData);
 	if (r == NULL) {
@@ -5746,7 +5746,7 @@ static bool api_spoolss_DeletePrinterData(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_DeletePrinterData *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_DELETEPRINTERDATA];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_DELETEPRINTERDATA];
 
 	r = talloc(talloc_tos(), struct spoolss_DeletePrinterData);
 	if (r == NULL) {
@@ -5819,7 +5819,7 @@ static bool api_spoolss_4a(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_4a *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_4A];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_4A];
 
 	r = talloc(talloc_tos(), struct spoolss_4a);
 	if (r == NULL) {
@@ -5892,7 +5892,7 @@ static bool api_spoolss_4b(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_4b *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_4B];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_4B];
 
 	r = talloc(talloc_tos(), struct spoolss_4b);
 	if (r == NULL) {
@@ -5965,7 +5965,7 @@ static bool api_spoolss_4c(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_4c *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_4C];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_4C];
 
 	r = talloc(talloc_tos(), struct spoolss_4c);
 	if (r == NULL) {
@@ -6038,7 +6038,7 @@ static bool api_spoolss_SetPrinterDataEx(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_SetPrinterDataEx *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_SETPRINTERDATAEX];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_SETPRINTERDATAEX];
 
 	r = talloc(talloc_tos(), struct spoolss_SetPrinterDataEx);
 	if (r == NULL) {
@@ -6111,7 +6111,7 @@ static bool api_spoolss_GetPrinterDataEx(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_GetPrinterDataEx *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_GETPRINTERDATAEX];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_GETPRINTERDATAEX];
 
 	r = talloc(talloc_tos(), struct spoolss_GetPrinterDataEx);
 	if (r == NULL) {
@@ -6203,7 +6203,7 @@ static bool api_spoolss_EnumPrinterDataEx(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_EnumPrinterDataEx *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_ENUMPRINTERDATAEX];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ENUMPRINTERDATAEX];
 
 	r = talloc(talloc_tos(), struct spoolss_EnumPrinterDataEx);
 	if (r == NULL) {
@@ -6295,7 +6295,7 @@ static bool api_spoolss_EnumPrinterKey(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_EnumPrinterKey *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_ENUMPRINTERKEY];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ENUMPRINTERKEY];
 
 	r = talloc(talloc_tos(), struct spoolss_EnumPrinterKey);
 	if (r == NULL) {
@@ -6381,7 +6381,7 @@ static bool api_spoolss_DeletePrinterDataEx(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_DeletePrinterDataEx *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_DELETEPRINTERDATAEX];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_DELETEPRINTERDATAEX];
 
 	r = talloc(talloc_tos(), struct spoolss_DeletePrinterDataEx);
 	if (r == NULL) {
@@ -6454,7 +6454,7 @@ static bool api_spoolss_DeletePrinterKey(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_DeletePrinterKey *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_DELETEPRINTERKEY];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_DELETEPRINTERKEY];
 
 	r = talloc(talloc_tos(), struct spoolss_DeletePrinterKey);
 	if (r == NULL) {
@@ -6527,7 +6527,7 @@ static bool api_spoolss_53(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_53 *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_53];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_53];
 
 	r = talloc(talloc_tos(), struct spoolss_53);
 	if (r == NULL) {
@@ -6600,7 +6600,7 @@ static bool api_spoolss_DeletePrinterDriverEx(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_DeletePrinterDriverEx *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_DELETEPRINTERDRIVEREX];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_DELETEPRINTERDRIVEREX];
 
 	r = talloc(talloc_tos(), struct spoolss_DeletePrinterDriverEx);
 	if (r == NULL) {
@@ -6673,7 +6673,7 @@ static bool api_spoolss_55(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_55 *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_55];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_55];
 
 	r = talloc(talloc_tos(), struct spoolss_55);
 	if (r == NULL) {
@@ -6746,7 +6746,7 @@ static bool api_spoolss_56(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_56 *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_56];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_56];
 
 	r = talloc(talloc_tos(), struct spoolss_56);
 	if (r == NULL) {
@@ -6819,7 +6819,7 @@ static bool api_spoolss_57(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_57 *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_57];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_57];
 
 	r = talloc(talloc_tos(), struct spoolss_57);
 	if (r == NULL) {
@@ -6892,7 +6892,7 @@ static bool api_spoolss_XcvData(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_XcvData *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_XCVDATA];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_XCVDATA];
 
 	r = talloc(talloc_tos(), struct spoolss_XcvData);
 	if (r == NULL) {
@@ -6979,7 +6979,7 @@ static bool api_spoolss_AddPrinterDriverEx(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_AddPrinterDriverEx *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_ADDPRINTERDRIVEREX];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ADDPRINTERDRIVEREX];
 
 	r = talloc(talloc_tos(), struct spoolss_AddPrinterDriverEx);
 	if (r == NULL) {
@@ -7052,7 +7052,7 @@ static bool api_spoolss_5a(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_5a *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_5A];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_5A];
 
 	r = talloc(talloc_tos(), struct spoolss_5a);
 	if (r == NULL) {
@@ -7125,7 +7125,7 @@ static bool api_spoolss_5b(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_5b *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_5B];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_5B];
 
 	r = talloc(talloc_tos(), struct spoolss_5b);
 	if (r == NULL) {
@@ -7198,7 +7198,7 @@ static bool api_spoolss_5c(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_5c *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_5C];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_5C];
 
 	r = talloc(talloc_tos(), struct spoolss_5c);
 	if (r == NULL) {
@@ -7271,7 +7271,7 @@ static bool api_spoolss_5d(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_5d *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_5D];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_5D];
 
 	r = talloc(talloc_tos(), struct spoolss_5d);
 	if (r == NULL) {
@@ -7344,7 +7344,7 @@ static bool api_spoolss_5e(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_5e *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_5E];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_5E];
 
 	r = talloc(talloc_tos(), struct spoolss_5e);
 	if (r == NULL) {
@@ -7417,7 +7417,7 @@ static bool api_spoolss_5f(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_5f *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_5F];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_5F];
 
 	r = talloc(talloc_tos(), struct spoolss_5f);
 	if (r == NULL) {
@@ -7490,7 +7490,7 @@ static bool api_spoolss_60(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_60 *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_60];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_60];
 
 	r = talloc(talloc_tos(), struct spoolss_60);
 	if (r == NULL) {
@@ -7563,7 +7563,7 @@ static bool api_spoolss_61(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_61 *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_61];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_61];
 
 	r = talloc(talloc_tos(), struct spoolss_61);
 	if (r == NULL) {
@@ -7636,7 +7636,7 @@ static bool api_spoolss_62(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_62 *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_62];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_62];
 
 	r = talloc(talloc_tos(), struct spoolss_62);
 	if (r == NULL) {
@@ -7709,7 +7709,7 @@ static bool api_spoolss_63(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_63 *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_63];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_63];
 
 	r = talloc(talloc_tos(), struct spoolss_63);
 	if (r == NULL) {
@@ -7782,7 +7782,7 @@ static bool api_spoolss_64(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_64 *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_64];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_64];
 
 	r = talloc(talloc_tos(), struct spoolss_64);
 	if (r == NULL) {
@@ -7855,7 +7855,7 @@ static bool api_spoolss_65(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_65 *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_65];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_65];
 
 	r = talloc(talloc_tos(), struct spoolss_65);
 	if (r == NULL) {
@@ -7928,7 +7928,7 @@ static bool api_spoolss_GetCorePrinterDrivers(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_GetCorePrinterDrivers *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_GETCOREPRINTERDRIVERS];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_GETCOREPRINTERDRIVERS];
 
 	r = talloc(talloc_tos(), struct spoolss_GetCorePrinterDrivers);
 	if (r == NULL) {
@@ -8008,7 +8008,7 @@ static bool api_spoolss_67(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_67 *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_67];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_67];
 
 	r = talloc(talloc_tos(), struct spoolss_67);
 	if (r == NULL) {
@@ -8081,7 +8081,7 @@ static bool api_spoolss_GetPrinterDriverPackagePath(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_GetPrinterDriverPackagePath *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_GETPRINTERDRIVERPACKAGEPATH];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_GETPRINTERDRIVERPACKAGEPATH];
 
 	r = talloc(talloc_tos(), struct spoolss_GetPrinterDriverPackagePath);
 	if (r == NULL) {
@@ -8162,7 +8162,7 @@ static bool api_spoolss_69(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_69 *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_69];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_69];
 
 	r = talloc(talloc_tos(), struct spoolss_69);
 	if (r == NULL) {
@@ -8235,7 +8235,7 @@ static bool api_spoolss_6a(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_6a *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_6A];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_6A];
 
 	r = talloc(talloc_tos(), struct spoolss_6a);
 	if (r == NULL) {
@@ -8308,7 +8308,7 @@ static bool api_spoolss_6b(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_6b *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_6B];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_6B];
 
 	r = talloc(talloc_tos(), struct spoolss_6b);
 	if (r == NULL) {
@@ -8381,7 +8381,7 @@ static bool api_spoolss_6c(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_6c *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_6C];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_6C];
 
 	r = talloc(talloc_tos(), struct spoolss_6c);
 	if (r == NULL) {
@@ -8454,7 +8454,7 @@ static bool api_spoolss_6d(pipes_struct *p)
 	DATA_BLOB blob;
 	struct spoolss_6d *r;
 
-	call = &p->interface->calls[NDR_SPOOLSS_6D];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_6D];
 
 	r = talloc(talloc_tos(), struct spoolss_6d);
 	if (r == NULL) {

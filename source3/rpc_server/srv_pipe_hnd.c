@@ -57,8 +57,7 @@ pipes_struct *get_next_internal_pipe(pipes_struct *p)
 
 const char *get_pipe_name_tos(struct pipes_struct *p)
 {
-	return get_pipe_name_from_syntax(talloc_tos(),
-					 &p->interface->syntax_id);
+	return get_pipe_name_from_syntax(talloc_tos(), &p->syntax);
 }
 
 /****************************************************************************
@@ -120,14 +119,6 @@ static struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	p->interface = get_iface_from_syntax(syntax);
-	if (p->interface == NULL) {
-		DEBUG(10, ("Could not find ndr table for syntax\n"));
-		TALLOC_FREE(p->mem_ctx);
-		TALLOC_FREE(p);
-		return NULL;
-	}
-
 	if (!init_pipe_handle_list(p, syntax)) {
 		DEBUG(0,("open_rpc_pipe_p: init_pipe_handles failed.\n"));
 		talloc_destroy(p->mem_ctx);
@@ -169,6 +160,8 @@ static struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	 * Initialize the outgoing RPC data buffer with no memory.
 	 */	
 	prs_init_empty(&p->out_data.rdata, p->mem_ctx, MARSHALL);
+
+	p->syntax = *syntax;
 
 	DEBUG(4,("Created internal pipe %s (pipes_open=%d)\n",
 		 get_pipe_name_from_syntax(talloc_tos(), syntax), pipes_open));

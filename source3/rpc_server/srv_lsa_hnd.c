@@ -81,11 +81,10 @@ bool init_pipe_handle_list(pipes_struct *p, const struct ndr_syntax_id *syntax)
 	for (plist = get_first_internal_pipe();
 	     plist;
 	     plist = get_next_internal_pipe(plist)) {
-		if (ndr_syntax_id_equal(syntax,
-					&plist->interface->syntax_id)) {
+		if (ndr_syntax_id_equal(syntax, &plist->syntax)) {
 			break;
 		}
-		if (is_samr_lsa_pipe(&plist->interface->syntax_id)
+		if (is_samr_lsa_pipe(&plist->syntax)
 		    && is_samr_lsa_pipe(syntax)) {
 			/*
 			 * samr and lsa share a handle space (same process
