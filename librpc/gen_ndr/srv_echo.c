@@ -15,7 +15,7 @@ static bool api_echo_AddOne(pipes_struct *p)
 	DATA_BLOB blob;
 	struct echo_AddOne *r;
 
-	call = &p->interface->calls[NDR_ECHO_ADDONE];
+	call = &ndr_table_rpcecho.calls[NDR_ECHO_ADDONE];
 
 	r = talloc(talloc_tos(), struct echo_AddOne);
 	if (r == NULL) {
@@ -95,7 +95,7 @@ static bool api_echo_EchoData(pipes_struct *p)
 	DATA_BLOB blob;
 	struct echo_EchoData *r;
 
-	call = &p->interface->calls[NDR_ECHO_ECHODATA];
+	call = &ndr_table_rpcecho.calls[NDR_ECHO_ECHODATA];
 
 	r = talloc(talloc_tos(), struct echo_EchoData);
 	if (r == NULL) {
@@ -175,7 +175,7 @@ static bool api_echo_SinkData(pipes_struct *p)
 	DATA_BLOB blob;
 	struct echo_SinkData *r;
 
-	call = &p->interface->calls[NDR_ECHO_SINKDATA];
+	call = &ndr_table_rpcecho.calls[NDR_ECHO_SINKDATA];
 
 	r = talloc(talloc_tos(), struct echo_SinkData);
 	if (r == NULL) {
@@ -248,7 +248,7 @@ static bool api_echo_SourceData(pipes_struct *p)
 	DATA_BLOB blob;
 	struct echo_SourceData *r;
 
-	call = &p->interface->calls[NDR_ECHO_SOURCEDATA];
+	call = &ndr_table_rpcecho.calls[NDR_ECHO_SOURCEDATA];
 
 	r = talloc(talloc_tos(), struct echo_SourceData);
 	if (r == NULL) {
@@ -328,7 +328,7 @@ static bool api_echo_TestCall(pipes_struct *p)
 	DATA_BLOB blob;
 	struct echo_TestCall *r;
 
-	call = &p->interface->calls[NDR_ECHO_TESTCALL];
+	call = &ndr_table_rpcecho.calls[NDR_ECHO_TESTCALL];
 
 	r = talloc(talloc_tos(), struct echo_TestCall);
 	if (r == NULL) {
@@ -408,7 +408,7 @@ static bool api_echo_TestCall2(pipes_struct *p)
 	DATA_BLOB blob;
 	struct echo_TestCall2 *r;
 
-	call = &p->interface->calls[NDR_ECHO_TESTCALL2];
+	call = &ndr_table_rpcecho.calls[NDR_ECHO_TESTCALL2];
 
 	r = talloc(talloc_tos(), struct echo_TestCall2);
 	if (r == NULL) {
@@ -488,7 +488,7 @@ static bool api_echo_TestSleep(pipes_struct *p)
 	DATA_BLOB blob;
 	struct echo_TestSleep *r;
 
-	call = &p->interface->calls[NDR_ECHO_TESTSLEEP];
+	call = &ndr_table_rpcecho.calls[NDR_ECHO_TESTSLEEP];
 
 	r = talloc(talloc_tos(), struct echo_TestSleep);
 	if (r == NULL) {
@@ -561,7 +561,7 @@ static bool api_echo_TestEnum(pipes_struct *p)
 	DATA_BLOB blob;
 	struct echo_TestEnum *r;
 
-	call = &p->interface->calls[NDR_ECHO_TESTENUM];
+	call = &ndr_table_rpcecho.calls[NDR_ECHO_TESTENUM];
 
 	r = talloc(talloc_tos(), struct echo_TestEnum);
 	if (r == NULL) {
@@ -638,7 +638,7 @@ static bool api_echo_TestSurrounding(pipes_struct *p)
 	DATA_BLOB blob;
 	struct echo_TestSurrounding *r;
 
-	call = &p->interface->calls[NDR_ECHO_TESTSURROUNDING];
+	call = &ndr_table_rpcecho.calls[NDR_ECHO_TESTSURROUNDING];
 
 	r = talloc(talloc_tos(), struct echo_TestSurrounding);
 	if (r == NULL) {
@@ -713,7 +713,7 @@ static bool api_echo_TestDoublePointer(pipes_struct *p)
 	DATA_BLOB blob;
 	struct echo_TestDoublePointer *r;
 
-	call = &p->interface->calls[NDR_ECHO_TESTDOUBLEPOINTER];
+	call = &ndr_table_rpcecho.calls[NDR_ECHO_TESTDOUBLEPOINTER];
 
 	r = talloc(talloc_tos(), struct echo_TestDoublePointer);
 	if (r == NULL) {

@@ -15,7 +15,7 @@ static bool api_samr_Connect(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_Connect *r;
 
-	call = &p->interface->calls[NDR_SAMR_CONNECT];
+	call = &ndr_table_samr.calls[NDR_SAMR_CONNECT];
 
 	r = talloc(talloc_tos(), struct samr_Connect);
 	if (r == NULL) {
@@ -95,7 +95,7 @@ static bool api_samr_Close(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_Close *r;
 
-	call = &p->interface->calls[NDR_SAMR_CLOSE];
+	call = &ndr_table_samr.calls[NDR_SAMR_CLOSE];
 
 	r = talloc(talloc_tos(), struct samr_Close);
 	if (r == NULL) {
@@ -170,7 +170,7 @@ static bool api_samr_SetSecurity(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_SetSecurity *r;
 
-	call = &p->interface->calls[NDR_SAMR_SETSECURITY];
+	call = &ndr_table_samr.calls[NDR_SAMR_SETSECURITY];
 
 	r = talloc(talloc_tos(), struct samr_SetSecurity);
 	if (r == NULL) {
@@ -243,7 +243,7 @@ static bool api_samr_QuerySecurity(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_QuerySecurity *r;
 
-	call = &p->interface->calls[NDR_SAMR_QUERYSECURITY];
+	call = &ndr_table_samr.calls[NDR_SAMR_QUERYSECURITY];
 
 	r = talloc(talloc_tos(), struct samr_QuerySecurity);
 	if (r == NULL) {
@@ -323,7 +323,7 @@ static bool api_samr_Shutdown(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_Shutdown *r;
 
-	call = &p->interface->calls[NDR_SAMR_SHUTDOWN];
+	call = &ndr_table_samr.calls[NDR_SAMR_SHUTDOWN];
 
 	r = talloc(talloc_tos(), struct samr_Shutdown);
 	if (r == NULL) {
@@ -396,7 +396,7 @@ static bool api_samr_LookupDomain(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_LookupDomain *r;
 
-	call = &p->interface->calls[NDR_SAMR_LOOKUPDOMAIN];
+	call = &ndr_table_samr.calls[NDR_SAMR_LOOKUPDOMAIN];
 
 	r = talloc(talloc_tos(), struct samr_LookupDomain);
 	if (r == NULL) {
@@ -476,7 +476,7 @@ static bool api_samr_EnumDomains(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_EnumDomains *r;
 
-	call = &p->interface->calls[NDR_SAMR_ENUMDOMAINS];
+	call = &ndr_table_samr.calls[NDR_SAMR_ENUMDOMAINS];
 
 	r = talloc(talloc_tos(), struct samr_EnumDomains);
 	if (r == NULL) {
@@ -563,7 +563,7 @@ static bool api_samr_OpenDomain(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_OpenDomain *r;
 
-	call = &p->interface->calls[NDR_SAMR_OPENDOMAIN];
+	call = &ndr_table_samr.calls[NDR_SAMR_OPENDOMAIN];
 
 	r = talloc(talloc_tos(), struct samr_OpenDomain);
 	if (r == NULL) {
@@ -643,7 +643,7 @@ static bool api_samr_QueryDomainInfo(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_QueryDomainInfo *r;
 
-	call = &p->interface->calls[NDR_SAMR_QUERYDOMAININFO];
+	call = &ndr_table_samr.calls[NDR_SAMR_QUERYDOMAININFO];
 
 	r = talloc(talloc_tos(), struct samr_QueryDomainInfo);
 	if (r == NULL) {
@@ -723,7 +723,7 @@ static bool api_samr_SetDomainInfo(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_SetDomainInfo *r;
 
-	call = &p->interface->calls[NDR_SAMR_SETDOMAININFO];
+	call = &ndr_table_samr.calls[NDR_SAMR_SETDOMAININFO];
 
 	r = talloc(talloc_tos(), struct samr_SetDomainInfo);
 	if (r == NULL) {
@@ -796,7 +796,7 @@ static bool api_samr_CreateDomainGroup(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_CreateDomainGroup *r;
 
-	call = &p->interface->calls[NDR_SAMR_CREATEDOMAINGROUP];
+	call = &ndr_table_samr.calls[NDR_SAMR_CREATEDOMAINGROUP];
 
 	r = talloc(talloc_tos(), struct samr_CreateDomainGroup);
 	if (r == NULL) {
@@ -882,7 +882,7 @@ static bool api_samr_EnumDomainGroups(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_EnumDomainGroups *r;
 
-	call = &p->interface->calls[NDR_SAMR_ENUMDOMAINGROUPS];
+	call = &ndr_table_samr.calls[NDR_SAMR_ENUMDOMAINGROUPS];
 
 	r = talloc(talloc_tos(), struct samr_EnumDomainGroups);
 	if (r == NULL) {
@@ -969,7 +969,7 @@ static bool api_samr_CreateUser(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_CreateUser *r;
 
-	call = &p->interface->calls[NDR_SAMR_CREATEUSER];
+	call = &ndr_table_samr.calls[NDR_SAMR_CREATEUSER];
 
 	r = talloc(talloc_tos(), struct samr_CreateUser);
 	if (r == NULL) {
@@ -1055,7 +1055,7 @@ static bool api_samr_EnumDomainUsers(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_EnumDomainUsers *r;
 
-	call = &p->interface->calls[NDR_SAMR_ENUMDOMAINUSERS];
+	call = &ndr_table_samr.calls[NDR_SAMR_ENUMDOMAINUSERS];
 
 	r = talloc(talloc_tos(), struct samr_EnumDomainUsers);
 	if (r == NULL) {
@@ -1142,7 +1142,7 @@ static bool api_samr_CreateDomAlias(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_CreateDomAlias *r;
 
-	call = &p->interface->calls[NDR_SAMR_CREATEDOMALIAS];
+	call = &ndr_table_samr.calls[NDR_SAMR_CREATEDOMALIAS];
 
 	r = talloc(talloc_tos(), struct samr_CreateDomAlias);
 	if (r == NULL) {
@@ -1228,7 +1228,7 @@ static bool api_samr_EnumDomainAliases(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_EnumDomainAliases *r;
 
-	call = &p->interface->calls[NDR_SAMR_ENUMDOMAINALIASES];
+	call = &ndr_table_samr.calls[NDR_SAMR_ENUMDOMAINALIASES];
 
 	r = talloc(talloc_tos(), struct samr_EnumDomainAliases);
 	if (r == NULL) {
@@ -1315,7 +1315,7 @@ static bool api_samr_GetAliasMembership(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_GetAliasMembership *r;
 
-	call = &p->interface->calls[NDR_SAMR_GETALIASMEMBERSHIP];
+	call = &ndr_table_samr.calls[NDR_SAMR_GETALIASMEMBERSHIP];
 
 	r = talloc(talloc_tos(), struct samr_GetAliasMembership);
 	if (r == NULL) {
@@ -1395,7 +1395,7 @@ static bool api_samr_LookupNames(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_LookupNames *r;
 
-	call = &p->interface->calls[NDR_SAMR_LOOKUPNAMES];
+	call = &ndr_table_samr.calls[NDR_SAMR_LOOKUPNAMES];
 
 	r = talloc(talloc_tos(), struct samr_LookupNames);
 	if (r == NULL) {
@@ -1481,7 +1481,7 @@ static bool api_samr_LookupRids(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_LookupRids *r;
 
-	call = &p->interface->calls[NDR_SAMR_LOOKUPRIDS];
+	call = &ndr_table_samr.calls[NDR_SAMR_LOOKUPRIDS];
 
 	r = talloc(talloc_tos(), struct samr_LookupRids);
 	if (r == NULL) {
@@ -1567,7 +1567,7 @@ static bool api_samr_OpenGroup(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_OpenGroup *r;
 
-	call = &p->interface->calls[NDR_SAMR_OPENGROUP];
+	call = &ndr_table_samr.calls[NDR_SAMR_OPENGROUP];
 
 	r = talloc(talloc_tos(), struct samr_OpenGroup);
 	if (r == NULL) {
@@ -1647,7 +1647,7 @@ static bool api_samr_QueryGroupInfo(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_QueryGroupInfo *r;
 
-	call = &p->interface->calls[NDR_SAMR_QUERYGROUPINFO];
+	call = &ndr_table_samr.calls[NDR_SAMR_QUERYGROUPINFO];
 
 	r = talloc(talloc_tos(), struct samr_QueryGroupInfo);
 	if (r == NULL) {
@@ -1727,7 +1727,7 @@ static bool api_samr_SetGroupInfo(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_SetGroupInfo *r;
 
-	call = &p->interface->calls[NDR_SAMR_SETGROUPINFO];
+	call = &ndr_table_samr.calls[NDR_SAMR_SETGROUPINFO];
 
 	r = talloc(talloc_tos(), struct samr_SetGroupInfo);
 	if (r == NULL) {
@@ -1800,7 +1800,7 @@ static bool api_samr_AddGroupMember(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_AddGroupMember *r;
 
-	call = &p->interface->calls[NDR_SAMR_ADDGROUPMEMBER];
+	call = &ndr_table_samr.calls[NDR_SAMR_ADDGROUPMEMBER];
 
 	r = talloc(talloc_tos(), struct samr_AddGroupMember);
 	if (r == NULL) {
@@ -1873,7 +1873,7 @@ static bool api_samr_DeleteDomainGroup(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_DeleteDomainGroup *r;
 
-	call = &p->interface->calls[NDR_SAMR_DELETEDOMAINGROUP];
+	call = &ndr_table_samr.calls[NDR_SAMR_DELETEDOMAINGROUP];
 
 	r = talloc(talloc_tos(), struct samr_DeleteDomainGroup);
 	if (r == NULL) {
@@ -1948,7 +1948,7 @@ static bool api_samr_DeleteGroupMember(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_DeleteGroupMember *r;
 
-	call = &p->interface->calls[NDR_SAMR_DELETEGROUPMEMBER];
+	call = &ndr_table_samr.calls[NDR_SAMR_DELETEGROUPMEMBER];
 
 	r = talloc(talloc_tos(), struct samr_DeleteGroupMember);
 	if (r == NULL) {
@@ -2021,7 +2021,7 @@ static bool api_samr_QueryGroupMember(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_QueryGroupMember *r;
 
-	call = &p->interface->calls[NDR_SAMR_QUERYGROUPMEMBER];
+	call = &ndr_table_samr.calls[NDR_SAMR_QUERYGROUPMEMBER];
 
 	r = talloc(talloc_tos(), struct samr_QueryGroupMember);
 	if (r == NULL) {
@@ -2101,7 +2101,7 @@ static bool api_samr_SetMemberAttributesOfGroup(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_SetMemberAttributesOfGroup *r;
 
-	call = &p->interface->calls[NDR_SAMR_SETMEMBERATTRIBUTESOFGROUP];
+	call = &ndr_table_samr.calls[NDR_SAMR_SETMEMBERATTRIBUTESOFGROUP];
 
 	r = talloc(talloc_tos(), struct samr_SetMemberAttributesOfGroup);
 	if (r == NULL) {
@@ -2174,7 +2174,7 @@ static bool api_samr_OpenAlias(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_OpenAlias *r;
 
-	call = &p->interface->calls[NDR_SAMR_OPENALIAS];
+	call = &ndr_table_samr.calls[NDR_SAMR_OPENALIAS];
 
 	r = talloc(talloc_tos(), struct samr_OpenAlias);
 	if (r == NULL) {
@@ -2254,7 +2254,7 @@ static bool api_samr_QueryAliasInfo(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_QueryAliasInfo *r;
 
-	call = &p->interface->calls[NDR_SAMR_QUERYALIASINFO];
+	call = &ndr_table_samr.calls[NDR_SAMR_QUERYALIASINFO];
 
 	r = talloc(talloc_tos(), struct samr_QueryAliasInfo);
 	if (r == NULL) {
@@ -2334,7 +2334,7 @@ static bool api_samr_SetAliasInfo(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_SetAliasInfo *r;
 
-	call = &p->interface->calls[NDR_SAMR_SETALIASINFO];
+	call = &ndr_table_samr.calls[NDR_SAMR_SETALIASINFO];
 
 	r = talloc(talloc_tos(), struct samr_SetAliasInfo);
 	if (r == NULL) {
@@ -2407,7 +2407,7 @@ static bool api_samr_DeleteDomAlias(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_DeleteDomAlias *r;
 
-	call = &p->interface->calls[NDR_SAMR_DELETEDOMALIAS];
+	call = &ndr_table_samr.calls[NDR_SAMR_DELETEDOMALIAS];
 
 	r = talloc(talloc_tos(), struct samr_DeleteDomAlias);
 	if (r == NULL) {
@@ -2482,7 +2482,7 @@ static bool api_samr_AddAliasMember(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_AddAliasMember *r;
 
-	call = &p->interface->calls[NDR_SAMR_ADDALIASMEMBER];
+	call = &ndr_table_samr.calls[NDR_SAMR_ADDALIASMEMBER];
 
 	r = talloc(talloc_tos(), struct samr_AddAliasMember);
 	if (r == NULL) {
@@ -2555,7 +2555,7 @@ static bool api_samr_DeleteAliasMember(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_DeleteAliasMember *r;
 
-	call = &p->interface->calls[NDR_SAMR_DELETEALIASMEMBER];
+	call = &ndr_table_samr.calls[NDR_SAMR_DELETEALIASMEMBER];
 
 	r = talloc(talloc_tos(), struct samr_DeleteAliasMember);
 	if (r == NULL) {
@@ -2628,7 +2628,7 @@ static bool api_samr_GetMembersInAlias(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_GetMembersInAlias *r;
 
-	call = &p->interface->calls[NDR_SAMR_GETMEMBERSINALIAS];
+	call = &ndr_table_samr.calls[NDR_SAMR_GETMEMBERSINALIAS];
 
 	r = talloc(talloc_tos(), struct samr_GetMembersInAlias);
 	if (r == NULL) {
@@ -2708,7 +2708,7 @@ static bool api_samr_OpenUser(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_OpenUser *r;
 
-	call = &p->interface->calls[NDR_SAMR_OPENUSER];
+	call = &ndr_table_samr.calls[NDR_SAMR_OPENUSER];
 
 	r = talloc(talloc_tos(), struct samr_OpenUser);
 	if (r == NULL) {
@@ -2788,7 +2788,7 @@ static bool api_samr_DeleteUser(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_DeleteUser *r;
 
-	call = &p->interface->calls[NDR_SAMR_DELETEUSER];
+	call = &ndr_table_samr.calls[NDR_SAMR_DELETEUSER];
 
 	r = talloc(talloc_tos(), struct samr_DeleteUser);
 	if (r == NULL) {
@@ -2863,7 +2863,7 @@ static bool api_samr_QueryUserInfo(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_QueryUserInfo *r;
 
-	call = &p->interface->calls[NDR_SAMR_QUERYUSERINFO];
+	call = &ndr_table_samr.calls[NDR_SAMR_QUERYUSERINFO];
 
 	r = talloc(talloc_tos(), struct samr_QueryUserInfo);
 	if (r == NULL) {
@@ -2943,7 +2943,7 @@ static bool api_samr_SetUserInfo(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_SetUserInfo *r;
 
-	call = &p->interface->calls[NDR_SAMR_SETUSERINFO];
+	call = &ndr_table_samr.calls[NDR_SAMR_SETUSERINFO];
 
 	r = talloc(talloc_tos(), struct samr_SetUserInfo);
 	if (r == NULL) {
@@ -3016,7 +3016,7 @@ static bool api_samr_ChangePasswordUser(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_ChangePasswordUser *r;
 
-	call = &p->interface->calls[NDR_SAMR_CHANGEPASSWORDUSER];
+	call = &ndr_table_samr.calls[NDR_SAMR_CHANGEPASSWORDUSER];
 
 	r = talloc(talloc_tos(), struct samr_ChangePasswordUser);
 	if (r == NULL) {
@@ -3089,7 +3089,7 @@ static bool api_samr_GetGroupsForUser(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_GetGroupsForUser *r;
 
-	call = &p->interface->calls[NDR_SAMR_GETGROUPSFORUSER];
+	call = &ndr_table_samr.calls[NDR_SAMR_GETGROUPSFORUSER];
 
 	r = talloc(talloc_tos(), struct samr_GetGroupsForUser);
 	if (r == NULL) {
@@ -3169,7 +3169,7 @@ static bool api_samr_QueryDisplayInfo(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_QueryDisplayInfo *r;
 
-	call = &p->interface->calls[NDR_SAMR_QUERYDISPLAYINFO];
+	call = &ndr_table_samr.calls[NDR_SAMR_QUERYDISPLAYINFO];
 
 	r = talloc(talloc_tos(), struct samr_QueryDisplayInfo);
 	if (r == NULL) {
@@ -3261,7 +3261,7 @@ static bool api_samr_GetDisplayEnumerationIndex(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_GetDisplayEnumerationIndex *r;
 
-	call = &p->interface->calls[NDR_SAMR_GETDISPLAYENUMERATIONINDEX];
+	call = &ndr_table_samr.calls[NDR_SAMR_GETDISPLAYENUMERATIONINDEX];
 
 	r = talloc(talloc_tos(), struct samr_GetDisplayEnumerationIndex);
 	if (r == NULL) {
@@ -3341,7 +3341,7 @@ static bool api_samr_TestPrivateFunctionsDomain(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_TestPrivateFunctionsDomain *r;
 
-	call = &p->interface->calls[NDR_SAMR_TESTPRIVATEFUNCTIONSDOMAIN];
+	call = &ndr_table_samr.calls[NDR_SAMR_TESTPRIVATEFUNCTIONSDOMAIN];
 
 	r = talloc(talloc_tos(), struct samr_TestPrivateFunctionsDomain);
 	if (r == NULL) {
@@ -3414,7 +3414,7 @@ static bool api_samr_TestPrivateFunctionsUser(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_TestPrivateFunctionsUser *r;
 
-	call = &p->interface->calls[NDR_SAMR_TESTPRIVATEFUNCTIONSUSER];
+	call = &ndr_table_samr.calls[NDR_SAMR_TESTPRIVATEFUNCTIONSUSER];
 
 	r = talloc(talloc_tos(), struct samr_TestPrivateFunctionsUser);
 	if (r == NULL) {
@@ -3487,7 +3487,7 @@ static bool api_samr_GetUserPwInfo(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_GetUserPwInfo *r;
 
-	call = &p->interface->calls[NDR_SAMR_GETUSERPWINFO];
+	call = &ndr_table_samr.calls[NDR_SAMR_GETUSERPWINFO];
 
 	r = talloc(talloc_tos(), struct samr_GetUserPwInfo);
 	if (r == NULL) {
@@ -3567,7 +3567,7 @@ static bool api_samr_RemoveMemberFromForeignDomain(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_RemoveMemberFromForeignDomain *r;
 
-	call = &p->interface->calls[NDR_SAMR_REMOVEMEMBERFROMFOREIGNDOMAIN];
+	call = &ndr_table_samr.calls[NDR_SAMR_REMOVEMEMBERFROMFOREIGNDOMAIN];
 
 	r = talloc(talloc_tos(), struct samr_RemoveMemberFromForeignDomain);
 	if (r == NULL) {
@@ -3640,7 +3640,7 @@ static bool api_samr_QueryDomainInfo2(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_QueryDomainInfo2 *r;
 
-	call = &p->interface->calls[NDR_SAMR_QUERYDOMAININFO2];
+	call = &ndr_table_samr.calls[NDR_SAMR_QUERYDOMAININFO2];
 
 	r = talloc(talloc_tos(), struct samr_QueryDomainInfo2);
 	if (r == NULL) {
@@ -3720,7 +3720,7 @@ static bool api_samr_QueryUserInfo2(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_QueryUserInfo2 *r;
 
-	call = &p->interface->calls[NDR_SAMR_QUERYUSERINFO2];
+	call = &ndr_table_samr.calls[NDR_SAMR_QUERYUSERINFO2];
 
 	r = talloc(talloc_tos(), struct samr_QueryUserInfo2);
 	if (r == NULL) {
@@ -3800,7 +3800,7 @@ static bool api_samr_QueryDisplayInfo2(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_QueryDisplayInfo2 *r;
 
-	call = &p->interface->calls[NDR_SAMR_QUERYDISPLAYINFO2];
+	call = &ndr_table_samr.calls[NDR_SAMR_QUERYDISPLAYINFO2];
 
 	r = talloc(talloc_tos(), struct samr_QueryDisplayInfo2);
 	if (r == NULL) {
@@ -3892,7 +3892,7 @@ static bool api_samr_GetDisplayEnumerationIndex2(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_GetDisplayEnumerationIndex2 *r;
 
-	call = &p->interface->calls[NDR_SAMR_GETDISPLAYENUMERATIONINDEX2];
+	call = &ndr_table_samr.calls[NDR_SAMR_GETDISPLAYENUMERATIONINDEX2];
 
 	r = talloc(talloc_tos(), struct samr_GetDisplayEnumerationIndex2);
 	if (r == NULL) {
@@ -3972,7 +3972,7 @@ static bool api_samr_CreateUser2(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_CreateUser2 *r;
 
-	call = &p->interface->calls[NDR_SAMR_CREATEUSER2];
+	call = &ndr_table_samr.calls[NDR_SAMR_CREATEUSER2];
 
 	r = talloc(talloc_tos(), struct samr_CreateUser2);
 	if (r == NULL) {
@@ -4064,7 +4064,7 @@ static bool api_samr_QueryDisplayInfo3(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_QueryDisplayInfo3 *r;
 
-	call = &p->interface->calls[NDR_SAMR_QUERYDISPLAYINFO3];
+	call = &ndr_table_samr.calls[NDR_SAMR_QUERYDISPLAYINFO3];
 
 	r = talloc(talloc_tos(), struct samr_QueryDisplayInfo3);
 	if (r == NULL) {
@@ -4156,7 +4156,7 @@ static bool api_samr_AddMultipleMembersToAlias(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_AddMultipleMembersToAlias *r;
 
-	call = &p->interface->calls[NDR_SAMR_ADDMULTIPLEMEMBERSTOALIAS];
+	call = &ndr_table_samr.calls[NDR_SAMR_ADDMULTIPLEMEMBERSTOALIAS];
 
 	r = talloc(talloc_tos(), struct samr_AddMultipleMembersToAlias);
 	if (r == NULL) {
@@ -4229,7 +4229,7 @@ static bool api_samr_RemoveMultipleMembersFromAlias(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_RemoveMultipleMembersFromAlias *r;
 
-	call = &p->interface->calls[NDR_SAMR_REMOVEMULTIPLEMEMBERSFROMALIAS];
+	call = &ndr_table_samr.calls[NDR_SAMR_REMOVEMULTIPLEMEMBERSFROMALIAS];
 
 	r = talloc(talloc_tos(), struct samr_RemoveMultipleMembersFromAlias);
 	if (r == NULL) {
@@ -4302,7 +4302,7 @@ static bool api_samr_OemChangePasswordUser2(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_OemChangePasswordUser2 *r;
 
-	call = &p->interface->calls[NDR_SAMR_OEMCHANGEPASSWORDUSER2];
+	call = &ndr_table_samr.calls[NDR_SAMR_OEMCHANGEPASSWORDUSER2];
 
 	r = talloc(talloc_tos(), struct samr_OemChangePasswordUser2);
 	if (r == NULL) {
@@ -4375,7 +4375,7 @@ static bool api_samr_ChangePasswordUser2(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_ChangePasswordUser2 *r;
 
-	call = &p->interface->calls[NDR_SAMR_CHANGEPASSWORDUSER2];
+	call = &ndr_table_samr.calls[NDR_SAMR_CHANGEPASSWORDUSER2];
 
 	r = talloc(talloc_tos(), struct samr_ChangePasswordUser2);
 	if (r == NULL) {
@@ -4448,7 +4448,7 @@ static bool api_samr_GetDomPwInfo(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_GetDomPwInfo *r;
 
-	call = &p->interface->calls[NDR_SAMR_GETDOMPWINFO];
+	call = &ndr_table_samr.calls[NDR_SAMR_GETDOMPWINFO];
 
 	r = talloc(talloc_tos(), struct samr_GetDomPwInfo);
 	if (r == NULL) {
@@ -4528,7 +4528,7 @@ static bool api_samr_Connect2(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_Connect2 *r;
 
-	call = &p->interface->calls[NDR_SAMR_CONNECT2];
+	call = &ndr_table_samr.calls[NDR_SAMR_CONNECT2];
 
 	r = talloc(talloc_tos(), struct samr_Connect2);
 	if (r == NULL) {
@@ -4608,7 +4608,7 @@ static bool api_samr_SetUserInfo2(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_SetUserInfo2 *r;
 
-	call = &p->interface->calls[NDR_SAMR_SETUSERINFO2];
+	call = &ndr_table_samr.calls[NDR_SAMR_SETUSERINFO2];
 
 	r = talloc(talloc_tos(), struct samr_SetUserInfo2);
 	if (r == NULL) {
@@ -4681,7 +4681,7 @@ static bool api_samr_SetBootKeyInformation(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_SetBootKeyInformation *r;
 
-	call = &p->interface->calls[NDR_SAMR_SETBOOTKEYINFORMATION];
+	call = &ndr_table_samr.calls[NDR_SAMR_SETBOOTKEYINFORMATION];
 
 	r = talloc(talloc_tos(), struct samr_SetBootKeyInformation);
 	if (r == NULL) {
@@ -4754,7 +4754,7 @@ static bool api_samr_GetBootKeyInformation(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_GetBootKeyInformation *r;
 
-	call = &p->interface->calls[NDR_SAMR_GETBOOTKEYINFORMATION];
+	call = &ndr_table_samr.calls[NDR_SAMR_GETBOOTKEYINFORMATION];
 
 	r = talloc(talloc_tos(), struct samr_GetBootKeyInformation);
 	if (r == NULL) {
@@ -4834,7 +4834,7 @@ static bool api_samr_Connect3(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_Connect3 *r;
 
-	call = &p->interface->calls[NDR_SAMR_CONNECT3];
+	call = &ndr_table_samr.calls[NDR_SAMR_CONNECT3];
 
 	r = talloc(talloc_tos(), struct samr_Connect3);
 	if (r == NULL) {
@@ -4914,7 +4914,7 @@ static bool api_samr_Connect4(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_Connect4 *r;
 
-	call = &p->interface->calls[NDR_SAMR_CONNECT4];
+	call = &ndr_table_samr.calls[NDR_SAMR_CONNECT4];
 
 	r = talloc(talloc_tos(), struct samr_Connect4);
 	if (r == NULL) {
@@ -4994,7 +4994,7 @@ static bool api_samr_ChangePasswordUser3(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_ChangePasswordUser3 *r;
 
-	call = &p->interface->calls[NDR_SAMR_CHANGEPASSWORDUSER3];
+	call = &ndr_table_samr.calls[NDR_SAMR_CHANGEPASSWORDUSER3];
 
 	r = talloc(talloc_tos(), struct samr_ChangePasswordUser3);
 	if (r == NULL) {
@@ -5080,7 +5080,7 @@ static bool api_samr_Connect5(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_Connect5 *r;
 
-	call = &p->interface->calls[NDR_SAMR_CONNECT5];
+	call = &ndr_table_samr.calls[NDR_SAMR_CONNECT5];
 
 	r = talloc(talloc_tos(), struct samr_Connect5);
 	if (r == NULL) {
@@ -5172,7 +5172,7 @@ static bool api_samr_RidToSid(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_RidToSid *r;
 
-	call = &p->interface->calls[NDR_SAMR_RIDTOSID];
+	call = &ndr_table_samr.calls[NDR_SAMR_RIDTOSID];
 
 	r = talloc(talloc_tos(), struct samr_RidToSid);
 	if (r == NULL) {
@@ -5252,7 +5252,7 @@ static bool api_samr_SetDsrmPassword(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_SetDsrmPassword *r;
 
-	call = &p->interface->calls[NDR_SAMR_SETDSRMPASSWORD];
+	call = &ndr_table_samr.calls[NDR_SAMR_SETDSRMPASSWORD];
 
 	r = talloc(talloc_tos(), struct samr_SetDsrmPassword);
 	if (r == NULL) {
@@ -5325,7 +5325,7 @@ static bool api_samr_ValidatePassword(pipes_struct *p)
 	DATA_BLOB blob;
 	struct samr_ValidatePassword *r;
 
-	call = &p->interface->calls[NDR_SAMR_VALIDATEPASSWORD];
+	call = &ndr_table_samr.calls[NDR_SAMR_VALIDATEPASSWORD];
 
 	r = talloc(talloc_tos(), struct samr_ValidatePassword);
 	if (r == NULL) {
