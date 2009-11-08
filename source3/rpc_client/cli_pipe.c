@@ -195,20 +195,6 @@ const char *get_pipe_name_from_syntax(TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-bool ndr_syntax_from_string(const char *s, uint32_t version,
-			    struct ndr_syntax_id *syntax)
-{
-	NTSTATUS status;
-	status = GUID_from_string(s, &syntax->uuid);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("GUID_from_string returned %s\n",
-			   nt_errstr(status)));
-		return false;
-	}
-	syntax->if_version = version;
-	return true;
-}
-
 /********************************************************************
  Map internal value to wire value.
  ********************************************************************/
