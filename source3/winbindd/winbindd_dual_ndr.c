@@ -293,7 +293,7 @@ enum winbindd_result winbindd_dual_ndrcmd(struct winbindd_domain *domain,
  * Just a dummy to make srv_wbint.c happy
  */
 NTSTATUS rpc_srv_register(int version, const char *clnt, const char *srv,
-			  const struct ndr_interface_table *iface,
+			  const char *interface, uint32_t interface_version,
 			  const struct api_struct *cmds, int size)
 {
 	return NT_STATUS_OK;

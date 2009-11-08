@@ -5819,9 +5819,8 @@ NTSTATUS rpc_pipe_register_commands(int version, const char *clnt,
 				    const char *srv,
 				    const struct ndr_syntax_id *interface,
 				    const struct api_struct *cmds, int size);
-NTSTATUS rpc_srv_register(int version, const char *clnt,
-			  const char *srv,
-			  const struct ndr_interface_table *iface,
+NTSTATUS rpc_srv_register(int version, const char *clnt, const char *srv,
+			  const char *interface, uint32_t interface_version,
 			  const struct api_struct *cmds, int size);
 bool is_known_pipename(const char *cli_filename, struct ndr_syntax_id *syntax);
 bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p);

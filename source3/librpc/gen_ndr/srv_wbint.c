@@ -2140,5 +2140,5 @@ NTSTATUS rpc_wbint_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, co
 
 NTSTATUS rpc_wbint_init(void)
 {
-	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "wbint", "wbint", &ndr_table_wbint, api_wbint_cmds, sizeof(api_wbint_cmds) / sizeof(struct api_struct));
+	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "wbint", "wbint", NDR_WBINT_UUID, NDR_WBINT_VERSION, api_wbint_cmds, sizeof(api_wbint_cmds) / sizeof(struct api_struct));
 }

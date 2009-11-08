@@ -9724,5 +9724,5 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 
 NTSTATUS rpc_spoolss_init(void)
 {
-	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "spoolss", "spoolss", &ndr_table_spoolss, api_spoolss_cmds, sizeof(api_spoolss_cmds) / sizeof(struct api_struct));
+	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "spoolss", "spoolss", NDR_SPOOLSS_UUID, NDR_SPOOLSS_VERSION, api_spoolss_cmds, sizeof(api_spoolss_cmds) / sizeof(struct api_struct));
 }
