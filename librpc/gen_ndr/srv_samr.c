@@ -6263,5 +6263,5 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 
 NTSTATUS rpc_samr_init(void)
 {
-	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "samr", "samr", &ndr_table_samr, api_samr_cmds, sizeof(api_samr_cmds) / sizeof(struct api_struct));
+	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "samr", "samr", NDR_SAMR_UUID, NDR_SAMR_VERSION, api_samr_cmds, sizeof(api_samr_cmds) / sizeof(struct api_struct));
 }

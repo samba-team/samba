@@ -2690,5 +2690,5 @@ NTSTATUS rpc_wkssvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 
 NTSTATUS rpc_wkssvc_init(void)
 {
-	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "wkssvc", "wkssvc", &ndr_table_wkssvc, api_wkssvc_cmds, sizeof(api_wkssvc_cmds) / sizeof(struct api_struct));
+	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "wkssvc", "wkssvc", NDR_WKSSVC_UUID, NDR_WKSSVC_VERSION, api_wkssvc_cmds, sizeof(api_wkssvc_cmds) / sizeof(struct api_struct));
 }

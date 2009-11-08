@@ -7153,5 +7153,5 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 
 NTSTATUS rpc_lsarpc_init(void)
 {
-	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "lsarpc", "lsarpc", &ndr_table_lsarpc, api_lsarpc_cmds, sizeof(api_lsarpc_cmds) / sizeof(struct api_struct));
+	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "lsarpc", "lsarpc", NDR_LSARPC_UUID, NDR_LSARPC_VERSION, api_lsarpc_cmds, sizeof(api_lsarpc_cmds) / sizeof(struct api_struct));
 }
