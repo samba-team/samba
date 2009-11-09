@@ -177,6 +177,7 @@ WERROR _netr_LogonControl2Ex(pipes_struct *p,
 	struct netr_NETLOGON_INFO_3 *info3;
 	struct netr_NETLOGON_INFO_4 *info4;
 	const char *fn;
+	uint32_t acct_ctrl;
 
 	switch (p->hdr_req.opnum) {
 	case NDR_NETR_LOGONCONTROL:
@@ -192,12 +193,16 @@ WERROR _netr_LogonControl2Ex(pipes_struct *p,
 		return WERR_INVALID_PARAM;
 	}
 
+	acct_ctrl = pdb_get_acct_ctrl(p->server_info->sam_account);
+
 	switch (r->in.function_code) {
 	case NETLOGON_CONTROL_TC_VERIFY:
 	case NETLOGON_CONTROL_CHANGE_PASSWORD:
 	case NETLOGON_CONTROL_REDISCOVER:
-		if (!nt_token_check_domain_rid(p->server_info->ptok, DOMAIN_GROUP_RID_ADMINS) &&
-		    !nt_token_check_sid(&global_sid_Builtin_Administrators, p->server_info->ptok)) {
+		if ((geteuid() != sec_initial_uid()) &&
+		    !nt_token_check_domain_rid(p->server_info->ptok, DOMAIN_RID_ADMINS) &&
+		    !nt_token_check_sid(&global_sid_Builtin_Administrators, p->server_info->ptok) &&
+		    !(acct_ctrl & (ACB_WSTRUST | ACB_SVRTRUST))) {
 			return WERR_ACCESS_DENIED;
 		}
 		break;
@@ -215,9 +220,23 @@ WERROR _netr_LogonControl2Ex(pipes_struct *p,
 	case NETLOGON_CONTROL_SYNCHRONIZE:
 	case NETLOGON_CONTROL_PDC_REPLICATE:
 	case NETLOGON_CONTROL_BACKUP_CHANGE_LOG:
-	case NETLOGON_CONTROL_TRUNCATE_LOG:
 	case NETLOGON_CONTROL_BREAKPOINT:
-		return WERR_ACCESS_DENIED;
+		if (acct_ctrl & ACB_NORMAL) {
+			return WERR_NOT_SUPPORTED;
+		} else if (acct_ctrl & (ACB_WSTRUST | ACB_SVRTRUST)) {
+			return WERR_ACCESS_DENIED;
+		} else {
+			return WERR_ACCESS_DENIED;
+		}
+	case NETLOGON_CONTROL_TRUNCATE_LOG:
+		if (acct_ctrl & ACB_NORMAL) {
+			break;
+		} else if (acct_ctrl & (ACB_WSTRUST | ACB_SVRTRUST)) {
+			return WERR_ACCESS_DENIED;
+		} else {
+			return WERR_ACCESS_DENIED;
+		}
+
 	case NETLOGON_CONTROL_TRANSPORT_NOTIFY:
 	case NETLOGON_CONTROL_FORCE_DNS_REG:
 	case NETLOGON_CONTROL_QUERY_DNS_REG:
