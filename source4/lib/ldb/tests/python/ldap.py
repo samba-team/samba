@@ -484,7 +484,10 @@ class BasicTests(unittest.TestCase):
 
         self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
-    def test_largeRDN(self):
+
+        # this test needs to be disabled until we really understand
+        # what the rDN length constraints are
+    def DISABLED_test_largeRDN(self):
         """Testing large rDN (limit 64 characters)"""
         rdn = "CN=a012345678901234567890123456789012345678901234567890123456789012";
         self.delete_force(self.ldb, "%s,%s" % (rdn, self.base_dn))
