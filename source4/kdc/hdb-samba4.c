@@ -1585,6 +1585,8 @@ NTSTATUS hdb_samba4_create_kdc(TALLOC_CTX *mem_ctx,
 			      krb5_context context, struct HDB **db)
 {
 	struct auth_session_info *session_info;
+	NTSTATUS nt_status;
+
 	*db = talloc(mem_ctx, HDB);
 	if (!*db) {
 		krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
@@ -1595,17 +1597,30 @@ NTSTATUS hdb_samba4_create_kdc(TALLOC_CTX *mem_ctx,
 	(*db)->hdb_db = NULL;
 	(*db)->hdb_capability_flags = 0;
 
+#if 1
+	/* we would prefer to use system_session(), as that would
+	 * allow us to share the samdb backend context with other parts of the
+	 * system. For now we can't as we need to override the
+	 * credentials to set CRED_DONT_USE_KERBEROS, which would
+	 * break other users of the system_session */	 
+	DEBUG(0,("FIXME: Using new system session for hdb\n"));
+	nt_status = auth_system_session_info(*db, lp_ctx, &session_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+               return nt_status;
+	}
+#else
 	session_info = system_session(lp_ctx);
 	if (session_info == NULL) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
+#endif
 	
 	/* The idea here is very simple.  Using Kerberos to
 	 * authenticate the KDC to the LDAP server is higly likely to
 	 * be circular.
 	 *
 	 * In future we may set this up to use EXERNAL and SSL
-	 * certificates, for now it will almost certainly be NTLMSSP
+	 * certificates, for now it will almost certainly be NTLMSSP_SET_USERNAME
 	*/
 	
 	cli_credentials_set_kerberos_state(session_info->credentials, 
