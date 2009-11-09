@@ -54,8 +54,8 @@ static void PyErr_SetLdbError(PyObject *error, int ret, struct ldb_context *ldb_
 		return; /* Python exception should already be set, just keep that */
 
 	PyErr_SetObject(error, 
-					Py_BuildValue(discard_const_p(char, "(i,s)"), ret, 
-				  ldb_ctx == NULL?ldb_strerror(ret):ldb_errstring(ldb_ctx)));
+			Py_BuildValue(discard_const_p(char, "(i,s)"), ret,
+			ldb_ctx == NULL?ldb_strerror(ret):ldb_errstring(ldb_ctx)));
 }
 
 static PyObject *py_ldb_get_exception(void)
