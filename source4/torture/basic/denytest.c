@@ -1439,6 +1439,16 @@ bool torture_denytest1(struct torture_context *tctx,
 
 		progress_bar(tctx, i, ARRAY_SIZE(denytable1));
 
+		if (!torture_setting_bool(tctx, "deny_fcb_support", true) &&
+		    (denytable1[i].deny1 == DENY_FCB ||
+			denytable1[i].deny2 == DENY_FCB))
+			continue;
+
+		if (!torture_setting_bool(tctx, "deny_dos_support", true) &&
+		    (denytable1[i].deny1 == DENY_DOS ||
+			denytable1[i].deny2 == DENY_DOS))
+			continue;
+
 		fnum1 = smbcli_open(cli1->tree, fname, 
 				 denytable1[i].mode1,
 				 denytable1[i].deny1);
@@ -1525,6 +1535,16 @@ bool torture_denytest2(struct torture_context *tctx,
 		const char *fname = fnames[denytable2[i].isexe];
 
 		progress_bar(tctx, i, ARRAY_SIZE(denytable1));
+
+		if (!torture_setting_bool(tctx, "deny_fcb_support", true) &&
+		    (denytable1[i].deny1 == DENY_FCB ||
+			denytable1[i].deny2 == DENY_FCB))
+			continue;
+
+		if (!torture_setting_bool(tctx, "deny_dos_support", true) &&
+		    (denytable1[i].deny1 == DENY_DOS ||
+			denytable1[i].deny2 == DENY_DOS))
+			continue;
 
 		fnum1 = smbcli_open(cli1->tree, fname, 
 				 denytable2[i].mode1,
