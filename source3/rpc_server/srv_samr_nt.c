@@ -6678,6 +6678,124 @@ NTSTATUS _samr_RidToSid(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
+static enum samr_ValidationStatus samr_ValidatePassword_Change(TALLOC_CTX *mem_ctx,
+							       const struct samr_PwInfo *dom_pw_info,
+							       const struct samr_ValidatePasswordReq2 *req,
+							       struct samr_ValidatePasswordRepCtr *rep)
+{
+	NTSTATUS status;
+
+	if (req->password.string) {
+		if (strlen(req->password.string) < dom_pw_info->min_password_length) {
+			ZERO_STRUCT(rep->info);
+			return SAMR_VALIDATION_STATUS_PWD_TOO_SHORT;
+		}
+		if (dom_pw_info->password_properties & DOMAIN_PASSWORD_COMPLEX) {
+			status = check_password_complexity(req->account.string,
+							   req->password.string,
+							   NULL);
+			if (!NT_STATUS_IS_OK(status)) {
+				ZERO_STRUCT(rep->info);
+				return SAMR_VALIDATION_STATUS_NOT_COMPLEX_ENOUGH;
+			}
+		}
+	}
+
+	return SAMR_VALIDATION_STATUS_SUCCESS;
+}
+
+/****************************************************************
+****************************************************************/
+
+static enum samr_ValidationStatus samr_ValidatePassword_Reset(TALLOC_CTX *mem_ctx,
+							      const struct samr_PwInfo *dom_pw_info,
+							      const struct samr_ValidatePasswordReq3 *req,
+							      struct samr_ValidatePasswordRepCtr *rep)
+{
+	NTSTATUS status;
+
+	if (req->password.string) {
+		if (strlen(req->password.string) < dom_pw_info->min_password_length) {
+			ZERO_STRUCT(rep->info);
+			return SAMR_VALIDATION_STATUS_PWD_TOO_SHORT;
+		}
+		if (dom_pw_info->password_properties & DOMAIN_PASSWORD_COMPLEX) {
+			status = check_password_complexity(req->account.string,
+							   req->password.string,
+							   NULL);
+			if (!NT_STATUS_IS_OK(status)) {
+				ZERO_STRUCT(rep->info);
+				return SAMR_VALIDATION_STATUS_NOT_COMPLEX_ENOUGH;
+			}
+		}
+	}
+
+	return SAMR_VALIDATION_STATUS_SUCCESS;
+}
+
+/****************************************************************
+ _samr_ValidatePassword
+****************************************************************/
+
+NTSTATUS _samr_ValidatePassword(pipes_struct *p,
+				struct samr_ValidatePassword *r)
+{
+	union samr_ValidatePasswordRep *rep;
+	NTSTATUS status;
+	struct samr_GetDomPwInfo pw;
+	struct samr_PwInfo dom_pw_info;
+
+	if (r->in.level < 1 || r->in.level > 3) {
+		return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	pw.in.domain_name = NULL;
+	pw.out.info = &dom_pw_info;
+
+	status = _samr_GetDomPwInfo(p, &pw);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	rep = talloc_zero(p->mem_ctx, union samr_ValidatePasswordRep);
+	if (!rep) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	switch (r->in.level) {
+	case 1:
+		status = NT_STATUS_NOT_SUPPORTED;
+		break;
+	case 2:
+		rep->ctr2.status = samr_ValidatePassword_Change(p->mem_ctx,
+								&dom_pw_info,
+								&r->in.req->req2,
+								&rep->ctr2);
+		break;
+	case 3:
+		rep->ctr3.status = samr_ValidatePassword_Reset(p->mem_ctx,
+							       &dom_pw_info,
+							       &r->in.req->req3,
+							       &rep->ctr3);
+		break;
+	default:
+		status = NT_STATUS_INVALID_INFO_CLASS;
+		break;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(rep);
+		return status;
+	}
+
+	*r->out.rep = rep;
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
 NTSTATUS _samr_Shutdown(pipes_struct *p,
 			struct samr_Shutdown *r)
 {
@@ -6758,16 +6876,6 @@ NTSTATUS _samr_GetBootKeyInformation(pipes_struct *p,
 
 NTSTATUS _samr_SetDsrmPassword(pipes_struct *p,
 			       struct samr_SetDsrmPassword *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_ValidatePassword(pipes_struct *p,
-				struct samr_ValidatePassword *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
