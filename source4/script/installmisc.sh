@@ -9,7 +9,9 @@ cd $SRCDIR || exit 1
 echo "Installing setup templates"
 mkdir -p $SETUPDIR || exit 1
 mkdir -p $SETUPDIR/ad-schema || exit 1
+mkdir -p $SETUPDIR/display-specifiers || exit1
 cp setup/ad-schema/*.txt $SETUPDIR/ad-schema || exit 1
+cp setup/display-specifiers/*.txt $SETUPDIR/display-specifiers || exit 1
 for p in enableaccount newuser provision setexpiry setpassword pwsettings
 do
 	chmod a+x setup/$p
