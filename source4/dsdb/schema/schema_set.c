@@ -456,6 +456,36 @@ void dsdb_make_schema_global(struct ldb_context *ldb)
 	dsdb_set_global_schema(ldb);
 }
 
+/** 
+ * Add an element to the schema (attribute or class) from an LDB message
+ */
+WERROR dsdb_schema_set_el_from_ldb_msg(struct ldb_context *ldb, struct dsdb_schema *schema, 
+				       struct ldb_message *msg) 
+{
+	static struct ldb_parse_tree *attr_tree, *class_tree;
+	if (!attr_tree) {
+		attr_tree = ldb_parse_tree(talloc_autofree_context(), "(objectClass=attributeSchema)");
+		if (!attr_tree) {
+			return WERR_NOMEM;
+		}
+	}
+
+	if (!class_tree) {
+		class_tree = ldb_parse_tree(talloc_autofree_context(), "(objectClass=classSchema)");
+		if (!class_tree) {
+			return WERR_NOMEM;
+		}
+	}
+
+	if (ldb_match_msg(ldb, msg, attr_tree, NULL, LDB_SCOPE_BASE)) {
+		return dsdb_attribute_from_ldb(ldb, schema, msg);
+	} else if (ldb_match_msg(ldb, msg, class_tree, NULL, LDB_SCOPE_BASE)) {
+		return dsdb_class_from_ldb(schema, msg);
+	}
+
+	/* Don't fail on things not classes or attributes */
+	return WERR_OK;
+}
 
 /**
  * Rather than read a schema from the LDB itself, read it from an ldif
@@ -474,6 +504,7 @@ WERROR dsdb_set_schema_from_ldif(struct ldb_context *ldb, const char *pf, const 
 	const struct ldb_val *prefix_val;
 	const struct ldb_val *info_val;
 	struct ldb_val info_val_default;
+
 
 	mem_ctx = talloc_new(ldb);
 	if (!mem_ctx) {
@@ -529,9 +560,6 @@ WERROR dsdb_set_schema_from_ldif(struct ldb_context *ldb, const char *pf, const 
 	 * load the attribute and class definitions outof df
 	 */
 	while ((ldif = ldb_ldif_read_string(ldb, &df))) {
-		bool is_sa;
-		bool is_sc;
-
 		talloc_steal(mem_ctx, ldif);
 
 		msg = ldb_msg_canonicalize(ldb, ldif->msg);
@@ -539,40 +567,10 @@ WERROR dsdb_set_schema_from_ldif(struct ldb_context *ldb, const char *pf, const 
 			goto nomem;
 		}
 
-		talloc_steal(mem_ctx, msg);
+		status = dsdb_schema_set_el_from_ldb_msg(ldb, schema, msg);
 		talloc_free(ldif);
-
-		is_sa = ldb_msg_check_string_attribute(msg, "objectClass", "attributeSchema");
-		is_sc = ldb_msg_check_string_attribute(msg, "objectClass", "classSchema");
-
-		if (is_sa) {
-			struct dsdb_attribute *sa;
-
-			sa = talloc_zero(schema, struct dsdb_attribute);
-			if (!sa) {
-				goto nomem;
-			}
-
-			status = dsdb_attribute_from_ldb(ldb, schema, msg, sa, sa);
-			if (!W_ERROR_IS_OK(status)) {
-				goto failed;
-			}
-
-			DLIST_ADD(schema->attributes, sa);
-		} else if (is_sc) {
-			struct dsdb_class *sc;
-
-			sc = talloc_zero(schema, struct dsdb_class);
-			if (!sc) {
-				goto nomem;
-			}
-
-			status = dsdb_class_from_ldb(schema, msg, sc, sc);
-			if (!W_ERROR_IS_OK(status)) {
-				goto failed;
-			}
-
-			DLIST_ADD(schema->classes, sc);
+		if (!W_ERROR_IS_OK(status)) {
+			goto failed;
 		}
 	}
 

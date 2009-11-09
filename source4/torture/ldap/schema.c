@@ -211,43 +211,28 @@ again:
 static int test_add_attribute(void *ptr, struct ldb_context *ldb, struct ldb_message *msg)
 {
 	struct dsdb_schema *schema = talloc_get_type(ptr, struct dsdb_schema);
-	struct dsdb_attribute *attr = NULL;
 	WERROR status;
 
-	attr = talloc_zero(schema, struct dsdb_attribute);
-	if (!attr) {
-		goto failed;
-	}
-
-	status = dsdb_attribute_from_ldb(ldb, schema, msg, attr, attr);
+	status = dsdb_attribute_from_ldb(ldb, schema, msg);
 	if (!W_ERROR_IS_OK(status)) {
 		goto failed;
 	}
 
-	DLIST_ADD_END(schema->attributes, attr, struct dsdb_attribute *);
 	return LDB_SUCCESS;
 failed:
-	talloc_free(attr);
 	return LDB_ERR_OTHER;
 }
 
 static int test_add_class(void *ptr, struct ldb_context *ldb, struct ldb_message *msg)
 {
 	struct dsdb_schema *schema = talloc_get_type(ptr, struct dsdb_schema);
-	struct dsdb_class *obj;
 	WERROR status;
 
-	obj = talloc_zero(schema, struct dsdb_class);
-	if (!obj) {
-		goto failed;
-	}
-
-	status = dsdb_class_from_ldb(schema, msg, obj, obj);
+	status = dsdb_class_from_ldb(schema, msg);
 	if (!W_ERROR_IS_OK(status)) {
 		goto failed;
 	}
 
-	DLIST_ADD_END(schema->classes, obj, struct dsdb_class *);
 	return LDB_SUCCESS;
 failed:
 	return LDB_ERR_OTHER;

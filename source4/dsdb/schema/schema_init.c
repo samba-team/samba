@@ -508,7 +508,7 @@ static int dsdb_schema_setup_ldb_schema_attribute(struct ldb_context *ldb,
 	(p)->elem = samdb_result_uint(msg, attr, 0);\
 } while (0)
 
-#define GET_UINT32_PTR_LDB(msg, attr, p, elem) do { \
+#define GET_UINT32_PTR_LDB(msg, attr, mem_ctx, p, elem) do {		\
 	uint64_t _v = samdb_result_uint64(msg, attr, UINT64_MAX);\
 	if (_v == UINT64_MAX) { \
 		(p)->elem = NULL; \
@@ -542,16 +542,18 @@ static int dsdb_schema_setup_ldb_schema_attribute(struct ldb_context *ldb,
 } while (0)
 
 WERROR dsdb_attribute_from_ldb(struct ldb_context *ldb,
-			       const struct dsdb_schema *schema,
-			       struct ldb_message *msg,
-			       TALLOC_CTX *mem_ctx,
-			       struct dsdb_attribute *attr)
+			       struct dsdb_schema *schema,
+			       struct ldb_message *msg)
 {
 	WERROR status;
+	struct dsdb_attribute *attr = talloc_zero(schema, struct dsdb_attribute);
+	if (!attr) {
+		return WERR_NOMEM;
+	}
 
-	GET_STRING_LDB(msg, "cn", mem_ctx, attr, cn, false);
-	GET_STRING_LDB(msg, "lDAPDisplayName", mem_ctx, attr, lDAPDisplayName, true);
-	GET_STRING_LDB(msg, "attributeID", mem_ctx, attr, attributeID_oid, true);
+	GET_STRING_LDB(msg, "cn", attr, attr, cn, false);
+	GET_STRING_LDB(msg, "lDAPDisplayName", attr, attr, lDAPDisplayName, true);
+	GET_STRING_LDB(msg, "attributeID", attr, attr, attributeID_oid, true);
 	if (!schema->prefixmap || schema->prefixmap->length == 0) {
 		/* set an invalid value */
 		attr->attributeID_id = 0xFFFFFFFF;
@@ -576,7 +578,7 @@ WERROR dsdb_attribute_from_ldb(struct ldb_context *ldb,
 	GET_BOOL_LDB(msg, "isMemberOfPartialAttributeSet", attr, isMemberOfPartialAttributeSet, false);
 	GET_UINT32_LDB(msg, "linkID", attr, linkID);
 
-	GET_STRING_LDB(msg, "attributeSyntax", mem_ctx, attr, attributeSyntax_oid, true);
+	GET_STRING_LDB(msg, "attributeSyntax", attr, attr, attributeSyntax_oid, true);
 	if (!schema->prefixmap || schema->prefixmap->length == 0) {
 		/* set an invalid value */
 		attr->attributeSyntax_id = 0xFFFFFFFF;
@@ -592,20 +594,20 @@ WERROR dsdb_attribute_from_ldb(struct ldb_context *ldb,
 		}
 	}
 	GET_UINT32_LDB(msg, "oMSyntax", attr, oMSyntax);
-	GET_BLOB_LDB(msg, "oMObjectClass", mem_ctx, attr, oMObjectClass);
+	GET_BLOB_LDB(msg, "oMObjectClass", attr, attr, oMObjectClass);
 
 	GET_BOOL_LDB(msg, "isSingleValued", attr, isSingleValued, true);
-	GET_UINT32_PTR_LDB(msg, "rangeLower", attr, rangeLower);
-	GET_UINT32_PTR_LDB(msg, "rangeUpper", attr, rangeUpper);
+	GET_UINT32_PTR_LDB(msg, "rangeLower", attr, attr, rangeLower);
+	GET_UINT32_PTR_LDB(msg, "rangeUpper", attr, attr, rangeUpper);
 	GET_BOOL_LDB(msg, "extendedCharsAllowed", attr, extendedCharsAllowed, false);
 
 	GET_UINT32_LDB(msg, "schemaFlagsEx", attr, schemaFlagsEx);
-	GET_BLOB_LDB(msg, "msDs-Schema-Extensions", mem_ctx, attr, msDs_Schema_Extensions);
+	GET_BLOB_LDB(msg, "msDs-Schema-Extensions", attr, attr, msDs_Schema_Extensions);
 
 	GET_BOOL_LDB(msg, "showInAdvancedViewOnly", attr, showInAdvancedViewOnly, false);
-	GET_STRING_LDB(msg, "adminDisplayName", mem_ctx, attr, adminDisplayName, false);
-	GET_STRING_LDB(msg, "adminDescription", mem_ctx, attr, adminDescription, false);
-	GET_STRING_LDB(msg, "classDisplayName", mem_ctx, attr, classDisplayName, false);
+	GET_STRING_LDB(msg, "adminDisplayName", attr, attr, adminDisplayName, false);
+	GET_STRING_LDB(msg, "adminDescription", attr, attr, adminDescription, false);
+	GET_STRING_LDB(msg, "classDisplayName", attr, attr, classDisplayName, false);
 	GET_BOOL_LDB(msg, "isEphemeral", attr, isEphemeral, false);
 	GET_BOOL_LDB(msg, "isDefunct", attr, isDefunct, false);
 	GET_BOOL_LDB(msg, "systemOnly", attr, systemOnly, false);
@@ -619,19 +621,21 @@ WERROR dsdb_attribute_from_ldb(struct ldb_context *ldb,
 		return WERR_DS_ATT_SCHEMA_REQ_SYNTAX;
 	}
 
+	DLIST_ADD(schema->attributes, attr);
 	return WERR_OK;
 }
 
-WERROR dsdb_class_from_ldb(const struct dsdb_schema *schema,
-			   struct ldb_message *msg,
-			   TALLOC_CTX *mem_ctx,
-			   struct dsdb_class *obj)
+WERROR dsdb_class_from_ldb(struct dsdb_schema *schema,
+			   struct ldb_message *msg)
 {
 	WERROR status;
-
-	GET_STRING_LDB(msg, "cn", mem_ctx, obj, cn, false);
-	GET_STRING_LDB(msg, "lDAPDisplayName", mem_ctx, obj, lDAPDisplayName, true);
-	GET_STRING_LDB(msg, "governsID", mem_ctx, obj, governsID_oid, true);
+	struct dsdb_class *obj = talloc_zero(schema, struct dsdb_class);
+	if (!obj) {
+		return WERR_NOMEM;
+	}
+	GET_STRING_LDB(msg, "cn", obj, obj, cn, false);
+	GET_STRING_LDB(msg, "lDAPDisplayName", obj, obj, lDAPDisplayName, true);
+	GET_STRING_LDB(msg, "governsID", obj, obj, governsID_oid, true);
 	if (!schema->prefixmap || schema->prefixmap->length == 0) {
 		/* set an invalid value */
 		obj->governsID_id = 0xFFFFFFFF;
@@ -649,35 +653,36 @@ WERROR dsdb_class_from_ldb(const struct dsdb_schema *schema,
 	GET_GUID_LDB(msg, "schemaIDGUID", obj, schemaIDGUID);
 
 	GET_UINT32_LDB(msg, "objectClassCategory", obj, objectClassCategory);
-	GET_STRING_LDB(msg, "rDNAttID", mem_ctx, obj, rDNAttID, false);
-	GET_STRING_LDB(msg, "defaultObjectCategory", mem_ctx, obj, defaultObjectCategory, true);
+	GET_STRING_LDB(msg, "rDNAttID", obj, obj, rDNAttID, false);
+	GET_STRING_LDB(msg, "defaultObjectCategory", obj, obj, defaultObjectCategory, true);
  
-	GET_STRING_LDB(msg, "subClassOf", mem_ctx, obj, subClassOf, true);
+	GET_STRING_LDB(msg, "subClassOf", obj, obj, subClassOf, true);
 
-	GET_STRING_LIST_LDB(msg, "systemAuxiliaryClass", mem_ctx, obj, systemAuxiliaryClass, false);
-	GET_STRING_LIST_LDB(msg, "auxiliaryClass", mem_ctx, obj, auxiliaryClass, false);
+	GET_STRING_LIST_LDB(msg, "systemAuxiliaryClass", obj, obj, systemAuxiliaryClass, false);
+	GET_STRING_LIST_LDB(msg, "auxiliaryClass", obj, obj, auxiliaryClass, false);
 
-	GET_STRING_LIST_LDB(msg, "systemMustContain", mem_ctx, obj, systemMustContain, false);
-	GET_STRING_LIST_LDB(msg, "systemMayContain", mem_ctx, obj, systemMayContain, false);
-	GET_STRING_LIST_LDB(msg, "mustContain", mem_ctx, obj, mustContain, false);
-	GET_STRING_LIST_LDB(msg, "mayContain", mem_ctx, obj, mayContain, false);
+	GET_STRING_LIST_LDB(msg, "systemMustContain", obj, obj, systemMustContain, false);
+	GET_STRING_LIST_LDB(msg, "systemMayContain", obj, obj, systemMayContain, false);
+	GET_STRING_LIST_LDB(msg, "mustContain", obj, obj, mustContain, false);
+	GET_STRING_LIST_LDB(msg, "mayContain", obj, obj, mayContain, false);
 
-	GET_STRING_LIST_LDB(msg, "systemPossSuperiors", mem_ctx, obj, systemPossSuperiors, false);
-	GET_STRING_LIST_LDB(msg, "possSuperiors", mem_ctx, obj, possSuperiors, false);
+	GET_STRING_LIST_LDB(msg, "systemPossSuperiors", obj, obj, systemPossSuperiors, false);
+	GET_STRING_LIST_LDB(msg, "possSuperiors", obj, obj, possSuperiors, false);
 
-	GET_STRING_LDB(msg, "defaultSecurityDescriptor", mem_ctx, obj, defaultSecurityDescriptor, false);
+	GET_STRING_LDB(msg, "defaultSecurityDescriptor", obj, obj, defaultSecurityDescriptor, false);
 
 	GET_UINT32_LDB(msg, "schemaFlagsEx", obj, schemaFlagsEx);
-	GET_BLOB_LDB(msg, "msDs-Schema-Extensions", mem_ctx, obj, msDs_Schema_Extensions);
+	GET_BLOB_LDB(msg, "msDs-Schema-Extensions", obj, obj, msDs_Schema_Extensions);
 
 	GET_BOOL_LDB(msg, "showInAdvancedViewOnly", obj, showInAdvancedViewOnly, false);
-	GET_STRING_LDB(msg, "adminDisplayName", mem_ctx, obj, adminDisplayName, false);
-	GET_STRING_LDB(msg, "adminDescription", mem_ctx, obj, adminDescription, false);
-	GET_STRING_LDB(msg, "classDisplayName", mem_ctx, obj, classDisplayName, false);
+	GET_STRING_LDB(msg, "adminDisplayName", obj, obj, adminDisplayName, false);
+	GET_STRING_LDB(msg, "adminDescription", obj, obj, adminDescription, false);
+	GET_STRING_LDB(msg, "classDisplayName", obj, obj, classDisplayName, false);
 	GET_BOOL_LDB(msg, "defaultHidingValue", obj, defaultHidingValue, false);
 	GET_BOOL_LDB(msg, "isDefunct", obj, isDefunct, false);
 	GET_BOOL_LDB(msg, "systemOnly", obj, systemOnly, false);
 
+	DLIST_ADD(schema->classes, obj);
 	return WERR_OK;
 }
 
@@ -736,15 +741,7 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	}
 
 	for (i=0; i < attrs_res->count; i++) {
-		struct dsdb_attribute *sa;
-
-		sa = talloc_zero(schema, struct dsdb_attribute);
-		if (!sa) {
-			dsdb_oom(error_string, mem_ctx);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-
-		status = dsdb_attribute_from_ldb(ldb, schema, attrs_res->msgs[i], sa, sa);
+		status = dsdb_attribute_from_ldb(ldb, schema, attrs_res->msgs[i]);
 		if (!W_ERROR_IS_OK(status)) {
 			*error_string = talloc_asprintf(mem_ctx, 
 				      "schema_fsmo_init: failed to load attribute definition: %s:%s",
@@ -753,20 +750,10 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 			DEBUG(0,(__location__ ": %s\n", *error_string));
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
-
-		DLIST_ADD(schema->attributes, sa);
 	}
 
 	for (i=0; i < objectclass_res->count; i++) {
-		struct dsdb_class *sc;
-
-		sc = talloc_zero(schema, struct dsdb_class);
-		if (!sc) {
-			dsdb_oom(error_string, mem_ctx);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-
-		status = dsdb_class_from_ldb(schema, objectclass_res->msgs[i], sc, sc);
+		status = dsdb_class_from_ldb(schema, objectclass_res->msgs[i]);
 		if (!W_ERROR_IS_OK(status)) {
 			*error_string = talloc_asprintf(mem_ctx, 
 				      "schema_fsmo_init: failed to load class definition: %s:%s",
@@ -775,8 +762,6 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 			DEBUG(0,(__location__ ": %s\n", *error_string));
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
-
-		DLIST_ADD(schema->classes, sc);
 	}
 
 	schema->fsmo.master_dn = ldb_msg_find_attr_as_dn(ldb, schema, schema_res->msgs[0], "fSMORoleOwner");
