@@ -1138,7 +1138,7 @@ NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!site_name) {
+	if ((site_name == NULL) || (site_name[0] == '\0')) {
 		query_site = sitename_fetch(domain_name);
 	} else {
 		query_site = SMB_STRDUP(site_name);
