@@ -280,7 +280,6 @@ static NTSTATUS vampire_apply_schema(struct vampire_state *s,
 			if (!W_ERROR_IS_OK(status)) {
 				return werror_to_ntstatus(status);
 			}
-
 			DLIST_ADD_END(s->self_made_schema->classes, sc, struct dsdb_class *);
 		}
 	}
@@ -291,20 +290,21 @@ static NTSTATUS vampire_apply_schema(struct vampire_state *s,
 		return NT_STATUS_FOOBAR;
 	}
 	/* we don't want to access the self made schema anymore */
+	s->schema = s->self_made_schema;
 	s->self_made_schema = NULL;
-	s->schema = dsdb_get_schema(s->ldb);
 
-	status = dsdb_extended_replicated_objects_commit(s->ldb,
-							 c->partition->nc.dn,
-							 mapping_ctr,
-							 object_count,
-							 first_object,
-							 linked_attributes_count,
-							 linked_attributes,
-							 s_dsa,
-							 uptodateness_vector,
-							 c->gensec_skey,
-							 s, &objs, &seq_num);
+	/* Now convert the schema elements again, using the schema we just imported */
+	status = dsdb_extended_replicated_objects_convert(s->ldb, 
+							  c->partition->nc.dn,
+							  mapping_ctr,
+							  object_count,
+							  first_object,
+							  linked_attributes_count,
+							  linked_attributes,
+							  s_dsa,
+							  uptodateness_vector,
+							  c->gensec_skey,
+							  s, &objs);
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0,("Failed to commit objects: %s\n", win_errstr(status)));
 		return werror_to_ntstatus(status);
@@ -319,6 +319,12 @@ static NTSTATUS vampire_apply_schema(struct vampire_state *s,
 			ldb_ldif_write_file(s->ldb, stdout, &ldif);
 			NDR_PRINT_DEBUG(replPropertyMetaDataBlob, objs->objects[i].meta_data);
 		}
+	}
+
+	status = dsdb_extended_replicated_objects_commit(s->ldb, objs, &seq_num);
+	if (!W_ERROR_IS_OK(status)) {
+		DEBUG(0,("Failed to commit objects: %s\n", win_errstr(status)));
+		return werror_to_ntstatus(status);
 	}
 
 	msg = ldb_msg_new(objs);
@@ -535,19 +541,19 @@ static NTSTATUS vampire_store_chunk(void *private_data,
 	}
 
 
-	status = dsdb_extended_replicated_objects_commit(s->ldb,
-							 c->partition->nc.dn,
-							 mapping_ctr,
-							 object_count,
-							 first_object,
-							 linked_attributes_count,
-							 linked_attributes,
-							 s_dsa,
-							 uptodateness_vector,
-							 c->gensec_skey,
-							 s, &objs, &seq_num);
+	status = dsdb_extended_replicated_objects_convert(s->ldb,
+							  c->partition->nc.dn,
+							  mapping_ctr,
+							  object_count,
+							  first_object,
+							  linked_attributes_count,
+							  linked_attributes,
+							  s_dsa,
+							  uptodateness_vector,
+							  c->gensec_skey,
+							  s, &objs);
 	if (!W_ERROR_IS_OK(status)) {
-		DEBUG(0,("Failed to commit objects: %s\n", win_errstr(status)));
+		DEBUG(0,("Failed to convert objects: %s\n", win_errstr(status)));
 		return werror_to_ntstatus(status);
 	}
 
@@ -561,6 +567,13 @@ static NTSTATUS vampire_store_chunk(void *private_data,
 			NDR_PRINT_DEBUG(replPropertyMetaDataBlob, objs->objects[i].meta_data);
 		}
 	}
+	status = dsdb_extended_replicated_objects_commit(s->ldb,
+							 objs, &seq_num);
+	if (!W_ERROR_IS_OK(status)) {
+		DEBUG(0,("Failed to commit objects: %s\n", win_errstr(status)));
+		return werror_to_ntstatus(status);
+	}
+
 	talloc_free(s_dsa);
 	talloc_free(objs);
 

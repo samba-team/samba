@@ -258,19 +258,19 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 	s->self_made_schema = NULL;
 	s->schema = dsdb_get_schema(s->ldb);
 
-	status = dsdb_extended_replicated_objects_commit(s->ldb,
-							 c->partition->nc.dn,
-							 mapping_ctr,
-							 object_count,
-							 first_object,
-							 linked_attributes_count,
-							 linked_attributes,
-							 s_dsa,
-							 uptodateness_vector,
-							 c->gensec_skey,
-							 s, &objs, &seq_num);
+	status = dsdb_extended_replicated_objects_convert(s->ldb,
+							  c->partition->nc.dn,
+							  mapping_ctr,
+							  object_count,
+							  first_object,
+							  linked_attributes_count,
+							  linked_attributes,
+							  s_dsa,
+							  uptodateness_vector,
+							  c->gensec_skey,
+							  s, &objs);
 	if (!W_ERROR_IS_OK(status)) {
-		DEBUG(0,("Failed to commit objects: %s\n", win_errstr(status)));
+		DEBUG(0,("Failed to convert objects: %s\n", win_errstr(status)));
 		return werror_to_ntstatus(status);
 	}
 
@@ -283,6 +283,13 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 			ldb_ldif_write_file(s->ldb, stdout, &ldif);
 			NDR_PRINT_DEBUG(replPropertyMetaDataBlob, objs->objects[i].meta_data);
 		}
+	}
+
+	status = dsdb_extended_replicated_objects_commit(s->ldb,
+							 objs, &seq_num);
+	if (!W_ERROR_IS_OK(status)) {
+		DEBUG(0,("Failed to commit objects: %s\n", win_errstr(status)));
+		return werror_to_ntstatus(status);
 	}
 
 	msg = ldb_msg_new(objs);
@@ -500,19 +507,19 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 		c->partition->nc.dn, object_count, linked_attributes_count));
 	}
 
-	status = dsdb_extended_replicated_objects_commit(s->ldb,
-							 c->partition->nc.dn,
-							 mapping_ctr,
-							 object_count,
-							 first_object,
-							 linked_attributes_count,
-							 linked_attributes,
-							 s_dsa,
-							 uptodateness_vector,
-							 c->gensec_skey,
-							 s, &objs, &seq_num);
+	status = dsdb_extended_replicated_objects_convert(s->ldb,
+							  c->partition->nc.dn,
+							  mapping_ctr,
+							  object_count,
+							  first_object,
+							  linked_attributes_count,
+							  linked_attributes,
+							  s_dsa,
+							  uptodateness_vector,
+							  c->gensec_skey,
+							  s, &objs);
 	if (!W_ERROR_IS_OK(status)) {
-		DEBUG(0,("Failed to commit objects: %s\n", win_errstr(status)));
+		DEBUG(0,("Failed to convert objects: %s\n", win_errstr(status)));
 		return werror_to_ntstatus(status);
 	}
 
@@ -526,8 +533,13 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 			NDR_PRINT_DEBUG(replPropertyMetaDataBlob, objs->objects[i].meta_data);
 		}
 	}
+	status = dsdb_extended_replicated_objects_commit(s->ldb, objs, &seq_num);
 	talloc_free(s_dsa);
 	talloc_free(objs);
+	if (!W_ERROR_IS_OK(status)) {
+		DEBUG(0,("Failed to commit objects: %s\n", win_errstr(status)));
+		return werror_to_ntstatus(status);
+	}
 
 	for (i=0; i < linked_attributes_count; i++) {
 		const struct dsdb_attribute *sa;
@@ -618,7 +630,7 @@ bool torture_net_become_dc(struct torture_context *torture)
 
 	status = libnet_BecomeDC(s->ctx, s, &b);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("libnet_BecomeDC() failed - %s\n", nt_errstr(status));
+		printf("libnet_BecomeDC() failed - %s %s\n", nt_errstr(status), b.out.error_string);
 		ret = false;
 		goto cleanup;
 	}
@@ -693,7 +705,7 @@ cleanup:
 
 	status = libnet_UnbecomeDC(s->ctx, s, &u);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("libnet_UnbecomeDC() failed - %s\n", nt_errstr(status));
+		printf("libnet_UnbecomeDC() failed - %s %s\n", nt_errstr(status), u.out.error_string);
 		ret = false;
 	}
 

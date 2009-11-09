@@ -201,28 +201,24 @@ static WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
-WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
-					       const char *partition_dn,
-					       const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr,
-					       uint32_t object_count,
-					       const struct drsuapi_DsReplicaObjectListItemEx *first_object,
-					       uint32_t linked_attributes_count,
-					       const struct drsuapi_DsReplicaLinkedAttribute *linked_attributes,
-					       const struct repsFromTo1 *source_dsa,
-					       const struct drsuapi_DsReplicaCursor2CtrEx *uptodateness_vector,
-					       const DATA_BLOB *gensec_skey,
-					       TALLOC_CTX *mem_ctx,
-					       struct dsdb_extended_replicated_objects **_out,
-					       uint64_t *notify_uSN)
+WERROR dsdb_extended_replicated_objects_convert(struct ldb_context *ldb,
+						const char *partition_dn,
+						const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr,
+						uint32_t object_count,
+						const struct drsuapi_DsReplicaObjectListItemEx *first_object,
+						uint32_t linked_attributes_count,
+						const struct drsuapi_DsReplicaLinkedAttribute *linked_attributes,
+						const struct repsFromTo1 *source_dsa,
+						const struct drsuapi_DsReplicaCursor2CtrEx *uptodateness_vector,
+						const DATA_BLOB *gensec_skey,
+						TALLOC_CTX *mem_ctx,
+						struct dsdb_extended_replicated_objects **objects)
 {
 	WERROR status;
 	const struct dsdb_schema *schema;
 	struct dsdb_extended_replicated_objects *out;
-	struct ldb_result *ext_res;
 	const struct drsuapi_DsReplicaObjectListItemEx *cur;
 	uint32_t i;
-	int ret;
-	uint64_t seq_num1, seq_num2;
 
 	schema = dsdb_get_schema(ldb);
 	if (!schema) {
@@ -270,6 +266,18 @@ WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
 		return WERR_FOOBAR;
 	}
 
+	*objects = out;
+	return WERR_OK;
+}
+
+WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
+					       struct dsdb_extended_replicated_objects *objects,
+					       uint64_t *notify_uSN)
+{
+	struct ldb_result *ext_res;
+	int ret;
+	uint64_t seq_num1, seq_num2;
+
 	/* TODO: handle linked attributes */
 
 	/* wrap the extended operation in a transaction 
@@ -278,23 +286,20 @@ WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
 	ret = ldb_transaction_start(ldb);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,(__location__ " Failed to start transaction\n"));
-		talloc_free(out);
 		return WERR_FOOBAR;
 	}
 
-	ret = dsdb_load_partition_usn(ldb, out->partition_dn, &seq_num1);
+	ret = dsdb_load_partition_usn(ldb, objects->partition_dn, &seq_num1);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,(__location__ " Failed to load partition uSN\n"));
-		talloc_free(out);
 		ldb_transaction_cancel(ldb);
 		return WERR_FOOBAR;		
 	}
 
-	ret = ldb_extended(ldb, DSDB_EXTENDED_REPLICATED_OBJECTS_OID, out, &ext_res);
+	ret = ldb_extended(ldb, DSDB_EXTENDED_REPLICATED_OBJECTS_OID, objects, &ext_res);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,("Failed to apply records: %s: %s\n",
 			 ldb_errstring(ldb), ldb_strerror(ret)));
-		talloc_free(out);
 		ldb_transaction_cancel(ldb);
 		return WERR_FOOBAR;
 	}
@@ -303,14 +308,12 @@ WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
 	ret = ldb_transaction_prepare_commit(ldb);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,(__location__ " Failed to prepare commit of transaction\n"));
-		talloc_free(out);
 		return WERR_FOOBAR;
 	}
 
-	ret = dsdb_load_partition_usn(ldb, out->partition_dn, &seq_num2);
+	ret = dsdb_load_partition_usn(ldb, objects->partition_dn, &seq_num2);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,(__location__ " Failed to load partition uSN\n"));
-		talloc_free(out);
 		ldb_transaction_cancel(ldb);
 		return WERR_FOOBAR;		
 	}
@@ -325,22 +328,14 @@ WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
 	ret = ldb_transaction_commit(ldb);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,(__location__ " Failed to commit transaction\n"));
-		talloc_free(out);
 		return WERR_FOOBAR;
 	}
 
 
 	DEBUG(2,("Replicated %u objects (%u linked attributes) for %s\n",
-		 out->num_objects, out->linked_attributes_count,
-		 ldb_dn_get_linearized(out->partition_dn)));
+		 objects->num_objects, objects->linked_attributes_count,
+		 ldb_dn_get_linearized(objects->partition_dn)));
 		 
-
-	if (_out) {
-		*_out = out;
-	} else {
-		talloc_free(out);
-	}
-
 	return WERR_OK;
 }
 

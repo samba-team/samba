@@ -375,6 +375,7 @@ static void dreplsrv_op_pull_source_apply_changes_send(struct dreplsrv_op_pull_s
 	uint32_t linked_attributes_count;
 	struct drsuapi_DsReplicaLinkedAttribute *linked_attributes;
 	const struct drsuapi_DsReplicaCursor2CtrEx *uptodateness_vector;
+	struct dsdb_extended_replicated_objects *objects;
 	bool more_data = false;
 	WERROR status;
 
@@ -404,18 +405,27 @@ static void dreplsrv_op_pull_source_apply_changes_send(struct dreplsrv_op_pull_s
 		return;
 	}
 
+	status = dsdb_extended_replicated_objects_convert(service->samdb,
+							  partition->nc.dn,
+							  mapping_ctr,
+							  object_count,
+							  first_object,
+							  linked_attributes_count,
+							  linked_attributes,
+							  &rf1,
+							  uptodateness_vector,
+							  &drsuapi->gensec_skey,
+							  st, &objects);
+	if (!W_ERROR_IS_OK(status)) {
+		DEBUG(0,("Failed to convert objects: %s\n", win_errstr(status)));
+		composite_error(c, werror_to_ntstatus(status));
+		return;
+	}
+
 	status = dsdb_extended_replicated_objects_commit(service->samdb,
-							 partition->nc.dn,
-							 mapping_ctr,
-							 object_count,
-							 first_object,
-							 linked_attributes_count,
-							 linked_attributes,
-							 &rf1,
-							 uptodateness_vector,
-							 &drsuapi->gensec_skey,
-							 st, NULL, 
+							 objects, 
 							 &st->op->source_dsa->notify_uSN);
+	talloc_free(objects);
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0,("Failed to commit objects: %s\n", win_errstr(status)));
 		composite_error(c, werror_to_ntstatus(status));
