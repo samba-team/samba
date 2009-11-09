@@ -1614,12 +1614,16 @@ static const char *function_code_str(TALLOC_CTX *mem_ctx,
   try a netlogon LogonControl 
 */
 static bool test_LogonControl(struct torture_context *tctx, 
-			      struct dcerpc_pipe *p)
+			      struct dcerpc_pipe *p,
+			      struct cli_credentials *machine_credentials)
+
 {
 	NTSTATUS status;
 	struct netr_LogonControl r;
 	union netr_CONTROL_QUERY_INFORMATION query;
 	int i,f;
+	enum netr_SchannelType secure_channel_type = SEC_CHAN_NULL;
+
 	uint32_t function_codes[] = {
 		NETLOGON_CONTROL_QUERY,
 		NETLOGON_CONTROL_REPLICATE,
@@ -1638,6 +1642,13 @@ static bool test_LogonControl(struct torture_context *tctx,
 		NETLOGON_CONTROL_SET_DBFLAG,
 		NETLOGON_CONTROL_BREAKPOINT
 	};
+
+	if (machine_credentials) {
+		secure_channel_type = cli_credentials_get_secure_channel_type(machine_credentials);
+	}
+
+	torture_comment(tctx, "testing LogonControl with secure channel type: %d\n",
+		secure_channel_type);
 
 	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.function_code = 1;
@@ -1661,12 +1672,18 @@ static bool test_LogonControl(struct torture_context *tctx,
 			case NETLOGON_CONTROL_REPLICATE:
 			case NETLOGON_CONTROL_SYNCHRONIZE:
 			case NETLOGON_CONTROL_PDC_REPLICATE:
-			case NETLOGON_CONTROL_BACKUP_CHANGE_LOG:
-			case NETLOGON_CONTROL_TRUNCATE_LOG:
 			case NETLOGON_CONTROL_BREAKPOINT:
-				torture_assert_werr_equal(tctx, r.out.result, WERR_ACCESS_DENIED,
-					"LogonControl returned unexpected error code");
+			case NETLOGON_CONTROL_BACKUP_CHANGE_LOG:
+				if ((secure_channel_type == SEC_CHAN_BDC) ||
+				    (secure_channel_type == SEC_CHAN_WKSTA)) {
+					torture_assert_werr_equal(tctx, r.out.result, WERR_ACCESS_DENIED,
+						"LogonControl returned unexpected error code");
+				} else {
+					torture_assert_werr_equal(tctx, r.out.result, WERR_NOT_SUPPORTED,
+						"LogonControl returned unexpected error code");
+				}
 				break;
+
 			case NETLOGON_CONTROL_REDISCOVER:
 			case NETLOGON_CONTROL_TC_QUERY:
 			case NETLOGON_CONTROL_TRANSPORT_NOTIFY:
@@ -1678,6 +1695,16 @@ static bool test_LogonControl(struct torture_context *tctx,
 			case NETLOGON_CONTROL_SET_DBFLAG:
 				torture_assert_werr_equal(tctx, r.out.result, WERR_NOT_SUPPORTED,
 					"LogonControl returned unexpected error code");
+				break;
+			case NETLOGON_CONTROL_TRUNCATE_LOG:
+				if ((secure_channel_type == SEC_CHAN_BDC) ||
+				    (secure_channel_type == SEC_CHAN_WKSTA)) {
+					torture_assert_werr_equal(tctx, r.out.result, WERR_ACCESS_DENIED,
+						"LogonControl returned unexpected error code");
+				} else {
+					torture_assert_werr_ok(tctx, r.out.result,
+						"LogonControl returned unexpected result");
+				}
 				break;
 			default:
 				torture_assert_werr_ok(tctx, r.out.result,
@@ -1731,7 +1758,9 @@ static bool test_GetAnyDCName(struct torture_context *tctx,
   try a netlogon LogonControl2
 */
 static bool test_LogonControl2(struct torture_context *tctx, 
-			       struct dcerpc_pipe *p)
+			       struct dcerpc_pipe *p,
+			       struct cli_credentials *machine_credentials)
+
 {
 	NTSTATUS status;
 	struct netr_LogonControl2 r;
@@ -1879,7 +1908,9 @@ static bool test_DatabaseSync2(struct torture_context *tctx,
   try a netlogon LogonControl2Ex
 */
 static bool test_LogonControl2Ex(struct torture_context *tctx, 
-				 struct dcerpc_pipe *p)
+				 struct dcerpc_pipe *p,
+				 struct cli_credentials *machine_credentials)
+
 {
 	NTSTATUS status;
 	struct netr_LogonControl2Ex r;
@@ -2823,11 +2854,8 @@ struct torture_suite *torture_rpc_netlogon(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test_creds(tcase, "AccountSync", test_AccountSync);
 	torture_rpc_tcase_add_test(tcase, "GetDcName", test_GetDcName);
 	torture_rpc_tcase_add_test(tcase, "ManyGetDCName", test_ManyGetDCName);
-	torture_rpc_tcase_add_test(tcase, "LogonControl", test_LogonControl);
 	torture_rpc_tcase_add_test(tcase, "GetAnyDCName", test_GetAnyDCName);
-	torture_rpc_tcase_add_test(tcase, "LogonControl2", test_LogonControl2);
 	torture_rpc_tcase_add_test_creds(tcase, "DatabaseSync2", test_DatabaseSync2);
-	torture_rpc_tcase_add_test(tcase, "LogonControl2Ex", test_LogonControl2Ex);
 	torture_rpc_tcase_add_test(tcase, "DsrEnumerateDomainTrusts", test_DsrEnumerateDomainTrusts);
 	torture_rpc_tcase_add_test(tcase, "NetrEnumerateTrustedDomains", test_netr_NetrEnumerateTrustedDomains);
 	torture_rpc_tcase_add_test(tcase, "NetrEnumerateTrustedDomainsEx", test_netr_NetrEnumerateTrustedDomainsEx);
@@ -2856,10 +2884,33 @@ struct torture_suite *torture_rpc_netlogon_s3(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test_creds(tcase, "SetPassword", test_SetPassword);
 	torture_rpc_tcase_add_test_creds(tcase, "SetPassword_with_flags", test_SetPassword_with_flags);
 	torture_rpc_tcase_add_test_creds(tcase, "SetPassword2", test_SetPassword2);
-	torture_rpc_tcase_add_test(tcase, "LogonControl", test_LogonControl);
-	torture_rpc_tcase_add_test(tcase, "LogonControl2", test_LogonControl2);
-	torture_rpc_tcase_add_test(tcase, "LogonControl2Ex", test_LogonControl2Ex);
 	torture_rpc_tcase_add_test(tcase, "NetrEnumerateTrustedDomains", test_netr_NetrEnumerateTrustedDomains);
+
+	return suite;
+}
+
+struct torture_suite *torture_rpc_netlogon_admin(TALLOC_CTX *mem_ctx)
+{
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "NETLOGON-ADMIN");
+	struct torture_rpc_tcase *tcase;
+
+	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "netlogon",
+						  &ndr_table_netlogon, TEST_MACHINE_NAME);
+	torture_rpc_tcase_add_test_creds(tcase, "LogonControl", test_LogonControl);
+	torture_rpc_tcase_add_test_creds(tcase, "LogonControl2", test_LogonControl2);
+	torture_rpc_tcase_add_test_creds(tcase, "LogonControl2Ex", test_LogonControl2Ex);
+
+	tcase = torture_suite_add_machine_workstation_rpc_iface_tcase(suite, "netlogon",
+						  &ndr_table_netlogon, TEST_MACHINE_NAME);
+	torture_rpc_tcase_add_test_creds(tcase, "LogonControl", test_LogonControl);
+	torture_rpc_tcase_add_test_creds(tcase, "LogonControl2", test_LogonControl2);
+	torture_rpc_tcase_add_test_creds(tcase, "LogonControl2Ex", test_LogonControl2Ex);
+
+	tcase = torture_suite_add_rpc_iface_tcase(suite, "netlogon",
+						  &ndr_table_netlogon);
+	torture_rpc_tcase_add_test_creds(tcase, "LogonControl", test_LogonControl);
+	torture_rpc_tcase_add_test_creds(tcase, "LogonControl2", test_LogonControl2);
+	torture_rpc_tcase_add_test_creds(tcase, "LogonControl2Ex", test_LogonControl2Ex);
 
 	return suite;
 }
