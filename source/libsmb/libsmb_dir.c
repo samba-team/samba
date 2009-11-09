@@ -617,7 +617,11 @@ SMBC_opendir_ctx(SMBCCTX *context,
                             !is_ipaddress(server) &&
 			    (resolve_name(server, &rem_ss, 0x1d) ||   /* LMB */
                              resolve_name(server, &rem_ss, 0x1b) )) { /* DMB */
-
+				/*
+				 * "server" is actually a workgroup name,
+				 * not a server. Make this clear.
+				 */
+				char *wgroup = server;
 				fstring buserver;
 
 				dir->dir_type = SMBC_SERVER;
@@ -625,12 +629,17 @@ SMBC_opendir_ctx(SMBCCTX *context,
 				/*
 				 * Get the backup list ...
 				 */
-				if (!name_status_find(server, 0x20, 0x20,
+				if (!name_status_find(wgroup, 0, 0,
                                                       &rem_ss, buserver)) {
+					char addr[INET6_ADDRSTRLEN];
 
+					print_sockaddr(addr, sizeof(addr), &rem_ss);
                                         DEBUG(0,("Could not get name of "
-                                                 "local/domain master browser "
-                                                 "for server %s\n", server));
+                                                "local/domain master browser "
+                                                "for workgroup %s fro m"
+						"address %s\n",
+						wgroup,
+						addr));
 					if (dir) {
 						SAFE_FREE(dir->fname);
 						SAFE_FREE(dir);
@@ -663,7 +672,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
 				dir->srv = srv;
 
 				/* Now, list the servers ... */
-				if (!cli_NetServerEnum(srv->cli, server,
+				if (!cli_NetServerEnum(srv->cli, wgroup,
                                                        0x0000FFFE, list_fn,
 						       (void *)dir)) {
 
