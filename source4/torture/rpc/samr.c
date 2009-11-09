@@ -6771,7 +6771,7 @@ static bool test_samr_ValidatePassword(struct dcerpc_pipe *p, struct torture_con
 	r.in.level = NetValidatePasswordReset;
 	r.in.req = &req;
 	r.out.rep = &repp;
-	
+
 	ZERO_STRUCT(req);
 	req.req3.account.string = "non-existant-account-aklsdji";
 
@@ -6784,7 +6784,7 @@ static bool test_samr_ValidatePassword(struct dcerpc_pipe *p, struct torture_con
 				req.req3.password.string, repp->ctr3.status);
 	}
 
-	return true;	
+	return true;
 }
 
 bool torture_rpc_samr(struct torture_context *torture)
