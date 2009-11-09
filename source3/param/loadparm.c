@@ -9850,4 +9850,6 @@ bool set_inherit_acls(int i)
 		return false;
 	}
 	ServicePtrs[(i)]->bInheritACLS = true;
+
+	return true;
 }
