@@ -784,8 +784,13 @@ static void becomeDC_recv_cldap(struct tevent_req *req)
 					lp_iconv_convenience(s->libnet->lp_ctx),
 					s, &s->cldap.io);
 	talloc_free(req);
-	if (!composite_is_ok(c)) return;
-
+	if (!composite_is_ok(c)) {
+		DEBUG(0,("Failed to send, receive or parse CLDAP reply from server %s for our host %s: %s\n", 
+			 s->cldap.io.in.dest_address, 
+			 s->cldap.io.in.host, 
+			 nt_errstr(c->status)));
+		return;
+	}
 	s->cldap.netlogon = s->cldap.io.out.netlogon.data.nt5_ex;
 
 	s->domain.dns_name		= s->cldap.netlogon.dns_domain;
