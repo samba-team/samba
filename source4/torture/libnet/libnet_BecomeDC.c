@@ -32,6 +32,7 @@
 #include "auth/auth.h"
 #include "param/param.h"
 #include "param/provision.h"
+#include "libcli/resolve/resolve.h"
 
 struct test_become_dc_state {
 	struct libnet_context *ctx;
@@ -581,6 +582,8 @@ bool torture_net_become_dc(struct torture_context *torture)
 	int ldb_ret;
 	uint32_t i;
 	char *sam_ldb_path;
+	const char *address;
+	struct nbt_name name;
 
 	char *location = NULL;
 	torture_assert_ntstatus_ok(torture, torture_temp_dir(torture, "libnet_BecomeDC", &location), 
@@ -591,6 +594,17 @@ bool torture_net_become_dc(struct torture_context *torture)
 
 	s->tctx = torture;
 	s->lp_ctx = torture->lp_ctx;
+
+	make_nbt_name_server(&name, torture_setting_string(torture, "host", NULL));
+
+	/* do an initial name resolution to find its IP */
+	status = resolve_name(lp_resolve_context(torture->lp_ctx),
+			      &name, torture, &address, torture->ev);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to resolve %s - %s\n",
+		       name.name, nt_errstr(status));
+		return false;
+	}
 
 	s->netbios_name = lp_parm_string(torture->lp_ctx, NULL, "become dc", "smbtorture dc");
 	if (!s->netbios_name || !s->netbios_name[0]) {
@@ -618,7 +632,7 @@ bool torture_net_become_dc(struct torture_context *torture)
 	b.in.domain_dns_name		= torture_join_dom_dns_name(s->tj);
 	b.in.domain_netbios_name	= torture_join_dom_netbios_name(s->tj);
 	b.in.domain_sid			= torture_join_sid(s->tj);
-	b.in.source_dsa_address		= torture_setting_string(torture, "host", NULL);
+	b.in.source_dsa_address		= address;
 	b.in.dest_dsa_netbios_name	= s->netbios_name;
 
 	b.in.callbacks.private_data	= s;
@@ -700,7 +714,7 @@ cleanup:
 	ZERO_STRUCT(u);
 	u.in.domain_dns_name		= torture_join_dom_dns_name(s->tj);
 	u.in.domain_netbios_name	= torture_join_dom_netbios_name(s->tj);
-	u.in.source_dsa_address		= torture_setting_string(torture, "host", NULL);
+	u.in.source_dsa_address		= address;
 	u.in.dest_dsa_netbios_name	= s->netbios_name;
 
 	status = libnet_UnbecomeDC(s->ctx, s, &u);
