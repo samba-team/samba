@@ -797,8 +797,10 @@ static NTSTATUS dcesrv_samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, 
 		break;
 	}
 	case 9:
+	{
 		attrs = NULL;
-		break;		
+		break;
+	}
 	case 11:
 	{
 		static const char * const attrs2[] = { "oEMInformation",
@@ -827,6 +829,10 @@ static NTSTATUS dcesrv_samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, 
 						       NULL };
 		attrs = attrs2;
 		break;
+	}
+	default:
+	{
+		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 	}
 
@@ -881,9 +887,9 @@ static NTSTATUS dcesrv_samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, 
 	case 13:
 		return dcesrv_samr_info_DomInfo13(d_state, mem_ctx, dom_msgs, 
 						  &info->info13);
+	default:
+		return NT_STATUS_INVALID_INFO_CLASS;
 	}
-
-	return NT_STATUS_INVALID_INFO_CLASS;
 }
 
 
@@ -3148,6 +3154,10 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 		attrs = attrs2;
 		break;
 	}
+	case 18:
+	{
+		return NT_STATUS_NOT_SUPPORTED;
+	}
 	case 20:
 	{
 		static const char * const attrs2[] = {"userParameters",
@@ -3182,6 +3192,17 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 						      NULL};
 		attrs = attrs2;
 		break;
+	}
+	case 23:
+	case 24:
+	case 25:
+	case 26:
+	{
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+	default:
+	{
+		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 	}
 
@@ -4400,6 +4421,9 @@ static NTSTATUS dcesrv_samr_ValidatePassword(struct dcesrv_call_state *dce_call,
 					   pwInfo.password_properties,
 					   pwInfo.min_password_length);
 		(*r->out.rep)->ctr3.status = res;
+	break;
+	default:
+		return NT_STATUS_INVALID_INFO_CLASS;
 	break;
 	}
 
