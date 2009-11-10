@@ -36,7 +36,7 @@
 
 
 struct DsSyncBindInfo {
-	struct dcerpc_pipe *pipe;
+	struct dcerpc_pipe *drs_pipe;
 	struct drsuapi_DsBind req;
 	struct GUID bind_guid;
 	struct drsuapi_DsBindInfoCtr our_bind_info_ctr;
@@ -181,7 +181,7 @@ static bool _test_DsBind(struct torture_context *tctx,
 	bool ret = true;
 
 	status = dcerpc_pipe_connect_b(ctx,
-				       &b->pipe, ctx->drsuapi_binding, 
+				       &b->drs_pipe, ctx->drsuapi_binding,
 				       &ndr_table_drsuapi,
 				       credentials, tctx->ev, tctx->lp_ctx);
 	
@@ -190,11 +190,11 @@ static bool _test_DsBind(struct torture_context *tctx,
 		return false;
 	}
 
-	status = dcerpc_drsuapi_DsBind(b->pipe, ctx, &b->req);
+	status = dcerpc_drsuapi_DsBind(b->drs_pipe, ctx, &b->req);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(ctx, b->pipe->last_fault_code);
+			errstr = dcerpc_errstr(ctx, b->drs_pipe->last_fault_code);
 		}
 		printf("dcerpc_drsuapi_DsBind failed - %s\n", errstr);
 		ret = false;
@@ -317,11 +317,11 @@ static bool test_GetInfo(struct torture_context *tctx, struct DsSyncTest *ctx)
 	r.out.level_out			= &level_out;
 	r.out.ctr			= &ctr;
 
-	status = dcerpc_drsuapi_DsCrackNames(ctx->admin.drsuapi.pipe, ctx, &r);
+	status = dcerpc_drsuapi_DsCrackNames(ctx->admin.drsuapi.drs_pipe, ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(ctx, ctx->admin.drsuapi.pipe->last_fault_code);
+			errstr = dcerpc_errstr(ctx, ctx->admin.drsuapi.drs_pipe->last_fault_code);
 		}
 		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
 		return false;
@@ -767,7 +767,7 @@ static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 			dump_data_pw("CREDENTIALS nthash:", nthash->hash, sizeof(nthash->hash));
 		}
 	}
-	status = gensec_session_key(ctx->new_dc.drsuapi.pipe->conn->security_state.generic_state,
+	status = gensec_session_key(ctx->new_dc.drsuapi.drs_pipe->conn->security_state.generic_state,
 				    &gensec_skey);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("failed to get gensec session key: %s\n", nt_errstr(status));
@@ -874,11 +874,11 @@ static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 					(long long)r.in.req->req8.highwatermark.highest_usn));
 			}
 
-			status = dcerpc_drsuapi_DsGetNCChanges(ctx->new_dc.drsuapi.pipe, ctx, &r);
+			status = dcerpc_drsuapi_DsGetNCChanges(ctx->new_dc.drsuapi.drs_pipe, ctx, &r);
 			if (!NT_STATUS_IS_OK(status)) {
 				const char *errstr = nt_errstr(status);
 				if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-					errstr = dcerpc_errstr(ctx, ctx->new_dc.drsuapi.pipe->last_fault_code);
+					errstr = dcerpc_errstr(ctx, ctx->new_dc.drsuapi.drs_pipe->last_fault_code);
 				}
 				printf("dcerpc_drsuapi_DsGetNCChanges failed - %s\n", errstr);
 				ret = false;
@@ -984,14 +984,14 @@ static bool test_FetchNT4Data(struct torture_context *tctx,
 
 		r.in.req = &req;
 
-		status = dcerpc_drsuapi_DsGetNT4ChangeLog(ctx->new_dc.drsuapi.pipe, ctx, &r);
+		status = dcerpc_drsuapi_DsGetNT4ChangeLog(ctx->new_dc.drsuapi.drs_pipe, ctx, &r);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
 			printf("DsGetNT4ChangeLog not supported by target server\n");
 			break;
 		} else if (!NT_STATUS_IS_OK(status)) {
 			const char *errstr = nt_errstr(status);
 			if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-				errstr = dcerpc_errstr(ctx, ctx->new_dc.drsuapi.pipe->last_fault_code);
+				errstr = dcerpc_errstr(ctx, ctx->new_dc.drsuapi.drs_pipe->last_fault_code);
 			}
 			printf("dcerpc_drsuapi_DsGetNT4ChangeLog failed - %s\n", errstr);
 			ret = false;
