@@ -1298,7 +1298,11 @@ static WERROR dsdb_syntax_DN_BINARY_drsuapi_to_ldb(struct ldb_context *ldb,
 
 		/* set binary stuff */
 		dsdb_dn = dsdb_dn_construct(tmp_ctx, dn, id3.binary, attr->syntax->ldap_oid);
-
+		if (!dsdb_dn) {
+			/* If this fails, it must be out of memory, we know the ldap_oid is valid */
+			talloc_free(tmp_ctx);
+			W_ERROR_HAVE_NO_MEMORY(dsdb_dn);
+		}
 		out->values[i] = data_blob_string_const(dsdb_dn_get_extended_linearized(out->values, dsdb_dn, 1));
 		talloc_free(tmp_ctx);
 	}
@@ -1342,7 +1346,7 @@ static WERROR dsdb_syntax_DN_BINARY_ldb_to_drsuapi(struct ldb_context *ldb,
 
 		dsdb_dn = dsdb_dn_parse(tmp_ctx, ldb, &in->values[i], attr->syntax->ldap_oid);
 
-		if (dsdb_dn) {
+		if (!dsdb_dn) {
 			talloc_free(tmp_ctx);
 			return ntstatus_to_werror(NT_STATUS_INVALID_PARAMETER);
 		}
