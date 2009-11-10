@@ -44,6 +44,14 @@ static PyObject *provision_module(void)
 	return PyImport_Import(name);
 }
 
+static PyObject *schema_module(void)
+{
+	PyObject *name = PyString_FromString("samba.schema");
+	if (name == NULL)
+		return NULL;
+	return PyImport_Import(name);
+}
+
 NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 			struct provision_settings *settings, 
 			struct provision_result *result)
@@ -297,4 +305,57 @@ failure:
 	PyErr_Print();
 	PyErr_Clear();
 	return NT_STATUS_UNSUCCESSFUL;
+}
+
+
+struct ldb_context *provision_get_schema(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
+{
+	const char *setupdir;
+	PyObject *schema_mod, *schema_dict, *schema_fn, *py_result, *parameters;
+	
+	DEBUG(0,("Schema for DRS tests using python\n"));
+
+	py_load_samba_modules();
+	Py_Initialize();
+	py_update_path("bin"); /* FIXME: Can't assume this is always the case */
+
+	schema_mod = schema_module();
+
+	if (schema_mod == NULL) {
+		PyErr_Print();
+		DEBUG(0, ("Unable to import schema Python module.\n"));
+	      	return NULL;
+	}
+
+	schema_dict = PyModule_GetDict(schema_mod);
+
+	if (schema_dict == NULL) {
+		DEBUG(0, ("Unable to get dictionary for schema module\n"));
+		return NULL;
+	}
+
+	schema_fn = PyDict_GetItemString(schema_dict, "ldb_with_schema");
+	if (schema_fn == NULL) {
+		PyErr_Print();
+		DEBUG(0, ("Unable to get schema_get_ldb function\n"));
+		return NULL;
+	}
+	
+	parameters = PyDict_New();
+
+	setupdir = lp_setupdir(lp_ctx);
+	PyDict_SetItemString(parameters, "setup_dir", 
+			     PyString_FromString(setupdir));
+
+	py_result = PyEval_CallObjectWithKeywords(schema_fn, NULL, parameters);
+
+	Py_DECREF(parameters);
+
+	if (py_result == NULL) {
+		PyErr_Print();
+		PyErr_Clear();
+		return NULL;
+	}
+
+	return PyLdb_AsLdbContext(PyObject_GetAttrString(py_result, "ldb"));
 }

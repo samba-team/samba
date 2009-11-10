@@ -32,6 +32,7 @@ from samba import read_and_sub_file, substitute_var, check_all_substituted
 from samba import Ldb
 from samba.ndr import ndr_pack
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE
+import os
 
 def get_schema_descriptor(domain_sid):
     sddl = "O:SAG:SAD:(A;CI;RPLCLORC;;;AU)(A;CI;RPWPCRCCLCLORCWOWDSW;;;SA)" \
@@ -138,3 +139,25 @@ def get_dnsyntax_attributes(schemadn,schemaldb):
         
     return attributes
 
+def ldb_with_schema(setup_dir=None, schemadn="cn=schema,cn=configuration,dc=example,dc=com", 
+                    serverdn="cn=server,cn=servers,cn=default-first-site-name,cn=sites,cn=cn=configuration,dc=example,dc=com",
+                    domainsid=None):
+    """Load schema for the SamDB from the AD schema files and samba4_schema.ldif
+    
+    :param setup_dir: Setup path
+    :param schemadn: DN of the schema
+    :param serverdn: DN of the server
+    
+    Returns the schema data loaded as an object, with .ldb being a
+    new ldb with the schema loaded.  This allows certain tests to
+    operate without a remote or local schema.
+    """
+    
+    def setup_path(file):
+        return os.path.join(setup_dir, file)
+
+    if domainsid is None:
+        domainsid = security.random_sid()
+    else:
+        domainsid = security.dom_sid(domainsid)
+    return Schema(setup_path, domainsid, schemadn=schemadn, serverdn=serverdn)
