@@ -8,6 +8,7 @@ import os
 import base64
 import re
 import random
+import time
 
 sys.path.append("bin/python")
 sys.path.append("../lib/subunit/python")
@@ -207,9 +208,9 @@ showInAdvancedViewOnly: TRUE
         _ldb.add_ldif(ldif)
 
     def read_desc(self, object_dn):
-        res = self.ldb_admin.search(base=object_dn, attrs=["nTSecurityDescriptor"])
+        res = self.ldb_admin.search(base=object_dn, scope=SCOPE_BASE, attrs=["nTSecurityDescriptor"])
         desc = res[0]["nTSecurityDescriptor"][0]
-        return ndr_unpack( security.descriptor, desc )
+        return ndr_unpack(security.descriptor, desc)
 
     def enable_account(self,  user_dn):
         """Enable an account.
@@ -274,8 +275,6 @@ userAccountControl: %s""" % userAccountControl
             self.SAMBA = True
         else:
             self.WIN2003 = True
-        #print "self.SAMBA:", self.SAMBA
-        #print "self.WIN2003:", self.WIN2003
 
     ################################################################################################
 
@@ -446,7 +445,7 @@ member: """ + user_dn
                 "113" : "O:DAG:DA",
                 "114" : "O:DAG:DA",
                 "115" : "O:DAG:DA",
-                "130" : "",
+                "130" : "0:EAG:EA",
                 "131" : "",
                 "132" : "",
                 "133" : "%s",
@@ -542,7 +541,7 @@ member: """ + user_dn
         self.assertEqual(self.results[self.DS_BEHAVIOR]["100"], res)
 
     def test_101(self):
-        """ Dmain admin group member creates object (default nTSecurityDescriptor) in DOMAIN
+        """ Domain admin group member creates object (default nTSecurityDescriptor) in DOMAIN
         """
         user_name = "testuser2"
         self.check_user_belongs(self.get_users_domain_dn(user_name), ["Domain Admins"])
@@ -1377,8 +1376,8 @@ class DaclDescriptorTests(DescriptorTests):
         DescriptorTests.setUp(self)
 
     def tearDown(self):
-        self.delete_force(self.ldb_admin, "CN=test_inherit_group,OU=test_inherit_ou," + self.base_dn)
-        self.delete_force(self.ldb_admin, "OU=test_inherit_ou," + self.base_dn)
+        self.delete_force(self.ldb_admin, "CN=_test_inherit_group,OU=test_inherit_ou," + self.base_dn)
+        self.delete_force(self.ldb_admin, "OU=_test_inherit_ou," + self.base_dn)
 
     def create_clean_ou(self, object_dn):
         """ Base repeating setup for unittests to follow """
@@ -1397,11 +1396,8 @@ class DaclDescriptorTests(DescriptorTests):
             desc_sddl = desc_sddl.replace(x, "")
         # Add flag 'protected' in both DACL and SACL so no inherit ACEs
         # can propagate from above
+        # remove SACL, we are not interested
         desc_sddl = desc_sddl.replace(":AI", ":AIP")
-        # colon at the end breaks ldif parsing, fix it
-        res = re.findall(".*?S:", desc_sddl)
-        if res:
-            desc_sddl = desc_sddl.replace("S:", "")
         self.modify_desc(object_dn, desc_sddl)
         # Verify all inheritable ACEs are gone
         desc_sddl = self.get_desc_sddl(object_dn)
