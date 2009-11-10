@@ -6107,6 +6107,9 @@ NTSTATUS pass_oem_change(char *user,
 			 uchar password_encrypted_with_nt_hash[516],
 			 const uchar old_nt_hash_encrypted[16],
 			 enum samPwdChangeReason *reject_reason);
+NTSTATUS check_password_complexity(const char *username,
+				   const char *password,
+				   enum samPwdChangeReason *samr_reject_reason);
 NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passwd, bool as_root, enum samPwdChangeReason *samr_reject_reason);
 
 /* The following definitions come from smbd/close.c  */

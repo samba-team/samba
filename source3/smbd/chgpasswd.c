@@ -1075,6 +1075,43 @@ static bool check_passwd_history(struct samu *sampass, const char *plaintext)
 }
 
 /***********************************************************
+************************************************************/
+
+NTSTATUS check_password_complexity(const char *username,
+				   const char *password,
+				   enum samPwdChangeReason *samr_reject_reason)
+{
+	TALLOC_CTX *tosctx = talloc_tos();
+
+	/* Use external script to check password complexity */
+	if (lp_check_password_script() && *(lp_check_password_script())) {
+		int check_ret;
+		char *cmd;
+
+		cmd = talloc_string_sub(tosctx, lp_check_password_script(), "%u", username);
+		if (!cmd) {
+			return NT_STATUS_PASSWORD_RESTRICTION;
+		}
+
+		check_ret = smbrunsecret(cmd, password);
+		DEBUG(5,("check_password_complexity: check password script (%s) returned [%d]\n",
+			cmd, check_ret));
+		TALLOC_FREE(cmd);
+
+		if (check_ret != 0) {
+			DEBUG(1,("check_password_complexity: "
+				"check password script said new password is not good enough!\n"));
+			if (samr_reject_reason) {
+				*samr_reject_reason = SAM_PWD_CHANGE_NOT_COMPLEX;
+			}
+			return NT_STATUS_PASSWORD_RESTRICTION;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
+/***********************************************************
  Code to change the oem password. Changes both the lanman
  and NT hashes.  Old_passwd is almost always NULL.
  NOTE this function is designed to be called as root. Check the old password
@@ -1089,6 +1126,7 @@ NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passw
 	struct passwd *pass = NULL;
 	const char *username = pdb_get_username(hnd);
 	time_t can_change_time = pdb_get_pass_can_change_time(hnd);
+	NTSTATUS status;
 
 	if (samr_reject_reason) {
 		*samr_reject_reason = SAM_PWD_CHANGE_NO_ERROR;
@@ -1154,28 +1192,10 @@ NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passw
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	/* Use external script to check password complexity */
-	if (lp_check_password_script() && *(lp_check_password_script())) {
-		int check_ret;
-		char *cmd;
-
-		cmd = talloc_string_sub(tosctx, lp_check_password_script(), "%u", username);
-        	if (!cmd) {
-                	return NT_STATUS_PASSWORD_RESTRICTION;
-        	}
-
-		check_ret = smbrunsecret(cmd, new_passwd);
-		DEBUG(5, ("change_oem_password: check password script (%s) returned [%d]\n", cmd, check_ret));
-		TALLOC_FREE(cmd);
-
-		if (check_ret != 0) {
-			DEBUG(1, ("change_oem_password: check password script said new password is not good enough!\n"));
-			if (samr_reject_reason) {
-				*samr_reject_reason = SAM_PWD_CHANGE_NOT_COMPLEX;
-			}
-			TALLOC_FREE(pass);
-			return NT_STATUS_PASSWORD_RESTRICTION;
-		}
+	status = check_password_complexity(username, new_passwd, samr_reject_reason);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(pass);
+		return status;
 	}
 
 	/*
