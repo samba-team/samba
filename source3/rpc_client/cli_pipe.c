@@ -4034,6 +4034,8 @@ NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
 	struct rpc_pipe_client *result = NULL;
 	NTSTATUS status;
 
+	*presult = NULL;
+
 	status = get_schannel_session_key(cli, domain, &neg_flags,
 					  &netlogon_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -4054,7 +4056,7 @@ NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
 		*presult = result;
 	}
 
-	return NT_STATUS_OK;
+	return status;
 }
 
 /****************************************************************************
