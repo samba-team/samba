@@ -2348,6 +2348,9 @@ bool rpccli_get_pwd_hash(struct rpc_pipe_client *cli, uint8_t nt_hash[16])
 
 struct cli_state *rpc_pipe_np_smb_conn(struct rpc_pipe_client *p)
 {
+	if (p == NULL) {
+		return NULL;
+	}
 	if (p->transport_type == NCACN_NP) {
 		return p->trans.np.cli;
 	}
