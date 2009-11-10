@@ -245,7 +245,7 @@ void reply_sendtxt(struct smb_request *req)
 		return;
 	}
 
-	if (smbd_msg_state == NULL) {
+	if ((smbd_msg_state == NULL) || (req->buflen < 3)) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBsendtxt);
 		return;
