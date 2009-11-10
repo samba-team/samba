@@ -50,7 +50,7 @@ def get_schema_descriptor(domain_sid):
    
 class Schema(object):
     def __init__(self, setup_path, domain_sid, schemadn=None,
-                 serverdn=None, sambadn=None):
+                 serverdn=None):
         """Load schema for the SamDB from the AD schema files and samba4_schema.ldif
         
         :param samdb: Load a schema into a SamDB.

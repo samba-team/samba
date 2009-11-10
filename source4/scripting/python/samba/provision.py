@@ -206,7 +206,6 @@ class ProvisionNames(object):
         self.domaindn = None
         self.configdn = None
         self.schemadn = None
-        self.sambadn = None
         self.ldapmanagerdn = None
         self.dnsdomain = None
         self.realm = None
@@ -379,7 +378,7 @@ def provision_paths_from_lp(lp, dnsdomain):
 
 def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
                 serverrole=None, rootdn=None, domaindn=None, configdn=None,
-                schemadn=None, serverdn=None, sitename=None, sambadn=None):
+                schemadn=None, serverdn=None, sitename=None):
     """Guess configuration settings to use."""
 
     if hostname is None:
@@ -441,8 +440,6 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
         configdn = "CN=Configuration," + rootdn
     if schemadn is None:
         schemadn = "CN=Schema," + configdn
-    if sambadn is None:
-        sambadn = "CN=Samba"
 
     if sitename is None:
         sitename=DEFAULTSITE
@@ -452,7 +449,6 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
     names.domaindn = domaindn
     names.configdn = configdn
     names.schemadn = schemadn
-    names.sambadn = sambadn
     names.ldapmanagerdn = "CN=Manager," + rootdn
     names.dnsdomain = dnsdomain
     names.domain = domain
@@ -956,8 +952,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
                            serverrole=serverrole, schema=schema)
 
     if (schema == None):
-        schema = Schema(setup_path, domainsid, schemadn=names.schemadn, serverdn=names.serverdn,
-                        sambadn=names.sambadn)
+        schema = Schema(setup_path, domainsid, schemadn=names.schemadn, serverdn=names.serverdn)
 
     # Load the database, but importantly, use Ldb not SamDB as we don't want to load the global schema
     samdb = Ldb(session_info=session_info, 
@@ -1236,8 +1231,7 @@ def provision(setup_dir, message, session_info,
 
     ldapi_url = "ldapi://%s" % urllib.quote(paths.s4_ldapi_path, safe="")
     
-    schema = Schema(setup_path, domainsid, schemadn=names.schemadn, serverdn=names.serverdn,
-                    sambadn=names.sambadn)
+    schema = Schema(setup_path, domainsid, schemadn=names.schemadn, serverdn=names.serverdn)
     
     provision_backend = ProvisionBackend(backend_type,
                                          paths=paths, setup_path=setup_path,
