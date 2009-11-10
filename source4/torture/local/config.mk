@@ -59,6 +59,7 @@ TORTURE_LOCAL_OBJ_FILES = \
 		$(torturesrcdir)/local/dbspeed.o \
 		$(torturesrcdir)/local/torture.o \
 		$(torturesrcdir)/ldb/ldb.o \
-		$(torturesrcdir)/../dsdb/common/tests/dsdb_dn.o
+		$(torturesrcdir)/../dsdb/common/tests/dsdb_dn.o \
+		$(torturesrcdir)/../dsdb/schema/tests/schema_syntax.o
 
 $(eval $(call proto_header_template,$(torturesrcdir)/local/proto.h,$(TORTURE_LOCAL_OBJ_FILES:.o=.c)))

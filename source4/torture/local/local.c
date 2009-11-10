@@ -59,7 +59,8 @@
 	torture_local_dbspeed, 
 	torture_local_credentials,
 	torture_ldb,
-	torture_dsdb,
+	torture_dsdb_dn,
+	torture_dsdb_syntax,
 	torture_registry,
 	NULL
 };

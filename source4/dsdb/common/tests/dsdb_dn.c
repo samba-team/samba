@@ -111,7 +111,7 @@ static bool torture_dsdb_dn_attrs(struct torture_context *torture)
 	return true;
 }
 
-static bool torture_dsdb_dn(struct torture_context *torture)
+static bool torture_dsdb_dn_valid(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(torture);
 	struct ldb_context *ldb;
@@ -339,17 +339,17 @@ static bool torture_dsdb_dn_invalid(struct torture_context *torture)
 	return true;
 }
 
-struct torture_suite *torture_dsdb(TALLOC_CTX *mem_ctx)
+struct torture_suite *torture_dsdb_dn(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "DSDB");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "DSDB-DN");
 
 	if (suite == NULL) {
 		return NULL;
 	}
 
-	torture_suite_add_simple_test(suite, "DN", torture_dsdb_dn);
-	torture_suite_add_simple_test(suite, "DN-INVALID", torture_dsdb_dn_invalid);
-	torture_suite_add_simple_test(suite, "DN-ATTRS", torture_dsdb_dn_attrs);
+	torture_suite_add_simple_test(suite, "VALID", torture_dsdb_dn_valid);
+	torture_suite_add_simple_test(suite, "INVALID", torture_dsdb_dn_invalid);
+	torture_suite_add_simple_test(suite, "ATTRS", torture_dsdb_dn_attrs);
 
 	suite->description = talloc_strdup(suite, "DSDB DN tests");
 
