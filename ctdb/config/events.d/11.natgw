@@ -43,7 +43,7 @@ case $cmd in
 	NATGWIP=`ctdb natgwlist | head -1 | sed -e "s/^[^ ]* *//"`
 
 	CTDB_NATGW_PUBLIC_IP_HOST=`echo $CTDB_NATGW_PUBLIC_IP | sed -e "s/\/.*/\/32/"`
-	if [ "$NATGWMASTER" == "-1" ]; then
+	if [ "$NATGWMASTER" = "-1" ]; then
 		echo "There is not NATGW master node"
 		exit 1
 	fi
