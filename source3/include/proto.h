@@ -2740,13 +2740,14 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 
 /* The following definitions come from libsmb/climessage.c  */
 
-int cli_message_start_build(struct cli_state *cli, const char *host, const char *username);
-bool cli_message_start(struct cli_state *cli, const char *host, const char *username,
-			      int *grp);
-int cli_message_text_build(struct cli_state *cli, const char *msg, int len, int grp);
-bool cli_message_text(struct cli_state *cli, const char *msg, int len, int grp);
-int cli_message_end_build(struct cli_state *cli, int grp);
-bool cli_message_end(struct cli_state *cli, int grp);
+struct tevent_req *cli_message_send(TALLOC_CTX *mem_ctx,
+				    struct tevent_context *ev,
+				    struct cli_state *cli,
+				    const char *host, const char *username,
+				    const char *message);
+NTSTATUS cli_message_recv(struct tevent_req *req);
+NTSTATUS cli_message(struct cli_state *cli, const char *host,
+		     const char *username, const char *message);
 
 /* The following definitions come from libsmb/clioplock.c  */
 
