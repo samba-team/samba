@@ -243,51 +243,29 @@ static size_t push_source(uint8_t *buf, size_t n, void *priv)
 
 static void send_message(const char *username)
 {
-	int total_len = 0;
-	int grp_id;
+	char buf[1600];
+	NTSTATUS status;
+	int i;
 
-	if (!cli_message_start(cli, desthost, username, &grp_id)) {
-		d_printf("message start: %s\n", cli_errstr(cli));
-		return;
-	}
+	d_printf("Type your message, ending it with a Control-D\n");
 
-
-	d_printf("Connected. Type your message, ending it with a Control-D\n");
-
-	while (!feof(stdin) && total_len < 1600) {
-		int maxlen = MIN(1600 - total_len,127);
-		char msg[1024];
-		int l=0;
-		int c;
-
-		ZERO_ARRAY(msg);
-
-		for (l=0;l<maxlen && (c=fgetc(stdin))!=EOF;l++) {
-			if (c == '\n')
-				msg[l++] = '\r';
-			msg[l] = c;
-		}
-
-		if ((total_len > 0) && (strlen(msg) == 0)) {
+	i = 0;
+	while (i<sizeof(buf)-2) {
+		int c = fgetc(stdin);
+		if (c == EOF) {
 			break;
 		}
-
-		if (!cli_message_text(cli, msg, l, grp_id)) {
-			d_printf("SMBsendtxt failed (%s)\n",cli_errstr(cli));
-			return;
+		if (c == '\n') {
+			buf[i++] = '\r';
 		}
-
-		total_len += l;
+		buf[i++] = c;
 	}
+	buf[i] = '\0';
 
-	if (total_len >= 1600)
-		d_printf("the message was truncated to 1600 bytes\n");
-	else
-		d_printf("sent %d bytes\n",total_len);
-
-	if (!cli_message_end(cli, grp_id)) {
-		d_printf("SMBsendend failed (%s)\n",cli_errstr(cli));
-		return;
+	status = cli_message(cli, desthost, username, buf);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "cli_message returned %s\n",
+			  nt_errstr(status));
 	}
 }
 
