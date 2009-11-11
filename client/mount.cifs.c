@@ -76,8 +76,6 @@
 
 #define MAX_UNC_LEN 1024
 
-#define CONST_DISCARD(type, ptr)      ((type) ((void *) (ptr)))
-
 #ifndef SAFE_FREE
 #define SAFE_FREE(x) do { if ((x) != NULL) {free(x); x=NULL;} } while(0)
 #endif
@@ -123,6 +121,7 @@ static char * user_name = NULL;
 static char * mountpassword = NULL;
 char * domain_name = NULL;
 char * prefixpath = NULL;
+char *cifs_fstype = "cifs";
 
 /* glibc doesn't have strlcpy, strlcat. Ensure we do. JRA. We
  * don't link to libreplace so need them here. */
@@ -1590,7 +1589,7 @@ mount_retry:
 	if (verboseflag)
 		fprintf(stderr, "\n");
 
-	if (!fakemnt && mount(dev_name, mountpoint, "cifs", flags, options)) {
+	if (!fakemnt && mount(dev_name, mountpoint, cifs_fstype, flags, options)) {
 		switch (errno) {
 		case ECONNREFUSED:
 		case EHOSTUNREACH:
@@ -1638,7 +1637,7 @@ mount_retry:
 	}
 	mountent.mnt_fsname = dev_name;
 	mountent.mnt_dir = mountpoint;
-	mountent.mnt_type = CONST_DISCARD(char *,"cifs");
+	mountent.mnt_type = cifs_fstype;
 	mountent.mnt_opts = (char *)malloc(220);
 	if(mountent.mnt_opts) {
 		char * mount_user = getusername();
