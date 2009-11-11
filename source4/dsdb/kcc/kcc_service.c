@@ -136,6 +136,25 @@ static WERROR kccsrv_load_partitions(struct kccsrv_service *s)
 	return WERR_OK;
 }
 
+static NTSTATUS kccsrv_execute_kcc(struct irpc_message *msg,
+					struct drsuapi_DsExecuteKCC *r)
+{
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS status;
+	struct kccsrv_service *service = talloc_get_type(msg->private_data, struct kccsrv_service);
+
+	mem_ctx = talloc_new(service);
+	status = kccsrv_simple_update(service, mem_ctx);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("kccsrv_simple_update failed - %s\n", nt_errstr(status)));
+		talloc_free(mem_ctx);
+		return status;
+	}
+
+	talloc_free(mem_ctx);
+	return NT_STATUS_OK;
+}
 
 /*
   startup the kcc service task
@@ -208,6 +227,7 @@ static void kccsrv_task_init(struct task_server *task)
 	}
 
 	irpc_add_name(task->msg_ctx, "kccsrv");
+	IRPC_REGISTER(task->msg_ctx, drsuapi, DRSUAPI_DSEXECUTEKCC, kccsrv_execute_kcc, service);
 }
 
 /*

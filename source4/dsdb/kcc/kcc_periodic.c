@@ -115,7 +115,7 @@ static NTSTATUS kccsrv_add_repsFrom(struct kccsrv_service *s, TALLOC_CTX *mem_ct
   We just add a repsFrom entry for all DCs we find that have nTDSDSA
   objects, except for ourselves
  */
-static NTSTATUS kccsrv_simple_update(struct kccsrv_service *s, TALLOC_CTX *mem_ctx)
+NTSTATUS kccsrv_simple_update(struct kccsrv_service *s, TALLOC_CTX *mem_ctx)
 {
 	struct ldb_result *res;
 	int ret, i;

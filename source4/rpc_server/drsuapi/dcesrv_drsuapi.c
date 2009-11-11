@@ -796,7 +796,16 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo(struct dcesrv_call_state 
 static WERROR dcesrv_drsuapi_DsExecuteKCC(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				  struct drsuapi_DsExecuteKCC *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	WERROR status;
+	status = drs_security_level_check(dce_call, "DsExecuteKCC");
+
+	if (!W_ERROR_IS_OK(status)) {
+		return status;
+	}
+
+	dcesrv_irpc_forward_rpc_call(dce_call, mem_ctx, r, NDR_DRSUAPI_DSEXECUTEKCC,
+								&ndr_table_drsuapi, "kccsrv", "DsExecuteKCC");
+	return WERR_OK;
 }
 
 
