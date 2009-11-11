@@ -45,18 +45,6 @@ typedef enum _sectype {
 	MS_KRB5
 } sectype_t;
 
-static inline int
-k5_data_equal(krb5_data d1, krb5_data d2, unsigned int length)
-{
-	if (!length)
-		length = d1.length;
-
-	return (d1.length == length &&
-		d1.length == d2.length &&
-		memcmp(d1.data, d2.data, length) == 0);
-
-}
-
 /* does the ccache have a valid TGT? */
 static time_t
 get_tgt_time(const char *ccname) {
@@ -65,9 +53,8 @@ get_tgt_time(const char *ccname) {
 	krb5_cc_cursor cur;
 	krb5_creds creds;
 	krb5_principal principal;
-	krb5_data tgt = { .data =	"krbtgt",
-			  .length =	6 };
 	time_t credtime = 0;
+	char *realm = NULL;
 
 	if (krb5_init_context(&context)) {
 		syslog(LOG_DEBUG, "%s: unable to init krb5 context", __func__);
@@ -94,16 +81,27 @@ get_tgt_time(const char *ccname) {
 		goto err_ccstart;
 	}
 
+	if ((realm = smb_krb5_principal_get_realm(context, principal)) == NULL) {
+		syslog(LOG_DEBUG, "%s: unable to get realm", __func__);
+		goto err_ccstart;
+	}
+
 	while (!credtime && !krb5_cc_next_cred(context, ccache, &cur, &creds)) {
-		if (k5_data_equal(creds.server->realm, principal->realm, 0) &&
-		    k5_data_equal(creds.server->data[0], tgt, tgt.length) &&
-		    k5_data_equal(creds.server->data[1], principal->realm, 0) &&
+		char *name;
+		if (smb_krb5_unparse_name(NULL, context, creds.server, &name)) {
+			syslog(LOG_DEBUG, "%s: unable to unparse name", __func__);
+			goto err_endseq;
+		}
+		if (krb5_realm_compare(context, creds.server, principal) &&
+		    strnequal(name, KRB5_TGS_NAME, KRB5_TGS_NAME_SIZE) &&
+		    strnequal(name+KRB5_TGS_NAME_SIZE+1, realm, strlen(realm)) &&
 		    creds.times.endtime > time(NULL))
 			credtime = creds.times.endtime;
                 krb5_free_cred_contents(context, &creds);
+		TALLOC_FREE(name);
         }
+err_endseq:
         krb5_cc_end_seq_get(context, ccache, &cur);
-
 err_ccstart:
 	krb5_free_principal(context, principal);
 err_princ:
