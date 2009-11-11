@@ -41,7 +41,6 @@ ntvfs.cifs.raw.notify
 ntvfs.cifs.raw.scan-eamax
 ntvfs.cifs.raw.context
 ntvfs.cifs.raw.qfileinfo.ipc
-rpc.dssync
 rpc.samsync
 rpc.remact							# Not provided by Samba 4
 rpc.oxidresolve						# Not provided by Samba 4

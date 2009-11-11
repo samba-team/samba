@@ -79,11 +79,6 @@ struct DsSyncTest {
 	} old_dc;
 };
 
-static bool _drs_util_verify_attids(struct torture_context *tctx,
-				    struct DsSyncTest *ctx,
-				    const struct drsuapi_DsReplicaOIDMapping_Ctr *prefix_map,
-				    const struct drsuapi_DsReplicaObjectListItemEx *cur);
-
 static struct DsSyncTest *test_create_context(struct torture_context *tctx)
 {
 	NTSTATUS status;
@@ -382,7 +377,6 @@ static bool test_analyse_objects(struct torture_context *tctx,
 	int i, j, ret;
 	struct dsdb_extended_replicated_objects *objs;
 	struct ldb_extended_dn_control *extended_dn_ctrl;
-	_drs_util_verify_attids(tctx, ctx, mapping_ctr, first_object);
 	
 	if (!dsdb_get_schema(ldb)) {
 		struct dsdb_schema *ldap_schema;
@@ -713,86 +707,6 @@ static bool test_analyse_objects(struct torture_context *tctx,
 	}
 	return true;
 }
-
-/**
- * Fetch LDAP attribute name and DN by supplied OID
- */
-static bool _drs_ldap_attr_by_oid(struct torture_context *tctx,
-				  struct DsSyncTest *ctx,
-				  const char *oid,
-				  char **attr_name)
-{
-	struct ldb_dn *config_dn;
-	struct ldb_result *res;
-	TALLOC_CTX *tmp_ctx = NULL;
-	const char *search_attrs[] = {"lDAPDisplayName", NULL};
-	int ret;
-
-	tmp_ctx = talloc_new(ctx);
-
-	config_dn = ldb_dn_new_fmt(tmp_ctx, ctx->admin.ldap.ldb, 
-				   "CN=Schema,CN=Configuration,%s", ctx->domain_dn);
-	ret = ldb_search(ctx->admin.ldap.ldb, tmp_ctx, &res, config_dn, 
-			 LDB_SCOPE_ONELEVEL, search_attrs, "(attributeID=%s)", oid);
-	
-	torture_assert_int_equal(tctx, 
-				 ret, LDB_SUCCESS, 
-				 "Failed to search for attribute");
-
-	torture_assert_int_equal(tctx,
-				 res->count, 1, "Failed to find attribute for OID");
-
-	if (attr_name) {
-		*attr_name = talloc_strdup(ctx, ldb_msg_find_attr_as_string(res->msgs[0], "lDAPDisplayName", NULL));
-	}
-
-	talloc_free(tmp_ctx);
-
-	return true;
-}
-
-/**
- * Make Attribute OID and verify such Attribute exists in schema
- */
-static bool _drs_util_verify_attids(struct torture_context *tctx,
-				    struct DsSyncTest *ctx,
-				    const struct drsuapi_DsReplicaOIDMapping_Ctr *prefix_map,
-				    const struct drsuapi_DsReplicaObjectListItemEx *cur)
-{
-	uint32_t i;
-
-	DEBUG(1,("drs_test_verify_attids:\n"));
-
-	for (; cur; cur = cur->next_object) {
-		char *attr_name = NULL;
-		const struct drsuapi_DsReplicaObject *obj = &cur->object;
-
-		DEBUG(1,("%3s %-10s: %s\n", "", "object_dn", obj->identifier->dn));
-
-		for (i = 0; i < obj->attribute_ctr.num_attributes; i++) {
-			int map_idx;
-			const char *oid = NULL;
-			struct drsuapi_DsReplicaAttribute *attr;
-
-			attr = &obj->attribute_ctr.attributes[i];
-			if (!drs_util_oid_from_attid(tctx, prefix_map, attr->attid, &oid, &map_idx)) {
-				return false;
-			}
-
-			if (!_drs_ldap_attr_by_oid(tctx, ctx, oid, &attr_name)) {
-				return false;
-			}
-
-			DEBUG(10,("%7s attr[%2d]: %-22s {map_idx=%2d; attid=0x%06x; ldap_name=%-26s; idl_name=%s}\n", "",
-					i, oid, map_idx, attr->attid, attr_name,
-					drs_util_DsAttributeId_to_string(attr->attid)));
-			talloc_free(attr_name);
-		}
-	}
-
-	return true;
-}
-
 
 static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 {
