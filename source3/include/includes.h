@@ -1025,7 +1025,8 @@ int smb_krb5_kt_add_entry_ext(krb5_context context,
 			      krb5_data password,
 			      bool no_salt,
 			      bool keep_old_entries);
-
+char *smb_krb5_principal_get_realm(krb5_context context,
+				   krb5_principal principal);
 #endif /* HAVE_KRB5 */
 
 

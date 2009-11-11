@@ -1941,6 +1941,31 @@ krb5_error_code krb5_auth_con_set_req_cksumtype(
 }
 #endif
 
+/*
+ * smb_krb5_principal_get_realm
+ *
+ * @brief Get realm of a principal
+ *
+ * @param[in] context		The krb5_context
+ * @param[in] principal		The principal
+ * @return pointer to the realm
+ *
+ */
+
+char *smb_krb5_principal_get_realm(krb5_context context,
+				   krb5_principal principal)
+{
+#ifdef HAVE_KRB5_PRINCIPAL_GET_REALM /* Heimdal */
+	return krb5_principal_get_realm(context, principal);
+#elif defined(krb5_princ_realm) /* MIT */
+	krb5_data *realm;
+	realm = krb5_princ_realm(context, principal);
+	return (char *)realm->data;
+#else
+	return NULL;
+#endif
+}
+
 #else /* HAVE_KRB5 */
  /* this saves a few linking headaches */
  int cli_krb5_get_ticket(const char *principal, time_t time_offset, 
