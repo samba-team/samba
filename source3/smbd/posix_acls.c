@@ -913,33 +913,12 @@ void create_file_sids(const SMB_STRUCT_STAT *psbuf, DOM_SID *powner_sid, DOM_SID
 }
 
 /****************************************************************************
- Is the identity in two ACEs equal ? Check both SID and uid/gid.
-****************************************************************************/
-
-static bool identity_in_ace_equal(canon_ace *ace1, canon_ace *ace2)
-{
-	if (sid_equal(&ace1->trustee, &ace2->trustee)) {
-		return True;
-	}
-	if (ace1->owner_type == ace2->owner_type) {
-		if (ace1->owner_type == UID_ACE &&
-				ace1->unix_ug.uid == ace2->unix_ug.uid) {
-			return True;
-		} else if (ace1->owner_type == GID_ACE &&
-				ace1->unix_ug.gid == ace2->unix_ug.gid) {
-			return True;
-		}
-	}
-	return False;
-}
-
-/****************************************************************************
  Merge aces with a common sid - if both are allow or deny, OR the permissions together and
  delete the second one. If the first is deny, mask the permissions off and delete the allow
  if the permissions become zero, delete the deny if the permissions are non zero.
 ****************************************************************************/
 
-static void merge_aces( canon_ace **pp_list_head )
+static void merge_aces( canon_ace **pp_list_head, bool dir_acl)
 {
 	canon_ace *l_head = *pp_list_head;
 	canon_ace *curr_ace_outer;
@@ -957,12 +936,24 @@ static void merge_aces( canon_ace **pp_list_head )
 		curr_ace_outer_next = curr_ace_outer->next; /* Save the link in case we delete. */
 
 		for (curr_ace = curr_ace_outer->next; curr_ace; curr_ace = curr_ace_next) {
+			bool can_merge = false;
 
 			curr_ace_next = curr_ace->next; /* Save the link in case of delete. */
 
-			if (identity_in_ace_equal(curr_ace, curr_ace_outer) &&
-				(curr_ace->attr == curr_ace_outer->attr)) {
+			/* For file ACLs we can merge if the SIDs and ALLOW/DENY
+			 * types are the same. For directory acls we must also
+			 * ensure the POSIX ACL types are the same. */
 
+			if (!dir_acl) {
+				can_merge = (sid_equal(&curr_ace->trustee, &curr_ace_outer->trustee) &&
+						(curr_ace->attr == curr_ace_outer->attr));
+			} else {
+				can_merge = (sid_equal(&curr_ace->trustee, &curr_ace_outer->trustee) &&
+						(curr_ace->type == curr_ace_outer->type) &&
+						(curr_ace->attr == curr_ace_outer->attr));
+			}
+
+			if (can_merge) {
 				if( DEBUGLVL( 10 )) {
 					dbgtext("merge_aces: Merging ACE's\n");
 					print_canon_ace( curr_ace_outer, 0);
@@ -971,7 +962,13 @@ static void merge_aces( canon_ace **pp_list_head )
 
 				/* Merge two allow or two deny ACE's. */
 
+				/* Theoretically we shouldn't merge a dir ACE if
+				 * one ACE has the CI flag set, and the other
+				 * ACE has the OI flag set, but this is rare
+				 * enough we can ignore it. */
+
 				curr_ace_outer->perms |= curr_ace->perms;
+				curr_ace_outer->ace_flags |= curr_ace->ace_flags;
 				DLIST_REMOVE(l_head, curr_ace);
 				SAFE_FREE(curr_ace);
 				curr_ace_outer_next = curr_ace_outer->next; /* We may have deleted the link. */
@@ -1000,7 +997,7 @@ static void merge_aces( canon_ace **pp_list_head )
 			 * we've put on the ACL, we know the deny must be the first one.
 			 */
 
-			if (identity_in_ace_equal(curr_ace, curr_ace_outer) &&
+			if (sid_equal(&curr_ace->trustee, &curr_ace_outer->trustee) &&
 				(curr_ace_outer->attr == DENY_ACE) && (curr_ace->attr == ALLOW_ACE)) {
 
 				if( DEBUGLVL( 10 )) {
@@ -1525,6 +1522,50 @@ static void check_owning_objs(canon_ace *ace, DOM_SID *pfile_owner_sid, DOM_SID 
 }
 
 /****************************************************************************
+ If an ACE entry is SMB_ACL_USER_OBJ and not CREATOR_OWNER, map to SMB_ACL_USER.
+ If an ACE entry is SMB_ACL_GROUP_OBJ and not CREATOR_GROUP, map to SMB_ACL_GROUP
+****************************************************************************/
+
+static bool dup_owning_ace(canon_ace *dir_ace, canon_ace *ace)
+{
+	/* dir ace must be followings.
+	   SMB_ACL_USER_OBJ : trustee(CREATOR_OWNER) -> Posix ACL d:u::perm
+	   SMB_ACL_USER     : not trustee    -> Posix ACL u:user:perm
+	   SMB_ACL_USER_OBJ : trustee -> convert to SMB_ACL_USER : trustee
+	   Posix ACL u:trustee:perm
+
+	   SMB_ACL_GROUP_OBJ: trustee(CREATOR_GROUP) -> Posix ACL d:g::perm
+	   SMB_ACL_GROUP    : not trustee   -> Posix ACL g:group:perm
+	   SMB_ACL_GROUP_OBJ: trustee -> convert to SMB_ACL_GROUP : trustee
+	   Posix ACL g:trustee:perm
+	*/
+
+	if (ace->type == SMB_ACL_USER_OBJ &&
+			!(sid_equal(&ace->trustee, &global_sid_Creator_Owner))) {
+		canon_ace *dup_ace = dup_canon_ace(ace);
+
+		if (dup_ace == NULL) {
+			return false;
+		}
+		dup_ace->type = SMB_ACL_USER;
+		DLIST_ADD_END(dir_ace, dup_ace, canon_ace *);
+	}
+
+	if (ace->type == SMB_ACL_GROUP_OBJ &&
+			!(sid_equal(&ace->trustee, &global_sid_Creator_Group))) {
+		canon_ace *dup_ace = dup_canon_ace(ace);
+
+		if (dup_ace == NULL) {
+			return false;
+		}
+		dup_ace->type = SMB_ACL_GROUP;
+		DLIST_ADD_END(dir_ace, dup_ace, canon_ace *);
+	}
+
+	return true;
+}
+
+/****************************************************************************
  Unpack a SEC_DESC into two canonical ace lists.
 ****************************************************************************/
 
@@ -1655,11 +1696,11 @@ static bool create_canon_ace_lists(files_struct *fsp,
 			/*
 			 * The Creator Owner entry only specifies inheritable permissions,
 			 * never access permissions. WinNT doesn't always set the ACE to
-			 *INHERIT_ONLY, though.
+			 * INHERIT_ONLY, though.
 			 */
 
-			if (nt4_compatible_acls())
-				psa->flags |= SEC_ACE_FLAG_INHERIT_ONLY;
+			psa->flags |= SEC_ACE_FLAG_INHERIT_ONLY;
+
 		} else if (sid_equal(&current_ace->trustee, &global_sid_Creator_Group)) {
 			current_ace->owner_type = GID_ACE;
 			current_ace->unix_ug.gid = pst->st_ex_gid;
@@ -1668,10 +1709,9 @@ static bool create_canon_ace_lists(files_struct *fsp,
 			/*
 			 * The Creator Group entry only specifies inheritable permissions,
 			 * never access permissions. WinNT doesn't always set the ACE to
-			 *INHERIT_ONLY, though.
+			 * INHERIT_ONLY, though.
 			 */
-			if (nt4_compatible_acls())
-				psa->flags |= SEC_ACE_FLAG_INHERIT_ONLY;
+			psa->flags |= SEC_ACE_FLAG_INHERIT_ONLY;
 
 		} else if (sid_to_uid( &current_ace->trustee, &current_ace->unix_ug.uid)) {
 			current_ace->owner_type = UID_ACE;
@@ -1768,6 +1808,34 @@ static bool create_canon_ace_lists(files_struct *fsp,
 				}
 
 				/*
+				 * We have a lossy mapping: directory ACE entries
+				 * CREATOR_OWNER ------\
+				 *     (map to)         +---> SMB_ACL_USER_OBJ
+				 * owning sid    ------/
+				 *
+				 * CREATOR_GROUP ------\
+				 *     (map to)         +---> SMB_ACL_GROUP_OBJ
+				 * primary group sid --/
+				 *
+				 * on set. And on read of a directory ACL
+				 *
+				 * SMB_ACL_USER_OBJ ----> CREATOR_OWNER
+				 * SMB_ACL_GROUP_OBJ ---> CREATOR_GROUP.
+				 *
+				 * Deal with this on set by duplicating
+				 * owning sid and primary group sid ACE
+				 * entries into the directory ACL.
+				 * Fix from Tsukasa Hamano <hamano@osstech.co.jp>.
+				 */
+
+				if (!dup_owning_ace(dir_ace, current_ace)) {
+					DEBUG(0,("create_canon_ace_lists: malloc fail !\n"));
+					free_canon_ace_list(file_ace);
+					free_canon_ace_list(dir_ace);
+					return false;
+				}
+
+				/*
 				 * If this is not an inherit only ACE we need to add a duplicate
 				 * to the file acl.
 				 */
@@ -1787,6 +1855,13 @@ static bool create_canon_ace_lists(files_struct *fsp,
 					 * pointer is now owned by the dir_ace list.
 					 */
 					current_ace = dup_ace;
+					/* We've essentially split this ace into two,
+					 * and added the ace with inheritance request
+					 * bits to the directory ACL. Drop those bits for
+					 * the ACE we're adding to the file list. */
+					current_ace->ace_flags &= ~(SEC_ACE_FLAG_OBJECT_INHERIT|
+								SEC_ACE_FLAG_CONTAINER_INHERIT|
+								SEC_ACE_FLAG_INHERIT_ONLY);
 				} else {
 					/*
 					 * We must not free current_ace here as its
@@ -2277,10 +2352,10 @@ static bool unpack_canon_ace(files_struct *fsp,
 	 */
 
 	print_canon_ace_list( "file ace - before merge", file_ace);
-	merge_aces( &file_ace );
+	merge_aces( &file_ace, false);
 
 	print_canon_ace_list( "dir ace - before merge", dir_ace);
-	merge_aces( &dir_ace );
+	merge_aces( &dir_ace, true);
 
 	/*
 	 * NT ACLs are order dependent. Go through the acl lists and
@@ -2444,17 +2519,6 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 					uid_t *puid = (uid_t *)SMB_VFS_SYS_ACL_GET_QUALIFIER(conn, entry);
 					if (puid == NULL) {
 						DEBUG(0,("canonicalise_acl: Failed to get uid.\n"));
-						continue;
-					}
-					/*
-					 * A SMB_ACL_USER entry for the owner is shadowed by the
-					 * SMB_ACL_USER_OBJ entry and Windows also cannot represent
-					 * that entry, so we ignore it. We also don't create such
-					 * entries out of the blue when setting ACLs, so a get/set
-					 * cycle will drop them.
-					 */
-					if (the_acl_type == SMB_ACL_TYPE_ACCESS && *puid == psbuf->st_ex_uid) {
-						SMB_VFS_SYS_ACL_FREE_QUALIFIER(conn, (void *)puid,tagtype);
 						continue;
 					}
 					uid_to_sid( &sid, *puid);
