@@ -25,13 +25,12 @@
 #include "librpc/gen_ndr/ndr_drsuapi_c.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "libcli/cldap/cldap.h"
-#include "libcli/ldap/ldap_client.h"
 #include "torture/torture.h"
-#include "torture/ldap/proto.h"
 #include "../libcli/drsuapi/drsuapi.h"
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
 #include "dsdb/samdb/samdb.h"
+#include "lib/ldb_wrap.h"
 #include "torture/rpc/rpc.h"
 #include "torture/drs/proto.h"
 
@@ -47,7 +46,7 @@ struct DsSyncBindInfo {
 };
 
 struct DsSyncLDAPInfo {
-	struct ldap_connection *conn;
+	struct ldb_context *ldb;
 };
 
 struct DsSyncTest {
@@ -240,23 +239,15 @@ static bool _test_DsBind(struct torture_context *tctx,
 static bool test_LDAPBind(struct torture_context *tctx, struct DsSyncTest *ctx, 
 			  struct cli_credentials *credentials, struct DsSyncLDAPInfo *l)
 {
-	NTSTATUS status;
 	bool ret = true;
 
-	status = torture_ldap_connection(tctx, &l->conn, ctx->ldap_url);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("failed to connect to LDAP: %s\n", ctx->ldap_url);
-		return false;
-	}
+	l->ldb = ldb_wrap_connect(tctx, tctx->ev, tctx->lp_ctx, ctx->ldap_url,
+				  NULL,
+				  credentials,
+				  0);
+	torture_assert(tctx, l->ldb, "Failed to make LDB connection to target");
 
 	printf("connected to LDAP: %s\n", ctx->ldap_url);
-
-	status = torture_ldap_bind_sasl(l->conn, credentials, tctx->lp_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("failed to bind to LDAP:\n");
-		return false;
-	}
-	printf("bound to LDAP.\n");
 
 	return ret;
 }
@@ -492,44 +483,32 @@ static void test_analyse_objects(struct torture_context *tctx,
  * Fetch LDAP attribute name and DN by supplied OID
  */
 static bool _drs_ldap_attr_by_oid(struct torture_context *tctx,
-					struct DsSyncTest *ctx,
-					const char *oid,
-					const char **attr_dn,
-					const char **attr_name)
+				  struct DsSyncTest *ctx,
+				  const char *oid,
+				  char **attr_name)
 {
-	NTSTATUS status;
-	const char *config_dn;
-	const char *expression;
-	struct ldap_message **res_msg;
-	struct ldap_SearchResEntry *search_res;
+	struct ldb_dn *config_dn;
+	struct ldb_result *res;
 	TALLOC_CTX *tmp_ctx = NULL;
 	const char *search_attrs[] = {"lDAPDisplayName", NULL};
+	int ret;
 
 	tmp_ctx = talloc_new(ctx);
 
-	config_dn = talloc_asprintf(tmp_ctx, "CN=Schema,CN=Configuration,%s", ctx->domain_dn);
-	expression = talloc_asprintf(tmp_ctx, "(attributeID=%s)", oid);
+	config_dn = ldb_dn_new_fmt(tmp_ctx, ctx->admin.ldap.ldb, 
+				   "CN=Schema,CN=Configuration,%s", ctx->domain_dn);
+	ret = ldb_search(ctx->admin.ldap.ldb, tmp_ctx, &res, config_dn, 
+			 LDB_SCOPE_ONELEVEL, search_attrs, "(attributeID=%s)", oid);
+	
+	torture_assert_int_equal(tctx, 
+				 ret, LDB_SUCCESS, 
+				 "Failed to search for attribute");
 
-	status = ildap_search(ctx->admin.ldap.conn,
-				config_dn, LDAP_SEARCH_SCOPE_SUB,
-				expression, search_attrs, false,
-				NULL, NULL, &res_msg);
-	torture_assert_ntstatus_ok(tctx, status, "LDAP search request failed");
-	torture_assert(tctx,
-			ildap_count_entries(ctx->admin.ldap.conn, res_msg) == 1,
-			talloc_asprintf(tmp_ctx, "Failed to find attribute with OID=%s", oid));
-
-	search_res = &res_msg[0]->r.SearchResultEntry;
-	torture_assert(tctx, search_res->num_attributes > 0, "No attributes returned!")
-	torture_assert(tctx, strequal(search_attrs[0], search_res->attributes[0].name),
-			"Requested attributes for attribute class not returned");
-
-	if (attr_dn) {
-		*attr_dn = search_res->dn;
-	}
+	torture_assert_int_equal(tctx,
+				 res->count, 1, "Failed to find attribute for OID");
 
 	if (attr_name) {
-		*attr_name = (const char *)search_res->attributes[0].values[0].data;
+		*attr_name = talloc_strdup(ctx, ldb_msg_find_attr_as_string(res->msgs[0], "lDAPDisplayName", NULL));
 	}
 
 	talloc_free(tmp_ctx);
@@ -550,8 +529,7 @@ static bool _drs_util_verify_attids(struct torture_context *tctx,
 	DEBUG(1,("drs_test_verify_attids:\n"));
 
 	for (; cur; cur = cur->next_object) {
-		const char *attr_dn = NULL;
-		const char *attr_name = NULL;
+		char *attr_name = NULL;
 		struct drsuapi_DsReplicaObject *obj = &cur->object;
 
 		DEBUG(1,("%3s %-10s: %s\n", "", "object_dn", obj->identifier->dn));
@@ -566,13 +544,14 @@ static bool _drs_util_verify_attids(struct torture_context *tctx,
 				return false;
 			}
 
-			if (!_drs_ldap_attr_by_oid(tctx, ctx, oid, &attr_dn, &attr_name)) {
+			if (!_drs_ldap_attr_by_oid(tctx, ctx, oid, &attr_name)) {
 				return false;
 			}
 
 			DEBUG(1,("%7s attr[%2d]: %-22s {map_idx=%2d; attid=0x%06x; ldap_name=%-26s; idl_name=%s}\n", "",
 					i, oid, map_idx, attr->attid, attr_name,
 					drs_util_DsAttributeId_to_string(attr->attid)));
+			talloc_free(attr_name);
 		}
 	}
 
