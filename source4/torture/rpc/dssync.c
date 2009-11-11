@@ -79,6 +79,11 @@ struct DsSyncTest {
 	} old_dc;
 };
 
+static bool _drs_util_verify_attids(struct torture_context *tctx,
+				    struct DsSyncTest *ctx,
+				    const struct drsuapi_DsReplicaOIDMapping_Ctr *prefix_map,
+				    const struct drsuapi_DsReplicaObjectListItemEx *cur);
+
 static struct DsSyncTest *test_create_context(struct torture_context *tctx)
 {
 	NTSTATUS status;
@@ -96,7 +101,7 @@ static struct DsSyncTest *test_create_context(struct torture_context *tctx)
 	}
 	ctx->drsuapi_binding->flags |= DCERPC_SIGN | DCERPC_SEAL;
 
-	ctx->ldap_url = talloc_asprintf(ctx, "ldap://%s/", ctx->drsuapi_binding->host);
+	ctx->ldap_url = talloc_asprintf(ctx, "ldap://%s", ctx->drsuapi_binding->host);
 
 	/* ctx->admin ...*/
 	ctx->admin.credentials				= cmdline_credentials;
@@ -241,15 +246,46 @@ static bool test_LDAPBind(struct torture_context *tctx, struct DsSyncTest *ctx,
 {
 	bool ret = true;
 
-	l->ldb = ldb_wrap_connect(tctx, tctx->ev, tctx->lp_ctx, ctx->ldap_url,
-				  NULL,
-				  credentials,
-				  0);
-	torture_assert(tctx, l->ldb, "Failed to make LDB connection to target");
+	struct ldb_context *ldb;
 
+	const char *modules_option[] = { "modules:paged_searches", NULL };
+	ctx->admin.ldap.ldb = ldb = ldb_init(ctx, tctx->ev);
+	if (ldb == NULL) {
+		return false;
+	}
+
+	/* Despite us loading the schema from the AD server, we need
+	 * the samba handlers to get the extended DN syntax stuff */
+	ret = ldb_register_samba_handlers(ldb);
+	if (ret == -1) {
+		talloc_free(ldb);
+		return NULL;
+	}
+
+	ldb_set_modules_dir(ldb,
+			    talloc_asprintf(ldb,
+					    "%s/ldb",
+					    lp_modulesdir(tctx->lp_ctx)));
+
+	if (ldb_set_opaque(ldb, "credentials", credentials)) {
+		talloc_free(ldb);
+		return NULL;
+	}
+
+	if (ldb_set_opaque(ldb, "loadparm", tctx->lp_ctx)) {
+		talloc_free(ldb);
+		return NULL;
+	}
+
+	ret = ldb_connect(ldb, ctx->ldap_url, 0, modules_option);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(ldb);
+		torture_assert_int_equal(tctx, ret, LDB_SUCCESS, "Failed to make LDB connection to target");
+	}
+	
 	printf("connected to LDAP: %s\n", ctx->ldap_url);
 
-	return ret;
+	return true;
 }
 
 static bool test_GetInfo(struct torture_context *tctx, struct DsSyncTest *ctx)
@@ -329,26 +365,224 @@ static bool test_GetInfo(struct torture_context *tctx, struct DsSyncTest *ctx)
 	return ret;
 }
 
-static void test_analyse_objects(struct torture_context *tctx, 
+static bool test_analyse_objects(struct torture_context *tctx, 
 				 struct DsSyncTest *ctx,
-				 const DATA_BLOB *gensec_skey,
-				 struct drsuapi_DsReplicaObjectListItemEx *cur)
+				 const char *partition, 
+				 const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr,
+				 uint32_t object_count,
+				 const struct drsuapi_DsReplicaObjectListItemEx *first_object,
+				 const DATA_BLOB *gensec_skey)
 {
 	static uint32_t object_id;
 	const char *save_values_dir;
+	const struct drsuapi_DsReplicaObjectListItemEx *cur;
+	struct ldb_context *ldb = ctx->admin.ldap.ldb;
+	struct ldb_dn *deleted_dn;
+	WERROR status;
+	int i, j, ret;
+	struct dsdb_extended_replicated_objects *objs;
+	struct ldb_extended_dn_control *extended_dn_ctrl;
+	_drs_util_verify_attids(tctx, ctx, mapping_ctr, first_object);
+	
+	if (!dsdb_get_schema(ldb)) {
+		struct dsdb_schema *ldap_schema;
+		struct ldb_result *a_res;
+		struct ldb_result *c_res;
+		struct ldb_dn *schema_dn = ldb_get_schema_basedn(ldb);
+		ldap_schema = dsdb_new_schema(ctx, lp_iconv_convenience(tctx->lp_ctx));
+		if (!ldap_schema) {
+			return false;
+		}
+		status = dsdb_load_prefixmap_from_drsuapi(ldap_schema, mapping_ctr);
+
+		/*
+		 * load the attribute definitions
+		 */
+		ret = ldb_search(ldb, ldap_schema, &a_res,
+				 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
+				 "(objectClass=attributeSchema)");
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0, ("load schema from LDAP for DSSYNC: failed to search attributeSchema objects: %s",
+				  ldb_errstring(ldb)));
+			return false;
+		}
+
+		/*
+		 * load the objectClass definitions
+		 */
+		ret = ldb_search(ldb, ldap_schema, &c_res,
+				 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
+				 "(objectClass=classSchema)");
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0, ("load schema from LDAP for DSSYNC: failed to search classSchema objects: %s", 
+				  ldb_errstring(ldb)));
+			return false;
+		}
+
+		/* Build schema */
+		for (i=0; i < a_res->count; i++) {
+			status = dsdb_attribute_from_ldb(ldb, ldap_schema, a_res->msgs[i]);
+			if (!W_ERROR_IS_OK(status)) {
+				DEBUG(0, ("load schema from LDAP for DSSYNC: failed to load attribute definition: %s:%s",
+					  ldb_dn_get_linearized(a_res->msgs[i]->dn),
+					  win_errstr(status)));
+				return false;
+			}
+		}
+		
+		for (i=0; i < c_res->count; i++) {
+			status = dsdb_class_from_ldb(ldap_schema, c_res->msgs[i]);
+			if (!W_ERROR_IS_OK(status)) {
+				DEBUG(0, ("load scheam from LDAP for DSSYNC: failed to load class definition: %s:%s",
+								ldb_dn_get_linearized(c_res->msgs[i]->dn),
+					  win_errstr(status)));
+				return false;
+			}
+		}
+		talloc_free(a_res);
+		talloc_free(c_res);
+		ret = dsdb_set_schema(ldb, ldap_schema);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0, ("load schema from LDAP for DSSYNC: failed to set schema: %s\n", ldb_strerror(ret)));
+			return false;
+		}
+	}
+
+	status = dsdb_extended_replicated_objects_convert(ldb,
+							  partition,
+							  mapping_ctr,
+							  object_count,
+							  first_object,
+							  0, NULL, 
+							  NULL, NULL, 
+							  gensec_skey,
+							  ctx, &objs);
+	if (!W_ERROR_IS_OK(status)) {
+		DEBUG(0, ("load scheam from LDAP for DSSYNC: failed to parse objects: %s",
+			  win_errstr(status)));
+		return false;
+	}
+
+	extended_dn_ctrl = talloc(objs, struct ldb_extended_dn_control);
+	extended_dn_ctrl->type = 1;
+
+	deleted_dn = ldb_dn_new(objs, ldb, partition);
+	ldb_dn_add_child_fmt(deleted_dn, "CN=Deleted Objects");
+		
+	for (i=0; i < object_count; i++) {
+		struct ldb_request *search_req;
+		struct ldb_result *res;
+		struct ldb_message *new_msg, *drs_msg, *ldap_msg;
+		const char **attrs = talloc_array(objs, const char *, objs->objects[i].msg->num_elements+1);
+		for (j=0; j < objs->objects[i].msg->num_elements; j++) {
+			attrs[j] = objs->objects[i].msg->elements[j].name;
+		}
+		attrs[j] = NULL;
+		res = talloc_zero(objs, struct ldb_result);
+		if (!res) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		ret = ldb_build_search_req(&search_req, ldb, objs, 
+					   objs->objects[i].msg->dn,
+					   LDB_SCOPE_BASE,
+					   NULL,
+					   attrs,
+					   NULL,
+					   res,
+					   ldb_search_default_callback,
+					   NULL);
+		if (ret != LDB_SUCCESS) {
+			return false;
+		}
+		talloc_steal(search_req, res);
+		ret = ldb_request_add_control(search_req, LDB_CONTROL_SHOW_DELETED_OID, true, NULL);
+		if (ret != LDB_SUCCESS) {
+			return false;
+		}
+
+		ret = ldb_request_add_control(search_req, LDB_CONTROL_EXTENDED_DN_OID, true, extended_dn_ctrl);
+		if (ret != LDB_SUCCESS) {
+			return false;
+		}
+
+		ret = ldb_request(ldb, search_req);
+		if (ret == LDB_SUCCESS) {
+			ret = ldb_wait(search_req->handle, LDB_WAIT_ALL);
+		}
+
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0, ("Could not re-fetch object just delivered over DRS: %s", ldb_errstring(ldb)));
+			return false;
+		}
+		if (res->count != 1) {
+			DEBUG(0, ("Could not re-fetch object just delivered over DRS"));
+			return false;
+		}
+		ldap_msg = res->msgs[0];
+		for (j=0; j < ldap_msg->num_elements; j++) {
+			ldap_msg->elements[j].flags = LDB_FLAG_MOD_ADD;
+		}
+
+		drs_msg = ldb_msg_canonicalize(ldb, objs->objects[i].msg);
+		for (j=0; j < drs_msg->num_elements; j++) {
+			if (drs_msg->elements[j].num_values == 0) {
+				ldb_msg_remove_element(drs_msg, &drs_msg->elements[j]);
+				/* Don't skip one */
+				j--;
+				
+				/* For unknown reasons, there is no nTSecurityDescriptor on cn=deleted objects over LDAP, but there is over DRS! */
+			} else if (ldb_attr_cmp(drs_msg->elements[j].name, "nTSecurityDescriptor") == 0 && 
+				   ldb_dn_compare(drs_msg->dn, deleted_dn) == 0) {
+				ldb_msg_remove_element(drs_msg, &drs_msg->elements[j]);
+				/* Don't skip one */
+				j--;
+			} else if (ldb_attr_cmp(drs_msg->elements[j].name, "unicodePwd") == 0 ||
+				   ldb_attr_cmp(drs_msg->elements[j].name, "dBCSPwd") == 0 ||
+				   ldb_attr_cmp(drs_msg->elements[j].name, "ntPwdHistory") == 0 ||
+				   ldb_attr_cmp(drs_msg->elements[j].name, "lmPwdHistory") == 0 ||
+				   ldb_attr_cmp(drs_msg->elements[j].name, "supplementalCredentials") == 0 ||
+				   ldb_attr_cmp(drs_msg->elements[j].name, "priorValue") == 0 ||
+				   ldb_attr_cmp(drs_msg->elements[j].name, "currentValue") == 0 ||
+				   ldb_attr_cmp(drs_msg->elements[j].name, "trustAuthOutgoing") == 0 ||
+				   ldb_attr_cmp(drs_msg->elements[j].name, "trustAuthIncoming") == 0 ||
+				   ldb_attr_cmp(drs_msg->elements[j].name, "initialAuthOutgoing") == 0 ||
+				   ldb_attr_cmp(drs_msg->elements[j].name, "initialAuthIncoming") == 0) {
+
+				/* These are not shown over LDAP, so we need to skip them for the comparison */
+				ldb_msg_remove_element(drs_msg, &drs_msg->elements[j]);
+				/* Don't skip one */
+				j--;
+			} else {
+				drs_msg->elements[j].flags = LDB_FLAG_MOD_ADD;
+			}
+		}
+		
+		
+		new_msg = ldb_msg_diff(ldb, drs_msg, ldap_msg);
+		talloc_steal(search_req, new_msg);
+		if (new_msg->num_elements != 0) {
+			char *s;
+			struct ldb_ldif ldif;
+			fprintf(stdout, "#\n");
+			ldif.changetype = LDB_CHANGETYPE_MODIFY;
+			ldif.msg = new_msg;
+			s = ldb_ldif_write_string(ldb, new_msg, &ldif);
+			DEBUG(0, ("Difference in between DRS and LDAP objects: %s\n", s));
+		}
+		talloc_free(search_req);
+	}
 
 	if (!lp_parm_bool(tctx->lp_ctx, NULL, "dssync", "print_pwd_blobs", false)) {
-		return;	
+		return true;	
 	}
 
 	save_values_dir = lp_parm_string(tctx->lp_ctx, NULL, "dssync", "save_pwd_blobs_dir");
 
-	for (; cur; cur = cur->next_object) {
+	for (cur = first_object; cur; cur = cur->next_object) {
 		const char *dn;
 		struct dom_sid *sid = NULL;
 		uint32_t rid = 0;
 		bool dn_printed = false;
-		uint32_t i;
 
 		if (!cur->object.identifier) continue;
 
@@ -477,6 +711,7 @@ static void test_analyse_objects(struct torture_context *tctx,
 			talloc_free(ptr);
 		}
 	}
+	return true;
 }
 
 /**
@@ -521,8 +756,8 @@ static bool _drs_ldap_attr_by_oid(struct torture_context *tctx,
  */
 static bool _drs_util_verify_attids(struct torture_context *tctx,
 				    struct DsSyncTest *ctx,
-				    struct drsuapi_DsReplicaOIDMapping_Ctr *prefix_map,
-				    struct drsuapi_DsReplicaObjectListItemEx *cur)
+				    const struct drsuapi_DsReplicaOIDMapping_Ctr *prefix_map,
+				    const struct drsuapi_DsReplicaObjectListItemEx *cur)
 {
 	uint32_t i;
 
@@ -530,7 +765,7 @@ static bool _drs_util_verify_attids(struct torture_context *tctx,
 
 	for (; cur; cur = cur->next_object) {
 		char *attr_name = NULL;
-		struct drsuapi_DsReplicaObject *obj = &cur->object;
+		const struct drsuapi_DsReplicaObject *obj = &cur->object;
 
 		DEBUG(1,("%3s %-10s: %s\n", "", "object_dn", obj->identifier->dn));
 
@@ -548,7 +783,7 @@ static bool _drs_util_verify_attids(struct torture_context *tctx,
 				return false;
 			}
 
-			DEBUG(1,("%7s attr[%2d]: %-22s {map_idx=%2d; attid=0x%06x; ldap_name=%-26s; idl_name=%s}\n", "",
+			DEBUG(10,("%7s attr[%2d]: %-22s {map_idx=%2d; attid=0x%06x; ldap_name=%-26s; idl_name=%s}\n", "",
 					i, oid, map_idx, attr->attid, attr_name,
 					drs_util_DsAttributeId_to_string(attr->attid)));
 			talloc_free(attr_name);
@@ -740,9 +975,10 @@ static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 					(long long)ctr1->new_highwatermark.tmp_highest_usn,
 					(long long)ctr1->new_highwatermark.highest_usn));
 
-				_drs_util_verify_attids(tctx, ctx, &ctr1->mapping_ctr, ctr1->first_object);
-
-				test_analyse_objects(tctx, ctx, &gensec_skey, ctr1->first_object);
+				if (!test_analyse_objects(tctx, ctx, partition, &ctr1->mapping_ctr,  ctr1->object_count, 
+							  ctr1->first_object, &gensec_skey)) {
+					return false;
+				}
 
 				if (ctr1->more_data) {
 					r.in.req->req5.highwatermark = ctr1->new_highwatermark;
@@ -772,9 +1008,10 @@ static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 					(long long)ctr6->new_highwatermark.tmp_highest_usn,
 					(long long)ctr6->new_highwatermark.highest_usn));
 
-				_drs_util_verify_attids(tctx, ctx, &ctr6->mapping_ctr, ctr6->first_object);
-
-				test_analyse_objects(tctx, ctx, &gensec_skey, ctr6->first_object);
+				if (!test_analyse_objects(tctx, ctx, partition, &ctr6->mapping_ctr,  ctr6->object_count, 
+							  ctr6->first_object, &gensec_skey)) {
+					return false;
+				}
 
 				if (ctr6->more_data) {
 					r.in.req->req8.highwatermark = ctr6->new_highwatermark;
