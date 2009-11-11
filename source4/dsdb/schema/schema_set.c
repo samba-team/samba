@@ -139,8 +139,8 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 		}
 	}
 
-	if (ret == LDB_ERR_OPERATIONS_ERROR || ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
-		/* We might be on a read-only DB */
+	if (ret == LDB_ERR_OPERATIONS_ERROR || ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS || ret == LDB_ERR_INVALID_DN_SYNTAX) {
+		/* We might be on a read-only DB or LDAP */
 		ret = LDB_SUCCESS;
 	}
 	if (ret != LDB_SUCCESS) {
@@ -166,7 +166,7 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 			ret = samdb_replace(ldb, mem_ctx, mod_msg);
 		}
 	}
-	if (ret == LDB_ERR_OPERATIONS_ERROR || ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
+	if (ret == LDB_ERR_OPERATIONS_ERROR || ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS || ret == LDB_ERR_INVALID_DN_SYNTAX) {
 		/* We might be on a read-only DB */
 		ret = LDB_SUCCESS;
 	}
