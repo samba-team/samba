@@ -781,6 +781,9 @@ char *ldb_dn_get_extended_linearized(void *mem_ctx, struct ldb_dn *dn, int mode)
 		int ret;
 
 		ext_syntax = ldb_dn_extended_syntax_by_name(dn->ldb, name);
+		if (!ext_syntax) {
+			return NULL;
+		}
 
 		if (mode == 1) {
 			ret = ext_syntax->write_clear_fn(dn->ldb, mem_ctx,
@@ -1821,6 +1824,11 @@ int ldb_dn_set_extended_component(struct ldb_dn *dn,
 
 	if ( ! ldb_dn_validate(dn)) {
 		return LDB_ERR_OTHER;
+	}
+
+	if (!ldb_dn_extended_syntax_by_name(dn->ldb, name)) {
+		/* We don't know how to handle this type of thing */
+		return LDB_ERR_INVALID_DN_SYNTAX;
 	}
 
 	for (i=0; i < dn->ext_comp_num; i++) {
