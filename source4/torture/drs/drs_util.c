@@ -32,7 +32,7 @@
  * corresponding prefix_map index (if requested)
  */
 bool drs_util_oid_from_attid(struct torture_context *tctx,
-			     struct drsuapi_DsReplicaOIDMapping_Ctr *prefix_map,
+			     const struct drsuapi_DsReplicaOIDMapping_Ctr *prefix_map,
 			     uint32_t attid,
 			     const char **_oid,
 			     int *map_idx)
