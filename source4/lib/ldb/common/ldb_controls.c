@@ -168,12 +168,11 @@ int ldb_request_add_control(struct ldb_request *req, const char *oid, bool criti
 	struct ldb_control **ctrls;
 	struct ldb_control *ctrl;
 
-	for (n=0; req->controls && req->controls[n];) { 
+	for (n=0; req->controls && req->controls[n];n++) { 
 		/* having two controls of the same OID makes no sense */
 		if (strcmp(oid, req->controls[n]->oid) == 0) {
 			return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
 		}
-		n++; 
 	}
 
 	ctrls = talloc_array(req,
