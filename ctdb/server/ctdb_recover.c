@@ -963,7 +963,7 @@ int32_t ctdb_control_end_recovery(struct ctdb_context *ctdb,
 	ctdb_disable_monitoring(ctdb);
 
 	ret = ctdb_event_script_callback(ctdb, 
-					 timeval_current_ofs(ctdb->tunable.script_timeout, 0),
+					 timeval_set(ctdb->tunable.script_timeout, 0),
 					 state, 
 					 ctdb_end_recovery_callback, 
 					 state, "recovered");
@@ -1017,7 +1017,7 @@ int32_t ctdb_control_start_recovery(struct ctdb_context *ctdb,
 	ctdb_disable_monitoring(ctdb);
 
 	ret = ctdb_event_script_callback(ctdb, 
-					 timeval_current_ofs(ctdb->tunable.script_timeout, 0),
+					 timeval_set(ctdb->tunable.script_timeout, 0),
 					 state, 
 					 ctdb_start_recovery_callback, 
 					 state, "startrecovery");
@@ -1231,7 +1231,7 @@ int32_t ctdb_control_stop_node(struct ctdb_context *ctdb, struct ctdb_req_contro
 	ctdb_disable_monitoring(ctdb);
 
 	ret = ctdb_event_script_callback(ctdb, 
-					 timeval_current_ofs(ctdb->tunable.script_timeout, 0),
+					 timeval_set(ctdb->tunable.script_timeout, 0),
 					 state, 
 					 ctdb_stop_node_callback, 
 					 state, "stopped");

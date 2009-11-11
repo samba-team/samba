@@ -424,6 +424,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_TRANS2_FINISHED:
 		return ctdb_control_trans2_finished(ctdb, c);
 
+	case CTDB_CONTROL_TRANS2_ACTIVE:
+		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
+		return ctdb_control_trans2_active(ctdb, c, *(uint32_t *)indata.dptr);
+
 	case CTDB_CONTROL_RECD_PING:
 		CHECK_CONTROL_DATA_SIZE(0);
 		return ctdb_control_recd_ping(ctdb);
@@ -469,6 +473,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		}
 		if (indata.dsize > 0) {
 			ctdb->recovery_lock_file = talloc_strdup(ctdb, discard_const(indata.dptr));
+			ctdb->tunable.verify_recovery_lock = 1;
 		}
 		return 0;
 
@@ -551,6 +556,13 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_TRANSACTION_CANCEL:
 		CHECK_CONTROL_DATA_SIZE(0);
 		return ctdb_control_transaction_cancel(ctdb);
+
+	case CTDB_CONTROL_REGISTER_NOTIFY:
+		return ctdb_control_register_notify(ctdb, client_id, indata);
+
+	case CTDB_CONTROL_DEREGISTER_NOTIFY:
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_client_notify_deregister));
+		return ctdb_control_deregister_notify(ctdb, client_id, indata);
 
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));

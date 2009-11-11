@@ -144,6 +144,12 @@ start() {
 
     check_persistent_databases || return $?
 
+    if [ yes == "$CTDB_SUPPRESS_COREFILE" ]; then
+	ulimit -c 0
+    else
+	ulimit -c unlimited
+    fi
+
     case $init_style in
 	valgrind)
 	    valgrind -q --log-file=/var/log/ctdb_valgrind \

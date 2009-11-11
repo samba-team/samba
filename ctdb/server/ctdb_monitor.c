@@ -126,7 +126,7 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 	if (status != 0 && !(node->flags & NODE_FLAGS_UNHEALTHY)) {
 		DEBUG(DEBUG_NOTICE,("monitor event failed - disabling node\n"));
 		node->flags |= NODE_FLAGS_UNHEALTHY;
-		ctdb->monitor->next_interval = 1;
+		ctdb->monitor->next_interval = 5;
 		if (ctdb->tunable.disable_when_unhealthy != 0) {
 			DEBUG(DEBUG_INFO, ("DISABLING node since it became unhealthy\n"));
 			node->flags |= NODE_FLAGS_DISABLED;
@@ -144,7 +144,7 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 	} else if (status == 0 && (node->flags & NODE_FLAGS_UNHEALTHY)) {
 		DEBUG(DEBUG_NOTICE,("monitor event OK - node re-enabled\n"));
 		node->flags &= ~NODE_FLAGS_UNHEALTHY;
-		ctdb->monitor->next_interval = 1;
+		ctdb->monitor->next_interval = 5;
 
 		ctdb_run_notification_script(ctdb, "healthy");
 
@@ -194,7 +194,7 @@ static void ctdb_startup_callback(struct ctdb_context *ctdb, int status, void *p
 	} else if (status == 0) {
 		DEBUG(DEBUG_NOTICE,("startup event OK - enabling monitoring\n"));
 		ctdb->done_startup = true;
-		ctdb->monitor->next_interval = 1;
+		ctdb->monitor->next_interval = 5;
 		ctdb_run_notification_script(ctdb, "startup");
 	}
 
@@ -211,7 +211,7 @@ static void ctdb_check_health(struct event_context *ev, struct timed_event *te,
 			      struct timeval t, void *private_data)
 {
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
-	int ret;
+	int ret = 0;
 
 	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL ||
 	    (ctdb->monitor->monitoring_mode == CTDB_MONITORING_DISABLED && ctdb->done_startup)) {
@@ -223,7 +223,7 @@ static void ctdb_check_health(struct event_context *ev, struct timed_event *te,
 	
 	if (!ctdb->done_startup) {
 		ret = ctdb_event_script_callback(ctdb, 
-						 timeval_current_ofs(ctdb->tunable.script_timeout, 0),
+						 timeval_set(ctdb->tunable.script_timeout, 0),
 						 ctdb->monitor->monitor_context, ctdb_startup_callback, 
 						 ctdb, "startup");
 	} else {
@@ -241,26 +241,26 @@ static void ctdb_check_health(struct event_context *ev, struct timed_event *te,
 				break;
 			}
 		}
-		if (skip_monitoring) {
+		if (skip_monitoring != 0) {
 			event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
 					timeval_current_ofs(ctdb->monitor->next_interval, 0), 
 					ctdb_check_health, ctdb);
 			return;
 		} else {
 			ret = ctdb_event_script_callback(ctdb, 
-						 timeval_current_ofs(ctdb->tunable.script_timeout, 0),
-						 ctdb->monitor->monitor_context, ctdb_health_callback, 
-						 ctdb, "monitor");
+					timeval_set(ctdb->tunable.script_timeout, 0),
+					ctdb->monitor->monitor_context, ctdb_health_callback,
+					ctdb, "monitor");
 		}
 	}
 
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Unable to launch monitor event script\n"));
-		ctdb->monitor->next_interval = 1;
+		ctdb->monitor->next_interval = 5;
 		event_add_timed(ctdb->ev, ctdb->monitor->monitor_context, 
-				timeval_current_ofs(1, 0), 
-				ctdb_check_health, ctdb);
-	}	
+			timeval_current_ofs(5, 0), 
+			ctdb_check_health, ctdb);
+	}
 }
 
 /* 
@@ -279,7 +279,7 @@ void ctdb_disable_monitoring(struct ctdb_context *ctdb)
 void ctdb_enable_monitoring(struct ctdb_context *ctdb)
 {
 	ctdb->monitor->monitoring_mode  = CTDB_MONITORING_ACTIVE;
-	ctdb->monitor->next_interval = 2;
+	ctdb->monitor->next_interval = 5;
 	DEBUG(DEBUG_INFO,("Monitoring has been enabled\n"));
 }
 
@@ -292,7 +292,7 @@ void ctdb_stop_monitoring(struct ctdb_context *ctdb)
 	ctdb->monitor->monitor_context = NULL;
 
 	ctdb->monitor->monitoring_mode  = CTDB_MONITORING_DISABLED;
-	ctdb->monitor->next_interval = 1;
+	ctdb->monitor->next_interval = 5;
 	DEBUG(DEBUG_NOTICE,("Monitoring has been stopped\n"));
 }
 
@@ -310,7 +310,7 @@ void ctdb_start_monitoring(struct ctdb_context *ctdb)
 	ctdb->monitor = talloc(ctdb, struct ctdb_monitor_state);
 	CTDB_NO_MEMORY_FATAL(ctdb, ctdb->monitor);
 
-	ctdb->monitor->next_interval = 1;
+	ctdb->monitor->next_interval = 5;
 
 	ctdb->monitor->monitor_context = talloc_new(ctdb->monitor);
 	CTDB_NO_MEMORY_FATAL(ctdb, ctdb->monitor->monitor_context);
@@ -342,7 +342,9 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 
 	node         = ctdb->nodes[c->pnn];
 	old_flags    = node->flags;
-	c->old_flags  = node->flags;
+	if (c->pnn != ctdb->pnn) {
+		c->old_flags  = node->flags;
+	}
 	node->flags   = c->new_flags & ~NODE_FLAGS_DISCONNECTED;
 	node->flags  |= (c->old_flags & NODE_FLAGS_DISCONNECTED);
 

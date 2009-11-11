@@ -21,12 +21,15 @@
 */
 
 #include "includes.h"
+#include "system/time.h"
 #include "system/filesys.h"
 #include "system/network.h"
 #include "lib/util/dlinklist.h"
 #include "lib/events/events.h"
 #include "lib/events/events_internal.h"
 #include <sys/epoll.h>
+
+extern pid_t ctdbd_pid;
 
 struct epoll_event_context {
 	/* a pointer back to the generic event_context */
@@ -457,11 +460,26 @@ static int epoll_event_loop_once(struct event_context *ev)
 */
 static int epoll_event_loop_wait(struct event_context *ev)
 {
+	static time_t t=0;
+	time_t new_t;
 	struct epoll_event_context *epoll_ev = talloc_get_type(ev->additional_data,
 							   struct epoll_event_context);
 	while (epoll_ev->num_fd_events) {
 		if (epoll_event_loop_once(ev) != 0) {
 			break;
+		}
+		if (getpid() == ctdbd_pid) {
+			new_t=time(NULL);
+			if (t != 0) {
+				if (t > new_t) {
+					DEBUG(0,("ERROR Time skipped backward by %d seconds\n", (int)(t-new_t)));
+				}
+				/* We assume here that we get at least one event every 5 seconds */
+				if (new_t > (t+5)) {
+					DEBUG(0,("ERROR Time jumped forward by %d seconds\n", (int)(new_t-t)));
+				}
+			}
+			t=new_t;
 		}
 	}
 

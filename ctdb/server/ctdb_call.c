@@ -342,13 +342,10 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 			 ctdb_db->db_id, hdr->generation, ctdb->vnn_map->generation,
 			 (unsigned long long)c->rsn, (unsigned long long)header.rsn, c->hdr.reqid,
 			 (key.dsize >= 4)?(*(uint32_t *)key.dptr):0));
-		/*
-		 * with the new vacuuming code there are conditions where a node has outdated
-		 * information about the real dmaster
-		 * since here we are lmaster and always know who is the real dmaster
-		 * we don't need to exit with a fatal error and we even don't have
-		 * to initiate a recovery
-		 */
+		if (header.rsn != 0 || header.dmaster != ctdb->pnn) {
+			ctdb_fatal(ctdb, "ctdb_req_dmaster from non-master");
+			return;
+		}
 	}
 
 	if (header.rsn > c->rsn) {

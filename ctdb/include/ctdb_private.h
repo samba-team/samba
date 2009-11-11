@@ -54,6 +54,11 @@ struct takeover_run_reply {
 };
 
 /*
+ * pid of the ctdbd daemon
+ */
+extern pid_t ctdbd_pid;
+
+/*
   a tcp connection description
  */
 struct ctdb_tcp_connection {
@@ -160,7 +165,6 @@ typedef void (*ctdb_control_callback_fn_t)(struct ctdb_context *,
 					   int32_t status, TDB_DATA data, 
 					   const char *errormsg,
 					   void *private_data);
-
 /*
   structure describing a connected client in the daemon
  */
@@ -173,6 +177,7 @@ struct ctdb_client {
 	struct ctdb_tcp_list *tcp_list;
 	uint32_t db_id;
 	uint32_t num_persistent_updates;
+	struct ctdb_client_notify_list *notify;
 };
 
 
@@ -445,8 +450,9 @@ struct ctdb_context {
 	TALLOC_CTX *eventscripts_ctx; /* a context to hold data for the RUN_EVENTSCRIPTS control */
 	uint32_t *recd_ping_count;
 	TALLOC_CTX *release_ips_ctx; /* a context used to automatically drop all IPs if we fail to recover the node */
-	TALLOC_CTX *script_monitoring_ctx; /* a context where we store results while running the monitor event */
-	TALLOC_CTX *last_monitoring_ctx; 
+	TALLOC_CTX *script_monitor_ctx; /* a context where we store results while running the monitor event */
+	TALLOC_CTX *last_monitor_ctx; 
+	TALLOC_CTX *event_script_ctx;  /* non-monitoring events */
 	TALLOC_CTX *banning_ctx;
 };
 
@@ -612,6 +618,9 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_SET_DB_PRIORITY         = 111,
 		    CTDB_CONTROL_GET_DB_PRIORITY         = 112,
 		    CTDB_CONTROL_TRANSACTION_CANCEL      = 113,
+		    CTDB_CONTROL_REGISTER_NOTIFY         = 114,
+		    CTDB_CONTROL_DEREGISTER_NOTIFY       = 115,
+		    CTDB_CONTROL_TRANS2_ACTIVE           = 116,
 };	
 
 /*
@@ -1461,6 +1470,9 @@ int32_t ctdb_control_trans2_finished(struct ctdb_context *ctdb,
 				     struct ctdb_req_control *c);
 int32_t ctdb_control_trans2_error(struct ctdb_context *ctdb, 
 				  struct ctdb_req_control *c);
+int32_t ctdb_control_trans2_active(struct ctdb_context *ctdb,
+				   struct ctdb_req_control *c,
+				   uint32_t db_id);
 
 char *ctdb_addr_to_str(ctdb_sock_addr *addr);
 unsigned ctdb_addr_to_port(ctdb_sock_addr *addr);
@@ -1500,5 +1512,11 @@ int32_t ctdb_control_disable_script(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_set_ban_state(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_get_ban_state(struct ctdb_context *ctdb, TDB_DATA *outdata);
 int32_t ctdb_control_set_db_priority(struct ctdb_context *ctdb, TDB_DATA indata);
+
+int32_t ctdb_control_register_notify(struct ctdb_context *ctdb, uint32_t client_id, TDB_DATA indata);
+
+int32_t ctdb_control_deregister_notify(struct ctdb_context *ctdb, uint32_t client_id, TDB_DATA indata);
+
+int start_syslog_daemon(struct ctdb_context *ctdb);
 
 #endif

@@ -4,8 +4,8 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.98
-Release: 1
+Version: 1.0.104
+Release: 1GITHASH
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -13,7 +13,7 @@ URL: http://ctdb.samba.org/
 
 Source: ctdb-%{version}.tar.gz
 
-Prereq: /sbin/chkconfig /bin/mktemp /usr/bin/killall
+Prereq: /bin/mktemp /usr/bin/killall
 Prereq: fileutils sed /etc/init.d
 
 Provides: ctdb = %{version}
@@ -74,15 +74,6 @@ find $RPM_BUILD_ROOT -name "*.old" -exec rm -f {} \;
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-%post
-[ -x /sbin/chkconfig ] && /sbin/chkconfig --add ctdb
-
-%preun
-if [ $1 = 0 ] ; then
-    [ -x /sbin/chkconfig ] && /sbin/chkconfig --del ctdb
-fi
-exit 0
-
 
 #######################################################################
 ## Files section                                                     ##
@@ -127,6 +118,64 @@ exit 0
 %{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
+* Fri Nov 6 2009 : Version 1.0.104
+ - Suggestion from Metze, we can now use killtcp to kill local connections
+   for nfs so change the killtcp script to kill both directions of an NFS
+   connection.
+   We used to deliberately only kill one direction in these cases due to
+   limitations.
+ - Suggestion from christian Ambach, when using natgw, try to avoid using a
+   UNHEALTHY node as the natgw master.
+ - From Michael Adam: Fix a SEGV bug in the recent change to the eventscripts
+   to allow the timeout to apply to each individual script.
+ - fix a talloc bug in teh vacuuming code that produced nasty valgrind
+   warnings.
+ - From Rusty: Set up ulimit to create core files for ctdb, and spawned
+   processes by default. This is useful for debugging and testing but can be
+   disabled by setting CTDB_SUPRESS_COREFILE=yes in the sysconfig file.
+ - Remove the wbinfo -t check from the startup check that winbindd is happy.
+ - Enhance the test for bond devices so we also check if the sysadmin have
+   disabled all slave devices using "ifdown".
+* Tue Nov 3 2009 : Version 1.0.103
+ - Dont use vacuuming on persistent databases
+ - Michael A : transaction updates to persistent databases
+ - Dont activate service automatically when installing the RPM. Leave this to the admin.
+ - Create a child process to send all log messages to, to prevent a hung/slow syslogd
+   from blocking the main daemon. In this case, discard log messages instead and let the child
+   process block.
+ - Michael A: updates to log messages
+* Thu Oct 29 2009 : Version 1.0.102
+ - Wolfgang: fix for the vacuuming code
+ - Wolfgang: stronger tests for persistent database filename tests
+ - Improve the log message when we refuse to startup since wbinfo -t fails
+   to make it easier to spot in the log.
+ - Update the uptime command output and the man page to indicate that
+   "time since last ..." if from either the last recovery OR the last failover
+ - Michael A: transaction updates
+* Wed Oct 28 2009 : Version 1.0.101
+ - create a separate context for non-monitoring events so they dont interfere with the monitor event
+ - make sure to return status 0 in teh callback when we abort an event
+* Wed Oct 28 2009 : Version 1.0.100
+ - Change eventscript handling to allow EventScriptTimeout for each individual script instead of for all scripts as a whole.
+ - Enhanced logging from the eventscripts, log the name and the duration for each script as it finishes.
+ - Add a check to use wbinfo -t for the startup event of samba
+ - TEMP: allow clients to attach to databases even when teh node is in recovery mode
+ - dont run the monitor event as frequently after an event has failed
+ - DEBUG: in the eventloops, check the local time and warn if the time changes backward or rapidly forward
+ - From Metze, fix a bug where recovery master becoming unhealthy did not trigger an ip failover.
+ - Disable the multipath script by default
+ - Automatically re-activate the reclock checking if the reclock file is specified at runtime. Update manpage to reflect this.
+ - Add a mechanism where samba can register a SRVID and if samba unexpectedly disconnects, a message will be broadcasted to all other samba daemons.
+ - Log the pstree on hung scripts to a file in /tmp isntead of /var/log/messages
+ - change ban count before unhealthy/banned to 10
+* Thu Oct 22 2009 : Version 1.0.99
+ - Fix a SEGV in the new db priority code.
+ - From Wolfgang : eliminate a ctdb_fatal() if there is a dmaster violation detected.
+ - During testing we often add/delete eventscripts at runtime. This could cause an eventscript to fail and mark the node unhealthy if an eventscript was deleted while we were listing the names. Handle the errorcode and make sure the node does not becomne unhealthy in this case.
+ - Lower the debuglevel for the messages when ctdb creates a filedescruiptor so we dont spam the logs with these messages.
+ - Dont have the RPM automatically restart ctdb
+ - Volker : add a missing transaction_cancel() in the handling of persistent databases
+ - Treat interfaces with the anme ethX* as bond devices in 10.interfaces so we do the correct test for if they are up or not.
 * Tue Oct 20 2009 : Version 1.0.98
  - Fix for the vacuuming database from Wolfgang M
  - Create a directory where the test framework can put temporary overrides

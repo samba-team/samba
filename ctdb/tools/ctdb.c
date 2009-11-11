@@ -31,7 +31,6 @@
 #include "../common/rb_tree.h"
 #include "db_wrap.h"
 
-
 #define ERR_TIMEOUT	20	/* timed out trying to reach node */
 #define ERR_NONODE	21	/* node does not exist */
 #define ERR_DISNODE	22	/* node is disconnected */
@@ -319,7 +318,7 @@ static int control_uptime(struct ctdb_context *ctdb, int argc, const char **argv
 	}
 
 	if (options.machinereadable){
-		printf(":Current Node Time:Ctdb Start Time:Last Recovery Time:Last Recovery Duration:\n");
+		printf(":Current Node Time:Ctdb Start Time:Last Recovery/Failover Time:Last Recovery/IPFailover Duration:\n");
 		printf(":%u:%u:%u:%lf\n",
 			(unsigned int)uptime->current_time.tv_sec,
 			(unsigned int)uptime->ctdbd_start_time.tv_sec,
@@ -330,7 +329,7 @@ static int control_uptime(struct ctdb_context *ctdb, int argc, const char **argv
 		return 0;
 	}
 
-	printf("Current time of node  : %s", ctime(&uptime->current_time.tv_sec));
+	printf("Current time of node          :                %s", ctime(&uptime->current_time.tv_sec));
 
 	tmp = uptime->current_time.tv_sec - uptime->ctdbd_start_time.tv_sec;
 	seconds = tmp%60;
@@ -340,7 +339,7 @@ static int control_uptime(struct ctdb_context *ctdb, int argc, const char **argv
 	hours   = tmp%24;
 	tmp    /= 24;
 	days    = tmp;
-	printf("Ctdbd start time      : (%03d %02d:%02d:%02d) %s", days, hours, minutes, seconds, ctime(&uptime->ctdbd_start_time.tv_sec));
+	printf("Ctdbd start time              : (%03d %02d:%02d:%02d) %s", days, hours, minutes, seconds, ctime(&uptime->ctdbd_start_time.tv_sec));
 
 	tmp = uptime->current_time.tv_sec - uptime->last_recovery_finished.tv_sec;
 	seconds = tmp%60;
@@ -350,9 +349,9 @@ static int control_uptime(struct ctdb_context *ctdb, int argc, const char **argv
 	hours   = tmp%24;
 	tmp    /= 24;
 	days    = tmp;
-	printf("Time of last recovery : (%03d %02d:%02d:%02d) %s", days, hours, minutes, seconds, ctime(&uptime->last_recovery_finished.tv_sec));
+	printf("Time of last recovery/failover: (%03d %02d:%02d:%02d) %s", days, hours, minutes, seconds, ctime(&uptime->last_recovery_finished.tv_sec));
 	
-	printf("Duration of last recovery : %lf seconds\n",
+	printf("Duration of last recovery/failover: %lf seconds\n",
 		timeval_delta(&uptime->last_recovery_finished,
 			      &uptime->last_recovery_started));
 
@@ -677,13 +676,22 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 		i++;
 	}		
 
-	/* print the natgw master
-	 * we dont allow STOPPED or DELETED nodes to become the natgwmaster
+	/* pick a node to be natgwmaster
+	 * we dont allow STOPPED, DELETED, BANNED or UNHEALTHY nodes to become the natgwmaster
 	 */
 	for(i=0;i<nodemap->num;i++){
-		if (!(nodemap->nodes[i].flags & (NODE_FLAGS_DISCONNECTED|NODE_FLAGS_STOPPED|NODE_FLAGS_DELETED))) {
+		if (!(nodemap->nodes[i].flags & (NODE_FLAGS_DISCONNECTED|NODE_FLAGS_STOPPED|NODE_FLAGS_DELETED|NODE_FLAGS_BANNED|NODE_FLAGS_UNHEALTHY))) {
 			printf("%d %s\n", nodemap->nodes[i].pnn,ctdb_addr_to_str(&nodemap->nodes[i].addr));
 			break;
+		}
+	}
+	/* we couldnt find any healthy node, try unhealthy ones */
+	if (i == nodemap->num) {
+		for(i=0;i<nodemap->num;i++){
+			if (!(nodemap->nodes[i].flags & (NODE_FLAGS_DISCONNECTED|NODE_FLAGS_STOPPED|NODE_FLAGS_DELETED))) {
+				printf("%d %s\n", nodemap->nodes[i].pnn,ctdb_addr_to_str(&nodemap->nodes[i].addr));
+				break;
+			}
 		}
 	}
 	/* unless all nodes are STOPPED, when we pick one anyway */

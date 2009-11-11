@@ -131,7 +131,7 @@ static int vacuum_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 
 		hash = ctdb_hash(&key);
 		if (trbt_lookup32(vdata->delete_tree, hash)) {
-			DEBUG(DEBUG_INFO, (__location__ " Hash collission when vacuuming, skipping this record.\n"));
+			DEBUG(DEBUG_DEBUG, (__location__ " Hash collission when vacuuming, skipping this record.\n"));
 		} 
 		else {
 			struct delete_record_data *dd;
@@ -401,8 +401,18 @@ static int repack_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 		 * there might be hash collisions so we have to compare the keys here to be sure
 		 */
 		if (kd && kd->key.dsize == key.dsize && memcmp(kd->key.dptr, key.dptr, key.dsize) == 0) {
-			vdata->vacuumed++;
-			return 0;
+			struct ctdb_ltdb_header *hdr = (struct ctdb_ltdb_header *)data.dptr;
+			/*
+			 * we have to check if the record hasn't changed in the meantime in order to
+			 * savely remove it from the database
+			 */
+			if (data.dsize == sizeof(struct ctdb_ltdb_header) &&
+				hdr->dmaster == kd->ctdb->pnn &&
+				ctdb_lmaster(kd->ctdb, &(kd->key)) == kd->ctdb->pnn &&
+				kd->hdr.rsn == hdr->rsn) {
+				vdata->vacuumed++;
+				return 0;
+			}
 		}
 	}
 	if (tdb_store(vdata->dest_db, key, data, TDB_INSERT) != 0) {
@@ -636,8 +646,8 @@ static int ctdb_repack_db(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx)
 	 * decide if a repack is necessary
 	 */
 	if (size < repack_limit && vdata->delete_count < vacuum_limit) {
-		talloc_free(vdata);
 		update_tuning_db(ctdb_db, vdata, size);
+		talloc_free(vdata);
 		return 0;
 	}
 
@@ -862,6 +872,11 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
  */
 int ctdb_vacuum_init(struct ctdb_db_context *ctdb_db)
 {
+	if (ctdb_db->persistent != 0) {
+		DEBUG(DEBUG_ERR,("Vacuuming is disabled for persistent database %s\n", ctdb_db->db_name));
+		return 0;
+	}
+
 	ctdb_db->vacuum_handle = talloc(ctdb_db, struct ctdb_vacuum_handle);
 	CTDB_NO_MEMORY(ctdb_db->ctdb, ctdb_db->vacuum_handle);
 

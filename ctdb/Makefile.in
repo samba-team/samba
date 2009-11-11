@@ -211,7 +211,7 @@ install: all
 	${INSTALLCMD} -m 755 config/events.d/10.interface $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/11.natgw $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/11.routing $(DESTDIR)$(etcdir)/ctdb/events.d
-	${INSTALLCMD} -m 755 config/events.d/20.multipathd $(DESTDIR)$(etcdir)/ctdb/events.d
+	${INSTALLCMD} -m 644 config/events.d/20.multipathd $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 644 config/events.d/31.clamd $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/40.vsftpd $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/41.httpd $(DESTDIR)$(etcdir)/ctdb/events.d

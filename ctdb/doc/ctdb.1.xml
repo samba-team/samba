@@ -271,7 +271,7 @@ Recovery master:0
 
     <refsect2><title>uptime</title>
       <para>
-        This command shows the uptime for the ctdb daemon. When the last recovery completed and how long the last recovery took. If the "duration" is shown as a negative number, this indicates that there is a recovery in progress and it started that many seconds ago.
+        This command shows the uptime for the ctdb daemon. When the last recovery or ip-failover completed and how long it took. If the "duration" is shown as a negative number, this indicates that there is a recovery/failover in progress and it started that many seconds ago.
       </para>
 
       <para>
@@ -279,10 +279,10 @@ Recovery master:0
       </para>
       <para>Example output:</para>
       <screen format="linespecific">
-Current time of node  : Tue Mar 24 18:27:54 2009
-Ctdbd start time      : (000 00:00:05) Tue Mar 24 18:27:49 2009
-Time of last recovery : (000 00:00:05) Tue Mar 24 18:27:49 2009
-Duration of last recovery : 0.000000 seconds
+Current time of node          :                Thu Oct 29 10:38:54 2009
+Ctdbd start time              : (000 16:54:28) Wed Oct 28 17:44:26 2009
+Time of last recovery/failover: (000 16:53:31) Wed Oct 28 17:45:23 2009
+Duration of last recovery/failover: 2.248552 seconds
       </screen>
     </refsect2>
 

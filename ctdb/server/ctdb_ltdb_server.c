@@ -26,6 +26,7 @@
 #include "../include/ctdb_private.h"
 #include "db_wrap.h"
 #include "lib/util/dlinklist.h"
+#include <ctype.h>
 
 /*
   this is the dummy null procedure that all databases support
@@ -294,7 +295,8 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name, boo
 
 	ret = ctdb_vacuum_init(ctdb_db);
 	if (ret != 0) {
-		DEBUG(DEBUG_CRIT,("Failed to setup vacuuming for database '%s'\n", ctdb_db->db_name));
+		DEBUG(DEBUG_CRIT,("Failed to setup vacuuming for "
+				  "database '%s'\n", ctdb_db->db_name));
 		talloc_free(ctdb_db);
 		return -1;
 	}
@@ -316,7 +318,9 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 {
 	const char *db_name = (const char *)indata.dptr;
 	struct ctdb_db_context *db;
+#if 0
 	struct ctdb_node *node = ctdb->nodes[ctdb->pnn];
+#endif
 
 	/* the client can optionally pass additional tdb flags, but we
 	   only allow a subset of those on the database in ctdb. Note
@@ -324,24 +328,25 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	   srvid to the attach control */
 	tdb_flags &= TDB_NOSYNC;
 
+	/* see if we already have this name */
+	db = ctdb_db_handle(ctdb, db_name);
+	if (db != NULL) {
+		outdata->dptr  = (uint8_t *)&db->db_id;
+		outdata->dsize = sizeof(db->db_id);
+		tdb_add_flags(db->ltdb->tdb, tdb_flags);
+		return 0;
+	}
+
+#if 0
 	/* If the node is inactive it is not part of the cluster
-	   and we should not allow clients to attach to any
+	   and we should not allow clients to attach to any new
 	   databases
 	*/
 	if (node->flags & NODE_FLAGS_INACTIVE) {
 		DEBUG(DEBUG_ERR,("DB Attach to database %s refused since node is inactive (disconnected or banned)\n", db_name));
 		return -1;
 	}
-
-
-	/* see if we already have this name */
-	db = ctdb_db_handle(ctdb, db_name);
-	if (db) {
-		outdata->dptr  = (uint8_t *)&db->db_id;
-		outdata->dsize = sizeof(db->db_id);
-		tdb_add_flags(db->ltdb->tdb, tdb_flags);
-		return 0;
-	}
+#endif
 
 	if (ctdb_local_attach(ctdb, db_name, persistent) != 0) {
 		return -1;
@@ -386,18 +391,13 @@ int ctdb_attach_persistent(struct ctdb_context *ctdb)
 	}
 
 	while ((de=readdir(d))) {
-		char *p, *s;
+		char *p, *s, *q;
 		size_t len = strlen(de->d_name);
 		uint32_t node;
+		int invalid_name = 0;
 		
 		s = talloc_strdup(ctdb, de->d_name);
 		CTDB_NO_MEMORY(ctdb, s);
-
-		/* ignore names ending in .bak */
-		p = strstr(s, ".bak");
-		if (p != NULL) {
-			continue;
-		}
 
 		/* only accept names ending in .tdb */
 		p = strstr(s, ".tdb.");
@@ -405,7 +405,16 @@ int ctdb_attach_persistent(struct ctdb_context *ctdb)
 			talloc_free(s);
 			continue;
 		}
-		if (sscanf(p+5, "%u", &node) != 1 || node != ctdb->pnn) {
+
+		/* only accept names ending with .tdb. and any number of digits */
+		q = p+5;
+		while (*q != 0 && invalid_name == 0) {
+			if (!isdigit(*q++)) {
+				invalid_name = 1;
+			}
+		}
+		if (invalid_name == 1 || sscanf(p+5, "%u", &node) != 1 || node != ctdb->pnn) {
+			DEBUG(DEBUG_ERR,("Ignoring persistent database '%s'\n", de->d_name));
 			talloc_free(s);
 			continue;
 		}

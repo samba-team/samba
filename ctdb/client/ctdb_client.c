@@ -30,6 +30,8 @@
 #include "../include/ctdb_private.h"
 #include "lib/util/dlinklist.h"
 
+pid_t ctdbd_pid;
+
 /*
   allocate a packet for use in client<->daemon communication
  */
@@ -764,7 +766,9 @@ static void control_timeout_func(struct event_context *ev, struct timed_event *t
 {
 	struct ctdb_client_control_state *state = talloc_get_type(private_data, struct ctdb_client_control_state);
 
-	DEBUG(DEBUG_ERR,("control timed out. reqid:%d opcode:%d dstnode:%d\n", state->reqid, state->c->opcode, state->c->hdr.destnode));
+	DEBUG(DEBUG_ERR,(__location__ " control timed out. reqid:%u opcode:%u "
+			 "dstnode:%u\n", state->reqid, state->c->opcode,
+			 state->c->hdr.destnode));
 
 	state->state = CTDB_CONTROL_TIMEOUT;
 
@@ -2386,7 +2390,7 @@ int ctdb_ctrl_modflags(struct ctdb_context *ctdb, struct timeval timeout, uint32
 					timeout, false, data,
 					NULL, NULL,
 					NULL) != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " ctdb_control to disable node failed\n"));
+		DEBUG(DEBUG_ERR, (__location__ " Unable to update nodeflags on remote nodes\n"));
 
 		talloc_free(tmp_ctx);
 		return -1;
@@ -3139,12 +3143,42 @@ int ctdb_ctrl_getcapabilities(struct ctdb_context *ctdb, struct timeval timeout,
 	return ret;
 }
 
+/**
+ * check whether a transaction is active on a given db on a given node
+ */
+static int32_t ctdb_ctrl_transaction_active(struct ctdb_context *ctdb,
+					    uint32_t destnode,
+					    uint32_t db_id)
+{
+	int32_t status;
+	int ret;
+	TDB_DATA indata;
+
+	indata.dptr = (uint8_t *)&db_id;
+	indata.dsize = sizeof(db_id);
+
+	ret = ctdb_control(ctdb, destnode, 0,
+			   CTDB_CONTROL_TRANS2_ACTIVE,
+			   0, indata, NULL, NULL, &status,
+			   NULL, NULL);
+
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " ctdb control for transaction_active failed\n"));
+		return -1;
+	}
+
+	return status;
+}
+
+
 struct ctdb_transaction_handle {
 	struct ctdb_db_context *ctdb_db;
 	bool in_replay;
-	/* we store the reads and writes done under a transaction one
-	   list stores both reads and writes, the other just writes
-	*/
+	/*
+	 * we store the reads and writes done under a transaction:
+	 * - one list stores both reads and writes (m_all),
+	 * - the other just writes (m_write)
+	 */
 	struct ctdb_marshall_buffer *m_all;
 	struct ctdb_marshall_buffer *m_write;
 };
@@ -3168,6 +3202,7 @@ static int ctdb_transaction_fetch_start(struct ctdb_transaction_handle *h)
 	int ret;
 	struct ctdb_db_context *ctdb_db = h->ctdb_db;
 	pid_t pid;
+	int32_t status;
 
 	key.dptr = discard_const(keyname);
 	key.dsize = strlen(keyname);
@@ -3182,10 +3217,25 @@ again:
 
 	rh = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, NULL);
 	if (rh == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to fetch_lock database\n"));		
+		DEBUG(DEBUG_ERR,(__location__ " Failed to fetch_lock database\n"));
 		talloc_free(tmp_ctx);
 		return -1;
 	}
+
+	status = ctdb_ctrl_transaction_active(ctdb_db->ctdb,
+					      CTDB_CURRENT_NODE,
+					      ctdb_db->db_id);
+	if (status == 1) {
+		unsigned long int usec = (1000 + random()) % 100000;
+		DEBUG(DEBUG_NOTICE, (__location__ " transaction is active "
+				     "on db_id[0x%08x]. waiting for %lu "
+				     "microseconds\n",
+				     ctdb_db->db_id, usec));
+		talloc_free(tmp_ctx);
+		usleep(usec);
+		goto again;
+	}
+
 	/*
 	 * store the pid in the database:
 	 * it is not enough that the node is dmaster...
@@ -3451,6 +3501,9 @@ again:
 			   &timeout, NULL);
 	if (ret != 0 || status != 0) {
 		tdb_transaction_cancel(h->ctdb_db->ltdb->tdb);
+		DEBUG(DEBUG_WARNING, (__location__ " transaction commit%s failed"
+				      ", retrying after 1 second...\n",
+				      (retries==0)?"":"retry "));
 		sleep(1);
 
 		if (ret != 0) {

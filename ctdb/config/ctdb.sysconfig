@@ -187,9 +187,18 @@ CTDB_RECOVERY_LOCK="/some/place/on/shared/storage"
 # the default is ERR
 CTDB_DEBUGLEVEL=ERR
 
+# whether to suppress core files.  Default is no.
+# CTDB_SUPPRESS_COREFILE=yes
+
 # Write debug messages to syslog instead of logfile?
 # The default is not to use syslog.
 # CTDB_SYSLOG=no
+
+# Should the 99.timeout monitor event script be run?
+# This event script just sleeps long enough to trigger the
+# event script timeout. Might be useful for debugging.
+# The default is "no".
+# CTDB_RUN_TIMEOUT_MONITOR=no
 
 # set any default tuning options for ctdb
 # use CTDB_SET_XXXX=value where XXXX is the name of the tuning
@@ -197,7 +206,6 @@ CTDB_DEBUGLEVEL=ERR
 # for example
 #    CTDB_SET_TRAVERSETIMEOUT=60
 # you can get a list of variables using "ctdb listvars"
-
 
 # any other options you might want. Run ctdbd --help for a list
 # CTDB_OPTIONS=
