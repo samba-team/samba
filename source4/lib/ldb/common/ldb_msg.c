@@ -526,7 +526,7 @@ struct ldb_message *ldb_msg_canonicalize(struct ldb_context *ldb,
 		if (ldb_msg_element_compare_name(el1, el2) == 0) {
 			el1->values = talloc_realloc(msg2->elements, el1->values, struct ldb_val, 
 						       el1->num_values + el2->num_values);
-			if (el1->values == NULL) {
+			if (el1->num_values + el2->num_values > 0 && el1->values == NULL) {
 				return NULL;
 			}
 			memcpy(el1->values + el1->num_values,
