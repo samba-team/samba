@@ -28,7 +28,7 @@ NTSTATUS net_rpc_lookup_name(struct net_context *c,
 			     const char **ret_name, DOM_SID *ret_sid,
 			     enum lsa_SidType *ret_type)
 {
-	struct rpc_pipe_client *lsa_pipe;
+	struct rpc_pipe_client *lsa_pipe = NULL;
 	struct policy_handle pol;
 	NTSTATUS result = NT_STATUS_OK;
 	const char **dom_names;

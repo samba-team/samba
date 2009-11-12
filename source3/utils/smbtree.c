@@ -148,7 +148,7 @@ static bool get_rpc_shares(struct cli_state *cli,
 			   void *state)
 {
 	NTSTATUS status;
-	struct rpc_pipe_client *pipe_hnd;
+	struct rpc_pipe_client *pipe_hnd = NULL;
 	TALLOC_CTX *mem_ctx;
 	WERROR werr;
 	struct srvsvc_NetShareInfoCtr info_ctr;

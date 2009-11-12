@@ -142,7 +142,7 @@ bool enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
 	struct sockaddr_storage	dc_ss;
 	uint32 		enum_ctx = 0;
 	struct cli_state *cli = NULL;
-	struct rpc_pipe_client *lsa_pipe;
+	struct rpc_pipe_client *lsa_pipe = NULL;
 	bool 		retry;
 	struct lsa_DomainList dom_list;
 	int i;

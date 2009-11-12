@@ -267,7 +267,7 @@ net_share_enum_rpc(struct cli_state *cli,
 	struct srvsvc_NetShareCtr1 ctr1;
 	fstring name = "";
         fstring comment = "";
-	struct rpc_pipe_client *pipe_hnd;
+	struct rpc_pipe_client *pipe_hnd = NULL;
         NTSTATUS nt_status;
 	uint32_t resume_handle = 0;
 	uint32_t total_entries = 0;
