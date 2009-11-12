@@ -136,10 +136,12 @@ static bool force_cli_encryption(struct cli_state *c,
 			return false;
 	}
 
-	if (!cli_unix_extensions_version(c, &major, &minor, &caplow, &caphigh)) {
+	status = cli_unix_extensions_version(c, &major, &minor, &caplow,
+					     &caphigh);
+	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Encryption required and "
 			"can't get UNIX CIFS extensions "
-			"version from server.\n");
+			"version from server: %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -4367,6 +4369,7 @@ static bool run_simple_posix_open_test(int dummy)
 	uint16_t fnum1 = (uint16_t)-1;
 	SMB_STRUCT_STAT sbuf;
 	bool correct = false;
+	NTSTATUS status;
 
 	printf("Starting simple POSIX open test\n");
 
@@ -4381,9 +4384,11 @@ static bool run_simple_posix_open_test(int dummy)
 		return false;
 	}
 
-	if (!cli_unix_extensions_version(cli1, &major,
-			&minor, &caplow, &caphigh)) {
-		printf("Server didn't return UNIX CIFS extensions.\n");
+	status = cli_unix_extensions_version(cli1, &major, &minor, &caplow,
+					     &caphigh);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Server didn't return UNIX CIFS extensions: %s\n",
+		       nt_errstr(status));
 		return false;
 	}
 
