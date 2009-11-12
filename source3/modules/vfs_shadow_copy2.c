@@ -664,9 +664,8 @@ static char *shadow_copy2_realpath(vfs_handle_struct *handle,
 		copy[gmt - fname + 1] = '\0';
 
 		DEBUG(10, ("calling NEXT_REALPATH with %s\n", copy));
-		result = SMB_VFS_NEXT_REALPATH(handle, copy, resolved_path);
-		TALLOC_FREE(copy);
-		return result;
+		SHADOW2_NEXT(REALPATH, (handle, name, resolved_path), char *,
+			     NULL);
 	}
         SHADOW2_NEXT(REALPATH, (handle, name, resolved_path), char *, NULL);
 }
