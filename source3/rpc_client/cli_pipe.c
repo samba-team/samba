@@ -3469,18 +3469,13 @@ NTSTATUS rpc_pipe_open_tcp(TALLOC_CTX *mem_ctx, const char *host,
 	NTSTATUS status;
 	uint16_t port = 0;
 
-	*presult = NULL;
-
 	status = rpc_pipe_get_tcp_port(host, abstract_syntax, &port);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
+		return status;
 	}
 
-	status = rpc_pipe_open_tcp_port(mem_ctx, host, port,
+	return rpc_pipe_open_tcp_port(mem_ctx, host, port,
 					abstract_syntax, presult);
-
-done:
-	return status;
 }
 
 /********************************************************************
@@ -4122,8 +4117,6 @@ NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	struct rpc_pipe_client *result = NULL;
 	NTSTATUS status;
-
-	*presult = NULL;
 
 	status = get_schannel_session_key(cli, domain, &neg_flags,
 					  &netlogon_pipe);
