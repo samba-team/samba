@@ -3066,6 +3066,8 @@ NTSTATUS rpccli_anon_bind_data(TALLOC_CTX *mem_ctx,
 {
 	struct cli_pipe_auth_data *result;
 
+	*presult = NULL;
+
 	result = talloc(mem_ctx, struct cli_pipe_auth_data);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -3101,6 +3103,8 @@ NTSTATUS rpccli_ntlmssp_bind_data(TALLOC_CTX *mem_ctx,
 {
 	struct cli_pipe_auth_data *result;
 	NTSTATUS status;
+
+	*presult = NULL;
 
 	result = talloc(mem_ctx, struct cli_pipe_auth_data);
 	if (result == NULL) {
@@ -3167,6 +3171,8 @@ NTSTATUS rpccli_schannel_bind_data(TALLOC_CTX *mem_ctx, const char *domain,
 {
 	struct cli_pipe_auth_data *result;
 
+	*presult = NULL;
+
 	result = talloc(mem_ctx, struct cli_pipe_auth_data);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -3217,6 +3223,8 @@ NTSTATUS rpccli_kerberos_bind_data(TALLOC_CTX *mem_ctx,
 #ifdef HAVE_KRB5
 	struct cli_pipe_auth_data *result;
 
+	*presult = NULL;
+
 	if ((username != NULL) && (password != NULL)) {
 		int ret = kerberos_kinit_password(username, password, 0, NULL);
 		if (ret != 0) {
@@ -3262,6 +3270,7 @@ NTSTATUS rpccli_kerberos_bind_data(TALLOC_CTX *mem_ctx,
 	TALLOC_FREE(result);
 	return NT_STATUS_NO_MEMORY;
 #else
+	*presult = NULL;
 	return NT_STATUS_NOT_SUPPORTED;
 #endif
 }
@@ -3278,6 +3287,8 @@ static NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx, const char *host,
 	struct sockaddr_storage addr;
 	NTSTATUS status;
 	int fd;
+
+	*presult = NULL;
 
 	result = TALLOC_ZERO_P(mem_ctx, struct rpc_pipe_client);
 	if (result == NULL) {
@@ -3495,6 +3506,8 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 	NTSTATUS status;
 	int fd;
 
+	*presult = NULL;
+
 	result = talloc_zero(mem_ctx, struct rpc_pipe_client);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -3581,6 +3594,8 @@ static NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
 	struct rpc_pipe_client *result;
 	NTSTATUS status;
 
+	*presult = NULL;
+
 	/* sanity check to protect against crashes */
 
 	if ( !cli ) {
@@ -3633,6 +3648,8 @@ NTSTATUS rpc_pipe_open_local(TALLOC_CTX *mem_ctx,
 	struct rpc_pipe_client *result;
 	struct cli_pipe_auth_data *auth;
 	NTSTATUS status;
+
+	*presult = NULL;
 
 	result = talloc(mem_ctx, struct rpc_pipe_client);
 	if (result == NULL) {
@@ -3693,6 +3710,8 @@ static NTSTATUS cli_rpc_pipe_open(struct cli_state *cli,
 				  const struct ndr_syntax_id *interface,
 				  struct rpc_pipe_client **presult)
 {
+	*presult = NULL;
+
 	switch (transport) {
 	case NCACN_IP_TCP:
 		return rpc_pipe_open_tcp(NULL, cli->desthost, interface,
@@ -3716,6 +3735,8 @@ NTSTATUS cli_rpc_pipe_open_noauth_transport(struct cli_state *cli,
 	struct rpc_pipe_client *result;
 	struct cli_pipe_auth_data *auth;
 	NTSTATUS status;
+
+	*presult = NULL;
 
 	status = cli_rpc_pipe_open(cli, transport, interface, &result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3783,6 +3804,8 @@ NTSTATUS cli_rpc_pipe_open_noauth(struct cli_state *cli,
 				  const struct ndr_syntax_id *interface,
 				  struct rpc_pipe_client **presult)
 {
+	*presult = NULL;
+
 	return cli_rpc_pipe_open_noauth_transport(cli, NCACN_NP,
 						  interface, presult);
 }
@@ -3804,6 +3827,8 @@ static NTSTATUS cli_rpc_pipe_open_ntlmssp_internal(struct cli_state *cli,
 	struct rpc_pipe_client *result;
 	struct cli_pipe_auth_data *auth;
 	NTSTATUS status;
+
+	*presult = NULL;
 
 	status = cli_rpc_pipe_open(cli, transport, interface, &result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3854,6 +3879,8 @@ NTSTATUS cli_rpc_pipe_open_ntlmssp(struct cli_state *cli,
 				   const char *password,
 				   struct rpc_pipe_client **presult)
 {
+	*presult = NULL;
+
 	return cli_rpc_pipe_open_ntlmssp_internal(cli,
 						interface,
 						transport,
@@ -3879,6 +3906,8 @@ NTSTATUS cli_rpc_pipe_open_spnego_ntlmssp(struct cli_state *cli,
 					  const char *password,
 					  struct rpc_pipe_client **presult)
 {
+	*presult = NULL;
+
 	return cli_rpc_pipe_open_ntlmssp_internal(cli,
 						interface,
 						transport,
@@ -3954,6 +3983,8 @@ NTSTATUS get_schannel_session_key(struct cli_state *cli,
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	NTSTATUS status;
 
+	*presult = NULL;
+
 	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_netlogon.syntax_id,
 					  &netlogon_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3990,6 +4021,8 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 	struct rpc_pipe_client *result;
 	struct cli_pipe_auth_data *auth;
 	NTSTATUS status;
+
+	*presult = NULL;
 
 	status = cli_rpc_pipe_open(cli, transport, interface, &result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -4045,6 +4078,8 @@ static NTSTATUS get_schannel_session_key_auth_ntlmssp(struct cli_state *cli,
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	NTSTATUS status;
 
+	*presult = NULL;
+
 	status = cli_rpc_pipe_open_spnego_ntlmssp(
 		cli, &ndr_table_netlogon.syntax_id, NCACN_NP,
 		DCERPC_AUTH_LEVEL_PRIVACY,
@@ -4083,6 +4118,8 @@ NTSTATUS cli_rpc_pipe_open_ntlmssp_auth_schannel(struct cli_state *cli,
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	struct rpc_pipe_client *result = NULL;
 	NTSTATUS status;
+
+	*presult = NULL;
 
 	status = get_schannel_session_key_auth_ntlmssp(
 		cli, domain, username, password, &neg_flags, &netlogon_pipe);
@@ -4167,6 +4204,8 @@ NTSTATUS cli_rpc_pipe_open_krb5(struct cli_state *cli,
 	struct cli_pipe_auth_data *auth;
 	NTSTATUS status;
 
+	*presult = NULL;
+
 	status = cli_rpc_pipe_open(cli, NCACN_NP, interface, &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -4192,6 +4231,7 @@ NTSTATUS cli_rpc_pipe_open_krb5(struct cli_state *cli,
 	*presult = result;
 	return NT_STATUS_OK;
 #else
+	*presult = NULL;
 	DEBUG(0,("cli_rpc_pipe_open_krb5: kerberos not found at compile time.\n"));
 	return NT_STATUS_NOT_IMPLEMENTED;
 #endif
