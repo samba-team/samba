@@ -64,7 +64,7 @@ static bool torture_test_syntax(struct torture_context *torture,
 	torture_assert(torture, schema = dsdb_get_schema(ldb), "Failed to fetch schema");
 	torture_assert(torture, syntax = find_syntax_map_by_standard_oid(oid), "Failed to find syntax handler");
 	torture_assert(torture, attr = dsdb_attribute_by_lDAPDisplayName(schema, attr_string), "Failed to find attribute handler");
-	torture_assert_str_equal(torture, syntax->name, attr->syntax->name, "Syntax from schema not as expected");
+	torture_assert_str_equal(torture, attr->syntax->name, syntax->name, "Syntax from schema not as expected");
 	
 
 	torture_assert_werr_ok(torture, syntax->drsuapi_to_ldb(ldb, schema, attr, &drs, tmp_ctx, &el), "Failed to convert from DRS to ldb format");
@@ -80,9 +80,14 @@ static bool torture_test_syntax(struct torture_context *torture,
 
 static bool torture_dsdb_drs_DN_BINARY(struct torture_context *torture) 
 {
-	const char *ldb_str = "B:32:A9D1CA15768811D1ADED00C04FD8D5CD:<GUID=23e75535-240b-447b-bdf0-ee0ab80a9116>;CN=Users,DC=ad,DC=naomi,DC=abartlet,DC=net";
-	const char *drs_str = "8E000000000000003555E7230B247B44BDF0EE0AB80A9116000000000000000000000000000000000000000000000000000000002A00000043004E003D00550073006500720073002C00440043003D00610064002C00440043003D006E0061006F006D0069002C00440043003D00610062006100720074006C00650074002C00440043003D006E00650074000000000014000000A9D1CA15768811D1ADED00C04FD8D5CD";
-	return torture_test_syntax(torture, DSDB_SYNTAX_BINARY_DN, "wellKnownObjects", ldb_str, drs_str);
+	bool ret;
+	const char *ldb_str = "B:32:A9D1CA15768811D1ADED00C04FD8D5CD:<GUID=a8378c29-6319-45b3-b216-6a3108452d6c>;CN=Users,DC=ad,DC=ruth,DC=abartlet,DC=net";
+	const char *drs_str = "8C00000000000000298C37A81963B345B2166A3108452D6C000000000000000000000000000000000000000000000000000000002900000043004E003D00550073006500720073002C00440043003D00610064002C00440043003D0072007500740068002C00440043003D00610062006100720074006C00650074002C00440043003D006E0065007400000014000000A9D1CA15768811D1ADED00C04FD8D5CD";
+	const char *ldb_str2 = "B:8:00000002:<GUID=2b475208-3180-4ad4-b6bb-a26cfb44ac50>;<SID=S-1-5-21-3686369990-3108025515-1819299124>;DC=ad,DC=ruth,DC=abartlet,DC=net";
+	const char *drs_str2 = "7A000000180000000852472B8031D44AB6BBA26CFB44AC50010400000000000515000000C68AB9DBABB440B9344D706C0000000020000000440043003D00610064002C00440043003D0072007500740068002C00440043003D00610062006100720074006C00650074002C00440043003D006E0065007400000000000800000000000002";
+	ret = torture_test_syntax(torture, DSDB_SYNTAX_BINARY_DN, "wellKnownObjects", ldb_str, drs_str);
+	if (!ret) return false;
+	return torture_test_syntax(torture, DSDB_SYNTAX_BINARY_DN, "msDS-HasInstantiatedNCs", ldb_str2, drs_str2);
 }
 
 static bool torture_dsdb_drs_DN(struct torture_context *torture) 
