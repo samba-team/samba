@@ -489,6 +489,11 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 	return ldb_module_send_entry(ac->req, msg, ares->controls);
 }
 
+static int extended_callback_ldb(struct ldb_request *req, struct ldb_reply *ares)
+{
+	return extended_callback(req, ares, NULL);
+}
+
 static int extended_callback_openldap(struct ldb_request *req, struct ldb_reply *ares)
 {
 	return extended_callback(req, ares, handle_dereference_openldap);
@@ -642,7 +647,7 @@ static int extended_dn_out_search(struct ldb_module *module, struct ldb_request 
 
 static int extended_dn_out_ldb_search(struct ldb_module *module, struct ldb_request *req)
 {
-	return extended_dn_out_search(module, req, extended_callback_openldap);
+	return extended_dn_out_search(module, req, extended_callback_ldb);
 }
 
 static int extended_dn_out_openldap_search(struct ldb_module *module, struct ldb_request *req)
