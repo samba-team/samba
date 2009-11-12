@@ -1559,7 +1559,11 @@ done:
 		}
 
 		if (krberror->e_data.data == NULL) {
+#if defined(ERROR_TABLE_BASE_krb5)
 			ret = ERROR_TABLE_BASE_krb5 + (krb5_error_code) krberror->error;
+#else
+			ret = (krb5_error_code)krberror->error;
+#endif
 			got_error_code = True;
 		}
 		smb_krb5_free_error(context, krberror);
