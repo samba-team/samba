@@ -359,7 +359,6 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 	const char *auth_princ = NULL;
 	const char *local_service = NULL;
 	const char *cc = "MEMORY:kerberos_return_pac";
-	krb5_creds *creds = NULL;
 
 	ZERO_STRUCT(tkt);
 	ZERO_STRUCT(ap_rep);
