@@ -25,59 +25,136 @@
  Get UNIX extensions version info.
 ****************************************************************************/
 
-bool cli_unix_extensions_version(struct cli_state *cli, uint16 *pmajor, uint16 *pminor,
-                                        uint32 *pcaplow, uint32 *pcaphigh)
+struct cli_unix_extensions_version_state {
+	uint16_t setup[1];
+	uint8_t param[2];
+	uint16_t major, minor;
+	uint32_t caplow, caphigh;
+};
+
+static void cli_unix_extensions_version_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_unix_extensions_version_send(TALLOC_CTX *mem_ctx,
+						    struct tevent_context *ev,
+						    struct cli_state *cli)
 {
-	bool ret = False;
-	uint16 setup;
-	char param[2];
-	char *rparam=NULL, *rdata=NULL;
-	unsigned int rparam_count=0, rdata_count=0;
+	struct tevent_req *req, *subreq;
+	struct cli_unix_extensions_version_state *state;
 
-	setup = TRANSACT2_QFSINFO;
+	req = tevent_req_create(mem_ctx, &state,
+				struct cli_unix_extensions_version_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	SSVAL(state->setup, 0, TRANSACT2_QFSINFO);
+	SSVAL(state->param, 0, SMB_QUERY_CIFS_UNIX_INFO);
 
-	SSVAL(param,0,SMB_QUERY_CIFS_UNIX_INFO);
+	subreq = cli_trans_send(state, ev, cli, SMBtrans2,
+				NULL, 0, 0, 0,
+				state->setup, 1, 0,
+				state->param, 2, 0,
+				NULL, 0, 560);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_unix_extensions_version_done, req);
+	return req;
+}
 
-	if (!cli_send_trans(cli, SMBtrans2,
-		    NULL,
-		    0, 0,
-		    &setup, 1, 0,
-		    param, 2, 0,
-		    NULL, 0, 560)) {
-		goto cleanup;
+static void cli_unix_extensions_version_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_unix_extensions_version_state *state = tevent_req_data(
+		req, struct cli_unix_extensions_version_state);
+	uint8_t *data;
+	uint32_t num_data;
+	NTSTATUS status;
+
+	status = cli_trans_recv(subreq, state, NULL, NULL, NULL, NULL,
+				&data, &num_data);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	if (num_data < 12) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
 	}
 
-	if (!cli_receive_trans(cli, SMBtrans2,
-                              &rparam, &rparam_count,
-                              &rdata, &rdata_count)) {
-		goto cleanup;
+	state->major = SVAL(data, 0);
+	state->minor = SVAL(data, 2);
+	state->caplow = IVAL(data, 4);
+	state->caphigh = IVAL(data, 8);
+	TALLOC_FREE(data);
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_unix_extensions_version_recv(struct tevent_req *req,
+					  uint16_t *pmajor, uint16_t *pminor,
+					  uint32_t *pcaplow,
+					  uint32_t *pcaphigh)
+{
+	struct cli_unix_extensions_version_state *state = tevent_req_data(
+		req, struct cli_unix_extensions_version_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	*pmajor = state->major;
+	*pminor = state->minor;
+	*pcaplow = state->caplow;
+	*pcaphigh = state->caphigh;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_unix_extensions_version(struct cli_state *cli, uint16 *pmajor,
+				     uint16 *pminor, uint32 *pcaplow,
+				     uint32 *pcaphigh)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
 	}
 
-	if (cli_is_error(cli)) {
-		ret = False;
-		goto cleanup;
-	} else {
-		ret = True;
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
 	}
 
-	if (rdata_count < 12) {
-		goto cleanup;
+	req = cli_unix_extensions_version_send(frame, ev, cli);
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
 	}
 
-	*pmajor = SVAL(rdata,0);
-	*pminor = SVAL(rdata,2);
-	cli->posix_capabilities = *pcaplow = IVAL(rdata,4);
-	*pcaphigh = IVAL(rdata,8);
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
 
-	/* todo: but not yet needed
-	 *       return the other stuff
-	 */
-
-cleanup:
-	SAFE_FREE(rparam);
-	SAFE_FREE(rdata);
-
-	return ret;
+	status = cli_unix_extensions_version_recv(req, pmajor, pminor, pcaplow,
+						  pcaphigh);
+	if (NT_STATUS_IS_OK(status)) {
+		cli->posix_capabilities = *pcaplow;
+	}
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
 }
 
 /****************************************************************************
@@ -789,12 +866,17 @@ NTSTATUS cli_force_encryption(struct cli_state *c,
 {
 	uint16 major, minor;
 	uint32 caplow, caphigh;
+	NTSTATUS status;
 
 	if (!SERVER_HAS_UNIX_CIFS(c)) {
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	if (!cli_unix_extensions_version(c, &major, &minor, &caplow, &caphigh)) {
+	status = cli_unix_extensions_version(c, &major, &minor, &caplow,
+					     &caphigh);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("cli_force_encryption: cli_unix_extensions_version "
+			   "returned %s\n", nt_errstr(status)));
 		return NT_STATUS_UNKNOWN_REVISION;
 	}
 

@@ -322,8 +322,10 @@ static struct cli_state *cli_cm_connect(TALLOC_CTX *ctx,
 	if (referring_cli && referring_cli->posix_capabilities) {
 		uint16 major, minor;
 		uint32 caplow, caphigh;
-		if (cli_unix_extensions_version(cli, &major,
-					&minor, &caplow, &caphigh)) {
+		NTSTATUS status;
+		status = cli_unix_extensions_version(cli, &major, &minor,
+						     &caplow, &caphigh);
+		if (NT_STATUS_IS_OK(status)) {
 			cli_set_unix_extensions_capabilities(cli,
 					major, minor,
 					caplow, caphigh);
