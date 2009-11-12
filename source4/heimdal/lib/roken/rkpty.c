@@ -93,6 +93,10 @@ caught_signal(int signo)
 static void
 open_pty(void)
 {
+#ifdef _AIX
+    printf("implement open_pty\n");
+    exit(77);
+#endif
 #if defined(HAVE_OPENPTY) || defined(__linux) || defined(__osf__) /* XXX */
     if(openpty(&master, &slave, line, 0, 0) == 0)
 	return;

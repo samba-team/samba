@@ -80,8 +80,9 @@ _kdc_db_fetch(krb5_context context,
 
 	ret = config->db[i]->hdb_open(context, config->db[i], O_RDONLY, 0);
 	if (ret) {
-	    kdc_log(context, config, 0, "Failed to open database: %s",
-		    krb5_get_err_text(context, ret));
+	    const char *msg = krb5_get_error_message(context, ret);
+	    kdc_log(context, config, 0, "Failed to open database: %s", msg);
+	    krb5_free_error_message(context, msg);
 	    continue;
 	}
 

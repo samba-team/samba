@@ -517,7 +517,7 @@ _kdc_pk_rd_padata(krb5_context context,
 	goto out;
     }
 
-    ret = hx509_certs_init(kdc_identity->hx509ctx,
+    ret = hx509_certs_init(context->hx509ctx,
 			   "MEMORY:trust-anchors",
 			   0, NULL, &trust_anchors);
     if (ret) {
@@ -525,7 +525,7 @@ _kdc_pk_rd_padata(krb5_context context,
 	goto out;
     }
 
-    ret = hx509_certs_merge(kdc_identity->hx509ctx, trust_anchors, 
+    ret = hx509_certs_merge(context->hx509ctx, trust_anchors, 
 			    kdc_identity->anchors);
     if (ret) {
 	hx509_certs_free(&trust_anchors);
@@ -540,18 +540,18 @@ _kdc_pk_rd_padata(krb5_context context,
 	unsigned int i;
 	
 	for (i = 0; i < pc->len; i++) {
-	    ret = hx509_cert_init_data(kdc_identity->hx509ctx,
+	    ret = hx509_cert_init_data(context->hx509ctx,
 				       pc->val[i].cert.data,
 				       pc->val[i].cert.length,
 				       &cert);
 	    if (ret)
 		continue;
-	    hx509_certs_add(kdc_identity->hx509ctx, trust_anchors, cert);
+	    hx509_certs_add(context->hx509ctx, trust_anchors, cert);
 	    hx509_cert_free(cert);
 	}
     }
 
-    ret = hx509_verify_init_ctx(kdc_identity->hx509ctx, &cp->verify_ctx);
+    ret = hx509_verify_init_ctx(context->hx509ctx, &cp->verify_ctx);
     if (ret) {
 	hx509_certs_free(&trust_anchors);
 	krb5_set_error_message(context, ret, "failed to create verify context");
@@ -618,7 +618,7 @@ _kdc_pk_rd_padata(krb5_context context,
 	    ExternalPrincipalIdentifiers *edi = r.trustedCertifiers;
 	    unsigned int i, maxedi;
 
-	    ret = hx509_certs_init(kdc_identity->hx509ctx,
+	    ret = hx509_certs_init(context->hx509ctx,
 				   "MEMORY:client-anchors",
 				   0, NULL,
 				   &cp->client_anchors);
@@ -645,7 +645,7 @@ _kdc_pk_rd_padata(krb5_context context,
 		if (edi->val[i].issuerAndSerialNumber == NULL)
 		    continue;
 
-		ret = hx509_query_alloc(kdc_identity->hx509ctx, &q);
+		ret = hx509_query_alloc(context->hx509ctx, &q);
 		if (ret) {
 		    krb5_set_error_message(context, ret,
 					  "Failed to allocate hx509_query");
@@ -657,24 +657,24 @@ _kdc_pk_rd_padata(krb5_context context,
 						   &iasn,
 						   &size);
 		if (ret) {
-		    hx509_query_free(kdc_identity->hx509ctx, q);
+		    hx509_query_free(context->hx509ctx, q);
 		    continue;
 		}
 		ret = hx509_query_match_issuer_serial(q, &iasn.issuer, &iasn.serialNumber);
 		free_IssuerAndSerialNumber(&iasn);
 		if (ret) {
-		    hx509_query_free(kdc_identity->hx509ctx, q);
+		    hx509_query_free(context->hx509ctx, q);
 		    continue;
 		}
 
-		ret = hx509_certs_find(kdc_identity->hx509ctx,
+		ret = hx509_certs_find(context->hx509ctx,
 				       kdc_identity->certs,
 				       q,
 				       &cert);
-		hx509_query_free(kdc_identity->hx509ctx, q);
+		hx509_query_free(context->hx509ctx, q);
 		if (ret)
 		    continue;
-		hx509_certs_add(kdc_identity->hx509ctx,
+		hx509_certs_add(context->hx509ctx,
 				cp->client_anchors, cert);
 		hx509_cert_free(cert);
 	    }
@@ -719,7 +719,7 @@ _kdc_pk_rd_padata(krb5_context context,
 	if (req->req_body.kdc_options.request_anonymous)
 	    flags |= HX509_CMS_VS_ALLOW_ZERO_SIGNER;
 
-	ret = hx509_cms_verify_signed(kdc_identity->hx509ctx,
+	ret = hx509_cms_verify_signed(context->hx509ctx,
 				      cp->verify_ctx,
 				      flags,
 				      signed_content.data,
@@ -730,7 +730,7 @@ _kdc_pk_rd_padata(krb5_context context,
 				      &eContent,
 				      &signer_certs);
 	if (ret) {
-	    char *s = hx509_get_error_string(kdc_identity->hx509ctx, ret);
+	    char *s = hx509_get_error_string(context->hx509ctx, ret);
 	    krb5_warnx(context, "PKINIT: failed to verify signature: %s: %d",
 		       s, ret);
 	    free(s);
@@ -738,7 +738,7 @@ _kdc_pk_rd_padata(krb5_context context,
 	}
 
 	if (signer_certs) {
-	    ret = hx509_get_one_cert(kdc_identity->hx509ctx, signer_certs,
+	    ret = hx509_get_one_cert(context->hx509ctx, signer_certs,
 				     &cp->cert);
 	    hx509_certs_free(&signer_certs);
 	}
@@ -843,7 +843,7 @@ _kdc_pk_rd_padata(krb5_context context,
 	} else
 	    cp->keyex = USE_RSA;
 
-	ret = hx509_peer_info_alloc(kdc_identity->hx509ctx,
+	ret = hx509_peer_info_alloc(context->hx509ctx,
 					&cp->peer);
 	if (ret) {
 	    free_AuthPack(&ap);
@@ -851,7 +851,7 @@ _kdc_pk_rd_padata(krb5_context context,
 	}
 	
 	if (ap.supportedCMSTypes) {
-	    ret = hx509_peer_info_set_cms_algs(kdc_identity->hx509ctx,
+	    ret = hx509_peer_info_set_cms_algs(context->hx509ctx,
 					       cp->peer,
 					       ap.supportedCMSTypes->val,
 					       ap.supportedCMSTypes->len);
@@ -861,11 +861,11 @@ _kdc_pk_rd_padata(krb5_context context,
 	    }
 	} else {
 	    /* assume old client */
-	    hx509_peer_info_add_cms_alg(kdc_identity->hx509ctx, cp->peer,
+	    hx509_peer_info_add_cms_alg(context->hx509ctx, cp->peer,
 					hx509_crypto_des_rsdi_ede3_cbc());
-	    hx509_peer_info_add_cms_alg(kdc_identity->hx509ctx, cp->peer,
+	    hx509_peer_info_add_cms_alg(context->hx509ctx, cp->peer,
 					hx509_signature_rsa_with_sha1());
-	    hx509_peer_info_add_cms_alg(kdc_identity->hx509ctx, cp->peer,
+	    hx509_peer_info_add_cms_alg(context->hx509ctx, cp->peer,
 					hx509_signature_sha1());
 	}
 	free_AuthPack(&ap);
@@ -1016,7 +1016,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
 	hx509_query *q;
 	hx509_cert cert;
 	
-	ret = hx509_query_alloc(kdc_identity->hx509ctx, &q);
+	ret = hx509_query_alloc(context->hx509ctx, &q);
 	if (ret)
 	    goto out;
 	
@@ -1024,15 +1024,15 @@ pk_mk_pa_reply_enckey(krb5_context context,
 	if (config->pkinit_kdc_friendly_name)
 	    hx509_query_match_friendly_name(q, config->pkinit_kdc_friendly_name);
 	
-	ret = hx509_certs_find(kdc_identity->hx509ctx,
+	ret = hx509_certs_find(context->hx509ctx,
 			       kdc_identity->certs,
 			       q,
 			       &cert);
-	hx509_query_free(kdc_identity->hx509ctx, q);
+	hx509_query_free(context->hx509ctx, q);
 	if (ret)
 	    goto out;
 	
-	ret = hx509_cms_create_signed_1(kdc_identity->hx509ctx,
+	ret = hx509_cms_create_signed_1(context->hx509ctx,
 					0,
 					sdAlg,
 					buf.data,
@@ -1060,7 +1060,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
 	signed_data = buf;
     }
 
-    ret = hx509_cms_envelope_1(kdc_identity->hx509ctx,
+    ret = hx509_cms_envelope_1(context->hx509ctx,
 			       HX509_CMS_EV_NO_KU_CHECK,
 			       cp->cert,
 			       signed_data.data, signed_data.length,
@@ -1172,7 +1172,7 @@ pk_mk_pa_reply_dh(krb5_context context,
      * filled in above
      */
 
-    ret = hx509_query_alloc(kdc_identity->hx509ctx, &q);
+    ret = hx509_query_alloc(context->hx509ctx, &q);
     if (ret)
 	goto out;
     
@@ -1180,15 +1180,15 @@ pk_mk_pa_reply_dh(krb5_context context,
     if (config->pkinit_kdc_friendly_name)
 	hx509_query_match_friendly_name(q, config->pkinit_kdc_friendly_name);
     
-    ret = hx509_certs_find(kdc_identity->hx509ctx,
+    ret = hx509_certs_find(context->hx509ctx,
 			   kdc_identity->certs,
 			   q,
 			   &cert);
-    hx509_query_free(kdc_identity->hx509ctx, q);
+    hx509_query_free(context->hx509ctx, q);
     if (ret)
 	goto out;
     
-    ret = hx509_cms_create_signed_1(kdc_identity->hx509ctx,
+    ret = hx509_cms_create_signed_1(context->hx509ctx,
 				    0,
 				    &asn1_oid_id_pkdhkeydata,
 				    buf.data,
@@ -1509,7 +1509,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 		goto out_ocsp;
 	    }
 
-	    ret = hx509_ocsp_verify(kdc_identity->hx509ctx,
+	    ret = hx509_ocsp_verify(context->hx509ctx,
 				    kdc_time,
 				    kdc_cert,
 				    0,
@@ -1580,9 +1580,10 @@ match_rfc_san(krb5_context context,
 				       list.val[i].length,
 				       &kn, &size);
 	if (ret) {
+	    const char *msg = krb5_get_error_message(context, ret);
 	    kdc_log(context, config, 0,
-		    "Decoding kerberos name in certificate failed: %s",
-		    krb5_get_err_text(context, ret));
+		    "Decoding kerberos name in certificate failed: %s", msg);
+	    krb5_free_error_message(context, msg);
 	    break;
 	}
 	if (size != list.val[i].length) {
@@ -1644,6 +1645,12 @@ match_ms_upn_san(krb5_context context,
 	kdc_log(context, config, 0, "Decode of MS-UPN-SAN failed");
 	goto out;
     }
+    if (size != list.val[0].length) {
+	free_MS_UPN_SAN(&upn);
+	kdc_log(context, config, 0, "Trailing data in ");
+	ret = KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
+	goto out;
+    }
 
     kdc_log(context, config, 0, "found MS UPN SAN: %s", upn);
 
@@ -1697,7 +1704,7 @@ _kdc_pk_check_client(krb5_context context,
 	return 0;
     }
 
-    ret = hx509_cert_get_base_subject(kdc_identity->hx509ctx,
+    ret = hx509_cert_get_base_subject(context->hx509ctx,
 				      cp->cert,
 				      &name);
     if (ret)
@@ -1718,7 +1725,7 @@ _kdc_pk_check_client(krb5_context context,
 	unsigned int i;
 	
 	for (i = 0; i < pc->len; i++) {
-	    ret = hx509_cert_init_data(kdc_identity->hx509ctx,
+	    ret = hx509_cert_init_data(context->hx509ctx,
 				       pc->val[i].cert.data,
 				       pc->val[i].cert.length,
 				       &cert);
@@ -1737,7 +1744,7 @@ _kdc_pk_check_client(krb5_context context,
 
     if (config->pkinit_princ_in_cert) {
 	ret = match_rfc_san(context, config,
-			    kdc_identity->hx509ctx,
+			    context->hx509ctx,
 			    cp->cert,
 			    client->entry.principal);
 	if (ret == 0) {
@@ -1746,7 +1753,7 @@ _kdc_pk_check_client(krb5_context context,
 	    return 0;
 	}
 	ret = match_ms_upn_san(context, config,
-			       kdc_identity->hx509ctx,
+			       context->hx509ctx,
 			       cp->cert,
 			       clientdb, 
 			       client);
@@ -1944,7 +1951,6 @@ _kdc_pk_initialize(krb5_context context,
 
     ret = _krb5_pk_load_id(context,
 			   &kdc_identity,
-			   0,
 			   user_id,
 			   anchors,
 			   pool,
@@ -1962,7 +1968,7 @@ _kdc_pk_initialize(krb5_context context,
 	hx509_query *q;
 	hx509_cert cert;
 	
-	ret = hx509_query_alloc(kdc_identity->hx509ctx, &q);
+	ret = hx509_query_alloc(context->hx509ctx, &q);
 	if (ret) {
 	    krb5_warnx(context, "PKINIT: out of memory");
 	    return ENOMEM;
@@ -1972,13 +1978,13 @@ _kdc_pk_initialize(krb5_context context,
 	if (config->pkinit_kdc_friendly_name)
 	    hx509_query_match_friendly_name(q, config->pkinit_kdc_friendly_name);
 	
-	ret = hx509_certs_find(kdc_identity->hx509ctx,
+	ret = hx509_certs_find(context->hx509ctx,
 			       kdc_identity->certs,
 			       q,
 			       &cert);
-	hx509_query_free(kdc_identity->hx509ctx, q);
+	hx509_query_free(context->hx509ctx, q);
 	if (ret == 0) {
-	    if (hx509_cert_check_eku(kdc_identity->hx509ctx, cert,
+	    if (hx509_cert_check_eku(context->hx509ctx, cert,
 				     &asn1_oid_id_pkkdcekuoid, 0)) {
 		hx509_name name;
 		char *str;

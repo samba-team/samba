@@ -39,6 +39,9 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <stdio.h>
+
+#include "roken.h"
 
 #include "normalize_table.h"
 
@@ -173,7 +176,7 @@ cc_cmp(const void *a, const void *b)
 static void
 canonical_reorder(uint32_t *tmp, size_t tmp_len)
 {
-    unsigned i;
+    size_t i;
 
     for (i = 0; i < tmp_len; ++i) {
 	int cc = _wind_combining_class(tmp[i]);
@@ -183,8 +186,7 @@ canonical_reorder(uint32_t *tmp, size_t tmp_len)
 		 j < tmp_len && _wind_combining_class(tmp[j]);
 		 ++j)
 		;
-	    qsort(&tmp[i], j - i, sizeof(unsigned),
-		  cc_cmp);
+	    qsort(&tmp[i], j - i, sizeof(tmp[0]), cc_cmp);
 	    i = j;
 	}
     }
@@ -279,6 +281,11 @@ _wind_stringprep_normalize(const uint32_t *in, size_t in_len,
     size_t tmp_len;
     uint32_t *tmp;
     int ret;
+
+    if (in_len == 0) {
+	*out_len = 0;
+	return 0;
+    }
 
     tmp_len = in_len * 4;
     if (tmp_len < MAX_LENGTH_CANON)

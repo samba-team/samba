@@ -281,12 +281,11 @@ hdb_entry_get_password(krb5_context context, HDB *db,
 		       const hdb_entry *entry, char **p)
 {
     HDB_extension *ext;
-    char *str;
     int ret;
 
     ext = hdb_find_extension(entry, choice_HDB_extension_data_password);
     if (ext) {
-	heim_utf8_string str2;
+	heim_utf8_string str;
 	heim_octet_string pw;
 
 	if (db->hdb_master_key_set && ext->data.u.password.mkvno) {
@@ -314,13 +313,13 @@ hdb_entry_get_password(krb5_context context, HDB *db,
 	    return ret;
 	}
 
-	str2 = pw.data;
-	if (str2[pw.length - 1] != '\0') {
+	str = pw.data;
+	if (str[pw.length - 1] != '\0') {
 	    krb5_set_error_message(context, EINVAL, "password malformated");
 	    return EINVAL;
 	}
 
-	*p = strdup(str2);
+	*p = strdup(str);
 
 	der_free_octet_string(&pw);
 	if (*p == NULL) {
@@ -330,14 +329,17 @@ hdb_entry_get_password(krb5_context context, HDB *db,
 	return 0;
     }
 
-    ret = krb5_unparse_name(context, entry->principal, &str);
-    if (ret == 0) {
-	krb5_set_error_message(context, ENOENT, "no password attributefor %s", str);
-	free(str);
-    } else
-	krb5_clear_error_message(context);
-
-    return ENOENT;
+    {
+	char *name;
+	ret = krb5_unparse_name(context, entry->principal, &name);
+	if (ret == 0) {
+	    krb5_set_error_message(context, ENOENT, "no password attributefor %s", name);
+	    free(name);
+	} else
+	    krb5_clear_error_message(context);
+	
+	return ENOENT;
+    }
 }
 
 int

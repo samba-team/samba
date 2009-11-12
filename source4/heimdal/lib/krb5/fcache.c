@@ -95,12 +95,14 @@ _krb5_xlock(krb5_context context, int fd, krb5_boolean exclusive,
 			       N_("timed out locking cache file %s", "file"),
 			       filename);
 	break;
-    default:
+    default: {
+	char buf[128];
+	strerror_r(ret, buf, sizeof(buf));
 	krb5_set_error_message(context, ret,
 			       N_("error locking cache file %s: %s",
-				  "file, error"),
-			       filename, strerror(ret));
+				  "file, error"), filename, buf);
 	break;
+    }
     }
     return ret;
 }
@@ -127,11 +129,13 @@ _krb5_xunlock(krb5_context context, int fd)
     case EINVAL: /* filesystem doesn't support locking, let the user have it */
 	ret = 0;
 	break;
-    default:
+    default: {
+	char buf[128];
+	strerror_r(ret, buf, sizeof(buf));
 	krb5_set_error_message(context, ret,
-			       N_("Failed to unlock file: %s", ""),
-			       strerror(ret));
+			       N_("Failed to unlock file: %s", ""), buf);
 	break;
+    }
     }
     return ret;
 }
@@ -369,9 +373,11 @@ fcc_open(krb5_context context,
     int fd;
     fd = open(filename, flags, mode);
     if(fd < 0) {
+	char buf[128];
 	ret = errno;
+	strerror_r(ret, buf, sizeof(buf));
 	krb5_set_error_message(context, ret, N_("open(%s): %s", "file, error"),
-			       filename, strerror(ret));
+			       filename, buf);
 	return ret;
     }
     rk_cloexec(fd);
@@ -431,9 +437,11 @@ fcc_initialize(krb5_context context,
     fcc_unlock(context, fd);
     if (close(fd) < 0)
 	if (ret == 0) {
+	    char buf[128];
 	    ret = errno;
+	    strerror_r(ret, buf, sizeof(buf));
 	    krb5_set_error_message (context, ret, N_("close %s: %s", ""),
-				    FILENAME(id), strerror(ret));
+				    FILENAME(id), buf);
 	}
     return ret;
 }
@@ -485,9 +493,11 @@ fcc_store_cred(krb5_context context,
     fcc_unlock(context, fd);
     if (close(fd) < 0) {
 	if (ret == 0) {
+	    char buf[128];
+	    strerror_r(ret, buf, sizeof(buf));
 	    ret = errno;
 	    krb5_set_error_message (context, ret, N_("close %s: %s", ""),
-				    FILENAME(id), strerror(ret));
+				    FILENAME(id), buf);
 	}
     }
     return ret;
@@ -875,12 +885,13 @@ fcc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 
     ret = rename(FILENAME(from), FILENAME(to));
     if (ret && errno != EXDEV) {
+	char buf[128];
 	ret = errno;
+	strerror_r(ret, buf, sizeof(buf));
 	krb5_set_error_message(context, ret,
 			       N_("Rename of file from %s "
 				  "to %s failed: %s", ""),
-			       FILENAME(from), FILENAME(to),
-			       strerror(ret));
+			       FILENAME(from), FILENAME(to), buf);
 	return ret;
     } else if (ret && errno == EXDEV) {
 	/* make a copy and delete the orignal */

@@ -184,6 +184,9 @@ copy_type (const char *from, const char *to, const Type *t, int preserve)
     case TGeneralString:
 	copy_primitive ("general_string", from, to);
 	break;
+    case TTeletexString:
+	copy_primitive ("general_string", from, to);
+	break;
     case TUTCTime:
 	fprintf(codefile, "*(%s) = *(%s);\n", to, from);
 	break;

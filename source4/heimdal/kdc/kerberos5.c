@@ -261,6 +261,7 @@ _kdc_encode_reply(krb5_context context,
 		  krb5_enctype etype,
 		  int skvno, const EncryptionKey *skey,
 		  int ckvno, const EncryptionKey *reply_key,
+		  int rk_is_subkey,
 		  const char **e_text,
 		  krb5_data *reply)
 {
@@ -272,8 +273,9 @@ _kdc_encode_reply(krb5_context context,
 
     ASN1_MALLOC_ENCODE(EncTicketPart, buf, buf_size, et, &len, ret);
     if(ret) {
-	kdc_log(context, config, 0, "Failed to encode ticket: %s",
-		krb5_get_err_text(context, ret));
+	const char *msg = krb5_get_error_message(context, ret);
+	kdc_log(context, config, 0, "Failed to encode ticket: %s", msg);
+	krb5_free_error_message(context, msg);
 	return ret;
     }
     if(buf_size != len) {
@@ -286,8 +288,9 @@ _kdc_encode_reply(krb5_context context,
     ret = krb5_crypto_init(context, skey, etype, &crypto);
     if (ret) {
 	free(buf);
-	kdc_log(context, config, 0, "krb5_crypto_init failed: %s",
-		krb5_get_err_text(context, ret));
+	const char *msg = krb5_get_error_message(context, ret);
+	kdc_log(context, config, 0, "krb5_crypto_init failed: %s", msg);
+	krb5_free_error_message(context, msg);
 	return ret;
     }
 
@@ -301,8 +304,9 @@ _kdc_encode_reply(krb5_context context,
     free(buf);
     krb5_crypto_destroy(context, crypto);
     if(ret) {
-	kdc_log(context, config, 0, "Failed to encrypt data: %s",
-		krb5_get_err_text(context, ret));
+	const char *msg = krb5_get_error_message(context, ret);
+	kdc_log(context, config, 0, "Failed to encrypt data: %s", msg);
+	krb5_free_error_message(context, msg);
 	return ret;
     }
 
@@ -311,8 +315,9 @@ _kdc_encode_reply(krb5_context context,
     else
 	ASN1_MALLOC_ENCODE(EncTGSRepPart, buf, buf_size, ek, &len, ret);
     if(ret) {
-	kdc_log(context, config, 0, "Failed to encode KDC-REP: %s",
-		krb5_get_err_text(context, ret));
+	const char *msg = krb5_get_error_message(context, ret);
+	kdc_log(context, config, 0, "Failed to encode KDC-REP: %s", msg);
+	krb5_free_error_message(context, msg);
 	return ret;
     }
     if(buf_size != len) {
@@ -323,9 +328,10 @@ _kdc_encode_reply(krb5_context context,
     }
     ret = krb5_crypto_init(context, reply_key, 0, &crypto);
     if (ret) {
+	const char *msg = krb5_get_error_message(context, ret);
 	free(buf);
-	kdc_log(context, config, 0, "krb5_crypto_init failed: %s",
-		krb5_get_err_text(context, ret));
+	kdc_log(context, config, 0, "krb5_crypto_init failed: %s", msg);
+	krb5_free_error_message(context, msg);
 	return ret;
     }
     if(rep->msg_type == krb_as_rep) {
@@ -341,7 +347,7 @@ _kdc_encode_reply(krb5_context context,
     } else {
 	krb5_encrypt_EncryptedData(context,
 				   crypto,
-				   KRB5_KU_TGS_REP_ENC_PART_SESSION,
+				   rk_is_subkey ? KRB5_KU_TGS_REP_ENC_PART_SUB_KEY : KRB5_KU_TGS_REP_ENC_PART_SESSION,
 				   buf,
 				   len,
 				   ckvno,
@@ -351,8 +357,9 @@ _kdc_encode_reply(krb5_context context,
     }
     krb5_crypto_destroy(context, crypto);
     if(ret) {
-	kdc_log(context, config, 0, "Failed to encode KDC-REP: %s",
-		krb5_get_err_text(context, ret));
+	const char *msg = krb5_get_error_message(context, ret);
+	kdc_log(context, config, 0, "Failed to encode KDC-REP: %s", msg);
+	krb5_free_error_message(context, msg);
 	return ret;
     }
     if(buf_size != len) {
@@ -980,8 +987,9 @@ _kdc_as_rep(krb5_context context,
     ret = _kdc_db_fetch(context, config, client_princ,
 			HDB_F_GET_CLIENT | flags, &clientdb, &client);
     if(ret){
-	kdc_log(context, config, 0, "UNKNOWN -- %s: %s", client_name,
-		krb5_get_err_text(context, ret));
+	const char *msg = krb5_get_error_message(context, ret);
+	kdc_log(context, config, 0, "UNKNOWN -- %s: %s", client_name, msg);
+	krb5_free_error_message(context, msg);
 	ret = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
 	goto out;
     }
@@ -990,8 +998,9 @@ _kdc_as_rep(krb5_context context,
 			HDB_F_GET_SERVER|HDB_F_GET_KRBTGT,
 			NULL, &server);
     if(ret){
-	kdc_log(context, config, 0, "UNKNOWN -- %s: %s", server_name,
-		krb5_get_err_text(context, ret));
+	const char *msg = krb5_get_error_message(context, ret);
+	kdc_log(context, config, 0, "UNKNOWN -- %s: %s", server_name, msg);
+	krb5_free_error_message(context, msg);
 	ret = KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
 	goto out;
     }
@@ -1135,8 +1144,9 @@ _kdc_as_rep(krb5_context context,
 	try_next_key:
 	    ret = krb5_crypto_init(context, &pa_key->key, 0, &crypto);
 	    if (ret) {
-		kdc_log(context, config, 0, "krb5_crypto_init failed: %s",
-			krb5_get_err_text(context, ret));
+		const char *msg = krb5_get_error_message(context, ret);
+		kdc_log(context, config, 0, "krb5_crypto_init failed: %s", msg);
+		krb5_free_error_message(context, msg);
 		free_EncryptedData(&enc_data);
 		continue;
 	    }
@@ -1154,6 +1164,8 @@ _kdc_as_rep(krb5_context context,
 	     */
 	    if(ret){
 		krb5_error_code ret2;
+		const char *msg = krb5_get_error_message(context, ret);
+
 		ret2 = krb5_enctype_to_string(context,
 					      pa_key->key.keytype, &str);
 		if (ret2)
@@ -1161,9 +1173,8 @@ _kdc_as_rep(krb5_context context,
 		kdc_log(context, config, 5,
 			"Failed to decrypt PA-DATA -- %s "
 			"(enctype %s) error %s",
-			client_name,
-			str ? str : "unknown enctype",
-			krb5_get_err_text(context, ret));
+			client_name, str ? str : "unknown enctype", msg);
+		krb5_free_error_message(context, msg);
 		free(str);
 
 		if(hdb_next_enctype2key(context, &client->entry,
@@ -1757,7 +1768,7 @@ _kdc_as_rep(krb5_context context,
     ret = _kdc_encode_reply(context, config,
 			    &rep, &et, &ek, setype, server->entry.kvno,
 			    &skey->key, client->entry.kvno,
-			    reply_key, &e_text, reply);
+			    reply_key, 0, &e_text, reply);
     free_EncTicketPart(&et);
     free_EncKDCRepPart(&ek);
     if (ret)

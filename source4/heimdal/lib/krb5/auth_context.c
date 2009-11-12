@@ -171,10 +171,10 @@ krb5_auth_con_genaddrs(krb5_context context,
 	if (auth_context->local_address == NULL) {
 	    len = sizeof(ss_local);
 	    if(getsockname(fd, local, &len) < 0) {
+		char buf[128];
 		ret = errno;
-		krb5_set_error_message(context, ret,
-				       "getsockname: %s",
-				       strerror(ret));
+		strerror_r(ret, buf, sizeof(buf));
+		krb5_set_error_message(context, ret, "getsockname: %s", buf);
 		goto out;
 	    }
 	    ret = krb5_sockaddr2address (context, local, &local_k_address);
@@ -189,9 +189,10 @@ krb5_auth_con_genaddrs(krb5_context context,
     if(flags & KRB5_AUTH_CONTEXT_GENERATE_REMOTE_ADDR) {
 	len = sizeof(ss_remote);
 	if(getpeername(fd, remote, &len) < 0) {
+	    char buf[128];
 	    ret = errno;
-	    krb5_set_error_message(context, ret,
-				   "getpeername: %s", strerror(ret));
+	    strerror_r(ret, buf, sizeof(buf));
+	    krb5_set_error_message(context, ret, "getpeername: %s", buf);
 	    goto out;
 	}
 	ret = krb5_sockaddr2address (context, remote, &remote_k_address);

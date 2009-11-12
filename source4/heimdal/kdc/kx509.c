@@ -143,7 +143,6 @@ build_certificate(krb5_context context,
 		  krb5_principal principal,
 		  krb5_data *certificate)
 {
-    hx509_context hxctx = NULL;
     hx509_ca_tbs tbs = NULL;
     hx509_env env = NULL;
     hx509_cert cert = NULL;
@@ -155,11 +154,7 @@ build_certificate(krb5_context context,
 	return EINVAL;
     }
 
-    ret = hx509_context_init(&hxctx);
-    if (ret)
-	goto out;
-
-    ret = hx509_env_add(hxctx, &env, "principal-name",
+    ret = hx509_env_add(context->hx509ctx, &env, "principal-name",
 			krb5_principal_get_comp_string(context, principal, 0));
     if (ret)
 	goto out;
@@ -168,14 +163,14 @@ build_certificate(krb5_context context,
 	hx509_certs certs;
 	hx509_query *q;
 
-	ret = hx509_certs_init(hxctx, config->kx509_ca, 0,
+	ret = hx509_certs_init(context->hx509ctx, config->kx509_ca, 0,
 			       NULL, &certs);
 	if (ret) {
 	    kdc_log(context, config, 0, "Failed to load CA %s",
 		    config->kx509_ca);
 	    goto out;
 	}
-	ret = hx509_query_alloc(hxctx, &q);
+	ret = hx509_query_alloc(context->hx509ctx, &q);
 	if (ret) {
 	    hx509_certs_free(&certs);
 	    goto out;
@@ -184,8 +179,8 @@ build_certificate(krb5_context context,
 	hx509_query_match_option(q, HX509_QUERY_OPTION_PRIVATE_KEY);
 	hx509_query_match_option(q, HX509_QUERY_OPTION_KU_KEYCERTSIGN);
 
-	ret = hx509_certs_find(hxctx, certs, q, &signer);
-	hx509_query_free(hxctx, q);
+	ret = hx509_certs_find(context->hx509ctx, certs, q, &signer);
+	hx509_query_free(context->hx509ctx, q);
 	hx509_certs_free(&certs);
 	if (ret) {
 	    kdc_log(context, config, 0, "Failed to find a CA in %s",
@@ -194,7 +189,7 @@ build_certificate(krb5_context context,
 	}
     }
 
-    ret = hx509_ca_tbs_init(hxctx, &tbs);
+    ret = hx509_ca_tbs_init(context->hx509ctx, &tbs);
     if (ret)
 	goto out;
 
@@ -214,7 +209,7 @@ build_certificate(krb5_context context,
 	any.length = 2;
 	spki.algorithm.parameters = &any;
 
-	ret = hx509_ca_tbs_set_spki(hxctx, tbs, &spki);
+	ret = hx509_ca_tbs_set_spki(context->hx509ctx, tbs, &spki);
 	der_free_oid(&spki.algorithm.algorithm);
 	if (ret)
 	    goto out;
@@ -224,21 +219,21 @@ build_certificate(krb5_context context,
 	hx509_certs certs;
 	hx509_cert template;
 
-	ret = hx509_certs_init(hxctx, config->kx509_template, 0,
+	ret = hx509_certs_init(context->hx509ctx, config->kx509_template, 0,
 			       NULL, &certs);
 	if (ret) {
 	    kdc_log(context, config, 0, "Failed to load template %s",
 		    config->kx509_template);
 	    goto out;
 	}
-	ret = hx509_get_one_cert(hxctx, certs, &template);
+	ret = hx509_get_one_cert(context->hx509ctx, certs, &template);
 	hx509_certs_free(&certs);
 	if (ret) {
 	    kdc_log(context, config, 0, "Failed to find template in %s",
 		    config->kx509_template);
 	    goto out;
 	}
-	ret = hx509_ca_tbs_set_template(hxctx, tbs,
+	ret = hx509_ca_tbs_set_template(context->hx509ctx, tbs,
 					HX509_CA_TEMPLATE_SUBJECT|
 					HX509_CA_TEMPLATE_KU|
 					HX509_CA_TEMPLATE_EKU,
@@ -248,25 +243,23 @@ build_certificate(krb5_context context,
 	    goto out;
     }
 
-    hx509_ca_tbs_set_notAfter(hxctx, tbs, endtime);
+    hx509_ca_tbs_set_notAfter(context->hx509ctx, tbs, endtime);
 
-    hx509_ca_tbs_subject_expand(hxctx, tbs, env);
+    hx509_ca_tbs_subject_expand(context->hx509ctx, tbs, env);
     hx509_env_free(&env);
 
-    ret = hx509_ca_sign(hxctx, tbs, signer, &cert);
+    ret = hx509_ca_sign(context->hx509ctx, tbs, signer, &cert);
     hx509_cert_free(signer);
     if (ret)
 	goto out;
 
     hx509_ca_tbs_free(&tbs);
 
-    ret = hx509_cert_binary(hxctx, cert, certificate);
+    ret = hx509_cert_binary(context->hx509ctx, cert, certificate);
     hx509_cert_free(cert);
     if (ret)
 	goto out;
 		
-    hx509_context_free(&hxctx);
-
     return 0;
 out:
     if (env)
@@ -275,8 +268,6 @@ out:
 	hx509_ca_tbs_free(&tbs);
     if (signer)
 	hx509_cert_free(signer);
-    if (hxctx)
-	hx509_context_free(&hxctx);
     krb5_set_error_message(context, ret, "cert creation failed");
     return ret;
 }

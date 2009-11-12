@@ -59,7 +59,7 @@
  *
  */
 
-
+const int hdb_interface_version = HDB_INTERFACE_VERSION;
 
 static struct hdb_method methods[] = {
 #if HAVE_DB1 || HAVE_DB3

@@ -198,7 +198,7 @@ hx509_certs_store(hx509_context context,
 
 
 hx509_certs
-_hx509_certs_ref(hx509_certs certs)
+hx509_certs_ref(hx509_certs certs)
 {
     if (certs == NULL)
 	return NULL;

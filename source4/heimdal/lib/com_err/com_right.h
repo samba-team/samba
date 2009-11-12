@@ -52,6 +52,7 @@ struct et_list {
 extern struct et_list *_et_list;
 
 const char *com_right (struct et_list *list, long code);
+const char *com_right_r (struct et_list *list, long code, char *, size_t);
 void initialize_error_table_r (struct et_list **, const char **, int, long);
 void free_error_table (struct et_list *);
 

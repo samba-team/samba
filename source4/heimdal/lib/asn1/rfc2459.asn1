@@ -150,11 +150,9 @@ AttributeType ::=   OBJECT IDENTIFIER
 
 AttributeValue ::=   heim_any
 
-TeletexStringx ::= [UNIVERSAL 20] IMPLICIT OCTET STRING
-
 DirectoryString ::= CHOICE {
 	ia5String	IA5String,
-	teletexString	TeletexStringx,
+	teletexString	TeletexString,
 	printableString	PrintableString,
 	universalString UniversalString,
 	utf8String	UTF8String,

@@ -306,6 +306,12 @@ int ROKEN_LIB_FUNCTION getdtablesize(void);
 char * ROKEN_LIB_FUNCTION strerror(int);
 #endif
 
+#if !defined(HAVE_STRERROR) && !defined(strerror)
+#define strerror_r rk_strerror_r
+int ROKEN_LIB_FUNCTION strerror_r(int, char *, size_t);
+#endif
+
+
 #if !defined(HAVE_HSTRERROR) || defined(NEED_HSTRERROR_PROTO)
 #ifndef HAVE_HSTRERROR
 #define hstrerror rk_hstrerror
@@ -476,7 +482,7 @@ unsigned short ROKEN_LIB_FUNCTION bswap16(unsigned short);
 int rk_flock(int fd, int operation);
 #endif /* HAVE_FLOCK */
 
-#ifdef SunOS
+#if defined(SunOS) || defined(_AIX)
 #define dirfd(x) ((x)->dd_fd)
 #endif
 
@@ -797,6 +803,12 @@ closefrom(int);
 #define timegm rk_timegm
 time_t ROKEN_LIB_FUNCTION
 rk_timegm(struct tm *tm);
+#endif
+
+#ifdef NEED_QSORT
+#define qsort rk_qsort
+void
+rk_qsort(void *, size_t, size_t, int (*)(const void *, const void *));
 #endif
 
 #ifdef SOCKET_WRAPPER_REPLACE

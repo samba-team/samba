@@ -44,6 +44,7 @@ enum typetype {
     TChoice,
     TEnumerated,
     TGeneralString,
+    TTeletexString,
     TGeneralizedTime,
     TIA5String,
     TInteger,

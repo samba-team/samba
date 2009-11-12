@@ -40,6 +40,7 @@
 struct krb5_dh_moduli;
 struct AlgorithmIdentifier;
 struct _krb5_krb_auth_data;
+struct hx509_certs_data;
 #include <krb5-private.h>
 
 #ifndef NO_NTLM
@@ -76,6 +77,7 @@ int fcache_version;
 char *password_file	= NULL;
 char *pk_user_id	= NULL;
 int pk_enterprise_flag = 0;
+struct hx509_certs_data *ent_user_id = NULL;
 char *pk_x509_anchors	= NULL;
 int pk_use_enckey	= 0;
 static int canonicalize_flag = 0;
@@ -246,10 +248,15 @@ do_524init(krb5_context context, krb5_ccache ccache,
 	real_creds = creds;
     else {
 	krb5_principal client;
-	krb5_cc_get_principal(context, ccache, &client);
+	ret = krb5_cc_get_principal(context, ccache, &client);
+	if (ret) {
+	    krb5_warn(context, ret, "524init: can't get client principal");
+	    return ret;
+	}
 	memset(&in_creds, 0, sizeof(in_creds));
 	ret = get_server(context, client, server, &in_creds.server);
 	if(ret) {
+	    krb5_warn(context, ret, "524init: can't get server principal");
 	    krb5_free_principal(context, client);
 	    return ret;
 	}
@@ -415,7 +422,7 @@ get_new_tickets(krb5_context context,
     char passwd[256];
     krb5_deltat start_time = 0;
     krb5_deltat renew = 0;
-    char *renewstr = NULL;
+    const char *renewstr = NULL;
     krb5_enctype *enctype = NULL;
     krb5_ccache tempccache;
 #ifndef NO_NTLM
@@ -467,7 +474,7 @@ get_new_tickets(krb5_context context,
 	krb5_get_init_creds_opt_set_canonicalize(context, opt, TRUE);
     if (pk_enterprise_flag && windows_flag)
 	krb5_get_init_creds_opt_set_win2k(context, opt, TRUE);
-    if (pk_user_id || anonymous_flag) {
+    if (pk_user_id || ent_user_id || anonymous_flag) {
 	ret = krb5_get_init_creds_opt_set_pkinit(context, opt,
 						 principal,
 						 pk_user_id,
@@ -481,6 +488,8 @@ get_new_tickets(krb5_context context,
 						 passwd);
 	if (ret)
 	    krb5_err(context, 1, ret, "krb5_get_init_creds_opt_set_pkinit");
+	if (ent_user_id)
+	    _krb5_get_init_creds_opt_set_pkinit_user_certs(context, opt, ent_user_id);
     }
 
     if (addrs_flag != -1)
@@ -488,14 +497,14 @@ get_new_tickets(krb5_context context,
 						addrs_flag ? FALSE : TRUE);
 
     if (renew_life == NULL && renewable_flag)
-	asprintf(&renewstr, "1 month");
+	renewstr = "1 month";
     if (renew_life)
-	asprintf(&renewstr, "%s", renew_life);
+	renewstr = renew_life;
     if (renewstr) {
 	renew = parse_time (renewstr, "s");
 	if (renew < 0)
 	    errx (1, "unparsable time: %s", renewstr);
-	free(renewstr);
+	
 	krb5_get_init_creds_opt_set_renew_life (opt, renew);
     }
 
@@ -543,7 +552,7 @@ get_new_tickets(krb5_context context,
 					  server_str,
 					  opt);
 	krb5_kt_close(context, kt);
-    } else if (pk_user_id || anonymous_flag) {
+    } else if (pk_user_id || ent_user_id || anonymous_flag) {
 	ret = krb5_get_init_creds_password (context,
 					    &cred,
 					    principal,
@@ -796,9 +805,12 @@ main (int argc, char **argv)
 
     if (pk_enterprise_flag) {
 	ret = _krb5_pk_enterprise_cert(context, pk_user_id,
-				       argv[0], &principal);
+				       argv[0], &principal,
+				       &ent_user_id);
 	if (ret)
 	    krb5_err(context, 1, ret, "krb5_pk_enterprise_certs");
+
+	pk_user_id = NULL;
 
     } else if (anonymous_flag) {
 
@@ -806,7 +818,7 @@ main (int argc, char **argv)
 				  KRB5_WELLKNOWN_NAME, KRB5_ANON_NAME, 
 				  NULL);
 	if (ret)
-	    krb5_err(context, 1, ret, "krb5_build_principal");
+	    krb5_err(context, 1, ret, "krb5_make_principal");
 	krb5_principal_set_type(context, principal, KRB5_NT_WELLKNOWN);
 
     } else {

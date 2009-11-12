@@ -145,6 +145,9 @@ free_type (const char *name, const Type *t, int preserve)
     case TGeneralString:
 	free_primitive ("general_string", name);
 	break;
+    case TTeletexString:
+	free_primitive ("general_string", name);
+	break;
     case TUTF8String:
 	free_primitive ("utf8string", name);
 	break;

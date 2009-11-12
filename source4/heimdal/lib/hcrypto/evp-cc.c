@@ -296,6 +296,7 @@ EVP_cc_aes_256_cbc(void)
  *
  */
 
+#ifdef COMMONCRYPTO_SUPPORTS_RC2
 static int
 cc_rc2_cbc_init(EVP_CIPHER_CTX *ctx,
 		const unsigned char * key,
@@ -305,6 +306,7 @@ cc_rc2_cbc_init(EVP_CIPHER_CTX *ctx,
     struct cc_key *cc = ctx->cipher_data;
     return init_cc_key(encp, kCCAlgorithmRC2, key, ctx->cipher->key_len, iv, &cc->href);
 }
+#endif
 
 /**
  * The RC2 cipher type - common crypto
@@ -318,6 +320,7 @@ cc_rc2_cbc_init(EVP_CIPHER_CTX *ctx,
 const EVP_CIPHER *
 EVP_cc_rc2_cbc(void)
 {
+#ifdef COMMONCRYPTO_SUPPORTS_RC2
     static const EVP_CIPHER rc2_cbc = {
 	0,
 	kCCBlockSizeRC2,
@@ -334,6 +337,9 @@ EVP_cc_rc2_cbc(void)
 	NULL
     };
     return &rc2_cbc;
+#else
+    return NULL;
+#endif
 }
 
 /**
@@ -348,6 +354,7 @@ EVP_cc_rc2_cbc(void)
 const EVP_CIPHER *
 EVP_cc_rc2_40_cbc(void)
 {
+#ifdef COMMONCRYPTO_SUPPORTS_RC2
     static const EVP_CIPHER rc2_40_cbc = {
 	0,
 	kCCBlockSizeRC2,
@@ -364,6 +371,9 @@ EVP_cc_rc2_40_cbc(void)
 	NULL
     };
     return &rc2_40_cbc;
+#else
+    return NULL;
+#endif
 }
 
 
@@ -379,6 +389,7 @@ EVP_cc_rc2_40_cbc(void)
 const EVP_CIPHER *
 EVP_cc_rc2_64_cbc(void)
 {
+#ifdef COMMONCRYPTO_SUPPORTS_RC2
     static const EVP_CIPHER rc2_64_cbc = {
 	0,
 	kCCBlockSizeRC2,
@@ -395,6 +406,9 @@ EVP_cc_rc2_64_cbc(void)
 	NULL
     };
     return &rc2_64_cbc;
+#else
+    return NULL;
+#endif
 }
 
 /**

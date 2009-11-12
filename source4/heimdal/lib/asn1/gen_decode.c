@@ -67,6 +67,7 @@ is_primitive_type(int type)
     case TEnumerated:
     case TGeneralizedTime:
     case TGeneralString:
+    case TTeletexString:
     case TOID:
     case TUTCTime:
     case TUTF8String:
@@ -108,6 +109,11 @@ find_tag (const Type *t,
 	*cl  = ASN1_C_UNIV;
 	*ty  = PRIM;
 	*tag = UT_GeneralString;
+	break;
+    case TTeletexString:
+	*cl  = ASN1_C_UNIV;
+	*ty  = PRIM;
+	*tag = UT_TeletexString;
 	break;
     case TGeneralizedTime:
 	*cl  = ASN1_C_UNIV;
@@ -489,6 +495,9 @@ decode_type (const char *name, const Type *t, int optional,
     case TGeneralString:
 	decode_primitive ("general_string", name, forwstr);
 	break;
+    case TTeletexString:
+	decode_primitive ("general_string", name, forwstr);
+	break;
     case TTag:{
     	char *tname, *typestring;
 	char *ide = NULL;
@@ -621,7 +630,7 @@ decode_type (const char *name, const Type *t, int optional,
 	    fprintf(codefile,
 		    "else {\n"
 		    "(%s)->u.%s.data = calloc(1, len);\n"
-		    "if ((%s)->u.%s.data == NULL) {\n"
+		    "if ((%s)->u.%s.data == NULL && len != 0) {\n"
 		    "e = ENOMEM; %s;\n"
 		    "}\n"
 		    "(%s)->u.%s.length = len;\n"
@@ -703,6 +712,7 @@ generate_type_decode (const Symbol *s)
     case TOID:
     case TGeneralizedTime:
     case TGeneralString:
+    case TTeletexString:
     case TUTF8String:
     case TPrintableString:
     case TIA5String:
@@ -734,7 +744,7 @@ generate_type_decode (const Symbol *s)
 	if (preserve)
 	    fprintf (codefile,
 		     "data->_save.data = calloc(1, ret);\n"
-		     "if (data->_save.data == NULL) { \n"
+		     "if (data->_save.data == NULL && ret != 0) { \n"
 		     "e = ENOMEM; goto fail; \n"
 		     "}\n"
 		     "data->_save.length = ret;\n"

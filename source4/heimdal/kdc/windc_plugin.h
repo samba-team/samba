@@ -72,6 +72,7 @@ typedef krb5_error_code
 
 
 #define KRB5_WINDC_PLUGING_MINOR		4
+#define KRB5_WINDC_PLUGIN_MINOR			4
 
 typedef struct krb5plugin_windc_ftable {
     int			minor_version;

@@ -66,7 +66,7 @@ _hx509_write_file(const char *fn, const void *data, size_t length)
  */
 
 static void
-header(FILE *f, const char *type, const char *str)
+print_pem_stamp(FILE *f, const char *type, const char *str)
 {
     fprintf(f, "-----%s %s-----\n", type, str);
 }
@@ -82,7 +82,7 @@ hx509_pem_write(hx509_context context, const char *type,
 
 #define ENCODE_LINE_LENGTH	54
 
-    header(f, "BEGIN", type);
+    print_pem_stamp(f, "BEGIN", type);
 
     while (headers) {
 	fprintf(f, "%s: %s\n%s",
@@ -110,7 +110,7 @@ hx509_pem_write(hx509_context context, const char *type,
 	free(line);
     }
 
-    header(f, "END", type);
+    print_pem_stamp(f, "END", type);
 
     return 0;
 }
@@ -121,14 +121,14 @@ hx509_pem_write(hx509_context context, const char *type,
 
 int
 hx509_pem_add_header(hx509_pem_header **headers,
-		     const char *hdr, const char *value)
+		     const char *header, const char *value)
 {
     hx509_pem_header *h;
 
     h = calloc(1, sizeof(*h));
     if (h == NULL)
 	return ENOMEM;
-    h->header = strdup(hdr);
+    h->header = strdup(header);
     if (h->header == NULL) {
 	free(h);
 	return ENOMEM;
@@ -164,10 +164,10 @@ hx509_pem_free_header(hx509_pem_header *headers)
  */
 
 const char *
-hx509_pem_find_header(const hx509_pem_header *h, const char *hdr)
+hx509_pem_find_header(const hx509_pem_header *h, const char *header)
 {
     while(h) {
-	if (strcmp(hdr, h->header) == 0)
+	if (strcmp(header, h->header) == 0)
 	    return h->value;
 	h = h->next;
     }

@@ -2058,7 +2058,7 @@ evp_encrypt(krb5_context context,
     return 0;
 }
 
-static const char zero_ivec[EVP_MAX_BLOCK_LENGTH] = { 0 };
+static const unsigned char zero_ivec[EVP_MAX_BLOCK_LENGTH] = { 0 };
 
 static krb5_error_code
 evp_encrypt_cts(krb5_context context,

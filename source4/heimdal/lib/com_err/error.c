@@ -49,16 +49,26 @@ const char *
 com_right(struct et_list *list, long code)
 {
     struct et_list *p;
+    for (p = list; p; p = p->next)
+	if (code >= p->table->base && code < p->table->base + p->table->n_msgs)
+	    return p->table->msgs[code - p->table->base];
+    return NULL;
+}
+
+const char *
+com_right_r(struct et_list *list, long code, char *str, size_t len)
+{
+    struct et_list *p;
     for (p = list; p; p = p->next) {
 	if (code >= p->table->base && code < p->table->base + p->table->n_msgs) {
-	    const char *str = p->table->msgs[code - p->table->base];
+	    const char *msg = p->table->msgs[code - p->table->base];
 #ifdef LIBINTL
 	    char domain[12 + 20];
 	    snprintf(domain, sizeof(domain), "heim_com_err%d", p->table->base);
 #endif
-	    return dgettext(domain, str);
+	    strlcpy(str, dgettext(domain, msg), len);
+	    return str;
 	}
-
     }
     return NULL;
 }

@@ -55,7 +55,7 @@ krb5_kdc_windc_init(krb5_context context)
     for (e = list; e != NULL; e = _krb5_plugin_get_next(e)) {
 
 	windcft = _krb5_plugin_get_symbol(e);
-	if (windcft->minor_version < KRB5_WINDC_PLUGING_MINOR)
+	if (windcft->minor_version < KRB5_WINDC_PLUGIN_MINOR)
 	    continue;
 	
 	(*windcft->init)(context, &windcctx);

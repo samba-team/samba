@@ -494,6 +494,9 @@ define_asn1 (int level, Type *t)
     case TGeneralString:
 	fprintf (headerfile, "GeneralString");
 	break;
+    case TTeletexString:
+	fprintf (headerfile, "TeletexString");
+	break;
     case TTag: {
 	const char *classnames[] = { "UNIVERSAL ", "APPLICATION ",
 				     "" /* CONTEXT */, "PRIVATE " };
@@ -682,6 +685,10 @@ define_type (int level, const char *name, Type *t, int typedefp, int preservep)
 	fprintf (headerfile, "time_t %s;\n", name);
 	break;
     case TGeneralString:
+	space(level);
+	fprintf (headerfile, "heim_general_string %s;\n", name);
+	break;
+    case TTeletexString:
 	space(level);
 	fprintf (headerfile, "heim_general_string %s;\n", name);
 	break;

@@ -305,7 +305,7 @@ der_get_octet_string_ber (const unsigned char *p, size_t len,
 	    void *ptr;
 
 	    ptr = realloc(data->data, data->length + datalen);
-	    if (ptr == NULL) {
+	    if (ptr == NULL && data->length + datalen != 0) {
 		e = ENOMEM;
 		goto out;
 	    }
@@ -354,21 +354,23 @@ der_get_heim_integer (const unsigned char *p, size_t len,
 	    p++;
 	    data->length--;
 	}
-	data->data = malloc(data->length);
-	if (data->data == NULL) {
-	    data->length = 0;
-	    if (size)
-		*size = 0;
-	    return ENOMEM;
-	}
-	q = &((unsigned char*)data->data)[data->length - 1];
-	p += data->length - 1;
-	while (q >= (unsigned char*)data->data) {
-	    *q = *p ^ 0xff;
-	    if (carry)
-		carry = !++*q;
-	    p--;
-	    q--;
+	if (data->length) {
+	    data->data = malloc(data->length);
+	    if (data->data == NULL) {
+		data->length = 0;
+		if (size)
+		    *size = 0;
+		return ENOMEM;
+	    }
+	    q = &((unsigned char*)data->data)[data->length - 1];
+	    p += data->length - 1;
+	    while (q >= (unsigned char*)data->data) {
+		*q = *p ^ 0xff;
+		if (carry)
+		    carry = !++*q;
+		p--;
+		q--;
+	    }
 	}
     } else {
 	data->negative = 0;

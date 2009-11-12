@@ -219,6 +219,9 @@ length_type (const char *name, const Type *t,
     case TGeneralString:
 	length_primitive ("general_string", name, variable);
 	break;
+    case TTeletexString:
+	length_primitive ("general_string", name, variable);
+	break;
     case TUTCTime:
 	length_primitive ("utctime", name, variable);
 	break;

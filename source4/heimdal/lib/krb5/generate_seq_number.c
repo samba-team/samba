@@ -38,23 +38,11 @@ krb5_generate_seq_number(krb5_context context,
 			 const krb5_keyblock *key,
 			 uint32_t *seqno)
 {
-    krb5_error_code ret;
-    krb5_keyblock *subkey;
-    uint32_t q;
-    u_char *p;
-    int i;
-
-    ret = krb5_generate_subkey (context, key, &subkey);
-    if (ret)
-	return ret;
-
-    q = 0;
-    for (p = (u_char *)subkey->keyvalue.data, i = 0;
-	 i < subkey->keyvalue.length;
-	 ++i, ++p)
-	q = (q << 8) | *p;
-    q &= 0xffffffff;
-    *seqno = q;
-    krb5_free_keyblock (context, subkey);
+    if (RAND_bytes((void *)seqno, sizeof(*seqno)) != 1)
+	krb5_abortx(context, "Failed to generate random block");
+    /* MIT used signed numbers, lets not stomp into that space directly */
+    *seqno &= 0x3fffffff;
+    if (*seqno == 0)
+	*seqno = 1;
     return 0;
 }

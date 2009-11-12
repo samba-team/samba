@@ -121,7 +121,8 @@ HMAC_Init_ex(HMAC_CTX *ctx,
     for (i = 0, p = ctx->opad; i < keylen; i++)
 	p[i] ^= ((const unsigned char *)key)[i];
 
-    ctx->ctx = EVP_MD_CTX_create();
+    if (ctx->ctx == NULL)
+	ctx->ctx = EVP_MD_CTX_create();
 
     EVP_DigestInit_ex(ctx->ctx, ctx->md, ctx->engine);
     EVP_DigestUpdate(ctx->ctx, ctx->ipad, EVP_MD_block_size(ctx->md));

@@ -95,8 +95,10 @@ unix_bytes(unsigned char *outdata, int size)
     ssize_t count;
     int once = 0;
 
-    if (size <= 0)
+    if (size < 0)
 	return 0;
+    else if (size == 0)
+	return 1;
 
     HEIMDAL_MUTEX_lock(&random_mutex);
     if (random_fd == -1) {

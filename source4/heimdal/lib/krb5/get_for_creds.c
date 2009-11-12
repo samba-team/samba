@@ -137,13 +137,12 @@ krb5_fwd_tgt_creds (krb5_context	context,
     memset (&creds, 0, sizeof(creds));
     creds.client = client;
 
-    ret = krb5_build_principal(context,
-			       &creds.server,
-			       strlen(client_realm),
-			       client_realm,
-			       KRB5_TGS_NAME,
-			       client_realm,
-			       NULL);
+    ret = krb5_make_principal(context,
+			      &creds.server,
+			      client_realm,
+			      KRB5_TGS_NAME,
+			      client_realm,
+			      NULL);
     if (ret)
 	return ret;
 

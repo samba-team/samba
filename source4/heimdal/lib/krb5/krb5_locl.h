@@ -136,6 +136,8 @@ struct sockaddr_dl;
 #include <door.h>
 #endif
 
+#include <com_err.h>
+
 #include <roken.h>
 #include <parse_time.h>
 #include <base64.h>
@@ -151,6 +153,7 @@ struct sockaddr_dl;
 struct send_to_kdc;
 
 /* XXX glue for pkinit */
+struct hx509_certs_data;
 struct krb5_pk_identity;
 struct krb5_pk_cert;
 struct ContentInfo;
@@ -265,6 +268,9 @@ typedef struct krb5_context_data {
 #define KRB5_CTX_F_CHECK_PAC			2
 #define KRB5_CTX_F_HOMEDIR_ACCESS		4
     struct send_to_kdc *send_to_kdc;
+#ifdef PKINIT
+    hx509_context hx509ctx;
+#endif
 } krb5_context_data;
 
 #define KRB5_DEFAULT_CCNAME_FILE "FILE:/tmp/krb5cc_%{uid}"
@@ -295,7 +301,6 @@ typedef struct krb5_context_data {
 #ifdef PKINIT
 
 struct krb5_pk_identity {
-    hx509_context hx509ctx;
     hx509_verify_ctx verify_ctx;
     hx509_certs certs;
     hx509_cert cert;

@@ -44,6 +44,7 @@ krb5_mk_error(krb5_context context,
 	      int *client_usec,
 	      krb5_data *reply)
 {
+    const char *e_text2 = NULL;
     KRB_ERROR msg;
     krb5_timestamp sec;
     int32_t usec;
@@ -62,7 +63,7 @@ krb5_mk_error(krb5_context context,
     /* Make sure we only send `protocol' error codes */
     if(error_code < KRB5KDC_ERR_NONE || error_code >= KRB5_ERR_RCSID) {
 	if(e_text == NULL)
-	    e_text = krb5_get_err_text(context, error_code);
+	    e_text = e_text2 = krb5_get_error_message(context, error_code);
 	error_code = KRB5KRB_ERR_GENERIC;
     }
     msg.error_code = error_code - KRB5KDC_ERR_NONE;
@@ -82,6 +83,8 @@ krb5_mk_error(krb5_context context,
     }
 
     ASN1_MALLOC_ENCODE(KRB_ERROR, reply->data, reply->length, &msg, &len, ret);
+    if (e_text2)
+	krb5_free_error_message(context, e_text2);
     if (ret)
 	return ret;
     if(reply->length != len)

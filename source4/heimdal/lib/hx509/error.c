@@ -67,8 +67,10 @@ free_error_string(hx509_error msg)
 void
 hx509_clear_error_string(hx509_context context)
 {
-    free_error_string(context->error);
-    context->error = NULL;
+    if (context) {
+	free_error_string(context->error);
+	context->error = NULL;
+    }
 }
 
 /**
@@ -90,6 +92,9 @@ hx509_set_error_stringv(hx509_context context, int flags, int code,
 			const char *fmt, va_list ap)
 {
     hx509_error msg;
+
+    if (context == NULL)
+	return;
 
     msg = calloc(1, sizeof(*msg));
     if (msg == NULL) {

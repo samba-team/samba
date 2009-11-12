@@ -33,13 +33,18 @@
 
 #include <krb5_locl.h>
 
-krb5_error_code KRB5_LIB_FUNCTION
-krb5_generate_subkey(krb5_context context,
-		     const krb5_keyblock *key,
-		     krb5_keyblock **subkey)
-{
-    return krb5_generate_subkey_extended(context, key, key->keytype, subkey);
-}
+/**
+ * Generate subkey, from keyblock
+ *
+ * @param context kerberos context
+ * @param key session key
+ * @param etype encryption type of subkey, if ETYPE_NULL, use key's enctype
+ * @param subkey returned new, free with krb5_free_keyblock().
+ *
+ * @return 0 on success or a Kerberos 5 error code
+ *
+* @ingroup krb5_crypto
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_generate_subkey_extended(krb5_context context,

@@ -297,13 +297,12 @@ do_delegation (krb5_context context,
     if (kret)
 	goto out;
 
-    kret = krb5_build_principal(context,
-				&creds.server,
-				strlen(creds.client->realm),
-				creds.client->realm,
-				KRB5_TGS_NAME,
-				creds.client->realm,
-				NULL);
+    kret = krb5_make_principal(context,
+			       &creds.server,
+			       creds.client->realm,
+			       KRB5_TGS_NAME,
+			       creds.client->realm,
+			       NULL);
     if (kret)
 	goto out;
 
@@ -610,12 +609,11 @@ init_auth_restart
 	krb5_set_kdc_sec_offset (context, offset, -1);
     }
 
-    kret = krb5_build_authenticator (context,
+    kret = _krb5_build_authenticator(context,
 				     ctx->auth_context,
 				     enctype,
 				     ctx->kcred,
 				     &cksum,
-				     NULL,
 				     &authenticator,
 				     KRB5_KU_AP_REQ_AUTH);
 

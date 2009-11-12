@@ -133,9 +133,10 @@ krb5_rc_initialize(krb5_context context,
     int ret;
 
     if(f == NULL) {
+	char buf[128];
 	ret = errno;
-	krb5_set_error_message(context, ret, "open(%s): %s", id->name,
-			       strerror(ret));
+	strerror_r(ret, buf, sizeof(buf));
+	krb5_set_error_message(context, ret, "open(%s): %s", id->name, buf);
 	return ret;
     }
     tmp.stamp = auth_lifespan;
@@ -158,9 +159,10 @@ krb5_rc_destroy(krb5_context context,
     int ret;
 
     if(remove(id->name) < 0) {
+	char buf[128];
 	ret = errno;
-	krb5_set_error_message(context, ret, "remove(%s): %s", id->name,
-			       strerror(ret));
+	strerror_r(ret, buf, sizeof(buf));
+	krb5_set_error_message(context, ret, "remove(%s): %s", id->name, buf);
 	return ret;
     }
     return krb5_rc_close(context, id);
@@ -208,9 +210,10 @@ krb5_rc_store(krb5_context context,
     checksum_authenticator(rep, ent.data);
     f = fopen(id->name, "r");
     if(f == NULL) {
+	char buf[128];
 	ret = errno;
-	krb5_set_error_message(context, ret, "open(%s): %s", id->name,
-			       strerror(ret));
+	strerror_r(ret, buf, sizeof(buf));
+	krb5_set_error_message(context, ret, "open(%s): %s", id->name, buf);
 	return ret;
     }
     rk_cloexec_file(f);
@@ -226,18 +229,21 @@ krb5_rc_store(krb5_context context,
 	}
     }
     if(ferror(f)){
+	char buf[128];
 	ret = errno;
 	fclose(f);
+	strerror_r(ret, buf, sizeof(buf));
 	krb5_set_error_message(context, ret, "%s: %s",
-			       id->name, strerror(ret));
+			       id->name, buf);
 	return ret;
     }
     fclose(f);
     f = fopen(id->name, "a");
     if(f == NULL) {
+	char buf[128];
+	strerror_r(errno, buf, sizeof(buf));
 	krb5_set_error_message(context, KRB5_RC_IO_UNKNOWN,
-			       "open(%s): %s", id->name,
-			       strerror(errno));
+			       "open(%s): %s", id->name, buf);
 	return KRB5_RC_IO_UNKNOWN;
     }
     fwrite(&ent, 1, sizeof(ent), f);

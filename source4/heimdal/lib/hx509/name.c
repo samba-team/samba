@@ -243,11 +243,7 @@ _hx509_Name_to_string(const Name *n, char **str)
 		break;
 	    }
 	    case choice_DirectoryString_teletexString:
-		ss = malloc(ds->u.teletexString.length + 1);
-		if (ss == NULL)
-		    _hx509_abort("allocation failure"); /* XXX */
-		memcpy(ss, ds->u.teletexString.data, ds->u.teletexString.length);
-		ss[ds->u.teletexString.length] = '\0';
+		ss = ds->u.teletexString;
 		break;
 	    case choice_DirectoryString_universalString: {
 	        const uint32_t *uni = ds->u.universalString.data;
@@ -279,8 +275,7 @@ _hx509_Name_to_string(const Name *n, char **str)
 	    len = strlen(ss);
 	    append_string(str, &total_len, ss, len, 1);
 	    if (ds->element == choice_DirectoryString_universalString ||
-		ds->element == choice_DirectoryString_bmpString ||
-		ds->element == choice_DirectoryString_teletexString)
+		ds->element == choice_DirectoryString_bmpString)
 	    {
 		free(ss);
 	    }
@@ -341,7 +336,7 @@ dsstringprep(const DirectoryString *ds, uint32_t **rname, size_t *rlen)
 	COPYCHARARRAY(ds, printableString, len, name);
 	break;
     case choice_DirectoryString_teletexString:
-	COPYVOIDARRAY(ds, teletexString, len, name);
+	COPYCHARARRAY(ds, teletexString, len, name);
 	break;
     case choice_DirectoryString_bmpString:
 	COPYVALARRAY(ds, bmpString, len, name);
@@ -930,12 +925,12 @@ hx509_general_name_unparse(GeneralName *name, char **str)
 
     switch (name->element) {
     case choice_GeneralName_otherName: {
-	char *str2;
-	hx509_oid_sprint(&name->u.otherName.type_id, &str2);
-	if (str2 == NULL)
+	char *oid;
+	hx509_oid_sprint(&name->u.otherName.type_id, &oid);
+	if (oid == NULL)
 	    return ENOMEM;
-	strpool = rk_strpoolprintf(strpool, "otherName: %s", str2);
-	free(str2);
+	strpool = rk_strpoolprintf(strpool, "otherName: %s", oid);
+	free(oid);
 	break;
     }
     case choice_GeneralName_rfc822Name:
@@ -990,12 +985,12 @@ hx509_general_name_unparse(GeneralName *name, char **str)
 	break;
     }
     case choice_GeneralName_registeredID: {
-	char *str2;
-	hx509_oid_sprint(&name->u.registeredID, &str2);
-	if (str2 == NULL)
+	char *oid;
+	hx509_oid_sprint(&name->u.registeredID, &oid);
+	if (oid == NULL)
 	    return ENOMEM;
-	strpool = rk_strpoolprintf(strpool, "registeredID: %s", str2);
-	free(str2);
+	strpool = rk_strpoolprintf(strpool, "registeredID: %s", oid);
+	free(oid);
 	break;
     }
     default:

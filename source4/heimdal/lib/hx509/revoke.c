@@ -1004,17 +1004,17 @@ hx509_ocsp_request(hx509_context context,
 
 	es = req.tbsRequest.requestExtensions;
 	
-	es->val = calloc(es->len, sizeof(es->val[0]));
+	es->val = calloc(1, sizeof(es->val[0]));
 	if (es->val == NULL) {
 	    ret = ENOMEM;
 	    goto out;
 	}
-	es->len = 1;
 	ret = der_copy_oid(&asn1_oid_id_pkix_ocsp_nonce, &es->val[0].extnID);
 	if (ret) {
 	    free_OCSPRequest(&req);
 	    return ret;
 	}
+	es->len = 1;
 
 	es->val[0].extnValue.data = malloc(10);
 	if (es->val[0].extnValue.data == NULL) {

@@ -123,12 +123,11 @@ _krb5_mk_req_internal(krb5_context context,
     if (ret)
 	goto out;
 
-    ret = krb5_build_authenticator (context,
+    ret = _krb5_build_authenticator(context,
 				    ac,
 				    ac->keyblock->keytype,
 				    in_creds,
 				    c_opt,
-				    NULL,
 				    &authenticator,
 				    encrypt_usage);
     if (c_opt)

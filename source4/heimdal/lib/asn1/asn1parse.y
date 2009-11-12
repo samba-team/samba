@@ -687,6 +687,11 @@ RestrictedCharactedStringType: kw_GeneralString
 			$$ = new_tag(ASN1_C_UNIV, UT_GeneralString,
 				     TE_EXPLICIT, new_type(TGeneralString));
 		}
+		| kw_TeletexString
+		{
+			$$ = new_tag(ASN1_C_UNIV, UT_TeletexString,
+				     TE_EXPLICIT, new_type(TTeletexString));
+		}
 		| kw_UTF8String
 		{
 			$$ = new_tag(ASN1_C_UNIV, UT_UTF8String,
