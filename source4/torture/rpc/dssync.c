@@ -956,7 +956,6 @@ static bool test_FetchNT4Data(struct torture_context *tctx,
 			      struct DsSyncTest *ctx)
 {
 	NTSTATUS status;
-	bool ret = true;
 	struct drsuapi_DsGetNT4ChangeLog r;
 	union drsuapi_DsGetNT4ChangeLogRequest req;
 	union drsuapi_DsGetNT4ChangeLogInfo info;
@@ -986,38 +985,40 @@ static bool test_FetchNT4Data(struct torture_context *tctx,
 
 		status = dcerpc_drsuapi_DsGetNT4ChangeLog(ctx->new_dc.drsuapi.drs_pipe, ctx, &r);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
-			printf("DsGetNT4ChangeLog not supported by target server\n");
-			break;
+			torture_skip(tctx, "DsGetNT4ChangeLog not supported by target server");
 		} else if (!NT_STATUS_IS_OK(status)) {
 			const char *errstr = nt_errstr(status);
 			if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 				errstr = dcerpc_errstr(ctx, ctx->new_dc.drsuapi.drs_pipe->last_fault_code);
 			}
-			printf("dcerpc_drsuapi_DsGetNT4ChangeLog failed - %s\n", errstr);
-			ret = false;
+			torture_fail(tctx,
+				     talloc_asprintf(tctx, "dcerpc_drsuapi_DsGetNT4ChangeLog failed - %s\n",
+						     errstr));
 		} else if (W_ERROR_EQUAL(r.out.result, WERR_INVALID_DOMAIN_ROLE)) {
-			printf("DsGetNT4ChangeLog not supported by target server\n");
-			break;
+			torture_skip(tctx, "DsGetNT4ChangeLog not supported by target server");
 		} else if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("DsGetNT4ChangeLog failed - %s\n", win_errstr(r.out.result));
-			ret = false;
+			torture_fail(tctx,
+				     talloc_asprintf(tctx, "DsGetNT4ChangeLog failed - %s\n",
+						     win_errstr(r.out.result)));
 		} else if (*r.out.level_out != 1) {
-			printf("DsGetNT4ChangeLog unknown level - %u\n", *r.out.level_out);
-			ret = false;
+			torture_fail(tctx,
+				     talloc_asprintf(tctx, "DsGetNT4ChangeLog unknown level - %u\n",
+						     *r.out.level_out));
 		} else if (NT_STATUS_IS_OK(r.out.info->info1.status)) {
 		} else if (NT_STATUS_EQUAL(r.out.info->info1.status, STATUS_MORE_ENTRIES)) {
 			cookie.length	= r.out.info->info1.length1;
 			cookie.data	= r.out.info->info1.data1;
 			continue;
 		} else {
-			printf("DsGetNT4ChangeLog failed - %s\n", nt_errstr(r.out.info->info1.status));
-			ret = false;
+			torture_fail(tctx,
+				     talloc_asprintf(tctx, "DsGetNT4ChangeLog failed - %s\n",
+						     nt_errstr(r.out.info->info1.status)));
 		}
 
 		break;
 	}
 
-	return ret;
+	return true;
 }
 
 bool torture_rpc_dssync(struct torture_context *torture)
