@@ -2471,14 +2471,18 @@ static int cmd_posix(void)
 	uint16 major, minor;
 	uint32 caplow, caphigh;
 	char *caps;
+	NTSTATUS status;
 
 	if (!SERVER_HAS_UNIX_CIFS(cli)) {
 		d_printf("Server doesn't support UNIX CIFS extensions.\n");
 		return 1;
 	}
 
-	if (!cli_unix_extensions_version(cli, &major, &minor, &caplow, &caphigh)) {
-		d_printf("Can't get UNIX CIFS extensions version from server.\n");
+	status = cli_unix_extensions_version(cli, &major, &minor, &caplow,
+					     &caphigh);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Can't get UNIX CIFS extensions version from "
+			 "server: %s\n", nt_errstr(status));
 		return 1;
 	}
 
@@ -3005,6 +3009,7 @@ static int cmd_getfacl(void)
 	uint16 num_file_acls = 0;
 	uint16 num_dir_acls = 0;
 	uint16 i;
+	NTSTATUS status;
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&name,NULL)) {
 		d_printf("getfacl filename\n");
@@ -3028,9 +3033,11 @@ static int cmd_getfacl(void)
 		return 1;
 	}
 
-	if (!cli_unix_extensions_version(targetcli, &major, &minor,
-				&caplow, &caphigh)) {
-		d_printf("Can't get UNIX CIFS version from server.\n");
+	status = cli_unix_extensions_version(targetcli, &major, &minor,
+					     &caplow, &caphigh);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Can't get UNIX CIFS version from server: %s.\n",
+			 nt_errstr(status));
 		return 1;
 	}
 

@@ -2682,8 +2682,16 @@ NTSTATUS cli_notify_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 
 /* The following definitions come from libsmb/clifsinfo.c  */
 
-bool cli_unix_extensions_version(struct cli_state *cli, uint16 *pmajor, uint16 *pminor,
-                                        uint32 *pcaplow, uint32 *pcaphigh);
+struct tevent_req *cli_unix_extensions_version_send(TALLOC_CTX *mem_ctx,
+						    struct tevent_context *ev,
+						    struct cli_state *cli);
+NTSTATUS cli_unix_extensions_version_recv(struct tevent_req *req,
+					  uint16_t *pmajor, uint16_t *pminor,
+					  uint32_t *pcaplow,
+					  uint32_t *pcaphigh);
+NTSTATUS cli_unix_extensions_version(struct cli_state *cli, uint16 *pmajor,
+				     uint16 *pminor, uint32 *pcaplow,
+				     uint32 *pcaphigh);
 bool cli_set_unix_extensions_capabilities(struct cli_state *cli, uint16 major, uint16 minor,
                                         uint32 caplow, uint32 caphigh);
 bool cli_get_fs_attr_info(struct cli_state *cli, uint32 *fs_attr);
