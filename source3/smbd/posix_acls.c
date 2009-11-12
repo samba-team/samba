@@ -3594,7 +3594,17 @@ int try_chown(connection_struct *conn, struct smb_filename *smb_fname,
 
 	become_root();
 	/* Keep the current file gid the same. */
-	ret = SMB_VFS_FCHOWN(fsp, uid, (gid_t)-1);
+	if (fsp->fh->fd == -1) {
+		if (lp_posix_pathnames()) {
+			ret = SMB_VFS_LCHOWN(conn, smb_fname->base_name, uid,
+					    (gid_t)-1);
+		} else {
+			ret = SMB_VFS_CHOWN(conn, smb_fname->base_name, uid,
+					    (gid_t)-1);
+		}
+	} else {
+		ret = SMB_VFS_FCHOWN(fsp, uid, (gid_t)-1);
+	}
 	unbecome_root();
 
 	close_file_fchmod(NULL, fsp);
