@@ -69,7 +69,7 @@ static NTSTATUS net_sh_run(struct net_context *c,
 			   int argc, const char **argv)
 {
 	TALLOC_CTX *mem_ctx;
-	struct rpc_pipe_client *pipe_hnd;
+	struct rpc_pipe_client *pipe_hnd = NULL;
 	NTSTATUS status;
 
 	mem_ctx = talloc_new(ctx);

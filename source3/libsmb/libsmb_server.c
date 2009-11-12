@@ -713,8 +713,8 @@ SMBC_attr_server(TALLOC_CTX *ctx,
 {
         int flags;
         struct sockaddr_storage ss;
-	struct cli_state *ipc_cli;
-	struct rpc_pipe_client *pipe_hnd;
+	struct cli_state *ipc_cli = NULL;
+	struct rpc_pipe_client *pipe_hnd = NULL;
         NTSTATUS nt_status;
 	SMBCSRV *srv=NULL;
 	SMBCSRV *ipc_srv=NULL;

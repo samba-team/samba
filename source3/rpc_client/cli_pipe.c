@@ -3093,7 +3093,7 @@ static int cli_auth_ntlmssp_data_destructor(struct cli_pipe_auth_data *auth)
 	return 0;
 }
 
-NTSTATUS rpccli_ntlmssp_bind_data(TALLOC_CTX *mem_ctx,
+static NTSTATUS rpccli_ntlmssp_bind_data(TALLOC_CTX *mem_ctx,
 				  enum pipe_auth_type auth_type,
 				  enum dcerpc_AuthLevel auth_level,
 				  const char *domain,
@@ -3213,7 +3213,7 @@ static int cli_auth_kerberos_data_destructor(struct kerberos_auth_struct *auth)
 }
 #endif
 
-NTSTATUS rpccli_kerberos_bind_data(TALLOC_CTX *mem_ctx,
+static NTSTATUS rpccli_kerberos_bind_data(TALLOC_CTX *mem_ctx,
 				   enum dcerpc_AuthLevel auth_level,
 				   const char *service_princ,
 				   const char *username,

@@ -1626,8 +1626,8 @@ static int net_ads_printer_publish(struct net_context *c, int argc, const char *
         ADS_STRUCT *ads;
         ADS_STATUS rc;
 	const char *servername, *printername;
-	struct cli_state *cli;
-	struct rpc_pipe_client *pipe_hnd;
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_hnd = NULL;
 	struct sockaddr_storage server_ss;
 	NTSTATUS nt_status;
 	TALLOC_CTX *mem_ctx = talloc_init("net_ads_printer_publish");
