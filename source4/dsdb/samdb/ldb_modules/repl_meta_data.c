@@ -1966,14 +1966,22 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	struct dsdb_schema *schema = dsdb_get_schema(ldb);
 	struct drsuapi_DsReplicaObjectIdentifier3 target;
 	struct ldb_message *msg;
-	struct ldb_message_element *ret_el;
 	TALLOC_CTX *tmp_ctx = talloc_new(la_entry);
-	enum ndr_err_code ndr_err;
 	struct ldb_request *mod_req;
 	int ret;
 	const struct dsdb_attribute *attr;
 	struct ldb_dn *target_dn;
+	struct dsdb_dn *dsdb_dn;
 	uint64_t seq_num = 0;
+	struct drsuapi_DsReplicaAttribute drs;
+	struct drsuapi_DsAttributeValue val;
+	struct ldb_message_element el;
+	const struct ldb_val *guid;
+	WERROR status;
+
+	drs.value_ctr.num_values = 1;
+	drs.value_ctr.values = &val;
+	val.blob = la->value.blob;
 
 /*
 linked_attributes[0]:                                                     
@@ -1999,6 +2007,8 @@ linked_attributes[0]:
             originating_change_time  : Wed Sep  2 23:39:07 2009 EST            
             originating_invocation_id: 794640f3-18cf-40ee-a211-a93992b67a64    
             originating_usn          : 0x000000000001e19c (123292)             
+
+(for cases where the link is to a normal DN)
      &target: struct drsuapi_DsReplicaObjectIdentifier3                        
         __ndr_size               : 0x0000007e (126)                            
         __ndr_size_sid           : 0x0000001c (28)                             
@@ -2007,24 +2017,16 @@ linked_attributes[0]:
         __ndr_size_dn            : 0x00000022 (34)                                
         dn                       : 'CN=UOne,OU=TestOU,DC=vsofs8,DC=com'           
  */
-	if (DEBUGLVL(4)) {
-		NDR_PRINT_DEBUG(drsuapi_DsReplicaLinkedAttribute, la); 
-	}
 	
-	/* decode the target of the link */
-	ndr_err = ndr_pull_struct_blob(la->value.blob, 
-				       tmp_ctx, lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")), 
-				       &target,
-				       (ndr_pull_flags_fn_t)ndr_pull_drsuapi_DsReplicaObjectIdentifier3);
-	if (ndr_err != NDR_ERR_SUCCESS) {
-		DEBUG(0,("Unable to decode linked_attribute target\n"));
-		dump_data(4, la->value.blob->data, la->value.blob->length);			
+	/* find the attribute being modified */
+	attr = dsdb_attribute_by_attributeID_id(schema, la->attid);
+	if (attr == NULL) {
+		DEBUG(0, (__location__ ": Unable to find attributeID 0x%x\n", la->attid));
 		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	if (DEBUGLVL(4)) {
-		NDR_PRINT_DEBUG(drsuapi_DsReplicaObjectIdentifier3, &target);
-	}
+
+	status = attr->syntax->drsuapi_to_ldb(ldb, schema, attr, &drs, tmp_ctx, &el);
 
 	/* construct a modify request for this attribute change */
 	msg = ldb_msg_new(tmp_ctx);
@@ -2041,44 +2043,47 @@ linked_attributes[0]:
 		return ret;
 	}
 
-	/* find the attribute being modified */
-	attr = dsdb_attribute_by_attributeID_id(schema, la->attid);
-	if (attr == NULL) {
-		DEBUG(0, (__location__ ": Unable to find attributeID 0x%x\n", la->attid));
-		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
+	el.name = attr->lDAPDisplayName;
 	if (la->flags & DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE) {
-		ret = ldb_msg_add_empty(msg, attr->lDAPDisplayName,
-					LDB_FLAG_MOD_ADD, &ret_el);
+		ret = ldb_msg_add(msg, &el, LDB_FLAG_MOD_ADD);
 	} else {
-		ret = ldb_msg_add_empty(msg, attr->lDAPDisplayName,
-					LDB_FLAG_MOD_DELETE, &ret_el);
+		ret = ldb_msg_add(msg, &el, LDB_FLAG_MOD_DELETE);
 	}
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
 	}
-	/* we allocate two entries here, in case we need a remove/add
-	   pair */
-	ret_el->values = talloc_array(msg, struct ldb_val, 2);
-	if (!ret_el->values) {
-		ldb_oom(ldb);
-		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	ret_el->num_values = 1;
 
-	ret = dsdb_find_dn_by_guid(ldb, tmp_ctx, GUID_string(tmp_ctx, &target.guid), &target_dn);
+	dsdb_dn = dsdb_dn_parse(tmp_ctx, ldb, &el.values[0], attr->syntax->ldap_oid);
+	if (!dsdb_dn) {
+		DEBUG(0,(__location__ ": Failed to parse just-generated DN\n"));
+		talloc_free(tmp_ctx);
+		return LDB_ERR_INVALID_DN_SYNTAX;
+	}
+
+	guid = ldb_dn_get_extended_component(dsdb_dn->dn, "GUID");
+	if (!guid) {
+		DEBUG(0,(__location__ ": Failed to parse GUID from just-generated DN\n"));
+		talloc_free(tmp_ctx);
+		return LDB_ERR_INVALID_DN_SYNTAX;
+	}
+
+	ret = dsdb_find_dn_by_guid(ldb, tmp_ctx, ldb_binary_encode(tmp_ctx, *guid), &target_dn);
 	if (ret != LDB_SUCCESS) {
+		/* If this proves to be a problem in the future, then
+		 * just remove the return - perhaps we can just use
+		 * the details the replication peer supplied */
+
 		DEBUG(0,(__location__ ": Failed to map GUID %s to DN\n", GUID_string(tmp_ctx, &target.guid)));
 		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
-	}
+	} else {
 
-	ret_el->values[0].data = (uint8_t *)ldb_dn_get_extended_linearized(tmp_ctx, target_dn, 1);
-	ret_el->values[0].length = strlen((char *)ret_el->values[0].data);
+		/* Now update with full DN we just found in the DB (including extended components) */
+		dsdb_dn->dn = target_dn;
+		/* Now make a linearized version, using the original binary components (if any) */
+		el.values[0] = data_blob_string_const(dsdb_dn_get_extended_linearized(tmp_ctx, dsdb_dn, 1));
+	}
 
 	ret = replmd_update_rpmd(module, schema, msg, &seq_num);
 	if (ret != LDB_SUCCESS) {
