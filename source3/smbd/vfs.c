@@ -845,7 +845,7 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 	char *resolved_name = NULL;
 	char *p = NULL;
 
-	DEBUG(3,("reduce_name [%s] [%s]\n", fname, conn->connectpath));
+	DEBUG(3,("check_reduced_name [%s] [%s]\n", fname, conn->connectpath));
 
 #ifdef REALPATH_TAKES_NULL
 	resolved_name = SMB_VFS_REALPATH(conn,fname,NULL);
@@ -856,7 +856,9 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 	if (!resolved_name) {
 		switch (errno) {
 			case ENOTDIR:
-				DEBUG(3,("reduce_name: Component not a directory in getting realpath for %s\n", fname));
+				DEBUG(3,("check_reduced_name: Component not a "
+					 "directory in getting realpath for "
+					 "%s\n", fname));
 				return map_nt_error_from_unix(errno);
 			case ENOENT:
 			{
@@ -888,7 +890,9 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 				resolved_name = SMB_VFS_REALPATH(conn,tmp_fname,resolved_name_buf);
 #endif
 				if (!resolved_name) {
-					DEBUG(3,("reduce_name: couldn't get realpath for %s\n", fname));
+					DEBUG(3,("check_reduce_named: "
+						 "couldn't get realpath for "
+						 "%s\n", fname));
 					return map_nt_error_from_unix(errno);
 				}
 				tmp_fname = talloc_asprintf(ctx,
@@ -902,7 +906,8 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 				SAFE_FREE(resolved_name);
 				resolved_name = SMB_STRDUP(tmp_fname);
 				if (!resolved_name) {
-					DEBUG(0,("reduce_name: malloc fail for %s\n", tmp_fname));
+					DEBUG(0, ("check_reduced_name: malloc "
+						  "fail for %s\n", tmp_fname));
 					return NT_STATUS_NO_MEMORY;
 				}
 #else
@@ -912,15 +917,18 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 				break;
 			}
 			default:
-				DEBUG(1,("reduce_name: couldn't get realpath for %s\n", fname));
+				DEBUG(1,("check_reduced_name: couldn't get "
+					 "realpath for %s\n", fname));
 				return map_nt_error_from_unix(errno);
 		}
 	}
 
-	DEBUG(10,("reduce_name realpath [%s] -> [%s]\n", fname, resolved_name));
+	DEBUG(10,("check_reduced_name realpath [%s] -> [%s]\n", fname,
+		  resolved_name));
 
 	if (*resolved_name != '/') {
-		DEBUG(0,("reduce_name: realpath doesn't return absolute paths !\n"));
+		DEBUG(0,("check_reduced_name: realpath doesn't return "
+			 "absolute paths !\n"));
 		if (free_resolved_name) {
 			SAFE_FREE(resolved_name);
 		}
@@ -933,7 +941,8 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 
 		    conn_rootdir = SMB_VFS_CONNECTPATH(conn, fname);
 		    if (conn_rootdir == NULL) {
-			    DEBUG(2, ("check_reduced_name: Could not get conn_rootdir\n"));
+			    DEBUG(2, ("check_reduced_name: Could not get "
+				      "conn_rootdir\n"));
 			    if (free_resolved_name) {
 				    SAFE_FREE(resolved_name);
 			    }
@@ -942,9 +951,9 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 
 		    if (strncmp(conn_rootdir, resolved_name,
 				strlen(conn_rootdir)) != 0) {
-			    DEBUG(2, ("reduce_name: Bad access attempt: %s is "
-				      "a symlink outside the share path",
-				      fname));
+			    DEBUG(2, ("check_reduced_name: Bad access "
+				      "attempt: %s is a symlink outside the "
+				      "share path", fname));
 			    if (free_resolved_name) {
 				    SAFE_FREE(resolved_name);
 			    }
@@ -975,7 +984,8 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 			if (free_resolved_name) {
 				SAFE_FREE(resolved_name);
 			}
-                        DEBUG(3,("reduce_name: denied: file path name %s is a symlink\n",resolved_name));
+                        DEBUG(3,("check_reduced_name: denied: file path name "
+				 "%s is a symlink\n",resolved_name));
 			TALLOC_FREE(smb_fname);
 			return NT_STATUS_ACCESS_DENIED;
                 }
@@ -983,7 +993,8 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
         }
 #endif
 
-	DEBUG(3,("reduce_name: %s reduced to %s\n", fname, resolved_name));
+	DEBUG(3,("check_reduced_name: %s reduced to %s\n", fname,
+		 resolved_name));
 	if (free_resolved_name) {
 		SAFE_FREE(resolved_name);
 	}
