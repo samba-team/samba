@@ -965,6 +965,24 @@ out_free:
 		binding->transport = NCACN_NP;
 	}
 
+	if (binding->flags & DCERPC_SIGN) {
+		pipe_default_auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
+		pipe_default_auth_type = PIPE_AUTH_TYPE_NTLMSSP;
+	}
+	if (binding->flags & DCERPC_SEAL) {
+		pipe_default_auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
+		pipe_default_auth_type = PIPE_AUTH_TYPE_NTLMSSP;
+	}
+	if (binding->flags & DCERPC_AUTH_SPNEGO) {
+		pipe_default_auth_type = PIPE_AUTH_TYPE_SPNEGO_NTLMSSP;
+	}
+	if (binding->flags & DCERPC_AUTH_NTLM) {
+		pipe_default_auth_type = PIPE_AUTH_TYPE_NTLMSSP;
+	}
+	if (binding->flags & DCERPC_AUTH_KRB5) {
+		pipe_default_auth_type = PIPE_AUTH_TYPE_SPNEGO_KRB5;
+	}
+
 	if (get_cmdline_auth_info_use_kerberos(rpcclient_auth_info)) {
 		flags |= CLI_FULL_CONNECTION_USE_KERBEROS |
 			 CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
