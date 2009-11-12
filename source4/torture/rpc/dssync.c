@@ -506,12 +506,9 @@ static bool test_analyse_objects(struct torture_context *tctx,
 
 		if (ret != LDB_SUCCESS) {
 			DEBUG(0, ("Could not re-fetch object just delivered over DRS: %s", ldb_errstring(ldb)));
-			return false;
+			torture_assert_int_equal(tctx, ret, LDB_SUCCESS, "Could not re-fetch object just delivered over DRS");
 		}
-		if (res->count != 1) {
-			DEBUG(0, ("Could not re-fetch object just delivered over DRS"));
-			return false;
-		}
+		torture_assert_int_equal(tctx, res->count, 1, "Could not re-fetch object just delivered over DRS");
 		ldap_msg = res->msgs[0];
 		for (j=0; j < ldap_msg->num_elements; j++) {
 			ldap_msg->elements[j].flags = LDB_FLAG_MOD_ADD;
@@ -562,6 +559,8 @@ static bool test_analyse_objects(struct torture_context *tctx,
 			ldif.msg = new_msg;
 			s = ldb_ldif_write_string(ldb, new_msg, &ldif);
 			DEBUG(0, ("Difference in between DRS and LDAP objects: %s\n", s));
+			talloc_free(search_req);
+			torture_assert_int_equal(tctx, new_msg->num_elements, 0, "Should have no objects in 'difference' message");
 		}
 		talloc_free(search_req);
 	}
