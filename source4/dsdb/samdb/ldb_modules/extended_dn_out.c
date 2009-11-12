@@ -433,7 +433,9 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 			
 			if (!dsdb_dn || !ldb_dn_validate(dsdb_dn->dn)) {
 				ldb_asprintf_errstring(ldb, 
-						       "could not parse %.*s as a %s DN", (int)plain_dn->length, plain_dn->data,
+						       "could not parse %.*s in %s on %s as a %s DN", 
+						       (int)plain_dn->length, plain_dn->data,
+						       msg->elements[i].name, ldb_dn_get_linearized(msg->dn),
 						       attribute->syntax->ldap_oid);
 				talloc_free(dsdb_dn);
 				return ldb_module_done(ac->req, NULL, NULL, LDB_ERR_INVALID_DN_SYNTAX);
