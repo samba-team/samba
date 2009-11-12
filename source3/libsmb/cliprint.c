@@ -27,20 +27,21 @@
 static const char *fix_char_ptr(unsigned int datap, unsigned int converter,
 			  char *rdata, int rdrcnt)
 {
+	unsigned int offset;
+
 	if (datap == 0)	{
 		/* turn NULL pointers into zero length strings */
 		return "";
-	} else {
-		unsigned int offset = datap - converter;
-
-		if (offset >= rdrcnt) {
-			DEBUG(1,("bad char ptr: datap=%u, converter=%u rdrcnt=%d>",
-				 datap, converter, rdrcnt));
-			return "<ERROR>";
-		} else {
-			return &rdata[offset];
-		}
 	}
+
+	offset = datap - converter;
+
+	if (offset >= rdrcnt) {
+		DEBUG(1,("bad char ptr: datap=%u, converter=%u rdrcnt=%d>",
+			 datap, converter, rdrcnt));
+		return "<ERROR>";
+	}
+	return &rdata[offset];
 }
 
 /****************************************************************************
