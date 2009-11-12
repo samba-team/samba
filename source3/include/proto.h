@@ -4373,7 +4373,6 @@ void lp_set_posix_default_cifsx_readwrite_locktype(enum brl_flavour val);
 int lp_min_receive_file_size(void);
 char* lp_perfcount_module(void);
 void lp_set_passdb_backend(const char *backend);
-bool set_inherit_acls(int i);
 
 /* The following definitions come from param/util.c  */
 

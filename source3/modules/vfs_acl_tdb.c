@@ -384,9 +384,11 @@ static int connect_acl_tdb(struct vfs_handle_struct *handle,
 
 	/* Ensure we have "inherit acls = yes" if we're
 	 * using this module. */
-	DEBUG(2,("connect_acl_tdb: setting 'inherit acls = true' for service %s\n",
+	DEBUG(2,("connect_acl_tdb: setting 'inherit acls = true' "
+		"and 'dos filemode = true' for service %s\n",
 		service ));
-	set_inherit_acls(SNUM(handle->conn));
+	lp_do_parameter(SNUM(handle->conn), "inherit acls", "true");
+	lp_do_parameter(SNUM(handle->conn), "dos filemode", "true");
 
 	return 0;
 }
