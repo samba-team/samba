@@ -335,46 +335,6 @@ struct PAC_LOGON_INFO *get_logon_info_from_pac(struct PAC_DATA *pac_data)
 	return NULL;
 }
 
-static krb5_error_code smb_krb5_get_tkt_from_creds(krb5_creds *creds,
-						   DATA_BLOB *tkt)
-{
-	krb5_error_code ret;
-	krb5_context context;
-	krb5_auth_context auth_context = NULL;
-	krb5_data inbuf, outbuf;
-
-	ret = krb5_init_context(&context);
-	if (ret) {
-		return ret;
-	}
-
-	ret = krb5_auth_con_init(context, &auth_context);
-	if (ret) {
-		goto done;
-	}
-
-	ZERO_STRUCT(inbuf);
-
-	ret = krb5_mk_req_extended(context, &auth_context, AP_OPTS_USE_SUBKEY,
-				   &inbuf, creds, &outbuf);
-	if (ret) {
-		goto done;
-	}
-
-	*tkt = data_blob(outbuf.data, outbuf.length);
- done:
-	if (!context) {
-		return ret;
-	}
-	kerberos_free_data_contents(context, &outbuf);
-	if (auth_context) {
-		krb5_auth_con_free(context, auth_context);
-	}
-	krb5_free_context(context);
-
-	return ret;
-}
-
 /****************************************************************
 ****************************************************************/
 
@@ -462,26 +422,7 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 	    (*expire_time == 0) && (*renew_till_time == 0)) {
 		return NT_STATUS_INVALID_LOGON_TYPE;
 	}
-#if 1
-	ret = smb_krb5_get_creds(local_service,
-				 time_offset,
-				 cc,
-				 impersonate_princ_s,
-				 &creds);
-	if (ret) {
-		DEBUG(1,("failed to get credentials for %s: %s\n",
-			local_service, error_message(ret)));
-		status = krb5_to_nt_status(ret);
-		goto out;
-	}
 
-	ret = smb_krb5_get_tkt_from_creds(creds, &tkt);
-	if (ret) {
-		status = krb5_to_nt_status(ret);
-		goto out;
-	}
-
-#else
 	ret = cli_krb5_get_ticket(local_service,
 				  time_offset,
 				  &tkt,
@@ -493,10 +434,13 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 	if (ret) {
 		DEBUG(1,("failed to get ticket for %s: %s\n",
 			local_service, error_message(ret)));
+		if (impersonate_princ_s) {
+			DEBUGADD(1,("tried S4U2SELF impersonation as: %s\n",
+				impersonate_princ_s));
+		}
 		status = krb5_to_nt_status(ret);
 		goto out;
 	}
-#endif
 	status = ads_verify_ticket(mem_ctx,
 				   lp_realm(),
 				   time_offset,
