@@ -28,8 +28,8 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 				char **err_str)
 {
 	struct nmb_name calling, called;
-	struct cli_state *cli;
-	struct rpc_pipe_client *pipe_hnd;
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_hnd = NULL;
 	struct sockaddr_storage ss;
 	char *user, *domain, *p;
 

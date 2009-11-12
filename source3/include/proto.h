@@ -5287,22 +5287,9 @@ unsigned int rpccli_set_timeout(struct rpc_pipe_client *cli,
 bool rpccli_get_pwd_hash(struct rpc_pipe_client *cli, uint8_t nt_hash[16]);
 NTSTATUS rpccli_anon_bind_data(TALLOC_CTX *mem_ctx,
 			       struct cli_pipe_auth_data **presult);
-NTSTATUS rpccli_ntlmssp_bind_data(TALLOC_CTX *mem_ctx,
-				  enum pipe_auth_type auth_type,
-				  enum dcerpc_AuthLevel auth_level,
-				  const char *domain,
-				  const char *username,
-				  const char *password,
-				  struct cli_pipe_auth_data **presult);
 NTSTATUS rpccli_schannel_bind_data(TALLOC_CTX *mem_ctx, const char *domain,
 				   enum dcerpc_AuthLevel auth_level,
 				   struct netlogon_creds_CredentialState *creds,
-				   struct cli_pipe_auth_data **presult);
-NTSTATUS rpccli_kerberos_bind_data(TALLOC_CTX *mem_ctx,
-				   enum dcerpc_AuthLevel auth_level,
-				   const char *service_princ,
-				   const char *username,
-				   const char *password,
 				   struct cli_pipe_auth_data **presult);
 NTSTATUS rpc_pipe_open_tcp(TALLOC_CTX *mem_ctx, const char *host,
 			   const struct ndr_syntax_id *abstract_syntax,

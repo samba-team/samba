@@ -70,7 +70,7 @@ static NTSTATUS cli_lsa_lookup_sid(struct cli_state *cli,
 				   char **domain, char **name)
 {
 	uint16 orig_cnum = cli->cnum;
-	struct rpc_pipe_client *p;
+	struct rpc_pipe_client *p = NULL;
 	struct policy_handle handle;
 	NTSTATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();

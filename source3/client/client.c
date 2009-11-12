@@ -3668,7 +3668,7 @@ static void browse_fn(const char *name, uint32 m,
 static bool browse_host_rpc(bool sort)
 {
 	NTSTATUS status;
-	struct rpc_pipe_client *pipe_hnd;
+	struct rpc_pipe_client *pipe_hnd = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 	WERROR werr;
 	struct srvsvc_NetShareInfoCtr info_ctr;
