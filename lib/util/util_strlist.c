@@ -401,7 +401,7 @@ _PUBLIC_ const char **str_list_unique(const char **list)
 		}
 	}
 	list[j] = NULL;
-	list = talloc_realloc(NULL, list, const char *, j);
+	list = talloc_realloc(NULL, list, const char *, j + 1);
 	talloc_free(list2);
 	return list;
 }
