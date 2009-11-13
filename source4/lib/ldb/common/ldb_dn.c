@@ -180,6 +180,7 @@ struct ldb_dn *ldb_dn_new_fmt(void *mem_ctx,
 	return NULL;
 }
 
+/* see RFC2253 section 2.4 */
 static int ldb_dn_escape_internal(char *dst, const char *src, int len)
 {
 	const char *p, *s;
@@ -190,8 +191,7 @@ static int ldb_dn_escape_internal(char *dst, const char *src, int len)
 	d = dst;
 
 	while (p - src < len) {
-
-		p += strcspn(p, ",=\n+<>#;\\\"");
+		p += strcspn(p, ",=\n\r+<>#;\\\" ");
 
 		if (p - src == len) /* found no escapable chars */
 			break;
@@ -199,14 +199,46 @@ static int ldb_dn_escape_internal(char *dst, const char *src, int len)
 		/* copy the part of the string before the stop */
 		memcpy(d, s, p - s);
 		d += (p - s); /* move to current position */
+		
+		switch (*p) {
+		case ' ':
+			if (p == src || (p-src)==(len-1)) {
+				/* if at the beginning or end
+				 * of the string then escape */
+				*d++ = '\\';
+				*d++ = *p++;					 
+			} else {
+				/* otherwise don't escape */
+				*d++ = *p++;
+			}
+			break;
 
-		if (*p) { /* it is a normal escapable character */
+		case '#':
+			/* despite the RFC, windows escapes a #
+			   anywhere in the string */
+		case ',':
+		case '+':
+		case '"':
+		case '\\':
+		case '<':
+		case '>':
+		case '?':
+			/* these must be escaped using \c form */
 			*d++ = '\\';
 			*d++ = *p++;
-		} else { /* we have a zero byte in the string */
-			strncpy(d, "\00", 3); /* escape the zero */
-			d += 3;
-			p++; /* skip the zero */
+			break;
+
+		default: {
+			/* any others get \XX form */
+			unsigned char v;
+			const char *hexbytes = "0123456789ABCDEF";
+			v = *(unsigned char *)p;
+			*d++ = '\\';
+			*d++ = hexbytes[v>>4];
+			*d++ = hexbytes[v&0xF];
+			p++;
+			break;
+		}
 		}
 		s = p; /* move forward */
 	}
@@ -582,12 +614,13 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 
 				continue;
 
-			case '=':
 			case '+':
+			case '=':
 				/* to main compatibility with earlier
 				versions of ldb indexing, we have to
 				accept the base64 encoded binary index
-				values, which contain a '=' */
+				values, which contain a '+' or '='
+				which should normally be escaped */
 				if (is_index) {
 					if ( t ) t = NULL;
 					*d++ = *p++;
@@ -595,12 +628,10 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 					break;
 				}
 				/* fall through */
-			case '\n':
+			case '\"':
 			case '<':
 			case '>':
-			case '#':
 			case ';':
-			case '\"':
 				/* a string with not escaped specials is invalid (tested) */
 				if ( ! escape) {
 					ldb_dn_mark_invalid(dn);
@@ -630,17 +661,20 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 
 			default:
 				if (escape) {
-	 				if (sscanf(p, "%02x", &x) != 1) {
-						/* invalid escaping sequence */
-						ldb_dn_mark_invalid(dn);
-						goto failed;
+					if (isxdigit(p[0]) && isxdigit(p[1])) {
+						if (sscanf(p, "%02x", &x) != 1) {
+							/* invalid escaping sequence */
+							ldb_dn_mark_invalid(dn);
+							goto failed;
+						}
+						p += 2;
+						*d++ = (unsigned char)x;
+					} else {
+						*d++ = *p++;
 					}
+
 					escape = false;
-
-					p += 2;
-					*d++ = (unsigned char)x;
 					l++;
-
 					if ( t ) t = NULL;
 					break;
 				}
