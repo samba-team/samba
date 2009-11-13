@@ -4969,6 +4969,7 @@ static bool ldapsam_sid_to_id(struct pdb_methods *methods,
 
 		id->gid = strtoul(gid_str, NULL, 10);
 		*type = (enum lsa_SidType)strtoul(value, NULL, 10);
+		store_gid_sid_cache(sid, id->gid);
 		idmap_cache_set_sid2gid(sid, id->gid);
 		ret = True;
 		goto done;
@@ -4986,6 +4987,7 @@ static bool ldapsam_sid_to_id(struct pdb_methods *methods,
 
 	id->uid = strtoul(value, NULL, 10);
 	*type = SID_NAME_USER;
+	store_uid_sid_cache(sid, id->uid);
 	idmap_cache_set_sid2uid(sid, id->uid);
 
 	ret = True;
