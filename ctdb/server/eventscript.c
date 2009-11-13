@@ -541,10 +541,21 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *options)
 	   them
 	 */
 	for (current=scripts; current; current=current->next) {
-		/* we dont run disabled scripts, we just report they are disabled */
-		cmdstr = talloc_asprintf(tmp_ctx, "%s/%s %s", 
-				ctdb->event_script_dir,
-				current->name, options);
+		/* Allow a setting where we run the actual monitor event
+		   from an external source and replace it with
+		   a "status" event that just picks up the actual
+		   status of the event asynchronously.
+		*/
+		if ((ctdb->tunable.use_status_events_for_monitoring != 0) 
+		&& (!strcmp(options, "status"))) {
+			cmdstr = talloc_asprintf(tmp_ctx, "%s/%s %s", 
+					ctdb->event_script_dir,
+					current->name, "status");
+		} else {
+			cmdstr = talloc_asprintf(tmp_ctx, "%s/%s %s", 
+					ctdb->event_script_dir,
+					current->name, options);
+		}
 		CTDB_NO_MEMORY(ctdb, cmdstr);
 
 		DEBUG(DEBUG_INFO,("Executing event script %s\n",cmdstr));
