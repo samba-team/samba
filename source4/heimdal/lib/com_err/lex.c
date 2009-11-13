@@ -1,6 +1,5 @@
-#include "config.h"
 
-#line 3 "heimdal/lib/com_err/lex.c"
+#line 3 "lex.c"
 
 #define  YY_INT_ALIGNED short int
 
@@ -9,7 +8,7 @@
 #define FLEX_SCANNER
 #define YY_FLEX_MAJOR_VERSION 2
 #define YY_FLEX_MINOR_VERSION 5
-#define YY_FLEX_SUBMINOR_VERSION 34
+#define YY_FLEX_SUBMINOR_VERSION 35
 #if YY_FLEX_SUBMINOR_VERSION > 0
 #define FLEX_BETA
 #endif
@@ -178,13 +177,6 @@ extern FILE *yyin, *yyout;
 	while ( 0 )
 
 #define unput(c) yyunput( c, (yytext_ptr)  )
-
-/* The following is because we cannot portably get our hands on size_t
- * (without autoconf's help, which isn't available because we want
- * flex-generated scanners to compile on their own).
- * Given that the standard has decreed that size_t exists since 1989,
- * I guess we can afford to depend on it. Manoj.
- */
 
 #ifndef YY_TYPEDEF_YY_SIZE_T
 #define YY_TYPEDEF_YY_SIZE_T
@@ -534,7 +526,7 @@ static int getstring(void);
 
 #undef ECHO
 
-#line 537 "heimdal/lib/com_err/lex.c"
+#line 530 "lex.c"
 
 #define INITIAL 0
 
@@ -551,6 +543,35 @@ static int getstring(void);
 #endif
 
 static int yy_init_globals (void );
+
+/* Accessor methods to globals.
+   These are made visible to non-reentrant scanners for convenience. */
+
+int yylex_destroy (void );
+
+int yyget_debug (void );
+
+void yyset_debug (int debug_flag  );
+
+YY_EXTRA_TYPE yyget_extra (void );
+
+void yyset_extra (YY_EXTRA_TYPE user_defined  );
+
+FILE *yyget_in (void );
+
+void yyset_in  (FILE * in_str  );
+
+FILE *yyget_out (void );
+
+void yyset_out  (FILE * out_str  );
+
+int yyget_leng (void );
+
+char *yyget_text (void );
+
+int yyget_lineno (void );
+
+void yyset_lineno (int line_number  );
 
 /* Macros after this point can all be overridden by user definitions in
  * section 1.
@@ -605,7 +626,7 @@ static int input (void );
 	if ( YY_CURRENT_BUFFER_LVALUE->yy_is_interactive ) \
 		{ \
 		int c = '*'; \
-		int n; \
+		unsigned n; \
 		for ( n = 0; n < max_size && \
 			     (c = getc( yyin )) != EOF && c != '\n'; ++n ) \
 			buf[n] = (char) c; \
@@ -689,7 +710,7 @@ YY_DECL
     
 #line 57 "lex.l"
 
-#line 692 "heimdal/lib/com_err/lex.c"
+#line 714 "lex.c"
 
 	if ( !(yy_init) )
 		{
@@ -853,7 +874,7 @@ YY_RULE_SETUP
 #line 73 "lex.l"
 ECHO;
 	YY_BREAK
-#line 856 "heimdal/lib/com_err/lex.c"
+#line 878 "lex.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
