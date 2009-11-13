@@ -70,11 +70,10 @@ wait_until_get_src_socket "tcp" "${test_ip}:${test_port}" $nc_pid "nc"
 src_socket="$out"
 echo "Source socket is $src_socket"
 
-# Right here we assume that Samba is able to register the tickle with
-# CTDB faster than it takes us to wait for netstat to register the
-# connection and then use onnode below to ask CTDB about it.
-
-try_command_on_node -v 0 ctdb gettickles $test_ip -n $test_node
+# This should happen as soon as connection is up... but unless we wait
+# we sometimes beat the registration.
+echo "Checking if CIFS connection is tracked by CTDB..."
+wait_until 10 try_command_on_node 0 ctdb gettickles $test_ip -n $test_node
 
 if [ "${out/SRC: ${src_socket} /}" != "$out" ] ; then
     echo "GOOD: CIFS connection tracked OK by CTDB."

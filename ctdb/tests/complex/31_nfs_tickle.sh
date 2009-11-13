@@ -52,6 +52,10 @@ cluster_is_healthy
 # Reset configuration
 ctdb_restart_when_done
 
+ctdb_test_exit_hook_add ctdb_test_eventscript_uninstall
+
+ctdb_test_eventscript_install
+
 # We need this for later, so we know how long to sleep.
 try_command_on_node 0 $CTDB getvar MonitorInterval
 monitor_interval="${out#*= }"
@@ -71,8 +75,7 @@ wait_until_get_src_socket "tcp" "${test_ip}:${test_port}" $nc_pid "nc"
 src_socket="$out"
 echo "Source socket is $src_socket"
 
-echo "Sleeping for MonitorInterval..."
-sleep_for $monitor_interval
+wait_for_monitor_event $test_node
 
 echo "Trying to determine NFS_TICKLE_SHARED_DIRECTORY..."
 f="/etc/sysconfig/nfs"
