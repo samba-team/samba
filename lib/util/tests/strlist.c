@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "torture/torture.h"
+#include "param/param.h"
 
 struct test_list_element {
 	const char *list_as_string;
@@ -364,6 +365,37 @@ static bool test_list_unique(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_list_unique_2(struct torture_context *tctx)
+{
+	int i;
+	int count, num_dups;
+	const char **result;
+	const char **list = (const char **)str_list_make_empty(tctx);
+	const char **list_dup = (const char **)str_list_make_empty(tctx);
+
+	count = lp_parm_int(tctx->lp_ctx, NULL, "list_unique", "count", 9);
+	num_dups = lp_parm_int(tctx->lp_ctx, NULL, "list_unique", "dups", 7);
+	torture_comment(tctx, "test_list_unique_2() with %d elements and %d dups\n", count, num_dups);
+
+	for (i = 0; i < count; i++) {
+		list = str_list_add_const(list, (const char *)talloc_asprintf(tctx, "element_%03d", i));
+	}
+
+	for (i = 0; i < num_dups; i++) {
+		list_dup = str_list_append(list_dup, list);
+	}
+
+	result = (const char **)str_list_copy(tctx, list_dup);
+	/* We must copy the list, as str_list_unique does a talloc_realloc() on it's parameter */
+	result = str_list_unique(result);
+	torture_assert(tctx, result, "str_list_unique() must not return NULL");
+
+	torture_assert(tctx, str_list_equal(list, result),
+		       "str_list_unique() failed");
+
+	return true;
+}
+
 static bool test_list_append(struct torture_context *tctx)
 {
 	char **result;
@@ -458,6 +490,7 @@ struct torture_suite *torture_local_util_strlist(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite, "list_check", test_list_check);
 	torture_suite_add_simple_test(suite, "list_check_ci", test_list_check_ci);
 	torture_suite_add_simple_test(suite, "list_unique", test_list_unique);
+	torture_suite_add_simple_test(suite, "list_unique_2", test_list_unique_2);
 	torture_suite_add_simple_test(suite, "list_append", test_list_append);
 	torture_suite_add_simple_test(suite, "list_append_const", test_list_append_const);
 
