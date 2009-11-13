@@ -1038,6 +1038,7 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 			/* We've got a uid, feed the cache */
 			uid_t uid = strtoul(temp, NULL, 10);
 			store_uid_sid_cache(pdb_get_user_sid(sampass), uid);
+			idmap_cache_set_sid2uid(pdb_get_user_sid(sampass), uid);
 		}
 	}
 
@@ -2449,6 +2450,7 @@ for gidNumber(%lu)\n",(unsigned long)map->gid));
 
 	if (lp_parm_bool(-1, "ldapsam", "trusted", false)) {
 		store_gid_sid_cache(&map->sid, map->gid);
+		idmap_cache_set_sid2gid(&map->sid, map->gid);
 	}
 
 	TALLOC_FREE(ctx);
@@ -4967,6 +4969,7 @@ static bool ldapsam_sid_to_id(struct pdb_methods *methods,
 
 		id->gid = strtoul(gid_str, NULL, 10);
 		*type = (enum lsa_SidType)strtoul(value, NULL, 10);
+		idmap_cache_set_sid2gid(sid, id->gid);
 		ret = True;
 		goto done;
 	}
@@ -4983,6 +4986,7 @@ static bool ldapsam_sid_to_id(struct pdb_methods *methods,
 
 	id->uid = strtoul(value, NULL, 10);
 	*type = SID_NAME_USER;
+	idmap_cache_set_sid2uid(sid, id->uid);
 
 	ret = True;
  done:
