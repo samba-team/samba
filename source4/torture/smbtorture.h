@@ -53,6 +53,14 @@ bool torture_register_suite(struct torture_suite *suite);
  * Because we use parametric options we do not need to define these parameters
  * anywhere, we just define the meaning of each here.*/
 
+/* torture:invalid_lock_range_support
+ *
+ * This parameter specifies whether the server will return
+ * STATUS_INVALID_LOCK_RANGE in response to a LockingAndX request where the
+ * combined offset and range overflow the 63-bit boundary.  On Windows servers
+ * before Win7, this request would return STATUS_OK, but the actual lock
+ * behavior was undefined. */
+
 /* torture:sacl_support
  *
  * This parameter specifies whether the server supports the setting and

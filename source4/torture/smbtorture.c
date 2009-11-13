@@ -527,6 +527,8 @@ int main(int argc,char *argv[])
 		lp_set_cmdline(cmdline_lp_ctx, "torture:samba4", "true");
 	} else if (strcmp(target, "w2k8") == 0) {
 		lp_set_cmdline(cmdline_lp_ctx, "torture:w2k8", "true");
+		lp_set_cmdline(cmdline_lp_ctx,
+		    "torture:invalid_lock_range_support", "false");
 	} else if (strcmp(target, "win7") == 0) {
 		lp_set_cmdline(cmdline_lp_ctx, "torture:win7", "true");
 	} else if (strcmp(target, "onefs") == 0) {
