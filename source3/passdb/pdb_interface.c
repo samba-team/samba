@@ -1200,13 +1200,13 @@ static bool pdb_default_uid_to_sid(struct pdb_methods *methods, uid_t uid,
 	unix_pw = sys_getpwuid( uid );
 
 	if ( !unix_pw ) {
-		DEBUG(4,("pdb_default_uid_to_rid: host has no idea of uid "
+		DEBUG(4,("pdb_default_uid_to_sid: host has no idea of uid "
 			 "%lu\n", (unsigned long)uid));
 		return False;
 	}
 
 	if ( !(sampw = samu_new( NULL )) ) {
-		DEBUG(0,("pdb_default_uid_to_rid: samu_new() failed!\n"));
+		DEBUG(0,("pdb_default_uid_to_sid: samu_new() failed!\n"));
 		return False;
 	}
 
@@ -1216,7 +1216,7 @@ static bool pdb_default_uid_to_sid(struct pdb_methods *methods, uid_t uid,
 	unbecome_root();
 
 	if (!ret) {
-		DEBUG(5, ("pdb_default_uid_to_rid: Did not find user "
+		DEBUG(5, ("pdb_default_uid_to_sid: Did not find user "
 			  "%s (%u)\n", unix_pw->pw_name, (unsigned int)uid));
 		TALLOC_FREE(sampw);
 		return False;
