@@ -40,6 +40,7 @@ import urllib
 from ldb import SCOPE_BASE, SCOPE_ONELEVEL, LdbError, timestring
 from credentials import Credentials, DONT_USE_KERBEROS
 from samba import setup_file
+from schema import Schema
 
 def setup_db_config(setup_path, dbdir):
     """Setup a Berkeley database.
@@ -70,7 +71,7 @@ class ProvisionBackend(object):
         # Set a default - the code for "existing" below replaces this
         self.ldap_backend_type = backend_type
 
-    def setup(self):
+    def init(self):
         pass
 
     def start(self):
@@ -94,7 +95,7 @@ class LDBBackend(ProvisionBackend):
                 names=names,
                 message=message)
 
-    def setup(self):
+    def init(self):
         self.credentials = None
         self.secrets_credentials = None
     
@@ -115,7 +116,7 @@ class ExistingBackend(ProvisionBackend):
 
         self.ldapi_uri = "ldapi://" + urllib.quote(os.path.join(paths.ldapdir, "ldapi"), safe="")
 
-    def setup(self):
+    def init(self):
         #Check to see that this 'existing' LDAP backend in fact exists
         ldapi_db = Ldb(self.ldapi_uri, credentials=self.credentials)
         search_ol_rootdse = ldapi_db.search(base="", scope=SCOPE_BASE,
@@ -131,8 +132,9 @@ class ExistingBackend(ProvisionBackend):
 class LDAPBackend(ProvisionBackend):
     def __init__(self, backend_type, paths=None, setup_path=None, lp=None, credentials=None,
                  names=None, message=None,
-                 hostname=None,
+                 domainsid=None,
                  schema=None,
+                 hostname=None,
                  ldapadminpass=None,
                  slapd_path=None,
                  ldap_backend_extra_port=None,
@@ -145,9 +147,9 @@ class LDAPBackend(ProvisionBackend):
                 names=names,
                 message=message)
 
-        self.hostname = hostname
+        self.domainsid = domainsid
         self.schema = schema
-
+        self.hostname = hostname
         self.ldapadminpass = ldapadminpass
 
         self.slapd_path = slapd_path
@@ -159,7 +161,10 @@ class LDAPBackend(ProvisionBackend):
 
         self.ldapi_uri = "ldapi://" + urllib.quote(os.path.join(paths.ldapdir, "ldapi"), safe="")
 
-    def setup(self):
+        if not os.path.exists(self.paths.ldapdir):
+            os.mkdir(self.paths.ldapdir)
+
+    def init(self):
         # we will shortly start slapd with ldapi for final provisioning. first check with ldapsearch -> rootDSE via self.ldapi_uri
         # if another instance of slapd is already running 
         try:
@@ -261,8 +266,9 @@ class LDAPBackend(ProvisionBackend):
 class OpenLDAPBackend(LDAPBackend):
     def __init__(self, backend_type, paths=None, setup_path=None, lp=None, credentials=None,
                  names=None, message=None,
-                 hostname=None,
+                 domainsid=None,
                  schema=None,
+                 hostname=None,
                  ldapadminpass=None,
                  slapd_path=None,
                  ldap_backend_extra_port=None,
@@ -276,8 +282,9 @@ class OpenLDAPBackend(LDAPBackend):
                 lp=lp, credentials=credentials,
                 names=names,
                 message=message,
-                hostname=hostname,
+                domainsid=domainsid,
                 schema=schema,
+                hostname=hostname,
                 ldapadminpass=ldapadminpass,
                 slapd_path=slapd_path,
                 ldap_backend_extra_port=ldap_backend_extra_port,
@@ -285,6 +292,13 @@ class OpenLDAPBackend(LDAPBackend):
 
         self.ol_mmr_urls = ol_mmr_urls
         self.nosync = nosync
+
+        self.schema = Schema(
+                self.setup_path,
+                self.domainsid,
+                schemadn=self.names.schemadn,
+                serverdn=self.names.serverdn,
+                files=[setup_path("schema_samba4.ldif")]);
 
     def provision(self):
         # Wipe the directories so we can start
@@ -513,15 +527,15 @@ class OpenLDAPBackend(LDAPBackend):
 class FDSBackend(LDAPBackend):
     def __init__(self, backend_type, paths=None, setup_path=None, lp=None, credentials=None,
                  names=None, message=None,
-                 hostname=None,
+                 domainsid=None,
                  schema=None,
+                 hostname=None,
                  ldapadminpass=None,
                  slapd_path=None,
                  ldap_backend_extra_port=None,
                  ldap_dryrun_mode=False,
                  root=None,
-                 setup_ds_path=None,
-                 domainsid=None):
+                 setup_ds_path=None):
 
         super(FDSBackend, self).__init__(
                 backend_type=backend_type,
@@ -529,8 +543,9 @@ class FDSBackend(LDAPBackend):
                 lp=lp, credentials=credentials,
                 names=names,
                 message=message,
-                hostname=hostname,
+                domainsid=domainsid,
                 schema=schema,
+                hostname=hostname,
                 ldapadminpass=ldapadminpass,
                 slapd_path=slapd_path,
                 ldap_backend_extra_port=ldap_backend_extra_port,
@@ -538,7 +553,38 @@ class FDSBackend(LDAPBackend):
 
         self.root = root
         self.setup_ds_path = setup_ds_path
-        self.domainsid = domainsid
+
+        self.sambadn = "CN=Samba"
+
+        self.fedoradsinf = os.path.join(paths.ldapdir, "fedorads.inf")
+        self.partitions_ldif = os.path.join(paths.ldapdir, "fedorads-partitions.ldif")
+        self.sasl_ldif = os.path.join(paths.ldapdir, "fedorads-sasl.ldif")
+        self.dna_ldif = os.path.join(paths.ldapdir, "fedorads-dna.ldif")
+        self.pam_ldif = os.path.join(paths.ldapdir, "fedorads-pam.ldif")
+        self.refint_ldif = os.path.join(paths.ldapdir, "fedorads-refint.ldif")
+        self.linked_attrs_ldif = os.path.join(paths.ldapdir, "fedorads-linked-attributes.ldif")
+        self.index_ldif = os.path.join(paths.ldapdir, "fedorads-index.ldif")
+        self.samba_ldif = os.path.join(paths.ldapdir, "fedorads-samba.ldif")
+
+        self.samba3_schema = self.setup_path("../../examples/LDAP/samba.schema")
+        self.samba3_ldif = os.path.join(self.paths.ldapdir, "samba3.ldif")
+
+        self.retcode = subprocess.call(["bin/oLschema2ldif", "-H", "NONE",
+                "-I", self.samba3_schema,
+                "-O", self.samba3_ldif,
+                "-b", self.names.domaindn],
+                close_fds=True, shell=False)
+
+        if self.retcode != 0:
+            raise Exception("Unable to convert Samba 3 schema.")
+
+        self.schema = Schema(
+                self.setup_path,
+                self.domainsid,
+                schemadn=self.names.schemadn,
+                serverdn=self.names.serverdn,
+                files=[setup_path("schema_samba4.ldif"), self.samba3_ldif],
+                prefixmap=["1000:1.3.6.1.4.1.7165.2.1", "1001:1.3.6.1.4.1.7165.2.2"])
 
     def provision(self):
         if self.ldap_backend_extra_port is not None:
@@ -546,7 +592,7 @@ class FDSBackend(LDAPBackend):
         else:
             serverport = ""
         
-        setup_file(self.setup_path("fedorads.inf"), self.paths.fedoradsinf, 
+        setup_file(self.setup_path("fedorads.inf"), self.fedoradsinf, 
                    {"ROOT": self.root,
                     "HOSTNAME": self.hostname,
                     "DNSDOMAIN": self.names.dnsdomain,
@@ -556,23 +602,23 @@ class FDSBackend(LDAPBackend):
                     "LDAPMANAGERPASS": self.ldapadminpass, 
                     "SERVERPORT": serverport})
 
-        setup_file(self.setup_path("fedorads-partitions.ldif"), self.paths.fedoradspartitions, 
+        setup_file(self.setup_path("fedorads-partitions.ldif"), self.partitions_ldif, 
                    {"CONFIGDN": self.names.configdn,
                     "SCHEMADN": self.names.schemadn,
-                    "SAMBADN": self.names.sambadn,
+                    "SAMBADN": self.sambadn,
                     })
 
-        setup_file(self.setup_path("fedorads-sasl.ldif"), self.paths.fedoradssasl, 
-                   {"SAMBADN": self.names.sambadn,
+        setup_file(self.setup_path("fedorads-sasl.ldif"), self.sasl_ldif, 
+                   {"SAMBADN": self.sambadn,
                     })
 
-        setup_file(self.setup_path("fedorads-dna.ldif"), self.paths.fedoradsdna, 
+        setup_file(self.setup_path("fedorads-dna.ldif"), self.dna_ldif, 
                    {"DOMAINDN": self.names.domaindn,
-                    "SAMBADN": self.names.sambadn,
+                    "SAMBADN": self.sambadn,
                     "DOMAINSID": str(self.domainsid),
                     })
 
-        setup_file(self.setup_path("fedorads-pam.ldif"), self.paths.fedoradspam)
+        setup_file(self.setup_path("fedorads-pam.ldif"), self.pam_ldif)
 
         lnkattr = self.schema.linked_attributes()
 
@@ -593,8 +639,8 @@ class FDSBackend(LDAPBackend):
                                                  { "ATTR" : attr })
                 argnum += 1
 
-        open(self.paths.fedoradsrefint, 'w').write(refint_config)
-        open(self.paths.fedoradslinkedattributes, 'w').write(memberof_config)
+        open(self.refint_ldif, 'w').write(refint_config)
+        open(self.linked_attrs_ldif, 'w').write(memberof_config)
 
         attrs = ["lDAPDisplayName"]
         res = self.schema.ldb.search(expression="(&(objectclass=attributeSchema)(searchFlags:1.2.840.113556.1.4.803:=1))", base=self.names.schemadn, scope=SCOPE_ONELEVEL, attrs=attrs)
@@ -608,10 +654,10 @@ class FDSBackend(LDAPBackend):
             index_config += read_and_sub_file(self.setup_path("fedorads-index.ldif"),
                                              { "ATTR" : attr })
 
-        open(self.paths.fedoradsindex, 'w').write(index_config)
+        open(self.index_ldif, 'w').write(index_config)
 
-        setup_file(self.setup_path("fedorads-samba.ldif"), self.paths.fedoradssamba,
-                    {"SAMBADN": self.names.sambadn, 
+        setup_file(self.setup_path("fedorads-samba.ldif"), self.samba_ldif,
+                    {"SAMBADN": self.sambadn, 
                      "LDAPADMINPASS": self.ldapadminpass
                     })
 
@@ -649,16 +695,16 @@ class FDSBackend(LDAPBackend):
             raise ProvisioningError("Warning: Given Path to slapd does not exist!")
 
         # Run the Fedora DS setup utility
-        retcode = subprocess.call([self.setup_ds_path, "--silent", "--file", self.paths.fedoradsinf], close_fds=True, shell=False)
+        retcode = subprocess.call([self.setup_ds_path, "--silent", "--file", self.fedoradsinf], close_fds=True, shell=False)
         if retcode != 0:
             raise ProvisioningError("setup-ds failed")
 
         # Load samba-admin
         retcode = subprocess.call([
-            os.path.join(self.paths.ldapdir, "slapd-samba4", "ldif2db"), "-s", self.names.sambadn, "-i", self.paths.fedoradssamba],
+            os.path.join(self.paths.ldapdir, "slapd-samba4", "ldif2db"), "-s", self.sambadn, "-i", self.samba_ldif],
             close_fds=True, shell=False)
         if retcode != 0:
-            raise("ldib2db failed")
+            raise("ldif2db failed")
 
     def post_setup(self):
         ldapi_db = Ldb(self.ldapi_uri, credentials=self.credentials)
@@ -671,7 +717,7 @@ class FDSBackend(LDAPBackend):
             dn = str(res[i]["dn"])
             ldapi_db.delete(dn)
             
-            aci = """(targetattr = "*") (version 3.0;acl "full access to all by samba-admin";allow (all)(userdn = "ldap:///CN=samba-admin,%s");)""" % self.names.sambadn
+            aci = """(targetattr = "*") (version 3.0;acl "full access to all by samba-admin";allow (all)(userdn = "ldap:///CN=samba-admin,%s");)""" % self.sambadn
         
             m = ldb.Message()
             m["aci"] = ldb.MessageElement([aci], ldb.FLAG_MOD_REPLACE, "aci")

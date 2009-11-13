@@ -51,7 +51,7 @@ def get_schema_descriptor(domain_sid):
    
 class Schema(object):
     def __init__(self, setup_path, domain_sid, schemadn=None,
-                 serverdn=None):
+                 serverdn=None, files=None, prefixmap=None):
         """Load schema for the SamDB from the AD schema files and samba4_schema.ldif
         
         :param samdb: Load a schema into a SamDB.
@@ -66,7 +66,11 @@ class Schema(object):
         self.ldb = Ldb()
         self.schema_data = read_ms_schema(setup_path('ad-schema/MS-AD_Schema_2K8_Attributes.txt'),
                                           setup_path('ad-schema/MS-AD_Schema_2K8_Classes.txt'))
-        self.schema_data += open(setup_path("schema_samba4.ldif"), 'r').read()
+
+        if files is not None:
+            for file in files:
+                self.schema_data += open(file, 'r').read()
+
         self.schema_data = substitute_var(self.schema_data, {"SCHEMADN": schemadn})
         check_all_substituted(self.schema_data)
 
@@ -81,13 +85,18 @@ class Schema(object):
                                                 "DESCRIPTOR": descr
                                                 })
 
-        prefixmap = open(setup_path("prefixMap.txt"), 'r').read()
-        prefixmap = b64encode(prefixmap)
+        self.prefixmap_data = open(setup_path("prefixMap.txt"), 'r').read()
+
+        if prefixmap is not None:
+            for map in prefixmap:
+                self.prefixmap_data += "%s\n" % map
+
+        self.prefixmap_data = b64encode(self.prefixmap_data)
 
         
 
         # We don't actually add this ldif, just parse it
-        prefixmap_ldif = "dn: cn=schema\nprefixMap:: %s\n\n" % prefixmap
+        prefixmap_ldif = "dn: cn=schema\nprefixMap:: %s\n\n" % self.prefixmap_data
         self.ldb.set_schema_from_ldif(prefixmap_ldif, self.schema_data)
 
     def write_to_tmp_ldb(self, schemadb_path):

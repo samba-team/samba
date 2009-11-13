@@ -3,7 +3,6 @@ objectClass: top
 objectClass: extensibleObject
 cn: Samba SIDs
 dnaType: sambaSID
-dnaMaxValue: 10000
 dnaMagicRegen: 0
 dnaFilter: (|(objectClass=user)(objectClass=group))
 dnaScope: ${DOMAINDN}

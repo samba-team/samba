@@ -183,15 +183,6 @@ class ProvisionPaths(object):
         self.slapdconf = None
         self.modulesconf = None
         self.memberofconf = None
-        self.fedoradsinf = None
-        self.fedoradspartitions = None
-        self.fedoradssasl = None
-        self.fedoradsdna = None
-        self.fedoradspam = None
-        self.fedoradsrefint = None
-        self.fedoradslinkedattributes = None
-        self.fedoradsindex = None
-        self.fedoradssamba = None
         self.olmmron = None
         self.olmmrserveridsconf = None
         self.olmmrsyncreplconf = None
@@ -334,24 +325,6 @@ def provision_paths_from_lp(lp, dnsdomain):
                                      "modules.conf")
     paths.memberofconf = os.path.join(paths.ldapdir, 
                                       "memberof.conf")
-    paths.fedoradsinf = os.path.join(paths.ldapdir, 
-                                     "fedorads.inf")
-    paths.fedoradspartitions = os.path.join(paths.ldapdir, 
-                                            "fedorads-partitions.ldif")
-    paths.fedoradssasl = os.path.join(paths.ldapdir, 
-                                      "fedorads-sasl.ldif")
-    paths.fedoradsdna = os.path.join(paths.ldapdir, 
-                                     "fedorads-dna.ldif")
-    paths.fedoradspam = os.path.join(paths.ldapdir,
-                                     "fedorads-pam.ldif")
-    paths.fedoradsrefint = os.path.join(paths.ldapdir,
-                                        "fedorads-refint.ldif")
-    paths.fedoradslinkedattributes = os.path.join(paths.ldapdir,
-                                                  "fedorads-linked-attributes.ldif")
-    paths.fedoradsindex = os.path.join(paths.ldapdir,
-                                       "fedorads-index.ldif")
-    paths.fedoradssamba = os.path.join(paths.ldapdir, 
-                                       "fedorads-samba.ldif")
     paths.olmmrserveridsconf = os.path.join(paths.ldapdir, 
                                             "mmr_serverids.conf")
     paths.olmmrsyncreplconf = os.path.join(paths.ldapdir, 
@@ -1250,22 +1223,25 @@ def provision(setup_dir, message, session_info,
                                          paths=paths, setup_path=setup_path,
                                          lp=lp, credentials=credentials, 
                                          names=names,
-                                         message=message, hostname=hostname,
+                                         message=message,
+                                         domainsid=domainsid,
                                          schema=schema,
+                                         hostname=hostname,
                                          ldapadminpass=ldapadminpass,
                                          slapd_path=slapd_path,
                                          ldap_backend_extra_port=ldap_backend_extra_port,
                                          ldap_dryrun_mode=ldap_dryrun_mode,
                                          root=root,
-                                         setup_ds_path=setup_ds_path,
-                                         domainsid=domainsid)
+                                         setup_ds_path=setup_ds_path)
     elif backend_type == "openldap":
         provision_backend = OpenLDAPBackend(backend_type,
                                          paths=paths, setup_path=setup_path,
                                          lp=lp, credentials=credentials, 
                                          names=names,
-                                         message=message, hostname=hostname,
+                                         message=message,
+                                         domainsid=domainsid,
                                          schema=schema,
+                                         hostname=hostname,
                                          ldapadminpass=ldapadminpass,
                                          slapd_path=slapd_path,
                                          ldap_backend_extra_port=ldap_backend_extra_port,
@@ -1275,7 +1251,7 @@ def provision(setup_dir, message, session_info,
     else:
         raise ProvisioningError("Unknown LDAP backend type selected")
 
-    provision_backend.setup()
+    provision_backend.init()
     provision_backend.start()
 
     # only install a new shares config db if there is none

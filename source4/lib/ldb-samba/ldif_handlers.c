@@ -855,6 +855,7 @@ static const struct {
 	{ "objectGUID",			LDB_SYNTAX_SAMBA_GUID },
 	{ "invocationId",		LDB_SYNTAX_SAMBA_GUID },
 	{ "schemaIDGUID",		LDB_SYNTAX_SAMBA_GUID },
+	{ "oMSyntax",			LDB_SYNTAX_SAMBA_INT32 },
 	{ "attributeSecurityGUID",	LDB_SYNTAX_SAMBA_GUID },
 	{ "parentGUID",			LDB_SYNTAX_SAMBA_GUID },
 	{ "siteGUID",			LDB_SYNTAX_SAMBA_GUID },

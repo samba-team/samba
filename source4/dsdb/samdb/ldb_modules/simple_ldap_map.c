@@ -612,15 +612,6 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 		}
 	},
 	{
-		.local_name = "unixHomeDirectory",
-		.type = LDB_MAP_RENAME,
-		.u = {
-			.rename = {
-				 .remote_name = "homeDirectory"
-			 }
-		}
-	},
-	{
 		.local_name = "pwdLastSet",
 		.type = LDB_MAP_RENAME,
 		.u = {
@@ -740,38 +731,6 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 /* This objectClass conflicts with builtin classes on FDS */
 const struct ldb_map_objectclass nsuniqueid_objectclasses[] =
 {
-	{
-		.local_name = "domain",
-		.remote_name = "samba4Domain"
-	},
-	{
-		.local_name = "rFC822LocalPart",
-		.remote_name = "samba4RFC822LocalPart"
-	},
-	{
-		.local_name = "mailRecipient",
-		.remote_name = "samba4MailRecipient"
-	},
-	{
-		.local_name = "nisMap",
-		.remote_name = "samba4NisMap"
-	},
-	{
-		.local_name = "person",
-		.remote_name = "samba4Person"
-	},
-	{
-		.local_name = "organizationalPerson",
-		.remote_name = "samba4OrganizationalPerson"
-	},
-	{
-		.local_name = "residentialPerson",
-		.remote_name = "samba4ResidentialPerson"
-	},
-	{
-		.local_name = "inetOrgPerson",
-		.remote_name = "samba4InetOrgPerson"
-	},
 	{
 		.local_name = NULL
 	}

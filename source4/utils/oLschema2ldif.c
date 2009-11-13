@@ -35,6 +35,8 @@
 #include "ldb.h"
 #include "tools/cmdline.h"
 #include "dsdb/samdb/samdb.h"
+#include "../lib/crypto/sha256.h"
+#include "../librpc/gen_ndr/ndr_misc.h"
 
 #define SCHEMA_UNKNOWN 0
 #define SCHEMA_NAME 1
@@ -336,6 +338,16 @@ static struct ldb_message *process_entry(TALLOC_CTX *mem_ctx, const char *entry)
         char *c, *s;
         int n;
 
+	SHA256_CTX sha256_context;
+	uint8_t digest[SHA256_DIGEST_LENGTH];
+
+	struct GUID guid;
+	struct ldb_val schemaIdGuid;
+	enum ndr_err_code ndr_err;
+
+	bool isAttribute = false;
+	bool single_valued = false;
+
 	ctx = talloc_new(mem_ctx);
 	msg = ldb_msg_new(ctx);
 
@@ -351,6 +363,7 @@ static struct ldb_message *process_entry(TALLOC_CTX *mem_ctx, const char *entry)
 		if (strncmp(c, "attributetype", 13) == 0) {
 			c += 13;
 			MSG_ADD_STRING("objectClass", "attributeSchema");
+			isAttribute = true;
 			break;
 		}
 		goto failed;
@@ -374,7 +387,29 @@ static struct ldb_message *process_entry(TALLOC_CTX *mem_ctx, const char *entry)
 	/* get attributeID */
 	n = strcspn(c, " \t");
 	s = talloc_strndup(msg, c, n);
-	MSG_ADD_STRING("attributeID", s);
+	if (isAttribute) {
+		MSG_ADD_STRING("attributeID", s);
+	} else {
+		MSG_ADD_STRING("governsID", s);
+	}
+
+	SHA256_Init(&sha256_context);
+	SHA256_Update(&sha256_context, (uint8_t*)s, strlen(s));
+	SHA256_Final(digest, &sha256_context);
+
+	memcpy(&guid, digest, sizeof(struct GUID));
+
+	ndr_err = ndr_push_struct_blob(&schemaIdGuid, ctx, NULL, &guid,
+			(ndr_push_flags_fn_t)ndr_push_GUID);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		goto failed;
+	}
+
+	if (ldb_msg_add_value(msg, "schemaIdGuid", &schemaIdGuid, NULL) != 0) {
+		goto failed;
+	}
+
 	c += n;
 	c = skip_spaces(c);	
 
@@ -416,7 +451,7 @@ static struct ldb_message *process_entry(TALLOC_CTX *mem_ctx, const char *entry)
 			break;
 
 		case SCHEMA_SINGLE_VALUE:
-			MSG_ADD_STRING("isSingleValued", "TRUE");
+        		single_valued = true;
 			break;
 
 		case SCHEMA_EQUALITY:
@@ -433,12 +468,23 @@ static struct ldb_message *process_entry(TALLOC_CTX *mem_ctx, const char *entry)
 
 		case SCHEMA_SYNTAX:
 		{
-			const struct dsdb_syntax *map = 
-				find_syntax_map_by_standard_oid(token->value);
+			char *syntax_oid;
+			const struct dsdb_syntax *map;
+			char *oMSyntax;
+
+			n = strcspn(token->value, "{");
+			syntax_oid = talloc_strndup(ctx, token->value, n);
+
+			map = find_syntax_map_by_standard_oid(syntax_oid);
 			if (!map) {
 				break;
 			}
+
 			MSG_ADD_STRING("attributeSyntax", map->attributeSyntax_oid);
+
+			oMSyntax = talloc_asprintf(msg, "%d", map->oMSyntax);
+			MSG_ADD_STRING("oMSyntax", oMSyntax);
+
 			break;
 		}
 		case SCHEMA_DESC:
@@ -448,6 +494,12 @@ static struct ldb_message *process_entry(TALLOC_CTX *mem_ctx, const char *entry)
 		default:
 			fprintf(stderr, "Unknown Definition: %s\n", token->value);
 		}
+	}
+
+	if (isAttribute) {
+		MSG_ADD_STRING("isSingleValued", single_valued ? "TRUE" : "FALSE");
+	} else {
+		MSG_ADD_STRING("defaultObjectCategory", ldb_dn_get_linearized(msg->dn));
 	}
 
 	talloc_steal(mem_ctx, msg);
