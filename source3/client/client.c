@@ -2531,8 +2531,11 @@ static int cmd_posix(void)
 
 	d_printf("Server supports CIFS capabilities %s\n", caps);
 
-	if (!cli_set_unix_extensions_capabilities(cli, major, minor, caplow, caphigh)) {
-		d_printf("Can't set UNIX CIFS extensions capabilities. %s.\n", cli_errstr(cli));
+	status = cli_set_unix_extensions_capabilities(cli, major, minor,
+						      caplow, caphigh);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Can't set UNIX CIFS extensions capabilities. %s.\n",
+			 nt_errstr(status));
 		return 1;
 	}
 

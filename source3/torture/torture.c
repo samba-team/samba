@@ -4392,9 +4392,11 @@ static bool run_simple_posix_open_test(int dummy)
 		return false;
 	}
 
-	if (!cli_set_unix_extensions_capabilities(cli1,
-			major, minor, caplow, caphigh)) {
-		printf("Server doesn't support setting UNIX CIFS extensions.\n");
+	status = cli_set_unix_extensions_capabilities(cli1, major, minor,
+						      caplow, caphigh);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Server doesn't support setting UNIX CIFS extensions: "
+		       "%s.\n", nt_errstr(status));
 		return false;
         }
 

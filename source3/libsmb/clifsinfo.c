@@ -161,53 +161,95 @@ NTSTATUS cli_unix_extensions_version(struct cli_state *cli, uint16 *pmajor,
  Set UNIX extensions capabilities.
 ****************************************************************************/
 
-bool cli_set_unix_extensions_capabilities(struct cli_state *cli, uint16 major, uint16 minor,
-                                        uint32 caplow, uint32 caphigh)
+struct cli_set_unix_extensions_capabilities_state {
+	uint16_t setup[1];
+	uint8_t param[4];
+	uint8_t data[12];
+};
+
+static void cli_set_unix_extensions_capabilities_done(
+	struct tevent_req *subreq);
+
+struct tevent_req *cli_set_unix_extensions_capabilities_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev, struct cli_state *cli,
+	uint16_t major, uint16_t minor, uint32_t caplow, uint32_t caphigh)
 {
-	bool ret = False;
-	uint16 setup;
-	char param[4];
-	char data[12];
-	char *rparam=NULL, *rdata=NULL;
-	unsigned int rparam_count=0, rdata_count=0;
+	struct tevent_req *req, *subreq;
+	struct cli_set_unix_extensions_capabilities_state *state;
 
-	setup = TRANSACT2_SETFSINFO;
-
-	SSVAL(param,0,0);
-	SSVAL(param,2,SMB_SET_CIFS_UNIX_INFO);
-
-	SSVAL(data,0,major);
-	SSVAL(data,2,minor);
-	SIVAL(data,4,caplow);
-	SIVAL(data,8,caphigh);
-
-	if (!cli_send_trans(cli, SMBtrans2,
-		    NULL,
-		    0, 0,
-		    &setup, 1, 0,
-		    param, 4, 0,
-		    data, 12, 560)) {
-		goto cleanup;
+	req = tevent_req_create(
+		mem_ctx, &state,
+		struct cli_set_unix_extensions_capabilities_state);
+	if (req == NULL) {
+		return NULL;
 	}
 
-	if (!cli_receive_trans(cli, SMBtrans2,
-                              &rparam, &rparam_count,
-                              &rdata, &rdata_count)) {
-		goto cleanup;
+	SSVAL(state->setup+0, 0, TRANSACT2_SETFSINFO);
+
+	SSVAL(state->param, 0, 0);
+	SSVAL(state->param, 2, SMB_SET_CIFS_UNIX_INFO);
+
+	SSVAL(state->data, 0, major);
+	SSVAL(state->data, 2, minor);
+	SIVAL(state->data, 4, caplow);
+	SIVAL(state->data, 8, caphigh);
+
+	subreq = cli_trans_send(state, ev, cli, SMBtrans2,
+				NULL, 0, 0, 0,
+				state->setup, 1, 0,
+				state->param, 4, 0,
+				state->data, 12, 560);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
 	}
+	tevent_req_set_callback(
+		subreq, cli_set_unix_extensions_capabilities_done, req);
+	return req;
+}
 
-	if (cli_is_error(cli)) {
-		ret = False;
-		goto cleanup;
-	} else {
-		ret = True;
+static void cli_set_unix_extensions_capabilities_done(
+	struct tevent_req *subreq)
+{
+	return tevent_req_simple_finish_ntstatus(
+		subreq, cli_trans_recv(subreq, NULL, NULL, NULL, NULL, NULL,
+				       NULL, NULL));
+}
+
+NTSTATUS cli_set_unix_extensions_capabilities_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+NTSTATUS cli_set_unix_extensions_capabilities(struct cli_state *cli,
+					      uint16 major, uint16 minor,
+					      uint32 caplow, uint32 caphigh)
+{
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (cli_has_async_calls(cli)) {
+		return NT_STATUS_INVALID_PARAMETER;
 	}
-
-cleanup:
-	SAFE_FREE(rparam);
-	SAFE_FREE(rdata);
-
-	return ret;
+	ev = tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_set_unix_extensions_capabilities_send(
+		ev, ev, cli, major, minor, caplow, caphigh);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_set_unix_extensions_capabilities_recv(req);
+fail:
+	TALLOC_FREE(ev);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
 }
 
 bool cli_get_fs_attr_info(struct cli_state *cli, uint32 *fs_attr)

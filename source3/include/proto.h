@@ -2692,8 +2692,13 @@ NTSTATUS cli_unix_extensions_version_recv(struct tevent_req *req,
 NTSTATUS cli_unix_extensions_version(struct cli_state *cli, uint16 *pmajor,
 				     uint16 *pminor, uint32 *pcaplow,
 				     uint32 *pcaphigh);
-bool cli_set_unix_extensions_capabilities(struct cli_state *cli, uint16 major, uint16 minor,
-                                        uint32 caplow, uint32 caphigh);
+struct tevent_req *cli_set_unix_extensions_capabilities_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev, struct cli_state *cli,
+	uint16_t major, uint16_t minor, uint32_t caplow, uint32_t caphigh);
+NTSTATUS cli_set_unix_extensions_capabilities_recv(struct tevent_req *req);
+NTSTATUS cli_set_unix_extensions_capabilities(struct cli_state *cli,
+					      uint16 major, uint16 minor,
+					      uint32 caplow, uint32 caphigh);
 bool cli_get_fs_attr_info(struct cli_state *cli, uint32 *fs_attr);
 bool cli_get_fs_volume_info_old(struct cli_state *cli, fstring volume_name, uint32 *pserial_number);
 bool cli_get_fs_volume_info(struct cli_state *cli, fstring volume_name, uint32 *pserial_number, time_t *pdate);
