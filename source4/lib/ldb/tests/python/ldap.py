@@ -1895,32 +1895,46 @@ class SchemaTests(unittest.TestCase):
 
     def test_schemaUpdateNow(self):
         """Testing schemaUpdateNow"""
-        class_name = "test-class" + time.strftime("%s", time.gmtime())
+        attr_name = "test-Attr" + time.strftime("%s", time.gmtime())
+        attr_ldap_display_name = attr_name.replace("-", "")
+
+        ldif = """
+dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
+objectClass: top
+objectClass: attributeSchema
+adminDescription: """ + attr_name + """
+adminDisplayName: """ + attr_name + """
+cn: """ + attr_name + """
+attributeId: 1.2.840.""" + str(random.randint(1,100000)) + """.1.5.9940
+attributeSyntax: 2.5.5.12
+omSyntax: 64
+instanceType: 4
+isSingleValued: TRUE
+systemOnly: FALSE
+"""
+        self.ldb.add_ldif(ldif)
+
+        class_name = "test-Class" + time.strftime("%s", time.gmtime())
         class_ldap_display_name = class_name.replace("-", "")
-        object_name = "obj" + time.strftime("%s", time.gmtime())
 
         ldif = """
 dn: CN=%s,%s""" % (class_name, self.schema_dn) + """
-lDAPDisplayName: """ + class_ldap_display_name + """
 objectClass: top
 objectClass: classSchema
 adminDescription: """ + class_name + """
 adminDisplayName: """ + class_name + """
 cn: """ + class_name + """
-objectCategory: CN=Class-Schema,""" + self.schema_dn + """
-defaultObjectCategory: CN=%s,%s""" % (class_name, self.schema_dn) + """
-distinguishedName: CN=%s,%s""" % (class_name, self.schema_dn) + """
-governsID: 1.2.840.""" + str(random.randint(1,100000)) + """.1.5.9939
+governsId: 1.2.840.""" + str(random.randint(1,100000)) + """.1.5.9939
 instanceType: 4
-name: """ + class_name + """
 objectClassCategory: 1
 subClassOf: organizationalPerson
 systemFlags: 16
 rDNAttID: cn
-systemMustContain: cn
+systemMustContain: cn, """ + attr_ldap_display_name + """
 systemOnly: FALSE
 """
         self.ldb.add_ldif(ldif)
+
         ldif = """
 dn:
 changetype: modify
@@ -1928,6 +1942,9 @@ add: schemaUpdateNow
 schemaUpdateNow: 1
 """
         self.ldb.modify_ldif(ldif)
+
+        object_name = "obj" + time.strftime("%s", time.gmtime())
+
         ldif = """
 dn: CN=%s,CN=Users,%s"""% (object_name, self.base_dn) + """
 objectClass: organizationalPerson
@@ -1939,16 +1956,27 @@ instanceType: 4
 objectCategory: CN=%s,%s"""% (class_name, self.schema_dn) + """
 distinguishedName: CN=%s,CN=Users,%s"""% (object_name, self.base_dn) + """
 name: """ + object_name + """
+""" + attr_ldap_display_name + """: test
 """
         self.ldb.add_ldif(ldif)
-        # Search for created objectClass
+
+        # Search for created attribute
+        res = []
+        res = self.ldb.search("cn=%s,%s" % (attr_name, self.schema_dn), scope=SCOPE_BASE, attrs=["*"])
+        self.assertEquals(len(res), 1)
+        self.assertEquals(res[0]["lDAPDisplayName"][0], attr_ldap_display_name)
+
+        # Search for created objectclass
         res = []
         res = self.ldb.search("cn=%s,%s" % (class_name, self.schema_dn), scope=SCOPE_BASE, attrs=["*"])
-        self.assertNotEqual(res, [])
+        self.assertEquals(len(res), 1)
+        self.assertEquals(res[0]["lDAPDisplayName"][0], class_ldap_display_name)
+        self.assertEquals(res[0]["defaultObjectCategory"][0], res[0]["distinguishedName"][0])
 
+        # Search for created object
         res = []
         res = self.ldb.search("cn=%s,cn=Users,%s" % (object_name, self.base_dn), scope=SCOPE_BASE, attrs=["*"])
-        self.assertNotEqual(res, [])
+        self.assertEquals(len(res), 1)
         # Delete the object
         self.delete_force(self.ldb, "cn=%s,cn=Users,%s" % (object_name, self.base_dn))
 
