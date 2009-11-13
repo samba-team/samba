@@ -2,64 +2,57 @@
 # event script to manage httpd in a cluster environment
 
 . $CTDB_BASE/functions
-loadconfig ctdb
 
 detect_init_style
 
 case $CTDB_INIT_STYLE in
-	redhat)
-		CTDB_SERVICE_HTTP="httpd"
-		CTDB_CONFIG_HTTP="http"
-		;;
-	suse)
-		CTDB_SERVICE_HTTP="apache2"
-		CTDB_CONFIG_HTTP="apache2"
-		;;
-	debian)
-		CTDB_SERVICE_HTTP="apache2"
-		CTDB_CONFIG_HTTP="apache2"
-		;;
-	*)
-		# should not happen.
-		# for now use red hat style as default
-		CTDB_SERVICE_HTTP="httpd"
-		CTDB_CONFIG_HTTP="http"
-		;;
+    redhat)
+	service_name="httpd"
+	service_config="http"
+	;;
+    suse|debian|*)
+	service_name="apache2"
+	service_config="apache2"
+	;;
 esac
-
-loadconfig "${CTDB_CONFIG_HTTP}"
-
-[ "$CTDB_MANAGES_HTTPD" = "yes" ] || exit 0
-
-cmd="$1"
-shift
 
 # RHEL5 sometimes use a SIGKILL to terminate httpd, which then leaks
 # semaphores.  This is a hack to clean them up.
 cleanup_httpd_semaphore_leak() {
-    killall -q -0 "${CTDB_SERVICE_HTTP}" ||
+    killall -q -0 "$service_name" ||
     for i in $(ipcs -s | awk '$3 == "apache" { print $2 }') ; do
 	ipcrm -s $i
     done
 }
 
+##########
+
+service_start="cleanup_httpd_semaphore_leak; service $service_name start"
+service_stop="service $service_name stop; killall -q -9 $service_name"
+service_reconfigure="service $service_name restart"
+
+loadconfig
+
+ctdb_start_stop_service
+
 case $cmd in
     startup)
-	cleanup_httpd_semaphore_leak
-	service "${CTDB_SERVICE_HTTP}" start
+	ctdb_service_start
 	;;
 
     shutdown)
-	service "${CTDB_SERVICE_HTTP}" stop
-	killall -q -9 "${CTDB_SERVICE_HTTP}"
+	ctdb_service_stop
 	;;
 
-     monitor)
-	( ctdb_check_tcp_ports "http" 80 )
-	if [ $? -ne 0 ] ; then
+    monitor)
+	if ctdb_service_needs_reconfigure ; then
+	    ctdb_service_reconfigure
+	    exit 0
+	fi
+
+	if ! ctdb_check_tcp_ports 80 ; then
 	    echo "HTTPD is not running. Trying to restart HTTPD."
-	    cleanup_httpd_semaphore_leak
-	    service "${CTDB_SERVICE_HTTP}" start
+	    ctdb_service_start
 	    exit 1
 	fi
 	;;

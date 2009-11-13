@@ -1,11 +1,9 @@
 #!/bin/sh
 # ctdb event script for TGTD based iSCSI
 
-PATH=/bin:/usr/bin:$PATH
+service_name="iscsi"
 
 . $CTDB_BASE/functions
-loadconfig ctdb
-loadconfig iscsi
 
 cmd="$1"
 shift
@@ -64,7 +62,7 @@ case $cmd in
 
      monitor)
 	[ -f $CTDB_BASE/state/iscsi/iscsi_active ] && {
-		ctdb_check_tcp_ports "iscsi" 3260
+		ctdb_check_tcp_ports 3260 || exit $?
 	}
 	;;
 esac

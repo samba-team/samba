@@ -3,6 +3,8 @@
 
 PATH=/bin:/usr/bin:$PATH
 
+service_name="samba"
+
 . $CTDB_BASE/functions
 loadconfig ctdb
 loadconfig samba
@@ -245,7 +247,7 @@ case $cmd in
 		[ -z "$smb_ports" ] && {
 			smb_ports=`testparm_cat --parameter-name="smb ports"`
 		}
-		ctdb_check_tcp_ports "Samba" $smb_ports
+		ctdb_check_tcp_ports $smb_ports || exit $?
 	}
 
 	# check winbind is OK

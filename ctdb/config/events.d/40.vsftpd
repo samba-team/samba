@@ -1,68 +1,61 @@
 #!/bin/sh
 # event strict to manage vsftpd in a cluster environment
 
+service_name="vsftpd"
+# make sure the service is stopped first
+service_start="service vsftpd stop > /dev/null 2>&1 ; service vsftpd start"
+service_stop="service vsftpd stop"
+service_reconfigure="service $service_name restart"
+service_fail_limit=2
+service_tcp_ports=21
+
 . $CTDB_BASE/functions
-loadconfig ctdb
-loadconfig vsftpd
 
-[ "$CTDB_MANAGES_VSFTPD" = "yes" ] || exit 0
+loadconfig
 
-cmd="$1"
-shift
+ctdb_start_stop_service
 
-# Count the number of monitor failures.  The cluster only becomes
-# unhealthy after 2 failures.
-VSFTPD_FAILS="fail-count"
-VSFTPD_LIMIT=2
+is_ctdb_managed_service || exit 0
 
 case $cmd in 
      startup)
-	/bin/mkdir -p $CTDB_BASE/state/vsftpd
-
-	# make sure the service is stopped first
-	service vsftpd stop > /dev/null 2>&1
-	service vsftpd start
-
-	ctdb_counter_init "$VSFTPD_FAILS"
+	ctdb_service_start
 	;;
 
      shutdown)
-	service vsftpd stop
+	ctdb_service_stop
 	;;
 
-     takeip)
-	echo "restart" > $CTDB_BASE/state/vsftpd/restart
-	;;
-
-     releaseip)
-	echo "restart" > $CTDB_BASE/state/vsftpd/restart
+     takeip|releaseip)
+	ctdb_service_set_reconfigure
 	;;
 
      recovered)
 	# if we have taken or released any ips we must 
 	# restart vsftpd to ensure that all tcp connections are reset
-	[ -f $CTDB_BASE/state/vsftpd/restart ] && {
-		service vsftpd stop > /dev/null 2>&1
-		service vsftpd start
-		/bin/rm -f $CTDB_BASE/state/vsftpd/restart 2>/dev/null
-		ctdb_counter_init "$VSFTPD_FAILS"
-	} >/dev/null 2>&1
+	if ctdb_service_needs_reconfigure ; then
+	    ctdb_service_reconfigure
+	fi
 	;;
 
      monitor)
-	# Subshell catches the "exit 1"
-	if (ctdb_check_tcp_ports "ftp" 21) ; then
-	    ctdb_counter_init "$VSFTPD_FAILS"
-	else
-	    ctdb_counter_incr "$VSFTPD_FAILS"
-	    if ctdb_counter_limit "$VSFTPD_FAILS" $VSFTPD_LIMIT ; then
-		echo "ERROR: more than $VSFTPD_LIMIT consecutive failures, marking cluster unhealthy"
-		exit 1
-	    else
-		echo "WARNING: less than $VSFTPD_LIMIT consecutive failures, not unhealthy yet"
-	    fi
-		
+	if ctdb_service_needs_reconfigure ; then
+	    ctdb_service_reconfigure
+	    exit 0
 	fi
+
+	if [ -n "$service_tcp_ports" ] ; then
+	    if ctdb_check_tcp_ports $service_tcp_ports ; then
+		ctdb_counter_init
+	    else
+		ctdb_counter_incr
+		ctdb_check_counter_limit
+		exit 0 # only count 1 failure per monitor event
+	    fi
+	fi	
+	;;
+    status)
+	ctdb_checkstatus || exit $?
 	;;
 esac
 
