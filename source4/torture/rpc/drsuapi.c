@@ -91,7 +91,7 @@ static bool test_DsGetDomainControllerInfo(struct torture_context *tctx,
 					   struct DsPrivate *priv)
 {
 	NTSTATUS status;
-	struct dcerpc_pipe *p = priv->pipe;
+	struct dcerpc_pipe *p = priv->drs_pipe;
 	struct drsuapi_DsGetDomainControllerInfo r;
 	union drsuapi_DsGetDCInfoCtr ctr;
 	int32_t level_out = 0;
@@ -225,7 +225,7 @@ static bool test_DsWriteAccountSpn(struct torture_context *tctx,
 				   struct DsPrivate *priv)
 {
 	NTSTATUS status;
-	struct dcerpc_pipe *p = priv->pipe;
+	struct dcerpc_pipe *p = priv->drs_pipe;
 	struct drsuapi_DsWriteAccountSpn r;
 	union drsuapi_DsWriteAccountSpnRequest req;
 	struct drsuapi_DsNameString names[2];
@@ -265,7 +265,7 @@ static bool test_DsReplicaGetInfo(struct torture_context *tctx,
 				  struct DsPrivate *priv)
 {
 	NTSTATUS status;
-	struct dcerpc_pipe *p = priv->pipe;
+	struct dcerpc_pipe *p = priv->drs_pipe;
 	struct drsuapi_DsReplicaGetInfo r;
 	union drsuapi_DsReplicaGetInfoRequest req;
 	union drsuapi_DsReplicaInfo info;
@@ -394,7 +394,7 @@ static bool test_DsReplicaSync(struct torture_context *tctx,
 				struct DsPrivate *priv)
 {
 	NTSTATUS status;
-	struct dcerpc_pipe *p = priv->pipe;
+	struct dcerpc_pipe *p = priv->drs_pipe;
 	int i;
 	struct drsuapi_DsReplicaSync r;
 	struct drsuapi_DsReplicaObjectIdentifier nc;
@@ -452,7 +452,7 @@ static bool test_DsReplicaUpdateRefs(struct torture_context *tctx,
 				     struct DsPrivate *priv)
 {
 	NTSTATUS status;
-	struct dcerpc_pipe *p = priv->pipe;
+	struct dcerpc_pipe *p = priv->drs_pipe;
 	struct drsuapi_DsReplicaUpdateRefs r;
 	struct drsuapi_DsReplicaObjectIdentifier nc;
 	struct GUID null_guid;
@@ -519,7 +519,7 @@ static bool test_DsGetNCChanges(struct torture_context *tctx,
 				struct DsPrivate *priv)
 {
 	NTSTATUS status;
-	struct dcerpc_pipe *p = priv->pipe;
+	struct dcerpc_pipe *p = priv->drs_pipe;
 	int i;
 	struct drsuapi_DsGetNCChanges r;
 	union drsuapi_DsGetNCChangesRequest req;
@@ -629,7 +629,7 @@ bool test_QuerySitesByCost(struct torture_context *tctx,
 			   struct DsPrivate *priv)
 {
 	NTSTATUS status;
-	struct dcerpc_pipe *p = priv->pipe;
+	struct dcerpc_pipe *p = priv->drs_pipe;
 	struct drsuapi_QuerySitesByCost r;
 	union drsuapi_QuerySitesByCostRequest req;
 
@@ -719,7 +719,7 @@ bool torture_rpc_drsuapi_get_dcinfo(struct torture_context *torture,
 		r.out.ctr = &ctr;
 		r.out.level_out = &level_out;
 
-		status = dcerpc_drsuapi_DsGetDomainControllerInfo(priv->pipe, torture, &r);
+		status = dcerpc_drsuapi_DsGetDomainControllerInfo(priv->drs_pipe, torture, &r);
 		if (!NT_STATUS_IS_OK(status)) {
 			continue;
 		}
@@ -753,7 +753,7 @@ bool torture_drsuapi_tcase_setup_common(struct torture_context *tctx, struct DsP
 
 	torture_comment(tctx, "Create DRSUAPI pipe\n");
 	status = torture_rpc_connection(tctx,
-					&priv->pipe,
+					&priv->drs_pipe,
 					&ndr_table_drsuapi);
 	torture_assert(tctx, NT_STATUS_IS_OK(status), "Unable to connect to DRSUAPI pipe");
 
@@ -762,7 +762,7 @@ bool torture_drsuapi_tcase_setup_common(struct torture_context *tctx, struct DsP
 					 &machine_credentials);
 	torture_assert(tctx, priv->join, "Failed to join as BDC");
 
-	if (!test_DsBind(priv->pipe, tctx, priv)) {
+	if (!test_DsBind(priv->drs_pipe, tctx, priv)) {
 		/* clean up */
 		torture_drsuapi_tcase_teardown_common(tctx, priv);
 		torture_fail(tctx, "Failed execute test_DsBind()");

@@ -46,7 +46,7 @@ static bool test_DsCrackNamesMatrix(struct torture_context *tctx,
 	union drsuapi_DsNameRequest req;
 	int32_t level_out;
 	union drsuapi_DsNameCtr ctr;
-	struct dcerpc_pipe *p = priv->pipe;
+	struct dcerpc_pipe *p = priv->drs_pipe;
 	TALLOC_CTX *mem_ctx = priv;
 
 	enum drsuapi_DsNameFormat formats[] = {
@@ -256,7 +256,7 @@ bool test_DsCrackNames(struct torture_context *tctx,
 	const char *canonical_ex_name;
 	const char *dom_sid;
 	const char *test_dc = torture_join_netbios_name(priv->join);
-	struct dcerpc_pipe *p = priv->pipe;
+	struct dcerpc_pipe *p = priv->drs_pipe;
 	TALLOC_CTX *mem_ctx = priv;
 
 	ZERO_STRUCT(r);
