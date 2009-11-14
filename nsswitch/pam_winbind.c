@@ -1758,11 +1758,11 @@ static int winbind_auth_request(struct pwb_context *ctx,
 				       "Password has expired "
 				       "(Password was last set: %lld, "
 				       "the policy says it should expire here "
-				       "%lld (now it's: %lu))\n",
+				       "%lld (now it's: %ld))\n",
 				       (long long int)last_set,
 				       (long long int)last_set +
 				       policy->expire,
-				       time(NULL));
+				       (long)time(NULL));
 
 			return PAM_AUTHTOK_EXPIRED;
 		}
