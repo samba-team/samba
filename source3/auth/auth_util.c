@@ -2181,6 +2181,10 @@ bool is_trusted_domain(const char* dom_name)
 	if ( lp_server_role() == ROLE_STANDALONE )
 		return False;
 
+	if (dom_name == NULL || dom_name[0] == '\0') {
+		return false;
+	}
+
 	/* if we are a DC, then check for a direct trust relationships */
 
 	if ( IS_DC ) {
