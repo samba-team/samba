@@ -2167,7 +2167,7 @@ bool make_auth_methods(struct auth_context *auth_context, auth_methods **auth_me
  * Verify whether or not given domain is trusted.
  *
  * @param domain_name name of the domain to be verified
- * @return true if domain is one of the trusted once or
+ * @return true if domain is one of the trusted ones or
  *         false if otherwise
  **/
 
