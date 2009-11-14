@@ -59,3 +59,18 @@ NTSTATUS tevent_req_simple_recv_ntstatus(struct tevent_req *req)
 	}
 	return NT_STATUS_OK;
 }
+
+void tevent_req_simple_finish_ntstatus(struct tevent_req *subreq,
+				       NTSTATUS subreq_status)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+
+	TALLOC_FREE(subreq);
+
+	if (!NT_STATUS_IS_OK(subreq_status)) {
+		tevent_req_nterror(req, subreq_status);
+		return;
+	}
+	tevent_req_done(req);
+}
