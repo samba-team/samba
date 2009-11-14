@@ -36,12 +36,4 @@ NTSTATUS tevent_req_simple_recv_ntstatus(struct tevent_req *req);
 void tevent_req_simple_finish_ntstatus(struct tevent_req *subreq,
 				       NTSTATUS subreq_status);
 
-/*
- * Wrapper for tevent_req_poll that grabs NTSTATUS directly in case of a
- * failure
- */
-bool tevent_req_poll_ntstatus(struct tevent_req *req,
-			      struct tevent_context *ev,
-			      NTSTATUS *status);
-
 #endif

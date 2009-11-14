@@ -74,20 +74,3 @@ void tevent_req_simple_finish_ntstatus(struct tevent_req *subreq,
 	}
 	tevent_req_done(req);
 }
-
-/*
- * We have to declare map_nt_error_from_unix here, both s3 and s4 have their
- * (different) implementations of it.
- */
-NTSTATUS map_nt_error_from_unix(int sys_errno);
-
-bool tevent_req_poll_ntstatus(struct tevent_req *req,
-			      struct tevent_context *ev,
-			      NTSTATUS *status)
-{
-	bool ret = tevent_req_poll(req, ev);
-	if (!ret) {
-		*status = map_nt_error_from_unix(errno);
-	}
-	return ret;
-}

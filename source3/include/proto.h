@@ -1228,6 +1228,9 @@ bool is_valid_policy_hnd(const struct policy_handle *hnd);
 bool policy_hnd_equal(const struct policy_handle *hnd1,
 		      const struct policy_handle *hnd2);
 const char *strip_hostname(const char *s);
+bool tevent_req_poll_ntstatus(struct tevent_req *req,
+			      struct tevent_context *ev,
+			      NTSTATUS *status);
 
 /* The following definitions come from lib/util_file.c  */
 
