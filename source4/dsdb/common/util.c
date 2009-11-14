@@ -37,6 +37,7 @@
 #include "param/param.h"
 #include "libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
+#include "system/locale.h"
 
 /*
   search the sam for the specified attributes in a specific domain, filter on
@@ -2616,4 +2617,31 @@ failed:
 	DEBUG(1,("Failed to find our own NTDS Settings objectGUID in the ldb!\n"));
 	talloc_free(tmp_ctx);
 	return LDB_ERR_NO_SUCH_OBJECT;
+}
+
+/*
+ * Function which generates a "lDAPDisplayName" attribute from a "CN" one.
+ * Algorithm implemented according to MS-ADTS 3.1.1.2.3.4
+ */
+const char *samdb_cn_to_lDAPDisplayName(TALLOC_CTX *mem_ctx, const char *cn)
+{
+	char **tokens, *ret;
+	size_t i;
+
+	tokens = str_list_make(mem_ctx, cn, " -_");
+	if (tokens == NULL)
+		return NULL;
+
+	/* "tolower()" and "toupper()" should also work properly on 0x00 */
+	tokens[0][0] = tolower(tokens[0][0]);
+	for (i = 1; i < str_list_length((const char **)tokens); i++)
+		tokens[i][0] = toupper(tokens[i][0]);
+
+	ret = talloc_strdup(mem_ctx, tokens[0]);
+	for (i = 1; i < str_list_length((const char **)tokens); i++)
+		ret = talloc_asprintf_append_buffer(ret, "%s", tokens[i]);
+
+	talloc_free(tokens);
+
+	return ret;
 }
