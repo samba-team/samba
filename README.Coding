@@ -233,3 +233,11 @@ new code should adhere to the following conventions:
   * Booleans are of type "bool" (not BOOL)
   * Boolean values are "true" and "false" (not True or False)
   * Exact width integers are of type [u]int[8|16|32|64]_t
+
+
+Typedefs
+--------
+
+Samba tries to avoid "typedef struct { .. } x_t;", we always use
+"struct x { .. };". We know there are still those typedefs in the code,
+but for new code, please don't do that.
