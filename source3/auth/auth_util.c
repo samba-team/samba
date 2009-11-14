@@ -2185,6 +2185,10 @@ bool is_trusted_domain(const char* dom_name)
 		return false;
 	}
 
+	if (strequal(dom_name, get_global_sam_name())) {
+		return false;
+	}
+
 	/* if we are a DC, then check for a direct trust relationships */
 
 	if ( IS_DC ) {
