@@ -875,17 +875,8 @@ static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 			}
 
 			status = dcerpc_drsuapi_DsGetNCChanges(ctx->new_dc.drsuapi.drs_pipe, ctx, &r);
-			if (!NT_STATUS_IS_OK(status)) {
-				const char *errstr = nt_errstr(status);
-				if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-					errstr = dcerpc_errstr(ctx, ctx->new_dc.drsuapi.drs_pipe->last_fault_code);
-				}
-				printf("dcerpc_drsuapi_DsGetNCChanges failed - %s\n", errstr);
-				ret = false;
-			} else if (!W_ERROR_IS_OK(r.out.result)) {
-				printf("DsGetNCChanges failed - %s\n", win_errstr(r.out.result));
-				ret = false;
-			}
+			torture_drsuapi_assert_call(tctx, ctx->new_dc.drsuapi.drs_pipe, status,
+						    &r, "dcerpc_drsuapi_DsGetNCChanges");
 
 			if (ret == true && *r.out.level_out == 1) {
 				out_level = 1;
