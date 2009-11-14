@@ -385,8 +385,6 @@ struct pdb_methods
 			       struct pdb_search *search,
 			       const DOM_SID *sid);
 
-	bool (*uid_to_rid)(struct pdb_methods *methods, uid_t uid,
-			   uint32 *rid);
 	bool (*uid_to_sid)(struct pdb_methods *methods, uid_t uid,
 			   DOM_SID *sid);
 	bool (*gid_to_sid)(struct pdb_methods *methods, gid_t gid,
