@@ -71,15 +71,11 @@ static void cli_unix_extensions_version_done(struct tevent_req *subreq)
 	uint32_t num_data;
 	NTSTATUS status;
 
-	status = cli_trans_recv(subreq, state, NULL, NULL, NULL, NULL,
-				&data, &num_data);
+	status = cli_trans_recv(subreq, state, NULL, 0, NULL, NULL, 0, NULL,
+				&data, 12, &num_data);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
-		return;
-	}
-	if (num_data < 12) {
-		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
 
@@ -211,8 +207,8 @@ static void cli_set_unix_extensions_capabilities_done(
 	struct tevent_req *subreq)
 {
 	return tevent_req_simple_finish_ntstatus(
-		subreq, cli_trans_recv(subreq, NULL, NULL, NULL, NULL, NULL,
-				       NULL, NULL));
+		subreq, cli_trans_recv(subreq, NULL, NULL, 0, NULL,
+				       NULL, 0, NULL, NULL, 0, NULL));
 }
 
 NTSTATUS cli_set_unix_extensions_capabilities_recv(struct tevent_req *req)

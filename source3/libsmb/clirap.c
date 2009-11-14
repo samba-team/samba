@@ -974,18 +974,15 @@ bool cli_qfileinfo(struct cli_state *cli, uint16_t fnum,
 		   struct timespec *change_time,
                    SMB_INO_T *ino)
 {
-	unsigned int data_len = 0;
-	unsigned int param_len = 0;
+	uint32_t data_len = 0;
 	uint16 setup;
 	uint8_t param[4];
-	uint8_t *rparam=NULL, *rdata=NULL;
+	uint8_t *rdata=NULL;
 	NTSTATUS status;
 
 	/* if its a win95 server then fail this - win95 totally screws it
 	   up */
 	if (cli->win95) return False;
-
-	param_len = 4;
 
 	SSVAL(param, 0, fnum);
 	SSVAL(param, 2, SMB_QUERY_FILE_ALL_INFO);
@@ -995,18 +992,14 @@ bool cli_qfileinfo(struct cli_state *cli, uint16_t fnum,
 	status = cli_trans(talloc_tos(), cli, SMBtrans2,
 			   NULL, -1, 0, 0, /* name, fid, function, flags */
 			   &setup, 1, 0,          /* setup, length, max */
-			   param, param_len, 2,   /* param, length, max */
+			   param, 4, 2,   /* param, length, max */
 			   NULL, 0, MIN(cli->max_xmit, 0xffff), /* data, length, max */
-			   NULL, NULL, /* rsetup, length */
-			   &rparam, &param_len,	/* rparam, length */
-			   &rdata, &data_len);
+			   NULL, 0, NULL, /* rsetup, length */
+			   NULL, 0, NULL,	/* rparam, length */
+			   &rdata, 68, &data_len);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
-	}
-
-	if (!rdata || data_len < 68) {
-		return False;
 	}
 
 	if (create_time) {
@@ -1032,7 +1025,6 @@ bool cli_qfileinfo(struct cli_state *cli, uint16_t fnum,
 	}
 
 	TALLOC_FREE(rdata);
-	TALLOC_FREE(rparam);
 	return True;
 }
 
