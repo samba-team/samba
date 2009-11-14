@@ -1289,6 +1289,7 @@ static char **extract_args(TALLOC_CTX *mem_ctx, const char *command)
 	}
 
 	argl[i++] = NULL;
+	TALLOC_FREE(trunc_cmd);
 	return argl;
 
  nomem:
