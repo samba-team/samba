@@ -1129,19 +1129,16 @@ void store_gid_sid_cache(const DOM_SID *psid, gid_t gid)
 
 static void legacy_uid_to_sid(DOM_SID *psid, uid_t uid)
 {
-	uint32 rid;
 	bool ret;
 
 	ZERO_STRUCTP(psid);
 
 	become_root();
-	ret = pdb_uid_to_rid(uid, &rid);
+	ret = pdb_uid_to_sid(uid, psid);
 	unbecome_root();
 
 	if (ret) {
 		/* This is a mapped user */
-		sid_copy(psid, get_global_sam_sid());
-		sid_append_rid(psid, rid);
 		goto done;
 	}
 

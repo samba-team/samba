@@ -1024,12 +1024,6 @@ bool pdb_get_seq_num(time_t *seq_num)
 	return NT_STATUS_IS_OK(pdb->get_seq_num(pdb, seq_num));
 }
 
-bool pdb_uid_to_rid(uid_t uid, uint32 *rid)
-{
-	struct pdb_methods *pdb = pdb_get_methods();
-	return pdb->uid_to_rid(pdb, uid, rid);
-}
-
 bool pdb_uid_to_sid(uid_t uid, DOM_SID *sid)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
@@ -1227,27 +1221,6 @@ static bool pdb_default_uid_to_sid(struct pdb_methods *methods, uid_t uid,
 	TALLOC_FREE(sampw);
 
 	return True;
-}
-
-static bool pdb_default_uid_to_rid(struct pdb_methods *methods, uid_t uid,
-				   uint32 *rid)
-{
-	DOM_SID sid;
-	bool ret;
-
-	ret = pdb_default_uid_to_sid(methods, uid, &sid);
-	if (!ret) {
-		return ret;
-	}
-
-	ret = sid_peek_check_rid(get_global_sam_sid(), &sid, rid);
-
-	if (!ret) {
-		DEBUG(1, ("Could not peek rid out of sid %s\n",
-			  sid_string_dbg(&sid)));
-	}
-
-	return ret;
 }
 
 static bool pdb_default_gid_to_sid(struct pdb_methods *methods, gid_t gid,
@@ -2057,7 +2030,6 @@ NTSTATUS make_pdb_method( struct pdb_methods **methods )
 	(*methods)->get_account_policy = pdb_default_get_account_policy;
 	(*methods)->set_account_policy = pdb_default_set_account_policy;
 	(*methods)->get_seq_num = pdb_default_get_seq_num;
-	(*methods)->uid_to_rid = pdb_default_uid_to_rid;
 	(*methods)->uid_to_sid = pdb_default_uid_to_sid;
 	(*methods)->gid_to_sid = pdb_default_gid_to_sid;
 	(*methods)->sid_to_id = pdb_default_sid_to_id;

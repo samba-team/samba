@@ -4624,7 +4624,6 @@ NTSTATUS pdb_lookup_names(const DOM_SID *domain_sid,
 bool pdb_get_account_policy(enum pdb_policy_type type, uint32_t *value);
 bool pdb_set_account_policy(enum pdb_policy_type type, uint32_t value);
 bool pdb_get_seq_num(time_t *seq_num);
-bool pdb_uid_to_rid(uid_t uid, uint32 *rid);
 bool pdb_uid_to_sid(uid_t uid, DOM_SID *sid);
 bool pdb_gid_to_sid(gid_t gid, DOM_SID *sid);
 bool pdb_sid_to_id(const DOM_SID *sid, union unid_t *id,

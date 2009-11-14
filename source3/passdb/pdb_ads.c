@@ -1917,12 +1917,6 @@ static bool pdb_ads_search_aliases(struct pdb_methods *m,
 	return true;
 }
 
-static bool pdb_ads_uid_to_rid(struct pdb_methods *m, uid_t uid,
-			       uint32 *rid)
-{
-	return false;
-}
-
 static bool pdb_ads_uid_to_sid(struct pdb_methods *m, uid_t uid,
 			       DOM_SID *sid)
 {
@@ -2072,7 +2066,6 @@ static void pdb_ads_init_methods(struct pdb_methods *m)
 	m->search_users = pdb_ads_search_users;
 	m->search_groups = pdb_ads_search_groups;
 	m->search_aliases = pdb_ads_search_aliases;
-	m->uid_to_rid = pdb_ads_uid_to_rid;
 	m->uid_to_sid = pdb_ads_uid_to_sid;
 	m->gid_to_sid = pdb_ads_gid_to_sid;
 	m->sid_to_id = pdb_ads_sid_to_id;
