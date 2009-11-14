@@ -1034,17 +1034,17 @@ servicePrincipalName: host/ldaptest2computer29
 #        res = ldb.search(expression="(&(anr==testy ldap)(objectClass=user))")
 #        self.assertEquals(len(res), 1, "Found only %d for (&(anr==testy ldap)(objectClass=user))" % len(res))
 
-        self.assertEquals(str(res[0].dn), ("CN=ldaptestuser,CN=Users," + self.base_dn))
-        self.assertEquals(res[0]["cn"][0], "ldaptestuser")
-        self.assertEquals(res[0]["name"][0], "ldaptestuser")
+#        self.assertEquals(str(res[0].dn), ("CN=ldaptestuser,CN=Users," + self.base_dn))
+#        self.assertEquals(res[0]["cn"][0], "ldaptestuser")
+#        self.assertEquals(res[0]["name"][0], "ldaptestuser")
 
         # Testing ldb.search for (&(anr==testy ldap)(objectClass=user))
 #        res = ldb.search(expression="(&(anr==testy ldap)(objectClass=user))")
 #        self.assertEquals(len(res), 1, "Could not find (&(anr==testy ldap)(objectClass=user))")
 
-        self.assertEquals(str(res[0].dn), ("CN=ldaptestuser,CN=Users," + self.base_dn))
-        self.assertEquals(res[0]["cn"][0], "ldaptestuser")
-        self.assertEquals(res[0]["name"][0], "ldaptestuser")
+#        self.assertEquals(str(res[0].dn), ("CN=ldaptestuser,CN=Users," + self.base_dn))
+#        self.assertEquals(res[0]["cn"][0], "ldaptestuser")
+#        self.assertEquals(res[0]["name"][0], "ldaptestuser")
 
         # Testing ldb.search for (&(anr=testy ldap user)(objectClass=user))
         res = ldb.search(expression="(&(anr=testy ldap user)(objectClass=user))")
