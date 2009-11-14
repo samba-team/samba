@@ -240,9 +240,10 @@ enum pdb_policy_type {
  * Changed to 16 for access to the trusted domain passwords (obnox).
  * Changed to 17, the sampwent interface is gone.
  * Changed to 18, pdb_rid_algorithm -> pdb_capabilities
+ * Changed to 19, removed uid_to_rid
  */
 
-#define PASSDB_INTERFACE_VERSION 18
+#define PASSDB_INTERFACE_VERSION 19
 
 struct pdb_methods 
 {
