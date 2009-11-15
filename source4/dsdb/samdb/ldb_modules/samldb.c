@@ -992,7 +992,7 @@ static int samldb_find_for_defaultObjectCategory(struct samldb_ctx *ac)
 	struct ldb_context *ldb;
 	struct ldb_request *req;
         int ret;
-	const char *no_attrs[] = { NULL };
+	static const char *no_attrs[] = { NULL };
 
 	ldb = ldb_module_get_ctx(ac->module);
 
