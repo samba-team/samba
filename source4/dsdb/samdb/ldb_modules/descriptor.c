@@ -47,10 +47,13 @@ struct descriptor_data {
 };
 
 struct descriptor_context {
-		struct ldb_module *module;
-		struct ldb_request *req;
-		struct ldb_reply *search_res;
-		int (*step_fn)(struct descriptor_context *);
+	struct ldb_module *module;
+	struct ldb_request *req;
+	struct ldb_reply *search_res;
+	struct ldb_reply *search_oc_res;
+	struct ldb_val *parentsd_val;
+	struct ldb_val *sd_val;
+	int (*step_fn)(struct descriptor_context *);
 };
 
 static const struct dsdb_class * get_last_structural_class(const struct dsdb_schema *schema, struct ldb_message_element *element)
@@ -212,7 +215,7 @@ static DATA_BLOB *get_new_descriptor(struct ldb_module *module,
 
 
 	sddl_sd = sddl_encode(mem_ctx, new_sd, domain_sid);
-	DEBUG(10, ("Object %s created with desriptor %s", ldb_dn_get_linearized(dn), sddl_sd));
+	DEBUG(10, ("Object %s created with desriptor %s\n\n", ldb_dn_get_linearized(dn), sddl_sd));
 
 	linear_sd = talloc(mem_ctx, DATA_BLOB);
 	if (!linear_sd) {
@@ -272,12 +275,12 @@ static int get_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
-		if (ac->search_res != NULL) {
+			if (ac->search_res != NULL) {
 			ldb_set_errstring(ldb, "Too many results");
 			talloc_free(ares);
 			return ldb_module_done(ac->req, NULL, NULL,
 						LDB_ERR_OPERATIONS_ERROR);
-		}
+						}
 
 		ac->search_res = talloc_steal(ac, ares);
 		break;
@@ -298,6 +301,58 @@ static int get_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 	return LDB_SUCCESS;
 }
+
+static int get_search_oc_callback(struct ldb_request *req, struct ldb_reply *ares)
+{
+	struct ldb_context *ldb;
+	struct descriptor_context *ac;
+	int ret;
+
+	ac = talloc_get_type(req->context, struct descriptor_context);
+	ldb = ldb_module_get_ctx(ac->module);
+
+	if (!ares) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS &&
+	    ares->error != LDB_ERR_NO_SUCH_OBJECT) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
+	}
+
+	ldb_reset_err_string(ldb);
+
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
+			if (ac->search_oc_res != NULL) {
+			ldb_set_errstring(ldb, "Too many results");
+			talloc_free(ares);
+			return ldb_module_done(ac->req, NULL, NULL,
+						LDB_ERR_OPERATIONS_ERROR);
+						}
+
+		ac->search_oc_res = talloc_steal(ac, ares);
+		break;
+
+	case LDB_REPLY_REFERRAL:
+		/* ignore */
+		talloc_free(ares);
+		break;
+
+	case LDB_REPLY_DONE:
+		talloc_free(ares);
+		ret = ac->step_fn(ac);
+		if (ret != LDB_SUCCESS) {
+			return ldb_module_done(ac->req, NULL, NULL, ret);
+		}
+		break;
+	}
+
+	return LDB_SUCCESS;
+}
+
+
 static int descriptor_op_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	struct descriptor_context *ac;
@@ -323,6 +378,58 @@ static int descriptor_op_callback(struct ldb_request *req, struct ldb_reply *are
 				ares->response, ares->error);
 }
 
+static int descriptor_do_mod(struct descriptor_context *ac)
+{
+	struct ldb_context *ldb;
+	const struct dsdb_schema *schema;
+	struct ldb_request *mod_req;
+	struct ldb_message_element *objectclass_element, *tmp_element;
+	int ret;
+	DATA_BLOB *sd;
+	const struct dsdb_class *objectclass;
+	struct ldb_message *msg;
+	int flags = 0;
+
+	ldb = ldb_module_get_ctx(ac->module);
+	schema = dsdb_get_schema(ldb);
+
+	msg = ldb_msg_copy_shallow(ac, ac->req->op.mod.message);
+	objectclass_element = ldb_msg_find_element(ac->search_oc_res->message, "objectClass");
+	objectclass = get_last_structural_class(schema, objectclass_element);
+
+	if (!objectclass) {
+		ldb_asprintf_errstring(ldb, "No last structural objectclass found on %s",
+				       ldb_dn_get_linearized(ac->search_oc_res->message->dn));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	sd = get_new_descriptor(ac->module, msg->dn, ac, objectclass,
+				ac->parentsd_val, ac->sd_val);
+	if (ac->sd_val) {
+		tmp_element = ldb_msg_find_element(msg, "ntSecurityDescriptor");
+		flags = tmp_element->flags;
+		ldb_msg_remove_attr(msg, "nTSecurityDescriptor");
+	}
+
+	if (sd) {
+		ret = ldb_msg_add_steal_value(msg, "nTSecurityDescriptor", sd);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		tmp_element = ldb_msg_find_element(msg, "ntSecurityDescriptor");
+		tmp_element->flags = flags;
+	}
+	ret = ldb_build_mod_req(&mod_req, ldb, ac,
+				msg,
+				ac->req->controls,
+				ac, descriptor_op_callback,
+				ac->req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	return ldb_next_request(ac->module, mod_req);
+}
+
 static int descriptor_do_add(struct descriptor_context *ac)
 {
 	struct ldb_context *ldb;
@@ -332,94 +439,132 @@ static int descriptor_do_add(struct descriptor_context *ac)
 	struct ldb_message *msg;
 	TALLOC_CTX *mem_ctx;
 	int ret;
-	struct ldb_val *sd_val = NULL;
-	const struct ldb_val *parentsd_val = NULL;
 	DATA_BLOB *sd;
 	const struct dsdb_class *objectclass;
+	static const char *const attrs[] = { "objectClass", NULL };
+	struct ldb_request *search_req;
 
 	ldb = ldb_module_get_ctx(ac->module);
 	schema = dsdb_get_schema(ldb);
-
 	mem_ctx = talloc_new(ac);
 	if (mem_ctx == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	msg = ldb_msg_copy_shallow(ac, ac->req->op.add.message);
+	switch (ac->req->operation) {
+	case LDB_ADD:
+		msg = ldb_msg_copy_shallow(ac, ac->req->op.add.message);
+		objectclass_element = ldb_msg_find_element(msg, "objectClass");
+		objectclass = get_last_structural_class(schema, objectclass_element);
 
-	/* get the security descriptor values*/
-	sd_element = ldb_msg_find_element(msg, "nTSecurityDescriptor");
-	objectclass_element = ldb_msg_find_element(msg, "objectClass");
-	objectclass = get_last_structural_class(schema, objectclass_element);
-
-	if (!objectclass) {
-		ldb_asprintf_errstring(ldb, "No last structural objectclass found on %s", ldb_dn_get_linearized(msg->dn));
+		if (!objectclass) {
+			ldb_asprintf_errstring(ldb, "No last structural objectclass found on %s", ldb_dn_get_linearized(msg->dn));
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		break;
+	case LDB_MODIFY:
+		msg = ldb_msg_copy_shallow(ac, ac->req->op.mod.message);
+		break;
+	default:
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	if (sd_element)
-		sd_val = &sd_element->values[0];
+
+	/* get the security descriptor values*/
+	sd_element = ldb_msg_find_element(msg, "nTSecurityDescriptor");
+	if (sd_element) {
+		ac->sd_val = talloc_memdup(ac, &sd_element->values[0], sizeof(struct ldb_val));
+	}
 	/* NC's have no parent */
 	if ((ldb_dn_compare(msg->dn, (ldb_get_schema_basedn(ldb))) == 0) ||
 	    (ldb_dn_compare(msg->dn, (ldb_get_config_basedn(ldb))) == 0) ||
 	    (ldb_dn_compare(msg->dn, (ldb_get_root_basedn(ldb))) == 0)) {
-		parentsd_val = NULL;
-	} else if (ac->search_res != NULL){
-		parentsd_val = ldb_msg_find_ldb_val(ac->search_res->message, "nTSecurityDescriptor");
-	}
-
-	/* get the parent descriptor and the one provided. If not provided, get the default.*/
-	/* convert to security descriptor and calculate */
-	sd = get_new_descriptor(ac->module, msg->dn, mem_ctx, objectclass,
-			parentsd_val, sd_val);
-	if (sd_val) {
-		ldb_msg_remove_attr(msg, "nTSecurityDescriptor");
-	}
-
-	if (sd) {
-		ret = ldb_msg_add_steal_value(msg, "nTSecurityDescriptor", sd);
-		if (ret != LDB_SUCCESS) {
-			return ret;
+		ac->parentsd_val = NULL;
+	} else if (ac->search_res != NULL) {
+		struct ldb_message_element *parent_element = ldb_msg_find_element(ac->search_res->message, "nTSecurityDescriptor");
+		if (parent_element) {
+			ac->parentsd_val = talloc_memdup(ac, &parent_element->values[0], sizeof(struct ldb_val));
 		}
 	}
 
-	talloc_free(mem_ctx);
-	ret = ldb_msg_sanity_check(ldb, msg);
+	if (ac->req->operation == LDB_ADD) {
+	/* get the parent descriptor and the one provided. If not provided, get the default.*/
+	/* convert to security descriptor and calculate */
+		sd = get_new_descriptor(ac->module, msg->dn, mem_ctx, objectclass,
+					ac->parentsd_val, ac->sd_val);
+		if (ac->sd_val) {
+			ldb_msg_remove_attr(msg, "nTSecurityDescriptor");
+		}
 
-	if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(ldb, "No last structural objectclass found on %s", ldb_dn_get_linearized(msg->dn));
-		return ret;
+		if (sd) {
+			ret = ldb_msg_add_steal_value(msg, "nTSecurityDescriptor", sd);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+		}
+
+		talloc_free(mem_ctx);
+		ret = ldb_msg_sanity_check(ldb, msg);
+
+		if (ret != LDB_SUCCESS) {
+			ldb_asprintf_errstring(ldb, "No last structural objectclass found on %s",
+					       ldb_dn_get_linearized(msg->dn));
+			return ret;
+		}
+
+		ret = ldb_build_add_req(&add_req, ldb, ac,
+					msg,
+					ac->req->controls,
+					ac, descriptor_op_callback,
+					ac->req);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		return ldb_next_request(ac->module, add_req);
+	} else {
+		ret = ldb_build_search_req(&search_req, ldb,
+				   ac, msg->dn, LDB_SCOPE_BASE,
+				   "(objectClass=*)", attrs,
+				   NULL,
+				   ac, get_search_oc_callback,
+				   ac->req);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		ac->step_fn = descriptor_do_mod;
+		return ldb_next_request(ac->module, search_req);
 	}
-
-	ret = ldb_build_add_req(&add_req, ldb, ac,
-				msg,
-				ac->req->controls,
-				ac, descriptor_op_callback,
-				ac->req);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	/* perform the add */
-	return ldb_next_request(ac->module, add_req);
 }
 
-static int descriptor_add(struct ldb_module *module, struct ldb_request *req)
+static int descriptor_change(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
 	struct ldb_request *search_req;
 	struct descriptor_context *ac;
-	struct ldb_dn *parent_dn;
+	struct ldb_dn *parent_dn, *dn;
+	struct ldb_message_element *sd_element;
 	int ret;
-	struct descriptor_data *data;
 	static const char * const descr_attrs[] = { "nTSecurityDescriptor", NULL };
 
-	data = talloc_get_type(ldb_module_get_private(module), struct descriptor_data);
 	ldb = ldb_module_get_ctx(module);
 
-	ldb_debug(ldb, LDB_DEBUG_TRACE,"descriptor_add: %s\n", ldb_dn_get_linearized(req->op.add.message->dn));
+	switch (req->operation) {
+	case LDB_ADD:
+		dn = req->op.add.message->dn;
+		break;
+	case LDB_MODIFY:
+		dn = req->op.mod.message->dn;
+		sd_element = ldb_msg_find_element(req->op.mod.message, "nTSecurityDescriptor");
+		if (!sd_element) {
+			return ldb_next_request(module, req);
+		}
+		break;
+	default:
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ldb_debug(ldb, LDB_DEBUG_TRACE,"descriptor_change: %s\n", ldb_dn_get_linearized(dn));
 
-	if (ldb_dn_is_special(req->op.add.message->dn)) {
+	if (ldb_dn_is_special(dn)) {
 		return ldb_next_request(module, req);
 	}
 
@@ -429,12 +574,12 @@ static int descriptor_add(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/* If there isn't a parent, just go on to the add processing */
-	if (ldb_dn_get_comp_num(ac->req->op.add.message->dn) == 1) {
+	if (ldb_dn_get_comp_num(dn) == 1) {
 		return descriptor_do_add(ac);
 	}
 
 	/* get copy of parent DN */
-	parent_dn = ldb_dn_get_parent(ac, ac->req->op.add.message->dn);
+	parent_dn = ldb_dn_get_parent(ac, dn);
 	if (parent_dn == NULL) {
 		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -455,13 +600,7 @@ static int descriptor_add(struct ldb_module *module, struct ldb_request *req)
 
 	return ldb_next_request(ac->module, search_req);
 }
-/* TODO */
-static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
-{
-	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	ldb_debug(ldb, LDB_DEBUG_TRACE,"descriptor_modify: %s\n", ldb_dn_get_linearized(req->op.mod.message->dn));
-	return ldb_next_request(module, req);
-}
+
 /* TODO */
 static int descriptor_rename(struct ldb_module *module, struct ldb_request *req)
 {
@@ -472,25 +611,14 @@ static int descriptor_rename(struct ldb_module *module, struct ldb_request *req)
 
 static int descriptor_init(struct ldb_module *module)
 {
-	struct ldb_context *ldb;
-	struct descriptor_data *data;
-
-	ldb = ldb_module_get_ctx(module);
-	data = talloc(module, struct descriptor_data);
-	if (data == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ldb_module_set_private(module, data);
 	return ldb_next_init(module);
 }
 
 
 _PUBLIC_ const struct ldb_module_ops ldb_descriptor_module_ops = {
 	.name		   = "descriptor",
-	.add           = descriptor_add,
-	.modify        = descriptor_modify,
+	.add           = descriptor_change,
+	.modify        = descriptor_change,
 	.rename        = descriptor_rename,
 	.init_context  = descriptor_init
 };

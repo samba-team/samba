@@ -57,7 +57,6 @@ samba4.winbind.struct.*.LOOKUP_NAME_SID   # Not yet working in winbind
 ^samba4.*base.delaywrite.*update of write time using SET_END_OF_FILE$
 ^samba4.*base.delaywrite.*update of write time using SET_ALLOCATION_SIZE$
 ^samba4.ldap.python \(dc\).Test add_ldif\(\) with BASE64 security descriptor input using WRONG domain SID$
-^samba4.ldap.python \(dc\).Testing ldb.add_ldif\(\) for nTSecurityDescriptor
 # some operations don't work over the CIFS NTVFS backend yet (eg. root_fid)
 samba4.ntvfs.cifs.base.createx_access 
 samba4.ntvfs.cifs.base.createx_sharemodes_dir

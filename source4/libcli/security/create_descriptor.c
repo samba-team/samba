@@ -145,10 +145,8 @@ static bool postprocess_acl(struct security_acl *acl,
 	}
 	co = dom_sid_parse_talloc(tmp_ctx,  SID_CREATOR_OWNER);
 	cg = dom_sid_parse_talloc(tmp_ctx,  SID_CREATOR_GROUP);
-	for (i=0; i < acl->num_aces; i++){
+	for (i=0; i < acl->num_aces; i++) {
 		struct security_ace *ace = &acl->aces[i];
-		if (!(ace->flags == 0 || ace->flags & SEC_ACE_FLAG_INHERITED_ACE))
-			continue;
 		if (ace->flags & SEC_ACE_FLAG_INHERIT_ONLY)
 			continue;
 		if (dom_sid_equal(&ace->trustee, co)){
@@ -187,7 +185,7 @@ static struct security_acl *calculate_inherited_from_parent(TALLOC_CTX *mem_ctx,
 	for (i=0; i < acl->num_aces; i++){
 		struct security_ace *ace = &acl->aces[i];
 		if ((ace->flags & SEC_ACE_FLAG_CONTAINER_INHERIT) ||
-		    (ace->flags & SEC_ACE_FLAG_OBJECT_INHERIT)){
+		    (ace->flags & SEC_ACE_FLAG_OBJECT_INHERIT)) {
 			tmp_acl->aces = talloc_realloc(tmp_acl, tmp_acl->aces, struct security_ace,
 						       tmp_acl->num_aces+1);
 			if (tmp_acl->aces == NULL) {
@@ -212,7 +210,7 @@ static struct security_acl *calculate_inherited_from_parent(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (is_container){
+	if (is_container) {
 		for (i=0; i < acl->num_aces; i++){
 			struct security_ace *ace = &acl->aces[i];
 
@@ -230,13 +228,13 @@ static struct security_acl *calculate_inherited_from_parent(TALLOC_CTX *mem_ctx,
 					return NULL;
 				}
 				inh_acl->aces[inh_acl->num_aces] = *ace;
-				inh_acl->aces[inh_acl->num_aces].flags |= SEC_ACE_FLAG_INHERIT_ONLY;
+				inh_acl->aces[inh_acl->num_aces].flags &= ~SEC_ACE_FLAG_INHERIT_ONLY;
 				inh_acl->aces[inh_acl->num_aces].flags |= SEC_ACE_FLAG_INHERITED_ACE;
 				inh_acl->num_aces++;
 			}
 		}
 	}
-	new_acl = security_acl_concatenate(mem_ctx,tmp_acl, inh_acl);
+	new_acl = security_acl_concatenate(mem_ctx, inh_acl, tmp_acl);
 	if (new_acl)
 		new_acl->revision = acl->revision;
 	talloc_free(tmp_ctx);
@@ -360,6 +358,12 @@ static bool compute_acl(int acl_type,
 						       object_list);
 			if (*new_acl == NULL)
 				goto final;
+			if (acl_type == SEC_DESC_DACL_PRESENT && new_sd->dacl)
+				new_sd->type |= SEC_DESC_DACL_AUTO_INHERITED;
+
+			if (acl_type == SEC_DESC_SACL_PRESENT && new_sd->sacl)
+				new_sd->type |= SEC_DESC_SACL_AUTO_INHERITED;
+
 			if (!postprocess_acl(*new_acl, new_sd->owner_sid,
 					     new_sd->group_sid, generic_map))
 				return false;
@@ -370,7 +374,7 @@ static bool compute_acl(int acl_type,
 			}
 		}
 		if (c_acl && !(inherit_flags & SEC_DEFAULT_DESCRIPTOR)){
-			struct security_acl *pr_acl, *tmp_acl, *tpr_acl;
+			struct security_acl *pr_acl = NULL, *tmp_acl = NULL, *tpr_acl = NULL;
 			tpr_acl = preprocess_creator_acl(new_sd, c_acl);
 			tmp_acl = calculate_inherited_from_creator(new_sd,
 						      tpr_acl,
@@ -380,27 +384,26 @@ static bool compute_acl(int acl_type,
 			cr_descr_log_acl(tmp_acl, __location__"Inherited from creator", level);
 			/* Todo some refactoring here! */
 			if (acl_type == SEC_DESC_DACL_PRESENT &&
-			    !(creator_sd->type & SECINFO_PROTECTED_DACL) &&
-			    (inherit_flags & SEC_DACL_AUTO_INHERIT)){
+			    !(creator_sd->type & SEC_DESC_DACL_PROTECTED) &&
+			    (inherit_flags & SEC_DACL_AUTO_INHERIT)) {
 				pr_acl = calculate_inherited_from_parent(new_sd,
 							     p_acl,
 							     is_container,
 							     object_list);
 				cr_descr_log_acl(pr_acl, __location__"Inherited from parent", level);
-				*new_acl = security_acl_concatenate(new_sd, tmp_acl, pr_acl);
 				new_sd->type |= SEC_DESC_DACL_AUTO_INHERITED;
 			}
 			else if (acl_type == SEC_DESC_SACL_PRESENT &&
-			    !(creator_sd->type & SECINFO_PROTECTED_SACL) &&
+			    !(creator_sd->type & SEC_DESC_SACL_PROTECTED) &&
 			    (inherit_flags & SEC_SACL_AUTO_INHERIT)){
 				pr_acl = calculate_inherited_from_parent(new_sd,
 							     p_acl,
 							     is_container,
 							     object_list);
 				cr_descr_log_acl(pr_acl, __location__"Inherited from parent", level);
-				*new_acl = security_acl_concatenate(new_sd, tmp_acl, pr_acl);
 				new_sd->type |= SEC_DESC_SACL_AUTO_INHERITED;
 			}
+			*new_acl = security_acl_concatenate(new_sd, tmp_acl, pr_acl);
 		}
 		if (*new_acl == NULL)
 			goto final;

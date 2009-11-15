@@ -257,6 +257,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	const struct dsdb_schema *schema = dsdb_get_schema(ldb);
 	int i;
+	bool modify_sd = false;
 	const struct GUID *guid;
 	uint32_t access_granted;
 	struct object_tree *root = NULL;
@@ -315,41 +316,65 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 			attr = dsdb_attribute_by_lDAPDisplayName(schema,
 								 req->op.mod.message->elements[i].name);
 		}
+		if (strcmp("nTSecurityDescriptor", req->op.mod.message->elements[i].name) == 0) {
+			modify_sd = true;
+		} else {
 
-		if (!attr) {
-			DEBUG(10, ("acl_modify: cannot find attribute %s\n",
-				   req->op.mod.message->elements[i].name));
-			goto fail;
-		}
-		if (!insert_in_object_tree(tmp_ctx,
-					   &attr->attributeSecurityGUID, SEC_ADS_WRITE_PROP, 
-					   &new_node, &new_node)) {
-			DEBUG(10, ("acl_modify: cannot add to object tree securityGUID\n"));
-			goto fail;
-		}
+			if (!attr) {
+				DEBUG(10, ("acl_modify: cannot find attribute %s\n",
+					   req->op.mod.message->elements[i].name));
+				goto fail;
+			}
+			if (!insert_in_object_tree(tmp_ctx,
+						   &attr->attributeSecurityGUID, SEC_ADS_WRITE_PROP,
+						   &new_node, &new_node)) {
+				DEBUG(10, ("acl_modify: cannot add to object tree securityGUID\n"));
+				goto fail;
+			}
 
-		if (!insert_in_object_tree(tmp_ctx,
-					   &attr->schemaIDGUID, SEC_ADS_WRITE_PROP, &new_node, &new_node)) {
-			DEBUG(10, ("acl_modify: cannot add to object tree attributeGUID\n"));
-			goto fail;
+			if (!insert_in_object_tree(tmp_ctx,
+						   &attr->schemaIDGUID, SEC_ADS_WRITE_PROP, &new_node, &new_node)) {
+				DEBUG(10, ("acl_modify: cannot add to object tree attributeGUID\n"));
+				goto fail;
+			}
 		}
 	}
 
-	status = sec_access_check_ds(sd, acl_user_token(module),
-				     SEC_ADS_WRITE_PROP,
-				     &access_granted,
-				     root);
+	if (root->num_of_children > 0) {
+		status = sec_access_check_ds(sd, acl_user_token(module),
+					     SEC_ADS_WRITE_PROP,
+					     &access_granted,
+					     root);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("Object %s nas no write property access\n",
-			   ldb_dn_get_linearized(req->op.mod.message->dn)));
-		acl_debug(sd,
-			  acl_user_token(module),
-			  req->op.mod.message->dn,
-			  true,
-			  10);
-		talloc_free(tmp_ctx);
-		return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("Object %s nas no write property access\n",
+				  ldb_dn_get_linearized(req->op.mod.message->dn)));
+			acl_debug(sd,
+				  acl_user_token(module),
+				  req->op.mod.message->dn,
+				  true,
+				  10);
+			talloc_free(tmp_ctx);
+			return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
+		}
+	}
+	if (modify_sd) {
+		status = sec_access_check_ds(sd, acl_user_token(module),
+				     SEC_STD_WRITE_DAC,
+				     &access_granted,
+				     NULL);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("Object %s nas no write dacl access\n",
+				   ldb_dn_get_linearized(req->op.mod.message->dn)));
+			acl_debug(sd,
+				  acl_user_token(module),
+				  req->op.mod.message->dn,
+				  true,
+				  10);
+			talloc_free(tmp_ctx);
+			return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
+		}
 	}
 
 	talloc_free(tmp_ctx);
