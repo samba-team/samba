@@ -67,7 +67,7 @@ static NTSTATUS check_path_syntax_internal(char *path,
 			}
 		}
 
-		if (!posix_path && !stream_started && *s == ':') {
+		if ((*s == ':') && !posix_path && !stream_started) {
 			if (*p_last_component_contains_wcard) {
 				return NT_STATUS_OBJECT_NAME_INVALID;
 			}
