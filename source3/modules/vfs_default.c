@@ -1226,21 +1226,17 @@ static NTSTATUS vfswrap_streaminfo(vfs_handle_struct *handle,
 		ret = SMB_VFS_FSTAT(fsp, &sbuf);
 	}
 	else {
-		struct smb_filename *smb_fname = NULL;
-		NTSTATUS status;
+		struct smb_filename smb_fname;
 
-		status = create_synthetic_smb_fname(talloc_tos(), fname, NULL,
-						    NULL, &smb_fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
+		ZERO_STRUCT(smb_fname);
+		smb_fname.base_name = discard_const_p(char, fname);
+
 		if (lp_posix_pathnames()) {
-			ret = SMB_VFS_LSTAT(handle->conn, smb_fname);
+			ret = SMB_VFS_LSTAT(handle->conn, &smb_fname);
 		} else {
-			ret = SMB_VFS_STAT(handle->conn, smb_fname);
+			ret = SMB_VFS_STAT(handle->conn, &smb_fname);
 		}
-		sbuf = smb_fname->st;
-		TALLOC_FREE(smb_fname);
+		sbuf = smb_fname.st;
 	}
 
 	if (ret == -1) {
