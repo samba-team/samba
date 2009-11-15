@@ -783,15 +783,23 @@ static PyObject *py_ldb_delete(PyLdbObject *self, PyObject *args)
 	struct ldb_dn *dn;
 	int ret;
 	struct ldb_context *ldb;
+	TALLOC_CTX *mem_ctx;
 	if (!PyArg_ParseTuple(args, "O", &py_dn))
 		return NULL;
 
-	ldb = PyLdb_AsLdbContext(self);
-
-	if (!PyObject_AsDn(NULL, py_dn, ldb, &dn))
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
 		return NULL;
+	}
+	ldb = PyLdb_AsLdbContext(self);
+	if (!PyObject_AsDn(mem_ctx, py_dn, ldb, &dn)) {
+		talloc_free(mem_ctx);
+		return NULL;
+	}
 
 	ret = ldb_delete(ldb, dn);
+	talloc_free(mem_ctx);
 	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, ldb);
 
 	Py_RETURN_NONE;
