@@ -419,8 +419,7 @@ static bool is_msdfs_link_internal(TALLOC_CTX *ctx,
 #endif
 	size_t bufsize = 0;
 	char *link_target = NULL;
-	struct smb_filename *smb_fname = NULL;
-	NTSTATUS status;
+	struct smb_filename smb_fname;
 
 	if (pp_link_target) {
 		bufsize = 1024;
@@ -434,28 +433,22 @@ static bool is_msdfs_link_internal(TALLOC_CTX *ctx,
 		link_target = link_target_buf;
 	}
 
-	status = create_synthetic_smb_fname(talloc_tos(), path, NULL, NULL,
-					    &smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto err;
-	}
+	ZERO_STRUCT(smb_fname);
+	smb_fname.base_name = discard_const_p(char, path);
 
-	if (SMB_VFS_LSTAT(conn, smb_fname) != 0) {
+	if (SMB_VFS_LSTAT(conn, &smb_fname) != 0) {
 		DEBUG(5,("is_msdfs_link_read_target: %s does not exist.\n",
 			path));
-		TALLOC_FREE(smb_fname);
 		goto err;
 	}
-	if (!S_ISLNK(smb_fname->st.st_ex_mode)) {
+	if (!S_ISLNK(smb_fname.st.st_ex_mode)) {
 		DEBUG(5,("is_msdfs_link_read_target: %s is not a link.\n",
 					path));
-		TALLOC_FREE(smb_fname);
 		goto err;
 	}
 	if (sbufp != NULL) {
-		*sbufp = smb_fname->st;
+		*sbufp = smb_fname.st;
 	}
-	TALLOC_FREE(smb_fname);
 
 	referral_len = SMB_VFS_READLINK(conn, path, link_target, bufsize - 1);
 	if (referral_len == -1) {

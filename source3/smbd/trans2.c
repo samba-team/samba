@@ -2879,9 +2879,8 @@ NTSTATUS smbd_do_qfsinfo(connection_struct *conn,
 	int snum = SNUM(conn);
 	char *fstype = lp_fstype(SNUM(conn));
 	uint32 additional_flags = 0;
-	struct smb_filename *smb_fname_dot = NULL;
+	struct smb_filename smb_fname_dot;
 	SMB_STRUCT_STAT st;
-	NTSTATUS status;
 
 	if (IS_IPC(conn)) {
 		if (info_level != SMB_QUERY_CIFS_UNIX_INFO) {
@@ -2894,20 +2893,15 @@ NTSTATUS smbd_do_qfsinfo(connection_struct *conn,
 
 	DEBUG(3,("smbd_do_qfsinfo: level = %d\n", info_level));
 
-	status = create_synthetic_smb_fname(talloc_tos(), ".", NULL, NULL,
-					    &smb_fname_dot);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	ZERO_STRUCT(smb_fname_dot);
+	smb_fname_dot.base_name = discard_const_p(char, ".");
 
-	if(SMB_VFS_STAT(conn, smb_fname_dot) != 0) {
+	if(SMB_VFS_STAT(conn, &smb_fname_dot) != 0) {
 		DEBUG(2,("stat of . failed (%s)\n", strerror(errno)));
-		TALLOC_FREE(smb_fname_dot);
 		return map_nt_error_from_unix(errno);
 	}
 
-	st = smb_fname_dot->st;
-	TALLOC_FREE(smb_fname_dot);
+	st = smb_fname_dot.st;
 
 	*ppdata = (char *)SMB_REALLOC(
 		*ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
@@ -5392,12 +5386,11 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 			   struct smb_file_time *ft,
 			   bool setting_write_time)
 {
-	struct smb_filename *smb_fname_base = NULL;
+	struct smb_filename smb_fname_base;
 	uint32 action =
 		FILE_NOTIFY_CHANGE_LAST_ACCESS
 		|FILE_NOTIFY_CHANGE_LAST_WRITE
 		|FILE_NOTIFY_CHANGE_CREATION;
-	NTSTATUS status;
 
 	if (!VALID_STAT(smb_fname->st)) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -5469,18 +5462,12 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 	DEBUG(10,("smb_set_file_time: setting utimes to modified values.\n"));
 
 	/* Always call ntimes on the base, even if a stream was passed in. */
-	status = create_synthetic_smb_fname(talloc_tos(), smb_fname->base_name,
-					    NULL, &smb_fname->st,
-					    &smb_fname_base);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	smb_fname_base = *smb_fname;
+	smb_fname_base.stream_name = NULL;
 
-	if(file_ntimes(conn, smb_fname_base, ft)!=0) {
-		TALLOC_FREE(smb_fname_base);
+	if(file_ntimes(conn, &smb_fname_base, ft)!=0) {
 		return map_nt_error_from_unix(errno);
 	}
-	TALLOC_FREE(smb_fname_base);
 
 	notify_fname(conn, NOTIFY_ACTION_MODIFIED, action,
 		     smb_fname->base_name);

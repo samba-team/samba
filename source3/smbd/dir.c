@@ -613,14 +613,13 @@ char *dptr_ReadDirName(TALLOC_CTX *ctx,
 			long *poffset,
 			SMB_STRUCT_STAT *pst)
 {
-	struct smb_filename *smb_fname_base = NULL;
+	struct smb_filename smb_fname_base;
 	char *name = NULL;
 	const char *name_temp = NULL;
 	char *talloced = NULL;
 	char *pathreal = NULL;
 	char *found_name = NULL;
 	int ret;
-	NTSTATUS status;
 
 	SET_STAT_INVALID(*pst);
 
@@ -673,19 +672,14 @@ char *dptr_ReadDirName(TALLOC_CTX *ctx,
 		return NULL;
 
 	/* Create an smb_filename with stream_name == NULL. */
-	status = create_synthetic_smb_fname(ctx, pathreal, NULL, NULL,
-					    &smb_fname_base);
-	if (!NT_STATUS_IS_OK(status)) {
-		return NULL;
-	}
+	ZERO_STRUCT(smb_fname_base);
+	smb_fname_base.base_name = pathreal;
 
-	if (SMB_VFS_STAT(dptr->conn, smb_fname_base) == 0) {
-		*pst = smb_fname_base->st;
-		TALLOC_FREE(smb_fname_base);
+	if (SMB_VFS_STAT(dptr->conn, &smb_fname_base) == 0) {
+		*pst = smb_fname_base.st;
 		name = talloc_strdup(ctx, dptr->wcard);
 		goto clean;
 	} else {
-		TALLOC_FREE(smb_fname_base);
 		/* If we get any other error than ENOENT or ENOTDIR
 		   then the file exists we just can't stat it. */
 		if (errno != ENOENT && errno != ENOTDIR) {
@@ -916,7 +910,7 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 		bool isdots;
 		char *fname = NULL;
 		char *pathreal = NULL;
-		struct smb_filename *smb_fname = NULL;
+		struct smb_filename smb_fname;
 		uint32_t mode = 0;
 		bool ok;
 		NTSTATUS status;
@@ -961,21 +955,15 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 		}
 
 		/* Create smb_fname with NULL stream_name. */
-		status = create_synthetic_smb_fname(ctx, pathreal,
-						    NULL, &sbuf,
-						    &smb_fname);
-		TALLOC_FREE(pathreal);
-		if (!NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(dname);
-			TALLOC_FREE(fname);
-			return false;
-		}
+		ZERO_STRUCT(smb_fname);
+		smb_fname.base_name = pathreal;
+		smb_fname.st = sbuf;
 
-		ok = mode_fn(ctx, private_data, smb_fname, &mode);
+		ok = mode_fn(ctx, private_data, &smb_fname, &mode);
 		if (!ok) {
 			TALLOC_FREE(dname);
 			TALLOC_FREE(fname);
-			TALLOC_FREE(smb_fname);
+			TALLOC_FREE(pathreal);
 			continue;
 		}
 
@@ -984,7 +972,7 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 				fname, (unsigned int)mode, (unsigned int)dirtype));
 			TALLOC_FREE(dname);
 			TALLOC_FREE(fname);
-			TALLOC_FREE(smb_fname);
+			TALLOC_FREE(pathreal);
 			continue;
 		}
 
@@ -993,25 +981,29 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			struct file_id fileid;
 
 			fileid = vfs_file_id_from_sbuf(conn,
-						       &smb_fname->st);
+						       &smb_fname.st);
 			get_file_infos(fileid, NULL, &write_time_ts);
 			if (!null_timespec(write_time_ts)) {
-				update_stat_ex_mtime(&smb_fname->st,
+				update_stat_ex_mtime(&smb_fname.st,
 						     write_time_ts);
 			}
 		}
 
 		DEBUG(3,("smbd_dirptr_get_entry mask=[%s] found %s "
 			"fname=%s (%s)\n",
-			mask, smb_fname_str_dbg(smb_fname),
+			mask, smb_fname_str_dbg(&smb_fname),
 			dname, fname));
 
 		DirCacheAdd(dirptr->dir_hnd, dname, cur_offset);
 
 		TALLOC_FREE(dname);
 
+		status = copy_smb_filename(ctx, &smb_fname, _smb_fname);
+		TALLOC_FREE(pathreal);
+		if (!NT_STATUS_IS_OK(status)) {
+			return false;
+		}
 		*_fname = fname;
-		*_smb_fname = smb_fname;
 		*_mode = mode;
 		*_prev_offset = prev_offset;
 
