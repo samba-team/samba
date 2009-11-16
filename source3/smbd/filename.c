@@ -829,7 +829,8 @@ static int get_real_filename_full_scan(connection_struct *conn,
 				       TALLOC_CTX *mem_ctx, char **found_name)
 {
 	struct smb_Dir *cur_dir;
-	char *dname = NULL;
+	const char *dname = NULL;
+	char *talloced = NULL;
 	char *unmangled_name = NULL;
 	long curpos;
 
@@ -881,11 +882,11 @@ static int get_real_filename_full_scan(connection_struct *conn,
 
 	/* now scan for matching names */
 	curpos = 0;
-	while ((dname = ReadDirName(cur_dir, &curpos, NULL))) {
+	while ((dname = ReadDirName(cur_dir, &curpos, NULL, &talloced))) {
 
 		/* Is it dot or dot dot. */
 		if (ISDOT(dname) || ISDOTDOT(dname)) {
-			TALLOC_FREE(dname);
+			TALLOC_FREE(talloced);
 			continue;
 		}
 
@@ -908,13 +909,13 @@ static int get_real_filename_full_scan(connection_struct *conn,
 			TALLOC_FREE(cur_dir);
 			if (!*found_name) {
 				errno = ENOMEM;
-				TALLOC_FREE(dname);
+				TALLOC_FREE(talloced);
 				return -1;
 			}
-			TALLOC_FREE(dname);
+			TALLOC_FREE(talloced);
 			return 0;
 		}
-		TALLOC_FREE(dname);
+		TALLOC_FREE(talloced);
 	}
 
 	TALLOC_FREE(unmangled_name);

@@ -308,8 +308,10 @@ struct vfs_fn_pointers {
 			      struct lock_struct *plock);
 
 	NTSTATUS (*translate_name)(struct vfs_handle_struct *handle,
-				   char **mapped_name,
-				   enum vfs_translate_direction direction);
+				   const char *name,
+				   enum vfs_translate_direction direction,
+				   TALLOC_CTX *mem_ctx,
+				   char **mapped_name);
 
 	/* NT ACL operations. */
 
@@ -658,8 +660,10 @@ void smb_vfs_call_strict_unlock(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
 				struct lock_struct *plock);
 NTSTATUS smb_vfs_call_translate_name(struct vfs_handle_struct *handle,
-				     char **mapped_name,
-				     enum vfs_translate_direction direction);
+				     const char *name,
+				     enum vfs_translate_direction direction,
+				     TALLOC_CTX *mem_ctx,
+				     char **mapped_name);
 NTSTATUS smb_vfs_call_fget_nt_acl(struct vfs_handle_struct *handle,
 				  struct files_struct *fsp,
 				  uint32 security_info,

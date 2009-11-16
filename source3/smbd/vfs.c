@@ -659,11 +659,13 @@ SMB_OFF_T vfs_transfer_file(files_struct *in, files_struct *out, SMB_OFF_T n)
  A vfs_readdir wrapper which just returns the file name.
 ********************************************************************/
 
-char *vfs_readdirname(connection_struct *conn, void *p, SMB_STRUCT_STAT *sbuf)
+const char *vfs_readdirname(connection_struct *conn, void *p,
+			    SMB_STRUCT_STAT *sbuf, char **talloced)
 {
 	SMB_STRUCT_DIRENT *ptr= NULL;
-	char *dname = NULL;
-	NTSTATUS result;
+	const char *dname;
+	char *translated;
+	NTSTATUS status;
 
 	if (!p)
 		return(NULL);
@@ -672,17 +674,8 @@ char *vfs_readdirname(connection_struct *conn, void *p, SMB_STRUCT_STAT *sbuf)
 	if (!ptr)
 		return(NULL);
 
-	dname = talloc_strdup(talloc_tos(), ptr->d_name);
-	if (dname == NULL) {
-		errno = ENOMEM;
-		return NULL;
-	}
-	result = SMB_VFS_TRANSLATE_NAME(conn, &dname,
-					vfs_translate_to_windows);
-	if (!NT_STATUS_IS_OK(result)) {
-		TALLOC_FREE(dname);
-		return NULL;
-	}
+	dname = ptr->d_name;
+
 
 #ifdef NEXT2
 	if (telldir(p) < 0)
@@ -694,7 +687,17 @@ char *vfs_readdirname(connection_struct *conn, void *p, SMB_STRUCT_STAT *sbuf)
 	dname = dname - 2;
 #endif
 
-	return(dname);
+	status = SMB_VFS_TRANSLATE_NAME(conn, dname, vfs_translate_to_windows,
+					talloc_tos(), &translated);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
+		*talloced = NULL;
+		return dname;
+	}
+	*talloced = translated;
+	if (!NT_STATUS_IS_OK(status)) {
+		return NULL;
+	}
+	return translated;
 }
 
 /*******************************************************************
@@ -1550,11 +1553,14 @@ void smb_vfs_call_strict_unlock(struct vfs_handle_struct *handle,
 }
 
 NTSTATUS smb_vfs_call_translate_name(struct vfs_handle_struct *handle,
-				     char **mapped_name,
-				     enum vfs_translate_direction direction)
+				     const char *name,
+				     enum vfs_translate_direction direction,
+				     TALLOC_CTX *mem_ctx,
+				     char **mapped_name)
 {
 	VFS_FIND(translate_name);
-	return handle->fns->translate_name(handle, mapped_name, direction);
+	return handle->fns->translate_name(handle, name, direction, mem_ctx,
+					   mapped_name);
 }
 
 NTSTATUS smb_vfs_call_fget_nt_acl(struct vfs_handle_struct *handle,
