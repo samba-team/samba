@@ -42,7 +42,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "dsdb/samdb/samdb.h"
 #include "libcli/security/security.h"
-
+#include "dsdb/samdb/ldb_modules/util.h"
 #include <time.h>
 
 struct extended_dn_replace_list {
@@ -275,9 +275,8 @@ static int extended_store_replace(struct extended_dn_context *ac,
 		return ret;
 	}
 
-	ret = ldb_request_add_control(os->search_req,
-				      DSDB_CONTROL_DN_STORAGE_FORMAT_OID,
-				      true, NULL);
+	ret = dsdb_module_search_handle_flags(ac->module, os->search_req, 
+					      DSDB_SEARCH_SHOW_DELETED|DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(os);
 		return ret;

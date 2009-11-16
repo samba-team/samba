@@ -67,8 +67,8 @@ static int naming_fsmo_init(struct ldb_module *module)
 	ldb_module_set_private(module, naming_fsmo);
 
 	ret = dsdb_module_search_dn(module, mem_ctx, &naming_res,
-				    naming_dn, 
-				    naming_attrs);
+				    naming_dn,
+				    naming_attrs, 0);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		ldb_debug(ldb, LDB_DEBUG_WARNING,
 			  "naming_fsmo_init: no partitions dn present: (skip loading of naming contexts details)\n");

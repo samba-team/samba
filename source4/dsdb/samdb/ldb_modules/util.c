@@ -19,8 +19,63 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "includes.h"
 #include "ldb.h"
 #include "ldb_module.h"
+#include "dsdb/samdb/ldb_modules/util.h"
+#include "dsdb/samdb/samdb.h"
+
+int dsdb_module_search_handle_flags(struct ldb_module *module, struct ldb_request *req, int dsdb_flags) 
+{
+	int ret;
+	if (dsdb_flags & DSDB_SEARCH_SEARCH_ALL_PARTITIONS) {
+		struct ldb_search_options_control *options;
+		/* Using the phantom root control allows us to search all partitions */
+		options = talloc(req, struct ldb_search_options_control);
+		if (options == NULL) {
+			ldb_module_oom(module);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		options->search_options = LDB_SEARCH_OPTION_PHANTOM_ROOT;
+		
+		ret = ldb_request_add_control(req,
+					      LDB_CONTROL_SEARCH_OPTIONS_OID,
+					      true, options);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	if (dsdb_flags & DSDB_SEARCH_SHOW_DELETED) {
+		ret = ldb_request_add_control(req, LDB_CONTROL_SHOW_DELETED_OID, true, NULL);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	if (dsdb_flags & DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT) {
+		ret = ldb_request_add_control(req, DSDB_CONTROL_DN_STORAGE_FORMAT_OID, true, NULL);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	if (dsdb_flags & DSDB_SEARCH_SHOW_EXTENDED_DN) {
+		struct ldb_extended_dn_control *extended_ctrl = talloc(req, struct ldb_extended_dn_control);
+		if (!extended_ctrl) {
+			ldb_module_oom(module);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		extended_ctrl->type = 1;
+		
+		ret = ldb_request_add_control(req, LDB_CONTROL_EXTENDED_DN_OID, true, extended_ctrl);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	return LDB_SUCCESS;
+}
 
 /*
   search for attrs on one DN, in the modules below
@@ -29,7 +84,8 @@ int dsdb_module_search_dn(struct ldb_module *module,
 			  TALLOC_CTX *mem_ctx,
 			  struct ldb_result **_res,
 			  struct ldb_dn *basedn,
-			  const char * const *attrs)
+			  const char * const *attrs,
+			  int dsdb_flags)
 {
 	int ret;
 	struct ldb_request *req;
@@ -52,6 +108,12 @@ int dsdb_module_search_dn(struct ldb_module *module,
 				   res,
 				   ldb_search_default_callback,
 				   NULL);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	ret = dsdb_module_search_handle_flags(module, req, dsdb_flags);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -88,6 +150,7 @@ int dsdb_module_search(struct ldb_module *module,
 		       struct ldb_result **_res,
 		       struct ldb_dn *basedn, enum ldb_scope scope, 
 		       const char * const *attrs,
+		       int dsdb_flags, 
 		       const char *expression)
 {
 	int ret;
@@ -111,6 +174,12 @@ int dsdb_module_search(struct ldb_module *module,
 				   res,
 				   ldb_search_default_callback,
 				   NULL);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	ret = dsdb_module_search_handle_flags(module, req, dsdb_flags);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;

@@ -20,3 +20,8 @@
 */
 
 #include "dsdb/samdb/ldb_modules/util_proto.h"
+
+#define DSDB_SEARCH_SEARCH_ALL_PARTITIONS     0x0001
+#define DSDB_SEARCH_SHOW_DELETED              0x0002
+#define DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT 0x0004
+#define DSDB_SEARCH_SHOW_EXTENDED_DN          0x0010
