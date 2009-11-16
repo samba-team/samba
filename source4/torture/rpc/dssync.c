@@ -512,9 +512,18 @@ static bool test_analyse_objects(struct torture_context *tctx,
 		ldap_msg = res->msgs[0];
 		for (j=0; j < ldap_msg->num_elements; j++) {
 			ldap_msg->elements[j].flags = LDB_FLAG_MOD_ADD;
+			/* For unknown reasons, there is no nTSecurityDescriptor on cn=deleted objects over LDAP, but there is over DRS!  Skip it on both transports for now here so */
+			if ((ldb_attr_cmp(ldap_msg->elements[j].name, "nTSecurityDescriptor") == 0) && 
+			    (ldb_dn_compare(ldap_msg->dn, deleted_dn) == 0)) {
+				ldb_msg_remove_element(ldap_msg, &ldap_msg->elements[j]);
+				/* Don't skip one */
+				j--;
+			}
 		}
 
 		drs_msg = ldb_msg_canonicalize(ldb, objs->objects[i].msg);
+		talloc_steal(search_req, drs_msg);
+
 		for (j=0; j < drs_msg->num_elements; j++) {
 			if (drs_msg->elements[j].num_values == 0) {
 				ldb_msg_remove_element(drs_msg, &drs_msg->elements[j]);
@@ -522,8 +531,8 @@ static bool test_analyse_objects(struct torture_context *tctx,
 				j--;
 				
 				/* For unknown reasons, there is no nTSecurityDescriptor on cn=deleted objects over LDAP, but there is over DRS! */
-			} else if (ldb_attr_cmp(drs_msg->elements[j].name, "nTSecurityDescriptor") == 0 && 
-				   ldb_dn_compare(drs_msg->dn, deleted_dn) == 0) {
+			} else if ((ldb_attr_cmp(drs_msg->elements[j].name, "nTSecurityDescriptor") == 0) && 
+				   (ldb_dn_compare(drs_msg->dn, deleted_dn) == 0)) {
 				ldb_msg_remove_element(drs_msg, &drs_msg->elements[j]);
 				/* Don't skip one */
 				j--;
@@ -562,10 +571,13 @@ static bool test_analyse_objects(struct torture_context *tctx,
 			talloc_free(search_req);
 			torture_assert_int_equal(tctx, new_msg->num_elements, 0, "Should have no objects in 'difference' message");
 		}
+
+		/* search_req is used as a tmp talloc context in the above */
 		talloc_free(search_req);
 	}
 
 	if (!lp_parm_bool(tctx->lp_ctx, NULL, "dssync", "print_pwd_blobs", false)) {
+		talloc_free(objs);
 		return true;	
 	}
 
@@ -704,6 +716,7 @@ static bool test_analyse_objects(struct torture_context *tctx,
 			talloc_free(ptr);
 		}
 	}
+	talloc_free(objs);
 	return true;
 }
 

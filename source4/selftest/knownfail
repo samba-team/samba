@@ -19,7 +19,6 @@ rpc.handles.*.mixed-shared
 rpc.epmapper.*.Insert
 rpc.epmapper.*.InqObject
 rpc.dfs.*
-rpc.dssync  # Needs fixes in Samba4's provision to pass
 rpc.drsuapi.*
 rpc.lsalookup
 rpc.cracknames
