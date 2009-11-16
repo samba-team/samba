@@ -25,6 +25,8 @@
 #include "dsdb/samdb/samdb.h"
 #include "lib/ldb/include/ldb_module.h"
 #include "param/param.h"
+#include "librpc/ndr/libndr.h"
+#include "librpc/gen_ndr/ndr_misc.h"
 
 /*
   override the name to attribute handler function
@@ -456,6 +458,47 @@ void dsdb_make_schema_global(struct ldb_context *ldb)
 	dsdb_set_global_schema(ldb);
 }
 
+/* When loading the schema from LDIF files, we don't get the extended DNs. 
+   
+   We need to set these up, so that from the moment we start the provision, the defaultObjectCategory links are set up correctly. 
+ */
+int dsdb_schema_fill_extended_dn(struct ldb_context *ldb, struct dsdb_schema *schema)
+{
+	struct dsdb_class *cur;
+	const struct dsdb_class *target_class;
+	for (cur = schema->classes; cur; cur = cur->next) {
+		enum ndr_err_code ndr_err;
+		const struct ldb_val *rdn;
+		struct ldb_val guid;
+		struct ldb_dn *dn = ldb_dn_new(NULL, ldb, cur->defaultObjectCategory);
+		if (!dn) {
+			return LDB_ERR_INVALID_DN_SYNTAX;
+		}
+		rdn = ldb_dn_get_component_val(dn, 0);
+		if (!rdn) {
+			talloc_free(dn);
+			return LDB_ERR_INVALID_DN_SYNTAX;
+		}
+		target_class = dsdb_class_by_cn_ldb_val(schema, rdn);
+		if (!target_class) {
+			talloc_free(dn);
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
+		
+		ndr_err = ndr_push_struct_blob(&guid, dn, NULL, &target_class->objectGUID,
+					       (ndr_push_flags_fn_t)ndr_push_GUID);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			talloc_free(dn);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		ldb_dn_set_extended_component(dn, "GUID", &guid);
+
+		cur->defaultObjectCategory = ldb_dn_get_extended_linearized(cur, dn, 1);
+		talloc_free(dn);
+	}
+	return LDB_SUCCESS;
+}
+
 /** 
  * Add an element to the schema (attribute or class) from an LDB message
  */
@@ -575,6 +618,12 @@ WERROR dsdb_set_schema_from_ldif(struct ldb_context *ldb, const char *pf, const 
 	}
 
 	ret = dsdb_set_schema(ldb, schema);
+	if (ret != LDB_SUCCESS) {
+		status = WERR_FOOBAR;
+		goto failed;
+	}
+
+	ret = dsdb_schema_fill_extended_dn(ldb, schema);
 	if (ret != LDB_SUCCESS) {
 		status = WERR_FOOBAR;
 		goto failed;
