@@ -183,7 +183,7 @@ Good Examples::
 		int *z = NULL;
 		int ret = 0;
 
-		if ( y < 10 ) {
+		if (y < 10) {
 			z = malloc(sizeof(int)*y);
 			if (!z) {
 				ret = 1;
