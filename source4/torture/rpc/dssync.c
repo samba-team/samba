@@ -377,6 +377,7 @@ static bool test_analyse_objects(struct torture_context *tctx,
 	int i, j, ret;
 	struct dsdb_extended_replicated_objects *objs;
 	struct ldb_extended_dn_control *extended_dn_ctrl;
+	const char *err_msg;
 	
 	if (!dsdb_get_schema(ldb)) {
 		struct dsdb_schema *ldap_schema;
@@ -396,9 +397,10 @@ static bool test_analyse_objects(struct torture_context *tctx,
 				 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
 				 "(objectClass=attributeSchema)");
 		if (ret != LDB_SUCCESS) {
-			DEBUG(0, ("load schema from LDAP for DSSYNC: failed to search attributeSchema objects: %s",
-				  ldb_errstring(ldb)));
-			return false;
+			err_msg = talloc_asprintf(tctx,
+						  "failed to search attributeSchema objects: %s",
+						  ldb_errstring(ldb));
+			torture_fail(tctx, err_msg);
 		}
 
 		/*
@@ -408,37 +410,34 @@ static bool test_analyse_objects(struct torture_context *tctx,
 				 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
 				 "(objectClass=classSchema)");
 		if (ret != LDB_SUCCESS) {
-			DEBUG(0, ("load schema from LDAP for DSSYNC: failed to search classSchema objects: %s", 
-				  ldb_errstring(ldb)));
-			return false;
+			err_msg = talloc_asprintf(tctx,
+						  "failed to search classSchema objects: %s",
+						  ldb_errstring(ldb));
+			torture_fail(tctx, err_msg);
 		}
 
 		/* Build schema */
 		for (i=0; i < a_res->count; i++) {
 			status = dsdb_attribute_from_ldb(ldb, ldap_schema, a_res->msgs[i]);
-			if (!W_ERROR_IS_OK(status)) {
-				DEBUG(0, ("load schema from LDAP for DSSYNC: failed to load attribute definition: %s:%s",
-					  ldb_dn_get_linearized(a_res->msgs[i]->dn),
-					  win_errstr(status)));
-				return false;
-			}
+			torture_assert_werr_ok(tctx, status,
+					       talloc_asprintf(tctx,
+							       "dsdb_attribute_from_ldb() failed for: %s",
+							       ldb_dn_get_linearized(a_res->msgs[i]->dn)));
 		}
 		
 		for (i=0; i < c_res->count; i++) {
 			status = dsdb_class_from_ldb(ldap_schema, c_res->msgs[i]);
-			if (!W_ERROR_IS_OK(status)) {
-				DEBUG(0, ("load scheam from LDAP for DSSYNC: failed to load class definition: %s:%s",
-								ldb_dn_get_linearized(c_res->msgs[i]->dn),
-					  win_errstr(status)));
-				return false;
-			}
+			torture_assert_werr_ok(tctx, status,
+					       talloc_asprintf(tctx,
+							       "dsdb_class_from_ldb() failed for: %s",
+							       ldb_dn_get_linearized(c_res->msgs[i]->dn)));
 		}
 		talloc_free(a_res);
 		talloc_free(c_res);
 		ret = dsdb_set_schema(ldb, ldap_schema);
 		if (ret != LDB_SUCCESS) {
-			DEBUG(0, ("load schema from LDAP for DSSYNC: failed to set schema: %s\n", ldb_strerror(ret)));
-			return false;
+			torture_fail(tctx,
+				     talloc_asprintf(tctx, "dsdb_set_schema() failed: %s", ldb_strerror(ret)));
 		}
 	}
 
@@ -451,11 +450,7 @@ static bool test_analyse_objects(struct torture_context *tctx,
 							  NULL, NULL, 
 							  gensec_skey,
 							  ctx, &objs);
-	if (!W_ERROR_IS_OK(status)) {
-		DEBUG(0, ("load scheam from LDAP for DSSYNC: failed to parse objects: %s",
-			  win_errstr(status)));
-		return false;
-	}
+	torture_assert_werr_ok(tctx, status, "dsdb_extended_replicated_objects_convert() failed!");
 
 	extended_dn_ctrl = talloc(objs, struct ldb_extended_dn_control);
 	extended_dn_ctrl->type = 1;
@@ -504,10 +499,10 @@ static bool test_analyse_objects(struct torture_context *tctx,
 			ret = ldb_wait(search_req->handle, LDB_WAIT_ALL);
 		}
 
-		if (ret != LDB_SUCCESS) {
-			DEBUG(0, ("Could not re-fetch object just delivered over DRS: %s", ldb_errstring(ldb)));
-			torture_assert_int_equal(tctx, ret, LDB_SUCCESS, "Could not re-fetch object just delivered over DRS");
-		}
+		torture_assert_int_equal(tctx, ret, LDB_SUCCESS,
+					 talloc_asprintf(tctx,
+							 "Could not re-fetch object just delivered over DRS: %s",
+							 ldb_errstring(ldb)));
 		torture_assert_int_equal(tctx, res->count, 1, "Could not re-fetch object just delivered over DRS");
 		ldap_msg = res->msgs[0];
 		for (j=0; j < ldap_msg->num_elements; j++) {
@@ -563,13 +558,14 @@ static bool test_analyse_objects(struct torture_context *tctx,
 		if (new_msg->num_elements != 0) {
 			char *s;
 			struct ldb_ldif ldif;
-			fprintf(stdout, "#\n");
 			ldif.changetype = LDB_CHANGETYPE_MODIFY;
 			ldif.msg = new_msg;
 			s = ldb_ldif_write_string(ldb, new_msg, &ldif);
-			DEBUG(0, ("Difference in between DRS and LDAP objects: %s\n", s));
-			talloc_free(search_req);
-			torture_assert_int_equal(tctx, new_msg->num_elements, 0, "Should have no objects in 'difference' message");
+			s = talloc_asprintf(tctx, "\n# Difference in between DRS and LDAP objects: %s\n", s);
+			s = talloc_asprintf_append(s,
+						   "# Should have no objects in 'difference' message. Diff elements: %d",
+						   new_msg->num_elements);
+			torture_fail(tctx, s);
 		}
 
 		/* search_req is used as a tmp talloc context in the above */
@@ -863,15 +859,19 @@ static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 			r.out.ctr	= &ctr;
 
 			if (r.in.level == 5) {
-				DEBUG(0,("start[%d] tmp_higest_usn: %llu , highest_usn: %llu\n",y,
-					(long long)r.in.req->req5.highwatermark.tmp_highest_usn,
-					(long long)r.in.req->req5.highwatermark.highest_usn));
+				torture_comment(tctx,
+						"start[%d] tmp_higest_usn: %llu , highest_usn: %llu\n",
+						y,
+						r.in.req->req5.highwatermark.tmp_highest_usn,
+						r.in.req->req5.highwatermark.highest_usn);
 			}
 
 			if (r.in.level == 8) {
-				DEBUG(0,("start[%d] tmp_higest_usn: %llu , highest_usn: %llu\n",y,
-					(long long)r.in.req->req8.highwatermark.tmp_highest_usn,
-					(long long)r.in.req->req8.highwatermark.highest_usn));
+				torture_comment(tctx,
+						"start[%d] tmp_higest_usn: %llu , highest_usn: %llu\n",
+						y,
+						r.in.req->req8.highwatermark.tmp_highest_usn,
+						r.in.req->req8.highwatermark.highest_usn);
 			}
 
 			status = dcerpc_drsuapi_DsGetNCChanges(ctx->new_dc.drsuapi.drs_pipe, ctx, &r);
@@ -888,9 +888,11 @@ static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 			}
 
 			if (out_level == 1) {
-				DEBUG(0,("end[%d] tmp_highest_usn: %llu , highest_usn: %llu\n",y,
-					(long long)ctr1->new_highwatermark.tmp_highest_usn,
-					(long long)ctr1->new_highwatermark.highest_usn));
+				torture_comment(tctx,
+						"end[%d] tmp_highest_usn: %llu , highest_usn: %llu\n",
+						y,
+						ctr1->new_highwatermark.tmp_highest_usn,
+						ctr1->new_highwatermark.highest_usn);
 
 				if (!test_analyse_objects(tctx, ctx, partition, &ctr1->mapping_ctr,  ctr1->object_count, 
 							  ctr1->first_object, &gensec_skey)) {
@@ -921,9 +923,11 @@ static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 			}
 
 			if (out_level == 6) {
-				DEBUG(0,("end[%d] tmp_highest_usn: %llu , highest_usn: %llu\n",y,
-					(long long)ctr6->new_highwatermark.tmp_highest_usn,
-					(long long)ctr6->new_highwatermark.highest_usn));
+				torture_comment(tctx,
+						"end[%d] tmp_highest_usn: %llu , highest_usn: %llu\n",
+						y,
+						ctr6->new_highwatermark.tmp_highest_usn,
+						ctr6->new_highwatermark.highest_usn);
 
 				if (!test_analyse_objects(tctx, ctx, partition, &ctr6->mapping_ctr,  ctr6->object_count, 
 							  ctr6->first_object, &gensec_skey)) {
