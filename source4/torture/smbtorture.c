@@ -548,6 +548,7 @@ int main(int argc,char *argv[])
 		    "true");
 		lp_set_cmdline(cmdline_lp_ctx, "torture:deny_dos_support", "false");
 		lp_set_cmdline(cmdline_lp_ctx, "torture:deny_fcb_support", "false");
+		lp_set_cmdline(cmdline_lp_ctx, "torture:read_support", "false");
 	}
 
 	if (max_runtime) {

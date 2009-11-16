@@ -94,13 +94,18 @@ static bool test_read(struct torture_context *tctx, struct smbcli_state *cli)
 
 	buf = talloc_zero_array(tctx, uint8_t, maxsize);
 
+	if (!torture_setting_bool(tctx, "read_support", true)) {
+		printf("server refuses to support READ\n");
+		return true;
+	}
+
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
 	}
 
 	printf("Testing RAW_READ_READ\n");
 	io.generic.level = RAW_READ_READ;
-	
+
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
 		printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
@@ -478,7 +483,29 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 	smbcli_write(cli->tree, fnum, 0, buf, 0, maxsize);
 	memset(buf, 0, maxsize);
 
-	printf("Trying large read\n");
+	printf("Trying page sized read\n");
+	io.readx.in.offset = 0;
+	io.readx.in.mincnt = 0x1000;
+	io.readx.in.maxcnt = 0x1000;
+	status = smb_raw_read(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(io.readx.out.remaining, 0xFFFF);
+	CHECK_VALUE(io.readx.out.compaction_mode, 0);
+	CHECK_VALUE(io.readx.out.nread, io.readx.in.maxcnt);
+	CHECK_BUFFER(buf, seed, io.readx.out.nread);
+
+	printf("Trying page + 1 sized read (check alignment)\n");
+	io.readx.in.offset = 0;
+	io.readx.in.mincnt = 0x1001;
+	io.readx.in.maxcnt = 0x1001;
+	status = smb_raw_read(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(io.readx.out.remaining, 0xFFFF);
+	CHECK_VALUE(io.readx.out.compaction_mode, 0);
+	CHECK_VALUE(io.readx.out.nread, io.readx.in.maxcnt);
+	CHECK_BUFFER(buf, seed, io.readx.out.nread);
+
+	printf("Trying large read (UINT16_MAX)\n");
 	io.readx.in.offset = 0;
 	io.readx.in.mincnt = 0xFFFF;
 	io.readx.in.maxcnt = 0xFFFF;
