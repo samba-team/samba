@@ -7,6 +7,7 @@
 
 import re
 import base64
+import uuid
 
 bitFields = {}
 
@@ -227,6 +228,7 @@ def __transform_entry(entry, objectClass):
     entry.insert(0, ["dn", "CN=%s,${SCHEMADN}" % cn])
     entry.insert(1, ["objectClass", ["top", objectClass]])
     entry.insert(2, ["cn", cn])
+    entry.insert(2, ["objectGUID", str(uuid.uuid4())])
     
     for l in entry:
         key = l[0].lower()
