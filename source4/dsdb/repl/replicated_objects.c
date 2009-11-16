@@ -153,10 +153,7 @@ static WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 		struct ldb_message_element *el;
 		el = ldb_msg_find_element(msg, rdn_attr->lDAPDisplayName);
 		if (!el) {
-			/* we assume that the RDN has prefix "CN" */
-			ret = ldb_msg_add_string(msg, rdn_attr->lDAPDisplayName,
-				samdb_cn_to_lDAPDisplayName(mem_ctx,
-					(const char *) rdn_value->data));
+			ret = ldb_msg_add_value(msg, rdn_attr->lDAPDisplayName, rdn_value, NULL);
 			if (ret != LDB_SUCCESS) {
 				return WERR_FOOBAR;
 			}
