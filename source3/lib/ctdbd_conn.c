@@ -104,6 +104,59 @@ static NTSTATUS get_cluster_vnn(struct ctdbd_connection *conn, uint32 *vnn)
 	return status;
 }
 
+/*
+ * Are we active (i.e. not banned or stopped?)
+ */
+static bool ctdbd_working(struct ctdbd_connection *conn, uint32_t vnn)
+{
+	int32_t cstatus=-1;
+	NTSTATUS status;
+	TDB_DATA outdata;
+	struct ctdb_node_map *m;
+	uint32_t failure_flags;
+	bool ret = false;
+	int i;
+
+	status = ctdbd_control(conn, CTDB_CURRENT_NODE,
+			       CTDB_CONTROL_GET_NODEMAP, 0, 0,
+			       tdb_null, talloc_tos(), &outdata, &cstatus);
+	if (!NT_STATUS_IS_OK(status)) {
+		cluster_fatal("ctdbd_control failed\n");
+	}
+	if ((cstatus != 0) || (outdata.dptr == NULL)) {
+		DEBUG(2, ("Received invalid ctdb data\n"));
+		return false;
+	}
+
+	m = (struct ctdb_node_map *)outdata.dptr;
+
+	for (i=0; i<m->num; i++) {
+		if (vnn == m->nodes[i].pnn) {
+			break;
+		}
+	}
+
+	if (i == m->num) {
+		DEBUG(2, ("Did not find ourselves (node %d) in nodemap\n",
+			  (int)vnn));
+		goto fail;
+	}
+
+	failure_flags = NODE_FLAGS_BANNED | NODE_FLAGS_DISCONNECTED
+		| NODE_FLAGS_PERMANENTLY_DISABLED | NODE_FLAGS_STOPPED;
+
+	if ((m->nodes[i].flags & failure_flags) != 0) {
+		DEBUG(2, ("Node has status %x, not active\n",
+			  (int)m->nodes[i].flags));
+		goto fail;
+	}
+
+	ret = true;
+fail:
+	TALLOC_FREE(outdata.dptr);
+	return ret;;
+}
+
 uint32 ctdbd_vnn(const struct ctdbd_connection *conn)
 {
 	return conn->our_vnn;
@@ -455,6 +508,11 @@ static NTSTATUS ctdbd_init_connection(TALLOC_CTX *mem_ctx,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("get_cluster_vnn failed: %s\n", nt_errstr(status)));
+		goto fail;
+	}
+
+	if (!ctdbd_working(conn, conn->our_vnn)) {
+		DEBUG(2, ("Node is not working, can not connect\n"));
 		goto fail;
 	}
 
