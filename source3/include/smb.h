@@ -461,6 +461,14 @@ typedef struct files_struct {
 
 	struct files_struct *base_fsp; /* placeholder for delete on close */
 
+	/*
+	 * Read-only cached brlock record, thrown away when the
+	 * brlock.tdb seqnum changes. This avoids fetching data from
+	 * the brlock.tdb on every read/write call.
+	 */
+	int brlock_seqnum;
+	struct byte_range_lock *brlock_rec;
+
 	struct dptr_struct *dptr;
 } files_struct;
 
