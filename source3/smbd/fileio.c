@@ -982,17 +982,15 @@ NTSTATUS sync_file(connection_struct *conn, files_struct *fsp, bool write_throug
  Perform a stat whether a valid fd or not.
 ************************************************************/
 
-int fsp_stat(files_struct *fsp, SMB_STRUCT_STAT *pst)
+int fsp_stat(files_struct *fsp)
 {
 	if (fsp->fh->fd == -1) {
-		int ret;
-
-		ret = SMB_VFS_STAT(fsp->conn, fsp->fsp_name);
-		if (ret != -1) {
-			*pst = fsp->fsp_name->st;
+		if (fsp->posix_open) {
+			return SMB_VFS_LSTAT(fsp->conn, fsp->fsp_name);
+		} else {
+			return SMB_VFS_STAT(fsp->conn, fsp->fsp_name);
 		}
-		return ret;
 	} else {
-		return SMB_VFS_FSTAT(fsp, pst);
+		return SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st);
 	}
 }
