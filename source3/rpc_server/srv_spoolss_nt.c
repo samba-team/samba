@@ -1826,177 +1826,6 @@ static bool convert_printer_info(struct spoolss_SetPrinterInfoCtr *info_ctr,
 	return false;
 }
 
-/*******************************************************************
-********************************************************************/
-
-static bool string_array_to_fstring_array(const char **sarray, fstring **farray)
-{
-	int i;
-
-	if (!sarray) {
-		*farray = NULL;
-		return true;
-	}
-
-	*farray = SMB_MALLOC_ARRAY(fstring, 1);
-	if (!*farray) {
-		return false;
-	}
-
-	for (i=0; sarray[i] != NULL; i++) {
-		*farray = SMB_REALLOC_ARRAY(*farray, fstring, i+2);
-		if (!*farray) {
-			return false;
-		}
-		fstrcpy((*farray)[i], sarray[i]);
-	}
-
-	fstrcpy((*farray)[i], "");
-
-	return true;
-}
-
-/*******************************************************************
-********************************************************************/
-
-static bool driver_info3_to_nt_driver_info3(struct spoolss_AddDriverInfo3 *r,
-					    NT_PRINTER_DRIVER_INFO_LEVEL_3 **p)
-{
-	NT_PRINTER_DRIVER_INFO_LEVEL_3 *d;
-
-	DEBUG(7,("driver_info3_to_nt_driver_info3: Converting from UNICODE to ASCII\n"));
-
-	if (*p == NULL) {
-		*p = SMB_MALLOC_P(NT_PRINTER_DRIVER_INFO_LEVEL_3);
-		if (*p == NULL) {
-			return false;
-		}
-		ZERO_STRUCTP(*p);
-	}
-
-	d = *p;
-
-	d->cversion =			r->version;
-
-	fstrcpy(d->name,		r->driver_name);
-	fstrcpy(d->environment,		r->architecture);
-	fstrcpy(d->driverpath,		r->driver_path);
-	fstrcpy(d->datafile,		r->data_file);
-	fstrcpy(d->configfile,		r->config_file);
-	fstrcpy(d->helpfile,		r->help_file);
-	fstrcpy(d->monitorname,		r->monitor_name);
-	fstrcpy(d->defaultdatatype,	r->default_datatype);
-
-	DEBUGADD(8,( "version:         %d\n", d->cversion));
-	DEBUGADD(8,( "name:            %s\n", d->name));
-	DEBUGADD(8,( "environment:     %s\n", d->environment));
-	DEBUGADD(8,( "driverpath:      %s\n", d->driverpath));
-	DEBUGADD(8,( "datafile:        %s\n", d->datafile));
-	DEBUGADD(8,( "configfile:      %s\n", d->configfile));
-	DEBUGADD(8,( "helpfile:        %s\n", d->helpfile));
-	DEBUGADD(8,( "monitorname:     %s\n", d->monitorname));
-	DEBUGADD(8,( "defaultdatatype: %s\n", d->defaultdatatype));
-
-	if (r->dependent_files) {
-		if (!string_array_to_fstring_array(r->dependent_files->string,
-						   &d->dependentfiles)) {
-			SAFE_FREE(*p);
-			return false;
-		}
-	}
-
-	return true;
-}
-
-/*******************************************************************
-********************************************************************/
-
-static bool driver_info6_to_nt_driver_info6(struct spoolss_AddDriverInfo6 *r,
-					    NT_PRINTER_DRIVER_INFO_LEVEL_6 **p)
-{
-	NT_PRINTER_DRIVER_INFO_LEVEL_6 *d;
-
-	DEBUG(7,("driver_info6_to_nt_driver_info6: Converting from UNICODE to ASCII\n"));
-
-	if (*p == NULL) {
-		*p = SMB_MALLOC_P(NT_PRINTER_DRIVER_INFO_LEVEL_6);
-		if (*p == NULL) {
-			return false;
-		}
-		ZERO_STRUCTP(*p);
-	}
-
-	d = *p;
-
-	d->version =			r->version;
-
-	fstrcpy(d->name,		r->driver_name);
-	fstrcpy(d->environment,		r->architecture);
-	fstrcpy(d->driverpath,		r->driver_path);
-	fstrcpy(d->datafile,		r->data_file);
-	fstrcpy(d->configfile,		r->config_file);
-	fstrcpy(d->helpfile,		r->help_file);
-	fstrcpy(d->monitorname,		r->monitor_name);
-	fstrcpy(d->defaultdatatype,	r->default_datatype);
-
-	DEBUGADD(8,( "version:         %d\n", d->version));
-	DEBUGADD(8,( "name:            %s\n", d->name));
-	DEBUGADD(8,( "environment:     %s\n", d->environment));
-	DEBUGADD(8,( "driverpath:      %s\n", d->driverpath));
-	DEBUGADD(8,( "datafile:        %s\n", d->datafile));
-	DEBUGADD(8,( "configfile:      %s\n", d->configfile));
-	DEBUGADD(8,( "helpfile:        %s\n", d->helpfile));
-	DEBUGADD(8,( "monitorname:     %s\n", d->monitorname));
-	DEBUGADD(8,( "defaultdatatype: %s\n", d->defaultdatatype));
-
-	if (r->dependent_files) {
-		if (!string_array_to_fstring_array(r->dependent_files->string,
-						   &d->dependentfiles)) {
-			goto error;
-		}
-	}
-
-	if (r->previous_names) {
-		if (!string_array_to_fstring_array(r->previous_names->string,
-						   &d->previousnames)) {
-			goto error;
-		}
-	}
-
-	return true;
-
- error:
-	SAFE_FREE(*p);
-	return false;
-}
-
-/********************************************************************
- ********************************************************************/
-
-static bool convert_printer_driver_info(const struct spoolss_AddDriverInfoCtr *r,
-					NT_PRINTER_DRIVER_INFO_LEVEL *printer,
-					uint32_t level)
-{
-	switch (level) {
-	case 3:
-		printer->info_3 = NULL;
-		if (!driver_info3_to_nt_driver_info3(r->info.info3, &printer->info_3)) {
-			return false;
-		}
-		break;
-	case 6:
-		printer->info_6 = NULL;
-		if (!driver_info6_to_nt_driver_info6(r->info.info6, &printer->info_6)) {
-			return false;
-		}
-		break;
-	default:
-		return false;
-	}
-
-	return true;
-}
-
 /****************************************************************
  _spoolss_ClosePrinter
 ****************************************************************/
@@ -7694,11 +7523,8 @@ WERROR _spoolss_AddPrinter(pipes_struct *p,
 WERROR _spoolss_AddPrinterDriver(pipes_struct *p,
 				 struct spoolss_AddPrinterDriver *r)
 {
-	uint32_t level = r->in.info_ctr->level;
-	struct spoolss_AddDriverInfoCtr *info = r->in.info_ctr;
 	WERROR err = WERR_OK;
-	NT_PRINTER_DRIVER_INFO_LEVEL driver;
-	const char *driver_name = NULL;
+	char *driver_name = NULL;
 	uint32_t version;
 	const char *fn;
 
@@ -7715,45 +7541,30 @@ WERROR _spoolss_AddPrinterDriver(pipes_struct *p,
 
 
 	/* FIXME */
-	if (level != 3 && level != 6) {
+	if (r->in.info_ctr->level != 3 && r->in.info_ctr->level != 6) {
 		/* Clever hack from Martin Zielinski <mz@seh.de>
 		 * to allow downgrade from level 8 (Vista).
 		 */
-		DEBUG(0,("%s: level %d not yet implemented\n", fn, level));
+		DEBUG(0,("%s: level %d not yet implemented\n", fn,
+			r->in.info_ctr->level));
 		return WERR_UNKNOWN_LEVEL;
 	}
 
-	ZERO_STRUCT(driver);
-
-	if (!convert_printer_driver_info(info, &driver, level)) {
-		err = WERR_NOMEM;
-		goto done;
-	}
-
 	DEBUG(5,("Cleaning driver's information\n"));
-	err = clean_up_driver_struct(p, driver, level);
+	err = clean_up_driver_struct(p, r->in.info_ctr);
 	if (!W_ERROR_IS_OK(err))
 		goto done;
 
 	DEBUG(5,("Moving driver to final destination\n"));
-	if( !W_ERROR_IS_OK(err = move_driver_to_download_area(p, driver, level,
+	if( !W_ERROR_IS_OK(err = move_driver_to_download_area(p, r->in.info_ctr,
 							      &err)) ) {
 		goto done;
 	}
 
-	if (add_a_printer_driver(driver, level)!=0) {
+	if (add_a_printer_driver(p->mem_ctx, r->in.info_ctr, &driver_name, &version)!=0) {
 		err = WERR_ACCESS_DENIED;
 		goto done;
 	}
-
-        switch(level) {
-	case 3:
-		driver_name = driver.info_3->name ? driver.info_3->name : "";
-		break;
-	case 6:
-		driver_name = driver.info_6->name ? driver.info_6->name : "";
-		break;
-        }
 
 	/*
 	 * I think this is where he DrvUpgradePrinter() hook would be
@@ -7777,12 +7588,7 @@ WERROR _spoolss_AddPrinterDriver(pipes_struct *p,
 	 * It is necessary to follow the driver install by an initialization step to
 	 * finish off this process.
 	*/
-	if (level == 3)
-		version = driver.info_3->cversion;
-	else if (level == 6)
-		version = driver.info_6->version;
-	else
-		version = -1;
+
 	switch (version) {
 		/*
 		 * 9x printer driver - never delete init data
@@ -7828,13 +7634,13 @@ WERROR _spoolss_AddPrinterDriver(pipes_struct *p,
 			break;
 
 		default:
-			DEBUG(0,("%s: invalid level=%d\n", fn, level));
+			DEBUG(0,("%s: invalid level=%d\n", fn,
+				r->in.info_ctr->level));
 			break;
  	}
 
 
 done:
-	free_a_printer_driver(driver, level);
 	return err;
 }
 
