@@ -207,7 +207,7 @@ static int samldb_get_parent_domain_callback(struct ldb_request *req,
 			/* one too many! */
 			ldb_set_errstring(ldb,
 				"Invalid number of results while searching "
-				"for domain object!");
+				"for domain object!\n");
 			ret = LDB_ERR_OPERATIONS_ERROR;
 			break;
 		}
@@ -284,7 +284,7 @@ static int samldb_get_parent_domain(struct samldb_ctx *ac)
 	dn = ldb_dn_get_parent(ac, ac->check_dn);
 	if (dn == NULL) {
 		ldb_set_errstring(ldb,
-			"Unable to find parent domain object!");
+			"Unable to find parent domain object!\n");
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
@@ -427,7 +427,7 @@ static int samldb_check_samAccountType(struct samldb_ctx *ac)
 		uac = samdb_result_uint(ac->msg, "userAccountControl", 0);
 		if (uac == 0) {
 			ldb_asprintf_errstring(ldb,
-				"userAccountControl invalid!");
+				"userAccountControl invalid!\n");
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		} else {
 			account_type = ds_uf2atype(uac);
@@ -445,7 +445,7 @@ static int samldb_check_samAccountType(struct samldb_ctx *ac)
 		group_type = samdb_result_uint(ac->msg, "groupType", 0);
 		if (group_type == 0) {
 			ldb_asprintf_errstring(ldb,
-				"groupType invalid!");
+				"groupType invalid!\n");
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		} else {
 			account_type = ds_gtype2atype(group_type);
@@ -494,7 +494,7 @@ static int samldb_get_sid_domain_callback(struct ldb_request *req,
 			/* one too many! */
 			ldb_set_errstring(ldb,
 				"Invalid number of results while searching "
-				"for domain object!");
+				"for domain object!\n");
 			ret = LDB_ERR_OPERATIONS_ERROR;
 			break;
 		}
@@ -549,7 +549,7 @@ done:
 static int samldb_get_sid_domain(struct samldb_ctx *ac)
 {
 	struct ldb_context *ldb;
-	static const char * const attrs[2] = { "nextRid", NULL };
+	static const char * const attrs[] = { "nextRid", NULL };
 	struct ldb_request *req;
 	char *filter;
 	int ret;
@@ -624,7 +624,7 @@ static int samldb_dn_from_sid_callback(struct ldb_request *req,
 			/* one too many! */
 			ldb_set_errstring(ldb,
 				"Invalid number of results while searching "
-				"for domain objects!");
+				"for domain objects!\n");
 			ret = LDB_ERR_OPERATIONS_ERROR;
 			break;
 		}
@@ -711,7 +711,7 @@ static int samldb_check_primaryGroupID_2(struct samldb_ctx *ac)
 		struct ldb_context *ldb;
 		ldb = ldb_module_get_ctx(ac->module);
 		ldb_asprintf_errstring(ldb,
-				       "Failed to find group sid %s", 
+				       "Failed to find group sid %s!\n", 
 				       dom_sid_string(ac->sid, ac->sid));
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
@@ -1312,7 +1312,7 @@ static int samldb_foreign_notice_sid_callback(struct ldb_request *req,
 			/* one too many! */
 			ldb_set_errstring(ldb,
 				"Invalid number of results while searching "
-				"for domain object!");
+				"for domain object!\n");
 			ret = LDB_ERR_OPERATIONS_ERROR;
 			break;
 		}
@@ -1430,7 +1430,7 @@ static int samldb_fill_foreignSecurityPrincipal_object(struct samldb_ctx *ac)
 		if (!ac->sid) {
 			ldb_set_errstring(ldb,
 					"No valid SID found in "
-					"ForeignSecurityPrincipal CN!");
+					"ForeignSecurityPrincipal CN!\n");
 			talloc_free(ac);
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
@@ -1501,7 +1501,7 @@ static int samldb_sid_from_dn_callback(struct ldb_request *req,
 			/* one too many! */
 			ldb_set_errstring(ldb,
 				"Invalid number of results while searching "
-				"for domain objects!");
+				"for domain objects!\n");
 			ret = LDB_ERR_OPERATIONS_ERROR;
 			break;
 		}
@@ -1538,7 +1538,7 @@ done:
 static int samldb_sid_from_dn(struct samldb_ctx *ac)
 {
 	struct ldb_context *ldb;
-	static const char * const attrs[] = { "objectSid" };
+	static const char * const attrs[] = { "objectSid", NULL };
 	struct ldb_request *req;
 	int ret;
 
@@ -1592,7 +1592,7 @@ static int samldb_user_dn_to_prim_group_rid_callback(struct ldb_request *req,
 			/* one too many! */
 			ldb_set_errstring(ldb,
 				"Invalid number of results while searching "
-				"for domain objects!");
+				"for domain objects!\n");
 			ret = LDB_ERR_OPERATIONS_ERROR;
 			break;
 		}
@@ -2254,7 +2254,7 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 
 	if (ldb_msg_find_element(req->op.mod.message, "sAMAccountType") != NULL) {
 		ldb_asprintf_errstring(ldb,
-			"sAMAccountType must not be specified!");
+			"sAMAccountType must not be specified!\n");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
