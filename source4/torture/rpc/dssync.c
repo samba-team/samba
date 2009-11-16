@@ -1016,30 +1016,74 @@ static bool test_FetchNT4Data(struct torture_context *tctx,
 	return true;
 }
 
-bool torture_rpc_dssync(struct torture_context *torture)
+/**
+ * DSSYNC test case setup
+ */
+static bool torture_dssync_tcase_setup(struct torture_context *tctx, void **data)
 {
-	bool ret = true;
-	TALLOC_CTX *mem_ctx;
+	bool bret;
 	struct DsSyncTest *ctx;
-	
-	mem_ctx = talloc_init("torture_rpc_dssync");
-	ctx = test_create_context(torture);
-	
-	ret &= _test_DsBind(torture, ctx, ctx->admin.credentials, &ctx->admin.drsuapi);
-	if (!ret) {
-		return ret;
-	}
-	ret &= test_LDAPBind(torture, ctx, ctx->admin.credentials, &ctx->admin.ldap);
-	if (!ret) {
-		return ret;
-	}
-	ret &= test_GetInfo(torture, ctx);
-	ret &= _test_DsBind(torture, ctx, ctx->new_dc.credentials, &ctx->new_dc.drsuapi);
-	if (!ret) {
-		return ret;
-	}
-	ret &= test_FetchData(torture, ctx);
-	ret &= test_FetchNT4Data(torture, ctx);
 
-	return ret;
+	*data = ctx = test_create_context(tctx);
+	torture_assert(tctx, ctx, "test_create_context() failed");
+
+	bret = _test_DsBind(tctx, ctx, ctx->admin.credentials, &ctx->admin.drsuapi);
+	torture_assert(tctx, bret, "_test_DsBind() failed");
+
+	bret = test_LDAPBind(tctx, ctx, ctx->admin.credentials, &ctx->admin.ldap);
+	torture_assert(tctx, bret, "test_LDAPBind() failed");
+
+	bret = test_GetInfo(tctx, ctx);
+	torture_assert(tctx, bret, "test_GetInfo() failed");
+
+	bret = _test_DsBind(tctx, ctx, ctx->new_dc.credentials, &ctx->new_dc.drsuapi);
+	torture_assert(tctx, bret, "_test_DsBind() failed");
+
+	return true;
 }
+
+/**
+ * DSSYNC test case cleanup
+ */
+static bool torture_dssync_tcase_teardown(struct torture_context *tctx, void *data)
+{
+	struct DsSyncTest *ctx;
+	struct drsuapi_DsUnbind r;
+	struct policy_handle bind_handle;
+
+	ctx = talloc_get_type(data, struct DsSyncTest);
+
+	ZERO_STRUCT(r);
+	r.out.bind_handle = &bind_handle;
+
+	/* Unbing admin handle */
+	r.in.bind_handle = &ctx->admin.drsuapi.bind_handle;
+	dcerpc_drsuapi_DsUnbind(ctx->admin.drsuapi.drs_pipe, ctx, &r);
+
+	/* Unbing new_dc handle */
+	r.in.bind_handle = &ctx->new_dc.drsuapi.bind_handle;
+	dcerpc_drsuapi_DsUnbind(ctx->new_dc.drsuapi.drs_pipe, ctx, &r);
+
+	talloc_free(ctx);
+
+	return true;
+}
+
+/**
+ * DSSYNC test case implementation
+ */
+void torture_drs_rpc_dssync_tcase(struct torture_suite *suite)
+{
+	typedef bool (*run_func) (struct torture_context *test, void *tcase_data);
+
+	struct torture_test *test;
+	struct torture_tcase *tcase = torture_suite_add_tcase(suite, "DSSYNC");
+
+	torture_tcase_set_fixture(tcase,
+				  torture_dssync_tcase_setup,
+				  torture_dssync_tcase_teardown);
+
+	test = torture_tcase_add_simple_test(tcase, "DC_FetchData", (run_func)test_FetchData);
+	test = torture_tcase_add_simple_test(tcase, "FetchNT4Data", (run_func)test_FetchNT4Data);
+}
+
