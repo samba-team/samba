@@ -1049,8 +1049,15 @@ interface netlogon
 		[in]     [string,charset(UTF16)] uint16 *computername,
 		[in]     netr_Authenticator *credential,
 		[in,out,ref] netr_Authenticator *return_authenticator,
-		[in]     [subcontext(4),subcontext_size(change_log_entry_size)] netr_ChangeLogEntry change_log_entry,
-		[in]     [value(ndr_size_netr_ChangeLogEntry(&change_log_entry, ndr->iconv_convenience, ndr->flags))] uint32 change_log_entry_size,
+		/*
+		 * we cannot use subcontext_size() here, as
+		 * change_log_entry_size is encoded after the subcontext
+		 */
+		[in]     [subcontext(4)/*,subcontext_size(change_log_entry_size)*/]
+			netr_ChangeLogEntry change_log_entry,
+		[in]     [value(ndr_size_netr_ChangeLogEntry(&change_log_entry,
+				ndr->iconv_convenience, ndr->flags))]
+			uint32 change_log_entry_size,
 		[out,ref]    netr_DELTA_ENUM_ARRAY **delta_enum_array
 		);
 
