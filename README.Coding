@@ -241,3 +241,29 @@ Typedefs
 Samba tries to avoid "typedef struct { .. } x_t;", we always use
 "struct x { .. };". We know there are still those typedefs in the code,
 but for new code, please don't do that.
+
+Make use of helper variables
+----------------------------
+
+Please try to avoid passing function calls as function parameters
+in new code. This makes the code much easier to read and
+it's also easier to use the "step" command within gdb.
+
+Good Example::
+
+	char *name;
+
+	name = get_some_name();
+	if (name == NULL) {
+		...
+	}
+
+	ret = some_function_my_name(name);
+	...
+
+
+Bad Example::
+
+	ret = some_function_my_name(get_some_name());
+	...
+
