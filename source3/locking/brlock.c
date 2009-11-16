@@ -1810,7 +1810,6 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 	br_lck->fsp = fsp;
 	br_lck->num_locks = 0;
 	br_lck->modified = False;
-	memset(&br_lck->key, '\0', sizeof(struct file_id));
 	br_lck->key = fsp->file_id;
 
 	key.dptr = (uint8 *)&br_lck->key;
