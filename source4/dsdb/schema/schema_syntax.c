@@ -1028,6 +1028,89 @@ static WERROR dsdb_syntax_UNICODE_ldb_to_drsuapi(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
+
+WERROR dsdb_syntax_one_DN_drsuapi_to_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, 
+					 const struct dsdb_syntax *syntax, 
+					 struct smb_iconv_convenience *iconv_convenience,
+					 const DATA_BLOB *in, DATA_BLOB *out)
+{
+	struct drsuapi_DsReplicaObjectIdentifier3 id3;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB guid_blob;
+	struct ldb_dn *dn;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	int ret;
+
+	if (!tmp_ctx) {
+		W_ERROR_HAVE_NO_MEMORY(tmp_ctx);
+	}
+	
+	if (in == NULL) {
+		talloc_free(tmp_ctx);
+		return WERR_FOOBAR;
+	}
+	
+	if (in->length == 0) {
+		talloc_free(tmp_ctx);
+		return WERR_FOOBAR;
+	}
+	
+	
+	/* windows sometimes sends an extra two pad bytes here */
+	ndr_err = ndr_pull_struct_blob(in,
+				       tmp_ctx, iconv_convenience, &id3,
+				       (ndr_pull_flags_fn_t)ndr_pull_drsuapi_DsReplicaObjectIdentifier3);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+		talloc_free(tmp_ctx);
+		return ntstatus_to_werror(status);
+	}
+	
+	dn = ldb_dn_new(tmp_ctx, ldb, id3.dn);
+	if (!dn) {
+		talloc_free(tmp_ctx);
+		/* If this fails, it must be out of memory, as it does not do much parsing */
+		W_ERROR_HAVE_NO_MEMORY(dn);
+	}
+	
+	ndr_err = ndr_push_struct_blob(&guid_blob, tmp_ctx, iconv_convenience, &id3.guid,
+				       (ndr_push_flags_fn_t)ndr_push_GUID);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+		talloc_free(tmp_ctx);
+		return ntstatus_to_werror(status);
+	}
+	
+	ret = ldb_dn_set_extended_component(dn, "GUID", &guid_blob);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return WERR_FOOBAR;
+	}
+	
+	talloc_free(guid_blob.data);
+	
+	if (id3.__ndr_size_sid) {
+		DATA_BLOB sid_blob;
+		ndr_err = ndr_push_struct_blob(&sid_blob, tmp_ctx, iconv_convenience, &id3.sid,
+					       (ndr_push_flags_fn_t)ndr_push_dom_sid);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+			talloc_free(tmp_ctx);
+			return ntstatus_to_werror(status);
+		}
+		
+		ret = ldb_dn_set_extended_component(dn, "SID", &sid_blob);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return WERR_FOOBAR;
+		}
+	}
+	
+	*out = data_blob_string_const(ldb_dn_get_extended_linearized(mem_ctx, dn, 1));
+	talloc_free(tmp_ctx);
+	return WERR_OK;
+}
+
 static WERROR dsdb_syntax_DN_drsuapi_to_ldb(struct ldb_context *ldb, 
 					    const struct dsdb_schema *schema,
 					    const struct dsdb_attribute *attr,
@@ -1036,7 +1119,6 @@ static WERROR dsdb_syntax_DN_drsuapi_to_ldb(struct ldb_context *ldb,
 					    struct ldb_message_element *out)
 {
 	uint32_t i;
-	int ret;
 
 	out->flags	= 0;
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
@@ -1047,78 +1129,14 @@ static WERROR dsdb_syntax_DN_drsuapi_to_ldb(struct ldb_context *ldb,
 	W_ERROR_HAVE_NO_MEMORY(out->values);
 
 	for (i=0; i < out->num_values; i++) {
-		struct drsuapi_DsReplicaObjectIdentifier3 id3;
-		enum ndr_err_code ndr_err;
-		DATA_BLOB guid_blob;
-		struct ldb_dn *dn;
-		TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
-		if (!tmp_ctx) {
-			W_ERROR_HAVE_NO_MEMORY(tmp_ctx);
+		WERROR status = dsdb_syntax_one_DN_drsuapi_to_ldb(out->values, ldb, attr->syntax, 
+								  schema->iconv_convenience, 
+								  in->value_ctr.values[i].blob, 
+								  &out->values[i]);
+		if (!W_ERROR_IS_OK(status)) {
+			return status;
 		}
-
-		if (in->value_ctr.values[i].blob == NULL) {
-			talloc_free(tmp_ctx);
-			return WERR_FOOBAR;
-		}
-
-		if (in->value_ctr.values[i].blob->length == 0) {
-			talloc_free(tmp_ctx);
-			return WERR_FOOBAR;
-		}
-
-		
-		/* windows sometimes sends an extra two pad bytes here */
-		ndr_err = ndr_pull_struct_blob(in->value_ctr.values[i].blob,
-					       tmp_ctx, schema->iconv_convenience, &id3,
-					       (ndr_pull_flags_fn_t)ndr_pull_drsuapi_DsReplicaObjectIdentifier3);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
-			talloc_free(tmp_ctx);
-			return ntstatus_to_werror(status);
-		}
-
-		dn = ldb_dn_new(tmp_ctx, ldb, id3.dn);
-		if (!dn) {
-			talloc_free(tmp_ctx);
-			/* If this fails, it must be out of memory, as it does not do much parsing */
-			W_ERROR_HAVE_NO_MEMORY(dn);
-		}
-
-		ndr_err = ndr_push_struct_blob(&guid_blob, tmp_ctx, schema->iconv_convenience, &id3.guid,
-					       (ndr_push_flags_fn_t)ndr_push_GUID);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
-			talloc_free(tmp_ctx);
-			return ntstatus_to_werror(status);
-		}
-
-		ret = ldb_dn_set_extended_component(dn, "GUID", &guid_blob);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(tmp_ctx);
-			return WERR_FOOBAR;
-		}
-
-		talloc_free(guid_blob.data);
-
-		if (id3.__ndr_size_sid) {
-			DATA_BLOB sid_blob;
-			ndr_err = ndr_push_struct_blob(&sid_blob, tmp_ctx, schema->iconv_convenience, &id3.sid,
-						       (ndr_push_flags_fn_t)ndr_push_dom_sid);
-			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-				NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
-				talloc_free(tmp_ctx);
-				return ntstatus_to_werror(status);
-			}
-
-			ret = ldb_dn_set_extended_component(dn, "SID", &sid_blob);
-			if (ret != LDB_SUCCESS) {
-				talloc_free(tmp_ctx);
-				return WERR_FOOBAR;
-			}
-		}
-
-		out->values[i] = data_blob_string_const(ldb_dn_get_extended_linearized(out->values, dn, 1));
-		talloc_free(tmp_ctx);
+						  
 	}
 
 	return WERR_OK;
