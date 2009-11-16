@@ -95,6 +95,10 @@ sub end_test($$$$$)
 		$reason .= $xfail_reason;
 	}
 
+	if ($result eq "fail" or $result eq "failure") {
+		$self->{fail_added}++;
+	}
+
 	if ($self->{strip_ok_output}) {
 		unless ($result eq "success" or $result eq "xfail" or $result eq "skip") {
 			print $self->{output}
@@ -115,16 +119,18 @@ sub start_testsuite($;$)
 {
 	my ($self, $name) = @_;
 	Subunit::start_testsuite($name);
+	$self->{fail_added} = 0;
 	$self->{xfail_added} = 0;
 }
 
 sub end_testsuite($$;$)
 {
 	my ($self, $name, $result, $reason) = @_;
-	if ($self->{xfail_added} and ($result eq "fail" or $result eq "failure")) {
+	if ($self->{fail_added} == 0 and $self->{xfail_added} and
+	    ($result eq "fail" or $result eq "failure")) {
 		$result = "xfail";
 	}
-		
+
 	Subunit::end_testsuite($name, $result, $reason);
 }
 
