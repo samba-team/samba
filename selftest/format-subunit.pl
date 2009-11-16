@@ -59,6 +59,9 @@ exit(1) if (not $result);
 
 my $msg_ops;
 
+# we want unbuffered output
+$| = 1;
+
 my $statistics = {
 	SUITES_FAIL => 0,
 

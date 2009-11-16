@@ -82,6 +82,9 @@ if (defined($opt_expected_failures)) {
 	@expected_failures = Subunit::Filter::read_test_regexes($opt_expected_failures);
 }
 
+# we want unbuffered output
+$| = 1;
+
 my $statistics = {
 	TESTS_UNEXPECTED_OK => 0,
 	TESTS_EXPECTED_OK => 0,

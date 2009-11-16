@@ -348,6 +348,9 @@ exit(1) if (not $result);
 
 ShowHelp() if ($opt_help);
 
+# we want unbuffered output
+$| = 1;
+
 my @tests = @ARGV;
 
 # quick hack to disable rpc validation when using valgrind - its way too slow
