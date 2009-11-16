@@ -12428,9 +12428,9 @@ static enum ndr_err_code ndr_push_netr_DatabaseRedo(struct ndr_push *ndr, int fl
 		NDR_CHECK(ndr_push_netr_Authenticator(ndr, NDR_SCALARS, r->in.return_authenticator));
 		{
 			struct ndr_push *_ndr_change_log_entry;
-			NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_change_log_entry, 4, ndr_size_netr_ChangeLogEntry(&r->in.change_log_entry, ndr->iconv_convenience, ndr->flags)));
+			NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_change_log_entry, 4, -1));
 			NDR_CHECK(ndr_push_netr_ChangeLogEntry(_ndr_change_log_entry, NDR_SCALARS|NDR_BUFFERS, &r->in.change_log_entry));
-			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_change_log_entry, 4, ndr_size_netr_ChangeLogEntry(&r->in.change_log_entry, ndr->iconv_convenience, ndr->flags)));
+			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_change_log_entry, 4, -1));
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_netr_ChangeLogEntry(&r->in.change_log_entry, ndr->iconv_convenience, ndr->flags)));
 	}
@@ -12491,9 +12491,9 @@ static enum ndr_err_code ndr_pull_netr_DatabaseRedo(struct ndr_pull *ndr, int fl
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_return_authenticator_0, LIBNDR_FLAG_REF_ALLOC);
 		{
 			struct ndr_pull *_ndr_change_log_entry;
-			NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_change_log_entry, 4, r->in.change_log_entry_size));
+			NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_change_log_entry, 4, -1));
 			NDR_CHECK(ndr_pull_netr_ChangeLogEntry(_ndr_change_log_entry, NDR_SCALARS|NDR_BUFFERS, &r->in.change_log_entry));
-			NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_change_log_entry, 4, r->in.change_log_entry_size));
+			NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_change_log_entry, 4, -1));
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.change_log_entry_size));
 		NDR_PULL_ALLOC(ndr, r->out.return_authenticator);

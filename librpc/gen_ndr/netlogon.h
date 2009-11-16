@@ -1431,7 +1431,7 @@ struct netr_DatabaseRedo {
 		const char *logon_server;/* [ref,charset(UTF16)] */
 		const char *computername;/* [ref,charset(UTF16)] */
 		struct netr_Authenticator *credential;/* [ref] */
-		struct netr_ChangeLogEntry change_log_entry;/* [subcontext_size(change_log_entry_size),subcontext(4)] */
+		struct netr_ChangeLogEntry change_log_entry;/* [subcontext(4)] */
 		uint32_t change_log_entry_size;/* [value(ndr_size_netr_ChangeLogEntry(&change_log_entry,ndr->iconv_convenience,ndr->flags))] */
 		struct netr_Authenticator *return_authenticator;/* [ref] */
 	} in;

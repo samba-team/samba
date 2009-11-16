@@ -2875,7 +2875,7 @@ struct tevent_req *rpccli_netr_DatabaseRedo_send(TALLOC_CTX *mem_ctx,
 						 const char *_computername /* [in] [ref,charset(UTF16)] */,
 						 struct netr_Authenticator *_credential /* [in] [ref] */,
 						 struct netr_Authenticator *_return_authenticator /* [in,out] [ref] */,
-						 struct netr_ChangeLogEntry _change_log_entry /* [in] [subcontext_size(change_log_entry_size),subcontext(4)] */,
+						 struct netr_ChangeLogEntry _change_log_entry /* [in] [subcontext(4)] */,
 						 uint32_t _change_log_entry_size /* [in] [value(ndr_size_netr_ChangeLogEntry(&change_log_entry,ndr->iconv_convenience,ndr->flags))] */,
 						 struct netr_DELTA_ENUM_ARRAY **_delta_enum_array /* [out] [ref] */)
 {
@@ -2990,7 +2990,7 @@ NTSTATUS rpccli_netr_DatabaseRedo(struct rpc_pipe_client *cli,
 				  const char *computername /* [in] [ref,charset(UTF16)] */,
 				  struct netr_Authenticator *credential /* [in] [ref] */,
 				  struct netr_Authenticator *return_authenticator /* [in,out] [ref] */,
-				  struct netr_ChangeLogEntry change_log_entry /* [in] [subcontext_size(change_log_entry_size),subcontext(4)] */,
+				  struct netr_ChangeLogEntry change_log_entry /* [in] [subcontext(4)] */,
 				  uint32_t change_log_entry_size /* [in] [value(ndr_size_netr_ChangeLogEntry(&change_log_entry,ndr->iconv_convenience,ndr->flags))] */,
 				  struct netr_DELTA_ENUM_ARRAY **delta_enum_array /* [out] [ref] */)
 {
