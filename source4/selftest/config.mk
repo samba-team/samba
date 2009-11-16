@@ -20,11 +20,11 @@ FORMAT_TEST = $(PERL) $(selftestdir)/format-subunit.pl --prefix=${selftest_prefi
 FORMAT_TEST_OUTPUT = $(FILTER_XFAIL) | $(FORMAT_TEST)
 
 test-subunit:: everything
-	$(SELFTEST) --socket-wrapper $(TESTS) $(ST_TOUCH)
+	$(ST_RM) $(SELFTEST) --socket-wrapper $(TESTS) $(ST_TOUCH)
 	$(ST_DONE_TEST)
 
 slowtest:: everything
-	$(SELFTEST) $(DEFAULT_TEST_OPTIONS) $(TESTS) $(ST_TOUCH) | $(FORMAT_TEST_OUTPUT) --immediate 
+	$(ST_RM) $(SELFTEST) $(DEFAULT_TEST_OPTIONS) $(TESTS) $(ST_TOUCH) | $(FORMAT_TEST_OUTPUT) --immediate
 	$(ST_DONE_TEST)
 
 ifeq ($(RUN_FROM_BUILD_FARM),yes)
