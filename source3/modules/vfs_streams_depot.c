@@ -382,7 +382,8 @@ static NTSTATUS walk_streams(vfs_handle_struct *handle,
 {
 	char *dirname;
 	SMB_STRUCT_DIR *dirhandle = NULL;
-	char *dirent = NULL;
+	const char *dirent = NULL;
+	char *talloced = NULL;
 
 	dirname = stream_dir(handle, smb_fname_base, &smb_fname_base->st,
 			     false);
@@ -406,20 +407,21 @@ static NTSTATUS walk_streams(vfs_handle_struct *handle,
 		return map_nt_error_from_unix(errno);
 	}
 
-	while ((dirent = vfs_readdirname(handle->conn, dirhandle, NULL)) != NULL) {
+	while ((dirent = vfs_readdirname(handle->conn, dirhandle, NULL,
+					 &talloced)) != NULL) {
 
 		if (ISDOT(dirent) || ISDOTDOT(dirent)) {
-			TALLOC_FREE(dirent);
+			TALLOC_FREE(talloced);
 			continue;
 		}
 
 		DEBUG(10, ("walk_streams: dirent=%s\n", dirent));
 
 		if (!fn(dirname, dirent, private_data)) {
-			TALLOC_FREE(dirent);
+			TALLOC_FREE(talloced);
 			break;
 		}
-		TALLOC_FREE(dirent);
+		TALLOC_FREE(talloced);
 	}
 
 	SMB_VFS_NEXT_CLOSEDIR(handle, dirhandle);

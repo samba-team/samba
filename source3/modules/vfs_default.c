@@ -649,17 +649,15 @@ static int vfswrap_lstat(vfs_handle_struct *handle,
 	return result;
 }
 
-static NTSTATUS vfswrap_translate_name(vfs_handle_struct *handle,
-				       char **mapped_name,
-				       enum vfs_translate_direction direction)
+static NTSTATUS vfswrap_translate_name(struct vfs_handle_struct *handle,
+				       const char *name,
+				       enum vfs_translate_direction direction,
+				       TALLOC_CTX *mem_ctx,
+				       char **mapped_name)
 {
-	/* Default behavior is a NOOP */
-
-	if (*mapped_name != NULL)
-		return NT_STATUS_OK;
-
-	return NT_STATUS_INVALID_PARAMETER;
+	return NT_STATUS_NONE_MAPPED;
 }
+
 /********************************************************************
  Given a stat buffer return the allocated size on disk, taking into
  account sparse files.
