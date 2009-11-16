@@ -5071,7 +5071,7 @@ static bool ldapsam_uid_to_sid(struct pdb_methods *methods, uid_t uid,
 
 
 /*
- * The following functions is called only if
+ * The following functions are called only if
  * ldapsam:trusted and ldapsam:editposix are
  * set to true
  */
