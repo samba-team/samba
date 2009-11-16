@@ -1505,7 +1505,8 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 {
 	size_t cnt = 0;
 	SMB_STRUCT_DIR *dirp = NULL;
-	char *dname = NULL;
+	const char *dname = NULL;
+	char *talloced = NULL;
 	const char *connect_path = lp_pathname(snum);
 	const char *msdfs_proxy = lp_msdfs_proxy(snum);
 	connection_struct *conn;
@@ -1542,13 +1543,14 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 		goto out;
 	}
 
-	while ((dname = vfs_readdirname(conn, dirp, NULL)) != NULL) {
+	while ((dname = vfs_readdirname(conn, dirp, NULL, &talloced))
+	       != NULL) {
 		if (is_msdfs_link(conn,
 				dname,
 				NULL)) {
 			cnt++;
 		}
-		TALLOC_FREE(dname);
+		TALLOC_FREE(talloced);
 	}
 
 	SMB_VFS_CLOSEDIR(conn,dirp);
@@ -1569,7 +1571,8 @@ static int form_junctions(TALLOC_CTX *ctx,
 {
 	size_t cnt = 0;
 	SMB_STRUCT_DIR *dirp = NULL;
-	char *dname = NULL;
+	const char *dname = NULL;
+	char *talloced = NULL;
 	const char *connect_path = lp_pathname(snum);
 	char *service_name = lp_servicename(snum);
 	const char *msdfs_proxy = lp_msdfs_proxy(snum);
@@ -1643,12 +1646,13 @@ static int form_junctions(TALLOC_CTX *ctx,
 		goto out;
 	}
 
-	while ((dname = vfs_readdirname(conn, dirp, NULL)) != NULL) {
+	while ((dname = vfs_readdirname(conn, dirp, NULL, &talloced))
+	       != NULL) {
 		char *link_target = NULL;
 		if (cnt >= jn_remain) {
 			DEBUG(2, ("form_junctions: ran out of MSDFS "
 				"junction slots"));
-			TALLOC_FREE(dname);
+			TALLOC_FREE(talloced);
 			goto out;
 		}
 		if (is_msdfs_link_internal(ctx,
@@ -1666,7 +1670,7 @@ static int form_junctions(TALLOC_CTX *ctx,
 								dname);
 				if (!jucn[cnt].service_name ||
 						!jucn[cnt].volume_name) {
-					TALLOC_FREE(dname);
+					TALLOC_FREE(talloced);
 					goto out;
 				}
 				jucn[cnt].comment = "";
@@ -1674,7 +1678,7 @@ static int form_junctions(TALLOC_CTX *ctx,
 			}
 			TALLOC_FREE(link_target);
 		}
-		TALLOC_FREE(dname);
+		TALLOC_FREE(talloced);
 	}
 
 out:

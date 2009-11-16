@@ -286,11 +286,14 @@ static SMB_STRUCT_DIR *catia_opendir(vfs_handle_struct *handle,
  * TRANSLATE_NAME call which converts the given name to
  * "WINDOWS displayable" name
  */
-static NTSTATUS catia_translate_name(vfs_handle_struct *handle,
-				     char **mapped_name,
-				     enum vfs_translate_direction direction)
+static NTSTATUS catia_translate_name(struct vfs_handle_struct *handle,
+				     const char *orig_name,
+				     enum vfs_translate_direction direction,
+				     TALLOC_CTX *mem_ctx,
+				     char **pmapped_name)
 {
 	char *name = NULL;
+	char *mapped_name;
 	NTSTATUS ret;
 
 	/*
@@ -299,21 +302,27 @@ static NTSTATUS catia_translate_name(vfs_handle_struct *handle,
 	 * We will be allocating new memory for mapped_name in
 	 * catia_string_replace_allocate
 	 */
-	name = talloc_strdup(talloc_tos(), *mapped_name);
+	name = talloc_strdup(talloc_tos(), orig_name);
 	if (!name) {
 		errno = ENOMEM;
 		return NT_STATUS_NO_MEMORY;
 	}
-	TALLOC_FREE(*mapped_name);
 	ret = catia_string_replace_allocate(handle->conn, name,
-			mapped_name, direction);
+			&mapped_name, direction);
 
 	TALLOC_FREE(name);
 	if (!NT_STATUS_IS_OK(ret)) {
 		return ret;
 	}
 
-	ret = SMB_VFS_NEXT_TRANSLATE_NAME(handle, mapped_name, direction);
+	ret = SMB_VFS_NEXT_TRANSLATE_NAME(handle, mapped_name, direction,
+					  mem_ctx, pmapped_name);
+
+	if (NT_STATUS_EQUAL(ret, NT_STATUS_NONE_MAPPED)) {
+		*pmapped_name = talloc_move(mem_ctx, &mapped_name);
+	} else {
+		TALLOC_FREE(mapped_name);
+	}
 
 	return ret;
 }

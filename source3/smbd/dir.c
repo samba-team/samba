@@ -585,16 +585,21 @@ int dptr_dnum(struct dptr_struct *dptr)
  Return the next visible file name, skipping veto'd and invisible files.
 ****************************************************************************/
 
-static char *dptr_normal_ReadDirName(struct dptr_struct *dptr,
-					   long *poffset, SMB_STRUCT_STAT *pst)
+static const char *dptr_normal_ReadDirName(struct dptr_struct *dptr,
+					   long *poffset, SMB_STRUCT_STAT *pst,
+					   char **ptalloced)
 {
 	/* Normal search for the next file. */
-	char *name;
-	while ((name = ReadDirName(dptr->dir_hnd, poffset, pst)) != NULL) {
+	const char *name;
+	char *talloced = NULL;
+
+	while ((name = ReadDirName(dptr->dir_hnd, poffset, pst, &talloced))
+	       != NULL) {
 		if (is_visible_file(dptr->conn, dptr->path, name, pst, True)) {
+			*ptalloced = talloced;
 			return name;
 		}
-		TALLOC_FREE(name);
+		TALLOC_FREE(talloced);
 	}
 	return NULL;
 }
@@ -610,6 +615,8 @@ char *dptr_ReadDirName(TALLOC_CTX *ctx,
 {
 	struct smb_filename *smb_fname_base = NULL;
 	char *name = NULL;
+	const char *name_temp = NULL;
+	char *talloced = NULL;
 	char *pathreal = NULL;
 	char *found_name = NULL;
 	int ret;
@@ -618,8 +625,15 @@ char *dptr_ReadDirName(TALLOC_CTX *ctx,
 	SET_STAT_INVALID(*pst);
 
 	if (dptr->has_wild || dptr->did_stat) {
-		name = dptr_normal_ReadDirName(dptr, poffset, pst);
-		return name;
+		name_temp = dptr_normal_ReadDirName(dptr, poffset, pst,
+						    &talloced);
+		if (name_temp == NULL) {
+			return NULL;
+		}
+		if (talloced != NULL) {
+			return talloc_move(ctx, &talloced);
+		}
+		return talloc_strdup(ctx, name_temp);
 	}
 
 	/* If poffset is -1 then we know we returned this name before and we
@@ -706,9 +720,14 @@ char *dptr_ReadDirName(TALLOC_CTX *ctx,
 
 	TALLOC_FREE(pathreal);
 
-	name = dptr_normal_ReadDirName(dptr, poffset, pst);
-
-	return name;
+	name_temp = dptr_normal_ReadDirName(dptr, poffset, pst, &talloced);
+	if (name_temp == NULL) {
+		return NULL;
+	}
+	if (talloced != NULL) {
+		return talloc_move(ctx, &talloced);
+	}
+	return talloc_strdup(ctx, name_temp);
 
 clean:
 	TALLOC_FREE(pathreal);
@@ -1336,10 +1355,11 @@ struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
  Don't check for veto or invisible files.
 ********************************************************************/
 
-char *ReadDirName(struct smb_Dir *dirp, long *poffset,
-			SMB_STRUCT_STAT *sbuf)
+const char *ReadDirName(struct smb_Dir *dirp, long *poffset,
+			SMB_STRUCT_STAT *sbuf, char **ptalloced)
 {
-	char *n;
+	const char *n;
+	char *talloced = NULL;
 	connection_struct *conn = dirp->conn;
 
 	/* Cheat to allow . and .. to be the first entries returned. */
@@ -1347,17 +1367,14 @@ char *ReadDirName(struct smb_Dir *dirp, long *poffset,
 	     (*poffset == DOT_DOT_DIRECTORY_OFFSET)) && (dirp->file_number < 2))
 	{
 		if (dirp->file_number == 0) {
-			n = talloc_strdup(talloc_tos(), ".");
-			if (n == NULL)
-				return NULL;
+			n = ".";
 			*poffset = dirp->offset = START_OF_DIRECTORY_OFFSET;
 		} else {
+			n = "..";
 			*poffset = dirp->offset = DOT_DOT_DIRECTORY_OFFSET;
-			n = talloc_strdup(talloc_tos(), "..");
-			if (n == NULL)
-				return NULL;
 		}
 		dirp->file_number++;
+		*ptalloced = NULL;
 		return n;
 	} else if (*poffset == END_OF_DIRECTORY_OFFSET) {
 		*poffset = dirp->offset = END_OF_DIRECTORY_OFFSET;
@@ -1367,19 +1384,21 @@ char *ReadDirName(struct smb_Dir *dirp, long *poffset,
 		SeekDir(dirp, *poffset);
 	}
 
-	while ((n = vfs_readdirname(conn, dirp->dir, sbuf))) {
+	while ((n = vfs_readdirname(conn, dirp->dir, sbuf, &talloced))) {
 		/* Ignore . and .. - we've already returned them. */
 		if (*n == '.') {
 			if ((n[1] == '\0') || (n[1] == '.' && n[2] == '\0')) {
-				TALLOC_FREE(n);
+				TALLOC_FREE(talloced);
 				continue;
 			}
 		}
 		*poffset = dirp->offset = SMB_VFS_TELLDIR(conn, dirp->dir);
+		*ptalloced = talloced;
 		dirp->file_number++;
 		return n;
 	}
 	*poffset = dirp->offset = END_OF_DIRECTORY_OFFSET;
+	*ptalloced = NULL;
 	return NULL;
 }
 
@@ -1474,7 +1493,8 @@ void DirCacheAdd(struct smb_Dir *dirp, const char *name, long offset)
 bool SearchDir(struct smb_Dir *dirp, const char *name, long *poffset)
 {
 	int i;
-	char *entry = NULL;
+	const char *entry = NULL;
+	char *talloced = NULL;
 	connection_struct *conn = dirp->conn;
 
 	/* Search back in the name cache. */
@@ -1501,12 +1521,12 @@ bool SearchDir(struct smb_Dir *dirp, const char *name, long *poffset)
 	SMB_VFS_REWINDDIR(conn, dirp->dir);
 	dirp->file_number = 0;
 	*poffset = START_OF_DIRECTORY_OFFSET;
-	while ((entry = ReadDirName(dirp, poffset, NULL))) {
+	while ((entry = ReadDirName(dirp, poffset, NULL, &talloced))) {
 		if (conn->case_sensitive ? (strcmp(entry, name) == 0) : strequal(entry, name)) {
-			TALLOC_FREE(entry);
+			TALLOC_FREE(talloced);
 			return True;
 		}
-		TALLOC_FREE(entry);
+		TALLOC_FREE(talloced);
 	}
 	return False;
 }
@@ -1520,7 +1540,8 @@ NTSTATUS can_delete_directory(struct connection_struct *conn,
 {
 	NTSTATUS status = NT_STATUS_OK;
 	long dirpos = 0;
-	char *dname = NULL;
+	const char *dname = NULL;
+	char *talloced = NULL;
 	SMB_STRUCT_STAT st;
 	struct smb_Dir *dir_hnd = OpenDir(talloc_tos(), conn, dirname,
 					  NULL, 0);
@@ -1529,17 +1550,17 @@ NTSTATUS can_delete_directory(struct connection_struct *conn,
 		return map_nt_error_from_unix(errno);
 	}
 
-	while ((dname = ReadDirName(dir_hnd, &dirpos, &st))) {
+	while ((dname = ReadDirName(dir_hnd, &dirpos, &st, &talloced))) {
 		/* Quick check for "." and ".." */
 		if (dname[0] == '.') {
 			if (!dname[1] || (dname[1] == '.' && !dname[2])) {
-				TALLOC_FREE(dname);
+				TALLOC_FREE(talloced);
 				continue;
 			}
 		}
 
 		if (!is_visible_file(conn, dirname, dname, &st, True)) {
-			TALLOC_FREE(dname);
+			TALLOC_FREE(talloced);
 			continue;
 		}
 
@@ -1548,7 +1569,7 @@ NTSTATUS can_delete_directory(struct connection_struct *conn,
 		status = NT_STATUS_DIRECTORY_NOT_EMPTY;
 		break;
 	}
-	TALLOC_FREE(dname);
+	TALLOC_FREE(talloced);
 	TALLOC_FREE(dir_hnd);
 
 	return status;
