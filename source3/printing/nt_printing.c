@@ -1442,7 +1442,7 @@ Determine the correct cVersion associated with an architecture and driver
 ****************************************************************************/
 static uint32 get_correct_cversion(struct pipes_struct *p,
 				   const char *architecture,
-				   fstring driverpath_in,
+				   const char *driverpath_in,
 				   WERROR *perr)
 {
 	int               cversion;
@@ -1600,119 +1600,40 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 
 /****************************************************************************
 ****************************************************************************/
+
+#define strip_driver_path(_mem_ctx, _element) do { \
+	if ((_p = strrchr(_element, '\\')) != NULL) { \
+		_element = talloc_asprintf(_mem_ctx, _p+1); \
+		W_ERROR_HAVE_NO_MEMORY(_element); \
+	} \
+} while (0);
+
 static WERROR clean_up_driver_struct_level_3(struct pipes_struct *rpc_pipe,
-					     NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
+					     struct spoolss_AddDriverInfo3 *driver)
 {
 	const char *architecture;
-	fstring new_name;
-	char *p;
 	int i;
 	WERROR err;
+	char *_p;
 
 	/* clean up the driver name.
 	 * we can get .\driver.dll
 	 * or worse c:\windows\system\driver.dll !
 	 */
 	/* using an intermediate string to not have overlaping memcpy()'s */
-	if ((p = strrchr(driver->driverpath,'\\')) != NULL) {
-		fstrcpy(new_name, p+1);
-		fstrcpy(driver->driverpath, new_name);
-	}
 
-	if ((p = strrchr(driver->datafile,'\\')) != NULL) {
-		fstrcpy(new_name, p+1);
-		fstrcpy(driver->datafile, new_name);
-	}
+	strip_driver_path(driver, driver->driver_path);
+	strip_driver_path(driver, driver->data_file);
+	strip_driver_path(driver, driver->config_file);
+	strip_driver_path(driver, driver->help_file);
 
-	if ((p = strrchr(driver->configfile,'\\')) != NULL) {
-		fstrcpy(new_name, p+1);
-		fstrcpy(driver->configfile, new_name);
-	}
-
-	if ((p = strrchr(driver->helpfile,'\\')) != NULL) {
-		fstrcpy(new_name, p+1);
-		fstrcpy(driver->helpfile, new_name);
-	}
-
-	if (driver->dependentfiles) {
-		for (i=0; *driver->dependentfiles[i]; i++) {
-			if ((p = strrchr(driver->dependentfiles[i],'\\')) != NULL) {
-				fstrcpy(new_name, p+1);
-				fstrcpy(driver->dependentfiles[i], new_name);
-			}
+	if (driver->dependent_files && driver->dependent_files->string) {
+		for (i=0; driver->dependent_files->string[i]; i++) {
+			strip_driver_path(driver, driver->dependent_files->string[i]);
 		}
 	}
 
-	architecture = get_short_archi(driver->environment);
-	if (!architecture) {
-		return WERR_UNKNOWN_PRINTER_DRIVER;
-	}
-
-	/* jfm:7/16/2000 the client always sends the cversion=0.
-	 * The server should check which version the driver is by reading
-	 * the PE header of driver->driverpath.
-	 *
-	 * For Windows 95/98 the version is 0 (so the value sent is correct)
-	 * For Windows NT (the architecture doesn't matter)
-	 *	NT 3.1: cversion=0
-	 *	NT 3.5/3.51: cversion=1
-	 *	NT 4: cversion=2
-	 *	NT2K: cversion=3
-	 */
-	if ((driver->cversion = get_correct_cversion(rpc_pipe, architecture,
-						     driver->driverpath,
-						     &err)) == -1)
-		return err;
-
-	return WERR_OK;
-}
-
-/****************************************************************************
-****************************************************************************/
-static WERROR clean_up_driver_struct_level_6(struct pipes_struct *rpc_pipe,
-					     NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver)
-{
-	const char *architecture;
-	fstring new_name;
-	char *p;
-	int i;
-	WERROR err;
-
-	/* clean up the driver name.
-	 * we can get .\driver.dll
-	 * or worse c:\windows\system\driver.dll !
-	 */
-	/* using an intermediate string to not have overlaping memcpy()'s */
-	if ((p = strrchr(driver->driverpath,'\\')) != NULL) {
-		fstrcpy(new_name, p+1);
-		fstrcpy(driver->driverpath, new_name);
-	}
-
-	if ((p = strrchr(driver->datafile,'\\')) != NULL) {
-		fstrcpy(new_name, p+1);
-		fstrcpy(driver->datafile, new_name);
-	}
-
-	if ((p = strrchr(driver->configfile,'\\')) != NULL) {
-		fstrcpy(new_name, p+1);
-		fstrcpy(driver->configfile, new_name);
-	}
-
-	if ((p = strrchr(driver->helpfile,'\\')) != NULL) {
-		fstrcpy(new_name, p+1);
-		fstrcpy(driver->helpfile, new_name);
-	}
-
-	if (driver->dependentfiles) {
-		for (i=0; *driver->dependentfiles[i]; i++) {
-			if ((p = strrchr(driver->dependentfiles[i],'\\')) != NULL) {
-				fstrcpy(new_name, p+1);
-				fstrcpy(driver->dependentfiles[i], new_name);
-			}
-		}
-	}
-
-	architecture = get_short_archi(driver->environment);
+	architecture = get_short_archi(driver->architecture);
 	if (!architecture) {
 		return WERR_UNKNOWN_PRINTER_DRIVER;
 	}
@@ -1730,7 +1651,59 @@ static WERROR clean_up_driver_struct_level_6(struct pipes_struct *rpc_pipe,
 	 */
 
 	if ((driver->version = get_correct_cversion(rpc_pipe, architecture,
-						    driver->driverpath,
+						     driver->driver_path,
+						     &err)) == -1)
+		return err;
+
+	return WERR_OK;
+}
+
+/****************************************************************************
+****************************************************************************/
+static WERROR clean_up_driver_struct_level_6(struct pipes_struct *rpc_pipe,
+					     struct spoolss_AddDriverInfo6 *driver)
+{
+	const char *architecture;
+	char *_p;
+	int i;
+	WERROR err;
+
+	/* clean up the driver name.
+	 * we can get .\driver.dll
+	 * or worse c:\windows\system\driver.dll !
+	 */
+	/* using an intermediate string to not have overlaping memcpy()'s */
+
+	strip_driver_path(driver, driver->driver_path);
+	strip_driver_path(driver, driver->data_file);
+	strip_driver_path(driver, driver->config_file);
+	strip_driver_path(driver, driver->help_file);
+
+	if (driver->dependent_files && driver->dependent_files->string) {
+		for (i=0; driver->dependent_files->string[i]; i++) {
+			strip_driver_path(driver, driver->dependent_files->string[i]);
+		}
+	}
+
+	architecture = get_short_archi(driver->architecture);
+	if (!architecture) {
+		return WERR_UNKNOWN_PRINTER_DRIVER;
+	}
+
+	/* jfm:7/16/2000 the client always sends the cversion=0.
+	 * The server should check which version the driver is by reading
+	 * the PE header of driver->driverpath.
+	 *
+	 * For Windows 95/98 the version is 0 (so the value sent is correct)
+	 * For Windows NT (the architecture doesn't matter)
+	 *	NT 3.1: cversion=0
+	 *	NT 3.5/3.51: cversion=1
+	 *	NT 4: cversion=2
+	 *	NT2K: cversion=3
+	 */
+
+	if ((driver->version = get_correct_cversion(rpc_pipe, architecture,
+						    driver->driver_path,
 						    &err)) == -1)
 			return err;
 
@@ -1740,26 +1713,15 @@ static WERROR clean_up_driver_struct_level_6(struct pipes_struct *rpc_pipe,
 /****************************************************************************
 ****************************************************************************/
 WERROR clean_up_driver_struct(struct pipes_struct *rpc_pipe,
-			      NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract,
-			      uint32 level)
+			      struct spoolss_AddDriverInfoCtr *r)
 {
-	switch (level) {
-		case 3:
-		{
-			NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver;
-			driver=driver_abstract.info_3;
-			return clean_up_driver_struct_level_3(rpc_pipe,
-							      driver);
-		}
-		case 6:
-		{
-			NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver;
-			driver=driver_abstract.info_6;
-			return clean_up_driver_struct_level_6(rpc_pipe,
-							      driver);
-		}
-		default:
-			return WERR_INVALID_PARAM;
+	switch (r->level) {
+	case 3:
+		return clean_up_driver_struct_level_3(rpc_pipe, r->info.info3);
+	case 6:
+		return clean_up_driver_struct_level_6(rpc_pipe, r->info.info6);
+	default:
+		return WERR_NOT_SUPPORTED;
 	}
 }
 
@@ -1767,38 +1729,22 @@ WERROR clean_up_driver_struct(struct pipes_struct *rpc_pipe,
  This function sucks and should be replaced. JRA.
 ****************************************************************************/
 
-static void convert_level_6_to_level3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *dst, NT_PRINTER_DRIVER_INFO_LEVEL_6 *src)
+static void convert_level_6_to_level3(struct spoolss_AddDriverInfo3 *dst,
+				      const struct spoolss_AddDriverInfo6 *src)
 {
-    dst->cversion  = src->version;
+	dst->version		= src->version;
 
-    fstrcpy( dst->name, src->name);
-    fstrcpy( dst->environment, src->environment);
-    fstrcpy( dst->driverpath, src->driverpath);
-    fstrcpy( dst->datafile, src->datafile);
-    fstrcpy( dst->configfile, src->configfile);
-    fstrcpy( dst->helpfile, src->helpfile);
-    fstrcpy( dst->monitorname, src->monitorname);
-    fstrcpy( dst->defaultdatatype, src->defaultdatatype);
-    dst->dependentfiles = src->dependentfiles;
+	dst->driver_name	= src->driver_name;
+	dst->architecture 	= src->architecture;
+	dst->driver_path	= src->driver_path;
+	dst->data_file		= src->data_file;
+	dst->config_file	= src->config_file;
+	dst->help_file		= src->help_file;
+	dst->monitor_name	= src->monitor_name;
+	dst->default_datatype	= src->default_datatype;
+	dst->_ndr_size_dependent_files = src->_ndr_size_dependent_files;
+	dst->dependent_files	= src->dependent_files;
 }
-
-#if 0 /* Debugging function */
-
-static char* ffmt(unsigned char *c){
-	int i;
-	static char ffmt_str[17];
-
-	for (i=0; i<16; i++) {
-		if ((c[i] < ' ') || (c[i] > '~'))
-			ffmt_str[i]='.';
-		else
-			ffmt_str[i]=c[i];
-	}
-    ffmt_str[16]='\0';
-	return ffmt_str;
-}
-
-#endif
 
 /****************************************************************************
 ****************************************************************************/
@@ -1872,11 +1818,11 @@ static WERROR move_driver_file_to_download_area(TALLOC_CTX *mem_ctx,
 }
 
 WERROR move_driver_to_download_area(struct pipes_struct *p,
-				    NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract,
-				    uint32 level, WERROR *perr)
+				    struct spoolss_AddDriverInfoCtr *r,
+				    WERROR *perr)
 {
-	NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver;
-	NT_PRINTER_DRIVER_INFO_LEVEL_3 converted_driver;
+	struct spoolss_AddDriverInfo3 *driver;
+	struct spoolss_AddDriverInfo3 converted_driver;
 	const char *short_architecture;
 	struct smb_filename *smb_dname = NULL;
 	char *new_dir = NULL;
@@ -1891,20 +1837,20 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 
 	*perr = WERR_OK;
 
-	switch (level) {
+	switch (r->level) {
 	case 3:
-		driver = driver_abstract.info_3;
+		driver = r->info.info3;
 		break;
 	case 6:
-		convert_level_6_to_level3(&converted_driver, driver_abstract.info_6);
+		convert_level_6_to_level3(&converted_driver, r->info.info6);
 		driver = &converted_driver;
 		break;
 	default:
-		DEBUG(0,("move_driver_to_download_area: Unknown info level (%u)\n", (unsigned int)level ));
+		DEBUG(0,("move_driver_to_download_area: Unknown info level (%u)\n", (unsigned int)r->level));
 		return WERR_UNKNOWN_LEVEL;
 	}
 
-	short_architecture = get_short_archi(driver->environment);
+	short_architecture = get_short_archi(driver->architecture);
 	if (!short_architecture) {
 		return WERR_UNKNOWN_PRINTER_DRIVER;
 	}
@@ -1930,7 +1876,7 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 	new_dir = talloc_asprintf(ctx,
 				"%s/%d",
 				short_architecture,
-				driver->cversion);
+				driver->version);
 	if (!new_dir) {
 		*perr = WERR_NOMEM;
 		goto err_exit;
@@ -1948,14 +1894,14 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 	/* For each driver file, archi\filexxx.yyy, if there is a duplicate file
 	 * listed for this driver which has already been moved, skip it (note:
 	 * drivers may list the same file name several times. Then check if the
-	 * file already exists in archi\cversion\, if so, check that the version
+	 * file already exists in archi\version\, if so, check that the version
 	 * info (or time stamps if version info is unavailable) is newer (or the
-	 * date is later). If it is, move it to archi\cversion\filexxx.yyy.
+	 * date is later). If it is, move it to archi\version\filexxx.yyy.
 	 * Otherwise, delete the file.
 	 *
-	 * If a file is not moved to archi\cversion\ because of an error, all the
+	 * If a file is not moved to archi\version\ because of an error, all the
 	 * rest of the 'unmoved' driver files are removed from archi\. If one or
-	 * more of the driver's files was already moved to archi\cversion\, it
+	 * more of the driver's files was already moved to archi\version\, it
 	 * potentially leaves the driver in a partially updated state. Version
 	 * trauma will most likely occur if an client attempts to use any printer
 	 * bound to the driver. Perhaps a rewrite to make sure the moves can be
@@ -1964,13 +1910,13 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 
 	DEBUG(5,("Moving files now !\n"));
 
-	if (driver->driverpath && strlen(driver->driverpath)) {
+	if (driver->driver_path && strlen(driver->driver_path)) {
 
 		*perr = move_driver_file_to_download_area(ctx,
 							  conn,
-							  driver->driverpath,
+							  driver->driver_path,
 							  short_architecture,
-							  driver->cversion,
+							  driver->version,
 							  ver);
 		if (!W_ERROR_IS_OK(*perr)) {
 			if (W_ERROR_EQUAL(*perr, WERR_ACCESS_DENIED)) {
@@ -1980,14 +1926,14 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 		}
 	}
 
-	if (driver->datafile && strlen(driver->datafile)) {
-		if (!strequal(driver->datafile, driver->driverpath)) {
+	if (driver->data_file && strlen(driver->data_file)) {
+		if (!strequal(driver->data_file, driver->driver_path)) {
 
 			*perr = move_driver_file_to_download_area(ctx,
 								  conn,
-								  driver->datafile,
+								  driver->data_file,
 								  short_architecture,
-								  driver->cversion,
+								  driver->version,
 								  ver);
 			if (!W_ERROR_IS_OK(*perr)) {
 				if (W_ERROR_EQUAL(*perr, WERR_ACCESS_DENIED)) {
@@ -1998,15 +1944,15 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 		}
 	}
 
-	if (driver->configfile && strlen(driver->configfile)) {
-		if (!strequal(driver->configfile, driver->driverpath) &&
-		    !strequal(driver->configfile, driver->datafile)) {
+	if (driver->config_file && strlen(driver->config_file)) {
+		if (!strequal(driver->config_file, driver->driver_path) &&
+		    !strequal(driver->config_file, driver->data_file)) {
 
 			*perr = move_driver_file_to_download_area(ctx,
 								  conn,
-								  driver->configfile,
+								  driver->config_file,
 								  short_architecture,
-								  driver->cversion,
+								  driver->version,
 								  ver);
 			if (!W_ERROR_IS_OK(*perr)) {
 				if (W_ERROR_EQUAL(*perr, WERR_ACCESS_DENIED)) {
@@ -2017,16 +1963,16 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 		}
 	}
 
-	if (driver->helpfile && strlen(driver->helpfile)) {
-		if (!strequal(driver->helpfile, driver->driverpath) &&
-		    !strequal(driver->helpfile, driver->datafile) &&
-		    !strequal(driver->helpfile, driver->configfile)) {
+	if (driver->help_file && strlen(driver->help_file)) {
+		if (!strequal(driver->help_file, driver->driver_path) &&
+		    !strequal(driver->help_file, driver->data_file) &&
+		    !strequal(driver->help_file, driver->config_file)) {
 
 			*perr = move_driver_file_to_download_area(ctx,
 								  conn,
-								  driver->helpfile,
+								  driver->help_file,
 								  short_architecture,
-								  driver->cversion,
+								  driver->version,
 								  ver);
 			if (!W_ERROR_IS_OK(*perr)) {
 				if (W_ERROR_EQUAL(*perr, WERR_ACCESS_DENIED)) {
@@ -2037,24 +1983,24 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 		}
 	}
 
-	if (driver->dependentfiles) {
-		for (i=0; *driver->dependentfiles[i]; i++) {
-			if (!strequal(driver->dependentfiles[i], driver->driverpath) &&
-			    !strequal(driver->dependentfiles[i], driver->datafile) &&
-			    !strequal(driver->dependentfiles[i], driver->configfile) &&
-			    !strequal(driver->dependentfiles[i], driver->helpfile)) {
+	if (driver->dependent_files && driver->dependent_files->string) {
+		for (i=0; driver->dependent_files->string[i]; i++) {
+			if (!strequal(driver->dependent_files->string[i], driver->driver_path) &&
+			    !strequal(driver->dependent_files->string[i], driver->data_file) &&
+			    !strequal(driver->dependent_files->string[i], driver->config_file) &&
+			    !strequal(driver->dependent_files->string[i], driver->help_file)) {
 				int j;
 				for (j=0; j < i; j++) {
-					if (strequal(driver->dependentfiles[i], driver->dependentfiles[j])) {
+					if (strequal(driver->dependent_files->string[i], driver->dependent_files->string[j])) {
 						goto NextDriver;
 					}
 				}
 
 				*perr = move_driver_file_to_download_area(ctx,
 									  conn,
-									  driver->dependentfiles[i],
+									  driver->dependent_files->string[i],
 									  short_architecture,
-									  driver->cversion,
+									  driver->version,
 									  ver);
 				if (!W_ERROR_IS_OK(*perr)) {
 					if (W_ERROR_EQUAL(*perr, WERR_ACCESS_DENIED)) {
@@ -2087,19 +2033,18 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 /****************************************************************************
 ****************************************************************************/
 
-static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
+static uint32 add_a_printer_driver_3(struct spoolss_AddDriverInfo3 *driver)
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	int len, buflen;
 	const char *architecture;
 	char *directory = NULL;
-	fstring temp_name;
 	char *key = NULL;
 	uint8 *buf;
 	int i, ret;
 	TDB_DATA dbuf;
 
-	architecture = get_short_archi(driver->environment);
+	architecture = get_short_archi(driver->architecture);
 	if (!architecture) {
 		return (uint32)-1;
 	}
@@ -2110,10 +2055,22 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 	 */
 
 	directory = talloc_asprintf(ctx, "\\print$\\%s\\%d\\",
-			architecture, driver->cversion);
+			architecture, driver->version);
 	if (!directory) {
 		return (uint32)-1;
 	}
+
+#define gen_full_driver_unc_path(ctx, directory, file) \
+	do { \
+		if (file && strlen(file)) { \
+			file = talloc_asprintf(ctx, "%s%s", directory, file); \
+		} else { \
+			file = talloc_strdup(ctx, ""); \
+		} \
+		if (!file) { \
+			return (uint32_t)-1; \
+		} \
+	} while (0);
 
 	/* .inf files do not always list a file for each of the four standard files.
 	 * Don't prepend a path to a null filename, or client claims:
@@ -2121,35 +2078,21 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 	 *   <printer driver name> printer driver installed. Click OK if you
 	 *   wish to install the driver on your local machine."
 	 */
-	if (strlen(driver->driverpath)) {
-		fstrcpy(temp_name, driver->driverpath);
-		slprintf(driver->driverpath, sizeof(driver->driverpath)-1, "%s%s", directory, temp_name);
-	}
 
-	if (strlen(driver->datafile)) {
-		fstrcpy(temp_name, driver->datafile);
-		slprintf(driver->datafile, sizeof(driver->datafile)-1, "%s%s", directory, temp_name);
-	}
+	gen_full_driver_unc_path(ctx, directory, driver->driver_path);
+	gen_full_driver_unc_path(ctx, directory, driver->data_file);
+	gen_full_driver_unc_path(ctx, directory, driver->config_file);
+	gen_full_driver_unc_path(ctx, directory, driver->help_file);
 
-	if (strlen(driver->configfile)) {
-		fstrcpy(temp_name, driver->configfile);
-		slprintf(driver->configfile, sizeof(driver->configfile)-1, "%s%s", directory, temp_name);
-	}
-
-	if (strlen(driver->helpfile)) {
-		fstrcpy(temp_name, driver->helpfile);
-		slprintf(driver->helpfile, sizeof(driver->helpfile)-1, "%s%s", directory, temp_name);
-	}
-
-	if (driver->dependentfiles) {
-		for (i=0; *driver->dependentfiles[i]; i++) {
-			fstrcpy(temp_name, driver->dependentfiles[i]);
-			slprintf(driver->dependentfiles[i], sizeof(driver->dependentfiles[i])-1, "%s%s", directory, temp_name);
+	if (driver->dependent_files && driver->dependent_files->string) {
+		for (i=0; driver->dependent_files->string[i]; i++) {
+			gen_full_driver_unc_path(ctx, directory,
+				driver->dependent_files->string[i]);
 		}
 	}
 
 	key = talloc_asprintf(ctx, "%s%s/%d/%s", DRIVERS_PREFIX,
-			architecture, driver->cversion, driver->name);
+			architecture, driver->version, driver->driver_name);
 	if (!key) {
 		return (uint32)-1;
 	}
@@ -2162,20 +2105,20 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
  again:
 	len = 0;
 	len += tdb_pack(buf+len, buflen-len, "dffffffff",
-			driver->cversion,
-			driver->name,
-			driver->environment,
-			driver->driverpath,
-			driver->datafile,
-			driver->configfile,
-			driver->helpfile,
-			driver->monitorname,
-			driver->defaultdatatype);
+			driver->version,
+			driver->driver_name,
+			driver->architecture,
+			driver->driver_path,
+			driver->data_file,
+			driver->config_file,
+			driver->help_file,
+			driver->monitor_name ? driver->monitor_name : "",
+			driver->default_datatype ? driver->default_datatype : "");
 
-	if (driver->dependentfiles) {
-		for (i=0; *driver->dependentfiles[i]; i++) {
+	if (driver->dependent_files && driver->dependent_files->string) {
+		for (i=0; driver->dependent_files->string[i]; i++) {
 			len += tdb_pack(buf+len, buflen-len, "f",
-					driver->dependentfiles[i]);
+					driver->dependent_files->string[i]);
 		}
 	}
 
@@ -2205,21 +2148,12 @@ done:
 
 /****************************************************************************
 ****************************************************************************/
-static uint32 add_a_printer_driver_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver)
-{
-	NT_PRINTER_DRIVER_INFO_LEVEL_3 info3;
 
-	ZERO_STRUCT(info3);
-	info3.cversion = driver->version;
-	fstrcpy(info3.name,driver->name);
-	fstrcpy(info3.environment,driver->environment);
-	fstrcpy(info3.driverpath,driver->driverpath);
-	fstrcpy(info3.datafile,driver->datafile);
-	fstrcpy(info3.configfile,driver->configfile);
-	fstrcpy(info3.helpfile,driver->helpfile);
-	fstrcpy(info3.monitorname,driver->monitorname);
-	fstrcpy(info3.defaultdatatype,driver->defaultdatatype);
-	info3.dependentfiles = driver->dependentfiles;
+static uint32 add_a_printer_driver_6(struct spoolss_AddDriverInfo6 *driver)
+{
+	struct spoolss_AddDriverInfo3 info3;
+
+	convert_level_6_to_level3(&info3, driver);
 
 	return add_a_printer_driver_3(&info3);
 }
@@ -2337,55 +2271,6 @@ static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr,
 	}
 
 	return WERR_OK;
-}
-
-/****************************************************************************
- Debugging function, dump at level 6 the struct in the logs.
-****************************************************************************/
-
-static uint32 dump_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
-{
-	uint32 result;
-	NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3;
-	int i;
-
-	DEBUG(20,("Dumping printer driver at level [%d]\n", level));
-
-	switch (level)
-	{
-		case 3:
-		{
-			if (driver.info_3 == NULL)
-				result=5;
-			else {
-				info3=driver.info_3;
-
-				DEBUGADD(20,("version:[%d]\n",         info3->cversion));
-				DEBUGADD(20,("name:[%s]\n",            info3->name));
-				DEBUGADD(20,("environment:[%s]\n",     info3->environment));
-				DEBUGADD(20,("driverpath:[%s]\n",      info3->driverpath));
-				DEBUGADD(20,("datafile:[%s]\n",        info3->datafile));
-				DEBUGADD(20,("configfile:[%s]\n",      info3->configfile));
-				DEBUGADD(20,("helpfile:[%s]\n",        info3->helpfile));
-				DEBUGADD(20,("monitorname:[%s]\n",     info3->monitorname));
-				DEBUGADD(20,("defaultdatatype:[%s]\n", info3->defaultdatatype));
-
-				for (i=0; info3->dependentfiles &&
-					  *info3->dependentfiles[i]; i++) {
-					DEBUGADD(20,("dependentfile:[%s]\n",
-						      info3->dependentfiles[i]));
-				}
-				result=0;
-			}
-			break;
-		}
-		default:
-			DEBUGADD(20,("dump_a_printer_driver: Level %u not implemented\n", (unsigned int)level));
-			result=1;
-			break;
-	}
-
-	return result;
 }
 
 /****************************************************************************
@@ -4734,24 +4619,38 @@ uint32 free_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level)
 
 /****************************************************************************
 ****************************************************************************/
-uint32 add_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
+uint32_t add_a_printer_driver(TALLOC_CTX *mem_ctx,
+			      struct spoolss_AddDriverInfoCtr *r,
+			      char **driver_name,
+			      uint32_t *version)
 {
 	uint32 result;
-	DEBUG(104,("adding a printer at level [%d]\n", level));
-	dump_a_printer_driver(driver, level);
+	DEBUG(10,("adding a printer at level [%d]\n", r->level));
 
-	switch (level) {
-		case 3:
-			result=add_a_printer_driver_3(driver.info_3);
-			break;
-
-		case 6:
-			result=add_a_printer_driver_6(driver.info_6);
-			break;
-
-		default:
-			result=1;
-			break;
+	switch (r->level) {
+	case 3:
+		result = add_a_printer_driver_3(r->info.info3);
+		if (result == 0) {
+			*driver_name = talloc_strdup(mem_ctx, r->info.info3->driver_name);
+			if (!*driver_name) {
+				return -1;
+			}
+			*version = r->info.info3->version;
+		}
+		break;
+	case 6:
+		result = add_a_printer_driver_6(r->info.info6);
+		if (result == 0) {
+			*driver_name = talloc_strdup(mem_ctx, r->info.info6->driver_name);
+			if (!*driver_name) {
+				return -1;
+			}
+			*version = r->info.info6->version;
+		}
+		break;
+	default:
+		result = 1;
+		break;
 	}
 
 	return result;
@@ -4788,9 +4687,6 @@ WERROR get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32_t level
 			result=W_ERROR(1);
 			break;
 	}
-
-	if (W_ERROR_IS_OK(result))
-		dump_a_printer_driver(*driver, level);
 
 	return result;
 }
@@ -5112,9 +5008,6 @@ bool printer_driver_files_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info )
 
 	driver.info_3 = info;
 
-	if ( DEBUGLEVEL >= 20 )
-		dump_a_printer_driver( driver, 3 );
-
 	return in_use;
 }
 
@@ -5274,7 +5167,6 @@ WERROR delete_printer_driver(struct pipes_struct *rpc_pipe,
 		key, delete_files ? "TRUE" : "FALSE" ));
 
 	ctr.info_3 = info_3;
-	dump_a_printer_driver( ctr, 3 );
 
 	/* check if the driver actually exists for this environment */
 

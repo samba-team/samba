@@ -4839,11 +4839,10 @@ void update_a_form(nt_forms_struct **list, struct spoolss_AddFormInfo1 *form, in
 int get_ntdrivers(fstring **list, const char *architecture, uint32 version);
 const char *get_short_archi(const char *long_archi);
 WERROR clean_up_driver_struct(struct pipes_struct *rpc_pipe,
-			      NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract,
-			      uint32 level);
+			      struct spoolss_AddDriverInfoCtr *r);
 WERROR move_driver_to_download_area(struct pipes_struct *p,
-				    NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract,
-				    uint32 level, WERROR *perr);
+				    struct spoolss_AddDriverInfoCtr *r,
+				    WERROR *perr);
 int pack_devicemode(NT_DEVICEMODE *nt_devmode, uint8 *buf, int buflen);
 uint32 del_a_printer(const char *sharename);
 NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename);
@@ -4879,7 +4878,10 @@ WERROR get_a_printer_search( Printer_entry *print_hnd,
 			uint32 level,
 			const char *sharename);
 uint32 free_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level);
-uint32 add_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level);
+uint32_t add_a_printer_driver(TALLOC_CTX *mem_ctx,
+			      struct spoolss_AddDriverInfoCtr *r,
+			      char **driver_name,
+			      uint32_t *version);
 WERROR get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32_t level,
 			    const char *drivername, const char *architecture, uint32_t version);
 uint32 free_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level);
