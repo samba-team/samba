@@ -67,8 +67,8 @@ static char **schema_supclasses(struct dsdb_schema *schema, struct dsdb_class *s
 	}
 
 	schema_class->supclasses = str_list_unique(list);
-	
-	return list;
+
+	return schema_class->supclasses;
 }
 
 /*
