@@ -16,7 +16,8 @@ ST_DONE_TEST = @test -f $(selftest_prefix)/st_done || { echo "SELFTEST FAILED"; 
 SELFTEST_NOSLOW_OPTS = --exclude=$(srcdir)/selftest/slow
 SELFTEST_QUICK_OPTS = $(SELFTEST_NOSLOW_OPTS) --quick --include=$(srcdir)/selftest/quick
 FILTER_XFAIL = $(PERL) $(selftestdir)/filter-subunit.pl --expected-failures=$(srcdir)/selftest/knownfail
-FORMAT_TEST_OUTPUT = $(FILTER_XFAIL) | $(PERL) $(selftestdir)/format-subunit.pl --format=$(TEST_FORMAT)
+FORMAT_TEST = $(PERL) $(selftestdir)/format-subunit.pl --prefix=${selftest_prefix} --format=$(TEST_FORMAT)
+FORMAT_TEST_OUTPUT = $(FILTER_XFAIL) | $(FORMAT_TEST)
 
 test-subunit:: everything
 	$(SELFTEST) --socket-wrapper $(TESTS) $(ST_TOUCH)
