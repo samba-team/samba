@@ -64,6 +64,7 @@ struct dsdb_attribute {
 	uint32_t mAPIID;
 
 	struct GUID attributeSecurityGUID;
+	struct GUID objectGUID;
 
 	uint32_t searchFlags;
 	uint32_t systemFlags;
@@ -104,6 +105,7 @@ struct dsdb_class {
 	const char *governsID_oid;
 	uint32_t governsID_id;
 	struct GUID schemaIDGUID;
+	struct GUID objectGUID;
 
 	uint32_t objectClassCategory;
 	const char *rDNAttID;

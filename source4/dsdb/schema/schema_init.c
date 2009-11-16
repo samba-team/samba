@@ -573,6 +573,8 @@ WERROR dsdb_attribute_from_ldb(struct ldb_context *ldb,
 
 	GET_GUID_LDB(msg, "attributeSecurityGUID", attr, attributeSecurityGUID);
 
+	GET_GUID_LDB(msg, "objectGUID", attr, objectGUID);
+
 	GET_UINT32_LDB(msg, "searchFlags", attr, searchFlags);
 	GET_UINT32_LDB(msg, "systemFlags", attr, systemFlags);
 	GET_BOOL_LDB(msg, "isMemberOfPartialAttributeSet", attr, isMemberOfPartialAttributeSet, false);
@@ -651,6 +653,7 @@ WERROR dsdb_class_from_ldb(struct dsdb_schema *schema,
 		}
 	}
 	GET_GUID_LDB(msg, "schemaIDGUID", obj, schemaIDGUID);
+	GET_GUID_LDB(msg, "objectGUID", obj, objectGUID);
 
 	GET_UINT32_LDB(msg, "objectClassCategory", obj, objectClassCategory);
 	GET_STRING_LDB(msg, "rDNAttID", obj, obj, rDNAttID, false);
@@ -907,39 +910,6 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 	if (_a) (p)->elem[list_counter] = 0;				\
 } while (0)
 
-#define GET_DN_DS(s, r, attr, mem_ctx, p, elem, strict) do { \
-	struct drsuapi_DsReplicaAttribute *_a; \
-	_a = dsdb_find_object_attr_name(s, r, attr, NULL); \
-	if (strict && !_a) { \
-		d_printf("%s: %s == NULL\n", __location__, attr); \
-		return WERR_INVALID_PARAM; \
-	} \
-	if (strict && _a->value_ctr.num_values != 1) { \
-		d_printf("%s: %s num_values == %u\n", __location__, attr, \
-			_a->value_ctr.num_values); \
-		return WERR_INVALID_PARAM; \
-	} \
-	if (strict && !_a->value_ctr.values[0].blob) { \
-		d_printf("%s: %s data == NULL\n", __location__, attr); \
-		return WERR_INVALID_PARAM; \
-	} \
-	if (_a && _a->value_ctr.num_values >= 1 \
-	    && _a->value_ctr.values[0].blob) { \
-		struct drsuapi_DsReplicaObjectIdentifier3 _id3; \
-		enum ndr_err_code _ndr_err; \
-		_ndr_err = ndr_pull_struct_blob_all(_a->value_ctr.values[0].blob, \
-						      mem_ctx, s->iconv_convenience, &_id3,\
-						      (ndr_pull_flags_fn_t)ndr_pull_drsuapi_DsReplicaObjectIdentifier3);\
-		if (!NDR_ERR_CODE_IS_SUCCESS(_ndr_err)) { \
-			NTSTATUS _nt_status = ndr_map_error2ntstatus(_ndr_err); \
-			return ntstatus_to_werror(_nt_status); \
-		} \
-		(p)->elem = _id3.dn; \
-	} else { \
-		(p)->elem = NULL; \
-	} \
-} while (0)
-
 #define GET_BOOL_DS(s, r, attr, p, elem, strict) do { \
 	struct drsuapi_DsReplicaAttribute *_a; \
 	_a = dsdb_find_object_attr_name(s, r, attr, NULL); \
@@ -1054,6 +1024,8 @@ WERROR dsdb_attribute_from_drsuapi(struct ldb_context *ldb,
 
 	GET_GUID_DS(schema, r, "attributeSecurityGUID", mem_ctx, attr, attributeSecurityGUID);
 
+	attr->objectGUID = r->identifier->guid;
+
 	GET_UINT32_DS(schema, r, "searchFlags", attr, searchFlags);
 	GET_UINT32_DS(schema, r, "systemFlags", attr, systemFlags);
 	GET_BOOL_DS(schema, r, "isMemberOfPartialAttributeSet", attr, isMemberOfPartialAttributeSet, false);
@@ -1099,12 +1071,15 @@ WERROR dsdb_attribute_from_drsuapi(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
-WERROR dsdb_class_from_drsuapi(struct dsdb_schema *schema,
+WERROR dsdb_class_from_drsuapi(struct ldb_context *ldb, 
+			       struct dsdb_schema *schema,
 			       struct drsuapi_DsReplicaObject *r,
 			       TALLOC_CTX *mem_ctx,
 			       struct dsdb_class *obj)
 {
 	WERROR status;
+	struct drsuapi_DsReplicaAttribute *attr;
+	DATA_BLOB blob;
 
 	GET_STRING_DS(schema, r, "name", mem_ctx, obj, cn, true);
 	GET_STRING_DS(schema, r, "lDAPDisplayName", mem_ctx, obj, lDAPDisplayName, true);
@@ -1119,9 +1094,24 @@ WERROR dsdb_class_from_drsuapi(struct dsdb_schema *schema,
 	}
 	GET_GUID_DS(schema, r, "schemaIDGUID", mem_ctx, obj, schemaIDGUID);
 
+	obj->objectGUID = r->identifier->guid;
+
 	GET_UINT32_DS(schema, r, "objectClassCategory", obj, objectClassCategory);
 	GET_STRING_DS(schema, r, "rDNAttID", mem_ctx, obj, rDNAttID, false);
-	GET_DN_DS(schema, r, "defaultObjectCategory", mem_ctx, obj, defaultObjectCategory, true);
+
+	attr = dsdb_find_object_attr_name(schema, r, "defaultObjectCategory", NULL); 
+
+	if (!attr || attr->value_ctr.num_values != 1 || !attr->value_ctr.values[0].blob) { 
+		d_printf("%s: no defaultObjectCategory supplied\n", __location__); 
+		return WERR_INVALID_PARAM; 
+	}
+
+	status = dsdb_syntax_one_DN_drsuapi_to_ldb(mem_ctx, ldb, find_syntax_map_by_standard_oid(LDB_SYNTAX_DN), 
+						   schema->iconv_convenience, attr->value_ctr.values[0].blob, &blob);
+	if (!W_ERROR_IS_OK(status)) {
+		return status;
+	}
+	obj->defaultObjectCategory = (char *)blob.data;
 
 	GET_UINT32_DS(schema, r, "subClassOf", obj, subClassOf_id);
 

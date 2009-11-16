@@ -241,7 +241,7 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 			sc = talloc_zero(s->self_made_schema, struct dsdb_class);
 			NT_STATUS_HAVE_NO_MEMORY(sc);
 
-			status = dsdb_class_from_drsuapi(s->self_made_schema, &cur->object, s, sc);
+			status = dsdb_class_from_drsuapi(s->ldb, s->self_made_schema, &cur->object, s, sc);
 			if (!W_ERROR_IS_OK(status)) {
 				return werror_to_ntstatus(status);
 			}
