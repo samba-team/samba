@@ -554,6 +554,7 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
     #
     # Some Known ordering constraints:
     # - rootdse must be first, as it makes redirects from "" -> cn=rootdse
+    # - extended_dn_in must be before objectclass.c, as it resolves the DN
     # - objectclass must be before password_hash, because password_hash checks
     #   that the objectclass is of type person (filled in by objectclass
     #   module when expanding the objectclass list)
@@ -577,6 +578,7 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
                     "password_hash",
                     "operational",
                     "kludge_acl", 
+                    "schema_load",
                     "instancetype"]
     tdb_modules_list = [
                     "subtree_rename",
@@ -584,7 +586,6 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
                     "linked_attributes",
                     "extended_dn_out_ldb"]
     modules_list2 = ["show_deleted",
-                     "schema_load",
                      "new_partition",
                      "partition"]
 
@@ -996,11 +997,6 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
             "CONFIGDN": names.configdn, 
             "DESCRIPTOR": descr,
             })
-        message("Modifying configuration container")
-        setup_modify_ldif(samdb, setup_path("provision_configuration_basedn_modify.ldif"), {
-            "CONFIGDN": names.configdn, 
-            "SCHEMADN": names.schemadn,
-            })
 
         # The LDIF here was created when the Schema object was constructed
         message("Setting up sam.ldb schema")
@@ -1053,6 +1049,12 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
             "POLICYGUID_DC": policyguid_dc
             })
 
+        setup_modify_ldif(samdb, setup_path("provision_basedn_references.ldif"), {
+                "DOMAINDN": names.domaindn})
+
+        setup_modify_ldif(samdb, setup_path("provision_configuration_references.ldif"), {
+                "CONFIGDN": names.configdn,
+                "SCHEMADN": names.schemadn})
         if fill == FILL_FULL:
             message("Setting up sam.ldb users and groups")
             setup_add_ldif(samdb, setup_path("provision_users.ldif"), {
