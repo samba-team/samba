@@ -116,7 +116,9 @@ bool strict_lock_default(files_struct *fsp, struct lock_struct *plock)
 			DEBUG(10,("is_locked: optimisation - level II oplock on file %s\n", fsp_str_dbg(fsp)));
 			ret = True;
 		} else {
-			struct byte_range_lock *br_lck = brl_get_locks_readonly(talloc_tos(), fsp);
+			struct byte_range_lock *br_lck;
+
+			br_lck = brl_get_locks_readonly(fsp);
 			if (!br_lck) {
 				return True;
 			}
@@ -127,10 +129,11 @@ bool strict_lock_default(files_struct *fsp, struct lock_struct *plock)
 					plock->size,
 					plock->lock_type,
 					plock->lock_flav);
-			TALLOC_FREE(br_lck);
 		}
 	} else {
-		struct byte_range_lock *br_lck = brl_get_locks_readonly(talloc_tos(), fsp);
+		struct byte_range_lock *br_lck;
+
+		br_lck = brl_get_locks_readonly(fsp);
 		if (!br_lck) {
 			return True;
 		}
@@ -141,7 +144,6 @@ bool strict_lock_default(files_struct *fsp, struct lock_struct *plock)
 				plock->size,
 				plock->lock_type,
 				plock->lock_flav);
-		TALLOC_FREE(br_lck);
 	}
 
 	DEBUG(10,("strict_lock_default: flavour = %s brl start=%.0f "
@@ -170,7 +172,6 @@ NTSTATUS query_lock(files_struct *fsp,
 			enum brl_flavour lock_flav)
 {
 	struct byte_range_lock *br_lck = NULL;
-	NTSTATUS status = NT_STATUS_LOCK_NOT_GRANTED;
 
 	if (!fsp->can_lock) {
 		return fsp->is_directory ? NT_STATUS_INVALID_DEVICE_REQUEST : NT_STATUS_INVALID_HANDLE;
@@ -180,21 +181,18 @@ NTSTATUS query_lock(files_struct *fsp,
 		return NT_STATUS_OK;
 	}
 
-	br_lck = brl_get_locks_readonly(talloc_tos(), fsp);
+	br_lck = brl_get_locks_readonly(fsp);
 	if (!br_lck) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = brl_lockquery(br_lck,
+	return brl_lockquery(br_lck,
 			psmbpid,
 			procid_self(),
 			poffset,
 			pcount,
 			plock_type,
 			lock_flav);
-
-	TALLOC_FREE(br_lck);
-	return status;
 }
 
 static void increment_current_lock_count(files_struct *fsp,
