@@ -561,7 +561,13 @@ static bool test_analyse_objects(struct torture_context *tctx,
 			ldif.changetype = LDB_CHANGETYPE_MODIFY;
 			ldif.msg = new_msg;
 			s = ldb_ldif_write_string(ldb, new_msg, &ldif);
-			s = talloc_asprintf(tctx, "\n# Difference in between DRS and LDAP objects: %s\n", s);
+			s = talloc_asprintf(tctx, "\n# Difference in between DRS and LDAP objects: \n%s\n", s);
+
+			ldif.msg = ldb_msg_diff(ldb, ldap_msg, drs_msg);
+			s = talloc_asprintf_append(s,
+						   "\n# Difference in between LDAP and DRS objects: \n%s\n",
+						   ldb_ldif_write_string(ldb, new_msg, &ldif));
+
 			s = talloc_asprintf_append(s,
 						   "# Should have no objects in 'difference' message. Diff elements: %d",
 						   new_msg->num_elements);
