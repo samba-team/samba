@@ -7752,7 +7752,6 @@ void reply_writebs(struct smb_request *req)
 void reply_getattrE(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
-	SMB_STRUCT_STAT sbuf;
 	int mode;
 	files_struct *fsp;
 	struct timespec create_ts;
@@ -7774,13 +7773,11 @@ void reply_getattrE(struct smb_request *req)
 	}
 
 	/* Do an fstat on this file */
-	if(fsp_stat(fsp, &sbuf)) {
+	if(fsp_stat(fsp)) {
 		reply_nterror(req, map_nt_error_from_unix(errno));
 		END_PROFILE(SMBgetattrE);
 		return;
 	}
-
-	fsp->fsp_name->st = sbuf;
 
 	mode = dos_mode(conn, fsp->fsp_name);
 
@@ -7795,17 +7792,17 @@ void reply_getattrE(struct smb_request *req)
 	create_ts = get_create_timespec(conn, fsp, fsp->fsp_name);
 	srv_put_dos_date2((char *)req->outbuf, smb_vwv0, create_ts.tv_sec);
 	srv_put_dos_date2((char *)req->outbuf, smb_vwv2,
-			  convert_timespec_to_time_t(sbuf.st_ex_atime));
+			  convert_timespec_to_time_t(fsp->fsp_name->st.st_ex_atime));
 	/* Should we check pending modtime here ? JRA */
 	srv_put_dos_date2((char *)req->outbuf, smb_vwv4,
-			  convert_timespec_to_time_t(sbuf.st_ex_mtime));
+			  convert_timespec_to_time_t(fsp->fsp_name->st.st_ex_mtime));
 
 	if (mode & aDIR) {
 		SIVAL(req->outbuf, smb_vwv6, 0);
 		SIVAL(req->outbuf, smb_vwv8, 0);
 	} else {
-		uint32 allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn,fsp, &sbuf);
-		SIVAL(req->outbuf, smb_vwv6, (uint32)sbuf.st_ex_size);
+		uint32 allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn,fsp, &fsp->fsp_name->st);
+		SIVAL(req->outbuf, smb_vwv6, (uint32)fsp->fsp_name->st.st_ex_size);
 		SIVAL(req->outbuf, smb_vwv8, allocation_size);
 	}
 	SSVAL(req->outbuf,smb_vwv10, mode);
