@@ -69,7 +69,7 @@ static int dsdb_schema_from_schema_dn(TALLOC_CTX *mem_ctx, struct ldb_module *mo
 	 * setup the prefix mappings and schema info
 	 */
 	ret = dsdb_module_search_dn(module, tmp_ctx, &schema_res,
-				    schema_dn, schema_attrs);
+				    schema_dn, schema_attrs, 0);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		goto failed;
 	} else if (ret != LDB_SUCCESS) {
@@ -84,6 +84,7 @@ static int dsdb_schema_from_schema_dn(TALLOC_CTX *mem_ctx, struct ldb_module *mo
 	 */
 	ret = dsdb_module_search(module, tmp_ctx, &a_res,
 				 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
+				 0, 
 				 "(objectClass=attributeSchema)");
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, 
@@ -97,6 +98,7 @@ static int dsdb_schema_from_schema_dn(TALLOC_CTX *mem_ctx, struct ldb_module *mo
 	 */
 	ret = dsdb_module_search(module, tmp_ctx, &c_res,
 				 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
+				 DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT,
 				 "(objectClass=classSchema)");
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, 
