@@ -4996,6 +4996,80 @@ static bool ldapsam_sid_to_id(struct pdb_methods *methods,
 	return ret;
 }
 
+/**
+ * Find the SID for a uid.
+ * This is shortcut is only used if ldapsam:trusted is set to true.
+ */
+static bool ldapsam_uid_to_sid(struct pdb_methods *methods, uid_t uid,
+			       DOM_SID *sid)
+{
+	struct ldapsam_privates *priv =
+		(struct ldapsam_privates *)methods->private_data;
+	char *filter;
+	const char *attrs[] = { "sambaSID", NULL };
+	LDAPMessage *result = NULL;
+	LDAPMessage *entry = NULL;
+	bool ret = false;
+	char *user_sid_string;
+	DOM_SID *user_sid;
+	int rc;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+
+	filter = talloc_asprintf(tmp_ctx,
+				 "(&(uidNumber=%u)"
+				 "(objectClass=%s)"
+				 "(objectClass=%s))",
+				 (unsigned int)uid,
+				 LDAP_OBJ_POSIXACCOUNT,
+				 LDAP_OBJ_SAMBASAMACCOUNT);
+	if (filter == NULL) {
+		DEBUG(3, ("talloc_asprintf failed\n"));
+		goto done;
+	}
+
+	rc = smbldap_search_suffix(priv->smbldap_state, filter, attrs, &result);
+	if (rc != LDAP_SUCCESS) {
+		goto done;
+	}
+	talloc_autofree_ldapmsg(tmp_ctx, result);
+
+	if (ldap_count_entries(priv2ld(priv), result) != 1) {
+		DEBUG(3, ("ERROR: Got %d entries for uid %u, expected one\n",
+			   ldap_count_entries(priv2ld(priv), result),
+			   (unsigned int)uid));
+		goto done;
+	}
+
+	entry = ldap_first_entry(priv2ld(priv), result);
+
+	user_sid_string = smbldap_talloc_single_attribute(priv2ld(priv), entry,
+							  "sambaSID", tmp_ctx);
+	if (user_sid_string == NULL) {
+		DEBUG(1, ("Could not find sambaSID in object '%s'\n",
+			  smbldap_talloc_dn(tmp_ctx, priv2ld(priv), entry)));
+		goto done;
+	}
+
+	user_sid = string_sid_talloc(tmp_ctx, user_sid_string);
+	if (user_sid == NULL) {
+		DEBUG(3, ("Error calling sid_string_talloc for sid '%s'\n",
+			  user_sid_string));
+		goto done;
+	}
+
+	sid_copy(sid, user_sid);
+
+	store_uid_sid_cache(sid, uid);
+	idmap_cache_set_sid2uid(sid, uid);
+
+	ret = true;
+
+ done:
+	TALLOC_FREE(tmp_ctx);
+	return ret;
+}
+
+
 /*
  * The following functions is called only if
  * ldapsam:trusted and ldapsam:editposix are
@@ -6344,6 +6418,7 @@ NTSTATUS pdb_init_ldapsam(struct pdb_methods **pdb_method, const char *location)
 			ldapsam_enum_group_memberships;
 		(*pdb_method)->lookup_rids = ldapsam_lookup_rids;
 		(*pdb_method)->sid_to_id = ldapsam_sid_to_id;
+		(*pdb_method)->uid_to_sid = ldapsam_uid_to_sid;
 
 		if (lp_parm_bool(-1, "ldapsam", "editposix", False)) {
 			(*pdb_method)->create_user = ldapsam_create_user;
