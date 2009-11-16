@@ -264,12 +264,25 @@ NTSTATUS brl_lock_failed(files_struct *fsp, const struct lock_struct *lock, bool
 
 void brl_init(bool read_only)
 {
+	int tdb_flags;
+
 	if (brlock_db) {
 		return;
 	}
+
+	tdb_flags = TDB_DEFAULT|TDB_VOLATILE|TDB_CLEAR_IF_FIRST;
+
+	if (!lp_clustering()) {
+		/*
+		 * We can't use the SEQNUM trick to cache brlock
+		 * entries in the clustering case because ctdb seqnum
+		 * propagation has a delay.
+		 */
+		tdb_flags |= TDB_SEQNUM;
+	}
+
 	brlock_db = db_open(NULL, lock_path("brlock.tdb"),
-			    lp_open_files_db_hash_size(),
-			    TDB_DEFAULT|TDB_VOLATILE|TDB_CLEAR_IF_FIRST,
+			    lp_open_files_db_hash_size(), tdb_flags,
 			    read_only?O_RDONLY:(O_RDWR|O_CREAT), 0644 );
 	if (!brlock_db) {
 		DEBUG(0,("Failed to open byte range locking database %s\n",
@@ -1890,10 +1903,49 @@ struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx,
 	return brl_get_locks_internal(mem_ctx, fsp, False);
 }
 
-struct byte_range_lock *brl_get_locks_readonly(TALLOC_CTX *mem_ctx,
-					files_struct *fsp)
+struct byte_range_lock *brl_get_locks_readonly(files_struct *fsp)
 {
-	return brl_get_locks_internal(mem_ctx, fsp, True);
+	struct byte_range_lock *br_lock;
+
+	if (lp_clustering()) {
+		return brl_get_locks_internal(talloc_tos(), fsp, true);
+	}
+
+	if ((fsp->brlock_rec != NULL)
+	    && (brlock_db->get_seqnum(brlock_db) == fsp->brlock_seqnum)) {
+		return fsp->brlock_rec;
+	}
+
+	TALLOC_FREE(fsp->brlock_rec);
+
+	br_lock = brl_get_locks_internal(talloc_tos(), fsp, false);
+	if (br_lock == NULL) {
+		return NULL;
+	}
+	fsp->brlock_seqnum = brlock_db->get_seqnum(brlock_db);
+
+	fsp->brlock_rec = talloc_zero(fsp, struct byte_range_lock);
+	if (fsp->brlock_rec == NULL) {
+		goto fail;
+	}
+	fsp->brlock_rec->fsp = fsp;
+	fsp->brlock_rec->num_locks = br_lock->num_locks;
+	fsp->brlock_rec->read_only = true;
+	fsp->brlock_rec->key = br_lock->key;
+
+	fsp->brlock_rec->lock_data = (struct lock_struct *)
+		talloc_memdup(fsp->brlock_rec, br_lock->lock_data,
+			      sizeof(struct lock_struct) * br_lock->num_locks);
+	if (fsp->brlock_rec->lock_data == NULL) {
+		goto fail;
+	}
+
+	TALLOC_FREE(br_lock);
+	return fsp->brlock_rec;
+fail:
+	TALLOC_FREE(br_lock);
+	TALLOC_FREE(fsp->brlock_rec);
+	return NULL;
 }
 
 struct brl_revalidate_state {

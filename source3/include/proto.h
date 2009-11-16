@@ -3428,8 +3428,7 @@ int brl_forall(void (*fn)(struct file_id id, struct server_id pid,
 	       void *private_data);
 struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx,
 					files_struct *fsp);
-struct byte_range_lock *brl_get_locks_readonly(TALLOC_CTX *mem_ctx,
-					files_struct *fsp);
+struct byte_range_lock *brl_get_locks_readonly(files_struct *fsp);
 void brl_register_msgs(struct messaging_context *msg_ctx);
 
 /* The following definitions come from locking/locking.c  */
