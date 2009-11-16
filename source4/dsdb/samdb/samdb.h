@@ -135,4 +135,9 @@ struct dsdb_openldap_dereference_result_control {
 #define DSDB_PARTITION_DN "@PARTITION"
 #define DSDB_PARTITION_ATTR "partition"
 
+#define DSDB_EXTENDED_DN_STORE_FORMAT_OPAQUE_NAME "dsdb_extended_dn_store_format"
+struct dsdb_extended_dn_store_format {
+	bool store_extended_dn_in_ldb;
+};
+
 #endif /* __SAMDB_H__ */

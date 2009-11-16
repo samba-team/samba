@@ -33,6 +33,7 @@
 #include "libcli/ldap/ldap_ndr.h"
 #include "ldb_module.h"
 #include "dsdb/samdb/samdb.h"
+#include "dsdb/samdb/ldb_modules/util.h"
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "../lib/util/util_ldb.h"
@@ -1005,6 +1006,10 @@ static int samldb_find_for_defaultObjectCategory(struct samldb_ctx *ac)
 					   NULL,
 					   ac, samldb_find_for_defaultObjectCategory_callback,
 					   ac->req);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		ret = dsdb_module_search_handle_flags(ac->module, req, DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}

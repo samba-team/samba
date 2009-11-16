@@ -621,7 +621,15 @@ static int objectclass_do_add(struct oc_context *ac)
 				}
 
 				if (!ldb_msg_find_element(msg, "objectCategory")) {
-					value = talloc_strdup(msg, current->objectclass->defaultObjectCategory);
+					struct dsdb_extended_dn_store_format *dn_format = talloc_get_type(ldb_module_get_private(ac->module), struct dsdb_extended_dn_store_format);
+					if (dn_format && dn_format->store_extended_dn_in_ldb == false) {
+						/* Strip off extended components */
+						struct ldb_dn *dn = ldb_dn_new(msg, ldb, current->objectclass->defaultObjectCategory);
+						value = ldb_dn_alloc_linearized(msg, dn);
+						talloc_free(dn);
+					} else {
+						value = talloc_strdup(msg, current->objectclass->defaultObjectCategory);
+					}
 					if (value == NULL) {
 						ldb_oom(ldb);
 						talloc_free(mem_ctx);
@@ -1189,9 +1197,26 @@ static int objectclass_do_rename(struct oc_context *ac)
 	return ldb_next_request(ac->module, rename_req);
 }
 
+static int objectclass_init(struct ldb_module *module)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	int ret;
+	/* Init everything else */
+	ret = ldb_next_init(module);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	
+	/* Look for the opaque to indicate we might have to cut down the DN of defaultObjectCategory */
+	ldb_module_set_private(module, ldb_get_opaque(ldb, DSDB_EXTENDED_DN_STORE_FORMAT_OPAQUE_NAME));
+
+	return ldb_next_init(module);
+}
+
 _PUBLIC_ const struct ldb_module_ops ldb_objectclass_module_ops = {
 	.name		   = "objectclass",
 	.add           = objectclass_add,
 	.modify        = objectclass_modify,
 	.rename        = objectclass_rename,
+	.init_context  = objectclass_init
 };

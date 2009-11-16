@@ -665,12 +665,27 @@ static int extended_dn_out_ldb_init(struct ldb_module *module)
 	int ret;
 
 	struct extended_dn_out_private *p = talloc(module, struct extended_dn_out_private);
+	struct dsdb_extended_dn_store_format *dn_format;
 
 	ldb_module_set_private(module, p);
 
 	if (!p) {
 		ldb_oom(ldb_module_get_ctx(module));
 		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	dn_format = talloc(p, struct dsdb_extended_dn_store_format);
+	if (!dn_format) {
+		talloc_free(p);
+		ldb_oom(ldb_module_get_ctx(module));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	dn_format->store_extended_dn_in_ldb = true;
+	ret = ldb_set_opaque(ldb_module_get_ctx(module), DSDB_EXTENDED_DN_STORE_FORMAT_OPAQUE_NAME, dn_format);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(p);
+		return ret;
 	}
 
 	p->dereference = false;
@@ -690,6 +705,7 @@ static int extended_dn_out_dereference_init(struct ldb_module *module, const cha
 {
 	int ret, i = 0;
 	struct extended_dn_out_private *p = talloc_zero(module, struct extended_dn_out_private);
+	struct dsdb_extended_dn_store_format *dn_format;
 	struct dsdb_openldap_dereference_control *dereference_control;
 	struct dsdb_attribute *cur;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
@@ -700,6 +716,21 @@ static int extended_dn_out_dereference_init(struct ldb_module *module, const cha
 	if (!p) {
 		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	dn_format = talloc(p, struct dsdb_extended_dn_store_format);
+	if (!dn_format) {
+		talloc_free(p);
+		ldb_oom(ldb_module_get_ctx(module));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	dn_format->store_extended_dn_in_ldb = false;
+
+	ret = ldb_set_opaque(ldb_module_get_ctx(module), DSDB_EXTENDED_DN_STORE_FORMAT_OPAQUE_NAME, dn_format);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(p);
+		return ret;
 	}
 
 	p->dereference = true;
