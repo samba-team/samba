@@ -25,13 +25,56 @@
 #include "system/time.h"
 #include "system/filesys.h"
 
-static bool syslogd_is_started;
-
 struct syslog_message {
 	uint32_t level;
 	uint32_t len;
 	char message[1];
 };
+
+
+struct ctdb_syslog_state {
+	int syslog_fd;
+	int fd[2];
+};
+
+static int syslogd_is_started = 0;
+
+
+/* called when child is finished
+ * this is for the syslog daemon, we can not use DEBUG here
+ */
+static void ctdb_syslog_handler(struct event_context *ev, struct fd_event *fde, 
+				      uint16_t flags, void *p)
+{
+	struct ctdb_syslog_state *state = talloc_get_type(p, struct ctdb_syslog_state);
+
+	int count;
+	char str[65536];
+	struct syslog_message *msg;
+
+	if (state == NULL) {
+		return;
+	}
+
+	count = recv(state->syslog_fd, str, sizeof(str), 0);
+	if (count < sizeof(struct syslog_message)) {
+		return;
+	}
+	msg = (struct syslog_message *)str;
+
+	syslog(msg->level, "%s", msg->message);
+}
+
+
+/* called when the pipd from the main daemon has closed
+ * this is for the syslog daemon, we can not use DEBUG here
+ */
+static void ctdb_syslog_terminate_handler(struct event_context *ev, struct fd_event *fde, 
+				      uint16_t flags, void *p)
+{
+	syslog(LOG_ERR, "Shutting down SYSLOG daemon with pid:%d", (int)getpid());
+	_exit(0);
+}
 
 
 
@@ -40,24 +83,46 @@ struct syslog_message {
  */
 int start_syslog_daemon(struct ctdb_context *ctdb)
 {
-	pid_t child;
-	int syslog_fd = -1;
 	struct sockaddr_in syslog_sin;
+	struct ctdb_syslog_state *state;
 
-	child = fork();
-	if (child == (pid_t)-1) {
+	state = talloc(ctdb, struct ctdb_syslog_state);
+	CTDB_NO_MEMORY(ctdb, state);
+
+	if (pipe(state->fd) != 0) {
+		printf("Failed to create syslog pipe\n");
+		talloc_free(state);
+		return -1;
+	}
+	
+	ctdb->syslogd_pid = fork();
+	if (ctdb->syslogd_pid == (pid_t)-1) {
 		printf("Failed to create syslog child process\n");
+		close(state->fd[0]);
+		close(state->fd[1]);
+		talloc_free(state);
 		return -1;
 	}
 
 	syslogd_is_started = 1;
 
-	if (child != 0) {
+	if (ctdb->syslogd_pid != 0) {
+		DEBUG(DEBUG_ERR,("Starting SYSLOG child process with pid:%d\n", (int)ctdb->syslogd_pid));
+
+		close(state->fd[1]);
+		set_close_on_exec(state->fd[0]);
+
 		return 0;
 	}
 
-	syslog_fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	if (syslog_fd == -1) {
+	syslog(LOG_ERR, "Starting SYSLOG daemon with pid:%d", (int)getpid());
+
+	close(state->fd[0]);
+	event_add_fd(ctdb->ev, state, state->fd[1], EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
+		     ctdb_syslog_terminate_handler, state);
+
+	state->syslog_fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (state->syslog_fd == -1) {
 		printf("Failed to create syslog socket\n");
 		return -1;
 	}
@@ -66,7 +131,7 @@ int start_syslog_daemon(struct ctdb_context *ctdb)
 	syslog_sin.sin_port   = htons(CTDB_PORT);
 	syslog_sin.sin_addr.s_addr = htonl(INADDR_LOOPBACK);	
 
-	if (bind(syslog_fd, &syslog_sin, sizeof(syslog_sin)) == -1) {
+	if (bind(state->syslog_fd, &syslog_sin, sizeof(syslog_sin)) == -1) {
 		if (errno == EADDRINUSE) {
 			/* this is ok, we already have a syslog daemon */
 			_exit(0);
@@ -75,20 +140,13 @@ int start_syslog_daemon(struct ctdb_context *ctdb)
 		_exit(10);
 	}
 
-	/* just loop over the messages */
-	while (1) {
-		int count;
-		char str[1024];
-		struct syslog_message *msg;
 
-		count = recv(syslog_fd, str, sizeof(str), 0);
-		if (count < sizeof(struct syslog_message)) {
-			continue;
-		}
-		msg = (struct syslog_message *)str;
+	event_add_fd(ctdb->ev, state, state->syslog_fd, EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
+		     ctdb_syslog_handler, state);
 
-		syslog(msg->level, "%s", msg->message);
-	}
+	event_loop_wait(ctdb->ev);
+
+	/* this should not happen */
 	_exit(10);
 }
 

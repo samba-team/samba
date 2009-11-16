@@ -440,6 +440,7 @@ struct ctdb_context {
 	const char *default_public_interface;
 	pid_t ctdbd_pid;
 	pid_t recoverd_pid;
+	pid_t syslogd_pid;
 	bool done_startup;
 	const char *node_ip;
 	struct ctdb_monitor_state *monitor;
