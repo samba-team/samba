@@ -884,7 +884,8 @@ static int key_driver_fetch_keys( const char *key, struct regsubkey_ctr *subkeys
 /**********************************************************************
  *********************************************************************/
 
-static void fill_in_driver_values(NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3, struct regval_ctr *values)
+static void fill_in_driver_values(const struct spoolss_DriverInfo3 *info3,
+				  struct regval_ctr *values)
 {
 	char *buffer = NULL;
 	int buffer_size = 0;
@@ -892,32 +893,32 @@ static void fill_in_driver_values(NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3, struct 
 	const char *filename;
 	DATA_BLOB data;
 
-	filename = dos_basename( info3->driverpath );
+	filename = dos_basename(info3->driver_path);
 	regval_ctr_addvalue_sz(values, "Driver", filename);
 
-	filename = dos_basename( info3->configfile );
+	filename = dos_basename(info3->config_file);
 	regval_ctr_addvalue_sz(values, "Configuration File", filename);
 
-	filename = dos_basename( info3->datafile );
+	filename = dos_basename(info3->data_file);
 	regval_ctr_addvalue_sz(values, "Data File", filename);
 
-	filename = dos_basename( info3->helpfile );
+	filename = dos_basename(info3->help_file);
 	regval_ctr_addvalue_sz(values, "Help File", filename);
 
-	regval_ctr_addvalue_sz(values, "Data Type", info3->defaultdatatype);
+	regval_ctr_addvalue_sz(values, "Data Type", info3->default_datatype);
 
-	regval_ctr_addvalue( values, "Version", REG_DWORD, (char*)&info3->cversion, 
-		sizeof(info3->cversion) );
+	regval_ctr_addvalue( values, "Version", REG_DWORD, (char*)&info3->version,
+		sizeof(info3->version) );
 
-	if ( info3->dependentfiles ) {
+	if (info3->dependent_files) {
 		/* place the list of dependent files in a single
 		   character buffer, separating each file name by
 		   a NULL */
 
-		for ( i=0; strcmp(info3->dependentfiles[i], ""); i++ ) {
+		for (i=0; info3->dependent_files[i] && strcmp(info3->dependent_files[i], ""); i++) {
 			/* strip the path to only the file's base name */
 
-			filename = dos_basename( info3->dependentfiles[i] );
+			filename = dos_basename(info3->dependent_files[i]);
 
 			length = strlen(filename);
 
@@ -959,7 +960,7 @@ static int driver_arch_fetch_values(char *key, struct regval_ctr *values)
 	fstring		arch_environment;
 	fstring		driver;
 	int		version;
-	NT_PRINTER_DRIVER_INFO_LEVEL	driver_ctr;
+	union spoolss_DriverInfo *driver_ctr;
 	WERROR		w_result;
 
 	if (!reg_split_path( key, &base, &subkeypath )) {
@@ -1020,14 +1021,14 @@ static int driver_arch_fetch_values(char *key, struct regval_ctr *values)
 
 	fstrcpy( driver, base );
 
-	w_result = get_a_printer_driver( &driver_ctr, 3, driver, arch_environment, version );
+	w_result = get_a_printer_driver(talloc_tos(), &driver_ctr, 3, driver, arch_environment, version);
 
 	if ( !W_ERROR_IS_OK(w_result) )
 		return -1;
 
-	fill_in_driver_values( driver_ctr.info_3, values );
+	fill_in_driver_values(&driver_ctr->info3, values);
 
-	free_a_printer_driver( driver_ctr, 3 );
+	free_a_printer_driver(driver_ctr);
 
 	/* END PRINTER DRIVER NAME BLOCK */
 

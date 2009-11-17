@@ -4882,13 +4882,16 @@ uint32_t add_a_printer_driver(TALLOC_CTX *mem_ctx,
 			      struct spoolss_AddDriverInfoCtr *r,
 			      char **driver_name,
 			      uint32_t *version);
-WERROR get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32_t level,
-			    const char *drivername, const char *architecture, uint32_t version);
-uint32 free_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level);
-bool printer_driver_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3 );
-bool printer_driver_files_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info );
+WERROR get_a_printer_driver(TALLOC_CTX *mem_ctx,
+			    union spoolss_DriverInfo **driver_p, uint32_t level,
+			    const char *drivername, const char *architecture,
+			    uint32_t version);
+uint32_t free_a_printer_driver(union spoolss_DriverInfo *driver);
+bool printer_driver_in_use(const struct spoolss_DriverInfo3 *info_3);
+bool printer_driver_files_in_use(TALLOC_CTX *mem_ctx,
+				 struct spoolss_DriverInfo3 *info);
 WERROR delete_printer_driver(struct pipes_struct *rpc_pipe,
-			     NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3,
+			     const struct spoolss_DriverInfo3 *info_3,
 			     uint32 version, bool delete_files );
 WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr);
 bool nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **secdesc_ctr);
