@@ -135,7 +135,7 @@ isCriticalSystemObject: TRUE
 dn: CN=Read-Only Domain Controllers,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
-description: read-only domain controllers
+description: Read-only domain controllers
 objectSid: ${DOMAINSID}-521
 sAMAccountName: Read-Only Domain Controllers
 groupType: -2147483644
@@ -144,7 +144,7 @@ isCriticalSystemObject: TRUE
 dn: CN=Enterprise Read-Only Domain Controllers,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
-description: enterprise read-only domain controllers
+description: Enterprise read-only domain controllers
 objectSid: ${DOMAINSID}-498
 sAMAccountName: Enterprise Read-Only Domain Controllers
 groupType: -2147483644
