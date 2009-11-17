@@ -208,7 +208,7 @@ static void cli_set_unix_extensions_capabilities_done(
 {
 	NTSTATUS status = cli_trans_recv(subreq, NULL, NULL, 0, NULL,
 					 NULL, 0, NULL, NULL, 0, NULL);
-	return tevent_req_simple_finish_ntstatus(subreq, status);
+	tevent_req_simple_finish_ntstatus(subreq, status);
 }
 
 NTSTATUS cli_set_unix_extensions_capabilities_recv(struct tevent_req *req)
