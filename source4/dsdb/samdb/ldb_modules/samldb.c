@@ -1342,7 +1342,7 @@ static int samldb_foreign_notice_sid_callback(struct ldb_request *req,
 		ldb_debug(ldb, LDB_DEBUG_TRACE,
 			 "NOTE (strange but valid): Adding foreign SID "
 			 "record with SID %s, but this domain (%s) is "
-			 "not foreign in the database",
+			 "not foreign in the database\n",
 			 dom_sid_string(ares, ac->sid), name);
 
 		talloc_free(ares);
@@ -2161,7 +2161,7 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 	if (!ac->msg) {
 		talloc_free(ac);
 		ldb_debug(ldb, LDB_DEBUG_FATAL,
-			  "samldb_add: ldb_msg_copy failed!");
+			  "samldb_add: ldb_msg_copy failed!\n");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
