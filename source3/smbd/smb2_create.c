@@ -347,7 +347,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	struct smb_request *smbreq;
 	files_struct *result;
 	int info;
-	SMB_STRUCT_STAT sbuf;
+	struct timespec write_time_ts;
 	struct smb2_create_blobs out_context_blobs;
 
 	ZERO_STRUCT(out_context_blobs);
@@ -386,7 +386,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			return tevent_req_post(req, ev);
 		}
 		info = FILE_WAS_OPENED;
-		ZERO_STRUCT(sbuf);
 	} else if (CAN_PRINT(smbreq->conn)) {
 		status = file_new(smbreq, smbreq->conn, &result);
 		if(!NT_STATUS_IS_OK(status)) {
@@ -398,8 +397,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					smbreq->conn,
 					in_name,
 					smbreq->vuid,
-					result,
-					&sbuf);
+					result);
 		if (!NT_STATUS_IS_OK(status)) {
 			file_free(smbreq, result);
 			tevent_req_nterror(req, status);
@@ -669,8 +667,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				return tevent_req_post(req, ev);
 			}
 		}
-
-		sbuf = result->fsp_name->st;
 	}
 
 	smb2req->compat_chain_fsp = smbreq->chain_fsp;
@@ -682,14 +678,30 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	} else {
 		state->out_create_action = info;
 	}
-	unix_timespec_to_nt_time(&state->out_creation_time, sbuf.st_ex_btime);
-	unix_timespec_to_nt_time(&state->out_last_access_time, sbuf.st_ex_atime);
-	unix_timespec_to_nt_time(&state->out_last_write_time,sbuf.st_ex_mtime);
-	unix_timespec_to_nt_time(&state->out_change_time, sbuf.st_ex_ctime);
-	state->out_allocation_size	= sbuf.st_ex_blksize * sbuf.st_ex_blocks;
-	state->out_end_of_file		= sbuf.st_ex_size;
-	state->out_file_attributes	= dos_mode(result->conn,
-						   result->fsp_name);
+	state->out_file_attributes = dos_mode(result->conn,
+					   result->fsp_name);
+	/* Deal with other possible opens having a modified
+	   write time. JRA. */
+	ZERO_STRUCT(write_time_ts);
+	get_file_infos(result->file_id, NULL, &write_time_ts);
+	if (!null_timespec(write_time_ts)) {
+		update_stat_ex_mtime(&result->fsp_name->st, write_time_ts);
+	}
+
+	unix_timespec_to_nt_time(&state->out_creation_time,
+			get_create_timespec(smbreq->conn, result,
+					result->fsp_name));
+	unix_timespec_to_nt_time(&state->out_last_access_time,
+			result->fsp_name->st.st_ex_atime);
+	unix_timespec_to_nt_time(&state->out_last_write_time,
+			result->fsp_name->st.st_ex_mtime);
+	unix_timespec_to_nt_time(&state->out_change_time,
+			get_change_timespec(smbreq->conn, result,
+					result->fsp_name));
+	state->out_allocation_size =
+			result->fsp_name->st.st_ex_blksize *
+			result->fsp_name->st.st_ex_blocks;
+	state->out_end_of_file = result->fsp_name->st.st_ex_size;
 	if (state->out_file_attributes == 0) {
 		state->out_file_attributes = FILE_ATTRIBUTE_NORMAL;
 	}

@@ -853,10 +853,8 @@ static int vfswrap_ntimes(vfs_handle_struct *handle,
 		ft->mtime = smb_fname->st.st_ex_mtime;
 	}
 
-	if (!null_timespec(ft->create_time) &&
-			lp_store_create_time(SNUM(handle->conn))) {
+	if (!null_timespec(ft->create_time)) {
 		set_create_timespec_ea(handle->conn,
-				NULL,
 				smb_fname,
 				ft->create_time);
 	}

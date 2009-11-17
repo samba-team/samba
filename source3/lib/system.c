@@ -504,6 +504,13 @@ void update_stat_ex_mtime(struct stat_ex *dst,
 	}
 }
 
+void update_stat_ex_create_time(struct stat_ex *dst,
+                                struct timespec create_time)
+{
+	dst->st_ex_btime = create_time;
+	dst->st_ex_calculated_birthtime = false;
+}
+
 static void init_stat_ex_from_stat (struct stat_ex *dst,
 				    const struct stat *src)
 {

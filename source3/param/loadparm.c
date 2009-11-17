@@ -452,7 +452,6 @@ struct service {
 	bool bMap_system;
 	bool bMap_hidden;
 	bool bMap_archive;
-	bool bStoreCreateTime;
 	bool bStoreDosAttributes;
 	bool bDmapiSupport;
 	bool bLocking;
@@ -596,7 +595,6 @@ static struct service sDefault = {
 	False,			/* bMap_system */
 	False,			/* bMap_hidden */
 	True,			/* bMap_archive */
-	False,			/* bStoreCreateTime */
 	False,			/* bStoreDosAttributes */
 	False,			/* bDmapiSupport */
 	True,			/* bLocking */
@@ -3081,15 +3079,6 @@ static struct parm_struct parm_table[] = {
 		.special	= NULL,
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
-	},
-	{
-		.label		= "store create time",
-		.type		= P_BOOL,
-		.p_class	= P_LOCAL,
-		.ptr		= &sDefault.bStoreCreateTime,
-		.special	= NULL,
-		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL,
 	},
 	{
 		.label		= "store dos attributes",
@@ -5618,7 +5607,6 @@ FN_LOCAL_BOOL(lp_administrative_share, bAdministrative_share)
 FN_LOCAL_BOOL(lp_print_ok, bPrint_ok)
 FN_LOCAL_BOOL(lp_map_hidden, bMap_hidden)
 FN_LOCAL_BOOL(lp_map_archive, bMap_archive)
-FN_LOCAL_BOOL(lp_store_create_time, bStoreCreateTime)
 FN_LOCAL_BOOL(lp_store_dos_attributes, bStoreDosAttributes)
 FN_LOCAL_BOOL(lp_dmapi_support, bDmapiSupport)
 FN_LOCAL_PARM_BOOL(lp_locking, bLocking)

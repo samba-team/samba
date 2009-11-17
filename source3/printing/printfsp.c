@@ -27,8 +27,7 @@ print_job_start().
 
 NTSTATUS print_fsp_open(struct smb_request *req, connection_struct *conn,
 			const char *fname,
-			uint16_t current_vuid, files_struct *fsp,
-			SMB_STRUCT_STAT *psbuf)
+			uint16_t current_vuid, files_struct *fsp)
 {
 	int jobid;
 	fstring name;
@@ -80,9 +79,9 @@ NTSTATUS print_fsp_open(struct smb_request *req, connection_struct *conn,
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->is_directory = False;
 	fsp->wcp = NULL;
-	SMB_VFS_FSTAT(fsp, psbuf);
-	fsp->mode = psbuf->st_ex_mode;
-	fsp->file_id = vfs_file_id_from_sbuf(conn, psbuf);
+	SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st);
+	fsp->mode = fsp->fsp_name->st.st_ex_mode;
+	fsp->file_id = vfs_file_id_from_sbuf(conn, &fsp->fsp_name->st);
 
 	return NT_STATUS_OK;
 }

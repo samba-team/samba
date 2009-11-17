@@ -680,6 +680,33 @@ void unix_timespec_to_nt_time(NTTIME *nt, struct timespec ts)
 	*nt = d;
 }
 
+#if 0
+void nt_time_to_unix_timespec(struct timespec *ts, NTTIME t)
+{
+	if (ts == NULL) {
+		return;
+	}
+
+	/* t starts in 100 nsec units since 1601-01-01. */
+
+	t *= 100;
+	/* t is now in nsec units since 1601-01-01. */
+
+	t -= TIME_FIXUP_CONSTANT*1000*1000*100;
+	/* t is now in nsec units since the UNIX epoch 1970-01-01. */
+
+	ts->tv_sec  = t / 1000000000LL;
+
+	if (TIME_T_MIN > ts->tv_sec || ts->tv_sec > TIME_T_MAX) {
+		ts->tv_sec  = 0;
+		ts->tv_nsec = 0;
+		return;
+	}
+
+	ts->tv_nsec = t - ts->tv_sec*1000000000LL;
+}
+#endif
+
 /****************************************************************************
  Convert a time_t to a NTTIME structure
 

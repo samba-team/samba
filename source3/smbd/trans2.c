@@ -5720,7 +5720,7 @@ static NTSTATUS smb_set_file_disposition_info(connection_struct *conn,
 				const char *pdata,
 				int total_data,
 				files_struct *fsp,
-				const struct smb_filename *smb_fname)
+				struct smb_filename *smb_fname)
 {
 	NTSTATUS status = NT_STATUS_OK;
 	bool delete_on_close;
