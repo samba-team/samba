@@ -277,6 +277,7 @@ interface security
 	const int DOMAIN_RID_SCHEMA_ADMINS         = 518;
 	const int DOMAIN_RID_ENTERPRISE_ADMINS     = 519;
 	const int DOMAIN_RID_POLICY_ADMINS         = 520;
+	const int DOMAIN_RID_RAS_SERVERS           = 553;
 
 
 	/*
