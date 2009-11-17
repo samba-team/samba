@@ -32,8 +32,6 @@
 
 #include "spnego_locl.h"
 
-RCSID("$Id$");
-
 /*
  * Apparently Microsoft got the OID wrong, and used
  * 1.2.840.48018.1.2.2 instead. We need both this and

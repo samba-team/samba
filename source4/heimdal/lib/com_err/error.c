@@ -38,6 +38,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <com_right.h>
+#include <roken.h>
 
 #ifdef LIBINTL
 #include <libintl.h>

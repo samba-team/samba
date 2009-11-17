@@ -33,8 +33,6 @@
 #include "spnego_locl.h"
 #include <gssapi_mech.h>
 
-RCSID("$Id$");
-
 /*
  * RFC2478, SPNEGO:
  *  The security mechanism of the initial

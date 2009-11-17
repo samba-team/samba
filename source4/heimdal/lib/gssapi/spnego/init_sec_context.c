@@ -33,8 +33,6 @@
 
 #include "spnego_locl.h"
 
-RCSID("$Id$");
-
 /*
  * Is target_name an sane target for `mech´.
  */

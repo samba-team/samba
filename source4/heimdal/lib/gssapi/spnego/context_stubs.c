@@ -32,8 +32,6 @@
 
 #include "spnego_locl.h"
 
-RCSID("$Id$");
-
 static OM_uint32
 spnego_supported_mechs(OM_uint32 *minor_status, gss_OID_set *mechs)
 {

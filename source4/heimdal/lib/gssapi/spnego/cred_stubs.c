@@ -32,8 +32,6 @@
 
 #include "spnego_locl.h"
 
-RCSID("$Id$");
-
 OM_uint32
 _gss_spnego_release_cred(OM_uint32 *minor_status, gss_cred_id_t *cred_handle)
 {

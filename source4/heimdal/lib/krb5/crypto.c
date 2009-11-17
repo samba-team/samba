@@ -2386,7 +2386,6 @@ usage2arcfour (krb5_context context, unsigned *usage)
 {
     switch (*usage) {
     case KRB5_KU_AS_REP_ENC_PART : /* 3 */
-    case KRB5_KU_TGS_REP_ENC_PART_SUB_KEY : /* 9 */
 	*usage = 8;
 	return 0;
     case KRB5_KU_USAGE_SEAL :  /* 22 */

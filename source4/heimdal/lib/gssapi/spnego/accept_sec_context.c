@@ -33,8 +33,6 @@
 
 #include "spnego_locl.h"
 
-RCSID("$Id$");
-
 static OM_uint32
 send_reject (OM_uint32 *minor_status,
 	     gss_buffer_t output_token)
