@@ -100,6 +100,10 @@ sub end_test($$$$$)
 		$self->{fail_added}++;
 	}
 
+	if ($result eq "error") {
+		$self->{error_added}++;
+	}
+
 	if ($self->{strip_ok_output}) {
 		unless ($result eq "success" or $result eq "xfail" or $result eq "skip") {
 			print $self->{output}
@@ -120,6 +124,7 @@ sub start_testsuite($;$)
 {
 	my ($self, $name) = @_;
 	Subunit::start_testsuite($name);
+	$self->{error_added} = 0;
 	$self->{fail_added} = 0;
 	$self->{xfail_added} = 0;
 }
@@ -127,9 +132,26 @@ sub start_testsuite($;$)
 sub end_testsuite($$;$)
 {
 	my ($self, $name, $result, $reason) = @_;
-	if ($self->{fail_added} == 0 and $self->{xfail_added} and
-	    ($result eq "fail" or $result eq "failure")) {
+	my $xfail = 0;
+
+	$xfail = 1 if ($self->{xfail_added} > 0);
+	$xfail = 0 if ($self->{fail_added} > 0);
+	$xfail = 0 if ($self->{error_added} > 0);
+
+	if ($xfail and ($result eq "fail" or $result eq "failure")) {
 		$result = "xfail";
+	}
+
+	if ($self->{fail_added} > 0 and $result ne "failure") {
+		$result = "failure";
+		$reason = "Subunit/Filer Reason" unless defined($reason);
+		$reason .= "\n failures[$self->{fail_added}]";
+	}
+
+	if ($self->{error_added} > 0 and $result ne "error") {
+		$result = "error";
+		$reason = "Subunit/Filer Reason" unless defined($reason);
+		$reason .= "\n errors[$self->{error_added}]";
 	}
 
 	Subunit::end_testsuite($name, $result, $reason);
