@@ -224,6 +224,11 @@ static bool test_lockread(struct torture_context *tctx,
 	const char *test_data = "TEST DATA";
 	uint_t seed = time(NULL);
 
+	if (!cli->transport->negotiate.lockread_supported) {
+		printf("Server does not support lockread - skipping\n");
+		return true;
+	}
+
 	buf = talloc_zero_array(tctx, uint8_t, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {

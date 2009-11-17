@@ -65,6 +65,7 @@ struct smbcli_negotiate {
 	time_t server_time;
 	uint_t readbraw_supported:1;
 	uint_t writebraw_supported:1;
+	uint_t lockread_supported:1;
 
 	char *server_domain;
 };
