@@ -425,6 +425,14 @@ int torture_setting_int(struct torture_context *test, const char *name,
 	return lp_parm_int(test->lp_ctx, NULL, "torture", name, default_value);
 }
 
+unsigned long torture_setting_ulong(struct torture_context *test,
+				    const char *name,
+				    unsigned long default_value)
+{
+	return lp_parm_ulong(test->lp_ctx, NULL, "torture", name,
+			     default_value);
+}
+
 double torture_setting_double(struct torture_context *test, const char *name, 
 							double default_value)
 {
