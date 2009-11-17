@@ -5,7 +5,7 @@
 
 if [ $# -lt 4 ]; then
 cat <<EOF
-Usage: test_gentest.sh SERVER USERNAME PASSWORD DOMAIN
+Usage: test_gentest.sh SERVER USERNAME PASSWORD DOMAIN PREFIX
 EOF
 exit 1;
 fi
@@ -14,7 +14,8 @@ SERVER=$1
 USERNAME=$2
 PASSWORD=$3
 DOMAIN=$4
-shift 4
+PREFIX=$5
+shift 5
 failed=0
 
 samba4bindir="$BUILDDIR/bin"
@@ -22,13 +23,13 @@ gentest="$samba4bindir/gentest$EXEEXT"
 
 . `dirname $0`/../../../testprogs/blackbox/subunit.sh
 
-cat <<EOF > st/gentest.ignore
+cat <<EOF > $PREFIX/gentest.ignore
 all_info.out.fname
 internal_information.out.file_id
 EOF
 
-testit "gentest" $VALGRIND $gentest //$SERVER/test1 //$SERVER/test2 --num-ops=100 --ignore=st/gentest.ignore -W "$DOMAIN" -U"$USERNAME%$PASSWORD" -U"$USERNAME%$PASSWORD" $@ || failed=`expr $failed + 1`
+testit "gentest" $VALGRIND $gentest //$SERVER/test1 //$SERVER/test2 --num-ops=100 --ignore=$PREFIX/gentest.ignore -W "$DOMAIN" -U"$USERNAME%$PASSWORD" -U"$USERNAME%$PASSWORD" $@ || failed=`expr $failed + 1`
 
-rm -f st/gentest.ignore
+rm -f $PREFIX/gentest.ignore
 
 exit $failed
