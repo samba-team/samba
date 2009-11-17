@@ -926,6 +926,7 @@ ssize_t sys_recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr *f
 int sys_fcntl_ptr(int fd, int cmd, void *arg);
 int sys_fcntl_long(int fd, int cmd, long arg);
 void update_stat_ex_mtime(struct stat_ex *dst, struct timespec write_ts);
+void update_stat_ex_create_time(struct stat_ex *dst, struct timespec create_time);
 int sys_stat(const char *fname,SMB_STRUCT_STAT *sbuf);
 int sys_fstat(int fd,SMB_STRUCT_STAT *sbuf);
 int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf);
@@ -4185,7 +4186,6 @@ bool lp_administrative_share(int );
 bool lp_print_ok(int );
 bool lp_map_hidden(int );
 bool lp_map_archive(int );
-bool lp_store_create_time(int );
 bool lp_store_dos_attributes(int );
 bool lp_dmapi_support(int );
 bool lp_locking(const struct share_params *p );
@@ -4916,8 +4916,7 @@ bool sysv_cache_reload(void);
 
 NTSTATUS print_fsp_open(struct smb_request *req, connection_struct *conn,
 			const char *fname,
-			uint16_t current_vuid, files_struct *fsp,
-			SMB_STRUCT_STAT *psbuf);
+			uint16_t current_vuid, files_struct *fsp);
 void print_fsp_end(files_struct *fsp, enum file_close_type close_type);
 
 /* The following definitions come from printing/printing.c  */
@@ -6238,7 +6237,7 @@ mode_t unix_mode(connection_struct *conn, int dosmode,
 uint32 dos_mode_msdfs(connection_struct *conn,
 		      const struct smb_filename *smb_fname);
 int dos_attributes_to_stat_dos_flags(uint32_t dosmode);
-uint32 dos_mode(connection_struct *conn, const struct smb_filename *smb_fname);
+uint32 dos_mode(connection_struct *conn, struct smb_filename *smb_fname);
 int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
 		     uint32 dosmode, const char *parent_dir, bool newfile);
 int file_ntimes(connection_struct *conn, const struct smb_filename *smb_fname,
@@ -6248,7 +6247,6 @@ bool set_sticky_write_time_fsp(struct files_struct *fsp,
 			       struct timespec mtime);
 
 NTSTATUS set_create_timespec_ea(connection_struct *conn,
-				struct files_struct *fsp,
 				const struct smb_filename *smb_fname,
 				struct timespec create_time);
 

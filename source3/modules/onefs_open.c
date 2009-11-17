@@ -489,7 +489,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 			   smb_fname_str_dbg(smb_fname)));
 
 		return print_fsp_open(req, conn, smb_fname->base_name,
-				      req->vuid, fsp, &smb_fname->st);
+				      req->vuid, fsp);
 	}
 
 	if (!parent_dirname(talloc_tos(), smb_fname->base_name, &parent_dir,

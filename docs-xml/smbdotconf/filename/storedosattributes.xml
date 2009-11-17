@@ -14,6 +14,13 @@
 	attribute named "user.DOSATTRIB". This extended attribute is explicitly hidden from smbd clients requesting an
 	EA list. On Linux the filesystem must have been mounted with the mount option user_xattr in order for
 	extended attributes to work, also extended attributes must be compiled into the Linux kernel.
+
+	In Samba 3.5.0 and above the "user.DOSATTRIB" extended attribute has been extended to store
+	the create time for a file as well as the DOS attributes. This is done in a backwards compatible
+	way so files created by Samba 3.5.0 and above can still have the DOS attribute read from this
+	extended attribute by earlier versions of Samba, but they will not be able to read the create
+	time stored there. Storing the create time separately from the normal filesystem meta-data
+	allows Samba to faithfully reproduce NTFS semantics on top of a POSIX filesystem.
 	</para>
 </description>
 <value type="default">no</value>
