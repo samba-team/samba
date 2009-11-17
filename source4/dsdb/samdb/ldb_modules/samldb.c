@@ -208,7 +208,7 @@ static int samldb_get_parent_domain_callback(struct ldb_request *req,
 			/* one too many! */
 			ldb_set_errstring(ldb,
 				"Invalid number of results while searching "
-				"for domain object!\n");
+				"for domain object!");
 			ret = LDB_ERR_OPERATIONS_ERROR;
 			break;
 		}
@@ -217,7 +217,7 @@ static int samldb_get_parent_domain_callback(struct ldb_request *req,
 						      "nextRid", NULL);
 		if (nextRid == NULL) {
 			ldb_asprintf_errstring(ldb,
-				"While looking for domain above %s attribute nextRid not found in %s!\n",
+				"While looking for domain above %s attribute nextRid not found in %s!",
 				ldb_dn_get_linearized(
 					ac->req->op.add.message->dn),
 				ldb_dn_get_linearized(ares->message->dn));
@@ -231,7 +231,7 @@ static int samldb_get_parent_domain_callback(struct ldb_request *req,
 								"objectSid");
 		if (ac->domain_sid == NULL) {
 			ldb_set_errstring(ldb,
-				"Unable to get the parent domain SID!\n");
+				"Unable to get the parent domain SID!");
 			ret = LDB_ERR_CONSTRAINT_VIOLATION;
 			break;
 		}
@@ -285,7 +285,7 @@ static int samldb_get_parent_domain(struct samldb_ctx *ac)
 	dn = ldb_dn_get_parent(ac, ac->check_dn);
 	if (dn == NULL) {
 		ldb_set_errstring(ldb,
-			"Unable to find parent domain object!\n");
+			"Unable to find parent domain object!");
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
@@ -388,7 +388,8 @@ static int samldb_check_samAccountName(struct samldb_ctx *ac)
 	if (name == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	filter = talloc_asprintf(ac, "samAccountName=%s", ldb_binary_encode_string(ac, name));
+	filter = talloc_asprintf(ac, "samAccountName=%s",
+				 ldb_binary_encode_string(ac, name));
 	if (filter == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -428,7 +429,7 @@ static int samldb_check_samAccountType(struct samldb_ctx *ac)
 		uac = samdb_result_uint(ac->msg, "userAccountControl", 0);
 		if (uac == 0) {
 			ldb_asprintf_errstring(ldb,
-				"userAccountControl invalid!\n");
+				"userAccountControl invalid!");
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		} else {
 			account_type = ds_uf2atype(uac);
@@ -495,7 +496,7 @@ static int samldb_get_sid_domain_callback(struct ldb_request *req,
 			/* one too many! */
 			ldb_set_errstring(ldb,
 				"Invalid number of results while searching "
-				"for domain object!\n");
+				"for domain object!");
 			ret = LDB_ERR_OPERATIONS_ERROR;
 			break;
 		}
@@ -504,7 +505,7 @@ static int samldb_get_sid_domain_callback(struct ldb_request *req,
 							"nextRid", NULL);
 		if (nextRid == NULL) {
 			ldb_asprintf_errstring(ldb,
-				"Attribute nextRid not found in %s!\n",
+				"Attribute nextRid not found in %s!",
 				ldb_dn_get_linearized(ares->message->dn));
 			ret = LDB_ERR_OPERATIONS_ERROR;
 			break;
@@ -528,7 +529,7 @@ static int samldb_get_sid_domain_callback(struct ldb_request *req,
 		talloc_free(ares);
 		if (ac->next_rid == 0) {
 			ldb_asprintf_errstring(ldb,
-				"Unable to get nextRid from domain entry!\n");
+				"Unable to get nextRid from domain entry!");
 			ret = LDB_ERR_OPERATIONS_ERROR;
 			break;
 		}
@@ -625,7 +626,7 @@ static int samldb_dn_from_sid_callback(struct ldb_request *req,
 			/* one too many! */
 			ldb_set_errstring(ldb,
 				"Invalid number of results while searching "
-				"for domain objects!\n");
+				"for domain objects!");
 			ret = LDB_ERR_OPERATIONS_ERROR;
 			break;
 		}
@@ -712,7 +713,7 @@ static int samldb_check_primaryGroupID_2(struct samldb_ctx *ac)
 		struct ldb_context *ldb;
 		ldb = ldb_module_get_ctx(ac->module);
 		ldb_asprintf_errstring(ldb,
-				       "Failed to find group sid %s!\n", 
+				       "Failed to find group sid %s!", 
 				       dom_sid_string(ac->sid, ac->sid));
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
@@ -779,7 +780,7 @@ static int samldb_notice_sid_callback(struct ldb_request *req,
 	}
 	if (ares->type != LDB_REPLY_DONE) {
 		ldb_set_errstring(ldb,
-			"Invalid reply type!\n");
+			"Invalid reply type!");
 		ret = LDB_ERR_OPERATIONS_ERROR;
 		goto done;
 	}
@@ -900,7 +901,7 @@ static int samldb_set_defaultObjectCategory_callback(struct ldb_request *req,
 	}
 	if (ares->type != LDB_REPLY_DONE) {
 		ldb_set_errstring(ldb,
-			"Invalid reply type!\n");
+			"Invalid reply type!");
 		ret = LDB_ERR_OPERATIONS_ERROR;
 		goto done;
 	}
@@ -1237,7 +1238,7 @@ static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 		return samldb_first_step(ac);
 	} else {
 		ldb_asprintf_errstring(ldb,
-			"Invalid entry type!\n");
+			"Invalid entry type!");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -1317,7 +1318,7 @@ static int samldb_foreign_notice_sid_callback(struct ldb_request *req,
 			/* one too many! */
 			ldb_set_errstring(ldb,
 				"Invalid number of results while searching "
-				"for domain object!\n");
+				"for domain object!");
 			ret = LDB_ERR_OPERATIONS_ERROR;
 			break;
 		}
@@ -1326,7 +1327,7 @@ static int samldb_foreign_notice_sid_callback(struct ldb_request *req,
 							"nextRid", NULL);
 		if (nextRid == NULL) {
 			ldb_asprintf_errstring(ldb,
-				"while looking for forign sid %s attribute nextRid not found in %s\n",
+				"While looking for foreign SID %s attribute nextRid not found in %s",
 				dom_sid_string(ares, ac->sid),
 					ldb_dn_get_linearized(ares->message->dn));
 			ret = LDB_ERR_OPERATIONS_ERROR;
@@ -1397,7 +1398,11 @@ static int samldb_foreign_notice_sid(struct samldb_ctx *ac)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	filter = talloc_asprintf(ac, "(&(objectSid=%s)(objectclass=domain))",
+
+	filter = talloc_asprintf(ac, 
+				 "(&(objectSid=%s)"
+				 "(|(objectClass=domain)"
+				 "(objectClass=builtinDomain)))",
 				 ldap_encode_ndr_dom_sid(ac, ac->domain_sid));
 	if (filter == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -1435,7 +1440,7 @@ static int samldb_fill_foreignSecurityPrincipal_object(struct samldb_ctx *ac)
 		if (!ac->sid) {
 			ldb_set_errstring(ldb,
 					"No valid SID found in "
-					"ForeignSecurityPrincipal CN!\n");
+					"ForeignSecurityPrincipal CN!");
 			talloc_free(ac);
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
@@ -1467,7 +1472,7 @@ static int samldb_check_rdn(struct ldb_module *module, struct ldb_dn *dn)
 	if (strcasecmp(rdn_name, "cn") != 0) {
 		ldb_asprintf_errstring(ldb,
 					"Bad RDN (%s=) for samldb object, "
-					"should be CN=!\n", rdn_name);
+					"should be CN=!", rdn_name);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
@@ -1506,7 +1511,7 @@ static int samldb_sid_from_dn_callback(struct ldb_request *req,
 			/* one too many! */
 			ldb_set_errstring(ldb,
 				"Invalid number of results while searching "
-				"for domain objects!\n");
+				"for domain objects!");
 			ret = LDB_ERR_OPERATIONS_ERROR;
 			break;
 		}
@@ -1597,7 +1602,7 @@ static int samldb_user_dn_to_prim_group_rid_callback(struct ldb_request *req,
 			/* one too many! */
 			ldb_set_errstring(ldb,
 				"Invalid number of results while searching "
-				"for domain objects!\n");
+				"for domain objects!");
 			ret = LDB_ERR_OPERATIONS_ERROR;
 			break;
 		}
@@ -1618,7 +1623,7 @@ static int samldb_user_dn_to_prim_group_rid_callback(struct ldb_request *req,
 		talloc_free(ares);
 		if (ac->prim_group_rid == 0) {
 			ldb_asprintf_errstring(ldb,
-				"Unable to get the primary group RID!\n");
+				"Unable to get the primary group RID!");
 			ret = LDB_ERR_OPERATIONS_ERROR;
 			break;
 		}
@@ -1783,7 +1788,7 @@ static int samldb_group_add_del_member_callback(struct ldb_request *req,
 	}
 	if (ares->type != LDB_REPLY_DONE) {
 		ldb_set_errstring(ldb,
-			"Invalid reply type!\n");
+			"Invalid reply type!");
 		ret = LDB_ERR_OPERATIONS_ERROR;
 		goto done;
 	}
@@ -2156,7 +2161,7 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 	if (!ac->msg) {
 		talloc_free(ac);
 		ldb_debug(ldb, LDB_DEBUG_FATAL,
-			  "samldb_add: ldb_msg_copy failed!\n");
+			  "samldb_add: ldb_msg_copy failed!");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -2259,7 +2264,7 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 
 	if (ldb_msg_find_element(req->op.mod.message, "sAMAccountType") != NULL) {
 		ldb_asprintf_errstring(ldb,
-			"sAMAccountType must not be specified!\n");
+			"sAMAccountType must not be specified!");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
@@ -2376,3 +2381,4 @@ _PUBLIC_ const struct ldb_module_ops ldb_samldb_module_ops = {
 	.modify        = samldb_modify,
 	.del           = samldb_delete
 };
+
