@@ -22,47 +22,6 @@
 #ifndef NT_PRINTING_H_
 #define NT_PRINTING_H_
 
-typedef struct nt_printer_driver_info_level_3
-{
-	uint32 cversion;
-
-	fstring name;
-	fstring environment;
-	fstring driverpath;
-	fstring datafile;
-	fstring configfile;
-	fstring helpfile;
-	fstring monitorname;
-	fstring defaultdatatype;
-	fstring *dependentfiles;
-} NT_PRINTER_DRIVER_INFO_LEVEL_3;
-
-/* SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 structure */
-typedef struct {
-	uint32	version;
-	fstring	name;
-	fstring	environment;
-	fstring	driverpath;
-	fstring	datafile;
-	fstring	configfile;
-	fstring	helpfile;
-	fstring	monitorname;
-	fstring	defaultdatatype;
-	fstring	mfgname;
-	fstring	oemurl;
-	fstring	hardwareid;
-	fstring	provider;
-	fstring *dependentfiles;
-	fstring *previousnames;
-} NT_PRINTER_DRIVER_INFO_LEVEL_6;
-
-
-typedef struct nt_printer_driver_info_level
-{
-	NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3;
-	NT_PRINTER_DRIVER_INFO_LEVEL_6 *info_6;
-} NT_PRINTER_DRIVER_INFO_LEVEL;
-
 /* predefined registry key names for printer data */
 
 #define SPOOL_PRINTERDATA_KEY		"PrinterDriverData"
