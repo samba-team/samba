@@ -15,6 +15,7 @@ sub read_test_regexes($)
 	while (<LF>) { 
 		chomp; 
 		next if (/^#/);
+		next if (/^$/);
 		if (/^(.*?)([ \t]+)\#([\t ]*)(.*?)$/) {
 			push (@ret, [$1, $4]);
 		} else {
