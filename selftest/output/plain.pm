@@ -113,10 +113,14 @@ sub end_testsuite($$$$)
 	my $out = "";
 	my $unexpected = 0;
 
+	if (not defined($self->{test_output}->{$name})) {
+		print "no output for name[$name]\n";
+	}
+
 	if ($result eq "success" or $result eq "xfail") {
 		$self->{suites_ok}++;
 	} else {
-		$self->output_msg("ERROR: $reason\n");
+		$self->output_msg("ERROR: Testsuite[$name]\nREASON: $reason\n");
 		push (@{$self->{suitesfailed}}, $name);
 		if ($self->{immediate} and not $self->{verbose}) {
 			$out .= $self->{test_output}->{$name};
