@@ -1495,7 +1495,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 
 		return print_fsp_open(req, conn, smb_fname->base_name,
-				      req->vuid, fsp, &smb_fname->st);
+				      req->vuid, fsp);
 	}
 
 	if (!parent_dirname(talloc_tos(), smb_fname->base_name, &parent_dir,
@@ -3243,7 +3243,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		}
 	}
 
-	if (!fsp->is_directory && S_ISDIR(smb_fname->st.st_ex_mode)) {
+	if (!fsp->is_directory && S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
 		status = NT_STATUS_ACCESS_DENIED;
 		goto fail;
 	}
@@ -3251,7 +3251,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	/* Save the requested allocation size. */
 	if ((info == FILE_WAS_CREATED) || (info == FILE_WAS_OVERWRITTEN)) {
 		if (allocation_size
-		    && (allocation_size > smb_fname->st.st_ex_size)) {
+		    && (allocation_size > fsp->fsp_name->st.st_ex_size)) {
 			fsp->initial_allocation_size = smb_roundup(
 				fsp->conn, allocation_size);
 			if (fsp->is_directory) {
@@ -3266,7 +3266,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 			}
 		} else {
 			fsp->initial_allocation_size = smb_roundup(
-				fsp->conn, (uint64_t)smb_fname->st.st_ex_size);
+				fsp->conn, (uint64_t)fsp->fsp_name->st.st_ex_size);
 		}
 	}
 
@@ -3276,18 +3276,8 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	if (pinfo != NULL) {
 		*pinfo = info;
 	}
-	if ((fsp->fh != NULL) && (fsp->fh->fd != -1)) {
-		SMB_VFS_FSTAT(fsp, &smb_fname->st);
-		fsp->fsp_name->st = smb_fname->st;
-	}
 
-	/* Try and make a create timestamp, if required. */
-	if ((info == FILE_WAS_CREATED) || (info == FILE_WAS_OVERWRITTEN)) {
-		if (lp_store_create_time(SNUM(conn))) {
-			set_create_timespec_ea(conn, fsp,
-				smb_fname, smb_fname->st.st_ex_btime);
-		}
-	}
+	smb_fname->st = fsp->fsp_name->st;
 
 	return NT_STATUS_OK;
 

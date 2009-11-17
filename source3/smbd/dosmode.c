@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_xattr.h"
 
 static int set_sparse_flag(const SMB_STRUCT_STAT * const sbuf)
 {
@@ -205,15 +206,19 @@ static uint32 dos_mode_from_sbuf(connection_struct *conn,
 
 /****************************************************************************
  Get DOS attributes from an EA.
+ This can also pull the create time into the stat struct inside smb_fname.
 ****************************************************************************/
 
 static bool get_ea_dos_attribute(connection_struct *conn,
-				 const struct smb_filename *smb_fname,
+				 struct smb_filename *smb_fname,
 				 uint32 *pattr)
 {
+	struct xattr_DOSATTRIB dosattrib;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
 	ssize_t sizeret;
 	fstring attrstr;
-	unsigned int dosattr;
+	uint32_t dosattr;
 
 	if (!lp_store_dos_attributes(SNUM(conn))) {
 		return False;
@@ -240,18 +245,65 @@ static bool get_ea_dos_attribute(connection_struct *conn,
 		}
 		return False;
 	}
-	/* Null terminate string. */
-	attrstr[sizeret] = 0;
-	DEBUG(10,("get_ea_dos_attribute: %s attrstr = %s\n",
-		  smb_fname_str_dbg(smb_fname), attrstr));
 
-	if (sizeret < 2 || attrstr[0] != '0' || attrstr[1] != 'x' ||
-			sscanf(attrstr, "%x", &dosattr) != 1) {
-		DEBUG(1,("get_ea_dos_attributes: Badly formed DOSATTRIB on "
-			 "file %s - %s\n", smb_fname_str_dbg(smb_fname),
-			 attrstr));
-                return False;
-        }
+	blob.data = (uint8_t *)attrstr;
+	blob.length = sizeret;
+
+	ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), NULL, &dosattrib,
+			(ndr_pull_flags_fn_t)ndr_pull_xattr_DOSATTRIB);
+
+	DEBUG(10,("get_ea_dos_attribute: %s attr = %s\n",
+		  smb_fname_str_dbg(smb_fname), dosattrib.attrib_hex));
+
+	switch (dosattrib.version) {
+		case 0xFFFF:
+			dosattr = dosattrib.info.compatinfoFFFF.attrib;
+			break;
+		case 1:
+			dosattr = dosattrib.info.info1.attrib;
+			if (!null_nttime(dosattrib.info.info1.create_time)) {
+				struct timespec create_time =
+					nt_time_to_unix_timespec(
+						&dosattrib.info.info1.create_time);
+
+				update_stat_ex_create_time(&smb_fname->st,
+							create_time);
+
+				DEBUG(10,("get_ea_dos_attributes: file %s case 1 "
+					"set btime %s\n",
+					smb_fname_str_dbg(smb_fname),
+					time_to_asc(convert_timespec_to_time_t(
+						create_time)) ));
+			}
+			break;
+		case 2:
+			dosattr = dosattrib.info.oldinfo2.attrib;
+			/* Don't know what flags to check for this case. */
+			break;
+		case 3:
+			dosattr = dosattrib.info.info3.attrib;
+			if ((dosattrib.info.info3.valid_flags & XATTR_DOSINFO_CREATE_TIME) &&
+					!null_nttime(dosattrib.info.info3.create_time)) {
+				struct timespec create_time =
+					nt_time_to_unix_timespec(
+						&dosattrib.info.info3.create_time);
+
+				update_stat_ex_create_time(&smb_fname->st,
+							create_time);
+
+				DEBUG(10,("get_ea_dos_attributes: file %s case 3 "
+					"set btime %s\n",
+					smb_fname_str_dbg(smb_fname),
+					time_to_asc(convert_timespec_to_time_t(
+						create_time)) ));
+			}
+			break;
+			default:
+				DEBUG(1,("get_ea_dos_attributes: Badly formed DOSATTRIB on "
+					 "file %s - %s\n", smb_fname_str_dbg(smb_fname),
+					 attrstr));
+	                return false;
+	}
 
 	if (S_ISDIR(smb_fname->st.st_ex_mode)) {
 		dosattr |= aDIR;
@@ -273,23 +325,49 @@ static bool get_ea_dos_attribute(connection_struct *conn,
 
 /****************************************************************************
  Set DOS attributes in an EA.
+ Also sets the create time.
 ****************************************************************************/
 
 static bool set_ea_dos_attribute(connection_struct *conn,
 				 struct smb_filename *smb_fname,
 				 uint32 dosmode)
 {
-	fstring attrstr;
+	struct xattr_DOSATTRIB dosattrib;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
 	files_struct *fsp = NULL;
-	bool ret = False;
+	bool ret = false;
 
 	if (!lp_store_dos_attributes(SNUM(conn))) {
 		return False;
 	}
 
-	snprintf(attrstr, sizeof(attrstr)-1, "0x%x", dosmode & SAMBA_ATTRIBUTES_MASK);
+	ZERO_STRUCT(dosattrib);
+	ZERO_STRUCT(blob);
+
+	dosattrib.version = 3;
+	dosattrib.info.info3.valid_flags = XATTR_DOSINFO_ATTRIB|
+					XATTR_DOSINFO_CREATE_TIME;
+	dosattrib.info.info3.attrib = dosmode;
+	unix_timespec_to_nt_time(&dosattrib.info.info3.create_time,
+				smb_fname->st.st_ex_btime);
+
+	ndr_err = ndr_push_struct_blob(
+			&blob, talloc_tos(), NULL, &dosattrib,
+			(ndr_push_flags_fn_t)ndr_push_xattr_DOSATTRIB);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(5, ("create_acl_blob: ndr_push_xattr_DOSATTRIB failed: %s\n",
+			ndr_errstr(ndr_err)));
+		return false;
+	}
+
+	if (blob.data == NULL || blob.length == 0) {
+		return false;
+	}
+
 	if (SMB_VFS_SETXATTR(conn, smb_fname->base_name,
-			     SAMBA_XATTR_DOS_ATTRIB, attrstr, strlen(attrstr),
+			     SAMBA_XATTR_DOS_ATTRIB, blob.data, blob.length,
 			     0) == -1) {
 		if((errno != EPERM) && (errno != EACCES)) {
 			if (errno == ENOSYS
@@ -304,7 +382,7 @@ static bool set_ea_dos_attribute(connection_struct *conn,
 					 strerror(errno) ));
 				set_store_dos_attributes(SNUM(conn), False);
 			}
-			return False;
+			return false;
 		}
 
 		/* We want DOS semantics, ie allow non owner with write permission to change the
@@ -313,7 +391,7 @@ static bool set_ea_dos_attribute(connection_struct *conn,
 
 		/* Check if we have write access. */
 		if(!CAN_WRITE(conn) || !lp_dos_filemode(SNUM(conn)))
-			return False;
+			return false;
 
 		/*
 		 * We need to open the file with write access whilst
@@ -326,17 +404,18 @@ static bool set_ea_dos_attribute(connection_struct *conn,
 			return ret;
 		become_root();
 		if (SMB_VFS_SETXATTR(conn, smb_fname->base_name,
-				     SAMBA_XATTR_DOS_ATTRIB, attrstr,
-				     strlen(attrstr), 0) == 0) {
-			ret = True;
+				     SAMBA_XATTR_DOS_ATTRIB, blob.data,
+				     blob.length, 0) == 0) {
+			ret = true;
 		}
 		unbecome_root();
 		close_file_fchmod(NULL, fsp);
 		return ret;
 	}
-	DEBUG(10,("set_ea_dos_attribute: set EA %s on file %s\n", attrstr,
-		  smb_fname_str_dbg(smb_fname)));
-	return True;
+	DEBUG(10,("set_ea_dos_attribute: set EA 0x%x on file %s\n",
+		(unsigned int)dosmode,
+		smb_fname_str_dbg(smb_fname)));
+	return true;
 }
 
 /****************************************************************************
@@ -510,11 +589,12 @@ static bool set_stat_dos_flags(connection_struct *conn,
 
 /****************************************************************************
  Change a unix mode to a dos mode.
+ May also read the create timespec into the stat struct in smb_fname
+ if "store dos attributes" is true.
 ****************************************************************************/
 
-uint32 dos_mode(connection_struct *conn, const struct smb_filename *smb_fname)
+uint32 dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 {
-	SMB_STRUCT_STAT sbuf;
 	uint32 result = 0;
 	bool offline, used_stat_dos_flags = false;
 
@@ -553,9 +633,8 @@ uint32 dos_mode(connection_struct *conn, const struct smb_filename *smb_fname)
 		}
 	}
 
-	sbuf = smb_fname->st;
-	offline = SMB_VFS_IS_OFFLINE(conn, smb_fname->base_name, &sbuf);
-	if (S_ISREG(sbuf.st_ex_mode) && offline) {
+	offline = SMB_VFS_IS_OFFLINE(conn, smb_fname->base_name, &smb_fname->st);
+	if (S_ISREG(smb_fname->st.st_ex_mode) && offline) {
 		result |= FILE_ATTRIBUTE_OFFLINE;
 	}
 
@@ -588,6 +667,9 @@ uint32 dos_mode(connection_struct *conn, const struct smb_filename *smb_fname)
 
 /*******************************************************************
  chmod a file - but preserve some bits.
+ If "store dos attributes" is also set it will store the create time
+ from the stat struct in smb_fname (in NTTIME format) in the EA
+ attribute also.
 ********************************************************************/
 
 int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
@@ -598,17 +680,13 @@ int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
 	mode_t unixmode;
 	int ret = -1, lret = -1;
 	uint32_t old_mode;
+	struct timespec new_create_timespec;
 
 	/* We only allow READONLY|HIDDEN|SYSTEM|DIRECTORY|ARCHIVE here. */
 	dosmode &= (SAMBA_ATTRIBUTES_MASK | FILE_ATTRIBUTE_OFFLINE);
 
 	DEBUG(10,("file_set_dosmode: setting dos mode 0x%x on file %s\n",
 		  dosmode, smb_fname_str_dbg(smb_fname)));
-
-	if (!VALID_STAT(smb_fname->st)) {
-		if (SMB_VFS_STAT(conn, smb_fname))
-			return(-1);
-	}
 
 	unixmode = smb_fname->st.st_ex_mode;
 
@@ -619,6 +697,8 @@ int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
 		dosmode |= aDIR;
 	else
 		dosmode &= ~aDIR;
+
+	new_create_timespec = smb_fname->st.st_ex_btime;
 
 	old_mode = dos_mode(conn, smb_fname);
 
@@ -639,10 +719,14 @@ int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
 	dosmode  &= ~FILE_ATTRIBUTE_OFFLINE;
 	old_mode &= ~FILE_ATTRIBUTE_OFFLINE;
 
-	if (old_mode == dosmode) {
+	if (old_mode == dosmode &&
+			(timespec_compare(&new_create_timespec,
+				&smb_fname->st.st_ex_btime) == 0)) {
 		smb_fname->st.st_ex_mode = unixmode;
 		return(0);
 	}
+
+	smb_fname->st.st_ex_btime = new_create_timespec;
 
 #ifdef HAVE_STAT_DOS_FLAGS
 	{
@@ -842,6 +926,10 @@ bool set_sticky_write_time_path(struct file_id fileid, struct timespec mtime)
 
 bool set_sticky_write_time_fsp(struct files_struct *fsp, struct timespec mtime)
 {
+	if (null_timespec(mtime)) {
+		return true;
+	}
+
 	fsp->write_time_forced = true;
 	TALLOC_FREE(fsp->update_write_time_event);
 
@@ -853,93 +941,51 @@ bool set_sticky_write_time_fsp(struct files_struct *fsp, struct timespec mtime)
 ******************************************************************/
 
 NTSTATUS set_create_timespec_ea(connection_struct *conn,
-				struct files_struct *fsp,
-                                const struct smb_filename *smb_fname,
+				const struct smb_filename *psmb_fname,
 				struct timespec create_time)
 {
+	NTSTATUS status;
+	struct smb_filename *smb_fname = NULL;
+	uint32_t dosmode;
 	int ret;
-	char buf[8];
 
-	if (!lp_store_create_time(SNUM(conn))) {
+	if (!lp_store_dos_attributes(SNUM(conn))) {
 		return NT_STATUS_OK;
 	}
 
-	put_long_date_timespec(conn->ts_res, buf, create_time);
-	if (fsp && fsp->fh->fd != -1) {
-		ret = SMB_VFS_FSETXATTR(fsp,
-				SAMBA_XATTR_DOSTIMESTAMPS,
-				buf,
-				sizeof(buf),
-				0);
-	} else {
-		ret = SMB_VFS_SETXATTR(conn,
-				smb_fname->base_name,
-				SAMBA_XATTR_DOSTIMESTAMPS,
-				buf,
-				sizeof(buf),
-				0);
+	status = create_synthetic_smb_fname(talloc_tos(),
+				psmb_fname->base_name,
+				NULL, &psmb_fname->st,
+				&smb_fname);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
+	dosmode = dos_mode(conn, smb_fname);
+
+	smb_fname->st.st_ex_btime = create_time;
+
+	ret = file_set_dosmode(conn, smb_fname, dosmode, NULL, false);
 	if (ret == -1) {
 		map_nt_error_from_unix(errno);
 	}
+
 	DEBUG(10,("set_create_timespec_ea: wrote create time EA for file %s\n",
 		smb_fname_str_dbg(smb_fname)));
+
 	return NT_STATUS_OK;
 }
 
 /******************************************************************
- Returns an EA create timespec, or a zero timespec if fail.
-******************************************************************/
-
-static struct timespec get_create_timespec_ea(connection_struct *conn,
-                                struct files_struct *fsp,
-                                const struct smb_filename *smb_fname)
-{
-	ssize_t ret;
-	char buf[8];
-	struct timespec ts;
-
-	ZERO_STRUCT(ts);
-
-	if (!lp_store_create_time(SNUM(conn))) {
-		return ts;
-	}
-
-	if (fsp && fsp->fh->fd != -1) {
-		ret = SMB_VFS_FGETXATTR(fsp,
-				SAMBA_XATTR_DOSTIMESTAMPS,
-				buf,
-				sizeof(buf));
-	} else {
-		ret = SMB_VFS_GETXATTR(conn,
-				smb_fname->base_name,
-				SAMBA_XATTR_DOSTIMESTAMPS,
-				buf,
-				sizeof(buf));
-	}
-	if (ret == sizeof(buf)) {
-		return interpret_long_date(buf);
-	} else {
-		return ts;
-	}
-}
-
-/******************************************************************
- Return a create time - looks at EA.
+ Return a create time.
 ******************************************************************/
 
 struct timespec get_create_timespec(connection_struct *conn,
 				struct files_struct *fsp,
 				const struct smb_filename *smb_fname)
 {
-	struct timespec ts = get_create_timespec_ea(conn, fsp, smb_fname);
-
-	if (!null_timespec(ts)) {
-		return ts;
-	} else {
-		return smb_fname->st.st_ex_btime;
-	}
+	return smb_fname->st.st_ex_btime;
 }
 
 /******************************************************************

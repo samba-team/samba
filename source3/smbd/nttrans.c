@@ -554,10 +554,6 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	}
 
 	file_len = smb_fname->st.st_ex_size;
-	fattr = dos_mode(conn, smb_fname);
-	if (fattr == 0) {
-		fattr = FILE_ATTRIBUTE_NORMAL;
-	}
 
 	if (flags & EXTENDED_RESPONSE_REQUIRED) {
 		/* This is very strange. We
@@ -585,6 +581,11 @@ void reply_ntcreate_and_X(struct smb_request *req)
 		SIVAL(p,0,info);
 	}
 	p += 4;
+
+	fattr = dos_mode(conn, smb_fname);
+	if (fattr == 0) {
+		fattr = FILE_ATTRIBUTE_NORMAL;
+	}
 
 	/* Deal with other possible opens having a modified
 	   write time. JRA. */
@@ -1070,10 +1071,6 @@ static void call_nt_transact_create(connection_struct *conn,
 	}
 
 	file_len = smb_fname->st.st_ex_size;
-	fattr = dos_mode(conn, smb_fname);
-	if (fattr == 0) {
-		fattr = FILE_ATTRIBUTE_NORMAL;
-	}
 
 	/* Realloc the size of parameters and data we will return */
 	if (flags & EXTENDED_RESPONSE_REQUIRED) {
@@ -1101,6 +1098,11 @@ static void call_nt_transact_create(connection_struct *conn,
 		SIVAL(p,0,info);
 	}
 	p += 8;
+
+	fattr = dos_mode(conn, smb_fname);
+	if (fattr == 0) {
+		fattr = FILE_ATTRIBUTE_NORMAL;
+	}
 
 	/* Deal with other possible opens having a modified
 	   write time. JRA. */
