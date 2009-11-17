@@ -115,6 +115,9 @@ int start_syslog_daemon(struct ctdb_context *ctdb)
 		return 0;
 	}
 
+	talloc_free(ctdb->ev);
+	ctdb->ev = event_context_init(NULL);
+
 	syslog(LOG_ERR, "Starting SYSLOG daemon with pid:%d", (int)getpid());
 
 	close(state->fd[0]);
