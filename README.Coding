@@ -15,9 +15,10 @@ style should never outweigh coding itself and so the guidelines
 described here are hopefully easy enough to follow as they are very
 common and supported by tools and editors.
 
-The basic style, also mentioned in prog_guide4.txt, is the Linux kernel coding 
-style (See Documentation/CodingStyle in the kernel source tree). This closely 
-matches what most Samba developers use already anyways.
+The basic style, also mentioned in prog_guide4.txt, is the Linux kernel coding
+style (See Documentation/CodingStyle in the kernel source tree). This closely
+matches what most Samba developers use already anyways, with a few exceptions as
+mentioned below.
 
 But to save you the trouble of reading the Linux kernel style guide, here
 are the highlights.
@@ -125,23 +126,24 @@ This is bad:
 
 	if ( x == 1 )
 
-Yes we have a lot of code that uses the second form and we are trying 
+Yes we have a lot of code that uses the second form and we are trying
 to clean it up without being overly intrusive.
 
 Note that this is a rule about parentheses following keywords and not
-functions.  Don't insert a space between the name and left parentheses when 
+functions.  Don't insert a space between the name and left parentheses when
 invoking functions.
 
 Braces for code blocks used by for, if, switch, while, do..while, etc.
-should begin on the same line as the statement keyword and end on a line 
-of their own.  NOTE: Functions are different and the beginning left brace
-should begin on a line of its own.
+should begin on the same line as the statement keyword and end on a line
+of their own. You should always include braces, even if the block only
+contains one statement.  NOTE: Functions are different and the beginning left
+brace should begin on a line of its own.
 
 If the beginning statement has to be broken across lines due to length,
 the beginning brace should be on a line of its own.
 
-The exception to the ending rule is when the closing brace is followed by 
-another language keyword such as else or the closing while in a do..while 
+The exception to the ending rule is when the closing brace is followed by
+another language keyword such as else or the closing while in a do..while
 loop.
 
 Good examples::
@@ -150,11 +152,15 @@ Good examples::
 		printf("good\n");
 	}
 
-	for (x=1;
-	     x<10;
-	     x++)
-	{
+	for (x=1; x<10; x++) {
 		print("%d\n", x);
+	}
+
+	for (really_really_really_really_long_var_name=0;
+	     really_really_really_really_long_var_name<10;
+	     really_really_really_really_long_var_name++)
+	{
+		print("%d\n", really_really_really_really_long_var_name);
 	}
 
 	do {
@@ -166,7 +172,17 @@ Bad examples::
 	while (1)
 	{
 		print("I'm in a loop!\n"); }
-	
+
+	for (x=1;
+	     x<10;
+	     x++)
+	{
+		print("no good\n");
+	}
+
+	if (i < 10)
+		print("I should be in braces.\n");
+
 
 Goto
 ----
