@@ -2357,26 +2357,11 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 static void log_handler(struct ctdb_context *ctdb, uint64_t srvid, 
 			     TDB_DATA data, void *private_data)
 {
-	struct ctdb_log_entry_wire *entry;
-	int size;
-	struct tm *tm;
-	char tbuf[100];
-
 	DEBUG(DEBUG_ERR,("Log data received\n"));
-	while (data.dsize > 0) {
-		entry = (struct ctdb_log_entry_wire *)data.dptr;
-		size = offsetof(struct ctdb_log_entry_wire, message) + entry->message_len + 1;
-		size = (size+3)&0xfffffffc;
-
-		tm = localtime(&entry->t.tv_sec);
-
-		strftime(tbuf,sizeof(tbuf)-1,"%Y/%m/%d %H:%M:%S", tm);
-
-		printf("%s:%s %s", tbuf, get_debug_by_level(entry->level), entry->message);
-
-		data.dsize -= size;
-		data.dptr  += size;
+	if (data.dsize > 0) {
+		printf("%s", data.dptr);
 	}
+
 	exit(0);
 }
 

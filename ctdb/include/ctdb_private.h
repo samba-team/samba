@@ -1529,14 +1529,6 @@ struct ctdb_get_log_addr {
 	int32_t level;
 };
 
-/* wire data for log entries, padded to uint32 */
-struct ctdb_log_entry_wire {
-	int32_t level;
-	struct timeval t;
-	int32_t message_len;
-	char message[1];
-};
-
 int32_t ctdb_control_get_log(struct ctdb_context *ctdb, TDB_DATA addr);
 int32_t ctdb_control_clear_log(struct ctdb_context *ctdb);
 

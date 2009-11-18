@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "lib/events/events.h"
 #include "lib/tdb/include/tdb.h"
+#include "system/time.h"
 #include "../include/ctdb_private.h"
 #include "../include/ctdb.h"
 
@@ -82,49 +83,59 @@ void log_ringbuffer(const char *format, ...)
 
 static void ctdb_collect_log(struct ctdb_context *ctdb, struct ctdb_get_log_addr *log_addr)
 {
-	char *buf = talloc_size(NULL, 0);
-	struct ctdb_log_entry_wire *log_entry;
-	uint32_t old_size, len;
 	TDB_DATA data;
+	FILE *f;
+	long fsize;
+	int tmp_entry;
+	int count = 0;
+	DEBUG(DEBUG_ERR,("Marshalling log entries  first:%d last:%d\n", first_entry, last_entry));
 
-	DEBUG(DEBUG_INFO,("Marshalling log entries\n"));
-	while (first_entry != last_entry) {
-		int slen = strlen(log_entries[first_entry].message);
+	/* dump to a file, then send the file as a blob */
+	f = tmpfile();
+	if (f == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Unable to open tmpfile - %s\n", strerror(errno)));
+		return;
+	}
 
-		if (log_entries[first_entry].level > log_addr->level) {
-			first_entry++;
-			if (first_entry >= MAX_LOG_ENTRIES) {
-				first_entry = 0;
+	tmp_entry = first_entry;
+	while (tmp_entry != last_entry) {
+		struct tm *tm;
+		char tbuf[100];
+
+		if (log_entries[tmp_entry].level > log_addr->level) {
+			tmp_entry++;
+			if (tmp_entry >= MAX_LOG_ENTRIES) {
+				tmp_entry = 0;
 			}
-			continue;
+		 	continue;
 		}
 
-		len = offsetof(struct ctdb_log_entry_wire, message) + slen + 1;
-		/* pad it to uint42 */
-		len = (len+3)&0xfffffffc;
+		tm = localtime(&log_entries[tmp_entry].t.tv_sec);
+		strftime(tbuf, sizeof(tbuf)-1,"%Y/%m/%d %H:%M:%S", tm);
 
-		old_size = talloc_get_size(buf);
-		buf = talloc_realloc_size(NULL, buf, old_size + len);
+		if (log_entries[tmp_entry].message) {
+			count += fprintf(f, "%s:%s %s", tbuf, get_debug_by_level(log_entries[tmp_entry].level), log_entries[tmp_entry].message);
+		}
 
-		log_entry = (struct ctdb_log_entry_wire *)&buf[old_size];
-		log_entry->level       = log_entries[first_entry].level;
-		log_entry->t           = log_entries[first_entry].t;
-		log_entry->message_len = slen;
-		memcpy(log_entry->message, log_entries[first_entry].message, slen);
-		log_entry->message[slen] = 0;
-
-		first_entry++;
-		if (first_entry >= MAX_LOG_ENTRIES) {
-			first_entry = 0;
+		tmp_entry++;
+		if (tmp_entry >= MAX_LOG_ENTRIES) {
+			tmp_entry = 0;
 		}
 	}
 
-	data.dptr  = (uint8_t *)buf;
-	data.dsize = talloc_get_size(buf);
-	DEBUG(DEBUG_INFO,("Marshalling log entries into a blob of %d bytes\n", (int)data.dsize));
+	fsize = ftell(f);
+	rewind(f);
+	data.dptr = talloc_size(NULL, fsize);
+	CTDB_NO_MEMORY_VOID(ctdb, data.dptr);
+	data.dsize = fread(data.dptr, 1, fsize, f);
+	fclose(f);
 
-	DEBUG(DEBUG_INFO,("Send log to %d:%d\n", (int)log_addr->pnn, (int)log_addr->srvid));
+	DEBUG(DEBUG_ERR,("Marshalling log entries into a blob of %d bytes\n", (int)data.dsize));
+
+	DEBUG(DEBUG_ERR,("Send log to %d:%d\n", (int)log_addr->pnn, (int)log_addr->srvid));
 	ctdb_send_message(ctdb, log_addr->pnn, log_addr->srvid, data);
+
+	talloc_free(data.dptr);
 }
 
 int32_t ctdb_control_get_log(struct ctdb_context *ctdb, TDB_DATA addr)
