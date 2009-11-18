@@ -63,3 +63,4 @@ samba4.ntvfs.cifs.base.createx_sharemodes_dir
 samba4.ntvfs.cifs.base.maximum_allowed
 samba4.base.createx_access # this test is broken for non-administrator users
 samba4.smb2.oplock # oplocks in the s4 SMB2 server are a mess
+samba4.smb2.lock.*.VALID-REQUEST # the s4 SMB2 server doesn't check lock ranges
