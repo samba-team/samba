@@ -2354,6 +2354,115 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 }
 
 
+static void log_handler(struct ctdb_context *ctdb, uint64_t srvid, 
+			     TDB_DATA data, void *private_data)
+{
+	struct ctdb_log_entry_wire *entry;
+	int size;
+	struct tm *tm;
+	char tbuf[100];
+
+	DEBUG(DEBUG_ERR,("Log data received\n"));
+	while (data.dsize > 0) {
+		entry = (struct ctdb_log_entry_wire *)data.dptr;
+		size = offsetof(struct ctdb_log_entry_wire, message) + entry->message_len + 1;
+		size = (size+3)&0xfffffffc;
+
+		tm = localtime(&entry->t.tv_sec);
+
+		strftime(tbuf,sizeof(tbuf)-1,"%Y/%m/%d %H:%M:%S", tm);
+
+		printf("%s:%s %s", tbuf, get_debug_by_level(entry->level), entry->message);
+
+		data.dsize -= size;
+		data.dptr  += size;
+	}
+	exit(0);
+}
+
+/*
+  display a list of log messages from the in memory ringbuffer
+ */
+static int control_getlog(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	int32_t res;
+	struct ctdb_get_log_addr log_addr;
+	TDB_DATA data;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	char *errmsg;
+	struct timeval tv;
+
+	if (argc != 1) {
+		DEBUG(DEBUG_ERR,("Invalid arguments\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	log_addr.pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
+	log_addr.srvid = getpid();
+	if (isalpha(argv[0][0]) || argv[0][0] == '-') { 
+		log_addr.level = get_debug_by_desc(argv[0]);
+	} else {
+		log_addr.level = strtol(argv[0], NULL, 0);
+	}
+
+
+	data.dptr = (unsigned char *)&log_addr;
+	data.dsize = sizeof(log_addr);
+
+	DEBUG(DEBUG_ERR, ("Pulling logs from node %u\n", options.pnn));
+
+	ctdb_set_message_handler(ctdb, log_addr.srvid, log_handler, NULL);
+	sleep(1);
+
+	DEBUG(DEBUG_ERR,("Listen for response on %d\n", (int)log_addr.srvid));
+
+	ret = ctdb_control(ctdb, options.pnn, 0, CTDB_CONTROL_GET_LOG,
+			   0, data, tmp_ctx, NULL, &res, NULL, &errmsg);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,("Failed to get logs - %s\n", errmsg));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+
+	tv = timeval_current();
+	/* this loop will terminate when we have received the reply */
+	while (timeval_elapsed(&tv) < 3.0) {	
+		event_loop_once(ctdb->ev);
+	}
+
+	DEBUG(DEBUG_INFO,("Timed out waiting for log data.\n"));
+
+	talloc_free(tmp_ctx);
+	return 0;
+}
+
+/*
+  clear the in memory log area
+ */
+static int control_clearlog(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	int32_t res;
+	char *errmsg;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+
+	ret = ctdb_control(ctdb, options.pnn, 0, CTDB_CONTROL_CLEAR_LOG,
+			   0, tdb_null, tmp_ctx, NULL, &res, NULL, &errmsg);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,("Failed to clear logs\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	talloc_free(tmp_ctx);
+	return 0;
+}
+
+
+
 /*
   display a list of the databases on a remote ctdb
  */
@@ -3460,6 +3569,8 @@ static const struct {
 	{ "enablemonitor",      control_enable_monmode, true,	false,  "set monitoring mode to ACTIVE" },
 	{ "setdebug",        control_setdebug,          true,	false,  "set debug level",                      "<EMERG|ALERT|CRIT|ERR|WARNING|NOTICE|INFO|DEBUG>" },
 	{ "getdebug",        control_getdebug,          true,	false,  "get debug level" },
+	{ "getlog",          control_getlog,            true,	false,  "get the log data from the in memory ringbuffer", "<level>" },
+	{ "clearlog",          control_clearlog,        true,	false,  "clear the log data from the in memory ringbuffer" },
 	{ "attach",          control_attach,            true,	false,  "attach to a database",                 "<dbname>" },
 	{ "dumpmemory",      control_dumpmemory,        true,	false,  "dump memory map to stdout" },
 	{ "rddumpmemory",    control_rddumpmemory,      true,	false,  "dump memory map from the recovery daemon to stdout" },

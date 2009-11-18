@@ -622,6 +622,8 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_REGISTER_NOTIFY         = 114,
 		    CTDB_CONTROL_DEREGISTER_NOTIFY       = 115,
 		    CTDB_CONTROL_TRANS2_ACTIVE           = 116,
+		    CTDB_CONTROL_GET_LOG		 = 117,
+		    CTDB_CONTROL_CLEAR_LOG		 = 118,
 };	
 
 /*
@@ -1519,5 +1521,23 @@ int32_t ctdb_control_register_notify(struct ctdb_context *ctdb, uint32_t client_
 int32_t ctdb_control_deregister_notify(struct ctdb_context *ctdb, uint32_t client_id, TDB_DATA indata);
 
 int start_syslog_daemon(struct ctdb_context *ctdb);
+
+/* Where to send the log messages back to */
+struct ctdb_get_log_addr {
+	uint32_t pnn;
+	uint64_t srvid;
+	int32_t level;
+};
+
+/* wire data for log entries, padded to uint32 */
+struct ctdb_log_entry_wire {
+	int32_t level;
+	struct timeval t;
+	int32_t message_len;
+	char message[1];
+};
+
+int32_t ctdb_control_get_log(struct ctdb_context *ctdb, TDB_DATA addr);
+int32_t ctdb_control_clear_log(struct ctdb_context *ctdb);
 
 #endif

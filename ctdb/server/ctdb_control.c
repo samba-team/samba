@@ -564,6 +564,13 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_client_notify_deregister));
 		return ctdb_control_deregister_notify(ctdb, client_id, indata);
 
+	case CTDB_CONTROL_GET_LOG:
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_get_log_addr));
+		return ctdb_control_get_log(ctdb, indata);
+
+	case CTDB_CONTROL_CLEAR_LOG:
+		return ctdb_control_clear_log(ctdb);
+
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;

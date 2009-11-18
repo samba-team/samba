@@ -448,3 +448,8 @@ int ctdb_set_child_logging(struct ctdb_context *ctdb)
 
 	return 0;
 }
+
+
+
+
+	
