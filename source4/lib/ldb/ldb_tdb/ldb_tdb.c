@@ -498,15 +498,9 @@ static int msg_delete_attribute(struct ldb_module *module,
 				struct ldb_context *ldb,
 				struct ldb_message *msg, const char *name)
 {
-	const char *dn;
 	unsigned int i;
 	int ret;
 	struct ldb_message_element *el;
-
-	dn = ldb_dn_get_linearized(msg->dn);
-	if (dn == NULL) {
-		return -1;
-	}
 
 	el = ldb_msg_find_element(msg, name);
 	if (el == NULL) {
@@ -514,7 +508,7 @@ static int msg_delete_attribute(struct ldb_module *module,
 	}
 	i = el - msg->elements;
 
-	ret = ltdb_index_del_element(module, dn, el);
+	ret = ltdb_index_del_element(module, msg->dn, el);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -562,7 +556,7 @@ static int msg_delete_element(struct ldb_module *module,
 				return msg_delete_attribute(module, ldb, msg, name);
 			}
 
-			ret = ltdb_index_del_value(module, ldb_dn_get_linearized(msg->dn), el, i);
+			ret = ltdb_index_del_value(module, msg->dn, el, i);
 			if (ret != LDB_SUCCESS) {
 				return -1;
 			}

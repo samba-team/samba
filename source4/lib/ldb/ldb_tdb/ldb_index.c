@@ -1218,7 +1218,7 @@ static int ltdb_index_onelevel(struct ldb_module *module, const struct ldb_messa
 	if (add) {
 		ret = ltdb_index_add1(module, dn, &el, 0);
 	} else { /* delete */
-		ret = ltdb_index_del_value(module, dn, &el, 0);
+		ret = ltdb_index_del_value(module, msg->dn, &el, 0);
 	}
 
 	talloc_free(pdn);
@@ -1272,17 +1272,23 @@ int ltdb_index_add_new(struct ldb_module *module, const struct ldb_message *msg)
 /*
   delete an index entry for one message element
 */
-int ltdb_index_del_value(struct ldb_module *module, const char *dn,
+int ltdb_index_del_value(struct ldb_module *module, struct ldb_dn *dn,
 			 struct ldb_message_element *el, int v_idx)
 {
 	struct ldb_context *ldb;
 	struct ldb_dn *dn_key;
+	const char *dn_str;
 	int ret, i;
 	struct dn_list *list;
 
 	ldb = ldb_module_get_ctx(module);
 
-	if (dn[0] == '@') {
+	dn_str = ldb_dn_get_linearized(dn);
+	if (dn_str == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (dn_str[0] == '@') {
 		return LDB_SUCCESS;
 	}
 
@@ -1310,7 +1316,7 @@ int ltdb_index_del_value(struct ldb_module *module, const char *dn,
 		return ret;
 	}
 
-	i = ltdb_dn_list_find_str(list, dn);
+	i = ltdb_dn_list_find_str(list, dn_str);
 	if (i == -1) {
 		/* nothing to delete */
 		talloc_free(dn_key);
@@ -1334,9 +1340,11 @@ int ltdb_index_del_value(struct ldb_module *module, const char *dn,
   delete the index entries for a element
   return -1 on failure
 */
-int ltdb_index_del_element(struct ldb_module *module, const char *dn, struct ldb_message_element *el)
+int ltdb_index_del_element(struct ldb_module *module, struct ldb_dn *dn,
+			   struct ldb_message_element *el)
 {
 	struct ltdb_private *ltdb = talloc_get_type(ldb_module_get_private(module), struct ltdb_private);
+	const char *dn_str;
 	int ret;
 	unsigned int i;
 
@@ -1345,7 +1353,12 @@ int ltdb_index_del_element(struct ldb_module *module, const char *dn, struct ldb
 		return LDB_SUCCESS;
 	}
 
-	if (dn[0] == '@') {
+	dn_str = ldb_dn_get_linearized(dn);
+	if (dn_str == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (dn_str[0] == '@') {
 		return LDB_SUCCESS;
 	}
 
@@ -1370,7 +1383,6 @@ int ltdb_index_delete(struct ldb_module *module, const struct ldb_message *msg)
 {
 	struct ltdb_private *ltdb = talloc_get_type(ldb_module_get_private(module), struct ltdb_private);
 	int ret;
-	const char *dn;
 	unsigned int i;
 
 	if (ldb_dn_is_special(msg->dn)) {
@@ -1387,13 +1399,8 @@ int ltdb_index_delete(struct ldb_module *module, const struct ldb_message *msg)
 		return LDB_SUCCESS;
 	}
 
-	dn = ldb_dn_get_linearized(msg->dn);
-	if (dn == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
 	for (i = 0; i < msg->num_elements; i++) {
-		ret = ltdb_index_del_element(module, dn, &msg->elements[i]);
+		ret = ltdb_index_del_element(module, msg->dn, &msg->elements[i]);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -1431,7 +1438,7 @@ static int delete_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, vo
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb_module_get_ctx(module), 
 				       "Unable to store null index for %s\n",
-				       ldb_dn_get_linearized(dn));
+						ldb_dn_get_linearized(dn));
 		talloc_free(dn);
 		return -1;
 	}
@@ -1466,7 +1473,7 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 	ret = ltdb_unpack_data(module, &data, msg);
 	if (ret != 0) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "Invalid data for index %s\n",
-			  ldb_dn_get_linearized(msg->dn));
+						ldb_dn_get_linearized(msg->dn));
 		talloc_free(msg);
 		return -1;
 	}
@@ -1477,7 +1484,7 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 	if (key2.dptr == NULL) {
 		/* probably a corrupt record ... darn */
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "Invalid DN in re_index: %s",
-							ldb_dn_get_linearized(msg->dn));
+						ldb_dn_get_linearized(msg->dn));
 		talloc_free(msg);
 		return 0;
 	}
@@ -1496,8 +1503,8 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 	ret = ltdb_index_onelevel(module, msg, 1);
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
-			"Adding special ONE LEVEL index failed (%s)!",
-			ldb_dn_get_linearized(msg->dn));
+			  "Adding special ONE LEVEL index failed (%s)!",
+						ldb_dn_get_linearized(msg->dn));
 		talloc_free(msg);
 		return -1;
 	}
