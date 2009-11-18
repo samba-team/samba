@@ -1527,6 +1527,74 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[default,flag(NDR_REMAINING)] DATA_BLOB data;
 	} spoolss_PrinterData;
 
+	/* predefined registry key names for printer data */
+
+	const string SPOOL_PRINTERDATA_KEY		= "PrinterDriverData";
+	const string SPOOL_DSSPOOLER_KEY		= "DsSpooler";
+	const string SPOOL_DSDRIVER_KEY			= "DsDriver";
+	const string SPOOL_DSUSER_KEY			= "DsUser";
+	const string SPOOL_PNPDATA_KEY			= "PnPData";
+	const string SPOOL_OID_KEY			= "OID";
+
+	/* predefined value names for printer data */
+
+	const string SPOOL_REG_ASSETNUMBER		= "assetNumber";
+	const string SPOOL_REG_BYTESPERMINUTE		= "bytesPerMinute";
+	const string SPOOL_REG_DEFAULTPRIORITY		= "defaultPriority";
+	const string SPOOL_REG_DESCRIPTION		= "description";
+	const string SPOOL_REG_DRIVERNAME		= "driverName";
+	const string SPOOL_REG_DRIVERVERSION		= "driverVersion";
+	const string SPOOL_REG_FLAGS			= "flags";
+	const string SPOOL_REG_LOCATION			= "location";
+	const string SPOOL_REG_OPERATINGSYSTEM		= "operatingSystem";
+	const string SPOOL_REG_OPERATINGSYSTEMHOTFIX	= "operatingSystemHotfix";
+	const string SPOOL_REG_OPERATINGSYSTEMSERVICEPACK = "operatingSystemServicePack";
+	const string SPOOL_REG_OPERATINGSYSTEMVERSION	= "operatingSystemVersion";
+	const string SPOOL_REG_PORTNAME			= "portName";
+	const string SPOOL_REG_PRINTATTRIBUTES		= "printAttributes";
+	const string SPOOL_REG_PRINTBINNAMES		= "printBinNames";
+	const string SPOOL_REG_PRINTCOLLATE		= "printCollate";
+	const string SPOOL_REG_PRINTCOLOR		= "printColor";
+	const string SPOOL_REG_PRINTDUPLEXSUPPORTED	= "printDuplexSupported";
+	const string SPOOL_REG_PRINTENDTIME		= "printEndTime";
+	const string SPOOL_REG_PRINTERNAME		= "printerName";
+	const string SPOOL_REG_PRINTFORMNAME		= "printFormName";
+	const string SPOOL_REG_PRINTKEEPPRINTEDJOBS	= "printKeepPrintedJobs";
+	const string SPOOL_REG_PRINTLANGUAGE		= "printLanguage";
+	const string SPOOL_REG_PRINTMACADDRESS		= "printMACAddress";
+	const string SPOOL_REG_PRINTMAXCOPIES		= "printMaxCopies";
+	const string SPOOL_REG_PRINTMAXRESOLUTIONSUPPORTED = "printMaxResolutionSupported";
+	const string SPOOL_REG_PRINTMAXXEXTENT		= "printMaxXExtent";
+	const string SPOOL_REG_PRINTMAXYEXTENT		= "printMaxYExtent";
+	const string SPOOL_REG_PRINTMEDIAREADY		= "printMediaReady";
+	const string SPOOL_REG_PRINTMEDIASUPPORTED	= "printMediaSupported";
+	const string SPOOL_REG_PRINTMEMORY		= "printMemory";
+	const string SPOOL_REG_PRINTMINXEXTENT		= "printMinXExtent";
+	const string SPOOL_REG_PRINTMINYEXTENT		= "printMinYExtent";
+	const string SPOOL_REG_PRINTNETWORKADDRESS	= "printNetworkAddress";
+	const string SPOOL_REG_PRINTNOTIFY		= "printNotify";
+	const string SPOOL_REG_PRINTNUMBERUP		= "printNumberUp";
+	const string SPOOL_REG_PRINTORIENTATIONSSUPPORTED = "printOrientationsSupported";
+	const string SPOOL_REG_PRINTOWNER		= "printOwner";
+	const string SPOOL_REG_PRINTPAGESPERMINUTE	= "printPagesPerMinute";
+	const string SPOOL_REG_PRINTRATE		= "printRate";
+	const string SPOOL_REG_PRINTRATEUNIT		= "printRateUnit";
+	const string SPOOL_REG_PRINTSEPARATORFILE	= "printSeparatorFile";
+	const string SPOOL_REG_PRINTSHARENAME		= "printShareName";
+	const string SPOOL_REG_PRINTSPOOLING		= "printSpooling";
+	const string SPOOL_REGVAL_PRINTWHILESPOOLING	= "PrintWhileSpooling";
+	const string SPOOL_REGVAL_PRINTAFTERSPOOLED	= "PrintAfterSpooled";
+	const string SPOOL_REGVAL_PRINTDIRECT		= "PrintDirect";
+	const string SPOOL_REG_PRINTSTAPLINGSUPPORTED	= "printStaplingSupported";
+	const string SPOOL_REG_PRINTSTARTTIME		= "printStartTime";
+	const string SPOOL_REG_PRINTSTATUS		= "printStatus";
+	const string SPOOL_REG_PRIORITY			= "priority";
+	const string SPOOL_REG_SERVERNAME		= "serverName";
+	const string SPOOL_REG_SHORTSERVERNAME		= "shortServerName";
+	const string SPOOL_REG_UNCNAME			= "uNCName";
+	const string SPOOL_REG_URL			= "url";
+	const string SPOOL_REG_VERSIONNUMBER		= "versionNumber";
+
 	[noopnum,noprint,public] WERROR _spoolss_GetPrinterData(
 		[in,ref] policy_handle *handle,
 		[in] 	 [string,charset(UTF16)] uint16 value_name[],
