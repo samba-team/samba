@@ -33,6 +33,11 @@
 	    <para><constant>NT1</constant>: Current up to date version of the protocol. 
 	    Used by Windows NT. Known as CIFS.</para>
 	</listitem>
+	<listitem>
+	    <para><constant>SMB2</constant>: Re-implementation of the SMB protocol.
+	    Used by Windows Vista and newer. The Samba implementation of SMB2 is
+	    currently marked experimental!</para>
+	</listitem>
     </itemizedlist>
 
     <para>Normally this option should not be set as the automatic 
