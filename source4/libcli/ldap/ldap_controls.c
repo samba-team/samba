@@ -1251,6 +1251,25 @@ static bool decode_openldap_dereference(void *mem_ctx, DATA_BLOB in, void *_out)
 	return true;
 }
 
+static bool encode_relax_request(void *mem_ctx, void *in, DATA_BLOB *out)
+{
+	if (in) {
+		return false;
+	}
+
+	*out = data_blob(NULL, 0);
+	return true;
+}
+
+static bool decode_relax_request(void *mem_ctx, DATA_BLOB in, void *_out)
+{
+	if (in.length != 0) {
+		return false;
+	}
+
+	return true;
+}
+
 static const struct ldap_control_handler ldap_known_controls[] = {
 	{ "1.2.840.113556.1.4.319", decode_paged_results_request, encode_paged_results_request },
 	{ "1.2.840.113556.1.4.529", decode_extended_dn_request, encode_extended_dn_request },
@@ -1274,8 +1293,7 @@ static const struct ldap_control_handler ldap_known_controls[] = {
 /* DSDB_EXTENDED_REPLICATED_OBJECTS_OID is internal only, and has no network representation */
 	{ "1.3.6.1.4.1.7165.4.4.1", NULL, NULL },
 	{ DSDB_OPENLDAP_DEREFERENCE_CONTROL, decode_openldap_dereference, encode_openldap_dereference},
-/* LDB_CONTROL_RELAX_OID has no data (so no need for pull/push functions) */
-	{ LDB_CONTROL_RELAX_OID, NULL, NULL },
+	{ LDB_CONTROL_RELAX_OID, decode_relax_request, encode_relax_request },
 	{ NULL, NULL, NULL }
 };
 
