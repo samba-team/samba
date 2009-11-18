@@ -640,7 +640,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 
 		if (ldb_attr_cmp(el->name, "distinguishedName") == 0) {
 			ldb_asprintf_errstring(ldb, "it is not permitted to perform a modify on 'distinguishedName' (use rename instead): %s",
-					       ldb_dn_get_linearized(msg->dn));
+					       ldb_dn_get_linearized(msg2->dn));
 			ret = LDB_ERR_CONSTRAINT_VIOLATION;
 			goto done;
 		}
@@ -649,7 +649,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 		case LDB_FLAG_MOD_ADD:
 			if (el->num_values == 0) {
 				ldb_asprintf_errstring(ldb, "attribute %s on %s specified, but with 0 values (illigal)",
-						       el->name, ldb_dn_get_linearized(msg->dn));
+						       el->name, ldb_dn_get_linearized(msg2->dn));
 				ret = LDB_ERR_CONSTRAINT_VIOLATION;
 				goto done;
 			}
@@ -657,7 +657,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 			if (a && a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) {
 				if (el->num_values > 1) {
 					ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s specified more than once",
-						               el->name, ldb_dn_get_linearized(msg->dn));
+						               el->name, ldb_dn_get_linearized(msg2->dn));
 					ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
 					goto done;
 				}
@@ -670,7 +670,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 					ret = LDB_ERR_OTHER;
 					goto done;
 				}
-				ret = ltdb_index_add_element(module, msg->dn, el);
+				ret = ltdb_index_add_element(module, msg2->dn, el);
 				if (ret != LDB_SUCCESS) {
 					goto done;
 				}
@@ -679,7 +679,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 				   if the attribute is single-valued */
 				if (a && a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) {
 					ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s specified more than once",
-						               el->name, ldb_dn_get_linearized(msg->dn));
+						               el->name, ldb_dn_get_linearized(msg2->dn));
 					ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
 					goto done;
 				}
@@ -720,7 +720,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 				el2->values = vals;
 				el2->num_values += el->num_values;
 
-				ret = ltdb_index_add_element(module, msg->dn, el);
+				ret = ltdb_index_add_element(module, msg2->dn, el);
 				if (ret != LDB_SUCCESS) {
 					goto done;
 				}
@@ -732,7 +732,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 			if (a && a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) {
 				if (el->num_values > 1) {
 					ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s specified more than once",
-						               el->name, ldb_dn_get_linearized(msg->dn));
+						               el->name, ldb_dn_get_linearized(msg2->dn));
 					ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
 					goto done;
 				}
@@ -768,7 +768,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 				goto done;
 			}
 
-			ret = ltdb_index_add_element(module, msg->dn, el);
+			ret = ltdb_index_add_element(module, msg2->dn, el);
 			if (ret != LDB_SUCCESS) {
 				goto done;
 			}
@@ -776,7 +776,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 			break;
 
 		case LDB_FLAG_MOD_DELETE:
-			dn = ldb_dn_get_linearized(msg->dn);
+			dn = ldb_dn_get_linearized(msg2->dn);
 			if (dn == NULL) {
 				ret = LDB_ERR_OTHER;
 				goto done;
@@ -821,7 +821,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 		goto done;
 	}
 
-	ret = ltdb_modified(module, msg->dn);
+	ret = ltdb_modified(module, msg2->dn);
 	if (ret != LDB_SUCCESS) {
 		goto done;
 	}
@@ -885,18 +885,18 @@ static int ltdb_rename(struct ltdb_context *ctx)
 		return ret;
 	}
 
-	msg->dn = ldb_dn_copy(msg, req->op.rename.newdn);
-	if (msg->dn == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
 	/* Always delete first then add, to avoid conflicts with
 	 * unique indexes. We rely on the transaction to make this
 	 * atomic
 	 */
-	ret = ltdb_delete_internal(module, req->op.rename.olddn);
+	ret = ltdb_delete_internal(module, msg->dn);
 	if (ret != LDB_SUCCESS) {
 		return ret;
+	}
+
+	msg->dn = ldb_dn_copy(msg, req->op.rename.newdn);
+	if (msg->dn == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	ret = ltdb_add_internal(module, msg);
