@@ -243,6 +243,11 @@ static bool test_writex(struct torture_context *tctx,
 
 	buf = talloc_zero_array(tctx, uint8_t, maxsize);
 
+	if (!cli->transport->negotiate.lockread_supported) {
+		printf("Server does not support writeunlock - skipping\n");
+		return true;
+	}
+
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
 	}
