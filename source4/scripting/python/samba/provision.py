@@ -47,7 +47,8 @@ from samba import DS_DOMAIN_FUNCTION_2003, DS_DOMAIN_FUNCTION_2008, DS_DC_FUNCTI
 from samba.samdb import SamDB
 from samba.idmap import IDmapDB
 from samba.dcerpc import security
-from samba.ndr import ndr_pack
+from samba.misc import setntacl,dsacl2fsacl
+from samba.ndr import ndr_pack,ndr_unpack
 import urllib
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError
 from ms_display_specifiers import read_ms_ldif
@@ -56,7 +57,6 @@ from provisionbackend import LDBBackend, ExistingBackend, FDSBackend, OpenLDAPBa
 from provisionexceptions import ProvisioningError, InvalidNetbiosName
 from signal import SIGTERM
 from dcerpc.misc import SEC_CHAN_BDC, SEC_CHAN_WKSTA
-
 __docformat__ = "restructuredText"
 
 def find_setup_dir():
@@ -828,6 +828,46 @@ def setup_self_join(samdb, names,
               "DNSPASS_B64": b64encode(dnspass),
               })
 
+def set_gpo_acl(path,acl,setfileacl):
+	if setfileacl:
+		setntacl(path,acl)
+		for root, dirs, files in os.walk(path, topdown=False):
+			for name in files:
+				setntacl(os.path.join(root, name),acl)
+			for name in dirs:
+				setntacl(os.path.join(root, name),acl)
+
+def setup_gpo(paths,names,samdb,policyguid,policyguid_dc,domainsid,setfileacl):
+    policy_path = os.path.join(paths.sysvol, names.dnsdomain, "Policies",
+                               "{" + policyguid + "}")
+    os.makedirs(policy_path, 0755)
+    open(os.path.join(policy_path, "GPT.INI"), 'w').write(
+                      "[General]\r\nVersion=65543")
+    os.makedirs(os.path.join(policy_path, "MACHINE"), 0755)
+    os.makedirs(os.path.join(policy_path, "USER"), 0755)
+
+    policy_path_dc = os.path.join(paths.sysvol, names.dnsdomain, "Policies",
+                                  "{" + policyguid_dc + "}")
+    os.makedirs(policy_path_dc, 0755)
+    open(os.path.join(policy_path_dc, "GPT.INI"), 'w').write(
+                      "[General]\r\nVersion=2")
+    os.makedirs(os.path.join(policy_path_dc, "MACHINE"), 0755)
+    os.makedirs(os.path.join(policy_path_dc, "USER"), 0755)
+# call setntacl ...
+    res = samdb.search(base="CN={%s},CN=Policies,CN=System,%s"%(policyguid,names.domaindn),
+                                attrs=["nTSecurityDescriptor"],
+                                expression="", scope=SCOPE_BASE)
+    assert(len(res) > 0)
+    acl = ndr_unpack(security.descriptor,str(res[0]["nTSecurityDescriptor"])).as_sddl(security.dom_sid("S-1-5-21-1"))
+    set_gpo_acl(policy_path_dc,dsacl2fsacl(acl),setfileacl)
+
+    res = samdb.search(base="CN={%s},CN=Policies,CN=System,%s"%(policyguid_dc,names.domaindn),
+                                attrs=["nTSecurityDescriptor"],
+                                expression="", scope=SCOPE_BASE)
+    assert(len(res) > 0)
+    acl = ndr_unpack(security.descriptor,str(res[0]["nTSecurityDescriptor"])).as_sddl(security.dom_sid("S-1-5-21-1"))
+    set_gpo_acl(policy_path,dsacl2fsacl(acl),setfileacl)
+
 
 def setup_samdb(path, setup_path, session_info, provision_backend, lp, 
                 names, message, 
@@ -1054,7 +1094,7 @@ def provision(setup_dir, message, session_info,
               sitename=None,
               ol_mmr_urls=None, ol_olc=None, 
               setup_ds_path=None, slapd_path=None, nosync=False,
-              ldap_dryrun_mode=False):
+              ldap_dryrun_mode=False,setfileacl=False):
     """Provision samba4
     
     :note: caution, this wipes all existing data!
@@ -1253,22 +1293,7 @@ def provision(setup_dir, message, session_info,
             assert(paths.sysvol is not None)            
             
         # Set up group policies (domain policy and domain controller policy)
-
-        policy_path = os.path.join(paths.sysvol, names.dnsdomain, "Policies",
-                                   "{" + policyguid + "}")
-        os.makedirs(policy_path, 0755)
-        open(os.path.join(policy_path, "GPT.INI"), 'w').write(
-                                   "[General]\r\nVersion=65543")
-        os.makedirs(os.path.join(policy_path, "MACHINE"), 0755)
-        os.makedirs(os.path.join(policy_path, "USER"), 0755)
-
-        policy_path_dc = os.path.join(paths.sysvol, names.dnsdomain, "Policies",
-                                   "{" + policyguid_dc + "}")
-        os.makedirs(policy_path_dc, 0755)
-        open(os.path.join(policy_path_dc, "GPT.INI"), 'w').write(
-                                   "[General]\r\nVersion=2")
-        os.makedirs(os.path.join(policy_path_dc, "MACHINE"), 0755)
-        os.makedirs(os.path.join(policy_path_dc, "USER"), 0755)
+        setup_gpo(paths,names,samdb,policyguid,policyguid_dc,domainsid,setfileacl)
 
         if not os.path.isdir(paths.netlogon):
             os.makedirs(paths.netlogon, 0755)
