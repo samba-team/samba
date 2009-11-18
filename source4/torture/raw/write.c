@@ -573,6 +573,11 @@ static bool test_writeclose(struct torture_context *tctx,
 
 	buf = talloc_zero_array(tctx, uint8_t, maxsize);
 
+	if (!torture_setting_bool(tctx, "writeclose_support", true)) {
+		printf("Server does not support writeclose - skipping\n");
+		return true;
+	}
+
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
 	}
