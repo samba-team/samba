@@ -8,6 +8,7 @@ import sys
 import time
 import random
 import base64
+import os
 
 sys.path.append("bin/python")
 sys.path.append("../lib/subunit/python")
@@ -1981,7 +1982,10 @@ name: """ + object_name + """
         self.delete_force(self.ldb, "cn=%s,cn=Users,%s" % (object_name, self.base_dn))
 
 if not "://" in host:
-    host = "ldap://%s" % host
+    if os.path.isfile(host):
+        host = "tdb://%s" % host
+    else:
+        host = "ldap://%s" % host
 
 ldb = Ldb(host, credentials=creds, session_info=system_session(), lp=lp)
 gc_ldb = Ldb("%s:3268" % host, credentials=creds,
