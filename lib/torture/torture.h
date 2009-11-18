@@ -449,6 +449,10 @@ bool torture_setting_bool(struct torture_context *test,
 struct torture_suite *torture_find_suite(struct torture_suite *parent, 
 										 const char *name);
 
+unsigned long torture_setting_ulong(struct torture_context *test,
+				    const char *name,
+				    unsigned long default_value);
+
 NTSTATUS torture_temp_dir(struct torture_context *tctx, 
 				   const char *prefix, 
 				   char **tempdir);
