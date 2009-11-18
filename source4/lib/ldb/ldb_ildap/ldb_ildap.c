@@ -513,6 +513,7 @@ static int ildb_add(struct ildb_context *ac)
 	for (i = 0; i < n; i++) {
 		msg->r.AddRequest.attributes[i] = mods[i]->attrib;
 	}
+	msg->controls = req->controls;
 
 	return ildb_request_send(ac, msg);
 }
@@ -556,7 +557,7 @@ static int ildb_modify(struct ildb_context *ac)
 	for (i = 0; i < n; i++) {
 		msg->r.ModifyRequest.mods[i] = *mods[i];
 	}
-
+	msg->controls = req->controls;
 	return ildb_request_send(ac, msg);
 }
 
@@ -580,6 +581,7 @@ static int ildb_delete(struct ildb_context *ac)
 		talloc_free(msg);
 		return LDB_ERR_INVALID_DN_SYNTAX;
 	}
+	msg->controls = req->controls;
 
 	return ildb_request_send(ac, msg);
 }
@@ -629,6 +631,7 @@ static int ildb_rename(struct ildb_context *ac)
 	}
 
 	msg->r.ModifyDNRequest.deleteolddn = true;
+	msg->controls = req->controls;
 
 	return ildb_request_send(ac, msg);
 }
