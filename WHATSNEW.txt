@@ -50,6 +50,7 @@ Winbind changes
 The Winbind daemon has been refactored internally to be asynchronous. The new
 Winbind will not be blocked by running 'wbinfo -g' or 'wbinfo -u'.
 
+
 ######################################################################
 Changes
 #######
@@ -65,7 +66,49 @@ smb.conf changes
    cups encrypt			       New	       no
    debug hires timestamp	       Changed Default yes
    ldap follow referral		       New	       auto
-   store create time		       New	       no
+
+
+New [sub]commands
+-----------------
+
+rpcclient createtrustdom	Create trusted domain.
+rpcclient deletetrustdom	Delete trusted domain.
+
+
+New configure options
+---------------------
+
+--enable-external-libtalloc	Enable external tdb
+--enable-netapi			Turn on netapi support
+--enable-pthreadpool		Enable pthreads pool helper support
+--with-cifsumount		Include umount.cifs (Linux only) support
+--with-codepagedir=DIR		Where to put codepages
+
+
+Commit Highlights
+=================
+
+
+o   Jeremy Allison <jra@samba.org>
+    *
+
+
+o   Günther Deschner <gd@samba.org>
+    *
+
+
+o   Björn Jacke <bjacke@sernet.de>
+    * Add support for full Windows timestamp resolution.
+    * Add encryption support for connections to a CUPS server.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Major internal refactoring of the Winbind daemon.
+    * Make Winbind asynchronous.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * Implement the new SMB2 protocol (experimental).
 
 
 ######################################################################
