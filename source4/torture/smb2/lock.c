@@ -32,20 +32,14 @@
 #define TARGET_IS_W2K8(_tctx) (torture_setting_bool(_tctx, "w2k8", false))
 
 #define CHECK_STATUS(status, correct) do { \
-	if (!NT_STATUS_EQUAL(status, correct)) { \
-		printf("(%s) Incorrect status %s - should be %s\n", \
-		       __location__, nt_errstr(status), nt_errstr(correct)); \
-		ret = false; \
-		goto done; \
-	}} while (0)
+	const char *_cmt = "(" __location__ ")"; \
+	torture_assert_ntstatus_equal_goto(torture,status,correct,ret,done,_cmt); \
+} while (0)
 
 #define CHECK_VALUE(v, correct) do { \
-	if ((v) != (correct)) { \
-		printf("(%s) Incorrect value %s=%d - should be %d\n", \
-		       __location__, #v, v, correct); \
-		ret = false; \
-		goto done; \
-	}} while (0)
+	const char *_cmt = "(" __location__ ")"; \
+	torture_assert_int_equal_goto(torture,v,correct,ret,done,_cmt); \
+} while (0)
 
 static bool test_valid_request(struct torture_context *torture, struct smb2_tree *tree)
 {
