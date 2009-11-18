@@ -579,13 +579,13 @@ static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB 
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		if (memcmp(lm_key, zeros, 8) != 0) {
-			*lm_session_key = data_blob(NULL, 16);
+			*lm_session_key = data_blob_talloc(ntlmssp_state, NULL, 16);
 			memcpy(lm_session_key->data, lm_key, 8);
 			memset(lm_session_key->data+8, '\0', 8);
 		}
 		
 		if (memcmp(user_sess_key, zeros, 16) != 0) {
-			*user_session_key = data_blob(user_sess_key, 16);
+			*user_session_key = data_blob_talloc(ntlmssp_state, user_sess_key, 16);
 		}
 		ntlmssp_state->auth_context = talloc_strdup(ntlmssp_state,
 							    unix_name);
