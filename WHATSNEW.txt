@@ -71,8 +71,6 @@ smb.conf changes
 New [sub]commands
 -----------------
 
-rpcclient createtrustdom	Create trusted domain.
-rpcclient deletetrustdom	Delete trusted domain.
 
 
 New configure options
