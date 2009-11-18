@@ -10,6 +10,45 @@ system at https://bugzilla.samba.org/.
 
 Major enhancements in Samba 3.5.0 include:
 
+General changes:
+o Add support for full Windows timestamp resolution
+
+Protocol changes:
+o Experimental implementation of SMB2
+
+Printing Changes:
+o Add encryption support for connections to a CUPS server
+
+Winbind changes:
+o Major refactoring
+o Asynchronous
+
+General changes:
+================
+
+Support for full Windows timestamp resolution has been added. This effectively
+makes us use Windows' full 100ns timestamp resolution if supported by the
+kernel (2.6.22 and higher) and the glibc (2.6 and higher).
+
+Protocol changes
+================
+
+An EXPERIMENTAL implementation of the SMB2 protocol has been added. SMB2 can be
+enabled by setting "max protocol = smb2". SMB2 is a new implementation of the
+SMB protocol used by Windows Vista and higher.
+
+Printing Changes
+================
+
+A new parameter "cups encrypt" has been added to control whether connections to
+CUPS servers will be encrypted or not. The default is to use unencrypted
+connections.
+
+Winbind changes
+===============
+
+The Winbind daemon has been refactored internally to be asynchronous. The new
+Winbind will not be blocked by running 'wbinfo -g' or 'wbinfo -u'.
 
 ######################################################################
 Changes
