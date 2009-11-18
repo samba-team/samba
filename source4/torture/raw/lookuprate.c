@@ -93,7 +93,7 @@ static NTSTATUS fill_directory(struct smbcli_tree *tree,
 				    path, current);
 
 		fnum = smbcli_open(tree, fname, O_RDONLY|O_CREAT,
-				OPENX_MODE_DENY_NONE);
+				DENY_NONE);
 		if (fnum < 0) {
 			talloc_free(fname);
 			return smbcli_nt_error(tree);
