@@ -98,6 +98,8 @@ static WERROR dcesrv_winreg_CloseKey(struct dcesrv_call_state *dce_call,
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 
+	talloc_unlink(dce_call->context, h);
+
 	ZERO_STRUCTP(r->out.handle);
 
 	return WERR_OK;
