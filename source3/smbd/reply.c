@@ -2334,7 +2334,7 @@ void reply_ctemp(struct smb_request *req)
 ********************************************************************/
 
 static NTSTATUS can_rename(connection_struct *conn, files_struct *fsp,
-			   uint16 dirtype, SMB_STRUCT_STAT *pst)
+			uint16 dirtype)
 {
 	uint32 fmode;
 
@@ -2347,7 +2347,7 @@ static NTSTATUS can_rename(connection_struct *conn, files_struct *fsp,
 		return NT_STATUS_NO_SUCH_FILE;
 	}
 
-	if (S_ISDIR(pst->st_ex_mode)) {
+	if (S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
 		if (fsp->posix_open) {
 			return NT_STATUS_OK;
 		}
@@ -3027,7 +3027,6 @@ void reply_readbraw(struct smb_request *req)
 	SMB_OFF_T startpos;
 	files_struct *fsp;
 	struct lock_struct lock;
-	SMB_STRUCT_STAT st;
 	SMB_OFF_T size = 0;
 
 	START_PROFILE(SMBreadbraw);
@@ -3119,7 +3118,7 @@ void reply_readbraw(struct smb_request *req)
 			reply_readbraw_error();
 			END_PROFILE(SMBreadbraw);
 			return;
-		}      
+		}
 	}
 
 	maxcount = (SVAL(req->vwv+3, 0) & 0xFFFF);
@@ -3138,8 +3137,8 @@ void reply_readbraw(struct smb_request *req)
 		return;
 	}
 
-	if (SMB_VFS_FSTAT(fsp, &st) == 0) {
-		size = st.st_ex_size;
+	if (fsp_stat(fsp) == 0) {
+		size = fsp->fsp_name->st.st_ex_size;
 	}
 
 	if (startpos >= size) {
@@ -3414,12 +3413,11 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 			    files_struct *fsp, SMB_OFF_T startpos,
 			    size_t smb_maxcnt)
 {
-	SMB_STRUCT_STAT sbuf;
 	ssize_t nread = -1;
 	struct lock_struct lock;
 	int saved_errno = 0;
 
-	if(SMB_VFS_FSTAT(fsp, &sbuf) == -1) {
+	if(fsp_stat(fsp) == -1) {
 		reply_nterror(req, map_nt_error_from_unix(errno));
 		return;
 	}
@@ -3433,8 +3431,9 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 		return;
 	}
 
-	if (!S_ISREG(sbuf.st_ex_mode) || (startpos > sbuf.st_ex_size)
-	    || (smb_maxcnt > (sbuf.st_ex_size - startpos))) {
+	if (!S_ISREG(fsp->fsp_name->st.st_ex_mode) ||
+			(startpos > fsp->fsp_name->st.st_ex_size)
+			|| (smb_maxcnt > (fsp->fsp_name->st.st_ex_size - startpos))) {
 		/*
 		 * We already know that we would do a short read, so don't
 		 * try the sendfile() path.
@@ -4499,16 +4498,15 @@ void reply_lseek(struct smb_request *req)
 		if((res = SMB_VFS_LSEEK(fsp,startpos,umode)) == -1) {
 			if(errno == EINVAL) {
 				SMB_OFF_T current_pos = startpos;
-				SMB_STRUCT_STAT sbuf;
 
-				if(SMB_VFS_FSTAT(fsp, &sbuf) == -1) {
+				if(fsp_stat(fsp) == -1) {
 					reply_nterror(req,
 						map_nt_error_from_unix(errno));
 					END_PROFILE(SMBlseek);
 					return;
 				}
 
-				current_pos += sbuf.st_ex_size;
+				current_pos += fsp->fsp_name->st.st_ex_size;
 				if(current_pos < 0)
 					res = SMB_VFS_LSEEK(fsp,0,SEEK_SET);
 			}
@@ -5387,7 +5385,6 @@ NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
 			 struct smb_filename *smb_dname)
 {
 	int ret;
-	SMB_STRUCT_STAT st;
 
 	SMB_ASSERT(!is_ntfs_stream_smb_fname(smb_dname));
 
@@ -5422,6 +5419,7 @@ NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
 		 * retry. If we fail to delete any of them (and we *don't*
 		 * do a recursive delete) then fail the rmdir.
 		 */
+		SMB_STRUCT_STAT st;
 		char *dname = NULL;
 		long dirpos = 0;
 		struct smb_Dir *dir_hnd = OpenDir(talloc_tos(), conn,
@@ -6034,7 +6032,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		goto out;
 	}
 
-	status = can_rename(conn, fsp, attrs, &fsp->fsp_name->st);
+	status = can_rename(conn, fsp, attrs);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("rename_internals_fsp: Error %s rename %s -> %s\n",
