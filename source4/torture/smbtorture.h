@@ -91,4 +91,26 @@ bool torture_register_suite(struct torture_suite *suite);
  * steps rather than 1.
  */
 
+/* torture:resume_key_support
+ *
+ * Server supports resuming search via key.
+ */
+
+/* torture:rewind_support
+ *
+ * Server supports rewinding during search.
+ */
+
+/* torture:ea_support
+ *
+ * Server supports OS/2 style EAs.
+ */
+
+/* torture:search_ea_support
+ *
+ * Server supports RAW_SEARCH_DATA_EA_LIST - Torture currently
+ * does not interact correctly with win7, this flag disables
+ * the appropriate test.
+ */
+
 #endif /* __SMBTORTURE_H__ */

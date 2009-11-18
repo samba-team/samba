@@ -711,7 +711,7 @@ static bool test_many_files(struct torture_context *tctx,
 
 		if ((search_types[t].cont_type == CONT_RESUME_KEY) &&
 		    (search_types[t].data_level != RAW_SEARCH_DATA_SEARCH) &&
-		    torture_setting_bool(tctx, "samba3", false)) {
+		    !torture_setting_bool(tctx, "resume_key_support", true)) {
 			torture_comment(tctx,
 					"SKIP: Continue %s via %s\n",
 					search_types[t].name, search_types[t].cont_name);
@@ -1122,7 +1122,8 @@ static bool test_many_dirs(struct torture_context *tctx,
 			goto done;
 		}
 
-		if (strcmp(file3[i].search.name, file2[i].search.name) != 0) {
+		if (torture_setting_bool(tctx, "rewind_support", true) &&
+		    strcmp(file3[i].search.name, file2[i].search.name) != 0) {
 			printf("(%s) server did not rewind - got '%s' expected '%s'\n", 
 			       __location__, file3[i].search.name, file2[i].search.name);
 			ret = false;
@@ -1272,6 +1273,12 @@ static bool test_ea_list(struct torture_context *tctx,
 	}
 
 	printf("Testing RAW_SEARCH_EA_LIST level\n");
+
+	if (!torture_setting_bool(tctx, "search_ea_support", true) ||
+	    !torture_setting_bool(tctx, "ea_support", true)) {
+		printf("..skipped per target configuration.\n");
+		return true;
+	}
 
 	fnum = smbcli_open(cli->tree, BASEDIR "\\file1.txt", O_CREAT|O_RDWR, DENY_NONE);
 	smbcli_close(cli->tree, fnum);

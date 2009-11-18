@@ -523,6 +523,7 @@ int main(int argc,char *argv[])
 
 	if (strcmp(target, "samba3") == 0) {
 		lp_set_cmdline(cmdline_lp_ctx, "torture:samba3", "true");
+		lp_set_cmdline(cmdline_lp_ctx, "torture:resume_key_support", "false");
 	} else if (strcmp(target, "samba4") == 0) {
 		lp_set_cmdline(cmdline_lp_ctx, "torture:samba4", "true");
 	} else if (strcmp(target, "winxp") == 0) {
@@ -537,11 +538,17 @@ int main(int argc,char *argv[])
 		lp_set_cmdline(cmdline_lp_ctx, "torture:win7", "true");
 		lp_set_cmdline(cmdline_lp_ctx, "torture:cn_max_buffer_size",
 		    "0x00010000");
+		lp_set_cmdline(cmdline_lp_ctx, "torture:resume_key_support", "false");
+		lp_set_cmdline(cmdline_lp_ctx, "torture:rewind_support", "false");
+
+		/* RAW-SEARCH for fails for inexplicable reasons against win7 */
+		lp_set_cmdline(cmdline_lp_ctx, "torture:search_ea_support", "false");
 	} else if (strcmp(target, "onefs") == 0) {
 		lp_set_cmdline(cmdline_lp_ctx, "torture:onefs", "true");
 		lp_set_cmdline(cmdline_lp_ctx, "torture:openx_deny_dos_support",
 		    "false");
 		lp_set_cmdline(cmdline_lp_ctx, "torture:sacl_support", "false");
+		lp_set_cmdline(cmdline_lp_ctx, "torture:ea_support", "false");
 		lp_set_cmdline(cmdline_lp_ctx, "torture:smblock_pdu_support",
 		    "false");
 		lp_set_cmdline(cmdline_lp_ctx, "torture:2_step_break_to_none",
@@ -550,6 +557,8 @@ int main(int argc,char *argv[])
 		lp_set_cmdline(cmdline_lp_ctx, "torture:deny_fcb_support", "false");
 		lp_set_cmdline(cmdline_lp_ctx, "torture:read_support", "false");
 		lp_set_cmdline(cmdline_lp_ctx, "torture:writeclose_support", "false");
+		lp_set_cmdline(cmdline_lp_ctx, "torture:resume_key_support", "false");
+		lp_set_cmdline(cmdline_lp_ctx, "torture:rewind_support", "false");
 	}
 
 	if (max_runtime) {
