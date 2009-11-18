@@ -60,12 +60,13 @@ int ltdb_index_transaction_start(struct ldb_module *module)
  * differences in string termination */
 static int dn_list_cmp(const struct ldb_val *v1, const struct ldb_val *v2)
 {
-	int ret = strncmp((char *)v1->data, (char *)v2->data, v1->length);
-	if (ret != 0) return ret;
-	if (v2->length > v1->length && v2->data[v1->length] != 0) {
+	if (v1->length > v2->length && v1->data[v2->length] != 0) {
+		return -1;
+	}
+	if (v1->length < v2->length && v2->data[v1->length] != 0) {
 		return 1;
 	}
-	return 0;
+	return strncmp((char *)v1->data, (char *)v2->data, v1->length);
 }
 
 
