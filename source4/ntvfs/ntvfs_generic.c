@@ -1113,6 +1113,14 @@ NTSTATUS ntvfs_map_lock(struct ntvfs_module_context *ntvfs,
 			isunlock = false;
 		}
 		for (i=0;i<lck->smb2.in.lock_count;i++) {
+			if (lck->smb2.in.locks[i].flags == SMB2_LOCK_FLAG_NONE) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+
+			if (lck->smb2.in.locks[i].flags & ~SMB2_LOCK_FLAG_ALL_MASK) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+
 			if (isunlock && 
 			    (lck->smb2.in.locks[i].flags & 
 			     (SMB2_LOCK_FLAG_SHARED|SMB2_LOCK_FLAG_EXCLUSIVE))) {
