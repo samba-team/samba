@@ -24,7 +24,11 @@
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../lib/util/python_util.h"
+#include <Python.h>
+#ifndef Py_RETURN_NONE
+#define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
+#endif
+
 #ifdef HAVE_FSTAT
 #undef HAVE_FSTAT
 #endif
