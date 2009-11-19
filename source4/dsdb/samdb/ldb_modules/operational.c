@@ -63,10 +63,12 @@
   modifiersName: not supported by w2k3?
 */
 
+#include "includes.h"
 #include "ldb_includes.h"
 #include "ldb_module.h"
 
-#include "includes.h"
+#include "librpc/gen_ndr/ndr_misc.h"
+#include "param/param.h"
 #include "dsdb/samdb/samdb.h"
 
 #ifndef ARRAY_SIZE
@@ -108,6 +110,35 @@ static int construct_primary_group_token(struct ldb_module *module,
 	}
 }
 
+static int construct_parent_guid(struct ldb_module *module,
+		struct ldb_message *msg)
+{
+	struct ldb_context *ldb;
+	struct GUID parent_guid;
+	int ret;
+
+	ldb = ldb_module_get_ctx(module);
+
+	ret = dsdb_find_parentguid_by_dn(ldb, msg->dn, &parent_guid);
+
+
+	if (ret != LDB_SUCCESS){
+
+		/* if there is no parentGUID for this object, then return */
+		if (ret == LDB_ERR_NO_SUCH_OBJECT){
+			return LDB_SUCCESS;
+		}else{
+			return ret;
+		}
+
+	}
+
+	ret = dsdb_msg_add_guid(msg, &parent_guid, "parentGUID");
+
+	return ret;
+
+}
+
 
 /*
   a list of attribute names that should be substituted in the parse
@@ -135,7 +166,8 @@ static const struct {
 	{ "modifyTimestamp", "whenChanged", NULL },
 	{ "structuralObjectClass", "objectClass", NULL },
 	{ "canonicalName", "distinguishedName", construct_canonical_name },
-	{ "primaryGroupToken", "objectSid", construct_primary_group_token }
+	{ "primaryGroupToken", "objectSid", construct_primary_group_token },
+	{ "parentGUID", NULL, construct_parent_guid }
 };
 
 /*
