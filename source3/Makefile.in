@@ -3084,7 +3084,8 @@ cleanlibs::
 	-rm -f ../lib/*/*.o ../lib/*/*/*.o \
 		../libcli/*.o ../libcli/*/*.o ../libcli/*/*/*.o \
 		../librpc/*/*.o \
-		../libgpo/*.o ../libgpo/*/*.o
+		../libgpo/*.o ../libgpo/*/*.o \
+		../libds/*.o ../libds/*/*.o
 
 clean:: cleanlibs
 	-rm -f include/build_env.h
@@ -3094,6 +3095,7 @@ clean:: cleanlibs
 		*/*.o */*/*.o */*/*/*.o \
 		../testsuite/*/*.o \
 		../nsswitch/*.o ../nsswitch/*/*.o ../nsswitch/*.@SHLIBEXT@ \
+		../client/*.o \
 		*/*.@SHLIBEXT@ */*/*.@SHLIBEXT@ */*/*/*.@SHLIBEXT@ \
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(ROOT_SBIN_PROGS) \
 		$(MODULES) $(TORTURE_PROGS) \
