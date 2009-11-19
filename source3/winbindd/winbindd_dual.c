@@ -1117,21 +1117,31 @@ static void machine_password_change_handler(struct event_context *ctx,
 		   "trust_pw_find_change_and_store_it returned %s\n",
 		   nt_errstr(result)));
 
+	if (NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) ) {
+		DEBUG(3,("machine_password_change_handler: password set returned "
+			 "ACCESS_DENIED.  Maybe the trust account "
+			 "password was changed and we didn't know it. "
+			 "Killing connections to domain %s\n",
+			 child->domain->name));
+		TALLOC_FREE(child->domain->conn.netlogon_pipe);
+	}
+
+	if (!calculate_next_machine_pwd_change(child->domain->name,
+					       &next_change)) {
+		DEBUG(10, ("calculate_next_machine_pwd_change failed\n"));
+		return;
+	}
+
+	DEBUG(10, ("calculate_next_machine_pwd_change returned %s\n",
+		   timeval_string(talloc_tos(), &next_change, false)));
+
 	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(10,("machine_password_change_handler: "
-			"failed to change machine password: %s\n",
-			 nt_errstr(result)));
-		if (NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) ) {
-			DEBUG(3,("machine_password_change_handler: password set returned "
-				"ACCESS_DENIED.  Maybe the trust account "
-				"password was changed and we didn't know it. "
-				"Killing connections to domain %s\n",
-				child->domain->name));
-			TALLOC_FREE(child->domain->conn.netlogon_pipe);
-		}
-	} else {
-		DEBUG(10,("machine_password_change_handler: "
-			"successfully changed machine password\n"));
+		struct timeval tmp;
+		/*
+		 * In case of failure, give the DC a minute to recover
+		 */
+		tmp = timeval_current_ofs(60, 0);
+		next_change = timeval_max(&next_change, &tmp);
 	}
 
 done:
