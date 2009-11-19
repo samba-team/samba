@@ -377,8 +377,9 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 				ret = ldb_msg_add_steal_string(ares->message, "distinguishedName", 
 							       ldb_dn_get_extended_linearized(ares->message, ares->message->dn, ac->extended_type));
 			} else {
-				ret = ldb_msg_add_string(ares->message, "distinguishedName", 
-							 ldb_dn_get_linearized(ares->message->dn));
+				ret = ldb_msg_add_dn(ares->message,
+						     "distinguishedName",
+						     ares->message->dn);
 			}
 			if (ret != LDB_SUCCESS) {
 				ldb_oom(ldb);

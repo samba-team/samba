@@ -259,6 +259,15 @@ int ldb_msg_add_steal_string(struct ldb_message *msg,
 }
 
 /*
+  add a DN element to a message
+*/
+int ldb_msg_add_dn(struct ldb_message *msg, const char *attr_name,
+		   struct ldb_dn *dn)
+{
+	return ldb_msg_add_string(msg, attr_name, ldb_dn_get_linearized(dn));
+}
+
+/*
   add a printf formatted element to a message
 */
 int ldb_msg_add_fmt(struct ldb_message *msg, 

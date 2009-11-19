@@ -362,7 +362,6 @@ int map_add(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_context *ldb;
 	struct map_context *ac;
 	struct ldb_message *remote_msg;
-	const char *dn;
 	int ret;
 
 	ldb = ldb_module_get_ctx(module);
@@ -426,8 +425,7 @@ int map_add(struct ldb_module *module, struct ldb_request *req)
 
 	/* Store remote DN in 'IS_MAPPED' */
 	/* TODO: use GUIDs here instead */
-	dn = ldb_dn_alloc_linearized(ac->local_msg, remote_msg->dn);
-	if (ldb_msg_add_string(ac->local_msg, IS_MAPPED, dn) != 0) {
+	if (ldb_msg_add_dn(ac->local_msg, IS_MAPPED, remote_msg->dn) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -545,7 +543,6 @@ static int map_modify_do_local(struct map_context *ac)
 {
 	struct ldb_request *local_req;
 	struct ldb_context *ldb;
-	char *dn;
 	int ret;
 
 	ldb = ldb_module_get_ctx(ac->module);
@@ -558,9 +555,8 @@ static int map_modify_do_local(struct map_context *ac)
 					LDB_FLAG_MOD_ADD, NULL) != 0) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		dn = ldb_dn_alloc_linearized(ac->local_msg,
-					ac->remote_req->op.mod.message->dn);
-		if (ldb_msg_add_string(ac->local_msg, IS_MAPPED, dn) != 0) {
+		if (ldb_msg_add_dn(ac->local_msg, IS_MAPPED,
+				   ac->remote_req->op.mod.message->dn) != 0) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 

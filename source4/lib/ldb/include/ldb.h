@@ -1752,6 +1752,8 @@ int ldb_msg_add_steal_string(struct ldb_message *msg,
 			     const char *attr_name, char *str);
 int ldb_msg_add_string(struct ldb_message *msg, 
 		       const char *attr_name, const char *str);
+int ldb_msg_add_dn(struct ldb_message *msg, const char *attr_name,
+		   struct ldb_dn *dn);
 int ldb_msg_add_fmt(struct ldb_message *msg, 
 		    const char *attr_name, const char *fmt, ...) PRINTF_ATTRIBUTE(3,4);
 
