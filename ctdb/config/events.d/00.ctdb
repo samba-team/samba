@@ -10,13 +10,7 @@
 #     recovered  : called when ctdb has finished a recovery event
 
 . $CTDB_BASE/functions
-loadconfig ctdb
-
-# ensure we have /bin and /usr/bin in the path
-PATH=/bin:/usr/bin:$PATH
-
-cmd="$1"
-shift
+loadconfig
 
 case $cmd in 
      startup)

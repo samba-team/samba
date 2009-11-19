@@ -35,6 +35,8 @@ loadconfig
 
 ctdb_start_stop_service
 
+is_ctdb_managed_service || exit 0
+
 case $cmd in
     startup)
 	ctdb_service_start
@@ -55,6 +57,10 @@ case $cmd in
 	    ctdb_service_start
 	    exit 1
 	fi
+	;;
+
+    status)
+	ctdb_checkstatus || exit $?
 	;;
 esac
 

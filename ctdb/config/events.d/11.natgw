@@ -6,14 +6,9 @@
 #
 
 . $CTDB_BASE/functions
-loadconfig ctdb
+loadconfig
 
 [ -z "$CTDB_NATGW_PUBLIC_IFACE" ] && exit 0
-
-cmd="$1"
-shift
-PATH=/usr/bin:/bin:/usr/sbin:/sbin:$PATH
-
 
 delete_all() {
 	remove_ip $CTDB_NATGW_PUBLIC_IP $CTDB_NATGW_PUBLIC_IFACE
@@ -28,7 +23,7 @@ delete_all() {
 }
 
 case $cmd in 
-     startup)
+    startup)
 	# do not respond to ARPs that are for ip addresses with scope 'host'
 	echo 3 > /proc/sys/net/ipv4/conf/all/arp_ignore
 	# do not send out arp requests from loopback addresses
@@ -37,13 +32,13 @@ case $cmd in
 	ctdb setnatgwstate on
 	;;
 
-     recovered|updatenatgw)
+    recovered|updatenatgw)
 	MYPNN=`ctdb pnn | cut -d: -f2`
 	NATGWMASTER=`ctdb natgwlist | head -1 | sed -e "s/ .*//"`
 	NATGWIP=`ctdb natgwlist | head -1 | sed -e "s/^[^ ]* *//"`
 
 	CTDB_NATGW_PUBLIC_IP_HOST=`echo $CTDB_NATGW_PUBLIC_IP | sed -e "s/\/.*/\/32/"`
-	if [ "$NATGWMASTER" = "-1" ]; then
+	if [ "$NATGWMASTER" == "-1" ]; then
 		echo "There is not NATGW master node"
 		exit 1
 	fi
@@ -71,7 +66,7 @@ case $cmd in
 	echo 1 > /proc/sys/net/ipv4/route/flush
 	;;
 
-     shutdown|removenatgw)
+    shutdown|removenatgw)
 	delete_all
 	;;
 

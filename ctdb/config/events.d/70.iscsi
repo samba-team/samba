@@ -5,10 +5,7 @@ service_name="iscsi"
 
 . $CTDB_BASE/functions
 
-cmd="$1"
-shift
-
-[ "$CTDB_MANAGES_ISCSI" = "yes" ] || exit 0
+ctdb_start_stop_service
 
 [ -z "$CTDB_START_ISCSI_SCRIPTS" ] && {
 	echo "No iscsi start script directory found"
@@ -16,15 +13,6 @@ shift
 }
 
 case $cmd in 
-     startup)
-	;;
-
-     takeip)
-	;;
-
-     releaseip)
-	;;
-
      recovered)
 	# block the iscsi port
 	iptables -I INPUT 1 -p tcp --dport 3260 -j DROP
@@ -49,8 +37,8 @@ case $cmd in
 	done
 
 	# remove all iptables rules
-	while `iptables -D INPUT -p tcp --dport 3260 -j DROP 2>/dev/null >/dev/null` ;  do
-		true;
+	while iptables -D INPUT -p tcp --dport 3260 -j DROP 2>/dev/null >/dev/null ;  do
+	    :
 	done
 
 	;;
@@ -61,9 +49,11 @@ case $cmd in
 	;;
 
      monitor)
-	[ -f $CTDB_BASE/state/iscsi/iscsi_active ] && {
-		ctdb_check_tcp_ports 3260 || exit $?
-	}
+	ctdb_check_tcp_ports 3260 || exit $?
+	;;
+
+    status)
+	ctdb_checkstatus || exit $?
 	;;
 esac
 

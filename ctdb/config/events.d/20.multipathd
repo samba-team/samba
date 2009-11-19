@@ -6,14 +6,10 @@
 #   CTDB_MONITOR_MPDEVICES="device1 device2 ..."
 #
 
-PATH=/bin:/usr/bin:$PATH
+service_name="multipathd"
 
 . $CTDB_BASE/functions
-loadconfig ctdb
-loadconfig multipathd
-
-cmd="$1"
-shift
+loadconfig 
 
 [ -z "$CTDB_MONITOR_MPDEVICES" ] && {
 	exit 0

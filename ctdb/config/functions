@@ -1,15 +1,20 @@
 # utility functions for ctdb event scripts
 
-PATH=/bin:/usr/bin:$PATH
+PATH=/bin:/usr/bin:/usr/sbin:/sbin:$PATH
 
 #######################################
 # pull in a system config file, if any
 loadconfig() {
     name="$1"
 
-    if [ -n "$name" ] ; then
-	loadconfig ctdb
-	loadconfig "${service_config:-${service_name}}"
+    if [ "$name" != "ctdb" ] ; then
+	loadconfig "ctdb"
+    fi
+    if [ -z "$name" ] ; then
+	foo="${service_config:-${service_name}}"
+	if [ -n "$foo" ] ; then
+	    loadconfig "$foo"
+	fi
     fi
 
     if [ -f /etc/sysconfig/$name ]; then
@@ -236,7 +241,7 @@ ctdb_check_tcp_ports() {
 
       [ $all_ok -eq 1 ] || {
 	  echo "ERROR: $service_name tcp port $p is not responding"
-	  exit 1
+	  return 1
       }
   done
 }
@@ -246,8 +251,7 @@ ctdb_check_tcp_ports() {
 # usage: ctdb_check_unix_socket SERVICE_NAME <socket_path>
 ######################################################
 ctdb_check_unix_socket() {
-  service_name="$1"
-  socket_path="$2"
+  socket_path="$1"
   [ -z "$socket_path" ] && return;
 
   # check availability of netstat first
@@ -273,7 +277,7 @@ ctdb_check_unix_socket() {
 
   [ $all_ok -eq 1 ] || {
     echo "ERROR: $service_name socket $socket_path not found"
-    exit 1
+    return 1
   }
 }
 
@@ -493,15 +497,13 @@ remove_ip() {
 
 ########################################################
 # some simple logic for counting events - per eventscript
-# usage: ctdb_counter_init <tag>
-#        ctdb_counter_incr <tag>
-#        ctdb_counter_limit <tag> <limit>
-#        e.g. <tag> = "fail-count"
-# ctdb_counter_limit succeeds when count >= <limit>
+# usage: ctdb_counter_init
+#        ctdb_counter_incr
+#        ctdb_check_counter_limit <limit>
+# ctdb_check_counter_limit succeeds when count >= <limit>
 ########################################################
 _ctdb_counter_common () {
-    _eventscript="${0##*/}" # basename
-    _counter_file="$ctdb_fail_dir/${service_name:-${_eventscript}}"
+    _counter_file="$ctdb_fail_dir/$service_name"
     mkdir -p "${_counter_file%/*}" # dirname
 }
 ctdb_counter_init () {
@@ -668,6 +670,9 @@ ctdb_service_stop ()
 		[ -x "$i" ] && . "$i"
 	done
 }
+
+# A reasonable default is the basename of the eventscript.
+service_name="${0##*/}" # basename
 
 ctdb_event="$1" ; shift
 cmd="$ctdb_event"

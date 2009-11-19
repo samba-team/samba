@@ -2,55 +2,43 @@
 # script to check accessibility to the reclock file on a node
 
 . $CTDB_BASE/functions
-loadconfig ctdb
-
-cmd="$1"
-shift
-
-PATH=/usr/bin:/bin:/usr/sbin:/sbin:$PATH
-
-# Count the number of intervals that have passed when we have tried to
-# but failed to stat the reclock file.  after third failure the node
-# becomes unhealthy after the twentieth failure the node we shutdown
-# ctdbd
-RECLOCKCOUNT="fail-count"
+loadconfig
 
 case $cmd in 
-     startup)
-	ctdb_counter_init "$RECLOCKCOUNT"
+    startup)
+	ctdb_counter_init
 	;;
-
-      monitor)
-	ctdb_counter_incr "$RECLOCKCOUNT"
-	ctdb_counter_limit "$RECLOCKCOUNT" 200 && {
-		echo "Reclock file \"$RECLOCKFILE\" can not be accessed. Shutting down."
-		df
-		sleep 1
-		ctdb shutdown
+    
+    monitor)
+	ctdb_counter_incr
+	(ctdb_counter_limit 200 >/dev/null 2>&1) || {
+	    echo "Reclock file \"$RECLOCKFILE\" can not be accessed. Shutting down."
+	    df
+	    sleep 1
+	    ctdb shutdown
 	}
 
-	RECLOCKFILE=`ctdb -Y getreclock`
+	RECLOCKFILE=$(ctdb -Y getreclock)
 	[ -z "$RECLOCKFILE" ] && {
-		# we are not using a reclock file
-		ctdb_counter_init "$RECLOCKCOUNT"
-		exit 0
+	    # we are not using a reclock file
+	    ctdb_counter_init
+	    exit 0
 	}
 
 	# try stat the reclock file as a background process
 	# so that we dont block in case the cluster filesystem is unavailable
 	(
-		stat $RECLOCKFILE && {
-			# we could stat the file, reset the counter
-			ctdb_counter_init "$RECLOCKCOUNT"
-		}
+	    stat $RECLOCKFILE && {
+		# we could stat the file, reset the counter
+		ctdb_counter_init
+	    }
 	) >/dev/null 2>/dev/null &
 
 
-	ctdb_counter_limit "$RECLOCKCOUNT" 3 && {
-		echo "Reclock file \"$RECLOCKFILE\" can not be accessed. Mark node UNHEALTHY."
-		df
-		exit 1;
-	}
+	ctdb_counter_limit 3
+	;;
+    status)
+	ctdb_checkstatus || exit $?
 	;;
 esac
 

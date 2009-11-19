@@ -6,10 +6,7 @@
 # public interface
 
 . $CTDB_BASE/functions
-loadconfig ctdb
-
-cmd="$1"
-shift
+loadconfig
 
 [ -z "$CTDB_PUBLIC_ADDRESSES" ] && {
 	CTDB_PUBLIC_ADDRESSES=$CTDB_BASE/public_addresses
@@ -177,10 +174,10 @@ case $cmd in
 	    esac
 	done
 	;;
-
+    status)
+	ctdb_checkstatus || exit $?
+	;;
 esac
 
 exit 0
-
-
 
