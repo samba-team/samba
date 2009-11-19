@@ -1,0 +1,8 @@
+[PYTHON::swig_tdb]
+LIBRARY_REALNAME = tdb.$(SHLIBEXT)
+PUBLIC_DEPENDENCIES = LIBTDB DYNCONFIG
+
+swig_tdb_OBJ_FILES = $(tdbsrcdir)/pytdb.o
+
+$(swig_tdb_OBJ_FILES): CFLAGS+=$(CFLAG_NO_CAST_QUAL)
+
