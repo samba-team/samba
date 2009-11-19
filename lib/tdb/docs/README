@@ -69,6 +69,10 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
     TDB_NOLOCK - don't do any locking
     TDB_NOMMAP - don't use mmap
     TDB_NOSYNC - don't synchronise transactions to disk
+    TDB_SEQNUM - maintain a sequence number
+    TDB_VOLATILE - activate the per-hashchain freelist, default 5
+    TDB_ALLOW_NESTING - allow transactions to nest
+    TDB_DISALLOW_NESTING - disallow transactions to nest
 
 ----------------------------------------------------------------------
 TDB_CONTEXT *tdb_open_ex(char *name, int hash_size, int tdb_flags,
