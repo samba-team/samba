@@ -175,6 +175,7 @@ struct smb2_request *smb2_request_init_tree(struct smb2_tree *tree, uint16_t opc
 	if (req == NULL) return NULL;
 
 	SBVAL(req->out.hdr,  SMB2_HDR_SESSION_ID, tree->session->uid);
+	SIVAL(req->out.hdr,  SMB2_HDR_PID, tree->session->pid);
 	SIVAL(req->out.hdr,  SMB2_HDR_TID, tree->tid);
 	req->session = tree->session;
 	req->tree = tree;

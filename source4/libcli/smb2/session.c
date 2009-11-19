@@ -26,6 +26,8 @@
 #include "libcli/composite/composite.h"
 #include "auth/gensec/gensec.h"
 
+#include <unistd.h>
+
 /**
   initialise a smb2_session structure
  */
@@ -45,6 +47,8 @@ struct smb2_session *smb2_session_init(struct smb2_transport *transport,
 	} else {
 		session->transport = talloc_reference(session, transport);
 	}
+
+	session->pid = getpid();
 
 	/* prepare a gensec context for later use */
 	status = gensec_client_start(session, &session->gensec, 
