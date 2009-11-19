@@ -72,8 +72,16 @@ echo "Source socket is $src_socket"
 
 # This should happen as soon as connection is up... but unless we wait
 # we sometimes beat the registration.
+check_tickles ()
+{
+    try_command_on_node 0 ctdb gettickles $test_ip -n $test_node
+    # SRC: 10.0.2.45:49091   DST: 10.0.2.143:445
+    [ "${out/SRC: ${src_socket} /}" != "$out" ]
+}
+
 echo "Checking if CIFS connection is tracked by CTDB..."
-wait_until 10 try_command_on_node 0 ctdb gettickles $test_ip -n $test_node
+wait_until 10 check_tickles
+echo "$out"
 
 if [ "${out/SRC: ${src_socket} /}" != "$out" ] ; then
     echo "GOOD: CIFS connection tracked OK by CTDB."
