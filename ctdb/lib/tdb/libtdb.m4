@@ -1,9 +1,9 @@
 dnl find the tdb sources. This is meant to work both for 
 dnl tdb standalone builds, and builds of packages using tdb
 tdbdir=""
-tdbpaths="$srcdir $srcdir/lib/tdb $srcdir/tdb $srcdir/../tdb"
+tdbpaths=". lib/tdb tdb ../tdb ../lib/tdb"
 for d in $tdbpaths; do
-	if test -f "$d/common/tdb.c"; then
+	if test -f "$srcdir/$d/common/tdb.c"; then
 		tdbdir="$d"		
 		AC_SUBST(tdbdir)
 		break;
@@ -28,3 +28,8 @@ AC_CHECK_HEADERS(getopt.h sys/select.h sys/time.h)
 
 AC_HAVE_DECL(pread, [#include <unistd.h>])
 AC_HAVE_DECL(pwrite, [#include <unistd.h>])
+
+if test x"$VERSIONSCRIPT" != "x"; then
+    EXPORTSFILE=tdb.exports
+    AC_SUBST(EXPORTSFILE)
+fi

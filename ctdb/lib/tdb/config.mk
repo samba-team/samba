@@ -1,59 +1,57 @@
 ################################################
 # Start SUBSYSTEM LIBTDB
 [LIBRARY::LIBTDB]
-VERSION = 0.0.1
-SO_VERSION = 0
-DESCRIPTION = Trivial Database Library
-OBJ_FILES = \
-	common/tdb.o common/dump.o common/io.o common/lock.o \
-	common/open.o common/traverse.o common/freelist.o \
-	common/error.o common/transaction.o
-CFLAGS = -Ilib/tdb/include
-PUBLIC_HEADERS = include/tdb.h
+OUTPUT_TYPE = MERGED_OBJ
+CFLAGS = -I$(tdbsrcdir)/include
 #
 # End SUBSYSTEM ldb
 ################################################
+
+LIBTDB_OBJ_FILES = $(addprefix $(tdbsrcdir)/common/, \
+	tdb.o dump.o io.o lock.o \
+	open.o traverse.o freelist.o \
+	error.o transaction.o)
 
 ################################################
 # Start BINARY tdbtool
 [BINARY::tdbtool]
 INSTALLDIR = BINDIR
-OBJ_FILES= \
-		tools/tdbtool.o
 PRIVATE_DEPENDENCIES = \
 		LIBTDB
 # End BINARY tdbtool
 ################################################
 
+tdbtool_OBJ_FILES = $(tdbsrcdir)/tools/tdbtool.o
+
 ################################################
 # Start BINARY tdbtorture
 [BINARY::tdbtorture]
 INSTALLDIR = BINDIR
-OBJ_FILES= \
-		tools/tdbtorture.o
 PRIVATE_DEPENDENCIES = \
 		LIBTDB
 # End BINARY tdbtorture
 ################################################
 
+tdbtorture_OBJ_FILES = $(tdbsrcdir)/tools/tdbtorture.o
+
 ################################################
 # Start BINARY tdbdump
 [BINARY::tdbdump]
 INSTALLDIR = BINDIR
-OBJ_FILES= \
-		tools/tdbdump.o
 PRIVATE_DEPENDENCIES = \
 		LIBTDB
 # End BINARY tdbdump
 ################################################
 
+tdbdump_OBJ_FILES = $(tdbsrcdir)/tools/tdbdump.o
+
 ################################################
 # Start BINARY tdbbackup
 [BINARY::tdbbackup]
 INSTALLDIR = BINDIR
-OBJ_FILES= \
-		tools/tdbbackup.o
 PRIVATE_DEPENDENCIES = \
 		LIBTDB
 # End BINARY tdbbackup
 ################################################
+
+tdbbackup_OBJ_FILES = $(tdbsrcdir)/tools/tdbbackup.o
