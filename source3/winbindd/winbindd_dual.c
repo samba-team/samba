@@ -1019,6 +1019,7 @@ static bool calculate_next_machine_pwd_change(const char *domain,
 	time_t pass_last_set_time;
 	time_t timeout;
 	time_t next_change;
+	struct timeval tv;
 	char *pw;
 
 	pw = secrets_fetch_machine_password(domain,
@@ -1037,6 +1038,13 @@ static bool calculate_next_machine_pwd_change(const char *domain,
 		DEBUG(10,("machine password never expires\n"));
 		return false;
 	}
+
+	tv.tv_sec = pass_last_set_time;
+	DEBUG(10, ("password last changed %s\n",
+		   timeval_string(talloc_tos(), &tv, false)));
+	tv.tv_sec += timeout;
+	DEBUGADD(10, ("password valid until %s\n",
+		      timeval_string(talloc_tos(), &tv, false)));
 
 	if (time(NULL) < (pass_last_set_time + timeout)) {
 		next_change = pass_last_set_time + timeout;
@@ -1071,8 +1079,12 @@ static void machine_password_change_handler(struct event_context *ctx,
 
 	if (!calculate_next_machine_pwd_change(child->domain->name,
 					       &next_change)) {
+		DEBUG(10, ("calculate_next_machine_pwd_change failed\n"));
 		return;
 	}
+
+	DEBUG(10, ("calculate_next_machine_pwd_change returned %s\n",
+		   timeval_string(talloc_tos(), &next_change, false)));
 
 	if (!winbindd_can_contact_domain(child->domain)) {
 		DEBUG(10,("machine_password_change_handler: Removing myself since I "
@@ -1095,6 +1107,10 @@ static void machine_password_change_handler(struct event_context *ctx,
 						   frame,
 						   child->domain->name);
 	TALLOC_FREE(frame);
+
+	DEBUG(10, ("machine_password_change_handler: "
+		   "trust_pw_find_change_and_store_it returned %s\n",
+		   nt_errstr(result)));
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10,("machine_password_change_handler: "
