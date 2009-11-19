@@ -32,10 +32,6 @@
 #define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
 #endif
 
-#ifdef HAVE_FSTAT
-#undef HAVE_FSTAT
-#endif
-
 /* Include tdb headers */
 #include <tdb.h>
 
