@@ -28,7 +28,7 @@ cleanup_httpd_semaphore_leak() {
 ##########
 
 service_start="cleanup_httpd_semaphore_leak; service $service_name start"
-service_stop="service $service_name stop; killall -q -9 $service_name"
+service_stop="service $service_name stop; killall -q -9 $service_name || true"
 service_reconfigure="service $service_name restart"
 
 loadconfig

@@ -509,7 +509,7 @@ _ctdb_counter_common () {
 ctdb_counter_init () {
     _ctdb_counter_common
 
-    echo -n > "$_counter_file"
+    >"$_counter_file"
 }
 ctdb_counter_incr () {
     _ctdb_counter_common
@@ -520,13 +520,16 @@ ctdb_counter_incr () {
 ctdb_check_counter_limit () {
     _ctdb_counter_common
 
+    _limit="${1:-${service_fail_limit}}"
+    _quiet="$2"
+
     # unary counting!
     _size=$(stat -c "%s" "$_counter_file" 2>/dev/null || echo 0)
-    if [ $_size -ge $service_fail_limit ] ; then
-	echo "ERROR: more than $service_fail_limit consecutive failures, marking cluster unhealthy"
+    if [ $_size -ge $_limit ] ; then
+	echo "ERROR: more than $_limit consecutive failures for $service_name, marking cluster unhealthy"
 	exit 1
-    else
-	echo "WARNING: less than $service_fail_limit consecutive failures, not unhealthy yet"
+    elif [ $_size -gt 0 -a -z "$_quiet" ] ; then
+	echo "WARNING: less than $_limit consecutive failures ($_size) for $service_name, not unhealthy yet"
     fi
 }
 ########################################################
@@ -585,7 +588,7 @@ ctdb_service_unset_reconfigure ()
 ctdb_service_reconfigure ()
 {
     if [ -n "$service_reconfigure" ] ; then
-	$service_reconfigure
+	eval $service_reconfigure
     else
 	service "$service_name" restart
     fi
@@ -641,7 +644,7 @@ ctdb_start_stop_service ()
 ctdb_service_start ()
 {
     if [ -n "$service_start" ] ; then
-	$service_start
+	eval $service_start
     else
 	service "$service_name" start
     fi
@@ -651,7 +654,7 @@ ctdb_service_start ()
 ctdb_service_stop ()
 {
     if [ -n "$service_stop" ] ; then
-	$service_stop
+	eval $service_stop
     else
 	service "$service_name" stop
     fi
@@ -673,6 +676,7 @@ ctdb_service_stop ()
 
 # A reasonable default is the basename of the eventscript.
 service_name="${0##*/}" # basename
+service_fail_limit=1
 
 ctdb_event="$1" ; shift
 cmd="$ctdb_event"

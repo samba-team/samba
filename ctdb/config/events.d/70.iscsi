@@ -1,9 +1,9 @@
 #!/bin/sh
 # ctdb event script for TGTD based iSCSI
 
-service_name="iscsi"
-
 . $CTDB_BASE/functions
+
+service_name="iscsi"
 
 ctdb_start_stop_service
 

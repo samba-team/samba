@@ -7,7 +7,7 @@
 . $CTDB_BASE/functions
 loadconfig ctdb
 
-[ "x$CTDB_RUN_TIMEOUT_MONITOR" = "xyes" ] || exit 0
+[ "$CTDB_RUN_TIMEOUT_MONITOR" = "yes" ] || exit 0
 
 case $cmd in
     monitor)

@@ -6,9 +6,10 @@
 #   CTDB_MONITOR_MPDEVICES="device1 device2 ..."
 #
 
+. $CTDB_BASE/functions
+
 service_name="multipathd"
 
-. $CTDB_BASE/functions
 loadconfig 
 
 [ -z "$CTDB_MONITOR_MPDEVICES" ] && {

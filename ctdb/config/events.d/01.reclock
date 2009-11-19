@@ -10,15 +10,16 @@ case $cmd in
 	;;
     
     monitor)
+	RECLOCKFILE=$(ctdb -Y getreclock)
+
 	ctdb_counter_incr
-	(ctdb_counter_limit 200 >/dev/null 2>&1) || {
-	    echo "Reclock file \"$RECLOCKFILE\" can not be accessed. Shutting down."
+	(ctdb_check_counter_limit 200 >/dev/null 2>&1) || {
+	    echo "Reclock file $RECLOCKFILE\" can not be accessed. Shutting down."
 	    df
 	    sleep 1
 	    ctdb shutdown
 	}
 
-	RECLOCKFILE=$(ctdb -Y getreclock)
 	[ -z "$RECLOCKFILE" ] && {
 	    # we are not using a reclock file
 	    ctdb_counter_init
@@ -34,8 +35,7 @@ case $cmd in
 	    }
 	) >/dev/null 2>/dev/null &
 
-
-	ctdb_counter_limit 3
+	ctdb_check_counter_limit 3 quiet
 	;;
     status)
 	ctdb_checkstatus || exit $?
