@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.104
+Version: 1.0.105
 Release: 1GITHASH
 Epoch: 0
 License: GNU GPL version 3
@@ -118,6 +118,16 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
+* Thu Nov 19 2009 : Version 1.0.105
+ - Fix a bug where we could SEGV if multiple concurrent "ctdb eventscript ..."
+   are used and some of them block.
+ - Monitor the daemon from the syslog child process so we shutdown cleanly when
+   the main daemon terminates.
+ - Add a 500k line ringbuffer in memory where all log messages are stored.
+ - Add a "ctdb getlog <level>" command to pull log messages from the in memory
+   ringbuffer.
+ - From martin : fixes to cifs and nfs autotests
+ - from michael a : fix a bashism in 11.natgw
 * Fri Nov 6 2009 : Version 1.0.104
  - Suggestion from Metze, we can now use killtcp to kill local connections
    for nfs so change the killtcp script to kill both directions of an NFS
