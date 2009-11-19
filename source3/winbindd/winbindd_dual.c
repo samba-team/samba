@@ -1106,7 +1106,7 @@ static void machine_password_change_handler(struct event_context *ctx,
 				"password was changed and we didn't know it. "
 				"Killing connections to domain %s\n",
 				child->domain->name));
-			invalidate_cm_connection(&child->domain->conn);
+			TALLOC_FREE(child->domain->conn.netlogon_pipe);
 		}
 	} else {
 		DEBUG(10,("machine_password_change_handler: "
