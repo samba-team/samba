@@ -1086,6 +1086,11 @@ static void machine_password_change_handler(struct event_context *ctx,
 	DEBUG(10, ("calculate_next_machine_pwd_change returned %s\n",
 		   timeval_string(talloc_tos(), &next_change, false)));
 
+	if (!timeval_expired(&next_change)) {
+		DEBUG(10, ("Someone else has already changed the pw\n"));
+		goto done;
+	}
+
 	if (!winbindd_can_contact_domain(child->domain)) {
 		DEBUG(10,("machine_password_change_handler: Removing myself since I "
 			  "do not have an incoming trust to domain %s\n",
@@ -1129,6 +1134,7 @@ static void machine_password_change_handler(struct event_context *ctx,
 			"successfully changed machine password\n"));
 	}
 
+done:
 	child->machine_password_change_event = event_add_timed(winbind_event_context(), NULL,
 							      next_change,
 							      machine_password_change_handler,
