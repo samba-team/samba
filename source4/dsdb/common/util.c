@@ -2266,6 +2266,105 @@ int dsdb_find_guid_by_dn(struct ldb_context *ldb,
 	return LDB_SUCCESS;
 }
 
+
+/*
+  Use a DN to find it's parentGUID
+
+  Results
+   LDB_ERR_OPERATIONS_ERROR for out of memory
+   LDB_ERR_NO_SUCH_OBJECT if there is no parent object for the given DN
+   LDB_ERR_NO_SUCH_ATTRIBUTE if couldn't get the ObjectGUID from the parent
+   LDB_SUCCESS if it could find the parentGUID correctly
+ */
+int dsdb_find_parentguid_by_dn(struct ldb_context *ldb,
+			struct ldb_dn *dn,
+			struct GUID *parent_guid)
+{
+
+	int ret;
+	struct ldb_result *res;
+	struct ldb_dn *parent_dn;
+	const char *attrs[] = { "objectGUID", NULL };
+	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+
+
+	parent_dn = ldb_dn_get_parent(tmp_ctx, dn);
+
+	if (parent_dn == NULL){
+		DEBUG(4,(__location__ ": Failed to find parent for dn %s\n",
+					 ldb_dn_get_linearized(dn)));
+		ret = LDB_ERR_NO_SUCH_OBJECT;
+		goto done;
+	}
+
+	/*
+		The few lines of code bellow are very similar to the
+		dsdb_find_guid_by_dn() function implementation, but this way we can
+		differ situations when the parent_dn doesn't exist from when there is
+		an error on returning it's GUID.
+	 */
+	ret = dsdb_search_dn_with_deleted(ldb, tmp_ctx, &res, parent_dn, attrs);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(4,(__location__ ": Parent dn for %s does not exist \n",
+							 ldb_dn_get_linearized(dn)));
+		/* When there is no parent dn, it simply doesn't return a parentGUID  */
+		ret = LDB_ERR_NO_SUCH_OBJECT;
+		goto done;
+	}
+	if (res->count < 1) {
+		DEBUG(4,(__location__ ": Failed to find GUID for dn %s\n",
+					 ldb_dn_get_linearized(parent_dn)));
+		ret = LDB_ERR_NO_SUCH_ATTRIBUTE;
+		goto done;
+	}
+
+	*parent_guid = samdb_result_guid(res->msgs[0], "objectGUID");
+	ret = LDB_SUCCESS;
+
+done:
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
+/*
+ adds the given GUID to the given ldb_message. This value is added
+ for the given attr_name (may be either "objectGUID" or "parentGUID").
+ */
+int dsdb_msg_add_guid(struct ldb_message *msg,
+		struct GUID *guid,
+		const char *attr_name)
+{
+	int ret;
+	enum ndr_err_code ndr_err;
+	struct ldb_val v;
+
+	TALLOC_CTX *tmp_ctx =  talloc_init("dsdb_msg_add_guid");
+
+	ndr_err = ndr_push_struct_blob(&v, tmp_ctx, NULL,
+				       guid,
+				       (ndr_push_flags_fn_t)ndr_push_GUID);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		goto done;
+	}
+
+	ret = ldb_msg_add_steal_value(msg, attr_name, &v);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(4,(__location__ ": Failed to add %s to the message\n",
+					 attr_name));
+		goto done;
+	}
+
+	ret = LDB_SUCCESS;
+
+done:
+	talloc_free(tmp_ctx);
+	return ret;
+
+}
+
+
 /*
   use a DN to find a SID
  */
