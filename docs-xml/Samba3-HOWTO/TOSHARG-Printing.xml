@@ -522,7 +522,7 @@ value.  To see all settings, as <constant>root</constant> use the <command>testp
 
 <para>
 The following is a discussion of the settings from <link linkend="extbsdpr">Extended BSD Printing
-Configuration</link> <link linkend="extbsdpr">Extended BSD Printing Configuration</link>.
+Configuration</link>.
 </para>
 
 <sect3>
@@ -1038,7 +1038,7 @@ passed to a UNIX shell. The shell is able to expand the included environment var
 usual. (The syntax to include a UNIX environment variable <parameter>$variable</parameter>
 in the Samba print command is <parameter>%$variable</parameter>.) To give you a working
 <smbconfoption name="print command"/> example, the following will log a print job
-to <filename>/tmp/print.log</filename>, print the file, then remove it. The semicolon (<quote>;</quote>
+to <filename>/tmp/print.log</filename>, print the file, then remove it. The semicolon (<quote>;</quote>)
 is the usual separator for commands in shell scripts:
 </para>
 
@@ -1318,7 +1318,7 @@ The following parameters are frequently needed in this share section:
 &dosprompt; <command>net use g:\\sambaserver\print$</command>
 </screen>
 		 you can still mount it from any client. This can also be done from the
-		<guimenu>Connect network drive menu></guimenu> from Windows Explorer.
+		<guimenu>Connect network drive</guimenu> menu from Windows Explorer.
 		</para></listitem>
 	</varlistentry>
 
@@ -1641,7 +1641,6 @@ Windows PC. This PC can also host the Windows 9x/Me drivers, even if it runs on 
 <para>
 <indexterm><primary>UNC notation</primary></indexterm>
 <indexterm><primary>Windows Explorer</primary></indexterm>
-<indexterm><primary></primary></indexterm>
 Since the <smbconfsection name="[print$]"/> share is usually accessible through the <guiicon>Network
 Neighborhood</guiicon>, you can also use the UNC notation from Windows Explorer to poke at it. The Windows
 9x/Me driver files will end up in subdirectory <filename>0</filename> of the <filename>WIN40</filename>
