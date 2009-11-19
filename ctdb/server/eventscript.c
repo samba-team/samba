@@ -952,7 +952,7 @@ struct eventscript_callback_state {
 };
 
 /*
-  called when takeip event finishes
+  called when a forced eventscript run has finished
  */
 static void run_eventscripts_callback(struct ctdb_context *ctdb, int status, 
 				 void *private_data)
@@ -985,14 +985,11 @@ int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb,
 	int ret;
 	struct eventscript_callback_state *state;
 
-	/* kill off any previous invokations of forced eventscripts */
-	if (ctdb->eventscripts_ctx) {
-		talloc_free(ctdb->eventscripts_ctx);
+	if (ctdb->event_script_ctx == NULL) {
+		ctdb->event_script_ctx = talloc_zero(ctdb, struct ctdb_monitor_status);
 	}
-	ctdb->eventscripts_ctx = talloc_new(ctdb);
-	CTDB_NO_MEMORY(ctdb, ctdb->eventscripts_ctx);
 
-	state = talloc(ctdb->eventscripts_ctx, struct eventscript_callback_state);
+	state = talloc(ctdb->event_script_ctx, struct eventscript_callback_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
 	state->c = talloc_steal(state, c);

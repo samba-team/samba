@@ -448,7 +448,6 @@ struct ctdb_context {
 	int start_as_disabled;
 	int start_as_stopped;
 	uint32_t event_script_timeouts; /* counting how many consecutive times an eventscript has timedout */
-	TALLOC_CTX *eventscripts_ctx; /* a context to hold data for the RUN_EVENTSCRIPTS control */
 	uint32_t *recd_ping_count;
 	TALLOC_CTX *release_ips_ctx; /* a context used to automatically drop all IPs if we fail to recover the node */
 	TALLOC_CTX *script_monitor_ctx; /* a context where we store results while running the monitor event */
