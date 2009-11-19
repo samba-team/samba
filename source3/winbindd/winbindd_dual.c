@@ -1051,6 +1051,24 @@ static bool calculate_next_machine_pwd_change(const char *domain,
 		DEBUG(10,("machine password still valid until: %s\n",
 			http_timestring(talloc_tos(), next_change)));
 		*t = timeval_set(next_change, 0);
+
+		if (lp_clustering()) {
+			uint8_t randbuf;
+			/*
+			 * When having a cluster, we have several
+			 * winbinds racing for the password change. In
+			 * the machine_password_change_handler()
+			 * function we check if someone else was
+			 * faster when the event triggers. We add a
+			 * 255-second random delay here, so that we
+			 * don't run to change the password at the
+			 * exact same moment.
+			 */
+			generate_random_buffer(&randbuf, sizeof(randbuf));
+			DEBUG(10, ("adding %d seconds randomness\n",
+				   (int)randbuf));
+			t->tv_sec += randbuf;
+		}
 		return true;
 	}
 
