@@ -188,27 +188,21 @@ int set_server_zone_offset(time_t t)
  Return the date and time as a string
 ****************************************************************************/
 
-char *current_timestring(TALLOC_CTX *ctx, bool hires)
+char *timeval_string(TALLOC_CTX *ctx, const struct timeval *tp, bool hires)
 {
 	fstring TimeBuf;
-	struct timeval tp;
 	time_t t;
 	struct tm *tm;
 
-	if (hires) {
-		GetTimeOfDay(&tp);
-		t = (time_t)tp.tv_sec;
-	} else {
-		t = time(NULL);
-	}
+	t = (time_t)tp->tv_sec;
 	tm = localtime(&t);
 	if (!tm) {
 		if (hires) {
 			slprintf(TimeBuf,
 				 sizeof(TimeBuf)-1,
 				 "%ld.%06ld seconds since the Epoch",
-				 (long)tp.tv_sec, 
-				 (long)tp.tv_usec);
+				 (long)tp->tv_sec,
+				 (long)tp->tv_usec);
 		} else {
 			slprintf(TimeBuf,
 				 sizeof(TimeBuf)-1,
@@ -222,7 +216,7 @@ char *current_timestring(TALLOC_CTX *ctx, bool hires)
 			slprintf(TimeBuf+strlen(TimeBuf),
 				 sizeof(TimeBuf)-1 - strlen(TimeBuf), 
 				 ".%06ld", 
-				 (long)tp.tv_usec);
+				 (long)tp->tv_usec);
 		} else {
 			strftime(TimeBuf,sizeof(TimeBuf)-1,"%Y/%m/%d %H:%M:%S",tm);
 		}
@@ -233,7 +227,7 @@ char *current_timestring(TALLOC_CTX *ctx, bool hires)
 				 sizeof(TimeBuf)-1, 
 				 "%s.%06ld", 
 				 asct ? asct : "unknown", 
-				 (long)tp.tv_usec);
+				 (long)tp->tv_usec);
 		} else {
 			const char *asct = asctime(tm);
 			fstrcpy(TimeBuf, asct ? asct : "unknown");
@@ -243,6 +237,13 @@ char *current_timestring(TALLOC_CTX *ctx, bool hires)
 	return talloc_strdup(ctx, TimeBuf);
 }
 
+char *current_timestring(TALLOC_CTX *ctx, bool hires)
+{
+	struct timeval tv;
+
+	GetTimeOfDay(&tv);
+	return timeval_string(ctx, &tv, hires);
+}
 
 /*******************************************************************
  Put a dos date into a buffer (time/date format).
