@@ -484,7 +484,6 @@ static int objectclass_do_add(struct oc_context *ac)
 			return LDB_ERR_NO_SUCH_OBJECT;
 		}
 	} else {
-		const struct ldb_val *parent_guid;
 
 		/* Fix up the DN to be in the standard form, taking particular care to match the parent DN */
 		ret = fix_dn(msg, 
@@ -499,21 +498,6 @@ static int objectclass_do_add(struct oc_context *ac)
 			return ret;
 		}
 
-		parent_guid = ldb_msg_find_ldb_val(ac->search_res->message, "objectGUID");
-		if (parent_guid == NULL) {
-			ldb_asprintf_errstring(ldb, "objectclass: Cannot add %s, parent does not have an objectGUID!", 
-					       ldb_dn_get_linearized(msg->dn));
-			talloc_free(mem_ctx);
-			return LDB_ERR_UNWILLING_TO_PERFORM;			
-		}
-
-		ret = ldb_msg_add_steal_value(msg, "parentGUID", discard_const(parent_guid));
-		if (ret != LDB_SUCCESS) {
-			ldb_asprintf_errstring(ldb, "objectclass: Cannot add %s, failed to add parentGUID", 
-					       ldb_dn_get_linearized(msg->dn));
-			talloc_free(mem_ctx);
-			return LDB_ERR_UNWILLING_TO_PERFORM;						
-		}
 	}
 	if (schema) {
 		ret = fix_attributes(ldb, schema, msg);
@@ -1033,7 +1017,7 @@ static int objectclass_do_rename(struct oc_context *ac);
 
 static int objectclass_rename(struct ldb_module *module, struct ldb_request *req)
 {
-	static const char * const attrs[] = { "objectGUID", NULL };
+	static const char * const attrs[] = { NULL };
 	struct ldb_context *ldb;
 	struct ldb_request *search_req;
 	struct oc_context *ac;
@@ -1067,12 +1051,14 @@ static int objectclass_rename(struct ldb_module *module, struct ldb_request *req
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/* note that the results of this search are kept and used to
-	   update the parentGUID in objectclass_rename_callback() */
+	/*
+	  it makes a search request, looking for the parent DN to fix up the new DN
+	  to a standard one, at objectclass_do_rename()
+	 */
 	ret = ldb_build_search_req(&search_req, ldb,
 				   ac, parent_dn, LDB_SCOPE_BASE,
 				   "(objectClass=*)",
-				   attrs, NULL, 
+				   attrs, NULL,
 				   ac, get_search_callback,
 				   req);
 	if (ret != LDB_SUCCESS) {
@@ -1091,67 +1077,8 @@ static int objectclass_rename(struct ldb_module *module, struct ldb_request *req
 	ac->step_fn = objectclass_do_rename;
 
 	return ldb_next_request(ac->module, search_req);
-}
 
-/* 
-   called after the rename happens. 
-   We now need to fix the parentGUID of the object to be the objectGUID of
-   the new parent 
-*/
-static int objectclass_rename_callback(struct ldb_request *req, struct ldb_reply *ares)
-{
-	struct ldb_context *ldb;
-	struct oc_context *ac;
-	const struct ldb_val *parent_guid;
-	struct ldb_request *mod_req = NULL;
-	int ret;
-	struct ldb_message *msg;
-	struct ldb_message_element *el = NULL;
 
-	ac = talloc_get_type(req->context, struct oc_context);
-	ldb = ldb_module_get_ctx(ac->module);
-
-	/* make sure the rename succeeded */
-	if (!ares) {
-		return ldb_module_done(ac->req, NULL, NULL,
-					LDB_ERR_OPERATIONS_ERROR);
-	}
-	if (ares->error != LDB_SUCCESS) {
-		return ldb_module_done(ac->req, ares->controls,
-					ares->response, ares->error);
-	}
-
-	talloc_free(ares);
-
-	/* the ac->search_res should contain the new parents objectGUID */
-	parent_guid = ldb_msg_find_ldb_val(ac->search_res->message, "objectGUID");
-	if (parent_guid == NULL) {
-		ldb_asprintf_errstring(ldb, "objectclass: Cannot rename %s, new parent does not have an objectGUID!", 
-				       ldb_dn_get_linearized(ac->req->op.rename.newdn));
-		return LDB_ERR_UNWILLING_TO_PERFORM;
-
-	}
-
-	/* construct the modify message */
-	msg = ldb_msg_new(ac);
-	if (msg == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	msg->dn = ac->req->op.rename.newdn;
-
-	ret = ldb_msg_add_value(msg, "parentGUID", parent_guid, &el);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	el->flags = LDB_FLAG_MOD_REPLACE;
-
-	ret = ldb_build_mod_req(&mod_req, ldb, ac, msg,
-				NULL, ac, oc_op_callback, req);
-
-	return ldb_next_request(ac->module, mod_req);
 }
 
 static int objectclass_do_rename(struct oc_context *ac)
@@ -1187,7 +1114,7 @@ static int objectclass_do_rename(struct oc_context *ac)
 	ret = ldb_build_rename_req(&rename_req, ldb, ac,
 				   ac->req->op.rename.olddn, fixed_dn,
 				   ac->req->controls,
-				   ac, objectclass_rename_callback,
+				   ac, oc_op_callback,
 				   ac->req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
