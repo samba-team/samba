@@ -2661,7 +2661,7 @@ static bool handler_smb2_lock(int instance)
 	parm[0].level = RAW_LOCK_LOCKX;
 	parm[0].in.file.handle.data[0] = gen_fnum(instance);
 	parm[0].in.lock_count = gen_lock_count();
-	parm[0].in.reserved = gen_reserved32();
+	parm[0].in.lock_sequence = gen_reserved32();
 	
 	parm[0].in.locks = talloc_array(current_op.mem_ctx,
 					struct smb2_lock_element,

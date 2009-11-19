@@ -39,7 +39,7 @@ struct smb2_request *smb2_lock_send(struct smb2_tree *tree, struct smb2_lock *io
 	SSVAL(req->out.body, 0, 0x30);
 
 	SSVAL(req->out.body, 0x02, io->in.lock_count);
-	SIVAL(req->out.body, 0x04, io->in.reserved);
+	SIVAL(req->out.body, 0x04, io->in.lock_sequence);
 	smb2_push_handle(req->out.body+0x08, &io->in.file.handle);
 
 	for (i=0;i<io->in.lock_count;i++) {

@@ -2030,7 +2030,7 @@ union smb_lock {
 			/* static body buffer 48 (0x30) bytes */
 			/* uint16_t buffer_code;  0x30 */
 			uint16_t lock_count;
-			uint32_t reserved;
+			uint32_t lock_sequence;
 			/* struct smb2_handle handle; */
 			struct smb2_lock_element {
 				uint64_t offset;

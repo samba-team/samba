@@ -63,7 +63,7 @@ static bool test_valid_request(struct torture_context *torture, struct smb2_tree
 	torture_comment(torture, "Test request with 0 locks.\n");
 
 	lck.in.lock_count	= 0x0000;
-	lck.in.reserved		= 0x00000000;
+	lck.in.lock_sequence	= 0x00000000;
 	lck.in.file.handle	= h;
 	el[0].offset		= 0x0000000000000000;
 	el[0].length		= 0x0000000000000000;
@@ -73,7 +73,7 @@ static bool test_valid_request(struct torture_context *torture, struct smb2_tree
 	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
 
 	lck.in.lock_count	= 0x0000;
-	lck.in.reserved		= 0x00000000;
+	lck.in.lock_sequence	= 0x00000000;
 	lck.in.file.handle	= h;
 	el[0].offset		= 0;
 	el[0].length		= 0;
@@ -83,7 +83,7 @@ static bool test_valid_request(struct torture_context *torture, struct smb2_tree
 	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
 
 	lck.in.lock_count	= 0x0001;
-	lck.in.reserved		= 0x00000000;
+	lck.in.lock_sequence	= 0x00000000;
 	lck.in.file.handle	= h;
 	el[0].offset		= 0;
 	el[0].length		= 0;
@@ -106,7 +106,7 @@ static bool test_valid_request(struct torture_context *torture, struct smb2_tree
 	lck.in.file.handle.data[0] -=1;
 
 	lck.in.lock_count	= 0x0001;
-	lck.in.reserved		= 0x123ab1;
+	lck.in.lock_sequence	= 0x123ab1;
 	lck.in.file.handle	= h;
 	el[0].offset		= UINT64_MAX;
 	el[0].length		= UINT64_MAX;
@@ -121,7 +121,7 @@ static bool test_valid_request(struct torture_context *torture, struct smb2_tree
 		CHECK_VALUE(lck.out.reserved, 0);
 	}
 
-	lck.in.reserved		= 0x123ab2;
+	lck.in.lock_sequence	= 0x123ab2;
 	status = smb2_lock(tree, &lck);
 	if (TARGET_SUPPORTS_INVALID_LOCK_RANGE(torture)) {
 		CHECK_STATUS(status, NT_STATUS_INVALID_LOCK_RANGE);
@@ -132,7 +132,7 @@ static bool test_valid_request(struct torture_context *torture, struct smb2_tree
 	torture_comment(torture, "Test basic lock stacking.\n");
 
 	lck.in.lock_count	= 0x0001;
-	lck.in.reserved		= 0x12345678;
+	lck.in.lock_sequence	= 0x12345678;
 	lck.in.file.handle	= h;
 	el[0].offset		= UINT32_MAX;
 	el[0].length		= UINT32_MAX;
@@ -153,7 +153,7 @@ static bool test_valid_request(struct torture_context *torture, struct smb2_tree
 	CHECK_VALUE(lck.out.reserved, 0);
 
 	lck.in.lock_count	= 0x0001;
-	lck.in.reserved		= 0x87654321;
+	lck.in.lock_sequence	= 0x87654321;
 	lck.in.file.handle	= h;
 	el[0].offset		= 0x00000000FFFFFFFF;
 	el[0].length		= 0x00000000FFFFFFFF;
@@ -163,7 +163,7 @@ static bool test_valid_request(struct torture_context *torture, struct smb2_tree
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	lck.in.lock_count	= 0x0001;
-	lck.in.reserved		= 0x1234567;
+	lck.in.lock_sequence	= 0x1234567;
 	lck.in.file.handle	= h;
 	el[0].offset		= 0x00000000FFFFFFFF;
 	el[0].length		= 0x00000000FFFFFFFF;
@@ -180,7 +180,7 @@ static bool test_valid_request(struct torture_context *torture, struct smb2_tree
 	torture_comment(torture, "Test flags field permutations.\n");
 
 	lck.in.lock_count	= 0x0001;
-	lck.in.reserved		= 0;
+	lck.in.lock_sequence	= 0;
 	lck.in.file.handle	= h;
 	el[0].offset		= 1;
 	el[0].length		= 1;
@@ -231,7 +231,7 @@ static bool test_valid_request(struct torture_context *torture, struct smb2_tree
 				 "requested\n");
 
 	lck.in.lock_count	= 2;
-	lck.in.reserved		= 0;
+	lck.in.lock_sequence	= 0;
 	lck.in.file.handle	= h;
 	el[0].offset		= 9999;
 	el[0].length		= 1;
@@ -342,7 +342,7 @@ static bool test_lock_read_write(struct torture_context *torture,
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	lck.in.lock_count	= 0x0001;
-	lck.in.reserved		= 0x00000000;
+	lck.in.lock_sequence	= 0x00000000;
 	lck.in.file.handle	= h1;
 	el[0].offset		= 0;
 	el[0].length		= ARRAY_SIZE(buf)/2;
@@ -353,7 +353,7 @@ static bool test_lock_read_write(struct torture_context *torture,
 	CHECK_VALUE(lck.out.reserved, 0);
 
 	lck.in.lock_count	= 0x0001;
-	lck.in.reserved		= 0x00000000;
+	lck.in.lock_sequence	= 0x00000000;
 	lck.in.file.handle	= h1;
 	el[0].offset		= ARRAY_SIZE(buf)/2;
 	el[0].length		= ARRAY_SIZE(buf)/2;
@@ -413,7 +413,7 @@ static bool test_lock_read_write(struct torture_context *torture,
 	CHECK_STATUS(status, s->read_h2_status);
 
 	lck.in.lock_count	= 0x0001;
-	lck.in.reserved		= 0x00000000;
+	lck.in.lock_sequence	= 0x00000000;
 	lck.in.file.handle	= h1;
 	el[0].offset		= ARRAY_SIZE(buf)/2;
 	el[0].length		= ARRAY_SIZE(buf)/2;
