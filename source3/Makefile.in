@@ -234,7 +234,8 @@ EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ \
 	$(TALLOCTORT) bin/replacetort@EXEEXT@ \
 	bin/log2pcap@EXEEXT@ \
 	bin/vlp@EXEEXT@ bin/smbiconv@EXEEXT@ \
-	bin/dbwrap_tool@EXEEXT@
+	bin/dbwrap_tool@EXEEXT@ \
+	bin/dbwrap_torture@EXEEXT@
 
 PAM_MODULES = @PAM_MODULES@
 
@@ -1337,6 +1338,12 @@ DBWRAP_TOOL_OBJ = utils/dbwrap_tool.o \
 		  $(PARAM_OBJ) \
 		  $(LIB_NONSMBD_OBJ) \
 		  $(LIBSAMBA_OBJ)
+
+DBWRAP_TORTURE_OBJ = utils/dbwrap_torture.o \
+		     $(PARAM_OBJ) \
+		     $(LIB_NONSMBD_OBJ) \
+		     $(LIBSAMBA_OBJ) \
+		     $(POPT_LIB_OBJ)
 
 ######################################################################
 # now the rules...
@@ -2910,6 +2917,17 @@ bin/dbwrap_tool@EXEEXT@: $(DBWRAP_TOOL_OBJ) $(LIBTALLOC) $(LIBTDB)
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
 install-dbwrap_tool:: bin/dbwrap_tool@EXEEXT@
+	@$(SHELL) script/installbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(BINDIR) $<
+
+bin/dbwrap_torture@EXEEXT@: $(DBWRAP_TORTURE_OBJ) $(LIBTALLOC) $(LIBTDB)
+	@echo "Linking $@"
+	@$(CC) -o $@ $(DBWRAP_TORTURE_OBJ)\
+		$(LDFLAGS) $(DYNEEXP) $(LIBS) \
+		$(LDAP_LIBS) \
+		$(POPT_LIBS) \
+		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
+
+install-dbwrap_torture:: bin/dbwrap_torture@EXEEXT@
 	@$(SHELL) script/installbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(BINDIR) $<
 
 install:: installservers installbin @INSTALL_CIFSMOUNT@ @INSTALL_CIFSUMOUNT@ @INSTALL_CIFSUPCALL@ installman \
