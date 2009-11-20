@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "nsswitch/libwbclient/wbc_async.h"
+#include "torture.h"
 
 extern char *optarg;
 extern int optind;

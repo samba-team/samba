@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "torture.h"
 
 extern int torture_numops;
 

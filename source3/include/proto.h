@@ -7163,61 +7163,6 @@ int vfs_lstat_smb_fname(struct connection_struct *conn, const char *fname,
 			SMB_STRUCT_STAT *psbuf);
 NTSTATUS vfs_stat_fsp(files_struct *fsp);
 
-/* The following definitions come from torture/denytest.c  */
-
-bool torture_denytest1(int dummy);
-bool torture_denytest2(int dummy);
-
-/* The following definitions come from torture/mangle_test.c  */
-
-bool torture_mangle(int dummy);
-
-/* The following definitions come from torture/nbio.c  */
-
-double nbio_total(void);
-void nb_alarm(int ignore);
-void nbio_shmem(int n);
-void nb_setup(struct cli_state *cli);
-void nb_unlink(const char *fname);
-void nb_createx(const char *fname, 
-		unsigned create_options, unsigned create_disposition, int handle);
-void nb_writex(int handle, int offset, int size, int ret_size);
-void nb_readx(int handle, int offset, int size, int ret_size);
-void nb_close(int handle);
-void nb_rmdir(const char *fname);
-void nb_rename(const char *oldname, const char *newname);
-void nb_qpathinfo(const char *fname);
-void nb_qfileinfo(int fnum);
-void nb_qfsinfo(int level);
-void nb_findfirst(const char *mask);
-void nb_flush(int fnum);
-void nb_deltree(const char *dname);
-void nb_cleanup(void);
-
-/* The following definitions come from torture/scanner.c  */
-
-bool torture_trans2_scan(int dummy);
-bool torture_nttrans_scan(int dummy);
-
-/* The following definitions come from torture/torture.c  */
-
-void start_timer(void);
-double end_timer(void);
-void *shm_setup(int size);
-bool smbcli_parse_unc(const char *unc_name, TALLOC_CTX *mem_ctx,
-		      char **hostname, char **sharename);
-void torture_open_connection_free_unclist(char **unc_list);
-bool torture_open_connection(struct cli_state **c, int conn_index);
-bool torture_cli_session_setup2(struct cli_state *cli, uint16 *new_vuid);
-bool torture_close_connection(struct cli_state *c);
-bool torture_ioctl_test(int dummy);
-bool torture_chkpath_test(int dummy);
-
-/* The following definitions come from torture/utable.c  */
-
-bool torture_utable(int dummy);
-bool torture_casetable(int dummy);
-
 /* The following definitions come from utils/passwd_util.c  */
 
 char *stdin_new_passwd( void);

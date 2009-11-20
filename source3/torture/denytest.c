@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "torture.h"
 
 extern bool torture_showall;
 
