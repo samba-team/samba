@@ -435,7 +435,9 @@ static int ctdb_repack_tdb(struct tdb_context *tdb, TALLOC_CTX *mem_ctx, struct 
 		return -1;
 	}
 
-	tmp_db = tdb_open("tmpdb", tdb_hash_size(tdb), TDB_INTERNAL, O_RDWR|O_CREAT, 0);
+	tmp_db = tdb_open("tmpdb", tdb_hash_size(tdb),
+			  TDB_INTERNAL|TDB_DISALLOW_NESTING,
+			  O_RDWR|O_CREAT, 0);
 	if (tmp_db == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to create tmp_db\n"));
 		tdb_transaction_cancel(tdb);
@@ -524,7 +526,9 @@ static int update_tuning_db(struct ctdb_db_context *ctdb_db, struct vacuum_data 
 		return -1;
 	}
 
-	tune_tdb = tdb_open(vac_dbname, 0, 0, O_RDWR|O_CREAT, 0644);
+	tune_tdb = tdb_open(vac_dbname, 0,
+			    TDB_DISALLOW_NESTING,
+			    O_RDWR|O_CREAT, 0644);
 	if (tune_tdb == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to create/open %s\n", TUNINGDBNAME));
 		talloc_free(tmp_ctx);
@@ -685,7 +689,9 @@ static int get_vacuum_interval(struct ctdb_db_context *ctdb_db)
 		return interval;
 	}
 
-	tdb = tdb_open(vac_dbname, 0, 0, O_RDWR|O_CREAT, 0644);
+	tdb = tdb_open(vac_dbname, 0,
+		       TDB_DISALLOW_NESTING,
+		       O_RDWR|O_CREAT, 0644);
 	if (!tdb) {
 		DEBUG(DEBUG_ERR,("Unable to open/create database %s using default interval\n", vac_dbname));
 		talloc_free(tmp_ctx);

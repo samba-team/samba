@@ -507,7 +507,9 @@ static int ctdb_repack_tdb(struct tdb_context *tdb)
 		return -1;
 	}
 
-	tmp_db = tdb_open("tmpdb", tdb_hash_size(tdb), TDB_INTERNAL, O_RDWR|O_CREAT, 0);
+	tmp_db = tdb_open("tmpdb", tdb_hash_size(tdb),
+			  TDB_INTERNAL|TDB_DISALLOW_NESTING,
+			  O_RDWR|O_CREAT, 0);
 	if (tmp_db == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to create tmp_db\n"));
 		tdb_transaction_cancel(tdb);
