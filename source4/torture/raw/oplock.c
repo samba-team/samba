@@ -973,11 +973,13 @@ static bool test_raw_oplock_batch4(struct torture_context *tctx, struct smbcli_s
 	fnum = io.ntcreatex.out.file.fnum;
 	CHECK_VAL(io.ntcreatex.out.oplock_level, BATCH_OPLOCK_RETURN);
 
-	rd.read.level = RAW_READ_READ;
-	rd.read.in.file.fnum = fnum;
-	rd.read.in.count = 1;
-	rd.read.in.offset = 0;
-	rd.read.in.remaining = 0;
+	rd.readx.level = RAW_READ_READX;
+	rd.readx.in.file.fnum = fnum;
+	rd.readx.in.mincnt = 1;
+	rd.readx.in.maxcnt = 1;
+	rd.readx.in.offset = 0;
+	rd.readx.in.remaining = 0;
+	rd.readx.in.read_for_execute = false;
 	status = smb_raw_read(cli1->tree, &rd);
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 	torture_wait_for_oplock_break(tctx);
