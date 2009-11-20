@@ -170,6 +170,25 @@ static const struct {
 	{ "parentGUID", NULL, construct_parent_guid }
 };
 
+
+enum op_remove {
+	OPERATIONAL_REMOVE_ALWAYS, /* remove always */
+	OPERATIONAL_REMOVE_UNASKED /* remove if not requested */
+};
+
+/*
+  a list of attributes that may need to be removed from the
+  underlying db return
+*/
+static const struct {
+	const char *attr;
+	enum op_remove op;
+} operational_remove[] = {
+	{ "ntSecurityDescriptor", OPERATIONAL_REMOVE_UNASKED },
+	{ "parentGUID",           OPERATIONAL_REMOVE_ALWAYS }
+};
+
+
 /*
   post process a search result record. For any search_sub[] attributes that were
   asked for, we need to call the appropriate copy routine to copy the result
@@ -184,6 +203,24 @@ static int operational_search_post_process(struct ldb_module *module,
 	int i, a=0;
 
 	ldb = ldb_module_get_ctx(module);
+
+	/* removed any attrs that should not be shown to the user */
+	for (i=0; i<ARRAY_SIZE(operational_remove); i++) {
+		struct ldb_message_element *el;
+
+		switch (operational_remove[i].op) {
+		case OPERATIONAL_REMOVE_UNASKED:
+			if (ldb_attr_in_list(attrs, operational_remove[i].attr)) {
+				continue;
+			}
+		case OPERATIONAL_REMOVE_ALWAYS:
+			el = ldb_msg_find_element(msg, operational_remove[i].attr);
+			if (el) {
+				ldb_msg_remove_element(msg, el);
+			}
+			break;
+		}
+	}
 
 	for (a=0;attrs && attrs[a];a++) {
 		for (i=0;i<ARRAY_SIZE(search_sub);i++) {
