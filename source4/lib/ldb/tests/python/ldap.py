@@ -109,6 +109,7 @@ class BasicTests(unittest.TestCase):
         self.delete_force(self.ldb, "cn=ldaptestuser3,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestuser4,cn=ldaptestcontainer," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestuser4,cn=ldaptestcontainer2," + self.base_dn)
+        self.delete_force(self.ldb, "cn=ldaptestuser5,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
@@ -530,6 +531,28 @@ objectClass: container
             self.assertEquals(num, ERR_INVALID_DN_SYNTAX)
 
         self.delete_force(self.ldb, "cn=ldaptestuser3,cn=users," + self.base_dn)
+
+    def test_rename_twice(self):
+        """Tests the rename operation twice - this corresponds to a past bug"""
+        print "Tests the rename twice operation"""
+
+        self.ldb.add({
+             "dn": "cn=ldaptestuser5,cn=users," + self.base_dn,
+             "objectclass": ["user", "person"] })
+
+        ldb.rename("cn=ldaptestuser5,cn=users," + self.base_dn, "cn=ldaptestUSER5,cn=users," + self.base_dn)
+        self.delete_force(self.ldb, "cn=ldaptestuser5,cn=users," + self.base_dn)
+        self.ldb.add({
+             "dn": "cn=ldaptestuser5,cn=users," + self.base_dn,
+             "objectclass": ["user", "person"] })
+        ldb.rename("cn=ldaptestuser5,cn=Users," + self.base_dn, "cn=ldaptestUSER5,cn=users," + self.base_dn)
+        res = ldb.search(expression="cn=ldaptestuser5")
+        print "Found %u records" % len(res)
+        self.assertEquals(len(res), 1, "Wrong number of hits for cn=ldaptestuser5")
+        res = ldb.search(expression="(&(cn=ldaptestuser5)(objectclass=user))")
+        print "Found %u records" % len(res)
+        self.assertEquals(len(res), 1, "Wrong number of hits for (&(cn=ldaptestuser5)(objectclass=user))")
+        self.delete_force(self.ldb, "cn=ldaptestuser5,cn=users," + self.base_dn)
 
     def test_parentGUID(self):
         """Test parentGUID behaviour"""
@@ -1632,6 +1655,7 @@ member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + self.base_dn + """
         self.delete_force(self.ldb, "cn=ldaptestuser3,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestuser4,cn=ldaptestcontainer," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestuser4,cn=ldaptestcontainer2," + self.base_dn)
+        self.delete_force(self.ldb, "cn=ldaptestuser5,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
