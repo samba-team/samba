@@ -81,13 +81,15 @@ case $cmd in
 
 	# and that its directories are available
 	[ "$CTDB_NFS_SKIP_SHARE_CHECK" = "yes" ] || {
-	    nfs_dirs=$(exportfs | grep -v '^#' | grep '^/' | awk {'print $1;'})
-	    ctdb_check_directories "nfs" $nfs_dirs
-	}
+	    exportfs | grep -v '^#' | grep '^/' |
+	    sed -e 's/[[:space:]]*[^[:space:]]*$//' |
+	    ctdb_check_directories
+	} || exit $?
 
 	# check that lockd responds to rpc requests
 	ctdb_check_rpc "lockd" 100021 1
-	ctdb_check_directories "statd" $STATD_SHARED_DIRECTORY
+	echo "$STATD_SHARED_DIRECTORY" | ctdb_check_directories "statd" || \
+	    exit $?
 
 	# mount needs special handling since it is sometimes not started
 	# correctly on RHEL5

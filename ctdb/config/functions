@@ -5,24 +5,24 @@ PATH=/bin:/usr/bin:/usr/sbin:/sbin:$PATH
 #######################################
 # pull in a system config file, if any
 loadconfig() {
-    name="$1"
 
-    if [ "$name" != "ctdb" ] ; then
+    if [ "$1" != "ctdb" ] ; then
 	loadconfig "ctdb"
     fi
-    if [ -z "$name" ] ; then
+
+    if [ -z "$1" ] ; then
 	foo="${service_config:-${service_name}}"
 	if [ -n "$foo" ] ; then
 	    loadconfig "$foo"
 	fi
     fi
 
-    if [ -f /etc/sysconfig/$name ]; then
-	. /etc/sysconfig/$name
-    elif [ -f /etc/default/$name ]; then
-	. /etc/default/$name
-    elif [ -f $CTDB_BASE/sysconfig/$name ]; then
-	. $CTDB_BASE/sysconfig/$name
+    if [ -f /etc/sysconfig/$1 ]; then
+	. /etc/sysconfig/$1
+    elif [ -f /etc/default/$1 ]; then
+	. /etc/default/$1
+    elif [ -f $CTDB_BASE/sysconfig/$1 ]; then
+	. $CTDB_BASE/sysconfig/$1
     fi
 }
 
@@ -48,7 +48,7 @@ service() {
   _op="$2"
 
   # do nothing, when no service was specified
-  test "x$_service_name" = "x" && return
+  [ -z "$_service_name" ] && return
 
   if [ -x /sbin/service ]; then
       /sbin/service "$_service_name" "$_op"
@@ -62,6 +62,9 @@ service() {
 ######################################################
 # simulate /sbin/service (niced) on platforms that don't have it
 nice_service() { 
+  # do nothing, when no service was specified
+  [ -z "$1" ] && return
+
     nice service "$@"
 }
 
@@ -124,44 +127,17 @@ ctdb_wait_tcp_ports() {
 }
 
 
-
-######################################################
-# wait for a set of directories
-# usage: ctdb_wait_directories SERVICE_NAME <directories...>
-######################################################
-ctdb_wait_directories() {
-  service_name="$1"
-  shift
-  wait_dirs="$*"
-  [ -z "$wait_dirs" ] && return;
-  all_ok=0
-  echo "Waiting for local directories for $service_name"
-  while [ $all_ok -eq 0 ]; do
-  	  all_ok=1
-  	  for d in $wait_dirs; do
-  	      [ -d $d ] || all_ok=0
-	  done
-	  [ $all_ok -eq 1 ] || sleep 1
-	  ctdb status > /dev/null 2>&1 || {
-  		echo "ctdb daemon has died. Exiting directory wait for $service_name"
-		exit 1
-	  }
-  done
-  echo "Local directories for $service_name are available"
-}
-
-
 ######################################################
 # check that a rpc server is registered with portmap
 # and responding to requests
 # usage: ctdb_check_rpc SERVICE_NAME PROGNUM VERSION
 ######################################################
 ctdb_check_rpc() {
-    service_name="$1"
+    progname="$1"
     prognum="$2"
     version="$3"
     rpcinfo -u localhost $prognum $version > /dev/null || {
-	    echo "ERROR: $service_name not responding to rpc requests"
+	    echo "ERROR: $progname not responding to rpc requests"
 	    exit 1
     }
 }
@@ -172,18 +148,15 @@ ctdb_check_rpc() {
 # usage: ctdb_check_directories_probe SERVICE_NAME <directories...>
 ######################################################
 ctdb_check_directories_probe() {
-  service_name="$1"
-  shift
-  for d ; do
-      case "$d" in
-	  *%*)
-	      continue
-	      ;;
-	  *)
-	      [ -d "$d" ] || return 1
-      esac
-  done
-  return 0
+    while IFS="" read d ; do
+	case "$d" in
+	    *%*)
+		continue
+		;;
+	    *)
+		[ -d "$d" ] || return 1
+	esac
+    done
 }
 
 ######################################################
@@ -191,59 +164,27 @@ ctdb_check_directories_probe() {
 # usage: ctdb_check_directories SERVICE_NAME <directories...>
 ######################################################
 ctdb_check_directories() {
-  # Note: ctdb_check_directories_probe sets both $service_name and $d.
-  ctdb_check_directories_probe "$@" || {
-      echo "ERROR: $service_name directory $d not available"
-      exit 1
-  }
+    n="${1:-${service_name}}"
+    ctdb_check_directories_probe || {
+	echo "ERROR: $n directory \"$d\" not available"
+	exit 1
+    }
 }
 
 ######################################################
 # check a set of tcp ports
-# usage: ctdb_check_tcp_ports SERVICE_NAME <ports...>
+# usage: ctdb_check_tcp_ports <ports...>
 ######################################################
 ctdb_check_tcp_ports() {
-  [ -z "$1" ] && return;
 
-  # check availability of netcat or netstat first
-  NETCAT=""
-  NETSTAT=""
-  if [ -x /usr/bin/netstat ]; then
-      NETSTAT=/usr/bin/netstat
-  elif [ -x /bin/netstat ]; then
-      NETSTAT=/bin/netstat
-  elif [ -x /usr/bin/netcat ]; then
-      NETCAT=/usr/bin/netcat
-  elif [ -x /bin/netcat ]; then
-      NETCAT=/bin/netcat
-  elif [ -x /usr/bin/nc ]; then
-      NETCAT=/usr/bin/nc
-  elif [ -x /bin/nc ]; then
-      NETCAT=/bin/nc
-  fi
-
-  for p ; do
-      all_ok=1
-
-      if [ "x${NETCAT}" != "x" ]; then
-          ${NETCAT} -z 127.0.0.1 $p > /dev/null || all_ok=0
-      elif [ "x${NETSTAT}" != "x" ]; then
-          if ! ${NETSTAT} -a -n | egrep "0.0.0.0:$p .*LISTEN" > /dev/null ; then
-              if ! ${NETSTAT} -a -n | egrep ":::$p .*LISTEN" > /dev/null ; then
-                  all_ok=0
-              fi
-          fi
-      else
-          echo "ERROR: neither netcat (or nc) nor netstat found!"
-          echo "ERROR: can't monitor ${service_name} tcp port ${p}"
-          all_ok=0
-      fi
-
-      [ $all_ok -eq 1 ] || {
-	  echo "ERROR: $service_name tcp port $p is not responding"
-	  return 1
-      }
-  done
+    for p ; do
+	if ! netstat -a -t -n | grep -q "0\.0\.0\.0:$p .*LISTEN" ; then
+            if ! netstat -a -t -n | grep -q ":::$p .*LISTEN" ; then
+		echo "ERROR: $service_name tcp port $p is not responding"
+		return 1
+            fi
+	fi
+    done
 }
 
 ######################################################
@@ -251,34 +192,13 @@ ctdb_check_tcp_ports() {
 # usage: ctdb_check_unix_socket SERVICE_NAME <socket_path>
 ######################################################
 ctdb_check_unix_socket() {
-  socket_path="$1"
-  [ -z "$socket_path" ] && return;
+    socket_path="$1"
+    [ -z "$socket_path" ] && return
 
-  # check availability of netstat first
-  NETSTAT=""
-  if [ -x $(type -p netstat) ]; then
-        NETSTAT=$(type -p netstat)
-  elif [ -x /usr/bin/netstat ]; then
-      NETSTAT=/usr/bin/netstat
-  elif [ -x /bin/netstat ]; then
-      NETSTAT=/bin/netstat
-  fi
-
-  all_ok=1
-  if [ "x$NETSTAT" != "x" ]; then
-    if $NETSTAT -l -a -n | grep -qE "^unix.*LISTEN.*${socket_path}$"; then
-      all_ok=1
-    else
-      all_ok=0
+    if ! netstat --unix -a -n | grep -q "^unix.*LISTEN.*${socket_path}$"; then
+        echo "ERROR: $service_name socket $socket_path not found"
+        return 1
     fi
-    else
-    [ -S ${socket_path} ] && all_ok=1 || all_ok=0
-  fi
-
-  [ $all_ok -eq 1 ] || {
-    echo "ERROR: $service_name socket $socket_path not found"
-    return 1
-  }
 }
 
 ######################################################
