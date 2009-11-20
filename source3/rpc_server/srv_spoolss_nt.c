@@ -9335,7 +9335,7 @@ WERROR _spoolss_EnumPrinterKey(pipes_struct *p,
 	WERROR		result = WERR_BADFILE;
 	int i;
 	const char **array = NULL;
-
+	DATA_BLOB blob;
 
 	DEBUG(4,("_spoolss_EnumPrinterKey\n"));
 
@@ -9364,7 +9364,9 @@ WERROR _spoolss_EnumPrinterKey(pipes_struct *p,
 		goto done;
 	}
 
-	*r->out.needed = 4;
+	/* two byte termination (a multisz) */
+
+	*r->out.needed = 2;
 
 	array = talloc_zero_array(r->out.key_buffer, const char *, num_keys + 1);
 	if (!array) {
@@ -9373,6 +9375,10 @@ WERROR _spoolss_EnumPrinterKey(pipes_struct *p,
 	}
 
 	for (i=0; i < num_keys; i++) {
+
+		DEBUG(10,("_spoolss_EnumPrinterKey: adding keyname: %s\n",
+			keynames[i]));
+
 		array[i] = talloc_strdup(array, keynames[i]);
 		if (!array[i]) {
 			result = WERR_NOMEM;
@@ -9389,12 +9395,21 @@ WERROR _spoolss_EnumPrinterKey(pipes_struct *p,
 
 	result = WERR_OK;
 
-	*r->out.key_buffer = array;
+	if (!push_reg_multi_sz(p->mem_ctx, &blob, array)) {
+		result = WERR_NOMEM;
+		goto done;
+	}
+
+	if (r->in.offered == blob.length) {
+		memcpy(r->out.key_buffer, blob.data, blob.length);
+	}
 
  done:
 	if (!W_ERROR_IS_OK(result)) {
 		TALLOC_FREE(array);
-		ZERO_STRUCTP(r->out.key_buffer);
+		if (!W_ERROR_EQUAL(result, WERR_MORE_DATA)) {
+			*r->out.needed = 0;
+		}
 	}
 
 	free_a_printer(&printer, 2);

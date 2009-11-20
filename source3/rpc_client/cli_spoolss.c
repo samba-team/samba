@@ -810,25 +810,43 @@ WERROR rpccli_spoolss_enumprinterkey(struct rpc_pipe_client *cli,
 	NTSTATUS status;
 	WERROR werror;
 	uint32_t needed;
+	uint16_t *buffer = NULL;
+
+	*key_buffer = NULL;
+
+	if (offered) {
+		buffer = talloc_array(mem_ctx, uint16_t, offered);
+		W_ERROR_HAVE_NO_MEMORY(buffer);
+	}
 
 	status = rpccli_spoolss_EnumPrinterKey(cli, mem_ctx,
 					       handle,
 					       key_name,
-					       key_buffer,
+					       buffer,
 					       offered,
 					       &needed,
 					       &werror);
 
 	if (W_ERROR_EQUAL(werror, WERR_MORE_DATA)) {
 		offered = needed;
-
+		buffer = talloc_realloc(mem_ctx, buffer, uint16_t, needed);
+		W_ERROR_HAVE_NO_MEMORY(buffer);
 		status = rpccli_spoolss_EnumPrinterKey(cli, mem_ctx,
 						       handle,
 						       key_name,
-						       key_buffer,
+						       buffer,
 						       offered,
 						       &needed,
 						       &werror);
+	}
+
+	if (W_ERROR_IS_OK(werror)) {
+		const char **array;
+		DATA_BLOB blob = data_blob_const((uint8_t *)buffer, offered);
+		if (!pull_reg_multi_sz(mem_ctx, &blob, &array)) {
+			return WERR_NOMEM;
+		}
+		*key_buffer = array;
 	}
 
 	return werror;
