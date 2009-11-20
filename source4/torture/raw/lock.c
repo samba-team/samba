@@ -1404,11 +1404,13 @@ static bool test_zerobytelocks(struct torture_context *tctx, struct smbcli_state
 		io.lockx.in.ulock_cnt = 0;
 		io.lockx.in.lock_cnt = 1;
 
-		io.lockx.in.locks = &zero_byte_tests[i].lock1;
+		io.lockx.in.locks = discard_const_p(struct smb_lock_entry,
+						    &zero_byte_tests[i].lock1);
 		status = smb_raw_lock(cli->tree, &io);
 		CHECK_STATUS(status, NT_STATUS_OK);
 
-		io.lockx.in.locks = &zero_byte_tests[i].lock2;
+		io.lockx.in.locks = discard_const_p(struct smb_lock_entry,
+						    &zero_byte_tests[i].lock2);
 		status = smb_raw_lock(cli->tree, &io);
 
 		if (NT_STATUS_EQUAL(zero_byte_tests[i].exp_status,
@@ -1433,7 +1435,8 @@ static bool test_zerobytelocks(struct torture_context *tctx, struct smbcli_state
 			CHECK_STATUS(status, NT_STATUS_OK);
 		}
 
-		io.lockx.in.locks = &zero_byte_tests[i].lock1;
+		io.lockx.in.locks = discard_const_p(struct smb_lock_entry,
+						    &zero_byte_tests[i].lock1);
 		status = smb_raw_lock(cli->tree, &io);
 		CHECK_STATUS(status, NT_STATUS_OK);
 	}
