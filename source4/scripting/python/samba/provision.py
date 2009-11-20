@@ -580,53 +580,59 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
                     "kludge_acl", 
                     "schema_load",
                     "instancetype"]
+    if serverrole == "domain controller":
+        objectguid_module = "repl_meta_data"
+    else:
+        objectguid_module = "objectguid"
     tdb_modules_list = [
                     "subtree_rename",
                     "subtree_delete",
-                    "linked_attributes",
-                    "extended_dn_out_ldb"]
+                    "linked_attributes"]
+    extended_dn_module = "extended_dn_out_ldb"
     modules_list2 = ["show_deleted",
                      "new_partition",
                      "partition"]
+
+    backend_modules = []
 
     ldap_backend_line = "# No LDAP backend"
     if provision_backend.type is not "ldb":
         ldap_backend_line = "ldapBackend: %s" % provision_backend.ldapi_uri
         
+        # The LDAP backends assign the objectGUID on thier own
+        objectguid_module = None
+        # OpenLDAP and FDS handles subtree renames, so we don't want to do any of these things
+        tdb_modules_list = []
+
         if provision_backend.ldap_backend_type == "fedora-ds":
             backend_modules = ["nsuniqueid", "paged_searches"]
-            # We can handle linked attributes here, as we don't have directory-side subtree operations
-            tdb_modules_list = ["extended_dn_out_fds"]
+            extended_dn_module_list = ["extended_dn_out_fds"];
         elif provision_backend.ldap_backend_type == "openldap":
             backend_modules = ["entryuuid", "paged_searches"]
-            # OpenLDAP handles subtree renames, so we don't want to do any of these things
-            tdb_modules_list = ["extended_dn_out_openldap"]
+            extended_dn_module_list = ["extended_dn_out_openldap"]
 
-    elif serverrole == "domain controller":
-        tdb_modules_list.insert(0, "repl_meta_data")
-        backend_modules = []
-    else:
-        backend_modules = ["objectguid"]
+    if objectguid_module is not None:
+        modules_list.append(objectguid_module)
 
-    if tdb_modules_list is None:
-        tdb_modules_list_as_string = ""
-    else:
-        tdb_modules_list_as_string = ","+",".join(tdb_modules_list)
-        
+    for m in tdb_modules_list:
+        modules_list.append(m)
+
+    modules_list.append(extended_dn_module)
+
+    for m in modules_list2:
+        modules_list.append(m)
+
     samdb.transaction_start()
     try:
         message("Setting up sam.ldb partitions and settings")
         setup_add_ldif(samdb, setup_path("provision_partitions.ldif"), {
                 "SCHEMADN": ldb.Dn(schema.ldb, names.schemadn).get_casefold(), 
-                "SCHEMADN_MOD2": ",objectguid",
                 "CONFIGDN": ldb.Dn(schema.ldb, names.configdn).get_casefold(),
                 "DOMAINDN": ldb.Dn(schema.ldb, names.domaindn).get_casefold(),
                 "SCHEMADN_MOD": "schema_data",
                 "CONFIGDN_MOD": "naming_fsmo",
                 "DOMAINDN_MOD": "pdc_fsmo",
                 "MODULES_LIST": ",".join(modules_list),
-                "TDB_MODULES_LIST": tdb_modules_list_as_string,
-                "MODULES_LIST2": ",".join(modules_list2),
                 "BACKEND_MOD": ",".join(backend_modules),
                 "LDAP_BACKEND_LINE": ldap_backend_line,
         })
