@@ -652,7 +652,6 @@ NTSTATUS pvfs_access_check_create(struct pvfs_state *pvfs,
 {
 	struct pvfs_filename *parent;
 	NTSTATUS status;
-	struct security_token *token = req->session_info->security_token;
 
 	if (pvfs_read_only(pvfs, *access_mask)) {
 		return NT_STATUS_ACCESS_DENIED;
