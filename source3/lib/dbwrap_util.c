@@ -204,7 +204,7 @@ static NTSTATUS dbwrap_change_int32_atomic_action(struct db_context *db,
 {
 	struct db_record *rec;
 	int32_t val = -1;
-	TDB_DATA data;
+	int32_t v_store;
 	NTSTATUS ret;
 	struct dbwrap_change_int32_atomic_context *state;
 
@@ -227,10 +227,12 @@ static NTSTATUS dbwrap_change_int32_atomic_action(struct db_context *db,
 
 	val += state->change_val;
 
-	data.dsize = sizeof(val);
-	data.dptr = (uint8 *)&val;
+	SIVAL(&v_store, 0, val);
 
-	ret = rec->store(rec, data, TDB_REPLACE);
+	ret = rec->store(rec,
+			 make_tdb_data((const uint8_t *)&v_store,
+				       sizeof(v_store)),
+			 TDB_REPLACE);
 
 done:
 	TALLOC_FREE(rec);
