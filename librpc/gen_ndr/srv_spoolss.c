@@ -6325,7 +6325,7 @@ static bool api_spoolss_EnumPrinterKey(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.key_buffer = talloc_zero(r, const char **);
+	r->out.key_buffer = talloc_zero_array(r, uint16_t, r->in.offered / 2);
 	if (r->out.key_buffer == NULL) {
 		talloc_free(r);
 		return false;
@@ -9504,7 +9504,7 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 		case NDR_SPOOLSS_ENUMPRINTERKEY: {
 			struct spoolss_EnumPrinterKey *r = (struct spoolss_EnumPrinterKey *)_r;
 			ZERO_STRUCT(r->out);
-			r->out.key_buffer = talloc_zero(mem_ctx, const char **);
+			r->out.key_buffer = talloc_zero_array(mem_ctx, uint16_t, r->in.offered / 2);
 			if (r->out.key_buffer == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}

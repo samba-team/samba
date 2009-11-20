@@ -3489,7 +3489,7 @@ struct spoolss_EnumPrinterKey {
 	} in;
 
 	struct {
-		const char ** *key_buffer;/* [subcontext_size(offered),ref,subcontext(0),flag(LIBNDR_FLAG_STR_NULLTERM)] */
+		uint16_t *key_buffer;/* [ref,size_is(offered/2)] */
 		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
