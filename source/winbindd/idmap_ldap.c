@@ -853,6 +853,8 @@ static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom,
 	}
 	CHECK_ALLOC_DONE(ctx->url);
 
+	trim_char(ctx->url, '\"', '\"');
+
         tmp = lp_parm_const_string(-1, config_option, "ldap_base_dn", NULL);
         if ( ! tmp || ! *tmp) {
                 tmp = lp_ldap_idmap_suffix();
