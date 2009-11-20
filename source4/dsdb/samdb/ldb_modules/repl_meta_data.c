@@ -49,7 +49,6 @@
 struct replmd_private {
 	TALLOC_CTX *la_ctx;
 	struct la_entry *la_list;
-	uint32_t num_ncs;
 	struct nc_entry {
 		struct nc_entry *prev, *next;
 		struct ldb_dn *dn;
@@ -208,11 +207,10 @@ static int replmd_notify_store(struct ldb_module *module)
 	struct replmd_private *replmd_private = 
 		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	struct nc_entry *modified_partition;
 
-	for (modified_partition = replmd_private->ncs; modified_partition; 
-	     modified_partition = modified_partition->next) {
+	while (replmd_private->ncs) {
 		int ret;
+		struct nc_entry *modified_partition = replmd_private->ncs;
 
 		ret = dsdb_save_partition_usn(ldb, modified_partition->dn, modified_partition->mod_usn);
 		if (ret != LDB_SUCCESS) {
@@ -220,6 +218,8 @@ static int replmd_notify_store(struct ldb_module *module)
 				 ldb_dn_get_linearized(modified_partition->dn)));
 			return ret;
 		}
+		DLIST_REMOVE(replmd_private->ncs, modified_partition);
+		talloc_free(modified_partition);
 	}
 
 	return LDB_SUCCESS;
@@ -2202,15 +2202,18 @@ static int replmd_extended(struct ldb_module *module, struct ldb_request *req)
 static int replmd_start_transaction(struct ldb_module *module)
 {
 	/* create our private structure for this transaction */
-	int i;
 	struct replmd_private *replmd_private = talloc_get_type(ldb_module_get_private(module),
 								struct replmd_private);
 	talloc_free(replmd_private->la_ctx);
 	replmd_private->la_list = NULL;
 	replmd_private->la_ctx = NULL;
 
-	for (i=0; i<replmd_private->num_ncs; i++) {
-		replmd_private->ncs[i].mod_usn = 0;
+	/* free any leftover mod_usn records from cancelled
+	   transactions */
+	while (replmd_private->ncs) {
+		struct nc_entry *e = replmd_private->ncs;
+		DLIST_REMOVE(replmd_private->ncs, e);
+		talloc_free(e);
 	}
 
 	return ldb_next_start_trans(module);
