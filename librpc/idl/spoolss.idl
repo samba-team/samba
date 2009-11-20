@@ -2508,7 +2508,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 	[public] WERROR spoolss_EnumPrinterKey(
 		[in, ref] policy_handle *handle,
 		[in] [string,charset(UTF16)] uint16 key_name[],
-		[out,ref] [subcontext(0),subcontext_size(offered)] nstring_array **key_buffer,
+		[out,ref] [size_is(offered/2)] uint16 *key_buffer,
 		[in] uint32 offered,
 		[out,ref] uint32 *needed
 	);
