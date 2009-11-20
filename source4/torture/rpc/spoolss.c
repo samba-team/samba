@@ -24,7 +24,9 @@
 #include "includes.h"
 #include "torture/torture.h"
 #include "torture/rpc/rpc.h"
+#include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_spoolss_c.h"
+#include "param/param.h"
 
 #define TORTURE_WELLKNOWN_PRINTER	"torture_wkn_printer"
 #define TORTURE_PRINTER			"torture_printer"
@@ -3033,6 +3035,77 @@ static bool test_printer_info(struct torture_context *tctx,
 	return ret;
 }
 
+bool test_printer_keys(struct torture_context *tctx,
+		       struct dcerpc_pipe *p,
+		       struct policy_handle *handle)
+{
+	DATA_BLOB blob;
+	const char **key_array = NULL;
+	int i;
+
+	{
+		struct spoolss_EnumPrinterKey r;
+		uint32_t needed;
+		uint16_t *key_buffer = talloc_zero_array(tctx, uint16_t, 0);
+
+		r.in.handle = handle;
+		r.in.key_name = "";
+		r.in.offered = 0;
+		r.out.key_buffer = key_buffer;
+		r.out.needed = &needed;
+
+		torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_EnumPrinterKey(p, tctx, &r),
+			"failed to call EnumPrinterKey");
+		if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
+			r.in.offered = needed;
+			key_buffer = talloc_zero_array(tctx, uint16_t, needed/2);
+			r.out.key_buffer = key_buffer;
+			torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_EnumPrinterKey(p, tctx, &r),
+				"failed to call EnumPrinterKey");
+		}
+		torture_assert_werr_ok(tctx, r.out.result,
+			"failed to call EnumPrinterKey");
+
+		blob = data_blob_const(key_buffer, needed);
+	}
+
+	{
+		union winreg_Data data;
+		enum ndr_err_code ndr_err;
+		ndr_err = ndr_pull_union_blob(&blob, tctx, lp_iconv_convenience(tctx->lp_ctx),
+					&data, REG_MULTI_SZ,
+					(ndr_pull_flags_fn_t)ndr_pull_winreg_Data);
+		torture_assert_ndr_success(tctx, ndr_err, "failed to pull REG_MULTI_SZ");
+		key_array = data.string_array;
+	}
+
+	for (i=0; key_array[i]; i++) {
+		struct spoolss_EnumPrinterDataEx r;
+		uint32_t count;
+		struct spoolss_PrinterEnumValues *info;
+		uint32_t needed;
+
+		r.in.handle = handle;
+		r.in.key_name = key_array[i];
+		r.in.offered = 0;
+		r.out.count = &count;
+		r.out.info = &info;
+		r.out.needed = &needed;
+
+		torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_EnumPrinterDataEx(p, tctx, &r),
+			"failed to call EnumPrinterDataEx");
+		if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
+			r.in.offered = needed;
+			torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_EnumPrinterDataEx(p, tctx, &r),
+				"failed to call EnumPrinterDataEx");
+		}
+		torture_assert_werr_ok(tctx, r.out.result,
+			"failed to call EnumPrinterDataEx");
+	}
+
+	return true;
+}
+
 static bool test_printer(struct torture_context *tctx,
 			 struct dcerpc_pipe *p)
 {
@@ -3049,6 +3122,10 @@ static bool test_printer(struct torture_context *tctx,
 	}
 
 	if (!test_printer_info(tctx, p, &handle[0])) {
+		ret = false;
+	}
+
+	if (!test_printer_keys(tctx, p, &handle[0])) {
 		ret = false;
 	}
 
@@ -3070,6 +3147,10 @@ static bool test_printer(struct torture_context *tctx,
 	}
 
 	if (!test_printer_info(tctx, p, &handle[1])) {
+		ret = false;
+	}
+
+	if (!test_printer_keys(tctx, p, &handle[1])) {
 		ret = false;
 	}
 
