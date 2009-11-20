@@ -185,7 +185,12 @@ static const struct {
 	enum op_remove op;
 } operational_remove[] = {
 	{ "ntSecurityDescriptor", OPERATIONAL_REMOVE_UNASKED },
-	{ "parentGUID",           OPERATIONAL_REMOVE_ALWAYS }
+	{ "parentGUID",           OPERATIONAL_REMOVE_ALWAYS },
+	{ "replPropertyMetaData", OPERATIONAL_REMOVE_UNASKED },
+	{ "ntPwdHistory",         OPERATIONAL_REMOVE_UNASKED },
+	{ "lmPwdHistory",         OPERATIONAL_REMOVE_UNASKED },
+	{ "unicodePwd",           OPERATIONAL_REMOVE_UNASKED },
+	{ "supplementalCredentials", OPERATIONAL_REMOVE_UNASKED }
 };
 
 
