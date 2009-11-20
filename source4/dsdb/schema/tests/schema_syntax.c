@@ -39,6 +39,46 @@ DATA_BLOB hexstr_to_data_blob(TALLOC_CTX *mem_ctx, const char *string)
 	return binary;
 }
 
+static bool torture_syntax_add_OR_Name(struct torture_context *tctx,
+				       struct ldb_context *ldb,
+				       struct dsdb_schema *schema)
+{
+	WERROR werr;
+	int ldb_res;
+	struct ldb_ldif *ldif;
+	const char *ldif_str =	"dn: CN=ms-Exch-Auth-Orig,CN=Schema,CN=Configuration,DC=kma-exch,DC=devel\n"
+				"changetype: add\n"
+				"cn: ms-Exch-Auth-Orig\n"
+				"attributeID: 1.2.840.113556.1.2.129\n"
+				"attributeSyntax: 2.5.5.7\n"
+				"isSingleValued: FALSE\n"
+				"linkID: 110\n"
+				"showInAdvancedViewOnly: TRUE\n"
+				"adminDisplayName: ms-Exch-Auth-Orig\n"
+				"oMObjectClass:: VgYBAgULHQ==\n"
+				"adminDescription: ms-Exch-Auth-Orig\n"
+				"oMSyntax: 127\n"
+				"searchFlags: 16\n"
+				"lDAPDisplayName: authOrig\n"
+				"name: ms-Exch-Auth-Orig\n"
+				"objectGUID:: 7tqEWktjAUqsZXqsFPQpRg==\n"
+				"schemaIDGUID:: l3PfqOrF0RG7ywCAx2ZwwA==\n"
+				"attributeSecurityGUID:: VAGN5Pi80RGHAgDAT7lgUA==\n"
+				"isMemberOfPartialAttributeSet: TRUE\n";
+
+	ldif = ldb_ldif_read_string(ldb, &ldif_str);
+	torture_assert(tctx, ldif, "Failed to parse LDIF for authOrig");
+
+	werr = dsdb_attribute_from_ldb(ldb, schema, ldif->msg);
+	ldb_ldif_read_free(ldb, ldif);
+	torture_assert_werr_ok(tctx, werr, "dsdb_attribute_from_ldb() failed!");
+
+	ldb_res = dsdb_set_schema(ldb, schema);
+	torture_assert_int_equal(tctx, ldb_res, LDB_SUCCESS, "dsdb_set_schema() failed");
+
+	return true;
+};
+
 static bool torture_test_syntax(struct torture_context *torture, 
 				const char *oid,
 				const char *attr_string, 
@@ -50,8 +90,8 @@ static bool torture_test_syntax(struct torture_context *torture,
 	DATA_BLOB ldb_blob = data_blob_string_const(ldb_str);
 	struct drsuapi_DsReplicaAttribute drs, drs2;
 	struct drsuapi_DsAttributeValue val;
+	struct dsdb_schema *schema;
 	const struct dsdb_syntax *syntax;
-	const struct dsdb_schema *schema;
 	const struct dsdb_attribute *attr;
 	struct ldb_context *ldb;
 	struct ldb_message_element el;
@@ -62,6 +102,9 @@ static bool torture_test_syntax(struct torture_context *torture,
 
 	torture_assert(torture, ldb = provision_get_schema(tmp_ctx, torture->lp_ctx), "Failed to load schema from disk");
 	torture_assert(torture, schema = dsdb_get_schema(ldb), "Failed to fetch schema");
+	if (!torture_syntax_add_OR_Name(torture, ldb, schema)) {
+		return false;
+	}
 	torture_assert(torture, syntax = find_syntax_map_by_standard_oid(oid), "Failed to find syntax handler");
 	torture_assert(torture, attr = dsdb_attribute_by_lDAPDisplayName(schema, attr_string), "Failed to find attribute handler");
 	torture_assert_str_equal(torture, attr->syntax->name, syntax->name, "Syntax from schema not as expected");
