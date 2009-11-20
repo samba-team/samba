@@ -497,7 +497,7 @@ NTSTATUS rpccli_spoolss_EnumPrinterKey(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
 				       struct policy_handle *handle /* [in] [ref] */,
 				       const char *key_name /* [in] [charset(UTF16)] */,
-				       const char ** *key_buffer /* [out] [subcontext_size(offered),ref,subcontext(0),flag(LIBNDR_FLAG_STR_NULLTERM)] */,
+				       uint16_t *key_buffer /* [out] [ref,size_is(offered/2)] */,
 				       uint32_t offered /* [in]  */,
 				       uint32_t *needed /* [out] [ref] */,
 				       WERROR *werror);
