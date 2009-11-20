@@ -305,6 +305,8 @@ static NTSTATUS idmap_ldap_alloc_init(const char *params)
 	}
 	CHECK_ALLOC_DONE( idmap_alloc_ldap->url );
 
+	trim_char(idmap_alloc_ldap->url, '\"', '\"');
+
 	tmp = lp_parm_const_string(-1, "idmap alloc config",
 				   "ldap_base_dn", NULL);
 	if ( ! tmp || ! *tmp) {
