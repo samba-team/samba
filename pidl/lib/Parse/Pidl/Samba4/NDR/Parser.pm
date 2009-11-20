@@ -1053,7 +1053,12 @@ sub ParseElementPullLevel
 		$self->ParseMemCtxPullEnd($e, $l, $ndr);
 
 		if ($l->{POINTER_TYPE} ne "ref") {
-    			if ($l->{POINTER_TYPE} eq "relative") {
+			if ($l->{POINTER_TYPE} eq "relative") {
+				$self->pidl("if ($ndr->offset > $ndr->relative_highest_offset) {");
+				$self->indent;
+				$self->pidl("$ndr->relative_highest_offset = $ndr->offset;");
+				$self->deindent;
+				$self->pidl("}");
 				$self->pidl("$ndr->offset = _relative_save_offset;");
 			}
 			$self->deindent;
