@@ -251,6 +251,7 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name, boo
 	if (!ctdb->do_setsched) {
 		tdb_flags |= TDB_NOMMAP;
 	}
+	tdb_flags |= TDB_DISALLOW_NESTING;
 
 	ctdb_db->ltdb = tdb_wrap_open(ctdb, ctdb_db->db_path, 
 				      ctdb->tunable.database_hash_size, 
