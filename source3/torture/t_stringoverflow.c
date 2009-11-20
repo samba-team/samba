@@ -2,7 +2,7 @@
 
  int main(void)
 {
-	fstring dest;
+	char dest[100];
 	char *ptr = dest;
 
 	printf("running on valgrind? %d\n", RUNNING_ON_VALGRIND);
@@ -17,7 +17,7 @@
 	pstrcpy(dest, "hello");
 #endif /* 0 */
 
-	pstrcpy(ptr, "hello!");
+	fstrcpy(ptr, "hello!");
 
 	return 0;
 }
