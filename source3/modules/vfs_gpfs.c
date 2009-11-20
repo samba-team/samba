@@ -939,6 +939,11 @@ static int gpfs_set_xattr(struct vfs_handle_struct *handle,  const char *path,
         ret = set_gpfs_winattrs(CONST_DISCARD(char *, path),
 				GPFS_WINATTR_SET_ATTRS, &attrs);
         if ( ret == -1){
+		if (errno == ENOSYS) {
+			return SMB_VFS_NEXT_SETXATTR(handle, path, name, value,
+						     size, flags);
+		}
+
                 DEBUG(1, ("gpfs_set_xattr:Set GPFS attributes failed %d\n",ret));
                 return -1;
         }
@@ -964,6 +969,11 @@ static ssize_t gpfs_get_xattr(struct vfs_handle_struct *handle,  const char *pat
 
         ret = get_gpfs_winattrs(CONST_DISCARD(char *, path), &attrs);
         if ( ret == -1){
+		if (errno == ENOSYS) {
+			return SMB_VFS_NEXT_GETXATTR(handle, path, name, value,
+						     size);
+		}
+
                 DEBUG(1, ("gpfs_get_xattr: Get GPFS attributes failed: %d\n",ret));
                 return -1;
         }
@@ -1095,7 +1105,7 @@ static int vfs_gpfs_ntimes(struct vfs_handle_struct *handle,
 
         ret = set_gpfs_winattrs(CONST_DISCARD(char *, path),
                                 GPFS_WINATTR_SET_CREATION_TIME, &attrs);
-        if(ret == -1){
+        if(ret == -1 && errno != ENOSYS){
                 DEBUG(1,("vfs_gpfs_ntimes: set GPFS ntimes failed %d\n",ret));
 	        return -1;
         }
