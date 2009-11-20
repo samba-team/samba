@@ -3082,6 +3082,7 @@ TOPFILES=dynconfig.o localedir.o
 
 cleanlibs::
 	-rm -f ../lib/*/*.o ../lib/*/*/*.o \
+		../lib/*/*.ho \
 		../libcli/*.o ../libcli/*/*.o ../libcli/*/*/*.o \
 		../librpc/*/*.o \
 		../libgpo/*.o ../libgpo/*/*.o \
@@ -3092,9 +3093,9 @@ clean:: cleanlibs
 	-rm -f smbd/build_options.c
 	-rm -f $(PRECOMPILED_HEADER)
 	-rm -f core */*~ *~ \
-		*/*.o */*/*.o */*/*/*.o \
+		*/*.o */*/*.o */*/*/*.o */*/*/*/*.o \
 		../testsuite/*/*.o \
-		../nsswitch/*.o ../nsswitch/*/*.o ../nsswitch/*.@SHLIBEXT@ \
+		../nsswitch/*.o ../nsswitch/*/*.o ../nsswitch/*/*/*.o ../nsswitch/*.@SHLIBEXT@ \
 		../client/*.o \
 		*/*.@SHLIBEXT@ */*/*.@SHLIBEXT@ */*/*/*.@SHLIBEXT@ \
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(ROOT_SBIN_PROGS) \
