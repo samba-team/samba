@@ -241,7 +241,7 @@ class Ldb(ldb.Ldb):
         """
         self.add_ldif(open(ldif_path, 'r').read())
 
-    def add_ldif(self, ldif,controls=None):
+    def add_ldif(self, ldif, controls=None):
         """Add data based on a LDIF string.
 
         :param ldif: LDIF text.
@@ -250,13 +250,13 @@ class Ldb(ldb.Ldb):
             assert changetype == ldb.CHANGETYPE_NONE
             self.add(msg,controls)
 
-    def modify_ldif(self, ldif):
+    def modify_ldif(self, ldif, controls=None):
         """Modify database based on a LDIF string.
 
         :param ldif: LDIF text.
         """
         for changetype, msg in self.parse_ldif(ldif):
-            self.modify(msg)
+            self.modify(msg, controls)
 
     def set_domain_sid(self, sid):
         """Change the domain SID used by this LDB.
@@ -422,4 +422,10 @@ DS_DC_FUNCTION_2000 = glue.DS_DC_FUNCTION_2000
 DS_DC_FUNCTION_2003 = glue.DS_DC_FUNCTION_2003
 DS_DC_FUNCTION_2008 = glue.DS_DC_FUNCTION_2008
 DS_DC_FUNCTION_2008_R2 = glue.DS_DC_FUNCTION_2008_R2
+
+#LDAP_SERVER_SD_FLAGS_OID flags
+SECINFO_OWNER = glue.SECINFO_OWNER
+SECINFO_GROUP = glue.SECINFO_GROUP
+SECINFO_DACL  = glue.SECINFO_DACL
+SECINFO_SACL  = glue.SECINFO_SACL
 

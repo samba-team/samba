@@ -1378,10 +1378,11 @@ int ldb_add(struct ldb_context *ldb,
 }
 
 /*
-  modify the specified attributes of a record
+  same as ldb_modify, but accepts controls
 */
-int ldb_modify(struct ldb_context *ldb,
-	       const struct ldb_message *message)
+int ldb_modify_ctrl(struct ldb_context *ldb,
+		    const struct ldb_message *message,
+		    struct ldb_control **controls)
 {
 	struct ldb_request *req;
 	int ret;
@@ -1393,7 +1394,7 @@ int ldb_modify(struct ldb_context *ldb,
 
 	ret = ldb_build_mod_req(&req, ldb, ldb,
 					message,
-					NULL,
+					controls,
 					NULL,
 					ldb_op_default_callback,
 					NULL);
@@ -1405,6 +1406,14 @@ int ldb_modify(struct ldb_context *ldb,
 
 	talloc_free(req);
 	return ret;
+}
+/*
+  modify the specified attributes of a record
+*/
+int ldb_modify(struct ldb_context *ldb,
+	       const struct ldb_message *message)
+{
+	return ldb_modify_ctrl(ldb, message, NULL);
 }
 
 

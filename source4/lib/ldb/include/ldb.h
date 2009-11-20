@@ -1217,6 +1217,24 @@ int ldb_add(struct ldb_context *ldb,
   ldb_init())
   \param message the message containing the changes required.
 
+  \param controls ldap controls for the request
+
+  \return result code (LDB_SUCCESS if the record was modified as
+  requested, otherwise a failure code)
+*/
+int ldb_modify_ctrl(struct ldb_context *ldb,
+		    const struct ldb_message *message,
+		    struct ldb_control **controls);
+
+/**
+  Modify the specified attributes of a record
+
+  This function modifies a record that is in the database.
+
+  \param ldb the context associated with the database (from
+  ldb_init())
+  \param message the message containing the changes required.
+
   \return result code (LDB_SUCCESS if the record was modified as
   requested, otherwise a failure code)
 */

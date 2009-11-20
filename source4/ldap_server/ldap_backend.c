@@ -546,7 +546,7 @@ reply:
 	NT_STATUS_HAVE_NO_MEMORY(modify_reply);
 
 	if (result == LDAP_SUCCESS) {
-		ldb_ret = ldb_modify(samdb, msg);
+		ldb_ret = ldb_modify_ctrl(samdb, msg, call->request->controls);
 		result = map_ldb_error(local_ctx, ldb_ret, &errstr);
 	}
 

@@ -566,6 +566,12 @@ void initglue(void)
 	PyModule_AddObject(m, "DS_DC_FUNCTION_2008", PyInt_FromLong(DS_DC_FUNCTION_2008));
 	PyModule_AddObject(m, "DS_DC_FUNCTION_2008_R2", PyInt_FromLong(DS_DC_FUNCTION_2008_R2));
 
+	/* "LDAP_SERVER_SD_FLAGS_OID" */
+	PyModule_AddObject(m, "SECINFO_OWNER", PyInt_FromLong(SECINFO_OWNER));
+	PyModule_AddObject(m, "SECINFO_GROUP", PyInt_FromLong(SECINFO_GROUP));
+	PyModule_AddObject(m, "SECINFO_DACL", PyInt_FromLong(SECINFO_DACL));
+	PyModule_AddObject(m, "SECINFO_SACL", PyInt_FromLong(SECINFO_SACL));
+
 	/* one of the most annoying things about python scripts is
  	   that they don't die when you hit control-C. This fixes that
  	   sillyness. As we do all database operations using
