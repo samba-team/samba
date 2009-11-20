@@ -68,12 +68,13 @@ static bool torture_test_syntax(struct torture_context *torture,
 	
 
 	torture_assert_werr_ok(torture, syntax->drsuapi_to_ldb(ldb, schema, attr, &drs, tmp_ctx, &el), "Failed to convert from DRS to ldb format");
-	
+
 	torture_assert_data_blob_equal(torture, el.values[0], ldb_blob, "Incorrect conversion from DRS to ldb format");
 
 	torture_assert_werr_ok(torture, syntax->ldb_to_drsuapi(ldb, schema, attr, &el, tmp_ctx, &drs2), "Failed to convert from ldb to DRS format");
 	
 	torture_assert(torture, drs2.value_ctr.values[0].blob, "No blob returned from conversion");
+
 	torture_assert_data_blob_equal(torture, *drs2.value_ctr.values[0].blob, drs_binary, "Incorrect conversion from ldb to DRS format");
 	return true;
 }
@@ -94,6 +95,13 @@ static bool torture_dsdb_drs_DN(struct torture_context *torture)
 {
 	const char *ldb_str = "<GUID=fbee08fd-6f75-4bd4-af3f-e4f063a6379e>;OU=Domain Controllers,DC=ad,DC=naomi,DC=abartlet,DC=net";
 	const char *drs_str = "A800000000000000FD08EEFB756FD44BAF3FE4F063A6379E00000000000000000000000000000000000000000000000000000000370000004F0055003D0044006F006D00610069006E00200043006F006E00740072006F006C006C006500720073002C00440043003D00610064002C00440043003D006E0061006F006D0069002C00440043003D00610062006100720074006C00650074002C00440043003D006E00650074000000";
+	if (!torture_test_syntax(torture, LDB_SYNTAX_DN, "lastKnownParent", ldb_str, drs_str)) {
+		return false;
+	}
+
+	/* extended_dn with GUID and SID in it */
+	ldb_str = "<GUID=23cc7d16-3da0-4f3a-9921-0ad60a99230f>;<SID=S-1-5-21-3427639452-1671929926-2759570404-500>;CN=Administrator,CN=Users,DC=kma-exch,DC=devel";
+	drs_str = "960000001C000000167DCC23A03D3A4F99210AD60A99230F0105000000000005150000009CA04DCC46A0A763E4B37BA4F40100002E00000043004E003D00410064006D0069006E006900730074007200610074006F0072002C0043004E003D00550073006500720073002C00440043003D006B006D0061002D0065007800630068002C00440043003D0064006500760065006C000000";
 	return torture_test_syntax(torture, LDB_SYNTAX_DN, "lastKnownParent", ldb_str, drs_str);
 }
 
