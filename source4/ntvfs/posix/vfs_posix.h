@@ -124,7 +124,7 @@ struct pvfs_dos_fileinfo {
   a filename passed by the client to any function
 */
 struct pvfs_filename {
-	const char *original_name;
+	char *original_name;
 	char *full_name;
 	const char *stream_name; /* does not include :$DATA suffix */
 	uint32_t stream_id;      /* this uses a hash, so is probabilistic */
