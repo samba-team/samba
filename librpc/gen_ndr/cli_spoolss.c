@@ -12207,7 +12207,7 @@ struct tevent_req *rpccli_spoolss_EnumPrinterKey_send(TALLOC_CTX *mem_ctx,
 						      struct rpc_pipe_client *cli,
 						      struct policy_handle *_handle /* [in] [ref] */,
 						      const char *_key_name /* [in] [charset(UTF16)] */,
-						      const char ** *_key_buffer /* [out] [subcontext_size(offered),ref,subcontext(0),flag(LIBNDR_FLAG_STR_NULLTERM)] */,
+						      uint16_t *_key_buffer /* [out] [ref,size_is(offered/2)] */,
 						      uint32_t _offered /* [in]  */,
 						      uint32_t *_needed /* [out] [ref] */)
 {
@@ -12278,7 +12278,7 @@ static void rpccli_spoolss_EnumPrinterKey_done(struct tevent_req *subreq)
 	}
 
 	/* Copy out parameters */
-	*state->orig.out.key_buffer = *state->tmp.out.key_buffer;
+	memcpy(state->orig.out.key_buffer, state->tmp.out.key_buffer, state->tmp.in.offered / 2 * sizeof(*state->orig.out.key_buffer));
 	*state->orig.out.needed = *state->tmp.out.needed;
 
 	/* Copy result */
@@ -12317,7 +12317,7 @@ NTSTATUS rpccli_spoolss_EnumPrinterKey(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
 				       struct policy_handle *handle /* [in] [ref] */,
 				       const char *key_name /* [in] [charset(UTF16)] */,
-				       const char ** *key_buffer /* [out] [subcontext_size(offered),ref,subcontext(0),flag(LIBNDR_FLAG_STR_NULLTERM)] */,
+				       uint16_t *key_buffer /* [out] [ref,size_is(offered/2)] */,
 				       uint32_t offered /* [in]  */,
 				       uint32_t *needed /* [out] [ref] */,
 				       WERROR *werror)
@@ -12345,7 +12345,7 @@ NTSTATUS rpccli_spoolss_EnumPrinterKey(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	*key_buffer = *r.out.key_buffer;
+	memcpy(key_buffer, r.out.key_buffer, r.in.offered / 2 * sizeof(*key_buffer));
 	*needed = *r.out.needed;
 
 	/* Return result */
