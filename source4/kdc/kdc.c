@@ -412,30 +412,21 @@ static const struct stream_server_ops kpasswdd_tcp_stream_ops = {
 /*
   start listening on the given address
 */
-static NTSTATUS kdc_add_socket(struct kdc_server *kdc, const char *address,
-			       uint16_t kdc_port, uint16_t kpasswd_port)
+static NTSTATUS kdc_add_kdc_socket(struct kdc_server *kdc,
+			       const struct model_ops *model_ops,
+			       const char *address,
+			       uint16_t kdc_port)
 {
-	const struct model_ops *model_ops;
  	struct kdc_socket *kdc_socket;
- 	struct kdc_socket *kpasswd_socket;
-	struct socket_address *kdc_address, *kpasswd_address;
+	struct socket_address *kdc_address;
 	NTSTATUS status;
 
 	kdc_socket = talloc(kdc, struct kdc_socket);
 	NT_STATUS_HAVE_NO_MEMORY(kdc_socket);
 
-	kpasswd_socket = talloc(kdc, struct kdc_socket);
-	NT_STATUS_HAVE_NO_MEMORY(kpasswd_socket);
-
 	status = socket_create("ip", SOCKET_TYPE_DGRAM, &kdc_socket->sock, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(kdc_socket);
-		return status;
-	}
-
-	status = socket_create("ip", SOCKET_TYPE_DGRAM, &kpasswd_socket->sock, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(kpasswd_socket);
 		return status;
 	}
 
@@ -461,6 +452,41 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc, const char *address,
 		return status;
 	}
 
+	status = stream_setup_socket(kdc->task->event_ctx, 
+				     kdc->task->lp_ctx,
+				     model_ops, 
+				     &kdc_tcp_stream_ops, 
+				     "ip", address, &kdc_port, 
+				     lp_socket_options(kdc->task->lp_ctx), 
+				     kdc);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Failed to bind to %s:%u TCP - %s\n",
+			 address, kdc_port, nt_errstr(status)));
+		talloc_free(kdc_socket);
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS kdc_add_kpasswd_socket(struct kdc_server *kdc,
+			       const struct model_ops *model_ops,
+			       const char *address,
+			       uint16_t kpasswd_port)
+{
+ 	struct kdc_socket *kpasswd_socket;
+	struct socket_address *kpasswd_address;
+	NTSTATUS status;
+
+	kpasswd_socket = talloc(kdc, struct kdc_socket);
+	NT_STATUS_HAVE_NO_MEMORY(kpasswd_socket);
+
+	status = socket_create("ip", SOCKET_TYPE_DGRAM, &kpasswd_socket->sock, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(kpasswd_socket);
+		return status;
+	}
+
 	kpasswd_socket->kdc = kdc;
 	kpasswd_socket->send_queue = NULL;
 	kpasswd_socket->process = kpasswdd_process;
@@ -483,30 +509,6 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc, const char *address,
 		return status;
 	}
 
-	/* within the kdc task we want to be a single process, so
-	   ask for the single process model ops and pass these to the
-	   stream_setup_socket() call. */
-	model_ops = process_model_startup(kdc->task->event_ctx, "single");
-	if (!model_ops) {
-		DEBUG(0,("Can't find 'single' process model_ops\n"));
-		talloc_free(kdc_socket);
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	status = stream_setup_socket(kdc->task->event_ctx, 
-				     kdc->task->lp_ctx,
-				     model_ops, 
-				     &kdc_tcp_stream_ops, 
-				     "ip", address, &kdc_port, 
-				     lp_socket_options(kdc->task->lp_ctx), 
-				     kdc);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to bind to %s:%u TCP - %s\n",
-			 address, kdc_port, nt_errstr(status)));
-		talloc_free(kdc_socket);
-		return status;
-	}
-
 	status = stream_setup_socket(kdc->task->event_ctx, 
 				     kdc->task->lp_ctx,
 				     model_ops, 
@@ -517,7 +519,7 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc, const char *address,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to bind to %s:%u TCP - %s\n",
 			 address, kpasswd_port, nt_errstr(status)));
-		talloc_free(kdc_socket);
+		talloc_free(kpasswd_socket);
 		return status;
 	}
 
@@ -531,18 +533,37 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc, const char *address,
 static NTSTATUS kdc_startup_interfaces(struct kdc_server *kdc, struct loadparm_context *lp_ctx,
 				       struct interface *ifaces)
 {
+	const struct model_ops *model_ops;
 	int num_interfaces;
 	TALLOC_CTX *tmp_ctx = talloc_new(kdc);
 	NTSTATUS status;
 	int i;
 
+	/* within the kdc task we want to be a single process, so
+	   ask for the single process model ops and pass these to the
+	   stream_setup_socket() call. */
+	model_ops = process_model_startup(kdc->task->event_ctx, "single");
+	if (!model_ops) {
+		DEBUG(0,("Can't find 'single' process model_ops\n"));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
 	num_interfaces = iface_count(ifaces);
 	
 	for (i=0; i<num_interfaces; i++) {
 		const char *address = talloc_strdup(tmp_ctx, iface_n_ip(ifaces, i));
-		status = kdc_add_socket(kdc, address, lp_krb5_port(lp_ctx), 
-					lp_kpasswd_port(lp_ctx));
-		NT_STATUS_NOT_OK_RETURN(status);
+		uint16_t kdc_port = lp_krb5_port(lp_ctx);
+		uint16_t kpasswd_port = lp_kpasswd_port(lp_ctx);
+
+		if (kdc_port) {
+			status = kdc_add_kdc_socket(kdc, model_ops, address, kdc_port);
+			NT_STATUS_NOT_OK_RETURN(status);
+		}
+
+		if (kpasswd_port) {
+			status = kdc_add_kpasswd_socket(kdc, model_ops, address, kpasswd_port);
+			NT_STATUS_NOT_OK_RETURN(status);
+		}
 	}
 
 	talloc_free(tmp_ctx);
