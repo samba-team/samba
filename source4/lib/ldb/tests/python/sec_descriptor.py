@@ -25,7 +25,8 @@ from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc import security
 
 from samba.auth import system_session
-from samba import Ldb, DS_DOMAIN_FUNCTION_2008
+from samba import Ldb, DS_DOMAIN_FUNCTION_2008, SECINFO_OWNER, \
+    SECINFO_GROUP, SECINFO_DACL, SECINFO_SACL
 from subunit import SubunitTestRunner
 import unittest
 
@@ -83,7 +84,7 @@ class DescriptorTests(unittest.TestCase):
     def get_users_domain_dn(self, name):
         return "CN=%s,CN=Users,%s" % (name, self.base_dn)
 
-    def modify_desc(self, _ldb, object_dn, desc):
+    def modify_desc(self, _ldb, object_dn, desc, controls=None):
         assert(isinstance(desc, str) or isinstance(desc, security.descriptor))
         mod = """
 dn: """ + object_dn + """
@@ -94,9 +95,9 @@ replace: nTSecurityDescriptor
             mod += "nTSecurityDescriptor: %s" % desc
         elif isinstance(desc, security.descriptor):
             mod += "nTSecurityDescriptor:: %s" % base64.b64encode(ndr_pack(desc))
-        _ldb.modify_ldif(mod)
+        _ldb.modify_ldif(mod, controls)
 
-    def create_domain_ou(self, _ldb, ou_dn, desc=None):
+    def create_domain_ou(self, _ldb, ou_dn, desc=None, controls=None):
         ldif = """
 dn: """ + ou_dn + """
 ou: """ + ou_dn.split(",")[0][3:] + """
@@ -109,7 +110,7 @@ url: www.example.com
                 ldif += "nTSecurityDescriptor: %s" % desc
             elif isinstance(desc, security.descriptor):
                 ldif += "nTSecurityDescriptor:: %s" % base64.b64encode(ndr_pack(desc))
-        _ldb.add_ldif(ldif)
+        _ldb.add_ldif(ldif, controls)
 
     def create_domain_user(self, _ldb, user_dn, desc=None):
         ldif = """
@@ -1683,6 +1684,105 @@ class DaclDescriptorTests(DescriptorTests):
 
     ########################################################################################
 
+
+class SdFlagsDescriptorTests(DescriptorTests):
+    def setUp(self):
+        DescriptorTests.setUp(self)
+        self.test_descr = "O:AUG:AUD:(D;;CC;;;LG)S:(OU;;WP;;;AU)"
+
+    def tearDown(self):
+        self.delete_force(self.ldb_admin, "OU=test_sdflags_ou," + self.base_dn)
+
+    def test_301(self):
+        """ Modify a descriptor with OWNER_SECURITY_INFORMATION set.
+            See that only the owner has been changed.
+        """
+        ou_dn = "OU=test_sdflags_ou," + self.base_dn
+        self.create_domain_ou(self.ldb_admin, ou_dn)
+        self.modify_desc(self.ldb_admin, ou_dn, self.test_descr, controls=["sd_flags:1:%d" % (SECINFO_OWNER)])
+        desc_sddl = self.get_desc_sddl(ou_dn)
+        # make sure we have modified the owner
+        self.assertTrue("O:AU" in desc_sddl)
+        # make sure nothing else has been modified
+        self.assertFalse("G:AU" in desc_sddl)
+        self.assertFalse("D:(D;;CC;;;LG)" in desc_sddl)
+        self.assertFalse("(OU;;WP;;;AU)" in desc_sddl)
+
+    def test_302(self):
+        """ Modify a descriptor with GROUP_SECURITY_INFORMATION set.
+            See that only the owner has been changed.
+        """
+        ou_dn = "OU=test_sdflags_ou," + self.base_dn
+        self.create_domain_ou(self.ldb_admin, ou_dn)
+        self.modify_desc(self.ldb_admin, ou_dn, self.test_descr, controls=["sd_flags:1:%d" % (SECINFO_GROUP)])
+        desc_sddl = self.get_desc_sddl(ou_dn)
+        # make sure we have modified the group
+        self.assertTrue("G:AU" in desc_sddl)
+        # make sure nothing else has been modified
+        self.assertFalse("O:AU" in desc_sddl)
+        self.assertFalse("D:(D;;CC;;;LG)" in desc_sddl)
+        self.assertFalse("(OU;;WP;;;AU)" in desc_sddl)
+
+    def test_303(self):
+        """ Modify a descriptor with SACL_SECURITY_INFORMATION set.
+            See that only the owner has been changed.
+        """
+        ou_dn = "OU=test_sdflags_ou," + self.base_dn
+        self.create_domain_ou(self.ldb_admin, ou_dn)
+        self.modify_desc(self.ldb_admin, ou_dn, self.test_descr, controls=["sd_flags:1:%d" % (SECINFO_DACL)])
+        desc_sddl = self.get_desc_sddl(ou_dn)
+        # make sure we have modified the DACL
+        self.assertTrue("(D;;CC;;;LG)" in desc_sddl)
+        # make sure nothing else has been modified
+        self.assertFalse("O:AU" in desc_sddl)
+        self.assertFalse("G:AU" in desc_sddl)
+        self.assertFalse("(OU;;WP;;;AU)" in desc_sddl)
+
+    def test_304(self):
+        """ Modify a descriptor with SACL_SECURITY_INFORMATION set.
+            See that only the owner has been changed.
+        """
+        ou_dn = "OU=test_sdflags_ou," + self.base_dn
+        self.create_domain_ou(self.ldb_admin, ou_dn)
+        self.modify_desc(self.ldb_admin, ou_dn, self.test_descr, controls=["sd_flags:1:%d" % (SECINFO_SACL)])
+        desc_sddl = self.get_desc_sddl(ou_dn)
+        # make sure we have modified the DACL
+        self.assertTrue("(OU;;WP;;;AU)" in desc_sddl)
+        # make sure nothing else has been modified
+        self.assertFalse("O:AU" in desc_sddl)
+        self.assertFalse("G:AU" in desc_sddl)
+        self.assertFalse("(D;;CC;;;LG)" in desc_sddl)
+
+    def test_305(self):
+        """ Modify a descriptor with 0x0 set.
+            Contrary to logic this is interpreted as no control,
+            which is the same as 0xF
+        """
+        ou_dn = "OU=test_sdflags_ou," + self.base_dn
+        self.create_domain_ou(self.ldb_admin, ou_dn)
+        self.modify_desc(self.ldb_admin, ou_dn, self.test_descr, controls=["sd_flags:1:0"])
+        desc_sddl = self.get_desc_sddl(ou_dn)
+        # make sure we have modified the DACL
+        self.assertTrue("(OU;;WP;;;AU)" in desc_sddl)
+        # make sure nothing else has been modified
+        self.assertTrue("O:AU" in desc_sddl)
+        self.assertTrue("G:AU" in desc_sddl)
+        self.assertTrue("(D;;CC;;;LG)" in desc_sddl)
+
+    def test_306(self):
+        """ Modify a descriptor with 0xF set.
+        """
+        ou_dn = "OU=test_sdflags_ou," + self.base_dn
+        self.create_domain_ou(self.ldb_admin, ou_dn)
+        self.modify_desc(self.ldb_admin, ou_dn, self.test_descr, controls=["sd_flags:1:15"])
+        desc_sddl = self.get_desc_sddl(ou_dn)
+        # make sure we have modified the DACL
+        self.assertTrue("(OU;;WP;;;AU)" in desc_sddl)
+        # make sure nothing else has been modified
+        self.assertTrue("O:AU" in desc_sddl)
+        self.assertTrue("G:AU" in desc_sddl)
+        self.assertTrue("(D;;CC;;;LG)" in desc_sddl)
+
 if not "://" in host:
     host = "ldap://%s" % host
 ldb = Ldb(host, credentials=creds, session_info=system_session(), lp=lp, options=["modules:paged_searches"])
@@ -1692,6 +1792,8 @@ rc = 0
 if not runner.run(unittest.makeSuite(OwnerGroupDescriptorTests)).wasSuccessful():
     rc = 1
 if not runner.run(unittest.makeSuite(DaclDescriptorTests)).wasSuccessful():
+    rc = 1
+if not runner.run(unittest.makeSuite(SdFlagsDescriptorTests)).wasSuccessful():
     rc = 1
 
 sys.exit(rc)

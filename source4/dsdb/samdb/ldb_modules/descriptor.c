@@ -154,15 +154,85 @@ static struct dom_sid *get_default_group(TALLOC_CTX *mem_ctx,
 	return NULL;
 }
 
+static struct security_descriptor *descr_handle_sd_flags(TALLOC_CTX *mem_ctx,
+							 struct security_descriptor *new_sd,
+							 struct security_descriptor *old_sd,
+							 uint32_t sd_flags)
+{
+	struct security_descriptor *final_sd; 
+	/* if there is no control or contlol == 0 modify everything */
+	if (!sd_flags) {
+		return new_sd;
+	}
+
+	final_sd = talloc_zero(mem_ctx, struct security_descriptor);
+	final_sd->revision = SECURITY_DESCRIPTOR_REVISION_1;
+	final_sd->type = SEC_DESC_SELF_RELATIVE;
+
+	if (sd_flags & (SECINFO_OWNER)) {
+		final_sd->owner_sid = talloc_memdup(mem_ctx, new_sd->owner_sid, sizeof(struct dom_sid));
+		final_sd->type |= new_sd->type & SEC_DESC_OWNER_DEFAULTED;
+	}
+	else if (old_sd) {
+		final_sd->owner_sid = talloc_memdup(mem_ctx, old_sd->owner_sid, sizeof(struct dom_sid));
+		final_sd->type |= old_sd->type & SEC_DESC_OWNER_DEFAULTED;
+	}
+
+	if (sd_flags & (SECINFO_GROUP)) {
+		final_sd->group_sid = talloc_memdup(mem_ctx, new_sd->group_sid, sizeof(struct dom_sid));
+		final_sd->type |= new_sd->type & SEC_DESC_GROUP_DEFAULTED;
+	} 
+	else if (old_sd) {
+		final_sd->group_sid = talloc_memdup(mem_ctx, old_sd->group_sid, sizeof(struct dom_sid));
+		final_sd->type |= old_sd->type & SEC_DESC_GROUP_DEFAULTED;
+	}
+
+	if (sd_flags & (SECINFO_SACL)) {
+		final_sd->sacl = security_acl_dup(mem_ctx,new_sd->sacl);
+		final_sd->type |= new_sd->type & (SEC_DESC_SACL_PRESENT |
+			SEC_DESC_SACL_DEFAULTED|SEC_DESC_SACL_AUTO_INHERIT_REQ |
+			SEC_DESC_SACL_AUTO_INHERITED|SEC_DESC_SACL_PROTECTED |
+			SEC_DESC_SERVER_SECURITY);
+	} 
+	else if (old_sd) {
+		final_sd->sacl = security_acl_dup(mem_ctx,old_sd->sacl);
+		final_sd->type |= old_sd->type & (SEC_DESC_SACL_PRESENT |
+			SEC_DESC_SACL_DEFAULTED|SEC_DESC_SACL_AUTO_INHERIT_REQ |
+			SEC_DESC_SACL_AUTO_INHERITED|SEC_DESC_SACL_PROTECTED |
+			SEC_DESC_SERVER_SECURITY);
+	}
+
+	if (sd_flags & (SECINFO_DACL)) {
+		final_sd->dacl = security_acl_dup(mem_ctx,new_sd->dacl);
+		final_sd->type |= new_sd->type & (SEC_DESC_DACL_PRESENT |
+			SEC_DESC_DACL_DEFAULTED|SEC_DESC_DACL_AUTO_INHERIT_REQ |
+			SEC_DESC_DACL_AUTO_INHERITED|SEC_DESC_DACL_PROTECTED |
+			SEC_DESC_DACL_TRUSTED);
+	} 
+	else if (old_sd) {
+		final_sd->dacl = security_acl_dup(mem_ctx,old_sd->dacl);
+		final_sd->type |= old_sd->type & (SEC_DESC_DACL_PRESENT |
+			SEC_DESC_DACL_DEFAULTED|SEC_DESC_DACL_AUTO_INHERIT_REQ |
+			SEC_DESC_DACL_AUTO_INHERITED|SEC_DESC_DACL_PROTECTED |
+			SEC_DESC_DACL_TRUSTED);
+	}
+	/* not so sure about this */
+	final_sd->type |= new_sd->type & SEC_DESC_RM_CONTROL_VALID;
+	return final_sd;
+}
+
 static DATA_BLOB *get_new_descriptor(struct ldb_module *module,
 				     struct ldb_dn *dn,
 				     TALLOC_CTX *mem_ctx,
 				     const struct dsdb_class *objectclass,
 				     const struct ldb_val *parent,
-				     struct ldb_val *object)
+				     struct ldb_val *object,
+				     struct ldb_val *old_sd,
+				     uint32_t sd_flags)
 {
 	struct security_descriptor *user_descriptor = NULL, *parent_descriptor = NULL;
-	struct security_descriptor *new_sd;
+	struct security_descriptor *old_descriptor = NULL;
+	struct security_descriptor *new_sd, *final_sd;
 	DATA_BLOB *linear_sd;
 	enum ndr_err_code ndr_err;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
@@ -175,13 +245,14 @@ static DATA_BLOB *get_new_descriptor(struct ldb_module *module,
 
 	if (object) {
 		user_descriptor = talloc(mem_ctx, struct security_descriptor);
-		if(!user_descriptor)
+		if (!user_descriptor) {
 			return NULL;
+		}
 		ndr_err = ndr_pull_struct_blob(object, user_descriptor, NULL,
 					       user_descriptor,
 					       (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
 
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)){
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			talloc_free(user_descriptor);
 			return NULL;
 		}
@@ -189,19 +260,36 @@ static DATA_BLOB *get_new_descriptor(struct ldb_module *module,
 		user_descriptor = get_sd_unpacked(module, mem_ctx, objectclass);
 	}
 
-	if (parent){
-		parent_descriptor = talloc(mem_ctx, struct security_descriptor);
-		if(!parent_descriptor)
+	if (old_sd) {
+		old_descriptor = talloc(mem_ctx, struct security_descriptor);
+		if (!old_descriptor) {
 			return NULL;
+		}
+		ndr_err = ndr_pull_struct_blob(old_sd, old_descriptor, NULL,
+					       old_descriptor,
+					       (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			talloc_free(old_descriptor);
+			return NULL;
+		}
+	}
+
+	if (parent) {
+		parent_descriptor = talloc(mem_ctx, struct security_descriptor);
+		if (!parent_descriptor) {
+			return NULL;
+		}
 		ndr_err = ndr_pull_struct_blob(parent, parent_descriptor, NULL,
 					       parent_descriptor,
 					       (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
 
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)){
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			talloc_free(parent_descriptor);
 			return NULL;
 		}
 	}
+
 	default_owner = get_default_ag(mem_ctx, dn,
 				       session_info->security_token, ldb);
 	default_group = get_default_group(mem_ctx, ldb, default_owner);
@@ -210,11 +298,15 @@ static DATA_BLOB *get_new_descriptor(struct ldb_module *module,
 					    session_info->security_token,
 					    default_owner, default_group,
 					    map_generic_rights_ds);
-	if (!new_sd)
+	if (!new_sd) {
 		return NULL;
+	}
+	final_sd = descr_handle_sd_flags(mem_ctx, new_sd, old_descriptor, sd_flags);
 
-
-	sddl_sd = sddl_encode(mem_ctx, new_sd, domain_sid);
+	if (!final_sd) {
+		return NULL;
+	}
+	sddl_sd = sddl_encode(mem_ctx, final_sd, domain_sid);
 	DEBUG(10, ("Object %s created with desriptor %s\n\n", ldb_dn_get_linearized(dn), sddl_sd));
 
 	linear_sd = talloc(mem_ctx, DATA_BLOB);
@@ -224,7 +316,7 @@ static DATA_BLOB *get_new_descriptor(struct ldb_module *module,
 
 	ndr_err = ndr_push_struct_blob(linear_sd, mem_ctx,
 				       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
-				       new_sd,
+				       final_sd,
 				       (ndr_push_flags_fn_t)ndr_push_security_descriptor);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return NULL;
@@ -383,12 +475,16 @@ static int descriptor_do_mod(struct descriptor_context *ac)
 	struct ldb_context *ldb;
 	const struct dsdb_schema *schema;
 	struct ldb_request *mod_req;
-	struct ldb_message_element *objectclass_element, *tmp_element;
+	struct ldb_message_element *objectclass_element, *tmp_element, *oldsd_el;
+	struct ldb_val *oldsd_val = NULL;
 	int ret;
 	DATA_BLOB *sd;
 	const struct dsdb_class *objectclass;
 	struct ldb_message *msg;
+	struct ldb_control *sd_control;
+	struct ldb_control **saved_controls;
 	int flags = 0;
+	uint32_t sd_flags = 0;
 
 	ldb = ldb_module_get_ctx(ac->module);
 	schema = dsdb_get_schema(ldb);
@@ -402,9 +498,21 @@ static int descriptor_do_mod(struct descriptor_context *ac)
 				       ldb_dn_get_linearized(ac->search_oc_res->message->dn));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-
+	sd_control = ldb_request_get_control(ac->req, LDB_CONTROL_SD_FLAGS_OID);
+	if (sd_control) {
+		struct ldb_sd_flags_control *sdctr = (struct ldb_sd_flags_control *)sd_control->data;
+		sd_flags = sdctr->secinfo_flags;
+		/* we only care for the last 4 bits */
+		sd_flags = sd_flags & 0x0000000F;
+	}
+	if (sd_flags != 0) {
+		oldsd_el = ldb_msg_find_element(ac->search_oc_res->message, "nTSecurityDescriptor");
+		if (oldsd_el) {
+			oldsd_val = oldsd_el->values;
+		}
+	}
 	sd = get_new_descriptor(ac->module, msg->dn, ac, objectclass,
-				ac->parentsd_val, ac->sd_val);
+				ac->parentsd_val, ac->sd_val, oldsd_val, sd_flags);
 	if (ac->sd_val) {
 		tmp_element = ldb_msg_find_element(msg, "ntSecurityDescriptor");
 		flags = tmp_element->flags;
@@ -427,6 +535,15 @@ static int descriptor_do_mod(struct descriptor_context *ac)
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
+	/* save it locally and remove it from the list */
+	/* we do not need to replace them later as we
+	 * are keeping the original req intact */
+	if (sd_control) {
+		if (!save_controls(sd_control, mod_req, &saved_controls)) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+	}
+
 	return ldb_next_request(ac->module, mod_req);
 }
 
@@ -441,7 +558,7 @@ static int descriptor_do_add(struct descriptor_context *ac)
 	int ret;
 	DATA_BLOB *sd;
 	const struct dsdb_class *objectclass;
-	static const char *const attrs[] = { "objectClass", NULL };
+	static const char *const attrs[] = { "objectClass", "nTSecurityDescriptor", NULL };
 	struct ldb_request *search_req;
 
 	ldb = ldb_module_get_ctx(ac->module);
@@ -491,7 +608,7 @@ static int descriptor_do_add(struct descriptor_context *ac)
 	/* get the parent descriptor and the one provided. If not provided, get the default.*/
 	/* convert to security descriptor and calculate */
 		sd = get_new_descriptor(ac->module, msg->dn, mem_ctx, objectclass,
-					ac->parentsd_val, ac->sd_val);
+					ac->parentsd_val, ac->sd_val, NULL, 0);
 		if (ac->sd_val) {
 			ldb_msg_remove_attr(msg, "nTSecurityDescriptor");
 		}
