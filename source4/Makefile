@@ -213,6 +213,7 @@ installdirs::
 		$(DESTDIR)$(torturedir) \
 		$(DESTDIR)$(libdir) \
 		$(DESTDIR)$(modulesdir) \
+		$(DESTDIR)$(modulesdir)/ldb \
 		$(DESTDIR)$(mandir) \
 		$(DESTDIR)$(localstatedir) \
 		$(DESTDIR)$(localstatedir)/lib \
