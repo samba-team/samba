@@ -375,6 +375,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_NEGOTIATE_MESSAGE(struct ndr_pull *ndr, int 
 					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_DomainName, 0, r->DomainNameLen));
 				}
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_DomainName_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
 				ndr->offset = _relative_save_offset;
 			}
 			ndr->flags = _flags_save_string;
@@ -395,6 +398,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_NEGOTIATE_MESSAGE(struct ndr_pull *ndr, int 
 					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_Workstation, 0, r->WorkstationLen));
 				}
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_Workstation_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
 				ndr->offset = _relative_save_offset;
 			}
 			ndr->flags = _flags_save_string;
@@ -1092,6 +1098,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_CHALLENGE_MESSAGE(struct ndr_pull *ndr, int 
 						NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_TargetName, 0, r->TargetNameLen));
 					}
 					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_TargetName_0, 0);
+					if (ndr->offset > ndr->relative_highest_offset) {
+						ndr->relative_highest_offset = ndr->offset;
+					}
 					ndr->offset = _relative_save_offset;
 				}
 				ndr->flags = _flags_save_string;
@@ -1109,6 +1118,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_CHALLENGE_MESSAGE(struct ndr_pull *ndr, int 
 					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_TargetInfo, 0, r->TargetInfoLen));
 				}
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_TargetInfo_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
 				ndr->offset = _relative_save_offset;
 			}
 			NDR_CHECK(ndr_pull_ntlmssp_Version(ndr, NDR_BUFFERS, &r->Version));
@@ -1851,6 +1863,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_AUTHENTICATE_MESSAGE(struct ndr_pull *ndr, i
 					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_LmChallengeResponse, 0, r->LmChallengeResponseLen));
 				}
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_LmChallengeResponse_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
 				ndr->offset = _relative_save_offset;
 			}
 			if (r->NtChallengeResponse) {
@@ -1867,6 +1882,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_AUTHENTICATE_MESSAGE(struct ndr_pull *ndr, i
 					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_NtChallengeResponse, 0, r->NtChallengeResponseMaxLen));
 				}
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_NtChallengeResponse_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
 				ndr->offset = _relative_save_offset;
 			}
 			{
@@ -1885,6 +1903,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_AUTHENTICATE_MESSAGE(struct ndr_pull *ndr, i
 						NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_DomainName, 0, r->DomainNameLen));
 					}
 					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_DomainName_0, 0);
+					if (ndr->offset > ndr->relative_highest_offset) {
+						ndr->relative_highest_offset = ndr->offset;
+					}
 					ndr->offset = _relative_save_offset;
 				}
 				ndr->flags = _flags_save_string;
@@ -1905,6 +1926,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_AUTHENTICATE_MESSAGE(struct ndr_pull *ndr, i
 						NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_UserName, 0, r->UserNameLen));
 					}
 					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_UserName_0, 0);
+					if (ndr->offset > ndr->relative_highest_offset) {
+						ndr->relative_highest_offset = ndr->offset;
+					}
 					ndr->offset = _relative_save_offset;
 				}
 				ndr->flags = _flags_save_string;
@@ -1925,6 +1949,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_AUTHENTICATE_MESSAGE(struct ndr_pull *ndr, i
 						NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_Workstation, 0, r->WorkstationLen));
 					}
 					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_Workstation_0, 0);
+					if (ndr->offset > ndr->relative_highest_offset) {
+						ndr->relative_highest_offset = ndr->offset;
+					}
 					ndr->offset = _relative_save_offset;
 				}
 				ndr->flags = _flags_save_string;
@@ -1942,6 +1969,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_AUTHENTICATE_MESSAGE(struct ndr_pull *ndr, i
 					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_EncryptedRandomSessionKey, 0, r->EncryptedRandomSessionKeyLen));
 				}
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_EncryptedRandomSessionKey_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
 				ndr->offset = _relative_save_offset;
 			}
 			NDR_CHECK(ndr_pull_ntlmssp_Version(ndr, NDR_BUFFERS, &r->Version));

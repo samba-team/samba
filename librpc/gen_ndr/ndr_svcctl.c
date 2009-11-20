@@ -309,6 +309,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_ENUM_SERVICE_STATUSW(struct ndr_pull *ndr, i
 				NDR_PULL_SET_MEM_CTX(ndr, r->service_name, 0);
 				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->service_name));
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_service_name_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
 				ndr->offset = _relative_save_offset;
 			}
 			ndr->flags = _flags_save_string;
@@ -324,6 +327,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_ENUM_SERVICE_STATUSW(struct ndr_pull *ndr, i
 				NDR_PULL_SET_MEM_CTX(ndr, r->display_name, 0);
 				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->display_name));
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_display_name_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
 				ndr->offset = _relative_save_offset;
 			}
 			ndr->flags = _flags_save_string;
@@ -446,6 +452,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_ENUM_SERVICE_STATUSA(struct ndr_pull *ndr, i
 				NDR_PULL_SET_MEM_CTX(ndr, r->service_name, 0);
 				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->service_name));
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_service_name_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
 				ndr->offset = _relative_save_offset;
 			}
 			ndr->flags = _flags_save_string;
@@ -461,6 +470,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_ENUM_SERVICE_STATUSA(struct ndr_pull *ndr, i
 				NDR_PULL_SET_MEM_CTX(ndr, r->display_name, 0);
 				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->display_name));
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_display_name_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
 				ndr->offset = _relative_save_offset;
 			}
 			ndr->flags = _flags_save_string;
@@ -1064,6 +1076,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_SERVICE_DESCRIPTION(struct ndr_pull *ndr, in
 				NDR_PULL_SET_MEM_CTX(ndr, r->description, 0);
 				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->description));
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_description_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
 				ndr->offset = _relative_save_offset;
 			}
 			ndr->flags = _flags_save_string;
@@ -1266,6 +1281,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_SERVICE_FAILURE_ACTIONS(struct ndr_pull *ndr
 				NDR_PULL_SET_MEM_CTX(ndr, r->rebootmsg, 0);
 				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->rebootmsg));
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_rebootmsg_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
 				ndr->offset = _relative_save_offset;
 			}
 			ndr->flags = _flags_save_string;
@@ -1281,6 +1299,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_SERVICE_FAILURE_ACTIONS(struct ndr_pull *ndr
 				NDR_PULL_SET_MEM_CTX(ndr, r->command, 0);
 				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->command));
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_command_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
 				ndr->offset = _relative_save_offset;
 			}
 			ndr->flags = _flags_save_string;
@@ -1300,6 +1321,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_SERVICE_FAILURE_ACTIONS(struct ndr_pull *ndr
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_actions_1, 0);
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_actions_0, 0);
+			if (ndr->offset > ndr->relative_highest_offset) {
+				ndr->relative_highest_offset = ndr->offset;
+			}
 			ndr->offset = _relative_save_offset;
 		}
 		if (r->actions) {

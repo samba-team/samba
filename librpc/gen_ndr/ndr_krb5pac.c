@@ -589,6 +589,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_PAC_BUFFER_RAW(struct ndr_pull *ndr, int ndr
 					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_info, 0, NDR_ROUND(r->ndr_size, 8)));
 				}
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
 				ndr->offset = _relative_save_offset;
 			}
 			ndr->flags = _flags_save_DATA_BLOB_REM;

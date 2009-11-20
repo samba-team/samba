@@ -583,6 +583,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_repsFromTo1(struct ndr_pull *ndr, int ndr_fl
 				NDR_PULL_SET_MEM_CTX(ndr, r->other_info, 0);
 				NDR_CHECK(ndr_pull_repsFromTo1OtherInfo(ndr, NDR_SCALARS, r->other_info));
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_other_info_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
 				ndr->offset = _relative_save_offset;
 			}
 		}
@@ -728,6 +731,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_repsFromTo2OtherInfo(struct ndr_pull *ndr, i
 				NDR_PULL_SET_MEM_CTX(ndr, r->dns_name1, 0);
 				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->dns_name1));
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dns_name1_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
 				ndr->offset = _relative_save_offset;
 			}
 			ndr->flags = _flags_save_string;
@@ -743,6 +749,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_repsFromTo2OtherInfo(struct ndr_pull *ndr, i
 				NDR_PULL_SET_MEM_CTX(ndr, r->dns_name2, 0);
 				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->dns_name2));
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dns_name2_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
 				ndr->offset = _relative_save_offset;
 			}
 			ndr->flags = _flags_save_string;
@@ -855,6 +864,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_repsFromTo2(struct ndr_pull *ndr, int ndr_fl
 				NDR_PULL_SET_MEM_CTX(ndr, r->other_info, 0);
 				NDR_CHECK(ndr_pull_repsFromTo2OtherInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->other_info));
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_other_info_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
 				ndr->offset = _relative_save_offset;
 			}
 		}
@@ -1847,6 +1859,9 @@ static enum ndr_err_code ndr_pull_package_PrimaryKerberosString(struct ndr_pull 
 					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_string, 0, r->size));
 				}
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_string_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
 				ndr->offset = _relative_save_offset;
 			}
 			ndr->flags = _flags_save_string;
@@ -1948,6 +1963,9 @@ static enum ndr_err_code ndr_pull_package_PrimaryKerberosKey3(struct ndr_pull *n
 					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_value, 0, r->value_len));
 				}
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_value_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
 				ndr->offset = _relative_save_offset;
 			}
 			ndr->flags = _flags_save_DATA_BLOB;
@@ -2175,6 +2193,9 @@ static enum ndr_err_code ndr_pull_package_PrimaryKerberosKey4(struct ndr_pull *n
 					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_value, 0, r->value_len));
 				}
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_value_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
 				ndr->offset = _relative_save_offset;
 			}
 			ndr->flags = _flags_save_DATA_BLOB;
@@ -3045,6 +3066,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_trustCurrentPasswords(struct ndr_pull *ndr, 
 				NDR_PULL_SET_MEM_CTX(ndr, r->current[cntr_current_0], 0);
 				NDR_CHECK(ndr_pull_AuthenticationInformation(ndr, NDR_SCALARS, r->current[cntr_current_0]));
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_current_1, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
 				ndr->offset = _relative_save_offset;
 			}
 		}

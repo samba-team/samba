@@ -707,6 +707,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_descriptor(struct ndr_pull *ndr, in
 				NDR_PULL_SET_MEM_CTX(ndr, r->owner_sid, 0);
 				NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS, r->owner_sid));
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_owner_sid_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
 				ndr->offset = _relative_save_offset;
 			}
 			if (r->group_sid) {
@@ -717,6 +720,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_descriptor(struct ndr_pull *ndr, in
 				NDR_PULL_SET_MEM_CTX(ndr, r->group_sid, 0);
 				NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS, r->group_sid));
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_group_sid_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
 				ndr->offset = _relative_save_offset;
 			}
 			if (r->sacl) {
@@ -727,6 +733,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_descriptor(struct ndr_pull *ndr, in
 				NDR_PULL_SET_MEM_CTX(ndr, r->sacl, 0);
 				NDR_CHECK(ndr_pull_security_acl(ndr, NDR_SCALARS|NDR_BUFFERS, r->sacl));
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sacl_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
 				ndr->offset = _relative_save_offset;
 			}
 			if (r->dacl) {
@@ -737,6 +746,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_descriptor(struct ndr_pull *ndr, in
 				NDR_PULL_SET_MEM_CTX(ndr, r->dacl, 0);
 				NDR_CHECK(ndr_pull_security_acl(ndr, NDR_SCALARS|NDR_BUFFERS, r->dacl));
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dacl_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
 				ndr->offset = _relative_save_offset;
 			}
 		}
