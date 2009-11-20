@@ -861,13 +861,22 @@ _PUBLIC_ enum ndr_err_code ndr_pull_struct_blob_all(const DATA_BLOB *blob, TALLO
 						    void *p, ndr_pull_flags_fn_t fn)
 {
 	struct ndr_pull *ndr;
+	uint32_t highest_ofs;
 	ndr = ndr_pull_init_blob(blob, mem_ctx, iconv_convenience);
 	NDR_ERR_HAVE_NO_MEMORY(ndr);
 	NDR_CHECK_FREE(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
-	if (ndr->offset < ndr->data_size) {
-		return ndr_pull_error(ndr, NDR_ERR_UNREAD_BYTES,
-				      "not all bytes consumed ofs[%u] size[%u]",
-				      ndr->offset, ndr->data_size);
+	if (ndr->offset > ndr->relative_highest_offset) {
+		highest_ofs = ndr->offset;
+	} else {
+		highest_ofs = ndr->relative_highest_offset;
+	}
+	if (highest_ofs < ndr->data_size) {
+		enum ndr_err_code ret;
+		ret = ndr_pull_error(ndr, NDR_ERR_UNREAD_BYTES,
+				     "not all bytes consumed ofs[%u] size[%u]",
+				     highest_ofs, ndr->data_size);
+		talloc_free(ndr);
+		return ret;
 	}
 	talloc_free(ndr);
 	return NDR_ERR_SUCCESS;
@@ -898,15 +907,21 @@ _PUBLIC_ enum ndr_err_code ndr_pull_union_blob_all(const DATA_BLOB *blob, TALLOC
 			     uint32_t level, ndr_pull_flags_fn_t fn)
 {
 	struct ndr_pull *ndr;
+	uint32_t highest_ofs;
 	ndr = ndr_pull_init_blob(blob, mem_ctx, iconv_convenience);
 	NDR_ERR_HAVE_NO_MEMORY(ndr);
 	NDR_CHECK_FREE(ndr_pull_set_switch_value(ndr, p, level));
 	NDR_CHECK_FREE(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
-	if (ndr->offset < ndr->data_size) {
+	if (ndr->offset > ndr->relative_highest_offset) {
+		highest_ofs = ndr->offset;
+	} else {
+		highest_ofs = ndr->relative_highest_offset;
+	}
+	if (highest_ofs < ndr->data_size) {
 		enum ndr_err_code ret;
 		ret = ndr_pull_error(ndr, NDR_ERR_UNREAD_BYTES,
 				     "not all bytes consumed ofs[%u] size[%u]",
-				     ndr->offset, ndr->data_size);
+				     highest_ofs, ndr->data_size);
 		talloc_free(ndr);
 		return ret;
 	}
