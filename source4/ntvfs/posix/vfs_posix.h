@@ -126,7 +126,7 @@ struct pvfs_dos_fileinfo {
 struct pvfs_filename {
 	char *original_name;
 	char *full_name;
-	const char *stream_name; /* does not include :$DATA suffix */
+	char *stream_name; /* does not include :$DATA suffix */
 	uint32_t stream_id;      /* this uses a hash, so is probabilistic */
 	bool has_wildcard;
 	bool exists;          /* true if the base filename exists */
