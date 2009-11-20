@@ -35,6 +35,7 @@
 #include "tools/cmdline.h"
 
 static int failures;
+static struct ldb_cmdline *options;
 
 static void usage(void)
 {
@@ -69,6 +70,9 @@ static int process_file(struct ldb_context *ldb, FILE *f, int *count)
 			failures++;
 		} else {
 			(*count)++;
+			if (options->verbose) {
+				printf("Added %s\n", ldb_dn_get_linearized(ldif->msg->dn));
+			}
 		}
 		ldb_ldif_read_free(ldb, ldif);
 	}
@@ -82,7 +86,6 @@ int main(int argc, const char **argv)
 {
 	struct ldb_context *ldb;
 	int i, ret=0, count=0;
-	struct ldb_cmdline *options;
 
 	ldb = ldb_init(NULL, NULL);
 
