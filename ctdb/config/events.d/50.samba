@@ -179,6 +179,14 @@ check_ctdb_manages_winbind() {
   }
 }
 
+list_samba_shares ()
+{
+    testparm_cat |
+    sed -n -e 's@^[[:space:]]*path[[:space:]]*=[[:space:]]@@p' |
+    sed -e 's/"//g'
+}
+
+
 ###########################
 # periodic cleanup function
 periodic_cleanup() {
@@ -220,13 +228,13 @@ case $cmd in
 				exit 1
 			    }
 			}
-
-			smb_dirs=`testparm_cat | egrep '^[[:space:]]*path = ' | cut -d= -f2`
-			ctdb_check_directories_probe "Samba" $smb_dirs || {
+			
+			list_samba_shares |
+			ctdb_check_directories_probe || {
 			    testparm_foreground_update
-			    smb_dirs=`testparm_cat | egrep '^[[:space:]]*path = ' | cut -d= -f2`
-			    ctdb_check_directories "Samba" $smb_dirs
-			}
+			    list_samba_shares |
+			    ctdb_check_directories
+			} || exit $?
 		}
 
 		smb_ports="$CTDB_SAMBA_CHECK_PORTS"
