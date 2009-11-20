@@ -99,6 +99,9 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb,
 
 #endif
 
+	/* make the ldb utilities line buffered */
+	setlinebuf(stdout);
+
 	ret = talloc_zero(ldb, struct ldb_cmdline);
 	if (ret == NULL) {
 		fprintf(stderr, "Out of memory!\n");
