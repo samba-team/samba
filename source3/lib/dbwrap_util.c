@@ -151,7 +151,7 @@ int32 dbwrap_change_int32_atomic(struct db_context *db, const char *keystr,
 {
 	struct db_record *rec;
 	int32 val = -1;
-	TDB_DATA data;
+	int32_t v_store;
 
 	if (!(rec = db->fetch_locked(db, NULL,
 				     string_term_tdb_data(keystr)))) {
@@ -169,10 +169,11 @@ int32 dbwrap_change_int32_atomic(struct db_context *db, const char *keystr,
 
 	val += change_val;
 
-	data.dsize = sizeof(val);
-	data.dptr = (uint8 *)&val;
+	SIVAL(&v_store, 0, val);
 
-	rec->store(rec, data, TDB_REPLACE);
+	rec->store(rec,
+		   make_tdb_data((const uint8_t *)&v_store, sizeof(v_store)),
+		   TDB_REPLACE);
 
 	TALLOC_FREE(rec);
 
