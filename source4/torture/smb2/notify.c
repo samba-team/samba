@@ -327,7 +327,7 @@ static bool torture_smb2_notify_dir(struct torture_context *torture,
 		"testing buffered notify on create of %d files\n", count);
 	for (i=0;i<count;i++) {
 		struct smb2_handle h12;
-		char *fname = talloc_asprintf(torture, BASEDIR "\\test%d.txt",
+		char *fname2 = talloc_asprintf(torture, BASEDIR "\\test%d.txt",
 					      i);
 
 		ZERO_STRUCT(io.smb2);
@@ -343,7 +343,7 @@ static bool torture_smb2_notify_dir(struct torture_context *torture,
 	        io.smb2.in.create_disposition = NTCREATEX_DISP_CREATE;
 		io.smb2.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
 	        io.smb2.in.security_flags = 0;
-		io.smb2.in.fname = fname;
+		io.smb2.in.fname = fname2;
 
 		status = smb2_create(tree1, torture, &(io.smb2));
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_OK)) {
@@ -353,7 +353,7 @@ static bool torture_smb2_notify_dir(struct torture_context *torture,
 			goto done;
 		}
 		h12 = io.smb2.out.file.handle;
-		talloc_free(fname);
+		talloc_free(fname2);
 		smb2_util_close(tree1, h12);
 	}
 
@@ -404,11 +404,11 @@ static bool torture_smb2_notify_dir(struct torture_context *torture,
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
 	for (i=1;i<count;i++) {
-		char *fname = talloc_asprintf(torture,
+		char *fname2 = talloc_asprintf(torture,
 			      BASEDIR "\\test%d.txt", i);
-		status = smb2_util_unlink(tree2, fname);
+		status = smb2_util_unlink(tree2, fname2);
 		CHECK_STATUS(status, NT_STATUS_OK);
-		talloc_free(fname);
+		talloc_free(fname2);
 	}
 
 	/* receive the 3rd notify */
