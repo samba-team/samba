@@ -168,8 +168,6 @@ static bool torture_oplock_handler_level2_to_none(
 					       uint8_t level,
 					       void *private_data)
 {
-	struct smb2_tree *tree = private_data;
-
 	break_info.handle = *handle;
 	break_info.level = level;
 	break_info.count++;
@@ -3467,8 +3465,6 @@ bool test_smb2_bench_oplock(struct torture_context *tctx,
 	torture_comment(tctx, "Running for %d seconds\n", timelimit);
 	while (timeval_elapsed(&tv) < timelimit) {
 		for (i=0;i<torture_nprocs;i++) {
-			NTSTATUS status;
-
 			status = smb2_create(trees[i], mem_ctx, &(io.smb2));
 			torture_assert_ntstatus_ok(tctx, status, "Incorrect status");
 			count++;
@@ -3565,7 +3561,6 @@ bool test_smb2_hold_oplock(struct torture_context *tctx,
 	/* setup the files */
 	for (i=0;i<ARRAY_SIZE(hold_info);i++) {
 		union smb_open io;
-		NTSTATUS status;
 		char c = 1;
 
 		ZERO_STRUCT(io.smb2);
