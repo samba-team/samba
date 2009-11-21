@@ -54,7 +54,7 @@ static NTSTATUS dcesrv_echo_SinkData(struct dcesrv_call_state *dce_call, TALLOC_
 
 static NTSTATUS dcesrv_echo_SourceData(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_SourceData *r)
 {
-	int i;
+	unsigned int i;
 
 	r->out.data = talloc_array(mem_ctx, uint8_t, r->in.len);
 	if (!r->out.data) {
