@@ -5445,7 +5445,8 @@ NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
 				TALLOC_FREE(talloced);
 				continue;
 			}
-			if(!IS_VETO_PATH(conn, dname)) {
+			if(!is_in_path(dname, conn->veto_list, get_Protocol(),
+				       conn->case_sensitive)) {
 				TALLOC_FREE(dir_hnd);
 				TALLOC_FREE(talloced);
 				errno = ENOTEMPTY;

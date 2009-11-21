@@ -611,7 +611,7 @@ static NTSTATUS open_file(files_struct *fsp,
 	fsp->is_directory = False;
 	if (conn->aio_write_behind_list &&
 	    is_in_path(smb_fname->base_name, conn->aio_write_behind_list,
-		       conn->case_sensitive)) {
+		       get_Protocol(), conn->case_sensitive)) {
 		fsp->aio_write_behind = True;
 	}
 	status = fsp_set_smb_fname(fsp, smb_fname);
@@ -1570,7 +1570,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	/* ignore any oplock requests if oplocks are disabled */
 	if (!lp_oplocks(SNUM(conn)) || global_client_failed_oplock_break ||
-	    IS_VETO_OPLOCK_PATH(conn, smb_fname->base_name)) {
+	    is_in_path(smb_fname->base_name, conn->veto_oplock_list,
+		       get_Protocol(), conn->case_sensitive)) {
 		/* Mask off everything except the private Samba bits. */
 		oplock_request &= SAMBA_PRIVATE_OPLOCK_MASK;
 	}
