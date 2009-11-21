@@ -7,17 +7,17 @@
    Copyright (C) Tom Jansen (Ninja ISD) 2002 
    Copyright (C) Derrell Lipman 2003-2008
    Copyright (C) Jeremy Allison 2007, 2008
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -50,23 +50,19 @@ SMBC_open_ctx(SMBCCTX *context,
 	uint16_t fd;
 	NTSTATUS status = NT_STATUS_OBJECT_PATH_INVALID;
 	TALLOC_CTX *frame = talloc_stackframe();
-        
+
 	if (!context || !context->internal->initialized) {
-                
 		errno = EINVAL;  /* Best I can think of ... */
 		TALLOC_FREE(frame);
 		return NULL;
-                
 	}
-        
+
 	if (!fname) {
-                
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return NULL;
-                
 	}
-        
+
 	if (SMBC_parse_path(frame,
                             context,
                             fname,
@@ -81,7 +77,7 @@ SMBC_open_ctx(SMBCCTX *context,
 		TALLOC_FREE(frame);
 		return NULL;
         }
-        
+
 	if (!user || user[0] == (char)0) {
 		user = talloc_strdup(frame, smbc_getUser(context));
 		if (!user) {
@@ -90,31 +86,29 @@ SMBC_open_ctx(SMBCCTX *context,
 			return NULL;
 		}
 	}
-        
+
 	srv = SMBC_server(frame, context, True,
                           server, share, &workgroup, &user, &password);
-        
 	if (!srv) {
 		if (errno == EPERM) errno = EACCES;
 		TALLOC_FREE(frame);
 		return NULL;  /* SMBC_server sets errno */
 	}
-        
+
 	/* Hmmm, the test for a directory is suspect here ... FIXME */
-        
+
 	if (strlen(path) > 0 && path[strlen(path) - 1] == '\\') {
 		status = NT_STATUS_OBJECT_PATH_INVALID;
 	} else {
 		file = SMB_MALLOC_P(SMBCFILE);
-                
 		if (!file) {
 			errno = ENOMEM;
 			TALLOC_FREE(frame);
 			return NULL;
 		}
-                
+
 		ZERO_STRUCTP(file);
-                
+
 		/*d_printf(">>>open: resolving %s\n", path);*/
 		if (!cli_resolve_path(frame, "", context->internal->auth_info,
 				srv->cli, path,
@@ -126,30 +120,29 @@ SMBC_open_ctx(SMBCCTX *context,
 			return NULL;
 		}
 		/*d_printf(">>>open: resolved %s as %s\n", path, targetpath);*/
-                
+
 		status = cli_open(targetcli, targetpath, flags,
                                    context->internal->share_mode, &fd);
 		if (!NT_STATUS_IS_OK(status)) {
-                        
+
 			/* Handle the error ... */
-                        
+
 			SAFE_FREE(file);
 			errno = SMBC_errno(context, targetcli);
 			TALLOC_FREE(frame);
 			return NULL;
-                        
 		}
-                
+
 		/* Fill in file struct */
-                
+
 		file->cli_fd  = fd;
 		file->fname   = SMB_STRDUP(fname);
 		file->srv     = srv;
 		file->offset  = 0;
 		file->file    = True;
-                
+
 		DLIST_ADD(context->internal->files, file);
-                
+
                 /*
                  * If the file was opened in O_APPEND mode, all write
                  * operations should be appended to the file.  To do that,
@@ -180,29 +173,26 @@ SMBC_open_ctx(SMBCCTX *context,
                                 return NULL;
                         }
                 }
-                
+
 		TALLOC_FREE(frame);
 		return file;
-                
 	}
-        
+
 	/* Check if opendir needed ... */
-        
+
 	if (!NT_STATUS_IS_OK(status)) {
 		int eno = 0;
-                
+
 		eno = SMBC_errno(context, srv->cli);
 		file = smbc_getFunctionOpendir(context)(context, fname);
 		if (!file) errno = eno;
 		TALLOC_FREE(frame);
 		return file;
-                
 	}
-        
+
 	errno = EINVAL; /* FIXME, correct errno ? */
 	TALLOC_FREE(frame);
 	return NULL;
-        
 }
 
 /*
@@ -214,14 +204,11 @@ SMBC_creat_ctx(SMBCCTX *context,
                const char *path,
                mode_t mode)
 {
-        
 	if (!context || !context->internal->initialized) {
-                
 		errno = EINVAL;
 		return NULL;
-                
 	}
-        
+
 	return SMBC_open_ctx(context, path,
                              O_WRONLY | O_CREAT | O_TRUNC, mode);
 }
@@ -242,7 +229,7 @@ SMBC_read_ctx(SMBCCTX *context,
 	char *targetpath = NULL;
 	struct cli_state *targetcli = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
-        
+
         /*
          * offset:
          *
@@ -253,35 +240,31 @@ SMBC_read_ctx(SMBCCTX *context,
          * retrieving data at an offset greater than 4GB.
          */
         off_t offset;
-        
+
 	if (!context || !context->internal->initialized) {
-                
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return -1;
-                
 	}
-        
+
 	DEBUG(4, ("smbc_read(%p, %d)\n", file, (int)count));
-        
+
 	if (!file || !SMBC_dlist_contains(context->internal->files, file)) {
 		errno = EBADF;
 		TALLOC_FREE(frame);
 		return -1;
-                
 	}
-        
+
 	offset = file->offset;
-        
+
 	/* Check that the buffer exists ... */
-        
+
 	if (buf == NULL) {
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return -1;
-                
 	}
-        
+
 	/*d_printf(">>>read: parsing %s\n", file->fname);*/
 	if (SMBC_parse_path(frame,
                             context,
@@ -297,7 +280,7 @@ SMBC_read_ctx(SMBCCTX *context,
 		TALLOC_FREE(frame);
                 return -1;
         }
-        
+
 	/*d_printf(">>>read: resolving %s\n", path);*/
 	if (!cli_resolve_path(frame, "", context->internal->auth_info,
 			file->srv->cli, path,
@@ -308,24 +291,21 @@ SMBC_read_ctx(SMBCCTX *context,
 		return -1;
 	}
 	/*d_printf(">>>fstat: resolved path as %s\n", targetpath);*/
-        
+
 	ret = cli_read(targetcli, file->cli_fd, (char *)buf, offset, count);
-        
+
 	if (ret < 0) {
-                
 		errno = SMBC_errno(context, targetcli);
 		TALLOC_FREE(frame);
 		return -1;
-                
 	}
-        
+
 	file->offset += ret;
-        
+
 	DEBUG(4, ("  --> %d\n", ret));
-        
+
 	TALLOC_FREE(frame);
 	return ret;  /* Success, ret bytes of data ... */
-        
 }
 
 /*
@@ -345,34 +325,31 @@ SMBC_write_ctx(SMBCCTX *context,
 	char *targetpath = NULL;
 	struct cli_state *targetcli = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
-        
+
 	/* First check all pointers before dereferencing them */
-        
+
 	if (!context || !context->internal->initialized) {
-                
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return -1;
-                
 	}
-        
+
 	if (!file || !SMBC_dlist_contains(context->internal->files, file)) {
 		errno = EBADF;
 		TALLOC_FREE(frame);
 		return -1;
 	}
-        
+
 	/* Check that the buffer exists ... */
-        
+
 	if (buf == NULL) {
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return -1;
-                
 	}
-        
+
         offset = file->offset; /* See "offset" comment in SMBC_read_ctx() */
-        
+
 	/*d_printf(">>>write: parsing %s\n", file->fname);*/
 	if (SMBC_parse_path(frame,
                             context,
@@ -399,19 +376,17 @@ SMBC_write_ctx(SMBCCTX *context,
 		return -1;
 	}
 	/*d_printf(">>>write: resolved path as %s\n", targetpath);*/
-        
+
 	ret = cli_write(targetcli, file->cli_fd,
                         0, (char *)buf, offset, count);
-        
 	if (ret <= 0) {
 		errno = SMBC_errno(context, targetcli);
 		TALLOC_FREE(frame);
 		return -1;
-                
 	}
-        
+
 	file->offset += ret;
-        
+
 	TALLOC_FREE(frame);
 	return ret;  /* Success, 0 bytes of data ... */
 }
@@ -430,26 +405,25 @@ SMBC_close_ctx(SMBCCTX *context,
 	char *targetpath = NULL;
 	struct cli_state *targetcli = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
-        
+
 	if (!context || !context->internal->initialized) {
-                
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return -1;
 	}
-        
+
 	if (!file || !SMBC_dlist_contains(context->internal->files, file)) {
 		errno = EBADF;
 		TALLOC_FREE(frame);
 		return -1;
 	}
-        
+
 	/* IS a dir ... */
 	if (!file->file) {
 		TALLOC_FREE(frame);
 		return smbc_getFunctionClosedir(context)(context, file);
 	}
-        
+
 	/*d_printf(">>>close: parsing %s\n", file->fname);*/
 	if (SMBC_parse_path(frame,
                             context,
@@ -465,7 +439,7 @@ SMBC_close_ctx(SMBCCTX *context,
 		TALLOC_FREE(frame);
                 return -1;
         }
-        
+
 	/*d_printf(">>>close: resolving %s\n", path);*/
 	if (!cli_resolve_path(frame, "", context->internal->auth_info,
 			file->srv->cli, path,
@@ -476,9 +450,8 @@ SMBC_close_ctx(SMBCCTX *context,
 		return -1;
 	}
 	/*d_printf(">>>close: resolved path as %s\n", targetpath);*/
-        
+
 	if (!NT_STATUS_IS_OK(cli_close(targetcli, file->cli_fd))) {
-                
 		DEBUG(3, ("cli_close failed on %s. purging server.\n", 
 			  file->fname));
 		/* Deallocate slot and remove the server 
@@ -491,14 +464,12 @@ SMBC_close_ctx(SMBCCTX *context,
 		smbc_getFunctionRemoveUnusedServer(context)(context, srv);
 		TALLOC_FREE(frame);
 		return -1;
-                
 	}
-        
+
 	DLIST_REMOVE(context->internal->files, file);
 	SAFE_FREE(file->fname);
 	SAFE_FREE(file);
 	TALLOC_FREE(frame);
-        
 	return 0;
 }
 
@@ -523,14 +494,13 @@ SMBC_getatr(SMBCCTX * context,
 	struct cli_state *targetcli = NULL;
 	time_t write_time;
 	TALLOC_CTX *frame = talloc_stackframe();
-        
+
 	if (!context || !context->internal->initialized) {
-                
 		errno = EINVAL;
 		TALLOC_FREE(frame);
  		return False;
  	}
-        
+
 	/* path fixup for . and .. */
 	if (strequal(path, ".") || strequal(path, "..")) {
 		fixedpath = talloc_strdup(frame, "\\");
@@ -550,7 +520,7 @@ SMBC_getatr(SMBCCTX * context,
 		trim_string(fixedpath, NULL, "\\.");
 	}
 	DEBUG(4,("SMBC_getatr: sending qpathinfo\n"));
-        
+
 	if (!cli_resolve_path(frame, "", context->internal->auth_info,
 			srv->cli, fixedpath,
 			&targetcli, &targetpath)) {
@@ -559,7 +529,7 @@ SMBC_getatr(SMBCCTX * context,
 		TALLOC_FREE(frame);
 		return False;
 	}
-        
+
 	if (!srv->no_pathinfo2 &&
             cli_qpathinfo2(targetcli, targetpath,
                            create_time_ts,
@@ -570,45 +540,38 @@ SMBC_getatr(SMBCCTX * context,
 		TALLOC_FREE(frame);
 		return True;
         }
-        
+
 	/* if this is NT then don't bother with the getatr */
 	if (targetcli->capabilities & CAP_NT_SMBS) {
                 errno = EPERM;
 		TALLOC_FREE(frame);
                 return False;
         }
-        
+
 	if (NT_STATUS_IS_OK(cli_getatr(targetcli, targetpath, mode, size, &write_time))) {
-                
                 struct timespec w_time_ts;
-                
+
                 w_time_ts = convert_time_t_to_timespec(write_time);
-                
                 if (write_time_ts != NULL) {
 			*write_time_ts = w_time_ts;
                 }
-                
                 if (create_time_ts != NULL) {
                         *create_time_ts = w_time_ts;
                 }
-                
                 if (access_time_ts != NULL) {
                         *access_time_ts = w_time_ts;
                 }
-                
                 if (change_time_ts != NULL) {
                         *change_time_ts = w_time_ts;
                 }
-                
 		srv->no_pathinfo2 = True;
 		TALLOC_FREE(frame);
 		return True;
 	}
-        
+
         errno = EPERM;
 	TALLOC_FREE(frame);
 	return False;
-        
 }
 
 /*
@@ -632,7 +595,7 @@ SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
         uint16_t fd;
         int ret;
 	TALLOC_CTX *frame = talloc_stackframe();
-        
+
         /*
          * First, try setpathinfo (if qpathinfo succeeded), for it is the
          * modern function for "new code" to be using, and it works given a
@@ -646,7 +609,7 @@ SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
                               write_time,
                               change_time,
                               mode)) {
-                
+
                 /*
                  * setpathinfo is not supported; go to plan B. 
                  *
@@ -656,27 +619,26 @@ SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
                  * cli_setattrE() which should work on all OS versions, and
                  * supports both times.
                  */
-                
+
                 /* Don't try {q,set}pathinfo() again, with this server */
                 srv->no_pathinfo = True;
-                
+
                 /* Open the file */
                 if (!NT_STATUS_IS_OK(cli_open(srv->cli, path, O_RDWR, DENY_NONE, &fd))) {
-                        
                         errno = SMBC_errno(context, srv->cli);
 			TALLOC_FREE(frame);
                         return -1;
                 }
-                
+
                 /* Set the new attributes */
                 ret = NT_STATUS_IS_OK(cli_setattrE(srv->cli, fd,
                                    change_time,
                                    access_time,
                                    write_time));
-                
+
                 /* Close the file */
                 cli_close(srv->cli, fd);
-                
+
                 /*
                  * Unfortunately, setattrE() doesn't have a provision for
                  * setting the access mode (attributes).  We'll have to try
@@ -686,14 +648,14 @@ SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
                 if (ret && mode != (uint16) -1) {
                         ret = NT_STATUS_IS_OK(cli_setatr(srv->cli, path, mode, 0));
                 }
-                
+
                 if (! ret) {
                         errno = SMBC_errno(context, srv->cli);
 			TALLOC_FREE(frame);
                         return False;
                 }
         }
-        
+
 	TALLOC_FREE(frame);
         return True;
 }
@@ -714,39 +676,32 @@ SMBC_lseek_ctx(SMBCCTX *context,
 	char *targetpath = NULL;
 	struct cli_state *targetcli = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
-        
+
 	if (!context || !context->internal->initialized) {
-                
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return -1;
 	}
-        
+
 	if (!file || !SMBC_dlist_contains(context->internal->files, file)) {
-                
 		errno = EBADF;
 		TALLOC_FREE(frame);
 		return -1;
-                
 	}
-        
+
 	if (!file->file) {
-                
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return -1;      /* Can't lseek a dir ... */
-                
 	}
-        
+
 	switch (whence) {
 	case SEEK_SET:
 		file->offset = offset;
 		break;
-                
 	case SEEK_CUR:
 		file->offset += offset;
 		break;
-                
 	case SEEK_END:
 		/*d_printf(">>>lseek: parsing %s\n", file->fname);*/
 		if (SMBC_parse_path(frame,
@@ -763,7 +718,7 @@ SMBC_lseek_ctx(SMBCCTX *context,
 			TALLOC_FREE(frame);
 			return -1;
 		}
-                
+
 		/*d_printf(">>>lseek: resolving %s\n", path);*/
 		if (!cli_resolve_path(frame, "", context->internal->auth_info,
 				file->srv->cli, path,
@@ -773,8 +728,8 @@ SMBC_lseek_ctx(SMBCCTX *context,
 			TALLOC_FREE(frame);
 			return -1;
 		}
+
 		/*d_printf(">>>lseek: resolved path as %s\n", targetpath);*/
-                
 		if (!cli_qfileinfo(targetcli, file->cli_fd, NULL,
                                    &size, NULL, NULL, NULL, NULL, NULL))
 		{
@@ -789,16 +744,13 @@ SMBC_lseek_ctx(SMBCCTX *context,
 		}
 		file->offset = size + offset;
 		break;
-                
 	default:
 		errno = EINVAL;
 		break;
-                
 	}
-        
+
 	TALLOC_FREE(frame);
 	return file->offset;
-        
 }
 
 
@@ -820,26 +772,25 @@ SMBC_ftruncate_ctx(SMBCCTX *context,
         char *targetpath = NULL;
 	struct cli_state *targetcli = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
-        
+
 	if (!context || !context->internal->initialized) {
-                
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return -1;
 	}
-        
+
 	if (!file || !SMBC_dlist_contains(context->internal->files, file)) {
 		errno = EBADF;
 		TALLOC_FREE(frame);
 		return -1;
 	}
-        
+
 	if (!file->file) {
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return -1;
 	}
-        
+
 	/*d_printf(">>>fstat: parsing %s\n", file->fname);*/
 	if (SMBC_parse_path(frame,
                             context,
@@ -855,7 +806,7 @@ SMBC_ftruncate_ctx(SMBCCTX *context,
 		TALLOC_FREE(frame);
                 return -1;
         }
-        
+
 	/*d_printf(">>>fstat: resolving %s\n", path);*/
 	if (!cli_resolve_path(frame, "", context->internal->auth_info,
 			file->srv->cli, path,
@@ -866,14 +817,13 @@ SMBC_ftruncate_ctx(SMBCCTX *context,
 		return -1;
 	}
 	/*d_printf(">>>fstat: resolved path as %s\n", targetpath);*/
-        
+
         if (!NT_STATUS_IS_OK(cli_ftruncate(targetcli, file->cli_fd, (uint64_t)size))) {
                 errno = EINVAL;
                 TALLOC_FREE(frame);
                 return -1;
         }
-        
+
 	TALLOC_FREE(frame);
 	return 0;
-        
 }

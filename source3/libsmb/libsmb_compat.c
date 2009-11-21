@@ -6,17 +6,17 @@
    Copyright (C) John Terpstra 2000
    Copyright (C) Tom Jansen (Ninja ISD) 2002 
    Copyright (C) Derrell Lipman 2003, 2008
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -55,11 +55,10 @@ static int
 add_fd(SMBCFILE * file)
 {
         struct smbc_compat_fdlist * f = smbc_compat_fd_avail;
-        
+
 	if (f) {
                 /* We found one that's available */
                 DLIST_REMOVE(smbc_compat_fd_avail, f);
-                
 	} else {
                 /*
                  * None were available, so allocate one.  Keep the number of
@@ -72,19 +71,19 @@ add_fd(SMBCFILE * file)
                         errno = EMFILE;
                         return -1;
                 }
-                
+
                 f = SMB_MALLOC_P(struct smbc_compat_fdlist);
                 if (!f) {
                         errno = ENOMEM;
                         return -1;
                 }
-                
+
                 f->fd = SMBC_BASE_FD + smbc_compat_nextfd++;
         }
-        
+
 	f->file = file;
 	DLIST_ADD(smbc_compat_fd_in_use, f);
-        
+
 	return f->fd;
 }
 
@@ -95,13 +94,13 @@ static int
 del_fd(int fd)
 {
 	struct smbc_compat_fdlist * f = smbc_compat_fd_in_use;
-        
+
 	while (f) {
 		if (f->fd == fd) 
 			break;
 		f = f->next;
 	}
-        
+
 	if (f) {
 		/* found */
 		DLIST_REMOVE(smbc_compat_fd_in_use, f);
@@ -122,17 +121,17 @@ smbc_init(smbc_get_auth_data_fn fn,
 		statcont = smbc_new_context();
 		if (!statcont) 
 			return -1;
-                
+
                 smbc_setDebug(statcont, debug);
                 smbc_setFunctionAuthData(statcont, fn);
-                
+
 		if (!smbc_init_context(statcont)) {
 			smbc_free_context(statcont, False);
 			return -1;
 		}
-                
+
 		smbc_compat_initialized = 1;
-                
+
 		return 0;
 	}
 	return 0;
@@ -143,15 +142,15 @@ SMBCCTX *
 smbc_set_context(SMBCCTX * context)
 {
         SMBCCTX *old_context = statcont;
-        
+
         if (context) {
                 /* Save provided context.  It must have been initialized! */
                 statcont = context;
-                
+
                 /* You'd better know what you're doing.  We won't help you. */
 		smbc_compat_initialized = 1;
         }
-        
+
         return old_context;
 }
 
@@ -163,11 +162,11 @@ smbc_open(const char *furl,
 {
 	SMBCFILE * file;
 	int fd;
-        
+
         file = smbc_getFunctionOpen(statcont)(statcont, furl, flags, mode);
 	if (!file)
 		return -1;
-        
+
 	fd = add_fd(file);
 	if (fd == -1) 
                 smbc_getFunctionClose(statcont)(statcont, file);
@@ -181,11 +180,11 @@ smbc_creat(const char *furl,
 {
 	SMBCFILE * file;
 	int fd;
-        
+
         file = smbc_getFunctionCreat(statcont)(statcont, furl, mode);
 	if (!file)
 		return -1;
-        
+
 	fd = add_fd(file);
 	if (fd == -1) {
 		/* Hmm... should we delete the file too ? I guess we could try */
@@ -250,15 +249,15 @@ smbc_opendir(const char *durl)
 {
 	SMBCFILE * file;
 	int fd;
-        
+
         file = smbc_getFunctionOpendir(statcont)(statcont, durl);
 	if (!file)
 		return -1;
-        
+
 	fd = add_fd(file);
 	if (fd == -1) 
                 smbc_getFunctionClosedir(statcont)(statcont, file);
-        
+
 	return fd;
 }
 
@@ -372,14 +371,14 @@ smbc_utime(const char *fname,
            struct utimbuf *utbuf)
 {
         struct timeval tv[2];
-        
+
         if (utbuf == NULL)
                 return smbc_getFunctionUtimes(statcont)(statcont, fname, NULL);
-        
+
         tv[0].tv_sec = utbuf->actime;
         tv[1].tv_sec = utbuf->modtime;
         tv[0].tv_usec = tv[1].tv_usec = 0;
-        
+
         return smbc_getFunctionUtimes(statcont)(statcont, fname, tv);
 }
 #endif
@@ -534,7 +533,7 @@ int
 smbc_open_print_job(const char *fname)
 {
         SMBCFILE * file;
-        
+
         file = smbc_getFunctionOpenPrintJob(statcont)(statcont, fname);
 	if (!file) return -1;
 	return file->cli_fd;
