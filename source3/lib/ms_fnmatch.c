@@ -234,5 +234,5 @@ int ms_fnmatch(const char *pattern, const char *string, bool translate_pattern,
 /* a generic fnmatch function - uses for non-CIFS pattern matching */
 int gen_fnmatch(const char *pattern, const char *string)
 {
-	return ms_fnmatch(pattern, string, PROTOCOL_NT1, False);
+	return ms_fnmatch(pattern, string, true, False);
 }
