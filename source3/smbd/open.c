@@ -2383,7 +2383,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 					 smb_dname->base_name, mode);
 	}
 
-	if (!(file_attributes & FILE_FLAG_POSIX_SEMANTICS)) {
+	if (!posix_open) {
 		/*
 		 * Check if high bits should have been set,
 		 * then (if bits are missing): add them.
