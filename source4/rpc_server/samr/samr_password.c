@@ -67,7 +67,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser(struct dcesrv_call_state *dce_call,
 	}
 
 	ret = ldb_transaction_start(sam_ctx);
-	if (ret) {
+	if (ret != LDB_SUCCESS) {
 		DEBUG(1, ("Failed to start transaction: %s\n", ldb_errstring(sam_ctx)));
 		return NT_STATUS_TRANSACTION_ABORTED;
 	}
@@ -154,7 +154,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser(struct dcesrv_call_state *dce_call,
 	/* The above call only setup the modifications, this actually
 	 * makes the write to the database. */
 	ret = samdb_replace(sam_ctx, mem_ctx, msg);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		DEBUG(2,("Failed to modify record to change password on %s: %s\n",
 			 ldb_dn_get_linearized(a_state->account_dn),
 			 ldb_errstring(sam_ctx)));
@@ -164,7 +164,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser(struct dcesrv_call_state *dce_call,
 
 	/* And this confirms it in a transaction commit */
 	ret = ldb_transaction_commit(sam_ctx);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		DEBUG(1,("Failed to commit transaction to change password on %s: %s\n",
 			 ldb_dn_get_linearized(a_state->account_dn),
 			 ldb_errstring(sam_ctx)));
@@ -216,7 +216,7 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 	}
 
 	ret = ldb_transaction_start(sam_ctx);
-	if (ret) {
+	if (ret != LDB_SUCCESS) {
 		DEBUG(1, ("Failed to start transaction: %s\n", ldb_errstring(sam_ctx)));
 		return NT_STATUS_TRANSACTION_ABORTED;
 	}
@@ -311,7 +311,7 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 	/* The above call only setup the modifications, this actually
 	 * makes the write to the database. */
 	ret = samdb_replace(sam_ctx, mem_ctx, mod);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		DEBUG(2,("Failed to modify record to change password on %s: %s\n",
 			 ldb_dn_get_linearized(user_dn),
 			 ldb_errstring(sam_ctx)));
@@ -321,7 +321,7 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 
 	/* And this confirms it in a transaction commit */
 	ret = ldb_transaction_commit(sam_ctx);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		DEBUG(1,("Failed to commit transaction to change password on %s: %s\n",
 			 ldb_dn_get_linearized(user_dn),
 			 ldb_errstring(sam_ctx)));
@@ -369,7 +369,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	}
 
 	ret = ldb_transaction_start(sam_ctx);
-	if (ret) {
+	if (ret != LDB_SUCCESS) {
 		talloc_free(sam_ctx);
 		DEBUG(1, ("Failed to start transaction: %s\n", ldb_errstring(sam_ctx)));
 		return NT_STATUS_TRANSACTION_ABORTED;
@@ -474,7 +474,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	/* The above call only setup the modifications, this actually
 	 * makes the write to the database. */
 	ret = samdb_replace(sam_ctx, mem_ctx, mod);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		DEBUG(2,("samdb_replace failed to change password for %s: %s\n",
 			 ldb_dn_get_linearized(user_dn),
 			 ldb_errstring(sam_ctx)));
@@ -484,7 +484,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 
 	/* And this confirms it in a transaction commit */
 	ret = ldb_transaction_commit(sam_ctx);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		DEBUG(1,("Failed to commit transaction to change password on %s: %s\n",
 			 ldb_dn_get_linearized(user_dn),
 			 ldb_errstring(sam_ctx)));

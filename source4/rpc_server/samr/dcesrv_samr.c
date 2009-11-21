@@ -2679,7 +2679,7 @@ static NTSTATUS dcesrv_samr_DeleteDomAlias(struct dcesrv_call_state *dce_call, T
 	a_state = h->data;
 
 	ret = ldb_delete(a_state->sam_ctx, a_state->account_dn);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -4048,10 +4048,10 @@ static NTSTATUS dcesrv_samr_RemoveMemberFromForeignDomain(struct dcesrv_call_sta
 		}
 
 		if (samdb_msg_add_delval(d_state->sam_ctx, mem_ctx, mod,
-					 "member", memberdn) != 0)
+					 "member", memberdn) != LDB_SUCCESS)
 			return NT_STATUS_NO_MEMORY;
 
-		if (ldb_modify(d_state->sam_ctx, mod) != 0)
+		if (ldb_modify(d_state->sam_ctx, mod) != LDB_SUCCESS)
 			return NT_STATUS_UNSUCCESSFUL;
 
 		talloc_free(mod);
