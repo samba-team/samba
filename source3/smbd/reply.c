@@ -2638,7 +2638,7 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 				continue;
 			}
 
-			if(!mask_match(dname, fname_mask,
+			if(!mask_match(dname, fname_mask, get_Protocol(),
 				       conn->case_sensitive)) {
 				TALLOC_FREE(frame);
 				TALLOC_FREE(talloced);
@@ -6337,7 +6337,8 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			continue;
 		}
 
-		if(!mask_match(dname, fname_src_mask, conn->case_sensitive)) {
+		if(!mask_match(dname, fname_src_mask, get_Protocol(),
+			       conn->case_sensitive)) {
 			TALLOC_FREE(talloced);
 			continue;
 		}
@@ -6968,7 +6969,7 @@ void reply_copy(struct smb_request *req)
 				continue;
 			}
 
-			if(!mask_match(dname, fname_src_mask,
+			if(!mask_match(dname, fname_src_mask, get_Protocol(),
 				       conn->case_sensitive)) {
 				TALLOC_FREE(talloced);
 				continue;

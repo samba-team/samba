@@ -1687,7 +1687,8 @@ bool is_in_path(const char *name, name_compare_entry *namelist, bool case_sensit
 
 	for(; namelist->name != NULL; namelist++) {
 		if(namelist->is_wild) {
-			if (mask_match(last_component, namelist->name, case_sensitive)) {
+			if (mask_match(last_component, namelist->name,
+				       get_Protocol(), case_sensitive)) {
 				DEBUG(8,("is_in_path: mask match succeeded\n"));
 				return True;
 			}
@@ -2384,14 +2385,16 @@ bool ms_has_wild_w(const smb_ucs2_t *s)
  of the ".." name.
 *******************************************************************/
 
-bool mask_match(const char *string, const char *pattern, bool is_case_sensitive)
+bool mask_match(const char *string, const char *pattern,
+		enum protocol_types proto, bool is_case_sensitive)
 {
 	if (ISDOTDOT(string))
 		string = ".";
 	if (ISDOT(pattern))
 		return False;
 
-	return ms_fnmatch(pattern, string, Protocol <= PROTOCOL_LANMAN2, is_case_sensitive) == 0;
+	return ms_fnmatch(pattern, string, proto <= PROTOCOL_LANMAN2,
+			  is_case_sensitive) == 0;
 }
 
 /*******************************************************************
@@ -2418,7 +2421,8 @@ bool mask_match_search(const char *string, const char *pattern, bool is_case_sen
 bool mask_match_list(const char *string, char **list, int listLen, bool is_case_sensitive)
 {
        while (listLen-- > 0) {
-               if (mask_match(string, *list++, is_case_sensitive))
+               if (mask_match(string, *list++, get_Protocol(),
+			      is_case_sensitive))
                        return True;
        }
        return False;

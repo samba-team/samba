@@ -1368,7 +1368,7 @@ static bool smbd_dirptr_lanman2_match_fn(TALLOC_CTX *ctx,
 				fname, mask);
 	state->got_exact_match = got_match;
 	if (!got_match) {
-		got_match = mask_match(fname, mask,
+		got_match = mask_match(fname, mask, get_Protocol(),
 				       state->conn->case_sensitive);
 	}
 
@@ -1393,6 +1393,7 @@ static bool smbd_dirptr_lanman2_match_fn(TALLOC_CTX *ctx,
 		state->got_exact_match = got_match;
 		if (!got_match) {
 			got_match = mask_match(mangled_name, mask,
+					       get_Protocol(),
 					       state->conn->case_sensitive);
 		}
 	}

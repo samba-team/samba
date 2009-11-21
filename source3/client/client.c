@@ -472,7 +472,8 @@ static bool do_this_one(file_info *finfo)
 	}
 
 	if (*client_get_fileselection() &&
-	    !mask_match(finfo->name,client_get_fileselection(),false)) {
+	    !mask_match(finfo->name, client_get_fileselection(),
+			get_Protocol(), false)) {
 		DEBUG(3,("mask_match %s failed\n", finfo->name));
 		return false;
 	}
