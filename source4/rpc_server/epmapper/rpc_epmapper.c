@@ -103,7 +103,7 @@ static error_status_t dcesrv_epm_Lookup(struct dcesrv_call_state *dce_call, TALL
 		struct dcesrv_ep_iface *e;
 	} *eps;
 	uint32_t num_ents;
-	int i;
+	unsigned int i;
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.entry_handle, HTYPE_LOOKUP);
 
@@ -168,7 +168,7 @@ static error_status_t dcesrv_epm_Map(struct dcesrv_call_state *dce_call, TALLOC_
 			      struct epm_Map *r)
 {
 	uint32_t count;
-	int i;
+	unsigned int i;
 	struct dcesrv_ep_iface *eps;
 	struct epm_floor *floors;
 	enum dcerpc_transport_t transport;
