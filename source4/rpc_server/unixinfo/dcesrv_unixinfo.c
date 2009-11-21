@@ -195,7 +195,7 @@ static NTSTATUS dcesrv_unixinfo_GetPWUid(struct dcesrv_call_state *dce_call,
 				  TALLOC_CTX *mem_ctx,
 				  struct unixinfo_GetPWUid *r)
 {
-	int i;
+	unsigned int i;
 
 	*r->out.count = 0;
 
