@@ -2386,9 +2386,9 @@ bool ms_has_wild_w(const smb_ucs2_t *s)
 
 bool mask_match(const char *string, const char *pattern, bool is_case_sensitive)
 {
-	if (strcmp(string,"..") == 0)
+	if (ISDOTDOT(string))
 		string = ".";
-	if (strcmp(pattern,".") == 0)
+	if (ISDOT(pattern))
 		return False;
 	
 	return ms_fnmatch(pattern, string, Protocol <= PROTOCOL_LANMAN2, is_case_sensitive) == 0;
@@ -2402,9 +2402,9 @@ bool mask_match(const char *string, const char *pattern, bool is_case_sensitive)
 
 bool mask_match_search(const char *string, const char *pattern, bool is_case_sensitive)
 {
-	if (strcmp(string,"..") == 0)
+	if (ISDOTDOT(string))
 		string = ".";
-	if (strcmp(pattern,".") == 0)
+	if (ISDOT(pattern))
 		return False;
 	
 	return ms_fnmatch(pattern, string, True, is_case_sensitive) == 0;
