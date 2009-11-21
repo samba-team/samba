@@ -238,7 +238,7 @@ static NTSTATUS remote_op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 static NTSTATUS remote_register_one_iface(struct dcesrv_context *dce_ctx, const struct dcesrv_interface *iface)
 {
-	int i;
+	unsigned int i;
 	const struct ndr_interface_table *table = iface->private_data;
 
 	for (i=0;i<table->endpoints->count;i++) {
@@ -257,7 +257,7 @@ static NTSTATUS remote_register_one_iface(struct dcesrv_context *dce_ctx, const 
 
 static NTSTATUS remote_op_init_server(struct dcesrv_context *dce_ctx, const struct dcesrv_endpoint_server *ep_server)
 {
-	int i;
+	unsigned int i;
 	const char **ifaces = (const char **)str_list_make(dce_ctx, lp_parm_string(dce_ctx->lp_ctx, NULL, "dcerpc_remote", "interfaces"),NULL);
 
 	if (!ifaces) {
