@@ -1354,8 +1354,7 @@ static bool test_DatabaseRedo(struct torture_context *tctx,
 	r.out.delta_enum_array = &delta_enum_array;
 
 	for (d=0; d<3; d++) {
-
-		const char *database;
+		const char *database = NULL;
 
 		switch (d) {
 		case 0:
