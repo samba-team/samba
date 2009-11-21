@@ -455,12 +455,13 @@ uint32 dos_mode_msdfs(connection_struct *conn,
 	/* Optimization : Only call is_hidden_path if it's not already
 	   hidden. */
 	if (!(result & aHIDDEN) &&
-	    is_in_path(smb_fname->base_name, conn->hide_list, get_Protocol(),
+	    is_in_path(smb_fname->base_name, conn->hide_list,
+		       get_Protocol(conn->sconn),
 		       conn->case_sensitive)) {
 		result |= aHIDDEN;
 	}
 
-	if (get_Protocol() <= PROTOCOL_LANMAN2) {
+	if (get_Protocol(conn->sconn) <= PROTOCOL_LANMAN2) {
 		DEBUG(10,("dos_mode_msdfs : filtering result 0x%x\n",
 			(unsigned int)result ));
 		result &= 0xff;
@@ -642,12 +643,13 @@ uint32 dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 	/* Optimization : Only call is_hidden_path if it's not already
 	   hidden. */
 	if (!(result & aHIDDEN) &&
-	    is_in_path(smb_fname->base_name, conn->hide_list, get_Protocol(),
+	    is_in_path(smb_fname->base_name, conn->hide_list,
+		       get_Protocol(conn->sconn),
 		       conn->case_sensitive)) {
 		result |= aHIDDEN;
 	}
 
-	if (get_Protocol() <= PROTOCOL_LANMAN2) {
+	if (get_Protocol(conn->sconn) <= PROTOCOL_LANMAN2) {
 		DEBUG(10,("dos_mode : filtering result 0x%x\n",
 			(unsigned int)result ));
 		result &= 0xff;

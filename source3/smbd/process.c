@@ -379,6 +379,7 @@ void init_smb_request(struct smb_request *req,
 	req->unread_bytes = unread_bytes;
 	req->encrypted = encrypted;
 	req->conn = conn_find(sconn,req->tid);
+	req->sconn = smbd_server_conn;
 	req->chain_fsp = NULL;
 	req->chain_outbuf = NULL;
 	req->done = false;

@@ -446,6 +446,7 @@ struct smbd_server_connection {
 			 * Can be modified by the max xmit parameter.
 			 */
 			int max_recv;
+			enum protocol_types protocol;
 		} negprot;
 
 		struct {

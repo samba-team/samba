@@ -829,7 +829,7 @@ static void do_tar(file_info *finfo, const char *dir)
 		if ((!tar_re_search && clipfind(cliplist, clipn, exclaim)) ||
 		    (tar_re_search
 		     && mask_match_list(exclaim, cliplist, clipn,
-					get_Protocol(), True))) {
+					PROTOCOL_NONE, True))) {
 			DEBUG(3,("Skipping file %s\n", exclaim));
 			TALLOC_FREE(exclaim);
 			return;
@@ -1214,7 +1214,7 @@ static void do_tarput(void)
 		skip = clipn && ((!tar_re_search && clipfind(cliplist, clipn, finfo.name) ^ tar_excl) ||
 				 (tar_re_search
 				  && mask_match_list(finfo.name, cliplist,
-						     clipn, get_Protocol(),
+						     clipn, PROTOCOL_NONE,
 						     True)));
 
 		DEBUG(5, ("Skip = %i, cliplist=%s, file=%s\n", skip, (cliplist?cliplist[0]:NULL), finfo.name));

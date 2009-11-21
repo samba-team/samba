@@ -396,7 +396,7 @@ static int preopen_open(vfs_handle_struct *handle,
 	}
 
 	if (!is_in_path(smb_fname->base_name, state->preopen_names,
-			get_Protocol(), true)) {
+			get_Protocol(handle->conn->sconn), true)) {
 		DEBUG(10, ("%s does not match the preopen:names list\n",
 			   smb_fname_str_dbg(smb_fname)));
 		return res;

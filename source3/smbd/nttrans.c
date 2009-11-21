@@ -2539,7 +2539,7 @@ static void handle_nttrans(connection_struct *conn,
 			   struct trans_state *state,
 			   struct smb_request *req)
 {
-	if (get_Protocol() >= PROTOCOL_NT1) {
+	if (get_Protocol(conn->sconn) >= PROTOCOL_NT1) {
 		req->flags2 |= 0x40; /* IS_LONG_NAME */
 		SSVAL(req->inbuf,smb_flg2,req->flags2);
 	}

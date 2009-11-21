@@ -1368,7 +1368,8 @@ static bool smbd_dirptr_lanman2_match_fn(TALLOC_CTX *ctx,
 				fname, mask);
 	state->got_exact_match = got_match;
 	if (!got_match) {
-		got_match = mask_match(fname, mask, get_Protocol(),
+		got_match = mask_match(fname, mask,
+				       get_Protocol(state->conn->sconn),
 				       state->conn->case_sensitive);
 	}
 
@@ -1392,9 +1393,10 @@ static bool smbd_dirptr_lanman2_match_fn(TALLOC_CTX *ctx,
 					mangled_name, mask);
 		state->got_exact_match = got_match;
 		if (!got_match) {
-			got_match = mask_match(mangled_name, mask,
-					       get_Protocol(),
-					       state->conn->case_sensitive);
+			got_match = mask_match(
+				mangled_name, mask,
+				get_Protocol(state->conn->sconn),
+				state->conn->case_sensitive);
 		}
 	}
 
@@ -2465,7 +2467,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 	if(numentries == 0) {
 		dptr_close(sconn, &dptr_num);
-		if (get_Protocol() < PROTOCOL_NT1) {
+		if (get_Protocol(sconn) < PROTOCOL_NT1) {
 			reply_doserror(req, ERRDOS, ERRnofiles);
 			goto out;
 		} else {
@@ -8147,7 +8149,7 @@ void reply_findnclose(struct smb_request *req)
 static void handle_trans2(connection_struct *conn, struct smb_request *req,
 			  struct trans_state *state)
 {
-	if (get_Protocol() >= PROTOCOL_NT1) {
+	if (get_Protocol(req->sconn) >= PROTOCOL_NT1) {
 		req->flags2 |= 0x40; /* IS_LONG_NAME */
 		SSVAL(req->inbuf,smb_flg2,req->flags2);
 	}
