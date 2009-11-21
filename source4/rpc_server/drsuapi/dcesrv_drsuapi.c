@@ -497,7 +497,8 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 	struct drsuapi_DsGetDCInfoCtr1 *ctr1;
 	struct drsuapi_DsGetDCInfoCtr2 *ctr2;
 
-	int ret, i;
+	int ret;
+	unsigned int i;
 
 	*r->out.level_out = r->in.req->req1.level;
 	r->out.ctr = talloc(mem_ctx, union drsuapi_DsGetDCInfoCtr);

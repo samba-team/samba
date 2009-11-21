@@ -38,7 +38,7 @@ static WERROR uref_add_dest(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 {
 	struct repsTo reps;
 	WERROR werr;
-	int i;
+	unsigned int i;
 
 	werr = dsdb_loadreps(sam_ctx, mem_ctx, dn, "repsTo", &reps.r, &reps.count);
 	if (!W_ERROR_IS_OK(werr)) {
@@ -82,7 +82,7 @@ static WERROR uref_del_dest(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 {
 	struct repsTo reps;
 	WERROR werr;
-	int i;
+	unsigned int i;
 	bool found = false;
 
 	werr = dsdb_loadreps(sam_ctx, mem_ctx, dn, "repsTo", &reps.r, &reps.count);

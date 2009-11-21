@@ -96,7 +96,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 					  struct drsuapi_DsReplicaCursorCtrEx *uptodateness_vector)
 {
 	const struct ldb_val *md_value;
-	int i, n;
+	unsigned int i, n;
 	struct replPropertyMetaDataBlob md;
 	uint32_t rid = 0;
 	enum ndr_err_code ndr_err;
@@ -345,14 +345,14 @@ static WERROR get_nc_changes_add_links(struct ldb_context *sam_ctx,
 				       uint32_t *la_count,
 				       struct drsuapi_DsReplicaCursorCtrEx *uptodateness_vector)
 {
-	int i;
+	unsigned int i;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	uint64_t uSNChanged = ldb_msg_find_attr_as_int(msg, "uSNChanged", -1);
 
 	for (i=0; i<msg->num_elements; i++) {
 		struct ldb_message_element *el = &msg->elements[i];
 		const struct dsdb_attribute *sa;
-		int j;
+		unsigned int j;
 
 		sa = dsdb_attribute_by_lDAPDisplayName(schema, el->name);
 
@@ -653,7 +653,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 {
 	struct drsuapi_DsReplicaObjectIdentifier *ncRoot;
 	int ret;
-	int i;
+	unsigned int i;
 	struct dsdb_schema *schema;
 	struct drsuapi_DsReplicaOIDMapping_Ctr *ctr;
 	struct drsuapi_DsReplicaObjectListItemEx **currentObject;
