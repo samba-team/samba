@@ -160,7 +160,7 @@ static struct security_descriptor *descr_handle_sd_flags(TALLOC_CTX *mem_ctx,
 							 uint32_t sd_flags)
 {
 	struct security_descriptor *final_sd; 
-	/* if there is no control or contlol == 0 modify everything */
+	/* if there is no control or control == 0 modify everything */
 	if (!sd_flags) {
 		return new_sd;
 	}
@@ -325,6 +325,51 @@ static DATA_BLOB *get_new_descriptor(struct ldb_module *module,
 	return linear_sd;
 }
 
+static DATA_BLOB *descr_get_descriptor_to_show(struct ldb_module *module,
+					       TALLOC_CTX *mem_ctx,
+					       struct ldb_val *sd,
+					       uint32_t sd_flags)
+{
+	struct security_descriptor *old_sd, *final_sd;
+	DATA_BLOB *linear_sd;
+	enum ndr_err_code ndr_err;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+
+	old_sd = talloc(mem_ctx, struct security_descriptor);
+	if (!old_sd) {
+		return NULL;
+	}
+	ndr_err = ndr_pull_struct_blob(sd, old_sd, NULL,
+				       old_sd,
+				       (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(old_sd);
+		return NULL;
+	}
+
+	final_sd = descr_handle_sd_flags(mem_ctx, old_sd, NULL, sd_flags);
+
+	if (!final_sd) {
+		return NULL;
+	}
+
+	linear_sd = talloc(mem_ctx, DATA_BLOB);
+	if (!linear_sd) {
+		return NULL;
+	}
+
+	ndr_err = ndr_push_struct_blob(linear_sd, mem_ctx,
+				       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
+				       final_sd,
+				       (ndr_push_flags_fn_t)ndr_push_security_descriptor);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return NULL;
+	}
+
+	return linear_sd;
+}
+
 static struct descriptor_context *descriptor_init_context(struct ldb_module *module,
 							  struct ldb_request *req)
 {
@@ -468,6 +513,74 @@ static int descriptor_op_callback(struct ldb_request *req, struct ldb_reply *are
 
 	return ldb_module_done(ac->req, ares->controls,
 				ares->response, ares->error);
+}
+
+static int descriptor_search_callback(struct ldb_request *req, struct ldb_reply *ares)
+{
+	struct descriptor_context *ac;
+	struct ldb_control *sd_control;
+	struct ldb_val *sd_val = NULL;
+	struct ldb_message_element *sd_el;
+	DATA_BLOB *show_sd;
+	int ret;
+	uint32_t sd_flags = 0;
+
+	ac = talloc_get_type(req->context, struct descriptor_context);
+
+	if (!ares) {
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		goto fail;
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
+	}
+
+	sd_control = ldb_request_get_control(ac->req, LDB_CONTROL_SD_FLAGS_OID);
+		if (sd_control) {
+			struct ldb_sd_flags_control *sdctr = (struct ldb_sd_flags_control *)sd_control->data;
+			sd_flags = sdctr->secinfo_flags;
+			/* we only care for the last 4 bits */
+			sd_flags = sd_flags & 0x0000000F;
+		}
+
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
+		if (sd_flags != 0) {
+			sd_el = ldb_msg_find_element(ares->message, "nTSecurityDescriptor");
+			if (sd_el) {
+				sd_val = sd_el->values;
+			}
+		}
+		if (sd_val) {
+			show_sd = descr_get_descriptor_to_show(ac->module, ac->req,
+							       sd_val, sd_flags);
+			if (!show_sd) {
+				ret = LDB_ERR_OPERATIONS_ERROR;
+				goto fail;
+			}
+			ldb_msg_remove_attr(ares->message, "nTSecurityDescriptor");
+			ret = ldb_msg_add_steal_value(ares->message, "nTSecurityDescriptor", show_sd);
+			if (ret != LDB_SUCCESS) {
+				goto fail;
+			}
+		}
+		return ldb_module_send_entry(ac->req, ares->message, ares->controls);
+
+	case LDB_REPLY_REFERRAL:
+		/* ignore referrals */
+		break;
+
+	case LDB_REPLY_DONE:
+
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
+	}
+
+	talloc_free(ares);
+	return LDB_SUCCESS;
+fail:
+	return ldb_module_done(ac->req, NULL, NULL, ret);
 }
 
 static int descriptor_do_mod(struct descriptor_context *ac)
@@ -718,6 +831,48 @@ static int descriptor_change(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(ac->module, search_req);
 }
 
+static int descriptor_search(struct ldb_module *module, struct ldb_request *req)
+{
+	int ret;
+	struct ldb_context *ldb;
+	struct ldb_control *sd_control;
+	struct ldb_control **saved_controls;
+	struct ldb_request *down_req;
+	struct descriptor_context *ac;
+
+	sd_control = ldb_request_get_control(req, LDB_CONTROL_SD_FLAGS_OID);
+	if (!sd_control) {
+		return ldb_next_request(module, req);
+	}
+
+	ldb = ldb_module_get_ctx(module);
+	ac = descriptor_init_context(module, req);
+	if (ac == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ldb_build_search_req_ex(&down_req, ldb, ac,
+				      req->op.search.base,
+				      req->op.search.scope,
+				      req->op.search.tree,
+				      req->op.search.attrs,
+				      req->controls,
+				      ac, descriptor_search_callback,
+				      ac->req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	/* save it locally and remove it from the list */
+	/* we do not need to replace them later as we
+	 * are keeping the original req intact */
+	if (sd_control) {
+		if (!save_controls(sd_control, down_req, &saved_controls)) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+	}
+
+	return ldb_next_request(ac->module, down_req);
+}
 /* TODO */
 static int descriptor_rename(struct ldb_module *module, struct ldb_request *req)
 {
@@ -728,12 +883,20 @@ static int descriptor_rename(struct ldb_module *module, struct ldb_request *req)
 
 static int descriptor_init(struct ldb_module *module)
 {
+	int ret = ldb_mod_register_control(module, LDB_CONTROL_SD_FLAGS_OID);
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	if (ret != LDB_SUCCESS) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			"descriptor: Unable to register control with rootdse!\n");
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 	return ldb_next_init(module);
 }
 
 
 _PUBLIC_ const struct ldb_module_ops ldb_descriptor_module_ops = {
-	.name		   = "descriptor",
+	.name	       = "descriptor",
+	.search        = descriptor_search,
 	.add           = descriptor_change,
 	.modify        = descriptor_change,
 	.rename        = descriptor_rename,

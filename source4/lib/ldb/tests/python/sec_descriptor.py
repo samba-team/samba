@@ -208,8 +208,8 @@ showInAdvancedViewOnly: TRUE
                 ldif += "nTSecurityDescriptor:: %s" % base64.b64encode(ndr_pack(desc))
         _ldb.add_ldif(ldif)
 
-    def read_desc(self, object_dn):
-        res = self.ldb_admin.search(base=object_dn, scope=SCOPE_BASE, attrs=["nTSecurityDescriptor"])
+    def read_desc(self, object_dn, controls=None):
+        res = self.ldb_admin.search(base=object_dn, scope=SCOPE_BASE, attrs=["nTSecurityDescriptor"], controls=controls)
         desc = res[0]["nTSecurityDescriptor"][0]
         return ndr_unpack(security.descriptor, desc)
 
@@ -257,10 +257,10 @@ userAccountControl: %s""" % userAccountControl
             desc_sddl = desc_sddl + ace
         self.modify_desc(self.ldb_admin, object_dn, desc_sddl)
 
-    def get_desc_sddl(self, object_dn):
+    def get_desc_sddl(self, object_dn, controls=None):
         """ Return object nTSecutiryDescriptor in SDDL format
         """
-        desc = self.read_desc(object_dn)
+        desc = self.read_desc(object_dn, controls)
         return desc.as_sddl(self.domain_sid)
 
     def setUp(self):
@@ -1782,6 +1782,62 @@ class SdFlagsDescriptorTests(DescriptorTests):
         self.assertTrue("O:AU" in desc_sddl)
         self.assertTrue("G:AU" in desc_sddl)
         self.assertTrue("(D;;CC;;;LG)" in desc_sddl)
+
+    def test_307(self):
+        """ Read a descriptor with OWNER_SECURITY_INFORMATION
+            Only the owner part should be returned.
+        """
+        ou_dn = "OU=test_sdflags_ou," + self.base_dn
+        self.create_domain_ou(self.ldb_admin, ou_dn)
+        desc_sddl = self.get_desc_sddl(ou_dn, controls=["sd_flags:1:%d" % (SECINFO_OWNER)])
+        # make sure we have read the owner
+        self.assertTrue("O:" in desc_sddl)
+        # make sure we have read nothing else
+        self.assertFalse("G:" in desc_sddl)
+        self.assertFalse("D:" in desc_sddl)
+        self.assertFalse("S:" in desc_sddl)
+
+    def test_308(self):
+        """ Read a descriptor with GROUP_SECURITY_INFORMATION
+            Only the group part should be returned.
+        """
+        ou_dn = "OU=test_sdflags_ou," + self.base_dn
+        self.create_domain_ou(self.ldb_admin, ou_dn)
+        desc_sddl = self.get_desc_sddl(ou_dn, controls=["sd_flags:1:%d" % (SECINFO_GROUP)])
+        # make sure we have read the owner
+        self.assertTrue("G:" in desc_sddl)
+        # make sure we have read nothing else
+        self.assertFalse("O:" in desc_sddl)
+        self.assertFalse("D:" in desc_sddl)
+        self.assertFalse("S:" in desc_sddl)
+
+    def test_309(self):
+        """ Read a descriptor with SACL_SECURITY_INFORMATION
+            Only the sacl part should be returned.
+        """
+        ou_dn = "OU=test_sdflags_ou," + self.base_dn
+        self.create_domain_ou(self.ldb_admin, ou_dn)
+        desc_sddl = self.get_desc_sddl(ou_dn, controls=["sd_flags:1:%d" % (SECINFO_SACL)])
+        # make sure we have read the owner
+        self.assertTrue("S:" in desc_sddl)
+        # make sure we have read nothing else
+        self.assertFalse("O:" in desc_sddl)
+        self.assertFalse("D:" in desc_sddl)
+        self.assertFalse("G:" in desc_sddl)
+
+    def test_310(self):
+        """ Read a descriptor with DACL_SECURITY_INFORMATION
+            Only the dacl part should be returned.
+        """
+        ou_dn = "OU=test_sdflags_ou," + self.base_dn
+        self.create_domain_ou(self.ldb_admin, ou_dn)
+        desc_sddl = self.get_desc_sddl(ou_dn, controls=["sd_flags:1:%d" % (SECINFO_DACL)])
+        # make sure we have read the owner
+        self.assertTrue("D:" in desc_sddl)
+        # make sure we have read nothing else
+        self.assertFalse("O:" in desc_sddl)
+        self.assertFalse("S:" in desc_sddl)
+        self.assertFalse("G:" in desc_sddl)
 
 if not "://" in host:
     host = "ldap://%s" % host
