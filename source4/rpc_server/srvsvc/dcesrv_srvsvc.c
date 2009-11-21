@@ -431,8 +431,8 @@ static WERROR dcesrv_srvsvc_NetShareAdd(struct dcesrv_call_state *dce_call, TALL
 		NTSTATUS nterr;
 		struct share_info *info;
 		struct share_context *sctx;
-		int count = 8;
-		int i;
+		unsigned int count = 8;
+		unsigned int i;
 
 		nterr = share_get_context_by_name(mem_ctx, lp_share_backend(dce_call->conn->dce_ctx->lp_ctx), dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, &sctx);
 		if (!NT_STATUS_IS_OK(nterr)) {
@@ -529,8 +529,8 @@ static WERROR dcesrv_srvsvc_NetShareAdd(struct dcesrv_call_state *dce_call, TALL
 		NTSTATUS nterr;
 		struct share_info *info;
 		struct share_context *sctx;
-		int count = 10;
-		int i;
+		unsigned int count = 10;
+		unsigned int i;
 
 		nterr = share_get_context_by_name(mem_ctx, lp_share_backend(dce_call->conn->dce_ctx->lp_ctx), dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, &sctx);
 		if (!NT_STATUS_IS_OK(nterr)) {
@@ -733,7 +733,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 	switch (r->in.info_ctr->level) {
 	case 0:
 	{
-		int i;
+		unsigned int i;
 		struct srvsvc_NetShareCtr0 *ctr0;
 
 		ctr0 = talloc(mem_ctx, struct srvsvc_NetShareCtr0);
@@ -774,7 +774,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 	}
 	case 1:
 	{
-		int i;
+		unsigned int i;
 		struct srvsvc_NetShareCtr1 *ctr1;
 
 		ctr1 = talloc(mem_ctx, struct srvsvc_NetShareCtr1);
@@ -816,7 +816,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 	}
 	case 2:
 	{
-		int i;
+		unsigned int i;
 		struct srvsvc_NetShareCtr2 *ctr2;
 
 		SRVSVC_CHECK_ADMIN_ACCESS;
@@ -860,7 +860,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 	}
 	case 501:
 	{
-		int i;
+		unsigned int i;
 		struct srvsvc_NetShareCtr501 *ctr501;
 
 		SRVSVC_CHECK_ADMIN_ACCESS;
@@ -904,7 +904,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 	}
 	case 502:
 	{
-		int i;
+		unsigned int i;
 		struct srvsvc_NetShareCtr502 *ctr502;
 
 		SRVSVC_CHECK_ADMIN_ACCESS;
@@ -1102,7 +1102,7 @@ static WERROR dcesrv_srvsvc_fill_share_info(struct share_info *info, int *count,
 					uint32_t csc_policy,
 					struct security_descriptor *sd)
 {
-	int i = 0;
+	unsigned int i = 0;
 
 	if (level == 501) {
 		info[i].name = SHARE_CSC_POLICY;
@@ -1383,7 +1383,8 @@ static WERROR dcesrv_srvsvc_NetShareCheck(struct dcesrv_call_state *dce_call, TA
 	struct share_config *scfg = NULL;
 	char *device;
 	const char **names;
-	int count, i;
+	int count;
+	unsigned int i;
 
 	*r->out.type = 0;
 
@@ -1833,8 +1834,8 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 	switch (r->in.info_ctr->level) {
 	case 0:
 	{
-		int i, y = 0;
-		int count;
+		unsigned int i, y = 0;
+		unsigned int count;
 		struct srvsvc_NetShareCtr0 *ctr0;
 
 		ctr0 = talloc(mem_ctx, struct srvsvc_NetShareCtr0);
@@ -1885,8 +1886,8 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 	}
 	case 1:
 	{
-		int i, y = 0;
-		int count;
+		unsigned int i, y = 0;
+		unsigned int count;
 		struct srvsvc_NetShareCtr1 *ctr1;
 
 		ctr1 = talloc(mem_ctx, struct srvsvc_NetShareCtr1);
@@ -1937,8 +1938,8 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 	}
 	case 2:
 	{
-		int i, y = 0;
-		int count;
+		unsigned int i, y = 0;
+		unsigned int count;
 		struct srvsvc_NetShareCtr2 *ctr2;
 
 		SRVSVC_CHECK_ADMIN_ACCESS;
@@ -1991,8 +1992,8 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 	}
 	case 502:
 	{
-		int i, y = 0;
-		int count;
+		unsigned int i, y = 0;
+		unsigned int count;
 		struct srvsvc_NetShareCtr502 *ctr502;
 
 		SRVSVC_CHECK_ADMIN_ACCESS;
