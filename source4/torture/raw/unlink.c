@@ -450,7 +450,6 @@ static bool oplock_handler_ack_to_none(struct smbcli_transport *transport,
 	struct unlink_defer_cli_state *ud_cli_state =
 	    (struct unlink_defer_cli_state *)private_data;
 	union smb_setfileinfo sfinfo;
-	NTSTATUS status;
 	bool ret;
 	struct smbcli_request *req = NULL;
 
@@ -469,7 +468,7 @@ static bool oplock_handler_ack_to_none(struct smbcli_transport *transport,
 
 	ret = smbcli_oplock_ack(ud_cli_state->cli1->tree, fnum,
 				 OPLOCK_BREAK_TO_NONE);
- done:
+
 	return ret;
 }
 
