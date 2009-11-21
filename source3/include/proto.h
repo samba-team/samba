@@ -2256,7 +2256,7 @@ void cli_cm_display(const struct cli_state *c);
 bool cli_dfs_get_referral(TALLOC_CTX *ctx,
 			struct cli_state *cli,
 			const char *path,
-			CLIENT_DFS_REFERRAL**refs,
+			struct client_dfs_referral **refs,
 			size_t *num_refs,
 			size_t *consumed);
 bool cli_resolve_path(TALLOC_CTX *ctx,

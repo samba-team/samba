@@ -602,7 +602,7 @@ static bool cli_dfs_check_error( struct cli_state *cli, NTSTATUS status )
 bool cli_dfs_get_referral(TALLOC_CTX *ctx,
 			struct cli_state *cli,
 			const char *path,
-			CLIENT_DFS_REFERRAL**refs,
+			struct client_dfs_referral **refs,
 			size_t *num_refs,
 			size_t *consumed)
 {
@@ -618,7 +618,7 @@ bool cli_dfs_get_referral(TALLOC_CTX *ctx,
 	char *consumed_path = NULL;
 	uint16_t consumed_ucs;
 	uint16 num_referrals;
-	CLIENT_DFS_REFERRAL *referrals = NULL;
+	struct client_dfs_referral *referrals = NULL;
 	bool ret = false;
 
 	*num_refs = 0;
@@ -687,8 +687,8 @@ bool cli_dfs_get_referral(TALLOC_CTX *ctx,
 		int i;
 		uint16 node_offset;
 
-		referrals = TALLOC_ARRAY(ctx, CLIENT_DFS_REFERRAL,
-				num_referrals);
+		referrals = talloc_array(ctx, struct client_dfs_referral,
+					 num_referrals);
 
 		if (!referrals) {
 			goto out;
@@ -755,7 +755,7 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 			struct cli_state **targetcli,
 			char **pp_targetpath)
 {
-	CLIENT_DFS_REFERRAL *refs = NULL;
+	struct client_dfs_referral *refs = NULL;
 	size_t num_refs = 0;
 	size_t consumed = 0;
 	struct cli_state *cli_ipc = NULL;
@@ -986,7 +986,7 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 				const char *password,
 				const char *domain)
 {
-	CLIENT_DFS_REFERRAL *refs = NULL;
+	struct client_dfs_referral *refs = NULL;
 	size_t num_refs = 0;
 	size_t consumed = 0;
 	char *fullpath = NULL;

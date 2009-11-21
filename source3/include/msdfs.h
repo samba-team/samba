@@ -37,11 +37,11 @@
 #define MAX_REFERRAL_COUNT   256
 #define MAX_MSDFS_JUNCTIONS 256
 
-typedef struct _client_referral {
+struct client_dfs_referral {
 	uint32 proximity;
 	uint32 ttl;
 	char *dfspath;
-} CLIENT_DFS_REFERRAL;
+};
 
 struct referral {
 	char *alternate_path; /* contains the path referred */
