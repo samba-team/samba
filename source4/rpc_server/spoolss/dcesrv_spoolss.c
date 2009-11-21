@@ -151,7 +151,7 @@ static WERROR dcesrv_spoolss_check_server_name(struct dcesrv_call_state *dce_cal
 	struct socket_address *myaddr;
 	const char **aliases;
 	const char *dnsdomain;
-	int i;
+	unsigned int i;
 
 	/* NULL is ok */
 	if (!server_name) return WERR_OK;
