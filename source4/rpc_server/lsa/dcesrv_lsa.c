@@ -192,7 +192,7 @@ static NTSTATUS dcesrv_lsa_DeleteObject(struct dcesrv_call_state *dce_call, TALL
 		ret = ldb_delete(secret_state->sam_ldb, 
 				 secret_state->secret_dn);
 		talloc_free(h);
-		if (ret != 0) {
+		if (ret != LDB_SUCCESS) {
 			return NT_STATUS_INVALID_HANDLE;
 		}
 
@@ -203,13 +203,13 @@ static NTSTATUS dcesrv_lsa_DeleteObject(struct dcesrv_call_state *dce_call, TALL
 		struct lsa_trusted_domain_state *trusted_domain_state = 
 			talloc_get_type(h->data, struct lsa_trusted_domain_state);
 		ret = ldb_transaction_start(trusted_domain_state->policy->sam_ldb);
-		if (ret != 0) {
+		if (ret != LDB_SUCCESS) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
 		ret = ldb_delete(trusted_domain_state->policy->sam_ldb, 
 				 trusted_domain_state->trusted_domain_dn);
-		if (ret != 0) {
+		if (ret != LDB_SUCCESS) {
 			ldb_transaction_cancel(trusted_domain_state->policy->sam_ldb);
 			return NT_STATUS_INVALID_HANDLE;
 		}
@@ -217,14 +217,14 @@ static NTSTATUS dcesrv_lsa_DeleteObject(struct dcesrv_call_state *dce_call, TALL
 		if (trusted_domain_state->trusted_domain_user_dn) {
 			ret = ldb_delete(trusted_domain_state->policy->sam_ldb, 
 					 trusted_domain_state->trusted_domain_user_dn);
-			if (ret != 0) {
+			if (ret != LDB_SUCCESS) {
 				ldb_transaction_cancel(trusted_domain_state->policy->sam_ldb);
 				return NT_STATUS_INVALID_HANDLE;
 			}
 		}
 
 		ret = ldb_transaction_commit(trusted_domain_state->policy->sam_ldb);
-		if (ret != 0) {
+		if (ret != LDB_SUCCESS) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 		talloc_free(h);
@@ -2025,7 +2025,7 @@ static NTSTATUS dcesrv_lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_
 		samdb_msg_add_string(state->pdb, msg, msg, "comment", "added via LSA");
 		ret = ldb_add(state->pdb, msg);		
 	}
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		if (ldb_flag == LDB_FLAG_MOD_DELETE && ret == LDB_ERR_NO_SUCH_ATTRIBUTE) {
 			talloc_free(msg);
 			return NT_STATUS_OK;
@@ -2339,7 +2339,7 @@ static NTSTATUS dcesrv_lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALL
 
 	/* create the secret */
 	ret = ldb_add(secret_state->sam_ldb, msg);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		DEBUG(0,("Failed to create secret record %s: %s\n",
 			 ldb_dn_get_linearized(msg->dn), 
 			 ldb_errstring(secret_state->sam_ldb)));
@@ -2529,13 +2529,13 @@ static NTSTATUS dcesrv_lsa_SetSecret(struct dcesrv_call_state *dce_call, TALLOC_
 		
 		/* set value */
 		if (samdb_msg_add_value(secret_state->sam_ldb, 
-					mem_ctx, msg, "priorValue", &val) != 0) {
+					mem_ctx, msg, "priorValue", &val) != LDB_SUCCESS) {
 			return NT_STATUS_NO_MEMORY; 
 		}
 		
 		/* set old value mtime */
 		if (samdb_msg_add_uint64(secret_state->sam_ldb, 
-					 mem_ctx, msg, "priorSetTime", nt_now) != 0) { 
+					 mem_ctx, msg, "priorSetTime", nt_now) != LDB_SUCCESS) {
 			return NT_STATUS_NO_MEMORY; 
 		}
 
@@ -2585,12 +2585,12 @@ static NTSTATUS dcesrv_lsa_SetSecret(struct dcesrv_call_state *dce_call, TALLOC_
 		/* set old value mtime */
 		if (ldb_msg_find_ldb_val(res[0], "lastSetTime")) {
 			if (samdb_msg_add_uint64(secret_state->sam_ldb, 
-						 mem_ctx, msg, "priorSetTime", last_set_time) != 0) { 
+						 mem_ctx, msg, "priorSetTime", last_set_time) != LDB_SUCCESS) {
 				return NT_STATUS_NO_MEMORY; 
 			}
 		} else {
 			if (samdb_msg_add_uint64(secret_state->sam_ldb, 
-						 mem_ctx, msg, "priorSetTime", nt_now) != 0) { 
+						 mem_ctx, msg, "priorSetTime", nt_now) != LDB_SUCCESS) {
 				return NT_STATUS_NO_MEMORY; 
 			}
 		}
@@ -2611,31 +2611,31 @@ static NTSTATUS dcesrv_lsa_SetSecret(struct dcesrv_call_state *dce_call, TALLOC_
 		
 		/* set value */
 		if (samdb_msg_add_value(secret_state->sam_ldb, 
-					mem_ctx, msg, "currentValue", &val) != 0) {
+					mem_ctx, msg, "currentValue", &val) != LDB_SUCCESS) {
 			return NT_STATUS_NO_MEMORY; 
 		}
 		
 		/* set new value mtime */
 		if (samdb_msg_add_uint64(secret_state->sam_ldb, 
-					 mem_ctx, msg, "lastSetTime", nt_now) != 0) { 
+					 mem_ctx, msg, "lastSetTime", nt_now) != LDB_SUCCESS) {
 			return NT_STATUS_NO_MEMORY; 
 		}
 		
 	} else {
 		/* NULL out the NEW value */
 		if (samdb_msg_add_uint64(secret_state->sam_ldb, 
-					 mem_ctx, msg, "lastSetTime", nt_now) != 0) { 
+					 mem_ctx, msg, "lastSetTime", nt_now) != LDB_SUCCESS) {
 			return NT_STATUS_NO_MEMORY; 
 		}
 		if (samdb_msg_add_delete(secret_state->sam_ldb, 
-					 mem_ctx, msg, "currentValue")) {
+					 mem_ctx, msg, "currentValue") != LDB_SUCCESS) {
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
 	/* modify the samdb record */
 	ret = samdb_replace(secret_state->sam_ldb, mem_ctx, msg);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		/* we really need samdb.c to return NTSTATUS */
 		return NT_STATUS_UNSUCCESSFUL;
 	}
