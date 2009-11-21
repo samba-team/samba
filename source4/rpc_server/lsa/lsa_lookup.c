@@ -243,7 +243,8 @@ static NTSTATUS dcesrv_lsa_lookup_name(struct tevent_context *ev_ctx,
 				       struct dom_sid **sid, enum lsa_SidType *rtype,
 				       uint32_t *rid)
 {
-	int ret, atype, i;
+	int ret, i;
+	uint32_t atype;
 	struct ldb_message **res;
 	const char * const attrs[] = { "objectSid", "sAMAccountType", NULL};
 	const char *p;
