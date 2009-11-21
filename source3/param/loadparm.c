@@ -10,17 +10,17 @@
    Copyright (C) Stefan (metze) Metzmacher 2002
    Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2003
    Copyright (C) Michael Adam 2008
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -5713,16 +5713,16 @@ static struct param_opt_struct *get_parametrics(int snum, const char *type,
 	bool global_section = False;
 	char* param_key;
         struct param_opt_struct *data;
-	
+
 	if (snum >= iNumServices) return NULL;
-	
+
 	if (snum < 0) { 
 		data = Globals.param_opt;
 		global_section = True;
 	} else {
 		data = ServicePtrs[snum]->param_opt;
 	}
-    
+
 	if (asprintf(&param_key, "%s:%s", type, option) == -1) {
 		DEBUG(0,("asprintf failed!\n"));
 		return NULL;
@@ -5750,7 +5750,7 @@ static struct param_opt_struct *get_parametrics(int snum, const char *type,
 	}
 
 	string_free(&param_key);
-	
+
 	return NULL;
 }
 
@@ -5797,7 +5797,7 @@ static bool lp_bool(const char *s)
 		MISSING_PARAMETER(lp_bool);
 		return False;
 	}
-	
+
 	if (!set_boolean(s, &ret)) {
 		DEBUG(0,("lp_bool(%s): value is not boolean!\n",s));
 		return False;
@@ -5817,7 +5817,7 @@ static int lp_enum(const char *s,const struct enum_list *_enum)
 		MISSING_PARAMETER(lp_enum);
 		return (-1);
 	}
-	
+
 	for (i=0; _enum[i].name; i++) {
 		if (strequal(_enum[i].name,s))
 			return _enum[i].value;
@@ -5847,7 +5847,7 @@ static int lp_enum(const char *s,const struct enum_list *_enum)
 char *lp_parm_talloc_string(int snum, const char *type, const char *option, const char *def)
 {
 	struct param_opt_struct *data = get_parametrics(snum, type, option);
-	
+
 	if (data == NULL||data->value==NULL) {
 		if (def) {
 			return lp_string(def);
@@ -5864,10 +5864,10 @@ char *lp_parm_talloc_string(int snum, const char *type, const char *option, cons
 const char *lp_parm_const_string(int snum, const char *type, const char *option, const char *def)
 {
 	struct param_opt_struct *data = get_parametrics(snum, type, option);
-	
+
 	if (data == NULL||data->value==NULL)
 		return def;
-		
+
 	return data->value;
 }
 
@@ -5880,7 +5880,7 @@ const char **lp_parm_string_list(int snum, const char *type, const char *option,
 
 	if (data == NULL||data->value==NULL)
 		return (const char **)def;
-		
+
 	if (data->list==NULL) {
 		data->list = str_list_make_v3(talloc_autofree_context(), data->value, NULL);
 	}
@@ -5894,7 +5894,7 @@ const char **lp_parm_string_list(int snum, const char *type, const char *option,
 int lp_parm_int(int snum, const char *type, const char *option, int def)
 {
 	struct param_opt_struct *data = get_parametrics(snum, type, option);
-	
+
 	if (data && data->value && *data->value)
 		return lp_int(data->value);
 
@@ -5907,7 +5907,7 @@ int lp_parm_int(int snum, const char *type, const char *option, int def)
 unsigned long lp_parm_ulong(int snum, const char *type, const char *option, unsigned long def)
 {
 	struct param_opt_struct *data = get_parametrics(snum, type, option);
-	
+
 	if (data && data->value && *data->value)
 		return lp_ulong(data->value);
 
@@ -5920,7 +5920,7 @@ unsigned long lp_parm_ulong(int snum, const char *type, const char *option, unsi
 bool lp_parm_bool(int snum, const char *type, const char *option, bool def)
 {
 	struct param_opt_struct *data = get_parametrics(snum, type, option);
-	
+
 	if (data && data->value && *data->value)
 		return lp_bool(data->value);
 
@@ -5934,7 +5934,7 @@ int lp_parm_enum(int snum, const char *type, const char *option,
 		 const struct enum_list *_enum, int def)
 {
 	struct param_opt_struct *data = get_parametrics(snum, type, option);
-	
+
 	if (data && data->value && *data->value && _enum)
 		return lp_enum(data->value, _enum);
 
@@ -6024,7 +6024,7 @@ static void free_service_byindex(int idx)
 	if (ServicePtrs[idx]->szService) {
 		char *canon_name = canonicalize_servicename(
 			ServicePtrs[idx]->szService );
-		
+
 		dbwrap_delete_bystring(ServiceHash, canon_name );
 		TALLOC_FREE(canon_name);
 	}
@@ -6066,7 +6066,7 @@ static int add_a_service(const struct service *pservice, const char *name)
 	if (i == iNumServices) {
 		struct service **tsp;
 		int *tinvalid;
-		
+
 		tsp = SMB_REALLOC_ARRAY_KEEP_OLD_ON_ERROR(ServicePtrs, struct service *, num_to_alloc);
 		if (tsp == NULL) {
 			DEBUG(0,("add_a_service: failed to enlarge ServicePtrs!\n"));
@@ -6099,14 +6099,14 @@ static int add_a_service(const struct service *pservice, const char *name)
 	copy_service(ServicePtrs[i], &tservice, NULL);
 	if (name)
 		string_set(&ServicePtrs[i]->szService, name);
-		
+
 	DEBUG(8,("add_a_service: Creating snum = %d for %s\n", 
 		i, ServicePtrs[i]->szService));
 
 	if (!hash_a_service(ServicePtrs[i]->szService, i)) {
 		return (-1);
 	}
-		
+
 	return (i);
 }
 
@@ -6289,7 +6289,7 @@ bool lp_add_printer(const char *pszPrintername, int iDefaultService)
 	ServicePtrs[i]->bOpLocks = False;
 	/* Printer services must be printable. */
 	ServicePtrs[i]->bPrint_ok = True;
-	
+
 	DEBUG(3, ("adding printer service %s\n", pszPrintername));
 
 	return (True);
@@ -6779,7 +6779,7 @@ static void copy_service(struct service *pserviceDest, struct service *pserviceS
 			bitmap_copy(pserviceDest->copymap,
 				    pserviceSource->copymap);
 	}
-	
+
 	data = pserviceSource->param_opt;
 	while (data) {
 		set_param_opt(&pserviceDest->param_opt, data->key, data->value);
@@ -7161,17 +7161,17 @@ static bool handle_charset(int snum, const char *pszParmValue, char **ptr)
 static bool handle_workgroup(int snum, const char *pszParmValue, char **ptr)
 {
 	bool ret;
-	
+
 	ret = set_global_myworkgroup(pszParmValue);
 	string_set(&Globals.szWorkgroup,lp_workgroup());
-	
+
 	return ret;
 }
 
 static bool handle_netbios_scope(int snum, const char *pszParmValue, char **ptr)
 {
 	bool ret;
-	
+
 	ret = set_global_scope(pszParmValue);
 	string_set(&Globals.szNetbiosScope,global_scope());
 
@@ -7852,7 +7852,7 @@ static void dump_globals(FILE *f)
 {
 	int i;
 	struct param_opt_struct *data;
-	
+
 	fprintf(f, "[global]\n");
 
 	for (i = 0; parm_table[i].label; i++)
@@ -7897,7 +7897,7 @@ static void dump_a_service(struct service *pService, FILE * f)
 {
 	int i;
 	struct param_opt_struct *data;
-	
+
 	if (pService != &sDefault)
 		fprintf(f, "[%s]\n", pService->szService);
 
@@ -7909,7 +7909,6 @@ static void dump_a_service(struct service *pService, FILE * f)
 		    (*parm_table[i].label != '-') &&
 		    (i == 0 || (parm_table[i].ptr != parm_table[i - 1].ptr))) 
 		{
-		
 			int pdiff = PTR_DIFF(parm_table[i].ptr, &sDefault);
 
 			if (pService == &sDefault) {
@@ -8046,7 +8045,7 @@ struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters)
 			    && (parm_table[*i].ptr ==
 				parm_table[(*i) - 1].ptr))
 				continue;
-			
+
 			if (is_default(*i) && !allparameters)
 				continue;
 
@@ -9293,11 +9292,11 @@ int lp_servicenumber(const char *pszServiceName)
 {
 	int iService;
         fstring serviceName;
-        
+
         if (!pszServiceName) {
         	return GLOBAL_SECTION_SNUM;
 	}
-        
+
 	for (iService = iNumServices - 1; iService >= 0; iService--) {
 		if (VALID(iService) && ServicePtrs[iService]->szService) {
 			/*
@@ -9447,7 +9446,7 @@ const char *volume_label(int snum)
 	if (!*label) {
 		label = lp_servicename(snum);
 	}
-		
+
 	/* This returns a 33 byte guarenteed null terminated string. */
 	ret = talloc_strndup(talloc_tos(), label, 32);
 	if (!ret) {
@@ -9820,7 +9819,7 @@ int lp_min_receive_file_size(void)
 const char *lp_socket_address(void)
 {
 	char *sock_addr = Globals.szSocketAddress;
-	
+
 	if (sock_addr[0] == '\0'){
 		string_set(&Globals.szSocketAddress, "0.0.0.0");
 	}

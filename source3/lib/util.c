@@ -11,12 +11,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -532,7 +532,7 @@ bool file_exist_stat(const char *fname,SMB_STRUCT_STAT *sbuf)
 	SMB_STRUCT_STAT st;
 	if (!sbuf)
 		sbuf = &st;
-  
+
 	if (sys_stat(fname,sbuf) != 0) 
 		return(False);
 
@@ -626,7 +626,7 @@ void show_msg(char *buf)
 
 	if (!DEBUGLVL(5))
 		return;
-	
+
 	DEBUG(5,("size=%d\nsmb_com=0x%x\nsmb_rcls=%d\nsmb_reh=%d\nsmb_err=%d\nsmb_flg=%d\nsmb_flg2=%d\n",
 			smb_len(buf),
 			(int)CVAL(buf,smb_com),
@@ -645,7 +645,7 @@ void show_msg(char *buf)
 	for (i=0;i<(int)CVAL(buf,smb_wct);i++)
 		DEBUGADD(5,("smb_vwv[%2d]=%5d (0x%X)\n",i,
 			SVAL(buf,smb_vwv+2*i),SVAL(buf,smb_vwv+2*i)));
-	
+
 	bcc = (int)SVAL(buf,smb_vwv+2*(CVAL(buf,smb_wct)));
 
 	DEBUGADD(5,("smb_bcc=%d\n",bcc));
@@ -896,7 +896,7 @@ void smb_msleep(unsigned int t)
 
 	GetTimeOfDay(&t1);
 	t2 = t1;
-  
+
 	while (tdiff < t) {
 		tval.tv_sec = (t-tdiff)/1000;
 		tval.tv_usec = 1000*((t-tdiff)%1000);
@@ -1217,9 +1217,9 @@ int interpret_protocol(const char *str,int def)
 		return(PROTOCOL_COREPLUS);
 	if (strequal(str,"CORE+"))
 		return(PROTOCOL_COREPLUS);
-  
+
 	DEBUG(0,("Unrecognised protocol level %s\n",str));
-  
+
 	return(def);
 }
 
@@ -1577,7 +1577,7 @@ libunwind_failed:
 
 	DEBUG(0, ("BACKTRACE: %lu stack frames:\n", 
 		  (unsigned long)backtrace_size));
-	
+
 	if (backtrace_strings) {
 		int i;
 
@@ -1641,7 +1641,7 @@ const char *readdirname(SMB_STRUCT_DIR *p)
 
 	if (!p)
 		return(NULL);
-  
+
 	ptr = (SMB_STRUCT_DIRENT *)sys_readdir(p);
 	if (!ptr)
 		return(NULL);
@@ -1715,7 +1715,7 @@ bool is_in_path(const char *name, name_compare_entry *namelist, bool case_sensit
  remove a potentially expensive call to mask_match
  if possible.
 ********************************************************************/
- 
+
 void set_namearray(name_compare_entry **ppname_array, const char *namelist)
 {
 	char *name_end;
@@ -1791,7 +1791,7 @@ void set_namearray(name_compare_entry **ppname_array, const char *namelist)
 		nameptr = name_end + 1;
 		i++;
 	}
-  
+
 	(*ppname_array)[i].name = NULL;
 
 	return;
@@ -1851,7 +1851,7 @@ bool fcntl_getlock(int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pi
 	*poffset = lock.l_start;
 	*pcount = lock.l_len;
 	*ppid = lock.l_pid;
-	
+
 	DEBUG(3,("fcntl_getlock: fd %d is returned info %d pid %u\n",
 			fd, (int)lock.l_type, (unsigned int)lock.l_pid));
 	return True;
@@ -2310,7 +2310,7 @@ bool parent_dirname(TALLOC_CTX *mem_ctx, const char *dir, char **parent,
 {
 	char *p;
 	ptrdiff_t len;
- 
+
 	p = strrchr_m(dir, '/'); /* Find final '/', if any */
 
 	if (p == NULL) {
@@ -2390,7 +2390,7 @@ bool mask_match(const char *string, const char *pattern, bool is_case_sensitive)
 		string = ".";
 	if (ISDOT(pattern))
 		return False;
-	
+
 	return ms_fnmatch(pattern, string, Protocol <= PROTOCOL_LANMAN2, is_case_sensitive) == 0;
 }
 
@@ -2406,7 +2406,7 @@ bool mask_match_search(const char *string, const char *pattern, bool is_case_sen
 		string = ".";
 	if (ISDOT(pattern))
 		return False;
-	
+
 	return ms_fnmatch(pattern, string, True, is_case_sensitive) == 0;
 }
 
