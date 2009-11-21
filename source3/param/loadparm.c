@@ -7074,7 +7074,6 @@ bool lp_file_list_changed(void)
  	DEBUG(6, ("lp_file_list_changed()\n"));
 
 	while (f) {
-		char *n2 = NULL;
 		time_t mod_time;
 
 		if (strequal(f->name, INCLUDE_REGISTRY_NAME)) {
@@ -7090,9 +7089,11 @@ bool lp_file_list_changed(void)
 				return true;
 			}
 		} else {
-			n2 = alloc_sub_basic(get_current_username(),
-					    current_user_info.domain,
-					    f->name);
+			char *n2 = NULL;
+			n2 = talloc_sub_basic(talloc_tos(),
+					      get_current_username(),
+					      current_user_info.domain,
+					      f->name);
 			if (!n2) {
 				return false;
 			}
@@ -7116,7 +7117,7 @@ bool lp_file_list_changed(void)
 						     above. */
 				return true;
 			}
-			SAFE_FREE(n2);
+			TALLOC_FREE(n2);
 		}
 		f = f->next;
 	}
@@ -7133,12 +7134,12 @@ bool lp_file_list_changed(void)
 static bool handle_netbios_name(int snum, const char *pszParmValue, char **ptr)
 {
 	bool ret;
-	char *netbios_name = alloc_sub_basic(get_current_username(),
-					current_user_info.domain,
-					pszParmValue);
+	char *netbios_name = talloc_sub_basic(
+		talloc_tos(), get_current_username(), current_user_info.domain,
+		pszParmValue);
 
 	ret = set_global_myname(netbios_name);
-	SAFE_FREE(netbios_name);
+	TALLOC_FREE(netbios_name);
 	string_set(&Globals.szNetbiosName,global_myname());
 
 	DEBUG(4, ("handle_netbios_name: set global_myname to: %s\n",
@@ -7217,9 +7218,9 @@ static bool handle_include(int snum, const char *pszParmValue, char **ptr)
 		}
 	}
 
-	fname = alloc_sub_basic(get_current_username(),
-				current_user_info.domain,
-				pszParmValue);
+	fname = talloc_sub_basic(talloc_tos(), get_current_username(),
+				 current_user_info.domain,
+				 pszParmValue);
 
 	add_to_file_list(pszParmValue, fname);
 
@@ -7230,12 +7231,12 @@ static bool handle_include(int snum, const char *pszParmValue, char **ptr)
 		include_depth++;
 		ret = pm_process(fname, do_section, do_parameter, NULL);
 		include_depth--;
-		SAFE_FREE(fname);
+		TALLOC_FREE(fname);
 		return ret;
 	}
 
 	DEBUG(2, ("Can't find include file %s\n", fname));
-	SAFE_FREE(fname);
+	TALLOC_FREE(fname);
 	return true;
 }
 
@@ -9117,7 +9118,7 @@ bool lp_load_ex(const char *pszFname,
 	iServiceIndex = -1;
 
 	if (lp_config_backend_is_file()) {
-		n2 = alloc_sub_basic(get_current_username(),
+		n2 = talloc_sub_basic(talloc_tos(), get_current_username(),
 					current_user_info.domain,
 					pszFname);
 		if (!n2) {
@@ -9127,7 +9128,7 @@ bool lp_load_ex(const char *pszFname,
 		add_to_file_list(pszFname, n2);
 
 		bRetval = pm_process(n2, do_section, do_parameter, NULL);
-		SAFE_FREE(n2);
+		TALLOC_FREE(n2);
 
 		/* finish up the last section */
 		DEBUG(4, ("pm_process() returned %s\n", BOOLSTR(bRetval)));

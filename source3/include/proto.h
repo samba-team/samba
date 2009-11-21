@@ -794,8 +794,6 @@ void standard_sub_basic(const char *smb_name, const char *domain_name,
 			char *str, size_t len);
 char *talloc_sub_basic(TALLOC_CTX *mem_ctx, const char *smb_name,
 		       const char *domain_name, const char *str);
-char *alloc_sub_basic(const char *smb_name, const char *domain_name,
-		      const char *str);
 char *talloc_sub_specified(TALLOC_CTX *mem_ctx,
 			const char *input_string,
 			const char *username,

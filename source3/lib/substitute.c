@@ -21,6 +21,9 @@
 
 #include "includes.h"
 
+static char *alloc_sub_basic(const char *smb_name, const char *domain_name,
+			     const char *str);
+
 userdom_struct current_user_info;
 fstring remote_proto="UNKNOWN";
 
@@ -544,8 +547,8 @@ char *talloc_sub_basic(TALLOC_CTX *mem_ctx, const char *smb_name,
 /****************************************************************************
 ****************************************************************************/
 
-char *alloc_sub_basic(const char *smb_name, const char *domain_name,
-		      const char *str)
+static char *alloc_sub_basic(const char *smb_name, const char *domain_name,
+			     const char *str)
 {
 	char *b, *p, *s, *r, *a_string;
 	fstring pidstr, vnnstr;
