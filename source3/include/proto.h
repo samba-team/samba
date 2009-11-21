@@ -1191,7 +1191,8 @@ bool ms_has_wild_w(const smb_ucs2_t *s);
 bool mask_match(const char *string, const char *pattern,
 		enum protocol_types proto, bool is_case_sensitive);
 bool mask_match_search(const char *string, const char *pattern, bool is_case_sensitive);
-bool mask_match_list(const char *string, char **list, int listLen, bool is_case_sensitive);
+bool mask_match_list(const char *string, char **list, int listLen,
+		     enum protocol_types proto, bool is_case_sensitive);
 bool unix_wild_match(const char *pattern, const char *string);
 bool name_to_fqdn(fstring fqdn, const char *name);
 void *talloc_append_blob(TALLOC_CTX *mem_ctx, void *buf, DATA_BLOB blob);
