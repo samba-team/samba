@@ -195,7 +195,7 @@ static NTSTATUS lookup_well_known_names(TALLOC_CTX *mem_ctx, const char *domain,
 					const char *name, const char **authority_name, 
 					struct dom_sid **sid, uint32_t *rtype) 
 {
-	int i;
+	unsigned int i;
 	for (i=0; well_known[i].sid; i++) {
 		if (domain) {
 			if (strcasecmp_m(domain, well_known[i].domain) == 0
@@ -221,7 +221,7 @@ static NTSTATUS lookup_well_known_sids(TALLOC_CTX *mem_ctx,
 				       const char *sid_str, const char **authority_name, 
 				       const char **name, uint32_t *rtype) 
 {
-	int i;
+	unsigned int i;
 	for (i=0; well_known[i].sid; i++) {
 		if (strcasecmp_m(sid_str, well_known[i].sid) == 0) {
 			*authority_name = well_known[i].domain;
@@ -441,7 +441,7 @@ static NTSTATUS dcesrv_lsa_authority_list(struct lsa_policy_state *state, TALLOC
 					  uint32_t *sid_index)
 {
 	struct dom_sid *authority_sid;
-	int i;
+	uint32_t i;
 
 	if (rtype != SID_NAME_DOMAIN) {
 		authority_sid = dom_sid_dup(mem_ctx, sid);
@@ -545,7 +545,7 @@ NTSTATUS dcesrv_lsa_LookupSids2(struct dcesrv_call_state *dce_call,
 {
 	struct lsa_policy_state *state;
 	struct lsa_RefDomainList *domains = NULL;
-	int i;
+	uint32_t i;
 	NTSTATUS status = NT_STATUS_OK;
 
 	if (r->in.level < LSA_LOOKUP_NAMES_ALL ||
@@ -704,7 +704,7 @@ NTSTATUS dcesrv_lsa_LookupSids(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 {
 	struct lsa_LookupSids2 r2;
 	NTSTATUS status;
-	int i;
+	uint32_t i;
 
 	ZERO_STRUCT(r2);
 
@@ -758,7 +758,7 @@ NTSTATUS dcesrv_lsa_LookupNames3(struct dcesrv_call_state *dce_call,
 {
 	struct lsa_policy_state *policy_state;
 	struct dcesrv_handle *policy_handle;
-	int i;
+	uint32_t i;
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
 	struct lsa_RefDomainList *domains;
 
@@ -900,7 +900,7 @@ NTSTATUS dcesrv_lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 {
 	struct lsa_policy_state *state;
 	struct dcesrv_handle *h;
-	int i;
+	uint32_t i;
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
 	struct lsa_RefDomainList *domains;
 
@@ -989,7 +989,7 @@ NTSTATUS dcesrv_lsa_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 {
 	struct lsa_LookupNames2 r2;
 	NTSTATUS status;
-	int i;
+	uint32_t i;
 
 	ZERO_STRUCT(r2);
 

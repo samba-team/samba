@@ -286,7 +286,7 @@ static NTSTATUS dcesrv_lsa_EnumPrivs(struct dcesrv_call_state *dce_call, TALLOC_
 {
 	struct dcesrv_handle *h;
 	struct lsa_policy_state *state;
-	int i;
+	uint32_t i;
 	const char *privname;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
@@ -682,10 +682,10 @@ static NTSTATUS dcesrv_lsa_EnumAccounts(struct dcesrv_call_state *dce_call, TALL
 {
 	struct dcesrv_handle *h;
 	struct lsa_policy_state *state;
-	int ret, i;
+	int ret;
 	struct ldb_message **res;
 	const char * const attrs[] = { "objectSid", NULL};
-	uint32_t count;
+	uint32_t count, i;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
 
@@ -823,7 +823,7 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 	}
 
 	if (auth_struct.incoming.count) {
-		int i;
+		uint32_t i;
 		struct trustAuthInOutBlob incoming;
 
 		incoming.count = auth_struct.incoming.count;
@@ -862,7 +862,7 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 	}
 
 	if (auth_struct.outgoing.count) {
-		int i;
+		uint32_t i;
 		struct trustAuthInOutBlob outgoing;
 
 		outgoing.count = auth_struct.outgoing.count;
@@ -1046,7 +1046,7 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 		}
 
 		if (auth_struct.incoming.count) {
-			int i;
+			uint32_t i;
 			for (i=0; i < auth_struct.incoming.count; i++ ) {
 				if (auth_struct.incoming.current[i]->AuthType == TRUST_AUTH_TYPE_NT4OWF) {
 					samdb_msg_add_hash(sam_ldb,
@@ -1815,7 +1815,8 @@ static NTSTATUS dcesrv_lsa_EnumPrivsAccount(struct dcesrv_call_state *dce_call,
 {
 	struct dcesrv_handle *h;
 	struct lsa_account_state *astate;
-	int ret, i;
+	int ret;
+	unsigned int i;
 	struct ldb_message **res;
 	const char * const attrs[] = { "privilege", NULL};
 	struct ldb_message_element *el;
@@ -1882,7 +1883,8 @@ static NTSTATUS dcesrv_lsa_EnumAccountRights(struct dcesrv_call_state *dce_call,
 {
 	struct dcesrv_handle *h;
 	struct lsa_policy_state *state;
-	int ret, i;
+	int ret;
+	unsigned int i;
 	struct ldb_message **res;
 	const char * const attrs[] = { "privilege", NULL};
 	const char *sidstr;
@@ -1946,7 +1948,8 @@ static NTSTATUS dcesrv_lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_
 	const char *sidstr, *sidndrstr;
 	struct ldb_message *msg;
 	struct ldb_message_element *el;
-	int i, ret;
+	int ret;
+	uint32_t i;
 	struct lsa_EnumAccountRights r2;
 	char *dnstr;
 
@@ -1993,7 +1996,7 @@ static NTSTATUS dcesrv_lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_
 		}
 
 		if (ldb_flag == LDB_FLAG_MOD_ADD) {
-			int j;
+			uint32_t j;
 			for (j=0;j<r2.out.rights->count;j++) {
 				if (strcasecmp_m(r2.out.rights->names[j].string, 
 					       rights->names[i].string) == 0) {
@@ -2052,7 +2055,7 @@ static NTSTATUS dcesrv_lsa_AddPrivilegesToAccount(struct dcesrv_call_state *dce_
 	struct lsa_RightSet rights;
 	struct dcesrv_handle *h;
 	struct lsa_account_state *astate;
-	int i;
+	uint32_t i;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_ACCOUNT);
 
@@ -2089,7 +2092,7 @@ static NTSTATUS dcesrv_lsa_RemovePrivilegesFromAccount(struct dcesrv_call_state 
 	struct lsa_RightSet *rights;
 	struct dcesrv_handle *h;
 	struct lsa_account_state *astate;
-	int i;
+	uint32_t i;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_ACCOUNT);
 
@@ -2168,7 +2171,7 @@ static NTSTATUS dcesrv_lsa_SetQuotasForAccount(struct dcesrv_call_state *dce_cal
 static NTSTATUS dcesrv_lsa_GetSystemAccessAccount(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct lsa_GetSystemAccessAccount *r)
 {
-	int i;
+	uint32_t i;
 	NTSTATUS status;
 	struct lsa_EnumPrivsAccount enumPrivs;
 	struct lsa_PrivilegeSet *privs;
