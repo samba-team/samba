@@ -327,7 +327,7 @@ static NTSTATUS dcesrv_samr_EnumDomains(struct dcesrv_call_state *dce_call, TALL
 	struct samr_connect_state *c_state;
 	struct dcesrv_handle *h;
 	struct samr_SamArray *array;
-	int i, start_i;
+	uint32_t i, start_i;
 
 	*r->out.resume_handle = 0;
 	*r->out.sam = NULL;
@@ -1121,7 +1121,8 @@ static NTSTATUS dcesrv_samr_EnumDomainGroups(struct dcesrv_call_state *dce_call,
 	struct dcesrv_handle *h;
 	struct samr_domain_state *d_state;
 	struct ldb_message **res;
-	int ldb_cnt, count, i, first;
+	int i, ldb_cnt;
+	uint32_t first, count;
 	struct samr_SamEntry *entries;
 	const char * const attrs[3] = { "objectSid", "sAMAccountName", NULL };
 	struct samr_SamArray *sam;
@@ -1488,7 +1489,9 @@ static NTSTATUS dcesrv_samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, 
 	struct dcesrv_handle *h;
 	struct samr_domain_state *d_state;
 	struct ldb_result *res;
-	int ret, num_filtered_entries, i, first;
+	int ret;
+	unsigned int i;
+	uint32_t num_filtered_entries, first;
 	struct samr_SamEntry *entries;
 	const char * const attrs[] = { "objectSid", "sAMAccountName",
 		"userAccountControl", NULL };
@@ -1684,7 +1687,8 @@ static NTSTATUS dcesrv_samr_EnumDomainAliases(struct dcesrv_call_state *dce_call
 	struct dcesrv_handle *h;
 	struct samr_domain_state *d_state;
 	struct ldb_message **res;
-	int ldb_cnt, count, i, first;
+	int i, ldb_cnt;
+	uint32_t first, count;
 	struct samr_SamEntry *entries;
 	const char * const attrs[3] = { "objectSid", "sAMAccountName", NULL };
 	struct samr_SamArray *sam;
@@ -1859,7 +1863,7 @@ static NTSTATUS dcesrv_samr_LookupNames(struct dcesrv_call_state *dce_call, TALL
 {
 	struct dcesrv_handle *h;
 	struct samr_domain_state *d_state;
-	int i, num_mapped;
+	uint32_t i, num_mapped;
 	NTSTATUS status = NT_STATUS_OK;
 	const char * const attrs[] = { "sAMAccountType", "objectSid", NULL };
 	int count;
@@ -1940,7 +1944,7 @@ static NTSTATUS dcesrv_samr_LookupRids(struct dcesrv_call_state *dce_call, TALLO
 {
 	struct dcesrv_handle *h;
 	struct samr_domain_state *d_state;
-	int i;
+	uint32_t i;
 	NTSTATUS status = NT_STATUS_OK;
 	struct lsa_String *names;
 	uint32_t *ids;
@@ -2444,7 +2448,7 @@ static NTSTATUS dcesrv_samr_QueryGroupMember(struct dcesrv_call_state *dce_call,
 	el = ldb_msg_find_element(res[0], "member");
 
 	if (el != NULL) {
-		int i;
+		unsigned int i;
 
 		array->count = el->num_values;
 
@@ -2858,7 +2862,7 @@ static NTSTATUS dcesrv_samr_GetMembersInAlias(struct dcesrv_call_state *dce_call
 	el = ldb_msg_find_element(msgs[0], "member");
 
 	if (el != NULL) {
-		int i;
+		unsigned int i;
 
 		sids = talloc_array(mem_ctx, struct lsa_SidPtr,
 				      el->num_values);
@@ -3751,7 +3755,8 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 	struct dcesrv_handle *h;
 	struct samr_domain_state *d_state;
 	struct ldb_message **res;
-	int ldb_cnt, count, i;
+	int i, ldb_cnt;
+	uint32_t count;
 	const char * const attrs[] = { "objectSid", "sAMAccountName",
 		"displayName", "description", "userAccountControl",
 		"pwdLastSet", NULL };
