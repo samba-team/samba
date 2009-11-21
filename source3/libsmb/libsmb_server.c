@@ -330,7 +330,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
                         if (is_ipc) {
                                 DEBUG(4,
                                       ("IPC$ so ignore case sensitivity\n"));
-                        } else if (!cli_get_fs_attr_info(c, &fs_attrs)) {
+                        } else if (!NT_STATUS_IS_OK(cli_get_fs_attr_info(c, &fs_attrs))) {
                                 DEBUG(4, ("Could not retrieve "
                                           "case sensitivity flag: %s.\n",
                                           cli_errstr(c)));
@@ -563,7 +563,7 @@ again:
         /* Determine if this share supports case sensitivity */
 	if (is_ipc) {
                 DEBUG(4, ("IPC$ so ignore case sensitivity\n"));
-        } else if (!cli_get_fs_attr_info(c, &fs_attrs)) {
+        } else if (!NT_STATUS_IS_OK(cli_get_fs_attr_info(c, &fs_attrs))) {
                 DEBUG(4, ("Could not retrieve case sensitivity flag: %s.\n",
                           cli_errstr(c)));
 

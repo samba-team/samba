@@ -235,7 +235,7 @@ static int do_quota(struct cli_state *cli,
 	SMB_NTQUOTA_STRUCT qt;
 	ZERO_STRUCT(qt);
 
-	if (!cli_get_fs_attr_info(cli, &fs_attrs)) {
+	if (!NT_STATUS_IS_OK(cli_get_fs_attr_info(cli, &fs_attrs))) {
 		d_printf("Failed to get the filesystem attributes %s.\n",
 			cli_errstr(cli));
 		return -1;

@@ -248,58 +248,103 @@ fail:
 	return status;
 }
 
-bool cli_get_fs_attr_info(struct cli_state *cli, uint32 *fs_attr)
+struct cli_get_fs_attr_info_state {
+	uint16_t setup[1];
+	uint8_t param[2];
+	uint32_t fs_attr;
+};
+
+static void cli_get_fs_attr_info_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_get_fs_attr_info_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct cli_state *cli)
 {
-	bool ret = False;
-	uint16 setup;
-	char param[2];
-	char *rparam=NULL, *rdata=NULL;
-	unsigned int rparam_count=0, rdata_count=0;
+	struct tevent_req *subreq, *req;
+	struct cli_get_fs_attr_info_state *state;
 
-	if (!cli||!fs_attr)
-		smb_panic("cli_get_fs_attr_info() called with NULL Pionter!");
-
-	setup = TRANSACT2_QFSINFO;
-
-	SSVAL(param,0,SMB_QUERY_FS_ATTRIBUTE_INFO);
-
-	if (!cli_send_trans(cli, SMBtrans2,
-		    NULL,
-		    0, 0,
-		    &setup, 1, 0,
-		    param, 2, 0,
-		    NULL, 0, 560)) {
-		goto cleanup;
+	req = tevent_req_create(mem_ctx, &state,
+				struct cli_get_fs_attr_info_state);
+	if (req == NULL) {
+		return NULL;
 	}
+	SSVAL(state->setup+0, 0, TRANSACT2_QFSINFO);
+	SSVAL(state->param+0, 0, SMB_QUERY_FS_ATTRIBUTE_INFO);
 
-	if (!cli_receive_trans(cli, SMBtrans2,
-                              &rparam, &rparam_count,
-                              &rdata, &rdata_count)) {
-		goto cleanup;
+	subreq = cli_trans_send(state, ev, cli, SMBtrans2,
+				NULL, 0, 0, 0,
+				state->setup, 1, 0,
+				state->param, 2, 0,
+				NULL, 0, 560);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
 	}
+	tevent_req_set_callback(subreq, cli_get_fs_attr_info_done, req);
+	return req;
+}
 
-	if (cli_is_error(cli)) {
-		ret = False;
-		goto cleanup;
-	} else {
-		ret = True;
+static void cli_get_fs_attr_info_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_get_fs_attr_info_state *state = tevent_req_data(
+		req, struct cli_get_fs_attr_info_state);
+	uint8_t *data;
+	uint32_t num_data;
+	NTSTATUS status;
+
+	status = cli_trans_recv(subreq, talloc_tos(), NULL, 0, NULL,
+				NULL, 0, NULL, &data, 12, &num_data);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
 	}
+	state->fs_attr = IVAL(data, 0);
+	TALLOC_FREE(data);
+	tevent_req_done(req);
+}
 
-	if (rdata_count < 12) {
-		goto cleanup;
+NTSTATUS cli_get_fs_attr_info_recv(struct tevent_req *req, uint32_t *fs_attr)
+{
+	struct cli_get_fs_attr_info_state *state = tevent_req_data(
+		req, struct cli_get_fs_attr_info_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
 	}
+	*fs_attr = state->fs_attr;
+	return NT_STATUS_OK;
+}
 
-	*fs_attr = IVAL(rdata,0);
+NTSTATUS cli_get_fs_attr_info(struct cli_state *cli, uint32_t *fs_attr)
+{
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	/* todo: but not yet needed
-	 *       return the other stuff
-	 */
-
-cleanup:
-	SAFE_FREE(rparam);
-	SAFE_FREE(rdata);
-
-	return ret;
+	if (cli_has_async_calls(cli)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	ev = tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_get_fs_attr_info_send(ev, ev, cli);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_get_fs_attr_info_recv(req, fs_attr);
+fail:
+	TALLOC_FREE(ev);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
 }
 
 bool cli_get_fs_volume_info_old(struct cli_state *cli, fstring volume_name, uint32 *pserial_number)

@@ -454,7 +454,7 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
         }
 
         /* See if the share is case sensitive */
-        if (!cli_get_fs_attr_info(cli, &fs_attrs)) {
+        if (!NT_STATUS_IS_OK(cli_get_fs_attr_info(cli, &fs_attrs))) {
                 /*
                  * We can't determine the case sensitivity of
                  * the share. We have no choice but to use the

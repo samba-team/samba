@@ -2827,11 +2827,20 @@ static bool run_trans2test(int dummy)
 	const char *fname2 = "\\trans2\\trans2.tst";
 	char pname[1024];
 	bool correct = True;
+	NTSTATUS status;
+	uint32_t fs_attr;
 
 	printf("starting trans2 test\n");
 
 	if (!torture_open_connection(&cli, 0)) {
 		return False;
+	}
+
+	status = cli_get_fs_attr_info(cli, &fs_attr);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("ERROR: cli_get_fs_attr_info returned %s\n",
+		       nt_errstr(status));
+		correct = false;
 	}
 
 	cli_unlink(cli, fname, aSYSTEM | aHIDDEN);
