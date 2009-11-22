@@ -398,6 +398,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 
 	/* Walk the retruned elements (but only if we have a schema to interpret the list with) */
 	for (i = 0; ac->schema && i < msg->num_elements; i++) {
+		bool make_extended_dn;
 		const struct dsdb_attribute *attribute;
 		attribute = dsdb_attribute_by_lDAPDisplayName(ac->schema, msg->elements[i].name);
 		if (!attribute) {
@@ -423,6 +424,13 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 		/* Look to see if this attributeSyntax is a DN */
 		if (dsdb_dn_oid_to_format(attribute->syntax->ldap_oid) == DSDB_INVALID_DN) {
 			continue;
+		}
+
+		make_extended_dn = ac->inject;
+
+		/* Always show plain DN in case of Object(OR-Name) syntax */
+		if (make_extended_dn) {
+			make_extended_dn = (strcmp(attribute->syntax->ldap_oid, DSDB_SYNTAX_OR_NAME) != 0);
 		}
 
 		for (j = 0; j < msg->elements[i].num_values; j++) {
@@ -470,12 +478,12 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 				}
 			}
 			
-			if (!ac->inject) {
+			if (make_extended_dn) {
+				dn_str = dsdb_dn_get_extended_linearized(msg->elements[i].values,
+									 dsdb_dn, ac->extended_type);
+			} else {
 				dn_str = dsdb_dn_get_linearized(msg->elements[i].values, 
 								dsdb_dn);
-			} else {
-				dn_str = dsdb_dn_get_extended_linearized(msg->elements[i].values, 
-									 dsdb_dn, ac->extended_type);
 			}
 			
 			if (!dn_str) {
