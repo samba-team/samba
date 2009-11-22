@@ -31,6 +31,8 @@ enum dsdb_dn_format dsdb_dn_oid_to_format(const char *oid)
 		return DSDB_BINARY_DN;
 	} else if (strcmp(oid, DSDB_SYNTAX_STRING_DN) == 0) {
 		return DSDB_STRING_DN;
+	} else if (strcmp(oid, DSDB_SYNTAX_OR_NAME) == 0) {
+		return DSDB_NORMAL_DN;
 	} else {
 		return DSDB_INVALID_DN;
 	}

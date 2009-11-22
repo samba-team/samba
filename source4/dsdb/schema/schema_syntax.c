@@ -1690,14 +1690,16 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.equality               = "octetStringMatch",
 		.comment                = "OctetString: Binary+DN",
 	},{
-	/* not used in w2k3 schema */
+	/* not used in w2k3 schema, but used in Exchange schema*/
 		.name			= "Object(OR-Name)",
-		.ldap_oid		= "1.2.840.113556.1.4.1221",
+		.ldap_oid		= DSDB_SYNTAX_OR_NAME,
 		.oMSyntax		= 127,
 		.oMObjectClass		= OMOBJECTCLASS("\x56\x06\x01\x02\x05\x0b\x1D"),
 		.attributeSyntax_oid	= "2.5.5.7",
-		.drsuapi_to_ldb		= dsdb_syntax_FOOBAR_drsuapi_to_ldb,
-		.ldb_to_drsuapi		= dsdb_syntax_FOOBAR_ldb_to_drsuapi,
+		.drsuapi_to_ldb		= dsdb_syntax_DN_BINARY_drsuapi_to_ldb,
+		.ldb_to_drsuapi		= dsdb_syntax_DN_BINARY_ldb_to_drsuapi,
+		.equality		= "caseIgnoreMatch",
+		.ldb_syntax		= LDB_SYNTAX_DN,
 	},{
 	/* 
 	 * TODO: verify if DATA_BLOB is correct here...!
