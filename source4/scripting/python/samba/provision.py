@@ -1130,6 +1130,8 @@ def provision(setup_dir, message, session_info,
 
     if not os.path.exists(paths.private_dir):
         os.mkdir(paths.private_dir)
+    if not os.path.exists(os.path.join(paths.private_dir,"tls")):
+        os.mkdir(os.path.join(paths.private_dir,"tls"))
 
     ldapi_url = "ldapi://%s" % urllib.quote(paths.s4_ldapi_path, safe="")
     
