@@ -105,6 +105,13 @@ static bool torture_dsdb_drs_DN(struct torture_context *torture)
 	return torture_test_syntax(torture, LDB_SYNTAX_DN, "lastKnownParent", ldb_str, drs_str);
 }
 
+static bool torture_dsdb_drs_OR_Name(struct torture_context *torture)
+{
+	const char *ldb_str = "<GUID=23cc7d16-3da0-4f3a-9921-0ad60a99230f>;<SID=S-1-5-21-3427639452-1671929926-2759570404-500>;CN=Administrator,CN=Users,DC=kma-exch,DC=devel";
+	const char *drs_str = "960000001C000000167DCC23A03D3A4F99210AD60A99230F0105000000000005150000009CA04DCC46A0A763E4B37BA4F40100002E00000043004E003D00410064006D0069006E006900730074007200610074006F0072002C0043004E003D00550073006500720073002C00440043003D006B006D0061002D0065007800630068002C00440043003D0064006500760065006C000000000004000000";
+	return torture_test_syntax(torture, DSDB_SYNTAX_OR_NAME, "authOrig", ldb_str, drs_str);
+}
+
 static bool torture_dsdb_drs_INT32(struct torture_context *torture) 
 {
 	const char *ldb_str = "532480";
@@ -150,6 +157,7 @@ struct torture_suite *torture_dsdb_syntax(TALLOC_CTX *mem_ctx)
 
 	torture_suite_add_simple_test(suite, "DN-BINARY", torture_dsdb_drs_DN_BINARY);
 	torture_suite_add_simple_test(suite, "DN", torture_dsdb_drs_DN);
+	torture_suite_add_simple_test(suite, "OR-Name", torture_dsdb_drs_OR_Name);
 	torture_suite_add_simple_test(suite, "INT32", torture_dsdb_drs_INT32);
 	torture_suite_add_simple_test(suite, "INT64", torture_dsdb_drs_INT64);
 	torture_suite_add_simple_test(suite, "NTTIME", torture_dsdb_drs_NTTIME);
