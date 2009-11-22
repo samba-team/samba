@@ -30,33 +30,96 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
+struct dom_usr {
+	char *name;
+	char *domain;
+	time_t login_time;
+};
+
 #ifdef HAVE_GETUTXENT
 
 #include <utmpx.h>
 
+struct usrinfo {
+	char *name;
+	struct timeval login_time;
+};
+
+static int usr_info_cmp(const void *p1, const void *p2)
+{
+	const struct usrinfo *usr1 = (const struct usrinfo *)p1;
+	const struct usrinfo *usr2 = (const struct usrinfo *)p2;
+
+	/* Called from qsort to compare two users in a usrinfo_t array for
+	 * sorting by login time. Return >0 if usr1 login time was later than
+	 * usr2 login time, <0 if it was earlier */
+	return ((usr1->login_time.tv_sec == usr2->login_time.tv_sec)
+		? usr1->login_time.tv_usec - usr2->login_time.tv_usec
+		: usr1->login_time.tv_sec - usr2->login_time.tv_sec);
+}
+
+/*******************************************************************
+ Get a list of the names of all users logged into this machine
+ ********************************************************************/
+
 static char **get_logged_on_userlist(TALLOC_CTX *mem_ctx)
 {
-	char **users = NULL;
-	int num_users = 0;
+	char **users;
+	int i, num_users = 0;
+	struct usrinfo *usr_infos = NULL;
 	struct utmpx *u;
 
 	while ((u = getutxent()) != NULL) {
-		char **tmp;
+		struct usrinfo *tmp;
 		if (u->ut_type != USER_PROCESS) {
 			continue;
 		}
-		tmp = talloc_realloc(mem_ctx, users, char *, num_users+1);
+		for (i = 0; i < num_users; i++) {
+			/* getutxent can return multiple user entries for the
+			 * same user, so ignore any dups */
+			if (strcmp(u->ut_user, usr_infos[i].name) == 0) {
+				break;
+			}
+		}
+		if (i < num_users) {
+			continue;
+		}
+
+		tmp = talloc_realloc(mem_ctx, usr_infos, struct usrinfo,
+				     num_users+1);
 		if (tmp == NULL) {
+			TALLOC_FREE(tmp);
+			endutxent();
 			return NULL;
 		}
-		users = tmp;
-		users[num_users] = talloc_strdup(users, u->ut_user);
-		if (users[num_users] == NULL) {
-			TALLOC_FREE(users);
+		usr_infos = tmp;
+		usr_infos[num_users].name = talloc_strdup(usr_infos,
+							  u->ut_user);
+		if (usr_infos[num_users].name == NULL) {
+			TALLOC_FREE(usr_infos);
+			endutxent();
 			return NULL;
 		}
+		usr_infos[num_users].login_time.tv_sec = u->ut_tv.tv_sec;
+		usr_infos[num_users].login_time.tv_usec = u->ut_tv.tv_usec;
 		num_users += 1;
 	}
+
+	/* Sort the user list by time, oldest first */
+	if (num_users > 1) {
+		qsort(usr_infos, num_users, sizeof(struct usrinfo),
+		      usr_info_cmp);
+	}
+
+	users = (char**)talloc_array(mem_ctx, char*, num_users);
+	if (users) {
+		for (i = 0; i < num_users; i++) {
+			users[i] = talloc_move(users, &usr_infos[i].name);
+		}
+	}
+	TALLOC_FREE(usr_infos);
+	endutxent();
+	errno = 0;
 	return users;
 }
 
@@ -69,8 +132,129 @@ static char **get_logged_on_userlist(TALLOC_CTX *mem_ctx)
 
 #endif
 
+static int dom_user_cmp(const void *p1, const void *p2)
+{
+	/* Called from qsort to compare two domain users in a dom_usr_t array
+	 * for sorting by login time. Return >0 if usr1 login time was later
+	 * than usr2 login time, <0 if it was earlier */
+	const struct dom_usr *usr1 = (const struct dom_usr *)p1;
+	const struct dom_usr *usr2 = (const struct dom_usr *)p2;
+
+	return (usr1->login_time - usr2->login_time);
+}
+
 /*******************************************************************
- Fill in the values for the struct wkssvc_NetWkstaInfo100.
+ Get a list of the names of all users of this machine who are
+ logged into the domain.
+
+ This should return a list of the users on this machine who are
+ logged into the domain (i.e. have been authenticated by the domain's
+ password server) but that doesn't fit well with the normal Samba
+ scenario where accesses out to the domain are made through smbclient
+ with each such session individually authenticated. So about the best
+ we can do currently is to list sessions of local users connected to
+ this server, which means that to get themself included in the list a
+ local user must create a session to the local samba server by running:
+     smbclient \\\\localhost\\share
+
+ FIXME: find a better way to get local users logged into the domain
+ in this list.
+ ********************************************************************/
+
+static struct dom_usr *get_domain_userlist(TALLOC_CTX *mem_ctx)
+{
+	struct sessionid *session_list = NULL;
+	char *machine_name, *p, *nm;
+	const char *sep;
+	struct dom_usr *users, *tmp;
+	int i, num_users, num_sessions;
+
+	sep = lp_winbind_separator();
+	if (!sep) {
+		sep = "\\";
+	}
+
+	num_sessions = list_sessions(mem_ctx, &session_list);
+	if (num_sessions == 0) {
+		errno = 0;
+		return NULL;
+	}
+
+	users = talloc_array(mem_ctx, struct dom_usr, num_sessions);
+	if (users == NULL) {
+		TALLOC_FREE(session_list);
+		return NULL;
+	}
+
+	for (i=num_users=0; i<num_sessions; i++) {
+		if (!session_list[i].username
+		    || !session_list[i].remote_machine) {
+			continue;
+		}
+		p = strpbrk(session_list[i].remote_machine, "./");
+		if (p) {
+			*p = '\0';
+		}
+		machine_name = talloc_asprintf_strupper_m(
+			users, "%s", session_list[i].remote_machine);
+		if (machine_name == NULL) {
+			DEBUG(10, ("talloc_asprintf failed\n"));
+			continue;
+		}
+		if (strcmp(machine_name, global_myname()) == 0) {
+			p = session_list[i].username;
+			nm = strstr(p, sep);
+			if (nm) {
+				/*
+				 * "domain+name" format so split domain and
+				 * name components
+				 */
+				*nm = '\0';
+				nm += strlen(sep);
+				users[num_users].domain =
+					talloc_asprintf_strupper_m(users,
+								   "%s", p);
+				users[num_users].name = talloc_strdup(users,
+								      nm);
+			} else {
+				/*
+				 * Simple user name so get domain from smb.conf
+				 */
+				users[num_users].domain =
+					talloc_strdup(users, lp_workgroup());
+				users[num_users].name = talloc_strdup(users,
+								      p);
+			}
+			users[num_users].login_time =
+				session_list[i].connect_start;
+			num_users++;
+		}
+		TALLOC_FREE(machine_name);
+	}
+	TALLOC_FREE(session_list);
+
+	tmp = talloc_realloc(mem_ctx, users, struct dom_usr, num_users);
+	if (tmp == NULL) {
+		return NULL;
+	}
+	users = tmp;
+
+	/* Sort the user list by time, oldest first */
+	if (num_users > 1) {
+		qsort(users, num_users, sizeof(struct dom_usr), dom_user_cmp);
+	}
+
+	errno = 0;
+	return users;
+}
+
+/*******************************************************************
+ RPC Workstation Service request NetWkstaGetInfo with level 100.
+ Returns to the requester:
+  - The machine name.
+  - The smb version number
+  - The domain name.
+ Returns a filled in wkssvc_NetWkstaInfo100 struct.
  ********************************************************************/
 
 static struct wkssvc_NetWkstaInfo100 *create_wks_info_100(TALLOC_CTX *mem_ctx)
@@ -94,6 +278,14 @@ static struct wkssvc_NetWkstaInfo100 *create_wks_info_100(TALLOC_CTX *mem_ctx)
 	return info100;
 }
 
+/*******************************************************************
+ RPC Workstation Service request NetWkstaGetInfo with level 101.
+ Returns to the requester:
+  - As per NetWkstaGetInfo with level 100, plus:
+  - The LANMAN directory path (not currently supported).
+ Returns a filled in wkssvc_NetWkstaInfo101 struct.
+ ********************************************************************/
+
 static struct wkssvc_NetWkstaInfo101 *create_wks_info_101(TALLOC_CTX *mem_ctx)
 {
 	struct wkssvc_NetWkstaInfo101 *info101;
@@ -111,10 +303,18 @@ static struct wkssvc_NetWkstaInfo101 *create_wks_info_101(TALLOC_CTX *mem_ctx)
 		info101, "%s", global_myname());
 	info101->domain_name = talloc_asprintf_strupper_m(
 		info101, "%s", lp_workgroup());
-	info101->lan_root = NULL;
+	info101->lan_root = "";
 
 	return info101;
 }
+
+/*******************************************************************
+ RPC Workstation Service request NetWkstaGetInfo with level 102.
+ Returns to the requester:
+  - As per NetWkstaGetInfo with level 101, plus:
+  - The number of logged in users.
+ Returns a filled in wkssvc_NetWkstaInfo102 struct.
+ ********************************************************************/
 
 static struct wkssvc_NetWkstaInfo102 *create_wks_info_102(TALLOC_CTX *mem_ctx)
 {
@@ -134,35 +334,63 @@ static struct wkssvc_NetWkstaInfo102 *create_wks_info_102(TALLOC_CTX *mem_ctx)
 		info102, "%s", global_myname());
 	info102->domain_name = talloc_asprintf_strupper_m(
 		info102, "%s", lp_workgroup());
-	info102->lan_root = NULL;
+	info102->lan_root = "";
 
 	users = get_logged_on_userlist(talloc_tos());
 	info102->logged_on_users = talloc_array_length(users);
+
 	TALLOC_FREE(users);
 
 	return info102;
 }
 
 /********************************************************************
- only supports info level 100 at the moment.
+ Handling for RPC Workstation Service request NetWkstaGetInfo
  ********************************************************************/
 
 WERROR _wkssvc_NetWkstaGetInfo(pipes_struct *p, struct wkssvc_NetWkstaGetInfo *r)
 {
 	switch (r->in.level) {
 	case 100:
+		/* Level 100 can be allowed from anyone including anonymous
+		 * so no access checks are needed for this case */
 		r->out.info->info100 = create_wks_info_100(p->mem_ctx);
 		if (r->out.info->info100 == NULL) {
 			return WERR_NOMEM;
 		}
 		break;
 	case 101:
+		/* Level 101 can be allowed from any logged in user */
+		if (!nt_token_check_sid(&global_sid_Authenticated_Users,
+					p->server_info->ptok)) {
+			DEBUG(1,("User not allowed for NetWkstaGetInfo level "
+				 "101\n"));
+			DEBUGADD(3,(" - does not have sid for Authenticated "
+				    "Users %s:\n",
+				    sid_string_dbg(
+					    &global_sid_Authenticated_Users)));
+			debug_nt_user_token(DBGC_CLASS, 3,
+					    p->server_info->ptok);
+			return WERR_ACCESS_DENIED;
+		}
 		r->out.info->info101 = create_wks_info_101(p->mem_ctx);
 		if (r->out.info->info101 == NULL) {
 			return WERR_NOMEM;
 		}
 		break;
 	case 102:
+		/* Level 102 Should only be allowed from a domain administrator */
+		if (!nt_token_check_sid(&global_sid_Builtin_Administrators,
+					p->server_info->ptok)) {
+			DEBUG(1,("User not allowed for NetWkstaGetInfo level "
+				 "102\n"));
+			DEBUGADD(3,(" - does not have sid for Administrators "
+				    "group %s, sids are:\n",
+				    sid_string_dbg(&global_sid_Builtin_Administrators)));
+			debug_nt_user_token(DBGC_CLASS, 3,
+					    p->server_info->ptok);
+			return WERR_ACCESS_DENIED;
+		}
 		r->out.info->info102 = create_wks_info_102(p->mem_ctx);
 		if (r->out.info->info102 == NULL) {
 			return WERR_NOMEM;
@@ -185,6 +413,13 @@ WERROR _wkssvc_NetWkstaSetInfo(pipes_struct *p, struct wkssvc_NetWkstaSetInfo *r
 	return WERR_NOT_SUPPORTED;
 }
 
+/********************************************************************
+ RPC Workstation Service request NetWkstaEnumUsers with level 0:
+ Returns to the requester:
+  - the user names of the logged in users.
+ Returns a filled in wkssvc_NetWkstaEnumUsersCtr0 struct.
+ ********************************************************************/
+
 static struct wkssvc_NetWkstaEnumUsersCtr0 *create_enum_users0(
 	TALLOC_CTX *mem_ctx)
 {
@@ -198,12 +433,14 @@ static struct wkssvc_NetWkstaEnumUsersCtr0 *create_enum_users0(
 	}
 
 	users = get_logged_on_userlist(talloc_tos());
-	if (users == NULL) {
+	if (users == NULL && errno != 0) {
+		DEBUG(1,("get_logged_on_userlist error %d: %s\n",
+			errno, strerror(errno)));
 		TALLOC_FREE(ctr0);
 		return NULL;
 	}
 
-	num_users = talloc_array_length(users);
+	num_users = (users) ? talloc_array_length(users) : 0;
 	ctr0->entries_read = num_users;
 	ctr0->user0 = talloc_array(ctr0, struct wkssvc_NetrWkstaUserInfo0,
 				   num_users);
@@ -221,21 +458,142 @@ static struct wkssvc_NetWkstaEnumUsersCtr0 *create_enum_users0(
 }
 
 /********************************************************************
+ RPC Workstation Service request NetWkstaEnumUsers with level 1.
+ Returns to the requester:
+  - the user names of the logged in users,
+  - the domain or machine each is logged into,
+  - the password server that was used to authenticate each,
+  - other domains each user is logged into (not currently supported).
+ Returns a filled in wkssvc_NetWkstaEnumUsersCtr1 struct.
+ ********************************************************************/
+
+static struct wkssvc_NetWkstaEnumUsersCtr1 *create_enum_users1(
+	TALLOC_CTX *mem_ctx)
+{
+	struct wkssvc_NetWkstaEnumUsersCtr1 *ctr1;
+	char **users;
+	struct dom_usr *dom_users;
+	char *pwd_server;
+	int i, j, num_users, num_dom_users;
+
+	ctr1 = talloc(mem_ctx, struct wkssvc_NetWkstaEnumUsersCtr1);
+	if (ctr1 == NULL) {
+		return NULL;
+	}
+
+	users = get_logged_on_userlist(talloc_tos());
+	if (users == NULL && errno != 0) {
+		DEBUG(1,("get_logged_on_userlist error %d: %s\n",
+			errno, strerror(errno)));
+		TALLOC_FREE(ctr1);
+		return NULL;
+	}
+	num_users = (users) ? talloc_array_length(users) : 0;
+
+	dom_users = get_domain_userlist(talloc_tos());
+	if (dom_users == NULL && errno != 0) {
+		TALLOC_FREE(ctr1);
+		TALLOC_FREE(users);
+		return NULL;
+	}
+	num_dom_users = (dom_users) ? talloc_array_length(dom_users) : 0;
+
+	ctr1->user1 = talloc_array(ctr1, struct wkssvc_NetrWkstaUserInfo1,
+				   num_users+num_dom_users);
+	if (ctr1->user1 == NULL) {
+		TALLOC_FREE(ctr1);
+		TALLOC_FREE(users);
+		TALLOC_FREE(dom_users);
+		return NULL;
+	}
+
+	if ((pwd_server = talloc_strdup(ctr1->user1, lp_passwordserver()))) {
+		/* The configured password server is a full DNS name but
+		 * for the logon server we need to return just the first
+		 * component (machine name) of it in upper-case */
+		char *p = strchr(pwd_server, '.');
+		if (p) {
+			*p = '\0';
+		} else {
+			p = pwd_server + strlen(pwd_server);
+		}
+		while (--p >= pwd_server) {
+			*p = toupper(*p);
+		}
+	} else {
+		pwd_server = "";
+	}
+
+	/* Put in local users first */
+	for (i=0; i<num_users; i++) {
+		ctr1->user1[i].user_name = talloc_move(ctr1->user1, &users[i]);
+
+		/* For a local user the domain name and logon server are
+		 * both returned as the local machine's NetBIOS name */
+		ctr1->user1[i].logon_domain = ctr1->user1[i].logon_server =
+			talloc_asprintf_strupper_m(ctr1->user1, "%s", global_myname());
+
+		ctr1->user1[i].other_domains = NULL;	/* Maybe in future? */
+	}
+
+	/* Now domain users */
+	for (j=0; j<num_dom_users; j++) {
+		ctr1->user1[i].user_name =
+				talloc_strdup(ctr1->user1, dom_users[j].name);
+		ctr1->user1[i].logon_domain =
+				talloc_strdup(ctr1->user1, dom_users[j].domain);
+		ctr1->user1[i].logon_server = pwd_server;
+
+		ctr1->user1[i++].other_domains = NULL;	/* Maybe in future? */
+	}
+
+	ctr1->entries_read = i;
+
+	TALLOC_FREE(users);
+	TALLOC_FREE(dom_users);
+	return ctr1;
+}
+
+/********************************************************************
+ Handling for RPC Workstation Service request NetWkstaEnumUsers
+ (a.k.a Windows NetWkstaUserEnum)
  ********************************************************************/
 
 WERROR _wkssvc_NetWkstaEnumUsers(pipes_struct *p, struct wkssvc_NetWkstaEnumUsers *r)
 {
-	if (r->in.info->level != 0) {
-		return WERR_UNKNOWN_LEVEL;
+	/* This with any level should only be allowed from a domain administrator */
+	if (!nt_token_check_sid(&global_sid_Builtin_Administrators,
+				p->server_info->ptok)) {
+		DEBUG(1,("User not allowed for NetWkstaEnumUsers\n"));
+		DEBUGADD(3,(" - does not have sid for Administrators group "
+			    "%s\n", sid_string_dbg(
+				    &global_sid_Builtin_Administrators)));
+		debug_nt_user_token(DBGC_CLASS, 3, p->server_info->ptok);
+		return WERR_ACCESS_DENIED;
 	}
 
-	r->out.info->ctr.user0 = create_enum_users0(p->mem_ctx);
-	if (r->out.info->ctr.user0 == NULL) {
-		return WERR_NOMEM;
+	switch (r->in.info->level) {
+	case 0:
+		r->out.info->ctr.user0 = create_enum_users0(p->mem_ctx);
+		if (r->out.info->ctr.user0 == NULL) {
+			return WERR_NOMEM;
+		}
+		r->out.info->level = r->in.info->level;
+		*r->out.entries_read = r->out.info->ctr.user0->entries_read;
+		*r->out.resume_handle = 0;
+		break;
+	case 1:
+		r->out.info->ctr.user1 = create_enum_users1(p->mem_ctx);
+		if (r->out.info->ctr.user1 == NULL) {
+			return WERR_NOMEM;
+		}
+		r->out.info->level = r->in.info->level;
+		*r->out.entries_read = r->out.info->ctr.user1->entries_read;
+		*r->out.resume_handle = 0;
+		break;
+	default:
+		return WERR_UNKNOWN_LEVEL;
 	}
-	r->out.info->level = r->in.info->level;
-	*r->out.entries_read = r->out.info->ctr.user0->entries_read;
-	*r->out.resume_handle = 0;
 
 	return WERR_OK;
 }
