@@ -828,16 +828,8 @@ def setup_self_join(samdb, names,
               "DNSPASS_B64": b64encode(dnspass),
               })
 
-def set_gpo_acl(path,acl,setfileacl):
-	if setfileacl:
-		setntacl(path,acl)
-		for root, dirs, files in os.walk(path, topdown=False):
-			for name in files:
-				setntacl(os.path.join(root, name),acl)
-			for name in dirs:
-				setntacl(os.path.join(root, name),acl)
 
-def setup_gpo(paths,names,samdb,policyguid,policyguid_dc,domainsid,setfileacl):
+def setup_gpo(paths,names,samdb,policyguid,policyguid_dc,domainsid):
     policy_path = os.path.join(paths.sysvol, names.dnsdomain, "Policies",
                                "{" + policyguid + "}")
     os.makedirs(policy_path, 0755)
@@ -853,20 +845,6 @@ def setup_gpo(paths,names,samdb,policyguid,policyguid_dc,domainsid,setfileacl):
                       "[General]\r\nVersion=2")
     os.makedirs(os.path.join(policy_path_dc, "MACHINE"), 0755)
     os.makedirs(os.path.join(policy_path_dc, "USER"), 0755)
-# call setntacl ...
-    res = samdb.search(base="CN={%s},CN=Policies,CN=System,%s"%(policyguid,names.domaindn),
-                                attrs=["nTSecurityDescriptor"],
-                                expression="", scope=SCOPE_BASE)
-    assert(len(res) > 0)
-    acl = ndr_unpack(security.descriptor,str(res[0]["nTSecurityDescriptor"])).as_sddl(security.dom_sid("S-1-5-21-1"))
-    set_gpo_acl(policy_path_dc,dsacl2fsacl(acl),setfileacl)
-
-    res = samdb.search(base="CN={%s},CN=Policies,CN=System,%s"%(policyguid_dc,names.domaindn),
-                                attrs=["nTSecurityDescriptor"],
-                                expression="", scope=SCOPE_BASE)
-    assert(len(res) > 0)
-    acl = ndr_unpack(security.descriptor,str(res[0]["nTSecurityDescriptor"])).as_sddl(security.dom_sid("S-1-5-21-1"))
-    set_gpo_acl(policy_path,dsacl2fsacl(acl),setfileacl)
 
 
 def setup_samdb(path, setup_path, session_info, provision_backend, lp, 
@@ -1075,6 +1053,43 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
 FILL_FULL = "FULL"
 FILL_NT4SYNC = "NT4SYNC"
 FILL_DRS = "DRS"
+SYSVOL_ACL = "O:${DOMAINSID}-500G:BAD:P(A;OICI;0x001f01ff;;;BA)(A;OICI;0x001200a9;;;S-1-5-32-549)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)"
+POLICIES_ACL = "O:${DOMAINSID}-500G:BAD:P(A;OICI;0x001f01ff;;;BA)(A;OICI;0x001200a9;;;S-1-5-32-549)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)(A;OICI;0x001301bf;;;${DOMAINSID}-520)"
+
+def set_gpo_acl(path,acl):
+	setntacl(path,acl)
+	for root, dirs, files in os.walk(path, topdown=False):
+		for name in files:
+			setntacl(os.path.join(root, name),acl)
+		for name in dirs:
+			setntacl(os.path.join(root, name),acl)
+
+def setdiracl(samdb,names,netlogon,sysvol,gid,domainsid):
+	acl = SYSVOL_ACL.replace("${DOMAINSID}",str(domainsid))
+	os.chown(sysvol,-1,gid)
+	setntacl(sysvol,acl)
+	for root, dirs, files in os.walk(sysvol, topdown=False):
+		for name in files:
+			os.chown(os.path.join(root, name),-1,gid)
+			setntacl(os.path.join(root, name),acl)
+		for name in dirs:
+			os.chown(os.path.join(root, name),-1,gid)
+			setntacl(os.path.join(root, name),acl)
+
+	# Set ACL for GPO
+	policy_path = os.path.join(sysvol, names.dnsdomain, "Policies")
+	acl = POLICIES_ACL.replace("${DOMAINSID}",str(domainsid))
+	set_gpo_acl(policy_path,dsacl2fsacl(acl))
+	res = samdb.search(base="CN=Policies,CN=System,%s"%(names.domaindn),
+						attrs=["cn","nTSecurityDescriptor"],
+						expression="", scope=SCOPE_ONELEVEL)
+	security.dom_sid("S-1-5-21-1")
+	for policy in res:
+		acl = ndr_unpack(security.descriptor,str(policy["nTSecurityDescriptor"])).as_sddl()
+		policy_path = os.path.join(sysvol, names.dnsdomain, "Policies",
+									 str(policy["cn"]))
+		set_gpo_acl(policy_path,dsacl2fsacl(acl))
+
 
 
 def provision(setup_dir, message, session_info, 
@@ -1292,8 +1307,6 @@ def provision(setup_dir, message, session_info,
                     (paths.smbconf, setup_path("provision.smb.conf.dc")))
             assert(paths.sysvol is not None)            
             
-        # Set up group policies (domain policy and domain controller policy)
-        setup_gpo(paths,names,samdb,policyguid,policyguid_dc,domainsid,setfileacl)
 
         if not os.path.isdir(paths.netlogon):
             os.makedirs(paths.netlogon, 0755)
@@ -1302,6 +1315,12 @@ def provision(setup_dir, message, session_info,
         setup_name_mappings(samdb, idmap, str(domainsid), names.domaindn,
                             root_uid=root_uid, nobody_uid=nobody_uid,
                             users_gid=users_gid, wheel_gid=wheel_gid)
+
+        setup_gpo(paths,names,samdb,policyguid,policyguid_dc,domainsid)
+
+        if setfileacl:
+            setdiracl(samdb,names,paths.netlogon,paths.sysvol,wheel_gid,domainsid)
+        # Set up group policies (domain policy and domain controller policy)
 
         message("Setting up sam.ldb rootDSE marking as synchronized")
         setup_modify_ldif(samdb, setup_path("provision_rootdse_modify.ldif"))

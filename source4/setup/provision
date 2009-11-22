@@ -110,7 +110,7 @@ parser.add_option("--slapd-path", type="string", metavar="SLAPD-PATH",
 parser.add_option("--setup-ds-path", type="string", metavar="SETUP_DS-PATH", 
 		help="Path to setup-ds.pl script for Fedora DS LDAP backend [e.g.:'/usr/sbin/setup-ds.pl']. Required for Setup with Fedora DS backend.") 
 parser.add_option("--nosync", help="Configure LDAP backend not to call fsync() (for performance in test environments)", action="store_true")
-parser.add_option("--setfileacl", help="Set NT ACL on files", action="store_true")
+parser.add_option("--nosetfileacl", help="Do not set NT ACL on files (set by default)", action="store_true")
 parser.add_option("--ldap-dryrun-mode", help="Configure LDAP backend, but do not run any binaries and exit early.  Used only for the test environment.  DO NOT USE", action="store_true")
 
 opts = parser.parse_args()[0]
@@ -202,6 +202,11 @@ if opts.blank:
 elif opts.partitions_only:
     samdb_fill = FILL_DRS
 
+setfileacl = True
+
+if opts.nosetfileacl:
+	setfileacl = False
+
 session = system_session()
 provision(setup_dir, message, 
           session, creds, smbconf=smbconf, targetdir=opts.targetdir,
@@ -220,4 +225,4 @@ provision(setup_dir, message,
           backend_type=opts.ldap_backend_type,
           ldapadminpass=opts.ldapadminpass, ol_mmr_urls=opts.ol_mmr_urls,
           slapd_path=opts.slapd_path, setup_ds_path=opts.setup_ds_path,
-          nosync=opts.nosync,ldap_dryrun_mode=opts.ldap_dryrun_mode,setfileacl=opts.setfileacl)
+          nosync=opts.nosync,ldap_dryrun_mode=opts.ldap_dryrun_mode,setfileacl=setfileacl)
