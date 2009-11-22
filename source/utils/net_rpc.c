@@ -5984,6 +5984,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 	int i, pad_len, col_len = 20;
 	struct lsa_DomainList dom_list;
 	fstring pdc_name;
+	bool found_domain;
 
 	/* trusting domains listing variables */
 	POLICY_HND domain_hnd;
@@ -6068,6 +6069,8 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 	 
 	d_printf("Trusted domains list:\n\n");
 
+	found_domain = false;
+
 	do {
 		nt_status = rpccli_lsa_EnumTrustDom(pipe_hnd, mem_ctx,
 						    &connect_hnd,
@@ -6085,15 +6088,18 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 		for (i = 0; i < dom_list.count; i++) {
 			print_trusted_domain(dom_list.domains[i].sid,
 					     dom_list.domains[i].name.string);
+			found_domain = true;
 		};
 
-		/*
-		 * in case of no trusted domains say something rather
-		 * than just display blank line
-		 */
-		if (!dom_list.count) d_printf("none\n");
-
 	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
+
+	/*
+	 * in case of no trusted domains say something rather
+	 * than just display blank line
+	 */
+	if (!found_domain) {
+		d_printf("none\n");
+	}
 
 	/* close this connection before doing next one */
 	nt_status = rpccli_lsa_Close(pipe_hnd, mem_ctx, &connect_hnd);
@@ -6157,6 +6163,8 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 	 * perform actual enumeration
 	 */
 
+	found_domain = false;
+
 	enum_ctx = 0;	/* reset enumeration context from last enumeration */
 	do {
 
@@ -6178,6 +6186,8 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 		for (i = 0; i < num_domains; i++) {
 
 			char *str = CONST_DISCARD(char *, trusts->entries[i].name.string);
+
+			found_domain = true;
 
 			/*
 			 * get each single domain's sid (do we _really_ need this ?):
@@ -6224,9 +6234,11 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 			};
 		};
 
-		if (!num_domains) d_printf("none\n");
-
 	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
+
+	if (!found_domain) {
+		d_printf("none\n");
+	}
 
 	/* close opened samr and domain policy handles */
 	nt_status = rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_hnd);
