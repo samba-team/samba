@@ -790,14 +790,14 @@ objectClass: container
 	rid = dom_sid_to_rid(ldb.schema_format_value("objectSID", res1[0]["objectSID"][0]))
         self.assertEquals(primary_group_token, rid)
 
-# TODO Has to wait until we support read-only generated attributes correctly
-#        m = Message()
-#        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
-#        m["primaryGroupToken"] = "100"
-#        try:
-#                ldb.modify(m)
-#                self.fail()
-#        except LdbError, (num, msg):
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["primaryGroupToken"] = "100"
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
         self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
