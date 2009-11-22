@@ -537,12 +537,12 @@ static int descriptor_search_callback(struct ldb_request *req, struct ldb_reply 
 	}
 
 	sd_control = ldb_request_get_control(ac->req, LDB_CONTROL_SD_FLAGS_OID);
-		if (sd_control) {
-			struct ldb_sd_flags_control *sdctr = (struct ldb_sd_flags_control *)sd_control->data;
-			sd_flags = sdctr->secinfo_flags;
-			/* we only care for the last 4 bits */
-			sd_flags = sd_flags & 0x0000000F;
-		}
+	if (sd_control) {
+		struct ldb_sd_flags_control *sdctr = (struct ldb_sd_flags_control *)sd_control->data;
+		sd_flags = sdctr->secinfo_flags;
+		/* we only care for the last 4 bits */
+		sd_flags = sd_flags & 0x0000000F;
+	}
 
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
@@ -572,7 +572,6 @@ static int descriptor_search_callback(struct ldb_request *req, struct ldb_reply 
 		break;
 
 	case LDB_REPLY_DONE:
-
 		return ldb_module_done(ac->req, ares->controls,
 					ares->response, ares->error);
 	}
