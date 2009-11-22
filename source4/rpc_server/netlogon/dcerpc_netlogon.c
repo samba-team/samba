@@ -1416,7 +1416,7 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call, TA
 	/* Windows 7 sends the domain name in the form the user typed, so we
 	 * have to cope  with both the short and long form here */
 	if (r->in.domain_name != NULL &&
-			!lp_is_my_domain_or_realm(dce_call->conn->dce_ctx->lp_ctx,
+			!lp_is_my_domain_or_realm(dce_call->conn->dce_ctx->lp_ctx, 
 						  r->in.domain_name)) {
 		return WERR_NO_SUCH_DOMAIN;
 	}
@@ -1429,6 +1429,7 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call, TA
 	ret = gendb_search_dn(sam_ctx, mem_ctx,
 			      domain_dn, &res, attrs);
 	if (ret != 1) {
+		return WERR_GENERAL_FAILURE;
 	}
 
 	info = talloc(mem_ctx, struct netr_DsRGetDCNameInfo);
@@ -1603,9 +1604,6 @@ static WERROR dcesrv_netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce
 
 	ret = gendb_search_dn(sam_ctx, mem_ctx, NULL,
 			      &dom_res, dom_attrs);
-	if (ret == -1) {
-		return WERR_GENERAL_FAILURE;		
-	}
 	if (ret != 1) {
 		return WERR_GENERAL_FAILURE;
 	}
