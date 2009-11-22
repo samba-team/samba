@@ -22,6 +22,7 @@
 
 __docformat__ = "restructuredText"
 
+import ldb
 import samba
 
 class IDmapDB(samba.Ldb):
@@ -50,12 +51,35 @@ class IDmapDB(samba.Ldb):
         super(IDmapDB, self).connect(url=self.lp.private_path(url), flags=flags,
                 options=options)
 
-    def setup_name_mapping(self, sid, type, unixid):
+
+    def increment_xid(self):
+        """Increment xidNumber, if not present it create and assign it to the lowerBound
+
+        :return xid can that be used for SID/unixid mapping
+        """
+        res=self.search(expression="dn=CN=CONFIG",base="", scope=ldb.SCOPE_SUBTREE)
+        id=res[0].get("xidNumber")
+        flag=ldb.FLAG_MOD_REPLACE
+        if id == None:
+            id=res[0].get("lowerBound")
+            flag = ldb.FLAG_MOD_ADD
+        newid = int(str(id)) + 1
+        msg = ldb.Message()
+        msg.dn = ldb.Dn(self,"CN=CONFIG")
+        msg["xidNumber"] = ldb.MessageElement(str(newid),flag,"xidNumber")
+        self.modify(msg)
+
+        return id
+
+
+    def setup_name_mapping(self, sid, type, unixid=None):
         """Setup a mapping between a sam name and a unix name.
 
         :param sid: SID of the NT-side of the mapping.
-        :param unixname: Unix name to map to.
+        :param unixname: Unix id to map to, if none supplied the next one will be selected
         """
+        if unixid == None:
+            unixid = self.increment_xid()
         type_string = ""
         if type == self.TYPE_UID:
             type_string = "ID_TYPE_UID"
