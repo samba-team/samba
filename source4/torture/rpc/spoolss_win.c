@@ -21,7 +21,9 @@
 #include "includes.h"
 #include "torture/rpc/rpc.h"
 #include "librpc/gen_ndr/ndr_spoolss_c.h"
+#include "librpc/gen_ndr/ndr_misc.h"
 #include "ntvfs/ntvfs.h"
+#include "param/param.h"
 
 struct test_spoolss_win_context {
 	/* EnumPrinters */
@@ -174,7 +176,7 @@ static bool test_GetPrinterData(struct torture_context *tctx,
 	if (W_ERROR_IS_OK(expected_werr)) {
 		torture_assert_int_equal(tctx, data.value,
 			expected_value,
-			"GetPrinterData did not return expected value.");
+			talloc_asprintf(tctx, "GetPrinterData for %s did not return expected value.", value_name));
 	}
 	return true;
 }
@@ -382,15 +384,17 @@ static bool test_EnumPrinterKey(struct torture_context *tctx,
 	NTSTATUS status;
 	struct spoolss_EnumPrinterKey epk;
 	uint32_t needed = 0;
-	const char **key_buffer = NULL;
+	uint16_t *key_buffer;
 
 	torture_comment(tctx, "Testing EnumPrinterKey(%s)\n", key);
+
+	key_buffer = talloc_zero_array(tctx, uint16_t, 0);
 
 	epk.in.handle = handle;
 	epk.in.key_name = talloc_strdup(tctx, key);
 	epk.in.offered = 0;
 	epk.out.needed = &needed;
-	epk.out.key_buffer = &key_buffer;
+	epk.out.key_buffer = key_buffer;
 
 	status = dcerpc_spoolss_EnumPrinterKey(p, tctx, &epk);
 	torture_assert_ntstatus_ok(tctx, status, "EnumPrinterKey failed");
@@ -398,6 +402,8 @@ static bool test_EnumPrinterKey(struct torture_context *tctx,
 
 	if (W_ERROR_EQUAL(epk.out.result, WERR_MORE_DATA)) {
 		epk.in.offered = needed;
+		key_buffer = talloc_zero_array(tctx, uint16_t, needed/2);
+		epk.out.key_buffer = key_buffer;
 		status = dcerpc_spoolss_EnumPrinterKey(p, tctx, &epk);
 		torture_assert_ntstatus_ok(tctx, status,
 				"EnumPrinterKey failed");
@@ -405,7 +411,16 @@ static bool test_EnumPrinterKey(struct torture_context *tctx,
 
 	torture_assert_werr_ok(tctx, epk.out.result, "EnumPrinterKey failed");
 
-	ctx->printer_keys = key_buffer;
+	{
+		union winreg_Data data;
+		enum ndr_err_code ndr_err;
+		DATA_BLOB blob = data_blob_const(key_buffer, needed);
+		ndr_err = ndr_pull_union_blob(&blob, tctx, lp_iconv_convenience(tctx->lp_ctx),
+					&data, REG_MULTI_SZ,
+					(ndr_pull_flags_fn_t)ndr_pull_winreg_Data);
+		torture_assert_ndr_success(tctx, ndr_err, "failed to pull REG_MULTI_SZ");
+		ctx->printer_keys = data.string_array;
+	}
 
 	return true;
 }
