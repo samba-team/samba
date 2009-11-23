@@ -819,6 +819,18 @@ objectClass: container
         res2 = self.ldb.search(scope=SCOPE_BASE, attrs=["wellKnownObjects"], expression=("wellKnownObjects=%s") % res[0].dn)
         self.assertEquals(len(res2), 0)
 
+    def test_subschemasubentry(self):
+        """Test subSchemaSubEntry appears when requested, but not when not requested"""
+        print "Test subSchemaSubEntry"""
+
+        res = self.ldb.search(base=self.base_dn, scope=SCOPE_BASE, attrs=["subSchemaSubEntry"])
+        self.assertEquals(len(res), 1)
+        self.assertEquals(res[0]["subSchemaSubEntry"][0], "CN=Aggregate,"+self.schema_dn)
+
+        res = self.ldb.search(base=self.base_dn, scope=SCOPE_BASE, attrs=["*"])
+        self.assertEquals(len(res), 1)
+        self.assertTrue("subScheamSubEntry" not in res[0])
+
     def test_all(self):
         """Basic tests"""
 
