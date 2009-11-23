@@ -263,10 +263,11 @@ int ldb_msg_add_steal_string(struct ldb_message *msg,
   WARNING: this uses the linearized string from the dn, and does not
   copy the string.
 */
-int ldb_msg_add_dn(struct ldb_message *msg, const char *attr_name,
-		   struct ldb_dn *dn)
+int ldb_msg_add_linearized_dn(struct ldb_message *msg, const char *attr_name,
+			      struct ldb_dn *dn)
 {
-	return ldb_msg_add_string(msg, attr_name, ldb_dn_get_linearized(dn));
+	return ldb_msg_add_steal_string(msg, attr_name,
+					ldb_dn_alloc_linearized(msg, dn));
 }
 
 /*
