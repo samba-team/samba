@@ -404,12 +404,12 @@ NTSTATUS _wbint_CheckMachineAccount(pipes_struct *p,
 	int num_retries = 0;
 	NTSTATUS status;
 
-again:
 	domain = wb_child_domain();
 	if (domain == NULL) {
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
+again:
 	invalidate_cm_connection(&domain->conn);
 
 	{
