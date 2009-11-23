@@ -2418,11 +2418,11 @@ bool mask_match_search(const char *string, const char *pattern, bool is_case_sen
  on each.  Returns True if any of the patterns match.
 *******************************************************************/
 
-bool mask_match_list(const char *string, char **list, int listLen,
-		     enum protocol_types proto, bool is_case_sensitive)
+bool mask_match_list(const char *string, char **list, int listLen, bool is_case_sensitive)
 {
        while (listLen-- > 0) {
-               if (mask_match(string, *list++, proto, is_case_sensitive))
+               if (mask_match(string, *list++, get_Protocol(),
+			      is_case_sensitive))
                        return True;
        }
        return False;
