@@ -1186,8 +1186,7 @@ bool parent_dirname(TALLOC_CTX *mem_ctx, const char *dir, char **parent,
 		    const char **name);
 bool ms_has_wild(const char *s);
 bool ms_has_wild_w(const smb_ucs2_t *s);
-bool mask_match(const char *string, const char *pattern,
-		enum protocol_types proto, bool is_case_sensitive);
+bool mask_match(const char *string, const char *pattern, bool is_case_sensitive);
 bool mask_match_search(const char *string, const char *pattern, bool is_case_sensitive);
 bool mask_match_list(const char *string, char **list, int listLen, bool is_case_sensitive);
 bool unix_wild_match(const char *pattern, const char *string);
