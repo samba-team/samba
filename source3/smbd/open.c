@@ -1470,7 +1470,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	struct share_mode_lock *lck = NULL;
 	uint32 open_access_mask = access_mask;
 	NTSTATUS status;
-	int ret_flock;
 	char *parent_dir;
 
 	ZERO_STRUCT(id);
@@ -2092,6 +2091,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	   note that GPFS supports it as well - jmcd */
 
 	if (fsp->fh->fd != -1) {
+		int ret_flock;
 		ret_flock = SMB_VFS_KERNEL_FLOCK(fsp, share_access, access_mask);
 		if(ret_flock == -1 ){
 
