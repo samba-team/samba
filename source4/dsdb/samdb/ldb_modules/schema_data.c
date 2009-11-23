@@ -119,14 +119,14 @@ static int schema_data_init(struct ldb_module *module)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/* Check to see if this is a result on the CN=Aggregate schema */
-	data->aggregate_dn = ldb_dn_copy(data, schema_dn);
-	if (!ldb_dn_add_child_fmt(data->aggregate_dn, "CN=Aggregate")) {
-		ldb_oom(ldb);
+	data->schema_dn = schema_dn;
+
+	/* Used to check to see if this is a result on the CN=Aggregate schema */
+	data->aggregate_dn = samdb_aggregate_schema_dn(ldb, data);
+	if (!data->aggregate_dn) {
+		ldb_set_errstring(ldb, "Could not build aggregate schema DN");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-
-	data->schema_dn = schema_dn;
 
 	ldb_module_set_private(module, data);
 	return LDB_SUCCESS;
