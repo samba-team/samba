@@ -155,13 +155,3 @@ void smbd_init_globals(void)
 		exit_server("failed to create smbd_server_connection");
 	}
 }
-
-enum protocol_types get_Protocol(const struct smbd_server_connection *c)
-{
-	return c->smb1.negprot.protocol;
-}
-
-void set_Protocol(struct smbd_server_connection *c, enum protocol_types p)
-{
-	c->smb1.negprot.protocol = p;
-}

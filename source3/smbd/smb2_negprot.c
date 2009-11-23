@@ -112,7 +112,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 
-	set_Protocol(req->sconn, PROTOCOL_SMB2);
+	set_Protocol(PROTOCOL_SMB2);
 
 	if (get_remote_arch() != RA_SAMBA) {
 		set_remote_arch(RA_VISTA);

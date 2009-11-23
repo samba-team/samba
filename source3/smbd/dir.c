@@ -1215,8 +1215,7 @@ bool is_visible_file(connection_struct *conn, const char *dir_path,
 	}
 
 	/* If it's a vetoed file, pretend it doesn't even exist */
-	if (use_veto && is_in_path(name, conn->veto_list,
-				   get_Protocol(conn->sconn),
+	if (use_veto && is_in_path(name, conn->veto_list, get_Protocol(),
 				   conn->case_sensitive)) {
 		DEBUG(10,("is_visible_file: file %s is vetoed.\n", name ));
 		return False;

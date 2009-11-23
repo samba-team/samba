@@ -652,7 +652,6 @@ struct smb_request {
 	size_t unread_bytes;
 	bool encrypted;
 	connection_struct *conn;
-	struct smbd_server_connection *sconn;
 	struct smb_perfcount_data pcd;
 
 	/*
