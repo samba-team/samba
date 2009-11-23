@@ -75,6 +75,10 @@
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
 #endif
 
+struct operational_data {
+	struct ldb_dn *aggregate_dn;
+};
+
 /*
   construct a canonical name from a message
 */
@@ -139,6 +143,21 @@ static int construct_parent_guid(struct ldb_module *module,
 
 }
 
+/*
+  construct a subSchemaSubEntry
+*/
+static int construct_subschema_subentry(struct ldb_module *module,
+					struct ldb_message *msg)
+{
+	struct operational_data *data = talloc_get_type(ldb_module_get_private(module), struct operational_data);
+	char *subSchemaSubEntry;
+	if (data && data->aggregate_dn) {
+		subSchemaSubEntry = ldb_dn_alloc_linearized(msg, data->aggregate_dn);
+		return ldb_msg_add_steal_string(msg, "subSchemaSubEntry", subSchemaSubEntry);
+	}
+	return LDB_SUCCESS;
+}
+
 
 /*
   a list of attribute names that should be substituted in the parse
@@ -167,7 +186,8 @@ static const struct {
 	{ "structuralObjectClass", "objectClass", NULL },
 	{ "canonicalName", "distinguishedName", construct_canonical_name },
 	{ "primaryGroupToken", "objectSid", construct_primary_group_token },
-	{ "parentGUID", NULL, construct_parent_guid }
+	{ "parentGUID", NULL, construct_parent_guid },
+	{ "subSchemaSubEntry", NULL, construct_subschema_subentry }
 };
 
 
@@ -389,13 +409,29 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 
 static int operational_init(struct ldb_module *ctx)
 {
-	int ret = 0;
+	struct operational_data *data;
+	struct ldb_context *ldb = ldb_module_get_ctx(ctx);
+	int ret = ldb_next_init(ctx);
 
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
-	return ldb_next_init(ctx);
+	data = talloc(ctx, struct operational_data);
+	if (!data) {
+		ldb_module_oom(ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	data->aggregate_dn = samdb_aggregate_schema_dn(ldb, data);
+	if (!data->aggregate_dn) {
+		ldb_set_errstring(ldb, "Could not build aggregate schema DN");
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ldb_module_set_private(ctx, data);
+
+	return LDB_SUCCESS;
 }
 
 const struct ldb_module_ops ldb_operational_module_ops = {
