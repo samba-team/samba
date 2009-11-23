@@ -38,6 +38,7 @@ static struct {
 	const char *recovery_lock_file;
 	const char *db_dir;
 	const char *db_dir_persistent;
+	const char *db_dir_state;
 	const char *public_interface;
 	const char *single_public_ip;
 	const char *node_ip;
@@ -57,6 +58,7 @@ static struct {
 	.logfile = LOGDIR "/log.ctdb",
 	.db_dir = VARDIR "/ctdb",
 	.db_dir_persistent = VARDIR "/ctdb/persistent",
+	.db_dir_state = VARDIR "/ctdb/state",
 	.script_log_level = DEBUG_ERR,
 };
 
@@ -126,6 +128,7 @@ int main(int argc, const char *argv[])
 		{ "transport", 0, POPT_ARG_STRING, &options.transport, 0, "protocol transport", NULL },
 		{ "dbdir", 0, POPT_ARG_STRING, &options.db_dir, 0, "directory for the tdb files", NULL },
 		{ "dbdir-persistent", 0, POPT_ARG_STRING, &options.db_dir_persistent, 0, "directory for persistent tdb files", NULL },
+		{ "dbdir-state", 0, POPT_ARG_STRING, &options.db_dir_state, 0, "directory for internal state tdb files", NULL },
 		{ "reclock", 0, POPT_ARG_STRING, &options.recovery_lock_file, 0, "location of recovery lock file", "filename" },
 		{ "nosetsched", 0, POPT_ARG_NONE, &options.no_setsched, 0, "disable setscheduler SCHED_FIFO call", NULL },
 		{ "syslog", 0, POPT_ARG_NONE, &options.use_syslog, 0, "log messages to syslog", NULL },
@@ -256,6 +259,13 @@ int main(int argc, const char *argv[])
 		ret = ctdb_set_tdb_dir_persistent(ctdb, options.db_dir_persistent);
 		if (ret == -1) {
 			DEBUG(DEBUG_ALERT,("ctdb_set_tdb_dir_persistent failed - %s\n", ctdb_errstr(ctdb)));
+			exit(1);
+		}
+	}
+	if (options.db_dir_state) {
+		ret = ctdb_set_tdb_dir_state(ctdb, options.db_dir_state);
+		if (ret == -1) {
+			DEBUG(DEBUG_ALERT,("ctdb_set_tdb_dir_state failed - %s\n", ctdb_errstr(ctdb)));
 			exit(1);
 		}
 	}

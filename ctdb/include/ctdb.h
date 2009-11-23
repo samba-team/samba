@@ -178,6 +178,7 @@ int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport);
 */
 int ctdb_set_tdb_dir(struct ctdb_context *ctdb, const char *dir);
 int ctdb_set_tdb_dir_persistent(struct ctdb_context *ctdb, const char *dir);
+int ctdb_set_tdb_dir_state(struct ctdb_context *ctdb, const char *dir);
 
 /*
   set some flags

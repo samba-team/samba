@@ -405,6 +405,7 @@ struct ctdb_context {
 	const char *name;
 	const char *db_directory;
 	const char *db_directory_persistent;
+	const char *db_directory_state;
 	const char *transport;
 	char *recovery_lock_file;
 	int recovery_lock_fd;
