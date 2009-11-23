@@ -418,11 +418,6 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	flags = IVAL(req->vwv+3, 1);
 	access_mask = IVAL(req->vwv+7, 1);
 	file_attributes = IVAL(req->vwv+13, 1);
-	/*
-	 * Bug #6898 - clients using Windows opens should
-	 * never be able to set this attribute.
-	 */
-	file_attributes &= ~FILE_FLAG_POSIX_SEMANTICS;
 	share_access = IVAL(req->vwv+15, 1);
 	create_disposition = IVAL(req->vwv+17, 1);
 	create_options = IVAL(req->vwv+19, 1);
@@ -483,7 +478,8 @@ void reply_ntcreate_and_X(struct smb_request *req)
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
-				0,
+				(file_attributes & FILE_FLAG_POSIX_SEMANTICS) ?
+					UCF_POSIX_PATHNAMES : 0,
 				NULL,
 				&smb_fname);
 
@@ -497,6 +493,13 @@ void reply_ntcreate_and_X(struct smb_request *req)
 		reply_nterror(req, status);
 		goto out;
 	}
+
+	/*
+	 * Bug #6898 - clients using Windows opens should
+	 * never be able to set this attribute into the
+	 * VFS.
+	 */
+	file_attributes &= ~FILE_FLAG_POSIX_SEMANTICS;
 
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
@@ -918,11 +921,6 @@ static void call_nt_transact_create(connection_struct *conn,
 	flags = IVAL(params,0);
 	access_mask = IVAL(params,8);
 	file_attributes = IVAL(params,20);
-	/*
-	 * Bug #6898 - clients using Windows opens should
-	 * never be able to set this attribute.
-	 */
-	file_attributes &= ~FILE_FLAG_POSIX_SEMANTICS;
 	share_access = IVAL(params,24);
 	create_disposition = IVAL(params,28);
 	create_options = IVAL(params,32);
@@ -1004,7 +1002,8 @@ static void call_nt_transact_create(connection_struct *conn,
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
-				0,
+				(file_attributes & FILE_FLAG_POSIX_SEMANTICS) ?
+					UCF_POSIX_PATHNAMES : 0,
 				NULL,
 				&smb_fname);
 
@@ -1024,6 +1023,13 @@ static void call_nt_transact_create(connection_struct *conn,
 		oplock_request |= (flags & REQUEST_BATCH_OPLOCK)
 			? BATCH_OPLOCK : 0;
 	}
+
+	/*
+	 * Bug #6898 - clients using Windows opens should
+	 * never be able to set this attribute into the
+	 * VFS.
+	 */
+	file_attributes &= ~FILE_FLAG_POSIX_SEMANTICS;
 
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
