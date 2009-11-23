@@ -1608,10 +1608,17 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 	} \
 } while (0);
 
-static WERROR clean_up_driver_struct_level_3(struct pipes_struct *rpc_pipe,
-					     struct spoolss_AddDriverInfo3 *driver)
+static WERROR clean_up_driver_struct_level(TALLOC_CTX *mem_ctx,
+					   struct pipes_struct *rpc_pipe,
+					   const char *architecture,
+					   const char **driver_path,
+					   const char **data_file,
+					   const char **config_file,
+					   const char **help_file,
+					   struct spoolss_StringArray *dependent_files,
+					   uint32_t *version)
 {
-	const char *architecture;
+	const char *short_architecture;
 	int i;
 	WERROR err;
 	char *_p;
@@ -1622,19 +1629,19 @@ static WERROR clean_up_driver_struct_level_3(struct pipes_struct *rpc_pipe,
 	 */
 	/* using an intermediate string to not have overlaping memcpy()'s */
 
-	strip_driver_path(driver, driver->driver_path);
-	strip_driver_path(driver, driver->data_file);
-	strip_driver_path(driver, driver->config_file);
-	strip_driver_path(driver, driver->help_file);
+	strip_driver_path(mem_ctx, *driver_path);
+	strip_driver_path(mem_ctx, *data_file);
+	strip_driver_path(mem_ctx, *config_file);
+	strip_driver_path(mem_ctx, *help_file);
 
-	if (driver->dependent_files && driver->dependent_files->string) {
-		for (i=0; driver->dependent_files->string[i]; i++) {
-			strip_driver_path(driver, driver->dependent_files->string[i]);
+	if (dependent_files && dependent_files->string) {
+		for (i=0; dependent_files->string[i]; i++) {
+			strip_driver_path(mem_ctx, dependent_files->string[i]);
 		}
 	}
 
-	architecture = get_short_archi(driver->architecture);
-	if (!architecture) {
+	short_architecture = get_short_archi(architecture);
+	if (!short_architecture) {
 		return WERR_UNKNOWN_PRINTER_DRIVER;
 	}
 
@@ -1650,76 +1657,40 @@ static WERROR clean_up_driver_struct_level_3(struct pipes_struct *rpc_pipe,
 	 *	NT2K: cversion=3
 	 */
 
-	if ((driver->version = get_correct_cversion(rpc_pipe, architecture,
-						     driver->driver_path,
-						     &err)) == -1)
+	*version = get_correct_cversion(rpc_pipe, short_architecture,
+					*driver_path, &err);
+	if (*version == -1) {
 		return err;
+	}
 
 	return WERR_OK;
 }
 
 /****************************************************************************
 ****************************************************************************/
-static WERROR clean_up_driver_struct_level_6(struct pipes_struct *rpc_pipe,
-					     struct spoolss_AddDriverInfo6 *driver)
-{
-	const char *architecture;
-	char *_p;
-	int i;
-	WERROR err;
 
-	/* clean up the driver name.
-	 * we can get .\driver.dll
-	 * or worse c:\windows\system\driver.dll !
-	 */
-	/* using an intermediate string to not have overlaping memcpy()'s */
-
-	strip_driver_path(driver, driver->driver_path);
-	strip_driver_path(driver, driver->data_file);
-	strip_driver_path(driver, driver->config_file);
-	strip_driver_path(driver, driver->help_file);
-
-	if (driver->dependent_files && driver->dependent_files->string) {
-		for (i=0; driver->dependent_files->string[i]; i++) {
-			strip_driver_path(driver, driver->dependent_files->string[i]);
-		}
-	}
-
-	architecture = get_short_archi(driver->architecture);
-	if (!architecture) {
-		return WERR_UNKNOWN_PRINTER_DRIVER;
-	}
-
-	/* jfm:7/16/2000 the client always sends the cversion=0.
-	 * The server should check which version the driver is by reading
-	 * the PE header of driver->driverpath.
-	 *
-	 * For Windows 95/98 the version is 0 (so the value sent is correct)
-	 * For Windows NT (the architecture doesn't matter)
-	 *	NT 3.1: cversion=0
-	 *	NT 3.5/3.51: cversion=1
-	 *	NT 4: cversion=2
-	 *	NT2K: cversion=3
-	 */
-
-	if ((driver->version = get_correct_cversion(rpc_pipe, architecture,
-						    driver->driver_path,
-						    &err)) == -1)
-			return err;
-
-	return WERR_OK;
-}
-
-/****************************************************************************
-****************************************************************************/
 WERROR clean_up_driver_struct(struct pipes_struct *rpc_pipe,
 			      struct spoolss_AddDriverInfoCtr *r)
 {
 	switch (r->level) {
 	case 3:
-		return clean_up_driver_struct_level_3(rpc_pipe, r->info.info3);
+		return clean_up_driver_struct_level(r, rpc_pipe,
+						    r->info.info3->architecture,
+						    &r->info.info3->driver_path,
+						    &r->info.info3->data_file,
+						    &r->info.info3->config_file,
+						    &r->info.info3->help_file,
+						    r->info.info3->dependent_files,
+						    &r->info.info3->version);
 	case 6:
-		return clean_up_driver_struct_level_6(rpc_pipe, r->info.info6);
+		return clean_up_driver_struct_level(r, rpc_pipe,
+						    r->info.info6->architecture,
+						    &r->info.info6->driver_path,
+						    &r->info.info6->data_file,
+						    &r->info.info6->config_file,
+						    &r->info.info6->help_file,
+						    r->info.info6->dependent_files,
+						    &r->info.info6->version);
 	default:
 		return WERR_NOT_SUPPORTED;
 	}
