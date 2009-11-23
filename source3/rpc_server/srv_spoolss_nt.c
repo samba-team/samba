@@ -4541,11 +4541,11 @@ static const char **string_array_from_driver_info(TALLOC_CTX *mem_ctx,
 
 static WERROR fill_printer_driver_info1(TALLOC_CTX *mem_ctx,
 					struct spoolss_DriverInfo1 *r,
-					const union spoolss_DriverInfo *driver,
+					const struct spoolss_DriverInfo3 *driver,
 					const char *servername,
 					const char *architecture)
 {
-	r->driver_name		= talloc_strdup(mem_ctx, driver->info3.driver_name);
+	r->driver_name		= talloc_strdup(mem_ctx, driver->driver_name);
 	W_ERROR_HAVE_NO_MEMORY(r->driver_name);
 
 	return WERR_OK;
@@ -4557,38 +4557,38 @@ static WERROR fill_printer_driver_info1(TALLOC_CTX *mem_ctx,
 
 static WERROR fill_printer_driver_info2(TALLOC_CTX *mem_ctx,
 					struct spoolss_DriverInfo2 *r,
-					const union spoolss_DriverInfo *driver,
+					const struct spoolss_DriverInfo3 *driver,
 					const char *servername)
 
 {
 	const char *cservername = canon_servername(servername);
 
-	r->version		= driver->info3.version;
+	r->version		= driver->version;
 
-	r->driver_name		= talloc_strdup(mem_ctx, driver->info3.driver_name);
+	r->driver_name		= talloc_strdup(mem_ctx, driver->driver_name);
 	W_ERROR_HAVE_NO_MEMORY(r->driver_name);
-	r->architecture		= talloc_strdup(mem_ctx, driver->info3.architecture);
+	r->architecture		= talloc_strdup(mem_ctx, driver->architecture);
 	W_ERROR_HAVE_NO_MEMORY(r->architecture);
 
-	if (strlen(driver->info3.driver_path)) {
+	if (strlen(driver->driver_path)) {
 		r->driver_path	= talloc_asprintf(mem_ctx, "\\\\%s%s",
-				cservername, driver->info3.driver_path);
+				cservername, driver->driver_path);
 	} else {
 		r->driver_path	= talloc_strdup(mem_ctx, "");
 	}
 	W_ERROR_HAVE_NO_MEMORY(r->driver_path);
 
-	if (strlen(driver->info3.data_file)) {
+	if (strlen(driver->data_file)) {
 		r->data_file	= talloc_asprintf(mem_ctx, "\\\\%s%s",
-				cservername, driver->info3.data_file);
+				cservername, driver->data_file);
 	} else {
 		r->data_file	= talloc_strdup(mem_ctx, "");
 	}
 	W_ERROR_HAVE_NO_MEMORY(r->data_file);
 
-	if (strlen(driver->info3.config_file)) {
+	if (strlen(driver->config_file)) {
 		r->config_file	= talloc_asprintf(mem_ctx, "\\\\%s%s",
-				cservername, driver->info3.config_file);
+				cservername, driver->config_file);
 	} else {
 		r->config_file	= talloc_strdup(mem_ctx, "");
 	}
@@ -4603,57 +4603,57 @@ static WERROR fill_printer_driver_info2(TALLOC_CTX *mem_ctx,
 
 static WERROR fill_printer_driver_info3(TALLOC_CTX *mem_ctx,
 					struct spoolss_DriverInfo3 *r,
-					const union spoolss_DriverInfo *driver,
+					const struct spoolss_DriverInfo3 *driver,
 					const char *servername)
 {
 	const char *cservername = canon_servername(servername);
 
-	r->version		= driver->info3.version;
+	r->version		= driver->version;
 
-	r->driver_name		= talloc_strdup(mem_ctx, driver->info3.driver_name);
+	r->driver_name		= talloc_strdup(mem_ctx, driver->driver_name);
 	W_ERROR_HAVE_NO_MEMORY(r->driver_name);
-	r->architecture		= talloc_strdup(mem_ctx, driver->info3.architecture);
+	r->architecture		= talloc_strdup(mem_ctx, driver->architecture);
 	W_ERROR_HAVE_NO_MEMORY(r->architecture);
 
-	if (strlen(driver->info3.driver_path)) {
+	if (strlen(driver->driver_path)) {
 		r->driver_path	= talloc_asprintf(mem_ctx, "\\\\%s%s",
-				cservername, driver->info3.driver_path);
+				cservername, driver->driver_path);
 	} else {
 		r->driver_path	= talloc_strdup(mem_ctx, "");
 	}
 	W_ERROR_HAVE_NO_MEMORY(r->driver_path);
 
-	if (strlen(driver->info3.data_file)) {
+	if (strlen(driver->data_file)) {
 		r->data_file	= talloc_asprintf(mem_ctx, "\\\\%s%s",
-				cservername, driver->info3.data_file);
+				cservername, driver->data_file);
 	} else {
 		r->data_file	= talloc_strdup(mem_ctx, "");
 	}
 	W_ERROR_HAVE_NO_MEMORY(r->data_file);
 
-	if (strlen(driver->info3.config_file)) {
+	if (strlen(driver->config_file)) {
 		r->config_file	= talloc_asprintf(mem_ctx, "\\\\%s%s",
-				cservername, driver->info3.config_file);
+				cservername, driver->config_file);
 	} else {
 		r->config_file	= talloc_strdup(mem_ctx, "");
 	}
 	W_ERROR_HAVE_NO_MEMORY(r->config_file);
 
-	if (strlen(driver->info3.help_file)) {
+	if (strlen(driver->help_file)) {
 		r->help_file	= talloc_asprintf(mem_ctx, "\\\\%s%s",
-				cservername, driver->info3.help_file);
+				cservername, driver->help_file);
 	} else {
 		r->help_file	= talloc_strdup(mem_ctx, "");
 	}
 	W_ERROR_HAVE_NO_MEMORY(r->help_file);
 
-	r->monitor_name		= talloc_strdup(mem_ctx, driver->info3.monitor_name);
+	r->monitor_name		= talloc_strdup(mem_ctx, driver->monitor_name);
 	W_ERROR_HAVE_NO_MEMORY(r->monitor_name);
-	r->default_datatype	= talloc_strdup(mem_ctx, driver->info3.default_datatype);
+	r->default_datatype	= talloc_strdup(mem_ctx, driver->default_datatype);
 	W_ERROR_HAVE_NO_MEMORY(r->default_datatype);
 
 	r->dependent_files = string_array_from_driver_info(mem_ctx,
-							   driver->info3.dependent_files,
+							   driver->dependent_files,
 							   cservername);
 	return WERR_OK;
 }
@@ -4664,58 +4664,58 @@ static WERROR fill_printer_driver_info3(TALLOC_CTX *mem_ctx,
 
 static WERROR fill_printer_driver_info4(TALLOC_CTX *mem_ctx,
 					struct spoolss_DriverInfo4 *r,
-					const union spoolss_DriverInfo *driver,
+					const struct spoolss_DriverInfo3 *driver,
 					const char *servername)
 {
 	const char *cservername = canon_servername(servername);
 
-	r->version		= driver->info3.version;
+	r->version		= driver->version;
 
-	r->driver_name		= talloc_strdup(mem_ctx, driver->info3.driver_name);
+	r->driver_name		= talloc_strdup(mem_ctx, driver->driver_name);
 	W_ERROR_HAVE_NO_MEMORY(r->driver_name);
-	r->architecture		= talloc_strdup(mem_ctx, driver->info3.architecture);
+	r->architecture		= talloc_strdup(mem_ctx, driver->architecture);
 	W_ERROR_HAVE_NO_MEMORY(r->architecture);
 
-	if (strlen(driver->info3.driver_path)) {
+	if (strlen(driver->driver_path)) {
 		r->driver_path	= talloc_asprintf(mem_ctx, "\\\\%s%s",
-				cservername, driver->info3.driver_path);
+				cservername, driver->driver_path);
 	} else {
 		r->driver_path	= talloc_strdup(mem_ctx, "");
 	}
 	W_ERROR_HAVE_NO_MEMORY(r->driver_path);
 
-	if (strlen(driver->info3.data_file)) {
+	if (strlen(driver->data_file)) {
 		r->data_file	= talloc_asprintf(mem_ctx, "\\\\%s%s",
-				cservername, driver->info3.data_file);
+				cservername, driver->data_file);
 	} else {
 		r->data_file	= talloc_strdup(mem_ctx, "");
 	}
 	W_ERROR_HAVE_NO_MEMORY(r->data_file);
 
-	if (strlen(driver->info3.config_file)) {
+	if (strlen(driver->config_file)) {
 		r->config_file	= talloc_asprintf(mem_ctx, "\\\\%s%s",
-				cservername, driver->info3.config_file);
+				cservername, driver->config_file);
 	} else {
 		r->config_file	= talloc_strdup(mem_ctx, "");
 	}
 	W_ERROR_HAVE_NO_MEMORY(r->config_file);
 
-	if (strlen(driver->info3.help_file)) {
+	if (strlen(driver->help_file)) {
 		r->help_file	= talloc_asprintf(mem_ctx, "\\\\%s%s",
-				cservername, driver->info3.help_file);
+				cservername, driver->help_file);
 	} else {
 		r->help_file	= talloc_strdup(mem_ctx, "");
 	}
 	W_ERROR_HAVE_NO_MEMORY(r->help_file);
 
 	r->dependent_files = string_array_from_driver_info(mem_ctx,
-							   driver->info3.dependent_files,
+							   driver->dependent_files,
 							   cservername);
 
 
-	r->monitor_name		= talloc_strdup(mem_ctx, driver->info3.monitor_name);
+	r->monitor_name		= talloc_strdup(mem_ctx, driver->monitor_name);
 	W_ERROR_HAVE_NO_MEMORY(r->monitor_name);
-	r->default_datatype	= talloc_strdup(mem_ctx, driver->info3.default_datatype);
+	r->default_datatype	= talloc_strdup(mem_ctx, driver->default_datatype);
 	W_ERROR_HAVE_NO_MEMORY(r->default_datatype);
 
 	r->previous_names = string_array_from_driver_info(mem_ctx,
@@ -4731,37 +4731,37 @@ static WERROR fill_printer_driver_info4(TALLOC_CTX *mem_ctx,
 
 static WERROR fill_printer_driver_info5(TALLOC_CTX *mem_ctx,
 					struct spoolss_DriverInfo5 *r,
-					const union spoolss_DriverInfo *driver,
+					const struct spoolss_DriverInfo3 *driver,
 					const char *servername)
 {
 	const char *cservername = canon_servername(servername);
 
-	r->version		= driver->info3.version;
+	r->version		= driver->version;
 
-	r->driver_name		= talloc_strdup(mem_ctx, driver->info3.driver_name);
+	r->driver_name		= talloc_strdup(mem_ctx, driver->driver_name);
 	W_ERROR_HAVE_NO_MEMORY(r->driver_name);
-	r->architecture		= talloc_strdup(mem_ctx, driver->info3.architecture);
+	r->architecture		= talloc_strdup(mem_ctx, driver->architecture);
 	W_ERROR_HAVE_NO_MEMORY(r->architecture);
 
-	if (strlen(driver->info3.driver_path)) {
+	if (strlen(driver->driver_path)) {
 		r->driver_path	= talloc_asprintf(mem_ctx, "\\\\%s%s",
-				cservername, driver->info3.driver_path);
+				cservername, driver->driver_path);
 	} else {
 		r->driver_path	= talloc_strdup(mem_ctx, "");
 	}
 	W_ERROR_HAVE_NO_MEMORY(r->driver_path);
 
-	if (strlen(driver->info3.data_file)) {
+	if (strlen(driver->data_file)) {
 		r->data_file	= talloc_asprintf(mem_ctx, "\\\\%s%s",
-				cservername, driver->info3.data_file);
+				cservername, driver->data_file);
 	} else {
 		r->data_file	= talloc_strdup(mem_ctx, "");
 	}
 	W_ERROR_HAVE_NO_MEMORY(r->data_file);
 
-	if (strlen(driver->info3.config_file)) {
+	if (strlen(driver->config_file)) {
 		r->config_file	= talloc_asprintf(mem_ctx, "\\\\%s%s",
-				cservername, driver->info3.config_file);
+				cservername, driver->config_file);
 	} else {
 		r->config_file	= talloc_strdup(mem_ctx, "");
 	}
@@ -4779,57 +4779,57 @@ static WERROR fill_printer_driver_info5(TALLOC_CTX *mem_ctx,
 
 static WERROR fill_printer_driver_info6(TALLOC_CTX *mem_ctx,
 					struct spoolss_DriverInfo6 *r,
-					const union spoolss_DriverInfo *driver,
+					const struct spoolss_DriverInfo3 *driver,
 					const char *servername)
 {
 	const char *cservername = canon_servername(servername);
 
-	r->version		= driver->info3.version;
+	r->version		= driver->version;
 
-	r->driver_name		= talloc_strdup(mem_ctx, driver->info3.driver_name);
+	r->driver_name		= talloc_strdup(mem_ctx, driver->driver_name);
 	W_ERROR_HAVE_NO_MEMORY(r->driver_name);
-	r->architecture		= talloc_strdup(mem_ctx, driver->info3.architecture);
+	r->architecture		= talloc_strdup(mem_ctx, driver->architecture);
 	W_ERROR_HAVE_NO_MEMORY(r->architecture);
 
-	if (strlen(driver->info3.driver_path)) {
+	if (strlen(driver->driver_path)) {
 		r->driver_path	= talloc_asprintf(mem_ctx, "\\\\%s%s",
-				cservername, driver->info3.driver_path);
+				cservername, driver->driver_path);
 	} else {
 		r->driver_path	= talloc_strdup(mem_ctx, "");
 	}
 	W_ERROR_HAVE_NO_MEMORY(r->driver_path);
 
-	if (strlen(driver->info3.data_file)) {
+	if (strlen(driver->data_file)) {
 		r->data_file	= talloc_asprintf(mem_ctx, "\\\\%s%s",
-				cservername, driver->info3.data_file);
+				cservername, driver->data_file);
 	} else {
 		r->data_file	= talloc_strdup(mem_ctx, "");
 	}
 	W_ERROR_HAVE_NO_MEMORY(r->data_file);
 
-	if (strlen(driver->info3.config_file)) {
+	if (strlen(driver->config_file)) {
 		r->config_file	= talloc_asprintf(mem_ctx, "\\\\%s%s",
-				cservername, driver->info3.config_file);
+				cservername, driver->config_file);
 	} else {
 		r->config_file	= talloc_strdup(mem_ctx, "");
 	}
 	W_ERROR_HAVE_NO_MEMORY(r->config_file);
 
-	if (strlen(driver->info3.help_file)) {
+	if (strlen(driver->help_file)) {
 		r->help_file	= talloc_asprintf(mem_ctx, "\\\\%s%s",
-				cservername, driver->info3.help_file);
+				cservername, driver->help_file);
 	} else {
 		r->help_file	= talloc_strdup(mem_ctx, "");
 	}
 	W_ERROR_HAVE_NO_MEMORY(r->help_file);
 
-	r->monitor_name		= talloc_strdup(mem_ctx, driver->info3.monitor_name);
+	r->monitor_name		= talloc_strdup(mem_ctx, driver->monitor_name);
 	W_ERROR_HAVE_NO_MEMORY(r->monitor_name);
-	r->default_datatype	= talloc_strdup(mem_ctx, driver->info3.default_datatype);
+	r->default_datatype	= talloc_strdup(mem_ctx, driver->default_datatype);
 	W_ERROR_HAVE_NO_MEMORY(r->default_datatype);
 
 	r->dependent_files = string_array_from_driver_info(mem_ctx,
-							   driver->info3.dependent_files,
+							   driver->dependent_files,
 							   cservername);
 	r->previous_names = string_array_from_driver_info(mem_ctx,
 							  NULL,
@@ -4873,7 +4873,7 @@ static WERROR fill_spoolss_DriverFileInfo(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 static WERROR spoolss_DriverFileInfo_from_driver(TALLOC_CTX *mem_ctx,
-						 const union spoolss_DriverInfo *driver,
+						 const struct spoolss_DriverInfo3 *driver,
 						 const char *cservername,
 						 struct spoolss_DriverFileInfo **info_p,
 						 uint32_t *count_p)
@@ -4886,7 +4886,7 @@ static WERROR spoolss_DriverFileInfo_from_driver(TALLOC_CTX *mem_ctx,
 	*info_p = NULL;
 	*count_p = 0;
 
-	if (strlen(driver->info3.driver_path)) {
+	if (strlen(driver->driver_path)) {
 		info = TALLOC_REALLOC_ARRAY(mem_ctx, info,
 					    struct spoolss_DriverFileInfo,
 					    count + 1);
@@ -4894,14 +4894,14 @@ static WERROR spoolss_DriverFileInfo_from_driver(TALLOC_CTX *mem_ctx,
 		result = fill_spoolss_DriverFileInfo(info,
 						     &info[count],
 						     cservername,
-						     driver->info3.driver_path,
+						     driver->driver_path,
 						     SPOOLSS_DRIVER_FILE_TYPE_RENDERING,
 						     0);
 		W_ERROR_NOT_OK_RETURN(result);
 		count++;
 	}
 
-	if (strlen(driver->info3.config_file)) {
+	if (strlen(driver->config_file)) {
 		info = TALLOC_REALLOC_ARRAY(mem_ctx, info,
 					    struct spoolss_DriverFileInfo,
 					    count + 1);
@@ -4909,14 +4909,14 @@ static WERROR spoolss_DriverFileInfo_from_driver(TALLOC_CTX *mem_ctx,
 		result = fill_spoolss_DriverFileInfo(info,
 						     &info[count],
 						     cservername,
-						     driver->info3.config_file,
+						     driver->config_file,
 						     SPOOLSS_DRIVER_FILE_TYPE_CONFIGURATION,
 						     0);
 		W_ERROR_NOT_OK_RETURN(result);
 		count++;
 	}
 
-	if (strlen(driver->info3.data_file)) {
+	if (strlen(driver->data_file)) {
 		info = TALLOC_REALLOC_ARRAY(mem_ctx, info,
 					    struct spoolss_DriverFileInfo,
 					    count + 1);
@@ -4924,14 +4924,14 @@ static WERROR spoolss_DriverFileInfo_from_driver(TALLOC_CTX *mem_ctx,
 		result = fill_spoolss_DriverFileInfo(info,
 						     &info[count],
 						     cservername,
-						     driver->info3.data_file,
+						     driver->data_file,
 						     SPOOLSS_DRIVER_FILE_TYPE_DATA,
 						     0);
 		W_ERROR_NOT_OK_RETURN(result);
 		count++;
 	}
 
-	if (strlen(driver->info3.help_file)) {
+	if (strlen(driver->help_file)) {
 		info = TALLOC_REALLOC_ARRAY(mem_ctx, info,
 					    struct spoolss_DriverFileInfo,
 					    count + 1);
@@ -4939,14 +4939,14 @@ static WERROR spoolss_DriverFileInfo_from_driver(TALLOC_CTX *mem_ctx,
 		result = fill_spoolss_DriverFileInfo(info,
 						     &info[count],
 						     cservername,
-						     driver->info3.help_file,
+						     driver->help_file,
 						     SPOOLSS_DRIVER_FILE_TYPE_HELP,
 						     0);
 		W_ERROR_NOT_OK_RETURN(result);
 		count++;
 	}
 
-	for (i=0; driver->info3.dependent_files[i] && driver->info3.dependent_files[i][0] != '\0'; i++) {
+	for (i=0; driver->dependent_files[i] && driver->dependent_files[i][0] != '\0'; i++) {
 		info = TALLOC_REALLOC_ARRAY(mem_ctx, info,
 					    struct spoolss_DriverFileInfo,
 					    count + 1);
@@ -4954,7 +4954,7 @@ static WERROR spoolss_DriverFileInfo_from_driver(TALLOC_CTX *mem_ctx,
 		result = fill_spoolss_DriverFileInfo(info,
 						     &info[count],
 						     cservername,
-						     driver->info3.dependent_files[i],
+						     driver->dependent_files[i],
 						     SPOOLSS_DRIVER_FILE_TYPE_OTHER,
 						     0);
 		W_ERROR_NOT_OK_RETURN(result);
@@ -4973,17 +4973,17 @@ static WERROR spoolss_DriverFileInfo_from_driver(TALLOC_CTX *mem_ctx,
 
 static WERROR fill_printer_driver_info101(TALLOC_CTX *mem_ctx,
 					  struct spoolss_DriverInfo101 *r,
-					  const union spoolss_DriverInfo *driver,
+					  const struct spoolss_DriverInfo3 *driver,
 					  const char *servername)
 {
 	const char *cservername = canon_servername(servername);
 	WERROR result;
 
-	r->version		= driver->info3.version;
+	r->version		= driver->version;
 
-	r->driver_name		= talloc_strdup(mem_ctx, driver->info3.driver_name);
+	r->driver_name		= talloc_strdup(mem_ctx, driver->driver_name);
 	W_ERROR_HAVE_NO_MEMORY(r->driver_name);
-	r->architecture		= talloc_strdup(mem_ctx, driver->info3.architecture);
+	r->architecture		= talloc_strdup(mem_ctx, driver->architecture);
 	W_ERROR_HAVE_NO_MEMORY(r->architecture);
 
 	result = spoolss_DriverFileInfo_from_driver(mem_ctx, driver,
@@ -4994,10 +4994,10 @@ static WERROR fill_printer_driver_info101(TALLOC_CTX *mem_ctx,
 		return result;
 	}
 
-	r->monitor_name		= talloc_strdup(mem_ctx, driver->info3.monitor_name);
+	r->monitor_name		= talloc_strdup(mem_ctx, driver->monitor_name);
 	W_ERROR_HAVE_NO_MEMORY(r->monitor_name);
 
-	r->default_datatype	= talloc_strdup(mem_ctx, driver->info3.default_datatype);
+	r->default_datatype	= talloc_strdup(mem_ctx, driver->default_datatype);
 	W_ERROR_HAVE_NO_MEMORY(r->default_datatype);
 
 	r->previous_names = string_array_from_driver_info(mem_ctx,
@@ -5041,7 +5041,7 @@ static WERROR construct_printer_driver_info_1(TALLOC_CTX *mem_ctx,
 		return WERR_UNKNOWN_PRINTER_DRIVER;
 	}
 
-	result = fill_printer_driver_info1(mem_ctx, r, driver, servername, architecture);
+	result = fill_printer_driver_info1(mem_ctx, r, &driver->info3, servername, architecture);
 
 	free_a_printer_driver(driver);
 	free_a_printer(&printer,2);
@@ -5075,7 +5075,7 @@ static WERROR construct_printer_driver_info_2(TALLOC_CTX *mem_ctx,
 		return WERR_UNKNOWN_PRINTER_DRIVER;
 	}
 
-	result = fill_printer_driver_info2(mem_ctx, r, driver, servername);
+	result = fill_printer_driver_info2(mem_ctx, r, &driver->info3, servername);
 
 	free_a_printer_driver(driver);
 	free_a_printer(&printer,2);
@@ -5140,7 +5140,7 @@ static WERROR construct_printer_driver_info_3(TALLOC_CTX *mem_ctx,
 #endif
 
 
-	status = fill_printer_driver_info3(mem_ctx, r, driver, servername);
+	status = fill_printer_driver_info3(mem_ctx, r, &driver->info3, servername);
 
 	free_a_printer_driver(driver);
 	free_a_printer(&printer,2);
@@ -5196,7 +5196,7 @@ static WERROR construct_printer_driver_info_6(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	status = fill_printer_driver_info6(mem_ctx, r, driver, servername);
+	status = fill_printer_driver_info6(mem_ctx, r, &driver->info3, servername);
 
 	free_a_printer(&printer,2);
 	free_a_printer_driver(driver);
@@ -5257,7 +5257,7 @@ static WERROR construct_printer_driver_info_101(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	result = fill_printer_driver_info101(mem_ctx, r, driver, servername);
+	result = fill_printer_driver_info101(mem_ctx, r, &driver->info3, servername);
 
 	free_a_printer(&printer, 2);
 	free_a_printer_driver(driver);
@@ -6599,28 +6599,28 @@ static WERROR enumprinterdrivers_level_by_architecture(TALLOC_CTX *mem_ctx,
 			switch (level) {
 			case 1:
 				result = fill_printer_driver_info1(info, &info[count+i].info1,
-								   driver, servername,
+								   &driver->info3, servername,
 								   architecture);
 				break;
 			case 2:
 				result = fill_printer_driver_info2(info, &info[count+i].info2,
-								   driver, servername);
+								   &driver->info3, servername);
 				break;
 			case 3:
 				result = fill_printer_driver_info3(info, &info[count+i].info3,
-								   driver, servername);
+								   &driver->info3, servername);
 				break;
 			case 4:
 				result = fill_printer_driver_info4(info, &info[count+i].info4,
-								   driver, servername);
+								   &driver->info3, servername);
 				break;
 			case 5:
 				result = fill_printer_driver_info5(info, &info[count+i].info5,
-								   driver, servername);
+								   &driver->info3, servername);
 				break;
 			case 6:
 				result = fill_printer_driver_info6(info, &info[count+i].info6,
-								   driver, servername);
+								   &driver->info3, servername);
 				break;
 			default:
 				result = WERR_UNKNOWN_LEVEL;
