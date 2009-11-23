@@ -47,6 +47,8 @@ struct partition_private_data {
 
 	uint64_t metadata_seq;
 	uint32_t in_transaction;
+
+	struct ldb_message *forced_module_msg;
 };
 
 #include "dsdb/samdb/ldb_modules/partition_proto.h"

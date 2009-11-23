@@ -549,78 +549,9 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
     samdb = Ldb(url=samdb_path, session_info=session_info, 
                 lp=lp, options=["modules:"])
 
-    #Add modules to the list to activate them by default
-    #beware often order is important
-    #
-    # Some Known ordering constraints:
-    # - rootdse must be first, as it makes redirects from "" -> cn=rootdse
-    # - extended_dn_in must be before objectclass.c, as it resolves the DN
-    # - objectclass must be before password_hash, because password_hash checks
-    #   that the objectclass is of type person (filled in by objectclass
-    #   module when expanding the objectclass list)
-    # - partition must be last
-    # - each partition has its own module list then
-    modules_list = ["resolve_oids",
-                    "rootdse",
-                    "lazy_commit",
-                    "paged_results",
-                    "ranged_results",
-                    "anr",
-                    "server_sort",
-                    "asq",
-                    "extended_dn_store",
-                    "extended_dn_in",
-                    "rdn_name",
-                    "objectclass",
-                    "descriptor",
-                    "acl",
-                    "samldb",
-                    "password_hash",
-                    "operational",
-                    "kludge_acl", 
-                    "schema_load",
-                    "instancetype"]
-    if serverrole == "domain controller":
-        objectguid_module = "repl_meta_data"
-    else:
-        objectguid_module = "objectguid"
-    tdb_modules_list = [
-                    "subtree_rename",
-                    "subtree_delete",
-                    "linked_attributes"]
-    extended_dn_module = "extended_dn_out_ldb"
-    modules_list2 = ["show_deleted",
-                     "new_partition",
-                     "partition"]
-
-    backend_modules = []
-
     ldap_backend_line = "# No LDAP backend"
     if provision_backend.type is not "ldb":
         ldap_backend_line = "ldapBackend: %s" % provision_backend.ldapi_uri
-        
-        # The LDAP backends assign the objectGUID on thier own
-        objectguid_module = None
-        # OpenLDAP and FDS handles subtree renames, so we don't want to do any of these things
-        tdb_modules_list = []
-
-        if provision_backend.ldap_backend_type == "fedora-ds":
-            backend_modules = ["nsuniqueid", "paged_searches"]
-            extended_dn_module_list = ["extended_dn_out_fds"];
-        elif provision_backend.ldap_backend_type == "openldap":
-            backend_modules = ["entryuuid", "paged_searches"]
-            extended_dn_module_list = ["extended_dn_out_openldap"]
-
-    if objectguid_module is not None:
-        modules_list.append(objectguid_module)
-
-    for m in tdb_modules_list:
-        modules_list.append(m)
-
-    modules_list.append(extended_dn_module)
-
-    for m in modules_list2:
-        modules_list.append(m)
 
     samdb.transaction_start()
     try:
@@ -629,16 +560,14 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
                 "SCHEMADN": ldb.Dn(schema.ldb, names.schemadn).get_casefold(), 
                 "CONFIGDN": ldb.Dn(schema.ldb, names.configdn).get_casefold(),
                 "DOMAINDN": ldb.Dn(schema.ldb, names.domaindn).get_casefold(),
-                "SCHEMADN_MOD": "schema_data",
-                "CONFIGDN_MOD": "naming_fsmo",
-                "DOMAINDN_MOD": "pdc_fsmo",
-                "MODULES_LIST": ",".join(modules_list),
-                "BACKEND_MOD": ",".join(backend_modules),
                 "LDAP_BACKEND_LINE": ldap_backend_line,
         })
 
         
-        samdb.load_ldif_file_add(setup_path("provision_init.ldif"))
+        setup_add_ldif(samdb, setup_path("provision_init.ldif"), {
+                "BACKEND_TYPE": provision_backend.type,
+                "SERVER_ROLE": serverrole
+                })
 
         message("Setting up sam.ldb rootDSE")
         setup_samdb_rootdse(samdb, setup_path, names)

@@ -129,7 +129,7 @@ static int partition_load_modules(struct ldb_context *ldb,
 static int partition_reload_metadata(struct ldb_module *module, struct partition_private_data *data, TALLOC_CTX *mem_ctx, struct ldb_message **_msg) 
 {
 	int ret;
-	struct ldb_message *msg;
+	struct ldb_message *msg, *module_msg;
 	struct ldb_result *res;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	const char *attrs[] = { "partition", "replicateEntries", "modules", "ldapBackend", NULL };
@@ -148,7 +148,16 @@ static int partition_reload_metadata(struct ldb_module *module, struct partition
 		return ret;
 	}
 
-	ret = partition_load_modules(ldb, data, msg);			
+	/* When used from Samba4, this message is set by the samba4
+	 * module, as a fixed value not read from the DB.  This avoids
+	 * listing modules in the DB */
+	if (data->forced_module_msg) {
+		module_msg = data->forced_module_msg;
+	} else {
+		module_msg = msg;
+	}
+
+	ret = partition_load_modules(ldb, data, module_msg);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -790,7 +799,7 @@ int partition_init(struct ldb_module *module)
 {
 	int ret;
 	TALLOC_CTX *mem_ctx = talloc_new(module);
-
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct partition_private_data *data;
 
 	if (!mem_ctx) {
@@ -801,6 +810,14 @@ int partition_init(struct ldb_module *module)
 	if (data == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
+
+	/* When used from Samba4, this message is set by the samba4
+	 * module, as a fixed value not read from the DB.  This avoids
+	 * listing modules in the DB */
+	data->forced_module_msg = talloc_get_type(
+		ldb_get_opaque(ldb,
+			       DSDB_OPAQUE_PARTITION_MODULE_MSG_OPAQUE_NAME),
+		struct ldb_message);
 
 	/* This loads the partitions */
 	ret = partition_reload_if_required(module, data);
@@ -813,14 +830,14 @@ int partition_init(struct ldb_module *module)
 
 	ret = ldb_mod_register_control(module, LDB_CONTROL_DOMAIN_SCOPE_OID);
 	if (ret != LDB_SUCCESS) {
-		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_ERROR,
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
 			"partition: Unable to register control with rootdse!\n");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	ret = ldb_mod_register_control(module, LDB_CONTROL_SEARCH_OPTIONS_OID);
 	if (ret != LDB_SUCCESS) {
-		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_ERROR,
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
 			"partition: Unable to register control with rootdse!\n");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}

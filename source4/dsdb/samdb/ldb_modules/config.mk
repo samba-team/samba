@@ -9,6 +9,17 @@ $(eval $(call proto_header_template,$(dsdbsrcdir)/samdb/ldb_modules/util_proto.h
 
 
 ################################################
+# Start MODULE ldb_samba_dsdb
+[MODULE::ldb_samba_dsdb]
+SUBSYSTEM = LIBLDB
+PRIVATE_DEPENDENCIES = SAMDB LIBTALLOC LIBEVENTS LIBNDR
+INIT_FUNCTION = LDB_MODULE(samba_dsdb)
+# End MODULE ldb_samba_dsdb
+################################################
+
+ldb_samba_dsdb_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/samba_dsdb.o
+
+################################################
 # Start MODULE ldb_objectguid
 [MODULE::ldb_objectguid]
 SUBSYSTEM = LIBLDB

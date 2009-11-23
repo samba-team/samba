@@ -20,3 +20,10 @@ passwordAttribute: initialAuthIncoming
 
 dn: @OPTIONS
 checkBaseOnSearch: TRUE
+
+dn: @SAMBA_DSDB
+backendType: ${BACKEND_TYPE}
+serverRole: ${SERVER_ROLE}
+
+dn: @MODULES
+@LIST: samba_dsdb

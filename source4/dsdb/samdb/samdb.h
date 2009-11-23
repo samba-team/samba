@@ -140,4 +140,6 @@ struct dsdb_extended_dn_store_format {
 	bool store_extended_dn_in_ldb;
 };
 
+#define DSDB_OPAQUE_PARTITION_MODULE_MSG_OPAQUE_NAME "DSDB_OPAQUE_PARTITION_MODULE_MSG"
+
 #endif /* __SAMDB_H__ */
