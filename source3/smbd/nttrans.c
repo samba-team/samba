@@ -418,6 +418,11 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	flags = IVAL(req->vwv+3, 1);
 	access_mask = IVAL(req->vwv+7, 1);
 	file_attributes = IVAL(req->vwv+13, 1);
+	/*
+	 * Bug #6898 - clients using Windows opens should
+	 * never be able to set this attribute.
+	 */
+	file_attributes &= ~FILE_FLAG_POSIX_SEMANTICS;
 	share_access = IVAL(req->vwv+15, 1);
 	create_disposition = IVAL(req->vwv+17, 1);
 	create_options = IVAL(req->vwv+19, 1);
@@ -913,6 +918,11 @@ static void call_nt_transact_create(connection_struct *conn,
 	flags = IVAL(params,0);
 	access_mask = IVAL(params,8);
 	file_attributes = IVAL(params,20);
+	/*
+	 * Bug #6898 - clients using Windows opens should
+	 * never be able to set this attribute.
+	 */
+	file_attributes &= ~FILE_FLAG_POSIX_SEMANTICS;
 	share_access = IVAL(params,24);
 	create_disposition = IVAL(params,28);
 	create_options = IVAL(params,32);
