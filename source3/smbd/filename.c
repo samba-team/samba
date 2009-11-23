@@ -238,7 +238,8 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		}
 	}
 
-	posix_pathnames = lp_posix_pathnames();
+	posix_pathnames = (lp_posix_pathnames() ||
+				(ucf_flags & UCF_POSIX_PATHNAMES));
 
 	/*
 	 * Strip off the stream, and add it back when we're done with the
