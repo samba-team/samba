@@ -1010,7 +1010,9 @@ static struct tdb_wrap *create_recdb(struct ctdb_context *ctdb, TALLOC_CTX *mem_
 	unsigned tdb_flags;
 
 	/* open up the temporary recovery database */
-	name = talloc_asprintf(mem_ctx, "%s/recdb.tdb", ctdb->db_directory);
+	name = talloc_asprintf(mem_ctx, "%s/recdb.tdb.%u",
+			       ctdb->db_directory_state,
+			       ctdb->pnn);
 	if (name == NULL) {
 		return NULL;
 	}
