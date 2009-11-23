@@ -4946,7 +4946,7 @@ static WERROR spoolss_DriverFileInfo_from_driver(TALLOC_CTX *mem_ctx,
 		count++;
 	}
 
-	for (i=0; driver->info3.dependent_files[i][0] != '\0'; i++) {
+	for (i=0; driver->info3.dependent_files[i] && driver->info3.dependent_files[i][0] != '\0'; i++) {
 		info = TALLOC_REALLOC_ARRAY(mem_ctx, info,
 					    struct spoolss_DriverFileInfo,
 					    count + 1);
