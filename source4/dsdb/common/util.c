@@ -1027,6 +1027,24 @@ struct ldb_dn *samdb_schema_dn(struct ldb_context *sam_ctx)
 	return ldb_get_schema_basedn(sam_ctx);
 }
 
+struct ldb_dn *samdb_aggregate_schema_dn(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx) 
+{
+	struct ldb_dn *schema_dn = ldb_get_schema_basedn(sam_ctx);
+	struct ldb_dn *aggregate_dn;
+	if (!schema_dn) {
+		return NULL;
+	}
+
+	aggregate_dn = ldb_dn_copy(mem_ctx, schema_dn);
+	if (!aggregate_dn) {
+		return NULL;
+	}
+	if (!ldb_dn_add_child_fmt(aggregate_dn, "CN=Aggregate")) {
+		return NULL;
+	}
+	return aggregate_dn;
+}
+
 struct ldb_dn *samdb_root_dn(struct ldb_context *sam_ctx) 
 {
 	return ldb_get_root_basedn(sam_ctx);
