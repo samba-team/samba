@@ -20,6 +20,17 @@ INIT_FUNCTION = LDB_MODULE(samba_dsdb)
 ldb_samba_dsdb_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/samba_dsdb.o
 
 ################################################
+# Start MODULE ldb_samba_secrets
+[MODULE::ldb_samba_secrets]
+SUBSYSTEM = LIBLDB
+PRIVATE_DEPENDENCIES = SAMDB LIBTALLOC LIBEVENTS LIBNDR
+INIT_FUNCTION = LDB_MODULE(samba_secrets)
+# End MODULE ldb_samba_secrets
+################################################
+
+ldb_samba_secrets_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/samba_secrets.o
+
+################################################
 # Start MODULE ldb_objectguid
 [MODULE::ldb_objectguid]
 SUBSYSTEM = LIBLDB
