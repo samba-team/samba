@@ -528,7 +528,7 @@ static int update_tuning_db(struct ctdb_db_context *ctdb_db, struct vacuum_data 
 
 	tune_tdb = tdb_open(vac_dbname, 0,
 			    TDB_DISALLOW_NESTING,
-			    O_RDWR|O_CREAT, 0644);
+			    O_RDWR|O_CREAT, 0600);
 	if (tune_tdb == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to create/open %s\n", TUNINGDBNAME));
 		talloc_free(tmp_ctx);
