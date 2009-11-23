@@ -725,7 +725,7 @@ static int vacuum_child_destructor(struct ctdb_vacuum_child_context *child_ctx)
 	struct ctdb_db_context *ctdb_db = child_ctx->vacuum_handle->ctdb_db;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 
-	DEBUG(DEBUG_ERR,("Vacuuming took %.3f seconds for database %s\n", l, ctdb_db->db_name));
+	DEBUG(DEBUG_INFO,("Vacuuming took %.3f seconds for database %s\n", l, ctdb_db->db_name));
 
 	if (child_ctx->child_pid != -1) {
 		kill(child_ctx->child_pid, SIGKILL);
@@ -764,7 +764,7 @@ static void vacuum_child_handler(struct event_context *ev, struct fd_event *fde,
 	char c = 0;
 	int ret;
 
-	DEBUG(DEBUG_NOTICE,("Vacuuming child process %d finished for db %s\n", child_ctx->child_pid, child_ctx->vacuum_handle->ctdb_db->db_name));
+	DEBUG(DEBUG_INFO,("Vacuuming child process %d finished for db %s\n", child_ctx->child_pid, child_ctx->vacuum_handle->ctdb_db->db_name));
 	child_ctx->child_pid = -1;
 
 	ret = read(child_ctx->fd[0], &c, 1);
@@ -827,7 +827,7 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 		char cc = 0;
 		close(child_ctx->fd[0]);
 
-		DEBUG(DEBUG_NOTICE,("Vacuuming child process %d for db %s started\n", getpid(), ctdb_db->db_name));
+		DEBUG(DEBUG_INFO,("Vacuuming child process %d for db %s started\n", getpid(), ctdb_db->db_name));
 	
 		if (switch_from_server_to_client(ctdb) != 0) {
 			DEBUG(DEBUG_CRIT, (__location__ "ERROR: failed to switch vacuum daemon into client mode. Shutting down.\n"));
