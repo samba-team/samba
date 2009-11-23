@@ -1156,8 +1156,7 @@ gid_t nametogid(const char *name);
 void smb_panic(const char *const why);
 void log_stack_trace(void);
 const char *readdirname(SMB_STRUCT_DIR *p);
-bool is_in_path(const char *name, name_compare_entry *namelist,
-		enum protocol_types proto, bool case_sensitive);
+bool is_in_path(const char *name, name_compare_entry *namelist, bool case_sensitive);
 void set_namearray(name_compare_entry **ppname_array, const char *namelist);
 void free_namearray(name_compare_entry *name_array);
 bool fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);

@@ -780,8 +780,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 
 NTSTATUS check_name(connection_struct *conn, const char *name)
 {
-	if (is_in_path(name, conn->veto_list, get_Protocol(),
-		       conn->case_sensitive)) {
+	if (IS_VETO_PATH(conn, name))  {
 		/* Is it not dot or dot dot. */
 		if (!((name[0] == '.') && (!name[1] ||
 					(name[1] == '.' && !name[2])))) {

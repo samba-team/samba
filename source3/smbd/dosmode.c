@@ -455,8 +455,7 @@ uint32 dos_mode_msdfs(connection_struct *conn,
 	/* Optimization : Only call is_hidden_path if it's not already
 	   hidden. */
 	if (!(result & aHIDDEN) &&
-	    is_in_path(smb_fname->base_name, conn->hide_list, get_Protocol(),
-		       conn->case_sensitive)) {
+	    IS_HIDDEN_PATH(conn, smb_fname->base_name)) {
 		result |= aHIDDEN;
 	}
 
@@ -642,8 +641,7 @@ uint32 dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 	/* Optimization : Only call is_hidden_path if it's not already
 	   hidden. */
 	if (!(result & aHIDDEN) &&
-	    is_in_path(smb_fname->base_name, conn->hide_list, get_Protocol(),
-		       conn->case_sensitive)) {
+	    IS_HIDDEN_PATH(conn, smb_fname->base_name)) {
 		result |= aHIDDEN;
 	}
 

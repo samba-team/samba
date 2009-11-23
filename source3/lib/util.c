@@ -1666,8 +1666,7 @@ const char *readdirname(SMB_STRUCT_DIR *p)
  of a path matches a (possibly wildcarded) entry in a namelist.
 ********************************************************************/
 
-bool is_in_path(const char *name, name_compare_entry *namelist,
-		enum protocol_types proto, bool case_sensitive)
+bool is_in_path(const char *name, name_compare_entry *namelist, bool case_sensitive)
 {
 	const char *last_component;
 
@@ -1689,7 +1688,7 @@ bool is_in_path(const char *name, name_compare_entry *namelist,
 	for(; namelist->name != NULL; namelist++) {
 		if(namelist->is_wild) {
 			if (mask_match(last_component, namelist->name,
-				       proto, case_sensitive)) {
+				       get_Protocol(), case_sensitive)) {
 				DEBUG(8,("is_in_path: mask match succeeded\n"));
 				return True;
 			}
