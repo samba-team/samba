@@ -16,6 +16,24 @@ if test x$ac_cv_prog_cc_g = xyes -a x$debug = xyes; then
 	CFLAGS="${CFLAGS} -g"
 fi
 
+dnl ###########################################################################
+dnl _AC_LANG_COMPILER_SUNCC
+dnl Check whether the compiler for the current language is really Sun compiler.
+dnl ###########################################################################
+m4_define([AC_LANG_COMPILER_SUNCC],
+[AC_CACHE_CHECK([whether we are really using the Sun _AC_LANG compiler],
+                [ac_cv_[]_AC_LANG_ABBREV[]_compiler_suncc],
+[_AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [[#ifndef __SUNPRO_C
+       choke me
+#endif
+]])],
+                   [ac_compiler_suncc=yes],
+                   [ac_compiler_suncc=no])
+ac_cv_[]_AC_LANG_ABBREV[]_compiler_suncc=$ac_compiler_suncc
+])])
+
+AC_LANG_COMPILER_SUNCC
+
 ############################################
 # check if the compiler handles c99 struct initialization
 LIBREPLACE_C99_STRUCT_INIT(samba_cv_c99_struct_initialization=yes,
@@ -131,7 +149,7 @@ if test x$developer = xyes; then
 	    AC_SUBST(CFLAG_NO_CAST_QUAL)
 	    AX_CFLAGS_GCC_OPTION(-Wno-unused-macros, CFLAG_NO_UNUSED_MACROS)
 	    AC_SUBST(CFLAG_NO_UNUSED_MACROS)
-	else
+	elif test x"$ac_cv_c_compiler_suncc" != x"yes"; then
 	    AX_CFLAGS_IRIX_OPTION(-fullwarn, DEVELOPER_CFLAGS)
 	fi
 
