@@ -61,7 +61,9 @@ static void sigterm(int sig)
 struct ctdb_event_script_state {
 	struct ctdb_context *ctdb;
 	pid_t child;
+	/* Warning: this can free us! */
 	void (*callback)(struct ctdb_context *, int, void *);
+	int cb_status;
 	int fd[2];
 	void *private_data;
 	const char *options;
@@ -609,21 +611,16 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 	struct ctdb_event_script_state *state = 
 		talloc_get_type(p, struct ctdb_event_script_state);
 	struct ctdb_context *ctdb = state->ctdb;
-	int rt;
 
-	if (read(state->fd[0], &rt, sizeof(rt)) != sizeof(rt))
-		rt = -2;
-
-	DEBUG(DEBUG_INFO,(__location__ " Eventscript %s finished with state %d\n", state->options, rt));
-
-	if (state->callback) {
-		state->callback(ctdb, rt, state->private_data);
-		state->callback = NULL;
+	if (read(state->fd[0], &state->cb_status, sizeof(state->cb_status)) !=
+	    sizeof(state->cb_status)) {
+		state->cb_status = -2;
 	}
 
-	ctdb->event_script_timeouts = 0;
+	DEBUG(DEBUG_INFO,(__location__ " Eventscript %s finished with state %d\n", state->options, state->cb_status));
 
-	talloc_set_destructor(state, NULL);
+	state->child = 0;
+	ctdb->event_script_timeouts = 0;
 	talloc_free(state);
 }
 
@@ -647,18 +644,13 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 				      struct timeval t, void *p)
 {
 	struct ctdb_event_script_state *state = talloc_get_type(p, struct ctdb_event_script_state);
-	void *private_data = state->private_data;
 	struct ctdb_context *ctdb = state->ctdb;
 
 	DEBUG(DEBUG_ERR,("Event script timed out : %s count : %u  pid : %d\n", state->options, ctdb->event_script_timeouts, state->child));
 
 	if (kill(state->child, 0) != 0) {
 		DEBUG(DEBUG_ERR,("Event script child process already dead, errno %s(%d)\n", strerror(errno), errno));
-		if (state->callback) {
-			state->callback(ctdb, 0, private_data);
-			state->callback = NULL;
-		}
-		talloc_set_destructor(state, NULL);
+		state->child = 0;
 		talloc_free(state);
 		return;
 	}
@@ -674,22 +666,13 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 
 		if (ctdb->event_script_timeouts > ctdb->tunable.script_ban_count) {
 			DEBUG(DEBUG_ERR, ("Maximum timeout count %u reached for eventscript. Making node unhealthy\n", ctdb->tunable.script_ban_count));
-			if (state->callback) {
-				state->callback(ctdb, -ETIME, private_data);
-				state->callback = NULL;
-			}
+			state->cb_status = -ETIME;
 		} else {
-			if (state->callback) {
-			  	state->callback(ctdb, 0, private_data);
-				state->callback = NULL;
-			}
+			state->cb_status = 0;
 		}
 	} else if (!strcmp(state->options, "startup")) {
 		DEBUG(DEBUG_ERR, (__location__ " eventscript for startup event timedout.\n"));
-		if (state->callback) {
-			state->callback(ctdb, -1, private_data);
-			state->callback = NULL;
-		}
+		state->cb_status = -1;
 	} else {
 		/* if it is not a monitor or a startup event we ban ourself
 		   immediately
@@ -698,10 +681,7 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 
 		ctdb_ban_self(ctdb, ctdb->tunable.recovery_ban_period);
 
-		if (state->callback) {
-			state->callback(ctdb, -1, private_data);
-			state->callback = NULL;
-		}
+		state->cb_status = -1;
 	}
 
 	if (!strcmp(state->options, "monitor") || !strcmp(state->options, "status")) {
@@ -729,19 +709,22 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 }
 
 /*
-  destroy a running event script
+  destroy an event script: kill it if ->child != 0.
  */
 static int event_script_destructor(struct ctdb_event_script_state *state)
 {
-	DEBUG(DEBUG_ERR,(__location__ " Sending SIGTERM to child pid:%d\n", state->child));
+	if (state->child) {
+		DEBUG(DEBUG_ERR,(__location__ " Sending SIGTERM to child pid:%d\n", state->child));
 
-	if (state->callback) {
-		state->callback(state->ctdb, 0, state->private_data);
-		state->callback = NULL;
+		if (kill(state->child, SIGTERM) != 0) {
+			DEBUG(DEBUG_ERR,("Failed to kill child process for eventscript, errno %s(%d)\n", strerror(errno), errno));
+		}
 	}
 
-	if (kill(state->child, SIGTERM) != 0) {
-		DEBUG(DEBUG_ERR,("Failed to kill child process for eventscript, errno %s(%d)\n", strerror(errno), errno));
+	/* This is allowed to free us; talloc will prevent double free anyway,
+	 * but beware if you call this outside the destructor! */
+	if (state->callback) {
+		state->callback(state->ctdb, state->cb_status, state->private_data);
 	}
 
 	return 0;
@@ -943,6 +926,7 @@ static void run_eventscripts_callback(struct ctdb_context *ctdb, int status,
 	}
 
 	ctdb_request_control_reply(ctdb, state->c, NULL, status, NULL);
+	/* This will free the struct ctdb_event_script_state we are in! */
 	talloc_free(state);
 	return;
 }
