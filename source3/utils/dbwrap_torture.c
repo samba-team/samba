@@ -33,20 +33,6 @@
 
 extern bool AllowDebugChange;
 
-static struct timeval tp1,tp2;
-
-static void start_timer(void)
-{
-	gettimeofday(&tp1,NULL);
-}
-
-static double end_timer(void)
-{
-	gettimeofday(&tp2,NULL);
-	return (tp2.tv_sec + (tp2.tv_usec*1.0e-6)) -
-		(tp1.tv_sec + (tp1.tv_usec*1.0e-6));
-}
-
 #define DEFAULT_DB_NAME "transaction.tdb"
 
 static int timelimit = 10;
@@ -138,12 +124,13 @@ static void test_store_records(struct db_context *db, struct tevent_context *ev)
 	TDB_DATA key;
 	uint32_t *counters;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	struct timeval start;
 
 	key.dptr = (unsigned char *)discard_const("testkey");
 	key.dsize = strlen((const char *)key.dptr)+1;
 
-	start_timer();
-	while ((timelimit == 0) || (end_timer() < timelimit)) {
+	start = timeval_current();
+	while ((timelimit == 0) || (timeval_elapsed(&start) < timelimit)) {
 		struct db_record *rec;
 		TDB_DATA data;
 		int ret;
