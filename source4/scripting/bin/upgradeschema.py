@@ -129,7 +129,6 @@ setup_dir = opts.setupdir
 if setup_dir is None:
     setup_dir = find_setup_dir()
 
-setup_dir = "/usr/local/src/samba4/source4/setup"
 session = system_session()
 
 # Create an array of backlinked attributes
@@ -348,7 +347,6 @@ def handle_security_desc(ischema,att,msgElt,hashallSD,old,new):
 # if it has a certain value or if it's for a certain object or 
 # a class of object. 
 # It can be also if we want to do a merge of value instead of a simple replace 
-
 def handle_special_case(att,delta,new,old,ischema):
 	flag = delta.get(att).flags()
 	if (att == "gPLink" or att == "gPCFileSysPath") and flag ==  ldb.FLAG_MOD_REPLACE and str(new[0].dn).lower() == str(old[0].dn).lower():
@@ -449,6 +447,7 @@ def update_secrets(newpaths,paths,creds,session):
 				
 		delta.dn = res2[0].dn
 		sam_ldb.modify(delta)	
+
 # Check difference between the current provision and the reference provision.
 # It looks for all object which base DN is name if ischema is false then scan is done in 
 # cross partition mode.
@@ -510,7 +509,6 @@ def check_diff_name(newpaths,paths,creds,session,basedn,names,ischema):
 	print "There are %d missing objects"%(len(listMissing))
 	for dn in listMissing:
 		res = newsam_ldb.search(expression="dn=%s"%(str(dn)),base=basedn, scope=SCOPE_SUBTREE,controls=["search_options:1:2"])
-		#print >>sys.stderr, "@@@"+str(dn)
 		delta = sam_ldb.msg_diff(empty,res[0])
 		for att in hashAttrNotCopied.keys():
 			delta.remove(att)
@@ -642,8 +640,6 @@ def rmall(topdir):
 # For each partition check the differences
 
 def check_diff(newpaths,paths,creds,session,names):
-	#for name in [str(names.schemadn), str(names.configdn), str(names.rootdn)] :
-	#for name in [str(names.configdn)] :
 	print "Copy samdb"
 	shutil.copy(newpaths.samdb,paths.samdb)
 
@@ -685,7 +681,6 @@ names = guess_names_from_current_provision(creds,session,paths)
 print_names(names)
 # With all this information let's create a fresh new provision used as reference
 provisiondir = newprovision(names,setup_dir,creds,session,smbconf)
-#provisiondir = "/home/mat/provision12962"
 # Get file paths of this new provision
 newpaths = get_paths(targetdir=provisiondir)
 populate_backlink(newpaths,creds,session,names.schemadn)
