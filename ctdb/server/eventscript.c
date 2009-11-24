@@ -609,9 +609,10 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 	struct ctdb_event_script_state *state = 
 		talloc_get_type(p, struct ctdb_event_script_state);
 	struct ctdb_context *ctdb = state->ctdb;
-	signed char rt = 0;
+	int rt;
 
-	read(state->fd[0], &rt, sizeof(rt));
+	if (read(state->fd[0], &rt, sizeof(rt)) != sizeof(rt))
+		rt = -2;
 
 	DEBUG(DEBUG_INFO,(__location__ " Eventscript %s finished with state %d\n", state->options, rt));
 
@@ -825,12 +826,14 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	}
 
 	if (state->child == 0) {
-		signed char rt;
+		int rt;
 
 		close(state->fd[0]);
 		set_close_on_exec(state->fd[1]);
 
 		rt = ctdb_event_script_v(ctdb, state->options);
+		/* We must be able to write PIPEBUF bytes at least; if this
+		   somehow fails, the read above will be short. */
 		write(state->fd[1], &rt, sizeof(rt));
 		close(state->fd[1]);
 		_exit(rt);
