@@ -2471,9 +2471,13 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 	}
 
 	/*
-	 * Try NetSamLogonEx for AD domains
+	 * Always try netr_LogonSamLogonEx. We will fall back for NT4
+	 * which gives DCERPC_FAULT_OP_RNG_ERROR (function not
+	 * supported). We used to only try SamLogonEx for AD, but
+	 * Samba DCs can also do it. And because we don't distinguish
+	 * between Samba and NT4, always try it once.
 	 */
-	domain->can_do_samlogon_ex = domain->active_directory;
+	domain->can_do_samlogon_ex = true;
 
 	*cli = conn->netlogon_pipe;
 	return NT_STATUS_OK;
