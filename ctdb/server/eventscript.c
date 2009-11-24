@@ -744,6 +744,45 @@ static int event_script_destructor(struct ctdb_event_script_state *state)
 	return 0;
 }
 
+static unsigned int count_words(const char *options)
+{
+	unsigned int words = 0;
+
+	options += strspn(options, " \t");
+	while (*options) {
+		words++;
+		options += strcspn(options, " \t");
+		options += strspn(options, " \t");
+	}
+	return words;
+}
+
+static bool check_options(enum ctdb_eventscript_call call, const char *options)
+{
+	switch (call) {
+	/* These all take no arguments. */
+	case CTDB_EVENT_STARTUP:
+	case CTDB_EVENT_START_RECOVERY:
+	case CTDB_EVENT_RECOVERED:
+	case CTDB_EVENT_STOPPED:
+	case CTDB_EVENT_MONITOR:
+	case CTDB_EVENT_STATUS:
+	case CTDB_EVENT_SHUTDOWN:
+		return count_words(options) == 0;
+
+	case CTDB_EVENT_TAKE_IP: /* interface, IP address, netmask bits. */
+	case CTDB_EVENT_RELEASE_IP:
+		return count_words(options) == 3;
+
+	case CTDB_EVENT_UNKNOWN:
+		return true;
+
+	default:
+		DEBUG(DEBUG_ERR,(__location__ "Unknown ctdb_eventscript_call %u\n", call));
+		return false;
+	}
+}
+
 /*
   run the event script in the background, calling the callback when 
   finished
@@ -802,6 +841,12 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	state->timeout = timeval_set(ctdb->tunable.script_timeout, 0);
 	if (state->options == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " could not allocate state->options\n"));
+		talloc_free(state);
+		return -1;
+	}
+	if (!check_options(state->call, state->options)) {
+		DEBUG(DEBUG_ERR, ("Bad eventscript options '%s' for %s\n",
+				  call_names[state->call], state->options));
 		talloc_free(state);
 		return -1;
 	}
