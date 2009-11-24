@@ -791,7 +791,8 @@ NTSTATUS check_name(connection_struct *conn, const char *name)
 		}
 	}
 
-	if (!lp_widelinks(SNUM(conn)) || !lp_symlinks(SNUM(conn))) {
+	if (!lp_widelinks(SNUM(conn)) || !lp_symlinks(SNUM(conn)) ||
+			conn->case_sensitive) {
 		NTSTATUS status = check_reduced_name(conn,name);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(5,("check_name: name %s failed with %s\n",name,

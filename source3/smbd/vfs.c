@@ -862,7 +862,7 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 				DEBUG(3,("check_reduced_name: Component not a "
 					 "directory in getting realpath for "
 					 "%s\n", fname));
-				return map_nt_error_from_unix(errno);
+				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 			case ENOENT:
 			{
 				TALLOC_CTX *ctx = talloc_tos();
@@ -893,10 +893,18 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 				resolved_name = SMB_VFS_REALPATH(conn,tmp_fname,resolved_name_buf);
 #endif
 				if (!resolved_name) {
+					NTSTATUS status = map_nt_error_from_unix(errno);
+
+					if (errno == ENOENT || errno == ENOTDIR) {
+						status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+					}
+
 					DEBUG(3,("check_reduce_named: "
 						 "couldn't get realpath for "
-						 "%s\n", fname));
-					return map_nt_error_from_unix(errno);
+						 "%s (%s)\n",
+						fname,
+						nt_errstr(status)));
+					return status;
 				}
 				tmp_fname = talloc_asprintf(ctx,
 						"%s/%s",
