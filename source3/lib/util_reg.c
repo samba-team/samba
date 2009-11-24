@@ -73,29 +73,6 @@ const char *reg_type_lookup(enum winreg_Type type)
 	return result;
 }
 
-WERROR reg_pull_multi_sz(TALLOC_CTX *mem_ctx, const void *buf, size_t len,
-			 uint32 *num_values, char ***values)
-{
-	DATA_BLOB blob;
-	const char **vals;
-	int i;
-
-	blob = data_blob_const((uint8_t *)buf, len);
-
-	if (!pull_reg_multi_sz(mem_ctx, &blob, &vals)) {
-		return WERR_NOMEM;
-	}
-
-	for (i=0; vals[i]; i++) {
-		;;
-	}
-
-	*num_values = i;
-	*values = (char **)vals;
-
-	return WERR_OK;
-}
-
 /*******************************************************************
  push a string in unix charset into a REG_SZ UCS2 null terminated blob
  ********************************************************************/
