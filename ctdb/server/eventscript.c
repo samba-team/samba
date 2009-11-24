@@ -533,9 +533,9 @@ static int ctdb_run_event_script(struct ctdb_context *ctdb,
 					ctdb->event_script_dir,
 					current->name, "status");
 		} else {
-			cmdstr = talloc_asprintf(tmp_ctx, "%s/%s %s", 
+			cmdstr = talloc_asprintf(tmp_ctx, "%s/%s %s %s",
 					ctdb->event_script_dir,
-					current->name, options);
+					current->name, call_names[call], options);
 		}
 		CTDB_NO_MEMORY(ctdb, cmdstr);
 
@@ -629,7 +629,8 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 		state->cb_status = -2;
 	}
 
-	DEBUG(DEBUG_INFO,(__location__ " Eventscript %s finished with state %d\n", state->options, state->cb_status));
+	DEBUG(DEBUG_INFO,(__location__ " Eventscript %s %s finished with state %d\n",
+			  call_names[state->call], state->options, state->cb_status));
 
 	state->child = 0;
 	ctdb->event_script_timeouts = 0;
@@ -658,7 +659,8 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 	struct ctdb_event_script_state *state = talloc_get_type(p, struct ctdb_event_script_state);
 	struct ctdb_context *ctdb = state->ctdb;
 
-	DEBUG(DEBUG_ERR,("Event script timed out : %s count : %u  pid : %d\n", state->options, ctdb->event_script_timeouts, state->child));
+	DEBUG(DEBUG_ERR,("Event script timed out : %s %s count : %u  pid : %d\n",
+			 call_names[state->call], state->options, ctdb->event_script_timeouts, state->child));
 
 	if (kill(state->child, 0) != 0) {
 		DEBUG(DEBUG_ERR,("Event script child process already dead, errno %s(%d)\n", strerror(errno), errno));
@@ -796,9 +798,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	state->callback = callback;
 	state->private_data = private_data;
 	state->call = call;
-	state->options = talloc_asprintf(state, "%s ", call_names[call]);
-	if (state->options)
-		state->options = talloc_vasprintf_append(discard_const_p(char, state->options), fmt, ap);
+	state->options = talloc_vasprintf(state, fmt, ap);
 	state->timeout = timeval_set(ctdb->tunable.script_timeout, 0);
 	if (state->options == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " could not allocate state->options\n"));
@@ -806,7 +806,8 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	DEBUG(DEBUG_INFO,(__location__ " Starting eventscript %s\n", state->options));
+	DEBUG(DEBUG_INFO,(__location__ " Starting eventscript %s %s\n",
+			  call_names[state->call], state->options));
 	
 	ret = pipe(state->fd);
 	if (ret != 0) {
@@ -849,7 +850,8 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	if (!timeval_is_zero(&state->timeout)) {
 		event_add_timed(ctdb->ev, state, timeval_current_ofs(state->timeout.tv_sec, state->timeout.tv_usec), ctdb_event_script_timeout, state);
 	} else {
-		DEBUG(DEBUG_ERR, (__location__ " eventscript %s called with no timeout\n", state->options));
+		DEBUG(DEBUG_ERR, (__location__ " eventscript %s %s called with no timeout\n",
+				  call_names[state->call], state->options));
 	}
 
 	return 0;
