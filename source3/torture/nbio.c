@@ -28,6 +28,7 @@ static char buf[70000];
 extern int line_count;
 extern int nbio_id;
 static int nprocs;
+static struct timeval nb_start;
 
 static struct {
 	int fd;
@@ -61,7 +62,9 @@ void nb_alarm(int ignore)
 		if (!children[i].done) num_clients++;
 	}
 
-	printf("%4d  %8d  %.2f MB/sec\r", num_clients, lines/nprocs, 1.0e-6 * nbio_total() / end_timer());
+	printf("%4d  %8d  %.2f MB/sec\r",
+	       num_clients, lines/nprocs,
+	       1.0e-6 * nbio_total() / timeval_elapsed(&nb_start));
 
 	signal(SIGALRM, nb_alarm);
 	alarm(1);	
@@ -122,7 +125,7 @@ void nb_setup(struct cli_state *cli)
 {
 	signal(SIGSEGV, sigsegv);
 	c = cli;
-	start_timer();
+	nb_start = timeval_current();
 	children[nbio_id].done = 0;
 }
 
