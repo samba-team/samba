@@ -129,14 +129,17 @@ _PUBLIC_ int create_complex_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, 
 		}
 	}
 
-	/* make sure all the timestamps aren't the same, and are also 
-	   in different DST zones*/
-	setfile.generic.level = RAW_SFILEINFO_SETATTRE;
+	/* make sure all the timestamps aren't the same */
+	ZERO_STRUCT(setfile);
+	setfile.generic.level = RAW_SFILEINFO_BASIC_INFO;
 	setfile.generic.in.file.fnum = fnum;
 
-	setfile.setattre.in.create_time = t + 9*30*24*60*60;
-	setfile.setattre.in.access_time = t + 6*30*24*60*60;
-	setfile.setattre.in.write_time  = t + 3*30*24*60*60;
+	unix_to_nt_time(&setfile.basic_info.in.create_time,
+	    t + 9*30*24*60*60);
+	unix_to_nt_time(&setfile.basic_info.in.access_time,
+	    t + 6*30*24*60*60);
+	unix_to_nt_time(&setfile.basic_info.in.write_time,
+	    t + 3*30*24*60*60);
 
 	status = smb_raw_setfileinfo(cli->tree, &setfile);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -144,7 +147,7 @@ _PUBLIC_ int create_complex_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, 
 	}
 
 	/* make sure all the timestamps aren't the same */
-	fileinfo.generic.level = RAW_FILEINFO_GETATTRE;
+	fileinfo.generic.level = RAW_FILEINFO_BASIC_INFO;
 	fileinfo.generic.in.file.fnum = fnum;
 
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &fileinfo);
@@ -152,13 +155,13 @@ _PUBLIC_ int create_complex_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, 
 		printf("Failed to query file times - %s\n", nt_errstr(status));
 	}
 
-	if (setfile.setattre.in.create_time != fileinfo.getattre.out.create_time) {
+	if (setfile.basic_info.in.create_time != fileinfo.basic_info.out.create_time) {
 		printf("create_time not setup correctly\n");
 	}
-	if (setfile.setattre.in.access_time != fileinfo.getattre.out.access_time) {
+	if (setfile.basic_info.in.access_time != fileinfo.basic_info.out.access_time) {
 		printf("access_time not setup correctly\n");
 	}
-	if (setfile.setattre.in.write_time != fileinfo.getattre.out.write_time) {
+	if (setfile.basic_info.in.write_time != fileinfo.basic_info.out.write_time) {
 		printf("write_time not setup correctly\n");
 	}
 
@@ -206,14 +209,17 @@ int create_complex_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const char
 		}
 	}
 
-	/* make sure all the timestamps aren't the same, and are also 
-	   in different DST zones*/
-	setfile.generic.level = RAW_SFILEINFO_SETATTRE;
+	/* make sure all the timestamps aren't the same */
+	ZERO_STRUCT(setfile);
+	setfile.generic.level = RAW_SFILEINFO_BASIC_INFO;
 	setfile.generic.in.file.fnum = fnum;
 
-	setfile.setattre.in.create_time = t + 9*30*24*60*60;
-	setfile.setattre.in.access_time = t + 6*30*24*60*60;
-	setfile.setattre.in.write_time  = t + 3*30*24*60*60;
+	unix_to_nt_time(&setfile.basic_info.in.create_time,
+	    t + 9*30*24*60*60);
+	unix_to_nt_time(&setfile.basic_info.in.access_time,
+	    t + 6*30*24*60*60);
+	unix_to_nt_time(&setfile.basic_info.in.write_time,
+	    t + 3*30*24*60*60);
 
 	status = smb_raw_setfileinfo(cli->tree, &setfile);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -221,7 +227,7 @@ int create_complex_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const char
 	}
 
 	/* make sure all the timestamps aren't the same */
-	fileinfo.generic.level = RAW_FILEINFO_GETATTRE;
+	fileinfo.generic.level = RAW_FILEINFO_BASIC_INFO;
 	fileinfo.generic.in.file.fnum = fnum;
 
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &fileinfo);
@@ -229,13 +235,13 @@ int create_complex_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const char
 		printf("Failed to query file times - %s\n", nt_errstr(status));
 	}
 
-	if (setfile.setattre.in.create_time != fileinfo.getattre.out.create_time) {
+	if (setfile.basic_info.in.create_time != fileinfo.basic_info.out.create_time) {
 		printf("create_time not setup correctly\n");
 	}
-	if (setfile.setattre.in.access_time != fileinfo.getattre.out.access_time) {
+	if (setfile.basic_info.in.access_time != fileinfo.basic_info.out.access_time) {
 		printf("access_time not setup correctly\n");
 	}
-	if (setfile.setattre.in.write_time != fileinfo.getattre.out.write_time) {
+	if (setfile.basic_info.in.write_time != fileinfo.basic_info.out.write_time) {
 		printf("write_time not setup correctly\n");
 	}
 
