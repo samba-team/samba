@@ -32,6 +32,19 @@ static struct {
 	const char *script_running;
 } child_state;
 
+static const char *call_names[] = {
+	"startup",
+	"startrecovery",
+	"recovered",
+	"takeip",
+	"releaseip",
+	"stopped",
+	"monitor",
+	"status",
+	"shutdown",
+	""
+};
+
 static void ctdb_event_script_timeout(struct event_context *ev, struct timed_event *te, struct timeval t, void *p);
 
 /*
@@ -737,13 +750,14 @@ static int event_script_destructor(struct ctdb_event_script_state *state)
 static int ctdb_event_script_callback_v(struct ctdb_context *ctdb, 
 					void (*callback)(struct ctdb_context *, int, void *),
 					void *private_data,
+					enum ctdb_eventscript_call call,
 					const char *fmt, va_list ap)
 {
 	TALLOC_CTX *mem_ctx;
 	struct ctdb_event_script_state *state;
 	int ret;
 
-	if (!strcmp(fmt, "monitor") || !strcmp(fmt, "status")) {
+	if (call == CTDB_EVENT_MONITOR || call == CTDB_EVENT_STATUS) {
 		/* if this was a "monitor" or a status event, we recycle the
 		   context to start a new monitor event
 		*/
@@ -781,7 +795,9 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	state->ctdb = ctdb;
 	state->callback = callback;
 	state->private_data = private_data;
-	state->options = talloc_vasprintf(state, fmt, ap);
+	state->options = talloc_asprintf(state, "%s ", call_names[call]);
+	if (state->options)
+		state->options = talloc_vasprintf_append(discard_const_p(char, state->options), fmt, ap);
 	state->timeout = timeval_set(ctdb->tunable.script_timeout, 0);
 	if (state->options == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " could not allocate state->options\n"));
@@ -847,13 +863,14 @@ int ctdb_event_script_callback(struct ctdb_context *ctdb,
 			       TALLOC_CTX *mem_ctx,
 			       void (*callback)(struct ctdb_context *, int, void *),
 			       void *private_data,
+			       enum ctdb_eventscript_call call,
 			       const char *fmt, ...)
 {
 	va_list ap;
 	int ret;
 
 	va_start(ap, fmt);
-	ret = ctdb_event_script_callback_v(ctdb, callback, private_data, fmt, ap);
+	ret = ctdb_event_script_callback_v(ctdb, callback, private_data, call, fmt, ap);
 	va_end(ap);
 
 	return ret;
@@ -879,20 +896,20 @@ static void event_script_callback(struct ctdb_context *ctdb, int status, void *p
   run the event script, waiting for it to complete. Used when the caller
   doesn't want to continue till the event script has finished.
  */
-int ctdb_event_script(struct ctdb_context *ctdb, const char *fmt, ...)
+int ctdb_event_script_args(struct ctdb_context *ctdb, enum ctdb_eventscript_call call,
+			   const char *fmt, ...)
 {
 	va_list ap;
 	int ret;
 	struct callback_status status;
 
 	va_start(ap, fmt);
-	ret = ctdb_event_script_callback_v(ctdb, 
-			event_script_callback, &status, fmt, ap);
-	va_end(ap);
-
+	ret = ctdb_event_script_callback_v(ctdb,
+			event_script_callback, &status, call, fmt, ap);
 	if (ret != 0) {
 		return ret;
 	}
+	va_end(ap);
 
 	status.status = -1;
 	status.done = false;
@@ -902,6 +919,11 @@ int ctdb_event_script(struct ctdb_context *ctdb, const char *fmt, ...)
 	return status.status;
 }
 
+int ctdb_event_script(struct ctdb_context *ctdb, enum ctdb_eventscript_call call)
+{
+	/* GCC complains about empty format string, so use %s and "". */
+	return ctdb_event_script_args(ctdb, call, "%s", "");
+}
 
 struct eventscript_callback_state {
 	struct ctdb_req_control *c;
@@ -955,7 +977,7 @@ int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb,
 
 	ret = ctdb_event_script_callback(ctdb,
 			 state, run_eventscripts_callback, state,
-			 "%s", (const char *)indata.dptr);
+			 CTDB_EVENT_UNKNOWN, "%s", (const char *)indata.dptr);
 
 	if (ret != 0) {
 		ctdb_enable_monitoring(ctdb);

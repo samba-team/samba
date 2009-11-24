@@ -858,6 +858,19 @@ enum ctdb_trans2_commit_error {
 	CTDB_TRANS2_COMMIT_SOMEFAIL=3 /* some nodes failed the commit, some allowed it */
 };
 
+/* different calls to event scripts. */
+enum ctdb_eventscript_call {
+	CTDB_EVENT_STARTUP,		/* CTDB starting up: no args. */
+	CTDB_EVENT_START_RECOVERY,	/* CTDB recovery starting: no args. */
+	CTDB_EVENT_RECOVERED,		/* CTDB recovery finished: no args. */
+	CTDB_EVENT_TAKE_IP,		/* IP taken: interface, IP address, netmask bits. */
+	CTDB_EVENT_RELEASE_IP,		/* IP released: interface, IP address, netmask bits. */
+	CTDB_EVENT_STOPPED,		/* This node is stopped: no args. */
+	CTDB_EVENT_MONITOR,		/* Please check if service is healthy: no args. */
+	CTDB_EVENT_STATUS,		/* Report service status: no args. */
+	CTDB_EVENT_SHUTDOWN,		/* CTDB shutting down: no args. */
+	CTDB_EVENT_UNKNOWN,		/* Other: manually invoked from "ctdb eventscript". */
+};
 
 /* internal prototypes */
 void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
@@ -1326,12 +1339,15 @@ int32_t ctdb_control_get_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA ind
 int32_t ctdb_control_set_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA indata);
 
 void ctdb_takeover_client_destructor_hook(struct ctdb_client *client);
-int ctdb_event_script(struct ctdb_context *ctdb, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
+int ctdb_event_script(struct ctdb_context *ctdb, enum ctdb_eventscript_call call);
+int ctdb_event_script_args(struct ctdb_context *ctdb, enum ctdb_eventscript_call call,
+			   const char *fmt, ...) PRINTF_ATTRIBUTE(3,4);
 int ctdb_event_script_callback(struct ctdb_context *ctdb, 
 			       TALLOC_CTX *mem_ctx,
 			       void (*callback)(struct ctdb_context *, int, void *),
 			       void *private_data,
-			       const char *fmt, ...) PRINTF_ATTRIBUTE(5,6);
+			       enum ctdb_eventscript_call call,
+			       const char *fmt, ...) PRINTF_ATTRIBUTE(6,7);
 void ctdb_release_all_ips(struct ctdb_context *ctdb);
 
 void set_nonblocking(int fd);

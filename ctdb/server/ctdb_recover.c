@@ -964,7 +964,7 @@ int32_t ctdb_control_end_recovery(struct ctdb_context *ctdb,
 
 	ret = ctdb_event_script_callback(ctdb, state,
 					 ctdb_end_recovery_callback, 
-					 state, "recovered");
+					 state, CTDB_EVENT_RECOVERED, "%s", "");
 
 	if (ret != 0) {
 		ctdb_enable_monitoring(ctdb);
@@ -1016,7 +1016,8 @@ int32_t ctdb_control_start_recovery(struct ctdb_context *ctdb,
 
 	ret = ctdb_event_script_callback(ctdb, state,
 					 ctdb_start_recovery_callback, 
-					 state, "startrecovery");
+					 state, CTDB_EVENT_START_RECOVERY,
+					 "%s", "");
 
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to start recovery\n"));
@@ -1156,7 +1157,7 @@ static void ctdb_recd_ping_timeout(struct event_context *ev, struct timed_event 
 	if (ctdb->methods != NULL) {
 		ctdb->methods->shutdown(ctdb);
 	}
-	ctdb_event_script(ctdb, "shutdown");
+	ctdb_event_script(ctdb, CTDB_EVENT_SHUTDOWN);
 	DEBUG(DEBUG_ERR, ("Recovery daemon ping timeout. Daemon has been shut down.\n"));
 	exit(0);
 }
@@ -1228,7 +1229,7 @@ int32_t ctdb_control_stop_node(struct ctdb_context *ctdb, struct ctdb_req_contro
 
 	ret = ctdb_event_script_callback(ctdb, state,
 					 ctdb_stop_node_callback, 
-					 state, "stopped");
+					 state, CTDB_EVENT_STOPPED, "%s", "");
 
 	if (ret != 0) {
 		ctdb_enable_monitoring(ctdb);
