@@ -374,6 +374,53 @@ static void do_ntcreate_pipe_open(connection_struct *conn,
 	chain_reply(req);
 }
 
+struct case_semantics_state {
+	connection_struct *conn;
+	bool case_sensitive;
+	bool case_preserve;
+	bool short_case_preserve;
+};
+
+/****************************************************************************
+ Restore case semantics.
+****************************************************************************/
+
+static int restore_case_semantics(struct case_semantics_state *state)
+{
+	state->conn->case_sensitive = state->case_sensitive;
+	state->conn->case_preserve = state->case_preserve;
+	state->conn->short_case_preserve = state->short_case_preserve;
+	return 0;
+}
+
+/****************************************************************************
+ Save case semantics.
+****************************************************************************/
+
+static struct case_semantics_state *set_posix_case_semantics(TALLOC_CTX *mem_ctx,
+						connection_struct *conn)
+{
+	struct case_semantics_state *result;
+
+	if (!(result = talloc(mem_ctx, struct case_semantics_state))) {
+		return NULL;
+	}
+
+	result->conn = conn;
+	result->case_sensitive = conn->case_sensitive;
+	result->case_preserve = conn->case_preserve;
+	result->short_case_preserve = conn->short_case_preserve;
+
+	/* Set to POSIX. */
+	conn->case_sensitive = True;
+	conn->case_preserve = True;
+	conn->short_case_preserve = True;
+
+	talloc_set_destructor(result, restore_case_semantics);
+
+	return result;
+}
+
 /****************************************************************************
  Reply to an NT create and X call.
 ****************************************************************************/
@@ -406,13 +453,14 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	NTSTATUS status;
 	int oplock_request;
 	uint8_t oplock_granted = NO_OPLOCK_RETURN;
+	struct case_semantics_state *case_state = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBntcreateX);
 
 	if (req->wct < 24) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return;
+		goto out;
 	}
 
 	flags = IVAL(req->vwv+3, 1);
@@ -474,14 +522,21 @@ void reply_ntcreate_and_X(struct smb_request *req)
 			? BATCH_OPLOCK : 0;
 	}
 
+	case_state = set_posix_case_semantics(ctx, conn);
+	if (!case_state) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		goto out;
+	}
+
 	status = filename_convert(ctx,
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
-				(file_attributes & FILE_FLAG_POSIX_SEMANTICS) ?
-					UCF_POSIX_PATHNAMES : 0,
+				0,
 				NULL,
 				&smb_fname);
+
+	TALLOC_FREE(case_state);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -887,6 +942,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	uint64_t allocation_size;
 	int oplock_request;
 	uint8_t oplock_granted;
+	struct case_semantics_state *case_state = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	DEBUG(5,("call_nt_transact_create\n"));
@@ -998,14 +1054,21 @@ static void call_nt_transact_create(connection_struct *conn,
 		goto out;
 	}
 
+	case_state = set_posix_case_semantics(ctx, conn);
+	if (!case_state) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		goto out;
+	}
+
 	status = filename_convert(ctx,
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
-				(file_attributes & FILE_FLAG_POSIX_SEMANTICS) ?
-					UCF_POSIX_PATHNAMES : 0,
+				0,
 				NULL,
 				&smb_fname);
+
+	TALLOC_FREE(case_state);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
