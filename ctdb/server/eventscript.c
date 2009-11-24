@@ -735,7 +735,6 @@ static int event_script_destructor(struct ctdb_event_script_state *state)
   finished
  */
 static int ctdb_event_script_callback_v(struct ctdb_context *ctdb, 
-					struct timeval timeout,
 					void (*callback)(struct ctdb_context *, int, void *),
 					void *private_data,
 					const char *fmt, va_list ap)
@@ -783,7 +782,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	state->callback = callback;
 	state->private_data = private_data;
 	state->options = talloc_vasprintf(state, fmt, ap);
-	state->timeout = timeout;
+	state->timeout = timeval_set(ctdb->tunable.script_timeout, 0);
 	if (state->options == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " could not allocate state->options\n"));
 		talloc_free(state);
@@ -845,7 +844,6 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
   finished
  */
 int ctdb_event_script_callback(struct ctdb_context *ctdb, 
-			       struct timeval timeout,
 			       TALLOC_CTX *mem_ctx,
 			       void (*callback)(struct ctdb_context *, int, void *),
 			       void *private_data,
@@ -855,7 +853,7 @@ int ctdb_event_script_callback(struct ctdb_context *ctdb,
 	int ret;
 
 	va_start(ap, fmt);
-	ret = ctdb_event_script_callback_v(ctdb, timeout, callback, private_data, fmt, ap);
+	ret = ctdb_event_script_callback_v(ctdb, callback, private_data, fmt, ap);
 	va_end(ap);
 
 	return ret;
@@ -889,7 +887,6 @@ int ctdb_event_script(struct ctdb_context *ctdb, const char *fmt, ...)
 
 	va_start(ap, fmt);
 	ret = ctdb_event_script_callback_v(ctdb, 
-			timeval_set(ctdb->tunable.script_timeout, 0),
 			event_script_callback, &status, fmt, ap);
 	va_end(ap);
 
@@ -956,8 +953,7 @@ int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb,
 
 	ctdb_disable_monitoring(ctdb);
 
-	ret = ctdb_event_script_callback(ctdb, 
-			 timeval_set(ctdb->tunable.script_timeout, 0),
+	ret = ctdb_event_script_callback(ctdb,
 			 state, run_eventscripts_callback, state,
 			 "%s", (const char *)indata.dptr);
 

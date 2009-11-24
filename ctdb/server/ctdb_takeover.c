@@ -235,7 +235,6 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 		vnn->iface));
 
 	ret = ctdb_event_script_callback(ctdb, 
-					 timeval_set(ctdb->tunable.script_timeout, 0),
 					 state, takeover_ip_callback, state,
 					 "takeip %s %s %u",
 					 vnn->iface, 
@@ -391,7 +390,6 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 	state->vnn   = vnn;
 
 	ret = ctdb_event_script_callback(ctdb, 
-					 timeval_set(ctdb->tunable.script_timeout, 0),
 					 state, release_ip_callback, state,
 					 "releaseip %s %s %u",
 					 vnn->iface, 
@@ -2094,7 +2092,6 @@ int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb, TDB_DATA inda
 			DLIST_REMOVE(ctdb->vnn, vnn);
 
 			ret = ctdb_event_script_callback(ctdb, 
-					 timeval_set(ctdb->tunable.script_timeout, 0),
 					 mem_ctx, delete_ip_callback, mem_ctx,
 					 "releaseip %s %s %u",
 					 vnn->iface, 
