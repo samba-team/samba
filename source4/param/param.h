@@ -20,7 +20,7 @@
 #ifndef _PARAM_H /* _PARAM_H */
 #define _PARAM_H 
 
-#include "../lib/util/parmlist.h"
+struct parmlist_entry;
 
 struct param_context {
 	struct param_section *sections;
