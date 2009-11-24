@@ -1967,7 +1967,8 @@ objectClassCategory: 1
 subClassOf: organizationalPerson
 systemFlags: 16
 rDNAttID: cn
-systemMustContain: cn, """ + attr_ldap_display_name + """
+systemMustContain: cn
+systemMustContain: """ + attr_ldap_display_name + """
 systemOnly: FALSE
 """
         self.ldb.add_ldif(ldif)
