@@ -436,6 +436,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	NTSTATUS status;
 	int oplock_request;
 	uint8_t oplock_granted = NO_OPLOCK_RETURN;
+	struct case_semantics_state *case_state = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBntcreateX);
@@ -509,6 +510,25 @@ void reply_ntcreate_and_X(struct smb_request *req)
 			? BATCH_OPLOCK : 0;
 	}
 
+	/*
+	 * Check if POSIX semantics are wanted.
+	 */
+
+	if (file_attributes & FILE_FLAG_POSIX_SEMANTICS) {
+		case_state = set_posix_case_semantics(ctx, conn);
+		if (!case_state) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			END_PROFILE(SMBntcreateX);
+			return;
+		}
+		/*
+		 * Bug #6898 - clients using Windows opens should
+		 * never be able to set this attribute into the
+		 * VFS.
+		 */
+		file_attributes &= ~FILE_FLAG_POSIX_SEMANTICS;
+	}
+
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
@@ -527,6 +547,8 @@ void reply_ntcreate_and_X(struct smb_request *req)
 		&fsp,					/* result */
 		&info,					/* pinfo */
 		&sbuf);					/* psbuf */
+
+	TALLOC_FREE(case_state);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
@@ -864,6 +886,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	uint64_t allocation_size;
 	int oplock_request;
 	uint8_t oplock_granted;
+	struct case_semantics_state *case_state = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	SET_STAT_INVALID(sbuf);
@@ -983,6 +1006,24 @@ static void call_nt_transact_create(connection_struct *conn,
 			? BATCH_OPLOCK : 0;
 	}
 
+	/*
+	 * Check if POSIX semantics are wanted.
+	 */
+
+	if (file_attributes & FILE_FLAG_POSIX_SEMANTICS) {
+		case_state = set_posix_case_semantics(ctx, conn);
+		if (!case_state) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			return;
+		}
+		/*
+		 * Bug #6898 - clients using Windows opens should
+		 * never be able to set this attribute into the
+		 * VFS.
+		 */
+		file_attributes &= ~FILE_FLAG_POSIX_SEMANTICS;
+	}
+
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
@@ -1001,6 +1042,8 @@ static void call_nt_transact_create(connection_struct *conn,
 		&fsp,					/* result */
 		&info,					/* pinfo */
 		&sbuf);					/* psbuf */
+
+	TALLOC_FREE(case_state);
 
 	if(!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
