@@ -9203,7 +9203,7 @@ WERROR _spoolss_EnumPrinterKey(pipes_struct *p,
 		goto done;
 	}
 
-	if (r->in.offered == blob.length) {
+	if (r->in.offered >= blob.length) {
 		memcpy(r->out.key_buffer, blob.data, blob.length);
 	}
 
