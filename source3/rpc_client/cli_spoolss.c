@@ -815,7 +815,7 @@ WERROR rpccli_spoolss_enumprinterkey(struct rpc_pipe_client *cli,
 	*key_buffer = NULL;
 
 	if (offered) {
-		buffer = talloc_array(mem_ctx, uint16_t, offered);
+		buffer = talloc_array(mem_ctx, uint16_t, offered/2);
 		W_ERROR_HAVE_NO_MEMORY(buffer);
 	}
 
@@ -829,7 +829,7 @@ WERROR rpccli_spoolss_enumprinterkey(struct rpc_pipe_client *cli,
 
 	if (W_ERROR_EQUAL(werror, WERR_MORE_DATA)) {
 		offered = needed;
-		buffer = talloc_realloc(mem_ctx, buffer, uint16_t, needed);
+		buffer = talloc_realloc(mem_ctx, buffer, uint16_t, needed/2);
 		W_ERROR_HAVE_NO_MEMORY(buffer);
 		status = rpccli_spoolss_EnumPrinterKey(cli, mem_ctx,
 						       handle,
