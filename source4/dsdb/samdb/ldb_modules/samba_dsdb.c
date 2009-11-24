@@ -199,8 +199,8 @@ static int samba_dsdb_init(struct ldb_module *module)
 
 	const char *extended_dn_module;
 	const char *extended_dn_module_ldb = "extended_dn_out_ldb";
-	const char *extended_dn_module_fds = "extended_dn_out_ldb";
-	const char *extended_dn_module_openldap = "extended_dn_out_ldb";
+	const char *extended_dn_module_fds = "extended_dn_out_fds";
+	const char *extended_dn_module_openldap = "extended_dn_out_openldap";
 
 	static const char *modules_list2[] = {"show_deleted",
 					      "new_partition",
@@ -211,7 +211,7 @@ static int samba_dsdb_init(struct ldb_module *module)
 	static const char *fedora_ds_backend_modules[] = {
 		"nsuniqueid", "paged_searches", NULL };
 	static const char *openldap_backend_modules[] = {
-		"nsuniqueid", "paged_searches", NULL };
+		"entryuuid", "paged_searches", NULL };
 
 	static const char *samba_dsdb_attrs[] = { "backendType", "serverRole", NULL };
 	const char *backendType, *serverRole;
@@ -257,10 +257,10 @@ static int samba_dsdb_init(struct ldb_module *module)
 	} else {
 		objectguid_module = NULL;
 		link_modules = NULL;
-		if (strcasecmp(backendType, "fedora-ds")) {
+		if (strcasecmp(backendType, "fedora-ds") == 0) {
 			backend_modules = fedora_ds_backend_modules;
 			extended_dn_module = extended_dn_module_fds;
-		} else if (strcasecmp(backendType, "openldap")) {
+		} else if (strcasecmp(backendType, "openldap") == 0) {
 			backend_modules = openldap_backend_modules;
 			extended_dn_module = extended_dn_module_openldap;
 		}
