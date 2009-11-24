@@ -355,9 +355,9 @@ static bool kdc_process(struct kdc_server *kdc,
 /*
   called when we get a new connection
 */
-static void kdc_tcp_generic_accept(struct stream_connection *conn, kdc_process_fn_t process_fn)
+static void kdc_tcp_accept(struct stream_connection *conn)
 {
-	struct kdc_server *kdc = talloc_get_type(conn->private_data, struct kdc_server);
+ 	struct kdc_socket *kdc_socket = talloc_get_type(conn->private_data, struct kdc_socket);
 	struct kdc_tcp_connection *kdcconn;
 
 	kdcconn = talloc_zero(conn, struct kdc_tcp_connection);
@@ -366,8 +366,8 @@ static void kdc_tcp_generic_accept(struct stream_connection *conn, kdc_process_f
 		return;
 	}
 	kdcconn->conn	 = conn;
-	kdcconn->kdc	 = kdc;
-	kdcconn->process = process_fn;
+	kdcconn->kdc	 = kdc_socket->kdc;
+	kdcconn->process = kdc_socket->process;
 	conn->private_data    = kdcconn;
 
 	kdcconn->packet = packet_init(kdcconn);
@@ -385,26 +385,9 @@ static void kdc_tcp_generic_accept(struct stream_connection *conn, kdc_process_f
 	packet_set_serialise(kdcconn->packet);
 }
 
-static void kdc_tcp_accept(struct stream_connection *conn)
-{
-	kdc_tcp_generic_accept(conn, kdc_process);
-}
-
 static const struct stream_server_ops kdc_tcp_stream_ops = {
 	.name			= "kdc_tcp",
 	.accept_connection	= kdc_tcp_accept,
-	.recv_handler		= kdc_tcp_recv_handler,
-	.send_handler		= kdc_tcp_send
-};
-
-static void kpasswdd_tcp_accept(struct stream_connection *conn)
-{
-	kdc_tcp_generic_accept(conn, kpasswdd_process);
-}
-
-static const struct stream_server_ops kpasswdd_tcp_stream_ops = {
-	.name			= "kpasswdd_tcp",
-	.accept_connection	= kpasswdd_tcp_accept,
 	.recv_handler		= kdc_tcp_recv_handler,
 	.send_handler		= kdc_tcp_send
 };
@@ -417,7 +400,6 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc,
 			       const char *name,
 			       const char *address,
 			       uint16_t port,
-			       const struct stream_server_ops *tcp_stream_ops,
 			       kdc_process_fn_t process)
 {
  	struct kdc_socket *kdc_socket;
@@ -458,10 +440,10 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc,
 	status = stream_setup_socket(kdc->task->event_ctx, 
 				     kdc->task->lp_ctx,
 				     model_ops, 
-				     tcp_stream_ops, 
+				     &kdc_tcp_stream_ops, 
 				     "ip", address, &port, 
 				     lp_socket_options(kdc->task->lp_ctx), 
-				     kdc);
+				     kdc_socket);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to bind to %s:%u TCP - %s\n",
 			 address, port, nt_errstr(status)));
@@ -504,7 +486,6 @@ static NTSTATUS kdc_startup_interfaces(struct kdc_server *kdc, struct loadparm_c
 		if (kdc_port) {
 			status = kdc_add_socket(kdc, model_ops,
 					"kdc", address, kdc_port,
-					&kdc_tcp_stream_ops, 
 					kdc_process);
 			NT_STATUS_NOT_OK_RETURN(status);
 		}
@@ -512,7 +493,6 @@ static NTSTATUS kdc_startup_interfaces(struct kdc_server *kdc, struct loadparm_c
 		if (kpasswd_port) {
 			status = kdc_add_socket(kdc, model_ops,
 					"kpasswd", address, kpasswd_port,
-					&kpasswdd_tcp_stream_ops,
 					kpasswdd_process);
 			NT_STATUS_NOT_OK_RETURN(status);
 		}
