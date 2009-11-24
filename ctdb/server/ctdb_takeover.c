@@ -235,9 +235,9 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 		vnn->iface));
 
 	ret = ctdb_event_script_callback(ctdb, 
-					 timeval_set(ctdb->tunable.script_timeout, 0),
 					 state, takeover_ip_callback, state,
-					 "takeip %s %s %u",
+					 CTDB_EVENT_TAKE_IP,
+					 "%s %s %u",
 					 vnn->iface, 
 					 talloc_strdup(state, ctdb_addr_to_str(&pip->addr)),
 					 vnn->public_netmask_bits);
@@ -391,9 +391,9 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 	state->vnn   = vnn;
 
 	ret = ctdb_event_script_callback(ctdb, 
-					 timeval_set(ctdb->tunable.script_timeout, 0),
 					 state, release_ip_callback, state,
-					 "releaseip %s %s %u",
+					 CTDB_EVENT_RELEASE_IP,
+					 "%s %s %u",
 					 vnn->iface, 
 					 talloc_strdup(state, ctdb_addr_to_str(&pip->addr)),
 					 vnn->public_netmask_bits);
@@ -1354,7 +1354,7 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb)
 		if (vnn->pnn == ctdb->pnn) {
 			vnn->pnn = -1;
 		}
-		ctdb_event_script(ctdb, "releaseip %s %s %u",
+		ctdb_event_script_args(ctdb, CTDB_EVENT_RELEASE_IP, "%s %s %u",
 				  vnn->iface, 
 				  talloc_strdup(ctdb, ctdb_addr_to_str(&vnn->public_address)),
 				  vnn->public_netmask_bits);
@@ -2094,9 +2094,9 @@ int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb, TDB_DATA inda
 			DLIST_REMOVE(ctdb->vnn, vnn);
 
 			ret = ctdb_event_script_callback(ctdb, 
-					 timeval_set(ctdb->tunable.script_timeout, 0),
 					 mem_ctx, delete_ip_callback, mem_ctx,
-					 "releaseip %s %s %u",
+					 CTDB_EVENT_RELEASE_IP,
+					 "%s %s %u",
 					 vnn->iface, 
 					 talloc_strdup(mem_ctx, ctdb_addr_to_str(&vnn->public_address)),
 					 vnn->public_netmask_bits);

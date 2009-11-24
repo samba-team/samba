@@ -448,12 +448,15 @@ struct ctdb_context {
 	int start_as_disabled;
 	int start_as_stopped;
 	uint32_t event_script_timeouts; /* counting how many consecutive times an eventscript has timedout */
-	TALLOC_CTX *eventscripts_ctx; /* a context to hold data for the RUN_EVENTSCRIPTS control */
 	uint32_t *recd_ping_count;
 	TALLOC_CTX *release_ips_ctx; /* a context used to automatically drop all IPs if we fail to recover the node */
-	TALLOC_CTX *script_monitor_ctx; /* a context where we store results while running the monitor event */
-	TALLOC_CTX *last_monitor_ctx; 
-	TALLOC_CTX *event_script_ctx;  /* non-monitoring events */
+
+	TALLOC_CTX *monitor_event_script_ctx;
+	TALLOC_CTX *other_event_script_ctx;
+
+	struct ctdb_monitor_script_status_ctx *current_monitor_status_ctx; 
+	struct ctdb_monitor_script_status_ctx *last_monitor_status_ctx; 
+
 	TALLOC_CTX *banning_ctx;
 };
 
@@ -855,6 +858,18 @@ enum ctdb_trans2_commit_error {
 	CTDB_TRANS2_COMMIT_SOMEFAIL=3 /* some nodes failed the commit, some allowed it */
 };
 
+/* different calls to event scripts. */
+enum ctdb_eventscript_call {
+	CTDB_EVENT_STARTUP,		/* CTDB starting up: no args. */
+	CTDB_EVENT_START_RECOVERY,	/* CTDB recovery starting: no args. */
+	CTDB_EVENT_RECOVERED,		/* CTDB recovery finished: no args. */
+	CTDB_EVENT_TAKE_IP,		/* IP taken: interface, IP address, netmask bits. */
+	CTDB_EVENT_RELEASE_IP,		/* IP released: interface, IP address, netmask bits. */
+	CTDB_EVENT_STOPPED,		/* This node is stopped: no args. */
+	CTDB_EVENT_MONITOR,		/* Please check if service is healthy: no args. */
+	CTDB_EVENT_STATUS,		/* Report service status: no args. */
+	CTDB_EVENT_SHUTDOWN		/* CTDB shutting down: no args. */
+};
 
 /* internal prototypes */
 void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
@@ -1323,12 +1338,14 @@ int32_t ctdb_control_get_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA ind
 int32_t ctdb_control_set_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA indata);
 
 void ctdb_takeover_client_destructor_hook(struct ctdb_client *client);
-int ctdb_event_script(struct ctdb_context *ctdb, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
+int ctdb_event_script(struct ctdb_context *ctdb, enum ctdb_eventscript_call call);
+int ctdb_event_script_args(struct ctdb_context *ctdb, enum ctdb_eventscript_call call,
+			   const char *fmt, ...) PRINTF_ATTRIBUTE(3,4);
 int ctdb_event_script_callback(struct ctdb_context *ctdb, 
-			       struct timeval timeout,
 			       TALLOC_CTX *mem_ctx,
 			       void (*callback)(struct ctdb_context *, int, void *),
 			       void *private_data,
+			       enum ctdb_eventscript_call call,
 			       const char *fmt, ...) PRINTF_ATTRIBUTE(6,7);
 void ctdb_release_all_ips(struct ctdb_context *ctdb);
 
