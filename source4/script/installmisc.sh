@@ -12,7 +12,7 @@ mkdir -p $SETUPDIR/ad-schema || exit 1
 mkdir -p $SETUPDIR/display-specifiers || exit1
 cp setup/ad-schema/*.txt $SETUPDIR/ad-schema || exit 1
 cp setup/display-specifiers/*.txt $SETUPDIR/display-specifiers || exit 1
-for p in enableaccount newuser provision setexpiry setpassword pwsettings
+for p in domainlevel enableaccount newuser provision setexpiry setpassword pwsettings
 do
 	chmod a+x setup/$p
 	cp setup/$p $SETUPDIR || exit 1
