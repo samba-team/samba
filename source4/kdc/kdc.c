@@ -412,13 +412,16 @@ static const struct stream_server_ops kpasswdd_tcp_stream_ops = {
 /*
   start listening on the given address
 */
-static NTSTATUS kdc_add_kdc_socket(struct kdc_server *kdc,
+static NTSTATUS kdc_add_socket(struct kdc_server *kdc,
 			       const struct model_ops *model_ops,
+			       const char *name,
 			       const char *address,
-			       uint16_t kdc_port)
+			       uint16_t port,
+			       const struct stream_server_ops *tcp_stream_ops,
+			       kdc_process_fn_t process)
 {
  	struct kdc_socket *kdc_socket;
-	struct socket_address *kdc_address;
+	struct socket_address *socket_address;
 	NTSTATUS status;
 
 	kdc_socket = talloc(kdc, struct kdc_socket);
@@ -432,94 +435,37 @@ static NTSTATUS kdc_add_kdc_socket(struct kdc_server *kdc,
 
 	kdc_socket->kdc = kdc;
 	kdc_socket->send_queue = NULL;
-	kdc_socket->process = kdc_process;
+	kdc_socket->process = process;
 
 	talloc_steal(kdc_socket, kdc_socket->sock);
 
 	kdc_socket->fde = event_add_fd(kdc->task->event_ctx, kdc, 
-				       socket_get_fd(kdc_socket->sock), EVENT_FD_READ,
-				       kdc_socket_handler, kdc_socket);
-
-	kdc_address = socket_address_from_strings(kdc_socket, kdc_socket->sock->backend_name, 
-						  address, kdc_port);
-	NT_STATUS_HAVE_NO_MEMORY(kdc_address);
-
-	status = socket_listen(kdc_socket->sock, kdc_address, 0, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to bind to %s:%d UDP for kdc - %s\n", 
-			 address, kdc_port, nt_errstr(status)));
-		talloc_free(kdc_socket);
-		return status;
-	}
-
-	status = stream_setup_socket(kdc->task->event_ctx, 
-				     kdc->task->lp_ctx,
-				     model_ops, 
-				     &kdc_tcp_stream_ops, 
-				     "ip", address, &kdc_port, 
-				     lp_socket_options(kdc->task->lp_ctx), 
-				     kdc);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to bind to %s:%u TCP - %s\n",
-			 address, kdc_port, nt_errstr(status)));
-		talloc_free(kdc_socket);
-		return status;
-	}
-
-	return NT_STATUS_OK;
-}
-
-static NTSTATUS kdc_add_kpasswd_socket(struct kdc_server *kdc,
-			       const struct model_ops *model_ops,
-			       const char *address,
-			       uint16_t kpasswd_port)
-{
- 	struct kdc_socket *kpasswd_socket;
-	struct socket_address *kpasswd_address;
-	NTSTATUS status;
-
-	kpasswd_socket = talloc(kdc, struct kdc_socket);
-	NT_STATUS_HAVE_NO_MEMORY(kpasswd_socket);
-
-	status = socket_create("ip", SOCKET_TYPE_DGRAM, &kpasswd_socket->sock, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(kpasswd_socket);
-		return status;
-	}
-
-	kpasswd_socket->kdc = kdc;
-	kpasswd_socket->send_queue = NULL;
-	kpasswd_socket->process = kpasswdd_process;
-
-	talloc_steal(kpasswd_socket, kpasswd_socket->sock);
-
-	kpasswd_socket->fde = event_add_fd(kdc->task->event_ctx, kdc, 
-					   socket_get_fd(kpasswd_socket->sock), EVENT_FD_READ,
-					   kdc_socket_handler, kpasswd_socket);
+					   socket_get_fd(kdc_socket->sock), EVENT_FD_READ,
+					   kdc_socket_handler, kdc_socket);
 	
-	kpasswd_address = socket_address_from_strings(kpasswd_socket, kpasswd_socket->sock->backend_name, 
-						      address, kpasswd_port);
-	NT_STATUS_HAVE_NO_MEMORY(kpasswd_address);
+	socket_address = socket_address_from_strings(kdc_socket, kdc_socket->sock->backend_name, 
+						      address, port);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(socket_address, kdc_socket);
 
-	status = socket_listen(kpasswd_socket->sock, kpasswd_address, 0, 0);
+	status = socket_listen(kdc_socket->sock, socket_address, 0, 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to bind to %s:%d UDP for kpasswd - %s\n", 
-			 address, kpasswd_port, nt_errstr(status)));
-		talloc_free(kpasswd_socket);
+		DEBUG(0,("Failed to bind to %s:%d UDP for %s - %s\n", 
+			 address, port, name, nt_errstr(status)));
+		talloc_free(kdc_socket);
 		return status;
 	}
 
 	status = stream_setup_socket(kdc->task->event_ctx, 
 				     kdc->task->lp_ctx,
 				     model_ops, 
-				     &kpasswdd_tcp_stream_ops, 
-				     "ip", address, &kpasswd_port, 
+				     tcp_stream_ops, 
+				     "ip", address, &port, 
 				     lp_socket_options(kdc->task->lp_ctx), 
 				     kdc);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to bind to %s:%u TCP - %s\n",
-			 address, kpasswd_port, nt_errstr(status)));
-		talloc_free(kpasswd_socket);
+			 address, port, nt_errstr(status)));
+		talloc_free(kdc_socket);
 		return status;
 	}
 
@@ -556,12 +502,18 @@ static NTSTATUS kdc_startup_interfaces(struct kdc_server *kdc, struct loadparm_c
 		uint16_t kpasswd_port = lp_kpasswd_port(lp_ctx);
 
 		if (kdc_port) {
-			status = kdc_add_kdc_socket(kdc, model_ops, address, kdc_port);
+			status = kdc_add_socket(kdc, model_ops,
+					"kdc", address, kdc_port,
+					&kdc_tcp_stream_ops, 
+					kdc_process);
 			NT_STATUS_NOT_OK_RETURN(status);
 		}
 
 		if (kpasswd_port) {
-			status = kdc_add_kpasswd_socket(kdc, model_ops, address, kpasswd_port);
+			status = kdc_add_socket(kdc, model_ops,
+					"kpasswd", address, kpasswd_port,
+					&kpasswdd_tcp_stream_ops,
+					kpasswdd_process);
 			NT_STATUS_NOT_OK_RETURN(status);
 		}
 	}
