@@ -102,14 +102,27 @@ WERROR registry_pull_value(TALLOC_CTX *mem_ctx,
 		SAFE_FREE(tmp);
 		break;
 	}
-	case REG_MULTI_SZ:
-		err = reg_pull_multi_sz(value, (void *)data, length,
-					&value->v.multi_sz.num_strings,
-					&value->v.multi_sz.strings);
-		if (!(W_ERROR_IS_OK(err))) {
+	case REG_MULTI_SZ: {
+		int i;
+		const char **vals;
+		DATA_BLOB blob;
+
+		blob = data_blob_const(data, length);
+
+		if (!pull_reg_multi_sz(mem_ctx, &blob, &vals)) {
+			err = WERR_NOMEM;
 			goto error;
 		}
+
+		for (i=0; vals[i]; i++) {
+			;;
+		}
+
+		value->v.multi_sz.num_strings = i;
+		value->v.multi_sz.strings = (char **)vals;
+
 		break;
+	}
 	case REG_BINARY:
 		value->v.binary = data_blob_talloc(mem_ctx, data, length);
 		break;
