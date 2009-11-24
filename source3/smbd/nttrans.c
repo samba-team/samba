@@ -522,10 +522,12 @@ void reply_ntcreate_and_X(struct smb_request *req)
 			? BATCH_OPLOCK : 0;
 	}
 
-	case_state = set_posix_case_semantics(ctx, conn);
-	if (!case_state) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		goto out;
+	if (file_attributes & FILE_FLAG_POSIX_SEMANTICS) {
+		case_state = set_posix_case_semantics(ctx, conn);
+		if (!case_state) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			goto out;
+		}
 	}
 
 	status = filename_convert(ctx,
@@ -1054,10 +1056,12 @@ static void call_nt_transact_create(connection_struct *conn,
 		goto out;
 	}
 
-	case_state = set_posix_case_semantics(ctx, conn);
-	if (!case_state) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		goto out;
+	if (file_attributes & FILE_FLAG_POSIX_SEMANTICS) {
+		case_state = set_posix_case_semantics(ctx, conn);
+		if (!case_state) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			goto out;
+		}
 	}
 
 	status = filename_convert(ctx,
