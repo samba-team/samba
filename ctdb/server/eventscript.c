@@ -79,6 +79,7 @@ struct ctdb_event_script_state {
 	int cb_status;
 	int fd[2];
 	void *private_data;
+	enum ctdb_eventscript_call call;
 	const char *options;
 	struct timeval timeout;
 };
@@ -460,19 +461,16 @@ static struct ctdb_script_list *ctdb_get_script_list(struct ctdb_context *ctdb, 
   this function is called and run in the context of a forked child
   which allows it to do blocking calls such as system()
  */
-static int ctdb_run_event_script(struct ctdb_context *ctdb, const char *options)
+static int ctdb_run_event_script(struct ctdb_context *ctdb,
+				 enum ctdb_eventscript_call call,
+				 const char *options)
 {
 	char *cmdstr;
 	int ret;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	struct ctdb_script_list *scripts, *current;
-	int is_monitor = 0;
 
-	if (!strcmp(options, "monitor")) {
-		is_monitor = 1;
-	}
-
-	if (is_monitor == 1) {
+	if (call == CTDB_EVENT_MONITOR) {
 		/* This is running in the forked child process. At this stage
 		 * we want to switch from being a ctdb daemon into being a
 		 * client and connect to the real local daemon.
@@ -492,14 +490,15 @@ static int ctdb_run_event_script(struct ctdb_context *ctdb, const char *options)
 	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
 		/* we guarantee that only some specifically allowed event scripts are run
 		   while in recovery */
-		const char *allowed_scripts[] = {"startrecovery", "shutdown", "releaseip", "stopped" };
+		const enum ctdb_eventscript_call allowed_calls[] = {
+			CTDB_EVENT_START_RECOVERY, CTDB_EVENT_SHUTDOWN, CTDB_EVENT_RELEASE_IP, CTDB_EVENT_STOPPED };
 		int i;
-		for (i=0;i<ARRAY_SIZE(allowed_scripts);i++) {
-			if (strncmp(options, allowed_scripts[i], strlen(allowed_scripts[i])) == 0) break;
+		for (i=0;i<ARRAY_SIZE(allowed_calls);i++) {
+			if (call == allowed_calls[i]) break;
 		}
-		if (i == ARRAY_SIZE(allowed_scripts)) {
-			DEBUG(DEBUG_ERR,("Refusing to run event scripts with option '%s' while in recovery\n",
-				 options));
+		if (i == ARRAY_SIZE(allowed_calls)) {
+			DEBUG(DEBUG_ERR,("Refusing to run event scripts call '%s' while in recovery\n",
+				 call_names[call]));
 			talloc_free(tmp_ctx);
 			return -1;
 		}
@@ -529,7 +528,7 @@ static int ctdb_run_event_script(struct ctdb_context *ctdb, const char *options)
 		   status of the event asynchronously.
 		*/
 		if ((ctdb->tunable.use_status_events_for_monitoring != 0) 
-		&& (!strcmp(options, "monitor"))) {
+		    && call == CTDB_EVENT_MONITOR) {
 			cmdstr = talloc_asprintf(tmp_ctx, "%s/%s %s", 
 					ctdb->event_script_dir,
 					current->name, "status");
@@ -545,7 +544,7 @@ static int ctdb_run_event_script(struct ctdb_context *ctdb, const char *options)
 		child_state.start = timeval_current();
 		child_state.script_running = cmdstr;
 
-		if (is_monitor == 1) {
+		if (call == CTDB_EVENT_MONITOR) {
 			if (ctdb_ctrl_event_script_start(ctdb, current->name) != 0) {
 				DEBUG(DEBUG_ERR,(__location__ " Failed to start event script monitoring\n"));
 				talloc_free(tmp_ctx);
@@ -578,7 +577,7 @@ static int ctdb_run_event_script(struct ctdb_context *ctdb, const char *options)
 			DEBUG(DEBUG_ERR,("Script %s returned status 127. Someone just deleted it?\n", cmdstr));
 		}
  
-		if (is_monitor == 1) {
+		if (call == CTDB_EVENT_MONITOR) {
 			if (ctdb_ctrl_event_script_stop(ctdb, ret) != 0) {
 				DEBUG(DEBUG_ERR,(__location__ " Failed to stop event script monitoring\n"));
 				talloc_free(tmp_ctx);
@@ -589,7 +588,7 @@ static int ctdb_run_event_script(struct ctdb_context *ctdb, const char *options)
 		/* return an error if the script failed */
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR,("Event script %s failed with error %d\n", cmdstr, ret));
-			if (is_monitor == 1) {
+			if (call == CTDB_EVENT_MONITOR) {
 				if (ctdb_ctrl_event_script_finished(ctdb) != 0) {
 					DEBUG(DEBUG_ERR,(__location__ " Failed to finish event script monitoring\n"));
 					talloc_free(tmp_ctx);
@@ -605,7 +604,7 @@ static int ctdb_run_event_script(struct ctdb_context *ctdb, const char *options)
 	child_state.start = timeval_current();
 	child_state.script_running = "finished";
 	
-	if (is_monitor == 1) {
+	if (call == CTDB_EVENT_MONITOR) {
 		if (ctdb_ctrl_event_script_finished(ctdb) != 0) {
 			DEBUG(DEBUG_ERR,(__location__ " Failed to finish event script monitoring\n"));
 			talloc_free(tmp_ctx);
@@ -668,7 +667,7 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 		return;
 	}
 
-	if (!strcmp(state->options, "monitor")) {
+	if (state->call == CTDB_EVENT_MONITOR) {
 		/* if it is a monitor event, we allow it to "hang" a few times
 		   before we declare it a failure and ban ourself (and make
 		   ourself unhealthy)
@@ -683,7 +682,7 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 		} else {
 			state->cb_status = 0;
 		}
-	} else if (!strcmp(state->options, "startup")) {
+	} else if (state->call == CTDB_EVENT_STARTUP) {
 		DEBUG(DEBUG_ERR, (__location__ " eventscript for startup event timedout.\n"));
 		state->cb_status = -1;
 	} else {
@@ -697,7 +696,7 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 		state->cb_status = -1;
 	}
 
-	if (!strcmp(state->options, "monitor") || !strcmp(state->options, "status")) {
+	if (state->call == CTDB_EVENT_MONITOR || state->call == CTDB_EVENT_STATUS) {
 		struct ctdb_monitor_script_status *script;
 
 		if (ctdb->current_monitor_status_ctx == NULL) {
@@ -795,6 +794,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	state->ctdb = ctdb;
 	state->callback = callback;
 	state->private_data = private_data;
+	state->call = call;
 	state->options = talloc_asprintf(state, "%s ", call_names[call]);
 	if (state->options)
 		state->options = talloc_vasprintf_append(discard_const_p(char, state->options), fmt, ap);
@@ -828,7 +828,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 		close(state->fd[0]);
 		set_close_on_exec(state->fd[1]);
 
-		rt = ctdb_run_event_script(ctdb, state->options);
+		rt = ctdb_run_event_script(ctdb, state->call, state->options);
 		/* We must be able to write PIPEBUF bytes at least; if this
 		   somehow fails, the read above will be short. */
 		write(state->fd[1], &rt, sizeof(rt));
