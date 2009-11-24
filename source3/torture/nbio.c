@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "torture.h"
+#include "torture/proto.h"
 
 #define MAX_FILES 1000
 
