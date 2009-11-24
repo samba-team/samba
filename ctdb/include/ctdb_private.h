@@ -1328,11 +1328,10 @@ int32_t ctdb_control_set_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA ind
 void ctdb_takeover_client_destructor_hook(struct ctdb_client *client);
 int ctdb_event_script(struct ctdb_context *ctdb, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 int ctdb_event_script_callback(struct ctdb_context *ctdb, 
-			       struct timeval timeout,
 			       TALLOC_CTX *mem_ctx,
 			       void (*callback)(struct ctdb_context *, int, void *),
 			       void *private_data,
-			       const char *fmt, ...) PRINTF_ATTRIBUTE(6,7);
+			       const char *fmt, ...) PRINTF_ATTRIBUTE(5,6);
 void ctdb_release_all_ips(struct ctdb_context *ctdb);
 
 void set_nonblocking(int fd);
