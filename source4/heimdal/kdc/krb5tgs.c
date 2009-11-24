@@ -1138,7 +1138,7 @@ tgs_parse_request(krb5_context context,
 	    p = "<unparse_name failed>";
 	krb5_free_principal(context, princ);
 	kdc_log(context, config, 0,
-		"Ticket-granting ticket not found in database: %s: %s", msg);
+		"Ticket-granting ticket not found in database: %s", msg);
 	krb5_free_error_message(context, msg);
 	if (ret == 0)
 	    free(p);
