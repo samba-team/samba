@@ -336,7 +336,7 @@
  *		name:		<new_dc_site_name>
  *		objectGUID:	<object_guid>
  *		systemFlags:	1107296256 <0x42000000>
- *		objectCategory:	CN=Site,C=Schema,CN=Configuration,<domain_partition>
+ *		objectCategory:	CN=Site,CN=Schema,CN=Configuration,<domain_partition>
  */
 
 /***************************************************************
