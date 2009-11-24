@@ -41,6 +41,7 @@ from ldb import SCOPE_BASE, SCOPE_ONELEVEL, LdbError, timestring
 from credentials import Credentials, DONT_USE_KERBEROS
 from samba import setup_file
 from schema import Schema
+from provisionexceptions import ProvisioningError
 
 def setup_db_config(setup_path, dbdir):
     """Setup a Berkeley database.

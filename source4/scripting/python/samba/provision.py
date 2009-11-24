@@ -53,6 +53,7 @@ from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError
 from ms_display_specifiers import read_ms_ldif
 from schema import Schema
 from provisionbackend import LDBBackend, ExistingBackend, FDSBackend, OpenLDAPBackend
+from provisionexceptions import ProvisioningError, InvalidNetbiosName
 from signal import SIGTERM
 from dcerpc.misc import SEC_CHAN_BDC, SEC_CHAN_WKSTA
 
@@ -152,15 +153,6 @@ def get_domain_descriptor(domain_sid):
 DEFAULTSITE = "Default-First-Site-Name"
 
 # Exception classes
-
-class ProvisioningError(Exception):
-    """A generic provision error."""
-
-class InvalidNetbiosName(Exception):
-    """A specified name was not a valid NetBIOS name."""
-    def __init__(self, name):
-        super(InvalidNetbiosName, self).__init__("The name '%r' is not a valid NetBIOS name" % name)
-
 
 class ProvisionPaths(object):
     def __init__(self):
