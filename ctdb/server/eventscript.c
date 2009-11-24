@@ -443,11 +443,11 @@ static struct ctdb_script_list *ctdb_get_script_list(struct ctdb_context *ctdb, 
 
 
 /*
-  run the event script - varargs version
+  Actually run the event script
   this function is called and run in the context of a forked child
   which allows it to do blocking calls such as system()
  */
-static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *options)
+static int ctdb_run_event_script(struct ctdb_context *ctdb, const char *options)
 {
 	char *cmdstr;
 	int ret;
@@ -814,7 +814,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 		close(state->fd[0]);
 		set_close_on_exec(state->fd[1]);
 
-		rt = ctdb_event_script_v(ctdb, state->options);
+		rt = ctdb_run_event_script(ctdb, state->options);
 		/* We must be able to write PIPEBUF bytes at least; if this
 		   somehow fails, the read above will be short. */
 		write(state->fd[1], &rt, sizeof(rt));
