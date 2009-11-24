@@ -170,18 +170,17 @@ def guess_names_from_current_provision(credentials,session_info,paths):
 	names.dnsdomain = names.realm
 	names.realm = string.upper(names.realm)
 	# netbiosname
-	secrets_ldb = Ldb(paths.secrets, session_info=session_info, credentials=credentials,lp=lp)
+	secrets_ldb = Ldb(paths.secrets, session_info=session_info, credentials=credentials,lp=lp, options=["modules:samba_secrets"])
 	# Get the netbiosname first (could be obtained from smb.conf in theory)
 	attrs = ["sAMAccountName"]
 	res = secrets_ldb.search(expression="(flatname=%s)"%names.domain,base="CN=Primary Domains", scope=SCOPE_SUBTREE, attrs=attrs)
 	names.netbiosname = str(res[0]["sAMAccountName"]).replace("$","")
 
-	#partitions = get_partitions(credentials,session_info,paths,lp)
 	names.smbconf = smbconf
-	samdb = SamDB(paths.samdb, session_info=session_info,
-								credentials=credentials, lp=lp)
+	#It's important here to let ldb load with the old module or it's quite certain that the LDB won't load ... 
+	samdb = Ldb(paths.samdb, session_info=session_info,
+		    credentials=credentials, lp=lp)
 	
-	# partitions (schema,config,root)
 	# That's a bit simplistic but it's ok as long as we have only 3 partitions 
 	attrs2 = ["schemaNamingContext","configurationNamingContext","rootDomainNamingContext"]
 	res2 = samdb.search(expression="(objectClass=*)",base="", scope=SCOPE_BASE, attrs=attrs2)
@@ -391,18 +390,18 @@ def handle_special_case(att,delta,new,old,ischema):
 	return 0
 
 def update_secrets(newpaths,paths,creds,session):
-	newsam_ldb = Ldb(newpaths.secrets, session_info=session, credentials=creds,lp=lp)
-	sam_ldb = Ldb(paths.secrets, session_info=session, credentials=creds,lp=lp)
-	res = newsam_ldb.search(expression="dn=@MODULES",base="", scope=SCOPE_SUBTREE)
-	res2 = sam_ldb.search(expression="dn=@MODULES",base="", scope=SCOPE_SUBTREE)
-	delta = sam_ldb.msg_diff(res2[0],res[0])
+	newsecrets_ldb = Ldb(newpaths.secrets, session_info=session, credentials=creds,lp=lp)
+	secrets_ldb = Ldb(paths.secrets, session_info=session, credentials=creds,lp=lp, options=["modules:samba_secrets"])
+	res = newsecrets_ldb.search(expression="dn=@MODULES",base="", scope=SCOPE_SUBTREE)
+	res2 = secrets_ldb.search(expression="dn=@MODULES",base="", scope=SCOPE_SUBTREE)
+	delta = secrets_ldb.msg_diff(res2[0],res[0])
 	delta.dn = res2[0].dn
-	sam_ldb.modify(delta)	
+	secrets_ldb.modify(delta)	
 
-	newsam_ldb = Ldb(newpaths.secrets, session_info=session, credentials=creds,lp=lp)
-	sam_ldb = Ldb(paths.secrets, session_info=session, credentials=creds,lp=lp)
-	res = newsam_ldb.search(expression="objectClass=top",base="", scope=SCOPE_SUBTREE,attrs=["dn"])
-	res2 = sam_ldb.search(expression="objectClass=top",base="", scope=SCOPE_SUBTREE,attrs=["dn"])
+	newsecrets_ldb = Ldb(newpaths.secrets, session_info=session, credentials=creds,lp=lp)
+	secrets_ldb = Ldb(paths.secrets, session_info=session, credentials=creds,lp=lp)
+	res = newsecrets_ldb.search(expression="objectClass=top",base="", scope=SCOPE_SUBTREE,attrs=["dn"])
+	res2 = secrets_ldb.search(expression="objectClass=top",base="", scope=SCOPE_SUBTREE,attrs=["dn"])
 	hash_new = {}
 	hash = {}
 	listMissing = []
@@ -422,21 +421,21 @@ def update_secrets(newpaths,paths,creds,session):
 		else:
 			listPresent.append(hash_new[k])
 	for entry in listMissing:
-		res = newsam_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
-		res2 = sam_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
-		delta = sam_ldb.msg_diff(empty,res[0])
+		res = newsecrets_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
+		res2 = secrets_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
+		delta = secrets_ldb.msg_diff(empty,res[0])
 		for att in hashAttrNotCopied.keys():
 			delta.remove(att)
 		message(CHANGE,"Entry %s is missing from secrets.ldb"%res[0].dn)
 		for att in delta:
 			message(CHANGE," Adding attribute %s"%att)
 		delta.dn = res[0].dn
-		sam_ldb.add(delta)	
+		secrets_ldb.add(delta)	
 
 	for entry in listPresent:
-		res = newsam_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
-		res2 = sam_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
-		delta = sam_ldb.msg_diff(res2[0],res[0])
+		res = newsecrets_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
+		res2 = secrets_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
+		delta = secrets_ldb.msg_diff(res2[0],res[0])
 		i=0
 		for att in hashAttrNotCopied.keys():
 			delta.remove(att)
@@ -446,7 +445,7 @@ def update_secrets(newpaths,paths,creds,session):
 				message(CHANGE," Adding/Changing attribute %s to %s"%(att,res2[0].dn))
 				
 		delta.dn = res2[0].dn
-		sam_ldb.modify(delta)	
+		secrets_ldb.modify(delta)	
 
 # Check difference between the current provision and the reference provision.
 # It looks for all object which base DN is name if ischema is false then scan is done in 
@@ -462,7 +461,7 @@ def check_diff_name(newpaths,paths,creds,session,basedn,names,ischema):
 	res2 = []
 	# Connect to the reference provision and get all the attribute in the partition referred by name
 	newsam_ldb = Ldb(newpaths.samdb, session_info=session, credentials=creds,lp=lp)
-	sam_ldb = Ldb(paths.samdb, session_info=session, credentials=creds,lp=lp)
+	sam_ldb = Ldb(paths.samdb, session_info=session, credentials=creds,lp=lp, options=["modules:samba_dsdb"])
 	if ischema:
 		res = newsam_ldb.search(expression="objectClass=*",base=basedn, scope=SCOPE_SUBTREE,attrs=["dn"])
 		res2 = sam_ldb.search(expression="objectClass=*",base=basedn, scope=SCOPE_SUBTREE,attrs=["dn"])
@@ -647,14 +646,19 @@ def check_diff(newpaths,paths,creds,session,names):
 	schemaldb=os.path.join(paths.private_dir,"schema.ldb")
 	configldb=os.path.join(paths.private_dir,"configuration.ldb")
 	usersldb=os.path.join(paths.private_dir,"users.ldb")
+	samldbdir=os.path.join(paths.private_dir,"sam.ldb.d")
+
+	if not os.path.isdir(samldbdir):
+		os.mkdir(samldbdir)
+		os.chmod(samldbdir,0700)
 	if os.path.isfile(schemaldb):
-		shutil.copy(schemaldb,os.path.join(paths.private_dir,"%s.ldb"%str(names.schemadn).upper()))
+		shutil.copy(schemaldb,os.path.join(samldbdir,"%s.ldb"%str(names.schemadn).upper()))
 		os.remove(schemaldb)
 	if os.path.isfile(usersldb):
-		shutil.copy(usersldb,os.path.join(paths.private_dir,"%s.ldb"%str(names.rootdn).upper()))
+		shutil.copy(usersldb,os.path.join(samldbdir,"%s.ldb"%str(names.rootdn).upper()))
 		os.remove(usersldb)
 	if os.path.isfile(configldb):
-		shutil.copy(configldb,os.path.join(paths.private_dir,"%s.ldb"%str(names.configdn).upper()))
+		shutil.copy(configldb,os.path.join(samldbdir,"%s.ldb"%str(names.configdn).upper()))
 		os.remove(configldb)
 	shutil.copy(os.path.join(newpaths.private_dir,"privilege.ldb"),os.path.join(paths.private_dir,"privilege.ldb"))
 
