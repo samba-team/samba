@@ -155,21 +155,6 @@ static void read_byte(struct smbcli_state *cli, int fd, uint8_t *c, int offset)
 	}
 }	
 
-
-static struct timeval tp1, tp2;
-
-static void start_timer(void)
-{
-	gettimeofday(&tp1, NULL);
-}
-
-static double end_timer(void)
-{
-	gettimeofday(&tp2, NULL);
-	return (tp2.tv_sec + (tp2.tv_usec*1.0e-6)) - 
-		(tp1.tv_sec + (tp1.tv_usec*1.0e-6));
-}
-
 /* 
    ping pong
 */
@@ -187,6 +172,7 @@ bool torture_ping_pong(struct torture_context *torture)
 	uint8_t incr=0, last_incr=0;
 	uint8_t *val;
 	int count, loops;
+	struct timeval start;
 
 	fn = torture_setting_string(torture, "filename", NULL);
 	if (fn == NULL) {
@@ -219,7 +205,7 @@ bool torture_ping_pong(struct torture_context *torture)
 	lock_byte(cli, fd, 0, lock_timeout);
 
 
-	start_timer();
+	start = timeval_current();
 	val = talloc_zero_array(mem_ctx, uint8_t, num_locks);
 	i = 0;
 	count = 0;
@@ -248,11 +234,11 @@ bool torture_ping_pong(struct torture_context *torture)
 			printf("data increment = %u\n", incr);
 			fflush(stdout);
 		}
-		if (end_timer() > 1.0) {
+		if (timeval_elapsed(&start) > 1.0) {
 			printf("%8u locks/sec\r", 
-			       (unsigned)(2*count/end_timer()));
+			       (unsigned)(2*count/timeval_elapsed(&start)));
 			fflush(stdout);
-			start_timer();
+			start = timeval_current();
 			count=0;
 		}
 		loops++;
