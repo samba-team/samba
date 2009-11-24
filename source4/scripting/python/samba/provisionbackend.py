@@ -226,8 +226,7 @@ class LDAPBackend(ProvisionBackend):
 
     def start(self):
         self.slapd_command_escaped = "\'" + "\' \'".join(self.slapd_command) + "\'"
-        setup_file(self.setup_path("ldap_backend_startup.sh"), self.paths.ldapdir + "/ldap_backend_startup.sh", {
-                "SLAPD_COMMAND" : self.slapd_command_escaped})
+        open(self.paths.ldapdir + "/ldap_backend_startup.sh", 'w').write("#!/bin/sh\n" + self.slapd_command_escaped + "\n")
 
         # Now start the slapd, so we can provision onto it.  We keep the
         # subprocess context around, to kill this off at the successful
