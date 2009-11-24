@@ -6627,9 +6627,6 @@ void msg_file_was_renamed(struct messaging_context *msg,
 			  uint32_t msg_type,
 			  struct server_id server_id,
 			  DATA_BLOB *data);
-struct case_semantics_state;
-struct case_semantics_state *set_posix_case_semantics(TALLOC_CTX *mem_ctx,
-						      connection_struct *conn);
 NTSTATUS open_streams_for_delete(connection_struct *conn,
 				 const char *fname);
 NTSTATUS create_file_default(connection_struct *conn,

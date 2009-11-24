@@ -2770,52 +2770,6 @@ void msg_file_was_renamed(struct messaging_context *msg,
 	return;
 }
 
-struct case_semantics_state {
-	connection_struct *conn;
-	bool case_sensitive;
-	bool case_preserve;
-	bool short_case_preserve;
-};
-
-/****************************************************************************
- Restore case semantics.
-****************************************************************************/
-static int restore_case_semantics(struct case_semantics_state *state)
-{
-	state->conn->case_sensitive = state->case_sensitive;
-	state->conn->case_preserve = state->case_preserve;
-	state->conn->short_case_preserve = state->short_case_preserve;
-	return 0;
-}
-
-/****************************************************************************
- Save case semantics.
-****************************************************************************/
-struct case_semantics_state *set_posix_case_semantics(TALLOC_CTX *mem_ctx,
-						      connection_struct *conn)
-{
-	struct case_semantics_state *result;
-
-	if (!(result = talloc(mem_ctx, struct case_semantics_state))) {
-		DEBUG(0, ("talloc failed\n"));
-		return NULL;
-	}
-
-	result->conn = conn;
-	result->case_sensitive = conn->case_sensitive;
-	result->case_preserve = conn->case_preserve;
-	result->short_case_preserve = conn->short_case_preserve;
-
-	/* Set to POSIX. */
-	conn->case_sensitive = True;
-	conn->case_preserve = True;
-	conn->short_case_preserve = True;
-
-	talloc_set_destructor(result, restore_case_semantics);
-
-	return result;
-}
-
 /*
  * If a main file is opened for delete, all streams need to be checked for
  * !FILE_SHARE_DELETE. Do this by opening with DELETE_ACCESS.
