@@ -61,8 +61,6 @@ bool torture_nttrans_scan(int dummy);
 
 /* The following definitions come from torture/torture.c  */
 
-void start_timer(void);
-double end_timer(void);
 void *shm_setup(int size);
 bool smbcli_parse_unc(const char *unc_name, TALLOC_CTX *mem_ctx,
 		      char **hostname, char **sharename);

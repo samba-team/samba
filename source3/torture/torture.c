@@ -49,22 +49,6 @@ bool torture_showall = False;
 static double create_procs(bool (*fn)(int), bool *result);
 
 
-static struct timeval tp1,tp2;
-
-
-void start_timer(void)
-{
-	GetTimeOfDay(&tp1);
-}
-
-double end_timer(void)
-{
-	GetTimeOfDay(&tp2);
-	return((tp2.tv_sec - tp1.tv_sec) + 
-	       (tp2.tv_usec - tp1.tv_usec)*1.0e-6);
-}
-
-
 /* return a pointer to a anonymous shared memory segment of size "size"
    which will persist across fork() but will disappear when all processes
    exit 
@@ -2278,6 +2262,7 @@ static bool run_locktest9(int dummy)
 	pid_t child_pid;
 	char c = '\0';
 	int ret;
+	struct timeval start;
 	double seconds;
 	NTSTATUS status;
 
@@ -2350,7 +2335,7 @@ static bool run_locktest9(int dummy)
 	CatchSignal(SIGALRM, alarm_handler_parent);
 	alarm(20);
 
-	start_timer();
+	start = timeval_current();
 
 	if (!cli_lock(cli1, fnum, 0, 4, -1, WRITE_LOCK)) {
 		d_fprintf(stderr, "Unable to apply write lock on range 0:4, error was "
@@ -2359,7 +2344,7 @@ static bool run_locktest9(int dummy)
 	}
 	alarm(0);
 
-	seconds = end_timer();
+	seconds = timeval_elapsed(&start);
 
 	printf("Parent got the lock after %.2f seconds.\n",
 		seconds);
@@ -4777,7 +4762,7 @@ static bool run_dirtest(int dummy)
 	int i;
 	static struct cli_state *cli;
 	uint16_t fnum;
-	double t1;
+	struct timeval core_start;
 	bool correct = True;
 
 	printf("starting directory test\n");
@@ -4799,13 +4784,13 @@ static bool run_dirtest(int dummy)
 		cli_close(cli, fnum);
 	}
 
-	t1 = end_timer();
+	core_start = timeval_current();
 
 	printf("Matched %d\n", cli_list(cli, "a*.*", 0, list_fn, NULL));
 	printf("Matched %d\n", cli_list(cli, "b*.*", 0, list_fn, NULL));
 	printf("Matched %d\n", cli_list(cli, "xyzabc", 0, list_fn, NULL));
 
-	printf("dirtest core %g seconds\n", end_timer() - t1);
+	printf("dirtest core %g seconds\n", timeval_elapsed(&core_start));
 
 	srandom(0);
 	for (i=0;i<torture_numops;i++) {
@@ -5967,6 +5952,7 @@ static bool run_windows_write(int dummy)
 	int i;
 	bool ret = false;
 	const char *fname = "\\writetest.txt";
+	struct timeval start;
 	double seconds;
 	double kbytes;
 
@@ -5982,7 +5968,7 @@ static bool run_windows_write(int dummy)
 
 	cli_sockopt(cli1, sockops);
 
-	start_timer();
+	start = timeval_current();
 
 	for (i=0; i<torture_numops; i++) {
 		char c = 0;
@@ -6004,7 +5990,7 @@ static bool run_windows_write(int dummy)
 		}
 	}
 
-	seconds = end_timer();
+	seconds = timeval_elapsed(&start);
 	kbytes = (double)torture_blocksize * torture_numops;
 	kbytes /= 1024;
 
@@ -7051,6 +7037,7 @@ static double create_procs(bool (*fn)(int), bool *result)
 	volatile bool *child_status_out;
 	int synccount;
 	int tries = 8;
+	struct timeval start;
 
 	synccount = 0;
 
@@ -7071,7 +7058,7 @@ static double create_procs(bool (*fn)(int), bool *result)
 		child_status_out[i] = True;
 	}
 
-	start_timer();
+	start = timeval_current();
 
 	for (i=0;i<nprocs;i++) {
 		procnum = i;
@@ -7092,7 +7079,7 @@ static double create_procs(bool (*fn)(int), bool *result)
 
 			child_status[i] = getpid();
 
-			while (child_status[i] && end_timer() < 5) smb_msleep(2);
+			while (child_status[i] && timeval_elapsed(&start) < 5) smb_msleep(2);
 
 			child_status_out[i] = fn(i);
 			_exit(0);
@@ -7106,16 +7093,16 @@ static double create_procs(bool (*fn)(int), bool *result)
 		}
 		if (synccount == nprocs) break;
 		smb_msleep(10);
-	} while (end_timer() < 30);
+	} while (timeval_elapsed(&start) < 30);
 
 	if (synccount != nprocs) {
 		printf("FAILED TO START %d CLIENTS (started %d)\n", nprocs, synccount);
 		*result = False;
-		return end_timer();
+		return timeval_elapsed(&start);
 	}
 
 	/* start the client load */
-	start_timer();
+	start = timeval_current();
 
 	for (i=0;i<nprocs;i++) {
 		child_status[i] = 0;
@@ -7134,7 +7121,7 @@ static double create_procs(bool (*fn)(int), bool *result)
 			*result = False;
 		}
 	}
-	return end_timer();
+	return timeval_elapsed(&start);
 }
 
 #define FLAG_MULTIPROC 1
@@ -7252,12 +7239,13 @@ static bool run_test(const char *name)
 					printf("TEST %s FAILED!\n", name);
 				}
 			} else {
-				start_timer();
+				struct timeval start;
+				start = timeval_current();
 				if (!torture_ops[i].fn(0)) {
 					ret = False;
 					printf("TEST %s FAILED!\n", name);
 				}
-				t = end_timer();
+				t = timeval_elapsed(&start);
 			}
 			printf("%s took %g secs\n\n", name, t);
 		}
