@@ -3611,7 +3611,7 @@ static void rpccli_spoolss_ReadPrinter_done(struct tevent_req *subreq)
 	}
 
 	/* Copy out parameters */
-	memcpy(state->orig.out.data, state->tmp.out.data, state->tmp.in.data_size * sizeof(*state->orig.out.data));
+	memcpy(state->orig.out.data, state->tmp.out.data, (state->tmp.in.data_size) * sizeof(*state->orig.out.data));
 	*state->orig.out._data_size = *state->tmp.out._data_size;
 
 	/* Copy result */
@@ -3676,7 +3676,7 @@ NTSTATUS rpccli_spoolss_ReadPrinter(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(data, r.out.data, r.in.data_size * sizeof(*data));
+	memcpy(data, r.out.data, (r.in.data_size) * sizeof(*data));
 	*_data_size = *r.out._data_size;
 
 	/* Return result */
@@ -3913,7 +3913,7 @@ static void rpccli_spoolss_AddJob_done(struct tevent_req *subreq)
 
 	/* Copy out parameters */
 	if (state->orig.out.buffer && state->tmp.out.buffer) {
-		memcpy(state->orig.out.buffer, state->tmp.out.buffer, state->tmp.in.offered * sizeof(*state->orig.out.buffer));
+		memcpy(state->orig.out.buffer, state->tmp.out.buffer, (state->tmp.in.offered) * sizeof(*state->orig.out.buffer));
 	}
 	*state->orig.out.needed = *state->tmp.out.needed;
 
@@ -3983,7 +3983,7 @@ NTSTATUS rpccli_spoolss_AddJob(struct rpc_pipe_client *cli,
 
 	/* Return variables */
 	if (buffer && r.out.buffer) {
-		memcpy(buffer, r.out.buffer, r.in.offered * sizeof(*buffer));
+		memcpy(buffer, r.out.buffer, (r.in.offered) * sizeof(*buffer));
 	}
 	*needed = *r.out.needed;
 
@@ -11057,10 +11057,10 @@ static void rpccli_spoolss_EnumPrinterData_done(struct tevent_req *subreq)
 	}
 
 	/* Copy out parameters */
-	memcpy(CONST_DISCARD(char *, state->orig.out.value_name), state->tmp.out.value_name, state->tmp.in.value_offered / 2 * sizeof(*state->orig.out.value_name));
+	memcpy(discard_const_p(uint8_t, state->orig.out.value_name), state->tmp.out.value_name, (state->tmp.in.value_offered / 2) * sizeof(*state->orig.out.value_name));
 	*state->orig.out.value_needed = *state->tmp.out.value_needed;
 	*state->orig.out.type = *state->tmp.out.type;
-	memcpy(state->orig.out.data, state->tmp.out.data, state->tmp.in.data_offered * sizeof(*state->orig.out.data));
+	memcpy(state->orig.out.data, state->tmp.out.data, (state->tmp.in.data_offered) * sizeof(*state->orig.out.data));
 	*state->orig.out.data_needed = *state->tmp.out.data_needed;
 
 	/* Copy result */
@@ -11132,10 +11132,10 @@ NTSTATUS rpccli_spoolss_EnumPrinterData(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(CONST_DISCARD(char *, value_name), r.out.value_name, r.in.value_offered / 2 * sizeof(*value_name));
+	memcpy(discard_const_p(uint8_t, value_name), r.out.value_name, (r.in.value_offered / 2) * sizeof(*value_name));
 	*value_needed = *r.out.value_needed;
 	*type = *r.out.type;
-	memcpy(data, r.out.data, r.in.data_offered * sizeof(*data));
+	memcpy(data, r.out.data, (r.in.data_offered) * sizeof(*data));
 	*data_needed = *r.out.data_needed;
 
 	/* Return result */
@@ -11943,7 +11943,7 @@ static void rpccli_spoolss_GetPrinterDataEx_done(struct tevent_req *subreq)
 
 	/* Copy out parameters */
 	*state->orig.out.type = *state->tmp.out.type;
-	memcpy(state->orig.out.buffer, state->tmp.out.buffer, state->tmp.in.offered * sizeof(*state->orig.out.buffer));
+	memcpy(state->orig.out.buffer, state->tmp.out.buffer, (state->tmp.in.offered) * sizeof(*state->orig.out.buffer));
 	*state->orig.out.needed = *state->tmp.out.needed;
 
 	/* Copy result */
@@ -12014,7 +12014,7 @@ NTSTATUS rpccli_spoolss_GetPrinterDataEx(struct rpc_pipe_client *cli,
 
 	/* Return variables */
 	*type = *r.out.type;
-	memcpy(buffer, r.out.buffer, r.in.offered * sizeof(*buffer));
+	memcpy(buffer, r.out.buffer, (r.in.offered) * sizeof(*buffer));
 	*needed = *r.out.needed;
 
 	/* Return result */
@@ -12278,7 +12278,7 @@ static void rpccli_spoolss_EnumPrinterKey_done(struct tevent_req *subreq)
 	}
 
 	/* Copy out parameters */
-	memcpy(state->orig.out.key_buffer, state->tmp.out.key_buffer, state->tmp.in.offered / 2 * sizeof(*state->orig.out.key_buffer));
+	memcpy(state->orig.out.key_buffer, state->tmp.out.key_buffer, (state->tmp.in.offered / 2) * sizeof(*state->orig.out.key_buffer));
 	*state->orig.out.needed = *state->tmp.out.needed;
 
 	/* Copy result */
@@ -12345,7 +12345,7 @@ NTSTATUS rpccli_spoolss_EnumPrinterKey(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(key_buffer, r.out.key_buffer, r.in.offered / 2 * sizeof(*key_buffer));
+	memcpy(key_buffer, r.out.key_buffer, (r.in.offered / 2) * sizeof(*key_buffer));
 	*needed = *r.out.needed;
 
 	/* Return result */
@@ -13433,7 +13433,7 @@ static void rpccli_spoolss_XcvData_done(struct tevent_req *subreq)
 	}
 
 	/* Copy out parameters */
-	memcpy(state->orig.out.out_data, state->tmp.out.out_data, state->tmp.in.out_data_size * sizeof(*state->orig.out.out_data));
+	memcpy(state->orig.out.out_data, state->tmp.out.out_data, (state->tmp.in.out_data_size) * sizeof(*state->orig.out.out_data));
 	*state->orig.out.needed = *state->tmp.out.needed;
 	*state->orig.out.status_code = *state->tmp.out.status_code;
 
@@ -13507,7 +13507,7 @@ NTSTATUS rpccli_spoolss_XcvData(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(out_data, r.out.out_data, r.in.out_data_size * sizeof(*out_data));
+	memcpy(out_data, r.out.out_data, (r.in.out_data_size) * sizeof(*out_data));
 	*needed = *r.out.needed;
 	*status_code = *r.out.status_code;
 
@@ -15373,7 +15373,7 @@ static void rpccli_spoolss_GetCorePrinterDrivers_done(struct tevent_req *subreq)
 	}
 
 	/* Copy out parameters */
-	memcpy(state->orig.out.core_printer_drivers, state->tmp.out.core_printer_drivers, state->tmp.in.core_printer_driver_count * sizeof(*state->orig.out.core_printer_drivers));
+	memcpy(state->orig.out.core_printer_drivers, state->tmp.out.core_printer_drivers, (state->tmp.in.core_printer_driver_count) * sizeof(*state->orig.out.core_printer_drivers));
 
 	/* Copy result */
 	state->orig.out.result = state->tmp.out.result;
@@ -15442,7 +15442,7 @@ NTSTATUS rpccli_spoolss_GetCorePrinterDrivers(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(core_printer_drivers, r.out.core_printer_drivers, r.in.core_printer_driver_count * sizeof(*core_printer_drivers));
+	memcpy(core_printer_drivers, r.out.core_printer_drivers, (r.in.core_printer_driver_count) * sizeof(*core_printer_drivers));
 
 	/* Return result */
 	if (werror) {
@@ -15678,7 +15678,7 @@ static void rpccli_spoolss_GetPrinterDriverPackagePath_done(struct tevent_req *s
 
 	/* Copy out parameters */
 	if (state->orig.out.driver_package_cab && state->tmp.out.driver_package_cab) {
-		memcpy(CONST_DISCARD(char *, state->orig.out.driver_package_cab), state->tmp.out.driver_package_cab, state->tmp.in.driver_package_cab_size * sizeof(*state->orig.out.driver_package_cab));
+		memcpy(discard_const_p(uint8_t, state->orig.out.driver_package_cab), state->tmp.out.driver_package_cab, (state->tmp.in.driver_package_cab_size) * sizeof(*state->orig.out.driver_package_cab));
 	}
 	*state->orig.out.required = *state->tmp.out.required;
 
@@ -15752,7 +15752,7 @@ NTSTATUS rpccli_spoolss_GetPrinterDriverPackagePath(struct rpc_pipe_client *cli,
 
 	/* Return variables */
 	if (driver_package_cab && r.out.driver_package_cab) {
-		memcpy(CONST_DISCARD(char *, driver_package_cab), r.out.driver_package_cab, r.in.driver_package_cab_size * sizeof(*driver_package_cab));
+		memcpy(discard_const_p(uint8_t, driver_package_cab), r.out.driver_package_cab, (r.in.driver_package_cab_size) * sizeof(*driver_package_cab));
 	}
 	*required = *r.out.required;
 
