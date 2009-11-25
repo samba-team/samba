@@ -772,17 +772,15 @@ torture_raw_sfileinfo_eof(struct torture_context *tctx, struct smbcli_state *cli
 	 * Looks like a windows bug:
 	 * http://lists.samba.org/archive/cifs-protocol/2009-November/001130.html
 	 */
-	if (torture_setting_bool(tctx, "samba3", false) ||
-	    torture_setting_bool(tctx, "samba4", false) ||
-	    torture_setting_bool(tctx, "onefs", false)) {
+	if (TARGET_IS_W2K8(tctx) || TARGET_IS_WIN7(tctx)) {
+		/* It succeeds! This is just weird! */
+		torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OK, ret,
+		    done, "Status should be OK");
+	} else {
 		torture_assert_ntstatus_equal_goto(tctx, status,
 		    NT_STATUS_SHARING_VIOLATION, ret, done, "Status should be "
 		    "SHARING_VIOLATION");
 		goto done;
-	} else {
-		/* It succeeds! This is just weird! */
-		torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OK, ret,
-		    done, "Status should be OK");
 	}
 
 	/* Verify that the file was actually extended to 100. */
