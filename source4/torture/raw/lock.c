@@ -69,6 +69,17 @@
 	}} while (0)
 #define BASEDIR "\\testlock"
 
+#define TARGET_SUPPORTS_SMBLOCK(_tctx) \
+    (torture_setting_bool(_tctx, "smblock_pdu_support", true))
+#define TARGET_SUPPORTS_OPENX_DENY_DOS(_tctx) \
+    (torture_setting_bool(_tctx, "openx_deny_dos_support", true))
+#define TARGET_SUPPORTS_INVALID_LOCK_RANGE(_tctx) \
+    (torture_setting_bool(_tctx, "invalid_lock_range_support", true))
+#define TARGET_IS_W2K8(_tctx) (torture_setting_bool(_tctx, "w2k8", false))
+#define TARGET_IS_WIN7(_tctx) (torture_setting_bool(_tctx, "win7", false))
+#define TARGET_IS_SAMBA3(_tctx) (torture_setting_bool(_tctx, "samba3", false))
+#define TARGET_IS_SAMBA4(_tctx) (torture_setting_bool(_tctx, "samba4", false))
+
 /*
   test SMBlock and SMBunlock ops
 */
@@ -79,6 +90,9 @@ static bool test_lock(struct torture_context *tctx, struct smbcli_state *cli)
 	bool ret = true;
 	int fnum;
 	const char *fname = BASEDIR "\\test.txt";
+
+	if (!TARGET_SUPPORTS_SMBLOCK(tctx))
+		torture_skip(tctx, "Target does not support the SMBlock PDU");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
@@ -361,7 +375,7 @@ static bool test_lockx(struct torture_context *tctx, struct smbcli_state *cli)
 	lock[0].pid++;
 	lock[0].count = 2;
 	status = smb_raw_lock(cli->tree, &io);
-	if (TARGET_IS_WIN7(tctx) || TARGET_IS_SAMBA4(tctx))
+	if (TARGET_SUPPORTS_INVALID_LOCK_RANGE(tctx))
 		CHECK_STATUS(status, NT_STATUS_INVALID_LOCK_RANGE);
 	else
 		CHECK_STATUS(status, NT_STATUS_OK);
@@ -780,6 +794,7 @@ static bool test_errorcode(struct torture_context *tctx,
 	time_t start;
 	int t;
 	int delay;
+	uint16_t deny_mode = 0;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
@@ -796,14 +811,20 @@ static bool test_errorcode(struct torture_context *tctx,
 	 * the second with t > 0 (=1)
 	 */
 next_run:
-	/* 
-	 * use the DENY_DOS mode, that creates two fnum's of one low-level file handle,
-	 * this demonstrates that the cache is per fnum
+	/*
+	 * use the DENY_DOS mode, that creates two fnum's of one low-level
+	 * file handle, this demonstrates that the cache is per fnum, not
+	 * per file handle
 	 */
+	if (TARGET_SUPPORTS_OPENX_DENY_DOS(tctx))
+	    deny_mode = OPENX_MODE_DENY_DOS;
+	else
+	    deny_mode = OPENX_MODE_DENY_NONE;
+
 	op.openx.level = RAW_OPEN_OPENX;
 	op.openx.in.fname = fname;
 	op.openx.in.flags = OPENX_FLAGS_ADDITIONAL_INFO;
-	op.openx.in.open_mode = OPENX_MODE_ACCESS_RDWR | OPENX_MODE_DENY_DOS;
+	op.openx.in.open_mode = OPENX_MODE_ACCESS_RDWR | deny_mode;
 	op.openx.in.open_func = OPENX_OPEN_FUNC_OPEN | OPENX_OPEN_FUNC_CREATE;
 	op.openx.in.search_attrs = 0;
 	op.openx.in.file_attrs = 0;
@@ -1054,7 +1075,7 @@ next_run:
 	/* 
 	 * demonstrate the a successful lock in a different range, 
 	 * doesn't reset the cache, the failing lock on the 2nd handle
-	 * resets the resets the cache
+	 * resets the cache
 	 */
 	lock[0].offset = 120;
 	lock[0].count = 15;

@@ -69,11 +69,20 @@ bool torture_register_suite(struct torture_suite *suite);
  * before Win7, this request would return STATUS_OK, but the actual lock
  * behavior was undefined. */
 
+/* torture:openx_deny_dos_support
+ *
+ * This parameter specifies whether the server supports the DENY_DOS open mode
+ * of the SMBOpenX PDU. */
+
 /* torture:sacl_support
  *
  * This parameter specifies whether the server supports the setting and
  * retrieval of System Access Control Lists.  This includes whether the server
  * supports the use of the SEC_FLAG_SYSTEM_SECURITY bit in the open access
  * mask.*/
+
+/* torture:smblock_pdu_support
+ *
+ * This parameter specifies whether the server supports the SMBLock (0x0C) PDU. */
 
 #endif /* __SMBTORTURE_H__ */
