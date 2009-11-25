@@ -65,7 +65,7 @@ directories.
 CHANGES SINCE alpha8
 =====================
 
-In the time since Samba4 alpha7 was released in Feburary 2009, Samba has
+In the time since Samba4 alpha8 was released in June 2009, Samba has
 continued to evolve, but you may particularly notice these areas 
 (in no particular order):
 
@@ -116,6 +116,9 @@ KNOWN ISSUES
 - Users upgrading existing databases to Samba4 should carefully
   consult upgrading-samba4.txt.  We have made a number of changes in
   this release that should make it easier to upgrade in future. 
+
+- ACL are not set by default on shares created by the provision.
+  Work is underway on this subject and it should be fixed in Alpha10.
 
 RUNNING Samba4
 ==============

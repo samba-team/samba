@@ -1,0 +1,24 @@
+Upgrading from an older samba4 installation.
+
+For users of samba4 alpha 8 and after
+=====================================
+
+* Stop any samba process
+* Backup your samba4 provision:
+  go in the directory where your samba4 provision is stored (/usr/local/samba by default)
+  do tar cf $HOME/backup.tar private (it's also recommended to save the etc/smb.conf and var/sysvol dir aswell)
+* Go in the source4 dir
+* run ./python/scripting/upgradeprovision
+* do make install
+
+For users of samba4 alpha 8 and after
+=====================================
+
+* Stop any samba/smbd process
+* Backup your samba4 provision:
+  go in the directory where your samba4 provision is stored (/usr/local/samba by default)
+  do tar cf $HOME/backup.tar private (it's also recommended to save the etc/smb.conf and var/sysvol dir aswell)
+* Go in the source4 dir
+* run ./python/scripting/upgradeprovision --full
+* do make install
+
