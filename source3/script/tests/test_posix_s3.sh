@@ -96,6 +96,10 @@ for t in $tests; do
     else
 	    testit "$name" $VALGRIND $SMBTORTURE4 $TORTURE4_OPTIONS $ADDARGS $unc -U"$username"%"$password" $t || failed=`expr $failed + 1`
     fi
+    if [ "$t" = "RAW-CHKPATH" ]; then
+	    echo "Testing with case sensitive"
+	    testit "$name" $VALGRIND $SMBTORTURE4 $TORTURE4_OPTIONS $ADDARGS "$unc"case -U"$username"%"$password" $t || failed=`expr $failed + 1`
+    fi
 done
 
 testok $0 $failed
