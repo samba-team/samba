@@ -161,12 +161,29 @@ WERROR registry_push_value(TALLOC_CTX *mem_ctx,
 		}
 		break;
 	}
-	case REG_MULTI_SZ:
-		if (!push_reg_multi_sz(mem_ctx, presult, (const char **)value->v.multi_sz.strings))
-		{
+	case REG_MULTI_SZ: {
+		/* handle the case where we don't get a NULL terminated array */
+		const char **array;
+		int i;
+
+		array = talloc_array(mem_ctx, const char *,
+				     value->v.multi_sz.num_strings + 1);
+		if (!array) {
 			return WERR_NOMEM;
 		}
+
+		for (i=0; i < value->v.multi_sz.num_strings; i++) {
+			array[i] = value->v.multi_sz.strings[i];
+		}
+		array[i] = NULL;
+
+		if (!push_reg_multi_sz(mem_ctx, presult, array)) {
+			talloc_free(array);
+			return WERR_NOMEM;
+		}
+		talloc_free(array);
 		break;
+	}
 	case REG_BINARY:
 		*presult = data_blob_talloc(mem_ctx,
 					    value->v.binary.data,
