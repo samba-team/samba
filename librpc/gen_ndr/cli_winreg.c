@@ -1668,7 +1668,7 @@ static void rpccli_winreg_EnumValue_done(struct tevent_req *subreq)
 		*state->orig.out.type = *state->tmp.out.type;
 	}
 	if (state->orig.out.value && state->tmp.out.value) {
-		memcpy(state->orig.out.value, state->tmp.out.value, *state->tmp.in.size * sizeof(*state->orig.out.value));
+		memcpy(state->orig.out.value, state->tmp.out.value, (*state->tmp.in.size) * sizeof(*state->orig.out.value));
 	}
 	if (state->orig.out.size && state->tmp.out.size) {
 		*state->orig.out.size = *state->tmp.out.size;
@@ -1752,7 +1752,7 @@ NTSTATUS rpccli_winreg_EnumValue(struct rpc_pipe_client *cli,
 		*type = *r.out.type;
 	}
 	if (value && r.out.value) {
-		memcpy(value, r.out.value, *r.in.size * sizeof(*value));
+		memcpy(value, r.out.value, (*r.in.size) * sizeof(*value));
 	}
 	if (size && r.out.size) {
 		*size = *r.out.size;
@@ -2823,7 +2823,7 @@ static void rpccli_winreg_QueryValue_done(struct tevent_req *subreq)
 		*state->orig.out.type = *state->tmp.out.type;
 	}
 	if (state->orig.out.data && state->tmp.out.data) {
-		memcpy(state->orig.out.data, state->tmp.out.data, *state->tmp.in.data_size * sizeof(*state->orig.out.data));
+		memcpy(state->orig.out.data, state->tmp.out.data, (*state->tmp.in.data_size) * sizeof(*state->orig.out.data));
 	}
 	if (state->orig.out.data_size && state->tmp.out.data_size) {
 		*state->orig.out.data_size = *state->tmp.out.data_size;
@@ -2904,7 +2904,7 @@ NTSTATUS rpccli_winreg_QueryValue(struct rpc_pipe_client *cli,
 		*type = *r.out.type;
 	}
 	if (data && r.out.data) {
-		memcpy(data, r.out.data, *r.in.data_size * sizeof(*data));
+		memcpy(data, r.out.data, (*r.in.data_size) * sizeof(*data));
 	}
 	if (data_size && r.out.data_size) {
 		*data_size = *r.out.data_size;
@@ -4627,9 +4627,9 @@ static void rpccli_winreg_QueryMultipleValues_done(struct tevent_req *subreq)
 	}
 
 	/* Copy out parameters */
-	memcpy(state->orig.out.values, state->tmp.out.values, state->tmp.in.num_values * sizeof(*state->orig.out.values));
+	memcpy(state->orig.out.values, state->tmp.out.values, (state->tmp.in.num_values) * sizeof(*state->orig.out.values));
 	if (state->orig.out.buffer && state->tmp.out.buffer) {
-		memcpy(state->orig.out.buffer, state->tmp.out.buffer, *state->tmp.in.buffer_size * sizeof(*state->orig.out.buffer));
+		memcpy(state->orig.out.buffer, state->tmp.out.buffer, (*state->tmp.in.buffer_size) * sizeof(*state->orig.out.buffer));
 	}
 	*state->orig.out.buffer_size = *state->tmp.out.buffer_size;
 
@@ -4699,9 +4699,9 @@ NTSTATUS rpccli_winreg_QueryMultipleValues(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(values, r.out.values, r.in.num_values * sizeof(*values));
+	memcpy(values, r.out.values, (r.in.num_values) * sizeof(*values));
 	if (buffer && r.out.buffer) {
-		memcpy(buffer, r.out.buffer, *r.in.buffer_size * sizeof(*buffer));
+		memcpy(buffer, r.out.buffer, (*r.in.buffer_size) * sizeof(*buffer));
 	}
 	*buffer_size = *r.out.buffer_size;
 
