@@ -617,25 +617,46 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 			CONST_DISCARD(struct security_descriptor *,psd));
 	}
 
-	/* Ensure owner and group are set. */
-	if (!psd->owner_sid || !psd->group_sid) {
-		DOM_SID owner_sid, group_sid;
-		struct security_descriptor *nc_psd = dup_sec_desc(talloc_tos(), psd);
+        /* Ensure we have OWNER/GROUP/DACL set. */
 
-		if (!nc_psd) {
-			return NT_STATUS_OK;
-		}
-		status = vfs_stat_fsp(fsp);
+	if ((security_info_sent & (OWNER_SECURITY_INFORMATION|
+				GROUP_SECURITY_INFORMATION|
+				DACL_SECURITY_INFORMATION)) !=
+				(OWNER_SECURITY_INFORMATION|
+				 GROUP_SECURITY_INFORMATION|
+				 DACL_SECURITY_INFORMATION)) {
+		/* No we don't - read from the existing SD. */
+		struct security_descriptor *nc_psd = NULL;
+
+		status = get_nt_acl_internal(handle, fsp,
+				NULL,
+				(OWNER_SECURITY_INFORMATION|
+				 GROUP_SECURITY_INFORMATION|
+				 DACL_SECURITY_INFORMATION),
+				&nc_psd);
+
 		if (!NT_STATUS_IS_OK(status)) {
-			/* Lower level acl set succeeded,
-			 * so still return OK. */
-			return NT_STATUS_OK;
+			return status;
 		}
-		create_file_sids(&fsp->fsp_name->st, &owner_sid, &group_sid);
+
 		/* This is safe as nc_psd is discarded at fn exit. */
-		nc_psd->owner_sid = &owner_sid;
-		nc_psd->group_sid = &group_sid;
-		security_info_sent |= (OWNER_SECURITY_INFORMATION|GROUP_SECURITY_INFORMATION);
+		if (security_info_sent & OWNER_SECURITY_INFORMATION) {
+			nc_psd->owner_sid = psd->owner_sid;
+		}
+		security_info_sent |= OWNER_SECURITY_INFORMATION;
+
+		if (security_info_sent & GROUP_SECURITY_INFORMATION) {
+			nc_psd->group_sid = psd->group_sid;
+		}
+		security_info_sent |= GROUP_SECURITY_INFORMATION;
+
+		if (security_info_sent & DACL_SECURITY_INFORMATION) {
+			nc_psd->dacl = dup_sec_acl(talloc_tos(), psd->dacl);
+			if (nc_psd->dacl == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
+		security_info_sent |= DACL_SECURITY_INFORMATION;
 		psd = nc_psd;
 	}
 
