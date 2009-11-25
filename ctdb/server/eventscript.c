@@ -809,7 +809,12 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 			ctdb->current_monitor_status_ctx = NULL;
 		}
 
+<<<<<<< HEAD:server/eventscript.c
 		ctdb->current_monitor_status_ctx = talloc(ctdb->monitor_event_script_ctx, struct ctdb_monitor_script_status_ctx);
+=======
+		ctdb->current_monitor_status_ctx = talloc(ctdb, struct ctdb_monitor_script_status_ctx);
+		CTDB_NO_MEMORY(ctdb, ctdb->current_monitor_status_ctx);
+>>>>>>> martins-svart/status-test-2:server/eventscript.c
 		ctdb->current_monitor_status_ctx->scripts = NULL;
 	} else {
 		/* any other script will first terminate any monitor event */
@@ -818,11 +823,17 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 			ctdb->monitor_event_script_ctx = NULL;
 		}
 		/* and then use a context common for all non-monitor events */
+<<<<<<< HEAD:server/eventscript.c
 		if (ctdb->other_event_script_ctx != NULL) {
 			talloc_free(ctdb->other_event_script_ctx);
 			ctdb->other_event_script_ctx = NULL;
 		}
 		ctdb->other_event_script_ctx = talloc_new(ctdb);
+=======
+		if (ctdb->other_event_script_ctx == NULL) {
+			ctdb->other_event_script_ctx = talloc_new(ctdb);
+		}
+>>>>>>> martins-svart/status-test-2:server/eventscript.c
 		mem_ctx = ctdb->other_event_script_ctx;
 	}
 
@@ -994,7 +1005,11 @@ static void run_eventscripts_callback(struct ctdb_context *ctdb, int status,
 	return;
 }
 
+<<<<<<< HEAD:server/eventscript.c
 
+=======
+/* Returns rest of string, or NULL if no match. */
+>>>>>>> martins-svart/status-test-2:server/eventscript.c
 static const char *get_call(const char *p, enum ctdb_eventscript_call *call)
 {
 	unsigned int len;
@@ -1006,6 +1021,7 @@ static const char *get_call(const char *p, enum ctdb_eventscript_call *call)
 	for (*call = 0; *call < ARRAY_SIZE(call_names); (*call)++) {
 		len = strlen(call_names[*call]);
 		if (strncmp(p, call_names[*call], len) == 0) {
+<<<<<<< HEAD:server/eventscript.c
 			/* If that's it, we're good. */
 			if (*p == '\0')
 				return p;
@@ -1014,6 +1030,12 @@ static const char *get_call(const char *p, enum ctdb_eventscript_call *call)
 			if (len)
 				return p + len;
 			/* Hmm, extra chars: keep looking. */
+=======
+			/* If end of string or whitespace, we're done. */
+			if (strcspn(p + len, " \t") == 0) {
+				return p + len;
+			}
+>>>>>>> martins-svart/status-test-2:server/eventscript.c
 		}
 	}
 	return NULL;

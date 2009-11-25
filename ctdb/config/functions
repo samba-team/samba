@@ -459,13 +459,18 @@ ctdb_status_dir="$ctdb_spool_dir/status"
 ctdb_fail_dir="$ctdb_spool_dir/failcount"
 ctdb_active_dir="$ctdb_spool_dir/active"
 
+log_status_cat ()
+{
+    echo "node is \"$1\", problem with \"${script_name}\": $(cat $2)"
+}
+
 ctdb_checkstatus ()
 {
-    if [ -r "$ctdb_status_dir/$service_name/unhealthy" ] ; then
-	log_status_cat "unhealthy" "$ctdb_status_dir/$service_name/unhealthy"
+    if [ -r "$ctdb_status_dir/$script_name/unhealthy" ] ; then
+	log_status_cat "unhealthy" "$ctdb_status_dir/$script_name/unhealthy"
 	return 1
-    elif [ -r "$ctdb_status_dir/$service_name/banned" ] ; then
-	log_status_cat "banned" "$ctdb_status_dir/$service_name/banned"
+    elif [ -r "$ctdb_status_dir/$script_name/banned" ] ; then
+	log_status_cat "banned" "$ctdb_status_dir/$script_name/banned"
 	return 2
     else
 	return 0
@@ -474,7 +479,7 @@ ctdb_checkstatus ()
 
 ctdb_setstatus ()
 {
-    d="$ctdb_status_dir/$service_name"
+    d="$ctdb_status_dir/$script_name"
     case "$1" in
 	unhealthy|banned)
 	    mkdir -p "$d"
@@ -534,6 +539,7 @@ is_ctdb_managed_service ()
     ctdb_compat_managed_service "$CTDB_MANAGES_HTTPD"    "httpd"
     ctdb_compat_managed_service "$CTDB_MANAGES_ISCSI"    "iscsi"
     ctdb_compat_managed_service "$CTDB_MANAGES_CLAMD"    "clamd"
+    ctdb_compat_managed_service "$CTDB_MANAGES_NFS"      "nfs"
 
     # Returns 0 if "<space>$service_name<space>" appears in $t
     [ "${t#* ${service_name} }" != "${t}" ]
@@ -595,7 +601,8 @@ ctdb_service_stop ()
 }
 
 # A reasonable default is the basename of the eventscript.
-service_name="${0##*/}" # basename
+script_name="${0##*/}" # basename
+service_name="$script_name"
 service_fail_limit=1
 
 ctdb_event="$1" ; shift
