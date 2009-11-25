@@ -535,6 +535,11 @@ _PUBLIC_ const char **str_list_add_const(const char **list, const char *s);
 _PUBLIC_ const char **str_list_copy_const(TALLOC_CTX *mem_ctx,
 					  const char **list);
 
+/**
+ * Needed for making an "unconst" list "const"
+ */
+_PUBLIC_ const char **const_str_list(char **list);
+
 
 /* The following definitions come from lib/util/util_file.c  */
 

@@ -486,3 +486,12 @@ _PUBLIC_ const char **str_list_copy_const(TALLOC_CTX *mem_ctx,
 	ret[i] = NULL;
 	return ret;
 }
+
+/**
+ * Needed for making an "unconst" list "const"
+ */
+_PUBLIC_ const char **const_str_list(char **list)
+{
+	return (const char **)list;
+}
+
