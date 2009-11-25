@@ -31,6 +31,7 @@
 
 #include "includes.h"
 #include "ldb_module.h"
+#include "dsdb/samdb/samdb.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "param/param.h"
 
@@ -136,10 +137,8 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_request *down_req;
 	struct ldb_message_element *attribute;
 	struct ldb_message *msg;
-	struct ldb_val v;
 	struct GUID guid;
 	uint64_t seq_num;
-	enum ndr_err_code ndr_err;
 	int ret;
 	time_t t = time(NULL);
 	struct og_context *ac;
@@ -174,15 +173,7 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 	/* a new GUID */
 	guid = GUID_random();
 
-	ndr_err = ndr_push_struct_blob(&v, msg, 
-				       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
-				       &guid,
-				       (ndr_push_flags_fn_t)ndr_push_GUID);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ret = ldb_msg_add_value(msg, "objectGUID", &v, NULL);
+	ret = dsdb_msg_add_guid(msg, &guid, "objectGUID");
 	if (ret) {
 		return ret;
 	}

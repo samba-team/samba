@@ -1161,21 +1161,10 @@ static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 		}
 
 		if (!ldb_msg_find_element(ac->msg, "schemaIDGUID")) {
-			enum ndr_err_code ndr_err;
-			struct ldb_val guid_value;
 			struct GUID guid;
 			/* a new GUID */
 			guid = GUID_random();
-			/* generated NDR encoded values */
-			ndr_err = ndr_push_struct_blob(&guid_value, ac->msg,
-						       NULL,
-						       &guid,
-						       (ndr_push_flags_fn_t)ndr_push_GUID);
-			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-				ldb_oom(ldb);
-				return LDB_ERR_OPERATIONS_ERROR;
-			}
-			ret = ldb_msg_add_value(ac->msg, "schemaIDGUID", &guid_value, NULL);
+			ret = dsdb_msg_add_guid(ac->msg, &guid, "schemaIDGUID");
 			if (ret != LDB_SUCCESS) {
 				ldb_oom(ldb);
 				return ret;
@@ -1211,21 +1200,10 @@ static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 		if (ret != LDB_SUCCESS) return ret;
 
 		if (!ldb_msg_find_element(ac->msg, "schemaIDGUID")) {
-			enum ndr_err_code ndr_err;
-			struct ldb_val guid_value;
 			struct GUID guid;
 			/* a new GUID */
 			guid = GUID_random();
-			/* generated NDR encoded values */
-			ndr_err = ndr_push_struct_blob(&guid_value, ac->msg,
-						       NULL,
-						       &guid,
-						       (ndr_push_flags_fn_t)ndr_push_GUID);
-			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-				ldb_oom(ldb);
-				return LDB_ERR_OPERATIONS_ERROR;
-			}
-			ret = ldb_msg_add_value(ac->msg, "schemaIDGUID", &guid_value, NULL);
+			ret = dsdb_msg_add_guid(ac->msg, &guid, "schemaIDGUID");
 			if (ret != LDB_SUCCESS) {
 				ldb_oom(ldb);
 				return ret;

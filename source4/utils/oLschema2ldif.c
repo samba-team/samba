@@ -399,14 +399,7 @@ static struct ldb_message *process_entry(TALLOC_CTX *mem_ctx, const char *entry)
 
 	memcpy(&guid, digest, sizeof(struct GUID));
 
-	ndr_err = ndr_push_struct_blob(&schemaIdGuid, ctx, NULL, &guid,
-			(ndr_push_flags_fn_t)ndr_push_GUID);
-
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		goto failed;
-	}
-
-	if (ldb_msg_add_value(msg, "schemaIdGuid", &schemaIdGuid, NULL) != 0) {
+	if (dsdb_msg_add_guid(msg, &guid, "schemaIdGuid") != 0) {
 		goto failed;
 	}
 
