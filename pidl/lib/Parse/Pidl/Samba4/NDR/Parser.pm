@@ -2119,7 +2119,7 @@ sub AllocateArrayLevel($$$$$$)
 		$self->pidl("}");
 		if (grep(/in/,@{$e->{DIRECTION}}) and
 		    grep(/out/,@{$e->{DIRECTION}})) {
-			$self->pidl("memcpy(r->out.$e->{NAME}, r->in.$e->{NAME}, $size * sizeof(*r->in.$e->{NAME}));");
+			$self->pidl("memcpy(r->out.$e->{NAME}, r->in.$e->{NAME}, ($size) * sizeof(*r->in.$e->{NAME}));");
 		}
 		return;
 	}
