@@ -682,7 +682,7 @@ static void rpccli_svcctl_QueryServiceObjectSecurity_done(struct tevent_req *sub
 	}
 
 	/* Copy out parameters */
-	memcpy(state->orig.out.buffer, state->tmp.out.buffer, state->tmp.in.offered * sizeof(*state->orig.out.buffer));
+	memcpy(state->orig.out.buffer, state->tmp.out.buffer, (state->tmp.in.offered) * sizeof(*state->orig.out.buffer));
 	*state->orig.out.needed = *state->tmp.out.needed;
 
 	/* Copy result */
@@ -749,7 +749,7 @@ NTSTATUS rpccli_svcctl_QueryServiceObjectSecurity(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(buffer, r.out.buffer, r.in.offered * sizeof(*buffer));
+	memcpy(buffer, r.out.buffer, (r.in.offered) * sizeof(*buffer));
 	*needed = *r.out.needed;
 
 	/* Return result */
@@ -2116,7 +2116,7 @@ static void rpccli_svcctl_EnumDependentServicesW_done(struct tevent_req *subreq)
 	}
 
 	/* Copy out parameters */
-	memcpy(state->orig.out.service_status, state->tmp.out.service_status, state->tmp.in.offered * sizeof(*state->orig.out.service_status));
+	memcpy(state->orig.out.service_status, state->tmp.out.service_status, (state->tmp.in.offered) * sizeof(*state->orig.out.service_status));
 	*state->orig.out.needed = *state->tmp.out.needed;
 	*state->orig.out.services_returned = *state->tmp.out.services_returned;
 
@@ -2185,7 +2185,7 @@ NTSTATUS rpccli_svcctl_EnumDependentServicesW(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(service_status, r.out.service_status, r.in.offered * sizeof(*service_status));
+	memcpy(service_status, r.out.service_status, (r.in.offered) * sizeof(*service_status));
 	*needed = *r.out.needed;
 	*services_returned = *r.out.services_returned;
 
@@ -2289,7 +2289,7 @@ static void rpccli_svcctl_EnumServicesStatusW_done(struct tevent_req *subreq)
 	}
 
 	/* Copy out parameters */
-	memcpy(state->orig.out.service, state->tmp.out.service, state->tmp.in.offered * sizeof(*state->orig.out.service));
+	memcpy(state->orig.out.service, state->tmp.out.service, (state->tmp.in.offered) * sizeof(*state->orig.out.service));
 	*state->orig.out.needed = *state->tmp.out.needed;
 	*state->orig.out.services_returned = *state->tmp.out.services_returned;
 	if (state->orig.out.resume_handle && state->tmp.out.resume_handle) {
@@ -2365,7 +2365,7 @@ NTSTATUS rpccli_svcctl_EnumServicesStatusW(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(service, r.out.service, r.in.offered * sizeof(*service));
+	memcpy(service, r.out.service, (r.in.offered) * sizeof(*service));
 	*needed = *r.out.needed;
 	*services_returned = *r.out.services_returned;
 	if (resume_handle && r.out.resume_handle) {
@@ -4290,7 +4290,7 @@ static void rpccli_svcctl_EnumServicesStatusA_done(struct tevent_req *subreq)
 	}
 
 	/* Copy out parameters */
-	memcpy(state->orig.out.service, state->tmp.out.service, state->tmp.in.offered * sizeof(*state->orig.out.service));
+	memcpy(state->orig.out.service, state->tmp.out.service, (state->tmp.in.offered) * sizeof(*state->orig.out.service));
 	*state->orig.out.needed = *state->tmp.out.needed;
 	*state->orig.out.services_returned = *state->tmp.out.services_returned;
 	if (state->orig.out.resume_handle && state->tmp.out.resume_handle) {
@@ -4366,7 +4366,7 @@ NTSTATUS rpccli_svcctl_EnumServicesStatusA(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(service, r.out.service, r.in.offered * sizeof(*service));
+	memcpy(service, r.out.service, (r.in.offered) * sizeof(*service));
 	*needed = *r.out.needed;
 	*services_returned = *r.out.services_returned;
 	if (resume_handle && r.out.resume_handle) {
@@ -4769,7 +4769,7 @@ static void rpccli_svcctl_QueryServiceConfigA_done(struct tevent_req *subreq)
 	}
 
 	/* Copy out parameters */
-	memcpy(state->orig.out.query, state->tmp.out.query, state->tmp.in.offered * sizeof(*state->orig.out.query));
+	memcpy(state->orig.out.query, state->tmp.out.query, (state->tmp.in.offered) * sizeof(*state->orig.out.query));
 	*state->orig.out.needed = *state->tmp.out.needed;
 
 	/* Copy result */
@@ -4834,7 +4834,7 @@ NTSTATUS rpccli_svcctl_QueryServiceConfigA(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(query, r.out.query, r.in.offered * sizeof(*query));
+	memcpy(query, r.out.query, (r.in.offered) * sizeof(*query));
 	*needed = *r.out.needed;
 
 	/* Return result */
@@ -6130,7 +6130,7 @@ static void rpccli_svcctl_QueryServiceConfig2A_done(struct tevent_req *subreq)
 	}
 
 	/* Copy out parameters */
-	memcpy(state->orig.out.buffer, state->tmp.out.buffer, state->tmp.in.offered * sizeof(*state->orig.out.buffer));
+	memcpy(state->orig.out.buffer, state->tmp.out.buffer, (state->tmp.in.offered) * sizeof(*state->orig.out.buffer));
 	*state->orig.out.needed = *state->tmp.out.needed;
 
 	/* Copy result */
@@ -6197,7 +6197,7 @@ NTSTATUS rpccli_svcctl_QueryServiceConfig2A(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(buffer, r.out.buffer, r.in.offered * sizeof(*buffer));
+	memcpy(buffer, r.out.buffer, (r.in.offered) * sizeof(*buffer));
 	*needed = *r.out.needed;
 
 	/* Return result */
@@ -6293,7 +6293,7 @@ static void rpccli_svcctl_QueryServiceConfig2W_done(struct tevent_req *subreq)
 	}
 
 	/* Copy out parameters */
-	memcpy(state->orig.out.buffer, state->tmp.out.buffer, state->tmp.in.offered * sizeof(*state->orig.out.buffer));
+	memcpy(state->orig.out.buffer, state->tmp.out.buffer, (state->tmp.in.offered) * sizeof(*state->orig.out.buffer));
 	*state->orig.out.needed = *state->tmp.out.needed;
 
 	/* Copy result */
@@ -6360,7 +6360,7 @@ NTSTATUS rpccli_svcctl_QueryServiceConfig2W(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(buffer, r.out.buffer, r.in.offered * sizeof(*buffer));
+	memcpy(buffer, r.out.buffer, (r.in.offered) * sizeof(*buffer));
 	*needed = *r.out.needed;
 
 	/* Return result */
@@ -6456,7 +6456,7 @@ static void rpccli_svcctl_QueryServiceStatusEx_done(struct tevent_req *subreq)
 	}
 
 	/* Copy out parameters */
-	memcpy(state->orig.out.buffer, state->tmp.out.buffer, state->tmp.in.offered * sizeof(*state->orig.out.buffer));
+	memcpy(state->orig.out.buffer, state->tmp.out.buffer, (state->tmp.in.offered) * sizeof(*state->orig.out.buffer));
 	*state->orig.out.needed = *state->tmp.out.needed;
 
 	/* Copy result */
@@ -6523,7 +6523,7 @@ NTSTATUS rpccli_svcctl_QueryServiceStatusEx(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(buffer, r.out.buffer, r.in.offered * sizeof(*buffer));
+	memcpy(buffer, r.out.buffer, (r.in.offered) * sizeof(*buffer));
 	*needed = *r.out.needed;
 
 	/* Return result */
@@ -6630,7 +6630,7 @@ static void rpccli_EnumServicesStatusExA_done(struct tevent_req *subreq)
 	}
 
 	/* Copy out parameters */
-	memcpy(state->orig.out.services, state->tmp.out.services, state->tmp.in.offered * sizeof(*state->orig.out.services));
+	memcpy(state->orig.out.services, state->tmp.out.services, (state->tmp.in.offered) * sizeof(*state->orig.out.services));
 	*state->orig.out.needed = *state->tmp.out.needed;
 	*state->orig.out.service_returned = *state->tmp.out.service_returned;
 	if (state->orig.out.resume_handle && state->tmp.out.resume_handle) {
@@ -6710,7 +6710,7 @@ NTSTATUS rpccli_EnumServicesStatusExA(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(services, r.out.services, r.in.offered * sizeof(*services));
+	memcpy(services, r.out.services, (r.in.offered) * sizeof(*services));
 	*needed = *r.out.needed;
 	*service_returned = *r.out.service_returned;
 	if (resume_handle && r.out.resume_handle) {
@@ -6822,7 +6822,7 @@ static void rpccli_EnumServicesStatusExW_done(struct tevent_req *subreq)
 	}
 
 	/* Copy out parameters */
-	memcpy(state->orig.out.services, state->tmp.out.services, state->tmp.in.offered * sizeof(*state->orig.out.services));
+	memcpy(state->orig.out.services, state->tmp.out.services, (state->tmp.in.offered) * sizeof(*state->orig.out.services));
 	*state->orig.out.needed = *state->tmp.out.needed;
 	*state->orig.out.service_returned = *state->tmp.out.service_returned;
 	if (state->orig.out.resume_handle && state->tmp.out.resume_handle) {
@@ -6902,7 +6902,7 @@ NTSTATUS rpccli_EnumServicesStatusExW(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(services, r.out.services, r.in.offered * sizeof(*services));
+	memcpy(services, r.out.services, (r.in.offered) * sizeof(*services));
 	*needed = *r.out.needed;
 	*service_returned = *r.out.service_returned;
 	if (resume_handle && r.out.resume_handle) {

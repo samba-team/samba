@@ -5044,7 +5044,7 @@ static void rpccli_srvsvc_NetPathCanonicalize_done(struct tevent_req *subreq)
 	}
 
 	/* Copy out parameters */
-	memcpy(state->orig.out.can_path, state->tmp.out.can_path, state->tmp.in.maxbuf * sizeof(*state->orig.out.can_path));
+	memcpy(state->orig.out.can_path, state->tmp.out.can_path, (state->tmp.in.maxbuf) * sizeof(*state->orig.out.can_path));
 	*state->orig.out.pathtype = *state->tmp.out.pathtype;
 
 	/* Copy result */
@@ -5116,7 +5116,7 @@ NTSTATUS rpccli_srvsvc_NetPathCanonicalize(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(can_path, r.out.can_path, r.in.maxbuf * sizeof(*can_path));
+	memcpy(can_path, r.out.can_path, (r.in.maxbuf) * sizeof(*can_path));
 	*pathtype = *r.out.pathtype;
 
 	/* Return result */

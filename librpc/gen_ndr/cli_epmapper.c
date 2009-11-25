@@ -380,7 +380,7 @@ static void rpccli_epm_Lookup_done(struct tevent_req *subreq)
 	/* Copy out parameters */
 	*state->orig.out.entry_handle = *state->tmp.out.entry_handle;
 	*state->orig.out.num_ents = *state->tmp.out.num_ents;
-	memcpy(state->orig.out.entries, state->tmp.out.entries, state->tmp.in.max_ents * sizeof(*state->orig.out.entries));
+	memcpy(state->orig.out.entries, state->tmp.out.entries, (state->tmp.in.max_ents) * sizeof(*state->orig.out.entries));
 
 	/* Copy result */
 	state->orig.out.result = state->tmp.out.result;
@@ -453,7 +453,7 @@ NTSTATUS rpccli_epm_Lookup(struct rpc_pipe_client *cli,
 	/* Return variables */
 	*entry_handle = *r.out.entry_handle;
 	*num_ents = *r.out.num_ents;
-	memcpy(entries, r.out.entries, r.in.max_ents * sizeof(*entries));
+	memcpy(entries, r.out.entries, (r.in.max_ents) * sizeof(*entries));
 
 	/* Return result */
 	return NT_STATUS_OK;
@@ -549,7 +549,7 @@ static void rpccli_epm_Map_done(struct tevent_req *subreq)
 	/* Copy out parameters */
 	*state->orig.out.entry_handle = *state->tmp.out.entry_handle;
 	*state->orig.out.num_towers = *state->tmp.out.num_towers;
-	memcpy(state->orig.out.towers, state->tmp.out.towers, state->tmp.in.max_towers * sizeof(*state->orig.out.towers));
+	memcpy(state->orig.out.towers, state->tmp.out.towers, (state->tmp.in.max_towers) * sizeof(*state->orig.out.towers));
 
 	/* Copy result */
 	state->orig.out.result = state->tmp.out.result;
@@ -618,7 +618,7 @@ NTSTATUS rpccli_epm_Map(struct rpc_pipe_client *cli,
 	/* Return variables */
 	*entry_handle = *r.out.entry_handle;
 	*num_towers = *r.out.num_towers;
-	memcpy(towers, r.out.towers, r.in.max_towers * sizeof(*towers));
+	memcpy(towers, r.out.towers, (r.in.max_towers) * sizeof(*towers));
 
 	/* Return result */
 	return NT_STATUS_OK;
