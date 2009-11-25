@@ -29,8 +29,8 @@
    for each call we test that it succeeds, and where possible test 
    for consistency between the calls. 
 */
-bool torture_raw_sfileinfo(struct torture_context *torture, 
-			   struct smbcli_state *cli)
+static bool
+torture_raw_sfileinfo_base(struct torture_context *torture, struct smbcli_state *cli)
 {
 	bool ret = true;
 	int fnum = -1;
@@ -442,8 +442,9 @@ done:
 /*
  * basic testing of all RAW_SFILEINFO_RENAME call
  */
-bool torture_raw_sfileinfo_rename(struct torture_context *torture,
-								  struct smbcli_state *cli)
+static bool
+torture_raw_sfileinfo_rename(struct torture_context *torture,
+    struct smbcli_state *cli)
 {
 	bool ret = true;
 	int fnum_saved, d_fnum, fnum2, fnum = -1;
@@ -669,8 +670,8 @@ done:
 /* 
    look for the w2k3 setpathinfo STANDARD bug
 */
-bool torture_raw_sfileinfo_bug(struct torture_context *torture,
-							   struct smbcli_state *cli)
+static bool torture_raw_sfileinfo_bug(struct torture_context *torture,
+    struct smbcli_state *cli)
 {
 	const char *fname = "\\bug3.txt";
 	union smb_setfileinfo sfinfo;
@@ -697,4 +698,17 @@ bool torture_raw_sfileinfo_bug(struct torture_context *torture,
 	printf("now try and delete %s\n", fname);
 
 	return true;
+}
+
+struct torture_suite *torture_raw_sfileinfo(TALLOC_CTX *mem_ctx)
+{
+	struct torture_suite *suite = torture_suite_create(mem_ctx,
+	    "SFILEINFO");
+
+	torture_suite_add_1smb_test(suite, "BASE", torture_raw_sfileinfo_base);
+	torture_suite_add_1smb_test(suite, "RENAME",
+				      torture_raw_sfileinfo_rename);
+	torture_suite_add_1smb_test(suite, "BUG", torture_raw_sfileinfo_bug);
+
+	return suite;
 }
