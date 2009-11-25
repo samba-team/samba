@@ -1602,9 +1602,9 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 ****************************************************************************/
 
 #define strip_driver_path(_mem_ctx, _element) do { \
-	if ((_p = strrchr(_element, '\\')) != NULL) { \
-		_element = talloc_asprintf(_mem_ctx, _p+1); \
-		W_ERROR_HAVE_NO_MEMORY(_element); \
+	if ((_p = strrchr((_element), '\\')) != NULL) { \
+		(_element) = talloc_asprintf((_mem_ctx), "%s", _p+1); \
+		W_ERROR_HAVE_NO_MEMORY((_element)); \
 	} \
 } while (0);
 
