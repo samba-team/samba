@@ -42,7 +42,6 @@ static const char *call_names[] = {
 	"monitor",
 	"status",
 	"shutdown",
-	""
 };
 
 static void ctdb_event_script_timeout(struct event_context *ev, struct timed_event *te, struct timeval t, void *p);
@@ -774,9 +773,6 @@ static bool check_options(enum ctdb_eventscript_call call, const char *options)
 	case CTDB_EVENT_RELEASE_IP:
 		return count_words(options) == 3;
 
-	case CTDB_EVENT_UNKNOWN:
-		return true;
-
 	default:
 		DEBUG(DEBUG_ERR,(__location__ "Unknown ctdb_eventscript_call %u\n", call));
 		return false;
@@ -997,6 +993,26 @@ static void run_eventscripts_callback(struct ctdb_context *ctdb, int status,
 	return;
 }
 
+/* Returns rest of string, or NULL if no match. */
+static const char *get_call(const char *p, enum ctdb_eventscript_call *call)
+{
+	unsigned int len;
+
+	/* Skip any initial whitespace. */
+	p += strspn(p, " \t");
+
+	/* See if we match any. */
+	for (*call = 0; *call < ARRAY_SIZE(call_names); (*call)++) {
+		len = strlen(call_names[*call]);
+		if (strncmp(p, call_names[*call], len) == 0) {
+			/* If end of string or whitespace, we're done. */
+			if (strcspn(p + len, " \t") == 0) {
+				return p + len;
+			}
+		}
+	}
+	return NULL;
+}
 
 /*
   A control to force running of the eventscripts from the ctdb client tool
@@ -1007,6 +1023,15 @@ int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb,
 {
 	int ret;
 	struct eventscript_callback_state *state;
+	const char *options;
+	enum ctdb_eventscript_call call;
+
+	/* Figure out what call they want. */
+	options = get_call((const char *)indata.dptr, &call);
+	if (!options) {
+		DEBUG(DEBUG_ERR, (__location__ " Invalid forced \"%s\"\n", (const char *)indata.dptr));
+		return -1;
+	}
 
 	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
 		DEBUG(DEBUG_ERR, (__location__ " Aborted running eventscript \"%s\" while in RECOVERY mode\n", indata.dptr));
@@ -1024,7 +1049,7 @@ int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb,
 
 	ret = ctdb_event_script_callback(ctdb,
 			 state, run_eventscripts_callback, state,
-			 CTDB_EVENT_UNKNOWN, "%s", (const char *)indata.dptr);
+			 call, "%s", options);
 
 	if (ret != 0) {
 		ctdb_enable_monitoring(ctdb);

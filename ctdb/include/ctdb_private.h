@@ -868,8 +868,7 @@ enum ctdb_eventscript_call {
 	CTDB_EVENT_STOPPED,		/* This node is stopped: no args. */
 	CTDB_EVENT_MONITOR,		/* Please check if service is healthy: no args. */
 	CTDB_EVENT_STATUS,		/* Report service status: no args. */
-	CTDB_EVENT_SHUTDOWN,		/* CTDB shutting down: no args. */
-	CTDB_EVENT_UNKNOWN,		/* Other: manually invoked from "ctdb eventscript". */
+	CTDB_EVENT_SHUTDOWN		/* CTDB shutting down: no args. */
 };
 
 /* internal prototypes */
