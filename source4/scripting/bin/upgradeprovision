@@ -6,17 +6,17 @@
 # Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2008
 # Copyright (C) Andrew Bartlett <abartlet@samba.org> 2008
 #
-#   
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
-#   
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#   
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -70,7 +70,7 @@ hashAttrNotCopied = { 	"dn": 1,"whenCreated": 1,"whenChanged": 1,"objectGUID": 1
 # Usually for an object that already exists we do not overwrite attributes as they might have been changed for good
 # reasons. Anyway for a few of thems it's mandatory to replace them otherwise the provision will be broken somehow.
 hashOverwrittenAtt = {	 "prefixMap": replace, "systemMayContain": replace,"systemOnly":replace, "searchFlags":replace,\
-					 	 "mayContain":replace,  "systemFlags":replace, 
+						 "mayContain":replace,  "systemFlags":replace,
 						 "oEMInformation":replace, "operatingSystemVersion":replace, "adminPropertyPages":1,"possibleInferiors":replace+delete}
 backlinked = []
 
@@ -94,14 +94,14 @@ parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))
 credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
-parser.add_option("--setupdir", type="string", metavar="DIR", 
+parser.add_option("--setupdir", type="string", metavar="DIR",
 					help="directory with setup files")
 parser.add_option("--debugprovision", help="Debug provision", action="store_true")
 parser.add_option("--debugguess", help="Print information on what is different but won't be changed", action="store_true")
 parser.add_option("--debugchange", help="Print information on what is different but won't be changed", action="store_true")
 parser.add_option("--debugchangesd", help="Print information security descriptors differences", action="store_true")
 parser.add_option("--debugall", help="Print all available information (very verbose)", action="store_true")
-parser.add_option("--targetdir", type="string", metavar="DIR", 
+parser.add_option("--targetdir", type="string", metavar="DIR",
 					help="Set target directory")
 
 opts = parser.parse_args()[0]
@@ -152,11 +152,11 @@ def get_paths(targetdir=None,smbconf=None):
 
 	lp = param.LoadParm()
 	lp.load(smbconf)
-# Normaly we need the domain name for this function but for our needs it's pointless 
+# Normaly we need the domain name for this function but for our needs it's pointless
 	paths = provision_paths_from_lp(lp,"foo")
 	return paths
 
-# This function guess(fetch) informations needed to make a fresh provision from the current provision  	
+# This function guess(fetch) informations needed to make a fresh provision from the current provision
 # It includes: realm, workgroup, partitions, netbiosname, domain guid, ...
 def guess_names_from_current_provision(credentials,session_info,paths):
 	lp = param.LoadParm()
@@ -177,11 +177,11 @@ def guess_names_from_current_provision(credentials,session_info,paths):
 	names.netbiosname = str(res[0]["sAMAccountName"]).replace("$","")
 
 	names.smbconf = smbconf
-	#It's important here to let ldb load with the old module or it's quite certain that the LDB won't load ... 
+	#It's important here to let ldb load with the old module or it's quite certain that the LDB won't load ...
 	samdb = Ldb(paths.samdb, session_info=session_info,
 		    credentials=credentials, lp=lp)
-	
-	# That's a bit simplistic but it's ok as long as we have only 3 partitions 
+
+	# That's a bit simplistic but it's ok as long as we have only 3 partitions
 	attrs2 = ["schemaNamingContext","configurationNamingContext","rootDomainNamingContext"]
 	res2 = samdb.search(expression="(objectClass=*)",base="", scope=SCOPE_BASE, attrs=attrs2)
 
@@ -196,15 +196,15 @@ def guess_names_from_current_provision(credentials,session_info,paths):
 	attrs3 = ["cn"]
 	res3= samdb.search(expression="(objectClass=*)",base="CN=Sites,"+configdn, scope=SCOPE_ONELEVEL, attrs=attrs3)
 	names.sitename = str(res3[0]["cn"])
-	
-	# dns hostname and server dn 
+
+	# dns hostname and server dn
 	attrs4 = ["dNSHostName"]
 	res4= samdb.search(expression="(CN=%s)"%names.netbiosname,base="OU=Domain Controllers,"+rootdn, \
 						scope=SCOPE_ONELEVEL, attrs=attrs4)
 	names.hostname = str(res4[0]["dNSHostName"]).replace("."+names.dnsdomain,"")
 
 	names.serverdn = "CN=%s,CN=Servers,CN=%s,CN=Sites,%s" % (names.netbiosname, names.sitename, configdn)
-	
+
 	# invocation id
 	attrs5 = ["invocationId"]
 	res5 = samdb.search(expression="(objectClass=*)",base="CN=Sites,"+configdn, scope=SCOPE_SUBTREE, attrs=attrs5)
@@ -261,7 +261,7 @@ def print_names(names):
 	message(GUESS, "ntdsguid    :"+names.ntdsguid)
 
 # Create a fresh new reference provision
-# This provision will be the reference for knowing what has changed in the 
+# This provision will be the reference for knowing what has changed in the
 # since the latest upgrade in the current provision
 def newprovision(names,setup_dir,creds,session,smbconf):
 	random.seed()
@@ -293,7 +293,7 @@ def newprovision(names,setup_dir,creds,session,smbconf):
 	return provdir
 
 # This function sorts two dn in the lexicographical order and put higher level DN before
-# So given the dns cn=bar,cn=foo and cn=foo the later will be return as smaller (-1) as it has less 
+# So given the dns cn=bar,cn=foo and cn=foo the later will be return as smaller (-1) as it has less
 # level
 def dn_sort(x,y):
 	p = re.compile(r'(?<!\\),')
@@ -303,8 +303,8 @@ def dn_sort(x,y):
 	if (len(tab1) > len(tab2)):
 		min = len(tab2)
 	elif (len(tab1) < len(tab2)):
-		min = len(tab1) 
-	else: 
+		min = len(tab1)
+	else:
 		min = len(tab1)
 	len1=len(tab1)-1
 	len2=len(tab2)-1
@@ -313,7 +313,7 @@ def dn_sort(x,y):
 	for i in range(0,min):
 		ret=cmp(tab1[len1-i],tab2[len2-i])
 		if(ret != 0):
-			return ret	
+			return ret
 		else:
 			if(i==min-1):
 				if(len1==len2):
@@ -342,17 +342,17 @@ def handle_security_desc(ischema,att,msgElt,hashallSD,old,new):
 		return 1
 	return 0
 
-# Hangle special cases ... That's when we want to update an attribute only 
-# if it has a certain value or if it's for a certain object or 
-# a class of object. 
-# It can be also if we want to do a merge of value instead of a simple replace 
+# Hangle special cases ... That's when we want to update an attribute only
+# if it has a certain value or if it's for a certain object or
+# a class of object.
+# It can be also if we want to do a merge of value instead of a simple replace
 def handle_special_case(att,delta,new,old,ischema):
 	flag = delta.get(att).flags()
 	if (att == "gPLink" or att == "gPCFileSysPath") and flag ==  ldb.FLAG_MOD_REPLACE and str(new[0].dn).lower() == str(old[0].dn).lower():
 		delta.remove(att)
 		return 1
 	if att == "forceLogoff":
-		ref=0x8000000000000000 
+		ref=0x8000000000000000
 		oldval=int(old[0][att][0])
 		newval=int(new[0][att][0])
 		ref == old and ref == abs(new)
@@ -396,7 +396,7 @@ def update_secrets(newpaths,paths,creds,session):
 	res2 = secrets_ldb.search(expression="dn=@MODULES",base="", scope=SCOPE_SUBTREE)
 	delta = secrets_ldb.msg_diff(res2[0],res[0])
 	delta.dn = res2[0].dn
-	secrets_ldb.modify(delta)	
+	secrets_ldb.modify(delta)
 
 	newsecrets_ldb = Ldb(newpaths.secrets, session_info=session, credentials=creds,lp=lp)
 	secrets_ldb = Ldb(paths.secrets, session_info=session, credentials=creds,lp=lp)
@@ -410,7 +410,7 @@ def update_secrets(newpaths,paths,creds,session):
 	empty = ldb.Message()
 	for i in range(0,len(res)):
 		hash_new[str(res[i]["dn"]).lower()] = res[i]["dn"]
-	
+
 	# Create a hash for speeding the search of existing object in the current provision
 	for i in range(0,len(res2)):
 		hash[str(res2[i]["dn"]).lower()] = res2[i]["dn"]
@@ -430,7 +430,7 @@ def update_secrets(newpaths,paths,creds,session):
 		for att in delta:
 			message(CHANGE," Adding attribute %s"%att)
 		delta.dn = res[0].dn
-		secrets_ldb.add(delta)	
+		secrets_ldb.add(delta)
 
 	for entry in listPresent:
 		res = newsecrets_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
@@ -443,12 +443,12 @@ def update_secrets(newpaths,paths,creds,session):
 			i = i + 1
 			if att != "dn":
 				message(CHANGE," Adding/Changing attribute %s to %s"%(att,res2[0].dn))
-				
+
 		delta.dn = res2[0].dn
-		secrets_ldb.modify(delta)	
+		secrets_ldb.modify(delta)
 
 # Check difference between the current provision and the reference provision.
-# It looks for all object which base DN is name if ischema is false then scan is done in 
+# It looks for all object which base DN is name if ischema is false then scan is done in
 # cross partition mode.
 # If ischema is true, then special handling is done for dealing with schema
 def check_diff_name(newpaths,paths,creds,session,basedn,names,ischema):
@@ -468,11 +468,11 @@ def check_diff_name(newpaths,paths,creds,session,basedn,names,ischema):
 	else:
 		res = newsam_ldb.search(expression="objectClass=*",base=basedn, scope=SCOPE_SUBTREE,attrs=["dn"],controls=["search_options:1:2"])
 		res2 = sam_ldb.search(expression="objectClass=*",base=basedn, scope=SCOPE_SUBTREE,attrs=["dn"],controls=["search_options:1:2"])
-		
+
 	# Create a hash for speeding the search of new object
 	for i in range(0,len(res)):
 		hash_new[str(res[i]["dn"]).lower()] = res[i]["dn"]
-	
+
 	# Create a hash for speeding the search of existing object in the current provision
 	for i in range(0,len(res2)):
 		hash[str(res2[i]["dn"]).lower()] = res2[i]["dn"]
@@ -483,14 +483,14 @@ def check_diff_name(newpaths,paths,creds,session,basedn,names,ischema):
 		else:
 			listPresent.append(hash_new[k])
 
-	# Sort the missing object in order to have object of the lowest level first (which can be 
+	# Sort the missing object in order to have object of the lowest level first (which can be
 	# containers for higher level objects)
 	listMissing.sort(dn_sort)
 	listPresent.sort(dn_sort)
 
 	if ischema:
-		# The following lines (up to the for loop) is to load the up to date schema into our current LDB 
-		# a complete schema is needed as the insertion of attributes and class is done against it 
+		# The following lines (up to the for loop) is to load the up to date schema into our current LDB
+		# a complete schema is needed as the insertion of attributes and class is done against it
 		# and the schema is self validated
 		# The double ldb open and schema validation is taken from the initial provision script
 		# it's not certain that it is really needed ....
@@ -501,7 +501,7 @@ def check_diff_name(newpaths,paths,creds,session,basedn,names,ischema):
 		# And now we can connect to the DB - the schema won't be loaded from the DB
 		sam_ldb.connect(paths.samdb)
 		sam_ldb.transaction_start()
-	else:	
+	else:
 		sam_ldb.transaction_start()
 
 	empty = ldb.Message()
@@ -560,8 +560,8 @@ def check_diff_name(newpaths,paths,creds,session,basedn,names,ischema):
 
 
 # This function updates SD for AD objects.
-# As SD in the upgraded provision can be different for various reasons 
-# this function check if an automatic update can be performed and do it 
+# As SD in the upgraded provision can be different for various reasons
+# this function check if an automatic update can be performed and do it
 # or if it can't be done.
 def update_sds(diffDefSD,diffSD,paths,creds,session,rootdn,domSIDTxt):
 	sam_ldb = Ldb(paths.samdb, session_info=session, credentials=creds,lp=lp)
@@ -586,8 +586,8 @@ def update_sds(diffDefSD,diffSD,paths,creds,session,rootdn,domSIDTxt):
 			if len(res2) > 0:
 				defSD = str(res2[0]["defaultSecurityDescriptor"])
 				hashClassSD[classObj] = defSD
-		# Because somewhere between alpha8 and alpha9 samba4 changed the owner of ACLs in the AD so 
-		# we check if it's the case and if so use the "old" owner to see if the ACL is a direct calculation 
+		# Because somewhere between alpha8 and alpha9 samba4 changed the owner of ACLs in the AD so
+		# we check if it's the case and if so use the "old" owner to see if the ACL is a direct calculation
 		# from the defaultSecurityDescriptor
 		session = admin_session_info
 		if oldSD.startswith("O:SYG:BA"):
@@ -608,14 +608,14 @@ def update_sds(diffDefSD,diffSD,paths,creds,session,rootdn,domSIDTxt):
 			delta = ldb.Message()
 			delta.dn = ldb.Dn(sam_ldb,dn)
 			delta["nTSecurityDescriptor"] = ldb.MessageElement( ndr_pack(diffSD[dn]["newSD"]),ldb.FLAG_MOD_REPLACE,"nTSecurityDescriptor" )
-        	sam_ldb.modify(delta)
-		
+		sam_ldb.modify(delta)
+
 	sam_ldb.transaction_commit()
 	print "%d nTSecurityDescriptor attribute(s) have been updated"%(upgrade)
 	sam_ldb.transaction_start()
 	upgrade = 0
 	for dn in diffDefSD:
-		message(CHANGESD, "DefaultSecurityDescriptor for class object %s has changed"%(dn)) 
+		message(CHANGESD, "DefaultSecurityDescriptor for class object %s has changed"%(dn))
 		if not diffDefSD[dn].has_key("noupgrade"):
 			upgrade = upgrade +1
 			delta = ldb.Message()
@@ -627,7 +627,7 @@ def update_sds(diffDefSD,diffSD,paths,creds,session,rootdn,domSIDTxt):
 
 	sam_ldb.transaction_commit()
 	print "%d defaultSecurityDescriptor attribute(s) have been updated"%(upgrade)
-			
+
 def rmall(topdir):
 	for root, dirs, files in os.walk(topdir, topdown=False):
 		for name in files:
@@ -678,7 +678,7 @@ paths=get_paths(targetdir=opts.targetdir,smbconf=smbconf)
 paths.setup = setup_dir
 def setup_path(file):
 	return os.path.join(setup_dir, file)
-# Guess all the needed names (variables in fact) from the current 
+# Guess all the needed names (variables in fact) from the current
 # provision.
 names = guess_names_from_current_provision(creds,session,paths)
 # Let's see them
