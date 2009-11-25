@@ -637,6 +637,14 @@ NTSTATUS nt_status_string_to_code(const char *nt_status_str);
 /** Used by ntstatus_dos_equal: */
 extern bool ntstatus_check_dos_mapping;
 
+/* we need these here for openchange */
+#ifndef likely
+#define likely(x) (x)
+#endif
+#ifndef unlikely
+#define unlikely(x) (x)
+#endif
+
 #define NT_STATUS_IS_OK(x) (likely(NT_STATUS_V(x) == 0))
 #define NT_STATUS_IS_ERR(x) (unlikely((NT_STATUS_V(x) & 0xc0000000) == 0xc0000000))
 /* checking for DOS error mapping here is ugly, but unfortunately the
