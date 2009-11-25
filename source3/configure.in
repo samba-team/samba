@@ -3279,7 +3279,7 @@ if test x"$with_ads_support" != x"no"; then
   # now check for krb5.h. Some systems have the libraries without the headers!
   # note that this check is done here to allow for different kerberos
   # include paths
-  AC_CHECK_HEADERS(krb5.h)
+  AC_CHECK_HEADERS(krb5.h krb5/krb5.h)
 
   if test x"$ac_cv_header_krb5_h" = x"no"; then
 
@@ -3300,7 +3300,12 @@ if test x"$with_ads_support" != x"no"; then
     CPPFLAGS=$ac_save_CPPFLAGS
     LDFLAGS=$ac_save_LDFLAGS
   fi
-  AC_CHECK_HEADERS(krb5/locate_plugin.h)
+  AC_CHECK_HEADERS([krb5/locate_plugin.h], [], [],
+[[#ifdef HAVE_KRB5_KRB5_H
+ #include <krb5/krb5.h>
+ #endif
+]])
+
   if test x"$ac_cv_header_krb5_locate_plugin_h" = x"yes"; then
 	WINBIND_KRB5_LOCATOR="bin/winbind_krb5_locator.$SHLIBEXT"
 	if test x"$BLDSHARED" = x"true" ; then
