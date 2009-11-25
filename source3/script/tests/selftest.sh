@@ -266,6 +266,9 @@ cat >$SERVERCONFFILE<<EOF
 [hideunread]
 	copy = tmp
 	hide unreadable = yes
+[tmpcase]
+	copy = tmp
+	case sensitive = yes
 [hideunwrite]
 	copy = tmp
 	hide unwriteable files = yes
