@@ -459,6 +459,11 @@ ctdb_status_dir="$ctdb_spool_dir/status"
 ctdb_fail_dir="$ctdb_spool_dir/failcount"
 ctdb_active_dir="$ctdb_spool_dir/active"
 
+log_status_cat ()
+{
+    echo "node is \"$1\", problem with \"${service_name}\": $(cat $2)"
+}
+
 ctdb_checkstatus ()
 {
     if [ -r "$ctdb_status_dir/$service_name/unhealthy" ] ; then
@@ -534,6 +539,7 @@ is_ctdb_managed_service ()
     ctdb_compat_managed_service "$CTDB_MANAGES_HTTPD"    "httpd"
     ctdb_compat_managed_service "$CTDB_MANAGES_ISCSI"    "iscsi"
     ctdb_compat_managed_service "$CTDB_MANAGES_CLAMD"    "clamd"
+    ctdb_compat_managed_service "$CTDB_MANAGES_NFS"      "nfs"
 
     # Returns 0 if "<space>$service_name<space>" appears in $t
     [ "${t#* ${service_name} }" != "${t}" ]
