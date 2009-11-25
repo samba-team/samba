@@ -5578,7 +5578,7 @@ static NTSTATUS smb_set_file_size(connection_struct *conn,
 		req,					/* req */
 		0,					/* root_dir_fid */
 		smb_fname_tmp,				/* fname */
-		FILE_WRITE_ATTRIBUTES,			/* access_mask */
+		FILE_WRITE_DATA,			/* access_mask */
 		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */
 		    FILE_SHARE_DELETE),
 		FILE_OPEN,				/* create_disposition*/
