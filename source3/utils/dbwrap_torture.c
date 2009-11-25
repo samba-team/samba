@@ -36,7 +36,7 @@ extern bool AllowDebugChange;
 #define DEFAULT_DB_NAME "transaction.tdb"
 
 static int timelimit = 10;
-static int delay = 0;
+static int torture_delay = 0;
 static int verbose = 0;
 static int no_trans = 0;
 static char *db_name = (char *)discard_const(DEFAULT_DB_NAME);
@@ -145,7 +145,7 @@ static void test_store_records(struct db_context *db, struct tevent_context *ev)
 				goto fail;
 			}
 			if (verbose) DEBUG(1, ("transaction started\n"));
-			do_sleep(delay);
+			do_sleep(torture_delay);
 		}
 
 		if (verbose) DEBUG(1, ("calling fetch_lock\n"));
@@ -155,7 +155,7 @@ static void test_store_records(struct db_context *db, struct tevent_context *ev)
 			goto fail;
 		}
 		if (verbose) DEBUG(1, ("fetched record ok\n"));
-		do_sleep(delay);
+		do_sleep(torture_delay);
 
 		data.dsize = MAX(rec->value.dsize, sizeof(uint32_t) * (pnn+1));
 		data.dptr = (unsigned char *)talloc_zero_size(tmp_ctx,
@@ -185,7 +185,7 @@ static void test_store_records(struct db_context *db, struct tevent_context *ev)
 		}
 		talloc_free(rec);
 		if (verbose) DEBUG(1, ("stored data ok\n"));
-		do_sleep(delay);
+		do_sleep(torture_delay);
 
 		if (!no_trans) {
 			if (verbose) DEBUG(1, ("calling transaction_commit\n"));
@@ -205,7 +205,7 @@ static void test_store_records(struct db_context *db, struct tevent_context *ev)
 		}
 		talloc_free(data.dptr);
 
-		do_sleep(delay);
+		do_sleep(torture_delay);
 	}
 
 	goto done;
@@ -233,7 +233,7 @@ int main(int argc, const char *argv[])
 		POPT_AUTOHELP
 		POPT_COMMON_SAMBA
 		{ "timelimit", 't', POPT_ARG_INT, &timelimit, 0, "timelimit", "INTEGER" },
-		{ "delay", 'D', POPT_ARG_INT, &delay, 0, "delay (in seconds) between operations", "INTEGER" },
+		{ "delay", 'D', POPT_ARG_INT, &torture_delay, 0, "delay (in seconds) between operations", "INTEGER" },
 		{ "verbose", 'v', POPT_ARG_NONE,  &verbose, 0, "switch on verbose mode", NULL },
 		{ "db-name", 'N', POPT_ARG_STRING, &db_name, 0, "name of the test db", "NAME" },
 		{ "no-trans", 'n', POPT_ARG_NONE, &no_trans, 0, "use fetch_lock/record store instead of transactions", NULL },
@@ -313,7 +313,7 @@ int main(int argc, const char *argv[])
 	pnn = get_my_vnn();
 
 	printf("Starting test on node %u. running for %u seconds. "
-	       "sleep delay: %u seconds.\n", pnn, timelimit, delay);
+	       "sleep delay: %u seconds.\n", pnn, timelimit, torture_delay);
 
 	if (!verbose && (pnn == 0)) {
 		tevent_add_timer(ev_ctx, db, timeval_current_ofs(1, 0), each_second, db);
