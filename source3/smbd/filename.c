@@ -80,6 +80,24 @@ static NTSTATUS determine_path_error(const char *name,
 	}
 }
 
+static NTSTATUS check_for_dot_component(const struct smb_filename *smb_fname)
+{
+	/* Ensure we catch all names with in "/."
+	   this is disallowed under Windows and
+	   in POSIX they've already been removed. */
+	const char *p = strstr(smb_fname->base_name, "/."); /*mb safe*/
+	if (p) {
+		if (p[2] == '/') {
+			/* Error code within a pathname. */
+			return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		} else if (p[2] == '\0') {
+			/* Error code at the end of a pathname. */
+			return NT_STATUS_OBJECT_NAME_INVALID;
+		}
+	}
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
 This routine is called to convert names from the dos namespace to unix
 namespace. It needs to handle any case conversions, mangling, format changes,
@@ -294,52 +312,103 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	}
 
 	/*
-	 * stat the name - if it exists then we can add the stream back (if
-	 * there was one) and be done!
+	 * If we have a wildcard we must walk the path to
+	 * find where the error is, even if case sensitive
+	 * is true.
 	 */
 
-	if (posix_pathnames) {
-		ret = SMB_VFS_LSTAT(conn, smb_fname);
-	} else {
-		ret = SMB_VFS_STAT(conn, smb_fname);
-	}
-
-	if (ret == 0) {
-		/* Ensure we catch all names with in "/."
-		   this is disallowed under Windows. */
-		const char *p = strstr(smb_fname->base_name, "/."); /*mb safe*/
-		if (p) {
-			if (p[2] == '/') {
-				/* Error code within a pathname. */
-				status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
-				goto fail;
-			} else if (p[2] == '\0') {
-				/* Error code at the end of a pathname. */
-				status = NT_STATUS_OBJECT_NAME_INVALID;
-				goto fail;
-			}
-		}
-		/* Add the path (not including the stream) to the cache. */
-		stat_cache_add(orig_path, smb_fname->base_name,
-			       conn->case_sensitive);
-		DEBUG(5,("conversion of base_name finished %s -> %s\n",
-			 orig_path, smb_fname->base_name));
-		goto done;
+	name_has_wildcard = ms_has_wild(smb_fname->base_name);
+	if (name_has_wildcard && !allow_wcard_last_component) {
+		/* Wildcard not valid anywhere. */
+		status = NT_STATUS_OBJECT_NAME_INVALID;
+		goto fail;
 	}
 
 	DEBUG(5,("unix_convert begin: name = %s, dirpath = %s, start = %s\n",
 		 smb_fname->base_name, dirpath, start));
 
-	/*
-	 * A special case - if we don't have any mangling chars and are case
-	 * sensitive or the underlying filesystem is case insentive then searching
-	 * won't help.
-	 */
+	if (!name_has_wildcard) {
+		/*
+		 * stat the name - if it exists then we can add the stream back (if
+		 * there was one) and be done!
+		 */
 
-	if ((conn->case_sensitive || !(conn->fs_capabilities &
-				       FILE_CASE_SENSITIVE_SEARCH)) &&
-	    !mangle_is_mangled(smb_fname->base_name, conn->params)) {
-		goto done;
+		if (posix_pathnames) {
+			ret = SMB_VFS_LSTAT(conn, smb_fname);
+		} else {
+			ret = SMB_VFS_STAT(conn, smb_fname);
+		}
+
+		if (ret == 0) {
+			status = check_for_dot_component(smb_fname);
+			if (!NT_STATUS_IS_OK(status)) {
+				goto fail;
+			}
+			/* Add the path (not including the stream) to the cache. */
+			stat_cache_add(orig_path, smb_fname->base_name,
+				       conn->case_sensitive);
+			DEBUG(5,("conversion of base_name finished %s -> %s\n",
+				 orig_path, smb_fname->base_name));
+			goto done;
+		}
+
+		/*
+		 * A special case - if we don't have any wildcards or mangling chars and are case
+		 * sensitive or the underlying filesystem is case insentive then searching
+		 * won't help.
+		 */
+
+		if ((conn->case_sensitive || !(conn->fs_capabilities &
+					FILE_CASE_SENSITIVE_SEARCH)) &&
+				!mangle_is_mangled(smb_fname->base_name, conn->params)) {
+
+			status = check_for_dot_component(smb_fname);
+			if (!NT_STATUS_IS_OK(status)) {
+				goto fail;
+			}
+
+			/*
+			 * The stat failed. Could be ok as it could be
+ 			 * a new file.
+ 			 */
+
+			if (errno == ENOTDIR || errno == ELOOP) {
+				status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+				goto fail;
+			} else if (errno == ENOENT) {
+				/*
+				 * Was it a missing last component ?
+				 * or a missing intermediate component ?
+				 */
+				struct smb_filename parent_fname;
+				ZERO_STRUCT(parent_fname);
+				if (!parent_dirname(ctx, smb_fname->base_name,
+							&parent_fname.base_name,
+							NULL)) {
+					status = NT_STATUS_NO_MEMORY;
+					goto fail;
+				}
+				if (posix_pathnames) {
+					ret = SMB_VFS_LSTAT(conn, &parent_fname);
+				} else {
+					ret = SMB_VFS_STAT(conn, &parent_fname);
+				}
+				if (ret == -1) {
+					if (errno == ENOTDIR ||
+							errno == ENOENT ||
+							errno == ELOOP) {
+						status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+						goto fail;
+					}
+				}
+				/*
+				 * Missing last component is ok - new file.
+				 * Also deal with permission denied elsewhere.
+				 * Just drop out to done.
+				 */
+				goto done;
+			}
+		}
 	}
 
 	/*
@@ -403,12 +472,6 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		   the last component. */
 
 		name_has_wildcard = ms_has_wild(start);
-
-		/* Wildcard not valid anywhere. */
-		if (name_has_wildcard && !allow_wcard_last_component) {
-			status = NT_STATUS_OBJECT_NAME_INVALID;
-			goto fail;
-		}
 
 		/* Wildcards never valid within a pathname. */
 		if (name_has_wildcard && end) {
