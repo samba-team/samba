@@ -54,6 +54,13 @@ enum torture_samr_choice {
 	TORTURE_SAMR_MANY_ALIASES
 };
 
+struct torture_samr_context {
+	struct policy_handle handle;
+	struct cli_credentials *machine_credentials;
+	enum torture_samr_choice choice;
+	uint32_t num_objects_large_dc;
+};
+
 static bool test_QueryUserInfo(struct dcerpc_pipe *p,
 			       struct torture_context *tctx,
 			       struct policy_handle *handle);
@@ -6273,9 +6280,9 @@ static bool test_ManyObjects(struct dcerpc_pipe *p,
 			     struct torture_context *tctx,
 			     struct policy_handle *domain_handle,
 			     struct dom_sid *domain_sid,
-			     enum torture_samr_choice which_ops)
+			     struct torture_samr_context *ctx)
 {
-	uint32_t num_total = 1500;
+	uint32_t num_total = ctx->num_objects_large_dc;
 	uint32_t num_enum = 0;
 	uint32_t num_disp = 0;
 	uint32_t num_created = 0;
@@ -6299,7 +6306,7 @@ static bool test_ManyObjects(struct dcerpc_pipe *p,
 		torture_assert_ntstatus_ok(tctx, status,
 			"failed to query domain info");
 
-		switch (which_ops) {
+		switch (ctx->choice) {
 		case TORTURE_SAMR_MANY_ACCOUNTS:
 			num_anounced = info->general.num_users;
 			break;
@@ -6320,7 +6327,7 @@ static bool test_ManyObjects(struct dcerpc_pipe *p,
 
 		const char *name = NULL;
 
-		switch (which_ops) {
+		switch (ctx->choice) {
 		case TORTURE_SAMR_MANY_ACCOUNTS:
 			name = talloc_asprintf(tctx, "%s%04d", TEST_ACCOUNT_NAME, i);
 			ret &= test_CreateUser(p, tctx, domain_handle, name, &handles[i], domain_sid, 0, NULL, false);
@@ -6343,7 +6350,7 @@ static bool test_ManyObjects(struct dcerpc_pipe *p,
 
 	/* enum */
 
-	switch (which_ops) {
+	switch (ctx->choice) {
 	case TORTURE_SAMR_MANY_ACCOUNTS:
 		ret &= test_EnumDomainUsers(p, tctx, domain_handle, &num_enum);
 		break;
@@ -6359,7 +6366,7 @@ static bool test_ManyObjects(struct dcerpc_pipe *p,
 
 	/* dispinfo */
 
-	switch (which_ops) {
+	switch (ctx->choice) {
 	case TORTURE_SAMR_MANY_ACCOUNTS:
 		ret &= test_QueryDisplayInfo_level(p, tctx, domain_handle, 1, &num_disp);
 		break;
@@ -6384,7 +6391,7 @@ static bool test_ManyObjects(struct dcerpc_pipe *p,
 		if (torture_setting_bool(tctx, "samba3", false)) {
 			ret &= test_samr_handle_Close(p, tctx, &handles[i]);
 		} else {
-			switch (which_ops) {
+			switch (ctx->choice) {
 			case TORTURE_SAMR_MANY_ACCOUNTS:
 				ret &= test_DeleteUser(p, tctx, &handles[i]);
 				break;
@@ -6402,7 +6409,7 @@ static bool test_ManyObjects(struct dcerpc_pipe *p,
 
 	talloc_free(handles);
 
-	if (which_ops == TORTURE_SAMR_MANY_ACCOUNTS && num_enum != num_anounced + num_created) {
+	if (ctx->choice == TORTURE_SAMR_MANY_ACCOUNTS && num_enum != num_anounced + num_created) {
 		torture_comment(tctx,
 				"unexpected number of results (%u) returned in enum call, expected %u\n",
 				num_enum, num_anounced + num_created);
@@ -6418,9 +6425,7 @@ static bool test_Connect(struct dcerpc_pipe *p, struct torture_context *tctx,
 			 struct policy_handle *handle);
 
 static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
-			    struct policy_handle *handle, struct dom_sid *sid,
-			    enum torture_samr_choice which_ops,
-			    struct cli_credentials *machine_credentials)
+			    struct torture_samr_context *ctx, struct dom_sid *sid)
 {
 	NTSTATUS status;
 	struct samr_OpenDomain r;
@@ -6437,7 +6442,7 @@ static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
 
 	torture_comment(tctx, "Testing OpenDomain of %s\n", dom_sid_string(tctx, sid));
 
-	r.in.connect_handle = handle;
+	r.in.connect_handle = &ctx->handle;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.in.sid = sid;
 	r.out.domain_handle = &domain_handle;
@@ -6447,24 +6452,24 @@ static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
 
 	/* run the domain tests with the main handle closed - this tests
 	   the servers reference counting */
-	torture_assert(tctx, test_samr_handle_Close(p, tctx, handle), "Failed to close SAMR handle");
+	torture_assert(tctx, test_samr_handle_Close(p, tctx, &ctx->handle), "Failed to close SAMR handle");
 
-	switch (which_ops) {
+	switch (ctx->choice) {
 	case TORTURE_SAMR_PASSWORDS:
 	case TORTURE_SAMR_USER_PRIVILEGES:
 		if (!torture_setting_bool(tctx, "samba3", false)) {
-			ret &= test_CreateUser2(p, tctx, &domain_handle, sid, which_ops, NULL);
+			ret &= test_CreateUser2(p, tctx, &domain_handle, sid, ctx->choice, NULL);
 		}
-		ret &= test_CreateUser(p, tctx, &domain_handle, TEST_ACCOUNT_NAME, &user_handle, sid, which_ops, NULL, true);
+		ret &= test_CreateUser(p, tctx, &domain_handle, TEST_ACCOUNT_NAME, &user_handle, sid, ctx->choice, NULL, true);
 		if (!ret) {
 			torture_warning(tctx, "Testing PASSWORDS or PRIVILEGES on domain %s failed!\n", dom_sid_string(tctx, sid));
 		}
 		break;
 	case TORTURE_SAMR_USER_ATTRIBUTES:
 		if (!torture_setting_bool(tctx, "samba3", false)) {
-			ret &= test_CreateUser2(p, tctx, &domain_handle, sid, which_ops, NULL);
+			ret &= test_CreateUser2(p, tctx, &domain_handle, sid, ctx->choice, NULL);
 		}
-		ret &= test_CreateUser(p, tctx, &domain_handle, TEST_ACCOUNT_NAME, &user_handle, sid, which_ops, NULL, true);
+		ret &= test_CreateUser(p, tctx, &domain_handle, TEST_ACCOUNT_NAME, &user_handle, sid, ctx->choice, NULL, true);
 		/* This test needs 'complex' users to validate */
 		ret &= test_QueryDisplayInfo(p, tctx, &domain_handle);
 		if (!ret) {
@@ -6473,9 +6478,9 @@ static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
 		break;
 	case TORTURE_SAMR_PASSWORDS_PWDLASTSET:
 		if (!torture_setting_bool(tctx, "samba3", false)) {
-			ret &= test_CreateUser2(p, tctx, &domain_handle, sid, which_ops, machine_credentials);
+			ret &= test_CreateUser2(p, tctx, &domain_handle, sid, ctx->choice, ctx->machine_credentials);
 		}
-		ret &= test_CreateUser(p, tctx, &domain_handle, TEST_ACCOUNT_NAME, &user_handle, sid, which_ops, machine_credentials, true);
+		ret &= test_CreateUser(p, tctx, &domain_handle, TEST_ACCOUNT_NAME, &user_handle, sid, ctx->choice, ctx->machine_credentials, true);
 		if (!ret) {
 			torture_warning(tctx, "Testing PASSWORDS PWDLASTSET on domain %s failed!\n", dom_sid_string(tctx, sid));
 		}
@@ -6483,13 +6488,13 @@ static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
 	case TORTURE_SAMR_MANY_ACCOUNTS:
 	case TORTURE_SAMR_MANY_GROUPS:
 	case TORTURE_SAMR_MANY_ALIASES:
-		ret &= test_ManyObjects(p, tctx, &domain_handle, sid, which_ops);
+		ret &= test_ManyObjects(p, tctx, &domain_handle, sid, ctx);
 		if (!ret) {
 			torture_warning(tctx, "Testing MANY-{ACCOUNTS,GROUPS,ALIASES} on domain %s failed!\n", dom_sid_string(tctx, sid));
 		}
 		break;
 	case TORTURE_SAMR_OTHER:
-		ret &= test_CreateUser(p, tctx, &domain_handle, TEST_ACCOUNT_NAME, &user_handle, sid, which_ops, NULL, true);
+		ret &= test_CreateUser(p, tctx, &domain_handle, TEST_ACCOUNT_NAME, &user_handle, sid, ctx->choice, NULL, true);
 		if (!ret) {
 			torture_warning(tctx, "Failed to CreateUser in SAMR-OTHER on domain %s!\n", dom_sid_string(tctx, sid));
 		}
@@ -6542,7 +6547,7 @@ static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
 
 	torture_assert(tctx, test_samr_handle_Close(p, tctx, &domain_handle), "Failed to close SAMR domain handle");
 
-	torture_assert(tctx, test_Connect(p, tctx, handle), "Faile to re-connect SAMR handle");
+	torture_assert(tctx, test_Connect(p, tctx, &ctx->handle), "Faile to re-connect SAMR handle");
 	/* reconnect the main handle */
 
 	if (!ret) {
@@ -6553,9 +6558,7 @@ static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
 }
 
 static bool test_LookupDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
-			      struct policy_handle *handle, const char *domain,
-			      enum torture_samr_choice which_ops,
-			      struct cli_credentials *machine_credentials)
+			      struct torture_samr_context *ctx, const char *domain)
 {
 	NTSTATUS status;
 	struct samr_LookupDomain r;
@@ -6567,7 +6570,7 @@ static bool test_LookupDomain(struct dcerpc_pipe *p, struct torture_context *tct
 	torture_comment(tctx, "Testing LookupDomain(%s)\n", domain);
 
 	/* check for correct error codes */
-	r.in.connect_handle = handle;
+	r.in.connect_handle = &ctx->handle;
 	r.in.domain_name = &n2;
 	r.out.sid = &sid;
 	n2.string = NULL;
@@ -6580,7 +6583,7 @@ static bool test_LookupDomain(struct dcerpc_pipe *p, struct torture_context *tct
 	status = dcerpc_samr_LookupDomain(p, tctx, &r);
 	torture_assert_ntstatus_equal(tctx, NT_STATUS_NO_SUCH_DOMAIN, status, "LookupDomain expected NT_STATUS_NO_SUCH_DOMAIN");
 
-	r.in.connect_handle = handle;
+	r.in.connect_handle = &ctx->handle;
 
 	init_lsa_String(&n1, domain);
 	r.in.domain_name = &n1;
@@ -6592,8 +6595,7 @@ static bool test_LookupDomain(struct dcerpc_pipe *p, struct torture_context *tct
 		ret = false;
 	}
 
-	if (!test_OpenDomain(p, tctx, handle, *r.out.sid, which_ops,
-			     machine_credentials)) {
+	if (!test_OpenDomain(p, tctx, ctx, *r.out.sid)) {
 		ret = false;
 	}
 
@@ -6602,8 +6604,7 @@ static bool test_LookupDomain(struct dcerpc_pipe *p, struct torture_context *tct
 
 
 static bool test_EnumDomains(struct dcerpc_pipe *p, struct torture_context *tctx,
-			     struct policy_handle *handle, enum torture_samr_choice which_ops,
-			     struct cli_credentials *machine_credentials)
+			     struct torture_samr_context *ctx)
 {
 	NTSTATUS status;
 	struct samr_EnumDomains r;
@@ -6613,7 +6614,7 @@ static bool test_EnumDomains(struct dcerpc_pipe *p, struct torture_context *tctx
 	int i;
 	bool ret = true;
 
-	r.in.connect_handle = handle;
+	r.in.connect_handle = &ctx->handle;
 	r.in.resume_handle = &resume_handle;
 	r.in.buf_size = (uint32_t)-1;
 	r.out.resume_handle = &resume_handle;
@@ -6628,9 +6629,8 @@ static bool test_EnumDomains(struct dcerpc_pipe *p, struct torture_context *tctx
 	}
 
 	for (i=0;i<sam->count;i++) {
-		if (!test_LookupDomain(p, tctx, handle,
-				       sam->entries[i].name.string, which_ops,
-				       machine_credentials)) {
+		if (!test_LookupDomain(p, tctx, ctx,
+				       sam->entries[i].name.string)) {
 			ret = false;
 		}
 	}
@@ -6792,26 +6792,30 @@ bool torture_rpc_samr(struct torture_context *torture)
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
 	bool ret = true;
-	struct policy_handle handle;
+	struct torture_samr_context *ctx;
 
 	status = torture_rpc_connection(torture, &p, &ndr_table_samr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
-	ret &= test_Connect(p, torture, &handle);
+	ctx = talloc_zero(torture, struct torture_samr_context);
+
+	ctx->choice = TORTURE_SAMR_OTHER;
+
+	ret &= test_Connect(p, torture, &ctx->handle);
 
 	if (!torture_setting_bool(torture, "samba3", false)) {
-		ret &= test_QuerySecurity(p, torture, &handle);
+		ret &= test_QuerySecurity(p, torture, &ctx->handle);
 	}
 
-	ret &= test_EnumDomains(p, torture, &handle, TORTURE_SAMR_OTHER, NULL);
+	ret &= test_EnumDomains(p, torture, ctx);
 
-	ret &= test_SetDsrmPassword(p, torture, &handle);
+	ret &= test_SetDsrmPassword(p, torture, &ctx->handle);
 
-	ret &= test_Shutdown(p, torture, &handle);
+	ret &= test_Shutdown(p, torture, &ctx->handle);
 
-	ret &= test_samr_handle_Close(p, torture, &handle);
+	ret &= test_samr_handle_Close(p, torture, &ctx->handle);
 
 	return ret;
 }
@@ -6822,26 +6826,30 @@ bool torture_rpc_samr_users(struct torture_context *torture)
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
 	bool ret = true;
-	struct policy_handle handle;
+	struct torture_samr_context *ctx;
 
 	status = torture_rpc_connection(torture, &p, &ndr_table_samr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
-	ret &= test_Connect(p, torture, &handle);
+	ctx = talloc_zero(torture, struct torture_samr_context);
+
+	ctx->choice = TORTURE_SAMR_USER_ATTRIBUTES;
+
+	ret &= test_Connect(p, torture, &ctx->handle);
 
 	if (!torture_setting_bool(torture, "samba3", false)) {
-		ret &= test_QuerySecurity(p, torture, &handle);
+		ret &= test_QuerySecurity(p, torture, &ctx->handle);
 	}
 
-	ret &= test_EnumDomains(p, torture, &handle, TORTURE_SAMR_USER_ATTRIBUTES, NULL);
+	ret &= test_EnumDomains(p, torture, ctx);
 
-	ret &= test_SetDsrmPassword(p, torture, &handle);
+	ret &= test_SetDsrmPassword(p, torture, &ctx->handle);
 
-	ret &= test_Shutdown(p, torture, &handle);
+	ret &= test_Shutdown(p, torture, &ctx->handle);
 
-	ret &= test_samr_handle_Close(p, torture, &handle);
+	ret &= test_samr_handle_Close(p, torture, &ctx->handle);
 
 	return ret;
 }
@@ -6852,18 +6860,22 @@ bool torture_rpc_samr_passwords(struct torture_context *torture)
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
 	bool ret = true;
-	struct policy_handle handle;
+	struct torture_samr_context *ctx;
 
 	status = torture_rpc_connection(torture, &p, &ndr_table_samr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
-	ret &= test_Connect(p, torture, &handle);
+	ctx = talloc_zero(torture, struct torture_samr_context);
 
-	ret &= test_EnumDomains(p, torture, &handle, TORTURE_SAMR_PASSWORDS, NULL);
+	ctx->choice = TORTURE_SAMR_PASSWORDS;
 
-	ret &= test_samr_handle_Close(p, torture, &handle);
+	ret &= test_Connect(p, torture, &ctx->handle);
+
+	ret &= test_EnumDomains(p, torture, ctx);
+
+	ret &= test_samr_handle_Close(p, torture, &ctx->handle);
 
 	ret &= test_samr_ValidatePassword(p, torture);
 
@@ -6877,20 +6889,23 @@ static bool torture_rpc_samr_pwdlastset(struct torture_context *torture,
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
 	bool ret = true;
-	struct policy_handle handle;
+	struct torture_samr_context *ctx;
 
 	status = torture_rpc_connection(torture, &p, &ndr_table_samr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
-	ret &= test_Connect(p, torture, &handle);
+	ctx = talloc_zero(torture, struct torture_samr_context);
 
-	ret &= test_EnumDomains(p, torture, &handle,
-				TORTURE_SAMR_PASSWORDS_PWDLASTSET,
-				machine_credentials);
+	ctx->choice = TORTURE_SAMR_PASSWORDS_PWDLASTSET;
+	ctx->machine_credentials = machine_credentials;
 
-	ret &= test_samr_handle_Close(p, torture, &handle);
+	ret &= test_Connect(p, torture, &ctx->handle);
+
+	ret &= test_EnumDomains(p, torture, ctx);
+
+	ret &= test_samr_handle_Close(p, torture, &ctx->handle);
 
 	return ret;
 }
@@ -6917,20 +6932,23 @@ static bool torture_rpc_samr_users_privileges_delete_user(struct torture_context
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
 	bool ret = true;
-	struct policy_handle handle;
+	struct torture_samr_context *ctx;
 
 	status = torture_rpc_connection(torture, &p, &ndr_table_samr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
-	ret &= test_Connect(p, torture, &handle);
+	ctx = talloc_zero(torture, struct torture_samr_context);
 
-	ret &= test_EnumDomains(p, torture, &handle,
-				TORTURE_SAMR_USER_PRIVILEGES,
-				machine_credentials);
+	ctx->choice = TORTURE_SAMR_USER_PRIVILEGES;
+	ctx->machine_credentials = machine_credentials;
 
-	ret &= test_samr_handle_Close(p, torture, &handle);
+	ret &= test_Connect(p, torture, &ctx->handle);
+
+	ret &= test_EnumDomains(p, torture, ctx);
+
+	ret &= test_samr_handle_Close(p, torture, &ctx->handle);
 
 	return ret;
 }
@@ -6957,20 +6975,23 @@ static bool torture_rpc_samr_many_accounts(struct torture_context *torture,
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
 	bool ret = true;
-	struct policy_handle handle;
+	struct torture_samr_context *ctx;
 
 	status = torture_rpc_connection(torture, &p, &ndr_table_samr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
-	ret &= test_Connect(p, torture, &handle);
+	ctx = talloc_zero(torture, struct torture_samr_context);
 
-	ret &= test_EnumDomains(p, torture, &handle,
-				TORTURE_SAMR_MANY_ACCOUNTS,
-				machine_credentials);
+	ctx->choice = TORTURE_SAMR_MANY_ACCOUNTS;
+	ctx->num_objects_large_dc = 1500;
 
-	ret &= test_samr_handle_Close(p, torture, &handle);
+	ret &= test_Connect(p, torture, &ctx->handle);
+
+	ret &= test_EnumDomains(p, torture, ctx);
+
+	ret &= test_samr_handle_Close(p, torture, &ctx->handle);
 
 	return ret;
 }
@@ -6982,20 +7003,23 @@ static bool torture_rpc_samr_many_groups(struct torture_context *torture,
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
 	bool ret = true;
-	struct policy_handle handle;
+	struct torture_samr_context *ctx;
 
 	status = torture_rpc_connection(torture, &p, &ndr_table_samr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
-	ret &= test_Connect(p, torture, &handle);
+	ctx = talloc_zero(torture, struct torture_samr_context);
 
-	ret &= test_EnumDomains(p, torture, &handle,
-				TORTURE_SAMR_MANY_GROUPS,
-				machine_credentials);
+	ctx->choice = TORTURE_SAMR_MANY_GROUPS;
+	ctx->num_objects_large_dc = 1500;
 
-	ret &= test_samr_handle_Close(p, torture, &handle);
+	ret &= test_Connect(p, torture, &ctx->handle);
+
+	ret &= test_EnumDomains(p, torture, ctx);
+
+	ret &= test_samr_handle_Close(p, torture, &ctx->handle);
 
 	return ret;
 }
@@ -7007,20 +7031,23 @@ static bool torture_rpc_samr_many_aliases(struct torture_context *torture,
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
 	bool ret = true;
-	struct policy_handle handle;
+	struct torture_samr_context *ctx;
 
 	status = torture_rpc_connection(torture, &p, &ndr_table_samr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
-	ret &= test_Connect(p, torture, &handle);
+	ctx = talloc_zero(torture, struct torture_samr_context);
 
-	ret &= test_EnumDomains(p, torture, &handle,
-				TORTURE_SAMR_MANY_ALIASES,
-				machine_credentials);
+	ctx->choice = TORTURE_SAMR_MANY_ALIASES;
+	ctx->num_objects_large_dc = 1500;
 
-	ret &= test_samr_handle_Close(p, torture, &handle);
+	ret &= test_Connect(p, torture, &ctx->handle);
+
+	ret &= test_EnumDomains(p, torture, ctx);
+
+	ret &= test_samr_handle_Close(p, torture, &ctx->handle);
 
 	return ret;
 }
