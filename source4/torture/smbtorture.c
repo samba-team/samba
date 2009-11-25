@@ -535,6 +535,7 @@ int main(int argc,char *argv[])
 		     "0x00010000");
 	} else if (strcmp(target, "onefs") == 0) {
 		lp_set_cmdline(cmdline_lp_ctx, "torture:sacl_support", "false");
+		lp_set_cmdline(cmdline_lp_ctx, "torture:onefs", "true");
 	}
 
 	if (max_runtime) {
