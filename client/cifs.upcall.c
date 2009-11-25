@@ -105,7 +105,9 @@ err_endseq:
 err_ccstart:
 	krb5_free_principal(context, principal);
 err_princ:
+#if defined(KRB5_TC_OPENCLOSE)
 	krb5_cc_set_flags(context, ccache, KRB5_TC_OPENCLOSE);
+#endif
 	krb5_cc_close(context, ccache);
 err_cache:
 	krb5_free_context(context);
