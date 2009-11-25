@@ -637,39 +637,54 @@ static int find_takeover_node(struct ctdb_context *ctdb,
 	return 0;
 }
 
-struct ctdb_public_ip_list *
-add_ip_to_merged_list(struct ctdb_context *ctdb,
-			TALLOC_CTX *tmp_ctx, 
-			struct ctdb_public_ip_list *ip_list, 
-			struct ctdb_public_ip *ip)
+#define IP_KEYLEN	4
+static uint32_t *ip_key(ctdb_sock_addr *ip)
 {
-	struct ctdb_public_ip_list *tmp_ip; 
+	static uint32_t key[IP_KEYLEN];
 
-	/* do we already have this ip in our merged list ?*/
-	for (tmp_ip=ip_list;tmp_ip;tmp_ip=tmp_ip->next) {
+	bzero(key, sizeof(key));
 
-		/* we already have this public ip in the list */
-		if (ctdb_same_ip(&tmp_ip->addr, &ip->addr)) {
-			return ip_list;
-		}
+	switch (ip->sa.sa_family) {
+	case AF_INET:
+		key[3]	= htonl(ip->ip.sin_addr.s_addr);
+		break;
+	case AF_INET6:
+		key[0]	= htonl(ip->ip6.sin6_addr.s6_addr32[0]);
+		key[1]	= htonl(ip->ip6.sin6_addr.s6_addr32[1]);
+		key[2]	= htonl(ip->ip6.sin6_addr.s6_addr32[2]);
+		key[3]	= htonl(ip->ip6.sin6_addr.s6_addr32[3]);
+		break;
+	default:
+		DEBUG(DEBUG_ERR, (__location__ " ERROR, unknown family passed :%u\n", ip->sa.sa_family));
+		return key;
 	}
 
-	/* this is a new public ip, we must add it to the list */
-	tmp_ip = talloc_zero(tmp_ctx, struct ctdb_public_ip_list);
-	CTDB_NO_MEMORY_NULL(ctdb, tmp_ip);
-	tmp_ip->pnn  = ip->pnn;
-	tmp_ip->addr = ip->addr;
-	tmp_ip->next = ip_list;
+	return key;
+}
 
-	return tmp_ip;
+static void *add_ip_callback(void *parm, void *data)
+{
+	return parm;
+}
+
+void getips_count_callback(void *param, void *data)
+{
+	struct ctdb_public_ip_list **ip_list = (struct ctdb_public_ip_list **)param;
+	struct ctdb_public_ip_list *new_ip = (struct ctdb_public_ip_list *)data;
+
+	new_ip->next = *ip_list;
+	*ip_list     = new_ip;
 }
 
 struct ctdb_public_ip_list *
 create_merged_ip_list(struct ctdb_context *ctdb, TALLOC_CTX *tmp_ctx)
 {
 	int i, j;
-	struct ctdb_public_ip_list *ip_list = NULL;
+	struct ctdb_public_ip_list *ip_list;
 	struct ctdb_all_public_ips *public_ips;
+	trbt_tree_t *ip_tree;
+
+	ip_tree = trbt_create(tmp_ctx, 0);
 
 	for (i=0;i<ctdb->num_nodes;i++) {
 		public_ips = ctdb->nodes[i]->public_ips;
@@ -684,10 +699,23 @@ create_merged_ip_list(struct ctdb_context *ctdb, TALLOC_CTX *tmp_ctx)
 		}		
 
 		for (j=0;j<public_ips->num;j++) {
-			ip_list = add_ip_to_merged_list(ctdb, tmp_ctx,
-					ip_list, &public_ips->ips[j]);
+			struct ctdb_public_ip_list *tmp_ip; 
+
+			tmp_ip = talloc_zero(tmp_ctx, struct ctdb_public_ip_list);
+			CTDB_NO_MEMORY_NULL(ctdb, tmp_ip);
+			tmp_ip->pnn  = public_ips->ips[j].pnn;
+			tmp_ip->addr = public_ips->ips[j].addr;
+			tmp_ip->next = NULL;
+
+			trbt_insertarray32_callback(ip_tree,
+				IP_KEYLEN, ip_key(&public_ips->ips[j].addr),
+				add_ip_callback,
+				tmp_ip);
 		}
 	}
+
+	ip_list = NULL;
+	trbt_traversearray32(ip_tree, IP_KEYLEN, getips_count_callback, &ip_list);
 
 	return ip_list;
 }
