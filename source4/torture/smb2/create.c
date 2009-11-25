@@ -126,8 +126,6 @@
 		       __location__, sattrib, fname); \
 	}} while (0)
 
-#define TARGET_IS_WIN7(_tctx) (torture_setting_bool(_tctx, "win7", false))
-
 /*
   test some interesting combinations found by gentest
  */
