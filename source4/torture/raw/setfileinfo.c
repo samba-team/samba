@@ -700,6 +700,193 @@ static bool torture_raw_sfileinfo_bug(struct torture_context *torture,
 	return true;
 }
 
+static bool
+torture_raw_sfileinfo_eof(struct torture_context *tctx, struct smbcli_state *cli1,
+    struct smbcli_state *cli2)
+{
+	const char *fname = BASEDIR "\\test_sfileinfo_end_of_file.dat";
+	NTSTATUS status;
+	bool ret = true;
+	union smb_open io;
+	union smb_setfileinfo sfi;
+	union smb_fileinfo qfi;
+	uint16_t fnum = 0;
+
+	if (!torture_setup_dir(cli1, BASEDIR)) {
+		return false;
+	}
+
+	/* cleanup */
+	smbcli_unlink(cli1->tree, fname);
+
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid.fnum = 0;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname;
+	io.ntcreatex.in.flags = 0;
+
+	/* Open the file sharing none. */
+	status = smb_raw_open(cli1->tree, tctx, &io);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OK, ret,
+	    done, "Status should be OK");
+	fnum = io.ntcreatex.out.file.fnum;
+
+	/* Try to sfileinfo to extend the file. */
+	ZERO_STRUCT(sfi);
+	sfi.generic.level = RAW_SFILEINFO_END_OF_FILE_INFO;
+	sfi.generic.in.file.path = fname;
+	sfi.end_of_file_info.in.size = 100;
+	status = smb_raw_setpathinfo(cli2->tree, &sfi);
+
+	/* There should be share mode contention in this case. */
+	torture_assert_ntstatus_equal_goto(tctx, status,
+	    NT_STATUS_SHARING_VIOLATION, ret, done, "Status should be "
+	    "SHARING_VIOLATION");
+
+	/* Make sure the size is still 0. */
+	ZERO_STRUCT(qfi);
+	qfi.generic.level = RAW_FILEINFO_STANDARD_INFO;
+	qfi.generic.in.file.path = fname;
+	status = smb_raw_pathinfo(cli2->tree, tctx, &qfi);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OK, ret,
+	    done, "Status should be OK");
+
+	torture_assert_u64_equal(tctx, qfi.standard_info.out.size, 0,
+	    "alloc_size should be 0 since the setpathinfo failed.");
+
+	/* Try again with the pass through instead of documented version. */
+	ZERO_STRUCT(sfi);
+	sfi.generic.level = RAW_SFILEINFO_END_OF_FILE_INFORMATION;
+	sfi.generic.in.file.path = fname;
+	sfi.end_of_file_info.in.size = 100;
+	status = smb_raw_setpathinfo(cli2->tree, &sfi);
+
+	/*
+	 * Looks like a windows bug:
+	 * http://lists.samba.org/archive/cifs-protocol/2009-November/001130.html
+	 */
+	if (torture_setting_bool(tctx, "samba3", false) ||
+	    torture_setting_bool(tctx, "samba4", false) ||
+	    torture_setting_bool(tctx, "onefs", false)) {
+		torture_assert_ntstatus_equal_goto(tctx, status,
+		    NT_STATUS_SHARING_VIOLATION, ret, done, "Status should be "
+		    "SHARING_VIOLATION");
+		goto done;
+	} else {
+		/* It succeeds! This is just weird! */
+		torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OK, ret,
+		    done, "Status should be OK");
+	}
+
+	/* Verify that the file was actually extended to 100. */
+	ZERO_STRUCT(qfi);
+	qfi.generic.level = RAW_FILEINFO_STANDARD_INFO;
+	qfi.generic.in.file.path = fname;
+	status = smb_raw_pathinfo(cli2->tree, tctx, &qfi);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OK, ret,
+	    done, "Status should be OK");
+
+	torture_assert_u64_equal(tctx, qfi.standard_info.out.size, 100,
+	    "alloc_size should be 100 since the setpathinfo succeeded.");
+
+	/*
+	 * Try another open with just write to mimic what setpathinfo should
+	 * be doing under the covers.
+	 */
+	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
+	status = smb_raw_open(cli2->tree, tctx, &io);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+	    NT_STATUS_SHARING_VIOLATION, ret, done, "Status should be "
+	    "SHARING_VIOLATION");
+
+	smbcli_close(cli1->tree, fnum);
+
+done:
+	smb_raw_exit(cli1->session);
+	smb_raw_exit(cli2->session);
+	smbcli_deltree(cli1->tree, BASEDIR);
+	return ret;
+}
+
+static bool
+torture_raw_sfileinfo_eof_access(struct torture_context *tctx,
+    struct smbcli_state *cli1, struct smbcli_state *cli2)
+{
+	const char *fname = BASEDIR "\\test_exclusive3.dat";
+	NTSTATUS status, expected_status;
+	bool ret = true;
+	union smb_open io;
+	union smb_setfileinfo sfi;
+	uint16_t fnum=0;
+	uint32_t access_mask = 0;
+
+	if (!torture_setup_dir(cli1, BASEDIR)) {
+		return false;
+	}
+
+	/* cleanup */
+	smbcli_unlink(cli1->tree, fname);
+
+	/*
+	 * base ntcreatex parms
+	 */
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid.fnum = 0;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OVERWRITE_IF;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname;
+	io.ntcreatex.in.flags = 0;
+
+
+	for (access_mask = 1; access_mask <= 0x00001FF; access_mask++) {
+		io.ntcreatex.in.access_mask = access_mask;
+
+		status = smb_raw_open(cli1->tree, tctx, &io);
+		if (!NT_STATUS_IS_OK(status)) {
+			continue;
+		}
+
+		fnum = io.ntcreatex.out.file.fnum;
+
+		ZERO_STRUCT(sfi);
+		sfi.generic.level = RAW_SFILEINFO_END_OF_FILE_INFO;
+		sfi.generic.in.file.fnum = fnum;
+		sfi.end_of_file_info.in.size = 100;
+
+		status = smb_raw_setfileinfo(cli1->tree, &sfi);
+
+		expected_status = (access_mask & SEC_FILE_WRITE_DATA) ?
+		    NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
+
+		if (!NT_STATUS_EQUAL(expected_status, status)) {
+			torture_comment(tctx, "0x%x wrong\n", access_mask);
+		}
+
+		torture_assert_ntstatus_equal_goto(tctx, status,
+		    expected_status, ret, done, "Status Wrong");
+
+		smbcli_close(cli1->tree, fnum);
+	}
+
+done:
+	smb_raw_exit(cli1->session);
+	smb_raw_exit(cli2->session);
+	smbcli_deltree(cli1->tree, BASEDIR);
+	return ret;
+}
+
 struct torture_suite *torture_raw_sfileinfo(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx,
@@ -709,6 +896,10 @@ struct torture_suite *torture_raw_sfileinfo(TALLOC_CTX *mem_ctx)
 	torture_suite_add_1smb_test(suite, "RENAME",
 				      torture_raw_sfileinfo_rename);
 	torture_suite_add_1smb_test(suite, "BUG", torture_raw_sfileinfo_bug);
+	torture_suite_add_2smb_test(suite, "END-OF-FILE",
+	    torture_raw_sfileinfo_eof);
+	torture_suite_add_2smb_test(suite, "END-OF-FILE-ACCESS",
+	    torture_raw_sfileinfo_eof_access);
 
 	return suite;
 }
