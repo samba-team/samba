@@ -1343,7 +1343,7 @@ struct double_lock_test {
 /**
  * Tests zero byte locks.
  */
-static const struct double_lock_test zero_byte_tests[] = {
+static struct double_lock_test zero_byte_tests[] = {
 	/* {pid, offset, count}, {pid, offset, count}, status */
 
 	/** First, takes a zero byte lock at offset 10. Then:
