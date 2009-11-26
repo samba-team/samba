@@ -177,8 +177,7 @@ static struct ctdb_freeze_handle *ctdb_freeze_lock(struct ctdb_context *ctdb, ui
 	h->ctdb     = ctdb;
 	h->priority = priority;
 
-	/* use socketpair() instead of pipe() so we have bi-directional fds */
-	if (socketpair(AF_UNIX, SOCK_STREAM, 0, fd) != 0) {
+	if (pipe(fd) == -1) {
 		DEBUG(DEBUG_ERR,("Failed to create pipe for ctdb_freeze_lock\n"));
 		talloc_free(h);
 		return NULL;
@@ -193,39 +192,38 @@ static struct ctdb_freeze_handle *ctdb_freeze_lock(struct ctdb_context *ctdb, ui
 
 	if (h->child == 0) {
 		int ret;
-		int count = 0;
+
 		/* in the child */
 		close(fd[0]);
+
 		ret = ctdb_lock_all_databases(ctdb, priority);
 		if (ret != 0) {
 			_exit(0);
 		}
 
-		alarm(30);
-
-		while (count++ < 30) {
-			ret = write(fd[1], &ret, sizeof(ret));
-			if (ret == sizeof(ret)) {
-				break;
-			}
+		ret = write(fd[1], &ret, sizeof(ret));
+		if (ret != sizeof(ret)) {
 			DEBUG(DEBUG_ERR, (__location__ " Failed to write to socket from freeze child. ret:%d errno:%u\n", ret, errno));
-			sleep (1);
-		}
-		if (count >= 30) {
-			DEBUG(DEBUG_ERR, (__location__ " Failed to write to socket from freeze child. Aborting freeze child\n"));
-			_exit(0);
+			_exit(1);
 		}
 
-		/* the read here means we will die if the parent exits */
-		read(fd[1], &ret, sizeof(ret));
-		_exit(0);
+		while (1) {
+			sleep(1);
+			if (kill(ctdb->ctdbd_pid, 0) != 0) {
+				DEBUG(DEBUG_ERR,("Parent died. Exiting lock wait child\n"));
+
+				_exit(0);
+			}
+		}
 	}
 
 	talloc_set_destructor(h, ctdb_freeze_handle_destructor);
 
 	close(fd[1]);
+	set_close_on_exec(fd[0]);
 
 	h->fd = fd[0];
+
 
 	fde = event_add_fd(ctdb->ev, h, h->fd, EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
 			   ctdb_freeze_lock_handler, h);
