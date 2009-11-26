@@ -28,10 +28,21 @@ DIRNAME=$(dirname $0)
 TOPDIR=${DIRNAME}/..
 RPMDIR=${DIRNAME}/RPM
 SPECFILE=${RPMDIR}/ctdb.spec
+SPECFILE_IN=${SPECFILE}.in
 
 EXTRA_SUFFIX="$1"
 
-VERSION=$(grep ^Version ${SPECFILE} | sed -e 's/^Version:\ \+//')
+GITHASH=".$(git log --pretty=format:%h -1)"
+
+if test "x$USE_GITHASH" = "xno" ; then
+	GITHASH=""
+fi
+
+sed -e s/GITHASH/${GITHASH}/g \
+	< ${SPECFILE_IN} \
+	> ${SPECFILE}
+
+VERSION=$(grep ^Version ${SPECFILE} | sed -e 's/^Version:\ \+//')${GITHASH}
 
 if [ "x${EXTRA_SUFFIX}" != "x" ]; then
 	VERSION="${VERSION}-${EXTRA_SUFFIX}"
