@@ -9125,10 +9125,6 @@ WERROR _spoolss_EnumPrinterKey(pipes_struct *p,
 		goto done;
 	}
 
-	/* two byte termination (a multisz) */
-
-	*r->out.needed = 2;
-
 	array = talloc_zero_array(r->out.key_buffer, const char *, num_keys + 1);
 	if (!array) {
 		result = WERR_NOMEM;
@@ -9145,23 +9141,19 @@ WERROR _spoolss_EnumPrinterKey(pipes_struct *p,
 			result = WERR_NOMEM;
 			goto done;
 		}
-
-		*r->out.needed += strlen_m_term(keynames[i]) * 2;
 	}
-
-	if (r->in.offered < *r->out.needed) {
-		result = WERR_MORE_DATA;
-		goto done;
-	}
-
-	result = WERR_OK;
 
 	if (!push_reg_multi_sz(p->mem_ctx, &blob, array)) {
 		result = WERR_NOMEM;
 		goto done;
 	}
 
-	if (r->in.offered >= blob.length) {
+	*r->out.needed = blob.length;
+
+	if (r->in.offered < *r->out.needed) {
+		result = WERR_MORE_DATA;
+	} else {
+		result = WERR_OK;
 		memcpy(r->out.key_buffer, blob.data, blob.length);
 	}
 
