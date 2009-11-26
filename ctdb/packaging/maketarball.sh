@@ -54,18 +54,53 @@ else
 	GZIP="gzip -9"
 fi
 
+TAR_PREFIX="ctdb-${VERSION}"
+TAR_BASE="ctdb-${VERSION}"
+
+TAR_BALL=${TAR_BASE}.tar
+TAR_GZ_BALL=${TAR_BALL}.gz
+
 pushd ${TOPDIR}
-echo -n "Creating ctdb-${VERSION}.tar.gz ... "
-git archive --prefix=ctdb-${VERSION}/ HEAD | ${GZIP} \
-	> ${TOPDIR}/ctdb-${VERSION}.tar.gz
+echo "Creating ${TAR_BASE}.tar.gz ... "
+git archive --prefix=${TAR_PREFIX}/ HEAD | ( cd /tmp ; tar xf - )
 RC=$?
 popd
-
-echo "Done."
-
 if [ $RC -ne 0 ]; then
+	echo "Error calling git archive."
+	exit 1
+fi
+
+pushd /tmp/${TAR_PREFIX}
+./autogen.sh
+RC=$?
+popd
+if [ $RC -ne 0 ]; then
+	echo "Error calling autogen.sh."
+	exit 1
+fi
+
+pushd /tmp
+tar cf ${TAR_BALL} ${TAR_PREFIX}
+RC=$?
+if [ $RC -ne 0 ]; then
+	popd
         echo "Creation of tarball failed."
         exit 1
 fi
 
+${GZIP} ${TAR_BALL}
+RC=$?
+if [ $RC -ne 0 ]; then
+	popd
+        echo "Zipping tarball failed."
+        exit 1
+fi
+
+rm -rf ${TAR_PREFIX}
+
+popd
+
+mv /tmp/${TAR_GZ_BALL} .
+
+echo "Done."
 exit 0
