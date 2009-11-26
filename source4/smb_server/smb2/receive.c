@@ -322,7 +322,8 @@ static NTSTATUS smb2srv_reply(struct smb2srv_request *req)
 	uid			= BVAL(req->in.hdr, SMB2_HDR_SESSION_ID);
 	flags			= IVAL(req->in.hdr, SMB2_HDR_FLAGS);
 
-	if (req->smb_conn->highest_smb2_seqnum != 0 &&
+	if (opcode != SMB2_OP_CANCEL &&
+	    req->smb_conn->highest_smb2_seqnum != 0 &&
 	    req->seqnum <= req->smb_conn->highest_smb2_seqnum) {
 		smbsrv_terminate_connection(req->smb_conn, "Invalid SMB2 sequence number");
 		return NT_STATUS_INVALID_PARAMETER;
