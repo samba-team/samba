@@ -26,7 +26,11 @@
 
 #if defined(HAVE_KRB5) && defined(HAVE_KRB5_LOCATE_PLUGIN_H)
 
-#include <krb5/krb5.h>
+#if HAVE_COM_ERR_H
+#include <com_err.h>
+#endif
+
+#include <krb5.h>
 #include <krb5/locate_plugin.h>
 
 #ifndef KRB5_PLUGIN_NO_HANDLE
