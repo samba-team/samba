@@ -1106,6 +1106,9 @@ NTSTATUS ntvfs_map_lock(struct ntvfs_module_context *ntvfs,
 		/* only the first lock gives the UNLOCK bit - see
 		   MS-SMB2 3.3.5.14 */
 		if (lck->smb2.in.locks[0].flags & SMB2_LOCK_FLAG_UNLOCK) {
+			if (lck->smb2.in.locks[0].flags & SMB2_LOCK_FLAG_FAIL_IMMEDIATELY) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
 			lck2->generic.in.ulock_cnt = lck->smb2.in.lock_count;
 			isunlock = true;
 		} else {
