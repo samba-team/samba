@@ -116,6 +116,19 @@ function buildDocs
 	rsync -av "${OPT_DOCSDIR}"/ docs/
 	exitOnError $? "Failed top copy docs from ${OPT_DOCSDIR}"
 
+	cd docs/
+	/bin/rm -rf test.pdf Samba4*pdf htmldocs/Samba4* htmldocs/test
+	if [ -d manpages-3 ]; then
+		mv manpages-3 manpages
+	fi
+	if [ -d htmldocs/manpages-3 ]; then
+		mv htmldocs/manpages-3 htmldocs/manpages
+	fi
+	# Sync thanks, history and registry/ into the docs dir
+	rsync -Ca --exclude=.svn ../../$OPT_BRANCH/docs-xml/registry ../docs/
+	rsync -Ca --exclude=.svn ../../$OPT_BRANCH/docs-xml/archives/ ../docs/
+	cd ../
+
 	return 0
     fi
 
