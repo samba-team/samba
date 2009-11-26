@@ -868,7 +868,8 @@ enum ctdb_eventscript_call {
 	CTDB_EVENT_STOPPED,		/* This node is stopped: no args. */
 	CTDB_EVENT_MONITOR,		/* Please check if service is healthy: no args. */
 	CTDB_EVENT_STATUS,		/* Report service status: no args. */
-	CTDB_EVENT_SHUTDOWN		/* CTDB shutting down: no args. */
+	CTDB_EVENT_SHUTDOWN,		/* CTDB shutting down: no args. */
+	CTDB_EVENT_RELOAD		/* magic */
 };
 
 /* internal prototypes */
@@ -1345,8 +1346,9 @@ int ctdb_event_script_callback(struct ctdb_context *ctdb,
 			       TALLOC_CTX *mem_ctx,
 			       void (*callback)(struct ctdb_context *, int, void *),
 			       void *private_data,
+			       bool from_user,
 			       enum ctdb_eventscript_call call,
-			       const char *fmt, ...) PRINTF_ATTRIBUTE(6,7);
+			       const char *fmt, ...) PRINTF_ATTRIBUTE(7,8);
 void ctdb_release_all_ips(struct ctdb_context *ctdb);
 
 void set_nonblocking(int fd);

@@ -224,7 +224,8 @@ static void ctdb_check_health(struct event_context *ev, struct timed_event *te,
 	if (!ctdb->done_startup) {
 		ret = ctdb_event_script_callback(ctdb, 
 						 ctdb->monitor->monitor_context, ctdb_startup_callback, 
-						 ctdb, CTDB_EVENT_STARTUP, "%s", "");
+						 ctdb, false,
+						 CTDB_EVENT_STARTUP, "%s", "");
 	} else {
 		int i;
 		int skip_monitoring = 0;
@@ -248,7 +249,8 @@ static void ctdb_check_health(struct event_context *ev, struct timed_event *te,
 		} else {
 			ret = ctdb_event_script_callback(ctdb, 
 					ctdb->monitor->monitor_context, ctdb_health_callback,
-					ctdb, CTDB_EVENT_MONITOR, "%s", "");
+					ctdb, false,
+					CTDB_EVENT_MONITOR, "%s", "");
 		}
 	}
 
