@@ -477,6 +477,12 @@ static PyObject *py_ldb_transaction_commit(PyLdbObject *self)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_ldb_transaction_prepare_commit(PyLdbObject *self)
+{
+	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ldb_transaction_prepare_commit(PyLdb_AsLdbContext(self)), PyLdb_AsLdbContext(self));
+	Py_RETURN_NONE;
+}
+
 static PyObject *py_ldb_transaction_cancel(PyLdbObject *self)
 {
 	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ldb_transaction_cancel(PyLdb_AsLdbContext(self)), PyLdb_AsLdbContext(self));
@@ -1224,6 +1230,9 @@ static PyMethodDef py_ldb_methods[] = {
 	{ "transaction_start", (PyCFunction)py_ldb_transaction_start, METH_NOARGS, 
 		"S.transaction_start() -> None\n"
 		"Start a new transaction." },
+	{ "transaction_prepare_commit", (PyCFunction)py_ldb_transaction_prepare_commit, METH_NOARGS,
+		"S.transaction_prepare_commit() -> None\n"
+		"prepare to commit a new transaction (2-stage commit)." },
 	{ "transaction_commit", (PyCFunction)py_ldb_transaction_commit, METH_NOARGS, 
 		"S.transaction_commit() -> None\n"
 		"commit a new transaction." },
