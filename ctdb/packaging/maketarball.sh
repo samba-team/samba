@@ -57,6 +57,11 @@ fi
 TAR_PREFIX="ctdb-${VERSION}"
 TAR_BASE="ctdb-${VERSION}"
 
+if test "x${DEBIAN_MODE}" = "xyes" ; then
+	TAR_PREFIX="ctdb-${VERSION}.orig"
+	TAR_BASE="ctdb_${VERSION}.orig"
+fi
+
 TAR_BALL=${TAR_BASE}.tar
 TAR_GZ_BALL=${TAR_BALL}.gz
 
