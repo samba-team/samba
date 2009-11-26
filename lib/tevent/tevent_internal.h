@@ -142,7 +142,7 @@ struct tevent_req {
 		struct tevent_immediate *trigger;
 
 		/**
-		 * @brief the timer event if tevent_req_set_timeout was used
+		 * @brief the timer event if tevent_req_set_endtime was used
 		 *
 		 */
 		struct tevent_timer *timer;
