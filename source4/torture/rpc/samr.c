@@ -6970,22 +6970,22 @@ struct torture_suite *torture_rpc_samr_user_privileges(TALLOC_CTX *mem_ctx)
 
 static bool torture_rpc_samr_many_accounts(struct torture_context *torture,
 					   struct dcerpc_pipe *p2,
-					   struct cli_credentials *machine_credentials)
+					   void *data)
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
 	bool ret = true;
-	struct torture_samr_context *ctx;
+	struct torture_samr_context *ctx =
+		talloc_get_type_abort(data, struct torture_samr_context);
 
 	status = torture_rpc_connection(torture, &p, &ndr_table_samr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
-	ctx = talloc_zero(torture, struct torture_samr_context);
-
 	ctx->choice = TORTURE_SAMR_MANY_ACCOUNTS;
-	ctx->num_objects_large_dc = 1500;
+	ctx->num_objects_large_dc = torture_setting_int(torture, "large_dc",
+							ctx->num_objects_large_dc);
 
 	ret &= test_Connect(p, torture, &ctx->handle);
 
@@ -6998,22 +6998,22 @@ static bool torture_rpc_samr_many_accounts(struct torture_context *torture,
 
 static bool torture_rpc_samr_many_groups(struct torture_context *torture,
 					 struct dcerpc_pipe *p2,
-					 struct cli_credentials *machine_credentials)
+					 void *data)
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
 	bool ret = true;
-	struct torture_samr_context *ctx;
+	struct torture_samr_context *ctx =
+		talloc_get_type_abort(data, struct torture_samr_context);
 
 	status = torture_rpc_connection(torture, &p, &ndr_table_samr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
-	ctx = talloc_zero(torture, struct torture_samr_context);
-
 	ctx->choice = TORTURE_SAMR_MANY_GROUPS;
-	ctx->num_objects_large_dc = 1500;
+	ctx->num_objects_large_dc = torture_setting_int(torture, "large_dc",
+							ctx->num_objects_large_dc);
 
 	ret &= test_Connect(p, torture, &ctx->handle);
 
@@ -7026,22 +7026,22 @@ static bool torture_rpc_samr_many_groups(struct torture_context *torture,
 
 static bool torture_rpc_samr_many_aliases(struct torture_context *torture,
 					  struct dcerpc_pipe *p2,
-					  struct cli_credentials *machine_credentials)
+					  void *data)
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
 	bool ret = true;
-	struct torture_samr_context *ctx;
+	struct torture_samr_context *ctx =
+		talloc_get_type_abort(data, struct torture_samr_context);
 
 	status = torture_rpc_connection(torture, &p, &ndr_table_samr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
-	ctx = talloc_zero(torture, struct torture_samr_context);
-
 	ctx->choice = TORTURE_SAMR_MANY_ALIASES;
-	ctx->num_objects_large_dc = 1500;
+	ctx->num_objects_large_dc = torture_setting_int(torture, "large_dc",
+							ctx->num_objects_large_dc);
 
 	ret &= test_Connect(p, torture, &ctx->handle);
 
@@ -7056,18 +7056,19 @@ struct torture_suite *torture_rpc_samr_large_dc(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "SAMR-LARGE-DC");
 	struct torture_rpc_tcase *tcase;
+	struct torture_samr_context *ctx;
 
-	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "samr",
-							  &ndr_table_samr,
-							  TEST_ACCOUNT_NAME);
+	tcase = torture_suite_add_rpc_iface_tcase(suite, "samr", &ndr_table_samr);
 
-	torture_rpc_tcase_add_test_creds(tcase, "many_aliases",
-					 torture_rpc_samr_many_aliases);
-	torture_rpc_tcase_add_test_creds(tcase, "many_groups",
-					 torture_rpc_samr_many_groups);
-	torture_rpc_tcase_add_test_creds(tcase, "many_accounts",
-					 torture_rpc_samr_many_accounts);
+	ctx = talloc_zero(suite, struct torture_samr_context);
+	ctx->num_objects_large_dc = 150;
+
+	torture_rpc_tcase_add_test_ex(tcase, "many_aliases",
+				      torture_rpc_samr_many_aliases, ctx);
+	torture_rpc_tcase_add_test_ex(tcase, "many_groups",
+				      torture_rpc_samr_many_groups, ctx);
+	torture_rpc_tcase_add_test_ex(tcase, "many_accounts",
+				      torture_rpc_samr_many_accounts, ctx);
 
 	return suite;
 }
-
