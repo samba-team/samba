@@ -1212,6 +1212,10 @@ static int linked_attributes_prepare_commit(struct ldb_module *module)
 		talloc_get_type(ldb_module_get_private(module), struct la_private);
 	struct la_context *ac;
 
+	if (!la_private) {
+		/* prepare commit without begin_transaction - let someone else return the error, just don't segfault */
+		return ldb_next_prepare_commit(module);
+	}
 	/* walk the list backwards, to do the first entry first, as we
 	 * added the entries with DLIST_ADD() which puts them at the
 	 * start of the list */
