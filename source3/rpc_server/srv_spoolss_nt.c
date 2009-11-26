@@ -3781,6 +3781,110 @@ done:
 }
 
 /********************************************************************
+ * construct_printer_info1
+ * fill a spoolss_PrinterInfo1 struct
+********************************************************************/
+
+static WERROR construct_printer_info1(TALLOC_CTX *mem_ctx,
+				      const NT_PRINTER_INFO_LEVEL *ntprinter,
+				      uint32_t flags,
+				      struct spoolss_PrinterInfo1 *r,
+				      int snum)
+{
+	r->flags		= flags;
+
+	r->description		= talloc_asprintf(mem_ctx, "%s,%s,%s",
+						  ntprinter->info_2->printername,
+						  ntprinter->info_2->drivername,
+						  ntprinter->info_2->location);
+	W_ERROR_HAVE_NO_MEMORY(r->description);
+
+	if (*ntprinter->info_2->comment == '\0') {
+		r->comment	= talloc_strdup(mem_ctx, lp_comment(snum));
+	} else {
+		r->comment	= talloc_strdup(mem_ctx, ntprinter->info_2->comment); /* saved comment */
+	}
+	W_ERROR_HAVE_NO_MEMORY(r->comment);
+
+	r->name			= talloc_strdup(mem_ctx, ntprinter->info_2->printername);
+	W_ERROR_HAVE_NO_MEMORY(r->name);
+
+	return WERR_OK;
+}
+
+/********************************************************************
+ * construct_printer_info2
+ * fill a spoolss_PrinterInfo2 struct
+********************************************************************/
+
+static WERROR construct_printer_info2(TALLOC_CTX *mem_ctx,
+				      const NT_PRINTER_INFO_LEVEL *ntprinter,
+				      struct spoolss_PrinterInfo2 *r,
+				      int snum)
+{
+	int count;
+
+	print_status_struct status;
+
+	count = print_queue_length(snum, &status);
+
+	r->servername		= talloc_strdup(mem_ctx, ntprinter->info_2->servername);
+	W_ERROR_HAVE_NO_MEMORY(r->servername);
+	r->printername		= talloc_strdup(mem_ctx, ntprinter->info_2->printername);
+	W_ERROR_HAVE_NO_MEMORY(r->printername);
+	r->sharename		= talloc_strdup(mem_ctx, lp_servicename(snum));
+	W_ERROR_HAVE_NO_MEMORY(r->sharename);
+	r->portname		= talloc_strdup(mem_ctx, ntprinter->info_2->portname);
+	W_ERROR_HAVE_NO_MEMORY(r->portname);
+	r->drivername		= talloc_strdup(mem_ctx, ntprinter->info_2->drivername);
+	W_ERROR_HAVE_NO_MEMORY(r->drivername);
+
+	if (*ntprinter->info_2->comment == '\0') {
+		r->comment	= talloc_strdup(mem_ctx, lp_comment(snum));
+	} else {
+		r->comment	= talloc_strdup(mem_ctx, ntprinter->info_2->comment);
+	}
+	W_ERROR_HAVE_NO_MEMORY(r->comment);
+
+	r->location		= talloc_strdup(mem_ctx, ntprinter->info_2->location);
+	W_ERROR_HAVE_NO_MEMORY(r->location);
+	r->sepfile		= talloc_strdup(mem_ctx, ntprinter->info_2->sepfile);
+	W_ERROR_HAVE_NO_MEMORY(r->sepfile);
+	r->printprocessor	= talloc_strdup(mem_ctx, ntprinter->info_2->printprocessor);
+	W_ERROR_HAVE_NO_MEMORY(r->printprocessor);
+	r->datatype		= talloc_strdup(mem_ctx, ntprinter->info_2->datatype);
+	W_ERROR_HAVE_NO_MEMORY(r->datatype);
+	r->parameters		= talloc_strdup(mem_ctx, ntprinter->info_2->parameters);
+	W_ERROR_HAVE_NO_MEMORY(r->parameters);
+
+	r->attributes		= ntprinter->info_2->attributes;
+
+	r->priority		= ntprinter->info_2->priority;
+	r->defaultpriority	= ntprinter->info_2->default_priority;
+	r->starttime		= ntprinter->info_2->starttime;
+	r->untiltime		= ntprinter->info_2->untiltime;
+	r->status		= nt_printq_status(status.status);
+	r->cjobs		= count;
+	r->averageppm		= ntprinter->info_2->averageppm;
+
+	r->devmode = construct_dev_mode(mem_ctx, lp_const_servicename(snum));
+	if (!r->devmode) {
+		DEBUG(8,("Returning NULL Devicemode!\n"));
+	}
+
+	r->secdesc		= NULL;
+
+	if (ntprinter->info_2->secdesc_buf && ntprinter->info_2->secdesc_buf->sd_size != 0) {
+		/* don't use talloc_steal() here unless you do a deep steal of all
+		   the SEC_DESC members */
+
+		r->secdesc	= dup_sec_desc(mem_ctx, ntprinter->info_2->secdesc_buf->sd);
+	}
+
+	return WERR_OK;
+}
+
+/********************************************************************
  * construct_printer_info3
  * fill a spoolss_PrinterInfo3 struct
  ********************************************************************/
@@ -3925,110 +4029,6 @@ static WERROR construct_printer_info8(TALLOC_CTX *mem_ctx,
 	return WERR_OK;
 }
 
-
-/********************************************************************
- * construct_printer_info1
- * fill a spoolss_PrinterInfo1 struct
-********************************************************************/
-
-static WERROR construct_printer_info1(TALLOC_CTX *mem_ctx,
-				      const NT_PRINTER_INFO_LEVEL *ntprinter,
-				      uint32_t flags,
-				      struct spoolss_PrinterInfo1 *r,
-				      int snum)
-{
-	r->flags		= flags;
-
-	r->description		= talloc_asprintf(mem_ctx, "%s,%s,%s",
-						  ntprinter->info_2->printername,
-						  ntprinter->info_2->drivername,
-						  ntprinter->info_2->location);
-	W_ERROR_HAVE_NO_MEMORY(r->description);
-
-	if (*ntprinter->info_2->comment == '\0') {
-		r->comment	= talloc_strdup(mem_ctx, lp_comment(snum));
-	} else {
-		r->comment	= talloc_strdup(mem_ctx, ntprinter->info_2->comment); /* saved comment */
-	}
-	W_ERROR_HAVE_NO_MEMORY(r->comment);
-
-	r->name			= talloc_strdup(mem_ctx, ntprinter->info_2->printername);
-	W_ERROR_HAVE_NO_MEMORY(r->name);
-
-	return WERR_OK;
-}
-
-/********************************************************************
- * construct_printer_info2
- * fill a spoolss_PrinterInfo2 struct
-********************************************************************/
-
-static WERROR construct_printer_info2(TALLOC_CTX *mem_ctx,
-				      const NT_PRINTER_INFO_LEVEL *ntprinter,
-				      struct spoolss_PrinterInfo2 *r,
-				      int snum)
-{
-	int count;
-
-	print_status_struct status;
-
-	count = print_queue_length(snum, &status);
-
-	r->servername		= talloc_strdup(mem_ctx, ntprinter->info_2->servername);
-	W_ERROR_HAVE_NO_MEMORY(r->servername);
-	r->printername		= talloc_strdup(mem_ctx, ntprinter->info_2->printername);
-	W_ERROR_HAVE_NO_MEMORY(r->printername);
-	r->sharename		= talloc_strdup(mem_ctx, lp_servicename(snum));
-	W_ERROR_HAVE_NO_MEMORY(r->sharename);
-	r->portname		= talloc_strdup(mem_ctx, ntprinter->info_2->portname);
-	W_ERROR_HAVE_NO_MEMORY(r->portname);
-	r->drivername		= talloc_strdup(mem_ctx, ntprinter->info_2->drivername);
-	W_ERROR_HAVE_NO_MEMORY(r->drivername);
-
-	if (*ntprinter->info_2->comment == '\0') {
-		r->comment	= talloc_strdup(mem_ctx, lp_comment(snum));
-	} else {
-		r->comment	= talloc_strdup(mem_ctx, ntprinter->info_2->comment);
-	}
-	W_ERROR_HAVE_NO_MEMORY(r->comment);
-
-	r->location		= talloc_strdup(mem_ctx, ntprinter->info_2->location);
-	W_ERROR_HAVE_NO_MEMORY(r->location);
-	r->sepfile		= talloc_strdup(mem_ctx, ntprinter->info_2->sepfile);
-	W_ERROR_HAVE_NO_MEMORY(r->sepfile);
-	r->printprocessor	= talloc_strdup(mem_ctx, ntprinter->info_2->printprocessor);
-	W_ERROR_HAVE_NO_MEMORY(r->printprocessor);
-	r->datatype		= talloc_strdup(mem_ctx, ntprinter->info_2->datatype);
-	W_ERROR_HAVE_NO_MEMORY(r->datatype);
-	r->parameters		= talloc_strdup(mem_ctx, ntprinter->info_2->parameters);
-	W_ERROR_HAVE_NO_MEMORY(r->parameters);
-
-	r->attributes		= ntprinter->info_2->attributes;
-
-	r->priority		= ntprinter->info_2->priority;
-	r->defaultpriority	= ntprinter->info_2->default_priority;
-	r->starttime		= ntprinter->info_2->starttime;
-	r->untiltime		= ntprinter->info_2->untiltime;
-	r->status		= nt_printq_status(status.status);
-	r->cjobs		= count;
-	r->averageppm		= ntprinter->info_2->averageppm;
-
-	r->devmode = construct_dev_mode(mem_ctx, lp_const_servicename(snum));
-	if (!r->devmode) {
-		DEBUG(8,("Returning NULL Devicemode!\n"));
-	}
-
-	r->secdesc		= NULL;
-
-	if (ntprinter->info_2->secdesc_buf && ntprinter->info_2->secdesc_buf->sd_size != 0) {
-		/* don't use talloc_steal() here unless you do a deep steal of all
-		   the SEC_DESC members */
-
-		r->secdesc	= dup_sec_desc(mem_ctx, ntprinter->info_2->secdesc_buf->sd);
-	}
-
-	return WERR_OK;
-}
 
 /********************************************************************
 ********************************************************************/
