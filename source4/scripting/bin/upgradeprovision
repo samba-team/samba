@@ -45,9 +45,11 @@ import samba.getopt as options
 from samba.samdb import SamDB
 from samba import param
 from samba.provision import  ProvisionNames,provision_paths_from_lp,find_setup_dir,FILL_FULL,provision
+from samba.provisionexceptions import ProvisioningError
 from samba.schema import get_dnsyntax_attributes, get_linked_attributes, Schema
 from samba.dcerpc import misc, security
 from samba.ndr import ndr_pack, ndr_unpack
+from samba.dcerpc.misc import SEC_CHAN_BDC
 
 replace=2^ldb.FLAG_MOD_REPLACE
 add=2^ldb.FLAG_MOD_ADD
@@ -171,8 +173,7 @@ def guess_names_from_current_provision(credentials,session_info,paths):
 	# NT domain, kerberos realm, root dn, domain dn, domain dns name
 	names.domain = string.upper(lp.get("workgroup"))
 	names.realm = lp.get("realm")
-	rootdn = "DC=" + names.realm.replace(".",",DC=")
-	names.domaindn = rootdn
+	basedn = "DC=" + names.realm.replace(".",",DC=")
 	names.dnsdomain = names.realm
 	names.realm = string.upper(names.realm)
 	# netbiosname
@@ -188,16 +189,17 @@ def guess_names_from_current_provision(credentials,session_info,paths):
 		    credentials=credentials, lp=lp, options=["modules:samba_dsdb"])
 
 	# That's a bit simplistic but it's ok as long as we have only 3 partitions
-	attrs2 = ["schemaNamingContext","configurationNamingContext","rootDomainNamingContext"]
+	attrs2 = ["defaultNamingContext", "schemaNamingContext","configurationNamingContext","rootDomainNamingContext"]
 	res2 = samdb.search(expression="(objectClass=*)",base="", scope=SCOPE_BASE, attrs=attrs2)
 
 	names.configdn = res2[0]["configurationNamingContext"]
 	configdn = str(names.configdn)
 	names.schemadn = res2[0]["schemaNamingContext"]
-	if not (rootdn == str(res2[0]["rootDomainNamingContext"])):
-		message(ERROR, "rootdn in sam.ldb and smb.conf is not the same ...")
-	else:
-		names.rootdn=res2[0]["rootDomainNamingContext"]
+	if not (ldb.Dn(samdb, basedn) == (ldb.Dn(samdb, res2[0]["defaultNamingContext"][0]))):
+		raise ProvisioningError(("basedn in %s (%s) and from %s (%s) is not the same ..." % (paths.samdb, str(res2[0]["defaultNamingContext"][0]), paths.smbconf, basedn)))
+
+	names.domaindn=res2[0]["defaultNamingContext"]
+	names.rootdn=res2[0]["rootDomainNamingContext"]
 	# default site name
 	attrs3 = ["cn"]
 	res3= samdb.search(expression="(objectClass=*)",base="CN=Sites,"+configdn, scope=SCOPE_ONELEVEL, attrs=attrs3)
@@ -205,43 +207,37 @@ def guess_names_from_current_provision(credentials,session_info,paths):
 
 	# dns hostname and server dn
 	attrs4 = ["dNSHostName"]
-	res4= samdb.search(expression="(CN=%s)"%names.netbiosname,base="OU=Domain Controllers,"+rootdn, \
+	res4= samdb.search(expression="(CN=%s)"%names.netbiosname,base="OU=Domain Controllers,"+basedn, \
 						scope=SCOPE_ONELEVEL, attrs=attrs4)
 	names.hostname = str(res4[0]["dNSHostName"]).replace("."+names.dnsdomain,"")
 
-	names.serverdn = "CN=%s,CN=Servers,CN=%s,CN=Sites,%s" % (names.netbiosname, names.sitename, configdn)
+	server_res = samdb.search(expression="serverReference=%s"%res4[0].dn, attrs=[], base=configdn)
+	names.serverdn = server_res[0].dn
 
-	# invocation id
-	attrs5 = ["invocationId"]
-	res5 = samdb.search(expression="(objectClass=*)",base="CN=Sites,"+configdn, scope=SCOPE_SUBTREE, attrs=attrs5)
-	for i in range(0,len(res5)):
-		if ( len(res5[i]) > 0):
-			names.invocation = str(ndr_unpack( misc.GUID,res5[i]["invocationId"][0]))
-			break
+	# invocation id/objectguid
+	res5 = samdb.search(expression="(objectClass=*)",base="CN=NTDS Settings,%s" % str(names.serverdn), scope=SCOPE_BASE, attrs=["invocationID","objectGUID"])
+	names.invocation = str(ndr_unpack( misc.GUID,res5[0]["invocationId"][0]))
+	names.ntdsguid = str(ndr_unpack( misc.GUID,res5[0]["objectGUID"][0]))
+
 	# domain guid/sid
 	attrs6 = ["objectGUID", "objectSid", ]
-	res6 = samdb.search(expression="(objectClass=*)",base=rootdn, scope=SCOPE_BASE, attrs=attrs6)
+	res6 = samdb.search(expression="(objectClass=*)",base=basedn, scope=SCOPE_BASE, attrs=attrs6)
 	names.domainguid = str(ndr_unpack( misc.GUID,res6[0]["objectGUID"][0]))
 	names.domainsid = str(ndr_unpack( security.dom_sid,res6[0]["objectSid"][0]))
 
 	# policy guid
 	attrs7 = ["cn","displayName"]
-	res7 = samdb.search(expression="(displayName=Default Domain Policy)",base="CN=Policies,CN=System,"+rootdn, \
+	res7 = samdb.search(expression="(displayName=Default Domain Policy)",base="CN=Policies,CN=System,"+basedn, \
 							scope=SCOPE_ONELEVEL, attrs=attrs7)
 	names.policyid = str(res7[0]["cn"]).replace("{","").replace("}","")
 	# dc policy guid
 	attrs8 = ["cn","displayName"]
-	res8 = samdb.search(expression="(displayName=Default Domain Controllers Policy)",base="CN=Policies,CN=System,"+rootdn, \
+	res8 = samdb.search(expression="(displayName=Default Domain Controllers Policy)",base="CN=Policies,CN=System,"+basedn, \
 							scope=SCOPE_ONELEVEL, attrs=attrs7)
 	if len(res8) == 1:
 		names.policyid_dc = str(res8[0]["cn"]).replace("{","").replace("}","")
 	else:
 		names.policyid_dc = None
-	# ntds guid
-	attrs9 = ["objectGUID" ]
-	exp = "(dn=CN=NTDS Settings,%s)"%(names.serverdn)
-	res9 = samdb.search(expression="(dn=CN=NTDS Settings,%s)"%(names.serverdn),base=str(names.configdn), scope=SCOPE_SUBTREE, attrs=attrs9)
-	names.ntdsguid = str(ndr_unpack( misc.GUID,res9[0]["objectGUID"][0]))
 
 
 	return names
@@ -251,7 +247,7 @@ def print_names(names):
 	message(GUESS, "rootdn      :"+str(names.rootdn))
 	message(GUESS, "configdn    :"+str(names.configdn))
 	message(GUESS, "schemadn    :"+str(names.schemadn))
-	message(GUESS, "serverdn    :"+names.serverdn)
+	message(GUESS, "serverdn    :"+str(names.serverdn))
 	message(GUESS, "netbiosname :"+names.netbiosname)
 	message(GUESS, "defaultsite :"+names.sitename)
 	message(GUESS, "dnsdomain   :"+names.dnsdomain)
@@ -285,7 +281,7 @@ def newprovision(names,setup_dir,creds,session,smbconf):
 		session, creds, smbconf=smbconf, targetdir=provdir,
 		samdb_fill=FILL_FULL, realm=names.realm, domain=names.domain,
 		domainguid=names.domainguid, domainsid=names.domainsid,ntdsguid=names.ntdsguid,
-		policyguid=names.policyid,policyguid_dc=names.policyid_dc,hostname=names.hostname,
+		policyguid=names.policyid,policyguid_dc=names.policyid_dc,hostname=names.netbiosname,
 		hostip=None, hostip6=None,
 		invocationid=names.invocation, adminpass=None,
 		krbtgtpass=None, machinepass=None,
@@ -506,7 +502,7 @@ def check_diff_name(newpaths,paths,creds,session,basedn,names,ischema):
 		# The double ldb open and schema validation is taken from the initial provision script
 		# it's not certain that it is really needed ....
 		sam_ldb = Ldb(session_info=session, credentials=creds, lp=lp)
-		schema = Schema(setup_path, security.dom_sid(names.domainsid), schemadn=basedn, serverdn=names.serverdn)
+		schema = Schema(setup_path, security.dom_sid(names.domainsid), schemadn=basedn, serverdn=str(names.serverdn))
 		# Load the schema from the one we computed earlier
 		sam_ldb.set_schema_from_ldb(schema.ldb)
 		# And now we can connect to the DB - the schema won't be loaded from the DB
@@ -686,6 +682,40 @@ def update_samdb(newpaths,paths,creds,session,names):
 	message(SIMPLE,"Done with scanning")
 #	update_sds(hashdef,hashSD,paths,creds,session,str(names.rootdn),names.domainsid)
 
+def update_machine_account_password(newpaths,paths,creds,session,names):
+
+	secrets_ldb = Ldb(newpaths.secrets, session_info=session, credentials=creds,lp=lp)
+	secrets_ldb.transaction_start()
+	secrets_msg = secrets_ldb.search(expression=("samAccountName=%s$" % names.netbiosname), attrs=["secureChannelType"])
+	sam_ldb = Ldb(paths.samdb, session_info=session, credentials=creds,lp=lp)
+	if secrets_msg[0]["secureChannelType"][0] == SEC_CHAN_BDC:
+		sam_ldb.transaction_start()
+		res = sam_ldb.search(expression=("samAccountName=%s$" % names.netbiosname), attrs=[])
+		assert(len(res) == 1)
+
+		msg = ldb.Message(res[0].dn)
+		machinepass = msg["userPassword"] = glue.generate_random_str(12)
+		for el in msg:
+			el.set_flags(ldb.FLAG_MOD_REPLACE)
+		sam_ldb.modify(msg)
+
+		res = sam_ldb.search(expression=("samAccountName=%s$" % names.netbiosname),
+				     attrs=["msDs-keyVersionNumber"])
+		assert(len(res) == 1)
+		kvno = res[0]["msDs-keyVersionNumber"]
+
+		secretsdb_self_join(secrets_ldb, domain=names.domain,
+				    realm=names.realm,
+				    dnsdomain=names.dnsdomain,
+				    netbiosname=names.netbiosname,
+				    machinepass=machinepass,
+				    key_version_number=kvno,
+				    secure_channel_type=secrets_msg[0]["secureChannelType"])
+	sam_ldb.transaction_prepare_commit()
+	secrets_ldb.transaction_prepare_commit()
+	sam_ldb.transaction_commit()
+	secrets_ldb.transaction_commit()
+
 # From here start the big steps of the program
 # First get files paths
 paths=get_paths(targetdir=opts.targetdir,smbconf=smbconf)
@@ -708,6 +738,7 @@ update_secrets(newpaths,paths,creds,session)
 update_privilege(newpaths,paths)
 if opts.full:
 	update_samdb(newpaths,paths,creds,session,names)
+	update_machine_account_password(newpaths,paths,creds,session,names)
 message(SIMPLE,"Upgrade finished !")
 # remove reference provision now that everything is done !
 rmall(provisiondir)
