@@ -5,6 +5,7 @@
 #include "libcli/util/ntstatus.h"
 
 #include "librpc/gen_ndr/lsa.h"
+#include "librpc/gen_ndr/netlogon.h"
 #ifndef _HEADER_wbint
 #define _HEADER_wbint
 
