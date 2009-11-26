@@ -114,14 +114,6 @@ libgpodir := libgpo
 
 include data.mk
 
-INSTALL_SCRIPTS = $(addprefix scripting/bin/, \
-	autoidl \
-	samba3dump \
-	rpcclient \
-	smbstatus)
-
-$(foreach SCRIPT,$(INSTALL_SCRIPTS),$(eval $(call binary_install_template,$(SCRIPT))))
-
 $(DESTDIR)$(bindir)/%: scripting/bin/% installdirs
 	@mkdir -p $(@D)
 	@echo Installing $(@F) as $@
@@ -253,7 +245,7 @@ installman:: manpages installdirs
 	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(mandir) $(MANPAGES)
 
 installmisc:: installdirs
-	@$(SHELL) $(srcdir)/script/installmisc.sh $(srcdir) $(DESTDIR)$(setupdir)
+	@$(SHELL) $(srcdir)/script/installmisc.sh $(srcdir) $(DESTDIR)$(setupdir) $(DESTDIR)$(bindir) $(DESTDIR)$(sbindir) $(pythondir)
 
 installpc:: installdirs
 	@$(SHELL) $(srcdir)/script/installpc.sh $(builddir) $(DESTDIR)$(pkgconfigdir) $(PC_FILES)
