@@ -434,24 +434,8 @@ static int operational_init(struct ldb_module *ctx)
 	return LDB_SUCCESS;
 }
 
-static int operational_modify(struct ldb_module *module, struct ldb_request *req)
-{
-	unsigned int i;
-
-	for (i = 0; i < ARRAY_SIZE(search_sub); i++) {
-		if (ldb_msg_find_element(req->op.mod.message, search_sub[i].attr) != NULL) {
-			/* operational attributes cannot be changed! */
-			return LDB_ERR_CONSTRAINT_VIOLATION;
-		}
-	}
-
-	/* No operational attribute will be changed -> go on */
-	return ldb_next_request(module, req);
-}
-
 const struct ldb_module_ops ldb_operational_module_ops = {
 	.name              = "operational",
 	.search            = operational_search,
-	.modify            = operational_modify,
 	.init_context	   = operational_init
 };
