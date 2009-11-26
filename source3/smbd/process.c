@@ -21,7 +21,6 @@
 #include "includes.h"
 #include "smbd/globals.h"
 #include "../librpc/gen_ndr/srv_dfs.h"
-#include "../librpc/gen_ndr/srv_drsuapi.h"
 #include "../librpc/gen_ndr/srv_dssetup.h"
 #include "../librpc/gen_ndr/srv_echo.h"
 #include "../librpc/gen_ndr/srv_eventlog.h"
