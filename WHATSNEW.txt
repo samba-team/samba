@@ -1,6 +1,6 @@
                    =================================
                    Release Notes for Samba 3.5.0pre1
-
+			   November 26, 2009
                    =================================
 
 This is the first preview release of Samba 3.5.  This is *not*
@@ -22,6 +22,7 @@ o Add encryption support for connections to a CUPS server
 Winbind changes:
 o Major refactoring
 o Asynchronous
+
 
 General changes:
 ================
@@ -68,11 +69,6 @@ smb.conf changes
    ldap follow referral		       New	       auto
 
 
-New [sub]commands
------------------
-
-
-
 New configure options
 ---------------------
 
@@ -85,15 +81,6 @@ New configure options
 
 Commit Highlights
 =================
-
-
-o   Jeremy Allison <jra@samba.org>
-    *
-
-
-o   Günther Deschner <gd@samba.org>
-    *
-
 
 o   Björn Jacke <bjacke@sernet.de>
     * Add support for full Windows timestamp resolution.
