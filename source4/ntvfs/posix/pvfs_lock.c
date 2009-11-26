@@ -116,7 +116,11 @@ static void pvfs_pending_lock_continue(void *private_data, enum pvfs_wait_notice
 
 	/* we don't retry on a cancel */
 	if (reason == PVFS_WAIT_CANCEL) {
-		status = NT_STATUS_FILE_LOCK_CONFLICT;
+		if (pvfs->ntvfs->ctx->protocol != PROTOCOL_SMB2) {
+			status = NT_STATUS_FILE_LOCK_CONFLICT;
+		} else {
+			status = NT_STATUS_CANCELLED;
+		}
 	} else {
 		/* 
 		 * here it's important to pass the pending pointer
