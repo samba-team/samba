@@ -28,6 +28,7 @@
 #include "../libcli/auth/libcli_auth.h"
 #include "../libcli/auth/schannel_state.h"
 #include "../libcli/auth/schannel.h"
+#include "../librpc/gen_ndr/srv_netlogon.h"
 
 extern userdom_struct current_user_info;
 

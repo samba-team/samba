@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "../libcli/auth/libcli_auth.h"
+#include "../librpc/gen_ndr/cli_netlogon.h"
 
 /****************************************************************************
  Wrapper function that uses the auth and auth2 calls to set up a NETLOGON

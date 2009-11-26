@@ -23,6 +23,7 @@
 #include "lib/netapi/netapi.h"
 #include "lib/netapi/netapi_private.h"
 #include "lib/netapi/libnetapi.h"
+#include "../librpc/gen_ndr/cli_netlogon.h"
 
 static WERROR construct_data(enum netr_LogonControlCode function_code,
 			     const uint8_t *data_in,

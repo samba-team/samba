@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "../libcli/auth/libcli_auth.h"
+#include "../librpc/gen_ndr/cli_samr.h"
 
 /* User change password */
 

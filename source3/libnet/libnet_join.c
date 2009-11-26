@@ -21,6 +21,8 @@
 #include "includes.h"
 #include "libnet/libnet.h"
 #include "libcli/auth/libcli_auth.h"
+#include "../librpc/gen_ndr/cli_samr.h"
+#include "../librpc/gen_ndr/cli_lsa.h"
 
 /****************************************************************
 ****************************************************************/

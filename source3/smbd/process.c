@@ -20,6 +20,21 @@
 
 #include "includes.h"
 #include "smbd/globals.h"
+#include "../librpc/gen_ndr/srv_dfs.h"
+#include "../librpc/gen_ndr/srv_drsuapi.h"
+#include "../librpc/gen_ndr/srv_dssetup.h"
+#include "../librpc/gen_ndr/srv_echo.h"
+#include "../librpc/gen_ndr/srv_eventlog.h"
+#include "../librpc/gen_ndr/srv_initshutdown.h"
+#include "../librpc/gen_ndr/srv_lsa.h"
+#include "../librpc/gen_ndr/srv_netlogon.h"
+#include "../librpc/gen_ndr/srv_ntsvcs.h"
+#include "../librpc/gen_ndr/srv_samr.h"
+#include "../librpc/gen_ndr/srv_spoolss.h"
+#include "../librpc/gen_ndr/srv_srvsvc.h"
+#include "../librpc/gen_ndr/srv_svcctl.h"
+#include "../librpc/gen_ndr/srv_winreg.h"
+#include "../librpc/gen_ndr/srv_wkssvc.h"
 
 extern bool global_machine_password_needs_changing;
 

@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "rpcclient.h"
+#include "../librpc/gen_ndr/cli_dssetup.h"
 
 /* Look up domain related information on a remote host */
 

@@ -26,6 +26,7 @@
 #include "../lib/crypto/crypto.h"
 #include "../libcli/samsync/samsync.h"
 #include "../libcli/auth/libcli_auth.h"
+#include "../librpc/gen_ndr/cli_netlogon.h"
 
 /**
  * Fix up the delta, dealing with encryption issues so that the final

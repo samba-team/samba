@@ -25,6 +25,7 @@
 #include "lib/netapi/libnetapi.h"
 #include "libnet/libnet.h"
 #include "libcli/auth/libcli_auth.h"
+#include "../librpc/gen_ndr/cli_wkssvc.h"
 
 /****************************************************************
 ****************************************************************/

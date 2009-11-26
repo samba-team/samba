@@ -18,6 +18,7 @@
 */
 #include "includes.h"
 #include "utils/net.h"
+#include "../librpc/gen_ndr/cli_spoolss.h"
 
 /* support itanium as well */
 static const struct print_architecture_table_node archi_table[]= {

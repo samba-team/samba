@@ -22,6 +22,7 @@
 /* This is the interface to the rpcecho pipe. */
 
 #include "includes.h"
+#include "../librpc/gen_ndr/srv_echo.h"
 
 #ifdef DEVELOPER
 

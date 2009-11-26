@@ -23,6 +23,13 @@
 #include "includes.h"
 #include "utils/net.h"
 #include "../libcli/auth/libcli_auth.h"
+#include "../librpc/gen_ndr/cli_samr.h"
+#include "../librpc/gen_ndr/cli_lsa.h"
+#include "../librpc/gen_ndr/cli_netlogon.h"
+#include "../librpc/gen_ndr/cli_srvsvc.h"
+#include "../librpc/gen_ndr/cli_spoolss.h"
+#include "../librpc/gen_ndr/cli_initshutdown.h"
+#include "../librpc/gen_ndr/cli_winreg.h"
 
 static int net_mode_share;
 static bool sync_files(struct copy_clistate *cp_clistate, const char *mask);

@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "../librpc/gen_ndr/cli_srvsvc.h"
 
 static int use_bcast;
 
