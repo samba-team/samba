@@ -712,10 +712,12 @@ def update_machine_account_password(newpaths,paths,creds,session,names):
 				    machinepass=machinepass,
 				    key_version_number=kvno,
 				    secure_channel_type=secrets_msg[0]["secureChannelType"])
-	sam_ldb.transaction_prepare_commit()
-	secrets_ldb.transaction_prepare_commit()
-	sam_ldb.transaction_commit()
-	secrets_ldb.transaction_commit()
+		sam_ldb.transaction_prepare_commit()
+		secrets_ldb.transaction_prepare_commit()
+		sam_ldb.transaction_commit()
+		secrets_ldb.transaction_commit()
+	else:
+		secrets_ldb.transaction_cancel()
 
 # From here start the big steps of the program
 # First get files paths
