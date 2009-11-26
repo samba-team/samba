@@ -66,22 +66,6 @@
 #define BUILTIN_ALIAS_RID_PRE_2K_ACCESS (0x0000022aL)
 
 
-/********************************************************************** 
- * Masks for mappings between unix uid and gid types and
- * NT RIDS.
- **********************************************************************/
-
-#define BASE_RID (0x000003E8L)
-
-/* Take the bottom bit. */
-#define RID_TYPE_MASK 		1
-#define RID_MULTIPLIER 		2
-
-/* The two common types. */
-#define USER_RID_TYPE 		0
-#define GROUP_RID_TYPE 		1
-
-
 
 /********************************************************************** 
  * RPC policy handle used pretty much everywhere
