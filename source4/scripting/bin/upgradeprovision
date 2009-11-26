@@ -30,6 +30,7 @@ import random
 import string
 import re
 import base64
+import tempfile
 # Find right directory when running from source tree
 sys.path.insert(0, "bin/python")
 
@@ -266,7 +267,7 @@ def print_names(names):
 # since the latest upgrade in the current provision
 def newprovision(names,setup_dir,creds,session,smbconf):
 	message(SIMPLE, "Creating a reference provision")
-	provdir=os.path.join(paths.private_dir,"referenceprovision")
+	provdir=tempfile.mkdtemp(dir=paths.private_dir, prefix="referenceprovision")
 	if os.path.isdir(provdir):
 		rmall(provdir)
 	logstd=os.path.join(provdir,"log.std")
@@ -736,9 +737,9 @@ populate_backlink(newpaths,creds,session,names.schemadn)
 update_basesamdb(newpaths,paths,names)
 update_secrets(newpaths,paths,creds,session)
 update_privilege(newpaths,paths)
+update_machine_account_password(newpaths,paths,creds,session,names)
 if opts.full:
 	update_samdb(newpaths,paths,creds,session,names)
-	update_machine_account_password(newpaths,paths,creds,session,names)
 message(SIMPLE,"Upgrade finished !")
 # remove reference provision now that everything is done !
 rmall(provisiondir)
