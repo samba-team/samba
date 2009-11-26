@@ -366,9 +366,12 @@ static int fix_dn(TALLOC_CTX *mem_ctx,
 }
 
 /* Fix all attribute names to be in the correct case, and check they are all valid per the schema */
-static int fix_attributes(struct ldb_context *ldb, const struct dsdb_schema *schema, struct ldb_message *msg) 
+static int fix_check_attributes(struct ldb_context *ldb,
+				const struct dsdb_schema *schema,
+				struct ldb_message *msg,
+				enum ldb_request_type op)
 {
-	int i;
+	unsigned int i;
 	for (i=0; i < msg->num_elements; i++) {
 		const struct dsdb_attribute *attribute = dsdb_attribute_by_lDAPDisplayName(schema, msg->elements[i].name);
 		/* Add in a very special case for 'clearTextPassword',
@@ -382,6 +385,16 @@ static int fix_attributes(struct ldb_context *ldb, const struct dsdb_schema *sch
 			}
 		} else {
 			msg->elements[i].name = attribute->lDAPDisplayName;
+
+			/* We have to deny write operations on constructed attributes */
+			if ((attribute->systemFlags & DS_FLAG_ATTR_IS_CONSTRUCTED) != 0) {
+				if (op == LDB_ADD) {
+					return LDB_ERR_UNDEFINED_ATTRIBUTE_TYPE;
+				} else {
+					return LDB_ERR_CONSTRAINT_VIOLATION;
+				}
+			}
+
 		}
 	}
 
@@ -500,7 +513,7 @@ static int objectclass_do_add(struct oc_context *ac)
 
 	}
 	if (schema) {
-		ret = fix_attributes(ldb, schema, msg);
+		ret = fix_check_attributes(ldb, schema, msg, ac->req->operation);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(mem_ctx);
 			return ret;
@@ -738,7 +751,7 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		
-		ret = fix_attributes(ldb, schema, msg);
+		ret = fix_check_attributes(ldb, schema, msg, req->operation);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -775,7 +788,7 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		ret = fix_attributes(ldb, schema, msg);
+		ret = fix_check_attributes(ldb, schema, msg, req->operation);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(mem_ctx);
 			return ret;
@@ -851,7 +864,7 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = fix_attributes(ldb, schema, msg);
+	ret = fix_check_attributes(ldb, schema, msg, req->operation);
 	if (ret != LDB_SUCCESS) {
 		ldb_oom(ldb);
 		return ret;
