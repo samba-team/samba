@@ -24,3 +24,5 @@ upgradeprovision_full() {
 
 testit "upgradeprovision" upgradeprovision
 testit "upgradeprovision_full" upgradeprovision_full
+
+exit $failed
