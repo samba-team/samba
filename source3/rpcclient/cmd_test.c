@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "rpcclient.h"
+#include "../librpc/gen_ndr/cli_lsa.h"
 
 static NTSTATUS cmd_testme(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			   int argc, const char **argv)

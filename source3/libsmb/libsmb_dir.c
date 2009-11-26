@@ -25,7 +25,7 @@
 #include "includes.h"
 #include "libsmbclient.h"
 #include "libsmb_internal.h"
-
+#include "../librpc/gen_ndr/cli_srvsvc.h"
 
 /*
  * Routine to open a directory

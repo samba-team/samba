@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "rpcclient.h"
+#include "../librpc/gen_ndr/cli_echo.h"
 
 static NTSTATUS cmd_echo_add_one(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				 int argc, const char **argv)

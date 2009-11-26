@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "rpcclient.h"
+#include "../librpc/gen_ndr/cli_wkssvc.h"
 
 static WERROR cmd_wkssvc_wkstagetinfo(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,

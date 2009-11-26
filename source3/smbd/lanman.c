@@ -27,6 +27,8 @@
 
 #include "includes.h"
 #include "smbd/globals.h"
+#include "../librpc/gen_ndr/cli_samr.h"
+#include "../librpc/gen_ndr/srv_samr.h"
 
 #ifdef CHECK_TYPES
 #undef CHECK_TYPES

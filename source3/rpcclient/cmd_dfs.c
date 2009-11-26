@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "rpcclient.h"
+#include "../librpc/gen_ndr/cli_dfs.h"
 
 /* Check DFS is supported by the remote server */
 

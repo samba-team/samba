@@ -22,6 +22,7 @@
 #include "utils/net_registry_util.h"
 #include "regfio.h"
 #include "reg_objects.h"
+#include "../librpc/gen_ndr/cli_winreg.h"
 
 /*******************************************************************
  connect to a registry hive root (open a registry policy)

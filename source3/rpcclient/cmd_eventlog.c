@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "rpcclient.h"
+#include "../librpc/gen_ndr/cli_eventlog.h"
 
 static NTSTATUS get_eventlog_handle(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
