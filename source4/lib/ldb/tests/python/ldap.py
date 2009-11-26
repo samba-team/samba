@@ -23,6 +23,7 @@ from ldb import ERR_NOT_ALLOWED_ON_NON_LEAF, ERR_OTHER, ERR_INVALID_DN_SYNTAX
 from ldb import ERR_NO_SUCH_ATTRIBUTE, ERR_INSUFFICIENT_ACCESS_RIGHTS
 from ldb import ERR_OBJECT_CLASS_VIOLATION, ERR_NOT_ALLOWED_ON_RDN
 from ldb import ERR_NAMING_VIOLATION, ERR_CONSTRAINT_VIOLATION
+from ldb import ERR_UNDEFINED_ATTRIBUTE_TYPE
 from ldb import Message, MessageElement, Dn
 from ldb import FLAG_MOD_ADD, FLAG_MOD_REPLACE, FLAG_MOD_DELETE
 from samba import Ldb, param, dom_sid_to_rid
@@ -763,6 +764,16 @@ objectClass: container
     def test_primary_group_token(self):
         """Test the primary group token behaviour (hidden-generated-readonly attribute on groups)"""
         print "Testing primary group token behaviour\n"
+
+        try:
+            ldb.add({
+                "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+                "objectclass": "group",
+                "primaryGroupToken": "100"})
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNDEFINED_ATTRIBUTE_TYPE)
+        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
