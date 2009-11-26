@@ -530,7 +530,7 @@ static bool test_lock_auto_unlock(struct torture_context *torture,
 	struct smb2_handle h;
 	uint8_t buf[200];
 	struct smb2_lock lck;
-	struct smb2_lock_element el[2];
+	struct smb2_lock_element el[1];
 
 	ZERO_STRUCT(buf);
 
@@ -541,6 +541,7 @@ static bool test_lock_auto_unlock(struct torture_context *torture,
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	ZERO_STRUCT(lck);
+	ZERO_STRUCT(el[0]);
 	lck.in.locks		= el;
 	lck.in.lock_count	= 0x0001;
 	lck.in.file.handle	= h;
