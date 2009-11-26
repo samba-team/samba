@@ -4,6 +4,7 @@
 #include "librpc/gen_ndr/ndr_wbint.h"
 
 #include "librpc/gen_ndr/ndr_lsa.h"
+#include "librpc/gen_ndr/ndr_netlogon.h"
 _PUBLIC_ enum ndr_err_code ndr_push_wbint_userinfo(struct ndr_push *ndr, int ndr_flags, const struct wbint_userinfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {

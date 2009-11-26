@@ -1,5 +1,5 @@
 #include "idl_types.h"
-import "lsa.idl";
+import "lsa.idl", "netlogon.idl";
 
 [
     uuid("bf09192c-ed60-4928-9dff-d0d7bcb03ed8"),
