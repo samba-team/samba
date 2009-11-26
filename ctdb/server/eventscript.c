@@ -42,6 +42,7 @@ static const char *call_names[] = {
 	"monitor",
 	"status",
 	"shutdown",
+	"reload"
 };
 
 static void ctdb_event_script_timeout(struct event_context *ev, struct timed_event *te, struct timeval t, void *p);
@@ -461,6 +462,7 @@ static struct ctdb_script_list *ctdb_get_script_list(struct ctdb_context *ctdb, 
   which allows it to do blocking calls such as system()
  */
 static int ctdb_run_event_script(struct ctdb_context *ctdb,
+				 bool from_user,
 				 enum ctdb_eventscript_call call,
 				 const char *options)
 {
@@ -469,7 +471,7 @@ static int ctdb_run_event_script(struct ctdb_context *ctdb,
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	struct ctdb_script_list *scripts, *current;
 
-	if (call == CTDB_EVENT_MONITOR) {
+	if (!from_user && call == CTDB_EVENT_MONITOR) {
 		/* This is running in the forked child process. At this stage
 		 * we want to switch from being a ctdb daemon into being a
 		 * client and connect to the real local daemon.
@@ -521,18 +523,23 @@ static int ctdb_run_event_script(struct ctdb_context *ctdb,
 	   them
 	 */
 	for (current=scripts; current; current=current->next) {
+		const char *str = from_user ? "CTDB_CALLED_BY_USER=1 " : "";
+	
 		/* Allow a setting where we run the actual monitor event
 		   from an external source and replace it with
 		   a "status" event that just picks up the actual
 		   status of the event asynchronously.
 		*/
 		if ((ctdb->tunable.use_status_events_for_monitoring != 0) 
-		    && call == CTDB_EVENT_MONITOR) {
-			cmdstr = talloc_asprintf(tmp_ctx, "%s/%s %s", 
+		&&  (call == CTDB_EVENT_MONITOR)
+		&&  !from_user) {
+			cmdstr = talloc_asprintf(tmp_ctx, "%s%s/%s %s",
+					str,
 					ctdb->event_script_dir,
 					current->name, "status");
 		} else {
-			cmdstr = talloc_asprintf(tmp_ctx, "%s/%s %s %s",
+			cmdstr = talloc_asprintf(tmp_ctx, "%s%s/%s %s %s",
+			       	 	str,
 					ctdb->event_script_dir,
 					current->name, call_names[call], options);
 		}
@@ -543,7 +550,7 @@ static int ctdb_run_event_script(struct ctdb_context *ctdb,
 		child_state.start = timeval_current();
 		child_state.script_running = cmdstr;
 
-		if (call == CTDB_EVENT_MONITOR) {
+		if (!from_user && call == CTDB_EVENT_MONITOR) {
 			if (ctdb_ctrl_event_script_start(ctdb, current->name) != 0) {
 				DEBUG(DEBUG_ERR,(__location__ " Failed to start event script monitoring\n"));
 				talloc_free(tmp_ctx);
@@ -576,7 +583,7 @@ static int ctdb_run_event_script(struct ctdb_context *ctdb,
 			DEBUG(DEBUG_ERR,("Script %s returned status 127. Someone just deleted it?\n", cmdstr));
 		}
  
-		if (call == CTDB_EVENT_MONITOR) {
+		if (!from_user && call == CTDB_EVENT_MONITOR) {
 			if (ctdb_ctrl_event_script_stop(ctdb, ret) != 0) {
 				DEBUG(DEBUG_ERR,(__location__ " Failed to stop event script monitoring\n"));
 				talloc_free(tmp_ctx);
@@ -587,7 +594,7 @@ static int ctdb_run_event_script(struct ctdb_context *ctdb,
 		/* return an error if the script failed */
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR,("Event script %s failed with error %d\n", cmdstr, ret));
-			if (call == CTDB_EVENT_MONITOR) {
+			if (!from_user && call == CTDB_EVENT_MONITOR) {
 				if (ctdb_ctrl_event_script_finished(ctdb) != 0) {
 					DEBUG(DEBUG_ERR,(__location__ " Failed to finish event script monitoring\n"));
 					talloc_free(tmp_ctx);
@@ -603,7 +610,7 @@ static int ctdb_run_event_script(struct ctdb_context *ctdb,
 	child_state.start = timeval_current();
 	child_state.script_running = "finished";
 	
-	if (call == CTDB_EVENT_MONITOR) {
+	if (!from_user && call == CTDB_EVENT_MONITOR) {
 		if (ctdb_ctrl_event_script_finished(ctdb) != 0) {
 			DEBUG(DEBUG_ERR,(__location__ " Failed to finish event script monitoring\n"));
 			talloc_free(tmp_ctx);
@@ -786,6 +793,7 @@ static bool check_options(enum ctdb_eventscript_call call, const char *options)
 static int ctdb_event_script_callback_v(struct ctdb_context *ctdb, 
 					void (*callback)(struct ctdb_context *, int, void *),
 					void *private_data,
+					bool from_user,
 					enum ctdb_eventscript_call call,
 					const char *fmt, va_list ap)
 {
@@ -793,7 +801,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	struct ctdb_event_script_state *state;
 	int ret;
 
-	if (call == CTDB_EVENT_MONITOR || call == CTDB_EVENT_STATUS) {
+	if (!from_user && (call == CTDB_EVENT_MONITOR || call == CTDB_EVENT_STATUS)) {
 		/* if this was a "monitor" or a status event, we recycle the
 		   context to start a new monitor event
 		*/
@@ -870,7 +878,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 		close(state->fd[0]);
 		set_close_on_exec(state->fd[1]);
 
-		rt = ctdb_run_event_script(ctdb, state->call, state->options);
+		rt = ctdb_run_event_script(ctdb, from_user, state->call, state->options);
 		/* We must be able to write PIPEBUF bytes at least; if this
 		   somehow fails, the read above will be short. */
 		write(state->fd[1], &rt, sizeof(rt));
@@ -906,6 +914,7 @@ int ctdb_event_script_callback(struct ctdb_context *ctdb,
 			       TALLOC_CTX *mem_ctx,
 			       void (*callback)(struct ctdb_context *, int, void *),
 			       void *private_data,
+			       bool from_user,
 			       enum ctdb_eventscript_call call,
 			       const char *fmt, ...)
 {
@@ -913,7 +922,7 @@ int ctdb_event_script_callback(struct ctdb_context *ctdb,
 	int ret;
 
 	va_start(ap, fmt);
-	ret = ctdb_event_script_callback_v(ctdb, callback, private_data, call, fmt, ap);
+	ret = ctdb_event_script_callback_v(ctdb, callback, private_data, from_user, call, fmt, ap);
 	va_end(ap);
 
 	return ret;
@@ -948,7 +957,7 @@ int ctdb_event_script_args(struct ctdb_context *ctdb, enum ctdb_eventscript_call
 
 	va_start(ap, fmt);
 	ret = ctdb_event_script_callback_v(ctdb,
-			event_script_callback, &status, call, fmt, ap);
+			event_script_callback, &status, false, call, fmt, ap);
 	if (ret != 0) {
 		return ret;
 	}
@@ -1047,9 +1056,9 @@ int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb,
 
 	ctdb_disable_monitoring(ctdb);
 
-	ret = ctdb_event_script_callback(ctdb,
+	ret = ctdb_event_script_callback(ctdb, 
 			 state, run_eventscripts_callback, state,
-			 call, "%s", options);
+			 true, call, "%s", options);
 
 	if (ret != 0) {
 		ctdb_enable_monitoring(ctdb);

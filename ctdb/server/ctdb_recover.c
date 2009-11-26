@@ -964,7 +964,9 @@ int32_t ctdb_control_end_recovery(struct ctdb_context *ctdb,
 
 	ret = ctdb_event_script_callback(ctdb, state,
 					 ctdb_end_recovery_callback, 
-					 state, CTDB_EVENT_RECOVERED, "%s", "");
+					 state, 
+					 false,
+					 CTDB_EVENT_RECOVERED, "%s", "");
 
 	if (ret != 0) {
 		ctdb_enable_monitoring(ctdb);
@@ -1016,7 +1018,8 @@ int32_t ctdb_control_start_recovery(struct ctdb_context *ctdb,
 
 	ret = ctdb_event_script_callback(ctdb, state,
 					 ctdb_start_recovery_callback, 
-					 state, CTDB_EVENT_START_RECOVERY,
+					 state, false,
+					 CTDB_EVENT_START_RECOVERY,
 					 "%s", "");
 
 	if (ret != 0) {
@@ -1229,7 +1232,8 @@ int32_t ctdb_control_stop_node(struct ctdb_context *ctdb, struct ctdb_req_contro
 
 	ret = ctdb_event_script_callback(ctdb, state,
 					 ctdb_stop_node_callback, 
-					 state, CTDB_EVENT_STOPPED, "%s", "");
+					 state, false,
+					 CTDB_EVENT_STOPPED, "%s", "");
 
 	if (ret != 0) {
 		ctdb_enable_monitoring(ctdb);
