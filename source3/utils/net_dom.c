@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
+#include "../librpc/gen_ndr/cli_initshutdown.h"
 
 int net_dom_usage(struct net_context *c, int argc, const char **argv)
 {

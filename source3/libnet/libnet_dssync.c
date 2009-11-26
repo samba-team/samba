@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "libnet/libnet.h"
 #include "../libcli/drsuapi/drsuapi.h"
+#include "../librpc/gen_ndr/cli_drsuapi.h"
 
 /****************************************************************
 ****************************************************************/

@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "winbindd.h"
+#include "../librpc/gen_ndr/cli_netlogon.h"
 
 #ifdef HAVE_ADS
 

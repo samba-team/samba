@@ -24,6 +24,7 @@
 /* This is the implementation of the srvsvc pipe. */
 
 #include "includes.h"
+#include "../librpc/gen_ndr/srv_srvsvc.h"
 
 extern const struct generic_mapping file_generic_mapping;
 

@@ -23,7 +23,8 @@
 
 #include "includes.h"
 #include "client/client_proto.h"
-#include "include/rpc_client.h"
+#include "../librpc/gen_ndr/cli_srvsvc.h"
+
 #ifndef REGISTER
 #define REGISTER 0
 #endif

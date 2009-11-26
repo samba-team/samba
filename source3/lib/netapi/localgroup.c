@@ -23,6 +23,8 @@
 #include "lib/netapi/netapi.h"
 #include "lib/netapi/netapi_private.h"
 #include "lib/netapi/libnetapi.h"
+#include "../librpc/gen_ndr/cli_samr.h"
+#include "../librpc/gen_ndr/cli_lsa.h"
 
 static NTSTATUS libnetapi_samr_lookup_and_open_alias(TALLOC_CTX *mem_ctx,
 						     struct rpc_pipe_client *pipe_cli,

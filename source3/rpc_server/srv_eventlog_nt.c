@@ -21,6 +21,7 @@
  */
 
 #include "includes.h"
+#include "../librpc/gen_ndr/srv_eventlog.h"
 
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

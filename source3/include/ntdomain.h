@@ -28,6 +28,8 @@
  * in the NTDOM branch - it didn't belong there.
  */
 
+#define prs_init_empty( _ps_, _ctx_, _io_ ) (void) prs_init((_ps_), 0, (_ctx_), (_io_))
+
 typedef struct _prs_struct {
 	bool io; /* parsing in or out of data stream */
 	/* 

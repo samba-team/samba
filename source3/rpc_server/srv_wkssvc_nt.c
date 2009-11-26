@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "libnet/libnet.h"
 #include "../libcli/auth/libcli_auth.h"
+#include "../librpc/gen_ndr/srv_wkssvc.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

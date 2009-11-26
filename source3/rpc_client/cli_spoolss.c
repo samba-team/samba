@@ -23,7 +23,7 @@
 */
 
 #include "includes.h"
-#include "rpc_client.h"
+#include "../librpc/gen_ndr/cli_spoolss.h"
 
 /**********************************************************************
  convencience wrapper around rpccli_spoolss_OpenPrinterEx
