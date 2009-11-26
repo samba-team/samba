@@ -572,7 +572,7 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
 
         
 def secretsdb_self_join(secretsdb, domain, 
-                        netbiosname, domainsid, machinepass, 
+                        netbiosname, machinepass, domainsid=None,
                         realm=None, dnsdomain=None,
                         keytab_path=None, 
                         key_version_number=1,
@@ -607,7 +607,8 @@ def secretsdb_self_join(secretsdb, domain,
     msg["secret"] = [machinepass]
     msg["samAccountName"] = ["%s$" % netbiosname]
     msg["secureChannelType"] = [str(secure_channel_type)]
-    msg["objectSid"] = [ndr_pack(domainsid)]
+    if domainsid is not None:
+        msg["objectSid"] = [ndr_pack(domainsid)]
     
     res = secretsdb.search(base="cn=Primary Domains", 
                            attrs=attrs, 
@@ -1267,7 +1268,7 @@ def provision(setup_dir, message, session_info,
 
         # Only make a zone file on the first DC, it should be replicated with DNS replication
         if serverrole == "domain controller":
-            secretsdb_self_join(secrets_ldb, domain=domain,
+            secretsdb_self_join(secrets_ldb, domain=names.domain,
                                 realm=names.realm,
                                 dnsdomain=names.dnsdomain,
                                 netbiosname=names.netbiosname,
