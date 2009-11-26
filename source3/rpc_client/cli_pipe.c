@@ -18,11 +18,9 @@
  */
 
 #include "includes.h"
-#include "../libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/cli_epmapper.h"
 #include "../librpc/gen_ndr/ndr_schannel.h"
 #include "../libcli/auth/schannel.h"
-#include "../libcli/auth/schannel_proto.h"
 #include "../libcli/auth/spnego.h"
 
 #undef DBGC_CLASS
