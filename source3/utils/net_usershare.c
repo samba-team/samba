@@ -901,7 +901,7 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 	}
 
 	/* Check this is the same as the file we opened. */
-	if (sys_fstat(tmpfd, &sbuf, lp_fake_dir_create_times()) != 0) {
+	if (sys_fstat(tmpfd, &sbuf, false) != 0) {
 		d_fprintf(stderr,
 			  _("net usershare add: cannot fstat tmp file %s\n"),
 			  full_path_tmp );
