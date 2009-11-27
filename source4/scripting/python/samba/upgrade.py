@@ -251,7 +251,7 @@ def upgrade_provision(samba3, setup_dir, message, credentials, session_info, smb
                        domain=domainname, domainsid=domainsid, domainguid=domainguid, 
                        machinepass=machinepass, serverrole=serverrole, targetdir=targetdir)
 
-    import_wins(Ldb(result.paths.winsdb), samba3.get_wins_db())
+    # FIXME: import_wins(Ldb(result.paths.winsdb), samba3.get_wins_db())
 
     # FIXME: import_registry(registry.Registry(), samba3.get_registry())
 
