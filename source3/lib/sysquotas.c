@@ -60,7 +60,7 @@ static int sys_path_to_bdev(const char *path, char **mntpath, char **bdev, char 
 	(*bdev) = NULL;
 	(*fs) = NULL;
 	
-	if ( sys_stat(path, &S, lp_fake_dir_create_times()) == -1 )
+	if ( sys_stat(path, &S, false) == -1 )
 		return (-1);
 
 	devno = S.st_ex_dev ;
@@ -71,8 +71,7 @@ static int sys_path_to_bdev(const char *path, char **mntpath, char **bdev, char 
 	}
   
 	while ((mnt = getmntent(fp))) {
-		if ( sys_stat(mnt->mnt_dir, &S, lp_fake_dir_create_times())
-		     == -1 )
+		if ( sys_stat(mnt->mnt_dir, &S, false) == -1 )
 			continue ;
 
 		if (S.st_ex_dev == devno) {
@@ -115,7 +114,7 @@ static int sys_path_to_bdev(const char *path, char **mntpath, char **bdev, char 
 	
 	/* find the block device file */
 
-	if ((ret=sys_stat(path, &S, lp_fake_dir_create_times()))!=0) {
+	if ((ret=sys_stat(path, &S, false))!=0) {
 		return ret;
 	}
 	
