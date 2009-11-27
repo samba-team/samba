@@ -27,6 +27,7 @@
 #include "utils/ntlm_auth.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../libcli/auth/spnego.h"
+#include "smb_krb5.h"
 #include <iniparser.h>
 
 #ifndef PAM_WINBIND_CONFIG_FILE

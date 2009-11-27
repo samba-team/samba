@@ -27,6 +27,7 @@ create dns_resolver * * /usr/local/sbin/cifs.upcall %k
 
 #include "includes.h"
 #include "../libcli/auth/spnego.h"
+#include "smb_krb5.h"
 #include <keyutils.h>
 #include <getopt.h>
 
