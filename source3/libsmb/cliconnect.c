@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "smb_krb5.h"
 
 static const struct {
 	int prot;

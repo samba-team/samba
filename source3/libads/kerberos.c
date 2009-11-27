@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "smb_krb5.h"
 
 #ifdef HAVE_KRB5
 
