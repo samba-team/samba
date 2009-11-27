@@ -1793,7 +1793,7 @@ int tar_parseargs(int argc, char *argv[], const char *Optarg, int Optind)
 					SMB_STRUCT_STAT stbuf;
 
 					if (sys_stat(argv[Optind], &stbuf,
-						     lp_fake_dir_create_times()) == 0) {
+						     false) == 0) {
 						newer_than = convert_timespec_to_time_t(
 							stbuf.st_ex_mtime);
 						DEBUG(1,("Getting files newer than %s",
