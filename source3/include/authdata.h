@@ -21,8 +21,6 @@
 #ifndef _AUTHDATA_H
 #define _AUTHDATA_H
 
-#include "rpc_misc.h"
-
 #define PAC_TYPE_LOGON_INFO 1
 #define PAC_TYPE_SERVER_CHECKSUM 6
 #define PAC_TYPE_PRIVSVR_CHECKSUM 7
