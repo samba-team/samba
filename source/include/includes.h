@@ -679,7 +679,6 @@ typedef char fstring[FSTRING_LEN];
 #include "passdb.h"
 #include "rpc_secdes.h"
 #include "gpo.h"
-#include "authdata.h"
 #include "msdfs.h"
 #include "rap.h"
 #include "md5.h"
