@@ -3325,10 +3325,7 @@ if test x"$with_ads_support" != x"no"; then
       samba_cv_HAVE_KRB5_DEPRECATED_WITH_IDENTIFIER=no)])
 
   if test x"$samba_cv_HAVE_KRB5_DEPRECATED_WITH_IDENTIFIER" = x"yes"; then
-    AC_DEFINE(KRB5_DEPRECATED, 1,
-	       [Whether to use deprecated krb5 interfaces])
-  else
-    AC_DEFINE(KRB5_DEPRECATED,,
+    AC_DEFINE(HAVE_KRB5_DEPRECATED_WITH_IDENTIFIER, 1,
 	       [Whether to use deprecated krb5 interfaces])
   fi
 fi

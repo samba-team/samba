@@ -20,10 +20,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define KRB5_PRIVATE    1       /* this file uses PRIVATE interfaces! */
-/* this file uses DEPRECATED interfaces! */
-
 #include "includes.h"
+#include "smb_krb5.h"
 
 #ifdef HAVE_KRB5
 

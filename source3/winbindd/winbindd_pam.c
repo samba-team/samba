@@ -26,6 +26,7 @@
 #include "winbindd.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/cli_samr.h"
+#include "smb_krb5.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
