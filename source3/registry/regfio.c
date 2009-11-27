@@ -45,7 +45,7 @@ static int write_block( REGF_FILE *file, prs_struct *ps, uint32 offset )
 
 	/* check for end of file */
 
-	if (sys_fstat(file->fd, &sbuf, lp_fake_dir_create_times())) {
+	if (sys_fstat(file->fd, &sbuf, false)) {
 		DEBUG(0,("write_block: stat() failed! (%s)\n", strerror(errno)));
 		return -1;
 	}
