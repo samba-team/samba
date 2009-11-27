@@ -17,6 +17,8 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "smb_krb5.h"
+
 #ifdef HAVE_KRB5
 
 struct libnet_keytab_entry {
