@@ -18,7 +18,10 @@ cd $SRCDIR || exit 1
 fix_python_path() {
     f="$1"
     egrep 'sys.path.insert.*bin/python' $f > /dev/null && {
-	sed -i "s|\(sys.path.insert.*\)bin/python\(.*\)$|\1$PYTHONDIR\2|g" $f || exit 1
+	# old systems don't have sed -i :-(
+	sed "s|\(sys.path.insert.*\)bin/python\(.*\)$|\1$PYTHONDIR\2|g" < $f > $f.$$ || exit 1
+	mv -f $f.$$ $f || exit 1
+	chmod +x $f
     }
 }
 
