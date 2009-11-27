@@ -1941,15 +1941,12 @@ NTSTATUS pvfs_can_update_file_size(struct pvfs_state *pvfs,
 			  NTCREATEX_SHARE_ACCESS_WRITE |
 			  NTCREATEX_SHARE_ACCESS_DELETE;
 	/*
-	 * I would have thought that we would need to pass
-	 * SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA here too
-	 *
-	 * But you only need SEC_FILE_WRITE_ATTRIBUTE permissions
-	 * to set the filesize.
-	 *
-	 * --metze
+	 * this code previous set only SEC_FILE_WRITE_ATTRIBUTE, with
+	 * a comment that this seemed to be wrong, but matched windows
+	 * behaviour. It now appears that this windows behaviour is
+	 * just a bug.
 	 */
-	access_mask	= SEC_FILE_WRITE_ATTRIBUTE;
+	access_mask	= SEC_FILE_WRITE_ATTRIBUTE | SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA;
 	delete_on_close	= false;
 	break_to_none	= true;
 
