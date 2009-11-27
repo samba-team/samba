@@ -1718,6 +1718,32 @@ static void convert_level_6_to_level3(struct spoolss_AddDriverInfo3 *dst,
 }
 
 /****************************************************************************
+ This function sucks and should be replaced. JRA.
+****************************************************************************/
+
+static void convert_level_8_to_level3(TALLOC_CTX *mem_ctx,
+				      struct spoolss_AddDriverInfo3 *dst,
+				      const struct spoolss_DriverInfo8 *src)
+{
+	dst->version		= src->version;
+	dst->driver_name	= src->driver_name;
+	dst->architecture 	= src->architecture;
+	dst->driver_path	= src->driver_path;
+	dst->data_file		= src->data_file;
+	dst->config_file	= src->config_file;
+	dst->help_file		= src->help_file;
+	dst->monitor_name	= src->monitor_name;
+	dst->default_datatype	= src->default_datatype;
+	if (src->dependent_files) {
+		dst->dependent_files = talloc_zero(mem_ctx, struct spoolss_StringArray);
+		if (!dst->dependent_files) return;
+		dst->dependent_files->string = src->dependent_files;
+	} else {
+		dst->dependent_files = NULL;
+	}
+}
+
+/****************************************************************************
 ****************************************************************************/
 
 static WERROR move_driver_file_to_download_area(TALLOC_CTX *mem_ctx,
@@ -2120,15 +2146,19 @@ done:
 /****************************************************************************
 ****************************************************************************/
 
-static uint32 add_a_printer_driver_6(struct spoolss_AddDriverInfo6 *driver)
+static uint32_t add_a_printer_driver_8(struct spoolss_DriverInfo8 *driver)
 {
+	TALLOC_CTX *mem_ctx = talloc_new(talloc_tos());
 	struct spoolss_AddDriverInfo3 info3;
+	uint32_t ret;
 
-	convert_level_6_to_level3(&info3, driver);
+	convert_level_8_to_level3(mem_ctx, &info3, driver);
 
-	return add_a_printer_driver_3(&info3);
+	ret = add_a_printer_driver_3(&info3);
+	talloc_free(mem_ctx);
+
+	return ret;
 }
-
 
 /****************************************************************************
 ****************************************************************************/
@@ -4602,93 +4632,158 @@ uint32 free_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level)
 
 /****************************************************************************
 ****************************************************************************/
+
 uint32_t add_a_printer_driver(TALLOC_CTX *mem_ctx,
 			      struct spoolss_AddDriverInfoCtr *r,
 			      char **driver_name,
 			      uint32_t *version)
 {
-	uint32 result;
+	struct spoolss_DriverInfo8 info8;
+
+	ZERO_STRUCT(info8);
+
 	DEBUG(10,("adding a printer at level [%d]\n", r->level));
 
 	switch (r->level) {
 	case 3:
-		result = add_a_printer_driver_3(r->info.info3);
-		if (result == 0) {
-			*driver_name = talloc_strdup(mem_ctx, r->info.info3->driver_name);
-			if (!*driver_name) {
-				return -1;
-			}
-			*version = r->info.info3->version;
+		info8.version		= r->info.info3->version;
+		info8.driver_name	= r->info.info3->driver_name;
+		info8.architecture	= r->info.info3->architecture;
+		info8.driver_path	= r->info.info3->driver_path;
+		info8.data_file		= r->info.info3->data_file;
+		info8.config_file	= r->info.info3->config_file;
+		info8.help_file		= r->info.info3->help_file;
+		info8.monitor_name	= r->info.info3->monitor_name;
+		info8.default_datatype	= r->info.info3->default_datatype;
+		if (r->info.info3->dependent_files && r->info.info3->dependent_files->string) {
+			info8.dependent_files	= r->info.info3->dependent_files->string;
 		}
 		break;
 	case 6:
-		result = add_a_printer_driver_6(r->info.info6);
-		if (result == 0) {
-			*driver_name = talloc_strdup(mem_ctx, r->info.info6->driver_name);
-			if (!*driver_name) {
-				return -1;
-			}
-			*version = r->info.info6->version;
+		info8.version		= r->info.info6->version;
+		info8.driver_name	= r->info.info6->driver_name;
+		info8.architecture	= r->info.info6->architecture;
+		info8.driver_path	= r->info.info6->driver_path;
+		info8.data_file		= r->info.info6->data_file;
+		info8.config_file	= r->info.info6->config_file;
+		info8.help_file		= r->info.info6->help_file;
+		info8.monitor_name	= r->info.info6->monitor_name;
+		info8.default_datatype	= r->info.info6->default_datatype;
+		if (r->info.info6->dependent_files && r->info.info6->dependent_files->string) {
+			info8.dependent_files	= r->info.info6->dependent_files->string;
 		}
+		info8.driver_date	= r->info.info6->driver_date;
+		info8.driver_version	= r->info.info6->driver_version;
+		info8.manufacturer_name = r->info.info6->manufacturer_name;
+		info8.manufacturer_url	= r->info.info6->manufacturer_url;
+		info8.hardware_id	= r->info.info6->hardware_id;
+		info8.provider		= r->info.info6->provider;
+		break;
+	case 8:
+		info8.version		= r->info.info8->version;
+		info8.driver_name	= r->info.info8->driver_name;
+		info8.architecture	= r->info.info8->architecture;
+		info8.driver_path	= r->info.info8->driver_path;
+		info8.data_file		= r->info.info8->data_file;
+		info8.config_file	= r->info.info8->config_file;
+		info8.help_file		= r->info.info8->help_file;
+		info8.monitor_name	= r->info.info8->monitor_name;
+		info8.default_datatype	= r->info.info8->default_datatype;
+		if (r->info.info8->dependent_files && r->info.info8->dependent_files->string) {
+			info8.dependent_files	= r->info.info8->dependent_files->string;
+		}
+		if (r->info.info8->previous_names && r->info.info8->previous_names->string) {
+			info8.previous_names	= r->info.info8->previous_names->string;
+		}
+		info8.driver_date	= r->info.info8->driver_date;
+		info8.driver_version	= r->info.info8->driver_version;
+		info8.manufacturer_name = r->info.info8->manufacturer_name;
+		info8.manufacturer_url	= r->info.info8->manufacturer_url;
+		info8.hardware_id	= r->info.info8->hardware_id;
+		info8.provider		= r->info.info8->provider;
+		info8.print_processor	= r->info.info8->print_processor;
+		info8.vendor_setup	= r->info.info8->vendor_setup;
+		if (r->info.info8->color_profiles && r->info.info8->color_profiles->string) {
+			info8.color_profiles = r->info.info8->color_profiles->string;
+		}
+		info8.inf_path		= r->info.info8->inf_path;
+		info8.printer_driver_attributes = r->info.info8->printer_driver_attributes;
+		if (r->info.info8->core_driver_dependencies && r->info.info8->core_driver_dependencies->string) {
+			info8.core_driver_dependencies = r->info.info8->core_driver_dependencies->string;
+		}
+		info8.min_inbox_driver_ver_date = r->info.info8->min_inbox_driver_ver_date;
+		info8.min_inbox_driver_ver_version = r->info.info8->min_inbox_driver_ver_version;
 		break;
 	default:
-		result = 1;
-		break;
+		return -1;
 	}
 
-	return result;
+	*driver_name = talloc_strdup(mem_ctx, info8.driver_name);
+	if (!*driver_name) {
+		return -1;
+	}
+	*version = info8.version;
+
+	return add_a_printer_driver_8(&info8);
 }
+
 /****************************************************************************
 ****************************************************************************/
 
 WERROR get_a_printer_driver(TALLOC_CTX *mem_ctx,
-			    union spoolss_DriverInfo **driver_p, uint32_t level,
+			    struct spoolss_DriverInfo8 **driver,
 			    const char *drivername, const char *architecture,
 			    uint32_t version)
 {
 	WERROR result;
-	union spoolss_DriverInfo *driver;
+	struct spoolss_DriverInfo3 info3;
+	struct spoolss_DriverInfo8 *info8;
 
-	driver = talloc_zero(mem_ctx, union spoolss_DriverInfo);
-	W_ERROR_HAVE_NO_MEMORY(driver);
+	ZERO_STRUCT(info3);
 
-	switch (level) {
-		case 3:
-			/* Sometime we just want any version of the driver */
+	/* Sometime we just want any version of the driver */
 
-			if ( version == DRIVER_ANY_VERSION ) {
-				/* look for Win2k first and then for NT4 */
-				result = get_a_printer_driver_3(driver,
-								&driver->info3,
-								drivername,
-								architecture, 3);
-
-				if ( !W_ERROR_IS_OK(result) ) {
-					result = get_a_printer_driver_3(driver,
-									&driver->info3,
-									drivername,
-									architecture, 2);
-				}
-			} else {
-				result = get_a_printer_driver_3(driver,
-								&driver->info3,
-								drivername,
-								architecture,
-								version);
-			}
-			break;
-
-		default:
-			result=W_ERROR(1);
-			break;
+	if (version == DRIVER_ANY_VERSION) {
+		/* look for Win2k first and then for NT4 */
+		result = get_a_printer_driver_3(mem_ctx,
+						&info3,
+						drivername,
+						architecture, 3);
+		if (!W_ERROR_IS_OK(result)) {
+			result = get_a_printer_driver_3(mem_ctx,
+							&info3,
+							drivername,
+							architecture, 2);
+		}
+	} else {
+		result = get_a_printer_driver_3(mem_ctx,
+						&info3,
+						drivername,
+						architecture,
+						version);
 	}
 
 	if (!W_ERROR_IS_OK(result)) {
-		TALLOC_FREE(driver);
 		return result;
 	}
 
-	*driver_p = driver;
+	info8 = talloc_zero(mem_ctx, struct spoolss_DriverInfo8);
+	if (!info8) {
+		return WERR_NOMEM;
+	}
+
+	info8->version		= info3.version;
+	info8->driver_name	= info3.driver_name;
+	info8->architecture	= info3.architecture;
+	info8->driver_path	= info3.driver_path;
+	info8->data_file	= info3.data_file;
+	info8->config_file	= info3.config_file;
+	info8->help_file	= info3.help_file;
+	info8->dependent_files	= info3.dependent_files;
+	info8->monitor_name	= info3.monitor_name;
+	info8->default_datatype = info3.default_datatype;
+
+	*driver = info8;
 
 	return WERR_OK;
 }
@@ -4696,7 +4791,7 @@ WERROR get_a_printer_driver(TALLOC_CTX *mem_ctx,
 /****************************************************************************
 ****************************************************************************/
 
-uint32_t free_a_printer_driver(union spoolss_DriverInfo *driver)
+uint32_t free_a_printer_driver(struct spoolss_DriverInfo8 *driver)
 {
 	talloc_free(driver);
 	return 0;
@@ -4708,15 +4803,16 @@ uint32_t free_a_printer_driver(union spoolss_DriverInfo *driver)
   to a printer
 ****************************************************************************/
 
-bool printer_driver_in_use(const struct spoolss_DriverInfo3 *info_3)
+bool printer_driver_in_use(const struct spoolss_DriverInfo8 *r)
 {
 	int snum;
 	int n_services = lp_numservices();
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	bool in_use = False;
 
-	if ( !info_3 )
-		return False;
+	if (!r) {
+		return false;
+	}
 
 	DEBUG(10,("printer_driver_in_use: Beginning search through ntprinters.tdb...\n"));
 
@@ -4729,7 +4825,7 @@ bool printer_driver_in_use(const struct spoolss_DriverInfo3 *info_3)
 		if ( !W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, lp_servicename(snum))) )
 			continue;
 
-		if (strequal(info_3->driver_name, printer->info_2->drivername))
+		if (strequal(r->driver_name, printer->info_2->drivername))
 			in_use = True;
 
 		free_a_printer( &printer, 2 );
@@ -4738,28 +4834,28 @@ bool printer_driver_in_use(const struct spoolss_DriverInfo3 *info_3)
 	DEBUG(10,("printer_driver_in_use: Completed search through ntprinters.tdb...\n"));
 
 	if ( in_use ) {
-		union spoolss_DriverInfo *d;
+		struct spoolss_DriverInfo8 *d;
 		WERROR werr;
 
-		DEBUG(5,("printer_driver_in_use: driver \"%s\" is currently in use\n", info_3->driver_name));
+		DEBUG(5,("printer_driver_in_use: driver \"%s\" is currently in use\n", r->driver_name));
 
 		/* we can still remove the driver if there is one of
 		   "Windows NT x86" version 2 or 3 left */
 
-		if (!strequal("Windows NT x86", info_3->architecture)) {
-			werr = get_a_printer_driver(talloc_tos(), &d, 3, info_3->driver_name, "Windows NT x86", DRIVER_ANY_VERSION);
+		if (!strequal("Windows NT x86", r->architecture)) {
+			werr = get_a_printer_driver(talloc_tos(), &d, r->driver_name, "Windows NT x86", DRIVER_ANY_VERSION);
 		}
 		else {
-			switch (info_3->version) {
+			switch (r->version) {
 			case 2:
-				werr = get_a_printer_driver(talloc_tos(), &d, 3, info_3->driver_name, "Windows NT x86", 3);
+				werr = get_a_printer_driver(talloc_tos(), &d, r->driver_name, "Windows NT x86", 3);
 				break;
 			case 3:
-				werr = get_a_printer_driver(talloc_tos(), &d, 3, info_3->driver_name, "Windows NT x86", 2);
+				werr = get_a_printer_driver(talloc_tos(), &d, r->driver_name, "Windows NT x86", 2);
 				break;
 			default:
 				DEBUG(0,("printer_driver_in_use: ERROR! unknown driver version (%d)\n",
-					info_3->version));
+					r->version));
 				werr = WERR_UNKNOWN_PRINTER_DRIVER;
 				break;
 			}
@@ -4784,7 +4880,7 @@ bool printer_driver_in_use(const struct spoolss_DriverInfo3 *info_3)
  Check to see if a ogiven file is in use by *info
  *********************************************************************/
 
-static bool drv_file_in_use(const char *file, const struct spoolss_DriverInfo3 *info)
+static bool drv_file_in_use(const char *file, const struct spoolss_DriverInfo8 *info)
 {
 	int i = 0;
 
@@ -4848,8 +4944,8 @@ static void trim_dependent_file(TALLOC_CTX *mem_ctx, const char **files, int idx
  *********************************************************************/
 
 static bool trim_overlap_drv_files(TALLOC_CTX *mem_ctx,
-				   struct spoolss_DriverInfo3 *src,
-				   const struct spoolss_DriverInfo3 *drv)
+				   struct spoolss_DriverInfo8 *src,
+				   const struct spoolss_DriverInfo8 *drv)
 {
 	bool 	in_use = False;
 	int 	i = 0;
@@ -4922,13 +5018,13 @@ static bool trim_overlap_drv_files(TALLOC_CTX *mem_ctx,
 ****************************************************************************/
 
 bool printer_driver_files_in_use(TALLOC_CTX *mem_ctx,
-				 struct spoolss_DriverInfo3 *info)
+				 struct spoolss_DriverInfo8 *info)
 {
 	int 				i;
 	int 				ndrivers;
 	uint32 				version;
 	fstring 			*list = NULL;
-	union spoolss_DriverInfo 	*driver;
+	struct spoolss_DriverInfo8 	*driver;
 	bool in_use = false;
 
 	if ( !info )
@@ -4955,7 +5051,7 @@ bool printer_driver_files_in_use(TALLOC_CTX *mem_ctx,
 
 		driver = NULL;
 
-		if (!W_ERROR_IS_OK(get_a_printer_driver(talloc_tos(), &driver, 3, list[i], info->architecture, version))) {
+		if (!W_ERROR_IS_OK(get_a_printer_driver(talloc_tos(), &driver, list[i], info->architecture, version))) {
 			SAFE_FREE(list);
 			return True;
 		}
@@ -4963,8 +5059,8 @@ bool printer_driver_files_in_use(TALLOC_CTX *mem_ctx,
 		/* check if d2 uses any files from d1 */
 		/* only if this is a different driver than the one being deleted */
 
-		if (!strequal(info->driver_name, driver->info3.driver_name)) {
-			if (trim_overlap_drv_files(mem_ctx, info, &driver->info3)) {
+		if (!strequal(info->driver_name, driver->driver_name)) {
+			if (trim_overlap_drv_files(mem_ctx, info, driver)) {
 				/* mz: Do not instantly return -
 				 * we need to ensure this file isn't
 				 * also in use by other drivers. */
@@ -5007,7 +5103,7 @@ static NTSTATUS driver_unlink_internals(connection_struct *conn,
 ****************************************************************************/
 
 static bool delete_driver_files(struct pipes_struct *rpc_pipe,
-				const struct spoolss_DriverInfo3 *info_3)
+				const struct spoolss_DriverInfo8 *r)
 {
 	int i = 0;
 	char *s;
@@ -5019,11 +5115,12 @@ static bool delete_driver_files(struct pipes_struct *rpc_pipe,
 	int printdollar_snum;
 	bool ret = false;
 
-	if ( !info_3 )
-		return False;
+	if (!r) {
+		return false;
+	}
 
 	DEBUG(6,("delete_driver_files: deleting driver [%s] - version [%d]\n",
-		info_3->driver_name, info_3->version));
+		r->driver_name, r->version));
 
 	fstrcpy(printdollar, "print$");
 
@@ -5049,32 +5146,32 @@ static bool delete_driver_files(struct pipes_struct *rpc_pipe,
 	/* now delete the files; must strip the '\print$' string from
 	   fron of path                                                */
 
-	if (info_3->driver_path && info_3->driver_path[0]) {
-		if ((s = strchr(&info_3->driver_path[1], '\\')) != NULL) {
+	if (r->driver_path && r->driver_path[0]) {
+		if ((s = strchr(&r->driver_path[1], '\\')) != NULL) {
 			file = s;
 			DEBUG(10,("deleting driverfile [%s]\n", s));
 			driver_unlink_internals(conn, file);
 		}
 	}
 
-	if (info_3->config_file && info_3->config_file[0]) {
-		if ((s = strchr(&info_3->config_file[1], '\\')) != NULL) {
+	if (r->config_file && r->config_file[0]) {
+		if ((s = strchr(&r->config_file[1], '\\')) != NULL) {
 			file = s;
 			DEBUG(10,("deleting configfile [%s]\n", s));
 			driver_unlink_internals(conn, file);
 		}
 	}
 
-	if (info_3->data_file && info_3->data_file[0]) {
-		if ((s = strchr(&info_3->data_file[1], '\\')) != NULL) {
+	if (r->data_file && r->data_file[0]) {
+		if ((s = strchr(&r->data_file[1], '\\')) != NULL) {
 			file = s;
 			DEBUG(10,("deleting datafile [%s]\n", s));
 			driver_unlink_internals(conn, file);
 		}
 	}
 
-	if (info_3->help_file && info_3->help_file[0]) {
-		if ((s = strchr( &info_3->help_file[1], '\\')) != NULL) {
+	if (r->help_file && r->help_file[0]) {
+		if ((s = strchr(&r->help_file[1], '\\')) != NULL) {
 			file = s;
 			DEBUG(10,("deleting helpfile [%s]\n", s));
 			driver_unlink_internals(conn, file);
@@ -5083,13 +5180,13 @@ static bool delete_driver_files(struct pipes_struct *rpc_pipe,
 
 	/* check if we are done removing files */
 
-	if (info_3->dependent_files) {
-		while (info_3->dependent_files[i] && info_3->dependent_files[i][0]) {
+	if (r->dependent_files) {
+		while (r->dependent_files[i] && r->dependent_files[i][0]) {
 			char *p;
 
 			/* bypass the "\print$" portion of the path */
 
-			if ((p = strchr(info_3->dependent_files[i]+1, '\\')) != NULL) {
+			if ((p = strchr(r->dependent_files[i]+1, '\\')) != NULL) {
 				file = p;
 				DEBUG(10,("deleting dependent file [%s]\n", file));
 				driver_unlink_internals(conn, file);
@@ -5116,7 +5213,7 @@ static bool delete_driver_files(struct pipes_struct *rpc_pipe,
  ***************************************************************************/
 
 WERROR delete_printer_driver(struct pipes_struct *rpc_pipe,
-			     const struct spoolss_DriverInfo3 *info_3,
+			     const struct spoolss_DriverInfo8 *r,
 			     uint32 version, bool delete_files )
 {
 	char *key = NULL;
@@ -5125,12 +5222,12 @@ WERROR delete_printer_driver(struct pipes_struct *rpc_pipe,
 
 	/* delete the tdb data first */
 
-	arch = get_short_archi(info_3->architecture);
+	arch = get_short_archi(r->architecture);
 	if (!arch) {
 		return WERR_UNKNOWN_PRINTER_DRIVER;
 	}
 	if (asprintf(&key, "%s%s/%d/%s", DRIVERS_PREFIX,
-			arch, version, info_3->driver_name) < 0) {
+			arch, version, r->driver_name) < 0) {
 		return WERR_NOMEM;
 	}
 
@@ -5163,7 +5260,7 @@ WERROR delete_printer_driver(struct pipes_struct *rpc_pipe,
 	 */
 
 	if ( delete_files )
-		delete_driver_files(rpc_pipe, info_3);
+		delete_driver_files(rpc_pipe, r);
 
 	DEBUG(5,("delete_printer_driver: driver delete successful [%s]\n", key));
 	SAFE_FREE(key);

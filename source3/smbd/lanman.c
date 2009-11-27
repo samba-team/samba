@@ -648,7 +648,7 @@ static void fill_printq_info_52(connection_struct *conn, int snum,
 {
 	int 				i;
 	fstring 			location;
-	union spoolss_DriverInfo *driver = NULL;
+	struct spoolss_DriverInfo8 *driver = NULL;
 	NT_PRINTER_INFO_LEVEL 		*printer = NULL;
 
 	if ( !W_ERROR_IS_OK(get_a_printer( NULL, &printer, 2, lp_servicename(snum))) ) {
@@ -657,7 +657,7 @@ static void fill_printq_info_52(connection_struct *conn, int snum,
 		goto err;
 	}
 
-	if (!W_ERROR_IS_OK(get_a_printer_driver(talloc_tos(), &driver, 3, printer->info_2->drivername,
+	if (!W_ERROR_IS_OK(get_a_printer_driver(talloc_tos(), &driver, printer->info_2->drivername,
 		"Windows 4.0", 0)) )
 	{
 		DEBUG(3,("fill_printq_info_52: Failed to lookup driver [%s]\n", 
@@ -665,38 +665,38 @@ static void fill_printq_info_52(connection_struct *conn, int snum,
 		goto err;
 	}
 
-	trim_string((char *)driver->info3.driver_path, "\\print$\\WIN40\\0\\", 0);
-	trim_string((char *)driver->info3.data_file, "\\print$\\WIN40\\0\\", 0);
-	trim_string((char *)driver->info3.help_file, "\\print$\\WIN40\\0\\", 0);
+	trim_string((char *)driver->driver_path, "\\print$\\WIN40\\0\\", 0);
+	trim_string((char *)driver->data_file, "\\print$\\WIN40\\0\\", 0);
+	trim_string((char *)driver->help_file, "\\print$\\WIN40\\0\\", 0);
 
 	PACKI(desc, "W", 0x0400);                     /* don't know */
-	PACKS(desc, "z", driver->info3.driver_name);        /* long printer name */
-	PACKS(desc, "z", driver->info3.driver_path);  /* Driverfile Name */
-	PACKS(desc, "z", driver->info3.data_file);    /* Datafile name */
-	PACKS(desc, "z", driver->info3.monitor_name); /* language monitor */
+	PACKS(desc, "z", driver->driver_name);        /* long printer name */
+	PACKS(desc, "z", driver->driver_path);  /* Driverfile Name */
+	PACKS(desc, "z", driver->data_file);    /* Datafile name */
+	PACKS(desc, "z", driver->monitor_name); /* language monitor */
 
 	fstrcpy(location, "\\\\%L\\print$\\WIN40\\0");
 	standard_sub_basic( "", "", location, sizeof(location)-1 );
 	PACKS(desc,"z", location);                          /* share to retrieve files */
 
-	PACKS(desc,"z", driver->info3.default_datatype);    /* default data type */
-	PACKS(desc,"z", driver->info3.help_file);           /* helpfile name */
-	PACKS(desc,"z", driver->info3.driver_path);               /* driver name */
+	PACKS(desc,"z", driver->default_datatype);    /* default data type */
+	PACKS(desc,"z", driver->help_file);           /* helpfile name */
+	PACKS(desc,"z", driver->driver_path);               /* driver name */
 
-	DEBUG(3,("Printer Driver Name: %s:\n",driver->info3.driver_name));
-	DEBUG(3,("Driver: %s:\n",driver->info3.driver_path));
-	DEBUG(3,("Data File: %s:\n",driver->info3.data_file));
-	DEBUG(3,("Language Monitor: %s:\n",driver->info3.monitor_name));
+	DEBUG(3,("Printer Driver Name: %s:\n",driver->driver_name));
+	DEBUG(3,("Driver: %s:\n",driver->driver_path));
+	DEBUG(3,("Data File: %s:\n",driver->data_file));
+	DEBUG(3,("Language Monitor: %s:\n",driver->monitor_name));
 	DEBUG(3,("Driver Location: %s:\n",location));
-	DEBUG(3,("Data Type: %s:\n",driver->info3.default_datatype));
-	DEBUG(3,("Help File: %s:\n",driver->info3.help_file));
+	DEBUG(3,("Data Type: %s:\n",driver->default_datatype));
+	DEBUG(3,("Help File: %s:\n",driver->help_file));
 	PACKI(desc,"N",count);                     /* number of files to copy */
 
-	for ( i=0; i<count && driver->info3.dependent_files && *driver->info3.dependent_files[i]; i++)
+	for ( i=0; i<count && driver->dependent_files && *driver->dependent_files[i]; i++)
 	{
-		trim_string((char *)driver->info3.dependent_files[i], "\\print$\\WIN40\\0\\", 0);
-		PACKS(desc,"z",driver->info3.dependent_files[i]);         /* driver files to copy */
-		DEBUG(3,("Dependent File: %s:\n", driver->info3.dependent_files[i]));
+		trim_string((char *)driver->dependent_files[i], "\\print$\\WIN40\\0\\", 0);
+		PACKS(desc,"z",driver->dependent_files[i]);         /* driver files to copy */
+		DEBUG(3,("Dependent File: %s:\n", driver->dependent_files[i]));
 	}
 
 	/* sanity check */
@@ -806,7 +806,7 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
 static int get_printerdrivernumber(int snum)
 {
 	int 				result = 0;
-	union spoolss_DriverInfo *driver;
+	struct spoolss_DriverInfo8 *driver;
 	NT_PRINTER_INFO_LEVEL 		*printer = NULL;
 
 	ZERO_STRUCT(driver);
@@ -817,7 +817,7 @@ static int get_printerdrivernumber(int snum)
 		goto done;
 	}
 
-	if (!W_ERROR_IS_OK(get_a_printer_driver(talloc_tos(), &driver, 3, printer->info_2->drivername,
+	if (!W_ERROR_IS_OK(get_a_printer_driver(talloc_tos(), &driver, printer->info_2->drivername,
 		"Windows 4.0", 0)) )
 	{
 		DEBUG(3,("get_printerdrivernumber: Failed to lookup driver [%s]\n", 
@@ -826,7 +826,7 @@ static int get_printerdrivernumber(int snum)
 	}
 
 	/* count the number of files */
-	while (driver->info3.dependent_files && *driver->info3.dependent_files[result])
+	while (driver->dependent_files && *driver->dependent_files[result])
 		result++;
  done:
 	if ( printer )
