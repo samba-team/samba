@@ -1366,10 +1366,11 @@ member: cn=ldaptestuser2,cn=users,""" + self.base_dn + """
 
         print "Testing ldb.search for (&(cn=ldaptestuser)(objectCategory=PerSon)) in with 'phantom root' control"
 
-        res3control = gc_ldb.search(self.base_dn, expression="(&(cn=ldaptestuser)(objectCategory=PerSon))", scope=SCOPE_SUBTREE, attrs=["cn"], controls=["search_options:1:2"])
-        self.assertEquals(len(res3control), 1, "Could not find (&(cn=ldaptestuser)(objectCategory=PerSon)) in Global Catalog")
+        if gc_ldb is not None:
+            res3control = gc_ldb.search(self.base_dn, expression="(&(cn=ldaptestuser)(objectCategory=PerSon))", scope=SCOPE_SUBTREE, attrs=["cn"], controls=["search_options:1:2"])
+            self.assertEquals(len(res3control), 1, "Could not find (&(cn=ldaptestuser)(objectCategory=PerSon)) in Global Catalog")
 
-        self.assertEquals(res[0].dn, res3control[0].dn)
+            self.assertEquals(res[0].dn, res3control[0].dn)
 
         ldb.delete(res[0].dn)
 
@@ -2038,8 +2039,11 @@ if not "://" in host:
         host = "ldap://%s" % host
 
 ldb = Ldb(host, credentials=creds, session_info=system_session(), lp=lp)
-gc_ldb = Ldb("%s:3268" % host, credentials=creds,
-             session_info=system_session(), lp=lp)
+if not "tdb://" in host:
+    gc_ldb = Ldb("%s:3268" % host, credentials=creds,
+                 session_info=system_session(), lp=lp)
+else:
+    gc_ldb = None
 
 runner = SubunitTestRunner()
 rc = 0
