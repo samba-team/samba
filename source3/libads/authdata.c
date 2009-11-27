@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "smb_krb5.h"
+#include "authdata.h"
 
 #ifdef HAVE_KRB5
 
