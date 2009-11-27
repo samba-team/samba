@@ -8622,7 +8622,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	/* Minimize the race condition by doing an lstat before we
 	   open and fstat. Ensure this isn't a symlink link. */
 
-	if (sys_lstat(fname, &lsbuf, lp_fake_dir_create_times()) != 0) {
+	if (sys_lstat(fname, &lsbuf, false) != 0) {
 		DEBUG(0,("process_usershare_file: stat of %s failed. %s\n",
 			fname, strerror(errno) ));
 		SAFE_FREE(fname);
