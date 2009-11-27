@@ -8900,8 +8900,7 @@ int load_usershare_shares(void)
 		return lp_numservices();
 	}
 
-	if (sys_stat(usersharepath, &sbuf, lp_fake_dir_create_times())
-	    != 0) {
+	if (sys_stat(usersharepath, &sbuf, false) != 0) {
 		DEBUG(0,("load_usershare_shares: stat of %s failed. %s\n",
 			usersharepath, strerror(errno) ));
 		return ret;
