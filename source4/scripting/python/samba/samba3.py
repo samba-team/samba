@@ -592,7 +592,7 @@ class TdbSam(TdbDatabase):
         for entry in hours:
             for i in range(8):
                 user.hours.append(ord(entry) & (2 ** i) == (2 ** i))
-        # FIXME
+        # FIXME (reactivate also the tests in tests/samba3.py after fixing this)
         #(user.bad_password_count, data) = unpack_uint16(data)
         #(user.logon_count, data) = unpack_uint16(data)
         #(user.unknown_6, data) = unpack_uint32(data)
