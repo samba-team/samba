@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#include "libcli/util/ntstatus.h"
+
 #ifndef _HEADER_notify
 #define _HEADER_notify
 

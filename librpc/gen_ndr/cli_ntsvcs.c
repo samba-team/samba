@@ -461,7 +461,7 @@ NTSTATUS rpccli_PNP_GetDeviceList(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(buffer, r.out.buffer, *r.in.length * sizeof(*buffer));
+	memcpy(buffer, r.out.buffer, (*r.in.length) * sizeof(*buffer));
 	*length = *r.out.length;
 
 	/* Return result */
@@ -606,7 +606,7 @@ NTSTATUS rpccli_PNP_GetDeviceRegProp(struct rpc_pipe_client *cli,
 
 	/* Return variables */
 	*reg_data_type = *r.out.reg_data_type;
-	memcpy(buffer, r.out.buffer, *r.in.buffer_size * sizeof(*buffer));
+	memcpy(buffer, r.out.buffer, (*r.in.buffer_size) * sizeof(*buffer));
 	*buffer_size = *r.out.buffer_size;
 	*needed = *r.out.needed;
 
