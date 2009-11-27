@@ -8550,8 +8550,7 @@ enum usershare_err parse_usershare_file(TALLOC_CTX *ctx,
 	/* Ensure the owner of the usershare file has permission to share
 	   this directory. */
 
-	if (sys_stat(sharepath, &sbuf,
-		     lp_fake_dir_create_times()) == -1) {
+	if (sys_stat(sharepath, &sbuf, false) == -1) {
 		DEBUG(2,("parse_usershare_file: share %s : stat failed on path %s. %s\n",
 			servicename, sharepath, strerror(errno) ));
 		sys_closedir(dp);
