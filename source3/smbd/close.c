@@ -103,7 +103,7 @@ static NTSTATUS check_magic(struct files_struct *fsp)
 		goto out;
 	}
 
-	if (sys_fstat(tmp_fd, &st, lp_fake_dir_create_times()) == -1) {
+	if (sys_fstat(tmp_fd, &st, false) == -1) {
 		int err = errno;
 		close(tmp_fd);
 		close(outfd);
