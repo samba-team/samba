@@ -527,13 +527,14 @@ void set_cmdline_auth_info_getpass(struct user_auth_info *auth_info)
  Check if a file exists - call vfs_file_exist for samba files.
 ********************************************************************/
 
-bool file_exist_stat(const char *fname,SMB_STRUCT_STAT *sbuf)
+bool file_exist_stat(const char *fname,SMB_STRUCT_STAT *sbuf,
+		     bool fake_dir_create_times)
 {
 	SMB_STRUCT_STAT st;
 	if (!sbuf)
 		sbuf = &st;
 
-	if (sys_stat(fname, sbuf, lp_fake_dir_create_times()) != 0)
+	if (sys_stat(fname, sbuf, fake_dir_create_times) != 0)
 		return(False);
 
 	return((S_ISREG(sbuf->st_ex_mode)) || (S_ISFIFO(sbuf->st_ex_mode)));

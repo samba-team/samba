@@ -1745,7 +1745,7 @@ static int cmd_put(void)
 		SMB_STRUCT_STAT st;
 		/* allow '-' to represent stdin
 		   jdblair, 24.jun.98 */
-		if (!file_exist_stat(lname,&st) &&
+		if (!file_exist_stat(lname, &st, false) &&
 		    (strcmp(lname,"-"))) {
 			d_printf("%s does not exist\n",lname);
 			return 1;
@@ -3618,7 +3618,7 @@ static int cmd_reput(void)
 		return 1;
 	}
 
-	if (!file_exist_stat(local_name, &st)) {
+	if (!file_exist_stat(local_name, &st, false)) {
 		d_printf("%s does not exist\n", local_name);
 		return 1;
 	}
