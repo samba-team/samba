@@ -29,8 +29,11 @@
 /* atalk functions */
 
 static int atalk_build_paths(TALLOC_CTX *ctx, const char *path,
-  const char *fname, char **adbl_path, char **orig_path, 
-  SMB_STRUCT_STAT *adbl_info, SMB_STRUCT_STAT *orig_info);
+			     const char *fname,
+			     char **adbl_path, char **orig_path,
+			     SMB_STRUCT_STAT *adbl_info,
+			     SMB_STRUCT_STAT *orig_info,
+			     bool fake_dir_create_times);
 
 static int atalk_unlink_file(const char *path);
 
@@ -52,9 +55,12 @@ static int atalk_get_path_ptr(char *path)
 	return ptr;
 }
 
-static int atalk_build_paths(TALLOC_CTX *ctx, const char *path, const char *fname,
-                              char **adbl_path, char **orig_path,
-                              SMB_STRUCT_STAT *adbl_info, SMB_STRUCT_STAT *orig_info)
+static int atalk_build_paths(TALLOC_CTX *ctx, const char *path,
+			     const char *fname,
+			     char **adbl_path, char **orig_path,
+			     SMB_STRUCT_STAT *adbl_info,
+			     SMB_STRUCT_STAT *orig_info,
+			     bool fake_dir_create_times)
 {
 	int ptr0 = 0;
 	int ptr1 = 0;
@@ -80,7 +86,7 @@ static int atalk_build_paths(TALLOC_CTX *ctx, const char *path, const char *fnam
 	/* get pointer to last '/' */
 	ptr1 = atalk_get_path_ptr(*orig_path);
 
-	sys_lstat(*orig_path, orig_info, lp_fake_dir_create_times());
+	sys_lstat(*orig_path, orig_info, fake_dir_create_times);
 
 	if (S_ISDIR(orig_info->st_ex_mode)) {
 		*adbl_path = talloc_asprintf(ctx, "%s/%s/%s/", 
@@ -95,7 +101,7 @@ static int atalk_build_paths(TALLOC_CTX *ctx, const char *path, const char *fnam
 #if 0
 	DEBUG(3, ("ATALK: DEBUG:\n%s\n%s\n", *orig_path, *adbl_path)); 
 #endif
-	sys_lstat(*adbl_path, adbl_info, lp_fake_dir_create_times());
+	sys_lstat(*adbl_path, adbl_info, fake_dir_create_times);
 	return 0;
 }
 
@@ -243,7 +249,7 @@ static int atalk_rename(struct vfs_handle_struct *handle,
 
 	if (atalk_build_paths(talloc_tos(), handle->conn->origpath, oldname,
 			      &adbl_path, &orig_path, &adbl_info,
-			      &orig_info) != 0)
+			      &orig_info, false) != 0)
 		goto exit_rename;
 
 	if (S_ISDIR(orig_info.st_ex_mode) || S_ISREG(orig_info.st_ex_mode)) {
@@ -304,7 +310,7 @@ static int atalk_unlink(struct vfs_handle_struct *handle,
 
 	if (atalk_build_paths(talloc_tos(), handle->conn->origpath, path,
 			      &adbl_path, &orig_path,
-	  &adbl_info, &orig_info) != 0)
+			      &adbl_info, &orig_info, false) != 0)
 		goto exit_unlink;
 
 	if (S_ISDIR(orig_info.st_ex_mode) || S_ISREG(orig_info.st_ex_mode)) {
@@ -337,8 +343,9 @@ static int atalk_chmod(struct vfs_handle_struct *handle, const char *path, mode_
 	if (!(ctx = talloc_init("chmod_file")))
 		return ret;
 
-	if (atalk_build_paths(ctx, handle->conn->origpath, path, &adbl_path, &orig_path,
-	  &adbl_info, &orig_info) != 0)
+	if (atalk_build_paths(ctx, handle->conn->origpath, path, &adbl_path,
+			      &orig_path, &adbl_info, &orig_info,
+			      false) != 0)
 		goto exit_chmod;
 
 	if (!S_ISDIR(orig_info.st_ex_mode) && !S_ISREG(orig_info.st_ex_mode)) {
@@ -369,8 +376,9 @@ static int atalk_chown(struct vfs_handle_struct *handle, const char *path, uid_t
 	if (!(ctx = talloc_init("chown_file")))
 		return ret;
 
-	if (atalk_build_paths(ctx, handle->conn->origpath, path, &adbl_path, &orig_path,
-	  &adbl_info, &orig_info) != 0)
+	if (atalk_build_paths(ctx, handle->conn->origpath, path,
+			      &adbl_path, &orig_path,
+			      &adbl_info, &orig_info, false) != 0)
 		goto exit_chown;
 
 	if (!S_ISDIR(orig_info.st_ex_mode) && !S_ISREG(orig_info.st_ex_mode)) {
@@ -403,8 +411,9 @@ static int atalk_lchown(struct vfs_handle_struct *handle, const char *path, uid_
 	if (!(ctx = talloc_init("lchown_file")))
 		return ret;
 
-	if (atalk_build_paths(ctx, handle->conn->origpath, path, &adbl_path, &orig_path,
-	  &adbl_info, &orig_info) != 0)
+	if (atalk_build_paths(ctx, handle->conn->origpath, path,
+			      &adbl_path, &orig_path,
+			      &adbl_info, &orig_info, false) != 0)
 		goto exit_lchown;
 
 	if (!S_ISDIR(orig_info.st_ex_mode) && !S_ISREG(orig_info.st_ex_mode)) {
