@@ -1056,7 +1056,14 @@ static bool test_cancel_tdis(struct torture_context *torture,
 	lck.in.file.handle	= h;
 	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
 	status = smb2_lock(tree, &lck);
-	CHECK_STATUS(status, NT_STATUS_FILE_CLOSED);
+	if (torture_setting_bool(torture, "samba4", false)) {
+		/* checking if the tcon supplied are still valid
+		 * should happen before you validate a file handle,
+		 * so we should return USER_SESSION_DELETED */
+		CHECK_STATUS(status, NT_STATUS_NETWORK_NAME_DELETED);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_FILE_CLOSED);
+	}
 
 done:
 	smb2_util_close(tree, h2);
