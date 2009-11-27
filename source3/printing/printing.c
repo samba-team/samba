@@ -2582,8 +2582,7 @@ bool print_job_end(int snum, uint32 jobid, enum file_close_type close_type)
 		return False;
 
 	if ((close_type == NORMAL_CLOSE || close_type == SHUTDOWN_CLOSE) &&
-	    (sys_fstat(pjob->fd, &sbuf, lp_fake_dir_create_times())
-	     == 0)) {
+	    (sys_fstat(pjob->fd, &sbuf, false) == 0)) {
 		pjob->size = sbuf.st_ex_size;
 		close(pjob->fd);
 		pjob->fd = -1;
