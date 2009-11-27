@@ -3320,7 +3320,7 @@ if test x"$with_ads_support" != x"no"; then
     AC_TRY_COMPILE(
       [#define KRB5_DEPRECATED 1
       #include <krb5.h>],
-      [void main(void) {}],
+      [],
       samba_cv_HAVE_KRB5_DEPRECATED_WITH_IDENTIFIER=yes,
       samba_cv_HAVE_KRB5_DEPRECATED_WITH_IDENTIFIER=no)])
 
