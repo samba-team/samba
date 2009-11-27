@@ -404,7 +404,7 @@ static void dotareof(int f)
 	(void) dozerobuf(f, TBLOCK);
 	(void) dozerobuf(f, TBLOCK);
 
-	if (sys_fstat(f, &stbuf, lp_fake_dir_create_times()) == -1) {
+	if (sys_fstat(f, &stbuf, false) == -1) {
 		DEBUG(0, ("Couldn't stat file handle\n"));
 		return;
 	}
