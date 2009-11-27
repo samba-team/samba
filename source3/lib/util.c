@@ -554,27 +554,6 @@ bool socket_exist(const char *fname)
 }
 
 /*******************************************************************
- Check if a directory exists.
-********************************************************************/
-
-bool directory_exist_stat(char *dname,SMB_STRUCT_STAT *st)
-{
-	SMB_STRUCT_STAT st2;
-	bool ret;
-
-	if (!st)
-		st = &st2;
-
-	if (sys_stat(dname, st, lp_fake_dir_create_times()) != 0)
-		return(False);
-
-	ret = S_ISDIR(st->st_ex_mode);
-	if(!ret)
-		errno = ENOTDIR;
-	return ret;
-}
-
-/*******************************************************************
  Returns the size in bytes of the named given the stat struct.
 ********************************************************************/
 
