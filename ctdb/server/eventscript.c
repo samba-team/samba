@@ -774,6 +774,7 @@ static bool check_options(enum ctdb_eventscript_call call, const char *options)
 	case CTDB_EVENT_MONITOR:
 	case CTDB_EVENT_STATUS:
 	case CTDB_EVENT_SHUTDOWN:
+	case CTDB_EVENT_RELOAD:
 		return count_words(options) == 0;
 
 	case CTDB_EVENT_TAKE_IP: /* interface, IP address, netmask bits. */
