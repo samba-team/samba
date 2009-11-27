@@ -1044,7 +1044,13 @@ static bool test_cancel_tdis(struct torture_context *torture,
 
 	torture_comment(torture, "  Check pending lock reply\n");
 	status = smb2_lock_recv(req, &lck);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	if (torture_setting_bool(torture, "samba4", false)) {
+		/* saying that this lock succeeded is nonsense - the
+		 * tree is gone!! */
+		CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_OK);
+	}
 
 	torture_comment(torture, "  Attempt to unlock first lock\n");
 	lck.in.file.handle	= h;
@@ -1116,13 +1122,26 @@ static bool test_cancel_logoff(struct torture_context *torture,
 
 	torture_comment(torture, "  Check pending lock reply\n");
 	status = smb2_lock_recv(req, &lck);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	if (torture_setting_bool(torture, "samba4", false)) {
+		/* another bogus 'success' code from windows. The lock
+		 * cannot have succeeded, as we are now logged off */
+		CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_OK);
+	}
 
 	torture_comment(torture, "  Attempt to unlock first lock\n");
 	lck.in.file.handle	= h;
 	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
 	status = smb2_lock(tree, &lck);
-	CHECK_STATUS(status, NT_STATUS_FILE_CLOSED);
+	if (torture_setting_bool(torture, "samba4", false)) {
+		/* checking if the credential supplied are still valid
+		 * should happen before you validate a file handle,
+		 * so we should return USER_SESSION_DELETED */
+		CHECK_STATUS(status, NT_STATUS_USER_SESSION_DELETED);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_FILE_CLOSED);
+	}
 
 done:
 	smb2_util_close(tree, h2);
