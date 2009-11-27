@@ -546,7 +546,7 @@ bool file_exist_stat(const char *fname,SMB_STRUCT_STAT *sbuf)
 bool socket_exist(const char *fname)
 {
 	SMB_STRUCT_STAT st;
-	if (sys_stat(fname, &st, lp_fake_dir_create_times()) != 0)
+	if (sys_stat(fname, &st, false) != 0)
 		return(False);
 
 	return S_ISSOCK(st.st_ex_mode);
