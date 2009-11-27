@@ -123,4 +123,4 @@ my $e = { NAME => "foo", ORIGINAL => { FILE => "f", LINE => -1 },
           LEVELS => [ { TYPE => "ARRAY", SIZE_IS => "mysize" }, { TYPE => "DATA", DATA_TYPE => "int" } ]};
 
 $x->ParseOutputArgument($fn, $e);
-is($x->{res}, "memcpy(foo, r.out.foo, mysize * sizeof(*foo));\n");
+is($x->{res}, "memcpy(foo, r.out.foo, (mysize) * sizeof(*foo));\n");
