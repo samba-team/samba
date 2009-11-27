@@ -8550,7 +8550,8 @@ enum usershare_err parse_usershare_file(TALLOC_CTX *ctx,
 	/* Ensure the owner of the usershare file has permission to share
 	   this directory. */
 
-	if (sys_stat(sharepath, &sbuf) == -1) {
+	if (sys_stat(sharepath, &sbuf,
+		     lp_fake_dir_create_times()) == -1) {
 		DEBUG(2,("parse_usershare_file: share %s : stat failed on path %s. %s\n",
 			servicename, sharepath, strerror(errno) ));
 		sys_closedir(dp);
@@ -8622,7 +8623,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	/* Minimize the race condition by doing an lstat before we
 	   open and fstat. Ensure this isn't a symlink link. */
 
-	if (sys_lstat(fname, &lsbuf) != 0) {
+	if (sys_lstat(fname, &lsbuf, lp_fake_dir_create_times()) != 0) {
 		DEBUG(0,("process_usershare_file: stat of %s failed. %s\n",
 			fname, strerror(errno) ));
 		SAFE_FREE(fname);
@@ -8675,7 +8676,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	}
 
 	/* Now fstat to be *SURE* it's a regular file. */
-	if (sys_fstat(fd, &sbuf) != 0) {
+	if (sys_fstat(fd, &sbuf, lp_fake_dir_create_times()) != 0) {
 		close(fd);
 		DEBUG(0,("process_usershare_file: fstat of %s failed. %s\n",
 			fname, strerror(errno) ));
@@ -8793,7 +8794,7 @@ static bool usershare_exists(int iService, struct timespec *last_mod)
 		return false;
 	}
 
-	if (sys_lstat(fname, &lsbuf) != 0) {
+	if (sys_lstat(fname, &lsbuf, lp_fake_dir_create_times()) != 0) {
 		SAFE_FREE(fname);
 		return false;
 	}
@@ -8823,7 +8824,8 @@ int load_usershare_service(const char *servicename)
 		return -1;
 	}
 
-	if (sys_stat(usersharepath, &sbuf) != 0) {
+	if (sys_stat(usersharepath, &sbuf, lp_fake_dir_create_times())
+	    != 0) {
 		DEBUG(0,("load_usershare_service: stat of %s failed. %s\n",
 			usersharepath, strerror(errno) ));
 		return -1;
@@ -8900,7 +8902,8 @@ int load_usershare_shares(void)
 		return lp_numservices();
 	}
 
-	if (sys_stat(usersharepath, &sbuf) != 0) {
+	if (sys_stat(usersharepath, &sbuf, lp_fake_dir_create_times())
+	    != 0) {
 		DEBUG(0,("load_usershare_shares: stat of %s failed. %s\n",
 			usersharepath, strerror(errno) ));
 		return ret;

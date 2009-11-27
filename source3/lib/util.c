@@ -533,7 +533,7 @@ bool file_exist_stat(const char *fname,SMB_STRUCT_STAT *sbuf)
 	if (!sbuf)
 		sbuf = &st;
 
-	if (sys_stat(fname,sbuf) != 0) 
+	if (sys_stat(fname, sbuf, lp_fake_dir_create_times()) != 0)
 		return(False);
 
 	return((S_ISREG(sbuf->st_ex_mode)) || (S_ISFIFO(sbuf->st_ex_mode)));
@@ -546,7 +546,7 @@ bool file_exist_stat(const char *fname,SMB_STRUCT_STAT *sbuf)
 bool socket_exist(const char *fname)
 {
 	SMB_STRUCT_STAT st;
-	if (sys_stat(fname,&st) != 0) 
+	if (sys_stat(fname, &st, lp_fake_dir_create_times()) != 0)
 		return(False);
 
 	return S_ISSOCK(st.st_ex_mode);
@@ -564,7 +564,7 @@ bool directory_exist_stat(char *dname,SMB_STRUCT_STAT *st)
 	if (!st)
 		st = &st2;
 
-	if (sys_stat(dname,st) != 0) 
+	if (sys_stat(dname, st, lp_fake_dir_create_times()) != 0)
 		return(False);
 
 	ret = S_ISDIR(st->st_ex_mode);
@@ -590,7 +590,7 @@ SMB_OFF_T get_file_size(char *file_name)
 {
 	SMB_STRUCT_STAT buf;
 	buf.st_ex_size = 0;
-	if(sys_stat(file_name,&buf) != 0)
+	if (sys_stat(file_name, &buf, lp_fake_dir_create_times()) != 0)
 		return (SMB_OFF_T)-1;
 	return get_file_size_stat(&buf);
 }

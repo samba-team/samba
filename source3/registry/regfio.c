@@ -45,7 +45,7 @@ static int write_block( REGF_FILE *file, prs_struct *ps, uint32 offset )
 
 	/* check for end of file */
 
-	if ( sys_fstat( file->fd, &sbuf ) ) {
+	if (sys_fstat(file->fd, &sbuf, lp_fake_dir_create_times())) {
 		DEBUG(0,("write_block: stat() failed! (%s)\n", strerror(errno)));
 		return -1;
 	}
@@ -79,7 +79,7 @@ static int read_block( REGF_FILE *file, prs_struct *ps, uint32 file_offset, uint
 
 	/* check for end of file */
 
-	if ( sys_fstat( file->fd, &sbuf ) ) {
+	if (sys_fstat(file->fd, &sbuf, lp_fake_dir_create_times())) {
 		DEBUG(0,("read_block: stat() failed! (%s)\n", strerror(errno)));
 		return -1;
 	}
@@ -1429,7 +1429,7 @@ static REGF_HBIN* regf_hbin_allocate( REGF_FILE *file, uint32 block_size )
 	memcpy( hbin->header, "hbin", sizeof(HBIN_HDR_SIZE) );
 
 
-	if ( sys_fstat( file->fd, &sbuf ) ) {
+	if (sys_fstat(file->fd, &sbuf, lp_fake_dir_create_times())) {
 		DEBUG(0,("regf_hbin_allocate: stat() failed! (%s)\n", strerror(errno)));
 		return NULL;
 	}

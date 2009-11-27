@@ -925,9 +925,12 @@ int sys_fcntl_ptr(int fd, int cmd, void *arg);
 int sys_fcntl_long(int fd, int cmd, long arg);
 void update_stat_ex_mtime(struct stat_ex *dst, struct timespec write_ts);
 void update_stat_ex_create_time(struct stat_ex *dst, struct timespec create_time);
-int sys_stat(const char *fname,SMB_STRUCT_STAT *sbuf);
-int sys_fstat(int fd,SMB_STRUCT_STAT *sbuf);
-int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf);
+int sys_stat(const char *fname, SMB_STRUCT_STAT *sbuf,
+	     bool fake_dir_create_times);
+int sys_fstat(int fd, SMB_STRUCT_STAT *sbuf,
+	      bool fake_dir_create_times);
+int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf,
+	      bool fake_dir_create_times);
 int sys_ftruncate(int fd, SMB_OFF_T offset);
 SMB_OFF_T sys_lseek(int fd, SMB_OFF_T offset, int whence);
 int sys_fseek(FILE *fp, SMB_OFF_T offset, int whence);

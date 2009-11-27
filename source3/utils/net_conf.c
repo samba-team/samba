@@ -654,7 +654,7 @@ static int net_conf_addshare(struct net_context *c,
 		goto done;
 	}
 
-	if (sys_stat(path, &sbuf) != 0) {
+	if (sys_stat(path, &sbuf, lp_fake_dir_create_times()) != 0) {
 		d_fprintf(stderr,
 			  _("ERROR: cannot stat path '%s' to ensure "
 			    "this is a directory.\n"

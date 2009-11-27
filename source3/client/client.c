@@ -3439,7 +3439,7 @@ static int cmd_newer(void)
 	SMB_STRUCT_STAT sbuf;
 
 	ok = next_token_talloc(ctx, &cmd_ptr,&buf,NULL);
-	if (ok && (sys_stat(buf,&sbuf) == 0)) {
+	if (ok && (sys_stat(buf, &sbuf, lp_fake_dir_create_times()) == 0)) {
 		newer_than = convert_timespec_to_time_t(sbuf.st_ex_mtime);
 		DEBUG(1,("Getting files newer than %s",
 			 time_to_asc(newer_than)));
