@@ -30,7 +30,7 @@ NTSTATUS wbsrv_setup_domains(struct wbsrv_service *service)
 	primary_sid = secrets_get_domain_sid(service,
 					     service->task->event_ctx,
 					     service->task->lp_ctx,
-					     lp_workgroup(service->task->lp_ctx));
+					     lp_sam_name(service->task->lp_ctx));
 	if (!primary_sid) {
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}

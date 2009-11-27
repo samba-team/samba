@@ -1266,16 +1266,16 @@ def provision(setup_dir, message, session_info,
         message("Setting up sam.ldb rootDSE marking as synchronized")
         setup_modify_ldif(samdb, setup_path("provision_rootdse_modify.ldif"))
 
-        # Only make a zone file on the first DC, it should be replicated with DNS replication
-        if serverrole == "domain controller":
-            secretsdb_self_join(secrets_ldb, domain=names.domain,
-                                realm=names.realm,
-                                dnsdomain=names.dnsdomain,
-                                netbiosname=names.netbiosname,
-                                domainsid=domainsid, 
-                                machinepass=machinepass,
-                                secure_channel_type=SEC_CHAN_BDC)
 
+        secretsdb_self_join(secrets_ldb, domain=names.domain,
+                             realm=names.realm,
+                             dnsdomain=names.dnsdomain,
+                             netbiosname=names.netbiosname,
+                             domainsid=domainsid, 
+                             machinepass=machinepass,
+                             secure_channel_type=SEC_CHAN_BDC)
+
+        if serverrole == "domain controller":
             secretsdb_setup_dns(secrets_ldb, setup_path, 
                                 realm=names.realm, dnsdomain=names.dnsdomain,
                                 dns_keytab_path=paths.dns_keytab,
@@ -1284,6 +1284,8 @@ def provision(setup_dir, message, session_info,
             domainguid = samdb.searchone(basedn=domaindn, attribute="objectGUID")
             assert isinstance(domainguid, str)
 
+            # Only make a zone file on the first DC, it should be replicated
+            # with DNS replication
             create_zone_file(paths.dns, setup_path, dnsdomain=names.dnsdomain,
                              hostip=hostip,
                              hostip6=hostip6, hostname=names.hostname,
