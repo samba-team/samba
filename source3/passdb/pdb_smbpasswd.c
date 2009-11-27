@@ -276,8 +276,7 @@ Error was %s\n", pfile, strerror(errno) ));
 			 * prevent infinate loops. JRA.
 			 */
 
-			if (sys_stat(pfile, &sbuf1,
-				     lp_fake_dir_create_times()) != 0) {
+			if (sys_stat(pfile, &sbuf1, false) != 0) {
 				DEBUG(0, ("startsmbfilepwent_internal: unable to stat file %s. \
 Error was %s\n", pfile, strerror(errno)));
 				pw_file_unlock(fileno(fp), lock_depth);
@@ -285,8 +284,7 @@ Error was %s\n", pfile, strerror(errno)));
 				return NULL;
 			}
 
-			if (sys_fstat(fileno(fp), &sbuf2,
-				      lp_fake_dir_create_times()) != 0) {
+			if (sys_fstat(fileno(fp), &sbuf2, false) != 0) {
 				DEBUG(0, ("startsmbfilepwent_internal: unable to fstat file %s. \
 Error was %s\n", pfile, strerror(errno)));
 				pw_file_unlock(fileno(fp), lock_depth);
