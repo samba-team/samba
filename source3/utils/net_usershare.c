@@ -585,8 +585,7 @@ static int count_num_usershares(void)
 			return -1;
 		}
 
-		if (sys_lstat(path, &sbuf, lp_fake_dir_create_times())
-		    != 0) {
+		if (sys_lstat(path, &sbuf, false) != 0) {
 			d_fprintf(stderr,
 				_("count_num_usershares: can't lstat file %s. "
 				  "Error was %s\n"),
