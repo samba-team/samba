@@ -607,3 +607,14 @@ service_fail_limit=1
 
 ctdb_event="$1" ; shift
 cmd="$ctdb_event"
+
+case "$ctdb_event" in
+    status)
+	ctdb_checkstatus
+	exit
+	;;
+    setstatus)
+	ctdb_setstatus "$@"
+	exit
+	;;
+esac
