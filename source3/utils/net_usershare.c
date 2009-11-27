@@ -749,7 +749,7 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 	}
 
 	/* Check the directory to be shared exists. */
-	if (sys_stat(us_path, &sbuf, lp_fake_dir_create_times()) != 0) {
+	if (sys_stat(us_path, &sbuf, false) != 0) {
 		d_fprintf(stderr,
 			_("net usershare add: cannot stat path %s to ensure "
 			  "this is a directory. Error was %s\n"),
