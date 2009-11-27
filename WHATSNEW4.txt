@@ -69,8 +69,8 @@ In the time since Samba4 alpha8 was released in June 2009, Samba has
 continued to evolve, but you may particularly notice these areas 
 (in no particular order):
 
- Samba4 now includes the full set of user interface strings (display Specifiers) required to
- have the Microsoft Management Console operate
+ Samba4 now includes the full set of user interface strings (display Specifiers)
+ required to have the Microsoft Management Console operate
 
  LDB (the core Samba4 database library) has again been reworked for
  better performance
@@ -115,7 +115,11 @@ KNOWN ISSUES
 
 - Users upgrading existing databases to Samba4 should carefully
   consult upgrading-samba4.txt.  We have made a number of changes in
-  this release that should make it easier to upgrade in future. 
+  this release that should make it easier to upgrade in future.
+  Btw: there exists also a script under the "scripting/bin" directory of the
+  source distribution called "upgrade_from_s3" which should allow a step-up
+  from Samba3 to Samba4. It's not included yet in the binary distributions
+  since it's completely experimental!
 
 - ACL are not set by default on shares created by the provision.
   Work is underway on this subject and it should be fixed in Alpha10.
@@ -128,6 +132,7 @@ in root of the tarball.
 
 DEVELOPMENT and FEEDBACK
 ========================
+
 Bugs can be filed at https://bugzilla.samba.org/ but please be aware
 that many features are simply not expected to work at this stage.  
 
