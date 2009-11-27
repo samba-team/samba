@@ -596,7 +596,7 @@ class TdbSam(TdbDatabase):
         #(user.bad_password_count, data) = unpack_uint16(data)
         #(user.logon_count, data) = unpack_uint16(data)
         #(user.unknown_6, data) = unpack_uint32(data)
-        assert len(data) == 0
+        #assert len(data) == 0
         return user
 
 
