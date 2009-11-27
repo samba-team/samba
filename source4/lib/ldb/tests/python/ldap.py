@@ -566,10 +566,33 @@ objectClass: container
             "objectclass":"user",
             "samaccountname":"parentguidtest"});
         res1 = ldb.search(base="cn=parentguidtest,cn=users," + self.base_dn, scope=SCOPE_BASE,
-                          attrs=["parentGUID"]);
+                          attrs=["parentGUID", "samaccountname"]);
         res2 = ldb.search(base="cn=users," + self.base_dn,scope=SCOPE_BASE,
                           attrs=["objectGUID"]);
+        res3 = ldb.search(base=self.base_dn, scope=SCOPE_BASE,
+                          attrs=["parentGUID"]);
+
+        """Check if the parentGUID is valid """
         self.assertEquals(res1[0]["parentGUID"], res2[0]["objectGUID"]);
+
+        """Check if it returns nothing when there is no parent object"""
+        has_parentGUID = False
+        for key in res3[0].keys():
+            if key == "parentGUID":
+                has_parentGUID = True
+                break
+        self.assertFalse(has_parentGUID);
+
+        """Ensures that if you look for another object attribute after the constructed
+            parentGUID, it will return correctly"""
+        has_another_attribute = False
+        for key in res1[0].keys():
+            if key == "sAMAccountName":
+                has_another_attribute = True
+                break
+        self.assertTrue(has_another_attribute)
+        self.assertTrue(len(res1[0]["samaccountname"]) == 1)
+        self.assertEquals(res1[0]["samaccountname"][0], "parentguidtest");
 
         print "Testing parentGUID behaviour on rename\n"
 
