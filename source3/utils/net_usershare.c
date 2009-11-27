@@ -248,8 +248,7 @@ static int get_share_list(TALLOC_CTX *ctx, const char *wcard, bool only_ours)
 			return -1;
 		}
 
-		if (sys_lstat(path, &sbuf, lp_fake_dir_create_times())
-		    != 0) {
+		if (sys_lstat(path, &sbuf, false) != 0) {
 			d_fprintf(stderr,
 				_("get_share_list: can't lstat file %s. Error "
 				  "was %s\n"),
