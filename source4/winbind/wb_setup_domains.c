@@ -27,11 +27,23 @@ NTSTATUS wbsrv_setup_domains(struct wbsrv_service *service)
 {
 	const struct dom_sid *primary_sid;
 
+	/*
+	 * This is a bit more difficult here: when we are a domain controller
+	 * or a joined domain member the first call will work. But if we are
+	 * a standalone server or unjoined member then the second is the right
+	 * one.
+	 */
 	primary_sid = secrets_get_domain_sid(service,
 					     service->task->event_ctx,
 					     service->task->lp_ctx,
-					     lp_sam_name(service->task->lp_ctx));
-	if (!primary_sid) {
+					     lp_workgroup(service->task->lp_ctx));
+	if (primary_sid == NULL) {
+		primary_sid = secrets_get_domain_sid(service,
+						     service->task->event_ctx,
+						     service->task->lp_ctx,
+						     lp_netbios_name(service->task->lp_ctx));
+	}
+	if (primary_sid == NULL) {
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
