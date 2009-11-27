@@ -72,6 +72,7 @@
 #define TARGET_IS_W2K8(_tctx) (torture_setting_bool(_tctx, "w2k8", false))
 #define TARGET_IS_WIN7(_tctx) (torture_setting_bool(_tctx, "win7", false))
 #define TARGET_IS_SAMBA3(_tctx) (torture_setting_bool(_tctx, "samba3", false))
+#define TARGET_IS_SAMBA4(_tctx) (torture_setting_bool(_tctx, "samba4", false))
 
 /*
   test SMBlock and SMBunlock ops
@@ -365,7 +366,7 @@ static bool test_lockx(struct torture_context *tctx, struct smbcli_state *cli)
 	lock[0].pid++;
 	lock[0].count = 2;
 	status = smb_raw_lock(cli->tree, &io);
-	if (TARGET_IS_WIN7(tctx))
+	if (TARGET_IS_WIN7(tctx) || TARGET_IS_SAMBA4(tctx))
 		CHECK_STATUS(status, NT_STATUS_INVALID_LOCK_RANGE);
 	else
 		CHECK_STATUS(status, NT_STATUS_OK);
