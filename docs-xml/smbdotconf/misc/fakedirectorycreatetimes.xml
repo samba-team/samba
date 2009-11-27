@@ -1,5 +1,5 @@
 <samba:parameter name="fake directory create times"
-		 context="G"
+		 context="S"
 		 type="boolean"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>

@@ -4210,7 +4210,7 @@ bool lp_recursive_veto_delete(int );
 bool lp_dos_filemode(int );
 bool lp_dos_filetimes(int );
 bool lp_dos_filetime_resolution(int );
-bool lp_fake_dir_create_times(void);
+bool lp_fake_dir_create_times(int);
 bool lp_blocking_locks(int );
 bool lp_inherit_perms(int );
 bool lp_inherit_acls(int );
