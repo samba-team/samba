@@ -70,12 +70,14 @@ configure above to change this.
  
   # make install
 
-
 Step 4: provision Samba4
 ------------------------
 
-The "provision" step sets up a basic user database. 
-Must be run as a user with permission to write to the install directory.
+The "provision" step sets up a basic user database. Be warned that this
+removes all preexisting database data (if any)!
+
+It must be run as a user with permission to write to the install directory
+(typically "root").
 
 ::
 
@@ -85,6 +87,14 @@ Must be run as a user with permission to write to the install directory.
 
 'YOURDOM' is the NT4 style domain name. 'YOUR.REALM' is your kerberos
 realm, which is typically your DNS domain name.
+
+If you provisioned a more recent Samba4 system already you should be able to
+use the procedures shown in "upgrading-samba4.txt" to upgrade it and keep all
+data.
+
+When you are using Samba3 at the moment you could try the experimental script
+"upgrade_from_s3" under the "scripting/bin" directory of the source
+distribution (it isn't included in binary distributions yet).
 
 Step 5: Create a simple smb.conf
 --------------------------------
@@ -96,7 +106,6 @@ example::
   [test]
 	path = /data/test
 	read only = no
-
 
 Step 6: starting Samba4
 -----------------------
@@ -116,7 +125,6 @@ they need to be stopped before starting samba from Samba 4.
 
 Make sure you put the bin and sbin directories from your new install
 in your $PATH. Make sure you run the right version!
-
 
 Step 7: testing Samba4
 ----------------------
