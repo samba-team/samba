@@ -1326,6 +1326,23 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		return -1;
 	}
 
+	/*
+	  update all nodes to have the same flags that we have
+	 */
+	for (i=0;i<nodemap->num;i++) {
+		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
+			continue;
+		}
+
+		ret = update_flags_on_all_nodes(ctdb, nodemap, i, nodemap->nodes[i].flags);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, (__location__ " Unable to update flags on all nodes for node %d\n", i));
+			return -1;
+		}
+	}
+
+	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - updated flags\n"));
+
 	/* pick a new generation number */
 	generation = new_generation();
 
