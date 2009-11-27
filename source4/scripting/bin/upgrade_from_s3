@@ -50,14 +50,14 @@ opts, args = parser.parse_args()
 
 def message(text):
     """Print a message if quiet is not set."""
-    if opts.quiet:
+    if not opts.quiet:
         print text
 
 if len(args) < 1:
     parser.print_usage()
     sys.exit(1)
 
-message("Reading Samba3 databases and smb.conf\n")
+message("Reading Samba3 databases and smb.conf")
 
 libdir = args[0]
 if not os.path.isdir(libdir):
@@ -71,7 +71,7 @@ else:
 
 samba3 = Samba3(libdir, smbconf)
 
-message("Provisioning\n")
+message("Provisioning")
 
 setup_dir = opts.setupdir
 if setup_dir is None:
