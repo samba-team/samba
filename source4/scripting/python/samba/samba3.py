@@ -509,7 +509,7 @@ class TdbSam(TdbDatabase):
     """Samba 3 TDB passdb backend reader."""
     def _check_version(self):
         self.version = fetch_uint32(self.tdb, "INFO/version\0") or 0
-        assert self.version in (0, 1, 2)
+        assert self.version in (0, 1, 2, 3)
 
     def usernames(self):
         """Iterate over the usernames in this Tdb database."""
