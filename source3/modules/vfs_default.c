@@ -487,8 +487,7 @@ static int copy_reg(const char *source, const char *dest)
 	int ifd = -1;
 	int ofd = -1;
 
-	if (sys_lstat (source, &source_stats,
-		       lp_fake_dir_create_times()) == -1)
+	if (sys_lstat(source, &source_stats, false) == -1)
 		return -1;
 
 	if (!S_ISREG (source_stats.st_ex_mode))
