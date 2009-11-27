@@ -590,7 +590,7 @@ SMB_OFF_T get_file_size(char *file_name)
 {
 	SMB_STRUCT_STAT buf;
 	buf.st_ex_size = 0;
-	if (sys_stat(file_name, &buf, lp_fake_dir_create_times()) != 0)
+	if (sys_stat(file_name, &buf, false) != 0)
 		return (SMB_OFF_T)-1;
 	return get_file_size_stat(&buf);
 }
