@@ -8793,7 +8793,7 @@ static bool usershare_exists(int iService, struct timespec *last_mod)
 		return false;
 	}
 
-	if (sys_lstat(fname, &lsbuf, lp_fake_dir_create_times()) != 0) {
+	if (sys_lstat(fname, &lsbuf, false) != 0) {
 		SAFE_FREE(fname);
 		return false;
 	}
