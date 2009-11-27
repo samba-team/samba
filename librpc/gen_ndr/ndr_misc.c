@@ -213,77 +213,106 @@ _PUBLIC_ void ndr_print_winreg_Type(struct ndr_print *ndr, const char *name, enu
 
 _PUBLIC_ enum ndr_err_code ndr_push_winreg_Data(struct ndr_push *ndr, int ndr_flags, const union winreg_Data *r)
 {
-	if (ndr_flags & NDR_SCALARS) {
-		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_union_align(ndr, 4));
-		switch (level) {
-			case REG_NONE: {
-			break; }
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_LITTLE_ENDIAN);
+		if (ndr_flags & NDR_SCALARS) {
+			int level = ndr_push_get_switch_value(ndr, r);
+			NDR_CHECK(ndr_push_union_align(ndr, 4));
+			switch (level) {
+				case REG_NONE: {
+				break; }
 
-			case REG_SZ: {
-				{
-					uint32_t _flags_save_string = ndr->flags;
-					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
-					NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->string));
-					ndr->flags = _flags_save_string;
-				}
-			break; }
+				case REG_SZ: {
+					{
+						uint32_t _flags_save_string = ndr->flags;
+						ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+						NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->string));
+						ndr->flags = _flags_save_string;
+					}
+				break; }
 
-			case REG_BINARY: {
-				{
-					uint32_t _flags_save_DATA_BLOB = ndr->flags;
-					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
-					NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, r->binary));
-					ndr->flags = _flags_save_DATA_BLOB;
-				}
-			break; }
+				case REG_EXPAND_SZ: {
+					{
+						uint32_t _flags_save_string = ndr->flags;
+						ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+						NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->string));
+						ndr->flags = _flags_save_string;
+					}
+				break; }
 
-			case REG_DWORD: {
-				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->value));
-			break; }
+				case REG_BINARY: {
+					{
+						uint32_t _flags_save_DATA_BLOB = ndr->flags;
+						ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
+						NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, r->binary));
+						ndr->flags = _flags_save_DATA_BLOB;
+					}
+				break; }
 
-			case REG_MULTI_SZ: {
-				{
-					uint32_t _flags_save_string_array = ndr->flags;
-					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
-					NDR_CHECK(ndr_push_string_array(ndr, NDR_SCALARS, r->string_array));
-					ndr->flags = _flags_save_string_array;
-				}
-			break; }
+				case REG_DWORD: {
+					NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->value));
+				break; }
 
-			default: {
-				{
-					uint32_t _flags_save_DATA_BLOB = ndr->flags;
-					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
-					NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, r->data));
-					ndr->flags = _flags_save_DATA_BLOB;
-				}
-			break; }
+				case REG_DWORD_BIG_ENDIAN: {
+					{
+						uint32_t _flags_save_uint32 = ndr->flags;
+						ndr_set_flags(&ndr->flags, LIBNDR_FLAG_BIGENDIAN);
+						NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->value));
+						ndr->flags = _flags_save_uint32;
+					}
+				break; }
 
+				case REG_MULTI_SZ: {
+					{
+						uint32_t _flags_save_string_array = ndr->flags;
+						ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+						NDR_CHECK(ndr_push_string_array(ndr, NDR_SCALARS, r->string_array));
+						ndr->flags = _flags_save_string_array;
+					}
+				break; }
+
+				default: {
+					{
+						uint32_t _flags_save_DATA_BLOB = ndr->flags;
+						ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
+						NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, r->data));
+						ndr->flags = _flags_save_DATA_BLOB;
+					}
+				break; }
+
+			}
 		}
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		int level = ndr_push_get_switch_value(ndr, r);
-		switch (level) {
-			case REG_NONE:
-			break;
+		if (ndr_flags & NDR_BUFFERS) {
+			int level = ndr_push_get_switch_value(ndr, r);
+			switch (level) {
+				case REG_NONE:
+				break;
 
-			case REG_SZ:
-			break;
+				case REG_SZ:
+				break;
 
-			case REG_BINARY:
-			break;
+				case REG_EXPAND_SZ:
+				break;
 
-			case REG_DWORD:
-			break;
+				case REG_BINARY:
+				break;
 
-			case REG_MULTI_SZ:
-			break;
+				case REG_DWORD:
+				break;
 
-			default:
-			break;
+				case REG_DWORD_BIG_ENDIAN:
+				break;
 
+				case REG_MULTI_SZ:
+				break;
+
+				default:
+				break;
+
+			}
 		}
+		ndr->flags = _flags_save_UNION;
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -291,76 +320,105 @@ _PUBLIC_ enum ndr_err_code ndr_push_winreg_Data(struct ndr_push *ndr, int ndr_fl
 _PUBLIC_ enum ndr_err_code ndr_pull_winreg_Data(struct ndr_pull *ndr, int ndr_flags, union winreg_Data *r)
 {
 	int level;
-	level = ndr_pull_get_switch_value(ndr, r);
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_union_align(ndr, 4));
-		switch (level) {
-			case REG_NONE: {
-			break; }
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_LITTLE_ENDIAN);
+		level = ndr_pull_get_switch_value(ndr, r);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_pull_union_align(ndr, 4));
+			switch (level) {
+				case REG_NONE: {
+				break; }
 
-			case REG_SZ: {
-				{
-					uint32_t _flags_save_string = ndr->flags;
-					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
-					NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->string));
-					ndr->flags = _flags_save_string;
-				}
-			break; }
+				case REG_SZ: {
+					{
+						uint32_t _flags_save_string = ndr->flags;
+						ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+						NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->string));
+						ndr->flags = _flags_save_string;
+					}
+				break; }
 
-			case REG_BINARY: {
-				{
-					uint32_t _flags_save_DATA_BLOB = ndr->flags;
-					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
-					NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, &r->binary));
-					ndr->flags = _flags_save_DATA_BLOB;
-				}
-			break; }
+				case REG_EXPAND_SZ: {
+					{
+						uint32_t _flags_save_string = ndr->flags;
+						ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+						NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->string));
+						ndr->flags = _flags_save_string;
+					}
+				break; }
 
-			case REG_DWORD: {
-				NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->value));
-			break; }
+				case REG_BINARY: {
+					{
+						uint32_t _flags_save_DATA_BLOB = ndr->flags;
+						ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
+						NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, &r->binary));
+						ndr->flags = _flags_save_DATA_BLOB;
+					}
+				break; }
 
-			case REG_MULTI_SZ: {
-				{
-					uint32_t _flags_save_string_array = ndr->flags;
-					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
-					NDR_CHECK(ndr_pull_string_array(ndr, NDR_SCALARS, &r->string_array));
-					ndr->flags = _flags_save_string_array;
-				}
-			break; }
+				case REG_DWORD: {
+					NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->value));
+				break; }
 
-			default: {
-				{
-					uint32_t _flags_save_DATA_BLOB = ndr->flags;
-					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
-					NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, &r->data));
-					ndr->flags = _flags_save_DATA_BLOB;
-				}
-			break; }
+				case REG_DWORD_BIG_ENDIAN: {
+					{
+						uint32_t _flags_save_uint32 = ndr->flags;
+						ndr_set_flags(&ndr->flags, LIBNDR_FLAG_BIGENDIAN);
+						NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->value));
+						ndr->flags = _flags_save_uint32;
+					}
+				break; }
 
+				case REG_MULTI_SZ: {
+					{
+						uint32_t _flags_save_string_array = ndr->flags;
+						ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+						NDR_CHECK(ndr_pull_string_array(ndr, NDR_SCALARS, &r->string_array));
+						ndr->flags = _flags_save_string_array;
+					}
+				break; }
+
+				default: {
+					{
+						uint32_t _flags_save_DATA_BLOB = ndr->flags;
+						ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
+						NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, &r->data));
+						ndr->flags = _flags_save_DATA_BLOB;
+					}
+				break; }
+
+			}
 		}
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		switch (level) {
-			case REG_NONE:
-			break;
+		if (ndr_flags & NDR_BUFFERS) {
+			switch (level) {
+				case REG_NONE:
+				break;
 
-			case REG_SZ:
-			break;
+				case REG_SZ:
+				break;
 
-			case REG_BINARY:
-			break;
+				case REG_EXPAND_SZ:
+				break;
 
-			case REG_DWORD:
-			break;
+				case REG_BINARY:
+				break;
 
-			case REG_MULTI_SZ:
-			break;
+				case REG_DWORD:
+				break;
 
-			default:
-			break;
+				case REG_DWORD_BIG_ENDIAN:
+				break;
 
+				case REG_MULTI_SZ:
+				break;
+
+				default:
+				break;
+
+			}
 		}
+		ndr->flags = _flags_save_UNION;
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -368,32 +426,45 @@ _PUBLIC_ enum ndr_err_code ndr_pull_winreg_Data(struct ndr_pull *ndr, int ndr_fl
 _PUBLIC_ void ndr_print_winreg_Data(struct ndr_print *ndr, const char *name, const union winreg_Data *r)
 {
 	int level;
-	level = ndr_print_get_switch_value(ndr, r);
-	ndr_print_union(ndr, name, level, "winreg_Data");
-	switch (level) {
-		case REG_NONE:
-		break;
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_LITTLE_ENDIAN);
+		level = ndr_print_get_switch_value(ndr, r);
+		ndr_print_union(ndr, name, level, "winreg_Data");
+		switch (level) {
+			case REG_NONE:
+			break;
 
-		case REG_SZ:
-			ndr_print_string(ndr, "string", r->string);
-		break;
+			case REG_SZ:
+				ndr_print_string(ndr, "string", r->string);
+			break;
 
-		case REG_BINARY:
-			ndr_print_DATA_BLOB(ndr, "binary", r->binary);
-		break;
+			case REG_EXPAND_SZ:
+				ndr_print_string(ndr, "string", r->string);
+			break;
 
-		case REG_DWORD:
-			ndr_print_uint32(ndr, "value", r->value);
-		break;
+			case REG_BINARY:
+				ndr_print_DATA_BLOB(ndr, "binary", r->binary);
+			break;
 
-		case REG_MULTI_SZ:
-			ndr_print_string_array(ndr, "string_array", r->string_array);
-		break;
+			case REG_DWORD:
+				ndr_print_uint32(ndr, "value", r->value);
+			break;
 
-		default:
-			ndr_print_DATA_BLOB(ndr, "data", r->data);
-		break;
+			case REG_DWORD_BIG_ENDIAN:
+				ndr_print_uint32(ndr, "value", r->value);
+			break;
 
+			case REG_MULTI_SZ:
+				ndr_print_string_array(ndr, "string_array", r->string_array);
+			break;
+
+			default:
+				ndr_print_DATA_BLOB(ndr, "data", r->data);
+			break;
+
+		}
+		ndr->flags = _flags_save_UNION;
 	}
 }
 
