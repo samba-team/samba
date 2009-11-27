@@ -456,9 +456,10 @@ static struct timespec calc_create_time_stat_ex(const struct stat_ex *st)
  use the best approximation.
 ****************************************************************************/
 
-static void make_create_timespec(const struct stat *pst, struct stat_ex *dst)
+static void make_create_timespec(const struct stat *pst, struct stat_ex *dst,
+				 bool fake_dir_create_times)
 {
-	if (S_ISDIR(pst->st_mode) && lp_fake_dir_create_times()) {
+	if (S_ISDIR(pst->st_mode) && fake_dir_create_times) {
 		dst->st_ex_btime.tv_sec = 315493200L;          /* 1/1/1980 */
 		dst->st_ex_btime.tv_nsec = 0;
 	}
@@ -512,7 +513,8 @@ void update_stat_ex_create_time(struct stat_ex *dst,
 }
 
 static void init_stat_ex_from_stat (struct stat_ex *dst,
-				    const struct stat *src)
+				    const struct stat *src,
+				    bool fake_dir_create_times)
 {
 	dst->st_ex_dev = src->st_dev;
 	dst->st_ex_ino = src->st_ino;
@@ -525,7 +527,7 @@ static void init_stat_ex_from_stat (struct stat_ex *dst,
 	dst->st_ex_atime = get_atimespec(src);
 	dst->st_ex_mtime = get_mtimespec(src);
 	dst->st_ex_ctime = get_ctimespec(src);
-	make_create_timespec(src, dst);
+	make_create_timespec(src, dst, fake_dir_create_times);
 	dst->st_ex_blksize = src->st_blksize;
 	dst->st_ex_blocks = src->st_blocks;
 
@@ -540,7 +542,8 @@ static void init_stat_ex_from_stat (struct stat_ex *dst,
 A stat() wrapper that will deal with 64 bit filesizes.
 ********************************************************************/
 
-int sys_stat(const char *fname,SMB_STRUCT_STAT *sbuf)
+int sys_stat(const char *fname, SMB_STRUCT_STAT *sbuf,
+	     bool fake_dir_create_times)
 {
 	int ret;
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_STAT64)
@@ -554,7 +557,7 @@ int sys_stat(const char *fname,SMB_STRUCT_STAT *sbuf)
 		if (S_ISDIR(statbuf.st_mode)) {
 			statbuf.st_size = 0;
 		}
-		init_stat_ex_from_stat(sbuf, &statbuf);
+		init_stat_ex_from_stat(sbuf, &statbuf, fake_dir_create_times);
 	}
 	return ret;
 }
@@ -563,7 +566,7 @@ int sys_stat(const char *fname,SMB_STRUCT_STAT *sbuf)
  An fstat() wrapper that will deal with 64 bit filesizes.
 ********************************************************************/
 
-int sys_fstat(int fd,SMB_STRUCT_STAT *sbuf)
+int sys_fstat(int fd, SMB_STRUCT_STAT *sbuf, bool fake_dir_create_times)
 {
 	int ret;
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_FSTAT64)
@@ -577,7 +580,7 @@ int sys_fstat(int fd,SMB_STRUCT_STAT *sbuf)
 		if (S_ISDIR(statbuf.st_mode)) {
 			statbuf.st_size = 0;
 		}
-		init_stat_ex_from_stat(sbuf, &statbuf);
+		init_stat_ex_from_stat(sbuf, &statbuf, fake_dir_create_times);
 	}
 	return ret;
 }
@@ -586,7 +589,8 @@ int sys_fstat(int fd,SMB_STRUCT_STAT *sbuf)
  An lstat() wrapper that will deal with 64 bit filesizes.
 ********************************************************************/
 
-int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf)
+int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf,
+	      bool fake_dir_create_times)
 {
 	int ret;
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_LSTAT64)
@@ -600,7 +604,7 @@ int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf)
 		if (S_ISDIR(statbuf.st_mode)) {
 			statbuf.st_size = 0;
 		}
-		init_stat_ex_from_stat(sbuf, &statbuf);
+		init_stat_ex_from_stat(sbuf, &statbuf, fake_dir_create_times);
 	}
 	return ret;
 }

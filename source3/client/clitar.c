@@ -404,7 +404,7 @@ static void dotareof(int f)
 	(void) dozerobuf(f, TBLOCK);
 	(void) dozerobuf(f, TBLOCK);
 
-	if (sys_fstat(f, &stbuf) == -1) {
+	if (sys_fstat(f, &stbuf, lp_fake_dir_create_times()) == -1) {
 		DEBUG(0, ("Couldn't stat file handle\n"));
 		return;
 	}
@@ -1792,7 +1792,8 @@ int tar_parseargs(int argc, char *argv[], const char *Optarg, int Optind)
 				} else {
 					SMB_STRUCT_STAT stbuf;
 
-					if (sys_stat(argv[Optind], &stbuf) == 0) {
+					if (sys_stat(argv[Optind], &stbuf,
+						     lp_fake_dir_create_times()) == 0) {
 						newer_than = convert_timespec_to_time_t(
 							stbuf.st_ex_mtime);
 						DEBUG(1,("Getting files newer than %s",
