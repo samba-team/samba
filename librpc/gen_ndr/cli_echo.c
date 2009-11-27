@@ -82,7 +82,7 @@ NTSTATUS rpccli_echo_EchoData(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(out_data, r.out.out_data, r.in.len * sizeof(*out_data));
+	memcpy(out_data, r.out.out_data, (r.in.len) * sizeof(*out_data));
 
 	/* Return result */
 	return NT_STATUS_OK;
@@ -162,7 +162,7 @@ NTSTATUS rpccli_echo_SourceData(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(data, r.out.data, r.in.len * sizeof(*data));
+	memcpy(data, r.out.data, (r.in.len) * sizeof(*data));
 
 	/* Return result */
 	return NT_STATUS_OK;

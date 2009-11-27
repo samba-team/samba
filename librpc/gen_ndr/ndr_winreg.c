@@ -3700,7 +3700,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_winreg_QueryMultipleValues(struct ndr_pull *
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC_N(ndr, r->in.values, ndr_get_array_size(ndr, &r->in.values));
 		}
-		memcpy(r->out.values, r->in.values, ndr_get_array_size(ndr, &r->in.values) * sizeof(*r->in.values));
+		memcpy(r->out.values, r->in.values, (ndr_get_array_size(ndr, &r->in.values)) * sizeof(*r->in.values));
 		_mem_save_values_1 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.values, 0);
 		for (cntr_values_1 = 0; cntr_values_1 < r->in.num_values; cntr_values_1++) {
@@ -3762,7 +3762,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_winreg_QueryMultipleValues(struct ndr_pull *
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC_N(ndr, r->out.values, ndr_get_array_size(ndr, &r->out.values));
 		}
-		memcpy(r->out.values, r->in.values, ndr_get_array_size(ndr, &r->out.values) * sizeof(*r->in.values));
+		memcpy(r->out.values, r->in.values, (ndr_get_array_size(ndr, &r->out.values)) * sizeof(*r->in.values));
 		_mem_save_values_1 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.values, 0);
 		for (cntr_values_1 = 0; cntr_values_1 < r->in.num_values; cntr_values_1++) {

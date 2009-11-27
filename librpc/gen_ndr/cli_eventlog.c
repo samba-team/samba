@@ -464,7 +464,7 @@ NTSTATUS rpccli_eventlog_ReadEventLogW(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(data, r.out.data, r.in.number_of_bytes * sizeof(*data));
+	memcpy(data, r.out.data, (r.in.number_of_bytes) * sizeof(*data));
 	*sent_size = *r.out.sent_size;
 	*real_size = *r.out.real_size;
 
@@ -941,7 +941,7 @@ NTSTATUS rpccli_eventlog_GetLogInformation(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(buffer, r.out.buffer, r.in.buf_size * sizeof(*buffer));
+	memcpy(buffer, r.out.buffer, (r.in.buf_size) * sizeof(*buffer));
 	*bytes_needed = *r.out.bytes_needed;
 
 	/* Return result */
