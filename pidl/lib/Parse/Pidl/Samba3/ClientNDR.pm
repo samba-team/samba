@@ -98,9 +98,9 @@ sub ParseOutputArgument($$$)
 		my $env = GenerateFunctionInEnv($fn, "r.");
 		my $size_is = ParseExpr($e->{LEVELS}[$level]->{SIZE_IS}, $env, $e->{ORIGINAL});
 		if (has_property($e, "charset")) {
-		    $self->pidl("memcpy(CONST_DISCARD(char *, $e->{NAME}), r.out.$e->{NAME}, $size_is * sizeof(*$e->{NAME}));");
+		    $self->pidl("memcpy(discard_const_p(uint8_t, $e->{NAME}), r.out.$e->{NAME}, ($size_is) * sizeof(*$e->{NAME}));");
 		} else {
-		    $self->pidl("memcpy($e->{NAME}, r.out.$e->{NAME}, $size_is * sizeof(*$e->{NAME}));");
+		    $self->pidl("memcpy($e->{NAME}, r.out.$e->{NAME}, ($size_is) * sizeof(*$e->{NAME}));");
 		}
 	} else {
 		$self->pidl("*$e->{NAME} = *r.out.$e->{NAME};");
