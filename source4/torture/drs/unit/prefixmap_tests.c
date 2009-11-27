@@ -625,27 +625,19 @@ static bool torture_drs_unit_dsdb_create_prefix_mapping(struct torture_context *
  */
 static bool torture_drs_unit_ldb_setup(struct torture_context *tctx, struct drsut_prefixmap_data *priv)
 {
-	int fd = -1;
 	int ldb_err;
 	char *ldb_url;
 	bool bret = true;
 	TALLOC_CTX* mem_ctx;
+	char *tempdir;
+	NTSTATUS status;
 
 	mem_ctx = talloc_new(priv);
 
-	/* try to find to make temporary LDB_ULR */
-	ldb_url = getenv("LDB_URL");
-	if (!ldb_url) {
-		const char *temp_dir;
-		temp_dir = getenv("TEST_DATA_PREFIX");
-		if (!temp_dir) {
-			temp_dir = "/tmp";
-		}
-		ldb_url = talloc_asprintf(priv, "%s/drs_XXXXXX", temp_dir);
-		fd = mkstemp(ldb_url);
-		torture_assert(tctx, fd != -1,
-			       talloc_asprintf(mem_ctx, "mkstemp() failed: %s", strerror(errno)));
-	}
+	status = torture_temp_dir(tctx, "drs_", &tempdir);
+	torture_assert_ntstatus_ok(tctx, status, "creating temp dir");
+
+	ldb_url = talloc_asprintf(priv, "%s/drs_test.ldb", tempdir);
 
 	/* create LDB */
 	priv->ldb_ctx = ldb_init(priv, tctx->ev);
@@ -671,10 +663,7 @@ static bool torture_drs_unit_ldb_setup(struct torture_context *tctx, struct drsu
 	}
 
 DONE:
-	if (fd != -1) {
-		close(fd);
-		unlink(ldb_url);
-	}
+	unlink(ldb_url);
 	talloc_free(mem_ctx);
 	return bret;
 }
