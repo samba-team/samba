@@ -1429,7 +1429,7 @@ static REGF_HBIN* regf_hbin_allocate( REGF_FILE *file, uint32 block_size )
 	memcpy( hbin->header, "hbin", sizeof(HBIN_HDR_SIZE) );
 
 
-	if (sys_fstat(file->fd, &sbuf, lp_fake_dir_create_times())) {
+	if (sys_fstat(file->fd, &sbuf, false)) {
 		DEBUG(0,("regf_hbin_allocate: stat() failed! (%s)\n", strerror(errno)));
 		return NULL;
 	}
