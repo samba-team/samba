@@ -839,7 +839,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
     if dom_for_fun_level is None:
         dom_for_fun_level = DS_DOMAIN_FUNCTION_2003
     if dom_for_fun_level < DS_DOMAIN_FUNCTION_2003:
-        raise ProvisioningError("You want to run SAMBA 4 on a domain and forest function level lower than Windows 2003 (Native). This isn't supported!")
+        message("You want to run SAMBA 4 on a domain and forest function level lower than Windows 2003 (Native). This is not recommended")
 
     if dom_for_fun_level > domainControllerFunctionality:
         raise ProvisioningError("You want to run SAMBA 4 on a domain and forest function level which itself is higher than its actual DC function level (2008). This won't work!")

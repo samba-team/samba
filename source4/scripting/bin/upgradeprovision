@@ -39,7 +39,7 @@ from base64 import b64encode
 import samba
 from samba.credentials import DONT_USE_KERBEROS
 from samba.auth import system_session, admin_session
-from samba import Ldb
+from samba import Ldb, DS_DOMAIN_FUNCTION_2000, DS_DOMAIN_FUNCTION_2003, DS_DOMAIN_FUNCTION_2008, DS_DC_FUNCTION_2008_R2
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError
 import ldb
 import samba.getopt as options
@@ -222,10 +222,14 @@ def guess_names_from_current_provision(credentials,session_info,paths):
 	names.ntdsguid = str(ndr_unpack( misc.GUID,res5[0]["objectGUID"][0]))
 
 	# domain guid/sid
-	attrs6 = ["objectGUID", "objectSid", ]
+	attrs6 = ["objectGUID", "objectSid","msDS-Behavior-Version" ]
 	res6 = samdb.search(expression="(objectClass=*)",base=basedn, scope=SCOPE_BASE, attrs=attrs6)
 	names.domainguid = str(ndr_unpack( misc.GUID,res6[0]["objectGUID"][0]))
 	names.domainsid = ndr_unpack( security.dom_sid,res6[0]["objectSid"][0])
+	if res6[0].get("msDS-Behavior-Version") == None or int(res6[0]["msDS-Behavior-Version"][0]) < DS_DOMAIN_FUNCTION_2000:
+		names.domainlevel = DS_DOMAIN_FUNCTION_2000
+	else:
+		names.domainlevel = int(res6[0]["msDS-Behavior-Version"][0])
 
 	# policy guid
 	attrs7 = ["cn","displayName"]
@@ -262,6 +266,7 @@ def print_names(names):
 	message(GUESS, "domainsid   :"+str(names.domainsid))
 	message(GUESS, "domainguid  :"+names.domainguid)
 	message(GUESS, "ntdsguid    :"+names.ntdsguid)
+	message(GUESS, "domainlevel :"+str(names.domainlevel))
 
 # Create a fresh new reference provision
 # This provision will be the reference for knowing what has changed in the
@@ -297,6 +302,7 @@ def newprovision(names,setup_dir,creds,session,smbconf):
 		slapd_path=None,
 		setup_ds_path=None,
 		nosync=None,
+		dom_for_fun_level=names.domainlevel,
 		ldap_dryrun_mode=None)
 	return provdir
 
