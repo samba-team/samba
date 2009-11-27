@@ -8823,8 +8823,7 @@ int load_usershare_service(const char *servicename)
 		return -1;
 	}
 
-	if (sys_stat(usersharepath, &sbuf, lp_fake_dir_create_times())
-	    != 0) {
+	if (sys_stat(usersharepath, &sbuf, false) != 0) {
 		DEBUG(0,("load_usershare_service: stat of %s failed. %s\n",
 			usersharepath, strerror(errno) ));
 		return -1;
