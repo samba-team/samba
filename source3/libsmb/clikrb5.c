@@ -21,7 +21,7 @@
 */
 
 #define KRB5_PRIVATE    1       /* this file uses PRIVATE interfaces! */
-#define KRB5_DEPRECATED 1       /* this file uses DEPRECATED interfaces! */
+/* this file uses DEPRECATED interfaces! */
 
 #include "includes.h"
 
