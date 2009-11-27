@@ -1121,7 +1121,8 @@ struct user_auth_info *get_cmdline_auth_info_copy(TALLOC_CTX *mem_ctx,
 						 const struct user_auth_info *info);
 bool set_cmdline_auth_info_machine_account_creds(struct user_auth_info *auth_info);
 void set_cmdline_auth_info_getpass(struct user_auth_info *auth_info);
-bool file_exist_stat(const char *fname,SMB_STRUCT_STAT *sbuf);
+bool file_exist_stat(const char *fname,SMB_STRUCT_STAT *sbuf,
+		     bool fake_dir_create_times);
 bool socket_exist(const char *fname);
 bool directory_exist_stat(char *dname,SMB_STRUCT_STAT *st);
 uint64_t get_file_size_stat(const SMB_STRUCT_STAT *sbuf);

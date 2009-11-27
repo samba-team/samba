@@ -450,7 +450,8 @@ static void cgi_download(char *file)
 	if (S_ISDIR(st.st_ex_mode))
 	{
 		snprintf(buf, sizeof(buf), "%s/index.html", file);
-		if (!file_exist_stat(buf, &st) || !S_ISREG(st.st_ex_mode))
+		if (!file_exist_stat(buf, &st, false)
+		    || !S_ISREG(st.st_ex_mode))
 		{
 			cgi_setup_error("404 File Not Found","",
 					"The requested file was not found");
