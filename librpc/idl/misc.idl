@@ -61,11 +61,13 @@ interface misc
 		REG_QWORD                      = 11
 	} winreg_Type;
 
-	typedef [nodiscriminant,public] union {
+	typedef [nodiscriminant,public,flag(NDR_LITTLE_ENDIAN)] union {
 		[case(REG_NONE)];
 		[case(REG_SZ)] nstring string;
+		[case(REG_EXPAND_SZ)] nstring string;
 		[case(REG_BINARY),flag(NDR_REMAINING)] DATA_BLOB binary;
 		[case(REG_DWORD)] uint32 value;
+		[case(REG_DWORD_BIG_ENDIAN),flag(NDR_BIG_ENDIAN)] uint32 value;
 		[case(REG_MULTI_SZ)] nstring_array string_array;
 		[default,flag(NDR_REMAINING)] DATA_BLOB data;
 	} winreg_Data;
