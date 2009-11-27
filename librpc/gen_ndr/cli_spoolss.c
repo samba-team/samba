@@ -11057,7 +11057,7 @@ static void rpccli_spoolss_EnumPrinterData_done(struct tevent_req *subreq)
 	}
 
 	/* Copy out parameters */
-	memcpy(discard_const_p(uint8_t, state->orig.out.value_name), state->tmp.out.value_name, (state->tmp.in.value_offered / 2) * sizeof(*state->orig.out.value_name));
+	memcpy(discard_const_p(uint8_t *, state->orig.out.value_name), state->tmp.out.value_name, (state->tmp.in.value_offered / 2) * sizeof(*state->orig.out.value_name));
 	*state->orig.out.value_needed = *state->tmp.out.value_needed;
 	*state->orig.out.type = *state->tmp.out.type;
 	memcpy(state->orig.out.data, state->tmp.out.data, (state->tmp.in.data_offered) * sizeof(*state->orig.out.data));
@@ -11132,7 +11132,7 @@ NTSTATUS rpccli_spoolss_EnumPrinterData(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(discard_const_p(uint8_t, value_name), r.out.value_name, (r.in.value_offered / 2) * sizeof(*value_name));
+	memcpy(discard_const_p(uint8_t *, value_name), r.out.value_name, (r.in.value_offered / 2) * sizeof(*value_name));
 	*value_needed = *r.out.value_needed;
 	*type = *r.out.type;
 	memcpy(data, r.out.data, (r.in.data_offered) * sizeof(*data));
@@ -15678,7 +15678,7 @@ static void rpccli_spoolss_GetPrinterDriverPackagePath_done(struct tevent_req *s
 
 	/* Copy out parameters */
 	if (state->orig.out.driver_package_cab && state->tmp.out.driver_package_cab) {
-		memcpy(discard_const_p(uint8_t, state->orig.out.driver_package_cab), state->tmp.out.driver_package_cab, (state->tmp.in.driver_package_cab_size) * sizeof(*state->orig.out.driver_package_cab));
+		memcpy(discard_const_p(uint8_t *, state->orig.out.driver_package_cab), state->tmp.out.driver_package_cab, (state->tmp.in.driver_package_cab_size) * sizeof(*state->orig.out.driver_package_cab));
 	}
 	*state->orig.out.required = *state->tmp.out.required;
 
@@ -15752,7 +15752,7 @@ NTSTATUS rpccli_spoolss_GetPrinterDriverPackagePath(struct rpc_pipe_client *cli,
 
 	/* Return variables */
 	if (driver_package_cab && r.out.driver_package_cab) {
-		memcpy(discard_const_p(uint8_t, driver_package_cab), r.out.driver_package_cab, (r.in.driver_package_cab_size) * sizeof(*driver_package_cab));
+		memcpy(discard_const_p(uint8_t *, driver_package_cab), r.out.driver_package_cab, (r.in.driver_package_cab_size) * sizeof(*driver_package_cab));
 	}
 	*required = *r.out.required;
 
