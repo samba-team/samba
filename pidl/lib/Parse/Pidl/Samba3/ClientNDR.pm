@@ -105,7 +105,7 @@ sub ParseOutputArgument($$$;$$)
 		} else {
 			my $size_is = ParseExpr($l->{SIZE_IS}, $env, $e->{ORIGINAL});
 			if (has_property($e, "charset")) {
-				$self->pidl("memcpy(discard_const_p(uint8_t, $o$e->{NAME}), ${r}out.$e->{NAME}, ($size_is) * sizeof(*$o$e->{NAME}));");
+				$self->pidl("memcpy(discard_const_p(uint8_t *, $o$e->{NAME}), ${r}out.$e->{NAME}, ($size_is) * sizeof(*$o$e->{NAME}));");
 			} else {
 				$self->pidl("memcpy($o$e->{NAME}, ${r}out.$e->{NAME}, ($size_is) * sizeof(*$o$e->{NAME}));");
 			}
