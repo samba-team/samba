@@ -120,7 +120,11 @@ int net_help(struct net_context *ctx, const struct net_functable *ftable)
 
 	d_printf("Available commands:\n");
 	while (name && desc) {
-		d_printf("\t%s\t\t%s", name, desc);
+		if (strlen(name) > 7) {
+			d_printf("\t%s\t%s", name, desc);
+		} else {
+			d_printf("\t%s\t\t%s", name, desc);
+		}
 		name = ftable[++i].name;
 		desc = ftable[i].desc;
 	}
@@ -132,6 +136,7 @@ static int net_usage(struct net_context *ctx, int argc, const char **argv)
 {
 	d_printf("Usage:\n");
 	d_printf("net <command> [options]\n");
+	d_printf("Type 'net help' for all available commands\n");
 	return 0;
 }
 
