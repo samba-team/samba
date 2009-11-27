@@ -241,7 +241,7 @@ int32_t ctdb_control_event_script_finished(struct ctdb_context *ctdb)
 		talloc_free(ctdb->last_monitor_status_ctx);
 		ctdb->last_monitor_status_ctx = NULL;
 	}
-	ctdb->last_monitor_status_ctx = talloc_steal(ctdb, ctdb->current_monitor_status_ctx);
+	ctdb->last_monitor_status_ctx = ctdb->current_monitor_status_ctx);
 	ctdb->current_monitor_status_ctx = NULL;
 
 	return 0;
