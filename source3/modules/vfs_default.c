@@ -616,7 +616,7 @@ static int vfswrap_stat(vfs_handle_struct *handle,
 	}
 
 	result = sys_stat(smb_fname->base_name, &smb_fname->st,
-			  lp_fake_dir_create_times());
+			  lp_fake_dir_create_times(SNUM(handle->conn)));
  out:
 	END_PROFILE(syscall_stat);
 	return result;
@@ -628,7 +628,7 @@ static int vfswrap_fstat(vfs_handle_struct *handle, files_struct *fsp, SMB_STRUC
 
 	START_PROFILE(syscall_fstat);
 	result = sys_fstat(fsp->fh->fd,
-			   sbuf, lp_fake_dir_create_times());
+			   sbuf, lp_fake_dir_create_times(SNUM(handle->conn)));
 	END_PROFILE(syscall_fstat);
 	return result;
 }
@@ -646,7 +646,7 @@ static int vfswrap_lstat(vfs_handle_struct *handle,
 	}
 
 	result = sys_lstat(smb_fname->base_name, &smb_fname->st,
-			   lp_fake_dir_create_times());
+			   lp_fake_dir_create_times(SNUM(handle->conn)));
  out:
 	END_PROFILE(syscall_lstat);
 	return result;

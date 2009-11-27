@@ -357,7 +357,6 @@ struct global {
 	int cups_connection_timeout;
 	char *szSMBPerfcountModule;
 	bool bMapUntrustedToDomain;
-	bool bFakeDirCreateTimes;
 };
 
 static struct global Globals;
@@ -475,6 +474,7 @@ struct service {
 	bool bDosFilemode;
 	bool bDosFiletimes;
 	bool bDosFiletimeResolution;
+	bool bFakeDirCreateTimes;
 	bool bBlockingLocks;
 	bool bInheritPerms;
 	bool bInheritACLS;
@@ -618,6 +618,7 @@ static struct service sDefault = {
 	False,			/* bDosFilemode */
 	True,			/* bDosFiletimes */
 	False,			/* bDosFiletimeResolution */
+	False,			/* bFakeDirCreateTimes */
 	True,			/* bBlockingLocks */
 	False,			/* bInheritPerms */
 	False,			/* bInheritACLS */
@@ -4301,8 +4302,8 @@ static struct parm_struct parm_table[] = {
 	{
 		.label		= "fake directory create times",
 		.type		= P_BOOL,
-		.p_class	= P_GLOBAL,
-		.ptr		= &Globals.bFakeDirCreateTimes,
+		.p_class	= P_LOCAL,
+		.ptr		= &sDefault.bFakeDirCreateTimes,
 		.special	= NULL,
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED | FLAG_GLOBAL,
@@ -5629,7 +5630,7 @@ FN_LOCAL_BOOL(lp_recursive_veto_delete, bDeleteVetoFiles)
 FN_LOCAL_BOOL(lp_dos_filemode, bDosFilemode)
 FN_LOCAL_BOOL(lp_dos_filetimes, bDosFiletimes)
 FN_LOCAL_BOOL(lp_dos_filetime_resolution, bDosFiletimeResolution)
-FN_GLOBAL_BOOL(lp_fake_dir_create_times, &Globals.bFakeDirCreateTimes)
+FN_LOCAL_BOOL(lp_fake_dir_create_times, bFakeDirCreateTimes)
 FN_LOCAL_BOOL(lp_blocking_locks, bBlockingLocks)
 FN_LOCAL_BOOL(lp_inherit_perms, bInheritPerms)
 FN_LOCAL_BOOL(lp_inherit_acls, bInheritACLS)
