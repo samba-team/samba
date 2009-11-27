@@ -95,7 +95,7 @@ def get_config_descriptor(domain_sid):
            "S:(AU;SA;WPWOWD;;;WD)(AU;SA;CR;;;BA)(AU;SA;CR;;;DU)" \
            "(OU;SA;CR;45ec5156-db7e-47bb-b53f-dbeb2d03c40f;;WD)"
     sec = security.descriptor.from_sddl(sddl, domain_sid)
-    return b64encode(ndr_pack(sec))
+    return ndr_pack(sec)
 
 def get_domain_descriptor(domain_sid):
     sddl= "O:BAG:BAD:AI(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;4828cc14-1437-45bc-9b07-ad6f015e5f28;RU)" \
@@ -148,7 +148,7 @@ def get_domain_descriptor(domain_sid):
     "(OU;CISA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)" \
     "(AU;SA;CR;;;DU)(AU;SA;CR;;;BA)(AU;SA;WPWOWD;;;WD)"
     sec = security.descriptor.from_sddl(sddl, domain_sid)
-    return b64encode(ndr_pack(sec))
+    return ndr_pack(sec)
 
 DEFAULTSITE = "Default-First-Site-Name"
 
@@ -897,7 +897,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
         else:
             domainguid_line = ""
 
-        descr = get_domain_descriptor(domainsid)
+        descr = b64encode(get_domain_descriptor(domainsid))
         setup_add_ldif(samdb, setup_path("provision_basedn.ldif"), {
                 "DOMAINDN": names.domaindn,
                 "DOMAINGUID": domainguid_line,
@@ -920,7 +920,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
             })
 
         message("Adding configuration container")
-        descr = get_config_descriptor(domainsid);
+        descr = b64encode(get_config_descriptor(domainsid))
         setup_add_ldif(samdb, setup_path("provision_configuration_basedn.ldif"), {
             "CONFIGDN": names.configdn, 
             "DESCRIPTOR": descr,

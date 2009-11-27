@@ -594,13 +594,13 @@ static int descriptor_do_mod(struct descriptor_context *ac)
 	const struct dsdb_class *objectclass;
 	struct ldb_message *msg;
 	struct ldb_control *sd_control;
+	struct ldb_control *sd_control2;
 	struct ldb_control **saved_controls;
 	int flags = 0;
 	uint32_t sd_flags = 0;
 
 	ldb = ldb_module_get_ctx(ac->module);
 	schema = dsdb_get_schema(ldb);
-
 	msg = ldb_msg_copy_shallow(ac, ac->req->op.mod.message);
 	objectclass_element = ldb_msg_find_element(ac->search_oc_res->message, "objectClass");
 	objectclass = get_last_structural_class(schema, objectclass_element);
@@ -611,6 +611,7 @@ static int descriptor_do_mod(struct descriptor_context *ac)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	sd_control = ldb_request_get_control(ac->req, LDB_CONTROL_SD_FLAGS_OID);
+	sd_control2 = ldb_request_get_control(ac->req, LDB_CONTROL_RECALCULATE_SD_OID);
 	if (sd_control) {
 		struct ldb_sd_flags_control *sdctr = (struct ldb_sd_flags_control *)sd_control->data;
 		sd_flags = sdctr->secinfo_flags;
@@ -637,7 +638,11 @@ static int descriptor_do_mod(struct descriptor_context *ac)
 			return ret;
 		}
 		tmp_element = ldb_msg_find_element(msg, "ntSecurityDescriptor");
-		tmp_element->flags = flags;
+		if (sd_control2) {
+			tmp_element->flags = LDB_FLAG_MOD_REPLACE;
+		} else {
+			tmp_element->flags = flags;
+		}
 	}
 	ret = ldb_build_mod_req(&mod_req, ldb, ac,
 				msg,
@@ -679,7 +684,6 @@ static int descriptor_do_add(struct descriptor_context *ac)
 	if (mem_ctx == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-
 	switch (ac->req->operation) {
 	case LDB_ADD:
 		msg = ldb_msg_copy_shallow(ac, ac->req->op.add.message);
@@ -768,6 +772,7 @@ static int descriptor_do_add(struct descriptor_context *ac)
 static int descriptor_change(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
+	struct ldb_control *sd_control;
 	struct ldb_request *search_req;
 	struct descriptor_context *ac;
 	struct ldb_dn *parent_dn, *dn;
@@ -784,7 +789,9 @@ static int descriptor_change(struct ldb_module *module, struct ldb_request *req)
 	case LDB_MODIFY:
 		dn = req->op.mod.message->dn;
 		sd_element = ldb_msg_find_element(req->op.mod.message, "nTSecurityDescriptor");
-		if (!sd_element) {
+		/* This control allow forcing the recalculation of the SD */
+		sd_control = ldb_request_get_control(req, LDB_CONTROL_RECALCULATE_SD_OID);
+		if (!sd_element && !sd_control) {
 			return ldb_next_request(module, req);
 		}
 		break;

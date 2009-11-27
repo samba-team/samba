@@ -463,7 +463,13 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
    \sa <a href="http://opends.dev.java.net/public/standards/draft-zeilenga-ldap-managedit.txt">draft managedit</a>.
 */
 #define LDB_CONTROL_RELAX_OID "1.3.6.1.4.1.4203.666.5.12"
+/**
+  OID for recalculate SD control. This control force the
+  dsdb code to recalculate the SD of the object as if the
+  object was just created.
 
+*/
+#define LDB_CONTROL_RECALCULATE_SD_OID "1.3.6.1.4.1.7165.4.3.5"
 /**
    OID for the paged results control. This control is included in the
    searchRequest and searchResultDone messages as part of the controls

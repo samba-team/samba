@@ -46,7 +46,7 @@ def get_schema_descriptor(domain_sid):
            "(AU;SA;CR;;;DU)(OU;SA;CR;e12b56b6-0a95-11d1-adbb-00c04fd8d5cd;;WD)" \
            "(OU;SA;CR;45ec5156-db7e-47bb-b53f-dbeb2d03c40f;;WD)"
     sec = security.descriptor.from_sddl(sddl, domain_sid)
-    return b64encode(ndr_pack(sec))
+    return ndr_pack(sec)
 
    
 class Schema(object):
@@ -79,7 +79,7 @@ class Schema(object):
                                                    "SERVERDN": serverdn,
                                                    })
 
-        descr = get_schema_descriptor(domain_sid)
+        descr = b64encode(get_schema_descriptor(domain_sid))
         self.schema_dn_add = read_and_sub_file(setup_path("provision_schema_basedn.ldif"),
                                                {"SCHEMADN": schemadn,
                                                 "DESCRIPTOR": descr

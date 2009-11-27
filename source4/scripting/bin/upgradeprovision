@@ -45,9 +45,10 @@ import ldb
 import samba.getopt as options
 from samba.samdb import SamDB
 from samba import param
-from samba.provision import  ProvisionNames,provision_paths_from_lp,find_setup_dir,FILL_FULL,provision
+from samba import glue
+from samba.provision import  ProvisionNames,provision_paths_from_lp,find_setup_dir,FILL_FULL,provision, get_domain_descriptor, get_config_descriptor, secretsdb_self_join
 from samba.provisionexceptions import ProvisioningError
-from samba.schema import get_dnsyntax_attributes, get_linked_attributes, Schema
+from samba.schema import get_dnsyntax_attributes, get_linked_attributes, Schema, get_schema_descriptor
 from samba.dcerpc import misc, security
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc.misc import SEC_CHAN_BDC
@@ -72,7 +73,7 @@ hashAttrNotCopied = { 	"dn": 1,"whenCreated": 1,"whenChanged": 1,"objectGUID": 1
 						"showInAdvancedViewOnly": 1,"instanceType": 1, "cn": 1, "msDS-Behavior-Version":1, "nextRid":1,\
 						"nTMixedDomain": 1,"versionNumber":1, "lmPwdHistory":1, "pwdLastSet": 1, "ntPwdHistory":1, "unicodePwd":1,\
 						"dBCSPwd":1,"supplementalCredentials":1,"gPCUserExtensionNames":1, "gPCMachineExtensionNames":1,\
-						"maxPwdAge":1, "mail":1, "secret":1}
+						"maxPwdAge":1, "mail":1, "secret":1,"possibleInferiors":1}
 
 # Usually for an object that already exists we do not overwrite attributes as they might have been changed for good
 # reasons. Anyway for a few of thems it's mandatory to replace them otherwise the provision will be broken somehow.
@@ -224,7 +225,7 @@ def guess_names_from_current_provision(credentials,session_info,paths):
 	attrs6 = ["objectGUID", "objectSid", ]
 	res6 = samdb.search(expression="(objectClass=*)",base=basedn, scope=SCOPE_BASE, attrs=attrs6)
 	names.domainguid = str(ndr_unpack( misc.GUID,res6[0]["objectGUID"][0]))
-	names.domainsid = str(ndr_unpack( security.dom_sid,res6[0]["objectSid"][0]))
+	names.domainsid = ndr_unpack( security.dom_sid,res6[0]["objectSid"][0])
 
 	# policy guid
 	attrs7 = ["cn","displayName"]
@@ -258,7 +259,7 @@ def print_names(names):
 	message(GUESS, "invocationid:"+names.invocation)
 	message(GUESS, "policyguid  :"+names.policyid)
 	message(GUESS, "policyguiddc:"+str(names.policyid_dc))
-	message(GUESS, "domainsid   :"+names.domainsid)
+	message(GUESS, "domainsid   :"+str(names.domainsid))
 	message(GUESS, "domainguid  :"+names.domainguid)
 	message(GUESS, "ntdsguid    :"+names.ntdsguid)
 
@@ -281,7 +282,7 @@ def newprovision(names,setup_dir,creds,session,smbconf):
 	provision(setup_dir, messageprovision,
 		session, creds, smbconf=smbconf, targetdir=provdir,
 		samdb_fill=FILL_FULL, realm=names.realm, domain=names.domain,
-		domainguid=names.domainguid, domainsid=names.domainsid,ntdsguid=names.ntdsguid,
+		domainguid=names.domainguid, domainsid=str(names.domainsid),ntdsguid=names.ntdsguid,
 		policyguid=names.policyid,policyguid_dc=names.policyid_dc,hostname=names.netbiosname,
 		hostip=None, hostip6=None,
 		invocationid=names.invocation, adminpass=None,
@@ -503,7 +504,7 @@ def check_diff_name(newpaths,paths,creds,session,basedn,names,ischema):
 		# The double ldb open and schema validation is taken from the initial provision script
 		# it's not certain that it is really needed ....
 		sam_ldb = Ldb(session_info=session, credentials=creds, lp=lp)
-		schema = Schema(setup_path, security.dom_sid(names.domainsid), schemadn=basedn, serverdn=str(names.serverdn))
+		schema = Schema(setup_path, names.domainsid, schemadn=basedn, serverdn=str(names.serverdn))
 		# Load the schema from the one we computed earlier
 		sam_ldb.set_schema_from_ldb(schema.ldb)
 		# And now we can connect to the DB - the schema won't be loaded from the DB
@@ -566,75 +567,76 @@ def check_diff_name(newpaths,paths,creds,session,basedn,names,ischema):
 	message(SIMPLE,"There are %d changed objects"%(changed))
 	return hashallSD
 
+# Check that SD are correct
+def check_updated_sd(newpaths,paths,creds,session,names):
+	newsam_ldb = Ldb(newpaths.samdb, session_info=session, credentials=creds,lp=lp)
+	sam_ldb = Ldb(paths.samdb, session_info=session, credentials=creds,lp=lp)
+	res = newsam_ldb.search(expression="objectClass=*",base=str(names.rootdn), scope=SCOPE_SUBTREE,attrs=["dn","nTSecurityDescriptor"],controls=["search_options:1:2"])
+	res2 = sam_ldb.search(expression="objectClass=*",base=str(names.rootdn), scope=SCOPE_SUBTREE,attrs=["dn","nTSecurityDescriptor"],controls=["search_options:1:2"])
+	hash_new = {}
+	for i in range(0,len(res)):
+		hash_new[str(res[i]["dn"]).lower()] = ndr_unpack(security.descriptor,str(res[i]["nTSecurityDescriptor"])).as_sddl(names.domainsid)
 
-# This function updates SD for AD objects.
-# As SD in the upgraded provision can be different for various reasons
-# this function check if an automatic update can be performed and do it
-# or if it can't be done.
-def update_sds(diffDefSD,diffSD,paths,creds,session,rootdn,domSIDTxt):
+	for i in range(0,len(res2)):
+		key = str(res2[i]["dn"]).lower()
+		if hash_new.has_key(key):
+			sddl = ndr_unpack(security.descriptor,str(res2[i]["nTSecurityDescriptor"])).as_sddl(names.domainsid)
+			if sddl != hash_new[key]:
+				print "%s new sddl/sddl in ref"%key
+				print "%s\n%s"%(sddl,hash_new[key])
+
+# Simple update method for updating the SD that rely on the fact that nobody should have modified the SD
+# This assumption is safe right now (alpha9) but should be removed asap
+def update_sd(newpaths,paths,creds,session,names):
 	sam_ldb = Ldb(paths.samdb, session_info=session, credentials=creds,lp=lp)
 	sam_ldb.transaction_start()
-	domSID = security.dom_sid(domSIDTxt)
-	hashClassSD = {}
-	admin_session_info = admin_session(lp, str(domSID))
-	system_session_info = system_session()
-	upgrade = 0
-	for dn in diffSD.keys():
-		newSD = diffSD[dn]["newSD"].as_sddl(domSID)
-		oldSD = diffSD[dn]["oldSD"].as_sddl(domSID)
-		message(CHANGESD, "ntsecuritydescriptor for %s has changed old %s new %s"%(dn,oldSD,diffSD[dn]["newSD"].as_sddl(domSID)))
-		# First let's find the defaultSD for the object which SD is different from the reference one.
-		res = sam_ldb.search(expression="dn=%s"%(dn),base=rootdn, scope=SCOPE_SUBTREE,attrs=["objectClass"],controls=["search_options:1:2"])
-		classObj = res[0]["objectClass"][-1]
-		defSD = ""
-		if hashClassSD.has_key(classObj):
-			defSD = hashClassSD[classObj]
-		else:
-			res2 = sam_ldb.search(expression="lDAPDisplayName=%s"%(classObj),base=rootdn, scope=SCOPE_SUBTREE,attrs=["defaultSecurityDescriptor"],controls=["search_options:1:2"])
-			if len(res2) > 0:
-				defSD = str(res2[0]["defaultSecurityDescriptor"])
-				hashClassSD[classObj] = defSD
-		# Because somewhere between alpha8 and alpha9 samba4 changed the owner of ACLs in the AD so
-		# we check if it's the case and if so use the "old" owner to see if the ACL is a direct calculation
-		# from the defaultSecurityDescriptor
-		session = admin_session_info
-		if oldSD.startswith("O:SYG:BA"):
-			session = system_session_info
-		descr = security.descriptor.ntsd_from_defaultsd(defSD, domSID,session)
-		if descr.as_sddl(domSID) != oldSD:
-			message(SIMPLE, "nTSecurity Descriptor for %s do not directly inherit from the defaultSecurityDescriptor and is different from the one of the reference provision, therefor I can't upgrade i")
-			message(SIMPLE,"Old Descriptor: %s"%(oldSD))
-			message(SIMPLE,"New Descriptor: %s"%(newSD))
-			if diffDefSD.has_key(classObj):
-				# We have a pending modification for the defaultSecurityDescriptor of the class Object of the currently inspected object
-				# and we have a conflict so write down that we won't upgrade this defaultSD for this class object
-				diffDefSD[classObj]["noupgrade"]=1
-		else:
-			# At this point we know that the SD was directly generated from the defaultSecurityDescriptor
-			# so we can take the new SD and replace the old one
-			upgrade = upgrade +1
-			delta = ldb.Message()
-			delta.dn = ldb.Dn(sam_ldb,dn)
-			delta["nTSecurityDescriptor"] = ldb.MessageElement( ndr_pack(diffSD[dn]["newSD"]),ldb.FLAG_MOD_REPLACE,"nTSecurityDescriptor" )
-		sam_ldb.modify(delta)
+	# First update the SD for the rootdn
+	sam_ldb.set_session_info(session)
+	res = sam_ldb.search(expression="objectClass=*",base=str(names.rootdn), scope=SCOPE_BASE,attrs=["dn","whenCreated"],controls=["search_options:1:2"])
+	delta = ldb.Message()
+	delta.dn = ldb.Dn(sam_ldb,str(res[0]["dn"]))
+	descr = get_domain_descriptor(names.domainsid)
+	delta["nTSecurityDescriptor"] = ldb.MessageElement( descr,ldb.FLAG_MOD_REPLACE,"nTSecurityDescriptor" )
+	sam_ldb.modify(delta,["recalculate_sd:0"])
+	# Then the config dn
+	res = sam_ldb.search(expression="objectClass=*",base=str(names.configdn), scope=SCOPE_BASE,attrs=["dn","whenCreated"],controls=["search_options:1:2"])
+	delta = ldb.Message()
+	delta.dn = ldb.Dn(sam_ldb,str(res[0]["dn"]))
+	descr = get_config_descriptor(names.domainsid)
+	delta["nTSecurityDescriptor"] = ldb.MessageElement( descr,ldb.FLAG_MOD_REPLACE,"nTSecurityDescriptor" )
+	sam_ldb.modify(delta,["recalculate_sd:0"])
+	# Then the schema dn
+	res = sam_ldb.search(expression="objectClass=*",base=str(names.schemadn), scope=SCOPE_BASE,attrs=["dn","whenCreated"],controls=["search_options:1:2"])
+	delta = ldb.Message()
+	delta.dn = ldb.Dn(sam_ldb,str(res[0]["dn"]))
+	descr = get_schema_descriptor(names.domainsid)
+	delta["nTSecurityDescriptor"] = ldb.MessageElement( descr,ldb.FLAG_MOD_REPLACE,"nTSecurityDescriptor" )
+	sam_ldb.modify(delta,["recalculate_sd:0"])
 
-	sam_ldb.transaction_commit()
-	message(SIMPLE,"%d nTSecurityDescriptor attribute(s) have been updated"%(upgrade))
-	sam_ldb.transaction_start()
-	upgrade = 0
-	for dn in diffDefSD:
-		message(CHANGESD, "DefaultSecurityDescriptor for class object %s has changed"%(dn))
-		if not diffDefSD[dn].has_key("noupgrade"):
-			upgrade = upgrade +1
-			delta = ldb.Message()
-			delta.dn = ldb.Dn(sam_ldb,dn)
-			delta["defaultSecurityDescriptor"] = ldb.MessageElement(diffDefSD[dn]["newSD"],ldb.FLAG_MOD_REPLACE,"defaultSecurityDescriptor" )
-			sam_ldb.modify(delta)
-		else:
-			message(CHANGESD,"Not updating the defaultSecurityDescriptor for class object %s as one or more dependant object hasn't been upgraded"%(dn))
+	# Then the rest
+	hash = {}
+	res = sam_ldb.search(expression="objectClass=*",base=str(names.rootdn), scope=SCOPE_SUBTREE,attrs=["dn","whenCreated"],controls=["search_options:1:2"])
+	for obj in res:
+		if not (str(obj["dn"]) == str(names.rootdn) or
+			str(obj["dn"]) == str(names.configdn) or \
+			str(obj["dn"]) == str(names.schemadn)):
+			hash[str(obj["dn"])] = obj["whenCreated"]
 
+	listkeys = hash.keys()
+	listkeys.sort(dn_sort)
+
+	for key in listkeys:
+		try:
+			delta = ldb.Message()
+			delta.dn = ldb.Dn(sam_ldb,key)
+			delta["whenCreated"] = ldb.MessageElement( hash[key],ldb.FLAG_MOD_REPLACE,"whenCreated" )
+			sam_ldb.modify(delta,["recalculate_sd:0"])
+		except:
+			sam_ldb.transaction_cancel()
+			res = sam_ldb.search(expression="objectClass=*",base=str(names.rootdn), scope=SCOPE_SUBTREE,attrs=["dn","nTSecurityDescriptor"],controls=["search_options:1:2"])
+			print "bad stuff" +ndr_unpack(security.descriptor,str(res[0]["nTSecurityDescriptor"])).as_sddl(names.domainsid)
+			return
 	sam_ldb.transaction_commit()
-	message(SIMPLE,"%d defaultSecurityDescriptor attribute(s) have been updated"%(upgrade))
 
 def rmall(topdir):
 	for root, dirs, files in os.walk(topdir, topdown=False):
@@ -681,37 +683,36 @@ def update_samdb(newpaths,paths,creds,session,names):
 	message(SIMPLE,"Scanning whole provision for updates and additions")
 	hashSD = check_diff_name(newpaths,paths,creds,session,str(names.rootdn),names,0)
 	message(SIMPLE,"Done with scanning")
-#	update_sds(hashdef,hashSD,paths,creds,session,str(names.rootdn),names.domainsid)
 
-def update_machine_account_password(newpaths,paths,creds,session,names):
+def update_machine_account_password(paths,creds,session,names):
 
-	secrets_ldb = Ldb(newpaths.secrets, session_info=session, credentials=creds,lp=lp)
+	secrets_ldb = Ldb(paths.secrets, session_info=session, credentials=creds,lp=lp)
 	secrets_ldb.transaction_start()
 	secrets_msg = secrets_ldb.search(expression=("samAccountName=%s$" % names.netbiosname), attrs=["secureChannelType"])
 	sam_ldb = Ldb(paths.samdb, session_info=session, credentials=creds,lp=lp)
-	if secrets_msg[0]["secureChannelType"][0] == SEC_CHAN_BDC:
-		sam_ldb.transaction_start()
+	sam_ldb.transaction_start()
+	if int(secrets_msg[0]["secureChannelType"][0]) == SEC_CHAN_BDC:
 		res = sam_ldb.search(expression=("samAccountName=%s$" % names.netbiosname), attrs=[])
 		assert(len(res) == 1)
 
 		msg = ldb.Message(res[0].dn)
-		machinepass = msg["userPassword"] = glue.generate_random_str(12)
-		for el in msg:
-			el.set_flags(ldb.FLAG_MOD_REPLACE)
+		machinepass = glue.generate_random_str(12)
+		msg["userPassword"] = ldb.MessageElement(machinepass, ldb.FLAG_MOD_REPLACE, "userPassword")
 		sam_ldb.modify(msg)
 
 		res = sam_ldb.search(expression=("samAccountName=%s$" % names.netbiosname),
 				     attrs=["msDs-keyVersionNumber"])
 		assert(len(res) == 1)
-		kvno = res[0]["msDs-keyVersionNumber"]
+		kvno = int(str(res[0]["msDs-keyVersionNumber"]))
 
 		secretsdb_self_join(secrets_ldb, domain=names.domain,
 				    realm=names.realm,
+					domainsid=names.domainsid,
 				    dnsdomain=names.dnsdomain,
 				    netbiosname=names.netbiosname,
 				    machinepass=machinepass,
 				    key_version_number=kvno,
-				    secure_channel_type=secrets_msg[0]["secureChannelType"])
+				    secure_channel_type=int(secrets_msg[0]["secureChannelType"][0]))
 		sam_ldb.transaction_prepare_commit()
 		secrets_ldb.transaction_prepare_commit()
 		sam_ldb.transaction_commit()
@@ -739,9 +740,16 @@ populate_backlink(newpaths,creds,session,names.schemadn)
 update_basesamdb(newpaths,paths,names)
 update_secrets(newpaths,paths,creds,session)
 update_privilege(newpaths,paths)
-update_machine_account_password(newpaths,paths,creds,session,names)
+update_machine_account_password(paths,creds,session,names)
+
 if opts.full:
 	update_samdb(newpaths,paths,creds,session,names)
+# SD should be created with admin but as some previous acl were so wrong that admin can't modify them we have first
+# to recreate them with the good form but with system account and then give the ownership to admin ...
+admin_session_info = admin_session(lp, str(names.domainsid))
+update_sd(newpaths,paths,creds,session,names)
+update_sd(newpaths,paths,creds,admin_session_info,names)
+check_updated_sd(newpaths,paths,creds,session,names)
 message(SIMPLE,"Upgrade finished !")
 # remove reference provision now that everything is done !
 rmall(provisiondir)
