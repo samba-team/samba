@@ -3362,6 +3362,25 @@ if test x"$with_ads_support" != x"no"; then
 		EXTRA_ALL_TARGETS="$EXTRA_ALL_TARGETS $WINBIND_KRB5_LOCATOR"
 	fi
   fi
+
+  # check for new heimdal KRB5_DEPRECATED handling
+
+  AC_CACHE_CHECK([for KRB5_DEPRECATED define taking an identifier],
+                samba_cv_HAVE_KRB5_DEPRECATED_WITH_IDENTIFIER,[
+    AC_TRY_COMPILE(
+      [#define KRB5_DEPRECATED 1
+      #include <krb5.h>],
+      [void main(void) {}],
+      samba_cv_HAVE_KRB5_DEPRECATED_WITH_IDENTIFIER=yes,
+      samba_cv_HAVE_KRB5_DEPRECATED_WITH_IDENTIFIER=no)])
+
+  if test x"$samba_cv_HAVE_KRB5_DEPRECATED_WITH_IDENTIFIER" = x"yes"; then
+    AC_DEFINE(KRB5_DEPRECATED, 1,
+	       [Whether to use deprecated krb5 interfaces])
+  else
+    AC_DEFINE(KRB5_DEPRECATED,,
+	       [Whether to use deprecated krb5 interfaces])
+  fi
 fi
 
 # Now we have determined whether we really want ADS support
