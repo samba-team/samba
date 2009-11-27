@@ -365,7 +365,7 @@ static int info_fn(struct file_list *fl, void *priv)
         }
 
 	/* Paranoia... */
-	if (sys_fstat(fd, &sbuf, lp_fake_dir_create_times()) != 0) {
+	if (sys_fstat(fd, &sbuf, false) != 0) {
 		d_fprintf(stderr,
 			_("info_fn: can't fstat file %s. Error was %s\n"),
 			basepath, strerror(errno) );
