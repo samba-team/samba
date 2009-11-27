@@ -6,6 +6,24 @@
   basically this is a wrapper around ldap
 */
 
+/*
+ * This should be under the HAVE_KRB5 flag but since they're used
+ * in lp_kerberos_method(), they ned to be always available
+ */
+#define KERBEROS_VERIFY_SECRETS 0
+#define KERBEROS_VERIFY_SYSTEM_KEYTAB 1
+#define KERBEROS_VERIFY_DEDICATED_KEYTAB 2
+#define KERBEROS_VERIFY_SECRETS_AND_KEYTAB 3
+
+/*
+ * If you add any entries to the above, please modify the below expressions
+ * so they remain accurate.
+ */
+#define USE_KERBEROS_KEYTAB (KERBEROS_VERIFY_SECRETS != lp_kerberos_method())
+#define USE_SYSTEM_KEYTAB \
+    ((KERBEROS_VERIFY_SECRETS_AND_KEYTAB == lp_kerberos_method()) || \
+     (KERBEROS_VERIFY_SYSTEM_KEYTAB == lp_kerberos_method()))
+
 enum wb_posix_mapping {
 	WB_POSIX_MAP_UNKNOWN    = -1,
 	WB_POSIX_MAP_TEMPLATE 	= 0, 
@@ -339,61 +357,8 @@ typedef void **ADS_MODLIST;
 /* Kerberos environment variable names */
 #define KRB5_ENV_CCNAME "KRB5CCNAME"
 
-/* Heimdal uses a slightly different name */
-#if defined(HAVE_ENCTYPE_ARCFOUR_HMAC_MD5)
-#define ENCTYPE_ARCFOUR_HMAC ENCTYPE_ARCFOUR_HMAC_MD5
-#endif
-
-/* The older versions of heimdal that don't have this
-   define don't seem to use it anyway.  I'm told they
-   always use a subkey */
-#ifndef HAVE_AP_OPTS_USE_SUBKEY
-#define AP_OPTS_USE_SUBKEY 0
-#endif
-
 #define WELL_KNOWN_GUID_COMPUTERS	"AA312825768811D1ADED00C04FD8D5CD" 
 #define WELL_KNOWN_GUID_USERS		"A9D1CA15768811D1ADED00C04FD8D5CD"
-
-#ifndef KRB5_ADDR_NETBIOS
-#define KRB5_ADDR_NETBIOS 0x14
-#endif
-
-#ifndef KRB5KRB_ERR_RESPONSE_TOO_BIG
-#define KRB5KRB_ERR_RESPONSE_TOO_BIG (-1765328332L)
-#endif
-
-#ifdef HAVE_KRB5
-typedef struct {
-#if defined(HAVE_MAGIC_IN_KRB5_ADDRESS) && defined(HAVE_ADDRTYPE_IN_KRB5_ADDRESS) /* MIT */
-	krb5_address **addrs;
-#elif defined(HAVE_KRB5_ADDRESSES) /* Heimdal */
-	krb5_addresses *addrs;
-#else
-#error UNKNOWN_KRB5_ADDRESS_TYPE
-#endif /* defined(HAVE_MAGIC_IN_KRB5_ADDRESS) && defined(HAVE_ADDRTYPE_IN_KRB5_ADDRESS) */
-} smb_krb5_addresses;
-
-#ifdef HAVE_KRB5_KEYBLOCK_KEYVALUE /* Heimdal */
-#define KRB5_KEY_TYPE(k)	((k)->keytype)
-#define KRB5_KEY_LENGTH(k)	((k)->keyvalue.length)
-#define KRB5_KEY_DATA(k)	((k)->keyvalue.data)
-#define KRB5_KEY_DATA_CAST	void
-#else /* MIT */
-#define KRB5_KEY_TYPE(k)	((k)->enctype)
-#define KRB5_KEY_LENGTH(k)	((k)->length)
-#define KRB5_KEY_DATA(k)	((k)->contents)
-#define KRB5_KEY_DATA_CAST	krb5_octet
-#endif /* HAVE_KRB5_KEYBLOCK_KEYVALUE */
-
-#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEY               /* MIT */
-#define KRB5_KT_KEY(k)		(&(k)->key)
-#elif HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK          /* Heimdal */
-#define KRB5_KT_KEY(k)		(&(k)->keyblock)
-#else
-#error krb5_keytab_entry has no key or keyblock member
-#endif /* HAVE_KRB5_KEYTAB_ENTRY_KEY */
-
-#endif /* HAVE_KRB5 */
 
 enum ads_extended_dn_flags {
 	ADS_EXTENDED_DN_HEX_STRING	= 0,

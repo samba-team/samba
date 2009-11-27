@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "smb_krb5.h"
 
 /*
   generate a negTokenInit packet given a GUID, a list of supported
