@@ -442,8 +442,7 @@ static void cgi_download(char *file)
 		}
 	}
 
-	if (sys_stat(file, &st) != 0) 
-	{
+	if (sys_stat(file, &st, lp_fake_dir_create_times()) != 0)	{
 		cgi_setup_error("404 File Not Found","",
 				"The requested file was not found");
 	}

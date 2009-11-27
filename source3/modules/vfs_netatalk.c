@@ -80,7 +80,7 @@ static int atalk_build_paths(TALLOC_CTX *ctx, const char *path, const char *fnam
 	/* get pointer to last '/' */
 	ptr1 = atalk_get_path_ptr(*orig_path);
 
-	sys_lstat(*orig_path, orig_info);
+	sys_lstat(*orig_path, orig_info, lp_fake_dir_create_times());
 
 	if (S_ISDIR(orig_info->st_ex_mode)) {
 		*adbl_path = talloc_asprintf(ctx, "%s/%s/%s/", 
@@ -95,7 +95,7 @@ static int atalk_build_paths(TALLOC_CTX *ctx, const char *path, const char *fnam
 #if 0
 	DEBUG(3, ("ATALK: DEBUG:\n%s\n%s\n", *orig_path, *adbl_path)); 
 #endif
-	sys_lstat(*adbl_path, adbl_info);
+	sys_lstat(*adbl_path, adbl_info, lp_fake_dir_create_times());
 	return 0;
 }
 

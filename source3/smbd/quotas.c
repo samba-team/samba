@@ -224,7 +224,7 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
 
 	/* find the block device file */
 
-	if ( sys_stat(path, &S) == -1 )
+	if ( sys_stat(path, &S, lp_fake_dir_create_times()) == -1 )
 		return(False) ;
 
 	devno = S.st_ex_dev ;
@@ -235,7 +235,8 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
 	found = False ;
 
 	while ((mnt = getmntent(fp))) {
-		if ( sys_stat(mnt->mnt_dir,&S) == -1 )
+		if ( sys_stat(mnt->mnt_dir, &S, lp_fake_dir_create_times())
+		     == -1 )
 			continue ;
 
 		if (S.st_ex_dev == devno) {
@@ -317,7 +318,7 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
 	int quota_default = 0 ;
 	bool found = false;
 
-	if (sys_stat(path,&sbuf) == -1) {
+	if (sys_stat(path, &sbuf, lp_fake_dir_create_times()) == -1) {
 		return false;
 	}
 
@@ -328,7 +329,8 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
 	}
 
 	while ((mnt = getmntent(fd)) != NULL) {
-		if (sys_stat(mnt->mnt_dir,&sbuf) == -1) {
+		if (sys_stat(mnt->mnt_dir, &sbuf, lp_fake_dir_create_times())
+		    == -1) {
 			continue;
 		}
 		if (sbuf.st_ex_dev == devno) {
@@ -599,7 +601,7 @@ bool disk_quotas(const char *path,
 
 	euser_id = geteuid();
 
-	if (sys_stat(path,&sbuf) == -1) {
+	if (sys_stat(path, &sbuf, lp_fake_dir_create_times()) == -1) {
 		return false;
 	}
 
@@ -612,7 +614,8 @@ bool disk_quotas(const char *path,
 	}
 
 	while (getmntent(fd, &mnt) == 0) {
-		if (sys_stat(mnt.mnt_mountp, &sbuf) == -1) {
+		if (sys_stat(mnt.mnt_mountp, &sbuf,
+			     lp_fake_dir_create_times()) == -1) {
 			continue;
 		}
 
@@ -639,7 +642,8 @@ bool disk_quotas(const char *path,
 	}
 
 	while ((mnt = getmntent(fd)) != NULL) {
-		if (sys_stat(mnt->mnt_dir,&sbuf) == -1) {
+		if (sys_stat(mnt->mnt_dir, &sbuf,
+			     lp_fake_dir_create_times()) == -1) {
 			continue;
 		}
 		DEBUG(5,("disk_quotas: testing \"%s\" devno=%x\n",
@@ -832,7 +836,7 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
   
   /* find the block device file */
   
-  if ( sys_stat(path, &S) == -1 ) {
+  if ( sys_stat(path, &S, lp_fake_dir_create_times()) == -1 ) {
     return(False) ;
   }
 
@@ -842,7 +846,7 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
   found = False ;
   
   while ((mnt = getmntent(fp))) {
-    if ( sys_stat(mnt->mnt_dir,&S) == -1 )
+    if ( sys_stat(mnt->mnt_dir, &S, lp_fake_dir_create_times()) == -1 )
       continue ;
     if (S.st_ex_dev == devno) {
       found = True ;
@@ -1154,9 +1158,11 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
    * to have a significant performance boost when
    * lstat calls on /dev access this function.
    */
-  if ((sys_stat(path, &S)<0) || (devnm(S_IFBLK, S.st_ex_dev, dev_disk, 256, 1)<0))
+  if ((sys_stat(path, &S, lp_fake_dir_create_times())<0)
+      || (devnm(S_IFBLK, S.st_ex_dev, dev_disk, 256, 1)<0))
 #else
-  if ((sys_stat(path, &S)<0) || (devnm(S_IFBLK, S.st_ex_dev, dev_disk, 256, 0)<0))
+  if ((sys_stat(path, &S, lp_fake_dir_create_times())<0)
+      || (devnm(S_IFBLK, S.st_ex_dev, dev_disk, 256, 0)<0))
 	return (False);
 #endif /* ifdef HPUX */
 
@@ -1183,7 +1189,7 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
     SMB_STRUCT_STAT st;
     int mntsize, i;
     
-    if (sys_stat(path,&st) < 0)
+    if (sys_stat(path, &st, lp_fake_dir_create_times()) < 0)
         return False;
     devno = st.st_ex_dev;
 
@@ -1192,7 +1198,7 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
         return False;
 
     for (i = 0; i < mntsize; i++) {
-        if (sys_stat(mnts[i].f_mntonname,&st) < 0)
+	if (sys_stat(mnts[i].f_mntonname, &st, lp_fake_dir_create_times()) < 0)
             return False;
         if (st.st_ex_dev == devno)
             break;

@@ -487,7 +487,8 @@ static int copy_reg(const char *source, const char *dest)
 	int ifd = -1;
 	int ofd = -1;
 
-	if (sys_lstat (source, &source_stats) == -1)
+	if (sys_lstat (source, &source_stats,
+		       lp_fake_dir_create_times()) == -1)
 		return -1;
 
 	if (!S_ISREG (source_stats.st_ex_mode))
@@ -615,7 +616,8 @@ static int vfswrap_stat(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	result = sys_stat(smb_fname->base_name, &smb_fname->st);
+	result = sys_stat(smb_fname->base_name, &smb_fname->st,
+			  lp_fake_dir_create_times());
  out:
 	END_PROFILE(syscall_stat);
 	return result;
@@ -626,7 +628,8 @@ static int vfswrap_fstat(vfs_handle_struct *handle, files_struct *fsp, SMB_STRUC
 	int result;
 
 	START_PROFILE(syscall_fstat);
-	result = sys_fstat(fsp->fh->fd, sbuf);
+	result = sys_fstat(fsp->fh->fd,
+			   sbuf, lp_fake_dir_create_times());
 	END_PROFILE(syscall_fstat);
 	return result;
 }
@@ -643,7 +646,8 @@ static int vfswrap_lstat(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	result = sys_lstat(smb_fname->base_name, &smb_fname->st);
+	result = sys_lstat(smb_fname->base_name, &smb_fname->st,
+			   lp_fake_dir_create_times());
  out:
 	END_PROFILE(syscall_lstat);
 	return result;
