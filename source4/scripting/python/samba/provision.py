@@ -1135,7 +1135,7 @@ def provision(setup_dir, message, session_info,
         os.mkdir(os.path.join(paths.private_dir,"tls"))
 
     ldapi_url = "ldapi://%s" % urllib.quote(paths.s4_ldapi_path, safe="")
-    
+ 
     schema = Schema(setup_path, domainsid, schemadn=names.schemadn, serverdn=names.serverdn)
     
     if backend_type == "ldb":
@@ -1266,14 +1266,13 @@ def provision(setup_dir, message, session_info,
         message("Setting up sam.ldb rootDSE marking as synchronized")
         setup_modify_ldif(samdb, setup_path("provision_rootdse_modify.ldif"))
 
-
         secretsdb_self_join(secrets_ldb, domain=names.domain,
-                             realm=names.realm,
-                             dnsdomain=names.dnsdomain,
-                             netbiosname=names.netbiosname,
-                             domainsid=domainsid, 
-                             machinepass=machinepass,
-                             secure_channel_type=SEC_CHAN_BDC)
+                            realm=names.realm,
+                            dnsdomain=names.dnsdomain,
+                            netbiosname=names.netbiosname,
+                            domainsid=domainsid, 
+                            machinepass=machinepass,
+                            secure_channel_type=SEC_CHAN_BDC)
 
         if serverrole == "domain controller":
             secretsdb_setup_dns(secrets_ldb, setup_path, 
