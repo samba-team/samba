@@ -791,6 +791,16 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
 		ret = module->ops->del(module, req);
 		break;
 	case LDB_RENAME:
+		if (!ldb_dn_validate(req->op.rename.olddn)) {
+			ldb_asprintf_errstring(ldb, "ldb_rename: invalid olddn '%s'",
+					       ldb_dn_get_linearized(req->op.rename.olddn));
+			return LDB_ERR_INVALID_DN_SYNTAX;
+		}
+		if (!ldb_dn_validate(req->op.rename.newdn)) {
+			ldb_asprintf_errstring(ldb, "ldb_rename: invalid newdn '%s'",
+					       ldb_dn_get_linearized(req->op.rename.newdn));
+			return LDB_ERR_INVALID_DN_SYNTAX;
+		}
 		FIRST_OP(ldb, rename);
 		ret = module->ops->rename(module, req);
 		break;

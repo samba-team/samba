@@ -63,15 +63,6 @@ int main(int argc, const char **argv)
 	dn1 = ldb_dn_new(ldb, ldb, options->argv[0]);
 	dn2 = ldb_dn_new(ldb, ldb, options->argv[1]);
 
-	if ( ! ldb_dn_validate(dn1)) {
-		printf("Invalid DN1: %s\n", options->argv[0]);
-		return -1;
-	}
-	if ( ! ldb_dn_validate(dn2)) {
-		printf("Invalid DN2: %s\n", options->argv[1]);
-		return -1;
-	}
-
 	ret = ldb_rename(ldb, dn1, dn2);
 	if (ret == 0) {
 		printf("Renamed 1 record\n");
