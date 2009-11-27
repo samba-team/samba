@@ -1322,7 +1322,7 @@ def provision(setup_dir, message, session_info,
     message("DNS Domain:            %s" % names.dnsdomain)
     message("DOMAIN SID:            %s" % str(domainsid))
     if samdb_fill == FILL_FULL:
-        message("Admin password:    %s" % adminpass)
+        message("Admin password:        %s" % adminpass)
     if provision_backend.type is not "ldb":
         if provision_backend.credentials.get_bind_dn() is not None:
             message("LDAP Backend Admin DN: %s" % provision_backend.credentials.get_bind_dn())
