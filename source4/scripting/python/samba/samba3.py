@@ -684,7 +684,7 @@ class ParamFile(object):
         section = None
         for i, l in enumerate(open(filename, 'r').xreadlines()):
             l = l.strip()
-            if not l:
+            if not l or l[0] == '#' or l[0] == ';':
                 continue
             if l[0] == "[" and l[-1] == "]":
                 section = self._sanitize_name(l[1:-1])
