@@ -80,6 +80,13 @@ struct brl_handle {
 	struct lock_struct last_lock;
 };
 
+/* see if we have wrapped locks, which are no longer allowed (windows
+ * changed this in win7 */
+static bool brl_invalid_lock_range(uint64_t start, uint64_t size)
+{
+	return (size > 1 && (start + size < start));
+}
+
 /*
   Open up the brlock.tdb database. Close it down using
   talloc_free(). We need the messaging_ctx to allow for
@@ -299,6 +306,10 @@ static NTSTATUS brl_tdb_lock(struct brl_context *brl,
 	kbuf.dptr = brlh->key.data;
 	kbuf.dsize = brlh->key.length;
 
+	if (brl_invalid_lock_range(start, size)) {
+		return NT_STATUS_INVALID_LOCK_RANGE;
+	}
+
 	if (tdb_chainlock(brl->w->tdb, kbuf) != 0) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -448,6 +459,10 @@ static NTSTATUS brl_tdb_unlock(struct brl_context *brl,
 
 	kbuf.dptr = brlh->key.data;
 	kbuf.dsize = brlh->key.length;
+
+	if (brl_invalid_lock_range(start, size)) {
+		return NT_STATUS_INVALID_LOCK_RANGE;
+	}
 
 	if (tdb_chainlock(brl->w->tdb, kbuf) != 0) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -619,6 +634,10 @@ static NTSTATUS brl_tdb_locktest(struct brl_context *brl,
 
 	kbuf.dptr = brlh->key.data;
 	kbuf.dsize = brlh->key.length;
+
+	if (brl_invalid_lock_range(start, size)) {
+		return NT_STATUS_INVALID_LOCK_RANGE;
+	}
 
 	dbuf = tdb_fetch(brl->w->tdb, kbuf);
 	if (dbuf.dptr == NULL) {
