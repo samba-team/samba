@@ -2139,11 +2139,11 @@ static bool test_EnumPrinterData(struct torture_context *tctx, struct dcerpc_pip
 
 		torture_assert_ntstatus_ok(tctx, status, "EnumPrinterData failed");
 
-		test_GetPrinterData(tctx, p, handle, r.out.value_name);
+		torture_assert(tctx, test_GetPrinterData(tctx, p, handle, r.out.value_name),
+			talloc_asprintf(tctx, "failed to call GetPrinterData for %s\n", r.out.value_name));
 
-		test_GetPrinterDataEx(tctx,
-			p, handle, "PrinterDriverData",
-			r.out.value_name);
+		torture_assert(tctx, test_GetPrinterDataEx(tctx, p, handle, "PrinterDriverData", r.out.value_name),
+			talloc_asprintf(tctx, "failed to call GetPrinterDataEx on PrinterDriverData for %s\n", r.out.value_name));
 
 		r.in.enum_index++;
 
@@ -2436,6 +2436,10 @@ static bool test_OpenPrinterEx(struct torture_context *tctx,
 	}
 
 	if (!test_EnumPrinterDataEx(tctx, p, &handle)) {
+		ret = false;
+	}
+
+	if (!test_printer_keys(tctx, p, &handle)) {
 		ret = false;
 	}
 
