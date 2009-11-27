@@ -4857,15 +4857,15 @@ uint32_t add_a_printer_driver(TALLOC_CTX *mem_ctx,
 			      char **driver_name,
 			      uint32_t *version);
 WERROR get_a_printer_driver(TALLOC_CTX *mem_ctx,
-			    union spoolss_DriverInfo **driver_p, uint32_t level,
+			    struct spoolss_DriverInfo8 **driver_p,
 			    const char *drivername, const char *architecture,
 			    uint32_t version);
-uint32_t free_a_printer_driver(union spoolss_DriverInfo *driver);
-bool printer_driver_in_use(const struct spoolss_DriverInfo3 *info_3);
+uint32_t free_a_printer_driver(struct spoolss_DriverInfo8 *driver);
+bool printer_driver_in_use(const struct spoolss_DriverInfo8 *r);
 bool printer_driver_files_in_use(TALLOC_CTX *mem_ctx,
-				 struct spoolss_DriverInfo3 *info);
+				 struct spoolss_DriverInfo8 *r);
 WERROR delete_printer_driver(struct pipes_struct *rpc_pipe,
-			     const struct spoolss_DriverInfo3 *info_3,
+			     const struct spoolss_DriverInfo8 *r,
 			     uint32 version, bool delete_files );
 WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr);
 bool nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **secdesc_ctr);

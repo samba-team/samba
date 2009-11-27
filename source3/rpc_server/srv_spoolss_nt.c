@@ -1928,8 +1928,8 @@ WERROR _spoolss_DeletePrinterDriver(pipes_struct *p,
 				    struct spoolss_DeletePrinterDriver *r)
 {
 
-	union spoolss_DriverInfo *info = NULL;
-	union spoolss_DriverInfo *info_win2k = NULL;
+	struct spoolss_DriverInfo8 *info = NULL;
+	struct spoolss_DriverInfo8 *info_win2k = NULL;
 	int				version;
 	WERROR				status;
 	WERROR				status_win2k = WERR_ACCESS_DENIED;
@@ -1953,7 +1953,7 @@ WERROR _spoolss_DeletePrinterDriver(pipes_struct *p,
 	if ((version = get_version_id(r->in.architecture)) == -1)
 		return WERR_INVALID_ENVIRONMENT;
 
-	if (!W_ERROR_IS_OK(get_a_printer_driver(p->mem_ctx, &info, 3, r->in.driver,
+	if (!W_ERROR_IS_OK(get_a_printer_driver(p->mem_ctx, &info, r->in.driver,
 						r->in.architecture,
 						version)))
 	{
@@ -1962,7 +1962,7 @@ WERROR _spoolss_DeletePrinterDriver(pipes_struct *p,
 		if ( version == 2 ) {
 			version = 3;
 			if (!W_ERROR_IS_OK(get_a_printer_driver(p->mem_ctx,
-								&info, 3,
+								&info,
 								r->in.driver,
 								r->in.architecture,
 								version))) {
@@ -1978,7 +1978,7 @@ WERROR _spoolss_DeletePrinterDriver(pipes_struct *p,
 
 	}
 
-	if (printer_driver_in_use(&info->info3)) {
+	if (printer_driver_in_use(info)) {
 		status = WERR_PRINTER_DRIVER_IN_USE;
 		goto done;
 	}
@@ -1986,7 +1986,7 @@ WERROR _spoolss_DeletePrinterDriver(pipes_struct *p,
 	if ( version == 2 )
 	{
 		if (W_ERROR_IS_OK(get_a_printer_driver(p->mem_ctx,
-						       &info_win2k, 3,
+						       &info_win2k,
 						       r->in.driver,
 						       r->in.architecture, 3)))
 		{
@@ -1994,7 +1994,7 @@ WERROR _spoolss_DeletePrinterDriver(pipes_struct *p,
 			/* remove the Win2k driver first*/
 
 			status_win2k = delete_printer_driver(
-				p, &info_win2k->info3, 3, false);
+				p, info_win2k, 3, false);
 			free_a_printer_driver(info_win2k);
 
 			/* this should not have failed---if it did, report to client */
@@ -2006,7 +2006,7 @@ WERROR _spoolss_DeletePrinterDriver(pipes_struct *p,
 		}
 	}
 
-	status = delete_printer_driver(p, &info->info3, version, false);
+	status = delete_printer_driver(p, info, version, false);
 
 	/* if at least one of the deletes succeeded return OK */
 
@@ -2026,8 +2026,8 @@ done:
 WERROR _spoolss_DeletePrinterDriverEx(pipes_struct *p,
 				      struct spoolss_DeletePrinterDriverEx *r)
 {
-	union spoolss_DriverInfo	*info = NULL;
-	union spoolss_DriverInfo	*info_win2k = NULL;
+	struct spoolss_DriverInfo8	*info = NULL;
+	struct spoolss_DriverInfo8	*info_win2k = NULL;
 	int				version;
 	bool				delete_files;
 	WERROR				status;
@@ -2055,7 +2055,7 @@ WERROR _spoolss_DeletePrinterDriverEx(pipes_struct *p,
 	if (r->in.delete_flags & DPD_DELETE_SPECIFIC_VERSION)
 		version = r->in.version;
 
-	status = get_a_printer_driver(p->mem_ctx, &info, 3, r->in.driver,
+	status = get_a_printer_driver(p->mem_ctx, &info, r->in.driver,
 				      r->in.architecture, version);
 
 	if ( !W_ERROR_IS_OK(status) )
@@ -2072,7 +2072,7 @@ WERROR _spoolss_DeletePrinterDriverEx(pipes_struct *p,
 		/* try for Win2k driver if "Windows NT x86" */
 
 		version = 3;
-		if (!W_ERROR_IS_OK(get_a_printer_driver(p->mem_ctx, &info, 3, r->in.driver,
+		if (!W_ERROR_IS_OK(get_a_printer_driver(p->mem_ctx, &info, r->in.driver,
 							r->in.architecture,
 							version))) {
 			status = WERR_UNKNOWN_PRINTER_DRIVER;
@@ -2080,7 +2080,7 @@ WERROR _spoolss_DeletePrinterDriverEx(pipes_struct *p,
 		}
 	}
 
-	if ( printer_driver_in_use(&info->info3) ) {
+	if (printer_driver_in_use(info)) {
 		status = WERR_PRINTER_DRIVER_IN_USE;
 		goto done;
 	}
@@ -2101,7 +2101,7 @@ WERROR _spoolss_DeletePrinterDriverEx(pipes_struct *p,
 
 	/* fail if any files are in use and DPD_DELETE_ALL_FILES is set */
 
-	if ( delete_files && printer_driver_files_in_use(info, &info->info3) & (r->in.delete_flags & DPD_DELETE_ALL_FILES) ) {
+	if (delete_files && printer_driver_files_in_use(info, info) & (r->in.delete_flags & DPD_DELETE_ALL_FILES)) {
 		/* no idea of the correct error here */
 		status = WERR_ACCESS_DENIED;
 		goto done;
@@ -2111,12 +2111,12 @@ WERROR _spoolss_DeletePrinterDriverEx(pipes_struct *p,
 	/* also check for W32X86/3 if necessary; maybe we already have? */
 
 	if ( (version == 2) && ((r->in.delete_flags & DPD_DELETE_SPECIFIC_VERSION) != DPD_DELETE_SPECIFIC_VERSION)  ) {
-		if (W_ERROR_IS_OK(get_a_printer_driver(p->mem_ctx, &info_win2k, 3,
+		if (W_ERROR_IS_OK(get_a_printer_driver(p->mem_ctx, &info_win2k,
 						       r->in.driver,
 						       r->in.architecture, 3)))
 		{
 
-			if ( delete_files && printer_driver_files_in_use(info, &info_win2k->info3) & (r->in.delete_flags & DPD_DELETE_ALL_FILES) ) {
+			if (delete_files && printer_driver_files_in_use(info, info_win2k) & (r->in.delete_flags & DPD_DELETE_ALL_FILES) ) {
 				/* no idea of the correct error here */
 				free_a_printer_driver(info_win2k);
 				status = WERR_ACCESS_DENIED;
@@ -2127,7 +2127,7 @@ WERROR _spoolss_DeletePrinterDriverEx(pipes_struct *p,
 			/* remove the Win2k driver first*/
 
 			status_win2k = delete_printer_driver(
-				p, &info_win2k->info3, 3, delete_files);
+				p, info_win2k, 3, delete_files);
 			free_a_printer_driver(info_win2k);
 
 			/* this should not have failed---if it did, report to client */
@@ -2137,7 +2137,7 @@ WERROR _spoolss_DeletePrinterDriverEx(pipes_struct *p,
 		}
 	}
 
-	status = delete_printer_driver(p, &info->info3, version, delete_files);
+	status = delete_printer_driver(p, info, version, delete_files);
 
 	if ( W_ERROR_IS_OK(status) || W_ERROR_IS_OK(status_win2k) )
 		status = WERR_OK;
@@ -4476,6 +4476,8 @@ static const char **string_array_from_driver_info(TALLOC_CTX *mem_ctx,
 		if (in && strlen(in)) { \
 			out = talloc_strdup(mem_ctx, in); \
 			W_ERROR_HAVE_NO_MEMORY(out); \
+		} else { \
+			out = NULL; \
 		} \
 	} while (0);
 
@@ -4495,7 +4497,7 @@ static const char **string_array_from_driver_info(TALLOC_CTX *mem_ctx,
 
 static WERROR fill_printer_driver_info1(TALLOC_CTX *mem_ctx,
 					struct spoolss_DriverInfo1 *r,
-					const struct spoolss_DriverInfo3 *driver,
+					const struct spoolss_DriverInfo8 *driver,
 					const char *servername,
 					const char *architecture)
 {
@@ -4511,7 +4513,7 @@ static WERROR fill_printer_driver_info1(TALLOC_CTX *mem_ctx,
 
 static WERROR fill_printer_driver_info2(TALLOC_CTX *mem_ctx,
 					struct spoolss_DriverInfo2 *r,
-					const struct spoolss_DriverInfo3 *driver,
+					const struct spoolss_DriverInfo8 *driver,
 					const char *servername)
 
 {
@@ -4545,7 +4547,7 @@ static WERROR fill_printer_driver_info2(TALLOC_CTX *mem_ctx,
 
 static WERROR fill_printer_driver_info3(TALLOC_CTX *mem_ctx,
 					struct spoolss_DriverInfo3 *r,
-					const struct spoolss_DriverInfo3 *driver,
+					const struct spoolss_DriverInfo8 *driver,
 					const char *servername)
 {
 	const char *cservername = canon_servername(servername);
@@ -4593,7 +4595,7 @@ static WERROR fill_printer_driver_info3(TALLOC_CTX *mem_ctx,
 
 static WERROR fill_printer_driver_info4(TALLOC_CTX *mem_ctx,
 					struct spoolss_DriverInfo4 *r,
-					const struct spoolss_DriverInfo3 *driver,
+					const struct spoolss_DriverInfo8 *driver,
 					const char *servername)
 {
 	const char *cservername = canon_servername(servername);
@@ -4634,7 +4636,7 @@ static WERROR fill_printer_driver_info4(TALLOC_CTX *mem_ctx,
 			   r->default_datatype);
 
 	r->previous_names = string_array_from_driver_info(mem_ctx,
-							  NULL,
+							  driver->previous_names,
 							  cservername);
 
 	return WERR_OK;
@@ -4646,7 +4648,7 @@ static WERROR fill_printer_driver_info4(TALLOC_CTX *mem_ctx,
 
 static WERROR fill_printer_driver_info5(TALLOC_CTX *mem_ctx,
 					struct spoolss_DriverInfo5 *r,
-					const struct spoolss_DriverInfo3 *driver,
+					const struct spoolss_DriverInfo8 *driver,
 					const char *servername)
 {
 	const char *cservername = canon_servername(servername);
@@ -4682,7 +4684,7 @@ static WERROR fill_printer_driver_info5(TALLOC_CTX *mem_ctx,
 
 static WERROR fill_printer_driver_info6(TALLOC_CTX *mem_ctx,
 					struct spoolss_DriverInfo6 *r,
-					const struct spoolss_DriverInfo3 *driver,
+					const struct spoolss_DriverInfo8 *driver,
 					const char *servername)
 {
 	const char *cservername = canon_servername(servername);
@@ -4722,19 +4724,23 @@ static WERROR fill_printer_driver_info6(TALLOC_CTX *mem_ctx,
 							   driver->dependent_files,
 							   cservername);
 	r->previous_names = string_array_from_driver_info(mem_ctx,
-							  NULL,
+							  driver->previous_names,
 							  cservername);
 
-	r->driver_date		= 0;
-	r->driver_version	= 0;
+	r->driver_date		= driver->driver_date;
+	r->driver_version	= driver->driver_version;
 
-	FILL_DRIVER_STRING(mem_ctx, "",
+	FILL_DRIVER_STRING(mem_ctx,
+			   driver->manufacturer_name,
 			   r->manufacturer_name);
-	FILL_DRIVER_STRING(mem_ctx, "",
+	FILL_DRIVER_STRING(mem_ctx,
+			   driver->manufacturer_url,
 			   r->manufacturer_url);
-	FILL_DRIVER_STRING(mem_ctx, "",
+	FILL_DRIVER_STRING(mem_ctx,
+			   driver->hardware_id,
 			   r->hardware_id);
-	FILL_DRIVER_STRING(mem_ctx, "",
+	FILL_DRIVER_STRING(mem_ctx,
+			   driver->provider,
 			   r->provider);
 
 	return WERR_OK;
@@ -4763,7 +4769,7 @@ static WERROR fill_spoolss_DriverFileInfo(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 static WERROR spoolss_DriverFileInfo_from_driver(TALLOC_CTX *mem_ctx,
-						 const struct spoolss_DriverInfo3 *driver,
+						 const struct spoolss_DriverInfo8 *driver,
 						 const char *cservername,
 						 struct spoolss_DriverFileInfo **info_p,
 						 uint32_t *count_p)
@@ -4863,7 +4869,7 @@ static WERROR spoolss_DriverFileInfo_from_driver(TALLOC_CTX *mem_ctx,
 
 static WERROR fill_printer_driver_info101(TALLOC_CTX *mem_ctx,
 					  struct spoolss_DriverInfo101 *r,
-					  const struct spoolss_DriverInfo3 *driver,
+					  const struct spoolss_DriverInfo8 *driver,
 					  const char *servername)
 {
 	const char *cservername = canon_servername(servername);
@@ -4893,18 +4899,22 @@ static WERROR fill_printer_driver_info101(TALLOC_CTX *mem_ctx,
 			   r->default_datatype);
 
 	r->previous_names = string_array_from_driver_info(mem_ctx,
-							  NULL,
+							  driver->previous_names,
 							  cservername);
-	r->driver_date		= 0;
-	r->driver_version	= 0;
+	r->driver_date		= driver->driver_date;
+	r->driver_version	= driver->driver_version;
 
-	FILL_DRIVER_STRING(mem_ctx, "",
+	FILL_DRIVER_STRING(mem_ctx,
+			   driver->manufacturer_name,
 			   r->manufacturer_name);
-	FILL_DRIVER_STRING(mem_ctx, "",
+	FILL_DRIVER_STRING(mem_ctx,
+			   driver->manufacturer_url,
 			   r->manufacturer_url);
-	FILL_DRIVER_STRING(mem_ctx, "",
+	FILL_DRIVER_STRING(mem_ctx,
+			   driver->hardware_id,
 			   r->hardware_id);
-	FILL_DRIVER_STRING(mem_ctx, "",
+	FILL_DRIVER_STRING(mem_ctx,
+			   driver->provider,
 			   r->provider);
 
 	return WERR_OK;
@@ -4922,18 +4932,18 @@ static WERROR construct_printer_driver_info_1(TALLOC_CTX *mem_ctx,
 					      uint32_t version)
 {
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
-	union spoolss_DriverInfo *driver;
+	struct spoolss_DriverInfo8 *driver;
 	WERROR result;
 
 	if (!W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, lp_const_servicename(snum))))
 		return WERR_INVALID_PRINTER_NAME;
 
-	if (!W_ERROR_IS_OK(get_a_printer_driver(mem_ctx, &driver, 3, printer->info_2->drivername, architecture, version))) {
+	if (!W_ERROR_IS_OK(get_a_printer_driver(mem_ctx, &driver, printer->info_2->drivername, architecture, version))) {
 		free_a_printer(&printer, 2);
 		return WERR_UNKNOWN_PRINTER_DRIVER;
 	}
 
-	result = fill_printer_driver_info1(mem_ctx, r, &driver->info3, servername, architecture);
+	result = fill_printer_driver_info1(mem_ctx, r, driver, servername, architecture);
 
 	free_a_printer_driver(driver);
 	free_a_printer(&printer,2);
@@ -4954,7 +4964,7 @@ static WERROR construct_printer_driver_info_2(TALLOC_CTX *mem_ctx,
 					      uint32_t version)
 {
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
-	union spoolss_DriverInfo *driver;
+	struct spoolss_DriverInfo8 *driver;
 	WERROR result;
 
 	ZERO_STRUCT(printer);
@@ -4962,12 +4972,12 @@ static WERROR construct_printer_driver_info_2(TALLOC_CTX *mem_ctx,
 	if (!W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, lp_const_servicename(snum))))
 		return WERR_INVALID_PRINTER_NAME;
 
-	if (!W_ERROR_IS_OK(get_a_printer_driver(mem_ctx, &driver, 3, printer->info_2->drivername, architecture, version))) {
+	if (!W_ERROR_IS_OK(get_a_printer_driver(mem_ctx, &driver, printer->info_2->drivername, architecture, version))) {
 		free_a_printer(&printer, 2);
 		return WERR_UNKNOWN_PRINTER_DRIVER;
 	}
 
-	result = fill_printer_driver_info2(mem_ctx, r, &driver->info3, servername);
+	result = fill_printer_driver_info2(mem_ctx, r, driver, servername);
 
 	free_a_printer_driver(driver);
 	free_a_printer(&printer,2);
@@ -4988,7 +4998,7 @@ static WERROR construct_printer_driver_info_3(TALLOC_CTX *mem_ctx,
 					      uint32_t version)
 {
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
-	union spoolss_DriverInfo *driver;
+	struct spoolss_DriverInfo8 *driver;
 	WERROR status;
 	ZERO_STRUCT(driver);
 
@@ -4997,7 +5007,7 @@ static WERROR construct_printer_driver_info_3(TALLOC_CTX *mem_ctx,
 	if (!W_ERROR_IS_OK(status))
 		return WERR_INVALID_PRINTER_NAME;
 
-	status = get_a_printer_driver(mem_ctx, &driver, 3, printer->info_2->drivername, architecture, version);
+	status = get_a_printer_driver(mem_ctx, &driver, printer->info_2->drivername, architecture, version);
 	DEBUG(8,("construct_printer_driver_info_3: status: %s\n", win_errstr(status)));
 
 #if 0	/* JERRY */
@@ -5032,7 +5042,7 @@ static WERROR construct_printer_driver_info_3(TALLOC_CTX *mem_ctx,
 #endif
 
 
-	status = fill_printer_driver_info3(mem_ctx, r, &driver->info3, servername);
+	status = fill_printer_driver_info3(mem_ctx, r, driver, servername);
 
 	free_a_printer_driver(driver);
 	free_a_printer(&printer,2);
@@ -5053,7 +5063,7 @@ static WERROR construct_printer_driver_info_6(TALLOC_CTX *mem_ctx,
 					      uint32_t version)
 {
 	NT_PRINTER_INFO_LEVEL 		*printer = NULL;
-	union spoolss_DriverInfo *driver;
+	struct spoolss_DriverInfo8 *driver;
 	WERROR 				status;
 
 	status=get_a_printer(NULL, &printer, 2, lp_const_servicename(snum) );
@@ -5063,7 +5073,7 @@ static WERROR construct_printer_driver_info_6(TALLOC_CTX *mem_ctx,
 	if (!W_ERROR_IS_OK(status))
 		return WERR_INVALID_PRINTER_NAME;
 
-	status = get_a_printer_driver(mem_ctx, &driver, 3, printer->info_2->drivername, architecture, version);
+	status = get_a_printer_driver(mem_ctx, &driver, printer->info_2->drivername, architecture, version);
 
 	DEBUG(8,("construct_printer_driver_info_6: status: %s\n", win_errstr(status)));
 
@@ -5080,7 +5090,7 @@ static WERROR construct_printer_driver_info_6(TALLOC_CTX *mem_ctx,
 
 		/* Yes - try again with a WinNT driver. */
 		version = 2;
-		status = get_a_printer_driver(mem_ctx, &driver, 3, printer->info_2->drivername, architecture, version);
+		status = get_a_printer_driver(mem_ctx, &driver, printer->info_2->drivername, architecture, version);
 		DEBUG(8,("construct_printer_driver_info_6: status: %s\n", win_errstr(status)));
 		if (!W_ERROR_IS_OK(status)) {
 			free_a_printer(&printer,2);
@@ -5088,7 +5098,7 @@ static WERROR construct_printer_driver_info_6(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	status = fill_printer_driver_info6(mem_ctx, r, &driver->info3, servername);
+	status = fill_printer_driver_info6(mem_ctx, r, driver, servername);
 
 	free_a_printer(&printer,2);
 	free_a_printer_driver(driver);
@@ -5109,7 +5119,7 @@ static WERROR construct_printer_driver_info_101(TALLOC_CTX *mem_ctx,
 						uint32_t version)
 {
 	NT_PRINTER_INFO_LEVEL 		*printer = NULL;
-	union spoolss_DriverInfo *driver;
+	struct spoolss_DriverInfo8 *driver;
 	WERROR 				result;
 
 	result = get_a_printer(NULL, &printer, 2, lp_const_servicename(snum));
@@ -5121,7 +5131,7 @@ static WERROR construct_printer_driver_info_101(TALLOC_CTX *mem_ctx,
 		return WERR_INVALID_PRINTER_NAME;
 	}
 
-	result = get_a_printer_driver(mem_ctx, &driver, 3, printer->info_2->drivername,
+	result = get_a_printer_driver(mem_ctx, &driver, printer->info_2->drivername,
 				      architecture, version);
 
 	DEBUG(8,("construct_printer_driver_info_101: status: %s\n",
@@ -5139,7 +5149,7 @@ static WERROR construct_printer_driver_info_101(TALLOC_CTX *mem_ctx,
 
 		/* Yes - try again with a WinNT driver. */
 		version = 2;
-		result = get_a_printer_driver(mem_ctx, &driver, 3, printer->info_2->drivername,
+		result = get_a_printer_driver(mem_ctx, &driver, printer->info_2->drivername,
 					      architecture, version);
 		DEBUG(8,("construct_printer_driver_info_6: status: %s\n",
 			win_errstr(result)));
@@ -5149,7 +5159,7 @@ static WERROR construct_printer_driver_info_101(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	result = fill_printer_driver_info101(mem_ctx, r, &driver->info3, servername);
+	result = fill_printer_driver_info101(mem_ctx, r, driver, servername);
 
 	free_a_printer(&printer, 2);
 	free_a_printer_driver(driver);
@@ -6448,7 +6458,7 @@ static WERROR enumprinterdrivers_level_by_architecture(TALLOC_CTX *mem_ctx,
 	int ndrivers;
 	uint32_t version;
 	fstring *list = NULL;
-	union spoolss_DriverInfo *driver;
+	struct spoolss_DriverInfo8 *driver;
 	union spoolss_DriverInfo *info = NULL;
 	uint32_t count = 0;
 	WERROR result = WERR_OK;
@@ -6482,7 +6492,7 @@ static WERROR enumprinterdrivers_level_by_architecture(TALLOC_CTX *mem_ctx,
 		for (i=0; i<ndrivers; i++) {
 			DEBUGADD(5,("\tdriver: [%s]\n", list[i]));
 			ZERO_STRUCT(driver);
-			result = get_a_printer_driver(mem_ctx, &driver, 3, list[i],
+			result = get_a_printer_driver(mem_ctx, &driver, list[i],
 						      architecture, version);
 			if (!W_ERROR_IS_OK(result)) {
 				goto out;
@@ -6491,28 +6501,28 @@ static WERROR enumprinterdrivers_level_by_architecture(TALLOC_CTX *mem_ctx,
 			switch (level) {
 			case 1:
 				result = fill_printer_driver_info1(info, &info[count+i].info1,
-								   &driver->info3, servername,
+								   driver, servername,
 								   architecture);
 				break;
 			case 2:
 				result = fill_printer_driver_info2(info, &info[count+i].info2,
-								   &driver->info3, servername);
+								   driver, servername);
 				break;
 			case 3:
 				result = fill_printer_driver_info3(info, &info[count+i].info3,
-								   &driver->info3, servername);
+								   driver, servername);
 				break;
 			case 4:
 				result = fill_printer_driver_info4(info, &info[count+i].info4,
-								   &driver->info3, servername);
+								   driver, servername);
 				break;
 			case 5:
 				result = fill_printer_driver_info5(info, &info[count+i].info5,
-								   &driver->info3, servername);
+								   driver, servername);
 				break;
 			case 6:
 				result = fill_printer_driver_info6(info, &info[count+i].info6,
-								   &driver->info3, servername);
+								   driver, servername);
 				break;
 			default:
 				result = WERR_UNKNOWN_LEVEL;
@@ -7493,9 +7503,9 @@ WERROR _spoolss_AddPrinterDriver(pipes_struct *p,
 		*/
 		case 2:
 		{
-			union spoolss_DriverInfo *driver1;
+			struct spoolss_DriverInfo8 *driver1;
 
-			if (!W_ERROR_IS_OK(get_a_printer_driver(p->mem_ctx, &driver1, 3, driver_name, "Windows NT x86", 3))) {
+			if (!W_ERROR_IS_OK(get_a_printer_driver(p->mem_ctx, &driver1, driver_name, "Windows NT x86", 3))) {
 				/*
 				 * No 2k/Xp driver found, delete init data (if any) for the new Nt driver.
 				*/

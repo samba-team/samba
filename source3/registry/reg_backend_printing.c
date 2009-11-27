@@ -884,7 +884,7 @@ static int key_driver_fetch_keys( const char *key, struct regsubkey_ctr *subkeys
 /**********************************************************************
  *********************************************************************/
 
-static void fill_in_driver_values(const struct spoolss_DriverInfo3 *info3,
+static void fill_in_driver_values(const struct spoolss_DriverInfo8 *r,
 				  struct regval_ctr *values)
 {
 	char *buffer = NULL;
@@ -893,32 +893,32 @@ static void fill_in_driver_values(const struct spoolss_DriverInfo3 *info3,
 	const char *filename;
 	DATA_BLOB data;
 
-	filename = dos_basename(info3->driver_path);
+	filename = dos_basename(r->driver_path);
 	regval_ctr_addvalue_sz(values, "Driver", filename);
 
-	filename = dos_basename(info3->config_file);
+	filename = dos_basename(r->config_file);
 	regval_ctr_addvalue_sz(values, "Configuration File", filename);
 
-	filename = dos_basename(info3->data_file);
+	filename = dos_basename(r->data_file);
 	regval_ctr_addvalue_sz(values, "Data File", filename);
 
-	filename = dos_basename(info3->help_file);
+	filename = dos_basename(r->help_file);
 	regval_ctr_addvalue_sz(values, "Help File", filename);
 
-	regval_ctr_addvalue_sz(values, "Data Type", info3->default_datatype);
+	regval_ctr_addvalue_sz(values, "Data Type", r->default_datatype);
 
-	regval_ctr_addvalue( values, "Version", REG_DWORD, (char*)&info3->version,
-		sizeof(info3->version) );
+	regval_ctr_addvalue( values, "Version", REG_DWORD, (char*)&r->version,
+		sizeof(r->version) );
 
-	if (info3->dependent_files) {
+	if (r->dependent_files) {
 		/* place the list of dependent files in a single
 		   character buffer, separating each file name by
 		   a NULL */
 
-		for (i=0; info3->dependent_files[i] && strcmp(info3->dependent_files[i], ""); i++) {
+		for (i=0; r->dependent_files[i] && strcmp(r->dependent_files[i], ""); i++) {
 			/* strip the path to only the file's base name */
 
-			filename = dos_basename(info3->dependent_files[i]);
+			filename = dos_basename(r->dependent_files[i]);
 
 			length = strlen(filename);
 
@@ -960,7 +960,7 @@ static int driver_arch_fetch_values(char *key, struct regval_ctr *values)
 	fstring		arch_environment;
 	fstring		driver;
 	int		version;
-	union spoolss_DriverInfo *driver_ctr;
+	struct spoolss_DriverInfo8 *driver_ctr;
 	WERROR		w_result;
 
 	if (!reg_split_path( key, &base, &subkeypath )) {
@@ -1021,12 +1021,12 @@ static int driver_arch_fetch_values(char *key, struct regval_ctr *values)
 
 	fstrcpy( driver, base );
 
-	w_result = get_a_printer_driver(talloc_tos(), &driver_ctr, 3, driver, arch_environment, version);
+	w_result = get_a_printer_driver(talloc_tos(), &driver_ctr, driver, arch_environment, version);
 
 	if ( !W_ERROR_IS_OK(w_result) )
 		return -1;
 
-	fill_in_driver_values(&driver_ctr->info3, values);
+	fill_in_driver_values(driver_ctr, values);
 
 	free_a_printer_driver(driver_ctr);
 
