@@ -1122,7 +1122,6 @@ void set_cmdline_auth_info_getpass(struct user_auth_info *auth_info);
 bool file_exist_stat(const char *fname,SMB_STRUCT_STAT *sbuf,
 		     bool fake_dir_create_times);
 bool socket_exist(const char *fname);
-bool directory_exist_stat(char *dname,SMB_STRUCT_STAT *st);
 uint64_t get_file_size_stat(const SMB_STRUCT_STAT *sbuf);
 SMB_OFF_T get_file_size(char *file_name);
 char *attrib_string(uint16 mode);
