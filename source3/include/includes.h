@@ -652,7 +652,6 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 #include "passdb.h"
 #include "rpc_secdes.h"
 #include "../libgpo/gpo.h"
-#include "authdata.h"
 #include "msdfs.h"
 #include "rap.h"
 #include "../lib/crypto/md5.h"
