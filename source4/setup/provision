@@ -122,14 +122,6 @@ def message(text):
 if len(sys.argv) == 1:
 	opts.interactive = True
 
-if not opts.interactive and (opts.realm is None or opts.domain is None):
-	if opts.realm is None:
-		print >>sys.stderr, "No realm set"
-	if opts.domain is None:
-		print >>sys.stderr, "No domain set"
-	parser.print_usage()
-	sys.exit(1)
-
 if opts.interactive:
 	from getpass import getpass
 	import socket
@@ -137,19 +129,17 @@ if opts.interactive:
 		if default is not None:
 			print "%s [%s]: " % (prompt,default),
 		else:
-			print "%s: " % (prompt,),
+			print "%s: " % (prompt),
 		return sys.stdin.readline().rstrip("\n") or default
 	try:
 		opts.realm = ask("Realm", socket.getfqdn().split(".", 1)[1].upper())
 	except IndexError:
-		print >>sys.stderr, "Cannot guess realm from %s" % ( socket.getfqdn())
-		sys.exit(1)
+		opts.realm = ask("Realm", None)
 
 	try:
 		opts.domain = ask("Domain", opts.realm.split(".")[0])
 	except IndexError:
-		print >>sys.stderr, "Cannot guess domain from %s" % ( opts.realm())
-		sys.exit(1)
+		opts.domain = ask("Domain", None)
 
 	opts.server_role = ask("Server Role (dc, member, standalone)", "dc")
 	for i in range(3):
