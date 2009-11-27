@@ -8675,7 +8675,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	}
 
 	/* Now fstat to be *SURE* it's a regular file. */
-	if (sys_fstat(fd, &sbuf, lp_fake_dir_create_times()) != 0) {
+	if (sys_fstat(fd, &sbuf, false) != 0) {
 		close(fd);
 		DEBUG(0,("process_usershare_file: fstat of %s failed. %s\n",
 			fname, strerror(errno) ));
