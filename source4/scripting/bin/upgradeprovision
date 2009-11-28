@@ -79,7 +79,8 @@ hashAttrNotCopied = { 	"dn": 1,"whenCreated": 1,"whenChanged": 1,"objectGUID": 1
 # reasons. Anyway for a few of thems it's mandatory to replace them otherwise the provision will be broken somehow.
 hashOverwrittenAtt = {	 "prefixMap": replace, "systemMayContain": replace,"systemOnly":replace, "searchFlags":replace,\
 						 "mayContain":replace,  "systemFlags":replace,
-						 "oEMInformation":replace, "operatingSystemVersion":replace, "adminPropertyPages":1,"possibleInferiors":replace+delete}
+						 "oEMInformation":replace, "operatingSystemVersion":replace, "adminPropertyPages":replace,
+						 "defaultSecurityDescriptor": replace}
 backlinked = []
 
 def define_what_to_log(opts):
@@ -346,7 +347,7 @@ def handle_security_desc(ischema,att,msgElt,hashallSD,old,new):
 		hashSD["oldSD"] = old[0][att]
 		hashSD["newSD"] = new[0][att]
 		hashallSD[str(old[0].dn)] = hashSD
-		return 1
+		return 0
 	if att == "nTSecurityDescriptor"  and msgElt.flags() == ldb.FLAG_MOD_REPLACE:
 		if ischema == 0:
 			hashSD = {}
