@@ -129,17 +129,25 @@ if opts.interactive:
 		if default is not None:
 			print "%s [%s]: " % (prompt,default),
 		else:
-			print "%s: " % (prompt),
+			print "%s: " % (prompt,),
 		return sys.stdin.readline().rstrip("\n") or default
 	try:
-		opts.realm = ask("Realm", socket.getfqdn().split(".", 1)[1].upper())
+		default = socket.getfqdn().split(".", 1)[1].upper()
 	except IndexError:
-		opts.realm = ask("Realm", None)
+		default = None
+	opts.realm = ask("Realm", default)
+	if opts.realm in (None, ""):
+		print >>sys.stderr, "No realm set!"
+		sys.exit(1)
 
 	try:
-		opts.domain = ask("Domain", opts.realm.split(".")[0])
+		default = opts.realm.split(".")[0]
 	except IndexError:
-		opts.domain = ask("Domain", None)
+		default = None
+	opts.domain = ask("Domain", default)
+	if opts.domain is None:
+		print >> sys.stderr, "No domain set!"
+		sys.exit(1)
 
 	opts.server_role = ask("Server Role (dc, member, standalone)", "dc")
 	for i in range(3):
@@ -148,6 +156,17 @@ if opts.interactive:
 			print >>sys.stderr, "Invalid administrator password."
 		else:
 			break
+else:
+	if opts.realm is None or opts.domain is None:
+		if opts.realm is None:
+			print >>sys.stderr, "No realm set!"
+		if opts.domain is None:
+			print >> sys.stderr, "No domain set!"
+		parser.print_usage()
+		sys.exit(1)
+
+if not opts.adminpass:
+	message("Administrator password will be set randomly!")
 
 lp = sambaopts.get_loadparm()
 smbconf = lp.configfile
