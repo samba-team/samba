@@ -93,6 +93,7 @@ def import_sam_account(samldb,acc,domaindn,domainsid):
         "ntPwdHash:": acc.nt_password,
         })
 
+
 def import_sam_group(samldb, sid, gid, sid_name_use, nt_name, comment, domaindn):
     """Upgrade a SAM group.
     
@@ -132,6 +133,7 @@ def import_sam_group(samldb, sid, gid, sid_name_use, nt_name, comment, domaindn)
         "samba3SidNameUse": str(sid_name_use)
         })
 
+
 def import_idmap(samdb,samba3_idmap,domaindn):
     """Import idmap data.
 
@@ -155,6 +157,7 @@ def import_idmap(samdb,samba3_idmap,domaindn):
                           "SID": samba3_idmap.get_group_sid(gid),
                           "type": "group",
                           "unixID": str(gid)})
+
 
 def import_wins(samba4_winsdb, samba3_winsdb):
     """Import settings from a Samba3 WINS database.
@@ -220,6 +223,7 @@ replace: @LIST
 """)
 
     samdb.add({"dn": "@MAP=samba3sam", "@MAP_URL": ldapurl})
+
 
 smbconf_keep = [
     "dos charset", 
