@@ -93,7 +93,7 @@ use the procedures shown in "upgrading-samba4.txt" to upgrade it and keep all
 data.
 
 When you are using Samba3 at the moment you could try the experimental script
-"upgrade_from_s3" under the "scripting/bin" directory of the source
+"upgrade_from_s3" under the "setup" directory of the source
 distribution (it isn't included in binary distributions yet).
 
 Step 5: Create a simple smb.conf

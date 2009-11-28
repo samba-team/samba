@@ -116,7 +116,7 @@ KNOWN ISSUES
 - Users upgrading existing databases to Samba4 should carefully
   consult upgrading-samba4.txt.  We have made a number of changes in
   this release that should make it easier to upgrade in future.
-  Btw: there exists also a script under the "scripting/bin" directory of the
+  Btw: there exists also a script under the "setup" directory of the
   source distribution called "upgrade_from_s3" which should allow a step-up
   from Samba3 to Samba4. It's not included yet in the binary distributions
   since it's completely experimental!
