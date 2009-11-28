@@ -43,7 +43,7 @@ struct ldb_cmdline {
 	const char *sasl_mechanism;
 	const char *input;
 	const char *output;
-	char **controls;
+	const char **controls;
 	int show_binary;
 	int tracing;
 };
