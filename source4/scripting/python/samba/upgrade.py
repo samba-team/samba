@@ -2,7 +2,6 @@
 #
 #	backend code for upgrading from Samba3
 #	Copyright Jelmer Vernooij 2005-2007
-#	Copyright Matthias Dieter Wallnoefer 2009
 #	Released under the GNU GPL v3 or later
 #
 
