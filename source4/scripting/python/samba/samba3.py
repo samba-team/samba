@@ -509,7 +509,7 @@ class TdbSam(TdbDatabase):
     """Samba 3 TDB passdb backend reader."""
     def _check_version(self):
         self.version = fetch_uint32(self.tdb, "INFO/version\0") or 0
-        assert self.version in (0, 1, 2, 3)
+        assert self.version in (0, 1, 2)
 
     def usernames(self):
         """Iterate over the usernames in this Tdb database."""
@@ -592,11 +592,10 @@ class TdbSam(TdbDatabase):
         for entry in hours:
             for i in range(8):
                 user.hours.append(ord(entry) & (2 ** i) == (2 ** i))
-        # FIXME (reactivate also the tests in tests/samba3.py after fixing this)
-        #(user.bad_password_count, data) = unpack_uint16(data)
-        #(user.logon_count, data) = unpack_uint16(data)
-        #(user.unknown_6, data) = unpack_uint32(data)
-        #assert len(data) == 0
+        (user.bad_password_count, data) = unpack_uint16(data)
+        (user.logon_count, data) = unpack_uint16(data)
+        (user.unknown_6, data) = unpack_uint32(data)
+        assert len(data) == 0
         return user
 
 

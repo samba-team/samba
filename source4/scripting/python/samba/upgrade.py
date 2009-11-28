@@ -411,7 +411,7 @@ def upgrade_provision(samba3, setup_dir, message, credentials, session_info,
                        hostname=netbiosname, machinepass=machinepass,
                        serverrole=serverrole)
 
-    # FIXME: import_wins(Ldb(result.paths.winsdb), samba3.get_wins_db())
+    import_wins(Ldb(result.paths.winsdb), samba3.get_wins_db())
 
     # FIXME: import_registry(registry.Registry(), samba3.get_registry())
 
