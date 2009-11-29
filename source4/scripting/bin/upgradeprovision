@@ -495,6 +495,7 @@ def check_diff_name(newpaths,paths,creds,session,basedn,names,ischema):
 	# Connect to the reference provision and get all the attribute in the partition referred by name
 	newsam_ldb = Ldb(newpaths.samdb, session_info=session, credentials=creds,lp=lp)
 	sam_ldb = Ldb(paths.samdb, session_info=session, credentials=creds,lp=lp, options=["modules:samba_dsdb"])
+	sam_ldb.transaction_start()
 	if ischema:
 		res = newsam_ldb.search(expression="objectClass=*",base=basedn, scope=SCOPE_SUBTREE,attrs=["dn"])
 		res2 = sam_ldb.search(expression="objectClass=*",base=basedn, scope=SCOPE_SUBTREE,attrs=["dn"])
@@ -502,6 +503,7 @@ def check_diff_name(newpaths,paths,creds,session,basedn,names,ischema):
 		res = newsam_ldb.search(expression="objectClass=*",base=basedn, scope=SCOPE_SUBTREE,attrs=["dn"],controls=["search_options:1:2"])
 		res2 = sam_ldb.search(expression="objectClass=*",base=basedn, scope=SCOPE_SUBTREE,attrs=["dn"],controls=["search_options:1:2"])
 
+	sam_ldb.transaction_commit()
 	# Create a hash for speeding the search of new object
 	for i in range(0,len(res)):
 		hash_new[str(res[i]["dn"]).lower()] = res[i]["dn"]
@@ -533,9 +535,10 @@ def check_diff_name(newpaths,paths,creds,session,basedn,names,ischema):
 		sam_ldb.set_schema_from_ldb(schema.ldb)
 		# And now we can connect to the DB - the schema won't be loaded from the DB
 		sam_ldb.connect(paths.samdb)
-		sam_ldb.transaction_start()
 	else:
-		sam_ldb.transaction_start()
+		sam_ldb = Ldb(paths.samdb, session_info=session, credentials=creds,lp=lp, options=["modules:samba_dsdb"])
+
+	sam_ldb.transaction_start()
 
 	empty = ldb.Message()
 	message(SIMPLE,"There are %d missing objects"%(len(listMissing)))
@@ -762,12 +765,12 @@ newpaths = get_paths(targetdir=provisiondir)
 populate_backlink(newpaths,creds,session,names.schemadn)
 # Check the difference
 update_basesamdb(newpaths,paths,names)
-update_secrets(newpaths,paths,creds,session)
-update_privilege(newpaths,paths)
-update_machine_account_password(paths,creds,session,names)
 
 if opts.full:
 	update_samdb(newpaths,paths,creds,session,names)
+update_secrets(newpaths,paths,creds,session)
+update_privilege(newpaths,paths)
+update_machine_account_password(paths,creds,session,names)
 # SD should be created with admin but as some previous acl were so wrong that admin can't modify them we have first
 # to recreate them with the good form but with system account and then give the ownership to admin ...
 admin_session_info = admin_session(lp, str(names.domainsid))
