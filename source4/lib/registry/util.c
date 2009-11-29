@@ -82,10 +82,14 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx,
 						      *(int *)data.data);
 			}
 			break;
+		case REG_NONE:
+			/* "NULL" is the right return value */
+			break;
 		case REG_MULTI_SZ:
-			/* FIXME */
+			/* FIXME: We don't support this yet */
 			break;
 		default:
+			/* Other datatypes aren't supported -> return "NULL" */
 			break;
 	}
 
@@ -137,23 +141,22 @@ _PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx,
 							  (void **)&data->data,
 							  &data->length, false);
 			break;
-
+		case REG_BINARY:
+			*data = strhex_to_data_blob(mem_ctx, data_str);
+			break;
 		case REG_DWORD: {
 			uint32_t tmp = strtol(data_str, NULL, 0);
 			*data = data_blob_talloc(mem_ctx, &tmp, 4);
 			}
 			break;
-
 		case REG_NONE:
 			ZERO_STRUCTP(data);
 			break;
-
-		case REG_BINARY:
-			*data = strhex_to_data_blob(mem_ctx, data_str);
-			break;
-
+		case REG_MULTI_SZ:
+			/* FIXME: We don't support this yet */
+			return false;
 		default:
-			/* FIXME */
+			/* Other datatypes aren't supported -> return no success */
 			return false;
 	}
 	return true;
