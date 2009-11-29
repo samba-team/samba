@@ -1,17 +1,17 @@
 /* 
    some simple CGI helper routines
    Copyright (C) Andrew Tridgell 1997-1998
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -53,7 +53,7 @@ static char *grab_line(FILE *f, int *cl)
 
 	while ((*cl)) {
 		int c;
-	
+
 		if (i == len) {
 			char *ret2;
 			if (len == 0) len = 1024;
@@ -62,7 +62,7 @@ static char *grab_line(FILE *f, int *cl)
 			if (!ret2) return ret;
 			ret = ret2;
 		}
-	
+
 		c = fgetc(f);
 		(*cl)--;
 
@@ -70,7 +70,7 @@ static char *grab_line(FILE *f, int *cl)
 			(*cl) = 0;
 			break;
 		}
-		
+
 		if (c == '\r') continue;
 
 		if (strchr_m("\n&", c)) break;
@@ -78,7 +78,7 @@ static char *grab_line(FILE *f, int *cl)
 		ret[i++] = c;
 
 	}
-	
+
 	if (ret) {
 		ret[i] = 0;
 	}
@@ -132,14 +132,14 @@ void cgi_load_variables(void)
 		while (len && (line=grab_line(f, &len))) {
 			p = strchr_m(line,'=');
 			if (!p) continue;
-			
+
 			*p = 0;
-			
+
 			variables[num_variables].name = SMB_STRDUP(line);
 			variables[num_variables].value = SMB_STRDUP(p+1);
 
 			SAFE_FREE(line);
-			
+
 			if (!variables[num_variables].name || 
 			    !variables[num_variables].value)
 				continue;
@@ -154,7 +154,7 @@ void cgi_load_variables(void)
 			       variables[num_variables].name,
 			       variables[num_variables].value);
 #endif
-			
+
 			num_variables++;
 			if (num_variables == MAX_VARIABLES) break;
 		}
@@ -169,9 +169,9 @@ void cgi_load_variables(void)
 		     tok=strtok_r(NULL, "&;", &saveptr)) {
 			p = strchr_m(tok,'=');
 			if (!p) continue;
-			
+
 			*p = 0;
-			
+
 			variables[num_variables].name = SMB_STRDUP(tok);
 			variables[num_variables].value = SMB_STRDUP(p+1);
 
@@ -366,33 +366,33 @@ static bool cgi_handle_authorization(char *line)
 	/*
 	 * Try and get the user from the UNIX password file.
 	 */
-	
+
 	pass = getpwnam_alloc(talloc_autofree_context(), user);
-	
+
 	/*
 	 * Validate the password they have given.
 	 */
-	
+
 	if NT_STATUS_IS_OK(pass_check(pass, user, user_pass, 
 		      strlen(user_pass), NULL, False)) {
-		
+
 		if (pass) {
 			/*
 			 * Password was ok.
 			 */
-			
+
 			if ( initgroups(pass->pw_name, pass->pw_gid) != 0 )
 				goto err;
 
 			become_user_permanently(pass->pw_uid, pass->pw_gid);
-			
+
 			/* Save the users name */
 			C_user = SMB_STRDUP(user);
 			TALLOC_FREE(pass);
 			return True;
 		}
 	}
-	
+
 err:
 	cgi_setup_error("401 Bad Authorization", 
 			"WWW-Authenticate: Basic realm=\"SWAT\"\r\n",
