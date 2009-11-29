@@ -521,7 +521,8 @@ static int create_missing_local_databases(struct ctdb_context *ctdb, struct ctdb
   pull the remote database contents from one node into the recdb
  */
 static int pull_one_remote_database(struct ctdb_context *ctdb, uint32_t srcnode, 
-				    struct tdb_wrap *recdb, uint32_t dbid)
+				    struct tdb_wrap *recdb, uint32_t dbid,
+				    bool persistent)
 {
 	int ret;
 	TDB_DATA outdata;
@@ -606,7 +607,8 @@ static int pull_one_remote_database(struct ctdb_context *ctdb, uint32_t srcnode,
 static int pull_remote_database(struct ctdb_context *ctdb,
 				struct ctdb_recoverd *rec, 
 				struct ctdb_node_map *nodemap, 
-				struct tdb_wrap *recdb, uint32_t dbid)
+				struct tdb_wrap *recdb, uint32_t dbid,
+				bool persistent)
 {
 	int j;
 
@@ -618,7 +620,7 @@ static int pull_remote_database(struct ctdb_context *ctdb,
 		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 			continue;
 		}
-		if (pull_one_remote_database(ctdb, nodemap->nodes[j].pnn, recdb, dbid) != 0) {
+		if (pull_one_remote_database(ctdb, nodemap->nodes[j].pnn, recdb, dbid, persistent) != 0) {
 			DEBUG(DEBUG_ERR,(__location__ " Failed to pull remote database from node %u\n", 
 				 nodemap->nodes[j].pnn));
 			ctdb_set_culprit_count(rec, nodemap->nodes[j].pnn, nodemap->num);
@@ -1039,6 +1041,7 @@ struct recdb_data {
 	struct ctdb_marshall_buffer *recdata;
 	uint32_t len;
 	bool failed;
+	bool persistent;
 };
 
 static int traverse_recdb(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *p)
@@ -1081,6 +1084,7 @@ static int traverse_recdb(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, 
   push the recdb database out to all nodes
  */
 static int push_recdb_database(struct ctdb_context *ctdb, uint32_t dbid,
+			       bool persistent,
 			       struct tdb_wrap *recdb, struct ctdb_node_map *nodemap)
 {
 	struct recdb_data params;
@@ -1101,6 +1105,7 @@ static int push_recdb_database(struct ctdb_context *ctdb, uint32_t dbid,
 	params.recdata = recdata;
 	params.len = offsetof(struct ctdb_marshall_buffer, data);
 	params.failed = false;
+	params.persistent = persistent;
 
 	if (tdb_traverse_read(recdb->tdb, traverse_recdb, &params) == -1) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to traverse recdb database\n"));
@@ -1149,6 +1154,7 @@ static int push_recdb_database(struct ctdb_context *ctdb, uint32_t dbid,
 static int recover_database(struct ctdb_recoverd *rec, 
 			    TALLOC_CTX *mem_ctx,
 			    uint32_t dbid,
+			    bool persistent,
 			    uint32_t pnn, 
 			    struct ctdb_node_map *nodemap,
 			    uint32_t transaction_id)
@@ -1166,7 +1172,7 @@ static int recover_database(struct ctdb_recoverd *rec,
 	}
 
 	/* pull all remote databases onto the recdb */
-	ret = pull_remote_database(ctdb, rec, nodemap, recdb, dbid);
+	ret = pull_remote_database(ctdb, rec, nodemap, recdb, dbid, persistent);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to pull remote database 0x%x\n", dbid));
 		return -1;
@@ -1194,7 +1200,7 @@ static int recover_database(struct ctdb_recoverd *rec,
 	
 	/* push out the correct database. This sets the dmaster and skips 
 	   the empty records */
-	ret = push_recdb_database(ctdb, dbid, recdb, nodemap);
+	ret = push_recdb_database(ctdb, dbid, persistent, recdb, nodemap);
 	if (ret != 0) {
 		talloc_free(recdb);
 		return -1;
@@ -1360,7 +1366,11 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	DEBUG(DEBUG_NOTICE,(__location__ " started transactions on all nodes\n"));
 
 	for (i=0;i<dbmap->num;i++) {
-		if (recover_database(rec, mem_ctx, dbmap->dbs[i].dbid, pnn, nodemap, generation) != 0) {
+		ret = recover_database(rec, mem_ctx,
+				       dbmap->dbs[i].dbid,
+				       dbmap->dbs[i].persistent,
+				       pnn, nodemap, generation);
+		if (ret != 0) {
 			DEBUG(DEBUG_ERR, (__location__ " Failed to recover database 0x%x\n", dbmap->dbs[i].dbid));
 			return -1;
 		}
