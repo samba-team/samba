@@ -1854,9 +1854,6 @@ static int dumpdb_fn(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA data, voi
 	FILE *f = (FILE *)p;
 	struct ctdb_ltdb_header *h = (struct ctdb_ltdb_header *)data.dptr;
 
-	fprintf(f, "dmaster: %u\n", h->dmaster);
-	fprintf(f, "rsn: %llu\n", (unsigned long long)h->rsn);
-
 	fprintf(f, "key(%u) = \"", (unsigned)key.dsize);
 	for (i=0;i<key.dsize;i++) {
 		if (ISASCII(key.dptr[i])) {
@@ -1867,6 +1864,9 @@ static int dumpdb_fn(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA data, voi
 	}
 	fprintf(f, "\"\n");
 
+	fprintf(f, "dmaster: %u\n", h->dmaster);
+	fprintf(f, "rsn: %llu\n", (unsigned long long)h->rsn);
+
 	fprintf(f, "data(%u) = \"", (unsigned)data.dsize);
 	for (i=sizeof(*h);i<data.dsize;i++) {
 		if (ISASCII(data.dptr[i])) {
@@ -1876,6 +1876,8 @@ static int dumpdb_fn(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA data, voi
 		}
 	}
 	fprintf(f, "\"\n");
+
+	fprintf(f, "\n");
 
 	return 0;
 }
