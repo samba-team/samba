@@ -59,6 +59,7 @@ static int ltdb_err_map(enum TDB_ERROR tdb_code)
 	case TDB_ERR_CORRUPT:
 	case TDB_ERR_OOM:
 	case TDB_ERR_EINVAL:
+	case TDB_ERR_NESTING:
 		return LDB_ERR_OPERATIONS_ERROR;
 	case TDB_ERR_IO:
 		return LDB_ERR_PROTOCOL_ERROR;
