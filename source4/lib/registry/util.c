@@ -56,7 +56,6 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx,
 				   const DATA_BLOB data)
 {
 	char *ret = NULL;
-	size_t ret_cnt;
 
 	if (data.length == 0)
 		return talloc_strdup(mem_ctx, "");
@@ -70,9 +69,7 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx,
 							  data.data,
 							  data.length,
 							  (void **)&ret,
-							  &ret_cnt, false);
-			ret = talloc_realloc(mem_ctx, ret, char, ret_cnt + 1);
-			ret[ret_cnt] = '\0';
+							  NULL, false);
 			break;
 		case REG_BINARY:
 			ret = data_blob_hex_string_upper(mem_ctx, &data);
@@ -136,10 +133,9 @@ _PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx,
 							  iconv_convenience,
 							  CH_UNIX, CH_UTF16,
 							  data_str,
-							  strlen(data_str),
+							  strlen(data_str)+1,
 							  (void **)&data->data,
 							  &data->length, false);
-
 			break;
 
 		case REG_DWORD: {
