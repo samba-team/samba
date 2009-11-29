@@ -4347,6 +4347,36 @@ static bool run_opentest(int dummy)
 	return correct;
 }
 
+NTSTATUS torture_setup_unix_extensions(struct cli_state *cli)
+{
+	uint16 major, minor;
+	uint32 caplow, caphigh;
+	NTSTATUS status;
+
+	if (!SERVER_HAS_UNIX_CIFS(cli)) {
+		printf("Server doesn't support UNIX CIFS extensions.\n");
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	status = cli_unix_extensions_version(cli, &major, &minor, &caplow,
+					     &caphigh);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Server didn't return UNIX CIFS extensions: %s\n",
+		       nt_errstr(status));
+		return status;
+	}
+
+	status = cli_set_unix_extensions_capabilities(cli, major, minor,
+						      caplow, caphigh);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Server doesn't support setting UNIX CIFS extensions: "
+		       "%s.\n", nt_errstr(status));
+		return status;
+        }
+
+	return NT_STATUS_OK;
+}
+
 /*
   Test POSIX open /mkdir calls.
  */
@@ -4359,8 +4389,6 @@ static bool run_simple_posix_open_test(int dummy)
 	const char *dname = "posix:dir";
 	char buf[10];
 	char namebuf[11];
-	uint16 major, minor;
-	uint32 caplow, caphigh;
 	uint16_t fnum1 = (uint16_t)-1;
 	SMB_STRUCT_STAT sbuf;
 	bool correct = false;
@@ -4374,26 +4402,10 @@ static bool run_simple_posix_open_test(int dummy)
 
 	cli_sockopt(cli1, sockops);
 
-	if (!SERVER_HAS_UNIX_CIFS(cli1)) {
-		printf("Server doesn't support UNIX CIFS extensions.\n");
+	status = torture_setup_unix_extensions(cli1);
+	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
-
-	status = cli_unix_extensions_version(cli1, &major, &minor, &caplow,
-					     &caphigh);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Server didn't return UNIX CIFS extensions: %s\n",
-		       nt_errstr(status));
-		return false;
-	}
-
-	status = cli_set_unix_extensions_capabilities(cli1, major, minor,
-						      caplow, caphigh);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Server doesn't support setting UNIX CIFS extensions: "
-		       "%s.\n", nt_errstr(status));
-		return false;
-        }
 
 	cli_setatr(cli1, fname, 0, 0);
 	cli_posix_unlink(cli1, fname);

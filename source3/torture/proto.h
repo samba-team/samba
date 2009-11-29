@@ -70,6 +70,7 @@ bool torture_cli_session_setup2(struct cli_state *cli, uint16 *new_vuid);
 bool torture_close_connection(struct cli_state *c);
 bool torture_ioctl_test(int dummy);
 bool torture_chkpath_test(int dummy);
+NTSTATUS torture_setup_unix_extensions(struct cli_state *cli);
 
 /* The following definitions come from torture/utable.c  */
 
