@@ -657,7 +657,8 @@ const char *cgi_remote_addr(void)
 {
 	if (inetd_server) {
 		char addr[INET6_ADDRSTRLEN];
-		return get_peer_addr(1,addr,sizeof(addr));
+		get_peer_addr(1,addr,sizeof(addr));
+		return talloc_strdup(talloc_tos(), addr);
 	}
 	return getenv("REMOTE_ADDR");
 }
