@@ -1057,7 +1057,9 @@ static int traverse_recdb(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, 
 
 	/* update the dmaster field to point to us */
 	hdr = (struct ctdb_ltdb_header *)data.dptr;
-	hdr->dmaster = params->ctdb->pnn;
+	if (!params->persistent) {
+		hdr->dmaster = params->ctdb->pnn;
+	}
 
 	/* add the record to the blob ready to send to the nodes */
 	rec = ctdb_marshall_record(params->recdata, 0, key, NULL, data);
