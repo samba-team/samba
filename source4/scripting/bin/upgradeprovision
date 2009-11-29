@@ -73,7 +73,7 @@ hashAttrNotCopied = { 	"dn": 1,"whenCreated": 1,"whenChanged": 1,"objectGUID": 1
 						"showInAdvancedViewOnly": 1,"instanceType": 1, "cn": 1, "msDS-Behavior-Version":1, "nextRid":1,\
 						"nTMixedDomain": 1,"versionNumber":1, "lmPwdHistory":1, "pwdLastSet": 1, "ntPwdHistory":1, "unicodePwd":1,\
 						"dBCSPwd":1,"supplementalCredentials":1,"gPCUserExtensionNames":1, "gPCMachineExtensionNames":1,\
-						"maxPwdAge":1, "mail":1, "secret":1,"possibleInferiors":1}
+						"maxPwdAge":1, "mail":1, "secret":1,"possibleInferiors":1, "sAMAccountType":1}
 
 # Usually for an object that already exists we do not overwrite attributes as they might have been changed for good
 # reasons. Anyway for a few of thems it's mandatory to replace them otherwise the provision will be broken somehow.
@@ -457,11 +457,30 @@ def update_secrets(newpaths,paths,creds,session):
 			delta.remove(att)
 		for att in delta:
 			i = i + 1
+
+			if att == "name":
+				message(CHANGE,"Found attribute name on  %s, must rename the DN "%(res2[0].dn))
+				secrets_ldb.rename(res2[0].dn,ldb.Dn(secrets_ldb,"%sfoo"%str(res2[0].dn)))
+				secrets_ldb.rename(ldb.Dn(secrets_ldb,"%sfoo"%str(res2[0].dn)),res2[0].dn)
+			else:
+				delta.remove(att)
+
+
+	for entry in listPresent:
+		res = newsecrets_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
+		res2 = secrets_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
+		delta = secrets_ldb.msg_diff(res2[0],res[0])
+		i=0
+		for att in hashAttrNotCopied.keys():
+			delta.remove(att)
+		for att in delta:
+			i = i + 1
 			if att != "dn":
 				message(CHANGE," Adding/Changing attribute %s to %s"%(att,res2[0].dn))
 
 		delta.dn = res2[0].dn
 		secrets_ldb.modify(delta)
+
 
 # Check difference between the current provision and the reference provision.
 # It looks for all object which base DN is name if ischema is false then scan is done in
@@ -594,8 +613,8 @@ def check_updated_sd(newpaths,paths,creds,session,names):
 
 # Simple update method for updating the SD that rely on the fact that nobody should have modified the SD
 # This assumption is safe right now (alpha9) but should be removed asap
-def update_sd(newpaths,paths,creds,session,names):
-	sam_ldb = Ldb(paths.samdb, session_info=session, credentials=creds,lp=lp)
+def update_sd(paths,creds,session,names):
+	sam_ldb = Ldb(paths.samdb, session_info=session, credentials=creds,lp=lp,options=["modules:samba_dsdb"])
 	sam_ldb.transaction_start()
 	# First update the SD for the rootdn
 	sam_ldb.set_session_info(session)
@@ -754,8 +773,9 @@ if opts.full:
 # SD should be created with admin but as some previous acl were so wrong that admin can't modify them we have first
 # to recreate them with the good form but with system account and then give the ownership to admin ...
 admin_session_info = admin_session(lp, str(names.domainsid))
-update_sd(newpaths,paths,creds,session,names)
-update_sd(newpaths,paths,creds,admin_session_info,names)
+message(SIMPLE,"Updating SD")
+update_sd(paths,creds,session,names)
+update_sd(paths,creds,admin_session_info,names)
 check_updated_sd(newpaths,paths,creds,session,names)
 message(SIMPLE,"Upgrade finished !")
 # remove reference provision now that everything is done !
