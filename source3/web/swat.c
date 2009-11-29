@@ -645,7 +645,7 @@ static void wizard_params_page(void)
 
 	if (cgi_variable("Commit")) {
 		commit_parameters(GLOBAL_SECTION_SNUM);
-		save_reload(0);
+		save_reload(-1);
 	}
 
 	printf("<form name=\"swatform\" method=post action=wizard_params>\n");
@@ -669,7 +669,7 @@ static void wizard_params_page(void)
 static void rewritecfg_file(void)
 {
 	commit_parameters(GLOBAL_SECTION_SNUM);
-	save_reload(0);
+	save_reload(-1);
 	printf("<H2>%s</H2>\n", _("Note: smb.conf file has been read and rewritten"));
 }
 
@@ -757,7 +757,7 @@ static void wizard_page(void)
 		}
 
 		commit_parameters(GLOBAL_SECTION_SNUM);
-		save_reload(0);
+		save_reload(-1);
 	}
 	else
 	{
@@ -851,7 +851,7 @@ static void globals_page(void)
 
 	if (cgi_variable("Commit")) {
 		commit_parameters(GLOBAL_SECTION_SNUM);
-		save_reload(0);
+		save_reload(-1);
 	}
 
 	if ( cgi_variable("ViewMode") )
@@ -909,13 +909,13 @@ static void shares_page(void)
 
 	if (cgi_variable("Commit") && snum >= 0) {
 		commit_parameters(snum);
-		save_reload(0);
+		save_reload(-1);
 		snum = lp_servicenumber(share);
 	}
 
 	if (cgi_variable("Delete") && snum >= 0) {
 		lp_remove_service(snum);
-		save_reload(0);
+		save_reload(-1);
 		share = NULL;
 		snum = -1;
 	}
@@ -1265,13 +1265,13 @@ static void printers_page(void)
 		if (snum >= iNumNonAutoPrintServices)
 		    save_reload(snum);
 		else
-		    save_reload(0);
+		    save_reload(-1);
 		snum = lp_servicenumber(share);
 	}
 
 	if (cgi_variable("Delete") && snum >= 0) {
 		lp_remove_service(snum);
-		save_reload(0);
+		save_reload(-1);
 		share = NULL;
 		snum = -1;
 	}
