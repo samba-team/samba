@@ -28,6 +28,8 @@
 #include "lib/util/dlinklist.h"
 #include <ctype.h>
 
+#define PERSISTENT_HEALTH_TDB "persistent_health.tdb"
+
 /*
   this is the dummy null procedure that all databases support
 */
@@ -193,7 +195,8 @@ static void ctdb_check_db_empty(struct ctdb_db_context *ctdb_db)
   attach to a database, handling both persistent and non-persistent databases
   return 0 on success, -1 on failure
  */
-static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name, bool persistent)
+static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name,
+			     bool persistent, const char *unhealthy_reason)
 {
 	struct ctdb_db_context *ctdb_db, *tmp_db;
 	int ret;
@@ -327,7 +330,7 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 		return 0;
 	}
 
-	if (ctdb_local_attach(ctdb, db_name, persistent) != 0) {
+	if (ctdb_local_attach(ctdb, db_name, persistent, NULL) != 0) {
 		return -1;
 	}
 
@@ -358,7 +361,8 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 /*
   attach to all existing persistent databases
  */
-static int ctdb_attach_persistent(struct ctdb_context *ctdb)
+static int ctdb_attach_persistent(struct ctdb_context *ctdb,
+				  const char *unhealthy_reason)
 {
 	DIR *d;
 	struct dirent *de;
@@ -399,12 +403,13 @@ static int ctdb_attach_persistent(struct ctdb_context *ctdb)
 		}
 		p[4] = 0;
 
-		if (ctdb_local_attach(ctdb, s, true) != 0) {
+		if (ctdb_local_attach(ctdb, s, true, unhealthy_reason) != 0) {
 			DEBUG(DEBUG_ERR,("Failed to attach to persistent database '%s'\n", de->d_name));
 			closedir(d);
 			talloc_free(s);
 			return -1;
 		}
+
 		DEBUG(DEBUG_INFO,("Attached to persistent database %s\n", s));
 
 		talloc_free(s);
@@ -416,6 +421,9 @@ static int ctdb_attach_persistent(struct ctdb_context *ctdb)
 int ctdb_attach_databases(struct ctdb_context *ctdb)
 {
 	int ret;
+	char *persistent_health_path = NULL;
+	char *unhealthy_reason = NULL;
+	bool first_try = true;
 
 	if (ctdb->db_directory == NULL) {
 		ctdb->db_directory = VARDIR "/ctdb";
@@ -451,7 +459,110 @@ int ctdb_attach_databases(struct ctdb_context *ctdb)
 		return -1;
 	}
 
-	ret = ctdb_attach_persistent(ctdb);
+	persistent_health_path = talloc_asprintf(ctdb, "%s/%s.%u",
+						 ctdb->db_directory_state,
+						 PERSISTENT_HEALTH_TDB,
+						 ctdb->pnn);
+	if (persistent_health_path == NULL) {
+		DEBUG(DEBUG_CRIT,(__location__ " talloc_asprintf() failed\n"));
+		return -1;
+	}
+
+again:
+
+	ctdb->db_persistent_health = tdb_wrap_open(ctdb, persistent_health_path,
+						   0, TDB_DISALLOW_NESTING,
+						   O_CREAT | O_RDWR, 0600);
+	if (ctdb->db_persistent_health == NULL) {
+		struct tdb_wrap *tdb;
+
+		if (!first_try) {
+			DEBUG(DEBUG_CRIT,("Failed to open tdb '%s': %d - %s\n",
+					  persistent_health_path,
+					  errno,
+					  strerror(errno)));
+			talloc_free(persistent_health_path);
+			talloc_free(unhealthy_reason);
+			return -1;
+		}
+		first_try = false;
+
+		unhealthy_reason = talloc_asprintf(ctdb, "WARNING - '%s' %s - %s",
+						   persistent_health_path,
+						   "was cleared after a failure",
+						   "manual verification needed");
+		if (unhealthy_reason == NULL) {
+			DEBUG(DEBUG_CRIT,(__location__ " talloc_asprintf() failed\n"));
+			talloc_free(persistent_health_path);
+			return -1;
+		}
+
+		DEBUG(DEBUG_CRIT,("Failed to open tdb '%s' - retrying after CLEAR_IF_FIRST\n",
+				  persistent_health_path));
+		tdb = tdb_wrap_open(ctdb, persistent_health_path,
+				    0, TDB_CLEAR_IF_FIRST | TDB_DISALLOW_NESTING,
+				    O_CREAT | O_RDWR, 0600);
+		if (tdb) {
+			DEBUG(DEBUG_CRIT,("Failed to open tdb '%s' - with CLEAR_IF_FIRST: %d - %s\n",
+					  persistent_health_path,
+					  errno,
+					  strerror(errno)));
+			talloc_free(persistent_health_path);
+			talloc_free(unhealthy_reason);
+			return -1;
+		}
+
+		talloc_free(tdb);
+		goto again;
+	}
+	ret = tdb_check(ctdb->db_persistent_health->tdb, NULL, NULL);
+	if (ret != 0) {
+		struct tdb_wrap *tdb;
+
+		talloc_free(ctdb->db_persistent_health);
+		ctdb->db_persistent_health = NULL;
+
+		if (!first_try) {
+			DEBUG(DEBUG_CRIT,("tdb_check('%s') failed\n",
+					  persistent_health_path));
+			talloc_free(persistent_health_path);
+			talloc_free(unhealthy_reason);
+			return -1;
+		}
+		first_try = false;
+
+		unhealthy_reason = talloc_asprintf(ctdb, "WARNING - '%s' %s - %s",
+						   persistent_health_path,
+						   "was cleared after a failure",
+						   "manual verification needed");
+		if (unhealthy_reason == NULL) {
+			DEBUG(DEBUG_CRIT,(__location__ " talloc_asprintf() failed\n"));
+			talloc_free(persistent_health_path);
+			return -1;
+		}
+
+		DEBUG(DEBUG_CRIT,("tdb_check('%s') failed - retrying after CLEAR_IF_FIRST\n",
+				  persistent_health_path));
+		tdb = tdb_wrap_open(ctdb, persistent_health_path,
+				    0, TDB_CLEAR_IF_FIRST | TDB_DISALLOW_NESTING,
+				    O_CREAT | O_RDWR, 0600);
+		if (tdb) {
+			DEBUG(DEBUG_CRIT,("Failed to open tdb '%s' - with CLEAR_IF_FIRST: %d - %s\n",
+					  persistent_health_path,
+					  errno,
+					  strerror(errno)));
+			talloc_free(persistent_health_path);
+			talloc_free(unhealthy_reason);
+			return -1;
+		}
+
+		talloc_free(tdb);
+		goto again;
+	}
+	talloc_free(persistent_health_path);
+
+	ret = ctdb_attach_persistent(ctdb, unhealthy_reason);
+	talloc_free(unhealthy_reason);
 	if (ret != 0) {
 		return ret;
 	}

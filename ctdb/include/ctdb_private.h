@@ -406,6 +406,7 @@ struct ctdb_context {
 	const char *db_directory;
 	const char *db_directory_persistent;
 	const char *db_directory_state;
+	struct tdb_wrap *db_persistent_health;
 	const char *transport;
 	char *recovery_lock_file;
 	int recovery_lock_fd;
