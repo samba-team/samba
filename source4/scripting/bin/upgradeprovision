@@ -112,8 +112,6 @@ parser.add_option("--debugchange", help="Print information on what is different 
 parser.add_option("--debugchangesd", help="Print information security descriptors differences", action="store_true")
 parser.add_option("--debugall", help="Print all available information (very verbose)", action="store_true")
 parser.add_option("--full", help="Perform full upgrade of the samdb (schema, configuration, new objects, ...", action="store_true")
-parser.add_option("--targetdir", type="string", metavar="DIR",
-					help="Set target directory")
 
 opts = parser.parse_args()[0]
 
@@ -748,7 +746,7 @@ def update_machine_account_password(paths,creds,session,names):
 
 # From here start the big steps of the program
 # First get files paths
-paths=get_paths(targetdir=opts.targetdir,smbconf=smbconf)
+paths=get_paths(smbconf=smbconf)
 paths.setup = setup_dir
 def setup_path(file):
 	return os.path.join(setup_dir, file)
