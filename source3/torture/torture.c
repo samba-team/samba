@@ -7176,6 +7176,7 @@ static struct {
 	{"RW3",  run_readwritelarge, 0},
 	{"OPEN", run_opentest, 0},
 	{"POSIX", run_simple_posix_open_test, 0},
+	{"POSIX-APPEND", run_posix_append, 0},
 	{ "UID-REGRESSION-TEST", run_uid_regression_test, 0},
 	{ "SHORTNAME-TEST", run_shortname_test, 0},
 #if 1

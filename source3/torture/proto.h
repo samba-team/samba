@@ -77,4 +77,10 @@ NTSTATUS torture_setup_unix_extensions(struct cli_state *cli);
 bool torture_utable(int dummy);
 bool torture_casetable(int dummy);
 
+/*
+ * Misc
+ */
+
+bool run_posix_append(int dummy);
+
 #endif /* __TORTURE_H__ */
