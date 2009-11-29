@@ -223,25 +223,6 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name, boo
 		}
 	}
 
-	if (ctdb->db_directory == NULL) {
-		ctdb->db_directory = VARDIR "/ctdb";
-	}
-
-	/* make sure the db directory exists */
-	if (mkdir(ctdb->db_directory, 0700) == -1 && errno != EEXIST) {
-		DEBUG(DEBUG_CRIT,(__location__ " Unable to create ctdb directory '%s'\n", 
-			 ctdb->db_directory));
-		talloc_free(ctdb_db);
-		return -1;
-	}
-
-	if (persistent && mkdir(ctdb->db_directory_persistent, 0700) == -1 && errno != EEXIST) {
-		DEBUG(DEBUG_CRIT,(__location__ " Unable to create ctdb persistent directory '%s'\n", 
-			 ctdb->db_directory_persistent));
-		talloc_free(ctdb_db);
-		return -1;
-	}
-
 	/* open the database */
 	ctdb_db->db_path = talloc_asprintf(ctdb_db, "%s/%s.%u", 
 					   persistent?ctdb->db_directory_persistent:ctdb->db_directory, 
@@ -377,7 +358,7 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 /*
   attach to all existing persistent databases
  */
-int ctdb_attach_persistent(struct ctdb_context *ctdb)
+static int ctdb_attach_persistent(struct ctdb_context *ctdb)
 {
 	DIR *d;
 	struct dirent *de;
@@ -429,6 +410,52 @@ int ctdb_attach_persistent(struct ctdb_context *ctdb)
 		talloc_free(s);
 	}
 	closedir(d);
+	return 0;
+}
+
+int ctdb_attach_databases(struct ctdb_context *ctdb)
+{
+	int ret;
+
+	if (ctdb->db_directory == NULL) {
+		ctdb->db_directory = VARDIR "/ctdb";
+	}
+	if (ctdb->db_directory_persistent == NULL) {
+		ctdb->db_directory_persistent = VARDIR "/ctdb/persistent";
+	}
+	if (ctdb->db_directory_state == NULL) {
+		ctdb->db_directory_state = VARDIR "/ctdb/state";
+	}
+
+	/* make sure the db directory exists */
+	ret = mkdir(ctdb->db_directory, 0700);
+	if (ret == -1 && errno != EEXIST) {
+		DEBUG(DEBUG_CRIT,(__location__ " Unable to create ctdb directory '%s'\n",
+			 ctdb->db_directory));
+		return -1;
+	}
+
+	/* make sure the persistent db directory exists */
+	ret = mkdir(ctdb->db_directory_persistent, 0700);
+	if (ret == -1 && errno != EEXIST) {
+		DEBUG(DEBUG_CRIT,(__location__ " Unable to create ctdb persistent directory '%s'\n",
+			 ctdb->db_directory_persistent));
+		return -1;
+	}
+
+	/* make sure the internal state db directory exists */
+	ret = mkdir(ctdb->db_directory_state, 0700);
+	if (ret == -1 && errno != EEXIST) {
+		DEBUG(DEBUG_CRIT,(__location__ " Unable to create ctdb state directory '%s'\n",
+			 ctdb->db_directory_state));
+		return -1;
+	}
+
+	ret = ctdb_attach_persistent(ctdb);
+	if (ret != 0) {
+		return ret;
+	}
+
 	return 0;
 }
 

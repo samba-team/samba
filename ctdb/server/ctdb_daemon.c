@@ -764,9 +764,9 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog)
 		ctdb_fatal(ctdb, "transport failed to initialise");
 	}
 
-	/* attach to any existing persistent databases */
-	if (ctdb_attach_persistent(ctdb) != 0) {
-		ctdb_fatal(ctdb, "Failed to attach to persistent databases\n");		
+	/* attach to existing databases */
+	if (ctdb_attach_databases(ctdb) != 0) {
+		ctdb_fatal(ctdb, "Failed to attach to databases\n");
 	}
 
 	/* start frozen, then let the first election sort things out */

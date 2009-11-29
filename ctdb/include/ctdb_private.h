@@ -1416,7 +1416,7 @@ int32_t ctdb_control_get_server_id_list(struct ctdb_context *ctdb,
 int32_t ctdb_control_uptime(struct ctdb_context *ctdb, 
 		      TDB_DATA *outdata);
 
-int ctdb_attach_persistent(struct ctdb_context *ctdb);
+int ctdb_attach_databases(struct ctdb_context *ctdb);
 
 int32_t ctdb_control_persistent_store(struct ctdb_context *ctdb, 
 				      struct ctdb_req_control *c, 
