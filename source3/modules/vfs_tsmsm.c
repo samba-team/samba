@@ -87,16 +87,24 @@ static void tsmsm_free_data(void **pptr) {
 static int tsmsm_connect(struct vfs_handle_struct *handle,
 			 const char *service,
 			 const char *user) {
-	struct tsmsm_struct *tsmd = TALLOC_ZERO_P(handle, struct tsmsm_struct);
+	struct tsmsm_struct *tsmd;
 	const char *fres;
 	const char *tsmname;
-	
+        int ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
+
+	if (ret < 0) {
+		return ret;
+	}
+
+	tsmd = TALLOC_ZERO_P(handle, struct tsmsm_struct);
 	if (!tsmd) {
+		SMB_VFS_NEXT_DISCONNECT(handle);
 		DEBUG(0,("tsmsm_connect: out of memory!\n"));
 		return -1;
 	}
 
 	if (!dmapi_have_session()) {
+		SMB_VFS_NEXT_DISCONNECT(handle);
 		DEBUG(0,("tsmsm_connect: no DMAPI session for Samba is available!\n"));
 		TALLOC_FREE(tsmd);
 		return -1;
@@ -134,7 +142,7 @@ static int tsmsm_connect(struct vfs_handle_struct *handle,
         /* Store the private data. */
         SMB_VFS_HANDLE_SET_DATA(handle, tsmd, tsmsm_free_data,
                                 struct tsmsm_struct, return -1);
-        return SMB_VFS_NEXT_CONNECT(handle, service, user); 
+        return 0;
 }
 
 static bool tsmsm_is_offline(struct vfs_handle_struct *handle, 

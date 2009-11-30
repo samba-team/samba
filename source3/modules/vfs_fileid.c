@@ -181,9 +181,15 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 {
 	struct fileid_handle_data *data;
 	const char *algorithm;
+	int ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
+
+	if (ret < 0) {
+		return ret;
+	}
 
 	data = talloc_zero(handle->conn, struct fileid_handle_data);
 	if (!data) {
+		SMB_VFS_NEXT_DISCONNECT(handle);
 		DEBUG(0, ("talloc_zero() failed\n"));
 		return -1;
 	}
@@ -203,6 +209,7 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 	} else if (strcmp("fsid", algorithm) == 0) {
 		data->device_mapping_fn	= fileid_device_mapping_fsid;
 	} else {
+		SMB_VFS_NEXT_DISCONNECT(handle);
 		DEBUG(0,("fileid_connect(): unknown algorithm[%s]\n", algorithm));
 		return -1;
 	}
@@ -214,7 +221,7 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 	DEBUG(10, ("fileid_connect(): connect to service[%s] with algorithm[%s]\n",
 		service, algorithm));
 
-	return SMB_VFS_NEXT_CONNECT(handle, service, user);
+	return 0;
 }
 
 static void fileid_disconnect(struct vfs_handle_struct *handle)

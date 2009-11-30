@@ -1065,14 +1065,19 @@ static int afsacl_connect(vfs_handle_struct *handle,
 			  const char *service, 
 			  const char *user)
 {
-			const char *spc;
+	const char *spc;
+	int ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
+
+	if (ret < 0) {
+		return ret;
+	}
 
 	spc = lp_parm_const_string(SNUM(handle->conn), "afsacl", "space", "%");
 
 	if (spc != NULL)
 		space_replacement = spc[0];
-	
-	return SMB_VFS_NEXT_CONNECT(handle, service, user);
+
+	return 0;
 }
 
 static struct vfs_fn_pointers vfs_afsacl_fns = {

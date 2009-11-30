@@ -80,7 +80,11 @@ static int audit_syslog_priority(vfs_handle_struct *handle)
 
 static int audit_connect(vfs_handle_struct *handle, const char *svc, const char *user)
 {
-	int result;
+	int result = SMB_VFS_NEXT_CONNECT(handle, svc, user);
+
+	if (result < 0) {
+		return result;
+	}
 
 	openlog("smbd_audit", LOG_PID, audit_syslog_facility(handle));
 
@@ -92,9 +96,7 @@ static int audit_connect(vfs_handle_struct *handle, const char *svc, const char 
 	DEBUG(10, ("Connected to service %s as user %s\n",
 	       svc, user));
 
-	result = SMB_VFS_NEXT_CONNECT(handle, svc, user);
-
-	return result;
+	return 0;
 }
 
 static void audit_disconnect(vfs_handle_struct *handle)
