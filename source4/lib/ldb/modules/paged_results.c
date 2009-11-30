@@ -326,6 +326,11 @@ static int paged_search(struct ldb_module *module, struct ldb_request *req)
 	ac->module = module;
 	ac->req = req;
 	ac->size = paged_ctrl->size;
+	if (ac->size < 0) {
+		/* apparently some clients send more than 2^31. This
+		   violates the ldap standard, but we need to cope */
+		ac->size = 0x7FFFFFFF;
+	}
 
 	/* check if it is a continuation search the store */
 	if (paged_ctrl->cookie_len == 0) {
