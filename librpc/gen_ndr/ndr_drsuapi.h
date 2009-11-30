@@ -120,7 +120,6 @@ size_t ndr_size_drsuapi_DsReplicaObjectIdentifier3(const struct drsuapi_DsReplic
 enum ndr_err_code ndr_push_drsuapi_DsReplicaObjectIdentifier3Binary(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsReplicaObjectIdentifier3Binary *r);
 enum ndr_err_code ndr_pull_drsuapi_DsReplicaObjectIdentifier3Binary(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_DsReplicaObjectIdentifier3Binary *r);
 void ndr_print_drsuapi_DsReplicaObjectIdentifier3Binary(struct ndr_print *ndr, const char *name, const struct drsuapi_DsReplicaObjectIdentifier3Binary *r);
-size_t ndr_size_drsuapi_DsReplicaObjectIdentifier3Binary(const struct drsuapi_DsReplicaObjectIdentifier3Binary *r, struct smb_iconv_convenience *ic, int flags);
 enum ndr_err_code ndr_push_drsuapi_DsReplicaAttribute(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsReplicaAttribute *r);
 enum ndr_err_code ndr_pull_drsuapi_DsReplicaAttribute(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_DsReplicaAttribute *r);
 void ndr_print_drsuapi_DsReplicaAttribute(struct ndr_print *ndr, const char *name, const struct drsuapi_DsReplicaAttribute *r);
