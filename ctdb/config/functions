@@ -1,15 +1,28 @@
 # utility functions for ctdb event scripts
 
+PATH=/bin:/usr/bin:/usr/sbin:/sbin:$PATH
+
 #######################################
 # pull in a system config file, if any
 loadconfig() {
-    name="$1"
-    if [ -f /etc/sysconfig/$name ]; then
-	. /etc/sysconfig/$name
-    elif [ -f /etc/default/$name ]; then
-	. /etc/default/$name
-    elif [ -f $CTDB_BASE/sysconfig/$name ]; then
-	. $CTDB_BASE/sysconfig/$name
+
+    if [ "$1" != "ctdb" ] ; then
+	loadconfig "ctdb"
+    fi
+
+    if [ -z "$1" ] ; then
+	foo="${service_config:-${service_name}}"
+	if [ -n "$foo" ] ; then
+	    loadconfig "$foo"
+	fi
+    fi
+
+    if [ -f /etc/sysconfig/$1 ]; then
+	. /etc/sysconfig/$1
+    elif [ -f /etc/default/$1 ]; then
+	. /etc/default/$1
+    elif [ -f $CTDB_BASE/sysconfig/$1 ]; then
+	. $CTDB_BASE/sysconfig/$1
     fi
 }
 
@@ -31,37 +44,28 @@ detect_init_style() {
 ######################################################
 # simulate /sbin/service on platforms that don't have it
 service() { 
-  service_name="$1"
-  op="$2"
+  _service_name="$1"
+  _op="$2"
 
   # do nothing, when no service was specified
-  test "x$service_name" = "x" && return
+  [ -z "$_service_name" ] && return
 
   if [ -x /sbin/service ]; then
-      /sbin/service "$service_name" "$op"
-  elif [ -x /etc/init.d/$service_name ]; then
-      /etc/init.d/$service_name "$op"
-  elif [ -x /etc/rc.d/init.d/$service_name ]; then
-      /etc/rc.d/init.d/$service_name "$op"
+      /sbin/service "$_service_name" "$_op"
+  elif [ -x /etc/init.d/$_service_name ]; then
+      /etc/init.d/$_service_name "$_op"
+  elif [ -x /etc/rc.d/init.d/$_service_name ]; then
+      /etc/rc.d/init.d/$_service_name "$_op"
   fi
 }
 
 ######################################################
 # simulate /sbin/service (niced) on platforms that don't have it
 nice_service() { 
-  service_name="$1"
-  op="$2"
-
   # do nothing, when no service was specified
-  test "x$service_name" = "x" && return
+  [ -z "$1" ] && return
 
-  if [ -x /sbin/service ]; then
-      nice /sbin/service "$service_name" "$op"
-  elif [ -x /etc/init.d/$service_name ]; then
-      nice /etc/init.d/$service_name "$op"
-  elif [ -x /etc/rc.d/init.d/$service_name ]; then
-      nice /etc/rc.d/init.d/$service_name "$op"
-  fi
+    nice service "$@"
 }
 
 ######################################################
@@ -110,43 +114,16 @@ ctdb_wait_tcp_ports() {
 	          (netstat -a -n | egrep "0.0.0.0:$p[[:space:]]*LISTEN" > /dev/null) || all_ok=0
 	      else 
 		  echo "No tool to check tcp ports availabe. can not check in ctdb_wait_tcp_ports"
-		  return
+		  return 127
 	      fi
 	  done
 	  [ $all_ok -eq 1 ] || sleep 1
 	  ctdb status > /dev/null 2>&1 || {
   		echo "ctdb daemon has died. Exiting tcp wait $service_name"
-		exit 1
+		return 1
 	  }
   done
   echo "Local tcp services for $service_name are up"
-}
-
-
-
-######################################################
-# wait for a set of directories
-# usage: ctdb_wait_directories SERVICE_NAME <directories...>
-######################################################
-ctdb_wait_directories() {
-  service_name="$1"
-  shift
-  wait_dirs="$*"
-  [ -z "$wait_dirs" ] && return;
-  all_ok=0
-  echo "Waiting for local directories for $service_name"
-  while [ $all_ok -eq 0 ]; do
-  	  all_ok=1
-  	  for d in $wait_dirs; do
-  	      [ -d $d ] || all_ok=0
-	  done
-	  [ $all_ok -eq 1 ] || sleep 1
-	  ctdb status > /dev/null 2>&1 || {
-  		echo "ctdb daemon has died. Exiting directory wait for $service_name"
-		exit 1
-	  }
-  done
-  echo "Local directories for $service_name are available"
 }
 
 
@@ -156,11 +133,11 @@ ctdb_wait_directories() {
 # usage: ctdb_check_rpc SERVICE_NAME PROGNUM VERSION
 ######################################################
 ctdb_check_rpc() {
-    service_name="$1"
+    progname="$1"
     prognum="$2"
     version="$3"
     rpcinfo -u localhost $prognum $version > /dev/null || {
-	    echo "ERROR: $service_name not responding to rpc requests"
+	    echo "ERROR: $progname not responding to rpc requests"
 	    exit 1
     }
 }
@@ -171,18 +148,15 @@ ctdb_check_rpc() {
 # usage: ctdb_check_directories_probe SERVICE_NAME <directories...>
 ######################################################
 ctdb_check_directories_probe() {
-  service_name="$1"
-  shift
-  for d ; do
-      case "$d" in
-	  *%*)
-	      continue
-	      ;;
-	  *)
-	      [ -d "$d" ] || return 1
-      esac
-  done
-  return 0
+    while IFS="" read d ; do
+	case "$d" in
+	    *%*)
+		continue
+		;;
+	    *)
+		[ -d "$d" ] || return 1
+	esac
+    done
 }
 
 ######################################################
@@ -190,62 +164,27 @@ ctdb_check_directories_probe() {
 # usage: ctdb_check_directories SERVICE_NAME <directories...>
 ######################################################
 ctdb_check_directories() {
-  # Note: ctdb_check_directories_probe sets both $service_name and $d.
-  ctdb_check_directories_probe "$@" || {
-      echo "ERROR: $service_name directory $d not available"
-      exit 1
-  }
+    n="${1:-${service_name}}"
+    ctdb_check_directories_probe || {
+	echo "ERROR: $n directory \"$d\" not available"
+	exit 1
+    }
 }
 
 ######################################################
 # check a set of tcp ports
-# usage: ctdb_check_tcp_ports SERVICE_NAME <ports...>
+# usage: ctdb_check_tcp_ports <ports...>
 ######################################################
 ctdb_check_tcp_ports() {
-  service_name="$1"
-  shift
-  wait_ports="$*"
-  [ -z "$wait_ports" ] && return;
 
-  # check availability of netcat or netstat first
-  NETCAT=""
-  NETSTAT=""
-  if [ -x /usr/bin/netstat ]; then
-      NETSTAT=/usr/bin/netstat
-  elif [ -x /bin/netstat ]; then
-      NETSTAT=/bin/netstat
-  elif [ -x /usr/bin/netcat ]; then
-      NETCAT=/usr/bin/netcat
-  elif [ -x /bin/netcat ]; then
-      NETCAT=/bin/netcat
-  elif [ -x /usr/bin/nc ]; then
-      NETCAT=/usr/bin/nc
-  elif [ -x /bin/nc ]; then
-      NETCAT=/bin/nc
-  fi
-
-  for p in $wait_ports; do
-      all_ok=1
-
-      if [ "x${NETCAT}" != "x" ]; then
-          ${NETCAT} -z 127.0.0.1 $p > /dev/null || all_ok=0
-      elif [ "x${NETSTAT}" != "x" ]; then
-          if ! ${NETSTAT} -a -n | egrep "0.0.0.0:$p .*LISTEN" > /dev/null ; then
-              if ! ${NETSTAT} -a -n | egrep ":::$p .*LISTEN" > /dev/null ; then
-                  all_ok=0
-              fi
-          fi
-      else
-          echo "ERROR: neither netcat (or nc) nor netstat found!"
-          echo "ERROR: can't monitor ${service_name} tcp port ${p}"
-          all_ok=0
-      fi
-
-      [ $all_ok -eq 1 ] || {
-	  echo "ERROR: $service_name tcp port $p is not responding"
-	  exit 1
-      }
-  done
+    for p ; do
+	if ! netstat -a -t -n | grep -q "0\.0\.0\.0:$p .*LISTEN" ; then
+            if ! netstat -a -t -n | grep -q ":::$p .*LISTEN" ; then
+		echo "ERROR: $service_name tcp port $p is not responding"
+		return 1
+            fi
+	fi
+    done
 }
 
 ######################################################
@@ -253,35 +192,13 @@ ctdb_check_tcp_ports() {
 # usage: ctdb_check_unix_socket SERVICE_NAME <socket_path>
 ######################################################
 ctdb_check_unix_socket() {
-  service_name="$1"
-  socket_path="$2"
-  [ -z "$socket_path" ] && return;
+    socket_path="$1"
+    [ -z "$socket_path" ] && return
 
-  # check availability of netstat first
-  NETSTAT=""
-  if [ -x $(type -p netstat) ]; then
-        NETSTAT=$(type -p netstat)
-  elif [ -x /usr/bin/netstat ]; then
-      NETSTAT=/usr/bin/netstat
-  elif [ -x /bin/netstat ]; then
-      NETSTAT=/bin/netstat
-  fi
-
-  all_ok=1
-  if [ "x$NETSTAT" != "x" ]; then
-    if $NETSTAT -l -a -n | grep -qE "^unix.*LISTEN.*${socket_path}$"; then
-      all_ok=1
-    else
-      all_ok=0
+    if ! netstat --unix -a -n | grep -q "^unix.*LISTEN.*${socket_path}$"; then
+        echo "ERROR: $service_name socket $socket_path not found"
+        return 1
     fi
-    else
-    [ -S ${socket_path} ] && all_ok=1 || all_ok=0
-  fi
-
-  [ $all_ok -eq 1 ] || {
-    echo "ERROR: $service_name socket $socket_path not found"
-    exit 1
-  }
 }
 
 ######################################################
@@ -500,38 +417,175 @@ remove_ip() {
 
 ########################################################
 # some simple logic for counting events - per eventscript
-# usage: ctdb_counter_init <tag>
-#        ctdb_counter_incr <tag>
-#        ctdb_counter_limit <tag> <limit>
-#        e.g. <tag> = "fail-count"
-# ctdb_counter_limit succeeds when count >= <limit>
+# usage: ctdb_counter_init
+#        ctdb_counter_incr
+#        ctdb_check_counter_limit <limit>
+# ctdb_check_counter_limit succeeds when count >= <limit>
 ########################################################
 _ctdb_counter_common () {
-    _tag="$1"
-    _eventscript="${0##*/}" # basename
-
-    _counter_file="$CTDB_BASE/state/${_eventscript}-${_tag}"
+    _counter_file="$ctdb_fail_dir/$service_name"
     mkdir -p "${_counter_file%/*}" # dirname
 }
 ctdb_counter_init () {
-    _ctdb_counter_common "$1"
+    _ctdb_counter_common
 
-    echo -n > "$_counter_file"
+    >"$_counter_file"
 }
 ctdb_counter_incr () {
-    _ctdb_counter_common "$1"
+    _ctdb_counter_common
 
     # unary counting!
     echo -n 1 >> "$_counter_file"
 }
-ctdb_counter_limit () {
-    _ctdb_counter_common "$1"
-    _limit="$2"
+ctdb_check_counter_limit () {
+    _ctdb_counter_common
+
+    _limit="${1:-${service_fail_limit}}"
+    _quiet="$2"
 
     # unary counting!
     _size=$(stat -c "%s" "$_counter_file" 2>/dev/null || echo 0)
-    [ $_size -ge $_limit ]
+    if [ $_size -ge $_limit ] ; then
+	echo "ERROR: more than $_limit consecutive failures for $service_name, marking cluster unhealthy"
+	exit 1
+    elif [ $_size -gt 0 -a -z "$_quiet" ] ; then
+	echo "WARNING: less than $_limit consecutive failures ($_size) for $service_name, not unhealthy yet"
+    fi
 }
+########################################################
+
+ctdb_spool_dir="/var/spool/ctdb"
+ctdb_status_dir="$ctdb_spool_dir/status"
+ctdb_fail_dir="$ctdb_spool_dir/failcount"
+ctdb_active_dir="$ctdb_spool_dir/active"
+
+log_status_cat ()
+{
+    echo "node is \"$1\", problem with \"${script_name}\": $(cat $2)"
+}
+
+ctdb_checkstatus ()
+{
+    if [ -r "$ctdb_status_dir/$script_name/unhealthy" ] ; then
+	log_status_cat "unhealthy" "$ctdb_status_dir/$script_name/unhealthy"
+	return 1
+    elif [ -r "$ctdb_status_dir/$script_name/banned" ] ; then
+	log_status_cat "banned" "$ctdb_status_dir/$script_name/banned"
+	return 2
+    else
+	return 0
+    fi
+}
+
+ctdb_setstatus ()
+{
+    d="$ctdb_status_dir/$script_name"
+    case "$1" in
+	unhealthy|banned)
+	    mkdir -p "$d"
+	    cat "$2" >"$d/$1"
+	    ;;
+	*)
+	    for i in "banned" "unhealthy" ; do
+		rm -f "$d/$i"
+	    done
+	    ;;
+    esac
+}
+
+ctdb_service_needs_reconfigure ()
+{
+    [ -e "$ctdb_status_dir/$service_name/reconfigure" ]
+}
+
+ctdb_service_set_reconfigure ()
+{
+    d="$ctdb_status_dir/$service_name"
+    mkdir -p "$d"
+    >"$d/reconfigure"
+}
+
+ctdb_service_unset_reconfigure ()
+{
+    rm -f "$ctdb_status_dir/$service_name/reconfigure"
+}
+
+ctdb_service_reconfigure ()
+{
+    if [ -n "$service_reconfigure" ] ; then
+	eval $service_reconfigure
+    else
+	service "$service_name" restart
+    fi
+    ctdb_service_unset_reconfigure
+    ctdb_counter_init
+}
+
+ctdb_compat_managed_service ()
+{
+    if [ "$1" = "yes" ] ; then
+	t="$t $2 "
+    fi
+}
+
+is_ctdb_managed_service ()
+{
+    t=" $CTDB_MANAGED_SERVICES "
+
+    ctdb_compat_managed_service "$CTDB_MANAGES_VSFTPD"   "vsftpd"
+    ctdb_compat_managed_service "$CTDB_MANAGES_SAMBA"    "samba"
+    ctdb_compat_managed_service "$CTDB_MANAGES_SCP"      "scp"
+    ctdb_compat_managed_service "$CTDB_MANAGES_WINDBIND" "windbind"
+    ctdb_compat_managed_service "$CTDB_MANAGES_HTTPD"    "httpd"
+    ctdb_compat_managed_service "$CTDB_MANAGES_ISCSI"    "iscsi"
+    ctdb_compat_managed_service "$CTDB_MANAGES_CLAMD"    "clamd"
+    ctdb_compat_managed_service "$CTDB_MANAGES_NFS"      "nfs"
+
+    # Returns 0 if "<space>$service_name<space>" appears in $t
+    [ "${t#* ${service_name} }" != "${t}" ]
+}
+
+ctdb_start_stop_service ()
+{
+    _active="$ctdb_active_dir/$service_name"
+
+    if is_ctdb_managed_service ; then
+	if ! [ -e "$_active" ] ; then
+	    echo "Starting service $service_name"
+	    ctdb_service_start || exit $?
+	    mkdir -p "$ctdb_active_dir"
+	    touch "$_active"
+	    exit 0
+	fi
+    elif ! is_ctdb_managed_service ; then
+	if [ -e "$_active" ] ; then
+	    echo "Stopping service $service_name"
+	    ctdb_service_stop || exit $?
+	    rm -f "$_active"
+	fi
+	exit 0
+    fi
+}
+
+ctdb_service_start ()
+{
+    if [ -n "$service_start" ] ; then
+	eval $service_start
+    else
+	service "$service_name" start
+    fi
+    ctdb_counter_init
+}
+
+ctdb_service_stop ()
+{
+    if [ -n "$service_stop" ] ; then
+	eval $service_stop
+    else
+	service "$service_name" stop
+    fi
+}
+
 ########################################################
 # load a site local config file
 ########################################################
@@ -546,4 +600,21 @@ ctdb_counter_limit () {
 	done
 }
 
+# A reasonable default is the basename of the eventscript.
+script_name="${0##*/}" # basename
+service_name="$script_name"
+service_fail_limit=1
 
+ctdb_event="$1" ; shift
+cmd="$ctdb_event"
+
+case "$ctdb_event" in
+    status)
+	ctdb_checkstatus
+	exit
+	;;
+    setstatus)
+	ctdb_setstatus "$@"
+	exit
+	;;
+esac

@@ -2,52 +2,45 @@
 # event script to manage clamd in a cluster environment
 
 . $CTDB_BASE/functions
-loadconfig ctdb
 
 detect_init_style
 
 case $CTDB_INIT_STYLE in
 	redhat)
-		CTDB_SERVICE_CLAMD="clamd"
-		CTDB_CONFIG_CLAMD="clamd"
-		;;
-	suse)
-		CTDB_SERVICE_CLAMD="clamav"
-		CTDB_CONFIG_CLAMD="clamav"
-		;;
-	debian)
-		CTDB_SERVICE_CLAMD="clamav"
-		CTDB_CONFIG_CLAMD="clamav"
+		service_name="clamd"
+		service_config="clamd"
 		;;
 	*)
-		# should not happen.
-		# for now use red hat style as default
-		CTDB_SERVICE_CLAMD="clamd"
-		CTDB_CONFIG_CLAMD="clamd"
+		service_name="clamav"
+		service_config="clamav"
 		;;
 esac
 
-loadconfig "${CTDB_CONFIG_CLAMD}"
+service_start="service $service_name stop > /dev/null 2>&1 ; service $service_name start"
+service_stop="service $service_name stop"
 
-[ "$CTDB_MANAGES_CLAMD" = "yes" ] || exit 0
+loadconfig
 
-cmd="$1"
-shift
+ctdb_start_stop_service
+
+is_ctdb_managed_service || exit 0
 
 case $cmd in 
      startup)
-        service "${CTDB_SERVICE_CLAMD}" stop > /dev/null 2>&1
-        service "${CTDB_SERVICE_CLAMD}" start
+	ctdb_service_start
         ;;
 
      shutdown)
-        service "${CTDB_SERVICE_CLAMD}" stop
+        ctdb_service_stop
         ;;
 
      monitor)
-        ctdb_check_unix_socket "clamd" ${CTDB_CLAMD_SOCKET}
+        ctdb_check_unix_socket ${CTDB_CLAMD_SOCKET} || exit $?
         ;;
+
+    status)
+	ctdb_checkstatus || exit $?
+	;;
 esac
 
 exit 0
-

@@ -28,7 +28,7 @@ case "$1" in
   add-client)
 	# the callout does not tell us to which ip the client connected
 	# so we must add it to all the ips that we serve
-        for f in `/bin/ls $CTDB_BASE/state/statd/ip/*`; do
+        for f in $CTDB_BASE/state/statd/ip/*; do
 	    ip=`basename $f`
 	    [ -d $STATD_SHARED_DIRECTORY/$ip ] || /bin/mkdir $STATD_SHARED_DIRECTORY/$ip
 	    touch $STATD_SHARED_DIRECTORY/$ip/$2
@@ -37,7 +37,7 @@ case "$1" in
   del-client)
 	# the callout does not tell us to which ip the client connected
 	# so we must add it to all the ips that we serve
-        for f in `/bin/ls $CTDB_BASE/state/statd/ip/*`; do
+        for f in $CTDB_BASE/state/statd/ip/*; do
 	    ip=`basename $f`
 	    /bin/rm -f $STATD_SHARED_DIRECTORY/$ip/$2
 	done

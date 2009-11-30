@@ -2,6 +2,7 @@
 # script to manage the lvs ip multiplexer for a single public address cluster
 
 . $CTDB_BASE/functions
+
 loadconfig ctdb
 
 [ -z "$CTDB_LVS_PUBLIC_IP" ] && exit 0
@@ -11,12 +12,6 @@ loadconfig ctdb
     echo "LVS configured but /sbin/ipvsadm is not installed."
     exit 0
 }
-
-
-cmd="$1"
-shift
-
-PATH=/usr/bin:/bin:/usr/sbin:/sbin:$PATH
 
 case $cmd in 
      startup)
@@ -40,12 +35,6 @@ case $cmd in
 
 	# flush our route cache
 	echo 1 > /proc/sys/net/ipv4/route/flush
-	;;
-
-     takeip)
-	;;
-
-     releaseip)
 	;;
 
      recovered|stopped)
@@ -87,9 +76,6 @@ case $cmd in
 
 	# flush our route cache
 	echo 1 > /proc/sys/net/ipv4/route/flush
-	;;
-
-      monitor)
 	;;
 
 esac

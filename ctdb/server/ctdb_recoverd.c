@@ -3288,7 +3288,7 @@ static void ctdb_check_recd(struct event_context *ev, struct timed_event *te,
 		if (ctdb->methods != NULL) {
 			ctdb->methods->shutdown(ctdb);
 		}
-		ctdb_event_script(ctdb, "shutdown");
+		ctdb_event_script(ctdb, CTDB_EVENT_SHUTDOWN);
 
 		exit(10);	
 	}

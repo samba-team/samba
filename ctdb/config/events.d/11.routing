@@ -13,15 +13,11 @@
 # bond1 10.3.3.0/24 10.0.0.1
 
 . $CTDB_BASE/functions
-loadconfig ctdb
+loadconfig
 
 [ -f $CTDB_BASE/static-routes ] || {
     exit 0
 }
-
-cmd="$1"
-shift
-PATH=/usr/bin:/bin:/usr/sbin:/sbin:$PATH
 
 case $cmd in 
      takeip|releaseip)
