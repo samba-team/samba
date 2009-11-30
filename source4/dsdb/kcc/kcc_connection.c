@@ -25,6 +25,7 @@
 #include "auth/auth.h"
 #include "smbd/service.h"
 #include "lib/messaging/irpc.h"
+#include "dsdb/kcc/kcc_connection.h"
 #include "dsdb/kcc/kcc_service.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "../lib/util/dlinklist.h"
@@ -33,18 +34,14 @@
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "param/param.h"
 
-void kccsrv_apply_connections(struct ldb_dn **connections)
-{
-}
-
-void kccsrv_create_connection(struct kccsrv_service *s, struct repsFromTo1 *r1)
+static int kccsrv_add_connection(struct kccsrv_service *s,
+				 struct kcc_connection *conn)
 {
 	struct ldb_message *msg;
 	TALLOC_CTX *tmp_ctx;
 	struct ldb_dn *new_dn, *server_dn;
 	struct GUID guid;
-	const struct GUID *invocation_id;
-	struct ldb_val schedule_val;
+	/* struct ldb_val schedule_val; */
 	int ret;
 	bool ok;
 
@@ -52,34 +49,38 @@ void kccsrv_create_connection(struct kccsrv_service *s, struct repsFromTo1 *r1)
 	new_dn = samdb_ntds_settings_dn(s->samdb);
 	if (!new_dn) {
 		DEBUG(0, ("failed to find NTDS settings\n"));
+		ret = LDB_ERR_OPERATIONS_ERROR;
 		goto done;
 	}
-	invocation_id = samdb_ntds_invocation_id(s->samdb);
+	new_dn = ldb_dn_copy(tmp_ctx, new_dn);
+	if (!new_dn) {
+		DEBUG(0, ("failed to copy NTDS settings\n"));
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		goto done;
+	}
 	guid = GUID_random();
 	ok = ldb_dn_add_child_fmt(new_dn, "CN=%s", GUID_string(tmp_ctx, &guid));
 	if (!ok) {
 		DEBUG(0, ("failed to create nTDSConnection DN\n"));
+		ret = LDB_ERR_INVALID_DN_SYNTAX;
 		goto done;
 	}
 	ret = dsdb_find_dn_by_guid(s->samdb, tmp_ctx, GUID_string(tmp_ctx,
-				   &r1->source_dsa_obj_guid), &server_dn);
+				   &conn->dsa_guid), &server_dn);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0, ("failed to find fromServer DN '%s'\n",
-			  GUID_string(tmp_ctx, &r1->source_dsa_obj_guid)));
+			  GUID_string(tmp_ctx, &conn->dsa_guid)));
 		goto done;
 	}
-	schedule_val = data_blob_const(r1->schedule, sizeof(r1->schedule));
+	/*schedule_val = data_blob_const(r1->schedule, sizeof(r1->schedule));*/
 
 	msg = ldb_msg_new(tmp_ctx);
 	msg->dn = new_dn;
-	ldb_msg_add_string(msg, "invocationID",
-			   GUID_string(tmp_ctx, invocation_id));
 	ldb_msg_add_string(msg, "objectClass", "nTDSConnection");
 	ldb_msg_add_string(msg, "showInAdvancedViewOnly", "TRUE");
 	ldb_msg_add_string(msg, "enabledConnection", "TRUE");
-	/* ldb_msg_add_dn(msg, "fromServer", server_dn); */
-	ldb_msg_add_string(msg, "fromServer", ldb_dn_get_linearized(server_dn));
-	ldb_msg_add_value(msg, "schedule", &schedule_val, NULL);
+	ldb_msg_add_linearized_dn(msg, "fromServer", server_dn);
+	/* ldb_msg_add_value(msg, "schedule", &schedule_val, NULL); */
 	ldb_msg_add_string(msg, "options", "1");
 
 	ret = ldb_add(s->samdb, msg);
@@ -93,32 +94,134 @@ void kccsrv_create_connection(struct kccsrv_service *s, struct repsFromTo1 *r1)
 
 done:
 	talloc_free(tmp_ctx);
+	return ret;
 }
 
-struct ldb_dn **kccsrv_find_connections(struct kccsrv_service *s,
-					TALLOC_CTX *mem_ctx)
+static int kccsrv_delete_connection(struct kccsrv_service *s,
+				    struct kcc_connection *conn)
 {
-	struct ldb_result *res;
-	int ret, i;
-	const char *attrs[] = { "distinguishedName", NULL };
-	struct ldb_dn **connections;
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_dn *dn;
+	int ret;
 
-	ret = ldb_search(s->samdb, mem_ctx, &res, s->config_dn,
-			 LDB_SCOPE_ONELEVEL, attrs, "objectClass=nTDSDSA");
+	tmp_ctx = talloc_new(s);
+	ret = dsdb_find_dn_by_guid(s->samdb, tmp_ctx,
+				   GUID_string(tmp_ctx, &conn->obj_guid), &dn);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0, ("failed nTDSDSA search: %s\n", ldb_strerror(ret)));
+		DEBUG(0, ("failed to find nTDSConnection's DN: %s\n",
+			  ldb_strerror(ret)));
+		goto done;
+	}
+
+	ret = ldb_delete(s->samdb, dn);
+	if (ret == LDB_SUCCESS) {
+		DEBUG(2, ("deleted nTDSConnection object '%s'\n",
+			  ldb_dn_get_linearized(dn)));
+	} else {
+		DEBUG(0, ("failed to delete an nTDSConnection object: %s\n",
+			  ldb_strerror(ret)));
+	}
+
+done:
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
+void kccsrv_apply_connections(struct kccsrv_service *s,
+			      struct kcc_connection_list *ntds_list,
+			      struct kcc_connection_list *dsa_list)
+{
+	int i, j, deleted = 0, added = 0, ret;
+
+	for (i = 0; i < ntds_list->count; i++) {
+		struct kcc_connection *ntds = &ntds_list->servers[i];
+		for (j = 0; j < dsa_list->count; j++) {
+			struct kcc_connection *dsa = &dsa_list->servers[j];
+			if (GUID_equal(&ntds->dsa_guid, &dsa->dsa_guid)) {
+				break;
+			}
+		}
+		if (j == dsa_list->count) {
+			ret = kccsrv_delete_connection(s, ntds);
+			if (ret == LDB_SUCCESS) {
+				deleted++;
+			}
+		}
+	}
+	DEBUG(4, ("%d connections have been deleted\n", deleted));
+
+	for (i = 0; i < dsa_list->count; i++) {
+		struct kcc_connection *dsa = &dsa_list->servers[i];
+		for (j = 0; j < ntds_list->count; j++) {
+			struct kcc_connection *ntds = &ntds_list->servers[j];
+			if (GUID_equal(&dsa->dsa_guid, &ntds->dsa_guid)) {
+				break;
+			}
+		}
+		if (j == ntds_list->count) {
+			ret = kccsrv_add_connection(s, dsa);
+			if (ret == LDB_SUCCESS) {
+				added++;
+			}
+		}
+	}
+	DEBUG(4, ("%d connections have been added\n", added));
+}
+
+struct kcc_connection_list *kccsrv_find_connections(struct kccsrv_service *s,
+						    TALLOC_CTX *mem_ctx)
+{
+	int ret, i;
+	struct ldb_dn *base_dn;
+	struct ldb_result *res;
+	const char *attrs[] = { "objectGUID", "fromServer", NULL };
+	struct kcc_connection_list *list;
+
+	base_dn = samdb_ntds_settings_dn(s->samdb);
+	if (!base_dn) {
+		DEBUG(0, ("failed to find our own NTDS settings DN\n"));
 		return NULL;
 	}
 
-	for (i = 0; i < res->count; i++) {
-		connections = talloc_realloc(mem_ctx, connections,
-					     struct ldb_dn *, i + 1);
-		connections[i] = samdb_result_dn(s->samdb, mem_ctx,
-						 res->msgs[i],
-						 "distinguishedName", NULL);
+	ret = ldb_search(s->samdb, mem_ctx, &res, base_dn, LDB_SCOPE_ONELEVEL,
+			 attrs, "objectClass=nTDSConnection");
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0, ("failed nTDSConnection search: %s\n",
+			  ldb_strerror(ret)));
+		return NULL;
 	}
-	connections = talloc_realloc(mem_ctx, connections, struct ldb_dn *,
-				     i + 1);
-	connections[i] = NULL;
-	return connections;
+
+	list = talloc(mem_ctx, struct kcc_connection_list);
+	if (!list) {
+		DEBUG(0, ("out of memory"));
+		return NULL;
+	}
+	list->servers = talloc_array(mem_ctx, struct kcc_connection,
+				     res->count);
+	if (!list->servers) {
+		DEBUG(0, ("out of memory"));
+		return NULL;
+	}
+	list->count = 0;
+
+	for (i = 0; i < res->count; i++) {
+		struct ldb_dn *server_dn;
+
+		list->servers[i].obj_guid = samdb_result_guid(res->msgs[i],
+							      "objectGUID");
+		server_dn = samdb_result_dn(s->samdb, mem_ctx, res->msgs[i],
+					    "fromServer", NULL);
+		ret = dsdb_find_guid_by_dn(s->samdb, server_dn,
+					   &list->servers[i].dsa_guid);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0, ("failed to find connection server's GUID"
+				  "by DN=%s: %s\n",
+				  ldb_dn_get_linearized(server_dn),
+				  ldb_strerror(ret)));
+			continue;
+		}
+		list->count++;
+	}
+	DEBUG(4, ("found %d existing nTDSConnection objects\n", list->count));
+	return list;
 }

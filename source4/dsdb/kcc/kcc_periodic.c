@@ -26,6 +26,7 @@
 #include "auth/auth.h"
 #include "smbd/service.h"
 #include "lib/messaging/irpc.h"
+#include "dsdb/kcc/kcc_connection.h"
 #include "dsdb/kcc/kcc_service.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "../lib/util/dlinklist.h"
@@ -122,7 +123,7 @@ NTSTATUS kccsrv_simple_update(struct kccsrv_service *s, TALLOC_CTX *mem_ctx)
 	const char *attrs[] = { "objectGUID", "invocationID", NULL };
 	struct repsFromToBlob *reps = NULL;
 	uint32_t count = 0;
-	struct ldb_dn **connections;
+	struct kcc_connection_list *ntds_conn, *dsa_conn;
 
 	ret = ldb_search(s->samdb, mem_ctx, &res, s->config_dn, LDB_SCOPE_SUBTREE, 
 			 attrs, "objectClass=nTDSDSA");
@@ -130,6 +131,11 @@ NTSTATUS kccsrv_simple_update(struct kccsrv_service *s, TALLOC_CTX *mem_ctx)
 		DEBUG(0,(__location__ ": Failed nTDSDSA search - %s\n", ldb_errstring(s->samdb)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
+
+	/* get the current list of connections */
+	ntds_conn = kccsrv_find_connections(s, mem_ctx);
+
+	dsa_conn = talloc_zero(mem_ctx, struct kcc_connection_list);
 
 	for (i=0; i<res->count; i++) {
 		struct repsFromTo1 *r1;
@@ -161,12 +167,18 @@ NTSTATUS kccsrv_simple_update(struct kccsrv_service *s, TALLOC_CTX *mem_ctx)
 			DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP | 
 			DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS;
 		memset(r1->schedule, 0x11, sizeof(r1->schedule));
-		/* kccsrv_create_connection(s, r1); */
+
+		dsa_conn->servers = talloc_realloc(dsa_conn, dsa_conn->servers,
+						  struct kcc_connection,
+						  dsa_conn->count + 1);
+		NT_STATUS_HAVE_NO_MEMORY(dsa_conn->servers);
+		dsa_conn->servers[dsa_conn->count].dsa_guid = r1->source_dsa_obj_guid;
+		dsa_conn->count++;
+
 		count++;
 	}
 
-	connections = kccsrv_find_connections(s, mem_ctx);
-	kccsrv_apply_connections(connections);
+	kccsrv_apply_connections(s, ntds_conn, dsa_conn);
 
 	return kccsrv_add_repsFrom(s, mem_ctx, reps, count);
 }
