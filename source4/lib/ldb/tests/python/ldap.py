@@ -1923,6 +1923,21 @@ class BaseDnTests(unittest.TestCase):
                 attrs=["netlogon", "highestCommittedUSN"])
         self.assertEquals(len(res), 0)
 
+    def test_namingContexts(self):
+        """Testing for namingContexts in rootDSE"""
+        res = self.ldb.search("", scope=SCOPE_BASE,
+                attrs=["namingContexts", "defaultNamingContext", "schemaNamingContext", "configurationNamingContext"])
+        self.assertEquals(len(res), 1)
+        
+        ncs = set([])
+        for nc in res[0]["namingContexts"]:
+            self.assertTrue(nc not in ncs)
+            ncs.add(nc)
+
+        self.assertTrue(res[0]["defaultNamingContext"][0] in ncs)
+        self.assertTrue(res[0]["configurationNamingContext"][0] in ncs)
+        self.assertTrue(res[0]["schemaNamingContext"][0] in ncs)
+
 class SchemaTests(unittest.TestCase):
     def delete_force(self, ldb, dn):
         try:
