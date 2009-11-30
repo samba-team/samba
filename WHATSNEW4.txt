@@ -80,8 +80,8 @@ continued to evolve, but you may particularly notice these areas
 
  Access Control Lists (in nTSecurityDescriptor) are now set correctly
  on objects in the directory, based on the same rules as Windows 2008.
- (Searches and modifications still use a simplistic administrator/not
- administrator criteria)
+ (Searches and still use a simplistic administrator/not administrator
+ criteria)
 
 These are just some of the user-visible highlights of the work done in
 the past few months.  More details of the work done 'under the hood'
