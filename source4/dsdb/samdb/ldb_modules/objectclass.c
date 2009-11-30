@@ -1150,7 +1150,7 @@ static int objectclass_init(struct ldb_module *module)
 	/* Look for the opaque to indicate we might have to cut down the DN of defaultObjectCategory */
 	ldb_module_set_private(module, ldb_get_opaque(ldb, DSDB_EXTENDED_DN_STORE_FORMAT_OPAQUE_NAME));
 
-	return ldb_next_init(module);
+	return ret;
 }
 
 _PUBLIC_ const struct ldb_module_ops ldb_objectclass_module_ops = {
