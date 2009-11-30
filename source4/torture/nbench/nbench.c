@@ -95,7 +95,9 @@ again:
 
 		nbench_line_count++;
 
-		line[strlen(line)-1] = 0;
+		if ((strlen(line) > 0) && line[strlen(line)-1] == '\n') {
+			line[strlen(line)-1] = 0;
+		}
 
 		all_string_sub(line,"client1", cname, sizeof(line));
 		

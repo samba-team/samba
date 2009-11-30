@@ -4262,8 +4262,9 @@ static bool get_user_tokens_from_file(FILE *f,
 			return true;
 		}
 
-		if (line[strlen(line)-1] == '\n')
+		if ((strlen(line) > 0) && (line[strlen(line)-1] == '\n')) {
 			line[strlen(line)-1] = '\0';
+		}
 
 		if (line[0] == ' ') {
 			/* We have a SID */
