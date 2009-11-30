@@ -1344,6 +1344,12 @@ DBWRAP_TORTURE_OBJ = utils/dbwrap_torture.o \
 		     $(LIBSAMBA_OBJ) \
 		     $(POPT_LIB_OBJ)
 
+SPLIT_TOKENS_OBJ = utils/split_tokens.o \
+                   $(PARAM_OBJ) \
+		   $(LIB_NONSMBD_OBJ) \
+		   $(POPT_LIB_OBJ) \
+	           $(LIBSAMBA_OBJ)
+
 ######################################################################
 # now the rules...
 ######################################################################
@@ -2926,6 +2932,14 @@ bin/dbwrap_torture@EXEEXT@: $(DBWRAP_TORTURE_OBJ) $(LIBTALLOC) $(LIBTDB)
 
 install-dbwrap_torture:: bin/dbwrap_torture@EXEEXT@
 	@$(SHELL) script/installbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(BINDIR) $<
+
+bin/split_tokens@EXEEXT@: $(BINARY_PREREQS) $(SPLIT_TOKENS_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
+	@echo "Linking $@"
+	@$(CC) -o $@ $(SPLIT_TOKENS_OBJ) \
+		$(LDFLAGS) $(DYNEEXP) \
+		$(LIBS) $(POPT_LIBS) \
+		$(LDAP_LIBS) \
+		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
 install:: installservers installbin @INSTALL_CIFSMOUNT@ @INSTALL_CIFSUMOUNT@ @INSTALL_CIFSUPCALL@ installman \
 		installscripts installdat installmodules @SWAT_INSTALL_TARGETS@ \
