@@ -94,7 +94,9 @@ static void get_auth_data(const char *srv, const char *shr, char *wg, int wglen,
 		if (fgets(tmp, sizeof(tmp), stdin) == NULL) {
 			return;
 		}
-		if(tmp[strlen(tmp)-1] == '\n')tmp[strlen(tmp)-1] = '\0';
+		if ((strlen(tmp) > 0) && (tmp[strlen(tmp)-1] == '\n')) {
+			tmp[strlen(tmp)-1] = '\0';
+		}
 		strncpy(un, tmp, unlen-1);
 	} else if(username) strncpy(un, username, unlen-1);
 
