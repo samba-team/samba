@@ -277,6 +277,11 @@ static int smb_traffic_analyzer_connect(struct vfs_handle_struct *handle,
 	uint16_t port = (st == UNIX_DOMAIN_SOCKET) ? 0 :
 				atoi( lp_parm_const_string(SNUM(conn),
 				"smb_traffic_analyzer", "port", "9430"));
+	int ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
+
+	if (ret < 0) {
+		return ret;
+	}
 
 	/* Are we already connected ? */
 	for (rf_sock = sock_list; rf_sock; rf_sock = rf_sock->next) {
@@ -294,11 +299,13 @@ static int smb_traffic_analyzer_connect(struct vfs_handle_struct *handle,
 		/* New connection. */
 		rf_sock = TALLOC_ZERO_P(NULL, struct refcounted_sock);
 		if (rf_sock == NULL) {
+			SMB_VFS_NEXT_DISCONNECT(handle);
 			errno = ENOMEM;
 			return -1;
 		}
 		rf_sock->name = talloc_strdup(rf_sock, name);
 		if (rf_sock->name == NULL) {
+			SMB_VFS_NEXT_DISCONNECT(handle);
 			TALLOC_FREE(rf_sock);
 			errno = ENOMEM;
 			return -1;
@@ -316,6 +323,7 @@ static int smb_traffic_analyzer_connect(struct vfs_handle_struct *handle,
 							port);
 		}
 		if (rf_sock->sock == -1) {
+			SMB_VFS_NEXT_DISCONNECT(handle);
 			TALLOC_FREE(rf_sock);
 			return -1;
 		}
@@ -325,7 +333,7 @@ static int smb_traffic_analyzer_connect(struct vfs_handle_struct *handle,
 	/* Store the private data. */
 	SMB_VFS_HANDLE_SET_DATA(handle, rf_sock, smb_traffic_analyzer_free_data,
 				struct refcounted_sock, return -1);
-	return SMB_VFS_NEXT_CONNECT(handle, service, user);
+	return 0;
 }
 
 /* VFS Functions: write, read, pread, pwrite for now */

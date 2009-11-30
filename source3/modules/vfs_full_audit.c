@@ -606,12 +606,14 @@ static int smb_full_audit_connect(vfs_handle_struct *handle,
 	const char *none[] = { NULL };
 	const char *all [] = { "all" };
 
-	if (!handle) {
-		return -1;
+	result = SMB_VFS_NEXT_CONNECT(handle, svc, user);
+	if (result < 0) {
+		return result;
 	}
 
 	pd = SMB_MALLOC_P(struct vfs_full_audit_private_data);
 	if (!pd) {
+		SMB_VFS_NEXT_DISCONNECT(handle);
 		return -1;
 	}
 	ZERO_STRUCTP(pd);
@@ -631,12 +633,10 @@ static int smb_full_audit_connect(vfs_handle_struct *handle,
 	SMB_VFS_HANDLE_SET_DATA(handle, pd, free_private_data,
 				struct vfs_full_audit_private_data, return -1);
 
-	result = SMB_VFS_NEXT_CONNECT(handle, svc, user);
-
 	do_log(SMB_VFS_OP_CONNECT, True, handle,
 	       "%s", svc);
 
-	return result;
+	return 0;
 }
 
 static void smb_full_audit_disconnect(vfs_handle_struct *handle)

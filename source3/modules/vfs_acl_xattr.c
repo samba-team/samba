@@ -212,6 +212,12 @@ static int connect_acl_xattr(struct vfs_handle_struct *handle,
 				const char *service,
 				const char *user)
 {
+	int ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
+
+	if (ret < 0) {
+		return ret;
+	}
+
 	/* Ensure we have "inherit acls = yes" if we're
 	 * using this module. */
 	DEBUG(2,("connect_acl_xattr: setting 'inherit acls = true' "

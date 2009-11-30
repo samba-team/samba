@@ -28,15 +28,20 @@
 static int onefs_connect(struct vfs_handle_struct *handle, const char *service,
 			 const char *user)
 {
-	int ret;
+	int ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
+
+	if (ret < 0) {
+		return ret;
+	}
 
 	ret = onefs_load_config(handle->conn);
 	if (ret) {
+		SMB_VFS_NEXT_DISCONNECT(handle);
 		DEBUG(3, ("Load config failed: %s\n", strerror(errno)));
 		return ret;
 	}
 
-	return SMB_VFS_NEXT_CONNECT(handle, service, user);
+	return 0;
 }
 
 static int onefs_mkdir(vfs_handle_struct *handle, const char *path,

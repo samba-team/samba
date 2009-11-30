@@ -89,6 +89,8 @@ static int cprime_connect(
                 const char *                service,
                 const char *                user)
 {
+	int ret;
+
         module_debug = lp_parm_int(SNUM(handle->conn), MODULE, "debug", 100);
         if (g_readbuf) {
                 /* Only allocate g_readbuf once. If the config changes and
@@ -97,6 +99,11 @@ static int cprime_connect(
                  */
                 return SMB_VFS_NEXT_CONNECT(handle, service, user);
         }
+
+	ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
+	if (ret < 0) {
+		return ret;
+	}
 
         g_readsz = conv_str_size(lp_parm_const_string(SNUM(handle->conn),
                                         MODULE, "rsize", NULL));
@@ -118,7 +125,7 @@ static int cprime_connect(
                 g_readsz = 0;
         }
 
-        return SMB_VFS_NEXT_CONNECT(handle, service, user);
+        return 0;
 }
 
 static ssize_t cprime_sendfile(

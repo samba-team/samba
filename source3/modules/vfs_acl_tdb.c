@@ -367,12 +367,11 @@ static int connect_acl_tdb(struct vfs_handle_struct *handle,
 				const char *user)
 {
 	struct db_context *db;
-	int res;
+	int ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
 
-        res = SMB_VFS_NEXT_CONNECT(handle, service, user);
-        if (res < 0) {
-                return res;
-        }
+	if (ret < 0) {
+		return ret;
+	}
 
 	if (!acl_tdb_init(&db)) {
 		SMB_VFS_NEXT_DISCONNECT(handle);
