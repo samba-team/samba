@@ -124,7 +124,7 @@ below) or entered at the password prompt will be read correctly.
 <programlisting>
 		username=<replaceable>value</replaceable>
 		password=<replaceable>value</replaceable>
-		workgroup=<replaceable>value</replaceable>
+		domain=<replaceable>value</replaceable>
 </programlisting>
 
 		<para>
