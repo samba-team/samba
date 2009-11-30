@@ -517,7 +517,7 @@ struct drsuapi_DsReplicaObjectIdentifier3 {
 }/* [gensize,public] */;
 
 struct drsuapi_DsReplicaObjectIdentifier3Binary {
-	uint32_t __ndr_size;/* [value(ndr_size_drsuapi_DsReplicaObjectIdentifier3(r,ndr->iconv_convenience,ndr->flags))] */
+	uint32_t __ndr_size;/* [value(ndr_size_drsuapi_DsReplicaObjectIdentifier3Binary_without_Binary(r,ndr->iconv_convenience,ndr->flags))] */
 	uint32_t __ndr_size_sid;/* [value(ndr_size_dom_sid28(&sid,ndr->flags))] */
 	struct GUID guid;
 	struct dom_sid28 sid;
@@ -525,7 +525,7 @@ struct drsuapi_DsReplicaObjectIdentifier3Binary {
 	const char *dn;/* [charset(UTF16)] */
 	uint32_t __ndr_size_binary;/* [value(binary.length+4)] */
 	DATA_BLOB binary;/* [flag(LIBNDR_FLAG_REMAINING)] */
-}/* [gensize,public] */;
+}/* [public] */;
 
 struct drsuapi_DsReplicaAttribute {
 	enum drsuapi_DsAttributeId attid;

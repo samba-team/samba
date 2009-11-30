@@ -2176,7 +2176,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_drsuapi_DsReplicaObjectIdentifier3Binary(str
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_drsuapi_DsReplicaObjectIdentifier3(r, ndr->iconv_convenience, ndr->flags)));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_drsuapi_DsReplicaObjectIdentifier3Binary_without_Binary(r, ndr->iconv_convenience, ndr->flags)));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_dom_sid28(&r->sid, ndr->flags)));
 		NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->guid));
 		NDR_CHECK(ndr_push_dom_sid28(ndr, NDR_SCALARS, &r->sid));
@@ -2226,7 +2226,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaObjectIdentifier3Binary(struct ndr_prin
 {
 	ndr_print_struct(ndr, name, "drsuapi_DsReplicaObjectIdentifier3Binary");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "__ndr_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_drsuapi_DsReplicaObjectIdentifier3(r, ndr->iconv_convenience, ndr->flags):r->__ndr_size);
+	ndr_print_uint32(ndr, "__ndr_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_drsuapi_DsReplicaObjectIdentifier3Binary_without_Binary(r, ndr->iconv_convenience, ndr->flags):r->__ndr_size);
 	ndr_print_uint32(ndr, "__ndr_size_sid", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_dom_sid28(&r->sid, ndr->flags):r->__ndr_size_sid);
 	ndr_print_GUID(ndr, "guid", &r->guid);
 	ndr_print_dom_sid28(ndr, "sid", &r->sid);
@@ -2235,11 +2235,6 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaObjectIdentifier3Binary(struct ndr_prin
 	ndr_print_uint32(ndr, "__ndr_size_binary", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?r->binary.length + 4:r->__ndr_size_binary);
 	ndr_print_DATA_BLOB(ndr, "binary", r->binary);
 	ndr->depth--;
-}
-
-_PUBLIC_ size_t ndr_size_drsuapi_DsReplicaObjectIdentifier3Binary(const struct drsuapi_DsReplicaObjectIdentifier3Binary *r, struct smb_iconv_convenience *ic, int flags)
-{
-	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3Binary, ic);
 }
 
 _PUBLIC_ enum ndr_err_code ndr_push_drsuapi_DsReplicaAttribute(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsReplicaAttribute *r)
