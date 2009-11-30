@@ -7016,7 +7016,6 @@ static void add_to_file_list(const char *fname, const char *subfname)
 		}
 		f->subfname = SMB_STRDUP(subfname);
 		if (!f->subfname) {
-			SAFE_FREE(f->name);
 			SAFE_FREE(f);
 			return;
 		}
@@ -7027,7 +7026,6 @@ static void add_to_file_list(const char *fname, const char *subfname)
 		if (t)
 			f->modtime = t;
 	}
-	return;
 }
 
 /**
@@ -7114,8 +7112,9 @@ bool lp_file_list_changed(void)
 					  ctime(&mod_time)));
 				f->modtime = mod_time;
 				SAFE_FREE(f->subfname);
-				f->subfname = SMB_STRDUP(n2);
-				TALLOC_FREE(n2);
+				f->subfname = n2; /* Passing ownership of
+						     return from alloc_sub_basic
+						     above. */
 				return true;
 			}
 			TALLOC_FREE(n2);
