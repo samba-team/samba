@@ -101,10 +101,16 @@ static int prealloc_connect(
                 const char *                service,
                 const char *                user)
 {
-	    module_debug = lp_parm_int(SNUM(handle->conn),
+	int ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
+
+	if (ret < 0) {
+		return ret;
+	}
+
+	module_debug = lp_parm_int(SNUM(handle->conn),
 					MODULE, "debug", 100);
 
-	    return SMB_VFS_NEXT_CONNECT(handle, service, user);
+	return 0;
 }
 
 static int prealloc_open(vfs_handle_struct* handle,

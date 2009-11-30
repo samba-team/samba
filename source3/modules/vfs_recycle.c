@@ -38,10 +38,16 @@ static int recycle_unlink(vfs_handle_struct *handle,
 
 static int recycle_connect(vfs_handle_struct *handle, const char *service, const char *user)
 {
+	int ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
+
+	if (ret < 0) {
+		return ret;
+	}
+
 	DEBUG(10,("recycle_connect() connect to service[%s] as user[%s].\n",
 		service,user));
 
-	return SMB_VFS_NEXT_CONNECT(handle, service, user);
+	return 0;
 }
 
 static void recycle_disconnect(vfs_handle_struct *handle)

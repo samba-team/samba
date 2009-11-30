@@ -127,8 +127,15 @@ static int readahead_connect(struct vfs_handle_struct *handle,
 				const char *service,
 				const char *user)
 {
-	struct readahead_data *rhd = SMB_MALLOC_P(struct readahead_data);
+	struct readahead_data *rhd;
+	int ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
+
+	if (ret < 0) {
+		return ret;
+	}
+	rhd = SMB_MALLOC_P(struct readahead_data);
 	if (!rhd) {
+		SMB_VFS_NEXT_DISCONNECT(handle);
 		DEBUG(0,("readahead_connect: out of memory\n"));
 		return -1;
 	}
@@ -152,7 +159,7 @@ static int readahead_connect(struct vfs_handle_struct *handle,
 
 	handle->data = (void *)rhd;
 	handle->free_data = free_readahead_data;
-	return SMB_VFS_NEXT_CONNECT(handle, service, user);
+	return 0;
 }
 
 static struct vfs_fn_pointers vfs_readahead_fns = {
