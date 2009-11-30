@@ -7091,7 +7091,7 @@ bool lp_file_list_changed(void)
 				return true;
 			}
 		} else {
-			n2 = talloc_sub_basic(get_current_username(),
+			n2 = alloc_sub_basic(get_current_username(),
 					    current_user_info.domain,
 					    f->name);
 			if (!n2) {
@@ -7117,7 +7117,7 @@ bool lp_file_list_changed(void)
 						     above. */
 				return true;
 			}
-			TALLOC_FREE(n2);
+			SAFE_FREE(n2);
 		}
 		f = f->next;
 	}
