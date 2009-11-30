@@ -14,12 +14,12 @@ shift 1
 
 upgradeprovision() {
 	$PYTHON ./setup/provision --domain=FOO --realm=foo.example.com --targetdir="$PREFIX/upgradeprovision" --server-role="dc"
-	$PYTHON ./scripting/bin/upgradeprovision --targetdir="$PREFIX/upgradeprovision"
+	$PYTHON ./scripting/bin/upgradeprovision -s "$PREFIX/upgradeprovision/etc/smb.conf"
 }
 
 upgradeprovision_full() {
 	$PYTHON ./setup/provision --domain=FOO --realm=foo.example.com --targetdir="$PREFIX/upgradeprovision_full" --server-role="dc"
-	$PYTHON ./scripting/bin/upgradeprovision --targetdir="$PREFIX/upgradeprovision_full" --full
+	$PYTHON ./scripting/bin/upgradeprovision -s "$PREFIX/upgradeprovision_full/etc/smb.conf" --full
 }
 
 testit "upgradeprovision" upgradeprovision
