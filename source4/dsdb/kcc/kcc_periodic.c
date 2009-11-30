@@ -122,6 +122,7 @@ NTSTATUS kccsrv_simple_update(struct kccsrv_service *s, TALLOC_CTX *mem_ctx)
 	const char *attrs[] = { "objectGUID", "invocationID", NULL };
 	struct repsFromToBlob *reps = NULL;
 	uint32_t count = 0;
+	struct ldb_dn **connections;
 
 	ret = ldb_search(s->samdb, mem_ctx, &res, s->config_dn, LDB_SCOPE_SUBTREE, 
 			 attrs, "objectClass=nTDSDSA");
@@ -160,8 +161,12 @@ NTSTATUS kccsrv_simple_update(struct kccsrv_service *s, TALLOC_CTX *mem_ctx)
 			DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP | 
 			DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS;
 		memset(r1->schedule, 0x11, sizeof(r1->schedule));
+		/* kccsrv_create_connection(s, r1); */
 		count++;
 	}
+
+	connections = kccsrv_find_connections(s, mem_ctx);
+	kccsrv_apply_connections(connections);
 
 	return kccsrv_add_repsFrom(s, mem_ctx, reps, count);
 }
