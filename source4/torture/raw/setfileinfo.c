@@ -700,9 +700,14 @@ static bool torture_raw_sfileinfo_bug(struct torture_context *torture,
 	return true;
 }
 
+/**
+ * Test both the snia cifs RAW_SFILEINFO_END_OF_FILE_INFO and the undocumented
+ * pass-through RAW_SFILEINFO_END_OF_FILE_INFORMATION in the context of
+ * trans2setpathinfo.
+ */
 static bool
-torture_raw_sfileinfo_eof(struct torture_context *tctx, struct smbcli_state *cli1,
-    struct smbcli_state *cli2)
+torture_raw_sfileinfo_eof(struct torture_context *tctx,
+    struct smbcli_state *cli1, struct smbcli_state *cli2)
 {
 	const char *fname = BASEDIR "\\test_sfileinfo_end_of_file.dat";
 	NTSTATUS status;
@@ -774,39 +779,119 @@ torture_raw_sfileinfo_eof(struct torture_context *tctx, struct smbcli_state *cli
 	 */
 	if (TARGET_IS_W2K8(tctx) || TARGET_IS_WIN7(tctx)) {
 		/* It succeeds! This is just weird! */
-		torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OK, ret,
-		    done, "Status should be OK");
+		torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OK,
+		    ret, done, "Status should be OK");
+
+		/* Verify that the file was actually extended to 100. */
+		ZERO_STRUCT(qfi);
+		qfi.generic.level = RAW_FILEINFO_STANDARD_INFO;
+		qfi.generic.in.file.path = fname;
+		status = smb_raw_pathinfo(cli2->tree, tctx, &qfi);
+		torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OK,
+		    ret, done, "Status should be OK");
+
+		torture_assert_u64_equal(tctx, qfi.standard_info.out.size, 100,
+		    "alloc_size should be 100 since the setpathinfo "
+		    "succeeded.");
 	} else {
 		torture_assert_ntstatus_equal_goto(tctx, status,
 		    NT_STATUS_SHARING_VIOLATION, ret, done, "Status should be "
 		    "SHARING_VIOLATION");
-		goto done;
 	}
 
-	/* Verify that the file was actually extended to 100. */
+	/* close the first file. */
+	smbcli_close(cli1->tree, fnum);
+	fnum = 0;
+
+	/* Try to sfileinfo to extend the file again (non-pass-through). */
+	ZERO_STRUCT(sfi);
+	sfi.generic.level = RAW_SFILEINFO_END_OF_FILE_INFO;
+	sfi.generic.in.file.path = fname;
+	sfi.end_of_file_info.in.size = 200;
+	status = smb_raw_setpathinfo(cli2->tree, &sfi);
+
+	/* This should cause the client to retun invalid level. */
+	if (TARGET_IS_W2K8(tctx) || TARGET_IS_WIN7(tctx)) {
+		/*
+		 * Windows sends back an invalid packet that smbclient sees
+		 * and returns INTERNAL_ERROR.
+		 */
+		torture_assert_ntstatus_equal_goto(tctx, status,
+		    NT_STATUS_INTERNAL_ERROR, ret, done, "Status should be "
+		    "INTERNAL_ERROR");
+	} else {
+		torture_assert_ntstatus_equal_goto(tctx, status,
+		    NT_STATUS_INVALID_LEVEL, ret, done, "Status should be "
+		    "INVALID_LEVEL");
+	}
+
+	/* Try to extend the file now with the passthrough level. */
+	sfi.generic.level = RAW_SFILEINFO_END_OF_FILE_INFORMATION;
+	status = smb_raw_setpathinfo(cli2->tree, &sfi);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OK, ret,
+	    done, "Status should be OK");
+
+	/* Verify that the file was actually extended to 200. */
 	ZERO_STRUCT(qfi);
 	qfi.generic.level = RAW_FILEINFO_STANDARD_INFO;
 	qfi.generic.in.file.path = fname;
 	status = smb_raw_pathinfo(cli2->tree, tctx, &qfi);
+
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OK, ret,
+	    done, "Status should be OK");
+	torture_assert_u64_equal(tctx, qfi.standard_info.out.size, 200,
+	    "alloc_size should be 200 since the setpathinfo succeeded.");
+
+	/* Open the file so end of file can be set by handle. */
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_WRITE;
+	status = smb_raw_open(cli1->tree, tctx, &io);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OK, ret,
+	    done, "Status should be OK");
+	fnum = io.ntcreatex.out.file.fnum;
+
+	/* Try sfileinfo to extend the file by handle (non-pass-through). */
+	ZERO_STRUCT(sfi);
+	sfi.generic.level = RAW_SFILEINFO_END_OF_FILE_INFO;
+	sfi.generic.in.file.fnum = fnum;
+	sfi.end_of_file_info.in.size = 300;
+	status = smb_raw_setfileinfo(cli1->tree, &sfi);
 	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OK, ret,
 	    done, "Status should be OK");
 
-	torture_assert_u64_equal(tctx, qfi.standard_info.out.size, 100,
-	    "alloc_size should be 100 since the setpathinfo succeeded.");
+	/* Verify that the file was actually extended to 300. */
+	ZERO_STRUCT(qfi);
+	qfi.generic.level = RAW_FILEINFO_STANDARD_INFO;
+	qfi.generic.in.file.path = fname;
+	status = smb_raw_pathinfo(cli1->tree, tctx, &qfi);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OK, ret,
+	    done, "Status should be OK");
+	torture_assert_u64_equal(tctx, qfi.standard_info.out.size, 300,
+	    "alloc_size should be 300 since the setpathinfo succeeded.");
 
-	/*
-	 * Try another open with just write to mimic what setpathinfo should
-	 * be doing under the covers.
-	 */
-	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
-	status = smb_raw_open(cli2->tree, tctx, &io);
-	torture_assert_ntstatus_equal_goto(tctx, status,
-	    NT_STATUS_SHARING_VIOLATION, ret, done, "Status should be "
-	    "SHARING_VIOLATION");
+	/* Try sfileinfo to extend the file by handle (pass-through). */
+	ZERO_STRUCT(sfi);
+	sfi.generic.level = RAW_SFILEINFO_END_OF_FILE_INFORMATION;
+	sfi.generic.in.file.fnum = fnum;
+	sfi.end_of_file_info.in.size = 400;
+	status = smb_raw_setfileinfo(cli1->tree, &sfi);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OK, ret,
+	    done, "Status should be OK");
 
-	smbcli_close(cli1->tree, fnum);
+	/* Verify that the file was actually extended to 300. */
+	ZERO_STRUCT(qfi);
+	qfi.generic.level = RAW_FILEINFO_STANDARD_INFO;
+	qfi.generic.in.file.path = fname;
+	status = smb_raw_pathinfo(cli1->tree, tctx, &qfi);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OK, ret,
+	    done, "Status should be OK");
+	torture_assert_u64_equal(tctx, qfi.standard_info.out.size, 400,
+	    "alloc_size should be 400 since the setpathinfo succeeded.");
+ done:
+	if (fnum > 0) {
+		smbcli_close(cli1->tree, fnum);
+		fnum = 0;
+	}
 
-done:
 	smb_raw_exit(cli1->session);
 	smb_raw_exit(cli2->session);
 	smbcli_deltree(cli1->tree, BASEDIR);
