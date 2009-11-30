@@ -1484,8 +1484,11 @@ bool convert_devicemode(const char *printername,
 			return false;
 	}
 
-	rpcstr_push(nt_devmode->devicename, devmode->devicename, 31, 0);
-	rpcstr_push(nt_devmode->formname, devmode->formname, 31, 0);
+	fstrcpy(nt_devmode->devicename, devmode->devicename);
+	fstrcpy(nt_devmode->formname, devmode->formname);
+
+	nt_devmode->devicename[31] = '\0';
+	nt_devmode->formname[31] = '\0';
 
 	nt_devmode->specversion		= devmode->specversion;
 	nt_devmode->driverversion	= devmode->driverversion;
