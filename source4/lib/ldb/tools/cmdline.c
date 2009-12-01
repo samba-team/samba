@@ -232,7 +232,7 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb,
 			}
 			break;
 		case 'E':
-			if (!add_control(ret, "extended_dn:1")) {
+			if (!add_control(ret, "extended_dn:1:1")) {
 				fprintf(stderr, __location__ ": out of memory\n");
 				goto failed;
 			}
