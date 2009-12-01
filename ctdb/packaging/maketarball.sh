@@ -85,6 +85,7 @@ fi
 if test "x${DEBIAN_MODE}" = "xyes" ; then
 	TAR_PREFIX="ctdb-${VERSION}.orig"
 	TAR_BASE="ctdb_${VERSION}.orig"
+	rm -rf /tmp/${TAR_PREFIX_TMP}/lib/popt
 fi
 
 TAR_BALL=${TAR_BASE}.tar
