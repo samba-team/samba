@@ -368,8 +368,10 @@ import "misc.idl", "security.idl", "winreg.idl";
 		DMDITHER_GRAYSCALE	= 0x0000000A
 	} spoolss_DeviceModeDitherType;
 
+	const int MAXDEVICENAME	= 32;
+
 	typedef [public,gensize] struct {
-		[charset(UTF16)] uint16 devicename[32];
+		[charset(UTF16)] uint16 devicename[MAXDEVICENAME];
 		spoolss_DeviceModeSpecVersion specversion;
 		uint16 driverversion;
 		uint16 size;
@@ -388,7 +390,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		uint16 yresolution;
 		spoolss_DeviceModeTTOption ttoption;
 		spoolss_DeviceModeCollate collate;
-		[charset(UTF16)] uint16 formname[32];
+		[charset(UTF16)] uint16 formname[MAXDEVICENAME];
 		uint16 logpixels; /* reserved */
 		uint32 bitsperpel; /* reserved */
 		uint32 pelswidth; /* reserved */
