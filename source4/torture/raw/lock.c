@@ -1750,6 +1750,73 @@ static bool test_multiple_unlock(struct torture_context *tctx, struct smbcli_sta
 	status = smb_raw_lock(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
+	/* Test3: Request 2 locks, second will contend.  What happens to the
+	 * first? */
+	torture_comment(tctx, "  request 2 locks, second one will contend. "
+	   "Expect both to fail.\n");
+
+	/* Lock the second range */
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	io.lockx.in.locks = &lock2;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Request both locks */
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 2;
+	io.lockx.in.locks = locks;
+
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
+
+	/* First lock should be unlocked. */
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	io.lockx.in.locks = &lock1;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* cleanup */
+	io.lockx.in.ulock_cnt = 2;
+	io.lockx.in.lock_cnt = 0;
+	io.lockx.in.locks = locks;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Test4: Request unlock and lock. The lock contends, is the unlock
+	 * then re-locked? */
+	torture_comment(tctx, "  request unlock and lock, second one will "
+	   "contend. Expect the unlock to succeed.\n");
+
+	/* Lock both ranges */
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 2;
+	io.lockx.in.locks = locks;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Attempt to unlock the first range and lock the second */
+	io.lockx.in.ulock_cnt = 1;
+	io.lockx.in.lock_cnt = 1;
+	io.lockx.in.locks = locks;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
+
+	/* The first lock should've been unlocked */
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	io.lockx.in.locks = &lock1;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* cleanup */
+	io.lockx.in.ulock_cnt = 2;
+	io.lockx.in.lock_cnt = 0;
+	io.lockx.in.locks = locks;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
 done:
 	smbcli_close(cli->tree, fnum1);
 	smb_raw_exit(cli->session);

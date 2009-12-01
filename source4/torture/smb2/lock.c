@@ -1702,7 +1702,6 @@ static bool test_multiple_unlock(struct torture_context *torture,
 	uint8_t buf[200];
 	struct smb2_lock lck;
 	struct smb2_lock_element el[2];
-	struct smb2_lock_element el0, el1;
 
 	const char *fname = BASEDIR "\\unlock_multiple.txt";
 
@@ -1723,41 +1722,37 @@ static bool test_multiple_unlock(struct torture_context *torture,
 	lck.in.lock_count	= 0x0002;
 	lck.in.lock_sequence	= 0x00000000;
 	lck.in.file.handle	= h;
-	el0.offset		= 0;
-	el0.length		= 10;
-	el0.reserved		= 0x00000000;
-	el1.offset		= 10;
-	el1.length		= 10;
-	el1.reserved		= 0x00000000;
-	el[0]			= el0;
-	el[1]			= el1;
+	el[0].offset		= 0;
+	el[0].length		= 10;
+	el[0].reserved		= 0x00000000;
+	el[1].offset		= 10;
+	el[1].length		= 10;
+	el[1].reserved		= 0x00000000;
 
 	/* Test1: Acquire second lock, but not first. */
 	torture_comment(torture, "  unlock 2 locks, first one not locked. "
 				 "Expect no locks unlocked. \n");
 
 	lck.in.lock_count	= 0x0001;
-	el1.flags		= SMB2_LOCK_FLAG_EXCLUSIVE |
+	el[1].flags		= SMB2_LOCK_FLAG_EXCLUSIVE |
 				  SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
-	lck.in.locks		= &el1;
+	lck.in.locks		= &el[1];
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	/* Try to unlock both locks */
 	lck.in.lock_count	= 0x0002;
-	el0.flags		= SMB2_LOCK_FLAG_UNLOCK;
-	el1.flags		= SMB2_LOCK_FLAG_UNLOCK;
-	el[0]			= el0;
-	el[1]			= el1;
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
+	el[1].flags		= SMB2_LOCK_FLAG_UNLOCK;
 	lck.in.locks		= el;
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
 
 	/* Second lock should not be unlocked. */
 	lck.in.lock_count	= 0x0001;
-	el1.flags		= SMB2_LOCK_FLAG_EXCLUSIVE |
+	el[1].flags		= SMB2_LOCK_FLAG_EXCLUSIVE |
 				  SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
-	lck.in.locks		= &el1;
+	lck.in.locks		= &el[1];
 	status = smb2_lock(tree, &lck);
 	if (TARGET_IS_W2K8(torture)) {
 		CHECK_STATUS(status, NT_STATUS_OK);
@@ -1770,8 +1765,8 @@ static bool test_multiple_unlock(struct torture_context *torture,
 
 	/* cleanup */
 	lck.in.lock_count	= 0x0001;
-	el1.flags		= SMB2_LOCK_FLAG_UNLOCK;
-	lck.in.locks		= &el1;
+	el[1].flags		= SMB2_LOCK_FLAG_UNLOCK;
+	lck.in.locks		= &el[1];
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -1780,36 +1775,224 @@ static bool test_multiple_unlock(struct torture_context *torture,
 				 "Expect first lock unlocked.\n");
 
 	lck.in.lock_count	= 0x0001;
-	el0.flags		= SMB2_LOCK_FLAG_EXCLUSIVE |
+	el[0].flags		= SMB2_LOCK_FLAG_EXCLUSIVE |
 				  SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
-	lck.in.locks		= &el0;
+	lck.in.locks		= &el[0];
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	/* Try to unlock both locks */
 	lck.in.lock_count	= 0x0002;
-	el0.flags		= SMB2_LOCK_FLAG_UNLOCK;
-	el1.flags		= SMB2_LOCK_FLAG_UNLOCK;
-	el[0]			= el0;
-	el[1]			= el1;
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
+	el[1].flags		= SMB2_LOCK_FLAG_UNLOCK;
 	lck.in.locks		= el;
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
 
 	/* First lock should be unlocked. */
 	lck.in.lock_count	= 0x0001;
-	el0.flags		= SMB2_LOCK_FLAG_EXCLUSIVE |
+	el[0].flags		= SMB2_LOCK_FLAG_EXCLUSIVE |
 				  SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
-	lck.in.locks		= &el0;
+	lck.in.locks		= &el[0];
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	/* cleanup */
 	lck.in.lock_count	= 0x0001;
-	el0.flags		= SMB2_LOCK_FLAG_UNLOCK;
-	lck.in.locks		= &el0;
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
+	lck.in.locks		= &el[0];
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Test3: Request 2 locks, second will contend.  What happens to the
+	 * first? */
+	torture_comment(torture, "  request 2 locks, second one will contend. "
+				 "Expect both to fail.\n");
+
+	/* Lock the second range */
+	lck.in.lock_count	= 0x0001;
+	el[1].flags		= SMB2_LOCK_FLAG_EXCLUSIVE |
+				  SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	lck.in.locks		= &el[1];
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Request both locks */
+	lck.in.lock_count	= 0x0002;
+	el[0].flags		= SMB2_LOCK_FLAG_EXCLUSIVE |
+				  SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	lck.in.locks		= el;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
+
+	/* First lock should be unlocked. */
+	lck.in.lock_count	= 0x0001;
+	lck.in.locks		= &el[0];
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* cleanup */
+	if (TARGET_IS_W2K8(torture)) {
+		lck.in.lock_count	= 0x0001;
+		el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
+		lck.in.locks		= &el[0];
+		status = smb2_lock(tree, &lck);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		torture_warning(torture, "Target has \"pretty please\" bug. "
+				"A contending lock request on the same handle "
+				"unlocks the lock.\n");
+	} else {
+		lck.in.lock_count	= 0x0002;
+		el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
+		el[1].flags		= SMB2_LOCK_FLAG_UNLOCK;
+		lck.in.locks		= el;
+		status = smb2_lock(tree, &lck);
+		CHECK_STATUS(status, NT_STATUS_OK);
+	}
+
+	/* Test4: Request unlock and lock.  The lock contends, is the unlock
+	 * then relocked?  SMB2 doesn't like the lock and unlock requests in the
+	 * same packet. The unlock will succeed, but the lock will return
+	 * INVALID_PARAMETER.  This behavior is described in MS-SMB2
+	 * 3.3.5.14.1 */
+	torture_comment(torture, "  request unlock and lock, second one will "
+				 "error. Expect the unlock to succeed.\n");
+
+	/* Lock both ranges */
+	lck.in.lock_count	= 0x0002;
+	el[0].flags		= SMB2_LOCK_FLAG_EXCLUSIVE |
+				  SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	el[1].flags		= SMB2_LOCK_FLAG_EXCLUSIVE |
+				  SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	lck.in.locks		= el;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Attempt to unlock the first range and lock the second. The lock
+	 * request will error. */
+	lck.in.lock_count	= 0x0002;
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
+	el[1].flags		= SMB2_LOCK_FLAG_EXCLUSIVE |
+				  SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	lck.in.locks		= el;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	/* The first lock should've been unlocked */
+	lck.in.lock_count	= 0x0001;
+	el[0].flags		= SMB2_LOCK_FLAG_EXCLUSIVE |
+				  SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	lck.in.locks		= &el[0];
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* cleanup */
+	lck.in.lock_count	= 0x0002;
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
+	el[1].flags		= SMB2_LOCK_FLAG_UNLOCK;
+	lck.in.locks		= el;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Test10: SMB2 only test. Request unlock and lock in same packet.
+	 * Neither contend. SMB2 doesn't like lock and unlock requests in the
+	 * same packet.  The unlock will succeed, but the lock will return
+	 * INVALID_PARAMETER. */
+	torture_comment(torture, "  request unlock and lock.  Unlock will "
+				 "succeed, but lock will fail.\n");
+
+	/* Lock first range */
+	lck.in.lock_count	= 0x0001;
+	el[0].flags		= SMB2_LOCK_FLAG_EXCLUSIVE |
+				  SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	lck.in.locks		= &el[0];
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Attempt to unlock the first range and lock the second */
+	lck.in.lock_count	= 0x0002;
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
+	el[1].flags		= SMB2_LOCK_FLAG_EXCLUSIVE |
+				  SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	lck.in.locks		= el;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	/* Neither lock should still be locked */
+	lck.in.lock_count	= 0x0002;
+	el[0].flags		= SMB2_LOCK_FLAG_EXCLUSIVE |
+				  SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	el[1].flags		= SMB2_LOCK_FLAG_EXCLUSIVE |
+				  SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	lck.in.locks		= el;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* cleanup */
+	lck.in.lock_count	= 0x0002;
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
+	el[1].flags		= SMB2_LOCK_FLAG_UNLOCK;
+	lck.in.locks		= el;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Test11: SMB2 only test. Request lock and unlock in same packet.
+	 * Neither contend. SMB2 doesn't like lock and unlock requests in the
+	 * same packet.  The lock will succeed, the unlock will fail with
+	 * INVALID_PARAMETER, and the lock will be unlocked before return. */
+	torture_comment(torture, "  request lock and unlock.  Both will "
+				 "fail.\n");
+
+	/* Lock second range */
+	lck.in.lock_count	= 0x0001;
+	el[1].flags		= SMB2_LOCK_FLAG_EXCLUSIVE |
+				  SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	lck.in.locks		= &el[1];
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Attempt to lock the first range and unlock the second */
+	lck.in.lock_count	= 0x0002;
+	el[0].flags		= SMB2_LOCK_FLAG_EXCLUSIVE |
+				  SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	el[1].flags		= SMB2_LOCK_FLAG_UNLOCK;
+	lck.in.locks		= el;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	/* First range should be unlocked, second locked. */
+	lck.in.lock_count	= 0x0001;
+	el[0].flags		= SMB2_LOCK_FLAG_EXCLUSIVE |
+				  SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	lck.in.locks		= &el[0];
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	lck.in.lock_count	= 0x0001;
+	el[1].flags		= SMB2_LOCK_FLAG_EXCLUSIVE |
+				  SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	lck.in.locks		= &el[1];
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
+
+	/* cleanup */
+	if (TARGET_IS_W2K8(torture)) {
+		lck.in.lock_count	= 0x0001;
+		el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
+		lck.in.locks		= &el[0];
+		status = smb2_lock(tree, &lck);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		torture_warning(torture, "Target has \"pretty please\" bug. "
+				"A contending lock request on the same handle "
+				"unlocks the lock.\n");
+	} else {
+		lck.in.lock_count	= 0x0002;
+		el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
+		el[1].flags		= SMB2_LOCK_FLAG_UNLOCK;
+		lck.in.locks		= el;
+		status = smb2_lock(tree, &lck);
+		CHECK_STATUS(status, NT_STATUS_OK);
+	}
 
 done:
 	smb2_util_close(tree, h);
