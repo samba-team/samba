@@ -463,7 +463,7 @@ static bool test_raw_oplock_exclusive3(struct torture_context *tctx, struct smbc
 
 	torture_comment(tctx, "setpathinfo EOF should trigger a break to none\n");
 	ZERO_STRUCT(sfi);
-	sfi.generic.level = RAW_SFILEINFO_END_OF_FILE_INFO;
+	sfi.generic.level = RAW_SFILEINFO_END_OF_FILE_INFORMATION;
 	sfi.generic.in.file.path = fname;
 	sfi.end_of_file_info.in.size = 100;
 
@@ -1530,7 +1530,7 @@ static bool test_raw_oplock_batch11(struct torture_context *tctx, struct smbcli_
 	CHECK_VAL(io.ntcreatex.out.oplock_level, BATCH_OPLOCK_RETURN);
 
 	ZERO_STRUCT(sfi);
-	sfi.generic.level = RAW_SFILEINFO_END_OF_FILE_INFO;
+	sfi.generic.level = RAW_SFILEINFO_END_OF_FILE_INFORMATION;
 	sfi.generic.in.file.path = fname;
 	sfi.end_of_file_info.in.size = 100;
 
