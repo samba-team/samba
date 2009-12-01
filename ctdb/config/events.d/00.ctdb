@@ -39,6 +39,7 @@ case "$1" in
 			ctdb shutdown
 		}
 	}
+	;;
 
     *)
 	ctdb_standard_event_handler "$@"
