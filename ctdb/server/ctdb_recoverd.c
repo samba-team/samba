@@ -1855,6 +1855,11 @@ static void process_ipreallocate_requests(struct ctdb_context *ctdb, struct ctdb
 	result.dptr  = (uint8_t *)&ret;
 
 	for (callers=rec->reallocate_callers; callers; callers=callers->next) {
+
+		/* Someone that sent srvid==0 does not want a reply */
+		if (callers->rd->srvid == 0) {
+			continue;
+		}
 		DEBUG(DEBUG_INFO,("Sending ip reallocate reply message to "
 				  "%u:%llu\n", (unsigned)callers->rd->pnn,
 				  (unsigned long long)callers->rd->srvid));
@@ -2286,7 +2291,7 @@ static enum monitor_result verify_recmaster(struct ctdb_recoverd *rec, struct ct
 
 /* called to check that the allocation of public ip addresses is ok.
 */
-static int verify_ip_allocation(struct ctdb_context *ctdb, uint32_t pnn)
+static int verify_ip_allocation(struct ctdb_context *ctdb, struct ctdb_recoverd *rec, uint32_t pnn)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct ctdb_all_public_ips *ips = NULL;
@@ -2352,41 +2357,38 @@ static int verify_ip_allocation(struct ctdb_context *ctdb, uint32_t pnn)
 	for (j=0; j<ips->num; j++) {
 		if (ips->ips[j].pnn == pnn) {
 			if (!ctdb_sys_have_ip(&ips->ips[j].addr)) {
+				struct takeover_run_reply rd;
+				TDB_DATA data;
+
 				DEBUG(DEBUG_CRIT,("Public address '%s' is missing and we should serve this ip\n",
 					ctdb_addr_to_str(&ips->ips[j].addr)));
-				ret = ctdb_ctrl_freeze_priority(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, 1);
-				if (ret != 0) {
-					DEBUG(DEBUG_ERR,(__location__ " Failed to freeze node due to public ip address mismatches\n"));
 
-					talloc_free(mem_ctx);
-					return -1;
-				}
-				ret = ctdb_ctrl_setrecmode(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, CTDB_RECOVERY_ACTIVE);
-				if (ret != 0) {
-					DEBUG(DEBUG_ERR,(__location__ " Failed to activate recovery mode due to public ip address mismatches\n"));
+				rd.pnn   = ctdb->pnn;
+				rd.srvid = 0;
+				data.dptr = (uint8_t *)&rd;
+				data.dsize = sizeof(rd);
 
-					talloc_free(mem_ctx);
-					return -1;
+			        ret = ctdb_send_message(ctdb, rec->recmaster, CTDB_SRVID_TAKEOVER_RUN, data);
+				if (ret != 0) {
+					DEBUG(DEBUG_ERR,(__location__ " Failed to send ipreallocate to recmaster :%d\n", (int)rec->recmaster));
 				}
 			}
 		} else {
 			if (ctdb_sys_have_ip(&ips->ips[j].addr)) {
+				struct takeover_run_reply rd;
+				TDB_DATA data;
+
 				DEBUG(DEBUG_CRIT,("We are still serving a public address '%s' that we should not be serving.\n", 
 					ctdb_addr_to_str(&ips->ips[j].addr)));
 
-				ret = ctdb_ctrl_freeze_priority(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, 1);
-				if (ret != 0) {
-					DEBUG(DEBUG_ERR,(__location__ " Failed to freeze node due to public ip address mismatches\n"));
+				rd.pnn   = ctdb->pnn;
+				rd.srvid = 0;
+				data.dptr = (uint8_t *)&rd;
+				data.dsize = sizeof(rd);
 
-					talloc_free(mem_ctx);
-					return -1;
-				}
-				ret = ctdb_ctrl_setrecmode(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, CTDB_RECOVERY_ACTIVE);
+			        ret = ctdb_send_message(ctdb, rec->recmaster, CTDB_SRVID_TAKEOVER_RUN, data);
 				if (ret != 0) {
-					DEBUG(DEBUG_ERR,(__location__ " Failed to activate recovery mode due to public ip address mismatches\n"));
-
-					talloc_free(mem_ctx);
-					return -1;
+					DEBUG(DEBUG_ERR,(__location__ " Failed to send ipreallocate to recmaster :%d\n", (int)rec->recmaster));
 				}
 			}
 		}
@@ -2939,9 +2941,8 @@ again:
 	 */ 
 	if (ctdb->do_checkpublicip) {
 		if (rec->ip_check_disable_ctx == NULL) {
-			if (verify_ip_allocation(ctdb, pnn) != 0) {
+			if (verify_ip_allocation(ctdb, rec, pnn) != 0) {
 				DEBUG(DEBUG_ERR, (__location__ " Public IPs were inconsistent.\n"));
-				goto again;
 			}
 		}
 	}
