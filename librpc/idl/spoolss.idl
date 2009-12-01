@@ -1498,8 +1498,12 @@ import "misc.idl", "security.idl", "winreg.idl";
 	const string SPL_ARCH_IA64		= "IA64";
 	const string SPL_ARCH_X64		= "x64";
 
-	const string SPOOLSS_ARCHITECTURE_ALL			= "all";
+	const string SPOOLSS_ARCHITECTURE_ALL			= "All";
+	const string SPOOLSS_ARCHITECTURE_ALL_CLUSTER		= "AllCluster";
 	const string SPOOLSS_ARCHITECTURE_NT_X86		= "Windows NT x86";
+	const string SPOOLSS_ARCHITECTURE_IA_64			= "Windows IA64";
+	const string SPOOLSS_ARCHITECTURE_x64			= "Windows x64";
+	const string SPOOLSS_ARCHITECTURE_4_0			= "Windows 4.0";
 	const string SPOOLSS_DEFAULT_SERVER_PATH		= "C:\\WINDOWS\\system32\\spool";
 
 	typedef [public,gensize] struct {
