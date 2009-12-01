@@ -205,6 +205,51 @@ static void ctdb_startup_callback(struct ctdb_context *ctdb, int status, void *p
 
 
 /*
+  wait until we have finished initial recoveries before we start the
+  monitoring events
+ */
+static void ctdb_wait_until_recovered(struct event_context *ev, struct timed_event *te, 
+			      struct timeval t, void *private_data)
+{
+	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
+
+	DEBUG(DEBUG_NOTICE,("CTDB_WAIT_UNTIL_RECOVERED\n"));
+
+	if (ctdb->vnn_map->generation == INVALID_GENERATION) {
+		DEBUG(DEBUG_NOTICE,(__location__ " generation is INVALID. Wait one more second\n"));
+		event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
+				     timeval_current_ofs(1, 0), 
+				     ctdb_wait_until_recovered, ctdb);
+		return;
+	}
+
+	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
+		DEBUG(DEBUG_NOTICE,(__location__ " in recovery. Wait one more second\n"));
+		event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
+				     timeval_current_ofs(1, 0), 
+				     ctdb_wait_until_recovered, ctdb);
+		return;
+	}
+
+
+	if (timeval_elapsed(&ctdb->last_recovery_finished) < (ctdb->tunable.rerecovery_timeout + 3)) {
+		DEBUG(DEBUG_NOTICE,(__location__ " wait for pending recoveries to end. Wait one more second.\n"));
+
+		event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
+				     timeval_current_ofs(1, 0), 
+				     ctdb_wait_until_recovered, ctdb);
+		return;
+	}
+
+
+	DEBUG(DEBUG_NOTICE,(__location__ " Recoveries finished. Running the \"startup\" event.\n"));
+	event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
+			     timeval_current_ofs(1, 0), 
+			     ctdb_check_health, ctdb);
+}
+
+
+/*
   see if the event scripts think we are healthy
  */
 static void ctdb_check_health(struct event_context *ev, struct timed_event *te, 
@@ -301,8 +346,6 @@ void ctdb_stop_monitoring(struct ctdb_context *ctdb)
  */
 void ctdb_start_monitoring(struct ctdb_context *ctdb)
 {
-	struct timed_event *te;
-
 	if (ctdb->monitor != NULL) {
 		return;
 	}
@@ -315,10 +358,9 @@ void ctdb_start_monitoring(struct ctdb_context *ctdb)
 	ctdb->monitor->monitor_context = talloc_new(ctdb->monitor);
 	CTDB_NO_MEMORY_FATAL(ctdb, ctdb->monitor->monitor_context);
 
-	te = event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
+	event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
 			     timeval_current_ofs(1, 0), 
-			     ctdb_check_health, ctdb);
-	CTDB_NO_MEMORY_FATAL(ctdb, te);
+			     ctdb_wait_until_recovered, ctdb);
 
 	ctdb->monitor->monitoring_mode  = CTDB_MONITORING_ACTIVE;
 	DEBUG(DEBUG_NOTICE,("Monitoring has been started\n"));
