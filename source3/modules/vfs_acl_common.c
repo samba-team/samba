@@ -512,7 +512,7 @@ static NTSTATUS check_parent_acl_common(vfs_handle_struct *handle,
 					 DACL_SECURITY_INFORMATION),
 					&parent_desc);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("check_parent_acl_common: SMB_VFS_GET_NT_ACL "
+		DEBUG(10,("check_parent_acl_common: SMB_VFS_GET_NT_ACL "
 			"on directory %s for "
 			"path %s returned %s\n",
 			parent_name,
@@ -525,7 +525,7 @@ static NTSTATUS check_parent_acl_common(vfs_handle_struct *handle,
 					access_mask,
 					&access_granted);
 	if(!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("check_parent_acl_common: access check "
+		DEBUG(10,("check_parent_acl_common: access check "
 			"on directory %s for "
 			"path %s for mask 0x%x returned %s\n",
 			parent_name,
@@ -783,6 +783,8 @@ static SMB_STRUCT_DIR *opendir_acl_common(vfs_handle_struct *handle,
 	NTSTATUS status = check_parent_acl_common(handle, fname, SEC_DIR_LIST);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		return NULL;
 	}
 	return SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr);
 }
