@@ -186,6 +186,20 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 	status = get_acl_blob(talloc_tos(), handle, fsp, name, &blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("get_acl_blob returned %s\n", nt_errstr(status)));
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+			/* Pull the ACL from the underlying system. */
+			if (fsp) {
+				status = SMB_VFS_NEXT_FGET_NT_ACL(handle,
+								fsp,
+								security_info,
+								ppdesc);
+			} else {
+				status = SMB_VFS_NEXT_GET_NT_ACL(handle,
+								name,
+								security_info,
+								ppdesc);
+			}
+		}
 		return status;
 	}
 
@@ -478,6 +492,51 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 	}
 }
 
+static NTSTATUS check_parent_acl_common(vfs_handle_struct *handle,
+				const char *path,
+				uint32_t access_mask)
+{
+	char *parent_name = NULL;
+	struct security_descriptor *parent_desc = NULL;
+	uint32_t access_granted = 0;
+	NTSTATUS status;
+
+	if (!parent_dirname(talloc_tos(), path, &parent_name, NULL)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = SMB_VFS_GET_NT_ACL(handle->conn,
+					parent_name,
+					(OWNER_SECURITY_INFORMATION |
+					 GROUP_SECURITY_INFORMATION |
+					 DACL_SECURITY_INFORMATION),
+					&parent_desc);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("check_parent_acl_common: SMB_VFS_GET_NT_ACL "
+			"on directory %s for "
+			"path %s returned %s\n",
+			parent_name,
+			path,
+			nt_errstr(status) ));
+		return status;
+	}
+	status = smb1_file_se_access_check(parent_desc,
+					handle->conn->server_info->ptok,
+					access_mask,
+					&access_granted);
+	if(!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("check_parent_acl_common: access check "
+			"on directory %s for "
+			"path %s for mask 0x%x returned %s\n",
+			parent_name,
+			path,
+			access_mask,
+			nt_errstr(status) ));
+		return status;
+	}
+	return NT_STATUS_OK;
+}
+
 /*********************************************************************
  Check ACL on open. For new files inherit from parent directory.
 *********************************************************************/
@@ -504,8 +563,7 @@ static int open_acl_common(vfs_handle_struct *handle,
 	status = get_full_smb_filename(talloc_tos(), smb_fname,
 				       &fname);
 	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		return -1;
+		goto err;
 	}
 
 	status = get_nt_acl_internal(handle,
@@ -526,11 +584,21 @@ static int open_acl_common(vfs_handle_struct *handle,
 				"refused with error %s\n",
 				smb_fname_str_dbg(smb_fname),
 				nt_errstr(status) ));
-			errno = map_errno_from_nt_status(status);
-			return -1;
+			goto err;
 		}
         } else if (NT_STATUS_EQUAL(status,NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 		file_existed = false;
+		/*
+		 * If O_CREAT is true then we're trying to create a file.
+		 * Check the parent directory ACL will allow this.
+		 */
+		if (flags & O_CREAT) {
+			status = check_parent_acl_common(handle, fname,
+					SEC_DIR_ADD_FILE);
+			if (!NT_STATUS_IS_OK(status)) {
+				goto err;
+			}
+		}
 	}
 
 	DEBUG(10,("open_acl_xattr: get_nt_acl_attr_internal for "
@@ -544,21 +612,38 @@ static int open_acl_common(vfs_handle_struct *handle,
 		/* File was created. Inherit from parent directory. */
 		status = fsp_set_smb_fname(fsp, smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
-			errno = map_errno_from_nt_status(status);
-			return -1;
+			goto err;
 		}
 		inherit_new_acl(handle, smb_fname, fsp, false);
 	}
 
 	return fsp->fh->fd;
+
+  err:
+
+	errno = map_errno_from_nt_status(status);
+	return -1;
 }
 
 static int mkdir_acl_common(vfs_handle_struct *handle, const char *path, mode_t mode)
 {
 	struct smb_filename *smb_fname = NULL;
-	int ret = SMB_VFS_NEXT_MKDIR(handle, path, mode);
+	int ret;
 	NTSTATUS status;
+	SMB_STRUCT_STAT sbuf;
 
+	ret = vfs_stat_smb_fname(handle->conn, path, &sbuf);
+	if (ret == -1 && errno == ENOENT) {
+		/* We're creating a new directory. */
+		status = check_parent_acl_common(handle, path,
+				SEC_DIR_ADD_SUBDIR);
+		if (!NT_STATUS_IS_OK(status)) {
+			errno = map_errno_from_nt_status(status);
+			return -1;
+		}
+	}
+
+	ret = SMB_VFS_NEXT_MKDIR(handle, path, mode);
 	if (ret == -1) {
 		return ret;
 	}
@@ -690,4 +775,14 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 	store_acl_blob_fsp(handle, fsp, &blob);
 
 	return NT_STATUS_OK;
+}
+
+static SMB_STRUCT_DIR *opendir_acl_common(vfs_handle_struct *handle,
+			const char *fname, const char *mask, uint32 attr)
+{
+	NTSTATUS status = check_parent_acl_common(handle, fname, SEC_DIR_LIST);
+
+	if (!NT_STATUS_IS_OK(status)) {
+	}
+	return SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr);
 }

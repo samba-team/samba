@@ -232,6 +232,7 @@ static int connect_acl_xattr(struct vfs_handle_struct *handle,
 
 static struct vfs_fn_pointers vfs_acl_xattr_fns = {
 	.connect_fn = connect_acl_xattr,
+	.opendir = opendir_acl_common,
 	.mkdir = mkdir_acl_common,
 	.open = open_acl_common,
 	.fget_nt_acl = fget_nt_acl_common,

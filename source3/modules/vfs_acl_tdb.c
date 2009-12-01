@@ -461,6 +461,7 @@ static int sys_acl_set_fd_tdb(vfs_handle_struct *handle,
 
 static struct vfs_fn_pointers vfs_acl_tdb_fns = {
 	.connect_fn = connect_acl_tdb,
+	.opendir = opendir_acl_common,
 	.mkdir = mkdir_acl_common,
 	.open = open_acl_common,
 	.unlink = unlink_acl_tdb,
