@@ -5154,7 +5154,7 @@ AC_ARG_WITH(ctdb,
   esac])
 
 SAVED_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS $CTDB_CPPFLAGS"
+CPPFLAGS="$CPPFLAGS ${SAMBA_CONFIGURE_CPPFLAGS} $CTDB_CPPFLAGS"
 ctdb_broken="missing or broken headers"
 
 AC_CHECK_HEADERS(ctdb.h ctdb_private.h,,,[
