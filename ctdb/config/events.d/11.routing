@@ -19,15 +19,17 @@ loadconfig
     exit 0
 }
 
-case $cmd in 
-     takeip|releaseip)
-	iface=$1
+case "$1" in 
+    takeip|releaseip)
+	iface=$2
 	cat $CTDB_BASE/static-routes | egrep "^$iface " | while read IFACE DEST GW; do
 	    ip route add $DEST via $GW dev $IFACE >/dev/null 2>/dev/null
 	done
-
 	;;
 
+    *)
+	ctdb_standard_event_handler "$@"
+	;;
 esac
 
 exit 0

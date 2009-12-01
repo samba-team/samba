@@ -31,7 +31,7 @@ loadconfig
 
 ctdb_start_stop_service
 
-case $cmd in 
+case "$1" in 
      startup)
 	ctdb_service_start
 	;;
@@ -42,12 +42,12 @@ case $cmd in
 
      takeip)
 	ctdb_service_set_reconfigure
-	touch $CTDB_BASE/state/statd/ip/$2
+	touch $CTDB_BASE/state/statd/ip/$3
 	;;
 
      releaseip)
 	ctdb_service_set_reconfigure
-	/bin/rm -f $CTDB_BASE/state/statd/ip/$2
+	/bin/rm -f $CTDB_BASE/state/statd/ip/$3
 	;;
 
      recovered)
@@ -103,8 +103,8 @@ case $cmd in
 	}
        	;;
 
-    status)
-	ctdb_checkstatus || exit $?
+    *)
+	ctdb_standard_event_handler "$@"
 	;;
 esac
 

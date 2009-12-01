@@ -4,7 +4,7 @@
 . $CTDB_BASE/functions
 loadconfig
 
-case $cmd in 
+case "$1" in 
     startup)
 	ctdb_counter_init
 	;;
@@ -37,8 +37,9 @@ case $cmd in
 
 	ctdb_check_counter_limit 3 quiet
 	;;
-    status)
-	ctdb_checkstatus || exit $?
+
+    *)
+	ctdb_standard_event_handler "$@"
 	;;
 esac
 

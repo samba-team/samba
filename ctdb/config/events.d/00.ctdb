@@ -12,7 +12,7 @@
 . $CTDB_BASE/functions
 loadconfig
 
-case $cmd in 
+case "$1" in 
      startup)
         # make sure we have a blank state directory for the scripts to work with
 	/bin/rm -rf $CTDB_BASE/state
@@ -39,6 +39,10 @@ case $cmd in
 			ctdb shutdown
 		}
 	}
+
+    *)
+	ctdb_standard_event_handler "$@"
+	;;
 esac
 
 # all OK

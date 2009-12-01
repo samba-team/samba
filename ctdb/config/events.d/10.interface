@@ -17,7 +17,7 @@ loadconfig
 	exit 0
 }
 
-case $cmd in 
+case "$1" in 
      #############################
      # called when ctdbd starts up
      startup)
@@ -41,13 +41,13 @@ case $cmd in
      ################################################
      # called when ctdbd wants to claim an IP address
      takeip)
-	if [ $# != 3 ]; then
+	if [ $# != 4 ]; then
 	   echo "must supply interface, IP and maskbits"
 	   exit 1
 	fi
-	iface=$1
-	ip=$2
-	maskbits=$3
+	iface=$2
+	ip=$3
+	maskbits=$4
 
 	# we make sure the interface is up first
 	/sbin/ip link set $iface up || {
@@ -68,7 +68,7 @@ case $cmd in
      ##################################################
      # called when ctdbd wants to release an IP address
      releaseip)
-	if [ $# != 3 ]; then
+	if [ $# != 4 ]; then
 	   echo "must supply interface, IP and maskbits"
 	   exit 1
 	fi
@@ -83,9 +83,9 @@ case $cmd in
 	# 2) use netstat -tn to find existing connections, and kill them 
 	# 3) remove the IP from the interface
 	# 4) remove the firewall rule
-	iface=$1
-	ip=$2
-	maskbits=$3
+	iface=$2
+	ip=$3
+	maskbits=$4
 
 	failed=0
 	# we do an extra delete to cope with the script being killed
@@ -174,8 +174,8 @@ case $cmd in
 	    esac
 	done
 	;;
-    status)
-	ctdb_checkstatus || exit $?
+    *)
+	ctdb_standard_event_handler "$@"
 	;;
 esac
 

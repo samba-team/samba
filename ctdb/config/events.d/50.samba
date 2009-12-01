@@ -196,7 +196,7 @@ periodic_cleanup() {
     smbstatus -np > /dev/null 2>&1 &
 }
 
-case $cmd in 
+case "$1" in 
      startup)
 	ctdb_service_start
 	;;
@@ -251,10 +251,9 @@ case $cmd in
 	}
 	;;
 
-    status)
-	ctdb_checkstatus || exit $?
+    *)
+	ctdb_standard_event_handler "$@"
 	;;
 esac
 
-# ignore unknown commands
 exit 0

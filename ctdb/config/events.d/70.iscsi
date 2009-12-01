@@ -12,8 +12,8 @@ ctdb_start_stop_service
 	exit 0
 }
 
-case $cmd in 
-     recovered)
+case "$1" in 
+    recovered)
 	# block the iscsi port
 	iptables -I INPUT 1 -p tcp --dport 3260 -j DROP
 	
@@ -43,19 +43,18 @@ case $cmd in
 
 	;;
 
-     shutdown)
+    shutdown)
 	# shutdown iscsi when ctdb goes down
 	killall -9 tgtd >/dev/null 2>/dev/null
 	;;
 
-     monitor)
+    monitor)
 	ctdb_check_tcp_ports 3260 || exit $?
 	;;
 
-    status)
-	ctdb_checkstatus || exit $?
+    *)
+	ctdb_standard_event_handler "$@"
 	;;
 esac
 
-# ignore unknown commands
 exit 0

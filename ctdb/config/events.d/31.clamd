@@ -25,21 +25,21 @@ ctdb_start_stop_service
 
 is_ctdb_managed_service || exit 0
 
-case $cmd in 
-     startup)
+case "$1" in 
+    startup)
 	ctdb_service_start
         ;;
 
-     shutdown)
+    shutdown)
         ctdb_service_stop
         ;;
 
-     monitor)
+    monitor)
         ctdb_check_unix_socket ${CTDB_CLAMD_SOCKET} || exit $?
         ;;
 
-    status)
-	ctdb_checkstatus || exit $?
+    *)
+	ctdb_standard_event_handler "$@"
 	;;
 esac
 

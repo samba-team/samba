@@ -13,14 +13,14 @@ ctdb_start_stop_service
 
 [ -z "$NFS_TICKLE_SHARED_DIRECTORY" ] && exit 0
 
-case $cmd in 
+case "$1" in 
      startup)
 	ctdb_service_start
 	;;
 	
      takeip)
-	iface=$1
-	ip=$2
+	iface=$2
+	ip=$3
 	# first send a grat arp, to ensure the client knows the updated
 	# mac address for this IP
 	ctdb gratiousarp $ip $iface
@@ -48,7 +48,9 @@ case $cmd in
 		done
 	;;
 
+    *)
+	ctdb_standard_event_handler "$@"
+	;;
 esac
 
-# ignore unknown commands
 exit 0
