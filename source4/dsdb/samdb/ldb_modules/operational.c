@@ -213,7 +213,8 @@ static const struct {
 	{ "ntPwdHistory",         OPERATIONAL_REMOVE_UNASKED },
 	{ "lmPwdHistory",         OPERATIONAL_REMOVE_UNASKED },
 	{ "unicodePwd",           OPERATIONAL_REMOVE_UNASKED },
-	{ "supplementalCredentials", OPERATIONAL_REMOVE_UNASKED }
+	{ "supplementalCredentials", OPERATIONAL_REMOVE_UNASKED },
+	{ "dBCSPwd",              OPERATIONAL_REMOVE_UNASKED }
 };
 
 
