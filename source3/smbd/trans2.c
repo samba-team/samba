@@ -70,8 +70,8 @@ static bool samba_private_attr_name(const char *unix_ea_name)
 	static const char * const prohibited_ea_names[] = {
 		SAMBA_POSIX_INHERITANCE_EA_NAME,
 		SAMBA_XATTR_DOS_ATTRIB,
-		SAMBA_XATTR_DOSTIMESTAMPS,
 		SAMBA_XATTR_MARKER,
+		XATTR_NTACL_NAME,
 		NULL
 	};
 
