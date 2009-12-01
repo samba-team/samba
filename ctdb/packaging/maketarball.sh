@@ -26,26 +26,22 @@
 
 DIRNAME=$(dirname $0)
 TOPDIR=${DIRNAME}/..
-RPMDIR=${DIRNAME}/RPM
-SPECFILE=${RPMDIR}/ctdb.spec
+
+TAR_PREFIX_TMP="ctdb-tmp"
+SPECFILE=/tmp/${TAR_PREFIX_TMP}/packaging/RPM/ctdb.spec
 SPECFILE_IN=${SPECFILE}.in
 
 EXTRA_SUFFIX="$1"
 
-GITHASH=".$(git log --pretty=format:%h -1)"
-
-if test "x$USE_GITHASH" = "xno" ; then
-	GITHASH=""
+# if no githash was specified on the commandline,
+# then use the current head
+if test x"$GITHASH" = "x" ; then
+	GITHASH="$(git log --pretty=format:%h -1)"
 fi
 
-sed -e s/GITHASH/${GITHASH}/g \
-	< ${SPECFILE_IN} \
-	> ${SPECFILE}
-
-VERSION=$(grep ^Version ${SPECFILE} | sed -e 's/^Version:\ \+//')${GITHASH}
-
-if [ "x${EXTRA_SUFFIX}" != "x" ]; then
-	VERSION="${VERSION}-${EXTRA_SUFFIX}"
+GITHASH_SUFFIX=".${GITHASH}"
+if test "x$USE_GITHASH" = "xno" ; then
+	GITHASH_SUFFIX=""
 fi
 
 if echo | gzip -c --rsyncable - > /dev/null 2>&1 ; then
@@ -54,8 +50,37 @@ else
 	GZIP="gzip -9"
 fi
 
+pushd ${TOPDIR}
+echo "Creating tarball ... "
+git archive --prefix=${TAR_PREFIX_TMP}/ ${GITHASH} | ( cd /tmp ; tar xf - )
+RC=$?
+popd
+if [ $RC -ne 0 ]; then
+	echo "Error calling git archive."
+	exit 1
+fi
+
+sed -e s/GITHASH/${GITHASH_SUFFIX}/g \
+	< ${SPECFILE_IN} \
+	> ${SPECFILE}
+
+VERSION=$(grep ^Version ${SPECFILE} | sed -e 's/^Version:\ \+//')${GITHASH_SUFFIX}
+
+if [ "x${EXTRA_SUFFIX}" != "x" ]; then
+	VERSION="${VERSION}-${EXTRA_SUFFIX}"
+fi
+
 TAR_PREFIX="ctdb-${VERSION}"
 TAR_BASE="ctdb-${VERSION}"
+
+pushd /tmp/${TAR_PREFIX_TMP}
+./autogen.sh
+RC=$?
+popd
+if [ $RC -ne 0 ]; then
+	echo "Error calling autogen.sh."
+	exit 1
+fi
 
 if test "x${DEBIAN_MODE}" = "xyes" ; then
 	TAR_PREFIX="ctdb-${VERSION}.orig"
@@ -65,24 +90,7 @@ fi
 TAR_BALL=${TAR_BASE}.tar
 TAR_GZ_BALL=${TAR_BALL}.gz
 
-pushd ${TOPDIR}
-echo "Creating ${TAR_BASE}.tar.gz ... "
-git archive --prefix=${TAR_PREFIX}/ HEAD | ( cd /tmp ; tar xf - )
-RC=$?
-popd
-if [ $RC -ne 0 ]; then
-	echo "Error calling git archive."
-	exit 1
-fi
-
-pushd /tmp/${TAR_PREFIX}
-./autogen.sh
-RC=$?
-popd
-if [ $RC -ne 0 ]; then
-	echo "Error calling autogen.sh."
-	exit 1
-fi
+mv /tmp/${TAR_PREFIX_TMP} /tmp/${TAR_PREFIX}
 
 pushd /tmp
 tar cf ${TAR_BALL} ${TAR_PREFIX}
