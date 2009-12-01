@@ -82,7 +82,7 @@ New configure options
 Commit Highlights
 =================
 
-o   Björn Jacke <bjacke@sernet.de>
+o   Björn Jacke <bj@sernet.de>
     * Add support for full Windows timestamp resolution.
     * Add encryption support for connections to a CUPS server.
 
