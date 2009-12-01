@@ -540,6 +540,8 @@ int main(int argc,char *argv[])
 		lp_set_cmdline(cmdline_lp_ctx, "torture:sacl_support", "false");
 		lp_set_cmdline(cmdline_lp_ctx, "torture:smblock_pdu_support",
 		    "false");
+		lp_set_cmdline(cmdline_lp_ctx, "torture:2_step_break_to_none",
+		    "true");
 	}
 
 	if (max_runtime) {

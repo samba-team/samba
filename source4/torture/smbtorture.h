@@ -85,4 +85,10 @@ bool torture_register_suite(struct torture_suite *suite);
  *
  * This parameter specifies whether the server supports the SMBLock (0x0C) PDU. */
 
+/* torture:2_step_break_to_none
+ *
+ * If true this parameter tests servers that break from level 1 to none in two
+ * steps rather than 1.
+ */
+
 #endif /* __SMBTORTURE_H__ */

@@ -253,6 +253,12 @@ done:
 	return;
 }
 
+static uint8_t get_break_level1_to_none_count(struct torture_context *tctx)
+{
+	return torture_setting_bool(tctx, "2_step_break_to_none", false) ?
+	    2 : 1;
+}
+
 static bool test_raw_oplock_exclusive1(struct torture_context *tctx, struct smbcli_state *cli1, struct smbcli_state *cli2)
 {
 	const char *fname = BASEDIR "\\test_exclusive1.dat";
@@ -471,7 +477,7 @@ static bool test_raw_oplock_exclusive3(struct torture_context *tctx, struct smbc
 
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 	torture_wait_for_oplock_break(tctx);
-	CHECK_VAL(break_info.count, 1);
+	CHECK_VAL(break_info.count, get_break_level1_to_none_count(tctx));
 	CHECK_VAL(break_info.failures, 0);
 	CHECK_VAL(break_info.level, OPLOCK_BREAK_TO_NONE);
 
@@ -608,7 +614,7 @@ static bool test_raw_oplock_exclusive5(struct torture_context *tctx, struct smbc
 	fnum2 = io.ntcreatex.out.file.fnum;
 	CHECK_VAL(io.ntcreatex.out.oplock_level, LEVEL_II_OPLOCK_RETURN);
 	torture_wait_for_oplock_break(tctx);
-	CHECK_VAL(break_info.count, 1);
+	CHECK_VAL(break_info.count, get_break_level1_to_none_count(tctx));
 	CHECK_VAL(break_info.failures, 0);
 
 	smbcli_close(cli1->tree, fnum);
@@ -1538,7 +1544,7 @@ static bool test_raw_oplock_batch11(struct torture_context *tctx, struct smbcli_
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 
 	torture_wait_for_oplock_break(tctx);
-	CHECK_VAL(break_info.count, 1);
+	CHECK_VAL(break_info.count, get_break_level1_to_none_count(tctx));
 	CHECK_VAL(break_info.failures, 0);
 	CHECK_VAL(break_info.level, 0);
 
@@ -1615,7 +1621,7 @@ static bool test_raw_oplock_batch12(struct torture_context *tctx, struct smbcli_
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 
 	torture_wait_for_oplock_break(tctx);
-	CHECK_VAL(break_info.count, 1);
+	CHECK_VAL(break_info.count, get_break_level1_to_none_count(tctx));
 	CHECK_VAL(break_info.failures, 0);
 	CHECK_VAL(break_info.level, 0);
 
@@ -1692,7 +1698,7 @@ static bool test_raw_oplock_batch13(struct torture_context *tctx, struct smbcli_
 	fnum2 = io.ntcreatex.out.file.fnum;
 	torture_wait_for_oplock_break(tctx);
 	CHECK_VAL(io.ntcreatex.out.oplock_level, LEVEL_II_OPLOCK_RETURN);
-	CHECK_VAL(break_info.count, 1);
+	CHECK_VAL(break_info.count, get_break_level1_to_none_count(tctx));
 	CHECK_VAL(break_info.failures, 0);
 
 	smbcli_close(cli1->tree, fnum);
@@ -1769,7 +1775,7 @@ static bool test_raw_oplock_batch14(struct torture_context *tctx, struct smbcli_
 	CHECK_VAL(io.ntcreatex.out.oplock_level, LEVEL_II_OPLOCK_RETURN);
 
 	torture_wait_for_oplock_break(tctx);
-	CHECK_VAL(break_info.count, 1);
+	CHECK_VAL(break_info.count, get_break_level1_to_none_count(tctx));
 	CHECK_VAL(break_info.failures, 0);
 
 	smbcli_close(cli1->tree, fnum);
@@ -1921,7 +1927,7 @@ static bool test_raw_oplock_batch16(struct torture_context *tctx, struct smbcli_
 	CHECK_VAL(io.ntcreatex.out.oplock_level, LEVEL_II_OPLOCK_RETURN);
 
 	torture_wait_for_oplock_break(tctx);
-	CHECK_VAL(break_info.count, 1);
+	CHECK_VAL(break_info.count, get_break_level1_to_none_count(tctx));
 	CHECK_VAL(break_info.failures, 0);
 
 	smbcli_close(cli1->tree, fnum);
