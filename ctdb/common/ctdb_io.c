@@ -52,6 +52,7 @@ struct ctdb_queue {
 	size_t alignment;
 	void *private_data;
 	ctdb_queue_cb_fn_t callback;
+	bool *destroyed;
 };
 
 
@@ -114,6 +115,8 @@ static void queue_io_read(struct ctdb_queue *queue)
 		/* we have at least one packet */
 		uint8_t *d2;
 		uint32_t len;
+		bool destroyed = false;
+
 		len = *(uint32_t *)data;
 		if (len == 0) {
 			/* bad packet! treat as EOF */
@@ -126,7 +129,15 @@ static void queue_io_read(struct ctdb_queue *queue)
 			/* sigh */
 			goto failed;
 		}
+
+		queue->destroyed = &destroyed;
 		queue->callback(d2, len, queue->private_data);
+		/* If callback freed us, don't do anything else. */
+		if (destroyed) {
+			return;
+		}
+		queue->destroyed = NULL;
+
 		data += len;
 		nread -= len;		
 	}
@@ -337,7 +348,13 @@ int ctdb_queue_set_fd(struct ctdb_queue *queue, int fd)
 	return 0;
 }
 
-
+/* If someone sets up this pointer, they want to know if the queue is freed */
+static int queue_destructor(struct ctdb_queue *queue)
+{
+	if (queue->destroyed != NULL)
+		*queue->destroyed = true;
+	return 0;
+}
 
 /*
   setup a packet queue on a socket
@@ -364,6 +381,7 @@ struct ctdb_queue *ctdb_queue_setup(struct ctdb_context *ctdb,
 			return NULL;
 		}
 	}
+	talloc_set_destructor(queue, queue_destructor);
 
 	return queue;
 }
