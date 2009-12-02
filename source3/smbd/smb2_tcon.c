@@ -169,7 +169,7 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 
 	snum = find_service(service);
 	if (snum < 0) {
-		DEBUG(1,("smbd_smb2_tree_connect: couldn't find service %s\n",
+		DEBUG(3,("smbd_smb2_tree_connect: couldn't find service %s\n",
 			 service));
 		return NT_STATUS_BAD_NETWORK_NAME;
 	}
