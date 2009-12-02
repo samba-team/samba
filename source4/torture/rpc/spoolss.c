@@ -3043,44 +3043,31 @@ bool test_printer_keys(struct torture_context *tctx,
 		       struct dcerpc_pipe *p,
 		       struct policy_handle *handle)
 {
-	DATA_BLOB blob;
 	const char **key_array = NULL;
 	int i;
 
 	{
 		struct spoolss_EnumPrinterKey r;
 		uint32_t needed;
-		uint16_t *key_buffer = talloc_zero_array(tctx, uint16_t, 0);
+		struct spoolss_StringArray2 key_buffer;
 
 		r.in.handle = handle;
 		r.in.key_name = "";
 		r.in.offered = 0;
-		r.out.key_buffer = key_buffer;
+		r.out.key_buffer = &key_buffer;
 		r.out.needed = &needed;
 
 		torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_EnumPrinterKey(p, tctx, &r),
 			"failed to call EnumPrinterKey");
 		if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
 			r.in.offered = needed;
-			key_buffer = talloc_zero_array(tctx, uint16_t, needed/2);
-			r.out.key_buffer = key_buffer;
 			torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_EnumPrinterKey(p, tctx, &r),
 				"failed to call EnumPrinterKey");
 		}
 		torture_assert_werr_ok(tctx, r.out.result,
 			"failed to call EnumPrinterKey");
 
-		blob = data_blob_const(key_buffer, needed);
-	}
-
-	{
-		union winreg_Data data;
-		enum ndr_err_code ndr_err;
-		ndr_err = ndr_pull_union_blob(&blob, tctx, lp_iconv_convenience(tctx->lp_ctx),
-					&data, REG_MULTI_SZ,
-					(ndr_pull_flags_fn_t)ndr_pull_winreg_Data);
-		torture_assert_ndr_success(tctx, ndr_err, "failed to pull REG_MULTI_SZ");
-		key_array = data.string_array;
+		key_array = key_buffer.string;
 	}
 
 	for (i=0; key_array[i]; i++) {
