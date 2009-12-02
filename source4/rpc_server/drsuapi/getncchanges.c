@@ -132,6 +132,18 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 
 	obj->meta_data_ctr = talloc(obj, struct drsuapi_DsReplicaMetaDataCtr);
 	attids = talloc_array(obj, uint32_t, md.ctr.ctr1.count);
+
+	obj->object.identifier = talloc(obj, struct drsuapi_DsReplicaObjectIdentifier);
+	obj_dn = ldb_msg_find_attr_as_dn(sam_ctx, obj, msg, "distinguishedName");
+	obj->object.identifier->dn = ldb_dn_get_linearized(obj_dn);
+	obj->object.identifier->guid = samdb_result_guid(msg, "objectGUID");
+	sid = samdb_result_dom_sid(obj, msg, "objectSid");
+	if (sid) {
+		dom_sid_split_rid(NULL, sid, NULL, &rid);
+		obj->object.identifier->sid = *sid;
+	} else {
+		ZERO_STRUCT(obj->object.identifier->sid);
+	}
 	
 	obj->meta_data_ctr->meta_data = talloc_array(obj, struct drsuapi_DsReplicaMetaData, md.ctr.ctr1.count);
 	for (n=i=0; i<md.ctr.ctr1.count; i++) {
@@ -159,18 +171,6 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 
 	obj->meta_data_ctr->count = n;
 
-	obj->object.identifier = talloc(obj, struct drsuapi_DsReplicaObjectIdentifier);
-	obj_dn = ldb_msg_find_attr_as_dn(sam_ctx, obj, msg, "distinguishedName");
-	obj->object.identifier->dn = ldb_dn_get_linearized(obj_dn);
-	obj->object.identifier->guid = samdb_result_guid(msg, "objectGUID");
-	sid = samdb_result_dom_sid(obj, msg, "objectSid");
-	if (sid) {
-		dom_sid_split_rid(NULL, sid, NULL, &rid);
-		obj->object.identifier->sid = *sid;
-	} else {
-		ZERO_STRUCT(obj->object.identifier->sid);
-	}
-
 	obj->object.flags = DRSUAPI_DS_REPLICA_OBJECT_FROM_MASTER;
 	obj->object.attribute_ctr.num_attributes = obj->meta_data_ctr->count;
 	obj->object.attribute_ctr.attributes = talloc_array(obj, struct drsuapi_DsReplicaAttribute,
@@ -193,7 +193,8 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 
 		el = ldb_msg_find_element(msg, sa->lDAPDisplayName);
 		if (el == NULL) {
-			DEBUG(0,("No element '%s' for attributeID %u in message\n", 
+			/* this happens for attributes that have been removed */
+			DEBUG(5,("No element '%s' for attributeID %u in message\n",
 				 sa->lDAPDisplayName, attids[i]));
 			ZERO_STRUCT(obj->object.attribute_ctr.attributes[i]);
 			obj->object.attribute_ctr.attributes[i].attid = attids[i];
@@ -275,14 +276,13 @@ static WERROR load_udv(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
  */
 static WERROR get_nc_changes_udv(struct ldb_context *sam_ctx,
 				 struct ldb_dn *ncRoot_dn,
-				 struct drsuapi_DsReplicaCursor2CtrEx *udv)
+				 struct drsuapi_DsReplicaCursor2CtrEx *udv,
+				 uint64_t highestUSN)
 {
 	WERROR werr;
 	struct drsuapi_DsReplicaCursor2 *tmp_cursor;
-	uint64_t highest_commited_usn;
 	NTTIME now;
 	time_t t = time(NULL);
-	int ret;
 	struct replUpToDateVectorBlob ouv;
 
 	werr = load_udv(sam_ctx, udv, ncRoot_dn, &ouv);
@@ -290,14 +290,9 @@ static WERROR get_nc_changes_udv(struct ldb_context *sam_ctx,
 		return werr;
 	}
 	
-	ret = ldb_sequence_number(sam_ctx, LDB_SEQ_HIGHEST_SEQ, &highest_commited_usn);
-	if (ret != LDB_SUCCESS) {
-		return WERR_DS_DRA_INTERNAL_ERROR;
-	}
-
 	tmp_cursor = talloc(udv, struct drsuapi_DsReplicaCursor2);
 	tmp_cursor->source_dsa_invocation_id = *(samdb_ntds_invocation_id(sam_ctx));
-	tmp_cursor->highest_usn = highest_commited_usn;
+	tmp_cursor->highest_usn = highestUSN;
 	unix_to_nt_time(&now, t);
 	tmp_cursor->last_sync_success = now;
 
@@ -321,7 +316,8 @@ struct drsuapi_getncchanges_state {
 	struct ldb_result *site_res;
 	uint32_t num_sent;
 	struct ldb_dn *ncRoot_dn;
-	uint32_t min_usn;
+	uint64_t min_usn;
+	uint64_t highest_usn;
 };
 
 /* 
@@ -386,6 +382,8 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	req8 = &r->in.req->req8;
 
         /* Perform access checks. */
+	/* TODO: we need to support a sync on a specific non-root
+	 * DN. We'll need to find the real partition root here */
 	ncRoot = req8->naming_context;
 	if (ncRoot == NULL) {
 		DEBUG(0,(__location__ ": Request for DsGetNCChanges with no NC\n"));
@@ -413,6 +411,19 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 
 	getnc_state = b_state->getncchanges_state;
+
+	/* see if a previous replication has been abandoned */
+	if (getnc_state) {
+		struct ldb_dn *new_dn = ldb_dn_new(getnc_state, b_state->sam_ctx, ncRoot->dn);
+		if (ldb_dn_compare(new_dn, getnc_state->ncRoot_dn) != 0) {
+			DEBUG(0,(__location__ ": DsGetNCChanges 2nd replication on different DN %s %s\n",
+				 ldb_dn_get_linearized(new_dn),
+				 ldb_dn_get_linearized(getnc_state->ncRoot_dn)));
+			talloc_free(getnc_state);
+			getnc_state = NULL;
+		}
+	}
+
 	if (getnc_state == NULL) {
 		getnc_state = talloc_zero(b_state, struct drsuapi_getncchanges_state);
 		if (getnc_state == NULL) {
@@ -456,7 +467,6 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 							search_filter);
 		}
 		
-		getnc_state->ncRoot_dn = ldb_dn_new(getnc_state, b_state->sam_ctx, ncRoot->dn);
 		if (req8->replica_flags & DRSUAPI_DS_REPLICA_NEIGHBOUR_ASYNC_REP) {
 			scope = LDB_SCOPE_BASE;
 		}
@@ -469,19 +479,6 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 						      search_filter);
 		if (ret != LDB_SUCCESS) {
 			return WERR_DS_DRA_INTERNAL_ERROR;
-		}
-	} else {
-		/* check that this request is for the same NC as the previous one */
-		struct ldb_dn *dn;
-		dn = ldb_dn_new(getnc_state, b_state->sam_ctx, ncRoot->dn);
-		if (!dn) {
-			return WERR_NOMEM;
-		}
-		if (ldb_dn_compare(dn, getnc_state->ncRoot_dn) != 0) {
-			DEBUG(0,(__location__ ": DsGetNCChanges 2nd replication on different DN %s %s\n",
-				 ldb_dn_get_linearized(dn),
-				 ldb_dn_get_linearized(getnc_state->ncRoot_dn)));
-			return WERR_DS_DRA_BAD_NC;
 		}
 	}
 
@@ -528,6 +525,9 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		uSN = ldb_msg_find_attr_as_int(getnc_state->site_res->msgs[i], "uSNChanged", -1);
 		if (uSN > r->out.ctr->ctr6.new_highwatermark.tmp_highest_usn) {
 			r->out.ctr->ctr6.new_highwatermark.tmp_highest_usn = uSN;
+		}
+		if (uSN > getnc_state->highest_usn) {
+			getnc_state->highest_usn = uSN;
 		}
 
 		werr = get_nc_changes_build_object(obj, getnc_state->site_res->msgs[i], 
@@ -590,7 +590,8 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		r->out.ctr->ctr6.new_highwatermark.highest_usn = r->out.ctr->ctr6.new_highwatermark.tmp_highest_usn;
 
 		werr = get_nc_changes_udv(b_state->sam_ctx, getnc_state->ncRoot_dn, 
-					  r->out.ctr->ctr6.uptodateness_vector);
+					  r->out.ctr->ctr6.uptodateness_vector,
+					  getnc_state->highest_usn);
 		if (!W_ERROR_IS_OK(werr)) {
 			return werr;
 		}
@@ -599,10 +600,11 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		b_state->getncchanges_state = NULL;
 	}
 
-	DEBUG(2,("DsGetNCChanges with uSNChanged >= %llu flags 0x%08x on %s gave %u objects\n", 
+	DEBUG(2,("DsGetNCChanges with uSNChanged >= %llu flags 0x%08x on %s gave %u objects (done %d/%d)\n",
 		 (unsigned long long)(req8->highwatermark.highest_usn+1),
 		 req8->replica_flags,
-		 ncRoot->dn, r->out.ctr->ctr6.object_count));
+		 ncRoot->dn, r->out.ctr->ctr6.object_count,
+		 i, r->out.ctr->ctr6.more_data?getnc_state->site_res->count:i));
 
 	return WERR_OK;
 }
