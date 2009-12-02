@@ -3811,7 +3811,7 @@ NTSTATUS rpccli_spoolss_EnumPrinterKey(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
 				       struct policy_handle *handle /* [in] [ref] */,
 				       const char *key_name /* [in] [charset(UTF16)] */,
-				       uint16_t *key_buffer /* [out] [ref,size_is(offered/2)] */,
+				       struct spoolss_StringArray2 *key_buffer /* [out] [ref] */,
 				       uint32_t offered /* [in]  */,
 				       uint32_t *needed /* [out] [ref] */,
 				       WERROR *werror)
@@ -3847,7 +3847,7 @@ NTSTATUS rpccli_spoolss_EnumPrinterKey(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(key_buffer, r.out.key_buffer, (r.in.offered / 2) * sizeof(*key_buffer));
+	*key_buffer = *r.out.key_buffer;
 	*needed = *r.out.needed;
 
 	/* Return result */
