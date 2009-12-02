@@ -399,8 +399,9 @@ static bool test_EnumPrinterKey(struct torture_context *tctx,
 	status = dcerpc_spoolss_EnumPrinterKey(p, tctx, &epk);
 	torture_assert_ntstatus_ok(tctx, status, "EnumPrinterKey failed");
 
-
 	if (W_ERROR_EQUAL(epk.out.result, WERR_MORE_DATA)) {
+		torture_assert(tctx, (key_buffer._ndr_size == 0),
+			talloc_asprintf(tctx, "EnumPrinterKey did not return 0 _ndr_size (but %d), windows clients would abort here!", key_buffer._ndr_size));
 		epk.in.offered = needed;
 		status = dcerpc_spoolss_EnumPrinterKey(p, tctx, &epk);
 		torture_assert_ntstatus_ok(tctx, status,
@@ -408,6 +409,10 @@ static bool test_EnumPrinterKey(struct torture_context *tctx,
 	}
 
 	torture_assert_werr_ok(tctx, epk.out.result, "EnumPrinterKey failed");
+
+	torture_assert(tctx, (key_buffer._ndr_size * 2 == needed),
+		talloc_asprintf(tctx, "EnumPrinterKey size mismatch, _ndr_size %d (expected %d)",
+		key_buffer._ndr_size, needed/2));
 
 	ctx->printer_keys = key_buffer.string;
 
@@ -552,7 +557,7 @@ static bool test_WinXP(struct torture_context *tctx, struct dcerpc_pipe *p)
 
 	ret &= test_EnumPrinterKey(tctx, p, &handle03, "", ctx);
 
-	for (i=0; ctx->printer_keys[i] != NULL; i++) {
+	for (i=0; ctx->printer_keys && ctx->printer_keys[i] != NULL; i++) {
 
 		ret &= test_EnumPrinterKey(tctx, p, &handle03,
 					   ctx->printer_keys[i],
