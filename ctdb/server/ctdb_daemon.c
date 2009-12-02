@@ -29,6 +29,13 @@
 #include "../include/ctdb_private.h"
 #include <sys/socket.h>
 
+struct ctdb_client_pid_list {
+	struct ctdb_client_pid_list *next, *prev;
+	struct ctdb_context *ctdb;
+	pid_t pid;
+	struct ctdb_client *client;
+};
+
 static void daemon_incoming_packet(void *, struct ctdb_req_header *);
 
 static void print_exit_message(void)
@@ -530,6 +537,17 @@ static void ctdb_daemon_read_cb(uint8_t *data, size_t cnt, void *args)
 	daemon_incoming_packet(client, hdr);
 }
 
+
+static int ctdb_clientpid_destructor(struct ctdb_client_pid_list *client_pid)
+{
+	if (client_pid->ctdb->client_pids != NULL) {
+		DLIST_REMOVE(client_pid->ctdb->client_pids, client_pid);
+	}
+
+	return 0;
+}
+
+
 static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde, 
 			 uint16_t flags, void *private_data)
 {
@@ -538,6 +556,7 @@ static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde,
 	int fd;
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
 	struct ctdb_client *client;
+	struct ctdb_client_pid_list *client_pid;
 #ifdef _AIX
 	struct peercred_struct cr;
 	socklen_t crl = sizeof(struct peercred_struct);
@@ -571,12 +590,26 @@ static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde,
 	client->fd = fd;
 	client->client_id = ctdb_reqid_new(ctdb, client);
 	client->pid = cr.pid;
-	ctdb->statistics.num_clients++;
+
+	client_pid = talloc(client, struct ctdb_client_pid_list);
+	if (client_pid == NULL) {
+		DEBUG(DEBUG_ERR,("Failed to allocate client pid structure\n"));
+		close(fd);
+		talloc_free(client);
+		return;
+	}		
+	client_pid->ctdb   = ctdb;
+	client_pid->pid    = cr.pid;
+	client_pid->client = client;
+
+	DLIST_ADD(ctdb->client_pids, client_pid);
 
 	client->queue = ctdb_queue_setup(ctdb, client, fd, CTDB_DS_ALIGNMENT, 
 					 ctdb_daemon_read_cb, client);
 
 	talloc_set_destructor(client, ctdb_client_destructor);
+	talloc_set_destructor(client_pid, ctdb_clientpid_destructor);
+	ctdb->statistics.num_clients++;
 }
 
 
@@ -1150,5 +1183,4 @@ int32_t ctdb_control_deregister_notify(struct ctdb_context *ctdb, uint32_t clien
 
 	return 0;
 }
-
 

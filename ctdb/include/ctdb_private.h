@@ -459,6 +459,9 @@ struct ctdb_context {
 	struct ctdb_monitor_script_status_ctx *last_monitor_status_ctx;
 
 	TALLOC_CTX *banning_ctx;
+
+	/* mapping from pid to ctdb_client * */
+	struct ctdb_client_pid_list *client_pids;
 };
 
 struct ctdb_db_context {
