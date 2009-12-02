@@ -3539,7 +3539,7 @@ again:
 			}
 		}
 
-		if (++retries == 10) {
+		if (++retries == 100) {
 			DEBUG(DEBUG_ERR,(__location__ " Giving up transaction on db 0x%08x after %d retries failure_control=%u\n", 
 					 h->ctdb_db->db_id, retries, (unsigned)failure_control));
 			ctdb_control(ctdb, CTDB_CURRENT_NODE, h->ctdb_db->db_id, 
