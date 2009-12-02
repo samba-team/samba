@@ -717,12 +717,7 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 			script->timedout = 1;
 		}
 
-		if (ctdb->last_monitor_status_ctx) {
-			talloc_free(ctdb->last_monitor_status_ctx);
-			ctdb->last_monitor_status_ctx = NULL;
-		}
-		ctdb->last_monitor_status_ctx = talloc_steal(ctdb, ctdb->current_monitor_status_ctx);
-		ctdb->current_monitor_status_ctx = NULL;
+		ctdb_control_event_script_finished(ctdb);
 	}
 
 	talloc_free(state);
