@@ -3060,6 +3060,9 @@ bool test_printer_keys(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_EnumPrinterKey(p, tctx, &r),
 			"failed to call EnumPrinterKey");
 		if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
+			torture_assert(tctx, (key_buffer._ndr_size == 0),
+				talloc_asprintf(tctx, "EnumPrinterKey did not return 0 _ndr_size (but %d), windows clients would abort here!", key_buffer._ndr_size));
+
 			r.in.offered = needed;
 			torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_EnumPrinterKey(p, tctx, &r),
 				"failed to call EnumPrinterKey");
@@ -3067,10 +3070,14 @@ bool test_printer_keys(struct torture_context *tctx,
 		torture_assert_werr_ok(tctx, r.out.result,
 			"failed to call EnumPrinterKey");
 
+		torture_assert(tctx, (key_buffer._ndr_size * 2 == needed),
+			talloc_asprintf(tctx, "EnumPrinterKey size mismatch, _ndr_size %d (expected %d)",
+			key_buffer._ndr_size, needed/2));
+
 		key_array = key_buffer.string;
 	}
 
-	for (i=0; key_array[i]; i++) {
+	for (i=0; key_array && key_array[i]; i++) {
 		struct spoolss_EnumPrinterDataEx r;
 		uint32_t count;
 		struct spoolss_PrinterEnumValues *info;
