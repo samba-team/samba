@@ -81,7 +81,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	switch (opcode) {
 	case CTDB_CONTROL_PROCESS_EXISTS: {
 		CHECK_CONTROL_DATA_SIZE(sizeof(pid_t));
-		return kill(*(pid_t *)indata.dptr, 0);
+		return ctdb_control_process_exists(ctdb, *(pid_t *)indata.dptr);
 	}
 
 	case CTDB_CONTROL_SET_DEBUG: {

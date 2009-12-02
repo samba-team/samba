@@ -1184,3 +1184,41 @@ int32_t ctdb_control_deregister_notify(struct ctdb_context *ctdb, uint32_t clien
 	return 0;
 }
 
+struct ctdb_client *ctdb_find_client_by_pid(struct ctdb_context *ctdb, pid_t pid)
+{
+	struct ctdb_client_pid_list *client_pid;
+
+	for (client_pid = ctdb->client_pids; client_pid; client_pid=client_pid->next) {
+		if (client_pid->pid == pid) {
+			return client_pid->client;
+		}
+	}
+	return NULL;
+}
+
+
+/* This control is used by samba when probing if a process (of a samba daemon)
+   exists on the node.
+   Samba does this when it needs/wants to check if a subrecord in one of the
+   databases is still valied, or if it is stale and can be removed.
+   If the node is in unhealthy or stopped state we just kill of the samba
+   process holding htis sub-record and return to the calling samba that
+   the process does not exist.
+   This allows us to forcefully recall subrecords registered by samba processes
+   on banned and stopped nodes.
+*/
+int32_t ctdb_control_process_exists(struct ctdb_context *ctdb, pid_t pid)
+{
+        struct ctdb_client *client;
+
+	if (ctdb->nodes[ctdb->pnn]->flags & (NODE_FLAGS_BANNED|NODE_FLAGS_STOPPED)) {
+		client = ctdb_find_client_by_pid(ctdb, pid);
+		if (client != NULL) {
+			DEBUG(DEBUG_NOTICE,(__location__ " Killing client with pid:%d on banned/stopped node\n", (int)pid));
+			talloc_free(client);
+		}
+		return -1;
+	}
+
+	return kill(pid, 0);
+}
