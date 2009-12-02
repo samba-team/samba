@@ -8125,52 +8125,6 @@ _PUBLIC_ void ndr_print_spoolss_StringArray(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_push_spoolss_StringArray2(struct ndr_push *ndr, int ndr_flags, const struct spoolss_StringArray2 *r)
-{
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, (ndr_size_spoolss_StringArray2(r, ndr->iconv_convenience, ndr->flags) - 4) / 2));
-		{
-			uint32_t _flags_save_string_array = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
-			{
-				struct ndr_push *_ndr_string;
-				NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_string, 0, (ndr_size_spoolss_StringArray2(r, ndr->iconv_convenience, ndr->flags) - 4) / 2 * 2));
-				NDR_CHECK(ndr_push_string_array(_ndr_string, NDR_SCALARS, r->string));
-				NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_string, 0, (ndr_size_spoolss_StringArray2(r, ndr->iconv_convenience, ndr->flags) - 4) / 2 * 2));
-			}
-			ndr->flags = _flags_save_string_array;
-		}
-		NDR_CHECK(ndr_push_trailer_align(ndr, 4));
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-	}
-	return NDR_ERR_SUCCESS;
-}
-
-_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_StringArray2(struct ndr_pull *ndr, int ndr_flags, struct spoolss_StringArray2 *r)
-{
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->_ndr_size));
-		{
-			uint32_t _flags_save_string_array = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
-			{
-				struct ndr_pull *_ndr_string;
-				NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_string, 0, r->_ndr_size * 2));
-				NDR_CHECK(ndr_pull_string_array(_ndr_string, NDR_SCALARS, &r->string));
-				NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_string, 0, r->_ndr_size * 2));
-			}
-			ndr->flags = _flags_save_string_array;
-		}
-		NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-	}
-	return NDR_ERR_SUCCESS;
-}
-
 _PUBLIC_ void ndr_print_spoolss_StringArray2(struct ndr_print *ndr, const char *name, const struct spoolss_StringArray2 *r)
 {
 	ndr_print_struct(ndr, name, "spoolss_StringArray2");
