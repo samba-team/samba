@@ -1641,9 +1641,6 @@ DSO_EXPORTS=""
 			AC_DEFINE(STAT_ST_BLOCKSIZE,8192,[The size of a block])
 			AC_DEFINE(POSIX_ACL_NEEDS_MASK,1,[Does a POSIX ACL need a mask element])
 			;;
-		*qnx*) AC_DEFINE(QNX,1,[Whether the host os is qnx])
-			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
-			;;
 		*osf*) AC_DEFINE(OSF1,1,[Whether the host os is osf1])
 			BLDSHARED="true"
 			LDSHFLAGS="-shared"
