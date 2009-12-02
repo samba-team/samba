@@ -423,7 +423,7 @@ int ctdb_attach_persistent(struct ctdb_context *ctdb)
 			talloc_free(s);
 			return -1;
 		}
-		DEBUG(DEBUG_NOTICE,("Attached to persistent database %s\n", s));
+		DEBUG(DEBUG_INFO,("Attached to persistent database %s\n", s));
 
 		talloc_free(s);
 	}
