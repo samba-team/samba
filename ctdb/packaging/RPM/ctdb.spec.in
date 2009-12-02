@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.106
+Version: 1.0.107
 Release: 1GITHASH
 Epoch: 0
 License: GNU GPL version 3
@@ -118,6 +118,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
+* Wed Dec 2 2009 : Version 1.0.107
+ - fix for rusty to solve a double-free that can happen when there are
+   multiple packets queued and the connection is destroyed before
+   all packets are processed.
 * Tue Dec 1 2009 : Version 1.0.106
  - Buildscript changes from Michael Adam
  - Dont do a full recovery when there is a mismatch detected for ip addresses,
