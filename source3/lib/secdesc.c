@@ -474,6 +474,26 @@ static bool is_inheritable_ace(const SEC_ACE *ace,
 	return false;
 }
 
+/*
+ * Does a security descriptor have any inheritable components for
+ * the newly created type ?
+ */
+
+bool sd_has_inheritable_components(const SEC_DESC *parent_ctr, bool container)
+{
+	unsigned int i;
+	const SEC_ACL *the_acl = parent_ctr->dacl;
+
+	for (i = 0; i < the_acl->num_aces; i++) {
+		const SEC_ACE *ace = &the_acl->aces[i];
+
+		if (is_inheritable_ace(ace, container)) {
+			return true;
+		}
+	}
+	return false;
+}
+
 /* Create a child security descriptor using another security descriptor as
    the parent container.  This child object can either be a container or
    non-container object. */
