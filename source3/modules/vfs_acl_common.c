@@ -493,14 +493,28 @@ static NTSTATUS check_parent_acl_common(vfs_handle_struct *handle,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = SMB_VFS_GET_NT_ACL(handle->conn,
+	status = get_nt_acl_internal(handle,
+					NULL,
 					parent_name,
 					(OWNER_SECURITY_INFORMATION |
 					 GROUP_SECURITY_INFORMATION |
 					 DACL_SECURITY_INFORMATION),
 					&parent_desc);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		/* No Windows ACL stored as a blob. Let the
+		 * underlying filesystem take care of checking
+		 * permissions. */
+		DEBUG(10,("check_parent_acl_common: no Windows ACL blob "
+			"stored on directory %s for "
+			"path %s\n",
+			parent_name,
+			path ));
+		return NT_STATUS_OK;
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10,("check_parent_acl_common: SMB_VFS_GET_NT_ACL "
+		DEBUG(10,("check_parent_acl_common: get_nt_acl_internal "
 			"on directory %s for "
 			"path %s returned %s\n",
 			parent_name,
