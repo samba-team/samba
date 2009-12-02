@@ -3245,6 +3245,8 @@ again:
 	pid = getpid();
 	data.dptr = (unsigned char *)&pid;
 	data.dsize = sizeof(pid_t);
+	rh->header.rsn++;
+	rh->header.dmaster = ctdb_db->ctdb->pnn;
 	ret = ctdb_ltdb_store(ctdb_db, key, &(rh->header), data);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Failed to store pid in "
