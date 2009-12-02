@@ -436,6 +436,75 @@ int ctdb_recheck_persistent_health(struct ctdb_context *ctdb)
 	return 0;
 }
 
+
+/*
+  mark a database - as healthy
+ */
+int32_t ctdb_control_db_set_healthy(struct ctdb_context *ctdb, TDB_DATA indata)
+{
+	uint32_t db_id = *(uint32_t *)indata.dptr;
+	struct ctdb_db_context *ctdb_db;
+	int ret;
+	bool may_recover = false;
+
+	ctdb_db = find_ctdb_db(ctdb, db_id);
+	if (!ctdb_db) {
+		DEBUG(DEBUG_ERR,(__location__ " Unknown db 0x%x\n", db_id));
+		return -1;
+	}
+
+	if (ctdb_db->unhealthy_reason) {
+		may_recover = true;
+	}
+
+	ret = ctdb_update_persistent_health(ctdb, ctdb_db, NULL, 1);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,(__location__
+				 " ctdb_update_persistent_health(%s) failed\n",
+				 ctdb_db->db_name));
+		return -1;
+	}
+
+	if (may_recover && !ctdb->done_startup) {
+		DEBUG(DEBUG_ERR, (__location__ " db %s become healthy  - force recovery for startup\n",
+				  ctdb_db->db_name));
+		ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
+	}
+
+	return 0;
+}
+
+int32_t ctdb_control_db_get_health(struct ctdb_context *ctdb,
+				   TDB_DATA indata,
+				   TDB_DATA *outdata)
+{
+	uint32_t db_id = *(uint32_t *)indata.dptr;
+	struct ctdb_db_context *ctdb_db;
+	int ret;
+
+	ctdb_db = find_ctdb_db(ctdb, db_id);
+	if (!ctdb_db) {
+		DEBUG(DEBUG_ERR,(__location__ " Unknown db 0x%x\n", db_id));
+		return -1;
+	}
+
+	ret = ctdb_load_persistent_health(ctdb, ctdb_db);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,(__location__
+				 " ctdb_load_persistent_health(%s) failed\n",
+				 ctdb_db->db_name));
+		return -1;
+	}
+
+	*outdata = tdb_null;
+	if (ctdb_db->unhealthy_reason) {
+		outdata->dptr = (uint8_t *)ctdb_db->unhealthy_reason;
+		outdata->dsize = strlen(ctdb_db->unhealthy_reason)+1;
+	}
+
+	return 0;
+}
+
 /*
   attach to a database, handling both persistent and non-persistent databases
   return 0 on success, -1 on failure

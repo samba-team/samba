@@ -633,6 +633,8 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_CLEAR_LOG		 = 118,
 		    CTDB_CONTROL_TRANS3_COMMIT           = 119,
 		    CTDB_CONTROL_GET_DB_SEQNUM           = 120,
+		    CTDB_CONTROL_DB_SET_HEALTHY		 = 121,
+		    CTDB_CONTROL_DB_GET_HEALTH		 = 122,
 };	
 
 /*
@@ -1442,6 +1444,10 @@ int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb, uint32_t id);
 int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb, uint32_t id);
 int32_t ctdb_control_transaction_cancel(struct ctdb_context *ctdb);
 int32_t ctdb_control_wipe_database(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_db_set_healthy(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_db_get_health(struct ctdb_context *ctdb,
+				   TDB_DATA indata,
+				   TDB_DATA *outdata);
 
 
 int ctdb_vacuum(struct ctdb_context *ctdb, int argc, const char **argv);
