@@ -2576,6 +2576,52 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 }
 
 /*
+  display the status of a database on a remote ctdb
+ */
+static int control_getdbstatus(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int i, ret;
+	struct ctdb_dbid_map *dbmap=NULL;
+	const char *db_name;
+
+	if (argc < 1) {
+		usage();
+	}
+
+	db_name = argv[0];
+
+	ret = ctdb_ctrl_getdbmap(ctdb, TIMELIMIT(), options.pnn, ctdb, &dbmap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get dbids from node %u\n", options.pnn));
+		return ret;
+	}
+
+	for(i=0;i<dbmap->num;i++){
+		const char *path;
+		const char *name;
+		const char *health;
+		bool persistent;
+
+		ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &name);
+		if (strcmp(name, db_name) != 0) {
+			continue;
+		}
+
+		ctdb_ctrl_getdbpath(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &path);
+		ctdb_ctrl_getdbhealth(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &health);
+		persistent = dbmap->dbs[i].persistent;
+		printf("dbid: 0x%08x\nname: %s\npath: %s\nPERSISTENT: %s\nHEALTH: %s\n",
+		       dbmap->dbs[i].dbid, name, path,
+		       persistent?"yes":"no",
+		       health?health:"OK");
+		return 0;
+	}
+
+	DEBUG(DEBUG_ERR, ("db %s doesn't exist on node %u\n", db_name, options.pnn));
+	return 0;
+}
+
+/*
   check if the local node is recmaster or not
   it will return 1 if this node is the recmaster and 0 if it is not
   or if the local ctdb daemon could not be contacted
@@ -3803,6 +3849,7 @@ static const struct {
 	{ "ip",              control_ip,                false,	false,  "show which public ip's that ctdb manages" },
 	{ "process-exists",  control_process_exists,    true,	false,  "check if a process exists on a node",  "<pid>"},
 	{ "getdbmap",        control_getdbmap,          true,	false,  "show the database map" },
+	{ "getdbstatus",     control_getdbstatus,       true,	false,  "show the status of a database", "<dbname>" },
 	{ "catdb",           control_catdb,             true,	false,  "dump a database" ,                     "<dbname>"},
 	{ "getmonmode",      control_getmonmode,        true,	false,  "show monitoring mode" },
 	{ "getcapabilities", control_getcapabilities,   true,	false,  "show node capabilities" },
