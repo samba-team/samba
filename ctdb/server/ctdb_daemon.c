@@ -150,13 +150,6 @@ int daemon_register_message_handler(struct ctdb_context *ctdb, uint32_t client_i
 			 (unsigned long long)srvid));
 	}
 
-	/* this is a hack for Samba - we now know the pid of the Samba client */
-	if ((srvid & 0xFFFFFFFF) == srvid &&
-	    kill(srvid, 0) == 0) {
-		client->pid = srvid;
-		DEBUG(DEBUG_INFO,(__location__ " Registered PID %u for client %u\n",
-			 (unsigned)client->pid, client_id));
-	}
 	return res;
 }
 
@@ -571,12 +564,13 @@ static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde,
 #else
 	if (getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cr, &crl) == 0) {
 #endif
-		talloc_asprintf(client, "struct ctdb_client: pid:%u", (unsigned)cr.pid);
+		DEBUG(DEBUG_ERR,("Connected client with pid:%u\n", (unsigned)cr.pid));
 	}
 
 	client->ctdb = ctdb;
 	client->fd = fd;
 	client->client_id = ctdb_reqid_new(ctdb, client);
+	client->pid = cr.pid;
 	ctdb->statistics.num_clients++;
 
 	client->queue = ctdb_queue_setup(ctdb, client, fd, CTDB_DS_ALIGNMENT, 
@@ -1156,3 +1150,5 @@ int32_t ctdb_control_deregister_notify(struct ctdb_context *ctdb, uint32_t clien
 
 	return 0;
 }
+
+
