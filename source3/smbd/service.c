@@ -1193,7 +1193,7 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
 			return NULL;
 		}
 
-		DEBUG(0,("%s (%s) couldn't find service %s\n",
+		DEBUG(3,("%s (%s) couldn't find service %s\n",
 			get_remote_machine_name(),
 			client_addr(get_client_fd(),addr,sizeof(addr)),
 			service));
