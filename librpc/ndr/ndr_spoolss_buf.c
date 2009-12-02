@@ -708,6 +708,15 @@ _PUBLIC_ size_t ndr_size_spoolss_StringArray(const struct spoolss_StringArray *r
 	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_StringArray, ic);
 }
 
+_PUBLIC_ size_t ndr_size_spoolss_StringArray2(const struct spoolss_StringArray2 *r, struct smb_iconv_convenience *ic, int flags)
+{
+	if (!r) {
+		return 4;
+	}
+
+	return ndr_size_struct((const struct spoolss_StringArray *)r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_StringArray, ic);
+}
+
 /* hand marshall as pidl cannot (yet) generate a relative pointer to a fixed array of
  * structs */
 
