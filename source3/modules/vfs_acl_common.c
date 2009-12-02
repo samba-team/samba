@@ -161,7 +161,8 @@ static NTSTATUS create_acl_blob(const struct security_descriptor *psd,
 }
 
 /*******************************************************************
- Store a DATA_BLOB into an xattr given a pathname.
+ Pull a DATA_BLOB from an xattr given a pathname.
+ DOES NOT FALL BACK TO THE UNDERLYING ACLs ON THE FILESYSTEM.
 *******************************************************************/
 
 static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
@@ -185,21 +186,8 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 
 	status = get_acl_blob(talloc_tos(), handle, fsp, name, &blob);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("get_acl_blob returned %s\n", nt_errstr(status)));
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
-			/* Pull the ACL from the underlying system. */
-			if (fsp) {
-				status = SMB_VFS_NEXT_FGET_NT_ACL(handle,
-								fsp,
-								security_info,
-								ppdesc);
-			} else {
-				status = SMB_VFS_NEXT_GET_NT_ACL(handle,
-								name,
-								security_info,
-								ppdesc);
-			}
-		}
+		DEBUG(10, ("get_nt_acl_internal: get_acl_blob returned %s\n",
+			nt_errstr(status)));
 		return status;
 	}
 
@@ -668,8 +656,16 @@ static int mkdir_acl_common(vfs_handle_struct *handle, const char *path, mode_t 
 static NTSTATUS fget_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
         uint32_t security_info, struct security_descriptor **ppdesc)
 {
-	return get_nt_acl_internal(handle, fsp,
+	NTSTATUS status = get_nt_acl_internal(handle, fsp,
 				NULL, security_info, ppdesc);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		/* Pull the ACL from the underlying system. */
+		status = SMB_VFS_NEXT_FGET_NT_ACL(handle,
+						fsp,
+						security_info,
+						ppdesc);
+	}
+	return status;
 }
 
 /*********************************************************************
@@ -679,8 +675,16 @@ static NTSTATUS fget_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 static NTSTATUS get_nt_acl_common(vfs_handle_struct *handle,
         const char *name, uint32_t security_info, struct security_descriptor **ppdesc)
 {
-	return get_nt_acl_internal(handle, NULL,
+	NTSTATUS status = get_nt_acl_internal(handle, NULL,
 				name, security_info, ppdesc);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		/* Pull the ACL from the underlying system. */
+		status = SMB_VFS_NEXT_GET_NT_ACL(handle,
+						name,
+						security_info,
+						ppdesc);
+	}
+	return status;
 }
 
 /*********************************************************************

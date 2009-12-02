@@ -188,7 +188,7 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 		(unsigned int)data.dsize, name ));
 
 	if (pblob->length == 0 || pblob->data == NULL) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		return NT_STATUS_NOT_FOUND;
 	}
 	return NT_STATUS_OK;
 }
