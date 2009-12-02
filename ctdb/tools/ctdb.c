@@ -2559,13 +2559,17 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 	for(i=0;i<dbmap->num;i++){
 		const char *path;
 		const char *name;
+		const char *health;
 		bool persistent;
 
 		ctdb_ctrl_getdbpath(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &path);
 		ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &name);
+		ctdb_ctrl_getdbhealth(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &health);
 		persistent = dbmap->dbs[i].persistent;
-		printf("dbid:0x%08x name:%s path:%s %s\n", dbmap->dbs[i].dbid, name, 
-		       path, persistent?"PERSISTENT":"");
+		printf("dbid:0x%08x name:%s path:%s%s%s\n",
+		       dbmap->dbs[i].dbid, name, path,
+		       persistent?" PERSISTENT":"",
+		       health?" UNHEALTHY":"");
 	}
 
 	return 0;
