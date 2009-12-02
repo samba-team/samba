@@ -932,6 +932,7 @@ int sys_fstat(int fd, SMB_STRUCT_STAT *sbuf,
 int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf,
 	      bool fake_dir_create_times);
 int sys_ftruncate(int fd, SMB_OFF_T offset);
+int sys_posix_fallocate(int fd, SMB_OFF_T offset, SMB_OFF_T len);
 SMB_OFF_T sys_lseek(int fd, SMB_OFF_T offset, int whence);
 int sys_fseek(FILE *fp, SMB_OFF_T offset, int whence);
 SMB_OFF_T sys_ftell(FILE *fp);
