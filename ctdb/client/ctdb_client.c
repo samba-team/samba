@@ -3265,13 +3265,25 @@ again:
 	}
 
 	ret = ctdb_ltdb_fetch(ctdb_db, key, &header, tmp_ctx, &data);
-	if (ret != 0 || header.dmaster != ctdb_db->ctdb->pnn) {
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to re-fetch transaction "
+				 "lock record inside transaction\n"));
+		tdb_transaction_cancel(ctdb_db->ltdb->tdb);
+		talloc_free(tmp_ctx);
+		goto again;
+	}
+
+	if (header.dmaster != ctdb_db->ctdb->pnn) {
+		DEBUG(DEBUG_DEBUG,(__location__ " not dmaster any more on "
+				   "transaction lock record\n"));
 		tdb_transaction_cancel(ctdb_db->ltdb->tdb);
 		talloc_free(tmp_ctx);
 		goto again;
 	}
 
 	if ((data.dsize != sizeof(pid_t)) || (*(pid_t *)(data.dptr) != pid)) {
+		DEBUG(DEBUG_DEBUG, (__location__ " my pid is not stored in "
+				    "the transaction lock record\n"));
 		tdb_transaction_cancel(ctdb_db->ltdb->tdb);
 		talloc_free(tmp_ctx);
 		goto again;
