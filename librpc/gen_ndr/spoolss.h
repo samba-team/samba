@@ -1209,7 +1209,7 @@ struct spoolss_StringArray {
 struct spoolss_StringArray2 {
 	uint32_t _ndr_size;/* [value((ndr_size_spoolss_StringArray2(r,ndr->iconv_convenience,ndr->flags)-4)/2)] */
 	const char ** string;/* [subcontext_size(_ndr_size*2),subcontext(0),flag(LIBNDR_FLAG_STR_NULLTERM)] */
-}/* [public] */;
+}/* [nopush,public,nopull] */;
 
 struct spoolss_AddDriverInfo1 {
 	const char *driver_name;/* [unique,charset(UTF16)] */
