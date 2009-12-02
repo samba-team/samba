@@ -583,7 +583,7 @@ static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde,
 #else
 	if (getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cr, &crl) == 0) {
 #endif
-		DEBUG(DEBUG_ERR,("Connected client with pid:%u\n", (unsigned)cr.pid));
+		DEBUG(DEBUG_INFO,("Connected client with pid:%u\n", (unsigned)cr.pid));
 	}
 
 	client->ctdb = ctdb;
