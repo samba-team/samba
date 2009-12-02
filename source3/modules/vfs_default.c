@@ -922,8 +922,6 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 	if (SMB_VFS_FSTAT(fsp, &st) == -1)
 		return -1;
 
-	space_to_write = len - st.st_ex_size;
-
 #ifdef S_ISFIFO
 	if (S_ISFIFO(st.st_ex_mode))
 		return 0;
@@ -936,7 +934,28 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 	if (st.st_ex_size > len)
 		return sys_ftruncate(fsp->fh->fd, len);
 
+	/* for allocation try posix_fallocate first. This can fail on some
+	   platforms e.g. when the filesystem doesn't support it and no
+	   emulation is being done by the libc (like on AIX with JFS1). In that
+	   case we do our own emulation. posix_fallocate implementations can
+	   return ENOTSUP or EINVAL in cases like that. */
+#if defined(HAVE_POSIX_FALLOCATE)
+	{
+		int ret = sys_posix_fallocate(fsp->fh->fd, 0, len);
+		if (ret == ENOSPC) {
+			errno = ENOSPC;
+			return -1;
+		}
+		if (ret == 0) {
+			return 0;
+		}
+		DEBUG(10,("strict_allocate_ftruncate: sys_posix_fallocate "
+			"failed with error %d. "
+			"Falling back to slow manual allocation\n", ret));
+	}
+#endif
 	/* available disk space is enough or not? */
+	space_to_write = len - st.st_ex_size;
 	if (lp_strict_allocate(SNUM(fsp->conn))){
 		uint64_t space_avail;
 		uint64_t bsize,dfree,dsize;
@@ -955,8 +974,6 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 	/* Write out the real space on disk. */
 	if (SMB_VFS_LSEEK(fsp, st.st_ex_size, SEEK_SET) != st.st_ex_size)
 		return -1;
-
-	space_to_write = len - st.st_ex_size;
 
 	memset(zero_space, '\0', sizeof(zero_space));
 	while ( space_to_write > 0) {
