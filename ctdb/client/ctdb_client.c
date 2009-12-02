@@ -3148,9 +3148,9 @@ int ctdb_ctrl_getcapabilities(struct ctdb_context *ctdb, struct timeval timeout,
 /**
  * check whether a transaction is active on a given db on a given node
  */
-static int32_t ctdb_ctrl_transaction_active(struct ctdb_context *ctdb,
-					    uint32_t destnode,
-					    uint32_t db_id)
+int32_t ctdb_ctrl_transaction_active(struct ctdb_context *ctdb,
+				     uint32_t destnode,
+				     uint32_t db_id)
 {
 	int32_t status;
 	int ret;
