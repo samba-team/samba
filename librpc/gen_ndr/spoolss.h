@@ -3035,7 +3035,7 @@ struct spoolss_EnumPrinterKey {
 	} in;
 
 	struct {
-		uint16_t *key_buffer;/* [ref,size_is(offered/2)] */
+		struct spoolss_StringArray2 *key_buffer;/* [ref] */
 		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;

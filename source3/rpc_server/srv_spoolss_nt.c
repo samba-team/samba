@@ -9317,7 +9317,7 @@ WERROR _spoolss_EnumPrinterKey(pipes_struct *p,
 		result = WERR_MORE_DATA;
 	} else {
 		result = WERR_OK;
-		memcpy(r->out.key_buffer, blob.data, blob.length);
+		r->out.key_buffer->string = array;
 	}
 
  done:
