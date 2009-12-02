@@ -3407,6 +3407,22 @@ static int control_restoredb(struct ctdb_context *ctdb, int argc, const char **a
 		return -1;
 	}
 
+	data.dptr = (void *)&ctdb_db->db_id;
+	data.dsize = sizeof(ctdb_db->db_id);
+
+	/* mark the database as healthy */
+	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
+	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_DB_SET_HEALTHY,
+					nodes, 0,
+					TIMELIMIT(), false, data,
+					NULL, NULL,
+					NULL) != 0) {
+		DEBUG(DEBUG_ERR, ("Failed to mark database as healthy.\n"));
+		ctdb_ctrl_setrecmode(ctdb, TIMELIMIT(), options.pnn, CTDB_RECOVERY_ACTIVE);
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
 	data.dptr = (void *)&generation;
 	data.dsize = sizeof(generation);
 
@@ -3566,6 +3582,22 @@ static int control_wipedb(struct ctdb_context *ctdb, int argc,
 					NULL, NULL,
 					NULL) != 0) {
 		DEBUG(DEBUG_ERR, ("Unable to wipe database.\n"));
+		ctdb_ctrl_setrecmode(ctdb, TIMELIMIT(), options.pnn, CTDB_RECOVERY_ACTIVE);
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	data.dptr = (void *)&ctdb_db->db_id;
+	data.dsize = sizeof(ctdb_db->db_id);
+
+	/* mark the database as healthy */
+	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
+	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_DB_SET_HEALTHY,
+					nodes, 0,
+					TIMELIMIT(), false, data,
+					NULL, NULL,
+					NULL) != 0) {
+		DEBUG(DEBUG_ERR, ("Failed to mark database as healthy.\n"));
 		ctdb_ctrl_setrecmode(ctdb, TIMELIMIT(), options.pnn, CTDB_RECOVERY_ACTIVE);
 		talloc_free(tmp_ctx);
 		return -1;
