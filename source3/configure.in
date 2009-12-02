@@ -1524,9 +1524,10 @@ DSO_EXPORTS=""
 
   # and these are for particular systems
   case "$host_os" in
-		*linux* | gnu* | k*bsd*-gnu | kopensolaris*-gnu)
-			case "$host_os" in *linux*)
-				AC_DEFINE(LINUX,1,[Whether the host os is linux]) ;;
+		*linux* | gnu* | k*bsd*-gnu | kopensolaris*-gnu | *qnx*)
+			case "$host_os" in
+				*linux*) AC_DEFINE(LINUX,1,[Whether the host os is linux]) ;;
+				*qnx*) AC_DEFINE(QNX,1,[Whether the host os is qnx]) ;;
 			esac
 			BLDSHARED="true"
 			if test "${ac_cv_gnu_ld_no_default_allow_shlib_undefined}" = "yes"; then
