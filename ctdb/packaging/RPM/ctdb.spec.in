@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.105
+Version: 1.0.106
 Release: 1GITHASH
 Epoch: 0
 License: GNU GPL version 3
@@ -118,6 +118,16 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
+* Tue Dec 1 2009 : Version 1.0.106
+ - Buildscript changes from Michael Adam
+ - Dont do a full recovery when there is a mismatch detected for ip addresses,
+   just do a less disruptive ip-reallocation
+ - When starting ctdbd, wait until all initial recoveries have finished 
+   before we issue the "startup" event.
+   So dont start services or monitoring until the cluster has
+   stabilized.
+ - Major eventscript overhaul by Ronnie, Rusty and Martins and fixes of a few
+   bugs found.
 * Thu Nov 19 2009 : Version 1.0.105
  - Fix a bug where we could SEGV if multiple concurrent "ctdb eventscript ..."
    are used and some of them block.
