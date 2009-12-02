@@ -697,6 +697,176 @@ done:
 	return ret;
 }
 
+/**
+ * Exclusive version of batch19
+ */
+static bool test_raw_oplock_exclusive7(struct torture_context *tctx,
+    struct smbcli_state *cli1, struct smbcli_state *cli2)
+{
+	const char *fname1 = BASEDIR "\\test_exclusiv6_1.dat";
+	const char *fname2 = BASEDIR "\\test_exclusiv6_2.dat";
+	const char *fname3 = BASEDIR "\\test_exclusiv6_3.dat";
+	NTSTATUS status;
+	bool ret = true;
+	union smb_open io;
+	union smb_fileinfo qfi;
+	union smb_setfileinfo sfi;
+	uint16_t fnum=0;
+	uint16_t fnum2 = 0;
+
+	if (!torture_setup_dir(cli1, BASEDIR)) {
+		return false;
+	}
+
+	/* cleanup */
+	smbcli_unlink(cli1->tree, fname1);
+	smbcli_unlink(cli1->tree, fname2);
+	smbcli_unlink(cli1->tree, fname3);
+
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given,
+	    cli1->tree);
+
+	/*
+	  base ntcreatex parms
+	*/
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid.fnum = 0;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+	    NTCREATEX_SHARE_ACCESS_WRITE | NTCREATEX_SHARE_ACCESS_DELETE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname1;
+
+	torture_comment(tctx, "open a file with an exclusive oplock (share "
+	    "mode: none)\n");
+	ZERO_STRUCT(break_info);
+	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED |
+		NTCREATEX_FLAGS_REQUEST_OPLOCK;
+	status = smb_raw_open(cli1->tree, tctx, &io);
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.file.fnum;
+	CHECK_VAL(io.ntcreatex.out.oplock_level, EXCLUSIVE_OPLOCK_RETURN);
+
+	torture_comment(tctx, "setpathinfo rename info should trigger a break "
+	    "to none\n");
+	ZERO_STRUCT(sfi);
+	sfi.generic.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sfi.generic.in.file.path = fname1;
+	sfi.rename_information.in.overwrite	= 0;
+	sfi.rename_information.in.root_fid	= 0;
+	sfi.rename_information.in.new_name	= fname2+strlen(BASEDIR)+1;
+
+        status = smb_raw_setpathinfo(cli2->tree, &sfi);
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+
+	torture_wait_for_oplock_break(tctx);
+	CHECK_VAL(break_info.failures, 0);
+
+	if (TARGET_IS_WINXP(tctx)) {
+		/* XP incorrectly breaks to level2. */
+		CHECK_VAL(break_info.count, 1);
+		CHECK_VAL(break_info.level, OPLOCK_BREAK_TO_LEVEL_II);
+	} else {
+		/* Exclusive oplocks should not be broken on rename. */
+		CHECK_VAL(break_info.failures, 0);
+		CHECK_VAL(break_info.count, 0);
+	}
+
+	ZERO_STRUCT(qfi);
+	qfi.generic.level = RAW_FILEINFO_ALL_INFORMATION;
+	qfi.generic.in.file.fnum = fnum;
+
+	status = smb_raw_fileinfo(cli1->tree, tctx, &qfi);
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+	CHECK_STRMATCH(qfi.all_info.out.fname.s, fname2);
+
+	/* Try breaking to level2 and then see if rename breaks the level2.*/
+	ZERO_STRUCT(break_info);
+	io.ntcreatex.in.fname = fname2;
+	status = smb_raw_open(cli2->tree, tctx, &io);
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+	fnum2 = io.ntcreatex.out.file.fnum;
+	CHECK_VAL(io.ntcreatex.out.oplock_level, LEVEL_II_OPLOCK_RETURN);
+
+	torture_wait_for_oplock_break(tctx);
+	CHECK_VAL(break_info.failures, 0);
+
+	if (TARGET_IS_WINXP(tctx)) {
+		/* XP already broke to level2. */
+		CHECK_VAL(break_info.failures, 0);
+		CHECK_VAL(break_info.count, 0);
+	} else {
+		/* Break to level 2 expected. */
+		CHECK_VAL(break_info.count, 1);
+		CHECK_VAL(break_info.level, OPLOCK_BREAK_TO_LEVEL_II);
+	}
+
+	ZERO_STRUCT(break_info);
+	sfi.generic.in.file.path = fname2;
+	sfi.rename_information.in.overwrite	= 0;
+	sfi.rename_information.in.root_fid	= 0;
+	sfi.rename_information.in.new_name	= fname1+strlen(BASEDIR)+1;
+
+	status = smb_raw_setpathinfo(cli2->tree, &sfi);
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+
+	/* Level2 oplocks are not broken on rename. */
+	torture_wait_for_oplock_break(tctx);
+	CHECK_VAL(break_info.failures, 0);
+	CHECK_VAL(break_info.count, 0);
+
+	/* Close and re-open file with oplock. */
+	smbcli_close(cli1->tree, fnum);
+	status = smb_raw_open(cli1->tree, tctx, &io);
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.file.fnum;
+	CHECK_VAL(io.ntcreatex.out.oplock_level, EXCLUSIVE_OPLOCK_RETURN);
+
+	torture_comment(tctx, "setfileinfo rename info on a client's own fid "
+	    "should not trigger a break nor a violation\n");
+	ZERO_STRUCT(break_info);
+	ZERO_STRUCT(sfi);
+	sfi.generic.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sfi.generic.in.file.fnum = fnum;
+	sfi.rename_information.in.overwrite	= 0;
+	sfi.rename_information.in.root_fid	= 0;
+	sfi.rename_information.in.new_name	= fname3+strlen(BASEDIR)+1;
+
+	status = smb_raw_setfileinfo(cli1->tree, &sfi);
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+
+	torture_wait_for_oplock_break(tctx);
+	if (TARGET_IS_WINXP(tctx)) {
+		/* XP incorrectly breaks to level2. */
+		CHECK_VAL(break_info.count, 1);
+		CHECK_VAL(break_info.level, OPLOCK_BREAK_TO_LEVEL_II);
+	} else {
+		CHECK_VAL(break_info.count, 0);
+	}
+
+	ZERO_STRUCT(qfi);
+	qfi.generic.level = RAW_FILEINFO_ALL_INFORMATION;
+	qfi.generic.in.file.fnum = fnum;
+
+	status = smb_raw_fileinfo(cli1->tree, tctx, &qfi);
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+	CHECK_STRMATCH(qfi.all_info.out.fname.s, fname3);
+
+done:
+	smbcli_close(cli1->tree, fnum);
+	smbcli_close(cli2->tree, fnum2);
+
+	smb_raw_exit(cli1->session);
+	smb_raw_exit(cli2->session);
+	smbcli_deltree(cli1->tree, BASEDIR);
+	return ret;
+}
+
 static bool test_raw_oplock_batch1(struct torture_context *tctx, struct smbcli_state *cli1, struct smbcli_state *cli2)
 {
 	const char *fname = BASEDIR "\\test_batch1.dat";
@@ -3693,6 +3863,7 @@ struct torture_suite *torture_raw_oplock(TALLOC_CTX *mem_ctx)
 	torture_suite_add_2smb_test(suite, "EXCLUSIVE4", test_raw_oplock_exclusive4);
 	torture_suite_add_2smb_test(suite, "EXCLUSIVE5", test_raw_oplock_exclusive5);
 	torture_suite_add_2smb_test(suite, "EXCLUSIVE6", test_raw_oplock_exclusive6);
+	torture_suite_add_2smb_test(suite, "EXCLUSIVE7", test_raw_oplock_exclusive7);
 	torture_suite_add_2smb_test(suite, "BATCH1", test_raw_oplock_batch1);
 	torture_suite_add_2smb_test(suite, "BATCH2", test_raw_oplock_batch2);
 	torture_suite_add_2smb_test(suite, "BATCH3", test_raw_oplock_batch3);
