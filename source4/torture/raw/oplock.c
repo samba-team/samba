@@ -2135,7 +2135,8 @@ static bool test_raw_oplock_batch19(struct torture_context *tctx, struct smbcli_
 	fnum = io.ntcreatex.out.file.fnum;
 	CHECK_VAL(io.ntcreatex.out.oplock_level, BATCH_OPLOCK_RETURN);
 
-	torture_comment(tctx, "setpathinfo rename info should not trigger a break nor a violation\n");
+	torture_comment(tctx, "setpathinfo rename info should trigger a break "
+	    "to none\n");
 	ZERO_STRUCT(sfi);
 	sfi.generic.level = RAW_SFILEINFO_RENAME_INFORMATION;
 	sfi.generic.in.file.path = fname1;
@@ -2147,7 +2148,22 @@ static bool test_raw_oplock_batch19(struct torture_context *tctx, struct smbcli_
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 
 	torture_wait_for_oplock_break(tctx);
-	CHECK_VAL(break_info.count, 0);
+
+	CHECK_VAL(break_info.failures, 0);
+
+	if (TARGET_IS_WINXP(tctx)) {
+		/* Win XP breaks to level2. */
+		CHECK_VAL(break_info.count, 1);
+		CHECK_VAL(break_info.level, OPLOCK_BREAK_TO_LEVEL_II);
+	} else if (TARGET_IS_W2K3(tctx) || TARGET_IS_W2K8(tctx) ||
+	    TARGET_IS_SAMBA3(tctx) || TARGET_IS_SAMBA4(tctx)) {
+		/* Win2K3/2k8 incorrectly doesn't break at all. */
+		CHECK_VAL(break_info.count, 0);
+	} else {
+		/* win7/2k8r2 break to none. */
+		CHECK_VAL(break_info.count, 1);
+		CHECK_VAL(break_info.level, OPLOCK_BREAK_TO_NONE);
+	}
 
 	ZERO_STRUCT(qfi);
 	qfi.generic.level = RAW_FILEINFO_ALL_INFORMATION;
@@ -2157,7 +2173,16 @@ static bool test_raw_oplock_batch19(struct torture_context *tctx, struct smbcli_
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 	CHECK_STRMATCH(qfi.all_info.out.fname.s, fname2);
 
-	torture_comment(tctx, "setfileinfo rename info should not trigger a break nor a violation\n");
+	/* Close and re-open file with oplock. */
+	smbcli_close(cli1->tree, fnum);
+	status = smb_raw_open(cli1->tree, tctx, &io);
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.file.fnum;
+	CHECK_VAL(io.ntcreatex.out.oplock_level, BATCH_OPLOCK_RETURN);
+
+	torture_comment(tctx, "setfileinfo rename info on a client's own fid "
+	    "should not trigger a break nor a violation\n");
+	ZERO_STRUCT(break_info);
 	ZERO_STRUCT(sfi);
 	sfi.generic.level = RAW_SFILEINFO_RENAME_INFORMATION;
 	sfi.generic.in.file.fnum = fnum;
@@ -2169,7 +2194,13 @@ static bool test_raw_oplock_batch19(struct torture_context *tctx, struct smbcli_
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 
 	torture_wait_for_oplock_break(tctx);
-	CHECK_VAL(break_info.count, 0);
+	if (TARGET_IS_WINXP(tctx)) {
+		/* XP incorrectly breaks to level2. */
+		CHECK_VAL(break_info.count, 1);
+		CHECK_VAL(break_info.level, OPLOCK_BREAK_TO_LEVEL_II);
+	} else {
+		CHECK_VAL(break_info.count, 0);
+	}
 
 	ZERO_STRUCT(qfi);
 	qfi.generic.level = RAW_FILEINFO_ALL_INFORMATION;
@@ -2469,7 +2500,6 @@ static bool test_raw_oplock_batch20(struct torture_context *tctx, struct smbcli_
 	fnum = io.ntcreatex.out.file.fnum;
 	CHECK_VAL(io.ntcreatex.out.oplock_level, BATCH_OPLOCK_RETURN);
 
-	torture_comment(tctx, "setpathinfo rename info should not trigger a break nor a violation\n");
 	ZERO_STRUCT(sfi);
 	sfi.generic.level = RAW_SFILEINFO_RENAME_INFORMATION;
 	sfi.generic.in.file.path = fname1;
@@ -2481,7 +2511,21 @@ static bool test_raw_oplock_batch20(struct torture_context *tctx, struct smbcli_
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 
 	torture_wait_for_oplock_break(tctx);
-	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(break_info.failures, 0);
+
+	if (TARGET_IS_WINXP(tctx)) {
+		/* Win XP breaks to level2. */
+		CHECK_VAL(break_info.count, 1);
+		CHECK_VAL(break_info.level, OPLOCK_BREAK_TO_LEVEL_II);
+	} else if (TARGET_IS_W2K3(tctx) || TARGET_IS_W2K8(tctx) ||
+	    TARGET_IS_SAMBA3(tctx) || TARGET_IS_SAMBA4(tctx)) {
+		/* Win2K3/2k8 incorrectly doesn't break at all. */
+		CHECK_VAL(break_info.count, 0);
+	} else {
+		/* win7/2k8r2 break to none. */
+		CHECK_VAL(break_info.count, 1);
+		CHECK_VAL(break_info.level, OPLOCK_BREAK_TO_NONE);
+	}
 
 	ZERO_STRUCT(qfi);
 	qfi.generic.level = RAW_FILEINFO_ALL_INFORMATION;
@@ -2506,11 +2550,22 @@ static bool test_raw_oplock_batch20(struct torture_context *tctx, struct smbcli_
 	CHECK_VAL(io.ntcreatex.out.oplock_level, LEVEL_II_OPLOCK_RETURN);
 
 	torture_wait_for_oplock_break(tctx);
-	CHECK_VAL(break_info.count, 1);
-	CHECK_VAL(break_info.failures, 0);
-	CHECK_VAL(break_info.level, OPLOCK_BREAK_TO_LEVEL_II);
 
-	torture_comment(tctx, "setfileinfo rename info should not trigger a break nor a violation\n");
+	if (TARGET_IS_WINXP(tctx)) {
+		/* XP broke to level2, and doesn't break again. */
+		CHECK_VAL(break_info.count, 0);
+	} else if (TARGET_IS_W2K3(tctx) || TARGET_IS_W2K8(tctx) ||
+	    TARGET_IS_SAMBA3(tctx) || TARGET_IS_SAMBA4(tctx)) {
+		/* Win2K3 incorrectly didn't break before so break now. */
+		CHECK_VAL(break_info.count, 1);
+		CHECK_VAL(break_info.level, OPLOCK_BREAK_TO_LEVEL_II);
+	} else {
+		/* win7/2k8r2 broke to none, and doesn't break again. */
+		CHECK_VAL(break_info.count, 0);
+	}
+
+	ZERO_STRUCT(break_info);
+
 	ZERO_STRUCT(sfi);
 	sfi.generic.level = RAW_SFILEINFO_RENAME_INFORMATION;
 	sfi.generic.in.file.fnum = fnum;
@@ -2522,9 +2577,7 @@ static bool test_raw_oplock_batch20(struct torture_context *tctx, struct smbcli_
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 
 	torture_wait_for_oplock_break(tctx);
-	CHECK_VAL(break_info.count, 1);
-	CHECK_VAL(break_info.failures, 0);
-	CHECK_VAL(break_info.level, OPLOCK_BREAK_TO_LEVEL_II);
+	CHECK_VAL(break_info.count, 0);
 
 	ZERO_STRUCT(qfi);
 	qfi.generic.level = RAW_FILEINFO_ALL_INFORMATION;
