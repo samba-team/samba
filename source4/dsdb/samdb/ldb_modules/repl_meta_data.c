@@ -837,7 +837,6 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_message *msg;
 	struct ldb_result *res;
 	time_t t = time(NULL);
-	uint64_t seq_num = 0;
 	int ret;
 
 	/* do not manipulate our control entries */
@@ -900,13 +899,13 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 
 	/* we only change whenChanged and uSNChanged if the seq_num
 	   has changed */
-	if (seq_num != 0) {
+	if (ac->seq_num != 0) {
 		if (add_time_element(msg, "whenChanged", t) != LDB_SUCCESS) {
 			talloc_free(ac);
 			return ret;
 		}
 
-		if (add_uint64_element(msg, "uSNChanged", seq_num) != LDB_SUCCESS) {
+		if (add_uint64_element(msg, "uSNChanged", ac->seq_num) != LDB_SUCCESS) {
 			talloc_free(ac);
 			return ret;
 		}
