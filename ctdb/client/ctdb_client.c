@@ -1498,6 +1498,44 @@ int ctdb_ctrl_getdbname(struct ctdb_context *ctdb, struct timeval timeout, uint3
 }
 
 /*
+  get the health status of a db
+ */
+int ctdb_ctrl_getdbhealth(struct ctdb_context *ctdb,
+			  struct timeval timeout,
+			  uint32_t destnode,
+			  uint32_t dbid, TALLOC_CTX *mem_ctx,
+			  const char **reason)
+{
+	int ret;
+	int32_t res;
+	TDB_DATA data;
+
+	data.dptr = (uint8_t *)&dbid;
+	data.dsize = sizeof(dbid);
+
+	ret = ctdb_control(ctdb, destnode, 0,
+			   CTDB_CONTROL_DB_GET_HEALTH, 0, data,
+			   mem_ctx, &data, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		return -1;
+	}
+
+	if (data.dsize == 0) {
+		(*reason) = NULL;
+		return 0;
+	}
+
+	(*reason) = talloc_strndup(mem_ctx, (const char *)data.dptr, data.dsize);
+	if ((*reason) == NULL) {
+		return -1;
+	}
+
+	talloc_free(data.dptr);
+
+	return 0;
+}
+
+/*
   create a database
  */
 int ctdb_ctrl_createdb(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, 
