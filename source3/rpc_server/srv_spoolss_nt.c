@@ -5012,378 +5012,23 @@ static WERROR fill_printer_driver_info101(TALLOC_CTX *mem_ctx,
 }
 
 /********************************************************************
- * construct_printer_driver_info_1
  ********************************************************************/
 
-static WERROR construct_printer_driver_info_1(TALLOC_CTX *mem_ctx,
-					      struct spoolss_DriverInfo1 *r,
-					      int snum,
-					      const char *servername,
-					      const char *architecture,
-					      uint32_t version)
+static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
+						  uint32_t level,
+						  union spoolss_DriverInfo *r,
+						  int snum,
+						  const char *servername,
+						  const char *architecture,
+						  uint32_t version)
 {
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	struct spoolss_DriverInfo8 *driver;
 	WERROR result;
-
-	if (!W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, lp_const_servicename(snum))))
-		return WERR_INVALID_PRINTER_NAME;
-
-	if (!W_ERROR_IS_OK(get_a_printer_driver(mem_ctx, &driver, printer->info_2->drivername, architecture, version))) {
-		free_a_printer(&printer, 2);
-		return WERR_UNKNOWN_PRINTER_DRIVER;
-	}
-
-	result = fill_printer_driver_info1(mem_ctx, r, driver, servername, architecture);
-
-	free_a_printer_driver(driver);
-	free_a_printer(&printer,2);
-
-	return result;
-}
-
-/********************************************************************
- * construct_printer_driver_info_2
- * fill a printer_info_2 struct
- ********************************************************************/
-
-static WERROR construct_printer_driver_info_2(TALLOC_CTX *mem_ctx,
-					      struct spoolss_DriverInfo2 *r,
-					      int snum,
-					      const char *servername,
-					      const char *architecture,
-					      uint32_t version)
-{
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
-	struct spoolss_DriverInfo8 *driver;
-	WERROR result;
-
-	ZERO_STRUCT(printer);
-
-	if (!W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, lp_const_servicename(snum))))
-		return WERR_INVALID_PRINTER_NAME;
-
-	if (!W_ERROR_IS_OK(get_a_printer_driver(mem_ctx, &driver, printer->info_2->drivername, architecture, version))) {
-		free_a_printer(&printer, 2);
-		return WERR_UNKNOWN_PRINTER_DRIVER;
-	}
-
-	result = fill_printer_driver_info2(mem_ctx, r, driver, servername);
-
-	free_a_printer_driver(driver);
-	free_a_printer(&printer,2);
-
-	return result;
-}
-
-/********************************************************************
- * construct_printer_info_3
- * fill a printer_info_3 struct
- ********************************************************************/
-
-static WERROR construct_printer_driver_info_3(TALLOC_CTX *mem_ctx,
-					      struct spoolss_DriverInfo3 *r,
-					      int snum,
-					      const char *servername,
-					      const char *architecture,
-					      uint32_t version)
-{
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
-	struct spoolss_DriverInfo8 *driver;
-	WERROR status;
-	ZERO_STRUCT(driver);
-
-	status=get_a_printer(NULL, &printer, 2, lp_const_servicename(snum) );
-	DEBUG(8,("construct_printer_driver_info_3: status: %s\n", win_errstr(status)));
-	if (!W_ERROR_IS_OK(status))
-		return WERR_INVALID_PRINTER_NAME;
-
-	status = get_a_printer_driver(mem_ctx, &driver, printer->info_2->drivername, architecture, version);
-	DEBUG(8,("construct_printer_driver_info_3: status: %s\n", win_errstr(status)));
-
-#if 0	/* JERRY */
-
-	/*
-	 * I put this code in during testing.  Helpful when commenting out the
-	 * support for DRIVER_INFO_6 in regards to win2k.  Not needed in general
-	 * as win2k always queries the driver using an infor level of 6.
-	 * I've left it in (but ifdef'd out) because I'll probably
-	 * use it in experimentation again in the future.   --jerry 22/01/2002
-	 */
-
-	if (!W_ERROR_IS_OK(status)) {
-		/*
-		 * Is this a W2k client ?
-		 */
-		if (version == 3) {
-			/* Yes - try again with a WinNT driver. */
-			version = 2;
-			status=get_a_printer_driver(&driver, 3, printer->info_2->drivername, architecture, version);
-			DEBUG(8,("construct_printer_driver_info_3: status: %s\n", win_errstr(status)));
-		}
-#endif
-
-		if (!W_ERROR_IS_OK(status)) {
-			free_a_printer(&printer,2);
-			return WERR_UNKNOWN_PRINTER_DRIVER;
-		}
-
-#if 0	/* JERRY */
-	}
-#endif
-
-
-	status = fill_printer_driver_info3(mem_ctx, r, driver, servername);
-
-	free_a_printer_driver(driver);
-	free_a_printer(&printer,2);
-
-	return status;
-}
-
-/********************************************************************
- * construct_printer_info_4
- * fill a printer_info_4 struct
- ********************************************************************/
-
-static WERROR construct_printer_driver_info_4(TALLOC_CTX *mem_ctx,
-					      struct spoolss_DriverInfo4 *r,
-					      int snum,
-					      const char *servername,
-					      const char *architecture,
-					      uint32_t version)
-{
-	NT_PRINTER_INFO_LEVEL 		*printer = NULL;
-	struct spoolss_DriverInfo8 *driver;
-	WERROR 				status;
-
-	status=get_a_printer(NULL, &printer, 2, lp_const_servicename(snum) );
-
-	DEBUG(8,("construct_printer_driver_info_4: status: %s\n", win_errstr(status)));
-
-	if (!W_ERROR_IS_OK(status))
-		return WERR_INVALID_PRINTER_NAME;
-
-	status = get_a_printer_driver(mem_ctx, &driver, printer->info_2->drivername, architecture, version);
-
-	DEBUG(8,("construct_printer_driver_info_4: status: %s\n", win_errstr(status)));
-
-	if (!W_ERROR_IS_OK(status))
-	{
-		/*
-		 * Is this a W2k client ?
-		 */
-
-		if (version < 3) {
-			free_a_printer(&printer,2);
-			return WERR_UNKNOWN_PRINTER_DRIVER;
-		}
-
-		/* Yes - try again with a WinNT driver. */
-		version = 2;
-		status = get_a_printer_driver(mem_ctx, &driver, printer->info_2->drivername, architecture, version);
-		DEBUG(8,("construct_printer_driver_info_4: status: %s\n", win_errstr(status)));
-		if (!W_ERROR_IS_OK(status)) {
-			free_a_printer(&printer,2);
-			return WERR_UNKNOWN_PRINTER_DRIVER;
-		}
-	}
-
-	status = fill_printer_driver_info4(mem_ctx, r, driver, servername);
-
-	free_a_printer(&printer,2);
-	free_a_printer_driver(driver);
-
-	return status;
-}
-
-/********************************************************************
- * construct_printer_info_5
- * fill a printer_info_5 struct
- ********************************************************************/
-
-static WERROR construct_printer_driver_info_5(TALLOC_CTX *mem_ctx,
-					      struct spoolss_DriverInfo5 *r,
-					      int snum,
-					      const char *servername,
-					      const char *architecture,
-					      uint32_t version)
-{
-	NT_PRINTER_INFO_LEVEL 		*printer = NULL;
-	struct spoolss_DriverInfo8 *driver;
-	WERROR 				status;
-
-	status=get_a_printer(NULL, &printer, 2, lp_const_servicename(snum) );
-
-	DEBUG(8,("construct_printer_driver_info_5: status: %s\n", win_errstr(status)));
-
-	if (!W_ERROR_IS_OK(status))
-		return WERR_INVALID_PRINTER_NAME;
-
-	status = get_a_printer_driver(mem_ctx, &driver, printer->info_2->drivername, architecture, version);
-
-	DEBUG(8,("construct_printer_driver_info_5: status: %s\n", win_errstr(status)));
-
-	if (!W_ERROR_IS_OK(status))
-	{
-		/*
-		 * Is this a W2k client ?
-		 */
-
-		if (version < 3) {
-			free_a_printer(&printer,2);
-			return WERR_UNKNOWN_PRINTER_DRIVER;
-		}
-
-		/* Yes - try again with a WinNT driver. */
-		version = 2;
-		status = get_a_printer_driver(mem_ctx, &driver, printer->info_2->drivername, architecture, version);
-		DEBUG(8,("construct_printer_driver_info_5: status: %s\n", win_errstr(status)));
-		if (!W_ERROR_IS_OK(status)) {
-			free_a_printer(&printer,2);
-			return WERR_UNKNOWN_PRINTER_DRIVER;
-		}
-	}
-
-	status = fill_printer_driver_info5(mem_ctx, r, driver, servername);
-
-	free_a_printer(&printer,2);
-	free_a_printer_driver(driver);
-
-	return status;
-}
-
-/********************************************************************
- * construct_printer_info_6
- * fill a printer_info_6 struct
- ********************************************************************/
-
-static WERROR construct_printer_driver_info_6(TALLOC_CTX *mem_ctx,
-					      struct spoolss_DriverInfo6 *r,
-					      int snum,
-					      const char *servername,
-					      const char *architecture,
-					      uint32_t version)
-{
-	NT_PRINTER_INFO_LEVEL 		*printer = NULL;
-	struct spoolss_DriverInfo8 *driver;
-	WERROR 				status;
-
-	status=get_a_printer(NULL, &printer, 2, lp_const_servicename(snum) );
-
-	DEBUG(8,("construct_printer_driver_info_6: status: %s\n", win_errstr(status)));
-
-	if (!W_ERROR_IS_OK(status))
-		return WERR_INVALID_PRINTER_NAME;
-
-	status = get_a_printer_driver(mem_ctx, &driver, printer->info_2->drivername, architecture, version);
-
-	DEBUG(8,("construct_printer_driver_info_6: status: %s\n", win_errstr(status)));
-
-	if (!W_ERROR_IS_OK(status))
-	{
-		/*
-		 * Is this a W2k client ?
-		 */
-
-		if (version < 3) {
-			free_a_printer(&printer,2);
-			return WERR_UNKNOWN_PRINTER_DRIVER;
-		}
-
-		/* Yes - try again with a WinNT driver. */
-		version = 2;
-		status = get_a_printer_driver(mem_ctx, &driver, printer->info_2->drivername, architecture, version);
-		DEBUG(8,("construct_printer_driver_info_6: status: %s\n", win_errstr(status)));
-		if (!W_ERROR_IS_OK(status)) {
-			free_a_printer(&printer,2);
-			return WERR_UNKNOWN_PRINTER_DRIVER;
-		}
-	}
-
-	status = fill_printer_driver_info6(mem_ctx, r, driver, servername);
-
-	free_a_printer(&printer,2);
-	free_a_printer_driver(driver);
-
-	return status;
-}
-
-/********************************************************************
- * construct_printer_info_8
- * fill a printer_info_8 struct
- ********************************************************************/
-
-static WERROR construct_printer_driver_info_8(TALLOC_CTX *mem_ctx,
-					      struct spoolss_DriverInfo8 *r,
-					      int snum,
-					      const char *servername,
-					      const char *architecture,
-					      uint32_t version)
-{
-	NT_PRINTER_INFO_LEVEL 		*printer = NULL;
-	struct spoolss_DriverInfo8 *driver;
-	WERROR 				status;
-
-	status=get_a_printer(NULL, &printer, 2, lp_const_servicename(snum) );
-
-	DEBUG(8,("construct_printer_driver_info_8: status: %s\n", win_errstr(status)));
-
-	if (!W_ERROR_IS_OK(status))
-		return WERR_INVALID_PRINTER_NAME;
-
-	status = get_a_printer_driver(mem_ctx, &driver, printer->info_2->drivername, architecture, version);
-
-	DEBUG(8,("construct_printer_driver_info_8: status: %s\n", win_errstr(status)));
-
-	if (!W_ERROR_IS_OK(status))
-	{
-		/*
-		 * Is this a W2k client ?
-		 */
-
-		if (version < 3) {
-			free_a_printer(&printer,2);
-			return WERR_UNKNOWN_PRINTER_DRIVER;
-		}
-
-		/* Yes - try again with a WinNT driver. */
-		version = 2;
-		status = get_a_printer_driver(mem_ctx, &driver, printer->info_2->drivername, architecture, version);
-		DEBUG(8,("construct_printer_driver_info_8: status: %s\n", win_errstr(status)));
-		if (!W_ERROR_IS_OK(status)) {
-			free_a_printer(&printer,2);
-			return WERR_UNKNOWN_PRINTER_DRIVER;
-		}
-	}
-
-	status = fill_printer_driver_info8(mem_ctx, r, driver, servername);
-
-	free_a_printer(&printer,2);
-	free_a_printer_driver(driver);
-
-	return status;
-}
-
-/********************************************************************
- * construct_printer_info_101
- * fill a printer_info_101 struct
- ********************************************************************/
-
-static WERROR construct_printer_driver_info_101(TALLOC_CTX *mem_ctx,
-						struct spoolss_DriverInfo101 *r,
-						int snum,
-						const char *servername,
-						const char *architecture,
-						uint32_t version)
-{
-	NT_PRINTER_INFO_LEVEL 		*printer = NULL;
-	struct spoolss_DriverInfo8 *driver;
-	WERROR 				result;
 
 	result = get_a_printer(NULL, &printer, 2, lp_const_servicename(snum));
 
-	DEBUG(8,("construct_printer_driver_info_101: status: %s\n",
+	DEBUG(8,("construct_printer_driver_info_level: status: %s\n",
 		win_errstr(result)));
 
 	if (!W_ERROR_IS_OK(result)) {
@@ -5393,7 +5038,7 @@ static WERROR construct_printer_driver_info_101(TALLOC_CTX *mem_ctx,
 	result = get_a_printer_driver(mem_ctx, &driver, printer->info_2->drivername,
 				      architecture, version);
 
-	DEBUG(8,("construct_printer_driver_info_101: status: %s\n",
+	DEBUG(8,("construct_printer_driver_info_level: status: %s\n",
 		win_errstr(result)));
 
 	if (!W_ERROR_IS_OK(result)) {
@@ -5410,7 +5055,7 @@ static WERROR construct_printer_driver_info_101(TALLOC_CTX *mem_ctx,
 		version = 2;
 		result = get_a_printer_driver(mem_ctx, &driver, printer->info_2->drivername,
 					      architecture, version);
-		DEBUG(8,("construct_printer_driver_info_6: status: %s\n",
+		DEBUG(8,("construct_printer_driver_level: status: %s\n",
 			win_errstr(result)));
 		if (!W_ERROR_IS_OK(result)) {
 			free_a_printer(&printer, 2);
@@ -5418,7 +5063,35 @@ static WERROR construct_printer_driver_info_101(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	result = fill_printer_driver_info101(mem_ctx, r, driver, servername);
+	switch (level) {
+	case 1:
+		result = fill_printer_driver_info1(mem_ctx, &r->info1, driver, servername, architecture);
+		break;
+	case 2:
+		result = fill_printer_driver_info2(mem_ctx, &r->info2, driver, servername);
+		break;
+	case 3:
+		result = fill_printer_driver_info3(mem_ctx, &r->info3, driver, servername);
+		break;
+	case 4:
+		result = fill_printer_driver_info4(mem_ctx, &r->info4, driver, servername);
+		break;
+	case 5:
+		result = fill_printer_driver_info5(mem_ctx, &r->info5, driver, servername);
+		break;
+	case 6:
+		result = fill_printer_driver_info6(mem_ctx, &r->info6, driver, servername);
+		break;
+	case 8:
+		result = fill_printer_driver_info8(mem_ctx, &r->info8, driver, servername);
+		break;
+	case 101:
+		result = fill_printer_driver_info101(mem_ctx, &r->info101, driver, servername);
+		break;
+	default:
+		result = WERR_UNKNOWN_LEVEL;
+		break;
+	}
 
 	free_a_printer(&printer, 2);
 	free_a_printer_driver(driver);
@@ -5462,76 +5135,11 @@ WERROR _spoolss_GetPrinterDriver2(pipes_struct *p,
 		return WERR_BADFID;
 	}
 
-	switch (r->in.level) {
-	case 1:
-		result = construct_printer_driver_info_1(p->mem_ctx,
-							 &r->out.info->info1,
-							 snum,
-							 servername,
-							 r->in.architecture,
-							 r->in.client_major_version);
-		break;
-	case 2:
-		result = construct_printer_driver_info_2(p->mem_ctx,
-							 &r->out.info->info2,
-							 snum,
-							 servername,
-							 r->in.architecture,
-							 r->in.client_major_version);
-		break;
-	case 3:
-		result = construct_printer_driver_info_3(p->mem_ctx,
-							 &r->out.info->info3,
-							 snum,
-							 servername,
-							 r->in.architecture,
-							 r->in.client_major_version);
-		break;
-	case 4:
-		result = construct_printer_driver_info_4(p->mem_ctx,
-							 &r->out.info->info4,
-							 snum,
-							 servername,
-							 r->in.architecture,
-							 r->in.client_major_version);
-		break;
-	case 5:
-		result = construct_printer_driver_info_5(p->mem_ctx,
-							 &r->out.info->info5,
-							 snum,
-							 servername,
-							 r->in.architecture,
-							 r->in.client_major_version);
-		break;
-	case 6:
-		result = construct_printer_driver_info_6(p->mem_ctx,
-							 &r->out.info->info6,
-							 snum,
-							 servername,
-							 r->in.architecture,
-							 r->in.client_major_version);
-		break;
-	case 8:
-		result = construct_printer_driver_info_8(p->mem_ctx,
-							 &r->out.info->info8,
-							 snum,
-							 servername,
-							 r->in.architecture,
-							 r->in.client_major_version);
-		break;
-	case 101:
-		result = construct_printer_driver_info_101(p->mem_ctx,
-							   &r->out.info->info101,
-							   snum,
-							   servername,
-							   r->in.architecture,
-							   r->in.client_major_version);
-		break;
-	default:
-		result = WERR_UNKNOWN_LEVEL;
-		break;
-	}
-
+	result = construct_printer_driver_info_level(p->mem_ctx, r->in.level,
+						     r->out.info, snum,
+						     servername,
+						     r->in.architecture,
+						     r->in.client_major_version);
 	if (!W_ERROR_IS_OK(result)) {
 		TALLOC_FREE(r->out.info);
 		return result;
