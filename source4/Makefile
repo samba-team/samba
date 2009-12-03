@@ -11,7 +11,6 @@ include mkconfig.mk
 pidldir := $(srcdir)/../pidl
 
 basedir = $(prefix)
-torturedir = ../lib/torture
 swatdir = $(datadir)/swat
 setupdir = $(datadir)/setup
 ncalrpcdir = $(localstatedir)/ncalrpc
@@ -182,7 +181,6 @@ showlayout::
 	@echo '  setupdir:    $(setupdir)'
 	@echo '  swatdir:     $(swatdir)'
 	@echo '  mandir:      $(mandir)'
-	@echo '  torturedir:  $(torturedir)'
 	@echo '  datadir:     $(datadir)'
 	@echo '  winbindd_socket_dir:  $(winbindd_socket_dir)'
 	@echo '  ntp_signd_socket_dir:  $(ntp_signd_socket_dir)'
@@ -210,7 +208,6 @@ installdirs::
 		$(DESTDIR)$(basedir) \
 		$(DESTDIR)$(bindir) \
 		$(DESTDIR)$(sbindir) \
-		$(DESTDIR)$(torturedir) \
 		$(DESTDIR)$(libdir) \
 		$(DESTDIR)$(modulesdir) \
 		$(DESTDIR)$(modulesdir)/ldb \
