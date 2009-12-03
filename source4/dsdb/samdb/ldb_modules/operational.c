@@ -88,7 +88,7 @@ static int construct_canonical_name(struct ldb_module *module,
 	char *canonicalName;
 	canonicalName = ldb_dn_canonical_string(msg, msg->dn);
 	if (canonicalName == NULL) {
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	return ldb_msg_add_steal_string(msg, "canonicalName", canonicalName);
 }
@@ -255,13 +255,13 @@ static int operational_search_post_process(struct ldb_module *module,
 
 			/* construct the new attribute, using either a supplied
 			   constructor or a simple copy */
-			if (search_sub[i].constructor) {
-				if (search_sub[i].constructor(module, msg) != 0) {
+			if (search_sub[i].constructor != NULL) {
+				if (search_sub[i].constructor(module, msg) != LDB_SUCCESS) {
 					goto failed;
 				}
 			} else if (ldb_msg_copy_attr(msg,
 						     search_sub[i].replace,
-						     search_sub[i].attr) != 0) {
+						     search_sub[i].attr) != LDB_SUCCESS) {
 				goto failed;
 			}
 
