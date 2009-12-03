@@ -625,6 +625,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_TRANS2_ACTIVE           = 116,
 		    CTDB_CONTROL_GET_LOG		 = 117,
 		    CTDB_CONTROL_CLEAR_LOG		 = 118,
+		    CTDB_CONTROL_TRANS3_COMMIT           = 119,
 };	
 
 /*
@@ -1424,6 +1425,10 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 				   bool *async_reply);
 int32_t ctdb_control_trans2_commit(struct ctdb_context *ctdb, 
 				   struct ctdb_req_control *c, 
+				   TDB_DATA recdata, bool *async_reply);
+
+int32_t ctdb_control_trans3_commit(struct ctdb_context *ctdb,
+				   struct ctdb_req_control *c,
 				   TDB_DATA recdata, bool *async_reply);
 
 int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb, uint32_t id);

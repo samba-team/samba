@@ -242,6 +242,91 @@ int32_t ctdb_control_trans2_commit(struct ctdb_context *ctdb,
 }
 
 
+/*
+ * Store a set of persistent records.
+ * This is used to roll out a transaction to all nodes.
+ */
+int32_t ctdb_control_trans3_commit(struct ctdb_context *ctdb,
+				   struct ctdb_req_control *c,
+				   TDB_DATA recdata, bool *async_reply)
+{
+	struct ctdb_client *client;
+	struct ctdb_persistent_state *state;
+	int i;
+	struct ctdb_marshall_buffer *m = (struct ctdb_marshall_buffer *)recdata.dptr;
+	struct ctdb_db_context *ctdb_db;
+
+	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
+		DEBUG(DEBUG_INFO,("rejecting ctdb_control_trans3_commit when recovery active\n"));
+		return -1;
+	}
+
+	ctdb_db = find_ctdb_db(ctdb, m->db_id);
+	if (ctdb_db == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control_trans3_commit: "
+				 "Unknown database db_id[0x%08x]\n", m->db_id));
+		return -1;
+	}
+
+	client = ctdb_reqid_find(ctdb, c->client_id, struct ctdb_client);
+	if (client == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " can not match persistent_store "
+				 "to a client. Returning error\n"));
+		return -1;
+	}
+
+	state = talloc_zero(ctdb, struct ctdb_persistent_state);
+	CTDB_NO_MEMORY(ctdb, state);
+
+	state->ctdb = ctdb;
+	state->c    = c;
+
+	for (i = 0; i < ctdb->vnn_map->size; i++) {
+		struct ctdb_node *node = ctdb->nodes[ctdb->vnn_map->map[i]];
+		int ret;
+
+		/* only send to active nodes */
+		if (node->flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
+
+		ret = ctdb_daemon_send_control(ctdb, node->pnn, 0,
+					       CTDB_CONTROL_UPDATE_RECORD,
+					       c->client_id, 0, recdata,
+					       ctdb_persistent_callback,
+					       state);
+		if (ret == -1) {
+			DEBUG(DEBUG_ERR,("Unable to send "
+					 "CTDB_CONTROL_UPDATE_RECORD "
+					 "to pnn %u\n", node->pnn));
+			talloc_free(state);
+			return -1;
+		}
+
+		state->num_pending++;
+		state->num_sent++;
+	}
+
+	if (state->num_pending == 0) {
+		talloc_free(state);
+		return 0;
+	}
+
+	/* we need to wait for the replies */
+	*async_reply = true;
+
+	/* need to keep the control structure around */
+	talloc_steal(state, c);
+
+	/* but we won't wait forever */
+	event_add_timed(ctdb->ev, state,
+			timeval_current_ofs(ctdb->tunable.control_timeout, 0),
+			ctdb_persistent_store_timeout, state);
+
+	return 0;
+}
+
+
 struct ctdb_persistent_write_state {
 	struct ctdb_db_context *ctdb_db;
 	struct ctdb_marshall_buffer *m;

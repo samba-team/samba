@@ -428,6 +428,9 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
 		return ctdb_control_trans2_active(ctdb, c, *(uint32_t *)indata.dptr);
 
+	case CTDB_CONTROL_TRANS3_COMMIT:
+		return ctdb_control_trans3_commit(ctdb, c, indata, async_reply);
+
 	case CTDB_CONTROL_RECD_PING:
 		CHECK_CONTROL_DATA_SIZE(0);
 		return ctdb_control_recd_ping(ctdb);
