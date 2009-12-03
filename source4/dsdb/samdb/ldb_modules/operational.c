@@ -70,6 +70,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "param/param.h"
 #include "dsdb/samdb/samdb.h"
+#include "dsdb/samdb/ldb_modules/util.h"
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
@@ -118,32 +119,42 @@ static int construct_primary_group_token(struct ldb_module *module,
 }
 
 static int construct_parent_guid(struct ldb_module *module,
-		struct ldb_message *msg)
+				 struct ldb_message *msg)
 {
-	struct ldb_context *ldb;
-	struct GUID parent_guid;
+	struct ldb_result *res;
+	const struct ldb_val *parent_guid;
+	const char *attrs[] = { "objectGUID", NULL };
 	int ret;
 
-	ldb = ldb_module_get_ctx(module);
+	/* TODO:  In the future, this needs to honour the partition boundaries */
+	struct ldb_dn *parent_dn = ldb_dn_get_parent(msg, msg->dn);
 
-	ret = dsdb_find_parentguid_by_dn(ldb, msg->dn, &parent_guid);
-
-
-	if (ret != LDB_SUCCESS){
-
-		/* if there is no parentGUID for this object, then return */
-		if (ret == LDB_ERR_NO_SUCH_OBJECT){
-			return LDB_SUCCESS;
-		}else{
-			return ret;
-		}
-
+	if (parent_dn == NULL){
+		DEBUG(4,(__location__ ": Failed to find parent for dn %s\n",
+					 ldb_dn_get_linearized(msg->dn)));
+		return LDB_SUCCESS;
 	}
 
-	ret = dsdb_msg_add_guid(msg, &parent_guid, "parentGUID");
+	ret = dsdb_module_search_dn(module, msg, &res, parent_dn, attrs, DSDB_SEARCH_SHOW_DELETED);
+	talloc_free(parent_dn);
+	/* if there is no parentGUID for this object, then return */
+	if (ret == LDB_ERR_NO_SUCH_OBJECT){
+		DEBUG(4,(__location__ ": Parent dn for %s does not exist \n",
+			 ldb_dn_get_linearized(msg->dn)));
+		return LDB_SUCCESS;
+	} else if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 
-	return ret;
+	parent_guid = ldb_msg_find_ldb_val(res->msgs[0], "objectGUID");
+	if (!parent_guid) {
+		talloc_free(res);
+		return LDB_SUCCESS;
+	}
 
+	talloc_steal(msg->elements, parent_guid->data);
+	talloc_free(res);
+	return ldb_msg_add_value(msg, "parentGUID", parent_guid, 0);
 }
 
 /*
