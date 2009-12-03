@@ -915,6 +915,8 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 	SMB_OFF_T currpos = SMB_VFS_LSEEK(fsp, 0, SEEK_CUR);
 	unsigned char zero_space[4096];
 	SMB_OFF_T space_to_write;
+	uint64_t space_avail;
+	uint64_t bsize,dfree,dsize;
 
 	if (currpos == -1)
 		return -1;
@@ -956,19 +958,14 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 #endif
 	/* available disk space is enough or not? */
 	space_to_write = len - st.st_ex_size;
-	if (lp_strict_allocate(SNUM(fsp->conn))){
-		uint64_t space_avail;
-		uint64_t bsize,dfree,dsize;
-
-		space_avail = get_dfree_info(fsp->conn,
-					     fsp->fsp_name->base_name, false,
-					     &bsize, &dfree, &dsize);
-		/* space_avail is 1k blocks */
-		if (space_avail == (uint64_t)-1 ||
-				((uint64_t)space_to_write/1024 > space_avail) ) {
-			errno = ENOSPC;
-			return -1;
-		}
+	space_avail = get_dfree_info(fsp->conn,
+				     fsp->fsp_name->base_name, false,
+				     &bsize,&dfree,&dsize);
+	/* space_avail is 1k blocks */
+	if (space_avail == (uint64_t)-1 ||
+			((uint64_t)space_to_write/1024 > space_avail) ) {
+		errno = ENOSPC;
+		return -1;
 	}
 
 	/* Write out the real space on disk. */
