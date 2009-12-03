@@ -5737,10 +5737,11 @@ static NTSTATUS smb_set_file_disposition_info(connection_struct *conn,
 		(unsigned int)dosmode,
 		(unsigned int)delete_on_close ));
 
-	status = can_set_delete_on_close(fsp, delete_on_close, dosmode);
- 
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	if (delete_on_close) {
+		status = can_set_delete_on_close(fsp, dosmode);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
 	/* The set is across all open files on this dev/inode pair. */

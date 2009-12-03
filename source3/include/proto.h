@@ -3486,8 +3486,7 @@ bool del_share_mode(struct share_mode_lock *lck, files_struct *fsp);
 void del_deferred_open_entry(struct share_mode_lock *lck, uint16 mid);
 bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp);
 bool downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp);
-NTSTATUS can_set_delete_on_close(files_struct *fsp, bool delete_on_close,
-				 uint32 dosmode);
+NTSTATUS can_set_delete_on_close(files_struct *fsp, uint32 dosmode);
 void set_delete_on_close_token(struct share_mode_lock *lck, const UNIX_USER_TOKEN *tok);
 void set_delete_on_close_lck(struct share_mode_lock *lck, bool delete_on_close, const UNIX_USER_TOKEN *tok);
 bool set_delete_on_close(files_struct *fsp, bool delete_on_close, const UNIX_USER_TOKEN *tok);
