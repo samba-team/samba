@@ -1670,6 +1670,10 @@ WERROR _spoolss_OpenPrinterEx(pipes_struct *p,
 			return WERR_BADFID;
 		}
 
+		if (r->in.access_mask == SEC_FLAG_MAXIMUM_ALLOWED) {
+			r->in.access_mask = PRINTER_ACCESS_ADMINISTER;
+		}
+
 		se_map_standard(&r->in.access_mask, &printer_std_mapping);
 
 		/* map an empty access mask to the minimum access mask */
