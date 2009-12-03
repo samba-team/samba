@@ -520,7 +520,21 @@ CTDB_CAPABILITY_RECMASTER=no
     </p><p>
       This is implemented in the 11.natgw eventscript. Please see the
       eventscript for further information.
-    </p></div></div><div class="refsect1" lang="en"><a name="id2475819"></a><h2>NOTIFICATION SCRIPT</h2><p>
+    </p></div><div class="refsect2" lang="en"><a name="id2475818"></a><h3>Removing/Changing NATGW at runtime</h3><p>
+      The following are the procedures to change/remove a NATGW configuration 
+      at runtime, without having to restart ctdbd.
+    </p><p>
+      If you want to remove NATGW completely from a node, use these steps:
+    </p><pre class="screen">
+1, Run 'CTDB_BASE=/etc/ctdb /etc/ctdb/events.d/11.natgw removenatgw'
+2, Then remove the configuration from /etc/sysconfig/ctdb
+    </pre><p>
+      If you want to change the NATGW configuration on a node :
+    </p><pre class="screen">
+1, Run 'CTDB_BASE=/etc/ctdb /etc/ctdb/events.d/11.natgw removenatgw'
+2, Then change the configuration in /etc/sysconfig/ctdb
+3, Run 'CTDB_BASE=/etc/ctdb /etc/ctdb/events.d/11.natgw updatenatgw'
+    </pre></div></div><div class="refsect1" lang="en"><a name="id2475856"></a><h2>NOTIFICATION SCRIPT</h2><p>
       Notification scripts are used with ctdb to have a call-out from ctdb
       to a user-specified script when certain state changes occur in ctdb.
       This is commonly to set up either sending SNMP traps or emails
@@ -532,17 +546,17 @@ CTDB_CAPABILITY_RECMASTER=no
       See /etc/ctdb/notify.sh for an example script.
     </p><p>
       CTDB currently generates notifications on these state changes:
-    </p><div class="refsect2" lang="en"><a name="id2475850"></a><h3>unhealthy</h3><p>
+    </p><div class="refsect2" lang="en"><a name="id2475887"></a><h3>unhealthy</h3><p>
       This call-out is triggered when the node changes to UNHEALTHY state.
-    </p></div><div class="refsect2" lang="en"><a name="id2475860"></a><h3>healthy</h3><p>
+    </p></div><div class="refsect2" lang="en"><a name="id2475897"></a><h3>healthy</h3><p>
       This call-out is triggered when the node changes to HEALTHY state.
-    </p></div><div class="refsect2" lang="en"><a name="id2475870"></a><h3>startup</h3><p>
+    </p></div><div class="refsect2" lang="en"><a name="id2475907"></a><h3>startup</h3><p>
       This call-out is triggered when ctdb has started up and all managed services are up and running.
-    </p></div></div><div class="refsect1" lang="en"><a name="id2475882"></a><h2>ClamAV Daemon</h2><p>
+    </p></div></div><div class="refsect1" lang="en"><a name="id2475919"></a><h2>ClamAV Daemon</h2><p>
 CTDB has support to manage the popular anti-virus daemon ClamAV.
 This support is implemented through the
 eventscript : /etc/ctdb/events.d/31.clamd.
-</p><div class="refsect2" lang="en"><a name="id2475893"></a><h3>Configuration</h3><p>
+</p><div class="refsect2" lang="en"><a name="id2475930"></a><h3>Configuration</h3><p>
 Start by configuring CLAMAV normally and test that it works. Once this is
 done, copy the configuration files over to all the nodes so that all nodes
 share identical CLAMAV configurations.
@@ -571,10 +585,10 @@ Once you have restarted CTDBD, use
 ctdb scriptstatus
 </pre><p>
 and verify that the 31.clamd eventscript is listed and that it was executed successfully.
-</p></div></div><div class="refsect1" lang="en"><a name="id2475952"></a><h2>SEE ALSO</h2><p>
+</p></div></div><div class="refsect1" lang="en"><a name="id2475990"></a><h2>SEE ALSO</h2><p>
       ctdb(1), onnode(1)
       <a class="ulink" href="http://ctdb.samba.org/" target="_top">http://ctdb.samba.org/</a>
-    </p></div><div class="refsect1" lang="en"><a name="id2475965"></a><h2>COPYRIGHT/LICENSE</h2><div class="literallayout"><p><br>
+    </p></div><div class="refsect1" lang="en"><a name="id2476003"></a><h2>COPYRIGHT/LICENSE</h2><div class="literallayout"><p><br>
 Copyright (C) Andrew Tridgell 2007<br>
 Copyright (C) Ronnie sahlberg 2007<br>
 <br>

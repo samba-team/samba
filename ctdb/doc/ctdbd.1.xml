@@ -944,6 +944,31 @@ CTDB_CAPABILITY_RECMASTER=no
 
     </refsect2>
 
+    <refsect2><title>Removing/Changing NATGW at runtime</title>
+    <para>
+      The following are the procedures to change/remove a NATGW configuration 
+      at runtime, without having to restart ctdbd.
+    </para>
+
+    <para>
+      If you want to remove NATGW completely from a node, use these steps:
+    </para>
+    <screen format="linespecific">
+1, Run 'CTDB_BASE=/etc/ctdb /etc/ctdb/events.d/11.natgw removenatgw'
+2, Then remove the configuration from /etc/sysconfig/ctdb
+    </screen>
+
+    <para>
+      If you want to change the NATGW configuration on a node :
+    </para>
+    <screen format="linespecific">
+1, Run 'CTDB_BASE=/etc/ctdb /etc/ctdb/events.d/11.natgw removenatgw'
+2, Then change the configuration in /etc/sysconfig/ctdb
+3, Run 'CTDB_BASE=/etc/ctdb /etc/ctdb/events.d/11.natgw updatenatgw'
+    </screen>
+
+    </refsect2>
+
   </refsect1>
 
   <refsect1><title>NOTIFICATION SCRIPT</title>

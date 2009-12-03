@@ -1,11 +1,11 @@
 .\"     Title: ctdbd
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
-.\"      Date: 10/01/2009
+.\"      Date: 12/04/2009
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "CTDBD" "1" "10/01/2009" "" ""
+.TH "CTDBD" "1" "12/04/2009" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -517,6 +517,30 @@ The NAT\-GW node is assigned the CTDB_NATGW_PUBLIC_IP to the designated interfac
 All other nodes in the group are configured with a default route of metric 10 pointing to the designated NAT GW node\.
 .PP
 This is implemented in the 11\.natgw eventscript\. Please see the eventscript for further information\.
+.SS "Removing/Changing NATGW at runtime"
+.PP
+The following are the procedures to change/remove a NATGW configuration at runtime, without having to restart ctdbd\.
+.PP
+If you want to remove NATGW completely from a node, use these steps:
+.sp
+.RS 4
+.nf
+1, Run \'CTDB_BASE=/etc/ctdb /etc/ctdb/events\.d/11\.natgw removenatgw\'
+2, Then remove the configuration from /etc/sysconfig/ctdb
+    
+.fi
+.RE
+.PP
+If you want to change the NATGW configuration on a node :
+.sp
+.RS 4
+.nf
+1, Run \'CTDB_BASE=/etc/ctdb /etc/ctdb/events\.d/11\.natgw removenatgw\'
+2, Then change the configuration in /etc/sysconfig/ctdb
+3, Run \'CTDB_BASE=/etc/ctdb /etc/ctdb/events\.d/11\.natgw updatenatgw\'
+    
+.fi
+.RE
 .SH "NOTIFICATION SCRIPT"
 .PP
 Notification scripts are used with ctdb to have a call\-out from ctdb to a user\-specified script when certain state changes occur in ctdb\. This is commonly to set up either sending SNMP traps or emails when a node becomes unhealthy and similar\.
