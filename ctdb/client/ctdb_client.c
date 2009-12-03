@@ -3550,7 +3550,11 @@ again:
 		}		
 
 		if (ctdb_replay_transaction(h) != 0) {
-			DEBUG(DEBUG_ERR,(__location__ " Failed to replay transaction\n"));
+			DEBUG(DEBUG_ERR, (__location__ " Failed to replay "
+					  "transaction on db 0x%08x, "
+					  "failure control =%u\n",
+					  h->ctdb_db->db_id,
+					  (unsigned)failure_control));
 			ctdb_control(ctdb, CTDB_CURRENT_NODE, h->ctdb_db->db_id, 
 				     failure_control, CTDB_CTRL_FLAG_NOREPLY, 
 				     tdb_null, NULL, NULL, NULL, NULL, NULL);		
@@ -3565,7 +3569,11 @@ again:
 	/* do the real commit locally */
 	ret = tdb_transaction_commit(h->ctdb_db->ltdb->tdb);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to commit transaction\n"));
+		DEBUG(DEBUG_ERR, (__location__ " Failed to commit transaction "
+				  "on db id 0x%08x locally, "
+				  "failure_control=%u\n",
+				  h->ctdb_db->db_id,
+				  (unsigned)failure_control));
 		ctdb_control(ctdb, CTDB_CURRENT_NODE, h->ctdb_db->db_id, 
 			     failure_control, CTDB_CTRL_FLAG_NOREPLY, 
 			     tdb_null, NULL, NULL, NULL, NULL, NULL);		
