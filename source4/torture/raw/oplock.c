@@ -34,11 +34,11 @@
 		ret = false; \
 	}} while (0)
 
-#define CHECK_RANGE(v, min, max) do { \
-	if ((v) < (min) || (v) > (max)) { \
-		torture_result(tctx, TORTURE_FAIL, "(%s): wrong value for %s got %d - should be between %d and %d\n", \
-				__location__, #v, (int)v, (int)min, (int)max); \
-		ret = false; \
+#define CHECK_RANGE(v, min, max) do {					\
+	if ((v) < (min) || (v) > (max)) {				\
+		torture_warning(tctx, "(%s): wrong value for %s got "	\
+		    "%d - should be between %d and %d\n",		\
+		    __location__, #v, (int)v, (int)min, (int)max);	\
 	}} while (0)
 
 #define CHECK_STRMATCH(v, correct) do { \
@@ -2632,10 +2632,6 @@ static bool test_raw_oplock_batch22(struct torture_context *tctx, struct smbcli_
 	int timeout = torture_setting_int(tctx, "oplocktimeout", 30);
 	int te;
 
-	if (torture_setting_bool(tctx, "samba3", false)) {
-		torture_skip(tctx, "BATCH22 disabled against samba3\n");
-	}
-
 	if (!torture_setup_dir(cli1, BASEDIR)) {
 		return false;
 	}
@@ -2644,7 +2640,6 @@ static bool test_raw_oplock_batch22(struct torture_context *tctx, struct smbcli_
 	smbcli_unlink(cli1->tree, fname);
 
 	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
-
 	/*
 	  base ntcreatex parms
 	*/
@@ -2681,9 +2676,23 @@ static bool test_raw_oplock_batch22(struct torture_context *tctx, struct smbcli_
 	tv = timeval_current();
 	smbcli_oplock_handler(cli1->transport, oplock_handler_timeout, cli1->tree);
 	status = smb_raw_open(cli1->tree, tctx, &io);
-	CHECK_STATUS(tctx, status, NT_STATUS_SHARING_VIOLATION);
+
+	if (TARGET_IS_W2K3(tctx)) {
+		/* 2k3 has an issue here. xp/win7 are ok. */
+		CHECK_STATUS(tctx, status, NT_STATUS_SHARING_VIOLATION);
+	} else {
+		CHECK_STATUS(tctx, status, NT_STATUS_OK);
+	}
+
 	torture_wait_for_oplock_break(tctx);
 	te = (int)timeval_elapsed(&tv);
+
+	/*
+	 * Some servers detect clients that let oplocks timeout, so this check
+	 * only shows a warning message instead failing the test to eliminate
+	 * failures from repeated runs of the test.  This isn't ideal, but
+	 * it's better than not running the test at all.
+	 */
 	CHECK_RANGE(te, timeout - 1, timeout + 15);
 
 	CHECK_VAL(break_info.count, 1);
@@ -2698,7 +2707,13 @@ static bool test_raw_oplock_batch22(struct torture_context *tctx, struct smbcli_
 	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 	status = smb_raw_open(cli1->tree, tctx, &io);
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
-	CHECK_VAL(io.ntcreatex.out.oplock_level, LEVEL_II_OPLOCK_RETURN);
+	if (TARGET_IS_SAMBA3(tctx)) {
+		/* samba3 doesn't grant additional oplocks to bad clients. */
+		CHECK_VAL(io.ntcreatex.out.oplock_level, NO_OPLOCK_RETURN);
+	} else {
+		CHECK_VAL(io.ntcreatex.out.oplock_level,
+			  LEVEL_II_OPLOCK_RETURN);
+	}
 	torture_wait_for_oplock_break(tctx);
 	te = (int)timeval_elapsed(&tv);
 	/* it should come in without delay */
