@@ -5283,264 +5283,6 @@ void reply_mkdir(struct smb_request *req)
 }
 
 /****************************************************************************
- Static function used by reply_rmdir to delete an entire directory
- tree recursively. Return True on ok, False on fail.
-****************************************************************************/
-
-static bool recursive_rmdir(TALLOC_CTX *ctx,
-			connection_struct *conn,
-			struct smb_filename *smb_dname)
-{
-	const char *dname = NULL;
-	char *talloced = NULL;
-	bool ret = True;
-	long offset = 0;
-	SMB_STRUCT_STAT st;
-	struct smb_Dir *dir_hnd;
-
-	SMB_ASSERT(!is_ntfs_stream_smb_fname(smb_dname));
-
-	dir_hnd = OpenDir(talloc_tos(), conn, smb_dname->base_name, NULL, 0);
-	if(dir_hnd == NULL)
-		return False;
-
-	while((dname = ReadDirName(dir_hnd, &offset, &st, &talloced))) {
-		struct smb_filename *smb_dname_full = NULL;
-		char *fullname = NULL;
-		bool do_break = true;
-		NTSTATUS status;
-
-		if (ISDOT(dname) || ISDOTDOT(dname)) {
-			TALLOC_FREE(talloced);
-			continue;
-		}
-
-		if (!is_visible_file(conn, smb_dname->base_name, dname, &st,
-				     false)) {
-			TALLOC_FREE(talloced);
-			continue;
-		}
-
-		/* Construct the full name. */
-		fullname = talloc_asprintf(ctx,
-				"%s/%s",
-				smb_dname->base_name,
-				dname);
-		if (!fullname) {
-			errno = ENOMEM;
-			goto err_break;
-		}
-
-		status = create_synthetic_smb_fname(talloc_tos(), fullname,
-						    NULL, NULL,
-						    &smb_dname_full);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto err_break;
-		}
-
-		if(SMB_VFS_LSTAT(conn, smb_dname_full) != 0) {
-			goto err_break;
-		}
-
-		if(smb_dname_full->st.st_ex_mode & S_IFDIR) {
-			if(!recursive_rmdir(ctx, conn, smb_dname_full)) {
-				goto err_break;
-			}
-			if(SMB_VFS_RMDIR(conn,
-					 smb_dname_full->base_name) != 0) {
-				goto err_break;
-			}
-		} else if(SMB_VFS_UNLINK(conn, smb_dname_full) != 0) {
-			goto err_break;
-		}
-
-		/* Successful iteration. */
-		do_break = false;
-
-	 err_break:
-		TALLOC_FREE(smb_dname_full);
-		TALLOC_FREE(fullname);
-		TALLOC_FREE(talloced);
-		if (do_break) {
-			ret = false;
-			break;
-		}
-	}
-	TALLOC_FREE(dir_hnd);
-	return ret;
-}
-
-/****************************************************************************
- The internals of the rmdir code - called elsewhere.
-****************************************************************************/
-
-NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
-			 connection_struct *conn,
-			 struct smb_filename *smb_dname)
-{
-	int ret;
-
-	SMB_ASSERT(!is_ntfs_stream_smb_fname(smb_dname));
-
-	/* Might be a symlink. */
-	if(SMB_VFS_LSTAT(conn, smb_dname) != 0) {
-		return map_nt_error_from_unix(errno);
-	}
-
-	if (S_ISLNK(smb_dname->st.st_ex_mode)) {
-		/* Is what it points to a directory ? */
-		if(SMB_VFS_STAT(conn, smb_dname) != 0) {
-			return map_nt_error_from_unix(errno);
-		}
-		if (!(S_ISDIR(smb_dname->st.st_ex_mode))) {
-			return NT_STATUS_NOT_A_DIRECTORY;
-		}
-		ret = SMB_VFS_UNLINK(conn, smb_dname);
-	} else {
-		ret = SMB_VFS_RMDIR(conn, smb_dname->base_name);
-	}
-	if (ret == 0) {
-		notify_fname(conn, NOTIFY_ACTION_REMOVED,
-			     FILE_NOTIFY_CHANGE_DIR_NAME,
-			     smb_dname->base_name);
-		return NT_STATUS_OK;
-	}
-
-	if(((errno == ENOTEMPTY)||(errno == EEXIST)) && lp_veto_files(SNUM(conn))) {
-		/*
-		 * Check to see if the only thing in this directory are
-		 * vetoed files/directories. If so then delete them and
-		 * retry. If we fail to delete any of them (and we *don't*
-		 * do a recursive delete) then fail the rmdir.
-		 */
-		SMB_STRUCT_STAT st;
-		const char *dname = NULL;
-		char *talloced = NULL;
-		long dirpos = 0;
-		struct smb_Dir *dir_hnd = OpenDir(talloc_tos(), conn,
-						  smb_dname->base_name, NULL,
-						  0);
-
-		if(dir_hnd == NULL) {
-			errno = ENOTEMPTY;
-			goto err;
-		}
-
-		while ((dname = ReadDirName(dir_hnd, &dirpos, &st,
-					    &talloced)) != NULL) {
-			if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0)) {
-				TALLOC_FREE(talloced);
-				continue;
-			}
-			if (!is_visible_file(conn, smb_dname->base_name, dname,
-					     &st, false)) {
-				TALLOC_FREE(talloced);
-				continue;
-			}
-			if(!IS_VETO_PATH(conn, dname)) {
-				TALLOC_FREE(dir_hnd);
-				TALLOC_FREE(talloced);
-				errno = ENOTEMPTY;
-				goto err;
-			}
-			TALLOC_FREE(talloced);
-		}
-
-		/* We only have veto files/directories.
-		 * Are we allowed to delete them ? */
-
-		if(!lp_recursive_veto_delete(SNUM(conn))) {
-			TALLOC_FREE(dir_hnd);
-			errno = ENOTEMPTY;
-			goto err;
-		}
-
-		/* Do a recursive delete. */
-		RewindDir(dir_hnd,&dirpos);
-		while ((dname = ReadDirName(dir_hnd, &dirpos, &st,
-					    &talloced)) != NULL) {
-			struct smb_filename *smb_dname_full = NULL;
-			char *fullname = NULL;
-			bool do_break = true;
-			NTSTATUS status;
-
-			if (ISDOT(dname) || ISDOTDOT(dname)) {
-				TALLOC_FREE(talloced);
-				continue;
-			}
-			if (!is_visible_file(conn, smb_dname->base_name, dname,
-					     &st, false)) {
-				TALLOC_FREE(talloced);
-				continue;
-			}
-
-			fullname = talloc_asprintf(ctx,
-					"%s/%s",
-					smb_dname->base_name,
-					dname);
-
-			if(!fullname) {
-				errno = ENOMEM;
-				goto err_break;
-			}
-
-			status = create_synthetic_smb_fname(talloc_tos(),
-							    fullname, NULL,
-							    NULL,
-							    &smb_dname_full);
-			if (!NT_STATUS_IS_OK(status)) {
-				errno = map_errno_from_nt_status(status);
-				goto err_break;
-			}
-
-			if(SMB_VFS_LSTAT(conn, smb_dname_full) != 0) {
-				goto err_break;
-			}
-			if(smb_dname_full->st.st_ex_mode & S_IFDIR) {
-				if(!recursive_rmdir(ctx, conn,
-						    smb_dname_full)) {
-					goto err_break;
-				}
-				if(SMB_VFS_RMDIR(conn,
-					smb_dname_full->base_name) != 0) {
-					goto err_break;
-				}
-			} else if(SMB_VFS_UNLINK(conn, smb_dname_full) != 0) {
-				goto err_break;
-			}
-
-			/* Successful iteration. */
-			do_break = false;
-
-		 err_break:
-			TALLOC_FREE(fullname);
-			TALLOC_FREE(smb_dname_full);
-			TALLOC_FREE(talloced);
-			if (do_break)
-				break;
-		}
-		TALLOC_FREE(dir_hnd);
-		/* Retry the rmdir */
-		ret = SMB_VFS_RMDIR(conn, smb_dname->base_name);
-	}
-
-  err:
-
-	if (ret != 0) {
-		DEBUG(3,("rmdir_internals: couldn't remove directory %s : "
-			 "%s\n", smb_fname_str_dbg(smb_dname),
-			 strerror(errno)));
-		return map_nt_error_from_unix(errno);
-	}
-
-	notify_fname(conn, NOTIFY_ACTION_REMOVED,
-		     FILE_NOTIFY_CHANGE_DIR_NAME,
-		     smb_dname->base_name);
-
-	return NT_STATUS_OK;
-}
-
-/****************************************************************************
  Reply to a rmdir.
 ****************************************************************************/
 
@@ -5551,6 +5293,8 @@ void reply_rmdir(struct smb_request *req)
 	char *directory = NULL;
 	NTSTATUS status;
 	TALLOC_CTX *ctx = talloc_tos();
+	files_struct *fsp = NULL;
+	int info = 0;
 	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	START_PROFILE(SMBrmdir);
@@ -5583,14 +5327,50 @@ void reply_rmdir(struct smb_request *req)
 		goto out;
 	}
 
-	dptr_closepath(sconn, smb_dname->base_name, req->smbpid);
-	status = rmdir_internals(ctx, conn, smb_dname);
+	status = SMB_VFS_CREATE_FILE(
+		conn,                                   /* conn */
+		req,                                    /* req */
+		0,                                      /* root_dir_fid */
+		smb_dname,                              /* fname */
+		DELETE_ACCESS,                          /* access_mask */
+		(FILE_SHARE_READ | FILE_SHARE_WRITE |   /* share_access */
+			FILE_SHARE_DELETE),
+		FILE_OPEN,                              /* create_disposition*/
+		FILE_DIRECTORY_FILE,                    /* create_options */
+		FILE_ATTRIBUTE_DIRECTORY,               /* file_attributes */
+		0,                                      /* oplock_request */
+		0,                                      /* allocation_size */
+		NULL,                                   /* sd */
+		NULL,                                   /* ea_list */
+		&fsp,                                   /* result */
+		&info);                                 /* pinfo */
+
 	if (!NT_STATUS_IS_OK(status)) {
+		if (open_was_deferred(req->mid)) {
+			/* We have re-scheduled this call. */
+			goto out;
+		}
 		reply_nterror(req, status);
 		goto out;
 	}
 
+	status = can_set_delete_on_close(fsp, FILE_ATTRIBUTE_DIRECTORY);
+	if (!NT_STATUS_IS_OK(status)) {
+		close_file(req, fsp, ERROR_CLOSE);
+		reply_nterror(req, status);
+		goto out;
+	}
+
+	if (!set_delete_on_close(fsp, true, &conn->server_info->utok)) {
+		close_file(req, fsp, ERROR_CLOSE);
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+		goto out;
+	}
+
+	close_file(req, fsp, NORMAL_CLOSE);
 	reply_outbuf(req, 0, 0);
+
+	dptr_closepath(sconn, smb_dname->base_name, req->smbpid);
 
 	DEBUG(3, ("rmdir %s\n", smb_fname_str_dbg(smb_dname)));
  out:
