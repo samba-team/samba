@@ -1328,7 +1328,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 
 	/* Handle strange delete on close create semantics. */
 	if (create_options & FILE_DELETE_ON_CLOSE) {
-		status = can_set_delete_on_close(fsp, True, new_dos_attributes);
+		status = can_set_delete_on_close(fsp, new_dos_attributes);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			/* Remember to delete the mode we just added. */
@@ -1686,7 +1686,7 @@ static NTSTATUS onefs_open_directory(connection_struct *conn,
 	 * always to be honored on close... See test 19 in Samba4 BASE-DELETE.
 	 */
 	if (create_options & FILE_DELETE_ON_CLOSE) {
-		status = can_set_delete_on_close(fsp, True, 0);
+		status = can_set_delete_on_close(fsp, 0);
 		if (!NT_STATUS_IS_OK(status) &&
 		    !NT_STATUS_EQUAL(status, NT_STATUS_DIRECTORY_NOT_EMPTY)) {
 			TALLOC_FREE(lck);
