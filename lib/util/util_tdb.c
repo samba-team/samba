@@ -38,6 +38,14 @@ TDB_DATA make_tdb_data(const uint8_t *dptr, size_t dsize)
 	return ret;
 }
 
+bool tdb_data_equal(TDB_DATA t1, TDB_DATA t2)
+{
+	if (t1.dsize != t2.dsize) {
+		return false;
+	}
+	return (memcmp(t1.dptr, t2.dptr, t1.dsize) == 0);
+}
+
 TDB_DATA string_tdb_data(const char *string)
 {
 	return make_tdb_data((const uint8_t *)string, string ? strlen(string) : 0 );
