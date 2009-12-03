@@ -105,11 +105,6 @@ int32_t ctdb_control_trans2_commit(struct ctdb_context *ctdb,
 	struct ctdb_marshall_buffer *m = (struct ctdb_marshall_buffer *)recdata.dptr;
 	struct ctdb_db_context *ctdb_db;
 
-	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
-		DEBUG(DEBUG_INFO,("rejecting ctdb_control_trans2_commit when recovery active\n"));
-		return -1;
-	}
-
 	ctdb_db = find_ctdb_db(ctdb, m->db_id);
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " ctdb_control_trans2_commit: "
@@ -187,6 +182,11 @@ int32_t ctdb_control_trans2_commit(struct ctdb_context *ctdb,
 				    "db_id[0x%08x]\n",
 				    client->client_id, client->db_id));
 		break;
+	}
+
+	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
+		DEBUG(DEBUG_INFO,("rejecting ctdb_control_trans2_commit when recovery active\n"));
+		return -1;
 	}
 
 	state = talloc_zero(ctdb, struct ctdb_persistent_state);
