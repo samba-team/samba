@@ -515,6 +515,7 @@ static NTSTATUS ctdbd_init_connection(TALLOC_CTX *mem_ctx,
 
 	if (!ctdbd_working(conn, conn->our_vnn)) {
 		DEBUG(2, ("Node is not working, can not connect\n"));
+		status = NT_STATUS_INTERNAL_DB_ERROR;
 		goto fail;
 	}
 
