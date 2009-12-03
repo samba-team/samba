@@ -2454,24 +2454,6 @@ static NTSTATUS do_unlink(connection_struct *conn,
 		return NT_STATUS_OBJECT_NAME_INVALID;
 #endif /* JRATEST */
 
-	/* Fix for bug #3035 from SATOH Fumiyasu <fumiyas@miraclelinux.com>
-
-	  On a Windows share, a file with read-only dosmode can be opened with
-	  DELETE_ACCESS. But on a Samba share (delete readonly = no), it
-	  fails with NT_STATUS_CANNOT_DELETE error.
-
-	  This semantic causes a problem that a user can not
-	  rename a file with read-only dosmode on a Samba share
-	  from a Windows command prompt (i.e. cmd.exe, but can rename
-	  from Windows Explorer).
-	*/
-
-	if (!lp_delete_readonly(SNUM(conn))) {
-		if (fattr & aRONLY) {
-			return NT_STATUS_CANNOT_DELETE;
-		}
-	}
-
 	/* On open checks the open itself will check the share mode, so
 	   don't do it here as we'll get it wrong. */
 
@@ -2497,6 +2479,16 @@ static NTSTATUS do_unlink(connection_struct *conn,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("SMB_VFS_CREATEFILE failed: %s\n",
 			   nt_errstr(status)));
+		return status;
+	}
+
+	status = can_set_delete_on_close(fsp, fattr);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("do_unlink can_set_delete_on_close for file %s - "
+			"(%s)\n",
+			smb_fname_str_dbg(smb_fname),
+			nt_errstr(status)));
+		close_file(req, fsp, NORMAL_CLOSE);
 		return status;
 	}
 
@@ -6084,7 +6076,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		 */
 
 		if (create_options & FILE_DELETE_ON_CLOSE) {
-			status = can_set_delete_on_close(fsp, True, 0);
+			status = can_set_delete_on_close(fsp, 0);
 
 			if (NT_STATUS_IS_OK(status)) {
 				/* Note that here we set the *inital* delete on close flag,
