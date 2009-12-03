@@ -6897,9 +6897,6 @@ void reply_printclose(struct smb_request *req);
 void reply_printqueue(struct smb_request *req);
 void reply_printwrite(struct smb_request *req);
 void reply_mkdir(struct smb_request *req);
-NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
-			connection_struct *conn,
-			struct smb_filename *smb_dname);
 void reply_rmdir(struct smb_request *req);
 NTSTATUS rename_internals_fsp(connection_struct *conn,
 			files_struct *fsp,
