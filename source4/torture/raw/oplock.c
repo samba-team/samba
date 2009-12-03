@@ -2627,7 +2627,7 @@ static bool test_raw_oplock_batch22(struct torture_context *tctx, struct smbcli_
 	NTSTATUS status;
 	bool ret = true;
 	union smb_open io;
-	uint16_t fnum=0, fnum2=0;
+	uint16_t fnum = 0, fnum2 = 0, fnum3 = 0;
 	struct timeval tv;
 	int timeout = torture_setting_int(tctx, "oplocktimeout", 30);
 	int te;
@@ -2684,6 +2684,8 @@ static bool test_raw_oplock_batch22(struct torture_context *tctx, struct smbcli_
 		CHECK_STATUS(tctx, status, NT_STATUS_OK);
 	}
 
+	fnum2 = io.ntcreatex.out.file.fnum;
+
 	torture_wait_for_oplock_break(tctx);
 	te = (int)timeval_elapsed(&tv);
 
@@ -2718,12 +2720,13 @@ static bool test_raw_oplock_batch22(struct torture_context *tctx, struct smbcli_
 	te = (int)timeval_elapsed(&tv);
 	/* it should come in without delay */
 	CHECK_RANGE(te+1, 0, timeout);
-	fnum2 = io.ntcreatex.out.file.fnum;
+	fnum3 = io.ntcreatex.out.file.fnum;
 
 	CHECK_VAL(break_info.count, 0);
 
 	smbcli_close(cli1->tree, fnum);
 	smbcli_close(cli1->tree, fnum2);
+	smbcli_close(cli1->tree, fnum3);
 
 done:
 	smb_raw_exit(cli1->session);
