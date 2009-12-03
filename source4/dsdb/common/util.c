@@ -1994,6 +1994,18 @@ NTSTATUS samdb_set_password(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
         }
 
+	if (user_change) {
+		/* a user password change and we've checked already the old
+		 * password somewhere else (callers responsability) */
+		ret = ldb_request_add_control(req,
+					      DSDB_CONTROL_PASSWORD_CHANGE_OLD_PW_CHECKED_OID,
+					      true, NULL);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(req);
+			talloc_free(msg);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
 	ret = ldb_request_add_control(req,
 				      DSDB_CONTROL_PASSWORD_HASH_VALUES_OID,
 				      true, NULL);
