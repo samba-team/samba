@@ -3459,6 +3459,72 @@ static int control_restoredb(struct ctdb_context *ctdb, int argc, const char **a
 }
 
 /*
+ * dump a database backup from a file
+ */
+static int control_dumpdbbackup(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	TDB_DATA outdata;
+	struct db_file_header dbhdr;
+	int i, fh;
+	struct tm *tm;
+	char tbuf[100];
+	struct ctdb_rec_data *rec = NULL;
+	struct ctdb_marshall_buffer *m;
+
+	if (argc != 1) {
+		DEBUG(DEBUG_ERR,("Invalid arguments\n"));
+		return -1;
+	}
+
+	fh = open(argv[0], O_RDONLY);
+	if (fh == -1) {
+		DEBUG(DEBUG_ERR,("Failed to open file '%s'\n", argv[0]));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	read(fh, &dbhdr, sizeof(dbhdr));
+	if (dbhdr.version != DB_VERSION) {
+		DEBUG(DEBUG_ERR,("Invalid version of database dump. File is version %lu but expected version was %u\n", dbhdr.version, DB_VERSION));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	outdata.dsize = dbhdr.size;
+	outdata.dptr = talloc_size(tmp_ctx, outdata.dsize);
+	if (outdata.dptr == NULL) {
+		DEBUG(DEBUG_ERR,("Failed to allocate data of size '%lu'\n", dbhdr.size));
+		close(fh);
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+	read(fh, outdata.dptr, outdata.dsize);
+	close(fh);
+	m = (struct ctdb_marshall_buffer *)outdata.dptr;
+
+	tm = localtime(&dbhdr.timestamp);
+	strftime(tbuf,sizeof(tbuf)-1,"%Y/%m/%d %H:%M:%S", tm);
+	printf("Backup of database name:'%s' dbid:0x%x08x from @ %s\n",
+		dbhdr.name, m->db_id, tbuf);
+
+	for (i=0; i < m->count; i++) {
+		uint32_t reqid = 0;
+		TDB_DATA key, data;
+
+		/* we do not want the header splitted, so we pass NULL*/
+		rec = ctdb_marshall_loop_next(m, rec, &reqid,
+					      NULL, &key, &data);
+
+		ctdb_dumpdb_record(ctdb, key, data, stdout);
+	}
+
+	printf("Dumped %d records\n", i);
+	talloc_free(tmp_ctx);
+	return 0;
+}
+
+/*
  * wipe a database from a file
  */
 static int control_wipedb(struct ctdb_context *ctdb, int argc,
@@ -3930,6 +3996,7 @@ static const struct {
 	{ "eventscript",     control_eventscript,	true,	false, "run the eventscript with the given parameters on a node", "<arguments>"},
 	{ "backupdb",        control_backupdb,          false,	false, "backup the database into a file.", "<database> <file>"},
 	{ "restoredb",        control_restoredb,        false,	false, "restore the database from a file.", "<file>"},
+	{ "dumpdbbackup",    control_dumpdbbackup,      false,	true,  "dump database backup from a file.", "<file>"},
 	{ "wipedb",           control_wipedb,        false,	false, "wipe the contents of a database.", "<dbname>"},
 	{ "recmaster",        control_recmaster,        false,	false, "show the pnn for the recovery master."},
 	{ "setflags",        control_setflags,          false,	false, "set flags for a node in the nodemap.", "<node> <flags>"},
