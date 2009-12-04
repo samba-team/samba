@@ -587,10 +587,6 @@ static int open_acl_common(vfs_handle_struct *handle,
 
 	if (!file_existed && fsp->fh->fd != -1) {
 		/* File was created. Inherit from parent directory. */
-		status = fsp_set_smb_fname(fsp, smb_fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto err;
-		}
 		inherit_new_acl(handle, smb_fname, fsp, parent_desc, false);
 	}
 

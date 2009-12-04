@@ -119,11 +119,11 @@ NTSTATUS smbd_check_open_rights(struct connection_struct *conn,
 ****************************************************************************/
 
 static NTSTATUS fd_open(struct connection_struct *conn,
-		    struct smb_filename *smb_fname,
 		    files_struct *fsp,
 		    int flags,
 		    mode_t mode)
 {
+	struct smb_filename *smb_fname = fsp->fsp_name;
 	NTSTATUS status = NT_STATUS_OK;
 
 #ifdef O_NOFOLLOW
@@ -343,16 +343,16 @@ static NTSTATUS open_file(files_struct *fsp,
 			  connection_struct *conn,
 			  struct smb_request *req,
 			  const char *parent_dir,
-			  struct smb_filename *smb_fname,
 			  int flags,
 			  mode_t unx_mode,
 			  uint32 access_mask, /* client requested access mask. */
 			  uint32 open_access_mask) /* what we're actually using in the open. */
 {
+	struct smb_filename *smb_fname = fsp->fsp_name;
 	NTSTATUS status = NT_STATUS_OK;
 	int accmode = (flags & O_ACCMODE);
 	int local_flags = flags;
-	bool file_existed = VALID_STAT(smb_fname->st);
+	bool file_existed = VALID_STAT(fsp->fsp_name->st);
 
 	fsp->fh->fd = -1;
 	errno = EPERM;
@@ -443,7 +443,7 @@ static NTSTATUS open_file(files_struct *fsp,
 		}
 
 		/* Actually do the open */
-		status = fd_open(conn, smb_fname, fsp, local_flags, unx_mode);
+		status = fd_open(conn, fsp, local_flags, unx_mode);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3,("Error opening file %s (%s) (local_flags=%d) "
 				 "(flags=%d)\n", smb_fname_str_dbg(smb_fname),
@@ -612,12 +612,6 @@ static NTSTATUS open_file(files_struct *fsp,
 	    is_in_path(smb_fname->base_name, conn->aio_write_behind_list,
 		       conn->case_sensitive)) {
 		fsp->aio_write_behind = True;
-	}
-	status = fsp_set_smb_fname(fsp, smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		fd_close(fsp);
-		errno = map_errno_from_nt_status(status);
-		return status;
 	}
 
 	fsp->wcp = NULL; /* Write cache pointer. */
@@ -1440,7 +1434,6 @@ static NTSTATUS calculate_access_mask(connection_struct *conn,
 
 static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			    struct smb_request *req,
-			    struct smb_filename *smb_fname,
 			    uint32 access_mask,		/* access bits (FILE_READ_DATA etc.) */
 			    uint32 share_access,	/* share constants (FILE_SHARE_READ etc) */
 			    uint32 create_disposition,	/* FILE_OPEN_IF etc. */
@@ -1451,6 +1444,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			    int *pinfo,
 			    files_struct *fsp)
 {
+	struct smb_filename *smb_fname = fsp->fsp_name;
 	int flags=0;
 	int flags2=0;
 	bool file_existed = VALID_STAT(smb_fname->st);
@@ -1968,7 +1962,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * open_file strips any O_TRUNC flags itself.
 	 */
 
-	fsp_open = open_file(fsp, conn, req, parent_dir, smb_fname,
+	fsp_open = open_file(fsp, conn, req, parent_dir,
 			     flags|flags2, unx_mode, access_mask,
 			     open_access_mask);
 
@@ -3090,6 +3084,11 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 			goto fail;
 		}
 
+		status = fsp_set_smb_fname(fsp, smb_fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
+
 		/*
 		 * We're opening the stream element of a base_fsp
 		 * we already opened. Set up the base_fsp pointer.
@@ -3100,7 +3099,6 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 
 		status = open_file_ntcreate(conn,
 					    req,
-					    smb_fname,
 					    access_mask,
 					    share_access,
 					    create_disposition,
