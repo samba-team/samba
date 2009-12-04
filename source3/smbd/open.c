@@ -3188,7 +3188,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 
 	if ((ea_list != NULL) &&
 	    ((info == FILE_WAS_CREATED) || (info == FILE_WAS_OVERWRITTEN))) {
-		status = set_ea(conn, fsp, smb_fname, ea_list);
+		status = set_ea(conn, fsp, fsp->fsp_name, ea_list);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto fail;
 		}
