@@ -24,15 +24,18 @@
 #include "../include/ctdb_private.h"
 #include "../include/ctdb.h"
 
+#define MAX_LOG_ENTRIES 500000
+#define MAX_LOG_SIZE 128
+
+static int first_entry;
+static int last_entry;
+
 struct ctdb_log_entry {
 	int32_t level;
 	struct timeval t;
-	char *message;
+	char message[MAX_LOG_SIZE];
 };
 
-#define MAX_LOG_ENTRIES 500000
-static int first_entry;
-static int last_entry;
 
 static struct ctdb_log_entry log_entries[MAX_LOG_ENTRIES];
 
@@ -42,21 +45,16 @@ static struct ctdb_log_entry log_entries[MAX_LOG_ENTRIES];
 static void log_ringbuffer_v(const char *format, va_list ap)
 {
 	int ret;
-	char *s = NULL;
 
-	if (log_entries[last_entry].message != NULL) {
-		free(log_entries[last_entry].message);
-		log_entries[last_entry].message = NULL;
-	}
+	log_entries[last_entry].message[0] = '\0';
 
-	ret = vasprintf(&s, format, ap);
+	ret = vsnprintf(&log_entries[last_entry].message[0], MAX_LOG_SIZE, format, ap);
 	if (ret == -1) {
 		return;
 	}
 
 	log_entries[last_entry].level = this_log_level;
 	log_entries[last_entry].t = timeval_current();
-	log_entries[last_entry].message = s;
 
 	last_entry++;
 	if (last_entry >= MAX_LOG_ENTRIES) {
