@@ -28,7 +28,7 @@ enum debug_level {
 	DEBUG_DEBUG   =  4,
 };
 
-#define DEBUG(lvl, x) do { this_log_level = (lvl); log_ringbuffer x; if ((lvl) <= LogLevel) { do_debug x; }} while (0)
+#define DEBUG(lvl, x) do { this_log_level = (lvl); if ((lvl) < DEBUG_DEBUG) { log_ringbuffer x; } if ((lvl) <= LogLevel) { do_debug x; }} while (0)
 
 #define _PUBLIC_
 
