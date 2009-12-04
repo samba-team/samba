@@ -663,7 +663,6 @@ static bool torture_drs_unit_ldb_setup(struct torture_context *tctx, struct drsu
 	}
 
 DONE:
-	unlink(ldb_url);
 	talloc_free(mem_ctx);
 	return bret;
 }
