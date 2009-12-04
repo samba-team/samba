@@ -22,7 +22,7 @@ delete_all() {
 
 }
 
-case $cmd in 
+case "$1" in 
     startup)
 	# do not respond to ARPs that are for ip addresses with scope 'host'
 	echo 3 > /proc/sys/net/ipv4/conf/all/arp_ignore
@@ -70,6 +70,9 @@ case $cmd in
 	delete_all
 	;;
 
+    *)
+	ctdb_standard_event_handler "@"
+	;;
 esac
 
 exit 0

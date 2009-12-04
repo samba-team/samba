@@ -586,6 +586,20 @@ ctdb_service_stop ()
     fi
 }
 
+ctdb_standard_event_handler ()
+{
+    case "$1" in
+	status)
+	    ctdb_checkstatus
+	    exit
+	    ;;
+	setstatus)
+	    ctdb_setstatus "$@"
+	    exit
+	    ;;
+    esac
+}
+
 ########################################################
 # load a site local config file
 ########################################################
@@ -600,21 +614,6 @@ ctdb_service_stop ()
 	done
 }
 
-# A reasonable default is the basename of the eventscript.
-script_name="${0##*/}" # basename
-service_name="$script_name"
+script_name="${0##*/}"       # basename
+service_name="$script_name"  # default is just the script name
 service_fail_limit=1
-
-ctdb_event="$1" ; shift
-cmd="$ctdb_event"
-
-case "$ctdb_event" in
-    status)
-	ctdb_checkstatus
-	exit
-	;;
-    setstatus)
-	ctdb_setstatus "$@"
-	exit
-	;;
-esac

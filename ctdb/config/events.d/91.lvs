@@ -13,7 +13,7 @@ loadconfig ctdb
     exit 0
 }
 
-case $cmd in 
+case "$1" in 
      startup)
 	ipvsadm -D -t $CTDB_LVS_PUBLIC_IP:0
 	ipvsadm -D -u $CTDB_LVS_PUBLIC_IP:0
@@ -78,6 +78,9 @@ case $cmd in
 	echo 1 > /proc/sys/net/ipv4/route/flush
 	;;
 
+    *)
+	ctdb_standard_event_handler "$@"
+	;;
 esac
 
 exit 0

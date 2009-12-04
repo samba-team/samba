@@ -250,7 +250,7 @@ status() {
 }
 
 
-case "$cmd" in
+case "$1" in
     start)
   	start
 	;;

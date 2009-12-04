@@ -37,7 +37,7 @@ ctdb_start_stop_service
 
 is_ctdb_managed_service || exit 0
 
-case $cmd in
+case "$1" in
     startup)
 	ctdb_service_start
 	;;
@@ -59,8 +59,8 @@ case $cmd in
 	fi
 	;;
 
-    status)
-	ctdb_checkstatus || exit $?
+    *)
+	ctdb_standard_event_handler "$@"
 	;;
 esac
 

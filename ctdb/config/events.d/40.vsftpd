@@ -17,20 +17,20 @@ ctdb_start_stop_service
 
 is_ctdb_managed_service || exit 0
 
-case $cmd in 
-     startup)
+case "$1" in 
+    startup)
 	ctdb_service_start
 	;;
 
-     shutdown)
+    shutdown)
 	ctdb_service_stop
 	;;
 
-     takeip|releaseip)
+    takeip|releaseip)
 	ctdb_service_set_reconfigure
 	;;
 
-     recovered)
+    recovered)
 	# if we have taken or released any ips we must 
 	# restart vsftpd to ensure that all tcp connections are reset
 	if ctdb_service_needs_reconfigure ; then
@@ -38,7 +38,7 @@ case $cmd in
 	fi
 	;;
 
-     monitor)
+    monitor)
 	if ctdb_service_needs_reconfigure ; then
 	    ctdb_service_reconfigure
 	    exit 0
@@ -55,8 +55,8 @@ case $cmd in
 	fi	
 	;;
 
-    status)
-	ctdb_checkstatus || exit $?
+    *)
+	ctdb_standard_event_handler "$@"
 	;;
 esac
 

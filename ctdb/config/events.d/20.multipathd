@@ -74,15 +74,15 @@ multipathd_check()
 	fi
 }
 
-case $cmd in
-     startup)
+case "$1" in
+    startup)
 	# create a state directory to keep/track the multipath device
 	# state
 	/bin/mkdir -p $CTDB_BASE/state/multipathd
 	exit 0
 	;;
 
-     monitor)
+    monitor)
 	multipathd_check
 	[ "$?" = "0" ] || {
 		echo 20.multipathd: monitoring of multipathing failed
@@ -90,7 +90,10 @@ case $cmd in
 	}
 	exit 0
 	;;
+
+    *)
+	ctdb_standard_event_handler "$@"
+	;;
 esac
 
-# ignore unknown commands
 exit 0
