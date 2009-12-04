@@ -302,6 +302,9 @@ mkdir -p $RPM_BUILD_ROOT/%{_libarchdir}/krb5/plugins/libkrb5
 cd source3
 make DESTDIR=$RPM_BUILD_ROOT \
         install
+
+make DESTDIR=$RPM_BUILD_ROOT \
+        install-dbwrap_tool install-dbwrap_torture
 cd ..
 
 # NSS winbind support
@@ -590,6 +593,8 @@ exit 0
 %{_bindir}/ntlm_auth
 %{_bindir}/pdbedit
 %{_bindir}/smbcquotas
+%{_bindir}/dbwrap_tool
+%{_bindir}/dbwrap_torture
 
 %{_mandir}/man1/ntlm_auth.1*
 %{_mandir}/man1/profiles.1*
