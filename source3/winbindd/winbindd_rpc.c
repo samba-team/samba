@@ -1276,8 +1276,12 @@ NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
 	 * This call can take a long time
 	 * allow the server to time out.
 	 * 35 seconds should do it.
+	 * NB
+	 * only do this when the undelying transport is named pipe.
 	 */
-	orig_timeout = rpccli_set_timeout(cli, 35000);
+	if (cli->transport->transport == NCACN_NP) {
+		orig_timeout = rpccli_set_timeout(cli, 35000);
+	}
 
 	status = lookup_names_fn(cli,
 				 mem_ctx,
@@ -1290,7 +1294,9 @@ NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
 				 types);
 
 	/* And restore our original timeout. */
-	rpccli_set_timeout(cli, orig_timeout);
+	if (cli->transport->transport == NCACN_NP) {
+		rpccli_set_timeout(cli, orig_timeout);
+	}
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
