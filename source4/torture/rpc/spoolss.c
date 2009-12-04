@@ -2013,7 +2013,9 @@ static bool test_ResumePrinter(struct torture_context *tctx,
 static bool test_GetPrinterData(struct torture_context *tctx,
 				struct dcerpc_pipe *p,
 				struct policy_handle *handle,
-				const char *value_name)
+				const char *value_name,
+				enum winreg_Type *type_p,
+				union spoolss_PrinterData *data_p)
 {
 	NTSTATUS status;
 	struct spoolss_GetPrinterData r;
@@ -2028,7 +2030,7 @@ static bool test_GetPrinterData(struct torture_context *tctx,
 	r.out.type = &type;
 	r.out.data = &data;
 
-	torture_comment(tctx, "Testing GetPrinterData\n");
+	torture_comment(tctx, "Testing GetPrinterData(%s)\n", r.in.value_name);
 
 	status = dcerpc_spoolss_GetPrinterData(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "GetPrinterData failed");
@@ -2038,8 +2040,17 @@ static bool test_GetPrinterData(struct torture_context *tctx,
 
 		status = dcerpc_spoolss_GetPrinterData(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "GetPrinterData failed");
-
+		/* do not move below WERR_MORE_DATA check, as this test is used
+		 * for a lot of well known printer server values */
 		torture_assert_werr_ok(tctx, r.out.result, "GetPrinterData failed");
+	}
+
+	if (type_p) {
+		*type_p = type;
+	}
+
+	if (data_p) {
+		*data_p = data;
 	}
 
 	return true;
@@ -2049,12 +2060,17 @@ static bool test_GetPrinterDataEx(struct torture_context *tctx,
 				  struct dcerpc_pipe *p,
 				  struct policy_handle *handle,
 				  const char *key_name,
-				  const char *value_name)
+				  const char *value_name,
+				  enum winreg_Type *type_p,
+				  DATA_BLOB *buffer_p)
 {
 	NTSTATUS status;
 	struct spoolss_GetPrinterDataEx r;
 	enum winreg_Type type;
 	uint32_t needed;
+	uint8_t *buffer;
+
+	buffer = talloc_array(tctx, uint8_t, 0);
 
 	r.in.handle = handle;
 	r.in.key_name = key_name;
@@ -2062,9 +2078,10 @@ static bool test_GetPrinterDataEx(struct torture_context *tctx,
 	r.in.offered = 0;
 	r.out.type = &type;
 	r.out.needed = &needed;
-	r.out.buffer = NULL;
+	r.out.buffer = buffer;
 
-	torture_comment(tctx, "Testing GetPrinterDataEx\n");
+	torture_comment(tctx, "Testing GetPrinterDataEx(%s - %s)\n",
+		r.in.key_name, r.in.value_name);
 
 	status = dcerpc_spoolss_GetPrinterDataEx(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2077,15 +2094,53 @@ static bool test_GetPrinterDataEx(struct torture_context *tctx,
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
 		r.in.offered = needed;
-		r.out.buffer = talloc_array(tctx, uint8_t, needed);
+		buffer = talloc_array(tctx, uint8_t, needed);
+		r.out.buffer = buffer;
 
 		status = dcerpc_spoolss_GetPrinterDataEx(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "GetPrinterDataEx failed");
+	}
 
-		torture_assert_werr_ok(tctx, r.out.result,  "GetPrinterDataEx failed");
+	torture_assert_werr_ok(tctx, r.out.result,  "GetPrinterDataEx failed");
+
+	if (type_p) {
+		*type_p = type;
+	}
+
+	if (buffer_p) {
+		*buffer_p = data_blob(buffer, needed);
 	}
 
 	return true;
+}
+
+static bool test_GetPrinterData_list(struct torture_context *tctx,
+				     struct dcerpc_pipe *p,
+				     struct policy_handle *handle)
+{
+	bool ret = true;
+	const char *list[] = {
+		"W3SvcInstalled",
+		"BeepEnabled",
+		"EventLog",
+		"NetPopup",
+		"NetPopupToComputer",
+		"MajorVersion",
+		"MinorVersion",
+		"DefaultSpoolDirectory",
+		"Architecture",
+		"DsPresent",
+		"OSVersion",
+		"OSVersionEx",
+		"DNSMachineName"
+	};
+	int i;
+
+	for (i=0; i < ARRAY_SIZE(list); i++) {
+		ret &= test_GetPrinterData(tctx, p, handle, list[i], NULL, NULL);
+	}
+
+	return ret;
 }
 
 static bool test_EnumPrinterData(struct torture_context *tctx, struct dcerpc_pipe *p,
@@ -2135,10 +2190,10 @@ static bool test_EnumPrinterData(struct torture_context *tctx, struct dcerpc_pip
 
 		torture_assert_werr_ok(tctx, r.out.result, "EnumPrinterData failed");
 
-		torture_assert(tctx, test_GetPrinterData(tctx, p, handle, r.out.value_name),
+		torture_assert(tctx, test_GetPrinterData(tctx, p, handle, r.out.value_name, NULL, NULL),
 			talloc_asprintf(tctx, "failed to call GetPrinterData for %s\n", r.out.value_name));
 
-		torture_assert(tctx, test_GetPrinterDataEx(tctx, p, handle, "PrinterDriverData", r.out.value_name),
+		torture_assert(tctx, test_GetPrinterDataEx(tctx, p, handle, "PrinterDriverData", r.out.value_name, NULL, NULL),
 			talloc_asprintf(tctx, "failed to call GetPrinterDataEx on PrinterDriverData for %s\n", r.out.value_name));
 
 		r.in.enum_index++;
@@ -2153,7 +2208,6 @@ static bool test_EnumPrinterDataEx(struct torture_context *tctx,
 				   struct policy_handle *handle,
 				   const char *key_name)
 {
-	NTSTATUS status;
 	struct spoolss_EnumPrinterDataEx r;
 	struct spoolss_PrinterEnumValues *info;
 	uint32_t needed;
@@ -2193,12 +2247,63 @@ static bool test_DeletePrinterData(struct torture_context *tctx,
 	r.in.handle = handle;
 	r.in.value_name = value_name;
 
-	torture_comment(tctx, "Testing DeletePrinterData\n");
+	torture_comment(tctx, "Testing DeletePrinterData(%s)\n",
+		r.in.value_name);
 
 	status = dcerpc_spoolss_DeletePrinterData(p, tctx, &r);
 
 	torture_assert_ntstatus_ok(tctx, status, "DeletePrinterData failed");
 	torture_assert_werr_ok(tctx, r.out.result, "DeletePrinterData failed");
+
+	return true;
+}
+
+static bool test_DeletePrinterDataEx(struct torture_context *tctx,
+				     struct dcerpc_pipe *p,
+				     struct policy_handle *handle,
+				     const char *key_name,
+				     const char *value_name)
+{
+	struct spoolss_DeletePrinterDataEx r;
+
+	r.in.handle = handle;
+	r.in.key_name = key_name;
+	r.in.value_name = value_name;
+
+	torture_comment(tctx, "Testing DeletePrinterDataEx(%s - %s)\n",
+		r.in.key_name, r.in.value_name);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_DeletePrinterDataEx(p, tctx, &r),
+		"DeletePrinterDataEx failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+		"DeletePrinterDataEx failed");
+
+	return true;
+}
+
+static bool test_DeletePrinterKey(struct torture_context *tctx,
+				  struct dcerpc_pipe *p,
+				  struct policy_handle *handle,
+				  const char *key_name)
+{
+	struct spoolss_DeletePrinterKey r;
+
+	r.in.handle = handle;
+	r.in.key_name = key_name;
+
+	torture_comment(tctx, "Testing DeletePrinterKey(%s)\n", r.in.key_name);
+
+	if (strequal(key_name, "") && !torture_setting_bool(tctx, "dangerous", false)) {
+		torture_skip(tctx, "not wiping out printer registry - enable dangerous tests to use\n");
+		return true;
+	}
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_DeletePrinterKey(p, tctx, &r),
+		"DeletePrinterKey failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+		"DeletePrinterKey failed");
 
 	return true;
 }
@@ -2209,30 +2314,149 @@ static bool test_SetPrinterData(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct spoolss_SetPrinterData r;
-	const char *value_name = "spottyfoot";
+	const char *values[] = {
+		"spootyfoot",
+		"spooty\\foot",
+		"spooty,foot",
+		"spooty foot"
+	};
+	int i;
 
-	r.in.handle = handle;
-	r.in.value_name = value_name;
-	r.in.type = REG_SZ;
-	r.in.data.string = "dog";
+	for (i=0; i < ARRAY_SIZE(values); i++) {
 
-	torture_comment(tctx, "Testing SetPrinterData(%s)\n", value_name);
+		enum winreg_Type type;
+		union spoolss_PrinterData data;
 
-	status = dcerpc_spoolss_SetPrinterData(p, tctx, &r);
+		r.in.handle = handle;
+		r.in.value_name = values[i];
+		r.in.type = REG_SZ;
+		r.in.data.string = "dog";
 
-	torture_assert_ntstatus_ok(tctx, status, "SetPrinterData failed");
-	torture_assert_werr_ok(tctx, r.out.result, "SetPrinterData failed");
+		torture_comment(tctx, "Testing SetPrinterData(%s)\n",
+			r.in.value_name);
 
-	if (!test_GetPrinterData(tctx, p, handle, value_name)) {
-		return false;
-	}
+		status = dcerpc_spoolss_SetPrinterData(p, tctx, &r);
 
-	if (!test_DeletePrinterData(tctx, p, handle, value_name)) {
-		return false;
+		torture_assert_ntstatus_ok(tctx, status, "SetPrinterData failed");
+		torture_assert_werr_ok(tctx, r.out.result, "SetPrinterData failed");
+
+		if (!test_GetPrinterData(tctx, p, handle, r.in.value_name, &type, &data)) {
+			return false;
+		}
+
+		torture_assert_int_equal(tctx, r.in.type, type, "type mismatch");
+		torture_assert_str_equal(tctx, r.in.data.string, data.string, "data mismatch");
+
+		if (!test_DeletePrinterData(tctx, p, handle, r.in.value_name)) {
+			return false;
+		}
 	}
 
 	return true;
 }
+
+static bool test_EnumPrinterKey(struct torture_context *tctx,
+				struct dcerpc_pipe *p,
+				struct policy_handle *handle,
+				const char *key_name,
+				const char ***array);
+
+static bool test_SetPrinterDataEx(struct torture_context *tctx,
+				  struct dcerpc_pipe *p,
+				  struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct spoolss_SetPrinterDataEx r;
+	const char *value_name = "dog";
+	const char *keys[] = {
+		"torturedataex",
+		"what a wurst",
+		"torturedataex_with_subkey\\subkey",
+		"torturedataex_with_subkey\\subkey:0",
+		"torturedataex_with_subkey\\subkey:1",
+		"torturedataex_with_subkey\\subkey\\subsubkey",
+		"torturedataex_with_subkey\\subkey\\subsubkey:0",
+		"torturedataex_with_subkey\\subkey\\subsubkey:1",
+		"torture,data,ex"
+	};
+	int i;
+	DATA_BLOB blob = data_blob_string_const("catfoobar");
+
+
+	for (i=0; i < ARRAY_SIZE(keys); i++) {
+
+		char *c;
+		const char *key;
+		enum winreg_Type type;
+		DATA_BLOB buffer;
+		const char **subkeys;
+
+		r.in.handle = handle;
+		r.in.key_name = keys[i];
+		r.in.value_name = value_name;
+		r.in.type = REG_BINARY;
+		r.in.offered = blob.length;
+		r.in.buffer = blob.data;
+
+		torture_comment(tctx, "Testing SetPrinterDataEx(%s - %s)\n", r.in.key_name, value_name);
+
+		status = dcerpc_spoolss_SetPrinterDataEx(p, tctx, &r);
+
+		torture_assert_ntstatus_ok(tctx, status, "SetPrinterDataEx failed");
+		torture_assert_werr_ok(tctx, r.out.result, "SetPrinterDataEx failed");
+
+		key = talloc_strdup(tctx, r.in.key_name);
+
+		if (!test_GetPrinterDataEx(tctx, p, handle, r.in.key_name, value_name, &type, &buffer)) {
+			return false;
+		}
+
+		torture_assert_int_equal(tctx, r.in.type, type, "type mismatch");
+		torture_assert_data_blob_equal(tctx, blob, buffer, "data mismatch");
+
+		if (!test_EnumPrinterDataEx(tctx, p, handle, r.in.key_name)) {
+			return false;
+		}
+
+		if (!test_DeletePrinterDataEx(tctx, p, handle, r.in.key_name, value_name)) {
+			return false;
+		}
+
+		c = strchr(key, '\\');
+		if (c) {
+			int i;
+
+			/* we have subkeys */
+
+			*c = 0;
+
+			if (!test_EnumPrinterKey(tctx, p, handle, key, &subkeys)) {
+				return false;
+			}
+
+			for (i=0; subkeys && subkeys[i]; i++) {
+
+				const char *current_key = talloc_asprintf(tctx, "%s\\%s", key, subkeys[i]);
+
+				if (!test_DeletePrinterKey(tctx, p, handle, current_key)) {
+					return false;
+				}
+			}
+
+			if (!test_DeletePrinterKey(tctx, p, handle, key)) {
+				return false;
+			}
+
+		} else {
+			if (!test_DeletePrinterKey(tctx, p, handle, key)) {
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
 
 static bool test_SecondaryClosePrinter(struct torture_context *tctx,
 				       struct dcerpc_pipe *p,
@@ -2456,6 +2680,10 @@ static bool test_OpenPrinterEx(struct torture_context *tctx,
 	}
 
 	if (!test_SetPrinterData(tctx, p, &handle)) {
+		ret = false;
+	}
+
+	if (!test_SetPrinterDataEx(tctx, p, &handle)) {
 		ret = false;
 	}
 
@@ -3039,6 +3267,47 @@ static bool test_printer_info(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_EnumPrinterKey(struct torture_context *tctx,
+				struct dcerpc_pipe *p,
+				struct policy_handle *handle,
+				const char *key_name,
+				const char ***array)
+{
+	struct spoolss_EnumPrinterKey r;
+	uint32_t needed;
+	struct spoolss_StringArray2 key_buffer;
+
+	r.in.handle = handle;
+	r.in.key_name = key_name;
+	r.in.offered = 0;
+	r.out.key_buffer = &key_buffer;
+	r.out.needed = &needed;
+
+	torture_comment(tctx, "Testing EnumPrinterKey(%s)\n", r.in.key_name);
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_EnumPrinterKey(p, tctx, &r),
+		"failed to call EnumPrinterKey");
+	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
+		torture_assert(tctx, (key_buffer._ndr_size == 0),
+			talloc_asprintf(tctx, "EnumPrinterKey did not return 0 _ndr_size (but %d), windows clients would abort here!", key_buffer._ndr_size));
+		r.in.offered = needed;
+		torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_EnumPrinterKey(p, tctx, &r),
+			"failed to call EnumPrinterKey");
+	}
+	torture_assert_werr_ok(tctx, r.out.result,
+		"failed to call EnumPrinterKey");
+
+	torture_assert(tctx, (key_buffer._ndr_size * 2 == needed),
+		talloc_asprintf(tctx, "EnumPrinterKey size mismatch, _ndr_size %d (expected %d)",
+		key_buffer._ndr_size, needed/2));
+
+	if (array) {
+		*array = key_buffer.string;
+	}
+
+	return true;
+}
+
 bool test_printer_keys(struct torture_context *tctx,
 		       struct dcerpc_pipe *p,
 		       struct policy_handle *handle)
@@ -3046,37 +3315,13 @@ bool test_printer_keys(struct torture_context *tctx,
 	const char **key_array = NULL;
 	int i;
 
-	{
-		struct spoolss_EnumPrinterKey r;
-		uint32_t needed;
-		struct spoolss_StringArray2 key_buffer;
+	torture_assert(tctx, test_EnumPrinterKey(tctx, p, handle, "", &key_array),
+		"failed to call test_EnumPrinterKey");
 
-		r.in.handle = handle;
-		r.in.key_name = "";
-		r.in.offered = 0;
-		r.out.key_buffer = &key_buffer;
-		r.out.needed = &needed;
-
-		torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_EnumPrinterKey(p, tctx, &r),
-			"failed to call EnumPrinterKey");
-		if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
-			torture_assert(tctx, (key_buffer._ndr_size == 0),
-				talloc_asprintf(tctx, "EnumPrinterKey did not return 0 _ndr_size (but %d), windows clients would abort here!", key_buffer._ndr_size));
-
-			r.in.offered = needed;
-			torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_EnumPrinterKey(p, tctx, &r),
-				"failed to call EnumPrinterKey");
-		}
-		torture_assert_werr_ok(tctx, r.out.result,
-			"failed to call EnumPrinterKey");
-
-		torture_assert(tctx, (key_buffer._ndr_size * 2 == needed),
-			talloc_asprintf(tctx, "EnumPrinterKey size mismatch, _ndr_size %d (expected %d)",
-			key_buffer._ndr_size, needed/2));
-
-		key_array = key_buffer.string;
+	for (i=0; key_array && key_array[i]; i++) {
+		torture_assert(tctx, test_EnumPrinterKey(tctx, p, handle, key_array[i], NULL),
+			"failed to call test_EnumPrinterKey");
 	}
-
 	for (i=0; key_array && key_array[i]; i++) {
 		torture_assert(tctx, test_EnumPrinterDataEx(tctx, p, handle, key_array[i]),
 			"failed to call test_EnumPrinterDataEx");
@@ -3162,20 +3407,7 @@ bool torture_rpc_spoolss(struct torture_context *torture)
 	ctx = talloc_zero(torture, struct test_spoolss_context);
 
 	ret &= test_OpenPrinter_server(torture, p, &ctx->server_handle);
-
-	ret &= test_GetPrinterData(torture, p, &ctx->server_handle, "W3SvcInstalled");
-	ret &= test_GetPrinterData(torture, p, &ctx->server_handle, "BeepEnabled");
-	ret &= test_GetPrinterData(torture, p, &ctx->server_handle, "EventLog");
-	ret &= test_GetPrinterData(torture, p, &ctx->server_handle, "NetPopup");
-	ret &= test_GetPrinterData(torture, p, &ctx->server_handle, "NetPopupToComputer");
-	ret &= test_GetPrinterData(torture, p, &ctx->server_handle, "MajorVersion");
-	ret &= test_GetPrinterData(torture, p, &ctx->server_handle, "MinorVersion");
-	ret &= test_GetPrinterData(torture, p, &ctx->server_handle, "DefaultSpoolDirectory");
-	ret &= test_GetPrinterData(torture, p, &ctx->server_handle, "Architecture");
-	ret &= test_GetPrinterData(torture, p, &ctx->server_handle, "DsPresent");
-	ret &= test_GetPrinterData(torture, p, &ctx->server_handle, "OSVersion");
-	ret &= test_GetPrinterData(torture, p, &ctx->server_handle, "OSVersionEx");
-	ret &= test_GetPrinterData(torture, p, &ctx->server_handle, "DNSMachineName");
+	ret &= test_GetPrinterData_list(torture, p, &ctx->server_handle);
 	ret &= test_EnumForms(torture, p, &ctx->server_handle, true);
 	ret &= test_AddForm(torture, p, &ctx->server_handle, true);
 	ret &= test_EnumPorts(torture, p, ctx);
