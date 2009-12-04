@@ -7859,81 +7859,16 @@ done:
 WERROR _spoolss_SetPrinterData(pipes_struct *p,
 			       struct spoolss_SetPrinterData *r)
 {
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
-	int snum=0;
-	WERROR result = WERR_OK;
-	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
-	DATA_BLOB blob;
+	struct spoolss_SetPrinterDataEx r2;
 
-	DEBUG(5,("_spoolss_SetPrinterData\n"));
+	r2.in.handle		= r->in.handle;
+	r2.in.key_name		= "PrinterDriverData";
+	r2.in.value_name	= r->in.value_name;
+	r2.in.type		= r->in.type;
+	r2.in.data		= r->in.data;
+	r2.in._offered		= r->in._offered;
 
-	if (!Printer) {
-		DEBUG(2,("_spoolss_SetPrinterData: Invalid handle (%s:%u:%u).\n",
-			OUR_HANDLE(r->in.handle)));
-		return WERR_BADFID;
-	}
-
-	if (Printer->printer_type == SPLHND_SERVER) {
-		DEBUG(10,("_spoolss_SetPrinterData: "
-			"Not implemented for server handles yet\n"));
-		return WERR_INVALID_PARAM;
-	}
-
-	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
-		return WERR_BADFID;
-	}
-
-	/*
-	 * Access check : NT returns "access denied" if you make a
-	 * SetPrinterData call without the necessary privildge.
-	 * we were originally returning OK if nothing changed
-	 * which made Win2k issue **a lot** of SetPrinterData
-	 * when connecting to a printer  --jerry
-	 */
-
-	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
-		DEBUG(3,("_spoolss_SetPrinterData: "
-			"change denied by handle access permissions\n"));
-		result = WERR_ACCESS_DENIED;
-		goto done;
-	}
-
-	result = get_a_printer(Printer, &printer, 2, lp_const_servicename(snum));
-	if (!W_ERROR_IS_OK(result)) {
-		return result;
-	}
-
-	result = push_spoolss_PrinterData(p->mem_ctx, &blob,
-					  r->in.type, &r->in.data);
-	if (!W_ERROR_IS_OK(result)) {
-		goto done;
-	}
-
-	/*
-	 * When client side code sets a magic printer data key, detect it and save
-	 * the current printer data and the magic key's data (its the DEVMODE) for
-	 * future printer/driver initializations.
-	 */
-	if ((r->in.type == REG_BINARY) && strequal(r->in.value_name, PHANTOM_DEVMODE_KEY)) {
-		/* Set devmode and printer initialization info */
-		result = save_driver_init(printer, 2, blob.data, blob.length);
-
-		srv_spoolss_reset_printerdata(printer->info_2->drivername);
-
-		goto done;
-	}
-
-	result = set_printer_dataex(printer, SPOOL_PRINTERDATA_KEY,
-				    r->in.value_name, r->in.type,
-				    blob.data, blob.length);
-	if (W_ERROR_IS_OK(result)) {
-		result = mod_a_printer(printer, 2);
-	}
-
-done:
-	free_a_printer(&printer, 2);
-
-	return result;
+	return _spoolss_SetPrinterDataEx(p, &r2);
 }
 
 /****************************************************************
@@ -8897,6 +8832,7 @@ WERROR _spoolss_SetPrinterDataEx(pipes_struct *p,
 	WERROR 			result = WERR_OK;
 	Printer_entry 		*Printer = find_printer_index_by_hnd(p, r->in.handle);
 	char			*oid_string;
+	DATA_BLOB blob;
 
 	DEBUG(4,("_spoolss_SetPrinterDataEx\n"));
 
@@ -8946,10 +8882,30 @@ WERROR _spoolss_SetPrinterDataEx(pipes_struct *p,
 		oid_string++;
 	}
 
+	result = push_spoolss_PrinterData(p->mem_ctx, &blob,
+					  r->in.type, &r->in.data);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	/*
+	 * When client side code sets a magic printer data key, detect it and save
+	 * the current printer data and the magic key's data (its the DEVMODE) for
+	 * future printer/driver initializations.
+	 */
+	if ((r->in.type == REG_BINARY) && strequal(r->in.value_name, PHANTOM_DEVMODE_KEY)) {
+		/* Set devmode and printer initialization info */
+		result = save_driver_init(printer, 2, blob.data, blob.length);
+
+		srv_spoolss_reset_printerdata(printer->info_2->drivername);
+
+		goto done;
+	}
+
 	/* save the registry data */
 
 	result = set_printer_dataex(printer, r->in.key_name, r->in.value_name,
-				    r->in.type, r->in.buffer, r->in.offered);
+				    r->in.type, blob.data, blob.length);
 
 	if (W_ERROR_IS_OK(result)) {
 		/* save the OID if one was specified */
