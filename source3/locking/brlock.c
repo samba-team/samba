@@ -333,6 +333,11 @@ NTSTATUS brl_lock_windows_default(struct byte_range_lock *br_lck,
 	SMB_ASSERT(plock->lock_type != UNLOCK_LOCK);
 
 	for (i=0; i < br_lck->num_locks; i++) {
+		if (locks[i].start + locks[i].size < locks[i].start) {
+			/* 64-bit wrap. Error. */
+			return NT_STATUS_INVALID_LOCK_RANGE;
+		}
+
 		/* Do any Windows or POSIX locks conflict ? */
 		if (brl_conflict(&locks[i], plock)) {
 			/* Remember who blocked us. */

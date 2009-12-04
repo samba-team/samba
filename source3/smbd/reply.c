@@ -7038,6 +7038,30 @@ NTSTATUS smbd_do_locking(struct smb_request *req,
 		if (type & LOCKING_ANDX_CANCEL_LOCK) {
 			struct blocking_lock_record *blr = NULL;
 
+			if (num_locks > 1) {
+				/*
+				 * MS-CIFS (2.2.4.32.1) states that a cancel is honored if and only
+				 * if the lock vector contains one entry. When given mutliple cancel
+				 * requests in a single PDU we expect the server to return an
+				 * error. Windows servers seem to accept the request but only
+				 * cancel the first lock.
+				 * JRA - Do what Windows does (tm) :-).
+				 */
+
+#if 0
+				/* MS-CIFS (2.2.4.32.1) behavior. */
+				return NT_STATUS_DOS(ERRDOS,
+						ERRcancelviolation);
+#else
+				/* Windows behavior. */
+				if (i != 0) {
+					DEBUG(10,("smbd_do_locking: ignoring subsequent "
+						"cancel request\n"));
+					continue;
+				}
+#endif
+			}
+
 			if (lp_blocking_locks(SNUM(conn))) {
 
 				/* Schedule a message to ourselves to
