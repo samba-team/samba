@@ -69,3 +69,13 @@ samba4.raw.sfileinfo.*.END-OF-FILE # bug 6962
 samba4.raw.oplock.*.BATCH22 # bug 6963
 samba4.raw.lock.*.zerobyteread # bug 6974
 samba4.smb2.lock.*.ZEROBYTEREAD # bug 6974
+samba4.raw.streams.*.DELETE
+samba4.raw.streams.*.CREATEDISP
+samba4.raw.streams.*.SUMTAB
+samba4.raw.acls.*.CREATE_DIR
+samba4.raw.acls.*.CREATE_FILE
+samba4.raw.acls.*.INHERITFLAGS
+samba4.smb2.create.*.ACLDIR
+samba4.smb2.acls.*.GENERIC
+samba4.smb2.acls.*.INHERITFLAGS
+samba4.smb2.acls.*.OWNER
