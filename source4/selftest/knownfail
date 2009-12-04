@@ -65,3 +65,5 @@ samba4.base.createx_access # this test is broken for non-administrator users
 samba4.smb2.oplock # oplocks in the s4 SMB2 server are a mess
 samba4.raw.lock.*.async # bug 6960
 samba4.smb2.lock.*.MULTIPLE-UNLOCK # bug 6959
+samba4.raw.sfileinfo.*.END-OF-FILE # bug 6962
+samba4.raw.oplock.*.BATCH22 # bug 6963
