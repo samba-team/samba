@@ -104,7 +104,10 @@ static int construct_primary_group_token(struct ldb_module *module,
 
 	ldb = ldb_module_get_ctx(module);
 
-	if (samdb_search_count(ldb, ldb, msg->dn, "(objectclass=group)") == 1) {
+	/* this is horrendously inefficient! we're doing a subtree
+	 * search for every DN we return. So that's N^2 in the
+	 * total number of objects! */
+	if (samdb_search_count(ldb, msg->dn, "(objectclass=group)") == 1) {
 		primary_group_token
 			= samdb_result_rid_from_sid(ldb, msg, "objectSid", 0);
 		return samdb_msg_add_int(ldb, ldb, msg, "primaryGroupToken",

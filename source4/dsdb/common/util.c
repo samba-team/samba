@@ -187,18 +187,19 @@ struct dom_sid *samdb_search_dom_sid(struct ldb_context *sam_ldb,
   return the count of the number of records in the sam matching the query
 */
 int samdb_search_count(struct ldb_context *sam_ldb,
-		       TALLOC_CTX *mem_ctx,
 		       struct ldb_dn *basedn,
-		       const char *format, ...) _PRINTF_ATTRIBUTE(4,5)
+		       const char *format, ...) _PRINTF_ATTRIBUTE(3,4)
 {
 	va_list ap;
 	struct ldb_message **res;
-	const char * const attrs[] = { NULL };
+	const char *attrs[] = { NULL };
 	int ret;
+	TALLOC_CTX *tmp_ctx = talloc_new(sam_ldb);
 
 	va_start(ap, format);
-	ret = gendb_search_v(sam_ldb, mem_ctx, basedn, &res, attrs, format, ap);
+	ret = gendb_search_v(sam_ldb, tmp_ctx, basedn, &res, attrs, format, ap);
 	va_end(ap);
+	talloc_free(tmp_ctx);
 
 	return ret;
 }

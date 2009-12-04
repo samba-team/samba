@@ -518,12 +518,12 @@ static NTSTATUS dcesrv_samr_info_DomGeneralInformation(struct samr_domain_state 
 	}
 
 	/* No users in BUILTIN, and the LOCAL group types are only in builtin, and the global group type is never in BUILTIN */
-	info->num_users = samdb_search_count(state->sam_ctx, mem_ctx, state->domain_dn, 
+	info->num_users = samdb_search_count(state->sam_ctx, state->domain_dn,
 					     "(objectClass=user)");
-	info->num_groups = samdb_search_count(state->sam_ctx, mem_ctx, state->domain_dn,
+	info->num_groups = samdb_search_count(state->sam_ctx, state->domain_dn,
 					      "(&(objectClass=group)(sAMAccountType=%u))",
 					      ATYPE_GLOBAL_GROUP);
-	info->num_aliases = samdb_search_count(state->sam_ctx, mem_ctx, state->domain_dn,
+	info->num_aliases = samdb_search_count(state->sam_ctx, state->domain_dn,
 					       "(&(objectClass=group)(sAMAccountType=%u))",
 					       ATYPE_LOCAL_GROUP);
 
