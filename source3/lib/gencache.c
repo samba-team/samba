@@ -55,6 +55,7 @@ static bool gencache_init(void)
 {
 	char* cache_fname = NULL;
 	int open_flags = O_RDWR|O_CREAT;
+	bool first_try = true;
 
 	/* skip file open if it's already opened */
 	if (cache) return True;
@@ -63,7 +64,30 @@ static bool gencache_init(void)
 
 	DEBUG(5, ("Opening cache file at %s\n", cache_fname));
 
+again:
 	cache = tdb_open_log(cache_fname, 0, TDB_DEFAULT, open_flags, 0644);
+	if (cache) {
+		int ret;
+		ret = tdb_check(cache, NULL, NULL);
+		if (ret != 0) {
+			tdb_close(cache);
+			cache = NULL;
+			if (!first_try) {
+				DEBUG(0, ("gencache_init: tdb_check(%s) failed\n",
+					  cache_fname));
+				return false;
+			}
+			first_try = false;
+			DEBUG(0, ("gencache_init: tdb_check(%s) failed - retry after CLEAR_IF_FIRST\n",
+				  cache_fname));
+			cache = tdb_open_log(cache_fname, 0, TDB_CLEAR_IF_FIRST, open_flags, 0644);
+			if (cache) {
+				tdb_close(cache);
+				cache = NULL;
+				goto again;
+			}
+		}
+	}
 
 	if (!cache && (errno == EACCES)) {
 		open_flags = O_RDONLY;
@@ -89,6 +113,7 @@ static bool gencache_init(void)
 		DEBUG(5, ("Opening %s failed: %s\n", cache_fname,
 			  strerror(errno)));
 		tdb_close(cache);
+		cache = NULL;
 		return false;
 	}
 
