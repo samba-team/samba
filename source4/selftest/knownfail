@@ -67,3 +67,5 @@ samba4.raw.lock.*.async # bug 6960
 samba4.smb2.lock.*.MULTIPLE-UNLOCK # bug 6959
 samba4.raw.sfileinfo.*.END-OF-FILE # bug 6962
 samba4.raw.oplock.*.BATCH22 # bug 6963
+samba4.raw.lock.*.zerobyteread # bug 6974
+samba4.smb2.lock.*.ZEROBYTEREAD # bug 6974

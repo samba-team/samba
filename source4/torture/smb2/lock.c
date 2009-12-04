@@ -1453,6 +1453,124 @@ done:
 	return ret;
 }
 
+static bool test_zerobyteread(struct torture_context *torture,
+			      struct smb2_tree *tree)
+{
+	NTSTATUS status;
+	bool ret = true;
+	struct smb2_handle h, h2;
+	uint8_t buf[200];
+	struct smb2_lock lck;
+	struct smb2_lock_element el[1];
+	struct smb2_read rd;
+
+	const char *fname = BASEDIR "\\zerobyteread.txt";
+
+	status = torture_smb2_testdir(tree, BASEDIR, &h);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smb2_util_close(tree, h);
+
+	status = torture_smb2_testfile(tree, fname, &h);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	ZERO_STRUCT(buf);
+	status = smb2_util_write(tree, h, buf, 0, ARRAY_SIZE(buf));
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = torture_smb2_testfile(tree, fname, &h2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Setup initial parameters */
+	lck.in.locks		= el;
+	lck.in.lock_count	= 0x0001;
+	lck.in.lock_sequence	= 0x00000000;
+	lck.in.file.handle	= h;
+
+	ZERO_STRUCT(rd);
+	rd.in.file.handle = h2;
+
+	torture_comment(torture, "Testing zero byte read on lock range:\n");
+
+	/* Take an exclusive lock */
+	torture_comment(torture, "  taking exclusive lock.\n");
+	el[0].offset		= 0;
+	el[0].length		= 10;
+	el[0].reserved		= 0x00000000;
+	el[0].flags		= SMB2_LOCK_FLAG_EXCLUSIVE |
+				  SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(lck.out.reserved, 0);
+
+	/* Try a zero byte read */
+	torture_comment(torture, "  reading 0 bytes.\n");
+	rd.in.offset      = 5;
+	rd.in.length      = 0;
+	status = smb2_read(tree, tree, &rd);
+	torture_assert_int_equal_goto(torture, rd.out.data.length, 0, ret, done,
+				      "zero byte read did not return 0 bytes");
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Unlock lock */
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(lck.out.reserved, 0);
+
+	torture_comment(torture, "Testing zero byte read on zero byte lock "
+				 "range:\n");
+
+	/* Take an exclusive lock */
+	torture_comment(torture, "  taking exclusive 0-byte lock.\n");
+	el[0].offset		= 5;
+	el[0].length		= 0;
+	el[0].reserved		= 0x00000000;
+	el[0].flags		= SMB2_LOCK_FLAG_EXCLUSIVE |
+				  SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(lck.out.reserved, 0);
+
+	/* Try a zero byte read before the lock */
+	torture_comment(torture, "  reading 0 bytes before the lock.\n");
+	rd.in.offset      = 4;
+	rd.in.length      = 0;
+	status = smb2_read(tree, tree, &rd);
+	torture_assert_int_equal_goto(torture, rd.out.data.length, 0, ret, done,
+				      "zero byte read did not return 0 bytes");
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Try a zero byte read on the lock */
+	torture_comment(torture, "  reading 0 bytes on the lock.\n");
+	rd.in.offset      = 5;
+	rd.in.length      = 0;
+	status = smb2_read(tree, tree, &rd);
+	torture_assert_int_equal_goto(torture, rd.out.data.length, 0, ret, done,
+				      "zero byte read did not return 0 bytes");
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Try a zero byte read after the lock */
+	torture_comment(torture, "  reading 0 bytes after the lock.\n");
+	rd.in.offset      = 6;
+	rd.in.length      = 0;
+	status = smb2_read(tree, tree, &rd);
+	torture_assert_int_equal_goto(torture, rd.out.data.length, 0, ret, done,
+				      "zero byte read did not return 0 bytes");
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Unlock lock */
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(lck.out.reserved, 0);
+
+done:
+	smb2_util_close(tree, h2);
+	smb2_util_close(tree, h);
+	smb2_deltree(tree, BASEDIR);
+	return ret;
+}
+
 static bool test_unlock(struct torture_context *torture,
 		        struct smb2_tree *tree)
 {
@@ -2750,6 +2868,8 @@ struct torture_suite *torture_smb2_lock_init(void)
 	torture_suite_add_1smb2_test(suite, "ERRORCODE", test_errorcode);
 	torture_suite_add_1smb2_test(suite, "ZEROBYTELENGTH",
 	    test_zerobytelength);
+	torture_suite_add_1smb2_test(suite, "ZEROBYTEREAD",
+	    test_zerobyteread);
 	torture_suite_add_1smb2_test(suite, "UNLOCK", test_unlock);
 	torture_suite_add_1smb2_test(suite, "MULTIPLE-UNLOCK",
 	    test_multiple_unlock);

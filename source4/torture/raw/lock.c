@@ -1997,7 +1997,158 @@ done:
 	return ret;
 }
 
-/* 
+/**
+ * Test how 0-byte read requests contend with byte range locks
+ */
+static bool test_zerobyteread(struct torture_context *tctx,
+			      struct smbcli_state *cli)
+{
+	union smb_lock io;
+	union smb_read rd;
+	NTSTATUS status;
+	bool ret = true;
+	int fnum1, fnum2;
+	const char *fname = BASEDIR "\\zerobyteread.txt";
+	struct smb_lock_entry lock1;
+	uint8_t c = 1;
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
+
+	io.generic.level = RAW_LOCK_LOCKX;
+
+	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
+	torture_assert(tctx,(fnum1 != -1), talloc_asprintf(tctx,
+		       "Failed to create %s - %s\n",
+		       fname, smbcli_errstr(cli->tree)));
+
+	fnum2 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
+	torture_assert(tctx,(fnum2 != -1), talloc_asprintf(tctx,
+		       "Failed to create %s - %s\n",
+		       fname, smbcli_errstr(cli->tree)));
+
+	/* Setup initial parameters */
+	io.lockx.level = RAW_LOCK_LOCKX;
+	io.lockx.in.timeout = 0;
+
+	lock1.pid = cli->session->pid;
+	lock1.offset = 0;
+	lock1.count = 10;
+
+	ZERO_STRUCT(rd);
+	rd.readx.level = RAW_READ_READX;
+
+	torture_comment(tctx, "Testing zero byte read on lock range:\n");
+
+	/* Take an exclusive lock */
+	torture_comment(tctx, "  taking exclusive lock.\n");
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	io.lockx.in.mode = LOCKING_ANDX_EXCLUSIVE_LOCK;
+	io.lockx.in.file.fnum = fnum1;
+	io.lockx.in.locks = &lock1;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Try a zero byte read */
+	torture_comment(tctx, "  reading 0 bytes.\n");
+	rd.readx.in.file.fnum = fnum2;
+	rd.readx.in.offset    = 5;
+	rd.readx.in.mincnt    = 0;
+	rd.readx.in.maxcnt    = 0;
+	rd.readx.in.remaining = 0;
+	rd.readx.in.read_for_execute = false;
+	rd.readx.out.data     = &c;
+	status = smb_raw_read(cli->tree, &rd);
+	torture_assert_int_equal_goto(tctx, rd.readx.out.nread, 0, ret, done,
+				      "zero byte read did not return 0 bytes");
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Unlock lock */
+	io.lockx.in.ulock_cnt = 1;
+	io.lockx.in.lock_cnt = 0;
+	io.lockx.in.mode = LOCKING_ANDX_EXCLUSIVE_LOCK;
+	io.lockx.in.file.fnum = fnum1;
+	io.lockx.in.locks = &lock1;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	torture_comment(tctx, "Testing zero byte read on zero byte lock "
+			      "range:\n");
+
+	/* Take an exclusive lock */
+	torture_comment(tctx, "  taking exclusive 0-byte lock.\n");
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	io.lockx.in.mode = LOCKING_ANDX_EXCLUSIVE_LOCK;
+	io.lockx.in.file.fnum = fnum1;
+	io.lockx.in.locks = &lock1;
+	lock1.offset = 5;
+	lock1.count = 0;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Try a zero byte read before the lock */
+	torture_comment(tctx, "  reading 0 bytes before the lock.\n");
+	rd.readx.in.file.fnum = fnum2;
+	rd.readx.in.offset    = 4;
+	rd.readx.in.mincnt    = 0;
+	rd.readx.in.maxcnt    = 0;
+	rd.readx.in.remaining = 0;
+	rd.readx.in.read_for_execute = false;
+	rd.readx.out.data     = &c;
+	status = smb_raw_read(cli->tree, &rd);
+	torture_assert_int_equal_goto(tctx, rd.readx.out.nread, 0, ret, done,
+				      "zero byte read did not return 0 bytes");
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Try a zero byte read on the lock */
+	torture_comment(tctx, "  reading 0 bytes on the lock.\n");
+	rd.readx.in.file.fnum = fnum2;
+	rd.readx.in.offset    = 5;
+	rd.readx.in.mincnt    = 0;
+	rd.readx.in.maxcnt    = 0;
+	rd.readx.in.remaining = 0;
+	rd.readx.in.read_for_execute = false;
+	rd.readx.out.data     = &c;
+	status = smb_raw_read(cli->tree, &rd);
+	torture_assert_int_equal_goto(tctx, rd.readx.out.nread, 0, ret, done,
+				      "zero byte read did not return 0 bytes");
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Try a zero byte read after the lock */
+	torture_comment(tctx, "  reading 0 bytes after the lock.\n");
+	rd.readx.in.file.fnum = fnum2;
+	rd.readx.in.offset    = 6;
+	rd.readx.in.mincnt    = 0;
+	rd.readx.in.maxcnt    = 0;
+	rd.readx.in.remaining = 0;
+	rd.readx.in.read_for_execute = false;
+	rd.readx.out.data     = &c;
+	status = smb_raw_read(cli->tree, &rd);
+	torture_assert_int_equal_goto(tctx, rd.readx.out.nread, 0, ret, done,
+				      "zero byte read did not return 0 bytes");
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Unlock lock */
+	io.lockx.in.ulock_cnt = 1;
+	io.lockx.in.lock_cnt = 0;
+	io.lockx.in.mode = LOCKING_ANDX_EXCLUSIVE_LOCK;
+	io.lockx.in.file.fnum = fnum1;
+	io.lockx.in.locks = &lock1;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+done:
+	smbcli_close(cli->tree, fnum1);
+	smbcli_close(cli->tree, fnum2);
+	smb_raw_exit(cli->session);
+	smbcli_deltree(cli->tree, BASEDIR);
+	return ret;
+}
+
+/*
    basic testing of lock calls
 */
 struct torture_suite *torture_raw_lock(TALLOC_CTX *mem_ctx)
@@ -2017,6 +2168,8 @@ struct torture_suite *torture_raw_lock(TALLOC_CTX *mem_ctx)
 	    test_multiple_unlock);
 	torture_suite_add_1smb_test(suite, "zerobytelocks",
 	    test_zerobytelocks);
+	torture_suite_add_1smb_test(suite, "zerobyteread",
+	    test_zerobyteread);
 
 	return suite;
 }
