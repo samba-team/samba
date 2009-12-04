@@ -322,13 +322,6 @@ static NTSTATUS onefs_open_file(files_struct *fsp,
 		fsp->aio_write_behind = True;
 	}
 
-	status = fsp_set_smb_fname(fsp, smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		fd_close(fsp);
-		errno = map_errno_from_nt_status(status);
-		return status;
-	}
-
 	fsp->wcp = NULL; /* Write cache pointer. */
 
 	DEBUG(2,("%s opened file %s read=%s write=%s (numopen=%d)\n",
