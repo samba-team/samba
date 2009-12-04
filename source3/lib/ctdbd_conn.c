@@ -514,6 +514,11 @@ NTSTATUS ctdbd_messaging_connection(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
+struct messaging_context *ctdb_conn_msg_ctx(struct ctdbd_connection *conn)
+{
+	return conn->msg_ctx;
+}
+
 /*
  * Packet handler to receive and handle a ctdb message
  */

@@ -31,6 +31,7 @@ uint32 ctdbd_vnn(const struct ctdbd_connection *conn);
 
 NTSTATUS ctdbd_register_msg_ctx(struct ctdbd_connection *conn,
 				struct messaging_context *msg_ctx);
+struct messaging_context *ctdb_conn_msg_ctx(struct ctdbd_connection *conn);
 
 NTSTATUS ctdbd_messaging_send(struct ctdbd_connection *conn,
 			      uint32 dst_vnn, uint64 dst_srvid,
