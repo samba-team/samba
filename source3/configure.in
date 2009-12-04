@@ -2977,6 +2977,22 @@ exit(1);
   fi
 fi
 
+# glibc up to 2.3.6 had dangerously broken posix_fallocate(). DON'T USE IT.
+AC_CACHE_CHECK([for broken posix_fallocate],samba_cv_HAVE_BROKEN_POSIX_FALLOCATE,[
+AC_TRY_COMPILE([
+  #define _XOPEN_SOURCE 600
+  #include <stdlib.h>
+  #if defined(__GLIBC__) && ((__GLIBC__ < 2) || (__GLIBC__ == 2 && __GLIBC_MINOR__ < 4))
+    probably broken posix_fallocate
+  #endif
+], [
+], 
+samba_cv_HAVE_BROKEN_POSIX_FALLOCATE=no,samba_cv_HAVE_BROKEN_POSIX_FALLOCATE=yes)])
+if test x"$samba_cv_HAVE_BROKEN_POSIX_FALLOCATE" = xyes; then
+	AC_DEFINE(HAVE_BROKEN_POSIX_FALLOCATE,, Whether we have a broken posix_fallocate)
+fi
+
+
 AC_CACHE_CHECK([for st_blocks in struct stat],samba_cv_HAVE_STAT_ST_BLOCKS,[
 AC_TRY_COMPILE([#include <sys/types.h>
 #include <sys/stat.h>

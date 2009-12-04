@@ -612,7 +612,7 @@ int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf,
 /*******************************************************************
  An posix_fallocate() wrapper that will deal with 64 bit filesizes.
 ********************************************************************/
-#if defined(HAVE_POSIX_FALLOCATE64) || defined(HAVE_POSIX_FALLOCATE)
+#if (defined(HAVE_POSIX_FALLOCATE64) || defined(HAVE_POSIX_FALLOCATE)) && !defined(HAVE_BROKEN_POSIX_FALLOCATE)
 int sys_posix_fallocate(int fd, SMB_OFF_T offset, SMB_OFF_T len)
 {
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_POSIX_FALLOCATE64)
