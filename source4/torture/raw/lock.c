@@ -69,19 +69,20 @@
 	}} while (0)
 #define BASEDIR "\\testlock"
 
+#define TARGET_IS_W2K8(_tctx) (torture_setting_bool(_tctx, "w2k8", false))
+#define TARGET_IS_WIN7(_tctx) (torture_setting_bool(_tctx, "win7", false))
+#define TARGET_IS_WINDOWS(_tctx) ((torture_setting_bool(_tctx, "w2k8", false)) || \
+				  (torture_setting_bool(_tctx, "win7", false)) || \
+				  (torture_setting_bool(_tctx, "w2k3", false)))
+#define TARGET_IS_SAMBA3(_tctx) (torture_setting_bool(_tctx, "samba3", false))
+#define TARGET_IS_SAMBA4(_tctx) (torture_setting_bool(_tctx, "samba4", false))
+
+#define TARGET_SUPPORTS_INVALID_LOCK_RANGE(_tctx) \
+	(torture_setting_bool(_tctx, "invalid_lock_range_support", true))
 #define TARGET_SUPPORTS_SMBLOCK(_tctx) \
     (torture_setting_bool(_tctx, "smblock_pdu_support", true))
 #define TARGET_SUPPORTS_OPENX_DENY_DOS(_tctx) \
     (torture_setting_bool(_tctx, "openx_deny_dos_support", true))
-#define TARGET_SUPPORTS_INVALID_LOCK_RANGE(_tctx) \
-    (torture_setting_bool(_tctx, "invalid_lock_range_support", true))
-#define TARGET_IS_W2K8(_tctx) (torture_setting_bool(_tctx, "w2k8", false))
-#define TARGET_IS_WIN7(_tctx) (torture_setting_bool(_tctx, "win7", false))
-#define TARGET_IS_WINDOWS(_tctx) ((torture_setting_bool(_tctx, "w2k8", false)) || \
-				  (torture_setting_bool(_tctx, "win7", false)))
-#define TARGET_IS_SAMBA3(_tctx) (torture_setting_bool(_tctx, "samba3", false))
-#define TARGET_IS_SAMBA4(_tctx) (torture_setting_bool(_tctx, "samba4", false))
-
 /*
   test SMBlock and SMBunlock ops
 */
@@ -576,7 +577,8 @@ static bool test_async(struct torture_context *tctx,
 	 * requests in a single PDU we expect the server to return an
 	 * error. Samba4 handles this correctly. Windows servers seem to
 	 * accept the request but only cancel the first lock.  Samba3
-	 * cancels both locks. */
+	 * now does what Windows does (JRA).
+	 */
 	torture_comment(tctx, "testing multiple cancel\n");
 
 	/* acquire second lock */
@@ -607,45 +609,35 @@ static bool test_async(struct torture_context *tctx,
 	io.lockx.in.mode = LOCKING_ANDX_CANCEL_LOCK | LOCKING_ANDX_LARGE_FILES;
 	io.lockx.in.locks = lock;
 	status = smb_raw_lock(cli->tree, &io);
-	if (TARGET_IS_WINDOWS(tctx) || TARGET_IS_SAMBA3(tctx)) {
-		CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_STATUS(status, NT_STATUS_OK);
 
-		torture_warning(tctx, "Target server accepted a lock cancel "
-				      "request with multiple locks. This violates "
-				      "MS-CIFS 2.2.4.32.1.\n");
+	torture_warning(tctx, "Target server accepted a lock cancel "
+			      "request with multiple locks. This violates "
+			      "MS-CIFS 2.2.4.32.1.\n");
 
-		/* receive the failed lock requests */
-		status = smbcli_request_simple_recv(req);
-		CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
+	/* receive the failed lock requests */
+	status = smbcli_request_simple_recv(req);
+	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
 
-		torture_assert(tctx,!(time(NULL) > t+2), talloc_asprintf(tctx,
-			       "first lock was not cancelled immediately (%s)\n",
-			       __location__));
+	torture_assert(tctx,!(time(NULL) > t+2), talloc_asprintf(tctx,
+		       "first lock was not cancelled immediately (%s)\n",
+		       __location__));
 
-		/* send cancel to second lock */
-		io.lockx.in.timeout = 0;
-		io.lockx.in.lock_cnt = 1;
-		io.lockx.in.mode = LOCKING_ANDX_CANCEL_LOCK |
-				   LOCKING_ANDX_LARGE_FILES;
-		io.lockx.in.locks = &lock[1];
-		status = smb_raw_lock(cli->tree, &io);
-		if (TARGET_IS_SAMBA3(tctx)) {
-			/* Samba3 supports multiple cancels in a single PDU. */
-			CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS,
-							   ERRcancelviolation));
-		} else {
-			CHECK_STATUS(status, NT_STATUS_OK);
-		}
+	/* send cancel to second lock */
+	io.lockx.in.timeout = 0;
+	io.lockx.in.lock_cnt = 1;
+	io.lockx.in.mode = LOCKING_ANDX_CANCEL_LOCK |
+			   LOCKING_ANDX_LARGE_FILES;
+	io.lockx.in.locks = &lock[1];
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
 
-		status = smbcli_request_simple_recv(req2);
-		CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
+	status = smbcli_request_simple_recv(req2);
+	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
 
-		torture_assert(tctx,!(time(NULL) > t+2), talloc_asprintf(tctx,
-			       "second lock was not cancelled immediately (%s)\n",
-			       __location__));
-	} else {
-		CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRcancelviolation));
-	}
+	torture_assert(tctx,!(time(NULL) > t+2), talloc_asprintf(tctx,
+		       "second lock was not cancelled immediately (%s)\n",
+		       __location__));
 
 	/* cleanup the second lock */
 	io.lockx.in.ulock_cnt = 1;
