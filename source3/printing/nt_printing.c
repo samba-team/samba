@@ -3833,6 +3833,13 @@ static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 *info,
 		goto fail;
 	}
 
+	info->data = TALLOC_ZERO_P(info, NT_PRINTER_DATA);
+	if (!info->data) {
+		goto fail;
+	}
+
+	add_new_printer_key(info->data, SPOOL_PRINTERDATA_KEY);
+
 	return WERR_OK;
 
 fail:
