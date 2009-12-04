@@ -11710,8 +11710,8 @@ struct tevent_req *rpccli_spoolss_SetPrinterDataEx_send(TALLOC_CTX *mem_ctx,
 							const char *_key_name /* [in] [charset(UTF16)] */,
 							const char *_value_name /* [in] [charset(UTF16)] */,
 							enum winreg_Type _type /* [in]  */,
-							uint8_t *_buffer /* [in] [ref,size_is(offered)] */,
-							uint32_t _offered /* [in]  */)
+							union spoolss_PrinterData _data /* [in] [subcontext(4),switch_is(type)] */,
+							uint32_t __offered /* [in] [value(ndr_size_spoolss_PrinterData(&data,type,ndr->iconv_convenience,flags))] */)
 {
 	struct tevent_req *req;
 	struct rpccli_spoolss_SetPrinterDataEx_state *state;
@@ -11730,8 +11730,8 @@ struct tevent_req *rpccli_spoolss_SetPrinterDataEx_send(TALLOC_CTX *mem_ctx,
 	state->orig.in.key_name = _key_name;
 	state->orig.in.value_name = _value_name;
 	state->orig.in.type = _type;
-	state->orig.in.buffer = _buffer;
-	state->orig.in.offered = _offered;
+	state->orig.in.data = _data;
+	state->orig.in._offered = __offered;
 
 	/* Out parameters */
 
@@ -11814,8 +11814,8 @@ NTSTATUS rpccli_spoolss_SetPrinterDataEx(struct rpc_pipe_client *cli,
 					 const char *key_name /* [in] [charset(UTF16)] */,
 					 const char *value_name /* [in] [charset(UTF16)] */,
 					 enum winreg_Type type /* [in]  */,
-					 uint8_t *buffer /* [in] [ref,size_is(offered)] */,
-					 uint32_t offered /* [in]  */,
+					 union spoolss_PrinterData data /* [in] [subcontext(4),switch_is(type)] */,
+					 uint32_t _offered /* [in] [value(ndr_size_spoolss_PrinterData(&data,type,ndr->iconv_convenience,flags))] */,
 					 WERROR *werror)
 {
 	struct spoolss_SetPrinterDataEx r;
@@ -11826,8 +11826,8 @@ NTSTATUS rpccli_spoolss_SetPrinterDataEx(struct rpc_pipe_client *cli,
 	r.in.key_name = key_name;
 	r.in.value_name = value_name;
 	r.in.type = type;
-	r.in.buffer = buffer;
-	r.in.offered = offered;
+	r.in.data = data;
+	r.in._offered = _offered;
 
 	status = cli->dispatch(cli,
 				mem_ctx,
@@ -11868,9 +11868,9 @@ struct tevent_req *rpccli_spoolss_GetPrinterDataEx_send(TALLOC_CTX *mem_ctx,
 							struct policy_handle *_handle /* [in] [ref] */,
 							const char *_key_name /* [in] [charset(UTF16)] */,
 							const char *_value_name /* [in] [charset(UTF16)] */,
-							enum winreg_Type *_type /* [out] [ref] */,
-							uint8_t *_buffer /* [out] [ref,size_is(offered)] */,
 							uint32_t _offered /* [in]  */,
+							enum winreg_Type *_type /* [out] [ref] */,
+							union spoolss_PrinterData *_data /* [out] [subcontext_size(offered),ref,subcontext(4),switch_is(*type)] */,
 							uint32_t *_needed /* [out] [ref] */)
 {
 	struct tevent_req *req;
@@ -11893,7 +11893,7 @@ struct tevent_req *rpccli_spoolss_GetPrinterDataEx_send(TALLOC_CTX *mem_ctx,
 
 	/* Out parameters */
 	state->orig.out.type = _type;
-	state->orig.out.buffer = _buffer;
+	state->orig.out.data = _data;
 	state->orig.out.needed = _needed;
 
 	/* Result */
@@ -11943,7 +11943,7 @@ static void rpccli_spoolss_GetPrinterDataEx_done(struct tevent_req *subreq)
 
 	/* Copy out parameters */
 	*state->orig.out.type = *state->tmp.out.type;
-	memcpy(state->orig.out.buffer, state->tmp.out.buffer, (state->tmp.in.offered) * sizeof(*state->orig.out.buffer));
+	*state->orig.out.data = *state->tmp.out.data;
 	*state->orig.out.needed = *state->tmp.out.needed;
 
 	/* Copy result */
@@ -11983,9 +11983,9 @@ NTSTATUS rpccli_spoolss_GetPrinterDataEx(struct rpc_pipe_client *cli,
 					 struct policy_handle *handle /* [in] [ref] */,
 					 const char *key_name /* [in] [charset(UTF16)] */,
 					 const char *value_name /* [in] [charset(UTF16)] */,
-					 enum winreg_Type *type /* [out] [ref] */,
-					 uint8_t *buffer /* [out] [ref,size_is(offered)] */,
 					 uint32_t offered /* [in]  */,
+					 enum winreg_Type *type /* [out] [ref] */,
+					 union spoolss_PrinterData *data /* [out] [subcontext_size(offered),ref,subcontext(4),switch_is(*type)] */,
 					 uint32_t *needed /* [out] [ref] */,
 					 WERROR *werror)
 {
@@ -12014,7 +12014,7 @@ NTSTATUS rpccli_spoolss_GetPrinterDataEx(struct rpc_pipe_client *cli,
 
 	/* Return variables */
 	*type = *r.out.type;
-	memcpy(buffer, r.out.buffer, (r.in.offered) * sizeof(*buffer));
+	*data = *r.out.data;
 	*needed = *r.out.needed;
 
 	/* Return result */

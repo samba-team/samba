@@ -6147,8 +6147,8 @@ static bool api_spoolss_GetPrinterDataEx(pipes_struct *p)
 		return false;
 	}
 
-	r->out.buffer = talloc_zero_array(r, uint8_t, r->in.offered);
-	if (r->out.buffer == NULL) {
+	r->out.data = talloc_zero(r, union spoolss_PrinterData);
+	if (r->out.data == NULL) {
 		talloc_free(r);
 		return false;
 	}
@@ -9465,8 +9465,8 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.buffer = talloc_zero_array(mem_ctx, uint8_t, r->in.offered);
-			if (r->out.buffer == NULL) {
+			r->out.data = talloc_zero(mem_ctx, union spoolss_PrinterData);
+			if (r->out.data == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
