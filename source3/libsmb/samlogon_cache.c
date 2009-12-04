@@ -34,12 +34,50 @@ static TDB_CONTEXT *netsamlogon_tdb = NULL;
 
 bool netsamlogon_cache_init(void)
 {
-	if (!netsamlogon_tdb) {
-		netsamlogon_tdb = tdb_open_log(cache_path(NETSAMLOGON_TDB), 0,
-					       TDB_DEFAULT, O_RDWR | O_CREAT, 0600);
+	bool first_try = true;
+	const char *path = NULL;
+	int ret;
+	struct tdb_context *tdb;
+
+	if (netsamlogon_tdb) {
+		return true;
 	}
 
-	return (netsamlogon_tdb != NULL);
+	path = cache_path(NETSAMLOGON_TDB);
+again:
+	tdb = tdb_open_log(path, 0, TDB_DEFAULT,
+			   O_RDWR | O_CREAT, 0600);
+	if (tdb == NULL) {
+		DEBUG(0,("tdb_open_log('%s') - failed\n", path));
+		goto clear;
+	}
+
+	ret = tdb_check(tdb, NULL, NULL);
+	if (ret != 0) {
+		tdb_close(tdb);
+		DEBUG(0,("tdb_check('%s') - failed\n", path));
+		goto clear;
+	}
+
+	netsamlogon_tdb = tdb;
+	return true;
+
+clear:
+	if (!first_try) {
+		return false;
+	}
+	first_try = false;
+
+	DEBUG(0,("retry after CLEAR_IF_FIRST for '%s'\n", path));
+	tdb = tdb_open_log(path, 0, TDB_CLEAR_IF_FIRST,
+			   O_RDWR | O_CREAT, 0600);
+	if (tdb) {
+		tdb_close(tdb);
+		goto again;
+	}
+	DEBUG(0,("tdb_open_log(%s) with CLEAR_IF_FIRST - failed\n", path));
+
+	return false;
 }
 
 
