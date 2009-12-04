@@ -474,6 +474,7 @@ int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile, bool use_sy
 typedef int (*ctdb_traverse_func)(struct ctdb_context *, TDB_DATA, TDB_DATA, void *);
 int ctdb_traverse(struct ctdb_db_context *ctdb_db, ctdb_traverse_func fn, void *private_data);
 
+int ctdb_dumpdb_record(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA data, void *p);
 int ctdb_dump_db(struct ctdb_db_context *ctdb_db, FILE *f);
 
 /*

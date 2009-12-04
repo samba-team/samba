@@ -1887,7 +1887,7 @@ int ctdb_traverse(struct ctdb_db_context *ctdb_db, ctdb_traverse_func fn, void *
 /*
   called on each key during a catdb
  */
-static int dumpdb_fn(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA data, void *p)
+int ctdb_dumpdb_record(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA data, void *p)
 {
 	int i;
 	FILE *f = (FILE *)p;
@@ -1926,7 +1926,7 @@ static int dumpdb_fn(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA data, voi
  */
 int ctdb_dump_db(struct ctdb_db_context *ctdb_db, FILE *f)
 {
-	return ctdb_traverse(ctdb_db, dumpdb_fn, f);
+	return ctdb_traverse(ctdb_db, ctdb_dumpdb_record, f);
 }
 
 /*
