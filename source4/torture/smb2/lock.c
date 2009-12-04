@@ -2626,8 +2626,8 @@ static bool test_overlap(struct torture_context *torture,
 	      NT_STATUS_IS_OK(torture_smb2_testfile(tree, fname, &h)) &&
 	      NT_STATUS_IS_OK(smb2cli_lock(tree, h, 7, 1, true));
 	EXPECTED(ret, true);
-	torture_comment(torture, "the server %s have the NT byte range lock bug\n",
-				 !ret?"does":"doesn't");
+	torture_comment(torture, "the server %s have the NT byte range lock "
+				 "bug\n", !ret?"does":"doesn't");
 
 done:
 	smb2_util_close(tree2, h3);
@@ -2694,8 +2694,8 @@ static bool test_truncate(struct torture_context *torture,
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	/* On second handle open the file with OVERWRITE disposition */
-	torture_comment(torture, "  overwrite disposition is allowed on a locked "
-				 "file.\n");
+	torture_comment(torture, "  overwrite disposition is allowed on a "
+				 "locked file.\n");
 
 	io.in.create_disposition = NTCREATEX_DISP_OVERWRITE;
 	status = smb2_create(tree, tree, &io);
@@ -2704,8 +2704,8 @@ static bool test_truncate(struct torture_context *torture,
 	smb2_util_close(tree, h2);
 
 	/* On second handle open the file with SUPERSEDE disposition */
-	torture_comment(torture, "  supersede disposition is allowed on a locked "
-				 "file.\n");
+	torture_comment(torture, "  supersede disposition is allowed on a "
+				 "locked file.\n");
 
 	io.in.create_disposition = NTCREATEX_DISP_SUPERSEDE;
 	status = smb2_create(tree, tree, &io);
