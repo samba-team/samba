@@ -2525,24 +2525,49 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x4d */
-	WERROR spoolss_SetPrinterDataEx(
+	[noopnum,nopull,noprint,public] WERROR _spoolss_SetPrinterDataEx(
 		[in,ref] policy_handle *handle,
-		[in] 	 [string,charset(UTF16)] uint16 key_name[],
-		[in] 	 [string,charset(UTF16)] uint16 value_name[],
-		[in] 	 winreg_Type type,
-		[in,ref] [size_is(offered)] uint8 *buffer,
-		[in] 	 uint32 offered
+		[in] [string,charset(UTF16)] uint16 key_name[],
+		[in] [string,charset(UTF16)] uint16 value_name[],
+		[in] winreg_Type type,
+		[in] DATA_BLOB data,
+		[in] uint32 _offered
+	);
+	[noopnum,nopull,noprint,public] void __spoolss_SetPrinterDataEx(
+		[in] winreg_Type type,
+		[out,ref,switch_is(type)] spoolss_PrinterData *data
+	);
+	[nopush] WERROR spoolss_SetPrinterDataEx(
+		[in,ref] policy_handle *handle,
+		[in] [string,charset(UTF16)] uint16 key_name[],
+		[in] [string,charset(UTF16)] uint16 value_name[],
+		[in] winreg_Type type,
+		[in,subcontext(4),switch_is(type)] spoolss_PrinterData data,
+		[in,value(ndr_size_spoolss_PrinterData(&data,type,ndr->iconv_convenience,flags))] uint32 _offered
 	);
 
 	/******************/
 	/* Function: 0x4e */
-	WERROR spoolss_GetPrinterDataEx(
+	[noopnum,noprint,public] WERROR _spoolss_GetPrinterDataEx(
 		[in,ref] policy_handle *handle,
 		[in] 	 [string,charset(UTF16)] uint16 key_name[],
 		[in] 	 [string,charset(UTF16)] uint16 value_name[],
-		[out,ref] winreg_Type *type,
-		[out,ref] [size_is(offered)] uint8 *buffer,
 		[in] 	 uint32 offered,
+		[out,ref] winreg_Type *type,
+		[out,ref] DATA_BLOB *data,
+		[out,ref] uint32 *needed
+	);
+	[noopnum,noprint,public] void __spoolss_GetPrinterDataEx(
+		[in] winreg_Type type,
+		[out,ref,switch_is(type)] spoolss_PrinterData *data
+	);
+	[nopull,nopush,public] WERROR spoolss_GetPrinterDataEx(
+		[in,ref] policy_handle *handle,
+		[in] 	 [string,charset(UTF16)] uint16 key_name[],
+		[in] 	 [string,charset(UTF16)] uint16 value_name[],
+		[in] 	 uint32 offered,
+		[out,ref] winreg_Type *type,
+		[out,ref,subcontext(4),subcontext_size(offered),switch_is(*type)] spoolss_PrinterData *data,
 		[out,ref] uint32 *needed
 	);
 
