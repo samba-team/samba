@@ -2076,7 +2076,7 @@ ADS_STATUS ads_move_machine_acct(ADS_STRUCT *ads, const char *machine_name,
 done:
 	ads_msgfree(ads, res);
 	SAFE_FREE(filter);
-	SAFE_FREE(computer_dn);
+	TALLOC_FREE(computer_dn);
 	SAFE_FREE(computer_rdn);
 
 	if (!ADS_ERR_OK(rc)) {
