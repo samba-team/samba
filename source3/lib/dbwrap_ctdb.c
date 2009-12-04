@@ -381,6 +381,8 @@ again:
 	pid = getpid();
 	data.dptr = (unsigned char *)&pid;
 	data.dsize = sizeof(pid_t);
+	crec->header.rsn++;
+	crec->header.dmaster = get_my_vnn();
 	status = db_ctdb_ltdb_store(ctx, key, &(crec->header), data);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, (__location__ " Failed to store pid in transaction "
