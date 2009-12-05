@@ -1186,7 +1186,8 @@ static bool test_inheritance(struct torture_context *tctx, struct smb2_tree *tre
 		CHECK_ACCESS_FLAGS(handle2, SEC_RIGHTS_FILE_ALL);
 		smb2_util_close(tree, handle2);
 	} else {
-		if (TARGET_IS_WIN7(tctx)) {
+		if (torture_setting_bool(tctx, "hide_on_access_denied",
+					 false)) {
 			CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 		} else {
 			CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
@@ -1197,7 +1198,7 @@ static bool test_inheritance(struct torture_context *tctx, struct smb2_tree *tre
 	io.in.create_disposition = NTCREATEX_DISP_OPEN;
 	io.in.desired_access = SEC_RIGHTS_FILE_ALL & ~SEC_FILE_EXECUTE;
 	status = smb2_create(tree, tctx, &io);
-	if (TARGET_IS_WIN7(tctx)) {
+	if (torture_setting_bool(tctx, "hide_on_access_denied", false)) {
 		CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 	} else {
 		CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
@@ -1207,7 +1208,7 @@ static bool test_inheritance(struct torture_context *tctx, struct smb2_tree *tre
 	io.in.create_disposition = NTCREATEX_DISP_OPEN;
 	io.in.desired_access = SEC_RIGHTS_FILE_ALL;
 	status = smb2_create(tree, tctx, &io);
-	if (TARGET_IS_WIN7(tctx)) {
+	if (torture_setting_bool(tctx, "hide_on_access_denied", false)) {
 		CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 	} else {
 		CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
@@ -1232,7 +1233,7 @@ static bool test_inheritance(struct torture_context *tctx, struct smb2_tree *tre
 
 	io.in.desired_access = SEC_RIGHTS_FILE_ALL;
 	status = smb2_create(tree, tctx, &io);
-	if (TARGET_IS_WIN7(tctx)) {
+	if (torture_setting_bool(tctx, "hide_on_access_denied", false)) {
 		CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 	} else {
 		CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);

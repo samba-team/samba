@@ -113,4 +113,10 @@ bool torture_register_suite(struct torture_suite *suite);
  * the appropriate test.
  */
 
+/* torture:hide_on_acess_denied
+ *
+ * Some servers (win7) choose to hide files when certain access has been
+ * denied.  When true, torture will expect NT_STATUS_OBJECT_NAME_NOT_FOUND
+ * rather than NT_STATUS_ACCESS_DENIED when trying to open one of these files.
+ */
 #endif /* __SMBTORTURE_H__ */

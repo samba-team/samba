@@ -1302,22 +1302,38 @@ static bool test_create_null_dacl(struct torture_context *tctx,
 	torture_comment(tctx, "try open for write => access_denied\n");
 	io.in.desired_access = SEC_FILE_WRITE_DATA;
 	status = smb2_create(tree, tctx, &io);
-	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+	if (torture_setting_bool(tctx, "hide_on_access_denied", false)) {
+		CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+	}
 
 	torture_comment(tctx, "try open for read => access_denied\n");
 	io.in.desired_access = SEC_FILE_READ_DATA;
 	status = smb2_create(tree, tctx, &io);
-	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+	if (torture_setting_bool(tctx, "hide_on_access_denied", false)) {
+		CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+	}
 
 	torture_comment(tctx, "try open for generic write => access_denied\n");
 	io.in.desired_access = SEC_GENERIC_WRITE;
 	status = smb2_create(tree, tctx, &io);
-	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+	if (torture_setting_bool(tctx, "hide_on_access_denied", false)) {
+		CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+	}
 
 	torture_comment(tctx, "try open for generic read => access_denied\n");
 	io.in.desired_access = SEC_GENERIC_READ;
 	status = smb2_create(tree, tctx, &io);
-	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+	if (torture_setting_bool(tctx, "hide_on_access_denied", false)) {
+		CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+	}
 
 	torture_comment(tctx, "set empty sd\n");
 	sd->type &= ~SEC_DESC_DACL_PRESENT;

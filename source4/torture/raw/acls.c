@@ -1768,20 +1768,32 @@ static bool test_inheritance(struct torture_context *tctx,
 		CHECK_ACCESS_FLAGS(fnum2, SEC_RIGHTS_FILE_ALL);
 		smbcli_close(cli->tree, fnum2);
 	} else {
-		CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+		if (TARGET_IS_WIN7(tctx)) {
+			CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+		} else {
+			CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+		}
 	}
 
 	torture_comment(tctx, "trying without execute\n");
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL & ~SEC_FILE_EXECUTE;
 	status = smb_raw_open(cli->tree, tctx, &io);
-	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+	if (TARGET_IS_WIN7(tctx)) {
+		CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+	}
 
 	torture_comment(tctx, "and with full permissions again\n");
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	status = smb_raw_open(cli->tree, tctx, &io);
-	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+	if (TARGET_IS_WIN7(tctx)) {
+		CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+	}
 
 	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
 	status = smb_raw_open(cli->tree, tctx, &io);
@@ -1802,7 +1814,11 @@ static bool test_inheritance(struct torture_context *tctx,
 
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	status = smb_raw_open(cli->tree, tctx, &io);
-	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+	if (TARGET_IS_WIN7(tctx)) {
+		CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+	}
 
 	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
 	status = smb_raw_open(cli->tree, tctx, &io);
@@ -1810,9 +1826,6 @@ static bool test_inheritance(struct torture_context *tctx,
 	fnum2 = io.ntcreatex.out.file.fnum;
 	CHECK_ACCESS_FLAGS(fnum2, SEC_FILE_WRITE_DATA | SEC_FILE_READ_ATTRIBUTE);
 	smbcli_close(cli->tree, fnum2);
-
-	smbcli_unlink(cli->tree, fname1);
-	smbcli_rmdir(cli->tree, dname);
 
 done:
 	if (sd_orig != NULL) {
@@ -1824,6 +1837,8 @@ done:
 	}
 
 	smbcli_close(cli->tree, fnum);
+	smbcli_unlink(cli->tree, fname1);
+	smbcli_rmdir(cli->tree, dname);
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
 	return ret;

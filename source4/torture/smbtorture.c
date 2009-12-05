@@ -543,6 +543,9 @@ int main(int argc,char *argv[])
 
 		/* RAW-SEARCH for fails for inexplicable reasons against win7 */
 		lp_set_cmdline(cmdline_lp_ctx, "torture:search_ea_support", "false");
+
+		lp_set_cmdline(cmdline_lp_ctx, "torture:hide_on_access_denied",
+		    "true");
 	} else if (strcmp(target, "onefs") == 0) {
 		lp_set_cmdline(cmdline_lp_ctx, "torture:onefs", "true");
 		lp_set_cmdline(cmdline_lp_ctx, "torture:openx_deny_dos_support",
