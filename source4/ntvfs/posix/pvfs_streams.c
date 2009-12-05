@@ -304,11 +304,15 @@ NTSTATUS pvfs_stream_rename(struct pvfs_state *pvfs, struct pvfs_filename *name,
 	}
 
 	status = pvfs_streams_save(pvfs, name, fd, streams);
-	talloc_free(streams);
 
-	/* update the in-memory copy of the name of the open file */
-	talloc_free(name->stream_name);
-	name->stream_name = talloc_strdup(name, new_name);
+	if (NT_STATUS_IS_OK(status)) {
+
+		/* update the in-memory copy of the name of the open file */
+		talloc_free(name->stream_name);
+		name->stream_name = talloc_strdup(name, new_name);
+
+		talloc_free(streams);
+	}
 
 	return status;
 }
