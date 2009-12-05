@@ -512,9 +512,15 @@ void update_stat_ex_create_time(struct stat_ex *dst,
 	dst->st_ex_calculated_birthtime = false;
 }
 
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_STAT64)
+static void init_stat_ex_from_stat (struct stat_ex *dst,
+				    const struct stat64 *src,
+				    bool fake_dir_create_times)
+#else
 static void init_stat_ex_from_stat (struct stat_ex *dst,
 				    const struct stat *src,
 				    bool fake_dir_create_times)
+#endif
 {
 	dst->st_ex_dev = src->st_dev;
 	dst->st_ex_ino = src->st_ino;
@@ -547,7 +553,8 @@ int sys_stat(const char *fname, SMB_STRUCT_STAT *sbuf,
 {
 	int ret;
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_STAT64)
-	ret = stat64(fname, sbuf);
+	struct stat64 statbuf;
+	ret = stat64(fname, &statbuf);
 #else
 	struct stat statbuf;
 	ret = stat(fname, &statbuf);
@@ -570,7 +577,8 @@ int sys_fstat(int fd, SMB_STRUCT_STAT *sbuf, bool fake_dir_create_times)
 {
 	int ret;
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_FSTAT64)
-	ret = fstat64(fd, sbuf);
+	struct stat64 statbuf;
+	ret = fstat64(fd, &statbuf);
 #else
 	struct stat statbuf;
 	ret = fstat(fd, &statbuf);
@@ -594,7 +602,8 @@ int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf,
 {
 	int ret;
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_LSTAT64)
-	ret = lstat64(fname, sbuf);
+	struct stat64 statbuf;
+	ret = lstat64(fname, &statbuf);
 #else
 	struct stat statbuf;
 	ret = lstat(fname, &statbuf);
