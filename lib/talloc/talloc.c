@@ -1184,7 +1184,7 @@ void *_talloc_realloc(const void *context, void *ptr, size_t size, const char *n
 #if ALWAYS_REALLOC
 	new_ptr = malloc(size + TC_HDR_SIZE);
 	if (new_ptr) {
-		memcpy(new_ptr, tc, tc->size + TC_HDR_SIZE);
+		memcpy(new_ptr, tc, MIN(tc->size, size) + TC_HDR_SIZE);
 		free(tc);
 	}
 #else
