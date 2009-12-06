@@ -104,10 +104,7 @@ static char **get_logged_on_userlist(TALLOC_CTX *mem_ctx)
 	}
 
 	/* Sort the user list by time, oldest first */
-	if (num_users > 1) {
-		qsort(usr_infos, num_users, sizeof(struct usrinfo),
-		      usr_info_cmp);
-	}
+	qsort(usr_infos, num_users, sizeof(struct usrinfo), usr_info_cmp);
 
 	users = (char**)talloc_array(mem_ctx, char*, num_users);
 	if (users) {
@@ -238,9 +235,7 @@ static struct dom_usr *get_domain_userlist(TALLOC_CTX *mem_ctx)
 	users = tmp;
 
 	/* Sort the user list by time, oldest first */
-	if (num_users > 1) {
-		qsort(users, num_users, sizeof(struct dom_usr), dom_user_cmp);
-	}
+	qsort(users, num_users, sizeof(struct dom_usr), dom_user_cmp);
 
 	errno = 0;
 	return users;
