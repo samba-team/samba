@@ -160,6 +160,54 @@ static WERROR cmd_wkssvc_enumeratecomputernames(struct rpc_pipe_client *cli,
 	return werr;
 }
 
+static WERROR cmd_wkssvc_enumerateusers(struct rpc_pipe_client *cli,
+					TALLOC_CTX *mem_ctx,
+					int argc,
+					const char **argv)
+{
+	const char *server_name;
+	NTSTATUS status;
+	struct wkssvc_NetWkstaEnumUsersInfo info;
+	WERROR werr;
+	uint32_t i, num_entries, resume_handle;
+
+	server_name = cli->desthost;
+
+	ZERO_STRUCT(info);
+
+	if (argc >= 2) {
+		info.level = atoi(argv[1]);
+	}
+
+	status = rpccli_wkssvc_NetWkstaEnumUsers(cli, mem_ctx, server_name,
+						 &info, 1000, &num_entries,
+						 &resume_handle, &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	for (i=0; i<num_entries; i++) {
+		const char *user;
+		switch (info.level) {
+		case 0:
+			user = info.ctr.user0->user0[i].user_name;
+			break;
+		case 1:
+			user = talloc_asprintf(
+				talloc_tos(), "%s\\%s",
+				info.ctr.user1->user1[i].logon_domain,
+				info.ctr.user1->user1[i].user_name);
+			break;
+		}
+		printf("%s\n", user);
+	}
+
+	return werr;
+}
+
 struct cmd_set wkssvc_commands[] = {
 
 	{ "WKSSVC" },
@@ -167,5 +215,8 @@ struct cmd_set wkssvc_commands[] = {
 	{ "wkssvc_getjoininformation", RPC_RTYPE_WERROR, NULL, cmd_wkssvc_getjoininformation, &ndr_table_wkssvc.syntax_id, NULL, "Query WKSSVC Join Information", "" },
 	{ "wkssvc_messagebuffersend", RPC_RTYPE_WERROR, NULL, cmd_wkssvc_messagebuffersend, &ndr_table_wkssvc.syntax_id, NULL, "Send WKSSVC message", "" },
 	{ "wkssvc_enumeratecomputernames", RPC_RTYPE_WERROR, NULL, cmd_wkssvc_enumeratecomputernames, &ndr_table_wkssvc.syntax_id, NULL, "Enumerate WKSSVC computer names", "" },
+	{ "wkssvc_enumerateusers", RPC_RTYPE_WERROR, NULL,
+	  cmd_wkssvc_enumerateusers, &ndr_table_wkssvc.syntax_id, NULL,
+	  "Enumerate WKSSVC users", "" },
 	{ NULL }
 };
