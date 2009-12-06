@@ -466,7 +466,8 @@ static struct wkssvc_NetWkstaEnumUsersCtr1 *create_enum_users1(
 	struct wkssvc_NetWkstaEnumUsersCtr1 *ctr1;
 	char **users;
 	struct dom_usr *dom_users;
-	char *pwd_server;
+	const char *pwd_server;
+	char *pwd_tmp;
 	int i, j, num_users, num_dom_users;
 
 	ctr1 = talloc(mem_ctx, struct wkssvc_NetWkstaEnumUsersCtr1);
@@ -500,21 +501,22 @@ static struct wkssvc_NetWkstaEnumUsersCtr1 *create_enum_users1(
 		return NULL;
 	}
 
-	if ((pwd_server = talloc_strdup(ctr1->user1, lp_passwordserver()))) {
+	pwd_server = "";
+
+	if ((pwd_tmp = talloc_strdup(ctr1->user1, lp_passwordserver()))) {
 		/* The configured password server is a full DNS name but
 		 * for the logon server we need to return just the first
 		 * component (machine name) of it in upper-case */
-		char *p = strchr(pwd_server, '.');
+		char *p = strchr(pwd_tmp, '.');
 		if (p) {
 			*p = '\0';
 		} else {
-			p = pwd_server + strlen(pwd_server);
+			p = pwd_tmp + strlen(pwd_tmp);
 		}
-		while (--p >= pwd_server) {
+		while (--p >= pwd_tmp) {
 			*p = toupper(*p);
 		}
-	} else {
-		pwd_server = "";
+		pwd_server = pwd_tmp;
 	}
 
 	/* Put in local users first */
