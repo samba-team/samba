@@ -53,9 +53,7 @@ static int usr_info_cmp(const void *p1, const void *p2)
 	/* Called from qsort to compare two users in a usrinfo_t array for
 	 * sorting by login time. Return >0 if usr1 login time was later than
 	 * usr2 login time, <0 if it was earlier */
-	return ((usr1->login_time.tv_sec == usr2->login_time.tv_sec)
-		? usr1->login_time.tv_usec - usr2->login_time.tv_usec
-		: usr1->login_time.tv_sec - usr2->login_time.tv_sec);
+	return timeval_compare(&usr1->login_time, &usr2->login_time);
 }
 
 /*******************************************************************
