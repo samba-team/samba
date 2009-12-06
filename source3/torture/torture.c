@@ -7447,6 +7447,8 @@ static void usage(void)
 
 	load_case_tables();
 
+	setup_logging("smbtorture", true);
+
 	if (is_default_dyn_CONFIGFILE()) {
 		if(getenv("SMB_CONF_PATH")) {
 			set_dyn_CONFIGFILE(getenv("SMB_CONF_PATH"));
