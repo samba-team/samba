@@ -154,7 +154,7 @@ static bool test_push_charset(struct torture_context *tctx)
 	torture_assert_ntstatus_ok(tctx, tdr_push_charset(tdr, &l, 4, 1, CH_UTF8), 
 							   "push failed");
 	torture_assert_int_equal(tctx, 4, tdr->data.length, "offset invalid");
-	torture_assert(tctx, strcmp("bloe", (const char *)tdr->data.data) == 0, "right string push");
+	torture_assert(tctx, strncmp("bloe", (const char *)tdr->data.data, 4) == 0, "right string push");
 
 	torture_assert_ntstatus_ok(tctx, tdr_push_charset(tdr, &l, -1, 1, CH_UTF8), 
 							   "push failed");
