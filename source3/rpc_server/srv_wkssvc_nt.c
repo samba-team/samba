@@ -433,7 +433,7 @@ static struct wkssvc_NetWkstaEnumUsersCtr0 *create_enum_users0(
 		return NULL;
 	}
 
-	num_users = (users) ? talloc_array_length(users) : 0;
+	num_users = talloc_array_length(users);
 	ctr0->entries_read = num_users;
 	ctr0->user0 = talloc_array(ctr0, struct wkssvc_NetrWkstaUserInfo0,
 				   num_users);
@@ -481,7 +481,7 @@ static struct wkssvc_NetWkstaEnumUsersCtr1 *create_enum_users1(
 		TALLOC_FREE(ctr1);
 		return NULL;
 	}
-	num_users = (users) ? talloc_array_length(users) : 0;
+	num_users = talloc_array_length(users);
 
 	dom_users = get_domain_userlist(talloc_tos());
 	if (dom_users == NULL && errno != 0) {
@@ -489,7 +489,7 @@ static struct wkssvc_NetWkstaEnumUsersCtr1 *create_enum_users1(
 		TALLOC_FREE(users);
 		return NULL;
 	}
-	num_dom_users = (dom_users) ? talloc_array_length(dom_users) : 0;
+	num_dom_users = talloc_array_length(dom_users);
 
 	ctr1->user1 = talloc_array(ctr1, struct wkssvc_NetrWkstaUserInfo1,
 				   num_users+num_dom_users);
