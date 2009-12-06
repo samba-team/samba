@@ -474,6 +474,10 @@ krb5_free_context(krb5_context context)
     krb5_set_ignore_addresses(context, NULL);
     krb5_set_send_to_kdc_func(context, NULL, NULL);
 
+#ifdef PKINIT
+    hx509_context_free(&context->hx509ctx);
+#endif
+
     HEIMDAL_MUTEX_destroy(context->mutex);
     free(context->mutex);
 
