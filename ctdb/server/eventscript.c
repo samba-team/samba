@@ -581,6 +581,55 @@ out:
 	return ret;
 }
 
+static void ctdb_event_script_handler(struct event_context *ev, struct fd_event *fde,
+				      uint16_t flags, void *p);
+
+static int fork_child_for_script(struct ctdb_context *ctdb,
+				 struct ctdb_event_script_state *state)
+{
+	int r;
+
+	r = pipe(state->fd);
+	if (r != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " pipe failed for child eventscript process\n"));
+		return -errno;
+	}
+
+	state->child = fork();
+
+	if (state->child == (pid_t)-1) {
+		r = -errno;
+		DEBUG(DEBUG_ERR, (__location__ " fork failed for child eventscript process\n"));
+		close(state->fd[0]);
+		close(state->fd[1]);
+		return r;
+	}
+
+	if (state->child == 0) {
+		int rt;
+
+		close(state->fd[0]);
+		set_close_on_exec(state->fd[1]);
+
+		rt = child_run_script(ctdb, state->from_user, state->call, state->options, state->script_list);
+		/* We must be able to write PIPEBUF bytes at least; if this
+		   somehow fails, the read above will be short. */
+		write(state->fd[1], &rt, sizeof(rt));
+		close(state->fd[1]);
+		_exit(rt);
+	}
+
+	close(state->fd[1]);
+	set_close_on_exec(state->fd[0]);
+
+	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d to child eventscript process\n", state->fd[0]));
+
+	/* Set ourselves up to be called when that's done. */
+	event_add_fd(ctdb->ev, state, state->fd[0], EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
+		     ctdb_event_script_handler, state);
+	return 0;
+}
+
 /* called when child is finished */
 static void ctdb_event_script_handler(struct event_context *ev, struct fd_event *fde, 
 				      uint16_t flags, void *p)
@@ -622,48 +671,14 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 	talloc_free(fde);
 
 	/* Next script! */
-	r = pipe(state->fd);
-	if (r != 0) {
-		state->cb_status = -errno;
-		goto abort;
+	state->cb_status = fork_child_for_script(ctdb, state);
+	if (state->cb_status != 0) {
+		if (!state->from_user && state->call == CTDB_EVENT_MONITOR) {
+			ctdb_control_event_script_finished(ctdb);
+		}
+		/* This calls the callback. */
+		talloc_free(state);
 	}
-
-	state->child = fork();
-
-	if (state->child == (pid_t)-1) {
-		state->cb_status = -errno;
-		close(state->fd[0]);
-		close(state->fd[1]);
-		goto abort;
-	}
-
-	if (state->child == 0) {
-		int rt;
-
-		close(state->fd[0]);
-		set_close_on_exec(state->fd[1]);
-
-		rt = child_run_script(ctdb, state->from_user, state->call, state->options, state->script_list);
-		/* We must be able to write PIPEBUF bytes at least; if this
-		   somehow fails, the read above will be short. */
-		write(state->fd[1], &rt, sizeof(rt));
-		close(state->fd[1]);
-		_exit(rt);
-	}
-
-	close(state->fd[1]);
-	set_close_on_exec(state->fd[0]);
-
-	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d to child eventscript process\n", state->fd[0]));
-
-	/* Set ourselves up to be called when that's done. */
-	event_add_fd(ctdb->ev, state, state->fd[0], EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
-		     ctdb_event_script_handler, state);
-	return;
-
-abort:
-	/* This calls the callback. */
-	talloc_free(state);
 }
 
 /* called when child times out */
@@ -834,51 +849,17 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	ret = pipe(state->fd);
+	if (!state->from_user && state->call == CTDB_EVENT_MONITOR) {
+		ctdb_control_event_script_init(ctdb);
+	}
+
+	ret = fork_child_for_script(ctdb, state);
 	if (ret != 0) {
 		talloc_free(state);
 		return -1;
 	}
 
-	if (!state->from_user && state->call == CTDB_EVENT_MONITOR) {
-		ctdb_control_event_script_init(ctdb);
-	}
-
-	state->child = fork();
-
-	if (state->child == (pid_t)-1) {
-		if (!state->from_user && state->call == CTDB_EVENT_MONITOR) {
-			ctdb_control_event_script_finished(ctdb);
-		}
-		close(state->fd[0]);
-		close(state->fd[1]);
-		talloc_free(state);
-		return -1;
-	}
-
-	if (state->child == 0) {
-		int rt;
-
-		close(state->fd[0]);
-		set_close_on_exec(state->fd[1]);
-
-		rt = child_run_script(ctdb, state->from_user, state->call, state->options, state->script_list);
-		/* We must be able to write PIPEBUF bytes at least; if this
-		   somehow fails, the read above will be short. */
-		write(state->fd[1], &rt, sizeof(rt));
-		close(state->fd[1]);
-		_exit(rt);
-	}
-
-	close(state->fd[1]);
-	set_close_on_exec(state->fd[0]);
 	talloc_set_destructor(state, event_script_destructor);
-
-	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d to child eventscript process\n", state->fd[0]));
-
-	event_add_fd(ctdb->ev, state, state->fd[0], EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
-		     ctdb_event_script_handler, state);
-
 	if (!timeval_is_zero(&state->timeout)) {
 		event_add_timed(ctdb->ev, state, timeval_current_ofs(state->timeout.tv_sec, state->timeout.tv_usec), ctdb_event_script_timeout, state);
 	} else {
