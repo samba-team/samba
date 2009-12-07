@@ -432,24 +432,10 @@ static struct ctdb_script_list *ctdb_get_script_list(struct ctdb_context *ctdb, 
 	return head;
 }
 
-
-
-/*
-  Actually run the event script
-  this function is called and run in the context of a forked child
-  which allows it to do blocking calls such as system()
- */
-static int ctdb_run_event_script(struct ctdb_context *ctdb,
-				 bool from_user,
-				 enum ctdb_eventscript_call call,
-				 const char *options,
-				 struct ctdb_script_list *scripts)
+static int child_setup(struct ctdb_context *ctdb,
+		       bool from_user,
+		       enum ctdb_eventscript_call call)
 {
-	char *cmdstr;
-	int ret = 0;
-	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	struct ctdb_script_list *current;
-
 	if (!from_user && call == CTDB_EVENT_MONITOR) {
 		/* This is running in the forked child process. At this stage
 		 * we want to switch from being a ctdb daemon into being a
@@ -461,47 +447,106 @@ static int ctdb_run_event_script(struct ctdb_context *ctdb,
 		}
 
 		if (ctdb_ctrl_event_script_init(ctdb) != 0) {
-			ret = -EIO;
-			goto out;
+			return -EIO;
 		}
 	}
 
 	if (setpgid(0,0) != 0) {
-		ret = -errno;
+		int ret = -errno;
 		DEBUG(DEBUG_ERR,("Failed to create process group for event scripts - %s\n",
 			 strerror(errno)));
-		goto out;
+		return ret;
 	}
 
 	signal(SIGTERM, sigterm);
 
 	child_state.start = timeval_current();
 	child_state.script_running = "startup";
+	return 0;
+}
+
+static char *child_command_string(struct ctdb_context *ctdb,
+				       TALLOC_CTX *ctx,
+				       bool from_user,
+				       const char *scriptname,
+				       enum ctdb_eventscript_call call,
+				       const char *options)
+{
+	const char *str = from_user ? "CTDB_CALLED_BY_USER=1 " : "";
+
+	/* Allow a setting where we run the actual monitor event
+	   from an external source and replace it with
+	   a "status" event that just picks up the actual
+	   status of the event asynchronously.
+	*/
+	if ((ctdb->tunable.use_status_events_for_monitoring != 0)
+	    &&  (call == CTDB_EVENT_MONITOR)
+	    &&  !from_user) {
+		return talloc_asprintf(ctx, "%s%s/%s %s",
+				       str,
+				       ctdb->event_script_dir,
+				       scriptname, "status");
+	} else {
+		return talloc_asprintf(ctx, "%s%s/%s %s %s",
+				       str,
+				       ctdb->event_script_dir,
+				       scriptname, call_names[call], options);
+	}
+}
+
+static int child_run_one(struct ctdb_context *ctdb,
+			 const char *scriptname, const char *cmdstr)
+{
+	int ret;
+
+	ret = system(cmdstr);
+	/* if the system() call was successful, translate ret into the
+	   return code from the command
+	*/
+	if (ret != -1) {
+		ret = WEXITSTATUS(ret);
+	} else {
+		ret = -errno;
+	}
+
+	/* 127 could mean it does not exist, 126 non-executable. */
+	if (ret == 127 || ret == 126) {
+		/* Re-check it... */
+		if (!check_executable(ctdb->event_script_dir, scriptname)) {
+			DEBUG(DEBUG_ERR,("Script %s returned status %u. Someone just deleted it?\n",
+					 cmdstr, ret));
+			ret = -errno;
+		}
+	}
+	return ret;
+}
+
+/*
+  Actually run the event scripts
+  this function is called and run in the context of a forked child
+  which allows it to do blocking calls such as system()
+ */
+static int child_run_scripts(struct ctdb_context *ctdb,
+			     bool from_user,
+			     enum ctdb_eventscript_call call,
+			     const char *options,
+			     struct ctdb_script_list *scripts)
+{
+	char *cmdstr;
+	int ret;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	struct ctdb_script_list *current;
+
+	ret = child_setup(ctdb, from_user, call);
+	if (ret != 0)
+		goto out;
 
 	/* fetch the scripts from the tree one by one and execute
 	   them
 	 */
 	for (current=scripts; current; current=current->next) {
-		const char *str = from_user ? "CTDB_CALLED_BY_USER=1 " : "";
-	
-		/* Allow a setting where we run the actual monitor event
-		   from an external source and replace it with
-		   a "status" event that just picks up the actual
-		   status of the event asynchronously.
-		*/
-		if ((ctdb->tunable.use_status_events_for_monitoring != 0) 
-		&&  (call == CTDB_EVENT_MONITOR)
-		&&  !from_user) {
-			cmdstr = talloc_asprintf(tmp_ctx, "%s%s/%s %s",
-					str,
-					ctdb->event_script_dir,
-					current->name, "status");
-		} else {
-			cmdstr = talloc_asprintf(tmp_ctx, "%s%s/%s %s %s",
-			       	 	str,
-					ctdb->event_script_dir,
-					current->name, call_names[call], options);
-		}
+		cmdstr = child_command_string(ctdb, tmp_ctx, from_user,
+					      current->name, call, options);
 		CTDB_NO_MEMORY(ctdb, cmdstr);
 
 		DEBUG(DEBUG_INFO,("Executing event script %s\n",cmdstr));
@@ -527,27 +572,8 @@ static int ctdb_run_event_script(struct ctdb_context *ctdb,
 			continue;
 		}
 
-		ret = system(cmdstr);
-		/* if the system() call was successful, translate ret into the
-		   return code from the command
-		*/
-		if (ret != -1) {
-			ret = WEXITSTATUS(ret);
-		} else {
-			ret = -errno;
-		}
+		ret = child_run_one(ctdb, current->name, cmdstr);
 
-		/* 127 could mean it does not exist, 126 non-executable. */
-		if (ret == 127 || ret == 126) {
-			/* Re-check it... */
-			if (!check_executable(ctdb->event_script_dir,
-					      current->name)) {
-				DEBUG(DEBUG_ERR,("Script %s returned status %u. Someone just deleted it?\n",
-						 cmdstr, ret));
-				ret = -errno;
-			}
-		}
- 
 		if (!from_user && call == CTDB_EVENT_MONITOR) {
 			if (ctdb_ctrl_event_script_stop(ctdb, ret) != 0) {
 				ret = -EIO;
@@ -809,7 +835,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 		close(state->fd[0]);
 		set_close_on_exec(state->fd[1]);
 
-		rt = ctdb_run_event_script(ctdb, from_user, state->call, state->options, scripts);
+		rt = child_run_scripts(ctdb, from_user, state->call, state->options, scripts);
 		/* We must be able to write PIPEBUF bytes at least; if this
 		   somehow fails, the read above will be short. */
 		write(state->fd[1], &rt, sizeof(rt));
