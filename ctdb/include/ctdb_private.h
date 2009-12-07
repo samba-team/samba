@@ -618,7 +618,6 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_SET_NATGWSTATE          = 103,
 		    CTDB_CONTROL_SET_LMASTERROLE         = 104,
 		    CTDB_CONTROL_SET_RECMASTERROLE       = 105,
-		    CTDB_CONTROL_EVENT_SCRIPT_DISABLED   = 106,
 		    CTDB_CONTROL_ENABLE_SCRIPT           = 107,
 		    CTDB_CONTROL_DISABLE_SCRIPT          = 108,
 		    CTDB_CONTROL_SET_BAN_STATE           = 109,
@@ -1513,12 +1512,10 @@ int ctdb_ctrl_event_script_init(struct ctdb_context *ctdb);
 int ctdb_ctrl_event_script_start(struct ctdb_context *ctdb, const char *name);
 int ctdb_ctrl_event_script_stop(struct ctdb_context *ctdb, int32_t res);
 int ctdb_ctrl_event_script_finished(struct ctdb_context *ctdb);
-int ctdb_ctrl_event_script_disabled(struct ctdb_context *ctdb, const char *name);
 
 int32_t ctdb_control_event_script_init(struct ctdb_context *ctdb);
 int32_t ctdb_control_event_script_start(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_event_script_stop(struct ctdb_context *ctdb, TDB_DATA indata);
-int32_t ctdb_control_event_script_disabled(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_event_script_finished(struct ctdb_context *ctdb);
 
 

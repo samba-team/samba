@@ -3723,28 +3723,6 @@ int ctdb_ctrl_event_script_stop(struct ctdb_context *ctdb, int32_t result)
 }
 
 /*
-  tell the main daemon a script was disabled
- */
-int ctdb_ctrl_event_script_disabled(struct ctdb_context *ctdb, const char *name)
-{
-	int ret;
-	int32_t res;
-	TDB_DATA data;
-
-	data.dptr = discard_const(name);
-	data.dsize = strlen(name)+1;
-
-	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0, CTDB_CONTROL_EVENT_SCRIPT_DISABLED, 0, data, 
-			   ctdb, NULL, &res, NULL, NULL);
-	if (ret != 0 || res != 0) {
-		DEBUG(DEBUG_ERR,("Failed to send event_script_disabeld\n"));
-		return -1;
-	}
-
-	return 0;
-}
-
-/*
   get the status of running the monitor eventscripts
  */
 int ctdb_ctrl_getscriptstatus(struct ctdb_context *ctdb, 

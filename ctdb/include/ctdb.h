@@ -658,7 +658,6 @@ struct ctdb_monitoring_script_wire {
 	char name[MAX_SCRIPT_NAME+1];
 	struct timeval start;
 	struct timeval finished;
-	int32_t disabled;
 	int32_t status;
 	char output[MAX_SCRIPT_OUTPUT+1];
 };

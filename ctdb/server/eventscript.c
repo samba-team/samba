@@ -90,7 +90,6 @@ struct ctdb_monitor_script_status {
 	const char *name;
 	struct timeval start;
 	struct timeval finished;
-	int32_t disabled;
 	int32_t status;
 	char *output;
 };
@@ -197,33 +196,6 @@ int32_t ctdb_control_event_script_stop(struct ctdb_context *ctdb, TDB_DATA indat
 	return 0;
 }
 
-/* called from the event script child process when we have a disabled script
- */
-int32_t ctdb_control_event_script_disabled(struct ctdb_context *ctdb, TDB_DATA indata)
-{
-	const char *name = (const char *)indata.dptr;
-	struct ctdb_monitor_script_status *script;
-
-	DEBUG(DEBUG_INFO, ("event script disabed called for script %s\n", name));
-
-	if (ctdb->current_monitor_status_ctx == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " current_monitor_status_ctx is NULL when script finished\n"));
-		return -1;
-	}
-
-	script = ctdb->current_monitor_status_ctx->scripts;
-	if (script == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " script is NULL when the script had finished\n"));
-		return -1;
-	}
-
-	script->finished = timeval_current();
-	script->status   = 0;
-	script->disabled = 1;
-
-	return 0;
-}
-
 static struct ctdb_monitoring_wire *marshall_monitoring_scripts(TALLOC_CTX *mem_ctx, struct ctdb_monitoring_wire *monitoring_scripts, struct ctdb_monitor_script_status *script)
 {
 	struct ctdb_monitoring_script_wire script_wire;
@@ -241,7 +213,6 @@ static struct ctdb_monitoring_wire *marshall_monitoring_scripts(TALLOC_CTX *mem_
 	strncpy(script_wire.name, script->name, MAX_SCRIPT_NAME);
 	script_wire.start    = script->start;
 	script_wire.finished = script->finished;
-	script_wire.disabled = script->disabled;
 	script_wire.status   = script->status;
 	if (script->output != NULL) {
 		strncpy(script_wire.output, script->output, MAX_SCRIPT_OUTPUT);
@@ -568,7 +539,7 @@ static int ctdb_run_event_script(struct ctdb_context *ctdb,
 			}
 
 			if (!current->is_enabled) {
-				if (ctdb_ctrl_event_script_disabled(ctdb, current->name) != 0) {
+				if (ctdb_ctrl_event_script_stop(ctdb, -ENOEXEC) != 0) {
 					DEBUG(DEBUG_ERR,(__location__ " Failed to report disabled eventscript\n"));
 					talloc_free(tmp_ctx);
 					return -1;

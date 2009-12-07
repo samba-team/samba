@@ -743,14 +743,12 @@ static int control_scriptstatus(struct ctdb_context *ctdb, int argc, const char 
 	printf("%d scripts were executed last monitoring cycle\n", script_status->num_scripts);
 	for (i=0; i<script_status->num_scripts; i++) {
 		const char *status;
-		if (script_status->scripts[i].disabled) {
-			printf("%-20s Status:DISABLED\n",
-				script_status->scripts[i].name);
-			continue;
-		} 
 		switch (script_status->scripts[i].status) {
 		case -ETIME:
 			status = "TIMEDOUT";
+			break;
+		case -ENOEXEC:
+			status = "DISABLED";
 			break;
 		case 0:
 			status = "OK";
@@ -766,8 +764,10 @@ static int control_scriptstatus(struct ctdb_context *ctdb, int argc, const char 
 			timeval_delta(&script_status->scripts[i].finished,
 			      &script_status->scripts[i].start));
 		}
-		printf("%s",
-			ctime(&script_status->scripts[i].start.tv_sec));
+		if (script_status->scripts[i].status != -ENOEXEC) {
+			printf("%s",
+			       ctime(&script_status->scripts[i].start.tv_sec));
+		}
 		if (script_status->scripts[i].status != 0) {
 			printf("   OUTPUT:%s\n",
 				script_status->scripts[i].output);
