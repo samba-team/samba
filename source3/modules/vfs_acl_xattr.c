@@ -127,41 +127,6 @@ static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
-/*******************************************************************
- Store a DATA_BLOB into an xattr given a pathname.
-*******************************************************************/
-
-static NTSTATUS store_acl_blob_pathname(vfs_handle_struct *handle,
-					const char *fname,
-					DATA_BLOB *pblob)
-{
-	connection_struct *conn = handle->conn;
-	int ret;
-	int saved_errno = 0;
-
-	DEBUG(10,("store_acl_blob_pathname: storing blob "
-			"length %u on file %s\n",
-			(unsigned int)pblob->length, fname));
-
-	become_root();
-	ret = SMB_VFS_SETXATTR(conn, fname,
-				XATTR_NTACL_NAME,
-				pblob->data, pblob->length, 0);
-	if (ret) {
-		saved_errno = errno;
-	}
-	unbecome_root();
-	if (ret) {
-		errno = saved_errno;
-		DEBUG(5, ("store_acl_blob_pathname: setting attr failed "
-			"for file %s with error %s\n",
-			fname,
-			strerror(errno) ));
-		return map_nt_error_from_unix(errno);
-	}
-	return NT_STATUS_OK;
-}
-
 /*********************************************************************
  Remove a Windows ACL - we're setting the underlying POSIX ACL.
 *********************************************************************/
@@ -235,6 +200,7 @@ static struct vfs_fn_pointers vfs_acl_xattr_fns = {
 	.opendir = opendir_acl_common,
 	.mkdir = mkdir_acl_common,
 	.open = open_acl_common,
+	.create_file = create_file_acl_common,
 	.fget_nt_acl = fget_nt_acl_common,
 	.get_nt_acl = get_nt_acl_common,
 	.fset_nt_acl = fset_nt_acl_common,
