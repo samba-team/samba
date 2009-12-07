@@ -61,7 +61,8 @@ static void sigterm(int sig)
 	t = time(NULL);
 
 	strftime(tbuf, sizeof(tbuf)-1, "%Y%m%d%H%M%S", 	localtime(&t));
-	sprintf(buf, "pstree -p >/tmp/ctdb.event.%s.%d", tbuf, getpid());
+	sprintf(buf, "{ pstree -p; cat /proc/locks; ls -li /var/ctdb/ /var/ctdb/persistent; }"
+		" >/tmp/ctdb.event.%s.%d", tbuf, getpid());
 	system(buf);
 
 	DEBUG(DEBUG_ERR,("Logged timedout eventscript : %s\n", buf));
