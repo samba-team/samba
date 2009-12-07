@@ -268,7 +268,7 @@ fi
 
 
 make -j %{numcpu} %{?_smp_mflags} \
-	all modules pam_smbpass
+	everything modules pam_smbpass
 
 # Remove some permission bits to avoid to many dependencies
 cd ..
