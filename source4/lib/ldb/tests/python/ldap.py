@@ -806,6 +806,28 @@ objectClass: container
             "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
             "objectclass": "group"})
 
+        # Testing for one invalid, and one valid operational attribute, but also the things they are built from
+        res1 = ldb.search(self.base_dn,
+                          scope=SCOPE_BASE, attrs=["primaryGroupToken", "canonicalName", "objectClass", "objectSid"])
+        self.assertTrue(len(res1) == 1)
+        self.assertFalse("primaryGroupToken" in res1[0])
+        self.assertTrue("canonicalName" in res1[0])
+        self.assertTrue("objectClass" in res1[0])
+        self.assertTrue("objectSid" in res1[0])
+
+        res1 = ldb.search(self.base_dn,
+                          scope=SCOPE_BASE, attrs=["primaryGroupToken", "canonicalName"])
+        self.assertTrue(len(res1) == 1)
+        self.assertFalse("primaryGroupToken" in res1[0])
+        self.assertFalse("objectSid" in res1[0])
+        self.assertFalse("objectClass" in res1[0])
+        self.assertTrue("canonicalName" in res1[0])
+
+        res1 = ldb.search("cn=users,"+self.base_dn,
+                          scope=SCOPE_BASE, attrs=["primaryGroupToken"])
+        self.assertTrue(len(res1) == 1)
+        self.assertFalse("primaryGroupToken" in res1[0])
+
         res1 = ldb.search("cn=ldaptestuser, cn=users," + self.base_dn,
                           scope=SCOPE_BASE, attrs=["primaryGroupToken"])
         self.assertTrue(len(res1) == 1)
