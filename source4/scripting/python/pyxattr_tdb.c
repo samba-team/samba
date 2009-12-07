@@ -33,12 +33,11 @@
 
 static PyObject  *py_is_xattr_supported(PyObject *self)
 {
-/*#if !defined(HAVE_XATTR_SUPPORT)
+#if !defined(HAVE_XATTR_SUPPORT)
 	return Py_False;
 #else
 	return Py_True;
-#endif*/
-	return Py_True;
+#endif
 }
 static PyObject *py_wrap_setxattr(PyObject *self, PyObject *args)
 {
@@ -105,7 +104,7 @@ static PyMethodDef py_xattr_methods[] = {
 		"wrap_setxattr(filename,attribute,value)\n"
 		"Set the given attribute to the given value on the given file." },
 	{ "is_xattr_supported", (PyCFunction)py_is_xattr_supported, METH_NOARGS,
-		"Return true if xattr backed by tdb are supported on this system\n"},
+		"Return true if xattr are supported on this system\n"},
 	{ NULL }
 };
 
