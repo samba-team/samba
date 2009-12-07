@@ -13,7 +13,7 @@ fi
 git clean -f -x -d lib/tdb
 git clean -f -x -d lib/replace
 
-curbranch=`git-branch |grep "^*" | tr -d "* "`
+curbranch=`git branch |grep "^*" | tr -d "* "`
 
 version=$1
 strver=`echo ${version} | tr "." "-"`
