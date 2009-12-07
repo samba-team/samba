@@ -455,7 +455,7 @@ struct ctdb_context {
 	TALLOC_CTX *event_script_ctx;
 
 	struct ctdb_event_script_state *current_monitor;
-	struct ctdb_monitoring_wire *last_status;
+	struct ctdb_scripts_wire *last_status;
 
 	TALLOC_CTX *banning_ctx;
 

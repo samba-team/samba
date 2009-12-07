@@ -118,9 +118,9 @@ static void log_event_script_output(const char *str, uint16_t len, void *p)
 	current->output = talloc_asprintf_append(current->output, "%*.*s", len, len, str);
 }
 
-static struct ctdb_monitoring_wire *marshall_monitoring_scripts(TALLOC_CTX *mem_ctx, const struct ctdb_scripts *scripts, unsigned int num_scripts)
+static struct ctdb_scripts_wire *marshall_monitoring_scripts(TALLOC_CTX *mem_ctx, const struct ctdb_scripts *scripts, unsigned int num_scripts)
 {
-	struct ctdb_monitoring_wire *wire;
+	struct ctdb_scripts_wire *wire;
 	unsigned int i;
 
 	/* Overallocates by 1, but that's OK. */
@@ -174,7 +174,7 @@ static int32_t ctdb_control_event_script_finished(struct ctdb_context *ctdb)
 
 int32_t ctdb_control_get_event_script_status(struct ctdb_context *ctdb, TDB_DATA *outdata)
 {
-	struct ctdb_monitoring_wire *monitoring_scripts = ctdb->last_status;
+	struct ctdb_scripts_wire *monitoring_scripts = ctdb->last_status;
 
 	if (monitoring_scripts == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " last_monitor_status_ctx is NULL when reading status\n"));

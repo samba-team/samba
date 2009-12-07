@@ -732,7 +732,7 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 static int control_scriptstatus(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int i, ret;
-	struct ctdb_monitoring_wire *script_status;
+	struct ctdb_scripts_wire *script_status;
 
 	ret = ctdb_ctrl_getscriptstatus(ctdb, TIMELIMIT(), options.pnn, ctdb, &script_status);
 	if (ret != 0) {
