@@ -6372,7 +6372,7 @@ static WERROR enumprinterdrivers_level_by_architecture(TALLOC_CTX *mem_ctx,
 						    union spoolss_DriverInfo,
 						    count + ndrivers);
 			if (!info) {
-				DEBUG(0,("enumprinterdrivers_level1: "
+				DEBUG(0,("enumprinterdrivers_level_by_architecture: "
 					"failed to enlarge driver info buffer!\n"));
 				result = WERR_NOMEM;
 				goto out;
@@ -6495,104 +6495,6 @@ static WERROR enumprinterdrivers_level(TALLOC_CTX *mem_ctx,
 							count_p);
 }
 
-/****************************************************************************
- Enumerates all printer drivers at level 1.
-****************************************************************************/
-
-static WERROR enumprinterdrivers_level1(TALLOC_CTX *mem_ctx,
-					const char *servername,
-					const char *architecture,
-					union spoolss_DriverInfo **info_p,
-					uint32_t *count)
-{
-	return enumprinterdrivers_level(mem_ctx, servername, architecture, 1,
-					info_p, count);
-}
-
-/****************************************************************************
- Enumerates all printer drivers at level 2.
-****************************************************************************/
-
-static WERROR enumprinterdrivers_level2(TALLOC_CTX *mem_ctx,
-					const char *servername,
-					const char *architecture,
-					union spoolss_DriverInfo **info_p,
-					uint32_t *count)
-{
-	return enumprinterdrivers_level(mem_ctx, servername, architecture, 2,
-					info_p, count);
-}
-
-/****************************************************************************
- Enumerates all printer drivers at level 3.
-****************************************************************************/
-
-static WERROR enumprinterdrivers_level3(TALLOC_CTX *mem_ctx,
-					const char *servername,
-					const char *architecture,
-					union spoolss_DriverInfo **info_p,
-					uint32_t *count)
-{
-	return enumprinterdrivers_level(mem_ctx, servername, architecture, 3,
-					info_p, count);
-}
-
-/****************************************************************************
- Enumerates all printer drivers at level 4.
-****************************************************************************/
-
-static WERROR enumprinterdrivers_level4(TALLOC_CTX *mem_ctx,
-					const char *servername,
-					const char *architecture,
-					union spoolss_DriverInfo **info_p,
-					uint32_t *count)
-{
-	return enumprinterdrivers_level(mem_ctx, servername, architecture, 4,
-					info_p, count);
-}
-
-/****************************************************************************
- Enumerates all printer drivers at level 5.
-****************************************************************************/
-
-static WERROR enumprinterdrivers_level5(TALLOC_CTX *mem_ctx,
-					const char *servername,
-					const char *architecture,
-					union spoolss_DriverInfo **info_p,
-					uint32_t *count)
-{
-	return enumprinterdrivers_level(mem_ctx, servername, architecture, 5,
-					info_p, count);
-}
-
-/****************************************************************************
- Enumerates all printer drivers at level 6.
-****************************************************************************/
-
-static WERROR enumprinterdrivers_level6(TALLOC_CTX *mem_ctx,
-					const char *servername,
-					const char *architecture,
-					union spoolss_DriverInfo **info_p,
-					uint32_t *count)
-{
-	return enumprinterdrivers_level(mem_ctx, servername, architecture, 6,
-					info_p, count);
-}
-
-/****************************************************************************
- Enumerates all printer drivers at level 8.
-****************************************************************************/
-
-static WERROR enumprinterdrivers_level8(TALLOC_CTX *mem_ctx,
-					const char *servername,
-					const char *architecture,
-					union spoolss_DriverInfo **info_p,
-					uint32_t *count)
-{
-	return enumprinterdrivers_level(mem_ctx, servername, architecture, 8,
-					info_p, count);
-}
-
 /****************************************************************
  _spoolss_EnumPrinterDrivers
 ****************************************************************/
@@ -6621,46 +6523,11 @@ WERROR _spoolss_EnumPrinterDrivers(pipes_struct *p,
 		return WERR_UNKNOWN_PRINTER_DRIVER;
 	}
 
-	switch (r->in.level) {
-	case 1:
-		result = enumprinterdrivers_level1(p->mem_ctx, cservername,
-						   r->in.environment,
-						   r->out.info, r->out.count);
-		break;
-	case 2:
-		result = enumprinterdrivers_level2(p->mem_ctx, cservername,
-						   r->in.environment,
-						   r->out.info, r->out.count);
-		break;
-	case 3:
-		result = enumprinterdrivers_level3(p->mem_ctx, cservername,
-						   r->in.environment,
-						   r->out.info, r->out.count);
-		break;
-	case 4:
-		result = enumprinterdrivers_level4(p->mem_ctx, cservername,
-						   r->in.environment,
-						   r->out.info, r->out.count);
-		break;
-	case 5:
-		result = enumprinterdrivers_level5(p->mem_ctx, cservername,
-						   r->in.environment,
-						   r->out.info, r->out.count);
-		break;
-	case 6:
-		result = enumprinterdrivers_level6(p->mem_ctx, cservername,
-						   r->in.environment,
-						   r->out.info, r->out.count);
-		break;
-	case 8:
-		result = enumprinterdrivers_level8(p->mem_ctx, cservername,
-						   r->in.environment,
-						   r->out.info, r->out.count);
-		break;
-	default:
-		return WERR_UNKNOWN_LEVEL;
-	}
-
+	result = enumprinterdrivers_level(p->mem_ctx, cservername,
+					  r->in.environment,
+					  r->in.level,
+					  r->out.info,
+					  r->out.count);
 	if (!W_ERROR_IS_OK(result)) {
 		return result;
 	}
