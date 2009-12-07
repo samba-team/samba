@@ -92,7 +92,6 @@ struct ctdb_monitor_script_status {
 	struct timeval finished;
 	int32_t disabled;
 	int32_t status;
-	int32_t timedout;
 	char *output;
 };
 
@@ -244,7 +243,6 @@ static struct ctdb_monitoring_wire *marshall_monitoring_scripts(TALLOC_CTX *mem_
 	script_wire.finished = script->finished;
 	script_wire.disabled = script->disabled;
 	script_wire.status   = script->status;
-	script_wire.timedout = script->timedout;
 	if (script->output != NULL) {
 		strncpy(script_wire.output, script->output, MAX_SCRIPT_OUTPUT);
 	}
@@ -683,7 +681,7 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 		}
 	} else if (state->call == CTDB_EVENT_STARTUP) {
 		DEBUG(DEBUG_ERR, (__location__ " eventscript for startup event timedout.\n"));
-		state->cb_status = -1;
+		state->cb_status = -ETIME;
 	} else {
 		/* if it is not a monitor or a startup event we ban ourself
 		   immediately
@@ -692,7 +690,7 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 
 		ctdb_ban_self(ctdb, ctdb->tunable.recovery_ban_period);
 
-		state->cb_status = -1;
+		state->cb_status = -ETIME;
 	}
 
 	if (state->call == CTDB_EVENT_MONITOR || state->call == CTDB_EVENT_STATUS) {
@@ -705,7 +703,7 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 
 		script = ctdb->current_monitor_status_ctx->scripts;
 		if (script != NULL) {
-			script->timedout = 1;
+			script->status = state->cb_status;
 		}
 
 		ctdb_control_event_script_finished(ctdb);

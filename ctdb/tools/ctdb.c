@@ -742,23 +742,33 @@ static int control_scriptstatus(struct ctdb_context *ctdb, int argc, const char 
 
 	printf("%d scripts were executed last monitoring cycle\n", script_status->num_scripts);
 	for (i=0; i<script_status->num_scripts; i++) {
+		const char *status;
 		if (script_status->scripts[i].disabled) {
 			printf("%-20s Status:DISABLED\n",
 				script_status->scripts[i].name);
 			continue;
 		} 
+		switch (script_status->scripts[i].status) {
+		case -ETIME:
+			status = "TIMEDOUT";
+			break;
+		case 0:
+			status = "OK";
+			break;
+		default:
+			status = "ERROR";
+			break;
+		}
 		printf("%-20s Status:%s    ",
-			script_status->scripts[i].name,
-			script_status->scripts[i].timedout?"TIMEDOUT":script_status->scripts[i].status==0?"OK":"ERROR");
-		if (script_status->scripts[i].timedout == 0) {
+			script_status->scripts[i].name, status);
+		if (script_status->scripts[i].status != -ETIME) {
 			printf("Duration:%.3lf ",
 			timeval_delta(&script_status->scripts[i].finished,
 			      &script_status->scripts[i].start));
 		}
 		printf("%s",
 			ctime(&script_status->scripts[i].start.tv_sec));
-		if ((script_status->scripts[i].timedout != 0)
-		||  (script_status->scripts[i].status != 0) ) {
+		if (script_status->scripts[i].status != 0) {
 			printf("   OUTPUT:%s\n",
 				script_status->scripts[i].output);
 		}
