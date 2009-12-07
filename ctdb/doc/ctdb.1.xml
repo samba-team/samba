@@ -942,6 +942,11 @@ This is mainly useful for backing up persistent databases such as secrets.tdb an
 	the cluster, it's possible that the content is restored by a recovery
 	run automaticly. Otherwise an administrator needs to analyze the
 	problem.
+      </para>
+      <para>
+	See also "ctdb getdbstatus", "ctdb backupdb", "ctdb restoredb",
+	"ctdb dumpbackup", "ctdb wipedb", "ctdb setvar AllowUnhealthyDBRead 1"
+	and (if samba or tdb-utils are installed) "tdbtool check".
 	</para>
 	<para>
 	Most databases are not persistent and only store the state information that the currently running samba daemons need. These databases are always wiped when ctdb/samba starts and when a node is rebooted.
