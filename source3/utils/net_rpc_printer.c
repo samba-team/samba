@@ -910,6 +910,15 @@ static bool net_spoolss_setprinterdataex(struct rpc_pipe_client *pipe_hnd,
 {
 	WERROR result;
 	NTSTATUS status;
+	union spoolss_PrinterData data;
+	DATA_BLOB blob;
+
+	blob = data_blob_const(value->data_p, value->size);
+
+	result = pull_spoolss_PrinterData(mem_ctx, &blob, &data, value->type);
+	if (!W_ERROR_IS_OK(result)) {
+		return false;
+	}
 
 	/* setprinterdataex call */
 	status = rpccli_spoolss_SetPrinterDataEx(pipe_hnd, mem_ctx,
@@ -917,8 +926,8 @@ static bool net_spoolss_setprinterdataex(struct rpc_pipe_client *pipe_hnd,
 						 keyname,
 						 value->valuename,
 						 value->type,
-						 value->data_p,
-						 value->size,
+						 data,
+						 0,
 						 &result);
 
 	if (!W_ERROR_IS_OK(result)) {
