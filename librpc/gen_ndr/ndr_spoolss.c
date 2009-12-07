@@ -12895,6 +12895,12 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_DriverInfo8(struct ndr_push *ndr, in
 			ndr->flags = _flags_save_string;
 		}
 		{
+			uint32_t _flags_save_string_array = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->dependent_files));
+			ndr->flags = _flags_save_string_array;
+		}
+		{
 			uint32_t _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->monitor_name));
@@ -12905,12 +12911,6 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_DriverInfo8(struct ndr_push *ndr, in
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->default_datatype));
 			ndr->flags = _flags_save_string;
-		}
-		{
-			uint32_t _flags_save_string_array = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
-			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->dependent_files));
-			ndr->flags = _flags_save_string_array;
 		}
 		{
 			uint32_t _flags_save_string_array = ndr->flags;
@@ -13035,6 +13035,15 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_DriverInfo8(struct ndr_push *ndr, in
 			ndr->flags = _flags_save_string;
 		}
 		{
+			uint32_t _flags_save_string_array = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->dependent_files) {
+				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->dependent_files));
+				NDR_CHECK(ndr_push_string_array(ndr, NDR_SCALARS, r->dependent_files));
+			}
+			ndr->flags = _flags_save_string_array;
+		}
+		{
 			uint32_t _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
 			if (r->monitor_name) {
@@ -13051,15 +13060,6 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_DriverInfo8(struct ndr_push *ndr, in
 				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->default_datatype));
 			}
 			ndr->flags = _flags_save_string;
-		}
-		{
-			uint32_t _flags_save_string_array = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
-			if (r->dependent_files) {
-				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->dependent_files));
-				NDR_CHECK(ndr_push_string_array(ndr, NDR_SCALARS, r->dependent_files));
-			}
-			ndr->flags = _flags_save_string_array;
 		}
 		{
 			uint32_t _flags_save_string_array = ndr->flags;
@@ -13169,12 +13169,12 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_DriverInfo8(struct ndr_pull *ndr, in
 	TALLOC_CTX *_mem_save_config_file_0;
 	uint32_t _ptr_help_file;
 	TALLOC_CTX *_mem_save_help_file_0;
+	uint32_t _ptr_dependent_files;
+	TALLOC_CTX *_mem_save_dependent_files_0;
 	uint32_t _ptr_monitor_name;
 	TALLOC_CTX *_mem_save_monitor_name_0;
 	uint32_t _ptr_default_datatype;
 	TALLOC_CTX *_mem_save_default_datatype_0;
-	uint32_t _ptr_dependent_files;
-	TALLOC_CTX *_mem_save_dependent_files_0;
 	uint32_t _ptr_previous_names;
 	TALLOC_CTX *_mem_save_previous_names_0;
 	uint32_t _ptr_manufacturer_name;
@@ -13271,6 +13271,18 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_DriverInfo8(struct ndr_pull *ndr, in
 			ndr->flags = _flags_save_string;
 		}
 		{
+			uint32_t _flags_save_string_array = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_dependent_files));
+			if (_ptr_dependent_files) {
+				NDR_PULL_ALLOC(ndr, r->dependent_files);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->dependent_files, _ptr_dependent_files));
+			} else {
+				r->dependent_files = NULL;
+			}
+			ndr->flags = _flags_save_string_array;
+		}
+		{
 			uint32_t _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
 			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_monitor_name));
@@ -13293,18 +13305,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_DriverInfo8(struct ndr_pull *ndr, in
 				r->default_datatype = NULL;
 			}
 			ndr->flags = _flags_save_string;
-		}
-		{
-			uint32_t _flags_save_string_array = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
-			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_dependent_files));
-			if (_ptr_dependent_files) {
-				NDR_PULL_ALLOC(ndr, r->dependent_files);
-				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->dependent_files, _ptr_dependent_files));
-			} else {
-				r->dependent_files = NULL;
-			}
-			ndr->flags = _flags_save_string_array;
 		}
 		{
 			uint32_t _flags_save_string_array = ndr->flags;
@@ -13525,6 +13525,21 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_DriverInfo8(struct ndr_pull *ndr, in
 			ndr->flags = _flags_save_string;
 		}
 		{
+			uint32_t _flags_save_string_array = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->dependent_files) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->dependent_files));
+				_mem_save_dependent_files_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->dependent_files, 0);
+				NDR_CHECK(ndr_pull_string_array(ndr, NDR_SCALARS, &r->dependent_files));
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dependent_files_0, 0);
+				ndr->offset = _relative_save_offset;
+			}
+			ndr->flags = _flags_save_string_array;
+		}
+		{
 			uint32_t _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
 			if (r->monitor_name) {
@@ -13553,21 +13568,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_DriverInfo8(struct ndr_pull *ndr, in
 				ndr->offset = _relative_save_offset;
 			}
 			ndr->flags = _flags_save_string;
-		}
-		{
-			uint32_t _flags_save_string_array = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
-			if (r->dependent_files) {
-				uint32_t _relative_save_offset;
-				_relative_save_offset = ndr->offset;
-				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->dependent_files));
-				_mem_save_dependent_files_0 = NDR_PULL_GET_MEM_CTX(ndr);
-				NDR_PULL_SET_MEM_CTX(ndr, r->dependent_files, 0);
-				NDR_CHECK(ndr_pull_string_array(ndr, NDR_SCALARS, &r->dependent_files));
-				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dependent_files_0, 0);
-				ndr->offset = _relative_save_offset;
-			}
-			ndr->flags = _flags_save_string_array;
 		}
 		{
 			uint32_t _flags_save_string_array = ndr->flags;
@@ -13764,6 +13764,12 @@ _PUBLIC_ void ndr_print_spoolss_DriverInfo8(struct ndr_print *ndr, const char *n
 		ndr_print_string(ndr, "help_file", r->help_file);
 	}
 	ndr->depth--;
+	ndr_print_ptr(ndr, "dependent_files", r->dependent_files);
+	ndr->depth++;
+	if (r->dependent_files) {
+		ndr_print_string_array(ndr, "dependent_files", r->dependent_files);
+	}
+	ndr->depth--;
 	ndr_print_ptr(ndr, "monitor_name", r->monitor_name);
 	ndr->depth++;
 	if (r->monitor_name) {
@@ -13774,12 +13780,6 @@ _PUBLIC_ void ndr_print_spoolss_DriverInfo8(struct ndr_print *ndr, const char *n
 	ndr->depth++;
 	if (r->default_datatype) {
 		ndr_print_string(ndr, "default_datatype", r->default_datatype);
-	}
-	ndr->depth--;
-	ndr_print_ptr(ndr, "dependent_files", r->dependent_files);
-	ndr->depth++;
-	if (r->dependent_files) {
-		ndr_print_string_array(ndr, "dependent_files", r->dependent_files);
 	}
 	ndr->depth--;
 	ndr_print_ptr(ndr, "previous_names", r->previous_names);

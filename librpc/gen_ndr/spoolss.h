@@ -1434,9 +1434,9 @@ struct spoolss_DriverInfo8 {
 	const char * data_file;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * config_file;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * help_file;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char ** dependent_files;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * monitor_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * default_datatype;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	const char ** dependent_files;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char ** previous_names;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	NTTIME driver_date;
 	uint64_t driver_version;
