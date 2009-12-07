@@ -582,7 +582,6 @@ exit 0
 %config(noreplace) %{_sysconfdir}/samba/lmhosts
 %attr(755,root,root) %config %{initdir}/winbind
 
-#%attr(755,root,root) /%{_libarch}/libnss_wins.so*
 %attr(755,root,root) /%{_libarch}/libnss_winbind.so
 %attr(755,root,root) /%{_libarch}/libnss_winbind.so.2
 %attr(755,root,root) /%{_libarch}/security/pam_winbind.so
@@ -603,8 +602,6 @@ exit 0
 
 %{_includedir}/libsmbclient.h
 %{_libarchdir}/libsmbclient.*
-#%{_includedir}/libmsrpc.h
-#%{_libarchdir}/libmsrpc.*
 %{_includedir}/smb_share_modes.h
 %{_libarchdir}/libsmbsharemodes.so
 %{_libarchdir}/libsmbsharemodes.so.0
@@ -669,7 +666,6 @@ exit 0
 %files winbind-32bit
 %attr(755,root,root) /lib/libnss_winbind.so
 %attr(755,root,root) /lib/libnss_winbind.so.2
-#%attr(755,root,root) /lib/libnss_wins.so*
 %attr(755,root,root) /usr/lib/libtalloc.so
 %attr(755,root,root) /usr/lib/libtalloc.so.1
 %attr(755,root,root) /usr/lib/libtdb.so
