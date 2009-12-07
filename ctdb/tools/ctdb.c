@@ -740,7 +740,11 @@ static int control_scriptstatus(struct ctdb_context *ctdb, int argc, const char 
 		return ret;
 	}
 
-	printf("%d scripts were executed last monitoring cycle\n", script_status->num_scripts);
+	if (options.machinereadable) {
+		printf(":Name:Code:Status:Start:End:Error Output...:\n");
+	} else {
+		printf("%d scripts were executed last monitoring cycle\n", script_status->num_scripts);
+	}
 	for (i=0; i<script_status->num_scripts; i++) {
 		const char *status = NULL;
 
@@ -758,6 +762,18 @@ static int control_scriptstatus(struct ctdb_context *ctdb, int argc, const char 
 			if (script_status->scripts[i].status > 0)
 				status = "ERROR";
 			break;
+		}
+		if (options.machinereadable) {
+			printf("%s:%i:%s:%lu.%06lu:%lu.%06lu:%s:\n",
+			       script_status->scripts[i].name,
+			       script_status->scripts[i].status,
+			       status,
+			       (long)script_status->scripts[i].start.tv_sec,
+			       (long)script_status->scripts[i].start.tv_usec,
+			       (long)script_status->scripts[i].finished.tv_sec,
+			       (long)script_status->scripts[i].finished.tv_usec,
+			       script_status->scripts[i].output);
+			continue;
 		}
 		if (status)
 			printf("%-20s Status:%s    ",
