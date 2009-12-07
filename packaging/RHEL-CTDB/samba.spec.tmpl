@@ -470,8 +470,34 @@ exit 0
 %{_bindir}/tdbdump
 %{_bindir}/eventlogadm
 
-%{_libarchdir}/samba/vfs/*.so
-%{_libarchdir}/samba/auth/*.so
+%{_libarchdir}/samba/auth/script.so
+%{_libarchdir}/samba/vfs/acl_tdb.so
+%{_libarchdir}/samba/vfs/acl_xattr.so
+%{_libarchdir}/samba/vfs/aio_fork.so
+%{_libarchdir}/samba/vfs/audit.so
+%{_libarchdir}/samba/vfs/cap.so
+%{_libarchdir}/samba/vfs/default_quota.so
+%{_libarchdir}/samba/vfs/dirsort.so
+%{_libarchdir}/samba/vfs/expand_msdfs.so
+%{_libarchdir}/samba/vfs/extd_audit.so
+%{_libarchdir}/samba/vfs/fake_perms.so
+%{_libarchdir}/samba/vfs/fileid.so
+%{_libarchdir}/samba/vfs/full_audit.so
+%{_libarchdir}/samba/vfs/gpfs.so
+%{_libarchdir}/samba/vfs/netatalk.so
+%{_libarchdir}/samba/vfs/preopen.so
+%{_libarchdir}/samba/vfs/readahead.so
+%{_libarchdir}/samba/vfs/readonly.so
+%{_libarchdir}/samba/vfs/recycle.so
+%{_libarchdir}/samba/vfs/shadow_copy.so
+%{_libarchdir}/samba/vfs/shadow_copy2.so
+%{_libarchdir}/samba/vfs/smb_traffic_analyzer.so
+%{_libarchdir}/samba/vfs/streams_depot.so
+%{_libarchdir}/samba/vfs/streams_xattr.so
+%{_libarchdir}/samba/vfs/syncops.so
+%{_libarchdir}/samba/vfs/tsmsm.so
+%{_libarchdir}/samba/vfs/xattr_tdb.so
+
 
 %{_mandir}/man1/smbcontrol.1*
 %{_mandir}/man1/smbstatus.1*
