@@ -583,7 +583,8 @@ exit 0
 %attr(755,root,root) %config %{initdir}/winbind
 
 #%attr(755,root,root) /%{_libarch}/libnss_wins.so*
-%attr(755,root,root) /%{_libarch}/libnss_winbind.so*
+%attr(755,root,root) /%{_libarch}/libnss_winbind.so
+%attr(755,root,root) /%{_libarch}/libnss_winbind.so.2
 %attr(755,root,root) /%{_libarch}/security/pam_winbind.so
 %attr(755,root,root) /%{_libarch}/security/pam_smbpass.so
 /usr/share/locale/*/LC_MESSAGES/pam_winbind.mo
@@ -605,16 +606,21 @@ exit 0
 #%{_includedir}/libmsrpc.h
 #%{_libarchdir}/libmsrpc.*
 %{_includedir}/smb_share_modes.h
-%{_libarchdir}/libsmbsharemodes.*
+%{_libarchdir}/libsmbsharemodes.so
+%{_libarchdir}/libsmbsharemodes.so.0
 
 %{_includedir}/netapi.h
 %{_includedir}/wbclient.h
 %{_includedir}/talloc.h
 %{_includedir}/tdb.h
-%{_libarchdir}/libnetapi.so*
-%{_libarchdir}/libtalloc.so*
-%{_libarchdir}/libtdb.so*
-%{_libarchdir}/libwbclient.so*
+%{_libarchdir}/libnetapi.so
+%{_libarchdir}/libnetapi.so.0
+%{_libarchdir}/libtalloc.so
+%{_libarchdir}/libtalloc.so.1
+%{_libarchdir}/libtdb.so
+%{_libarchdir}/libtdb.so.1
+%{_libarchdir}/libwbclient.so
+%{_libarchdir}/libwbclient.so.0
 
 %{_libarchdir}/krb5/plugins/libkrb5/winbind_krb5_locator.so
 
