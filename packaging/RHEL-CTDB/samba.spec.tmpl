@@ -667,11 +667,15 @@ exit 0
 
 %ifarch x86_64 ppc64
 %files winbind-32bit
-%attr(755,root,root) /lib/libnss_winbind.so*
+%attr(755,root,root) /lib/libnss_winbind.so
+%attr(755,root,root) /lib/libnss_winbind.so.2
 #%attr(755,root,root) /lib/libnss_wins.so*
-%attr(755,root,root) /usr/lib/libtalloc.so*
-%attr(755,root,root) /usr/lib/libtdb.so*
-%attr(755,root,root) /usr/lib/libwbclient.so*
+%attr(755,root,root) /usr/lib/libtalloc.so
+%attr(755,root,root) /usr/lib/libtalloc.so.1
+%attr(755,root,root) /usr/lib/libtdb.so
+%attr(755,root,root) /usr/lib/libtdb.so.1
+%attr(755,root,root) /usr/lib/libwbclient.so
+%attr(755,root,root) /usr/lib/libwbclient.so.0
 %attr(755,root,root) /lib/security/pam_winbind.so
 %endif
 
