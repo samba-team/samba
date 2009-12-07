@@ -452,8 +452,7 @@ struct ctdb_context {
 	uint32_t *recd_ping_count;
 	TALLOC_CTX *release_ips_ctx; /* a context used to automatically drop all IPs if we fail to recover the node */
 
-	TALLOC_CTX *monitor_event_script_ctx;
-	TALLOC_CTX *other_event_script_ctx;
+	TALLOC_CTX *event_script_ctx;
 
 	struct ctdb_monitor_script_status_ctx *current_monitor_status_ctx;
 	struct ctdb_monitoring_wire *last_status;

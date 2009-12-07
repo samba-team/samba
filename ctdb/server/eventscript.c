@@ -252,7 +252,6 @@ int32_t ctdb_control_event_script_finished(struct ctdb_context *ctdb)
 
 	ctdb->last_status->num_scripts = 0;
 	ctdb->last_status = marshall_monitoring_scripts(ctdb, ctdb->last_status, ctdb->current_monitor_status_ctx->scripts);
-	talloc_free(ctdb->current_monitor_status_ctx);
 	ctdb->current_monitor_status_ctx = NULL;
 
 	return 0;
@@ -734,44 +733,11 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 					enum ctdb_eventscript_call call,
 					const char *fmt, va_list ap)
 {
-	TALLOC_CTX *mem_ctx;
 	struct ctdb_event_script_state *state;
 	int ret;
 	struct ctdb_script_list *scripts;
 
-	if (!from_user && (call == CTDB_EVENT_MONITOR || call == CTDB_EVENT_STATUS)) {
-		/* if this was a "monitor" or a status event, we recycle the
-		   context to start a new monitor event
-		*/
-		if (ctdb->monitor_event_script_ctx != NULL) {
-			talloc_free(ctdb->monitor_event_script_ctx);
-			ctdb->monitor_event_script_ctx = NULL;
-		}
-		ctdb->monitor_event_script_ctx = talloc_new(ctdb);
-		mem_ctx = ctdb->monitor_event_script_ctx;
-
-		if (ctdb->current_monitor_status_ctx != NULL) {
-			talloc_free(ctdb->current_monitor_status_ctx);
-			ctdb->current_monitor_status_ctx = NULL;
-		}
-
-		ctdb->current_monitor_status_ctx = talloc(ctdb, struct ctdb_monitor_script_status_ctx);
-		CTDB_NO_MEMORY(ctdb, ctdb->current_monitor_status_ctx);
-		ctdb->current_monitor_status_ctx->scripts = NULL;
-	} else {
-		/* any other script will first terminate any monitor event */
-		if (ctdb->monitor_event_script_ctx != NULL) {
-			talloc_free(ctdb->monitor_event_script_ctx);
-			ctdb->monitor_event_script_ctx = NULL;
-		}
-		/* and then use a context common for all non-monitor events */
-		if (ctdb->other_event_script_ctx == NULL) {
-			ctdb->other_event_script_ctx = talloc_new(ctdb);
-		}
-		mem_ctx = ctdb->other_event_script_ctx;
-	}
-
-	state = talloc(mem_ctx, struct ctdb_event_script_state);
+	state = talloc(ctdb->event_script_ctx, struct ctdb_event_script_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
 	state->ctdb = ctdb;
@@ -807,6 +773,18 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 			talloc_free(state);
 			return -1;
 		}
+	}
+
+	/* Kill off any running monitor events to run this event. */
+	talloc_free(ctdb->current_monitor_status_ctx);
+	ctdb->current_monitor_status_ctx = NULL;
+
+	if (!from_user && (call == CTDB_EVENT_MONITOR || call == CTDB_EVENT_STATUS)) {
+		/* Allocate script state, and make us a child of it. */
+		ctdb->current_monitor_status_ctx = talloc(ctdb, struct ctdb_monitor_script_status_ctx);
+		CTDB_NO_MEMORY(ctdb, ctdb->current_monitor_status_ctx);
+		ctdb->current_monitor_status_ctx->scripts = NULL;
+		talloc_steal(ctdb->current_monitor_status_ctx, state);
 	}
 
 	DEBUG(DEBUG_INFO,(__location__ " Starting eventscript %s %s\n",
@@ -1013,7 +991,7 @@ int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	state = talloc(ctdb->other_event_script_ctx, struct eventscript_callback_state);
+	state = talloc(ctdb->event_script_ctx, struct eventscript_callback_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
 	state->c = talloc_steal(state, c);
