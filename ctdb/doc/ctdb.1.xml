@@ -913,6 +913,11 @@ This is mainly useful for backing up persistent databases such as secrets.tdb an
       </para>
     </refsect2>
 
+    <refsect2><title>wipedb &lt;dbname&gt;</title>
+      <para>
+        This command can be used to remove all content of a database.
+      </para>
+    </refsect2>
   </refsect1>
 
 
