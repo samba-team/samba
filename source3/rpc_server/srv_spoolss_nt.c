@@ -8158,46 +8158,13 @@ WERROR _spoolss_ResetPrinter(pipes_struct *p,
 WERROR _spoolss_DeletePrinterData(pipes_struct *p,
 				  struct spoolss_DeletePrinterData *r)
 {
-	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
-	int 		snum=0;
-	WERROR 		status = WERR_OK;
-	Printer_entry 	*Printer = find_printer_index_by_hnd(p, r->in.handle);
+	struct spoolss_DeletePrinterDataEx r2;
 
-	DEBUG(5,("_spoolss_DeletePrinterData\n"));
+	r2.in.handle		= r->in.handle;
+	r2.in.key_name		= "PrinterDriverData";
+	r2.in.value_name	= r->in.value_name;
 
-	if (!Printer) {
-		DEBUG(2,("_spoolss_DeletePrinterData: Invalid handle (%s:%u:%u).\n",
-			OUR_HANDLE(r->in.handle)));
-		return WERR_BADFID;
-	}
-
-	if (!get_printer_snum(p, r->in.handle, &snum, NULL))
-		return WERR_BADFID;
-
-	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
-		DEBUG(3, ("_spoolss_DeletePrinterData: "
-			"printer properties change denied by handle\n"));
-		return WERR_ACCESS_DENIED;
-	}
-
-	status = get_a_printer(Printer, &printer, 2, lp_const_servicename(snum));
-	if (!W_ERROR_IS_OK(status))
-		return status;
-
-	if (!r->in.value_name) {
-		free_a_printer(&printer, 2);
-		return WERR_NOMEM;
-	}
-
-	status = delete_printer_dataex( printer, SPOOL_PRINTERDATA_KEY,
-					r->in.value_name );
-
-	if ( W_ERROR_IS_OK(status) )
-		mod_a_printer( printer, 2 );
-
-	free_a_printer(&printer, 2);
-
-	return status;
+	return _spoolss_DeletePrinterDataEx(p, &r2);
 }
 
 /****************************************************************
