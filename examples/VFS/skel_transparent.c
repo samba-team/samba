@@ -295,9 +295,9 @@ static bool skel_lock(vfs_handle_struct *handle, files_struct *fsp, int op, SMB_
 	return SMB_VFS_NEXT_LOCK(handle, fsp, op, offset, count, type);
 }
 
-static int skel_kernel_flock(struct vfs_handle_struct *handle, struct files_struct *fsp, uint32 share_mode)
+static int skel_kernel_flock(struct vfs_handle_struct *handle, struct files_struct *fsp, uint32 share_mode, uint32 access_mask)
 {
-	return SMB_VFS_NEXT_KERNEL_FLOCK(handle, fsp, share_mode);
+	return SMB_VFS_NEXT_KERNEL_FLOCK(handle, fsp, share_mode, access_mask);
 }
 
 static int skel_linux_setlease(struct vfs_handle_struct *handle, struct files_struct *fsp, int leasetype)
@@ -443,12 +443,13 @@ static void skel_strict_unlock(struct vfs_handle_struct *handle,
 }
 
 static NTSTATUS skel_translate_name(struct vfs_handle_struct *handle,
-				char **mapped_name,
-				enum vfs_translate_direction direction)
+				const char *mapped_name,
+				enum vfs_translate_direction direction,
+				TALLOC_CTX *mem_ctx,
+				char **pmapped_name)
 {
-	return SMB_VFS_NEXT_TRANSLATE_NAME(handle,
-					mapped_name,
-					direction);
+	return SMB_VFS_NEXT_TRANSLATE_NAME(handle, mapped_name, direction,
+					   mem_ctx, pmapped_name);
 }
 
 static NTSTATUS skel_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
