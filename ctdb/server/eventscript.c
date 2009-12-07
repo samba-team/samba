@@ -588,9 +588,13 @@ static int ctdb_run_event_script(struct ctdb_context *ctdb,
 		if (ret != -1) {
 			ret = WEXITSTATUS(ret);
 		}
-		if (ret == 127) {
-			ret = 0;
-			DEBUG(DEBUG_ERR,("Script %s returned status 127. Someone just deleted it?\n", cmdstr));
+		if (ret == 127 || ret == 126) {
+			/* Re-check it... */
+			if (!check_executable(ctdb->event_script_dir,
+					      current->name)) {
+				ret = 0;
+				DEBUG(DEBUG_ERR,("Script %s returned status 127. Someone just deleted it?\n", cmdstr));
+			}
 		}
  
 		if (!from_user && call == CTDB_EVENT_MONITOR) {
