@@ -433,8 +433,8 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_recd_ping(ctdb);
 
 	case CTDB_CONTROL_GET_EVENT_SCRIPT_STATUS:
-		CHECK_CONTROL_DATA_SIZE(0);
-		return ctdb_control_get_event_script_status(ctdb, outdata);
+		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
+		return ctdb_control_get_event_script_status(ctdb, *(uint32_t *)indata.dptr, outdata);
 
 	case CTDB_CONTROL_RECD_RECLOCK_LATENCY:
 		CHECK_CONTROL_DATA_SIZE(sizeof(double));

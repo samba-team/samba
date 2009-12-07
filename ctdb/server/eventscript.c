@@ -98,18 +98,21 @@ static void log_event_script_output(const char *str, uint16_t len, void *p)
 	memcpy(current->output + slen, str, min);
 }
 
-int32_t ctdb_control_get_event_script_status(struct ctdb_context *ctdb, TDB_DATA *outdata)
+int32_t ctdb_control_get_event_script_status(struct ctdb_context *ctdb,
+					     uint32_t call_type,
+					     TDB_DATA *outdata)
 {
-	struct ctdb_scripts_wire *monitoring_scripts = ctdb->last_status[CTDB_EVENT_MONITOR];
-
-	if (monitoring_scripts == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " last_monitor_status_ctx is NULL when reading status\n"));
+	if (call_type >= CTDB_EVENT_MAX) {
 		return -1;
 	}
 
-	outdata->dsize = talloc_get_size(monitoring_scripts);
-	outdata->dptr  = (uint8_t *)monitoring_scripts;
-
+	if (ctdb->last_status[call_type] == NULL) {
+		/* If it's never been run, return nothing so they can tell. */
+		outdata->dsize = 0;
+	} else {
+		outdata->dsize = talloc_get_size(ctdb->last_status[call_type]);
+		outdata->dptr  = (uint8_t *)ctdb->last_status[call_type];
+	}
 	return 0;
 }
 

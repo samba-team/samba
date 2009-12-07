@@ -687,7 +687,8 @@ extern const char *ctdb_eventscript_call_names[];
 
 int ctdb_ctrl_getscriptstatus(struct ctdb_context *ctdb, 
 		    struct timeval timeout, uint32_t destnode, 
-		    TALLOC_CTX *mem_ctx, struct ctdb_scripts_wire **script_status);
+		    TALLOC_CTX *mem_ctx, enum ctdb_eventscript_call type,
+		    struct ctdb_scripts_wire **script_status);
 
 
 struct debug_levels {

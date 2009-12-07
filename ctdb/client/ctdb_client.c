@@ -3643,27 +3643,35 @@ int switch_from_server_to_client(struct ctdb_context *ctdb)
 }
 
 /*
-  get the status of running the monitor eventscripts
+  get the status of running the monitor eventscripts: NULL means never run.
  */
 int ctdb_ctrl_getscriptstatus(struct ctdb_context *ctdb, 
 		struct timeval timeout, uint32_t destnode, 
-		TALLOC_CTX *mem_ctx,
+		TALLOC_CTX *mem_ctx, enum ctdb_eventscript_call type,
 		struct ctdb_scripts_wire **script_status)
 {
 	int ret;
-	TDB_DATA outdata;
+	TDB_DATA outdata, indata;
 	int32_t res;
+	uint32_t uinttype = type;
+
+	indata.dptr = (uint8_t *)&uinttype;
+	indata.dsize = sizeof(uinttype);
 
 	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_GET_EVENT_SCRIPT_STATUS, 0, tdb_null, 
+			   CTDB_CONTROL_GET_EVENT_SCRIPT_STATUS, 0, indata,
 			   mem_ctx, &outdata, &res, &timeout, NULL);
-	if (ret != 0 || res != 0 || outdata.dsize == 0) {
+	if (ret != 0 || res != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for getscriptstatus failed ret:%d res:%d\n", ret, res));
 		return -1;
 	}
 
-	*script_status = (struct ctdb_scripts_wire *)talloc_memdup(mem_ctx, outdata.dptr, outdata.dsize);
-	talloc_free(outdata.dptr);
+	if (outdata.dsize == 0) {
+		*script_status = NULL;
+	} else {
+		*script_status = (struct ctdb_scripts_wire *)talloc_memdup(mem_ctx, outdata.dptr, outdata.dsize);
+		talloc_free(outdata.dptr);
+	}
 		    
 	return 0;
 }

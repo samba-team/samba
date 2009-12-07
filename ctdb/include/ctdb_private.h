@@ -1489,7 +1489,9 @@ int32_t ctdb_control_set_recmaster(struct ctdb_context *ctdb, uint32_t opcode, T
 
 extern int script_log_level;
 
-int32_t ctdb_control_get_event_script_status(struct ctdb_context *ctdb, TDB_DATA *outdata);
+int32_t ctdb_control_get_event_script_status(struct ctdb_context *ctdb,
+					     uint32_t call_type,
+					     TDB_DATA *outdata);
 
 int ctdb_log_event_script_output(struct ctdb_context *ctdb, char *str, uint16_t len);
 int ctdb_ctrl_report_recd_lock_latency(struct ctdb_context *ctdb, struct timeval timeout, double latency);
