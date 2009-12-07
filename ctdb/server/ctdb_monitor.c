@@ -123,6 +123,17 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 	rddata.dptr = (uint8_t *)&rd;
 	rddata.dsize = sizeof(rd);
 
+	if (status == -ETIME) {
+		ctdb->event_script_timeouts++;
+
+		if (ctdb->event_script_timeouts > ctdb->tunable.script_ban_count) {
+			DEBUG(DEBUG_ERR, ("Maximum timeout count %u reached for eventscript. Making node unhealthy\n", ctdb->tunable.script_ban_count));
+		} else {
+			/* We pretend this is OK. */
+			status = 0;
+		}
+	}
+
 	if (status != 0 && !(node->flags & NODE_FLAGS_UNHEALTHY)) {
 		DEBUG(DEBUG_NOTICE,("monitor event failed - disabling node\n"));
 		node->flags |= NODE_FLAGS_UNHEALTHY;

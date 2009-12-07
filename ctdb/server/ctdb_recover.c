@@ -935,6 +935,9 @@ static void ctdb_end_recovery_callback(struct ctdb_context *ctdb, int status, vo
 
 	if (status != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " recovered event script failed (status %d)\n", status));
+		if (status == -ETIME) {
+			ctdb_ban_self(ctdb);
+		}
 	}
 
 	ctdb_request_control_reply(ctdb, state->c, NULL, status, NULL);
@@ -1210,6 +1213,9 @@ static void ctdb_stop_node_callback(struct ctdb_context *ctdb, int status, void 
 	if (status != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " stopped event script failed (status %d)\n", status));
 		ctdb->nodes[ctdb->pnn]->flags &= ~NODE_FLAGS_STOPPED;
+		if (status == -ETIME) {
+			ctdb_ban_self(ctdb);
+		}
 	}
 
 	ctdb_request_control_reply(ctdb, state->c, NULL, status, NULL);

@@ -633,57 +633,24 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 	DEBUG(DEBUG_ERR,("Event script timed out : %s %s count : %u  pid : %d\n",
 			 call_names[state->call], state->options, ctdb->event_script_timeouts, state->child));
 
+	state->cb_status = -ETIME;
+
 	if (kill(state->child, 0) != 0) {
 		DEBUG(DEBUG_ERR,("Event script child process already dead, errno %s(%d)\n", strerror(errno), errno));
 		state->child = 0;
-		state->cb_status = -ETIME;
-		talloc_free(state);
-		return;
-	}
-
-	if (state->call == CTDB_EVENT_MONITOR) {
-		/* if it is a monitor event, we allow it to "hang" a few times
-		   before we declare it a failure and ban ourself (and make
-		   ourself unhealthy)
-		*/
-		DEBUG(DEBUG_ERR, (__location__ " eventscript for monitor event timedout.\n"));
-
-		ctdb->event_script_timeouts++;
-
-		if (ctdb->event_script_timeouts > ctdb->tunable.script_ban_count) {
-			DEBUG(DEBUG_ERR, ("Maximum timeout count %u reached for eventscript. Making node unhealthy\n", ctdb->tunable.script_ban_count));
-			state->cb_status = -ETIME;
-		} else {
-			state->cb_status = 0;
-		}
-	} else if (state->call == CTDB_EVENT_STARTUP) {
-		DEBUG(DEBUG_ERR, (__location__ " eventscript for startup event timedout.\n"));
-		state->cb_status = -ETIME;
-	} else {
-		/* if it is not a monitor or a startup event we ban ourself
-		   immediately
-		*/
-		DEBUG(DEBUG_ERR, (__location__ " eventscript for NON-monitor/NON-startup event timedout. Immediately banning ourself for %d seconds\n", ctdb->tunable.recovery_ban_period));
-
-		ctdb_ban_self(ctdb);
-
-		state->cb_status = -ETIME;
 	}
 
 	if (state->call == CTDB_EVENT_MONITOR || state->call == CTDB_EVENT_STATUS) {
 		struct ctdb_monitor_script_status *script;
 
-		if (ctdb->current_monitor_status_ctx == NULL) {
-			talloc_free(state);
-			return;
-		}
+		if (ctdb->current_monitor_status_ctx != NULL) {
+			script = ctdb->current_monitor_status_ctx->scripts;
+			if (script != NULL) {
+				script->status = state->cb_status;
+			}
 
-		script = ctdb->current_monitor_status_ctx->scripts;
-		if (script != NULL) {
-			script->status = state->cb_status;
+			ctdb_control_event_script_finished(ctdb);
 		}
-
-		ctdb_control_event_script_finished(ctdb);
 	}
 
 	talloc_free(state);
@@ -929,6 +896,14 @@ int ctdb_event_script_args(struct ctdb_context *ctdb, enum ctdb_eventscript_call
 	status.done = false;
 
 	while (status.done == false && event_loop_once(ctdb->ev) == 0) /* noop */;
+
+	if (status.status == -ETIME) {
+		DEBUG(DEBUG_ERR, (__location__ " eventscript for '%s' timedout."
+				  " Immediately banning ourself for %d seconds\n",
+				  call_names[call],
+				  ctdb->tunable.recovery_ban_period));
+		ctdb_ban_self(ctdb);
+	}
 
 	return status.status;
 }

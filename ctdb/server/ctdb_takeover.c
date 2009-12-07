@@ -128,6 +128,9 @@ static void takeover_ip_callback(struct ctdb_context *ctdb, int status,
 	struct ctdb_tcp_array *tcparray;
 
 	if (status != 0) {
+		if (status == -ETIME) {
+			ctdb_ban_self(ctdb);
+		}
 		DEBUG(DEBUG_ERR,(__location__ " Failed to takeover IP %s on interface %s\n",
 			ctdb_addr_to_str(state->addr),
 			state->vnn->iface));
@@ -322,6 +325,10 @@ static void release_ip_callback(struct ctdb_context *ctdb, int status,
 	struct takeover_callback_state *state = 
 		talloc_get_type(private_data, struct takeover_callback_state);
 	TDB_DATA data;
+
+	if (status == -ETIME) {
+		ctdb_ban_self(ctdb);
+	}
 
 	/* send a message to all clients of this node telling them
 	   that the cluster has been reconfigured and they should
