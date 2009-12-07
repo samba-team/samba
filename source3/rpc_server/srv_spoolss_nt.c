@@ -4498,8 +4498,7 @@ static const char **string_array_from_driver_info(TALLOC_CTX *mem_ctx,
 static WERROR fill_printer_driver_info1(TALLOC_CTX *mem_ctx,
 					struct spoolss_DriverInfo1 *r,
 					const struct spoolss_DriverInfo8 *driver,
-					const char *servername,
-					const char *architecture)
+					const char *servername)
 {
 	r->driver_name		= talloc_strdup(mem_ctx, driver->driver_name);
 	W_ERROR_HAVE_NO_MEMORY(r->driver_name);
@@ -5065,7 +5064,7 @@ static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
 
 	switch (level) {
 	case 1:
-		result = fill_printer_driver_info1(mem_ctx, &r->info1, driver, servername, architecture);
+		result = fill_printer_driver_info1(mem_ctx, &r->info1, driver, servername);
 		break;
 	case 2:
 		result = fill_printer_driver_info2(mem_ctx, &r->info2, driver, servername);
@@ -6392,8 +6391,7 @@ static WERROR enumprinterdrivers_level_by_architecture(TALLOC_CTX *mem_ctx,
 			switch (level) {
 			case 1:
 				result = fill_printer_driver_info1(info, &info[count+i].info1,
-								   driver, servername,
-								   architecture);
+								   driver, servername);
 				break;
 			case 2:
 				result = fill_printer_driver_info2(info, &info[count+i].info2,
