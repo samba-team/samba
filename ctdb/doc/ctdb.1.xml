@@ -935,6 +935,13 @@ This is mainly useful for backing up persistent databases such as secrets.tdb an
     <refsect2><title>getdbmap</title>
       <para>
         This command lists all clustered TDB databases that the CTDB daemon has attached to. Some databases are flagged as PERSISTENT, this means that the database stores data persistently and the data will remain across reboots. One example of such a database is secrets.tdb where information about how the cluster was joined to the domain is stored.
+      </para>
+      <para>
+	If a PERSISTENT database is not in a healthy state the database is
+	flagged as UNHEALTHY. If there's at least one completely healthy node running in
+	the cluster, it's possible that the content is restored by a recovery
+	run automaticly. Otherwise an administrator needs to analyze the
+	problem.
 	</para>
 	<para>
 	Most databases are not persistent and only store the state information that the currently running samba daemons need. These databases are always wiped when ctdb/samba starts and when a node is rebooted.
@@ -956,6 +963,13 @@ dbid:0x2672a57f name:idmap2.tdb path:/var/ctdb/persistent/idmap2.tdb.0 PERSISTEN
 dbid:0xb775fff6 name:secrets.tdb path:/var/ctdb/persistent/secrets.tdb.0 PERSISTENT
 dbid:0xe98e08b6 name:group_mapping.tdb path:/var/ctdb/persistent/group_mapping.tdb.0 PERSISTENT
 dbid:0x7bbbd26c name:passdb.tdb path:/var/ctdb/persistent/passdb.tdb.0 PERSISTENT
+      </screen>
+      <para>
+	Example output for an unhealthy database:
+      </para>
+      <screen format="linespecific">
+Number of databases:1
+dbid:0xb775fff6 name:secrets.tdb path:/var/ctdb/persistent/secrets.tdb.0 PERSISTENT UNHEALTHY
       </screen>
     </refsect2>
 
