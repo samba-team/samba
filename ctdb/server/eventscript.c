@@ -623,21 +623,6 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 	talloc_free(state);
 }
 
-static void ctdb_ban_self(struct ctdb_context *ctdb, uint32_t ban_period)
-{
-	TDB_DATA data;
-	struct ctdb_ban_time bantime;
-
-	bantime.pnn  = ctdb->pnn;
-	bantime.time = ban_period;
-
-	data.dsize = sizeof(bantime);
-	data.dptr  = (uint8_t *)&bantime;
-
-	ctdb_control_set_ban_state(ctdb, data);
-}
-
-
 /* called when child times out */
 static void ctdb_event_script_timeout(struct event_context *ev, struct timed_event *te, 
 				      struct timeval t, void *p)
@@ -680,7 +665,7 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 		*/
 		DEBUG(DEBUG_ERR, (__location__ " eventscript for NON-monitor/NON-startup event timedout. Immediately banning ourself for %d seconds\n", ctdb->tunable.recovery_ban_period));
 
-		ctdb_ban_self(ctdb, ctdb->tunable.recovery_ban_period);
+		ctdb_ban_self(ctdb);
 
 		state->cb_status = -ETIME;
 	}
