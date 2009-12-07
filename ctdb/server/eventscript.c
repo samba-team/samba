@@ -442,12 +442,13 @@ static struct ctdb_script_list *ctdb_get_script_list(struct ctdb_context *ctdb, 
 static int ctdb_run_event_script(struct ctdb_context *ctdb,
 				 bool from_user,
 				 enum ctdb_eventscript_call call,
-				 const char *options)
+				 const char *options,
+				 struct ctdb_script_list *scripts)
 {
 	char *cmdstr;
 	int ret = 0;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	struct ctdb_script_list *scripts, *current;
+	struct ctdb_script_list *current;
 
 	if (!from_user && call == CTDB_EVENT_MONITOR) {
 		/* This is running in the forked child process. At this stage
@@ -465,23 +466,6 @@ static int ctdb_run_event_script(struct ctdb_context *ctdb,
 		}
 	}
 
-	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
-		/* we guarantee that only some specifically allowed event scripts are run
-		   while in recovery */
-		const enum ctdb_eventscript_call allowed_calls[] = {
-			CTDB_EVENT_START_RECOVERY, CTDB_EVENT_SHUTDOWN, CTDB_EVENT_RELEASE_IP, CTDB_EVENT_STOPPED };
-		int i;
-		for (i=0;i<ARRAY_SIZE(allowed_calls);i++) {
-			if (call == allowed_calls[i]) break;
-		}
-		if (i == ARRAY_SIZE(allowed_calls)) {
-			DEBUG(DEBUG_ERR,("Refusing to run event scripts call '%s' while in recovery\n",
-				 call_names[call]));
-			ret = -EBUSY;
-			goto out;
-		}
-	}
-
 	if (setpgid(0,0) != 0) {
 		ret = -errno;
 		DEBUG(DEBUG_ERR,("Failed to create process group for event scripts - %s\n",
@@ -493,8 +477,6 @@ static int ctdb_run_event_script(struct ctdb_context *ctdb,
 
 	child_state.start = timeval_current();
 	child_state.script_running = "startup";
-
-	scripts = ctdb_get_script_list(ctdb, tmp_ctx);
 
 	/* fetch the scripts from the tree one by one and execute
 	   them
@@ -729,6 +711,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	TALLOC_CTX *mem_ctx;
 	struct ctdb_event_script_state *state;
 	int ret;
+	struct ctdb_script_list *scripts;
 
 	if (!from_user && (call == CTDB_EVENT_MONITOR || call == CTDB_EVENT_STATUS)) {
 		/* if this was a "monitor" or a status event, we recycle the
@@ -783,9 +766,28 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 		return -1;
 	}
 
+	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
+		/* we guarantee that only some specifically allowed event scripts are run
+		   while in recovery */
+		const enum ctdb_eventscript_call allowed_calls[] = {
+			CTDB_EVENT_START_RECOVERY, CTDB_EVENT_SHUTDOWN, CTDB_EVENT_RELEASE_IP, CTDB_EVENT_STOPPED };
+		int i;
+		for (i=0;i<ARRAY_SIZE(allowed_calls);i++) {
+			if (call == allowed_calls[i]) break;
+		}
+		if (i == ARRAY_SIZE(allowed_calls)) {
+			DEBUG(DEBUG_ERR,("Refusing to run event scripts call '%s' while in recovery\n",
+				 call_names[call]));
+			talloc_free(state);
+			return -1;
+		}
+	}
+
 	DEBUG(DEBUG_INFO,(__location__ " Starting eventscript %s %s\n",
 			  call_names[state->call], state->options));
 	
+	scripts = ctdb_get_script_list(ctdb, state);
+
 	ret = pipe(state->fd);
 	if (ret != 0) {
 		talloc_free(state);
@@ -807,7 +809,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 		close(state->fd[0]);
 		set_close_on_exec(state->fd[1]);
 
-		rt = ctdb_run_event_script(ctdb, from_user, state->call, state->options);
+		rt = ctdb_run_event_script(ctdb, from_user, state->call, state->options, scripts);
 		/* We must be able to write PIPEBUF bytes at least; if this
 		   somehow fails, the read above will be short. */
 		write(state->fd[1], &rt, sizeof(rt));
