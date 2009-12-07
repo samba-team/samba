@@ -2,6 +2,7 @@
  * implementation of an Shadow Copy module - version 2
  *
  * Copyright (C) Andrew Tridgell     2007
+ * Copyright (C) Ed Plese            2009
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,6 +35,10 @@
      from the original. This allows the 'restore' button to work
      without a sharing violation
 
+     3) shadow copy results can be sorted before being sent to the
+     client.  This is beneficial for filesystems that don't read
+     directories alphabetically (the default unix).
+
   Module options:
 
       shadow:snapdir = <directory where snapshots are kept>
@@ -58,6 +63,14 @@
       don't set this option then the 'restore' button in the shadow
       copy UI will fail with a sharing violation.
 
+      shadow:sort = asc/desc, or not specified for unsorted (default)
+
+      This is an optional parameter that specifies that the shadow
+      copy directories should be sorted before sending them to the
+      client.  This can be beneficial as unix filesystems are usually
+      not listed alphabetically sorted.  If enabled, you typically
+      want to specify descending order.
+
   Note that the directory names in the snapshot directory must take the form
   @GMT-YYYY.MM.DD-HH.MM.SS
   
@@ -72,6 +85,8 @@ static int vfs_shadow_copy2_debug_level = DBGC_VFS;
 #define DBGC_CLASS vfs_shadow_copy2_debug_level
 
 #define GMT_NAME_LEN 24 /* length of a @GMT- name */
+
+#define SHADOW_COPY2_DEFAULT_SORT NULL
 
 /*
   make very sure it is one of our special names 
@@ -711,6 +726,50 @@ static int shadow_copy2_chmod_acl(vfs_handle_struct *handle,
         SHADOW2_NEXT(CHMOD_ACL, (handle, name, mode), int, -1);
 }
 
+static int shadow_copy2_label_cmp_asc(const void *x, const void *y)
+{
+	return strncmp((char *)x, (char *)y, sizeof(SHADOW_COPY_LABEL));
+}
+
+static int shadow_copy2_label_cmp_desc(const void *x, const void *y)
+{
+	return -strncmp((char *)x, (char *)y, sizeof(SHADOW_COPY_LABEL));
+}
+
+/*
+  sort the shadow copy data in ascending or descending order
+ */
+static void shadow_copy2_sort_data(vfs_handle_struct *handle,
+				   SHADOW_COPY_DATA *shadow_copy2_data)
+{
+	int (*cmpfunc)(const void *, const void *);
+	const char *sort;
+
+	sort = lp_parm_const_string(SNUM(handle->conn), "shadow",
+				    "sort", SHADOW_COPY2_DEFAULT_SORT);
+	if (sort == NULL) {
+		return;
+	}
+
+	if (strcmp(sort, "asc") == 0) {
+		cmpfunc = shadow_copy2_label_cmp_asc;
+	} else if (strcmp(sort, "desc") == 0) {
+		cmpfunc = shadow_copy2_label_cmp_desc;
+	} else {
+		return;
+	}
+
+	if (shadow_copy2_data && shadow_copy2_data->num_volumes > 0 &&
+	    shadow_copy2_data->labels)
+	{
+		qsort(shadow_copy2_data->labels,
+		      shadow_copy2_data->num_volumes,
+		      sizeof(SHADOW_COPY_LABEL), cmpfunc);
+	}
+
+	return;
+}
+
 static int shadow_copy2_get_shadow_copy2_data(vfs_handle_struct *handle, 
 					      files_struct *fsp, 
 					      SHADOW_COPY_DATA *shadow_copy2_data, 
@@ -774,6 +833,9 @@ static int shadow_copy2_get_shadow_copy2_data(vfs_handle_struct *handle,
 	}
 
 	SMB_VFS_NEXT_CLOSEDIR(handle,p);
+
+	shadow_copy2_sort_data(handle, shadow_copy2_data);
+
 	return 0;
 }
 
