@@ -275,13 +275,13 @@ int32_t ctdb_control_get_event_script_status(struct ctdb_context *ctdb, TDB_DATA
 
 struct ctdb_script_tree_item {
 	const char *name;
-	int32_t is_enabled;
+	int error;
 };
 
 struct ctdb_script_list {
 	struct ctdb_script_list *next;
 	const char *name;
-	int32_t is_enabled;
+	int error;
 };
 
 /* Return true if OK, otherwise set errno. */
@@ -377,12 +377,9 @@ static struct ctdb_script_list *ctdb_get_script_list(struct ctdb_context *ctdb, 
 			return NULL;
 		}
 	
-		tree_item->is_enabled = 1;
+		tree_item->error = 0;
 		if (!check_executable(ctdb->event_script_dir, de->d_name)) {
-			if (errno != ENOEXEC) {
-				continue;
-			}
-			tree_item->is_enabled = 0;
+			tree_item->error = errno;
 		}
 
 		tree_item->name = talloc_strdup(tree_item, de->d_name);
@@ -415,7 +412,7 @@ static struct ctdb_script_list *ctdb_get_script_list(struct ctdb_context *ctdb, 
 
 		new_item->next = NULL;
 		new_item->name = talloc_steal(new_item, tree_item->name);
-		new_item->is_enabled = tree_item->is_enabled;
+		new_item->error = tree_item->error;
 
 		if (head == NULL) {
 			head = new_item;
@@ -538,17 +535,16 @@ static int ctdb_run_event_script(struct ctdb_context *ctdb,
 				return -1;
 			}
 
-			if (!current->is_enabled) {
-				if (ctdb_ctrl_event_script_stop(ctdb, -ENOEXEC) != 0) {
+			if (current->error) {
+				if (ctdb_ctrl_event_script_stop(ctdb, -current->error) != 0) {
 					DEBUG(DEBUG_ERR,(__location__ " Failed to report disabled eventscript\n"));
 					talloc_free(tmp_ctx);
 					return -1;
 				}
 			}
-
 		}
 
-		if (!current->is_enabled) {
+		if (current->error) {
 			continue;
 		}
 
@@ -558,13 +554,18 @@ static int ctdb_run_event_script(struct ctdb_context *ctdb,
 		*/
 		if (ret != -1) {
 			ret = WEXITSTATUS(ret);
+		} else {
+			ret = -errno;
 		}
+
+		/* 127 could mean it does not exist, 126 non-executable. */
 		if (ret == 127 || ret == 126) {
 			/* Re-check it... */
 			if (!check_executable(ctdb->event_script_dir,
 					      current->name)) {
-				ret = 0;
-				DEBUG(DEBUG_ERR,("Script %s returned status 127. Someone just deleted it?\n", cmdstr));
+				DEBUG(DEBUG_ERR,("Script %s returned status %u. Someone just deleted it?\n",
+						 cmdstr, ret));
+				ret = -errno;
 			}
 		}
  
@@ -574,6 +575,12 @@ static int ctdb_run_event_script(struct ctdb_context *ctdb,
 				talloc_free(tmp_ctx);
 				return -1;
 			}
+		}
+
+		/* now we've reported the per-script error, don't exit the loop
+		 * just because it vanished or was disabled. */
+		if (ret == -ENOENT || ret == -ENOEXEC) {
+			ret = 0;
 		}
 
 		/* return an error if the script failed */

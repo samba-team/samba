@@ -742,7 +742,8 @@ static int control_scriptstatus(struct ctdb_context *ctdb, int argc, const char 
 
 	printf("%d scripts were executed last monitoring cycle\n", script_status->num_scripts);
 	for (i=0; i<script_status->num_scripts; i++) {
-		const char *status;
+		const char *status = NULL;
+
 		switch (script_status->scripts[i].status) {
 		case -ETIME:
 			status = "TIMEDOUT";
@@ -754,12 +755,20 @@ static int control_scriptstatus(struct ctdb_context *ctdb, int argc, const char 
 			status = "OK";
 			break;
 		default:
-			status = "ERROR";
+			if (script_status->scripts[i].status > 0)
+				status = "ERROR";
 			break;
 		}
-		printf("%-20s Status:%s    ",
-			script_status->scripts[i].name, status);
-		if (script_status->scripts[i].status != -ETIME) {
+		if (status)
+			printf("%-20s Status:%s    ",
+			       script_status->scripts[i].name, status);
+		else
+			/* Some other error, eg from stat. */
+			printf("%-20s Status:CANNOT RUN (%s)",
+			       script_status->scripts[i].name,
+			       strerror(-script_status->scripts[i].status));
+
+		if (script_status->scripts[i].status >= 0) {
 			printf("Duration:%.3lf ",
 			timeval_delta(&script_status->scripts[i].finished,
 			      &script_status->scripts[i].start));
