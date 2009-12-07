@@ -2503,7 +2503,7 @@ static struct parm_struct parm_table[] = {
 		.ptr		= &sDefault.iWriteCacheSize,
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED | FLAG_SHARE | FLAG_DEPRECATED,
+		.flags		= FLAG_ADVANCED | FLAG_SHARE,
 	},
 	{
 		.label		= "name cache timeout",
