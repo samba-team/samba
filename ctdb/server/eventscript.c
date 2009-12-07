@@ -445,10 +445,6 @@ static int child_setup(struct ctdb_context *ctdb,
 			DEBUG(DEBUG_CRIT, (__location__ "ERROR: failed to switch eventscript child into client mode. shutting down.\n"));
 			_exit(1);
 		}
-
-		if (ctdb_ctrl_event_script_init(ctdb) != 0) {
-			return -EIO;
-		}
 	}
 
 	if (setpgid(0,0) != 0) {
@@ -522,85 +518,63 @@ static int child_run_one(struct ctdb_context *ctdb,
 }
 
 /*
-  Actually run the event scripts
+  Actually run one event script
   this function is called and run in the context of a forked child
   which allows it to do blocking calls such as system()
  */
-static int child_run_scripts(struct ctdb_context *ctdb,
-			     bool from_user,
-			     enum ctdb_eventscript_call call,
-			     const char *options,
-			     struct ctdb_script_list *scripts)
+static int child_run_script(struct ctdb_context *ctdb,
+			    bool from_user,
+			    enum ctdb_eventscript_call call,
+			    const char *options,
+			    struct ctdb_script_list *current)
 {
 	char *cmdstr;
 	int ret;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	struct ctdb_script_list *current;
 
 	ret = child_setup(ctdb, from_user, call);
 	if (ret != 0)
 		goto out;
 
-	/* fetch the scripts from the tree one by one and execute
-	   them
-	 */
-	for (current=scripts; current; current=current->next) {
-		cmdstr = child_command_string(ctdb, tmp_ctx, from_user,
-					      current->name, call, options);
-		CTDB_NO_MEMORY(ctdb, cmdstr);
+	cmdstr = child_command_string(ctdb, tmp_ctx, from_user,
+				      current->name, call, options);
+	CTDB_NO_MEMORY(ctdb, cmdstr);
 
-		DEBUG(DEBUG_INFO,("Executing event script %s\n",cmdstr));
+	DEBUG(DEBUG_INFO,("Executing event script %s\n",cmdstr));
 
-		child_state.start = timeval_current();
-		child_state.script_running = cmdstr;
+	child_state.start = timeval_current();
+	child_state.script_running = cmdstr;
 
-		if (!from_user && call == CTDB_EVENT_MONITOR) {
-			if (ctdb_ctrl_event_script_start(ctdb, current->name) != 0) {
-				ret = -EIO;
-				goto out;
-			}
-
-			if (current->error) {
-				if (ctdb_ctrl_event_script_stop(ctdb, -current->error) != 0) {
-					ret = -EIO;
-					goto out;
-				}
-			}
+	if (!from_user && call == CTDB_EVENT_MONITOR) {
+		if (ctdb_ctrl_event_script_start(ctdb, current->name) != 0) {
+			ret = -EIO;
+			goto out;
 		}
 
 		if (current->error) {
-			continue;
-		}
-
-		ret = child_run_one(ctdb, current->name, cmdstr);
-
-		if (!from_user && call == CTDB_EVENT_MONITOR) {
-			if (ctdb_ctrl_event_script_stop(ctdb, ret) != 0) {
+			if (ctdb_ctrl_event_script_stop(ctdb, -current->error) != 0) {
 				ret = -EIO;
 				goto out;
 			}
 		}
+	}
 
-		/* now we've reported the per-script error, don't exit the loop
-		 * just because it vanished or was disabled. */
-		if (ret == -ENOENT || ret == -ENOEXEC) {
-			ret = 0;
-		}
+	if (current->error) {
+		ret = -current->error;
+		goto out;
+	}
 
-		/* return an error if the script failed */
-		if (ret != 0) {
-			break;
+	ret = child_run_one(ctdb, current->name, cmdstr);
+
+	if (!from_user && call == CTDB_EVENT_MONITOR) {
+		if (ctdb_ctrl_event_script_stop(ctdb, ret) != 0) {
+			ret = -EIO;
+			goto out;
 		}
 	}
 
 	child_state.start = timeval_current();
 	child_state.script_running = "finished";
-	
-	if (!from_user && call == CTDB_EVENT_MONITOR) {
-		if (ctdb_ctrl_event_script_finished(ctdb) != 0) {
-			ret = -EIO;
-		}
-	}
 
 out:
 	talloc_free(tmp_ctx);
@@ -621,13 +595,74 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 		state->cb_status = -errno;
 	} else if (r != sizeof(state->cb_status)) {
 		state->cb_status = -EIO;
+	} else {
+		/* don't stop just because it vanished or was disabled. */
+		if (state->cb_status == -ENOENT || state->cb_status == -ENOEXEC) {
+			state->cb_status = 0;
+		}
 	}
 
-	DEBUG(DEBUG_INFO,(__location__ " Eventscript %s %s finished with state %d\n",
-			  call_names[state->call], state->options, state->cb_status));
-
 	state->child = 0;
-	ctdb->event_script_timeouts = 0;
+	state->script_list = state->script_list->next;
+
+	/* Aborted or finished all scripts?  We're done. */
+	if (state->cb_status != 0 || state->script_list == NULL) {
+		DEBUG(DEBUG_INFO,(__location__ " Eventscript %s %s finished with state %d\n",
+				  call_names[state->call], state->options, state->cb_status));
+
+		if (!state->from_user && state->call == CTDB_EVENT_MONITOR) {
+			ctdb_control_event_script_finished(ctdb);
+		}
+		ctdb->event_script_timeouts = 0;
+		talloc_free(state);
+		return;
+	}
+
+	/* Forget about that old fd. */
+	talloc_free(fde);
+
+	/* Next script! */
+	r = pipe(state->fd);
+	if (r != 0) {
+		state->cb_status = -errno;
+		goto abort;
+	}
+
+	state->child = fork();
+
+	if (state->child == (pid_t)-1) {
+		state->cb_status = -errno;
+		close(state->fd[0]);
+		close(state->fd[1]);
+		goto abort;
+	}
+
+	if (state->child == 0) {
+		int rt;
+
+		close(state->fd[0]);
+		set_close_on_exec(state->fd[1]);
+
+		rt = child_run_script(ctdb, state->from_user, state->call, state->options, state->script_list);
+		/* We must be able to write PIPEBUF bytes at least; if this
+		   somehow fails, the read above will be short. */
+		write(state->fd[1], &rt, sizeof(rt));
+		close(state->fd[1]);
+		_exit(rt);
+	}
+
+	close(state->fd[1]);
+	set_close_on_exec(state->fd[0]);
+
+	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d to child eventscript process\n", state->fd[0]));
+
+	/* Set ourselves up to be called when that's done. */
+	event_add_fd(ctdb->ev, state, state->fd[0], EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
+		     ctdb_event_script_handler, state);
+	return;
+
+abort:
+	/* This calls the callback. */
 	talloc_free(state);
 }
 
@@ -794,6 +829,10 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 			  call_names[state->call], state->options));
 	
 	state->script_list = ctdb_get_script_list(ctdb, state);
+	if (state->script_list == NULL) {
+		talloc_free(state);
+		return -1;
+	}
 
 	ret = pipe(state->fd);
 	if (ret != 0) {
@@ -801,9 +840,16 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 		return -1;
 	}
 
+	if (!state->from_user && state->call == CTDB_EVENT_MONITOR) {
+		ctdb_control_event_script_init(ctdb);
+	}
+
 	state->child = fork();
 
 	if (state->child == (pid_t)-1) {
+		if (!state->from_user && state->call == CTDB_EVENT_MONITOR) {
+			ctdb_control_event_script_finished(ctdb);
+		}
 		close(state->fd[0]);
 		close(state->fd[1]);
 		talloc_free(state);
@@ -816,7 +862,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 		close(state->fd[0]);
 		set_close_on_exec(state->fd[1]);
 
-		rt = child_run_scripts(ctdb, state->from_user, state->call, state->options, state->script_list);
+		rt = child_run_script(ctdb, state->from_user, state->call, state->options, state->script_list);
 		/* We must be able to write PIPEBUF bytes at least; if this
 		   somehow fails, the read above will be short. */
 		write(state->fd[1], &rt, sizeof(rt));
