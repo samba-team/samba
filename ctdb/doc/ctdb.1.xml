@@ -971,6 +971,14 @@ dbid:0x7bbbd26c name:passdb.tdb path:/var/ctdb/persistent/passdb.tdb.0 PERSISTEN
 Number of databases:1
 dbid:0xb775fff6 name:secrets.tdb path:/var/ctdb/persistent/secrets.tdb.0 PERSISTENT UNHEALTHY
       </screen>
+
+      <para>
+	Example output for a healthy database as machinereadable output -Y:
+      </para>
+      <screen format="linespecific">
+:ID:Name:Path:Persistent:Unhealthy:
+:0x7bbbd26c:passdb.tdb:/var/ctdb/persistent/passdb.tdb.0:1:0:
+      </screen>
     </refsect2>
 
     <refsect2><title>catdb &lt;dbname&gt;</title>
