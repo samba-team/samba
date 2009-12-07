@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.107
+Version: 1.0.108
 Release: 1GITHASH
 Epoch: 0
 License: GNU GPL version 3
@@ -123,6 +123,15 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/ctdb/tests/bin/ctdb_transaction
 
 %changelog
+* Mon Dec 7 2009 : Version 1.0.108
+ - Transaction updates from Michael Adam.
+ - Use the new wbinfo --ping-dc instead of -p in the eventscript for samba
+   the check if winbindd is ok.
+ - Add a better "process-exist" for samba so it will automatically
+   reap smbd's on stopped and banned nodes to reclaim subrecords.
+   This will be done a bit differently in the next release.
+ - Use a statically allocated buffer for the 'first-time' capture buffer
+   to reduce the pressure on malloc/free.
 * Wed Dec 2 2009 : Version 1.0.107
  - fix for rusty to solve a double-free that can happen when there are
    multiple packets queued and the connection is destroyed before
