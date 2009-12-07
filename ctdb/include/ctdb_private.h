@@ -603,10 +603,6 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_TAKEOVER_IP             = 89,
 		    CTDB_CONTROL_GET_PUBLIC_IPS          = 90,
 		    CTDB_CONTROL_GET_NODEMAP             = 91,
-		    CTDB_CONTROL_EVENT_SCRIPT_INIT       = 92,
-		    CTDB_CONTROL_EVENT_SCRIPT_START      = 93,
-		    CTDB_CONTROL_EVENT_SCRIPT_STOP       = 94,
-		    CTDB_CONTROL_EVENT_SCRIPT_FINISHED   = 95,
 		    CTDB_CONTROL_GET_EVENT_SCRIPT_STATUS = 96,
 		    CTDB_CONTROL_TRAVERSE_KILL		 = 97,
 		    CTDB_CONTROL_RECD_RECLOCK_LATENCY    = 98,
@@ -1506,17 +1502,6 @@ int32_t ctdb_control_recd_ping(struct ctdb_context *ctdb);
 int32_t ctdb_control_set_recmaster(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata);
 
 extern int script_log_level;
-
-int ctdb_ctrl_event_script_init(struct ctdb_context *ctdb);
-int ctdb_ctrl_event_script_start(struct ctdb_context *ctdb, const char *name);
-int ctdb_ctrl_event_script_stop(struct ctdb_context *ctdb, int32_t res);
-int ctdb_ctrl_event_script_finished(struct ctdb_context *ctdb);
-
-int32_t ctdb_control_event_script_init(struct ctdb_context *ctdb);
-int32_t ctdb_control_event_script_start(struct ctdb_context *ctdb, TDB_DATA indata);
-int32_t ctdb_control_event_script_stop(struct ctdb_context *ctdb, TDB_DATA indata);
-int32_t ctdb_control_event_script_finished(struct ctdb_context *ctdb);
-
 
 int32_t ctdb_control_get_event_script_status(struct ctdb_context *ctdb, TDB_DATA *outdata);
 

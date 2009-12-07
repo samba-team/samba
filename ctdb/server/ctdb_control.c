@@ -432,21 +432,6 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(0);
 		return ctdb_control_recd_ping(ctdb);
 
-	case CTDB_CONTROL_EVENT_SCRIPT_INIT:
-		CHECK_CONTROL_DATA_SIZE(0);
-		return ctdb_control_event_script_init(ctdb);
-
-	case CTDB_CONTROL_EVENT_SCRIPT_START:
-		return ctdb_control_event_script_start(ctdb, indata);
-	
-	case CTDB_CONTROL_EVENT_SCRIPT_STOP:
-		CHECK_CONTROL_DATA_SIZE(sizeof(int32_t));
-		return ctdb_control_event_script_stop(ctdb, indata);
-
-	case CTDB_CONTROL_EVENT_SCRIPT_FINISHED:
-		CHECK_CONTROL_DATA_SIZE(0);
-		return ctdb_control_event_script_finished(ctdb);
-
 	case CTDB_CONTROL_GET_EVENT_SCRIPT_STATUS:
 		CHECK_CONTROL_DATA_SIZE(0);
 		return ctdb_control_get_event_script_status(ctdb, outdata);
