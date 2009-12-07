@@ -225,28 +225,6 @@ int32_t ctdb_control_event_script_disabled(struct ctdb_context *ctdb, TDB_DATA i
 	return 0;
 }
 
-/* called from the event script child process when we have completed a
- * monitor event
- */
-int32_t ctdb_control_event_script_finished(struct ctdb_context *ctdb)
-{
-	DEBUG(DEBUG_INFO, ("event script finished called\n"));
-
-	if (ctdb->current_monitor_status_ctx == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " script_status is NULL when monitoring event finished\n"));
-		return -1;
-	}
-
-	if (ctdb->last_monitor_status_ctx) {
-		talloc_free(ctdb->last_monitor_status_ctx);
-		ctdb->last_monitor_status_ctx = NULL;
-	}
-	ctdb->last_monitor_status_ctx = ctdb->current_monitor_status_ctx;
-	ctdb->current_monitor_status_ctx = NULL;
-
-	return 0;
-}
-
 static struct ctdb_monitoring_wire *marshall_monitoring_scripts(TALLOC_CTX *mem_ctx, struct ctdb_monitoring_wire *monitoring_scripts, struct ctdb_monitor_script_status *script)
 {
 	struct ctdb_monitoring_script_wire script_wire;
@@ -284,26 +262,39 @@ static struct ctdb_monitoring_wire *marshall_monitoring_scripts(TALLOC_CTX *mem_
 	return monitoring_scripts;
 }
 
+/* called from the event script child process when we have completed a
+ * monitor event
+ */
+int32_t ctdb_control_event_script_finished(struct ctdb_context *ctdb)
+{
+	DEBUG(DEBUG_INFO, ("event script finished called\n"));
+
+	if (ctdb->current_monitor_status_ctx == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " script_status is NULL when monitoring event finished\n"));
+		return -1;
+	}
+
+	talloc_free(ctdb->last_status);
+	ctdb->last_status = talloc_size(ctdb, offsetof(struct ctdb_monitoring_wire, scripts));
+	if (ctdb->last_status == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " failed to talloc last_status\n"));
+		return -1;
+	}
+
+	ctdb->last_status->num_scripts = 0;
+	ctdb->last_status = marshall_monitoring_scripts(ctdb, ctdb->last_status, ctdb->current_monitor_status_ctx->scripts);
+	talloc_free(ctdb->current_monitor_status_ctx);
+	ctdb->current_monitor_status_ctx = NULL;
+
+	return 0;
+}
+
 int32_t ctdb_control_get_event_script_status(struct ctdb_context *ctdb, TDB_DATA *outdata)
 {
-	struct ctdb_monitor_script_status_ctx *script_status = talloc_get_type(ctdb->last_monitor_status_ctx, struct ctdb_monitor_script_status_ctx);
-	struct ctdb_monitoring_wire *monitoring_scripts;
+	struct ctdb_monitoring_wire *monitoring_scripts = ctdb->last_status;
 
-	if (script_status == NULL) {
+	if (monitoring_scripts == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " last_monitor_status_ctx is NULL when reading status\n"));
-		return -1;
-	}
-
-	monitoring_scripts = talloc_size(outdata, offsetof(struct ctdb_monitoring_wire, scripts));
-	if (monitoring_scripts == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " failed to talloc monitoring_scripts structure\n"));
-		return -1;
-	}
-	
-	monitoring_scripts->num_scripts = 0;
-	monitoring_scripts = marshall_monitoring_scripts(outdata, monitoring_scripts, script_status->scripts);
-	if (monitoring_scripts == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Monitoring scritps is NULL. can not return data to client\n"));
 		return -1;
 	}
 
