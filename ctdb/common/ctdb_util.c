@@ -662,3 +662,15 @@ int32_t get_debug_by_desc(const char *desc)
 	return DEBUG_ERR;
 }
 
+const char *ctdb_eventscript_call_names[] = {
+	"startup",
+	"startrecovery",
+	"recovered",
+	"takeip",
+	"releaseip",
+	"stopped",
+	"monitor",
+	"status",
+	"shutdown",
+	"reload"
+};

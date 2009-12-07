@@ -32,19 +32,6 @@ static struct {
 	const char *script_running;
 } child_state;
 
-static const char *call_names[] = {
-	"startup",
-	"startrecovery",
-	"recovered",
-	"takeip",
-	"releaseip",
-	"stopped",
-	"monitor",
-	"status",
-	"shutdown",
-	"reload"
-};
-
 static void ctdb_event_script_timeout(struct event_context *ev, struct timed_event *te, struct timeval t, void *p);
 
 /*
@@ -311,7 +298,9 @@ static char *child_command_string(struct ctdb_context *ctdb,
 		return talloc_asprintf(ctx, "%s%s/%s %s %s",
 				       str,
 				       ctdb->event_script_dir,
-				       scriptname, call_names[call], options);
+				       scriptname,
+				       ctdb_eventscript_call_names[call],
+				       options);
 	}
 }
 
@@ -463,7 +452,7 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 	/* Aborted or finished all scripts?  We're done. */
 	if (state->cb_status != 0 || state->current+1 == state->scripts->num_scripts) {
 		DEBUG(DEBUG_INFO,(__location__ " Eventscript %s %s finished with state %d\n",
-				  call_names[state->call], state->options, state->cb_status));
+				  ctdb_eventscript_call_names[state->call], state->options, state->cb_status));
 
 		ctdb->event_script_timeouts = 0;
 		talloc_free(state);
@@ -490,7 +479,7 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 	struct ctdb_context *ctdb = state->ctdb;
 
 	DEBUG(DEBUG_ERR,("Event script timed out : %s %s count : %u  pid : %d\n",
-			 call_names[state->call], state->options, ctdb->event_script_timeouts, state->child));
+			 ctdb_eventscript_call_names[state->call], state->options, ctdb->event_script_timeouts, state->child));
 
 	state->cb_status = -ETIME;
 
@@ -607,7 +596,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	}
 	if (!check_options(state->call, state->options)) {
 		DEBUG(DEBUG_ERR, ("Bad eventscript options '%s' for %s\n",
-				  call_names[state->call], state->options));
+				  ctdb_eventscript_call_names[state->call], state->options));
 		talloc_free(state);
 		return -1;
 	}
@@ -623,7 +612,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 		}
 		if (i == ARRAY_SIZE(allowed_calls)) {
 			DEBUG(DEBUG_ERR,("Refusing to run event scripts call '%s' while in recovery\n",
-				 call_names[call]));
+				 ctdb_eventscript_call_names[call]));
 			talloc_free(state);
 			return -1;
 		}
@@ -638,7 +627,8 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	}
 
 	DEBUG(DEBUG_INFO,(__location__ " Starting eventscript %s %s\n",
-			  call_names[state->call], state->options));
+			  ctdb_eventscript_call_names[state->call],
+			  state->options));
 
 	/* This is not a child of state, since we save it in destructor. */
 	state->scripts = ctdb_get_script_list(ctdb, ctdb);
@@ -667,7 +657,8 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 		event_add_timed(ctdb->ev, state, timeval_current_ofs(state->timeout.tv_sec, state->timeout.tv_usec), ctdb_event_script_timeout, state);
 	} else {
 		DEBUG(DEBUG_ERR, (__location__ " eventscript %s %s called with no timeout\n",
-				  call_names[state->call], state->options));
+				  ctdb_eventscript_call_names[state->call],
+				  state->options));
 	}
 
 	return 0;
@@ -739,7 +730,7 @@ int ctdb_event_script_args(struct ctdb_context *ctdb, enum ctdb_eventscript_call
 	if (status.status == -ETIME) {
 		DEBUG(DEBUG_ERR, (__location__ " eventscript for '%s' timedout."
 				  " Immediately banning ourself for %d seconds\n",
-				  call_names[call],
+				  ctdb_eventscript_call_names[call],
 				  ctdb->tunable.recovery_ban_period));
 		ctdb_ban_self(ctdb);
 	}
@@ -788,9 +779,9 @@ static const char *get_call(const char *p, enum ctdb_eventscript_call *call)
 	p += strspn(p, " \t");
 
 	/* See if we match any. */
-	for (*call = 0; *call < ARRAY_SIZE(call_names); (*call)++) {
-		len = strlen(call_names[*call]);
-		if (strncmp(p, call_names[*call], len) == 0) {
+	for (*call = 0; *call < CTDB_EVENT_MAX; (*call)++) {
+		len = strlen(ctdb_eventscript_call_names[*call]);
+		if (strncmp(p, ctdb_eventscript_call_names[*call], len) == 0) {
 			/* If end of string or whitespace, we're done. */
 			if (strcspn(p + len, " \t") == 0) {
 				return p + len;
