@@ -354,6 +354,16 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 		return;
 	}
 
+	if (ctdb_db->unhealthy_reason) {
+		/*
+		 * this is just a warning, as the tdb should be empty anyway,
+		 * and only persistent databases can be unhealthy, which doesn't
+		 * use this code patch
+		 */
+		DEBUG(DEBUG_WARNING,("warn: db(%s) unhealty in daemon_request_call_from_client(): %s\n",
+				     ctdb_db->db_name, ctdb_db->unhealthy_reason));
+	}
+
 	key.dptr = c->data;
 	key.dsize = c->keylen;
 

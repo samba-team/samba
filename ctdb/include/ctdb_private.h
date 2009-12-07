@@ -129,6 +129,7 @@ struct ctdb_tunable {
 	uint32_t vacuum_max_interval;
 	uint32_t max_queue_depth_drop_msg;
 	uint32_t use_status_events_for_monitoring;
+	uint32_t allow_unhealthy_db_read;
 };
 
 /*
@@ -407,6 +408,9 @@ struct ctdb_context {
 	const char *db_directory_persistent;
 	const char *db_directory_state;
 	struct tdb_wrap *db_persistent_health;
+	uint32_t db_persistent_startup_generation;
+	uint64_t db_persistent_check_errors;
+	uint64_t max_persistent_check_errors;
 	const char *transport;
 	char *recovery_lock_file;
 	int recovery_lock_fd;
@@ -479,6 +483,7 @@ struct ctdb_db_context {
 	struct ctdb_traverse_local_handle *traverse;
 	bool transaction_active;
 	struct ctdb_vacuum_handle *vacuum_handle;
+	char *unhealthy_reason;
 };
 
 
@@ -1542,5 +1547,13 @@ struct ctdb_client *ctdb_find_client_by_pid(struct ctdb_context *ctdb, pid_t pid
 int32_t ctdb_control_get_db_seqnum(struct ctdb_context *ctdb,
 				   TDB_DATA indata,
 				   TDB_DATA *outdata);
+
+int ctdb_load_persistent_health(struct ctdb_context *ctdb,
+				struct ctdb_db_context *ctdb_db);
+int ctdb_update_persistent_health(struct ctdb_context *ctdb,
+				  struct ctdb_db_context *ctdb_db,
+				  const char *reason,/* NULL means healthy */
+				  int num_healthy_nodes);
+int ctdb_recheck_persistent_health(struct ctdb_context *ctdb);
 
 #endif

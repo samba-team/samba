@@ -117,6 +117,12 @@ int32_t ctdb_control_trans2_commit(struct ctdb_context *ctdb,
 		return -1;
 	}
 
+	if (ctdb_db->unhealthy_reason) {
+		DEBUG(DEBUG_ERR,("db(%s) unhealty in ctdb_control_trans2_commit: %s\n",
+				 ctdb_db->db_name, ctdb_db->unhealthy_reason));
+		return -1;
+	}
+
 	/* handling num_persistent_updates is a bit strange - 
 	   there are 3 cases
 	     1) very old clients, which never called CTDB_CONTROL_START_PERSISTENT_UPDATE
@@ -594,6 +600,12 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 	ctdb_db = find_ctdb_db(ctdb, m->db_id);
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,("Unknown database 0x%08x in ctdb_control_update_record\n", m->db_id));
+		return -1;
+	}
+
+	if (ctdb_db->unhealthy_reason) {
+		DEBUG(DEBUG_ERR,("db(%s) unhealty in ctdb_control_update_record: %s\n",
+				 ctdb_db->db_name, ctdb_db->unhealthy_reason));
 		return -1;
 	}
 

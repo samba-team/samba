@@ -489,7 +489,8 @@ int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb, uint32_t id)
 {
 	struct ctdb_db_context *ctdb_db;
 	int i;
-	
+	int healthy_nodes = 0;
+
 	for (i=1;i<=NUM_DB_PRIORITIES; i++) {
 		if (ctdb->freeze_mode[i] != CTDB_FREEZE_FROZEN) {
 			DEBUG(DEBUG_ERR,(__location__ " Failed transaction_start while not frozen\n"));
@@ -507,6 +508,16 @@ int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb, uint32_t id)
 		return -1;
 	}
 
+	DEBUG(DEBUG_DEBUG,(__location__ " num_nodes[%d]\n", ctdb->num_nodes));
+	for (i=0; i < ctdb->num_nodes; i++) {
+		DEBUG(DEBUG_DEBUG,(__location__ " node[%d].flags[0x%X]\n",
+				   i, ctdb->nodes[i]->flags));
+		if (ctdb->nodes[i]->flags == 0) {
+			healthy_nodes++;
+		}
+	}
+	DEBUG(DEBUG_INFO,(__location__ " healthy_nodes[%d]\n", healthy_nodes));
+
 	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
 		int ret;
 
@@ -518,6 +529,14 @@ int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb, uint32_t id)
 			goto fail;
 		}
 		tdb_remove_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
+
+		ret = ctdb_update_persistent_health(ctdb, ctdb_db, NULL, healthy_nodes);
+		if (ret != 0) {
+			DEBUG(DEBUG_CRIT,(__location__ " Failed to update persistent health for db '%s'. "
+					 "Cancel all remaining transactions and resetting transaction_started to false.\n",
+					 ctdb_db->db_name));
+			goto fail;
+		}
 	}
 
 	ctdb->freeze_transaction_started = false;

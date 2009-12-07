@@ -220,10 +220,13 @@ static void ctdb_wait_until_recovered(struct event_context *ev, struct timed_eve
 			      struct timeval t, void *private_data)
 {
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
+	int ret;
 
 	DEBUG(DEBUG_NOTICE,("CTDB_WAIT_UNTIL_RECOVERED\n"));
 
 	if (ctdb->vnn_map->generation == INVALID_GENERATION) {
+		ctdb->db_persistent_startup_generation = INVALID_GENERATION;
+
 		DEBUG(DEBUG_NOTICE,(__location__ " generation is INVALID. Wait one more second\n"));
 		event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
 				     timeval_current_ofs(1, 0), 
@@ -232,6 +235,8 @@ static void ctdb_wait_until_recovered(struct event_context *ev, struct timed_eve
 	}
 
 	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
+		ctdb->db_persistent_startup_generation = INVALID_GENERATION;
+
 		DEBUG(DEBUG_NOTICE,(__location__ " in recovery. Wait one more second\n"));
 		event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
 				     timeval_current_ofs(1, 0), 
@@ -241,6 +246,8 @@ static void ctdb_wait_until_recovered(struct event_context *ev, struct timed_eve
 
 
 	if (timeval_elapsed(&ctdb->last_recovery_finished) < (ctdb->tunable.rerecovery_timeout + 3)) {
+		ctdb->db_persistent_startup_generation = INVALID_GENERATION;
+
 		DEBUG(DEBUG_NOTICE,(__location__ " wait for pending recoveries to end. Wait one more second.\n"));
 
 		event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
@@ -249,6 +256,48 @@ static void ctdb_wait_until_recovered(struct event_context *ev, struct timed_eve
 		return;
 	}
 
+	if (ctdb->vnn_map->generation == ctdb->db_persistent_startup_generation) {
+		DEBUG(DEBUG_INFO,(__location__ " skip ctdb_recheck_persistent_health() "
+				  "until the next recovery\n"));
+		event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
+				     timeval_current_ofs(1, 0),
+				     ctdb_wait_until_recovered, ctdb);
+		return;
+	}
+
+	ctdb->db_persistent_startup_generation = ctdb->vnn_map->generation;
+	ret = ctdb_recheck_persistent_health(ctdb);
+	if (ret != 0) {
+		ctdb->db_persistent_check_errors++;
+		if (ctdb->db_persistent_check_errors < ctdb->max_persistent_check_errors) {
+			DEBUG(ctdb->db_persistent_check_errors==1?DEBUG_ERR:DEBUG_WARNING,
+			      (__location__ "ctdb_recheck_persistent_health() "
+			      "failed (%llu of %llu times) - retry later\n",
+			      (unsigned long long)ctdb->db_persistent_check_errors,
+			      (unsigned long long)ctdb->max_persistent_check_errors));
+			event_add_timed(ctdb->ev,
+					ctdb->monitor->monitor_context,
+					timeval_current_ofs(1, 0),
+					ctdb_wait_until_recovered, ctdb);
+			return;
+		}
+		DEBUG(DEBUG_ALERT,(__location__
+				  "ctdb_recheck_persistent_health() failed (%llu times) - prepare shutdown\n",
+				  (unsigned long long)ctdb->db_persistent_check_errors));
+		ctdb_stop_recoverd(ctdb);
+		ctdb_stop_keepalive(ctdb);
+		ctdb_stop_monitoring(ctdb);
+		ctdb_release_all_ips(ctdb);
+		if (ctdb->methods != NULL) {
+			ctdb->methods->shutdown(ctdb);
+		}
+		ctdb_event_script(ctdb, CTDB_EVENT_SHUTDOWN);
+		DEBUG(DEBUG_ALERT,("ctdb_recheck_persistent_health() failed - Stopping CTDB daemon\n"));
+		exit(11);
+	}
+	ctdb->db_persistent_check_errors = 0;
+	DEBUG(DEBUG_NOTICE,(__location__
+			   "ctdb_start_monitoring: ctdb_recheck_persistent_health() OK\n"));
 
 	DEBUG(DEBUG_NOTICE,(__location__ " Recoveries finished. Running the \"startup\" event.\n"));
 	event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
@@ -421,6 +470,11 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 
 	DEBUG(DEBUG_INFO, ("Control modflags on node %u - flags now 0x%x\n", c->pnn, node->flags));
 
+	if (node->flags == 0 && !ctdb->done_startup) {
+		DEBUG(DEBUG_ERR, (__location__ " Node %u became healthy - force recovery for startup\n",
+				  c->pnn));
+		ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
+	}
 
 	/* tell the recovery daemon something has changed */
 	ctdb_daemon_send_message(ctdb, ctdb->pnn,

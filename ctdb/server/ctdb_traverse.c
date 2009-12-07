@@ -388,6 +388,16 @@ int32_t ctdb_control_traverse_all(struct ctdb_context *ctdb, TDB_DATA data, TDB_
 		return -1;
 	}
 
+	if (ctdb_db->unhealthy_reason) {
+		if (ctdb->tunable.allow_unhealthy_db_read == 0) {
+			DEBUG(DEBUG_ERR,("db(%s) unhealty in ctdb_control_traverse_all: %s\n",
+					ctdb_db->db_name, ctdb_db->unhealthy_reason));
+			return -1;
+		}
+		DEBUG(DEBUG_WARNING,("warn: db(%s) unhealty in ctdb_control_traverse_all: %s\n",
+				     ctdb_db->db_name, ctdb_db->unhealthy_reason));
+	}
+
 	state = talloc(ctdb_db, struct traverse_all_state);
 	if (state == NULL) {
 		return -1;
@@ -559,6 +569,16 @@ int32_t ctdb_control_traverse_start(struct ctdb_context *ctdb, TDB_DATA data,
 	ctdb_db = find_ctdb_db(ctdb, d->db_id);
 	if (ctdb_db == NULL) {
 		return -1;
+	}
+
+	if (ctdb_db->unhealthy_reason) {
+		if (ctdb->tunable.allow_unhealthy_db_read == 0) {
+			DEBUG(DEBUG_ERR,("db(%s) unhealty in ctdb_control_traverse_start: %s\n",
+					ctdb_db->db_name, ctdb_db->unhealthy_reason));
+			return -1;
+		}
+		DEBUG(DEBUG_WARNING,("warn: db(%s) unhealty in ctdb_control_traverse_start: %s\n",
+				     ctdb_db->db_name, ctdb_db->unhealthy_reason));
 	}
 
 	state = talloc(client, struct traverse_start_state);

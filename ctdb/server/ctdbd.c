@@ -51,6 +51,7 @@ static struct {
 	int         lvs;
 	int	    script_log_level;
 	int         no_publicipcheck;
+	int         max_persistent_check_errors;
 } options = {
 	.nlist = ETCDIR "/ctdb/nodes",
 	.transport = "tcp",
@@ -139,6 +140,9 @@ int main(int argc, const char *argv[])
 		{ "lvs", 0, POPT_ARG_NONE, &options.lvs, 0, "lvs is enabled on this node", NULL },
 		{ "script-log-level", 0, POPT_ARG_INT, &options.script_log_level, DEBUG_ERR, "log level of event script output", NULL },
 		{ "nopublicipcheck", 0, POPT_ARG_NONE, &options.no_publicipcheck, 0, "dont check we have/dont have the correct public ip addresses", NULL },
+		{ "max-persistent-check-errors", 0, POPT_ARG_INT,
+		  &options.max_persistent_check_errors, 0,
+		  "max allowed persistent check errors (default 0)", NULL },
 		POPT_TABLEEND
 	};
 	int opt, ret;
@@ -324,6 +328,12 @@ int main(int argc, const char *argv[])
 	ctdb->do_setsched = !options.no_setsched;
 
 	ctdb->do_checkpublicip = !options.no_publicipcheck;
+
+	if (options.max_persistent_check_errors < 0) {
+		ctdb->max_persistent_check_errors = 0xFFFFFFFFFFFFFFFFLL;
+	} else {
+		ctdb->max_persistent_check_errors = (uint64_t)options.max_persistent_check_errors;
+	}
 
 	if (getenv("CTDB_BASE") == NULL) {
 		/* setup a environment variable for the event scripts to use
