@@ -3154,6 +3154,7 @@ static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **ar
 	struct backup_data *bd;
 	int fh = -1;
 	int status = -1;
+	const char *reason = NULL;
 
 	if (argc != 2) {
 		DEBUG(DEBUG_ERR,("Invalid arguments\n"));
@@ -3182,6 +3183,37 @@ static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **ar
 		return -1;
 	}
 
+	ret = ctdb_ctrl_getdbhealth(ctdb, TIMELIMIT(), options.pnn,
+				    dbmap->dbs[i].dbid, tmp_ctx, &reason);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Unable to get dbhealth for database '%s'\n",
+				 argv[0]));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+	if (reason) {
+		uint32_t allow_unhealthy = 0;
+
+		ctdb_ctrl_get_tunable(ctdb, TIMELIMIT(), options.pnn,
+				      "AllowUnhealthyDBRead",
+				      &allow_unhealthy);
+
+		if (allow_unhealthy != 1) {
+			DEBUG(DEBUG_ERR,("database '%s' is unhealthy: %s\n",
+					 argv[0], reason));
+
+			DEBUG(DEBUG_ERR,("disallow backup : tunnable AllowUnhealthyDBRead = %u\n",
+					 allow_unhealthy));
+			talloc_free(tmp_ctx);
+			return -1;
+		}
+
+		DEBUG(DEBUG_WARNING,("WARNING database '%s' is unhealthy - see 'ctdb getdbstatus %s'\n",
+				     argv[0], argv[0]));
+		DEBUG(DEBUG_WARNING,("WARNING! allow backup of unhealthy database: "
+				     "tunnable AllowUnhealthyDBRead = %u\n",
+				     allow_unhealthy));
+	}
 
 	ctdb_db = ctdb_attach(ctdb, argv[0], dbmap->dbs[i].persistent, 0);
 	if (ctdb_db == NULL) {
