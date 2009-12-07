@@ -313,6 +313,34 @@ struct ctdb_script_list {
 	int32_t is_enabled;
 };
 
+/* Return true if OK, otherwise set errno. */
+static bool check_executable(const char *dir, const char *name)
+{
+	char *full;
+	struct stat st;
+
+	full = talloc_asprintf(NULL, "%s/%s", dir, name);
+	if (!full)
+		return false;
+
+	if (stat(full, &st) != 0) {
+		DEBUG(DEBUG_ERR,("Could not stat event script %s: %s\n",
+				 full, strerror(errno)));
+		talloc_free(full);
+		return false;
+	}
+
+	if (!(st.st_mode & S_IXUSR)) {
+		DEBUG(DEBUG_INFO,("Event script %s is not executable. Ignoring this event script\n", full));
+		errno = ENOEXEC;
+		talloc_free(full);
+		return false;
+	}
+
+	talloc_free(full);
+	return true;
+}
+
 static struct ctdb_script_list *ctdb_get_script_list(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx)
 {
 	DIR *dir;
@@ -351,7 +379,6 @@ static struct ctdb_script_list *ctdb_get_script_list(struct ctdb_context *ctdb, 
 	while ((de=readdir(dir)) != NULL) {
 		int namlen;
 		unsigned num;
-		char *str;
 
 		namlen = strlen(de->d_name);
 
@@ -372,14 +399,6 @@ static struct ctdb_script_list *ctdb_get_script_list(struct ctdb_context *ctdb, 
 			continue;
 		}
 
-		/* Make sure the event script is executable */
-		str = talloc_asprintf(tree, "%s/%s", ctdb->event_script_dir, de->d_name);
-		if (stat(str, &st) != 0) {
-			DEBUG(DEBUG_ERR,("Could not stat event script %s. Ignoring this event script\n", str));
-			continue;
-		}
-
-
 		tree_item = talloc(tree, struct ctdb_script_tree_item);
 		if (tree_item == NULL) {
 			DEBUG(DEBUG_ERR, (__location__ " Failed to allocate new tree item\n"));
@@ -388,8 +407,10 @@ static struct ctdb_script_list *ctdb_get_script_list(struct ctdb_context *ctdb, 
 		}
 	
 		tree_item->is_enabled = 1;
-		if (!(st.st_mode & S_IXUSR)) {
-			DEBUG(DEBUG_INFO,("Event script %s is not executable. Ignoring this event script\n", str));
+		if (!check_executable(ctdb->event_script_dir, de->d_name)) {
+			if (errno != ENOEXEC) {
+				continue;
+			}
 			tree_item->is_enabled = 0;
 		}
 
