@@ -169,13 +169,13 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 		/* check for immediate expiry "must change at next logon" 
 		 * for a user account. */
 		if (((acct_ctrl & (ACB_WSTRUST|ACB_SVRTRUST)) == 0) && (last_set_time == 0)) {
-			DEBUG(1,("sam_account_ok: Account for user '%s' password must change!.\n", pdb_get_username(sampass)));
+			DEBUG(1,("sam_account_ok: Account for user '%s' password must change!\n", pdb_get_username(sampass)));
 			return NT_STATUS_PASSWORD_MUST_CHANGE;
 		}
 
 		/* check for expired password */
 		if (must_change_time < time(NULL) && must_change_time != 0) {
-			DEBUG(1,("sam_account_ok: Account for user '%s' password expired!.\n", pdb_get_username(sampass)));
+			DEBUG(1,("sam_account_ok: Account for user '%s' password expired!\n", pdb_get_username(sampass)));
 			DEBUG(1,("sam_account_ok: Password expired at '%s' (%ld) unix time.\n", http_timestring(talloc_tos(), must_change_time), (long)must_change_time));
 			return NT_STATUS_PASSWORD_EXPIRED;
 		}
