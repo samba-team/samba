@@ -445,7 +445,7 @@ static int ctdb_run_event_script(struct ctdb_context *ctdb,
 				 const char *options)
 {
 	char *cmdstr;
-	int ret;
+	int ret = 0;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	struct ctdb_script_list *scripts, *current;
 
@@ -585,17 +585,7 @@ static int ctdb_run_event_script(struct ctdb_context *ctdb,
 
 		/* return an error if the script failed */
 		if (ret != 0) {
-			DEBUG(DEBUG_ERR,("Event script %s failed with error %d\n", cmdstr, ret));
-			if (!from_user && call == CTDB_EVENT_MONITOR) {
-				if (ctdb_ctrl_event_script_finished(ctdb) != 0) {
-					DEBUG(DEBUG_ERR,(__location__ " Failed to finish event script monitoring\n"));
-					talloc_free(tmp_ctx);
-					return -1;
-				}
-			}
-
-			talloc_free(tmp_ctx);
-			return ret;
+			break;
 		}
 	}
 
@@ -611,7 +601,7 @@ static int ctdb_run_event_script(struct ctdb_context *ctdb,
 	}
 
 	talloc_free(tmp_ctx);
-	return 0;
+	return ret;
 }
 
 /* called when child is finished */
