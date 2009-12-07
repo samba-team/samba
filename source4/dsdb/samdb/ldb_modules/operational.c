@@ -100,16 +100,11 @@ static int construct_canonical_name(struct ldb_module *module,
 static int construct_primary_group_token(struct ldb_module *module,
 					 struct ldb_message *msg)
 {
-	struct ldb_parse_tree objectclass_is_group = {
-		.operation = LDB_OP_EQUALITY,
-		.u.equality.attr = "objectClass", 
-		.u.equality.value = data_blob_string_const("group")
-	};
 	struct ldb_context *ldb;
 	uint32_t primary_group_token;
 	
 	ldb = ldb_module_get_ctx(module);
-	if (ldb_match_msg(ldb, msg, &objectclass_is_group, msg->dn, LDB_SCOPE_BASE) == 1) {
+	if (ldb_match_msg_objectclass(msg, "group") == 1) {
 		primary_group_token
 			= samdb_result_rid_from_sid(ldb, msg, "objectSid", 0);
 		if (primary_group_token == 0) {
