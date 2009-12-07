@@ -42,8 +42,8 @@ struct test_spoolss_context {
 	union spoolss_PortInfo *ports[3];
 
 	/* for EnumPrinterDrivers */
-	uint32_t driver_count[7];
-	union spoolss_DriverInfo *drivers[7];
+	uint32_t driver_count[8];
+	union spoolss_DriverInfo *drivers[8];
 
 	/* for EnumMonitors */
 	uint32_t monitor_count[3];
@@ -77,6 +77,17 @@ struct test_spoolss_context {
 
 #define COMPARE_UINT32(tctx, c, r, e) do {\
 	_CHECK_FIELD_SIZE(c, r, e, uint32_t); \
+	torture_assert_int_equal(tctx, c.e, r.e, "invalid value"); \
+} while(0)
+
+#define COMPARE_UINT64(tctx, c, r, e) do {\
+	_CHECK_FIELD_SIZE(c, r, e, uint64_t); \
+	torture_assert_int_equal(tctx, c.e, r.e, "invalid value"); \
+} while(0)
+
+
+#define COMPARE_NTTIME(tctx, c, r, e) do {\
+	_CHECK_FIELD_SIZE(c, r, e, NTTIME); \
 	torture_assert_int_equal(tctx, c.e, r.e, "invalid value"); \
 } while(0)
 
@@ -328,7 +339,7 @@ static bool test_EnumPrinterDrivers(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct spoolss_EnumPrinterDrivers r;
-	uint16_t levels[] = { 1, 2, 3, 4, 5, 6 };
+	uint16_t levels[] = { 1, 2, 3, 4, 5, 6, 8 };
 	int i, j;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
@@ -389,57 +400,77 @@ static bool test_EnumPrinterDrivers(struct torture_context *tctx,
 
 		for (j=0;j<ctx->driver_count[level];j++) {
 			union spoolss_DriverInfo *cur = &ctx->drivers[level][j];
-			union spoolss_DriverInfo *ref = &ctx->drivers[6][j];
+			union spoolss_DriverInfo *ref = &ctx->drivers[8][j];
+
 			switch (level) {
 			case 1:
-				COMPARE_STRING(tctx, cur->info1, ref->info6, driver_name);
+				COMPARE_STRING(tctx, cur->info1, ref->info8, driver_name);
 				break;
 			case 2:
-				COMPARE_UINT32(tctx, cur->info2, ref->info6, version);
-				COMPARE_STRING(tctx, cur->info2, ref->info6, driver_name);
-				COMPARE_STRING(tctx, cur->info2, ref->info6, architecture);
-				COMPARE_STRING(tctx, cur->info2, ref->info6, driver_path);
-				COMPARE_STRING(tctx, cur->info2, ref->info6, data_file);
-				COMPARE_STRING(tctx, cur->info2, ref->info6, config_file);
+				COMPARE_UINT32(tctx, cur->info2, ref->info8, version);
+				COMPARE_STRING(tctx, cur->info2, ref->info8, driver_name);
+				COMPARE_STRING(tctx, cur->info2, ref->info8, architecture);
+				COMPARE_STRING(tctx, cur->info2, ref->info8, driver_path);
+				COMPARE_STRING(tctx, cur->info2, ref->info8, data_file);
+				COMPARE_STRING(tctx, cur->info2, ref->info8, config_file);
 				break;
 			case 3:
-				COMPARE_UINT32(tctx, cur->info3, ref->info6, version);
-				COMPARE_STRING(tctx, cur->info3, ref->info6, driver_name);
-				COMPARE_STRING(tctx, cur->info3, ref->info6, architecture);
-				COMPARE_STRING(tctx, cur->info3, ref->info6, driver_path);
-				COMPARE_STRING(tctx, cur->info3, ref->info6, data_file);
-				COMPARE_STRING(tctx, cur->info3, ref->info6, config_file);
-				COMPARE_STRING(tctx, cur->info3, ref->info6, help_file);
-				COMPARE_STRING_ARRAY(tctx, cur->info3, ref->info6, dependent_files);
-				COMPARE_STRING(tctx, cur->info3, ref->info6, monitor_name);
-				COMPARE_STRING(tctx, cur->info3, ref->info6, default_datatype);
+				COMPARE_UINT32(tctx, cur->info3, ref->info8, version);
+				COMPARE_STRING(tctx, cur->info3, ref->info8, driver_name);
+				COMPARE_STRING(tctx, cur->info3, ref->info8, architecture);
+				COMPARE_STRING(tctx, cur->info3, ref->info8, driver_path);
+				COMPARE_STRING(tctx, cur->info3, ref->info8, data_file);
+				COMPARE_STRING(tctx, cur->info3, ref->info8, config_file);
+				COMPARE_STRING(tctx, cur->info3, ref->info8, help_file);
+				COMPARE_STRING_ARRAY(tctx, cur->info3, ref->info8, dependent_files);
+				COMPARE_STRING(tctx, cur->info3, ref->info8, monitor_name);
+				COMPARE_STRING(tctx, cur->info3, ref->info8, default_datatype);
 				break;
 			case 4:
-				COMPARE_UINT32(tctx, cur->info4, ref->info6, version);
-				COMPARE_STRING(tctx, cur->info4, ref->info6, driver_name);
-				COMPARE_STRING(tctx, cur->info4, ref->info6, architecture);
-				COMPARE_STRING(tctx, cur->info4, ref->info6, driver_path);
-				COMPARE_STRING(tctx, cur->info4, ref->info6, data_file);
-				COMPARE_STRING(tctx, cur->info4, ref->info6, config_file);
-				COMPARE_STRING(tctx, cur->info4, ref->info6, help_file);
-				COMPARE_STRING_ARRAY(tctx, cur->info4, ref->info6, dependent_files);
-				COMPARE_STRING(tctx, cur->info4, ref->info6, monitor_name);
-				COMPARE_STRING(tctx, cur->info4, ref->info6, default_datatype);
-				COMPARE_STRING_ARRAY(tctx, cur->info4, ref->info6, previous_names);
+				COMPARE_UINT32(tctx, cur->info4, ref->info8, version);
+				COMPARE_STRING(tctx, cur->info4, ref->info8, driver_name);
+				COMPARE_STRING(tctx, cur->info4, ref->info8, architecture);
+				COMPARE_STRING(tctx, cur->info4, ref->info8, driver_path);
+				COMPARE_STRING(tctx, cur->info4, ref->info8, data_file);
+				COMPARE_STRING(tctx, cur->info4, ref->info8, config_file);
+				COMPARE_STRING(tctx, cur->info4, ref->info8, help_file);
+				COMPARE_STRING_ARRAY(tctx, cur->info4, ref->info8, dependent_files);
+				COMPARE_STRING(tctx, cur->info4, ref->info8, monitor_name);
+				COMPARE_STRING(tctx, cur->info4, ref->info8, default_datatype);
+				COMPARE_STRING_ARRAY(tctx, cur->info4, ref->info8, previous_names);
 				break;
 			case 5:
-				COMPARE_UINT32(tctx, cur->info5, ref->info6, version);
-				COMPARE_STRING(tctx, cur->info5, ref->info6, driver_name);
-				COMPARE_STRING(tctx, cur->info5, ref->info6, architecture);
-				COMPARE_STRING(tctx, cur->info5, ref->info6, driver_path);
-				COMPARE_STRING(tctx, cur->info5, ref->info6, data_file);
-				COMPARE_STRING(tctx, cur->info5, ref->info6, config_file);
-				/*COMPARE_UINT32(tctx, cur->info5, ref->info6, driver_attributes);*/
-				/*COMPARE_UINT32(tctx, cur->info5, ref->info6, config_version);*/
-				/*TODO: ! COMPARE_UINT32(tctx, cur->info5, ref->info6, driver_version); */
+				COMPARE_UINT32(tctx, cur->info5, ref->info8, version);
+				COMPARE_STRING(tctx, cur->info5, ref->info8, driver_name);
+				COMPARE_STRING(tctx, cur->info5, ref->info8, architecture);
+				COMPARE_STRING(tctx, cur->info5, ref->info8, driver_path);
+				COMPARE_STRING(tctx, cur->info5, ref->info8, data_file);
+				COMPARE_STRING(tctx, cur->info5, ref->info8, config_file);
+				/*COMPARE_UINT32(tctx, cur->info5, ref->info8, driver_attributes);*/
+				/*COMPARE_UINT32(tctx, cur->info5, ref->info8, config_version);*/
+				/*TODO: ! COMPARE_UINT32(tctx, cur->info5, ref->info8, driver_version); */
 				break;
 			case 6:
-				/* level 6 is our reference, and it makes no sense to compare it to itself */
+				COMPARE_UINT32(tctx, cur->info6, ref->info8, version);
+				COMPARE_STRING(tctx, cur->info6, ref->info8, driver_name);
+				COMPARE_STRING(tctx, cur->info6, ref->info8, architecture);
+				COMPARE_STRING(tctx, cur->info6, ref->info8, driver_path);
+				COMPARE_STRING(tctx, cur->info6, ref->info8, data_file);
+				COMPARE_STRING(tctx, cur->info6, ref->info8, config_file);
+				COMPARE_STRING(tctx, cur->info6, ref->info8, help_file);
+				COMPARE_STRING_ARRAY(tctx, cur->info6, ref->info8, dependent_files);
+				COMPARE_STRING(tctx, cur->info6, ref->info8, monitor_name);
+				COMPARE_STRING(tctx, cur->info6, ref->info8, default_datatype);
+				COMPARE_STRING_ARRAY(tctx, cur->info6, ref->info8, previous_names);
+				COMPARE_NTTIME(tctx, cur->info6, ref->info8, driver_date);
+				COMPARE_UINT64(tctx, cur->info6, ref->info8, driver_version);
+				COMPARE_STRING(tctx, cur->info6, ref->info8, manufacturer_name);
+				COMPARE_STRING(tctx, cur->info6, ref->info8, manufacturer_url);
+				COMPARE_STRING(tctx, cur->info6, ref->info8, hardware_id);
+				COMPARE_STRING(tctx, cur->info6, ref->info8, provider);
+				break;
+			case 8:
+				/* level 8 is our reference, and it makes no sense to compare it to itself */
 				break;
 			}
 		}
