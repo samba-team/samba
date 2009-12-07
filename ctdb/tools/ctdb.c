@@ -2555,6 +2555,28 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 		return ret;
 	}
 
+	if(options.machinereadable){
+		printf(":ID:Name:Path:Persistent:Unhealthy:\n");
+		for(i=0;i<dbmap->num;i++){
+			const char *path;
+			const char *name;
+			const char *health;
+			bool persistent;
+
+			ctdb_ctrl_getdbpath(ctdb, TIMELIMIT(), options.pnn,
+					    dbmap->dbs[i].dbid, ctdb, &path);
+			ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn,
+					    dbmap->dbs[i].dbid, ctdb, &name);
+			ctdb_ctrl_getdbhealth(ctdb, TIMELIMIT(), options.pnn,
+					      dbmap->dbs[i].dbid, ctdb, &health);
+			persistent = dbmap->dbs[i].persistent;
+			printf(":0x%08X:%s:%s:%d:%d:\n",
+			       dbmap->dbs[i].dbid, name, path,
+			       !!(persistent), !!(health));
+		}
+		return 0;
+	}
+
 	printf("Number of databases:%d\n", dbmap->num);
 	for(i=0;i<dbmap->num;i++){
 		const char *path;
