@@ -2438,6 +2438,9 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 	ret = ctdb_dump_db(ctdb_db, stdout);
 	if (ret == -1) {
 		DEBUG(DEBUG_ERR, ("Unable to dump database\n"));
+		DEBUG(DEBUG_ERR, ("Maybe try 'ctdb getdbstatus %s'"
+				  " and 'ctdb getvar AllowUnhealthyDBRead'\n",
+				  db_name));
 		return -1;
 	}
 	talloc_free(ctdb_db);
