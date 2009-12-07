@@ -298,7 +298,7 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 	struct security_descriptor *psd = NULL;
 	size_t size;
 
-	if (!parent_desc || !sd_has_inheritable_components(parent_desc, is_directory)) {
+	if (!sd_has_inheritable_components(parent_desc, is_directory)) {
 		return NT_STATUS_OK;
 	}
 
@@ -720,6 +720,10 @@ static NTSTATUS create_file_acl_common(struct vfs_handle_struct *handle,
 	SMB_VFS_HANDLE_GET_DATA(handle, parent_sd,
 		struct security_descriptor,
 		goto err);
+
+	if (!parent_sd) {
+		goto err;
+	}
 
 	/* New directory - inherit from parent. */
 	status1 = inherit_new_acl(handle, fsp, parent_sd, fsp->is_directory);
