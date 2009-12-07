@@ -588,8 +588,17 @@ exit 0
 %attr(755,root,root) /%{_libarch}/security/pam_smbpass.so
 /usr/share/locale/*/LC_MESSAGES/pam_winbind.mo
 
-%{_libarchdir}/samba/idmap/*.so
-%{_libarchdir}/samba/nss_info/*.so
+%{_libarchdir}/samba/charset/CP437.so
+%{_libarchdir}/samba/charset/CP850.so
+%{_libarchdir}/samba/idmap/ad.so
+%{_libarchdir}/samba/idmap/rid.so
+%{_libarchdir}/samba/idmap/tdb2.so
+%{_libarchdir}/samba/lowcase.dat
+%{_libarchdir}/samba/nss_info/rfc2307.so
+%{_libarchdir}/samba/nss_info/sfu.so
+%{_libarchdir}/samba/nss_info/sfu20.so
+%{_libarchdir}/samba/upcase.dat
+%{_libarchdir}/samba/valid.dat
 
 %{_includedir}/libsmbclient.h
 %{_libarchdir}/libsmbclient.*
@@ -597,9 +606,6 @@ exit 0
 #%{_libarchdir}/libmsrpc.*
 %{_includedir}/smb_share_modes.h
 %{_libarchdir}/libsmbsharemodes.*
-
-%{_libarchdir}/samba/*.dat
-%{_libarchdir}/samba/charset/*.so
 
 %{_includedir}/netapi.h
 %{_includedir}/wbclient.h
