@@ -154,6 +154,7 @@ int start_syslog_daemon(struct ctdb_context *ctdb)
 }
 
 struct ctdb_log_state {
+	struct ctdb_context *ctdb;
 	int fd, pfd;
 	char buf[1024];
 	uint16_t buf_used;
@@ -317,6 +318,7 @@ int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile, bool use_sy
 		abort();
 	}
 
+	ctdb->log->ctdb = ctdb;
 	log_state = ctdb->log;
 
 	if (use_syslog) {
@@ -355,7 +357,7 @@ int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile, bool use_sy
 static void ctdb_log_handler(struct event_context *ev, struct fd_event *fde, 
 			     uint16_t flags, void *private)
 {
-	struct ctdb_context *ctdb = talloc_get_type(private, struct ctdb_context);
+	struct ctdb_log_state *log = talloc_get_type(private, struct ctdb_log_state);
 	char *p;
 	int n;
 
@@ -363,41 +365,41 @@ static void ctdb_log_handler(struct event_context *ev, struct fd_event *fde,
 		return;
 	}
 	
-	n = read(ctdb->log->pfd, &ctdb->log->buf[ctdb->log->buf_used],
-		 sizeof(ctdb->log->buf) - ctdb->log->buf_used);
+	n = read(log->pfd, &log->buf[log->buf_used],
+		 sizeof(log->buf) - log->buf_used);
 	if (n > 0) {
-		ctdb->log->buf_used += n;
+		log->buf_used += n;
 	}
 
 	this_log_level = script_log_level;
 
-	while (ctdb->log->buf_used > 0 &&
-	       (p = memchr(ctdb->log->buf, '\n', ctdb->log->buf_used)) != NULL) {
-		int n1 = (p - ctdb->log->buf)+1;
+	while (log->buf_used > 0 &&
+	       (p = memchr(log->buf, '\n', log->buf_used)) != NULL) {
+		int n1 = (p - log->buf)+1;
 		int n2 = n1 - 1;
 		/* swallow \r from child processes */
-		if (n2 > 0 && ctdb->log->buf[n2-1] == '\r') {
+		if (n2 > 0 && log->buf[n2-1] == '\r') {
 			n2--;
 		}
 		if (script_log_level <= LogLevel) {
-			do_debug("%*.*s\n", n2, n2, ctdb->log->buf);
+			do_debug("%*.*s\n", n2, n2, log->buf);
 			/* log it in the eventsystem as well */
-			ctdb_log_event_script_output(ctdb, ctdb->log->buf, n2);
+			ctdb_log_event_script_output(log->ctdb, log->buf, n2);
 		}
-		memmove(ctdb->log->buf, p+1, sizeof(ctdb->log->buf) - n1);
-		ctdb->log->buf_used -= n1;
+		memmove(log->buf, p+1, sizeof(log->buf) - n1);
+		log->buf_used -= n1;
 	}
 
 	/* the buffer could have completely filled - unfortunately we have
 	   no choice but to dump it out straight away */
-	if (ctdb->log->buf_used == sizeof(ctdb->log->buf)) {
+	if (log->buf_used == sizeof(log->buf)) {
 		if (script_log_level <= LogLevel) {
 			do_debug("%*.*s\n", 
-				(int)ctdb->log->buf_used, (int)ctdb->log->buf_used, ctdb->log->buf);
+				(int)log->buf_used, (int)log->buf_used, log->buf);
 			/* log it in the eventsystem as well */
-			ctdb_log_event_script_output(ctdb, ctdb->log->buf, ctdb->log->buf_used);
+			ctdb_log_event_script_output(log->ctdb, log->buf, log->buf_used);
 		}
-		ctdb->log->buf_used = 0;
+		log->buf_used = 0;
 	}
 }
 
@@ -423,7 +425,7 @@ int ctdb_set_child_logging(struct ctdb_context *ctdb)
 	}
 
 	event_add_fd(ctdb->ev, ctdb, p[0], EVENT_FD_READ, 
-		     ctdb_log_handler, ctdb);
+		     ctdb_log_handler, ctdb->log);
 	set_close_on_exec(p[0]);
 	ctdb->log->pfd = p[0];
 
