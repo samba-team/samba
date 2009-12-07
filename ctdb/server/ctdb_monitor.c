@@ -130,7 +130,7 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 			DEBUG(DEBUG_ERR, ("Maximum timeout count %u reached for eventscript. Making node unhealthy\n", ctdb->tunable.script_ban_count));
 		} else {
 			/* We pretend this is OK. */
-			status = 0;
+			goto after_change_status;
 		}
 	}
 
@@ -168,6 +168,7 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 
 	}
 
+after_change_status:
 	next_interval = ctdb->monitor->next_interval;
 
 	ctdb->monitor->next_interval *= 2;
