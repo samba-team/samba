@@ -270,6 +270,16 @@ fi
 make -j %{numcpu} %{?_smp_mflags} \
 	everything modules pam_smbpass
 
+# check that desired suppor has been compiled into smbd:
+export LD_LIBRARY_PATH=./bin
+for test in HAVE_POSIX_ACLS HAVE_LDAP HAVE_KRB5 HAVE_GPFS CLUSTER_SUPPORT
+do
+	if ! $(./bin/smbd -b | grep -q $test ) ; then
+		echo "ERROR: '$test' is not in smbd. Build stopped."
+		exit 1;
+	fi
+done
+
 # Remove some permission bits to avoid to many dependencies
 cd ..
 find examples docs -type f | xargs -r chmod -x
