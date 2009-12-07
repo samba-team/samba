@@ -79,11 +79,13 @@ struct ctdb_event_script_state {
 	int cb_status;
 	int fd[2];
 	void *private_data;
+	bool from_user;
 	enum ctdb_eventscript_call call;
 	const char *options;
 	struct timeval timeout;
 
 	struct ctdb_monitor_script_status *scripts;
+	struct ctdb_script_list *script_list;
 };
 
 
@@ -739,7 +741,6 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 {
 	struct ctdb_event_script_state *state;
 	int ret;
-	struct ctdb_script_list *scripts;
 
 	state = talloc(ctdb->event_script_ctx, struct ctdb_event_script_state);
 	CTDB_NO_MEMORY(ctdb, state);
@@ -747,6 +748,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	state->ctdb = ctdb;
 	state->callback = callback;
 	state->private_data = private_data;
+	state->from_user = from_user;
 	state->call = call;
 	state->options = talloc_vasprintf(state, fmt, ap);
 	state->timeout = timeval_set(ctdb->tunable.script_timeout, 0);
@@ -791,7 +793,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	DEBUG(DEBUG_INFO,(__location__ " Starting eventscript %s %s\n",
 			  call_names[state->call], state->options));
 	
-	scripts = ctdb_get_script_list(ctdb, state);
+	state->script_list = ctdb_get_script_list(ctdb, state);
 
 	ret = pipe(state->fd);
 	if (ret != 0) {
@@ -814,7 +816,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 		close(state->fd[0]);
 		set_close_on_exec(state->fd[1]);
 
-		rt = child_run_scripts(ctdb, from_user, state->call, state->options, scripts);
+		rt = child_run_scripts(ctdb, state->from_user, state->call, state->options, state->script_list);
 		/* We must be able to write PIPEBUF bytes at least; if this
 		   somehow fails, the read above will be short. */
 		write(state->fd[1], &rt, sizeof(rt));
