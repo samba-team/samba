@@ -408,7 +408,7 @@ void cli_init_creds(struct cli_state *cli, const char *username, const char *dom
 	fstrcpy(cli->domain, domain);
 	fstrcpy(cli->user_name, username);
 	pwd_set_cleartext(&cli->pwd, password);
-	if (!*username) {
+	if ((username == NULL) || (!*username)) {
 		cli->pwd.null_pwd = true;
 	}
 
