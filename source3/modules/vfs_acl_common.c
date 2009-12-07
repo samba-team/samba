@@ -34,10 +34,6 @@ static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
 			files_struct *fsp,
 			DATA_BLOB *pblob);
 
-static NTSTATUS store_acl_blob_pathname(vfs_handle_struct *handle,
-			const char *fname,
-			DATA_BLOB *pblob);
-
 #define HASH_SECURITY_INFO (OWNER_SECURITY_INFORMATION | \
 				GROUP_SECURITY_INFORMATION | \
 				DACL_SECURITY_INFORMATION | \
@@ -285,72 +281,14 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
-#if 0
-/*********************************************************************
- Create a default security descriptor for a file in case no inheritance
- exists. All permissions to the owner and SYSTEM.
-*********************************************************************/
-
-static struct security_descriptor *default_file_sd(TALLOC_CTX *mem_ctx,
-						SMB_STRUCT_STAT *psbuf,
-						bool force_inherit)
-{
-	struct dom_sid owner_sid, group_sid;
-	size_t sd_size;
-	struct security_ace *pace = NULL;
-	struct security_acl *pacl = NULL;
-
-	uid_to_sid(&owner_sid, psbuf->st_ex_uid);
-	gid_to_sid(&group_sid, psbuf->st_ex_gid);
-
-	pace = TALLOC_ARRAY(mem_ctx, struct security_ace, 2);
-	if (!pace) {
-		return NULL;
-	}
-
-	/* If force_inherit is set, this means we are initializing the ACEs for
-	 * a container and we want the ACEs for owner_sid and "SYSTEM" to be
-	 * inheritable by their children (See Bug #6802).
-	 */
-
-	init_sec_ace(&pace[0], &owner_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
-			SEC_RIGHTS_FILE_ALL, (force_inherit ?
-					(SEC_ACE_FLAG_OBJECT_INHERIT|
-					SEC_ACE_FLAG_CONTAINER_INHERIT) :
-					0));
-
-	init_sec_ace(&pace[1], &global_sid_System, SEC_ACE_TYPE_ACCESS_ALLOWED,
-			SEC_RIGHTS_FILE_ALL, (force_inherit ?
-					(SEC_ACE_FLAG_OBJECT_INHERIT|
-					SEC_ACE_FLAG_CONTAINER_INHERIT) :
-					0));
-
-	pacl = make_sec_acl(mem_ctx,
-				NT4_ACL_REVISION,
-				2,
-				pace);
-	if (!pacl) {
-		return NULL;
-	}
-	return make_sec_desc(mem_ctx,
-			SECURITY_DESCRIPTOR_REVISION_1,
-			SEC_DESC_SELF_RELATIVE|SEC_DESC_DACL_PRESENT,
-			&owner_sid,
-			&group_sid,
-			NULL,
-                        pacl,
-			&sd_size);
-}
-#endif
-
 /*********************************************************************
  Create a default ACL by inheriting from the parent. If no inheritance
- from the parent available, just use the actual permissions the new
- file or directory already got from the filesystem.
+ from the parent available, don't set anything. This will leave the actual
+ permissions the new file or directory already got from the filesystem
+ as the NT ACL when read.
 *********************************************************************/
 
 static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
-					struct smb_filename *smb_fname,
 					files_struct *fsp,
 					struct security_descriptor *parent_desc,
 					bool is_directory)
@@ -358,108 +296,42 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 	TALLOC_CTX *ctx = talloc_tos();
 	NTSTATUS status = NT_STATUS_OK;
 	struct security_descriptor *psd = NULL;
-	struct security_descriptor *pdesc_next = NULL;
-	DATA_BLOB blob;
 	size_t size;
-	uint8_t hash[XATTR_SD_HASH_SIZE];
 
-	if (parent_desc == NULL) {
-		/* We don't already have the parent sd, fetch it now. */
-		char *parent_name;
-
-		if (!parent_dirname(ctx, smb_fname->base_name, &parent_name, NULL)) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		DEBUG(10,("inherit_new_acl: check directory %s\n",
-				parent_name));
-
-		status = get_nt_acl_internal(handle,
-				NULL,
-				parent_name,
-				(OWNER_SECURITY_INFORMATION |
-				 GROUP_SECURITY_INFORMATION |
-				 DACL_SECURITY_INFORMATION),
-				&parent_desc);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10,("inherit_new_acl: directory %s failed "
-				"to get acl BLOB %s\n",
-				parent_name,
-				nt_errstr(status) ));
-			return status;
-		}
+	if (!parent_desc || !sd_has_inheritable_components(parent_desc, is_directory)) {
+		return NT_STATUS_OK;
 	}
 
-	/*
-	 * Object must exist. Read the current SD off the filesystem
-	 * for the hash.
-	 */
-	if (fsp) {
-		status = SMB_VFS_NEXT_FGET_NT_ACL(handle,
-				fsp,
-				HASH_SECURITY_INFO,
-				&pdesc_next);
-	} else {
-		status = SMB_VFS_NEXT_GET_NT_ACL(handle,
-				smb_fname->base_name,
-				HASH_SECURITY_INFO,
-				&pdesc_next);
+	/* Create an inherited descriptor from the parent. */
+
+	if (DEBUGLEVEL >= 10) {
+		DEBUG(10,("inherit_new_acl: parent acl for %s is:\n",
+			fsp_str_dbg(fsp) ));
+		NDR_PRINT_DEBUG(security_descriptor, parent_desc);
 	}
 
+	status = se_create_child_secdesc(ctx,
+			&psd,
+			&size,
+			parent_desc,
+			&handle->conn->server_info->ptok->user_sids[PRIMARY_USER_SID_INDEX],
+			&handle->conn->server_info->ptok->user_sids[PRIMARY_GROUP_SID_INDEX],
+			is_directory);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10,("inherit_new_acl: get_next_acl \n"
-			"failed for %s (%s)\n",
-			smb_fname_str_dbg(smb_fname),
-			nt_errstr(status) ));
 		return status;
-	}
-
-	if (parent_desc && sd_has_inheritable_components(parent_desc, is_directory)) {
-		/* Create an inherited descriptor from the parent. */
-
-		if (DEBUGLEVEL >= 10) {
-			DEBUG(10,("inherit_new_acl: parent acl is:\n"));
-			NDR_PRINT_DEBUG(security_descriptor, parent_desc);
-		}
-
-		status = se_create_child_secdesc(ctx,
-				&psd,
-				&size,
-				parent_desc,
-				&handle->conn->server_info->ptok->user_sids[PRIMARY_USER_SID_INDEX],
-				&handle->conn->server_info->ptok->user_sids[PRIMARY_GROUP_SID_INDEX],
-				is_directory);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-	} else {
-		DEBUG(10,("inherit_new_acl: using current permissions.\n"
-			"to set Windows acl for %s\n",
-			smb_fname_str_dbg(smb_fname) ));
-		psd = pdesc_next;
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		DEBUG(10,("inherit_new_acl: child acl is:\n"));
-		NDR_PRINT_DEBUG(security_descriptor, psd);
+		DEBUG(10,("inherit_new_acl: child acl for %s is:\n",
+			fsp_str_dbg(fsp) ));
+		NDR_PRINT_DEBUG(security_descriptor, parent_desc);
 	}
 
-	status = hash_sd_sha256(pdesc_next, hash);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	status = create_acl_blob(psd, &blob, XATTR_SD_HASH_TYPE_SHA256, hash);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	if (fsp) {
-		return store_acl_blob_fsp(handle, fsp, &blob);
-	} else {
-		return store_acl_blob_pathname(handle, smb_fname->base_name,
-					       &blob);
-	}
+	return SMB_VFS_FSET_NT_ACL(fsp,
+				(OWNER_SECURITY_INFORMATION |
+				 GROUP_SECURITY_INFORMATION |
+				 DACL_SECURITY_INFORMATION),
+				psd);
 }
 
 static NTSTATUS check_parent_acl_common(vfs_handle_struct *handle,
@@ -513,6 +385,11 @@ static NTSTATUS check_parent_acl_common(vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
+static void free_sd_common(void **ptr)
+{
+	TALLOC_FREE(*ptr);
+}
+
 /*********************************************************************
  Check ACL on open. For new files inherit from parent directory.
 *********************************************************************/
@@ -533,7 +410,7 @@ static int open_acl_common(vfs_handle_struct *handle,
 	if (fsp->base_fsp) {
 		/* Stream open. Base filename open already did the ACL check. */
 		DEBUG(10,("open_acl_common: stream open on %s\n",
-			smb_fname_str_dbg(smb_fname) ));
+			fsp_str_dbg(fsp) ));
 		return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
 	}
 
@@ -557,9 +434,9 @@ static int open_acl_common(vfs_handle_struct *handle,
 					fsp->access_mask,
 					&access_granted);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10,("open_acl_xattr: file %s open "
+			DEBUG(10,("open_acl_xattr: %s open "
 				"refused with error %s\n",
-				smb_fname_str_dbg(smb_fname),
+				fsp_str_dbg(fsp),
 				nt_errstr(status) ));
 			goto err;
 		}
@@ -570,26 +447,39 @@ static int open_acl_common(vfs_handle_struct *handle,
 		 * Check the parent directory ACL will allow this.
 		 */
 		if (flags & O_CREAT) {
+			struct security_descriptor *psd = NULL;
+
 			status = check_parent_acl_common(handle, fname,
 					SEC_DIR_ADD_FILE, &parent_desc);
 			if (!NT_STATUS_IS_OK(status)) {
 				goto err;
 			}
+			/* Cache the parent security descriptor for
+			 * later use. We do have an fsp here, but to
+			 * keep the code consistent with the directory
+			 * case which doesn't, use the handle. */
+
+			/* Attach this to the conn, move from talloc_tos(). */
+			psd = (struct security_descriptor *)talloc_move(handle->conn,
+				&parent_desc);
+
+			if (!psd) {
+				status = NT_STATUS_NO_MEMORY;
+				goto err;
+			}
+			status = NT_STATUS_NO_MEMORY;
+			SMB_VFS_HANDLE_SET_DATA(handle, psd, free_sd_common,
+				struct security_descriptor *, goto err);
+			status = NT_STATUS_OK;
 		}
 	}
 
 	DEBUG(10,("open_acl_xattr: get_nt_acl_attr_internal for "
-		"file %s returned %s\n",
-		smb_fname_str_dbg(smb_fname),
+		"%s returned %s\n",
+		fsp_str_dbg(fsp),
 		nt_errstr(status) ));
 
 	fsp->fh->fd = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
-
-	if (!file_existed && fsp->fh->fd != -1) {
-		/* File was created. Inherit from parent directory. */
-		inherit_new_acl(handle, smb_fname, fsp, parent_desc, false);
-	}
-
 	return fsp->fh->fd;
 
   err:
@@ -600,14 +490,15 @@ static int open_acl_common(vfs_handle_struct *handle,
 
 static int mkdir_acl_common(vfs_handle_struct *handle, const char *path, mode_t mode)
 {
-	struct smb_filename *smb_fname = NULL;
 	int ret;
 	NTSTATUS status;
 	SMB_STRUCT_STAT sbuf;
-	struct security_descriptor *parent_desc = NULL;
 
 	ret = vfs_stat_smb_fname(handle->conn, path, &sbuf);
 	if (ret == -1 && errno == ENOENT) {
+		struct security_descriptor *parent_desc = NULL;
+		struct security_descriptor *psd = NULL;
+
 		/* We're creating a new directory. */
 		status = check_parent_acl_common(handle, path,
 				SEC_DIR_ADD_SUBDIR, &parent_desc);
@@ -615,24 +506,23 @@ static int mkdir_acl_common(vfs_handle_struct *handle, const char *path, mode_t 
 			errno = map_errno_from_nt_status(status);
 			return -1;
 		}
+
+		/* Cache the parent security descriptor for
+		 * later use. We don't have an fsp here so
+		 * use the handle. */
+
+		/* Attach this to the conn, move from talloc_tos(). */
+		psd = (struct security_descriptor *)talloc_move(handle->conn,
+				&parent_desc);
+
+		if (!psd) {
+			return -1;
+		}
+		SMB_VFS_HANDLE_SET_DATA(handle, psd, free_sd_common,
+			struct security_descriptor *, return -1);
 	}
 
-	ret = SMB_VFS_NEXT_MKDIR(handle, path, mode);
-	if (ret == -1) {
-		return ret;
-	}
-
-	status = create_synthetic_smb_fname(talloc_tos(), path, NULL, NULL,
-					    &smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		return -1;
-	}
-
-	/* New directory - inherit from parent. */
-	inherit_new_acl(handle, smb_fname, NULL, parent_desc, true);
-	TALLOC_FREE(smb_fname);
-	return ret;
+	return SMB_VFS_NEXT_MKDIR(handle, path, mode);
 }
 
 /*********************************************************************
@@ -762,4 +652,98 @@ static SMB_STRUCT_DIR *opendir_acl_common(vfs_handle_struct *handle,
 		return NULL;
 	}
 	return SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr);
+}
+
+static NTSTATUS create_file_acl_common(struct vfs_handle_struct *handle,
+				struct smb_request *req,
+				uint16_t root_dir_fid,
+				struct smb_filename *smb_fname,
+				uint32_t access_mask,
+				uint32_t share_access,
+				uint32_t create_disposition,
+				uint32_t create_options,
+				uint32_t file_attributes,
+				uint32_t oplock_request,
+				uint64_t allocation_size,
+				struct security_descriptor *sd,
+				struct ea_list *ea_list,
+				files_struct **result,
+				int *pinfo)
+{
+	NTSTATUS status, status1;
+	files_struct *fsp = NULL;
+	int info;
+	struct security_descriptor *parent_sd = NULL;
+
+	status = SMB_VFS_NEXT_CREATE_FILE(handle,
+					req,
+					root_dir_fid,
+					smb_fname,
+					access_mask,
+					share_access,
+					create_disposition,
+					create_options,
+					file_attributes,
+					oplock_request,
+					allocation_size,
+					sd,
+					ea_list,
+					result,
+					&info);
+
+	if (info != FILE_WAS_CREATED) {
+		/* File/directory was opened, not created. */
+		goto out;
+	}
+
+	fsp = *result;
+
+	if (!NT_STATUS_IS_OK(status) || fsp == NULL) {
+		/* Only handle success. */
+		goto out;
+	}
+
+	if (sd) {
+		/* Security descriptor already set. */
+		goto out;
+	}
+
+	if (fsp->base_fsp) {
+		/* Stream open. */
+		goto out;
+	}
+
+
+	/* We must have a cached parent sd in this case.
+	 * attached to the handle. */
+
+	SMB_VFS_HANDLE_GET_DATA(handle, parent_sd,
+		struct security_descriptor,
+		goto err);
+
+	/* New directory - inherit from parent. */
+	status1 = inherit_new_acl(handle, fsp, parent_sd, fsp->is_directory);
+
+	if (!NT_STATUS_IS_OK(status1)) {
+		DEBUG(1,("create_file_acl_common: error setting "
+			"sd for %s (%s)\n",
+			fsp_str_dbg(fsp),
+			nt_errstr(status1) ));
+	}
+
+  out:
+
+	/* Ensure we never leave attached data around. */
+	SMB_VFS_HANDLE_FREE_DATA(handle);
+
+	if (NT_STATUS_IS_OK(status) && pinfo) {
+		*pinfo = info;
+	}
+	return status;
+
+  err:
+
+	smb_panic("create_file_acl_common: logic error.\n");
+	/* NOTREACHED */
+	return status;
 }
