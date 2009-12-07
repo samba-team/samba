@@ -313,7 +313,7 @@ static bool skel_lock(vfs_handle_struct *handle, files_struct *fsp, int op, SMB_
 	return false;
 }
 
-static int skel_kernel_flock(struct vfs_handle_struct *handle, struct files_struct *fsp, uint32 share_mode)
+static int skel_kernel_flock(struct vfs_handle_struct *handle, struct files_struct *fsp, uint32 share_mode, uint32 access_mask)
 {
 	errno = ENOSYS;
 	return -1;
@@ -454,8 +454,10 @@ static void skel_strict_unlock(struct vfs_handle_struct *handle,
 }
 
 static NTSTATUS skel_translate_name(struct vfs_handle_struct *handle,
-				char **mapped_name,
-				enum vfs_translate_direction direction)
+				const char *mapped_name,
+				enum vfs_translate_direction direction,
+				TALLOC_CTX *mem_ctx,
+				char **pmapped_name)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
