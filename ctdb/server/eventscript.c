@@ -651,6 +651,7 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 	if (kill(state->child, 0) != 0) {
 		DEBUG(DEBUG_ERR,("Event script child process already dead, errno %s(%d)\n", strerror(errno), errno));
 		state->child = 0;
+		state->cb_status = -ETIME;
 		talloc_free(state);
 		return;
 	}
