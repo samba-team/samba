@@ -460,9 +460,8 @@ static int ctdb_run_event_script(struct ctdb_context *ctdb,
 		}
 
 		if (ctdb_ctrl_event_script_init(ctdb) != 0) {
-			DEBUG(DEBUG_ERR,(__location__ " Failed to init event script monitoring\n"));
-			talloc_free(tmp_ctx);
-			return -1;
+			ret = -EIO;
+			goto out;
 		}
 	}
 
@@ -478,16 +477,16 @@ static int ctdb_run_event_script(struct ctdb_context *ctdb,
 		if (i == ARRAY_SIZE(allowed_calls)) {
 			DEBUG(DEBUG_ERR,("Refusing to run event scripts call '%s' while in recovery\n",
 				 call_names[call]));
-			talloc_free(tmp_ctx);
-			return -1;
+			ret = -EBUSY;
+			goto out;
 		}
 	}
 
 	if (setpgid(0,0) != 0) {
+		ret = -errno;
 		DEBUG(DEBUG_ERR,("Failed to create process group for event scripts - %s\n",
 			 strerror(errno)));
-		talloc_free(tmp_ctx);
-		return -1;		
+		goto out;
 	}
 
 	signal(SIGTERM, sigterm);
@@ -530,16 +529,14 @@ static int ctdb_run_event_script(struct ctdb_context *ctdb,
 
 		if (!from_user && call == CTDB_EVENT_MONITOR) {
 			if (ctdb_ctrl_event_script_start(ctdb, current->name) != 0) {
-				DEBUG(DEBUG_ERR,(__location__ " Failed to start event script monitoring\n"));
-				talloc_free(tmp_ctx);
-				return -1;
+				ret = -EIO;
+				goto out;
 			}
 
 			if (current->error) {
 				if (ctdb_ctrl_event_script_stop(ctdb, -current->error) != 0) {
-					DEBUG(DEBUG_ERR,(__location__ " Failed to report disabled eventscript\n"));
-					talloc_free(tmp_ctx);
-					return -1;
+					ret = -EIO;
+					goto out;
 				}
 			}
 		}
@@ -571,9 +568,8 @@ static int ctdb_run_event_script(struct ctdb_context *ctdb,
  
 		if (!from_user && call == CTDB_EVENT_MONITOR) {
 			if (ctdb_ctrl_event_script_stop(ctdb, ret) != 0) {
-				DEBUG(DEBUG_ERR,(__location__ " Failed to stop event script monitoring\n"));
-				talloc_free(tmp_ctx);
-				return -1;
+				ret = -EIO;
+				goto out;
 			}
 		}
 
@@ -594,12 +590,11 @@ static int ctdb_run_event_script(struct ctdb_context *ctdb,
 	
 	if (!from_user && call == CTDB_EVENT_MONITOR) {
 		if (ctdb_ctrl_event_script_finished(ctdb) != 0) {
-			DEBUG(DEBUG_ERR,(__location__ " Failed to finish event script monitoring\n"));
-			talloc_free(tmp_ctx);
-			return -1;
+			ret = -EIO;
 		}
 	}
 
+out:
 	talloc_free(tmp_ctx);
 	return ret;
 }
@@ -611,10 +606,13 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 	struct ctdb_event_script_state *state = 
 		talloc_get_type(p, struct ctdb_event_script_state);
 	struct ctdb_context *ctdb = state->ctdb;
+	int r;
 
-	if (read(state->fd[0], &state->cb_status, sizeof(state->cb_status)) !=
-	    sizeof(state->cb_status)) {
-		state->cb_status = -2;
+	r = read(state->fd[0], &state->cb_status, sizeof(state->cb_status));
+	if (r < 0) {
+		state->cb_status = -errno;
+	} else if (r != sizeof(state->cb_status)) {
+		state->cb_status = -EIO;
 	}
 
 	DEBUG(DEBUG_INFO,(__location__ " Eventscript %s %s finished with state %d\n",
