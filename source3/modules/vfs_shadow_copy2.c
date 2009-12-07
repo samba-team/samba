@@ -42,6 +42,9 @@
      4) vanity naming for snapshots. Snapshots can be named in any
      format compatible with str[fp]time conversions.
 
+     5) time stamps in snapshot names can be represented in localtime
+     rather than UTC.
+
   Module options:
 
       shadow:snapdir = <directory where snapshots are kept>
@@ -81,6 +84,10 @@
       be compatible with the conversion specifications recognized
       by str[fp]time.  The default value is "@GMT-%Y.%m.%d-%H.%M.%S".
 
+      shadow:localtime = yes/no (default is no)
+
+      This is an optional parameter that indicates whether the
+      snapshot names are in UTC/GMT or the local time.
 
 
   The following command would generate a correctly formatted directory name
@@ -99,6 +106,7 @@ static int vfs_shadow_copy2_debug_level = DBGC_VFS;
 
 #define SHADOW_COPY2_DEFAULT_SORT NULL
 #define SHADOW_COPY2_DEFAULT_FORMAT "@GMT-%Y.%m.%d-%H.%M.%S"
+#define SHADOW_COPY2_DEFAULT_LOCALTIME false
 
 /*
   make very sure it is one of our special names 
@@ -145,6 +153,13 @@ static char *shadow_copy2_snapshot_to_gmt(TALLOC_CTX *mem_ctx,
 	}
 
 	DEBUG(10, ("shadow_copy2_snapshot_to_gmt: match %s: %s\n", fmt, name));
+	if (lp_parm_bool(SNUM(handle->conn), "shadow", "localtime",
+		         SHADOW_COPY2_DEFAULT_LOCALTIME))
+	{
+		timestamp.tm_isdst = -1;
+		timestamp_t = mktime(&timestamp);
+		gmtime_r(&timestamp_t, &timestamp);
+	}
 	strftime(gmt, sizeof(gmt), SHADOW_COPY2_GMT_FORMAT, &timestamp);
 
 	return talloc_strdup(mem_ctx, gmt);
@@ -436,6 +451,13 @@ static char *convert_shadow2_name(vfs_handle_struct *handle, const char *fname, 
 	}
 
 	/* relpath is the remaining portion of the path after the @GMT-xxx */
+
+	if (lp_parm_bool(SNUM(handle->conn), "shadow", "localtime",
+			 SHADOW_COPY2_DEFAULT_LOCALTIME))
+	{
+		timestamp_t = timegm(&timestamp);
+		localtime_r(&timestamp_t, &timestamp);
+	}
 
 	strftime(snapshot, MAXPATHLEN, fmt, &timestamp);
 
