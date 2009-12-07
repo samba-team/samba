@@ -98,19 +98,24 @@ static int construct_canonical_name(struct ldb_module *module,
   construct a primary group token for groups from a message
 */
 static int construct_primary_group_token(struct ldb_module *module,
-	struct ldb_message *msg)
+					 struct ldb_message *msg)
 {
+	struct ldb_parse_tree objectclass_is_group = {
+		.operation = LDB_OP_EQUALITY,
+		.u.equality.attr = "objectClass", 
+		.u.equality.value = data_blob_string_const("group")
+	};
 	struct ldb_context *ldb;
 	uint32_t primary_group_token;
-
+	
 	ldb = ldb_module_get_ctx(module);
-
-	/* this is horrendously inefficient! we're doing a subtree
-	 * search for every DN we return. So that's N^2 in the
-	 * total number of objects! */
-	if (samdb_search_count(ldb, msg->dn, "(objectclass=group)") == 1) {
+	if (ldb_match_msg(ldb, msg, &objectclass_is_group, msg->dn, LDB_SCOPE_BASE) == 1) {
 		primary_group_token
 			= samdb_result_rid_from_sid(ldb, msg, "objectSid", 0);
+		if (primary_group_token == 0) {
+			return LDB_SUCCESS;
+		}
+
 		return samdb_msg_add_int(ldb, ldb, msg, "primaryGroupToken",
 			primary_group_token);
 	} else {
@@ -193,15 +198,16 @@ static const struct {
 static const struct {
 	const char *attr;
 	const char *replace;
+	const char *extra_attr;
 	int (*constructor)(struct ldb_module *, struct ldb_message *);
 } search_sub[] = {
-	{ "createTimestamp", "whenCreated", NULL },
-	{ "modifyTimestamp", "whenChanged", NULL },
-	{ "structuralObjectClass", "objectClass", NULL },
-	{ "canonicalName", "distinguishedName", construct_canonical_name },
-	{ "primaryGroupToken", "objectSid", construct_primary_group_token },
-	{ "parentGUID", NULL, construct_parent_guid },
-	{ "subSchemaSubEntry", NULL, construct_subschema_subentry }
+	{ "createTimestamp", "whenCreated", NULL , NULL },
+	{ "modifyTimestamp", "whenChanged", NULL , NULL },
+	{ "structuralObjectClass", "objectClass", NULL , NULL },
+	{ "canonicalName", "distinguishedName", NULL , construct_canonical_name },
+	{ "primaryGroupToken", "objectClass", "objectSid", construct_primary_group_token },
+	{ "parentGUID", NULL, NULL, construct_parent_guid },
+	{ "subSchemaSubEntry", NULL, NULL, construct_subschema_subentry }
 };
 
 
@@ -282,13 +288,16 @@ static int operational_search_post_process(struct ldb_module *module,
 
 			/* remove the added search attribute, unless it was
  			   asked for by the user */
-			if (search_sub[i].replace == NULL ||
-			    ldb_attr_in_list(attrs, search_sub[i].replace) ||
-			    ldb_attr_in_list(attrs, "*")) {
-				continue;
+			if (search_sub[i].replace != NULL && 
+			    !ldb_attr_in_list(attrs, search_sub[i].replace) &&
+			    !ldb_attr_in_list(attrs, "*")) {
+				ldb_msg_remove_attr(msg, search_sub[i].replace);
 			}
-
-			ldb_msg_remove_attr(msg, search_sub[i].replace);
+			if (search_sub[i].extra_attr != NULL && 
+			    !ldb_attr_in_list(attrs, search_sub[i].extra_attr) &&
+			    !ldb_attr_in_list(attrs, "*")) {
+				ldb_msg_remove_attr(msg, search_sub[i].extra_attr);
+			}
 		}
 	}
 
@@ -394,12 +403,29 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 		for (i=0;i<ARRAY_SIZE(search_sub);i++) {
 			if (ldb_attr_cmp(ac->attrs[a], search_sub[i].attr) == 0 &&
 			    search_sub[i].replace) {
+
+				if (search_sub[i].extra_attr) {
+					const char **search_attrs2;
+					/* Only adds to the end of the list */
+					search_attrs2 = ldb_attr_list_copy_add(req, search_attrs
+									       ? search_attrs
+									       : ac->attrs, 
+									       search_sub[i].extra_attr);
+					if (search_attrs2 == NULL) {
+						return LDB_ERR_OPERATIONS_ERROR;
+					}
+					/* may be NULL, talloc_free() doesn't mind */
+					talloc_free(search_attrs);
+					search_attrs = search_attrs2;
+				}
+
 				if (!search_attrs) {
 					search_attrs = ldb_attr_list_copy(req, ac->attrs);
 					if (search_attrs == NULL) {
 						return LDB_ERR_OPERATIONS_ERROR;
 					}
 				}
+				/* Despite the ldb_attr_list_copy_add, this is safe as that fn only adds to the end */
 				search_attrs[a] = search_sub[i].replace;
 			}
 		}
