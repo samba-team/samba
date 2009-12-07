@@ -126,6 +126,9 @@ int ldb_match_msg(struct ldb_context *ldb,
 		  struct ldb_dn *base,
 		  enum ldb_scope scope);
 
+int ldb_match_msg_objectclass(const struct ldb_message *msg,
+			      const char *objectclass);
+
 /* The following definitions come from lib/ldb/common/ldb_modules.c  */
 
 struct ldb_module *ldb_module_new(TALLOC_CTX *memctx,
