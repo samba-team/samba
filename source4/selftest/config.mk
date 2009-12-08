@@ -31,6 +31,7 @@ ifeq ($(RUN_FROM_BUILD_FARM),yes)
 test:: everything
 	$(ST_RM) $(SELFTEST) $(SELFTEST_NOSLOW_OPTS) $(DEFAULT_TEST_OPTIONS) $(TESTS) $(ST_TOUCH) | $(FILTER_XFAIL) --strip-passed-output
 	$(ST_DONE_TEST)
+	test -f st/summary && cat st/summary
 else
 test:: 
 	$(ST_RM) $(SELFTEST) $(SELFTEST_NOSLOW_OPTS) $(DEFAULT_TEST_OPTIONS) $(TESTS) $(ST_TOUCH) | $(FORMAT_TEST_OUTPUT) --immediate 
