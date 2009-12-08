@@ -20,7 +20,6 @@ raw.close
 raw.ioctl
 raw.rename
 raw.eas
-# raw.streams Bug xxxx
 base.open 
 rpc.altercontext
 rpc.join
