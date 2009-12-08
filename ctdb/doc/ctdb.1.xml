@@ -900,7 +900,7 @@ Reclock file:/gpfs/.ctdb/shared
       </para>
     </refsect2>
 
-    <refsect2><title>backupdb &lt;database&gt; &lt;file&gt;</title>
+    <refsect2><title>backupdb &lt;dbname&gt; &lt;file&gt;</title>
       <para>
         This command can be used to copy the entire content of a database out to a file. This file can later be read back into ctdb using the restoredb command.
 This is mainly useful for backing up persistent databases such as secrets.tdb and similar.
