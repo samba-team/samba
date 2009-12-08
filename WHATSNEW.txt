@@ -96,6 +96,75 @@ o   Stefan Metzmacher <metze@samba.org>
     * Implement the new SMB2 protocol (experimental).
 
 
+Changes since 3.5.0pre1
+-----------------------
+
+o   Michael Adam <obnox@samba.org>
+    * Fix the build when no external talloc and tdb are installed.
+    * Fix detection of CTDB headers on systems without system-libtalloc.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 6802: A created folder does not properly inherit permissions from
+      parent in vfs_acl_xattr.
+    * BUG 6837: "Too many open files" when trying to access large number of
+      files from Windows 7.
+    * BUG 6938 : No hook exists to check creation rights when using acl_xattr
+      module.
+    * Fix vfs_acl_xattr which was failing to call the NEXT connect function.
+    * Restructure the ACL code.
+    * Refactor reply_rmdir to use handle based code.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 6929: Fix build with recent heimdal.
+    * Fix several printing issues.
+    * Fix the build on Mac OS X 10.6.2.
+    * Fix net and rpcclient after setprinterdataex changes.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * Prefer posix_fallocate for doing "strict allocate".
+
+
+o   Matt Kraai <mkraai@beckman.com>
+    * BUG 6860: Fix shared library build on QNX.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 6288: SWAT adds a second share when changing parameters of an existing
+      share.
+    * BUG 6435: Fix minor memory corruption.
+    * Restore "fake directory create times" as a share parameter.
+    * Fix explicit stat64 support.
+    * Add support for NetWkstaGetInfo 101 and 102.
+    * Add rpcclient wkssvc_enumerateusers.
+    * De-deprecate "write cache size" to prevent its removal without a proper
+      alternative.
+
+
+o   Jim McDonough <jmcd@samba.org>
+    * BUG 6967: Prevent glibc error on 'net ads join'.
+
+
+o   Lars Müller <lars@samba.org>
+    * BUG 6710: Only install the cifs.upcall man page if CIFSUPCALL_PROGS was
+      set while configure.
+
+
+o   Ian Puleston <ipuleston@sonicwall.com>
+    * Complete support for NetWkstaGetInfo/NetWkstaEnumUsers.
+
+
+o   Karolin Seeger <kseeger@samba.org>
+    * Fix the build of the example VFS modules.
+
+
+o   Bo Yang <boyang@samba.org>
+    * BUG 6879: Fix crash in Winbind.
+    * Fix crash in free_file_list().
+
+
 ######################################################################
 Reporting bugs & Development Discussion
 #######################################
