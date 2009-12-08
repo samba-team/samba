@@ -171,7 +171,7 @@ NTSTATUS gensec_ntlmssp_check_packet(struct gensec_security *gensec_security,
 						  NTLMSSP_RECEIVE, &local_sig, true);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(0, ("NTLMSSP packet check failed with %s\n", nt_errstr(nt_status)));
+		DEBUG(0, ("NTLMSSP packet sig creation failed with %s\n", nt_errstr(nt_status)));
 		return nt_status;
 	}
 
@@ -179,26 +179,25 @@ NTSTATUS gensec_ntlmssp_check_packet(struct gensec_security *gensec_security,
 		if (local_sig.length != sig->length ||
 		    memcmp(local_sig.data, 
 			   sig->data, sig->length) != 0) {
-			DEBUG(5, ("BAD SIG NTLM2: wanted signature over %llu bytes of input:\n", (unsigned long long)pdu_length));
-			dump_data(5, local_sig.data, local_sig.length);
+
+			DEBUG(10, ("BAD SIG NTLM2: wanted signature over %llu bytes of input:\n", (unsigned long long)pdu_length));
+			dump_data(10, local_sig.data, local_sig.length);
 			
-			DEBUG(5, ("BAD SIG: got signature over %llu bytes of input:\n", (unsigned long long)pdu_length));
-			dump_data(5, sig->data, sig->length);
+			DEBUG(10, ("BAD SIG: got signature over %llu bytes of input:\n", (unsigned long long)pdu_length));
+			dump_data(10, sig->data, sig->length);
 			
-			DEBUG(1, ("NTLMSSP NTLM2 packet check failed due to invalid signature on %llu bytes of input!\n", (unsigned long long)pdu_length));
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	} else {
 		if (local_sig.length != sig->length ||
 		    memcmp(local_sig.data + 8, 
 			   sig->data + 8, sig->length - 8) != 0) {
-			DEBUG(5, ("BAD SIG NTLM1: wanted signature of %llu bytes of input:\n", (unsigned long long)length));
+			DEBUG(10, ("BAD SIG NTLM1: wanted signature of %llu bytes of input:\n", (unsigned long long)length));
 			dump_data(5, local_sig.data, local_sig.length);
 			
-			DEBUG(5, ("BAD SIG: got signature of %llu bytes of input:\n", (unsigned long long)length));
-			dump_data(5, sig->data, sig->length);
+			DEBUG(10, ("BAD SIG: got signature of %llu bytes of input:\n", (unsigned long long)length));
+			dump_data(10, sig->data, sig->length);
 			
-			DEBUG(1, ("NTLMSSP NTLM1 packet check failed due to invalid signature on %llu bytes of input:\n", (unsigned long long)length));
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
@@ -281,6 +280,7 @@ NTSTATUS gensec_ntlmssp_unseal_packet(struct gensec_security *gensec_security,
 				      const uint8_t *whole_pdu, size_t pdu_length, 
 				      const DATA_BLOB *sig)
 {
+	NTSTATUS status;
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
 	if (!gensec_ntlmssp_state->session_key.length) {
 		DEBUG(3, ("NO session key, cannot unseal packet\n"));
@@ -294,7 +294,12 @@ NTSTATUS gensec_ntlmssp_unseal_packet(struct gensec_security *gensec_security,
 		arcfour_crypt_sbox(gensec_ntlmssp_state->crypt.ntlm.arcfour_state, data, length);
 	}
 	dump_data_pw("ntlmssp clear data\n", data, length);
-	return gensec_ntlmssp_check_packet(gensec_security, sig_mem_ctx, data, length, whole_pdu, pdu_length, sig);
+	status = gensec_ntlmssp_check_packet(gensec_security, sig_mem_ctx, data, length, whole_pdu, pdu_length, sig);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("NTLMSSP packet check for unseal failed due to invalid signature on %llu bytes of input:\n", (unsigned long long)length));
+	}
+	return status;
 }
 
 /**
@@ -584,6 +589,10 @@ NTSTATUS gensec_ntlmssp_unwrap(struct gensec_security *gensec_security,
 			} else {
 				status = check_status;
 			}
+		}
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("NTLMSSP packet check for unwrap failed due to invalid signature\n"));
 		}
 		return status;
 	} else {
