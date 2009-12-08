@@ -110,23 +110,6 @@ static void log_event_script_output(const char *str, uint16_t len, void *p)
 	memcpy(current->output + slen, str, min);
 }
 
-/* called when all event script child processes are done */
-static int32_t ctdb_control_event_script_finished(struct ctdb_context *ctdb,
-						  struct ctdb_event_script_state *state)
-{
-	DEBUG(DEBUG_INFO, ("event script finished called\n"));
-
-	talloc_free(ctdb->last_status[state->call]);
-	ctdb->last_status[state->call] = talloc_steal(ctdb, state->scripts);
-	/* if we didn't finish all the scripts, trim status array. */
-	if (state->current < ctdb->last_status[state->call]->num_scripts) {
-		ctdb->last_status[state->call]->num_scripts = state->current+1;
-	}
-	state->scripts = NULL;
-
-	return 0;
-}
-
 int32_t ctdb_control_get_event_script_status(struct ctdb_context *ctdb, TDB_DATA *outdata)
 {
 	struct ctdb_scripts_wire *monitoring_scripts = ctdb->last_status[CTDB_EVENT_MONITOR];
@@ -481,7 +464,6 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 		DEBUG(DEBUG_INFO,(__location__ " Eventscript %s %s finished with state %d\n",
 				  call_names[state->call], state->options, state->cb_status));
 
-		ctdb_control_event_script_finished(ctdb, state);
 		ctdb->event_script_timeouts = 0;
 		talloc_free(state);
 		return;
@@ -494,7 +476,6 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 	state->current++;
 	state->cb_status = fork_child_for_script(ctdb, state);
 	if (state->cb_status != 0) {
-		ctdb_control_event_script_finished(ctdb, state);
 		/* This calls the callback. */
 		talloc_free(state);
 	}
@@ -518,7 +499,6 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 	}
 
 	state->scripts->scripts[state->current].status = state->cb_status;
-	ctdb_control_event_script_finished(ctdb, state);
 
 	talloc_free(state);
 }
@@ -539,6 +519,13 @@ static int event_script_destructor(struct ctdb_event_script_state *state)
 	/* If we were the current monitor, we no longer are. */
 	if (state->ctdb->current_monitor == state) {
 		state->ctdb->current_monitor = NULL;
+	}
+
+	/* Save our status as the last executed status. */
+	talloc_free(state->ctdb->last_status[state->call]);
+	state->ctdb->last_status[state->call] = state->scripts;
+	if (state->current < state->ctdb->last_status[state->call]->num_scripts) {
+		state->ctdb->last_status[state->call]->num_scripts = state->current+1;
 	}
 
 	/* This is allowed to free us; talloc will prevent double free anyway,
@@ -652,7 +639,8 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	DEBUG(DEBUG_INFO,(__location__ " Starting eventscript %s %s\n",
 			  call_names[state->call], state->options));
 
-	state->scripts = ctdb_get_script_list(ctdb, state);
+	/* This is not a child of state, since we save it in destructor. */
+	state->scripts = ctdb_get_script_list(ctdb, ctdb);
 	if (state->scripts == NULL) {
 		talloc_free(state);
 		return -1;
@@ -661,7 +649,6 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 
 	/* Nothing to do? */
 	if (state->scripts->num_scripts == 0) {
-		ctdb_control_event_script_finished(ctdb, state);
 		ctdb->event_script_timeouts = 0;
 		talloc_free(state);
 		return 0;
@@ -669,6 +656,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 
 	ret = fork_child_for_script(ctdb, state);
 	if (ret != 0) {
+		talloc_free(state->scripts);
 		talloc_free(state);
 		return -1;
 	}
