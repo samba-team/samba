@@ -987,6 +987,13 @@ dbid:0xb775fff6 name:secrets.tdb path:/var/ctdb/persistent/secrets.tdb.0 PERSIST
       </para>
     </refsect2>
 
+    <refsect2><title>dumpdbbackup &lt;backup-file&gt;</title>
+      <para>
+	This command will dump the content of database backup to the screen
+	(similar to ctdb catdb). This is a debugging command.
+      </para>
+    </refsect2>
+
     <refsect2><title>getmonmode</title>
       <para>
         This command returns the monutoring mode of a node. The monitoring mode is either ACTIVE or DISABLED. Normally a node will continously monitor that all other nodes that are expected are in fact connected and that they respond to commands.
