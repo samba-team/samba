@@ -29,28 +29,14 @@
 
 #define BASEDIR "\\teststreams"
 
-#define CHECK_STATUS(status, correct) do { \
-	if (!NT_STATUS_EQUAL(status, correct)) { \
-		printf("(%s) Incorrect status %s - should be %s\n", \
-		       __location__, nt_errstr(status), nt_errstr(correct)); \
-		ret = false; \
-		goto done; \
-	}} while (0)
+#define CHECK_STATUS(status, correct) \
+	torture_assert_ntstatus_equal_goto(tctx,status,correct,ret,done,"CHECK_STATUS")
 
-#define CHECK_VALUE(v, correct) do { \
-	if ((v) != (correct)) { \
-		printf("(%s) Incorrect value %s=%d - should be %d\n", \
-		       __location__, #v, (int)v, (int)correct); \
-		ret = false; \
-	}} while (0)
+#define CHECK_VALUE(v, correct) \
+	torture_assert_int_equal(tctx,v,correct,"CHECK_VALUE")
 
-#define CHECK_NTTIME(v, correct) do { \
-	if ((v) != (correct)) { \
-		printf("(%s) Incorrect value %s=%llu - should be %llu\n", \
-		       __location__, #v, (unsigned long long)v, \
-		       (unsigned long long)correct); \
-		ret = false; \
-	}} while (0)
+#define CHECK_NTTIME(v, correct) \
+	torture_assert_u64_equal(tctx,v,correct,"CHECK_NTTIME")
 
 #define CHECK_STR(v, correct) do { \
 	bool ok; \
@@ -65,12 +51,10 @@
 	} else { \
 		ok = false; \
 	} \
-	if (!ok) { \
-		printf("(%s) Incorrect value %s='%s' - should be '%s'\n", \
-		       __location__, #v, (v)?(v):"NULL", \
-		       (correct)?(correct):"NULL"); \
-		ret = false; \
-	}} while (0)
+	torture_assert(tctx,ok,\
+		       talloc_asprintf(tctx, "got '%s', expected '%s'",\
+		       (v)?(v):"NULL", (correct)?(correct):"NULL")); \
+} while (0)
 
 /*
   check that a stream has the right contents
@@ -124,19 +108,20 @@ static bool check_stream(struct smbcli_state *cli, const char *location,
 
 static int qsort_string(const void *v1, const void *v2)
 {
-	char * const *s1 = v1;
-	char * const *s2 = v2;
+	char * const *s1 = (char * const *)v1;
+	char * const *s2 = (char * const *)v2;
 	return strcmp(*s1, *s2);
 }
 
 static int qsort_stream(const void *v1, const void *v2)
 {
-	const struct stream_struct * s1 = v1;
-	const struct stream_struct * s2 = v2;
+	const struct stream_struct * s1 = (const struct stream_struct *)v1;
+	const struct stream_struct * s2 = (const struct stream_struct *)v2;
 	return strcmp(s1->stream_name.s, s2->stream_name.s);
 }
 
-static bool check_stream_list(struct smbcli_state *cli, const char *fname,
+static bool check_stream_list(struct torture_context *tctx,
+			      struct smbcli_state *cli, const char *fname,
 			      int num_exp, const char **exp)
 {
 	union smb_fileinfo finfo;
@@ -146,43 +131,36 @@ static bool check_stream_list(struct smbcli_state *cli, const char *fname,
 	char **exp_sort;
 	struct stream_struct *stream_sort;
 	bool ret = false;
+	int fail = -1;
 
 	finfo.generic.level = RAW_FILEINFO_STREAM_INFO;
 	finfo.generic.in.file.path = fname;
 
 	status = smb_raw_pathinfo(cli->tree, tmp_ctx, &finfo);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_fprintf(stderr, "(%s) smb_raw_pathinfo failed: %s\n",
-			  __location__, nt_errstr(status));
-		goto fail;
-	}
+	CHECK_STATUS(status, NT_STATUS_OK);
 
-	if (finfo.stream_info.out.num_streams != num_exp) {
-		d_fprintf(stderr, "(%s) expected %d streams, got %d\n",
-			  __location__, num_exp,
-			  finfo.stream_info.out.num_streams);
-		goto fail;
-	}
+	CHECK_VALUE(finfo.stream_info.out.num_streams, num_exp);
 
 	if (num_exp == 0) {
 		ret = true;
-		goto fail;
+		goto done;
 	}
 
-	exp_sort = talloc_memdup(tmp_ctx, exp, num_exp * sizeof(*exp));
+	exp_sort = (char **)talloc_memdup(tmp_ctx, exp, num_exp * sizeof(*exp));
 
 	if (exp_sort == NULL) {
-		goto fail;
+		goto done;
 	}
 
 	qsort(exp_sort, num_exp, sizeof(*exp_sort), qsort_string);
 
-	stream_sort = talloc_memdup(tmp_ctx, finfo.stream_info.out.streams,
-				    finfo.stream_info.out.num_streams *
-				    sizeof(*stream_sort));
+	stream_sort = (struct stream_struct *)talloc_memdup(tmp_ctx,
+				finfo.stream_info.out.streams,
+				finfo.stream_info.out.num_streams *
+				sizeof(*stream_sort));
 
 	if (stream_sort == NULL) {
-		goto fail;
+		goto done;
 	}
 
 	qsort(stream_sort, finfo.stream_info.out.num_streams,
@@ -190,23 +168,22 @@ static bool check_stream_list(struct smbcli_state *cli, const char *fname,
 
 	for (i=0; i<num_exp; i++) {
 		if (strcmp(exp_sort[i], stream_sort[i].stream_name.s) != 0) {
-			d_fprintf(stderr, "(%s) expected stream name %s, got "
-				  "%s\n", __location__, exp_sort[i],
-				  stream_sort[i].stream_name.s);
+			fail = i;
 			goto show_streams;
 		}
 	}
 
 	ret = true;
- fail:
+done:
 	talloc_free(tmp_ctx);
 	return ret;
 
 show_streams:
 	for (i=0; i<num_exp; i++) {
-		d_fprintf(stderr, "stream names '%s' '%s'\n",
-			  exp_sort[i], stream_sort[i].stream_name.s);
+		torture_comment(tctx, "stream names '%s' '%s'\n",
+				exp_sort[i], stream_sort[i].stream_name.s);
 	}
+	CHECK_STR(stream_sort[fail].stream_name.s, exp_sort[fail]);
 	talloc_free(tmp_ctx);
 	return ret;
 }
@@ -280,7 +257,7 @@ static bool test_stream_dir(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_FILE_IS_A_DIRECTORY);
 
 	printf("(%s) list the streams on the basedir\n", __location__);
-	ret &= check_stream_list(cli, BASEDIR, 0, NULL);
+	ret &= check_stream_list(tctx, cli, BASEDIR, 0, NULL);
 done:
 	smbcli_deltree(cli->tree, BASEDIR);
 	return ret;
@@ -383,13 +360,13 @@ static bool test_stream_io(struct torture_context *tctx,
 	ret &= check_stream(cli, __location__, tctx, fname, "Second Stream:", NULL);
 	ret &= check_stream(cli, __location__, tctx, fname, "Second Stream:$FOO", NULL);
 
-	check_stream_list(cli, fname, 3, three);
+	check_stream_list(tctx, cli, fname, 3, three);
 
 	printf("(%s) deleting stream\n", __location__);
 	status = smbcli_unlink(cli->tree, sname1);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	check_stream_list(cli, fname, 2, two);
+	check_stream_list(tctx, cli, fname, 2, two);
 
 	printf("(%s) delete a stream via delete-on-close\n", __location__);
 	io.ntcreatex.in.fname = sname2;
@@ -406,7 +383,7 @@ static bool test_stream_io(struct torture_context *tctx,
 	status = smbcli_unlink(cli->tree, sname2);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
-	check_stream_list(cli, fname, 1, one);
+	check_stream_list(tctx, cli, fname, 1, one);
 
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
 	io.ntcreatex.in.fname = sname1;
@@ -794,7 +771,7 @@ static bool test_stream_names(struct torture_context *tctx,
 	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
 
-	ret &= check_stream_list(cli, fname, 4, four);
+	ret &= check_stream_list(tctx, cli, fname, 4, four);
 
 	smbcli_close(cli->tree, fnum1);
 	smbcli_close(cli->tree, fnum2);
@@ -805,7 +782,7 @@ static bool test_stream_names(struct torture_context *tctx,
 	status = smb_raw_pathinfo(cli->tree, tctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	ret &= check_stream_list(cli, fname, 4, four);
+	ret &= check_stream_list(tctx, cli, fname, 4, four);
 
 	for (i=0; i < 4; i++) {
 		NTTIME write_time;
@@ -911,7 +888,7 @@ static bool test_stream_names(struct torture_context *tctx,
 		CHECK_VALUE(stinfo.all_info.out.ea_size,
 			    finfo.all_info.out.ea_size);
 
-		ret &= check_stream_list(cli, fname, 4, four);
+		ret &= check_stream_list(tctx, cli, fname, 4, four);
 
 		smbcli_close(cli->tree, fnum1);
 		talloc_free(path);
@@ -927,7 +904,7 @@ static bool test_stream_names(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum1 = io.ntcreatex.out.file.fnum;
 
-	ret &= check_stream_list(cli, fname, 5, five1);
+	ret &= check_stream_list(tctx, cli, fname, 5, five1);
 
 	ZERO_STRUCT(sinfo);
 	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
@@ -938,7 +915,7 @@ static bool test_stream_names(struct torture_context *tctx,
 	status = smb_raw_setfileinfo(cli->tree, &sinfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	ret &= check_stream_list(cli, fname, 5, five2);
+	ret &= check_stream_list(tctx, cli, fname, 5, five2);
 
 	ZERO_STRUCT(sinfo);
 	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
@@ -949,7 +926,7 @@ static bool test_stream_names(struct torture_context *tctx,
 	status = smb_raw_setfileinfo(cli->tree, &sinfo);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_COLLISION);
 
-	ret &= check_stream_list(cli, fname, 5, five2);
+	ret &= check_stream_list(tctx, cli, fname, 5, five2);
 
 	ZERO_STRUCT(sinfo);
 	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
@@ -962,10 +939,10 @@ static bool test_stream_names(struct torture_context *tctx,
 	    torture_setting_bool(tctx, "samba3", false)) {
 		/* why should this rename be considered invalid?? */
 		CHECK_STATUS(status, NT_STATUS_OK);
-		ret &= check_stream_list(cli, fname, 4, four);
+		ret &= check_stream_list(tctx, cli, fname, 4, four);
 	} else {
 		CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
-		ret &= check_stream_list(cli, fname, 5, five2);
+		ret &= check_stream_list(tctx, cli, fname, 5, five2);
 	}
 
 
@@ -1430,7 +1407,7 @@ static bool test_stream_create_disposition(struct torture_context *tctx,
 	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
-	if (!check_stream_list(cli, fname, 2, stream_list)) {
+	if (!check_stream_list(tctx, cli, fname, 2, stream_list)) {
 		goto done;
 	}
 
@@ -1442,7 +1419,7 @@ static bool test_stream_create_disposition(struct torture_context *tctx,
 	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
-	if (!check_stream_list(cli, fname, 1, &default_stream_name)) {
+	if (!check_stream_list(tctx, cli, fname, 1, &default_stream_name)) {
 		goto done;
 	}
 
@@ -1459,7 +1436,7 @@ static bool test_stream_create_disposition(struct torture_context *tctx,
 	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
-	if (!check_stream_list(cli, fname, 1, &default_stream_name)) {
+	if (!check_stream_list(tctx, cli, fname, 1, &default_stream_name)) {
 		goto done;
 	}
 
@@ -1476,7 +1453,7 @@ static bool test_stream_create_disposition(struct torture_context *tctx,
 	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
-	if (!check_stream_list(cli, fname, 1, &default_stream_name)) {
+	if (!check_stream_list(tctx, cli, fname, 1, &default_stream_name)) {
 		goto done;
 	}
 
@@ -1495,7 +1472,7 @@ static bool test_stream_create_disposition(struct torture_context *tctx,
 	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
-	if (!check_stream_list(cli, fname, 2, stream_list)) {
+	if (!check_stream_list(tctx, cli, fname, 2, stream_list)) {
 		goto done;
 	}
 
@@ -1522,7 +1499,7 @@ static bool test_stream_create_disposition(struct torture_context *tctx,
 	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	smbcli_close(cli->tree, io.openx.out.file.fnum);
-	if (!check_stream_list(cli, fname, 1, &default_stream_name)) {
+	if (!check_stream_list(tctx, cli, fname, 1, &default_stream_name)) {
 		goto done;
 	}
 
@@ -1559,7 +1536,7 @@ static bool test_stream_large_streaminfo(struct torture_context *tctx,
 	}
 	lstream_name[LONG_STREAM_SIZE - 1] = '\0';
 
-	printf("(%s) Creating a file with a lot of streams\n", __location__);
+	torture_comment(tctx, "(%s) Creating a file with a lot of streams\n", __location__);
 	for (i = 0; i < 10000; i++) {
 		fname_stream = talloc_asprintf(tctx, "%s:%s%d", fname,
 					       lstream_name, i);
@@ -1600,7 +1577,7 @@ static bool test_stream_attributes(struct torture_context *tctx,
 		return false;
 	}
 
-	printf ("(%s) testing attribute setting on stream\n", __location__);
+	torture_comment(tctx, "(%s) testing attribute setting on stream\n", __location__);
 
 	fname_stream = talloc_asprintf(tctx, "%s:%s", fname, stream);
 
