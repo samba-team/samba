@@ -84,13 +84,11 @@ struct ctdb_event_script_state {
 	const char *options;
 	struct timeval timeout;
 
-	struct ctdb_monitor_script_status *scripts;
-	struct ctdb_script_list *script_list;
+	struct ctdb_script *scripts, *current;
 };
 
-
-struct ctdb_monitor_script_status {
-	struct ctdb_monitor_script_status *next;
+struct ctdb_script {
+	struct ctdb_script *next;
 	const char *name;
 	struct timeval start;
 	struct timeval finished;
@@ -103,8 +101,7 @@ struct ctdb_monitor_script_status {
  */
 static void log_event_script_output(const char *str, uint16_t len, void *p)
 {
-	struct ctdb_monitor_script_status *script =
-		talloc_get_type(p, struct ctdb_monitor_script_status);
+	struct ctdb_script *script = talloc_get_type(p, struct ctdb_script);
 
 	script->output = talloc_asprintf_append(script->output, "%*.*s", len, len, str);
 }
@@ -126,7 +123,7 @@ static int32_t ctdb_control_event_script_init(struct ctdb_context *ctdb)
 /* starting a new child to run a monitor event script */
 static int32_t ctdb_control_event_script_start(struct ctdb_context *ctdb, const char *name)
 {
-	struct ctdb_monitor_script_status *script;
+	struct ctdb_script *script;
 
 	DEBUG(DEBUG_INFO, ("event script start called : %s\n", name));
 
@@ -135,34 +132,27 @@ static int32_t ctdb_control_event_script_start(struct ctdb_context *ctdb, const 
 		return -1;
 	}
 
-	script = talloc_zero(ctdb->current_monitor, struct ctdb_monitor_script_status);
+	script = ctdb->current_monitor->current;
 	if (script == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to talloc ctdb_monitor_script_status for script %s\n", name));
+		DEBUG(DEBUG_ERR,(__location__ " current script for monitor is NULL for %s\n", name));
 		return -1;
 	}
 
-	script->next  = ctdb->current_monitor->scripts;
-	script->name  = talloc_strdup(script, name);
-	CTDB_NO_MEMORY(ctdb, script->name);
-	script->output = talloc_strdup(script, "");
-	CTDB_NO_MEMORY(ctdb, script->output);
 	script->start = timeval_current();
-	ctdb->current_monitor->scripts = script;
-
 	return 0;
 }
 
 /* finished a child running a monitor event script */
 static int32_t ctdb_control_event_script_stop(struct ctdb_context *ctdb, int res)
 {
-	struct ctdb_monitor_script_status *script;
+	struct ctdb_script *script;
 
 	if (ctdb->current_monitor == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " current_monitor_status_ctx is NULL when script finished\n"));
 		return -1;
 	}
 
-	script = ctdb->current_monitor->scripts;
+	script = ctdb->current_monitor->current;
 	if (script == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " script is NULL when the script had finished\n"));
 		return -1;
@@ -176,17 +166,13 @@ static int32_t ctdb_control_event_script_stop(struct ctdb_context *ctdb, int res
 	return 0;
 }
 
-static struct ctdb_monitoring_wire *marshall_monitoring_scripts(TALLOC_CTX *mem_ctx, struct ctdb_monitoring_wire *monitoring_scripts, struct ctdb_monitor_script_status *script)
+static struct ctdb_monitoring_wire *marshall_monitoring_scripts(TALLOC_CTX *mem_ctx, struct ctdb_monitoring_wire *monitoring_scripts, struct ctdb_script *script, struct ctdb_script *terminus)
 {
 	struct ctdb_monitoring_script_wire script_wire;
 	size_t size;
 
-	if (script == NULL) {
+	if (script == terminus) {
 		return monitoring_scripts;
-	}
-	monitoring_scripts = marshall_monitoring_scripts(mem_ctx, monitoring_scripts, script->next);
-	if (monitoring_scripts == NULL) {
-		return NULL;
 	}
 
 	bzero(&script_wire, sizeof(struct ctdb_monitoring_script_wire));
@@ -208,12 +194,19 @@ static struct ctdb_monitoring_wire *marshall_monitoring_scripts(TALLOC_CTX *mem_
 	memcpy(&monitoring_scripts->scripts[monitoring_scripts->num_scripts], &script_wire, sizeof(script_wire));
 	monitoring_scripts->num_scripts++;
 	
+	monitoring_scripts = marshall_monitoring_scripts(mem_ctx, monitoring_scripts, script->next, terminus);
+	if (monitoring_scripts == NULL) {
+		return NULL;
+	}
+
 	return monitoring_scripts;
 }
 
 /* called when all event script child processes are done */
 static int32_t ctdb_control_event_script_finished(struct ctdb_context *ctdb)
 {
+	struct ctdb_script *terminus = NULL;
+
 	DEBUG(DEBUG_INFO, ("event script finished called\n"));
 
 	if (ctdb->current_monitor == NULL) {
@@ -228,8 +221,13 @@ static int32_t ctdb_control_event_script_finished(struct ctdb_context *ctdb)
 		return -1;
 	}
 
+	/* only report the finished ones */
+	if (ctdb->current_monitor->current != NULL) {
+		terminus = ctdb->current_monitor->current->next;
+	}
+
 	ctdb->last_status->num_scripts = 0;
-	ctdb->last_status = marshall_monitoring_scripts(ctdb, ctdb->last_status, ctdb->current_monitor->scripts);
+	ctdb->last_status = marshall_monitoring_scripts(ctdb, ctdb->last_status, ctdb->current_monitor->scripts, terminus);
 	talloc_free(ctdb->current_monitor->scripts);
 	ctdb->current_monitor->scripts = NULL;
 
@@ -252,12 +250,6 @@ int32_t ctdb_control_get_event_script_status(struct ctdb_context *ctdb, TDB_DATA
 }
 
 struct ctdb_script_tree_item {
-	const char *name;
-	int error;
-};
-
-struct ctdb_script_list {
-	struct ctdb_script_list *next;
 	const char *name;
 	int error;
 };
@@ -290,13 +282,13 @@ static bool check_executable(const char *dir, const char *name)
 	return true;
 }
 
-static struct ctdb_script_list *ctdb_get_script_list(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx)
+static struct ctdb_script *ctdb_get_script_list(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx)
 {
 	DIR *dir;
 	struct dirent *de;
 	struct stat st;
 	trbt_tree_t *tree;
-	struct ctdb_script_list *head, *tail, *new_item;
+	struct ctdb_script *head, *tail, *new_item;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	struct ctdb_script_tree_item *tree_item;
 	int count;
@@ -381,7 +373,7 @@ static struct ctdb_script_list *ctdb_get_script_list(struct ctdb_context *ctdb, 
 	 */
 	while ((tree_item=trbt_findfirstarray32(tree, 1)) != NULL) {
 
-		new_item = talloc(tmp_ctx, struct ctdb_script_list);
+		new_item = talloc(tmp_ctx, struct ctdb_script);
 		if (new_item == NULL) {
 			DEBUG(DEBUG_ERR, (__location__ " Failed to allocate new list item\n"));
 			talloc_free(tmp_ctx);
@@ -390,7 +382,13 @@ static struct ctdb_script_list *ctdb_get_script_list(struct ctdb_context *ctdb, 
 
 		new_item->next = NULL;
 		new_item->name = talloc_steal(new_item, tree_item->name);
-		new_item->error = tree_item->error;
+		new_item->status = -tree_item->error;
+		new_item->output = talloc_strdup(new_item, "");
+		if (new_item->output == NULL) {
+			DEBUG(DEBUG_ERR, (__location__ " Failed to allocate new list item output\n"));
+			talloc_free(tmp_ctx);
+			return NULL;
+		}
 
 		if (head == NULL) {
 			head = new_item;
@@ -488,7 +486,7 @@ static int child_run_script(struct ctdb_context *ctdb,
 			    bool from_user,
 			    enum ctdb_eventscript_call call,
 			    const char *options,
-			    struct ctdb_script_list *current)
+			    struct ctdb_script *current)
 {
 	char *cmdstr;
 	int ret;
@@ -506,8 +504,8 @@ static int child_run_script(struct ctdb_context *ctdb,
 
 	DEBUG(DEBUG_INFO,("Executing event script %s\n",cmdstr));
 
-	if (current->error) {
-		ret = -current->error;
+	if (current->status) {
+		ret = current->status;
 		goto out;
 	}
 
@@ -528,10 +526,10 @@ static int fork_child_for_script(struct ctdb_context *ctdb,
 	void (*logfn)(const char *, uint16_t, void *) = NULL;
 
 	if (!state->from_user && state->call == CTDB_EVENT_MONITOR) {
-		ctdb_control_event_script_start(ctdb, state->script_list->name);
+		ctdb_control_event_script_start(ctdb, state->current->name);
 		/* We need the logging destroyed after scripts, since it
 		 * refers to them. */
-		mem_ctx = state->scripts->output;
+		mem_ctx = state->current->output;
 		logfn = log_event_script_output;
 	}
 
@@ -542,7 +540,7 @@ static int fork_child_for_script(struct ctdb_context *ctdb,
 	}
 
 	if (!ctdb_fork_with_logging(mem_ctx, ctdb, logfn,
-				    state->scripts, &state->child)) {
+				    state->current, &state->child)) {
 		r = -errno;
 		close(state->fd[0]);
 		close(state->fd[1]);
@@ -556,7 +554,7 @@ static int fork_child_for_script(struct ctdb_context *ctdb,
 		close(state->fd[0]);
 		set_close_on_exec(state->fd[1]);
 
-		rt = child_run_script(ctdb, state->from_user, state->call, state->options, state->script_list);
+		rt = child_run_script(ctdb, state->from_user, state->call, state->options, state->current);
 		/* We must be able to write PIPEBUF bytes at least; if this
 		   somehow fails, the read above will be short. */
 		write(state->fd[1], &rt, sizeof(rt));
@@ -601,10 +599,9 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 	}
 
 	state->child = 0;
-	state->script_list = state->script_list->next;
 
 	/* Aborted or finished all scripts?  We're done. */
-	if (state->cb_status != 0 || state->script_list == NULL) {
+	if (state->cb_status != 0 || state->current->next == NULL) {
 		DEBUG(DEBUG_INFO,(__location__ " Eventscript %s %s finished with state %d\n",
 				  call_names[state->call], state->options, state->cb_status));
 
@@ -620,6 +617,7 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 	talloc_free(fde);
 
 	/* Next script! */
+	state->current = state->current->next;
 	state->cb_status = fork_child_for_script(ctdb, state);
 	if (state->cb_status != 0) {
 		if (!state->from_user && state->call == CTDB_EVENT_MONITOR) {
@@ -648,10 +646,10 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 	}
 
 	if (state->call == CTDB_EVENT_MONITOR || state->call == CTDB_EVENT_STATUS) {
-		struct ctdb_monitor_script_status *script;
+		struct ctdb_script *script;
 
 		if (ctdb->current_monitor != NULL) {
-			script = ctdb->current_monitor->scripts;
+			script = ctdb->current_monitor->current;
 			if (script != NULL) {
 				script->status = state->cb_status;
 			}
@@ -791,9 +789,9 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 
 	DEBUG(DEBUG_INFO,(__location__ " Starting eventscript %s %s\n",
 			  call_names[state->call], state->options));
-	
-	state->script_list = ctdb_get_script_list(ctdb, state);
-	if (state->script_list == NULL) {
+
+	state->current = state->scripts = ctdb_get_script_list(ctdb, state);
+	if (state->scripts == NULL) {
 		talloc_free(state);
 		return -1;
 	}
