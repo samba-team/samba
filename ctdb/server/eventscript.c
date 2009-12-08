@@ -116,11 +116,11 @@ static int32_t ctdb_control_event_script_finished(struct ctdb_context *ctdb,
 {
 	DEBUG(DEBUG_INFO, ("event script finished called\n"));
 
-	talloc_free(ctdb->last_status);
-	ctdb->last_status = talloc_steal(ctdb, state->scripts);
+	talloc_free(ctdb->last_status[state->call]);
+	ctdb->last_status[state->call] = talloc_steal(ctdb, state->scripts);
 	/* if we didn't finish all the scripts, trim status array. */
-	if (state->current < ctdb->last_status->num_scripts) {
-		ctdb->last_status->num_scripts = state->current+1;
+	if (state->current < ctdb->last_status[state->call]->num_scripts) {
+		ctdb->last_status[state->call]->num_scripts = state->current+1;
 	}
 	state->scripts = NULL;
 
@@ -129,7 +129,7 @@ static int32_t ctdb_control_event_script_finished(struct ctdb_context *ctdb,
 
 int32_t ctdb_control_get_event_script_status(struct ctdb_context *ctdb, TDB_DATA *outdata)
 {
-	struct ctdb_scripts_wire *monitoring_scripts = ctdb->last_status;
+	struct ctdb_scripts_wire *monitoring_scripts = ctdb->last_status[CTDB_EVENT_MONITOR];
 
 	if (monitoring_scripts == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " last_monitor_status_ctx is NULL when reading status\n"));
@@ -481,9 +481,7 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 		DEBUG(DEBUG_INFO,(__location__ " Eventscript %s %s finished with state %d\n",
 				  call_names[state->call], state->options, state->cb_status));
 
-		if (!state->from_user && state->call == CTDB_EVENT_MONITOR) {
-			ctdb_control_event_script_finished(ctdb, state);
-		}
+		ctdb_control_event_script_finished(ctdb, state);
 		ctdb->event_script_timeouts = 0;
 		talloc_free(state);
 		return;
@@ -496,9 +494,7 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 	state->current++;
 	state->cb_status = fork_child_for_script(ctdb, state);
 	if (state->cb_status != 0) {
-		if (!state->from_user && state->call == CTDB_EVENT_MONITOR) {
-			ctdb_control_event_script_finished(ctdb, state);
-		}
+		ctdb_control_event_script_finished(ctdb, state);
 		/* This calls the callback. */
 		talloc_free(state);
 	}
@@ -521,10 +517,8 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 		state->child = 0;
 	}
 
-	if (state->call == CTDB_EVENT_MONITOR || state->call == CTDB_EVENT_STATUS) {
-		state->scripts->scripts[state->current].status = state->cb_status;
-		ctdb_control_event_script_finished(ctdb, state);
-	}
+	state->scripts->scripts[state->current].status = state->cb_status;
+	ctdb_control_event_script_finished(ctdb, state);
 
 	talloc_free(state);
 }
@@ -667,9 +661,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 
 	/* Nothing to do? */
 	if (state->scripts->num_scripts == 0) {
-		if (!state->from_user && state->call == CTDB_EVENT_MONITOR) {
-			ctdb_control_event_script_finished(ctdb, state);
-		}
+		ctdb_control_event_script_finished(ctdb, state);
 		ctdb->event_script_timeouts = 0;
 		talloc_free(state);
 		return 0;
