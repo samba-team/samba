@@ -80,7 +80,21 @@ struct test_spoolss_context {
 	torture_assert_int_equal(tctx, c.e, r.e, "invalid value"); \
 } while(0)
 
-#define COMPARE_STRING_ARRAY(tctx, c,r,e)
+#define COMPARE_STRING_ARRAY(tctx, c,r,e) do {\
+	int __i; \
+	if (!c.e && !r.e) { \
+		break; \
+	} \
+	if (c.e && !r.e) { \
+		torture_fail(tctx, #r "." #e " field is NULL and " #c "." #e " is not\n"); \
+	} \
+	if (!c.e && r.e) { \
+		torture_fail(tctx, #c "." #e " field is NULL and " #r "." #e " is not\n"); \
+	} \
+	for (__i=0;c.e[__i] != NULL; __i++) { \
+		torture_assert_str_equal(tctx, c.e[__i], r.e[__i], "invalid value"); \
+	} \
+} while(0)
 
 static bool test_OpenPrinter_server(struct torture_context *tctx,
 				    struct dcerpc_pipe *p,
