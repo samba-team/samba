@@ -195,6 +195,9 @@
 #Allocated: (dynamicObject) samba4DynamicObject: 1.3.6.1.4.1.7165.4.255.8
 #Allocated: (entryTTL) samba4EntryTTL: 1.3.6.1.4.1.7165.4.255.9
 
+#Allocated: (thumbnailPhoto) attributeID: 1.3.6.1.4.1.7165.4.255.10
+#Allocated: (thumbnailLogo) attributeID: 1.3.6.1.4.1.7165.4.255.11
+
 #
 # Based on domainDNS, but without the DNS bits.
 #
