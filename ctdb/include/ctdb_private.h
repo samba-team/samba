@@ -474,7 +474,7 @@ struct ctdb_db_context {
 	struct tdb_wrap *ltdb;
 	struct ctdb_registered_call *calls; /* list of registered calls */
 	uint32_t seqnum;
-	struct timed_event *te;
+	struct timed_event *seqnum_update;
 	struct ctdb_traverse_local_handle *traverse;
 	bool transaction_active;
 	struct ctdb_vacuum_handle *vacuum_handle;
