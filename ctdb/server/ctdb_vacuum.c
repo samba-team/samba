@@ -267,7 +267,7 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db, struct vacuum_data *v
 		/* for records where we are not the lmaster, tell the lmaster to fetch the record */
 		if (ctdb->vnn_map->map[i] != ctdb->pnn) {
 			TDB_DATA data;
-			DEBUG(DEBUG_NOTICE,("Found %u records for lmaster %u in '%s'\n", 
+			DEBUG(DEBUG_INFO,("Found %u records for lmaster %u in '%s'\n", 
 								vdata->list[i]->count, i, name));
 
 			data.dsize = talloc_get_size(vdata->list[i]);
@@ -459,7 +459,7 @@ static int ctdb_repack_tdb(struct tdb_context *tdb, TALLOC_CTX *mem_ctx, struct 
 		return -1;		
 	}
 
-	DEBUG(DEBUG_NOTICE,(__location__ " %u records vacuumed\n", vdata->vacuumed));
+	DEBUG(DEBUG_INFO,(__location__ " %u records vacuumed\n", vdata->vacuumed));
 	
 	if (vdata->traverse_error) {
 		DEBUG(DEBUG_ERR,(__location__ " Error during traversal\n"));
@@ -501,7 +501,7 @@ static int ctdb_repack_tdb(struct tdb_context *tdb, TALLOC_CTX *mem_ctx, struct 
 		DEBUG(DEBUG_ERR,(__location__ " Failed to commit\n"));
 		return -1;
 	}
-	DEBUG(DEBUG_NOTICE,(__location__ " %u records copied\n", vdata->copied));
+	DEBUG(DEBUG_INFO,(__location__ " %u records copied\n", vdata->copied));
 
 	return 0;
 }
@@ -555,7 +555,7 @@ static int update_tuning_db(struct ctdb_db_context *ctdb_db, struct vacuum_data 
 		    vdata->delete_count < vdata->vacuum_limit) {
 			if (tdata.last_interval < ctdb_db->ctdb->tunable.vacuum_max_interval) {
 				tdata.new_interval = tdata.last_interval * 110 / 100;
-				DEBUG(DEBUG_NOTICE,("Increasing vacuum interval %u -> %u for %s\n", 
+				DEBUG(DEBUG_INFO,("Increasing vacuum interval %u -> %u for %s\n", 
 					tdata.last_interval, tdata.new_interval, ctdb_db->db_name));
 			}
 		} else {
@@ -651,7 +651,7 @@ static int ctdb_repack_db(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx)
 		return 0;
 	}
 
-	DEBUG(DEBUG_NOTICE,("Repacking %s with %u freelist entries and %u records to delete\n", 
+	DEBUG(DEBUG_INFO,("Repacking %s with %u freelist entries and %u records to delete\n", 
 			name, size, vdata->delete_count));
 
 	/*
@@ -855,7 +855,7 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 		timeval_current_ofs(ctdb->tunable.vacuum_max_run_time, 0),
 		vacuum_child_timeout, child_ctx);
 
-	DEBUG(DEBUG_NOTICE, (__location__ " Created PIPE FD:%d to child vacuum process\n", child_ctx->fd[0]));
+	DEBUG(DEBUG_INFO, (__location__ " Created PIPE FD:%d to child vacuum process\n", child_ctx->fd[0]));
 
 	event_add_fd(ctdb->ev, child_ctx, child_ctx->fd[0],
 		EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
