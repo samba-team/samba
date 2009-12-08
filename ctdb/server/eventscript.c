@@ -111,23 +111,18 @@ static void log_event_script_output(const char *str, uint16_t len, void *p)
 }
 
 /* called when all event script child processes are done */
-static int32_t ctdb_control_event_script_finished(struct ctdb_context *ctdb)
+static int32_t ctdb_control_event_script_finished(struct ctdb_context *ctdb,
+						  struct ctdb_event_script_state *state)
 {
 	DEBUG(DEBUG_INFO, ("event script finished called\n"));
 
-	if (ctdb->current_monitor == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " script_status is NULL when monitoring event finished\n"));
-		return -1;
-	}
-
 	talloc_free(ctdb->last_status);
-	ctdb->last_status = talloc_steal(ctdb, ctdb->current_monitor->scripts);
+	ctdb->last_status = talloc_steal(ctdb, state->scripts);
 	/* if we didn't finish all the scripts, trim status array. */
-	if (ctdb->current_monitor->current < ctdb->last_status->num_scripts) {
-		ctdb->last_status->num_scripts
-			= ctdb->current_monitor->current+1;
+	if (state->current < ctdb->last_status->num_scripts) {
+		ctdb->last_status->num_scripts = state->current+1;
 	}
-	ctdb->current_monitor->scripts = NULL;
+	state->scripts = NULL;
 
 	return 0;
 }
@@ -487,7 +482,7 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 				  call_names[state->call], state->options, state->cb_status));
 
 		if (!state->from_user && state->call == CTDB_EVENT_MONITOR) {
-			ctdb_control_event_script_finished(ctdb);
+			ctdb_control_event_script_finished(ctdb, state);
 		}
 		ctdb->event_script_timeouts = 0;
 		talloc_free(state);
@@ -502,7 +497,7 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 	state->cb_status = fork_child_for_script(ctdb, state);
 	if (state->cb_status != 0) {
 		if (!state->from_user && state->call == CTDB_EVENT_MONITOR) {
-			ctdb_control_event_script_finished(ctdb);
+			ctdb_control_event_script_finished(ctdb, state);
 		}
 		/* This calls the callback. */
 		talloc_free(state);
@@ -528,7 +523,7 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 
 	if (state->call == CTDB_EVENT_MONITOR || state->call == CTDB_EVENT_STATUS) {
 		state->scripts->scripts[state->current].status = state->cb_status;
-		ctdb_control_event_script_finished(ctdb);
+		ctdb_control_event_script_finished(ctdb, state);
 	}
 
 	talloc_free(state);
@@ -673,7 +668,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	/* Nothing to do? */
 	if (state->scripts->num_scripts == 0) {
 		if (!state->from_user && state->call == CTDB_EVENT_MONITOR) {
-			ctdb_control_event_script_finished(ctdb);
+			ctdb_control_event_script_finished(ctdb, state);
 		}
 		ctdb->event_script_timeouts = 0;
 		talloc_free(state);
