@@ -936,6 +936,8 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 	if (st.st_ex_size > len)
 		return sys_ftruncate(fsp->fh->fd, len);
 
+	space_to_write = len - st.st_ex_size;
+
 	/* for allocation try posix_fallocate first. This can fail on some
 	   platforms e.g. when the filesystem doesn't support it and no
 	   emulation is being done by the libc (like on AIX with JFS1). In that
@@ -943,7 +945,7 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 	   return ENOTSUP or EINVAL in cases like that. */
 #if defined(HAVE_POSIX_FALLOCATE)
 	{
-		int ret = sys_posix_fallocate(fsp->fh->fd, 0, len);
+		int ret = sys_posix_fallocate(fsp->fh->fd, st.st_ex_size, space_to_write);
 		if (ret == ENOSPC) {
 			errno = ENOSPC;
 			return -1;
@@ -957,7 +959,6 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 	}
 #endif
 	/* available disk space is enough or not? */
-	space_to_write = len - st.st_ex_size;
 	space_avail = get_dfree_info(fsp->conn,
 				     fsp->fsp_name->base_name, false,
 				     &bsize,&dfree,&dsize);
