@@ -588,11 +588,11 @@ static int std_event_loop_wait(struct event_context *ev)
 			new_t=time(NULL);
 			if (t != 0) {
 				if (t > new_t) {
-					DEBUG(0,("ERROR Time skipped backward by %d seconds\n", (int)(t-new_t)));
+					DEBUG(0,(__location__ " ERROR Time skipped backward by %d seconds\n", (int)(t-new_t)));
 				}
 				/* We assume here that we get at least one event every 5 seconds */
 				if (new_t > (t+5)) {
-					DEBUG(0,("ERROR Time jumped forward by %d seconds\n", (int)(new_t-t)));
+					DEBUG(0,(__location__ " ERROR Time jumped forward by %d seconds\n", (int)(new_t-t)));
 				}
 			}
 			t=new_t;
