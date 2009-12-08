@@ -986,6 +986,38 @@ dbid:0xb775fff6 name:secrets.tdb path:/var/ctdb/persistent/secrets.tdb.0 PERSIST
       </screen>
     </refsect2>
 
+    <refsect2><title>getdbstatus &lt;dbname&gt;</title>
+      <para>
+	This command displays more details about a database.
+      </para>
+      <para>
+	Example: ctdb getdbstatus test.tdb.0
+      </para>
+      <para>
+	Example output:
+      </para>
+      <screen format="linespecific">
+dbid: 0x122224da
+name: test.tdb
+path: /var/ctdb/test.tdb.0
+PERSISTENT: no
+HEALTH: OK
+      </screen>
+      <para>
+	Example: ctdb getdbstatus registry.tdb (with a corrupted TDB)
+      </para>
+      <para>
+	Example output:
+      </para>
+      <screen format="linespecific">
+dbid: 0xf2a58948
+name: registry.tdb
+path: /var/ctdb/persistent/registry.tdb.0
+PERSISTENT: yes
+HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/var/ctdb/persistent/registry.tdb.0.corrupted.20091208091949.0Z'
+      </screen>
+    </refsect2>
+
     <refsect2><title>catdb &lt;dbname&gt;</title>
       <para>
         This command will dump a clustered TDB database to the screen. This is a debugging command.
