@@ -101,6 +101,11 @@ struct ctdb_scripts {
 	struct ctdb_script scripts[1];
 };
 
+static struct ctdb_script *get_current_script(struct ctdb_event_script_state *state)
+{
+	return &state->scripts->scripts[state->current];
+}
+
 /* called from ctdb_logging when we have received output on STDERR from
  * one of the eventscripts
  */
@@ -108,7 +113,7 @@ static void log_event_script_output(const char *str, uint16_t len, void *p)
 {
 	struct ctdb_event_script_state *state
 		= talloc_get_type(p, struct ctdb_event_script_state);
-	struct ctdb_script *current = &state->scripts->scripts[state->current];
+	struct ctdb_script *current = get_current_script(state);
 
 	current->output = talloc_asprintf_append(current->output, "%*.*s", len, len, str);
 }
@@ -443,7 +448,7 @@ static int fork_child_for_script(struct ctdb_context *ctdb,
 				 struct ctdb_event_script_state *state)
 {
 	int r;
-	struct ctdb_script *current = &state->scripts->scripts[state->current];
+	struct ctdb_script *current = get_current_script(state);
 
 	current->start = timeval_current();
 
@@ -494,24 +499,24 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 {
 	struct ctdb_event_script_state *state = 
 		talloc_get_type(p, struct ctdb_event_script_state);
-	struct ctdb_script *script = &state->scripts->scripts[state->current];
+	struct ctdb_script *current = get_current_script(state);
 	struct ctdb_context *ctdb = state->ctdb;
 	int r;
 
-	r = read(state->fd[0], &script->status, sizeof(script->status));
+	r = read(state->fd[0], &current->status, sizeof(current->status));
 	if (r < 0) {
-		script->status = -errno;
-	} else if (r != sizeof(script->status)) {
-		script->status = -EIO;
+		current->status = -errno;
+	} else if (r != sizeof(current->status)) {
+		current->status = -EIO;
 	}
 
-	script->finished = timeval_current();
+	current->finished = timeval_current();
 
 	/* update overall status based on this script. */
-	state->cb_status = script->status;
+	state->cb_status = current->status;
 
 	/* don't stop just because it vanished or was disabled. */
-	if (script->status == -ENOENT || script->status == -ENOEXEC) {
+	if (current->status == -ENOENT || current->status == -ENOEXEC) {
 		state->cb_status = 0;
 	}
 
