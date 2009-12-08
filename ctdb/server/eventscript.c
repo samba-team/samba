@@ -106,66 +106,6 @@ static void log_event_script_output(const char *str, uint16_t len, void *p)
 	script->output = talloc_asprintf_append(script->output, "%*.*s", len, len, str);
 }
 
-/* starting a new monitor event */
-static int32_t ctdb_control_event_script_init(struct ctdb_context *ctdb)
-{
-	DEBUG(DEBUG_INFO, ("event script init called\n"));
-
-	if (ctdb->current_monitor == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " current_monitor_status_ctx is NULL when initing script\n"));
-		return -1;
-	}
-
-	return 0;
-}
-
-
-/* starting a new child to run a monitor event script */
-static int32_t ctdb_control_event_script_start(struct ctdb_context *ctdb, const char *name)
-{
-	struct ctdb_script *script;
-
-	DEBUG(DEBUG_INFO, ("event script start called : %s\n", name));
-
-	if (ctdb->current_monitor == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " current_monitor_status_ctx is NULL when starting script\n"));
-		return -1;
-	}
-
-	script = ctdb->current_monitor->current;
-	if (script == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " current script for monitor is NULL for %s\n", name));
-		return -1;
-	}
-
-	script->start = timeval_current();
-	return 0;
-}
-
-/* finished a child running a monitor event script */
-static int32_t ctdb_control_event_script_stop(struct ctdb_context *ctdb, int res)
-{
-	struct ctdb_script *script;
-
-	if (ctdb->current_monitor == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " current_monitor_status_ctx is NULL when script finished\n"));
-		return -1;
-	}
-
-	script = ctdb->current_monitor->current;
-	if (script == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " script is NULL when the script had finished\n"));
-		return -1;
-	}
-
-	script->finished = timeval_current();
-	script->status   = res;
-
-	DEBUG(DEBUG_INFO, ("event script stop called for script:%s duration:%.1f status:%d\n", script->name, timeval_elapsed(&script->start), (int)res));
-
-	return 0;
-}
-
 static struct ctdb_monitoring_wire *marshall_monitoring_scripts(TALLOC_CTX *mem_ctx, struct ctdb_monitoring_wire *monitoring_scripts, struct ctdb_script *script, struct ctdb_script *terminus)
 {
 	struct ctdb_monitoring_script_wire script_wire;
@@ -522,16 +462,8 @@ static int fork_child_for_script(struct ctdb_context *ctdb,
 				 struct ctdb_event_script_state *state)
 {
 	int r;
-	void *mem_ctx = state;
-	void (*logfn)(const char *, uint16_t, void *) = NULL;
 
-	if (!state->from_user && state->call == CTDB_EVENT_MONITOR) {
-		ctdb_control_event_script_start(ctdb, state->current->name);
-		/* We need the logging destroyed after scripts, since it
-		 * refers to them. */
-		mem_ctx = state->current->output;
-		logfn = log_event_script_output;
-	}
+	state->current->start = timeval_current();
 
 	r = pipe(state->fd);
 	if (r != 0) {
@@ -539,7 +471,8 @@ static int fork_child_for_script(struct ctdb_context *ctdb,
 		return -errno;
 	}
 
-	if (!ctdb_fork_with_logging(mem_ctx, ctdb, logfn,
+	if (!ctdb_fork_with_logging(state->current->output, ctdb,
+				    log_event_script_output,
 				    state->current, &state->child)) {
 		r = -errno;
 		close(state->fd[0]);
@@ -579,22 +512,24 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 {
 	struct ctdb_event_script_state *state = 
 		talloc_get_type(p, struct ctdb_event_script_state);
+	struct ctdb_script *script = state->current;
 	struct ctdb_context *ctdb = state->ctdb;
 	int r;
 
-	r = read(state->fd[0], &state->cb_status, sizeof(state->cb_status));
+	r = read(state->fd[0], &script->status, sizeof(script->status));
 	if (r < 0) {
-		state->cb_status = -errno;
-	} else if (r != sizeof(state->cb_status)) {
-		state->cb_status = -EIO;
+		script->status = -errno;
+	} else if (r != sizeof(script->status)) {
+		script->status = -EIO;
 	}
 
-	if (!state->from_user && state->call == CTDB_EVENT_MONITOR) {
-		ctdb_control_event_script_stop(ctdb, state->cb_status);
-	}
+	script->finished = timeval_current();
+
+	/* update overall status based on this script. */
+	state->cb_status = script->status;
 
 	/* don't stop just because it vanished or was disabled. */
-	if (state->cb_status == -ENOENT || state->cb_status == -ENOEXEC) {
+	if (script->status == -ENOENT || script->status == -ENOEXEC) {
 		state->cb_status = 0;
 	}
 
@@ -794,10 +729,6 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	if (state->scripts == NULL) {
 		talloc_free(state);
 		return -1;
-	}
-
-	if (!state->from_user && state->call == CTDB_EVENT_MONITOR) {
-		ctdb_control_event_script_init(ctdb);
 	}
 
 	ret = fork_child_for_script(ctdb, state);
