@@ -1,4 +1,4 @@
-What's new in Samba 4 alpha9
+What's new in Samba 4 alpha10
 ============================
 
 Samba 4 is the ambitious next version of the Samba suite that is being
@@ -6,13 +6,13 @@ developed in parallel to the stable 3.0 series. The main emphasis in
 this branch is support for the Active Directory logon protocols used
 by Windows 2000 and above.
 
-Samba4 alpha9 follows on from the alpha release series we have been
+Samba4 alpha10 follows on from the alpha release series we have been
 publishing since September 2007
 
 WARNINGS
 ========
 
-Samba4 alpha9 is not a final Samba release.  That is more a reference
+Samba4 alpha10 is not a final Samba release.  That is more a reference
 to Samba4's lack of the features we expect you will need than a
 statement of code quality, but clearly it hasn't seen a broad
 deployment yet.  If you were to upgrade Samba3 (or indeed Windows) to
@@ -62,31 +62,12 @@ working on modules to map between AD-like behaviours and this backend.
 We are aiming for Samba 4 to be powerful frontend to large
 directories.
 
-CHANGES SINCE alpha8
+CHANGES SINCE alpha9
 =====================
 
-In the time since Samba4 alpha8 was released in June 2009, Samba has
-continued to evolve, but you may particularly notice these areas 
-(in no particular order):
-
- Samba4 now includes the full set of user interface strings (display Specifiers)
- required to have the Microsoft Management Console operate
-
- LDB (the core Samba4 database library) has again been reworked for
- better performance
-
- Replication between Samba4 and Active Directory domains using the
- native replication protocol (DRS) has been demonstrated.
-
- Access Control Lists (in nTSecurityDescriptor) are now set correctly
- on objects in the directory, based on the same rules as Windows 2008.
- (Searches and still use a simplistic administrator/not administrator
- criteria)
-
-These are just some of the user-visible highlights of the work done in
-the past few months.  More details of the work done 'under the hood'
-can be found in our GIT history.
-
+Alpha9 was released last week, but in the time since the release we
+have found and fixed an important segfault, and improved the
+experimental DRS replication. 
 
 CHANGES
 =======
