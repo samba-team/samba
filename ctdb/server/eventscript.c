@@ -85,23 +85,10 @@ struct ctdb_event_script_state {
 	struct timeval timeout;
 
 	unsigned int current;
-	struct ctdb_scripts *scripts;
+	struct ctdb_scripts_wire *scripts;
 };
 
-struct ctdb_script {
-	const char *name;
-	struct timeval start;
-	struct timeval finished;
-	int32_t status;
-	char *output;
-};
-
-struct ctdb_scripts {
-	uint32_t num_scripts;
-	struct ctdb_script scripts[1];
-};
-
-static struct ctdb_script *get_current_script(struct ctdb_event_script_state *state)
+static struct ctdb_script_wire *get_current_script(struct ctdb_event_script_state *state)
 {
 	return &state->scripts->scripts[state->current];
 }
@@ -113,37 +100,14 @@ static void log_event_script_output(const char *str, uint16_t len, void *p)
 {
 	struct ctdb_event_script_state *state
 		= talloc_get_type(p, struct ctdb_event_script_state);
-	struct ctdb_script *current = get_current_script(state);
+	struct ctdb_script_wire *current = get_current_script(state);
+	unsigned int slen, min;
 
-	current->output = talloc_asprintf_append(current->output, "%*.*s", len, len, str);
-}
+	/* Append, but don't overfill buffer.  It starts zero-filled. */
+	slen = strlen(current->output);
+	min = MIN(len, sizeof(current->output) - slen - 1);
 
-static struct ctdb_scripts_wire *marshall_monitoring_scripts(TALLOC_CTX *mem_ctx, const struct ctdb_scripts *scripts, unsigned int num_scripts)
-{
-	struct ctdb_scripts_wire *wire;
-	unsigned int i;
-
-	/* Overallocates by 1, but that's OK. */
-	wire = talloc_zero_size(mem_ctx, sizeof(*wire) +
-				sizeof(wire->scripts)*num_scripts);
-	if (wire == NULL) {
-		return NULL;
-	}
-
-	wire->num_scripts = num_scripts;
-	for (i = 0; i < wire->num_scripts; i++) {
-		strncpy(wire->scripts[i].name,
-			scripts->scripts[i].name, MAX_SCRIPT_NAME);
-		wire->scripts[i].start    = scripts->scripts[i].start;
-		wire->scripts[i].finished = scripts->scripts[i].finished;
-		wire->scripts[i].status   = scripts->scripts[i].status;
-		if (scripts->scripts[i].output != NULL) {
-			strncpy(wire->scripts[i].output,
-				scripts->scripts[i].output, MAX_SCRIPT_OUTPUT);
-		}
-	}
-
-	return wire;
+	memcpy(current->output + slen, str, min);
 }
 
 /* called when all event script child processes are done */
@@ -157,16 +121,12 @@ static int32_t ctdb_control_event_script_finished(struct ctdb_context *ctdb)
 	}
 
 	talloc_free(ctdb->last_status);
-	ctdb->last_status
-		= marshall_monitoring_scripts(ctdb,
-					      ctdb->current_monitor->scripts,
-					      ctdb->current_monitor->current+1);
-	if (ctdb->last_status == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " failed to talloc last_status\n"));
-		return -1;
+	ctdb->last_status = talloc_steal(ctdb, ctdb->current_monitor->scripts);
+	/* if we didn't finish all the scripts, trim status array. */
+	if (ctdb->current_monitor->current < ctdb->last_status->num_scripts) {
+		ctdb->last_status->num_scripts
+			= ctdb->current_monitor->current+1;
 	}
-
-	talloc_free(ctdb->current_monitor->scripts);
 	ctdb->current_monitor->scripts = NULL;
 
 	return 0;
@@ -220,13 +180,13 @@ static bool check_executable(const char *dir, const char *name)
 	return true;
 }
 
-static struct ctdb_scripts *ctdb_get_script_list(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx)
+static struct ctdb_scripts_wire *ctdb_get_script_list(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx)
 {
 	DIR *dir;
 	struct dirent *de;
 	struct stat st;
 	trbt_tree_t *tree;
-	struct ctdb_scripts *scripts;
+	struct ctdb_scripts_wire *scripts;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	struct ctdb_script_tree_item *tree_item;
 	int count;
@@ -278,6 +238,12 @@ static struct ctdb_scripts *ctdb_get_script_list(struct ctdb_context *ctdb, TALL
 			continue;
 		}
 
+		if (strlen(de->d_name) > MAX_SCRIPT_NAME) {
+			DEBUG(DEBUG_ERR,("Script name %s too long! %u chars max",
+					 de->d_name, MAX_SCRIPT_NAME));
+			continue;
+		}
+
 		tree_item = talloc(tree, struct ctdb_script_tree_item);
 		if (tree_item == NULL) {
 			DEBUG(DEBUG_ERR, (__location__ " Failed to allocate new tree item\n"));
@@ -303,9 +269,9 @@ static struct ctdb_scripts *ctdb_get_script_list(struct ctdb_context *ctdb, TALL
 	closedir(dir);
 
 	/* Overallocates by one, but that's OK */
-	scripts = talloc_size(tmp_ctx,
-			      sizeof(*scripts)
-			      + sizeof(scripts->scripts[0]) * count);
+	scripts = talloc_zero_size(tmp_ctx,
+				   sizeof(*scripts)
+				   + sizeof(scripts->scripts[0]) * count);
 	if (scripts == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " Failed to allocate scripts\n"));
 		talloc_free(tmp_ctx);
@@ -316,15 +282,9 @@ static struct ctdb_scripts *ctdb_get_script_list(struct ctdb_context *ctdb, TALL
 	for (count = 0; count < scripts->num_scripts; count++) {
 		tree_item = trbt_findfirstarray32(tree, 1);
 
-		scripts->scripts[count].name
-			= talloc_steal(scripts, tree_item->name);
+		strcpy(scripts->scripts[count].name, tree_item->name);
 		scripts->scripts[count].status = -tree_item->error;
-		scripts->scripts[count].output = talloc_strdup(scripts, "");
-		if (scripts->scripts[count].output == NULL) {
-			DEBUG(DEBUG_ERR, (__location__ " Failed to allocate new script output\n"));
-			talloc_free(tmp_ctx);
-			return NULL;
-		}
+
 		/* remove this script from the tree */
 		talloc_free(tree_item);
 	}
@@ -412,7 +372,7 @@ static int child_run_script(struct ctdb_context *ctdb,
 			    bool from_user,
 			    enum ctdb_eventscript_call call,
 			    const char *options,
-			    struct ctdb_script *current)
+			    struct ctdb_script_wire *current)
 {
 	char *cmdstr;
 	int ret;
@@ -448,7 +408,7 @@ static int fork_child_for_script(struct ctdb_context *ctdb,
 				 struct ctdb_event_script_state *state)
 {
 	int r;
-	struct ctdb_script *current = get_current_script(state);
+	struct ctdb_script_wire *current = get_current_script(state);
 
 	current->start = timeval_current();
 
@@ -458,8 +418,7 @@ static int fork_child_for_script(struct ctdb_context *ctdb,
 		return -errno;
 	}
 
-	if (!ctdb_fork_with_logging(current->output, ctdb,
-				    log_event_script_output,
+ 	if (!ctdb_fork_with_logging(state, ctdb, log_event_script_output,
 				    state, &state->child)) {
 		r = -errno;
 		close(state->fd[0]);
@@ -499,7 +458,7 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 {
 	struct ctdb_event_script_state *state = 
 		talloc_get_type(p, struct ctdb_event_script_state);
-	struct ctdb_script *current = get_current_script(state);
+	struct ctdb_script_wire *current = get_current_script(state);
 	struct ctdb_context *ctdb = state->ctdb;
 	int r;
 
