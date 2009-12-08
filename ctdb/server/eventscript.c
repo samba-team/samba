@@ -101,26 +101,12 @@ struct ctdb_monitor_script_status {
 /* called from ctdb_logging when we have received output on STDERR from
  * one of the eventscripts
  */
-int ctdb_log_event_script_output(struct ctdb_context *ctdb, char *str, uint16_t len)
+static void log_event_script_output(const char *str, uint16_t len, void *p)
 {
-	struct ctdb_monitor_script_status *script;
+	struct ctdb_monitor_script_status *script =
+		talloc_get_type(p, struct ctdb_monitor_script_status);
 
-	if (ctdb->current_monitor == NULL) {
-		return -1;
-	}
-
-	script = ctdb->current_monitor->scripts;
-	if (script == NULL) {
-		return -1;
-	}
-
-	if (script->output == NULL) {
-		script->output = talloc_asprintf(script, "%*.*s", len, len, str);
-	} else {
-		script->output = talloc_asprintf_append(script->output, "%*.*s", len, len, str);
-	}
-
-	return 0;
+	script->output = talloc_asprintf_append(script->output, "%*.*s", len, len, str);
 }
 
 /* starting a new monitor event */
@@ -158,6 +144,8 @@ static int32_t ctdb_control_event_script_start(struct ctdb_context *ctdb, const 
 	script->next  = ctdb->current_monitor->scripts;
 	script->name  = talloc_strdup(script, name);
 	CTDB_NO_MEMORY(ctdb, script->name);
+	script->output = talloc_strdup(script, "");
+	CTDB_NO_MEMORY(ctdb, script->output);
 	script->start = timeval_current();
 	ctdb->current_monitor->scripts = script;
 
@@ -536,9 +524,15 @@ static int fork_child_for_script(struct ctdb_context *ctdb,
 				 struct ctdb_event_script_state *state)
 {
 	int r;
+	void *mem_ctx = state;
+	void (*logfn)(const char *, uint16_t, void *) = NULL;
 
 	if (!state->from_user && state->call == CTDB_EVENT_MONITOR) {
 		ctdb_control_event_script_start(ctdb, state->script_list->name);
+		/* We need the logging destroyed after scripts, since it
+		 * refers to them. */
+		mem_ctx = state->scripts->output;
+		logfn = log_event_script_output;
 	}
 
 	r = pipe(state->fd);
@@ -547,16 +541,15 @@ static int fork_child_for_script(struct ctdb_context *ctdb,
 		return -errno;
 	}
 
-	state->child = fork();
-
-	if (state->child == (pid_t)-1) {
+	if (!ctdb_fork_with_logging(mem_ctx, ctdb, logfn,
+				    state->scripts, &state->child)) {
 		r = -errno;
-		DEBUG(DEBUG_ERR, (__location__ " fork failed for child eventscript process\n"));
 		close(state->fd[0]);
 		close(state->fd[1]);
 		return r;
 	}
 
+	/* If we are the child, do the work. */
 	if (state->child == 0) {
 		int rt;
 

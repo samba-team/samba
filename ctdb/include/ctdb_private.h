@@ -1536,6 +1536,10 @@ struct ctdb_get_log_addr {
 
 int32_t ctdb_control_get_log(struct ctdb_context *ctdb, TDB_DATA addr);
 int32_t ctdb_control_clear_log(struct ctdb_context *ctdb);
+struct ctdb_log_state *ctdb_fork_with_logging(TALLOC_CTX *mem_ctx,
+					      struct ctdb_context *ctdb,
+					      void (*logfn)(const char *, uint16_t, void *),
+					      void *logfn_private, pid_t *pid);
 
 int32_t ctdb_control_process_exists(struct ctdb_context *ctdb, pid_t pid);
 struct ctdb_client *ctdb_find_client_by_pid(struct ctdb_context *ctdb, pid_t pid);
