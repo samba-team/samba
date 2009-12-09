@@ -125,11 +125,12 @@ static int construct_parent_guid(struct ldb_module *module,
 	const struct ldb_val *parent_guid;
 	const char *attrs[] = { "objectGUID", NULL };
 	int ret;
+	struct ldb_val v;
 
 	/* TODO:  In the future, this needs to honour the partition boundaries */
 	struct ldb_dn *parent_dn = ldb_dn_get_parent(msg, msg->dn);
 
-	if (parent_dn == NULL){
+	if (parent_dn == NULL) {
 		DEBUG(4,(__location__ ": Failed to find parent for dn %s\n",
 					 ldb_dn_get_linearized(msg->dn)));
 		return LDB_SUCCESS;
@@ -138,7 +139,7 @@ static int construct_parent_guid(struct ldb_module *module,
 	ret = dsdb_module_search_dn(module, msg, &res, parent_dn, attrs, DSDB_SEARCH_SHOW_DELETED);
 	talloc_free(parent_dn);
 	/* if there is no parentGUID for this object, then return */
-	if (ret == LDB_ERR_NO_SUCH_OBJECT){
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		DEBUG(4,(__location__ ": Parent dn for %s does not exist \n",
 			 ldb_dn_get_linearized(msg->dn)));
 		return LDB_SUCCESS;
@@ -152,9 +153,14 @@ static int construct_parent_guid(struct ldb_module *module,
 		return LDB_SUCCESS;
 	}
 
-	talloc_steal(msg->elements, parent_guid->data);
+	v = data_blob_dup_talloc(res, parent_guid);
+	if (!v.data) {
+		talloc_free(res);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ret = ldb_msg_add_steal_value(msg, "parentGUID", &v);
 	talloc_free(res);
-	return ldb_msg_add_value(msg, "parentGUID", parent_guid, 0);
+	return ret;
 }
 
 /*
