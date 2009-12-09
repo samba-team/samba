@@ -725,48 +725,139 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 	return 0;
 }
 
-
 /*
-  display the status of the monitoring scripts
+  display the status of the scripts for monitoring (or other events)
  */
-static int control_scriptstatus(struct ctdb_context *ctdb, int argc, const char **argv)
+static int control_one_scriptstatus(struct ctdb_context *ctdb,
+				    enum ctdb_eventscript_call type)
 {
-	int i, ret;
-	struct ctdb_monitoring_wire *script_status;
+	struct ctdb_scripts_wire *script_status;
+	int ret, i;
 
-	ret = ctdb_ctrl_getscriptstatus(ctdb, TIMELIMIT(), options.pnn, ctdb, &script_status);
+	ret = ctdb_ctrl_getscriptstatus(ctdb, TIMELIMIT(), options.pnn, ctdb, type, &script_status);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("Unable to get script status from node %u\n", options.pnn));
 		return ret;
 	}
 
-	printf("%d scripts were executed last monitoring cycle\n", script_status->num_scripts);
+	if (script_status == NULL) {
+		if (!options.machinereadable) {
+			printf("%s cycle never run\n",
+			       ctdb_eventscript_call_names[type]);
+		}
+		return 0;
+	}
+
+	if (!options.machinereadable) {
+		printf("%d scripts were executed last %s cycle\n",
+		       script_status->num_scripts,
+		       ctdb_eventscript_call_names[type]);
+	}
 	for (i=0; i<script_status->num_scripts; i++) {
-		if (script_status->scripts[i].disabled) {
-			printf("%-20s Status:DISABLED\n",
-				script_status->scripts[i].name);
+		const char *status = NULL;
+
+		switch (script_status->scripts[i].status) {
+		case -ETIME:
+			status = "TIMEDOUT";
+			break;
+		case -ENOEXEC:
+			status = "DISABLED";
+			break;
+		case 0:
+			status = "OK";
+			break;
+		default:
+			if (script_status->scripts[i].status > 0)
+				status = "ERROR";
+			break;
+		}
+		if (options.machinereadable) {
+			printf("%s:%s:%i:%s:%lu.%06lu:%lu.%06lu:%s:\n",
+			       ctdb_eventscript_call_names[type],
+			       script_status->scripts[i].name,
+			       script_status->scripts[i].status,
+			       status,
+			       (long)script_status->scripts[i].start.tv_sec,
+			       (long)script_status->scripts[i].start.tv_usec,
+			       (long)script_status->scripts[i].finished.tv_sec,
+			       (long)script_status->scripts[i].finished.tv_usec,
+			       script_status->scripts[i].output);
 			continue;
-		} 
-		printf("%-20s Status:%s    ",
-			script_status->scripts[i].name,
-			script_status->scripts[i].timedout?"TIMEDOUT":script_status->scripts[i].status==0?"OK":"ERROR");
-		if (script_status->scripts[i].timedout == 0) {
+		}
+		if (status)
+			printf("%-20s Status:%s    ",
+			       script_status->scripts[i].name, status);
+		else
+			/* Some other error, eg from stat. */
+			printf("%-20s Status:CANNOT RUN (%s)",
+			       script_status->scripts[i].name,
+			       strerror(-script_status->scripts[i].status));
+
+		if (script_status->scripts[i].status >= 0) {
 			printf("Duration:%.3lf ",
 			timeval_delta(&script_status->scripts[i].finished,
 			      &script_status->scripts[i].start));
 		}
-		printf("%s",
-			ctime(&script_status->scripts[i].start.tv_sec));
-		if ((script_status->scripts[i].timedout != 0)
-		||  (script_status->scripts[i].status != 0) ) {
+		if (script_status->scripts[i].status != -ENOEXEC) {
+			printf("%s",
+			       ctime(&script_status->scripts[i].start.tv_sec));
+		}
+		if (script_status->scripts[i].status != 0) {
 			printf("   OUTPUT:%s\n",
 				script_status->scripts[i].output);
+		}
+	}
+	return 0;
+}
+
+
+static int control_scriptstatus(struct ctdb_context *ctdb,
+				int argc, const char **argv)
+{
+	int ret;
+	enum ctdb_eventscript_call type, min, max;
+	const char *arg;
+
+	if (argc > 1) {
+		DEBUG(DEBUG_ERR, ("Unknown arguments to scriptstatus\n"));
+		return -1;
+	}
+
+	if (argc == 0)
+		arg = ctdb_eventscript_call_names[CTDB_EVENT_MONITOR];
+	else
+		arg = argv[0];
+
+	for (type = 0; type < CTDB_EVENT_MAX; type++) {
+		if (strcmp(arg, ctdb_eventscript_call_names[type]) == 0) {
+			min = type;
+			max = type+1;
+			break;
+		}
+	}
+	if (type == CTDB_EVENT_MAX) {
+		if (strcmp(arg, "all") == 0) {
+			min = 0;
+			max = CTDB_EVENT_MAX;
+		} else {
+			DEBUG(DEBUG_ERR, ("Unknown event type %s\n", argv[0]));
+			return -1;
+		}
+	}
+
+	if (options.machinereadable) {
+		printf(":Type:Name:Code:Status:Start:End:Error Output...:\n");
+	}
+
+	for (type = min; type < max; type++) {
+		ret = control_one_scriptstatus(ctdb, type);
+		if (ret != 0) {
+			return ret;
 		}
 	}
 
 	return 0;
 }
-	
 
 /*
   enable an eventscript
@@ -3757,7 +3848,7 @@ static const struct {
 	{ "wipedb",           control_wipedb,        false,	false, "wipe the contents of a database.", "<dbname>"},
 	{ "recmaster",        control_recmaster,        false,	false, "show the pnn for the recovery master."},
 	{ "setflags",        control_setflags,          false,	false, "set flags for a node in the nodemap.", "<node> <flags>"},
-	{ "scriptstatus",    control_scriptstatus,  false,	false, "show the status of the monitoring scripts"},
+	{ "scriptstatus",    control_scriptstatus,  false,	false, "show the status of the monitoring scripts (or all scripts)", "[all]"},
 	{ "enablescript",     control_enablescript,  false,	false, "enable an eventscript", "<script>"},
 	{ "disablescript",    control_disablescript,  false,	false, "disable an eventscript", "<script>"},
 	{ "natgwlist",        control_natgwlist,        false,	false, "show the nodes belonging to this natgw configuration"},

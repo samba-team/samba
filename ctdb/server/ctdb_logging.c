@@ -154,10 +154,13 @@ int start_syslog_daemon(struct ctdb_context *ctdb)
 }
 
 struct ctdb_log_state {
+	struct ctdb_context *ctdb;
 	int fd, pfd;
 	char buf[1024];
 	uint16_t buf_used;
 	bool use_syslog;
+	void (*logfn)(const char *, uint16_t, void *);
+	void *logfn_private;
 };
 
 /* we need this global to keep the DEBUG() syntax */
@@ -317,6 +320,7 @@ int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile, bool use_sy
 		abort();
 	}
 
+	ctdb->log->ctdb = ctdb;
 	log_state = ctdb->log;
 
 	if (use_syslog) {
@@ -347,7 +351,17 @@ int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile, bool use_sy
 	return 0;
 }
 
-
+/* Note that do_debug always uses the global log state. */
+static void write_to_log(struct ctdb_log_state *log,
+			 const char *buf, unsigned int len)
+{
+	if (script_log_level <= LogLevel) {
+		do_debug("%*.*s\n", len, len, buf);
+		/* log it in the eventsystem as well */
+		if (log->logfn)
+			log->logfn(log->buf, len, log->logfn_private);
+	}
+}
 
 /*
   called when log data comes in from a child process
@@ -355,7 +369,7 @@ int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile, bool use_sy
 static void ctdb_log_handler(struct event_context *ev, struct fd_event *fde, 
 			     uint16_t flags, void *private)
 {
-	struct ctdb_context *ctdb = talloc_get_type(private, struct ctdb_context);
+	struct ctdb_log_state *log = talloc_get_type(private, struct ctdb_log_state);
 	char *p;
 	int n;
 
@@ -363,45 +377,115 @@ static void ctdb_log_handler(struct event_context *ev, struct fd_event *fde,
 		return;
 	}
 	
-	n = read(ctdb->log->pfd, &ctdb->log->buf[ctdb->log->buf_used],
-		 sizeof(ctdb->log->buf) - ctdb->log->buf_used);
+	n = read(log->pfd, &log->buf[log->buf_used],
+		 sizeof(log->buf) - log->buf_used);
 	if (n > 0) {
-		ctdb->log->buf_used += n;
+		log->buf_used += n;
 	}
 
 	this_log_level = script_log_level;
 
-	while (ctdb->log->buf_used > 0 &&
-	       (p = memchr(ctdb->log->buf, '\n', ctdb->log->buf_used)) != NULL) {
-		int n1 = (p - ctdb->log->buf)+1;
+	while (log->buf_used > 0 &&
+	       (p = memchr(log->buf, '\n', log->buf_used)) != NULL) {
+		int n1 = (p - log->buf)+1;
 		int n2 = n1 - 1;
 		/* swallow \r from child processes */
-		if (n2 > 0 && ctdb->log->buf[n2-1] == '\r') {
+		if (n2 > 0 && log->buf[n2-1] == '\r') {
 			n2--;
 		}
-		if (script_log_level <= LogLevel) {
-			do_debug("%*.*s\n", n2, n2, ctdb->log->buf);
-			/* log it in the eventsystem as well */
-			ctdb_log_event_script_output(ctdb, ctdb->log->buf, n2);
-		}
-		memmove(ctdb->log->buf, p+1, sizeof(ctdb->log->buf) - n1);
-		ctdb->log->buf_used -= n1;
+		write_to_log(log, log->buf, n2);
+		memmove(log->buf, p+1, sizeof(log->buf) - n1);
+		log->buf_used -= n1;
 	}
 
 	/* the buffer could have completely filled - unfortunately we have
 	   no choice but to dump it out straight away */
-	if (ctdb->log->buf_used == sizeof(ctdb->log->buf)) {
-		if (script_log_level <= LogLevel) {
-			do_debug("%*.*s\n", 
-				(int)ctdb->log->buf_used, (int)ctdb->log->buf_used, ctdb->log->buf);
-			/* log it in the eventsystem as well */
-			ctdb_log_event_script_output(ctdb, ctdb->log->buf, ctdb->log->buf_used);
-		}
-		ctdb->log->buf_used = 0;
+	if (log->buf_used == sizeof(log->buf)) {
+		write_to_log(log, log->buf, log->buf_used);
+		log->buf_used = 0;
 	}
 }
 
+static int log_context_destructor(struct ctdb_log_state *log)
+{
+	/* Flush buffer in case it wasn't \n-terminated. */
+	if (log->buf_used > 0) {
+		this_log_level = script_log_level;
+		write_to_log(log, log->buf, log->buf_used);
+	}
+	return 0;
+}
 
+/*
+   fork(), redirecting child output to logging and specified callback.
+*/
+struct ctdb_log_state *ctdb_fork_with_logging(TALLOC_CTX *mem_ctx,
+					      struct ctdb_context *ctdb,
+					      void (*logfn)(const char *, uint16_t, void *),
+					      void *logfn_private, pid_t *pid)
+{
+	int p[2];
+	int old_stdout, old_stderr;
+	int saved_errno;
+	struct ctdb_log_state *log;
+
+	log = talloc_zero(mem_ctx, struct ctdb_log_state);
+	CTDB_NO_MEMORY_NULL(ctdb, log);
+	log->ctdb = ctdb;
+	log->logfn = logfn;
+	log->logfn_private = (void *)logfn_private;
+
+	if (pipe(p) != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to setup for child logging pipe\n"));
+		goto free_log;
+	}
+
+	/* We'll fail if stderr/stdout not already open; it's simpler. */
+	old_stdout = dup(STDOUT_FILENO);
+	old_stderr = dup(STDERR_FILENO);
+	if (dup2(p[1], STDOUT_FILENO) < 0 || dup2(p[1], STDERR_FILENO) < 0) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to setup output for child\n"));
+		goto close_pipe;
+	}
+	close(p[1]);
+
+	*pid = fork();
+
+	/* Child? */
+	if (*pid == 0) {
+		close(old_stdout);
+		close(old_stderr);
+		close(p[0]);
+		return log;
+	}
+
+	saved_errno = errno;
+	dup2(STDOUT_FILENO, old_stdout);
+	dup2(STDERR_FILENO, old_stderr);
+	close(old_stdout);
+	close(old_stderr);
+
+	/* We failed? */
+	if (*pid < 0) {
+		DEBUG(DEBUG_ERR, (__location__ " fork failed for child process\n"));
+		close(p[0]);
+		errno = saved_errno;
+		goto free_log;
+	}
+
+	log->pfd = p[0];
+	talloc_set_destructor(log, log_context_destructor);
+	event_add_fd(ctdb->ev, log, log->pfd, EVENT_FD_READ,
+		     ctdb_log_handler, log);
+	return log;
+
+close_pipe:
+	close(p[0]);
+	close(p[1]);
+free_log:
+	talloc_free(log);
+	return NULL;
+}
 
 /*
   setup for logging of child process stdout
@@ -423,7 +507,7 @@ int ctdb_set_child_logging(struct ctdb_context *ctdb)
 	}
 
 	event_add_fd(ctdb->ev, ctdb, p[0], EVENT_FD_READ, 
-		     ctdb_log_handler, ctdb);
+		     ctdb_log_handler, ctdb->log);
 	set_close_on_exec(p[0]);
 	ctdb->log->pfd = p[0];
 

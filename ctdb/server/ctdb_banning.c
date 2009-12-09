@@ -119,3 +119,18 @@ int32_t ctdb_control_get_ban_state(struct ctdb_context *ctdb, TDB_DATA *outdata)
 
 	return 0;
 }
+
+/* Routine to ban ourselves for a while when trouble strikes. */
+void ctdb_ban_self(struct ctdb_context *ctdb)
+{
+	TDB_DATA data;
+	struct ctdb_ban_time bantime;
+
+	bantime.pnn  = ctdb->pnn;
+	bantime.time = ctdb->tunable.recovery_ban_period;
+
+	data.dsize = sizeof(bantime);
+	data.dptr  = (uint8_t *)&bantime;
+
+	ctdb_control_set_ban_state(ctdb, data);
+}

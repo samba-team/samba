@@ -452,11 +452,10 @@ struct ctdb_context {
 	uint32_t *recd_ping_count;
 	TALLOC_CTX *release_ips_ctx; /* a context used to automatically drop all IPs if we fail to recover the node */
 
-	TALLOC_CTX *monitor_event_script_ctx;
-	TALLOC_CTX *other_event_script_ctx;
+	TALLOC_CTX *event_script_ctx;
 
-	struct ctdb_monitor_script_status_ctx *current_monitor_status_ctx;
-	struct ctdb_monitor_script_status_ctx *last_monitor_status_ctx;
+	struct ctdb_event_script_state *current_monitor;
+	struct ctdb_scripts_wire *last_status[CTDB_EVENT_MAX];
 
 	TALLOC_CTX *banning_ctx;
 
@@ -604,10 +603,6 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_TAKEOVER_IP             = 89,
 		    CTDB_CONTROL_GET_PUBLIC_IPS          = 90,
 		    CTDB_CONTROL_GET_NODEMAP             = 91,
-		    CTDB_CONTROL_EVENT_SCRIPT_INIT       = 92,
-		    CTDB_CONTROL_EVENT_SCRIPT_START      = 93,
-		    CTDB_CONTROL_EVENT_SCRIPT_STOP       = 94,
-		    CTDB_CONTROL_EVENT_SCRIPT_FINISHED   = 95,
 		    CTDB_CONTROL_GET_EVENT_SCRIPT_STATUS = 96,
 		    CTDB_CONTROL_TRAVERSE_KILL		 = 97,
 		    CTDB_CONTROL_RECD_RECLOCK_LATENCY    = 98,
@@ -618,7 +613,6 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_SET_NATGWSTATE          = 103,
 		    CTDB_CONTROL_SET_LMASTERROLE         = 104,
 		    CTDB_CONTROL_SET_RECMASTERROLE       = 105,
-		    CTDB_CONTROL_EVENT_SCRIPT_DISABLED   = 106,
 		    CTDB_CONTROL_ENABLE_SCRIPT           = 107,
 		    CTDB_CONTROL_DISABLE_SCRIPT          = 108,
 		    CTDB_CONTROL_SET_BAN_STATE           = 109,
@@ -862,20 +856,6 @@ enum ctdb_trans2_commit_error {
 	CTDB_TRANS2_COMMIT_TIMEOUT=1, /* at least one node timed out */
 	CTDB_TRANS2_COMMIT_ALLFAIL=2, /* all nodes failed the commit */
 	CTDB_TRANS2_COMMIT_SOMEFAIL=3 /* some nodes failed the commit, some allowed it */
-};
-
-/* different calls to event scripts. */
-enum ctdb_eventscript_call {
-	CTDB_EVENT_STARTUP,		/* CTDB starting up: no args. */
-	CTDB_EVENT_START_RECOVERY,	/* CTDB recovery starting: no args. */
-	CTDB_EVENT_RECOVERED,		/* CTDB recovery finished: no args. */
-	CTDB_EVENT_TAKE_IP,		/* IP taken: interface, IP address, netmask bits. */
-	CTDB_EVENT_RELEASE_IP,		/* IP released: interface, IP address, netmask bits. */
-	CTDB_EVENT_STOPPED,		/* This node is stopped: no args. */
-	CTDB_EVENT_MONITOR,		/* Please check if service is healthy: no args. */
-	CTDB_EVENT_STATUS,		/* Report service status: no args. */
-	CTDB_EVENT_SHUTDOWN,		/* CTDB shutting down: no args. */
-	CTDB_EVENT_RELOAD		/* magic */
 };
 
 /* internal prototypes */
@@ -1509,20 +1489,9 @@ int32_t ctdb_control_set_recmaster(struct ctdb_context *ctdb, uint32_t opcode, T
 
 extern int script_log_level;
 
-int ctdb_ctrl_event_script_init(struct ctdb_context *ctdb);
-int ctdb_ctrl_event_script_start(struct ctdb_context *ctdb, const char *name);
-int ctdb_ctrl_event_script_stop(struct ctdb_context *ctdb, int32_t res);
-int ctdb_ctrl_event_script_finished(struct ctdb_context *ctdb);
-int ctdb_ctrl_event_script_disabled(struct ctdb_context *ctdb, const char *name);
-
-int32_t ctdb_control_event_script_init(struct ctdb_context *ctdb);
-int32_t ctdb_control_event_script_start(struct ctdb_context *ctdb, TDB_DATA indata);
-int32_t ctdb_control_event_script_stop(struct ctdb_context *ctdb, TDB_DATA indata);
-int32_t ctdb_control_event_script_disabled(struct ctdb_context *ctdb, TDB_DATA indata);
-int32_t ctdb_control_event_script_finished(struct ctdb_context *ctdb);
-
-
-int32_t ctdb_control_get_event_script_status(struct ctdb_context *ctdb, TDB_DATA *outdata);
+int32_t ctdb_control_get_event_script_status(struct ctdb_context *ctdb,
+					     uint32_t call_type,
+					     TDB_DATA *outdata);
 
 int ctdb_log_event_script_output(struct ctdb_context *ctdb, char *str, uint16_t len);
 int ctdb_ctrl_report_recd_lock_latency(struct ctdb_context *ctdb, struct timeval timeout, double latency);
@@ -1538,6 +1507,7 @@ int32_t ctdb_control_disable_script(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_set_ban_state(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_get_ban_state(struct ctdb_context *ctdb, TDB_DATA *outdata);
 int32_t ctdb_control_set_db_priority(struct ctdb_context *ctdb, TDB_DATA indata);
+void ctdb_ban_self(struct ctdb_context *ctdb);
 
 int32_t ctdb_control_register_notify(struct ctdb_context *ctdb, uint32_t client_id, TDB_DATA indata);
 
@@ -1554,6 +1524,10 @@ struct ctdb_get_log_addr {
 
 int32_t ctdb_control_get_log(struct ctdb_context *ctdb, TDB_DATA addr);
 int32_t ctdb_control_clear_log(struct ctdb_context *ctdb);
+struct ctdb_log_state *ctdb_fork_with_logging(TALLOC_CTX *mem_ctx,
+					      struct ctdb_context *ctdb,
+					      void (*logfn)(const char *, uint16_t, void *),
+					      void *logfn_private, pid_t *pid);
 
 int32_t ctdb_control_process_exists(struct ctdb_context *ctdb, pid_t pid);
 struct ctdb_client *ctdb_find_client_by_pid(struct ctdb_context *ctdb, pid_t pid);
