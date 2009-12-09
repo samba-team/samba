@@ -45,7 +45,6 @@ static double end_timer(void)
 static int timelimit = 10;
 static int delay = 0;
 static int verbose = 0;
-static int no_trans = 0;
 
 static unsigned int pnn;
 
@@ -129,37 +128,25 @@ static void test_store_records(struct ctdb_context *ctdb, struct event_context *
 		TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 		TDB_DATA data;
 		struct ctdb_transaction_handle *h;
-		struct ctdb_record_handle *rec;
 
-
-		if (!no_trans) {
-			if (verbose) DEBUG(DEBUG_ERR, ("starting transaction\n"));
-			h = ctdb_transaction_start(ctdb_db, tmp_ctx);
-			if (h == NULL) {
-				DEBUG(DEBUG_ERR, ("Failed to start transaction on node %d\n",
-				       ctdb_get_pnn(ctdb)));
-				talloc_free(tmp_ctx);
-				return;
-			}
-			if (verbose) DEBUG(DEBUG_ERR, ("transaction started\n"));
-			do_sleep(delay);
-
-			if (verbose) DEBUG(DEBUG_ERR, ("calling transaction_fetch\n"));
-			ret = ctdb_transaction_fetch(h, tmp_ctx, key, &data);
-			if (ret != 0) {
-				DEBUG(DEBUG_ERR,("Failed to fetch record\n"));
-				exit(1);
-			}
-			if (verbose) DEBUG(DEBUG_ERR, ("fetched data ok\n"));
-		} else {
-			if (verbose) DEBUG(DEBUG_ERR, ("calling fetch_lock\n"));
-			rec = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, &data);
-			if (rec == NULL) {
-				DEBUG(DEBUG_ERR,("Failed to fetch record\n"));
-				exit(1);
-			}
-			if (verbose) DEBUG(DEBUG_ERR, ("fetched record ok\n"));
+		if (verbose) DEBUG(DEBUG_ERR, ("starting transaction\n"));
+		h = ctdb_transaction_start(ctdb_db, tmp_ctx);
+		if (h == NULL) {
+			DEBUG(DEBUG_ERR, ("Failed to start transaction on node %d\n",
+			       ctdb_get_pnn(ctdb)));
+			talloc_free(tmp_ctx);
+			return;
 		}
+		if (verbose) DEBUG(DEBUG_ERR, ("transaction started\n"));
+		do_sleep(delay);
+
+		if (verbose) DEBUG(DEBUG_ERR, ("calling transaction_fetch\n"));
+		ret = ctdb_transaction_fetch(h, tmp_ctx, key, &data);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,("Failed to fetch record\n"));
+			exit(1);
+		}
+		if (verbose) DEBUG(DEBUG_ERR, ("fetched data ok\n"));
 		do_sleep(delay);
 
 		if (data.dsize < sizeof(uint32_t) * (pnn+1)) {
@@ -183,33 +170,23 @@ static void test_store_records(struct ctdb_context *ctdb, struct event_context *
 		/* bump our counter */
 		counters[pnn]++;
 
-		if (!no_trans) {
-			if (verbose) DEBUG(DEBUG_ERR, ("calling transaction_store\n"));
-			ret = ctdb_transaction_store(h, key, data);
-			if (ret != 0) {
-				DEBUG(DEBUG_ERR,("Failed to store record\n"));
-				exit(1);
-			}
-			if (verbose) DEBUG(DEBUG_ERR, ("stored data ok\n"));
-			do_sleep(delay);
-
-			if (verbose) DEBUG(DEBUG_ERR, ("calling transaction_commit\n"));
-			ret = ctdb_transaction_commit(h);
-			if (ret != 0) {
-				DEBUG(DEBUG_ERR,("Failed to commit transaction\n"));
-				check_counters(ctdb, data);
-				exit(1);
-			}
-			if (verbose) DEBUG(DEBUG_ERR, ("transaction committed\n"));
-		} else {
-			if (verbose) DEBUG(DEBUG_ERR, ("calling record_store\n"));
-			ret = ctdb_record_store(rec, data);
-			if (ret != 0) {
-				DEBUG(DEBUG_ERR,("Failed to store record\n"));
-				exit(1);
-			}
-			if (verbose) DEBUG(DEBUG_ERR, ("stored record ok\n"));
+		if (verbose) DEBUG(DEBUG_ERR, ("calling transaction_store\n"));
+		ret = ctdb_transaction_store(h, key, data);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,("Failed to store record\n"));
+			exit(1);
 		}
+		if (verbose) DEBUG(DEBUG_ERR, ("stored data ok\n"));
+		do_sleep(delay);
+
+		if (verbose) DEBUG(DEBUG_ERR, ("calling transaction_commit\n"));
+		ret = ctdb_transaction_commit(h);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,("Failed to commit transaction\n"));
+			check_counters(ctdb, data);
+			exit(1);
+		}
+		if (verbose) DEBUG(DEBUG_ERR, ("transaction committed\n"));
 
 		/* store the counters and verify that they are sane */
 		if (verbose || (pnn == 0)) {
@@ -237,7 +214,6 @@ int main(int argc, const char *argv[])
 		{ "timelimit", 't', POPT_ARG_INT, &timelimit, 0, "timelimit", "integer" },
 		{ "delay", 'D', POPT_ARG_INT, &delay, 0, "delay (in seconds) between operations", "integer" },
 		{ "verbose", 'v', POPT_ARG_NONE,  &verbose, 0, "switch on verbose mode", NULL },
-		{ "no-trans", 'n', POPT_ARG_NONE, &no_trans, 0, "use fetch_lock/record store instead of transactions", NULL },
 		{ "unsafe-writes", 'u', POPT_ARG_NONE, &unsafe_writes, 0, "do not use tdb transactions when writing", NULL },
 		POPT_TABLEEND
 	};
