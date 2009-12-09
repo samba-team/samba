@@ -442,7 +442,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	       && header.lacount >= ctdb->tunable.max_lacount)
 	      || (c->flags & CTDB_IMMEDIATE_MIGRATION)) ) {
 		if (ctdb_db->transaction_active) {
-			DEBUG(DEBUG_WARNING, (__location__ " refusing migration"
+			DEBUG(DEBUG_INFO, (__location__ " refusing migration"
 			      " of key %s while transaction is active\n",
 			      (char *)call->key.dptr));
 		} else {
