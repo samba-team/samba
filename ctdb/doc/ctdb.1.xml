@@ -417,21 +417,48 @@ MaxRedirectCount    = 3
 	Example output:
       </para>
       <screen format="linespecific">
-MaxRedirectCount    = 5
-SeqnumFrequency     = 1
+MaxRedirectCount    = 3
+SeqnumInterval      = 1000
 ControlTimeout      = 60
 TraverseTimeout     = 20
-KeepaliveInterval   = 2
-KeepaliveLimit      = 3
+KeepaliveInterval   = 5
+KeepaliveLimit      = 5
 MaxLACount          = 7
-RecoverTimeout      = 5
+RecoverTimeout      = 20
 RecoverInterval     = 1
 ElectionTimeout     = 3
 TakeoverTimeout     = 5
 MonitorInterval     = 15
-EventScriptTimeout  = 20
-RecoveryGracePeriod = 60
+TickleUpdateInterval = 20
+EventScriptTimeout  = 30
+EventScriptBanCount = 10
+EventScriptUnhealthyOnTimeout = 0
+RecoveryGracePeriod = 120
 RecoveryBanPeriod   = 300
+DatabaseHashSize    = 10000
+DatabaseMaxDead     = 5
+RerecoveryTimeout   = 10
+EnableBans          = 1
+DeterministicIPs    = 1
+DisableWhenUnhealthy = 0
+ReclockPingPeriod   = 60
+NoIPFailback        = 0
+VerboseMemoryNames  = 0
+RecdPingTimeout     = 60
+RecdFailCount       = 10
+LogLatencyMs        = 0
+RecLockLatencyMs    = 1000
+RecoveryDropAllIPs  = 60
+VerifyRecoveryLock  = 1
+VacuumDefaultInterval = 300
+VacuumMaxRunTime    = 30
+RepackLimit         = 10000
+VacuumLimit         = 5000
+VacuumMinInterval   = 60
+VacuumMaxInterval   = 600
+MaxQueueDropMsg     = 1000
+UseStatusEvents     = 0
+AllowUnhealthyDBRead = 0
       </screen>
     </refsect2>
 
