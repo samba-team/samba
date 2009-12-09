@@ -137,6 +137,7 @@ case "$1" in
 		sed -e "s/^[^\t ]*[\t ]*//" -e "s/[\t ]*$//"`
 
 	[ "$CTDB_PUBLIC_INTERFACE" ] && INTERFACES="$CTDB_PUBLIC_INTERFACE $INTERFACES"
+	[ "$CTDB_NATGW_PUBLIC_IFACE" ] && INTERFACES="$CTDB_NATGW_PUBLIC_IFACE $INTERFACES"
 
 	INTERFACES=`for IFACE in $INTERFACES ; do echo $IFACE ; done | sort | uniq`
 
