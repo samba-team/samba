@@ -45,6 +45,7 @@
 #include "param/param.h"
 #include "libcli/security/dom_sid.h"
 #include "lib/util/dlinklist.h"
+#include "dsdb/samdb/ldb_modules/util.h"
 
 struct replmd_private {
 	TALLOC_CTX *la_ctx;
@@ -870,7 +871,9 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	 *   attribute was changed
 	 */
 
-	ret = dsdb_search_dn_with_deleted(ldb, msg, &res, msg->dn, NULL);
+	ret = dsdb_module_search_dn(module, msg, &res, msg->dn, NULL,
+				    DSDB_SEARCH_SHOW_DELETED |
+				    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(ac);
 		return ret;
