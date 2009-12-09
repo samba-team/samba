@@ -57,46 +57,17 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 		obj->is_nc_prefix = true;
 		obj->parent_object_guid = NULL;
 	} else {
-		struct ldb_dn *parent_dn;
-		uint32_t instance_type;
-
-		instance_type = ldb_msg_find_attr_as_uint(msg, "instanceType", 0);
-		if (instance_type & INSTANCE_TYPE_IS_NC_HEAD) {
-			struct ldb_result *res;
-			int ret;
-			const char *dnstr = ldb_dn_get_linearized(msg->dn);
-			msg->dn = ldb_dn_new(msg, sam_ctx, dnstr);
-			/* we need to re-search the msg, to avoid the
-			 * broken dual message problems with our
-			 * partitions implementation */
-			DEBUG(6,(__location__ ": Re-fetching subref %s\n", 
-				 ldb_dn_get_linearized(msg->dn)));
-			ret = drsuapi_search_with_extended_dn(sam_ctx, msg, &res,
-							      msg->dn, LDB_SCOPE_BASE, NULL,
-							      NULL, NULL);
-			if (ret != LDB_SUCCESS || res->count < 1) {
-				DEBUG(0,(__location__ ": Failed to reload subref head %s in %s\n",
-					 ldb_dn_get_linearized(msg->dn), ldb_dn_get_linearized(ncRoot_dn)));
-				return WERR_DS_DRA_INTERNAL_ERROR;
-			}
-			msg = res->msgs[0];
-		}
-
-		parent_dn = ldb_dn_copy(msg, msg->dn);
 		obj->is_nc_prefix = false;
 		obj->parent_object_guid = talloc(obj, struct GUID);
-		if (parent_dn == NULL) {
+		if (obj->parent_object_guid == NULL) {
 			return WERR_DS_DRA_INTERNAL_ERROR;
 		}
-		if (ldb_dn_remove_child_components(parent_dn, 1) != true) {
-			DEBUG(0,(__location__ ": Unable to remove DN component\n"));
+		*obj->parent_object_guid = samdb_result_guid(msg, "parentGUID");
+		if (GUID_all_zero(obj->parent_object_guid)) {
+			DEBUG(0,(__location__ ": missing parentGUID for %s\n",
+				 ldb_dn_get_linearized(msg->dn)));
 			return WERR_DS_DRA_INTERNAL_ERROR;
 		}
-		if (dsdb_find_guid_by_dn(sam_ctx, parent_dn, obj->parent_object_guid) != LDB_SUCCESS) {
-			DEBUG(0,(__location__ ": Unable to find parent DN %s %s\n", 
-				 ldb_dn_get_linearized(msg->dn), ldb_dn_get_linearized(parent_dn)));
-		}
-		talloc_free(parent_dn);
 	}
 	obj->next_object = NULL;
 	
@@ -343,6 +314,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 				"ntPwdHistory", 
 				"supplementalCredentials", 
 				"unicodePwd", 
+				"parentGUID",
 				NULL };
 	WERROR werr;
 	struct dcesrv_handle *h;
