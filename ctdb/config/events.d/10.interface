@@ -142,18 +142,23 @@ case "$1" in
 	INTERFACES=`for IFACE in $INTERFACES ; do echo $IFACE ; done | sort | uniq`
 
 	for IFACE in $INTERFACES ; do
+	    # These interfaces are sometimes bond devices
+	    # When we use VLANs for bond interfaces, there will only
+	    # be an entry in /proc for the underlying real interface
+	    REALIFACE=`echo $IFACE |sed -e 's/\..*$//'`
+	    [ -f /proc/net/bonding/$REALIFACE ] && {
+		grep -q 'Currently Active Slave: None' /proc/net/bonding/$REALIFACE && {
+			echo "ERROR: No active slaves for bond device $REALIFACE"
+			exit 1
+		}
+		grep -q '^MII Status: up' /proc/net/bonding/$REALIFACE || {
+			echo "ERROR: public network interface $REALIFACE is down"
+			exit 1
+		}
+		exit 0;
+	    }
+
 	    case $IFACE in 
-	    ethX*|bond*)
-		IFACE=`echo $IFACE |sed -e 's/\....$//'`
-		grep -q 'Currently Active Slave: None' /proc/net/bonding/$IFACE && {
-			echo "ERROR: No active slaves for bond device $IFACE"
-			exit 1
-		}
-		grep -q '^MII Status: up' /proc/net/bonding/$IFACE || {
-			echo "ERROR: public network interface $IFACE is down"
-			exit 1
-		}
-		;;
 	    ib*)
 		# we dont know how to test ib links
 		;;
