@@ -321,9 +321,7 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 		if (events[i].events & EPOLLOUT) flags |= EVENT_FD_WRITE;
 		if (flags) {
 			fde->handler(epoll_ev->ev, fde, flags, fde->private_data);
-			if (destruction_count != epoll_ev->destruction_count) {
-				break;
-			}
+			break;
 		}
 	}
 

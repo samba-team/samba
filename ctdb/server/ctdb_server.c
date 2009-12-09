@@ -463,7 +463,7 @@ struct queue_next {
 
 
 /*
-  trigered when a deferred packet is due
+  triggered when a deferred packet is due
  */
 static void queue_next_trigger(struct event_context *ev, struct timed_event *te, 
 			       struct timeval t, void *private_data)

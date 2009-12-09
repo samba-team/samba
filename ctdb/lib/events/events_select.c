@@ -241,9 +241,7 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 			if (FD_ISSET(fde->fd, &w_fds)) flags |= EVENT_FD_WRITE;
 			if (flags) {
 				fde->handler(select_ev->ev, fde, flags, fde->private_data);
-				if (destruction_count != select_ev->destruction_count) {
-					break;
-				}
+				break;
 			}
 		}
 	}

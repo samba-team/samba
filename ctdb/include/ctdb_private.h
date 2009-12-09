@@ -478,6 +478,8 @@ struct ctdb_db_context {
 	struct ctdb_traverse_local_handle *traverse;
 	bool transaction_active;
 	struct ctdb_vacuum_handle *vacuum_handle;
+
+	uint8_t **holdback_keys;
 };
 
 

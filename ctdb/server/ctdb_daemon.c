@@ -134,7 +134,6 @@ static void daemon_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
 
 	talloc_free(r);
 }
-					   
 
 /*
   this is called when the ctdb daemon received a ctdb request to 
