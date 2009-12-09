@@ -3346,6 +3346,7 @@ static void ctdb_check_recd(struct event_context *ev, struct timed_event *te,
 
 		ctdb_stop_recoverd(ctdb);
 		ctdb_stop_keepalive(ctdb);
+		ctdb_stop_holdback_cleanup(ctdb);
 		ctdb_stop_monitoring(ctdb);
 		ctdb_release_all_ips(ctdb);
 		if (ctdb->methods != NULL) {

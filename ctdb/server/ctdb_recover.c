@@ -1158,6 +1158,7 @@ static void ctdb_recd_ping_timeout(struct event_context *ev, struct timed_event 
 
 	ctdb_stop_recoverd(ctdb);
 	ctdb_stop_keepalive(ctdb);
+	ctdb_stop_holdback_cleanup(ctdb);
 	ctdb_stop_monitoring(ctdb);
 	ctdb_release_all_ips(ctdb);
 	if (ctdb->methods != NULL) {

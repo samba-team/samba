@@ -231,6 +231,30 @@ static void ctdb_call_send_dmaster(struct ctdb_db_context *ctdb_db,
 	talloc_free(r);
 }
 
+static void ctdb_hold_back_key(struct ctdb_db_context *db, TDB_DATA key)
+{
+	size_t num_keys;
+	uint8_t **tmp;
+
+	DEBUG(DEBUG_INFO, ("Holding back key %08x\n", ctdb_hash(&key)));
+
+	num_keys = talloc_array_length(db->holdback_keys);
+	tmp = talloc_realloc(db, db->holdback_keys, uint8_t *, num_keys+1);
+	if (tmp == NULL) {
+		DEBUG(DEBUG_ERR, ("talloc_realloc failed\n"));
+		return;
+	}
+	db->holdback_keys = tmp;
+
+	db->holdback_keys[num_keys] = (uint8_t *)talloc_memdup(
+		db->holdback_keys, key.dptr, key.dsize);
+	if (db->holdback_keys[num_keys] == NULL) {
+		DEBUG(DEBUG_ERR, ("talloc_memdup failed\n"));
+		db->holdback_keys = talloc_realloc(db, db->holdback_keys,
+						   uint8_t *, num_keys);
+	}
+}
+
 /*
   called when a CTDB_REPLY_DMASTER packet comes in, or when the lmaster
   gets a CTDB_REQUEST_DMASTER for itself. We become the dmaster.
@@ -273,6 +297,8 @@ static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db,
 		ctdb_ltdb_unlock(ctdb_db, key);
 		return;
 	}
+
+	ctdb_hold_back_key(ctdb_db, key);
 
 	ctdb_call_local(ctdb_db, state->call, &header, state, &data, ctdb->pnn);
 
@@ -368,6 +394,47 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	}
 }
 
+/*
+ * Did we just pull the dmaster of the record for a client fetch_lock,
+ * so should we hold it back a while and thus give our client the
+ * chance to do its own tdb_lock?
+ */
+
+static bool ctdb_held_back(struct ctdb_db_context *db, TDB_DATA key,
+			   struct ctdb_req_header *hdr)
+{
+	int i;
+	size_t num_keys = talloc_array_length(db->holdback_keys);
+	size_t num_hdrs;
+	struct ctdb_req_header **tmp;
+
+	for (i=0; i<num_keys; i++) {
+		uint8_t *hold_key = db->holdback_keys[i];
+		size_t keylength = talloc_array_length(hold_key);
+
+		if ((keylength == key.dsize)
+		    && (memcmp(hold_key, key.dptr, keylength) == 0)) {
+			break;
+		}
+	}
+	if (i == num_keys) {
+		return false;
+	}
+	DEBUG(DEBUG_DEBUG, ("holding back record %08x after migration\n",
+			    ctdb_hash(&key)));
+
+	num_hdrs = talloc_array_length(db->held_back);
+
+	tmp = talloc_realloc(db, db->held_back, struct ctdb_req_header *,
+			     num_hdrs + 1);
+	if (tmp == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ "talloc_realloc failed\n"));
+		return false;
+	}
+	db->held_back = tmp;
+	db->held_back[num_hdrs] = talloc_move(db->held_back, &hdr);
+	return true;
+}
 
 /*
   called when a CTDB_REQ_CALL packet comes in
@@ -431,6 +498,13 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	if (c->hopcount > ctdb->statistics.max_hop_count) {
 		ctdb->statistics.max_hop_count = c->hopcount;
+	}
+
+	if ((c->flags & CTDB_IMMEDIATE_MIGRATION)
+	    && (ctdb_held_back(ctdb_db, call->key, hdr))) {
+		talloc_free(data.dptr);
+		ctdb_ltdb_unlock(ctdb_db, call->key);
+		return;
 	}
 
 	/* if this nodes has done enough consecutive calls on the same record
@@ -791,4 +865,113 @@ void ctdb_send_keepalive(struct ctdb_context *ctdb, uint32_t destnode)
 	ctdb_queue_packet(ctdb, &r->hdr);
 
 	talloc_free(r);
+}
+
+static void ctdb_holdback_cleanup(struct event_context *ev,
+				  struct timed_event *te,
+				  struct timeval t, void *private_data)
+{
+	struct ctdb_context *ctdb = talloc_get_type(private_data,
+						    struct ctdb_context);
+        struct ctdb_db_context *ctdb_db;
+
+	DEBUG(DEBUG_INFO, ("running ctdb_holdback_cleanup\n"));
+
+	if (te != ctdb->holdback_cleanup_te) {
+		ctdb_fatal(ctdb, "te != ctdb->holdback_cleanup_te");
+	}
+
+        for (ctdb_db=ctdb->db_list; ctdb_db; ctdb_db=ctdb_db->next) {
+		size_t i, num_heldback;
+
+		talloc_free(ctdb_db->holdback_keys);
+		ctdb_db->holdback_keys = NULL;
+
+		num_heldback = talloc_array_length(ctdb_db->held_back);
+		for (i=0; i<num_heldback; i++) {
+			ctdb_queue_packet(ctdb, ctdb_db->held_back[i]);
+		}
+		talloc_free(ctdb_db->held_back);
+		ctdb_db->held_back = NULL;
+        }
+
+	ctdb->holdback_cleanup_te = event_add_timed(
+		ctdb->ev, ctdb,	timeval_current_ofs(
+			0, ctdb->tunable.holdback_cleanup_interval * 1000),
+		ctdb_holdback_cleanup, ctdb);
+}
+
+void ctdb_start_holdback_cleanup(struct ctdb_context *ctdb)
+{
+	ctdb->holdback_cleanup_te = event_add_timed(
+		ctdb->ev, ctdb,	timeval_current_ofs(
+			0, ctdb->tunable.holdback_cleanup_interval * 1000),
+		ctdb_holdback_cleanup, ctdb);
+
+	CTDB_NO_MEMORY_FATAL(ctdb, ctdb->holdback_cleanup_te);
+
+	DEBUG(DEBUG_NOTICE,("Holdback cleanup has been started\n"));
+}
+
+void ctdb_stop_holdback_cleanup(struct ctdb_context *ctdb)
+{
+	talloc_free(ctdb->holdback_cleanup_te);
+	ctdb->holdback_cleanup_te = NULL;
+}
+
+int32_t ctdb_control_gotit(struct ctdb_context *ctdb, TDB_DATA indata)
+{
+	struct ctdb_control_gotit *c =
+		(struct ctdb_control_gotit *)indata.dptr;
+	struct ctdb_db_context *db;
+	size_t i, num_keys, num_heldback;
+	TDB_DATA key;
+
+	if (indata.dsize < sizeof(struct ctdb_control_gotit)) {
+		DEBUG(DEBUG_ERR, (__location__ "Invalid data size %d\n",
+				  (int)indata.dsize));
+		return -1;
+	}
+	db = find_ctdb_db(ctdb, c->db_id);
+	if (db == NULL) {
+		DEBUG(DEBUG_ERR, ("Unknown db_id 0x%x in ctdb_reply_dmaster\n",
+				  (int)c->db_id));
+		return -1;
+	}
+
+	key.dptr = c->key;
+	key.dsize = indata.dsize - offsetof(struct ctdb_control_gotit, key);
+
+	num_keys = talloc_array_length(db->holdback_keys);
+	for (i=0; i<num_keys; i++) {
+		uint8_t *hold_key = db->holdback_keys[i];
+		size_t keylength = talloc_array_length(hold_key);
+
+		if ((keylength == key.dsize)
+		    && (memcmp(hold_key, key.dptr, keylength) == 0)) {
+			break;
+		}
+	}
+	if (i == num_keys) {
+		/*
+		 * ctdb_holdback_cleanup has kicked in. This is okay,
+		 * we will just potentially have to retry.
+		 */
+		return 0;
+	}
+
+	talloc_free(db->holdback_keys[i]);
+	if (i < num_keys-1) {
+		db->holdback_keys[i] = db->holdback_keys[num_keys-1];
+	}
+	db->holdback_keys = talloc_realloc(db, db->holdback_keys, uint8_t *,
+					   num_keys-1);
+
+	num_heldback = talloc_array_length(db->held_back);
+	for (i=0; i<num_heldback; i++) {
+		ctdb_queue_packet(ctdb, db->held_back[i]);
+	}
+	talloc_free(db->held_back);
+	db->held_back = NULL;
+	return 0;
 }
