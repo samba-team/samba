@@ -322,10 +322,9 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		}
 	}
 
-	if (priv && do_attribute(attrs, "domainFunctionality")
-	    && (val = talloc_get_type(ldb_get_opaque(ldb, "domainFunctionality"), int))) {
+	if (priv && do_attribute(attrs, "domainFunctionality")) {
 		if (ldb_msg_add_fmt(msg, "domainFunctionality", 
-				    "%d", *val) != 0) {
+				    "%d", dsdb_functional_level(ldb)) != 0) {
 			goto failed;
 		}
 	}

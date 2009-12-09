@@ -2705,3 +2705,19 @@ const char *samdb_cn_to_lDAPDisplayName(TALLOC_CTX *mem_ctx, const char *cn)
 
 	return ret;
 }
+
+/*
+  return domain functional level
+  returns DS_DOMAIN_FUNCTION_*
+ */
+int dsdb_functional_level(struct ldb_context *ldb)
+{
+	int *domainFunctionality =
+		talloc_get_type(ldb_get_opaque(ldb, "domainFunctionality"), int);
+	if (!domainFunctionality) {
+		DEBUG(0,(__location__ ": WARNING: domainFunctionality not setup\n"));
+		return DS_DOMAIN_FUNCTION_2000;
+	}
+	return *domainFunctionality;
+}
+

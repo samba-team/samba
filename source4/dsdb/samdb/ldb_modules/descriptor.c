@@ -141,13 +141,7 @@ static struct dom_sid *get_default_group(TALLOC_CTX *mem_ctx,
 					 struct ldb_context *ldb,
 					 struct dom_sid *dag)
 {
-	int *domainFunctionality;
-
-	domainFunctionality = talloc_get_type(
-		ldb_get_opaque(ldb, "domainFunctionality"), int);
-
-	if (*domainFunctionality
-			&& (*domainFunctionality >= DS_DOMAIN_FUNCTION_2008)) {
+	if (dsdb_functional_level(ldb) >= DS_DOMAIN_FUNCTION_2008) {
 		return dag;
 	}
 
