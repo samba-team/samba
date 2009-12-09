@@ -3229,10 +3229,10 @@ again:
 					      ctdb_db->db_id);
 	if (status == 1) {
 		unsigned long int usec = (1000 + random()) % 100000;
-		DEBUG(DEBUG_NOTICE, (__location__ " transaction is active "
-				     "on db_id[0x%08x]. waiting for %lu "
-				     "microseconds\n",
-				     ctdb_db->db_id, usec));
+		DEBUG(DEBUG_DEBUG, (__location__ " transaction is active "
+				    "on db_id[0x%08x]. waiting for %lu "
+				    "microseconds\n",
+				    ctdb_db->db_id, usec));
 		talloc_free(tmp_ctx);
 		usleep(usec);
 		goto again;
