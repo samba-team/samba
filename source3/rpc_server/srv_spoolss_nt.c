@@ -6461,7 +6461,7 @@ static WERROR enumprinterdrivers_level(TALLOC_CTX *mem_ctx,
 	uint32_t a,i;
 	WERROR result = WERR_OK;
 
-	if (strequal(architecture, "all")) {
+	if (strequal(architecture, SPOOLSS_ARCHITECTURE_ALL)) {
 
 		for (a=0; archi_table[a].long_archi != NULL; a++) {
 
