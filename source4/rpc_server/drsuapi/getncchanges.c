@@ -402,6 +402,13 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 			return WERR_NOMEM;
 		}
 		b_state->getncchanges_state = getnc_state;
+		getnc_state->ncRoot_dn = ldb_dn_new(getnc_state, b_state->sam_ctx, ncRoot->dn);
+	}
+
+	if (!ldb_dn_validate(getnc_state->ncRoot_dn) ||
+	    ldb_dn_is_null(getnc_state->ncRoot_dn)) {
+		DEBUG(0,(__location__ ": Bad DN '%s'\n", ncRoot->dn));
+		return WERR_DS_DRA_INVALID_PARAMETER;
 	}
 
 	/* we need the session key for encrypting password attributes */
