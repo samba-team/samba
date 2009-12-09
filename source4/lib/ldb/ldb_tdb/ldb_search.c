@@ -567,6 +567,7 @@ int ltdb_search(struct ltdb_context *ctx)
 				 * full search or we may return
 				 * duplicate entries
 				 */
+				ltdb_unlock_read(module);
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
 			ret = ltdb_search_full(ctx);
