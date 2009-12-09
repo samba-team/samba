@@ -540,6 +540,27 @@ static int copy_reg(const char *source, const char *dest)
 		return -1;
 
 	/* Try to copy the old file's modtime and access time.  */
+#if defined(HAVE_UTIMENSAT)
+	{
+		struct timespec ts[2];
+
+		ts[0] = source_stats.st_ex_atime;
+		ts[1] = source_stats.st_ex_mtime;
+		utimensat(AT_FDCWD, dest, ts, AT_SYMLINK_NOFOLLOW);
+	}
+#elif defined(HAVE_UTIMES)
+	{
+		struct timeval tv[2];
+
+		tv[0] = convert_timespec_to_timeval(source_stats.st_ex_atime);
+		tv[1] = convert_timespec_to_timeval(source_stats.st_ex_mtime);
+#ifdef HAVE_LUTIMES
+		lutimes(dest, tv);
+#else
+		utimes(dest, tv);
+#endif
+	}
+#elif defined(HAVE_UTIME)
 	{
 		struct utimbuf tv;
 
@@ -547,6 +568,7 @@ static int copy_reg(const char *source, const char *dest)
 		tv.modtime = convert_timespec_to_time_t(source_stats.st_ex_mtime);
 		utime(dest, &tv);
 	}
+#endif
 
 	if (unlink (source) == -1)
 		return -1;
