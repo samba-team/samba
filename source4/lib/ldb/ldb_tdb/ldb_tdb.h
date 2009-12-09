@@ -31,6 +31,7 @@ struct ltdb_private {
 	bool check_base;
 	struct ltdb_idxptr *idxptr;
 	bool prepared_commit;
+	int read_lock_count;
 };
 
 /*
