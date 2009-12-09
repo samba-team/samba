@@ -2906,16 +2906,21 @@ static WERROR cmd_spoolss_enum_printerkey(struct rpc_pipe_client *cli,
 	struct policy_handle hnd;
 	const char **key_buffer = NULL;
 	int i;
+	uint32_t offered = 0;
 
-	if (argc < 2 || argc > 3) {
-		printf("Usage: %s printername [keyname]\n", argv[0]);
+	if (argc < 2 || argc > 4) {
+		printf("Usage: %s printername [keyname] [offered]\n", argv[0]);
 		return WERR_OK;
 	}
 
-	if (argc == 3) {
+	if (argc >= 3) {
 		keyname = argv[2];
 	} else {
 		keyname = "";
+	}
+
+	if (argc == 4) {
+		offered = atoi(argv[3]);
 	}
 
 	/* Open printer handle */
@@ -2936,7 +2941,7 @@ static WERROR cmd_spoolss_enum_printerkey(struct rpc_pipe_client *cli,
 					       &hnd,
 					       keyname,
 					       &key_buffer,
-					       0);
+					       offered);
 
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
