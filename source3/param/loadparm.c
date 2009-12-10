@@ -747,12 +747,18 @@ static const struct enum_list enum_ldap_ssl[] = {
 	{-1, NULL}
 };
 
+/* LDAP Dereferencing Alias types */
+#define SAMBA_LDAP_DEREF_NEVER		0
+#define SAMBA_LDAP_DEREF_SEARCHING	1
+#define SAMBA_LDAP_DEREF_FINDING	2
+#define SAMBA_LDAP_DEREF_ALWAYS		3
+
 static const struct enum_list enum_ldap_deref[] = {
-	{LDAP_DEREFERENCE_NEVER, "never"},
-	{LDAP_DEREFERENCE_SEARCHING, "searching"},
-	{LDAP_DEREFERENCE_FINDING, "finding"},
-	{LDAP_DEREFERENCE_ALWAYS, "always"},
-	{-1, NULL}
+	{SAMBA_LDAP_DEREF_NEVER, "never"},
+	{SAMBA_LDAP_DEREF_SEARCHING, "searching"},
+	{SAMBA_LDAP_DEREF_FINDING, "finding"},
+	{SAMBA_LDAP_DEREF_ALWAYS, "always"},
+	{-1, "default"}
 };
 
 static const struct enum_list enum_ldap_passwd_sync[] = {
@@ -5082,7 +5088,7 @@ static void init_globals(bool first_time_only)
 	string_set(&Globals.szLdapAdminDn, "");
 	Globals.ldap_ssl = LDAP_SSL_START_TLS;
 	Globals.ldap_ssl_ads = False;
-	Globals.ldap_deref = LDAP_DEREFERENCE_NEVER;
+	Globals.ldap_deref = -1;
 	Globals.ldap_passwd_sync = LDAP_PASSWD_SYNC_OFF;
 	Globals.ldap_delete_dn = False;
 	Globals.ldap_replication_sleep = 1000; /* wait 1 sec for replication */
