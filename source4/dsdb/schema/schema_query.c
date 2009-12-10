@@ -22,34 +22,7 @@
 
 #include "includes.h"
 #include "dsdb/samdb/samdb.h"
-
-/* a binary array search, where the array is an array of pointers to structures,
-   and we want to find a match for 'target' on 'field' in those structures.
-
-   Inputs:
-      array:          base pointer to an array of structures
-      arrray_size:    number of elements in the array
-      field:          the name of the field in the structure we are keying off
-      target:         the field value we are looking for
-      comparison_fn:  the comparison function
-      result:         where the result of the search is put
-
-   if the element is found, then 'result' is set to point to the found array element. If not,
-   then 'result' is set to NULL.
-
-   The array is assumed to be sorted by the same comparison_fn as the
-   search (with, for example, qsort)
- */
-#define BINARY_ARRAY_SEARCH(array, array_size, field, target, comparison_fn, result) do { \
-	int32_t _b, _e; \
-	(result) = NULL; \
-	for (_b = 0, _e = (array_size)-1; _b <= _e; ) {	\
-		int32_t _i = (_b+_e)/2; \
-		int _r = comparison_fn(target, array[_i]->field); \
-		if (_r == 0) { (result) = array[_i]; break; } \
-		if (_r < 0) _e = _i - 1; else _b = _i + 1; \
-	} } while (0)
-
+#include "lib/util/binsearch.h"
 
 static const char **dsdb_full_attribute_list_internal(TALLOC_CTX *mem_ctx, 
 						      const struct dsdb_schema *schema, 
@@ -81,8 +54,8 @@ const struct dsdb_attribute *dsdb_attribute_by_attributeID_id(const struct dsdb_
 	 */
 	if (id == 0xFFFFFFFF) return NULL;
 
-	BINARY_ARRAY_SEARCH(schema->attributes_by_attributeID_id, 
-			    schema->num_attributes, attributeID_id, id, uint32_cmp, c);
+	BINARY_ARRAY_SEARCH_P(schema->attributes_by_attributeID_id,
+			      schema->num_attributes, attributeID_id, id, uint32_cmp, c);
 	return c;
 }
 
@@ -93,8 +66,8 @@ const struct dsdb_attribute *dsdb_attribute_by_attributeID_oid(const struct dsdb
 
 	if (!oid) return NULL;
 
-	BINARY_ARRAY_SEARCH(schema->attributes_by_attributeID_oid, 
-			    schema->num_attributes, attributeID_oid, oid, strcasecmp, c);
+	BINARY_ARRAY_SEARCH_P(schema->attributes_by_attributeID_oid,
+			      schema->num_attributes, attributeID_oid, oid, strcasecmp, c);
 	return c;
 }
 
@@ -105,8 +78,8 @@ const struct dsdb_attribute *dsdb_attribute_by_lDAPDisplayName(const struct dsdb
 
 	if (!name) return NULL;
 
-	BINARY_ARRAY_SEARCH(schema->attributes_by_lDAPDisplayName, 
-			    schema->num_attributes, lDAPDisplayName, name, strcasecmp, c);
+	BINARY_ARRAY_SEARCH_P(schema->attributes_by_lDAPDisplayName,
+			      schema->num_attributes, lDAPDisplayName, name, strcasecmp, c);
 	return c;
 }
 
@@ -115,8 +88,8 @@ const struct dsdb_attribute *dsdb_attribute_by_linkID(const struct dsdb_schema *
 {
 	struct dsdb_attribute *c;
 
-	BINARY_ARRAY_SEARCH(schema->attributes_by_linkID, 
-			    schema->num_attributes, linkID, linkID, uint32_cmp, c);
+	BINARY_ARRAY_SEARCH_P(schema->attributes_by_linkID,
+			      schema->num_attributes, linkID, linkID, uint32_cmp, c);
 	return c;
 }
 
@@ -131,8 +104,8 @@ const struct dsdb_class *dsdb_class_by_governsID_id(const struct dsdb_schema *sc
 	 */
 	if (id == 0xFFFFFFFF) return NULL;
 
-	BINARY_ARRAY_SEARCH(schema->classes_by_governsID_id, 
-			    schema->num_classes, governsID_id, id, uint32_cmp, c);
+	BINARY_ARRAY_SEARCH_P(schema->classes_by_governsID_id,
+			      schema->num_classes, governsID_id, id, uint32_cmp, c);
 	return c;
 }
 
@@ -141,8 +114,8 @@ const struct dsdb_class *dsdb_class_by_governsID_oid(const struct dsdb_schema *s
 {
 	struct dsdb_class *c;
 	if (!oid) return NULL;
-	BINARY_ARRAY_SEARCH(schema->classes_by_governsID_oid, 
-			    schema->num_classes, governsID_oid, oid, strcasecmp, c);
+	BINARY_ARRAY_SEARCH_P(schema->classes_by_governsID_oid,
+			      schema->num_classes, governsID_oid, oid, strcasecmp, c);
 	return c;
 }
 
@@ -151,8 +124,8 @@ const struct dsdb_class *dsdb_class_by_lDAPDisplayName(const struct dsdb_schema 
 {
 	struct dsdb_class *c;
 	if (!name) return NULL;
-	BINARY_ARRAY_SEARCH(schema->classes_by_lDAPDisplayName, 
-			    schema->num_classes, lDAPDisplayName, name, strcasecmp, c);
+	BINARY_ARRAY_SEARCH_P(schema->classes_by_lDAPDisplayName,
+			      schema->num_classes, lDAPDisplayName, name, strcasecmp, c);
 	return c;
 }
 
@@ -161,8 +134,8 @@ const struct dsdb_class *dsdb_class_by_lDAPDisplayName_ldb_val(const struct dsdb
 {
 	struct dsdb_class *c;
 	if (!name) return NULL;
-	BINARY_ARRAY_SEARCH(schema->classes_by_lDAPDisplayName, 
-			    schema->num_classes, lDAPDisplayName, name, strcasecmp_with_ldb_val, c);
+	BINARY_ARRAY_SEARCH_P(schema->classes_by_lDAPDisplayName,
+			      schema->num_classes, lDAPDisplayName, name, strcasecmp_with_ldb_val, c);
 	return c;
 }
 
@@ -171,8 +144,8 @@ const struct dsdb_class *dsdb_class_by_cn(const struct dsdb_schema *schema,
 {
 	struct dsdb_class *c;
 	if (!cn) return NULL;
-	BINARY_ARRAY_SEARCH(schema->classes_by_cn, 
-			    schema->num_classes, cn, cn, strcasecmp, c);
+	BINARY_ARRAY_SEARCH_P(schema->classes_by_cn,
+			      schema->num_classes, cn, cn, strcasecmp, c);
 	return c;
 }
 
@@ -181,8 +154,8 @@ const struct dsdb_class *dsdb_class_by_cn_ldb_val(const struct dsdb_schema *sche
 {
 	struct dsdb_class *c;
 	if (!cn) return NULL;
-	BINARY_ARRAY_SEARCH(schema->classes_by_cn, 
-			    schema->num_classes, cn, cn, strcasecmp_with_ldb_val, c);
+	BINARY_ARRAY_SEARCH_P(schema->classes_by_cn,
+			      schema->num_classes, cn, cn, strcasecmp_with_ldb_val, c);
 	return c;
 }
 
