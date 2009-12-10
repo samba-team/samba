@@ -991,21 +991,17 @@ size_t smbcli_blob_append_string(struct smbcli_session *session,
   pull a GUID structure from the wire. The buffer must be at least 16
   bytes long
  */
-enum ndr_err_code smbcli_pull_guid(void *base, uint16_t offset, 
-				   struct GUID *guid)
+NTSTATUS smbcli_pull_guid(void *base, uint16_t offset,
+			  struct GUID *guid)
 {
 	DATA_BLOB blob;
-	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
-	enum ndr_err_code ndr_err;
 
 	ZERO_STRUCTP(guid);
 
 	blob.data       = offset + (uint8_t *)base;
 	blob.length     = 16;
-	ndr_err = ndr_pull_struct_blob(&blob, tmp_ctx, NULL, guid, 
-				       (ndr_pull_flags_fn_t)ndr_pull_GUID);
-	talloc_free(tmp_ctx);
-	return ndr_err;
+
+	return GUID_from_ndr_blob(&blob, guid);
 }
 
 /*
