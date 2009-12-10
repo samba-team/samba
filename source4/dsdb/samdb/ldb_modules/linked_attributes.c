@@ -105,26 +105,24 @@ static struct la_context *linked_attributes_init(struct ldb_module *module,
  */
 static int la_guid_from_dn(struct la_context *ac, struct ldb_dn *dn, struct GUID *guid)
 {
-	const struct ldb_val *guid_val;
 	int ret;
+	NTSTATUS status;
 
-	guid_val = ldb_dn_get_extended_component(dn, "GUID");
-	if (guid_val) {
-		/* there is a GUID embedded in the DN */
-		enum ndr_err_code ndr_err;
-		ndr_err = ndr_pull_struct_blob(guid_val, ac, NULL, guid,
-					       (ndr_pull_flags_fn_t)ndr_pull_GUID);
-		if (ndr_err != NDR_ERR_SUCCESS) {
-			DEBUG(0,(__location__ ": Failed to parse GUID\n"));
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-	} else {
-		ret = dsdb_find_guid_by_dn(ldb_module_get_ctx(ac->module), dn, guid);
-		if (ret != LDB_SUCCESS) {
-			DEBUG(4,(__location__ ": Failed to find GUID for dn %s\n",
-				 ldb_dn_get_linearized(dn)));
-			return ret;
-		}
+	status = dsdb_get_extended_dn_guid(dn, guid);
+	if (NT_STATUS_IS_OK(status)) {
+		return LDB_SUCCESS;
+	}
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		DEBUG(4,(__location__ ": Unable to parse GUID for dn %s\n",
+			 ldb_dn_get_linearized(dn)));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = dsdb_find_guid_by_dn(ldb_module_get_ctx(ac->module), dn, guid);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(4,(__location__ ": Failed to find GUID for dn %s\n",
+			 ldb_dn_get_linearized(dn)));
+		return ret;
 	}
 	return LDB_SUCCESS;
 }
