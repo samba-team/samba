@@ -470,6 +470,14 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 
 */
 #define LDB_CONTROL_RECALCULATE_SD_OID "1.3.6.1.4.1.7165.4.3.5"
+
+/**
+   REVEAL_INTERNALS is used to reveal internal attributes and DN
+   components which are not normally shown to the user
+*/
+#define LDB_CONTROL_REVEAL_INTERNALS "1.3.6.1.4.1.7165.4.3.6"
+
+
 /**
    OID for the paged results control. This control is included in the
    searchRequest and searchResultDone messages as part of the controls
@@ -1617,7 +1625,7 @@ char *ldb_dn_alloc_linearized(TALLOC_CTX *mem_ctx, struct ldb_dn *dn);
 char *ldb_dn_get_extended_linearized(void *mem_ctx, struct ldb_dn *dn, int mode);
 const struct ldb_val *ldb_dn_get_extended_component(struct ldb_dn *dn, const char *name);
 int ldb_dn_set_extended_component(struct ldb_dn *dn, const char *name, const struct ldb_val *val);
-
+void ldb_dn_extended_filter(struct ldb_dn *dn, const char * const *accept);
 void ldb_dn_remove_extended_components(struct ldb_dn *dn);
 bool ldb_dn_has_extended(struct ldb_dn *dn);
 

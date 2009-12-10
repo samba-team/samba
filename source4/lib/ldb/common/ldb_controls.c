@@ -775,6 +775,33 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, void *me
 			continue;
 		}
 
+		if (strncmp(control_strings[i], "reveal_internals:", 17) == 0) {
+			const char *p;
+			int crit, ret;
+
+			p = &(control_strings[i][17]);
+			ret = sscanf(p, "%d", &crit);
+			if ((ret != 1) || (crit < 0) || (crit > 1)) {
+				error_string = talloc_asprintf(mem_ctx, "invalid reveal_internals control syntax\n");
+				error_string = talloc_asprintf_append(error_string, " syntax: crit(b)\n");
+				error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
+				ldb_set_errstring(ldb, error_string);
+				talloc_free(error_string);
+				return NULL;
+			}
+
+			ctrl[i] = talloc(ctrl, struct ldb_control);
+			if (!ctrl[i]) {
+				ldb_oom(ldb);
+				return NULL;
+			}
+			ctrl[i]->oid = LDB_CONTROL_REVEAL_INTERNALS;
+			ctrl[i]->critical = crit;
+			ctrl[i]->data = NULL;
+
+			continue;
+		}
+
 		/* no controls matched, throw an error */
 		ldb_asprintf_errstring(ldb, "Invalid control name: '%s'", control_strings[i]);
 		return NULL;

@@ -61,6 +61,7 @@ static struct poptOption popt_options[] = {
 	{ "paged", 0, POPT_ARG_NONE, NULL, 'P', "use a paged search", NULL },
 	{ "show-deleted", 0, POPT_ARG_NONE, NULL, 'D', "show deleted objects", NULL },
 	{ "show-recycled", 0, POPT_ARG_NONE, NULL, 'R', "show recycled objects", NULL },
+	{ "reveal", 0, POPT_ARG_NONE, NULL, 'r', "reveal ldb internals", NULL },
 	{ "cross-ncs", 0, POPT_ARG_NONE, NULL, 'N', "search across NC boundaries", NULL },
 	{ "extended-dn", 0, POPT_ARG_NONE, NULL, 'E', "show extended DNs", NULL },
 #if (_SAMBA_BUILD_ >= 4)
@@ -221,6 +222,12 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb,
 			break;
 		case 'R':
 			if (!add_control(ret, "show_recycled:1")) {
+				fprintf(stderr, __location__ ": out of memory\n");
+				goto failed;
+			}
+			break;
+		case 'r':
+			if (!add_control(ret, "reveal_internals:0")) {
 				fprintf(stderr, __location__ ": out of memory\n");
 				goto failed;
 			}
