@@ -237,10 +237,10 @@ static int ldif_write_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 				 const struct ldb_val *in, struct ldb_val *out)
 {
 	struct GUID guid;
-	enum ndr_err_code ndr_err;
-	ndr_err = ndr_pull_struct_blob_all(in, mem_ctx, NULL, &guid,
-					   (ndr_pull_flags_fn_t)ndr_pull_GUID);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+	NTSTATUS status;
+
+	status = GUID_from_ndr_blob(in, &guid);
+	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
 	out->data = (uint8_t *)GUID_string(mem_ctx, &guid);
@@ -263,7 +263,8 @@ static int extended_dn_read_GUID(struct ldb_context *ldb, void *mem_ctx,
 			      const struct ldb_val *in, struct ldb_val *out)
 {
 	struct GUID guid;
-	enum ndr_err_code ndr_err;
+	NTSTATUS status;
+
 	if (in->length == 36 && ldif_read_objectGUID(ldb, mem_ctx, in, out) == 0) {
 		return 0;
 	}
@@ -283,9 +284,9 @@ static int extended_dn_read_GUID(struct ldb_context *ldb, void *mem_ctx,
 				      (const char *)in->data, in->length);
 	
 	/* Check it looks like a GUID */
-	ndr_err = ndr_pull_struct_blob_all(out, mem_ctx, NULL, &guid,
-					   (ndr_pull_flags_fn_t)ndr_pull_GUID);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+	status = GUID_from_ndr_blob(out, &guid);
+	if (!NT_STATUS_IS_OK(status)) {
+		data_blob_free(out);
 		return -1;
 	}
 	return 0;
