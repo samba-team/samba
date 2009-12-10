@@ -396,22 +396,15 @@ struct dom_sid *samdb_result_dom_sid(TALLOC_CTX *mem_ctx, const struct ldb_messa
 struct GUID samdb_result_guid(const struct ldb_message *msg, const char *attr)
 {
 	const struct ldb_val *v;
-	enum ndr_err_code ndr_err;
 	struct GUID guid;
-	TALLOC_CTX *mem_ctx;
-
-	ZERO_STRUCT(guid);
+	NTSTATUS status;
 
 	v = ldb_msg_find_ldb_val(msg, attr);
 	if (!v) return guid;
 
-	mem_ctx = talloc_named_const(NULL, 0, "samdb_result_guid");
-	if (!mem_ctx) return guid;
-	ndr_err = ndr_pull_struct_blob(v, mem_ctx, NULL, &guid,
-				       (ndr_pull_flags_fn_t)ndr_pull_GUID);
-	talloc_free(mem_ctx);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return guid;
+	status = GUID_from_ndr_blob(v, &guid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return GUID_zero();
 	}
 
 	return guid;
