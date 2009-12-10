@@ -64,11 +64,10 @@ char *ldap_encode_ndr_dom_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
 char *ldap_encode_ndr_GUID(TALLOC_CTX *mem_ctx, struct GUID *guid)
 {
 	DATA_BLOB blob;
-	enum ndr_err_code ndr_err;
+	NTSTATUS status;
 	char *ret;
-	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, NULL, guid,
-				       (ndr_push_flags_fn_t)ndr_push_GUID);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+	status = GUID_to_ndr_blob(guid, mem_ctx, &blob);
+	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
 	}
 	ret = ldb_binary_encode(mem_ctx, blob);
