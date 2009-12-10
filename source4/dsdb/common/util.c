@@ -2289,16 +2289,12 @@ int dsdb_msg_add_guid(struct ldb_message *msg,
 		const char *attr_name)
 {
 	int ret;
-	enum ndr_err_code ndr_err;
 	struct ldb_val v;
-
+	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx =  talloc_init("dsdb_msg_add_guid");
 
-	ndr_err = ndr_push_struct_blob(&v, tmp_ctx, NULL,
-				       guid,
-				       (ndr_push_flags_fn_t)ndr_push_GUID);
-
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+	status = GUID_to_ndr_blob(guid, tmp_ctx, &v);
+	if (!NT_STATUS_IS_OK(status)) {
 		ret = LDB_ERR_OPERATIONS_ERROR;
 		goto done;
 	}

@@ -202,8 +202,6 @@ static int handle_dereference_openldap(struct ldb_dn *dn,
 	entryUUIDblob = ldb_msg_find_ldb_val(&fake_msg, "entryUUID");
 	if (entryUUIDblob) {
 		NTSTATUS status;
-		enum ndr_err_code ndr_err;
-		
 		struct ldb_val guid_blob;
 		struct GUID guid;
 		
@@ -212,9 +210,8 @@ static int handle_dereference_openldap(struct ldb_dn *dn,
 		if (!NT_STATUS_IS_OK(status)) {
 			return LDB_ERR_INVALID_DN_SYNTAX;
 		}
-		ndr_err = ndr_push_struct_blob(&guid_blob, NULL, NULL, &guid,
-					       (ndr_push_flags_fn_t)ndr_push_GUID);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = GUID_to_ndr_blob(&guid, dn, &guid_blob);
+		if (!NT_STATUS_IS_OK(status)) {
 			return LDB_ERR_INVALID_DN_SYNTAX;
 		}
 		
@@ -259,8 +256,6 @@ static int handle_dereference_fds(struct ldb_dn *dn,
 	nsUniqueIdBlob = ldb_msg_find_ldb_val(&fake_msg, "nsUniqueId");
 	if (nsUniqueIdBlob) {
 		NTSTATUS status;
-		enum ndr_err_code ndr_err;
-		
 		struct ldb_val guid_blob;
 		struct GUID guid;
 		
@@ -269,9 +264,8 @@ static int handle_dereference_fds(struct ldb_dn *dn,
 		if (!NT_STATUS_IS_OK(status)) {
 			return LDB_ERR_INVALID_DN_SYNTAX;
 		}
-		ndr_err = ndr_push_struct_blob(&guid_blob, NULL, NULL, &guid,
-						(ndr_push_flags_fn_t)ndr_push_GUID);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = GUID_to_ndr_blob(&guid, dn, &guid_blob);
+		if (!NT_STATUS_IS_OK(status)) {
 			return LDB_ERR_INVALID_DN_SYNTAX;
 		}
 		

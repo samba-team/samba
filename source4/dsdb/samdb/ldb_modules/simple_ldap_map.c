@@ -44,16 +44,14 @@ static struct ldb_val encode_guid(struct ldb_module *module, TALLOC_CTX *ctx, co
 {
 	struct GUID guid;
 	NTSTATUS status = GUID_from_data_blob(val, &guid);
-	enum ndr_err_code ndr_err;
 	struct ldb_val out = data_blob(NULL, 0);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return out;
 	}
-	ndr_err = ndr_push_struct_blob(&out, ctx, NULL, &guid,
-				       (ndr_push_flags_fn_t)ndr_push_GUID);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return out;
+	status = GUID_to_ndr_blob(&guid, ctx, &out);
+	if (!NT_STATUS_IS_OK(status)) {
+		return data_blob(NULL, 0);
 	}
 
 	return out;
@@ -74,16 +72,14 @@ static struct ldb_val encode_ns_guid(struct ldb_module *module, TALLOC_CTX *ctx,
 {
 	struct GUID guid;
 	NTSTATUS status = NS_GUID_from_string((char *)val->data, &guid);
-	enum ndr_err_code ndr_err;
 	struct ldb_val out = data_blob(NULL, 0);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return out;
 	}
-	ndr_err = ndr_push_struct_blob(&out, ctx, NULL, &guid,
-				       (ndr_push_flags_fn_t)ndr_push_GUID);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return out;
+	status = GUID_to_ndr_blob(&guid, ctx, &out);
+	if (!NT_STATUS_IS_OK(status)) {
+		return data_blob(NULL, 0);
 	}
 
 	return out;
