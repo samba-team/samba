@@ -877,6 +877,7 @@ static int smbldap_open_connection (struct smbldap_state *ldap_state)
 {
 	int rc = LDAP_SUCCESS;
 	int version;
+	int deref;
 	LDAP **ldap_struct = &ldap_state->ldap_struct;
 
 	rc = smb_ldap_setup_conn(ldap_struct, ldap_state->uri);
@@ -900,6 +901,16 @@ static int smbldap_open_connection (struct smbldap_state *ldap_state)
 	rc = smb_ldap_start_tls(*ldap_struct, version);
 	if (rc) {
 		return rc;
+	}
+
+	/* Set alias dereferencing method */
+	deref = lp_ldap_deref();
+	if (deref != -1) {
+		if (ldap_set_option (*ldap_struct, LDAP_OPT_DEREF, &deref) != LDAP_OPT_SUCCESS) {
+			DEBUG(1,("smbldap_open_connection: Failed to set dereferencing method: %d\n", deref));
+		} else {
+			DEBUG(5,("Set dereferencing method: %d\n", deref));
+		}
 	}
 
 	DEBUG(2, ("smbldap_open_connection: connection opened\n"));
