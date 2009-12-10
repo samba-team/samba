@@ -47,9 +47,6 @@ enum ndr_err_code ndr_pull_spoolss_GetPrinterData(struct ndr_pull *ndr, int flag
 enum ndr_err_code ndr_push_spoolss_SetPrinterData(struct ndr_push *ndr, int flags, const struct spoolss_SetPrinterData *r);
 uint32_t _ndr_size_spoolss_DeviceMode(struct spoolss_DeviceMode *devmode, struct smb_iconv_convenience *ic, uint32_t flags);
 size_t ndr_size_spoolss_StringArray(const struct spoolss_StringArray *r, struct smb_iconv_convenience *ic, int flags);
-enum ndr_err_code ndr_push_spoolss_StringArray2(struct ndr_push *ndr, int ndr_flags, const struct spoolss_StringArray2 *r);
-enum ndr_err_code ndr_pull_spoolss_StringArray2(struct ndr_pull *ndr, int ndr_flags, struct spoolss_StringArray2 *r);
-size_t ndr_size_spoolss_StringArray2(const struct spoolss_StringArray2 *r, struct smb_iconv_convenience *ic, int flags);
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_DriverInfo101(struct ndr_push *ndr, int ndr_flags, const struct spoolss_DriverInfo101 *r);
 _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_DriverInfo101(struct ndr_pull *ndr, int ndr_flags, struct spoolss_DriverInfo101 *r);
 void ndr_print_spoolss_Field(struct ndr_print *ndr, const char *name, const union spoolss_Field *r);
