@@ -104,7 +104,6 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		if (domain_guid) {
 			struct GUID binary_guid;
 			struct ldb_val guid_val;
-			enum ndr_err_code ndr_err;
 
 			/* By this means, we ensure we don't have funny stuff in the GUID */
 
@@ -114,10 +113,9 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 			}
 
 			/* And this gets the result into the binary format we want anyway */
-			ndr_err = ndr_push_struct_blob(&guid_val, mem_ctx, NULL, &binary_guid,
-						       (ndr_push_flags_fn_t)ndr_push_GUID);
-			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-				return NT_STATUS_INVALID_PARAMETER;
+			status = GUID_to_ndr_blob(&binary_guid, mem_ctx, &guid_val);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
 			}
 			ret = ldb_search(sam_ctx, mem_ctx, &dom_res,
 						 NULL, LDB_SCOPE_SUBTREE, 

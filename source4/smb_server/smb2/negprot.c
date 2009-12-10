@@ -153,7 +153,6 @@ static NTSTATUS smb2srv_negprot_backend(struct smb2srv_request *req, struct smb2
 static void smb2srv_negprot_send(struct smb2srv_request *req, struct smb2_negprot *io)
 {
 	NTSTATUS status;
-	enum ndr_err_code ndr_err;
 
 	if (NT_STATUS_IS_ERR(req->status)) {
 		smb2srv_send_error(req, req->status); /* TODO: is this correct? */
@@ -170,8 +169,8 @@ static void smb2srv_negprot_send(struct smb2srv_request *req, struct smb2_negpro
 	SSVAL(req->out.body, 0x02, io->out.security_mode);
 	SIVAL(req->out.body, 0x04, io->out.dialect_revision);
 	SIVAL(req->out.body, 0x06, io->out.reserved);
-	ndr_err = smbcli_push_guid(req->out.body, 0x08, &io->out.server_guid);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+	status = smbcli_push_guid(req->out.body, 0x08, &io->out.server_guid);
+	if (!NT_STATUS_IS_OK(status)) {
 		smbsrv_terminate_connection(req->smb_conn, nt_errstr(status));
 		talloc_free(req);
 		return;
