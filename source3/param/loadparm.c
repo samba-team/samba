@@ -259,6 +259,7 @@ struct global {
 	char *szLdapGroupSuffix;
 	int ldap_ssl;
 	bool ldap_ssl_ads;
+	int ldap_deref;
 	int ldap_follow_referral;
 	char *szLdapSuffix;
 	char *szLdapAdminDn;
@@ -743,6 +744,14 @@ static const struct enum_list enum_ldap_ssl[] = {
 	{LDAP_SSL_OFF, "off"},
 	{LDAP_SSL_START_TLS, "start tls"},
 	{LDAP_SSL_START_TLS, "start_tls"},
+	{-1, NULL}
+};
+
+static const struct enum_list enum_ldap_deref[] = {
+	{LDAP_DEREFERENCE_NEVER, "never"},
+	{LDAP_DEREFERENCE_SEARCHING, "searching"},
+	{LDAP_DEREFERENCE_FINDING, "finding"},
+	{LDAP_DEREFERENCE_ALWAYS, "always"},
 	{-1, NULL}
 };
 
@@ -3671,6 +3680,15 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 	{
+		.label		= "ldap deref",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.ptr		= &Globals.ldap_deref,
+		.special	= NULL,
+		.enum_list	= enum_ldap_deref,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
 		.label		= "ldap follow referral",
 		.type		= P_ENUM,
 		.p_class	= P_GLOBAL,
@@ -5064,6 +5082,7 @@ static void init_globals(bool first_time_only)
 	string_set(&Globals.szLdapAdminDn, "");
 	Globals.ldap_ssl = LDAP_SSL_START_TLS;
 	Globals.ldap_ssl_ads = False;
+	Globals.ldap_deref = LDAP_DEREFERENCE_NEVER;
 	Globals.ldap_passwd_sync = LDAP_PASSWD_SYNC_OFF;
 	Globals.ldap_delete_dn = False;
 	Globals.ldap_replication_sleep = 1000; /* wait 1 sec for replication */
@@ -5418,6 +5437,7 @@ FN_GLOBAL_STRING(lp_ldap_suffix, &Globals.szLdapSuffix)
 FN_GLOBAL_STRING(lp_ldap_admin_dn, &Globals.szLdapAdminDn)
 FN_GLOBAL_INTEGER(lp_ldap_ssl, &Globals.ldap_ssl)
 FN_GLOBAL_BOOL(lp_ldap_ssl_ads, &Globals.ldap_ssl_ads)
+FN_GLOBAL_INTEGER(lp_ldap_deref, &Globals.ldap_deref)
 FN_GLOBAL_INTEGER(lp_ldap_follow_referral, &Globals.ldap_follow_referral)
 FN_GLOBAL_INTEGER(lp_ldap_passwd_sync, &Globals.ldap_passwd_sync)
 FN_GLOBAL_BOOL(lp_ldap_delete_dn, &Globals.ldap_delete_dn)
