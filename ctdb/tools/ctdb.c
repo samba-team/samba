@@ -801,10 +801,12 @@ static int control_one_scriptstatus(struct ctdb_context *ctdb,
 		if (script_status->scripts[i].status != -ENOEXEC) {
 			printf("%s",
 			       ctime(&script_status->scripts[i].start.tv_sec));
-		}
-		if (script_status->scripts[i].status != 0) {
-			printf("   OUTPUT:%s\n",
-				script_status->scripts[i].output);
+			if (script_status->scripts[i].status != 0) {
+				printf("   OUTPUT:%s\n",
+				       script_status->scripts[i].output);
+			}
+		} else {
+			printf("\n");
 		}
 	}
 	return 0;
