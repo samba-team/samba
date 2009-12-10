@@ -1074,6 +1074,20 @@ _PUBLIC_ enum ndr_err_code ndr_push_relative_ptr1(struct ndr_push *ndr, const vo
 }
 
 /*
+  push a short relative object - stage1
+  this is called during SCALARS processing
+*/
+_PUBLIC_ enum ndr_err_code ndr_push_short_relative_ptr1(struct ndr_push *ndr, const void *p)
+{
+	if (p == NULL) {
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, 0));
+		return NDR_ERR_SUCCESS;
+	}
+	NDR_CHECK(ndr_push_align(ndr, 2));
+	NDR_CHECK(ndr_token_store(ndr, &ndr->relative_list, p, ndr->offset));
+	return ndr_push_uint16(ndr, NDR_SCALARS, 0xFFFF);
+}
+/*
   push a relative object - stage2
   this is called during buffers processing
 */
@@ -1098,6 +1112,34 @@ _PUBLIC_ enum ndr_err_code ndr_push_relative_ptr2(struct ndr_push *ndr, const vo
 				      save_offset, ndr->relative_base_offset);
 	}	
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, save_offset - ndr->relative_base_offset));
+	ndr->offset = save_offset;
+	return NDR_ERR_SUCCESS;
+}
+/*
+  push a short relative object - stage2
+  this is called during buffers processing
+*/
+_PUBLIC_ enum ndr_err_code ndr_push_short_relative_ptr2(struct ndr_push *ndr, const void *p)
+{
+	uint32_t save_offset;
+	uint32_t ptr_offset = 0xFFFF;
+	if (p == NULL) {
+		return NDR_ERR_SUCCESS;
+	}
+	save_offset = ndr->offset;
+	NDR_CHECK(ndr_token_retrieve(&ndr->relative_list, p, &ptr_offset));
+	if (ptr_offset > ndr->offset) {
+		return ndr_push_error(ndr, NDR_ERR_BUFSIZE,
+				      "ndr_push_short_relative_ptr2 ptr_offset(%u) > ndr->offset(%u)",
+				      ptr_offset, ndr->offset);
+	}
+	ndr->offset = ptr_offset;
+	if (save_offset < ndr->relative_base_offset) {
+		return ndr_push_error(ndr, NDR_ERR_BUFSIZE,
+				      "ndr_push_relative_ptr2 save_offset(%u) < ndr->relative_base_offset(%u)",
+				      save_offset, ndr->relative_base_offset);
+	}
+	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, save_offset - ndr->relative_base_offset));
 	ndr->offset = save_offset;
 	return NDR_ERR_SUCCESS;
 }

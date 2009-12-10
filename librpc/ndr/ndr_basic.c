@@ -176,6 +176,18 @@ _PUBLIC_ enum ndr_err_code ndr_pull_double(struct ndr_pull *ndr, int ndr_flags, 
 }
 
 /*
+  parse a pointer referent identifier stored in 2 bytes
+*/
+_PUBLIC_ enum ndr_err_code ndr_pull_relative_ptr_short(struct ndr_pull *ndr, uint16_t *v)
+{
+	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, v));
+	if (*v != 0) {
+		ndr->ptr_count++;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+/*
   parse a pointer referent identifier
 */
 _PUBLIC_ enum ndr_err_code ndr_pull_generic_ptr(struct ndr_pull *ndr, uint32_t *v)
