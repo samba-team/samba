@@ -232,7 +232,7 @@ static int ldb_dn_escape_internal(char *dst, const char *src, int len)
 			/* any others get \XX form */
 			unsigned char v;
 			const char *hexbytes = "0123456789ABCDEF";
-			v = *(unsigned char *)p;
+			v = *(const unsigned char *)p;
 			*d++ = '\\';
 			*d++ = hexbytes[v>>4];
 			*d++ = hexbytes[v&0xF];
@@ -1899,6 +1899,11 @@ int ldb_dn_set_extended_component(struct ldb_dn *dn,
 				return LDB_SUCCESS;
 			}
 		}
+	}
+
+	if (val == NULL) {
+		/* removing a value that doesn't exist is not an error */
+		return LDB_SUCCESS;
 	}
 
 	p = dn->ext_components

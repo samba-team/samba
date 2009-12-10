@@ -215,16 +215,14 @@ static int ldif_read_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 {
 	struct GUID guid;
 	NTSTATUS status;
-	enum ndr_err_code ndr_err;
 
 	status = GUID_from_data_blob(in, &guid);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
 
-	ndr_err = ndr_push_struct_blob(out, mem_ctx, NULL, &guid,
-				       (ndr_push_flags_fn_t)ndr_push_GUID);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+	status = GUID_to_ndr_blob(&guid, mem_ctx, out);
+	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
 	return 0;
