@@ -322,6 +322,8 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 	struct ldb_message *msg = ares->message;
 	struct extended_dn_out_private *p;
 	struct ldb_context *ldb;
+	bool have_reveal_control, checked_reveal_control=false;
+
 	ac = talloc_get_type(req->context, struct extended_search_context);
 	p = talloc_get_type(ldb_module_get_private(ac->module), struct extended_dn_out_private);
 	ldb = ldb_module_get_ctx(ac->module);
@@ -433,7 +435,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 			struct dsdb_dn *dsdb_dn = NULL;
 			struct ldb_val *plain_dn = &msg->elements[i].values[j];		
 			dsdb_dn = dsdb_dn_parse(msg, ldb, plain_dn, attribute->syntax->ldap_oid);
-			
+
 			if (!dsdb_dn || !ldb_dn_validate(dsdb_dn->dn)) {
 				ldb_asprintf_errstring(ldb, 
 						       "could not parse %.*s in %s on %s as a %s DN", 
@@ -444,6 +446,38 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 				return ldb_module_done(ac->req, NULL, NULL, LDB_ERR_INVALID_DN_SYNTAX);
 			}
 			dn = dsdb_dn->dn;
+
+			if (!checked_reveal_control) {
+				have_reveal_control =
+					ldb_request_get_control(req, LDB_CONTROL_REVEAL_INTERNALS) != NULL;
+				checked_reveal_control = true;
+			}
+
+			/* this is a fast method for detecting deleted
+			   linked attributes. It relies on the
+			   linearization of extended DNs sorting by name,
+			   and "DELETED" being the first name */
+			if (plain_dn->length >= 12 &&
+			    strncmp((const char *)plain_dn->data, "<DELETED=1>;", 12) == 0) {
+				if (!have_reveal_control) {
+					/* it's a deleted linked
+					 * attribute, and we don't
+					 * have the reveal control */
+					memmove(&msg->elements[i].values[j],
+						&msg->elements[i].values[j+1],
+						(msg->elements[i].num_values-(j+1))*sizeof(struct ldb_val));
+					msg->elements[i].num_values--;
+					j--;
+					continue;
+				}
+			}
+
+			/* don't let users see the internal extended
+			   GUID components */
+			if (!have_reveal_control) {
+				const char *accept[] = { "GUID", "SID", "WKGUID", NULL };
+				ldb_dn_extended_filter(dn, accept);
+			}
 
 			if (p->normalise) {
 				ret = fix_dn(dn);
@@ -487,6 +521,15 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 			}
 			msg->elements[i].values[j] = data_blob_string_const(dn_str);
 			talloc_free(dsdb_dn);
+		}
+		if (msg->elements[i].num_values == 0) {
+			/* we've deleted all of the values from this
+			 * element - remove the element */
+			memmove(&msg->elements[i],
+				&msg->elements[i+1],
+				(msg->num_elements-(i+1))*sizeof(struct ldb_message_element));
+			msg->num_elements--;
+			i--;
 		}
 	}
 	return ldb_module_send_entry(ac->req, msg, ares->controls);
