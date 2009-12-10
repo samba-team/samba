@@ -2302,6 +2302,12 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[out,ref] uint32 *needed
 	);
 
+	typedef [nodiscriminant] union {
+		[case(0)];
+		[case(1)];
+		[default] nstring_array string_array;
+	} spoolss_KeyNames;
+
 	/******************/
 	/* Function: 0x50 */
 	[public] WERROR spoolss_EnumPrinterKey(
