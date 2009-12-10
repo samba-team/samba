@@ -514,11 +514,13 @@ static int event_script_destructor(struct ctdb_event_script_state *state)
 		state->ctdb->current_monitor = NULL;
 	}
 
-	/* Save our status as the last executed status. */
-	talloc_free(state->ctdb->last_status[state->call]);
-	state->ctdb->last_status[state->call] = state->scripts;
-	if (state->current < state->ctdb->last_status[state->call]->num_scripts) {
-		state->ctdb->last_status[state->call]->num_scripts = state->current+1;
+	/* Save our scripts as the last executed status, if we have them. */
+	if (state->scripts) {
+		talloc_free(state->ctdb->last_status[state->call]);
+		state->ctdb->last_status[state->call] = state->scripts;
+		if (state->current < state->ctdb->last_status[state->call]->num_scripts) {
+			state->ctdb->last_status[state->call]->num_scripts = state->current+1;
+		}
 	}
 
 	/* This is allowed to free us; talloc will prevent double free anyway,
@@ -622,8 +624,13 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	}
 
 	/* Kill off any running monitor events to run this event. */
-	talloc_free(ctdb->current_monitor);
-	ctdb->current_monitor = NULL;
+	if (ctdb->current_monitor) {
+		/* Discard script status so we don't save to last_status */
+		talloc_free(ctdb->current_monitor->scripts);
+		ctdb->current_monitor->scripts = NULL;
+		talloc_free(ctdb->current_monitor);
+		ctdb->current_monitor = NULL;
+	}
 
 	if (!from_user && (call == CTDB_EVENT_MONITOR || call == CTDB_EVENT_STATUS)) {
 		ctdb->current_monitor = state;
