@@ -34,8 +34,8 @@ struct smb2_request *smb2_negprot_send(struct smb2_transport *transport,
 {
 	struct smb2_request *req;
 	uint16_t size = 0x24 + io->in.dialect_count*2;
-	enum ndr_err_code ndr_err;
 	int i;
+	NTSTATUS status;
 
 	req = smb2_request_init(transport, SMB2_OP_NEGPROT, size, false, 0);
 	if (req == NULL) return NULL;
@@ -46,8 +46,8 @@ struct smb2_request *smb2_negprot_send(struct smb2_transport *transport,
 	SSVAL(req->out.body, 0x04, io->in.security_mode);
 	SSVAL(req->out.body, 0x06, io->in.reserved);
 	SIVAL(req->out.body, 0x08, io->in.capabilities);
-	ndr_err = smbcli_push_guid(req->out.body, 0x0C, &io->in.client_guid);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+	status = smbcli_push_guid(req->out.body, 0x0C, &io->in.client_guid);
+	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(req);
 		return NULL;
 	}
