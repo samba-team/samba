@@ -2058,6 +2058,10 @@ struct spoolss_PrinterEnumValues {
 	uint32_t data_length;/* [value(ndr_size_spoolss_PrinterData(data,type,ndr->iconv_convenience,ndr->flags))] */
 }/* [relative_base,gensize,public] */;
 
+union spoolss_KeyNames {
+	const char ** string_array;/* [default,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+}/* [nodiscriminant] */;
+
 /* bitmap spoolss_DeleteDriverFlags */
 #define DPD_DELETE_UNUSED_FILES ( 0x00000001 )
 #define DPD_DELETE_SPECIFIC_VERSION ( 0x00000002 )
@@ -3620,7 +3624,8 @@ struct spoolss_EnumPrinterKey {
 	} in;
 
 	struct {
-		struct spoolss_StringArray2 *key_buffer;/* [ref] */
+		uint32_t *_ndr_size;/* [ref] */
+		union spoolss_KeyNames *key_buffer;/* [subcontext_size(*_ndr_size*2),ref,subcontext(0),switch_is(*_ndr_size)] */
 		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;

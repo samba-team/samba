@@ -12207,7 +12207,8 @@ struct tevent_req *rpccli_spoolss_EnumPrinterKey_send(TALLOC_CTX *mem_ctx,
 						      struct rpc_pipe_client *cli,
 						      struct policy_handle *_handle /* [in] [ref] */,
 						      const char *_key_name /* [in] [charset(UTF16)] */,
-						      struct spoolss_StringArray2 *_key_buffer /* [out] [ref] */,
+						      uint32_t *__ndr_size /* [out] [ref] */,
+						      union spoolss_KeyNames *_key_buffer /* [out] [subcontext_size(*_ndr_size*2),ref,subcontext(0),switch_is(*_ndr_size)] */,
 						      uint32_t _offered /* [in]  */,
 						      uint32_t *_needed /* [out] [ref] */)
 {
@@ -12229,6 +12230,7 @@ struct tevent_req *rpccli_spoolss_EnumPrinterKey_send(TALLOC_CTX *mem_ctx,
 	state->orig.in.offered = _offered;
 
 	/* Out parameters */
+	state->orig.out._ndr_size = __ndr_size;
 	state->orig.out.key_buffer = _key_buffer;
 	state->orig.out.needed = _needed;
 
@@ -12278,6 +12280,7 @@ static void rpccli_spoolss_EnumPrinterKey_done(struct tevent_req *subreq)
 	}
 
 	/* Copy out parameters */
+	*state->orig.out._ndr_size = *state->tmp.out._ndr_size;
 	*state->orig.out.key_buffer = *state->tmp.out.key_buffer;
 	*state->orig.out.needed = *state->tmp.out.needed;
 
@@ -12317,7 +12320,8 @@ NTSTATUS rpccli_spoolss_EnumPrinterKey(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
 				       struct policy_handle *handle /* [in] [ref] */,
 				       const char *key_name /* [in] [charset(UTF16)] */,
-				       struct spoolss_StringArray2 *key_buffer /* [out] [ref] */,
+				       uint32_t *_ndr_size /* [out] [ref] */,
+				       union spoolss_KeyNames *key_buffer /* [out] [subcontext_size(*_ndr_size*2),ref,subcontext(0),switch_is(*_ndr_size)] */,
 				       uint32_t offered /* [in]  */,
 				       uint32_t *needed /* [out] [ref] */,
 				       WERROR *werror)
@@ -12345,6 +12349,7 @@ NTSTATUS rpccli_spoolss_EnumPrinterKey(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*_ndr_size = *r.out._ndr_size;
 	*key_buffer = *r.out.key_buffer;
 	*needed = *r.out.needed;
 
