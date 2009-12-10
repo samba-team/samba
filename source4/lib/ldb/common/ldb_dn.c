@@ -789,6 +789,13 @@ const char *ldb_dn_get_linearized(struct ldb_dn *dn)
 	return dn->linearized;
 }
 
+static int ldb_dn_extended_component_compare(const void *p1, const void *p2)
+{
+	const struct ldb_dn_ext_component *ec1 = (const struct ldb_dn_ext_component *)p1;
+	const struct ldb_dn_ext_component *ec2 = (const struct ldb_dn_ext_component *)p2;
+	return strcmp(ec1->name, ec2->name);
+}
+
 char *ldb_dn_get_extended_linearized(void *mem_ctx, struct ldb_dn *dn, int mode)
 {
 	const char *linearized = ldb_dn_get_linearized(dn);
@@ -806,6 +813,13 @@ char *ldb_dn_get_extended_linearized(void *mem_ctx, struct ldb_dn *dn, int mode)
 	if (!ldb_dn_validate(dn)) {
 		return NULL;
 	}
+
+	/* sort the extended components by name. The idea is to make
+	 * the resulting DNs consistent, plus to ensure that we put
+	 * 'DELETED' first, so it can be very quickly recognised
+	 */
+	qsort(dn->ext_components, dn->ext_comp_num, sizeof(dn->ext_components[0]),
+	      ldb_dn_extended_component_compare);
 
 	for (i = 0; i < dn->ext_comp_num; i++) {
 		const struct ldb_dn_extended_syntax *ext_syntax;
