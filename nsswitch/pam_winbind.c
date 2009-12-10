@@ -807,6 +807,8 @@ static int wbc_auth_error_to_pam_error(struct pwb_context *ctx,
 	return pam_winbind_request_log(ctx, ret, username, fn);
 }
 
+/* PAM_RADIO_TYPE is linux-only. */
+#ifdef LINUX
 static bool _pam_winbind_change_pwd(struct pwb_context *ctx)
 {
 	struct pam_message msg, *pmsg;
@@ -837,6 +839,12 @@ static bool _pam_winbind_change_pwd(struct pwb_context *ctx)
 	_pam_drop_reply(resp, 1);
 	return retval;
 }
+#else
+static bool _pam_winbind_change_pwd(struct pwb_context *ctx)
+{
+	return false;
+}
+#endif
 
 
 /**
