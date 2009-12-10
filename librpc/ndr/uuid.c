@@ -25,6 +25,17 @@
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 
+/**
+  build a NDR blob from a GUID
+*/
+_PUBLIC_ NTSTATUS GUID_to_ndr_blob(const struct GUID *guid, TALLOC_CTX *mem_ctx, DATA_BLOB *b)
+{
+	enum ndr_err_code ndr_err;
+	ndr_err = ndr_push_struct_blob(b, mem_ctx, NULL, guid,
+				       (ndr_push_flags_fn_t)ndr_push_GUID);
+	return ndr_map_error2ntstatus(ndr_err);
+}
+
 
 /**
   build a GUID from a NDR data blob
@@ -280,18 +291,15 @@ _PUBLIC_ char *GUID_hexstring(TALLOC_CTX *mem_ctx, const struct GUID *guid)
 {
 	char *ret;
 	DATA_BLOB guid_blob;
-	enum ndr_err_code ndr_err;
 	TALLOC_CTX *tmp_mem;
+	NTSTATUS status;
 
 	tmp_mem = talloc_new(mem_ctx);
 	if (!tmp_mem) {
 		return NULL;
 	}
-	ndr_err = ndr_push_struct_blob(&guid_blob, tmp_mem,
-				       NULL,
-				       guid,
-				       (ndr_push_flags_fn_t)ndr_push_GUID);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+	status = GUID_to_ndr_blob(guid, tmp_mem, &guid_blob);
+	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_mem);
 		return NULL;
 	}

@@ -536,6 +536,7 @@ enum ndr_err_code ndr_push_charset(struct ndr_push *ndr, int ndr_flags, const ch
 
 /* GUIDs */
 bool GUID_equal(const struct GUID *u1, const struct GUID *u2);
+NTSTATUS GUID_to_ndr_blob(const struct GUID *guid, TALLOC_CTX *mem_ctx, DATA_BLOB *b);
 NTSTATUS GUID_from_ndr_blob(const DATA_BLOB *b, struct GUID *guid);
 NTSTATUS GUID_from_data_blob(const DATA_BLOB *s, struct GUID *guid);
 NTSTATUS GUID_from_string(const char *s, struct GUID *guid);
