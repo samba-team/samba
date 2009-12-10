@@ -1855,6 +1855,7 @@ int ldb_dn_set_extended_component(struct ldb_dn *dn,
 {
 	struct ldb_dn_ext_component *p;
 	int i;
+	struct ldb_val v2;
 
 	if ( ! ldb_dn_validate(dn)) {
 		return LDB_ERR_OTHER;
@@ -1878,7 +1879,7 @@ int ldb_dn_set_extended_component(struct ldb_dn *dn,
 					ldb_dn_mark_invalid(dn);
 					return LDB_ERR_OPERATIONS_ERROR;
 				}
-
+				return LDB_SUCCESS;
 			} else {
 				if (i != (dn->ext_comp_num - 1)) {
 					memmove(&dn->ext_components[i],
@@ -1906,6 +1907,8 @@ int ldb_dn_set_extended_component(struct ldb_dn *dn,
 		return LDB_SUCCESS;
 	}
 
+	v2 = *val;
+
 	p = dn->ext_components
 		= talloc_realloc(dn,
 				 dn->ext_components,
@@ -1916,7 +1919,7 @@ int ldb_dn_set_extended_component(struct ldb_dn *dn,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	p[dn->ext_comp_num].value = ldb_val_dup(dn->ext_components, val);
+	p[dn->ext_comp_num].value = ldb_val_dup(dn->ext_components, &v2);
 	p[dn->ext_comp_num].name = talloc_strdup(p, name);
 
 	if (!dn->ext_components[i].name || !dn->ext_components[i].value.data) {
