@@ -197,7 +197,6 @@ void smb2srv_negprot_recv(struct smb2srv_request *req)
 {
 	struct smb2_negprot *io;
 	int i;
-	enum ndr_err_code ndr_err;
 
 	if (req->in.body_size < 0x26) {
 		smbsrv_terminate_connection(req->smb_conn, "Bad body size in SMB2 negprot");
@@ -215,8 +214,8 @@ void smb2srv_negprot_recv(struct smb2srv_request *req)
 	io->in.security_mode = SVAL(req->in.body, 0x04);
 	io->in.reserved      = SVAL(req->in.body, 0x06);
 	io->in.capabilities  = IVAL(req->in.body, 0x08);
-	ndr_err = smbcli_pull_guid(req->in.body, 0xC, &io->in.client_guid);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+	req->status = smbcli_pull_guid(req->in.body, 0xC, &io->in.client_guid);
+	if (!NT_STATUS_IS_OK(req->status)) {
 		smbsrv_terminate_connection(req->smb_conn, "Bad GUID in SMB2 negprot");
 		talloc_free(req);
 		return;
