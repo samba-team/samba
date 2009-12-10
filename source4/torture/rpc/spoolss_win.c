@@ -386,7 +386,8 @@ static bool test_EnumPrinterKey(struct torture_context *tctx,
 	NTSTATUS status;
 	struct spoolss_EnumPrinterKey epk;
 	uint32_t needed = 0;
-	struct spoolss_StringArray2 key_buffer;
+	union spoolss_KeyNames key_buffer;
+	uint32_t _ndr_size;
 
 	torture_comment(tctx, "Testing EnumPrinterKey(%s)\n", key);
 
@@ -395,6 +396,7 @@ static bool test_EnumPrinterKey(struct torture_context *tctx,
 	epk.in.offered = 0;
 	epk.out.needed = &needed;
 	epk.out.key_buffer = &key_buffer;
+	epk.out._ndr_size = &_ndr_size;
 
 	status = dcerpc_spoolss_EnumPrinterKey(p, tctx, &epk);
 	torture_assert_ntstatus_ok(tctx, status, "EnumPrinterKey failed");
@@ -409,7 +411,7 @@ static bool test_EnumPrinterKey(struct torture_context *tctx,
 
 	torture_assert_werr_ok(tctx, epk.out.result, "EnumPrinterKey failed");
 
-	ctx->printer_keys = key_buffer.string;
+	ctx->printer_keys = key_buffer.string_array;
 
 	return true;
 }
