@@ -467,10 +467,11 @@ int dsdb_schema_fill_extended_dn(struct ldb_context *ldb, struct dsdb_schema *sc
 	struct dsdb_class *cur;
 	const struct dsdb_class *target_class;
 	for (cur = schema->classes; cur; cur = cur->next) {
-		enum ndr_err_code ndr_err;
 		const struct ldb_val *rdn;
 		struct ldb_val guid;
+		NTSTATUS status;
 		struct ldb_dn *dn = ldb_dn_new(NULL, ldb, cur->defaultObjectCategory);
+
 		if (!dn) {
 			return LDB_ERR_INVALID_DN_SYNTAX;
 		}
@@ -485,9 +486,8 @@ int dsdb_schema_fill_extended_dn(struct ldb_context *ldb, struct dsdb_schema *sc
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 		
-		ndr_err = ndr_push_struct_blob(&guid, dn, NULL, &target_class->objectGUID,
-					       (ndr_push_flags_fn_t)ndr_push_GUID);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = GUID_to_ndr_blob(&target_class->objectGUID, dn, &guid);
+		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(dn);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}

@@ -1040,6 +1040,7 @@ WERROR dsdb_syntax_one_DN_drsuapi_to_ldb(TALLOC_CTX *mem_ctx, struct ldb_context
 	struct ldb_dn *dn;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	int ret;
+	NTSTATUS status;
 
 	if (!tmp_ctx) {
 		W_ERROR_HAVE_NO_MEMORY(tmp_ctx);
@@ -1061,7 +1062,7 @@ WERROR dsdb_syntax_one_DN_drsuapi_to_ldb(TALLOC_CTX *mem_ctx, struct ldb_context
 				       tmp_ctx, iconv_convenience, &id3,
 				       (ndr_pull_flags_fn_t)ndr_pull_drsuapi_DsReplicaObjectIdentifier3);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+		status = ndr_map_error2ntstatus(ndr_err);
 		talloc_free(tmp_ctx);
 		return ntstatus_to_werror(status);
 	}
@@ -1072,11 +1073,9 @@ WERROR dsdb_syntax_one_DN_drsuapi_to_ldb(TALLOC_CTX *mem_ctx, struct ldb_context
 		/* If this fails, it must be out of memory, as it does not do much parsing */
 		W_ERROR_HAVE_NO_MEMORY(dn);
 	}
-	
-	ndr_err = ndr_push_struct_blob(&guid_blob, tmp_ctx, iconv_convenience, &id3.guid,
-				       (ndr_push_flags_fn_t)ndr_push_GUID);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+
+	status = GUID_to_ndr_blob(&id3.guid, tmp_ctx, &guid_blob);
+	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);
 		return ntstatus_to_werror(status);
 	}
@@ -1094,7 +1093,7 @@ WERROR dsdb_syntax_one_DN_drsuapi_to_ldb(TALLOC_CTX *mem_ctx, struct ldb_context
 		ndr_err = ndr_push_struct_blob(&sid_blob, tmp_ctx, iconv_convenience, &id3.sid,
 					       (ndr_push_flags_fn_t)ndr_push_dom_sid);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+			status = ndr_map_error2ntstatus(ndr_err);
 			talloc_free(tmp_ctx);
 			return ntstatus_to_werror(status);
 		}
@@ -1244,6 +1243,7 @@ static WERROR dsdb_syntax_DN_BINARY_drsuapi_to_ldb(struct ldb_context *ldb,
 		DATA_BLOB guid_blob;
 		struct ldb_dn *dn;
 		struct dsdb_dn *dsdb_dn;
+		NTSTATUS status;
 		TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 		if (!tmp_ctx) {
 			W_ERROR_HAVE_NO_MEMORY(tmp_ctx);
@@ -1265,7 +1265,7 @@ static WERROR dsdb_syntax_DN_BINARY_drsuapi_to_ldb(struct ldb_context *ldb,
 					       tmp_ctx, schema->iconv_convenience, &id3,
 					       (ndr_pull_flags_fn_t)ndr_pull_drsuapi_DsReplicaObjectIdentifier3Binary);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+			status = ndr_map_error2ntstatus(ndr_err);
 			talloc_free(tmp_ctx);
 			return ntstatus_to_werror(status);
 		}
@@ -1277,10 +1277,8 @@ static WERROR dsdb_syntax_DN_BINARY_drsuapi_to_ldb(struct ldb_context *ldb,
 			W_ERROR_HAVE_NO_MEMORY(dn);
 		}
 
-		ndr_err = ndr_push_struct_blob(&guid_blob, tmp_ctx, schema->iconv_convenience, &id3.guid,
-					       (ndr_push_flags_fn_t)ndr_push_GUID);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+		status = GUID_to_ndr_blob(&id3.guid, tmp_ctx, &guid_blob);
+		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(tmp_ctx);
 			return ntstatus_to_werror(status);
 		}
@@ -1298,7 +1296,7 @@ static WERROR dsdb_syntax_DN_BINARY_drsuapi_to_ldb(struct ldb_context *ldb,
 			ndr_err = ndr_push_struct_blob(&sid_blob, tmp_ctx, schema->iconv_convenience, &id3.sid,
 						       (ndr_push_flags_fn_t)ndr_push_dom_sid);
 			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-				NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+				status = ndr_map_error2ntstatus(ndr_err);
 				talloc_free(tmp_ctx);
 				return ntstatus_to_werror(status);
 			}
