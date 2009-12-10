@@ -303,9 +303,6 @@ void ndr_print_spoolss_SetPrinterInfoCtr(struct ndr_print *ndr, const char *name
 enum ndr_err_code ndr_push_spoolss_StringArray(struct ndr_push *ndr, int ndr_flags, const struct spoolss_StringArray *r);
 enum ndr_err_code ndr_pull_spoolss_StringArray(struct ndr_pull *ndr, int ndr_flags, struct spoolss_StringArray *r);
 void ndr_print_spoolss_StringArray(struct ndr_print *ndr, const char *name, const struct spoolss_StringArray *r);
-enum ndr_err_code ndr_push_spoolss_StringArray2(struct ndr_push *ndr, int ndr_flags, const struct spoolss_StringArray2 *r);
-enum ndr_err_code ndr_pull_spoolss_StringArray2(struct ndr_pull *ndr, int ndr_flags, struct spoolss_StringArray2 *r);
-void ndr_print_spoolss_StringArray2(struct ndr_print *ndr, const char *name, const struct spoolss_StringArray2 *r);
 void ndr_print_spoolss_AddDriverInfo1(struct ndr_print *ndr, const char *name, const struct spoolss_AddDriverInfo1 *r);
 enum ndr_err_code ndr_push_spoolss_DriverOSVersion(struct ndr_push *ndr, int ndr_flags, enum spoolss_DriverOSVersion r);
 enum ndr_err_code ndr_pull_spoolss_DriverOSVersion(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DriverOSVersion *r);

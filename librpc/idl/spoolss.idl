@@ -786,11 +786,6 @@ import "misc.idl", "security.idl", "winreg.idl";
 		/*[subcontext(0),subcontext_size(_ndr_size*2)]*/ nstring_array string;
 	} spoolss_StringArray;
 
-	typedef [public,nopush,nopull] struct {
-		[value((ndr_size_spoolss_StringArray2(r, ndr->iconv_convenience, ndr->flags)-4)/2)] uint32 _ndr_size;
-		[subcontext(0),subcontext_size(_ndr_size*2)] nstring_array string;
-	} spoolss_StringArray2;
-
 	typedef struct {
 		[string,charset(UTF16)] uint16 *driver_name;
 	} spoolss_AddDriverInfo1;
