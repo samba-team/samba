@@ -7960,15 +7960,6 @@ _PUBLIC_ void ndr_print_spoolss_StringArray(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
-_PUBLIC_ void ndr_print_spoolss_StringArray2(struct ndr_print *ndr, const char *name, const struct spoolss_StringArray2 *r)
-{
-	ndr_print_struct(ndr, name, "spoolss_StringArray2");
-	ndr->depth++;
-	ndr_print_uint32(ndr, "_ndr_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?(ndr_size_spoolss_StringArray2(r, ndr->iconv_convenience, ndr->flags) - 4) / 2:r->_ndr_size);
-	ndr_print_string_array(ndr, "string", r->string);
-	ndr->depth--;
-}
-
 static enum ndr_err_code ndr_push_spoolss_AddDriverInfo1(struct ndr_push *ndr, int ndr_flags, const struct spoolss_AddDriverInfo1 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
