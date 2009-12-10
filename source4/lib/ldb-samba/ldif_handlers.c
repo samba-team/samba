@@ -840,6 +840,36 @@ static const struct ldb_dn_extended_syntax samba_dn_syntax[] = {
 		.read_fn          = ldb_handler_copy,
 		.write_clear_fn   = ldb_handler_copy,
 		.write_hex_fn     = ldb_handler_copy
+	},{
+		.name		  = "RMD_INVOCID",
+		.read_fn          = extended_dn_read_GUID,
+		.write_clear_fn   = ldif_write_objectGUID,
+		.write_hex_fn     = extended_dn_write_hex
+	},{
+		.name		  = "DELETED",
+		.read_fn          = ldb_handler_copy,
+		.write_clear_fn   = ldb_handler_copy,
+		.write_hex_fn     = ldb_handler_copy
+	},{
+		.name		  = "RMD_ADDTIME",
+		.read_fn          = ldb_handler_copy,
+		.write_clear_fn   = ldb_handler_copy,
+		.write_hex_fn     = ldb_handler_copy
+	},{
+		.name		  = "RMD_CHANGETIME",
+		.read_fn          = ldb_handler_copy,
+		.write_clear_fn   = ldb_handler_copy,
+		.write_hex_fn     = ldb_handler_copy
+	},{
+		.name		  = "RMD_USN",
+		.read_fn          = ldb_handler_copy,
+		.write_clear_fn   = ldb_handler_copy,
+		.write_hex_fn     = ldb_handler_copy
+	},{
+		.name		  = "RMD_VERSION",
+		.read_fn          = ldb_handler_copy,
+		.write_clear_fn   = ldb_handler_copy,
+		.write_hex_fn     = ldb_handler_copy
 	}
 };
 
