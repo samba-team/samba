@@ -1169,9 +1169,11 @@ static WERROR dsdb_syntax_DN_ldb_to_drsuapi(struct ldb_context *ldb,
 	for (i=0; i < in->num_values; i++) {
 		struct drsuapi_DsReplicaObjectIdentifier3 id3;
 		enum ndr_err_code ndr_err;
-		const DATA_BLOB *guid_blob, *sid_blob;
+		const DATA_BLOB *sid_blob;
 		struct ldb_dn *dn;
 		TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+		NTSTATUS status;
+
 		W_ERROR_HAVE_NO_MEMORY(tmp_ctx);
 
 		out->value_ctr.values[i].blob	= &blobs[i];
@@ -1180,19 +1182,13 @@ static WERROR dsdb_syntax_DN_ldb_to_drsuapi(struct ldb_context *ldb,
 
 		W_ERROR_HAVE_NO_MEMORY(dn);
 
-		guid_blob = ldb_dn_get_extended_component(dn, "GUID");
-
 		ZERO_STRUCT(id3);
 
-		if (guid_blob) {
-			ndr_err = ndr_pull_struct_blob_all(guid_blob, 
-							   tmp_ctx, schema->iconv_convenience, &id3.guid,
-							   (ndr_pull_flags_fn_t)ndr_pull_GUID);
-			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-				NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
-				talloc_free(tmp_ctx);
-				return ntstatus_to_werror(status);
-			}
+		status = dsdb_get_extended_dn_guid(dn, &id3.guid);
+		if (!NT_STATUS_IS_OK(status) &&
+		    !NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			talloc_free(tmp_ctx);
+			return ntstatus_to_werror(status);
 		}
 
 		sid_blob = ldb_dn_get_extended_component(dn, "SID");
@@ -1202,7 +1198,7 @@ static WERROR dsdb_syntax_DN_ldb_to_drsuapi(struct ldb_context *ldb,
 							   tmp_ctx, schema->iconv_convenience, &id3.sid,
 							   (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
 			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-				NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+				status = ndr_map_error2ntstatus(ndr_err);
 				talloc_free(tmp_ctx);
 				return ntstatus_to_werror(status);
 			}
@@ -1212,7 +1208,7 @@ static WERROR dsdb_syntax_DN_ldb_to_drsuapi(struct ldb_context *ldb,
 
 		ndr_err = ndr_push_struct_blob(&blobs[i], blobs, schema->iconv_convenience, &id3, (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+			status = ndr_map_error2ntstatus(ndr_err);
 			talloc_free(tmp_ctx);
 			return ntstatus_to_werror(status);
 		}
@@ -1355,9 +1351,11 @@ static WERROR dsdb_syntax_DN_BINARY_ldb_to_drsuapi(struct ldb_context *ldb,
 	for (i=0; i < in->num_values; i++) {
 		struct drsuapi_DsReplicaObjectIdentifier3Binary id3;
 		enum ndr_err_code ndr_err;
-		const DATA_BLOB *guid_blob, *sid_blob;
+		const DATA_BLOB *sid_blob;
 		struct dsdb_dn *dsdb_dn;
 		TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+		NTSTATUS status;
+
 		W_ERROR_HAVE_NO_MEMORY(tmp_ctx);
 
 		out->value_ctr.values[i].blob	= &blobs[i];
@@ -1369,19 +1367,13 @@ static WERROR dsdb_syntax_DN_BINARY_ldb_to_drsuapi(struct ldb_context *ldb,
 			return ntstatus_to_werror(NT_STATUS_INVALID_PARAMETER);
 		}
 
-		guid_blob = ldb_dn_get_extended_component(dsdb_dn->dn, "GUID");
-
 		ZERO_STRUCT(id3);
 
-		if (guid_blob) {
-			ndr_err = ndr_pull_struct_blob_all(guid_blob, 
-							   tmp_ctx, schema->iconv_convenience, &id3.guid,
-							   (ndr_pull_flags_fn_t)ndr_pull_GUID);
-			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-				NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
-				talloc_free(tmp_ctx);
-				return ntstatus_to_werror(status);
-			}
+		status = dsdb_get_extended_dn_guid(dsdb_dn->dn, &id3.guid);
+		if (!NT_STATUS_IS_OK(status) &&
+		    !NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			talloc_free(tmp_ctx);
+			return ntstatus_to_werror(status);
 		}
 
 		sid_blob = ldb_dn_get_extended_component(dsdb_dn->dn, "SID");
@@ -1391,7 +1383,7 @@ static WERROR dsdb_syntax_DN_BINARY_ldb_to_drsuapi(struct ldb_context *ldb,
 							   tmp_ctx, schema->iconv_convenience, &id3.sid,
 							   (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
 			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-				NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+				status = ndr_map_error2ntstatus(ndr_err);
 				talloc_free(tmp_ctx);
 				return ntstatus_to_werror(status);
 			}
@@ -1404,7 +1396,7 @@ static WERROR dsdb_syntax_DN_BINARY_ldb_to_drsuapi(struct ldb_context *ldb,
 
 		ndr_err = ndr_push_struct_blob(&blobs[i], blobs, schema->iconv_convenience, &id3, (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3Binary);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+			status = ndr_map_error2ntstatus(ndr_err);
 			talloc_free(tmp_ctx);
 			return ntstatus_to_werror(status);
 		}

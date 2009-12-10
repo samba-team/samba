@@ -975,12 +975,8 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 	if (_a && _a->value_ctr.num_values >= 1 \
 	    && _a->value_ctr.values[0].blob \
 	    && _a->value_ctr.values[0].blob->length == 16) { \
-		enum ndr_err_code _ndr_err; \
-		_ndr_err = ndr_pull_struct_blob_all(_a->value_ctr.values[0].blob, \
-						      mem_ctx, s->iconv_convenience, &(p)->elem, \
-						      (ndr_pull_flags_fn_t)ndr_pull_GUID); \
-		if (!NDR_ERR_CODE_IS_SUCCESS(_ndr_err)) { \
-			NTSTATUS _nt_status = ndr_map_error2ntstatus(_ndr_err); \
+		NTSTATUS _nt_status = GUID_from_ndr_blob(_a->value_ctr.values[0].blob, &(p)->elem); \
+		if (!NT_STATUS_IS_OK(_nt_status)) { \
 			return ntstatus_to_werror(_nt_status); \
 		} \
 	} else { \
