@@ -166,14 +166,12 @@ static NTSTATUS samsync_ldb_handle_domain(TALLOC_CTX *mem_ctx,
 		}
 
 		if (state->samsync_state->domain_guid) {
-			enum ndr_err_code ndr_err;
 			struct ldb_val v;
-			ndr_err = ndr_push_struct_blob(&v, msg, NULL, 
-						       state->samsync_state->domain_guid,
-							 (ndr_push_flags_fn_t)ndr_push_GUID);
-			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			NTSTATUS status;
+			status = GUID_to_ndr_blob(state->samsync_state->domain_guid, msg, &v);
+			if (!NT_STATUS_IS_OK(status)) {
 				*error_string = talloc_asprintf(mem_ctx, "ndr_push of domain GUID failed!");
-				return ndr_map_error2ntstatus(ndr_err);
+				return status;
 			}
 			
 			ldb_msg_add_value(msg, "objectGUID", &v, NULL);

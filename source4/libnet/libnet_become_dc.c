@@ -1939,6 +1939,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		struct drsuapi_DsAttributeValue *vs;
 		DATA_BLOB *vd;
 		const struct GUID *v;
+		NTSTATUS status;
 
 		vs = talloc_array(attrs, struct drsuapi_DsAttributeValue, 1);
 		if (composite_nomem(vs, c)) return;
@@ -1948,9 +1949,8 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 
 		v = &s->dest_dsa.invocation_id;
 
-		ndr_err = ndr_push_struct_blob(&vd[0], vd, iconv_convenience, v, (ndr_push_flags_fn_t)ndr_push_GUID);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			c->status = ndr_map_error2ntstatus(ndr_err);
+		c->status = GUID_to_ndr_blob(v, vd, &vd[0]);
+		if (!NT_STATUS_IS_OK(status)) {
 			if (!composite_is_ok(c)) return;
 		}
 
