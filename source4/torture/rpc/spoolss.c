@@ -3352,47 +3352,79 @@ static bool test_EnumPrinterKey(struct torture_context *tctx,
 				const char ***array)
 {
 	struct spoolss_EnumPrinterKey r;
-	uint32_t needed;
-	struct spoolss_StringArray2 key_buffer;
-	uint32_t offered[] = { 0, 512, 1024, 2048 };
+	uint32_t needed = 0;
+	union spoolss_KeyNames key_buffer;
+	int32_t offered[] = { 0, 1, 2, 3, 4, 5, -1, -2, -3, -4, -5, 256, 512, 1024, 2048 };
+	uint32_t _ndr_size;
 	int i;
 
 	r.in.handle = handle;
 	r.in.key_name = key_name;
 	r.out.key_buffer = &key_buffer;
 	r.out.needed = &needed;
+	r.out._ndr_size = &_ndr_size;
 
 	for (i=0; i < ARRAY_SIZE(offered); i++) {
-		r.in.offered = offered[i];
+
+		if (offered[i] < 0 && needed) {
+			if (needed <= 4) {
+				continue;
+			}
+			r.in.offered = needed + offered[i];
+		} else {
+			r.in.offered = offered[i];
+		}
+
+		ZERO_STRUCT(key_buffer);
 
 		torture_comment(tctx, "Testing EnumPrinterKey(%s) with %d offered\n", r.in.key_name, r.in.offered);
 
 		torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_EnumPrinterKey(p, tctx, &r),
 			"failed to call EnumPrinterKey");
 		if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
-			torture_assert(tctx, (key_buffer._ndr_size == 0),
-				talloc_asprintf(tctx, "EnumPrinterKey did not return 0 _ndr_size (but %d), windows clients would abort here!", key_buffer._ndr_size));
+
+			torture_assert(tctx, (_ndr_size == r.in.offered/2),
+				talloc_asprintf(tctx, "EnumPrinterKey size mismatch, _ndr_size %d (expected %d)",
+					_ndr_size, r.in.offered/2));
+
 			r.in.offered = needed;
 			torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_EnumPrinterKey(p, tctx, &r),
 				"failed to call EnumPrinterKey");
 		}
-		torture_assert_werr_ok(tctx, r.out.result,
-			"failed to call EnumPrinterKey");
 
-		torture_assert(tctx, (key_buffer._ndr_size * 2 == r.in.offered),
+		if (offered[i] > 0) {
+			torture_assert_werr_ok(tctx, r.out.result,
+				"failed to call EnumPrinterKey");
+		}
+
+		torture_assert(tctx, (_ndr_size == r.in.offered/2),
 			talloc_asprintf(tctx, "EnumPrinterKey size mismatch, _ndr_size %d (expected %d)",
-				key_buffer._ndr_size, r.in.offered/2));
+				_ndr_size, r.in.offered/2));
 
 		torture_assert(tctx, (*r.out.needed <= r.in.offered),
 			talloc_asprintf(tctx, "EnumPrinterKey size mismatch: needed %d is not <= offered %d", *r.out.needed, r.in.offered));
 
-		torture_assert(tctx, (*r.out.needed <= key_buffer._ndr_size * 2),
-			talloc_asprintf(tctx, "EnumPrinterKey size mismatch: needed %d is not <= _ndr_size %d * 2", *r.out.needed, key_buffer._ndr_size));
+		torture_assert(tctx, (*r.out.needed <= _ndr_size * 2),
+			talloc_asprintf(tctx, "EnumPrinterKey size mismatch: needed %d is not <= _ndr_size %d * 2", *r.out.needed, _ndr_size));
 
+		if (key_buffer.string_array) {
+			uint32_t calc_needed = 0;
+			int s;
+			for (s=0; key_buffer.string_array[s]; s++) {
+				calc_needed += strlen_m_term(key_buffer.string_array[s])*2;
+			}
+			if (!key_buffer.string_array[0]) {
+				calc_needed += 2;
+			}
+			calc_needed += 2;
+
+			torture_assert_int_equal(tctx, *r.out.needed, calc_needed,
+				"EnumPrinterKey unexpected size");
+		}
 	}
 
 	if (array) {
-		*array = key_buffer.string;
+		*array = key_buffer.string_array;
 	}
 
 	return true;
