@@ -351,6 +351,7 @@ sub pointer_type($)
 	return "sptr" if (has_property($e, "sptr"));
 	return "unique" if (has_property($e, "unique"));
 	return "relative" if (has_property($e, "relative"));
+	return "relative_short" if (has_property($e, "relative_short"));
 	return "ignore" if (has_property($e, "ignore"));
 
 	return undef;
@@ -902,6 +903,7 @@ my %property_list = (
 	"unique"		=> ["ELEMENT"],
 	"ignore"		=> ["ELEMENT"],
 	"relative"		=> ["ELEMENT"],
+	"relative_short"	=> ["ELEMENT"],
 	"null_is_ffffffff" => ["ELEMENT"],
 	"relative_base"		=> ["TYPEDEF", "STRUCT", "UNION"],
 
@@ -1059,6 +1061,7 @@ sub ValidElement($)
 		has_property($e, "ptr") or
 		has_property($e, "unique") or
 		has_property($e, "relative") or
+		has_property($e, "relative_short") or
 		has_property($e, "ref"))) {
 		fatal($e, el_name($e) . " : pointer properties on non-pointer element\n");	
 	}
