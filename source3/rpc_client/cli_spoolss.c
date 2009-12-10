@@ -810,11 +810,13 @@ WERROR rpccli_spoolss_enumprinterkey(struct rpc_pipe_client *cli,
 	NTSTATUS status;
 	WERROR werror;
 	uint32_t needed;
-	struct spoolss_StringArray2 _key_buffer;
+	union spoolss_KeyNames _key_buffer;
+	uint32_t _ndr_size;
 
 	status = rpccli_spoolss_EnumPrinterKey(cli, mem_ctx,
 					       handle,
 					       key_name,
+					       &_ndr_size,
 					       &_key_buffer,
 					       offered,
 					       &needed,
@@ -825,13 +827,14 @@ WERROR rpccli_spoolss_enumprinterkey(struct rpc_pipe_client *cli,
 		status = rpccli_spoolss_EnumPrinterKey(cli, mem_ctx,
 						       handle,
 						       key_name,
+						       &_ndr_size,
 						       &_key_buffer,
 						       offered,
 						       &needed,
 						       &werror);
 	}
 
-	*key_buffer = _key_buffer.string;
+	*key_buffer = _key_buffer.string_array;
 
 	return werror;
 }

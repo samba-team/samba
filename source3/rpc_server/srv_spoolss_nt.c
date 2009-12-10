@@ -8786,10 +8786,18 @@ WERROR _spoolss_EnumPrinterKey(pipes_struct *p,
 		goto done;
 	}
 
-	array = talloc_zero_array(r->out.key_buffer, const char *, num_keys + 1);
+	array = talloc_zero_array(r->out.key_buffer, const char *, num_keys + 2);
 	if (!array) {
 		result = WERR_NOMEM;
 		goto done;
+	}
+
+	if (!num_keys) {
+		array[0] = talloc_strdup(array, "");
+		if (!array[0]) {
+			result = WERR_NOMEM;
+			goto done;
+		}
 	}
 
 	for (i=0; i < num_keys; i++) {
@@ -8809,13 +8817,14 @@ WERROR _spoolss_EnumPrinterKey(pipes_struct *p,
 		goto done;
 	}
 
+	*r->out._ndr_size = r->in.offered / 2;
 	*r->out.needed = blob.length;
 
 	if (r->in.offered < *r->out.needed) {
 		result = WERR_MORE_DATA;
 	} else {
 		result = WERR_OK;
-		r->out.key_buffer->string = array;
+		r->out.key_buffer->string_array = array;
 	}
 
  done:
