@@ -146,8 +146,7 @@ static int ldif_read_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 		return -1;
 	}
 
-	status = ndr_push_struct_blob(out, mem_ctx, &guid,
-				      (ndr_push_flags_fn_t)ndr_push_GUID);
+	status = GUID_to_ndr_blob(&guid, mem_ctx, out);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
