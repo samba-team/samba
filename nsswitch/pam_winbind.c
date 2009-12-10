@@ -807,8 +807,7 @@ static int wbc_auth_error_to_pam_error(struct pwb_context *ctx,
 	return pam_winbind_request_log(ctx, ret, username, fn);
 }
 
-/* PAM_RADIO_TYPE is linux-only. */
-#ifdef LINUX
+#if defined(HAVE_PAM_RADIO_TYPE)
 static bool _pam_winbind_change_pwd(struct pwb_context *ctx)
 {
 	struct pam_message msg, *pmsg;
@@ -845,7 +844,6 @@ static bool _pam_winbind_change_pwd(struct pwb_context *ctx)
 	return false;
 }
 #endif
-
 
 /**
  * send a password expiry message if required
