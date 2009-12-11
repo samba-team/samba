@@ -815,4 +815,70 @@ int32_t ctdb_control_persistent_store(struct ctdb_context *ctdb,
 	return ctdb_control_trans2_commit(ctdb, c, ctdb_marshall_finish(m), async_reply);
 }
 
+static int32_t ctdb_get_db_seqnum(struct ctdb_context *ctdb,
+				  uint32_t db_id,
+				  uint64_t *seqnum)
+{
+	int32_t ret;
+	struct ctdb_db_context *ctdb_db;
+	const char *keyname = CTDB_DB_SEQNUM_KEY;
+	TDB_DATA key;
+	TDB_DATA data;
+	TALLOC_CTX *mem_ctx = talloc_new(ctdb);
 
+	ctdb_db = find_ctdb_db(ctdb, db_id);
+	if (!ctdb_db) {
+		DEBUG(DEBUG_ERR,(__location__ " Unknown db 0x%08x\n", db_id));
+		ret = -1;
+		goto done;
+	}
+
+	key.dptr = (uint8_t *)discard_const(keyname);
+	key.dsize = strlen(keyname) + 1;
+
+	ret = (int32_t)ctdb_ltdb_fetch(ctdb_db, key, NULL, mem_ctx, &data);
+	if (ret != 0) {
+		goto done;
+	}
+
+	if (data.dsize != sizeof(uint64_t)) {
+		*seqnum = 0;
+		goto done;
+	}
+
+	*seqnum = *(uint64_t *)data.dptr;
+
+done:
+	talloc_free(mem_ctx);
+	return ret;
+}
+
+/**
+ * Get the sequence number of a persistent database.
+ */
+int32_t ctdb_control_get_db_seqnum(struct ctdb_context *ctdb,
+				   TDB_DATA indata,
+				   TDB_DATA *outdata)
+{
+	uint32_t db_id;
+	int32_t ret;
+	uint64_t seqnum;
+
+	db_id = *(uint32_t *)indata.dptr;
+	ret = ctdb_get_db_seqnum(ctdb, db_id, &seqnum);
+	if (ret != 0) {
+		goto done;
+	}
+
+	outdata->dsize = sizeof(uint64_t);
+	outdata->dptr = (uint8_t *)talloc_zero(outdata, uint64_t);
+	if (outdata->dptr == NULL) {
+		ret = -1;
+		goto done;
+	}
+
+	*(outdata->dptr) = seqnum;
+
+done:
+	return ret;
+}

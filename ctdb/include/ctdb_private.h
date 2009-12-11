@@ -626,6 +626,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_GET_LOG		 = 117,
 		    CTDB_CONTROL_CLEAR_LOG		 = 118,
 		    CTDB_CONTROL_TRANS3_COMMIT           = 119,
+		    CTDB_CONTROL_GET_DB_SEQNUM           = 120,
 };	
 
 /*
@@ -1536,5 +1537,9 @@ struct ctdb_log_state *ctdb_fork_with_logging(TALLOC_CTX *mem_ctx,
 
 int32_t ctdb_control_process_exists(struct ctdb_context *ctdb, pid_t pid);
 struct ctdb_client *ctdb_find_client_by_pid(struct ctdb_context *ctdb, pid_t pid);
+
+int32_t ctdb_control_get_db_seqnum(struct ctdb_context *ctdb,
+				   TDB_DATA indata,
+				   TDB_DATA *outdata);
 
 #endif
