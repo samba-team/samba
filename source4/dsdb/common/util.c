@@ -400,7 +400,7 @@ struct GUID samdb_result_guid(const struct ldb_message *msg, const char *attr)
 	NTSTATUS status;
 
 	v = ldb_msg_find_ldb_val(msg, attr);
-	if (!v) return guid;
+	if (!v) return GUID_zero();
 
 	status = GUID_from_ndr_blob(v, &guid);
 	if (!NT_STATUS_IS_OK(status)) {
