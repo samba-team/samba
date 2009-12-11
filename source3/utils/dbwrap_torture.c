@@ -299,6 +299,10 @@ int main(int argc, const char *argv[])
 		tdb_flags = TDB_DEFAULT;
 	}
 
+	if (no_trans) {
+		tdb_flags |= TDB_CLEAR_IF_FIRST;
+	}
+
 	db = db_open(mem_ctx, db_name, 0, tdb_flags,  O_RDWR | O_CREAT, 0644);
 
 	if (db == NULL) {
