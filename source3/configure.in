@@ -5296,40 +5296,6 @@ AC_CHECK_HEADERS(ctdb.h ctdb_private.h,,,[
 #include <ctdb.h>
 ])
 
-AC_HAVE_DECL(CTDB_CONTROL_TRANS2_COMMIT_RETRY,[
-#include "confdefs.h"
-#define NO_CONFIG_H
-#include "replace.h"
-#include "system/wait.h"
-#include "system/network.h"
-#include <talloc.h>
-#include <tdb.h>
-#include <ctdb.h>
-#include <ctdb_private.h>
-])
-if test x"$ac_cv_have_CTDB_CONTROL_TRANS2_COMMIT_RETRY_decl" = x"yes"; then
-	ctdb_broken=no
-else
-	ctdb_broken="missing transaction support"
-fi
-
-AC_HAVE_DECL(CTDB_CONTROL_TRANS2_ACTIVE,[
-#include "confdefs.h"
-#define NO_CONFIG_H
-#include "replace.h"
-#include "system/wait.h"
-#include "system/network.h"
-#include <talloc.h>
-#include <tdb.h>
-#include <ctdb.h>
-#include <ctdb_private.h>
-])
-if test x"$ac_cv_have_CTDB_CONTROL_TRANS2_ACTIVE_decl" = x"yes"; then
-	ctdb_broken=no
-else
-	ctdb_broken="transaction support too old"
-fi
-
 AC_HAVE_DECL(CTDB_CONTROL_TRANS3_COMMIT,[
 #include "confdefs.h"
 #define NO_CONFIG_H
@@ -5344,7 +5310,7 @@ AC_HAVE_DECL(CTDB_CONTROL_TRANS3_COMMIT,[
 if test x"$ac_cv_have_CTDB_CONTROL_TRANS3_COMMIT_decl" = x"yes"; then
 	ctdb_broken=no
 else
-	ctdb_broken="transaction support too old"
+	ctdb_broken="ctdb transaction support missing or too old"
 fi
 
 # in ctdb 1.0.57 ctdb_control_tcp was temparary renamed to ctdb_tcp_client
