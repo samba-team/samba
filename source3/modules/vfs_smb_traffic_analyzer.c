@@ -37,16 +37,35 @@ enum vfs_id {
         vfs_id_write,
         vfs_id_pwrite,
 	/* end of protocol version 1 identifiers.		*/
-	vfs_id_mkdir
+	vfs_id_mkdir,
+	vfs_id_rmdir,
+	vfs_id_rename,
+	vfs_id_chdir
 };
 
 /* Specific data sets for the VFS functions.				*/
 
-struct mkdir_data {
+typedef struct mkdir_data {
 	const char *path;
 	mode_t mode;
 	int result;
-};
+} t_mkdir;
+
+typedef struct rmdir_data {
+	const char *path;
+	int result;
+} t_rmdir;
+
+typedef struct rename_data {
+	const char *src;
+	const char *dst;
+	int result;
+} t_rename;
+
+typedef struct chdir_data {
+	const char *path;
+	int result;
+} t_chdir;
 
 /* rw_data used for read/write/pread/pwrite 				*/
 struct rw_data {
@@ -331,15 +350,35 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 
 		switch( vfs_operation ) {
 			case vfs_id_mkdir: ;
-				struct mkdir_data *s_data = \
-					(struct mkdir_data *) data;
 				str = smb_traffic_analyzer_create_string( tm, \
 					seconds, handle, username, \
-					3, s_data->path, \
+					3, ((t_mkdir *) data)->path, \
 					talloc_asprintf( talloc_tos(), "%u", \
-						s_data->mode), \
+						((t_mkdir *) data)->mode), \
 					talloc_asprintf( talloc_tos(), "%u", \
-						s_data->result ));
+						((t_mkdir *) data)->result ));
+				break;
+			case vfs_id_rmdir: ;
+				str = smb_traffic_analyzer_create_string( tm, \
+					seconds, handle, username, \
+					2, ((t_rmdir *) data)->path, \
+					talloc_asprintf( talloc_tos(), "%u", \
+						((t_rmdir *) data)->result ));
+				break;
+			case vfs_id_rename: ;
+				str = smb_traffic_analyzer_create_string( tm, \
+					seconds, handle, username, \
+					3, ((t_rename *) data)->src, \
+					((t_rename *) data)->dst,
+					talloc_asprintf(talloc_tos(), "%u", \
+						((t_rename *) data)->result));
+				break;
+			case vfs_id_chdir: ;
+				str = smb_traffic_analyzer_create_string( tm, \
+					seconds, handle, username, \
+					2, ((t_chdir *) data)->path, \
+					talloc_asprintf(talloc_tos(), "%u", \
+						((t_chdir *) data)->result));
 				break;
 			default:
 				DEBUG(1, ("smb_traffic_analyzer: error! "
@@ -463,6 +502,43 @@ static int smb_traffic_analyzer_connect(struct vfs_handle_struct *handle,
 }
 
 /* VFS Functions */
+static int smb_traffic_analyzer_chdir(vfs_handle_struct *handle, \
+			const char *path)
+{
+	struct chdir_data s_data;
+	s_data.result = SMB_VFS_NEXT_CHDIR(handle, path);
+	s_data.path = path;
+	DEBUG(10, ("smb_traffic_analyzer_chdir: CHDIR: %s\n", path));
+	smb_traffic_analyzer_send_data(handle, &s_data, vfs_id_chdir);
+	return s_data.result;
+}
+
+static int smb_traffic_analyzer_rename(vfs_handle_struct *handle, \
+		const struct smb_filename *smb_fname_src,
+		const struct smb_filename *smb_fname_dst)
+{
+	struct rename_data s_data;
+	s_data.result = SMB_VFS_NEXT_RENAME(handle, smb_fname_src, \
+		smb_fname_dst);
+	s_data.src = smb_fname_src->base_name;
+	s_data.dst = smb_fname_dst->base_name;
+	DEBUG(10, ("smb_traffic_analyzer_rename: RENAME: %s / %s\n",
+		smb_fname_src->base_name,
+		smb_fname_dst->base_name));
+	smb_traffic_analyzer_send_data(handle, &s_data, vfs_id_rename);
+	return s_data.result;
+}
+
+static int smb_traffic_analyzer_rmdir(vfs_handle_struct *handle, \
+			const char *path)
+{
+	struct rmdir_data s_data;
+	s_data.result = SMB_VFS_NEXT_RMDIR(handle, path);
+	s_data.path = path;
+	DEBUG(10, ("smb_traffic_analyzer_rmdir: RMDIR: %s\n", path));
+	smb_traffic_analyzer_send_data(handle, &s_data, vfs_id_rmdir);
+	return s_data.result;
+}
 
 static int smb_traffic_analyzer_mkdir(vfs_handle_struct *handle, \
 			const char *path, mode_t mode)
@@ -549,7 +625,9 @@ static struct vfs_fn_pointers vfs_smb_traffic_analyzer_fns = {
 	.pread = smb_traffic_analyzer_pread,
 	.write = smb_traffic_analyzer_write,
 	.pwrite = smb_traffic_analyzer_pwrite,
-	.mkdir = smb_traffic_analyzer_mkdir
+	.mkdir = smb_traffic_analyzer_mkdir,
+	.rename = smb_traffic_analyzer_rename,
+	.chdir = smb_traffic_analyzer_chdir
 };
 
 /* Module initialization */
