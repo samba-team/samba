@@ -577,8 +577,8 @@ static struct db_record *db_ctdb_fetch_locked_persistent(struct db_ctdb_ctx *ctx
 /*
   stores a record inside a transaction
  */
-static int db_ctdb_transaction_store(struct db_ctdb_transaction_handle *h, 
-				     TDB_DATA key, TDB_DATA data)
+static NTSTATUS db_ctdb_transaction_store(struct db_ctdb_transaction_handle *h,
+					  TDB_DATA key, TDB_DATA data)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(h);
 	TDB_DATA rec;
@@ -608,7 +608,7 @@ static int db_ctdb_transaction_store(struct db_ctdb_transaction_handle *h,
 				   data.dsize) == 0) {
 				SAFE_FREE(rec.dptr);
 				talloc_free(tmp_ctx);
-				return 0;
+				return NT_STATUS_OK;
 			}
 		}
 		SAFE_FREE(rec.dptr);
@@ -623,18 +623,18 @@ static int db_ctdb_transaction_store(struct db_ctdb_transaction_handle *h,
 		DEBUG(0,(__location__ " Failed to add to marshalling "
 			 "record\n"));
 		talloc_free(tmp_ctx);
-		return -1;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	h->m_write = db_ctdb_marshall_add(h, h->m_write, h->ctx->db_id, 0, key, &header, data);
 	if (h->m_write == NULL) {
 		DEBUG(0,(__location__ " Failed to add to marshalling record\n"));
 		talloc_free(tmp_ctx);
-		return -1;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	talloc_free(tmp_ctx);
-	return 0;
+	return NT_STATUS_OK;
 }
 
 
@@ -645,13 +645,10 @@ static NTSTATUS db_ctdb_store_transaction(struct db_record *rec, TDB_DATA data, 
 {
 	struct db_ctdb_transaction_handle *h = talloc_get_type_abort(
 		rec->private_data, struct db_ctdb_transaction_handle);
-	int ret;
+	NTSTATUS status;
 
-	ret = db_ctdb_transaction_store(h, rec->key, data);
-	if (ret != 0) {
-		return tdb_error_to_ntstatus(h->ctx->wtdb->tdb);
-	}
-	return NT_STATUS_OK;
+	status = db_ctdb_transaction_store(h, rec->key, data);
+	return status;
 }
 
 /* 
@@ -661,13 +658,10 @@ static NTSTATUS db_ctdb_delete_transaction(struct db_record *rec)
 {
 	struct db_ctdb_transaction_handle *h = talloc_get_type_abort(
 		rec->private_data, struct db_ctdb_transaction_handle);
-	int ret;
+	NTSTATUS status;
 
-	ret = db_ctdb_transaction_store(h, rec->key, tdb_null);
-	if (ret != 0) {
-		return tdb_error_to_ntstatus(h->ctx->wtdb->tdb);
-	}
-	return NT_STATUS_OK;
+	status =  db_ctdb_transaction_store(h, rec->key, tdb_null);
+	return status;
 }
 
 /*
