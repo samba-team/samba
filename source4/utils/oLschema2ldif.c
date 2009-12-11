@@ -342,8 +342,6 @@ static struct ldb_message *process_entry(TALLOC_CTX *mem_ctx, const char *entry)
 	uint8_t digest[SHA256_DIGEST_LENGTH];
 
 	struct GUID guid;
-	struct ldb_val schemaIdGuid;
-	enum ndr_err_code ndr_err;
 
 	bool isAttribute = false;
 	bool single_valued = false;
