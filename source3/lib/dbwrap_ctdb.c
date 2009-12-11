@@ -389,6 +389,9 @@ static bool pull_newest_from_marshall_buffer(struct ctdb_marshall_buffer *buf,
 		return false;
 	}
 
+	ZERO_STRUCT(h);
+	ZERO_STRUCT(data);
+
 	/*
 	 * Walk the list of records written during this
 	 * transaction. If we want to read one we have already
