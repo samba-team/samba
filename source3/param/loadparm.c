@@ -758,7 +758,7 @@ static const struct enum_list enum_ldap_deref[] = {
 	{SAMBA_LDAP_DEREF_SEARCHING, "searching"},
 	{SAMBA_LDAP_DEREF_FINDING, "finding"},
 	{SAMBA_LDAP_DEREF_ALWAYS, "always"},
-	{-1, "default"}
+	{-1, "auto"}
 };
 
 static const struct enum_list enum_ldap_passwd_sync[] = {
