@@ -685,9 +685,13 @@ static NTSTATUS db_ctdb_fetch_db_seqnum_from_db(struct db_ctdb_ctx *db,
 	key.dsize = strlen(keyname) + 1;
 
 	status = db_ctdb_ltdb_fetch(db, key, &header, mem_ctx, &data);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND))
+	{
 		goto done;
 	}
+
+	status = NT_STATUS_OK;
 
 	if (data.dsize != sizeof(uint64_t)) {
 		*seqnum = 0;
