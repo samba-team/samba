@@ -374,10 +374,18 @@ fcc_open(krb5_context context,
     fd = open(filename, flags, mode);
     if(fd < 0) {
 	char buf[128];
+	char *estr;
 	ret = errno;
-	strerror_r(ret, buf, sizeof(buf));
+	buf[0] = 0;
+	estr = (char *)strerror_r(ret, buf, sizeof(buf));
+	if (buf[0] != 0) {
+		/* we've got the BSD/XSI strerror_r, and it use the
+		 * buffer. Otherwise we have the GNU strerror_r, and
+		 * it used a static string. Ain't standards great? */
+		estr = buf;
+	}
 	krb5_set_error_message(context, ret, N_("open(%s): %s", "file, error"),
-			       filename, buf);
+			       filename, estr);
 	return ret;
     }
     rk_cloexec(fd);
