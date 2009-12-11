@@ -7155,6 +7155,135 @@ fail:
 	return result;
 }
 
+static bool dbtrans_inc(struct db_context *db)
+{
+	struct db_record *rec;
+	uint32_t *val;
+	bool ret = false;
+	NTSTATUS status;
+
+	rec = db->fetch_locked(db, db, string_term_tdb_data("transtest"));
+	if (rec == NULL) {
+		printf(__location__ "fetch_lock failed\n");
+		return false;
+	}
+
+	if (rec->value.dsize != sizeof(uint32_t)) {
+		printf(__location__ "value.dsize = %d\n",
+		       (int)rec->value.dsize);
+		goto fail;
+	}
+
+	val = (uint32_t *)rec->value.dptr;
+	*val += 1;
+
+	status = rec->store(rec, make_tdb_data((uint8_t *)val,
+					       sizeof(uint32_t)),
+			    0);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf(__location__ "store failed: %s\n",
+		       nt_errstr(status));
+		goto fail;
+	}
+
+	ret = true;
+fail:
+	TALLOC_FREE(rec);
+	return ret;
+}
+
+static bool run_local_dbtrans(int dummy)
+{
+	struct db_context *db;
+	struct db_record *rec;
+	NTSTATUS status;
+	uint32_t initial;
+	int res;
+
+	db = db_open(talloc_tos(), "transtest.tdb", 0, TDB_DEFAULT,
+		     O_RDWR|O_CREAT, 0600);
+	if (db == NULL) {
+		printf("Could not open transtest.db\n");
+		return false;
+	}
+
+	res = db->transaction_start(db);
+	if (res == -1) {
+		printf(__location__ "transaction_start failed\n");
+		return false;
+	}
+
+	rec = db->fetch_locked(db, db, string_term_tdb_data("transtest"));
+	if (rec == NULL) {
+		printf(__location__ "fetch_lock failed\n");
+		return false;
+	}
+
+	if (rec->value.dptr == NULL) {
+		initial = 0;
+		status = rec->store(
+			rec, make_tdb_data((uint8_t *)&initial,
+					   sizeof(initial)),
+			0);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf(__location__ "store returned %s\n",
+			       nt_errstr(status));
+			return false;
+		}
+	}
+
+	TALLOC_FREE(rec);
+
+	res = db->transaction_commit(db);
+	if (res == -1) {
+		printf(__location__ "transaction_commit failed\n");
+		return false;
+	}
+
+	while (true) {
+		uint32_t val, val2;
+		int i;
+
+		res = db->transaction_start(db);
+		if (res == -1) {
+			printf(__location__ "transaction_start failed\n");
+			break;
+		}
+
+		if (!dbwrap_fetch_uint32(db, "transtest", &val)) {
+			printf(__location__ "dbwrap_fetch_uint32 failed\n");
+			break;
+		}
+
+		for (i=0; i<10; i++) {
+			if (!dbtrans_inc(db)) {
+				return false;
+			}
+		}
+
+		if (!dbwrap_fetch_uint32(db, "transtest", &val2)) {
+			printf(__location__ "dbwrap_fetch_uint32 failed\n");
+			break;
+		}
+
+		if (val2 != val + 10) {
+			printf(__location__ "val=%d, val2=%d\n",
+			       (int)val, (int)val2);
+			break;
+		}
+
+		printf("val2=%d\r", val2);
+
+		res = db->transaction_commit(db);
+		if (res == -1) {
+			printf(__location__ "transaction_commit failed\n");
+			break;
+		}
+	}
+
+	TALLOC_FREE(db);
+	return true;
+}
 
 static double create_procs(bool (*fn)(int), bool *result)
 {
@@ -7333,6 +7462,7 @@ static struct {
 	{ "LOCAL-STREAM-NAME", run_local_stream_name, 0},
 	{ "LOCAL-WBCLIENT", run_local_wbclient, 0},
 	{ "LOCAL-dom_sid_parse", run_local_dom_sid_parse, 0},
+	{ "LOCAL-DBTRANS", run_local_dbtrans, 0},
 	{NULL, NULL, 0}};
 
 
