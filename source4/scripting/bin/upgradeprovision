@@ -141,10 +141,10 @@ if setup_dir is None:
 session = system_session()
 
 # simple helper to allow back and forth rename
-def identic_rename(ldb,dn):
+def identic_rename(ldbobj,dn):
 	(before,sep,after)=str(dn).partition('=')
-	ldb.rename(dn,ldb.Dn(ldb,"%s=foo%s"%(before,after)))
-	ldb.rename(ldb.Dn(ldb,"%s=foo%s"%(before,after)),dn)
+	ldbobj.rename(dn,ldb.Dn(ldbobj,"%s=foo%s"%(before,after)))
+	ldbobj.rename(ldb.Dn(ldbobj,"%s=foo%s"%(before,after)),dn)
 
 # Create an array of backlinked attributes
 def populate_backlink(newpaths,creds,session,schemadn):
@@ -197,16 +197,16 @@ def guess_names_from_current_provision(credentials,session_info,paths):
 
 	# That's a bit simplistic but it's ok as long as we have only 3 partitions
 	attrs2 = ["defaultNamingContext", "schemaNamingContext","configurationNamingContext","rootDomainNamingContext"]
-	res2 = samdb.search(expression="(objectClass=*)",base="", scope=SCOPE_BASE, attrs=attrs2)
+	current = samdb.search(expression="(objectClass=*)",base="", scope=SCOPE_BASE, attrs=attrs2)
 
-	names.configdn = res2[0]["configurationNamingContext"]
+	names.configdn = current[0]["configurationNamingContext"]
 	configdn = str(names.configdn)
-	names.schemadn = res2[0]["schemaNamingContext"]
-	if not (ldb.Dn(samdb, basedn) == (ldb.Dn(samdb, res2[0]["defaultNamingContext"][0]))):
-		raise ProvisioningError(("basedn in %s (%s) and from %s (%s) is not the same ..." % (paths.samdb, str(res2[0]["defaultNamingContext"][0]), paths.smbconf, basedn)))
+	names.schemadn = current[0]["schemaNamingContext"]
+	if not (ldb.Dn(samdb, basedn) == (ldb.Dn(samdb, current[0]["defaultNamingContext"][0]))):
+		raise ProvisioningError(("basedn in %s (%s) and from %s (%s) is not the same ..." % (paths.samdb, str(current[0]["defaultNamingContext"][0]), paths.smbconf, basedn)))
 
-	names.domaindn=res2[0]["defaultNamingContext"]
-	names.rootdn=res2[0]["rootDomainNamingContext"]
+	names.domaindn=current[0]["defaultNamingContext"]
+	names.rootdn=current[0]["rootDomainNamingContext"]
 	# default site name
 	attrs3 = ["cn"]
 	res3= samdb.search(expression="(objectClass=*)",base="CN=Sites,"+configdn, scope=SCOPE_ONELEVEL, attrs=attrs3)
@@ -412,28 +412,28 @@ def update_secrets(newpaths,paths,creds,session):
 	message(SIMPLE,"update secrets.ldb")
 	newsecrets_ldb = Ldb(newpaths.secrets, session_info=session, credentials=creds,lp=lp)
 	secrets_ldb = Ldb(paths.secrets, session_info=session, credentials=creds,lp=lp, options=["modules:samba_secrets"])
-	res = newsecrets_ldb.search(expression="dn=@MODULES",base="", scope=SCOPE_SUBTREE)
-	res2 = secrets_ldb.search(expression="dn=@MODULES",base="", scope=SCOPE_SUBTREE)
-	delta = secrets_ldb.msg_diff(res2[0],res[0])
-	delta.dn = res2[0].dn
+	reference = newsecrets_ldb.search(expression="dn=@MODULES",base="", scope=SCOPE_SUBTREE)
+	current = secrets_ldb.search(expression="dn=@MODULES",base="", scope=SCOPE_SUBTREE)
+	delta = secrets_ldb.msg_diff(current[0],reference[0])
+	delta.dn = current[0].dn
 	secrets_ldb.modify(delta)
 
 	newsecrets_ldb = Ldb(newpaths.secrets, session_info=session, credentials=creds,lp=lp)
 	secrets_ldb = Ldb(paths.secrets, session_info=session, credentials=creds,lp=lp)
-	res = newsecrets_ldb.search(expression="objectClass=top",base="", scope=SCOPE_SUBTREE,attrs=["dn"])
-	res2 = secrets_ldb.search(expression="objectClass=top",base="", scope=SCOPE_SUBTREE,attrs=["dn"])
+	reference = newsecrets_ldb.search(expression="objectClass=top",base="", scope=SCOPE_SUBTREE,attrs=["dn"])
+	current = secrets_ldb.search(expression="objectClass=top",base="", scope=SCOPE_SUBTREE,attrs=["dn"])
 	hash_new = {}
 	hash = {}
 	listMissing = []
 	listPresent = []
 
 	empty = ldb.Message()
-	for i in range(0,len(res)):
-		hash_new[str(res[i]["dn"]).lower()] = res[i]["dn"]
+	for i in range(0,len(reference)):
+		hash_new[str(reference[i]["dn"]).lower()] = reference[i]["dn"]
 
 	# Create a hash for speeding the search of existing object in the current provision
-	for i in range(0,len(res2)):
-		hash[str(res2[i]["dn"]).lower()] = res2[i]["dn"]
+	for i in range(0,len(current)):
+		hash[str(current[i]["dn"]).lower()] = current[i]["dn"]
 
 	for k in hash_new.keys():
 		if not hash.has_key(k):
@@ -441,21 +441,21 @@ def update_secrets(newpaths,paths,creds,session):
 		else:
 			listPresent.append(hash_new[k])
 	for entry in listMissing:
-		res = newsecrets_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
-		res2 = secrets_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
-		delta = secrets_ldb.msg_diff(empty,res[0])
+		reference = newsecrets_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
+		current = secrets_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
+		delta = secrets_ldb.msg_diff(empty,reference[0])
 		for att in hashAttrNotCopied.keys():
 			delta.remove(att)
-		message(CHANGE,"Entry %s is missing from secrets.ldb"%res[0].dn)
+		message(CHANGE,"Entry %s is missing from secrets.ldb"%reference[0].dn)
 		for att in delta:
 			message(CHANGE," Adding attribute %s"%att)
-		delta.dn = res[0].dn
+		delta.dn = reference[0].dn
 		secrets_ldb.add(delta)
 
 	for entry in listPresent:
-		res = newsecrets_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
-		res2 = secrets_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
-		delta = secrets_ldb.msg_diff(res2[0],res[0])
+		reference = newsecrets_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
+		current = secrets_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
+		delta = secrets_ldb.msg_diff(current[0],reference[0])
 		i=0
 		for att in hashAttrNotCopied.keys():
 			delta.remove(att)
@@ -463,25 +463,25 @@ def update_secrets(newpaths,paths,creds,session):
 			i = i + 1
 
 			if att == "name":
-				message(CHANGE,"Found attribute name on  %s, must rename the DN "%(res2[0].dn))
-				identic_rename(secrets_ldb,res[0].dn)
+				message(CHANGE,"Found attribute name on  %s, must rename the DN "%(current[0].dn))
+				identic_rename(secrets_ldb,reference[0].dn)
 			else:
 				delta.remove(att)
 
 
 	for entry in listPresent:
-		res = newsecrets_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
-		res2 = secrets_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
-		delta = secrets_ldb.msg_diff(res2[0],res[0])
+		reference = newsecrets_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
+		current = secrets_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
+		delta = secrets_ldb.msg_diff(current[0],reference[0])
 		i=0
 		for att in hashAttrNotCopied.keys():
 			delta.remove(att)
 		for att in delta:
 			i = i + 1
 			if att != "dn":
-				message(CHANGE," Adding/Changing attribute %s to %s"%(att,res2[0].dn))
+				message(CHANGE," Adding/Changing attribute %s to %s"%(att,current[0].dn))
 
-		delta.dn = res2[0].dn
+		delta.dn = current[0].dn
 		secrets_ldb.modify(delta)
 
 
@@ -495,27 +495,27 @@ def check_diff_name(newpaths,paths,creds,session,basedn,names,ischema):
 	hashallSD = {}
 	listMissing = []
 	listPresent = []
-	res = []
-	res2 = []
+	reference = []
+	current = []
 	# Connect to the reference provision and get all the attribute in the partition referred by name
 	newsam_ldb = Ldb(newpaths.samdb, session_info=session, credentials=creds,lp=lp)
 	sam_ldb = Ldb(paths.samdb, session_info=session, credentials=creds,lp=lp, options=["modules:samba_dsdb"])
 	sam_ldb.transaction_start()
 	if ischema:
-		res = newsam_ldb.search(expression="objectClass=*",base=basedn, scope=SCOPE_SUBTREE,attrs=["dn"])
-		res2 = sam_ldb.search(expression="objectClass=*",base=basedn, scope=SCOPE_SUBTREE,attrs=["dn"])
+		reference = newsam_ldb.search(expression="objectClass=*",base=basedn, scope=SCOPE_SUBTREE,attrs=["dn"])
+		current = sam_ldb.search(expression="objectClass=*",base=basedn, scope=SCOPE_SUBTREE,attrs=["dn"])
 	else:
-		res = newsam_ldb.search(expression="objectClass=*",base=basedn, scope=SCOPE_SUBTREE,attrs=["dn"],controls=["search_options:1:2"])
-		res2 = sam_ldb.search(expression="objectClass=*",base=basedn, scope=SCOPE_SUBTREE,attrs=["dn"],controls=["search_options:1:2"])
+		reference = newsam_ldb.search(expression="objectClass=*",base=basedn, scope=SCOPE_SUBTREE,attrs=["dn"],controls=["search_options:1:2"])
+		current = sam_ldb.search(expression="objectClass=*",base=basedn, scope=SCOPE_SUBTREE,attrs=["dn"],controls=["search_options:1:2"])
 
 	sam_ldb.transaction_commit()
 	# Create a hash for speeding the search of new object
-	for i in range(0,len(res)):
-		hash_new[str(res[i]["dn"]).lower()] = res[i]["dn"]
+	for i in range(0,len(reference)):
+		hash_new[str(reference[i]["dn"]).lower()] = reference[i]["dn"]
 
 	# Create a hash for speeding the search of existing object in the current provision
-	for i in range(0,len(res2)):
-		hash[str(res2[i]["dn"]).lower()] = res2[i]["dn"]
+	for i in range(0,len(current)):
+		hash[str(current[i]["dn"]).lower()] = current[i]["dn"]
 
 	for k in hash_new.keys():
 		if not hash.has_key(k):
@@ -548,8 +548,8 @@ def check_diff_name(newpaths,paths,creds,session,basedn,names,ischema):
 	empty = ldb.Message()
 	message(SIMPLE,"There are %d missing objects"%(len(listMissing)))
 	for dn in listMissing:
-		res = newsam_ldb.search(expression="dn=%s"%(str(dn)),base=basedn, scope=SCOPE_SUBTREE,controls=["search_options:1:2"])
-		delta = sam_ldb.msg_diff(empty,res[0])
+		reference = newsam_ldb.search(expression="dn=%s"%(str(dn)),base=basedn, scope=SCOPE_SUBTREE,controls=["search_options:1:2"])
+		delta = sam_ldb.msg_diff(empty,reference[0])
 		for att in hashAttrNotCopied.keys():
 			delta.remove(att)
 		for att in backlinked:
@@ -560,17 +560,14 @@ def check_diff_name(newpaths,paths,creds,session,basedn,names,ischema):
 
 	changed = 0
 	for dn in listPresent:
-		res = newsam_ldb.search(expression="dn=%s"%(str(dn)),base=basedn, scope=SCOPE_SUBTREE,controls=["search_options:1:2"])
-		res2 = sam_ldb.search(expression="dn=%s"%(str(dn)),base=basedn, scope=SCOPE_SUBTREE,controls=["search_options:1:2"])
-		if ((str(res2[0].dn) != str(res[0].dn)) and (str(res2[0].dn).upper() == str(res[0].dn).upper())):
-			message(CHANGE,"Name are the same but case change, let's rename %s to %s"%(str(res2[0].dn),str(res[0].dn)))
-			(before,sep,after)=str(res2[0].dn).partition('=')
-			sam_ldb.rename(res2[0].dn,ldb.Dn(sam_ldb,"%s=foo%s"%(before,after)))
-			sam_ldb.rename(ldb.Dn(sam_ldb,"%s=foo%s"%(before,after)),res[0].dn)
+		reference = newsam_ldb.search(expression="dn=%s"%(str(dn)),base=basedn, scope=SCOPE_SUBTREE,controls=["search_options:1:2"])
+		current = sam_ldb.search(expression="dn=%s"%(str(dn)),base=basedn, scope=SCOPE_SUBTREE,controls=["search_options:1:2"])
+		if ((str(current[0].dn) != str(reference[0].dn)) and (str(current[0].dn).upper() == str(reference[0].dn).upper())):
+			message(CHANGE,"Name are the same but case change, let's rename %s to %s"%(str(current[0].dn),str(reference[0].dn)))
+			identic_rename(sam_ldb,reference[0].dn)
+			current = sam_ldb.search(expression="dn=%s"%(str(dn)),base=basedn, scope=SCOPE_SUBTREE,controls=["search_options:1:2"])
 
-			res = newsam_ldb.search(expression="dn=%s"%(str(dn)),base=basedn, scope=SCOPE_SUBTREE,controls=["search_options:1:2"])
-
-		delta = sam_ldb.msg_diff(res2[0],res[0])
+		delta = sam_ldb.msg_diff(current[0],reference[0])
 		for att in hashAttrNotCopied.keys():
 			delta.remove(att)
 		for att in backlinked:
@@ -585,20 +582,20 @@ def check_diff_name(newpaths,paths,creds,session,basedn,names,ischema):
 			if att == "name":
 				delta.remove(att)
 				continue
-			if handle_security_desc(ischema,att,msgElt,hashallSD,res2,res):
+			if handle_security_desc(ischema,att,msgElt,hashallSD,current,reference):
 				delta.remove(att)
 				continue
 			if (not hashOverwrittenAtt.has_key(att) or not (hashOverwrittenAtt.get(att)&2^msgElt.flags())):
-				if  handle_special_case(att,delta,res,res2,ischema)==0 and msgElt.flags()!=ldb.FLAG_MOD_ADD:
+				if  handle_special_case(att,delta,reference,current,ischema)==0 and msgElt.flags()!=ldb.FLAG_MOD_ADD:
 					i = 0
 					if opts.debugchange:
 						message(CHANGE, "dn= "+str(dn)+ " "+att + " with flag "+str(msgElt.flags())+ " is not allowed to be changed/removed, I discard this change ...")
-						for e in range(0,len(res2[0][att])):
-							message(CHANGE,"old %d : %s"%(i,str(res2[0][att][e])))
+						for e in range(0,len(current[0][att])):
+							message(CHANGE,"old %d : %s"%(i,str(current[0][att][e])))
 						if msgElt.flags() == 2:
 							i = 0
-							for e in range(0,len(res[0][att])):
-								message(CHANGE,"new %d : %s"%(i,str(res[0][att][e])))
+							for e in range(0,len(reference[0][att])):
+								message(CHANGE,"new %d : %s"%(i,str(reference[0][att][e])))
 					delta.remove(att)
 		delta.dn = dn
 		if len(delta.items()) >1:
@@ -615,16 +612,16 @@ def check_diff_name(newpaths,paths,creds,session,basedn,names,ischema):
 def check_updated_sd(newpaths,paths,creds,session,names):
 	newsam_ldb = Ldb(newpaths.samdb, session_info=session, credentials=creds,lp=lp)
 	sam_ldb = Ldb(paths.samdb, session_info=session, credentials=creds,lp=lp)
-	res = newsam_ldb.search(expression="objectClass=*",base=str(names.rootdn), scope=SCOPE_SUBTREE,attrs=["dn","nTSecurityDescriptor"],controls=["search_options:1:2"])
-	res2 = sam_ldb.search(expression="objectClass=*",base=str(names.rootdn), scope=SCOPE_SUBTREE,attrs=["dn","nTSecurityDescriptor"],controls=["search_options:1:2"])
+	reference = newsam_ldb.search(expression="objectClass=*",base=str(names.rootdn), scope=SCOPE_SUBTREE,attrs=["dn","nTSecurityDescriptor"],controls=["search_options:1:2"])
+	current = sam_ldb.search(expression="objectClass=*",base=str(names.rootdn), scope=SCOPE_SUBTREE,attrs=["dn","nTSecurityDescriptor"],controls=["search_options:1:2"])
 	hash_new = {}
-	for i in range(0,len(res)):
-		hash_new[str(res[i]["dn"]).lower()] = ndr_unpack(security.descriptor,str(res[i]["nTSecurityDescriptor"])).as_sddl(names.domainsid)
+	for i in range(0,len(reference)):
+		hash_new[str(reference[i]["dn"]).lower()] = ndr_unpack(security.descriptor,str(reference[i]["nTSecurityDescriptor"])).as_sddl(names.domainsid)
 
-	for i in range(0,len(res2)):
-		key = str(res2[i]["dn"]).lower()
+	for i in range(0,len(current)):
+		key = str(current[i]["dn"]).lower()
 		if hash_new.has_key(key):
-			sddl = ndr_unpack(security.descriptor,str(res2[i]["nTSecurityDescriptor"])).as_sddl(names.domainsid)
+			sddl = ndr_unpack(security.descriptor,str(current[i]["nTSecurityDescriptor"])).as_sddl(names.domainsid)
 			if sddl != hash_new[key]:
 				print "%s new sddl/sddl in ref"%key
 				print "%s\n%s"%(sddl,hash_new[key])
