@@ -140,6 +140,12 @@ if setup_dir is None:
 
 session = system_session()
 
+# simple helper to allow back and forth rename
+def identic_rename(ldb,dn):
+	(before,sep,after)=str(dn).partition('=')
+	ldb.rename(dn,ldb.Dn(ldb,"%s=foo%s"%(before,after)))
+	ldb.rename(ldb.Dn(ldb,"%s=foo%s"%(before,after)),dn)
+
 # Create an array of backlinked attributes
 def populate_backlink(newpaths,creds,session,schemadn):
 	newsam_ldb = Ldb(newpaths.samdb, session_info=session, credentials=creds,lp=lp)
@@ -458,8 +464,7 @@ def update_secrets(newpaths,paths,creds,session):
 
 			if att == "name":
 				message(CHANGE,"Found attribute name on  %s, must rename the DN "%(res2[0].dn))
-				secrets_ldb.rename(res2[0].dn,ldb.Dn(secrets_ldb,"%sfoo"%str(res2[0].dn)))
-				secrets_ldb.rename(ldb.Dn(secrets_ldb,"%sfoo"%str(res2[0].dn)),res2[0].dn)
+				identic_rename(secrets_ldb,res[0].dn)
 			else:
 				delta.remove(att)
 
