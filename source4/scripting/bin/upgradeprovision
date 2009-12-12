@@ -77,10 +77,10 @@ hashAttrNotCopied = { 	"dn": 1,"whenCreated": 1,"whenChanged": 1,"objectGUID": 1
 
 # Usually for an object that already exists we do not overwrite attributes as they might have been changed for good
 # reasons. Anyway for a few of thems it's mandatory to replace them otherwise the provision will be broken somehow.
-hashOverwrittenAtt = {	 "prefixMap": replace, "systemMayContain": replace,"systemOnly":replace, "searchFlags":replace,\
-						 "mayContain":replace,  "systemFlags":replace,
-						 "oEMInformation":replace, "operatingSystemVersion":replace, "adminPropertyPages":replace,
-						 "defaultSecurityDescriptor": replace}
+hashOverwrittenAtt = {	"prefixMap": replace, "systemMayContain": replace,"systemOnly":replace, "searchFlags":replace,\
+			"mayContain":replace,  "systemFlags":replace,"description":replace,
+			"oEMInformation":replace, "operatingSystemVersion":replace, "adminPropertyPages":replace,
+			"defaultSecurityDescriptor": replace,"wellKnownObjects":replace,"privilege":delete}
 backlinked = []
 
 def define_what_to_log(opts):
@@ -380,8 +380,8 @@ def handle_special_case(att,delta,new,old,ischema):
 		return 1
 	if (str(old[0].dn) == "CN=Samba4-Local-Domain,%s"%(str(names.schemadn)) and att == "defaultObjectCategory" and flag  == ldb.FLAG_MOD_REPLACE):
 		return 1
-	if (str(old[0].dn) == "CN=S-1-5-11,CN=ForeignSecurityPrincipals,%s"%(str(names.rootdn)) and att == "description" and flag  == ldb.FLAG_MOD_DELETE):
-		return 1
+#	if (str(old[0].dn) == "CN=S-1-5-11,CN=ForeignSecurityPrincipals,%s"%(str(names.rootdn)) and att == "description" and flag  == ldb.FLAG_MOD_DELETE):
+#		return 1
 	if (str(old[0].dn) == "CN=Title,%s"%(str(names.schemadn)) and att == "rangeUpper" and flag  == ldb.FLAG_MOD_REPLACE):
 		return 1
 	if ( (att == "member" or att == "servicePrincipalName") and flag  == ldb.FLAG_MOD_REPLACE):
@@ -562,6 +562,14 @@ def check_diff_name(newpaths,paths,creds,session,basedn,names,ischema):
 	for dn in listPresent:
 		res = newsam_ldb.search(expression="dn=%s"%(str(dn)),base=basedn, scope=SCOPE_SUBTREE,controls=["search_options:1:2"])
 		res2 = sam_ldb.search(expression="dn=%s"%(str(dn)),base=basedn, scope=SCOPE_SUBTREE,controls=["search_options:1:2"])
+		if ((str(res2[0].dn) != str(res[0].dn)) and (str(res2[0].dn).upper() == str(res[0].dn).upper())):
+			message(CHANGE,"Name are the same but case change, let's rename %s to %s"%(str(res2[0].dn),str(res[0].dn)))
+			(before,sep,after)=str(res2[0].dn).partition('=')
+			sam_ldb.rename(res2[0].dn,ldb.Dn(sam_ldb,"%s=foo%s"%(before,after)))
+			sam_ldb.rename(ldb.Dn(sam_ldb,"%s=foo%s"%(before,after)),res[0].dn)
+
+			res = newsam_ldb.search(expression="dn=%s"%(str(dn)),base=basedn, scope=SCOPE_SUBTREE,controls=["search_options:1:2"])
+
 		delta = sam_ldb.msg_diff(res2[0],res[0])
 		for att in hashAttrNotCopied.keys():
 			delta.remove(att)
@@ -569,9 +577,13 @@ def check_diff_name(newpaths,paths,creds,session,basedn,names,ischema):
 			delta.remove(att)
 		delta.remove("parentGUID")
 		nb = 0
+		
 		for att in delta:
 			msgElt = delta.get(att)
 			if att == "dn":
+				continue
+			if att == "name":
+				delta.remove(att)
 				continue
 			if handle_security_desc(ischema,att,msgElt,hashallSD,res2,res):
 				delta.remove(att)
