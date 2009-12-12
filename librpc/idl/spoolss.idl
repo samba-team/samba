@@ -1697,7 +1697,8 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[relative] nstring *mui_dll;
 		uint32 ressource_id;
 		[relative] nstring *display_name;
-		uint32 lang_id;
+		uint16 lang_id;
+		uint16 unused;
 	} spoolss_FormInfo2;
 
 	typedef [nodiscriminant,relative_base,public,gensize] union {
