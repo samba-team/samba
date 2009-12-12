@@ -1524,7 +1524,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		uint8 reserved;
 	} spoolss_OSVersionEx;
 
-	typedef [nodiscriminant,public,gensize] union {
+	typedef [nodiscriminant,public] union {
 		[case(REG_NONE)];
 		[case(REG_SZ)] nstring string;
 		[case(REG_BINARY),flag(NDR_REMAINING)] DATA_BLOB binary;

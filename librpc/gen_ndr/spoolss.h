@@ -1569,7 +1569,7 @@ union spoolss_PrinterData {
 	uint32_t value;/* [case(REG_DWORD)] */
 	const char ** string_array;/* [flag(LIBNDR_FLAG_STR_NULLTERM),case(REG_MULTI_SZ)] */
 	DATA_BLOB data;/* [flag(LIBNDR_FLAG_REMAINING),default] */
-}/* [gensize,public,nodiscriminant] */;
+}/* [nodiscriminant,public] */;
 
 enum spoolss_FormFlags
 #ifndef USE_UINT_ENUMS
