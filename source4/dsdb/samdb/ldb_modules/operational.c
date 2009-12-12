@@ -225,14 +225,14 @@ static const struct {
 	const char *attr;
 	enum op_remove op;
 } operational_remove[] = {
-	{ "nTSecurityDescriptor", OPERATIONAL_REMOVE_UNASKED },
-	{ "parentGUID",           OPERATIONAL_REMOVE_ALWAYS },
-	{ "replPropertyMetaData", OPERATIONAL_REMOVE_UNASKED },
-	{ "ntPwdHistory",         OPERATIONAL_REMOVE_UNASKED },
-	{ "lmPwdHistory",         OPERATIONAL_REMOVE_UNASKED },
-	{ "unicodePwd",           OPERATIONAL_REMOVE_UNASKED },
-	{ "supplementalCredentials", OPERATIONAL_REMOVE_UNASKED },
-	{ "dBCSPwd",              OPERATIONAL_REMOVE_UNASKED }
+	{ "nTSecurityDescriptor",    OPERATIONAL_REMOVE_UNASKED },
+	{ "parentGUID",              OPERATIONAL_REMOVE_ALWAYS  },
+	{ "replPropertyMetaData",    OPERATIONAL_REMOVE_UNASKED },
+	{ "unicodePwd",              OPERATIONAL_REMOVE_UNASKED },
+	{ "dBCSPwd",                 OPERATIONAL_REMOVE_UNASKED },
+	{ "ntPwdHistory",            OPERATIONAL_REMOVE_UNASKED },
+	{ "lmPwdHistory",            OPERATIONAL_REMOVE_UNASKED },
+	{ "supplementalCredentials", OPERATIONAL_REMOVE_UNASKED }
 };
 
 
