@@ -15984,7 +15984,8 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_FormInfo2(struct ndr_push *ndr, int 
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->display_name));
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->lang_id));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lang_id));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->unused));
 		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -16093,7 +16094,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_FormInfo2(struct ndr_pull *ndr, int 
 			}
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->lang_id));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lang_id));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->unused));
 		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -16206,7 +16208,8 @@ _PUBLIC_ void ndr_print_spoolss_FormInfo2(struct ndr_print *ndr, const char *nam
 		ndr_print_string(ndr, "display_name", r->display_name);
 	}
 	ndr->depth--;
-	ndr_print_uint32(ndr, "lang_id", r->lang_id);
+	ndr_print_uint16(ndr, "lang_id", r->lang_id);
+	ndr_print_uint16(ndr, "unused", r->unused);
 	ndr->depth--;
 }
 

@@ -1620,7 +1620,8 @@ struct spoolss_FormInfo2 {
 	const char * mui_dll;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	uint32_t ressource_id;
 	const char * display_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	uint32_t lang_id;
+	uint16_t lang_id;
+	uint16_t unused;
 }/* [gensize,public] */;
 
 union spoolss_FormInfo {
