@@ -328,7 +328,7 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
 	}
 
 	while ((mnt = getmntent(fd)) != NULL) {
-		if (sys_stat(mnt->mnt_dir, &sbuf, false) {
+		if (sys_stat(mnt->mnt_dir, &sbuf, false) == -1) {
 			continue;
 		}
 		if (sbuf.st_ex_dev == devno) {
@@ -599,7 +599,7 @@ bool disk_quotas(const char *path,
 
 	euser_id = geteuid();
 
-	if (sys_stat(path, &sbuf, false) {
+	if (sys_stat(path, &sbuf, false) == -1) {
 		return false;
 	}
 
