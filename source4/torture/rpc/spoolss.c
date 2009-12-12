@@ -25,6 +25,7 @@
 #include "torture/torture.h"
 #include "torture/rpc/rpc.h"
 #include "librpc/gen_ndr/ndr_misc.h"
+#include "librpc/gen_ndr/ndr_spoolss.h"
 #include "librpc/gen_ndr/ndr_spoolss_c.h"
 #include "param/param.h"
 
@@ -107,6 +108,42 @@ struct test_spoolss_context {
 	} \
 } while(0)
 
+#define CHECK_ALIGN(size, n) do {\
+	if (size % n) {\
+		torture_warning(tctx, "%d is *NOT* %d byte aligned, should be %d",\
+			size, n, size + n - (size % n));\
+	}\
+} while(0)
+
+#define DO_ROUND(size, n) (((size)+((n)-1)) & ~((n)-1))
+
+#define CHECK_NEEDED_SIZE_ENUM_LEVEL(fn, info, level, count, ic, needed, align) do { \
+	uint32_t size = ndr_size_##fn##_info(tctx, ic, level, count, info);\
+	uint32_t round_size = DO_ROUND(size, align);\
+	if (round_size != needed) {\
+		torture_warning(tctx, __location__": "#fn" level %d (count: %d) got unexpected needed size: %d, we calculated: %d", level, count, needed, round_size);\
+		CHECK_ALIGN(size, align);\
+	}\
+} while(0)
+
+#define CHECK_NEEDED_SIZE_ENUM(fn, info, count, ic, needed, align) do { \
+	uint32_t size = ndr_size_##fn##_info(tctx, ic, count, info);\
+	uint32_t round_size = DO_ROUND(size, align);\
+	if (round_size != needed) {\
+		torture_warning(tctx, __location__": "#fn" (count: %d) got unexpected needed size: %d, we calculated: %d", count, needed, round_size);\
+		CHECK_ALIGN(size, align);\
+	}\
+} while(0)
+
+#define CHECK_NEEDED_SIZE_LEVEL(fn, info, level, ic, needed, align) do { \
+	uint32_t size = ndr_size_##fn(info, level, ic, 0);\
+	uint32_t round_size = DO_ROUND(size, align);\
+	if (round_size != needed) {\
+		torture_warning(tctx, __location__": "#fn" level %d got unexpected needed size: %d, we calculated: %d", level, needed, round_size);\
+		CHECK_ALIGN(size, align);\
+	}\
+} while(0)
+
 static bool test_OpenPrinter_server(struct torture_context *tctx,
 				    struct dcerpc_pipe *p,
 				    struct policy_handle *server_handle)
@@ -175,6 +212,8 @@ static bool test_EnumPorts(struct torture_context *tctx,
 		torture_assert_werr_ok(tctx, r.out.result, "EnumPorts failed");
 
 		torture_assert(tctx, info, "EnumPorts returned no info");
+
+		CHECK_NEEDED_SIZE_ENUM_LEVEL(spoolss_EnumPorts, info, r.in.level, count, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
 
 		ctx->port_count[level]	= count;
 		ctx->ports[level]	= info;
@@ -264,6 +303,8 @@ static bool test_GetPrintProcessorDirectory(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_GetPrintProcessorDirectory failed");
 
 		torture_assert_werr_ok(tctx, r.out.result, "GetPrintProcessorDirectory failed");
+
+		CHECK_NEEDED_SIZE_LEVEL(spoolss_PrintProcessorDirectoryInfo, r.out.info, r.in.level, lp_iconv_convenience(tctx->lp_ctx), needed, 2);
 	}
 
 	return true;
@@ -327,6 +368,8 @@ static bool test_GetPrinterDriverDirectory(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_GetPrinterDriverDirectory failed");
 
 		torture_assert_werr_ok(tctx, r.out.result, "GetPrinterDriverDirectory failed");
+
+		CHECK_NEEDED_SIZE_LEVEL(spoolss_DriverDirectoryInfo, r.out.info, r.in.level, lp_iconv_convenience(tctx->lp_ctx), needed, 2);
 	}
 
 	return true;
@@ -382,6 +425,8 @@ static bool test_EnumPrinterDrivers(struct torture_context *tctx,
 		}
 
 		torture_assert_werr_ok(tctx, r.out.result, "EnumPrinterDrivers failed");
+
+		CHECK_NEEDED_SIZE_ENUM_LEVEL(spoolss_EnumPrinterDrivers, info, r.in.level, count, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
 
 		ctx->driver_count[level]	= count;
 		ctx->drivers[level]		= info;
@@ -524,6 +569,8 @@ static bool test_EnumMonitors(struct torture_context *tctx,
 
 		torture_assert_werr_ok(tctx, r.out.result, "EnumMonitors failed");
 
+		CHECK_NEEDED_SIZE_ENUM_LEVEL(spoolss_EnumMonitors, info, r.in.level, count, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
+
 		ctx->monitor_count[level]	= count;
 		ctx->monitors[level]		= info;
 	}
@@ -600,6 +647,8 @@ static bool test_EnumPrintProcessors(struct torture_context *tctx,
 
 		torture_assert_werr_ok(tctx, r.out.result, "EnumPrintProcessors failed");
 
+		CHECK_NEEDED_SIZE_ENUM_LEVEL(spoolss_EnumPrintProcessors, info, r.in.level, count, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
+
 		ctx->print_processor_count[level]	= count;
 		ctx->print_processors[level]		= info;
 	}
@@ -674,6 +723,9 @@ static bool test_EnumPrintProcDataTypes(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_EnumPrintProcDataTypes failed");
 
 		torture_assert_werr_ok(tctx, r.out.result, "EnumPrintProcDataTypes failed");
+
+		CHECK_NEEDED_SIZE_ENUM_LEVEL(spoolss_EnumPrintProcDataTypes, info, r.in.level, count, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
+
 	}
 
 	return true;
@@ -725,6 +777,8 @@ static bool test_EnumPrinters(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_EnumPrinters failed");
 
 		torture_assert_werr_ok(tctx, r.out.result, "EnumPrinters failed");
+
+		CHECK_NEEDED_SIZE_ENUM_LEVEL(spoolss_EnumPrinters, info, r.in.level, count, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
 
 		ctx->printer_count[level]	= count;
 		ctx->printers[level]		= info;
@@ -839,6 +893,8 @@ static bool test_GetPrinter(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx, status, "GetPrinter failed");
 
 		torture_assert_werr_ok(tctx, r.out.result, "GetPrinter failed");
+
+		CHECK_NEEDED_SIZE_LEVEL(spoolss_PrinterInfo, r.out.info, r.in.level, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
 	}
 
 	return true;
@@ -1459,6 +1515,8 @@ static bool test_GetForm(struct torture_context *tctx,
 
 	torture_assert_werr_ok(tctx, r.out.result, "GetForm failed");
 
+	CHECK_NEEDED_SIZE_LEVEL(spoolss_FormInfo, r.out.info, r.in.level, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
+
 	return true;
 }
 
@@ -1518,6 +1576,8 @@ static bool test_EnumForms(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx, status, "EnumForms failed");
 
 		torture_assert_werr_ok(tctx, r.out.result, "EnumForms failed");
+
+		CHECK_NEEDED_SIZE_ENUM_LEVEL(spoolss_EnumForms, info, r.in.level, count, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
 	}
 
 	return true;
@@ -1687,6 +1747,8 @@ static bool test_EnumPorts_old(struct torture_context *tctx,
 
 	torture_assert_werr_ok(tctx, r.out.result, "EnumPorts failed");
 
+	CHECK_NEEDED_SIZE_ENUM_LEVEL(spoolss_EnumPorts, info, 2, count, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
+
 	return true;
 }
 
@@ -1770,6 +1832,8 @@ static bool test_GetJob(struct torture_context *tctx,
 		}
 		torture_assert(tctx, r.out.info, "No job info returned");
 		torture_assert_werr_ok(tctx, r.out.result, "GetJob failed");
+
+		CHECK_NEEDED_SIZE_LEVEL(spoolss_JobInfo, r.out.info, r.in.level, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
 	}
 
 	return true;
@@ -1894,6 +1958,8 @@ static bool test_EnumJobs(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx, status, "EnumJobs failed");
 		torture_assert_werr_ok(tctx, r.out.result, "EnumJobs failed");
 		torture_assert(tctx, info, "No jobs returned");
+
+		CHECK_NEEDED_SIZE_ENUM_LEVEL(spoolss_EnumJobs, *r.out.info, r.in.level, count, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
 
 		for (j = 0; j < count; j++) {
 
@@ -2090,6 +2156,8 @@ static bool test_GetPrinterData(struct torture_context *tctx,
 	torture_assert_werr_ok(tctx, r.out.result,
 		talloc_asprintf(tctx, "GetPrinterData(%s) failed", r.in.value_name));
 
+	CHECK_NEEDED_SIZE_LEVEL(spoolss_PrinterData, &data, type, lp_iconv_convenience(tctx->lp_ctx), needed, 1);
+
 	if (type_p) {
 		*type_p = type;
 	}
@@ -2143,6 +2211,8 @@ static bool test_GetPrinterDataEx(struct torture_context *tctx,
 
 	torture_assert_werr_ok(tctx, r.out.result,
 		talloc_asprintf(tctx, "GetPrinterDataEx(%s - %s) failed", r.in.key_name, r.in.value_name));
+
+	CHECK_NEEDED_SIZE_LEVEL(spoolss_PrinterData, &data, type, lp_iconv_convenience(tctx->lp_ctx), needed, 1);
 
 	if (type_p) {
 		*type_p = type;
@@ -2291,6 +2361,8 @@ static bool test_EnumPrinterDataEx(struct torture_context *tctx,
 	}
 
 	torture_assert_werr_ok(tctx, r.out.result, "EnumPrinterDataEx failed");
+
+	CHECK_NEEDED_SIZE_ENUM(spoolss_EnumPrinterDataEx, info, count, lp_iconv_convenience(tctx->lp_ctx), needed, 1);
 
 	return true;
 }
@@ -2818,6 +2890,8 @@ static bool test_EnumPrinters_old(struct torture_context *tctx, struct dcerpc_pi
 
 		torture_assert_werr_ok(tctx, r.out.result, "EnumPrinters failed");
 
+		CHECK_NEEDED_SIZE_ENUM_LEVEL(spoolss_EnumPrinters, info, r.in.level, count, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
+
 		if (!info) {
 			torture_comment(tctx, "No printers returned\n");
 			return true;
@@ -2880,6 +2954,8 @@ static bool test_GetPrinterDriver(struct torture_context *tctx,
 	torture_assert_werr_ok(tctx, r.out.result,
 		"failed to call GetPrinterDriver");
 
+	CHECK_NEEDED_SIZE_LEVEL(spoolss_DriverInfo, r.out.info, r.in.level, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
+
 	return true;
 }
 
@@ -2919,6 +2995,8 @@ static bool test_GetPrinterDriver2(struct torture_context *tctx,
 
 	torture_assert_werr_ok(tctx, r.out.result,
 		"failed to call GetPrinterDriver2");
+
+	CHECK_NEEDED_SIZE_LEVEL(spoolss_DriverInfo, r.out.info, r.in.level, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
 
 	return true;
 }
@@ -2968,6 +3046,8 @@ static bool test_EnumPrinterDrivers_old(struct torture_context *tctx,
 			torture_comment(tctx, "No printer drivers returned\n");
 			break;
 		}
+
+		CHECK_NEEDED_SIZE_ENUM_LEVEL(spoolss_EnumPrinterDrivers, info, r.in.level, count, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
 	}
 
 	return true;
