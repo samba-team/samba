@@ -15364,11 +15364,6 @@ _PUBLIC_ void ndr_print_spoolss_PrinterData(struct ndr_print *ndr, const char *n
 	}
 }
 
-_PUBLIC_ size_t ndr_size_spoolss_PrinterData(const union spoolss_PrinterData *r, uint32_t level, struct smb_iconv_convenience *ic, int flags)
-{
-	return ndr_size_union(r, flags, level, (ndr_push_flags_fn_t)ndr_push_spoolss_PrinterData, ic);
-}
-
 static enum ndr_err_code ndr_push_spoolss_FormFlags(struct ndr_push *ndr, int ndr_flags, enum spoolss_FormFlags r)
 {
 	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
