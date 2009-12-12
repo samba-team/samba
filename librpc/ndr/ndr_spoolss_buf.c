@@ -1355,3 +1355,11 @@ void ndr_print_spoolss_Field(struct ndr_print *ndr, const char *name, const unio
 	}
 }
 
+_PUBLIC_ size_t ndr_size_spoolss_PrinterData(const union spoolss_PrinterData *r, uint32_t level, struct smb_iconv_convenience *ic, int flags)
+{
+	if (!r) {
+		return 0;
+	}
+	return ndr_size_union(r, flags, level, (ndr_push_flags_fn_t)ndr_push_spoolss_PrinterData, ic);
+}
+
