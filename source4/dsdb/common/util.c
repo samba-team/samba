@@ -1934,12 +1934,15 @@ NTSTATUS samdb_set_password_sid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	msg = ldb_msg_new(mem_ctx);
 	if (msg == NULL) {
 		ldb_transaction_cancel(ldb);
+		talloc_free(user_dn);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	msg->dn = ldb_dn_copy(msg, user_dn);
 	if (!msg->dn) {
 		ldb_transaction_cancel(ldb);
+		talloc_free(user_dn);
+		talloc_free(msg);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1947,10 +1950,12 @@ NTSTATUS samdb_set_password_sid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 				       user_dn, NULL,
 				       msg, new_password,
 				       lmNewHash, ntNewHash,
-				       user_change, /* This is a password set, not change */
+				       user_change,
 				       reject_reason, _dominfo);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		ldb_transaction_cancel(ldb);
+		talloc_free(user_dn);
+		talloc_free(msg);
 		return nt_status;
 	}
 
@@ -1958,16 +1963,23 @@ NTSTATUS samdb_set_password_sid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	ret = samdb_replace(ldb, mem_ctx, msg);
 	if (ret != LDB_SUCCESS) {
 		ldb_transaction_cancel(ldb);
+		talloc_free(user_dn);
+		talloc_free(msg);
 		return NT_STATUS_ACCESS_DENIED;
 	}
+
+	talloc_free(msg);
 
 	ret = ldb_transaction_commit(ldb);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,("Failed to commit transaction to change password on %s: %s\n",
-			 ldb_dn_get_linearized(msg->dn),
+			 ldb_dn_get_linearized(user_dn),
 			 ldb_errstring(ldb)));
+		talloc_free(user_dn);
 		return NT_STATUS_TRANSACTION_ABORTED;
 	}
+
+	talloc_free(user_dn);
 	return NT_STATUS_OK;
 }
 
