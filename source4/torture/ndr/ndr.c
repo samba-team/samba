@@ -252,6 +252,7 @@ struct torture_suite *torture_local_ndr(TALLOC_CTX *mem_ctx)
 	torture_suite_add_suite(suite, ndr_lsa_suite(suite));
 	torture_suite_add_suite(suite, ndr_epmap_suite(suite));
 	torture_suite_add_suite(suite, ndr_dfs_suite(suite));
+	torture_suite_add_suite(suite, ndr_dfsblob_suite(suite));
 	torture_suite_add_suite(suite, ndr_netlogon_suite(suite));
 	torture_suite_add_suite(suite, ndr_drsuapi_suite(suite));
 	torture_suite_add_suite(suite, ndr_spoolss_suite(suite));

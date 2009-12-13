@@ -94,7 +94,7 @@ mkinclude libnetapi/config.mk
 [SUBSYSTEM::TORTURE_NDR]
 PRIVATE_DEPENDENCIES = torture SERVICE_SMB
 
-TORTURE_NDR_OBJ_FILES = $(addprefix $(torturesrcdir)/ndr/, ndr.o winreg.o atsvc.o lsa.o epmap.o dfs.o netlogon.o drsuapi.o spoolss.o samr.o)
+TORTURE_NDR_OBJ_FILES = $(addprefix $(torturesrcdir)/ndr/, ndr.o winreg.o atsvc.o lsa.o epmap.o dfs.o netlogon.o drsuapi.o spoolss.o samr.o dfsblob.o)
 
 $(eval $(call proto_header_template,$(torturesrcdir)/ndr/proto.h,$(TORTURE_NDR_OBJ_FILES:.o=.c)))
 
