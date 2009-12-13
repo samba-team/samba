@@ -88,6 +88,8 @@ static int commit_do(
 #elif HAVE_FSYNC
         result = fsync(fd);
 #else
+	DEBUG(0, ("%s: WARNING: no commit support on this platform\n",
+		MODULE));
 	result = 0
 #endif
         if (result == 0) {
