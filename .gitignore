@@ -77,6 +77,10 @@ source3/lib/netapi/examples/Makefile
 source3/lib/netapi/tests/Makefile
 source3/library-versions
 librpc/gen_ndr/cli_krb5pac.*
+librpc/gen_ndr/cli_dfsblobs.*
+librpc/gen_ndr/dfsblobs.h
+librpc/gen_ndr/ndr_dfsblobs.*
+librpc/gen_ndr/srv_dfsblobs.*
 source3/librpc/gen_ndr/cli_libnetapi.c
 source3/librpc/gen_ndr/cli_libnetapi.h
 source3/librpc/gen_ndr/cli_messaging.*
