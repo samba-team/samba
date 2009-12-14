@@ -20,9 +20,9 @@
  */
 
 #include "includes.h"
+#include "../lib/crypto/crypto.h"
 
 /* abstraction for the send_over_network function */
-
 enum sock_type {INTERNET_SOCKET = 0, UNIX_DOMAIN_SOCKET};
 
 #define LOCAL_PATHNAME "/var/tmp/stadsocket"
@@ -400,8 +400,27 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 
 	len = strlen(str);
 
-	DEBUG(10, ("smb_traffic_analyzer_send_data_socket: sending %s\n",
-			str));
+	DEBUG(10, ("smb_traffic_analyzer_send_data_socket: going to send "
+		"%s\n", str));
+	/* If configured, optain the key and run AES encryption	*/
+	/* over the data.					*/
+	size_t size;
+	char *akey = secrets_fetch("smb_traffic_analyzer_key", &size);
+	if ( akey != NULL ) {
+		char *crypted;
+		DEBUG(10, ("smb_traffic_analyzer: a key was found, encrypting "
+			"data!"));
+		AES_KEY *key;
+		samba_AES_set_encrypt_key(akey, 128, key);
+		samba_AES_encrypt( str, crypted, key );
+		len = strlen( crypted );
+		if (write_data(rf_sock->sock, crypted, len) != len) {
+			DEBUG(1, ("smb_traffic_analyzer_send_data_socket: "
+				"error sending crypted data to socket!\n"));
+		free( crypted );
+		return ;
+		}
+	}
 	if (write_data(rf_sock->sock, str, len) != len) {
 		DEBUG(1, ("smb_traffic_analyzer_send_data_socket: "
 			"error sending data to socket!\n"));
