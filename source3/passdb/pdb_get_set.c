@@ -1051,7 +1051,7 @@ bool pdb_set_plaintext_passwd(struct samu *sampass, const char *plaintext)
 			/*
 			 * Ensure we have space for the needed history.
 			 */
-			uchar *new_history = talloc_array(
+			uchar *new_history = talloc_zero_array(
 				sampass, uchar,
 				pwHistLen*PW_HISTORY_ENTRY_LEN);
 			if (!new_history) {
@@ -1063,10 +1063,7 @@ bool pdb_set_plaintext_passwd(struct samu *sampass, const char *plaintext)
 				memcpy(new_history, pwhistory,
 				       current_history_len*PW_HISTORY_ENTRY_LEN);
 			}
-			/* Clearing out any extra space. */
-			memset(&new_history[current_history_len*PW_HISTORY_ENTRY_LEN],
-			       '\0', (pwHistLen-current_history_len)*PW_HISTORY_ENTRY_LEN);
-			/* Finally replace it. */
+
 			pwhistory = new_history;
 		}
 	}
