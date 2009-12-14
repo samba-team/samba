@@ -1145,6 +1145,30 @@ _PUBLIC_ enum ndr_err_code ndr_push_short_relative_ptr2(struct ndr_push *ndr, co
 }
 
 /*
+  push a relative object - stage2 start
+  this is called during buffers processing
+*/
+_PUBLIC_ enum ndr_err_code ndr_push_relative_ptr2_start(struct ndr_push *ndr, const void *p)
+{
+	if (p == NULL) {
+		return NDR_ERR_SUCCESS;
+	}
+	return ndr_push_relative_ptr2(ndr, p);
+}
+
+/*
+  push a relative object - stage2 end
+  this is called during buffers processing
+*/
+_PUBLIC_ enum ndr_err_code ndr_push_relative_ptr2_end(struct ndr_push *ndr, const void *p)
+{
+	if (p == NULL) {
+		return NDR_ERR_SUCCESS;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+/*
   get the current base for relative pointers for the pull
 */
 _PUBLIC_ uint32_t ndr_pull_get_relative_base_offset(struct ndr_pull *ndr)
