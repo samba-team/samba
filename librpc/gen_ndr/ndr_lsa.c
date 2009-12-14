@@ -1945,7 +1945,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_SidArray(struct ndr_pull *ndr, int ndr_f
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->num_sids));
-		if (r->num_sids > 1000) {
+		if (r->num_sids > 20480) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sids));
@@ -2444,7 +2444,7 @@ static enum ndr_err_code ndr_pull_lsa_TransNameArray(struct ndr_pull *ndr, int n
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
-		if (r->count > 1000) {
+		if (r->count > 20480) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_names));
