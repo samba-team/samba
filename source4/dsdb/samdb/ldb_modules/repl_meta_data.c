@@ -1170,7 +1170,8 @@ static int replmd_modify_la_add(struct ldb_module *module,
 
 	/* add the new ones on to the end of the old values, constructing a new el->values */
 	el->values = talloc_realloc(msg->elements, old_el?old_el->values:NULL,
-				    struct ldb_val, old_num_values+num_new_values);
+				    struct ldb_val,
+				    old_num_values+num_new_values);
 	if (el->values == NULL) {
 		ldb_module_oom(module);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -1191,20 +1192,6 @@ static int replmd_modify_la_add(struct ldb_module *module,
 	return LDB_SUCCESS;
 }
 
-
-/*
-  handle replacing a linked attribute
- */
-static int replmd_modify_la_replace(struct ldb_module *module,
-				    struct ldb_message *msg,
-				    struct ldb_message_element *el,
-				    struct ldb_message_element *old_el,
-				    const struct dsdb_attribute *schema_attr,
-				    uint64_t seq_num,
-				    time_t t)
-{
-	return LDB_SUCCESS;
-}
 
 /*
   handle deleting all active linked attributes
@@ -1266,7 +1253,7 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 					       el->name, GUID_string(tmp_ctx, p->guid));
 			return LDB_ERR_NO_SUCH_ATTRIBUTE;
 		}
-		v = ldb_dn_get_extended_component(p->dsdb_dn->dn, "DELETED");
+		v = ldb_dn_get_extended_component(p2->dsdb_dn->dn, "DELETED");
 		if (v) {
 			ldb_asprintf_errstring(ldb, "Attribute %s already deleted for target GUID %s",
 					       el->name, GUID_string(tmp_ctx, p->guid));
@@ -1307,6 +1294,134 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 	return LDB_SUCCESS;
 }
 
+/*
+  handle replacing a linked attribute
+ */
+static int replmd_modify_la_replace(struct ldb_module *module,
+				    struct ldb_message *msg,
+				    struct ldb_message_element *el,
+				    struct ldb_message_element *old_el,
+				    const struct dsdb_attribute *schema_attr,
+				    uint64_t seq_num,
+				    time_t t)
+{
+	int i;
+	struct parsed_dn *dns, *old_dns;
+	TALLOC_CTX *tmp_ctx = talloc_new(msg);
+	int ret;
+	const struct GUID *invocation_id;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct ldb_val *new_values = NULL;
+	uint32_t num_new_values = 0;
+	unsigned old_num_values = old_el?old_el->num_values:0;
+
+	/* check if there is nothing to replace */
+	if ((!old_el || old_el->num_values == 0) &&
+	    el->num_values == 0) {
+		return LDB_SUCCESS;
+	}
+
+	ret = get_parsed_dns(module, tmp_ctx, el, &dns, schema_attr->syntax->ldap_oid);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	ret = get_parsed_dns(module, tmp_ctx, old_el, &old_dns, schema_attr->syntax->ldap_oid);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	invocation_id = samdb_ntds_invocation_id(ldb);
+	if (!invocation_id) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/* mark all the old ones as deleted */
+	for (i=0; i<old_num_values; i++) {
+		struct parsed_dn *old_p = &old_dns[i];
+		struct parsed_dn *p;
+		const struct ldb_val *v;
+
+		p = parsed_dn_find(dns, el->num_values, old_p->guid);
+		if (p) {
+			/* we don't delete it if we are re-adding it */
+			continue;
+		}
+		v = ldb_dn_get_extended_component(old_p->dsdb_dn->dn, "DELETED");
+		if (v) continue;
+
+		ret = replmd_update_la_val(old_el->values, old_p->v, old_p, old_p,
+					   invocation_id, seq_num, t, true);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+	}
+
+	/* for each new value, either update its meta-data, or add it
+	 * to old_el
+	*/
+	for (i=0; i<el->num_values; i++) {
+		struct parsed_dn *p = &dns[i], *old_p;
+
+		if (old_dns &&
+		    (old_p = parsed_dn_find(old_dns,
+					    old_num_values, p->guid)) != NULL) {
+			/* update in place */
+			ret = replmd_update_la_val(old_el->values, old_p->v, old_p,
+						   old_p, invocation_id,
+						   seq_num, t, false);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(tmp_ctx);
+				return ret;
+			}
+		} else {
+			/* add a new one */
+			new_values = talloc_realloc(tmp_ctx, new_values, struct ldb_val,
+						    num_new_values+1);
+			if (new_values == NULL) {
+				ldb_module_oom(module);
+				talloc_free(tmp_ctx);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+			ret = replmd_build_la_val(new_values, &new_values[num_new_values], &dns[i],
+						  invocation_id, seq_num, t);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(tmp_ctx);
+				return ret;
+			}
+			num_new_values++;
+		}
+	}
+
+	/* add the new values to the end of old_el */
+	if (num_new_values != 0) {
+		el->values = talloc_realloc(msg->elements, old_el?old_el->values:NULL,
+					    struct ldb_val, old_num_values+num_new_values);
+		if (el->values == NULL) {
+			ldb_module_oom(module);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		memcpy(&el->values[old_num_values], &new_values[0],
+		       sizeof(struct ldb_val)*num_new_values);
+		el->num_values = old_num_values + num_new_values;
+		talloc_steal(msg->elements, new_values);
+	} else {
+		el->values = old_el->values;
+		el->num_values = old_el->num_values;
+		talloc_steal(msg->elements, el->values);
+	}
+
+	talloc_free(tmp_ctx);
+
+	/* we now tell the backend to replace all existing values
+	   with the one we have constructed */
+	el->flags = LDB_FLAG_MOD_REPLACE;
+
+	return LDB_SUCCESS;
+}
 
 
 /*
@@ -1340,6 +1455,7 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 
 	ret = dsdb_module_search_dn(module, msg, &res, msg->dn, NULL,
 				    DSDB_SEARCH_SHOW_DELETED |
+				    DSDB_SEARCH_REVEAL_INTERNALS |
 				    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT);
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -1348,7 +1464,7 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 
 	for (i=0; i<msg->num_elements; i++) {
 		struct ldb_message_element *el = &msg->elements[i];
-		struct ldb_message_element *old_el;
+		struct ldb_message_element *old_el, *new_el;
 		const struct dsdb_attribute *schema_attr
 			= dsdb_attribute_by_lDAPDisplayName(schema, el->name);
 		if (!schema_attr) {
@@ -1366,7 +1482,7 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
 		old_el = ldb_msg_find_element(old_msg, el->name);
-		switch (el->flags) {
+		switch (el->flags & LDB_FLAG_MOD_MASK) {
 		case LDB_FLAG_MOD_REPLACE:
 			ret = replmd_modify_la_replace(module, msg, el, old_el, schema_attr, seq_num, t);
 			break;
@@ -1381,6 +1497,24 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 					       "invalid flags 0x%x for %s linked attribute",
 					       el->flags, el->name);
 			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		if (old_el) {
+			ldb_msg_remove_attr(old_msg, el->name);
+		}
+		ldb_msg_add_empty(old_msg, el->name, 0, &new_el);
+		new_el->num_values = el->num_values;
+		new_el->values = el->values;
+
+		/* TODO: this relises a bit too heavily on the exact
+		   behaviour of ldb_msg_find_element and
+		   ldb_msg_remove_element */
+		old_el = ldb_msg_find_element(msg, el->name);
+		if (old_el != el) {
+			ldb_msg_remove_element(msg, old_el);
+			i--;
 		}
 	}
 
