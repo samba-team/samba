@@ -1035,33 +1035,22 @@ bool pdb_set_plaintext_passwd(struct samu *sampass, const char *plaintext)
 	 */
 	pwhistory = (uchar *)pdb_get_pw_history(sampass, &current_history_len);
 
-	if (current_history_len != pwHistLen) {
+	if (current_history_len < pwHistLen) {
 		/*
-		 * After closing and reopening struct samu the history
-		 * values will sync up. We can't do this here.
+		 * Ensure we have space for the needed history.
 		 */
+		uchar *new_history = talloc_zero_array(
+			sampass, uchar,
+			pwHistLen*PW_HISTORY_ENTRY_LEN);
 
-		/*
-		 * current_history_len > pwHistLen is not a problem -
-		 * we have more history than we need.
-		 */
-
-		if (current_history_len < pwHistLen) {
-			/*
-			 * Ensure we have space for the needed history.
-			 */
-			uchar *new_history = talloc_zero_array(
-				sampass, uchar,
-				pwHistLen*PW_HISTORY_ENTRY_LEN);
-			if (!new_history) {
-				return False;
-			}
-
-			memcpy(new_history, pwhistory,
-			       current_history_len*PW_HISTORY_ENTRY_LEN);
-
-			pwhistory = new_history;
+		if (!new_history) {
+			return False;
 		}
+
+		memcpy(new_history, pwhistory,
+		       current_history_len*PW_HISTORY_ENTRY_LEN);
+
+		pwhistory = new_history;
 	}
 
 	if (pwhistory && pwHistLen) {
