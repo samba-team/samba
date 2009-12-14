@@ -436,7 +436,7 @@ enum ndr_err_code ndr_token_store(TALLOC_CTX *mem_ctx,
 			 struct ndr_token_list **list, 
 			 const void *key, 
 			 uint32_t value);
-enum ndr_err_code ndr_token_retrieve_cmp_fn(struct ndr_token_list **list, const void *key, uint32_t *v, comparison_fn_t _cmp_fn, bool _remove_tok);
+enum ndr_err_code ndr_token_retrieve_cmp_fn(struct ndr_token_list **list, const void *key, uint32_t *v, int(*_cmp_fn)(const void*,const void*), bool _remove_tok);
 enum ndr_err_code ndr_token_retrieve(struct ndr_token_list **list, const void *key, uint32_t *v);
 uint32_t ndr_token_peek(struct ndr_token_list **list, const void *key);
 enum ndr_err_code ndr_pull_array_size(struct ndr_pull *ndr, const void *p);
