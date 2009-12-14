@@ -91,8 +91,8 @@ struct auth_context {
 	/* What order are the various methods in?   Try to stop it changing under us */ 
 	struct auth_methods *auth_method_list;	
 
-	void (*get_ntlm_challenge)(struct auth_context *auth_context,
-				   uint8_t chal[8]);
+	NTSTATUS (*get_ntlm_challenge)(struct auth_context *auth_context,
+				       uint8_t chal[8]);
 	NTSTATUS (*check_ntlm_password)(const struct auth_context *auth_context,
 					const struct auth_usersupplied_info *user_info, 
 					struct auth_serversupplied_info **server_info);

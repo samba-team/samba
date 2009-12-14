@@ -76,7 +76,7 @@ static struct auth_init_function_entry *auth_find_backend_entry(const char *name
  Returns a const char of length 8 bytes.
 ****************************************************************************/
 
-static void get_ntlm_challenge(struct auth_context *auth_context,
+static NTSTATUS get_ntlm_challenge(struct auth_context *auth_context,
 			       uint8_t chal[8])
 {
 	DATA_BLOB challenge = data_blob_null;
@@ -87,7 +87,7 @@ static void get_ntlm_challenge(struct auth_context *auth_context,
 		DEBUG(5, ("get_ntlm_challenge (auth subsystem): returning previous challenge by module %s (normal)\n", 
 			  auth_context->challenge_set_by));
 		memcpy(chal, auth_context->challenge.data, 8);
-		return;
+		return NT_STATUS_OK;
 	}
 
 	auth_context->challenge_may_be_modified = False;
@@ -138,6 +138,7 @@ static void get_ntlm_challenge(struct auth_context *auth_context,
 	auth_context->challenge_set_by=challenge_set_by;
 
 	memcpy(chal, auth_context->challenge.data, 8);
+	return NT_STATUS_OK;
 }
 
 
