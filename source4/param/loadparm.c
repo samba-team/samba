@@ -2552,6 +2552,10 @@ bool lp_load(struct loadparm_context *lp_ctx, const char *filename)
 
 	bRetval = bRetval && lp_update(lp_ctx);
 
+	/* we do this unconditionally, so that it happens even
+	   for a missing smb.conf */
+	reload_charcnv(lp_ctx);
+
 	return bRetval;
 }
 
