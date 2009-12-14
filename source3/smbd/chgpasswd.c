@@ -1017,7 +1017,7 @@ static NTSTATUS check_oem_password(const char *user,
 static bool check_passwd_history(struct samu *sampass, const char *plaintext)
 {
 	uchar new_nt_p16[NT_HASH_LEN];
-	uchar zero_md5_nt_pw[SALTED_MD5_HASH_LEN];
+	static const uint8_t zero_md5_nt_pw[SALTED_MD5_HASH_LEN] = { 0, };
 	const uint8 *nt_pw;
 	const uint8 *pwhistory;
 	bool found = False;
@@ -1051,7 +1051,6 @@ static bool check_passwd_history(struct samu *sampass, const char *plaintext)
 	dump_data(100, new_nt_p16, NT_HASH_LEN);
 	dump_data(100, pwhistory, PW_HISTORY_ENTRY_LEN*pwHisLen);
 
-	memset(zero_md5_nt_pw, '\0', SALTED_MD5_HASH_LEN);
 	for (i=0; i<pwHisLen; i++) {
 		uchar new_nt_pw_salted_md5_hash[SALTED_MD5_HASH_LEN];
 		const uchar *current_salt = &pwhistory[i*PW_HISTORY_ENTRY_LEN];
