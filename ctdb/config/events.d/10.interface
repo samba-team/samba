@@ -17,6 +17,65 @@ loadconfig
 	exit 0
 }
 
+monitor_interfaces()
+{
+	local INTERFACES=`cat $CTDB_PUBLIC_ADDRESSES |
+		sed -e "s/^[^\t ]*[\t ]*//" -e "s/,/ /g" -e "s/[\t ]*$//"`
+
+	[ "$CTDB_PUBLIC_INTERFACE" ] && INTERFACES="$CTDB_PUBLIC_INTERFACE $INTERFACES"
+	[ "$CTDB_NATGW_PUBLIC_IFACE" ] && INTERFACES="$CTDB_NATGW_PUBLIC_IFACE $INTERFACES"
+
+	local IFACE
+
+	INTERFACES=`for IFACE in $INTERFACES ; do echo $IFACE ; done | sort | uniq`
+
+	local fail=0
+	for IFACE in $INTERFACES ; do
+	    # These interfaces are sometimes bond devices
+	    # When we use VLANs for bond interfaces, there will only
+	    # be an entry in /proc for the underlying real interface
+	    local REALIFACE=`echo $IFACE |sed -e 's/\..*$//'`
+	    [ -f /proc/net/bonding/$REALIFACE ] && {
+		grep -q 'Currently Active Slave: None' /proc/net/bonding/$REALIFACE && {
+			echo "ERROR: No active slaves for bond device $REALIFACE"
+			fail=1
+			continue;
+		}
+		grep -q '^MII Status: up' /proc/net/bonding/$REALIFACE || {
+			echo "ERROR: public network interface $REALIFACE is down"
+			fail=1
+			continue;
+		}
+		return 0;
+	    }
+
+	    case $IFACE in
+	    ib*)
+		# we dont know how to test ib links
+		;;
+	    *)
+		[ -z "$IFACE" ] || {
+		    /usr/sbin/ethtool $IFACE | grep -q 'Link detected: yes' || {
+			# On some systems, this is not successful when a
+			# cable is plugged but the interface has not been
+			# brought up previously. Bring the interface up and
+			# try again...
+			/sbin/ip link set $IFACE up
+			/usr/sbin/ethtool $IFACE | grep -q 'Link detected: yes' || {
+			    echo "ERROR: No link on the public network interface $IFACE"
+			    fail=1
+			    continue
+			}
+		    }
+		}
+		;;
+	    esac
+
+	done
+
+	return $fail;
+}
+
 case "$1" in 
      #############################
      # called when ctdbd starts up
@@ -112,52 +171,12 @@ case "$1" in
 	;;
 
      monitor)
-	INTERFACES=`cat $CTDB_PUBLIC_ADDRESSES | 
-		sed -e "s/^[^\t ]*[\t ]*//" -e "s/,/ /g" -e "s/[\t ]*$//"`
+	monitor_interfaces
+	ret=$?
 
-	[ "$CTDB_PUBLIC_INTERFACE" ] && INTERFACES="$CTDB_PUBLIC_INTERFACE $INTERFACES"
-	[ "$CTDB_NATGW_PUBLIC_IFACE" ] && INTERFACES="$CTDB_NATGW_PUBLIC_IFACE $INTERFACES"
-
-	INTERFACES=`for IFACE in $INTERFACES ; do echo $IFACE ; done | sort | uniq`
-
-	for IFACE in $INTERFACES ; do
-	    # These interfaces are sometimes bond devices
-	    # When we use VLANs for bond interfaces, there will only
-	    # be an entry in /proc for the underlying real interface
-	    REALIFACE=`echo $IFACE |sed -e 's/\..*$//'`
-	    [ -f /proc/net/bonding/$REALIFACE ] && {
-		grep -q 'Currently Active Slave: None' /proc/net/bonding/$REALIFACE && {
-			echo "ERROR: No active slaves for bond device $REALIFACE"
-			exit 1
-		}
-		grep -q '^MII Status: up' /proc/net/bonding/$REALIFACE || {
-			echo "ERROR: public network interface $REALIFACE is down"
-			exit 1
-		}
-		exit 0;
-	    }
-
-	    case $IFACE in 
-	    ib*)
-		# we dont know how to test ib links
-		;;
-	    *)
-		[ -z "$IFACE" ] || {
-		    /usr/sbin/ethtool $IFACE | grep -q 'Link detected: yes' || {
-			# On some systems, this is not successful when a
-			# cable is plugged but the interface has not been
-			# brought up previously. Bring the interface up and
-			# try again...
-			/sbin/ip link set $IFACE up
-			/usr/sbin/ethtool $IFACE | grep -q 'Link detected: yes' || {
-			    echo "ERROR: No link on the public network interface $IFACE"
-			    exit 1
-			}
-	    	    }
-		}
-		;;
-	    esac
-	done
+	test x"$ret" != x"0" && {
+		exit 1;
+	}
 	;;
     *)
 	ctdb_standard_event_handler "$@"
