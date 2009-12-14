@@ -112,7 +112,6 @@ struct ctdb_tunable {
 	uint32_t rerecovery_timeout;
 	uint32_t enable_bans;
 	uint32_t deterministic_public_ips;
-	uint32_t disable_when_unhealthy;
 	uint32_t reclock_ping_period;
 	uint32_t no_ip_failback;
 	uint32_t verbose_memory_names;
