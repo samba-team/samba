@@ -74,6 +74,13 @@ int dsdb_module_search_handle_flags(struct ldb_module *module, struct ldb_reques
 		}
 	}
 
+	if (dsdb_flags & DSDB_SEARCH_REVEAL_INTERNALS) {
+		ret = ldb_request_add_control(req, LDB_CONTROL_REVEAL_INTERNALS, false, NULL);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
 	return LDB_SUCCESS;
 }
 
