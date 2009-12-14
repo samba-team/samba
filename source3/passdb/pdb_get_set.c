@@ -1036,6 +1036,11 @@ bool pdb_set_plaintext_passwd(struct samu *sampass, const char *plaintext)
 	 */
 	pwhistory = (uchar *)pdb_get_pw_history(sampass, &current_history_len);
 
+	if ((current_history_len != 0) && (pwhistory == NULL)) {
+		DEBUG(1, ("pdb_set_plaintext_passwd: pwhistory == NULL!\n"));
+		return false;
+	}
+
 	if (current_history_len < pwHistLen) {
 		/*
 		 * Ensure we have space for the needed history.
