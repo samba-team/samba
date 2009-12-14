@@ -600,9 +600,12 @@ NTSTATUS ntlmssp_server_auth(struct gensec_security *gensec_security,
 static const uint8_t *auth_ntlmssp_get_challenge(const struct gensec_ntlmssp_state *gensec_ntlmssp_state)
 {
 	NTSTATUS status;
-	const uint8_t *chal;
+	uint8_t *chal = talloc_array(gensec_ntlmssp_state, uint8_t, 8);
+	if (!chal) {
+		return NULL;
+	}
 
-	status = gensec_ntlmssp_state->auth_context->get_challenge(gensec_ntlmssp_state->auth_context, &chal);
+	status = gensec_ntlmssp_state->auth_context->get_challenge(gensec_ntlmssp_state->auth_context, chal);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("auth_ntlmssp_get_challenge: failed to get challenge: %s\n",
 			nt_errstr(status)));

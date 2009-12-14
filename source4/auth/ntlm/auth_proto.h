@@ -23,7 +23,7 @@ NTSTATUS server_service_auth_init(void);
 
 /* The following definitions come from auth/ntlm/auth_util.c  */
 
-NTSTATUS auth_get_challenge_not_implemented(struct auth_method_context *ctx, TALLOC_CTX *mem_ctx, DATA_BLOB *challenge);
+NTSTATUS auth_get_challenge_not_implemented(struct auth_method_context *ctx, TALLOC_CTX *mem_ctx, uint8_t chal[8]);
 
 /****************************************************************************
  Create an auth_usersupplied_data structure after appropriate mapping.

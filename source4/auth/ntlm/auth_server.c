@@ -40,7 +40,7 @@ static NTSTATUS server_want_check(struct auth_method_context *ctx,
 /** 
  * The challenge from the target server, when operating in security=server
  **/
-static NTSTATUS server_get_challenge(struct auth_method_context *ctx, TALLOC_CTX *mem_ctx, DATA_BLOB *_blob)
+static NTSTATUS server_get_challenge(struct auth_method_context *ctx, TALLOC_CTX *mem_ctx, uint8_t chal[8])
 {
 	struct smb_composite_connect io;
 	struct smbcli_options smb_options;
@@ -88,7 +88,10 @@ static NTSTATUS server_get_challenge(struct auth_method_context *ctx, TALLOC_CTX
 				       ctx->auth_ctx->event_ctx);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	*_blob = io.out.tree->session->transport->negotiate.secblob;
+	if (io.out.tree->session->transport->negotiate.secblob.length != 8) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	memcpy(chal, io.out.tree->session->transport->negotiate.secblob.data, 8);
 	ctx->private_data = talloc_steal(ctx, io.out.tree->session);
 	return NT_STATUS_OK;
 }

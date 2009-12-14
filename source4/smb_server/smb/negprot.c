@@ -33,7 +33,6 @@
 static NTSTATUS get_challenge(struct smbsrv_connection *smb_conn, uint8_t buff[8]) 
 {
 	NTSTATUS nt_status;
-	const uint8_t *challenge;
 
 	/* muliple negprots are not premitted */
 	if (smb_conn->negotiate.auth_context) {
@@ -53,13 +52,11 @@ static NTSTATUS get_challenge(struct smbsrv_connection *smb_conn, uint8_t buff[8
 		return nt_status;
 	}
 
-	nt_status = auth_get_challenge(smb_conn->negotiate.auth_context, &challenge);
+	nt_status = auth_get_challenge(smb_conn->negotiate.auth_context, buff);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("auth_get_challenge() returned %s", nt_errstr(nt_status)));
 		return nt_status;
 	}
-
-	memcpy(buff, challenge, 8);
 
 	return NT_STATUS_OK;
 }

@@ -135,7 +135,7 @@ struct auth_operations {
 	 * security=server, and makes a number of compromises to allow
 	 * that.  It is not compatible with being a PDC.  */
 
-	NTSTATUS (*get_challenge)(struct auth_method_context *ctx, TALLOC_CTX *mem_ctx, DATA_BLOB *challenge);
+	NTSTATUS (*get_challenge)(struct auth_method_context *ctx, TALLOC_CTX *mem_ctx, uint8_t chal[8]);
 
 	/* Given the user supplied info, check if this backend want to handle the password checking */
 
@@ -190,7 +190,7 @@ struct auth_context {
 				   const struct auth_usersupplied_info *user_info, 
 				   struct auth_serversupplied_info **server_info);
 	
-	NTSTATUS (*get_challenge)(struct auth_context *auth_ctx, const uint8_t **_chal);
+	NTSTATUS (*get_challenge)(struct auth_context *auth_ctx, uint8_t chal[8]);
 
 	bool (*challenge_may_be_modified)(struct auth_context *auth_ctx);
 
@@ -226,7 +226,7 @@ struct ldb_context;
 struct ldb_dn;
 struct gensec_security;
 
-NTSTATUS auth_get_challenge(struct auth_context *auth_ctx, const uint8_t **_chal);
+NTSTATUS auth_get_challenge(struct auth_context *auth_ctx, uint8_t chal[8]);
 NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 			    struct ldb_context *sam_ctx,
 			    uint32_t logon_parameters,

@@ -51,42 +51,34 @@ bool auth_challenge_may_be_modified(struct auth_context *auth_ctx)
  Try to get a challenge out of the various authentication modules.
  Returns a const char of length 8 bytes.
 ****************************************************************************/
-_PUBLIC_ NTSTATUS auth_get_challenge(struct auth_context *auth_ctx, const uint8_t **_chal)
+_PUBLIC_ NTSTATUS auth_get_challenge(struct auth_context *auth_ctx, uint8_t chal[8])
 {
 	NTSTATUS nt_status;
 	struct auth_method_context *method;
 
-	if (auth_ctx->challenge.data.length) {
+	if (auth_ctx->challenge.data.length == 8) {
 		DEBUG(5, ("auth_get_challenge: returning previous challenge by module %s (normal)\n", 
 			  auth_ctx->challenge.set_by));
-		*_chal = auth_ctx->challenge.data.data;
+		memcpy(chal, auth_ctx->challenge.data.data, 8);
 		return NT_STATUS_OK;
 	}
 
 	for (method = auth_ctx->methods; method; method = method->next) {
-		DATA_BLOB challenge = data_blob(NULL,0);
-
-		nt_status = method->ops->get_challenge(method, auth_ctx, &challenge);
+		nt_status = method->ops->get_challenge(method, auth_ctx, chal);
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NOT_IMPLEMENTED)) {
 			continue;
 		}
 
 		NT_STATUS_NOT_OK_RETURN(nt_status);
 
-		if (challenge.length != 8) {
-			DEBUG(0, ("auth_get_challenge: invalid challenge (length %u) by mothod [%s]\n",
-				(unsigned)challenge.length, method->ops->name));
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-
-		auth_ctx->challenge.data	= challenge;
+		auth_ctx->challenge.data	= data_blob_talloc(auth_ctx, chal, 8);
+		NT_STATUS_HAVE_NO_MEMORY(auth_ctx->challenge.data.data);
 		auth_ctx->challenge.set_by	= method->ops->name;
 
 		break;
 	}
 
 	if (!auth_ctx->challenge.set_by) {
-		uint8_t chal[8];
 		generate_random_buffer(chal, 8);
 
 		auth_ctx->challenge.data		= data_blob_talloc(auth_ctx, chal, 8);
@@ -99,7 +91,6 @@ _PUBLIC_ NTSTATUS auth_get_challenge(struct auth_context *auth_ctx, const uint8_
 	DEBUG(10,("auth_get_challenge: challenge set by %s\n",
 		 auth_ctx->challenge.set_by));
 
-	*_chal = auth_ctx->challenge.data.data;
 	return NT_STATUS_OK;
 }
 
@@ -256,7 +247,7 @@ _PUBLIC_ void auth_check_password_send(struct auth_context *auth_ctx,
 	/* if all the modules say 'not for me' this is reasonable */
 	NTSTATUS nt_status;
 	struct auth_method_context *method;
-	const uint8_t *challenge;
+	uint8_t chal[8];
 	struct auth_usersupplied_info *user_info_tmp;
 	struct auth_check_password_request *req = NULL;
 
@@ -283,7 +274,7 @@ _PUBLIC_ void auth_check_password_send(struct auth_context *auth_ctx,
 	DEBUGADD(3,("auth_check_password_send:  mapped user is: [%s]\\[%s]@[%s]\n", 
 		    user_info->mapped.domain_name, user_info->mapped.account_name, user_info->workstation_name));
 
-	nt_status = auth_get_challenge(auth_ctx, &challenge);
+	nt_status = auth_get_challenge(auth_ctx, chal);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("auth_check_password_send:  Invalid challenge (length %u) stored for this auth context set_by %s - cannot continue: %s\n",
 			(unsigned)auth_ctx->challenge.data.length, auth_ctx->challenge.set_by, nt_errstr(nt_status)));
