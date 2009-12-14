@@ -1317,6 +1317,9 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 		      uint32_t seq, uint32_t ack, int rst);
 
 int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist);
+int ctdb_set_single_public_ip(struct ctdb_context *ctdb,
+			      const char *iface,
+			      const char *ip);
 int ctdb_set_event_script(struct ctdb_context *ctdb, const char *script);
 int ctdb_set_event_script_dir(struct ctdb_context *ctdb, const char *script_dir);
 int ctdb_set_notification_script(struct ctdb_context *ctdb, const char *script);

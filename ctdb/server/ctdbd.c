@@ -282,24 +282,14 @@ int main(int argc, const char *argv[])
 	}
 
 	if (options.single_public_ip) {
-		struct ctdb_vnn *svnn;
-
 		if (options.public_interface == NULL) {
 			DEBUG(DEBUG_ALERT,("--single_public_ip used but --public_interface is not specified. You must specify the public interface when using single public ip. Exiting\n"));
 			exit(10);
 		}
 
-		svnn = talloc_zero(ctdb, struct ctdb_vnn);
-		CTDB_NO_MEMORY(ctdb, svnn);
-
-		ctdb->single_ip_vnn = svnn;
-		svnn->iface = talloc_strdup(svnn, options.public_interface);
-		CTDB_NO_MEMORY(ctdb, svnn->iface);
-
-		if (parse_ip(options.single_public_ip, 
-				svnn->iface,
-				0,
-				&svnn->public_address) == 0) {
+		ret = ctdb_set_single_public_ip(ctdb, options.public_interface,
+						options.single_public_ip);
+		if (ret != 0) {
 			DEBUG(DEBUG_ALERT,("Invalid --single-public-ip argument : %s . This is not a valid ip address. Exiting.\n", options.single_public_ip));
 			exit(10);
 		}

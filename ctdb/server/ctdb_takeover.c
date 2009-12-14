@@ -542,8 +542,28 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist)
 	return 0;
 }
 
+int ctdb_set_single_public_ip(struct ctdb_context *ctdb,
+			      const char *iface,
+			      const char *ip)
+{
+	struct ctdb_vnn *svnn;
+	bool ok;
 
+	svnn = talloc_zero(ctdb, struct ctdb_vnn);
+	CTDB_NO_MEMORY(ctdb, svnn);
 
+	svnn->iface = talloc_strdup(svnn, iface);
+	CTDB_NO_MEMORY(ctdb, svnn->iface);
+
+	ok = parse_ip(ip, iface, 0, &svnn->public_address);
+	if (!ok) {
+		talloc_free(svnn);
+		return -1;
+	}
+
+	ctdb->single_ip_vnn = svnn;
+	return 0;
+}
 
 struct ctdb_public_ip_list {
 	struct ctdb_public_ip_list *next;
