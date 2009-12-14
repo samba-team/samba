@@ -312,7 +312,7 @@ struct lsa_SidPtr {
 };
 
 struct lsa_SidArray {
-	uint32_t num_sids;/* [range(0,1000)] */
+	uint32_t num_sids;/* [range(0,20480)] */
 	struct lsa_SidPtr *sids;/* [unique,size_is(num_sids)] */
 }/* [public] */;
 
@@ -397,7 +397,7 @@ struct lsa_TranslatedName {
 };
 
 struct lsa_TransNameArray {
-	uint32_t count;/* [range(0,1000)] */
+	uint32_t count;/* [range(0,20480)] */
 	struct lsa_TranslatedName *names;/* [unique,size_is(count)] */
 };
 
