@@ -509,7 +509,7 @@ int ctdb_set_child_logging(struct ctdb_context *ctdb)
 		return -1;
 	}
 
-	event_add_fd(ctdb->ev, ctdb, p[0], EVENT_FD_READ, 
+	event_add_fd(ctdb->ev, ctdb->log, p[0], EVENT_FD_READ, 
 		     ctdb_log_handler, ctdb->log);
 	set_close_on_exec(p[0]);
 	ctdb->log->pfd = p[0];
