@@ -1050,8 +1050,9 @@ bool pdb_set_plaintext_passwd(struct samu *sampass, const char *plaintext)
 			/*
 			 * Ensure we have space for the needed history.
 			 */
-			uchar *new_history = (uchar *)TALLOC(
-				sampass, pwHistLen*PW_HISTORY_ENTRY_LEN);
+			uchar *new_history = talloc_array(
+				sampass, uchar,
+				pwHistLen*PW_HISTORY_ENTRY_LEN);
 			if (!new_history) {
 				return False;
 			}
