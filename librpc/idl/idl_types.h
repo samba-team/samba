@@ -67,3 +67,5 @@
   this is used to control formatting of uint8 arrays
 */
 #define NDR_PAHEX LIBNDR_PRINT_ARRAY_HEX
+
+#define NDR_RELATIVE_REVERSE LIBNDR_FLAG_RELATIVE_REVERSE
