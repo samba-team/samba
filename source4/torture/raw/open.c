@@ -157,7 +157,7 @@ static const char *rdwr_string(enum rdwr_mode m)
 /*
   test RAW_OPEN_OPEN
 */
-static bool test_open(struct smbcli_state *cli, struct torture_context *tctx)
+static bool test_open(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	union smb_open io;
 	union smb_fileinfo finfo;
@@ -166,7 +166,9 @@ static bool test_open(struct smbcli_state *cli, struct torture_context *tctx)
 	int fnum = -1, fnum2;
 	bool ret = true;
 
-	torture_comment(tctx, "Checking RAW_OPEN_OPEN\n");
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
 
 	io.openold.level = RAW_OPEN_OPEN;
 	io.openold.in.fname = fname;
@@ -259,7 +261,7 @@ static bool test_open(struct smbcli_state *cli, struct torture_context *tctx)
 
 done:
 	smbcli_close(cli->tree, fnum);
-	smbcli_unlink(cli->tree, fname);
+	smbcli_deltree(cli->tree, BASEDIR);
 
 	return ret;
 }
@@ -268,7 +270,7 @@ done:
 /*
   test RAW_OPEN_OPENX
 */
-static bool test_openx(struct smbcli_state *cli, struct torture_context *tctx)
+static bool test_openx(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	union smb_open io;
 	union smb_fileinfo finfo;
@@ -298,8 +300,9 @@ static bool test_openx(struct smbcli_state *cli, struct torture_context *tctx)
 		{ OPENX_OPEN_FUNC_TRUNC | OPENX_OPEN_FUNC_CREATE, false, NT_STATUS_OK },
 	};
 
-	torture_comment(tctx, "Checking RAW_OPEN_OPENX\n");
-	smbcli_unlink(cli->tree, fname);
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
 
 	io.openx.level = RAW_OPEN_OPENX;
 	io.openx.in.fname = fname;
@@ -494,8 +497,7 @@ static bool test_openx(struct smbcli_state *cli, struct torture_context *tctx)
 
 done:
 	smbcli_close(cli->tree, fnum);
-	smbcli_unlink(cli->tree, fname_exe);
-	smbcli_unlink(cli->tree, fname);
+	smbcli_deltree(cli->tree, BASEDIR);
 
 	return ret;
 }
@@ -506,7 +508,7 @@ done:
 
   many thanks to kukks for a sniff showing how this works with os2->w2k
 */
-static bool test_t2open(struct smbcli_state *cli, struct torture_context *tctx)
+static bool test_t2open(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	union smb_open io;
 	union smb_fileinfo finfo;
@@ -536,6 +538,10 @@ static bool test_t2open(struct smbcli_state *cli, struct torture_context *tctx)
 		{ OPENX_OPEN_FUNC_TRUNC | OPENX_OPEN_FUNC_CREATE, false, NT_STATUS_OK },
 	};
 
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
+
 	fnum = create_complex_file(cli, tctx, fname1);
 	if (fnum == -1) {
 		torture_result(tctx, TORTURE_FAIL,
@@ -545,8 +551,6 @@ static bool test_t2open(struct smbcli_state *cli, struct torture_context *tctx)
 		goto done;
 	}
 	smbcli_close(cli->tree, fnum);
-
-	torture_comment(tctx, "Checking RAW_OPEN_T2OPEN\n");
 
 	io.t2open.level = RAW_OPEN_T2OPEN;
 	io.t2open.in.flags = OPENX_FLAGS_ADDITIONAL_INFO;
@@ -669,7 +673,7 @@ static bool test_t2open(struct smbcli_state *cli, struct torture_context *tctx)
 
 done:
 	smbcli_close(cli->tree, fnum);
-	smbcli_unlink(cli->tree, fname);
+	smbcli_deltree(cli->tree, BASEDIR);
 
 	return ret;
 }
@@ -678,7 +682,7 @@ done:
 /*
   test RAW_OPEN_NTCREATEX
 */
-static bool test_ntcreatex(struct smbcli_state *cli, struct torture_context *tctx)
+static bool test_ntcreatex(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	union smb_open io;
 	union smb_fileinfo finfo;
@@ -709,7 +713,9 @@ static bool test_ntcreatex(struct smbcli_state *cli, struct torture_context *tct
 		{ 6, 	                        false, NT_STATUS_INVALID_PARAMETER },
 	};
 
-	torture_comment(tctx, "Checking RAW_OPEN_NTCREATEX\n");
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
 
 	/* reasonable default parameters */
 	io.generic.level = RAW_OPEN_NTCREATEX;
@@ -848,7 +854,7 @@ static bool test_ntcreatex(struct smbcli_state *cli, struct torture_context *tct
 
 done:
 	smbcli_close(cli->tree, fnum);
-	smbcli_unlink(cli->tree, fname);
+	smbcli_deltree(cli->tree, BASEDIR);
 
 	return ret;
 }
@@ -857,7 +863,7 @@ done:
 /*
   test RAW_OPEN_NTTRANS_CREATE
 */
-static bool test_nttrans_create(struct smbcli_state *cli, struct torture_context *tctx)
+static bool test_nttrans_create(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	union smb_open io;
 	union smb_fileinfo finfo;
@@ -890,7 +896,9 @@ static bool test_nttrans_create(struct smbcli_state *cli, struct torture_context
 		{ 6, 	                        false, NT_STATUS_INVALID_PARAMETER },
 	};
 
-	torture_comment(tctx, "Checking RAW_OPEN_NTTRANS_CREATE\n");
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
 
 	/* reasonable default parameters */
 	io.generic.level = RAW_OPEN_NTTRANS_CREATE;
@@ -1120,7 +1128,7 @@ static bool test_nttrans_create(struct smbcli_state *cli, struct torture_context
 
 done:
 	smbcli_close(cli->tree, fnum);
-	smbcli_unlink(cli->tree, fname);
+	smbcli_deltree(cli->tree, BASEDIR);
 
 	return ret;
 }
@@ -1133,7 +1141,7 @@ done:
   open_disposition==NTCREATEX_DISP_OVERWRITE_IF. Windows 2003 allows the
   second open.
 */
-static bool test_ntcreatex_brlocked(struct smbcli_state *cli, struct torture_context *tctx)
+static bool test_ntcreatex_brlocked(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	union smb_open io, io1;
 	union smb_lock io2;
@@ -1141,6 +1149,10 @@ static bool test_ntcreatex_brlocked(struct smbcli_state *cli, struct torture_con
 	const char *fname = BASEDIR "\\torture_ntcreatex.txt";
 	NTSTATUS status;
 	bool ret = true;
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
 
 	torture_comment(tctx, "Testing ntcreatex with a byte range locked file\n");
 
@@ -1196,14 +1208,14 @@ static bool test_ntcreatex_brlocked(struct smbcli_state *cli, struct torture_con
  done:
 	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
 	smbcli_close(cli->tree, io1.ntcreatex.out.file.fnum);
-	smbcli_unlink(cli->tree, fname);
+	smbcli_deltree(cli->tree, BASEDIR);
 	return ret;
 }
 
 /*
   test RAW_OPEN_MKNEW
 */
-static bool test_mknew(struct smbcli_state *cli, struct torture_context *tctx)
+static bool test_mknew(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	union smb_open io;
 	const char *fname = BASEDIR "\\torture_mknew.txt";
@@ -1213,7 +1225,9 @@ static bool test_mknew(struct smbcli_state *cli, struct torture_context *tctx)
 	time_t basetime = (time(NULL) + 3600*24*3) & ~1;
 	union smb_fileinfo finfo;
 
-	torture_comment(tctx, "Checking RAW_OPEN_MKNEW\n");
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
 
 	io.mknew.level = RAW_OPEN_MKNEW;
 	io.mknew.in.attrib = 0;
@@ -1249,7 +1263,7 @@ static bool test_mknew(struct smbcli_state *cli, struct torture_context *tctx)
 	
 done:
 	smbcli_close(cli->tree, fnum);
-	smbcli_unlink(cli->tree, fname);
+	smbcli_deltree(cli->tree, BASEDIR);
 
 	return ret;
 }
@@ -1258,7 +1272,7 @@ done:
 /*
   test RAW_OPEN_CREATE
 */
-static bool test_create(struct smbcli_state *cli, struct torture_context *tctx)
+static bool test_create(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	union smb_open io;
 	const char *fname = BASEDIR "\\torture_create.txt";
@@ -1268,7 +1282,9 @@ static bool test_create(struct smbcli_state *cli, struct torture_context *tctx)
 	time_t basetime = (time(NULL) + 3600*24*3) & ~1;
 	union smb_fileinfo finfo;
 
-	torture_comment(tctx, "Checking RAW_OPEN_CREATE\n");
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
 
 	io.create.level = RAW_OPEN_CREATE;
 	io.create.in.attrib = 0;
@@ -1305,7 +1321,7 @@ static bool test_create(struct smbcli_state *cli, struct torture_context *tctx)
 	
 done:
 	smbcli_close(cli->tree, fnum);
-	smbcli_unlink(cli->tree, fname);
+	smbcli_deltree(cli->tree, BASEDIR);
 
 	return ret;
 }
@@ -1314,7 +1330,7 @@ done:
 /*
   test RAW_OPEN_CTEMP
 */
-static bool test_ctemp(struct smbcli_state *cli, TALLOC_CTX *tctx)
+static bool test_ctemp(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	union smb_open io;
 	NTSTATUS status;
@@ -1324,7 +1340,9 @@ static bool test_ctemp(struct smbcli_state *cli, TALLOC_CTX *tctx)
 	union smb_fileinfo finfo;
 	const char *name, *fname = NULL;
 
-	torture_comment(tctx, "Checking RAW_OPEN_CTEMP\n");
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
 
 	io.ctemp.level = RAW_OPEN_CTEMP;
 	io.ctemp.in.attrib = FILE_ATTRIBUTE_HIDDEN;
@@ -1346,9 +1364,7 @@ static bool test_ctemp(struct smbcli_state *cli, TALLOC_CTX *tctx)
 
 done:
 	smbcli_close(cli->tree, fnum);
-	if (fname) {
-		smbcli_unlink(cli->tree, fname);
-	}
+	smbcli_deltree(cli->tree, BASEDIR);
 
 	return ret;
 }
@@ -1357,7 +1373,7 @@ done:
 /*
   test chained RAW_OPEN_OPENX_READX
 */
-static bool test_chained(struct smbcli_state *cli, TALLOC_CTX *tctx)
+static bool test_chained(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	union smb_open io;
 	const char *fname = BASEDIR "\\torture_chained.txt";
@@ -1367,8 +1383,9 @@ static bool test_chained(struct smbcli_state *cli, TALLOC_CTX *tctx)
 	const char *buf = "test";
 	char buf2[4];
 
-	torture_comment(tctx, "Checking RAW_OPEN_OPENX chained with READX\n");
-	smbcli_unlink(cli->tree, fname);
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
 
 	fnum = create_complex_file(cli, tctx, fname);
 
@@ -1405,7 +1422,7 @@ static bool test_chained(struct smbcli_state *cli, TALLOC_CTX *tctx)
 
 done:
 	smbcli_close(cli->tree, fnum);
-	smbcli_unlink(cli->tree, fname);
+	smbcli_deltree(cli->tree, BASEDIR);
 
 	return ret;
 }
@@ -1415,7 +1432,7 @@ done:
   NetApp filers are known to fail on this.
   
 */
-static bool test_no_leading_slash(struct smbcli_state *cli, TALLOC_CTX *tctx)
+static bool test_no_leading_slash(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	union smb_open io;
 	const char *fname = BASEDIR "\\torture_no_leading_slash.txt";
@@ -1424,8 +1441,10 @@ static bool test_no_leading_slash(struct smbcli_state *cli, TALLOC_CTX *tctx)
 	bool ret = true;
 	const char *buf = "test";
 
-	torture_comment(tctx, "Checking RAW_OPEN_OPENX without leading "
-			"slash on path\n");
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
+
 	smbcli_unlink(cli->tree, fname);
 
 	/* Create the file */
@@ -1451,7 +1470,7 @@ static bool test_no_leading_slash(struct smbcli_state *cli, TALLOC_CTX *tctx)
 
 done:
 	smbcli_close(cli->tree, fnum);
-	smbcli_unlink(cli->tree, fname);
+	smbcli_deltree(cli->tree, BASEDIR);
 
 	return ret;
 }
@@ -1462,7 +1481,7 @@ done:
   Samba 3.2.0 - 3.2.6 are known to fail this.
   
 */
-static bool test_openx_over_dir(struct smbcli_state *cli, TALLOC_CTX *tctx)
+static bool test_openx_over_dir(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	union smb_open io;
 	const char *fname = BASEDIR "\\openx_over_dir";
@@ -1471,8 +1490,9 @@ static bool test_openx_over_dir(struct smbcli_state *cli, TALLOC_CTX *tctx)
 	int fnum = -1;
 	bool ret = true;
 
-	torture_comment(tctx, "Checking RAW_OPEN_OPENX over an existing directory\n");
-	smbcli_unlink(cli->tree, fname);
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
 
 	/* Create the Directory */
 	status = create_directory_handle(cli->tree, fname, &d_fnum);
@@ -1496,7 +1516,7 @@ static bool test_openx_over_dir(struct smbcli_state *cli, TALLOC_CTX *tctx)
 
 done:
 	smbcli_close(cli->tree, fnum);
-	smbcli_unlink(cli->tree, fname);
+	smbcli_deltree(cli->tree, BASEDIR);
 
 	return ret;
 }
@@ -1504,7 +1524,7 @@ done:
 
 /* A little torture test to expose a race condition in Samba 3.0.20 ... :-) */
 
-static bool test_raw_open_multi(struct torture_context *tctx)
+static bool test_raw_open_multi(struct torture_context *tctx, struct smbcli_state *cli_ignored)
 {
 	struct smbcli_state *cli;
 	TALLOC_CTX *mem_ctx = talloc_init("torture_test_oplock_multi");
@@ -1633,7 +1653,7 @@ static bool test_raw_open_multi(struct torture_context *tctx)
 /*
   test opening for delete on a read-only attribute file.
 */
-static bool test_open_for_delete(struct smbcli_state *cli, struct torture_context *tctx)
+static bool test_open_for_delete(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	union smb_open io;
 	union smb_fileinfo finfo;
@@ -1642,7 +1662,9 @@ static bool test_open_for_delete(struct smbcli_state *cli, struct torture_contex
 	int fnum = -1;
 	bool ret = true;
 
-	torture_comment(tctx, "Checking RAW_NTCREATEX for delete on a readonly file.\n");
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
 
 	/* reasonable default parameters */
 	io.generic.level = RAW_OPEN_NTCREATEX;
@@ -1682,7 +1704,7 @@ static bool test_open_for_delete(struct smbcli_state *cli, struct torture_contex
 
 done:
 	smbcli_close(cli->tree, fnum);
-	smbcli_unlink(cli->tree, fname);
+	smbcli_deltree(cli->tree, BASEDIR);
 
 	return ret;
 }
@@ -1692,7 +1714,7 @@ done:
   Send chained NTCREATEX_READX on a file that doesn't exist, then create
   the file and try again.
 */
-static bool test_chained_ntcreatex_readx(struct smbcli_state *cli, struct torture_context *tctx)
+static bool test_chained_ntcreatex_readx(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	union smb_open io;
@@ -1703,9 +1725,12 @@ static bool test_chained_ntcreatex_readx(struct smbcli_state *cli, struct tortur
 	const char *buf = "test";
 	char buf2[4];
 
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
+
 	torture_comment(tctx, "Checking RAW_NTCREATEX_READX chained on "
 			      "non-existant file \n");
-	smbcli_unlink(cli->tree, fname);
 
 	/* ntcreatex parameters */
 	io.generic.level = RAW_OPEN_NTCREATEX_READX;
@@ -1756,7 +1781,7 @@ static bool test_chained_ntcreatex_readx(struct smbcli_state *cli, struct tortur
 
 done:
 	smbcli_close(cli->tree, fnum);
-	smbcli_unlink(cli->tree, fname);
+	smbcli_deltree(cli->tree, BASEDIR);
 	talloc_free(mem_ctx);
 
 	return ret;
@@ -1769,8 +1794,8 @@ done:
 		    = (typeof((_struct)->ntcreatex.in)) {_init};\
 	} while (0)
 
-static bool test_ntcreatex_opendisp_dir(struct smbcli_state *cli,
-					struct torture_context *tctx)
+static bool test_ntcreatex_opendisp_dir(struct torture_context *tctx,
+					struct smbcli_state *cli)
 {
 	union smb_open io;
 	const char *dname = BASEDIR "\\torture_ntcreatex_opendisp_dir";
@@ -1849,41 +1874,34 @@ static bool test_ntcreatex_opendisp_dir(struct smbcli_state *cli,
 	}
 
 done:
-	smbcli_rmdir(cli->tree, dname);
 	smbcli_deltree(cli->tree, BASEDIR);
+
 	return ret;
 }
 
 
 /* basic testing of all RAW_OPEN_* calls
 */
-bool torture_raw_open(struct torture_context *torture, struct smbcli_state *cli)
+struct torture_suite *torture_raw_open(TALLOC_CTX *mem_ctx)
 {
-	bool ret = true;
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "OPEN");
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_suite_add_1smb_test(suite, "BRLOCKED", test_ntcreatex_brlocked);
+	torture_suite_add_1smb_test(suite, "OPEN", test_open);
+	torture_suite_add_1smb_test(suite, "OPEN-MULTI", test_raw_open_multi);
+	torture_suite_add_1smb_test(suite, "OPENX", test_openx);
+	torture_suite_add_1smb_test(suite, "NTCREATEX", test_ntcreatex);
+	torture_suite_add_1smb_test(suite, "NTTRANS-CREATE", test_nttrans_create);
+	torture_suite_add_1smb_test(suite, "T2OPEN", test_t2open);
+	torture_suite_add_1smb_test(suite, "MKNEW", test_mknew);
+	torture_suite_add_1smb_test(suite, "CREATE", test_create);
+	torture_suite_add_1smb_test(suite, "CTEMP", test_ctemp);
+	torture_suite_add_1smb_test(suite, "CHAINED-OPENX", test_chained);
+	torture_suite_add_1smb_test(suite, "CHAINED-NTCREATEX", test_chained_ntcreatex_readx);
+	torture_suite_add_1smb_test(suite, "NO-LEADING-SLASH", test_no_leading_slash);
+	torture_suite_add_1smb_test(suite, "OPENX-OVER-DIR", test_openx_over_dir);
+	torture_suite_add_1smb_test(suite, "OPEN-FOR-DELETE", test_open_for_delete);
+	torture_suite_add_1smb_test(suite, "OPENDISP-DIR", test_ntcreatex_opendisp_dir);
 
-	ret &= test_ntcreatex_brlocked(cli, torture);
-	ret &= test_open(cli, torture);
-	ret &= test_raw_open_multi(torture);
-	ret &= test_openx(cli, torture);
-	ret &= test_ntcreatex(cli, torture);
-	ret &= test_nttrans_create(cli, torture);
-	ret &= test_t2open(cli, torture);
-	ret &= test_mknew(cli, torture);
-	ret &= test_create(cli, torture);
-	ret &= test_ctemp(cli, torture);
-	ret &= test_chained(cli, torture);
-	ret &= test_chained_ntcreatex_readx(cli, torture);
-	ret &= test_no_leading_slash(cli, torture);
-	ret &= test_openx_over_dir(cli, torture);
-	ret &= test_open_for_delete(cli, torture);
-	ret &= test_ntcreatex_opendisp_dir(cli, torture);
-
-	smb_raw_exit(cli->session);
-	smbcli_deltree(cli->tree, BASEDIR);
-
-	return ret;
+	return suite;
 }

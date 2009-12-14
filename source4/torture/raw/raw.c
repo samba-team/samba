@@ -44,7 +44,7 @@ NTSTATUS torture_raw_init(void)
 	torture_suite_add_suite(suite, torture_raw_sfileinfo(suite));
 	torture_suite_add_suite(suite, torture_raw_search(suite));
 	torture_suite_add_1smb_test(suite, "CLOSE", torture_raw_close);
-	torture_suite_add_1smb_test(suite, "OPEN", torture_raw_open);
+	torture_suite_add_suite(suite, torture_raw_open(suite));
 	torture_suite_add_1smb_test(suite, "MKDIR", torture_raw_mkdir);
 	torture_suite_add_suite(suite, torture_raw_oplock(suite));
 	torture_suite_add_1smb_test(suite, "HOLD-OPLOCK", torture_hold_oplock);
