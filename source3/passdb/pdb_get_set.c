@@ -1061,32 +1061,27 @@ bool pdb_set_plaintext_passwd(struct samu *sampass, const char *plaintext)
 		pwhistory = new_history;
 	}
 
-	if (pwhistory != NULL) {
-		/*
-		 * Make room for the new password in the history list.
-		 */
-		if (pwHistLen > 1) {
-			memmove(&pwhistory[PW_HISTORY_ENTRY_LEN], pwhistory,
-				(pwHistLen-1)*PW_HISTORY_ENTRY_LEN );
-		}
-		/*
-		 * Create the new salt as the first part of the
-		 * history entry.
-		 */
-		generate_random_buffer(pwhistory, PW_HISTORY_SALT_LEN);
-
-		/*
-		 * Generate the md5 hash of the salt+new password as
-		 * the second part of the history entry.
-		 */
-
-		E_md5hash(pwhistory, new_nt_p16,
-			  &pwhistory[PW_HISTORY_SALT_LEN]);
-		pdb_set_pw_history(sampass, pwhistory, pwHistLen, PDB_CHANGED);
-	} else {
-		DEBUG (10,("pdb_get_set.c: pdb_set_plaintext_passwd: "
-			   "pwhistory was NULL!\n"));
+	/*
+	 * Make room for the new password in the history list.
+	 */
+	if (pwHistLen > 1) {
+		memmove(&pwhistory[PW_HISTORY_ENTRY_LEN], pwhistory,
+			(pwHistLen-1)*PW_HISTORY_ENTRY_LEN );
 	}
+
+	/*
+	 * Create the new salt as the first part of the history entry.
+	 */
+	generate_random_buffer(pwhistory, PW_HISTORY_SALT_LEN);
+
+	/*
+	 * Generate the md5 hash of the salt+new password as the
+	 * second part of the history entry.
+	 */
+	E_md5hash(pwhistory, new_nt_p16, &pwhistory[PW_HISTORY_SALT_LEN]);
+
+	pdb_set_pw_history(sampass, pwhistory, pwHistLen, PDB_CHANGED);
+
 	return True;
 }
 
