@@ -1043,7 +1043,9 @@ bool pdb_set_plaintext_passwd(struct samu *sampass, const char *plaintext)
 
 	if (current_history_len < pwHistLen) {
 		/*
-		 * Ensure we have space for the needed history.
+		 * Ensure we have space for the needed history. This
+		 * also takes care of an account which did not have
+		 * any history at all so far, i.e. pwhistory==NULL
 		 */
 		uchar *new_history = talloc_zero_array(
 			sampass, uchar,
@@ -1059,7 +1061,7 @@ bool pdb_set_plaintext_passwd(struct samu *sampass, const char *plaintext)
 		pwhistory = new_history;
 	}
 
-	if (pwhistory && pwHistLen) {
+	if (pwhistory != NULL) {
 		/*
 		 * Make room for the new password in the history list.
 		 */
