@@ -103,7 +103,7 @@ struct ctdb_tunable {
 	uint32_t monitor_interval;
 	uint32_t tickle_update_interval;
 	uint32_t script_timeout;
-	uint32_t script_ban_count; /* ban after this many consec timeouts*/
+	uint32_t script_timeout_count; /* allow dodgy scripts to hang this many times in a row before we mark the node unhealthy */
 	uint32_t recovery_grace_period;
 	uint32_t recovery_ban_period;
 	uint32_t database_hash_size;

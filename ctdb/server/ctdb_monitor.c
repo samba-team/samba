@@ -126,8 +126,8 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 	if (status == -ETIME) {
 		ctdb->event_script_timeouts++;
 
-		if (ctdb->event_script_timeouts > ctdb->tunable.script_ban_count) {
-			DEBUG(DEBUG_ERR, ("Maximum timeout count %u reached for eventscript. Making node unhealthy\n", ctdb->tunable.script_ban_count));
+		if (ctdb->event_script_timeouts >= ctdb->tunable.script_timeout_count) {
+			DEBUG(DEBUG_ERR, ("Maximum timeout count %u reached for eventscript. Making node unhealthy\n", ctdb->tunable.script_timeout_count));
 		} else {
 			/* We pretend this is OK. */
 			goto after_change_status;
