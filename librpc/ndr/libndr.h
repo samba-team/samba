@@ -383,13 +383,16 @@ void ndr_push_restore_relative_base_offset(struct ndr_push *ndr, uint32_t offset
 enum ndr_err_code ndr_push_setup_relative_base_offset1(struct ndr_push *ndr, const void *p, uint32_t offset);
 enum ndr_err_code ndr_push_setup_relative_base_offset2(struct ndr_push *ndr, const void *p);
 enum ndr_err_code ndr_push_relative_ptr1(struct ndr_push *ndr, const void *p);
+enum ndr_err_code ndr_push_short_relative_ptr1(struct ndr_push *ndr, const void *p);
 enum ndr_err_code ndr_push_relative_ptr2(struct ndr_push *ndr, const void *p);
+enum ndr_err_code ndr_push_short_relative_ptr2(struct ndr_push *ndr, const void *p);
 uint32_t ndr_pull_get_relative_base_offset(struct ndr_pull *ndr);
 void ndr_pull_restore_relative_base_offset(struct ndr_pull *ndr, uint32_t offset);
 enum ndr_err_code ndr_pull_setup_relative_base_offset1(struct ndr_pull *ndr, const void *p, uint32_t offset);
 enum ndr_err_code ndr_pull_setup_relative_base_offset2(struct ndr_pull *ndr, const void *p);
 enum ndr_err_code ndr_pull_relative_ptr1(struct ndr_pull *ndr, const void *p, uint32_t rel_offset);
 enum ndr_err_code ndr_pull_relative_ptr2(struct ndr_pull *ndr, const void *p);
+enum ndr_err_code ndr_pull_relative_ptr_short(struct ndr_pull *ndr, uint16_t *v);
 size_t ndr_align_size(uint32_t offset, size_t n);
 struct ndr_pull *ndr_pull_init_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience);
 enum ndr_err_code ndr_pull_advance(struct ndr_pull *ndr, uint32_t size);
