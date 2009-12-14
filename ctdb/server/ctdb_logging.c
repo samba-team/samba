@@ -381,6 +381,9 @@ static void ctdb_log_handler(struct event_context *ev, struct fd_event *fde,
 		 sizeof(log->buf) - log->buf_used);
 	if (n > 0) {
 		log->buf_used += n;
+	} else if (n == 0) {
+		talloc_free(log);
+		return;
 	}
 
 	this_log_level = script_log_level;
