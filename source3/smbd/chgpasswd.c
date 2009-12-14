@@ -1155,7 +1155,7 @@ NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passw
 		}
 	}
 
-	/* removed calculation here, becuase passdb now calculates
+	/* removed calculation here, because passdb now calculates
 	   based on policy.  jmcd */
 	if ((can_change_time != 0) && (time(NULL) < can_change_time)) {
 		DEBUG(1, ("user %s cannot change password now, must "
