@@ -1058,11 +1058,8 @@ bool pdb_set_plaintext_passwd(struct samu *sampass, const char *plaintext)
 				return False;
 			}
 
-			/* And copy it into the new buffer. */
-			if (current_history_len) {
-				memcpy(new_history, pwhistory,
-				       current_history_len*PW_HISTORY_ENTRY_LEN);
-			}
+			memcpy(new_history, pwhistory,
+			       current_history_len*PW_HISTORY_ENTRY_LEN);
 
 			pwhistory = new_history;
 		}
