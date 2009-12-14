@@ -596,6 +596,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_subcontext_start(struct ndr_push *ndr,
 	if (size_is > 0) {
 		NDR_CHECK(ndr_push_zero(subndr, size_is));
 		subndr->offset = 0;
+		subndr->relative_end_offset = size_is;
 	}
 
 	*_subndr = subndr;
