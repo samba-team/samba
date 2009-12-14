@@ -237,8 +237,9 @@ _PUBLIC_ enum ndr_err_code ndr_push_ENUM_SERVICE_STATUSW(struct ndr_push *ndr, i
 			uint32_t _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
 			if (r->service_name) {
-				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->service_name));
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->service_name));
 				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->service_name));
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->service_name));
 			}
 			ndr->flags = _flags_save_string;
 		}
@@ -246,8 +247,9 @@ _PUBLIC_ enum ndr_err_code ndr_push_ENUM_SERVICE_STATUSW(struct ndr_push *ndr, i
 			uint32_t _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
 			if (r->display_name) {
-				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->display_name));
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->display_name));
 				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->display_name));
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->display_name));
 			}
 			ndr->flags = _flags_save_string;
 		}
@@ -372,8 +374,9 @@ _PUBLIC_ enum ndr_err_code ndr_push_ENUM_SERVICE_STATUSA(struct ndr_push *ndr, i
 			uint32_t _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
 			if (r->service_name) {
-				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->service_name));
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->service_name));
 				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->service_name));
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->service_name));
 			}
 			ndr->flags = _flags_save_string;
 		}
@@ -381,8 +384,9 @@ _PUBLIC_ enum ndr_err_code ndr_push_ENUM_SERVICE_STATUSA(struct ndr_push *ndr, i
 			uint32_t _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
 			if (r->display_name) {
-				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->display_name));
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->display_name));
 				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->display_name));
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->display_name));
 			}
 			ndr->flags = _flags_save_string;
 		}
@@ -1008,8 +1012,9 @@ _PUBLIC_ enum ndr_err_code ndr_push_SERVICE_DESCRIPTION(struct ndr_push *ndr, in
 			uint32_t _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
 			if (r->description) {
-				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->description));
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->description));
 				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->description));
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->description));
 			}
 			ndr->flags = _flags_save_string;
 		}
@@ -1160,8 +1165,9 @@ _PUBLIC_ enum ndr_err_code ndr_push_SERVICE_FAILURE_ACTIONS(struct ndr_push *ndr
 			uint32_t _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
 			if (r->rebootmsg) {
-				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->rebootmsg));
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->rebootmsg));
 				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->rebootmsg));
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->rebootmsg));
 			}
 			ndr->flags = _flags_save_string;
 		}
@@ -1169,17 +1175,19 @@ _PUBLIC_ enum ndr_err_code ndr_push_SERVICE_FAILURE_ACTIONS(struct ndr_push *ndr
 			uint32_t _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
 			if (r->command) {
-				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->command));
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->command));
 				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->command));
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->command));
 			}
 			ndr->flags = _flags_save_string;
 		}
 		if (r->actions) {
-			NDR_CHECK(ndr_push_relative_ptr2(ndr, r->actions));
+			NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->actions));
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->num_actions));
 			for (cntr_actions_1 = 0; cntr_actions_1 < r->num_actions; cntr_actions_1++) {
 				NDR_CHECK(ndr_push_SC_ACTION(ndr, NDR_SCALARS, &r->actions[cntr_actions_1]));
 			}
+			NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->actions));
 		}
 	}
 	return NDR_ERR_SUCCESS;

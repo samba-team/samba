@@ -618,20 +618,24 @@ _PUBLIC_ enum ndr_err_code ndr_push_security_descriptor(struct ndr_push *ndr, in
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 			if (r->owner_sid) {
-				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->owner_sid));
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->owner_sid));
 				NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS, r->owner_sid));
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->owner_sid));
 			}
 			if (r->group_sid) {
-				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->group_sid));
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->group_sid));
 				NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS, r->group_sid));
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->group_sid));
 			}
 			if (r->sacl) {
-				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->sacl));
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->sacl));
 				NDR_CHECK(ndr_push_security_acl(ndr, NDR_SCALARS|NDR_BUFFERS, r->sacl));
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->sacl));
 			}
 			if (r->dacl) {
-				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->dacl));
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->dacl));
 				NDR_CHECK(ndr_push_security_acl(ndr, NDR_SCALARS|NDR_BUFFERS, r->dacl));
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->dacl));
 			}
 		}
 		ndr->flags = _flags_save_STRUCT;
