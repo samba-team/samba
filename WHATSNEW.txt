@@ -116,6 +116,10 @@ o   Jeremy Allison <jra@samba.org>
     * Refactor reply_rmdir to use handle based code.
 
 
+o   Dan Cox <dan@wep.net>
+    * BUG 2350: Add LDAP Alias Dereferencing support.
+
+
 o   Günther Deschner <gd@samba.org>
     * BUG 6929: Fix build with recent heimdal.
     * Fix several printing issues.
@@ -163,6 +167,7 @@ o   Karolin Seeger <kseeger@samba.org>
 o   Bo Yang <boyang@samba.org>
     * BUG 6879: Fix crash in Winbind.
     * Fix crash in free_file_list().
+    * Give the user a chance to change password when password will expire soon.
 
 
 ######################################################################
