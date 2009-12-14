@@ -445,9 +445,16 @@ int32_t ctdb_control_release_ipv4(struct ctdb_context *ctdb,
 }
 
 
-static int ctdb_add_public_address(struct ctdb_context *ctdb, ctdb_sock_addr *addr, unsigned mask, const char *iface)
+static int ctdb_add_public_address(struct ctdb_context *ctdb,
+				   ctdb_sock_addr *addr,
+				   unsigned mask, const char *ifaces)
 {
 	struct ctdb_vnn      *vnn;
+	uint32_t num = 0;
+	char *tmp;
+	const char *iface;
+	int i;
+	int ret;
 
 	/* Verify that we dont have an entry for this ip yet */
 	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
@@ -461,8 +468,19 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb, ctdb_sock_addr *ad
 	/* create a new vnn structure for this ip address */
 	vnn = talloc_zero(ctdb, struct ctdb_vnn);
 	CTDB_NO_MEMORY_FATAL(ctdb, vnn);
-	vnn->iface = talloc_strdup(vnn, iface);
-	CTDB_NO_MEMORY(ctdb, vnn->iface);
+	vnn->ifaces = talloc_array(vnn, const char *, num + 2);
+	tmp = talloc_strdup(vnn, ifaces);
+	CTDB_NO_MEMORY_FATAL(ctdb, tmp);
+	for (iface = strtok(tmp, ","); iface; iface = strtok(NULL, ",")) {
+		vnn->ifaces = talloc_realloc(vnn, vnn->ifaces, const char *, num + 2);
+		CTDB_NO_MEMORY_FATAL(ctdb, vnn->ifaces);
+		vnn->ifaces[num] = talloc_strdup(vnn, iface);
+		CTDB_NO_MEMORY_FATAL(ctdb, vnn->ifaces[num]);
+		num++;
+	}
+	talloc_free(tmp);
+	vnn->ifaces[num] = NULL;
+	vnn->iface = vnn->ifaces[0];
 	vnn->public_address      = *addr;
 	vnn->public_netmask_bits = mask;
 	vnn->pnn                 = -1;
@@ -505,7 +523,7 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist)
 		unsigned mask;
 		ctdb_sock_addr addr;
 		const char *addrstr;
-		const char *iface;
+		const char *ifaces;
 		char *tok, *line;
 
 		line = lines[i];
@@ -528,17 +546,17 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist)
 				talloc_free(lines);
 				return -1;
 			}
-			iface = ctdb->default_public_interface;
+			ifaces = ctdb->default_public_interface;
 		} else {
-			iface = tok;
+			ifaces = tok;
 		}
 
-		if (!addrstr || !parse_ip_mask(addrstr, iface, &addr, &mask)) {
+		if (!addrstr || !parse_ip_mask(addrstr, ifaces, &addr, &mask)) {
 			DEBUG(DEBUG_CRIT,("Badly formed line %u in public address list\n", i+1));
 			talloc_free(lines);
 			return -1;
 		}
-		if (ctdb_add_public_address(ctdb, &addr, mask, iface)) {
+		if (ctdb_add_public_address(ctdb, &addr, mask, ifaces)) {
 			DEBUG(DEBUG_CRIT,("Failed to add line %u to the public address list\n", i+1));
 			talloc_free(lines);
 			return -1;
@@ -559,8 +577,13 @@ int ctdb_set_single_public_ip(struct ctdb_context *ctdb,
 	svnn = talloc_zero(ctdb, struct ctdb_vnn);
 	CTDB_NO_MEMORY(ctdb, svnn);
 
-	svnn->iface = talloc_strdup(svnn, iface);
-	CTDB_NO_MEMORY(ctdb, svnn->iface);
+	svnn->ifaces = talloc_array(svnn, const char *, 2);
+	CTDB_NO_MEMORY(ctdb, svnn->ifaces);
+	svnn->ifaces[0] = talloc_strdup(svnn->ifaces, iface);
+	CTDB_NO_MEMORY(ctdb, svnn->ifaces[0]);
+	svnn->ifaces[1] = NULL;
+
+	svnn->iface = svnn->ifaces[0];
 
 	ok = parse_ip(ip, iface, 0, &svnn->public_address);
 	if (!ok) {

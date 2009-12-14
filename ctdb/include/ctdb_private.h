@@ -187,6 +187,7 @@ struct ctdb_vnn {
 	struct ctdb_vnn *prev, *next;
 
 	const char *iface;
+	const char **ifaces;
 	ctdb_sock_addr public_address;
 	uint8_t public_netmask_bits;
 
