@@ -515,8 +515,9 @@ _PUBLIC_ enum ndr_err_code ndr_push_repsFromTo1(struct ndr_push *ndr, int ndr_fl
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 			if (r->other_info) {
-				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->other_info));
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->other_info));
 				NDR_CHECK(ndr_push_repsFromTo1OtherInfo(ndr, NDR_SCALARS, r->other_info));
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->other_info));
 			}
 		}
 		ndr->flags = _flags_save_STRUCT;
@@ -1452,13 +1453,14 @@ static enum ndr_err_code ndr_push_package_PrimaryKerberosString(struct ndr_push 
 			uint32_t _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NOTERM|LIBNDR_FLAG_REMAINING);
 			if (r->string) {
-				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->string));
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->string));
 				{
 					struct ndr_push *_ndr_string;
 					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_string, 0, 2 * strlen_m(r->string)));
 					NDR_CHECK(ndr_push_string(_ndr_string, NDR_SCALARS, r->string));
 					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_string, 0, 2 * strlen_m(r->string)));
 				}
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->string));
 			}
 			ndr->flags = _flags_save_string;
 		}
@@ -1548,13 +1550,14 @@ static enum ndr_err_code ndr_push_package_PrimaryKerberosKey3(struct ndr_push *n
 			uint32_t _flags_save_DATA_BLOB = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
 			if (r->value) {
-				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->value));
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->value));
 				{
 					struct ndr_push *_ndr_value;
 					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_value, 0, (r->value?r->value->length:0)));
 					NDR_CHECK(ndr_push_DATA_BLOB(_ndr_value, NDR_SCALARS, *r->value));
 					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_value, 0, (r->value?r->value->length:0)));
 				}
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->value));
 			}
 			ndr->flags = _flags_save_DATA_BLOB;
 		}
@@ -1770,13 +1773,14 @@ static enum ndr_err_code ndr_push_package_PrimaryKerberosKey4(struct ndr_push *n
 			uint32_t _flags_save_DATA_BLOB = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
 			if (r->value) {
-				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->value));
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->value));
 				{
 					struct ndr_push *_ndr_value;
 					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_value, 0, (r->value?r->value->length:0)));
 					NDR_CHECK(ndr_push_DATA_BLOB(_ndr_value, NDR_SCALARS, *r->value));
 					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_value, 0, (r->value?r->value->length:0)));
 				}
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->value));
 			}
 			ndr->flags = _flags_save_DATA_BLOB;
 		}
@@ -2627,8 +2631,9 @@ _PUBLIC_ enum ndr_err_code ndr_push_trustCurrentPasswords(struct ndr_push *ndr, 
 	if (ndr_flags & NDR_BUFFERS) {
 		for (cntr_current_0 = 0; cntr_current_0 < r->count; cntr_current_0++) {
 			if (r->current[cntr_current_0]) {
-				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->current[cntr_current_0]));
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->current[cntr_current_0]));
 				NDR_CHECK(ndr_push_AuthenticationInformation(ndr, NDR_SCALARS, r->current[cntr_current_0]));
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->current[cntr_current_0]));
 			}
 		}
 	}
