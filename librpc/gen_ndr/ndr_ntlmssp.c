@@ -286,13 +286,14 @@ _PUBLIC_ enum ndr_err_code ndr_push_NEGOTIATE_MESSAGE(struct ndr_push *ndr, int 
 			uint32_t _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, ndr_ntlmssp_negotiated_string_flags(NTLMSSP_NEGOTIATE_OEM));
 			if (r->DomainName) {
-				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->DomainName));
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->DomainName));
 				{
 					struct ndr_push *_ndr_DomainName;
 					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_DomainName, 0, strlen(r->DomainName)));
 					NDR_CHECK(ndr_push_string(_ndr_DomainName, NDR_SCALARS, r->DomainName));
 					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_DomainName, 0, strlen(r->DomainName)));
 				}
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->DomainName));
 			}
 			ndr->flags = _flags_save_string;
 		}
@@ -300,13 +301,14 @@ _PUBLIC_ enum ndr_err_code ndr_push_NEGOTIATE_MESSAGE(struct ndr_push *ndr, int 
 			uint32_t _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, ndr_ntlmssp_negotiated_string_flags(NTLMSSP_NEGOTIATE_OEM));
 			if (r->Workstation) {
-				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->Workstation));
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->Workstation));
 				{
 					struct ndr_push *_ndr_Workstation;
 					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_Workstation, 0, strlen(r->Workstation)));
 					NDR_CHECK(ndr_push_string(_ndr_Workstation, NDR_SCALARS, r->Workstation));
 					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_Workstation, 0, strlen(r->Workstation)));
 				}
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->Workstation));
 			}
 			ndr->flags = _flags_save_string;
 		}
@@ -1006,24 +1008,26 @@ _PUBLIC_ enum ndr_err_code ndr_push_CHALLENGE_MESSAGE(struct ndr_push *ndr, int 
 				uint32_t _flags_save_string = ndr->flags;
 				ndr_set_flags(&ndr->flags, ndr_ntlmssp_negotiated_string_flags(r->NegotiateFlags));
 				if (r->TargetName) {
-					NDR_CHECK(ndr_push_relative_ptr2(ndr, r->TargetName));
+					NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->TargetName));
 					{
 						struct ndr_push *_ndr_TargetName;
 						NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_TargetName, 0, ndr_ntlmssp_string_length(r->NegotiateFlags, r->TargetName)));
 						NDR_CHECK(ndr_push_string(_ndr_TargetName, NDR_SCALARS, r->TargetName));
 						NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_TargetName, 0, ndr_ntlmssp_string_length(r->NegotiateFlags, r->TargetName)));
 					}
+					NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->TargetName));
 				}
 				ndr->flags = _flags_save_string;
 			}
 			if (r->TargetInfo) {
-				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->TargetInfo));
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->TargetInfo));
 				{
 					struct ndr_push *_ndr_TargetInfo;
 					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_TargetInfo, 0, ndr_size_AV_PAIR_LIST(r->TargetInfo, ndr->iconv_convenience, ndr->flags)));
 					NDR_CHECK(ndr_push_AV_PAIR_LIST(_ndr_TargetInfo, NDR_SCALARS|NDR_BUFFERS, r->TargetInfo));
 					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_TargetInfo, 0, ndr_size_AV_PAIR_LIST(r->TargetInfo, ndr->iconv_convenience, ndr->flags)));
 				}
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->TargetInfo));
 			}
 			NDR_CHECK(ndr_push_ntlmssp_Version(ndr, NDR_BUFFERS, &r->Version));
 		}
@@ -1664,7 +1668,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_AUTHENTICATE_MESSAGE(struct ndr_push *ndr, i
 		}
 		if (ndr_flags & NDR_BUFFERS) {
 			if (r->LmChallengeResponse) {
-				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->LmChallengeResponse));
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->LmChallengeResponse));
 				{
 					struct ndr_push *_ndr_LmChallengeResponse;
 					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_LmChallengeResponse, 0, r->LmChallengeResponseLen));
@@ -1672,9 +1676,10 @@ _PUBLIC_ enum ndr_err_code ndr_push_AUTHENTICATE_MESSAGE(struct ndr_push *ndr, i
 					NDR_CHECK(ndr_push_ntlmssp_LM_RESPONSE(_ndr_LmChallengeResponse, NDR_SCALARS|NDR_BUFFERS, r->LmChallengeResponse));
 					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_LmChallengeResponse, 0, r->LmChallengeResponseLen));
 				}
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->LmChallengeResponse));
 			}
 			if (r->NtChallengeResponse) {
-				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->NtChallengeResponse));
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->NtChallengeResponse));
 				{
 					struct ndr_push *_ndr_NtChallengeResponse;
 					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_NtChallengeResponse, 0, r->NtChallengeResponseLen));
@@ -1682,18 +1687,20 @@ _PUBLIC_ enum ndr_err_code ndr_push_AUTHENTICATE_MESSAGE(struct ndr_push *ndr, i
 					NDR_CHECK(ndr_push_ntlmssp_NTLM_RESPONSE(_ndr_NtChallengeResponse, NDR_SCALARS|NDR_BUFFERS, r->NtChallengeResponse));
 					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_NtChallengeResponse, 0, r->NtChallengeResponseLen));
 				}
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->NtChallengeResponse));
 			}
 			{
 				uint32_t _flags_save_string = ndr->flags;
 				ndr_set_flags(&ndr->flags, ndr_ntlmssp_negotiated_string_flags(r->NegotiateFlags));
 				if (r->DomainName) {
-					NDR_CHECK(ndr_push_relative_ptr2(ndr, r->DomainName));
+					NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->DomainName));
 					{
 						struct ndr_push *_ndr_DomainName;
 						NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_DomainName, 0, ndr_ntlmssp_string_length(r->NegotiateFlags, r->DomainName)));
 						NDR_CHECK(ndr_push_string(_ndr_DomainName, NDR_SCALARS, r->DomainName));
 						NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_DomainName, 0, ndr_ntlmssp_string_length(r->NegotiateFlags, r->DomainName)));
 					}
+					NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->DomainName));
 				}
 				ndr->flags = _flags_save_string;
 			}
@@ -1701,13 +1708,14 @@ _PUBLIC_ enum ndr_err_code ndr_push_AUTHENTICATE_MESSAGE(struct ndr_push *ndr, i
 				uint32_t _flags_save_string = ndr->flags;
 				ndr_set_flags(&ndr->flags, ndr_ntlmssp_negotiated_string_flags(r->NegotiateFlags));
 				if (r->UserName) {
-					NDR_CHECK(ndr_push_relative_ptr2(ndr, r->UserName));
+					NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->UserName));
 					{
 						struct ndr_push *_ndr_UserName;
 						NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_UserName, 0, ndr_ntlmssp_string_length(r->NegotiateFlags, r->UserName)));
 						NDR_CHECK(ndr_push_string(_ndr_UserName, NDR_SCALARS, r->UserName));
 						NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_UserName, 0, ndr_ntlmssp_string_length(r->NegotiateFlags, r->UserName)));
 					}
+					NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->UserName));
 				}
 				ndr->flags = _flags_save_string;
 			}
@@ -1715,24 +1723,26 @@ _PUBLIC_ enum ndr_err_code ndr_push_AUTHENTICATE_MESSAGE(struct ndr_push *ndr, i
 				uint32_t _flags_save_string = ndr->flags;
 				ndr_set_flags(&ndr->flags, ndr_ntlmssp_negotiated_string_flags(r->NegotiateFlags));
 				if (r->Workstation) {
-					NDR_CHECK(ndr_push_relative_ptr2(ndr, r->Workstation));
+					NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->Workstation));
 					{
 						struct ndr_push *_ndr_Workstation;
 						NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_Workstation, 0, ndr_ntlmssp_string_length(r->NegotiateFlags, r->Workstation)));
 						NDR_CHECK(ndr_push_string(_ndr_Workstation, NDR_SCALARS, r->Workstation));
 						NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_Workstation, 0, ndr_ntlmssp_string_length(r->NegotiateFlags, r->Workstation)));
 					}
+					NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->Workstation));
 				}
 				ndr->flags = _flags_save_string;
 			}
 			if (r->EncryptedRandomSessionKey) {
-				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->EncryptedRandomSessionKey));
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->EncryptedRandomSessionKey));
 				{
 					struct ndr_push *_ndr_EncryptedRandomSessionKey;
 					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_EncryptedRandomSessionKey, 0, r->EncryptedRandomSessionKey->length));
 					NDR_CHECK(ndr_push_DATA_BLOB(_ndr_EncryptedRandomSessionKey, NDR_SCALARS, *r->EncryptedRandomSessionKey));
 					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_EncryptedRandomSessionKey, 0, r->EncryptedRandomSessionKey->length));
 				}
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->EncryptedRandomSessionKey));
 			}
 			NDR_CHECK(ndr_push_ntlmssp_Version(ndr, NDR_BUFFERS, &r->Version));
 		}
