@@ -472,7 +472,7 @@ struct ctdb_db_context {
 	struct tdb_wrap *ltdb;
 	struct ctdb_registered_call *calls; /* list of registered calls */
 	uint32_t seqnum;
-	struct timed_event *te;
+	struct timed_event *seqnum_update;
 	struct ctdb_traverse_local_handle *traverse;
 	bool transaction_active;
 	struct ctdb_vacuum_handle *vacuum_handle;
@@ -623,6 +623,8 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_TRANS2_ACTIVE           = 116,
 		    CTDB_CONTROL_GET_LOG		 = 117,
 		    CTDB_CONTROL_CLEAR_LOG		 = 118,
+		    CTDB_CONTROL_TRANS3_COMMIT           = 119,
+		    CTDB_CONTROL_GET_DB_SEQNUM           = 120,
 };	
 
 /*
@@ -1424,6 +1426,10 @@ int32_t ctdb_control_trans2_commit(struct ctdb_context *ctdb,
 				   struct ctdb_req_control *c, 
 				   TDB_DATA recdata, bool *async_reply);
 
+int32_t ctdb_control_trans3_commit(struct ctdb_context *ctdb,
+				   struct ctdb_req_control *c,
+				   TDB_DATA recdata, bool *async_reply);
+
 int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb, uint32_t id);
 int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb, uint32_t id);
 int32_t ctdb_control_transaction_cancel(struct ctdb_context *ctdb);
@@ -1529,5 +1535,9 @@ struct ctdb_log_state *ctdb_fork_with_logging(TALLOC_CTX *mem_ctx,
 
 int32_t ctdb_control_process_exists(struct ctdb_context *ctdb, pid_t pid);
 struct ctdb_client *ctdb_find_client_by_pid(struct ctdb_context *ctdb, pid_t pid);
+
+int32_t ctdb_control_get_db_seqnum(struct ctdb_context *ctdb,
+				   TDB_DATA indata,
+				   TDB_DATA *outdata);
 
 #endif
