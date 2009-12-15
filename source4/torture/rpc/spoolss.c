@@ -860,6 +860,11 @@ static bool test_EnumPrinters(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_GetPrinterDriver2(struct torture_context *tctx,
+				   struct dcerpc_pipe *p,
+				   struct policy_handle *handle,
+				   const char *driver_name);
+
 static bool test_GetPrinter(struct torture_context *tctx,
 			    struct dcerpc_pipe *p,
 		     struct policy_handle *handle)
@@ -895,6 +900,12 @@ static bool test_GetPrinter(struct torture_context *tctx,
 		torture_assert_werr_ok(tctx, r.out.result, "GetPrinter failed");
 
 		CHECK_NEEDED_SIZE_LEVEL(spoolss_PrinterInfo, r.out.info, r.in.level, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
+
+		if ((r.in.level == 2) && r.out.info->info2.drivername && strlen(r.out.info->info2.drivername)) {
+			torture_assert(tctx,
+				test_GetPrinterDriver2(tctx, p, handle, r.out.info->info2.drivername),
+				"failed to call test_GetPrinterDriver2");
+		}
 	}
 
 	return true;
@@ -2965,38 +2976,55 @@ static bool test_GetPrinterDriver2(struct torture_context *tctx,
 				   const char *driver_name)
 {
 	struct spoolss_GetPrinterDriver2 r;
+	uint16_t levels[] = {1, 2, 3, 4, 5, 6, 8, 101 };
 	uint32_t needed;
 	uint32_t server_major_version;
 	uint32_t server_minor_version;
+	int i;
 
 	r.in.handle = handle;
-	r.in.architecture = "W32X86";
-	r.in.level = 1;
-	r.in.buffer = NULL;
-	r.in.offered = 0;
-	r.in.client_major_version = 0;
+	r.in.architecture = SPOOLSS_ARCHITECTURE_NT_X86;
+	r.in.client_major_version = 3;
 	r.in.client_minor_version = 0;
 	r.out.needed = &needed;
 	r.out.server_major_version = &server_major_version;
 	r.out.server_minor_version = &server_minor_version;
 
-	torture_comment(tctx, "Testing GetPrinterDriver2 level %d\n", r.in.level);
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
 
-	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_GetPrinterDriver2(p, tctx, &r),
-		"failed to call GetPrinterDriver2");
-	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
-		data_blob_clear(&blob);
-		r.in.buffer = &blob;
-		r.in.offered = needed;
+		r.in.buffer = NULL;
+		r.in.offered = 0;
+		r.in.level = levels[i];
+
+		torture_comment(tctx, "Testing GetPrinterDriver2(%s) level %d\n",
+			driver_name, r.in.level);
+
 		torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_GetPrinterDriver2(p, tctx, &r),
 			"failed to call GetPrinterDriver2");
+		if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+			DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
+			data_blob_clear(&blob);
+			r.in.buffer = &blob;
+			r.in.offered = needed;
+			torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_GetPrinterDriver2(p, tctx, &r),
+				"failed to call GetPrinterDriver2");
+		}
+
+		if (W_ERROR_EQUAL(r.out.result, WERR_INVALID_LEVEL)) {
+			switch (r.in.level) {
+			case 101:
+			case 8:
+				continue;
+			default:
+				break;
+			}
+		}
+
+		torture_assert_werr_ok(tctx, r.out.result,
+			"failed to call GetPrinterDriver2");
+
+		CHECK_NEEDED_SIZE_LEVEL(spoolss_DriverInfo, r.out.info, r.in.level, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
 	}
-
-	torture_assert_werr_ok(tctx, r.out.result,
-		"failed to call GetPrinterDriver2");
-
-	CHECK_NEEDED_SIZE_LEVEL(spoolss_DriverInfo, r.out.info, r.in.level, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
 
 	return true;
 }
