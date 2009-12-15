@@ -434,6 +434,28 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 			struct ldb_dn *dn;
 			struct dsdb_dn *dsdb_dn = NULL;
 			struct ldb_val *plain_dn = &msg->elements[i].values[j];		
+
+			if (!checked_reveal_control) {
+				have_reveal_control =
+					ldb_request_get_control(req, LDB_CONTROL_REVEAL_INTERNALS) != NULL;
+				checked_reveal_control = true;
+			}
+
+			/* this is a fast method for detecting deleted
+			   linked attributes, working on the unparsed
+			   ldb_val */
+			if (dsdb_dn_is_deleted_val(plain_dn) && !have_reveal_control) {
+				/* it's a deleted linked attribute,
+				  and we don't have the reveal control */
+				memmove(&msg->elements[i].values[j],
+					&msg->elements[i].values[j+1],
+					(msg->elements[i].num_values-(j+1))*sizeof(struct ldb_val));
+				msg->elements[i].num_values--;
+				j--;
+				continue;
+			}
+
+
 			dsdb_dn = dsdb_dn_parse(msg, ldb, plain_dn, attribute->syntax->ldap_oid);
 
 			if (!dsdb_dn || !ldb_dn_validate(dsdb_dn->dn)) {
@@ -446,31 +468,6 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 				return ldb_module_done(ac->req, NULL, NULL, LDB_ERR_INVALID_DN_SYNTAX);
 			}
 			dn = dsdb_dn->dn;
-
-			if (!checked_reveal_control) {
-				have_reveal_control =
-					ldb_request_get_control(req, LDB_CONTROL_REVEAL_INTERNALS) != NULL;
-				checked_reveal_control = true;
-			}
-
-			/* this is a fast method for detecting deleted
-			   linked attributes. It relies on the
-			   linearization of extended DNs sorting by name,
-			   and "DELETED" being the first name */
-			if (plain_dn->length >= 12 &&
-			    strncmp((const char *)plain_dn->data, "<DELETED=1>;", 12) == 0) {
-				if (!have_reveal_control) {
-					/* it's a deleted linked
-					 * attribute, and we don't
-					 * have the reveal control */
-					memmove(&msg->elements[i].values[j],
-						&msg->elements[i].values[j+1],
-						(msg->elements[i].num_values-(j+1))*sizeof(struct ldb_val));
-					msg->elements[i].num_values--;
-					j--;
-					continue;
-				}
-			}
 
 			/* don't let users see the internal extended
 			   GUID components */
