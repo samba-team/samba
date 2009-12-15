@@ -430,6 +430,10 @@ _PUBLIC_ char *strlower_talloc(TALLOC_CTX *ctx, const char *src)
 	char *dest;
 	struct smb_iconv_convenience *iconv_convenience = get_iconv_convenience();
 
+	if(src == NULL) {
+		return NULL;
+	}
+
 	/* this takes advantage of the fact that upper/lower can't
 	   change the length of a character by more than 1 byte */
 	dest = talloc_array(ctx, char, 2*(strlen(src))+1);
