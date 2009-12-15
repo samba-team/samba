@@ -265,10 +265,25 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 
 		if (is_ipc) {
 			if (levels[i].expected_ipc_access_denied && NT_STATUS_EQUAL(NT_STATUS_ACCESS_DENIED, levels[i].fname_status)) {
+			} else if (!levels[i].only_handles &&
+				   NT_STATUS_EQUAL(levels[i].fname_status,
+				   NT_STATUS_NOT_SUPPORTED)) {
+				torture_warning(torture, "fname level %s %s",
+					levels[i].name,
+					nt_errstr(levels[i].fname_status));
+				continue;
 			} else if (!levels[i].only_handles && !NT_STATUS_EQUAL(NT_STATUS_INVALID_DEVICE_REQUEST, levels[i].fname_status)) {
 				printf("ERROR: fname level %s failed, expected NT_STATUS_INVALID_DEVICE_REQUEST - %s\n", 
 				       levels[i].name, nt_errstr(levels[i].fname_status));
 				count++;
+			}
+			if (!levels[i].only_paths &&
+			    NT_STATUS_EQUAL(levels[i].fnum_status,
+			    NT_STATUS_NOT_SUPPORTED)) {
+				torture_warning(torture, "fnum level %s %s",
+					levels[i].name,
+					nt_errstr(levels[i].fnum_status));
+				continue;
 			}
 			if (!levels[i].only_paths && !NT_STATUS_EQUAL(levels[i].expected_ipc_fnum_status, levels[i].fnum_status)) {
 				printf("ERROR: fnum level %s failed, expected %s - %s\n", 
@@ -277,6 +292,24 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 				count++;
 			}
 		} else {
+			if (!levels[i].only_paths &&
+			    NT_STATUS_EQUAL(levels[i].fnum_status,
+			    NT_STATUS_NOT_SUPPORTED)) {
+				torture_warning(torture, "fnum level %s %s",
+					levels[i].name,
+					nt_errstr(levels[i].fnum_status));
+				continue;
+			}
+
+			if (!levels[i].only_handles &&
+			    NT_STATUS_EQUAL(levels[i].fname_status,
+			    NT_STATUS_NOT_SUPPORTED)) {
+                                torture_warning(torture, "fname level %s %s",
+					levels[i].name,
+					nt_errstr(levels[i].fname_status));
+				continue;
+			}
+
 			if (!levels[i].only_paths && !NT_STATUS_IS_OK(levels[i].fnum_status)) {
 				printf("ERROR: fnum level %s failed - %s\n", 
 				       levels[i].name, nt_errstr(levels[i].fnum_status));
