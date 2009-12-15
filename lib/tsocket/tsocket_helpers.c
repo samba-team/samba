@@ -3,7 +3,7 @@
 
    Copyright (C) Stefan Metzmacher 2009
 
-     ** NOTE! The following LGPL license applies to the tevent
+     ** NOTE! The following LGPL license applies to the tsocket
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
 
