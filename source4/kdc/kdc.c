@@ -28,6 +28,7 @@
 #include "smbd/process_model.h"
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
+#include "lib/tsocket/tsocket.h"
 #include "system/network.h"
 #include "../lib/util/dlinklist.h"
 #include "lib/messaging/irpc.h"
@@ -58,8 +59,8 @@ typedef bool (*kdc_process_fn_t)(struct kdc_server *kdc,
 				 TALLOC_CTX *mem_ctx, 
 				 DATA_BLOB *input, 
 				 DATA_BLOB *reply,
-				 struct socket_address *peer_addr, 
-				 struct socket_address *my_addr, 
+				 struct tsocket_address *peer_addr,
+				 struct tsocket_address *my_addr,
 				 int datagram);
 
 /* hold information about one kdc socket */
@@ -130,6 +131,8 @@ static void kdc_recv_handler(struct kdc_socket *kdc_socket)
 	size_t nread, dsize;
 	struct socket_address *src;
 	struct socket_address *my_addr;
+	struct tsocket_address *tsrcaddr;
+	struct tsocket_address *tmyaddr;
 	int ret;
 
 	status = socket_pending(kdc_socket->sock, &dsize);
@@ -162,13 +165,27 @@ static void kdc_recv_handler(struct kdc_socket *kdc_socket)
 		return;
 	}
 
+	ret = tsocket_address_bsd_from_sockaddr(tmp_ctx, src->sockaddr,
+				src->sockaddrlen, &tsrcaddr);
+	if (ret < 0) {
+		talloc_free(tmp_ctx);
+		return;
+	}
+
+	ret = tsocket_address_bsd_from_sockaddr(tmp_ctx, my_addr->sockaddr,
+				my_addr->sockaddrlen, &tmyaddr);
+	if (ret < 0) {
+		talloc_free(tmp_ctx);
+		return;
+	}
 
 	/* Call krb5 */
 	ret = kdc_socket->process(kdc_socket->kdc, 
 				  tmp_ctx, 
 				  &blob,  
 				  &reply,
-				  src, my_addr,
+				  tsrcaddr,
+				  tmyaddr,
 				  1 /* Datagram */);
 	if (!ret) {
 		talloc_free(tmp_ctx);
@@ -229,6 +246,8 @@ static NTSTATUS kdc_tcp_recv(void *private_data, DATA_BLOB blob)
 	DATA_BLOB input, reply;
 	struct socket_address *src_addr;
 	struct socket_address *my_addr;
+	struct tsocket_address *tsrcaddr;
+	struct tsocket_address *tmyaddr;
 
 	talloc_steal(tmp_ctx, blob.data);
 
@@ -244,6 +263,20 @@ static NTSTATUS kdc_tcp_recv(void *private_data, DATA_BLOB blob)
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	ret = tsocket_address_bsd_from_sockaddr(tmp_ctx, src_addr->sockaddr,
+				src_addr->sockaddrlen, &tsrcaddr);
+	if (ret < 0) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = tsocket_address_bsd_from_sockaddr(tmp_ctx, my_addr->sockaddr,
+				my_addr->sockaddrlen, &tmyaddr);
+	if (ret < 0) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	/* Call krb5 */
 	input = data_blob_const(blob.data + 4, blob.length - 4); 
 
@@ -251,8 +284,8 @@ static NTSTATUS kdc_tcp_recv(void *private_data, DATA_BLOB blob)
 			       tmp_ctx,
 			       &input,
 			       &reply,
-			       src_addr,
-			       my_addr,
+			       tsrcaddr,
+			       tmyaddr,
 			       0 /* Not datagram */);
 	if (!ret) {
 		talloc_free(tmp_ctx);
@@ -319,25 +352,37 @@ static bool kdc_process(struct kdc_server *kdc,
 			TALLOC_CTX *mem_ctx, 
 			DATA_BLOB *input, 
 			DATA_BLOB *reply,
-			struct socket_address *peer_addr, 
-			struct socket_address *my_addr,
+			struct tsocket_address *peer_addr,
+			struct tsocket_address *my_addr,
 			int datagram_reply)
 {
-	int ret;	
+	int ret;
+	char *pa;
+	struct sockaddr_storage ss;
 	krb5_data k5_reply;
 	krb5_data_zero(&k5_reply);
 
 	krb5_kdc_update_time(NULL);
 
-	DEBUG(10,("Received KDC packet of length %lu from %s:%d\n", 
-		  (long)input->length - 4, peer_addr->addr, peer_addr->port));
+	ret = tsocket_address_bsd_sockaddr(peer_addr, (struct sockaddr *) &ss,
+				sizeof(struct sockaddr_storage));
+	if (ret < 0) {
+		return false;
+	}
+	pa = tsocket_address_string(peer_addr, mem_ctx);
+	if (pa == NULL) {
+		return false;
+	}
+
+	DEBUG(10,("Received KDC packet of length %lu from %s\n",
+				(long)input->length - 4, pa));
 
 	ret = krb5_kdc_process_krb5_request(kdc->smb_krb5_context->krb5_context, 
 					    kdc->config,
 					    input->data, input->length,
 					    &k5_reply,
-					    peer_addr->addr,
-					    peer_addr->sockaddr,
+					    pa,
+					    (struct sockaddr *) &ss,
 					    datagram_reply);
 	if (ret == -1) {
 		*reply = data_blob(NULL, 0);

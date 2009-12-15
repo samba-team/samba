@@ -29,15 +29,15 @@
 #include "kdc/hdb-samba4.h"
 
 struct kdc_server;
-struct socket_address;
+struct tsocket_address;
 
 
 bool kpasswdd_process(struct kdc_server *kdc,
 		      TALLOC_CTX *mem_ctx, 
 		      DATA_BLOB *input, 
 		      DATA_BLOB *reply,
-		      struct socket_address *peer_addr, 
-		      struct socket_address *my_addr,
+		      struct tsocket_address *peer_addr,
+		      struct tsocket_address *my_addr,
 		      int datagram_reply);
 
 /*
