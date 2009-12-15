@@ -1487,6 +1487,13 @@ static int setup_io(struct ph_context *ac,
 
 	io->n.lm_hash			= samdb_result_hash(io->ac, new_msg, "dBCSPwd");
 
+	if(io->u.sAMAccountName == NULL)
+	{
+		ldb_asprintf_errstring(ldb, "samAccountName is missing on %s for attempted password set/change",
+			ldb_dn_get_linearized(new_msg->dn));
+		return(LDB_ERR_CONSTRAINT_VIOLATION);
+	}
+
 	return LDB_SUCCESS;
 }
 
