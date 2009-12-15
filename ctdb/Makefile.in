@@ -58,7 +58,8 @@ CTDB_SERVER_OBJ = server/ctdbd.o server/ctdb_daemon.o server/ctdb_lockwait.o \
 	server/ctdb_vacuum.o server/ctdb_banning.o \
 	$(CTDB_CLIENT_OBJ) $(CTDB_TCP_OBJ) @INFINIBAND_WRAPPER_OBJ@
 
-TEST_BINS=tests/bin/ctdb_bench tests/bin/ctdb_fetch tests/bin/ctdb_store \
+TEST_BINS=tests/bin/ctdb_bench tests/bin/ctdb_fetch tests/bin/ctdb_fetch_one \
+	tests/bin/ctdb_store \
 	tests/bin/ctdb_randrec tests/bin/ctdb_persistent \
 	tests/bin/ctdb_traverse tests/bin/rb_test tests/bin/ctdb_transaction \
 	@INFINIBAND_BINS@
@@ -142,6 +143,10 @@ tests/bin/ctdb_bench: $(CTDB_CLIENT_OBJ) tests/src/ctdb_bench.o
 tests/bin/ctdb_fetch: $(CTDB_CLIENT_OBJ) tests/src/ctdb_fetch.o 
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+
+tests/bin/ctdb_fetch_one: $(CTDB_CLIENT_OBJ) tests/src/ctdb_fetch_one.o 
+	@echo Linking $@
+	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch_one.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 tests/bin/ctdb_store: $(CTDB_CLIENT_OBJ) tests/src/ctdb_store.o 
 	@echo Linking $@
