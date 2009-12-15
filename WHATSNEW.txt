@@ -66,6 +66,7 @@ smb.conf changes
    ctdb timeout			       New	       0
    cups encrypt			       New	       no
    debug hires timestamp	       Changed Default yes
+   ldap deref			       New	       auto
    ldap follow referral		       New	       auto
 
 
@@ -125,6 +126,10 @@ o   Günther Deschner <gd@samba.org>
     * Fix several printing issues.
     * Fix the build on Mac OS X 10.6.2.
     * Fix net and rpcclient after setprinterdataex changes.
+    * Add full support for level 8 printer drivers.
+    * Add more spoolss architectures to IDL.
+    * Fix enumprinter key client and server.
+    * Fix crash in EnumPrinterDataEx.
 
 
 o   Björn Jacke <bj@sernet.de>
@@ -145,6 +150,7 @@ o   Volker Lendecke <vl@samba.org>
     * Add rpcclient wkssvc_enumerateusers.
     * De-deprecate "write cache size" to prevent its removal without a proper
       alternative.
+    * Allow more than 1000 users in BUILTIN\Users.
 
 
 o   Jim McDonough <jmcd@samba.org>
