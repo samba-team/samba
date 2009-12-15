@@ -171,6 +171,48 @@ static int map_ldb_error(TALLOC_CTX *mem_ctx, int ldb_err,
 	/* result is 1:1 for now */
 	return ldb_err;
 }
+/* create and execute a modify request */
+static int ldb_mod_req_with_controls(struct ldb_context *ldb,
+				     const struct ldb_message *message,
+				     struct ldb_control **controls)
+{
+	struct ldb_request *req;
+	int ret;
+
+	ret = ldb_msg_sanity_check(ldb, message);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = ldb_build_mod_req(&req, ldb, ldb,
+					message,
+					controls,
+					NULL,
+					ldb_op_default_callback,
+					NULL);
+
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = ldb_transaction_start(ldb);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = ldb_request(ldb, req);
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+
+	if (ret == LDB_SUCCESS) {
+		return ldb_transaction_commit(ldb);
+	}
+	ldb_transaction_cancel(ldb);
+
+	talloc_free(req);
+	return ret;
+}
 
 /*
   connect to the sam database
@@ -546,7 +588,7 @@ reply:
 	NT_STATUS_HAVE_NO_MEMORY(modify_reply);
 
 	if (result == LDAP_SUCCESS) {
-		ldb_ret = ldb_modify_ctrl(samdb, msg, call->request->controls);
+		ldb_ret = ldb_mod_req_with_controls(samdb, msg, call->request->controls);
 		result = map_ldb_error(local_ctx, ldb_ret, &errstr);
 	}
 
