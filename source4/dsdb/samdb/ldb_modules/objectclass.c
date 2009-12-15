@@ -43,6 +43,7 @@
 #include "auth/auth.h"
 #include "param/param.h"
 #include "../libds/common/flags.h"
+#include "util.h"
 
 struct oc_context {
 
@@ -92,10 +93,8 @@ static int objectclass_sort(struct ldb_module *module,
 			    struct class_list **sorted_out) 
 {
 	struct ldb_context *ldb;
-	int i;
-	int layer;
-	struct class_list *sorted = NULL, *parent_class = NULL,
-		*subclass = NULL, *unsorted = NULL, *current, *poss_subclass, *poss_parent, *new_parent;
+	int i, lowest;
+	struct class_list *unsorted = NULL, *sorted = NULL, *current = NULL, *poss_parent = NULL, *new_parent = NULL, *current_lowest = NULL;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -148,20 +147,17 @@ static int objectclass_sort(struct ldb_module *module,
 			return LDB_ERR_NO_SUCH_ATTRIBUTE;
 		}
 
-		/* this is the root of the tree.  We will start
-		 * looking for subclasses from here */
-		if (ldb_attr_cmp("top", current->objectclass->lDAPDisplayName) == 0) {
-			DLIST_ADD_END(parent_class, current, struct class_list *);
-		} else {
+		/* Don't add top to list, we will do that later */
+		if (ldb_attr_cmp("top", current->objectclass->lDAPDisplayName) != 0) {
 			DLIST_ADD_END(unsorted, current, struct class_list *);
 		}
 	}
 
-	if (parent_class == NULL) {
-		current = talloc(mem_ctx, struct class_list);
-		current->objectclass = dsdb_class_by_lDAPDisplayName(schema, "top");
-		DLIST_ADD_END(parent_class, current, struct class_list *);
-	}
+	/* Add top here, to prevent duplicates */
+	current = talloc(mem_ctx, struct class_list);
+	current->objectclass = dsdb_class_by_lDAPDisplayName(schema, "top");
+	DLIST_ADD_END(sorted, current, struct class_list *);
+
 
 	/* For each object:  find parent chain */
 	for (current = unsorted; schema && current; current = current->next) {
@@ -180,43 +176,23 @@ static int objectclass_sort(struct ldb_module *module,
 		DLIST_ADD_END(unsorted, new_parent, struct class_list *);
 	}
 
-	/* DEBUGGING aid:  how many layers are we down now? */
-	layer = 0;
-	do {
-		layer++;
-		/* Find all the subclasses of classes in the
-		 * parent_classes.  Push them onto the subclass list */
-
-		/* Ensure we don't bother if there are no unsorted entries left */
-		for (current = parent_class; schema && unsorted && current; current = current->next) {
-			/* Walk the list of possible subclasses in unsorted */
-			for (poss_subclass = unsorted; poss_subclass; ) {
-				struct class_list *next;
-				
-				/* Save the next pointer, as the DLIST_ macros will change poss_subclass->next */
-				next = poss_subclass->next;
-
-				if (ldb_attr_cmp(poss_subclass->objectclass->subClassOf, current->objectclass->lDAPDisplayName) == 0) {
-					DLIST_REMOVE(unsorted, poss_subclass);
-					DLIST_ADD(subclass, poss_subclass);
-					
-					break;
-				}
-				poss_subclass = next;
+	do
+	{
+		lowest = INT_MAX;
+		current_lowest = NULL;
+		for (current = unsorted; schema && current; current = current->next) {
+			if(current->objectclass->subClass_order < lowest) {
+				current_lowest = current;
+				lowest = current->objectclass->subClass_order;
 			}
 		}
 
-		/* Now push the parent_classes as sorted, we are done with
-		these.  Add to the END of the list by concatenation */
-		DLIST_CONCATENATE(sorted, parent_class, struct class_list *);
+		if(current_lowest != NULL) {
+			DLIST_REMOVE(unsorted,current_lowest);
+			DLIST_ADD_END(sorted,current_lowest, struct class_list *);
+		}
+	} while(unsorted);
 
-		/* and now find subclasses of these */
-		parent_class = subclass;
-		subclass = NULL;
-
-		/* If we didn't find any subclasses we will fall out
-		 * the bottom here */
-	} while (parent_class);
 
 	if (!unsorted) {
 		*sorted_out = sorted;
@@ -466,11 +442,14 @@ static int objectclass_do_add(struct oc_context *ac)
 	const struct dsdb_schema *schema;
 	struct ldb_request *add_req;
 	char *value;
-	struct ldb_message_element *objectclass_element;
+	struct ldb_message_element *objectclass_element, *el;
 	struct ldb_message *msg;
 	TALLOC_CTX *mem_ctx;
 	struct class_list *sorted, *current;
 	int ret;
+	const struct dsdb_class *objectclass;
+	int32_t systemFlags = 0;
+	const char *rdn_name = NULL;
 
 	ldb = ldb_module_get_ctx(ac->module);
 	schema = dsdb_get_schema(ldb);
@@ -560,120 +539,128 @@ static int objectclass_do_add(struct oc_context *ac)
 				talloc_free(mem_ctx);
 				return ret;
 			}
-			/* Last one is the critical one */
-			if (!current->next) {
-				struct ldb_message_element *el;
-				int32_t systemFlags = 0;
-				const char *rdn_name = ldb_dn_get_rdn_name(msg->dn);
-				if (current->objectclass->rDNAttID
-				    && ldb_attr_cmp(rdn_name, current->objectclass->rDNAttID) != 0) {
-					ldb_asprintf_errstring(ldb,
-							       "RDN %s is not correct for most specific structural objectclass %s, should be %s",
-							       rdn_name, current->objectclass->lDAPDisplayName, current->objectclass->rDNAttID);
-					return LDB_ERR_NAMING_VIOLATION;
+		}
+
+		/* Retrive the message again so get_last_structural_class works */
+		objectclass_element = ldb_msg_find_element(msg, "objectClass");
+
+		/* Make sure its valid to add an object of this type */
+		objectclass = get_last_structural_class(schema,objectclass_element);
+		if(objectclass == NULL) {
+			ldb_asprintf_errstring(ldb,
+						"Failed to find a structural class for %s",
+						  ldb_dn_get_linearized(msg->dn));
+			return LDB_ERR_NAMING_VIOLATION;
+		}
+
+		rdn_name = ldb_dn_get_rdn_name(msg->dn);
+		if (objectclass->rDNAttID
+			&& ldb_attr_cmp(rdn_name, objectclass->rDNAttID) != 0) {
+			ldb_asprintf_errstring(ldb,
+						"RDN %s is not correct for most specific structural objectclass %s, should be %s",
+						rdn_name, objectclass->lDAPDisplayName, objectclass->rDNAttID);
+			return LDB_ERR_NAMING_VIOLATION;
+		}
+
+		if (ac->search_res && ac->search_res->message) {
+			struct ldb_message_element *oc_el
+				= ldb_msg_find_element(ac->search_res->message, "objectClass");
+
+			bool allowed_class = false;
+			int i, j;
+			for (i=0; allowed_class == false && oc_el && i < oc_el->num_values; i++) {
+				const struct dsdb_class *sclass;
+
+				sclass = dsdb_class_by_lDAPDisplayName_ldb_val(schema, &oc_el->values[i]);
+				if (!sclass) {
+					/* We don't know this class?  what is going on? */
+					continue;
 				}
-
-				if (ac->search_res && ac->search_res->message) {
-					struct ldb_message_element *oc_el
-						= ldb_msg_find_element(ac->search_res->message, "objectClass");
-
-					bool allowed_class = false;
-					int i, j;
-					for (i=0; allowed_class == false && oc_el && i < oc_el->num_values; i++) {
-						const struct dsdb_class *sclass;
-
-						sclass = dsdb_class_by_lDAPDisplayName_ldb_val(schema, &oc_el->values[i]);
-						if (!sclass) {
-							/* We don't know this class?  what is going on? */
-							continue;
+				if (ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
+					for (j=0; sclass->systemPossibleInferiors && sclass->systemPossibleInferiors[j]; j++) {
+						if (ldb_attr_cmp(objectclass->lDAPDisplayName, sclass->systemPossibleInferiors[j]) == 0) {
+							allowed_class = true;
+							break;
 						}
-						if (ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
-							for (j=0; sclass->systemPossibleInferiors && sclass->systemPossibleInferiors[j]; j++) {
-								if (ldb_attr_cmp(current->objectclass->lDAPDisplayName, sclass->systemPossibleInferiors[j]) == 0) {
-									allowed_class = true;
-									break;
-								}
-							}
-						} else {
-							for (j=0; sclass->systemPossibleInferiors && sclass->systemPossibleInferiors[j]; j++) {
-								if (ldb_attr_cmp(current->objectclass->lDAPDisplayName, sclass->systemPossibleInferiors[j]) == 0) {
-									allowed_class = true;
-									break;
-								}
-							}
+					}
+				} else {
+					for (j=0; sclass->systemPossibleInferiors && sclass->systemPossibleInferiors[j]; j++) {
+						if (ldb_attr_cmp(objectclass->lDAPDisplayName, sclass->systemPossibleInferiors[j]) == 0) {
+							allowed_class = true;
+							break;
 						}
 					}
-
-					if (!allowed_class) {
-						ldb_asprintf_errstring(ldb, "structural objectClass %s is not a valid child class for %s",
-							       current->objectclass->lDAPDisplayName, ldb_dn_get_linearized(ac->search_res->message->dn));
-						return LDB_ERR_NAMING_VIOLATION;
-					}
-				}
-
-				if (current->objectclass->systemOnly && !ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
-					ldb_asprintf_errstring(ldb, "objectClass %s is systemOnly, rejecting creation of %s",
-							       current->objectclass->lDAPDisplayName, ldb_dn_get_linearized(msg->dn));
-					return LDB_ERR_UNWILLING_TO_PERFORM;
-				}
-
-				if (!ldb_msg_find_element(msg, "objectCategory")) {
-					struct dsdb_extended_dn_store_format *dn_format = talloc_get_type(ldb_module_get_private(ac->module), struct dsdb_extended_dn_store_format);
-					if (dn_format && dn_format->store_extended_dn_in_ldb == false) {
-						/* Strip off extended components */
-						struct ldb_dn *dn = ldb_dn_new(msg, ldb, current->objectclass->defaultObjectCategory);
-						value = ldb_dn_alloc_linearized(msg, dn);
-						talloc_free(dn);
-					} else {
-						value = talloc_strdup(msg, current->objectclass->defaultObjectCategory);
-					}
-					if (value == NULL) {
-						ldb_oom(ldb);
-						talloc_free(mem_ctx);
-						return LDB_ERR_OPERATIONS_ERROR;
-					}
-					ldb_msg_add_string(msg, "objectCategory", value);
-				}
-				if (!ldb_msg_find_element(msg, "showInAdvancedViewOnly") && (current->objectclass->defaultHidingValue == true)) {
-					ldb_msg_add_string(msg, "showInAdvancedViewOnly",
-							   "TRUE");
-				}
-
-				/* There are very special rules for systemFlags, see MS-ADTS 3.1.1.5.2.4 */
-				el = ldb_msg_find_element(msg, "systemFlags");
-
-				systemFlags = ldb_msg_find_attr_as_int(msg, "systemFlags", 0);
-
-				if (el) {
-					/* Only these flags may be set by a client, but we can't tell between a client and our provision at this point */
-					/* systemFlags &= ( SYSTEM_FLAG_CONFIG_ALLOW_RENAME | SYSTEM_FLAG_CONFIG_ALLOW_MOVE | SYSTEM_FLAG_CONFIG_LIMITED_MOVE); */
-					ldb_msg_remove_element(msg, el);
-				}
-
-				/* This flag is only allowed on attributeSchema objects */
-				if (ldb_attr_cmp(current->objectclass->lDAPDisplayName, "attributeSchema") == 0) {
-					systemFlags &= ~SYSTEM_FLAG_ATTR_IS_RDN;
-				}
-
-				if (ldb_attr_cmp(current->objectclass->lDAPDisplayName, "server") == 0) {
-					systemFlags |= (int32_t)(SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE | SYSTEM_FLAG_CONFIG_ALLOW_RENAME | SYSTEM_FLAG_CONFIG_ALLOW_LIMITED_MOVE);
-				} else if (ldb_attr_cmp(current->objectclass->lDAPDisplayName, "site") == 0
-					   || ldb_attr_cmp(current->objectclass->lDAPDisplayName, "serverContainer") == 0
-					   || ldb_attr_cmp(current->objectclass->lDAPDisplayName, "ntDSDSA") == 0) {
-					systemFlags |= (int32_t)(SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE);
-
-				} else if (ldb_attr_cmp(current->objectclass->lDAPDisplayName, "siteLink") == 0
-					   || ldb_attr_cmp(current->objectclass->lDAPDisplayName, "siteLinkBridge") == 0
-					   || ldb_attr_cmp(current->objectclass->lDAPDisplayName, "nTDSConnection") == 0) {
-					systemFlags |= (int32_t)(SYSTEM_FLAG_CONFIG_ALLOW_RENAME);
-				}
-
-				/* TODO: If parent object is site or subnet, also add (SYSTEM_FLAG_CONFIG_ALLOW_RENAME) */
-
-				if (el || systemFlags != 0) {
-					samdb_msg_add_int(ldb, msg, msg, "systemFlags", systemFlags);
 				}
 			}
+
+			if (!allowed_class) {
+				ldb_asprintf_errstring(ldb, "structural objectClass %s is not a valid child class for %s",
+						objectclass->lDAPDisplayName, ldb_dn_get_linearized(ac->search_res->message->dn));
+				return LDB_ERR_NAMING_VIOLATION;
+			}
+		}
+
+		if (objectclass->systemOnly && !ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
+			ldb_asprintf_errstring(ldb, "objectClass %s is systemOnly, rejecting creation of %s",
+						objectclass->lDAPDisplayName, ldb_dn_get_linearized(msg->dn));
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+
+		if (!ldb_msg_find_element(msg, "objectCategory")) {
+			struct dsdb_extended_dn_store_format *dn_format = talloc_get_type(ldb_module_get_private(ac->module), struct dsdb_extended_dn_store_format);
+			if (dn_format && dn_format->store_extended_dn_in_ldb == false) {
+				/* Strip off extended components */
+				struct ldb_dn *dn = ldb_dn_new(msg, ldb, objectclass->defaultObjectCategory);
+				value = ldb_dn_alloc_linearized(msg, dn);
+				talloc_free(dn);
+			} else {
+				value = talloc_strdup(msg, objectclass->defaultObjectCategory);
+			}
+			if (value == NULL) {
+				ldb_oom(ldb);
+				talloc_free(mem_ctx);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+			ldb_msg_add_string(msg, "objectCategory", value);
+		}
+		if (!ldb_msg_find_element(msg, "showInAdvancedViewOnly") && (objectclass->defaultHidingValue == true)) {
+			ldb_msg_add_string(msg, "showInAdvancedViewOnly",
+						"TRUE");
+		}
+
+		/* There are very special rules for systemFlags, see MS-ADTS 3.1.1.5.2.4 */
+		el = ldb_msg_find_element(msg, "systemFlags");
+
+		systemFlags = ldb_msg_find_attr_as_int(msg, "systemFlags", 0);
+
+		if (el) {
+			/* Only these flags may be set by a client, but we can't tell between a client and our provision at this point */
+			/* systemFlags &= ( SYSTEM_FLAG_CONFIG_ALLOW_RENAME | SYSTEM_FLAG_CONFIG_ALLOW_MOVE | SYSTEM_FLAG_CONFIG_LIMITED_MOVE); */
+			ldb_msg_remove_element(msg, el);
+		}
+
+		/* This flag is only allowed on attributeSchema objects */
+		if (ldb_attr_cmp(objectclass->lDAPDisplayName, "attributeSchema") == 0) {
+			systemFlags &= ~SYSTEM_FLAG_ATTR_IS_RDN;
+		}
+
+		if (ldb_attr_cmp(objectclass->lDAPDisplayName, "server") == 0) {
+			systemFlags |= (int32_t)(SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE | SYSTEM_FLAG_CONFIG_ALLOW_RENAME | SYSTEM_FLAG_CONFIG_ALLOW_LIMITED_MOVE);
+		} else if (ldb_attr_cmp(objectclass->lDAPDisplayName, "site") == 0
+				|| ldb_attr_cmp(objectclass->lDAPDisplayName, "serverContainer") == 0
+				|| ldb_attr_cmp(objectclass->lDAPDisplayName, "ntDSDSA") == 0) {
+			systemFlags |= (int32_t)(SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE);
+
+		} else if (ldb_attr_cmp(objectclass->lDAPDisplayName, "siteLink") == 0
+				|| ldb_attr_cmp(objectclass->lDAPDisplayName, "siteLinkBridge") == 0
+				|| ldb_attr_cmp(objectclass->lDAPDisplayName, "nTDSConnection") == 0) {
+			systemFlags |= (int32_t)(SYSTEM_FLAG_CONFIG_ALLOW_RENAME);
+		}
+
+		/* TODO: If parent object is site or subnet, also add (SYSTEM_FLAG_CONFIG_ALLOW_RENAME) */
+
+		if (el || systemFlags != 0) {
+			samdb_msg_add_int(ldb, msg, msg, "systemFlags", systemFlags);
 		}
 	}
 
